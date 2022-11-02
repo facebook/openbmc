@@ -20,18 +20,17 @@ class HGXComponent : public Component {
     }
     return 0;
   }
-  int print_version() {
+  int get_version(json& j) {
     if (_hgxcomp == "") {
       return FW_STATUS_NOT_SUPPORTED;
     }
     try {
-      std::cout << _component << " Version : " << hgx::version(_hgxcomp)
-                << std::endl;
+      j["VERSION"] = hgx::version(_hgxcomp);
     } catch (std::exception& e) {
       std::cerr << e.what() << std::endl;
-      return -1;
+      return FW_STATUS_FAILURE;
     }
-    return 0;
+    return FW_STATUS_SUCCESS;
   }
 };
 

@@ -46,9 +46,9 @@ class CpldComponent : public Component {
     CpldComponent(const string &fru, const string &comp, uint8_t type, uint8_t bus, uint8_t addr,
       int (*cpld_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t))
       : Component(fru, comp), pld_type(type), attr{bus, addr, cpld_xfer} {}
-    int update(string image);
-    int fupdate(string image);
-    int print_version();
+    int update(string image) override;
+    int fupdate(string image) override;
+    int get_version(json& j) override;
 };
 
 int CpldComponent::_update(const char *path, uint8_t is_signed, i2c_attr_t attr ) {
@@ -57,14 +57,14 @@ int CpldComponent::_update(const char *path, uint8_t is_signed, i2c_attr_t attr 
 
   syslog(LOG_CRIT, "Component %s%s upgrade initiated", comp.c_str(), is_signed? "": " force");
   if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
-    printf("Cannot open i2c!\n");
+    cerr << "Cannot open i2c!" << endl;
     return ret;
   }
 
   ret = cpld_program((char *)path, NULL, false);
   cpld_intf_close();
   if (ret) {
-    printf("Error Occur at updating CPLD FW!\n");
+    cerr << "Error Occur at updating CPLD FW!" << endl;
     return ret;
   }
 
@@ -80,11 +80,13 @@ int CpldComponent::fupdate(string image) {
   return _update(image.c_str(), 0, attr);
 }
 
-int CpldComponent::print_version() {
+int CpldComponent::get_version(json& j) {
   int ret = -1;
   uint8_t ver[4];
   char strbuf[MAX_VALUE_LEN];
   string comp = this->component();
+  transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
+  j["PRETTY_COMPONENT"] = comp;
 
   if (!cpld_intf_open(pld_type, INTF_I2C, &attr)) {
     ret = cpld_get_ver((uint32_t *)ver);
@@ -97,11 +99,8 @@ int CpldComponent::print_version() {
     sprintf(strbuf, "%02X%02X%02X%02X", ver[0], ver[1], ver[2], ver[3]);
     kv_set(_component.c_str(), strbuf, 0, 0);
   }
-
-  transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
-  sys().output << comp << " Version: " << string(strbuf) << endl;
-
-  return 0;
+  j["VERSION"] = string(strbuf);
+  return FW_STATUS_SUCCESS;
 }
 
 CpldComponent mb_cpld("mb", "mb_cpld", LCMXO3_9400C, 7, 0x40, nullptr);

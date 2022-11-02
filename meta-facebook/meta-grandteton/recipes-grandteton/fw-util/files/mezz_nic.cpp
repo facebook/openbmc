@@ -10,7 +10,7 @@
 
 using namespace std;
 
-int PLDMNicComponent::print_version() {
+int PLDMNicComponent::get_version(json& j) {
 
   uint8_t tbuf[255] = {0};
   auto pldmbuf = (pldm_msg *)tbuf;
@@ -21,17 +21,18 @@ int PLDMNicComponent::print_version() {
   uint8_t *rbuf = nullptr;
   size_t rlen = 0;
   size_t tlen = PLDM_HEADER_SIZE;
-  int rc = oem_pldm_send_recv(_bus_id, _eid, tbuf, tlen, &rbuf, &rlen);
+  j["PRETTY_COMPONENT"] = "Mellanox " + _ver_key;
 
-  std::string ret = "N/A";
+  int rc = oem_pldm_send_recv(_bus_id, _eid, tbuf, tlen, &rbuf, &rlen);
   if (rc == 0) {
-    ret = "";
+    std::string ret{};
     for (int i = 0; i < 10; ++i)
       ret += (char)*(rbuf + i + 14);
+    j["VERSION"] = ret;
+  } else {
+    j["VERSION"] = "NA";
   }
-  printf("Mellanox %s firmware version: %s\n", _ver_key.c_str(), ret.c_str());
-
-  return rc;
+  return FW_STATUS_SUCCESS;
 }
 
 int PLDMNicComponent::update(string image) {

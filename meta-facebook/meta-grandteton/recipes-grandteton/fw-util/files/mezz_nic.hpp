@@ -13,8 +13,8 @@ class PLDMNicComponent : public MCTPNicComponent {
   public:
     PLDMNicComponent(std::string fru, std::string comp, std::string key, uint8_t eid, uint8_t bus)
       : MCTPNicComponent(fru, comp, key, eid), _bus_id(bus){}
-    int print_version();
-    int update(std::string image);
+    int get_version(json& j) override;
+    int update(std::string image) override;
 };
 
 #ifdef __cplusplus

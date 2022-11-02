@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <array>
@@ -25,9 +27,9 @@ class SwbBicFwComponent : public Component {
   public:
     SwbBicFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
         : Component(fru, comp), bus(bus), eid(eid), target(target) {}
-    int update(string image);
-    int fupdate(string image);
-    int print_version();
+    int update(string image) override;
+    int fupdate(string image) override;
+    int get_version(json& j) override;
 };
 
 class SwbBicFwRecoveryComponent : public Component {
@@ -38,8 +40,8 @@ class SwbBicFwRecoveryComponent : public Component {
     SwbBicFwRecoveryComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
         :Component(fru, comp), bus(bus), eid(eid), target(target) {}
 
-  int update(string image);
-  int fupdate(string image);
+  int update(string image) override;
+  int fupdate(string image) override;
 };
 
 class SwbPexFwComponent : public SwbBicFwComponent {
@@ -48,7 +50,7 @@ class SwbPexFwComponent : public SwbBicFwComponent {
   public:
     SwbPexFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target, uint8_t id)
         :SwbBicFwComponent(fru, comp, bus, eid, target), id(id) {}
-    int print_version();
+    int get_version(json& j) override;
 };
 
 class SwbNicFwComponent : public SwbBicFwComponent {
@@ -57,7 +59,7 @@ class SwbNicFwComponent : public SwbBicFwComponent {
   public:
     SwbNicFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target, uint8_t id)
         :SwbBicFwComponent(fru, comp, bus, eid, target), id(id) {}
-    int print_version();
+    int get_version(json& j) override;
 };
 
 
@@ -187,12 +189,12 @@ int swb_fw_update (uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data,
 
   int socket = oem_pldm_init_fd(bus);
   if ( socket < 0 ) {
-    fprintf(stderr, "%s() cannot connect to pldmd\n", __func__);
+    cerr << __func__ << "() cannot connect to pldmd" << std::endl;
     return ret;
   }
 
   // start update
-  printf("updating fw on bus %d:\n", bus);
+  cout << "updating fw on bus " << +bus << endl;
   struct timeval start, end;
   uint8_t buf[256] = {0};
   uint32_t offset = 0;
@@ -300,7 +302,7 @@ int fw_update_proc (const string& image, bool force,
     }
 
   } catch (string& err) {
-    printf("%s\n", err.c_str());
+    cerr << err << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
   syslog(LOG_CRIT, "Component %s upgrade completed\n", comp.c_str() );
@@ -444,46 +446,49 @@ int get_swb_version (uint8_t bus, uint8_t eid, uint8_t target, vector<uint8_t> &
 }
 
 
-int SwbBicFwComponent::print_version() {
-  int ret = 0;
-  char ver_str[32];
+int SwbBicFwComponent::get_version(json& j) {
   vector<uint8_t> ver = {};
 
   // Get Bridge-IC Version
-  ret = get_swb_version(bus, eid, target, ver);
+  int ret = get_swb_version(bus, eid, target, ver);
 
-  if (ver.empty()) {
-    snprintf(ver_str, sizeof(ver_str), "NA");
+  if (ret != 0 || ver.empty()) {
+    j["VERSION"] = "NA";
   } else if (ver[1] == 7){
-    snprintf(ver_str, sizeof(ver_str), "%02x%02x.%02x.%02x",
-            ver[2], ver[3], ver[4], ver[5]);
+    stringstream ver_str;
+    ver_str << std::hex << std::setfill('0')
+      << std::setw(2) << +ver[2]
+      << std::setw(2) << +ver[3] << '.'
+      << std::setw(2) << +ver[4] << '.'
+      << std::setw(2) << +ver[5];
+    j["VERSION"] = ver_str.str();
   } else {
-    snprintf(ver_str, sizeof(ver_str), "Format not supported");
+    j["VERSION"] = "Format not supported";
   }
-
-  printf("SWB BIC Version: %s\n", ver_str);
-  return ret;
+  j["PRETTY_COMPONENT"] = "SWB BIC";
+  return FW_STATUS_SUCCESS;
 }
 
-int SwbPexFwComponent::print_version() {
-  int ret = 0;
-  char ver_str[32];
+int SwbPexFwComponent::get_version(json& j) {
   vector<uint8_t> ver = {};
 
-// Get PEX Version
-  ret = get_swb_version(bus, eid, target, ver);
-
-  if (ver.empty()) {
-    snprintf(ver_str, sizeof(ver_str), "NA");
+  // Get PEX Version
+  int ret = get_swb_version(bus, eid, target, ver);
+  if (ret != 0 || ver.empty()) {
+    j["VERSION"] = "NA";
   } else if (ver[1] == 4){
-    snprintf(ver_str, sizeof(ver_str), "%02x.%02x.%02x.%02x",
-            ver[5], ver[4], ver[3], ver[2]);
+    stringstream ver_str;
+    ver_str << std::hex << std::setfill('0')
+      << std::setw(2) << +ver[5] << '.'
+      << std::setw(2) << +ver[4] << '.'
+      << std::setw(2) << +ver[3] << '.'
+      << std::setw(2) << +ver[2];
+    j["VERSION"] = ver_str.str();
   } else {
-    snprintf(ver_str, sizeof(ver_str), "Format not supported");
+    j["VERSION"] = "Format not supported";
   }
-
-  printf("SWB PEX%d Version: %s\n", id, ver_str);
-  return ret;
+  j["PRETTY_COMPONENT"] = string("SWB PEX") + std::to_string(+id);
+  return FW_STATUS_SUCCESS;
 }
 
 SwbBicFwComponent bic("swb", "bic", 3, 0x0A, BIC_COMP);

@@ -2122,52 +2122,52 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         ret = read_hsc_power_volt2(fru, sensor_num, FCM_B_HSC_MON_dir, 1, value);
       }
       break;
-    case SMB_SENSOR_FAN1_REAR_TACH:
+    case SMB_SENSOR_FAN1_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 1, value);
       break;
-    case SMB_SENSOR_FAN1_FRONT_TACH:
+    case SMB_SENSOR_FAN1_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 2, value);
       break;
-    case SMB_SENSOR_FAN2_REAR_TACH:
+    case SMB_SENSOR_FAN2_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 1, value);
       break;
-    case SMB_SENSOR_FAN2_FRONT_TACH:
+    case SMB_SENSOR_FAN2_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 2, value);
       break;
-    case SMB_SENSOR_FAN3_REAR_TACH:
+    case SMB_SENSOR_FAN3_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 3, value);
       break;
-    case SMB_SENSOR_FAN3_FRONT_TACH:
+    case SMB_SENSOR_FAN3_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 4, value);
       break;
-    case SMB_SENSOR_FAN4_REAR_TACH:
+    case SMB_SENSOR_FAN4_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 3, value);
       break;
-    case SMB_SENSOR_FAN4_FRONT_TACH:
+    case SMB_SENSOR_FAN4_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 4, value);
       break;
-    case SMB_SENSOR_FAN5_REAR_TACH:
+    case SMB_SENSOR_FAN5_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 5, value);
       break;
-    case SMB_SENSOR_FAN5_FRONT_TACH:
+    case SMB_SENSOR_FAN5_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 6, value);
       break;
-    case SMB_SENSOR_FAN6_REAR_TACH:
+    case SMB_SENSOR_FAN6_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 5, value);
       break;
-    case SMB_SENSOR_FAN6_FRONT_TACH:
+    case SMB_SENSOR_FAN6_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 6, value);
       break;
-    case SMB_SENSOR_FAN7_REAR_TACH:
+    case SMB_SENSOR_FAN7_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 7, value);
       break;
-    case SMB_SENSOR_FAN7_FRONT_TACH:
+    case SMB_SENSOR_FAN7_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 8, value);
       break;
-    case SMB_SENSOR_FAN8_REAR_TACH:
+    case SMB_SENSOR_FAN8_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 7, value);
       break;
-    case SMB_SENSOR_FAN8_FRONT_TACH:
+    case SMB_SENSOR_FAN8_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 8, value);
       break;
     case SMB_SENSOR_TH4_HIGH:

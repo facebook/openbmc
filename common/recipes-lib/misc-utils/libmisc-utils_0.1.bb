@@ -48,15 +48,6 @@ inherit ptest-meson
 
 DEPENDS += "gtest"
 
-do_compile_ptest() {
-  cat <<EOF > ${WORKDIR}/run-ptest
-#!/bin/sh
-set -e
-${libexecdir}/libmisc-utils/ptest/test-libmisc-utils
-${libexecdir}/libmisc-utils/ptest/test-cpp-libmisc-utils
-EOF
-}
-
 def get_soc_model(soc_family):
   if soc_family == "aspeed-g4":
     ret = "SOC_MODEL_ASPEED_G4"
@@ -89,5 +80,3 @@ do_install:append() {
     echo "${@ get_soc_model('${SOC_FAMILY}') }" > ${D}${sysconfdir}/soc_model
     echo "${@ get_cpu_model('${SOC_FAMILY}') }" > ${D}${sysconfdir}/cpu_model
 }
-
-FILES:${PN}-ptest = "${libdir}/libmisc-utils/ptest ${libexecdir}/libmisc-utils/ptest"

@@ -61,15 +61,12 @@ test_c_exe = executable('test-libmisc-utils',
     'test/test-path.c',
     'test/test-str.c',
     link_with: misc_lib,
-    install: true,
-    install_dir: get_option('libexecdir') + '/libmisc-utils/ptest/',
 )
+test('misc-utils-test-c', test_c_exe)
 
 test_cpp_exe = executable('test-cpp-libmisc-utils',
     'test/test-biview.cpp',
     'test/test-profile.cpp',
     dependencies: test_deps,
-    install: true,
-    install_dir: get_option('libexecdir') + '/libmisc-utils/ptest/',
 )
-
+test('misc-utils-test-cpp', test_cpp_exe)

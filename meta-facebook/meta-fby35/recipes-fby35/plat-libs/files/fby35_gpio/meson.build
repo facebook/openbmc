@@ -1,4 +1,4 @@
-project('libfby35_gpio',
+project('libfby35-gpio',
     'c',
     version: '0.1',
     license: 'GPL2',
@@ -26,7 +26,7 @@ install_headers(
     subdir: 'facebook'
 )
 
-gpio_lib = shared_library('fby35_gpio',
+gpio_lib = shared_library('fby35-gpio',
     sources,
     dependencies: deps,
     version: meson.project_version(),

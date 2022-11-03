@@ -8,7 +8,7 @@ cc = meson.get_compiler('c')
 
 dep_libs = [
     dependency('libfby35-common'),
-    dependency('libfby35_gpio'),
+    dependency('libfby35-gpio'),
     dependency('libgpio-ctrl'),
     dependency('libkv'),
     dependency('libphymem'),

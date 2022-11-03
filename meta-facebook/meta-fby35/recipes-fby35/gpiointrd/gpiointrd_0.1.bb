@@ -33,7 +33,7 @@ LOCAL_URI = " \
 DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfby35-common libipmi libfby35-gpio libobmc-i2c libkv libbic libpal libras"
 RDEPENDS:${PN} += " libpal libgpio-ctrl libfby35-common libipmi libfby35-gpio libobmc-i2c libkv libbic libpal libras"
 CFLAGS += " -DCONFIG_FBY3 "
-LDFLAGS += " -lpal -lgpio-ctrl -lfby35_common -lipmi -lbic -lfby35_gpio -lobmc-i2c -lkv -lpal -lras"
+LDFLAGS += " -lpal -lgpio-ctrl -lfby35_common -lipmi -lbic -lfby35-gpio -lobmc-i2c -lkv -lpal -lras"
 
 pkgdir = "gpiointrd"
 

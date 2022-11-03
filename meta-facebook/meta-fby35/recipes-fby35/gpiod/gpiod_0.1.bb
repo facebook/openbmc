@@ -32,7 +32,7 @@ LOCAL_URI = " \
 binfiles = "gpiod \
            "
 
-LDFLAGS += "-lbic -lfby35_gpio -lpal -lfby35_common -lkv -lfruid"
+LDFLAGS += "-lbic -lfby35-gpio -lpal -lfby35_common -lkv -lfruid"
 
 DEPENDS += "update-rc.d-native libbic libfby35-gpio libpal libfby35-common libkv libfruid"
 RDEPENDS:${PN} += "libbic libfby35-gpio libpal libfby35-common libkv libfruid"

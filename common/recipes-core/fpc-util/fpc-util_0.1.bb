@@ -18,17 +18,12 @@ LIC_FILES_CHKSUM = "\
     file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
     "
 
-LOCAL_URI = "file://fpc-util.c \
-           file://Makefile \
-          "
+LOCAL_URI = " \
+    file://fpc-util.c \
+    file://meson.build \
+    file://plat/meson.build \
+"
 
-do_install() {
-    install -d ${D}${bindir}
-    install -m 0755 fpc-util ${D}${bindir}/fpc-util
-}
+inherit meson pkgconfig
 
 DEPENDS += "libpal"
-RDEPENDS:${PN} += "libpal"
-LDFLAGS += "-lpal"
-
-FILES:${PN} = "${bindir}"

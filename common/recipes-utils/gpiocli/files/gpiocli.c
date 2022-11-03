@@ -37,12 +37,12 @@
 /*
  * Logging utilities.
  */
-#define GCLI_DEBUG(fmt, args...)		\
+#define GCLI_DEBUG(...) \
 	do {					\
 		if (verbose_flag)		\
-			printf(fmt, ##args);	\
+			printf(__VA_ARGS__);	\
 	} while (0)
-#define GCLI_ERR(fmt, args...)	fprintf(stderr, fmt, ##args)
+#define GCLI_ERR(...)	fprintf(stderr, __VA_ARGS__)
 
 /*
  * Macros for validating and accessing "gcli_cmd_args" structure.
@@ -133,7 +133,7 @@ static int gcli_cmd_unexport(struct gcli_cmd_args *args)
 	return error;
 }
 
-static int gcli_cmd_list_chips(struct gcli_cmd_args *args)
+static int gcli_cmd_list_chips(struct gcli_cmd_args *args __attribute__((unused)))
 {
 	int i, num_chips;
 	char type[64], device[64];

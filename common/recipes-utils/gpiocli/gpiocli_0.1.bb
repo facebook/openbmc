@@ -23,29 +23,14 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://gpiocli.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 LOCAL_URI = " \
-    file://Makefile \
+    file://meson.build \
     file://gpiocli.c \
     "
 
-pkgdir = "gpiocli"
-binfiles = "gpiocli \
-           "
+inherit meson pkgconfig
+inherit legacy-packages
 
-CFLAGS += "-Wall -Werror "
-LDFLAGS += " -lgpio-ctrl -lmisc-utils"
-RDEPENDS:${PN} += " libgpio-ctrl libmisc-utils"
+pkgdir = "gpiocli"
+
 DEPENDS:append = " libgpio-ctrl libmisc-utils"
 
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  for f in ${binfiles}; do
-    install -m 755 $f ${dst}/$f
-    ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
-  done
-}
-
-FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES:${PN} = "${FBPACKAGEDIR}/gpiocli ${prefix}/local/bin"

@@ -1,0 +1,16 @@
+. /usr/local/bin/openbmc-utils.sh
+
+readonly SKU_DUAL_COMPUTE=0
+readonly SKU_SINGLE_COMPUTE=3
+
+# Get get_sys_sku
+get_sys_sku() {
+  if val=$(/usr/bin/kv get "sys_sku_id"); then
+    echo "$val"
+    return 0
+  fi
+
+  val=$(( $(gpio_get SYS_SKU_ID0_R) + ($(gpio_get SYS_SKU_ID1_R)<<1) ))
+  /usr/bin/kv set "sys_sku_id" "$val"
+  echo $val
+}

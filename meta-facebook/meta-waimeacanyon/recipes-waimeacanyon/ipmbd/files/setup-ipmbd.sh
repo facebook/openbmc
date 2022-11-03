@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -28,12 +28,11 @@
 #
 ### END INIT INFO
 
-
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/fbpackages/utils/plat-functions
 
 echo -n "Starting IPMB Rx/Tx Daemon.."
 
-ulimit -q 1024000
+ulimit -q 2048000
 
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-1/new_device
 runsv /etc/sv/ipmbd_1 > /dev/null 2>&1 &
@@ -43,5 +42,20 @@ runsv /etc/sv/ipmbd_2 > /dev/null 2>&1 &
 
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-11/new_device
 runsv /etc/sv/ipmbd_11 > /dev/null 2>&1 &
+
+sys_sku_id=$(get_sys_sku)
+if [ "$sys_sku_id" = "$SKU_SINGLE_COMPUTE" ]; then
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-6/new_device
+  runsv /etc/sv/ipmbd_6 > /dev/null 2>&1 &
+  
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-7/new_device
+  runsv /etc/sv/ipmbd_7 > /dev/null 2>&1 &
+  
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device
+  runsv /etc/sv/ipmbd_8 > /dev/null 2>&1 &
+  
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-9/new_device
+  runsv /etc/sv/ipmbd_9 > /dev/null 2>&1 &
+fi
 
 echo "Done."

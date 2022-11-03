@@ -12,4 +12,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
+  plat-utils \
+  openbmc-utils \
+  ipmbd \
   "

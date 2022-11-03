@@ -27,6 +27,8 @@ LOCAL_URI = " \
     file://sync_date.sh \
     file://sol-util \
     file://setup-por.sh \
+    file://setup-dev.sh \
+    file://plat-functions \
     "
 
 pkgdir = "utils"
@@ -66,6 +68,8 @@ do_install() {
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 67 5 .
 
+  # install plat-functions
+  install -m 644 plat-functions ${dst}/plat-functions
 }
 
 FILES:${PN} += "/usr/local ${sysconfdir}"

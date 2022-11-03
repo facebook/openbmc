@@ -81,13 +81,13 @@ slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
 
   if (value == GPIO_VALUE_LOW) {
     pal_check_sled_managment_cable_id(slot_id, NULL, bmc_location);
-    
+
     pal_check_slot_cpu_present(slot_id);
     pal_check_slot_fru(slot_id);
   }
 }
 
-static void 
+static void
 slot_hotplug_setup(uint8_t slot_id) {
 #define SCRIPT_PATH "sh /etc/init.d/server-init.sh %d &"
   char cmd[128] = {0};
@@ -99,8 +99,8 @@ slot_hotplug_setup(uint8_t slot_id) {
   }
 }
 
-static void 
-slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+static void
+slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last __attribute__((unused)), gpio_value_t curr) {
   uint32_t slot_id;
   uint8_t bmc_location = 0;
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
@@ -140,7 +140,7 @@ issue_slot_ocp_fault_sel(uint8_t slot_id) {
   tbuf[1]  = NETFN_STORAGE_REQ << 2;
   tbuf[2]  = CMD_STORAGE_ADD_SEL;
   tbuf[5]  = 0x02; //record ID
-  tbuf[10] = 0x20; //addr 
+  tbuf[10] = 0x20; //addr
   tbuf[11] = 0x00;
   tbuf[12] = 0x04;
   tbuf[13] = 0xC9;
@@ -150,13 +150,13 @@ issue_slot_ocp_fault_sel(uint8_t slot_id) {
   tbuf[15] = 0x6F;
   tbuf[16] = 0x08; //fault event
   tbuf[17] = 0xff;
-  tbuf[18] = 0xff; 
+  tbuf[18] = 0xff;
   tlen = 19;
   lib_ipmi_handle(tbuf, tlen, rbuf, &rlen);
 }
 
 static void
-slot_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+slot_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last __attribute__((unused)), gpio_value_t curr) {
   uint32_t slot_id;
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
   assert(cfg);
@@ -177,7 +177,7 @@ slot_power_control(char *opt) {
 }
 
 static void
-slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last __attribute__((unused)), gpio_value_t curr) {
   uint32_t slot_id;
   char pwr_cmd[32];
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
@@ -197,7 +197,7 @@ slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
 }
 
 static void
-ocp_nic_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+ocp_nic_hotplug_hndlr(gpiopoll_pin_t *gp __attribute__((unused)), gpio_value_t last __attribute__((unused)), gpio_value_t curr) {
   int ret = 0;
   uint8_t fru = 0;
   uint8_t bmc_location = 0;
@@ -253,7 +253,7 @@ ocp_nic_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) 
 
   } while (timeout < MAX_BLOCK_TIMEOUT);
 
-  
+
   ret = fby35_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
@@ -275,7 +275,7 @@ ocp_nic_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) 
       if (ret < 0) {
         syslog(LOG_WARNING, "SLED_CYCLE failed...");
         goto exit;
-      } 
+      }
       break;
     case NIC_BMC:
       syslog(LOG_CRIT, "12V_CYCLE is starting due to NIC re-insertion.");
@@ -288,15 +288,15 @@ ocp_nic_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) 
       if (ret < 0) {
         syslog(LOG_WARNING, "12V_CYCLE failed...");
         goto exit;
-      } 
+      }
       break;
     default:
       syslog(LOG_WARNING, "%s() Unknown location of BMC, location = %d", __func__, bmc_location);
       break;
   }
-   
+
 exit:
-  snprintf(value, sizeof(value), "%d", KEY_CLEAR); 
+  snprintf(value, sizeof(value), "%d", KEY_CLEAR);
   if (kv_set(key, value, 0, 0) < 0) {
     syslog(LOG_WARNING, "%s() Fail to clear the key \"%s\"", __func__, key);
     return;
@@ -305,13 +305,13 @@ exit:
 }
 
 static void
-ocp_nic_init(gpiopoll_pin_t *gp, gpio_value_t value) {
+ocp_nic_init(gpiopoll_pin_t *gp __attribute__((unused)), gpio_value_t value) {
   if (value == GPIO_VALUE_HIGH)
     syslog(LOG_CRIT, "OCP NIC Removed");
 }
 
 static void
-usb_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+usb_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last __attribute__((unused)), gpio_value_t curr) {
   int ret = 0, i2cfd = 0, retry=0;
   uint8_t tbuf[1] = {0x08}, rbuf[1] = {0};
   uint8_t tlen = 1, rlen = 1;
@@ -518,7 +518,7 @@ init_class2_threads() {
 }
 
 int
-main(int argc, char **argv) {
+main() {
   int rc = 0;
   int pid_file = 0;
   uint8_t bmc_location = 0;

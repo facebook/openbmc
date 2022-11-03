@@ -21,48 +21,13 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://main.cpp;beginline=5;endline=18;md5=ff9a2ba58fa5b39d3d3dcb7c42e26496"
 
-LOCAL_URI = " \
-    file://Makefile \
-    file://main.cpp \
-    file://selformat.hpp \
-    file://selformat.cpp \
-    file://selstream.hpp \
-    file://selstream.cpp \
-    file://selexception.hpp \
-    file://log-util.hpp \
-    file://log-util.cpp \
-    file://rsyslogd.hpp \
-    file://rsyslogd.cpp \
-    file://exclusion.hpp \
-    file://tests/test_rsyslogd.cpp \
-    file://tests/test_selformat.cpp \
-    file://tests/test_selstream.cpp \
-    file://tests/test_logutil.cpp \
-    "
+SRC_URI = "file://log-util"
+S = "${WORKDIR}/log-util"
+
+inherit meson pkgconfig
+inherit ptest-meson
+
+DEPENDS += "libpal cli11 nlohmann-json gtest gmock"
 
 PROVIDES += "log-util-v2"
 RPROVIDES:${PN} += "log-util-v2"
-
-inherit ptest
-do_compile_ptest() {
-  make log-util-test
-  cat <<EOF > ${WORKDIR}/run-ptest
-#!/bin/sh
-/usr/lib/log-util/ptest/log-util-test
-EOF
-}
-
-do_install_ptest() {
-  install -D -m 755 log-util-test ${D}${libdir}/log-util/ptest/log-util-test
-}
-
-do_install() {
-  install -D -m 755 log-util ${D}${prefix}/local/bin/log-util
-}
-
-DEPENDS += "libpal cli11 nlohmann-json gtest gmock"
-RDEPENDS:${PN} += "libpal"
-RDEPENDS:${PN}-ptest += "libpal"
-
-FILES:${PN} = "${prefix}/local/bin/log-util"
-FILES:${PN}-ptest = "${libdir}/log-util/ptest"

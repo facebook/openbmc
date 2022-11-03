@@ -36,7 +36,7 @@
 #include <time.h>
 
 static uint8_t bmc_location = 0xff;
-const static char *intf_name[4] = {"Server Board", "Front Expansion Board", "Riser Expansion Board", "Baseboard"};
+static const char *intf_name[4] = {"Server Board", "Front Expansion Board", "Riser Expansion Board", "Baseboard"};
 const uint8_t intf_size = 4;
 
 static const char *option_list[] = {
@@ -56,7 +56,7 @@ static const char *option_list[] = {
 
 static void
 print_usage_help(void) {
-  int i;
+  size_t i;
 
   printf("Usage: bic-util <%s> <[0..n]data_bytes_to_send>\n", slot_usage);
   printf("Usage: bic-util <%s> <option>\n", slot_usage);
@@ -515,9 +515,9 @@ util_get_postcode(uint8_t slot_id) {
 static int
 util_print_dword_postcode_buf(uint8_t slot_id) {
   int ret = 0;
-  uint32_t len;
-  uint32_t intput_len = 0;
-  int i;
+  size_t len;
+  size_t intput_len = 0;
+  size_t i;
   uint32_t * dw_postcode_buf = malloc( MAX_POSTCODE_NUM * sizeof(uint32_t));
   if (dw_postcode_buf) {
     intput_len = MAX_POSTCODE_NUM;
@@ -859,7 +859,7 @@ main(int argc, char **argv) {
 
       gpio_num = atoi(argv[3]);
       gpio_val = atoi(argv[4]);
-      if ( gpio_num > 0xff || gpio_val > 1 ) goto err_exit;
+      if ( gpio_val > 1 ) goto err_exit;
       return util_set_gpio(slot_id, gpio_num, gpio_val);
     } else if ( strcmp(argv[2], "--check_status") == 0 ) {
       if ( argc != 3 ) {

@@ -62,6 +62,39 @@ gpio_set_value FM_BIC_DEBUG_SW_N_R 0
 # PWRGD_CPUPWRGD_LVC1
 gpio_export_by_name  "${ASPEED_GPIO}" GPIOR6 PWRGD_CPUPWRGD_LVC1
 
+# BIC_EXTRST
+gpio_export_by_name  "${ASPEED_GPIO}" GPIOS6 BIC_EXTRST
+gpio_set_value BIC_EXTRST 1
+
+# BIC_FWSPICK
+gpio_export_by_name  "${ASPEED_GPIO}" GPIOD0 BIC_FWSPICK
+gpio_set_value BIC_FWSPICK 0
+
+# BIC_SRST
+gpio_export_by_name  "${ASPEED_GPIO}" GPIOD1 BIC_SRST
+gpio_set_value BIC_SRST 1
+
+#SCB IO-Expender
+gpio_export_by_offset 1-0021 0 BMC_UART_SEL0
+gpio_set  BMC_UART_SEL0  0
+gpio_export_by_offset 1-0021 1 BMC_UART_SEL1
+gpio_set  BMC_UART_SEL1  0
+gpio_export_by_offset 1-0021 2 BMC_UART_SEL2
+gpio_set  BMC_UART_SEL2  0
+gpio_export_by_offset 1-0021 3 BMC_UART_SEL3
+gpio_set  BMC_UART_SEL3  0
+gpio_export_by_offset 1-0021 4 BMC_UART_SEL4
+gpio_export_by_offset 1-0021 5 BMC_UART_MUX_SEL_N
+gpio_set  BMC_UART_MUX_SEL_N  0
+gpio_export_by_offset 1-0021 6 FM_PWRGD_SCB_R_PWRGD_BUF
+gpio_export_by_offset 1-0021 7 FP_PWR_LED_BMC
+gpio_export_by_offset 1-0021 8 FP_STS_LED_BMC
+gpio_export_by_offset 1-0021 9 BMC_FP_LED_MUX_SEL_N
+gpio_export_by_offset 1-0021 10 PWR_BTN_QS_N_BMC
+gpio_export_by_offset 1-0021 11 RST_BTN_QS_N_BMC
+gpio_export_by_offset 1-0021 12 DC_SCM_FW_RDY_R_N
+
+
 
 # FM_BMC_READY_PLD_R
 gpio_export_by_name  "${ASPEED_GPIO}" GPIOV5 FM_BMC_READY_PLD_R

@@ -1,4 +1,4 @@
-From 173630d987c028e5cc563a501f31354c7c0e794d Mon Sep 17 00:00:00 2001
+From 850629f8971449d568de0f07e2da95feed951cf9 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Nov 2021 13:59:32 +0800
 Subject: [PATCH 1/7] dt-bindings: Add bindings for aspeed pwm-tach.
@@ -19,7 +19,7 @@ Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
 
 diff --git a/Documentation/devicetree/bindings/hwmon/aspeed,ast2600-tach.yaml b/Documentation/devicetree/bindings/hwmon/aspeed,ast2600-tach.yaml
 new file mode 100644
-index 000000000000..dded50a049fb
+index 000000000..dded50a04
 --- /dev/null
 +++ b/Documentation/devicetree/bindings/hwmon/aspeed,ast2600-tach.yaml
 @@ -0,0 +1,68 @@
@@ -93,7 +93,7 @@ index 000000000000..dded50a049fb
 +    - reg
 diff --git a/Documentation/devicetree/bindings/mfd/aspeed,ast2600-pwm-tach.yaml b/Documentation/devicetree/bindings/mfd/aspeed,ast2600-pwm-tach.yaml
 new file mode 100644
-index 000000000000..1eaf6fab2752
+index 000000000..1eaf6fab2
 --- /dev/null
 +++ b/Documentation/devicetree/bindings/mfd/aspeed,ast2600-pwm-tach.yaml
 @@ -0,0 +1,76 @@
@@ -175,7 +175,7 @@ index 000000000000..1eaf6fab2752
 +    };
 diff --git a/Documentation/devicetree/bindings/pwm/aspeed,ast2600-pwm.yaml b/Documentation/devicetree/bindings/pwm/aspeed,ast2600-pwm.yaml
 new file mode 100644
-index 000000000000..f501f8a769df
+index 000000000..f501f8a76
 --- /dev/null
 +++ b/Documentation/devicetree/bindings/pwm/aspeed,ast2600-pwm.yaml
 @@ -0,0 +1,64 @@
@@ -244,5 +244,5 @@ index 000000000000..f501f8a769df
 +  required:
 +    - reg
 -- 
-2.35.1
+2.30.2
 

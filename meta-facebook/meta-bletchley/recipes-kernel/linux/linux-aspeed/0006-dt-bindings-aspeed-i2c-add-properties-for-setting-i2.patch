@@ -1,4 +1,4 @@
-From 66e4a47399e57183310a0cfe3094396559a89081 Mon Sep 17 00:00:00 2001
+From a94e2728e978130be305bf5b8539df22f8bc9c23 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Wed, 1 Jun 2022 10:10:37 +0800
 Subject: [PATCH 6/7] dt-bindings: aspeed-i2c: add properties for setting i2c
@@ -14,7 +14,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 7 insertions(+)
 
 diff --git a/Documentation/devicetree/bindings/i2c/aspeed,i2c.yaml b/Documentation/devicetree/bindings/i2c/aspeed,i2c.yaml
-index f597f73ccd87..45ed9efd6aec 100644
+index f597f73cc..45ed9efd6 100644
 --- a/Documentation/devicetree/bindings/i2c/aspeed,i2c.yaml
 +++ b/Documentation/devicetree/bindings/i2c/aspeed,i2c.yaml
 @@ -49,6 +49,13 @@ properties:
@@ -32,5 +32,5 @@ index f597f73ccd87..45ed9efd6aec 100644
    - reg
    - compatible
 -- 
-2.35.1
+2.30.2
 

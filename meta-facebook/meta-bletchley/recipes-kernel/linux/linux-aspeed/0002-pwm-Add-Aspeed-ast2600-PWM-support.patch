@@ -1,4 +1,4 @@
-From a619e7e75515495442891e7bcceb848b60ac3bce Mon Sep 17 00:00:00 2001
+From c4c5185cc15e4474f0fff5af8751497a48c7c984 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Nov 2021 13:59:33 +0800
 Subject: [PATCH 2/7] pwm: Add Aspeed ast2600 PWM support
@@ -20,7 +20,7 @@ Reviewed-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
  create mode 100644 drivers/pwm/pwm-aspeed-ast2600.c
 
 diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 60d13a949bc5..752a2379cb7c 100644
+index 60d13a949..752a2379c 100644
 --- a/drivers/pwm/Kconfig
 +++ b/drivers/pwm/Kconfig
 @@ -51,6 +51,16 @@ config PWM_AB8500
@@ -41,7 +41,7 @@ index 60d13a949bc5..752a2379cb7c 100644
  	tristate "Atmel PWM support"
  	depends on ARCH_AT91 || COMPILE_TEST
 diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 7bf1a29f02b8..5169c34056e6 100644
+index 7bf1a29f0..5169c3405 100644
 --- a/drivers/pwm/Makefile
 +++ b/drivers/pwm/Makefile
 @@ -2,6 +2,7 @@
@@ -54,7 +54,7 @@ index 7bf1a29f02b8..5169c34056e6 100644
  obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
 diff --git a/drivers/pwm/pwm-aspeed-ast2600.c b/drivers/pwm/pwm-aspeed-ast2600.c
 new file mode 100644
-index 000000000000..bf54eeb70372
+index 000000000..bf54eeb70
 --- /dev/null
 +++ b/drivers/pwm/pwm-aspeed-ast2600.c
 @@ -0,0 +1,325 @@
@@ -384,5 +384,5 @@ index 000000000000..bf54eeb70372
 +MODULE_DESCRIPTION("Aspeed ast2600 PWM device driver");
 +MODULE_LICENSE("GPL v2");
 -- 
-2.35.1
+2.30.2
 

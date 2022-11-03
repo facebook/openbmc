@@ -1,4 +1,4 @@
-From 0f9a247bebca89178ac155ac168c9996f2f4c72e Mon Sep 17 00:00:00 2001
+From 33f4e9159701d0942f9b894a8b02ef61e26481e3 Mon Sep 17 00:00:00 2001
 From: Howard Chiu <howard10703049@gmail.com>
 Date: Thu, 2 Dec 2021 10:26:23 +0800
 Subject: [PATCH 3/7] Porting tach driver for ast26xx from Aspeed linux
@@ -17,10 +17,10 @@ Signed-off-by: Howard Chiu <howard.chiu@quantatw.com>
  create mode 100644 drivers/hwmon/tach-aspeed-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed-g6.dtsi
-index 1387a763a6a5..0cc92874caa8 100644
+index b94ccdb52..6f159ef1e 100644
 --- a/arch/arm/boot/dts/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed-g6.dtsi
-@@ -323,6 +323,28 @@ apb {
+@@ -327,6 +327,28 @@ apb {
  			#size-cells = <1>;
  			ranges;
  
@@ -50,7 +50,7 @@ index 1387a763a6a5..0cc92874caa8 100644
  				compatible = "aspeed,ast2600-scu", "syscon", "simple-mfd";
  				reg = <0x1e6e2000 0x1000>;
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index e70d9614bec2..d0f6165c2d31 100644
+index e70d9614b..d0f6165c2 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -402,6 +402,14 @@ config SENSORS_ASPEED
@@ -69,7 +69,7 @@ index e70d9614bec2..d0f6165c2d31 100644
  	tristate "Attansic ATXP1 VID controller"
  	depends on I2C
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 007e829d1d0d..9e2a932fbd0a 100644
+index 007e829d1..9e2a932fb 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
 @@ -54,6 +54,7 @@ obj-$(CONFIG_SENSORS_ARM_SCMI)	+= scmi-hwmon.o
@@ -82,7 +82,7 @@ index 007e829d1d0d..9e2a932fbd0a 100644
  obj-$(CONFIG_SENSORS_AXI_FAN_CONTROL) += axi-fan-control.o
 diff --git a/drivers/hwmon/tach-aspeed-ast2600.c b/drivers/hwmon/tach-aspeed-ast2600.c
 new file mode 100644
-index 000000000000..0b2551fc1711
+index 000000000..0b2551fc1
 --- /dev/null
 +++ b/drivers/hwmon/tach-aspeed-ast2600.c
 @@ -0,0 +1,388 @@
@@ -475,5 +475,5 @@ index 000000000000..0b2551fc1711
 +MODULE_DESCRIPTION("ASPEED Fan tach device driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.35.1
+2.30.2
 

@@ -136,7 +136,7 @@ led_handler() {
 
 
 int
-main (int argc, char * const argv[]) {
+main() {
   pthread_t tid_debug_card;
   pthread_t tid_led;
   int rc;

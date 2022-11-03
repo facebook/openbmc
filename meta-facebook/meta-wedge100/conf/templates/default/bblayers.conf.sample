@@ -8,20 +8,19 @@ BBFILES ?= ""
 BBLAYERS ?= " \
   ##OEROOT##/meta \
   ##OEROOT##/meta-poky \
-  ##OEROOT##/meta-yocto-bsp \
-  ##OEROOT##/../meta-security/meta-tpm \
-  ##OEROOT##/../meta-openembedded/meta-oe \
-  ##OEROOT##/../meta-openembedded/meta-networking \
-  ##OEROOT##/../meta-openembedded/meta-python \
-  ##OEROOT##/../meta-openembedded/meta-perl \
-  ##OEROOT##/../../.. \
-  ##OEROOT##/../meta-security \
-  ##OEROOT##/../../../meta-aspeed \
-  ##OEROOT##/../../../meta-facebook \
-  ##OEROOT##/../../../meta-facebook/meta-wedge \
-  ##OEROOT##/../../../meta-facebook/meta-wedge100 \
-  ##OEROOT##/../../../meta-facebook/meta-python3 \
-  ##OEROOT##/../../../meta-facebook/meta-backports \
+  ##OEROOT##/meta-security/meta-tpm \
+  ##OEROOT##/meta-openembedded/meta-oe \
+  ##OEROOT##/meta-openembedded/meta-networking \
+  ##OEROOT##/meta-openembedded/meta-python \
+  ##OEROOT##/meta-openembedded/meta-perl \
+  ##OEROOT##/../.. \
+  ##OEROOT##/meta-security \
+  ##OEROOT##/../../meta-aspeed \
+  ##OEROOT##/../../meta-facebook \
+  ##OEROOT##/../../meta-facebook/meta-wedge \
+  ##OEROOT##/../../meta-facebook/meta-wedge100 \
+  ##OEROOT##/../../meta-facebook/meta-python3 \
+  ##OEROOT##/../../meta-facebook/meta-backports \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
   ##OEROOT##/meta \

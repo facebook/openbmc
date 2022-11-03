@@ -47,6 +47,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-minipack:lf-dunfell
   meta-netlakemtp:lf-dunfell
   meta-qemux86:lf-dunfell
+  meta-wedge100:lf-dunfell
   meta-wedge400:lf-dunfell
 # Legacy platforms pending kernel upgrade
   meta-fbtp:rocko
@@ -57,7 +58,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-lightning:rocko
   meta-minilaketb:rocko
   meta-wedge:rocko
-  meta-wedge100:rocko
   meta-yamp:rocko
   meta-yosemite:rocko
 )

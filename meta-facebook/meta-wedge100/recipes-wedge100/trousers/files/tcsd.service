@@ -1,0 +1,11 @@
+[Unit]
+Description=TCG Core Services Daemon
+After=syslog.target
+
+[Service]
+Type=forking
+ExecStart=/etc/init.d/trousers start
+
+[Install]
+WantedBy=multi-user.target
+

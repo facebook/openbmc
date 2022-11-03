@@ -165,6 +165,10 @@ int BicFwComponent::get_version(json& j) {
   string ver("");
   string board_name = board;
 
+  if (fw_comp == FW_BIC_RCVY || fw_comp == FW_1OU_BIC_RCVY) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
   try {
     server.ready();
     expansion.ready();

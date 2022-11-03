@@ -200,7 +200,6 @@ fru_cache_dump(void *arg) {
   int oldstate;
   int finish_count = 0; // fru finish
   int nvme_ready_count = 0;
-  uint8_t type_2ou = UNKNOWN_BOARD;
   fruid_info_t fruid;
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -502,7 +501,8 @@ init_gpio_offset_map() {
 
 void
 check_bic_pch_pwr_fault(uint8_t fru) {
-  int pwr_fault, index;
+  int pwr_fault;
+  size_t index;
   size_t table_size = sizeof(bic_pch_pwr_fault)/sizeof(err_t);
 
   pwr_fault = fby35_common_get_sb_pch_bic_pwr_fault(fru);
@@ -519,7 +519,8 @@ check_bic_pch_pwr_fault(uint8_t fru) {
 
 void
 check_cpu_pwr_fault(uint8_t fru) {
-  int pwr_fault, index;
+  int pwr_fault;
+  size_t index;
   size_t table_size = sizeof(cpu_pwr_fault)/sizeof(err_t);
 
   pwr_fault = fby35_common_get_sb_cpu_pwr_fault(fru);
@@ -726,6 +727,8 @@ cpld_io_mon() {
 
     usleep(DELAY_GPIOD_READ);
   }
+
+  return NULL;
 }
 
 static void *
@@ -842,6 +845,8 @@ host_pwr_mon() {
 
     usleep(DELAY_GPIOD_READ);
   }
+
+  return NULL;
 }
 
 static void *
@@ -873,6 +878,8 @@ stby_pwr_mon() {
     }
     usleep(DELAY_GPIOD_READ);
   }
+
+  return NULL;
 }
 
 static void
@@ -882,7 +889,7 @@ print_usage() {
 
 /* Spawns a pthread for each fru to monitor all the sensors on it */
 static void
-run_gpiod(int argc, void **argv) {
+run_gpiod(int argc, char **argv) {
   int i, ret, slot;
   uint8_t fru_flag, fru;
   pthread_t tid_host_pwr_mon;
@@ -932,7 +939,7 @@ run_gpiod(int argc, void **argv) {
 }
 
 int
-main(int argc, void **argv) {
+main(int argc, char **argv) {
   int rc, pid_file;
 
   if (argc < 2) {

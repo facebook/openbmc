@@ -23,41 +23,26 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://gpiod.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
 
 LOCAL_URI = " \
-    file://Makefile \
+    file://meson.build \
     file://gpiod.c \
     file://setup-gpiod.sh \
     file://run-gpiod.sh \
     "
 
-binfiles = "gpiod \
-           "
-
-LDFLAGS += "-lbic -lfby35-gpio -lpal -lfby35_common -lkv -lfruid"
-
-DEPENDS += "update-rc.d-native libbic libfby35-gpio libpal libfby35-common libkv libfruid"
-RDEPENDS:${PN} += "libbic libfby35-gpio libpal libfby35-common libkv libfruid"
+inherit meson pkgconfig
+inherit legacy-packages
 
 pkgdir = "gpiod"
 
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  for f in ${binfiles}; do
-    install -m 755 $f ${dst}/$f
-    ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
-  done
+DEPENDS += "update-rc.d-native libbic libfby35-gpio libpal libfby35-common libkv libfruid"
+
+do_install:append() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/gpiod
   install -d ${D}${sysconfdir}/gpiod
-  install -m 755 setup-gpiod.sh ${D}${sysconfdir}/init.d/setup-gpiod.sh
-  install -m 755 run-gpiod.sh ${D}${sysconfdir}/sv/gpiod/run
+  install -m 755 ${S}/setup-gpiod.sh ${D}${sysconfdir}/init.d/setup-gpiod.sh
+  install -m 755 ${S}/run-gpiod.sh ${D}${sysconfdir}/sv/gpiod/run
   update-rc.d -r ${D} setup-gpiod.sh start 91 5 .
 }
-
-FBPACKAGEDIR = "${prefix}/local/fbpackages"
-
-FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "

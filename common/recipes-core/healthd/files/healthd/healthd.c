@@ -227,11 +227,6 @@ static bool vboot_state_check = false;
 /* BMC time stamp enabled */
 static bool bmc_timestamp_enabled = false;
 
-/* PFR status Monitor */
-extern bool pfr_monitor_enabled;
-extern void initialize_pfr_monitor_config(json_t *);
-extern void * pfr_monitor();
-
 /* BIC health monitor */
 static bool bic_health_enabled = false;
 static uint8_t bic_fru = 0;
@@ -690,7 +685,6 @@ initialize_configuration(void) {
   initialize_ecc_config(json_object_get(conf, "ecc_monitoring"));
   initialize_bmc_health_config(json_object_get(conf, "bmc_health"));
   initialize_nm_monitor_config(json_object_get(conf, "nm_monitor"));
-  initialize_pfr_monitor_config(json_object_get(conf, "pfr_monitor"));
   initialize_vboot_config(json_object_get(conf, "verified_boot"));
   initialize_bmc_timestamp_config(json_object_get(conf, "bmc_timestamp"));
   initialize_bic_health_config(json_object_get(conf, "bic_health"));
@@ -887,7 +881,7 @@ i2c_mon_handler() {
   char i2c_bus_device[16];
   int dev;
   int bus_status = 0;
-  int asserted_flag[I2C_BUS_NUM] = {};
+  int asserted_flag[I2C_BUS_NUM] = { 0 };
   bool assert_handle = 0;
   int i;
 
@@ -979,7 +973,8 @@ CPU_usage_monitor() {
   unsigned long long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
   unsigned long long total_diff, idle_diff, non_idle, idle_time = 0, total = 0, pre_total = 0, pre_idle = 0;
   char cpu[CPU_NAME_LENGTH] = {0};
-  int i, ready_flag = 0, timer = 0, retry = 0;
+  size_t i, timer = 0;
+  int ready_flag = 0, retry = 0;
   float cpu_util_avg, cpu_util_total;
   float cpu_utilization[cpu_window_size];
   FILE *fp;
@@ -1094,7 +1089,8 @@ static int set_panic_on_oom(void) {
 static void *
 memory_usage_monitor() {
   struct sysinfo s_info;
-  int i, error, timer = 0, ready_flag = 0, retry = 0;
+  size_t i, timer = 0;
+  int error, ready_flag = 0, retry = 0;
   float mem_util_avg, mem_util_total;
   float mem_utilization[mem_window_size];
   char cmd[128];
@@ -1160,7 +1156,7 @@ memory_usage_monitor() {
 // Thread to monitor the ECC counter
 static void *
 ecc_mon_handler() {
-  uint32_t mcr_fd = 0;
+  int mcr_fd = 0;
   uint32_t ecc_status = 0;
   uint32_t unrecover_ecc_err_addr = 0;
   uint32_t recover_ecc_err_addr = 0;
@@ -1481,9 +1477,16 @@ static size_t get_curr_version(char *buf, size_t buflen)
 {
   FILE *fp = fopen("/etc/issue", "r");
   size_t ret = 0;
-  char *vers = 0;
+  int flen = 0;
+  char *vers = NULL;
+
   if (fp) {
-    if(fscanf(fp, "OpenBMC Release %ms\n", &vers) == 1) {
+
+    flen = fseek(fp, 0, SEEK_END);
+    vers = malloc(flen);
+    rewind(fp);
+
+    if(fscanf(fp, "OpenBMC Release %s\n", vers) == 1) {
       ret = strnlen(vers, buflen);
       if ( ret < buflen) {
         snprintf(buf, buflen, "%s", vers);
@@ -1538,7 +1541,7 @@ static void store_curr_version(void)
    * so terminate it here explicitly */
   old_versions[old_versions_len] = '\0';
   /* check whether current version is the same as last version. */
-  if (strcmp( get_latest_n_versions(old_versions, old_versions_len, 1), 
+  if (strcmp( get_latest_n_versions(old_versions, old_versions_len, 1),
               curr_version) == 0) {
     /* version not changed */
     return;
@@ -1817,7 +1820,7 @@ bic_health_monitor() {
     if ((pal_get_server_12v_power(bic_fru, &status) < 0) || (status == SERVER_12V_OFF)) {
       goto next_run;
     }
-    
+
     // Check if bic is updating
     if (pal_is_fw_update_ongoing(bic_fru) == true) {
       err_cnt = 0;
@@ -1831,7 +1834,7 @@ bic_health_monitor() {
       goto next_run;
     }
 
-    // Check whether BIC heartbeat works 
+    // Check whether BIC heartbeat works
     if (pal_is_bic_heartbeat_ok(bic_fru) == false) {
       err_type[err_cnt++] = BIC_HB_ERR;
       goto next_run;
@@ -1860,9 +1863,9 @@ next_run:
           strcat(err_log, err_str[type]);
           if (i != BIC_RESET_ERR_CNT - 1) { // last one
             strcat(err_log, ", ");
-          }          
+          }
         }
-        syslog(LOG_CRIT, "FRU %d BIC reset by BIC health monitor due to health check failed in following order: %s", 
+        syslog(LOG_CRIT, "FRU %d BIC reset by BIC health monitor due to health check failed in following order: %s",
                 bic_fru, err_log);
         err_cnt = 0;
         is_already_reset = true;
@@ -1886,7 +1889,7 @@ log_rearm_check() {
       continue;
     }
     if (strcmp(val, "1") == 0) {
-      if (nm_monitor_enabled == true) {        
+      if (nm_monitor_enabled == true) {
         memset(is_duplicated_unaccess_event, 0, sizeof(is_duplicated_unaccess_event));
         memset(is_duplicated_abnormal_event, 0, sizeof(is_duplicated_abnormal_event));
       }
@@ -1897,7 +1900,7 @@ log_rearm_check() {
     }
     sleep(LOG_REARM_CHECK_INTERVAL);
   }
-  
+
   return NULL;
 }
 
@@ -1952,14 +1955,13 @@ ubifs_health_monitor() {
   return NULL;
 }
 
-void sig_handler(int signo) {
+void sig_handler(int signo __attribute__((unused))) {
   // Catch SIGALRM and SIGTERM. If recived signal record BMC log
   syslog(LOG_CRIT, "BMC health daemon stopped.");
   exit(0);
 }
 
-int
-main(int argc, char **argv) {
+int main() {
   pthread_t tid_watchdog;
   pthread_t tid_hb_led;
   pthread_t tid_i2c_mon;
@@ -1969,15 +1971,10 @@ main(int argc, char **argv) {
   pthread_t tid_ecc_monitor;
   pthread_t tid_bmc_health_monitor;
   pthread_t tid_nm_monitor;
-  pthread_t tid_pfr_monitor;
   pthread_t tid_timestamp_handler;
   pthread_t tid_bic_health_monitor;
   pthread_t tid_log_rearm_check;
   pthread_t tid_ubifs_health_monitor;
-
-  if (argc > 1) {
-    exit(1);
-  }
 
   //Catch signals
   signal(SIGALRM, sig_handler);
@@ -2051,13 +2048,6 @@ main(int argc, char **argv) {
     }
   }
 
-  if (pfr_monitor_enabled) {
-    if (pthread_create(&tid_pfr_monitor, NULL, pfr_monitor, NULL)) {
-      syslog(LOG_WARNING, "pthread_create for pfr monitor error\n");
-      exit(1);
-    }
-  }
-
   if (pthread_create(&tid_crit_proc_monitor, NULL, crit_proc_monitor, NULL)) {
     syslog(LOG_WARNING, "pthread_create for FW Update Monitor error\n");
     exit(1);
@@ -2114,10 +2104,6 @@ main(int argc, char **argv) {
     pthread_join(tid_nm_monitor, NULL);
   }
 
-  if (pfr_monitor_enabled) {
-    pthread_join(tid_pfr_monitor, NULL);
-  }
-
   pthread_join(tid_crit_proc_monitor, NULL);
 
   if (bmc_timestamp_enabled) {
@@ -2134,7 +2120,7 @@ main(int argc, char **argv) {
 
   if (uhm_config.enabled) {
     pthread_join(tid_ubifs_health_monitor, NULL);
-  }  
+  }
 
   return 0;
 }

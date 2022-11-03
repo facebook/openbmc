@@ -4,9 +4,7 @@ LOCAL_URI += "file://healthd-config.json"
 
 LOCAL_URI += " \
         file://healthd_plat.c \
+        file://plat/meson.build \
         "
 
-LDFLAGS += "-lbic"
-
 DEPENDS += "libbic"
-RDEPENDS:${PN} += "libbic"

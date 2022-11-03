@@ -98,7 +98,7 @@ get_dimm_cache_id(uint8_t cpu, uint8_t dimm) {
 }
 
 int
-util_read_spd(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf) {
+util_read_spd(uint8_t /*fru_id*/, uint8_t cpu, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf) {
   NM_RW_INFO info;
   NM_DIMM_SMB_DEV dev;
 
@@ -119,7 +119,7 @@ util_read_spd(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t offset, uint8_
 }
 
 int
-util_check_me_status(uint8_t fru_id) {
+util_check_me_status(uint8_t /*fru_id*/) {
   NM_RW_INFO info;
   ipmi_dev_id_t dev_id;
 
@@ -143,7 +143,7 @@ is_pmic_supported(void) {
 }
 
 int
-util_read_pmic(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf) {
+util_read_pmic(uint8_t /*slot_id*/, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf) {
   NM_RW_INFO info;
   NM_DIMM_SMB_DEV dev;
 
@@ -164,7 +164,7 @@ util_read_pmic(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8
 }
 
 int
-util_write_pmic(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf) {
+util_write_pmic(uint8_t /*slot_id*/, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf) {
   NM_RW_INFO info;
   NM_DIMM_SMB_DEV dev;
 

@@ -29,9 +29,9 @@
 #include "dimm-util.h"
 
 #ifdef DEBUG_DIMM_UTIL
-  #define DBG_PRINT(fmt, args...) printf(fmt, ##args)
+  #define DBG_PRINT(...) printf(__VA_ARGS__)
 #else
-  #define DBG_PRINT(fmt, args...)
+  #define DBG_PRINT(...)
 #endif
 
 enum _dimm_prsnt {
@@ -123,14 +123,14 @@ const char * dimm_speed_string(uint8_t id)
 // Check if ME is in operational state (e.g. status 0x55)
 // input:  fru_id
 int __attribute__((weak))
-util_check_me_status(uint8_t fru_id)
+util_check_me_status(uint8_t /*fru_id*/)
 {
   return -1;
 }
 
 // send ME command to select page 0 or 1 on SPD
 int __attribute__((weak))
-util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
+util_set_EE_page(uint8_t /*fru_id*/, uint8_t /*cpu*/, uint8_t /*dimm*/, uint8_t /*page_num*/)
 {
   return -1;
 }
@@ -138,13 +138,13 @@ util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
 // read 1 byte off SPD bus,
 // input:  fru_id/cpu/dimm/offset
 int __attribute__((weak))
-util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
+util_read_spd_byte(uint8_t /*fru_id*/, uint8_t /*cpu*/, uint8_t /*dimm*/, uint8_t /*offset*/)
 {
   return -1;
 }
 
 int __attribute__((weak))
-util_read_spd(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf)
+util_read_spd(uint8_t /*fru_id*/, uint8_t /*cpu*/, uint8_t /*dimm*/, uint16_t /*offset*/, uint8_t /*len*/, uint8_t * /*rxbuf*/)
 {
   return -1;
 }
@@ -159,7 +159,7 @@ plat_init(void)
 
 //  get DIMM label, e.g. DIMMA0,DIMMA1 etc
 const char * __attribute__((weak))
-get_dimm_label(uint8_t cpu, uint8_t dimm)
+get_dimm_label(uint8_t /*cpu*/, uint8_t /*dimm*/)
 {
   return "N/A";
 }
@@ -177,13 +177,13 @@ is_pmic_supported(void)
 }
 
 int __attribute__((weak))
-util_read_pmic(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf)
+util_read_pmic(uint8_t /*fru_id*/, uint8_t /*cpu*/, uint8_t /*dimm*/, uint8_t /*offset*/, uint8_t /*len*/, uint8_t * /*rxbuf*/)
 {
   return -1;
 }
 
 int __attribute__((weak))
-util_write_pmic(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf)
+util_write_pmic(uint8_t /*fru_id*/, uint8_t /*cpu*/, uint8_t /*dimm*/, uint8_t /*offset*/, uint8_t /*len*/, uint8_t * /*txbuf*/)
 {
   return -1;
 }
@@ -481,7 +481,7 @@ err_exit:
 }
 
 static int
-util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
+util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool /*json*/, uint8_t* options) {
   uint8_t i, page, cpu, startCPU, endCPU, startDimm, endDimm, dimm_present = 0;
   uint8_t page_num = 2;
   uint8_t buf[SPD5_DUMP_LEN] = {0};
@@ -532,7 +532,7 @@ util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
 }
 
 static int
-util_get_cache(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
+util_get_cache(uint8_t fru_id, uint8_t dimm, bool /*json*/, uint8_t* options) {
 #define MAX_KEY_SIZE 100
 #define MAX_VALUE_SIZE 128
   uint8_t i, cpu, dimmNum, startCPU, endCPU, startDimm, endDimm = 0;
@@ -791,7 +791,7 @@ util_get_config(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
 }
 
 static int
-util_pmic_err(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
+util_pmic_err(uint8_t fru_id, uint8_t dimm, bool /*json*/, uint8_t* options) {
   int ret = 0, i = 0;
   uint8_t err_cnt = 0;
   uint8_t cpu = 0, startCPU = 0, endCPU = 0, startDimm = 0, endDimm = 0, dimm_num = 0;

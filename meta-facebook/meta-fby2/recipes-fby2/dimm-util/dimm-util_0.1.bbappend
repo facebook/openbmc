@@ -2,11 +2,10 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
+    file://plat/meson.build \
     file://me-functions.cpp \
     file://dimm-util-plat.h \
     "
-
-CXXFLAGS += " -lbic"
 
 DEPENDS += "libbic"
 RDEPENDS:${PN} += "libbic"

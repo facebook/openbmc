@@ -2,11 +2,9 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
+    file://plat/meson.build \
     file://me-functions.cpp \
     file://dimm-util-plat.h \
     "
 
-CXXFLAGS += " -lipmb -lipmi -lpal"
-
 DEPENDS += "libipmb libipmi libpal"
-RDEPENDS:${PN} += "libipmb libipmi libpal"

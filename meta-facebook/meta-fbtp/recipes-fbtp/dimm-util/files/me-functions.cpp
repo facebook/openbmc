@@ -34,9 +34,9 @@
 // #define DEBUG_DIMM_UTIL
 
 #ifdef DEBUG_DIMM_UTIL
-  #define DBG_PRINT(fmt, args...) printf(fmt, ##args)
+  #define DBG_PRINT(...) printf(__VA_ARGS__)
 #else
-  #define DBG_PRINT(fmt, args...)
+  #define DBG_PRINT(...)
 #endif
 
 
@@ -99,7 +99,7 @@ get_dimm_label(uint8_t cpu, uint8_t dimm)
 
 // send ME command to select page 0 or 1 on SPD
 int
-util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
+util_set_EE_page(uint8_t /*fru_id*/, uint8_t cpu, uint8_t dimm, uint8_t page_num)
 {
 #define EEPROM_MAX_PAGE 2
 #define EEPROM_P0_SEL 0x6C
@@ -164,7 +164,7 @@ util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
 // read 1 byte off SPD bus,
 // input:  cpu/dimm/addr_msb/addr_lsb/offset
 int
-util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
+util_read_spd_byte(uint8_t /*fru_id*/, uint8_t cpu, uint8_t dimm, uint8_t offset)
 {
 // 7 bytes IPMB header + 3 bytes INTEL ID + 1 byte payload + 1 byte checksum
   constexpr size_t min_resp_len = (7 + INTEL_ID_LEN + 1 + 1 /* payload*/);
@@ -230,7 +230,7 @@ util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
 }
 
 int
-util_check_me_status(uint8_t fru_id) {
+util_check_me_status(uint8_t /*fru_id*/) {
 // 7 bytes IPMB header + 2 byte payload + 1 byte checksum
   constexpr size_t min_resp_len = (7 + 2 + 1 /* payload*/);
 

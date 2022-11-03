@@ -27,9 +27,9 @@
 #define HD_BIC_DIMM_I2C_BASE 10
 
 #ifdef DEBUG_DIMM_UTIL
-  #define DBG_PRINT(fmt, args...) printf(fmt, ##args)
+  #define DBG_PRINT(...) printf(__VA_ARGS__)
 #else
-  #define DBG_PRINT(fmt, args...)
+  #define DBG_PRINT(...)
 #endif
 
 static uint8_t cl_spd_addr[MAX_DIMM_PER_CPU/2] = {
@@ -290,7 +290,7 @@ bic_write_dimm_smbus(uint8_t slot_id, uint8_t bus_id, uint8_t addr, uint8_t offs
 }
 
 int
-util_read_spd(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf) {
+util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf) {
   uint8_t bus_id = 0;
   uint8_t addr = 0;
   uint32_t spd_offset = ((offset & 0x780) << 1) | (0x80 | (offset & 0x7F));
@@ -312,7 +312,7 @@ util_read_spd(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint16_t offset, uint8
 }
 
 int
-util_set_EE_page(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t page_num) {
+util_set_EE_page(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t /*page_num*/) {
   uint8_t bus_id = 0;
   uint8_t addr = 0;
   uint8_t buf[8];
@@ -373,7 +373,7 @@ is_pmic_supported(void) {
 }
 
 int
-util_read_pmic(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf) {
+util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf) {
   uint8_t bus_id = 0;
   uint8_t addr = 0;
   uint32_t pmic_offset = offset;
@@ -395,7 +395,7 @@ util_read_pmic(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8
 }
 
 int
-util_write_pmic(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf) {
+util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf) {
   uint8_t bus_id = 0;
   uint8_t addr = 0;
   uint32_t pmic_offset = offset;

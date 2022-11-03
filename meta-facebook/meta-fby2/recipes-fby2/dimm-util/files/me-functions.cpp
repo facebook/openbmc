@@ -33,9 +33,9 @@
 // #define DEBUG_DIMM_UTIL
 
 #ifdef DEBUG_DIMM_UTIL
-  #define DBG_PRINT(fmt, args...) printf(fmt, ##args)
+  #define DBG_PRINT(...) printf(__VA_ARGS__)
 #else
-  #define DBG_PRINT(fmt, args...)
+  #define DBG_PRINT(...)
 #endif
 
 static uint8_t dev_addr[MAX_DIMM_NUM_FBY2/2] = {

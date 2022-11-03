@@ -229,8 +229,6 @@ main(int argc, char **argv) {
   bool manu_flag = false;
   int pwm_cnt = 0;
   int tach_cnt = 0;
-  int pwmVal = 0;
-  bool getDrivers = false;
   string fanOpt = "";
   pwm_cnt = pal_get_pwm_cnt();
   tach_cnt = pal_get_tach_cnt();

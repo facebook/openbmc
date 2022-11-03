@@ -44,8 +44,8 @@ int fd;
 typedef struct {
   int (*nvme_get_bus_intf)(uint8_t dev_id, uint8_t* bus, uint8_t* intf);
   int (*nvme_set_mux_select)(uint8_t slot_id, uint8_t dev_id);
-  int (*board_pre_setup)(uint8_t slot_id, uint8_t dev_id);
-  int (*board_post_setup)(uint8_t slot_id, uint8_t dev_id);
+  int (*board_pre_setup)(uint8_t slot_id);
+  int (*board_post_setup)(uint8_t slot_id);
 } nvme_ops_t;
 
 typedef struct {
@@ -171,12 +171,12 @@ gpv3_1u_2u_set_mux_select(uint8_t slot_id, uint8_t dev_id) {
 }
 
 static int
-gpv3_board_pre_setup(uint8_t slot_id, uint8_t dev_id) {
+gpv3_board_pre_setup(uint8_t slot_id) {
   return ssd_monitor_enable(slot_id, false, REXP_BIC_INTF);
 }
 
 static int
-gpv3_board_post_setup(uint8_t slot_id, uint8_t dev_id) {
+gpv3_board_post_setup(uint8_t slot_id) {
   return ssd_monitor_enable(slot_id, true, REXP_BIC_INTF);
 }
 
@@ -253,7 +253,7 @@ drive_health(ssd_data *ssd, bool is_gpv3) {
 }
 
 static int
-read_nvme_status(uint8_t slot_id, uint8_t device_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
+read_nvme_status(uint8_t slot_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
   uint8_t tbuf[8] = {0};
   uint8_t rbuf[64] = {0};
   uint8_t tlen = 0;
@@ -295,7 +295,7 @@ read_nvme_status(uint8_t slot_id, uint8_t device_id, uint8_t bus, uint8_t intf, 
 }
 
 static int
-read_nvme_health(uint8_t slot_id, uint8_t device_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
+read_nvme_health(uint8_t slot_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
   uint8_t tbuf[8] = {0};
   uint8_t rbuf[64] = {0};
   uint8_t tlen = 0;
@@ -353,14 +353,14 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, sys_config_t* sy
 
   printf("slot%u-%s : ", slot_id, str);
   if (cmd == CMD_DRIVE_STATUS) {
-    if (read_nvme_status(slot_id, device_id, bus, intf, &ssd) < 0) {
+    if (read_nvme_status(slot_id, bus, intf, &ssd) < 0) {
       printf("NA\n");
     } else {
       print_drive_status(&ssd);
       printf("\n");
     }
   } else if (cmd == CMD_DRIVE_HEALTH) {
-    if (read_nvme_health(slot_id, device_id, bus, intf, &ssd) < 0) {
+    if (read_nvme_health(slot_id, bus, intf, &ssd) < 0) {
       printf("NA\n");
     } else {
       printf("%s\n", (drive_health(&ssd, (sys_conf->nvme_ops == &gpv3_ops)) == 0)?"Normal":"Abnormal");
@@ -374,9 +374,9 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, sys_config_t* sy
 }
 
 static void
-enclosure_sig_handler(int sig) {
+enclosure_sig_handler(int sig __attribute__((unused))) {
   if (g_sys_conf.nvme_ops->board_post_setup) {
-    if (g_sys_conf.nvme_ops->board_post_setup(g_sys_conf.slot_id, 0) < 0 ) {
+    if (g_sys_conf.nvme_ops->board_post_setup(g_sys_conf.slot_id) < 0 ) {
       printf("Error: board post setup failed");
     }
   }
@@ -497,7 +497,7 @@ main(int argc, char **argv) {
   }
 
   if (g_sys_conf.nvme_ops->board_pre_setup) {
-    if (g_sys_conf.nvme_ops->board_pre_setup(g_sys_conf.slot_id, 0) < 0) {
+    if (g_sys_conf.nvme_ops->board_pre_setup(g_sys_conf.slot_id) < 0) {
       printf("Error: board pre setup failed\n");
       goto exit;
     }
@@ -542,7 +542,7 @@ main(int argc, char **argv) {
 
 exit:
   if (g_sys_conf.nvme_ops->board_post_setup) {
-    if (g_sys_conf.nvme_ops->board_post_setup(g_sys_conf.slot_id, 0) < 0 ) {
+    if (g_sys_conf.nvme_ops->board_post_setup(g_sys_conf.slot_id) < 0 ) {
       printf("Error: board post setup failed");
     }
   }

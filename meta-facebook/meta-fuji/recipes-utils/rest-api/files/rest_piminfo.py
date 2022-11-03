@@ -61,27 +61,30 @@ def prepare_pimver():
         #peutil change requires the caller to use 2...9 scheme
         #not 1...8, so we add 1 here
         pim_number = str(int(pim)+1)
-        stdout = subprocess.check_output(
-            ["/usr/local/bin/peutil", pim_number], timeout=DEFAULT_TIMEOUT_SEC
-        )
-        pim_version_str = None
-        counter = 0
-        # pim_ver[pim] will be represented as:
-        # <Product Production State>.<Product Version>.<Product sub_version>
-        for line in stdout.decode().splitlines():
-            if "Production" in line:
-                _, version = line.split(":")
-                pim_version_str = version.strip()
-                pim_version_str += "."
-            elif "Version" in line:
-                _, version = line.split(":")
-                if counter == 1:
-                    pim_version_str += version.strip()
+        try:
+            stdout = subprocess.check_output(
+                ["/usr/local/bin/peutil", pim_number], timeout=DEFAULT_TIMEOUT_SEC
+            )
+            pim_version_str = None
+            counter = 0
+            # pim_ver[pim] will be represented as:
+            # <Product Production State>.<Product Version>.<Product sub_version>
+            for line in stdout.decode().splitlines():
+                if "Production" in line:
+                    _, version = line.split(":")
+                    pim_version_str = version.strip()
                     pim_version_str += "."
-                elif counter == 2:
-                    pim_version_str += version.strip()
-                counter = counter + 1
-        pim_ver[pim] = pim_version_str
+                elif "Version" in line:
+                    _, version = line.split(":")
+                    if counter == 1:
+                        pim_version_str += version.strip()
+                        pim_version_str += "."
+                    elif counter == 2:
+                        pim_version_str += version.strip()
+                    counter = counter + 1
+            pim_ver[pim] = pim_version_str
+        except Exception:
+            pass
     return pim_ver
 
 

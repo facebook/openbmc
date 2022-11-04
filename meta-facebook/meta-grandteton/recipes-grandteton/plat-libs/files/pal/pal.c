@@ -337,40 +337,6 @@ pal_get_platform_id(uint8_t *id) {
   return 0;
 }
 
-int
-pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int i;
-  char str[MAX_VALUE_LEN] = {0};
-  char tstr[8] = {0};
-
-  for (i = 0; i < SIZE_SYSFW_VER; i++) {
-    sprintf(tstr, "%02x", ver[i]);
-    strcat(str, tstr);
-  }
-
-  return pal_set_key_value("sysfw_ver_server", str);
-}
-
-int
-pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int ret = -1;
-  int i, j;
-  char str[MAX_VALUE_LEN] = {0};
-  char tstr[8] = {0};
-
-  ret = pal_get_key_value("sysfw_ver_server", str);
-  if (ret) {
-    return ret;
-  }
-
-  for (i = 0, j = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
-    sprintf(tstr, "%c%c", str[i], str[i+1]);
-    ver[j++] = strtol(tstr, NULL, 16);
-  }
-
-  return 0;
-}
-
 bool
 pal_check_boot_device_is_vaild(uint8_t device) {
   bool vaild = false;

@@ -1,0 +1,74 @@
+From abf1e63130c34da4e775d011cb45f1df3ec700b1 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Thu, 6 May 2021 16:48:42 -0700
+Subject: [PATCH] hwmon: (pmbus/bel-pfe) enable PMBUS_SKIP_STATUS_CHECK for
+ pfe1100
+
+Summary:
+Enable PMBUS_SKIP_STATUS_CHECK flag for pfe1100 so "sensors" command
+can report correct values.
+
+Test Plan:
+1) "bitbake wedge100-image" succeeded.
+2) sensors output looks reasonable on wedge100:
+
+root@bmc-oob:~# sensors pfe1100-i2c-14-5a
+pfe1100-i2c-14-5a
+Adapter: i2c-7-mux (chan_id 0)
+vin:         +210.00 V  (crit min =  +0.00 V, min =  +0.00 V)
+                       (max =  +0.00 V, crit max =  +0.00 V)
+vout1:       +12.01 V  (crit min =  +0.00 V, min =  +0.00 V)
+                       (max =  +0.00 V, crit max =  +0.00 V)
+fan1:        7552 RPM
+temp1:        +26.5 C  (low  =  +0.0 C, high =  +0.0 C)
+                       (crit low =  +0.0 C, crit =  +0.0 C)
+temp2:        +30.2 C  (low  =  +0.0 C, high =  +0.0 C)
+                       (crit low =  +0.0 C, crit =  +0.0 C)
+pin:         128.00 W  (max =   0.00 W)
+pout1:       116.00 W  (max =   0.00 W, crit =   0.00 W)
+                       (cap =   0.00 W)
+iin:          +0.64 A  (max =  +0.00 A, crit max =  +0.00 A)
+iout1:        +9.75 A  (crit min =  +0.00 A, max =  +0.00 A)
+                       (crit max =  +0.00 A)
+
+Reviewers: tfang, vineelak, joancaneus, binhuang, mikechoi, #openbmc
+
+Reviewed By: binhuang
+
+Differential Revision: https://phabricator.intern.facebook.com/D28276171
+
+Signature: 28276171:1620419772:863837ca7df79f00cdc6b8d330c8786ccff8ddb4
+---
+ .../files/linux-aspeed-5.10/drivers/hwmon/pmbus/bel-pfe.c  | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/hwmon/pmbus/bel-pfe.c b/drivers/hwmon/pmbus/bel-pfe.c
+index 2c5b853d6c..311191283f 100644
+--- a/drivers/hwmon/pmbus/bel-pfe.c
++++ b/drivers/hwmon/pmbus/bel-pfe.c
+@@ -22,7 +22,7 @@ enum chips {pfe1100, pfe3000};
+  * although correct VOUT_MODE (0x16) is returned: it leads to incorrect
+  * exponent in linear mode.
+  */
+-static struct pmbus_platform_data pfe3000_plat_data = {
++static struct pmbus_platform_data pfe_plat_data = {
+ 	.flags = PMBUS_SKIP_STATUS_CHECK,
+ };
+ 
+@@ -100,11 +100,10 @@ static int pfe_pmbus_probe(struct i2c_client *client)
+ 	 * probe which leads to probe failure (read status word failed).
+ 	 * So let's set the device to page 0 at the beginning.
+ 	 */
+-	if (model == pfe3000) {
+-		client->dev.platform_data = &pfe3000_plat_data;
++	if (model == pfe3000)
+ 		i2c_smbus_write_byte_data(client, PMBUS_PAGE, 0);
+-	}
+ 
++	client->dev.platform_data = &pfe_plat_data;
+ 	return pmbus_do_probe(client, &pfe_driver_info[model]);
+ }
+ 
+-- 
+2.30.2
+

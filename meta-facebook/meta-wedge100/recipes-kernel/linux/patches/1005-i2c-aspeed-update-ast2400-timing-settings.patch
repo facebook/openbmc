@@ -1,0 +1,64 @@
+From b87126ff08a1ce6dcb203cf419456d2532a94e06 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Wed, 21 Apr 2021 16:20:34 -0700
+Subject: [PATCH] i2c: aspeed: update ast2400 timing settings
+
+Summary:
+We have seen consistent I2C transaction failures in wedge100 i2c-3/4/9
+busses, and such errors can be fixed by adjusting I2C setup/hold time in
+I2CD04 register.
+
+Test Plan:
+verified i2c-3, i2c-4 and i2c-9 after chassis power cycle: all devices
+are functioning properly (devices are not reachable without the patch):
+  - tmp75 (3-0048, 3-004a, 3-004b, 3-004c)
+  - com_e_driver (4-0033)
+  - tpm_i2c_infineon (9-0020)
+
+Reviewers: patrickw3, tfang, amithash, benwei, zhdaniel, mikechoi, goldenbug, #openbmc
+
+Reviewed By: benwei
+
+Subscribers: tfang
+
+Differential Revision: https://phabricator.intern.facebook.com/D27956130
+
+Signature: 27956130:1619198529:34b97935d0812969dd1bb7a680046d1df9a6d262
+---
+ drivers/i2c/busses/i2c-aspeed.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/busses/i2c-aspeed.c b/drivers/i2c/busses/i2c-aspeed.c
+index c64c381b69b7..449c1376ce17 100644
+--- a/drivers/i2c/busses/i2c-aspeed.c
++++ b/drivers/i2c/busses/i2c-aspeed.c
+@@ -870,11 +870,25 @@ static u32 aspeed_i2c_get_clk_reg_val(struct device *dev,
+ 
+ static u32 aspeed_i2c_24xx_get_clk_reg_val(struct device *dev, u32 divisor)
+ {
++	u32 val;
++
+ 	/*
+ 	 * clk_high and clk_low are each 3 bits wide, so each can hold a max
+ 	 * value of 8 giving a clk_high_low_max of 16.
+ 	 */
+-	return aspeed_i2c_get_clk_reg_val(dev, GENMASK(2, 0), divisor);
++	val = aspeed_i2c_get_clk_reg_val(dev, GENMASK(2, 0), divisor);
++
++	/*
++	 * We have seen consistent I2C transaction errors on wedge100
++	 * i2c-3/4/9 busses, and such transaction errors can be fixed by
++	 * increasing I2C setup/hold time in I2CD04 register.
++	 * Please refer to AST2400 datasheet, Chapter 40 for I2CD04
++	 * register definition.
++	 *
++	 * XXX "0x77700300" is copied from linux-aspeed-4.1 (aspeed sdk).
++	 * Shall we apply it to all the AST2400 platforms?
++	 */
++	return (val | 0x77700300);
+ }
+ 
+ static u32 aspeed_i2c_25xx_get_clk_reg_val(struct device *dev, u32 divisor)
+-- 
+2.30.2
+

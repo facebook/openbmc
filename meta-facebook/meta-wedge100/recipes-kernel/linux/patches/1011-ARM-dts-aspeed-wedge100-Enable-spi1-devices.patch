@@ -1,0 +1,70 @@
+From 6c6dcb2735cf3d1fe69cd3b189942637b5f86014 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Fri, 4 Nov 2022 15:10:33 -0700
+Subject: [PATCH] ARM: dts: aspeed: wedge100: Enable spi1 devices
+
+Summary:
+
+Enable spi1 devices in wedge100 device tree.
+
+Test Plan:
+
+1) "bitbake wedge100-image" succeeded.
+2) booted up wedge100 image successfully.
+3) spi_util.sh works in wedge100:
+   - read backup_bios for twice: the 2 bios.bin files are identical.
+   - programed oob_switch_eeprom using the golden image, power cycled
+     the chassis: openbmc is sshable. Read back oob_switch_eeprom after
+     power cycle: the eeprom.bin is identical to the golden image.
+
+Reviewers:
+
+Subscribers:
+
+Tasks:
+
+Tags:
+---
+ .../boot/dts/aspeed-bmc-facebook-wedge100.dts | 22 +++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge100.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge100.dts
+index 584efa528450..7409a5372aa0 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge100.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge100.dts
+@@ -8,6 +8,10 @@ / {
+ 	model = "Facebook Wedge 100 BMC";
+ 	compatible = "facebook,wedge100-bmc", "aspeed,ast2400";
+ 
++	aliases {
++		spi1 = &spi;
++	};
++
+ 	chosen {
+ 		stdout-path = &uart3;
+ 		bootargs = "console=ttyS2,9600n8 root=/dev/ram rw";
+@@ -61,3 +65,21 @@ &i2c9 {
+ &vhub {
+ 	status = "okay";
+ };
++
++/*
++ * NOTE: the SPI bus is shared by Backup_BIOS and OOB_Switch_EEPROM, but
++ * unfortunately there is only 1 chip select.
++ * Backup_BIOS is described as below, and OOB_Switch_EEPROM is handled
++ * by bitbang because SPI-ASPEED controller's minimum frequency is higher
++ * than the max frequency of the EEPROM.
++ */
++&spi {
++	status = "okay";
++	compatible = "aspeed,ast2400-spi-user";
++
++	spidev@0 {
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <24750000>;
++		reg = <0>;
++	};
++};
+-- 
+2.30.2
+

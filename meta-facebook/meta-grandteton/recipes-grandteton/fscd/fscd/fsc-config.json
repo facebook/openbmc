@@ -19,6 +19,11 @@
         "attribute": {
           "type" : "power_status"
         }
+      },
+      "(.*)pex": {
+        "attribute": {
+          "type" : "power_status"
+        }
       }
     },
     "watchdog": false,

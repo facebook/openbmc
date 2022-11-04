@@ -5147,16 +5147,35 @@ pal_get_sys_guid(uint8_t slot, char *guid) {
 
 int
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int i;
-  char key[MAX_KEY_LEN] = {0};
+  int ret, i;
+  size_t len = 0, offs = 0;
+  char key[MAX_KEY_LEN];
   char str[MAX_VALUE_LEN] = {0};
-  char tstr[10] = {0};
+  char tstr[8] = {0};
 
-  sprintf(key, "sysfw_ver_slot%d", (int) slot);
+  if (ver[0] >= BLK_SYSFW_VER) {
+    return -1;
+  }
+  sprintf(key, "sysfw_ver_slot%u", slot);
+
+  // data length of 1st block: 14
+  //                2nd block: 16
+  if ((!ver[0] && ver[2] > 14) || (ver[0] > 0)) {
+    // using more than 1 block
+    ret = kv_get(key, str, &len, KV_FPERSIST);
+    if (ver[0] > 0) {
+      offs = ver[0] * SIZE_SYSFW_VER*2;
+      if (ret || (len < offs)) {
+        // fill '0' to the 1st block
+        memset(str, '0', offs);
+      }
+    }
+  }
 
   for (i = 0; i < SIZE_SYSFW_VER; i++) {
     sprintf(tstr, "%02x", ver[i]);
-    strcat(str, tstr);
+    memcpy(&str[offs], tstr, 2);
+    offs += 2;
   }
 
   return pal_set_key_value(key, str);
@@ -5164,35 +5183,29 @@ pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
 
 int
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int i;
-  int j = 0;
-  int ret;
-  int msb, lsb;
-  char key[MAX_KEY_LEN] = {0};
+  int blk, i, j = 0;
+  char key[MAX_KEY_LEN];
   char str[MAX_VALUE_LEN] = {0};
-  char tstr[4] = {0};
+  char *pstr, tstr[8] = {0};
 
-  if (!pal_is_slot_server(slot)) {
+  sprintf(key, "sysfw_ver_slot%u", slot);
+  if (kv_get(key, str, NULL, KV_FPERSIST)) {
+    memset(ver, 0, SIZE_SYSFW_VER);
     return -1;
   }
 
-  sprintf(key, "sysfw_ver_slot%d", (int) slot);
-
-  ret = pal_get_key_value(key, str);
-  if (ret) {
-    return ret;
+  for (blk = 0; blk < BLK_SYSFW_VER; blk++) {
+    pstr = str + blk * SIZE_SYSFW_VER*2;
+    for (i = 0; i < SIZE_SYSFW_VER*2; i += 2) {
+      if (blk > 0 && i == 0) {
+        continue;
+      }
+      memcpy(tstr, &pstr[i], 2);
+      ver[j++] = strtoul(tstr, NULL, 16);
+    }
   }
 
-  for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
-    sprintf(tstr, "%c\n", str[i]);
-    msb = strtol(tstr, NULL, 16);
-
-    sprintf(tstr, "%c\n", str[i+1]);
-    lsb = strtol(tstr, NULL, 16);
-    ver[j++] = (msb << 4) | lsb;
-  }
-
-  return 0;
+  return PAL_EOK;
 }
 
 int
@@ -6194,7 +6207,7 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t *event_data = &sel[10];
   uint8_t *ed = &event_data[3];
   uint8_t sen_type = event_data[0];
-  uint8_t ver[32] = {0};
+  uint8_t ver[64] = {0};
   char temp_log[512] = {0};
   bool parsed = false;
 
@@ -7589,7 +7602,7 @@ pal_fan_recovered_handle(int fan_num) {
 
 void
 pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
-  uint8_t ver[32] = {0};
+  uint8_t ver[64] = {0};
 
   syslog(LOG_INFO, "POST Start Event for Payload#%d\n", slot);
   *res_len = 0;
@@ -7710,7 +7723,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   char str[MAX_VALUE_LEN] = {0};
   char tstr[10] = {0};
   uint8_t old_boot[16], len, post = 1;
-  uint8_t ver[32] = {0};
+  uint8_t ver[64] = {0};
   struct timespec ts;
   enum {
     BOOT_DEVICE_IPV4 = 0x1,

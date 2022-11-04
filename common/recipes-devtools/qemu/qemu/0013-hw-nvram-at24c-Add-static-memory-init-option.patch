@@ -1,0 +1,129 @@
+From 722a59442ccf5fdc11fa8efa5a74130fd491797e Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Mon, 13 Jun 2022 17:40:48 -0700
+Subject: [PATCH 13/65] hw/nvram/at24c: Add static memory init option
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+
+%% original patch: 0014-hw-nvram-at24c-Add-static-memory-init-option.patch
+---
+ hw/arm/aspeed.c                 | 16 ++++------------
+ hw/nvram/eeprom_at24c.c         | 19 +++++++++++++++++++
+ include/hw/nvram/eeprom_at24c.h |  8 ++++++++
+ 3 files changed, 31 insertions(+), 12 deletions(-)
+ create mode 100644 include/hw/nvram/eeprom_at24c.h
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 5b970a8c51..7d7a0e396f 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -28,6 +28,7 @@
+ #include "hw/qdev-clock.h"
+ #include "sysemu/sysemu.h"
+ #include "hw/ssi/spi_gpio.h"
++#include "hw/nvram/eeprom_at24c.h"
+ 
+ static struct arm_boot_info aspeed_board_binfo = {
+     .board_id = -1, /* device-tree-only board */
+@@ -466,15 +467,6 @@ static void aspeed_machine_init(MachineState *machine)
+     arm_load_kernel(ARM_CPU(first_cpu), machine, &aspeed_board_binfo);
+ }
+ 
+-static void at24c_eeprom_init(I2CBus *bus, uint8_t addr, uint32_t rsize)
+-{
+-    I2CSlave *i2c_dev = i2c_slave_new("at24c-eeprom", addr);
+-    DeviceState *dev = DEVICE(i2c_dev);
+-
+-    qdev_prop_set_uint32(dev, "rom-size", rsize);
+-    i2c_slave_realize_and_unref(i2c_dev, bus, &error_abort);
+-}
+-
+ static void palmetto_bmc_i2c_init(AspeedMachineState *bmc)
+ {
+     AspeedSoCState *soc = &bmc->soc;
+@@ -720,7 +712,7 @@ static void fp5280g2_bmc_i2c_init(AspeedMachineState *bmc)
+     I2CSlave *i2c_mux;
+ 
+     /* The at24c256 */
+-    at24c_eeprom_init(aspeed_i2c_get_bus(&soc->i2c, 1), 0x50, 32768);
++    at24c_eeprom_init(aspeed_i2c_get_bus(&soc->i2c, 1), 0x50, NULL, 32768, true);
+ 
+     /* The fp5280g2 expects a TMP112 but a TMP105 is compatible */
+     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 2), TYPE_TMP105,
+@@ -977,13 +969,13 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
+     }
+ 
+     /* Bus 6 */
+-    at24c_eeprom_init(i2c[6], 0x56, 65536);
++    at24c_eeprom_init(i2c[6], 0x56, NULL, 65536, true);
+     /* Missing model: nxp,pcf85263 @ 0x51 , but ds1338 works enough */
+     i2c_slave_create_simple(i2c[6], "ds1338", 0x51);
+ 
+ 
+     /* Bus 7 */
+-    at24c_eeprom_init(i2c[7], 0x54, 65536);
++    at24c_eeprom_init(i2c[7], 0x54, NULL, 65536, true);
+ 
+     /* Bus 9 */
+     i2c_slave_create_simple(i2c[9], TYPE_TMP421, 0x4f);
+diff --git a/hw/nvram/eeprom_at24c.c b/hw/nvram/eeprom_at24c.c
+index 2d4d8b952f..b32dcce217 100644
+--- a/hw/nvram/eeprom_at24c.c
++++ b/hw/nvram/eeprom_at24c.c
+@@ -16,6 +16,7 @@
+ #include "hw/qdev-properties-system.h"
+ #include "sysemu/block-backend.h"
+ #include "qom/object.h"
++#include "hw/nvram/eeprom_at24c.h"
+ 
+ /* #define DEBUG_AT24C */
+ 
+@@ -49,6 +50,7 @@ struct EEPROMState {
+     uint8_t *mem;
+ 
+     BlockBackend *blk;
++    const uint8_t *rom;
+ };
+ 
+ static
+@@ -173,6 +175,23 @@ void at24c_eeprom_reset(DeviceState *state)
+         }
+         DPRINTK("Reset read backing file\n");
+     }
++
++    if (ee->rom) {
++        memcpy(ee->mem, ee->rom, ee->rsize);
++    }
++}
++
++void at24c_eeprom_init(I2CBus *bus, uint8_t address, const uint8_t *rom, uint32_t rom_size, bool writable)
++{
++    EEPROMState *s;
++
++    s = AT24C_EE(qdev_new(TYPE_AT24C_EE));
++    s->rom = rom;
++    qdev_prop_set_uint8(DEVICE(s), "address", address);
++    qdev_prop_set_uint32(DEVICE(s), "rom-size", rom_size);
++    qdev_prop_set_bit(DEVICE(s), "writable", writable);
++
++    i2c_slave_realize_and_unref(I2C_SLAVE(s), bus, &error_fatal);
+ }
+ 
+ static Property at24c_eeprom_props[] = {
+diff --git a/include/hw/nvram/eeprom_at24c.h b/include/hw/nvram/eeprom_at24c.h
+new file mode 100644
+index 0000000000..57fb3f729a
+--- /dev/null
++++ b/include/hw/nvram/eeprom_at24c.h
+@@ -0,0 +1,8 @@
++#ifndef HW_NVRAM_EEPROM_AT24C
++#define HW_NVRAM_EEPROM_AT24C
++
++#include "hw/i2c/i2c.h"
++
++void at24c_eeprom_init(I2CBus *bus, uint8_t address, const uint8_t *rom, uint32_t rom_size, bool writable);
++
++#endif
+-- 
+2.30.2
+

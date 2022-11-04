@@ -1,0 +1,32 @@
+From 180ba69e55c3d69bbcac72a8f38481e61335a9d3 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@meta.com>
+Date: Tue, 13 Sep 2022 16:31:48 -0700
+Subject: [PATCH 64/65] npcm8xx: Enable EL3
+
+Need this to allow people to boot the bootblocker provided by Nuvoton.
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+
+%% original patch: 0067-npcm8xx-Enable-EL3.patch
+---
+ hw/arm/npcm8xx.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/hw/arm/npcm8xx.c b/hw/arm/npcm8xx.c
+index 08d4731368..757c0b070b 100644
+--- a/hw/arm/npcm8xx.c
++++ b/hw/arm/npcm8xx.c
+@@ -463,10 +463,6 @@ static void npcm8xx_realize(DeviceState *dev, Error **errp)
+         object_property_set_int(OBJECT(&s->cpu[i]), "core-count",
+                                 nc->num_cpus, &error_abort);
+ 
+-        /* Disable security extensions. */
+-        object_property_set_bool(OBJECT(&s->cpu[i]), "has_el3", false,
+-                                 &error_abort);
+-
+         if (!qdev_realize(DEVICE(&s->cpu[i]), NULL, errp)) {
+             return;
+         }
+-- 
+2.30.2
+

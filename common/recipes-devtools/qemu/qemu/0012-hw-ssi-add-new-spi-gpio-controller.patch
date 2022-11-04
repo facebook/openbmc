@@ -1,0 +1,253 @@
+From f4d4bc05c31f15f1fd65c6015fac2c0a05076cb0 Mon Sep 17 00:00:00 2001
+From: Iris Chen <irischenlj@fb.com>
+Date: Mon, 6 Jun 2022 17:35:09 -0700
+Subject: [PATCH 12/65] hw: ssi: add new spi gpio controller
+
+Signed-off-by: Iris Chen <irischenlj@fb.com>
+
+changes
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+
+%% original patch: 0013-hw-ssi-add-new-spi-gpio-controller.patch
+---
+ hw/arm/Kconfig            |  1 +
+ hw/arm/aspeed.c           | 24 +++++++++++
+ hw/ssi/Kconfig            |  4 ++
+ hw/ssi/meson.build        |  1 +
+ hw/ssi/spi_gpio.c         | 88 +++++++++++++++++++++++++++++++++++++++
+ include/hw/ssi/spi_gpio.h | 44 ++++++++++++++++++++
+ 6 files changed, 162 insertions(+)
+ create mode 100644 hw/ssi/spi_gpio.c
+ create mode 100644 include/hw/ssi/spi_gpio.h
+
+diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
+index 15fa79afd3..4cf1747c3b 100644
+--- a/hw/arm/Kconfig
++++ b/hw/arm/Kconfig
+@@ -457,6 +457,7 @@ config ASPEED_SOC
+     select LED
+     select PMBUS
+     select MAX31785
++    select SPI_GPIO
+ 
+ config MPS2
+     bool
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 22fc883237..5b970a8c51 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -27,6 +27,7 @@
+ #include "qemu/units.h"
+ #include "hw/qdev-clock.h"
+ #include "sysemu/sysemu.h"
++#include "hw/ssi/spi_gpio.h"
+ 
+ static struct arm_boot_info aspeed_board_binfo = {
+     .board_id = -1, /* device-tree-only board */
+@@ -177,6 +178,11 @@ struct AspeedMachineState {
+ #define QCOM_DC_SCM_V1_BMC_HW_STRAP1  0x00000000
+ #define QCOM_DC_SCM_V1_BMC_HW_STRAP2  0x00000041
+ 
++/* ASPEED GPIO propname values */
++#define AST_GPIO_IRQ_X0_NUM 185
++#define AST_GPIO_IRQ_X3_NUM 188
++#define AST_GPIO_IRQ_X4_NUM 189
++
+ #define AST_SMP_MAILBOX_BASE            0x1e6e2180
+ #define AST_SMP_MBOX_FIELD_ENTRY        (AST_SMP_MAILBOX_BASE + 0x0)
+ #define AST_SMP_MBOX_FIELD_GOSIGN       (AST_SMP_MAILBOX_BASE + 0x4)
+@@ -376,6 +382,24 @@ static void aspeed_machine_init(MachineState *machine)
+     connect_serial_hds_to_uarts(bmc);
+     qdev_realize(DEVICE(&bmc->soc), NULL, &error_abort);
+ 
++    SpiGpioState *spi_gpio = SPI_GPIO(qdev_new(TYPE_SPI_GPIO));
++    spi_gpio->aspeed_gpio = &bmc->soc.gpio;
++    qdev_realize(DEVICE(spi_gpio), NULL, &error_fatal);
++
++    DeviceState *m25p80 = qdev_new("n25q256a");
++    qdev_realize(m25p80, BUS(spi_gpio->spi), &error_fatal);
++
++    qdev_connect_gpio_out_named(DEVICE(&bmc->soc.gpio), "sysbus-irq", AST_GPIO_IRQ_X0_NUM,
++                                qdev_get_gpio_in_named(DEVICE(spi_gpio), "SPI_CS_in", 0));
++    qdev_connect_gpio_out_named(DEVICE(&bmc->soc.gpio), "sysbus-irq", AST_GPIO_IRQ_X3_NUM,
++                                qdev_get_gpio_in_named(DEVICE(spi_gpio), "SPI_CLK", 0));
++    qdev_connect_gpio_out_named(DEVICE(&bmc->soc.gpio), "sysbus-irq", AST_GPIO_IRQ_X4_NUM,
++                                qdev_get_gpio_in_named(DEVICE(spi_gpio), "SPI_MOSI", 0));
++
++    qdev_connect_gpio_out_named(DEVICE(spi_gpio), "SPI_CS_out", 0,
++                                qdev_get_gpio_in_named(m25p80, SSI_GPIO_CS, 0));
++    object_property_set_bool(OBJECT(spi_gpio->aspeed_gpio), "gpioX5", true, &error_fatal);
++
+     aspeed_board_init_flashes(&bmc->soc.fmc,
+                               bmc->fmc_model ? bmc->fmc_model : amc->fmc_model,
+                               amc->num_cs, 0);
+diff --git a/hw/ssi/Kconfig b/hw/ssi/Kconfig
+index 7d90a02181..cdae4fab4e 100644
+--- a/hw/ssi/Kconfig
++++ b/hw/ssi/Kconfig
+@@ -20,3 +20,7 @@ config XILINX_SPIPS
+ config STM32F2XX_SPI
+     bool
+     select SSI
++
++config SPI_GPIO
++    bool
++    select SSI
+diff --git a/hw/ssi/meson.build b/hw/ssi/meson.build
+index 702aa5e4df..1e7ce76c3f 100644
+--- a/hw/ssi/meson.build
++++ b/hw/ssi/meson.build
+@@ -1,4 +1,5 @@
+ softmmu_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files('aspeed_smc.c'))
++softmmu_ss.add(when: 'CONFIG_SPI_GPIO', if_true: files('spi_gpio.c'))
+ softmmu_ss.add(when: 'CONFIG_MSF2', if_true: files('mss-spi.c'))
+ softmmu_ss.add(when: 'CONFIG_NPCM7XX', if_true: files('npcm7xx_fiu.c'))
+ softmmu_ss.add(when: 'CONFIG_PL022', if_true: files('pl022.c'))
+diff --git a/hw/ssi/spi_gpio.c b/hw/ssi/spi_gpio.c
+new file mode 100644
+index 0000000000..1f290a3713
+--- /dev/null
++++ b/hw/ssi/spi_gpio.c
+@@ -0,0 +1,88 @@
++/*
++ * QEMU model of the SPI GPIO controller
++ *
++ * Copyright (C)
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++ * THE SOFTWARE.
++ */
++
++#include "hw/ssi/spi_gpio.h"
++#include "hw/irq.h"
++
++static void cs_handler(void *opaque, int n, int level)
++{
++    SpiGpioState *s = SPI_GPIO(opaque);
++    s->cs = !!level;
++
++    /* relay the CS value to the CS output pin */
++    qemu_set_irq(s->cs_output_pin, s->cs);
++}
++
++static void clk_handler(void *opaque, int n, int level)
++{
++    SpiGpioState *s = SPI_GPIO(opaque);
++    s->clk = !!level;
++}
++
++static void mosi_handler(void *opaque, int n, int level)
++{
++    SpiGpioState *s = SPI_GPIO(opaque);
++    s->mosi = !!level;
++}
++
++static void spi_gpio_realize(DeviceState *dev, Error **errp)
++{
++    SpiGpioState *s = SPI_GPIO(dev);
++
++    s->spi = ssi_create_bus(dev, "spi");
++
++    s->cs = 1;
++    s->clk = 1;
++    s->mosi = 1;
++
++    /* init the input GPIO lines */
++    qdev_init_gpio_in_named(dev, cs_handler, "SPI_CS_in", 1);
++    qdev_init_gpio_in_named(dev, clk_handler, "SPI_CLK", 1);
++    qdev_init_gpio_in_named(dev, mosi_handler, "SPI_MOSI", 1);
++
++    /* init the output GPIO lines */
++    qdev_init_gpio_out_named(dev, &s->miso_output_pin, "SPI_MISO", 1);
++    qdev_init_gpio_out_named(dev, &s->cs_output_pin, "SPI_CS_out", 1);
++}
++
++static void SPI_GPIO_class_init(ObjectClass *klass, void *data)
++{
++    DeviceClass *dc = DEVICE_CLASS(klass);
++
++    dc->realize = spi_gpio_realize;
++}
++
++static const TypeInfo SPI_GPIO_info = {
++    .name           = TYPE_SPI_GPIO,
++    .parent         = TYPE_DEVICE,
++    .instance_size  = sizeof(SpiGpioState),
++    .class_init     = SPI_GPIO_class_init,
++};
++
++static void SPI_GPIO_register_types(void)
++{
++    type_register_static(&SPI_GPIO_info);
++}
++
++type_init(SPI_GPIO_register_types)
+diff --git a/include/hw/ssi/spi_gpio.h b/include/hw/ssi/spi_gpio.h
+new file mode 100644
+index 0000000000..4971ef6dc1
+--- /dev/null
++++ b/include/hw/ssi/spi_gpio.h
+@@ -0,0 +1,44 @@
++/*
++ * QEMU model of the SPI GPIO controller
++ *
++ * Copyright (C)
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++ * THE SOFTWARE.
++ */
++
++#ifndef SPI_GPIO_H
++#define SPI_GPIO_H
++
++#include "qemu/osdep.h"
++#include "hw/ssi/ssi.h"
++#include "hw/gpio/aspeed_gpio.h"
++
++#define TYPE_SPI_GPIO "spi_gpio"
++OBJECT_DECLARE_SIMPLE_TYPE(SpiGpioState, SPI_GPIO);
++
++struct SpiGpioState {
++    DeviceState parent;
++    SSIBus *spi;
++    AspeedGPIOState *aspeed_gpio;
++
++    int clk, mosi, cs;
++    qemu_irq miso_output_pin, cs_output_pin;
++};
++
++#endif /* SPI_GPIO_H */
+-- 
+2.30.2
+

@@ -1,0 +1,59 @@
+From 74eeb27bff9a08f9b95976811f761b30eff741a5 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Wed, 27 Jul 2022 15:09:05 -0700
+Subject: [PATCH 44/65] tests/avocado/boot_linux_console: Add NPCM845 EVB
+
+This test will timeout, so I increased the timeout to accommodate it.
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+
+%% original patch: 0046-tests-avocado-boot_linux_console-Add-NPCM845-EVB.patch
+---
+ tests/avocado/boot_linux_console.py | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/tests/avocado/boot_linux_console.py b/tests/avocado/boot_linux_console.py
+index 8f8f56df00..5b4a6f8357 100644
+--- a/tests/avocado/boot_linux_console.py
++++ b/tests/avocado/boot_linux_console.py
+@@ -90,7 +90,7 @@ class BootLinuxConsole(LinuxKernelTest):
+     Boots a Linux kernel and checks that the console is operational and the
+     kernel command line is properly passed from QEMU to the kernel
+     """
+-    timeout = 90
++    timeout = 500
+ 
+     def test_x86_64_pc(self):
+         """
+@@ -707,6 +707,27 @@ def test_arm_quanta_gsj_initrd(self):
+         self.wait_for_console_pattern(
+                 'Give root password for system maintenance')
+ 
++    def test_aarch64_npcm845_evb(self):
++        """
++        :avocado: tags=arch:aarch64
++        :avocado: tags=machine:npcm845-evb
++        :avocado: tags=accel:tcg
++        """
++        image_url = 'https://github.com/peterdelevoryas/openbmc/releases/download/nv1/npcm845.mtd'
++        image_hash = '845f94a29e5a09fa9e600ea4674f7a0f'
++        image_path = self.fetch_asset(image_url, asset_hash=image_hash, algorithm='md5')
++        bios_url = 'https://github.com/peterdelevoryas/vbootrom/releases/download/v1/npcm8xx_bootrom.bin'
++        bios_hash = 'b3d18d7243be3e9d2c95bea163974978'
++        bios_path = self.fetch_asset(bios_url, asset_hash=bios_hash, algorithm='md5')
++        self.vm.set_console()
++        self.vm.add_args('-mtdblock', image_path)
++        self.vm.add_args('-bios', bios_path)
++        self.vm.launch()
++        self.wait_for_console_pattern('U-Boot')
++        self.wait_for_console_pattern('Booting Kernel from flash')
++        self.wait_for_console_pattern('Starting kernel')
++        self.wait_for_console_pattern('evb-npcm845 login:')
++
+     def test_arm_orangepi(self):
+         """
+         :avocado: tags=arch:arm
+-- 
+2.30.2
+

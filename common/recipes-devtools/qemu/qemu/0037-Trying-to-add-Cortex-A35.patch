@@ -1,0 +1,28 @@
+From c4572a1205a63e8a7b84a45d32c3935063244dbc Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Mon, 18 Jul 2022 14:55:11 -0700
+Subject: [PATCH 37/65] Trying to add Cortex-A35
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+
+%% original patch: 0038-Trying-to-add-Cortex-A35.patch
+---
+ hw/arm/npcm8xx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/arm/npcm8xx.c b/hw/arm/npcm8xx.c
+index afcf8330d5..08d4731368 100644
+--- a/hw/arm/npcm8xx.c
++++ b/hw/arm/npcm8xx.c
+@@ -389,7 +389,7 @@ static void npcm8xx_init(Object *obj)
+                             TYPE_CPU_CLUSTER);
+     for (i = 0; i < NPCM8XX_MAX_NUM_CPUS; i++) {
+         object_initialize_child(OBJECT(&s->cpu_cluster), "cpu[*]", &s->cpu[i],
+-                                ARM_CPU_TYPE_NAME("cortex-a53"));
++                                ARM_CPU_TYPE_NAME("cortex-a35"));
+     }
+     object_initialize_child(obj, "gic", &s->gic, TYPE_ARM_GIC);
+     object_initialize_child(obj, "gcr", &s->gcr, TYPE_NPCM8XX_GCR);
+-- 
+2.30.2
+

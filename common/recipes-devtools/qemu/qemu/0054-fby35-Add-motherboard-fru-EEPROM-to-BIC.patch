@@ -1,0 +1,29 @@
+From d157100c5e42567adccf7ca525d1b199f5a138a4 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Wed, 24 Aug 2022 17:51:06 -0700
+Subject: [PATCH 54/65] fby35: Add motherboard fru EEPROM to BIC
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+
+%% original patch: 0057-fby35-Add-motherboard-fru-EEPROM-to-BIC.patch
+---
+ hw/arm/fby35.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
+index cdced004a0..f4e08cec79 100644
+--- a/hw/arm/fby35.c
++++ b/hw/arm/fby35.c
+@@ -64,6 +64,9 @@ static void fby35_cl_bic_i2c_init(AspeedSoCState *s)
+     i2c_slave_create_simple(i2c[1], "tmp105", 0x4a);
+     i2c_slave_create_simple(i2c[1], "adm1272", 0x40);
+     i2c_slave_create_simple(i2c[1], "tmp421", 0x4c);
++
++    at24c_eeprom_init(i2c[1], 0x54, fby35_fruid_slot, sizeof(fby35_fruid_slot), false);
++
+     i2c_slave_create_simple(i2c[2], "intel-me", 0x16);
+     i2c_slave_create_simple(i2c[4], "isl69259", 0x76);
+     i2c_slave_create_simple(i2c[4], "isl69259", 0x62);
+-- 
+2.30.2
+

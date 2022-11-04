@@ -1,0 +1,77 @@
+From 3cf77314aeac37287cc323831abfae8a2eef0d29 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Fri, 17 Jun 2022 12:21:22 -0700
+Subject: [PATCH 01/65] aspeed: Zero extend flash files to 128MB
+
+This finally removes the requirement that you have to pad your QEMU
+flash images with zeroes.
+
+Now QEMU will automatically zero-extend your flash device file to the
+Aspeed FMC's segment size if it is smaller than it should be.
+
+For example:
+
+    $ ls -lh flash-yosemite35
+    -rw-r--r-- 2 pdel users 30M Jun 17 12:23 flash-yosemite35
+    $ qemu-system-arm -machine fby35-bmc -drive file=flash-yosemite35,format=raw,if=mtd -nographic
+    $ ls -lh flash-yosemite35
+    -rw-r--r-- 2 pdel users 128M Jun 17 12:25 flash-yosemite35
+
+If your file is large enough already, then QEMU will not truncate it.
+
+For example, if your image is 256MB, it won't truncate to 128MB.
+
+    $ dd if=/dev/zero of=tmp.mtd bs=1M count=256
+    256+0 records in
+    256+0 records out
+    268435456 bytes (268 MB, 256 MiB) copied, 0.125099 s, 2.1 GB/s
+    pdel@devvm9194:~/local/qemu (blk)
+    $ ./build/qemu-system-arm -machine fby35-bmc -drive file=tmp.mtd,format=raw,if=mtd -nographic
+    QEMU 7.0.50 monitor - type 'help' for more information
+    (qemu) q
+    pdel@devvm9194:~/local/qemu (blk)
+    $ ls -lh tmp.mtd
+    -rw-r--r-- 1 pdel users 256M Jun 17 15:46 tmp.mtd
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+
+%% original patch: 0002-aspeed-Zero-extend-flash-files-to-128MB.patch
+---
+ hw/arm/aspeed.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 55f114ef72..f956b4a77e 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -270,13 +270,26 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
+     }
+ 
+     for (i = 0; i < count; ++i) {
++        AspeedSMCFlash *flash = &s->flashes[i];
+         DriveInfo *dinfo = drive_get(IF_MTD, 0, unit0 + i);
++        BlockBackend *blk;
+         qemu_irq cs_line;
+         DeviceState *dev;
++        uint64_t flash_size, blk_size, perm, shared_perm;
+ 
+         dev = qdev_new(flashtype);
++        flash_size = memory_region_size(&flash->mmio);
+         if (dinfo) {
+-            qdev_prop_set_drive(dev, "drive", blk_by_legacy_dinfo(dinfo));
++            blk = blk_by_legacy_dinfo(dinfo);
++            blk_size = blk_getlength(blk);
++            if (blk_size < flash_size) {
++                blk_get_perm(blk, &perm, &shared_perm);
++                blk_set_perm(blk, BLK_PERM_ALL, BLK_PERM_ALL, &error_abort);
++                blk_truncate(blk, flash_size, true, PREALLOC_MODE_OFF,
++                             BDRV_REQ_ZERO_WRITE, &error_abort);
++                blk_set_perm(blk, perm, shared_perm, &error_abort);
++            }
++            qdev_prop_set_drive(dev, "drive", blk);
+         }
+         qdev_realize_and_unref(dev, BUS(s->spi), &error_fatal);
+ 
+-- 
+2.30.2
+

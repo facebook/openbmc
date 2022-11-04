@@ -1,0 +1,28 @@
+From 9eb9c0d38ff73d6d4ed9aa928ad73275bff7ee76 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Wed, 6 Jul 2022 01:07:03 -0700
+Subject: [PATCH 33/65] hw/arm/npcm8xx: Remove qemu-common.h include
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+
+%% original patch: 0034-hw-arm-npcm8xx-Remove-qemu-common.h-include.patch
+---
+ hw/arm/npcm8xx_boards.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/hw/arm/npcm8xx_boards.c b/hw/arm/npcm8xx_boards.c
+index 2290473d12..d00b20b10b 100644
+--- a/hw/arm/npcm8xx_boards.c
++++ b/hw/arm/npcm8xx_boards.c
+@@ -23,7 +23,6 @@
+ #include "hw/qdev-core.h"
+ #include "hw/qdev-properties.h"
+ #include "qapi/error.h"
+-#include "qemu-common.h"
+ #include "qemu/datadir.h"
+ #include "qemu/units.h"
+ #include "sysemu/block-backend.h"
+-- 
+2.30.2
+

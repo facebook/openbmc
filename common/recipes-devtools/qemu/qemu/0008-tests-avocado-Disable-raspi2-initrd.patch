@@ -1,0 +1,27 @@
+From 384818ba0f55dfd9935b475d5066b19fbe2120f3 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Mon, 23 May 2022 10:23:53 -0700
+Subject: [PATCH 08/65] tests/avocado: Disable raspi2 initrd
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+
+%% original patch: 0009-tests-avocado-Disable-raspi2-initrd.patch
+---
+ tests/avocado/boot_linux_console.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tests/avocado/boot_linux_console.py b/tests/avocado/boot_linux_console.py
+index 4c9d551f47..8f8f56df00 100644
+--- a/tests/avocado/boot_linux_console.py
++++ b/tests/avocado/boot_linux_console.py
+@@ -452,6 +452,7 @@ def test_arm_raspi2_uart0(self):
+         """
+         self.do_test_arm_raspi2(0)
+ 
++    @skip("pdel@fb.com: This test is flaky")
+     def test_arm_raspi2_initrd(self):
+         """
+         :avocado: tags=arch:arm
+-- 
+2.30.2
+

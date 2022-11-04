@@ -1,0 +1,251 @@
+From a3716debff3b73f0b2c6d4da6d5fe46c0ba49ebd Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Tue, 23 Aug 2022 23:24:36 -0700
+Subject: [PATCH 53/65] fby35: Setup I2C devices and GPIO's
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+
+%% original patch: 0056-fby35-Setup-I2C-devices-and-GPIO-s.patch
+---
+ hw/arm/aspeed.c | 42 ++---------------------
+ hw/arm/fby35.c  | 91 +++++++++++++++++++++++++++++++++++++++++++++++++
+ hw/arm/fby35.h  |  5 +++
+ 3 files changed, 99 insertions(+), 39 deletions(-)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 02dafc15f5..3aa86e58d0 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -982,33 +982,15 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
+ static void fby35_i2c_init(AspeedMachineState *bmc)
+ {
+     AspeedSoCState *soc = &bmc->soc;
+-    I2CBus *i2c[16];
+-
+-    for (int i = 0; i < 16; i++) {
+-        i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
+-    }
+-
+-    i2c_slave_create_simple(i2c[2], TYPE_LM75, 0x4f);
+-    i2c_slave_create_simple(i2c[8], TYPE_TMP421, 0x1f);
+-    /* Hotswap controller is actually supposed to be mp5920 or ltc4282. */
+-    i2c_slave_create_simple(i2c[11], "adm1272", 0x44);
+-    i2c_slave_create_simple(i2c[12], TYPE_LM75, 0x4e);
+-    i2c_slave_create_simple(i2c[12], TYPE_LM75, 0x4f);
+ 
+-    aspeed_eeprom_init(i2c[4], 0x51, 128 * KiB);
+-    aspeed_eeprom_init(i2c[6], 0x51, 128 * KiB);
+-
+-    at24c_eeprom_init(i2c[8], 0x50, fby35_fruid_nic, sizeof(fby35_fruid_nic), false);
+-    at24c_eeprom_init(i2c[11], 0x51, fby35_fruid_bb, sizeof(fby35_fruid_bb), false);
+-    at24c_eeprom_init(i2c[11], 0x54, fby35_fruid_bmc, sizeof(fby35_fruid_bmc), false);
++    fby35_bmc_i2c_init(soc);
+ 
+     /*
+      * TODO: There is a multi-master i2c connection to an AST1030 MiniBMC on
+      * buses 0, 1, 2, 3, and 9. Source address 0x10, target address 0x20 on
+      * each.
+      */
+-    i2c_slave_create_simple(i2c[0], "fby35-sb-bic", 0x20);
+-    i2c_slave_create_simple(i2c[4], "fby35-sb-cpld", 0x0f);
++    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 0), "fby35-sb-bic", 0x20);
+ }
+ 
+ static void fbttn_i2c_init(AspeedMachineState *bmc)
+@@ -1448,27 +1430,9 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
+ static void fby35_reset(MachineState *state, ShutdownCause reason)
+ {
+     AspeedMachineState *bmc = ASPEED_MACHINE(state);
+-    AspeedGPIOState *gpio = &bmc->soc.gpio;
+ 
+     qemu_devices_reset(reason);
+-
+-    /* Board ID: 7 (Class-1, 4 slots) */
+-    object_property_set_bool(OBJECT(gpio), "gpioV4", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioV5", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioV6", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioV7", false, &error_fatal);
+-
+-    /* Slot presence pins, inverse polarity. (False means present) */
+-    object_property_set_bool(OBJECT(gpio), "gpioH4", false, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioH5", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioH6", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioH7", true, &error_fatal);
+-
+-    /* Slot 12v power pins, normal polarity. (True means powered-on) */
+-    object_property_set_bool(OBJECT(gpio), "gpioB2", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioB3", false, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioB4", false, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioB5", false, &error_fatal);
++    fby35_bmc_reset_gpios(&bmc->soc);
+ }
+ 
+ static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
+diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
+index e013a479ce..cdced004a0 100644
+--- a/hw/arm/fby35.c
++++ b/hw/arm/fby35.c
+@@ -9,6 +9,7 @@
+ #include "qemu/units.h"
+ #include "qapi/error.h"
+ #include "sysemu/sysemu.h"
++#include "sysemu/reset.h"
+ #include "sysemu/block-backend.h"
+ #include "hw/boards.h"
+ #include "hw/qdev-clock.h"
+@@ -17,6 +18,10 @@
+ #include "hw/arm/fby35.h"
+ #include "hw/i2c/i2c.h"
+ #include "hw/i2c/i2c_mux_pca954x.h"
++#include "hw/sensor/tmp105.h"
++#include "hw/nvram/eeprom_at24c.h"
++
++#define TYPE_LM75 TYPE_TMP105
+ 
+ #define TYPE_FBY35 MACHINE_TYPE_NAME("fby35")
+ OBJECT_DECLARE_SIMPLE_TYPE(Fby35State, FBY35);
+@@ -39,6 +44,32 @@ struct Fby35State {
+ #define FBY35_BMC_RAM_SIZE (2 * GiB)
+ #define FBY35_BMC_FIRMWARE_ADDR 0x0
+ 
++static void fby35_cl_bic_i2c_init(AspeedSoCState *s)
++{
++    I2CBus *i2c[14];
++    I2CBus *ssd[8];
++
++    for (int i = 0; i < ARRAY_SIZE(i2c); i++) {
++        i2c[i] = aspeed_i2c_get_bus(&s->i2c, i);
++    }
++    pca954x_i2c_get_channels(i2c[1], 0x71, "pca9548", ssd);
++
++    for (int i = 0; i < ARRAY_SIZE(ssd); i++) {
++        i2c_slave_create_simple(ssd[i], "tmp105", 0x6a);
++    }
++
++    i2c_slave_create_simple(i2c[0], "fby35-sb-cpld", 0x21);
++    i2c_slave_create_simple(i2c[1], "tmp105", 0x48);
++    i2c_slave_create_simple(i2c[1], "tmp105", 0x49);
++    i2c_slave_create_simple(i2c[1], "tmp105", 0x4a);
++    i2c_slave_create_simple(i2c[1], "adm1272", 0x40);
++    i2c_slave_create_simple(i2c[1], "tmp421", 0x4c);
++    i2c_slave_create_simple(i2c[2], "intel-me", 0x16);
++    i2c_slave_create_simple(i2c[4], "isl69259", 0x76);
++    i2c_slave_create_simple(i2c[4], "isl69259", 0x62);
++    i2c_slave_create_simple(i2c[4], "isl69259", 0x60);
++}
++
+ static void fby35_bmc_write_boot_rom(DriveInfo *dinfo, MemoryRegion *mr,
+                                      hwaddr offset, size_t rom_size,
+                                      Error **errp)
+@@ -71,6 +102,31 @@ static void fby35_bmc_write_boot_rom(DriveInfo *dinfo, MemoryRegion *mr,
+     memcpy(memory_region_get_ram_ptr(mr) + offset, storage, rom_size);
+ }
+ 
++void fby35_bmc_i2c_init(AspeedSoCState *soc)
++{
++    I2CBus *i2c[16];
++
++    for (int i = 0; i < 16; i++) {
++        i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
++    }
++
++    i2c_slave_create_simple(i2c[2], TYPE_LM75, 0x4f);
++    i2c_slave_create_simple(i2c[8], "tmp421", 0x1f);
++    /* Hotswap controller is actually supposed to be mp5920 or ltc4282. */
++    i2c_slave_create_simple(i2c[11], "adm1272", 0x44);
++    i2c_slave_create_simple(i2c[12], TYPE_LM75, 0x4e);
++    i2c_slave_create_simple(i2c[12], TYPE_LM75, 0x4f);
++
++    at24c_eeprom_init(i2c[4], 0x51, NULL, 128 * KiB, false);
++    at24c_eeprom_init(i2c[6], 0x51, NULL, 128 * KiB, false);
++
++    at24c_eeprom_init(i2c[8], 0x50, fby35_fruid_nic, sizeof(fby35_fruid_nic), false);
++    at24c_eeprom_init(i2c[11], 0x51, fby35_fruid_bb, sizeof(fby35_fruid_bb), false);
++    at24c_eeprom_init(i2c[11], 0x54, fby35_fruid_bmc, sizeof(fby35_fruid_bmc), false);
++
++    i2c_slave_create_simple(i2c[4], "fby35-sb-cpld", 0x0f);
++}
++
+ static void fby35_bmc_init(Fby35State *s)
+ {
+     DriveInfo *drive0 = drive_get(IF_MTD, 0, 0);
+@@ -116,6 +172,8 @@ static void fby35_bmc_init(Fby35State *s)
+                                      size, &error_abort);
+         }
+     }
++
++    fby35_bmc_i2c_init(&s->bmc);
+ }
+ 
+ static void fby35_bic_init(Fby35State *s)
+@@ -135,6 +193,8 @@ static void fby35_bic_init(Fby35State *s)
+     aspeed_board_init_flashes(&s->bic.fmc, "sst25vf032b", 2, 2);
+     aspeed_board_init_flashes(&s->bic.spi[0], "sst25vf032b", 2, 4);
+     aspeed_board_init_flashes(&s->bic.spi[1], "sst25vf032b", 2, 6);
++
++    fby35_cl_bic_i2c_init(&s->bic);
+ }
+ 
+ static void fby35_init(MachineState *machine)
+@@ -155,6 +215,36 @@ static void fby35_init(MachineState *machine)
+     fby35_bic_init(s);
+ }
+ 
++void fby35_bmc_reset_gpios(AspeedSoCState *s)
++{
++    AspeedGPIOState *gpio = &s->gpio;
++
++    /* Board ID: 7 (Class-1, 4 slots) */
++    object_property_set_bool(OBJECT(gpio), "gpioV4", true, &error_fatal);
++    object_property_set_bool(OBJECT(gpio), "gpioV5", true, &error_fatal);
++    object_property_set_bool(OBJECT(gpio), "gpioV6", true, &error_fatal);
++    object_property_set_bool(OBJECT(gpio), "gpioV7", false, &error_fatal);
++
++    /* Slot presence pins, inverse polarity. (False means present) */
++    object_property_set_bool(OBJECT(gpio), "gpioH4", false, &error_fatal);
++    object_property_set_bool(OBJECT(gpio), "gpioH5", true, &error_fatal);
++    object_property_set_bool(OBJECT(gpio), "gpioH6", true, &error_fatal);
++    object_property_set_bool(OBJECT(gpio), "gpioH7", true, &error_fatal);
++
++    /* Slot 12v power pins, normal polarity. (True means powered-on) */
++    object_property_set_bool(OBJECT(gpio), "gpioB2", true, &error_fatal);
++    object_property_set_bool(OBJECT(gpio), "gpioB3", false, &error_fatal);
++    object_property_set_bool(OBJECT(gpio), "gpioB4", false, &error_fatal);
++    object_property_set_bool(OBJECT(gpio), "gpioB5", false, &error_fatal);
++}
++
++static void fby35_reset(MachineState *machine, ShutdownCause reason)
++{
++    Fby35State *s = FBY35(machine);
++
++    qemu_devices_reset(reason);
++    fby35_bmc_reset_gpios(&s->bmc);
++}
+ 
+ static bool fby35_get_mmio_exec(Object *obj, Error **errp)
+ {
+@@ -180,6 +270,7 @@ static void fby35_class_init(ObjectClass *oc, void *data)
+     mc->no_floppy = 1;
+     mc->no_cdrom = 1;
+     mc->min_cpus = mc->max_cpus = mc->default_cpus = 3;
++    mc->reset = fby35_reset;
+ 
+     object_class_property_add_bool(oc, "execute-in-place",
+                                    fby35_get_mmio_exec,
+diff --git a/hw/arm/fby35.h b/hw/arm/fby35.h
+index 20bd43fbae..87cb1a10c2 100644
+--- a/hw/arm/fby35.h
++++ b/hw/arm/fby35.h
+@@ -142,4 +142,9 @@ static const uint8_t fby35_fruid_slot[] = {
+     0x29, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x98, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+ };
+ 
++typedef struct AspeedSoCState AspeedSoCState;
++
++void fby35_bmc_i2c_init(AspeedSoCState *s);
++void fby35_bmc_reset_gpios(AspeedSoCState *s);
++
+ #endif
+-- 
+2.30.2
+

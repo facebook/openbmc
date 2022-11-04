@@ -1,0 +1,157 @@
+From d6d911027a3b9e82d242d95a82b2534757450b78 Mon Sep 17 00:00:00 2001
+From: Klaus Jensen <k.jensen@samsung.com>
+Date: Thu, 31 Mar 2022 18:57:37 +0200
+Subject: [PATCH 60/65] hw/misc: add a toy i2c echo device
+
+Add an example i2c device that can master the bus. The device will echo
+whatever it is sent to the device identified by the first byte received.
+
+Signed-off-by: Klaus Jensen <k.jensen@samsung.com>
+[peter: - Reworked to work with the latest upstream I2C code]
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+
+%% original patch: 0063-hw-misc-add-a-toy-i2c-echo-device.patch
+---
+ hw/misc/i2c-echo.c  | 116 ++++++++++++++++++++++++++++++++++++++++++++
+ hw/misc/meson.build |   2 +-
+ 2 files changed, 117 insertions(+), 1 deletion(-)
+ create mode 100644 hw/misc/i2c-echo.c
+
+diff --git a/hw/misc/i2c-echo.c b/hw/misc/i2c-echo.c
+new file mode 100644
+index 0000000000..004829b82b
+--- /dev/null
++++ b/hw/misc/i2c-echo.c
+@@ -0,0 +1,116 @@
++/*
++ * I2C echo device for testing and development
++ *
++ * Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
++ *
++ * This code is licensed under the GPL version 2 or later. See the COPYING
++ * file in the top-level directory.
++ */
++
++#include "qemu/osdep.h"
++#include "qemu/main-loop.h"
++#include "hw/i2c/i2c.h"
++
++#define TYPE_I2C_ECHO "i2c-echo"
++OBJECT_DECLARE_SIMPLE_TYPE(I2CEchoState, I2C_ECHO)
++
++typedef struct I2CEchoState {
++    I2CSlave parent_obj;
++    I2CBus *bus;
++    QEMUBH *bh;
++    int len;
++    int pos;
++    uint8_t buf[256];
++} I2CEchoState;
++
++static void i2c_echo_bh(void *opaque)
++{
++    I2CEchoState *s = opaque;
++
++    switch (s->pos) {
++    case 0:
++        if (i2c_start_send_async(s->bus, s->buf[s->pos++] >> 1)) {
++            break;
++        }
++        return;
++    default:
++        if (s->pos >= s->len) {
++            break;
++        }
++        if (i2c_send_async(s->bus, s->buf[s->pos++])) {
++            break;
++        }
++        return;
++    }
++
++    i2c_end_transfer(s->bus);
++    i2c_bus_release(s->bus);
++
++    s->len = 0;
++    s->pos = 0;
++    memset(s->buf, 0, sizeof(s->buf));
++}
++
++static int i2c_echo_event(I2CSlave *i2c, enum i2c_event event)
++{
++    I2CEchoState *s = I2C_ECHO(i2c);
++
++    switch (event) {
++    case I2C_START_RECV:
++    case I2C_NACK:
++        return -1;
++    case I2C_START_SEND:
++    case I2C_START_SEND_ASYNC:
++        g_assert(s->pos == 0);
++        g_assert(s->len == 0);
++        s->len = 0;
++        break;
++    case I2C_FINISH:
++        s->pos = 0;
++        i2c_bus_master(s->bus, s->bh);
++        break;
++    }
++    return 0;
++}
++
++static int i2c_echo_send(I2CSlave *i2c, uint8_t data)
++{
++    I2CEchoState *s = I2C_ECHO(i2c);
++
++    g_assert(s->len < sizeof(s->buf));
++    s->buf[s->len++] = data;
++    return 0;
++}
++
++static void i2c_echo_realize(DeviceState *dev, Error **errp)
++{
++    I2CEchoState *s = I2C_ECHO(dev);
++    BusState *bus = qdev_get_parent_bus(dev);
++
++    s->bus = I2C_BUS(bus);
++    s->bh = qemu_bh_new(i2c_echo_bh, s);
++}
++
++static void i2c_echo_class_init(ObjectClass *oc, void *data)
++{
++    I2CSlaveClass *sc = I2C_SLAVE_CLASS(oc);
++    DeviceClass *dc = DEVICE_CLASS(oc);
++
++    dc->realize = i2c_echo_realize;
++    sc->event = i2c_echo_event;
++    sc->send = i2c_echo_send;
++}
++
++static const TypeInfo i2c_echo = {
++    .name = TYPE_I2C_ECHO,
++    .parent = TYPE_I2C_SLAVE,
++    .instance_size = sizeof(I2CEchoState),
++    .class_init = i2c_echo_class_init,
++};
++
++static void register_types(void)
++{
++    type_register_static(&i2c_echo);
++}
++
++type_init(register_types);
+diff --git a/hw/misc/meson.build b/hw/misc/meson.build
+index 834c082be9..86bb26378b 100644
+--- a/hw/misc/meson.build
++++ b/hw/misc/meson.build
+@@ -127,7 +127,7 @@ softmmu_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+ 
+ softmmu_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
+ 
+-softmmu_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-netdev.c', 'i2c-netdev2.c'))
++softmmu_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-netdev.c', 'i2c-netdev2.c', 'i2c-echo.c'))
+ 
+ specific_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))
+ 
+-- 
+2.30.2
+

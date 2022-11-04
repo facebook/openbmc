@@ -1,0 +1,100 @@
+From 58e1573dd06884213a6b1e216ba351685319716b Mon Sep 17 00:00:00 2001
+From: Hao Wu <wuhaotsh@google.com>
+Date: Tue, 5 Apr 2022 15:36:31 -0700
+Subject: [PATCH 24/65] hw/ssi: Make flash size a property in NPCM7XX FIU
+
+This allows different FIUs to have different flash sizes, useful
+in NPCM8XX which has multiple different sized FIU modules.
+
+Signed-off-by: Hao Wu <wuhaotsh@google.com>
+Reviewed-by: Patrick Venture <venture@google.com>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+
+%% original patch: 0025-hw-ssi-Make-flash-size-a-property-in-NPCM7XX-FIU.patch
+---
+ hw/arm/npcm7xx.c             | 6 ++++++
+ hw/ssi/npcm7xx_fiu.c         | 6 ++----
+ include/hw/ssi/npcm7xx_fiu.h | 1 +
+ 3 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/hw/arm/npcm7xx.c b/hw/arm/npcm7xx.c
+index d85cc02765..9946b94120 100644
+--- a/hw/arm/npcm7xx.c
++++ b/hw/arm/npcm7xx.c
+@@ -274,17 +274,21 @@ static const struct {
+     hwaddr regs_addr;
+     int cs_count;
+     const hwaddr *flash_addr;
++    size_t flash_size;
+ } npcm7xx_fiu[] = {
+     {
+         .name = "fiu0",
+         .regs_addr = 0xfb000000,
+         .cs_count = ARRAY_SIZE(npcm7xx_fiu0_flash_addr),
+         .flash_addr = npcm7xx_fiu0_flash_addr,
++        .flash_size = 128 * MiB,
++
+     }, {
+         .name = "fiu3",
+         .regs_addr = 0xc0000000,
+         .cs_count = ARRAY_SIZE(npcm7xx_fiu3_flash_addr),
+         .flash_addr = npcm7xx_fiu3_flash_addr,
++        .flash_size = 128 * MiB,
+     },
+ };
+ 
+@@ -686,6 +690,8 @@ static void npcm7xx_realize(DeviceState *dev, Error **errp)
+ 
+         object_property_set_int(OBJECT(sbd), "cs-count",
+                                 npcm7xx_fiu[i].cs_count, &error_abort);
++        object_property_set_int(OBJECT(sbd), "flash-size",
++                                npcm7xx_fiu[i].flash_size, &error_abort);
+         sysbus_realize(sbd, &error_abort);
+ 
+         sysbus_mmio_map(sbd, 0, npcm7xx_fiu[i].regs_addr);
+diff --git a/hw/ssi/npcm7xx_fiu.c b/hw/ssi/npcm7xx_fiu.c
+index 4eedb2927e..ea490f1332 100644
+--- a/hw/ssi/npcm7xx_fiu.c
++++ b/hw/ssi/npcm7xx_fiu.c
+@@ -28,9 +28,6 @@
+ 
+ #include "trace.h"
+ 
+-/* Up to 128 MiB of flash may be accessed directly as memory. */
+-#define NPCM7XX_FIU_FLASH_WINDOW_SIZE (128 * MiB)
+-
+ /* Each module has 4 KiB of register space. Only a fraction of it is used. */
+ #define NPCM7XX_FIU_CTRL_REGS_SIZE (4 * KiB)
+ 
+@@ -525,7 +522,7 @@ static void npcm7xx_fiu_realize(DeviceState *dev, Error **errp)
+         flash->fiu = s;
+         memory_region_init_io(&flash->direct_access, OBJECT(s),
+                               &npcm7xx_fiu_flash_ops, &s->flash[i], "flash",
+-                              NPCM7XX_FIU_FLASH_WINDOW_SIZE);
++                              s->flash_size);
+         sysbus_init_mmio(sbd, &flash->direct_access);
+     }
+ }
+@@ -543,6 +540,7 @@ static const VMStateDescription vmstate_npcm7xx_fiu = {
+ 
+ static Property npcm7xx_fiu_properties[] = {
+     DEFINE_PROP_INT32("cs-count", NPCM7xxFIUState, cs_count, 0),
++    DEFINE_PROP_SIZE("flash-size", NPCM7xxFIUState, flash_size, 0),
+     DEFINE_PROP_END_OF_LIST(),
+ };
+ 
+diff --git a/include/hw/ssi/npcm7xx_fiu.h b/include/hw/ssi/npcm7xx_fiu.h
+index a3a1704289..1785ea16f4 100644
+--- a/include/hw/ssi/npcm7xx_fiu.h
++++ b/include/hw/ssi/npcm7xx_fiu.h
+@@ -60,6 +60,7 @@ struct NPCM7xxFIUState {
+     int32_t cs_count;
+     int32_t active_cs;
+     qemu_irq *cs_lines;
++    size_t flash_size;
+     NPCM7xxFIUFlash *flash;
+ 
+     SSIBus *spi;
+-- 
+2.30.2
+

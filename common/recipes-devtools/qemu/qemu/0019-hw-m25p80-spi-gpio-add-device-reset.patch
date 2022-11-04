@@ -1,0 +1,57 @@
+From 385e6f8ae04448644cbfda6ccf0df6bb51ea50d7 Mon Sep 17 00:00:00 2001
+From: Iris Chen <irischenlj@fb.com>
+Date: Fri, 24 Jun 2022 14:44:23 -0700
+Subject: [PATCH 19/65] hw: m25p80: [spi gpio] add device reset
+
+Signed-off-by: Iris Chen <irischenlj@fb.com>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+
+%% original patch: 0020-hw-m25p80-spi-gpio-add-device-reset.patch
+---
+ hw/arm/aspeed.c           | 2 +-
+ hw/ssi/spi_gpio.c         | 2 +-
+ include/hw/ssi/spi_gpio.h | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 8b09f37887..54fc6ff5a3 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -391,7 +391,7 @@ static void aspeed_machine_init(MachineState *machine)
+ 
+     SpiGpioState *spi_gpio = SPI_GPIO(qdev_new(TYPE_SPI_GPIO));
+     spi_gpio->aspeed_gpio = &bmc->soc.gpio;
+-    qdev_realize(DEVICE(spi_gpio), NULL, &error_fatal);
++    sysbus_realize(SYS_BUS_DEVICE(spi_gpio), &error_fatal);
+ 
+     DeviceState *m25p80 = qdev_new("n25q256a");
+     qdev_realize(m25p80, BUS(spi_gpio->spi), &error_fatal);
+diff --git a/hw/ssi/spi_gpio.c b/hw/ssi/spi_gpio.c
+index b829b7d87f..2350c0a659 100644
+--- a/hw/ssi/spi_gpio.c
++++ b/hw/ssi/spi_gpio.c
+@@ -166,7 +166,7 @@ static void SPI_GPIO_class_init(ObjectClass *klass, void *data)
+ 
+ static const TypeInfo SPI_GPIO_info = {
+     .name           = TYPE_SPI_GPIO,
+-    .parent         = TYPE_DEVICE,
++    .parent         = TYPE_SYS_BUS_DEVICE,
+     .instance_size  = sizeof(SpiGpioState),
+     .class_init     = SPI_GPIO_class_init,
+ };
+diff --git a/include/hw/ssi/spi_gpio.h b/include/hw/ssi/spi_gpio.h
+index 9111640d6c..2094a45217 100644
+--- a/include/hw/ssi/spi_gpio.h
++++ b/include/hw/ssi/spi_gpio.h
+@@ -33,7 +33,7 @@
+ OBJECT_DECLARE_SIMPLE_TYPE(SpiGpioState, SPI_GPIO);
+ 
+ struct SpiGpioState {
+-    DeviceState parent;
++    SysBusDevice parent;
+     SSIBus *spi;
+     AspeedGPIOState *aspeed_gpio;
+ 
+-- 
+2.30.2
+

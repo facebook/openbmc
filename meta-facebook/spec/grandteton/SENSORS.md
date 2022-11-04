@@ -74,10 +74,6 @@ This document of sensor lists for platform Grand Teton.
 | MB_CPU1_TJMAX_C | 0x1D | C | NA | NA | NA | NA | NA | NA |
 | MB_CPU0_THERM_MARGIN_C | 0x1A | C | -5.00 | NA | NA | -81.00 | NA | NA |
 | MB_CPU1_THERM_MARGIN_C | 0x1B | C | -5.00 | NA | NA | -81.00 | NA | NA |
-| MB_HSC_VOLT_V | 0xB | Volts | 14.33 | NA | NA | 10.09 | NA | NA |
-| MB_HSC_CURR_A | 0xC | Amps | NA | NA | NA | NA | NA | NA |
-| MB_HSC_PWR_W | 0xD | Watts | NA | NA | NA | NA | NA | NA |
-| MB_HSC_TEMP_C | 0xE | C | 120.00 | NA | NA | 10.00 | NA | NA |
 | MB_P3V_BAT_VOLT_V | 0x5E | Volts | 3.40 | NA | NA | 2.60 | NA | NA |
 | MB_E1S_P3V3_VOLT_V | 0x1 | Volts | 3.46 | NA | NA | 3.13 | NA | NA |
 | MB_E1S_P12V_CURR_A | 0x3 | Amps | NA | NA | NA | NA | NA | NA |
@@ -119,6 +115,10 @@ This document of sensor lists for platform Grand Teton.
 | MB_CPU1_DIMM_D6_PWR_W | 0x7D | Watts | NA | NA | NA | NA | NA | NA |
 | MB_CPU1_DIMM_B7_PWR_W | 0x7E | Watts | NA | NA | NA | NA | NA | NA |
 | MB_CPU1_DIMM_D7_PWR_W | 0x7F | Watts | NA | NA | NA | NA | NA | NA |
+| MB_HSC_VOLT_V | 0xB | Volts | 14.33 | NA | NA | 10.09 | NA | NA |
+| MB_HSC_CURR_A | 0xC | Amps | NA | NA | NA | NA | NA | NA |
+| MB_HSC_PWR_W | 0xD | Watts | NA | NA | NA | NA | NA | NA |
+| MB_HSC_TEMP_C | 0xE | C | 120.00 | NA | NA | 10.00 | NA | NA |
 
 
 ## Switch Board
@@ -156,10 +156,6 @@ This document of sensor lists for platform Grand Teton.
 | SWB_NIC7_VOLT_V | 0x26 | Volts | 12.96 | NA | NA | 10.56 | NA | NA |
 | SWB_NIC7_CURR_A | 0x27 | Amps | NA | NA | NA | NA | NA | NA |
 | SWB_NIC7_PWR_W | 0x28 | Watts | NA | NA | NA | NA | NA | NA |
-| SWB_HSC_TEMP_C | 0x2A | C | 120.00 | NA | NA | 10.00 | NA | NA |
-| SWB_HSC_VOUT_V | 0x2B | Volts | 13.20 | NA | NA | 10.80 | NA | NA |
-| SWB_HSC_CURR_A | 0x2C | Amps | NA | NA | NA | NA | NA | NA |
-| SWB_HSC_PWR_W | 0x2D | Watts | NA | NA | NA | NA | NA | NA |
 | SWB_P12V_AUX_V | 0x30 | Volts | 13.20 | NA | NA | 10.80 | NA | NA |
 | SWB_P5V_AUX_V | 0x31 | Volts | 5.25 | NA | NA | 4.75 | NA | NA |
 | SWB_P3V3_AUX_V | 0x32 | Volts | 3.47 | NA | NA | 3.13 | NA | NA |
@@ -273,6 +269,10 @@ This document of sensor lists for platform Grand Teton.
 | SWB_E1S_15_VOLT_V | 0xBD | Volts | 13.20 | NA | NA | 10.80 | NA | NA |
 | SWB_E1S_15_CURR_A | 0xBE | Amps | NA | NA | NA | NA | NA | NA |
 | SWB_E1S_15_PWR_W | 0xBF | Watts | NA | NA | NA | NA | NA | NA |
+| SWB_HSC_TEMP_C | 0x2A | C | 120.00 | NA | NA | 10.00 | NA | NA |
+| SWB_HSC_VOUT_V | 0x2B | Volts | 13.20 | NA | NA | 10.80 | NA | NA |
+| SWB_HSC_CURR_A | 0x2C | Amps | NA | NA | NA | NA | NA | NA |
+| SWB_HSC_PWR_W | 0x2D | Watts | NA | NA | NA | NA | NA | NA |
 
 
 ## HMC Board

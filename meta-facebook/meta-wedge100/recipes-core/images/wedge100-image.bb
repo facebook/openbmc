@@ -23,8 +23,6 @@ IMAGE_INSTALL += " \
   lldp-util \
   wedge-eeprom \
   weutil-dhcp-id \
-  kcsd \
-  ipmid \
   po-eeprom \
   bitbang \
   jbi \
@@ -35,3 +33,18 @@ IMAGE_INSTALL += " \
   recover-from-secondary \
   udev-rules \
   "
+
+#
+# kcsd and ipmid are not installed because IPMI is not enabled in uServer
+# BIOS.
+# To enable IPMI in wedge100, we will need to:
+#   1. Upgrade wedge100s BIOS with IPMI support.
+#   2. Enable AST2400 LPC/KCS support (adding kcs nodes in aspeed-g4.dtsi
+#      and potentially kcs driver changes).
+#   3. Enable KCS devices in wedge100 dts.
+#   4. Uncomment below lines to include kcsd and ipmid in wedge100 image.
+#
+# IMAGE_INSTALL += " \
+#   kcsd \
+#   ipmid \
+#  "

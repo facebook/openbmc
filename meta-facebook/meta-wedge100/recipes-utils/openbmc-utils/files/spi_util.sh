@@ -51,8 +51,13 @@ PID_FILE='/var/run/spi_util.pid'
 
 #
 # Kernel modules used to talk to backup BIOS.
+# The module name is changed to spi_aspeed_user since linux-aspeed-5.15.
 #
-SPI_ASPEED_MODULE=spi_aspeed
+if modinfo spi_aspeed_user > /dev/null 2>&1; then
+    SPI_ASPEED_MODULE=spi_aspeed_user
+else
+    SPI_ASPEED_MODULE=spi_aspeed
+fi
 
 #
 # Kernel modules for eeprom access. We decided to use the legacy script

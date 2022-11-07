@@ -159,7 +159,8 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
     if (get_hmc_ver("HMC_Firmware", hmc_version) == 0) {
       build_stage = EVT;
     }
-    else if (get_hmc_ver("HGX_FW_HMC_0", hmc_version) == 0) {
+    else if (get_hmc_ver("HGX_FW_HMC_0", hmc_version) == 0 ||
+             get_hmc_ver("HGX_FW_BMC_0", hmc_version) == 0) {
       build_stage = DVT;
     }
     else {

@@ -63,7 +63,7 @@ struct raa_config {
   uint32_t devid_exp;
   uint32_t rev_exp;
   uint32_t crc_exp;
-  struct raa_data pdata[720];
+  struct raa_data pdata[1024];
 };
 
 enum {

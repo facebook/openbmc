@@ -1,0 +1,121 @@
+From a2f1f78daef0d91caaac6579782eb86b2ce459e9 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Wed, 27 Jul 2022 13:46:46 -0700
+Subject: [PATCH] arm/cpu64: Copy-paste A53 contents into A35 initfn
+
+After this change, I'll edit each field to match the Cortex-A35
+Technical Reference Manual specifications, rather than calling the A53
+initfn and overriding values.
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ target/arm/cpu64.c | 90 ++++++++++++++++++++++++----------------------
+ 1 file changed, 48 insertions(+), 42 deletions(-)
+
+diff --git a/target/arm/cpu64.c b/target/arm/cpu64.c
+index f9e5542..5ad1bce 100644
+--- a/target/arm/cpu64.c
++++ b/target/arm/cpu64.c
+@@ -157,50 +157,56 @@ static void aarch64_a35_initfn(Object *obj)
+ 
+     g_assert(!kvm_enabled() && "Cortex-A35 KVM unimplemented");
+ 
+-    aarch64_a53_initfn(obj);
+     cpu->dtb_compatible = "arm,cortex-a35";
++    set_feature(&cpu->env, ARM_FEATURE_V8);
++    set_feature(&cpu->env, ARM_FEATURE_NEON);
++    set_feature(&cpu->env, ARM_FEATURE_GENERIC_TIMER);
++    set_feature(&cpu->env, ARM_FEATURE_AARCH64);
++    set_feature(&cpu->env, ARM_FEATURE_CBAR_RO);
++    set_feature(&cpu->env, ARM_FEATURE_EL2);
++    set_feature(&cpu->env, ARM_FEATURE_EL3);
++    set_feature(&cpu->env, ARM_FEATURE_PMU);
+     cpu->psci_conduit = QEMU_PSCI_CONDUIT_SMC;
+-    // set_feature(&cpu->env, ARM_FEATURE_V8);
+-    // set_feature(&cpu->env, ARM_FEATURE_AARCH64);
+-    // set_feature(&cpu->env, ARM_FEATURE_EL2);
+-    // set_feature(&cpu->env, ARM_FEATURE_EL3);
+-    // set_feature(&cpu->env, ARM_FEATURE_PMU);
+-    // set_feature(&cpu->env, ARM_FEATURE_CBAR_RO);
+-    // set_feature(&cpu->env, ARM_FEATURE_GENERIC_TIMER);
+-    // set_feature(&cpu->env, ARM_FEATURE_NEON);
+-    // cpu->kvm_target = QEMU_KVM_ARM_TARGET_NONE;
+-    // cpu->midr = 0x410FD042;
+-    // cpu->ctr = 0x84448004;
+-    // cpu->revidr = 0x00000000;
+-    // cpu->isar.id_pfr0 = 0x00000131;
+-    // cpu->isar.id_pfr1 = 0x10011011;
+-    // cpu->isar.id_dfr0 = 0x03010066;
+-    // cpu->id_afr0 = 0x00000000;
+-    // cpu->isar.id_mmfr0 = 0x10201105;
+-    // cpu->isar.id_mmfr1 = 0x40000000;
+-    // cpu->isar.id_mmfr2 = 0x01260000;
+-    // cpu->isar.id_mmfr3 = 0x02102211;
+-    // cpu->isar.id_isar0 = 0x02101110;
+-    // cpu->isar.id_isar1 = 0x13112111;
+-    // cpu->isar.id_isar2 = 0x21232042;
+-    // cpu->isar.id_isar3 = 0x01112131;
+-    // cpu->isar.id_isar4 = 0x00011142;
+-    // cpu->isar.id_isar5 = 0x00011121;
+-    // cpu->ccsidr[0] = 0x700FE01A; /* 32KB L1 dcache */
+-    // cpu->ccsidr[1] = 0x201FE00A; /* 32KB L1 icache */
+-    // cpu->ccsidr[2] = 0x707FE03A; /* 512KB L2 cache */
+-    // cpu->clidr = 0x0A200023;
+-    // cpu->reset_sctlr = 0x00C50838;
+-    // cpu->reset_auxcr = 0x00000000;
+-    // cpu->isar.id_aa64isar0 = 0x00011120;
+-    // cpu->isar.id_aa64isar1 = 0x00000000;
+-    // cpu->isar.id_aa64pfr0 = 0x01002222;
+-    // cpu->isar.id_aa64pfr1 = 0x00000000;
+-    // cpu->isar.id_aa64mmfr0 = 0x00101122;
+-    // cpu->isar.id_aa64mmfr1 = 0x00000000;
+-    // cpu->isar.id_aa64dfr0 = 0x10305106;
+-    // cpu->isar.id_aa64dfr1 = 0x00000000;
+-    // define_cortex_a72_a57_a53_cp_reginfo(cpu);
++    cpu->kvm_target = QEMU_KVM_ARM_TARGET_NONE;
++    cpu->midr = 0x410fd034;
++    cpu->revidr = 0x00000000;
++    cpu->reset_fpsid = 0x41034070;
++    cpu->isar.mvfr0 = 0x10110222;
++    cpu->isar.mvfr1 = 0x12111111;
++    cpu->isar.mvfr2 = 0x00000043;
++    cpu->ctr = 0x84448004; /* L1Ip = VIPT */
++    cpu->reset_sctlr = 0x00c50838;
++    cpu->isar.id_pfr0 = 0x00000131;
++    cpu->isar.id_pfr1 = 0x00011011;
++    cpu->isar.id_dfr0 = 0x03010066;
++    cpu->id_afr0 = 0x00000000;
++    cpu->isar.id_mmfr0 = 0x10101105;
++    cpu->isar.id_mmfr1 = 0x40000000;
++    cpu->isar.id_mmfr2 = 0x01260000;
++    cpu->isar.id_mmfr3 = 0x02102211;
++    cpu->isar.id_isar0 = 0x02101110;
++    cpu->isar.id_isar1 = 0x13112111;
++    cpu->isar.id_isar2 = 0x21232042;
++    cpu->isar.id_isar3 = 0x01112131;
++    cpu->isar.id_isar4 = 0x00011142;
++    cpu->isar.id_isar5 = 0x00011121;
++    cpu->isar.id_isar6 = 0;
++    cpu->isar.id_aa64pfr0 = 0x00002222;
++    cpu->isar.id_aa64dfr0 = 0x10305106;
++    cpu->isar.id_aa64isar0 = 0x00011120;
++    cpu->isar.id_aa64mmfr0 = 0x00001122; /* 40 bit physical addr */
++    cpu->isar.dbgdidr = 0x3516d000;
++    cpu->isar.reset_pmcr_el0 = 0x41033000;
++    cpu->clidr = 0x0a200023;
++    cpu->ccsidr[0] = 0x700fe01a; /* 32KB L1 dcache */
++    cpu->ccsidr[1] = 0x201fe00a; /* 32KB L1 icache */
++    cpu->ccsidr[2] = 0x707fe07a; /* 1024KB L2 cache */
++    cpu->dcz_blocksize = 4; /* 64 bytes */
++    cpu->gic_num_lrs = 4;
++    cpu->gic_vpribits = 5;
++    cpu->gic_vprebits = 5;
++    cpu->gic_pribits = 5;
++    define_cortex_a72_a57_a53_cp_reginfo(cpu);
+ }
+ 
+ static void aarch64_a72_initfn(Object *obj)
+-- 
+2.37.2
+

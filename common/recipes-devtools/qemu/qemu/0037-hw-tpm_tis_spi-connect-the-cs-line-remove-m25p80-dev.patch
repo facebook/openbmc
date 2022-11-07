@@ -1,0 +1,147 @@
+From 603ac160286f80d604c46c84eab14d223778c396 Mon Sep 17 00:00:00 2001
+From: Iris Chen <irischenlj@fb.com>
+Date: Thu, 7 Jul 2022 16:11:08 -0700
+Subject: [PATCH] hw: tpm_tis_spi: connect the cs line remove m25p80 device and
+ connect cs line in tpm tis spi
+
+Signed-off-by: Iris Chen <irischenlj@fb.com>
+---
+ hw/arm/aspeed.c      |  7 +------
+ hw/tpm/tpm_tis_spi.c | 27 ++++++++++++++++++++-------
+ include/sysemu/tpm.h |  2 ++
+ 3 files changed, 23 insertions(+), 13 deletions(-)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 6a20068..0f7d6bc 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -392,9 +392,7 @@ static void aspeed_machine_init(MachineState *machine)
+     SpiGpioState *spi_gpio = SPI_GPIO(qdev_new(TYPE_SPI_GPIO));
+     spi_gpio->aspeed_gpio = &bmc->soc.gpio;
+     sysbus_realize(SYS_BUS_DEVICE(spi_gpio), &error_fatal);
+-
+-    DeviceState *m25p80 = qdev_new("n25q256a");
+-    qdev_realize(m25p80, BUS(spi_gpio->spi), &error_fatal);
++    DEVICE(spi_gpio)->id = g_strdup(TYPE_SPI_GPIO);
+ 
+     qdev_connect_gpio_out_named(DEVICE(&bmc->soc.gpio), "sysbus-irq", AST_GPIO_IRQ_X0_NUM,
+                                 qdev_get_gpio_in_named(DEVICE(spi_gpio), "SPI_CS_in", 0));
+@@ -402,9 +400,6 @@ static void aspeed_machine_init(MachineState *machine)
+                                 qdev_get_gpio_in_named(DEVICE(spi_gpio), "SPI_CLK", 0));
+     qdev_connect_gpio_out_named(DEVICE(&bmc->soc.gpio), "sysbus-irq", AST_GPIO_IRQ_X4_NUM,
+                                 qdev_get_gpio_in_named(DEVICE(spi_gpio), "SPI_MOSI", 0));
+-
+-    qdev_connect_gpio_out_named(DEVICE(spi_gpio), "SPI_CS_out", 0,
+-                                qdev_get_gpio_in_named(m25p80, SSI_GPIO_CS, 0));
+     object_property_set_bool(OBJECT(spi_gpio->aspeed_gpio), "gpioX5", true, &error_fatal);
+ 
+     aspeed_board_init_flashes(&bmc->soc.fmc,
+diff --git a/hw/tpm/tpm_tis_spi.c b/hw/tpm/tpm_tis_spi.c
+index 5644df8..c98ddcf 100644
+--- a/hw/tpm/tpm_tis_spi.c
++++ b/hw/tpm/tpm_tis_spi.c
+@@ -6,6 +6,7 @@
+ #include "tpm_tis.h"
+ #include "qom/object.h"
+ #include "hw/ssi/ssi.h"
++#include "hw/ssi/spi_gpio.h"
+ 
+ #define TPM_TIS_SPI_ADDR_BYTES 3
+ #define SPI_WRITE 0
+@@ -55,7 +56,11 @@ struct TpmTisSpiState {
+     uint8_t addr_idx;
+ };
+ 
+-OBJECT_DECLARE_SIMPLE_TYPE(TpmTisSpiState, TPM_TIS_SPI)
++struct TpmTisSpiClass {
++    SSIPeripheralClass parent_class;
++};
++
++OBJECT_DECLARE_TYPE(TpmTisSpiState, TpmTisSpiClass, TPM_TIS_SPI)
+ 
+ static void tpm_tis_spi_mmio_read(TpmTisSpiState *tts)
+ {
+@@ -129,7 +134,7 @@ static uint32_t tpm_tis_spi_transfer8(SSIPeripheral *ss, uint32_t tx)
+         tts->data.bytes[tts->data_idx++] = (uint8_t)tx;
+         if (tts->data_idx == tts->data_size) {
+             tpm_tis_spi_mmio_write(tts);
+-            tts->tpm_tis_spi_state = TIS_SPI_PKT_STATE_START;
++            tts->tpm_tis_spi_state = TIS_SPI_PKT_STATE_DONE;
+         }
+         break;
+     case TIS_SPI_PKT_STATE_DATA_RD:
+@@ -139,7 +144,7 @@ static uint32_t tpm_tis_spi_transfer8(SSIPeripheral *ss, uint32_t tx)
+         }
+         break;
+     default:
+-        tts->tpm_tis_spi_state = TIS_SPI_PKT_STATE_START;
++        tts->tpm_tis_spi_state = TIS_SPI_PKT_STATE_DEACTIVATED;
+         r = (uint32_t) -1;
+     }
+ 
+@@ -243,10 +248,9 @@ static Property tpm_tis_spi_properties[] = {
+     DEFINE_PROP_END_OF_LIST(),
+ };
+ 
+-static void tpm_tis_spi_realizefn(DeviceState *dev, Error **errp)
++static void tpm_tis_spi_realizefn(SSIPeripheral *ss, Error **errp)
+ {
+-    TpmTisSpiState *sbdev = TPM_TIS_SPI(dev);
+-    sbdev->tpm_tis_spi_state = TIS_SPI_PKT_STATE_START;
++    TpmTisSpiState *sbdev = TPM_TIS_SPI(ss);
+ 
+     if (!tpm_find()) {
+         error_setg(errp, "at most one TPM device is permitted");
+@@ -257,6 +261,13 @@ static void tpm_tis_spi_realizefn(DeviceState *dev, Error **errp)
+         error_setg(errp, "'tpmdev' property is required");
+         return;
+     }
++
++    DeviceState *spi_gpio = qdev_find_recursive(sysbus_get_default(),
++                                                TYPE_SPI_GPIO);
++    qdev_connect_gpio_out_named(spi_gpio,
++                                "SPI_CS_out", 0,
++                                qdev_get_gpio_in_named(DEVICE(ss),
++                                SSI_GPIO_CS, 0));
+ }
+ 
+ static void tpm_tis_spi_class_init(ObjectClass *klass, void *data)
+@@ -266,12 +277,13 @@ static void tpm_tis_spi_class_init(ObjectClass *klass, void *data)
+     TPMIfClass *tc = TPM_IF_CLASS(klass);
+ 
+     device_class_set_props(dc, tpm_tis_spi_properties);
++    k->realize = tpm_tis_spi_realizefn;
+     k->transfer = tpm_tis_spi_transfer8_ex;
+     k->set_cs = tpm_tis_spi_cs;
++    k->cs_polarity = SSI_CS_LOW;
+ 
+     dc->vmsd  = &vmstate_tpm_tis_spi;
+     tc->model = TPM_MODEL_TPM_TIS;
+-    dc->realize = tpm_tis_spi_realizefn;
+     dc->user_creatable = true;
+     dc->reset = tpm_tis_spi_reset;
+     tc->request_completed = tpm_tis_spi_request_completed;
+@@ -283,6 +295,7 @@ static const TypeInfo tpm_tis_spi_info = {
+     .name = TYPE_TPM_TIS_SPI,
+     .parent = TYPE_SSI_PERIPHERAL,
+     .instance_size = sizeof(TpmTisSpiState),
++    .class_size = sizeof(TpmTisSpiClass),
+     .class_init  = tpm_tis_spi_class_init,
+     .interfaces = (InterfaceInfo[]) {
+         { TYPE_TPM_IF },
+diff --git a/include/sysemu/tpm.h b/include/sysemu/tpm.h
+index f885243..6a6b311 100644
+--- a/include/sysemu/tpm.h
++++ b/include/sysemu/tpm.h
+@@ -54,6 +54,8 @@ struct TPMIfClass {
+     object_dynamic_cast(OBJECT(chr), TYPE_TPM_TIS_ISA)
+ #define TPM_IS_TIS_SYSBUS(chr)                      \
+     object_dynamic_cast(OBJECT(chr), TYPE_TPM_TIS_SYSBUS)
++#define TPM_IS_TIS_SPI(chr)                      \
++    object_dynamic_cast(OBJECT(chr), TYPE_TPM_TIS_SPI)
+ #define TPM_IS_CRB(chr)                             \
+     object_dynamic_cast(OBJECT(chr), TYPE_TPM_CRB)
+ #define TPM_IS_SPAPR(chr)                           \
+-- 
+2.37.2
+

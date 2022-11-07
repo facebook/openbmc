@@ -1,0 +1,29 @@
+From 5fd149bbbdcf2b40c7cfc451d106637c311a51fb Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Tue, 23 Aug 2022 18:11:55 -0700
+Subject: [PATCH] fby35: Add CPLD and BIC as I2C devices
+
+This lets us run some basic bic-util commands from the fby35 BMC
+perspective.
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+---
+ hw/arm/aspeed.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 7b0fa3f..99b4928 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -1018,6 +1018,8 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
+      * buses 0, 1, 2, 3, and 9. Source address 0x10, target address 0x20 on
+      * each.
+      */
++    i2c_slave_create_simple(i2c[0], "fby35-sb-bic", 0x20);
++    i2c_slave_create_simple(i2c[4], "fby35-sb-cpld", 0x0f);
+ }
+ 
+ static void fbttn_i2c_init(AspeedMachineState *bmc)
+-- 
+2.37.2
+

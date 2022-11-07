@@ -1,0 +1,76 @@
+From 54d3810d8860c5dcf2c7da26ce670576796fbaa5 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Thu, 2 Dec 2021 20:51:56 -0800
+Subject: [PATCH] slirp: Add mfr-id to -netdev options
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ net/slirp.c   | 7 ++++---
+ qapi/net.json | 5 ++++-
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/net/slirp.c b/net/slirp.c
+index 8679be6..adff905 100644
+--- a/net/slirp.c
++++ b/net/slirp.c
+@@ -413,7 +413,7 @@ static int net_slirp_init(NetClientState *peer, const char *model,
+                           const char *vnameserver, const char *vnameserver6,
+                           const char *smb_export, const char *vsmbserver,
+                           const char **dnssearch, const char *vdomainname,
+-                          const char *tftp_server_name,
++                          const char *tftp_server_name, uint32_t mfr_id,
+                           Error **errp)
+ {
+     /* default settings according to historic slirp */
+@@ -617,7 +617,7 @@ static int net_slirp_init(NetClientState *peer, const char *model,
+ 
+     s = DO_UPCAST(SlirpState, nc, nc);
+ 
+-    cfg.version = SLIRP_CHECK_VERSION(4,7,0) ? 4 : 1;
++    cfg.version = SLIRP_CHECK_VERSION(4,7,0) ? 5 : 1;
+     cfg.restricted = restricted;
+     cfg.in_enabled = ipv4;
+     cfg.vnetwork = net;
+@@ -636,6 +636,7 @@ static int net_slirp_init(NetClientState *peer, const char *model,
+     cfg.vnameserver6 = ip6_dns;
+     cfg.vdnssearch = dnssearch;
+     cfg.vdomainname = vdomainname;
++    cfg.mfr_id = mfr_id;
+     s->slirp = slirp_new(&cfg, &slirp_cb, s);
+     QTAILQ_INSERT_TAIL(&slirp_stacks, s, entry);
+ 
+@@ -1172,7 +1173,7 @@ int net_init_slirp(const Netdev *netdev, const char *name,
+                          user->bootfile, user->dhcpstart,
+                          user->dns, user->ipv6_dns, user->smb,
+                          user->smbserver, dnssearch, user->domainname,
+-                         user->tftp_server_name, errp);
++                         user->tftp_server_name, user->mfr_id, errp);
+ 
+     while (slirp_configs) {
+         config = slirp_configs;
+diff --git a/qapi/net.json b/qapi/net.json
+index 75ba2cb..14650a1 100644
+--- a/qapi/net.json
++++ b/qapi/net.json
+@@ -167,6 +167,8 @@
+ #
+ # @tftp-server-name: RFC2132 "TFTP server name" string (Since 3.1)
+ #
++# @mfr-id: Manufacturer ID (Private Enterprise Number: IANA)
++#
+ # Since: 1.2
+ ##
+ { 'struct': 'NetdevUserOptions',
+@@ -192,7 +194,8 @@
+     '*smbserver': 'str',
+     '*hostfwd':   ['String'],
+     '*guestfwd':  ['String'],
+-    '*tftp-server-name': 'str' } }
++    '*tftp-server-name': 'str',
++    '*mfr-id': 'uint32' } }
+ 
+ ##
+ # @NetdevTapOptions:
+-- 
+2.37.2
+

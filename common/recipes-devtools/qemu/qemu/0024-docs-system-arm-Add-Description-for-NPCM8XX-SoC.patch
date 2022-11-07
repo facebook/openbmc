@@ -1,0 +1,71 @@
+From 5764b583168c8e6320a0c24728957c3a7b408a72 Mon Sep 17 00:00:00 2001
+From: Hao Wu <wuhaotsh@google.com>
+Date: Tue, 5 Apr 2022 15:36:30 -0700
+Subject: [PATCH] docs/system/arm: Add Description for NPCM8XX SoC
+
+NPCM8XX SoC is the successor of the NPCM7XX. It features quad-core
+Cortex-A35 (Armv8, 64-bit) CPUs and some additional peripherals.
+
+Signed-off-by: Hao Wu <wuhaotsh@google.com>
+Reviewed-by: Patrick Venture <venture@google.com>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ docs/system/arm/nuvoton.rst | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/docs/system/arm/nuvoton.rst b/docs/system/arm/nuvoton.rst
+index ef27920..bead17f 100644
+--- a/docs/system/arm/nuvoton.rst
++++ b/docs/system/arm/nuvoton.rst
+@@ -1,12 +1,13 @@
+ Nuvoton iBMC boards (``*-bmc``, ``npcm750-evb``, ``quanta-gsj``)
+ ================================================================
+ 
+-The `Nuvoton iBMC`_ chips (NPCM7xx) are a family of ARM-based SoCs that are
++The `Nuvoton iBMC`_ chips are a family of ARM-based SoCs that are
+ designed to be used as Baseboard Management Controllers (BMCs) in various
+-servers. They all feature one or two ARM Cortex-A9 CPU cores, as well as an
+-assortment of peripherals targeted for either Enterprise or Data Center /
+-Hyperscale applications. The former is a superset of the latter, so NPCM750 has
+-all the peripherals of NPCM730 and more.
++servers. Currently there are two families: NPCM7XX series and
++NPCM8XX series. NPCM7XX series feature one or two ARM Cortex-A9 CPU cores,
++while NPCM8XX feature 4 ARM Cortex-A35 CPU cores. Both series contain a
++different assortment of peripherals targeted for either Enterprise or Data
++Center / Hyperscale applications.
+ 
+ .. _Nuvoton iBMC: https://www.nuvoton.com/products/cloud-computing/ibmc/
+ 
+@@ -27,6 +28,8 @@ There are also two more SoCs, NPCM710 and NPCM705, which are single-core
+ variants of NPCM750 and NPCM730, respectively. These are currently not
+ supported by QEMU.
+ 
++The NPCM8xx SoC is the successor of the NPCM7xx SoC.
++
+ Supported devices
+ -----------------
+ 
+@@ -61,6 +64,8 @@ Missing devices
+    * System Wake-up Control (SWC)
+    * Shared memory (SHM)
+    * eSPI slave interface
++   * Block-tranfer interface (8XX only)
++   * Virtual UART (8XX only)
+ 
+  * Ethernet controller (GMAC)
+  * USB device (USBD)
+@@ -76,6 +81,11 @@ Missing devices
+  * Video capture
+  * Encoding compression engine
+  * Security features
++ * I3C buses (8XX only)
++ * Temperator sensor interface (8XX only)
++ * Virtual UART (8XX only)
++ * Flash monitor (8XX only)
++ * JTAG master (8XX only)
+ 
+ Boot options
+ ------------
+-- 
+2.37.2
+

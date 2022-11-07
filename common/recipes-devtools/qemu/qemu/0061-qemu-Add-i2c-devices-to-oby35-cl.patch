@@ -1,0 +1,67 @@
+From 9b44fefeeac44cb35c84e1b18e2dd4f03bb0bf59 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Fri, 26 Aug 2022 02:03:46 -0700
+Subject: [PATCH] qemu: Add i2c devices to oby35-cl
+
+Already had these from -machine fby35, so this commit just makes
+fby35_cl_bic_i2c_init public and uses it in aspeed.c and fby35.c
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+---
+ hw/arm/aspeed.c | 14 +-------------
+ hw/arm/fby35.c  |  2 +-
+ hw/arm/fby35.h  |  1 +
+ 3 files changed, 3 insertions(+), 14 deletions(-)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 37f7ba9..c570a7c 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -1045,19 +1045,7 @@ static void create_unimplemented_i2c_device(I2CBus *bus, uint8_t addr)
+ 
+ static void oby35_cl_i2c_init(AspeedMachineState *bmc)
+ {
+-    AspeedSoCState *soc = &bmc->soc;
+-    I2CBus *i2c[16];
+-
+-    for (int i = 0; i < 16; i++) {
+-        i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
+-    }
+-
+-    create_unimplemented_i2c_device(i2c[1], 0x71);
+-    create_unimplemented_i2c_device(i2c[2], 0x16);
+-    create_unimplemented_i2c_device(i2c[2], 0x10);
+-    create_unimplemented_i2c_device(i2c[6], 0x20);
+-    create_unimplemented_i2c_device(i2c[7], 0x20);
+-    create_unimplemented_i2c_device(i2c[8], 0x20);
++    fby35_cl_bic_i2c_init(&bmc->soc);
+ }
+ 
+ static void oby35_bb_i2c_init(AspeedMachineState *bmc)
+diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
+index 0fa491e..e8941df 100644
+--- a/hw/arm/fby35.c
++++ b/hw/arm/fby35.c
+@@ -44,7 +44,7 @@ struct Fby35State {
+ #define FBY35_BMC_RAM_SIZE (2 * GiB)
+ #define FBY35_BMC_FIRMWARE_ADDR 0x0
+ 
+-static void fby35_cl_bic_i2c_init(AspeedSoCState *s)
++void fby35_cl_bic_i2c_init(AspeedSoCState *s)
+ {
+     I2CBus *i2c[14];
+     I2CBus *ssd[8];
+diff --git a/hw/arm/fby35.h b/hw/arm/fby35.h
+index 87cb1a1..0f8369f 100644
+--- a/hw/arm/fby35.h
++++ b/hw/arm/fby35.h
+@@ -146,5 +146,6 @@ typedef struct AspeedSoCState AspeedSoCState;
+ 
+ void fby35_bmc_i2c_init(AspeedSoCState *s);
+ void fby35_bmc_reset_gpios(AspeedSoCState *s);
++void fby35_cl_bic_i2c_init(AspeedSoCState *s);
+ 
+ #endif
+-- 
+2.37.2
+

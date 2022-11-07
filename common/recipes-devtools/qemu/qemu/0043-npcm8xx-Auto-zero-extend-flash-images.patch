@@ -1,0 +1,39 @@
+From 61cf8195576415bf297fc3966c395996ae16e673 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Thu, 21 Jul 2022 16:25:47 -0700
+Subject: [PATCH] npcm8xx: Auto-zero-extend flash images
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/arm/npcm8xx_boards.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/hw/arm/npcm8xx_boards.c b/hw/arm/npcm8xx_boards.c
+index 5b9a202..c7d71d4 100644
+--- a/hw/arm/npcm8xx_boards.c
++++ b/hw/arm/npcm8xx_boards.c
+@@ -58,9 +58,20 @@ static void npcm8xx_connect_flash(NPCM7xxFIUState *fiu, int cs_no,
+ {
+     DeviceState *flash;
+     qemu_irq flash_cs;
++    BlockBackend *blk;
++    uint64_t blk_size, perm, shared_perm;
+ 
+     flash = qdev_new(flash_type);
+     if (dinfo) {
++        blk = blk_by_legacy_dinfo(dinfo);
++        blk_size = blk_getlength(blk);
++        if (blk_size < fiu->flash_size) {
++            blk_get_perm(blk, &perm, &shared_perm);
++            blk_set_perm(blk, BLK_PERM_ALL, BLK_PERM_ALL, &error_abort);
++            blk_truncate(blk, fiu->flash_size, true, PREALLOC_MODE_OFF,
++                         BDRV_REQ_ZERO_WRITE, &error_abort);
++            blk_set_perm(blk, perm, shared_perm, &error_abort);
++        }
+         qdev_prop_set_drive(flash, "drive", blk_by_legacy_dinfo(dinfo));
+     }
+     qdev_realize_and_unref(flash, BUS(fiu->spi), &error_fatal);
+-- 
+2.37.2
+

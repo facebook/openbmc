@@ -1,0 +1,128 @@
+From e77cdd59de3e79268ff8d7fcbe2d83fce2d87234 Mon Sep 17 00:00:00 2001
+From: Hao Wu <wuhaotsh@google.com>
+Date: Tue, 5 Apr 2022 15:36:34 -0700
+Subject: [PATCH] hw/misc: Store DRAM size in NPCM8XX GCR Module
+
+NPCM8XX boot block stores the DRAM size in SCRPAD_B register in GCR
+module. Since we don't simulate a detailed memory controller, we
+need to store this information directly similar to the NPCM7XX's
+INCTR3 register.
+
+Signed-off-by: Hao Wu <wuhaotsh@google.com>
+Reviwed-by: Titus Rwantare <titusr@google.com>
+Reviewed-by: Peter Maydell <peter.maydell@linaro.org>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/misc/npcm_gcr.c         | 33 ++++++++++++++++++++++++++++++---
+ include/hw/misc/npcm_gcr.h |  1 +
+ 2 files changed, 31 insertions(+), 3 deletions(-)
+
+diff --git a/hw/misc/npcm_gcr.c b/hw/misc/npcm_gcr.c
+index 2349949..14c2986 100644
+--- a/hw/misc/npcm_gcr.c
++++ b/hw/misc/npcm_gcr.c
+@@ -267,7 +267,7 @@ static const struct MemoryRegionOps npcm_gcr_ops = {
+     },
+ };
+ 
+-static void npcm_gcr_enter_reset(Object *obj, ResetType type)
++static void npcm7xx_gcr_enter_reset(Object *obj, ResetType type)
+ {
+     NPCMGCRState *s = NPCM_GCR(obj);
+     NPCMGCRClass *c = NPCM_GCR_GET_CLASS(obj);
+@@ -283,6 +283,23 @@ static void npcm_gcr_enter_reset(Object *obj, ResetType type)
+     }
+ }
+ 
++static void npcm8xx_gcr_enter_reset(Object *obj, ResetType type)
++{
++    NPCMGCRState *s = NPCM_GCR(obj);
++    NPCMGCRClass *c = NPCM_GCR_GET_CLASS(obj);
++
++    switch (type) {
++    case RESET_TYPE_COLD:
++        memcpy(s->regs, c->cold_reset_values, c->nr_regs * sizeof(uint32_t));
++        /* These 3 registers are at the same location in both 7xx and 8xx. */
++        s->regs[NPCM8XX_GCR_PWRON] = s->reset_pwron;
++        s->regs[NPCM8XX_GCR_MDLR] = s->reset_mdlr;
++        s->regs[NPCM8XX_GCR_INTCR3] = s->reset_intcr3;
++        s->regs[NPCM8XX_GCR_SCRPAD_B] = s->reset_scrpad_b;
++        break;
++    }
++}
++
+ static void npcm_gcr_realize(DeviceState *dev, Error **errp)
+ {
+     ERRP_GUARD();
+@@ -326,6 +343,14 @@ static void npcm_gcr_realize(DeviceState *dev, Error **errp)
+      * https://github.com/Nuvoton-Israel/u-boot/blob/2aef993bd2aafeb5408dbaad0f3ce099ee40c4aa/board/nuvoton/poleg/poleg.c#L244
+      */
+     s->reset_intcr3 |= ctz64(dram_size / NPCM7XX_GCR_MIN_DRAM_SIZE) << 8;
++
++    /*
++     * The boot block starting from 0.0.6 for NPCM8xx SoCs stores the DRAM size
++     * in the SCRPAD2 registers. We need to set this field correctly since
++     * the initialization is skipped as we mentioned above.
++     * https://github.com/Nuvoton-Israel/u-boot/blob/npcm8mnx-v2019.01_tmp/board/nuvoton/arbel/arbel.c#L737
++     */
++    s->reset_scrpad_b = dram_size;
+ }
+ 
+ static void npcm_gcr_init(Object *obj)
+@@ -355,12 +380,10 @@ static Property npcm_gcr_properties[] = {
+ 
+ static void npcm_gcr_class_init(ObjectClass *klass, void *data)
+ {
+-    ResettableClass *rc = RESETTABLE_CLASS(klass);
+     DeviceClass *dc = DEVICE_CLASS(klass);
+ 
+     dc->realize = npcm_gcr_realize;
+     dc->vmsd = &vmstate_npcm_gcr;
+-    rc->phases.enter = npcm_gcr_enter_reset;
+ 
+     device_class_set_props(dc, npcm_gcr_properties);
+ }
+@@ -369,24 +392,28 @@ static void npcm7xx_gcr_class_init(ObjectClass *klass, void *data)
+ {
+     NPCMGCRClass *c = NPCM_GCR_CLASS(klass);
+     DeviceClass *dc = DEVICE_CLASS(klass);
++    ResettableClass *rc = RESETTABLE_CLASS(klass);
+ 
+     QEMU_BUILD_BUG_ON(NPCM7XX_GCR_REGS_END > NPCM_GCR_MAX_NR_REGS);
+     QEMU_BUILD_BUG_ON(NPCM7XX_GCR_REGS_END != NPCM7XX_GCR_NR_REGS);
+     dc->desc = "NPCM7xx System Global Control Registers";
+     c->nr_regs = NPCM7XX_GCR_NR_REGS;
+     c->cold_reset_values = npcm7xx_cold_reset_values;
++    rc->phases.enter = npcm7xx_gcr_enter_reset;
+ }
+ 
+ static void npcm8xx_gcr_class_init(ObjectClass *klass, void *data)
+ {
+     NPCMGCRClass *c = NPCM_GCR_CLASS(klass);
+     DeviceClass *dc = DEVICE_CLASS(klass);
++    ResettableClass *rc = RESETTABLE_CLASS(klass);
+ 
+     QEMU_BUILD_BUG_ON(NPCM8XX_GCR_REGS_END > NPCM_GCR_MAX_NR_REGS);
+     QEMU_BUILD_BUG_ON(NPCM8XX_GCR_REGS_END != NPCM8XX_GCR_NR_REGS);
+     dc->desc = "NPCM8xx System Global Control Registers";
+     c->nr_regs = NPCM8XX_GCR_NR_REGS;
+     c->cold_reset_values = npcm8xx_cold_reset_values;
++    rc->phases.enter = npcm8xx_gcr_enter_reset;
+ }
+ 
+ static const TypeInfo npcm_gcr_info[] = {
+diff --git a/include/hw/misc/npcm_gcr.h b/include/hw/misc/npcm_gcr.h
+index 6ff94b0..7a94d61 100644
+--- a/include/hw/misc/npcm_gcr.h
++++ b/include/hw/misc/npcm_gcr.h
+@@ -69,6 +69,7 @@ typedef struct NPCMGCRState {
+     uint32_t reset_pwron;
+     uint32_t reset_mdlr;
+     uint32_t reset_intcr3;
++    uint32_t reset_scrpad_b;
+ } NPCMGCRState;
+ 
+ typedef struct NPCMGCRClass {
+-- 
+2.37.2
+

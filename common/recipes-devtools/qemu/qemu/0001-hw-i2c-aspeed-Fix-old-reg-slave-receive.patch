@@ -1,0 +1,80 @@
+From 81ad13c3f0a34fe15690a39fb0d14545ad6bad18 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Sat, 20 Aug 2022 15:29:27 -0700
+Subject: [PATCH] hw/i2c/aspeed: Fix old reg slave receive
+
+I think when Klaus ported his slave mode changes from the original patch
+series to the rewritten I2C module, he changed the behavior of the first
+byte that is received by the slave device.
+
+What's supposed to happen is that the AspeedI2CBus's slave device's
+i2c_event callback should run, and if the event is "send_async", then it
+should populate the byte buffer with the 8-bit I2C address that is being
+sent to. Since we only support "send_async", the lowest bit should
+always be 0 (indicating that the master is requesting to send data).
+
+This is the code Klaus had previously, for reference. [1]
+
+    switch (event) {
+    case I2C_START_SEND:
+        bus->buf = bus->dev_addr << 1;
+
+        bus->buf &= I2CD_BYTE_BUF_RX_MASK;
+        bus->buf <<= I2CD_BYTE_BUF_RX_SHIFT;
+
+        bus->intr_status |= (I2CD_INTR_SLAVE_ADDR_RX_MATCH | I2CD_INTR_RX_DONE);
+        aspeed_i2c_set_state(bus, I2CD_STXD);
+
+        break;
+
+[1]: https://lore.kernel.org/qemu-devel/20220331165737.1073520-4-its@irrelevant.dk/
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+Fixes: a8d48f59cd021b25 ("hw/i2c/aspeed: add slave device in old register mode")
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/i2c/aspeed_i2c.c         | 8 +++++---
+ include/hw/i2c/aspeed_i2c.h | 1 +
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
+index 42c6d69..c166fd2 100644
+--- a/hw/i2c/aspeed_i2c.c
++++ b/hw/i2c/aspeed_i2c.c
+@@ -1131,7 +1131,9 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+     AspeedI2CBus *bus = ASPEED_I2C_BUS(qbus->parent);
+     uint32_t reg_intr_sts = aspeed_i2c_bus_intr_sts_offset(bus);
+     uint32_t reg_byte_buf = aspeed_i2c_bus_byte_buf_offset(bus);
+-    uint32_t value;
++    uint32_t reg_dev_addr = aspeed_i2c_bus_dev_addr_offset(bus);
++    uint32_t dev_addr = SHARED_ARRAY_FIELD_EX32(bus->regs, reg_dev_addr,
++                                                SLAVE_DEV_ADDR1);
+ 
+     if (aspeed_i2c_is_new_mode(bus->controller)) {
+         return aspeed_i2c_bus_new_slave_event(bus, event);
+@@ -1139,8 +1141,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+ 
+     switch (event) {
+     case I2C_START_SEND_ASYNC:
+-        value = SHARED_ARRAY_FIELD_EX32(bus->regs, reg_byte_buf, TX_BUF);
+-        SHARED_ARRAY_FIELD_DP32(bus->regs, reg_byte_buf, RX_BUF, value << 1);
++        /* Bit[0] == 0 indicates "send". */
++        SHARED_ARRAY_FIELD_DP32(bus->regs, reg_byte_buf, RX_BUF, dev_addr << 1);
+ 
+         ARRAY_FIELD_DP32(bus->regs, I2CD_INTR_STS, SLAVE_ADDR_RX_MATCH, 1);
+         SHARED_ARRAY_FIELD_DP32(bus->regs, reg_intr_sts, RX_DONE, 1);
+diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
+index 300a89b..adc904d 100644
+--- a/include/hw/i2c/aspeed_i2c.h
++++ b/include/hw/i2c/aspeed_i2c.h
+@@ -130,6 +130,7 @@ REG32(I2CD_CMD, 0x14) /* I2CD Command/Status */
+     SHARED_FIELD(M_TX_CMD, 1, 1)
+     SHARED_FIELD(M_START_CMD, 0, 1)
+ REG32(I2CD_DEV_ADDR, 0x18) /* Slave Device Address */
++    SHARED_FIELD(SLAVE_DEV_ADDR1, 0, 7)
+ REG32(I2CD_POOL_CTRL, 0x1C) /* Pool Buffer Control */
+     SHARED_FIELD(RX_COUNT, 24, 5)
+     SHARED_FIELD(RX_SIZE, 16, 5)
+-- 
+2.37.2
+

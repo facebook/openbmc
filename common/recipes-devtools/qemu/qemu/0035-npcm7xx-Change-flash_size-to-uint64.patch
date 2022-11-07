@@ -1,0 +1,29 @@
+From 33dc1e1d379fa38418a74a86a798cb11b4bb12f9 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Fri, 15 Jul 2022 15:19:22 -0700
+Subject: [PATCH] npcm7xx: Change flash_size to uint64
+
+Needed to support building with --target-list=arm-softmmu,aarch64-softmmu
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ include/hw/ssi/npcm7xx_fiu.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/hw/ssi/npcm7xx_fiu.h b/include/hw/ssi/npcm7xx_fiu.h
+index 1785ea1..7ebd422 100644
+--- a/include/hw/ssi/npcm7xx_fiu.h
++++ b/include/hw/ssi/npcm7xx_fiu.h
+@@ -60,7 +60,7 @@ struct NPCM7xxFIUState {
+     int32_t cs_count;
+     int32_t active_cs;
+     qemu_irq *cs_lines;
+-    size_t flash_size;
++    uint64_t flash_size;
+     NPCM7xxFIUFlash *flash;
+ 
+     SSIBus *spi;
+-- 
+2.37.2
+

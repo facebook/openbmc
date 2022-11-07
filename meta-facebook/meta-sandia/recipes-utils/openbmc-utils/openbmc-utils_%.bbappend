@@ -17,6 +17,8 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
+RDEPENDS:${PN}:append = " jq"
+
 LOCAL_URI += "\
     file://board-utils.sh \
     file://setup_i2c.sh \

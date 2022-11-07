@@ -40,7 +40,7 @@ echo "Probe VR Device"
 #CPU VR
 if [ "$vr_sku" -eq 4 ]; then
   i2c_device_add 20 0x4a xdpe152c4
-  i2c_device_add 20 0x4b xdpe152c4
+  i2c_device_add 20 0x49 xdpe152c4
   i2c_device_add 20 0x4c xdpe152c4
   i2c_device_add 20 0x4d xdpe152c4
   i2c_device_add 20 0x4e xdpe152c4

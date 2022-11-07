@@ -2,6 +2,17 @@
 
 # Copyright 2022-present Facebook. All Rights Reserved.
 
+#
+# Protect against multiple power requests
+#
+BOARD_UTILS_TIMEOUT=20
+# Worst case in FPGA design is 10 seconds for power to drain before power on
+# again. Add some buffer for time variation, errors, and serializing
+# simultaneous requests.
+if [[ "${FLOCKER}" != "$0" ]]; then
+    exec env FLOCKER="$0" flock -w "$BOARD_UTILS_TIMEOUT" "$0" "$0" "$@"
+fi
+
 wedge_board_type() {
     echo 'SANDIA'
 }

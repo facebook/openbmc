@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "dimm-util.h"
+#include "dimm.h"
 
 #define CHANNEL_NUM(x) (x + 1)
 

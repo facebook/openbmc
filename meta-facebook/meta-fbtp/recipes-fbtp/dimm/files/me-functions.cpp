@@ -28,7 +28,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
-#include "dimm-util.h"
+#include "dimm.h"
 #include "dimm-util-plat.h"
 
 // #define DEBUG_DIMM_UTIL

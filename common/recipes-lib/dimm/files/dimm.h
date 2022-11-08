@@ -18,8 +18,13 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __DIMM_UTIL_H__
-#define __DIMM_UTIL_H__
+#ifndef __DIMM_LIB_H__
+#define __DIMM_LIB_H__
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 #define PLAT_EOK       0
 //#define PLAT_ENOTREADY -1
@@ -69,6 +74,15 @@
 
 #define PKG_RANK(x) (x + 1)
 
+#define MAX_EXTEND_OPTION 8
+#define OPTION_CLEAR_ERR 0xFE
+#define OPTION_LIST_ERR 0xFF
+
+enum _dimm_prsnt {
+  DIMM_EMPTY   = 0,
+  DIMM_PRESENT = 1,
+};
+
 
 extern int num_frus;
 extern int num_cpus;
@@ -97,6 +111,7 @@ int util_read_spd_with_retry(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t
                              uint16_t early_exit_cnt, uint8_t *buf, uint8_t *present);
 
 int pmic_err_index(const char *str);
+int pmic_err_name(uint8_t idx, char *str);
 int pmic_list_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, const char **err_list, uint8_t *err_cnt);
 int pmic_inject_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t option);
 int pmic_clear_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm_num);
@@ -113,4 +128,14 @@ bool is_pmic_supported(void);
 int util_read_pmic(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf);
 int util_write_pmic(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf);
 
+int util_pmic_err(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options);
+int util_get_config(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options);
+int util_get_cache(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options);
+int util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options);
+int util_get_part(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options);
+int util_get_serial(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options);
+
+#ifdef __cplusplus
+}
+#endif
 #endif

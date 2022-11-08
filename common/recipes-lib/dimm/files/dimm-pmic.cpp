@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
-#include "dimm-util.h"
+#include "dimm.h"
 
 #define PMIC_ERR_INJ_REG 0x35
 #define ERR_PATTERN_LEN  6
@@ -108,6 +108,14 @@ pmic_err_index(const char *str) {
 
   return -1;
 }
+
+int
+pmic_err_name(uint8_t idx, char *str) {
+
+  memcpy(str, pmic_err[idx].err_str, strlen(pmic_err[idx].err_str));
+  return 0;
+}
+
 
 static int
 pmic_rdwr_with_retry(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset,

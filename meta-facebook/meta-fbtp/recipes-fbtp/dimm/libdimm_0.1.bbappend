@@ -7,4 +7,4 @@ LOCAL_URI += " \
     file://dimm-util-plat.h \
     "
 
-DEPENDS += "libipmb libipmi libpal"
+DEPENDS += "libipmb libpal"

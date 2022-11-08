@@ -11,19 +11,12 @@ project('dimm-util',
 )
 
 sources = [
-    'dimm-capacity.cpp',
-    'dimm-pmic.cpp',
     'dimm-util.cpp',
-    'dimm-vendor.cpp',
 ]
 
 deps = [
-    dependency('jansson'),
-    dependency('libkv'),
-    dependency('obmc-pal'),
+    dependency('libdimm'),
 ]
-
-subdir('plat')
 
 exe = executable('dimm-util',
     sources,

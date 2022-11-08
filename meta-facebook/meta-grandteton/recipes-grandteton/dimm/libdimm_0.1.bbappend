@@ -8,5 +8,5 @@ LOCAL_URI += " \
         file://dimm-util-plat.h \
         "
 
-DEPENDS += "libipmi libipmb libnm"
+DEPENDS += "libnm"
 RDEPENDS:${PN} += "libnm"

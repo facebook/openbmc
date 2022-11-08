@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <facebook/bic_xfer.h>
-#include "dimm-util.h"
+#include "dimm.h"
 #include "dimm-util-plat.h"
 
 #define MIN_RESP_LEN (1 /* ME CC */ + INTEL_ID_LEN)

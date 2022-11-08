@@ -21,9 +21,14 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/nm.h>
-#include <openbmc/pal_def.h>
-#include "dimm-util.h"
+#include "dimm.h"
 #include "dimm-util-plat.h"
+
+//NM Device Info
+#define NM_IPMB_BUS_ID             (6)
+#define NM_SLAVE_ADDR              (0x2C)
+#define BMC_DEF_SLAVE_ADDR         (0x10)
+
 
 static uint8_t spd_addr[MAX_DIMM_NUM_FBGT/2] = {
   DIMM0_SPD_ADDR,

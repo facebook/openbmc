@@ -27,7 +27,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <facebook/bic.h>
-#include "dimm-util.h"
+#include "dimm.h"
 #include "dimm-util-plat.h"
 
 // #define DEBUG_DIMM_UTIL

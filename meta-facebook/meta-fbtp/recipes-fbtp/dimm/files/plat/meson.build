@@ -4,6 +4,5 @@ sources += [
 
 deps += [
     dependency('libipmb'),
-    dependency('libipmi'),
     dependency('obmc-pal'),
 ]

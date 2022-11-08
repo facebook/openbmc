@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "dimm-util.h"
+#include "dimm.h"
 
 typedef struct _dimm_mfg {
   uint16_t id;

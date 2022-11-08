@@ -1014,13 +1014,12 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8A
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8B
-  //{      SensorName,              ID, FUNCTION, PWR_STATUS, {LNR, LCR, LNC,   UNC,   UCR,   UNR, Pos, Neg}, Unit}
-  {"BB_DPV2_1_12V_INPUT_VOLT_V" , DPV2_EFUSE_VIN , read_dpv2_efuse, 0, {10, 10.8, 11.04, 12.96,  13.2,    14, 0, 0}, VOLT}, //0x8C
-  {"BB_DPV2_1_12V_OUTPUT_VOLT_V", DPV2_EFUSE_VOUT, read_dpv2_efuse, 0, {10, 10.8, 11.04, 12.96,  13.2,    14, 0, 0}, VOLT}, //0x8D
-  {"BB_DPV2_1_12V_OUTPUT_CURR_A", DPV2_EFUSE_IOUT, read_dpv2_efuse, 0, { 0,    0,     0, 15.17, 15.47,  18.9, 0, 0}, CURR}, //0x8E
-  {"BB_DPV2_1_EFUSE_TEMP_C"     , DPV2_EFUSE_TEMP, read_dpv2_efuse, 0, { 0,    0,     0,     0,   100,   150, 0, 0}, TEMP}, //0x8F
-
-  {"BB_DPV2_1_EFUSE_PWR_W" , DPV2_EFUSE_PIN , read_dpv2_efuse, 0, { 0,    0,     0,     0,   186, 226.8, 0, 0}, POWER}, //0x90
+//{                   SensorName,              ID,        FUNCTION, PWR_STATUS, {LNR, LCR, LNC,   UNC,   UCR,   UNR, Pos, Neg}, Unit}
+  {"BB_DPV2_1_12V_INPUT_VOLT_V" , DPV2_EFUSE_VIN , read_dpv2_efuse,       true, {10, 10.8, 11.04, 12.96,  13.2,    14, 0, 0}, VOLT}, //0x8C
+  {"BB_DPV2_1_12V_OUTPUT_VOLT_V", DPV2_EFUSE_VOUT, read_dpv2_efuse,       true, {10, 10.8, 11.04, 12.96,  13.2,    14, 0, 0}, VOLT}, //0x8D
+  {"BB_DPV2_1_12V_OUTPUT_CURR_A", DPV2_EFUSE_IOUT, read_dpv2_efuse,       true, { 0,    0,     0, 15.17, 15.47,  18.9, 0, 0}, CURR}, //0x8E
+  {"BB_DPV2_1_EFUSE_TEMP_C"     , DPV2_EFUSE_TEMP, read_dpv2_efuse,       true, { 0,    0,     0,     0,   100,   150, 0, 0}, TEMP}, //0x8F
+  {"BB_DPV2_1_EFUSE_PWR_W"      , DPV2_EFUSE_PIN , read_dpv2_efuse,       true, { 0,    0,     0,     0,   186, 226.8, 0, 0}, POWER}, //0x90
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x91
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x92
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x93
@@ -1054,19 +1053,19 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
 //{                     SensorName,          ID, FUNCTION, PWR_STATUS, {   LNR,    LCR,   LNC,    UNC,    UCR,     UNR,  Pos, Neg}, Unit}
-  {"PDB_VPDB_DELTA1_TEMP_C"       , PDB_DELTA_1, read_pdb_temp,  true, {     0,      0,     0,      0,    115,     130,    0,   0}, TEMP}, //0xB0
-  {"PDB_VPDB_DELTA2_TEMP_C"       , PDB_DELTA_2, read_pdb_temp,  true, {     0,      0,     0,      0,    115,     130,    0,   0}, TEMP}, //0xB1
-  {"PDB_VPDB_WW_TEMP_C"           , PDB_RNS    , read_pdb_temp,  true, {     0,      0,     0,      0,    100,     115,    0,   0}, TEMP}, //0XB2
-  {"PDB_48V_DELTA1_INPUT_VOLT_V"  , PDB_DELTA_1, read_pdb_vin ,  true, {    36,  42.72,  43.2,   56.1,  56.61,      62,    0,   0}, VOLT}, //0xB3
-  {"PDB_48V_DELTA2_INPUT_VOLT_V"  , PDB_DELTA_2, read_pdb_vin ,  true, {    36,  42.72,  43.2,   56.1,  56.61,      62,    0,   0}, VOLT}, //0xB4
-  {"PDB_48V_WW_INPUT_VOLT_V"      , PDB_RNS    , read_pdb_vin ,  true, {  38.5,  42.72,  43.2,   56.1,  56.61,    61.5,    0,   0}, VOLT}, //0xB5
-  {"PDB_12V_DELTA1_OUTPUT_VOLT_V" , PDB_DELTA_1, read_pdb_vout,  true, { 8.162, 11.125, 11.25,  13.75, 13.875,      15,    0,   0}, VOLT}, //0xB6
-  {"PDB_12V_DELTA2_OUTPUT_VOLT_V" , PDB_DELTA_2, read_pdb_vout,  true, { 8.162, 11.125, 11.25,  13.75, 13.875,      15,    0,   0}, VOLT}, //0xB7
-  {"PDB_12V_WW_OUTPUT_VOLT_V"     , PDB_RNS    , read_pdb_vout,  true, {    10, 11.125, 11.25,  13.75, 13.875,    13.6,    0,   0}, VOLT}, //0xB8
-  {"PDB_DELTA1_OUTPUT_CURR_A"     , PDB_DELTA_1, read_pdb_iout,  true, {     0,      0,     0,      0,    100,       0,    0,   0}, CURR}, //0xB9
-  {"PDB_DELTA2_OUTPUT_CURR_A"     , PDB_DELTA_2, read_pdb_iout,  true, {     0,      0,     0,      0,    136,       0,    0,   0}, CURR}, //0xBA
-  {"PDB_12V_WW_OUTPUT_CURR_A"     , PDB_RNS    , read_pdb_iout,  true, {     0,      0,     0,      0,    144,       0,    0,   0}, CURR}, //0xBB
-  {"PDB_12V_WW_PWR_W"             , PDB_RNS    , read_pdb_pout,  true, {     0,      0,     0,      0,   1800,       0,    0,   0}, POWER}, //0xBC
+  {"PDB_VPDB_DELTA1_TEMP_C"       , PDB_DELTA_1, read_pdb_temp,     0, {     0,      0,     0,      0,    115,     130,    0,   0}, TEMP}, //0xB0
+  {"PDB_VPDB_DELTA2_TEMP_C"       , PDB_DELTA_2, read_pdb_temp,     0, {     0,      0,     0,      0,    115,     130,    0,   0}, TEMP}, //0xB1
+  {"PDB_VPDB_WW_TEMP_C"           , PDB_RNS    , read_pdb_temp,     0, {     0,      0,     0,      0,    100,     115,    0,   0}, TEMP}, //0XB2
+  {"PDB_48V_DELTA1_INPUT_VOLT_V"  , PDB_DELTA_1, read_pdb_vin ,     0, {    36,  42.72,  43.2,   56.1,  56.61,      62,    0,   0}, VOLT}, //0xB3
+  {"PDB_48V_DELTA2_INPUT_VOLT_V"  , PDB_DELTA_2, read_pdb_vin ,     0, {    36,  42.72,  43.2,   56.1,  56.61,      62,    0,   0}, VOLT}, //0xB4
+  {"PDB_48V_WW_INPUT_VOLT_V"      , PDB_RNS    , read_pdb_vin ,     0, {  38.5,  42.72,  43.2,   56.1,  56.61,    61.5,    0,   0}, VOLT}, //0xB5
+  {"PDB_12V_DELTA1_OUTPUT_VOLT_V" , PDB_DELTA_1, read_pdb_vout,     0, { 8.162, 11.125, 11.25,  13.75, 13.875,      15,    0,   0}, VOLT}, //0xB6
+  {"PDB_12V_DELTA2_OUTPUT_VOLT_V" , PDB_DELTA_2, read_pdb_vout,     0, { 8.162, 11.125, 11.25,  13.75, 13.875,      15,    0,   0}, VOLT}, //0xB7
+  {"PDB_12V_WW_OUTPUT_VOLT_V"     , PDB_RNS    , read_pdb_vout,     0, {    10, 11.125, 11.25,  13.75, 13.875,    13.6,    0,   0}, VOLT}, //0xB8
+  {"PDB_DELTA1_OUTPUT_CURR_A"     , PDB_DELTA_1, read_pdb_iout,     0, {     0,      0,     0,      0,    100,       0,    0,   0}, CURR}, //0xB9
+  {"PDB_DELTA2_OUTPUT_CURR_A"     , PDB_DELTA_2, read_pdb_iout,     0, {     0,      0,     0,      0,    136,       0,    0,   0}, CURR}, //0xBA
+  {"PDB_12V_WW_OUTPUT_CURR_A"     , PDB_RNS    , read_pdb_iout,     0, {     0,      0,     0,      0,    144,       0,    0,   0}, CURR}, //0xBB
+  {"PDB_12V_WW_PWR_W"             , PDB_RNS    , read_pdb_pout,     0, {     0,      0,     0,      0,   1800,       0,    0,   0}, POWER}, //0xBC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBF
@@ -1082,19 +1081,19 @@ PAL_SENSOR_MAP sensor_map[] = {
 //{                      SensorName,      ID,     FUNCTION, PWR_STATUS, {   LNR,    LCR,   LNC,    UNC,    UCR,     UNR,  Pos, Neg}, Unit}
   {"BB_HSC_PEAK_OUTPUT_CURR_A"     , HSC_ID0, read_hsc_peak_iout,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, CURR}, //0xC8
   {"BB_HSC_PEAK_INPUT_PWR_W"       , HSC_ID0, read_hsc_peak_pin ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, POWER}, //0xC9
-  {"BB_FAN_PWR_W"                  ,    0xCA, read_cached_val   , true, {     0,      0,     0,      0,201.465,  544.88,    0,   0}, POWER}, //0xCA
+  {"BB_FAN_PWR_W"                  ,    0xCA, read_cached_val   ,    0, {     0,      0,     0,      0,201.465,  544.88,    0,   0}, POWER}, //0xCA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
-  {"BB_CPU_CL_VDELTA_VOLT_V"       ,    0xCC, read_pdb_cl_vdelta, true, {     0,      0,     0,      0,    0.9,       0,    0,   0}, VOLT}, //0xCC
-  {"BB_PMON_CURRENT_LEAKAGE_CURR_A",    0xCD, read_curr_leakage , true, {     0,      0,     0,      0,      0,       0,    0,   0}, PERCENT}, //0xCD
-  {"BB_CPU_PDB_VDELTA_VOLT_V"      ,    0xCE, read_cached_val   , true, {     0,      0,     0,      0,    0.8,       0,    0,   0}, VOLT}, //0xCE
-  {"BB_MEDUSA_VDELTA_VOLT_V"       ,    0xCF, read_medusa_val   , true, {     0,      0,     0,      0,    0.5,       0,    0,   0}, VOLT}, //0xCF
+  {"BB_CPU_CL_VDELTA_VOLT_V"       ,    0xCC, read_pdb_cl_vdelta,    0, {     0,      0,     0,      0,    0.9,       0,    0,   0}, VOLT}, //0xCC
+  {"BB_PMON_CURRENT_LEAKAGE_CURR_A",    0xCD, read_curr_leakage ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, PERCENT}, //0xCD
+  {"BB_CPU_PDB_VDELTA_VOLT_V"      ,    0xCE, read_cached_val   ,    0, {     0,      0,     0,      0,    0.8,       0,    0,   0}, VOLT}, //0xCE
+  {"BB_MEDUSA_VDELTA_VOLT_V"       ,    0xCF, read_medusa_val   ,    0, {     0,      0,     0,      0,    0.5,       0,    0,   0}, VOLT}, //0xCF
   {"BB_MEDUSA_CURR_A"              ,    0xD0, read_medusa_val   ,    0, {     0,      0,     0,      0,    144,       0,    0,   0}, CURR}, //0xD0
   {"BB_MEDUSA_PWR_W"               ,    0xD1, read_medusa_val   ,    0, {     0,      0,     0,      0,   1800,       0,    0,   0}, POWER}, //0xD1
-  {"BB_ADC_NIC_P12V_VOLT_V"        ,   ADC12, read_adc_val      , true, { 10.17,  10.68,  10.8,   13.2,  13.32,   14.91,    0,   0}, VOLT},//0xD2
-  {"BB_NIC_PWR_W"                  ,    0xD3, read_cached_val   , true, {     0,      0,     0,      0,   82.5, 101.875,    0,   0}, POWER},//0xD3
-  {"BB_ADC_P1V0_STBY_VOLT_V"       ,    ADC7, read_adc_val      , true, {  0.83,   0.92,  0.93,   1.07,   1.08,    1.13,    0,   0}, VOLT}, //0xD4
-  {"BB_ADC_P0V6_STBY_VOLT_V"       ,    ADC8, read_adc_val      , true, {     0,  0.552, 0.558,  0.642,  0.648,       0,    0,   0}, VOLT}, //0xD5
-  {"BB_ADC_P3V3_RGM_STBY_VOLT_V"   ,   ADC13, read_adc_val      , true, {     0,  3.036, 3.069,  3.531,  3.564,       0,    0,   0}, VOLT}, //0xD6
+  {"BB_ADC_NIC_P12V_VOLT_V"        ,   ADC12, read_adc_val      ,    0, { 10.17,  10.68,  10.8,   13.2,  13.32,   14.91,    0,   0}, VOLT},//0xD2
+  {"BB_NIC_PWR_W"                  ,    0xD3, read_cached_val   ,    0, {     0,      0,     0,      0,   82.5, 101.875,    0,   0}, POWER},//0xD3
+  {"BB_ADC_P1V0_STBY_VOLT_V"       ,    ADC7, read_adc_val      ,    0, {  0.83,   0.92,  0.93,   1.07,   1.08,    1.13,    0,   0}, VOLT}, //0xD4
+  {"BB_ADC_P0V6_STBY_VOLT_V"       ,    ADC8, read_adc_val      ,    0, {     0,  0.552, 0.558,  0.642,  0.648,       0,    0,   0}, VOLT}, //0xD5
+  {"BB_ADC_P3V3_RGM_STBY_VOLT_V"   ,   ADC13, read_adc_val      ,    0, {     0,  3.036, 3.069,  3.531,  3.564,       0,    0,   0}, VOLT}, //0xD6
   {"BB_ADC_P5V_USB_VOLT_V"         ,    ADC4, read_adc_val      ,    0, {  4.15,    4.6,  4.65,   5.35,    5.4,    5.65,    0,   0}, VOLT}, //0xD7
   {"BB_ADC_P3V3_NIC_VOLT_V"        ,   ADC14, read_adc_val      ,    0, {  2.95,   2.97, 3.003,  3.597,  3.630,   3.729,    0,   0}, VOLT}, //0xD8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
@@ -1104,38 +1103,38 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
-//{              SensorName,          ID,  FUNCTION, PWR_STATUS, {    LNR,    LCR,    LNC,   UNC,   UCR,    UNR, Pos, Neg}, Unit}
-  {"BB_FAN0_TACH_RPM",        0xE0, read_fan_speed , true, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE0
-  {"BB_FAN1_TACH_RPM",        0xE1, read_fan_speed , true, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE1
-  {"BB_FAN2_TACH_RPM",        0xE2, read_fan_speed , true, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE2
-  {"BB_FAN3_TACH_RPM",        0xE3, read_fan_speed , true, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE3
-  {"BB_FAN4_TACH_RPM",        0xE4, read_fan_speed , true, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE4
-  {"BB_FAN5_TACH_RPM",        0xE5, read_fan_speed , true, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE5
-  {"BB_FAN6_TACH_RPM",        0xE6, read_fan_speed , true, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE6
-  {"BB_FAN7_TACH_RPM",        0xE7, read_fan_speed , true, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE7
-  {"BB_PWM0_TACH_PCT",       PWM_0, read_fan_pwm   , true, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xE8
-  {"BB_PWM1_TACH_PCT",       PWM_1, read_fan_pwm   , true, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xE9
-  {"BB_PWM2_TACH_PCT",       PWM_2, read_fan_pwm   , true, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xEA
-  {"BB_PWM3_TACH_PCT",       PWM_3, read_fan_pwm   , true, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xEB
+//{                SensorName,          ID,        FUNCTION, PWR_STATUS, {    LNR,    LCR,    LNC,   UNC,   UCR,    UNR, Pos, Neg}, Unit}
+  {"BB_FAN0_TACH_RPM"        ,        0xE0, read_fan_speed ,          0, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE0
+  {"BB_FAN1_TACH_RPM"        ,        0xE1, read_fan_speed ,          0, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE1
+  {"BB_FAN2_TACH_RPM"        ,        0xE2, read_fan_speed ,          0, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE2
+  {"BB_FAN3_TACH_RPM"        ,        0xE3, read_fan_speed ,          0, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE3
+  {"BB_FAN4_TACH_RPM"        ,        0xE4, read_fan_speed ,          0, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE4
+  {"BB_FAN5_TACH_RPM"        ,        0xE5, read_fan_speed ,          0, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE5
+  {"BB_FAN6_TACH_RPM"        ,        0xE6, read_fan_speed ,          0, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE6
+  {"BB_FAN7_TACH_RPM"        ,        0xE7, read_fan_speed ,          0, {      0,    500,      0,  8500, 11500,      0,   0,   0}, FAN}, //0xE7
+  {"BB_PWM0_TACH_PCT"        ,       PWM_0, read_fan_pwm   ,          0, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xE8
+  {"BB_PWM1_TACH_PCT"        ,       PWM_1, read_fan_pwm   ,          0, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xE9
+  {"BB_PWM2_TACH_PCT"        ,       PWM_2, read_fan_pwm   ,          0, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xEA
+  {"BB_PWM3_TACH_PCT"        ,       PWM_3, read_fan_pwm   ,          0, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xEB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
-  {"BB_INLET_TEMP_C"         ,  TEMP_INLET, read_temp      , true, {      0,      0,      0,     0,    50,    150,   0,   0}, TEMP}, //0xED
-  {"BB_OUTLET_TEMP_C"        , TEMP_OUTLET, read_temp      , true, {      0,      0,      0,     0,    55,    150,   0,   0}, TEMP}, //0xEE
-  {"NIC_TEMP_C"              ,    TEMP_NIC, read_temp      , true, {      0,      0,      0,     0,   105,    120,   0,   0}, TEMP}, //0xEF
-  {"BB_P5V_VOLT_V"           ,        ADC0, read_adc_val   , true, {   4.15,   4.45,    4.5,   5.5,  5.55,   5.65,   0,   0}, VOLT}, //0xF0
-  {"BB_P12V_VOLT_V"          ,        ADC1, read_adc_val   , true, { 10.091,  10.68,   10.8,  13.2, 13.32, 14.333,   0,   0}, VOLT}, //0xF1
-  {"BB_P3V3_STBY_VOLT_V"     ,        ADC2, read_adc_val   , true, {  2.739,  3.036,  3.069, 3.531, 3.564,  3.729,   0,   0}, VOLT}, //0xF2
-  {"BB_P1V8_STBY_VOLT_V"     ,        ADC5, read_adc_val   , true, {      0,  1.656,  1.674, 1.926, 1.944,      0,   0,   0}, VOLT}, //0xF3
-  {"BB_P1V2_STBY_VOLT_V"     ,        ADC6, read_adc_val   , true, {  0.996,  1.104,  1.116, 1.284, 1.296,  1.356,   0,   0}, VOLT}, //0xF4
-  {"BB_P2V5_STBY_VOLT_V"     ,        ADC3, read_adc_val   , true, {      0,    2.3,  2.325, 2.675,   2.7,      0,   0,   0}, VOLT}, //0xF5
-  {"BB_MEDUSA_OUTPUT_VOLT_V" ,        0xF6, read_medusa_val, true, {   9.25, 11.125,  11.25, 13.75,13.875,   13.9,   0,   0}, VOLT}, //0xF6
-  {"BB_HSC_INPUT_VOLT_V"     ,     HSC_ID0, read_hsc_vin   , true, { 10.091,  10.68,   10.8, 13.20, 13.32, 14.333,   0,   0}, VOLT}, //0xF7
-  {"BB_HSC_TEMP_C"           ,     HSC_ID0, read_hsc_temp  , true, {      0,      0,      0,     0,    55,    125,   0,   0}, TEMP}, //0xF8
-  {"BB_HSC_INPUT_PWR_W"      ,     HSC_ID0, read_hsc_pin   , true, {      0,      0,      0,     0, 287.5, 398.75,   0,   0}, POWER}, //0xF9
-  {"BB_HSC_OUTPUT_CURR_A"    ,     HSC_ID0, read_hsc_iout  , true, {      0,      0,      0,     0,    23,   31.9,   0,   0}, CURR}, //0xFA
-  {"BB_ADC_FAN_OUTPUT_CURR_A",       ADC10, read_adc_val   ,    0, {      0,      0,      0,     0, 14.52,   39.2,   0,   0}, CURR}, //0xFB
-  {"BB_ADC_NIC_OUTPUT_CURR_A",       ADC11, read_adc_val   ,    0, {      0,      0,      0,     0,   6.6,   8.15,   0,   0}, CURR}, //0xFC
-  {"BB_MEDUSA_INPUT_VOLT_V"  ,        0xFD, read_medusa_val, true, {   9.25, 11.125,  11.25, 13.75,13.875,   13.9,   0,   0}, VOLT}, //0xFD
-  {"NICEXP_TEMP_C"           ,TEMP_NICEXP , read_temp      , true, {      0,      0,      0,     0,    50,    150,   0,   0}, TEMP}, //0xFE
+  {"BB_INLET_TEMP_C"         ,  TEMP_INLET, read_temp      ,          0, {      0,      0,      0,     0,    50,    150,   0,   0}, TEMP}, //0xED
+  {"BB_OUTLET_TEMP_C"        , TEMP_OUTLET, read_temp      ,          0, {      0,      0,      0,     0,    55,    150,   0,   0}, TEMP}, //0xEE
+  {"NIC_TEMP_C"              ,    TEMP_NIC, read_temp      ,          0, {      0,      0,      0,     0,   105,    120,   0,   0}, TEMP}, //0xEF
+  {"BB_P5V_VOLT_V"           ,        ADC0, read_adc_val   ,          0, {   4.15,   4.45,    4.5,   5.5,  5.55,   5.65,   0,   0}, VOLT}, //0xF0
+  {"BB_P12V_VOLT_V"          ,        ADC1, read_adc_val   ,          0, { 10.091,  10.68,   10.8,  13.2, 13.32, 14.333,   0,   0}, VOLT}, //0xF1
+  {"BB_P3V3_STBY_VOLT_V"     ,        ADC2, read_adc_val   ,          0, {  2.739,  3.036,  3.069, 3.531, 3.564,  3.729,   0,   0}, VOLT}, //0xF2
+  {"BB_P1V8_STBY_VOLT_V"     ,        ADC5, read_adc_val   ,          0, {      0,  1.656,  1.674, 1.926, 1.944,      0,   0,   0}, VOLT}, //0xF3
+  {"BB_P1V2_STBY_VOLT_V"     ,        ADC6, read_adc_val   ,          0, {  0.996,  1.104,  1.116, 1.284, 1.296,  1.356,   0,   0}, VOLT}, //0xF4
+  {"BB_P2V5_STBY_VOLT_V"     ,        ADC3, read_adc_val   ,          0, {      0,    2.3,  2.325, 2.675,   2.7,      0,   0,   0}, VOLT}, //0xF5
+  {"BB_MEDUSA_OUTPUT_VOLT_V" ,        0xF6, read_medusa_val,          0, {   9.25, 11.125,  11.25, 13.75,13.875,   13.9,   0,   0}, VOLT}, //0xF6
+  {"BB_HSC_INPUT_VOLT_V"     ,     HSC_ID0, read_hsc_vin   ,          0, { 10.091,  10.68,   10.8, 13.20, 13.32, 14.333,   0,   0}, VOLT}, //0xF7
+  {"BB_HSC_TEMP_C"           ,     HSC_ID0, read_hsc_temp  ,          0, {      0,      0,      0,     0,    55,    125,   0,   0}, TEMP}, //0xF8
+  {"BB_HSC_INPUT_PWR_W"      ,     HSC_ID0, read_hsc_pin   ,          0, {      0,      0,      0,     0, 287.5, 398.75,   0,   0}, POWER}, //0xF9
+  {"BB_HSC_OUTPUT_CURR_A"    ,     HSC_ID0, read_hsc_iout  ,          0, {      0,      0,      0,     0,    23,   31.9,   0,   0}, CURR}, //0xFA
+  {"BB_ADC_FAN_OUTPUT_CURR_A",       ADC10, read_adc_val   ,          0, {      0,      0,      0,     0, 14.52,   39.2,   0,   0}, CURR}, //0xFB
+  {"BB_ADC_NIC_OUTPUT_CURR_A",       ADC11, read_adc_val   ,          0, {      0,      0,      0,     0,   6.6,   8.15,   0,   0}, CURR}, //0xFC
+  {"BB_MEDUSA_INPUT_VOLT_V"  ,        0xFD, read_medusa_val,          0, {   9.25, 11.125,  11.25, 13.75,13.875,   13.9,   0,   0}, VOLT}, //0xFD
+  {"NICEXP_TEMP_C"           ,TEMP_NICEXP , read_temp      ,          0, {      0,      0,      0,     0,    50,    150,   0,   0}, TEMP}, //0xFE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
 
@@ -2807,6 +2806,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   uint8_t id=0;
   uint8_t hsc_sesnor_num = 0x0;
   uint8_t info = 0;
+  uint8_t power_status = 0;
   PAL_SNR_INFO* dpv2_snr_info = (PAL_SNR_INFO*) &info;
   static uint8_t hsc_type = HSC_ADM1278; // set main source as default type
   static uint8_t bmc_location = 0;
@@ -2883,6 +2883,11 @@ skip_hsc_init:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+      if ((sensor_map[sensor_num].stby_read == true) && \
+        ((bic_get_server_power_status(fru, &power_status) < 0) || (power_status != SERVER_POWER_ON))) {
+        ret = READING_NA;
+        break;
+      }
       //check a config status of a blade
       if ( config_status[fru-1] == CONFIG_UNKNOWN ) {
         ret = bic_is_exp_prsnt(fru);

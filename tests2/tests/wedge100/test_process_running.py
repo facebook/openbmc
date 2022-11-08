@@ -31,8 +31,6 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "rackmond",
             "rest.py",
             "mTerm_server",
-            "kcsd",
-            "ipmid",
         ]
         if not running_systemd():
             self.expected_process.extend(

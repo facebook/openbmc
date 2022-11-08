@@ -4874,6 +4874,11 @@ pal_is_prot_card_prsnt(uint8_t fru)
     return fby35_common_is_prot_card_prsnt(fru);
 }
 
+bool
+pal_is_prot_bypass(uint8_t fru) {
+  return bic_is_prot_bypass(fru);
+}
+
 int
 pal_set_last_postcode(uint8_t slot, uint32_t postcode) {
   char key[MAX_KEY_LEN] = {0};

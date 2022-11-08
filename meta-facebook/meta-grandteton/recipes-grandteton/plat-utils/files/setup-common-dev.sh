@@ -76,6 +76,22 @@ if [ $mbrev -gt 2 ]; then
 fi
 #MB Expender
 i2c_device_add 29 0x74 pca9539
+# I/O Expander PCA9539 0xE8 BIC and GPU
+gpio_export_ioexp 29-0074 RST_USB_HUB              0
+gpio_export_ioexp 29-0074 RST_SWB_BIC_N            1
+gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_C_N      4
+gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_D_N      5
+gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_B3_N     6
+gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_B2_N     7
+
+gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_A2_N     8
+gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_B1_N     9
+gpio_export_ioexp 29-0074 GPU_BASE_ID0             10
+gpio_export_ioexp 29-0074 GPU_BASE_ID1             11
+gpio_export_ioexp 29-0074 GPU_PEX_STRAP0           12
+gpio_export_ioexp 29-0074 GPU_PEX_STRAP1           13
+gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_A1_N     14
+gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_A3_N     15
 
 #MB FRU
 i2c_device_add 33 0x51 24c64
@@ -87,16 +103,6 @@ i2c_device_add 32 0x76 pca9539
 
 gpio_export_ioexp 32-0076 BIC_FWSPICK        0
 gpio_export_ioexp 32-0076 BIC_UART_BMC_SEL   1
-
-# I/O Expander PCA9539 0xE8 BIC and GPU
-gpio_export_ioexp 29-0074 RST_USB_HUB     0
-gpio_export_ioexp 29-0074 RST_SWB_BIC_N   1
-gpio_export_ioexp 29-0074 GPU_SMB1_ALERT  8
-gpio_export_ioexp 29-0074 GPU_SMB2_ALERT  9
-gpio_export_ioexp 29-0074 GPU_BASE_ID0    10
-gpio_export_ioexp 29-0074 GPU_BASE_ID1    11
-gpio_export_ioexp 29-0074 GPU_PEX_STRAP0  12
-gpio_export_ioexp 29-0074 GPU_PEX_STRAP1  13
 
 #Set IO Expender
 gpio_set BIC_FWSPICK 0
@@ -114,7 +120,7 @@ VPDB_HSC_SECOND="1"
 echo "Probe VPDB Device"
 #VPDB Expender
 i2c_device_add 36 0x22 pca9555
-gpio_export_ioexp 36-0022  VPDB_PRESENT     9
+gpio_export_ioexp 36-0022  HPDB_PRESENT     9
 gpio_export_ioexp 36-0022  VPDB_BOARD_ID_0  10
 gpio_export_ioexp 36-0022  VPDB_BOARD_ID_1  11
 gpio_export_ioexp 36-0022  VPDB_BOARD_ID_2  12

@@ -24,8 +24,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 LOCAL_URI = " \
     file://COPYING \
     file://ast-functions \
-    file://setup-gpio.sh \
-    file://setup-sgpio.sh \
+    file://setup-gpio-common.sh \
+    file://setup-gpio-cover.sh \
     file://sol-util \
     file://setup-common-dev.sh \
     file://setup-cover-dev.sh \
@@ -66,12 +66,12 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
 
-# setup-gpio.sh
-  install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 57 5 .
-# setup-sgpio.sh
-  install -m 755 setup-sgpio.sh ${D}${sysconfdir}/init.d/setup-sgpio.sh
-  update-rc.d -r ${D} setup-sgpio.sh start 58 5 .
+# setup-gpio-common.sh
+  install -m 755 setup-gpio-common.sh ${D}${sysconfdir}/init.d/setup-gpio-common.sh
+  update-rc.d -r ${D} setup-gpio-common.sh start 57 5 .
+# setup-gpio-cover.sh
+  install -m 755 setup-gpio-cover.sh ${D}${sysconfdir}/init.d/setup-gpio-cover.sh
+  update-rc.d -r ${D} setup-gpio-cover.sh start 58 5 .
 # setup-common-dev.sh
   install -m 755 setup-common-dev.sh ${D}${sysconfdir}/init.d/setup-common-dev.sh
   update-rc.d -r ${D} setup-common-dev.sh start 59 5 .

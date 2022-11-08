@@ -23,7 +23,7 @@ MAX_RETRY=30
 retry=0
 usb_pst=""
 
-gp_pst=$(gpio_get GPU_PRSNT_N_ISO_R)
+gp_pst=$(gpio_get GPU_CABLE_PRSNT_D_N)
 
 setup_usb_dev() {
   if [ $gp_pst -eq 0 ]; then

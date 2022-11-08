@@ -241,3 +241,79 @@ gpio_export FM_DEBUG_PORT_PRSNT_N_IN GPIOZ6
 
 devmem_set_bit 0x1e7800e0 8
 devmem_clear_bit 0x1e7000e4 8
+
+
+# ==SGPIO Input Common==
+sgpio_export GPU_FPGA_READY_ISO_R 8
+
+sgpio_export FM_SYS_THROTTLE_R_N 20
+sgpio_export HPDB_HSC_PWRGD_ISO_R 24
+sgpio_export FM_UV_ADR_TRIGGER_R_N 26
+
+sgpio_export FM_SWB_BIC_READY_ISO_R_N 32
+
+sgpio_export GPU_FPGA_THERM_OVERT_ISO_R_N 40
+sgpio_export GPU_FPGA_OVERT_ISO_R_N 42
+sgpio_export BIC_MONITER_ISO_R 46
+
+sgpio_export GPU_HMC_PRSNT_ISO_R_N 52
+sgpio_export GPU_PRSNT_N_ISO_R 54
+
+sgpio_export FM_GPU_PWRGD_ISO_R 60
+sgpio_export RST_BMC_FROM_SWB_ISO_R_N 62
+sgpio_export GPU_BASE_HMC_READY_ISO_R 64
+
+sgpio_export E1S_0_P3V3_ADC_ALERT 96
+sgpio_export P12V_SCM_ADC_ALERT 98
+
+sgpio_export M2_0_P3V3_ADC_ALERT 100
+sgpio_export OCP_V3_2_P3V3_ADC_ALERT 102
+sgpio_export OCP_SFF_P3V3_ADC_ALERT 104
+sgpio_export FM_UARTSW_LSB_N 106
+sgpio_export FM_UARTSW_MSB_N 108
+
+sgpio_export FM_THERMAL_ALERT_R_N 110
+
+sgpio_export PCIE_M2_SSD0_PRSNT_N 190
+
+sgpio_export FM_BOARD_BMC_SKU_ID4 212
+sgpio_export FM_BOARD_BMC_SKU_ID3 214
+sgpio_export FM_BOARD_BMC_SKU_ID2 216
+sgpio_export FM_BOARD_BMC_SKU_ID1 218
+sgpio_export FM_BOARD_BMC_SKU_ID0 220
+
+sgpio_export FAB_BMC_REV_ID2 222
+sgpio_export FAB_BMC_REV_ID1 224
+sgpio_export FAB_BMC_REV_ID0 226
+
+kv set mb_rev "$(($(gpio_get FAB_BMC_REV_ID2)<<2 |
+                  $(gpio_get FAB_BMC_REV_ID1)<<1 |
+                  $(gpio_get FAB_BMC_REV_ID0)))"
+
+kv set mb_sku "$(($(gpio_get FM_BOARD_BMC_SKU_ID4)<<4 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID3)<<3 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID2)<<2 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID1)<<1 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID0)))"
+
+
+# == SGPIO OUT Common==
+sgpio_export IRQ_PCH_SCI_WHEA_R_N 11
+gpio_set IRQ_PCH_SCI_WHEA_R_N 1
+
+sgpio_export FM_SPD_REMOTE_EN_R 17
+gpio_set FM_SPD_REMOTE_EN_R 0
+
+sgpio_export RST_BMC_RSTBTN_OUT_R_N 21
+gpio_set RST_BMC_RSTBTN_OUT_R_N 1
+
+sgpio_export GPU_NVS_PWR_BRAKE_R_N 43
+gpio_set GPU_NVS_PWR_BRAKE_R_N 1
+
+sgpio_export GPU_WP_HW_CTRL_R_N 45
+gpio_set GPU_WP_HW_CTRL_R_N 0
+
+sgpio_export BMC_MONITER 51
+gpio_set BMC_MONITER 0
+
+

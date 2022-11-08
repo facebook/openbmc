@@ -17,7 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
-    file://setup-sgpio.sh \
+    file://setup-gpio-cover.sh \
     file://setup-cover-dev.sh \
     file://setup-pwon-snr.sh \
     file://sync_date.sh \

@@ -19,54 +19,47 @@
 #
 
 ### BEGIN INIT INFO
-# Provides:          sgpio-setup
+# Provides:          gpio-cover
 # Required-Start:
 # Required-Stop:
 # Default-Start:     S
 # Default-Stop:
-# Short-Description:  Set up SGPIO pins as appropriate
+# Short-Description: Set up GPIO pins as appropriate can be cover
 ### END INIT INFO
-
-# This file contains definitions for the SGPIO pins that were not otherwise
-# defined in other files.  We should probably move some more of the
-# definitions to this file at some point.
 
 . /usr/local/fbpackages/utils/ast-functions
 
-# ==SGPIO==
+
+
+# ==SGPIO Input Cover==
 sgpio_export FM_OCP_SFF_PWR_GOOD_R 0
 sgpio_export IRQ_SML1_PMBUS_PLD_ALERT_N 2
 sgpio_export PWRGD_PVNN_MAIN_CPU0 4
 sgpio_export PWRGD_PVPP_HBM_CPU1 6
-sgpio_export GPU_FPGA_READY_ISO_R 8
+
 sgpio_export FM_ADR_ACK_R 10
 sgpio_export IRQ_PVCCD_CPU0_VRHOT_LVC3_N 12
 sgpio_export FM_DIS_PS_PWROK_DLY 14
 sgpio_export IRQ_PSYS_CRIT_N 16
 sgpio_export IRQ_PVCCD_CPU1_VRHOT_LVC3_N 18
-sgpio_export FM_SYS_THROTTLE_R_N 20
+
 sgpio_export FM_PCH_PLD_GLB_RST_WARN_N 22
-sgpio_export HPDB_HSC_PWRGD_ISO_R 24
-sgpio_export FM_UV_ADR_TRIGGER_R_N 26
+
 sgpio_export FM_PCH_BMC_THERMTRIP_N 28
 sgpio_export FM_PCHHOT_R_N 30
-sgpio_export FM_SWB_BIC_READY_ISO_R_N 32
+
 sgpio_export FM_PCH_PRSNT_N 34
 sgpio_export IRQ_HSC_FAULT_N 36
 sgpio_export FM_OCP_V3_2_PWR_GOOD_R 38
-sgpio_export GPU_FPGA_THERM_OVERT_ISO_R_N 40
-sgpio_export GPU_FPGA_OVERT_ISO_R_N 42
+
 sgpio_export PWRGD_PVNN_PCH_AUX 44
-sgpio_export BIC_MONITER_ISO_R 46
+
 sgpio_export PWRGD_PVNN_MAIN_CPU1 48
 sgpio_export PWRGD_PVPP_HBM_CPU0 50
-sgpio_export GPU_HMC_PRSNT_ISO_R_N 52
-sgpio_export GPU_PRSNT_N_ISO_R 54
+
 sgpio_export PWRGD_P3V3 56
 sgpio_export PWRGD_PVCCFA_EHV_FIVRA_CPU0 58
-sgpio_export FM_GPU_PWRGD_ISO_R 60
-sgpio_export RST_BMC_FROM_SWB_ISO_R_N 62
-sgpio_export GPU_BASE_HMC_READY_ISO_R 64
+
 sgpio_export PWRGD_PVCCD_HV_CPU0 66
 sgpio_export PWRGD_PVCCIN_CPU0 68
 sgpio_export PWRGD_P3V3_AUX_PLD 70
@@ -82,14 +75,7 @@ sgpio_export PWRGD_P1V05_PCH_AUX 88
 sgpio_export PWRGD_P1V8_PCH_AUX_PLD 90
 sgpio_export PWRGD_SYS_PWROK_R 92
 sgpio_export PWRGD_PCH_PWROK_R 94
-sgpio_export E1S_0_P3V3_ADC_ALERT 96
-sgpio_export P12V_SCM_ADC_ALERT 98
-sgpio_export M2_0_P3V3_ADC_ALERT 100
-sgpio_export OCP_V3_2_P3V3_ADC_ALERT 102
-sgpio_export OCP_SFF_P3V3_ADC_ALERT 104
-sgpio_export FM_UARTSW_LSB_N 106
-sgpio_export FM_UARTSW_MSB_N 108
-sgpio_export FM_THERMAL_ALERT_R_N 110
+
 sgpio_export FM_CPU0_SKTOCC_LVT3_PLD_N 112
 sgpio_export FM_CPU1_SKTOCC_LVT3_PLD_N 114
 sgpio_export PWRGD_CPUPWRGD_LVC2_R1 116
@@ -129,7 +115,7 @@ sgpio_export H_CPU_RMCA_LVC2_R2_N 182
 #sgpio_export H_CPU_CATERR_LVC2_R2_N 184
 sgpio_export H_CPU1_PROCHOT_LVC1_N 186
 sgpio_export IRQ_UV_DETECT_N 188
-sgpio_export PCIE_M2_SSD0_PRSNT_N 190
+
 sgpio_export FM_ME_AUTHN_FAIL 192
 sgpio_export PRSNT_SWB_R_N 194
 sgpio_export IRQ_PSU_ALERT_R_N 196
@@ -140,31 +126,18 @@ sgpio_export FM_PCH_BEEP_LED 204
 sgpio_export FM_HDD_LED_N 206
 sgpio_export FM_PFR_NO_SERVICE_ACT_N 208
 sgpio_export FM_PFR_UPDATE_N 210
-sgpio_export FM_BOARD_BMC_SKU_ID4 212
-sgpio_export FM_BOARD_BMC_SKU_ID3 214
-sgpio_export FM_BOARD_BMC_SKU_ID2 216
-sgpio_export FM_BOARD_BMC_SKU_ID1 218
-sgpio_export FM_BOARD_BMC_SKU_ID0 220
-sgpio_export FAB_BMC_REV_ID2 222
-sgpio_export FAB_BMC_REV_ID1 224
-sgpio_export FAB_BMC_REV_ID0 226
+
 sgpio_export CPLD_SGPIO_READY_ID0 248
 sgpio_export CPLD_SGPIO_READY_ID1 250
 sgpio_export CPLD_SGPIO_READY_ID2 252
 sgpio_export CPLD_SGPIO_READY_ID3 254
 
-kv set mb_rev "$(($(gpio_get FAB_BMC_REV_ID2)<<2 |
-                  $(gpio_get FAB_BMC_REV_ID1)<<1 |
-                  $(gpio_get FAB_BMC_REV_ID0)))"
-
-kv set mb_sku "$(($(gpio_get FM_BOARD_BMC_SKU_ID4)<<4 |
-                  $(gpio_get FM_BOARD_BMC_SKU_ID3)<<3 |
-                  $(gpio_get FM_BOARD_BMC_SKU_ID2)<<2 |
-                  $(gpio_get FM_BOARD_BMC_SKU_ID1)<<1 |
-                  $(gpio_get FM_BOARD_BMC_SKU_ID0)))"
 
 
-# == SGPIO OUT ==
+
+
+
+# == SGPIO OUT Cover==
 sgpio_export FM_ESPI_PLD_R1_EN 1
 gpio_set FM_ESPI_PLD_R1_EN 1
 
@@ -180,22 +153,13 @@ gpio_set FM_BMC_CRASHLOG_TRIG_R1_N 1
 sgpio_export FM_DEBUG_PORT_PRSNT_N_OUT 9
 gpio_set FM_DEBUG_PORT_PRSNT_N_OUT "$(gpio_get FM_DEBUG_PORT_PRSNT_N_IN)"
 
-sgpio_export IRQ_PCH_SCI_WHEA_R_N 11
-gpio_set IRQ_PCH_SCI_WHEA_R_N 1
-
 sgpio_export FM_PECI_SEL_R_N 13
 gpio_set FM_PECI_SEL_R_N 1
 
 #sgpio_export FM_JTAG_BMC_MUX_SEL 15
 #gpio_set FM_JTAG_BMC_MUX_SEL 0
 
-sgpio_export FM_SPD_REMOTE_EN_R 17
-gpio_set FM_SPD_REMOTE_EN_R 0
-
 #sgpio_export FM_PWR_BTN 19
-
-sgpio_export RST_BMC_RSTBTN_OUT_R_N 21
-gpio_set RST_BMC_RSTBTN_OUT_R_N 1
 
 sgpio_export BMC_READY_N 23
 gpio_set BMC_READY_N 1
@@ -220,20 +184,11 @@ gpio_set FM_BMC_ONCTL_R_N 1
 sgpio_export FM_BIOS_DEBUG_EN_R_N 41
 gpio_set FM_BIOS_DEBUG_EN_R_N 1
 
-sgpio_export GPU_NVS_PWR_BRAKE_R_N 43
-gpio_set GPU_NVS_PWR_BRAKE_R_N 1
-
-sgpio_export GPU_WP_HW_CTRL_R_N 45
-gpio_set GPU_WP_HW_CTRL_R_N 0
-
 sgpio_export CLK_GEN2_BMC_RC_OE_N 47
 gpio_set CLK_GEN2_BMC_RC_OE_N 0
 
 sgpio_export IRQ_SML0_ALERT_R_N 49
 gpio_set IRQ_SML0_ALERT_R_N 1
-
-sgpio_export BMC_MONITER 51
-gpio_set BMC_MONITER 0
 
 sgpio_export FM_PFR_DSW_PWROK_N 53
 pio_set FM_PFR_DSW_PWROK_N 1
@@ -268,8 +223,3 @@ gpio_set FM_BMC_CPU_FBRK_OUT_N 1
 sgpio_export GPIO_READY 37
 gpio_set GPIO_READY 1
 
-#initial FPGA pcie device
-sleep 0.1
-gpio_set GPU_FPGA_RST_N 1
-sleep 0.1
-echo 1 > /sys/bus/pci/rescan

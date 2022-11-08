@@ -302,6 +302,7 @@ void rbf_vr_device_check(void){
 int plat_vr_init(void) {
   int config_status = 0;
   int vr_cnt = sizeof(fby35_vr_list)/sizeof(fby35_vr_list[0]);
+  uint8_t type_1ou = TYPE_1OU_UNKNOWN;
 
   if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
     halfdome_vr_device_check();
@@ -311,8 +312,11 @@ int plat_vr_init(void) {
 
   config_status = bic_is_exp_prsnt(slot_id);
   if (config_status < 0) config_status = 0;
-  if ((config_status & PRESENT_1OU) == PRESENT_1OU) {
-    rbf_vr_device_check();
+  if (((config_status & PRESENT_1OU) == PRESENT_1OU) &&
+    (bic_get_1ou_type(slot_id, &type_1ou) == 0)) {
+    if (type_1ou == TYPE_1OU_RAINBOW_FALLS) {
+      rbf_vr_device_check();
+    }
   }
 
   return vr_device_register(fby35_vr_list, vr_cnt);

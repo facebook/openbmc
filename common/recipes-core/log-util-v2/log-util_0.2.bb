@@ -26,6 +26,7 @@ S = "${WORKDIR}/log-util"
 
 inherit meson pkgconfig
 inherit ptest-meson
+inherit legacy-packages
 
 DEPENDS += "libpal cli11 nlohmann-json gtest gmock"
 

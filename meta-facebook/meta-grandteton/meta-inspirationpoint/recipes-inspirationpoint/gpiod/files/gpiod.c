@@ -138,17 +138,6 @@ decrease_timer(long int *val) {
   return *val;
 }
 
-//PROCHOT Handler
-static void prochot_reason(char *reason)
-{
-  if (gpio_get_value_by_shadow(IRQ_UV_DETECT_N) == GPIO_VALUE_LOW)
-    strcpy(reason, "UV");
-  if (gpio_get_value_by_shadow(IRQ_OC_DETECT_N) == GPIO_VALUE_LOW)
-    strcpy(reason, "OC");
-  if (gpio_get_value_by_shadow(IRQ_HSC_ALERT_N) == GPIO_VALUE_LOW)
-    strcpy(reason, "HSC PMBus alert");
-}
-
 static void cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
   char cmd[128] = {0};
@@ -161,13 +150,8 @@ static void cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_va
     strcat(cmd, " DEASSERT");
     syslog(LOG_CRIT, "FRU: %d DEASSERT: %s - %s\n", FRU_MB, cfg->description, cfg->shadow);
   } else {
-    char reason[32] = "";
-    strcat(cmd, " by ");
-    prochot_reason(reason);
-    strcat(cmd, reason);
-    syslog(LOG_CRIT, "FRU: %d ASSERT: %s - %s (reason: %s)\n",
-           FRU_MB, cfg->description, cfg->shadow, reason);
     strcat(cmd, " ASSERT");
+    syslog(LOG_CRIT, "FRU: %d ASSERT: %s - %s\n", FRU_MB, cfg->description, cfg->shadow);
   }
   pal_add_cri_sel(cmd);
 }
@@ -332,6 +316,17 @@ pwr_err_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   }
 }
 
+static void
+device_prsnt_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+
+  if (curr) {
+    syslog(LOG_CRIT, "FRU: %d %s LOST- %s\n", FRU_MB, cfg->description, cfg->shadow);
+  } else {
+    syslog(LOG_CRIT, "FRU: %d %s INSERT- %s\n", FRU_MB, cfg->description, cfg->shadow);
+  }
+}
+
 // Thread for gpio timer
 static void
 *gpio_timer() {
@@ -407,6 +402,11 @@ static struct gpiopoll_config g_gpios[] = {
   {FM_PVDDCR_CPU0_P1_PMALERT,  "SGPIO156",  GPIO_EDGE_BOTH,    gpio_event_handler,     NULL},
   {FM_PVDDCR_CPU1_P0_SMB_ALERT,"SGPIO158",  GPIO_EDGE_BOTH,    gpio_event_handler,     NULL},
   {FM_PVDDCR_CPU1_P1_SMB_ALERT,"SGPIO160",  GPIO_EDGE_BOTH,    gpio_event_handler,     NULL},
+  {FM_CPU0_PRSNT,           "CPU0",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
+  {FM_CPU1_PRSNT,           "CPU1",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
+  {FM_OCP0_PRSNT,           "NIC0",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
+  {FM_OCP1_PRSNT,           "NIC1",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
+  {FM_E1S0_PRSNT,           "E1.S",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
 };
 
 int main(int argc, char **argv)

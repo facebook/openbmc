@@ -19,9 +19,9 @@
 #
 import glob
 import subprocess
+import syslog
 import time
 import uuid
-import syslog
 from contextlib import suppress
 from unittest import TestCase
 
@@ -30,8 +30,6 @@ from utils.test_utils import running_systemd
 
 SYSTEMD_RESTART_COMMAND = ["/bin/systemctl", "restart", "rsyslog"]
 SYSV_RESTART_COMMAND = ["/etc/init.d/syslog", "restart"]
-
-PIDFILE = "/var/run/rsyslogd.pid"
 
 MESSAGES_FILE = "/var/log/messages"
 
@@ -51,15 +49,22 @@ class SyslogRestartTest(TestCase):
 
         self._ensure_rsyslog_working()
 
+    def _get_pid(self):
+        result = subprocess.run(["pidof", "rsyslogd"], stdout=subprocess.PIPE)
+        pid = result.stdout.strip()
+        if len(pid) == 0:
+            raise SyslogRestartTestError(
+                "`pidof rsyslogd` returned an empty string, rsyslog daemon doesn't seem to be running."
+            ) from None
+        return int(pid)
+
     def test_syslog_restart_pid_changed(self):
-        with open(PIDFILE) as f:
-            pid = f.read()
+        pid = self._get_pid()
 
         subprocess.Popen(self.syslog_restart_command).communicate()
         time.sleep(5)
 
-        with open(PIDFILE) as f:
-            new_pid = f.read()
+        new_pid = self._get_pid()
 
         self.assertNotEqual(pid, new_pid, "expected syslog PID to change after restart")
         self._ensure_rsyslog_working()
@@ -103,8 +108,7 @@ class SyslogRestartTest(TestCase):
         max_tries = 5
         for i in range(max_tries):
             try:
-                with open(PIDFILE) as f:
-                    reference_pid = f.read().strip()
+                reference_pid = self._get_pid()
 
                 with open("/proc/{}/cmdline".format(reference_pid)) as f:
                     reference_cmdline = f.read()
@@ -113,12 +117,8 @@ class SyslogRestartTest(TestCase):
                 # max_tries reached, raise
                 if i == max_tries - 1:
                     raise SyslogRestartTestError(
-                        "syslog daemon doesn't seem to be running. Check if '{PIDFILE}'"
-                        " exists and that it corresponds to a running process".format(
-                            PIDFILE=PIDFILE
-                        )
+                        "Could not get rsyslogd cmdline from /proc (syslog daemon restarting?)"
                     ) from None
-
                 time.sleep(5)
 
         return reference_cmdline

@@ -483,7 +483,9 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "Memory uncorrectable error",
     "Memory correctable error (Patrol scrub)",
     "Memory uncorrectable error (Patrol scrub)",
-    "Memory Parity Error event",
+    "Memory Parity Error (PCC=0)",
+    "Memory Parity Error (PCC=1)",
+    "Memory PMIC Error",
     "Reserved"
   };
   char *upi_err[] = {
@@ -561,6 +563,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       event_type = sel[12] & 0xF;
       switch (event_type) {
         case MEMORY_TRAINING_ERR:
+        case MEMORY_PMIC_ERR:
           if (plat == 0) { //Intel
             sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
                     general_info, dimm_location_str,

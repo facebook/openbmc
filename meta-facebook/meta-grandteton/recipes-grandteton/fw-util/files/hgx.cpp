@@ -98,7 +98,19 @@ class HGXSystemConfig {
         static HGXComponent envsw3("hgx", "erot-nvswitch3", "ERoT_NVSwitch3_Firmware");
         static HGXComponent epax("hgx", "erot-pax", "ERoT_PCIeSwitch_Firmware");
       } else {
-        static HGXComponent hmc("hgx", "hmc", "HGX_FW_BMC_0");
+        // Newer HMC uses "BMC" as the component name
+        bool isHMC;
+        try {
+          hgx::version("HGX_FW_HMC_0");
+          isHMC = true;
+        } catch (std::exception&) {
+          isHMC = false;
+        };
+        if (isHMC) {
+          static HGXComponent hmc("hgx", "hmc", "HGX_FW_HMC_0");
+        } else {
+          static HGXComponent hmc("hgx", "hmc", "HGX_FW_BMC_0");
+        }
         static HGXComponent gpu0("hgx", "gpu0-fw", "HGX_FW_GPU_SXM_1");
         static HGXComponent gpu1("hgx", "gpu1-fw", "HGX_FW_GPU_SXM_2");
         static HGXComponent gpu2("hgx", "gpu2-fw", "HGX_FW_GPU_SXM_3");
@@ -124,6 +136,7 @@ class HGXSystemConfig {
         static HGXComponent nvswinfo1("hgx", "nvswitch1-inforom", "HGX_InfoROM_NVSwitch_1");
         static HGXComponent nvswinfo2("hgx", "nvswitch2-inforom", "HGX_InfoROM_NVSwitch_2");
         static HGXComponent nvswinfo3("hgx", "nvswitch3-inforom", "HGX_InfoROM_NVSwitch_3");
+
         static HGXComponent pretimer0("hgx", "pcieretimer0", "HGX_FW_PCIeRetimer_0");
         static HGXComponent pretimer1("hgx", "pcieretimer1", "HGX_FW_PCIeRetimer_1");
         static HGXComponent pretimer2("hgx", "pcieretimer2", "HGX_FW_PCIeRetimer_2");
@@ -142,7 +155,11 @@ class HGXSystemConfig {
         static HGXComponent egpu5("hgx", "erot-gpu5", "HGX_FW_ERoT_GPU_SXM_6");
         static HGXComponent egpu6("hgx", "erot-gpu6", "HGX_FW_ERoT_GPU_SXM_7");
         static HGXComponent egpu7("hgx", "erot-gpu7", "HGX_FW_ERoT_GPU_SXM_8");
-        static HGXComponent ehmc("hgx", "erot-hmc", "HGX_FW_ERoT_BMC_0");
+        if (isHMC) {
+          static HGXComponent ehmc("hgx", "erot-hmc", "HGX_FW_ERoT_HMC_0");
+        } else {
+          static HGXComponent ehmc("hgx", "erot-hmc", "HGX_FW_ERoT_BMC_0");
+        }
         static HGXComponent envsw0("hgx", "erot-nvswitch0", "HGX_FW_ERoT_NVSwitch_0");
         static HGXComponent envsw1("hgx", "erot-nvswitch1", "HGX_FW_ERoT_NVSwitch_1");
         static HGXComponent envsw2("hgx", "erot-nvswitch2", "HGX_FW_ERoT_NVSwitch_2");

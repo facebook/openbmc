@@ -22,6 +22,7 @@ PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
   meta-bletchley:lf-master
   meta-evb-npcm845:lf-master
+  meta-fbttn2:lf-master
   meta-greatlakes:lf-master
   meta-halfdome:lf-master
 # kirkstone platforms (latest)

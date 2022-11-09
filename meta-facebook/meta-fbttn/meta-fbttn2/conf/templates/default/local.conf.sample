@@ -1,0 +1,2 @@
+MACHINE ??= "fbttn2"
+DISTRO ?= "openbmc-fb-master"

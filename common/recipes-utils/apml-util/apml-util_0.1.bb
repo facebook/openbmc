@@ -11,6 +11,7 @@ inherit legacy-packages
 
 LOCAL_URI = " \
     file://apml-util.cpp \
+    file://apml-extra.h \
     file://meson.build \
     "
 

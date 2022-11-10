@@ -13,8 +13,14 @@ deps = [
     dependency('libbic'),
 ]
 
-apml_util_exe = executable('apml-util',
+sources = [
     'apml-util.cpp',
+]
+
+subdir('plat')
+
+apml_util_exe = executable('apml-util',
+    sources,
     dependencies: deps,
     install: true,
 )

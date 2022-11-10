@@ -61,6 +61,7 @@ IMAGE_INSTALL += " \
   dimm-util \
   attest-util \
   psb-util \
+  apml-util \
   prot-util \
   "
 

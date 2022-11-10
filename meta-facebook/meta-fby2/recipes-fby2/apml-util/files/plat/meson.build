@@ -1,0 +1,3 @@
+sources += [
+    'apml-plat.cpp'
+]

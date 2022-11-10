@@ -18,8 +18,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
 LOCAL_URI += " \
     file://plat/meson.build \
-    file://pal_crashdump_nd.h \
-    file://pal_crashdump_nd.c \
     "
 
 CFLAGS:prepend = " -DCONFIG_FBY2_ND -DCONFIG_FBY2_KERNEL "
+
+EXTRA_OEMESON:append = " -Dcrashdump-amd=true"

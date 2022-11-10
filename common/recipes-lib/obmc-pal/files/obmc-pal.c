@@ -36,6 +36,9 @@
 #include <openbmc/ipmb.h>
 #include <openbmc/snr-tolerance.h>
 #include <math.h>
+#ifdef CRASHDUMP_AMD
+#include "crashdump-amd/pal_crashdump_amd.h"
+#endif
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
@@ -762,7 +765,23 @@ pal_set_imc_version(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *r
 uint8_t __attribute__((weak))
 pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
-  return PAL_EOK;
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+
+#ifdef CRASHDUMP_AMD
+  if (pal_is_slot_server(slot)) {
+    completion_code = pal_amdcrd_save_mca_to_file(
+        slot - 1, /* slot is 1 based */
+        req_data,
+        req_len - IPMI_MN_REQ_HDR_SIZE,
+        res_data,
+        res_len);
+    return completion_code;
+  } else {
+    return CC_PARAM_OUT_OF_RANGE;
+  }
+#endif
+
+  return completion_code;
 }
 
 uint8_t __attribute__((weak))

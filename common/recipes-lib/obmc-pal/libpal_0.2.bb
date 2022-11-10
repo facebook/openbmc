@@ -33,6 +33,8 @@ LOCAL_URI = " \
     file://pal.h \
     file://pal_sensors.h \
     file://pal.py \
+    file://crashdump-amd/pal_crashdump_amd.c \
+    file://crashdump-amd/pal_crashdump_amd.h \
     "
 
 DEPENDS += " \

@@ -20,18 +20,20 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <syslog.h>
 #include <sys/sysinfo.h>
 #include <pthread.h>
+#include <openbmc/kv.h>
 
 #include "pal.h"
-#include "pal_crashdump_nd.h"
+#include "pal_crashdump_amd.h"
 
-static ndcrd_mca_recv_list_t g_recv_list[MAX_NODES] = {0};
-static ndcrd_wdt_addr_bank_t g_wdt_addr[MAX_NODES] = {0};
-static pthread_mutex_t g_ndcrd_state_lock[MAX_NODES] = {[0 ... (MAX_NODES-1)] = PTHREAD_MUTEX_INITIALIZER};
-static uint8_t g_ndcrd_state[MAX_NODES] = {[0 ... (MAX_NODES-1)] = NDCRD_CTRL_BMC_FREE};
+static amdcrd_mca_recv_list_t g_recv_list[MAX_NODES] = {0};
+static amdcrd_wdt_addr_bank_t g_wdt_addr[MAX_NODES] = {0};
+static pthread_mutex_t g_amdcrd_state_lock[MAX_NODES] = {[0 ... (MAX_NODES-1)] = PTHREAD_MUTEX_INITIALIZER};
+static uint8_t g_amdcrd_state[MAX_NODES] = {[0 ... (MAX_NODES-1)] = AMDCRD_CTRL_BMC_FREE};
 
 typedef struct crashdump_data {
   uint8_t   sid;  // 0 based
@@ -39,31 +41,31 @@ typedef struct crashdump_data {
 } crashdump_data_t;
 static crashdump_data_t g_crashdump_data[MAX_NODES];
 
-static uint8_t ndcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_mca_bank_t* pbank);
-static uint8_t ndcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_t* pbank);
-static uint8_t ndcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_v2_t* pbank);
-static uint8_t ndcrd_header_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_header_bank_t* pbank);
-static uint8_t ndcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cpu_wdt_bank_t* pbank);
-static uint8_t ndcrd_wdt_addr_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_addr_bank_t* pbank);
-static uint8_t ndcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_data_bank_t* pbank);
-static uint8_t ndcrd_tcdx_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_tcdx_bank_t* pbank);
-static uint8_t ndcrd_cake_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cake_bank_t* pbank);
-static uint8_t ndcrd_pie0_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_pie0_bank_t* pbank);
-static uint8_t ndcrd_iom_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_iom_bank_t* pbank);
-static uint8_t ndcrd_ccix_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ccix_bank_t* pbank);
-static uint8_t ndcrd_cs_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cs_bank_t* pbank);
-static uint8_t ndcrd_pcie_aer_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_pcie_aer_bank_t* pbank);
-static uint8_t ndcrd_ctrl_pkt_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ctrl_pkt_t* ppkt, uint8_t* res_data, uint8_t* res_len);
+static uint8_t amdcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_mca_bank_t* pbank);
+static uint8_t amdcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_virtual_bank_t* pbank);
+static uint8_t amdcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_virtual_bank_v2_t* pbank);
+static uint8_t amdcrd_header_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_header_bank_t* pbank);
+static uint8_t amdcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_cpu_wdt_bank_t* pbank);
+static uint8_t amdcrd_wdt_addr_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_addr_bank_t* pbank);
+static uint8_t amdcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_data_bank_t* pbank);
+static uint8_t amdcrd_tcdx_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_tcdx_bank_t* pbank);
+static uint8_t amdcrd_cake_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_cake_bank_t* pbank);
+static uint8_t amdcrd_pie0_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_pie0_bank_t* pbank);
+static uint8_t amdcrd_iom_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_iom_bank_t* pbank);
+static uint8_t amdcrd_ccix_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_ccix_bank_t* pbank);
+static uint8_t amdcrd_cs_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_cs_bank_t* pbank);
+static uint8_t amdcrd_pcie_aer_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_pcie_aer_bank_t* pbank);
+static uint8_t amdcrd_ctrl_pkt_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_ctrl_pkt_t* ppkt, uint8_t* res_data, uint8_t* res_len);
 static void* generate_dump(void* arg);
 
 enum {
-  NDCRD_SET_STATE_SUCCESS     = 0,
-  NDCRD_SET_STATE_FAIL        = -1,
-  NDCRD_SET_STATE_THREAD_ERR  = -2,
-  NDCRD_SET_STATE_UNKNOW_ERR  = -3,
+  AMDCRD_SET_STATE_SUCCESS     = 0,
+  AMDCRD_SET_STATE_FAIL        = -1,
+  AMDCRD_SET_STATE_THREAD_ERR  = -2,
+  AMDCRD_SET_STATE_UNKNOW_ERR  = -3,
 };
 
-static int ndcrd_set_state(const uint8_t idx, const uint8_t new_state) {
+static int amdcrd_set_state(const uint8_t idx, const uint8_t new_state) {
   // ------------------------------------------
   // state machine diagram
   // ------------------------------------------
@@ -75,57 +77,57 @@ static int ndcrd_set_state(const uint8_t idx, const uint8_t new_state) {
   //   |----------------------------------
   //
 
-  int ret = NDCRD_SET_STATE_SUCCESS;
+  int ret = AMDCRD_SET_STATE_SUCCESS;
 
-  pthread_mutex_lock(&g_ndcrd_state_lock[idx]);
+  pthread_mutex_lock(&g_amdcrd_state_lock[idx]);
 
-  switch (g_ndcrd_state[idx]) {
-    case NDCRD_CTRL_BMC_FREE:
-      if (new_state == NDCRD_CTRL_BMC_WAIT_DATA) {
-        ret = NDCRD_SET_STATE_SUCCESS;
+  switch (g_amdcrd_state[idx]) {
+    case AMDCRD_CTRL_BMC_FREE:
+      if (new_state == AMDCRD_CTRL_BMC_WAIT_DATA) {
+        ret = AMDCRD_SET_STATE_SUCCESS;
       } else {
-        ret = NDCRD_SET_STATE_FAIL;
+        ret = AMDCRD_SET_STATE_FAIL;
       }
       break;
 
-    case NDCRD_CTRL_BMC_WAIT_DATA:
-      if (new_state == NDCRD_CTRL_BMC_WAIT_DATA) {
-        ret = NDCRD_SET_STATE_SUCCESS;
-      } else if (new_state == NDCRD_CTRL_BMC_PACK) {
+    case AMDCRD_CTRL_BMC_WAIT_DATA:
+      if (new_state == AMDCRD_CTRL_BMC_WAIT_DATA) {
+        ret = AMDCRD_SET_STATE_SUCCESS;
+      } else if (new_state == AMDCRD_CTRL_BMC_PACK) {
         // create a thread for packing
         g_crashdump_data[idx].sid = idx;
         if (pthread_create(&g_crashdump_data[idx].tid, NULL, generate_dump, (void*)&g_crashdump_data[idx])) {
           syslog(LOG_ERR, "%s(): create generate_dump threrad failed for slot%d", __func__, (idx+1));
-          ret = NDCRD_SET_STATE_THREAD_ERR;
+          ret = AMDCRD_SET_STATE_THREAD_ERR;
         } else {
-          ret = NDCRD_SET_STATE_SUCCESS;
+          ret = AMDCRD_SET_STATE_SUCCESS;
         }
       } else {
-        ret = NDCRD_SET_STATE_FAIL;
+        ret = AMDCRD_SET_STATE_FAIL;
       }
       break;
 
-    case NDCRD_CTRL_BMC_PACK:
-      if (new_state == NDCRD_CTRL_BMC_FREE) {
-        ret = NDCRD_SET_STATE_SUCCESS;
+    case AMDCRD_CTRL_BMC_PACK:
+      if (new_state == AMDCRD_CTRL_BMC_FREE) {
+        ret = AMDCRD_SET_STATE_SUCCESS;
       } else {
-        ret = NDCRD_SET_STATE_FAIL;
+        ret = AMDCRD_SET_STATE_FAIL;
       }
       break;
 
     default:
-      ret = NDCRD_SET_STATE_UNKNOW_ERR;
+      ret = AMDCRD_SET_STATE_UNKNOW_ERR;
       break;
   }
 
-  if (ret == NDCRD_SET_STATE_SUCCESS) {
-    g_ndcrd_state[idx] = new_state;
+  if (ret == AMDCRD_SET_STATE_SUCCESS) {
+    g_amdcrd_state[idx] = new_state;
   } else {
     syslog(LOG_ERR, "%s(): set state failed for slot%d, current_state: %u, new_state: %u, err: %d",
-      __func__, (idx+1), g_ndcrd_state[idx], new_state, ret);
+      __func__, (idx+1), g_amdcrd_state[idx], new_state, ret);
   }
 
-  pthread_mutex_unlock(&g_ndcrd_state_lock[idx]);
+  pthread_mutex_unlock(&g_amdcrd_state_lock[idx]);
   return ret;
 }
 
@@ -134,10 +136,10 @@ static void* generate_dump(void* arg) {
   crashdump_data_t* data = (crashdump_data_t*)arg;
   char cmd[128] = {0};
 
-  snprintf(cmd, 128, "%s slot%d", CRASHDUMP_ND_BIN, (data->sid + 1));
+  snprintf(cmd, 128, "%s slot%d", CRASHDUMP_AMD_BIN, (data->sid + 1));
   log_system(cmd);
 
-  if (ndcrd_set_state(data->sid, NDCRD_CTRL_BMC_FREE) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(data->sid, AMDCRD_CTRL_BMC_FREE) != AMDCRD_SET_STATE_SUCCESS) {
     syslog(LOG_ERR, "%s(): Failed set state to free (slot%d)", __func__, (data->sid+1));
   }
 
@@ -174,13 +176,13 @@ uint8_t crashdump_initial(uint8_t slot) {
 }
 
 uint8_t
-pal_ndcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, uint8_t* res_data, uint8_t* res_len) {
+pal_amdcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, uint8_t* res_data, uint8_t* res_len) {
 
   uint8_t completion_code;
   FILE* fp;
   char file_path[MAX_CRASHDUMP_FILE_NAME_LENGTH] = "";
-  ndcrd_hdr_t* phdr = (ndcrd_hdr_t*)req_data;
-  uint8_t* data_ptr = req_data + sizeof(ndcrd_hdr_t);
+  amdcrd_hdr_t* phdr = (amdcrd_hdr_t*)req_data;
+  uint8_t* data_ptr = req_data + sizeof(amdcrd_hdr_t);
 
   /* slot is 0 based, slot_id is 1 based */
   snprintf(file_path, MAX_CRASHDUMP_FILE_NAME_LENGTH, MCA_DECODED_LOG_PATH, slot + 1);
@@ -193,65 +195,65 @@ pal_ndcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, uin
 
   switch (phdr->bank_hdr.bank_type) {
     case TYPE_MCA_BANK:
-      completion_code = ndcrd_mac_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_mca_bank_t*)data_ptr);
+      completion_code = amdcrd_mac_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_mca_bank_t*)data_ptr);
       break;
 
     case TYPE_VIRTUAL_BANK:
       if (phdr->bank_hdr.bank_fmt_ver == 1) {
-        completion_code = ndcrd_virtual_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_virtual_bank_t*)data_ptr);
+        completion_code = amdcrd_virtual_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_virtual_bank_t*)data_ptr);
       } else if (phdr->bank_hdr.bank_fmt_ver == 2) {
-        completion_code = ndcrd_virtual_bank_v2_handler(fp, slot, &phdr->bank_hdr, (ndcrd_virtual_bank_v2_t*)data_ptr);
+        completion_code = amdcrd_virtual_bank_v2_handler(fp, slot, &phdr->bank_hdr, (amdcrd_virtual_bank_v2_t*)data_ptr);
       } else {
         completion_code = CC_INVALID_PARAM;
       }
       break;
 
     case TYPE_CPU_WDT_BANK:
-      completion_code = ndcrd_cpu_wdt_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_cpu_wdt_bank_t*)data_ptr);
+      completion_code = amdcrd_cpu_wdt_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_cpu_wdt_bank_t*)data_ptr);
       break;
 
     case TYPE_WDT_ADDR_BANK:
-      completion_code = ndcrd_wdt_addr_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_wdt_addr_bank_t*)data_ptr);
+      completion_code = amdcrd_wdt_addr_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_wdt_addr_bank_t*)data_ptr);
       break;
 
     case TYPE_WDT_DATA_BANK:
-      completion_code = ndcrd_wdt_data_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_wdt_data_bank_t*)data_ptr);
+      completion_code = amdcrd_wdt_data_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_wdt_data_bank_t*)data_ptr);
       break;
 
     case TYPE_TCDX_BANK:
-      completion_code = ndcrd_tcdx_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_tcdx_bank_t*)data_ptr);
+      completion_code = amdcrd_tcdx_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_tcdx_bank_t*)data_ptr);
       break;
 
     case TYPE_CAKE_BANK:
-      completion_code = ndcrd_cake_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_cake_bank_t*)data_ptr);
+      completion_code = amdcrd_cake_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_cake_bank_t*)data_ptr);
       break;
 
     case TYPE_PIE0_BANK:
-      completion_code = ndcrd_pie0_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_pie0_bank_t*)data_ptr);
+      completion_code = amdcrd_pie0_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_pie0_bank_t*)data_ptr);
       break;
 
     case TYPE_IOM_BANK:
-      completion_code = ndcrd_iom_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_iom_bank_t*)data_ptr);
+      completion_code = amdcrd_iom_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_iom_bank_t*)data_ptr);
       break;
 
     case TYPE_CCIX_BANK:
-      completion_code = ndcrd_ccix_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_ccix_bank_t*)data_ptr);
+      completion_code = amdcrd_ccix_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_ccix_bank_t*)data_ptr);
       break;
 
     case TYPE_CS_BANK:
-      completion_code = ndcrd_cs_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_cs_bank_t*)data_ptr);
+      completion_code = amdcrd_cs_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_cs_bank_t*)data_ptr);
       break;
 
     case TYPE_PCIE_AER_BANK:
-      completion_code = ndcrd_pcie_aer_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_pcie_aer_bank_t*)data_ptr);
+      completion_code = amdcrd_pcie_aer_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_pcie_aer_bank_t*)data_ptr);
       break;
 
     case TYPE_CONTROL_PKT:
-      completion_code = ndcrd_ctrl_pkt_handler(fp, slot, &phdr->bank_hdr, (ndcrd_ctrl_pkt_t*)data_ptr, res_data, res_len);
+      completion_code = amdcrd_ctrl_pkt_handler(fp, slot, &phdr->bank_hdr, (amdcrd_ctrl_pkt_t*)data_ptr, res_data, res_len);
       break;
 
     case TYPE_HEADER_BANK:
-      completion_code = ndcrd_header_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_header_bank_t*)data_ptr);
+      completion_code = amdcrd_header_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_header_bank_t*)data_ptr);
       break;
 
     default:
@@ -260,18 +262,18 @@ pal_ndcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, uin
   }
   fclose(fp);
 
-  pthread_mutex_lock(&g_ndcrd_state_lock[slot]);
-  syslog(LOG_INFO, "%s(): slot: %u, cc: 0x%02x, current state: 0x%02x", __func__, (slot+1), completion_code, g_ndcrd_state[slot]);
-  pthread_mutex_unlock(&g_ndcrd_state_lock[slot]);
+  pthread_mutex_lock(&g_amdcrd_state_lock[slot]);
+  syslog(LOG_INFO, "%s(): slot: %u, cc: 0x%02x, current state: 0x%02x", __func__, (slot+1), completion_code, g_amdcrd_state[slot]);
+  pthread_mutex_unlock(&g_amdcrd_state_lock[slot]);
   return completion_code;
 }
 
 
 static uint8_t
-ndcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_mca_bank_t* pbank) {
+amdcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_mca_bank_t* pbank) {
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -317,12 +319,12 @@ out:
 }
 
 static uint8_t
-ndcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_t* pbank) {
+amdcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_virtual_bank_t* pbank) {
   int ret;
   size_t i;
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -343,12 +345,12 @@ ndcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t*
         g_recv_list[idx].list[i].bank_id, g_recv_list[idx].list[i].core_id);
   }
   fprintf(fp, "\n");
-  memset(&g_recv_list[idx], 0, sizeof(ndcrd_mca_recv_list_t));
+  memset(&g_recv_list[idx], 0, sizeof(amdcrd_mca_recv_list_t));
 
-  ret = ndcrd_set_state(idx, NDCRD_CTRL_BMC_PACK);
-  if (ret == NDCRD_SET_STATE_THREAD_ERR) {
+  ret = amdcrd_set_state(idx, AMDCRD_CTRL_BMC_PACK);
+  if (ret == AMDCRD_SET_STATE_THREAD_ERR) {
     completion_code = CC_UNSPECIFIED_ERROR;
-  } else if (ret == NDCRD_SET_STATE_FAIL) {
+  } else if (ret == AMDCRD_SET_STATE_FAIL) {
     // basically, this code should never be run
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
   }
@@ -358,11 +360,11 @@ out:
 }
 
 static uint8_t
-ndcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_v2_t* pbank) {
+amdcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_virtual_bank_v2_t* pbank) {
   size_t i;
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -391,42 +393,42 @@ ndcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr
         g_recv_list[idx].list[i].bank_id, g_recv_list[idx].list[i].core_id);
   }
   fprintf(fp, "\n");
-  memset(&g_recv_list[idx], 0, sizeof(ndcrd_mca_recv_list_t));
+  memset(&g_recv_list[idx], 0, sizeof(amdcrd_mca_recv_list_t));
 
 out:
   return completion_code;
 }
 
 static uint8_t
-ndcrd_header_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_header_bank_t* pbank) {
+amdcrd_header_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_header_bank_t* pbank) {
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
 
   fprintf(fp, " %s : \n", "Crashdump Header");
-  fprintf(fp, " %-15s : 0x%016llX \n", "CPU PPIN", pbank->cpu_ppin);
+  fprintf(fp, " %-15s : 0x%016"PRIx64" \n", "CPU PPIN", pbank->cpu_ppin);
   fprintf(fp, " %-15s : 0x%08X \n", "UCODE VERSION", pbank->ucode_ver);
   fprintf(fp, " %-15s : 0x%08X \n", "PMIO 80h", pbank->pmio);
-  fprintf(fp, "    BIT0 - SMN Parity/SMN Timeouts PSP/SMU Parity and ECC/SMN On-Package Link Error : %d \n", (pbank->pmio & 0x1));
+  fprintf(fp, "    BIT0 - SMN Parity/SMN Timeouts PSP/SMU Parity and ECC/SMN On-Package Link Error : %u \n", (pbank->pmio & 0x1));
   fprintf(fp, "    BIT2 - PSP Parity and ECC : %d \n", ((pbank->pmio & 0x4)>>2));
   fprintf(fp, "    BIT3 - SMN Timeouts SMU : %d \n", ((pbank->pmio & 0x8)>>3));
   fprintf(fp, "    BIT4 - SMN Off-Package Link Packet Error : %d \n", ((pbank->pmio & 0x10)>>4));
   fprintf(fp, "\n");
-  memset(&g_recv_list[idx], 0, sizeof(ndcrd_mca_recv_list_t));
+  memset(&g_recv_list[idx], 0, sizeof(amdcrd_mca_recv_list_t));
 
 out:
   return completion_code;
 }
 
 static uint8_t
-ndcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cpu_wdt_bank_t* pbank) {
+amdcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_cpu_wdt_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -449,26 +451,26 @@ out:
 }
 
 static uint8_t
-ndcrd_wdt_addr_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_addr_bank_t* pbank) {
+amdcrd_wdt_addr_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_addr_bank_t* pbank) {
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != 0) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != 0) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
 
-  memcpy(&g_wdt_addr[idx], pbank, sizeof(ndcrd_wdt_addr_bank_t));
+  memcpy(&g_wdt_addr[idx], pbank, sizeof(amdcrd_wdt_addr_bank_t));
 
 out:
   return completion_code;
 }
 
 static uint8_t
-ndcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_data_bank_t* pbank) {
+amdcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_data_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -498,18 +500,18 @@ ndcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t
     fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA2: 0x%08X \n", pbank->data[i][3][2]);
   }
   fprintf(fp, "\n");
-  memset(&g_wdt_addr[idx], 0, sizeof(ndcrd_wdt_addr_bank_t));
+  memset(&g_wdt_addr[idx], 0, sizeof(amdcrd_wdt_addr_bank_t));
 
 out:
   return completion_code;
 }
 
 static uint8_t
-ndcrd_tcdx_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_tcdx_bank_t* pbank) {
+amdcrd_tcdx_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_tcdx_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -528,11 +530,11 @@ out:
 }
 
 static uint8_t
-ndcrd_cake_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cake_bank_t* pbank) {
+amdcrd_cake_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_cake_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -551,10 +553,10 @@ out:
 }
 
 static uint8_t
-ndcrd_pie0_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_pie0_bank_t* pbank) {
+amdcrd_pie0_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_pie0_bank_t* pbank) {
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -571,11 +573,11 @@ out:
 }
 
 static uint8_t
-ndcrd_iom_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_iom_bank_t* pbank) {
+amdcrd_iom_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_iom_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -594,11 +596,11 @@ out:
 }
 
 static uint8_t
-ndcrd_ccix_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ccix_bank_t* pbank) {
+amdcrd_ccix_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_ccix_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -617,11 +619,11 @@ out:
 }
 
 static uint8_t
-ndcrd_cs_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cs_bank_t* pbank) {
+amdcrd_cs_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_cs_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -640,10 +642,10 @@ out:
 }
 
 static uint8_t
-ndcrd_pcie_aer_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_pcie_aer_bank_t* pbank) {
+amdcrd_pcie_aer_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_pcie_aer_bank_t* pbank) {
   uint8_t completion_code = CC_SUCCESS;
 
-  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
     completion_code = CC_NOT_SUPP_IN_CURR_STATE;
     goto out;
   }
@@ -679,23 +681,23 @@ out:
 
 
 static uint8_t
-ndcrd_ctrl_pkt_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ctrl_pkt_t* ppkt, uint8_t* res_data, uint8_t* res_len) {
+amdcrd_ctrl_pkt_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_ctrl_pkt_t* ppkt, uint8_t* res_data, uint8_t* res_len) {
   int ret;
   uint8_t completion_code = CC_SUCCESS;
 
   switch (ppkt->cmd) {
-    case NDCRD_CTRL_GET_STATE:
-      pthread_mutex_lock(&g_ndcrd_state_lock[idx]);
-      res_data[0] = g_ndcrd_state[idx];
+    case AMDCRD_CTRL_GET_STATE:
+      pthread_mutex_lock(&g_amdcrd_state_lock[idx]);
+      res_data[0] = g_amdcrd_state[idx];
       *res_len = 1;
-      pthread_mutex_unlock(&g_ndcrd_state_lock[idx]);
+      pthread_mutex_unlock(&g_amdcrd_state_lock[idx]);
       break;
 
-    case NDCRD_CTRL_DUMP_FINIDHED:
-      ret = ndcrd_set_state(idx, NDCRD_CTRL_BMC_PACK);
-      if (ret == NDCRD_SET_STATE_THREAD_ERR) {
+    case AMDCRD_CTRL_DUMP_FINIDHED:
+      ret = amdcrd_set_state(idx, AMDCRD_CTRL_BMC_PACK);
+      if (ret == AMDCRD_SET_STATE_THREAD_ERR) {
         completion_code = CC_UNSPECIFIED_ERROR;
-      } else if (ret == NDCRD_SET_STATE_FAIL) {
+      } else if (ret == AMDCRD_SET_STATE_FAIL) {
         completion_code = CC_NOT_SUPP_IN_CURR_STATE;
       }
       break;

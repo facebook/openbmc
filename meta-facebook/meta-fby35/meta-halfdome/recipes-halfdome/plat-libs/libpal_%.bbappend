@@ -17,3 +17,5 @@
 
 
 CFLAGS:prepend = " -DCONFIG_HALFDOME "
+
+EXTRA_OEMESON:append = " -Dcrashdump-amd=true"

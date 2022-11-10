@@ -36,10 +36,10 @@ update_crashdump_history()
   HIST_INDEX_2=$(echo "$HISTORY_RECORD" | awk -F',' '{ print $2 }')
 
   OUT_STR="$l_CURT_DTIME"
-  if [ ! -z "$HIST_INDEX_1" ]; then
+  if [ -n "$HIST_INDEX_1" ]; then
     OUT_STR="$OUT_STR,$HIST_INDEX_1"
   fi
-  if [ ! -z "$HIST_INDEX_2" ]; then
+  if [ -n "$HIST_INDEX_2" ]; then
     OUT_STR="$OUT_STR,$HIST_INDEX_2"
   fi
  
@@ -103,7 +103,7 @@ for i in "$@"; do
       RUN_MODE="event"
       shift
       ;;
-    -*|--*=) # unsupported flags
+    --*|-*=) # unsupported flags
       echo "Error: Unsupported flag $i" >&2
       exit 1
       ;;

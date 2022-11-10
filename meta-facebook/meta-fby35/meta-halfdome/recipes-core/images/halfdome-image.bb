@@ -63,6 +63,5 @@ IMAGE_INSTALL += " \
   psb-util \
   apml-util \
   prot-util \
+  crashdump-amd \
   "
-
-#  crashdump-amd \

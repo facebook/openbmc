@@ -1,1 +1,6 @@
 option('machine', type: 'string', value : 'generic')
+
+option('crashdump-amd', type : 'boolean',
+    value : false,
+    description : 'Enable crashdump mechanism for AMD platfoem',
+)

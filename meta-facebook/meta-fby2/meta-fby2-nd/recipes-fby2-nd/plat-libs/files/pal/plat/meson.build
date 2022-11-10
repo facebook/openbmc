@@ -13,10 +13,3 @@ pal_deps += [
     dependency('libobmc-sensors'),
     ]
 
-pal_headers += [
-    'pal_crashdump_nd.h',
-    ]
-
-pal_sources += [
-    'pal_crashdump_nd.c',
-    ]

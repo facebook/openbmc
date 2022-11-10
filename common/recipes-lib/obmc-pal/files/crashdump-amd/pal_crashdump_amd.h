@@ -16,18 +16,25 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __PAL_CRASHDUMP_ND_H__
-#define __PAL_CRASHDUMP_ND_H__
+#ifndef __PAL_CRASHDUMP_AMD_H__
+#define __PAL_CRASHDUMP_AMD_H__
 
 #include <stdint.h>
 
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
 
-#define CRASHDUMP_ND_BIN       "/usr/local/bin/crashdump_amd.sh --event"      
+#define CRASHDUMP_AMD_BIN       "/usr/local/bin/crashdump_amd.sh --event"      
 #define MAX_CRASHDUMP_FILE_NAME_LENGTH 128
 #define MAX_VAILD_LIST_LENGTH 128
-#define NDCRD_CMD_HEADER_LENGTH 4
-#define NDCRD_BANK_HEADER_LENGTH 4
-#define NDCRD_HEADER_LENGTH (NDCRD_CMD_HEADER_LENGTH+NDCRD_BANK_HEADER_LENGTH)
+#define AMDCRD_CMD_HEADER_LENGTH 4
+#define AMDCRD_BANK_HEADER_LENGTH 4
+#define AMDCRD_HEADER_LENGTH (AMDCRD_CMD_HEADER_LENGTH+AMDCRD_BANK_HEADER_LENGTH)
 #define MCA_DECODED_LOG_PATH "/tmp/crashdump_slot%d_mca"
 #define CRASHDUMP_PID_PATH "/var/run/autodump%d.pid"
 #define CRASHDUMP_TIMESTAMP_FILE "fru%d_crashdump"
@@ -41,7 +48,7 @@
 #define CCIX_NUM 4
 #define CS_NUM 8
 
-enum NDCRD_DATA_TYPE{
+enum AMDCRD_DATA_TYPE{
   TYPE_MCA_BANK       = 0x01,
   TYPE_VIRTUAL_BANK   = 0x02,
   TYPE_CPU_WDT_BANK   = 0x03,
@@ -59,27 +66,26 @@ enum NDCRD_DATA_TYPE{
   TYPE_HEADER_BANK    = 0x81,
 };
 
-enum NDCRD_CTRL_CMD {
-  NDCRD_CTRL_GET_STATE      = 0x01,
-  NDCRD_CTRL_DUMP_FINIDHED  = 0x02,
+enum AMDCRD_CTRL_CMD {
+  AMDCRD_CTRL_GET_STATE      = 0x01,
+  AMDCRD_CTRL_DUMP_FINIDHED  = 0x02,
 };
 
-enum NDCRD_CTRL_STATE {
-  NDCRD_CTRL_BMC_FREE       = 0x01,
-  NDCRD_CTRL_BMC_WAIT_DATA  = 0x02,
-  NDCRD_CTRL_BMC_PACK       = 0x03,
+enum AMDCRD_CTRL_STATE {
+  AMDCRD_CTRL_BMC_FREE       = 0x01,
+  AMDCRD_CTRL_BMC_WAIT_DATA  = 0x02,
+  AMDCRD_CTRL_BMC_PACK       = 0x03,
 };
-
 
 typedef struct {
   uint8_t bank_id;
   uint8_t core_id;
-} __attribute__((packed)) ndcrd_bank_core_id_t;
+} __attribute__((packed)) amdcrd_bank_core_id_t;
 
 typedef struct {
   uint8_t count;
-  ndcrd_bank_core_id_t list[MAX_VAILD_LIST_LENGTH];
-} __attribute__((packed)) ndcrd_mca_recv_list_t;
+  amdcrd_bank_core_id_t list[MAX_VAILD_LIST_LENGTH];
+} __attribute__((packed)) amdcrd_mca_recv_list_t;
 
 //==============================================================================
 // Crashdump Command Header
@@ -87,7 +93,7 @@ typedef struct {
 typedef struct {
   uint8_t cmd_ver;
   uint8_t reserved[3];
-} __attribute__((packed)) ndcrd_cmd_hdr_t;
+} __attribute__((packed)) amdcrd_cmd_hdr_t;
 
 //==============================================================================
 // Crashdump Bank Header
@@ -105,15 +111,15 @@ typedef struct {
       uint8_t reserved[2];
     } __attribute__((packed));
   };
-} __attribute__((packed)) ndcrd_bank_hdr_t;
+} __attribute__((packed)) amdcrd_bank_hdr_t;
 
 //==============================================================================
 // Crashdump Header
 //==============================================================================
 typedef struct {
-  ndcrd_cmd_hdr_t cmd_hdr;
-  ndcrd_bank_hdr_t bank_hdr;
-} __attribute__((packed)) ndcrd_hdr_t;
+  amdcrd_cmd_hdr_t cmd_hdr;
+  amdcrd_bank_hdr_t bank_hdr;
+} __attribute__((packed)) amdcrd_hdr_t;
 
 
 
@@ -144,7 +150,7 @@ typedef struct {
   uint32_t mca_deaddr_hf;
   uint32_t mca_misc1_lf;
   uint32_t mca_misc1_hf;
-} __attribute__((packed)) ndcrd_mca_bank_t;
+} __attribute__((packed)) amdcrd_mca_bank_t;
 
 //==============================================================================
 // Type 0x02: Virtual/Global Bank
@@ -153,8 +159,8 @@ typedef struct {
   uint32_t bank_s5_reset_status;
   uint32_t bank_breakevent;
   uint16_t valid_mca_count;
-  ndcrd_bank_core_id_t valid_mca_list[1];
-} __attribute__((packed)) ndcrd_virtual_bank_t;
+  amdcrd_bank_core_id_t valid_mca_list[1];
+} __attribute__((packed)) amdcrd_virtual_bank_t;
 
 //==============================================================================
 // Type 0x02 (ver 2): Virtual/Global Bank v2
@@ -172,8 +178,8 @@ typedef struct {
   uint32_t ecx;
   uint32_t edx;
 
-  ndcrd_bank_core_id_t valid_mca_list[1];
-} __attribute__((packed)) ndcrd_virtual_bank_v2_t;
+  amdcrd_bank_core_id_t valid_mca_list[1];
+} __attribute__((packed)) amdcrd_virtual_bank_v2_t;
 
 //==============================================================================
 
@@ -187,7 +193,7 @@ typedef struct {
   uint32_t rspq_wdt_io_trans_log_low[CPU_WDT_CCM_NUM];
   uint32_t hw_assert_msk_hi[CPU_WDT_CCM_NUM];
   uint32_t hw_assert_msk_low[CPU_WDT_CCM_NUM];
-} __attribute__((packed)) ndcrd_cpu_wdt_bank_t;
+} __attribute__((packed)) amdcrd_cpu_wdt_bank_t;
 
 //==============================================================================
 // Type 0x04: SMU/PSP/PTDMA Watchdog Timers address bank
@@ -202,7 +208,7 @@ typedef struct {
 //==============================================================================
 typedef struct {
   uint32_t addr[WDT_NBIO_NUM][4];
-} __attribute__((packed)) ndcrd_wdt_addr_bank_t;
+} __attribute__((packed)) amdcrd_wdt_addr_bank_t;
 
 //==============================================================================
 // Type 0x05: SMU/PSP/PTDMA Watchdog Timers data bank
@@ -218,7 +224,7 @@ typedef struct {
 //==============================================================================
 typedef struct {
   uint32_t data[WDT_NBIO_NUM][4][3];
-} __attribute__((packed)) ndcrd_wdt_data_bank_t;
+} __attribute__((packed)) amdcrd_wdt_data_bank_t;
 
 //==============================================================================
 // Type 0x06: TCDX bank
@@ -228,7 +234,7 @@ typedef struct {
   uint32_t hw_assert_sts_low[TCDX_NUM];
   uint32_t hw_assert_msk_hi[TCDX_NUM];
   uint32_t hw_assert_msk_low[TCDX_NUM];
-} __attribute__((packed)) ndcrd_tcdx_bank_t;
+} __attribute__((packed)) amdcrd_tcdx_bank_t;
 
 //==============================================================================
 // Type 0x07: CAKE bank
@@ -238,7 +244,7 @@ typedef struct {
   uint32_t hw_assert_sts_low[CAKE_NUM];
   uint32_t hw_assert_msk_hi[CAKE_NUM];
   uint32_t hw_assert_msk_low[CAKE_NUM];
-} __attribute__((packed)) ndcrd_cake_bank_t;
+} __attribute__((packed)) amdcrd_cake_bank_t;
 
 //==============================================================================
 // Type 0x08: PIE0 bank
@@ -248,7 +254,7 @@ typedef struct {
   uint32_t hw_assert_sts_low;
   uint32_t hw_assert_msk_hi;
   uint32_t hw_assert_msk_low;
-} __attribute__((packed)) ndcrd_pie0_bank_t;
+} __attribute__((packed)) amdcrd_pie0_bank_t;
 
 //==============================================================================
 // Type 0x09: IOM bank
@@ -258,7 +264,7 @@ typedef struct {
   uint32_t hw_assert_sts_low[IOM_NUM];
   uint32_t hw_assert_msk_hi[IOM_NUM];
   uint32_t hw_assert_msk_low[IOM_NUM];
-} __attribute__((packed)) ndcrd_iom_bank_t;
+} __attribute__((packed)) amdcrd_iom_bank_t;
 
 //==============================================================================
 // Type 0x0A: CCIX bank
@@ -268,7 +274,7 @@ typedef struct {
   uint32_t hw_assert_sts_low[CCIX_NUM];
   uint32_t hw_assert_msk_hi[CCIX_NUM];
   uint32_t hw_assert_msk_low[CCIX_NUM];
-} __attribute__((packed)) ndcrd_ccix_bank_t;
+} __attribute__((packed)) amdcrd_ccix_bank_t;
 
 //==============================================================================
 // Type 0x0B: CS bank
@@ -278,7 +284,7 @@ typedef struct {
   uint32_t hw_assert_sts_low[CS_NUM];
   uint32_t hw_assert_msk_hi[CS_NUM];
   uint32_t hw_assert_msk_low[CS_NUM];
-} __attribute__((packed)) ndcrd_cs_bank_t;
+} __attribute__((packed)) amdcrd_cs_bank_t;
 
 //==============================================================================
 // Type 0x0C: PCIe AER bank
@@ -310,14 +316,14 @@ typedef struct {
   uint16_t correctable_err_src_id;
   uint16_t err_src_id;
   uint32_t lane_err_sts;
-} __attribute__((packed)) ndcrd_pcie_aer_bank_t;
+} __attribute__((packed)) amdcrd_pcie_aer_bank_t;
 
 //==============================================================================
 // Type 0x80: Control Packet
 //==============================================================================
 typedef struct {
   uint8_t cmd;
-} __attribute__((packed)) ndcrd_ctrl_pkt_t;
+} __attribute__((packed)) amdcrd_ctrl_pkt_t;
 
 //==============================================================================
 // Type 0x81: Crashdump Header
@@ -326,9 +332,9 @@ typedef struct {
   uint64_t cpu_ppin;
   uint32_t ucode_ver;
   uint32_t pmio;
-} __attribute__((packed)) ndcrd_header_bank_t;
+} __attribute__((packed)) amdcrd_header_bank_t;
 
 uint8_t crashdump_initial(uint8_t slot);
-uint8_t pal_ndcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, uint8_t* res_data, uint8_t* res_len);
+uint8_t pal_amdcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, uint8_t* res_data, uint8_t* res_len);
 
-#endif /* __PAL_CRASHDUMP_ND_H__ */
+#endif /* __PAL_CRASHDUMP_AMD_H__ */

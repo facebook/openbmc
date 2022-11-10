@@ -164,8 +164,8 @@
 #define BRCM_POWERUP_PRE_CMD  0x1A
 
 #if defined CONFIG_FBY2_ND
-#include "pal_crashdump_nd.h"
 #define PSB_CONFIG_RAW "slot%d_psb_config_raw"
+#include "crashdump-amd/pal_crashdump_amd.h"
 #endif /* CONFIG_FBY2_ND */
 
 #define TIME_SYNC_KEY "time_sync"
@@ -10635,7 +10635,7 @@ pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 
 #if defined(CONFIG_FBY2_ND)
   if ((slot > 0) && (slot <= MAX_NODES)) {
-    completion_code = pal_ndcrd_save_mca_to_file(
+    completion_code = pal_amdcrd_save_mca_to_file(
         slot - 1, /* slot is 1 based */
         req_data,
         req_len - IPMI_MN_REQ_HDR_SIZE,

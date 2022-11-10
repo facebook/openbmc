@@ -10,6 +10,8 @@ cc = meson.get_compiler('c')
 add_global_arguments('-D__MACHINE__=' + get_option('machine'),
     language: 'c')
 
+build_crashdump_amd = get_option('crashdump-amd')
+
 # Define header files.
 pal_headers = [
     'pal.h',
@@ -38,6 +40,12 @@ pal_deps = [
 # Import the plat-specific subdirectory for platform
 # headers/sources/dependencies.
 subdir('plat')
+
+if build_crashdump_amd
+    add_project_arguments('-DCRASHDUMP_AMD', language : 'c')
+    pal_sources += 'crashdump-amd/pal_crashdump_amd.c'
+    pal_headers += 'crashdump-amd/pal_crashdump_amd.h'
+endif
 
 # Instead headers.
 install_headers(

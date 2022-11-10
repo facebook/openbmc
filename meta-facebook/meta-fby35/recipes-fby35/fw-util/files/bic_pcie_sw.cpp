@@ -86,11 +86,11 @@ int PCIESWComponent::update(string image) {
   return ret;
 }
 
-int PCIESWComponent::fupdate(string image) {
+int PCIESWComponent::fupdate(string) {
   return FW_STATUS_NOT_SUPPORTED;
 }
 
-int PCIESWComponent::get_ver_str(string& s, const uint8_t alt_fw_comp, const uint8_t board_type) {
+int PCIESWComponent::get_ver_str(string& s, const uint8_t alt_fw_comp, const uint8_t) {
   char ver[32] = {0};
   uint8_t rbuf[4] = {0};
   int ret = 0;
@@ -131,7 +131,7 @@ int PCIESWComponent::print_version() {
   } catch(string& err) {
     // if we failed to get its version, we print FW_2OU_PESW_FW_VER
     printf("%s %s Version: NA (%s)\n", board_name.c_str(), list[FW_2OU_PESW_FW_VER].c_str(), err.c_str());
-    return FW_STATUS_SUCCESS;   
+    return FW_STATUS_SUCCESS;
   }
 
   string pesw_vendor((board_type == GPV3_BRCM_BOARD)?"BRCM":"MCHP");

@@ -29,7 +29,7 @@ int palBiosComponent::update_finish(void) {
   return 0;
 }
 
-int palBiosComponent::reboot(uint8_t fruid) {
+int palBiosComponent::reboot(uint8_t) {
   return 0;
 }
 

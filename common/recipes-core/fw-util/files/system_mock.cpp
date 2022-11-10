@@ -78,7 +78,7 @@ string& System::partition_conf()
   return parts;
 }
 
-uint8_t System::get_fru_id(string &name)
+uint8_t System::get_fru_id(string &name [[maybe_unused]])
 {
   const char *env = std::getenv("FWUTIL_FRUID");
   if (!env) {
@@ -87,11 +87,12 @@ uint8_t System::get_fru_id(string &name)
   return atoi(env);
 }
 
-void System::set_update_ongoing(uint8_t fru_id, int timeo)
+void System::set_update_ongoing(uint8_t fru_id [[maybe_unused]],
+                                int timeo [[maybe_unused]])
 {
 }
 
-bool System::is_update_ongoing(uint8_t fru_id)
+bool System::is_update_ongoing(uint8_t fru_id [[maybe_unused]])
 {
   return false;
 }
@@ -116,7 +117,7 @@ bool System::is_shutdown_non_executable()
   return false;
 }
 
-int System::wait_shutdown_non_executable(uint8_t timeout_sec)
+int System::wait_shutdown_non_executable(uint8_t timeout_sec [[maybe_unused]])
 {
   return 0;
 }

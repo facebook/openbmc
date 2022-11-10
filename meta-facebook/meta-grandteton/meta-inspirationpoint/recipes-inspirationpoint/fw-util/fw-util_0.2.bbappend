@@ -19,10 +19,6 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 
 LOCAL_URI += " \
+    file://me.cpp \
     file://plat_cover.cpp \
     "
-
-LOCAL_URI:remove = " \
-    file://me.cpp \
-    "
-

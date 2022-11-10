@@ -87,7 +87,7 @@ struct image_info {
   bool sign;
 };
 
-image_info wrapping_image (const string& image, bool force)
+image_info wrapping_image (const string& image, bool /*force*/)
 {
   struct image_info image_stat;
   image_stat.tmpfile = "";
@@ -172,7 +172,7 @@ int send_update_packet (int eid, int fd, uint8_t* buf, ssize_t bufsize,
   memcpy(pldmbuf->payload + payload_len, buf, bufsize);
   payload_len += bufsize;
 
-  // 
+  //
   uint8_t *rbuf = nullptr;
   size_t rlen = 0;
   size_t tlen = payload_len + PLDM_HEADER_SIZE;
@@ -256,7 +256,7 @@ exit:
 }
 
 static
-int fw_update_proc (const string& image, bool force,
+int fw_update_proc (const string& image, bool /*force*/,
                     uint8_t bus, uint8_t eid,
                     uint8_t target, const string& comp)
 {
@@ -320,7 +320,7 @@ int SwbBicFwComponent::fupdate(string image)
 }
 
 int
-bic_recovery_init(string image, bool force) {
+bic_recovery_init(string image, bool /*force*/) {
 
   if (gpio_set_value_by_shadow("BIC_FWSPICK", GPIO_VALUE_HIGH)) {
      syslog(LOG_WARNING, "[%s] Set BIC_FWSPICK High failed\n", __func__ );
@@ -427,7 +427,7 @@ int SwbBicFwRecoveryComponent::fupdate(string image)
 }
 
 //Print Version
-int get_swb_version (uint8_t bus, uint8_t eid, uint8_t target, vector<uint8_t> &data) {
+int get_swb_version (uint8_t bus, uint8_t /*eid*/, uint8_t target, vector<uint8_t> &data) {
   uint8_t tbuf[255] = {0};
   uint8_t rbuf[255] = {0};
   uint8_t tlen=0;

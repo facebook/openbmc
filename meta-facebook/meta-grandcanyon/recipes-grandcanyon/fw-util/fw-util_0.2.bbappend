@@ -18,21 +18,22 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += "\
-        file://nic_ext.cpp \
-        file://nic_ext.h \
-        file://bmc_fpga.cpp \
-        file://bmc_fpga.h \
-        file://platform.cpp \
-        file://server.h \
-        file://bic_cpld.cpp \
-        file://bic_vr.cpp \
-        file://bic_vr.h \
-        file://scc_exp.cpp \
-        file://scc_exp.h \
-        file://ioc.cpp \
-        file://ioc.h \
-        file://grandcanyon.json \
-        "
+    file://plat/meson.build \
+    file://bic_cpld.cpp \
+    file://bic_vr.cpp \
+    file://bic_vr.h \
+    file://bmc_fpga.cpp \
+    file://bmc_fpga.h \
+    file://ioc.cpp \
+    file://ioc.h \
+    file://nic_ext.cpp \
+    file://nic_ext.h \
+    file://platform.cpp \
+    file://scc_exp.cpp \
+    file://scc_exp.h \
+    file://server.h \
+    file://grandcanyon.json \
+    "
 
 do_unpack:append () {
     bb.build.exec_func('do_replace_image_parts_json', d)
@@ -45,6 +46,13 @@ do_replace_image_parts_json() {
 }
 
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp libipc "
-RDEPENDS:${PN} += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp libipc "
-LDFLAGS += " -lpal -lbic -lnl-wrapper -lkv -lfpga -lexp -lipc -lfbgc_common "
+DEPENDS += " \
+    libbic \
+    libexp \
+    libfbgc-common \
+    libfpga \
+    libipc \
+    libncsi \
+    libnl-wrapper \
+    "
+RDEPENDS:${PN} += "libbic libfbgc-common libexp"

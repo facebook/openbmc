@@ -186,10 +186,10 @@ std::string BmcComponent::get_bmc_version(const std::string &mtd)
   fp = popen(cmd, "r");
   if (fp) {
     char line[256];
-    char *ver = 0;
+    char *ver = (char*) malloc(256);
     while (fgets(line, sizeof(line), fp)) {
       int ret;
-      ret = sscanf(line, "U-Boot%*[^2]20%*2d.%*2d%*[ ]%m[^ \n]%*[ ](%*[^)])\n", &ver);
+      ret = sscanf(line, "U-Boot%*[^2]20%*2d.%*2d%*[ ]%s[^ \n]%*[ ](%*[^)])\n", ver);
       if (1 == ret) {
         bmc_ver = ver;
         break;

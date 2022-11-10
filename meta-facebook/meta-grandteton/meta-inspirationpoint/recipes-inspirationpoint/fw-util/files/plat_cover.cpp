@@ -27,12 +27,12 @@ int palBiosComponent::update_finish(void) {
   return 0;
 }
 
-int palBiosComponent::reboot(uint8_t fruid) {
+int palBiosComponent::reboot(uint8_t /*fruid*/) {
   return 0;
 }
 
 //No ME in AMD platfrom
-int palBiosComponent::setMeRecovery(uint8_t retry) {
+int palBiosComponent::setMeRecovery(uint8_t /*retry*/) {
   return 0;
 }
 

@@ -18,22 +18,22 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
-    file://vr.cpp \
+    file://plat/meson.build \
     file://bic_bios_ext.cpp \
-    file://platform.cpp \
-    file://mcu_fw.h \
-    file://mcu_fw.cpp \
-    file://usbdbg.h \
-    file://usbdbg.cpp \
     file://bic_cpld_ext.cpp \
     file://bic_me_ext.cpp \
-    file://pcie_switch.cpp \
     file://m2_dev.cpp \
+    file://mcu_fw.cpp \
+    file://mcu_fw.h \
     file://nic_ext.cpp \
     file://nic_ext.h \
+    file://pcie_switch.cpp \
+    file://platform.cpp \
+    file://usbdbg.cpp \
+    file://usbdbg.h \
+    file://vr.cpp \
     "
 
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libmcu libfby2-sensor libfby2-common libnl-wrapper "
-RDEPENDS:${PN} += "libipmi libipmb libbic libmcu libfby2-sensor libfby2-common libnl-wrapper"
-LDFLAGS += " -lipmi -lipmb -lbic -lmcu -lfby2_sensor -lfby2_common -lnl-wrapper "
+RDEPENDS:${PN} += "libbic libfby2-sensor libfby2-common"

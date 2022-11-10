@@ -71,7 +71,7 @@ class VrComponent : public Component {
     return 0;
   }
 
-  int update(string image) {
+  int update(string) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 };

@@ -21,7 +21,7 @@ using namespace std;
 #define MAX_FRU_NUM 4
 #define MAX_GPV2_DRIVE_NUM 12
 
-class M2_DevComponent : public Component { 
+class M2_DevComponent : public Component {
   uint8_t slot_id = 0;
   uint8_t dev_id = 0;
 
@@ -31,13 +31,13 @@ class M2_DevComponent : public Component {
   };
 
   struct PowerInfo {
-    bool isPrinted;
-    int ret;
-    uint8_t status;
-    uint8_t nvme_ready;
-    uint8_t ffi;
-    uint8_t major_ver;
-    uint8_t minor_ver;
+    bool isPrinted = false;
+    int ret = 0;
+    uint8_t status = 0;
+    uint8_t nvme_ready = 0;
+    uint8_t ffi = 0;
+    uint8_t major_ver = 0;
+    uint8_t minor_ver = 0;
   };
   static PowerInfo statusTable[MAX_GPV2_DRIVE_NUM];
   static bool isDual[MAX_FRU_NUM];
@@ -78,7 +78,7 @@ class M2_DevComponent : public Component {
   int fupdate(string image);
 };
 
-M2_DevComponent::PowerInfo M2_DevComponent::statusTable[] = {0};
+M2_DevComponent::PowerInfo M2_DevComponent::statusTable[];
 bool M2_DevComponent::isDual[MAX_FRU_NUM] = {false};
 bool M2_DevComponent::isScaned[MAX_FRU_NUM] = {false};
 M2_DevComponent::Dev_Main_Slot M2_DevComponent::dev_main_slot = M2_DevComponent::Dev_Main_Slot::ON_EVEN;
@@ -115,7 +115,7 @@ void M2_DevComponent::scan_all_devices() {
 
 void M2_DevComponent::save_info(uint8_t id, int ret, uint8_t status,
  uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver) {
-  if (id < 0 || id >= MAX_GPV2_DRIVE_NUM) {
+  if (id >= MAX_GPV2_DRIVE_NUM) {
     return;
   }
   statusTable[id].ret = ret;

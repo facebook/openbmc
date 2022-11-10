@@ -185,7 +185,7 @@ int BiosComponent::fupdate(string image) {
   return update(image, 1);
 }
 
-int BiosComponent::setDeepSleepWell(bool setting) {
+int BiosComponent::setDeepSleepWell(bool) {
   return 0;
 }
 

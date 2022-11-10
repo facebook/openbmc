@@ -18,38 +18,45 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += "\
-    file://nic_ext.cpp \
-    file://nic_ext.h \
-    file://bmc_cpld.cpp \
-    file://bmc_cpld.h \
-    file://platform.cpp \
-    file://bic_fw_ext.h \
-    file://bic_fw_ext.cpp \
-    file://expansion.h \
-    file://expansion.cpp \
-    file://bic_cpld_ext.cpp \
-    file://bic_cpld_ext.h \
-    file://bic_bios.cpp \
-    file://bic_vr.h \
-    file://bic_vr.cpp \
-    file://bic_capsule.h \
-    file://bic_capsule.cpp \
-    file://bmc_cpld_capsule.h \
-    file://bmc_cpld_capsule.cpp \
-    file://bic_pcie_sw.cpp \
-    file://bic_pcie_sw.h \
-    file://bic_expansion_vr.cpp \
-    file://usbdbg.h \
-    file://usbdbg.cpp \
-    file://mcu_fw.h \
-    file://mcu_fw.cpp \
-    file://bic_m2_dev.cpp \
-    file://bic_m2_dev.h \
+    file://plat/meson.build \
     file://ast_bic.cpp \
     file://ast_bic.h \
+    file://bic_bios.cpp \
+    file://bic_capsule.cpp \
+    file://bic_capsule.h \
+    file://bic_cpld_ext.cpp \
+    file://bic_cpld_ext.h \
+    file://bic_expansion_vr.cpp \
+    file://bic_fw_ext.cpp \
+    file://bic_fw_ext.h \
+    file://bic_m2_dev.cpp \
+    file://bic_m2_dev.h \
+    file://bic_pcie_sw.cpp \
+    file://bic_pcie_sw.h \
+    file://bic_vr.cpp \
+    file://bic_vr.h \
+    file://bmc_cpld.cpp \
+    file://bmc_cpld.h \
+    file://bmc_cpld_capsule.cpp \
+    file://bmc_cpld_capsule.h \
+    file://expansion.cpp \
+    file://expansion.h \
+    file://mcu_fw.cpp \
+    file://mcu_fw.h \
+    file://nic_ext.cpp \
+    file://nic_ext.h \
+    file://platform.cpp \
+    file://usbdbg.cpp \
+    file://usbdbg.h \
     "
 
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += " libbic libfpga libfby3-common libncsi libnl-wrapper libkv libobmc-i2c libmcu"
-RDEPENDS:${PN} += " libbic libfpga libfby3-common libncsi libnl-wrapper libkv libobmc-i2c libmcu"
-LDFLAGS += " -lbic -lfpga -lfby3_common -lnl-wrapper -lkv -lobmc-i2c -lmcu"
+DEPENDS += " \
+    libbic \
+    libfby3-common \
+    libfpga \
+    libmcu \
+    libnl-wrapper \
+    "
+
+RDEPENDS:${PN} += "libbic libfby3-common"

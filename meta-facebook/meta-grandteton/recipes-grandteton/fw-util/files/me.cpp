@@ -12,8 +12,7 @@ class MeComponent : public Component {
     int get_version(json& j) {
       j["PRETTY_COMPONENT"] = "ME";
       char ver[128] = {0};
-      NM_RW_INFO info = {.bus = NM_IPMB_BUS_ID,
-                         .nm_addr = NM_SLAVE_ADDR};
+      NM_RW_INFO info = {NM_IPMB_BUS_ID, NM_SLAVE_ADDR, 0, 0};
 
       // Print ME Version
       if (lib_get_me_fw_ver(&info, (uint8_t *)ver)) {

@@ -18,6 +18,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
+    file://plat/meson.build \
     file://platform.cpp \
     file://vr.cpp \
     file://exp.cpp \
@@ -30,5 +31,4 @@ LOCAL_URI += " \
 
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libexp libmcu"
-RDEPENDS:${PN} += "libipmi libipmb libbic libexp libmcu"
-LDFLAGS += " -lipmi -lipmb -lbic -lexp -lmcu"
+RDEPENDS:${PN} += "libbic libexp"

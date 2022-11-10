@@ -18,22 +18,32 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += "\
-        file://bios.cpp \
-        file://bios.h \
-        file://cpld.cpp \
-        file://fscd.cpp \
-        file://mcu_fw.cpp \
-        file://mcu_fw.h \
-        file://me.cpp \
-        file://nic_ext.cpp \
-        file://nic_ext.h \
-        file://platform.cpp \
-        file://usbdbg.cpp \
-        file://usbdbg.h \
-        file://vr_fw.cpp \
-        file://vr_fw.h \
-        "
+    file://plat/meson.build \
+    file://bios.cpp \
+    file://bios.h \
+    file://cpld.cpp \
+    file://fscd.cpp \
+    file://mcu_fw.cpp \
+    file://mcu_fw.h \
+    file://me.cpp \
+    file://nic_ext.cpp \
+    file://nic_ext.h \
+    file://platform.cpp \
+    file://usbdbg.cpp \
+    file://usbdbg.h \
+    file://vr_fw.cpp \
+    file://vr_fw.h \
+    "
 
-DEPENDS += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv libobmc-i2c"
-RDEPENDS:${PN} += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv libobmc-i2c"
-LDFLAGS += "-lmcu -lnm -lpal -lfpga -last-jtag -lvr -lnl-wrapper -lkv -lobmc-i2c"
+DEPENDS += " \
+    libmcu \
+    libnm \
+    libfpga \
+    libast-jtag \
+    libvr \
+    libncsi \
+    libnl-wrapper \
+    libobmc-i2c \
+    "
+
+RDEPENDS:${PN} += "libnm"

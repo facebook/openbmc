@@ -49,7 +49,7 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
     cerr << "File or fd is required." << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
-  
+
   if(isBypass) {
     cerr << "PRoT is Bypaas mode , try to off server first" << endl;
     if(attempt_server_power_off(force)) {
@@ -91,7 +91,7 @@ int ProtComponent::fupdate(const string image) {
   return update_internal(image, -1, true /* force */);
 }
 
-int ProtComponent::get_ver_str(string& s) {
+int ProtComponent::get_ver_str(string&) {
   uint8_t fruid = 0;
   int ret = 0;
 

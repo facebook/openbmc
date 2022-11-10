@@ -74,13 +74,13 @@ class Component {
     virtual bool is_alias(void) { return false; }
     virtual std::string &alias_component(void) { return _component; }
     virtual std::string &alias_fru(void) { return _fru; }
-    virtual int update(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
-    virtual int update(int fd, bool force) { return FW_STATUS_NOT_SUPPORTED; }
-    virtual int fupdate(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int update(std::string /*image*/) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int update(int /*fd*/, bool /*force*/) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int fupdate(std::string /*image*/) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int update_finish(void) { return FW_STATUS_NOT_SUPPORTED; }
-    virtual int dump(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int dump(std::string /*image*/) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int print_version() { return FW_STATUS_NOT_SUPPORTED; }
-    virtual int get_version(json &j) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int get_version(json&) { return FW_STATUS_NOT_SUPPORTED; }
     virtual System& sys() {
       return _sys;
     }

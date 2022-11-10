@@ -4,11 +4,11 @@
 
 using namespace std;
 
-static int update_unsupported(const char *image, const char *info)
+static int update_unsupported(const char * /*image*/, const char * /*info*/)
 {
   return FW_STATUS_NOT_SUPPORTED;
 }
-static int print_version_unsupported(const char *info)
+static int print_version_unsupported(const char * /*info*/)
 {
   return FW_STATUS_NOT_SUPPORTED;
 }
@@ -16,7 +16,7 @@ static int print_version_unsupported(const char *info)
 ExtlibComponent::ExtlibComponent(string fru, string component,
                             string libpath, string update_func,
                             string vers_func, string _info) :
-  Component(fru, component), info(_info), 
+  Component(fru, component), info(_info),
   update_fn(update_unsupported), print_version_fn(print_version_unsupported)
 {
   void *ptr;

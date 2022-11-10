@@ -75,7 +75,7 @@ int CxlComponent::fupdate(const string image) {
   return update_internal(image, -1, true /* force */);
 }
 
-int CxlComponent::get_ver_str(string& s) {
+int CxlComponent::get_ver_str(string&) {
   uint8_t fruid = 0;
   int ret = 0;
 

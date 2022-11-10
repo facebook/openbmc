@@ -18,6 +18,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
+    file://plat/meson.build \
     file://mcu_fw.h \
     file://mcu_fw.cpp \
     file://usbdbg.h \
@@ -34,8 +35,15 @@ LOCAL_URI += " \
     file://nic_ext.cpp \
     "
 
-LOCAL_URI:remove = "file://fscd.cpp"
+PACKAGECONFIG:remove = "fscd"
 
-DEPENDS += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv libobmc-i2c"
-RDEPENDS:${PN} += "libmcu libnm libpal libfpga libast-jtag libvr libnl-wrapper libkv libobmc-i2c"
-LDFLAGS += "-lmcu -lnm -lpal -lfpga -last-jtag -lvr -lnl-wrapper -lkv -lobmc-i2c"
+DEPENDS += " \
+    libast-jtag \
+    libfpga \
+    libmcu \
+    libncsi \
+    libnl-wrapper \
+    libnm \
+    libvr \
+    "
+RDEPENDS:${PN} += "libnm"

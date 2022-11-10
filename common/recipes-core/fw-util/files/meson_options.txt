@@ -1,0 +1,2 @@
+option('bic', type: 'boolean', value: true)
+option('fscd', type: 'boolean', value: true)

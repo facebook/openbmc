@@ -18,6 +18,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
+    file://plat/meson.build \
     file://usbdbg.h \
     file://usbdbg.cpp \
     file://mcu_fw.h \
@@ -42,6 +43,20 @@ LOCAL_URI += " \
     file://hgx.cpp \
     "
 
-DEPENDS += "libmcu libpal libfpga libvr libncsi libnl-wrapper libkv libobmc-i2c libnm libbic libpldm-oem libobmc-mctp libipmi libpldm-oem libgpio-ctrl libhgx"
+DEPENDS += " \
+    libbic \
+    libfpga \
+    libgpio-ctrl \
+    libhgx \
+    libipmi \
+    libmcu \
+    libncsi \
+    libnl-wrapper \
+    libnm \
+    libobmc-mctp \
+    libpldm-oem \
+    libpldm-oem \
+    libvr \
+    "
+
 RDEPENDS:${PN} += "libmcu libpal libfpga libvr libncsi libnl-wrapper libkv libobmc-i2c libnm libbic libpldm-oem libobmc-mctp libipmi libpldm-oem libgpio-ctrl libhgx"
-LDFLAGS += "-lmcu -lpal -lfpga -lvr -lnl-wrapper -lkv -lobmc-i2c -lnm -lbic -lpldm_oem -lobmc-mctp -lipmi -lpldm -lpldm_oem -lgpio-ctrl -lhgx"

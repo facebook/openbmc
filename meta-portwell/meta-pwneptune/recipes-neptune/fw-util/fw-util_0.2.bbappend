@@ -18,6 +18,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
+    file://plat/meson.build \
     file://vr.cpp \
     file://platform.cpp \
     file://cpld.cpp \
@@ -28,5 +29,4 @@ LOCAL_URI += " \
     "
 
 DEPENDS += "libgpio libme libcpld libbios libocpdbg-lcd libvr"
-RDEPENDS:${PN} += "libgpio libme libcpld libbios libocpdbg-lcd libvr"
-LDFLAGS += " -lgpio -lme -lcpld -lbios -locpdbg-lcd -lvr"
+RDEPENDS:${PN} += "libme libcpld libbios libvr"

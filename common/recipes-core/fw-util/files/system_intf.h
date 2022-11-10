@@ -16,6 +16,7 @@ class System {
     std::ostream &error;
 
     System() : output(std::cout), error(std::cerr) {}
+    virtual ~System() = default;
     System(std::ostream &out, std::ostream &err): output(out), error(err) {}
 
     virtual int runcmd(const std::string &cmd);

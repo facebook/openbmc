@@ -18,28 +18,19 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
-        file://bmc_cpld.cpp \
-        file://bmc_cpld.h \
-        file://platform.cpp \
-        file://bios.h \
-        file://bios.cpp \
-        file://bmc_bios.cpp \
-        file://me.cpp \
-        file://vr_fw.h \
-        file://vr_fw.cpp \
-        "
+    file://plat/meson.build \
+    file://bios.cpp \
+    file://bios.h \
+    file://bmc_bios.cpp \
+    file://bmc_cpld.cpp \
+    file://bmc_cpld.h \
+    file://me.cpp \
+    file://platform.cpp \
+    file://vr_fw.cpp \
+    file://vr_fw.h \
+    "
 
-LOCAL_URI:remove = " \
-        file://bic_cpld.cpp \
-        file://bic_cpld.h \
-        file://bic_fw.cpp \
-        file://bic_fw.h \
-        file://bic_me.cpp \
-        file://bic_me.h \
-        file://bic_bios.cpp \
-        file://bic_bios.h \
-        "
+PACKAGECONFIG:remove = "bic"
 
-DEPENDS += "libfpga libnetlakemtp-common libobmc-i2c libkv libvr"
-RDEPENDS:${PN} += "libfpga libnetlakemtp-common libobmc-i2c libkv libvr"
-LDFLAGS += "-lfpga -lnetlakemtp_common -lobmc-i2c -lvr"
+DEPENDS += "libfpga libnetlakemtp-common libvr"
+RDEPENDS:${PN} += "libnetlakemtp-common"

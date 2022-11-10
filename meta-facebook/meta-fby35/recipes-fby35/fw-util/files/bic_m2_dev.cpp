@@ -8,7 +8,7 @@
 using namespace std;
 
 #define FFI_0_ACCELERATOR 0x01
-int M2DevComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
+int M2DevComponent::get_ver_str(string&, const uint8_t) {
   return FW_STATUS_NOT_SUPPORTED;
 }
 
@@ -49,7 +49,7 @@ int M2DevComponent::print_version()
     } else if ( ffi != FFI_0_ACCELERATOR ) {
       throw string("Not Accelerator");
     }
-    
+
     if ( is_dual_m2 == true ) printf("%s DEV%d/%d Version: v%d.%d\n", board_name.c_str(), idx - 1, idx, major_ver, minor_ver);
     else printf("%s DEV%d Version: v%d.%d\n", board_name.c_str(), idx - 1, major_ver, minor_ver);
   } catch(string& err) {
@@ -96,7 +96,7 @@ int M2DevComponent::update(string image)
       throw string("Error in getting the m2 device info");
     }
   } catch (string& err) {
-    printf("Failed reason: %s\n", err.c_str()); 
+    printf("Failed reason: %s\n", err.c_str());
   }
 
   return ret;

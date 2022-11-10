@@ -18,11 +18,12 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
-    file://vr.cpp \
-    file://platform.cpp \
+    file://plat/meson.build \
     file://bic_bios.cpp \
+    file://platform.cpp \
+    file://vr.cpp \
     "
+
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libyosemite-sensor"
-RDEPENDS:${PN} += "libipmi libipmb libbic libyosemite-sensor"
-LDFLAGS += " -lipmi -lipmb -lbic -lyosemite_sensor "
+RDEPENDS:${PN} += "libbic libyosemite-sensor"

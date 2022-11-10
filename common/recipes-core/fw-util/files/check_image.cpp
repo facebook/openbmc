@@ -50,7 +50,8 @@ class Checker {
   off_t size;
   public:
   Checker(string n, off_t of, off_t sz) : name(n), offset(of), size(sz) {}
-  virtual bool is_valid(const unsigned char *image) {
+  virtual ~Checker() = default;
+  virtual bool is_valid(const unsigned char * /*image*/) {
     return true;
   }
 };
@@ -160,8 +161,8 @@ class FITChecker : public Checker {
         }
         if ((off_t)data_size > size) {
           // This partition cannot contain this FDT. Most
-          // probably we are using the wrong partition 
-          //description 
+          // probably we are using the wrong partition
+          //description
           return false;
         }
         SHA256(data, data_size, shasum);
@@ -416,7 +417,7 @@ bool BmcComponent::is_valid(string &file, bool pfr_active)
     if (!image.supports_machine(machine)) {
       return false;
     }
-    
+
     if (pfr_active) {
       return true;
     }

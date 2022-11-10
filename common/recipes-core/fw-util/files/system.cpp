@@ -71,7 +71,7 @@ bool System::get_mtd_name(string name, string &dev, size_t& size, size_t& erases
   }
   while (fgets(line, sizeof(line), partitions)) {
     size_t sz, esz;
-    if(sscanf(line, "mtd%d: %zx %zx %s",
+    if(sscanf(line, "mtd%u: %zx %zx %s",
                 &mtdno, &sz, &esz, mnt_name) == 4) {
       if(!strcmp(name.c_str(), mnt_name)) {
         dev = "/dev/mtd";

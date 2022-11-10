@@ -18,6 +18,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
+    file://plat/meson.build \
     file://cpld_fpga.cpp \
     file://server.cpp \
     file://platform.cpp \
@@ -25,6 +26,5 @@ LOCAL_URI += " \
     "
 
 CXXFLAGS += " -DBIC_SUPPORT -DCOMMON_BIC_SUPPORT"
-DEPENDS += "libipmi libipmb libbic libpal libobmc-i2c"
-RDEPENDS:${PN} += "libipmi libipmb libbic libpal libobmc-i2c"
-LDFLAGS += " -lipmi -lipmb -lbic -lpal -lobmc-i2c"
+DEPENDS += "libipmi libipmb libbic"
+RDEPENDS:${PN} += "libbic"

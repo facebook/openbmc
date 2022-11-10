@@ -821,7 +821,7 @@ static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static float hsc_rsense[MAX_NUM_FRUS] = {0};
 
 const char pal_fru_list[] = "all, scm, smb, pem1, pem2, \
-psu1, psu2, fan1, fan2, fan3, fan4 ";
+psu1, psu2, fan1, fan2, fan3, fan4";
 
 char * key_list[] = {
   "pwr_server_last_state",

@@ -64,6 +64,8 @@ extern "C" {
 
 #define BLK_SYSFW_VER 2
 
+#define MAX_SIZE_SYSFW_VER 2 * (SIZE_SYSFW_VER) * (BLK_SYSFW_VER)
+
 #define SIZE_SEL_REC 16
 #define SIZE_RAS_SEL 35
 

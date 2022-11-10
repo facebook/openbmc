@@ -211,6 +211,7 @@ int pal_clear_vr_crc(uint8_t fru);
 int pal_move_vr_new_crc(uint8_t fru, uint8_t action);
 int pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver);
 int pal_clear_vr_crc(uint8_t fru);
+int pal_get_delay_activate_sysfw_ver(uint8_t slot_id, uint8_t *ver);
 int pal_set_last_postcode(uint8_t slot, uint32_t postcode);
 int pal_get_last_postcode(uint8_t slot, char* postcode);
 

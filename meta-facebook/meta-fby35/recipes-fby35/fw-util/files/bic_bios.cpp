@@ -6,6 +6,7 @@
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 
 using namespace std;
 
@@ -182,7 +183,7 @@ int BiosComponent::dump(string image) {
 }
 
 int BiosComponent::get_ver_str(string& s) {
-  uint8_t ver[64] = {0};
+  uint8_t ver[MAX_SIZE_SYSFW_VER] = {0};
   uint8_t fruid = 0;
   int ret = 0;
 
@@ -206,12 +207,22 @@ int BiosComponent::get_ver_str(string& s) {
 
 int BiosComponent::print_version() {
   string ver("");
+  uint8_t str[MAX_SIZE_SYSFW_VER] = {0};
+
   try {
     server.ready();
     if ( get_ver_str(ver) < 0 ) {
       throw std::runtime_error("Error in getting the version of BIOS");
     }
     cout << "BIOS Version: " << ver << endl;
+    if (pal_get_delay_activate_sysfw_ver(slot_id, str) == 0) {
+      stringstream ss;
+      ss << str;
+      string delay_ver = ss.str();
+      cout << "BIOS Version after activation: " << delay_ver << endl;
+    } else { // no update before
+      cout << "BIOS Version after activation: " << ver << endl;
+    }
   } catch(string& err) {
     printf("BIOS Version: NA (%s)\n", err.c_str());
   }

@@ -1553,6 +1553,27 @@ pal_is_bmc_por(void) {
   return (por)?1:0;
 }
 
+/*
+ *  Transfer key ASCII code to character
+ *  e.g. 593335434c443039540000000000000000 -> Y35CLD09T
+ */
+void
+pal_sysfw_key_hex_to_char(char *str, uint8_t *ver) {
+  char *pstr, tstr[8] = {0};
+  int j = 0;
+
+  for (int blk = 0; blk < BLK_SYSFW_VER; blk++) {
+    pstr = str + blk * SIZE_SYSFW_VER*2;
+    for (int i = 0; i < SIZE_SYSFW_VER*2; i += 2) {
+      if (blk > 0 && i == 0) {
+        continue;
+      }
+      memcpy(tstr, &pstr[i], 2);
+      ver[j++] = strtoul(tstr, NULL, 16);
+    }
+  }
+}
+
 int
 pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
   int ret = 0;
@@ -1605,10 +1626,8 @@ pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
 
 int
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int blk, i, j = 0;
   char key[MAX_KEY_LEN];
   char str[MAX_VALUE_LEN] = {0};
-  char *pstr, tstr[8] = {0};
 
   sprintf(key, "fru%u_sysfw_ver", slot);
   if (kv_get(key, str, NULL, KV_FPERSIST)) {
@@ -1620,16 +1639,27 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
     return pal_get_sysfw_ver_from_bic(slot, ver);
   }
 
-  for (blk = 0; blk < BLK_SYSFW_VER; blk++) {
-    pstr = str + blk * SIZE_SYSFW_VER*2;
-    for (i = 0; i < SIZE_SYSFW_VER*2; i += 2) {
-      if (blk > 0 && i == 0) {
-        continue;
-      }
-      memcpy(tstr, &pstr[i], 2);
-      ver[j++] = strtoul(tstr, NULL, 16);
-    }
+  pal_sysfw_key_hex_to_char(str, ver);
+
+  return PAL_EOK;
+}
+
+int pal_get_delay_activate_sysfw_ver(uint8_t slot_id, uint8_t *ver) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s: failed to get system firmware version due to NULL pointer\n", __func__);
+    return -1;
   }
+
+  snprintf(key, sizeof(key), "fru%u_delay_activate_sysfw_ver", slot_id);
+  if (kv_get(key, str, NULL, KV_FPERSIST) || (strcmp(str, "0") == 0)) {
+    memset(ver, 0, SIZE_SYSFW_VER);
+    return -1;
+  }
+
+  pal_sysfw_key_hex_to_char(str, ver);
 
   return PAL_EOK;
 }

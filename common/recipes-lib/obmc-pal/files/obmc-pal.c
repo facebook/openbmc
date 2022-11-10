@@ -1158,6 +1158,26 @@ pal_set_sysfw_ver(uint8_t slot, uint8_t *ver)
 }
 
 int __attribute__((weak))
+pal_set_delay_activate_sysfw_ver(uint8_t slot, uint8_t *ver)
+{
+  size_t offs = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[8] = {0};
+
+  snprintf(key, sizeof(key), "fru%u_delay_activate_sysfw_ver", slot);
+
+//  Transfer IPMI raw data to BIOS version key.
+  for (int i = 0; i < SIZE_SYSFW_VER; i++) {
+    snprintf(tstr, sizeof(tstr), "%02x", ver[i]);
+    memcpy(&str[offs], tstr, 2);
+    offs += 2;
+  }
+
+  return kv_set(key, str, 0, KV_FPERSIST);
+}
+
+int __attribute__((weak))
 pal_is_cmd_valid(uint8_t *data)
 {
   return PAL_EOK;

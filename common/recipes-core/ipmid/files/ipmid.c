@@ -4252,6 +4252,14 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
     case CMD_OEM_1S_UPDATE_SDR:
       res->cc = pal_handle_oem_1s_update_sdr(req->payload_id);
       break;
+    case CMD_OEM_1S_SET_DELAY_ACTIVATE_SYSFW:
+      if (req_len > 7) {  // payload_id, netfn, cmd, IANA[3], data type
+        pal_set_delay_activate_sysfw_ver(req->payload_id, &req->data[SIZE_IANA_ID]);
+        res->cc = CC_SUCCESS;
+      } else {
+        res->cc = CC_INVALID_LENGTH;
+      }
+      break;
     default:
       res->cc = CC_INVALID_CMD;
       memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID

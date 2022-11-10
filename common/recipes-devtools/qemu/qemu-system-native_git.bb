@@ -99,10 +99,10 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            "
 PV = "7.0.90+git${SRCPV}"
 
-PACKAGECONFIG ??= "fdt slirp "
+PACKAGECONFIG ??= "fdt slirp pie "
 
 EXTRA_OECONF:append = " --target-list=${@get_qemu_system_target_list(d)}"
-EXTRA_OECONF:remove = " --meson=meson"
+EXTRA_OECONF:remove = "--meson=meson"
 
 do_install:append() {
     # The following is also installed by qemu-native

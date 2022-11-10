@@ -1629,14 +1629,17 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
   char key[MAX_KEY_LEN];
   char str[MAX_VALUE_LEN] = {0};
 
-  sprintf(key, "fru%u_sysfw_ver", slot);
-  if (kv_get(key, str, NULL, KV_FPERSIST)) {
-    memset(ver, 0, SIZE_SYSFW_VER);
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s: failed to get system firmware version due to NULL pointer\n", __func__);
     return -1;
   }
 
-  if (strcmp(str, "0") == 0) {
-    return pal_get_sysfw_ver_from_bic(slot, ver);
+  sprintf(key, "fru%u_sysfw_ver", slot);
+  if (kv_get(key, str, NULL, KV_FPERSIST) || (strcmp(str, "0") == 0)) {
+    if (pal_get_sysfw_ver_from_bic(slot, ver)) {
+      memset(ver, 0, SIZE_SYSFW_VER);
+    }
+    return PAL_EOK;
   }
 
   pal_sysfw_key_hex_to_char(str, ver);

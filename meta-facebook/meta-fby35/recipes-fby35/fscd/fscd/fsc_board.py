@@ -30,6 +30,7 @@ get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR"]
 lpal_hndl = CDLL("libpal.so.0")
 lbic_hndl = CDLL("libbic.so.0")
 
+one_fan_fail_tuple = (fan_mode["trans_mode"], 60)  # (mode, pwm)
 GPIO_FM_BIOS_POST_CMPLT_BMC_N = 1
 
 fru_map = {
@@ -77,6 +78,23 @@ host_ready_map = {
     "slot3": "fru3_host_ready",
     "slot4": "fru4_host_ready",
 }
+
+
+def is_halfdome():
+    try:
+        conf = kv.kv_get("sled_system_conf", kv.FPERSIST)
+        if "HD" in conf:
+            return True
+        return False
+
+    except Exception:
+        return False
+
+
+if is_halfdome():
+    one_fan_fail_tuple = (fan_mode["boost_mode"], 100)
+    GPIO_FM_BIOS_POST_CMPLT_BMC_N = 0
+    dimm_location_name_map = hd_dimm_location_name_map
 
 
 def board_fan_actions(fan, action="None"):
@@ -155,17 +173,6 @@ def is_dev_prsnt(filename):
         return 0
 
 
-def is_halfdome():
-    try:
-        conf = kv.kv_get("sled_system_conf", kv.FPERSIST, True)
-        if conf.find(b"HD") != -1:
-            return True
-        return False
-
-    except Exception:
-        return False
-
-
 def sensor_valid_check(board, sname, check_name, attribute):
     try:
         if attribute["type"] == "power_status":
@@ -195,20 +202,12 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     return 0
 
                 if "dimm" in sname:
-                    if is_halfdome():
-                        dimm_name = (
-                            "sys_config/"
-                            + fru_map[board]["name"]
-                            + hd_dimm_location_name_map[sname[8 : sname.find("_t")]]
-                        )
-                        return is_dev_prsnt(dimm_name)
-                    else:
-                        dimm_name = (
-                            "sys_config/"
-                            + fru_map[board]["name"]
-                            + dimm_location_name_map[sname[8 : sname.find("_t")]]
-                        )
-                        return is_dev_prsnt(dimm_name)
+                    dimm_name = (
+                        "sys_config/"
+                        + fru_map[board]["name"]
+                        + dimm_location_name_map[sname[8 : sname.find("_t")]]
+                    )
+                    return is_dev_prsnt(dimm_name)
 
                 return 1
 
@@ -223,12 +222,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
 def get_fan_mode(scenario="None"):
     if "one_fan_failure" in scenario:
-        if is_halfdome():
-            pwm = 100
-            return fan_mode["boost_mode"], pwm
-        else:
-            pwm = 60
-            return fan_mode["trans_mode"], pwm
+        return one_fan_fail_tuple
     elif "sensor_hit_UCR" in scenario:
         pwm = 100
         return fan_mode["boost_mode"], pwm

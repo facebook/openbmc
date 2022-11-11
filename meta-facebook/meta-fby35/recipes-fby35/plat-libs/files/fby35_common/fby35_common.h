@@ -107,7 +107,8 @@ extern const char *slot_usage;
 #define UNKNOWN_SLOT 0xFF
 
 #define BIOS_IMG_SIZE             (0x4000000)         //64MB
-#define BIOS_IMG_INFO_OFFSET      (0x2FEF000)
+#define CL_BIOS_IMG_INFO_OFFSET      (0x2FEF000)
+#define HD_BIOS_IMG_INFO_OFFSET      (0x00004000)
 #define MD5_SIZE                  (16)
 #define PLAT_SIG_SIZE             (16)
 #define FW_VER_SIZE               (13)
@@ -545,7 +546,7 @@ int fby35_common_get_2ou_board_type(uint8_t fru, uint8_t *board_type);
 int fby35_common_fscd_ctrl (uint8_t mode);
 int fby35_common_check_image_signature(uint8_t board_id, uint8_t *data);
 int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
-int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp);
+int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp, uint8_t board_id);
 bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, uint8_t rev_id);
 int fby35_common_get_bb_hsc_type(uint8_t* type);
 bool fby35_common_is_prot_card_prsnt(uint8_t fru) ;

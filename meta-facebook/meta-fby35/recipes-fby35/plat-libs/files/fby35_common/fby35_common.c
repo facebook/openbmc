@@ -633,7 +633,7 @@ exit:
 }
 
 int
-fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp) {
+fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp, uint8_t board_id) {
   int fd = 0, sum = 0, byte_num = 0 , ret = 0, read_bytes = 0;
   int clear_size = 0, padding = 0;
   char read_buf[MD5_READ_BYTES] = {0};
@@ -695,18 +695,19 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
       byte_num = read(fd, read_buf, read_bytes);
 
       if (comp == FW_BIOS) {
+        off_t bios_info_offs = (board_id == BOARD_ID_HD) ? HD_BIOS_IMG_INFO_OFFSET : CL_BIOS_IMG_INFO_OFFSET;
         // BIOS signed information(64Bytes) is filled into BIOS_IMG_INFO_OFFSET (0x2FEF000).
         // We need to clear these 64Bytes to 0xFF then calculate the BIOS MD5.
-        if (sum <= BIOS_IMG_INFO_OFFSET && (sum + byte_num) > BIOS_IMG_INFO_OFFSET) {
-          padding = BIOS_IMG_INFO_OFFSET - sum;
+        if (sum <= bios_info_offs && (sum + byte_num) > bios_info_offs) {
+          padding = bios_info_offs - sum;
           if ((byte_num - padding) > IMG_SIGNED_INFO_SIZE) {
             clear_size = IMG_SIGNED_INFO_SIZE;
           } else {
             clear_size = byte_num - padding;
           }
           memset(read_buf + padding, 0xFF, clear_size);
-        } else if (sum > BIOS_IMG_INFO_OFFSET && sum < BIOS_IMG_INFO_OFFSET + IMG_SIGNED_INFO_SIZE ) {
-          clear_size = BIOS_IMG_INFO_OFFSET + IMG_SIGNED_INFO_SIZE - sum;
+        } else if (sum > bios_info_offs && sum < bios_info_offs + IMG_SIGNED_INFO_SIZE ) {
+          clear_size = bios_info_offs + IMG_SIGNED_INFO_SIZE - sum;
           memset(read_buf, 0xFF, clear_size);
         } else {
           // in else case, read_buf does not need to be processed.
@@ -873,7 +874,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
   }
 
   if (comp == FW_BIOS) {
-    info_offs = BIOS_IMG_INFO_OFFSET;
+    info_offs = (board_id == BOARD_ID_HD) ? HD_BIOS_IMG_INFO_OFFSET : CL_BIOS_IMG_INFO_OFFSET;
     cal_size = file_info.st_size;
   } else {
     info_offs = file_info.st_size - IMG_SIGNED_INFO_SIZE;
@@ -897,11 +898,11 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
     return false;
   }
 
-  if (fby35_common_check_image_md5(img_path, cal_size, img_info.md5_sum, true, comp) < 0) {
+  if (fby35_common_check_image_md5(img_path, cal_size, img_info.md5_sum, true, comp, board_id) < 0) {
     return false;
   }
 
-  if (fby35_common_check_image_md5(img_path, info_offs, img_info.md5_sum_second, false, comp) < 0) {
+  if (fby35_common_check_image_md5(img_path, info_offs, img_info.md5_sum_second, false, comp, board_id) < 0) {
     return false;
   }
 

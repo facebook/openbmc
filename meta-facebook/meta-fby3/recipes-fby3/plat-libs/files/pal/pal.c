@@ -1786,6 +1786,7 @@ pal_get_m2_config(uint8_t fru, uint8_t *config)
   switch (fru) {
     case FRU_2U:
     case FRU_CWC:
+    case FRU_2U_SLOT3:
       intf = REXP_BIC_INTF;
       break;
     case FRU_2U_TOP:
@@ -5483,3 +5484,27 @@ pal_is_mcu_ready(uint8_t bus) {
   return false;
 }
 
+void
+pal_get_fru_intf(uint8_t fru, uint8_t *intf) {
+  switch (fru) {
+    case FRU_BB:
+      *intf = BB_BIC_INTF;
+      break;
+    case FRU_2U:
+    case FRU_2U_SLOT3:
+    case FRU_CWC:
+      *intf = REXP_BIC_INTF;
+      break;
+    case FRU_2U_TOP:
+      *intf = RREXP_BIC_INTF1;
+      break;
+    case FRU_2U_BOT:
+      *intf = RREXP_BIC_INTF2;
+      break;
+    // Add yourself
+    default:
+      *intf = NONE_INTF;
+      break;
+  }
+  return;
+}

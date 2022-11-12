@@ -35,7 +35,6 @@
 
 #include "bic_xfer.h"
 
-const uint32_t IANA_ID = 0x00A015;
 
 #define RETRY_TIME 3
 

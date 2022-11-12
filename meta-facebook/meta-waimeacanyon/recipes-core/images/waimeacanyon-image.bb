@@ -15,4 +15,5 @@ IMAGE_INSTALL += " \
   plat-utils \
   openbmc-utils \
   ipmbd \
+  expander-util \
   "

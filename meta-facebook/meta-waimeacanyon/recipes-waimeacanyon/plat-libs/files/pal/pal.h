@@ -33,7 +33,6 @@ extern const char pal_fru_list[];
 
 #define MAX_NODES       1
 #define FRUID_SIZE      512
-#define MAX_NUM_FRUS    13
 
 enum {
   PCIE_CONFIG_IOM_E1S          = 0x01,  // dual compute system

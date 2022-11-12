@@ -35,7 +35,6 @@
 #define USB_PKT_SIZE_BIG 0x1000
 #define USB_DAT_SIZE_BIG (USB_PKT_SIZE_BIG - USB_PKT_HDR_SIZE)
 #define BIOS_PKT_SIZE (64 * 1024)
-#define SIZE_IANA_ID 3
 #define BIOS_VERIFY_PKT_SIZE (32*1024)
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
 #define BIOS_UPDATE_BLK_SIZE (64*1024)
@@ -193,7 +192,7 @@ bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, cons
       goto error_exit;
     }
     index = 0;
-  printf("usb cnt: %d \n",cnt);
+  printf("usb cnt: %zd \n",cnt);
     while ((udev->dev = udev->devs[index++]) != NULL) {
   printf("index = %d \n",index);
       ret = libusb_get_device_descriptor(udev->dev, &udev->desc);

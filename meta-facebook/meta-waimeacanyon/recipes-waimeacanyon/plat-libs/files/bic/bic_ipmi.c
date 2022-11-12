@@ -38,7 +38,6 @@
 #include "bic_xfer.h"
 
 #define SIZE_SYS_GUID 16
-#define SIZE_IANA_ID 3
 
 // OEM - Get Firmware Version
 // Netfn: 0x38, Cmd: 0x0B
@@ -496,7 +495,7 @@ bic_send:
 #endif
 
   //Ignore IANA ID
-  memcpy(cksum, &rbuf[SIZE_IANA_ID], rlen-SIZE_IANA_ID);
+  memcpy(cksum, &rbuf[IANA_ID_SIZE], rlen-IANA_ID_SIZE);
 
   return ret;
 }

@@ -34,7 +34,6 @@
 
 #define OFFSET_DEV_GUID 0x1800
 
-const char *fru_str_list[] = {"all", "iom", "mb", "scb", "bmc", "scm", "bsm", "hdbp", "pdb", "nic", "fan0", "fan1", "fan2", "fan3"};
 const char pal_fru_list[] = "all, iom, mb, scb, scm, hdbp, nic";
 
 enum key_event {

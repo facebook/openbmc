@@ -140,7 +140,7 @@ static void print_nested(json& j, int indent = 0) {
 
 static void print_hexstring(const json& j) {
   std::cout << "Response: ";
-  for (const uint8_t& byte : j) {
+  for (const uint8_t& byte : j.get<std::vector<uint8_t>>()) {
     std::cout << std::hex << std::setw(2) << std::setfill('0') << int(byte)
               << " ";
   }

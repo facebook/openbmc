@@ -7,9 +7,13 @@
 #include "restclient-cpp/connection.h"
 #include "restclient-cpp/restclient.h"
 
+#include <fstream>
+#include <streambuf>
+
 // HTTP response status codes
 enum {
   HTTP_OK = 200,
+  HTTP_ACCEPTED = 202,
   HTTP_BAD_REQUEST = 400,
   HTTP_NOT_FOUND = 404,
 };
@@ -50,15 +54,21 @@ class HGXMgr {
     return result.body;
   }
 
-  static std::string post(const std::string& url, std::string&& args) {
+  static std::string post(const std::string& url, std::string&& args, bool isFile) {
     RestClient::Response result;
     RestClient::Connection conn(url);
 
-    conn.SetTimeout(TIME_OUT);
-    conn.SetBasicAuth(HMC_USR, HMC_PWD);
+    if (isFile) {
+      std::ifstream t(std::move(args));
+      std::string str((std::istreambuf_iterator<char>(t)),
+                     std::istreambuf_iterator<char>());
+      result =  conn.post("", str);
+    }
+    else {
+      result =  conn.post("", std::move(args));
+    }
 
-    result = conn.post("", std::move(args));
-    if (result.code != HTTP_OK) {
+    if (result.code != HTTP_OK && result.code != HTTP_ACCEPTED) {
       throw HTTPException(result.code);
     }
     return result.body;
@@ -72,7 +82,7 @@ std::string redfishGet(const std::string& subpath) {
 }
 
 std::string redfishPost(const std::string& subpath, std::string&& args) {
-  return hgx.post(HMC_URL + subpath, std::move(args));
+  return hgx.post(HMC_URL + subpath, std::move(args), false);
 }
 
 std::string version(const std::string& comp, bool returnJson) {
@@ -87,8 +97,8 @@ std::string version(const std::string& comp, bool returnJson) {
 
 std::string updateNonBlocking(const std::string& path, bool returnJson) {
   std::string url = HMC_UPDATE_SERVICE;
-  std::string fp = "{" + path + "}";
-  std::string respStr = hgx.post(url, std::move(fp));
+  std::string fp = path;
+  std::string respStr = hgx.post(url, std::move(fp), true);
   if (returnJson) {
     return respStr;
   }

@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright 2022-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,22 +16,17 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-LOCAL_URI += " \
-    file://setup-gpio-cover.sh \
-    file://setup-cover-dev.sh \
-    file://setup-pwon-snr.sh \
-    file://sync_date.sh \
-    file://setup-reboot-init.sh \
-    "
+### BEGIN INIT INFO
+# Provides:          gpio-cover
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Set up GPIO pins as appropriate can be cover
+### END INIT INFO
 
-do_install:append() {
-# setup-pwon-snr.sh
-  install -m 755 setup-pwon-snr.sh  ${D}${sysconfdir}/init.d/setup-pwon-snr.sh
-  update-rc.d -r ${D} setup-pwon-snr.sh start 68 5 .
-# setup-reboot-init.sh
-  install -m 755 setup-reboot-init.sh ${D}${sysconfdir}/init.d/setup-reboot-init.sh
-  update-rc.d -r ${D} setup-reboot-init.sh stop 01 6 .
-}
+. /usr/local/fbpackages/utils/ast-functions
 
+gpio_set FM_BMC_READY_R_N 0

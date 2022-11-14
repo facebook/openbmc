@@ -70,9 +70,28 @@ enum {
   PS_ON_3S,
 };
 
+static bool
+sgpio_valid_check() {
+  int bit1 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID0");
+  int bit2 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID1");
+  int bit3 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID2");
+  int bit4 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID3");
+  if (
+    bit1 ==  1 &&
+    bit2 ==  0 &&
+    bit3 ==  1 &&
+    bit4 ==  0
+  ) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 static void
 log_gpio_change(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  if (!sgpio_valid_check()) return;
   assert(cfg);
   syslog(LOG_CRIT, "FRU: %d %s: %s - %s\n", FRU_MB, value ? "DEASSERT": "ASSERT",
          cfg->description, cfg->shadow);
@@ -98,18 +117,21 @@ void cpu_skt_init(gpiopoll_pin_t *desc, gpio_value_t value) {
 
 static
 void sml1_pmbus_alert_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d HSC OC Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
 static
 void oc_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d HSC Surge Current Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
 static
 void uv_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d HSC Under Voltage Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
@@ -142,6 +164,7 @@ static void cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_va
 {
   char cmd[128] = {0};
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  if (!sgpio_valid_check()) return;
   assert(cfg);
   SERVER_POWER_CHECK(3);
   //LCD debug card critical SEL support
@@ -291,6 +314,7 @@ pwr_err_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   uint8_t rbuf[16] = {0};
   uint8_t cmds[1] = {0x27};
 
+  if (!sgpio_valid_check()) return;
   fd = open(fn, O_RDWR);
   if (fd < 0) {
     syslog(LOG_ERR, "can not open i2c device\n");

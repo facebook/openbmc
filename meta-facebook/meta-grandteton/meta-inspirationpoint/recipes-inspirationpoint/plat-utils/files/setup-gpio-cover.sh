@@ -129,7 +129,10 @@ sgpio_export P12V_OCP_V3_1_PWRGD 250
 sgpio_export OCP_V3_1_P3V3_PWRGD 252
 sgpio_export HP_LVC3_OCP_V3_2_P12V_PWRGD_R 254
 
-
+sgpio_export CPLD_SGPIO_READY_ID0 18
+sgpio_export CPLD_SGPIO_READY_ID1 22
+sgpio_export CPLD_SGPIO_READY_ID2 116
+sgpio_export CPLD_SGPIO_READY_ID3 120
 
 
 

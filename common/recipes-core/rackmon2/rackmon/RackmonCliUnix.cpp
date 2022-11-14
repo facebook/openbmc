@@ -404,8 +404,12 @@ int main(int argc, const char** argv) {
           regAddress,
           "The Register from which we want to read")
       ->required();
-  read_cmd->add_option(
-      "--count", regCount, "The number of registers to read", true);
+  read_cmd
+      ->add_option(
+          "--count",
+          regCount,
+          "The number of registers to read")
+      ->capture_default_str();
   read_cmd->callback([&]() {
     do_read_cmd(devAddress, regAddress, regCount, raw_cmd_timeout, json_fmt);
   });

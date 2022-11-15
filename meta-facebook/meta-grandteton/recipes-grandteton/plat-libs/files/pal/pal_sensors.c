@@ -282,17 +282,16 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
 int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
-  char fru_name[32];
-  char units_name[8];
+  char fru_name[32] = {0};
+  char units_name[8] = {0};
   uint8_t scale = sensor_map[fru].map[sensor_num].units;
 
 
-  if(sensor_map[fru].polling) {
-    pal_get_fru_name(fru, fru_name);
-    if (fru_name != NULL)
+  if (sensor_map[fru].polling) {
+    if (pal_get_fru_name(fru, fru_name) == 0) {
       for (int i = 0; i < strlen(fru_name); i++)
         fru_name[i] = toupper(fru_name[i]);
-
+    }
 
     switch(scale) {
       case TEMP:
@@ -309,6 +308,12 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         break;
       case POWER:
         sprintf(units_name, "_W");
+        break;
+      case ENRGY:
+        sprintf(units_name, "_J");
+        break;
+      case PRESS:
+        sprintf(units_name, "_P");
         break;
     }
 
@@ -382,6 +387,12 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         break;
       case POWER:
         sprintf(units, "Watts");
+        break;
+      case ENRGY:
+        sprintf(units, "Joules");
+        break;
+      case PRESS:
+        sprintf(units, "Pa");
         break;
       default:
         return -1;

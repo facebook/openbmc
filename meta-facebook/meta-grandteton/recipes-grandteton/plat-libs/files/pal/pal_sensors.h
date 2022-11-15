@@ -28,6 +28,8 @@ enum {
   VOLT,
   FAN,
   POWER,
+  ENRGY,
+  PRESS,
   STATE,
 };
 

@@ -204,8 +204,8 @@ PAL_SENSOR_MAP hmc_sensor_map[] = {
   {"PWR_GB_HSC9" , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0A
   {"PWR_GB_HSC10", 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0B
   {"Total_Power" , 0,  read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0C
-  {"Total_GPU_Power"   , 0, read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0D
-  {"Altitude_Pressure0", 0, read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0E
+  {"Total_GPU_Power"   , 0, read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0D
+  {"Altitude_Pressure0", 0, read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, PRESS}, //0x0E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0F
 
   {"TEMP_GB_FPGA",  0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x10
@@ -242,68 +242,68 @@ PAL_SENSOR_MAP hmc_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2F
 
-  {"EG_GB_GPU0"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0},     0}, //0x30
+  {"EG_GB_GPU0"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY}, //0x30
   {"PWR_GB_GPU0"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31
   {"PWR_GB_HBM_GPU0", 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x32
   {"TEMP_GB_GPU0"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x33
-  {"TEMP_GB_GPU0_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x34
+  {"TEMP_GB_GPU0_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x34
   {"VOLT_GB_GPU0"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x35
-  {"EG_GB_GPU1"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0},     0}, //0x36
+  {"EG_GB_GPU1"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY}, //0x36
   {"PWR_GB_GPU1"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x37
   {"PWR_GB_HBM_GPU1", 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x38
   {"TEMP_GB_GPU1"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x39
-  {"TEMP_GB_GPU1_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x3A
+  {"TEMP_GB_GPU1_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x3A
   {"VOLT_GB_GPU1"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x3B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3F
 
-  {"EG_GB_GPU2"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0},     0}, //0x40
+  {"EG_GB_GPU2"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY}, //0x40
   {"PWR_GB_GPU2"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x41
   {"PWR_GB_HBM_GPU2", 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x42
   {"TEMP_GB_GPU2"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x43
-  {"TEMP_GB_GPU2_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x44
+  {"TEMP_GB_GPU2_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x44
   {"VOLT_GB_GPU2"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x45
-  {"EG_GB_GPU3"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0},     0}, //0x46
+  {"EG_GB_GPU3"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY}, //0x46
   {"PWR_GB_GPU3"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x47
   {"PWR_GB_HBM_GPU3", 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x48
   {"TEMP_GB_GPU3"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x49
-  {"TEMP_GB_GPU3_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x4A
+  {"TEMP_GB_GPU3_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x4A
   {"VOLT_GB_GPU3"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x4B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4F
 
-  {"EG_GB_GPU4"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0},     0}, //0x50
+  {"EG_GB_GPU4"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY}, //0x50
   {"PWR_GB_GPU4"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x51
   {"PWR_GB_HBM_GPU4", 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x52
   {"TEMP_GB_GPU4"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x53
-  {"TEMP_GB_GPU4_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x54
+  {"TEMP_GB_GPU4_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x54
   {"VOLT_GB_GPU4"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x55
-  {"EG_GB_GPU5"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0},     0}, //0x56
+  {"EG_GB_GPU5"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY}, //0x56
   {"PWR_GB_GPU5"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x57
   {"PWR_GB_HBM_GPU5", 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x58
   {"TEMP_GB_GPU5"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x59
-  {"TEMP_GB_GPU5_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x5A
+  {"TEMP_GB_GPU5_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x5A
   {"VOLT_GB_GPU5"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x5B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
 
-  {"EG_GB_GPU6"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0},     0}, //0x60
+  {"EG_GB_GPU6"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY}, //0x60
   {"PWR_GB_GPU6"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x61
   {"PWR_GB_HBM_GPU6", 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x62
   {"TEMP_GB_GPU6"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x63
-  {"TEMP_GB_GPU6_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x64
+  {"TEMP_GB_GPU6_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x64
   {"VOLT_GB_GPU6"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x65
-  {"EG_GB_GPU7"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0},     0}, //0x66
+  {"EG_GB_GPU7"     , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY}, //0x66
   {"PWR_GB_GPU7"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x67
   {"PWR_GB_HBM_GPU7", 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x68
   {"TEMP_GB_GPU7"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x69
-  {"TEMP_GB_GPU7_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x6A
+  {"TEMP_GB_GPU7_M" , 0 , read_snr, true, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x6A
   {"VOLT_GB_GPU7"   , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x6B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6D

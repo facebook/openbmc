@@ -13,7 +13,7 @@ class SELStream {
   OutputFormat fmt_;
 
  public:
-  SELStream(OutputFormat fmt) : fmt_(fmt) {}
+  explicit SELStream(OutputFormat fmt) : fmt_(fmt) {}
   virtual ~SELStream() {}
   void flush(std::ostream& os);
   virtual std::unique_ptr<SELFormat> make_sel(uint8_t default_fru);

@@ -8,7 +8,7 @@ class Exclusion {
   bool allowed = false;
 
  public:
-  bool error() {
+  bool error() const {
     return !allowed;
   }
 

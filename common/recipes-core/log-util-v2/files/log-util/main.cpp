@@ -37,8 +37,10 @@ int main(int argc, char* argv[]) {
   std::set<std::string> fru_list;
   std::string fru_list_str = get_fru_list();
   std::regex pattern(R"(\s*,\s*)");
+  std::regex regex_space(R"(^\s+|\s+$)");
   std::string fru;
 
+  fru_list_str = std::regex_replace(fru_list_str, regex_space, "");
   std::copy(
       std::sregex_token_iterator(
           fru_list_str.begin(), fru_list_str.end(), pattern, -1),

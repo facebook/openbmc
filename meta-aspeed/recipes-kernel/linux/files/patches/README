@@ -3,7 +3,12 @@ OpenBMC platforms.
 
 Patch numbers [0000-0099] are reserved for backported patches from upstream.
 
-Patch numbers [0100-0999] are reserved for to-be-upstreamed patches.
+Patch numbers [0100-0499] are reserved for to-be-upstreamed patches, and the
+patches are applied for all the openbmc platforms.
+
+Patch numbers [0500-0999] are located in meta-aspeed layer but not applied
+by default: they will be added to platform layer linux-aspeed.bbappend file
+if needed.
 
 Machine/platform specific patches are located at machine layer, and patch
 number starts with 1000.

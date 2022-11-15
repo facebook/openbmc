@@ -1707,7 +1707,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
           strcat(error_log, "Unknown");
 
       }
-      sprintf(temp_log, "%s, FRU:%u", error_log, fru);
+      sprintf(temp_log, "%s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
       break;
 

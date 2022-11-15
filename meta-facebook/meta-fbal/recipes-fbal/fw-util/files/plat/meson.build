@@ -11,7 +11,7 @@ srcs += [
 ]
 
 deps += [
-    cc.find_library('libnm'),
+    dependency('libnm'),
     dependency('libast-jtag'),
     dependency('libfpga'),
     dependency('libmcu'),

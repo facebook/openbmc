@@ -45,5 +45,3 @@ DEPENDS += " \
     libnl-wrapper \
     libobmc-i2c \
     "
-
-RDEPENDS:${PN} += "libnm"

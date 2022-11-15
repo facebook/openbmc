@@ -18,28 +18,15 @@ SUMMARY = "Node Manager Library"
 DESCRIPTION = "library for Node Manager"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPL-2.0-or-later"
+LICENSE = "LGPL-2.1-or-later"
 LIC_FILES_CHKSUM = "file://nm.c;beginline=8;endline=20;md5=da58bc07a669261cb7ccf2838db71124"
 
+
+inherit meson pkgconfig
+
 LOCAL_URI = " \
-    file://Makefile \
+    file://meson.build \
     file://nm.c \
     file://nm.h \
     "
-
-LDFLAGS += "-lipmb -lipmi"
-DEPENDS += "libipmb libipmi"
-RDEPENDS:${PN} += "libipmb libipmi"
-
-
-do_install() {
-  install -d ${D}${libdir}
-  install -m 0644 libnm.so ${D}${libdir}/libnm.so
-
-  install -d ${D}${includedir}/openbmc
-  install -m 0644 nm.h ${D}${includedir}/openbmc/nm.h
-}
-
-
-FILES:${PN} = "${libdir}/libnm.so"
-FILES:${PN}-dev = "${includedir}/openbmc/nm.h"
+DEPENDS =+ "libipmi libipmb"

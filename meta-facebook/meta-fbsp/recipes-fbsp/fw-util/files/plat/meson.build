@@ -15,6 +15,6 @@ deps += [
     dependency('libfpga'),
     dependency('libmcu'),
     dependency('libnl-wrapper'),
-    cc.find_library('nm'),
+    dependency('libnm'),
     dependency('libvr'),
 ]

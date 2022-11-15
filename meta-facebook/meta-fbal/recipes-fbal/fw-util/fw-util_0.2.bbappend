@@ -46,4 +46,3 @@ DEPENDS += " \
     libnm \
     libvr \
     "
-RDEPENDS:${PN} += "libnm"

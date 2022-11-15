@@ -17,7 +17,7 @@ srcs += [
 ]
 
 deps += [
-    cc.find_library('libnm'),
+    dependency('libnm'),
     dependency('libbic'),
     dependency('libfpga'),
     dependency('libgpio-ctrl'),
@@ -27,7 +27,6 @@ deps += [
     dependency('libncsi'),
     dependency('libnl-wrapper'),
     dependency('libobmc-mctp'),
-    dependency('libpldm-oem'),
     dependency('libpldm-oem'),
     dependency('libvr'),
 ]

@@ -9,4 +9,3 @@ LOCAL_URI += " \
         "
 
 DEPENDS += "libnm"
-RDEPENDS:${PN} += "libnm"

@@ -46,7 +46,7 @@ class Tests:
         "fbdarwin:": [
             "common",
             "minipack",
-        ], # So fbdarwin can import minipack tests and run them only one time
+        ],  # So fbdarwin can import minipack tests and run them only one time
     }
 
     def __init__(self, platform, start_dir, pattern, denylist):
@@ -208,6 +208,7 @@ def arg_parser():
             "grandcanyon",
             "fby35",
             "churchillmono",
+            "sandia",
             "grandteton",
         ],
     )

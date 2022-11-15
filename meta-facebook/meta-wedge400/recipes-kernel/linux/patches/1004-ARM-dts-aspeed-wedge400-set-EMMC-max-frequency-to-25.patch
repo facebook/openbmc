@@ -1,0 +1,38 @@
+From 2fc97fd965da62e552f29c314f1a7cee36670218 Mon Sep 17 00:00:00 2001
+From: Yiang Han <hya321@fb.com>
+Date: Tue, 26 Jul 2022 16:16:40 -0700
+Subject: [PATCH] ARM: dts: aspeed: wedge400: set EMMC max-frequency to 25MHZ
+
+Summary:
+Current Wedge400 BMC use 50Mhz as default while data and cmd hold time can not meeting HW spec. Reduce frequency to 25Mhz.
+
+It was fixed in kernel 5.10  (refer to commit: a63d8c7e5ad) and port to kernel 5.15
+
+Test Plan:
+1. built and loaded the image to wedge400c.
+2. need to talk to original vendor and more verifying tests will be added.
+
+Reviewed By: tao-ren
+
+Differential Revision: D37904814
+
+fbshipit-source-id: 532785f47cce353d8ac921a1cfbcb6c8f0a0b5f4
+---
+ .../arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts           | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+index 9c1e292b2ee..58d468a6667 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+@@ -380,6 +380,7 @@ &uhci {
+ };
+ 
+ &sdhci1 {
++  max-frequency = <25000000>;
+ 	/*
+ 	 * DMA mode needs to be disabled to avoid conflicts with UHCI
+ 	 * Controller in AST2500 SoC.
+-- 
+2.25.1
+

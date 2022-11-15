@@ -1,0 +1,85 @@
+From 0215d48cd41b6e75eb04a22c3dea9b43b25d9339 Mon Sep 17 00:00:00 2001
+From: Yiang Han <hya321@fb.com>
+Date: Tue, 26 Jul 2022 11:38:01 -0700
+Subject: [PATCH] hwmon: pmbus: (pxe1610) support pxe1211 chip
+
+Summary: add the pxe1211 chip support for hwmon.
+
+Test Plan:
+root@fboss311782526-oob:~# cat /etc/issues
+cat: can't open '/etc/issues': No such file or directory
+root@fboss311782526-oob:~# cat /etc/issue
+OpenBMC Release wedge400-9863851c3a-dirty
+
+root@fboss311782526-oob:~# uname -r
+5.15.27-wedge400
+root@fboss311782526-oob:~# sensors pxe1211-*
+pxe1211-i2c-1-0e
+Adapter: 1e78a080.i2c-bus
+XP1R2V_HBM Input Voltage:     +12.00 V  (crit min =  +8.50 V, crit max = +15.00 V)
+VDDCK_1P15V_0 Input Voltage:  +12.00 V  (crit min =  +8.50 V, crit max = +15.00 V)
+VDDCK_1P15V_1 Input Voltage:  +12.00 V  (crit min =  +8.50 V, crit max = +14.50 V)
+XP1R2V_HBM Output Voltage:     +1.20 V  (crit min = +246.51 V, crit max = +248.56 V)
+VDDCK_1P15V_0 Output Voltage:  +1.15 V  (crit min = +246.51 V, crit max = +248.56 V)
+VDDCK_1P15V_1 Output Voltage:  +1.15 V  (crit min = +246.51 V, crit max = +248.56 V)
+XP1R2V_HBM Temp:               +34.0 C  (high = +110.0 C, crit = +135.0 C)
+VDDCK_1P15V_0 Temp:            +34.0 C  (high = +110.0 C, crit = +135.0 C)
+VDDCK_1P15V_1 Temp:            +34.0 C  (high = +110.0 C, crit = +135.0 C)
+PXE1211 Input Power:            1.06 W
+XP1R2V_HBM Output Power:        0.00 W
+VDDCK_1P15V_0 Output Power:   312.50 mW
+VDDCK_1P15V_1 Output Power:   312.50 mW
+XP1R2V_HBM Output Current:     +0.00 A  (crit max = +40.00 A)
+VDDCK_1P15V_0 Output Current:  +0.50 A  (crit max = +22.00 A)
+VDDCK_1P15V_1 Output Current:  +0.00 A  (crit max = +22.00 A)
+root@fboss311782526-oob:/sys/bus/i2c/devices/1-000e# ls
+driver     hwmon      modalias   name       power      subsystem  uevent
+root@fboss311782526-oob:/sys/bus/i2c/devices/1-000e# cat name
+pxe1211
+root@fboss311782526-oob:/sys/bus/i2c/devices/1-000e#
+
+root@fboss311782526-oob:/sys/bus/i2c/devices/1-000e/hwmon/hwmon24# ls
+curr1_alarm       curr4_crit_alarm  curr6_label       in2_input         in4_crit          in5_lcrit         power1_alarm      power4_label      temp1_max_alarm   temp3_max_alarm
+curr1_input       curr4_input       device            in2_label         in4_crit_alarm    in5_lcrit_alarm   power1_input      power5_input      temp2_crit        uevent
+curr1_label       curr4_label       in1_crit          in2_lcrit         in4_input         in6_crit          power1_label      power5_label      temp2_crit_alarm
+curr2_alarm       curr5_crit        in1_crit_alarm    in2_lcrit_alarm   in4_label         in6_crit_alarm    power2_alarm      power6_input      temp2_input
+curr2_input       curr5_crit_alarm  in1_input         in3_crit          in4_lcrit         in6_input         power2_input      power6_label      temp2_max
+curr2_label       curr5_input       in1_label         in3_crit_alarm    in4_lcrit_alarm   in6_label         power2_label      subsystem         temp2_max_alarm
+curr3_alarm       curr5_label       in1_lcrit         in3_input         in5_crit          in6_lcrit         power3_alarm      temp1_crit        temp3_crit
+curr3_input       curr6_crit        in1_lcrit_alarm   in3_label         in5_crit_alarm    in6_lcrit_alarm   power3_input      temp1_crit_alarm  temp3_crit_alarm
+curr3_label       curr6_crit_alarm  in2_crit          in3_lcrit         in5_input         name              power3_label      temp1_input       temp3_input
+curr4_crit        curr6_input       in2_crit_alarm    in3_lcrit_alarm   in5_label         power             power4_input      temp1_max         temp3_max
+root@fboss311782526-oob:/sys/bus/i2c/devices/1-000e/hwmon/hwmon24#
+
+Reviewed By: tao-ren
+
+Differential Revision: D38087232
+
+fbshipit-source-id: e13d099902864870e972d836736efab47671a341
+---
+ .../drivers/hwmon/pmbus/pxe1610.c      | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hwmon/pmbus/pxe1610.c b/drivers/hwmon/pmbus/pxe1610.c
+index 52bee5de298..6819a693f73 100644
+--- a/drivers/hwmon/pmbus/pxe1610.c
++++ b/drivers/hwmon/pmbus/pxe1610.c
+@@ -130,6 +130,7 @@ static const struct i2c_device_id pxe1610_id[] = {
+ 	{"pxe1610", 0},
+ 	{"pxe1110", 0},
+ 	{"pxm1310", 0},
++	{"pxe1211", 0},
+ 	{}
+ };
+ 
+@@ -146,6 +147,6 @@ static struct i2c_driver pxe1610_driver = {
+ module_i2c_driver(pxe1610_driver);
+ 
+ MODULE_AUTHOR("Vijay Khemka <vijaykhemka@fb.com>");
+-MODULE_DESCRIPTION("PMBus driver for Infineon PXE1610, PXE1110 and PXM1310");
++MODULE_DESCRIPTION("PMBus driver for Infineon PXE1610, PXE1110, PXE1211 and PXM1310");
+ MODULE_LICENSE("GPL");
+ MODULE_IMPORT_NS(PMBUS);
+-- 
+2.25.1
+

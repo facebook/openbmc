@@ -1,0 +1,46 @@
+From 1c6de4001b7879eddd940922ac7608aef4da20e6 Mon Sep 17 00:00:00 2001
+From: Yiang Han <hya321@fb.com>
+Date: Fri, 15 Jul 2022 11:33:50 -0700
+Subject: [PATCH] ARM: dts: aspeed: wedge400: enable jtag controller
+
+Summary: enable the jtag controller for wedge400 in kernel 5.15.
+
+Test Plan:
+devserver:
+ wedge400-image  got built.
+BMC:
+root@fboss312097296-oob:~# cat /etc/issue
+OpenBMC Release wedge400-8ffdb206dc-dirty
+
+root@fboss312097296-oob:~# uname -r
+5.15.27-wedge400
+root@fboss312097296-oob:~# ls /dev/jtag0
+/dev/jtag0
+root@fboss312097296-oob:~# ls /sys/devices/platform/ahb/ahb\:apb/1e6e4000.jtag/
+driver           driver_override  freq             misc             modalias         of_node          power            sts              subsystem        tck              tdi              tdo              tms              uevent
+root@fboss312097296-oob:~#
+
+Reviewed By: tao-ren
+
+Differential Revision: D37826270
+
+fbshipit-source-id: 714f33d29282e8389b8660ef699ab7e4f85db547
+---
+ .../arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts        | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+index a901c8be49b..ffdb0d3d0ea 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+@@ -372,3 +372,7 @@ &sdhci1 {
+ 	 */
+ 	sdhci-caps-mask = <0x0 0x580000>;
+ };
++
++&jtag {
++    status = "okay";
++};
+-- 
+2.25.1
+

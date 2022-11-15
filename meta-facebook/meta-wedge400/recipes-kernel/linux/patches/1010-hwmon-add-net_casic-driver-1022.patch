@@ -1,0 +1,347 @@
+From 5a484c1b5ac2b1aae6ee82dad828b04d07f76f35 Mon Sep 17 00:00:00 2001
+From: "karthik.gengan" <gengankarthik@gmail.com>
+Date: Sun, 6 Nov 2022 15:37:45 +0000
+Subject: [PATCH] Summary: Port net_asic driver from linux-aspeed-5.10. The
+ driver is also renamed to net_casic.
+
+Below 2 commits are squashed into this single patch:
+
+e4eaa78b77 [openbmc.celestica][PR] linux-5.10: hwmon: net_asic: add mutex lock in heartbeat update
+8a0349461f [openbmc.celestica][PR] hwmon: add net_asci driver
+
+Pull Request resolved: https://github.com/facebookexternal/openbmc.celestica/pull/1022
+---
+ drivers/hwmon/Kconfig     |  10 ++
+ drivers/hwmon/Makefile    |   1 +
+ drivers/hwmon/net_casic.c | 286 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 297 insertions(+)
+ create mode 100644 drivers/hwmon/net_casic.c
+
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index e70d9614bec2..3ad7e8742fd7 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -1547,6 +1547,16 @@ config SENSORS_NCT7904
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called nct7904.
+ 
++config SENSORS_NET_CASIC
++   tristate "WEDGE400C NET_CASIC"
++   depends on I2C
++   help
++     If you say yes here you get support for the WEDGE400C NET_CASIC
++     hardware monitoring chip, including manual fan speed control.
++
++     This driver can also be built as a module. If so, the module
++     will be called net_casic.
++
+ config SENSORS_NPCM7XX
+ 	tristate "Nuvoton NPCM750 and compatible PWM and Fan controllers"
+ 	imply THERMAL
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 007e829d1d0d..327cf506e6ff 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -161,6 +161,7 @@ obj-$(CONFIG_SENSORS_NCT6775)	+= nct6775.o
+ obj-$(CONFIG_SENSORS_NCT6775_I2C) += nct6775-i2c.o
+ obj-$(CONFIG_SENSORS_NCT7802)	+= nct7802.o
+ obj-$(CONFIG_SENSORS_NCT7904)	+= nct7904.o
++obj-$(CONFIG_SENSORS_NET_CASIC)  += net_casic.o
+ obj-$(CONFIG_SENSORS_NPCM7XX)	+= npcm750-pwm-fan.o
+ obj-$(CONFIG_SENSORS_NSA320)	+= nsa320-hwmon.o
+ obj-$(CONFIG_SENSORS_NTC_THERMISTOR)	+= ntc_thermistor.o
+diff --git a/drivers/hwmon/net_casic.c b/drivers/hwmon/net_casic.c
+new file mode 100644
+index 000000000000..11fb6d864c5d
+--- /dev/null
++++ b/drivers/hwmon/net_casic.c
+@@ -0,0 +1,286 @@
++/*
++ * net_casic.c - The i2c driver for net_casic
++ *
++ * Copyright 2019-present Facebook. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/errno.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/delay.h>
++#include <linux/jiffies.h>
++
++#define BUILD_U64(_high, _low) (((u_int64_t)(_high) << 32) | (_low))
++
++#define NET_CASIC_DELAY 10
++#define NET_NCSI_MSG_LEN 4
++
++#define NET_CASIC_REG_BASE 0x80000
++#define NET_CASIC_TEMP_REG_BASE NET_CASIC_REG_BASE
++
++#define HEARTBEAT_REFRESH_INTERVAL (HZ / 10)
++#define NET_CASIC_HEARTBEAT_LSB_REG (NET_CASIC_REG_BASE + 0x108)
++#define NET_CASIC_HEARTBEAT_MSB_REG (NET_CASIC_REG_BASE + 0x10C)
++
++/*
++ * This is because net_casic sometimes return random temperatures.
++ * after discussion, let's return -1 if temperature is bigger than 150 digree.
++ */
++#define NET_CASIC_IMPOSSIBLE_TEMP (150 * 1000)
++
++enum sdk_status {
++	NOT_RUNNING,
++	RUNNING,
++};
++
++struct heart_beat {
++	/*
++	 * When SDK is running, the heart beat value should keep increasing
++	 * every 100ms, or it should be keep the same.
++	 */
++	struct mutex update_lock; /* mutex protect HB updates */
++	u_int64_t curr;
++	u_int64_t last;
++};
++
++struct net_casic_data {
++	struct i2c_client *client;
++	struct mutex update_lock; /* mutex protect updates */
++	unsigned long last_updated; /* In jiffies */
++	struct heart_beat heartbeat;
++	unsigned int sdk_status;
++};
++
++/*
++ * Check sdk is running or not
++ * return value: 1-running, 0-not running
++ * When SDK is running, the heart beat value should keep increasing
++ * every 100ms, or it should be keep the same.
++ */
++static inline int sdk_is_running(struct heart_beat heartbeat)
++{
++	return heartbeat.curr > heartbeat.last ? RUNNING : NOT_RUNNING;
++}
++
++static int net_casic_i2c_read(struct net_casic_data *data, unsigned int reg,
++			     unsigned int *value)
++{
++	struct i2c_client *client = data->client;
++	char send_buf[NET_NCSI_MSG_LEN], read_buf[NET_NCSI_MSG_LEN];
++	int index, bit_shift;
++
++	for (index = 0; index < NET_NCSI_MSG_LEN; index++) {
++		// Convert 32-bits address to buffer
++		bit_shift = (NET_NCSI_MSG_LEN - 1 - index) * 8;
++		send_buf[index] = (reg & (0xff << bit_shift)) >> bit_shift;
++	}
++
++	mutex_lock(&data->update_lock);
++	if (i2c_master_send(client, send_buf, NET_NCSI_MSG_LEN) !=
++	    NET_NCSI_MSG_LEN) {
++		goto err_exit;
++	}
++	if (i2c_master_recv(client, read_buf, NET_NCSI_MSG_LEN) !=
++	    NET_NCSI_MSG_LEN) {
++		goto err_exit;
++	}
++	mutex_unlock(&data->update_lock);
++
++	*value = 0;
++	for (index = 0; index < NET_NCSI_MSG_LEN; index++) {
++		// Convert read buffer to 32-bits value
++		bit_shift = (NET_NCSI_MSG_LEN - 1 - index) * 8;
++		*value |= (read_buf[index] << bit_shift);
++	}
++
++	return 0;
++
++err_exit:
++	mutex_unlock(&data->update_lock);
++	return -1;
++}
++
++static int net_casic_heartbeat_update(struct net_casic_data *data)
++{
++	u_int32_t lsb, msb;
++
++	mutex_lock(&data->heartbeat.update_lock);
++	if (time_after(jiffies,
++		       data->last_updated + HEARTBEAT_REFRESH_INTERVAL)) {
++		if (net_casic_i2c_read(data, NET_CASIC_HEARTBEAT_LSB_REG, &lsb))
++			goto err_exit;
++		if (net_casic_i2c_read(data, NET_CASIC_HEARTBEAT_MSB_REG, &msb))
++			goto err_exit;
++
++		data->last_updated = jiffies;
++		data->heartbeat.curr = BUILD_U64(msb, lsb);
++		if (sdk_is_running(data->heartbeat) == RUNNING) {
++			data->sdk_status = RUNNING;
++		} else {
++			data->sdk_status = NOT_RUNNING;
++		}
++		data->heartbeat.last = data->heartbeat.curr;
++	}
++	mutex_unlock(&data->heartbeat.update_lock);
++	return 0;
++
++err_exit:
++	mutex_unlock(&data->heartbeat.update_lock);
++	return -1;
++}
++
++static int net_casic_sdk_status_show(struct device *dev,
++				    struct device_attribute *dev_attr,
++				    char *buf)
++{
++	struct net_casic_data *data = dev_get_drvdata(dev);
++
++	if (net_casic_heartbeat_update(data))
++		return -1;
++
++	return sprintf(buf, "%d\n", data->sdk_status == RUNNING ? 1 : 0);
++}
++
++/* sysfs callback function */
++static ssize_t net_casic_temp_show(struct device *dev,
++				  struct device_attribute *dev_attr, char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(dev_attr);
++	struct net_casic_data *data = dev_get_drvdata(dev);
++	int value = -1;
++	int reg;
++
++	int file_index = attr->index - 1;
++	if (file_index < 0)
++		return -1;
++
++	reg = file_index * NET_NCSI_MSG_LEN + NET_CASIC_TEMP_REG_BASE;
++
++	/*
++	 * Check sdk is running or not
++	 * return value: 1-running, 0-not running
++	 * When SDK is running, the heart beat value should keep increasing
++	 * every 100ms, or it should be keep the same.
++	 * Only when SDK is running, the temperature values are valid.
++	 */
++	if (net_casic_heartbeat_update(data))
++		return -1;
++
++	/* if SDK is running in the last 100ms, return the temperature */
++	if (data->sdk_status == RUNNING) {
++		/*
++		 * This is because net_casic sometimes return random
++		 * temperatures.
++		 * After discussion, let's return -1 if temperature is bigger
++		 * than NET_CASIC_IMPOSSIBLE_TEMP digree.
++		 */
++		if (net_casic_i2c_read(data, reg, &value) ||
++		    value > NET_CASIC_IMPOSSIBLE_TEMP)
++			goto err_exit;
++		return sprintf(buf, "%d\n", value);
++	}
++
++err_exit:
++	return -1;
++}
++
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, net_casic_temp_show, NULL, 1);
++static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, net_casic_temp_show, NULL, 2);
++static SENSOR_DEVICE_ATTR(temp3_input, S_IRUGO, net_casic_temp_show, NULL, 3);
++static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, net_casic_temp_show, NULL, 4);
++static SENSOR_DEVICE_ATTR(temp5_input, S_IRUGO, net_casic_temp_show, NULL, 5);
++static SENSOR_DEVICE_ATTR(temp6_input, S_IRUGO, net_casic_temp_show, NULL, 6);
++static SENSOR_DEVICE_ATTR(temp7_input, S_IRUGO, net_casic_temp_show, NULL, 7);
++static SENSOR_DEVICE_ATTR(temp8_input, S_IRUGO, net_casic_temp_show, NULL, 8);
++static SENSOR_DEVICE_ATTR(temp9_input, S_IRUGO, net_casic_temp_show, NULL, 9);
++static SENSOR_DEVICE_ATTR(temp10_input, S_IRUGO, net_casic_temp_show, NULL, 10);
++static SENSOR_DEVICE_ATTR(temp11_input, S_IRUGO, net_casic_temp_show, NULL, 11);
++static SENSOR_DEVICE_ATTR(temp12_input, S_IRUGO, net_casic_temp_show, NULL, 12);
++static SENSOR_DEVICE_ATTR(sdk_status, S_IRUGO, net_casic_sdk_status_show, NULL,
++			  0);
++
++static struct attribute *net_casic_attrs[] = {
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_temp2_input.dev_attr.attr,
++	&sensor_dev_attr_temp3_input.dev_attr.attr,
++	&sensor_dev_attr_temp4_input.dev_attr.attr,
++	&sensor_dev_attr_temp5_input.dev_attr.attr,
++	&sensor_dev_attr_temp6_input.dev_attr.attr,
++	&sensor_dev_attr_temp7_input.dev_attr.attr,
++	&sensor_dev_attr_temp8_input.dev_attr.attr,
++	&sensor_dev_attr_temp9_input.dev_attr.attr,
++	&sensor_dev_attr_temp10_input.dev_attr.attr,
++	&sensor_dev_attr_temp11_input.dev_attr.attr,
++	&sensor_dev_attr_temp12_input.dev_attr.attr,
++	&sensor_dev_attr_sdk_status.dev_attr.attr,
++	NULL,
++};
++ATTRIBUTE_GROUPS(net_casic);
++
++static int net_casic_probe(struct i2c_client *client,
++			  const struct i2c_device_id *id)
++{
++	struct net_casic_data *data;
++	struct device *dev = &client->dev;
++	struct device *hwmon_dev;
++	u_int32_t lsb = 0xffffffff;
++	u_int32_t msb = 0xffffffff;
++
++	data = devm_kzalloc(dev, sizeof(struct net_casic_data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	if (!i2c_verify_client(dev)) {
++		return -1;
++	}
++	data->client = client;
++	mutex_init(&data->update_lock);
++	mutex_init(&data->heartbeat.update_lock);
++
++	net_casic_i2c_read(data, NET_CASIC_HEARTBEAT_LSB_REG, &lsb);
++	net_casic_i2c_read(data, NET_CASIC_HEARTBEAT_MSB_REG, &msb);
++	data->heartbeat.last = BUILD_U64(msb, lsb);
++	data->last_updated = jiffies;
++	data->sdk_status = NOT_RUNNING;
++
++	hwmon_dev = devm_hwmon_device_register_with_groups(
++		dev, client->name, data, net_casic_groups);
++	return PTR_ERR_OR_ZERO(hwmon_dev);
++}
++
++/* net_casic id */
++static const struct i2c_device_id net_casic_id[] = {
++	{ "net_casic", 0 },
++	{},
++};
++MODULE_DEVICE_TABLE(i2c, net_casic_id);
++
++static struct i2c_driver net_casic_driver = {
++  .driver = {
++    .name = "net_casic",
++  },
++  .probe    = net_casic_probe,
++  .id_table = net_casic_id,
++};
++
++module_i2c_driver(net_casic_driver);
++
++MODULE_AUTHOR("Tianhui Xu <tianhui@celestica.com>");
++MODULE_DESCRIPTION("NET_CASIC Driver");
++MODULE_LICENSE("GPL");
+-- 
+2.25.1
+

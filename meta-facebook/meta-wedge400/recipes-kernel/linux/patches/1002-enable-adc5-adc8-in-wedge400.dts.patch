@@ -1,0 +1,56 @@
+From bbfcc1f7763871b83d7dd595c574325ed4563ad9 Mon Sep 17 00:00:00 2001
+From: Sittisak Sinprem <ssinprem@celestca.com>
+Date: Fri, 3 Jun 2022 10:20:54 -0700
+Subject: [PATCH] linux-5.10: wedge400: enable adc5 - adc8 in wedge400.dts
+ (#1354)
+
+Summary:
+enable ADC5-ADC8 for Wedge400c-Respin
+
+#### TestPlan:
+BMC ADC  be display correctly
+```
+root@bmc-oob:~# sensors ast_adc_hwmon-isa-0000
+ast_adc_hwmon-isa-0000
+Adapter: ISA adapter
+XP1R0V_FPGA:      +0.99 V
+XP2R5V_BMC:       +2.49 V
+XP1R15V_BMC:      +1.15 V
+XP3R3V_RIGHT:     +3.32 V
+XP3R3V_LEFT:      +3.33 V
+XP1R8V_ALG:       +1.80 V
+XP1R2V_VDDH:      +1.20 V
+XP1R1V_OOB_6321:  +1.10 V
+XP1R5V_OOB_6321:  +1.50 V
+```
+
+Pull Request resolved: https://github.com/facebookexternal/openbmc.celestica/pull/1354
+
+Reviewed By: joancaneus
+
+Differential Revision: D36900568
+
+Pulled By: mikechoifb
+
+fbshipit-source-id: fd02ed54b770e85a7476f01dda9fdf532eaca33e
+---
+ .../arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts         | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+index 935a840303d..4af64a4ceb3 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+@@ -60,7 +60,8 @@ chosen {
+ 
+ 	ast-adc-hwmon {
+ 		compatible = "iio-hwmon";
+-		io-channels = <&adc 0>, <&adc 1>, <&adc 2>, <&adc 3>, <&adc 4>;
++		io-channels = <&adc 0>, <&adc 1>, <&adc 2>, <&adc 3>, <&adc 4>,
++					  <&adc 5>, <&adc 6>, <&adc 7>, <&adc 8>;
+ 	};
+ 
+ 	/*
+-- 
+2.25.1
+

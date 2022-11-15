@@ -1,0 +1,30 @@
+From c6514be6b65e59edc4ec81ab13499ce5947b47bf Mon Sep 17 00:00:00 2001
+From: Yiang Han <hya321@fb.com>
+Date: Tue, 26 Jul 2022 14:57:34 -0700
+Subject: [PATCH] ARM: dts: aspeed: wedge400: add i2c slave timeout for i2c bus
+ 0
+
+Reviewed By: GoldenBug
+
+Differential Revision: D37870277
+
+fbshipit-source-id: 478f7324362921520857dc28c02ad5f6e36c2f4f
+---
+ arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+index fe89c41aeeb4..9c1e292b2ee5 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+@@ -142,6 +142,7 @@ &i2c0 {
+ 	status = "okay";
+ 	multi-master;
+ 	bus-frequency = <1000000>;
++	aspeed,hw-timeout-ms = <1000>;
+ };
+ 
+ &i2c1 {
+-- 
+2.25.1
+

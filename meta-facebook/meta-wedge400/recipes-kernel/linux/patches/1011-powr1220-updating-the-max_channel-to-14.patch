@@ -1,0 +1,26 @@
+From 34397ffb5c968231de9b5b58ac4857b3cc9fcfe3 Mon Sep 17 00:00:00 2001
+From: "karthik.gengan" <gengankarthik@gmail.com>
+Date: Tue, 8 Nov 2022 11:37:37 +0000
+Subject: [PATCH] powr1220:updating the max_channel to 14.
+
+---
+ drivers/hwmon/powr1220.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/hwmon/powr1220.c b/drivers/hwmon/powr1220.c
+index f77dc6db31ac..9cc6147960d7 100644
+--- a/drivers/hwmon/powr1220.c
++++ b/drivers/hwmon/powr1220.c
+@@ -297,6 +297,9 @@ static int powr1220_probe(struct i2c_client *client)
+ 	case powr1014:
+ 		data->max_channels = 10;
+ 		break;
++	case powr1220:
++		data->max_channels = 14;
++		break;
+ 	default:
+ 		data->max_channels = 12;
+ 		break;
+-- 
+2.25.1
+

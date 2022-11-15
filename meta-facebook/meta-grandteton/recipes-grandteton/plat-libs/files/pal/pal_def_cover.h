@@ -1,24 +1,11 @@
-#ifndef __HAL_GPIO_DEF_H__
-#define __HAL_GPIO_DEF_H__
+#ifndef __HAL_PALDEF_COVER_H__
+#define __HAL_PALDEF_COVER_H__
 
-//XDP Debug PIN
-#define IRQ_BMC_PRDY_N           "FM_DBP_BMC_PRDY_N"
-#define DBP_PRESENT_N            "FM_BMC_DBP_PRESENT_R_N"
-#define FM_JTAG_TCK_MUX_SEL      "FM_JTAG_TCK_MUX_BMC_SEL" //Choice Jtag to CPU or PCH
-#define FM_BMC_PREQ_N            "FM_DBP_CPU_PREQ_GF_N"
-#define FM_JTAG_BMC_MUX_SEL      "FM_JTAG_BMC_MUX_SEL" //Choice BMC to CPLD or BMC to CPU/PCH
-#define FM_BMC_CPU_PWR_DEBUG_N   "FM_BMC_CPU_FBRK_OUT_N"
-
-//EVENT
-#define FM_UARTSW_LSB_N          "FM_UARTSW_LSB_N"
-#define FM_UARTSW_MSB_N          "FM_UARTSW_MSB_N"
-#define FM_POST_CARD_PRES_N      "FM_DEBUG_PORT_PRSNT_N_IN"
-#define RST_PLTRST_N             "RST_PLTRST_PLD_N"
+//GPIO EVENT Cover
 #define IRQ_UV_DETECT_N          "IRQ_UV_DETECT_N"
 #define IRQ_OC_DETECT_N          "IRQ_OC_DETECT_N"
 #define IRQ_HSC_FAULT_N          "IRQ_HSC_FAULT_N"
 #define IRQ_HSC_ALERT_N          "IRQ_SML1_PMBUS_PLD_ALERT_N"
-#define FM_CPU_CATERR_N          "H_CPU_CATERR_LVC2_R2_N"
 #define FM_CPU0_PROCHOT_N        "H_CPU0_PROCHOT_LVC1_N"
 #define FM_CPU1_PROCHOT_N        "H_CPU1_PROCHOT_LVC1_N"
 #define FM_CPU0_THERMTRIP_N      "H_CPU0_THERMTRIP_LVC1_N"
@@ -40,17 +27,17 @@
 #define FM_CPU1_SKTOCC           "FM_CPU1_SKTOCC_LVT3_PLD_N"
 #define FM_BIOS_POST_CMPLT       "FM_BIOS_POST_CMPLT_BMC_N"
 
-
-//Power Control
+//GPIO Power Control Cover
 #define FM_LAST_PWRGD            "PWRGD_CPUPWRGD_LVC2_R1"
-#define FP_RST_BTN_IN_N          "ID_RST_BTN_BMC_IN"
-#define FP_PWR_BTN_IN_N          "SYS_BMC_PWRBTN_IN"
-#define FP_PWR_BTN_OUT_N         "SYS_BMC_PWRBTN_OUT"
-#define FP_RST_BTN_OUT_N         "RST_BMC_RSTBTN_OUT_R_N"
+#define RST_PLTRST_N             "RST_PLTRST_PLD_N"
 #define PWRGD_SYS_PWROK          "PWRGD_SYS_PWROK_R"
 
-#define BIC_READY                "FM_SWB_BIC_READY_ISO_R_N"
-#define HMC_PRESENCE             "GPU_HMC_PRSNT_ISO_R_N"
-#define GPU_FPGA_RST_N           "GPU_FPGA_RST_N"
+//XDP Debug PIN
+#define IRQ_BMC_PRDY_N           "FM_DBP_BMC_PRDY_N"
+#define DBP_PRESENT_N            "FM_BMC_DBP_PRESENT_R_N"
+#define FM_JTAG_TCK_MUX_SEL      "FM_JTAG_TCK_MUX_BMC_SEL" //Choice Jtag to CPU or PCH
+#define FM_BMC_PREQ_N            "FM_DBP_CPU_PREQ_GF_N"
+#define FM_JTAG_BMC_MUX_SEL      "FM_JTAG_BMC_MUX_SEL" //Choice BMC to CPLD or BMC to CPU/PCH
+#define FM_BMC_CPU_PWR_DEBUG_N   "FM_BMC_CPU_FBRK_OUT_N"
 
 #endif

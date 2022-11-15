@@ -26,7 +26,6 @@ enum {
   BP0_FAN_SOURCE,
 };
 
-
 enum {
   BP1_FAN_SOURCE,
 };
@@ -43,4 +42,5 @@ bool is_dimm_present(uint8_t dimm_id);
 int get_comp_source(uint8_t fru, uint8_t comp_id, uint8_t* source);
 bool is_mb_hsc_module(void);
 bool is_swb_hsc_module(void);
+bool sgpio_valid_check(void);
 #endif

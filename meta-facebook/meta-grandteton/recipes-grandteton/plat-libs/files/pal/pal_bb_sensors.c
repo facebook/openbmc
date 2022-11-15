@@ -69,6 +69,10 @@ const uint8_t vpdb_sensor_list[] = {
   PDBV_SNR_HSC0_IOUT,
   PDBV_SNR_HSC0_PIN,
   PDBV_SNR_HSC0_TEMP,
+  PDBV_SNR_ADC128_P3V3_AUX,
+};
+
+const uint8_t vpdb_3brick_sensor_list[] = {
   PDBV_SNR_BRICK0_VOUT,
   PDBV_SNR_BRICK0_IOUT,
   PDBV_SNR_BRICK0_TEMP,
@@ -78,18 +82,12 @@ const uint8_t vpdb_sensor_list[] = {
   PDBV_SNR_BRICK2_VOUT,
   PDBV_SNR_BRICK2_IOUT,
   PDBV_SNR_BRICK2_TEMP,
-  PDBV_SNR_ADC128_P3V3_AUX,
 };
 
-const uint8_t vpdb_discrete_sensor_list[] = {
-  PDBV_SNR_HSC0_VIN,
-  PDBV_SNR_HSC0_IOUT,
-  PDBV_SNR_HSC0_PIN,
-  PDBV_SNR_HSC0_TEMP,
+const uint8_t vpdb_1brick_sensor_list[] = {
   PDBV_SNR_BRICK0_VOUT,
   PDBV_SNR_BRICK0_IOUT,
   PDBV_SNR_BRICK0_TEMP,
-  PDBV_SNR_ADC128_P3V3_AUX,
 };
 
 
@@ -467,7 +465,8 @@ extern struct snr_map sensor_map[];
 size_t nic0_sensor_cnt = sizeof(nic0_sensor_list)/sizeof(uint8_t);
 size_t nic1_sensor_cnt = sizeof(nic1_sensor_list)/sizeof(uint8_t);
 size_t vpdb_sensor_cnt = sizeof(vpdb_sensor_list)/sizeof(uint8_t);
-size_t vpdb_discrete_sensor_cnt = sizeof(vpdb_discrete_sensor_list)/sizeof(uint8_t);
+size_t vpdb_1brick_sensor_cnt = sizeof(vpdb_1brick_sensor_list)/sizeof(uint8_t);
+size_t vpdb_3brick_sensor_cnt = sizeof(vpdb_3brick_sensor_list)/sizeof(uint8_t);
 size_t hpdb_sensor_cnt = sizeof(hpdb_sensor_list)/sizeof(uint8_t);
 size_t bp0_sensor_cnt = sizeof(bp0_sensor_list)/sizeof(uint8_t);
 size_t bp1_sensor_cnt = sizeof(bp1_sensor_list)/sizeof(uint8_t);
@@ -1095,7 +1094,7 @@ pal_get_pwm_value(uint8_t tach, uint8_t *value) {
   int ret;
 
   if (fan >= pal_pwm_cnt || !is_fan_present(fan)) {
-    syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
+//    syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
     return -1;
   }
 

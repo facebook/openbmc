@@ -18,13 +18,15 @@ extern PAL_SENSOR_MAP swb_sensor_map[];
 extern PAL_SENSOR_MAP bb_sensor_map[];
 
 extern const uint8_t mb_sensor_list[];
+extern const uint8_t mb_discrete_sensor_list[];
 extern const uint8_t swb_sensor_list[];
+extern const uint8_t swb_discrete_sensor_list[];
 extern const uint8_t hmc_sensor_list[];
 extern const uint8_t nic0_sensor_list[];
 extern const uint8_t nic1_sensor_list[];
-extern const uint8_t mb_discrete_sensor_list[];
 extern const uint8_t vpdb_sensor_list[];
-extern const uint8_t vpdb_discrete_sensor_list[];
+extern const uint8_t vpdb_1brick_sensor_list[];
+extern const uint8_t vpdb_3brick_sensor_list[];
 extern const uint8_t hpdb_sensor_list[];
 extern const uint8_t bp0_sensor_list[];
 extern const uint8_t bp1_sensor_list[];
@@ -34,13 +36,15 @@ extern const uint8_t shsc_sensor_list[];
 
 
 extern size_t mb_sensor_cnt;
-extern size_t swb_sensor_cnt;
-extern size_t hmc_sensor_cnt;
 extern size_t mb_discrete_sensor_cnt;
+extern size_t swb_sensor_cnt;
+extern size_t swb_discrete_sensor_cnt;
+extern size_t hmc_sensor_cnt;
 extern size_t nic0_sensor_cnt;
 extern size_t nic1_sensor_cnt;
 extern size_t vpdb_sensor_cnt;
-extern size_t vpdb_discrete_sensor_cnt;
+extern size_t vpdb_1brick_sensor_cnt;
+extern size_t vpdb_3brick_sensor_cnt;
 extern size_t hpdb_sensor_cnt;
 extern size_t bp0_sensor_cnt;
 extern size_t bp1_sensor_cnt;
@@ -76,6 +80,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   uint8_t id;
   static uint8_t snr_mb_tmp[255]={0};
   static uint8_t snr_swb_tmp[255]={0};
+  static uint8_t snr_vpdb_tmp[64]={0};
   bool module = is_mb_hsc_module();
   bool smodule = is_swb_hsc_module();
 
@@ -100,12 +105,16 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *cnt = hmc_sensor_cnt;
   } else if (fru == FRU_PDBV) {
     get_comp_source(fru, VPDB_BRICK_SOURCE, &id);
-    if(id == THIRD_SOURCE) {
-      *sensor_list = (uint8_t *) vpdb_discrete_sensor_list;
-      *cnt = vpdb_discrete_sensor_cnt;
+    if (id == THIRD_SOURCE) {
+      memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
+      memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_1brick_sensor_list, vpdb_1brick_sensor_cnt);
+      *sensor_list = snr_vpdb_tmp;
+      *cnt = vpdb_sensor_cnt + vpdb_1brick_sensor_cnt;
     } else {
-      *sensor_list = (uint8_t *) vpdb_sensor_list;
-      *cnt = vpdb_sensor_cnt;
+      memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
+      memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_3brick_sensor_list, vpdb_3brick_sensor_cnt);
+      *sensor_list = snr_vpdb_tmp;
+      *cnt = vpdb_sensor_cnt + vpdb_3brick_sensor_cnt;
     }
   } else if (fru == FRU_PDBH) {
     *sensor_list = (uint8_t *) hpdb_sensor_list;
@@ -153,6 +162,9 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   if (fru == FRU_MB) {
     *sensor_list = (uint8_t *) mb_discrete_sensor_list;
     *cnt = mb_discrete_sensor_cnt;
+  } else if (fru == FRU_SWB) {
+    *sensor_list = (uint8_t *) swb_discrete_sensor_list;
+    *cnt = swb_discrete_sensor_cnt;
   } else if (fru > MAX_NUM_FRUS) {
       return -1;
   } else {
@@ -663,6 +675,23 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   }
   pal_add_cri_sel(cmd);
 
+}
+
+int
+pal_sensor_discrete_check(uint8_t fru,
+                          uint8_t snr_num,
+                          char *snr_name,
+                          uint8_t o_val,
+                          uint8_t n_val) {
+  char name[64];
+
+  pal_get_sensor_name(fru, snr_num, name);
+  if (!GETBIT(n_val, 0)) {
+    syslog(LOG_CRIT, "ASSERT: %s - FRU: %d", name, fru);
+  } else {
+    syslog(LOG_CRIT, "DEASSERT: %s - FRU: %d", name, fru);
+  }
+  return 0;
 }
 
 int pal_sensor_monitor_initial(void) {

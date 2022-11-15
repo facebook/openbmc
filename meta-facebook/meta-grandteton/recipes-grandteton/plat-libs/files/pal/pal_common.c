@@ -8,7 +8,6 @@
 #include <syslog.h>
 #include "pal_common.h"
 #include "pal_def.h"
-#include "pal_gpio.h"
 #include <libpldm/pldm.h>
 #include <libpldm/platform.h>
 #include <libpldm-oem/pldm.h>
@@ -302,3 +301,15 @@ is_swb_hsc_module(void) {
   return val;
 }
 
+bool
+sgpio_valid_check(){
+  int bit1 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID0");
+  int bit2 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID1");
+  int bit3 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID2");
+  int bit4 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID3");
+  if ( bit1 == 0 && bit2 == 1 && bit3 == 0 && bit4 == 1) {
+    return true;
+  } else {
+    return false;
+  }
+}

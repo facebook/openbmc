@@ -34,7 +34,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/misc-utils.h>
 #include <openbmc/peci_sensors.h>
-#include <openbmc/pal_gpio.h>
+#include <openbmc/pal_def.h>
 
 #define POLL_TIMEOUT -1
 #define POWER_ON_STR        "on"

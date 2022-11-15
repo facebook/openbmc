@@ -10,7 +10,7 @@ LOCAL_URI += "\
     file://pal_common.c \
     file://pal_common.h \
     file://pal_def.h \
-    file://pal_gpio.h \
+    file://pal_def_cover.h \
     file://pal_sensors.c \
     file://pal_sensors.h \
     file://pal_mb_sensors.c \
@@ -39,6 +39,7 @@ DEPENDS += " \
     libpeci-sensors \
     libpldm-oem \
     libsensor-correction \
+    libdimm \
     apml \
     "
 
@@ -58,5 +59,6 @@ RDEPENDS:${PN} += " \
     libpeci-sensors \
     libpldm-oem \
     libsensor-correction \
+    libdimm \
     apml \
     "

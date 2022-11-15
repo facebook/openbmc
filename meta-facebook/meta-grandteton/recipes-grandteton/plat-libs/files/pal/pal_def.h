@@ -1,6 +1,26 @@
-#ifndef __PAL_COMMON_DEF_H__
-#define __PAL_COMMON_DEF_H__
+#ifndef __PAL_DEF_COMMON_H__
+#define __PAL_DEF_COMMON_H__
 #include <openbmc/misc-utils.h>
+#include "pal_def_cover.h"
+
+//GPIO EVENT Common
+#define FM_UARTSW_LSB_N          "FM_UARTSW_LSB_N"
+#define FM_UARTSW_MSB_N          "FM_UARTSW_MSB_N"
+#define FM_POST_CARD_PRES_N      "FM_DEBUG_PORT_PRSNT_N_IN"
+#define FM_CPU_CATERR_N          "H_CPU_CATERR_LVC2_R2_N"
+
+//GPIO Power Control Common
+#define FP_RST_BTN_IN_N          "ID_RST_BTN_BMC_IN"
+#define FP_PWR_BTN_IN_N          "SYS_BMC_PWRBTN_IN"
+#define FP_PWR_BTN_OUT_N         "SYS_BMC_PWRBTN_OUT"
+#define FP_RST_BTN_OUT_N         "RST_BMC_RSTBTN_OUT_R_N"
+
+//GPIO SWB
+#define BIC_READY                "FM_SWB_BIC_READY_ISO_R_N"
+
+//GPIO HGX
+#define HMC_PRESENCE             "GPU_HMC_PRSNT_ISO_R_N"
+#define GPU_FPGA_RST_N           "GPU_FPGA_RST_N"
 
 
 #define BMC_DEF_SLAVE_ADDR (0x10)

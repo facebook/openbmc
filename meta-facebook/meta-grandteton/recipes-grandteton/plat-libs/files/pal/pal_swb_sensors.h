@@ -5,6 +5,8 @@
 #include <libpldm/base.h>
 #include <libpldm/platform.h>
 
+#define SWB_CPLD_ADDR (0x26)
+
 struct pldm_snr_reading_t {
   struct pldm_msg_hdr hdr;
   struct pldm_get_sensor_reading_resp data;
@@ -161,6 +163,8 @@ enum {
   SWB_SENSOR_VOLT_E1S_15 = 0xBD,
   SWB_SENSOR_CURR_E1S_15 = 0xBE,
   SWB_SENSOR_POUT_E1S_15 = 0xBF,
+
+  SWB_SENSOR_CPLD_HEALTH = 0xD0,
 };
 
 #endif

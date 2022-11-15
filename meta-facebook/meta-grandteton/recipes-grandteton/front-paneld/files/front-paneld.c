@@ -27,7 +27,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
-#include <openbmc/pal_gpio.h>
+#include <openbmc/pal_def.h>
 
 #define BTN_MAX_SAMPLES   200
 #define FW_UPDATE_ONGOING 1

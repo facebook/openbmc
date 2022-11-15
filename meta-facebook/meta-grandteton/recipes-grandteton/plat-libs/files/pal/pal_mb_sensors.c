@@ -20,6 +20,7 @@
 #include <openbmc/peci_sensors.h>
 #include <openbmc/pmbus.h>
 #include <openbmc/sensor-correction.h>
+#include <openbmc/dimm.h>
 #include "pal.h"
 #include "pal_common.h"
 #include "pal_bb_sensors.h"
@@ -48,6 +49,7 @@ static int read_hsc_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_hsc_peak_pin(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_cpu_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_cpu_dimm_power(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_NM_pch_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_vr_temp(uint8_t fru, uint8_t sensor_num, float  *value);
@@ -57,6 +59,7 @@ static int read_frb3(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int get_nm_rw_info(uint8_t* nm_bus, uint8_t* nm_addr, uint16_t* bmc_addr);
+static int read_cpld_health(uint8_t fru, uint8_t sensor_num, float *value);
 bool pal_bios_completed(uint8_t fru);
 static uint8_t postcodes_last[256] = {0};
 
@@ -182,9 +185,40 @@ const uint8_t hsc_sensor_list[] = {
 
 // List of MB discrete sensors to be monitored
 const uint8_t mb_discrete_sensor_list[] = {
-//  MB_SENSOR_POWER_FAIL,
-//  MB_SENSOR_MEMORY_LOOP_FAIL,
   MB_SNR_PROCESSOR_FAIL,
+  MB_SNR_CPLD_HEALTH,
+  MB_SNR_DIMM_CPU0_A0_STATE,
+  MB_SNR_DIMM_CPU0_C0_STATE,
+  MB_SNR_DIMM_CPU0_A1_STATE,
+  MB_SNR_DIMM_CPU0_C1_STATE,
+  MB_SNR_DIMM_CPU0_A2_STATE,
+  MB_SNR_DIMM_CPU0_C2_STATE,
+  MB_SNR_DIMM_CPU0_A3_STATE,
+  MB_SNR_DIMM_CPU0_C3_STATE,
+  MB_SNR_DIMM_CPU0_A4_STATE,
+  MB_SNR_DIMM_CPU0_C4_STATE,
+  MB_SNR_DIMM_CPU0_A5_STATE,
+  MB_SNR_DIMM_CPU0_C5_STATE,
+  MB_SNR_DIMM_CPU0_A6_STATE,
+  MB_SNR_DIMM_CPU0_C6_STATE,
+  MB_SNR_DIMM_CPU0_A7_STATE,
+  MB_SNR_DIMM_CPU0_C7_STATE,
+  MB_SNR_DIMM_CPU1_B0_STATE,
+  MB_SNR_DIMM_CPU1_D0_STATE,
+  MB_SNR_DIMM_CPU1_B1_STATE,
+  MB_SNR_DIMM_CPU1_D1_STATE,
+  MB_SNR_DIMM_CPU1_B2_STATE,
+  MB_SNR_DIMM_CPU1_D2_STATE,
+  MB_SNR_DIMM_CPU1_B3_STATE,
+  MB_SNR_DIMM_CPU1_D3_STATE,
+  MB_SNR_DIMM_CPU1_B4_STATE,
+  MB_SNR_DIMM_CPU1_D4_STATE,
+  MB_SNR_DIMM_CPU1_B5_STATE,
+  MB_SNR_DIMM_CPU1_D5_STATE,
+  MB_SNR_DIMM_CPU1_B6_STATE,
+  MB_SNR_DIMM_CPU1_D6_STATE,
+  MB_SNR_DIMM_CPU1_B7_STATE,
+  MB_SNR_DIMM_CPU1_D7_STATE,
 };
 
 //CPU
@@ -267,7 +301,7 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x08
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x09
-  {"PROCESSOR_FAIL", FRU_MB, read_frb3, 0, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0x0A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0A
   {"HSC_VOLT",  HSC_ID0, read_hsc_vin, true, {14.333, 0, 0, 10.091, 0, 0, 0, 0}, VOLT}, //0x0B
   {"HSC_CURR",  HSC_ID0, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x0C
   {"HSC_PWR",   HSC_ID0, read_hsc_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0D
@@ -393,6 +427,92 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"CPU1_DIMM_D6_PWR", DIMM_ID29, read_cpu_dimm_power, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x7D
   {"CPU1_DIMM_B7_PWR", DIMM_ID30, read_cpu_dimm_power, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x7E
   {"CPU1_DIMM_D7_PWR", DIMM_ID31, read_cpu_dimm_power, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x7F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x80
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x81
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x82
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x83
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x84
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x85
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x86
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x87
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x88
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x90
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x91
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x92
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x93
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x94
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x95
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x96
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x97
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x98
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x99
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
+  {"PROCESSOR_FAIL", FRU_MB, read_frb3, 0, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xA1
+  {"CPLD_HEALTH", 0, read_cpld_health, 0, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xA2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
+
+  {"CPU0_DIMM_A0_STATE", DIMM_ID0,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB0
+  {"CPU0_DIMM_C0_STATE", DIMM_ID1,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB1
+  {"CPU0_DIMM_A1_STATE", DIMM_ID2,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB2
+  {"CPU0_DIMM_C1_STATE", DIMM_ID3,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB3
+  {"CPU0_DIMM_A2_STATE", DIMM_ID4,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB4
+  {"CPU0_DIMM_C2_STATE", DIMM_ID5,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB5
+  {"CPU0_DIMM_A3_STATE", DIMM_ID6,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB6
+  {"CPU0_DIMM_C3_STATE", DIMM_ID7,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB7
+  {"CPU0_DIMM_A4_STATE", DIMM_ID8,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB8
+  {"CPU0_DIMM_C4_STATE", DIMM_ID9,  read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB9
+  {"CPU0_DIMM_A5_STATE", DIMM_ID10, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBA
+  {"CPU0_DIMM_C5_STATE", DIMM_ID11, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBB
+  {"CPU0_DIMM_A6_STATE", DIMM_ID12, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBC
+  {"CPU0_DIMM_C6_STATE", DIMM_ID13, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBD
+  {"CPU0_DIMM_A7_STATE", DIMM_ID14, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBE
+  {"CPU0_DIMM_C7_STATE", DIMM_ID15, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBF
+
+  {"CPU1_DIMM_B0_STATE", DIMM_ID16, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC0
+  {"CPU1_DIMM_D0_STATE", DIMM_ID17, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC1
+  {"CPU1_DIMM_B1_STATE", DIMM_ID18, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC2
+  {"CPU1_DIMM_D1_STATE", DIMM_ID19, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC3
+  {"CPU1_DIMM_B2_STATE", DIMM_ID20, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC4
+  {"CPU1_DIMM_D2_STATE", DIMM_ID21, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC5
+  {"CPU1_DIMM_B3_STATE", DIMM_ID22, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC6
+  {"CPU1_DIMM_D3_STATE", DIMM_ID23, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC7
+  {"CPU1_DIMM_B4_STATE", DIMM_ID24, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC8
+  {"CPU1_DIMM_D4_STATE", DIMM_ID25, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC9
+  {"CPU1_DIMM_B5_STATE", DIMM_ID26, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCA
+  {"CPU1_DIMM_D5_STATE", DIMM_ID27, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCB
+  {"CPU1_DIMM_B6_STATE", DIMM_ID28, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCC
+  {"CPU1_DIMM_D6_STATE", DIMM_ID29, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCD
+  {"CPU1_DIMM_B7_STATE", DIMM_ID30, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCE
+  {"CPU1_DIMM_D7_STATE", DIMM_ID31, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCF
+
 };
 
 extern struct snr_map sensor_map[];
@@ -708,6 +828,52 @@ read_cpu_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
   return 0;
 }
 
+static
+int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value) {
+  uint8_t dimm_id = sensor_map[fru].map[sensor_num].id; // dimm_id 0-31
+  uint8_t dimm_num = dimm_id%PER_CPU_DIMM_NUMBER_MAX;   // per cpu dimm number 0-15
+  uint8_t cpu_id = dimm_id/PER_CPU_DIMM_NUMBER_MAX;     // cpu_id:CPU0/CPU1
+  uint8_t err_cnt = 0;
+  const char *err_list[MAX_PMIC_ERR_TYPE] = {0};
+  int ret, i, index=0;
+  static bool flag[MAX_DIMM_NUM][MAX_PMIC_ERR_TYPE]= {false};
+  bool curr[MAX_PMIC_ERR_TYPE] = {0};
+  bool tag=0;
+  char name[64] = {0};
+
+  if(!is_dimm_present(dimm_id))
+    return READING_NA;
+
+  *value = 0;
+  ret = pmic_list_err(fru, cpu_id, dimm_num, err_list, &err_cnt);
+  if(!ret) {
+    for (i = 0; i < err_cnt; i++) {
+      index = pmic_err_index(err_list[i]);
+      curr[index] = true;
+#ifdef DEBUG
+      syslog(LOG_DEBUG, "%s cpu%d dimm%d err_num%d %s\n", __func__, cpu_id, dimm_id, index, err_list[i]);
+#endif
+    }
+    for (i = 0; i < MAX_PMIC_ERR_TYPE; i++) {
+      tag = curr[i] ^ flag[dimm_id][i];
+#ifdef DEBUG
+      syslog(LOG_DEBUG, "%s dimm%d curr=%d flag%d",
+                         __func__, dimm_id, curr[i], flag[dimm_id][i] );
+#endif
+      if(tag) {
+        pmic_err_name(i, name);
+        if(curr[i] == true)
+           syslog(LOG_CRIT, "ASSERT DIMM Error %s", name);
+        else
+           syslog(LOG_CRIT, "DEASSERT DIMM Error %s", name);
+
+        flag[dimm_id][i] = curr[i];
+      }
+    }
+  }
+  return ret;
+}
+
 //Sensor HSC
 static int
 read_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value) {
@@ -935,7 +1101,6 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
     _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, frb3_fail, error);
   }
 
-  *value = (float)frb3_fail;
   return 0;
 }
 
@@ -948,7 +1113,25 @@ int read_frb3(uint8_t fru, uint8_t sensor_num, float *value) {
   syslog(LOG_INFO, "%s\n", __func__);
 #endif
   ret = check_frb3(fru_id, MB_SNR_PROCESSOR_FAIL, value);
+  *value = 0;
   return ret;
 }
 
+static
+int read_cpld_health(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret = 0;
+  static unsigned int retry;
 
+  ret = sgpio_valid_check();
+  if (!ret) {
+    if (retry_err_handle(retry, 5) == READING_NA) {
+      *value = 1;
+    } else {
+      *value = 0;
+    }
+  } else {
+    *value = 0;
+    retry = 0;
+  }
+  return 0;
+}

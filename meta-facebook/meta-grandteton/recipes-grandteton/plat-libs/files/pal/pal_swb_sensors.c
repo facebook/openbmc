@@ -4,6 +4,8 @@
 #include <libpldm-oem/pldm.h>
 #include "pal_swb_sensors.h"
 #include "pal.h"
+#include <openbmc/obmc-i2c.h>
+#include "syslog.h"
 
 static int
 get_swb_sensor(uint8_t fru, uint8_t sensor_num, float *value) 
@@ -48,6 +50,42 @@ exit:
     free(rbuf);
 
   return rc;
+}
+
+static
+int read_swb_cpld_health(uint8_t fru, uint8_t sensor_num, float *value) {
+  int fd = 0, ret = -1;
+  uint8_t tlen, rlen;
+  uint8_t addr = SWB_CPLD_ADDR;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  static unsigned int retry;
+
+  fd = open("/dev/i2c-32", O_RDWR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  tbuf[0] = 0x06;
+  tlen = 1;
+  rlen = 1;
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  if (!ret || rbuf[0] != 0xff) {
+    if (retry_err_handle(retry, 5) == READING_NA) {
+      *value = 1;
+    } else {
+      *value = 0;
+    }
+  } else {
+    *value = 0;
+    retry = 0;
+  }
+
+#ifdef DEBUG
+  syslog(LOG_INFO, "%s rbuf[0]=%x\n", __func__, rbuf[0]);
+#endif
+  return 0;
 }
 
 PAL_SENSOR_MAP swb_sensor_map[] = {
@@ -243,6 +281,42 @@ PAL_SENSOR_MAP swb_sensor_map[] = {
   {"E1S_15_VOLT", 0, get_swb_sensor, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, // 0xBD
   {"E1S_15_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0xBE
   {"E1S_15_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0xBF
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
+
+  {"CPLD_HEALTH", 0, read_swb_cpld_health, 0, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xD0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
+
+
 };
 
 const uint8_t swb_sensor_list[] = {
@@ -400,5 +474,11 @@ const uint8_t shsc_sensor_list[] = {
   SWB_SENSOR_POUT_PDB_HSC,
 };
 
+// List of SWB discrete sensors to be monitored
+const uint8_t swb_discrete_sensor_list[] = {
+  SWB_SENSOR_CPLD_HEALTH,
+};
+
 size_t swb_sensor_cnt = sizeof(swb_sensor_list)/sizeof(uint8_t);
 size_t shsc_sensor_cnt = sizeof(shsc_sensor_list)/sizeof(uint8_t);
+size_t swb_discrete_sensor_cnt = sizeof(swb_discrete_sensor_list)/sizeof(uint8_t);

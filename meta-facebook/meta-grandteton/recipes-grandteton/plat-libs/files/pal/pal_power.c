@@ -7,7 +7,6 @@
 #include <openbmc/obmc-pal.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/nm.h>
-#include "pal_gpio.h"
 #include "pal_def.h"
 #include "pal_common.h"
 #include "pal_power.h"

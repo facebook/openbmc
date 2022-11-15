@@ -1,7 +1,7 @@
 #include <safe_str_lib.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-pal.h>
-#include <openbmc/pal_gpio.h>
+#include <openbmc/pal_def.h>
 
 #include "jtag_handler.h"
 #include "logging.h"

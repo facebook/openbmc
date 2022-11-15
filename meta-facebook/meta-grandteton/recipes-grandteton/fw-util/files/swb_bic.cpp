@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <cstdio>
 #include <syslog.h>
 #include <stdio.h>
 #include <termios.h>
@@ -51,6 +52,24 @@ class SwbPexFwComponent : public SwbBicFwComponent {
     SwbPexFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target, uint8_t id)
         :SwbBicFwComponent(fru, comp, bus, eid, target), id(id) {}
     int get_version(json& j) override;
+};
+
+#define PexImageCount 4
+
+struct PexImage {
+  uint32_t offset;
+  uint32_t size;
+};
+
+class SwbAllPexFwComponent : public Component {
+  private:
+    uint8_t bus, eid;
+    uint8_t target = PEX0_COMP;
+  public:
+    SwbAllPexFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid)
+        :Component(fru, comp), bus(bus), eid(eid) {}
+    int update(string image);
+    int fupdate(string image);
 };
 
 class SwbNicFwComponent : public SwbBicFwComponent {
@@ -491,6 +510,96 @@ int SwbPexFwComponent::get_version(json& j) {
   return FW_STATUS_SUCCESS;
 }
 
+static ssize_t
+uint32_t_read (int fd, uint32_t& target)
+{
+  ssize_t ret = 0;
+  uint8_t temp[PexImageCount];
+  ret = read(fd, temp, sizeof(temp));
+  if (ret >= 0) {
+    target = 0;
+    for (int i = 0; i < 4; ++i)
+      target = (target << 8) + temp[i];
+  }
+
+  return ret;
+}
+
+int SwbAllPexFwComponent::fupdate(string image) {
+  return update(image);
+}
+
+int SwbAllPexFwComponent::update(string image) {
+
+  // open the binary
+  int fd_r = open(image.c_str(), O_RDONLY);
+  if (fd_r < 0) {
+    cerr << "Cannot open " << image << " for reading" << endl;
+    return -1;
+  }
+
+  uint32_t count = 0;
+  if (uint32_t_read(fd_r, count) < 0)
+    return -1;
+
+  if (count != PexImageCount) {
+    fprintf(stderr, "There should be %d images not %d.\n", PexImageCount, count);
+    return -1;
+  }
+
+  struct PexImage images[PexImageCount];
+  for (int i = 0; i < PexImageCount; ++i) {
+    if (uint32_t_read(fd_r, images[i].offset) < 0) return -1;
+    if (uint32_t_read(fd_r, images[i].size)   < 0) return -1;
+  }
+
+  syslog(LOG_CRIT, "Component %s upgrade initiated\n", this->alias_component().c_str() );
+  int ret = 0;
+
+  for (int i = 0; i < PexImageCount; ++i) {
+    try {
+      if (lseek(fd_r, images[i].offset, SEEK_SET) != (off_t)images[i].offset) {
+        printf("%d\n", -errno);
+        cerr << "Cannot seek " << image << endl;
+        ret = -1;
+        goto exit;
+      }
+      uint8_t *memblock = new uint8_t [images[i].size];
+      if (read(fd_r, memblock, images[i].size) != (ssize_t)images[i].size) {
+        cerr << "Cannot read " << image << endl;
+        ret = -1;
+        goto exit;
+      }
+      ret = swb_fw_update(bus, eid, PEX0_COMP+i, memblock, images[i].size);
+      delete[] memblock;
+      if (ret != SWB_FW_UPDATE_SUCCESS) {
+        switch(ret)
+        {
+          case SWB_FW_UPDATE_FAILED:
+            cerr << this->alias_component() << ": update process failed" << endl;
+            break;
+          case SWB_FW_UPDATE_NOT_SUPP_IN_CURR_STATE:
+            cerr << this->alias_component() << ": firmware update not supported in current state." << endl;
+            break;
+          default:
+            cerr << this->alias_component() << ": unknow error (ret: " << ret << ")" << endl;
+            break;
+        }
+        ret = FW_STATUS_FAILURE;
+      }
+
+    } catch (string& err) {
+      printf("%s\n", err.c_str());
+      ret = FW_STATUS_NOT_SUPPORTED;
+    }
+  }
+
+exit:
+  syslog(LOG_CRIT, "Component %s upgrade completed\n", this->alias_component().c_str() );
+  close(fd_r);
+  return ret;
+}
+
 SwbBicFwComponent bic("swb", "bic", 3, 0x0A, BIC_COMP);
 SwbBicFwRecoveryComponent bic_recovery("swb", "bic_recovery", 3, 0x0A, BIC_COMP);
 
@@ -498,6 +607,7 @@ SwbPexFwComponent swb_pex0("swb", "pex0", 3, 0x0A, PEX0_COMP, 0);
 SwbPexFwComponent swb_pex1("swb", "pex1", 3, 0x0A, PEX1_COMP, 1);
 SwbPexFwComponent swb_pex2("swb", "pex2", 3, 0x0A, PEX2_COMP, 2);
 SwbPexFwComponent swb_pex3("swb", "pex3", 3, 0x0A, PEX3_COMP, 3);
+SwbAllPexFwComponent swb_pex("swb", "pex_all", 3, 0x0A);
 
 PLDMNicComponent swb_nic0("swb", "swb_nic0", "SWB_NIC0", 0x10, 3);
 PLDMNicComponent swb_nic1("swb", "swb_nic1", "SWB_NIC1", 0x11, 3);

@@ -2,7 +2,7 @@ usage: bios-util FRU --boot_order get [-h] [--boot_mode | --clear_CMOS | --force
 
 Show Get Boot Order usage
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --boot_mode           Get Boot mode setting
   --clear_CMOS          Get CMOS clear setting

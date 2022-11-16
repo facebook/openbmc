@@ -2,7 +2,7 @@ usage: bios-util FRU --boot_order enable [-h] [--clear_CMOS | --force_boot_BIOS_
 
 Show Enable Boot Order usage
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --clear_CMOS          Enable clear CMOS
   --force_boot_BIOS_setup

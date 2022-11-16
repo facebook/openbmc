@@ -32,6 +32,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-grandcanyon:lf-kirkstone
   meta-grandteton:lf-kirkstone
   meta-inspirationpoint:lf-kirkstone
+  meta-qemux86:lf-kirkstone
   meta-sandia:lf-kirkstone
   meta-waimeacanyon:lf-kirkstone
 # dunfell platforms (pending upgrade)
@@ -47,7 +48,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fuji:lf-dunfell
   meta-minipack:lf-dunfell
   meta-netlakemtp:lf-dunfell
-  meta-qemux86:lf-dunfell
   meta-wedge100:lf-dunfell
   meta-wedge400:lf-dunfell
 # Legacy platforms pending kernel upgrade

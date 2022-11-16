@@ -2,7 +2,7 @@ usage: bios-util FRU --boot_order disable [-h] [--clear_CMOS | --force_boot_BIOS
 
 Show Disable Boot Order usage
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --clear_CMOS          Disable clear CMOS
   --force_boot_BIOS_setup

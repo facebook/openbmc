@@ -7,7 +7,7 @@ Show bios-util usage
 positional arguments:
   FRU                   FRU name
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --boot_order {enable,disable,set,get}
                         Enable or disable or set or get BIOS boot order

@@ -2,7 +2,7 @@ usage: bios-util FRU --boot_order set [-h] [--boot_mode | --boot_order]
 
 Show Set Boot Order usage
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --boot_mode {0,1}     Set BIOS boot mode {0: 'Legacy', 1: 'UEFI'}
   --boot_order order# order# order# order# order#

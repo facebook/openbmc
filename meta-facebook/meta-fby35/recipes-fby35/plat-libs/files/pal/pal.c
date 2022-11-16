@@ -4984,6 +4984,48 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
 #endif
 
 int
+pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t bmc_location, const uint8_t config_status) {
+  static uint8_t board_type[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
+  int ret = 0;
+
+  if(sensor == NULL) {
+    syslog(LOG_ERR, "%s: failed to read bic sensor due to NULL pointer\n", __func__);
+    return READING_NA;
+  }
+
+  if (((config_status & PRESENT_2OU) == PRESENT_2OU) && (board_type[fru-1] == UNKNOWN_BOARD)) {
+    ret = fby35_common_get_2ou_board_type(fru, &board_type[fru-1]);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+    }
+  }
+
+  //check snr number first. If it not holds, it will move on
+  if (sensor_num <= 0x48 || (((board_type[fru-1] & DPV2_X16_BOARD) == DPV2_X16_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) &&
+      (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR))) { //server board
+    ret = bic_get_sensor_reading(fru, sensor_num, sensor, NONE_INTF);
+  } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
+       ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
+    ret = bic_get_sensor_reading(fru, sensor_num, sensor, FEXP_BIC_INTF);
+  } else if ( ((sensor_num >= 0x80 && sensor_num <= 0xCE) ||     //2OU
+               (sensor_num >= 0x49 && sensor_num <= 0x4D)) &&    //Many sensors are defined in GPv3.
+              ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
+                                                                 //So, we take 0x49 ~ 0x4D here
+    ret = bic_get_sensor_reading(fru, sensor_num, sensor, REXP_BIC_INTF);
+  } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xF1) ) { //BB
+    ret = bic_get_sensor_reading(fru, sensor_num, sensor, BB_BIC_INTF);
+  } else {
+    return READING_NA;
+  }
+
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
+  }
+
+  return ret;
+}
+
+int
 pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   char key[MAX_KEY_LEN] = {0};
   char cvalue[MAX_VALUE_LEN] = {0};

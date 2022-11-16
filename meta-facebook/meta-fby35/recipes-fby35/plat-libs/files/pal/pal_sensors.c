@@ -2621,7 +2621,6 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   uint8_t *bic_skip_list;
   int skip_sensor_cnt = 0;
   uint8_t reading_msb = 0;
-  static uint8_t board_type[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
   get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
   ret = bic_get_server_power_status(fru, &power_status);
@@ -2651,33 +2650,10 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   if (ret == 0) {
     return READING_SKIP;
   }
-  if (((config_status & PRESENT_2OU) == PRESENT_2OU) && (board_type[fru-1] == UNKNOWN_BOARD)) {
-    ret = fby35_common_get_2ou_board_type(fru, &board_type[fru-1]);
-    if (ret < 0) {
-      syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-    }
-  }
 
-  //check snr number first. If it not holds, it will move on
-  if (sensor_num <= 0x48 || (((board_type[fru-1] & DPV2_X16_BOARD) == DPV2_X16_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) &&
-      (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR))) { //server board
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
-  } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
-       ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
-  } else if ( ((sensor_num >= 0x80 && sensor_num <= 0xCE) ||     //2OU
-               (sensor_num >= 0x49 && sensor_num <= 0x4D)) &&    //Many sensors are defined in GPv3.
-              ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
-                                                                 //So, we take 0x49 ~ 0x4D here
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-  } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xF1) ) { //BB
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
-  } else {
-    return READING_NA;
-  }
+  ret = pal_read_bic_sensor(fru, sensor_num, &sensor, bmc_location, config_status);
 
   if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
     return READING_NA;
   }
 

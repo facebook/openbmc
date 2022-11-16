@@ -356,11 +356,10 @@ static int
 util_read_sensor(uint8_t slot_id) {
   int ret = 0;
   int i = 0;
+  int sensor_cnt = 0;
   ipmi_extend_sensor_reading_t sensor = {0};
-  uint8_t intf_list[4] = {NONE_INTF};
-  uint8_t intf_index = 0;
   uint8_t config_status = 0xff;
-  uint8_t type_2ou = UNKNOWN_BOARD;
+  uint8_t *sensor_list;
 
   ret = bic_is_exp_prsnt(slot_id);
   if ( ret < 0 ) {
@@ -369,45 +368,25 @@ util_read_sensor(uint8_t slot_id) {
   }
   config_status = (uint8_t) ret;
 
-  if ( (config_status & PRESENT_1OU) == PRESENT_1OU && (bmc_location != NIC_BMC) ) {
-    intf_list[1] = FEXP_BIC_INTF;
-  } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) == 0 ) {
-      if ( ((type_2ou & DPV2_X8_BOARD) != DPV2_X8_BOARD) &&
-           ((type_2ou & DPV2_X16_BOARD) != DPV2_X16_BOARD) ) {
-        intf_list[2] = REXP_BIC_INTF;
-      }
-    } else {
-      printf("%s() Failed to get 2OU board type\n", __func__);
-    }
+  ret = pal_get_fru_sensor_list(slot_id, &sensor_list, &sensor_cnt);
+  if (ret < 0) {
+    printf("fru%d get sensor list failed!\n", slot_id);
+    return ret;
   }
 
-  if ( bmc_location == NIC_BMC ) {
-    intf_list[3] = BB_BIC_INTF;
-  }
-
-  for ( intf_index = 0; intf_index < intf_size; intf_index++ ) {
-    if ( intf_list[intf_index] == 0 ) {
+  for (i = 0; i < sensor_cnt; i++) {
+    ret = pal_read_bic_sensor(slot_id, sensor_list[i], &sensor, bmc_location, config_status);
+    if (ret < 0 ) {
       continue;
     }
-
-    printf("%s:\n", intf_name[intf_index]);
-
-    //TODO: If a sensor is not existed, a warning message is logged in /var/log/messages
-    for (i = 0; i < MAX_SENSOR_NUM; i++) {
-      ret = bic_get_sensor_reading(slot_id, i, &sensor, intf_list[intf_index]);
-      if (ret < 0 ) {
-        continue;
-      }
-      if (sensor.read_type == STANDARD_CMD) {
-        printf("sensor num: 0x%02X: value: 0x%02X, flags: 0x%02X, status: 0x%02X, ext_status: 0x%02X\n",
-                i, sensor.value, sensor.flags, sensor.status, sensor.ext_status);
-      } else {
-        printf("sensor num: 0x%02X: value: 0x%04X, flags: 0x%02X\n", i, sensor.value, sensor.flags);
-      }
+    if (sensor.read_type == STANDARD_CMD) {
+      printf("sensor num: 0x%02X: value: 0x%02X, flags: 0x%02X, status: 0x%02X, ext_status: 0x%02X\n",
+              sensor_list[i], sensor.value, sensor.flags, sensor.status, sensor.ext_status);
+    } else {
+      printf("sensor num: 0x%02X: value: 0x%04X, flags: 0x%02X\n", sensor_list[i], sensor.value, sensor.flags);
     }
-    printf("\n");
   }
+
   return ret;
 }
 

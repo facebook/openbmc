@@ -1,10 +1,10 @@
 inherit python3native
 def flakes_add_if_avail(d):
   distro = d.getVar('DISTRO_CODENAME', True)
-  if distro in [ 'dunfell']:
-    return "python3-flake8"
-  else:
+  if distro in [ 'rocko' ]:
     return ""
+  else:
+    return "python3-flake8"
 
 RDEPENDS:${PN}-ptest += "${@flakes_add_if_avail(d)}"
 do_flake8() {

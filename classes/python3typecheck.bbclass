@@ -2,10 +2,10 @@ inherit python3native
 def mypy_add_if_avail(d):
   distro = d.getVar('DISTRO_CODENAME', True)
   print(distro)
-  if distro in ['dunfell']:
-    return "python3-mypy"
-  else:
+  if distro in ['rocko']:
     return ""
+  else:
+    return "python3-mypy"
 
 RDEPENDS:${PN}-ptest += "${@mypy_add_if_avail(d)}"
 

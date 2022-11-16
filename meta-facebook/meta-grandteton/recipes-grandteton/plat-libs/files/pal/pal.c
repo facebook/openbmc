@@ -141,7 +141,7 @@ pal_get_num_slots(uint8_t *num) {
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
-  if(fru_dev_data[fru].check_presence == NULL || fru >= FRU_CNT) {
+  if (fru >= FRU_CNT || fru_dev_data[fru].check_presence == NULL) {
     *status = 0;
   } else {
     *status = fru_dev_data[fru].check_presence();

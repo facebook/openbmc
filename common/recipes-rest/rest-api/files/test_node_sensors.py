@@ -1,15 +1,16 @@
 import asyncio
 import subprocess
 import unittest
-import aiohttp
 from unittest.mock import Mock, patch
-from aiohttp.test_utils import unittest_run_loop, AioHTTPTestCase
+
+import aiohttp
 import common_utils
+from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from node_sensors import sensorsNode
 
 
 class TestSensors(AioHTTPTestCase):
-    def setUp(self):
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
 
         self.async_exec_mock = unittest.mock.patch(
@@ -19,7 +20,7 @@ class TestSensors(AioHTTPTestCase):
         )
 
         self.async_exec_mock.start()
-        super().setUp()
+        await super().setUpAsync()
 
     def tearDown(self):
         self.async_exec_mock.stop()

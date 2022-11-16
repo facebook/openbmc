@@ -12,7 +12,7 @@ MOCK_ASYNC_EXEC = (0, MOCK_RESP, None)
 
 
 class TestPowerCycleService(AioHTTPTestCase):
-    def setUp(self):
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
         self.patches = [
             unittest.mock.patch(
@@ -45,7 +45,7 @@ class TestPowerCycleService(AioHTTPTestCase):
             self.addCleanup(p.stop)
         common_utils.async_exec.return_value.set_result(MOCK_ASYNC_EXEC)
         # redfish_powercycle._verify_command_status.return_value.set_result(True)
-        super().setUp()
+        await super().setUpAsync()
 
     @unittest_run_loop
     async def test_systems_powercycle_compute(self):

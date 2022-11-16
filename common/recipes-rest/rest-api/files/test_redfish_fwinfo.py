@@ -49,7 +49,7 @@ FPGA_VER_RESULT = (0, FPGA_VER_RESP, None)
 
 
 class TestRedfishFWInfo(AioHTTPTestCase):
-    def setUp(self):
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
         futs = [asyncio.Future(), asyncio.Future(), asyncio.Future(), asyncio.Future()]
         futs[0].set_result(MOCK_FWUTIL_RESULT)
@@ -68,7 +68,7 @@ class TestRedfishFWInfo(AioHTTPTestCase):
             p.start()
             self.addCleanup(p.stop)
         # redfish_powercycle._verify_command_status.return_value.set_result(True)
-        super().setUp()
+        await super().setUpAsync()
 
     @unittest_run_loop
     async def test_updateservice_root(self):

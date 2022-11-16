@@ -1,6 +1,6 @@
 import asyncio
 import unittest
-from unittest.mock import mock_open, Mock
+from unittest.mock import Mock, mock_open
 
 import aiohttp.web
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
@@ -8,8 +8,7 @@ from common_middlewares import jsonerrorhandler
 
 
 class TestManagerService(AioHTTPTestCase):
-    def setUp(self):
-        super().setUp()
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
         file_contents_dict = {
             "/etc/issue": "OpenBMC Release fby2-v2020.49.2",
@@ -79,6 +78,7 @@ class TestManagerService(AioHTTPTestCase):
 
         redfish_managers.get_ipv4_netmask.return_value.set_result(ipv4)
         redfish_managers.get_ipv6_ip_address.return_value.set_result(ipv6)
+        await super().setUpAsync()
 
     def mapped_mock_open(self, file_contents_dict):
         real_open = open

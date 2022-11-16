@@ -41,7 +41,7 @@ MOCK_ASYNC_EXEC = (0, MOCK_RESP, None)
 
 
 class TestGetLogService(AioHTTPTestCase):
-    def setUp(self):
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
         self.patches = [
             unittest.mock.patch(
@@ -65,7 +65,7 @@ class TestGetLogService(AioHTTPTestCase):
             p.start()
             self.addCleanup(p.stop)
         common_utils.async_exec.return_value.set_result(MOCK_ASYNC_EXEC)
-        super().setUp()
+        await super().setUpAsync()
 
     @unittest_run_loop
     async def test_systems_get_log_services_root(self):

@@ -14,7 +14,7 @@ class FakeFruCapability(enum.Enum):
 
 
 class TestChassisService(AioHTTPTestCase):
-    def setUp(self):
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
         power_util_fut1 = asyncio.Future()
         power_util_fut1.set_result((0, "Power status for fru 1 : ON", ""))
@@ -124,7 +124,7 @@ class TestChassisService(AioHTTPTestCase):
             p.start()
             self.addCleanup(p.stop)
 
-        super().setUp()
+        await super().setUpAsync()
 
     def get_fru_name(self, server_name: str) -> str:
         if server_name == "1":

@@ -7,8 +7,7 @@ from common_middlewares import jsonerrorhandler
 
 
 class TestRootService(AioHTTPTestCase):
-    def setUp(self):
-        super().setUp()
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
 
         self.patches = [
@@ -31,6 +30,7 @@ class TestRootService(AioHTTPTestCase):
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
+        await super().setUpAsync()
 
     @unittest_run_loop
     async def test_get_redfish(self):

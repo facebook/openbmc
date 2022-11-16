@@ -4,9 +4,7 @@ import os
 import unittest
 import unittest.mock
 from contextlib import contextmanager
-from typing import (
-    List,
-)
+from typing import List
 
 import aiohttp.web
 import redfish_bios_firmware_dumps
@@ -175,7 +173,7 @@ class MockRepo:
 class TestBIOSFirmwareDumps(AioHTTPTestCase):
     _repo_path = "/tmp/RedfishBIOSFirmwareDumps-mockpath"
 
-    def setUp(self):
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
         self.patches = patches()
         self.patches.append(
@@ -196,7 +194,8 @@ class TestBIOSFirmwareDumps(AioHTTPTestCase):
                 redfish_bios_firmware_dumps.has_psutil = True
 
             self.addCleanup(redfish_bios_firmware_dumps_cleanup)
-        super().setUp()
+
+        await super().setUpAsync()
 
     @contextmanager
     def mock_repo(self):

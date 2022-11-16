@@ -11,8 +11,7 @@ from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 
 
 class TestRestModbusCmd(AioHTTPTestCase):
-    def setUp(self):
-        super().setUp()
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
 
         # Python >= 3.8 smartly uses AsyncMock automatically if the target
@@ -37,6 +36,7 @@ class TestRestModbusCmd(AioHTTPTestCase):
         pyrmd.RackmonAsyncInterface.raw.return_value.set_result(
             EXAMPLE_MODBUS_RESPONSE[2:]
         )
+        await super().setUpAsync()
 
     @unittest_run_loop
     async def test_post_modbus_cmd_200(self):

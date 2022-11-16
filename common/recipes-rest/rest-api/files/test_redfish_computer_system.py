@@ -8,13 +8,13 @@ from test_redfish_computer_system_patches import patches
 
 
 class TestComputerSystems(AioHTTPTestCase):
-    def setUp(self):
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
         self.patches = patches()
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
-        super().setUp()
+        await super().setUpAsync()
 
     @unittest_run_loop
     async def test_get_compute_system_names(self):

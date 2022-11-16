@@ -1,4 +1,5 @@
 import asyncio
+
 import typing as t
 import unittest
 
@@ -40,7 +41,7 @@ fake_sensors_py_sensor_details = redfish_chassis_helper.SensorDetails(
 
 
 class TestRedfishSensors(AioHTTPTestCase):
-    def setUp(self):
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
 
         # mocking a tuple instead of pal.SensorHistory bc pal lib isn't available here
@@ -172,8 +173,7 @@ class TestRedfishSensors(AioHTTPTestCase):
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
-
-        super().setUp()
+        await super().setUpAsync()
 
     def get_fru_name(self, server_name: str) -> str:
         if server_name == "1":

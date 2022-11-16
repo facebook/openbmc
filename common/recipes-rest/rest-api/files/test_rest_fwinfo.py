@@ -83,8 +83,7 @@ EXAMPLE_FW_UTIL_STDOUT = """BMC Version: fby2-v2021.12.8\nBMC CPLD Version: CPLD
 
 
 class TestRestFwinfo(AioHTTPTestCase):
-    def setUp(self):
-        super().setUp()
+    async def setUpAsync(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
 
         # Python >= 3.8 smartly uses AsyncMock automatically if the target
@@ -117,6 +116,7 @@ class TestRestFwinfo(AioHTTPTestCase):
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
+        await super().setUpAsync()
 
     @unittest_run_loop
     async def test_get_fwinfo(self):

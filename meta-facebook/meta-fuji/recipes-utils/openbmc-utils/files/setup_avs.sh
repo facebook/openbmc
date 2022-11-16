@@ -24,15 +24,18 @@
 # and there are 3 EVT1 units(F301220170001, F301220170002, F301220240001) shipped to FB. 
 # So it seems FB can't upgrade the 3 EVT1 units to next package.
 
-BOARD_VER=$(i2cget -f -y 13 0x35 0x3 | awk '{printf "%d", $1}') #Get board version
-if [ "$BOARD_VER" -lt 66 ];then
-    echo "No need to set avs VOUT."
-    exit 1
-fi
-
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
+
+board_ver=$(wedge_board_rev) #Get board version
+# VDD AVS need to config for DVT1 and later
+if [ "$board_ver" == "BOARD_FUJI_EVT1" ] || \
+[ "$board_ver" == "BOARD_FUJI_EVT2" ] || \
+[ "$board_ver" == "BOARD_FUJI_EVT3" ]; then
+    echo "No need to set avs VOUT."
+    exit 1
+fi
 
 #
 # We have seen intermittent AVS voltage reading errors and root cause is
@@ -48,12 +51,12 @@ fixup_avs_volt() {
         sleep 1
 
         AVS_VOLT=$(cat "${SYSFS_I2C_DEVICES}"/1-0040/hwmon/hwmon*/in3_input)
-
+        ret=$?
         #
         # Note: below range (500, 1200) millivolts is confirmed by hardware
         # team; please reach out to hardware team before making changes.
         #
-        if [ $? -eq 0 ] && [ $AVS_VOLT -gt 500 ] && [ $AVS_VOLT -lt 1200 ]; then
+        if [ $((ret)) -eq 0 ] && [ $((AVS_VOLT)) -gt 500 ] && [ $((AVS_VOLT)) -lt 1200 ]; then
             echo "AVS-Volt is normal, no fixup needed."
             return
         else

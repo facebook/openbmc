@@ -21,31 +21,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
-i2c_detect_address() {
-   bus="$1"
-   addr="$2"
-   if [ -n "$3" ]; then
-      retries="$3"
-   else
-      retries=5
-   fi
-
-   retry=0
-
-   while [ "$retry" -lt "$retries" ]; do
-      if i2cget -y -f "$bus" "$addr" &> /dev/null; then
-         return 0
-      fi
-      usleep 50000
-      retry=$((retry + 1))
-   done
-   
-   echo "setup-i2c : i2c_detect not found $bus - $addr" > /dev/kmsg
-   return 1
-}
-
-# Board Version EVT2 0x41, EVT3 0x42, DVT1 0x43
-BOARD_VER=$(i2cget -f -y 13 0x35 0x3 | awk '{printf "%d", $1}') #Get board version
+# Board Version
+board_ver=$(wedge_board_rev)
 
 # # Bus 0
 i2c_device_add 0 0x1010 slave-mqueue #IPMB 0
@@ -131,7 +108,9 @@ i2c_device_add 8 0x51 24c64
 i2c_device_add 8 0x4a lm75
 
 # net_brcm driver only support DVT1 and later
-if [ "$BOARD_VER" -gt 66 ]; then
+if [ "$board_ver" != "BOARD_FUJI_EVT1" ] && \
+[ "$board_ver" != "BOARD_FUJI_EVT2" ] && \
+[ "$board_ver" != "BOARD_FUJI_EVT3" ]; then
     i2c_device_add 29 0x47 net_brcm
 fi
 

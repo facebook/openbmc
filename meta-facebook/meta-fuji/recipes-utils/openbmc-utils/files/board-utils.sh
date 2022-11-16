@@ -5,6 +5,9 @@
 # I2C paths of CPLDs
 #
 #shellcheck disable=SC2034
+#shellcheck disable=SC1091
+. /usr/local/bin/i2c-utils.sh
+
 SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 2-0035)
 SMBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-003e)
 TOP_FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 64-0033)
@@ -78,12 +81,27 @@ PIM_RST_SYSFS="${SMBCPLD_SYSFS_DIR}"
 DELTA_48V="0x45 0x43 0x44 0x32 0x35 0x30 0x31 0x30 0x30 0x31 0x35"
 LITEON_48V="0x44 0x44 0x2d 0x32 0x31 0x35 0x32 0x2d 0x32 0x4c"
 
-wedge_board_rev() {
-    local val0 val1 val2
-    val0=$(gpio_get_value BMC_CPLD_BOARD_REV_ID0)
-    val1=$(gpio_get_value BMC_CPLD_BOARD_REV_ID1)
-    val2=$(gpio_get_value BMC_CPLD_BOARD_REV_ID2)
-    echo $((val0 | (val1 << 1) | (val2 << 2)))
+i2c_detect_address() {
+   bus="$1"
+   addr="$2"
+   if [ -n "$3" ]; then
+      retries="$3"
+   else
+      retries=5
+   fi
+
+   retry=0
+
+   while [ "$retry" -lt "$retries" ]; do
+      if i2cget -y -f "$bus" "$addr" &> /dev/null; then
+         return 0
+      fi
+      usleep 50000
+      retry=$((retry + 1))
+   done
+   
+   echo "setup-i2c : i2c_detect not found $bus - $addr" > /dev/kmsg
+   return 1
 }
 
 wedge_is_us_on() {
@@ -101,24 +119,46 @@ wedge_is_us_on() {
     return 0
 }
 
-wedge_board_ver() {
-    board_ver=$(i2cget -f -y 13 0x35 0x3 | awk '{printf "%d", $1}')
-    case $board_ver in
-        64)
-            echo "BOARD_FUJI_EVT1"
-            ;;
-        65)
-            echo "BOARD_FUJI_EVT2"
-            ;;
-        66)
-            echo "BOARD_FUJI_EVT3"
-            ;;
-        67)
-            echo "BOARD_FUJI_DVT1"
-            ;;
-        69)
-            echo "BOARD_FUJI_PVT"
-            ;;
+wedge_board_rev() {
+    board_ver=$(i2cget -f -y 12 0x3e 0x0 | tr -d '\n' ; \
+                i2cget -f -y 13 0x35 0x3 | cut -d'x' -f2)
+    case $((board_ver)) in
+        $((0x0043)))  echo "BOARD_FUJI_EVT1"              ;;
+        $((0x0041)))  echo "BOARD_FUJI_EVT2"              ;;
+        $((0x0042)))  echo "BOARD_FUJI_EVT3"              ;;
+        $((0x0343)))  echo "BOARD_FUJI_DVT1/DVT2"         ;;
+        $((0x0545)))  echo "BOARD_FUJI_PVT1/PVT2"         ;;
+        $((0x0747)))
+          # MP0-SKU1, MP1-SKU7 have same value,
+          # need to indicate from UCD90160A address 
+          if i2c_detect_address 5 0x35; then
+            echo "BOARD_FUJI_MP0-SKU1"
+          elif i2c_detect_address 5 0x66; then
+            echo "BOARD_FUJI_MP1-SKU7"
+          else
+            echo "BOARD_FUJI_UNDEFINED_${board_ver}"
+          fi
+          ;;
+        $((0x2747)))  
+          # MP0-SKU2, MP1-SKU6 have same value,
+          # need to indicate from UCD90160 address
+          if i2c_detect_address 5 0x35; then
+            echo "BOARD_FUJI_MP0-SKU2"
+          elif i2c_detect_address 5 0x68; then
+            echo "BOARD_FUJI_MP1-SKU6"
+          else
+            echo "BOARD_FUJI_UNDEFINED_${board_ver}"
+          fi
+          ;;
+        $((0x1747)))  echo "BOARD_FUJI_MP1-SKU1"          ;;
+        $((0x3747)))  echo "BOARD_FUJI_MP1-SKU2"          ;;
+        $((0x0757)))  echo "BOARD_FUJI_MP1-SKU3"          ;;
+        $((0x0767)))  echo "BOARD_FUJI_MP1-SKU4"          ;;
+        $((0x0777)))  echo "BOARD_FUJI_MP1-SKU5"          ;;
+        $((0x1040)))  echo "BOARD_FUJI_MP2-SKU1"          ;;
+        $((0x1044)))  echo "BOARD_FUJI_MP2-SKU2"          ;;
+        $((0x1042)))  echo "BOARD_FUJI_MP2-SKU3"          ;;
+        $((0x1046)))  echo "BOARD_FUJI_MP2-SKU4"          ;;
         *)  # New board version need to be added here
             echo "BOARD_FUJI_UNDEFINED_${board_ver}"
             ;;

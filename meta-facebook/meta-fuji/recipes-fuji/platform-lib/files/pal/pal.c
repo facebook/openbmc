@@ -1098,18 +1098,101 @@ char tstr[MAX_VALUE_LEN] = {0};
   pal_set_key_value(key, tstr);
 }
 
+/* To indicate the fuji board hardware revision
+ * need to read board version from both board_ver in iob_fpga and smbcpld
+ *
+ *         | iob_fpga board_ver | smbcpld board_ver |
+ * --------|--------------------|-------------------|
+ *   bit7  |         0          |         0         |
+ *   bit6  |         0          |         1         |
+ *   bit5  |    BOARD_TYPE_1    |   FPGA_BRD_TYP1   |
+ *   bit4  |    BOARD_TYPE_0    |   FPGA_BRD_TYP0   |
+ *   bit3  |         0          |         0         |
+ *   bit2  |    SMB_BRD_REV2    |   FPGA_BRD_VER2   |
+ *   bit1  |    SMB_BRD_REV1    |   FPGA_BRD_VER1   |
+ *   bit0  |    SMB_BRD_REV0    |   FPGA_BRD_VER0   |
+ */
+enum {
+  BOARD_HW_ID_EVT1            = 0x0043,
+  BOARD_HW_ID_EVT2            = 0x0041,
+  BOARD_HW_ID_EVT3            = 0x0042,
+  BOARD_HW_ID_DVT1_DVT2       = 0x0343,
+  BOARD_HW_ID_PVT1_PVT2       = 0x0545,
+  BOARD_HW_ID_MP0SKU1_MP1SKU7 = 0x0747,
+  BOARD_HW_ID_MP0SKU2_MP1SKU6 = 0x2747,
+  BOARD_HW_ID_MP1SKU1         = 0x1747,
+  BOARD_HW_ID_MP1SKU2         = 0x3747,
+  BOARD_HW_ID_MP1SKU3         = 0x0757,
+  BOARD_HW_ID_MP1SKU4         = 0x0767,
+  BOARD_HW_ID_MP1SKU5         = 0x0777,
+  BOARD_HW_ID_MP2SKU1         = 0x1040,
+  BOARD_HW_ID_MP2SKU2         = 0x1044,
+  BOARD_HW_ID_MP2SKU3         = 0x1042,
+  BOARD_HW_ID_MP2SKU4         = 0x1046,
+};
 int
 pal_get_board_rev(int *rev) {
   char path[LARGEST_DEVICE_NAME + 1];
-  int val;
+  int smbcpld_ver, iobfpga_ver;
+  int hw_id;
   int ret = -1;
 
-  snprintf(path, sizeof(path), IOBFPGA_PATH_FMT, "board_ver");
-  ret = device_read(path, &val);
+  snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, "board_ver");
+  ret = device_read(path, &smbcpld_ver);
   if (ret) {
+    syslog(LOG_ERR, "%s cannot get value from %s", __func__, path);
     return -1;
   }
-  *rev = val;
+
+  snprintf(path, sizeof(path), IOBFPGA_PATH_FMT, "board_ver");
+  ret = device_read(path, &iobfpga_ver);
+  if (ret) {
+    syslog(LOG_ERR, "%s cannot get value from %s", __func__, path);
+    return -1;
+  }
+  hw_id = ( smbcpld_ver << 8 ) | iobfpga_ver;
+
+  switch (hw_id) {
+    case BOARD_HW_ID_EVT1:       *rev = BOARD_FUJI_EVT1;       break;
+    case BOARD_HW_ID_EVT2:       *rev = BOARD_FUJI_EVT2;       break;
+    case BOARD_HW_ID_EVT3:       *rev = BOARD_FUJI_EVT3;       break;
+    case BOARD_HW_ID_DVT1_DVT2:  *rev = BOARD_FUJI_DVT1_DVT2;  break;
+    case BOARD_HW_ID_PVT1_PVT2:  *rev = BOARD_FUJI_PVT1_PVT2;  break;
+    case BOARD_HW_ID_MP0SKU1_MP1SKU7:
+      /*  MP0SKU1 and MP1SKU7 have the same BOARD_HW_ID
+       *  need to indicate by SMB UCD90160 i2c address
+       */
+      if ( i2c_detect_device(5, 0x35) == 0 ) {
+        *rev = BOARD_FUJI_MP0SKU1;
+      } else if ( i2c_detect_device(5, 0x66) == 0 ) {
+        *rev = BOARD_FUJI_MP1SKU7;
+      } else {
+        *rev = BOARD_FUJI_UNDEFINED;
+      }
+      break;
+    case BOARD_HW_ID_MP0SKU2_MP1SKU6:
+      /*  MP0SKU2 and MP1SKU6 have the same BOARD_HW_ID
+       *  need to indicate by SMB UCD90160 i2c address
+       */
+      if ( i2c_detect_device(5, 0x35) == 0 ) {
+        *rev = BOARD_FUJI_MP0SKU2;
+      } else if ( i2c_detect_device(5, 0x68) == 0 ) {
+        *rev = BOARD_FUJI_MP1SKU6;
+      } else {
+        *rev = BOARD_FUJI_UNDEFINED;
+      }
+      break;
+    case BOARD_HW_ID_MP1SKU1:    *rev = BOARD_FUJI_MP1SKU1;    break;
+    case BOARD_HW_ID_MP1SKU2:    *rev = BOARD_FUJI_MP1SKU2;    break;
+    case BOARD_HW_ID_MP1SKU3:    *rev = BOARD_FUJI_MP1SKU3;    break;
+    case BOARD_HW_ID_MP1SKU4:    *rev = BOARD_FUJI_MP1SKU4;    break;
+    case BOARD_HW_ID_MP1SKU5:    *rev = BOARD_FUJI_MP1SKU5;    break;
+    case BOARD_HW_ID_MP2SKU1:    *rev = BOARD_FUJI_MP2SKU1;    break;
+    case BOARD_HW_ID_MP2SKU2:    *rev = BOARD_FUJI_MP2SKU2;    break;
+    case BOARD_HW_ID_MP2SKU3:    *rev = BOARD_FUJI_MP2SKU3;    break;
+    case BOARD_HW_ID_MP2SKU4:    *rev = BOARD_FUJI_MP2SKU4;    break;
+    default:                  *rev = BOARD_FUJI_UNDEFINED;  break;
+  }
 
   return 0;
 }

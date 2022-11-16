@@ -41,7 +41,7 @@ echo "Done setting fan speed"
 
 fscd_enable=1
 
-board_ver=$(wedge_board_ver)
+board_ver=$(wedge_board_rev)
 if [ "$board_ver" == "BOARD_FUJI_EVT1" ] || \
 [ "$board_ver" == "BOARD_FUJI_EVT2" ] || \
 [ "$board_ver" == "BOARD_FUJI_EVT3" ]; then

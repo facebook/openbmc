@@ -52,15 +52,17 @@ def recipes_with_ptest():
                     total_recipes += 1
                     if f not in avoidlist and contains_ptest(f_full):
                         recipes.add(recipe_name(f))
-    print(f"Found {total_recipes} recipes of which {len(recipes)} define unit-tests")
+    print(
+        f"Found {total_recipes} recipes of which {len(recipes)} define unit-tests"
+    )
     return list(recipes)
 
 
 def update_conf_steps(recipes):
     recipe_arg = " ".join(recipes)
     steps = [
-        "sed -i -n '/IMAGE_INSTALL_append/!p' conf/local.conf",
-        f'echo IMAGE_INSTALL_append = \\"{recipe_arg}\\" >> conf/local.conf',
+        "sed -i -n '/IMAGE_INSTALL:append/!p' conf/local.conf",
+        f'echo IMAGE_INSTALL:append = \\"{recipe_arg}\\" >> conf/local.conf',
     ]
     return steps
 
@@ -68,7 +70,15 @@ def update_conf_steps(recipes):
 def update_conf_only(recipes, build_path):
     steps = [f"cd {build_path}"] + update_conf_steps(recipes)
     conf_cmd = "; ".join(steps)
-    cmd = ["env", "-i", f"HOME={os.environ['HOME']}", "bash", "-l", "-c", conf_cmd]
+    cmd = [
+        "env",
+        "-i",
+        f"HOME={os.environ['HOME']}",
+        "bash",
+        "-l",
+        "-c",
+        conf_cmd,
+    ]
     subprocess.check_call(cmd)
 
 
@@ -95,7 +105,15 @@ def bmc_build(recipes, build_path, verbose):
     build_steps += [f"bitbake {build_option} qemux86-image"]
 
     build_cmd = "; ".join(build_steps)
-    cmd = ["env", "-i", f"HOME={os.environ['HOME']}", "bash", "-l", "-c", build_cmd]
+    cmd = [
+        "env",
+        "-i",
+        f"HOME={os.environ['HOME']}",
+        "bash",
+        "-l",
+        "-c",
+        build_cmd,
+    ]
     try:
         subprocess.check_call(cmd)
     except subprocess.CalledProcessError:
@@ -139,11 +157,25 @@ def main(args):
     untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
     subprocess.check_call(untar)
     subprocess.check_call(
-        ["mkdir", "-p", rootfs + "/dev/shm", rootfs + "/tmp"]
+        ["mkdir", "-p", rootfs + "/dev/shm", rootfs + "/tmp", rootfs + "/proc"]
     )  # fake shm,tmp for flake8
     if not args.tmpfs:
-        base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
-        init_steps = ["export PATH=/bin:${PATH}", "mount -t tmpfs -o size=512m tmpfs /dev/shm"]
+        base_cmd = [
+            "unshare",
+            "--user",
+            "--mount",
+            "--pid",
+            "--map-root-user",
+            "--mount-proc",
+            "--fork",
+            "chroot",
+            rootfs,
+        ]
+        init_steps = [
+            "export PATH=/bin:${PATH}",
+            "mount -t proc proc /proc",
+            "mount -t tmpfs -o size=512m tmpfs /dev/shm",
+        ]
     else:
         # If we unpacked the rootfs within an existing tmpfs, then we don't have
         # to mount /dev/shm as a tmpfs.
@@ -154,7 +186,9 @@ def main(args):
         init_file = "/init-file.sh"
         with open(rootfs + init_file, "w") as f:
             f.write("\n".join(init_steps))
-        subprocess.check_call(base_cmd + ["/bin/bash", "--init-file", init_file])
+        subprocess.check_call(
+            base_cmd + ["/bin/bash", "--init-file", init_file]
+        )
     elif not args.skip_tests:
         exit_error = False
         if args.recipes is None or len(args.recipes) == 0:
@@ -162,7 +196,11 @@ def main(args):
         else:
             recipes = args.recipes
         ptest_cmd = " ".join(["ptest-runner"] + recipes)
-        cmd = base_cmd + ["/bin/bash", "-c", " && ".join(init_steps + [ptest_cmd])]
+        cmd = base_cmd + [
+            "/bin/bash",
+            "-c",
+            " && ".join(init_steps + [ptest_cmd]),
+        ]
         try:
             out = subprocess.check_output(cmd).decode()
             print(out)
@@ -178,7 +216,9 @@ def main(args):
             sys.exit(1)
 
 
-parser = argparse.ArgumentParser(description="Helper to run unit-tests natively")
+parser = argparse.ArgumentParser(
+    description="Helper to run unit-tests natively"
+)
 parser.add_argument(
     "--build",
     "-b",

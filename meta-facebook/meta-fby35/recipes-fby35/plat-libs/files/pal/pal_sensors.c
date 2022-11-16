@@ -9,6 +9,7 @@
 #include <sys/file.h>
 #include <string.h>
 #include <ctype.h>
+#include <signal.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
@@ -34,6 +35,10 @@
 #define FAN_15K_LCR  1200
 #define FAN_15K_UNC  13000
 #define FAN_15K_UCR  17000
+
+#define PWM_SET_PID "set_pwm_zone%d_pid"
+#define PWM_INTERVAL_TIME 2
+#define PWM_STEP_RISE_VALUE 20
 
 #define BB_CPU_VDELTA_48V_UCR 41.8
 
@@ -1487,6 +1492,30 @@ pal_get_fan_source(uint8_t fan_num) {
   return 0xff;
 }
 
+static int
+stepping_set_pwm(uint8_t pwm_num, uint8_t current_pwm, uint8_t pwm) {
+  int ret = 0;
+
+  while (pwm != current_pwm) {
+    if (((int)pwm - (int)current_pwm) >= PWM_STEP_RISE_VALUE) {
+      current_pwm += PWM_STEP_RISE_VALUE;
+      ret = sensors_write_pwmfan(pwm_num, (float)(current_pwm));
+      if (ret < 0) {
+        return ret;
+      }
+      sleep(PWM_INTERVAL_TIME);
+    } else {
+      current_pwm = pwm;
+      ret = sensors_write_pwmfan(pwm_num, (float)(pwm));
+      if (ret < 0) {
+        return ret;
+      }
+    }
+  };
+
+  return ret;
+}
+
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
 {
   FILE* fp;
@@ -1494,11 +1523,14 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
   uint8_t pwm_num = fan;
   uint8_t bmc_location = 0;
   uint8_t status;
+  uint8_t current_pwm = 0;
   int ret = 0;
   char cmd[64] = {0};
   char buf[32];
   int res;
   bool is_fscd_run = true;
+  char pwm_process_id[8] = {0};
+  char key[MAX_KEY_LEN] = {0};
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -1506,12 +1538,33 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
     return ret;
   }
 
+  ret = pal_get_pwm_value(pwm_num, &current_pwm);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the pwm of fan %d", __func__, pwm_num);
+  }
+
   if ( bmc_location == BB_BMC ) {
     if (pwm_num > pal_pwm_cnt ||
       snprintf(label, sizeof(label), "pwm%d", pwm_num) > sizeof(label)) {
       return -1;
     }
-    return sensors_write_pwmfan(pwm_num, (float)pwm);
+    sprintf(key, PWM_SET_PID, pwm_num);
+    if (kv_get(key, pwm_process_id, NULL, 0) < 0) {
+      snprintf(pwm_process_id, sizeof(pwm_process_id), "%d", getpid());
+      ret = kv_set(key, pwm_process_id, 0, 0);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s(): cache_set key = %s, pid = %s failed.", __func__, key, pwm_process_id);
+        return -1;
+      }
+      ret = stepping_set_pwm(pwm_num, current_pwm, pwm);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() fail to set pwm", __func__);
+      }
+      kv_del(key, 0);
+      return ret;
+    } else {
+      printf("Fan is ramping up, please wait for the previous process to complete!\n");
+    }
   } else if (bmc_location == NIC_BMC) {
     ret = bic_set_fan_auto_mode(GET_FAN_MODE, &status);
     if (ret < 0) {

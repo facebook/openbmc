@@ -89,6 +89,8 @@ fi
 # reload fscd
 /etc/init.d/setup-fan.sh reload
 
+set_vf_gpio
+
 # start the services again
 sv start gpiod
 sv start sensord

@@ -9,6 +9,9 @@ readonly BMC_ID_CLASS2=6
 readonly DVT_REVID=5
 readonly IANA_ID="0x15 0xa0 0x0"
 
+PCA9537_ADDR="49"
+PCA9555_ADDR="20"
+
 devmem_set_bit() {
     local addr
     local val
@@ -269,6 +272,61 @@ is_bic_ready() {
   else
     echo 0
   fi
+}
+
+# Set up VF gpio expander
+set_vf_gpio() {
+  local driver="pca953x"
+  local base=780
+  local pca9537_chip_addr=0x"$PCA9537_ADDR"
+  local pca9555_chip_addr=0x"$PCA9555_ADDR"
+  gpio_names=("BIC_SRST_N_IO_EXP_R_SLOT" "BIC_EXTRST_N_IO_EXP_R_SLOT")
+  for i in {4..7}; do
+    bus_pca9537_addr="$i"-00"$PCA9537_ADDR"
+    bus_pca9555_addr="$i"-00"$PCA9555_ADDR"
+    if test -f "/sys/bus/i2c/drivers/"$driver"/"$bus_pca9537_addr""; then
+      echo -n "$bus_pca9537_addr" > /sys/bus/i2c/drivers/"$driver"/unbind
+    fi
+    if test -f "/sys/bus/i2c/drivers/"$driver"/"$bus_pca9555_addr""; then
+      echo -n "$bus_pca9555_addr" > /sys/bus/i2c/drivers/"$driver"/unbind
+    fi
+    if [[ "$(/usr/sbin/i2cget -y "$i" "$pca9537_chip_addr" 0x1)" == "0xff" ]]; then
+      chip="pca9537"
+      create_new_dev "$chip" "$pca9537_chip_addr" "$i"
+      echo -n "$bus_pca9537_addr" > /sys/bus/i2c/drivers/"$driver"/bind #Bind the driver
+    fi
+    if [[ "$(/usr/sbin/i2cget -y "$i" "$pca9555_chip_addr" 0x1)" == "0xff" ]]; then
+      chip="pca9555"
+      create_new_dev "$chip" "$pca9555_chip_addr" "$i"
+      echo -n "$bus_pca9555_addr" > /sys/bus/i2c/drivers/"$driver"/bind #Bind the driver
+    fi
+  done
+
+  for slot in {1..4}; do
+    bus=$(($slot+3))
+    is_pca9537_exist="$(/usr/sbin/i2cdetect -y "$bus" | awk '{print $11}' | sed -n '6p')"
+    is_pca9555_exist="$(/usr/sbin/i2cdetect -y "$bus" | awk '{print $2}' | sed -n '4p')"
+    if [[ "$is_pca9537_exist" == UU ]]; then
+      base=$(($base-4))
+      offset=$base
+      for gpio_name in ${gpio_names[@]}; do
+        mkdir -m 755 /tmp/gpionames/$gpio_name$slot
+        echo $offset > /sys/class/gpio/export #Export the pin
+        ln -s /sys/class/gpio/gpio$offset/* /tmp/gpionames/$gpio_name$slot
+        offset=$(($offset+1))
+      done
+    fi
+    if [[ "$is_pca9555_exist" == UU ]]; then
+      base=$(($base-16))
+      offset=$base
+      for gpio_name in ${gpio_names[@]}; do
+        mkdir -m 755 /tmp/gpionames/$gpio_name$slot
+        echo $offset > /sys/class/gpio/export #Export the pin
+        ln -s /sys/class/gpio/gpio$offset/* /tmp/gpionames/$gpio_name$slot
+        offset=$(($offset+1))
+      done
+    fi
+  done
 }
 
 # Check to see if Server Board Present & Bridge-IC is ready

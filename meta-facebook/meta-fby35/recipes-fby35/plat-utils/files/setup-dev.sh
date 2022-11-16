@@ -86,7 +86,7 @@ function init_class2_dev() {
 }
 
 function init_exp_dev() {
-  for i in {1..3..2}; do
+  for i in {1..4}; do
     bmc_location=$(get_bmc_board_id)
     if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then 
       if [ "$(is_server_prsnt $i)" == "0" ]; then
@@ -122,5 +122,6 @@ else
 fi
 
 init_exp_dev
+set_vf_gpio
 
 echo "Done."

@@ -94,6 +94,11 @@ typedef struct {
   uint8_t minor_code;
 } DIMM_PATTERN;
 
+typedef struct {
+  uint8_t fan_id;
+  uint8_t pwm;
+} PWM_INFO;
+
 typedef enum {
   FRU_TYPE_SERVER   = 0,
   FRU_TYPE_NIC      = 1,
@@ -626,6 +631,7 @@ int pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count);
 bool pal_is_prot_card_prsnt(uint8_t fru);
 bool pal_is_prot_bypass(uint8_t fru);
 int pal_file_line_split(char **dst, char *src, char *delim, int maxsz);
+void *pal_set_fan_speed_thread(void *data);
 int pal_bitcount(unsigned int val);
 
 #ifdef __cplusplus

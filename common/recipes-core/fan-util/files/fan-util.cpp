@@ -30,10 +30,13 @@
 #include <dirent.h>
 #include "CLI/CLI.hpp"
 #include <iostream>
+#include <pthread.h>
 
 using std::string;
 using std::cout;
 using std::endl;
+
+#define MAX_ZONE_NUM 16 //According to Aspeed chip PWM capability
 
 const int ALL_FAN_NUM = -1;
 static constexpr auto SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record";
@@ -219,11 +222,11 @@ fscd_driver_check(bool status) {
 
 int
 main(int argc, char **argv) {
-
   uint8_t pwm = 0xFF;
   int fan = ALL_FAN_NUM;
-  int i;
-  int ret;
+  uint8_t i = 0;
+  int index = 0;
+  int ret = 0;
   int rpm = 0;
   char fan_name[32];
   bool manu_flag = false;
@@ -232,7 +235,9 @@ main(int argc, char **argv) {
   string fanOpt = "";
   pwm_cnt = pal_get_pwm_cnt();
   tach_cnt = pal_get_tach_cnt();
-
+  pthread_t tid[MAX_ZONE_NUM];
+  PWM_INFO *pwm_info;
+  pwm_info = (PWM_INFO *)malloc(MAX_ZONE_NUM * sizeof(PWM_INFO));
   bool fans_equal = pwm_cnt == tach_cnt;
   const string ident_set = fans_equal ? "Fan" : "Zone";
   const string ident_get = fans_equal ? "Fan" : "Tach";
@@ -278,20 +283,23 @@ main(int argc, char **argv) {
     // Set the Fan Speed.
     // If the fan num is not mentioned, set all fans to given pwm.
     for (i = 0; i < pwm_cnt; i++) {
-
       // Check if the fan number is mentioned.
       if (fan != ALL_FAN_NUM && fan != i)
           continue;
-
-      ret = pal_set_fan_speed(i, pwm);
-      if (ret == PAL_ENOTREADY) {
-        cout << "Blocked because host power is off" << endl;
-      } else if (!ret) {
-        cout << "Setting Zone " << i << " speed to " << +pwm << "%" << endl;
-      } else
-        cout << "Error while setting fan speed for Zone " << i << endl;
+      (pwm_info + index)->fan_id = i;
+      (pwm_info + index)->pwm = pwm;
+      ret = pthread_create(&tid[i], NULL, pal_set_fan_speed_thread, (pwm_info + index));
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s(): Create pal_set_fan_speed_thread thread failed!", __func__);
+        goto error_exit;
+      }
+      index++;
     }
-
+    for (i = 0; i < pwm_cnt; i++) {
+      if (fan != ALL_FAN_NUM && fan != i)
+          continue;
+      pthread_join(tid[i], NULL);
+    }
   } else if (getCommand->parsed()) {
     for (i = 0; i < tach_cnt; i++) {
 
@@ -332,11 +340,14 @@ main(int argc, char **argv) {
     ret = pal_set_fan_ctrl(argv[2]);
     if (ret < 0) {
         cout << "Error while setting fan auto mode : " << argv[2] << endl;
-        return -1;
+        goto error_exit;
     }
   } else if ( argc == 1 ) {
     cout << app.help() << endl;
   }
-
-  return 0;
+error_exit:
+  if (pwm_info != NULL) {
+    free(pwm_info);
+  }
+  return ret;
 }

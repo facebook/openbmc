@@ -36,6 +36,7 @@
 #include <openbmc/ipmb.h>
 #include <openbmc/snr-tolerance.h>
 #include <math.h>
+#include <pthread.h>
 #ifdef CRASHDUMP_AMD
 #include "crashdump-amd/pal_crashdump_amd.h"
 #endif
@@ -3314,6 +3315,26 @@ pal_file_line_split(char **dst, char *src, char *delim, int maxsz) {
   }
 
   return size;
+}
+
+void* __attribute__((weak))
+pal_set_fan_speed_thread(void *data)
+{
+  int ret = 0;
+  PWM_INFO *pwm_info = (PWM_INFO *)data;
+  if (data == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter pointer is NULL", __func__);
+    return NULL;
+  }
+  ret = pal_set_fan_speed(pwm_info->fan_id, pwm_info->pwm);
+  if (ret == PAL_ENOTREADY) {
+    printf("Blocked because host power is off\n");
+  } else if (!ret) {
+    printf("Setting Zone %d speed to %d\n", pwm_info->fan_id, pwm_info->pwm);
+  } else {
+    printf("Error while setting fan speed for Zone %d\n", pwm_info->fan_id);
+  }
+  return NULL;
 }
 
 int

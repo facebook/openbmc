@@ -16,6 +16,7 @@ sources = [
 
 deps = [
     dependency('obmc-pal'),
+    dependency('threads'),
 ]
 
 exe = executable('fan-util',

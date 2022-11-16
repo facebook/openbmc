@@ -10,7 +10,7 @@ MACHINE ??= "qemux86-64"
 PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb-2"
+DISTRO ?= "openbmc-fb-master"
 
 # Enable ptest to be built into the image.
 DISTRO_FEATURES:append = " ptest"

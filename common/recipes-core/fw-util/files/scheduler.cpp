@@ -3,7 +3,6 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
-#include <vector>
 #include <syslog.h>
 #include <fcntl.h>
 #include <semaphore.h>
@@ -39,7 +38,7 @@ string Scheduler::get_task_id(const std::string& task_str) const {
   const regex job_id_rgx("\\d+");
   smatch match;
   regex_search(task_str, match, job_id_rgx);
-  return match.str(); 
+  return match.str();
 }
 
 bool Scheduler::is_number(const string& task_id) const {
@@ -56,7 +55,7 @@ string Scheduler::exec_and_print(const string& cmd) const {
 
   if ( pipe == nullptr ) {
     throw std::runtime_error("Failed to run popen function!");
-  } 
+  }
 
   char buf[256] = {0};
   string result("");
@@ -76,33 +75,81 @@ bool Scheduler::is_platform_supported() const {
   return true;
 }
 
-int Scheduler::show_task() const {
+bool Scheduler::get_task_ids(unordered_set<string>& ids) const
+{
+  /*
+   * Use /usr/bin/atq to get current job id.
+   */
   static constexpr auto atq_cmd = "/usr/bin/atq 2>&1";
 
   if ( is_platform_supported() == false ) {
     cerr << "The function is not supported on this platform!" << endl;
-    return -1;
+    return false;
   }
 
-  auto sem_holder = sem_acquire(SEM_PATH);
-  if ( sem_holder == nullptr ) {
-    cerr << "Failed to acquire the permission" << endl;
-    return -1;
-  }
-
-  //store task id 
+  //store task id
   string resp_msg = exec_and_print(atq_cmd);
   string tmp("");
   string::iterator it = resp_msg.begin();
-  vector<string> existed_task_id;
   size_t spos = 0, epos = 0;
   while ( (epos = resp_msg.find('\n', spos)) != string::npos ) {
     tmp.assign( it + spos, it + epos );
     spos = epos + 1;
-    existed_task_id.push_back(get_task_id(tmp));  
+    ids.insert(get_task_id(tmp));
   }
 
-  //atq only shows the job id. 
+  return true;
+}
+
+bool Scheduler::get_running_task_frus(unordered_set<string>& ongoing_frus) const
+{
+  /*
+   * 1. Use /usr/bin/atq to get current job id.
+   * 2. Match to /var/run/schedule.list
+   * 3. Get all fru's name which are updating.
+   */
+  unordered_set<string> existed_task_id;
+  if (get_task_ids(existed_task_id) == false) {
+    cerr << "Failed to get current task IDs" << endl;
+    return false;
+  }
+
+  fstream skd_list(SCHEDULE_LIST_PATH, fstream::in);
+  if ( skd_list.is_open() == false ) {
+    cerr << "Failed to open fstream:" << SCHEDULE_LIST_PATH << endl;
+    return false;
+  }
+
+  string content("");
+  string task_id("");
+  while ( getline(skd_list, content) ) {
+    task_id = get_task_id(content);
+    if ( existed_task_id.find(task_id) != existed_task_id.end() ) {
+      regex fru_reg("/usr/bin/fw-util (.*) --update ");
+      smatch match;
+      regex_search(content, match, fru_reg);
+      ongoing_frus.insert(match[1]);
+    }
+  }
+
+  return true;
+}
+
+int Scheduler::show_task() const {
+
+  auto sem_holder = sem_acquire(SEM_PATH);
+  if ( sem_holder == nullptr ) {
+    cerr << "Failed to acquire the permission" << endl;
+    return false;
+  }
+
+  unordered_set<string> existed_task_id;
+  if (get_task_ids(existed_task_id) == false) {
+    cerr << "Failed to get current task IDs" << endl;
+    return -1;
+  }
+
+  //atq only shows the job id.
   //Users don't know what commands are going to be executed.
   //Combine the result of atq and SCHEDULE_LIST and provide it to users
   //sync the current list that is provided by atq to SCHEDULE_LIST at the same time.
@@ -124,8 +171,8 @@ int Scheduler::show_task() const {
   string task_id("");
   while ( getline(skd_list, content) ) {
     task_id = get_task_id(content);
-    if ( find(existed_task_id.begin(), existed_task_id.end(), task_id) != existed_task_id.end() ) {
-      skd_list_tmp << content << endl; 
+    if ( existed_task_id.find(task_id) != existed_task_id.end() ) {
+      skd_list_tmp << content << endl;
       cout << content << endl;
     }
   }
@@ -136,7 +183,7 @@ int Scheduler::show_task() const {
   skd_list.open(SCHEDULE_LIST_PATH, fstream::out | fstream::trunc);
   skd_list_tmp.seekg (0, skd_list_tmp.beg);
   skd_list << skd_list_tmp.rdbuf();
-  
+
   //rm tmp file
   remove(tmp_file.c_str());
 
@@ -145,7 +192,7 @@ int Scheduler::show_task() const {
 
 int Scheduler::add_task(const string& fru, const string& comp, const string& image, const string& time) const {
   string fwutil_cmd = "/usr/bin/fw-util " + fru + " --update " + comp + " " + image;
-  string scheduled_cmd = " | at " + time + " 2>&1"; 
+  string scheduled_cmd = " | at " + time + " 2>&1";
   string exec_cmd = "echo \"" + fwutil_cmd + "\"" + scheduled_cmd;
 
   if ( is_platform_supported() == false ) {
@@ -159,6 +206,23 @@ int Scheduler::add_task(const string& fru, const string& comp, const string& ima
     return -1;
   }
 
+  /*
+   * If /var/run/schedule.list exist, means that maybe
+   * there were some fru doing update.
+   */
+  if (access(SCHEDULE_LIST_PATH, F_OK) == 0) {
+    unordered_set<string> ongoing_frus;
+    if (get_running_task_frus(ongoing_frus)==false) {
+      cerr << "Failed to get the running task's fru" << endl;
+      return -1;
+    } else {
+      if (ongoing_frus.find(fru) != ongoing_frus.end()) {
+        cerr << string("Fru : " + fru + " firmware update ongoing.") << endl;
+        return -1;
+      }
+    }
+  }
+
   //extract the substring with the prefix job
   string resp_msg = exec_and_print(exec_cmd);
   size_t pos = 0;
@@ -167,13 +231,13 @@ int Scheduler::add_task(const string& fru, const string& comp, const string& ima
     return -1;
   }
 
-  //check the string is match 
+  //check the string is match
   string job_msg(resp_msg.begin() + pos, resp_msg.end()-1);
   const regex job_str_rgx("^job\\s+\\d+\\s+at\\s+.+\\d{4}$");
   if ( regex_match(job_msg, job_str_rgx) != true ) {
     cerr << "[Error] " << resp_msg;
     return -1;
-  } 
+  }
 
   ofstream outfile(SCHEDULE_LIST_PATH, ofstream::app);
   if ( outfile.is_open() == false ) {
@@ -183,7 +247,7 @@ int Scheduler::add_task(const string& fru, const string& comp, const string& ima
 
   outfile << job_msg << ":" << fwutil_cmd <<'\n';
 
-  string task_id = get_task_id(job_msg); 
+  string task_id = get_task_id(job_msg);
   syslog(LOG_CRIT, "Add task %s. %s will be applied to the component of %s at %s", task_id.c_str(), image.c_str(), comp.c_str(), time.c_str());
   cout << "Add task " << task_id << ". " << image << " will be applied to the component of " << comp << " at " << time << endl;
   return 0;
@@ -220,7 +284,7 @@ int Scheduler::del_task(const string& task_id) const {
   }
 
   //read the list
-  //if skd_list open fails, it means the file is not created by add_task 
+  //if skd_list open fails, it means the file is not created by add_task
   fstream skd_list(SCHEDULE_LIST_PATH, fstream::in);
   if ( skd_list.is_open() == false ) {
     cerr << "No scheduled commands are ready to run" << endl;
@@ -249,7 +313,7 @@ int Scheduler::del_task(const string& task_id) const {
   skd_list.open(SCHEDULE_LIST_PATH, fstream::out | fstream::trunc);
   skd_list_tmp.seekg (0, skd_list_tmp.beg);
   skd_list << skd_list_tmp.rdbuf();
-  
+
   //rm tmp file
   remove(tmp_file.c_str());
 

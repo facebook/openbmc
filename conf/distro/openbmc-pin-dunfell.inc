@@ -1,0 +1,1 @@
+PREFERRED_VERSION_python3-mypy = "0.910"

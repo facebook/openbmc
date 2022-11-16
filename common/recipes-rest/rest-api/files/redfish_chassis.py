@@ -166,7 +166,7 @@ async def get_chassis_member(request: web.Request) -> web.Response:
 
 async def get_chassis_member_for_fru(
     server_name: str, expand_level: int
-) -> web.Response:
+) -> t.Dict[str, t.Any]:
     try:
         fru_name = _get_fru_name_from_server_id(server_name)
     except ValueError:

@@ -93,7 +93,7 @@ def get_ipv4_gateway() -> Optional[str]:
     return gw_ip
 
 
-async def get_managers(request: str) -> web.Response:
+async def get_managers(request: web.Request) -> web.Response:
     body = {
         "@odata.context": "/redfish/v1/$metadata#ManagerCollection.ManagerCollection",
         "@odata.id": "/redfish/v1/Managers",
@@ -106,7 +106,7 @@ async def get_managers(request: str) -> web.Response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_managers_members(request: str) -> web.Response:
+async def get_managers_members(request: web.Request) -> web.Response:
     uuid_data = str(rest_pal_legacy.pal_get_uuid())
     with open("/etc/issue") as etc_issue:
         firmware_version = etc_issue.read().rstrip("\n")
@@ -140,7 +140,7 @@ async def get_managers_members(request: str) -> web.Response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_manager_log_services(request: str) -> web.Response:
+async def get_manager_log_services(request: web.Request) -> web.Response:
     body = {
         "@odata.type": "#LogServiceCollection.LogServiceCollection",
         "Name": "Log Service Collection",
@@ -153,7 +153,7 @@ async def get_manager_log_services(request: str) -> web.Response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_manager_ethernet(request: str) -> web.Response:
+async def get_manager_ethernet(request: web.Request) -> web.Response:
     body = {
         "@odata.context": "/redfish/v1/$metadata#EthernetInterfaceCollection.EthernetInterfaceCollection",  # noqa: B950
         "@odata.id": "/redfish/v1/Managers/System/EthernetInterfaces",
@@ -167,7 +167,7 @@ async def get_manager_ethernet(request: str) -> web.Response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_ethernet_members(request: str) -> web.Response:
+async def get_ethernet_members(request: web.Request) -> web.Response:
     eth_intf = rest_pal_legacy.pal_get_eth_intf_name()
     mac_address = get_mac_address(eth_intf)
     host_name = socket.gethostname()
@@ -213,7 +213,7 @@ async def get_ethernet_members(request: str) -> web.Response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_manager_network(request: str) -> web.Response:
+async def get_manager_network(request: web.Request) -> web.Response:
     host_name = socket.gethostname()
     fqdn = get_fqdn_str()
     headers = {

@@ -3,7 +3,7 @@ from common_utils import dumps_bytestr
 from redfish_base import validate_keys
 
 
-async def get_session_service(request: str) -> web.Response:
+async def get_session_service(request: web.Request) -> web.Response:
     body = {
         "@odata.type": "#SessionService.v1_1_8.SessionService",
         "Id": "SessionService",
@@ -21,7 +21,7 @@ async def get_session_service(request: str) -> web.Response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_session(request: str) -> web.Response:
+async def get_session(request: web.Request) -> web.Response:
     headers = {"Link": "</redfish/v1/schemas/SessionCollection.json>; rel=describedby"}
     body = {
         "@odata.type": "#SessionCollection.SessionCollection",

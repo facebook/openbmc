@@ -120,11 +120,11 @@ async def validate_keys(body: t.Dict[str, t.Any]) -> None:
 class RedfishErrorExtendedInfo:
     def __init__(
         self,
-        message_id: str = None,
-        message: str = None,
-        message_args: t.List[str] = None,
-        severity: str = None,
-        resolution: str = None,
+        message_id: t.Optional[str] = None,
+        message: t.Optional[str] = None,
+        message_args: t.Optional[t.List[str]] = None,
+        severity: t.Optional[str] = None,
+        resolution: t.Optional[str] = None,
     ):
         self.message_id = message_id
         self.message = message
@@ -151,9 +151,9 @@ class RedfishError:
     def __init__(
         self,
         status: int,
-        code: str = None,
-        message: str = None,
-        extended_info: t.List[RedfishErrorExtendedInfo] = None,
+        code: t.Optional[str] = None,
+        message: t.Optional[str] = None,
+        extended_info: t.Optional[t.List[RedfishErrorExtendedInfo]] = None,
     ):
         self.status = status
         self.code = code

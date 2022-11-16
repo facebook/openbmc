@@ -128,6 +128,7 @@ async def auth_enforcer(app, handler):  # noqa: C901
 
 
 def _is_request_from_localhost(request: Request) -> bool:
+    assert request.transport is not None
     peer_ip = request.transport.get_extra_info("peername")[0]
     return peer_ip in LOCALHOST_ADDRS
 

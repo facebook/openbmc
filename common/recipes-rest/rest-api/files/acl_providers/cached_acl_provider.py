@@ -52,7 +52,7 @@ class CachedAclProvider(common_acl_provider_base.AclProviderBase):
         if getattr(self, "oldhandler", None):
             signal.signal(signal.SIGHUP, self.oldhandler)
 
-    def signal_handler(self, sig: int, frame: FrameType):
+    def signal_handler(self, sig: int, frame: t.Optional[FrameType]):
         self._load_aclrules()
 
     def _get_permissions_for_user_identity(self, identity: Identity) -> t.List[str]:

@@ -103,7 +103,7 @@ class RedfishLogService:
     async def get_logservices_root(self, request: web.Request) -> web.Response:
         members = []
         fru_name = request.match_info["fru_name"]
-        if self.is_log_util_available:
+        if self.is_log_util_available():
             members.append(
                 {"@odata.id": "/redfish/v1/Systems/{}/LogServices/SEL".format(fru_name)}
             )
@@ -217,7 +217,7 @@ class RedfishLogService:
         fru_name = request.match_info["fru_name"]
 
         # We only support log-util capable machines for now
-        if not self.is_log_util_available:
+        if not self.is_log_util_available():
             return web.Response(status=404)
 
         if log_service_id.lower() == "sel":

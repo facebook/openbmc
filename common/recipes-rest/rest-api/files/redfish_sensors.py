@@ -6,7 +6,7 @@ import pal
 import redfish_chassis_helper
 import rest_pal_legacy
 from aiohttp import web
-from common_utils import dumps_bytestr, common_force_async, parse_expand_level
+from common_utils import common_force_async, dumps_bytestr, parse_expand_level
 from redfish_base import validate_keys
 
 try:
@@ -27,7 +27,7 @@ async def get_redfish_sensors_handler(request: web.Request) -> web.Response:
 
 async def get_redfish_sensors_for_server_name(
     server_name: str, expand_level: int
-) -> t.Dict[str, t.Any]:
+) -> t.Union[t.Dict[str, t.Any], web.Response]:
     try:
         fru_names = _get_fru_names(server_name)
     except ValueError:
@@ -57,6 +57,7 @@ async def get_redfish_sensors_for_server_name(
 # controller for /redfish/v1/Chassis/{fru}/Sensors/{fru_name}_{sensor_id}
 async def get_redfish_sensor_handler(request: web.Request) -> web.Response:
     server_name = request.match_info["fru_name"]
+    sensor_id = ""  # type: t.Union[str, int]
     if redfish_chassis_helper.is_libpal_supported():
         sensor_id_and_fru = request.match_info["sensor_id"]
         target_fru_name = "_".join(sensor_id_and_fru.split("_")[:-1])

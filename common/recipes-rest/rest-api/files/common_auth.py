@@ -25,7 +25,7 @@ import typing as t
 from contextlib import suppress
 
 from aiohttp.log import server_logger
-from aiohttp.web import Request, HTTPForbidden
+from aiohttp.web import HTTPForbidden, Request
 
 Identity = t.NamedTuple(
     "Identity",
@@ -113,6 +113,7 @@ def _extract_identity(request: Request) -> Identity:
     # If there's no cert identity, try setting the host identity as the
     # peer ip address
     with suppress(ValueError, IndexError, KeyError, TypeError):
+        assert request.transport is not None
         addr = request.transport.get_extra_info("peername")[0]
         addr = RE_IPV6_LINK_LOCAL_SUFFIX.sub("", addr)
 
@@ -122,6 +123,7 @@ def _extract_identity(request: Request) -> Identity:
 
 
 def _extract_identity_from_peercert(request: Request) -> Identity:
+    assert request.transport is not None
     peercert = request.transport.get_extra_info("peercert")
     if not peercert or not peercert.get("subject"):
         raise ValueError("No identity found in request")

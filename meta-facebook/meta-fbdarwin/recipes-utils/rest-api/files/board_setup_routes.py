@@ -1,4 +1,4 @@
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright 2022-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,31 +14,13 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+from board_endpoint import boardApp_Handler
+from boardroutes import *
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+from aiohttp.web import Application
 
-LOCAL_URI += "\
-    file://bmc_board_rev.sh \
-    file://board-utils.sh \
-    file://dump_gpios.sh \
-    file://meta_info.sh \
-    file://oob-eeprom-util.sh \
-    file://oob-mdio-util.sh \
-    file://oob-status.sh \
-    file://setup-gpio.sh \
-    file://setup_board.sh \
-    file://show_tech.py \
-    "
 
-OPENBMC_UTILS_FILES += " \
-    bmc_board_rev.sh \
-    dump_gpios.sh \
-    meta_info.sh \
-    oob-eeprom-util.sh \
-    oob-mdio-util.sh \
-    oob-status.sh \
-    show_tech.py \
-    "
-
-# Not needed for fbdarwin
-SYSTEMD_SERVICE:${PN}:remove = "setup_i2c.service power-on.service"
+def setup_board_routes(app: Application, write_enabled: bool):
+    bhandler = boardApp_Handler()
+    app.router.add_get(board_routes[0], bhandler.rest_bmc_board_rev_hdl)

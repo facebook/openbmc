@@ -1,4 +1,5 @@
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright 2022-present Facebook. All Rights Reserved.
+
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,28 +18,10 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-LOCAL_URI += "\
-    file://bmc_board_rev.sh \
-    file://board-utils.sh \
-    file://dump_gpios.sh \
-    file://meta_info.sh \
-    file://oob-eeprom-util.sh \
-    file://oob-mdio-util.sh \
-    file://oob-status.sh \
-    file://setup-gpio.sh \
-    file://setup_board.sh \
-    file://show_tech.py \
-    "
+LOCAL_URI += " \
+    file://rest_bmc_board_rev.py \
+"
 
-OPENBMC_UTILS_FILES += " \
-    bmc_board_rev.sh \
-    dump_gpios.sh \
-    meta_info.sh \
-    oob-eeprom-util.sh \
-    oob-mdio-util.sh \
-    oob-status.sh \
-    show_tech.py \
-    "
-
-# Not needed for fbdarwin
-SYSTEMD_SERVICE:${PN}:remove = "setup_i2c.service power-on.service"
+binfiles1 += " \
+    rest_bmc_board_rev.py \
+"

@@ -27,7 +27,7 @@ import subprocess
 import time
 
 
-VERSION = "0.9"
+VERSION = "0.10"
 
 
 def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
@@ -167,6 +167,11 @@ def showtech(verboseLevel=0):
     print(
         "##### BMC version #####\nbuilt: {}{}".format(
             runCmd("cat /etc/version"), runCmd("cat /etc/issue")
+        )
+    )
+    print(
+        "##### BMC Board Revision #####\n{}".format(
+            runCmd("/usr/local/bin/bmc_board_rev.sh")
         )
     )
     print("##### BMC UPTIME #####\n{}".format(runCmd("uptime")))

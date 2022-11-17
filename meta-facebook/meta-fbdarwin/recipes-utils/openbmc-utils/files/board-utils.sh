@@ -48,7 +48,7 @@ do_sync() {
 
    sync
    # rsyslogd logs to eMMC, so we must stop it prior to remouting.
-   kill -TERM "$(cat /var/run/rsyslogd.pid)"
+   systemctl stop syslog.socket rsyslog.service
    sleep .05
    if [ -e $mountpoint ]; then
       retry_command 5 mount -o remount,ro $partition $mountpoint

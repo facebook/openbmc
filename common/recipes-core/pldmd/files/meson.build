@@ -33,3 +33,16 @@ pldmd_exe = executable(
     install: true,
     install_dir : 'local/bin'
 )
+
+util_srcs = files(
+    'pldmd-util.cpp'
+)
+
+# pldmd executable.
+pldm_util = executable(
+    'pldmd-util',
+    util_srcs,
+    dependencies: deps,
+    install: true,
+    install_dir : 'bin'
+)

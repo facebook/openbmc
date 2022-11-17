@@ -38,7 +38,8 @@ LOCAL_URI = " \
     file://pldm_fd_handler.hpp \
     file://pldm_fd_handler.cpp \
     file://vector_handler.hpp \
+    file://pldmd-util.cpp \
     "
 pkgdir = "pldmd"
 
-FILES:${PN} = "${prefix}/local/bin/pldmd ${sysconfdir}"
+FILES:${PN} = "${prefix}/local/bin/pldmd ${sysconfdir} ${prefix}/bin/pldmd-util"

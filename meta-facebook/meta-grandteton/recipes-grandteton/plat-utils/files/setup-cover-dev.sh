@@ -46,6 +46,17 @@ MB_4TH_SOURCE="3"
 MB_VR_SECOND="1"
 MB_VR_THIRD="2"
 
+MB_ADC_MAIN="0"
+#MB ADM128D
+if [ "$(gpio_get FM_BOARD_BMC_SKU_ID1)" -eq "$MB_ADC_MAIN" ]; then
+  i2cset -f -y 20 0x1d 0x0b 0x02
+  i2c_device_add 20 0x1d adc128d818
+  kv set mb_adc_source "$MB_1ST_SOURCE"
+else
+  i2c_device_add 20 0x35 max11617
+  kv set mb_adc_source "$MB_2ND_SOURCE"
+fi
+
 # MB CPU VR Device"
 if [ "$vr_sku" -eq "$MB_VR_THIRD" ]; then
   i2c_device_add 20 0x60 mp2971

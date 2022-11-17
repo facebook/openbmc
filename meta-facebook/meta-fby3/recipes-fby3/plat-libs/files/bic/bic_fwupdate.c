@@ -783,6 +783,7 @@ update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
       bic_write  = FEXP_BIC_I2C_WRITE;
       bic_update = FEXP_BIC_I2C_UPDATE;
       bic_i2c    = FEXP_BIC_IPMI_I2C_SW;
+      bytes_per_read = 224;
       break;
     case BB_BIC_INTF:
       bic_read   = BB_BIC_I2C_READ;

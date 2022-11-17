@@ -23,11 +23,11 @@ enum {
 };
 
 enum {
-  BP0_FAN_SOURCE,
+  FAN_BP0_FAN_SOURCE,
 };
 
 enum {
-  BP1_FAN_SOURCE,
+  FAN_BP1_FAN_SOURCE,
 };
 
 bool swb_presence(void);

@@ -31,11 +31,11 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
     case FRU_HPDB:
       sprintf(key, "hpdb_sensor_health");
       break;
-    case FRU_BP0:
-      sprintf(key, "bp0_sensor_health");
+    case FRU_FAN_BP0:
+      sprintf(key, "fan_bp0_sensor_health");
       break;
-    case FRU_BP1:
-      sprintf(key, "bp1_sensor_health");
+    case FRU_FAN_BP1:
+      sprintf(key, "fan_bp1_sensor_health");
     break;
     case FRU_SCM:
       sprintf(key, "scm_sensor_health");

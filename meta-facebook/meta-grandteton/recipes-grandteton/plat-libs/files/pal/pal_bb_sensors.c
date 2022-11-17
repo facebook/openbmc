@@ -102,42 +102,42 @@ const uint8_t hpdb_sensor_list[] = {
   PDBH_SNR_HSC2_TEMP,
 };
 
-const uint8_t bp0_sensor_list[] = {
-  BP0_SNR_FAN0_INLET_SPEED,
-  BP0_SNR_FAN0_OUTLET_SPEED,
-  BP0_SNR_FAN1_INLET_SPEED,
-  BP0_SNR_FAN1_OUTLET_SPEED,
-  BP0_SNR_FAN4_INLET_SPEED,
-  BP0_SNR_FAN4_OUTLET_SPEED,
-  BP0_SNR_FAN5_INLET_SPEED,
-  BP0_SNR_FAN5_OUTLET_SPEED,
-  BP0_SNR_FAN8_INLET_SPEED,
-  BP0_SNR_FAN8_OUTLET_SPEED,
-  BP0_SNR_FAN9_INLET_SPEED,
-  BP0_SNR_FAN9_OUTLET_SPEED,
-  BP0_SNR_FAN12_INLET_SPEED,
-  BP0_SNR_FAN12_OUTLET_SPEED,
-  BP0_SNR_FAN13_INLET_SPEED,
-  BP0_SNR_FAN13_OUTLET_SPEED,
+const uint8_t fan_bp0_sensor_list[] = {
+  FAN_BP0_SNR_FAN0_INLET_SPEED,
+  FAN_BP0_SNR_FAN0_OUTLET_SPEED,
+  FAN_BP0_SNR_FAN1_INLET_SPEED,
+  FAN_BP0_SNR_FAN1_OUTLET_SPEED,
+  FAN_BP0_SNR_FAN4_INLET_SPEED,
+  FAN_BP0_SNR_FAN4_OUTLET_SPEED,
+  FAN_BP0_SNR_FAN5_INLET_SPEED,
+  FAN_BP0_SNR_FAN5_OUTLET_SPEED,
+  FAN_BP0_SNR_FAN8_INLET_SPEED,
+  FAN_BP0_SNR_FAN8_OUTLET_SPEED,
+  FAN_BP0_SNR_FAN9_INLET_SPEED,
+  FAN_BP0_SNR_FAN9_OUTLET_SPEED,
+  FAN_BP0_SNR_FAN12_INLET_SPEED,
+  FAN_BP0_SNR_FAN12_OUTLET_SPEED,
+  FAN_BP0_SNR_FAN13_INLET_SPEED,
+  FAN_BP0_SNR_FAN13_OUTLET_SPEED,
 };
 
-const uint8_t bp1_sensor_list[] = {
-  BP1_SNR_FAN2_INLET_SPEED,
-  BP1_SNR_FAN2_OUTLET_SPEED,
-  BP1_SNR_FAN3_INLET_SPEED,
-  BP1_SNR_FAN3_OUTLET_SPEED,
-  BP1_SNR_FAN6_INLET_SPEED,
-  BP1_SNR_FAN6_OUTLET_SPEED,
-  BP1_SNR_FAN7_INLET_SPEED,
-  BP1_SNR_FAN7_OUTLET_SPEED,
-  BP1_SNR_FAN10_INLET_SPEED,
-  BP1_SNR_FAN10_OUTLET_SPEED,
-  BP1_SNR_FAN11_INLET_SPEED,
-  BP1_SNR_FAN11_OUTLET_SPEED,
-  BP1_SNR_FAN14_INLET_SPEED,
-  BP1_SNR_FAN14_OUTLET_SPEED,
-  BP1_SNR_FAN15_INLET_SPEED,
-  BP1_SNR_FAN15_OUTLET_SPEED,
+const uint8_t fan_bp1_sensor_list[] = {
+  FAN_BP1_SNR_FAN2_INLET_SPEED,
+  FAN_BP1_SNR_FAN2_OUTLET_SPEED,
+  FAN_BP1_SNR_FAN3_INLET_SPEED,
+  FAN_BP1_SNR_FAN3_OUTLET_SPEED,
+  FAN_BP1_SNR_FAN6_INLET_SPEED,
+  FAN_BP1_SNR_FAN6_OUTLET_SPEED,
+  FAN_BP1_SNR_FAN7_INLET_SPEED,
+  FAN_BP1_SNR_FAN7_OUTLET_SPEED,
+  FAN_BP1_SNR_FAN10_INLET_SPEED,
+  FAN_BP1_SNR_FAN10_OUTLET_SPEED,
+  FAN_BP1_SNR_FAN11_INLET_SPEED,
+  FAN_BP1_SNR_FAN11_OUTLET_SPEED,
+  FAN_BP1_SNR_FAN14_INLET_SPEED,
+  FAN_BP1_SNR_FAN14_OUTLET_SPEED,
+  FAN_BP1_SNR_FAN15_INLET_SPEED,
+  FAN_BP1_SNR_FAN15_OUTLET_SPEED,
 };
 
 const uint8_t scm_sensor_list[] = {
@@ -175,10 +175,10 @@ NCT7363Y_CTRL nct7363y_ctrl_list[] = {
 
 //FAN CHIP
 char *max31790_chips[] = {
-  "max31790-i2c-40-2f",  // BP0
-  "max31790-i2c-40-20",  // BP0
-  "max31790-i2c-41-2f",  // BP1
-  "max31790-i2c-41-20",  // BP1
+  "max31790-i2c-40-2f",  // FAN_BP0
+  "max31790-i2c-40-20",  // FAN_BP0
+  "max31790-i2c-41-2f",  // FAN_BP1
+  "max31790-i2c-41-20",  // FAN_BP1
 };
 char **fan_chips = max31790_chips;
 
@@ -468,15 +468,15 @@ size_t vpdb_sensor_cnt = sizeof(vpdb_sensor_list)/sizeof(uint8_t);
 size_t vpdb_1brick_sensor_cnt = sizeof(vpdb_1brick_sensor_list)/sizeof(uint8_t);
 size_t vpdb_3brick_sensor_cnt = sizeof(vpdb_3brick_sensor_list)/sizeof(uint8_t);
 size_t hpdb_sensor_cnt = sizeof(hpdb_sensor_list)/sizeof(uint8_t);
-size_t bp0_sensor_cnt = sizeof(bp0_sensor_list)/sizeof(uint8_t);
-size_t bp1_sensor_cnt = sizeof(bp1_sensor_list)/sizeof(uint8_t);
+size_t fan_bp0_sensor_cnt = sizeof(fan_bp0_sensor_list)/sizeof(uint8_t);
+size_t fan_bp1_sensor_cnt = sizeof(fan_bp1_sensor_list)/sizeof(uint8_t);
 size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);
 
 
 static int get_fan_chip_dev_id(uint8_t fru, uint8_t* dev_id) {
   uint8_t id = MAIN_SOURCE;
 
-  if(get_comp_source(fru, fru == FRU_BP0 ? BP0_FAN_SOURCE : BP1_FAN_SOURCE, &id))
+  if(get_comp_source(fru, fru == FRU_FAN_BP0 ? FAN_BP0_FAN_SOURCE : FAN_BP1_FAN_SOURCE, &id))
     return -1;
 
   if (id == MAIN_SOURCE)
@@ -1054,9 +1054,9 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
   }
 
   if((fan/2)%2 == 0)
-    fru = FRU_BP0;
+    fru = FRU_FAN_BP0;
   else
-    fru = FRU_BP1;
+    fru = FRU_FAN_BP1;
 
   if (get_fan_chip_dev_id(fru, &dev_id))
     return -1;
@@ -1077,9 +1077,9 @@ pal_get_fan_speed(uint8_t tach, int *rpm) {
   }
 
   if((tach/4)%2 == 0)
-    fru = FRU_BP0;
+    fru = FRU_FAN_BP0;
   else
-    fru = FRU_BP1;
+    fru = FRU_FAN_BP1;
 
   ret = read_fan_speed(fru, sensor_num, &speed);
   *rpm = (int)speed;
@@ -1099,9 +1099,9 @@ pal_get_pwm_value(uint8_t tach, uint8_t *value) {
   }
 
   if((tach/4)%2 == 0)
-    fru = FRU_BP0;
+    fru = FRU_FAN_BP0;
   else
-    fru = FRU_BP1;
+    fru = FRU_FAN_BP1;
 
   if (get_fan_chip_dev_id(fru, &dev_id))
     return -1;

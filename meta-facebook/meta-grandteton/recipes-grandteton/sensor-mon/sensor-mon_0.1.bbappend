@@ -17,5 +17,5 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 CFLAGS += "-DSENSOR_FAIL_DETECT"
-SENSORD_MONITORED_FRUS = "mb nic0 nic1 vpdb hpdb bp0 bp1 scm swb hmc"
+SENSORD_MONITORED_FRUS = "mb nic0 nic1 vpdb hpdb fan_bp0 fan_bp1 scm swb hmc"
 

@@ -63,8 +63,8 @@ struct snr_map sensor_map[] = {
   { FRU_DBG,  NULL,           false },
   { FRU_BMC,  NULL,           false },
   { FRU_SCM,  bb_sensor_map,  true },
-  { FRU_PDBV, bb_sensor_map,  true },
-  { FRU_PDBH, bb_sensor_map,  true },
+  { FRU_VPDB, bb_sensor_map,  true },
+  { FRU_HPDB, bb_sensor_map,  true },
   { FRU_BP0,  bb_sensor_map,  true },
   { FRU_BP1,  bb_sensor_map,  true },
   { FRU_FIO,  NULL,           false },
@@ -103,7 +103,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   } else if (fru == FRU_HMC) {
     *sensor_list = (uint8_t *) hmc_sensor_list;
     *cnt = hmc_sensor_cnt;
-  } else if (fru == FRU_PDBV) {
+  } else if (fru == FRU_VPDB) {
     get_comp_source(fru, VPDB_BRICK_SOURCE, &id);
     if (id == THIRD_SOURCE) {
       memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
@@ -116,7 +116,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *sensor_list = snr_vpdb_tmp;
       *cnt = vpdb_sensor_cnt + vpdb_3brick_sensor_cnt;
     }
-  } else if (fru == FRU_PDBH) {
+  } else if (fru == FRU_HPDB) {
     *sensor_list = (uint8_t *) hpdb_sensor_list;
     *cnt = hpdb_sensor_cnt;
   } else if (fru == FRU_BP0) {

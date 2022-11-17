@@ -46,8 +46,8 @@ setup_oob_switch() {
                cut -d' ' -f2)
     curr_clk_dly=$(oob-mdio-util.sh read8 "$control_page" "$imp_rgmi_control_reg"|
                  cut -d' ' -f2)
-    if [ "$curr_speed" == "$port_state_reg_val" ] && \
-       [ "$curr_clk_dly" == "$imp_rgmi_control_reg_val" ]; then
+    if [ "$curr_speed" = "$port_state_reg_val" ] && \
+       [ "$curr_clk_dly" = "$imp_rgmi_control_reg_val" ]; then
         # Register values are as expected
         return 0
     fi

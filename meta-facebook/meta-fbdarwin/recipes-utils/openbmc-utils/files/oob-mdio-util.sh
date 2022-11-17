@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2022-present Facebook. All Rights Reserved.
 #

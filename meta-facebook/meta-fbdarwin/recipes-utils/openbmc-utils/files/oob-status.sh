@@ -19,6 +19,7 @@
 #
 
 # shellcheck disable=SC1091
+# shellcheck disable=SC2235
 . /usr/local/bin/openbmc-utils.sh
 
 trap handle_signal INT TERM QUIT

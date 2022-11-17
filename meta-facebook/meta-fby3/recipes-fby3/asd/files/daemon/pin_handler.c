@@ -12,16 +12,37 @@
 #define BMC_JTAG_SEL_N BMC_RSMRST_B
 
 // PLTRST,  PRDY, XDP_PRESENT
-enum  MONITOR_EVENTS {
+enum MONITOR_EVENTS {
   JTAG_PLTRST_EVENT = 0,
+  JTAG_PWRGD_EVENT,
   JTAG_PRDY_EVENT,
   JTAG_XDP_PRESENT_EVENT,
   JTAG_EVENT_NUM,
 };
 
+typedef struct gpio_evt {
+  bool triggered;
+  int value;
+} gpio_evt;
+
+static gpio_evt g_gpios_triggered[JTAG_EVENT_NUM] = {
+  {false, GPIO_VALUE_INVALID},
+  {false, GPIO_VALUE_INVALID},
+  {false, GPIO_VALUE_INVALID},
+  {false, GPIO_VALUE_INVALID}
+};
 static pthread_mutex_t triggered_mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool g_gpios_triggered[JTAG_EVENT_NUM] = {false, false, false};
-         
+
+static int m_gpios_pipe[JTAG_EVENT_NUM][2];
+
+static const uint8_t evt_pins[JTAG_EVENT_NUM] = {
+  BMC_PLTRST_B, BMC_CPU_PWRGD, BMC_PRDY_N, BMC_XDP_PRST_IN
+};
+
+static const uint8_t pin_gpios[JTAG_EVENT_NUM] = {
+  RST_PLTRST_BMC_N, PWRGD_CPU_LVC3_R, IRQ_BMC_PRDY_NODE_OD_N, DBP_PRESENT_R2_N
+};
+
 static const ASD_LogStream stream = ASD_LogStream_Pins;
 static const ASD_LogOption option = ASD_LogOption_None;
 
@@ -45,7 +66,7 @@ void write_pin_value(uint8_t fru, Target_Control_GPIO gpio, int value,
 }
 
 void get_pin_events(Target_Control_GPIO gpio, short* events) {
-  *events = POLL_GPIO; /*Not used*/
+  *events = POLLIN | POLLPRI;
 }
 
 static STATUS handle_preq_event(Target_Control_Handle* state, uint8_t fru) {
@@ -53,18 +74,18 @@ static STATUS handle_preq_event(Target_Control_Handle* state, uint8_t fru) {
   ASD_log(ASD_LogLevel_Debug, stream, option,
           "BreakAll detected PRDY, asserting PREQ");
 
-  bic_set_gpio(fru, FM_BMC_PREQ_N_NODE_R1, 1);
+  bic_set_gpio(fru, FM_BMC_PREQ_N_NODE_R1, 0);
   if (result != ST_OK)
   {
-     ASD_log(ASD_LogLevel_Error, stream, option,
-             "Failed to assert PREQ");
+    ASD_log(ASD_LogLevel_Error, stream, option,
+            "Failed to assert PREQ");
   }
   else if ( !state->event_cfg.reset_break )
   {
     usleep(10000);
     ASD_log(ASD_LogLevel_Debug, stream, option,
             "CPU_PRDY, de-asserting PREQ");
-    bic_set_gpio(fru, FM_BMC_PREQ_N_NODE_R1, 0);
+    bic_set_gpio(fru, FM_BMC_PREQ_N_NODE_R1, 1);
     if (result != ST_OK)
     {
       ASD_log(ASD_LogLevel_Error, stream, option,
@@ -179,10 +200,10 @@ STATUS pin_hndlr_deinit_asd_gpio(Target_Control_Handle *state) {
 }
 
 static void *gpio_poll_thread(void *fru) {
-  int sock, msgsock, n, len, gpio_pin, ret=0;
+  int sock, msgsock, n, len, ret=0;
   size_t t;
   struct sockaddr_un server, client;
-  uint8_t req_buf[256] = {0};
+  uint8_t i, req_buf[256] = {0};
   char sock_path[64] = {0};
   if ((sock = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
   {
@@ -235,25 +256,21 @@ static void *gpio_poll_thread(void *fru) {
         ASD_log(ASD_LogLevel_Debug, stream, option,
                 "message received, %d %d", req_buf[0], req_buf[1]);
 
-        gpio_pin = req_buf[0];
-        pthread_mutex_lock(&triggered_mutex);
-        switch (gpio_pin) {
-          case RST_PLTRST_BMC_N:
-            ASD_log(ASD_LogLevel_Debug, stream, option,
-                    "ASD_BIC: PLTRST_N event");
-            g_gpios_triggered[JTAG_PLTRST_EVENT] = true;
+        for (i = 0; i < JTAG_EVENT_NUM; i++) {
+          if (req_buf[0] == pin_gpios[i]) {
+            pthread_mutex_lock(&triggered_mutex);
+            g_gpios_triggered[i].value = req_buf[1];
+            g_gpios_triggered[i].triggered = true;
+            pthread_mutex_unlock(&triggered_mutex);
+
+            req_buf[0] = evt_pins[i];
+            if (write(m_gpios_pipe[i][1], req_buf, 1) != 1) {
+                ASD_log(ASD_LogLevel_Warning, stream, option,
+                        "Failed to write pipe[%u]", i);
+            }
             break;
-          case IRQ_BMC_PRDY_NODE_OD_N:
-            g_gpios_triggered[JTAG_PRDY_EVENT] = true;
-            break;
-          case DBP_PRESENT_R2_N:
-            g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = true;
-            break;
-          default:
-            ASD_log(ASD_LogLevel_Error, stream, option,
-                    "ASD BIC: unknown GPIO pin # received, %d", gpio_pin);
+          }
         }
-        pthread_mutex_unlock(&triggered_mutex);
     }
     close(msgsock);
   }
@@ -299,15 +316,29 @@ STATUS pin_hndlr_init_asd_gpio(Target_Control_Handle *state) {
     static bool gpios_polling = false;
     static pthread_t poll_thread;
     if (gpios_polling == false) {
+        int i;
+
+        for (i = 0; i < JTAG_EVENT_NUM; i++) {
+            if (pipe2(m_gpios_pipe[i], O_NONBLOCK) < 0) {
+                ASD_log(ASD_LogLevel_Error, stream, option,
+                        "Failed to create pipe[%d]", i);
+                return ST_ERR;
+            }
+        }
         pthread_create(&poll_thread, NULL, gpio_poll_thread, (void *)state->fru);
         gpios_polling = true;
     } else {
         pthread_mutex_lock(&triggered_mutex);
-        g_gpios_triggered[JTAG_PLTRST_EVENT] = false;
-        g_gpios_triggered[JTAG_PRDY_EVENT] = false;
-        g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
+        g_gpios_triggered[JTAG_PLTRST_EVENT].triggered = false;
+        g_gpios_triggered[JTAG_PWRGD_EVENT].triggered = false;
+        g_gpios_triggered[JTAG_PRDY_EVENT].triggered = false;
+        g_gpios_triggered[JTAG_XDP_PRESENT_EVENT].triggered = false;
         pthread_mutex_unlock(&triggered_mutex);
     }
+    state->gpios[BMC_PLTRST_B].fd = m_gpios_pipe[JTAG_PLTRST_EVENT][0];
+    state->gpios[BMC_CPU_PWRGD].fd = m_gpios_pipe[JTAG_PWRGD_EVENT][0];
+    state->gpios[BMC_PRDY_N].fd = m_gpios_pipe[JTAG_PRDY_EVENT][0];
+    state->gpios[BMC_XDP_PRST_IN].fd = m_gpios_pipe[JTAG_XDP_PRESENT_EVENT][0];
 
     return ST_OK;
 }
@@ -317,32 +348,43 @@ on_platform_reset_event(Target_Control_Handle* state, ASD_EVENT* event)
 {
     STATUS result = ST_OK;
     int value;
-    static bool is_asserted = false;
 
-    if ( g_gpios_triggered[JTAG_PLTRST_EVENT] == true ) {
+    if (event == NULL) {
+        return ST_ERR;
+    }
+
+    if (g_gpios_triggered[JTAG_PLTRST_EVENT].triggered == false) {
+        *event = ASD_EVENT_NONE;
+        return result;
+    }
+
+    pthread_mutex_lock(&triggered_mutex);
+    value = !g_gpios_triggered[JTAG_PLTRST_EVENT].value;
+    g_gpios_triggered[JTAG_PLTRST_EVENT].triggered = false;
+    pthread_mutex_unlock(&triggered_mutex);
+
+    if (value == 1)
+    {
         ASD_log(ASD_LogLevel_Debug, stream, option, "Platform reset asserted");
-        *event = ASD_EVENT_PLRSTASSERT;
+        *event = ASD_EVENT_PLRSTDEASSRT;
         if (state->event_cfg.reset_break)
         {
             ASD_log(ASD_LogLevel_Debug, stream, option,
                     "ResetBreak detected PLT_RESET "
                     "assert, asserting PREQ");
-            write_pin_value(state->fru, state->gpios[BMC_PREQ_N], 1, &result);
+            write_pin_value(state->fru, state->gpios[BMC_PREQ_N], 0, &result);
             if (result != ST_OK)
             {
                 ASD_log(ASD_LogLevel_Error, stream, option,
-                    "Failed to assert PREQ");
+                        "Failed to assert PREQ");
             }
         }
-        is_asserted = true;
-    } else {
-        if (is_asserted != true) *event = ASD_EVENT_NONE;
-        else {
-            ASD_log(ASD_LogLevel_Debug, stream, option,
-                    "Platform reset de-asserted");
-            *event = ASD_EVENT_PLRSTDEASSRT;
-            is_asserted = false;
-        }
+    }
+    else
+    {
+        ASD_log(ASD_LogLevel_Debug, stream, option,
+                "Platform reset de-asserted");
+        *event = ASD_EVENT_PLRSTASSERT;
     }
 
     return result;
@@ -352,19 +394,29 @@ static STATUS
 on_prdy_event(Target_Control_Handle* state, ASD_EVENT* event)
 {
     STATUS result = ST_OK;
-    *event = ASD_EVENT_NONE;
 
-    if ( g_gpios_triggered[JTAG_PRDY_EVENT] == false ) {
+    if (event == NULL) {
+        return ST_ERR;
+    }
+
+    if (g_gpios_triggered[JTAG_PRDY_EVENT].triggered == false) {
+        *event = ASD_EVENT_NONE;
         return result;
     }
 
-    pthread_mutex_lock(&triggered_mutex);
-    handle_preq_event(state, state->fru);
     ASD_log(ASD_LogLevel_Debug, stream, option,
-            "CPU_PRDY Asserted Event Detected.\n");
-    g_gpios_triggered[JTAG_PRDY_EVENT] = false;
-    pthread_mutex_unlock(&triggered_mutex);
+            "CPU_PRDY Asserted Event Detected.");
     *event = ASD_EVENT_PRDY_EVENT;
+
+    pthread_mutex_lock(&triggered_mutex);
+    g_gpios_triggered[JTAG_PRDY_EVENT].triggered = false;
+    pthread_mutex_unlock(&triggered_mutex);
+
+    if (state && state->event_cfg.break_all)
+    {
+        handle_preq_event(state, state->fru);
+    }
+
     return result;
 }
 
@@ -372,12 +424,14 @@ static STATUS
 on_xdp_present_event(Target_Control_Handle* state, ASD_EVENT* event)
 {
     STATUS result = ST_OK;
-    int value;
     (void)state; /* unused */
 
-    *event = ASD_EVENT_NONE;
+    if (event == NULL) {
+        return ST_ERR;
+    }
 
-    if ( g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] == false ) {
+    if (g_gpios_triggered[JTAG_XDP_PRESENT_EVENT].triggered == false) {
+        *event = ASD_EVENT_NONE;
         return result;
     }
 
@@ -386,7 +440,7 @@ on_xdp_present_event(Target_Control_Handle* state, ASD_EVENT* event)
             "XDP Present state change detected");
 
     pthread_mutex_lock(&triggered_mutex);
-    g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
+    g_gpios_triggered[JTAG_XDP_PRESENT_EVENT].triggered = false;
     pthread_mutex_unlock(&triggered_mutex);
 
     return result;
@@ -395,18 +449,29 @@ on_xdp_present_event(Target_Control_Handle* state, ASD_EVENT* event)
 static STATUS
 on_power_event(Target_Control_Handle* state, ASD_EVENT* event)
 {
-    STATUS result;
+    STATUS result = ST_OK;
     int value;
 
-    read_pin_value(state->fru, state->gpios[BMC_CPU_PWRGD], &value, &result);
-    if (result != ST_OK)
-    {
-        ASD_log(ASD_LogLevel_Error, stream, option,
-                "Failed to get gpio data for CPU_PWRGD: %d", result);
+    if (event == NULL) {
+        return ST_ERR;
     }
-    else if (value == 1)
-    {
+
+    if (g_gpios_triggered[JTAG_PWRGD_EVENT].triggered == false) {
         *event = ASD_EVENT_NONE;
+        return result;
+    }
+
+    pthread_mutex_lock(&triggered_mutex);
+    value = g_gpios_triggered[JTAG_PWRGD_EVENT].value;
+    g_gpios_triggered[JTAG_PWRGD_EVENT].triggered = false;
+    pthread_mutex_unlock(&triggered_mutex);
+
+    if (value == 1)
+    {
+#ifdef ENABLE_DEBUG_LOGGING
+        ASD_log(ASD_LogLevel_Debug, stream, option, "Power restored");
+#endif
+        *event = ASD_EVENT_PWRRESTORE;
     }
     else
     {
@@ -415,6 +480,7 @@ on_power_event(Target_Control_Handle* state, ASD_EVENT* event)
 #endif
         *event = ASD_EVENT_PWRFAIL;
     }
+
     return result;
 }
 
@@ -444,27 +510,22 @@ STATUS pin_hndlr_init_target_gpios_attr(Target_Control_Handle *state) {
                 sizeof(state->gpios[BMC_PRDY_N].name), "IRQ_BMC_PRDY_NODE_OD_N",
                 sizeof("IRQ_BMC_PRDY_NODE_OD_N"));
     state->gpios[BMC_PRDY_N].number = IRQ_BMC_PRDY_NODE_OD_N;
-    state->gpios[BMC_PRDY_N].fd = BMC_PRDY_N;
 
     strcpy_safe(state->gpios[BMC_JTAG_SEL_N].name,
-                sizeof(state->gpios[BMC_JTAG_SEL_N].name), "FM_BIC_JTAG_SEL_N",
-                sizeof("BMC_JTAG_SEL_N"));
+                sizeof(state->gpios[BMC_JTAG_SEL_N].name), "BMC_JTAG_SEL",
+                sizeof("BMC_JTAG_SEL"));
     state->gpios[BMC_JTAG_SEL_N].number = BMC_JTAG_SEL;
     state->gpios[BMC_JTAG_SEL_N].fd = BMC_JTAG_SEL_N;
 
-#if 1
     strcpy_safe(state->gpios[BMC_CPU_PWRGD].name,
-                sizeof(state->gpios[BMC_CPU_PWRGD].name), "PWRGD_BMC_PS_PWROK_R",
-                sizeof("PWRGD_BMC_PS_PWROK_R"));
-    state->gpios[BMC_CPU_PWRGD].number = PWRGD_BMC_PS_PWROK_R;
-    state->gpios[BMC_CPU_PWRGD].fd = BMC_CPU_PWRGD;
-#endif
+                sizeof(state->gpios[BMC_CPU_PWRGD].name), "PWRGD_CPU_LVC3_R",
+                sizeof("PWRGD_CPU_LVC3_R"));
+    state->gpios[BMC_CPU_PWRGD].number = PWRGD_CPU_LVC3_R;
 
     strcpy_safe(state->gpios[BMC_PLTRST_B].name,
                 sizeof(state->gpios[BMC_PLTRST_B].name), "RST_PLTRST_BMC_N",
                 sizeof("RST_PLTRST_BMC_N"));
     state->gpios[BMC_PLTRST_B].number = RST_PLTRST_BMC_N;
-    state->gpios[BMC_PLTRST_B].fd = BMC_PLTRST_B;
 
     strcpy_safe(state->gpios[BMC_SYSPWROK].name,
                 sizeof(state->gpios[BMC_SYSPWROK].name), "PWRGD_SYS_PWROK",
@@ -488,7 +549,6 @@ STATUS pin_hndlr_init_target_gpios_attr(Target_Control_Handle *state) {
                 sizeof(state->gpios[BMC_XDP_PRST_IN].name), "DBP_PRESENT_R2_N",
                 sizeof("DBP_PRESENT_R2_N"));
     state->gpios[BMC_XDP_PRST_IN].number = DBP_PRESENT_R2_N;
-    state->gpios[BMC_XDP_PRST_IN].fd = BMC_XDP_PRST_IN;
 
     state->gpios[BMC_CPU_PWRGD].handler =
         (TargetHandlerEventFunctionPtr)on_power_event;
@@ -509,22 +569,28 @@ short pin_hndlr_pin_events(Target_Control_GPIO gpio) {
     return POLL_GPIO;
 }
 
-STATUS pin_hndlr_read_gpio_event(Target_Control_Handle* state, 
+STATUS pin_hndlr_read_gpio_event(Target_Control_Handle* state,
                                  struct pollfd poll_fd,
                                  ASD_EVENT* event) {
-    //printf("state->gpios[poll_fd.fd].name :%s(%d)\n", state->gpios[poll_fd.fd].name, poll_fd.fd);
-    state->gpios[poll_fd.fd].handler(state, event);
-    return ST_OK;
+    STATUS result = ST_OK;
+    uint8_t pin_num = 0;
+
+    if (poll_fd.revents & (POLLIN | POLLPRI)) {
+        if ((read(poll_fd.fd, &pin_num, sizeof(pin_num)) == sizeof(pin_num)) &&
+            (pin_num < NUM_GPIOS) && state->gpios[pin_num].handler) {
+            result = state->gpios[pin_num].handler(state, event);
+        }
+    }
+
+    return result;
 }
 
 STATUS pin_hndlr_provide_GPIOs_list(Target_Control_Handle* state, target_fdarr_t* fds,
                       int* num_fds) {
-
     int index = 0;
     short events = 0;
-    // Only monitor 3 pins
+
     get_pin_events(state->gpios[BMC_PRDY_N], &events);
-    // Tony
     if ( state->event_cfg.report_PRDY && state->gpios[BMC_PRDY_N].fd != -1 )
     {
         (*fds)[index].fd = state->gpios[BMC_PRDY_N].fd;
@@ -556,6 +622,14 @@ STATUS pin_hndlr_provide_GPIOs_list(Target_Control_Handle* state, target_fdarr_t
     ASD_log(ASD_LogLevel_Info, stream, option,
             "XDP_PRST_IN: fd:%d, events: %d, index:%d",
             state->gpios[BMC_XDP_PRST_IN].fd, events, index);
+
+    get_pin_events(state->gpios[BMC_CPU_PWRGD], &events);
+    if (state->gpios[BMC_CPU_PWRGD].fd != -1)
+    {
+        (*fds)[index].fd = state->gpios[BMC_CPU_PWRGD].fd;
+        (*fds)[index].events = events;
+        index++;
+    }
 
     *num_fds = index;
     return ST_OK;

@@ -13,8 +13,8 @@
     "pim16q": {
         "filename": "elbert_pim16q.abin",
         "hash": "sha1sum",
-        "hash_value": "17695c20092c6c48400694343d7b142b3c6dbca0",
-        "version": "7.4"
+        "hash_value": "e09198834c6219e36dbf4ebdb1b50ee6f9a56e9f",
+        "version": "7.7"
     },
     "pim8ddm": {
         "filename": "elbert_pim8ddm.abin",
@@ -36,8 +36,8 @@
     "smb": {
         "filename": "elbert_smb.astp",
         "hash": "sha1sum",
-        "hash_value": "b98c2325ef7df5659754cac27c98c61164b261fc",
-        "version": "3.7"
+        "hash_value": "cfe8b56e636ff8f1c3bbd56f4a64893e66b2e7cf",
+        "version": "3.14"
     },
     "smb_cpld": {
         "filename": "elbert_smb_cpld.astp",

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # shellcheck disable=SC1091
 # shellcheck disable=SC2012
@@ -121,7 +121,7 @@ create_aboot_conf() {
     while [ -n "${nvs%%,*}" ]; do
         nv="${nvs%%,*}"
         name="${nv%%=*}"
-        if [ "$name" == "$nv" ]; then
+        if [ "$name" = "$nv" ]; then
             echo "Invalid name-value argument $nv" >&2
             return 1
         fi

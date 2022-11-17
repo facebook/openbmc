@@ -46,8 +46,12 @@ VERSION_OFFSET=0x10
 LOADER_BUILDDATE_OFFSET=0x1c
 VERSION_LEN=12
 
-hexbytes=($(hexdump -v -e '/1 "0x%x\n"' -s "$HEADER_OFFSET" -n "$HEADER_LEN" \
-            "$QSPI_REVISION_FILE"))
+hexbytes=()
+while IFS='' read -r line; do hexbytes+=("$line"); done <<< "$(
+   hexdump -v -e '/1 "0x%x\n"' -s "$HEADER_OFFSET" -n "$HEADER_LEN" \
+      "$QSPI_REVISION_FILE"
+)"
+
 fwver=""
 foundnull=0
 for h in "${hexbytes[@]:$VERSION_OFFSET:$VERSION_LEN}"

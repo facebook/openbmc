@@ -530,6 +530,7 @@ main(int argc, char **argv) {
   struct sigaction sa;
   uint8_t intf = 0;
   uint8_t m2_config = CONFIG_UNKNOWN;
+  uint8_t bmc_location = 0;
 
   if (argc != 3 && argc != 4) {
     print_usage_help();
@@ -596,23 +597,28 @@ main(int argc, char **argv) {
   }
 
   if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD || type_2ou == CWC_MCHP_BOARD ) { // Config C or Config D GPv3
-    switch (type_2ou) {
-      case GPV3_MCHP_BOARD:
-        ret = pal_get_m2_config(FRU_2U, &m2_config);
-        break;
-      case CWC_MCHP_BOARD:
-        if (fru_id == FRU_SLOT1) {
-          printf("Only slot1-2U-top and slot1-2U-bot are supported!\n");
-          goto exit;
-        }
-        ret = pal_get_m2_config(fru_id, &m2_config);
-        break;
-      default:
-        break;
-    }
-    if (ret < 0) {
-      printf("fru: %u M.2 config read failed\n", fru_id);
-      goto exit;
+    fby3_common_get_bmc_location(&bmc_location);
+    if (bmc_location == NIC_BMC) { //NIC BMC
+      switch (type_2ou) {
+        case GPV3_MCHP_BOARD:
+          ret = pal_get_m2_config(FRU_2U, &m2_config);
+          break;
+        case CWC_MCHP_BOARD:
+          if (fru_id == FRU_SLOT1) {
+            printf("Only slot1-2U-top and slot1-2U-bot are supported!\n");
+            goto exit;
+          }
+          ret = pal_get_m2_config(fru_id, &m2_config);
+          break;
+        default:
+          break;
+      }
+      if (ret < 0) {
+        printf("fru: %u M.2 config read failed\n", fru_id);
+        goto exit;
+      }
+    } else {
+      m2_config = CONFIG_D_GPV3;
     }
 
     device_start = DEV_ID0_2OU;

@@ -5,6 +5,7 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <openbmc/pal.h>
+#include <openbmc/misc-utils.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 
@@ -33,30 +34,31 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
     cerr << "File or fd is required." << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
-  while (retry_count < MAX_RETRY) {
-    ret = pal_get_server_power(slot_id, &status);
-    cerr << "Server power status: " << (int) status << endl;
-    if ( (ret == 0) && (status == SERVER_POWER_OFF) ){
-      break;
-    } else {
-      uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
-      if (retry_count == 0) {
-        cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
-        // Only power off/graceful-shutdown once, prevent power on after power off/graceful-shutdown.
-        pal_set_server_power(slot_id, power_cmd);
+
+  if (!force) {
+    cerr << "Powering off the server gracefully" << endl;
+    pal_set_server_power(slot_id, SERVER_GRACEFUL_SHUTDOWN);
+    if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 5*60, 1000)) {
+      cerr << "Retry powering off the server..." << endl;
+      pal_set_server_power(slot_id, SERVER_POWER_OFF);
+      if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+        cerr << "Failed to Power Off Server " << (int)slot_id << ". Stopping the update!" << endl;
+        return -1;
       }
-      retry_count++;
-      sleep(2);
+      // in power off condition, ME will be reset. We need to wait enough time for ME ready
+      sleep(5);
     }
-  }
-  if (retry_count == MAX_RETRY) {
-    cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
-    return -1;
-  }
-  if (force) {
+  } else {
+    cerr << "Powering off the server forcefully" << endl;
+    pal_set_server_power(slot_id, SERVER_POWER_OFF);
+    if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+      cerr << "Failed to Power Off Server " << (int)slot_id << ". Stopping the update!" << endl;
+      return -1;
+    }
     // in force condition, ME will be reset. We need to wait enough time for ME ready
     sleep(5);
   }
+
   cerr << "Putting ME into recovery mode..." << endl;
   me_recovery(slot_id, RECOVERY_MODE);
   cerr << "Enabling USB..." << endl;

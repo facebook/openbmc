@@ -26,7 +26,8 @@ PLAT_DISTRO_OVERRIDES=(
   meta-greatlakes:lf-master
   meta-halfdome:lf-master
   meta-qemux86:lf-master
-# kirkstone platforms (latest)
+# langdale platforms (latest)
+# kirkstone platforms (pending upgrade)
   meta-churchillmono:lf-kirkstone
   meta-fby2-nd:lf-kirkstone
   meta-fby35:lf-kirkstone

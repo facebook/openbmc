@@ -42,6 +42,7 @@
 #include <openbmc/ipc.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <zlib.h>
 #include "sensor.h"
 
 #define MAX_REQUESTS 64
@@ -59,6 +60,8 @@
 #define CONFIG_FBTP 1
 
 #define OBMC_DUMP_STAT_KEY "obmc_dump_stat"
+
+#define HTTPS_BOOT_CERT_PATH "/mnt/data/host/bios-rootcert"
 
 // PPR definition
 #define PPR_MAX_ROW_COUNT 100
@@ -3784,6 +3787,110 @@ oem_bios_extra_setup(unsigned char *request, unsigned char req_len,
   res->cc = pal_oem_bios_extra_setup(req->payload_id, req->data, req_len, res->data, res_len);
 }
 
+static void
+init_host_directory()
+{
+  char path[] = "/mnt/data/host";
+  if (access(path, F_OK) == -1) {
+    mkdir(path, 0777);
+  }
+}
+
+static void
+oem_get_https_certificate_data(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+  int ret;
+  int offset = req->data[0] + (req->data[1] << 8);
+  int count = req->data[2];
+
+  int fd = open(HTTPS_BOOT_CERT_PATH, O_RDONLY);
+  if (fd < 0) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+
+  do {
+    // seek position based on given offset
+    ret = lseek(fd, offset, SEEK_SET);
+    if (ret < 0) {
+      res->cc = CC_UNSPECIFIED_ERROR;
+      break;
+    }
+
+    // read the file content
+    ret = read(fd, data+1, count);
+    if (ret <0) {
+      res->cc = CC_UNSPECIFIED_ERROR;
+      break;
+    }
+    data[0] = ret; // Count returned
+    *res_len =  data[0] +1;
+    res->cc = CC_SUCCESS;
+  } while (0);
+
+  close(fd);
+  return;
+}
+
+static void
+oem_get_https_certificate_attr(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  enum attr_type{
+    ROOTCERT_SIZE,
+    ROOTCERT_CRC,
+  };
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+  int type = req->data[0];
+
+  int fd = open(HTTPS_BOOT_CERT_PATH, O_RDONLY);
+  if (fd < 0) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    return;
+  }
+
+  switch (type) {
+    case ROOTCERT_SIZE:
+    {
+      int size = 0;
+      struct stat st;
+      if (fstat(fd, &st) == 0) {
+        size = st.st_size;
+      }
+      data[0] = size & 0xFF; // size LSB
+      data[1] = (size >> 8) & 0xFF; //size MSB
+      *res_len = 2;
+      res->cc = CC_SUCCESS;
+      break;
+    }
+    case ROOTCERT_CRC:
+    {
+      unsigned char buf[1024];
+      uint32_t checksum = crc32(0, Z_NULL, 0);
+      int rc;
+      do {
+        rc = read(fd, buf, 1024);
+        if (rc > 0) {
+          checksum = crc32(checksum, buf, rc);
+        }
+      } while (rc > 0);
+
+      memcpy(data, &checksum, 4);
+      *res_len = 4;
+      res->cc = CC_SUCCESS;
+      break;
+    }
+    default:
+      res->cc = CC_UNSPECIFIED_ERROR;
+  }
+  return;
+}
 
 static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
@@ -3942,6 +4049,18 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_BIOS_EXTRA_SETUP:
       oem_bios_extra_setup(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_HTTPS_BOOT_CERT_DATA:
+      if(length_check(3, req_len, response, res_len)) {
+        break;
+      }
+      oem_get_https_certificate_data(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_HTTPS_BOOT_CERT_ATTR:
+      if(length_check(1, req_len, response, res_len)) {
+        break;
+      }
+      oem_get_https_certificate_attr(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;
@@ -4835,6 +4954,7 @@ main (int argc, char **argv)
 
   sdr_init();
   sel_init();
+  init_host_directory();
 
   pthread_mutex_init(&m_chassis, NULL);
   pthread_mutex_init(&m_sensor, NULL);

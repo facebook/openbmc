@@ -24,7 +24,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
 
-LDFLAGS += "-lpal -lkv -lsdr -lfruid -lipc "
+LDFLAGS += "-lpal -lkv -lsdr -lfruid -lipc -lz "
 CFLAGS += "-Wall -Werror "
 IPMI_FEATURE_FLAGS ?= "-DSENSOR_DISCRETE_US_STATUS -DSENSOR_DISCRETE_SEL_STATUS -DSENSOR_DISCRETE_WDT -DSENSOR_DISCRETE_PWR_STATUS -DSENSOR_DISCRETE_DIMM_HOT -DSENSOR_DISCRETE_PMBUS_STATUS"
 CFLAGS += "${IPMI_FEATURE_FLAGS}"
@@ -90,8 +90,8 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 FILES:${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
 
 LDFLAGS += " -lobmc-i2c "
-DEPENDS += " libpal libsdr libkv libfruid libipc libobmc-i2c libipmi libipmb libfruid update-rc.d-native"
-RDEPENDS:${PN} += " libpal libsdr libfruid libipc libkv libipmi libipmb libfruid libobmc-i2c "
+DEPENDS += " libpal libsdr libkv libfruid libipc libobmc-i2c libipmi libipmb libfruid update-rc.d-native zlib"
+RDEPENDS:${PN} += " libpal libsdr libfruid libipc libkv libipmi libipmb libfruid libobmc-i2c zlib"
 
 binfiles = "ipmid"
 

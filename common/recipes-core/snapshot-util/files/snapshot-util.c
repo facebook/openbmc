@@ -393,7 +393,6 @@ util_store_snapshot(uint8_t slot_id, uint8_t info_type, char *cmdline_opt) {
     ret = bic_master_write_read(slot_id, EEPROM_BUS, EEPROM_ADDR, wbuf, 2+len, rbuf, 0);
     if (ret != 0) {
       printf("write failed 0x%x, len = %d\n", offset, len);
-      fclose(fp);
       return ret;
     }
 

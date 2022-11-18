@@ -10,8 +10,7 @@ import traceback
 from binascii import hexlify
 from contextlib import ExitStack
 
-from pyrmd import RackmonInterface as rmd
-from pyrmd import ModbusTimeout
+from pyrmd import ModbusTimeout, RackmonInterface as rmd
 
 
 transcript_file = None
@@ -35,6 +34,13 @@ def bh(bs):
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--vendor",
+    type=str,
+    default="panasonic",
+    choices=["panasonic", "delta"],
+    help="Pick vendor for device",
+)
 parser.add_argument("--addr", type=auto_int, required=True, help="Modbus Address")
 parser.add_argument("--block-size", type=auto_int, default=96, help="Block Size")
 parser.add_argument(
@@ -51,6 +57,11 @@ parser.add_argument(
 parser.add_argument("file", help="firmware file")
 
 status = {"pid": os.getpid(), "state": "started"}
+
+vendor_params = {
+    "panasonic": {"block_size": 96, "boot_mode": 0xAA55, "block_wait": False},
+    "delta": {"block_size": 64, "boot_mode": 0xA5A5, "block_wait": True},
+}
 
 statuspath = None
 
@@ -89,15 +100,18 @@ def unlock_firmware(addr):
     rmd.write(addr, 0x300, 0x55AA)
 
 
-def enter_boot_mode(addr):
+def enter_boot_mode(addr, boot_mode):
     rmd.write(addr, 0x301, 0xAA55)
+    time.sleep(5.0)
 
 
 def verify_firmware_status(addr, expected_status):
     # ensure 0x302 register contains expected status
     a = rmd.read(addr, 0x302)[0]
     if a != expected_status:
-        raise ValueError("Bad firmware state: ", int(a))
+        raise ValueError(
+            "Bad firmware state: ", int(a), " expected: ", int(expected_status)
+        )
 
 
 def write_block(addr, data, block_size):
@@ -119,7 +133,20 @@ def write_block(addr, data, block_size):
             time.sleep(1.0)
 
 
-def transfer_image(addr, image, block_size_words):
+def wait_write_block(addr):
+    maxRetry = 500
+    for _ in range(0, maxRetry):
+        try:
+            verify_firmware_status(addr, FIRMWARE_PACKET_CORRECT)
+            break
+        except ValueError:
+            time.sleep(0.01)
+            continue
+    else:
+        verify_firmware_status(addr, FIRMWARE_PACKET_CORRECT)
+
+
+def transfer_image(addr, image, block_size_words, block_wait):
     num_words = len(image)
     sent_blocks = 0
     total_blocks = num_words // block_size_words
@@ -127,6 +154,8 @@ def transfer_image(addr, image, block_size_words):
         total_blocks += 1
     for i in range(0, num_words, block_size_words):
         write_block(addr, image[i : i + block_size_words], block_size_words)
+        if block_wait:
+            wait_write_block(addr)
         if statuspath is None:
             print(
                 "\r[%.2f%%] Sending block %d of %d..."
@@ -141,14 +170,21 @@ def transfer_image(addr, image, block_size_words):
 
 
 def verify_firmware(addr):
-    rmd.write(addr, 0x303, 0x55AA)
+    time.sleep(10.0)
+    rmd.write(addr, 0x303, 0x55AA, 10000)
 
 
 def exit_boot_mode(addr):
-    rmd.write(addr, 0x304, 0x55AA)
+    time.sleep(10.0)
+    try:
+        rmd.write(addr, 0x304, 0x55AA, 10000)
+    except ModbusTimeout:
+        print("Exit boot mode timed out... Checking if we are in correct status")
 
 
-def update_device(addr, filename, block_size=96):
+def update_device(addr, filename, vendor):
+    global vendor_params
+    vendor_param = vendor_params[vendor]
     status_state("pausing_monitoring")
     rmd.pause()
     status_state("parsing_fw_file")
@@ -156,15 +192,19 @@ def update_device(addr, filename, block_size=96):
     status_state("unlock firmware")
     unlock_firmware(addr)
     status_state("enter boot mode")
-    enter_boot_mode(addr)
+    enter_boot_mode(addr, vendor_param["boot_mode"])
     # Allow some time for the device to erase and prepare boot mode
     time.sleep(10)
     verify_firmware_status(addr, ENTERED_BOOT_MODE)
     status_state("writing data")
-    transfer_image(addr, binimg, block_size // 2)
+    transfer_image(
+        addr, binimg, vendor_param["block_size"] // 2, vendor_param["block_wait"]
+    )
 
     status_state("request verify firmware")
     verify_firmware(addr)
+    print("Waiting for verification to complete")
+    time.sleep(10.0)
     status_state("check firmware status")
     try:
         # XXX some older BBU FW versions do not support verify.
@@ -193,7 +233,7 @@ def main():
             transcript_file = stack.enter_context(open("modbus-transcript.log", "w"))
         print("statusfile %s" % statuspath)
         try:
-            update_device(args.addr, args.file, args.block_size)
+            update_device(args.addr, args.file, args.vendor)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             traceback.print_exc()

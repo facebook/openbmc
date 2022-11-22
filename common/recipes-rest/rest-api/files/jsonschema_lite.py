@@ -103,16 +103,33 @@ def _object_validate(data, schema, entry):
         validate(data[k], v, entry + "." + k)
 
 
-def validate(data, schema, entry="data"):
-    if schema["type"] == "object":
+def _validate_schema(data, schema, schema_type, entry):
+    if schema_type == "object":
         _object_validate(data, schema, entry)
-    elif schema["type"] == "array":
+    elif schema_type == "array":
         _array_validate(data, schema, entry)
-    elif schema["type"] == "integer":
+    elif schema_type == "integer":
         _integer_validate(data, schema, entry)
-    elif schema["type"] == "string":
+    elif schema_type == "string":
         _string_validate(data, schema, entry)
-    elif schema["type"] == "boolean":
+    elif schema_type == "boolean":
         _bool_validate(data, schema, entry)
     else:
-        raise ValidationError(entry, "Unknown schema type: " + schema["type"])
+        raise ValidationError(entry, "Unknown schema type: " + schema_type)
+
+
+def validate(data, schema, entry="data"):
+    if isinstance(schema["type"], str):
+        _validate_schema(data, schema, schema["type"], entry)
+    elif isinstance(schema["type"], list):
+        err_str = ""
+        for t in schema["type"]:
+            try:
+                _validate_schema(data, schema, t, entry)
+                break
+            except ValidationError as e:
+                err_str += str(e) + "\n"
+        else:
+            raise ValidationError(entry, err_str)
+    else:
+        raise ValueError("Invalid schema")

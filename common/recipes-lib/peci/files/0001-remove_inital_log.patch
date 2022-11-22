@@ -1,0 +1,22 @@
+diff --git a/peci.c b/peci.c
+index 53596f6..06921aa 100644
+--- a/peci.c
++++ b/peci.c
+@@ -47,14 +47,14 @@ void peci_SetDevName(char* peci_dev)
+         peci_name_new[DEV_NAME_SIZE - 1] = '\0';
+         peci_device_list[0] = peci_name_new;
+         peci_device_list[1] = NULL;
+-        syslog(LOG_INFO, "PECI set dev name to %s\n", peci_device_list[0]);
++//        syslog(LOG_INFO, "PECI set dev name to %s\n", peci_device_list[0]);
+     }
+     else
+     {
+         peci_device_list[0] = "/dev/peci-default";
+         peci_device_list[1] = "/dev/peci-0";
+-        syslog(LOG_INFO, "PECI set dev names to %s, %s\n", peci_device_list[0],
+-               peci_device_list[1]);
++//        syslog(LOG_INFO, "PECI set dev names to %s, %s\n", peci_device_list[0],
++//               peci_device_list[1]);
+     }
+ }
+ 

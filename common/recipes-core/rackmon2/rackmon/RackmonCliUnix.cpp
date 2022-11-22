@@ -46,27 +46,36 @@ static std::string to_string(const json& v) {
 static void print_value_data(const json& j) {
   for (const auto& device : j) {
     std::cout << "Device Address: 0x" << std::hex << std::setw(2)
-              << std::setfill('0') << int(device["deviceAddress"]) << '\n';
-    std::cout << "Device Type: " << std::string(device["deviceType"]) << '\n';
-    std::cout << "CRC Errors: " << std::dec << device["crcErrors"] << '\n';
-    std::cout << "timeouts: " << std::dec << device["timeouts"] << '\n';
-    std::cout << "Misc Errors: " << std::dec << device["miscErrors"] << '\n';
-    std::cout << "Baudrate: " << std::dec << device["baudrate"] << '\n';
-    std::cout << "Mode: " << std::string(device["mode"]) << '\n';
-    for (const auto& reg : device["registers"]) {
+              << std::setfill('0') << int(device["devInfo"]["devAddress"])
+              << '\n';
+    std::cout << "Device Type: " << std::string(device["devInfo"]["deviceType"])
+              << '\n';
+    std::cout << "CRC Errors: " << std::dec << device["devInfo"]["crcErrors"]
+              << '\n';
+    std::cout << "timeouts: " << std::dec << device["devInfo"]["timeouts"]
+              << '\n';
+    std::cout << "Misc Errors: " << std::dec << device["devInfo"]["miscErrors"]
+              << '\n';
+    std::cout << "Baudrate: " << std::dec << device["devInfo"]["baudrate"]
+              << '\n';
+    std::cout << "Mode: " << std::string(device["devInfo"]["mode"]) << '\n';
+    for (const auto& reg : device["regList"]) {
       std::cout << "  " << std::string(reg["name"]) << "<0x" << std::hex
                 << std::setw(4) << std::setfill('0') << int(reg["regAddress"])
                 << "> :";
-      for (const auto& value : reg["readings"]) {
-        if (value["type"] == "flags") {
-          for (const auto& flag : value["value"]) {
-            std::cout << "\n    [" << int(flag[0]) << "] "
-                      << std::string(flag[1]) << " <" << std::dec
-                      << int(flag[2]) << ">";
+      for (const auto& value : reg["history"]) {
+        if (value["type"] == "FLAGS") {
+          for (const auto& flag : value["value"]["flagsValue"]) {
+            std::cout << "\n    [" << int(flag["value"]) << "] "
+                      << std::string(flag["name"]) << " <" << std::dec
+                      << int(flag["bitOffset"]) << ">";
           }
           std::cout << '\n';
         } else {
-          std::cout << ' ' << value["value"];
+          for (auto x : value["value"].items()) {
+            std::cout << ' ' << x.value();
+            break;
+          }
         }
       }
       std::cout << '\n';
@@ -345,8 +354,8 @@ static void do_rackmonstatus() {
   json resp_j = json::parse(resp);
   for (const auto& ent : resp_j["data"]) {
     std::cout << "PSU addr " << std::hex << std::setw(2) << std::setfill('0')
-              << int(ent["addr"]);
-    std::cout << " - crc errors: " << std::dec << ent["crc_fails"];
+              << int(ent["devAddress"]);
+    std::cout << " - crc errors: " << std::dec << ent["crcErrors"];
     std::cout << ", timeouts: " << std::dec << ent["timeouts"];
     std::cout << ", baud rate: " << std::dec << ent["baudrate"] << std::endl;
   }
@@ -404,11 +413,7 @@ int main(int argc, const char** argv) {
           regAddress,
           "The Register from which we want to read")
       ->required();
-  read_cmd
-      ->add_option(
-          "--count",
-          regCount,
-          "The number of registers to read")
+  read_cmd->add_option("--count", regCount, "The number of registers to read")
       ->capture_default_str();
   read_cmd->callback([&]() {
     do_read_cmd(devAddress, regAddress, regCount, raw_cmd_timeout, json_fmt);
@@ -491,8 +496,8 @@ int main(int argc, const char** argv) {
         regNameFilter,
         latestOnly);
   });
-  data->add_option("-f,--format", format, "Format the data")->
-      check(CLI::IsMember({"raw", "value"}));
+  data->add_option("-f,--format", format, "Format the data")
+      ->check(CLI::IsMember({"raw", "value"}));
   data->add_option(
       "--reg-addr", regFilter, "Return values of provided registers only");
   data->add_option(

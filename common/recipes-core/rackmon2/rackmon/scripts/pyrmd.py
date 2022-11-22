@@ -62,6 +62,11 @@ def transcript():
 
 class RackmonInterface:
     @classmethod
+    def _setTimeout(cls, req, timeout):
+        if timeout > 0:
+            req["timeout"] = timeout
+
+    @classmethod
     def _check(cls, resp):
         status = resp["status"]
         if status == "SUCCESS":
@@ -81,8 +86,8 @@ class RackmonInterface:
         cmd = {
             "devAddress": addr,
             "regAddress": register,
-            "timeout": timeout,
         }
+        cls._setTimeout(cmd, timeout)
         if isinstance(data, int):
             cmd["type"] = "writeSingleRegister"
         elif isinstance(data, list):
@@ -94,24 +99,27 @@ class RackmonInterface:
 
     @classmethod
     def _read(cls, addr, register, length, timeout):
-        return {
+        cmd = {
             "type": "readHoldingRegisters",
             "devAddress": addr,
             "regAddress": register,
             "numRegisters": length,
-            "timeout": timeout,
         }
+        cls._setTimeout(cmd, timeout)
+        return cmd
+
+    @classmethod
+    def _read_file(cls, addr, records, timeout):
+        cmd = {"type": "readFileRecord", "devAddress": addr, "records": records}
+        cls._setTimeout(cmd, timeout)
+        return cmd
 
     @classmethod
     def _raw(cls, raw_cmd, expected, timeout):
         # Convert to integer array.
         raw_cmd_ints = list(raw_cmd)
-        cmd = {
-            "type": "raw",
-            "cmd": raw_cmd_ints,
-            "response_length": expected,
-            "timeout": timeout,
-        }
+        cmd = {"type": "raw", "cmd": raw_cmd_ints, "response_length": expected}
+        cls._setTimeout(cmd, timeout)
         return cmd
 
     @classmethod
@@ -218,6 +226,11 @@ class RackmonInterface:
     def write(cls, addr, reg, data, timeout=0):
         cls._do(cls._write, addr, reg, data, timeout)
 
+    @classmethod
+    def read_file(cls, addr, records, timeout=0):
+        result = cls._do(cls._read_file, addr, records, timeout)
+        return result["data"]
+
 
 class RackmonAsyncInterface(RackmonInterface):
     @classmethod
@@ -292,3 +305,8 @@ class RackmonAsyncInterface(RackmonInterface):
     @classmethod
     async def write(cls, addr, reg, data, timeout=0):
         await cls._do(cls._write, addr, reg, data, timeout)
+
+    @classmethod
+    async def read_file(cls, addr, records, timeout=0):
+        result = await cls._do(cls._read_file, addr, records, timeout)
+        return result["data"]

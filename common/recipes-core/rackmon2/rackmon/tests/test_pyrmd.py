@@ -83,7 +83,6 @@ class PyrmdSyncTest(unittest.TestCase):
         exp_req = {
             "type": "raw",
             "response_length": 7,
-            "timeout": 0,
             "cmd": [0xA4, 0x03, 0x0, 0x0, 0x0, 0x1],
         }
         self.do_cmd(
@@ -172,7 +171,6 @@ class PyrmdSyncTest(unittest.TestCase):
             "devAddress": 0xA4,
             "regAddress": 0x0,
             "numRegisters": 0x1,
-            "timeout": 0,
         }
         exp_ret = [0x1234]
         self.do_cmd(
@@ -194,7 +192,6 @@ class PyrmdSyncTest(unittest.TestCase):
             "devAddress": 0xA4,
             "regAddress": 0x0,
             "regValue": 0x1234,
-            "timeout": 0,
         }
         self.do_cmd(
             sync_exec,
@@ -216,7 +213,6 @@ class PyrmdSyncTest(unittest.TestCase):
             "devAddress": 0xA4,
             "regAddress": 0x0,
             "regValue": [0x1234, 0x5678],
-            "timeout": 0,
         }
         self.do_cmd(
             sync_exec,

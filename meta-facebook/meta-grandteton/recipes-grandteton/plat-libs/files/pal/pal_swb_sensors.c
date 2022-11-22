@@ -85,6 +85,7 @@ int read_swb_cpld_health(uint8_t fru, uint8_t sensor_num, float *value) {
 #ifdef DEBUG
   syslog(LOG_INFO, "%s rbuf[0]=%x\n", __func__, rbuf[0]);
 #endif
+  close(fd);
   return 0;
 }
 

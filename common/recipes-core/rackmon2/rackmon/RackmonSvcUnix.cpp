@@ -143,31 +143,30 @@ void RackmonUNIXSocketService::handleJSONCommand(
   // exceptions we have been ignoring all the way from
   // Device to Rackmon is going to come to roost. Convert
   // each exception to an error code.
-  // TODO: Work with rest-api to correctly define these.
   try {
     executeJSONCommand(req, resp);
   } catch (CRCError& e) {
-    resp["status"] = "CRC_ERROR";
+    resp["status"] = "ERR_BAD_CRC";
     print_msg(e);
   } catch (TimeoutException& e) {
-    resp["status"] = "TIMEOUT_ERROR";
+    resp["status"] = "ERR_TIMEOUT";
     print_msg(e);
   } catch (std::underflow_error& e) {
-    resp["status"] = "UNDERFLOW_ERROR";
+    resp["status"] = "ERR_UNDERFLOW";
     print_msg(e);
   } catch (std::overflow_error& e) {
-    resp["status"] = "OVERFLOW_ERROR";
+    resp["status"] = "ERR_OVERFLOW";
     print_msg(e);
   } catch (std::logic_error& e) {
-    resp["status"] = "USER_ERROR";
+    resp["status"] = "ERR_INVALID_ARGS";
     print_msg(e);
   } catch (ModbusError& e) {
     resp["status"] = e.toString(e.errorCode);
   } catch (std::runtime_error& e) {
-    resp["status"] = "RUNTIME_ERROR";
+    resp["status"] = "ERR_IO_FAILURE";
     print_msg(e);
   } catch (std::exception& e) {
-    resp["status"] = "UNKNOWN_ERROR";
+    resp["status"] = "ERR_IO_FAILURE";
     print_msg(e);
   }
 

@@ -124,7 +124,7 @@ class PyrmdSyncTest(unittest.TestCase):
         )
 
     def test_modbuscmd_sync_except_timeout(self, sync_exec, async_exec):
-        exp_resp = {"status": "TIMEOUT_ERROR"}
+        exp_resp = {"status": "ERR_TIMEOUT"}
         self.do_cmd_raises(
             sync_exec,
             async_exec,
@@ -138,7 +138,7 @@ class PyrmdSyncTest(unittest.TestCase):
         )
 
     def test_modbuscmd_sync_except_crc(self, sync_exec, async_exec):
-        exp_resp = {"status": "CRC_ERROR"}
+        exp_resp = {"status": "ERR_BAD_CRC"}
         self.do_cmd_raises(
             sync_exec,
             async_exec,

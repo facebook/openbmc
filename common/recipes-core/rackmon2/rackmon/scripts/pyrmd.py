@@ -58,10 +58,10 @@ class RackmonInterface:
         status = resp["status"]
         if status == "SUCCESS":
             return
-        if status == "CRC_ERROR":
+        if status == "ERR_BAD_CRC":
             log("<- crc check failure")
             raise ModbusCRCError()
-        elif status == "TIMEOUT_ERROR":
+        elif status == "ERR_TIMEOUT":
             log("<- timeout")
             raise ModbusTimeout()
         else:

@@ -69,9 +69,20 @@ static gpio_value_t g_server_power_status = GPIO_VALUE_INVALID;
 static bool g_cpu_pwrgd_trig = false;
 
 enum {
-  STBY,
-  PS_ON,
-  PS_ON_3S,
+  IOEX_GPIO_STANDBY,
+  IOEX_GPIO_POWER_ON,
+  IOEX_GPIO_POWER_ON_3S,
+};
+
+/* For GPIOs on IO expander don't have edge attr. */
+struct gpiopoll_ioex_config {
+	char shadow[32];
+	char desc[32];
+	char pwr_st;
+	gpio_edge_t edge;
+	gpio_value_t last;
+	void (*init)(char* desc, gpio_value_t value);
+	void (*handler)(char* desc, gpio_value_t value);
 };
 
 
@@ -514,6 +525,106 @@ static void
   return NULL;
 }
 
+void
+ioex_table_polling_once(struct gpiopoll_ioex_config *ioex_gpios,
+                        int *init_flags, int size, int power_status)
+{
+  int i, assert;
+  gpio_value_t curr;
+
+  for (i = 0; i < size; ++i)
+  {
+    if(ioex_gpios[i].pwr_st != IOEX_GPIO_STANDBY) {
+      if (power_status < 0 || power_status == SERVER_POWER_OFF) {
+        continue;
+      }
+    }
+
+    curr = gpio_get_value_by_shadow(ioex_gpios[i].shadow);
+    if(curr == ioex_gpios[i].last) {
+      continue;
+    }
+
+    if (init_flags[i] == false && ioex_gpios[i].init != NULL) {
+        ioex_gpios[i].init(ioex_gpios[i].desc, curr);
+        ioex_gpios[i].last = curr;
+        init_flags[i] = true;
+        continue;
+      }
+
+    switch (ioex_gpios[i].edge) {
+      case GPIO_EDGE_FALLING:
+        assert = (curr == GPIO_VALUE_LOW);
+        break;
+      case GPIO_EDGE_RISING:
+        assert = (curr == GPIO_VALUE_HIGH);
+        break;
+      case GPIO_EDGE_BOTH:
+        assert = true;
+        break;
+      default:
+        assert = false;
+        break;
+    }
+
+    if (assert && (ioex_gpios[i].handler != NULL)) {
+      ioex_gpios[i].handler(ioex_gpios[i].desc, curr);
+    }
+    ioex_gpios[i].last = curr;
+  }
+}
+
+static void
+fan_present_init (char* desc, gpio_value_t value) {
+  if (value == GPIO_VALUE_HIGH)
+    syslog(LOG_CRIT, "FRU: %d , %s not present.", FRU_MB, desc);
+}
+
+static void
+fan_present_handle (char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "FRU: %d , %s %s.", FRU_MB, desc,
+          (value == GPIO_VALUE_HIGH) ? "not present": "present");
+}
+
+struct gpiopoll_ioex_config iox_gpios[] = {
+  {"FAN0_PRESENT",  "FAN0",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN1_PRESENT",  "FAN1",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN2_PRESENT",  "FAN2",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN3_PRESENT",  "FAN3",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN4_PRESENT",  "FAN4",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN5_PRESENT",  "FAN5",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN6_PRESENT",  "FAN6",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN7_PRESENT",  "FAN7",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN8_PRESENT",  "FAN8",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN9_PRESENT",  "FAN9",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN10_PRESENT", "FAN10", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN11_PRESENT", "FAN11", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN12_PRESENT", "FAN12", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN13_PRESENT", "FAN13", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN14_PRESENT", "FAN14", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+  {"FAN15_PRESENT", "FAN15", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, fan_present_init, fan_present_handle},
+};
+
+static void
+*iox_gpio_handle()
+{
+  int i, status;
+  int size = sizeof(iox_gpios)/sizeof(iox_gpios[0]);
+  int init_flag[size];
+
+  for (i = 0; i < size; ++i)
+    init_flag[i] = false;
+
+  while (1) {
+    if (pal_get_server_power(FRU_MB, (uint8_t*)&status) < 0)
+      status = -1;
+    ioex_table_polling_once(iox_gpios, init_flag, size, status);
+    sleep(1);
+  }
+
+  return NULL;
+}
+
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
@@ -556,6 +667,7 @@ int main(int argc, char **argv)
   gpiopoll_desc_t *polldesc;
   pthread_t tid_ierr_mcerr_event;
   pthread_t tid_gpio_timer;
+  pthread_t tid_iox_gpio_handle;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -577,6 +689,12 @@ int main(int argc, char **argv)
     //Create thread for platform reset event filter check
     if (pthread_create(&tid_gpio_timer, NULL, gpio_timer, NULL) < 0) {
       syslog(LOG_WARNING, "pthread_create for platform_reset_filter_handler\n");
+      exit(1);
+    }
+
+    //Create thread for platform reset event filter check
+    if (pthread_create(&tid_iox_gpio_handle, NULL, iox_gpio_handle, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for iox_gpio_handler\n");
       exit(1);
     }
 

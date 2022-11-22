@@ -235,10 +235,10 @@ PAL_I2C_BUS_INFO nm_info_list[] = {
 
 
 PAL_DPM_DEV_INFO dpm_info_list[] = {
-  {DPM_0, I2C_BUS_34, 0x84, 0.004, 0, 0 },
-  {DPM_1, I2C_BUS_34, 0x88, 0.004, 0, 0 },
-  {DPM_2, I2C_BUS_34, 0x82, 0.004, 0, 0 },
-  {DPM_3, I2C_BUS_34, 0x86, 0.004, 0, 0 },
+  {DPM_0, I2C_BUS_34, 0x82, 0.004, 0, 0 },
+  {DPM_1, I2C_BUS_34, 0x84, 0.004, 0, 0 },
+  {DPM_2, I2C_BUS_34, 0x86, 0.004, 0, 0 },
+  {DPM_3, I2C_BUS_34, 0x88, 0.004, 0, 0 },
   {DPM_4, I2C_BUS_34, 0x8A, 0.004, 0, 0 },
 };
 
@@ -291,7 +291,7 @@ char **adc_chips = adc128_devs;
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}
 PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
-  {"E1S_P3V3_VOLT", DPM_0, read_dpm_vout, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x01
+  {"E1S_P3V3_VOLT", DPM_1, read_dpm_vout, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x01
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x02
   {"E1S_P12V_CURR", ADC_CH7, read_iic_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x03
   {"E1S_P12V_PWR", E1S_0, read_e1s_power, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x04

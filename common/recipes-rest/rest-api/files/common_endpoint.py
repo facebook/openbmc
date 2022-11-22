@@ -213,3 +213,7 @@ class commonApp_Handler:
     @staticmethod
     async def rest_modbus_write_post(request: web.Request) -> web.Response:
         return await rest_modbus_cmd.post_modbus_write(request)
+
+    @staticmethod
+    async def rest_modbus_read_file_post(request: web.Request) -> web.Response:
+        return await rest_modbus_cmd.post_modbus_read_file(request)

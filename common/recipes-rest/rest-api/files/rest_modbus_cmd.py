@@ -184,6 +184,48 @@ async def post_modbus_write(request: aiohttp.web.Request) -> aiohttp.web.Respons
     return aiohttp.web.json_response({"status": responses})
 
 
+async def post_modbus_read_file(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    if pyrmd is None:
+        return aiohttp.web.json_response(
+            {
+                "status": "Bad Request",
+                "details": "Unsupported on current configuration",
+            },
+            status=400,
+        )
+    try:
+        payload = await request.json()
+        jsonschema.validate(payload, READ_FILE_SCHEMA)
+
+    except ValueError as e:
+        return aiohttp.web.json_response(
+            {
+                "status": "Bad Request",
+                "details": "Invalid payload: " + str(e),
+            },
+            status=400,
+        )
+
+    response = {}
+    cmd = payload["req"]
+    # Get soliton beam lock so we don't race with it or modbuscmd
+    async with SolitonBeamFlock():
+        try:
+            data = await pyrmd.RackmonAsyncInterface.read_file(
+                cmd["devAddress"],
+                cmd["records"],
+                cmd.get("timeout", 0),
+            )
+            response["status"] = "SUCCESS"
+            response["data"] = data
+        except pyrmd.ModbusException as e:
+            response["status"] = str(e)
+        except Exception:
+            response["status"] = "ERR_IO_FAILURE"
+
+    return aiohttp.web.json_response(response)
+
+
 class SolitonBeamFlock:
     async def __aenter__(self):
         self.lock_file = self._open_lock_file()
@@ -275,4 +317,48 @@ WRITE_SCHEMA = {
     "additionalProperties": False,
     "required": ["req"],
     "properties": {"req": {"type": "array", "minItems": 1, "items": WRITE_REQ_SCHEMA}},
+}
+
+
+READ_FILE_SCHEMA = {
+    "title": "Read File record(s)",
+    "description": "JSON Schema for the request to /sys/modbus/read_file_record",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["req"],
+    "properties": {
+        "req": {
+            "type": "object",
+            "required": ["devAddress", "records"],
+            "properties": {
+                "devAddress": {"type": "integer", "minimum": 0, "maximum": 255},
+                "timeout": {"type": "integer", "minimum": 1},
+                "records": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "required": ["fileNum", "recordNum", "dataSize"],
+                        "properties": {
+                            "fileNum": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 65535,
+                            },
+                            "recordNum": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 65535,
+                            },
+                            "dataSize": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 255,
+                            },
+                        },
+                    },
+                },
+            },
+        }
+    },
 }

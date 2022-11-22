@@ -41,6 +41,7 @@ common_routes = [
     "/api/sys/modbus/devices",
     "/api/sys/modbus/read",
     "/api/sys/modbus/write",
+    "/api/sys/modbus/read_file",
 ]
 
 

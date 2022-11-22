@@ -179,7 +179,7 @@ class commonApp_Handler:
         return await rest_fscd_sensor_data.post_fscd_sensor_data(request)
 
     @staticmethod
-    def rest_modbus_get(request: web.Request) -> web.Response:
+    async def rest_modbus_get(request: web.Request) -> web.Response:
         return web.json_response(
             {
                 "Information": {"Description": "Modbus operations"},

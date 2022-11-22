@@ -17,19 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from board_endpoint import boardApp_Handler
-from common_endpoint import commonApp_Handler
-from boardroutes import board_routes
-from rest_utils import common_routes
-
 from aiohttp.web import Application
+from board_endpoint import boardApp_Handler
+from boardroutes import board_routes
+from common_setup_routes import setup_rackmon_routes
+from rest_utils import common_routes
 
 
 def setup_board_routes(app: Application, write_enabled: bool):
     # bhandler = boardApp_Handler()
     # app.router.add_get(board_routes[0], bhandler.rest_usb2i2c_reset_hdl)
     # TOR endpoints
-    chandler = commonApp_Handler()
-    app.router.add_get(common_routes[11], chandler.rest_modbus_get)
-    app.router.add_post(common_routes[12], chandler.rest_modbus_cmd_post)
-    app.router.add_get(common_routes[13], chandler.rest_modbus_registers_get)
+    setup_rackmon_routes(app)

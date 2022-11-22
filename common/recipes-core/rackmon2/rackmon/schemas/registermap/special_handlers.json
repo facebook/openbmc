@@ -31,7 +31,7 @@
         "properties": {
           "interpret": {
             "type": "string",
-            "enum": ["string", "integer"]
+            "enum": ["STRING", "INTEGER"]
           },
           "shell": {
             "type": "string"

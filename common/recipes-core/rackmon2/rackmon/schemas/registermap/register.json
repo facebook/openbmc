@@ -27,7 +27,7 @@
       },
       "format": {
         "type": "string",
-        "enum": ["hex", "string", "integer", "float", "flags"]
+        "enum": ["RAW", "STRING", "INTEGER", "FLOAT", "FLAGS"]
       },
       "endian": {
         "type": "string",

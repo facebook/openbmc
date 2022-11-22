@@ -99,6 +99,48 @@ async def post_modbus_cmd(request: aiohttp.web.Request) -> aiohttp.web.Response:
     )
 
 
+async def post_modbus_read(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    if pyrmd is None:
+        return aiohttp.web.json_response(
+            {
+                "status": "Bad Request",
+                "details": "Unsupported on current configuration",
+            },
+            status=400,
+        )
+    try:
+        payload = await request.json()
+        jsonschema.validate(payload, READ_SCHEMA)
+
+    except ValueError as e:
+        return aiohttp.web.json_response(
+            {
+                "status": "Bad Request",
+                "details": "Invalid payload: " + str(e),
+            },
+            status=400,
+        )
+
+    responses = []
+    # Get soliton beam lock so we don't race with it or modbuscmd
+    async with SolitonBeamFlock():
+        for cmd in payload["req"]:
+            try:
+                response = await pyrmd.RackmonAsyncInterface.read(
+                    cmd["devAddress"],
+                    cmd["regAddress"],
+                    cmd["numRegisters"],
+                    cmd.get("timeout", 0),
+                )
+                responses.append({"status": "SUCCESS", "regValues": response})
+            except pyrmd.ModbusException as e:
+                responses.append({"status": str(e)})
+            except Exception:
+                responses.append({"status": "ERR_IO_FAILURE"})
+
+    return aiohttp.web.json_response(responses)
+
+
 class SolitonBeamFlock:
     async def __aenter__(self):
         self.lock_file = self._open_lock_file()
@@ -142,4 +184,25 @@ MODBUS_CMD_PAYLOAD_SCHEMA = {
         "expected_response_length": {"type": "integer", "minimum": 2, "maximum": 255},
         "custom_timeout": {"type": "integer", "minimum": 0},
     },
+}
+
+READ_REQ_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "reqired": ["devAddress", "regAddress", "numRegisters"],
+    "properties": {
+        "devAddress": {"type": "integer", "minimum": 0, "maximum": 255},
+        "regAddress": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "numRegisters": {"type": "integer", "minimum": 1, "maximum": 127},
+        "timeout": {"type": "integer", "minimum": 1},
+    },
+}
+
+READ_SCHEMA = {
+    "title": "Modbus Read request",
+    "description": "Schema to define the modbus read request",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["req"],
+    "properties": {"req": {"type": "array", "minItems": 1, "items": READ_REQ_SCHEMA}},
 }

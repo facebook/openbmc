@@ -47,6 +47,7 @@ def setup_rackmon_routes(app: Application):
     app.router.add_get(common_routes[13], chandler.rest_modbus_registers_get)
     app.router.add_get(common_routes[14], chandler.rest_modbus_register_values_get)
     app.router.add_get(common_routes[15], chandler.rest_modbus_devices_get)
+    app.router.add_post(common_routes[16], chandler.rest_modbus_read_post)
 
 
 def setup_common_routes(app: Application, write_enabled: bool):

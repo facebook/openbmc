@@ -61,6 +61,13 @@ async def get_modbus_registers(request: aiohttp.web.Request) -> aiohttp.web.Resp
     return aiohttp.web.json_response(response, dumps=dumps_bytestr)
 
 
+async def get_modbus_devices() -> aiohttp.web.Response:
+    if pyrmd is None:
+        raise ModuleNotFoundError()
+    response = await pyrmd.RackmonAsyncInterface.list()
+    return aiohttp.web.json_response(response, dumps=dumps_bytestr)
+
+
 REGISTER_FILTER_SCHEMA = {
     "title": "Register Filter Schema",
     "description": "Schema to define a register filter",

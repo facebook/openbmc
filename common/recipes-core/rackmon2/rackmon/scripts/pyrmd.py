@@ -17,15 +17,23 @@ class ModbusException(Exception):
 
 
 class ModbusTimeout(ModbusException):
-    ...
+    def __init__(self):
+        super().__init__("ERR_TIMEOUT")
 
 
 class ModbusCRCError(ModbusException):
-    ...
+    def __init__(self):
+        super().__init__("ERR_BAD_CRC")
 
 
 class ModbusUnknownError(ModbusException):
-    ...
+    def __init__(self):
+        super().__init__("ERR_IO_FAILURE")
+
+
+class ModbusInvalidArgs(ModbusException):
+    def __init__(self):
+        super().__init__("ERR_INVALID_ARGS")
 
 
 modbuslog = None

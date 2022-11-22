@@ -263,7 +263,7 @@ class PyrmdSyncTest(unittest.TestCase):
             "crc_fails": 0,
             "timeouts": 0,
             "misc_fails": 0,
-            "mode": "active",
+            "mode": "ACTIVE",
             "baudrate": 19200,
             "deviceType": "orv2_psu",
         }

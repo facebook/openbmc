@@ -128,12 +128,14 @@ class RackmonInterface:
     def _list(cls):
         return {"type": "listModbusDevices"}
 
-    # TODO add filter support later.
     @classmethod
-    def _data(cls, raw):
+    def _data(cls, raw, dataFilter=None):
         if raw:
             return {"type": "getMonitorDataRaw"}
-        return {"type": "getMonitorData"}
+        req = {"type": "getMonitorData"}
+        if dataFilter is not None:
+            req = {**req, **dataFilter}
+        return req
 
     @classmethod
     def _execute(cls, cmd):
@@ -195,8 +197,8 @@ class RackmonInterface:
         return result["data"]
 
     @classmethod
-    def data(cls, raw=True):
-        result = cls._do(cls._data, raw)
+    def data(cls, raw=True, dataFilter=None):
+        result = cls._do(cls._data, raw, dataFilter)
         return result["data"]
 
     @classmethod
@@ -270,8 +272,8 @@ class RackmonAsyncInterface(RackmonInterface):
         return result["data"]
 
     @classmethod
-    async def data(cls, raw=True):
-        result = await cls._do(cls._data, raw)
+    async def data(cls, raw=True, dataFilter=None):
+        result = await cls._do(cls._data, raw, dataFilter)
         return result["data"]
 
     @classmethod

@@ -1,0 +1,27 @@
+{
+  "boot_mode": {
+    "supported": true
+  },
+  "clear_cmos": {
+    "supported": true
+  },
+  "force_boot_bios_setup": {
+    "supported": true
+  },
+  "boot_order": {
+    "supported": true
+  },
+  "plat_info": {
+    "supported": false
+  },
+  "pcie_port_config": {
+    "supported": false,
+    "pcie_ports": ""
+  },
+  "postcode": {
+    "supported": true
+  },
+  "force_clear_cmos" : {
+    "supported": true
+  }
+}

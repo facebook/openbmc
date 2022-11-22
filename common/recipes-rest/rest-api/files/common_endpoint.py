@@ -197,3 +197,7 @@ class commonApp_Handler:
         return web.json_response(
             await rest_modbus.get_modbus_registers_raw(), dumps=dumps_bytestr
         )
+
+    @staticmethod
+    async def rest_modbus_register_values_get(request: web.Request) -> web.Response:
+        return await rest_modbus.get_modbus_registers(request)

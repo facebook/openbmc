@@ -36,6 +36,9 @@ do_install:append() {
     echo "" >> ${D}${sysconfdir}/dhcpcd.conf
     echo "# Disable routing solicitation" >> ${D}${sysconfdir}/dhcpcd.conf
     echo "noipv6rs" >> ${D}${sysconfdir}/dhcpcd.conf
+    echo "# Revert timeouts to pre-rfc7083 (120s instead of 3600)" >> ${D}${sysconfdir}/dhcpcd.conf
+    echo "option dhcp6.solmax-rt 120" >> ${D}${sysconfdir}/dhcpcd.conf
+    echo "option dhcp6.inf-max-rt 120" >> ${D}${sysconfdir}/dhcpcd.conf
 }
 
 do_install:append:mf-ncsi() {

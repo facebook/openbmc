@@ -72,7 +72,7 @@ const char pal_server_list[] = "mb";
 
 #define SWB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
-#define HMC_CAPABILITY  FRU_CAPABILITY_SENSOR_ALL
+#define HMC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
 #define NIC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | \
                         FRU_CAPABILITY_NETWORK_CARD
@@ -111,7 +111,7 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_ALL,   "all",     NULL,            0,  0,    ALL_CAPABILITY, FRU_PATH_NONE,   NULL },
   {FRU_MB,    "mb",      "Mother Board",  33, 0x51, MB_CAPABILITY,  FRU_PATH_EEPROM, fru_presence},
   {FRU_SWB,   "swb",     "Switch Board",  3,  0x20, SWB_CAPABILITY, FRU_PATH_PLDM,   swb_presence},
-  {FRU_HMC,   "hmc",     "HMC Board"  ,   0,    0,  HMC_CAPABILITY, FRU_PATH_NONE,   hgx_presence},
+  {FRU_HMC,   "hmc",     "HMC Board"  ,   9,  0x53,  HMC_CAPABILITY, FRU_PATH_EEPROM,   hgx_presence},
   {FRU_NIC0,  "nic0",    "Mezz Card 0",   13, 0x50, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
   {FRU_NIC1,  "nic1",    "Mezz Card 1",   4,  0x52, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
   {FRU_DBG,   "ocpdbg",  "Debug Board",   14, 0,    0,              FRU_PATH_NONE,   NULL},

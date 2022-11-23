@@ -25,6 +25,14 @@ usb_pst=""
 
 gp_pst=$(gpio_get GPU_CABLE_PRSNT_D_N)
 
+hmc_fru_path="/tmp/fruid_hmc.bin"
+
+setup_hmc_eeprom () {
+  i2c_device_add 9 0x53 24c64
+  sleep 1
+  dd if=/sys/class/i2c-dev/i2c-9/device/9-0053/eeprom of=$hmc_fru_path bs=512 count=1
+}
+
 setup_usb_dev() {
   if [ $gp_pst -eq 0 ]; then
     echo "Init usbnet ethernet for HMC"
@@ -32,10 +40,14 @@ setup_usb_dev() {
     while [ $retry -lt "$MAX_RETRY" ]
     do 
       ifconfig usb0 192.168.31.2 netmask 255.255.0.0
- 
       usb_pst=$(ifconfig -a | grep usb0)
       if [ "$usb_pst" != "" ]; then
         echo "Setup usbnet ethernet device successfully"
+
+        if [ ! -s "$hmc_fru_path" ]; then
+          setup_hmc_eeprom
+        fi
+
         exit 0
       else
         retry=$(($retry+1))

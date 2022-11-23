@@ -27,7 +27,16 @@
 #include <syslog.h>
 #include <libmctp-alloc.h>
 #include <libmctp-log.h>
+#include <errno.h>      // for errno
+#include <sys/socket.h> // for socket()
+#include <sys/un.h>     // for sockaddr_un
+#include <sys/uio.h>    // for iovec
 #include "obmc-mctp.h"
+
+const uint8_t MCTP_MSG_TYPE_SPDM = MCTP_TYPE_SPDM;
+static int connect_to_socket(const char * path, int length);
+static int spdm_send_w_mctpd(int mctp_fd, uint8_t eid, uint8_t *req_msg, size_t req_msg_len);
+static int spdm_recv_w_mctpd(int mctp_fd, uint8_t eid, uint8_t **resp_msg, size_t *resp_msg_len);
 
 //#define DEBUG
 #define SYSFS_SLAVE_QUEUE "/sys/bus/i2c/devices/%d-10%02x/slave-mqueue"
@@ -446,40 +455,18 @@ bail:
   return ret;
 }
 
-int send_spdm_cmd(uint8_t bus, uint16_t src_addr, uint16_t dst_addr, uint8_t src_eid, uint8_t dst_eid,
-                  uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen)
+int send_spdm_cmd(uint8_t bus, uint8_t dst_eid,
+                  uint8_t *tbuf, int tlen,
+                  uint8_t *rbuf, int *rlen)
 {
-  int ret = -1;
-  uint8_t tag = 0;
-  struct obmc_mctp_binding *mctp_binding;
-  struct mctp_binding_smbus *smbus;
+  uint8_t *buf = NULL;
+  int ret = mctp_send_recv_w_mctpd(bus, dst_eid, tbuf+1, tlen-1, &buf, (size_t *)rlen);
 
+  if (ret == 0)
+    memcpy(rbuf, buf, *rlen);
+  if (buf != NULL)
+    free(buf);
 
-  mctp_binding = obmc_mctp_smbus_init(bus, src_addr, dst_addr, src_eid, SPDM_MAX_PAYLOAD);
-  if (mctp_binding == NULL) {
-    syslog(LOG_ERR, "%s: Error: mctp binding failed", __func__);
-    return -1;
-  }
-  smbus = (struct mctp_binding_smbus *)mctp_binding->prot;
-
-  tag |= MCTP_HDR_FLAG_TO;
-  ret = mctp_smbus_send_data(mctp_binding->mctp, dst_eid, tag, smbus, tbuf, tlen);
-  if (ret < 0) {
-    printf("error: %s send failed\n", __func__);
-    goto bail;
-  }
-
-  ret = mctp_smbus_recv_spdm_data_raw(mctp_binding->mctp, dst_eid, smbus, rbuf, -1);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s: error getting response\n", __func__);
-    goto bail;
-  } else {
-    *rlen = ret;
-    ret = 0;
-  }
-
-bail:
-  obmc_mctp_smbus_free(mctp_binding);
   return ret;
 }
 
@@ -650,4 +637,162 @@ free_exit:
   if (pkgHdr)
     free_pldm_pkg_data(&pkgHdr);
   return ret;
+}
+
+int mctp_send_recv_w_mctpd(uint8_t bus, uint8_t eid, uint8_t* req_msg, size_t req_msg_len,
+                            uint8_t **resp_msg, size_t *resp_msg_len)
+{
+  char busStr[8], path[32];
+  char *path_pre = "mctp-mux";
+  int pathLen, mctpfd, returnCode = 0;
+
+  sprintf(busStr, "%d", bus);
+  pathLen = sprintf(path, "%s%s", path_pre, busStr);
+
+  // connect to mctpd
+  mctpfd = connect_to_socket(path, pathLen);
+  if (mctpfd < 0)
+    return -1;
+
+  // send a byte of MSG_TYPE (0x01) for registration
+  if (send(mctpfd , &MCTP_MSG_TYPE_SPDM , 1 , 0) < 0)
+  {
+    returnCode = -errno;
+    syslog(LOG_ERR, "Failed to send message type as spdm to mctp, RC = %d", returnCode);
+    goto exit;
+  }
+
+  // send
+  if (spdm_send_w_mctpd(mctpfd, eid, req_msg, req_msg_len)) {
+    returnCode = -errno;
+    goto exit;
+  }
+
+  // recv
+  if (spdm_recv_w_mctpd(mctpfd, eid, resp_msg, resp_msg_len)) {
+    returnCode = -errno;
+    goto exit;
+  }
+
+exit:
+  close(mctpfd);
+  return returnCode;
+}
+
+static int connect_to_socket(const char * path, int length)
+{
+  int returnCode = 0;
+  int sockfd = socket(AF_UNIX, SOCK_SEQPACKET, 0);
+
+  if (-1 == sockfd) {
+    returnCode = -errno;
+    syslog(LOG_ERR, "Failed to create the socket, RC = %d", returnCode);
+    return -1;
+  }
+
+  struct timeval tv_timeout;
+  tv_timeout.tv_sec  = 10;
+  tv_timeout.tv_usec = 0;
+  if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (void *) &tv_timeout, sizeof(struct timeval)) < 0) {
+    returnCode = -errno;
+    syslog(LOG_ERR, "Failed to set send() timeout, RC = %d", returnCode);
+    goto socketfail;
+  }
+
+  if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (void *) &tv_timeout, sizeof(struct timeval)) < 0) {
+    returnCode = -errno;
+    syslog(LOG_ERR, "Failed to set recv() timeout, RC = %d", returnCode);
+    goto socketfail;
+  }
+
+  struct sockaddr_un addr;
+  addr.sun_family = AF_UNIX;
+  memcpy(addr.sun_path, "\0", 1);
+  memcpy(addr.sun_path+1, path, length++);
+  if (connect(sockfd, (struct sockaddr *)&addr, length + sizeof(addr.sun_family)) < 0) {
+    returnCode = -errno;
+    syslog(LOG_ERR, "Failed to connect the socket, RC = %d", returnCode);
+    goto socketfail;
+  }
+  return sockfd;
+
+socketfail:
+  close(sockfd);
+  return -1;
+}
+
+static int
+spdm_send_w_mctpd (int mctp_fd, uint8_t eid, uint8_t *req_msg, size_t req_msg_len)
+{
+	uint8_t hdr[2] = {eid, MCTP_TYPE_SPDM};
+
+	struct iovec iov[2];
+	iov[0].iov_base = hdr;
+	iov[0].iov_len = sizeof(hdr);
+	iov[1].iov_base = (uint8_t *)req_msg;
+	iov[1].iov_len = req_msg_len;
+
+	struct msghdr msg = {0};
+	msg.msg_iov = iov;
+	msg.msg_iovlen = sizeof(iov) / sizeof(iov[0]);
+
+	ssize_t rc = sendmsg(mctp_fd, &msg, 0);
+	if (rc == -1) {
+    syslog(LOG_ERR, "%s send failed. errno = %d", __func__, errno);
+		return -1;
+	}
+	return 0;
+}
+
+static int
+spdm_recv_w_mctpd (int mctp_fd, uint8_t eid, uint8_t **resp_msg, size_t *resp_msg_len)
+{
+  struct iovec iov[2];
+  struct msghdr msg = {0};
+  ssize_t bytes;
+  ssize_t min_len = sizeof(eid) + sizeof(MCTP_MSG_TYPE_SPDM);
+  ssize_t length = recv(mctp_fd, NULL, 0, MSG_PEEK | MSG_TRUNC);
+  uint8_t mctp_prefix[min_len];
+  uint8_t buf[length];
+  size_t spdm_len;
+
+  if (length <= 0) {
+    syslog(LOG_ERR, "%s recv failed. errno = %d", __func__, errno);
+    return -1;
+
+  } else if (length < min_len) {
+    /* read and discard */
+    recv(mctp_fd, buf, length, 0);
+    syslog(LOG_ERR, "%s invalid recv length. errno = %d", __func__, errno);
+    return -1;
+
+  } else {
+
+    spdm_len = length - min_len;
+
+    iov[0].iov_len = min_len;
+    iov[0].iov_base = mctp_prefix;
+    *resp_msg = (uint8_t *) malloc (spdm_len);
+    iov[1].iov_len = spdm_len;
+    iov[1].iov_base = *resp_msg;
+
+    msg.msg_iov = iov;
+    msg.msg_iovlen = sizeof(iov) / sizeof(iov[0]);
+    bytes = recvmsg(mctp_fd, &msg, 0);
+
+    if (length != bytes) {
+      free(*resp_msg);
+      syslog(LOG_ERR, "%s invalid recv length. errno = %d", __func__, errno);
+      return -1;
+    }
+    if ((mctp_prefix[0] != eid) ||
+        (mctp_prefix[1] != MCTP_MSG_TYPE_SPDM)) {
+      free(*resp_msg);
+      syslog(LOG_ERR, "%s not spdm message. errno = %d", __func__, errno);
+      return -1;
+    }
+
+    *resp_msg_len = spdm_len;
+    return 0;
+  }
 }

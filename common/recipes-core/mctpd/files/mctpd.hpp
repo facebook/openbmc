@@ -5,6 +5,7 @@
 
 #define MSG_TYPE_PLDM  (1)
 #define MSG_TYPE_NCSI  (2)
+#define MSG_TYPE_SPDM  (5)
 #define MSG_HDR_SIZE  (4)
 
 #define IPMI_REQ_MCTP_HADR_SIZE (9)

@@ -88,7 +88,7 @@ void benchmarkSpdmMessage(uint8_t bus, uint16_t slv_addr, uint8_t eid, vector<ui
     auto wallStart = std::chrono::high_resolution_clock::now();
     std::clock_t cpuStart = std::clock();
 
-    send_spdm_cmd(bus, addr, slv_addr, DEFAULT_EID, eid, &message[0], message.size(), rbuf, &rlen);
+    send_spdm_cmd(bus, eid, &message[0], message.size(), rbuf, &rlen);
 
     auto wallEnd = std::chrono::high_resolution_clock::now();
     std::clock_t cpuEnd = std::clock();
@@ -127,7 +127,7 @@ vector<uint8_t> sendSpdmMessage(uint8_t bus, uint16_t slv_addr, uint8_t eid, vec
               << std::endl;
 
   pal_get_bmc_ipmb_slave_addr(&addr, bus);
-  send_spdm_cmd(bus, addr, slv_addr, DEFAULT_EID, eid, &message[0], message.size(), rbuf, &rlen);
+  send_spdm_cmd(bus, eid, &message[0], message.size(), rbuf, &rlen);
 
   if (debugOutput == true) {
     std::cout << "Raw Response Length: " << std::dec << rlen << std::endl;

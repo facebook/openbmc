@@ -116,11 +116,13 @@ bool get_mctp_tag_owner(void* buf) {
   uint8_t type = *((uint8_t*) buf + 1);
 
   if ( type == MSG_TYPE_PLDM) {
-    if (!!(*((uint8_t*) buf + 2) & 0x80)) {
-      return true;
-    }
+    return ((*((uint8_t*)buf + 2) & 0x80) != 0);
+
   } else if (type == MSG_TYPE_NCSI) {
     return ((*((uint8_t*)buf + 6) & 0x80) == 0);
+
+  } else if (type == MSG_TYPE_SPDM) {
+    return ((*((uint8_t*)buf + 3) & 0x80) != 0);
   }
   return false;
 }

@@ -177,8 +177,9 @@ int obmc_mctp_set_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
 int send_mctp_cmd(uint8_t bus, uint16_t src_addr, uint8_t dst_addr, uint8_t src_eid, uint8_t dst_eid,
                   uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen);
 
-int send_spdm_cmd(uint8_t bus, uint16_t src_addr, uint16_t dst_addr, uint8_t src_eid, uint8_t dst_eid,
-                  uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen);
+int send_spdm_cmd(uint8_t bus, uint8_t dst_eid,
+                  uint8_t *tbuf, int tlen,
+                  uint8_t *rbuf, int *rlen);
 
 int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
                       uint8_t tag, uint8_t iid,
@@ -186,6 +187,10 @@ int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
 
 int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
                         uint8_t tag, char *path);
+
+int mctp_send_recv_w_mctpd(uint8_t bus, uint8_t eid, uint8_t* req_msg, size_t req_msg_len,
+                            uint8_t **resp_msg, size_t *resp_msg_len);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -578,7 +578,6 @@ fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
 
   if (kv_set(key, (char*)board_type, 1, KV_FCREATE)) {
     syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, board_type[0]);
-    return -1;
   }
 
   return 0;

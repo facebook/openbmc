@@ -65,8 +65,6 @@ extern "C" {
 #define VR_1OU_NEW_CRC_STR "slot%d_1ou_vr_%s_new_crc"
 #define VR_1OU_CRC_STR "slot%d_1ou_vr_%s_crc"
 
-#define BIC_GPIO_INDEX_POST_COMPLETE 1
-
 #define PCA953X_DRIVER_NAME "pca953x"
 #define PCA953X_BIND_DIR "/sys/bus/i2c/drivers/pca953x/%d-00%02x/"
 #define PCA9537_ADDR 0x49

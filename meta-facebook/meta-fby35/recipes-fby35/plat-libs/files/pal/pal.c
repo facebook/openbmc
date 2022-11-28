@@ -1579,6 +1579,7 @@ pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
   int ret = 0;
   int i, offs = 0;
   uint8_t bios_post_complete = 0;
+  uint8_t post_cmplt_pin = FM_BIOS_POST_CMPLT_BMC_N;
   bic_gpio_t gpio = {0};
 
   if (ver == NULL) {
@@ -1592,7 +1593,11 @@ pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
     return ret;
   }
 
-  bios_post_complete = BIT_VALUE(gpio, BIC_GPIO_INDEX_POST_COMPLETE);
+  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+    post_cmplt_pin = HD_FM_BIOS_POST_CMPLT_BIC_N;
+  }
+
+  bios_post_complete = BIT_VALUE(gpio, post_cmplt_pin);
   if (bios_post_complete != POST_COMPLETE) {
     syslog(LOG_WARNING, "%s() Failed to get BIOS firmware version because BIOS is not ready", __func__);
     return -1;

@@ -42,6 +42,9 @@ MB_1ST_SOURCE="0"
 MB_2ND_SOURCE="1"
 MB_3RD_SOURCE="2"
 
+mbrev=$(kv get mb_rev)
+MB_DVT_BORAD_ID="2"
+
 #HSC
 probe_hsc_mp5990() {
   i2c_device_add 6 0x20 mp5990
@@ -53,12 +56,25 @@ probe_hsc_ltc() {
   data=$(("$val"))
 
   #Read ADC 1.5v:LTC4286 1v:LTC4282
-  if [ "$data" -gt 4 ]; then
-    i2c_device_add 6 0x41 ltc4286
-    kv set mb_hsc_source "$MB_3RD_SOURCE"
+  if [ "$mbrev" -ge "$MB_DVT_BORAD_ID" ]
+  then
+    if [ "$data" -ge 4 ]
+    then
+      i2c_device_add 6 0x41 ltc4286
+      kv set mb_hsc_source "$MB_3RD_SOURCE"
+    else
+      i2c_device_add 6 0x41 ltc4282
+      kv set mb_hsc_source "$MB_2ND_SOURCE"
+    fi
   else
-    i2c_device_add 6 0x41 ltc4282
-    kv set mb_hsc_source "$MB_2ND_SOURCE"
+    if [ "$data" -gt 4 ]
+    then
+      i2c_device_add 6 0x41 ltc4286
+      kv set mb_hsc_source "$MB_3RD_SOURCE"
+    else
+      i2c_device_add 6 0x41 ltc4282
+      kv set mb_hsc_source "$MB_2ND_SOURCE"
+    fi
   fi
 
   #HSC Temp
@@ -71,22 +87,16 @@ probe_hsc_ltc() {
 probe_adc_ti() {
   i2cset -f -y 20 0x1d 0x0b 0x02
   i2c_device_add 20 0x1d adc128d818
+  kv set mb_adc_source "$MB_1ST_SOURCE"
+
 }
 
 probe_adc_maxim() {
   i2c_device_add 20 0x35 max11617
+  kv set mb_adc_source "$MB_2ND_SOURCE"
 }
 
 #VR
-probe_vr_xdpe() {
-   i2c_device_add 20 0x4a xdpe152c4
-   i2c_device_add 20 0x49 xdpe152c4
-   i2c_device_add 20 0x4c xdpe152c4
-   i2c_device_add 20 0x4d xdpe152c4
-   i2c_device_add 20 0x4e xdpe152c4
-   i2c_device_add 20 0x4f xdpe152c4
-}
-
 probe_vr_raa() {
   i2c_device_add 20 0x61 isl69260
   i2c_device_add 20 0x62 isl69260
@@ -94,6 +104,18 @@ probe_vr_raa() {
   i2c_device_add 20 0x72 isl69260
   i2c_device_add 20 0x74 isl69260
   i2c_device_add 20 0x75 isl69260
+  kv set mb_vr_source "$MB_1ST_SOURCE"
+}
+
+probe_vr_xdpe() {
+   i2c_device_add 20 0x4a xdpe152c4
+   i2c_device_add 20 0x49 xdpe152c4
+   i2c_device_add 20 0x4c xdpe152c4
+   i2c_device_add 20 0x4d xdpe152c4
+   i2c_device_add 20 0x4e xdpe152c4
+   i2c_device_add 20 0x4f xdpe152c4
+   kv set mb_vr_source "$MB_2ND_SOURCE"
+
 }
 
 if [ "$mb_sku" -eq "$config0" ]; then

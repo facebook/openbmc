@@ -91,6 +91,8 @@ mb_hsc=$(($(gpio_get FM_BOARD_BMC_SKU_ID3) << 1 |
 #MB_HSC_MAIN="0"   # mp5990
 MB_HSC_SECOND="1"  # ltc4282/ltc4286
 MB_HSC_THIRD="2"   # rs31380
+mbrev=$(kv get mb_rev)
+MB_DVT_BORAD_ID="3"
 
 if [ "$mb_hsc" -eq "$MB_HSC_THIRD" ]; then
   kv set mb_hsc_source "$MB_4TH_SOURCE"
@@ -98,16 +100,29 @@ elif [ "$mb_hsc" -eq "$MB_HSC_SECOND" ]; then
   i2c_device_add 21 0x4C lm75
   i2c_device_add 2 0x51 24c64
   #Read ADC 1.5v:LTC4286 1v:LTC4282
+  #DVT ADC INA230; EVT ADC ISL28022
   val=$(i2cget -f -y 21 0x42 0x02)
   data=$(("$val"))
 
-  if [ "$data" -gt 4 ]
+  if [ "$mbrev" -ge "$MB_DVT_BORAD_ID" ]
   then
-    i2c_device_add 2 0x41 ltc4286
-    kv set mb_hsc_source "$MB_3RD_SOURCE"
+    if [ "$data" -ge 4 ]
+    then
+      i2c_device_add 2 0x41 ltc4286
+      kv set mb_hsc_source "$MB_3RD_SOURCE"
+    else
+      i2c_device_add 2 0x41 ltc4282
+      kv set mb_hsc_source "$MB_2ND_SOURCE"
+    fi
   else
-    i2c_device_add 2 0x41 ltc4282
-    kv set mb_hsc_source "$MB_2ND_SOURCE"
+    if [ "$data" -gt 4 ]
+    then
+      i2c_device_add 2 0x41 ltc4286
+      kv set mb_hsc_source "$MB_3RD_SOURCE"
+    else
+      i2c_device_add 2 0x41 ltc4282
+      kv set mb_hsc_source "$MB_2ND_SOURCE"
+    fi
   fi
 else
   i2c_device_add 2 0x20 mp5990

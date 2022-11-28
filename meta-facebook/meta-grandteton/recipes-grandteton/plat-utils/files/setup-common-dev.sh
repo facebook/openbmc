@@ -55,8 +55,10 @@ MB_2ND_SOURCE="1"
 
 #MB DPM
 mbrev=$(kv get mb_rev)
+MB_DVT_BORAD_ID="3"
 MB_DPM_MAIN="0"
-if [ $mbrev -gt 2 ]; then
+
+if [ $mbrev -ge "$MB_DVT_BORAD_ID" ]; then
   i2c_device_add 34 0x41 ina230
   i2c_device_add 34 0x42 ina230
   i2c_device_add 34 0x43 ina230

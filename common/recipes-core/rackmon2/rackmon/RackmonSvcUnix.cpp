@@ -22,11 +22,6 @@ class RackmonUNIXSocketService : public UnixService {
   void handleJSONCommand(
       std::unique_ptr<json> reqPtr,
       std::unique_ptr<UnixSock> cli);
-  // Handle commands with the legacy byte format.
-  void handleLegacyCommand(
-      const std::vector<char>& req_buf,
-      std::vector<char>& resp_buf);
-  void handleLegacyCommand(const std::vector<char>& req_buf, UnixSock& cli);
 
   void handleRequest(
       const std::vector<char>& buf,
@@ -178,67 +173,6 @@ void RackmonUNIXSocketService::handleJSONCommand(
   }
 }
 
-void RackmonUNIXSocketService::handleLegacyCommand(
-    const std::vector<char>& req_buf,
-    std::vector<char>& resp_buf) {
-  struct req_hdr {
-    uint16_t type;
-    uint16_t pad;
-    uint16_t length;
-    uint16_t expected_resp_length;
-    uint32_t custom_timeout;
-  } const* req_hdr = (const struct req_hdr*)req_buf.data();
-
-  if (req_buf.size() < sizeof(req_hdr))
-    throw std::underflow_error("header");
-  if (req_hdr->type != 1)
-    throw std::logic_error(
-        "Unsupported command: " + std::to_string(req_hdr->type));
-  if (req_hdr->length < 1)
-    throw std::logic_error("request needs at least 1 byte");
-  if (req_hdr->length + sizeof(*req_hdr) != req_buf.size())
-    throw std::overflow_error("body");
-  Request req_msg;
-  std::copy(
-      req_buf.begin() + sizeof(struct req_hdr),
-      req_buf.end(),
-      req_msg.raw.begin());
-  req_msg.len = req_hdr->length;
-
-  Response resp_msg;
-  resp_msg.len = req_hdr->expected_resp_length;
-  ModbusTime timeout(req_hdr->custom_timeout);
-  rackmond_.rawCmd(req_msg, resp_msg, timeout);
-
-  size_t resp_sz = req_hdr->expected_resp_length;
-  resp_buf.resize(2 + resp_sz);
-  resp_buf[0] = 0xff & resp_sz;
-  resp_buf[1] = 0xff & (resp_sz >> 8);
-  std::copy(
-      resp_msg.raw.begin(),
-      resp_msg.raw.begin() + resp_sz,
-      resp_buf.begin() + 2);
-}
-
-void RackmonUNIXSocketService::handleLegacyCommand(
-    const std::vector<char>& req_buf,
-    UnixSock& cli) {
-  std::vector<char> resp_buf;
-  try {
-    handleLegacyCommand(req_buf, resp_buf);
-  } catch (std::exception& e) {
-    resp_buf = {0, 0, 1, 0};
-    logError << "Unable to handle legacy command: " << e.what() << std::endl;
-  }
-  try {
-    // We are handling the size since we use the length field as a
-    // error indicator. :-/
-    cli.sendRaw(resp_buf.data(), resp_buf.size());
-  } catch (std::exception& e) {
-    logError << "Unable to send response: " << e.what() << std::endl;
-  }
-}
-
 void RackmonUNIXSocketService::initialize(int argc, char** argv) {
   logInfo << "Loading configuration" << std::endl;
   rackmond_.load(kRackmonConfigurationPath, kRackmonRegmapDirPath);
@@ -276,7 +210,7 @@ void RackmonUNIXSocketService::handleRequest(
       tid.detach();
     }
   } else {
-    handleLegacyCommand(buf, *sock);
+    logError << "Service got invalid JSON" << std::endl;
   }
 }
 

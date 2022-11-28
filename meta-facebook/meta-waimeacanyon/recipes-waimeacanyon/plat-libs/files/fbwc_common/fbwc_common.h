@@ -38,9 +38,8 @@ enum {
   SKU_UNKNOW = 0xFF,
 };
 
-#define FRU_COMPONENT_NEW_VER_KEY "%s_%s_new_ver" 
+#define FRU_COMPONENT_NEW_VER_KEY "%s_%s_new_ver"
 #define MAX_PATH_LEN 128
-#define MAX_NAME_LEN 32
 #define READING_NA    (-2)
 
 #define TACH_NUM 8
@@ -106,7 +105,7 @@ enum {
 #define MAX_NUM_FRUS      MAX_FRUS-1
 
 // fru name list for pal_get_fru_id()
-static const char fru_str_list[MAX_FRUS][MAX_FRU_NAME_STR] = 
+static const char fru_str_list[MAX_FRUS][MAX_FRU_NAME_STR] =
 {
   "all",
   "mb",

@@ -788,7 +788,7 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
               sensor_map[sensor_num].snr_thresh.lcr_thresh,
               sensor_num,
               *(float*)value );
-      
+
 #endif
       }
     } else {
@@ -1609,7 +1609,7 @@ hsc_value_adjust(struct calibration_table *table, float *value) {
 
 static int
 read_pax_therm(uint8_t pax_id, float *value) {
-  int ret = 0, fd;
+  int ret = 0;
 
   if (!is_device_ready())
     return ERR_SENSOR_NA;
@@ -1629,11 +1629,6 @@ read_pax_therm(uint8_t pax_id, float *value) {
   }
   else {
     ret = sensors_read(devs[pax_id].chip, devs[pax_id].label, value);
-  }
-
-exit:
-  if (fd > 0) {
-    close(fd);
   }
 
   return ret;

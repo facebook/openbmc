@@ -7,7 +7,7 @@
 
 static uint8_t fw_active_region = 0;
 
-int int32_to_char(uint32_t version, char* ver) {
+static void int32_to_char(uint32_t version, char* ver) {
 
   uint8_t vers[4] = {0};
 
@@ -147,7 +147,6 @@ static uint8_t pex88000_chime_to_axi_read(uint8_t bus, uint8_t addr, uint32_t of
 }
 
 static uint8_t pex88000_chime_to_axi_write(uint8_t bus, uint8_t addr, uint32_t oft, uint32_t data) {
-  uint8_t ret = 0;
   uint32_t wbuf = oft;
   swap32(&wbuf);
   if(!pex88000_i2c_write(bus, addr, BRCM_CHIME_AXI_CSR_ADDR, (uint8_t *)&wbuf, sizeof(wbuf))){

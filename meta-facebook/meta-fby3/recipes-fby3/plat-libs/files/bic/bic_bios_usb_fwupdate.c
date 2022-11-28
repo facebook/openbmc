@@ -51,8 +51,7 @@
 #define STRONG_DIGEST_LENGTH SHA256_DIGEST_LENGTH
 #define USB_TIMEOUT_MS 3000
 
-int interface_ref = 0;
-int alt_interface,interface_number;
+static int alt_interface,interface_number;
 
 int print_configuration(struct libusb_device_handle *hDevice,struct libusb_config_descriptor *config)
 {

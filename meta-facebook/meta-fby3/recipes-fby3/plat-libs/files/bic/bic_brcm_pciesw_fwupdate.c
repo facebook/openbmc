@@ -45,8 +45,6 @@
 #define SIMPLE_DIGEST_LENGTH 4
 #define STRONG_DIGEST_LENGTH SHA256_DIGEST_LENGTH
 
-int alt_interface,interface_number;
-
 #define MAX_FW_PCIE_SWITCH_BLOCK_SIZE 1008
 #define PCIE_FW_IDX 0x05
 
@@ -145,7 +143,7 @@ out:
   return ret;
 }
 
-int 
+int
 update_bic_brcm(uint8_t slot_id, uint8_t comp, int fd, uint8_t intf)
 {
   struct timeval start, end;
@@ -161,7 +159,7 @@ update_bic_brcm(uint8_t slot_id, uint8_t comp, int fd, uint8_t intf)
   remote_bic_set_gpio(slot_id, BRCM_GPIO_SPI_MUX_SEL_N, VALUE_LOW, intf);
   bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
   sleep(60);
-  
+
   // init usb device
   ret = bic_init_usb_dev(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID);
   if (ret < 0) {

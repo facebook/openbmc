@@ -221,10 +221,10 @@ int BmcCpldCapsuleComponent::get_bmc_stg_cap_version(string& s) {
   fp = popen(cmd, "r");
   if (fp) {
     char line[256];
-    char *ver = 0;
+    char *ver = (char *) malloc(256);
     while (fgets(line, sizeof(line), fp)) {
       int ret;
-      ret = sscanf(line, "U-Boot 20%*2d.%*2d%*[ ]%m[^ \n]%*[ ](%*[^)])\n", &ver);
+      ret = sscanf(line, "U-Boot 20%*2d.%*2d%*[ ]%s[^ \n]%*[ ](%*[^)])\n", ver);
       if (1 == ret) {
         s = string(ver);
         break;

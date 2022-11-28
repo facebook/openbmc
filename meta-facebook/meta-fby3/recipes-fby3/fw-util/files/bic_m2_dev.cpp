@@ -17,12 +17,12 @@ using namespace std;
 
 #define FFI_0_ACCELERATOR 0x01
 
-M2DevComponent::PowerInfo M2DevComponent::statusTable[MAX_DEVICE_NUM] = {0};
+M2DevComponent::PowerInfo M2DevComponent::statusTable[MAX_DEVICE_NUM] = {{0,0,0,0,0,0,0,0,0,0,0}};
 bool M2DevComponent::isDual[MAX_NUM_SERVER_FRU] = {false};
 bool M2DevComponent::isScaned[MAX_NUM_SERVER_FRU] = {false};
 M2DevComponent::Dev_Main_Slot M2DevComponent::dev_main_slot = M2DevComponent::Dev_Main_Slot::ON_EVEN;
 
-int M2DevComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
+int M2DevComponent::get_ver_str(string& /*s*/, const uint8_t /*alt_fw_comp*/) {
   return FW_STATUS_NOT_SUPPORTED;
 }
 
@@ -113,7 +113,7 @@ int M2DevComponent::print_version()
   return FW_STATUS_SUCCESS;
 }
 
-void M2DevComponent::print_dual(uint8_t idx, M2_DEV_INFO m2_dev_info) {
+void M2DevComponent::print_dual(uint8_t idx, M2_DEV_INFO /*m2_dev_info*/) {
   int first_dev, second_dev, main_dev;
   string board_name = name;
 
@@ -177,7 +177,7 @@ void M2DevComponent::print_single(uint8_t idx) {
   }
 }
 
-int M2DevComponent::update_internal(string image, bool force) {
+int M2DevComponent::update_internal(string image, bool /*force*/) {
   int ret = FW_STATUS_SUCCESS;
   uint8_t nvme_ready = 0, status = 0, type = DEV_TYPE_UNKNOWN;
   uint8_t idx = (fw_comp - FW_2OU_M2_DEV0) + 1;

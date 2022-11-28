@@ -38,8 +38,6 @@ static int bot_gpv3_usb_depth = 5;
 static uint8_t top_gpv3_usb_ports[] = {1, 3, 1, 2, 3};
 static uint8_t bot_gpv3_usb_ports[] = {1, 3, 4, 2, 3};
 
-int alt_interface,interface_number;
-
 //#define CPLD_DEBUG
 typedef struct
 {
@@ -126,7 +124,7 @@ send_cpld_data(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *data, uint8
       }
 
       if ( board_type == GPV3_MCHP_BOARD ||
-           board_type == GPV3_BRCM_BOARD || 
+           board_type == GPV3_BRCM_BOARD ||
            board_type == CWC_MCHP_BOARD ) {
         bus = 0x13;
       } else {
@@ -1087,7 +1085,7 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
     goto error_exit;
   }
 
-  if (bmc_location == NIC_BMC) { 
+  if (bmc_location == NIC_BMC) {
     if (fby3_common_get_2ou_board_type(slot_id, &board_type) < 0) {
       syslog(LOG_ERR, "%s() Fails to get 2ou board type", __func__);
       goto error_exit;
@@ -1136,18 +1134,18 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
       if( (vid == udev->desc.idVendor) && (pid == udev->desc.idProduct) ) {
         if (board_type == CWC_MCHP_BOARD) {
           if (intf == REXP_BIC_INTF) {
-            if (path_len == cwc_usb_depth && 
-                udev->path[0] == cwc_usb_ports[0] && 
-                udev->path[1] == cwc_usb_ports[1] && 
+            if (path_len == cwc_usb_depth &&
+                udev->path[0] == cwc_usb_ports[0] &&
+                udev->path[1] == cwc_usb_ports[1] &&
                 udev->path[2] == cwc_usb_ports[2] ) {
               printf("Find cwc usb\n");
             } else {
               continue;
             }
           } else if (intf == RREXP_BIC_INTF1) {
-            if (path_len == top_gpv3_usb_depth && 
-                udev->path[0] == top_gpv3_usb_ports[0] && 
-                udev->path[1] == top_gpv3_usb_ports[1] && 
+            if (path_len == top_gpv3_usb_depth &&
+                udev->path[0] == top_gpv3_usb_ports[0] &&
+                udev->path[1] == top_gpv3_usb_ports[1] &&
                 udev->path[2] == top_gpv3_usb_ports[2] &&
                 udev->path[3] == top_gpv3_usb_ports[3] &&
                 udev->path[4] == top_gpv3_usb_ports[4] ) {
@@ -1156,9 +1154,9 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
               continue;
             }
           } else if (intf == RREXP_BIC_INTF2) {
-            if (path_len == bot_gpv3_usb_depth && 
-                udev->path[0] == bot_gpv3_usb_ports[0] && 
-                udev->path[1] == bot_gpv3_usb_ports[1] && 
+            if (path_len == bot_gpv3_usb_depth &&
+                udev->path[0] == bot_gpv3_usb_ports[0] &&
+                udev->path[1] == bot_gpv3_usb_ports[1] &&
                 udev->path[2] == bot_gpv3_usb_ports[2] &&
                 udev->path[3] == bot_gpv3_usb_ports[3] &&
                 udev->path[4] == bot_gpv3_usb_ports[4]) {

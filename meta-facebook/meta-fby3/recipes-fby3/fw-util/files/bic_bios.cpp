@@ -20,7 +20,6 @@ using namespace std;
 int BiosComponent::update_internal(const std::string &image, int fd, bool force) {
   int ret;
   uint8_t status;
-  int retry_count = 0;
   uint8_t bmc_location = 0;
 
   try {
@@ -88,7 +87,7 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
   if (ret != 0) {
     return -1;
   }
-  
+
   cerr << "Switching BIOS SPI MUX for default value..." << endl;
   bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_PCH);
   sleep(3);

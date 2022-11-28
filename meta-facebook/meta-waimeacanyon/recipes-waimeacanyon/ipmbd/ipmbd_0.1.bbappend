@@ -34,3 +34,5 @@ do_install:append() {
   install -m 755 ${S}/run-ipmbd_11.sh ${D}${sysconfdir}/sv/ipmbd_11/run
   update-rc.d -r ${D} setup-ipmbd.sh start 65 5 .
 }
+
+RDEPENDS:${PN}:append = " bash"

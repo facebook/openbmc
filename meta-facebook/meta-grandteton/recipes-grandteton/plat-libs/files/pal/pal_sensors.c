@@ -1,15 +1,12 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <openbmc/kv.h>
-#include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensors.h>
 #include "pal.h"
 #include "pal_common.h"
 
 //#define DEBUG
-#define PECI_MUX_SELECT_BMC (GPIO_VALUE_HIGH)
-#define PECI_MUX_SELECT_PCH (GPIO_VALUE_LOW)
 #define SENSOR_SKIP_MAX (1)
 
 extern PAL_SENSOR_MAP mb_sensor_map[];
@@ -443,19 +440,6 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
   return pal_get_x86_event_sensor_name(fru, snr_num, name);
 }
 
-static int pal_set_peci_mux(uint8_t select) {
-  gpio_desc_t *desc;
-  bool ret = false;
-
-  desc = gpio_open_by_shadow("PECI_MUX_SELECT");
-  if (!desc)
-    return ret;
-
-  gpio_set_value(desc, select);
-  gpio_close(desc);
-  return 0;
-}
-
 void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
@@ -691,14 +675,5 @@ pal_sensor_discrete_check(uint8_t fru,
   } else {
     syslog(LOG_CRIT, "DEASSERT: %s - FRU: %d", name, fru);
   }
-  return 0;
-}
-
-int pal_sensor_monitor_initial(void) {
-//Initial
-  syslog(LOG_DEBUG,"Sensor Initial\n");
-
-//Config PECI Switch
-  pal_set_peci_mux(PECI_MUX_SELECT_BMC);
   return 0;
 }

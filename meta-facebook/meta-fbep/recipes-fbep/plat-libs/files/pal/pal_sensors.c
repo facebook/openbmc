@@ -542,7 +542,7 @@ float sensors_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {
   [MB_SENSOR_PEX2_THERM_REMOTE] =
   {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
   [MB_SENSOR_PEX3_THERM_REMOTE] =
-  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0}, 
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
   [PDB_HSC_P12V_AUX_VIN] =
   {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
   [PDB_HSC_P12V_1_VIN] =
@@ -883,7 +883,7 @@ struct sensor_map {
   [MB_SENSOR_PEX2_THERM_REMOTE] =
   {sensors_read_pax_therm, "EP_MB_SENSOR_PEX2_THERM", SNR_TEMP},
   [MB_SENSOR_PEX3_THERM_REMOTE] =
-  {sensors_read_pax_therm, "EP_MB_SENSOR_PEX3_THERM", SNR_TEMP},  
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PEX3_THERM", SNR_TEMP},
   [PDB_HSC_P12V_AUX_VIN] =
   {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_AUX_VIN", SNR_VOLT},
   [PDB_HSC_P12V_1_VIN] =
@@ -1187,7 +1187,6 @@ static int sensors_read_vicor(uint8_t sensor_num, float *value)
 
 static int sensors_read_infineon(uint8_t sensor_num, float *value)
 {
-  int fd;
   char dev[64] = {0};
   uint8_t tbuf[8] = {0};
   uint8_t rbuf[8] = {0};
@@ -1216,20 +1215,21 @@ static int sensors_read_infineon(uint8_t sensor_num, float *value)
     break;
 
     default:
-      goto exit;
+      return -1;
   }
 
   snprintf(dev, sizeof(dev), "/dev/i2c-%d", bus);
-  fd = open(dev, O_RDWR);
+  int fd = open(dev, O_RDWR);
   if (fd < 0)
     goto exit;
 
   i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
 
   *value = rbuf[0];
-  
+
 exit:
-  close(fd);  
+  close(fd);
+  return 0;
 }
 
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)

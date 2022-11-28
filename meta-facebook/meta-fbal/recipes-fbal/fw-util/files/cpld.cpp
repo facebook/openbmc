@@ -43,28 +43,31 @@ enum {
   CFM1_10M16
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 static altera_max10_attr_t s_attrs[] = {
-  [CFM0_10M25] = {
+  /* [CFM0_10M25] = */{
     .img_type = CFM_IMAGE_1,
     .start_addr = CFM0_10M25_START_ADDR,
     .end_addr = CFM0_10M25_END_ADDR,
   },
-  [CFM1_10M25] = {
+  /* [CFM1_10M25] = */{
     .img_type = CFM_IMAGE_2,
     .start_addr = CFM1_10M25_START_ADDR,
     .end_addr = CFM1_10M25_END_ADDR,
   },
-  [CFM0_10M16] = {
+  /* [CFM0_10M16] = */{
     .img_type = CFM_IMAGE_1,
     .start_addr = CFM0_10M16_START_ADDR,
     .end_addr = CFM0_10M16_END_ADDR,
   },
-  [CFM1_10M16] = {
+  /* [CFM1_10M16] = */{
     .img_type = CFM_IMAGE_2,
     .start_addr = CFM1_10M16_START_ADDR,
     .end_addr = CFM1_10M16_END_ADDR,
   }
 };
+#pragma GCC diagnostic pop
 
 class CpldComponent : public Component {
   uint8_t pld_type;
@@ -130,12 +133,12 @@ int CpldComponent::_update(const char *path, uint8_t is_signed) {
         attr.start_addr = s_attrs[CFM1_10M25].start_addr;
         attr.end_addr = s_attrs[CFM1_10M25].end_addr;
       }
- 
+
       if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
         printf("Cannot open i2c!\n");
         break;
       }
- 
+
       comp = _component;
       transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
       ret = cpld_program((char *)path, (char *)comp.substr(0, 4).c_str(), is_signed);

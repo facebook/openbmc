@@ -100,7 +100,7 @@ int palBiosComponent::setDeepSleepWell(bool setting) {
   return retCode;
 }
 
-int palBiosComponent::reboot(uint8_t fruid) {
+int palBiosComponent::reboot(uint8_t /*fruid*/) {
   return 0;
 }
 

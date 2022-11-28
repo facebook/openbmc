@@ -162,55 +162,36 @@ exit:
   return image_stat;
 }
 
-int send_update_packet (int eid, int fd, uint8_t* buf, ssize_t bufsize,
+int send_update_packet (int bus, int eid, uint8_t* buf, ssize_t bufsize,
                         uint8_t target, uint32_t offset) {
   uint8_t tbuf[255] = {0};
-  uint8_t IANA[] = {0x15, 0xA0, 0x00};
-  size_t payload_len = 0;
-
-  // get pldm header
-  get_pldm_ipmi_req_hdr_w_IANA(tbuf, IANA, sizeof(IANA));
-  payload_len += sizeof(IANA);
-
-  // ipmi netfn & cmd
-  auto pldmbuf = (pldm_msg *)tbuf;
-  pldmbuf->payload[payload_len++] = NETFN_OEM_1S_REQ << 2; // NetFn
-  pldmbuf->payload[payload_len++] = CMD_OEM_1S_UPDATE_FW;  // Cmd
-  // ipmi IANA
-  memcpy(pldmbuf->payload + payload_len, IANA, sizeof(IANA));
-  payload_len += sizeof(IANA);
-  // Fill the component for which firmware is requested
-  pldmbuf->payload[payload_len++] = target;
-  pldmbuf->payload[payload_len++] = (offset) & 0xFF;
-  pldmbuf->payload[payload_len++] = (offset >> 8 ) & 0xFF;
-  pldmbuf->payload[payload_len++] = (offset >> 16) & 0xFF;
-  pldmbuf->payload[payload_len++] = (offset >> 24) & 0xFF;
-  pldmbuf->payload[payload_len++] = (bufsize) & 0xFF;
-  pldmbuf->payload[payload_len++] = (bufsize >> 8) & 0xFF;
-  // ipmi payload
-  memcpy(pldmbuf->payload + payload_len, buf, bufsize);
-  payload_len += bufsize;
-
-  //
-  uint8_t *rbuf = nullptr;
+  uint8_t rbuf[255] = {0};
+  uint8_t tlen=0;
   size_t rlen = 0;
-  size_t tlen = payload_len + PLDM_HEADER_SIZE;
-  int rc = oem_pldm_send_recv_w_fd(eid, fd, tbuf, tlen, &rbuf, &rlen);
+  int rc;
 
-  if (rbuf != nullptr)
-    free(rbuf);
+  tbuf[tlen++] = target;
+  tbuf[tlen++] = (offset) & 0xFF;
+  tbuf[tlen++] = (offset >> 8 ) & 0xFF;
+  tbuf[tlen++] = (offset >> 16) & 0xFF;
+  tbuf[tlen++] = (offset >> 24) & 0xFF;
+  tbuf[tlen++] = (bufsize) & 0xFF;
+  tbuf[tlen++] = (bufsize >> 8) & 0xFF;
+  // FW Image Data
+  memcpy(tbuf+tlen, buf, bufsize);
+  tlen += bufsize;
+
+
+  rc = pldm_oem_ipmi_send_recv(bus, eid,
+                               NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW,
+                               tbuf, tlen,
+                               rbuf, &rlen);
   return rc;
 }
 
 int swb_fw_update (uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data, uint32_t file_size)
 {
   int ret = SWB_FW_UPDATE_FAILED;
-
-  int socket = oem_pldm_init_fd(bus);
-  if ( socket < 0 ) {
-    cerr << __func__ << "() cannot connect to pldmd" << std::endl;
-    return ret;
-  }
 
   // start update
   cout << "updating fw on bus " << +bus << endl;
@@ -247,7 +228,7 @@ int swb_fw_update (uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data,
 
     memcpy(buf, file_data+offset, count);
     // Send data to Bridge-IC
-    if (send_update_packet(eid, socket, buf, count, target, offset))
+    if (send_update_packet(bus, eid, buf, count, target, offset))
        goto exit;
 
     // Update counter
@@ -270,7 +251,6 @@ int swb_fw_update (uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data,
   printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
 exit:
-  close(socket);
   return ret;
 }
 

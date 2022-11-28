@@ -338,6 +338,7 @@ pwr_err_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   } else {
     syslog(LOG_CRIT, "FRU: %d DEASSERT: %s - %s\n", FRU_MB, cfg->description, cfg->shadow);
   }
+  close(fd);
 }
 
 static void

@@ -6,15 +6,11 @@ RUN_DHC6_FILE = "run-dhc6_prefix64_ncsi.sh"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://update-ll-addr \
-            file://bringup-eth0.sh \
+SRC_URI += "file://bringup-eth0.sh \
 	"
 
 do_install_dhcp() {
-	# override it to install eth0 up update link-local addr only
-	install -m 755 ${WORKDIR}/update-ll-addr \
-		${D}${sysconfdir}/network/if-pre-up.d/update-ll-addr
-
+	# override it to install bringup-eth0.sh script
 	install -m 755 bringup-eth0.sh ${D}${sysconfdir}/init.d/bringup-eth0.sh
 	update-rc.d -r ${D} bringup-eth0.sh start 72 5 .
 }

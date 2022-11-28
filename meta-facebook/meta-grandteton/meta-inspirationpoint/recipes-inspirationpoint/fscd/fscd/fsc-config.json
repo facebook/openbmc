@@ -283,7 +283,7 @@
     "fans": {
       "0": {
         "read_source" : {
-          "kv" : "bp0_sensor208"
+          "kv" : "fan_bp0_sensor208"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -291,7 +291,7 @@
       },
       "1": {
         "read_source" : {
-          "kv" : "bp0_sensor210"
+          "kv" : "fan_bp0_sensor210"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -299,7 +299,7 @@
       },
       "2": {
         "read_source" : {
-          "kv" : "bp1_sensor212"
+          "kv" : "fan_bp1_sensor212"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -307,7 +307,7 @@
       },
       "3": {
         "read_source" : {
-          "kv" : "bp1_sensor214"
+          "kv" : "fan_bp1_sensor214"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -315,7 +315,7 @@
       },
       "4": {
         "read_source" : {
-          "kv" : "bp0_sensor216"
+          "kv" : "fan_bp0_sensor216"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -323,7 +323,7 @@
       },
       "5": {
         "read_source" : {
-          "kv" : "bp0_sensor218"
+          "kv" : "fan_bp0_sensor218"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -331,7 +331,7 @@
       },
       "6": {
         "read_source" : {
-          "kv" : "bp1_sensor220"
+          "kv" : "fan_bp1_sensor220"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -339,7 +339,7 @@
       },
       "7": {
         "read_source" : {
-          "kv" : "bp1_sensor222"
+          "kv" : "fan_bp1_sensor222"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -347,7 +347,7 @@
       },
       "8": {
         "read_source" : {
-          "kv" : "bp0_sensor224"
+          "kv" : "fan_bp0_sensor224"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -355,7 +355,7 @@
       },
       "9": {
         "read_source" : {
-          "kv" : "bp0_sensor226"
+          "kv" : "fan_bp0_sensor226"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -363,7 +363,7 @@
       },
       "10": {
         "read_source" : {
-          "kv" : "bp1_sensor228"
+          "kv" : "fan_bp1_sensor228"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -371,7 +371,7 @@
       },
       "11": {
         "read_source" : {
-          "kv" : "bp1_sensor230"
+          "kv" : "fan_bp1_sensor230"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -379,7 +379,7 @@
       },
       "12": {
         "read_source" : {
-          "kv" : "bp0_sensor232"
+          "kv" : "fan_bp0_sensor232"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -387,7 +387,7 @@
       },
       "13": {
         "read_source" : {
-          "kv" : "bp0_sensor234"
+          "kv" : "fan_bp0_sensor234"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -395,7 +395,7 @@
       },
       "14": {
         "read_source" : {
-          "kv" : "bp1_sensor236"
+          "kv" : "fan_bp1_sensor236"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -403,7 +403,7 @@
       },
       "15": {
         "read_source" : {
-          "kv" : "bp1_sensor238"
+          "kv" : "fan_bp1_sensor238"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"

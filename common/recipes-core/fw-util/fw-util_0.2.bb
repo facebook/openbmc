@@ -82,6 +82,15 @@ CXXFLAGS:append = " -Wno-psabi"
 CXXFLAGS:append:mf-tpm1 = " -DCONFIG_TPM1"
 CXXFLAGS:append:mf-tpm2 = " -DCONFIG_TPM2"
 
+def meson_cpp_std(d):
+    distro = d.getVar('DISTRO_CODENAME', True)
+    if distro in [ 'rocko', 'dunfell', 'kirkstone' ]:
+        return "-Dcpp_std=c++1z"
+    return "-Dcpp_std=c++20"
+
+EXTRA_OEMESON:append = " ${@meson_cpp_std(d)}"
+
+
 do_install:append() {
   install -d ${D}${sysconfdir}
   install -m 0644 ${S}/image_parts.json ${D}${sysconfdir}/image_parts.json

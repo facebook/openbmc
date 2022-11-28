@@ -81,7 +81,7 @@ void sensor_callback(unsigned int delay,
     // going to set an arbitrarily smaller number
     int ret;
     float curr_value = get_sensor_value(fru, snr_num);
-    float curr_thresh;
+    float curr_thresh = 0;
 
     // store the current threshold to properly restore it
     thresh_sensor_t snr = {};
@@ -98,7 +98,7 @@ void sensor_callback(unsigned int delay,
     }
 
     float buffer = 5;
-    float target_value;
+    float target_value = 0;
     if (bound == "UCR") {
         curr_thresh = snr.ucr_thresh;
         if (curr_value > buffer || curr_value < 0) {
@@ -111,6 +111,7 @@ void sensor_callback(unsigned int delay,
         target_value = std::min(curr_thresh + 5, snr.ucr_thresh);
     } else {
         std::cout << "Invalid or unsupported bound type" << std::endl;
+        return;
     }
 
     // get the fru name

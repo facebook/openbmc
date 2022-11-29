@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
               ret = c->get_version(j_object);
               if (ret == FW_STATUS_SUCCESS) {
                 string comp = j_object.value("PRETTY_COMPONENT", c->component());
-                string vers(j_object["VERSION"]);
+                string vers(j_object.value("PRETTY_VERSION", j_object["VERSION"]));
                 cout << comp << " Version: " << vers << std::endl;
               }
             }

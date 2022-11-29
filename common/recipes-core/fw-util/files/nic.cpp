@@ -94,14 +94,14 @@ int NicComponent::get_version(json& j) {
   if (is_unknown_mfg_id) {
     char mfg_id[9] = {0};
     sprintf(mfg_id, "%04x", nic_mfg_id);
-    j["PRETTY_COMPONENT"] = "NIC firmware";
+    j["PRETTY_COMPONENT"] = "NIC";
     std::string display_nic_str = "NA (Unknown Manufacture ID: 0x" +
       std::string(mfg_id) + ")";
     j["VERSION"] = display_nic_str;
   }
   else {
     j["vendor"] = vendor;
-    j["PRETTY_COMPONENT"] = vendor + " NIC firmware";
+    j["PRETTY_COMPONENT"] = vendor + " NIC";
     j["VERSION"] = version;
   }
   return FW_STATUS_SUCCESS;

@@ -37,7 +37,7 @@ TEST(NicVersionTest, Mellanox)
   json j;
   EXPECT_EQ(nic.get_version(j), 0);
   EXPECT_EQ(j["VERSION"], "14.21.3008");
-  EXPECT_EQ(j["PRETTY_COMPONENT"], "Mellanox NIC firmware");
+  EXPECT_EQ(j["PRETTY_COMPONENT"], "Mellanox NIC");
 }
 
 TEST(NicVersionTest, Broadcomm)
@@ -62,7 +62,7 @@ TEST(NicVersionTest, Broadcomm)
   json j;
   EXPECT_EQ(nic.get_version(j), 0);
   EXPECT_EQ(j["VERSION"], "20.6.4.12");
-  EXPECT_EQ(j["PRETTY_COMPONENT"], "Broadcom NIC firmware");
+  EXPECT_EQ(j["PRETTY_COMPONENT"], "Broadcom NIC");
 }
 
 
@@ -88,7 +88,7 @@ TEST(NicVersionTest, Unknown)
   json j;
   EXPECT_EQ(nic.get_version(j), 0);
   EXPECT_EQ(j["VERSION"], "NA (Unknown Manufacture ID: 0x20810000)");
-  EXPECT_EQ(j["PRETTY_COMPONENT"], "NIC firmware");
+  EXPECT_EQ(j["PRETTY_COMPONENT"], "NIC");
 }
 
 TEST(NicUpgrade, CallTest)

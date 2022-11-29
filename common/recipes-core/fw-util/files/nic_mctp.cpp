@@ -38,17 +38,17 @@ int MCTPOverSMBusNicComponent::get_version(json& j)
     goto bail;
 
   if (rsp.IANA == MLX_MFG_ID) {
-    j["PRETTY_COMPONENT"] = "MellanoxNIC firmware";
+    j["PRETTY_COMPONENT"] = "MellanoxNIC";
     j["vendor"] = "Mellanox";
     stringstream ss;
     ss << (int)rsp.fw_ver[0] << "." << (int)rsp.fw_ver[1] << "."
          << (int)((rsp.fw_ver[2] << 8) | rsp.fw_ver[3]);
     j["VERSION"] = ss.str();
   } else if (rsp.IANA == BCM_MFG_ID) {
-    j["PRETTY_COMPONENT"] = "BroadcomNIC firmware";
+    j["PRETTY_COMPONENT"] = "BroadcomNIC";
     j["VERSION"] = rsp.fw_name;
   } else {
-    j["PRETTY_COMPONENT"] = "NIC firmware";
+    j["PRETTY_COMPONENT"] = "NIC";
     stringstream ss;
     ss << "NA (Unknown Manufacture ID: 0x"
          << hex << rsp.IANA  << ")" << endl;

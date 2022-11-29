@@ -21,7 +21,7 @@
     },
     "nic": {
         "nic": {
-            "version header": "^.*NIC firmware version.*$"
+            "version header": "^.*NIC version.*$"
         }
     },
     "scc": {

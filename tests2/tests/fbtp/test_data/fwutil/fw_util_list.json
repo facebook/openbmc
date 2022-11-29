@@ -15,7 +15,10 @@
     },
     "nic": {
         "nic": {
-            "version header": ["Broadcom NIC firmware Version","Mellanox NIC firmware Version"]
+            "version header": [
+                "Broadcom NIC Version",
+                "Mellanox NIC Version"
+            ]
         }
     }
 }

@@ -36,6 +36,7 @@ int VrComponent::get_version(json& j) {
     start = str.rfind(' ', end);
 
     tmp_str = str.substr(0, start);
+    string vendor_str(tmp_str);
     transform(tmp_str.begin(), tmp_str.end(),tmp_str.begin(), ::tolower);
     j["vendor"] = tmp_str;
 
@@ -43,6 +44,7 @@ int VrComponent::get_version(json& j) {
     tmp_str = str.substr(start, end - start);
     transform(tmp_str.begin(), tmp_str.end(),tmp_str.begin(), ::tolower);
     j["VERSION"] = tmp_str;
+    j["PRETTY_VERSION"] = vendor_str + " " + tmp_str;
   } catch (string& err) {
     j["VERSION"] = "NA";
   }

@@ -37,9 +37,9 @@ init_class1_ipmb() {
     echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-${bus}/new_device
     runsv /etc/sv/ipmbd_${bus} > /dev/null 2>&1 &
     if [ $slot_num -eq 1 ] || [ $slot_num -eq 3 ]; then
-      slot_present=$(gpio_get PRSNT_MB_BMC_SLOT${slot_num}_BB_N)
+      slot_present=$(gpio_get_value PRSNT_MB_BMC_SLOT${slot_num}_BB_N)
     else
-      slot_present=$(gpio_get PRSNT_MB_SLOT${slot_num}_BB_N)
+      slot_present=$(gpio_get_value PRSNT_MB_SLOT${slot_num}_BB_N)
     fi
     if [ "$slot_present" = "1" ]; then
       usleep 50000

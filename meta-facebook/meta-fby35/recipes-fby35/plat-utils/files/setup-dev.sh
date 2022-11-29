@@ -25,22 +25,14 @@ LTC4282_ADDR="44"
 ADM1272_ADDR="1f"
 LTC4282_CONTROL_REG="00"
 
-function create_new_dev() {
-  local dev_name=$1
-  local addr=$2
-  local bus=$3
-
-  echo "$dev_name $addr" > /sys/class/i2c-dev/i2c-"${bus}"/device/new_device
-}
-
 function init_class1_dev() {
   #create the device of the inlet/outlet temp.
-  create_new_dev "lm75" 0x4e 12
-  create_new_dev "lm75" 0x4f 12
+  i2c_device_add 12 0x4e lm75
+  i2c_device_add 12 0x4f lm75
 
   #create the device of bmc/bb fru.
-  create_new_dev "24c128" 0x51 11
-  create_new_dev "24c128" 0x54 11
+  i2c_device_add 11 0x51 24c128
+  i2c_device_add 11 0x54 24c128
 
   local medusa_addr=""
   local chip=""
@@ -62,7 +54,7 @@ function init_class1_dev() {
     chip="ltc4287"
   fi
   if [ "$load_driver" = true ]; then
-    create_new_dev $chip $medusa_addr 11
+    i2c_device_add 11 $medusa_addr $chip
   fi
 
   # /mnt/data/kv_store checking, and create one if not exist
@@ -77,29 +69,33 @@ function init_class1_dev() {
 
 function init_class2_dev() {
   #create the device of the outlet temp.
-  create_new_dev "lm75" 0x4f 2
-  create_new_dev "lm75" 0x4f 12
+  i2c_device_add 2 0x4f lm75
+  i2c_device_add 12 0x4f lm75
 
   #create the device of bmc/nic fru.
-  create_new_dev "24c128" 0x51 11
-  create_new_dev "24c128" 0x54 11
+  i2c_device_add 11 0x51 24c128
+  i2c_device_add 11 0x54 24c128
 }
 
 function init_exp_dev() {
   for i in {1..4}; do
     bmc_location=$(get_bmc_board_id)
-    if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then 
+    if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
       if [ "$(is_server_prsnt $i)" == "0" ]; then
         continue
       fi
       enable_server_i2c_bus $i
-    fi    
+    fi
     cpld_bus=$(get_cpld_bus $i)
     type_2ou=$(get_2ou_board_type "$cpld_bus")
     # check DPv2 x8 present
     prsnt_x8=$((type_2ou & 0x7))
     if [ "$prsnt_x8" -eq "7" ]; then
-      create_new_dev "24c128" 0x51 "$cpld_bus"
+      i2c_device_add "$cpld_bus" 0x51 24c128
+    fi
+    # EEPROM on PRoT module
+    if [ "$(is_prot_prsnt $i)" == "1" ]; then
+      i2c_device_add "$cpld_bus" 0x50 24c32
     fi
   done
 }
@@ -107,8 +103,8 @@ function init_exp_dev() {
 echo "Setup devs for fby35..."
 
 #create the device of mezz card
-create_new_dev "tmp421" 0x1f 8
-create_new_dev "24c32" 0x50 8
+i2c_device_add 8 0x1f tmp421
+i2c_device_add 8 0x50 24c32
 
 bmc_location=$(get_bmc_board_id)
 if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then

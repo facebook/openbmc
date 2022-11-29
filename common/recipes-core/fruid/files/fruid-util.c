@@ -751,6 +751,10 @@ int print_fru(int fru, char * device, bool allow_absent, unsigned char print_for
 
   if (num_devs && dev_id == DEV_ALL) {
     for (i = 1;i <= num_devs; i++) {
+      unsigned int caps;
+      if (pal_get_dev_capability(fru, i, &caps) || !(caps & FRU_CAPABILITY_FRUID_READ)) {
+        continue;
+      }
       pal_get_dev_fruid_name(fru,i,name);
       ret = pal_get_dev_fruid_path(fru, i, path);
       if (ret < 0) {

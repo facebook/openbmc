@@ -24,6 +24,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-evb-npcm845:lf-master
   meta-fbttn2:lf-master
   meta-fby2-nd:lf-master
+  meta-fby35:lf-master
   meta-greatlakes:lf-master
   meta-halfdome:lf-master
   meta-qemux86:lf-master
@@ -31,7 +32,6 @@ PLAT_DISTRO_OVERRIDES=(
 # langdale platforms (latest)
 # kirkstone platforms (pending upgrade)
   meta-churchillmono:lf-kirkstone
-  meta-fby35:lf-kirkstone
   meta-grandcanyon:lf-kirkstone
   meta-grandteton:lf-kirkstone
   meta-inspirationpoint:lf-kirkstone

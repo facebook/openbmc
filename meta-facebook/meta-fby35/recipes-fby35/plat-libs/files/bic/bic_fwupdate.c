@@ -299,7 +299,7 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp __attribute__((unused)), uin
     goto exit;
   }
 
-  printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
+  printf("file size = %zu bytes, slot = %u, intf = 0x%x\n", file_size, slot_id, intf);
 
   //run into the different function based on the interface
   ret = update_bic(slot_id, fd, file_size, intf);
@@ -381,7 +381,7 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
     syslog(LOG_ERR, "%s[%u] Cannot open %s", __func__, slot_id, path);
     return -1;
   }
-  printf("file size = %d bytes, slot = %u, intf = 0x%x\n", file_size, slot_id, intf);
+  printf("file size = %zu bytes, slot = %u, intf = 0x%x\n", file_size, slot_id, intf);
 
   bus = slot_id + SLOT_BUS_BASE;
   addr = (SB_CPLD_ADDR << 1);
@@ -507,7 +507,7 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
 
         if ((last_offset + dsize) <= r_b) {
           _set_fw_update_ongoing(slot_id, 60);
-          printf("\ruploaded bic: %d %%", r_b/dsize);
+          printf("\ruploaded bic: %zu %%", r_b/dsize);
           fflush(stdout);
           last_offset += dsize;
         }
@@ -1015,7 +1015,6 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
             snprintf(value, sizeof(value), "%x", *rev_id);
             if (kv_set("board_rev_id", (char*)value, 1, KV_FCREATE)) {
               syslog(LOG_WARNING,"%s: kv_set failed, key: board_rev_id, val: %x", __func__, *rev_id);
-              return -1;
             }
           }
         }
@@ -1042,7 +1041,6 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
             snprintf(value, sizeof(value), "%x", *rev_id);
             if (kv_set("nic_board_rev_id", (char*)value, 1, KV_FCREATE)) {
               syslog(LOG_WARNING,"%s: kv_set failed, key: nic_board_rev_id, val: %x", __func__, *rev_id);
-              return -1;
             }
           }
         }
@@ -1056,7 +1054,6 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
             snprintf(value, sizeof(value), "%x", *rev_id);
             if (kv_set("board_rev_id", (char*)value, 1, KV_FCREATE)) {
               syslog(LOG_WARNING,"%s: kv_set failed, key: board_rev_id, val: %x", __func__, *rev_id);
-              return -1;
             }
           }
         }

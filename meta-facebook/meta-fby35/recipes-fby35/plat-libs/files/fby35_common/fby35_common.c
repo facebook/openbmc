@@ -311,7 +311,6 @@ fby35_common_get_slot_type(uint8_t fru) {
   ret = value[0];
   if (kv_set(key, value, 1, KV_FCREATE)) {
     syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
-    return -1;
   }
 
   return ret;
@@ -336,7 +335,6 @@ fby35_common_get_sb_rev(uint8_t fru) {
   ret = value[0];
   if (kv_set(key, value, 1, KV_FCREATE)) {
     syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
-    return -1;
   }
 
   return ret;
@@ -545,7 +543,6 @@ fby35_common_get_2ou_board_type(uint8_t fru, uint8_t *board_type) {
 
   if (kv_set(key, (char *)board_type, 1, KV_FCREATE)) {
     syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, board_type[0]);
-    return -1;
   }
 
   return 0;
@@ -1080,7 +1077,6 @@ fby35_common_is_prot_card_prsnt(uint8_t fru) {
   value[0] = (value[0] & 0x01) ^ 0x01;
   if (kv_set(key, value, 1, KV_FCREATE)) {
     syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
-    return false;
   }
 
   return value[0] ? true : false;

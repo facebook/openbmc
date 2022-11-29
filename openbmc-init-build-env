@@ -27,6 +27,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-greatlakes:lf-master
   meta-halfdome:lf-master
   meta-qemux86:lf-master
+  meta-waimeacanyon:lf-master
 # langdale platforms (latest)
 # kirkstone platforms (pending upgrade)
   meta-churchillmono:lf-kirkstone
@@ -35,7 +36,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-grandteton:lf-kirkstone
   meta-inspirationpoint:lf-kirkstone
   meta-sandia:lf-kirkstone
-  meta-waimeacanyon:lf-kirkstone
 # dunfell platforms (pending upgrade)
   meta-clearcreek:lf-dunfell
   meta-cloudripper:lf-dunfell

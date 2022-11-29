@@ -88,10 +88,10 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-    if(attempt_server_power_off(force)) {
-      cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
-      return FW_STATUS_FAILURE;
-    }
+  if (attempt_server_power_off(force)) {
+    cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
+    return FW_STATUS_FAILURE;
+  }
 
   server_type = fby35_common_get_slot_type(slot_id);
   if (SERVER_TYPE_HD != server_type) {
@@ -157,6 +157,8 @@ int BiosComponent::fupdate(const string image) {
 
 int BiosComponent::dump(string image) {
   int ret;
+  int server_type = 0;
+  int ret_recovery = 0, ret_reset = 0;
 
   try {
     cerr << "Checking if the server is ready..." << endl;
@@ -166,18 +168,44 @@ int BiosComponent::dump(string image) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  if(attempt_server_power_off(false)) {
+  if (attempt_server_power_off(false)) {
     cerr << "Failed to Power Off Server " << slot_id << ". Stopping the dmup!" << endl;
     return FW_STATUS_FAILURE;
+  }
+
+  server_type = fby35_common_get_slot_type(slot_id);
+  if (SERVER_TYPE_HD != server_type) {
+    cerr << "Putting ME into recovery mode..." << endl;
+    ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
+    if (ret_recovery < 0) {
+      cerr << "Failed to put ME into recovery mode." << endl;
+    }
+    sleep(1);
   }
 
   ret = dump_bic_usb_bios(slot_id, FW_BIOS, (char *)image.c_str());
   if (ret != 0) {
     cerr << "BIOS dump failed. ret = " << ret << endl;
   }
-  cerr << "Power-cycling the server..." << endl;
   sleep(1);
-  pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+
+  if (SERVER_TYPE_HD != server_type) {
+    // Have to do ME reset, because we have put ME into recovery mode
+    cerr << "Doing ME Reset..." << endl;
+    ret_reset = me_reset(slot_id);
+    sleep(DELAY_ME_RESET);
+  }
+
+  cerr << "Power-cycling the server..." << endl;
+
+  // 12V-cycle is necessary for concerning BIOS/ME crash case
+  if (ret_reset || ret_recovery) {
+    syslog(LOG_CRIT, "Server 12V cycle due to %s failed when BIOS dump",
+           ret_recovery ? "putting ME into recovery mode" : "ME reset");
+    pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+  } else {
+    pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+  }
 
   return ret;
 }

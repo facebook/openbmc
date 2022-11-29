@@ -643,7 +643,7 @@ bic_dump_fw_usb(uint8_t slot_id, uint8_t comp, char *path, usb_dev* udev) {
       img_size = 0x1000000;
       break;
     case SERVER_TYPE_CL:
-      img_size = 0x2000000;
+      img_size = 0x4000000;
       break;
     default:
       syslog(LOG_WARNING, "%s() Unknown slot type, dmup full flash(64MB)", __func__);

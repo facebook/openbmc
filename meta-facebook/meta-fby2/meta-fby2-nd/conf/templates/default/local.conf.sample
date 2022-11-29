@@ -6,7 +6,7 @@
 MACHINE ??= "northdome"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb-2"
+DISTRO ?= "openbmc-fb-master"
 
 # The following will enable a build capable of verified-boot.
 # Images and the resultant flash are always built as a FIT (firmware image).

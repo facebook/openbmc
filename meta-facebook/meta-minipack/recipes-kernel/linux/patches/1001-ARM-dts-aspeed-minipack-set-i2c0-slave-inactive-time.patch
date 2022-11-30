@@ -1,0 +1,59 @@
+From 95b1fc8cac7e3bbd6ff54d030310eb442e36dfd4 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Thu, 5 Sep 2019 15:30:44 -0700
+Subject: [PATCH] ARM: dts: aspeed: minipack: set i2c0 slave inactive timeout
+
+Summary:
+Sometimes aspeed i2c-0 controller gets stuck in slave mode because the
+STOP condition from BIC cannot be detected by BMC.
+
+This patch enables i2c slave inactive timeout interrupt and bus auto
+release feature on minipack i2c-0: the controller will be reset to idle
+state automatically when slave inactive timeout interrupt is generated.
+
+@fb-note-start
+This patch depends on commit "i2c: aspeed: add slave inactive timeout
+support".
+@fb-note-end
+
+Test Plan:
+
+1) verified i2c-0 stuck issue is resolved in minipack 5.10.
+2) bic-util works normally:
+
+root@dhcp-100-97-167-85:~# bic-util scm --get_dev_id
+Device ID: 0x25
+Device Revision: 0x80
+Firmware Revision: 0x1:0x9
+IPMI Version: 0x2
+Device Support: 0xBF
+Manufacturer ID: 0x0:0x1C:0x4C
+Product ID: 0x46:0x20
+Aux. FW Rev: 0x0:0x0:0x0:0x0
+
+Reviewers: tfang, mikechoi, #openbmc
+
+Reviewed By: mikechoi
+
+Differential Revision: https://phabricator.intern.facebook.com/D17274415
+
+Signature: 17274415:1568073312:534344fcf200a05f6669948b547518b0471064ac
+---
+ .../arch/arm/boot/dts/aspeed-bmc-facebook-minipack.dts           | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-minipack.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-minipack.dts
+index 4e5ee57fbe..54144e5074 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-minipack.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-minipack.dts
+@@ -372,6 +372,7 @@ &i2c0 {
+ 	status = "okay";
+ 	bus-frequency = <400000>;
+ 	multi-master;
++	aspeed,hw-timeout-ms = <1000>;
+ };
+ 
+ &i2c1 {
+-- 
+2.30.2
+

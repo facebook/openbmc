@@ -1,0 +1,69 @@
+From 9aba0f04d1b8d9f4ddee3a5a70e8bbb947f111f0 Mon Sep 17 00:00:00 2001
+From: Yiang Han <hya321@meta.com>
+Date: Wed, 30 Nov 2022 10:56:20 -0800
+Subject: [PATCH] ARM: dts: minipack: aspeed: kernel 6.0: add the spi flash
+ device desc.
+
+---
+ .../boot/dts/aspeed-bmc-facebook-minipack.dts | 41 +++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-minipack.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-minipack.dts
+index 53fc314e0ffc..a242b5c81229 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-minipack.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-minipack.dts
+@@ -226,6 +226,9 @@ aliases {
+ 		i2c141 = &imux141;
+ 		i2c142 = &imux142;
+ 		i2c143 = &imux143;
++
++		spi1 = &spi1;
++		spi2 = &spi2;
+ 	};
+ 
+ 	chosen {
+@@ -304,6 +307,44 @@ flash1@0 {
+ 	};
+ };
+ 
++&spi1 {
++	status = "okay";
++	compatible = "aspeed,ast2500-spi-user";
++
++	spidev@0 {
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <24750000>;
++		reg = <0>;
++	};
++};
++
++&spi2 {
++	status = "okay";
++	compatible = "aspeed,ast2500-spi-user";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_spi2ck_default
++		     &pinctrl_spi2cs0_default
++		     &pinctrl_spi2cs1_default
++		     &pinctrl_spi2miso_default
++		     &pinctrl_spi2mosi_default>;
++
++	spidev@0 {
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <24750000>;
++		reg = <0>;
++	};
++
++	eeprom@1 {
++		compatible = "atmel,at25";
++		spi-max-frequency = <5000000>;
++		reg = <1>;
++
++		at25,addr-mode = <4>;
++		at25,page-size = <256>;
++		at25,byte-len = <0x40000>;
++	};
++};
++
+ &uart1 {
+ 	pinctrl-0 = <&pinctrl_txd1_default
+ 		     &pinctrl_rxd1_default

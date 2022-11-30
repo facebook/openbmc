@@ -1,6 +1,7 @@
 #include <openbmc/hgx.h>
 #include <openbmc/libgpio.h>
 #include <iostream>
+#include <syslog.h>
 #include "fw-util.h"
 
 const char * GPU_PRESENT = "GPU_HMC_PRSNT_ISO_R_N";
@@ -16,11 +17,18 @@ class HGXComponent : public Component {
       : Component(fru, comp), _hgxcomp(hgxcomp) {}
   int update(std::string image) {
     try {
+      if (_hgxcomp == "") {
+        syslog(LOG_CRIT, "HGX FW upgrade initiated, image: %s", image.c_str());
+      }
+      else {
+        syslog(LOG_CRIT, "HGX Component %s upgrade initiated", component().c_str());
+      }
       hgx::update(image);
     } catch (std::exception& e) {
       std::cerr << e.what() << std::endl;
       return -1;
     }
+    syslog(LOG_CRIT, "HGX upgrade completed");
     return 0;
   }
   int get_version(json& j) {

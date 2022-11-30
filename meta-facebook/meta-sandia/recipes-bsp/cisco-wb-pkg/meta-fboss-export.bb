@@ -10,7 +10,7 @@ PV = "0.16-1"
 
 inherit cmake
 
-SRCREV = "a1af0726c91d85818c6f725c1af3f3f54d5e6714"
+SRCREV = "01f91b13a2a3e4a0daea120c25920f862754adac"
 SRC_URI = " \
     git://git@github.com:/cisco-open/meta-fboss-export.git;branch=main;protocol=ssh \
 "
@@ -27,6 +27,7 @@ DEPENDS += " \
     glog \
     howardhinnant-date \
     nlohmann-json \
+    zlib \
 "
 
 S = "${WORKDIR}/git"
@@ -57,8 +58,8 @@ do_install() {
         ${S}/target/sandia/etc/udev/rules.d/99-bmc-85_SCM_O_BMC.rules
 
     install -d ${D}${bindir}
-    install -m 755 -t ${D}${bindir} ${WORKDIR}/build/fw_util
-    install -m 755 -t ${D}${bindir} ${WORKDIR}/build/weutil
+    install -m 755 ${WORKDIR}/build/fw_util_cisco ${D}${bindir}/fw_util
+    install -m 755 ${WORKDIR}/build/weutil_cisco  ${D}${bindir}/weutil
 
     install -d ${D}/opt/cisco/bin/
     install -m 755 -t ${D}/opt/cisco/bin ${S}/fpd/bios_bmc_create_mtd.sh

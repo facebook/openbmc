@@ -92,21 +92,45 @@ bic_gpio_t gpio_ass_val = {
   {0, 0, 0}, // gpio[0], gpio[1], gpio[2]
 };
 
-err_t bic_pch_pwr_fault[] = {
-  {0x01, "P1V8_STBY"},
-  {0x02, "P1V26_STBY"},
-  {0x04, "P1V2_STBY"},
-  {0x08, "P1V05_STBY"},
+static const char *cl_bic_pch_pwr_fault[] = {
+  "P1V8_STBY",   // bit0
+  "P1V26_STBY",  // bit1
+  "P1V2_STBY",   // bit2
+  "P1V05_STBY",  // bit3
 };
 
-err_t cpu_pwr_fault[] = {
-  {0x01, "PVCCD_HV_CPU"},
-  {0x02, "PVCCIN_CPU"},
-  {0x04, "PVNN_MAIN_CPU"},
-  {0x08, "PVCCINFAON_CPU"},
-  {0x10, "PVCCFA_EHV_FIVRA_CPU"},
-  {0x20, "PVCCFA_EHV_CPU"},
+static const char *hd_bic_pch_pwr_fault[] = {
+  "P1V8_STBY",  // bit0
+  "RSVD",       // bit1
+  "P1V2_STBY",  // bit2
+  "PVDD33_S5",  // bit3
+  "PVDD18_S5",  // bit4
 };
+
+static const char **bic_pch_pwr_fault = cl_bic_pch_pwr_fault;
+static size_t bic_pch_pwr_fault_size = ARRAY_SIZE(cl_bic_pch_pwr_fault);
+
+static const char *cl_cpu_pwr_fault[] = {
+  "PVCCD_HV_CPU",          // bit0
+  "PVCCIN_CPU",            // bit1
+  "PVNN_MAIN_CPU",         // bit2
+  "PVCCINFAON_CPU",        // bit3
+  "PVCCFA_EHV_FIVRA_CPU",  // bit4
+  "PVCCFA_EHV_CPU",        // bit5
+};
+
+static const char *hd_cpu_pwr_fault[] = {
+  "PVDDCR_CPU0",  // bit0
+  "PVDDCR_SOC",   // bit1
+  "PVDDCR_CPU1",  // bit2
+  "PVDDIO",       // bit3
+  "PVDD11_S3",    // bit4
+  "P3V3_M2",      // bit5
+  "P12V_MEM",     // bit6
+};
+
+static const char **cpu_pwr_fault = cl_cpu_pwr_fault;
+static size_t cpu_pwr_fault_size = ARRAY_SIZE(cl_cpu_pwr_fault);
 
 char *host_key[] = {"fru1_host_ready",
                     "fru2_host_ready",
@@ -487,32 +511,35 @@ init_gpio_offset_map() {
     pal_is_fru_prsnt(fru, &fru_prsnt);
     if (fru_prsnt) {
       if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
-          gpio_offset.bmc_ready = HD_BMC_READY;
-          gpio_offset.bios_post_cmplt = HD_FM_BIOS_POST_CMPLT_BIC_N;
-          gpio_offset.pwrgd_cpu = HD_PWRGD_CPU_LVC3;
-          gpio_offset.rst_pltrst = HD_RST_PLTRST_BIC_N;
-          gpio_offset.bmc_debug_enable = HD_FM_BMC_DEBUG_ENABLE_N;
+        gpio_offset.bmc_ready = HD_BMC_READY;
+        gpio_offset.bios_post_cmplt = HD_FM_BIOS_POST_CMPLT_BIC_N;
+        gpio_offset.pwrgd_cpu = HD_PWRGD_CPU_LVC3;
+        gpio_offset.rst_pltrst = HD_RST_PLTRST_BIC_N;
+        gpio_offset.bmc_debug_enable = HD_FM_BMC_DEBUG_ENABLE_N;
+
+        cpu_pwr_fault = hd_cpu_pwr_fault;
+        cpu_pwr_fault_size = ARRAY_SIZE(hd_cpu_pwr_fault);
+        bic_pch_pwr_fault = hd_bic_pch_pwr_fault;
+        bic_pch_pwr_fault_size = ARRAY_SIZE(hd_bic_pch_pwr_fault);
       }
       break;
     }
   }
-
 }
 
 void
 check_bic_pch_pwr_fault(uint8_t fru) {
   int pwr_fault;
   size_t index;
-  size_t table_size = sizeof(bic_pch_pwr_fault)/sizeof(err_t);
 
   pwr_fault = fby35_common_get_sb_pch_bic_pwr_fault(fru);
   if (pwr_fault < 0) {
     return;
   }
 
-  for (index = 0; index < table_size; index++) {
+  for (index = 0; index < bic_pch_pwr_fault_size; index++) {
     if (GETBIT(pwr_fault, index)) {
-      syslog(LOG_CRIT, "FRU: %u, PCH/BIC power fault: %s (0x%02X)", fru, bic_pch_pwr_fault[index].err_des, pwr_fault);
+      syslog(LOG_CRIT, "FRU: %u, PCH/BIC power fault: %s (0x%02X)", fru, bic_pch_pwr_fault[index], pwr_fault);
     }
   }
 }
@@ -521,16 +548,15 @@ void
 check_cpu_pwr_fault(uint8_t fru) {
   int pwr_fault;
   size_t index;
-  size_t table_size = sizeof(cpu_pwr_fault)/sizeof(err_t);
 
   pwr_fault = fby35_common_get_sb_cpu_pwr_fault(fru);
   if (pwr_fault < 0) {
     return;
   }
 
-  for (index = 0; index < table_size; index++) {
+  for (index = 0; index < cpu_pwr_fault_size; index++) {
     if (GETBIT(pwr_fault, index)) {
-      syslog(LOG_CRIT, "FRU: %u, CPU power fault: %s (0x%02X)", fru, cpu_pwr_fault[index].err_des, pwr_fault);
+      syslog(LOG_CRIT, "FRU: %u, CPU power fault: %s (0x%02X)", fru, cpu_pwr_fault[index], pwr_fault);
     }
   }
 }

@@ -19,6 +19,24 @@ std::tuple<struct sockaddr_un, size_t> UnixSock::getServiceAddr(
   return std::make_tuple(ret, sockPath.size() + sizeof(ret.sun_family));
 }
 
+static void setRecvTimeout(int fd, int timeoutSec) {
+  struct timeval timeout;
+  timeout.tv_sec = timeoutSec;
+  timeout.tv_usec = 0;
+  if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) < 0) {
+    logError << "Unable to set recv timeout" << std::endl;
+  }
+}
+
+static void setSendTimeout(int fd, int timeoutSec) {
+  struct timeval timeout;
+  timeout.tv_sec = timeoutSec;
+  timeout.tv_usec = 0;
+  if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout) < 0) {
+    logError << "Unable to set send timeout" << std::endl;
+  }
+}
+
 int UnixSock::getServiceSock() {
   int ret = socket(AF_UNIX, SOCK_STREAM, 0);
   if (ret < 0) {
@@ -50,6 +68,10 @@ int UnixSock::createService(const std::string& sockPath) {
 
 int UnixSock::createClient(const std::string& sockPath) {
   int sock = getServiceSock();
+  // This include time client will wait for a connect to succeed.
+  setSendTimeout(sock, 15);
+  // If we are waiting longer than 30s, then something is really off.
+  setRecvTimeout(sock, 30);
   auto [rackmondAddr, addrLen] = getServiceAddr(sockPath);
   if (connect(sock, (struct sockaddr*)&rackmondAddr, addrLen)) {
     close(sock);
@@ -285,6 +307,12 @@ void UnixService::doLoop() {
         logError << "Failed to accept new connection" << std::endl;
         continue;
       }
+
+      // We operate in 64k chunks. We should never wait longer than
+      // 2s to send/recv. Even after that we retry in the calls,
+      // so this is a fair value.
+      setRecvTimeout(clifd, 1);
+      setSendTimeout(clifd, 1);
       auto clisock = std::make_unique<UnixSock>(clifd);
       handleConnection(std::move(clisock));
     }

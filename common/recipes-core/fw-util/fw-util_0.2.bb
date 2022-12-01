@@ -50,6 +50,8 @@ LOCAL_URI =+ " \
     file://tpm2.cpp \
     file://tpm2.h \
     file://vr.cpp \
+    file://signed_decoder.hpp \
+    file://signed_decoder.cpp \
     "
 
 inherit meson pkgconfig

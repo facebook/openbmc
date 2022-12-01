@@ -14,6 +14,7 @@ srcs += [
     'swb_bic.cpp',
     'usbdbg.cpp',
     'vr_fw.cpp',
+    'signed_decoder.cpp'
 ]
 
 deps += [

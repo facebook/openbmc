@@ -10,6 +10,8 @@
 #include <libpldm/pldm.h>
 #include <libpldm/platform.h>
 #include <libpldm-oem/pldm.h>
+#include "signed_decoder.hpp"
+#include "signed_info.hpp"
 
 #define SWB_CPLD_BUS_ID   (7)
 
@@ -103,6 +105,65 @@ int CpldComponent::get_version(json& j) {
   return FW_STATUS_SUCCESS;
 }
 
-CpldComponent mb_cpld("mb", "mb_cpld", LCMXO3_9400C, 7, 0x40, nullptr);
-CpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, 3, 0x40, &cpld_pldm_wr);
-CpldComponent scm_cpld("scm", "scm_cpld", LCMXO3_2100C, 15, 0x40, nullptr);
+class Signed_CpldComponent : public CpldComponent, public SignedDecoder {
+  public:
+    Signed_CpldComponent(const string &fru, const string &comp,
+      uint8_t type, uint8_t bus, uint8_t addr, int (*cpld_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t),
+      signed_header_t sign_info): CpldComponent(fru, comp, type, bus, addr, cpld_xfer),
+      SignedDecoder(sign_info, fru) {}
+    int update(string image);
+};
+
+int Signed_CpldComponent::update(string image) {
+  int ret = 0;
+  ret = is_image_signed(image);
+  if (ret) {
+    printf("Firmware not valid. error(%d)\n", -ret);
+    return -1;
+  }
+
+  ret = get_image(image);
+  if (ret) {
+    printf("Get copy file. error(%d)\n", -ret);
+    return -1;
+  }
+
+  ret = CpldComponent::update(image);
+  if (ret) {
+    printf("%s\n", image.c_str());
+    printf("Update component with temp file failed. error(%d)\n", ret);
+    return -1;
+  }
+
+  ret = delete_image();
+  if (ret) {
+    printf("Remove temp file failed. error(%d)\n", -ret);
+    return -1;
+  }
+
+  return ret;
+}
+
+// CpldComponent mb_cpld("mb", "mb_cpld", LCMXO3_9400C, 7, 0x40, nullptr);
+// CpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, 3, 0x40, &cpld_pldm_wr);
+// CpldComponent scm_cpld("scm", "scm_cpld", LCMXO3_2100C, 15, 0x40, nullptr);
+class fw_cpld_config {
+  public:
+    fw_cpld_config(){
+      signed_header_t cpld_info = {
+        signed_info::PLATFORM_NAME,
+        signed_info::MB_BOARD,
+        signed_info::DVT,
+        signed_info::CPLD
+      };
+      static Signed_CpldComponent mb_cpld("mb", "mb_cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
+
+      cpld_info.board_id = signed_info::SWB_BOARD;
+      static Signed_CpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, 3, 0x40, &cpld_pldm_wr, cpld_info);
+
+      cpld_info.board_id = signed_info::SCM_BOARD;
+      static Signed_CpldComponent scm_cpld("scm", "scm_cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
+    }
+};
+
+fw_cpld_config _fw_cpld_config;

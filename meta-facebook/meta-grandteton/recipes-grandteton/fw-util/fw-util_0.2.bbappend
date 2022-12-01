@@ -41,6 +41,7 @@ LOCAL_URI += " \
     file://vr_fw.cpp \
     file://swb_bic.cpp \
     file://hgx.cpp \
+    file://signed_info.hpp \
     "
 
 DEPENDS += " \

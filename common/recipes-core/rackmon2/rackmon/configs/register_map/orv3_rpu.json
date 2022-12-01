@@ -1,0 +1,416 @@
+{
+    "name": "ORV3_RPU",
+    "address_range": [
+      0,
+      0
+    ],
+    "probe_register": 36864,
+    "default_baudrate": 19200,
+    "preferred_baudrate": 19200,
+    "registers": [
+        {
+            "begin": 36864,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Coolant_Flow_Rate_LPM"
+        },
+        {
+            "begin": 36865,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Coolant_Outlet_Temp_C"
+        },
+        {
+            "begin": 36866,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Coolant_Inlet_Temp_C"
+        },
+        {
+            "begin": 36867,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Coolant_Outlet_Pressure_kPa"
+        },
+        {
+            "begin": 36868,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Coolant_Inlet_Pressure_kPa"
+        },
+        {
+            "begin": 36872,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Air_Inlet_Temp_C"
+        },
+        {
+            "begin": 36873,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump_PWM_Pct"
+        },
+        {
+            "begin": 36874,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump1_TACH_RPM"
+        },
+        {
+            "begin": 36875,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump2_TACH_RPM"
+        },
+        {
+            "begin": 36876,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump3_TACH_RPM"
+        },
+        {
+            "begin": 36877,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump4_TACH_RPM"
+        },
+        {
+            "begin": 36878,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [1, "RPU_Fan2_Status"],
+                [0, "RPU_Fan1_Status"]
+            ],
+            "name": "RPU_Fan_Status"
+        },
+        {
+            "begin": 36879,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Fan1_TACH_RPM"
+        },
+        {
+            "begin": 36880,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Fan2_TACH_RPM"
+        },
+        {
+            "begin": 36881,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "AALC_Cooling_Capacity_W"
+        },
+        {
+            "begin": 36882,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump1_Status"
+        },
+        {
+            "begin": 36883,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump2_Status"
+        },
+        {
+            "begin": 36884,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump3_Status"
+        },
+        {
+            "begin": 36885,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump4_Status"
+        },
+        {
+            "begin": 36886,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Reservoir_Status"
+        },
+        {
+            "begin": 36887,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [3, "RPU_LED_Power_Status"],
+                [3, "RPU_LED_Fault_Status"],
+                [2, "RPU_LED_Leakage_Status"],
+                [1, "RPU_LED_Reservoir_Blinking"],
+                [0, "RPU_LED_Reservoir_On"]
+            ],
+            "name": "RPU_LED_Status"
+        },
+        {
+            "begin": 36912,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "RPU_Pump1_Runtime"
+        },
+        {
+            "begin": 36914,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "RPU_Pump2_Runtime"
+        },
+        {
+            "begin": 36916,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "RPU_Pump3_Runtime"
+        },
+        {
+            "begin": 36918,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "RPU_Pump4_Runtime"
+        },
+        {
+            "begin": 37120,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan_PWM_TACH_Pct"
+        },
+        {
+            "begin": 37124,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan1_TACH_RPM"
+        },
+        {
+            "begin": 37125,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan2_TACH_RPM"
+        },
+        {
+            "begin": 37126,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_FAN3_TACH_RPM"
+        },
+        {
+            "begin": 37127,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_FAN4_TACH_RPM"
+        },
+        {
+            "begin": 37128,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_FAN5_TACH_RPM"
+        },
+        {
+            "begin": 37129,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_FAN6_TACH_RPM"
+        },
+        {
+            "begin": 37130,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_FAN7_TACH_RPM"
+        },
+        {
+            "begin": 37131,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_FAN8_TACH_RPM"
+        },
+        {
+            "begin": 37132,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_FAN9_TACH_RPM"
+        },
+        {
+            "begin": 37133,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_FAN10_TACH_RPM"
+        },
+        {
+            "begin": 37134,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet1_Temp_C"
+        },
+        {
+            "begin": 37135,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet2_Temp_C"
+        },
+        {
+            "begin": 37136,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Inlet1_Temp_C"
+        },
+        {
+            "begin": 37137,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Inlet2_Temp_C"
+        },
+        {
+            "begin": 37138,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Water_Inlet_Temp_C"
+        },
+        {
+            "begin": 37139,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Bladder_Level_Status"
+        },
+        {
+            "begin": 37376,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [9, "HX_Water_Inlet_Thermometer_Status"],
+                [8, "HEX_Air_Inlet2_Thermometer_Status"],
+                [7, "HEX_Air_Inlet1_Thermometer_Status"],
+                [6, "HEX_Air_Outlet2_Thermometer_Status"],
+                [5, "HEX_Air_Outlet1_Thermometer_Status"],
+                [4, "RPU_Flow_Meter_Status"],
+                [3, "RPU_Coolant_Outlet_Gauge_Status"],
+                [2, "RPU_Coolant_Inlet_Gauge_Status"],
+                [1, "RPU_Coolant_Outlet_Thermometer_Status"],
+                [0, "RPU_Coolant_Inlet_Thermometer_Status"]
+            ],
+            "name": "AALC_Sensor_Alarm"
+        },
+        {
+            "begin": 37377,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [5, "HEX_Water_Inlet_Temp_Status"],
+                [4, "RPU_Outlet_Pressure_Status"],
+                [3, "RPU_Air_Inlet_Temp_Status"],
+                [2, "RPU_Inlet_Temp_Status"],
+                [1, "RPU_Outlet_Temp_Status"],
+                [0, "RPU_Reservoir_Status_Abnormal"]
+            ],
+            "name": "AALC_Status_Alarm"
+        },
+        {
+            "begin": 37378,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [11, "HEX_Rack_Floor_Leakage_Relay"],
+                [10, "HEX_Rack_Pan_Leakage_Relay"],
+                [9, "HEX_Rack_Floor_Leakage"],
+                [8, "HEX_Rack_Pan_Leakage"],
+                [7, "RPU_Opt_External_Leakage2_Abnormal"],
+                [6, "RPU_Opt_External_Leakage1_Abnormal"],
+                [5, "RPU_External_Leakage_Abnormal"],
+                [4, "RPU_Internal_Leakage_Abnormal"],
+                [3, "FB_chassis3_leakage"],
+                [2, "FB_chassis2_leakage"],
+                [1, "FB_chassis1_leakage"],
+                [0, "FB_chassis0_leakage"]
+            ],
+            "name": "Leakage"
+        },
+        {
+            "begin": 37379,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [15, "HEX_Comms_Status"],
+                [14, "HEX_Fan_Group3_Comms_Status"],
+                [13, "HEX_Fan_Group2_Comms_Status"],
+                [12, "HEX_Fan_Group1_Comms_Status"],
+                [9, "HEX_Fan10_Status"],
+                [8, "HEX_Fan9_Status"],
+                [7, "HEX_Fan8_Status"],
+                [6, "HEX_Fan7_Status"],
+                [5, "HEX_Fan6_Status"],
+                [4, "HEX_Fan5_Status"],
+                [3, "HEX_Fan4_Status"],
+                [2, "HEX_Fan3_Status"],
+                [1, "HEX_Fan2_Status"],
+                [0, "HEX_Fan1_Status"]
+            ],
+            "name": "HEX_Alarm"
+        },
+        {
+            "begin": 37888,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Auto_Tune_Coolant_Flow_Rate_Target_Set"
+        },
+        {
+            "begin": 37889,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Auto_Tune_Coolant_Outlet_Temperature_Target_Set"
+        },
+        {
+            "begin": 37890,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Redundant_Switched_Interval"
+        },
+        {
+            "begin": 37891,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Manual_Control_Pump_Duty_Set"
+        },
+        {
+            "begin": 37892,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Manual_Control_Fan_Duty_Set"
+        },
+        {
+            "begin": 37904,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [15, "Pump4_Reset"],
+                [14, "Pump3_Reset"],
+                [13, "Pump2_Reset"],
+                [12, "Pump1_Reset"],
+                [11, "Clear_Log"],
+                [10, "Clear_Pump_Running_Time "],
+                [9, "Enable_Manual_Control"],
+                [8, "Set_Pump_Group2"],
+                [7, "Set_Pump_Group1"],
+                [5, "System_Stop"],
+                [4, "Auto_Tune_Pressure_Balance_Control_On"],
+                [3, "Auto_Tune_Flow_Control_On"],
+                [2, "Manual_Control_Fan_On"],
+                [1, "Manual_Control_Pump_On"],
+                [0, "Pump_Redundant_Switched_Enable"]
+            ],
+            "name": "RPU_Control"
+        },
+        {
+            "begin": 37905,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [5, "RPU_Opt2_External_Leakage_Setting_On"],
+                [4, "RPU_Opt1_External_Leakage_Setting_On"],
+                [3, "Rack_Pan_Leakage_Setting_On"],
+                [2, "Rack_Floor_Leakage_Setting_On"],
+                [1, "RPU_Internal_Leakage_Setting_On"],
+                [0, "RPU_External_Leakage_Setting_On"]
+            ],
+            "name": "Leakage_Settings"
+        }
+    ]
+}

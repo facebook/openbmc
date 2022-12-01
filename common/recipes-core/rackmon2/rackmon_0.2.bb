@@ -84,6 +84,7 @@ LOCAL_URI += " \
     file://configs/register_map/orv2_psu.json \
     file://configs/register_map/orv3_psu.json \
     file://configs/register_map/orv3_bbu.json \
+    file://configs/register_map/orv3_rpu.json \
     "
 
 # Schemas

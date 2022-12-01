@@ -17,5 +17,5 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
-    file://gpiod.c \
+    file://gpiod_cover.c \
     "

@@ -238,6 +238,9 @@ gpio_export FM_DEBUG_PORT_PRSNT_N_IN GPIOZ6
 
 # ==GPIO18D==
 # EMMC Func GPIO18D0 - GPIO18D7
+gpio1v8_export AC_PWR_BMC_BTN_N 0
+
+
 
 devmem_set_bit 0x1e7800e0 8
 devmem_clear_bit 0x1e7000e4 8

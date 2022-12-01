@@ -32,16 +32,13 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 . /usr/local/bin/openbmc-utils.sh
 . /usr/local/fbpackages/utils/ast-functions
 
-mb_hsc=$(($(gpio_get FM_BOARD_BMC_SKU_ID3) << 1 |
-          $(gpio_get FM_BOARD_BMC_SKU_ID2)))
 
-MB_HSC_SECOND="1"  # ltc4282/ltc4286
-
-if [ "$mb_hsc" -eq "$MB_HSC_SECOND" ]; then
+MB_HSC_MODULE="1"  # ltc4282/ltc4286
+mb_hsc=$(kv get mb_hsc_module)
+if [ "$mb_hsc" -eq "$MB_HSC_MODULE" ]; then
   sed -i "2{s/$/ hsc/}" /etc/sv/sensord/run
 fi
 
-fw-util swb --version pex01_vcc > /dev/null 2>&1
 SWB_HSC_MODULE="1"  # ltc4282/ltc4286
 swb_hsc=$(kv get swb_hsc_module)
 if [ "$swb_hsc" -eq "$SWB_HSC_MODULE" ]; then

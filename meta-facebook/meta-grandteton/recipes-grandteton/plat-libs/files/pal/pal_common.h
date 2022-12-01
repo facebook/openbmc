@@ -14,6 +14,12 @@ enum {
 };
 
 enum {
+  SWB_HSC_SOURCE,
+  SWB_VR_SOURCE,
+  SWB_ADC_SOURCE,
+};
+
+enum {
   VPDB_HSC_SOURCE,
   VPDB_BRICK_SOURCE,
 };

@@ -21,7 +21,7 @@ do_install() {
   install -m 755 setup-mctpd.sh ${D}${sysconfdir}/init.d/setup-mctpd.sh
   install -m 755 run-mctpd_3.sh ${D}${sysconfdir}/sv/mctpd_3/run
   install -m 755 run-mctpd_4.sh ${D}${sysconfdir}/sv/mctpd_4/run
-  update-rc.d -r ${D} setup-mctpd.sh start 62 5 .
+  update-rc.d -r ${D} setup-mctpd.sh start 57 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

@@ -91,7 +91,7 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   return ret;
 }
 
-
+//Renesas VR
 struct vr_ops raa_gen2_3_ops = {
   .get_fw_ver = get_raa_ver,
   .parse_file = raa_parse_file,
@@ -100,6 +100,33 @@ struct vr_ops raa_gen2_3_ops = {
   .fw_verify = NULL,
 };
 
+//INFINEON VR
+struct vr_ops xdpe152xx_ops = {
+  .get_fw_ver = get_xdpe152xx_ver,
+  .parse_file = xdpe152xx_parse_file,
+  .validate_file = NULL,
+  .fw_update = xdpe152xx_fw_update,
+  .fw_verify = NULL,
+};
+
+struct vr_ops xdpe12284c_ops = {
+  .get_fw_ver = get_xdpe_ver,
+  .parse_file = xdpe_parse_file,
+  .validate_file = NULL,
+  .fw_update = xdpe_fw_update,
+  .fw_verify = NULL,
+};
+
+//MPS VR
+struct vr_ops mp2856_ops = {
+  .get_fw_ver = get_mp2856_ver,
+  .parse_file = mp2856_parse_file,
+  .validate_file = NULL,
+  .fw_update = mp2856_fw_update,
+  .fw_verify = NULL,
+};
+
+//VR Support list
 struct vr_info vr_list[] = {
   [VR_MB_CPU0_VCCIN] = {
     .bus = MB_VR_BUS_ID,
@@ -167,99 +194,28 @@ struct vr_info vr_list[] = {
   },
 };
 
-
-//INFINEON
-struct vr_ops xdpe152xx_ops = {
-  .get_fw_ver = get_xdpe152xx_ver,
-  .parse_file = xdpe152xx_parse_file,
-  .validate_file = NULL,
-  .fw_update = xdpe152xx_fw_update,
-  .fw_verify = NULL,
-};
-
-struct vr_ops xdpe12284c_ops = {
-  .get_fw_ver = get_xdpe_ver,
-  .parse_file = xdpe_parse_file,
-  .validate_file = NULL,
-  .fw_update = xdpe_fw_update,
-  .fw_verify = NULL,
-};
-
-struct vr_info mb_inf_vr_list[] = {
-  [VR_MB_CPU0_VCCIN] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU0_VCCIN,
-    .dev_name = "VR_CPU0_VCCIN/VCCFA_FIVRA",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU0_VCCFA] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU0_VCCFA,
-    .dev_name = "VR_CPU0_VCCFAEHV/FAON",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU0_VCCD] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU0_VCCD,
-    .dev_name = "VR_CPU0_VCCD",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU1_VCCIN] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU1_VCCIN,
-    .dev_name = "VR_CPU1_VCCIN/VCCFA_FIVRA",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU1_VCCFA] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU1_VCCFA,
-    .dev_name = "VR_CPU1_VCCFAEHV/FAON",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU1_VCCD] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU1_VCCD,
-    .dev_name = "VR_CPU1_VCCD",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-};
-
-//MPS
-struct vr_ops mp2856_ops = {
-  .get_fw_ver = get_mp2856_ver,
-  .parse_file = mp2856_parse_file,
-  .validate_file = NULL,
-  .fw_update = mp2856_fw_update,
-  .fw_verify = NULL,
+uint8_t mb_inf_vr_addr[] = {
+  ADDR_INF_CPU0_VCCIN,
+  ADDR_INF_CPU0_VCCFA,
+  ADDR_INF_CPU0_VCCD,
+  ADDR_INF_CPU1_VCCIN,
+  ADDR_INF_CPU1_VCCFA,
+  ADDR_INF_CPU1_VCCD,
 };
 
 
 int plat_vr_init(void) {
   int ret, i, vr_cnt = sizeof(vr_list)/sizeof(vr_list[0]);
-  uint8_t mb_sku_id = 0;
-
-  pal_get_platform_id(&mb_sku_id);
-  mb_sku_id = mb_sku_id & 0x03;
+  uint8_t id;
 
 //MB
-  if (mb_sku_id == 0x01) {
+  get_comp_source(FRU_MB, MB_VR_SOURCE, &id);
+  if (id == SECOND_SOURCE) {
     for (i = 0; i < MB_VR_CNT; i++) {
       vr_list[i].ops =  &xdpe152xx_ops;
-      vr_list[i].addr = mb_inf_vr_list[i].addr;
+      vr_list[i].addr = mb_inf_vr_addr[i];
     }
-  } else if (mb_sku_id == 0x02) {
+  } else if (id == THIRD_SOURCE) {
     for (i = 0; i < MB_VR_CNT; i++) {
       vr_list[i].ops =  &mp2856_ops;
     }
@@ -267,9 +223,14 @@ int plat_vr_init(void) {
 
 //SWB
   if (swb_presence()) {
-    if(is_swb_hsc_module()) {
+    get_comp_source(FRU_SWB, SWB_VR_SOURCE, &id);
+    if(id == SECOND_SOURCE) {
       for (i = 0; i < SWB_VR_CNT; i++) {
         vr_list[i+MB_VR_CNT].ops = &xdpe12284c_ops;
+      }
+    } else if (id == THIRD_SOURCE) {
+      for (i = 0; i < SWB_VR_CNT; i++) {
+        vr_list[i+MB_VR_CNT].ops = &mp2856_ops;
       }
     }
   }

@@ -7,8 +7,8 @@
 #include <openbmc/obmc-i2c.h>
 #include "syslog.h"
 
-static int
-get_swb_sensor(uint8_t fru, uint8_t sensor_num, float *value) 
+int
+get_swb_sensor(uint8_t fru, uint8_t sensor_num, float *value)
 {
   uint8_t tbuf[255] = {0};
   uint8_t* rbuf = (uint8_t *) NULL;//, tmp;

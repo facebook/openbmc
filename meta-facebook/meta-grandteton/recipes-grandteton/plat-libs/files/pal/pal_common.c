@@ -6,11 +6,13 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/kv.h>
 #include <syslog.h>
-#include "pal_common.h"
-#include "pal_def.h"
 #include <libpldm/pldm.h>
 #include <libpldm/platform.h>
 #include <libpldm-oem/pldm.h>
+#include "pal_common.h"
+#include "pal_def.h"
+#include "pal_swb_sensors.h"
+
 
 //#define DEBUG
 
@@ -18,6 +20,11 @@ char *mb_source_data[] = {
   "mb_hsc_source",
   "mb_vr_source",
   "mb_adc_source",
+};
+
+char *swb_source_data[] = {
+  "swb_hsc_source",
+  "swb_vr_source",
 };
 
 char *vpdb_source_data[] = {
@@ -46,7 +53,7 @@ struct source_info {
 struct source_info comp_source_data[] = {
   {FRU_ALL,   NULL},
   {FRU_MB,    mb_source_data},
-  {FRU_SWB,   NULL},
+  {FRU_SWB,   swb_source_data},
   {FRU_HMC,   NULL},
   {FRU_NIC0,  NULL},
   {FRU_NIC1,  NULL},
@@ -269,32 +276,18 @@ is_mb_hsc_module(void) {
   return val;
 }
 
+
 bool
 is_swb_hsc_module(void) {
   static bool cached = false;
   static bool val = false;
-  uint8_t inf_devid[3] = { 0x02, 0x79, 0x02 };
-  uint8_t tbuf[16], rbuf[16];
-  uint8_t tlen=0;
-  int ret;
+  uint8_t id;
 
   if(!cached) {
-    kv_set("swb_hsc_module", 0, 0, 0);
     if(swb_presence()) {
-      tbuf[tlen++] = VR0_COMP;
-      tbuf[tlen++] = 3;
-      tbuf[tlen++] = 0xAD;
-
-      size_t rlen = 0;
-      ret = pldm_oem_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
-                                 NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
-                                 tbuf, tlen,
-                                 rbuf, &rlen);
-
-      if(!ret && !memcmp(rbuf, inf_devid, 3)) {
+      get_comp_source(FRU_SWB, SWB_HSC_SOURCE, &id);
+      if (id == SECOND_SOURCE || id == THIRD_SOURCE)
         val = true;
-        kv_set("swb_hsc_module", "1", 0, 0);
-      }
     }
     cached = true;
   }

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2022-present Facebook. All Rights Reserved.
 #
@@ -90,6 +90,11 @@ i2c_device_add 33 0x51 24c64
 
 # Swith Board
 echo "Probe SWB Device"
+SWB_1ST_SOURCE="0"
+SWB_2ND_SOURCE="1"
+SWB_3RD_SOURCE="2"
+SWB_4TH_SOURCE="3"
+
 # BIC I/O Expander PCA9539 0xEC BIC
 i2c_device_add 32 0x76 pca9539
 
@@ -101,12 +106,55 @@ gpio_set BIC_FWSPICK 0
 gpio_set RST_SWB_BIC_N 1
 gpio_set BIC_UART_BMC_SEL 0
 
+#SWB HSC
+str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf0 0x00 0x01 |grep "PLDM Data")
+array=(${str// 0x/ })
+
+int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
+dec=$((16#${array[11]}|16#${array[12]} << 8))
+val=$(("$int"+"$dec"))
+
+#kv set swb_hsc_module "0"
+if [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
+then
+  kv set swb_hsc_source "$SWB_2ND_SOURCE" #ltc4282
+  kv set swb_hsc_module "1"
+elif [ "$val" -gt 1250 ]
+then
+  kv set swb_hsc_source "$SWB_3RD_SOURCE" #ltc4287
+  kv set swb_hsc_module "1"
+else
+  kv set swb_hsc_source "$SWB_1ST_SOURCE" #mp5990
+fi
+
+#SWB VR
+str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf1 0x00 0x01 |grep "PLDM Data")
+array=(${str// 0x/ })
+
+int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
+dec=$((16#${array[11]}|16#${array[12]} << 8))
+val=$(("$int"+"$dec"))
+
+if [ "$val" -gt 250 ] && [ "$val" -lt 750 ]
+then
+  kv set swb_vr_source "$SWB_2ND_SOURCE" #INF
+elif [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
+then
+  kv set swb_vr_source "$SWB_3RD_SOURCE" #MPS
+elif [ "$val" -gt 1250 ] && [ "$val" -lt 1750 ]
+then
+  kv set swb_vr_source "$SWB_4TH_SOURCE" #TI
+else
+  kv set swb_vr_source "$SWB_1ST_SOURCE" #RAA
+fi
+
+
 VPDB_EVT2_BORAD_ID="2"
 VPDB_1ST_SOURCE="0"
 VPDB_2ND_SOURCE="1"
 VPDB_3RD_SOURCE="2"
 VPDB_HSC_MAIN="0"
-VPDB_HSC_SECOND="1"
+#VPDB_HSC_SECOND="1"
 
 # VPDB
 echo "Probe VPDB Device"

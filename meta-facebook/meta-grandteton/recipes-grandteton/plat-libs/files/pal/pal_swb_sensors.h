@@ -165,6 +165,10 @@ enum {
   SWB_SENSOR_POUT_E1S_15 = 0xBF,
 
   SWB_SENSOR_CPLD_HEALTH = 0xD0,
+  SWB_SENSOR_HSC_TYPE    = 0xF0,
+  SWB_SENSOR_VR_TYPE     = 0xF1,
+
 };
 
+int get_swb_sensor(uint8_t fru, uint8_t sensor_num, float *value);
 #endif

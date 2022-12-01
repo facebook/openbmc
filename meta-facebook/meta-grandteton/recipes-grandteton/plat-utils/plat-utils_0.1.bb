@@ -68,10 +68,10 @@ do_install() {
 
 # setup-gpio-common.sh
   install -m 755 setup-gpio-common.sh ${D}${sysconfdir}/init.d/setup-gpio-common.sh
-  update-rc.d -r ${D} setup-gpio-common.sh start 57 5 .
+  update-rc.d -r ${D} setup-gpio-common.sh start 55 5 .
 # setup-gpio-cover.sh
   install -m 755 setup-gpio-cover.sh ${D}${sysconfdir}/init.d/setup-gpio-cover.sh
-  update-rc.d -r ${D} setup-gpio-cover.sh start 58 5 .
+  update-rc.d -r ${D} setup-gpio-cover.sh start 56 5 .
 # setup-common-dev.sh
   install -m 755 setup-common-dev.sh ${D}${sysconfdir}/init.d/setup-common-dev.sh
   update-rc.d -r ${D} setup-common-dev.sh start 59 5 .

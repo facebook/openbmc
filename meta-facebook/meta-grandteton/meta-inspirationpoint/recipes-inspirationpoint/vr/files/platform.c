@@ -9,6 +9,7 @@
 #include "raa_gen3.h"
 #include "xdpe12284c.h"
 #include "xdpe152xx.h"
+#include "mp2856.h"
 
 #define MB_VR_BUS_ID   (20)
 #define SWB_VR_BUS_ID  (3)
@@ -90,7 +91,7 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   return ret;
 }
 
-
+//Renesas VR
 struct vr_ops raa_gen2_3_ops = {
   .get_fw_ver = get_raa_ver,
   .parse_file = raa_parse_file,
@@ -99,7 +100,7 @@ struct vr_ops raa_gen2_3_ops = {
   .fw_verify = NULL,
 };
 
-//INFINEON
+//INFINEON VR
 struct vr_ops xdpe152xx_ops = {
   .get_fw_ver = get_xdpe152xx_ver,
   .parse_file = xdpe152xx_parse_file,
@@ -108,6 +109,24 @@ struct vr_ops xdpe152xx_ops = {
   .fw_verify = NULL,
 };
 
+struct vr_ops xdpe12284c_ops = {
+  .get_fw_ver = get_xdpe_ver,
+  .parse_file = xdpe_parse_file,
+  .validate_file = NULL,
+  .fw_update = xdpe_fw_update,
+  .fw_verify = NULL,
+};
+
+//MPS VR
+struct vr_ops mp2856_ops = {
+  .get_fw_ver = get_mp2856_ver,
+  .parse_file = mp2856_parse_file,
+  .validate_file = NULL,
+  .fw_update = mp2856_fw_update,
+  .fw_verify = NULL,
+};
+
+//VR Support list
 struct vr_info vr_list[] = {
   [VR_MB_CPU0_VCORE0] = {
     .bus = MB_VR_BUS_ID,
@@ -175,92 +194,43 @@ struct vr_info vr_list[] = {
   },
 };
 
-struct vr_info mb_inf_vr_list[] = {
-  [VR_MB_CPU0_VCORE0] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU0_VCORE0,
-    .dev_name = "VR_CPU0_VCORE0/SOC",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU0_VCORE1] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU0_VCORE1,
-    .dev_name = "VR_CPU0_VCORE1/PVDDIO",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU0_PVDD11] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU0_PVDD11,
-    .dev_name = "VR_CPU0_PVDD11",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU1_VCORE0] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU1_VCORE0,
-    .dev_name = "VR_CPU1_VCORE0/SOC",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU1_VCORE1] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU1_VCORE1,
-    .dev_name = "VR_CPU1_VCORE1/PVDDIO",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-  [VR_MB_CPU1_PVDD11] = {
-    .bus = MB_VR_BUS_ID,
-    .addr = ADDR_INF_CPU1_PVDD11,
-    .dev_name = "VR_CPU1_PVDD11",
-    .ops = &xdpe152xx_ops,
-    .private_data = "mb",
-    .xfer = NULL,
-  },
-};
-
-//SWB
-//INFINEON
-struct vr_ops xdpe12284c_ops = {
-  .get_fw_ver = get_xdpe_ver,
-  .parse_file = xdpe_parse_file,
-  .validate_file = NULL,
-  .fw_update = xdpe_fw_update,
-  .fw_verify = NULL,
+uint8_t mb_inf_vr_addr[] = {
+  ADDR_INF_CPU0_VCORE0,
+  ADDR_INF_CPU0_VCORE1,
+  ADDR_INF_CPU0_PVDD11,
+  ADDR_INF_CPU1_VCORE0,
+  ADDR_INF_CPU1_VCORE1,
+  ADDR_INF_CPU1_PVDD11,
 };
 
 
 int plat_vr_init(void) {
   int ret, i, vr_cnt = sizeof(vr_list)/sizeof(vr_list[0]);
-  uint8_t mb_sku_id = 0;
-  uint8_t inf_devid[3] = { 0x02, 0x79, 0x02 };
-  uint8_t tbuf[8], rbuf[8];
-
-  pal_get_platform_id(&mb_sku_id);
-  mb_sku_id = mb_sku_id & 0x07;
+  uint8_t id;
 
 //MB
-  if (mb_sku_id == 4) {
+  get_comp_source(FRU_MB, MB_VR_SOURCE, &id);
+  if (id == SECOND_SOURCE) {
     for (i = 0; i < MB_VR_CNT; i++) {
       vr_list[i].ops =  &xdpe152xx_ops;
-      vr_list[i].addr = mb_inf_vr_list[i].addr;
+      vr_list[i].addr = mb_inf_vr_addr[i];
+    }
+  } else if (id == THIRD_SOURCE) {
+    for (i = 0; i < MB_VR_CNT; i++) {
+      vr_list[i].ops =  &mp2856_ops;
     }
   }
 
 //SWB
   if (swb_presence()) {
-    tbuf[0] = 0xAD;
-    vr_pldm_wr(SWB_VR_BUS_ID, ADDR_SWB_VR_PEX01, tbuf, 1, rbuf, 3);
-    if(!memcmp(rbuf, inf_devid, 3)) {
+    get_comp_source(FRU_SWB, SWB_VR_SOURCE, &id);
+    if(id == SECOND_SOURCE) {
       for (i = 0; i < SWB_VR_CNT; i++) {
         vr_list[i+MB_VR_CNT].ops = &xdpe12284c_ops;
+      }
+    } else if (id == THIRD_SOURCE) {
+      for (i = 0; i < SWB_VR_CNT; i++) {
+        vr_list[i+MB_VR_CNT].ops = &mp2856_ops;
       }
     }
   }

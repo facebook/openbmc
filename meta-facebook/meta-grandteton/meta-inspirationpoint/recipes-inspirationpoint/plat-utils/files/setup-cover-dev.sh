@@ -81,6 +81,7 @@ probe_hsc_ltc() {
   i2c_device_add 25 0x4C lm75
   #HSC module's eeprom
   i2c_device_add 6 0x51 24c64
+  kv set mb_hsc_module "1"
 }
 
 #ADC

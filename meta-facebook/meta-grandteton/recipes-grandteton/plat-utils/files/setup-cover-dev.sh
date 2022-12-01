@@ -94,6 +94,8 @@ MB_HSC_THIRD="2"   # rs31380
 mbrev=$(kv get mb_rev)
 MB_DVT_BORAD_ID="3"
 
+
+#kv set mb_hsc_module "0"
 if [ "$mb_hsc" -eq "$MB_HSC_THIRD" ]; then
   kv set mb_hsc_source "$MB_4TH_SOURCE"
 elif [ "$mb_hsc" -eq "$MB_HSC_SECOND" ]; then
@@ -124,6 +126,7 @@ elif [ "$mb_hsc" -eq "$MB_HSC_SECOND" ]; then
       kv set mb_hsc_source "$MB_2ND_SOURCE"
     fi
   fi
+  kv set mb_hsc_module "1"
 else
   i2c_device_add 2 0x20 mp5990
   kv set mb_hsc_source "$MB_1ST_SOURCE"

@@ -3,6 +3,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensors.h>
+#include <openbmc/libgpio.h>
 #include "pal.h"
 #include "pal_common.h"
 
@@ -440,6 +441,18 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
   return pal_get_x86_event_sensor_name(fru, snr_num, name);
 }
 
+static void fan_state_led_ctrl(uint8_t fru, uint8_t snr_num, bool assert) {
+  char blue_led[32] = {0};
+  char amber_led[32] = {0};
+  uint8_t fan_id = sensor_map[fru].map[snr_num].id/2;
+
+  snprintf(blue_led, sizeof(blue_led), "FAN%d_LED_GOOD", (int)fan_id);
+  snprintf(amber_led, sizeof(amber_led), "FAN%d_LED_FAIL", (int)fan_id);
+
+  gpio_set_value_by_shadow(amber_led, assert? GPIO_VALUE_HIGH: GPIO_VALUE_LOW);
+  gpio_set_value_by_shadow(blue_led, assert? GPIO_VALUE_LOW: GPIO_VALUE_HIGH); 
+}
+
 void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
@@ -524,6 +537,8 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case FAN_BP1_SNR_FAN15_INLET_SPEED:
       fan_id = snr_num-FAN_SNR_START_INDEX;
       sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
+      fan_state_led_ctrl(fru, snr_num, true);
+
       break;
     case FAN_BP0_SNR_FAN0_OUTLET_SPEED:
     case FAN_BP0_SNR_FAN1_OUTLET_SPEED:
@@ -634,6 +649,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case FAN_BP1_SNR_FAN15_INLET_SPEED:
       fan_id= snr_num-FAN_SNR_START_INDEX;
       sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
+      fan_state_led_ctrl(fru, snr_num, false);
       break;
     case FAN_BP0_SNR_FAN0_OUTLET_SPEED:
     case FAN_BP0_SNR_FAN1_OUTLET_SPEED:

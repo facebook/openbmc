@@ -1019,7 +1019,7 @@ read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value) {
   if (tach_id >= FAN_TACH_CNT || !is_fan_present(tach_id/2))
     return -1;
 
-if (get_fan_chip_dev_id(fru, &dev_id))
+  if (get_fan_chip_dev_id(fru, &dev_id))
     return -1;
 
   ret = fan_ctrl_map[dev_id].get_rpm(fru, sensor_num, value);

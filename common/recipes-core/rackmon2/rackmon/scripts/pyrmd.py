@@ -159,6 +159,7 @@ class RackmonInterface:
         if not os.path.exists("/var/run/rackmond.sock"):
             raise ModbusException()
         client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        client.settimeout(20)
         client.connect("/var/run/rackmond.sock")
         req_header = struct.pack("@H", len(request))
         client.send(req_header + request)
@@ -235,36 +236,9 @@ class RackmonInterface:
 class RackmonAsyncInterface(RackmonInterface):
     @classmethod
     async def _execute(cls, cmd):
-        request = json.dumps(cmd).encode()
-        if not os.path.exists("/var/run/rackmond.sock"):
-            raise ModbusException()
-        reader, writer = await asyncio.open_unix_connection("/var/run/rackmond.sock")
-        req_header = struct.pack("@H", len(request))
-        writer.write(req_header + request)
-
-        async def recvExact(num):
-            received = 0
-            chunk = bytes()
-            while received < num:
-                chunk += await reader.read(num - received)
-                received = len(chunk)
-            return chunk
-
-        async def recvChunk():
-            chunk_len_b = await recvExact(2)
-            (chunk_len,) = struct.unpack("@H", chunk_len_b)
-            chunk = await recvExact(chunk_len)
-            return chunk, len(chunk) == 0xFFFF
-
-        response = bytes()
-        while True:
-            data, cont_recv = await recvChunk()
-            response += data
-            if not cont_recv:
-                break
-
-        writer.close()
-        return json.loads(response.decode())
+        return await asyncio.get_event_loop().run_in_executor(
+            None, RackmonInterface._execute, cmd
+        )
 
     @classmethod
     async def _do(cls, f, *args, **kwargs):

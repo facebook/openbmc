@@ -1,0 +1,8 @@
+SUBSYSTEM=="spidev", DEVPATH=="*/1e6a3000.usb/*/usmc-spi.0.auto/*", RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /dev/%k /run/devmap/spi-devices/PIM1_FLASH"
+SUBSYSTEM=="spidev", DEVPATH=="*/1e6a3000.usb/*/usmc-spi.1.auto/*", RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /dev/%k /run/devmap/spi-devices/PIM2_FLASH"
+SUBSYSTEM=="spidev", DEVPATH=="*/1e6a3000.usb/*/usmc-spi.2.auto/*", RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /dev/%k /run/devmap/spi-devices/PIM3_FLASH"
+SUBSYSTEM=="spidev", DEVPATH=="*/1e6a3000.usb/*/usmc-spi.3.auto/*", RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /dev/%k /run/devmap/spi-devices/PIM4_FLASH"
+SUBSYSTEM=="spidev", DEVPATH=="*/1e6a3000.usb/*/usmc-spi.4.auto/*", RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /dev/%k /run/devmap/spi-devices/PIM5_FLASH"
+SUBSYSTEM=="spidev", DEVPATH=="*/1e6a3000.usb/*/usmc-spi.5.auto/*", RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /dev/%k /run/devmap/spi-devices/PIM6_FLASH"
+SUBSYSTEM=="spidev", DEVPATH=="*/1e6a3000.usb/*/usmc-spi.6.auto/*", RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /dev/%k /run/devmap/spi-devices/PIM7_FLASH"
+SUBSYSTEM=="spidev", DEVPATH=="*/1e6a3000.usb/*/usmc-spi.7.auto/*", RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /dev/%k /run/devmap/spi-devices/PIM8_FLASH"

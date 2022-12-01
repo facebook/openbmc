@@ -497,7 +497,21 @@ present_handle (char* desc, gpio_value_t value) {
           (value == GPIO_VALUE_HIGH) ? "not present": "present");
 }
 
+static void
+present_init_al (char* desc, gpio_value_t value) {
+  if (value == GPIO_VALUE_LOW)
+    syslog(LOG_CRIT, "FRU: %d , %s not present.", FRU_MB, desc);
+}
+
+static void
+present_handle_al (char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "FRU: %d , %s %s.", FRU_MB, desc,
+          (value == GPIO_VALUE_LOW) ? "not present": "present");
+}
+
 struct gpiopoll_ioex_config iox_gpios[] = {
+  {FAN_BP0_PRSNT,  "FAN_BP0",      IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init_al, present_handle_al},
+  {FAN_BP1_PRSNT,  "FAN_BP1",      IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init_al, present_handle_al},
   {FAN0_PRSNT,     "FAN0",         IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FAN1_PRSNT,     "FAN1",         IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FAN2_PRSNT,     "FAN2",         IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},

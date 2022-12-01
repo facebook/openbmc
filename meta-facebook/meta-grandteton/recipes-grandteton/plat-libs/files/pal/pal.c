@@ -101,6 +101,28 @@ struct fru_dev_info {
   bool (*check_presence) (void);
 };
 
+typedef struct {
+  uint8_t target;
+  uint8_t data[MAX_IPMB_REQ_LEN];
+} bypass_cmd;
+
+typedef struct {
+  uint8_t netdev;
+  uint8_t channel;
+  uint8_t cmd;
+  unsigned char data[NCSI_MAX_PAYLOAD];
+} bypass_ncsi_req;
+
+typedef struct {
+  uint8_t payload_id;
+  uint8_t netfn;
+  uint8_t cmd;
+  uint8_t target;
+  uint8_t netdev;
+  uint8_t channel;
+  uint8_t ncsi_cmd;
+} bypass_ncsi_header;
+
 enum {
   FRU_PATH_NONE,
   FRU_PATH_EEPROM,
@@ -714,4 +736,81 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   }
 
   return ret;
+}
+
+// IPMI OEM Command
+// netfn: NETFN_OEM_1S_REQ (0x30)
+// command code: CMD_OEM_BYPASS_CMD (0x34)
+int
+pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  int completion_code = CC_SUCCESS;
+  uint8_t tlen = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  NCSI_NL_MSG_T *msg = NULL;
+  NCSI_NL_RSP_T *rsp = NULL;
+  bypass_ncsi_req ncsi_req = {0};
+
+  if (req_data == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL request data, can not bypass the command", __func__);
+    return CC_INVALID_PARAM;
+  }
+  if (res_data == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL response data, can not bypass the command", __func__);
+    return CC_INVALID_PARAM;
+  }
+  if (res_len == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL response length, can not bypass the command", __func__);
+    return CC_INVALID_PARAM;
+  }
+  *res_len = 0;
+
+  memset(tbuf, 0, sizeof(tbuf));
+  memset(rbuf, 0, sizeof(rbuf));
+
+  switch (((bypass_cmd*)req_data)->target) {
+    case BYPASS_NCSI:
+      if ((req_len < sizeof(bypass_ncsi_header)) || (req_len > sizeof(NCSI_NL_MSG_T))) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+      tlen = req_len - sizeof(bypass_ncsi_header);
+      msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+      if (msg == NULL) {
+        syslog(LOG_ERR, "%s(): failed msg buffer allocation", __func__);
+        completion_code = CC_UNSPECIFIED_ERROR;
+        break;
+      }
+      memset(&ncsi_req, 0, sizeof(ncsi_req));
+      memcpy(&ncsi_req, &((bypass_cmd*)req_data)->data[0], sizeof(ncsi_req));
+      memset(msg, 0, sizeof(*msg));
+      sprintf(msg->dev_name, "eth%d", ncsi_req.netdev);
+
+      msg->channel_id = ncsi_req.channel;
+      msg->cmd = ncsi_req.cmd;
+      msg->payload_length = tlen;
+      memcpy(&msg->msg_payload[0], &ncsi_req.data[0], NCSI_MAX_PAYLOAD);
+
+      rsp = send_nl_msg_libnl(msg);
+      if (rsp != NULL) {
+        memcpy(&res_data[0], &rsp->msg_payload[0], rsp->hdr.payload_length);
+        *res_len = rsp->hdr.payload_length;
+      } else {
+        completion_code = CC_UNSPECIFIED_ERROR;
+      }
+      break;
+
+    default:
+      completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+      break;
+  }
+
+  if (msg != NULL) {
+    free(msg);
+  }
+  if (rsp != NULL) {
+    free(rsp);
+  }
+
+  return completion_code;
 }

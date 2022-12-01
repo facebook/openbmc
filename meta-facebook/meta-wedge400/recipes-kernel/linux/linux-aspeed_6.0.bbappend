@@ -33,6 +33,7 @@ SRC_URI += "file://1001-ARM-dts-aspeed-wedge400-enable-jtag-controller.patch \
             file://1002-enable-adc5-adc8-in-wedge400.dts.patch \
             file://1003-ARM-dts-aspeed-wedge400-add-i2c-slave-timeout-for-i2c.patch \
             file://1004-ARM-dts-aspeed-wedge400-set-EMMC-max-frequency-to-25.patch \
+	    file://1005-ARM-dts-aspeed-wedge400-enable-aspeed-spi-controller.patch \
             file://1010-hwmon-add-net_casic-driver-1022.patch \
             file://1011-powr1220-updating-the-max_channel-to-14.patch \
             file://1021-hwmon-pmbus-add-ir35215-driver.patch \

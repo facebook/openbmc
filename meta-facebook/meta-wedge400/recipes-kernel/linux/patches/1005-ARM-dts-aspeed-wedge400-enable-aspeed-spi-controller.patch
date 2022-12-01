@@ -1,0 +1,124 @@
+From 7381ff86cdbbbdb15867ac1a3868e958898755d6 Mon Sep 17 00:00:00 2001
+From: Yiang Han <hya321@fb.com>
+Date: Tue, 26 Jul 2022 13:22:51 -0700
+Subject: [PATCH] ARM: dts: aspeed: wedge400: enable aspeed spi controller
+
+Summary: enable the spi-aspeed-user controller in kernel 5.15
+
+Test Plan:
+root@fboss312097296-oob:~# uname -a
+Linux fboss312097296-oob.snc1.facebook.com 5.15.27-wedge400 #1 Thu Jul 14 05:56:24 UTC 2022 armv6l GNU/Linux
+root@fboss312097296-oob:/dev# ls -l spi*
+crw-------    1 root     root      153,   0 Jul 13 23:19 spidev1.0
+root@fboss311782526-oob:/sys/bus/platform/drivers/aspeed-spi-user# ls -l
+lrwxrwxrwx    1 root     root             0 Jul 18 11:41 1e630000.spi -> ../../../../devices/platform/ahb/1e630000.spi
+--w-------    1 root     root          4096 Jul 18 11:41 bind
+--w-------    1 root     root          4096 Jul 18 11:41 uevent
+--w-------    1 root     root          4096 Jul 18 11:41 unbind
+root@fboss312097296-oob:~# time spi_util.sh read spi1 DOM_FPGA_FLASH1 fpga
+Config SPI1 Done.
+Reading flash to fpga...
+flashrom v1.2 on Linux 5.15.27-wedge400 (armv6l)
+flashrom is free software, get the source code at https://flashrom.org
+
+Using clock_gettime for delay loops (clk_id: 1, resolution: 1ns).
+Using default 2000kHz clock. Use 'spispeed' parameter to override.
+Found Micron/Numonyx/ST flash chip "N25Q128..3E" (16384 kB, SPI) on linux_spi.
+Reading flash... done.
+
+real    1m0.632s
+user    0m0.925s
+sys     0m25.657s
+root@fboss312097296-oob:~# time spi_util.sh erase spi1 DOM_FPGA_FLASH1
+Config SPI1 Done.
+Erasing flash...
+flashrom v1.2 on Linux 5.15.27-wedge400 (armv6l)
+flashrom is free software, get the source code at https://flashrom.org
+
+Using clock_gettime for delay loops (clk_id: 1, resolution: 1ns).
+Using default 2000kHz clock. Use 'spispeed' parameter to override.
+Found Micron/Numonyx/ST flash chip "N25Q128..3E" (16384 kB, SPI) on linux_spi.
+Erasing and writing flash chip... Erase/write done.
+
+real    2m34.025s
+user    0m10.878s
+sys     0m51.180s
+root@fboss312097296-oob:~# time spi_util.sh write spi1 DOM_FPGA_FLASH1 fpga
+Config SPI1 Done.
+Writing fpga to flash...
+flashrom v1.2 on Linux 5.15.27-wedge400 (armv6l)
+flashrom is free software, get the source code at https://flashrom.org
+
+Using clock_gettime for delay loops (clk_id: 1, resolution: 1ns).
+Using default 2000kHz clock. Use 'spispeed' parameter to override.
+Found Micron/Numonyx/ST flash chip "N25Q128..3E" (16384 kB, SPI) on linux_spi.
+Reading old flash chip contents... done.
+Erasing and writing flash chip... Erase/write done.
+Verifying flash... VERIFIED.
+
+real    2m26.096s
+user    0m3.574s
+sys     1m1.003s
+root@fboss312097296-oob:~# time spi_util.sh read spi1 DOM_FPGA_FLASH1 fpga_r
+Config SPI1 Done.
+Reading flash to fpga_r...
+flashrom v1.2 on Linux 5.15.27-wedge400 (armv6l)
+flashrom is free software, get the source code at https://flashrom.org
+Using clock_gettime for delay loops (clk_id: 1, resolution: 1ns).
+Using default 2000kHz clock. Use 'spispeed' parameter to override.
+Found Micron/Numonyx/ST flash chip "N25Q128..3E" (16384 kB, SPI) on linux_spi.
+Reading flash... done.
+
+real    0m58.793s
+user    0m0.768s
+sys     0m25.827s
+root@fboss312097296-oob:~#  diff fpga fpga_r
+root@fboss312097296-oob:~# echo $?
+0
+root@fboss312097296-oob:~# ls -l
+-rw-r--r--    1 root     root      16777328 Jul 13 23:26 fpga
+-rw-r--r--    1 root     root      16777328 Jul 13 23:34 fpga_r
+root@fboss312097296-oob:~#
+
+Reviewed By: tao-ren
+
+Differential Revision: D37846378
+
+fbshipit-source-id: d82778aa4600ec2bdae6f644f0081f104aeed502
+---
+ .../arm/boot/dts/aspeed-bmc-facebook-wedge400.dts    | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+index 09e1c7e9e25..fe89c41aeeb 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-wedge400.dts
+@@ -49,6 +49,7 @@ aliases {
+ 		i2c38 = &imux38;
+ 		i2c39 = &imux39;
+ 
++		spi1 = &spi1;
+ 		spi2 = &spi_gpio;
+ 	};
+ 
+@@ -108,6 +109,17 @@ flash1@0 {
+ 	};
+ };
+ 
++&spi1 {
++	status = "okay";
++	compatible = "aspeed,ast2500-spi-user";
++
++	spidev@0 {
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <24750000>;
++		reg = <0>;
++	};
++};
++
+ &uart2 {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+-- 
+2.25.1
+

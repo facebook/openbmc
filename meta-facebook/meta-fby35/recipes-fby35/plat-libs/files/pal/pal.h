@@ -58,20 +58,10 @@ extern "C" {
 
 #define MAX_SERVER_BOARD_NUM 4
 
-#define MAX_PATH_LEN 128
-
 #define VR_NEW_CRC_STR "slot%d_vr_%s_new_crc"
 #define VR_CRC_STR "slot%d_vr_%s_crc"
 #define VR_1OU_NEW_CRC_STR "slot%d_1ou_vr_%s_new_crc"
 #define VR_1OU_CRC_STR "slot%d_1ou_vr_%s_crc"
-
-#define PCA953X_DRIVER_NAME "pca953x"
-#define PCA953X_BIND_DIR "/sys/bus/i2c/drivers/pca953x/%d-00%02x/"
-#define PCA9537_ADDR 0x49
-#define PCA9555_ADDR 0x20
-
-#define BIC_EXTRST_SHADOW_PATH "BIC_EXTRST_N_IO_EXP_R_SLOT%d"
-#define BIC_SRST_SHADOW_PATH "BIC_SRST_N_IO_EXP_R_SLOT%d"
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
@@ -194,11 +184,6 @@ typedef enum {
   POST_NOT_COMPLETE,
 } BIOS_POST_COMPLETE_STATUS;
 
-typedef enum {
-  UNBIND = 0,
-  BIND,
-} I2C_OPERATION;
-
 typedef struct {
   uint8_t err_id;
   char *err_des;
@@ -228,10 +213,6 @@ int pal_get_delay_activate_sysfw_ver(uint8_t slot_id, uint8_t *ver);
 int pal_set_last_postcode(uint8_t slot, uint32_t postcode);
 int pal_get_last_postcode(uint8_t slot, char* postcode);
 int pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t bmc_location, const uint8_t config_status);
-int pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir);
-int pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir);
-int pal_export_vf_exp_gpio();
-int pal_reload_vf_exp_gpio(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

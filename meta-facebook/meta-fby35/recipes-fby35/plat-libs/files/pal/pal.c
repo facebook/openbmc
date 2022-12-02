@@ -4910,91 +4910,10 @@ pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
   return 0;
 }
 
-static int
-i2c_device_binding_operation(uint8_t bus, uint8_t addr, char *driver_name, I2C_OPERATION operation) {
-  int ret = 0;
-  char cmd[MAX_PATH_LEN] = {0};
-  char path[MAX_PATH_LEN] = {0};
-  FILE *fp = NULL;
-
-  if (driver_name == NULL) {
-    syslog(LOG_ERR, "%s driver name is null", __func__);
-    return -1;
-  }
-
-  if (operation == BIND) {
-    snprintf(path, sizeof(path), "/sys/bus/i2c/drivers/%s/bind", driver_name);
-  } else {
-    snprintf(path, sizeof(path), "/sys/bus/i2c/drivers/%s/unbind", driver_name);
-  }
-  fp = fopen(path, "w");
-  if(fp == NULL) {
-    syslog(LOG_ERR, "%s Failed to open file: %s. %s", __func__, path, strerror(errno));
-    return -1;
-  }
-
-  snprintf(cmd, sizeof(cmd), "%d-00%02x", bus, addr);
-  if (fwrite(cmd, sizeof(char), strlen(cmd), fp) != strlen(cmd)) {
-    syslog(LOG_ERR, "%s Failed to write file: %s. %s", __func__, path, strerror(errno));
-    ret = -1;
-  }
-
-  fclose(fp);
-
-  return ret;
-}
-
-int
-pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir) {
-  if (bind_dir != NULL && access(bind_dir, F_OK) != 0) {
-    return i2c_device_binding_operation(bus, addr, driver_name, BIND);
-  }
-  return 0;
-}
-
-int
-pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir) {
-  if (bind_dir != NULL && access(bind_dir, F_OK) == 0) {
-    return i2c_device_binding_operation(bus, addr, driver_name, UNBIND);
-  }
-  return 0;
-}
-
-int
-pal_reload_vf_exp_gpio(uint8_t fru) {
-  bool chip_exist = false;
-  char pca953x_driver_dir[MAX_PATH_LEN] = {0};
-  char shawdowname_dir[MAX_PATH_LEN] = {0};
-  const char *io_exp_gpio_path_table[] = {BIC_SRST_SHADOW_PATH, BIC_EXTRST_SHADOW_PATH};
-  const uint8_t chip_address_table[] = {PCA9537_ADDR, PCA9555_ADDR};
-  uint8_t bus = 0;
-
-  bus = fby35_common_get_bus_id(fru) + 4;
-  for (int i = 0; i < ARRAY_SIZE(chip_address_table); i++) {
-    snprintf(pca953x_driver_dir, sizeof(pca953x_driver_dir), PCA953X_BIND_DIR, bus, chip_address_table[i]);
-    pal_unbind_i2c_device(bus, chip_address_table[i], PCA953X_DRIVER_NAME, pca953x_driver_dir);
-    if ( i2c_detect_device(bus, chip_address_table[i]) == 0 ) { //Check if the pca addr exist
-      pal_bind_i2c_device(bus, chip_address_table[i], PCA953X_DRIVER_NAME, pca953x_driver_dir);
-      chip_exist = true;
-    }
-  }
-
-  if (chip_exist == false) {
-    return 0;
-  }
-
-  for (int i = 0; i < ARRAY_SIZE(io_exp_gpio_path_table); i++) {
-    snprintf(shawdowname_dir, sizeof(shawdowname_dir), io_exp_gpio_path_table[i], fru);
-    gpio_export_by_offset(GPIO_CHIP_I2C_IO_EXP, (fru-1), shawdowname_dir);
-  }
-
-  return 0;
-}
-
 bool
 pal_is_prot_card_prsnt(uint8_t fru)
 {
-    return fby35_common_is_prot_card_prsnt(fru);
+  return fby35_common_is_prot_card_prsnt(fru);
 }
 
 bool

@@ -199,57 +199,44 @@ get_server_type() {
 
 # Set up VF gpio expander
 set_vf_gpio() {
-  local driver="pca953x"
-  local base=780
-  local pca9537_chip_addr=0x"$PCA9537_ADDR"
-  local pca9555_chip_addr=0x"$PCA9555_ADDR"
-  gpio_names=("BIC_SRST_N_IO_EXP_R_SLOT" "BIC_EXTRST_N_IO_EXP_R_SLOT")
-  for i in {4..7}; do
-    bus_pca9537_addr="$i"-00"$PCA9537_ADDR"
-    bus_pca9555_addr="$i"-00"$PCA9555_ADDR"
-    if test -f "/sys/bus/i2c/drivers/"$driver"/"$bus_pca9537_addr""; then
-      echo -n "$bus_pca9537_addr" > /sys/bus/i2c/drivers/"$driver"/unbind
+  local slot=$1
+  local bus=$((slot+3))
+  local ioexp_dev_addr=""
+  local ioexp_addrs=($PCA9537_ADDR $PCA9555_ADDR)
+  local ioexp_devs=("pca9537" "pca9555")
+  local gpio_names=("BIC_SRST_N_IO_EXP_R_SLOT" "BIC_EXTRST_N_IO_EXP_R_SLOT" "BIC_FWSPICK_IO_EXP_SLOT")
+
+  for _ in {1..3}; do
+    for i in "${!ioexp_addrs[@]}"; do
+      if i2cget -f -y $bus 0x${ioexp_addrs[$i]} 0 >/dev/null 2>&1; then
+        ioexp_dev_addr=$bus-00${ioexp_addrs[$i]}
+        if [ ! -L "${SYSFS_I2C_DEVICES}/$ioexp_dev_addr/driver" ]; then
+          i2c_device_add $bus 0x${ioexp_addrs[$i]} ${ioexp_devs[$i]}
+        fi
+        break
+      fi
+    done
+    if [ $ioexp_dev_addr != "" ]; then
+      break
     fi
-    if test -f "/sys/bus/i2c/drivers/"$driver"/"$bus_pca9555_addr""; then
-      echo -n "$bus_pca9555_addr" > /sys/bus/i2c/drivers/"$driver"/unbind
-    fi
-    if [[ "$(/usr/sbin/i2cget -y "$i" "$pca9537_chip_addr" 0x1)" == "0xff" ]]; then
-      chip="pca9537"
-      i2c_device_add $i $pca9537_chip_addr $chip
-      echo -n "$bus_pca9537_addr" > /sys/bus/i2c/drivers/"$driver"/bind #Bind the driver
-    fi
-    if [[ "$(/usr/sbin/i2cget -y "$i" "$pca9555_chip_addr" 0x1)" == "0xff" ]]; then
-      chip="pca9555"
-      i2c_device_add $i $pca9555_chip_addr $chip
-      echo -n "$bus_pca9555_addr" > /sys/bus/i2c/drivers/"$driver"/bind #Bind the driver
-    fi
+    usleep 50000
   done
 
-  for slot in {1..4}; do
-    bus=$(($slot+3))
-    is_pca9537_exist="$(/usr/sbin/i2cdetect -y "$bus" | awk '{print $11}' | sed -n '6p')"
-    is_pca9555_exist="$(/usr/sbin/i2cdetect -y "$bus" | awk '{print $2}' | sed -n '4p')"
-    if [[ "$is_pca9537_exist" == UU ]]; then
-      base=$(($base-4))
-      offset=$base
-      for gpio_name in ${gpio_names[@]}; do
-        mkdir -m 755 /tmp/gpionames/$gpio_name$slot
-        echo $offset > /sys/class/gpio/export #Export the pin
-        ln -s /sys/class/gpio/gpio$offset/* /tmp/gpionames/$gpio_name$slot
-        offset=$(($offset+1))
-      done
-    fi
-    if [[ "$is_pca9555_exist" == UU ]]; then
-      base=$(($base-16))
-      offset=$base
-      for gpio_name in ${gpio_names[@]}; do
-        mkdir -m 755 /tmp/gpionames/$gpio_name$slot
-        echo $offset > /sys/class/gpio/export #Export the pin
-        ln -s /sys/class/gpio/gpio$offset/* /tmp/gpionames/$gpio_name$slot
-        offset=$(($offset+1))
-      done
-    fi
-  done
+  # export GPIO pins
+  if [ $ioexp_dev_addr != "" ]; then
+    for _ in {1..50}; do
+      # wait for /sys/class/gpio/gpiochipxxx to be ready
+      if [ "$(gpiochip_lookup_by_i2c_path $ioexp_dev_addr)" != "" ]; then
+        break
+      fi
+      usleep 10000
+    done
+    for i in "${!gpio_names[@]}"; do
+      if [ ! -L "${SHADOW_GPIO}/${gpio_names[$i]}$slot" ]; then
+        gpio_export_by_offset $ioexp_dev_addr $i ${gpio_names[$i]}$slot >/dev/null 2>&1
+      fi
+    done
+  fi
 }
 
 # Check to see if Server Board Present & Bridge-IC is ready

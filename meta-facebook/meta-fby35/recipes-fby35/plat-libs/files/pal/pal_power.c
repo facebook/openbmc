@@ -35,20 +35,21 @@ is_server_off(void) {
   return POWER_STATUS_OK;
 }
 
-int
-pal_set_VF_power_off(int fru) {
-  int i2cfd = 0, bus = 0, tlen = 0, rlen = 0, retry = 0, ret = 0;
+static int
+pal_set_VF_power_off(uint8_t fru) {
+  int i2cfd = 0, bus = 0, ret = 0;
   uint8_t tbuf[2] = {0};
-  char gpio_pin_name[128] = "";
-  const char *gpio_pin_names[] = {"BIC_SRST_N_IO_EXP_R_SLOT%d", "BIC_EXTRST_N_IO_EXP_R_SLOT%d"};
+  char gpio_pin_name[128];
+  const char *gpio_pin_names[] = {BIC_SRST_SHADOW, BIC_EXTRST_SHADOW};
   const int num_of_gpio_pins = ARRAY_SIZE(gpio_pin_names);
   gpio_desc_t *vf_gpio = NULL;
 
   for (int i = 0; i < num_of_gpio_pins; i++) {
     snprintf(gpio_pin_name, sizeof(gpio_pin_name), gpio_pin_names[i], fru);
-    vf_gpio = gpio_open_by_shadow(gpio_pin_name);
-    gpio_set_direction(vf_gpio, GPIO_DIRECTION_OUT);
-    gpio_set_value_by_shadow(gpio_pin_name, GPIO_VALUE_LOW);
+    if ((vf_gpio = gpio_open_by_shadow(gpio_pin_name))) {
+      gpio_set_init_value(vf_gpio, GPIO_VALUE_LOW);
+      gpio_close(vf_gpio);
+    }
   }
 
   bus = fby35_common_get_bus_id(fru) + 4;
@@ -60,27 +61,32 @@ pal_set_VF_power_off(int fru) {
 
   tbuf[0] = CPLD_PWR_OFF_1OU_REG;
   tbuf[1] = 0; // power off
-  tlen = 2;
-  rlen = 0;
-  retry = 0;
-  while (retry < RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      break;
-    }
-  }
-  if (retry == RETRY_TIME) {
+  ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 2, NULL, 0),
+                   RETRY_TIME, 100);
+  close(i2cfd);
+  if (ret < 0) {
     syslog(LOG_CRIT, "%s(): Failed to do i2c_rdwr_msg_transfer\n", __func__);
-    ret = -1;
   }
 
   //Sleep for 20 microsecond wait for 1OU STBY power off
   usleep(DELAY_VDD_CORE_OFF);
 
   return ret;
+}
+
+static void
+reinit_vf_ioexp(uint8_t fru) {
+  const char *ioexp_pin_names[] = {BIC_SRST_SHADOW, BIC_EXTRST_SHADOW, BIC_FWSPICK_SHADOW};
+  char shadow_name[64];
+  gpio_desc_t *vf_gpio = NULL;
+
+  for (int i = 0; i < ARRAY_SIZE(ioexp_pin_names); i++) {
+    snprintf(shadow_name, sizeof(shadow_name), ioexp_pin_names[i], fru);
+    if ((vf_gpio = gpio_open_by_shadow(shadow_name))) {
+      gpio_set_direction(vf_gpio, GPIO_DIRECTION_IN);
+      gpio_close(vf_gpio);
+    }
+  }
 }
 
 // Power Off the server
@@ -146,27 +152,11 @@ pal_power_policy_control(uint8_t slot, char *last_ps) {
 
 static int
 server_power_12v_on(uint8_t fru) {
-  int ret = 0, config_status = 0;;
+  int ret = 0, config_status = 0;
   int i2cfd = 0;
   uint8_t tbuf[4] = {0};
   uint8_t rbuf[4] = {0};
-  uint8_t bmc_location = 0, type = TYPE_1OU_UNKNOWN;
-
-  ret = fby35_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-  }
-
-  config_status = bic_is_exp_prsnt(fru);
-  if (config_status < 0) {
-    config_status = 0;
-  }
-
-  if ( (bmc_location == BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
-    if ((bic_get_1ou_type(fru, &type) == 0) && (type == TYPE_1OU_VERNAL_FALLS_WITH_AST) ) {
-      pal_reload_vf_exp_gpio(fru);
-    }
-  }
+  uint8_t type = TYPE_1OU_UNKNOWN;
 
   i2cfd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
@@ -212,7 +202,6 @@ server_power_12v_on(uint8_t fru) {
   }
 
   sleep(1);
-
   ret = fby35_common_set_fru_i2c_isolated(fru, GPIO_VALUE_HIGH);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to enable the i2c of fru%d", __func__, fru);
@@ -220,6 +209,13 @@ server_power_12v_on(uint8_t fru) {
   }
 
   sleep(1);
+  if ((config_status = bic_is_exp_prsnt(fru)) < 0) {
+    config_status = 0;
+  }
+  if (((config_status & PRESENT_1OU) == PRESENT_1OU) &&
+      (bic_get_1ou_type(fru, &type) == 0) && (type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) {
+    reinit_vf_ioexp(fru);
+  }
 
   pal_power_policy_control(fru, NULL);
 
@@ -228,72 +224,49 @@ server_power_12v_on(uint8_t fru) {
 
 static int
 server_power_12v_off(uint8_t fru) {
-  int i2cfd = 0, config_status = 0;
+  int ret = 0, config_status = 0;
+  int i2cfd = 0;
   char cmd[64] = {0};
   uint8_t tbuf[2] = {0};
-  uint8_t tlen = 0;
-  int ret = 0, retry= 0;
-  uint8_t bmc_location = 0, type = TYPE_1OU_UNKNOWN;
+  uint8_t type = TYPE_1OU_UNKNOWN;
 
-  config_status = bic_is_exp_prsnt(fru);
-  if (config_status < 0) {
+  if ((config_status = bic_is_exp_prsnt(fru)) < 0) {
     config_status = 0;
   }
-
-  ret = fby35_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return POWER_STATUS_ERR;
-  }
-
-  if ( (bmc_location == BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
-    if ((bic_get_1ou_type(fru, &type) == 0) && (type == TYPE_1OU_VERNAL_FALLS_WITH_AST) ) {
-      pal_set_VF_power_off(fru);
-    }
+  if (((config_status & PRESENT_1OU) == PRESENT_1OU) &&
+      (bic_get_1ou_type(fru, &type) == 0) && (type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) {
+    pal_set_VF_power_off(fru);
   }
 
   pal_clear_vr_crc(fru);
 
-  memset(cmd, 0, 64);
-  snprintf(cmd, 64, FRU_ID_CPLD_NEW_VER_KEY, fru);
+  snprintf(cmd, sizeof(cmd), FRU_ID_CPLD_NEW_VER_KEY, fru);
   kv_del(cmd, 0);
 
   ret = fby35_common_set_fru_i2c_isolated(fru, GPIO_VALUE_LOW);
-  if ( ret < 0 ) {
+  if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to disable the i2c of fru%d", __func__, fru);
-    goto error_exit;
+    return -1;
   }
 
   sleep(1);
-
   i2cfd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
+  if (i2cfd < 0) {
     syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_PWR_CTRL_BUS);
-    goto error_exit;
+    return -1;
   }
 
   tbuf[0] = 0x09 + (fru-1);
   tbuf[1] = AC_OFF;
-  tlen = 2;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer fails, tlen=%d", __func__, tlen);
-    goto error_exit;
+  ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, 2, NULL, 0),
+                   MAX_READ_RETRY, 100);
+  close(i2cfd);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to write HSC_EN %u", __func__, tbuf[1]);
+    return -1;
   }
 
-error_exit:
-  if ( i2cfd > 0 ) close(i2cfd);
-
-  return ret;
+  return 0;
 }
 
 int

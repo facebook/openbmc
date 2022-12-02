@@ -97,6 +97,8 @@ function init_exp_dev() {
     if [ "$(is_prot_prsnt $i)" == "1" ]; then
       i2c_device_add "$cpld_bus" 0x50 24c32
     fi
+    # IO-exp on VF2
+    set_vf_gpio $i
   done
 }
 
@@ -118,6 +120,5 @@ else
 fi
 
 init_exp_dev
-set_vf_gpio
 
 echo "Done."

@@ -82,6 +82,10 @@ extern "C" {
 #define CPLD_REG_1OU_BIC_BOOT_STRAP 0x22
 #define CPLD_REG_PROT               0x23
 
+#define BIC_SRST_SHADOW    "BIC_SRST_N_IO_EXP_R_SLOT%u"
+#define BIC_EXTRST_SHADOW  "BIC_EXTRST_N_IO_EXP_R_SLOT%u"
+#define BIC_FWSPICK_SHADOW "BIC_FWSPICK_IO_EXP_SLOT%u"
+
 #define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
 extern const char *slot_usage;
@@ -107,8 +111,8 @@ extern const char *slot_usage;
 #define UNKNOWN_SLOT 0xFF
 
 #define BIOS_IMG_SIZE             (0x4000000)         //64MB
-#define CL_BIOS_IMG_INFO_OFFSET      (0x2FEF000)
-#define HD_BIOS_IMG_INFO_OFFSET      (0x00004000)
+#define CL_BIOS_IMG_INFO_OFFSET   (0x2FEF000)
+#define HD_BIOS_IMG_INFO_OFFSET   (0x00004000)
 #define MD5_SIZE                  (16)
 #define PLAT_SIG_SIZE             (16)
 #define FW_VER_SIZE               (13)

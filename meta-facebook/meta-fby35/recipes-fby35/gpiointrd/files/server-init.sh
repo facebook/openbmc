@@ -80,6 +80,7 @@ else
   /usr/bin/sv start ipmbd_${bus} > /dev/null 2>&1
   /usr/local/bin/power-util "slot${slot_num}" 12V-on
   i2c_device_add "${prot_bus}" 0x50 24c32 > /dev/null 2>&1
+  set_vf_gpio "$slot_num"
   /usr/local/bin/bic-cached -s "slot${slot_num}"
   /usr/local/bin/bic-cached -f "slot${slot_num}"
   /usr/bin/fw-util "slot${slot_num}" --version > /dev/null
@@ -87,8 +88,6 @@ fi
 
 # reload fscd
 /etc/init.d/setup-fan.sh reload
-
-set_vf_gpio
 
 # start the services again
 sv start gpiod

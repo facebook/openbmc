@@ -82,11 +82,11 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
 
   data[0] = rbuf[0];
 
-  if (record_slot_mapping) {
-    ret = pal_check_sled_managment_cable_id(slot_id, tbuf, bmc_location);
-  }
-  if ( ret < 0 ) {
-    return UTIL_EXECUTION_FAIL;
+  if (record_slot_mapping || verbosed || output_json) {
+    ret = pal_check_sled_managment_cable_id(slot_id, record_slot_mapping, tbuf, bmc_location);
+    if (ret < 0) {
+      return UTIL_EXECUTION_FAIL;
+    }
   }
 
   data[1] = tbuf[0];

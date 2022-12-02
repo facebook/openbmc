@@ -3925,7 +3925,7 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 }
 
 int
-pal_check_sled_managment_cable_id(uint8_t slot_id, uint8_t *cbl_val, uint8_t bmc_location) {
+pal_check_sled_managment_cable_id(uint8_t slot_id, bool log, uint8_t *cbl_val, uint8_t bmc_location) {
   enum {
     SLOT1_CABLE = 0x03,
     SLOT2_CABLE = 0x02,
@@ -3970,7 +3970,9 @@ pal_check_sled_managment_cable_id(uint8_t slot_id, uint8_t *cbl_val, uint8_t bmc
           break;
         }
       }
-      syslog(LOG_CRIT, "Abnormal - slot%d instead of slot%d", slot_id_tmp, (i+1));
+      if (log) {
+        syslog(LOG_CRIT, "Abnormal - slot%d instead of slot%d", slot_id_tmp, (i+1));
+      }
     }
 
     if ( cbl_val != NULL ) {

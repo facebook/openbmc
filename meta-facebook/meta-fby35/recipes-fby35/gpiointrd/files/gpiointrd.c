@@ -80,7 +80,7 @@ slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   }
 
   if (value == GPIO_VALUE_LOW) {
-    pal_check_sled_managment_cable_id(slot_id, NULL, bmc_location);
+    pal_check_sled_managment_cable_id(slot_id, true, NULL, bmc_location);
 
     pal_check_slot_cpu_present(slot_id);
     pal_check_slot_fru(slot_id);
@@ -119,7 +119,7 @@ slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last __attribute__((unused))
   }
 
   if (curr == GPIO_VALUE_LOW) {
-    pal_check_sled_managment_cable_id(slot_id, NULL, bmc_location);
+    pal_check_sled_managment_cable_id(slot_id, true, NULL, bmc_location);
 
     // Wait for IPMB ready
     sleep(6);

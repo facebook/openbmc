@@ -503,8 +503,17 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "Boot Drive failure",
     "Data Drive failure",
     "Received invalid boot order request from BMC",
+    "System HTTP boot fail",
+    "BIOS fails to get the certificate from BMC",
     "Reserved"
   };
+  char *cert_event[] = {
+    "No certificate at BMC",
+    "IPMI transaction fail",
+    "Certificate data corrupted",
+    "Reserved"
+  };
+
   char *pcie_event[] = {
     "PCIe DPC Event",
     "PCIe LER Event",
@@ -629,10 +638,34 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     }
 
     case UNIFIED_POST_ERR:
+    {
+      uint8_t cert_event_idx = (sel[12] < ARRAY_SIZE(cert_event)) ? sel[12] : (ARRAY_SIZE(cert_event) - 1);
+      uint8_t fail_type = sel[13] & 0xF;
+      uint8_t err_code =  sel[14];
       event_type = sel[8] & 0xF;
       estr_idx = (event_type < ARRAY_SIZE(post_err)) ? event_type : (ARRAY_SIZE(post_err) - 1);
-      sprintf(error_log, "GeneralInfo: POST(0x%02X), POST Failure Event: %s", general_info, post_err[estr_idx]);
+
+      switch(event_type) {
+        case POST_PXE_BOOT_FAIL:
+        case POST_HTTP_BOOT_FAIL:
+          if (fail_type == 4 || fail_type == 6) {
+            sprintf(temp_log, "IPv%d fail",fail_type);
+          } else {
+            sprintf(temp_log, "Unknown fail(%02X)",fail_type);
+          }
+          sprintf(error_log, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, Fail Type: %s, Error Code: 0x%02X",
+            general_info, post_err[estr_idx], temp_log, err_code);
+          break;
+        case POST_GET_CERT_FAIL:
+          sprintf(error_log, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, Failure Detail: %s",
+            general_info, post_err[estr_idx], cert_event[cert_event_idx]);
+          break;
+        default:
+          sprintf(error_log, "GeneralInfo: POST(0x%02X), POST Failure Event: %s", general_info, post_err[estr_idx]);
+          break;
+      }
       break;
+    }
 
     case UNIFIED_PCIE_EVENT:
       event_type = sel[8] & 0xF;

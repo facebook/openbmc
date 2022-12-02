@@ -277,6 +277,17 @@ enum {
 };
 
 enum {
+  POST_PXE_BOOT_FAIL      = 0x0,
+  POST_CMOS_CLEARED       = 0x1,
+  POST_TPM_SELF_TEST_FAIL = 0x2,
+  POST_BOOT_DRIVE_FAIL    = 0x3,
+  POST_DATA_DRIVE_FAIL    = 0x4,
+  POST_INVALID_BOOT_ORDER = 0x5,
+  POST_HTTP_BOOT_FAIL     = 0x6,
+  POST_GET_CERT_FAIL      = 0x7,
+};
+
+enum {
   UPI_INIT_ERR = 0x0,
 };
 

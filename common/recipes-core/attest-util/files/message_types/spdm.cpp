@@ -200,8 +200,6 @@ void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
       returnMessage = sendSpdmMessage(opt.bus, opt.addr, opt.device, message, opt.debugOutput);
 
       if(returnMessage.size() > 0) {
-        // Remove the MCTP header.
-        returnMessage.erase(returnMessage.begin(), returnMessage.begin()+3);
         // Re-encode response to base64
         encodedResponse = encodeBase64(returnMessage);
         errorMessage = "Success";

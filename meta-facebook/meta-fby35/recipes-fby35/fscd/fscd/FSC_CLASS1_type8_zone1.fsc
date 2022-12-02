@@ -1,0 +1,3 @@
+max([
+  linear_nic(all:nic_nic_temp_c)
+])

@@ -64,10 +64,12 @@ enum {
 };
 
 enum {
-  FEXP_BIC_INTF = 0x05,
+  FEXP_BIC_INTF = 0x05, // 1OU
   BB_BIC_INTF   = 0x10,
   BMC_INTF      = 0x1a,
-  REXP_BIC_INTF = 0x15,
+  REXP_BIC_INTF = 0x15, // 2OU
+  EXP3_BIC_INTF = 0x25, // 3OU
+  EXP4_BIC_INTF = 0x30, // 4OU
   NONE_INTF     = 0xff,
 };
 

@@ -429,6 +429,7 @@ get_1ou_board_type() {
 # 05h - Kahuna Falls
 # 06h - Waimano falls
 # 07h - Expansion with NIC
+# 08h - Olmstead point EXP A
 # FEh - no present card
 # FFh - No expected type
 get_1ou_card_type() {

@@ -57,6 +57,9 @@ extern "C" {
 #define SB_USB_VENDOR_ID  0x1D6B
 #define SB_USB_PRODUCT_ID 0x0104
 
+#define SET_OP_IOEXP(reg, port)   (reg | (1ULL << port))
+#define CLEAR_OP_IOEXP(reg, port) (reg & (~(1ULL << port)))
+
 typedef struct
 {
   struct libusb_device**          devs;
@@ -281,6 +284,18 @@ enum {
   NO_EXPANSION_PRESENT = 0x0,
   PRESENT_1OU = 0x01,
   PRESENT_2OU = 0x02,
+  // In Olmsted point system,
+  // 3OU present bit is the same as 2OU present in other platform
+  OP_PRESENT_3OU = 0x02,
+};
+
+// Port definition of Olmstead point I/O Expander
+enum op_ioexp_port{
+  OP_IOEXP_BIC_SRST_N_R = 0,
+  OP_IOEXP_BIC_EXTRST_N_R = 1,
+  OP_IOEXP_BIC_FWSPICK_R = 2,
+  OP_IOEXP_UART_IOEXP_MUX_CTRL = 3,
+  OP_IOEXP_P12V_STBY_POWER_EN = 4,
 };
 
 int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);

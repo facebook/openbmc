@@ -58,6 +58,10 @@ remote_fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t intf) {
     sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_1OU);
   } else if (intf == REXP_BIC_INTF) {
     sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU);
+  } else if (intf == EXP3_BIC_INTF) {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_3OU);
+  } else if (intf == EXP4_BIC_INTF) {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_4OU);
   } else {
     sprintf(fruid_path, "/tmp/fruid_slot%d.%d.bin", slot_id, intf);
   }
@@ -135,6 +139,16 @@ fruid_cache_init(uint8_t slot_id) {
           case TYPE_1OU_RAINBOW_FALLS:
           case TYPE_1OU_VERNAL_FALLS_WITH_AST:
             remote_f_ret = remote_fruid_cache_init(slot_id, FRUID_0, FEXP_BIC_INTF);
+            break;
+          case TYPE_1OU_OLMSTEAD_POINT:
+            if (slot_id != FRU_SLOT1) {
+              syslog(LOG_WARNING, "%s() slot %x is not expected on Type 8 system\n", __func__, slot_id);
+              return -1;
+            }
+            remote_f_ret += remote_fruid_cache_init(slot_id, FRUID_0, FEXP_BIC_INTF);
+            remote_f_ret += remote_fruid_cache_init(slot_id, FRUID_0, REXP_BIC_INTF);
+            remote_f_ret += remote_fruid_cache_init(slot_id, FRUID_0, EXP3_BIC_INTF);
+            remote_f_ret += remote_fruid_cache_init(slot_id, FRUID_0, EXP4_BIC_INTF);
             break;
           default:
             remote_f_ret = 0;

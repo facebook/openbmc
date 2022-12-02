@@ -81,6 +81,9 @@ do {                                                                        \
 #define UART_CH_RCVY_BB      0x04
 #define FORCE_BOOT_FROM_SPI  0x00
 #define FORCE_BOOT_FROM_UART 0x01
+#define OP_IOEXP_BUS         0x09
+#define OP_1OU_IOEXP_ADDR    0x4C
+#define OP_3OU_IOEXP_ADDR    0x4E
 
 enum {
   FEXP_BIC_I2C_WRITE   = 0x20,
@@ -352,6 +355,24 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
   uint8_t strap_reg = CPLD_REG_SB_BIC_BOOT_STRAP;
   uint8_t buf[64], bmc_location = 0;
   char cmd[64];
+  uint8_t op_index = 0;
+  uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 0;
+  uint8_t val_reg = 0xFF, dir_reg = 0xFF;
+  typedef struct {
+    uint8_t comp;
+    int mux_ctrl;
+    uint8_t ioexp_addr;
+    uint8_t uart_ch;
+    uint8_t component;
+  } OP_BIC_RCVY_INFO;
+  static const OP_BIC_RCVY_INFO op_info[4] = {
+    {FW_1OU_BIC, 1, OP_1OU_IOEXP_ADDR, UART_CH_RCVY_1OU, FW_1OU_BIC_RCVY},
+    {FW_2OU_BIC, 0, OP_1OU_IOEXP_ADDR, UART_CH_RCVY_1OU, FW_2OU_BIC_RCVY},
+    {FW_3OU_BIC, 1, OP_3OU_IOEXP_ADDR, UART_CH_RCVY_2OU, FW_3OU_BIC_RCVY},
+    {FW_4OU_BIC, 0, OP_3OU_IOEXP_ADDR, UART_CH_RCVY_2OU, FW_4OU_BIC_RCVY},
+  };
 
   if (path == NULL) {
     return -1;
@@ -364,11 +385,24 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
       comp = FW_SB_BIC;
       break;
     case FW_1OU_BIC_RCVY:
+    case FW_2OU_BIC_RCVY:
+    case FW_3OU_BIC_RCVY:
+    case FW_4OU_BIC_RCVY:
       uart_ch = UART_CH_RCVY_1OU;
       strap_reg = CPLD_REG_1OU_BIC_BOOT_STRAP;
-      comp = FW_1OU_BIC;
       if (bic_get_1ou_type(slot_id, &type) < 0) {
         syslog(LOG_WARNING, "%s[%u] Failed to get 1ou type", __func__, slot_id);
+      }
+      if (type == TYPE_1OU_OLMSTEAD_POINT) {
+        for (op_index = 0; op_index < sizeof(op_info)/sizeof(OP_BIC_RCVY_INFO); op_index++) {
+          if (op_info[op_index].component == comp) {
+            break;
+          }
+        }
+        comp = op_info[op_index].component;
+        uart_ch = op_info[op_index].uart_ch;
+      } else {
+        comp = FW_1OU_BIC;
       }
       break;
     default:
@@ -442,6 +476,73 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
       buf[1] = 0xFB;
       if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
         syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+        break;
+      }
+    } else if (type == TYPE_1OU_OLMSTEAD_POINT) {
+      // select UART MUX
+      tbuf[0] = (OP_IOEXP_BUS << 1) + 1;
+      tbuf[1] = op_info[op_index].ioexp_addr;
+      tbuf[2] = 0x01; // read bytes
+      tbuf[3] = 0x01; // value register
+      if (!bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 4,
+                          rbuf, &rlen, NONE_INTF)) {
+        val_reg = rbuf[0];
+      }
+
+      tbuf[3] = 0x01; // value
+      val_reg = (op_info[op_index].mux_ctrl)? SET_OP_IOEXP(val_reg, OP_IOEXP_UART_IOEXP_MUX_CTRL):
+                  CLEAR_OP_IOEXP(val_reg, OP_IOEXP_UART_IOEXP_MUX_CTRL);
+      tbuf[4] = val_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
+        break;
+      }
+      tbuf[3] = 0x03; // direction
+      dir_reg = CLEAR_OP_IOEXP(dir_reg, OP_IOEXP_UART_IOEXP_MUX_CTRL); // output
+      tbuf[4] = dir_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
+        break;
+      }
+      msleep(20);
+
+      // set boot from UART
+      tbuf[3] = 0x01; // value
+      val_reg = CLEAR_OP_IOEXP(val_reg, OP_IOEXP_BIC_FWSPICK_R); // low
+      tbuf[4] = val_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
+        break;
+      }
+      tbuf[3] = 0x03; // direction
+      dir_reg = CLEAR_OP_IOEXP(dir_reg, OP_IOEXP_BIC_FWSPICK_R); // output
+      tbuf[4] = dir_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
+        break;
+      }
+
+      // BIC EXRST
+      tbuf[3] = 0x01; // value
+      val_reg = CLEAR_OP_IOEXP(val_reg, OP_IOEXP_BIC_SRST_N_R); // low
+      tbuf[4] = val_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
+        break;
+      }
+      tbuf[3] = 0x03; // direction
+      dir_reg = CLEAR_OP_IOEXP(dir_reg, OP_IOEXP_BIC_SRST_N_R); // output
+      tbuf[4] = dir_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
+        break;
+      }
+      msleep(100);
+      tbuf[3] = 0x01; // value
+      val_reg = SET_OP_IOEXP(val_reg, OP_IOEXP_BIC_SRST_N_R); // high
+      tbuf[4] = val_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
         break;
       }
     } else {
@@ -551,6 +652,31 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
       buf[1] = 0xFF;
       if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
         syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      }
+    } else if (type == TYPE_1OU_OLMSTEAD_POINT) {
+      // set boot from SPI
+      tbuf[3] = 0x01; // data
+      val_reg = SET_OP_IOEXP(val_reg, OP_IOEXP_BIC_FWSPICK_R); // high
+      tbuf[4] = val_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
+        syslog(LOG_ERR, "%s Failed to set boot from SPI", __func__);
+      }
+      // BIC EXRST
+      tbuf[3] = 0x01; // data
+      val_reg = CLEAR_OP_IOEXP(val_reg, OP_IOEXP_BIC_SRST_N_R); // low
+      tbuf[4] = val_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
+        syslog(LOG_ERR, "%s Failed to set BIC EXRST (low)", __func__);
+      }
+      msleep(100);
+      tbuf[3] = 0x01; // data
+      val_reg = SET_OP_IOEXP(val_reg, OP_IOEXP_BIC_SRST_N_R); // high
+      tbuf[4] = val_reg;
+      if (bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 5,
+                          rbuf, &rlen, NONE_INTF)) {
+        syslog(LOG_ERR, "%s Failed to set BIC EXRST (high)", __func__);
       }
     } else {
       buf[0] = strap_reg;
@@ -758,6 +884,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       intf = FEXP_BIC_INTF;
       break;
     case FW_2OU_BIC:
+    case FW_2OU_BIC_RCVY:
     case FW_2OU_PESW:
     case FW_2OU_M2_DEV0:
     case FW_2OU_M2_DEV1:
@@ -772,6 +899,14 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_2OU_M2_DEV10:
     case FW_2OU_M2_DEV11:
       intf = REXP_BIC_INTF;
+      break;
+    case FW_3OU_BIC:
+    case FW_3OU_BIC_RCVY:
+      intf = EXP3_BIC_INTF;
+      break;
+    case FW_4OU_BIC:
+    case FW_4OU_BIC_RCVY:
+      intf = EXP4_BIC_INTF;
       break;
     case FW_BB_BIC:
     case FW_BB_CPLD:
@@ -828,10 +963,15 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_BB_BIC:
+    case FW_3OU_BIC:
+    case FW_4OU_BIC:
       ret = update_bic_runtime_fw(slot_id, UPDATE_BIC, intf, path, force);
       break;
     case FW_BIC_RCVY:
     case FW_1OU_BIC_RCVY:
+    case FW_2OU_BIC_RCVY:
+    case FW_3OU_BIC_RCVY:
+    case FW_4OU_BIC_RCVY:
       ret = recovery_bic_runtime_fw(slot_id, comp, intf, path, force);
       break;
     case FW_BB_CPLD:

@@ -27,6 +27,7 @@ class ClassConfig {
       uint8_t bmc_location = 0, prsnt;
       uint8_t hsc_type = HSC_UNKNOWN;
       uint8_t board_rev = UNKNOWN_REV;
+      uint8_t card_type = TYPE_1OU_UNKNOWN;
 
       int config_status;
 
@@ -96,12 +97,24 @@ class ClassConfig {
             config_status = 0;
           }
           if ((config_status & PRESENT_1OU) == PRESENT_1OU) {
+            if (bic_get_1ou_type(FRU_SLOT1, &card_type) < 0) {
+              card_type = TYPE_1OU_UNKNOWN;
+            }
             if (isRainbowFalls(FRU_SLOT1)) {
               static VrComponent  vr_1ou_fw1("slot1", "1ou_vr", FW_1OU_VR);
               static VrComponent  vr_1ou_va0v8_fw1("slot1", "1ou_vr_v9asica", FW_1OU_VR_V9_ASICA);
               static VrComponent  vr_1ou_vddqab_fw1("slot1", "1ou_vr_vddqab", FW_1OU_VR_VDDQAB);
               static VrComponent  vr_1ou_vddqcd_fw1("slot1", "1ou_vr_vddqcd", FW_1OU_VR_VDDQCD);
               static CxlComponent cxl_1ou_fw1("slot1", "cxl", "1ou", FW_1OU_CXL);
+            } else if (card_type == TYPE_1OU_OLMSTEAD_POINT) {
+              static BicFwComponent bic_1ou_fw1("slot1", "1ou_bic", "1ou", FW_1OU_BIC);
+              static BicFwComponent bic_2ou_fw1("slot1", "2ou_bic", "2ou", FW_2OU_BIC);
+              static BicFwComponent bic_3ou_fw1("slot1", "3ou_bic", "3ou", FW_3OU_BIC);
+              static BicFwComponent bic_4ou_fw1("slot1", "4ou_bic", "4ou", FW_4OU_BIC);
+              static BicFwComponent bic_1ou_rcvy_fw1("slot1", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
+              static BicFwComponent bic_2ou_rcvy_fw1("slot1", "2ou_bic_rcvy", "2ou", FW_2OU_BIC_RCVY);
+              static BicFwComponent bic_3ou_rcvy_fw1("slot1", "3ou_bic_rcvy", "3ou", FW_3OU_BIC_RCVY);
+              static BicFwComponent bic_4ou_rcvy_fw1("slot1", "4ou_bic_rcvy", "4ou", FW_4OU_BIC_RCVY);
             }
           }
         } else {

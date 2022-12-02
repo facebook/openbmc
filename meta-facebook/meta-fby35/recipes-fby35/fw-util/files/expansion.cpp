@@ -13,6 +13,7 @@ void ExpansionBoard::ready()
   uint8_t config_status = 0;
   bool is_present = true;
   int ret = 0;
+  uint8_t type = TYPE_1OU_UNKNOWN;
 
   switch(fw_comp) {
     case FW_CPLD:
@@ -32,6 +33,11 @@ void ExpansionBoard::ready()
   }
 
   config_status = (uint8_t) ret;
+  if ( (config_status & PRESENT_1OU) == PRESENT_1OU ) {
+    if (bic_get_1ou_type(slot_id, &type)) {
+      throw string("Failed to get 1OU board type");
+    }
+  }
   switch (fw_comp) {
     case FW_1OU_BIC:
       if ( (config_status & PRESENT_1OU) != PRESENT_1OU )
@@ -41,7 +47,6 @@ void ExpansionBoard::ready()
       if ( (config_status & PRESENT_1OU) != PRESENT_1OU ) {
         is_present = false;
       } else {
-        uint8_t type = TYPE_1OU_UNKNOWN;
         if (bic_get_1ou_type(slot_id, &type)) {
           throw string("Failed to get 1OU board type");
         }
@@ -70,6 +75,10 @@ void ExpansionBoard::ready()
       }
       if ( (config_status & PRESENT_2OU) != PRESENT_2OU || type_2ou == DPV2_BOARD )
         is_present = false;
+      if (type == TYPE_1OU_OLMSTEAD_POINT) {
+        // TODO: will check present pin after bring up
+        is_present = true;
+      }
       break;
     case FW_2OU_PESW:
     case FW_2OU_M2_DEV0:
@@ -90,6 +99,12 @@ void ExpansionBoard::ready()
         ret = pal_get_server_power(slot_id, &pwr_sts);
         if ( ret < 0 || pwr_sts == 0 )
           throw string("DC-off");
+      }
+      break;
+    case FW_3OU_BIC:
+    case FW_4OU_BIC:
+      if ( (config_status & OP_PRESENT_3OU) != OP_PRESENT_3OU ) {
+        is_present = false;
       }
       break;
     default:

@@ -36,6 +36,7 @@ class BicFwComponent : public Component {
     int fupdate(string image);
     int print_version();
     int get_version(json& j) override;
+    bool is_recovery();
 };
 
 #endif

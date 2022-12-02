@@ -126,6 +126,8 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
     case FEXP_BIC_INTF:
     case BB_BIC_INTF:
     case REXP_BIC_INTF:
+    case EXP3_BIC_INTF:
+    case EXP4_BIC_INTF:
       if ( tlen + MIN_IPMB_REQ_LEN + MIN_IPMB_BYPASS_LEN > MAX_IPMB_RES_LEN ) {
         syslog(LOG_WARNING, "%s() xfer length is too long. len=%d, max=%d", __func__, (tlen + MIN_IPMB_REQ_LEN + MIN_IPMB_BYPASS_LEN), MAX_IPMB_RES_LEN);
         return BIC_STATUS_FAILURE;

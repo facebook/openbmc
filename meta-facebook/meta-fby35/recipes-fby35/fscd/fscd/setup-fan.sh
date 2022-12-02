@@ -120,8 +120,17 @@ init_class1_fsc() {
   elif [ "$sys_config" = "B" ]; then
     server_type=$(get_server_type 1)
     if [[ $server_type -eq 2 ]]; then
-      config_type="HD"
-      target_fsc_config="/etc/FSC_CLASS1_HD_config.json"
+      board_type_1ou=$(get_1ou_board_type slot1)
+      case $board_type_1ou in
+      8)
+        config_type="8"
+        target_fsc_config="/etc/FSC_CLASS1_type8_config.json"
+        ;;
+      *)
+        config_type="HD"
+        target_fsc_config="/etc/FSC_CLASS1_HD_config.json"
+        ;;
+      esac
     else
       config_type="DPV2"
       target_fsc_config="/etc/FSC_CLASS1_DPV2_config.json"
@@ -190,7 +199,6 @@ reload_sled_fsc() {
     fi
   else
     cnt=$(get_all_server_prsnt)
-    run_fscd=false
 
     #Check number of slots
     sys_config="$($KV_CMD get sled_system_conf persistent)"
@@ -198,6 +206,10 @@ reload_sled_fsc() {
       run_fscd=true
     elif [[ "$sys_config" =~ ^(Type_(DPV2|HD))$ && "$cnt" -eq 2 ]]; then
       run_fscd=true
+    elif [[ "$sys_config" == "Type_8" && "$cnt" -eq 1 ]]; then
+      run_fscd=true
+    else
+      run_fscd=false
     fi
   fi
 

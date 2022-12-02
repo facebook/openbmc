@@ -452,6 +452,10 @@ fby35_common_dev_id(char *str, uint8_t *dev) {
     *dev = BOARD_2OU_X16;
   } else if (!strcmp(str, "PROT")) {
     *dev = BOARD_PROT;
+  } else if (!strcmp(str, "3U")) {
+    *dev = BOARD_3OU;
+  } else if (!strcmp(str, "4U")) {
+    *dev = BOARD_3OU;
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby35_common_dev_id: Wrong fru id");
@@ -507,6 +511,10 @@ fby35_common_dev_name(uint8_t dev, char *str) {
     strcpy(str, "1U");
   } else if (dev == BOARD_2OU) {
     strcpy(str, "2U");
+  } else if (dev == BOARD_3OU) {
+    strcpy(str, "3U");
+  } else if (dev == BOARD_4OU) {
+    strcpy(str, "4U");
   } else if (dev == BOARD_2OU_X8) {
     strcpy(str, "2U-X8");
   } else if (dev == BOARD_2OU_X16) {
@@ -922,6 +930,11 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
     case FW_1OU_BIC:
     case FW_1OU_BIC_RCVY:
     case FW_2OU_BIC:
+    case FW_2OU_BIC_RCVY:
+    case FW_3OU_BIC:
+    case FW_3OU_BIC_RCVY:
+    case FW_4OU_BIC:
+    case FW_4OU_BIC_RCVY:
     case FW_BB_BIC:
       if (err_proof_component != COMP_BIC) {
         printf("Not a valid BIC firmware image.\n");

@@ -66,6 +66,8 @@ fruid_to_devid mapping[] = {
   { FRU_ID_2OU_X8       ,BOARD_2OU_X8 },
   { FRU_ID_2OU_X16      ,BOARD_2OU_X16},
   { FRU_ID_PROT         ,BOARD_PROT   },
+  { FRU_ID_BOARD_3OU    ,BOARD_3OU    },
+  { FRU_ID_BOARD_4OU    ,BOARD_4OU    },
 };
 
 static int

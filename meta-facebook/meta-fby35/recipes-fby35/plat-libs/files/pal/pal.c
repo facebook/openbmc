@@ -63,7 +63,7 @@ const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
-const char pal_dev_fru_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
+const char pal_dev_fru_list[] = "all, 1U, 2U, 3U, 4U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13, 2U-X8, 2U-X16";
 const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
@@ -1527,6 +1527,10 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
       return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
     } else if ( dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID11_2OU ) {
       return bic_write_fruid(fru, dev_id - DEV_ID0_2OU + 1, path, REXP_BIC_INTF);
+    } else if ( dev_id == BOARD_3OU ) {
+      return bic_write_fruid(fru, 0, path, EXP3_BIC_INTF);
+    } else if ( dev_id == BOARD_4OU ) {
+      return bic_write_fruid(fru, 0, path, EXP4_BIC_INTF);
     } else {
       printf("Dev%d is not supported on 2OU!\n", dev_id);
     }

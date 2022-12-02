@@ -34,6 +34,8 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
       break;
     case FW_1OU_BIC:
     case FW_1OU_BIC_RCVY:
+    case FW_3OU_BIC:
+    case FW_3OU_BIC_RCVY:
       if (bic_get_1ou_type(slot_id, &type) == 0) {
         switch (type) {
           case TYPE_1OU_RAINBOW_FALLS:
@@ -42,8 +44,17 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
           case TYPE_1OU_VERNAL_FALLS_WITH_AST:
             board_id = BOARD_ID_VF;
             break;
+          case TYPE_1OU_OLMSTEAD_POINT:
+            board_id = BOARD_ID_OPA;
+            break;
         }
       }
+      break;
+    case FW_2OU_BIC:
+    case FW_2OU_BIC_RCVY:
+    case FW_4OU_BIC:
+    case FW_4OU_BIC_RCVY:
+       board_id = BOARD_ID_OPB;
       break;
     case FW_BB_BIC:
       board_id = BOARD_ID_BB;
@@ -63,6 +74,18 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
   return image_sts;
 }
 
+bool BicFwComponent::is_recovery() {
+  switch(fw_comp) {
+    case FW_BIC_RCVY:
+    case FW_1OU_BIC_RCVY:
+    case FW_2OU_BIC_RCVY:
+    case FW_3OU_BIC_RCVY:
+    case FW_4OU_BIC_RCVY:
+      return true;
+  }
+  return false;
+}
+
 int BicFwComponent::update_internal(const string& image, bool force) {
   int ret = FW_STATUS_FAILURE;
   image_info image_sts = check_image(image, force);
@@ -74,7 +97,7 @@ int BicFwComponent::update_internal(const string& image, bool force) {
   }
 
   try {
-    if (fw_comp != FW_BIC_RCVY && fw_comp != FW_1OU_BIC_RCVY) {
+    if (!is_recovery()) {
       server.ready();
       expansion.ready();
     }
@@ -99,7 +122,7 @@ int BicFwComponent::update_internal(const string& image, bool force) {
     return FW_STATUS_FAILURE;
   }
 
-  if (fw_comp == FW_BIC_RCVY || fw_comp == FW_1OU_BIC_RCVY) {
+  if (is_recovery()) {
     cout << "Performing 12V-cycle to complete the BIC recovery" << endl;
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
   }
@@ -142,7 +165,7 @@ int BicFwComponent::print_version() {
   string ver("");
   string board_name = board;
 
-  if (fw_comp == FW_BIC_RCVY || fw_comp == FW_1OU_BIC_RCVY) {
+  if (is_recovery()) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
@@ -165,7 +188,7 @@ int BicFwComponent::get_version(json& j) {
   string ver("");
   string board_name = board;
 
-  if (fw_comp == FW_BIC_RCVY || fw_comp == FW_1OU_BIC_RCVY) {
+  if (is_recovery()) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 

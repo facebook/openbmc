@@ -2262,7 +2262,7 @@ read_adc_val(uint8_t adc_id, float *value) {
         if ( gval == MAXIM_SOLUTION ) {
           *value = (((*value/0.157/0.33) - 2.5) * 0.96) + 0.15;
         } else if ( gval == MPS_SOLUTION ) {
-          *value = *value/0.01/5.11;
+          *value = ((*value/0.01/5.11) * 1.01) - 0.15;
         } else {
           syslog(LOG_WARNING, "%s() Fan current solution not support, gval = %d", __func__, gval);
           return -1;

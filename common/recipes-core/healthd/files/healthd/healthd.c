@@ -1475,19 +1475,20 @@ static int log_count(const char *str)
   otherwise return 0 as failure */
 static size_t get_curr_version(char *buf, size_t buflen)
 {
-  FILE *fp = fopen("/etc/issue", "r");
+#define STR_VALUE(x)   #x
+#define STRINGIFY(x)   STR_VALUE(x)
+
+  FILE *fp = NULL;
   size_t ret = 0;
-  int flen = 0;
   char *vers = NULL;
 
+  vers = malloc(MAX_VALUE_LEN);
+  if (!vers) return 0;
+
+  fp = fopen("/etc/issue", "r");
   if (fp) {
-
-    flen = fseek(fp, 0, SEEK_END);
-    vers = malloc(flen);
-    rewind(fp);
-
-    if(fscanf(fp, "OpenBMC Release %s\n", vers) == 1) {
-      ret = strnlen(vers, buflen);
+    if(fscanf(fp, "OpenBMC Release %" STRINGIFY(MAX_VALUE_LEN) "s\n", vers) == 1) {
+      ret = strnlen(vers, MAX_VALUE_LEN);
       if ( ret < buflen) {
         snprintf(buf, buflen, "%s", vers);
       } else {

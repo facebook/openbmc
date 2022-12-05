@@ -23,6 +23,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
 SRC_URI += "file://patches/0501-i2c-add-a-slave-backend-to-receive-and-q.patch \
             file://patches/0502-add-i2c-slave-inactive-timeout-support.patch \
             file://patches/0510-driver-xdpe132g5c-pmbus.patch \
+            file://patches/0520-add-shutdown-path-in-spi-aspeed-smc-driver.patch \
            "
 
 #

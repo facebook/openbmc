@@ -22,6 +22,7 @@ import unittest
 
 from common.base_fans_test import CommonShellBasedFansTest
 from utils.cit_logger import Logger
+from tests.fuji.helper.libpal import pal_is_fru_prsnt, pal_get_fru_id
 from utils.test_utils import qemu_check
 
 
@@ -31,7 +32,10 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         Logger.start(name=self._testMethodName)
         self.read_fans_cmd = "/usr/local/bin/get_fan_speed.sh"
         self.write_fans_cmd = "/usr/local/bin/set_fan_speed.sh"
-        self.kill_fan_ctrl_cmd = ["systemctl stop fscd.service", "/usr/local/bin/wdtcli stop"]
+        self.kill_fan_ctrl_cmd = [
+            "systemctl stop fscd.service",
+            "/usr/local/bin/wdtcli stop",
+        ]
         self.start_fan_ctrl_cmd = ["systemctl start fscd.service"]
 
     def tearDown(self):
@@ -44,6 +48,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan1")):
+            self.skipTest("fan1 is not present")
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -55,6 +61,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan2")):
+            self.skipTest("fan2 is not present")
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -66,6 +74,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan3")):
+            self.skipTest("fan3 is not present")
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -77,6 +87,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan4")):
+            self.skipTest("fan4 is not present")
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -88,6 +100,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan5")):
+            self.skipTest("fan5 is not present")
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -99,6 +113,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan6")):
+            self.skipTest("fan6 is not present")
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -110,6 +126,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan7")):
+            self.skipTest("fan7 is not present")
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -121,6 +139,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan8")):
+            self.skipTest("fan8 is not present")
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -132,6 +152,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan1")):
+            self.skipTest("fan1 is not present")
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -143,6 +165,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan2")):
+            self.skipTest("fan2 is not present")
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -154,6 +178,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan3")):
+            self.skipTest("fan3 is not present")
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -165,6 +191,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan4")):
+            self.skipTest("fan4 is not present")
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -176,6 +204,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan5")):
+            self.skipTest("fan5 is not present")
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -187,6 +217,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan6")):
+            self.skipTest("fan6 is not present")
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -198,6 +230,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan7")):
+            self.skipTest("fan7 is not present")
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
@@ -209,6 +243,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan8")):
+            self.skipTest("fan8 is not present")
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail

@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_eeprom_test import CommonEepromTest
+from tests.fuji.helper.libpal import pal_is_fru_prsnt, pal_get_fru_id
 from utils.test_utils import qemu_check
 
 
@@ -90,6 +91,8 @@ class PIM2EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim1")):
+            self.skipTest("pim1 is not present")
         self.eeprom_cmd = ["/usr/local/bin/peutil 2"]
 
     def set_product_name(self):
@@ -105,6 +108,8 @@ class PIM3EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim2")):
+            self.skipTest("pim2 is not present")
         self.eeprom_cmd = ["/usr/local/bin/peutil 3"]
 
     def set_product_name(self):
@@ -120,6 +125,8 @@ class PIM4EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim3")):
+            self.skipTest("pim3 is not present")
         self.eeprom_cmd = ["/usr/local/bin/peutil 4"]
 
     def set_product_name(self):
@@ -135,6 +142,8 @@ class PIM5EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim4")):
+            self.skipTest("pim4 is not present")
         self.eeprom_cmd = ["/usr/local/bin/peutil 5"]
 
     def set_product_name(self):
@@ -150,6 +159,8 @@ class PIM6EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim5")):
+            self.skipTest("pim5 is not present")
         self.eeprom_cmd = ["/usr/local/bin/peutil 6"]
 
     def set_product_name(self):
@@ -165,6 +176,8 @@ class PIM7EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim6")):
+            self.skipTest("pim6 is not present")
         self.eeprom_cmd = ["/usr/local/bin/peutil 7"]
 
     def set_product_name(self):
@@ -180,6 +193,8 @@ class PIM8EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim7")):
+            self.skipTest("pim7 is not present")
         self.eeprom_cmd = ["/usr/local/bin/peutil 8"]
 
     def set_product_name(self):
@@ -195,6 +210,8 @@ class PIM9EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim8")):
+            self.skipTest("pim8 is not present")
         self.eeprom_cmd = ["/usr/local/bin/peutil 9"]
 
     def set_product_name(self):
@@ -240,6 +257,8 @@ class FAN1EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan1")):
+            self.skipTest("fan1 is not present")
         self.eeprom_cmd = ["/usr/local/bin/feutil 1"]
 
     def set_product_name(self):
@@ -255,6 +274,8 @@ class FAN2EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan2")):
+            self.skipTest("fan2 is not present")
         self.eeprom_cmd = ["/usr/local/bin/feutil 2"]
 
     def set_product_name(self):
@@ -270,6 +291,8 @@ class FAN3EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan3")):
+            self.skipTest("fan3 is not present")
         self.eeprom_cmd = ["/usr/local/bin/feutil 3"]
 
     def set_product_name(self):
@@ -285,6 +308,8 @@ class FAN4EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan4")):
+            self.skipTest("fan4 is not present")
         self.eeprom_cmd = ["/usr/local/bin/feutil 4"]
 
     def set_product_name(self):
@@ -300,6 +325,8 @@ class FAN5EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan5")):
+            self.skipTest("fan5 is not present")
         self.eeprom_cmd = ["/usr/local/bin/feutil 5"]
 
     def set_product_name(self):
@@ -315,6 +342,8 @@ class FAN6EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan6")):
+            self.skipTest("fan6 is not present")
         self.eeprom_cmd = ["/usr/local/bin/feutil 6"]
 
     def set_product_name(self):
@@ -330,6 +359,8 @@ class FAN7EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan7")):
+            self.skipTest("fan7 is not present")
         self.eeprom_cmd = ["/usr/local/bin/feutil 7"]
 
     def set_product_name(self):
@@ -345,6 +376,8 @@ class FAN8EepromTest(EepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan8")):
+            self.skipTest("fan8 is not present")
         self.eeprom_cmd = ["/usr/local/bin/feutil 8"]
 
     def set_product_name(self):

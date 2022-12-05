@@ -21,29 +21,38 @@
 import unittest
 
 from common.base_psu_test import CommonPsuTest
+from tests.fuji.helper.libpal import pal_is_fru_prsnt, pal_get_fru_id
 from utils.test_utils import qemu_check
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Psu1Test(CommonPsuTest, unittest.TestCase):
     def set_psu_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("psu1")):
+            self.skipTest("psu1 is not present")
         self.psu_cmd = "/usr/bin/psu-util"
         self.psu_id = 1
 
 
 class Psu2Test(Psu1Test, unittest.TestCase):
     def set_psu_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("psu2")):
+            self.skipTest("psu2 is not present")
         self.psu_cmd = "/usr/bin/psu-util"
         self.psu_id = 2
 
 
 class Psu3Test(Psu1Test, unittest.TestCase):
     def set_psu_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("psu3")):
+            self.skipTest("psu3 is not present")
         self.psu_cmd = "/usr/bin/psu-util"
         self.psu_id = 3
 
 
 class Psu4Test(Psu1Test, unittest.TestCase):
     def set_psu_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("psu4")):
+            self.skipTest("psu4 is not present")
         self.psu_cmd = "/usr/bin/psu-util"
         self.psu_id = 4

@@ -172,6 +172,8 @@ class PimSensorTest(SensorUtilTest, unittest.TestCase):
 
 class Pim1SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim1")):
+            self.skipTest("pim1 is not present")
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim1"]
         self._pim_id = 1
 
@@ -193,6 +195,8 @@ class Pim1SensorTest(PimSensorTest, unittest.TestCase):
 
 class Pim2SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim2")):
+            self.skipTest("pim2 is not present")
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim2"]
         self._pim_id = 2
 
@@ -214,6 +218,8 @@ class Pim2SensorTest(PimSensorTest, unittest.TestCase):
 
 class Pim3SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim3")):
+            self.skipTest("pim3 is not present")
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim3"]
         self._pim_id = 3
 
@@ -235,6 +241,8 @@ class Pim3SensorTest(PimSensorTest, unittest.TestCase):
 
 class Pim4SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim4")):
+            self.skipTest("pim4 is not present")
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim4"]
         self._pim_id = 4
 
@@ -256,6 +264,8 @@ class Pim4SensorTest(PimSensorTest, unittest.TestCase):
 
 class Pim5SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim5")):
+            self.skipTest("pim5 is not present")
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim5"]
         self._pim_id = 5
 
@@ -277,6 +287,8 @@ class Pim5SensorTest(PimSensorTest, unittest.TestCase):
 
 class Pim6SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim6")):
+            self.skipTest("pim6 is not present")
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim6"]
         self._pim_id = 6
 
@@ -298,6 +310,8 @@ class Pim6SensorTest(PimSensorTest, unittest.TestCase):
 
 class Pim7SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim7")):
+            self.skipTest("pim7 is not present")
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim7"]
         self._pim_id = 7
 
@@ -319,6 +333,8 @@ class Pim7SensorTest(PimSensorTest, unittest.TestCase):
 
 class Pim8SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim8")):
+            self.skipTest("pim8 is not present")
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim8"]
         self._pim_id = 8
 

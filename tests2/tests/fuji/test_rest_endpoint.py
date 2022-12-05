@@ -273,6 +273,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan1(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan1")):
+            self.skipTest("fan1 is not present")
         self.set_endpoint_fruid_fan1_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_FAN1_ENDPOINT, self.endpoint_fruid_fan1_attrb
@@ -284,6 +286,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan2(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan2")):
+            self.skipTest("fan2 is not present")
         self.set_endpoint_fruid_fan2_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_FAN2_ENDPOINT, self.endpoint_fruid_fan2_attrb
@@ -295,6 +299,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan3(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan3")):
+            self.skipTest("fan3 is not present")
         self.set_endpoint_fruid_fan3_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_FAN3_ENDPOINT, self.endpoint_fruid_fan3_attrb
@@ -306,6 +312,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan4(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan4")):
+            self.skipTest("fan4 is not present")
         self.set_endpoint_fruid_fan4_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_FAN4_ENDPOINT, self.endpoint_fruid_fan4_attrb
@@ -317,6 +325,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan5(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan5")):
+            self.skipTest("fan5 is not present")
         self.set_endpoint_fruid_fan5_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_FAN5_ENDPOINT, self.endpoint_fruid_fan5_attrb
@@ -328,6 +338,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan6(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan6")):
+            self.skipTest("fan6 is not present")
         self.set_endpoint_fruid_fan6_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_FAN6_ENDPOINT, self.endpoint_fruid_fan6_attrb
@@ -339,6 +351,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan7(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan7")):
+            self.skipTest("fan7 is not present")
         self.set_endpoint_fruid_fan7_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_FAN7_ENDPOINT, self.endpoint_fruid_fan7_attrb
@@ -350,6 +364,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan8(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("fan8")):
+            self.skipTest("fan8 is not present")
         self.set_endpoint_fruid_fan8_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_FAN8_ENDPOINT, self.endpoint_fruid_fan8_attrb
@@ -361,6 +377,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim1(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim1")):
+            self.skipTest("pim1 is not present")
         self.set_endpoint_fruid_pim1_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_PIM1_ENDPOINT, self.endpoint_fruid_pim1_attrb
@@ -372,6 +390,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim2(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim2")):
+            self.skipTest("pim2 is not present")
         self.set_endpoint_fruid_pim2_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_PIM2_ENDPOINT, self.endpoint_fruid_pim2_attrb
@@ -383,6 +403,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim3(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim3")):
+            self.skipTest("pim3 is not present")
         self.set_endpoint_fruid_pim3_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_PIM3_ENDPOINT, self.endpoint_fruid_pim3_attrb
@@ -394,6 +416,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim4(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim4")):
+            self.skipTest("pim4 is not present")
         self.set_endpoint_fruid_pim4_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_PIM4_ENDPOINT, self.endpoint_fruid_pim4_attrb
@@ -405,6 +429,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim5(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim5")):
+            self.skipTest("pim5 is not present")
         self.set_endpoint_fruid_pim5_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_PIM5_ENDPOINT, self.endpoint_fruid_pim5_attrb
@@ -416,6 +442,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim6(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim6")):
+            self.skipTest("pim6 is not present")
         self.set_endpoint_fruid_pim6_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_PIM6_ENDPOINT, self.endpoint_fruid_pim6_attrb
@@ -427,6 +455,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim7(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim7")):
+            self.skipTest("pim7 is not present")
         self.set_endpoint_fruid_pim7_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_PIM7_ENDPOINT, self.endpoint_fruid_pim7_attrb
@@ -438,6 +468,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim8(self):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim8")):
+            self.skipTest("pim8 is not present")
         self.set_endpoint_fruid_pim8_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_PIM8_ENDPOINT, self.endpoint_fruid_pim8_attrb

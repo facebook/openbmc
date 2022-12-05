@@ -17,8 +17,9 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/plat_conf:"
 
-SRC_URI += "file://fby35.cfg \
-            file://0001-workaround-for-CX7-set-MAC-Affinity-issue.patch \
+SRC_URI += "file://fby35.cfg"
+SRC_URI:append:fby35 = " \
+    file://0001-workaround-for-CX7-set-MAC-Affinity-issue.patch \
 	"
 
 KERNEL_MODULE_AUTOLOAD += " \

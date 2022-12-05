@@ -2,7 +2,7 @@
     "bios": {
         "filename": "coreboot-elbert.rom",
         "hash": "sha1sum",
-        "hash_value": "70c1ecb4e69d8926297d7bf6598634d944676954"
+        "hash_value": "ea672e28d3f2939765204d341869d96edeb82ee9"
     },
     "fan": {
         "filename": "elbert_fan.astp",
@@ -46,9 +46,9 @@
         "version": "5.1"
     },
     "th4_qspi": {
-        "filename": "elbert_th4_qspi.astp",
+        "filename": "elbert_th4_qspi.abin",
         "hash": "sha1sum",
-        "hash_value": "d99fc0cf8ca26a4457aff1628518c9ced5547ef3",
+        "hash_value": "5251c0a80762433a496fabc4ba6673a23baa9cf1",
         "version": "D000_05"
     }
 }

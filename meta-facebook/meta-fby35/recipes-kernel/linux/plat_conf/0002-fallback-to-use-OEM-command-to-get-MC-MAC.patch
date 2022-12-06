@@ -1,0 +1,46 @@
+From 3f81ae703f8ddbbec6f6850231f87a2bb81e859c Mon Sep 17 00:00:00 2001
+From: cchoux <cosmo.chou@quantatw.com>
+Date: Tue, 6 Dec 2022 21:10:10 +0800
+Subject: [PATCH] fallback to use OEM command to get MC MAC
+
+Summary:
+It looks Broadcom NIC NCSI 1.2 replies MAC address in reverse order.
+Fallback to use OEM command for workaround.
+---
+ net/ncsi/ncsi-manage.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
+index 77f7681d1e5..31c0cd48c56 100644
+--- a/net/ncsi/ncsi-manage.c
++++ b/net/ncsi/ncsi-manage.c
+@@ -1075,8 +1075,8 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+ 			break;
+ 		}
+ 
+-		if (nc->version.major < 1 || nc->version.minor < 2) {
+-			netdev_warn(dev, "NCSI: Network controller only "
++		//if (nc->version.major < 1 || nc->version.minor < 2) {
++			netdev_warn(dev, "NCSI: Network controller "
+ 				    "supports NC-SI %d.%d, querying MAC address"
+ 				    " through OEM(0x%04x) command\n",
+ 				    nc->version.major, nc->version.minor,
+@@ -1089,6 +1089,7 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+ 			if (ret < 0)
+ 				schedule_work(&ndp->work);
+ 			break;
++#if 0
+ 		}
+ 
+ 		nca.type = NCSI_PKT_CMD_GMCMA;
+@@ -1100,6 +1101,7 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+ 			schedule_work(&ndp->work);
+ 
+ 		break;
++#endif
+ 	case ncsi_dev_state_config_clear_vids:
+ 	case ncsi_dev_state_config_svf:
+ 	case ncsi_dev_state_config_ev:
+-- 
+2.25.1
+

@@ -13,6 +13,7 @@ S = "${WORKDIR}/bic"
 
 DEPENDS += " \
     libfby35-common \
+    libgpio-ctrl \
     libipmb \
     libipmi \
     libkv \

@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <openbmc/kv.h>
+#include <openbmc/libgpio.h>
 #include <openbmc/misc-utils.h>
 #include <openbmc/obmc-i2c.h>
 #include "bic_fwupdate.h"
@@ -355,6 +356,7 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
   uint8_t strap_reg = CPLD_REG_SB_BIC_BOOT_STRAP;
   uint8_t buf[64], bmc_location = 0;
   char cmd[64];
+  gpio_desc_t *vf_fwspick = NULL, *vf_srst = NULL;
   uint8_t op_index = 0;
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
@@ -449,33 +451,32 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
 
     printf("Setting BIC boot from UART\n");
     if (type == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
-      // SET BIC_FWSPICK_IO_EXP (bit2) to high
-      buf[0] = 0x01;  // data
-      buf[1] = 0x04;
-      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
-        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      // set BIC_FWSPICK_IO_EXP (bit2) to high
+      snprintf(cmd, sizeof(cmd), BIC_FWSPICK_SHADOW, slot_id);
+      if (!(vf_fwspick = gpio_open_by_shadow(cmd))) {
+        syslog(LOG_ERR, "%s[%u] Failed to open %s", __func__, slot_id, cmd);
         break;
       }
-      buf[0] = 0x03;  // direction
-      buf[1] = 0xFB;
-      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
-        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      if (gpio_set_init_value(vf_fwspick, GPIO_VALUE_HIGH)) {
+        syslog(LOG_ERR, "%s[%u] Failed to set BIC_FWSPICK_IO_EXP to high", __func__, slot_id);
         break;
       }
 
-      // SET BIC_SRST_N_IO_EXP_R (bit0) to low
-      buf[0] = 0x03;  // direction
-      buf[1] = 0xFA;
-      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
-        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      // set BIC_SRST_N_IO_EXP_R (bit0) to low
+      snprintf(cmd, sizeof(cmd), BIC_SRST_SHADOW, slot_id);
+      if (!(vf_srst = gpio_open_by_shadow(cmd))) {
+        syslog(LOG_ERR, "%s[%u] Failed to open %s", __func__, slot_id, cmd);
         break;
       }
+      if (gpio_set_init_value(vf_srst, GPIO_VALUE_LOW)) {
+        syslog(LOG_ERR, "%s[%u] Failed to set BIC_SRST_N_IO_EXP_R to low", __func__, slot_id);
+        break;
+      }
+
       msleep(100);
-      // SET BIC_SRST_N_IO_EXP_R (bit0) to high
-      buf[0] = 0x03;  // direction
-      buf[1] = 0xFB;
-      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
-        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      // let BIC_SRST_N_IO_EXP_R (bit0) be high
+      if (gpio_set_direction(vf_srst, GPIO_DIRECTION_IN)) {
+        syslog(LOG_ERR, "%s[%u] Failed to let BIC_SRST_N_IO_EXP_R be high", __func__, slot_id);
         break;
       }
     } else if (type == TYPE_1OU_OLMSTEAD_POINT) {
@@ -634,24 +635,19 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
   if (set_strap) {
     if (type == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
       // let BIC_FWSPICK_IO_EXP (bit2) be low
-      buf[0] = 0x03;  // direction
-      buf[1] = 0xFF;
-      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
-        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      if (gpio_set_direction(vf_fwspick, GPIO_DIRECTION_IN)) {
+        syslog(LOG_ERR, "%s[%u] Failed to let BIC_FWSPICK_IO_EXP be low", __func__, slot_id);
       }
 
-      // SET BIC_SRST_N_IO_EXP_R (bit0) to low
-      buf[0] = 0x03;  // direction
-      buf[1] = 0xFE;
-      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
-        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      // set BIC_SRST_N_IO_EXP_R (bit0) to low
+      if (gpio_set_init_value(vf_srst, GPIO_VALUE_LOW)) {
+        syslog(LOG_ERR, "%s[%u] Failed to set BIC_SRST_N_IO_EXP_R to low", __func__, slot_id);
       }
+
       msleep(100);
-      // SET BIC_SRST_N_IO_EXP_R (bit0) to high
-      buf[0] = 0x03;  // direction
-      buf[1] = 0xFF;
-      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
-        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      // let BIC_SRST_N_IO_EXP_R (bit0) be high
+      if (gpio_set_direction(vf_srst, GPIO_DIRECTION_IN)) {
+        syslog(LOG_ERR, "%s[%u] Failed to let BIC_SRST_N_IO_EXP_R be high", __func__, slot_id);
       }
     } else if (type == TYPE_1OU_OLMSTEAD_POINT) {
       // set boot from SPI
@@ -695,6 +691,12 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
   }
   if (ttyfd >= 0) {
     close(ttyfd);
+  }
+  if (vf_fwspick) {
+    gpio_close(vf_fwspick);
+  }
+  if (vf_srst) {
+    gpio_close(vf_srst);
   }
 
   return ret;

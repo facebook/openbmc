@@ -40,6 +40,7 @@ sources = [
 deps = [
     dependency('libcrypto'),
     dependency('libfby35-common'),
+    dependency('libgpio-ctrl'),
     dependency('libipmb'),
     dependency('libkv'),
     dependency('libobmc-i2c'),

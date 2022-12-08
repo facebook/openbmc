@@ -72,18 +72,30 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP_L,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
-  MB_SNR_DIMM_CPU0_GRPA_TEMP,
-  MB_SNR_DIMM_CPU0_GRPB_TEMP,
-  MB_SNR_DIMM_CPU0_GRPC_TEMP,
-  MB_SNR_DIMM_CPU0_GRPD_TEMP,
-  MB_SNR_DIMM_CPU0_GRPE_TEMP,
-  MB_SNR_DIMM_CPU0_GRPF_TEMP,
-  MB_SNR_DIMM_CPU1_GRPA_TEMP,
-  MB_SNR_DIMM_CPU1_GRPB_TEMP,
-  MB_SNR_DIMM_CPU1_GRPC_TEMP,
-  MB_SNR_DIMM_CPU1_GRPD_TEMP,
-  MB_SNR_DIMM_CPU1_GRPE_TEMP,
-  MB_SNR_DIMM_CPU1_GRPF_TEMP,
+  MB_SNR_DIMM_CPU0_A0_TEMP,
+  MB_SNR_DIMM_CPU0_A1_TEMP,
+  MB_SNR_DIMM_CPU0_A2_TEMP,
+  MB_SNR_DIMM_CPU0_A3_TEMP,
+  MB_SNR_DIMM_CPU0_A4_TEMP,
+  MB_SNR_DIMM_CPU0_A5_TEMP,
+  MB_SNR_DIMM_CPU0_A6_TEMP,
+  MB_SNR_DIMM_CPU0_A7_TEMP,
+  MB_SNR_DIMM_CPU0_A8_TEMP,
+  MB_SNR_DIMM_CPU0_A9_TEMP,
+  MB_SNR_DIMM_CPU0_A10_TEMP,
+  MB_SNR_DIMM_CPU0_A11_TEMP,
+  MB_SNR_DIMM_CPU1_B0_TEMP,
+  MB_SNR_DIMM_CPU1_B1_TEMP,
+  MB_SNR_DIMM_CPU1_B2_TEMP,
+  MB_SNR_DIMM_CPU1_B3_TEMP,
+  MB_SNR_DIMM_CPU1_B4_TEMP,
+  MB_SNR_DIMM_CPU1_B5_TEMP,
+  MB_SNR_DIMM_CPU1_B6_TEMP,
+  MB_SNR_DIMM_CPU1_B7_TEMP,
+  MB_SNR_DIMM_CPU1_B8_TEMP,
+  MB_SNR_DIMM_CPU1_B9_TEMP,
+  MB_SNR_DIMM_CPU1_B10_TEMP,
+  MB_SNR_DIMM_CPU1_B11_TEMP,
   MB_SNR_VR_CPU0_VCCIN_VOLT,
   MB_SNR_VR_CPU0_VCCIN_TEMP,
   MB_SNR_VR_CPU0_VCCIN_CURR,
@@ -352,35 +364,35 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x80
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x81
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x82
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x83
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x84
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x85
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x86
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x87
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x88
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8B
+  {"CPU0_DIMM_A0_TEMP", DIMM_ID0, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x80
+  {"CPU0_DIMM_A1_TEMP", DIMM_ID1, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x81
+  {"CPU0_DIMM_A2_TEMP", DIMM_ID2, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x82
+  {"CPU0_DIMM_A3_TEMP", DIMM_ID3, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x83
+  {"CPU0_DIMM_A4_TEMP", DIMM_ID4, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x84
+  {"CPU0_DIMM_A5_TEMP", DIMM_ID5, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x85
+  {"CPU0_DIMM_A6_TEMP", DIMM_ID6, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x86
+  {"CPU0_DIMM_A7_TEMP", DIMM_ID7, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x87
+  {"CPU0_DIMM_A8_TEMP",  DIMM_ID8, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x88
+  {"CPU0_DIMM_A9_TEMP",  DIMM_ID9, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x89
+  {"CPU0_DIMM_A10_TEMP", DIMM_ID10, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x8A
+  {"CPU0_DIMM_A11_TEMP", DIMM_ID11, read_cpu0_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x8B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8F
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x90
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x91
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x92
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x93
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x94
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x95
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x96
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x97
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x98
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x99
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9B
+  {"CPU1_DIMM_B0_TEMP", DIMM_ID0, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x90
+  {"CPU1_DIMM_B1_TEMP", DIMM_ID1, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x91
+  {"CPU1_DIMM_B2_TEMP", DIMM_ID2, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x92
+  {"CPU1_DIMM_B3_TEMP", DIMM_ID3, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x93
+  {"CPU1_DIMM_B4_TEMP", DIMM_ID4, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x94
+  {"CPU1_DIMM_B5_TEMP", DIMM_ID5, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x95
+  {"CPU1_DIMM_B6_TEMP", DIMM_ID6, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x96
+  {"CPU1_DIMM_B7_TEMP", DIMM_ID7, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x97
+  {"CPU1_DIMM_B8_TEMP",  DIMM_ID8, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x98
+  {"CPU1_DIMM_B9_TEMP",  DIMM_ID9, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x99
+  {"CPU1_DIMM_B10_TEMP", DIMM_ID10, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x9A
+  {"CPU1_DIMM_B11_TEMP", DIMM_ID11, read_cpu1_dimm_temp, false, {85.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x9B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9E
@@ -665,38 +677,22 @@ static void decode_dimm_temp(uint16_t raw, float *temp)
     *temp = (raw - 0x800) * SCALING_FACTOR;
 }
 
-static float
-cmp_dimm_temp(float temp1, float temp2) {
-  return (temp1 > temp2) ? temp1 : temp2;
-}
-
 static int
 read_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value,
                 uint8_t dimm_id, uint8_t cpu_id) {
-  struct dimm_thermal d_sensor1;
-  struct dimm_thermal d_sensor2;
-  float temp1 = 0;
-  float temp2 = 0;
-  oob_status_t ret1, ret2;
+  struct dimm_thermal d_sensor;
+  float temp = 0;
+  oob_status_t ret;
 
-  uint pair_id1 = dimm_id*GROUP_OF_DIMM_NUM;
-  uint pair_id2 = dimm_id*GROUP_OF_DIMM_NUM + 1;
-  uint8_t addr1 = (pair_id1/CHANNEL_OF_DIMM_NUM << 4) + (pair_id1%CHANNEL_OF_DIMM_NUM);
-  uint8_t addr2 = (pair_id2/CHANNEL_OF_DIMM_NUM << 4) + (pair_id2%CHANNEL_OF_DIMM_NUM);
+  uint8_t addr = (dimm_id/CHANNEL_OF_DIMM_NUM << 4) + (dimm_id%CHANNEL_OF_DIMM_NUM);
 
-  ret1 = read_dimm_thermal_sensor(cpu_id, addr1, &d_sensor1);
-  if(!ret1) {
-    decode_dimm_temp(d_sensor1.sensor, &temp1);
-  }
-  ret2 = read_dimm_thermal_sensor(cpu_id, addr2, &d_sensor2);
-  if(!ret2) {
-    decode_dimm_temp(d_sensor2.sensor, &temp2);
-  }
-
-  if(!ret1 || !ret2)
-    *value = (float)(cmp_dimm_temp(temp1, temp2));
-  else
+  ret = read_dimm_thermal_sensor(cpu_id, addr, &d_sensor);
+  if(!ret) {
+    decode_dimm_temp(d_sensor.sensor, &temp);
+    *value = (float)temp;
+  } else {
     return -1;
+  }
 
   return 0;
 }

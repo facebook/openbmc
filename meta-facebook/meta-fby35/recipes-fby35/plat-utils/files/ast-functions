@@ -216,14 +216,14 @@ set_vf_gpio() {
         break
       fi
     done
-    if [ $ioexp_dev_addr != "" ]; then
+    if [ "$ioexp_dev_addr" != "" ]; then
       break
     fi
     usleep 50000
   done
 
   # export GPIO pins
-  if [ $ioexp_dev_addr != "" ]; then
+  if [ "$ioexp_dev_addr" != "" ]; then
     for _ in {1..50}; do
       # wait for /sys/class/gpio/gpiochipxxx to be ready
       if [ "$(gpiochip_lookup_by_i2c_path $ioexp_dev_addr)" != "" ]; then

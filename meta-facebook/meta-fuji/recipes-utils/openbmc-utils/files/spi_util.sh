@@ -46,7 +46,11 @@ remove_pid_file()
 
 SPI1_MTD_INDEX=7
 SPI1_DRIVER="1e630000.spi"
-ASPEED_SMC_PATH="/sys/bus/platform/drivers/aspeed-smc/"
+if [ -e /sys/bus/platform/drivers/spi-aspeed-smc ]; then
+    ASPEED_SMC_PATH="/sys/bus/platform/drivers/spi-aspeed-smc/"
+else
+    ASPEED_SMC_PATH="/sys/bus/platform/drivers/aspeed-smc/"
+fi
 
 mtd_driver_unbind_spi1() {
     [ -e ${ASPEED_SMC_PATH}${SPI1_DRIVER} ] && echo ${SPI1_DRIVER} > ${ASPEED_SMC_PATH}unbind

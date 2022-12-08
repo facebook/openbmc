@@ -1,0 +1,548 @@
+From 6ac3f23ebf7c7b88a45224967b8f9f108dc842e8 Mon Sep 17 00:00:00 2001
+From: dhineskumareswaran <dhineskumar.eswaran@celestica.com>
+Date: Wed, 30 Nov 2022 08:03:08 +0000
+Subject: [PATCH] Added Facebook mfd usmc driver
+
+Summary:
+Add support for the Facebook FBOSS USB System Management Controller.
+it is a multi-function device with 8 SPI controllers.
+
+Ref PR:
+https://github.com/facebookexternal/openbmc.celestica/commit/e548f18eb643855c6e154c5f2a685e96955ab3e2
+---
+ drivers/mfd/Kconfig            |   8 +
+ drivers/mfd/Makefile           |   2 +
+ drivers/mfd/fboss-usmc.c       | 460 +++++++++++++++++++++++++++++++++
+ include/linux/mfd/fboss-usmc.h |  21 ++
+ 4 files changed, 491 insertions(+)
+ create mode 100644 drivers/mfd/fboss-usmc.c
+ create mode 100644 include/linux/mfd/fboss-usmc.h
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index abb58ab1a1a4..55308046b0a1 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -421,6 +421,14 @@ config MFD_EXYNOS_LPASS
+ 	  SoCs (e.g. Exynos5433).
+ 	  Choose Y here only if you build for such Samsung SoC.
+ 
++config MFD_FACEBOOK_USMC
++        tristate "Facebook USB System Management Controller"
++        select MFD_CORE
++        depends on USB
++        help
++          Select the option to enable support for the Facebook USB System
++          Management Controller.
++
+ config MFD_GATEWORKS_GSC
+ 	tristate "Gateworks System Controller"
+ 	depends on (I2C && OF)
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 858cacf659d6..bec2023ce698 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -268,6 +268,8 @@ obj-$(CONFIG_SGI_MFD_IOC3)	+= ioc3.o
+ obj-$(CONFIG_MFD_SIMPLE_MFD_I2C)	+= simple-mfd-i2c.o
+ obj-$(CONFIG_MFD_INTEL_M10_BMC)   += intel-m10-bmc.o
+ 
++obj-$(CONFIG_MFD_FACEBOOK_USMC)	+= fboss-usmc.o
++
+ obj-$(CONFIG_MFD_ATC260X)	+= atc260x-core.o
+ obj-$(CONFIG_MFD_ATC260X_I2C)	+= atc260x-i2c.o
+ 
+diff --git a/drivers/mfd/fboss-usmc.c b/drivers/mfd/fboss-usmc.c
+new file mode 100644
+index 000000000000..6b4c881bbd12
+--- /dev/null
++++ b/drivers/mfd/fboss-usmc.c
+@@ -0,0 +1,460 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) 2020 Facebook Inc.
++
++#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/ioctl.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/fboss-usmc.h>
++#include <linux/miscdevice.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/usb.h>
++#include <linux/slab.h>
++
++/*
++ * Supported TLV types.
++ */
++#define FB_USMC_TLV_READ_RES	0x8200
++#define FB_USMC_TLV_READ_REQ	0x0200
++#define FB_USMC_TLV_WRITE	0x0100
++
++/*
++ * Note: "tlv->length" doesn't cover the 4 byte header (length + type):
++ * it defines the size of "data_buf" plus 4-byte "address". As a result:
++ *
++ * usb_pkt_size = tlv->length + 4_byte_header.
++ */
++#define FB_USMC_TLV_HDR_SIZE		4  /* type + length */
++#define FB_USMC_TLV_PKT_MIN_SIZE	8  /* type + length + address */
++#define FB_USMC_TLV_PKT_SIZE(_t)	((_t)->length + FB_USMC_TLV_HDR_SIZE)
++
++#define FB_USMC_BULK_TIMEOUT		2000	/* 2000 milliseconds */
++
++/*
++ * List of USB endpoints (besides Control Endpoint #0) supported by the
++ * USB System Manager Controller.
++ */
++enum {
++	FB_USMC_BULK_IN = 0,
++	FB_USMC_BULK_OUT,
++	FB_USMC_ENDPOINT_MAX,
++};
++
++/*
++ * All the USB Bulk transactions should follow "fboss_usmc_tlv" format.
++ */
++struct fboss_usmc_tlv {
++	u16 length;
++	u16 type;
++	u32 address;
++	u8 data_buf[FB_USMC_PAYLOAD_MAX];
++};
++
++struct fboss_usmc_priv {
++	struct usb_device *usb_dev;
++	struct usb_interface *usb_intf;
++
++	/*
++	 * "mem_lock" is required to serilize usb device memory read and
++	 * write requests.
++	 */
++	struct mutex mem_lock;
++
++	/*
++	 * "usmc_xfer_lock" is used to serilize transfers across different
++	 * mfd cells. Ideally the synchronization should be handled by FPGA
++	 * but unfortunately it's not implemented in the latest firmware.
++	 */
++	struct mutex usmc_xfer_lock;
++
++	u8 endpoints[FB_USMC_ENDPOINT_MAX];
++
++#ifdef MFD_FBOSS_USMC_UAPI
++	struct miscdevice miscdev;
++#endif /* MFD_FBOSS_USMC_UAPI */
++};
++
++
++static int fboss_usmc_tlv_init(struct fboss_usmc_tlv *tlv,
++				u16 type,
++				u32 address,
++				const void *data_buf,
++				unsigned int data_len)
++{
++	if (data_len > sizeof(tlv->data_buf))
++		return -E2BIG;
++
++	tlv->type = type;
++	tlv->address = address;
++	if (type == FB_USMC_TLV_WRITE) {
++		memcpy(tlv->data_buf, data_buf, data_len);
++		tlv->length = sizeof(tlv->address) + data_len;
++	} else if (type == FB_USMC_TLV_READ_REQ) {
++		/*
++		 * For read request, request length is specified by 4-byte
++		 * integer (u32). Another 4 byte is added to include the
++		 * address field.
++		 */
++		u32 req_len = data_len + 4;
++
++		memcpy(tlv->data_buf, &req_len, sizeof(req_len));
++		tlv->length = sizeof(tlv->address) + sizeof(req_len);
++	} else {
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++int fboss_usmc_write(struct platform_device *pdev, u32 addr,
++		     const void *buf, unsigned int size)
++{
++	unsigned int pipe;
++	struct fboss_usmc_tlv *tlv;
++	int ret, req_len, actual_len;
++	struct fboss_usmc_priv *priv = dev_get_drvdata(pdev->dev.parent);
++	struct usb_device *udev = priv->usb_dev;
++
++	tlv = kmalloc(sizeof(*tlv), GFP_KERNEL);
++	if (tlv == NULL)
++		return -ENOMEM;
++
++	ret = fboss_usmc_tlv_init(tlv, FB_USMC_TLV_WRITE, addr, buf, size);
++	if (ret < 0)
++		goto exit;
++
++	req_len = FB_USMC_TLV_PKT_SIZE(tlv);
++	pipe = usb_sndbulkpipe(udev, priv->endpoints[FB_USMC_BULK_OUT]);
++
++	mutex_lock(&priv->mem_lock);
++
++	ret = usb_bulk_msg(udev, pipe, tlv, req_len, &actual_len,
++			   FB_USMC_BULK_TIMEOUT);
++	if ((ret == 0) && (actual_len < req_len)) {
++		dev_err(&pdev->dev,
++			"usmc short write (0x%x/0x%x): expect %u, actual %d\n",
++			FB_USMC_TLV_WRITE, addr, req_len, actual_len);
++		ret = -EBADMSG;
++	}
++
++	mutex_unlock(&priv->mem_lock);
++
++exit:
++	kfree(tlv);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(fboss_usmc_write);
++
++int fboss_usmc_read(struct platform_device *pdev, u32 addr,
++		    void *buf, unsigned int size)
++{
++	unsigned int pipe;
++	struct fboss_usmc_tlv *tlv;
++	int ret, req_len, actual_len;
++	struct fboss_usmc_priv *priv = dev_get_drvdata(pdev->dev.parent);
++	struct usb_device *udev = priv->usb_dev;
++
++	tlv = kmalloc(sizeof(*tlv), GFP_KERNEL);
++	if (tlv == NULL)
++		return -ENOMEM;
++
++	/*
++	 * Send read request to the USMC.
++	 */
++	ret = fboss_usmc_tlv_init(tlv, FB_USMC_TLV_READ_REQ, addr, NULL, size);
++	if (ret < 0)
++		goto exit_mem;
++
++	req_len = FB_USMC_TLV_PKT_SIZE(tlv);
++	pipe = usb_sndbulkpipe(udev, priv->endpoints[FB_USMC_BULK_OUT]);
++
++	mutex_lock(&priv->mem_lock);
++
++	ret = usb_bulk_msg(udev, pipe, tlv, req_len, &actual_len,
++			   FB_USMC_BULK_TIMEOUT);
++	if (ret < 0) {
++		goto exit_lock;
++	} else if (actual_len < req_len) {
++		dev_err(&pdev->dev,
++			"usmc short write (0x%x/0x%x): expect %u, actual %d\n",
++			FB_USMC_TLV_READ_REQ, addr, req_len, actual_len);
++		ret = -EBADMSG;
++		goto exit_lock;
++	}
++
++	/*
++	 * Then read from bulk-in pipe.
++	 */
++	memset(tlv, 0, FB_USMC_TLV_PKT_MIN_SIZE); /* reset tlv head only. */
++	req_len = FB_USMC_TLV_PKT_MIN_SIZE + size;
++	pipe = usb_rcvbulkpipe(udev, priv->endpoints[FB_USMC_BULK_IN]);
++	ret = usb_bulk_msg(udev, pipe, tlv, req_len, &actual_len,
++			   FB_USMC_BULK_TIMEOUT);
++	if (ret < 0) {
++		goto exit_lock;
++	} else if (actual_len < req_len) {
++		dev_err(&pdev->dev,
++			"usmc short read (addr=0x%x): expect %u, actual %d\n",
++			addr, req_len, actual_len);
++		ret = -EBADMSG;
++		goto exit_lock;
++	}
++
++	memcpy(buf, tlv->data_buf, size);
++
++exit_lock:
++	mutex_unlock(&priv->mem_lock);
++exit_mem:
++	kfree(tlv);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(fboss_usmc_read);
++
++void fboss_usmc_xfer_lock(struct platform_device *pdev)
++{
++	struct fboss_usmc_priv *priv = dev_get_drvdata(pdev->dev.parent);
++
++	mutex_lock(&priv->usmc_xfer_lock);
++}
++EXPORT_SYMBOL_GPL(fboss_usmc_xfer_lock);
++
++void fboss_usmc_xfer_unlock(struct platform_device *pdev)
++{
++	struct fboss_usmc_priv *priv = dev_get_drvdata(pdev->dev.parent);
++
++	mutex_unlock(&priv->usmc_xfer_lock);
++}
++EXPORT_SYMBOL_GPL(fboss_usmc_xfer_unlock);
++
++#ifdef MFD_FBOSS_USMC_UAPI
++/*
++ * USMC chardev ioctl commands
++ */
++#define FB_USMC_FPGA_IOC_MEM_RDWR	0x101
++
++/*
++ * Structure to pass usb memory read/write command and data between user
++ * and kernel space.
++ */
++struct fboss_usmc_ioc {
++	u32 addr;
++	void *buf;
++	unsigned int len;
++	unsigned int flags;
++#define FB_USMC_FPGA_IOF_WRITE	0x1
++};
++
++static long fboss_usmc_cdev_ioctl(struct file *file,
++			    unsigned int cmd,
++			    unsigned long arg)
++{
++	int ret = 0;
++	u8 *xfer_buf;
++	struct fboss_usmc_ioc ioc_xfer;
++
++	switch (cmd) {
++	case FB_USMC_FPGA_IOC_MEM_RDWR:
++		if (copy_from_user(&ioc_xfer, (struct fboss_usmc_ioc *)arg,
++				   sizeof(ioc_xfer)))
++			return -EFAULT;
++
++		if ((ioc_xfer.buf == NULL) ||
++		    (ioc_xfer.len > FB_USMC_PAYLOAD_MAX))
++			return -EINVAL;
++
++		xfer_buf = kmalloc(ioc_xfer.len, GFP_KERNEL);
++		if (xfer_buf == NULL)
++			return -ENOMEM;
++
++		if (ioc_xfer.flags & FB_USMC_FPGA_IOF_WRITE) {
++			if (copy_from_user(xfer_buf, ioc_xfer.buf,
++			    ioc_xfer.len)) {
++				ret = -EFAULT;
++				goto io_exit;
++			}
++			ret = fboss_usmc_write(ioc_xfer.addr, xfer_buf,
++					     ioc_xfer.len);
++		} else {
++			ret = fboss_usmc_read(ioc_xfer.addr, xfer_buf,
++					    ioc_xfer.len);
++			if (ret < 0)
++				goto io_exit;
++
++			if (copy_to_user(ioc_xfer.buf, xfer_buf, ioc_xfer.len))
++				ret = -EFAULT;
++		}
++
++io_exit:
++		kfree(xfer_buf);
++		break;
++
++	default:
++		return -ENOTTY;
++	} /* switch */
++
++	return ret;
++}
++
++static const struct file_operations fboss_usmc_cdev_fops = {
++	.owner = THIS_MODULE,
++	.llseek = no_llseek,
++	.unlocked_ioctl = fboss_usmc_cdev_ioctl,
++};
++
++static void misc_dev_destroy(struct fboss_usmc_priv *priv)
++{
++	misc_deregister(&priv->miscdev);
++	kfree(miscdev->name);
++}
++
++static int misc_dev_init(struct fboss_usmc_priv *priv)
++{
++	int ret;
++	struct miscdevice *miscdev = &priv->miscdev;
++
++	miscdev->parent = &priv->usb_intf->dev;
++	miscdev->fops =  &fboss_usmc_cdev_fops;
++	miscdev->minor = MISC_DYNAMIC_MINOR;
++	miscdev->name = kasprintf(GFP_KERNEL, "fboss-usmc");
++	if (miscdev->name == NULL)
++		return -ENOMEM;
++
++	ret = misc_register(miscdev);
++	if (ret < 0)
++		kfree(miscdev->name);
++
++	return ret;
++}
++#else /* !MFD_FBOSS_USMC_UAPI */
++static int misc_dev_init(struct fboss_usmc_priv *priv)
++{
++	return 0;
++}
++
++static void misc_dev_destroy(struct fboss_usmc_priv *priv)
++{
++	/* No op */
++}
++#endif /* MFD_FBOSS_USMC_UAPI */
++
++static struct resource fboss_usmc_spi_resources[] = {
++	{
++		.name = "CTRL_REG",
++		.start = 0,
++		.end = 0x3FF,
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.name = "IO_BUF",
++		.start = 0x2000,
++		.end = 0x3FFFF,
++		.flags = IORESOURCE_MEM,
++	},
++};
++
++#define USMC_SPI_CELL(_id)						\
++	{								\
++		.id = _id,						\
++		.name = "usmc-spi",					\
++		.of_compatible = "facebook,usmc-spi",			\
++		.resources = fboss_usmc_spi_resources,			\
++		.num_resources = ARRAY_SIZE(fboss_usmc_spi_resources),	\
++	}
++
++static const struct mfd_cell fboss_usmc_cells[] = {
++	USMC_SPI_CELL(0),
++	USMC_SPI_CELL(1),
++	USMC_SPI_CELL(2),
++	USMC_SPI_CELL(3),
++	USMC_SPI_CELL(4),
++	USMC_SPI_CELL(5),
++	USMC_SPI_CELL(6),
++	USMC_SPI_CELL(7),
++};
++#undef USMC_SPI_CELL
++
++static int fboss_usmc_probe(struct usb_interface *usb_intf,
++			    const struct usb_device_id *usb_id)
++{
++	int ret = 0;
++	struct fboss_usmc_priv *priv;
++	struct device *dev = &usb_intf->dev;
++	struct usb_endpoint_descriptor *bulk_in, *bulk_out;
++
++	/*
++	 * The device supports 1 bulk-in and 1 bulk-out endpoints now.
++	 */
++	ret = usb_find_common_endpoints(usb_intf->cur_altsetting,
++					&bulk_in, &bulk_out, NULL, NULL);
++	if (ret) {
++		dev_err(dev, "failed to find bulk in/out endpoints, ret=%d\n",
++			ret);
++		return ret;
++	}
++
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (priv == NULL)
++		return -ENOMEM;
++
++	priv->usb_intf = usb_intf;
++	priv->usb_dev = usb_get_dev(interface_to_usbdev(usb_intf));
++	priv->endpoints[FB_USMC_BULK_IN] = bulk_in->bEndpointAddress;
++	priv->endpoints[FB_USMC_BULK_OUT] = bulk_out->bEndpointAddress;
++	mutex_init(&priv->mem_lock);
++	mutex_init(&priv->usmc_xfer_lock);
++	usb_set_intfdata(usb_intf, priv);
++
++	ret = mfd_add_hotplug_devices(dev, fboss_usmc_cells,
++					ARRAY_SIZE(fboss_usmc_cells));
++	if (ret < 0) {
++		dev_err(dev, "failed to add mfd devices, ret=%d\n", ret);
++		goto err_mem;
++	}
++
++	ret = misc_dev_init(priv);
++	if (ret < 0) {
++		dev_err(dev, "failed to initialize miscdev, ret=%d\n", ret);
++		goto err_mfd;
++	}
++
++	dev_info(dev, "ep_bulk_in: 0x%x, ep_bulk_out: 0x%x\n",
++		 priv->endpoints[FB_USMC_BULK_IN],
++		 priv->endpoints[FB_USMC_BULK_OUT]);
++	return 0;
++
++err_mfd:
++	mfd_remove_devices(dev);
++err_mem:
++	kfree(priv);
++	return ret;
++}
++
++static void fboss_usmc_disconnect(struct usb_interface *usb_intf)
++{
++	struct fboss_usmc_priv *priv = usb_get_intfdata(usb_intf);
++
++	misc_dev_destroy(priv);
++	mfd_remove_devices(&usb_intf->dev);
++}
++
++static const struct usb_device_id fboss_usmc_table[] = {
++	{USB_DEVICE(0x2ec6, 0x0100)}, /* XILINX */
++	{USB_DEVICE(0x0100, 0x2EC6)}, /* XILINX */
++	{}
++};
++MODULE_DEVICE_TABLE(usb, fboss_usmc_table);
++
++static struct usb_driver fboss_usmc_driver = {
++	.name		= "fboss-usmc",
++	.probe		= fboss_usmc_probe,
++	.disconnect	= fboss_usmc_disconnect,
++	.id_table	= fboss_usmc_table,
++};
++
++module_usb_driver(fboss_usmc_driver);
++
++MODULE_AUTHOR("Tao Ren <taoren@fb.com>");
++MODULE_DESCRIPTION("Facebook USB System Management Controller Driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/fboss-usmc.h b/include/linux/mfd/fboss-usmc.h
+new file mode 100644
+index 000000000000..7116a2fa0684
+--- /dev/null
++++ b/include/linux/mfd/fboss-usmc.h
+@@ -0,0 +1,21 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++#ifndef __LINUX_FBOSS_USMC_H
++#define __LINUX_FBOSS_USMC_H
++
++#include <linux/platform_device.h>
++
++/*
++ * The maximum bulk packet size is 512 bytes; as each tlv packet contains
++ * 8 byte type/length/address, the actually payload is (512 - 8) bytes.
++ */
++#define FB_USMC_BULK_MAX	512
++#define FB_USMC_PAYLOAD_MAX	(512 - 8)
++
++int fboss_usmc_write(struct platform_device *pdev, u32 addr,
++		     const void *buf, unsigned int size);
++int fboss_usmc_read(struct platform_device *pdev, u32 addr,
++		    void *buf, unsigned int size);
++void fboss_usmc_xfer_lock(struct platform_device *pdev);
++void fboss_usmc_xfer_unlock(struct platform_device *pdev);
++
++#endif /* __LINUX_FBOSS_USMC_H */
+-- 
+2.25.1
+

@@ -1,0 +1,103 @@
+From ab068fab994d1e29705775f4a729b4b01d5209b6 Mon Sep 17 00:00:00 2001
+From: Sittisak Sinprem <ssinprem@celestca.com>
+Date: Tue, 1 Nov 2022 16:20:41 -0700
+Subject: [PATCH] kernel-5.10: fuji: remove adm1278 from dts and let probe by
+ setup-i2c.sh (#1400)
+
+Summary:
+For Minipack2 Respin SKU5, will mount LM25066 chip instead ADM1278 chip,
+
+adm1278 in dts still be created sysfs
+```
+root@bmc:/sys/bus/i2c/devices/i2c-75# ls
+75-0010        75-0044        delete_device  device         i2c-dev        mux_device     name           new_device     of_node        power          subsystem      uevent
+root@bmc:/sys/bus/i2c/devices/i2c-75# ls 75-0010
+modalias   name       of_node    power      subsystem  uevent
+root@bmc:/sys/bus/i2c/devices/i2c-75# ls 75-0044
+driver     hwmon      modalias   name       power      subsystem  uevent
+root@bmc:/sys/bus/i2c/devices/i2c-75#
+```
+
+this is cause we can't fix adm1278 in the device tree, need to runtime probe in setup_i2c.sh
+
+for the `shunt-resistor-micro-ohms` config was removed,
+We will fix the calculation in pal_sensors and lm_sensors. https://github.com/facebookexternal/openbmc.celestica/issues/1401  https://github.com/facebookexternal/openbmc.celestica/issues/1402
+
+### TestPlan:
+when run on a unit with LM25066, will not show the ADM1278 address directory.
+
+```
+root@bmc-oob:/sys/bus/i2c/devices# ls i2c-16
+16-0044        delete_device  device         i2c-dev        mux_device     name           new_device     of_node        power          subsystem      uevent
+root@bmc-oob:/sys/bus/i2c/devices# ls i2c-67
+67-0044        delete_device  device         i2c-dev        mux_device     name           new_device     of_node        power          subsystem      uevent
+root@bmc-oob:/sys/bus/i2c/devices# ls i2c-75
+75-0044        delete_device  device         i2c-dev        mux_device     name           new_device     of_node        power          subsystem      uevent
+root@bmc-oob:/sys/bus/i2c/devices#
+```
+
+Pull Request resolved: https://github.com/facebookexternal/openbmc.celestica/pull/1400
+
+Reviewed By: mikechoifb
+
+Differential Revision: D40763717
+
+Pulled By: rootkeeper
+
+fbshipit-source-id: 8ab1376d79ee01e19602ad43d4b510d505bbc173
+---
+ .../arm/boot/dts/aspeed-bmc-facebook-fuji.dts | 24 -------------------
+ 1 file changed, 24 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
+index a60e270aeb2..e345d0288f0 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
+@@ -287,14 +287,6 @@ imux16: i2c@0 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0>;
+-
+-			adm1278@10 {
+-				compatible = "adi,adm1278";
+-				reg = <0x10>;
+-				#address-cells = <1>;
+-				#size-cells = <0>;
+-				shunt-resistor-micro-ohms = <1500>;
+-			};
+ 		};
+ 
+ 		imux17: i2c@1 {
+@@ -616,14 +608,6 @@ imux67: i2c@3 {
+ 					#address-cells = <1>;
+ 					#size-cells = <0>;
+ 					reg = <3>;
+-
+-					adm1278@10 {
+-						compatible = "adi,adm1278";
+-						reg = <0x10>;
+-						#address-cells = <1>;
+-						#size-cells = <0>;
+-						shunt-resistor-micro-ohms = <250>;
+-					};
+ 				};
+ 
+ 				imux68: i2c@4 {
+@@ -687,14 +671,6 @@ imux75: i2c@3 {
+ 					#address-cells = <1>;
+ 					#size-cells = <0>;
+ 					reg = <3>;
+-
+-					adm1278@10 {
+-						compatible = "adi,adm1278";
+-						reg = <0x10>;
+-						#address-cells = <1>;
+-						#size-cells = <0>;
+-						shunt-resistor-micro-ohms = <250>;
+-					};
+ 				};
+ 
+ 				imux76: i2c@4 {
+-- 
+2.25.1
+

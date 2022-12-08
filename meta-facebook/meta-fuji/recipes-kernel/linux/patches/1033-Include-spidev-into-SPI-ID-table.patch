@@ -1,0 +1,56 @@
+From 7c678a4f496a22588de404c1e90c42776e67734f Mon Sep 17 00:00:00 2001
+From: dhineskumareswaran <dhineskumar.eswaran@celestica.com>
+Date: Thu, 1 Dec 2022 13:35:22 +0000
+Subject: [PATCH] Include spidev into SPI ID table
+
+By adding spidev into SPI ID table, all the 8 SPI controllers were
+enumerated and created successfully.
+
+Test Plan:
+1. Successful build with linux-aspeed version 6.
+2. flashes on the SPI buses can be detected successfully
+
+root@bmc-oob:/dev#
+root@bmc-oob:/dev# ls spi*
+spidev10.0  spidev11.0  spidev4.0   spidev5.0   spidev6.0   spidev7.0   spidev8.0   spidev9.0
+root@bmc-oob:/dev#
+root@bmc-oob:/dev#
+
+root@bmc-oob:~#
+root@bmc-oob:~# pim_upgrade.sh all /mnt/data1/FPGA/mpack2_pim_v0.38.bit
+
+Usb-spi dom fpga update:
+
+1+0 records in
+1+0 records out
+ start pim 1 dom fpga update.
+ start pim 2 dom fpga update.
+ start pim 3 dom fpga update.
+ start pim 4 dom fpga update.
+ start pim 5 dom fpga update.
+ start pim 6 dom fpga update.
+ start pim 7 dom fpga update.
+ start pim 8 dom fpga update.
+
+ waitting for the update finished...done.
+root@bmc-oob:~#
+root@bmc-oob:~#
+---
+ drivers/spi/spidev.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index b2775d82d2d7..61fc4a0a67e7 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -691,6 +691,7 @@ static const struct spi_device_id spidev_spi_ids[] = {
+ 	{ .name = "m53cpld" },
+ 	{ .name = "spi-petra" },
+ 	{ .name = "spi-authenta" },
++	{ .name = "spidev" },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(spi, spidev_spi_ids);
+-- 
+2.25.1
+

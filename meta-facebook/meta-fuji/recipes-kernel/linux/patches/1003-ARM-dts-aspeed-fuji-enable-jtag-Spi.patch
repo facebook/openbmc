@@ -1,0 +1,89 @@
+From 91dcd72a03779a972c27c106d127833e5e331a53 Mon Sep 17 00:00:00 2001
+From: dhineskumareswaran <dhineskumar.eswaran@celestica.com>
+Date: Mon, 14 Nov 2022 08:32:47 +0000
+Subject: [PATCH] Subject: [PATCH] ARM: dts: aspeed: fuji:
+ enable jtag and spi
+
+Summary: enable the jtag controller and Spi for fuji platform in kernel 6.0.2
+
+Test Plan:
+devserver:
+ fuji-image got built.
+
+For jtag controller:
+
+BMC:
+root@bmc-oob:~#
+root@bmc-oob:~# uname -r
+6.0.2-aspeed
+root@bmc-oob:~#
+root@bmc-oob:~# cat /etc/issue
+OpenBMC Release fuji-c2861905240
+
+root@bmc-oob:~#
+root@bmc-oob:~# ls /dev/jtag0
+/dev/jtag0
+root@bmc-oob:~#
+root@bmc-oob:~# ls /sys/devices/platform/ahb/ahb\:apb/1e6e4100.jtag/
+driver                                     of_node                                    tck
+driver_override                            power                                      tdi
+freq                                       sts                                        tdo
+misc                                       subsystem                                  tms
+modalias                                   supplier:platform:1e6e2000.syscon:pinctrl  uevent
+root@bmc-oob:~#
+root@bmc-oob:~#
+
+For SPI:
+Ported Spi driver from kernel 5.10 to kernel 6.0.2
+---
+ .../arm/boot/dts/aspeed-bmc-facebook-fuji.dts | 34 +++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
+index 6c2e5cf4ef4a..7b7de2d7efd4 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
+@@ -223,6 +223,40 @@ eeprom@2 {
+ 	};
+ };
+ 
++&spi1 {
++        status = "okay";
++
++        /*
++         * Customize reg resource size to 32MB (maximum flash size on the
++         * bus) to avoid wasting vmalloc space.
++         */
++        reg = < 0x1e630000 0xc4
++                0x30000000 0x2000000 >;
++
++        flash@0 {
++                status = "okay";
++                m25p,fast-read;
++                label = "spi1.0";
++                spi-rx-bus-width = <1>;
++                spi-max-frequency = <5000000>;
++
++                partitions {
++                        compatible = "fixed-partitions";
++                        #address-cells = <1>;
++                        #size-cells = <1>;
++
++                        flash1@0 {
++                                reg = <0x0 0x2000000>;
++                                label = "spi-flash";
++                        };
++                };
++        };
++};
++
++&jtag1 {
++	status = "okay";
++};
++
+ &i2c0 {
+ 	multi-master;
+ 	bus-frequency = <1000000>;
+-- 
+2.25.1
+

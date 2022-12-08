@@ -1,0 +1,24 @@
+From 4599e5a860113479fbfab800a9d67df4bd3a6dec Mon Sep 17 00:00:00 2001
+From: Sittisak Sinprem <ssinprem@celestca.com>
+Date: Fri, 4 Nov 2022 09:14:03 +0700
+Subject: [PATCH] ARM: dts: aspeed: fuji: add i2c slave timeout for i2c bus 0
+
+---
+ arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
+index af58a73bbc49..48548d14016f 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
+@@ -226,6 +226,7 @@ eeprom@2 {
+ &i2c0 {
+ 	multi-master;
+ 	bus-frequency = <1000000>;
++	aspeed,hw-timeout-ms = <1000>;
+ };
+ 
+ &i2c2 {
+-- 
+2.25.1
+

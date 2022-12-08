@@ -1,0 +1,138 @@
+From de98c557df43c89dec0eae2aa14782163f1cb8f2 Mon Sep 17 00:00:00 2001
+From: wxiaohua1217 <wxiaohua@celestica.com>
+Date: Tue, 6 Apr 2021 15:06:29 -0700
+Subject: [PATCH] hwmon: (mp2975) add compatible for mp2978 (#1025)
+
+Summary:
+add compatible for mp2978 support
+
+Pull Request resolved: https://github.com/facebookexternal/openbmc.celestica/pull/1025
+
+Test Plan:
+```
+root@bmc-oob:~# uname -a
+Linux bmc-oob. 5.10.23-fuji https://github.com/facebookexternal/openbmc.celestica/issues/1 SMP Tue Apr 6 05:57:37 UTC 2021 armv7l GNU/Linux
+root@bmc-oob:~# sensors mp2978-*
+mp2978-i2c-1-53
+Adapter: 1e78a100.i2c-bus
+SMB_input_voltage_1:          +12.00 V  (crit max = +14.00 V)
+SMB_output_voltage_XP0R75V_1:  +0.75 V  (crit min =  +0.35 V, crit max =  +1.15 V)
+SMB_output_voltage_XP1R2V:     +1.20 V  (crit min =  +0.80 V, crit max =  +1.60 V)
+pin:                            2.00 W
+pout1:                        1000.00 mW (highest =   4.00 W)
+SMB_output_current_XP0R75V_1:  +2.00 A  (highest =  +5.00 A)
+SMB_output_current_XP1R2V:     +1.00 A
+iout1.1:                       +1.00 A
+iout1.2:                       +1.00 A
+iout2:                         +0.00 A  (highest =  +2.00 A)
+iout2.0:                       +0.00 A
+
+mp2978-i2c-1-59
+Adapter: 1e78a100.i2c-bus
+SMB_input_voltage_2:          +11.75 V  (crit max = +14.00 V)
+SMB_output_voltage_XP0R75V_2:  +0.75 V  (crit min =  +0.35 V, crit max =  +1.15 V)
+pin:                          1000.00 mW
+pout1:                        1000.00 mW (highest =   4.00 W)
+SMB_output_current_XP0R75V_2:  +2.00 A  (highest =  +5.00 A)
+iout1.1:                       +1.00 A
+iout1.2:                       +1.00 A
+
+root@bmc-oob:~# sensors mp2975-*
+mp2975-i2c-102-6b
+Adapter: i2c-42-mux (chan_id 6)
+PIM3 MP2975 input voltage:         +11.75 V  (crit max = +14.00 V)
+PIM3 MP2975 output voltage XP0R8V:  +0.78 V  (crit min =  +0.38 V, crit max =  +1.18 V)
+PIM3 MP2975 output voltage XP3R3V:  +3.27 V  (crit min =  +2.07 V, crit max =  +4.47 V)
+pin:                                 8.00 W
+pout1:                               2.00 W  (highest =   5.00 W)
+PIM3 MP2975 output current XP0R8V:  +3.00 A  (highest =  +7.00 A)
+PIM3 MP2975 output current XP3R3V:  +2.00 A
+iout1.1:                            +2.00 A
+iout2:                              +2.00 A  (highest =  +5.00 A)
+iout2.0:                            +1.00 A
+iout2.1:                            +1.00 A
+```
+
+Pass.
+
+Reviewed By: benwei13
+
+Differential Revision: D27606660
+
+Pulled By: tao-ren
+
+fbshipit-source-id: 039d146afd
+---
+ .../drivers/hwmon/pmbus/mp2975.c              | 23 ++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hwmon/pmbus/mp2975.c b/drivers/hwmon/pmbus/mp2975.c
+index 1c3e2a9453b..4aa6fd8cb2f 100644
+--- a/drivers/hwmon/pmbus/mp2975.c
++++ b/drivers/hwmon/pmbus/mp2975.c
+@@ -10,6 +10,7 @@
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/pmbus.h>
+ #include "pmbus.h"
+ 
+ /* Vendor specific registers. */
+@@ -68,6 +69,16 @@ struct mp2975_data {
+ 	int curr_sense_gain[MP2975_PAGE_NUM];
+ };
+ 
++/*
++ * Disable status check for mp2975/mp2978 devices, because some devices report
++ * communication error (invalid command) for VOUT_MODE command (0x20)
++ * although correct VOUT_MODE (0x16) is returned: it leads to incorrect
++ * exponent in linear mode.
++ */
++static struct pmbus_platform_data mp29xx_plat_data = {
++	.flags = PMBUS_SKIP_STATUS_CHECK,
++};
++
+ #define to_mp2975_data(x)  container_of(x, struct mp2975_data, info)
+ 
+ static int mp2975_read_byte_data(struct i2c_client *client, int page, int reg)
+@@ -686,6 +697,14 @@ static int mp2975_probe(struct i2c_client *client)
+ 	struct mp2975_data *data;
+ 	int ret;
+ 
++	/*
++	 * MP2975/MP2978 devices may not stay in page 0 during device
++	 * probe which leads to probe failure (read status word failed).
++	 * So let's set the device to page 0 at the beginning.
++	 */
++	client->dev.platform_data = &mp29xx_plat_data;
++	i2c_smbus_write_byte_data(client, PMBUS_PAGE, 0);
++
+ 	data = devm_kzalloc(&client->dev, sizeof(struct mp2975_data),
+ 			    GFP_KERNEL);
+ 	if (!data)
+@@ -741,6 +760,7 @@ static int mp2975_probe(struct i2c_client *client)
+ 
+ static const struct i2c_device_id mp2975_id[] = {
+ 	{"mp2975", 0},
++	{"mp2978", 0},
+ 	{}
+ };
+ 
+@@ -748,6 +768,7 @@ MODULE_DEVICE_TABLE(i2c, mp2975_id);
+ 
+ static const struct of_device_id __maybe_unused mp2975_of_match[] = {
+ 	{.compatible = "mps,mp2975"},
++	{.compatible = "mps,mp2978"},
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, mp2975_of_match);
+@@ -765,5 +786,5 @@ static struct i2c_driver mp2975_driver = {
+ module_i2c_driver(mp2975_driver);
+ 
+ MODULE_AUTHOR("Vadim Pasternak <vadimp@nvidia.com>");
+-MODULE_DESCRIPTION("PMBus driver for MPS MP2975 device");
++MODULE_DESCRIPTION("PMBus driver for MPS MP2975/MP2978 device");
+ MODULE_LICENSE("GPL");
+-- 
+2.25.1
+

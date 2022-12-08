@@ -36,7 +36,15 @@ target=$1
 fpgaimg=$2
 log_dir=/tmp/
 tmpfile=/tmp/domfpga
-DOM_FPGA_START=3
+MAX_PIMNUM=8
+
+get_pim_spidev() {
+    pim_id="$1"
+    pim_devmap_dir=/run/devmap/spi-devices
+    spidev_path=$(readlink "${pim_devmap_dir}/PIM${pim_id}_FLASH")
+    spidev_file=$(basename "$spidev_path")
+    echo "$spidev_file"
+}
 
 fpga_update(){
     # extend the image size to fit flash size
@@ -46,34 +54,30 @@ fpga_update(){
     # start dom fpga update
     printf "\nUsb-spi dom fpga update:\n\n"
 
+    pim1_flash=$(get_pim_spidev 1)
+    flash_size=$(flash_get_size "$pim1_flash")
+    addsize=$(($((flash_size * 1024)) - filesize))
+
+    if [ $((addsize)) -gt 0 ];then
+	dd if=/dev/zero bs="$addsize" count=1 | tr "\000" "\377" >> "$tmpfile"
+    fi
+
     if [ "$target" == "all" ];then
 
-        flash_size=$(flash_get_size "spidev$DOM_FPGA_START.0")
-        addsize=$(($((flash_size * 1024)) - filesize))
-
-        if [ $((addsize)) -gt 0 ];then
-            dd if=/dev/zero bs="$addsize" count=1 | tr "\000" "\377" >> "$tmpfile"
-        fi
-
-        for(( spidev=DOM_FPGA_START ; spidev<$((DOM_FPGA_START+8)) ; spidev++ ))
+        for(( pimnum=1 ; pimnum<=MAX_PIMNUM ; pimnum++ ))
         do
-            printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((spidev-3))"
-            flash_model=$(flash_get_model "spidev$spidev.0")
-            ( flash_write "spidev$spidev.0" "$tmpfile" "$flash_model" > ${log_dir}flash_spidev"${spidev}"_multi_log )  &
+	    printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((pimnum))"
+	    pim_flash=$(get_pim_spidev "$pimnum")
+	    flash_model=$(flash_get_model "$pim_flash")
+	    ( flash_write "$pim_flash" "$tmpfile" "$flash_model" > ${log_dir}flash_"${pim_flash}"_multi_log )  &
         done
     else
-        spidev=$(($(echo "$target" | cut -b 4) + 3))
-        printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((spidev-3))"
+	pimnum=$(($(echo "$target" | cut -b 4)))
+	printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((pimnum))"
 
-        flash_size=$(flash_get_size "spidev$spidev.0")
-        addsize=$(($((flash_size * 1024)) - filesize))
-
-        if [ $((addsize)) -gt 0 ];then
-            dd if=/dev/zero bs="$addsize" count=1 | tr "\000" "\377" >> "$tmpfile"
-        fi
-
-        flash_model=$(flash_get_model "spidev$spidev.0")
-        ( flash_write "spidev$spidev.0" "$tmpfile" "$flash_model" > ${log_dir}flash_spidev${spidev}_single_log )  &
+	pim_flash=$(get_pim_spidev "$pimnum")
+	flash_model=$(flash_get_model "$pim_flash")
+	( flash_write "$pim_flash" "$tmpfile" "$flash_model" > ${log_dir}flash_"${pim_flash}"_single_log )  &
     fi
 
     printf "\n \e[mwaitting for the update finished...\e[m"

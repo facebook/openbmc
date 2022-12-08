@@ -9,6 +9,7 @@ dep_libs = [
     dependency('obmc-pal'),
     dependency('threads'),
     dependency('libkv'),
+    dependency('libobmc-sensors'),
 ]
 
 executable('gpiod', 'gpiod.c', dependencies : dep_libs, install: true)

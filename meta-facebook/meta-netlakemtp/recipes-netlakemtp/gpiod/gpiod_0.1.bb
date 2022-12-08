@@ -17,8 +17,8 @@ SRC_URI = "file://meson.build \
 
 S = "${WORKDIR}"
 
-DEPENDS += " libpal update-rc.d-native libgpio-ctrl"
-RDEPENDS:${PN} += " libpal libgpio-ctrl"
+DEPENDS += " libpal update-rc.d-native libgpio-ctrl libobmc-sensors"
+RDEPENDS:${PN} += " libpal libgpio-ctrl libobmc-sensors"
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d

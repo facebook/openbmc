@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <openbmc/pal.h>
 #include <openbmc/kv.h>
+#include <openbmc/obmc-sensors.h>
 #include <openbmc/libgpio.h>
 
 #define POWER_ON_STR        "on"
@@ -237,6 +238,8 @@ post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value
     if (rc < 0) {
       syslog(LOG_WARNING, "%s() peci driver bind failed\n", __func__);
     }
+
+    sensors_reinit();
   } else {
     syslog(LOG_WARNING, "FRU: %d, Post complete gpio de-assert to high", FRU_SERVER);
     fp = fopen((char*)PECI_UNBIND_PATH, "w");

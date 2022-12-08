@@ -837,8 +837,8 @@ int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value) {
   const char *err_list[MAX_PMIC_ERR_TYPE] = {0};
   int ret, i, index=0;
   static bool flag[MAX_DIMM_NUM][MAX_PMIC_ERR_TYPE]= {false};
-  bool curr[MAX_PMIC_ERR_TYPE] = {0};
-  bool tag=0;
+  bool curr[MAX_PMIC_ERR_TYPE] = {false};
+  bool tag=false;
   char name[64] = {0};
 
   if(!is_dimm_present(dimm_id))
@@ -863,9 +863,11 @@ int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value) {
       if(tag) {
         pmic_err_name(i, name);
         if(curr[i] == true)
-           syslog(LOG_CRIT, "ASSERT DIMM Error %s", name);
+           syslog(LOG_CRIT, "ASSERT DIMM_LABEL=%s Error %s", 
+		get_dimm_label(cpu_id, dimm_num), name);
         else
-           syslog(LOG_CRIT, "DEASSERT DIMM Error %s", name);
+	   syslog(LOG_CRIT, "DEASSERT DIMM_LABEL=%s Error %s", 
+	        get_dimm_label(cpu_id, dimm_num), name);
 
         flag[dimm_id][i] = curr[i];
       }

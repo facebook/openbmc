@@ -54,8 +54,9 @@ get_tps_crc(uint8_t bus, uint8_t addr, uint16_t *crc) {
 }
 
 static int
-cache_tps_crc(uint8_t bus, uint8_t addr, char *key, char *checksum, uint16_t *crc) {
-  uint16_t tmp_crc;
+cache_tps_crc(uint8_t fru_id, uint8_t bus, uint8_t addr, char *key, char *checksum, uint16_t *crc) {
+  uint16_t tmp_crc = 0;
+  uint16_t remain = 0;
   char tmp_str[MAX_VALUE_LEN] = {0};
 
   if (key == NULL) {
@@ -69,10 +70,13 @@ cache_tps_crc(uint8_t bus, uint8_t addr, char *key, char *checksum, uint16_t *cr
     return -1;
   }
 
+  if (pal_load_tps_remaining_wr(fru_id, addr, &remain, checksum, crc, GET_VR_CRC) != 0) {
+    snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X", *crc);
+  }
+
   if (!checksum) {
     checksum = tmp_str;
   }
-  snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X", *crc);
   kv_set(key, checksum, 0, 0);
 
   return 0;
@@ -95,7 +99,7 @@ get_tps_ver(struct vr_info *info, char *ver_str) {
     if (info->xfer) {
       vr_xfer = info->xfer;
     }
-    if (cache_tps_crc(info->bus, info->addr, key, tmp_str, NULL))
+    if (cache_tps_crc(info->slot_id, info->bus, info->addr, key, tmp_str, NULL))
       return VR_STATUS_FAILURE;
   }
 
@@ -233,12 +237,14 @@ check_tps_image(uint16_t crc_exp, uint8_t *data) {
 }
 
 static int
-program_tps(uint8_t bus, uint8_t addr, struct tps_config *config, bool force) {
+program_tps(uint8_t fru_id, uint8_t bus, uint8_t addr, struct tps_config *config, bool force) {
   int i, ret = -1;
   uint64_t devid = 0x00;
   uint32_t offset = 0, dsize;
   uint16_t crc = 0;
+  uint16_t remain = 0;
   uint8_t tbuf[64], rbuf[64];
+  char checksum[MAX_KEY_LEN] = {0};
 
   if (config == NULL) {
     return -1;
@@ -256,6 +262,17 @@ program_tps(uint8_t bus, uint8_t addr, struct tps_config *config, bool force) {
 
   if (get_tps_crc(bus, addr, &crc) < 0) {
     return -1;
+  }
+
+  // check remaining writes
+  if (pal_load_tps_remaining_wr(fru_id, addr, &remain, checksum, &crc, GET_VR_CRC) == 0) {
+    if (!force && (remain <= VR_WARN_REMAIN_WR)) {
+      printf("WARNING: the remaining writes is below the threshold value %d!\n",
+           VR_WARN_REMAIN_WR);
+      printf("Please use \"--force\" option to try again.\n");
+      syslog(LOG_WARNING, "%s: insufficient remaining writes %u", __func__, remain);
+      return -1;
+    }
   }
 
   if (!force && (crc == config->crc_exp)) {
@@ -300,6 +317,7 @@ tps_fw_update(struct vr_info *info, void *args) {
   struct tps_config *config = (struct tps_config *)args;
   char ver_key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
+  uint16_t remain = 0;
 
   if (info == NULL || config == NULL) {
     return VR_STATUS_FAILURE;
@@ -317,14 +335,16 @@ tps_fw_update(struct vr_info *info, void *args) {
   if (info->xfer) {
     vr_xfer = info->xfer;
   }
-  if (program_tps(info->bus, info->addr, config, info->force)) {
+  if (program_tps(info->slot_id, info->bus, info->addr, config, info->force)) {
     return VR_STATUS_FAILURE;
   }
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
     snprintf(ver_key, sizeof(ver_key), "%s_vr_%02xh_new_crc", (char *)info->private_data, info->addr);
-    snprintf(value, sizeof(value), "Texas Instruments %04X",
-           config->crc_exp);
+    if (pal_load_tps_remaining_wr(info->slot_id, info->addr, &remain, value, &config->crc_exp, UPDATE_VR_CRC) != 0) {
+      snprintf(value, MAX_VALUE_LEN, "Texas Instruments %04X", config->crc_exp);
+    }
+
     kv_set(ver_key, value, 0, KV_FPERSIST);
   }
 
@@ -351,7 +371,7 @@ tps_fw_verify(struct vr_info *info, void *args) {
   } else {
     snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
   }
-  if (cache_tps_crc(info->bus, info->addr, key, NULL, &crc)) {
+  if (cache_tps_crc(info->slot_id, info->bus, info->addr, key, NULL, &crc)) {
     return VR_STATUS_FAILURE;
   }
 

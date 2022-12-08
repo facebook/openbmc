@@ -638,6 +638,7 @@ bool pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num);
 int pal_is_jumper_enable(uint8_t fru, uint8_t *status);
 int pal_register_sensor_failure_tolerance_policy(uint8_t fru);
 bool pal_is_support_vr_delay_activate(void);
+int pal_load_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain, char *checksum, uint16_t *crc, bool is_update);
 int pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count);
 bool pal_is_prot_card_prsnt(uint8_t fru);
 bool pal_is_prot_bypass(uint8_t fru);

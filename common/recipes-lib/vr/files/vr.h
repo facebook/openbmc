@@ -81,6 +81,7 @@ struct vr_ops {
 struct vr_info {
   uint8_t bus;
   uint8_t addr;
+  uint8_t slot_id;
   uint8_t padding[2];
   uint64_t dev_id;
   char dev_name[64];

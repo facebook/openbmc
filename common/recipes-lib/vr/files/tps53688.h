@@ -30,6 +30,11 @@ struct tps_config {
   uint8_t data[512];
 };
 
+typedef enum{
+  GET_VR_CRC = 0,
+  UPDATE_VR_CRC,
+} VR_CRC_OPERATION;
+
 int get_tps_ver(struct vr_info*, char*);
 void * tps_parse_file(struct vr_info*, const char*);
 int tps_fw_update(struct vr_info*, void*);

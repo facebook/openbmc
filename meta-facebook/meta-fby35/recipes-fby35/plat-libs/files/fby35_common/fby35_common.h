@@ -564,6 +564,8 @@ int fby35_common_fscd_ctrl (uint8_t mode);
 int fby35_common_check_image_signature(uint8_t board_id, uint8_t *data);
 int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
 int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp, uint8_t board_id);
+uint8_t fby35_zero_checksum_calculate(uint8_t *buf, uint8_t len);
+bool fby35_is_zero_checksum_valid(uint8_t *buf, uint8_t len);
 bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, uint8_t rev_id);
 int fby35_common_get_bb_hsc_type(uint8_t* type);
 bool fby35_common_is_prot_card_prsnt(uint8_t fru) ;

@@ -843,6 +843,32 @@ exit:
   return ret;
 }
 
+uint8_t
+fby35_zero_checksum_calculate(uint8_t *buf, uint8_t len) { 
+  uint8_t i, ret = 0;
+
+  for (i = 0; i < len; i++) {
+    ret += *(buf++);
+  }
+  ret = (~ret) + 1; //2's complement
+
+  return ret;
+}
+
+bool
+fby35_is_zero_checksum_valid(uint8_t *buf, uint8_t len) {
+  uint8_t i, ret = 0;
+
+  for(i = 0; i < len; i++)
+  {
+    ret += *(buf++);
+  }
+  ret += *(buf++); //Add checksum
+  ret = (~ret) + 1; //2's complement, should be 0
+
+  return (ret == 0) ? true : false;
+}
+
 bool
 fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, uint8_t rev_id) {
   const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "DVT_1C", "PVT", "MP"};

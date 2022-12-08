@@ -77,6 +77,14 @@ typedef struct
 #define MAX_POSTCODE_NUM  1024
 #define PSB_EEPROM_BUS 0x03
 
+//TI VR remaining writes
+#define VR_REMAINING_WRITE_START_ADDR 0x0A
+#define VR_REMAINING_WRITE_OFFSET(addr) ((addr & 0xf) | 0x40)
+#define BIC_EEPROM_BUS 0x2
+#define BIC_EEPROM_ADDR 0xA8
+#define UNINITIALIZED_EEPROM 0xFFFF
+#define TI_VR_REMAIN_WR_SIZE 2
+
 typedef struct {
   uint8_t bus_id;
   uint8_t addr;
@@ -160,6 +168,8 @@ int me_smbus_write(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t
 void get_pmic_err_str(uint8_t err_type, char* str, uint8_t len);
 int bic_check_cable_status();
 int bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type);
+int bic_get_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain);
+int bic_set_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t remain);
 int bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_t input_len, uint32_t *output_len);
 int bic_request_post_buffer_page_data(uint8_t slot_id, uint8_t page_num, uint8_t *port_buff, uint8_t *len);
 int bic_get_mb_index(uint8_t *index);

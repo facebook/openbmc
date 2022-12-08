@@ -2109,6 +2109,71 @@ bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type) {
 }
 
 int
+bic_get_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain) {
+  uint8_t tbuf[32] = {0};
+  uint8_t rbuf[4] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  if (remain == NULL) {
+    syslog(LOG_WARNING, "%s: fail to get remaining writes due to NULL pointer check \n", __func__);
+    return -1;
+  }
+
+  tbuf[0] = BIC_EEPROM_BUS;
+  tbuf[1] = BIC_EEPROM_ADDR;
+  tbuf[2] = 3; //read 3 bytes
+  tbuf[3] = VR_REMAINING_WRITE_START_ADDR; //offset
+  tbuf[4] = VR_REMAINING_WRITE_OFFSET(addr); //offset
+  tlen = 5;
+
+  ret = bic_ipmb_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to send the command to get the remaining writes. ret=%d", __func__, ret);
+  }
+  *remain = ((rbuf[0] << 8) | rbuf[1]); //higher byte first
+
+  if (*remain == UNINITIALIZED_EEPROM) {
+    syslog(LOG_INFO, "%s() Server board is uninitialized.\n", __func__);
+    return ret;
+  }
+
+  if (fby35_is_zero_checksum_valid(rbuf, TI_VR_REMAIN_WR_SIZE) == false) {
+    syslog(LOG_WARNING, "%s() Zero checksum is not valid.", __func__);
+    return -1;
+  }
+
+  return ret;
+}
+
+int
+bic_set_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t remain) {
+  uint8_t tbuf[32] = {0};
+  uint8_t rbuf[4] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = BIC_EEPROM_BUS;
+  tbuf[1] = BIC_EEPROM_ADDR;
+  tbuf[2] = 0; //write
+  tbuf[3] = VR_REMAINING_WRITE_START_ADDR; //offset
+  tbuf[4] = VR_REMAINING_WRITE_OFFSET(addr); //offset
+  tbuf[5] = remain >> 8; //higher byte
+  tbuf[6] = remain & 0xff; //lower byte
+  tbuf[7] = fby35_zero_checksum_calculate(&tbuf[5], TI_VR_REMAIN_WR_SIZE); //Zero checksum
+  tlen = 8;
+
+  ret = bic_ipmb_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to send the command to get the remaining writes. ret=%d", __func__, ret);
+  }
+
+  return ret;
+}
+
+int
 bic_request_post_buffer_page_data(uint8_t slot_id, uint8_t page_num, uint8_t *port_buff, uint8_t *len) {
   int ret;
   uint8_t tbuf[4] = {0};

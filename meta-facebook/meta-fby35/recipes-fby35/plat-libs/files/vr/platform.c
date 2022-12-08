@@ -319,6 +319,10 @@ int plat_vr_init(void) {
     }
   }
 
+  for (int i = 0; i < vr_cnt; i++) {
+    fby35_vr_list[i].slot_id = slot_id;
+  }
+
   return vr_device_register(fby35_vr_list, vr_cnt);
 }
 

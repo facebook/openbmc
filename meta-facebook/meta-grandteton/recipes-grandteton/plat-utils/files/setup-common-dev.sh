@@ -233,8 +233,8 @@ HPDB_HSC_SECOND="1"
 echo "Probe HPDB Device"
 #HPDB ID Expender
 i2c_device_add 37 0x23 pca9555
-gpio_export_ioexp 37-0023  FAN_BP0_PRSNT    2
-gpio_export_ioexp 37-0023  FAN_BP1_PRSNT    3
+gpio_export_ioexp 37-0023  FAN_BP0_PRSNT_N  2
+gpio_export_ioexp 37-0023  FAN_BP1_PRSNT_N  3
 gpio_export_ioexp 37-0023  HPDB_BOARD_ID_0  10
 gpio_export_ioexp 37-0023  HPDB_BOARD_ID_1  11
 gpio_export_ioexp 37-0023  HPDB_BOARD_ID_2  12

@@ -23,8 +23,8 @@
 #define GPU_FPGA_RST_N           "GPU_FPGA_RST_N"
 
 // GPIO FAN_BP PRSNT
-#define FAN_BP0_PRSNT      "FAN_BP0_PRSNT"
-#define FAN_BP1_PRSNT      "FAN_BP1_PRSNT"
+#define FAN_BP0_PRSNT      "FAN_BP0_PRSNT_N"
+#define FAN_BP1_PRSNT      "FAN_BP1_PRSNT_N"
 
 //GPIO FAN PRSNT
 #define  FAN0_PRSNT        "FAN0_PRESENT"

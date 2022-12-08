@@ -1627,7 +1627,7 @@ pal_get_tach_list(void) {
       break;
     default:
       syslog(LOG_ERR, "%s() Cannot identify the type of fan", __func__);
-      return "0..3";
+      return "0..7";
       break;
   }
 
@@ -1656,7 +1656,7 @@ pal_get_tach_cnt(void) {
       break;
     default:
       syslog(LOG_ERR, "%s() Cannot identify the type of fan", __func__);
-      return SINGLE_FAN_CNT;
+      return DUAL_FAN_CNT;
       break;
   }
 

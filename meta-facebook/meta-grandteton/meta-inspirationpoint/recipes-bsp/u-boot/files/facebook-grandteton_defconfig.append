@@ -3,6 +3,8 @@ CONFIG_SYS_CONFIG_NAME="facebook_inspirationpoint"
 CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-grandteton"
 
 CONFIG_ASPEED_TPM=y
+CONFIG_GIU_HW_SUPPORT=y
+CONFIG_GIU_HW_OPEN=y
 
 # logging facilities
 #    0 - emergency

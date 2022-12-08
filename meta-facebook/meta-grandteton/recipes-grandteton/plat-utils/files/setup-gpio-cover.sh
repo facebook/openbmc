@@ -191,7 +191,7 @@ sgpio_export IRQ_SML0_ALERT_R_N 49
 gpio_set IRQ_SML0_ALERT_R_N 1
 
 sgpio_export FM_PFR_DSW_PWROK_N 53
-pio_set FM_PFR_DSW_PWROK_N 1
+gpio_set FM_PFR_DSW_PWROK_N 1
 
 sgpio_export FM_PFR_OVR_RTC_R 55
 gpio_set FM_PFR_OVR_RTC_R 0

@@ -150,9 +150,6 @@ gpio_set FM_DEBUG_PORT_PRSNT_R1_N 1
 sgpio_export FM_JTAG_BMC_MUX_SEL_R1 15
 gpio_set FM_JTAG_BMC_MUX_SEL_R1 0
 
-sgpio_export FM_BMC_READY_R_N 23
-gpio_set FM_BMC_READY_R_N 1
-
 sgpio_export FM_BIOS_DEBUG_EN_N 41
 gpio_set FM_BIOS_DEBUG_EN_N 1
 

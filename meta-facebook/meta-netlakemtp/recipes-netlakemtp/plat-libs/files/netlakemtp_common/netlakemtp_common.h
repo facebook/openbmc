@@ -53,6 +53,7 @@ extern "C" {
 #define CPLD_VER_REG 0x28002000
 #define CPLD_REV_ID_REG 0x01
 #define CPLD_REV_ID_BYTE 1
+#define CPLD_SPI_MUX_REG 0x0A
 
 //In Netlake codebase, all definition used 0 base bus, 8 bit address
 #define VR_BUS  0

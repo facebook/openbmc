@@ -2,4 +2,4 @@
 
 LINUX_VERSION_EXTENSION = "-grandteton"
 
-COMPATIBLE_MACHINE = "grandteton|inspirationpoint"
+COMPATIBLE_MACHINE = "grandteton|inspirationpoint|gtartemis"

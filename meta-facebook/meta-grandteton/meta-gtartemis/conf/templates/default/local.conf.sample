@@ -1,0 +1,18 @@
+#
+# Local configuration file for building the OpenBMC image.
+#
+
+# Machine Selection
+MACHINE ??= "gtartemis"
+
+# OpenBMC distro settings
+DISTRO ?= "openbmc-fb-2"
+
+# The following will enable a build capable of verified-boot.
+# Images and the resultant flash are always built as a FIT (firmware image).
+# When verified-boot is enabled, the U-Boot firmware attempts to be built as
+# a ROM part and upgradable part using the SPL options.
+#
+# A public key must be configured, which will be built into the resultant ROM.
+# Most build logic is represented in the U-Boot recipes.
+IMAGE_FEATURES += " verified-boot "

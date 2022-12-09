@@ -6,8 +6,6 @@ require recipes-core/images/fb-zstd-rootfs.inc
 
 require recipes-core/images/fb-openbmc-image.bb
 
-PROVIDES += "inspirationpoint-image"
-
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   packagegroup-openbmc-base \

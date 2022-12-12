@@ -31,14 +31,8 @@
 # shellcheck disable=SC1091,SC2039
 . /usr/local/fbpackages/utils/ast-functions
 
-echo -n "Starting IPMB Rx/Tx Daemon.."
-
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-6/new_device   #ME
-echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-14/new_device  #USB DBG
 
 ulimit -q 1024000
 runsv /etc/sv/ipmbd_6 > /dev/null 2>&1 &
-runsv /etc/sv/ipmbd_14 > /dev/null 2>&1 &
-
-echo "done."
 

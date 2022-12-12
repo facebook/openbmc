@@ -27,7 +27,9 @@
 
 static void
 print_usage(void) {
+  printf("Usage: \n");
   printf("fpc-util <slot1|slot2|slot3|slot4> <1U-dev0|1U-dev1|1U-dev2|1U-dev3> --identify <on/off>\n");
+  printf("fpc-util sled --identify <on/off>\n");
 }
 
 int
@@ -70,16 +72,22 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  if ( fby35_common_get_slot_id(argv[1], &fru) < 0 || fru == FRU_ALL ) {
-    printf("Wrong fru: %s\n", argv[1]);
-    goto err_exit;
-  }
+  if (!strcmp(argv[1] , "sled")) {
+    if (is_dev) {
+      goto err_exit;
+    }
+    fru = FRU_ALL;
+  } else {
+    if ( fby35_common_get_slot_id(argv[1], &fru) < 0 || fru == FRU_ALL ) {
+      printf("Wrong fru: %s\n", argv[1]);
+      goto err_exit;
+    }
 
-  if ( pal_is_fru_prsnt(fru, &status) < 0 || status == 0 ) {
-    printf("slot%d is not present!\n", fru);
-    goto err_exit;
+    if ( pal_is_fru_prsnt(fru, &status) < 0 || status == 0 ) {
+      printf("slot%d is not present!\n", fru);
+      goto err_exit;
+    }
   }
-
   if ( is_dev == true ) {
     uint8_t type = TYPE_1OU_UNKNOWN;
     uint8_t dev_id = DEV_NONE;
@@ -133,7 +141,16 @@ main(int argc, char **argv) {
     printf("fpc-util: identification for %s %s is set to %s %ssuccessfully\n", \
                          argv[1], argv[2], argv[4], (ret < 0)?"un":"");
   } else {
-    ret = pal_sb_set_amber_led(fru, is_led_on, LED_LOCATE_MODE);
+    if (fru == FRU_ALL) {
+      ret = 0;
+      for (fru = FRU_SLOT1; fru <= FRU_SLOT4; fru++) {
+        if ( pal_is_fru_prsnt(fru, &status)  == 0 && status == 1 ) {
+          ret |= pal_sb_set_amber_led(fru, is_led_on, LED_LOCATE_MODE);
+        }
+      }
+    } else {
+      ret = pal_sb_set_amber_led(fru, is_led_on, LED_LOCATE_MODE);
+    }
     printf("fpc-util: identification for %s is set to %s %ssuccessfully\n", \
                          argv[1], argv[3], (ret < 0)?"un":"");
   }

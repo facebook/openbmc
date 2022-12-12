@@ -1,8 +1,9 @@
 import fcntl
+import ipaddress
 import os
 import socket
 import struct
-from typing import Optional, Union
+from typing import List, Optional, Union
 from uuid import getnode as get_mac
 
 import rest_pal_legacy
@@ -57,13 +58,31 @@ async def get_ipv4_netmask(if_name: str) -> str:
     return ipv4_netmask
 
 
-async def get_ipv6_ip_address(if_name: str) -> str:
-    v6_ip = ""
-    cmd = "ip -6 -o addr show dev %s scope global | awk '{print $4}'" % if_name
-    _, v6_ip, _ = await async_exec(cmd, shell=True)
-    if v6_ip:
-        v6_ip = v6_ip.strip().split("/64")[0]
-    return v6_ip
+def get_ipv6_addresses(if_name: str) -> List[dict]:
+    ipv6_addresses = []
+    with open("/proc/net/if_inet6") as ipv6_interface_file:
+        # e.g. line = "2401db00011630330000000000000065 02 80 00 00     eth0"
+        # spec: https://tldp.org/HOWTO/Linux+IPv6-HOWTO/ch11s04.html
+        for line in ipv6_interface_file:
+            words = line.split()
+            dev_name = words[-1]
+            v6_ip = str(ipaddress.IPv6Address(int(words[0], 16)))
+            prefix = int(words[2], 16)
+            scope = int(words[3], 16)
+
+            # Filter for interface name and global scope
+            if dev_name == if_name and scope == 0:
+                ipv6_addresses.append(
+                    {
+                        "Address": v6_ip,
+                        "PrefixLength": prefix,
+                        # XXX setting as `Static` until we have a reliable source of truth
+                        # on whether the address was set with `DHCPv6` or `SLAAC`
+                        "AddressOrigin": "Static",
+                        "AddressState": "Preferred",
+                    }
+                )
+    return ipv6_addresses
 
 
 def get_ipv4_gateway() -> Optional[str]:
@@ -175,7 +194,7 @@ async def get_ethernet_members(request: web.Request) -> web.Response:
     ipv4_ip = get_ipv4_ip_address(eth_intf)
     ipv4_netmask = await get_ipv4_netmask(eth_intf)
     ipv4_gateway = get_ipv4_gateway()
-    ipv6_ip = await get_ipv6_ip_address(eth_intf)
+    ipv6_addreses = get_ipv6_addresses(eth_intf)
     body = {
         "@odata.context": "/redfish/v1/$metadata#EthernetInterface.EthernetInterface",  # noqa: B950
         "@odata.id": "/redfish/v1/Managers/1/EthernetInterfaces/1",
@@ -197,14 +216,7 @@ async def get_ethernet_members(request: web.Request) -> web.Response:
                 "Gateway": ipv4_gateway,
             }
         ],
-        "IPv6Addresses": [
-            {
-                "Address": ipv6_ip,
-                "PrefixLength": 64,
-                "AddressOrigin": "SLAAC",
-                "AddressState": "Preferred",
-            }
-        ],
+        "IPv6Addresses": ipv6_addreses,
         "StaticNameServers": [],
         "NameServers": [],
         "LinkStatus": "LinkUp",

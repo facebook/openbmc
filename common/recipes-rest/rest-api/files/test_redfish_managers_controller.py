@@ -57,9 +57,15 @@ class TestManagerService(AioHTTPTestCase):
                 return_value="10.0.2.2",
             ),
             unittest.mock.patch(
-                "redfish_managers.get_ipv6_ip_address",
-                new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
-                return_value=asyncio.Future(),
+                "redfish_managers.get_ipv6_addresses",
+                return_value=[
+                    {
+                        "Address": "2401:db00:1130:60ff:face:0:5:0",
+                        "PrefixLength": 64,
+                        "AddressOrigin": "Static",
+                        "AddressState": "Preferred",
+                    }
+                ],
             ),
             unittest.mock.patch(
                 "aggregate_sensor.aggregate_sensor_init",
@@ -72,12 +78,10 @@ class TestManagerService(AioHTTPTestCase):
             p.start()
             self.addCleanup(p.stop)
 
-        ipv6 = "2401:db00:1130:60ff:face:0:5:0"
         ipv4 = "255.255.255.0"
         import redfish_managers
 
         redfish_managers.get_ipv4_netmask.return_value.set_result(ipv4)
-        redfish_managers.get_ipv6_ip_address.return_value.set_result(ipv6)
         await super().setUpAsync()
 
     def mapped_mock_open(self, file_contents_dict):
@@ -222,7 +226,7 @@ class TestManagerService(AioHTTPTestCase):
                 {
                     "Address": "2401:db00:1130:60ff:face:0:5:0",
                     "PrefixLength": 64,
-                    "AddressOrigin": "SLAAC",
+                    "AddressOrigin": "Static",
                     "AddressState": "Preferred",
                 }
             ],

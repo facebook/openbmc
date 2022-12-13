@@ -104,16 +104,16 @@ class AliasComponent : public Component {
   bool setup();
   public:
     AliasComponent(std::string fru, std::string comp, std::string t_fru, std::string t_comp);
-    bool is_alias(void) { return true; }
-    std::string &alias_component(void) { return _target_comp_name; }
-    std::string &alias_fru(void) { return _target_fru; }
-    int update(std::string image);
-    int fupdate(std::string image);
-    int dump(std::string image);
-    int print_version();
+    bool is_alias(void) override { return true; }
+    std::string &alias_component(void) override { return _target_comp_name; }
+    std::string &alias_fru(void) override { return _target_fru; }
+    int update(std::string image) override;
+    int fupdate(std::string image) override;
+    int dump(std::string image) override;
+    int print_version() override;
 
-    void set_update_ongoing(int timeout);
-    bool is_update_ongoing();
+    void set_update_ongoing(int timeout) override;
+    bool is_update_ongoing() override;
 };
 
 #endif

@@ -46,8 +46,8 @@
 #include "pal_common.h"
 
 
-#if !defined(PLATFORM_NAME)
-  #define PLATFORM_NAME "grandteton"
+#ifndef PLATFORM_NAME
+#define PLATFORM_NAME "grandteton"
 #endif
 
 #define GUID_SIZE 16
@@ -615,9 +615,31 @@ pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *respons
   return lib_dcmi_wrapper(&info, request, req_len, response, rlen);
 }
 
+static void
+update_bios_version_active()
+{
+  uint8_t tmp[64] = {0};
+  uint8_t ver[64] = {0};
+  uint8_t fruId;
+  char *fru_name = "mb";
+  int end;
+
+  pal_get_fru_id(fru_name, &fruId);
+  if (!pal_get_sysfw_ver(fruId, tmp)) {
+    if ((end = 3+tmp[2]) > (int)sizeof(tmp)) {
+      end = sizeof(tmp);
+    }
+    memcpy(ver, tmp+3, end-3);
+    kv_set("cur_mb_bios_ver", (char *)ver, 0, KV_FPERSIST);
+  }
+}
+
 void
 pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
 {
+  // update bios version active
+  update_bios_version_active();
+
   // log the post end event
   syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);
 

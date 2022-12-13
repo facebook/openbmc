@@ -105,6 +105,7 @@ int BiosComponent::check_image(const char *path)
   if (!regex_match(vers, sm, re)) {
     return -1;
   }
+  _ver_after_active = vers;
   return 0;
 }
 

@@ -10,7 +10,7 @@ class MTDComponent : public Component {
     std::string _mtd_name;
 
   public:
-    MTDComponent(std::string fru, std::string comp, std::string mtd) :
+    MTDComponent(const std::string& fru, const std::string& comp, const std::string& mtd) :
       Component(fru, comp), _mtd_name(mtd) {}
     int update(std::string image) override;
 };
@@ -21,7 +21,7 @@ class SPIMTDComponent : public MTDComponent {
     std::string spipath = "/sys/bus/spi/drivers/m25p80";
     std::string spidev;
   public:
-    SPIMTDComponent(std::string fru, std::string comp, std::string mtd, std::string dev) :
+    SPIMTDComponent(const std::string& fru, const std::string& comp, const std::string& mtd, const std::string& dev) :
       MTDComponent(fru, comp, mtd), spidev(dev) {}
     int update(std::string image) override;
 };
@@ -33,7 +33,7 @@ class GPIOSwitchedSPIMTDComponent : public SPIMTDComponent {
     bool access_level;
     bool change_direction;
   public:
-  GPIOSwitchedSPIMTDComponent(std::string fru, std::string comp, std::string mtd, std::string dev, std::string shadow, bool level, bool change = true) :
+  GPIOSwitchedSPIMTDComponent(const std::string& fru, const std::string& comp, const std::string& mtd, const std::string& dev, const std::string& shadow, bool level, bool change = true) :
     SPIMTDComponent(fru, comp, mtd, dev), gpio_shadow(shadow), access_level(level), change_direction(change) {}
   int update(std::string image) override;
 };

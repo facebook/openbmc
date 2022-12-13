@@ -85,6 +85,12 @@ do_configure_merge_and_tweak() {
     bbnote "Turn off CONFIG_SPL for non-vboot"
     defconfig_option_off CONFIG_SPL ${S}/configs/${UBOOT_MACHINE}
   fi
+
+  if [ "x${FBVBOOT_GOLDEN_IMAGE_SIZE_MB}" != "x" ]; then
+    bbnote "Append CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE"
+    echo "CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE_MB=${FBVBOOT_GOLDEN_IMAGE_SIZE_MB}" >> \
+      ${S}/configs/${UBOOT_MACHINE}
+  fi
 }
 
 # For u-boot only customized compile, intall and deploy task

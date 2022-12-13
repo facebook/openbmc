@@ -6,6 +6,9 @@
 # Todo: switch to use yocto kernel-fitimage instead of Aspeed kernel_fitimage
 inherit kernel_fitimage
 
+# Default Golden Image size is 32 MB
+FBVBOOT_GOLDEN_IMAGE_SIZE_MB ??= "32"
+
 python __anonymous () {
     # Todo get the version information from common place to get consistent with
     # tools: pypartition, sign-tools etc.
@@ -15,6 +18,12 @@ python __anonymous () {
 
     # meta partiton offset
     d.setVar("FBOBMC_IMAGE_META_OFFSET", "0x000F0000")
+
+    # sanity check and set FBVBOOT_GOLDEN_IMAGE_SIZE
+    golden_image_size_cfg = d.getVar("FBVBOOT_GOLDEN_IMAGE_SIZE_MB", True)
+    golden_image_size_mb = int(golden_image_size_cfg, 0)
+    if golden_image_size_mb not in [32, 64]:
+        bb.fatal("FBVBOOT_GOLDEN_IMAGE_SIZE_MB(%s) not support" % golden_image_size_cfg)
 }
 
 python flash_image_generate() {
@@ -252,3 +261,48 @@ def fbobmc_generate_image(d, image_meta):
     except OSError:
         pass
     os.symlink(image_file_link_target, image_file_link)
+
+def fbobmc_get_default_image_part_table(d, flash_size_mb=128, data0_size_mb=32):
+    # default flash size is 128MB, data0 size is 32MB
+    # define the partition table of image with (offset, name, max_size)
+    # the max_size is used to do sanity check of the partition define
+    # it can be omitted as -1, which will be calculated automatically
+    # the order in the partition in the list does not matter
+    # sanity check will make sure the partitions not overlap, no gaps
+    # align with erase_block_size and fits in the space defined as image_max_size
+    image_max_size = flash_size_mb << 20
+    erase_block_size = 64 * 1024
+    # FBVBOOT_GOLDEN_IMAGE_SIZE define in unit of MB
+    image_end = int(d.getVar("FBVBOOT_GOLDEN_IMAGE_SIZE_MB", True), 0) << 20
+    # put data0 at end of device
+    data0_size_k = data0_size_mb << 10
+    data0_begin = image_max_size - (data0_size_k << 10)
+
+    image_part_table_simple = (
+        #  offset,      name            max_size (K)  type              src_component ( 0: fill with zero, None: skip)
+        (  0,           "u-boot",       -1          , "raw",        d.expand("${DEPLOY_DIR_IMAGE}/u-boot-${MACHINE}.${UBOOT_SUFFIX}") ),
+        (  0x000E0000,  "u-boot-env",   64          , "data",       0),
+        (  0x000F0000,  "image-meta",   64          , "meta",       0),
+        (  0x00100000,  "os-fit",       -1          , "fit",        d.expand("${DEPLOY_DIR_IMAGE}/${FIT_LINK}")),
+        (  image_end,   "spare",        -1          , "mtdonly",    None),
+        (  data0_begin, "data0",        data0_size_k, "mtdonly",    None),
+    )
+
+    image_part_table_vboot = (
+        #  offset,      name            max_size (K)    type            src_component ( 0: fill with zero, None: skip)
+        (  0,           "spl",          256         ,   "rom",      d.expand("${DEPLOY_DIR_IMAGE}/u-boot-spl-${MACHINE}.${UBOOT_SUFFIX}") ),
+        (  0x00040000,  "rec-u-boot",   640         ,   "raw",      d.expand("${DEPLOY_DIR_IMAGE}/u-boot-recovery-${MACHINE}.${UBOOT_SUFFIX}")),
+        (  0x000E0000,  "u-boot-env",   64          ,   "data",     0),
+        (  0x000F0000,  "image-meta",   64          ,   "meta",     0),
+        (  0x00100000,  "u-boot-fit",   640         ,   "fit",      d.expand("${DEPLOY_DIR_IMAGE}/${UBOOT_FIT_LINK}") ),
+        (  0x001A0000,  "os-fit",       -1          ,   "fit",      d.expand("${DEPLOY_DIR_IMAGE}/${FIT_LINK}")),
+        (  image_end,   "spare",        -1          , "mtdonly",    None),
+        (  data0_begin, "data0",        data0_size_k, "mtdonly",    None),
+    )
+
+    if d.getVar("VERIFIED_BOOT"):
+        part_table = list(image_part_table_vboot)
+    else:
+        part_table = list(image_part_table_simple)
+
+    return (image_max_size, erase_block_size, part_table)

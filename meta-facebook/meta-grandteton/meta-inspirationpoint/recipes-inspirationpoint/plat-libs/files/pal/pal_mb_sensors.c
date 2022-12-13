@@ -838,12 +838,47 @@ read_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 read_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value) {
-  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  int ret = 0;
+  char source[10] = {0};
+
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  if (ret) {
+   return ret;
+  }
+
+  kv_get("mb_hsc_source", source, 0, 0);
+
+  if (!strcmp(source, "0")) {
+    *value = (*value * 1.0202 + 0.7316);
+  }
+  else if(!strcmp(source, "1")) {
+    *value = (*value * 1.3459 - 0.1993);
+  }
+
+  return ret;
 }
 
 static int
 read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
-  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  int ret = 0;
+  char source[10] = {0};
+
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+
+  if (ret) {
+    return ret;
+  }
+
+  kv_get("mb_hsc_source", source, 0, 0);
+
+  if (!strcmp(source, "0")) {
+    *value = (*value * 1.0265 + 9.865);
+  }
+  else if(!strcmp(source, "1")) {
+    *value = (*value * 1.3481 - 2.7754);
+  }
+
+  return ret;
 }
 
 static int

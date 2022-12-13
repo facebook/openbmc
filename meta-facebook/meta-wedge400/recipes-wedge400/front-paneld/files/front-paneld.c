@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -39,7 +40,6 @@
 #define BTN_POWER_OFF     40
 
 #define INTERVAL_MAX  5
-
 
 //Debug card presence check interval. Preferred range from ## milliseconds to ## milleseconds.
 #define DBG_CARD_CHECK_INTERVAL 500
@@ -57,6 +57,8 @@
 #define FRONT_PANELD_PWR_BTN_THREAD         "pwr_btn"
 #define FRONT_PANELD_RST_BTN_THREAD         "rst_btn"
 
+// Debug card monitoring is disabled by default.
+static bool enable_debug_card = false;
 
 // Thread for monitoring scm plug
 static void *
@@ -67,7 +69,7 @@ scm_monitor_handler(void *unused){
   uint8_t prsnt = 0;
   uint8_t power;
 
-  OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
+  OBMC_INFO("%s thread started", __FUNCTION__);
   while (1) {
     ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
     if (ret || !prsnt) {
@@ -120,7 +122,9 @@ sysLED_monitor_handler(void *unused) {
   struct timeval timeval;
   long curr_time;
   long last_time = 0;
-  OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
+
+  OBMC_INFO("%s thread started", __FUNCTION__);
+
   ret = pal_get_board_rev(&brd_rev);
   if (ret) {
     OBMC_INFO("%s: %s get borad rev error",  FRONTPANELD_NAME,__FUNCTION__);
@@ -149,7 +153,9 @@ LED_monitor_handler(void *unused) {
   struct timeval timeval;
   long curr_time;
   long last_time = 0;
-  OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
+
+  OBMC_INFO("%s thread started", __FUNCTION__);
+
   ret = pal_get_board_rev(&brd_rev);
   if (ret)
   {
@@ -182,7 +188,7 @@ debug_card_handler(void *unused) {
   int ret;
   uint8_t prsnt = 0;
 
-  OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
+  OBMC_INFO("%s thread started", __FUNCTION__);
   while (1) {
     // Check if debug card present or not
     ret = pal_is_debug_card_prsnt(&prsnt);
@@ -220,6 +226,9 @@ pwr_btn_handler(void *unused) {
   uint8_t cmd = 0;
   uint8_t power = 0;
   uint8_t prsnt = 0;
+
+  OBMC_INFO("%s thread started", __FUNCTION__);
+
   while (1) {
     ret = pal_is_debug_card_prsnt(&prsnt);
     if (ret || !prsnt) {
@@ -279,6 +288,9 @@ rst_btn_handler(void *unused) {
   uint8_t btn;
   int ret;
   uint8_t prsnt = 0;
+
+  OBMC_INFO("%s thread started", __FUNCTION__);
+
   while (1) {
     ret = pal_is_debug_card_prsnt(&prsnt);
     if (ret || !prsnt) {
@@ -308,6 +320,9 @@ uart_sel_btn_handler(void *unused) {
   uint8_t btn;
   uint8_t prsnt = 0;
   int ret;
+
+  OBMC_INFO("%s thread started", __FUNCTION__);
+
   /* Clear Debug Card reset button at the first time */
   ret = pal_clr_dbg_uart_btn();
   if (ret) {
@@ -335,6 +350,57 @@ uart_sel_btn_out:
   return 0;
 }
 
+static void
+dump_usage(const char *prog_name)
+{
+  int i;
+  struct {
+    const char *opt;
+    const char *desc;
+  } options[] = {
+    {"-h|--help", "print this help message"},
+    {"-d|--enable-debug-card", "enable debug card monitoring"},
+    {NULL, NULL},
+  };
+
+  printf("Usage: %s [options] ", prog_name);
+  for (i = 0; options[i].opt != NULL; i++) {
+    printf("    %-24s - %s\n", options[i].opt, options[i].desc);
+  }
+}
+
+static int
+parse_cmdline_args(int argc, char* const argv[])
+{
+  struct option long_opts[] = {
+    {"help",              no_argument, NULL, 'h'},
+    {"enable-debug-card", no_argument, NULL, 'd'},
+    {NULL,               0,           NULL, 0},
+  };
+
+  while (1) {
+    int opt_index = 0;
+    int ret = getopt_long(argc, argv, "hd", long_opts, &opt_index);
+    if (ret == -1)
+      break; /* end of arguments */
+
+    switch (ret) {
+    case 'h':
+      dump_usage(argv[0]);
+      exit(0);
+
+    case 'd':
+      enable_debug_card = true;
+      break;
+
+    default:
+      return -1;
+    }
+  } /* while */
+
+  return 0;
+}
+
 int
 main (int argc, char * const argv[]) {
   int pid_file;
@@ -345,6 +411,8 @@ main (int argc, char * const argv[]) {
     void* (*handler)(void *args);
     bool initialized;
     pthread_t tid;
+    unsigned int flags;
+#define FP_FLAG_DEBUG_CARD  0x1
   } front_paneld_threads[7] = {
     {
       .name = FRONT_PANELD_SCM_MONITOR_THREAD,
@@ -365,23 +433,31 @@ main (int argc, char * const argv[]) {
       .name = FRONT_PANELD_DEBUG_CARD_THREAD,
       .handler = debug_card_handler,
       .initialized = false,
+      .flags = FP_FLAG_DEBUG_CARD,
     },
     {
       .name = FRONT_PANELD_UART_SEL_BTN_THREAD,
       .handler = uart_sel_btn_handler,
       .initialized = false,
+      .flags = FP_FLAG_DEBUG_CARD,
     },
     {
       .name = FRONT_PANELD_PWR_BTN_THREAD,
       .handler = pwr_btn_handler,
       .initialized = false,
+      .flags = FP_FLAG_DEBUG_CARD,
     },
     {
       .name = FRONT_PANELD_RST_BTN_THREAD,
       .handler = rst_btn_handler,
       .initialized = false,
+      .flags = FP_FLAG_DEBUG_CARD,
     },
   };
+
+  if (parse_cmdline_args(argc, argv) != 0) {
+    return -1;
+  }
 
   signal(SIGTERM, exithandler);
   pid_file = open(FRONTPANELD_PID_FILE, O_CREAT | O_RDWR, 0666);
@@ -426,6 +502,13 @@ main (int argc, char * const argv[]) {
   }
 
   for (i = 0; i < ARRAY_SIZE(front_paneld_threads); i++) {
+    // Do not start debug_card related threads unless "enable_debug_card"
+    // is explicitly enabled.
+    if ((front_paneld_threads[i].flags & FP_FLAG_DEBUG_CARD) &&
+        (!enable_debug_card)) {
+      continue;
+    }
+
     rc = pthread_create(&front_paneld_threads[i].tid, NULL,
                         front_paneld_threads[i].handler, NULL);
     if (rc != 0) {

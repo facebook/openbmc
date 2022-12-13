@@ -43,6 +43,17 @@ image_info CpldComponent::check_image(const string& image, bool force) {
   return image_sts;
 }
 
+void CpldComponent::cpld_check_device() {
+  uint8_t hb_cpld_update_addr = 0x44;
+  if (i2c_detect_device(attr.bus_id, CPLD_ADDRESS >> 1)) {
+    //Fail to detect cpld function device, detect update device directly instead of check board sku id
+    cerr << "CPLD malfunction, checking cpld update address..." << endl;
+    if (!i2c_detect_device(attr.bus_id, hb_cpld_update_addr)) {
+      attr.slv_addr = hb_cpld_update_addr;
+    }
+  }
+}
+
 // Refresh CPLD to activate new image in case CPLD can not do 12V cycle when fw is broken
 int CpldComponent::cpld_refresh(uint8_t bus_id, uint8_t addr) {
   int retry = 3;
@@ -92,7 +103,10 @@ int CpldComponent::update_cpld(const string& image, bool force) {
     return FW_STATUS_FAILURE;
   }
 
-  if (force == false) {
+  if (force) {
+    // Force update, ignore server power check and verify cpld i2c devices
+    cpld_check_device();
+  } else {
     try {
       server.ready();
       expansion.ready();

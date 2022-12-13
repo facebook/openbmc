@@ -22,6 +22,7 @@ class CpldComponent : public Component {
     int update_cpld(const string& image, bool force);
     int get_ver_str(string& s);
     int cpld_refresh(uint8_t bus_id, uint8_t addr);
+    void cpld_check_device();
   public:
     CpldComponent(const string& fru, const string& comp, const string& brd, uint8_t comp_id, uint8_t type, uint8_t addr)
       : Component(fru, comp), slot_id(fru.at(4) - '0'), fw_comp(comp_id), pld_type(type), board(brd),

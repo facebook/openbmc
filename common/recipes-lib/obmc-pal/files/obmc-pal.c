@@ -51,6 +51,8 @@
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
 #endif
 
+#define ERR_LOG_SIZE    (256)
+
 // PAL Variable
 size_t pal_pwm_cnt __attribute__((weak)) = 0;
 size_t pal_tach_cnt __attribute__((weak)) = 0;
@@ -534,12 +536,24 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "No DIMM in System",
     "Reserved"
   };
+  char *mem_ppr_event[] = {
+    "PPR success",
+    "PPR fail",
+    "PPR request",
+    "N/A"
+  };
   char *upi_event[] = {
     "Successful LLR without Phy Reinit",
     "Successful LLR with Phy Reinit",
     "COR Phy Lane failure, recovery in x8 width",
     "Reserved"
   };
+  char *ppr_event[] = {
+    "PPR disable",
+    "Soft PPR",
+    "Hard PPR"
+  };
+
   uint8_t general_info = sel[3];
   uint8_t error_type = general_info & 0xF;
   uint8_t plat, event_type, estr_idx;
@@ -558,14 +572,14 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     case UNIFIED_PCIE_ERR:
       plat = (general_info & 0x10) >> 4;
       if (plat == 0) {  //x86
-        sprintf(error_log, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
+        snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
                 general_info, sel[11], sel[10]>>3, sel[10]&0x7, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
       } else {
-        sprintf(error_log, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
+        snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
                 general_info, ((sel[9]<<8)|sel[8]), sel[11], sel[10]>>3,
                 sel[10]&0x7, ((sel[13]<<8)|sel[12]),sel[14], sel[15]);
       }
-      sprintf(temp_log, "B %02X D %02X F %02X PCIe err,FRU:%u", sel[11], sel[10]>>3, sel[10]&0x7, fru);
+      snprintf(temp_log, sizeof(temp_log), "B %02X D %02X F %02X PCIe err,FRU:%u", sel[11], sel[10]>>3, sel[10]&0x7, fru);
       pal_add_cri_sel(temp_log);
       break;
 
@@ -578,29 +592,29 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
         case MEMORY_TRAINING_ERR:
         case MEMORY_PMIC_ERR:
           if (plat == 0) { //Intel
-            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
+            snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
                     general_info, dimm_location_str,
                     mem_err[event_type], sel[13], sel[14]);
           } else { //AMD
-            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
+            snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
                     general_info, dimm_location_str,
                     mem_err[event_type], sel[13], (sel[15]<<8)|sel[14]);
           }
-          sprintf(temp_log, "DIMM %s initialization fails", dimm_str);
+          snprintf(temp_log, sizeof(temp_log), "DIMM %s initialization fails", dimm_str);
           pal_add_cri_sel(temp_log);
           break;
 
         default:
           pal_convert_to_dimm_str(dimm_info.socket, dimm_info.channel, dimm_info.slot, dimm_str);
           estr_idx = (event_type < ARRAY_SIZE(mem_err)) ? event_type : (ARRAY_SIZE(mem_err) - 1);
-          sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s",
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s",
                   general_info, dimm_location_str, mem_err[estr_idx]);
 
           if ((event_type == MEMORY_CORRECTABLE_ERR) || (event_type == MEMORY_CORR_ERR_PTRL_SCR)) {
-            sprintf(temp_log, "DIMM%s ECC err,FRU:%u", dimm_str, fru);
+            snprintf(temp_log, sizeof(temp_log), "DIMM%s ECC err,FRU:%u", dimm_str, fru);
             pal_add_cri_sel(temp_log);
           } else if ((event_type == MEMORY_UNCORRECTABLE_ERR) || (event_type == MEMORY_UNCORR_ERR_PTRL_SCR)) {
-            sprintf(temp_log, "DIMM%s UECC err,FRU:%u", dimm_str, fru);
+            snprintf(temp_log, sizeof(temp_log), "DIMM%s UECC err,FRU:%u", dimm_str, fru);
             pal_add_cri_sel(temp_log);
           }
           break;
@@ -613,11 +627,11 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 
       switch (event_type) {
         case UPI_INIT_ERR:
-          sprintf(error_log, "GeneralInfo: UPIErr(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: UPIErr(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
                   general_info, dimm_info.sled, dimm_info.socket, sel[9]&0xF, upi_err[estr_idx], sel[13], sel[14]);
           break;
         default:
-          sprintf(error_log, "GeneralInfo: UPIErr(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s",
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: UPIErr(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s",
                   general_info, dimm_info.sled, dimm_info.socket, sel[9]&0xF, upi_err[estr_idx]);
           break;
       }
@@ -630,12 +644,11 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       uint8_t sel_error_severity = sel[14];
       uint8_t sel_error_id = sel[15];
 
-      sprintf(error_log, "GeneralInfo: IIOErr(0x%02X), IIO Port Location: Sled %02d/Socket %02d, Stack 0x%02X, Error Type: 0x%02X, Error Severity: 0x%02X, Error ID: 0x%02X",
+      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: IIOErr(0x%02X), IIO Port Location: Sled %02d/Socket %02d, Stack 0x%02X, Error Type: 0x%02X, Error Severity: 0x%02X, Error ID: 0x%02X",
               general_info, dimm_info.sled, dimm_info.socket, stack, sel_error_type, sel_error_severity, sel_error_id);
-      sprintf(temp_log, "IIO_ERR CPU%d. Error ID(%02X)",dimm_info.socket, sel_error_id);
+      snprintf(temp_log, sizeof(temp_log), "IIO_ERR CPU%d. Error ID(%02X)",dimm_info.socket, sel_error_id);
       pal_add_cri_sel(temp_log);
-      break;
-    }
+    } break;
 
     case UNIFIED_POST_ERR:
     {
@@ -649,19 +662,19 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
         case POST_PXE_BOOT_FAIL:
         case POST_HTTP_BOOT_FAIL:
           if (fail_type == 4 || fail_type == 6) {
-            sprintf(temp_log, "IPv%d fail",fail_type);
+            snprintf(temp_log, sizeof(temp_log), "IPv%d fail",fail_type);
           } else {
-            sprintf(temp_log, "Unknown fail(%02X)",fail_type);
+            snprintf(temp_log, sizeof(temp_log), "Unknown fail(%02X)",fail_type);
           }
-          sprintf(error_log, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, Fail Type: %s, Error Code: 0x%02X",
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, Fail Type: %s, Error Code: 0x%02X",
             general_info, post_err[estr_idx], temp_log, err_code);
           break;
         case POST_GET_CERT_FAIL:
-          sprintf(error_log, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, Failure Detail: %s",
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, Failure Detail: %s",
             general_info, post_err[estr_idx], cert_event[cert_event_idx]);
           break;
         default:
-          sprintf(error_log, "GeneralInfo: POST(0x%02X), POST Failure Event: %s", general_info, post_err[estr_idx]);
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: POST(0x%02X), POST Failure Event: %s", general_info, post_err[estr_idx]);
           break;
       }
       break;
@@ -673,11 +686,11 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 
       switch (event_type) {
         case PCIE_DPC:
-          sprintf(error_log, "GeneralInfo: PCIeEvent(0x%02X), PCIe Failure Event: %s, Status: 0x%04X, Source ID: 0x%04X",
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: PCIeEvent(0x%02X), PCIe Failure Event: %s, Status: 0x%04X, Source ID: 0x%04X",
                   general_info, pcie_event[estr_idx], (sel[11]<<8)|sel[10], (sel[13]<<8)|sel[12]);
           break;
         default:
-          sprintf(error_log, "GeneralInfo: PCIeEvent(0x%02X), PCIe Failure Event: %s",
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: PCIeEvent(0x%02X), PCIe Failure Event: %s",
                   general_info, pcie_event[estr_idx]);
           break;
       }
@@ -691,16 +704,16 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       event_type = sel[12] & 0x0F;
       switch (event_type) {
         case MEM_PPR:
-          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s",
-                  general_info, dimm_location_str, (sel[13]&0x01)?"PPR fail":"PPR success");
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s",
+                  general_info, dimm_location_str, mem_ppr_event[sel[13]&0x03]);
           break;
         case MEM_NO_DIMM:
-          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Failure Event: %s",
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MemEvent(0x%02X), DIMM Failure Event: %s",
                   general_info, mem_event[event_type]);
           break;
         default:
           estr_idx = (event_type < ARRAY_SIZE(mem_event)) ? event_type : (ARRAY_SIZE(mem_event) - 1);
-          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s",
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s",
                   general_info, dimm_location_str, mem_event[estr_idx]);
           break;
       }
@@ -709,17 +722,23 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     case UNIFIED_UPI_EVENT:
       event_type = sel[12] & 0xF;
       estr_idx = (event_type < ARRAY_SIZE(upi_event)) ? event_type : (ARRAY_SIZE(upi_event) - 1);
-      sprintf(error_log, "GeneralInfo: UPIEvent(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s",
+      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: UPIEvent(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s",
               general_info, dimm_info.sled, dimm_info.socket, sel[9]&0xF, upi_event[estr_idx]);
       break;
 
     case UNIFIED_BOOT_GUARD:
-      sprintf(error_log, "GeneralInfo: Boot Guard ACM Failure Events(0x%02X), Error Class(0x%02X), Error Code(0x%02X)",
+      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: Boot Guard ACM Failure Events(0x%02X), Error Class(0x%02X), Error Code(0x%02X)",
               general_info, sel[8], sel[9]);
       break;
 
+    case UNIFIED_PPR_EVENT:
+      event_type = sel[8] & 0x0F;
+      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: PPR Events(0x%02X), %s. Dimm Info: (%02X%02X%02X%02X%02X%02X%02X).",
+              general_info, ppr_event[event_type], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
+      break;
+
     default:
-      sprintf(error_log, "Undefined Error Type(0x%02X), Raw: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+      snprintf(error_log, ERR_LOG_SIZE, "Undefined Error Type(0x%02X), Raw: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
               error_type, sel[3], sel[4], sel[5], sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13],
               sel[14], sel[15]);
       break;
@@ -1426,7 +1445,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t idx;
 
   /*Used by decoding ME event*/
-  char *nm_capability_status[2] = {"Not Available", "Available"};
+  const char *nm_capability_status[2] = {"Not Available", "Available"};
   char *nm_domain_name[6] = {"Entire Platform", "CPU Subsystem", "Memory Subsystem", "HW Protection", "High Power I/O subsystem", "Unknown"};
   char *nm_err_type[17] =
                     {"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
@@ -1527,7 +1546,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       else
         strcat(error_log, "Unknown");
 
-      sprintf(temp_log,  "CRITICAL_IRQ, %s,FRU:%u", error_log, fru);
+      snprintf(temp_log, sizeof(temp_log),  "CRITICAL_IRQ, %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
 
       break;
@@ -1541,23 +1560,23 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         snprintf(temp_log, sizeof(temp_log), ", %s", post_error_type[ed[1]]);
         strcat(error_log, temp_log);
       } else if (((ed[0] >> 6) & 0x03) == 0x2) {
-        sprintf(temp_log, ", OEM Post Code 0x%02X%02X", ed[2], ed[1]);
+        snprintf(temp_log, sizeof(temp_log), ", OEM Post Code 0x%02X%02X", ed[2], ed[1]);
         strcat(error_log, temp_log);
         switch ((ed[2] << 8) | ed[1]) {
           case 0xA105:
-            sprintf(temp_log, ", BMC Failed (No Response)");
+            snprintf(temp_log, sizeof(temp_log), ", BMC Failed (No Response)");
             strcat(error_log, temp_log);
             break;
           case 0xA106:
-            sprintf(temp_log, ", BMC Failed (Self Test Fail)");
+            snprintf(temp_log, sizeof(temp_log), ", BMC Failed (Self Test Fail)");
             strcat(error_log, temp_log);
             break;
           case 0xA10A:
-            sprintf(temp_log, ", System Firmware Corruption Detected");
+            snprintf(temp_log, sizeof(temp_log), ", System Firmware Corruption Detected");
             strcat(error_log, temp_log);
             break;
           case 0xA10B:
-            sprintf(temp_log, ", TPM Self-Test FAIL Detected");
+            snprintf(temp_log, sizeof(temp_log), ", TPM Self-Test FAIL Detected");
             strcat(error_log, temp_log);
             break;
           default:
@@ -1569,21 +1588,21 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
     case MACHINE_CHK_ERR:
       if ((ed[0] & 0x0F) == 0x0B) {
         strcat(error_log, "Uncorrectable");
-        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", error_log, ed[1], fru);
+        snprintf(temp_log, sizeof(temp_log), "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", error_log, ed[1], fru);
         pal_add_cri_sel(temp_log);
       } else if ((ed[0] & 0x0F) == 0x0C) {
         strcat(error_log, "Correctable");
-        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", error_log, ed[1], fru);
+        snprintf(temp_log, sizeof(temp_log), "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", error_log, ed[1], fru);
         pal_add_cri_sel(temp_log);
       } else {
         strcat(error_log, "Unknown");
-        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", error_log, ed[1], fru);
+        snprintf(temp_log, sizeof(temp_log), "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", error_log, ed[1], fru);
         pal_add_cri_sel(temp_log);
       }
 
-      sprintf(temp_log, ", Machine Check bank Number %d ", ed[1]);
+      snprintf(temp_log, sizeof(temp_log), ", Machine Check bank Number %d ", ed[1]);
       strcat(error_log, temp_log);
-      sprintf(temp_log, ", CPU %d, Core %d ", ed[2] >> 5, ed[2] & 0x1F);
+      snprintf(temp_log, sizeof(temp_log), ", CPU %d, Core %d ", ed[2] >> 5, ed[2] & 0x1F);
       strcat(error_log, temp_log);
 
       break;
@@ -1591,28 +1610,28 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
     case PCIE_ERR:
 
       if ((ed[0] & 0xF) == 0x4) {
-        sprintf(error_log, "PCI PERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        snprintf(error_log, ERR_LOG_SIZE, "PCI PERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       } else if ((ed[0] & 0xF) == 0x5) {
-        sprintf(error_log, "PCI SERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        snprintf(error_log, ERR_LOG_SIZE, "PCI SERR (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       } else if ((ed[0] & 0xF) == 0x7) {
-        sprintf(error_log, "Correctable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        snprintf(error_log, ERR_LOG_SIZE, "Correctable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       } else if ((ed[0] & 0xF) == 0x8) {
-        sprintf(error_log, "Uncorrectable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        snprintf(error_log, ERR_LOG_SIZE, "Uncorrectable (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       } else if ((ed[0] & 0xF) == 0xA) {
-        sprintf(error_log, "Bus Fatal (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
+        snprintf(error_log, ERR_LOG_SIZE, "Bus Fatal (Bus %02X / Dev %02X / Fun %02X)", ed[2], ed[1] >> 3, ed[1] & 0x7);
       } else if ((ed[0] & 0xF) == 0xD) {
         unsigned int vendor_id = (unsigned int)ed[1] << 8 | (unsigned int)ed[2];
-        sprintf(error_log, "Vendor ID: 0x%4x", vendor_id);
+        snprintf(error_log, ERR_LOG_SIZE, "Vendor ID: 0x%4x", vendor_id);
       } else if ((ed[0] & 0xF) == 0xE) {
         unsigned int device_id = (unsigned int)ed[1] << 8 | (unsigned int)ed[2];
-        sprintf(error_log, "Device ID: 0x%4x", device_id);
+        snprintf(error_log, ERR_LOG_SIZE, "Device ID: 0x%4x", device_id);
       } else if ((ed[0] & 0xF) == 0xF) {
-        sprintf(error_log, "Error ID from downstream: 0x%2x 0x%2x", ed[1], ed[2]);
+        snprintf(error_log, ERR_LOG_SIZE, "Error ID from downstream: 0x%2x 0x%2x", ed[1], ed[2]);
       } else {
         strcat(error_log, "Unknown");
       }
 
-      sprintf(temp_log, "PCI_ERR %s,FRU:%u", error_log, fru);
+      snprintf(temp_log, sizeof(temp_log), "PCI_ERR %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
 
       break;
@@ -1620,7 +1639,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
     case IIO_ERR:
       if ((ed[0] & 0xF) == 0) {
 
-        sprintf(temp_log, "CPU %d, Error ID 0x%X", (ed[2] & 0xE0) >> 5,
+        snprintf(temp_log, sizeof(temp_log), "CPU %d, Error ID 0x%X", (ed[2] & 0xE0) >> 5,
             ed[1]);
         strcat(error_log, temp_log);
 
@@ -1649,7 +1668,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
           strcat(error_log, " - Reserved");
       } else
         strcat(error_log, "Unknown");
-      sprintf(temp_log, "IIO_ERR %s,FRU:%u", error_log, fru);
+      snprintf(temp_log, sizeof(temp_log), "IIO_ERR %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
       break;
 
@@ -1664,13 +1683,13 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         if ((ed[0] & 0x0F) == 0x0) {
           if (sen_type == 0x0C) {
             strcat(error_log, "Correctable");
-            sprintf(temp_log, "DIMM%02X ECC err,FRU:%u", ed[2], fru);
+            snprintf(temp_log, sizeof(temp_log), "DIMM%02X ECC err,FRU:%u", ed[2], fru);
             pal_add_cri_sel(temp_log);
           } else if (sen_type == 0x10)
             strcat(error_log, "Correctable ECC error Logging Disabled");
         } else if ((ed[0] & 0x0F) == 0x1) {
           strcat(error_log, "Uncorrectable");
-          sprintf(temp_log, "DIMM%02X UECC err,FRU:%u", ed[2], fru);
+          snprintf(temp_log, sizeof(temp_log), "DIMM%02X UECC err,FRU:%u", ed[2], fru);
           pal_add_cri_sel(temp_log);
         } else if ((ed[0] & 0x0F) == 0x5)
           strcat(error_log, "Correctable ECC error Logging Limit Reached");
@@ -1685,10 +1704,10 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       }
 
       // Common routine for both MEM_ECC_ERR and MEMORY_ERR_LOG_DIS
-      sprintf(temp_log, " (DIMM %02X)", ed[2]);
+      snprintf(temp_log, sizeof(temp_log), " (DIMM %02X)", ed[2]);
       strcat(error_log, temp_log);
 
-      sprintf(temp_log, " Logical Rank %d", ed[1] & 0x03);
+      snprintf(temp_log, sizeof(temp_log), " Logical Rank %d", ed[1] & 0x03);
       strcat(error_log, temp_log);
 
       // DIMM number (ed[2]):
@@ -1703,30 +1722,30 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         /* If critical SEL logging is available, do it */
         if (sen_type == 0x0C) {
           if ((ed[0] & 0x0F) == 0x0) {
-            sprintf(temp_log, "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num,
+            snprintf(temp_log, sizeof(temp_log), "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num,
                     dimm_num, fru);
             pal_add_cri_sel(temp_log);
           } else if ((ed[0] & 0x0F) == 0x1) {
-            sprintf(temp_log, "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num,
+            snprintf(temp_log, sizeof(temp_log), "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num,
                     dimm_num, fru);
             pal_add_cri_sel(temp_log);
           }
         }
         /* Then continue parse the error into a string. */
         /* All Info Valid                               */
-        sprintf(temp_log, " (CPU# %d, CHN# %d, DIMM# %d)",
+        snprintf(temp_log, sizeof(temp_log), " (CPU# %d, CHN# %d, DIMM# %d)",
             (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
       } else if (((ed[1] & 0xC) >> 2) == 0x1) {
         /* DIMM info not valid */
-        sprintf(temp_log, " (CPU# %d, CHN# %d)",
+        snprintf(temp_log, sizeof(temp_log), " (CPU# %d, CHN# %d)",
             (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
       } else if (((ed[1] & 0xC) >> 2) == 0x2) {
         /* CHN info not valid */
-        sprintf(temp_log, " (CPU# %d, DIMM# %d)",
+        snprintf(temp_log, sizeof(temp_log), " (CPU# %d, DIMM# %d)",
             (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
       } else if (((ed[1] & 0xC) >> 2) == 0x3) {
         /* CPU info not valid */
-        sprintf(temp_log, " (CHN# %d, DIMM# %d)",
+        snprintf(temp_log, sizeof(temp_log), " (CHN# %d, DIMM# %d)",
             (ed[2] & 0x18) >> 3, ed[2] & 0x7);
       }
       strcat(error_log, temp_log);
@@ -1737,28 +1756,28 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
     case PWR_ERR:
       switch(ed[0]) {
         case SYS_PWR_ON_FAIL:
-          sprintf(error_log, "SYS_PWROK failure");
+          snprintf(error_log, ERR_LOG_SIZE, "SYS_PWROK failure");
           break;
         case PCH_PWR_ON_FAIL:
-          sprintf(error_log, "PCH_PWROK failure");
+          snprintf(error_log, ERR_LOG_SIZE, "PCH_PWROK failure");
           break;
         case _1OU_EXP_PWR_ON_FAIL:
-          sprintf(error_log, "1OU EXP Power ON Failure");
+          snprintf(error_log, ERR_LOG_SIZE, "1OU EXP Power ON Failure");
           break;
         case _1OU_EXP_PWR_OFF_FAIL:
-          sprintf(error_log, "1OU EXP Power OFF Failure");
+          snprintf(error_log, ERR_LOG_SIZE, "1OU EXP Power OFF Failure");
           break;
         case _2OU_EXP_PWR_ON_FAIL:
-          sprintf(error_log, "2OU EXP Power ON Failure");
+          snprintf(error_log, ERR_LOG_SIZE, "2OU EXP Power ON Failure");
           break;
         case _2OU_EXP_PWR_OFF_FAIL:
-          sprintf(error_log, "2OU EXP Power OFF Failure");
+          snprintf(error_log, ERR_LOG_SIZE, "2OU EXP Power OFF Failure");
           break;
         default:
           strcat(error_log, "Unknown");
 
       }
-      sprintf(temp_log, "%s,FRU:%u", error_log, fru);
+      snprintf(temp_log, sizeof(temp_log), "%s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
       break;
 
@@ -1767,17 +1786,17 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       if (ed[0] == 0x0) {
         strcat(error_log, "IERR/CATERR");
         /* Also try logging to Critial log file, if available */
-        sprintf(temp_log, "IERR,FRU:%u", fru);
+        snprintf(temp_log, sizeof(temp_log), "IERR,FRU:%u", fru);
         pal_add_cri_sel(temp_log);
       } else if (ed[0] == 0xB) {
         strcat(error_log, "MCERR/CATERR");
         /* Also try logging to Critial log file, if available */
-        sprintf(temp_log, "MCERR,FRU:%u", fru);
+        snprintf(temp_log, sizeof(temp_log), "MCERR,FRU:%u", fru);
         pal_add_cri_sel(temp_log);
       } else if (ed[0] == 0xD){
         strcat(error_log, "MCERR/RMCA");
         /* Also try logging to Critial log file, if available */
-        sprintf(temp_log, "RMCA,FRU:%u", fru);
+        snprintf(temp_log, sizeof(temp_log), "RMCA,FRU:%u", fru);
         pal_add_cri_sel(temp_log);
       }
       else
@@ -1800,7 +1819,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         else
           strcat(error_log, "Unknown");
       }
-      sprintf(temp_log, "CPU_DIMM_HOT %s,FRU:%u", error_log, fru);
+      snprintf(temp_log, sizeof(temp_log), "CPU_DIMM_HOT %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
       break;
 
@@ -1814,13 +1833,13 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
     case ME_POWER_STATE:
       switch (ed[0]) {
         case 0:
-          sprintf(error_log, "RUNNING");
+          snprintf(error_log, ERR_LOG_SIZE, "RUNNING");
           break;
         case 2:
-          sprintf(error_log, "POWER_OFF");
+          snprintf(error_log, ERR_LOG_SIZE, "POWER_OFF");
           break;
         default:
-          sprintf(error_log, "Unknown[%d]", ed[0]);
+          snprintf(error_log, ERR_LOG_SIZE, "Unknown[%d]", ed[0]);
           break;
       }
       break;
@@ -1916,7 +1935,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       break;
     case PCH_THERM_THRESHOLD:
       idx = ed[0] & 0x0f;
-      sprintf(temp_log, "%s, curr_val: %d C, thresh_val: %d C", thres_event_name[idx] == NULL ? "Unknown" : thres_event_name[idx],ed[1],ed[2]);
+      snprintf(temp_log, sizeof(temp_log), "%s, curr_val: %d C, thresh_val: %d C", thres_event_name[idx] == NULL ? "Unknown" : thres_event_name[idx],ed[1],ed[2]);
       strcat(error_log, temp_log);
       break;
     case NM_HEALTH:
@@ -1925,7 +1944,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         uint8_t domain_index = (ed[1] & 0xf);
         uint8_t err_type_index = ((ed[1] >> 4) & 0xf);
 
-        sprintf(error_log, "%s,Domain:%s,ErrType:%s,Err:0x%x", nm_health_type[health_type_index], nm_domain_name[domain_index], nm_err_type[err_type_index], ed[2]);
+        snprintf(error_log, ERR_LOG_SIZE, "%s,Domain:%s,ErrType:%s,Err:0x%x", nm_health_type[health_type_index], nm_domain_name[domain_index], nm_err_type[err_type_index], ed[2]);
       }
       return 1;
       break;
@@ -1934,9 +1953,9 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       if (ed[0] & 0x7)//BIT1=policy, BIT2=monitoring, BIT3=pwr limit and the others are reserved
       {
         int capability_index = 0;
-        char *policy_capability = NULL;
-        char *monitoring_capability = NULL;
-        char *pwr_limit_capability = NULL;
+        const char *policy_capability = NULL;
+        const char *monitoring_capability = NULL;
+        const char *pwr_limit_capability = NULL;
 
         capability_index = BIT(ed[0], 0);
         policy_capability = nm_capability_status[ capability_index ];
@@ -1947,7 +1966,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         capability_index = BIT(ed[0], 2);
         pwr_limit_capability = nm_capability_status[ capability_index ];
 
-        sprintf(error_log, "PolicyInterface:%s,Monitoring:%s,PowerLimit:%s",
+        snprintf(error_log, ERR_LOG_SIZE, "PolicyInterface:%s,Monitoring:%s,PowerLimit:%s",
           policy_capability, monitoring_capability, pwr_limit_capability);
       }
       else
@@ -1966,7 +1985,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         uint8_t policy_event_index = BIT(ed[0], 3);
         char *policy_event[2] = {"Threshold Exceeded", "Policy Correction Time Exceeded"};
 
-        sprintf(error_log, "Threshold Number:%d-%s,Domain:%s,PolicyID:0x%x",
+        snprintf(error_log, ERR_LOG_SIZE, "Threshold Number:%d-%s,Domain:%s,PolicyID:0x%x",
           threshold_number, policy_event[policy_event_index], nm_domain_name[domain_index], policy_id);
       }
       return 1;
@@ -2000,7 +2019,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         if (ed[1] == 0xFF)
           strcat(temp_log, "Infinite Time");
         else
-          sprintf(temp_log, "%d minutes",ed[1]);
+          snprintf(temp_log, sizeof(temp_log), "%d minutes",ed[1]);
         strcat(error_log, temp_log);
       } else {
         strcat(error_log, "Unknown");
@@ -2011,15 +2030,15 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       break;
 
     default:
-      sprintf(error_log, "Unknown");
+      snprintf(error_log, ERR_LOG_SIZE, "Unknown");
       parsed = false;
       break;
   }
   if (((event_data[2] & 0x80) >> 7) == 0) {
-    sprintf(temp_log, " Assertion");
+    snprintf(temp_log, sizeof(temp_log), " Assertion");
     strcat(error_log, temp_log);
   } else {
-    sprintf(temp_log, " Deassertion");
+    snprintf(temp_log, sizeof(temp_log), " Deassertion");
     strcat(error_log, temp_log);
   }
   return parsed;

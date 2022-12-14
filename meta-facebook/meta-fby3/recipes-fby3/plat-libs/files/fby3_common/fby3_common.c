@@ -36,7 +36,7 @@
 #include "fby3_common.h"
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
-const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp", "slot1-2U", "slot1-2U-exp", "slot1-2U-top", "slot1-2U-bot", "slot3-2U"};
+const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp", "slot1-2U", "slot1-2U-exp", "slot1-2U-top", "slot1-2U-bot", "slot3-2U", "ocpdbg"};
 const char *exp_list[] = {"2U", "2U-cwc", "2U-top", "2U-bot"};
 const char plat_sig[PLAT_SIG_SIZE] = "Yosemite V3     ";
 const uint8_t exp_id_list[] = {FRU_2U, FRU_CWC, FRU_2U_TOP, FRU_2U_BOT};
@@ -84,12 +84,12 @@ fby3_common_get_slot_id(char *str, uint8_t *fru) {
   return 0;
 }
 
-int 
+int
 fby3_common_exp_get_num_devs(uint8_t fru, uint8_t *num) {
   switch (fru) {
     case FRU_2U_TOP:
     case FRU_2U_BOT:
-      *num = DEV_ID13_2OU; 
+      *num = DEV_ID13_2OU;
       return 0;
     break;
   }
@@ -97,7 +97,7 @@ fby3_common_exp_get_num_devs(uint8_t fru, uint8_t *num) {
   return -1;
 }
 
-int 
+int
 fby3_common_check_slot_id(uint8_t fru) {
   uint8_t bmc_location = 0;
 
@@ -133,7 +133,7 @@ fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
   //0: the fru isn't present
   //1: the fru is present
   *val = (gpio_value == GPIO_VALUE_HIGH)?0:1;
-  return 0; 
+  return 0;
 }
 
 int
@@ -155,7 +155,7 @@ fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
     }
     *val = (uint8_t)gpio_value;
   } else {
-    //1: a server is always existed on class2 
+    //1: a server is always existed on class2
     *val = 1;
   }
 
@@ -179,7 +179,7 @@ fby3_common_is_bic_ready(uint8_t fru, uint8_t *val) {
     goto error_exit;
   }
 
-  //a bus starts from 4 
+  //a bus starts from 4
   ret = fby3_common_get_bus_id(fru) + 4;
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
@@ -200,7 +200,7 @@ fby3_common_is_bic_ready(uint8_t fru, uint8_t *val) {
   }
 
   *val = (rbuf[0] & 0x2) >> 1;
-  
+
 error_exit:
   if ( i2cfd > 0 ) {
     close(i2cfd);
@@ -229,7 +229,7 @@ fby3_common_get_bus_id(uint8_t slot_id) {
       bus_id = -1;
     break;
   }
-  return bus_id; 
+  return bus_id;
 }
 
 int
@@ -293,7 +293,7 @@ fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset, bool power_of
       snprintf(cmd, cmd_len, "%s slot%d &", CRASHDUMP_BIN, fru);
     }
   }
-  
+
   if ( system(cmd) != 0 ) {
     syslog(LOG_INFO, "%s() Crashdump for FRU: %d is failed to be generated.", __func__, fru);
   } else {
@@ -596,7 +596,7 @@ fby3_common_get_sb_board_rev(uint8_t slot_id, uint8_t *rev) {
            __func__, slot_id + SLOT_BUS_BASE, strerror(errno));
     return -1;
   }
-  
+
   do {
     if (!i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 1, rbuf, 1)) {
       break;
@@ -610,7 +610,7 @@ fby3_common_get_sb_board_rev(uint8_t slot_id, uint8_t *rev) {
   if (retry <= 0) {
     return -1;
   }
-  
+
   *rev = rbuf[0];
   return 0;
 }
@@ -719,7 +719,7 @@ fby3_common_fscd_ctrl(uint8_t mode) {
         syslog(LOG_WARNING, "%s() popen failed, cmd: %s", __func__, cmd);
         ret = -1;
         goto exit;
-      } 
+      }
       memset(buf, 0, sizeof(buf));
       if (fgets(buf, sizeof(buf), fp2) == NULL) {
         syslog(LOG_WARNING, "%s() read popen failed, cmd: %s", __func__, cmd);

@@ -134,6 +134,7 @@ enum {
   FRU_2U_TOP    = 11,
   FRU_2U_BOT    = 12,
   FRU_2U_SLOT3  = 13,
+  FRU_OCPDBG    = 14,
   FRU_AGGREGATE = 0xff, //sensor-util will call pal_get_fru_name(). Add this virtual fru for sensor-util.
 };
 
@@ -211,7 +212,7 @@ enum {
 };
 
 enum {
-  // BOARD_ID [0:3] 
+  // BOARD_ID [0:3]
   NIC_BMC = 0x09, // 1001
   BB_BMC  = 0x0E, // 1110
   DVT_BB_BMC  = 0x07, // 0111
@@ -358,7 +359,7 @@ typedef struct {
 } BB_FW_UPDATE_EVENT;
 
 typedef struct {
-    uint8_t nvme_ready; 
+    uint8_t nvme_ready;
     uint16_t vendor_id;
     uint16_t status;
     uint8_t ffi;

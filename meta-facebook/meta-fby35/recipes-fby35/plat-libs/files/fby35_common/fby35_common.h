@@ -148,7 +148,7 @@ enum {
   FRU_NIC       = 6,
   FRU_BMC       = 7,
   FRU_NICEXP    = 8, //the fru is used when bmc is located on class 2
-  FRU_OPCDBG    = 9,
+  FRU_OCPDBG    = 9,
   FRU_AGGREGATE = 0xff, //sensor-util will call pal_get_fru_name(). Add this virtual fru for sensor-util.
 };
 

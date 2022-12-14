@@ -58,7 +58,7 @@ struct snr_map sensor_map[] = {
   { FRU_HMC,  hmc_sensor_map, true },
   { FRU_NIC0, bb_sensor_map,  true },
   { FRU_NIC1, bb_sensor_map,  true },
-  { FRU_DBG,  NULL,           false },
+  { FRU_OCPDBG,  NULL,           false },
   { FRU_BMC,  NULL,           false },
   { FRU_SCM,  bb_sensor_map,  true },
   { FRU_VPDB, bb_sensor_map,  true },
@@ -450,7 +450,7 @@ static void fan_state_led_ctrl(uint8_t fru, uint8_t snr_num, bool assert) {
   snprintf(amber_led, sizeof(amber_led), "FAN%d_LED_FAIL", (int)fan_id);
 
   gpio_set_value_by_shadow(amber_led, assert? GPIO_VALUE_HIGH: GPIO_VALUE_LOW);
-  gpio_set_value_by_shadow(blue_led, assert? GPIO_VALUE_LOW: GPIO_VALUE_HIGH); 
+  gpio_set_value_by_shadow(blue_led, assert? GPIO_VALUE_LOW: GPIO_VALUE_HIGH);
 }
 
 void

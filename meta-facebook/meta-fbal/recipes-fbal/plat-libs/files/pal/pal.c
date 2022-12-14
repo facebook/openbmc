@@ -302,7 +302,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   master = pal_get_config_is_master();
   *status = 0;
   // This MB, PDB, BMC && DBG
-  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BMC || fru == FRU_DBG) {
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BMC || fru == FRU_OCPDBG) {
     *status = 1;
   } else if ( master && (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) && (fru == FRU_TRAY1_MB) ) {
     // Support tray1 MB in master BMC.
@@ -409,7 +409,7 @@ pal_get_fru_id(char *str, uint8_t *fru) {
   } else if (!strcmp(str, "tray1_nic1")) {
     *fru = FRU_TRAY1_NIC1;
   } else if (!strcmp(str, "ocpdbg")) {
-    *fru = FRU_DBG;
+    *fru = FRU_OCPDBG;
   } else if (!strcmp(str, "bmc")) {
     *fru = FRU_BMC;
   } else if (!strcmp(str, "tray0_bmc")) {
@@ -447,7 +447,7 @@ pal_get_fru_name(uint8_t fru, char *name) {
     case FRU_TRAY1_NIC1:
       strcpy(name, "tray1_nic1");
       break;
-    case FRU_DBG:
+    case FRU_OCPDBG:
       strcpy(name, "ocpdbg");
       break;
     case FRU_TRAY0_BMC:
@@ -708,7 +708,7 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
     return -1;
   }
 
-  if (fruid == FRU_PDB) 
+  if (fruid == FRU_PDB)
     return 0;
   index = lib_cmc_get_block_index(fruid);
   if(index < 0) {
@@ -1412,7 +1412,7 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
   int ret;
 
   // If device is slave, fake the data of selftest,
-  // which is {0x55, 0x00} refer common/healthd.c 
+  // which is {0x55, 0x00} refer common/healthd.c
   if (!pal_get_config_is_master() || pal_skip_access_me()){
     data[0] = 0x55;
     data[1] = 0x00;
@@ -2031,7 +2031,7 @@ int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_PDB:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
       break;
-    case FRU_DBG:
+    case FRU_OCPDBG:
       *caps = FRU_CAPABILITY_SENSOR_ALL;
       break;
     case FRU_TRAY0_BMC:
@@ -2061,7 +2061,7 @@ int pal_i2c_write_read (uint8_t bus, uint8_t addr,
   fd = i2c_cdev_slave_open (bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
     syslog(LOG_WARNING, "Failed to open i2c-%d: %s", bus, strerror(errno));
-    return retCode; 
+    return retCode;
   }
 
   retCode = i2c_rdwr_msg_transfer (fd, addr, txbuf, txlen, rxbuf, rxlen);

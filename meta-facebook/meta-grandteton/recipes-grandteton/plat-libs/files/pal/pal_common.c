@@ -57,7 +57,7 @@ struct source_info comp_source_data[] = {
   {FRU_HMC,   NULL},
   {FRU_NIC0,  NULL},
   {FRU_NIC1,  NULL},
-  {FRU_DBG,   NULL},
+  {FRU_OCPDBG,   NULL},
   {FRU_BMC,   NULL},
   {FRU_SCM,   NULL},
   {FRU_VPDB,  vpdb_source_data},

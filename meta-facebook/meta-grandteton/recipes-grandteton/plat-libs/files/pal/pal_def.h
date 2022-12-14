@@ -185,7 +185,7 @@ enum {
   FRU_HMC,
   FRU_NIC0,
   FRU_NIC1,
-  FRU_DBG,
+  FRU_OCPDBG,
   FRU_BMC,
   FRU_SCM,
   FRU_VPDB,

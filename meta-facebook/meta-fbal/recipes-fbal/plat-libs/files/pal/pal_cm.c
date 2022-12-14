@@ -351,7 +351,7 @@ lib_cmc_get_block_index(uint8_t fru) {
     case FRU_TRAY1_NIC1:
       index = COMP_NIC;
       break;
-    case FRU_DBG:
+    case FRU_OCPDBG:
       index = COMP_MCU;
       break;
     default :

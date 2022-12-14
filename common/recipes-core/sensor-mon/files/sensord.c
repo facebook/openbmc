@@ -545,6 +545,19 @@ snr_monitor(void *arg) {
   kv_set("flag_sensord_monitor", "1", 0, 0);
 
   while(1) {
+    uint8_t fru_presence;
+
+    // Delay and retry later if the FRU is not detected.
+    // XXX Shall we exit the loop/thread? Or perhaps we shouldn't even
+    // create the thread if FRU is not detected when "sensord" starts?
+    // In other word, how do we swap FRUs in the field? Can we expect
+    // sensord, or even OpenBMC to be restarted after swapping FRUs?
+    ret = pal_is_fru_prsnt(fru, &fru_presence);
+    if (ret != 0 || fru_presence == 0) {
+      sleep(STOP_PERIOD);
+      continue;
+    }
+
     if (pal_is_fw_update_ongoing(slot)) {
       sleep(STOP_PERIOD);
       continue;

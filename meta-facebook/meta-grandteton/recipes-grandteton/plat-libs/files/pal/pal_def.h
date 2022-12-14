@@ -90,6 +90,15 @@
 
 #define MAX_CPU_CNT    (2)
 
+/* Artemis */
+// ACB Device Info
+#define ACB_BIC_BUS 3
+#define ACB_BIC_ADDR 0x20
+
+// MEB Device Info
+#define MEB_BIC_BUS 0
+#define MEB_BIC_ADDR 0x20
+
 enum {
   DIMM_ID0 = 0,
   DIMM_ID1,
@@ -186,6 +195,21 @@ enum {
   FRU_FIO,
   FRU_HSC,
   FRU_SHSC,
+  // Artemis FRU ID
+  FRU_ACB,
+  FRU_MEB,
+  FRU_ACB_ACCL1,
+  FRU_ACB_ACCL2,
+  FRU_ACB_ACCL3,
+  FRU_ACB_ACCL4,
+  FRU_ACB_ACCL5,
+  FRU_ACB_ACCL6,
+  FRU_ACB_ACCL7,
+  FRU_ACB_ACCL8,
+  FRU_ACB_ACCL9,
+  FRU_ACB_ACCL10,
+  FRU_ACB_ACCL11,
+  FRU_ACB_ACCL12,
   FRU_CNT,
 };
 

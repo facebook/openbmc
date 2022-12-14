@@ -1,0 +1,2 @@
+CFLAGS:prepend = " -DCONFIG_ARTEMIS "
+

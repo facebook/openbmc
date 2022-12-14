@@ -60,7 +60,10 @@
 #define NUM_BMC_FRU     1
 
 const char pal_fru_list[] = \
-"all, mb, nic0, nic1, swb, hmc, bmc, scm, vpdb, hpdb, fan_bp0, fan_bp1, fio, hsc, swb_hsc";
+"all, mb, nic0, nic1, swb, hmc, bmc, scm, vpdb, hpdb, fan_bp0, fan_bp1, fio, hsc, swb_hsc, " \
+// Artemis fru list
+"acb, meb, acb_accl1, acb_accl2, acb_accl3, acb_accl4, acb_accl5, acb_accl6, acb_accl7, acb_accl8, " \
+"acb_accl9, acb_accl10, acb_accl11, acb_accl12";
 
 const char pal_server_list[] = "mb";
 
@@ -89,6 +92,10 @@ const char pal_server_list[] = "mb";
 
 #define HSC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
+// Artemis fru capability
+#define ACB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
+#define MEB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
+#define ACB_ACCL_CAPABILITY FRU_CAPABILITY_FRUID_ALL
 
 struct fru_dev_info {
   uint8_t fru_id;
@@ -146,7 +153,31 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_FIO,   "fio",     "FIO Board",     3,  0x20, FIO_CAPABILITY, FRU_PATH_PLDM,   swb_presence},
   {FRU_HSC,   "hsc",     "HSC Board",     2,  0x51, 0,              FRU_PATH_EEPROM, fru_presence},
   {FRU_SHSC,  "swb_hsc", "SWB HSC Board", 3,  0x20, 0,              FRU_PATH_PLDM,   swb_presence},
+  // Artemis FRU dev data
+  {FRU_ACB,        "acb",        "Carrier Board",     ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_CAPABILITY,      FRU_PATH_PLDM,   fru_presence},
+  {FRU_MEB,        "meb",        "Memory Exp Board",  MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CAPABILITY,      FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL1,  "acb_accl1",  "ACB ACCL1 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL2,  "acb_accl2",  "ACB ACCL2 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL3,  "acb_accl3",  "ACB ACCL3 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL4,  "acb_accl4",  "ACB ACCL4 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL5,  "acb_accl5",  "ACB ACCL5 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL6,  "acb_accl6",  "ACB ACCL6 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL7,  "acb_accl7",  "ACB ACCL7 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL8,  "acb_accl8",  "ACB ACCL8 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL9,  "acb_accl9",  "ACB ACCL9 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL10, "acb_accl10", "ACB ACCL10 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL11, "acb_accl11", "ACB ACCL11 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
+  {FRU_ACB_ACCL12, "acb_accl12", "ACB ACCL12 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
 };
+
+bool
+pal_is_artemis() { // TODO: Use MB CPLD Offest to check the platform
+#ifdef CONFIG_ARTEMIS
+  return true;
+#else
+  return false;
+#endif
+}
 
 int
 pal_get_platform_name(char *name) {
@@ -162,6 +193,10 @@ pal_get_num_slots(uint8_t *num) {
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
+  if (!status) {
+    syslog(LOG_WARNING, "%s() Status pointer is NULL.", __func__);
+    return -1;
+  }
 
   if (fru >= FRU_CNT || fru_dev_data[fru].check_presence == NULL) {
     *status = 0;
@@ -180,6 +215,10 @@ pal_is_slot_server(uint8_t fru) {
 
 int
 pal_get_fru_id(char *str, uint8_t *fru) {
+  if (!str || !fru) {
+    syslog(LOG_WARNING, "%s() Input pointer is NULL.", __func__);
+    return -1;
+  }
 
   for(int i=0; i < FRU_CNT; i++) {
     if (!strcmp(str, fru_dev_data[i].name)) {
@@ -193,8 +232,15 @@ pal_get_fru_id(char *str, uint8_t *fru) {
 
 int
 pal_get_fru_name(uint8_t fru, char *name) {
-  if (fru > MAX_NUM_FRUS)
+  if (!name) {
+    syslog(LOG_WARNING, "%s() Name pointer is NULL.", __func__);
     return -1;
+  }
+
+  if (fru >= FRU_CNT) {
+    syslog(LOG_WARNING, "%s(): Input fruid %d is invalid.", __func__, fru);
+    return -1;
+  }
 
   strcpy(name, fru_dev_data[fru].name);
 
@@ -663,15 +709,64 @@ pal_get_sensor_util_timeout(uint8_t fru) {
 
 int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
-  if (fru > MAX_NUM_FRUS)
+  if (!caps) {
+    syslog(LOG_WARNING, "%s() Capability pointer is NULL.", __func__);
     return -1;
+  }
 
-  if(fru == FRU_SHSC && is_swb_hsc_module()) {
-    *caps = HSC_CAPABILITY;
-  } else if(fru == FRU_HSC && is_mb_hsc_module()) {
-    *caps = HSC_CAPABILITY;
+  if (fru >= FRU_CNT) {
+    return -1;
+  }
+
+  if (pal_is_artemis()) {
+    switch (fru) {
+      case FRU_SWB:
+      case FRU_HMC:
+      case FRU_DBG:
+      case FRU_HSC:
+      case FRU_SHSC:
+        *caps = 0; // Not in Artemis
+        break;
+      default:
+        *caps = fru_dev_data[fru].cap;
+        break;
+    }
   } else {
-    *caps = fru_dev_data[fru].cap;
+    switch (fru) {
+      case FRU_ACB:
+      case FRU_MEB:
+      case FRU_ACB_ACCL1:
+      case FRU_ACB_ACCL2:
+      case FRU_ACB_ACCL3:
+      case FRU_ACB_ACCL4:
+      case FRU_ACB_ACCL5:
+      case FRU_ACB_ACCL6:
+      case FRU_ACB_ACCL7:
+      case FRU_ACB_ACCL8:
+      case FRU_ACB_ACCL9:
+      case FRU_ACB_ACCL10:
+      case FRU_ACB_ACCL11:
+      case FRU_ACB_ACCL12:
+        *caps = 0;
+        break;
+      case FRU_SHSC:
+        if (is_swb_hsc_module()) {
+          *caps = HSC_CAPABILITY;
+        } else {
+          *caps = 0;
+        }
+        break;
+      case FRU_HSC:
+        if (is_mb_hsc_module()) {
+          *caps = HSC_CAPABILITY;
+        } else {
+          *caps = 0;
+        }
+        break;
+      default:
+        *caps = fru_dev_data[fru].cap;
+        break;
+    }
   }
   return 0;
 }

@@ -789,26 +789,35 @@ run_sensord(int argc, char **argv) {
         continue;
 
       /* Threshold Sensors */
-      if (pthread_create(&thread_snr[fru-1], NULL, snr_monitor,
-          (void*)(uintptr_t)fru) < 0) {
-        syslog(LOG_WARNING, "pthread_create for Threshold Sensors for FRU %d failed\n", fru);
-#ifdef DEBUG
+      ret = pthread_create(&thread_snr[fru-1], NULL, snr_monitor,
+                           (void*)(uintptr_t)fru);
+      if (ret != 0) {
+        syslog(LOG_WARNING,
+               "failed to create sensor monitor thread for FRU %d: %s\n",
+               fru, strerror(ret));
       } else {
-        syslog(LOG_WARNING, "pthread_create for Threshold Sensors for FRU %d succeed\n", fru);
-#endif /* DEBUG */
+        syslog(LOG_INFO, "created sensor monitor thread for FRU %d\n", fru);
       }
       sleep(1);
     }
   }
 
   /* Sensor Health */
-  if (pthread_create(&sensor_health, NULL, snr_health_monitor, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for sensor health failed\n");
+  ret = pthread_create(&sensor_health, NULL, snr_health_monitor, NULL);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "failed to create sensor health thread: %s\n",
+           strerror(ret));
+  } else {
+    syslog(LOG_INFO, "created sensor health thread\n");
   }
 
   /* Aggregate sensor monitor */
-  if (pthread_create(&agg_sensor_mon, NULL, aggregate_snr_monitor, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for aggregate sensor failed!\n");
+  ret = pthread_create(&agg_sensor_mon, NULL, aggregate_snr_monitor, NULL);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "failed to create aggregate sensor thread: %s\n",
+           strerror(ret));
+  } else {
+    syslog(LOG_INFO, "created aggregate sensor thread\n");
   }
 
   pthread_join(agg_sensor_mon, NULL);

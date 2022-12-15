@@ -607,6 +607,33 @@ static int set_apml_channel(uint8_t cpu_id) {
   return ret;
 }
 
+static int reset_mux() {
+  int fd = 0, ret = -1;
+  char fn[32];
+  uint8_t tlen, rlen, addr, bus;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  bus = I2C_BUS_0;
+  addr = 0xE2;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    return ret;
+  }
+
+  tbuf[0] = 0x46;
+  tbuf[1] = 0x01;
+  tlen = 2;
+  rlen = 0;
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  close(fd);
+
+  return ret;
+}
+
 static int
 read_cpu_pkg_pwr(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t cpu_id = sensor_map[fru].map[sensor_num].id;
@@ -711,8 +738,14 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   }
 
   kv_get("apml_mux", g_has_mux, 0, 0);
-  if (!strcmp( g_has_mux, "0")) {
+  if (!strcmp(g_has_mux, "0")) {
     set_apml_channel(CPU_ID0);
+  }
+  else if (!strcmp(g_has_mux, "1") && sensor_num == DIMM_SNR_START_INDEX) {
+    ret = reset_mux();
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s, reset mux fail", __FUNCTION__);
+    }
   }
 
   ret = read_dimm_temp(fru, sensor_num, value, dimm_id, CPU_ID0);

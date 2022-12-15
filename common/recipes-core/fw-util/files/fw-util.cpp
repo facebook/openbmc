@@ -360,6 +360,7 @@ int main(int argc, char *argv[])
           lfd = single_instance_lock_blocked(string("fw-util_"+c->fru()).c_str());
           if (lfd < 0) {
             syslog(LOG_WARNING, "Error getting single_instance_lock");
+            return -1;
           }
           if (c->is_update_ongoing()) {
             if (action == "--version") {

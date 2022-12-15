@@ -64,6 +64,7 @@ struct ModbusDeviceInfo {
   uint32_t deviceErrors = 0;
   time_t lastActive = 0;
   uint32_t numConsecutiveFailures = 0;
+  Parity parity = Parity::EVEN;
 };
 void to_json(nlohmann::json& j, const ModbusDeviceInfo& m);
 
@@ -105,6 +106,7 @@ class ModbusDevice {
       Modbus& interface,
       uint8_t deviceAddress,
       const RegisterMap& registerMap,
+      Parity parity = Parity::EVEN,
       int numCommandRetries = 5);
   virtual ~ModbusDevice() {
     setDefaultBaudrate();

@@ -15,7 +15,7 @@ class Mock2Modbus : public Modbus {
   Mock2Modbus() : Modbus() {}
   ~Mock2Modbus() {}
   MOCK_METHOD1(initialize, void(const nlohmann::json&));
-  MOCK_METHOD4(command, void(Msg&, Msg&, uint32_t, ModbusTime));
+  MOCK_METHOD5(command, void(Msg&, Msg&, uint32_t, ModbusTime, Parity));
 };
 
 // Matches Msg with an expected value.
@@ -82,7 +82,7 @@ TEST_F(ModbusDeviceTest, BasicSetup) {
 
 // Basic command interface is a blind pass through.
 TEST_F(ModbusDeviceTest, BasicCommand) {
-  EXPECT_CALL(get_modbus(), command(Eq(0x3202_M), _, 19200, ModbusTime::zero()))
+  EXPECT_CALL(get_modbus(), command(Eq(0x3202_M), _, 19200, ModbusTime::zero(), _))
       .Times(1)
       .WillOnce(SetArgReferee<1>(0x32020304_M));
 
@@ -97,11 +97,11 @@ TEST_F(ModbusDeviceTest, BasicCommand) {
 }
 
 TEST_F(ModbusDeviceTest, CommandTimeout) {
-  EXPECT_CALL(get_modbus(), command(_, _, _, _))
+  EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(3)
       .WillRepeatedly(Throw(TimeoutException()));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 3);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 3);
 
   Msg req, resp;
   EXPECT_THROW(dev.command(req, resp), TimeoutException);
@@ -110,7 +110,7 @@ TEST_F(ModbusDeviceTest, CommandTimeout) {
 }
 
 TEST_F(ModbusDeviceTest, CommandCRC) {
-  EXPECT_CALL(get_modbus(), command(_, _, _, _))
+  EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(5)
       .WillRepeatedly(Throw(CRCError(1, 2)));
 
@@ -123,11 +123,11 @@ TEST_F(ModbusDeviceTest, CommandCRC) {
 }
 
 TEST_F(ModbusDeviceTest, CommandMisc) {
-  EXPECT_CALL(get_modbus(), command(_, _, _, _))
+  EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(1)
       .WillOnce(Throw(std::runtime_error("")));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 1);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 1);
 
   Msg req, resp;
   EXPECT_THROW(dev.command(req, resp), std::runtime_error);
@@ -136,21 +136,21 @@ TEST_F(ModbusDeviceTest, CommandMisc) {
 }
 
 TEST_F(ModbusDeviceTest, CommandFlaky) {
-  EXPECT_CALL(get_modbus(), command(_, _, _, _))
+  EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(2)
-      .WillOnce(Invoke([](Msg& req, Msg&, uint32_t, ModbusTime) {
+      .WillOnce(Invoke([](Msg& req, Msg&, uint32_t, ModbusTime, Parity) {
         EXPECT_EQ(req, 0x3202_M);
         Encoder::encode(req);
         throw TimeoutException();
       }))
-      .WillOnce(Invoke([](Msg& req, Msg& resp, uint32_t, ModbusTime) {
+      .WillOnce(Invoke([](Msg& req, Msg& resp, uint32_t, ModbusTime, Parity) {
         EXPECT_EQ(req, 0x3202_M);
         Encoder::encode(req);
         resp = 0x32020304_EM;
         Encoder::decode(resp);
       }));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 3);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 3);
 
   Msg req, resp;
   req.raw = {0x32, 2};
@@ -162,10 +162,10 @@ TEST_F(ModbusDeviceTest, CommandFlaky) {
 }
 
 TEST_F(ModbusDeviceTest, TimeoutInExclusiveMode) {
-  EXPECT_CALL(get_modbus(), command(_, _, _, _))
+  EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(1)
       .WillOnce(Throw(TimeoutException()));
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 3);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 3);
   dev.setExclusiveMode(true);
   Msg req, resp;
   req.raw = {0x32, 2};
@@ -176,11 +176,11 @@ TEST_F(ModbusDeviceTest, TimeoutInExclusiveMode) {
 }
 
 TEST_F(ModbusDeviceTest, MakeDormant) {
-  EXPECT_CALL(get_modbus(), command(_, _, _, _))
+  EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(10)
       .WillRepeatedly(Throw(TimeoutException()));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 1);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 1);
 
   for (int i = 0; i < 10; i++) {
     ModbusDeviceInfo status = dev.getInfo();
@@ -205,7 +205,8 @@ TEST_F(ModbusDeviceTest, ReadHoldingRegs) {
           encodeMsgContentEqual(0x320300640002_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       // addr(1) = 9x32
       // func(1) = 03
@@ -231,7 +232,8 @@ TEST_F(ModbusDeviceTest, WriteSingleReg) {
           encodeMsgContentEqual(0x320600641122_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       // addr(1) = 0x32,
       // func(1) = 0x06,
@@ -258,7 +260,8 @@ TEST_F(ModbusDeviceTest, WriteMultipleReg) {
           encodeMsgContentEqual(0x3210006400020411223344_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       // addr(1) = 0x32,
       // func(1) = 0x10,
@@ -282,7 +285,8 @@ TEST_F(ModbusDeviceTest, ReadFileRecord) {
           encodeMsgContentEqual(0x32140E0600040001000206000300090002_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       .WillOnce(SetMsgDecode<1>(0x32140C05060DFE0020050633CD0040_EM));
 
@@ -331,14 +335,15 @@ TEST_F(ModbusDeviceTest, MonitorInvalidRegOnce) {
           encodeMsgContentEqual(0x320300000002_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       // addr(1) = 0x32,
       // func(1) = 0x83,
       // data(1) = 0x02
       .WillOnce(SetMsgDecode<1>(0x328302_EM));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 1);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 1);
   // This should see the illegal address error
   dev.reloadRegisters();
   // This should be a no-op.
@@ -356,7 +361,8 @@ TEST_F(ModbusDeviceTest, MonitorDataValue) {
           encodeMsgContentEqual(0x320300000002_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(3)
       // addr(1) = 0x32,
       // func(1) = 0x03,
@@ -483,7 +489,8 @@ TEST_F(ModbusDeviceTest, MonitorRawData) {
           encodeMsgContentEqual(0x320300000002_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(3)
       // addr(1) = 0x32,
       // func(1) = 0x03,
@@ -720,7 +727,8 @@ TEST(ModbusDeviceBaudrate, BaudrateNegotiationTest) {
           encodeMsgContentEqual(0x050600100100_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       .WillOnce(SetMsgDecode<1>(0x050600100100_EM));
 
@@ -735,7 +743,8 @@ TEST(ModbusDeviceBaudrate, BaudrateNegotiationTest) {
           encodeMsgContentEqual(0x050300000002_EM),
           _,
           115200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       .WillOnce(SetMsgDecode<1>(0x05030461626364_EM));
 
@@ -751,11 +760,12 @@ TEST(ModbusDeviceBaudrate, BaudrateNegotiationTest) {
           encodeMsgContentEqual(0x050600100001_EM),
           _,
           115200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       .WillOnce(SetMsgDecode<1>(0x050600100001_EM));
   {
-    ModbusDevice dev(mockdev, 5, regmap, 1);
+    ModbusDevice dev(mockdev, 5, regmap, Parity::EVEN, 1);
     dev.reloadRegisters();
     ModbusDeviceValueData data = dev.getValueData();
     EXPECT_EQ(data.deviceAddress, 0x05);
@@ -785,7 +795,8 @@ TEST(ModbusDeviceBaudrate, BaudrateNegotiationRejection) {
           encodeMsgContentEqual(0x050600100100_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       .WillOnce(Throw(ModbusError(3)));
 
@@ -800,11 +811,12 @@ TEST(ModbusDeviceBaudrate, BaudrateNegotiationRejection) {
           encodeMsgContentEqual(0x050300000002_EM),
           _,
           19200,
-          ModbusTime::zero()))
+          ModbusTime::zero(),
+          _))
       .Times(1)
       .WillOnce(SetMsgDecode<1>(0x05030461626364_EM));
   {
-    ModbusDevice dev(mockdev, 5, regmap, 1);
+    ModbusDevice dev(mockdev, 5, regmap, Parity::EVEN, 1);
     dev.reloadRegisters();
     ModbusDeviceValueData data = dev.getValueData();
     EXPECT_EQ(data.deviceAddress, 0x05);

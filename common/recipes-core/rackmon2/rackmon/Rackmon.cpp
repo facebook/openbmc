@@ -20,6 +20,8 @@ using namespace std::literals;
 
 namespace rackmon {
 
+constexpr auto ALL_PARITY_VARIANTS = {Parity::EVEN, Parity::ODD, Parity::NONE};
+
 void Rackmon::loadInterface(const nlohmann::json& config) {
   if (scanThread_ != nullptr || monitorThread_ != nullptr) {
     throw std::runtime_error("Cannot load configuration when started");
@@ -70,7 +72,7 @@ void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
   }
 }
 
-bool Rackmon::probe(Modbus& interface, uint8_t addr) {
+bool Rackmon::probe(Modbus& interface, Parity parity, uint8_t addr) {
   if (!interface.isPresent()) {
     return false;
   }
@@ -79,24 +81,15 @@ bool Rackmon::probe(Modbus& interface, uint8_t addr) {
   try {
     ReadHoldingRegistersReq req(addr, rmap.probeRegister, v.size());
     ReadHoldingRegistersResp resp(addr, v);
-    interface.command(req, resp, rmap.defaultBaudrate, kProbeTimeout);
+    interface.command(req, resp, rmap.defaultBaudrate, kProbeTimeout, parity);
     std::unique_lock lock(devicesMutex_);
-    devices_[addr] = std::make_unique<ModbusDevice>(interface, addr, rmap);
+    devices_[addr] = std::make_unique<ModbusDevice>(interface, addr, rmap, parity);
     logInfo << std::hex << std::setw(2) << std::setfill('0') << "Found "
             << int(addr) << " on " << interface.name() << std::endl;
     return true;
   } catch (std::exception& e) {
     return false;
   }
-}
-
-bool Rackmon::probe(uint8_t addr) {
-  // We do not support the same address
-  // on multiple interfaces.
-  return std::any_of(
-      interfaces_.begin(), interfaces_.end(), [this, addr](auto& iface) {
-        return probe(*iface, addr);
-      });
 }
 
 std::vector<uint8_t> Rackmon::inspectDormant() {
@@ -151,13 +144,18 @@ bool Rackmon::isDeviceKnown(uint8_t addr) {
 
 void Rackmon::fullScan() {
   logInfo << "Starting scan of all devices" << std::endl;
-  for (auto& addr : allPossibleDevAddrs_) {
-    if (isDeviceKnown(addr)) {
-      continue;
-    }
-    for (int i = 0; i < kScanNumRetry; i++) {
-      if (probe(addr)) {
-        break;
+
+  for (auto& modbus : interfaces_) {
+    for (auto parity : ALL_PARITY_VARIANTS) {
+      for (auto& addr : allPossibleDevAddrs_) {
+        if (isDeviceKnown(addr)) {
+          continue;
+        }
+        for (int i = 0; i < kScanNumRetry; i++) {
+          if (probe(*modbus, parity, addr)) {
+            break;
+          }
+        }
       }
     }
   }
@@ -173,7 +171,11 @@ void Rackmon::scan() {
 
   // Probe for the address only if we already dont know it.
   if (!isDeviceKnown(*nextDeviceToProbe_)) {
-    probe(*nextDeviceToProbe_);
+    for (auto& modbus : interfaces_) {
+      for (auto parity : ALL_PARITY_VARIANTS) {
+        probe(*modbus, parity, *nextDeviceToProbe_);
+      }
+    }
     lastScanTime_ = std::time(nullptr);
   }
 

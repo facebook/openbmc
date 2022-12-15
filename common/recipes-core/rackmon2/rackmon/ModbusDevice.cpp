@@ -12,6 +12,7 @@ ModbusDevice::ModbusDevice(
     Modbus& interface,
     uint8_t deviceAddress,
     const RegisterMap& registerMap,
+    Parity parity,
     int numCommandRetries)
     : interface_(interface),
       numCommandRetries_(numCommandRetries),
@@ -21,6 +22,7 @@ ModbusDevice::ModbusDevice(
   info_.defaultBaudrate = registerMap.defaultBaudrate;
   info_.baudrate = info_.defaultBaudrate;
   info_.deviceType = registerMap.name;
+  info_.parity = parity;
 
   for (auto& it : registerMap.registerDescriptors) {
     info_.registerList.emplace_back(it.second);
@@ -75,7 +77,7 @@ void ModbusDevice::command(Msg& req, Msg& resp, ModbusTime timeout) {
   int numRetries = exclusiveMode_ ? 1 : numCommandRetries_;
   for (int retries = 0; retries < numRetries; retries++) {
     try {
-      interface_.command(req, resp, info_.baudrate, timeout);
+      interface_.command(req, resp, info_.baudrate, timeout, info_.parity);
       info_.numConsecutiveFailures = 0;
       info_.lastActive = std::time(nullptr);
       break;
@@ -332,6 +334,12 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
     {{ModbusDeviceMode::ACTIVE, "ACTIVE"},
      {ModbusDeviceMode::DORMANT, "DORMANT"}})
 
+NLOHMANN_JSON_SERIALIZE_ENUM(
+    Parity,
+    {{Parity::EVEN, "EVEN"},
+     {Parity::ODD, "ODD"},
+     {Parity::NONE, "NONE"}})
+
 void to_json(json& j, const ModbusDeviceInfo& m) {
   j["devAddress"] = m.deviceAddress;
   j["deviceType"] = m.deviceType;
@@ -340,6 +348,7 @@ void to_json(json& j, const ModbusDeviceInfo& m) {
   j["miscErrors"] = m.miscErrors;
   j["baudrate"] = m.baudrate;
   j["mode"] = m.mode;
+  j["parity"] = m.parity;
 }
 
 // Legacy JSON format.

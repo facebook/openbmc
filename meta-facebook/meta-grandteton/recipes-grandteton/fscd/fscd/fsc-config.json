@@ -1,5 +1,5 @@
 {
-    "version": "grandteton-v5",
+    "version": "grandteton-v7",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -52,11 +52,11 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [-59, 25],
-          [-54, 28],
-          [-44, 30],
-          [-39, 40],
-          [-35, 50]
+          [-49, 25],
+          [-44, 28],
+          [-34, 30],
+          [-29, 40],
+          [-25, 50]
         ]
       },
       "cpu_tray_cpu_pid": {
@@ -66,7 +66,7 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
-        "setpoint": -31,
+        "setpoint": -21,
         "kp": -3,
         "ki": -0.0035,
         "kd": 0
@@ -218,7 +218,7 @@
           [63, 44],
           [67, 50],
           [72, 60],
-          [76, 70],
+          [76, 65],
           [82, 90]
         ]
       },
@@ -229,7 +229,7 @@
         "type": "pid",
         "positive_hysteresis": 1,
         "negative_hysteresis": 2,
-        "setpoint": 78,
+        "setpoint": 79,
         "kp": -3.5,
         "ki": -0.035,
         "kd": 0
@@ -275,7 +275,7 @@
           [63, 43],
           [78, 49],
           [82, 59],
-          [86, 69],
+          [86, 65],
           [92, 90]
         ]
       },

@@ -27,12 +27,6 @@
 # Short-Description: Set fan speed
 ### END INIT INFO
 
-# shellcheck disable=SC1091
-. /usr/local/fbpackages/utils/ast-functions
-
-
-default_fsc_config_path="/etc/fsc-config.json"
-ln -s /etc/fsc-config.json ${default_fsc_config_path}
 
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

@@ -931,3 +931,76 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
 
   return completion_code;
 }
+
+int
+pal_postcode_select(int option) {
+  int mmap_fd;
+  uint32_t ctrl;
+  void *reg_base;
+  void *reg_offset;
+
+  mmap_fd = open("/dev/mem", O_RDWR | O_SYNC);
+  if (mmap_fd < 0) {
+    return -1;
+  }
+
+  reg_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmap_fd, AST_GPIO_BASE);
+  reg_offset = (uint8_t *)reg_base + GPION_COMMON_SOURCE_OFFSET;
+  ctrl = *(volatile uint32_t *)reg_offset;
+
+  switch(option) {
+    case POSTCODE_BY_BMC:   // POST code LED controlled by BMC
+      ctrl &= ~0x00000100;
+      break;
+    case POSTCODE_BY_HOST:  // POST code LED controlled by LPC
+      ctrl |= 0x00000100;
+      break;
+    default:
+      syslog(LOG_WARNING, "pal_mmap: unknown option");
+      break;
+  }
+  *(volatile uint32_t *)reg_offset = ctrl;
+
+  munmap(reg_base, PAGE_SIZE);
+  close(mmap_fd);
+
+  return 0;
+}
+
+int
+pal_uart_select_led_set(void) {
+  static uint32_t pre_channel = 0xFF;
+  uint32_t channel;
+  uint32_t vals;
+  const char *uartsw_pins[] = {
+    "FM_UARTSW_MSB_N",
+    "FM_UARTSW_LSB_N",
+  };
+  const char *postcode_pins[] = {
+    "LED_POSTCODE_0",
+    "LED_POSTCODE_1",
+    "LED_POSTCODE_2",
+    "LED_POSTCODE_3",
+    "LED_POSTCODE_4",
+    "LED_POSTCODE_5",
+    "LED_POSTCODE_6",
+    "LED_POSTCODE_7"
+  };
+
+  pal_postcode_select(POSTCODE_BY_BMC);
+
+  if (gpio_get_value_by_shadow_list(uartsw_pins, ARRAY_SIZE(uartsw_pins), &vals)) {
+    return -1;
+  }
+  channel = ~vals & 0x3;  // the GPIOs are active-low, so invert it
+
+  if (channel != pre_channel) {
+    // show channel on 7-segment display
+    if (gpio_set_value_by_shadow_list(postcode_pins, ARRAY_SIZE(postcode_pins), channel)) {
+      return -1;
+    }
+    pre_channel = channel;
+  }
+
+  return 0;
+}

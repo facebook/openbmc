@@ -347,10 +347,12 @@ pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 //Uart Select on DEBUG Card Event Handler
 void
 uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  if (!sgpio_valid_check()) 
+  if (!sgpio_valid_check())
     return;
   g_uart_switch_count = 2;
   log_gpio_change(desc, curr, 0);
+  pal_uart_select_led_set();
+
 }
 
 // Event Handler for GPIOF6 platform reset changes
@@ -430,6 +432,14 @@ void
           syslog(LOG_INFO, "last pwr state updated to off\n");
         }
       }
+    }
+
+    //Show Uart Debug Select Number 2sec
+    if (g_uart_switch_count > 0) {
+      --g_uart_switch_count;
+
+      if ( g_uart_switch_count == 0)
+        pal_postcode_select(POSTCODE_BY_HOST);
     }
   }
 

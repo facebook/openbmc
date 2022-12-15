@@ -96,6 +96,7 @@ if get_option('orv3') == true
   register_maps += [
     'orv3_psu.json',
     'orv3_bbu.json',
+    'orv3_rpu.json',
   ]
 endif
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 #
@@ -33,14 +33,20 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 . /usr/local/fbpackages/utils/ast-functions
 
 
-MB_HSC_MODULE="1"  # ltc4282/ltc4286
-mb_hsc=$(kv get mb_hsc_module)
-if [ "$mb_hsc" -eq "$MB_HSC_MODULE" ]; then
+#MB_HSC_MODULE="1"  # ltc4282/ltc4286
+kv get mb_hsc_module
+rev=$?
+
+if [ $rev -eq 0 ];
+then
   sed -i "2{s/$/ hsc/}" /etc/sv/sensord/run
 fi
 
-SWB_HSC_MODULE="1"  # ltc4282/ltc4286
-swb_hsc=$(kv get swb_hsc_module)
-if [ "$swb_hsc" -eq "$SWB_HSC_MODULE" ]; then
+#SWB_HSC_MODULE="1"  # ltc4282/ltc4286
+kv get swb_hsc_module
+rev=$?
+
+if [ $rev -eq 0 ];
+then
   sed -i "2{s/$/ swb_hsc/}" /etc/sv/sensord/run
 fi

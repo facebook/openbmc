@@ -49,16 +49,13 @@ i2c_device_add 23 0x48 stlm75
 i2c_device_add 24 0x48 stlm75
 
 MB_1ST_SOURCE="0"
-MB_2ND_SOURCE="1"
-#MB_3RD_SOURCE="2"
 
 
 #MB DPM
 mbrev=$(kv get mb_rev)
-MB_DVT_BORAD_ID="3"
-MB_DPM_MAIN="0"
+MB_DVT_BOARD_ID="3"
 
-if [ $mbrev -ge "$MB_DVT_BORAD_ID" ]; then
+if [ "$mbrev" -ge "$MB_DVT_BOARD_ID" ]; then
   i2c_device_add 34 0x41 ina230
   i2c_device_add 34 0x42 ina230
   i2c_device_add 34 0x43 ina230
@@ -107,12 +104,32 @@ gpio_set RST_SWB_BIC_N 1
 gpio_set BIC_UART_BMC_SEL 0
 
 #SWB HSC
-str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf0 0x00 0x01 |grep "PLDM Data")
-array=(${str// 0x/ })
+cnt=3
+while [ $cnt -ne 0 ]
+do
 
-int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
-dec=$((16#${array[11]}|16#${array[12]} << 8))
-val=$(("$int"+"$dec"))
+   sleep 1
+   str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf0 0x00 0x01 |grep "PLDM Data")
+   rev=$?
+   if [ "$rev" -eq 1 ]; then
+     cnt=$(("$cnt"-1))
+     val=0
+   else
+     IFS=' ' read -ra  array <<< "$str"
+     cnt=0
+     for i in "${array[@]}"
+     do
+       array["$cnt"]=${i:2}
+       echo "${array["$cnt"]}"
+       cnt=$(("$cnt"+1))
+     done
+
+     int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
+     dec=$((16#${array[11]}|16#${array[12]} << 8))
+     val=$(("$int"+"$dec"))
+     break;
+   fi
+done
 
 #kv set swb_hsc_module "0"
 if [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
@@ -128,12 +145,30 @@ else
 fi
 
 #SWB VR
-str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf1 0x00 0x01 |grep "PLDM Data")
-array=(${str// 0x/ })
+cnt=3
+while [ "$cnt" -ne 0 ]
+do
+  sleep 1
+  str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf1 0x00 0x01 |grep "PLDM Data")
+  rev=$?
+   if [ "$rev" -eq 1 ]; then
+     cnt=$(("$cnt"-1))
+   else
+     IFS=' ' read -ra  array <<< "$str"
+     cnt=0
+     for i in "${array[@]}"
+     do
+       array["$cnt"]=${i:2}
+       echo "${array["$cnt"]}"
+       cnt=$(("$cnt"+1))
+     done
 
-int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
-dec=$((16#${array[11]}|16#${array[12]} << 8))
-val=$(("$int"+"$dec"))
+     int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
+     dec=$((16#${array[11]}|16#${array[12]} << 8))
+     val=$(("$int"+"$dec"))
+     break;
+   fi
+done
 
 if [ "$val" -gt 250 ] && [ "$val" -lt 750 ]
 then
@@ -228,7 +263,7 @@ HPDB_1ST_SOURCE="0"
 HPDB_2ND_SOURCE="1"
 #HPDB_3RD_SOURCE="2"
 HPDB_HSC_MAIN="0"
-HPDB_HSC_SECOND="1"
+#HPDB_HSC_SECOND="1"
 
 echo "Probe HPDB Device"
 #HPDB ID Expender

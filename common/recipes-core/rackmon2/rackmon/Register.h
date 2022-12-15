@@ -250,7 +250,7 @@ struct AddrRange {
 struct RegisterMap {
   AddrRange applicableAddresses;
   std::string name;
-  uint8_t probeRegister;
+  uint16_t probeRegister;
   uint32_t defaultBaudrate;
   uint32_t preferredBaudrate;
   BaudrateConfig baudConfig{};

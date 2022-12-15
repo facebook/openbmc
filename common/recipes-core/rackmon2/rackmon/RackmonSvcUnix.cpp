@@ -130,7 +130,7 @@ void RackmonUNIXSocketService::handleJSONCommand(
     std::unique_ptr<UnixSock> cli) {
   const json& req = *reqPtr;
   auto print_msg = [&req](std::exception& e) {
-    logError << "ERROR Executing: " << req["type"] << e.what() << std::endl;
+    logError << "ERROR Executing: " << req["type"] << " " << e.what() << std::endl;
   };
   json resp;
 

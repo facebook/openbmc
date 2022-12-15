@@ -39,7 +39,7 @@
 #include "scheduler.h"
 using namespace std;
 
-std::atomic<bool> quit_process(false);
+std::atomic<int> signal_received{0};
 
 string exec_name = "Unknown";
 map<string, map<string, Component *, partialLexCompare>, partialLexCompare> * Component::fru_list = NULL;
@@ -138,9 +138,7 @@ bool AliasComponent::is_update_ongoing()
 
 void fw_util_sig_handler(int signo)
 {
-  quit_process.store(true);
-  cout << "Terminated requested. Waiting for earlier operation complete.\n";
-  syslog(LOG_DEBUG, "fw_util_sig_handler signo=%d requesting exit", signo);
+  signal_received.store(signo);
 }
 
 void usage()
@@ -454,7 +452,8 @@ int main(int argc, char *argv[])
             }
           }
 
-          if (quit_process.load()) {
+          if (signal_received.load()) {
+            syslog(LOG_DEBUG, "fw-util: previously received signal=%d", signal_received.load());
             syslog(LOG_DEBUG, "fw-util: Terminate request handled");
             cout << "Aborted action due to signal\n";
             return -1;

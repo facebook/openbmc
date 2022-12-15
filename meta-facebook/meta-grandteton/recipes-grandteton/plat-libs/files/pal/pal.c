@@ -722,7 +722,7 @@ int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     switch (fru) {
       case FRU_SWB:
       case FRU_HMC:
-      case FRU_DBG:
+      case FRU_OCPDBG:
       case FRU_HSC:
       case FRU_SHSC:
         *caps = 0; // Not in Artemis

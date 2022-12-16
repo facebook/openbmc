@@ -21,7 +21,7 @@ static pthread_mutex_t triggered_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int m_gpios_pipe[JTAG_EVENT_NUM][2];
 
 static const uint8_t evt_pins[JTAG_EVENT_NUM] = {
-    BMC_PLTRST_B, BMC_CPU_PWRGD, JTAG_PRDY_EVENT, JTAG_XDP_PRESENT_EVENT
+    BMC_PLTRST_B, BMC_CPU_PWRGD, BMC_PRDY_N, BMC_XDP_PRST_IN
 };
 
 static const ASD_LogStream stream = ASD_LogStream_Pins;

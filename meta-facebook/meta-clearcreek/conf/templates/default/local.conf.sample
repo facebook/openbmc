@@ -6,4 +6,4 @@
 MACHINE ??= "clearcreek"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb"
+DISTRO ?= "openbmc-fb-master"

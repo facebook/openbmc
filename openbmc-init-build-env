@@ -21,6 +21,7 @@ declare -a PLAT_DISTRO_OVERRIDES
 PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
   meta-bletchley:lf-master
+  meta-clearcreek:lf-master
   meta-evb-npcm845:lf-master
   meta-fbal:lf-master
   meta-fbttn2:lf-master
@@ -40,7 +41,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-inspirationpoint:lf-kirkstone
   meta-sandia:lf-kirkstone
 # dunfell platforms (pending upgrade)
-  meta-clearcreek:lf-dunfell
   meta-cloudripper:lf-dunfell
   meta-cmm:lf-dunfell
   meta-elbert:lf-dunfell

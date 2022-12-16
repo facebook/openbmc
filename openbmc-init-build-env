@@ -24,6 +24,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-clearcreek:lf-master
   meta-evb-npcm845:lf-master
   meta-fbal:lf-master
+  meta-fbep:lf-master
   meta-fbttn2:lf-master
   meta-fby2-nd:lf-master
   meta-fby35:lf-master
@@ -45,7 +46,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-cmm:lf-dunfell
   meta-elbert:lf-dunfell
   meta-fbdarwin:lf-dunfell
-  meta-fbep:lf-dunfell
   meta-fbsp:lf-dunfell
   meta-fuji:lf-dunfell
   meta-minipack:lf-dunfell

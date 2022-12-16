@@ -31,6 +31,7 @@ LOCAL_URI = " \
     file://path-utils.c \
     file://plat-utils.c \
     file://str-utils.c \
+    file://crc-utils.c \
     file://misc-utils.h \
     file://biview.hpp \
     file://profile.hpp \
@@ -39,6 +40,7 @@ LOCAL_URI = " \
     file://test/test-file.c \
     file://test/test-path.c \
     file://test/test-str.c \
+    file://test/test-crc.c \
     file://test/test-biview.cpp \
     file://test/test-profile.cpp \
     "

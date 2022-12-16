@@ -65,5 +65,7 @@ void test_file_write(struct test_stats *stats);
 void test_path_exists(struct test_stats *stats);
 void test_path_split(struct test_stats *stats);
 void test_path_join(struct test_stats *stats);
+void test_crc16(struct test_stats *stats);
+void test_lrc8(struct test_stats *stats);
 
 #endif /* _OBMC_TEST_DEFS_H_ */

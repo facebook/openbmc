@@ -29,6 +29,8 @@ int main()
 	test_path_exists(&test_info);
 	test_path_split(&test_info);
 	test_path_join(&test_info);
+	test_crc16(&test_info);
+	test_lrc8(&test_info);
 
 	printf("total %d tests, failed %d\n",
 	       test_info.num_total, test_info.num_errors);

@@ -24,6 +24,7 @@ sources = [
     'path-utils.c',
     'plat-utils.c',
     'str-utils.c',
+    'crc-utils.c',
 ]
 
 deps = [
@@ -60,6 +61,7 @@ test_c_exe = executable('test-libmisc-utils',
     'test/test-file.c',
     'test/test-path.c',
     'test/test-str.c',
+    'test/test-crc.c',
     link_with: misc_lib,
 )
 test('misc-utils-test-c', test_c_exe)

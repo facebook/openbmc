@@ -21,7 +21,7 @@
 #define TEST_PATH_EXISTS	"/etc/issue"
 #define TEST_PATH_NON_EXISTS	"/etc/major_issues"
 #define	TEST_PATH_REG_FILE	"/etc/issue"
-#define	TEST_PATH_DIR_FILE	"/bin"
+#define	TEST_PATH_DIR_FILE	"/"
 #define	TEST_PATH_LINK_FILE	"/etc/os-release"
 
 void test_path_exists(struct test_stats *stats)

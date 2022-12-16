@@ -6,4 +6,4 @@
 MACHINE ??= "grandcanyon"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb-2"
+DISTRO ?= "openbmc-fb-master"

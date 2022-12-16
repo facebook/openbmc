@@ -25,6 +25,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fbttn2:lf-master
   meta-fby2-nd:lf-master
   meta-fby35:lf-master
+  meta-fby3:lf-master
   meta-greatlakes:lf-master
   meta-halfdome:lf-master
   meta-qemux86:lf-master
@@ -46,7 +47,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fbdarwin:lf-dunfell
   meta-fbep:lf-dunfell
   meta-fbsp:lf-dunfell
-  meta-fby3:lf-dunfell
   meta-fuji:lf-dunfell
   meta-minipack:lf-dunfell
   meta-netlakemtp:lf-dunfell

@@ -97,6 +97,12 @@ STATUS platform_init(Target_Control_Handle *state)
     state->gpios[BMC_SYSPWROK].number = PWRGD_SYS_PWROK;
     state->gpios[BMC_SYSPWROK].fd = BMC_SYSPWROK;
 
+    strcpy_s(state->gpios[BMC_PWR_DEBUG_N].name,
+             sizeof(state->gpios[BMC_PWR_DEBUG_N].name), "FBRK_N_R");
+    state->gpios[BMC_PWR_DEBUG_N].number = FBRK_N_R;
+    state->gpios[BMC_PWR_DEBUG_N].fd = BMC_PWR_DEBUG_N;
+    state->gpios[BMC_PWR_DEBUG_N].active_low = true;
+
     strcpy_s(state->gpios[BMC_DEBUG_EN_N].name,
              sizeof(state->gpios[BMC_DEBUG_EN_N].name), "FM_BMC_DEBUG_ENABLE_N");
     state->gpios[BMC_DEBUG_EN_N].number = FM_BMC_DEBUG_ENABLE_N;

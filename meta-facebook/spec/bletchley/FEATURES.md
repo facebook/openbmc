@@ -23,13 +23,13 @@
       drivers).
 - [X] P0 **GPIO device tree**
     - Create device tree entries for gpio pins.
-- [ ] P0 **PWM/Tach device tree**
+- [X] P0 **PWM/Tach device tree**
     - Create device tree entries for PWM/Tach devices.
 - [X] P0 **ADC device tree**
     - Create device tree entries for ADC devices.
 - [X] P0 **SPI device tree**
     - Create device tree entries for all SPI devices.
-- [ ] P1 **Qemu**
+- [X] P1 **Qemu**
     - Create Qemu machine config for BMC.  Should boot OpenBMC without any
       service failures.
 
@@ -54,14 +54,14 @@
     - Power ON the Host(s).
 - [X] P0 **off**
     - Power OFF the Host(s).
-- [ ] P0 **cycle**
+- [X] P0 **cycle**
     - Power cycle the Host(s).
-- [ ] P0 **reset**
+- [X] P0 **reset**
     - TODO: facebookexternal/openbmc.quanta#2616.
     - Reset the host(s).
-- [ ] P0 **recovery mode**
+- [X] P0 **recovery mode**
     - Put the host(s) into recovery mode.
-- [ ] P0 **chassis-cycle**
+- [X] P0 **chassis-cycle**
     - TODO: facebookexternal/openbmc.quanta#2617.
     - Power cycle entire chassis.
 - [ ] P1 **phosphor-state-manager**
@@ -85,9 +85,9 @@
 - [X] P0 **sensor read**
     - Read the current status of all sensors of a given FRU.
         - sensors on motherboard, Mezzanine card, etc.
-- [ ] P1 **Display threshold value**
+- [X] P1 **Display threshold value**
     - When requested, display the threshold values for each sensor (`lnr->unr`).
-- [ ] P1 **Display OK status**
+- [X] P1 **Display OK status**
     - Display a sensor is OK or not.
 - [ ] P3 **Sensor History**
     - Store historical min/average/max over several periods:
@@ -99,7 +99,7 @@
 #### Thermal Management
 - [X] P0 **Fan control (Manual)**
     - Implement fan utility to set fan-speed.
-- [ ] P0 **Fan Speed Control (Automatic)**
+- [X] P0 **Fan Speed Control (Automatic)**
     - Implement FSC algorithm with user given JSON configuration file with
       various linear/pid profiles for sensors across platform.
 - [ ] P2 **FSC configuration update**
@@ -108,13 +108,13 @@
 - [ ] P3 **Persistent FSC configuration**
     - Allow user to update the fan configuration to be persistent across BMC
       reboots.
-- [ ] P2 **Sensor calibration**
+- [X] P2 **Sensor calibration**
     - The sensor value needs to be adjusted/corrected based on the current PWM
       value.
 - [ ] P2 **Conditional Sensor calibration**
     - Allow for sensor calibration which can change based on runtime detected
       configuration changes.
-- [ ] P0 **Airflow Sensor**
+- [X] P0 **Airflow Sensor**
     - Calculate Airflow based on current configuration e.g. use BIOS OEM command
       to get information on number of DIMMs populated etc.
 
@@ -140,14 +140,14 @@ Support reading firmware versions of attached components including self.
 - [ ] P4 **Wipe Workflows**
     - _Facebook_ to develop.
     - Enable device wipe workflows for decomm.
-- [ ] P0 **VR**
-    - TODO: facebookexternal/openbmc.quanta#2619.
-    - Upgrade all attached Voltage regulators.
+- ~~[ ] P0 **VR**~~
+    ~~- TODO: facebookexternal/openbmc.quanta#2619.~~
+    ~~- Upgrade all attached Voltage regulators.~~
 - ~~[ ] P0 **Ethernet Switch**~~
     - ~~Upgrade Ethernet Switch manually using flashcp.~~
 - ~~[ ] P2 **Ethernet Switch**~~
     - ~~Upgrade Ethernet Switch using production (dbus+Redfish) methods.~~
-- [ ] P0 **USB3 Bridge**
+- [X] P0 **USB3 Bridge**
     - Upgrade USB3 Bridge manually using flashcp.
 - [ ] P4 **USB3 Bridge**
     - Upgrade USB3 Bridge using production (dbus+Redfish) methods.
@@ -155,28 +155,28 @@ Support reading firmware versions of attached components including self.
 #### Time Sync
 - [X] P0 **RTC**
     - Enable local RTC device and ensure synchronization on BMC reboot.
-- [ ] P2 **NTP Sync**
+- [X] P2 **NTP Sync**
     - Sync up BMC RTC with NTP server.
-- [ ] P3 **Time Zone**
+- [X] P3 **Time Zone**
     - Show PST/PDT time always.
 
 #### Configuration
-- [ ] P0 **Set Power Policy**
+- [X] P0 **Set Power Policy**
     - Change the policy to one of the following state: Last Power State, Always
       ON, and Always OFF with default as 'Last Power State'.
 
 #### BMC Reset/Recovery
 - [X] P0 **Remote Reset - SSH**
     - Reset any BMC from remote system using the `reboot` command.
-- [ ] P1 **Remote Reset - Redfish**
+- [X] P1 **Remote Reset - Redfish**
     - Reset any BMC from remote system using Redfish APIs.
 
 #### Front Panel Control
-- [ ] P0 **Power Button**
+- [X] P0 **Power Button**
     - Power ON/OFF the Host by using this button.
 - ~~[ ] P0 **Reset Button**~~
     - ~~PowerReset Host by using this button. Same as power-button.~~
-- [ ] P0 **Debug Card Console**
+- [X] P0 **Debug Card Console**
     - Support debug console when it is present.
 - ~~[ ] P0 **Debug Card Reset Button**~~
     - ~~PowerReset Reset Host by using the reset button on Debug Card.~~
@@ -213,10 +213,10 @@ Support reading firmware versions of attached components including self.
     - Host to report uptime hourly to BMC.
 
 #### LCD Debug Card
-- [ ] P2 **GPIO Description**
+- [X] P2 **GPIO Description**
     - Need to create a look up table and respond with descriptions for various
       GPIO signals connected to USB-Debug card.
-- [ ] P2 **Critical Sensors Frame**
+- [X] P2 **Critical Sensors Frame**
     - Create a frame (with multiple pages) for various sensors in critical stage
       (UCR/LCR/ etc.).
 - [ ] P2 **Critical Logs Frame**
@@ -226,27 +226,27 @@ Support reading firmware versions of attached components including self.
     - Need to allow user to change some configuration from host.
 
 #### BMC Health Monitoring
-- [ ] P0 **WDT**
+- [X] P0 **WDT**
     - This feature is useful to detect if BMC user space application is not
       running for some catastrophic reason. WDT Expire should trigger BMC reset.
-- [ ] P1 **Memory Usage**
+- [X] P1 **Memory Usage**
     - When BMC's free memory goes below a threshold, BMC can reboot to function
       properly.
-- [ ] P1 **CPU Usage**
+- [X] P1 **CPU Usage**
     - When CPU utilization goes above certain threshold, print a warning.
-- [ ] P1 **Healthd configuration**
+- [X] P1 **Healthd configuration**
     - Allow configuration on whether healthd should reboot the BMC upon issues.
 
 #### Device Specific Features
 - [ ] P1 **USB-PD Emulation**
     - Emulate USB-PD to allow software communication with managed host(s).
-- [ ] P2 **Switch diagnostics**
+- [X] P2 **Switch diagnostics**
     - TODO: facebookexternal/openbmc.quanta#2621.
     - Diagnostics, state, and sensors from 88E6191X MDIO interface.
 - ~~[ ] P2 **USB-C diagnostics**~~
     - ~~TODO: facebookexternal/openbmc.quanta#2620.~~
     - ~~Diagnostics, state, and sensors from JHL7440 i2c interface.~~
-- [ ] P1 **Automated Recovery**
+- [X] P1 **Automated Recovery**
     - Initiate automated recovery of managed host(s) over USB.
 
 
@@ -259,7 +259,7 @@ Support reading firmware versions of attached components including self.
     - _Facebook_ to develop.
     - Sensor naming should be standardized across various server platforms
       using different flavors of BMC(e.g. ODM, OEM or OpenBMC).
-- [ ] P2 **Reset Default factory settings**
+- [X] P2 **Reset Default factory settings**
     - Allow user to clear all configurations.
 - ~~[ ] P1 **guid-util**~~
     - ~~TODO: facebookexternal/openbmc.quanta#2622.~~

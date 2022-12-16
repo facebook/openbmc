@@ -39,16 +39,18 @@ class FwUpgradeTest(unittest.TestCase):
     _COMPONENTS = {
         "16q_fpga": [
             1,
-            "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
+            "timeout -s KILL 900 /usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
         ],  # priority=1, upgrade_cmd
         "16o_fpga": [
             2,
-            "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
+            "timeout -s KILL 900 /usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
         ],  # priority=2, upgrade_cmd
-        "4dd_fpga": [
-            20,
-            "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
-        ],  # priority=20, upgrade_cmd
+        # commenting and will double check with provisioning team if this still need
+        # to be tested
+        # "4dd_fpga": [
+        #    20,
+        #    "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
+        # ],  # priority=20, upgrade_cmd
         "bios": [
             3,
             "/usr/bin/fw-util scm --update --bios {filename}",
@@ -71,16 +73,19 @@ class FwUpgradeTest(unittest.TestCase):
         ],  # priority=7, upgrade_cmd
         "fcm": [
             8,
-            "usr/local/bin/fcmcpld_update.sh {filename}",
+            "/usr/local/bin/fcmcpld_update.sh {filename}",
         ],  # priority=8, upgrade_cmd
         "pdb": [
             9,
-            "usr/local/bin/pdbcpld_update.sh i2c {entity} {filename}",
-        ],  # priority=9, upgrade_cmd
-        "pim_spi_mux": [
-            100,
-            "/usr/local/bin/pimcpld_update.sh {entity} {filename}",
-        ],  # priority=100, upgrade_cmd
+            "/usr/local/bin/pdbcpld_update.sh i2c {entity} {filename}",
+        ],
+        # commenting pim_spi_mux for now and will remove once
+        # I confirmed that testing it is not needed from provisioning
+        # priority=9, upgrade_cmd
+        # "pim_spi_mux": [
+        #    100,
+        #    "/usr/local/bin/pimcpld_update.sh {entity} {filename}",
+        # ],  # priority=100, upgrade_cmd
     }
 
     def setUp(self):
@@ -113,6 +118,7 @@ class FwUpgradeTest(unittest.TestCase):
                         item, attributes[0], self.json.get(item).get("priority")
                     ),
                 )
+
             # Test for correct command in json
             with self.subTest(upgradable_component=item):
                 self.assertEqual(

@@ -36,9 +36,8 @@ enum {
   FAN_BP1_FAN_SOURCE,
 };
 
-bool swb_presence(void);
-bool hgx_presence(void);
-bool fru_presence(void);
+bool fru_presence(uint8_t fru_id);
+bool pldm_fru_prsnt(uint8_t pldm_fru_id);
 bool is_cpu_socket_occupy(uint8_t cpu_idx);
 bool pal_skip_access_me(void);
 int read_device(const char *device, int *value);

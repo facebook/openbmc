@@ -105,7 +105,8 @@ struct fru_dev_info {
   uint8_t addr;
   uint32_t cap;
   uint8_t path;
-  bool (*check_presence) (void);
+  bool (*check_presence) (uint8_t fru_id);
+  int8_t pldm_fru_id;
 };
 
 typedef struct {
@@ -130,45 +131,49 @@ typedef struct {
   uint8_t ncsi_cmd;
 } bypass_ncsi_header;
 
-enum {
-  FRU_PATH_NONE,
-  FRU_PATH_EEPROM,
-  FRU_PATH_PLDM,
+struct fru_dev_info fru_dev_data[] = {
+  {FRU_ALL,   "all",     NULL,            0,  0,    ALL_CAPABILITY, FRU_PATH_NONE,   NULL, PLDM_FRU_NOT_SUPPORT},
+  {FRU_MB,    "mb",      "Mother Board",  33, 0x51, MB_CAPABILITY,  FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_SWB,   "swb",     "Switch Board",  3,  0x20, SWB_CAPABILITY, FRU_PATH_PLDM,   fru_presence,  PLDM_FRU_SWB},
+  {FRU_HMC,   "hmc",     "HMC Board"  ,   9,  0x53,  HMC_CAPABILITY, FRU_PATH_EEPROM,fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_NIC0,  "nic0",    "Mezz Card 0",   13, 0x50, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_NIC1,  "nic1",    "Mezz Card 1",   4,  0x52, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_OCPDBG,   "ocpdbg",  "Debug Board",   14, 0,    0,              FRU_PATH_NONE,   NULL,         PLDM_FRU_NOT_SUPPORT},
+  {FRU_BMC,   "bmc",     "BSM Board",     15, 0x56, BMC_CAPABILITY, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_SCM,   "scm",     "SCM Board",     15, 0x50, SCM_CAPABILITY, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_VPDB,  "vpdb",    "VPDB Board",    36, 0x52, PDB_CAPABILITY, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_HPDB,  "hpdb",    "HPDB Board",    37, 0x51, PDB_CAPABILITY, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_FAN_BP0,   "fan_bp0",     "FAN_BP0 Board",     40, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_FAN_BP1,   "fan_bp1",     "FAN_BP1 Board",     41, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_FIO,   "fio",     "FIO Board",     3,  0x20, FIO_CAPABILITY, FRU_PATH_PLDM,   fru_presence, PLDM_FRU_FIO},
+  {FRU_HSC,   "hsc",     "HSC Board",     2,  0x51, 0,              FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_SHSC,  "swb_hsc", "SWB HSC Board", 3,  0x20, 0,              FRU_PATH_PLDM,   fru_presence, PLDM_FRU_SHSC},
+  // Artemis FRU dev data
+  {FRU_ACB,        "acb",        "Carrier Board",     ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_CAPABILITY,      FRU_PATH_PLDM,   fru_presence,  PLDM_FRU_ACB},
+  {FRU_MEB,        "meb",        "Memory Exp Board",  MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CAPABILITY,      FRU_PATH_PLDM,   fru_presence,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL1,  "acb_accl1",  "ACB ACCL1 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL1},
+  {FRU_ACB_ACCL2,  "acb_accl2",  "ACB ACCL2 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL2},
+  {FRU_ACB_ACCL3,  "acb_accl3",  "ACB ACCL3 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL3},
+  {FRU_ACB_ACCL4,  "acb_accl4",  "ACB ACCL4 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL4},
+  {FRU_ACB_ACCL5,  "acb_accl5",  "ACB ACCL5 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL5},
+  {FRU_ACB_ACCL6,  "acb_accl6",  "ACB ACCL6 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL6},
+  {FRU_ACB_ACCL7,  "acb_accl7",  "ACB ACCL7 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL7},
+  {FRU_ACB_ACCL8,  "acb_accl8",  "ACB ACCL8 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL8},
+  {FRU_ACB_ACCL9,  "acb_accl9",  "ACB ACCL9 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL9},
+  {FRU_ACB_ACCL10, "acb_accl10", "ACB ACCL10 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL10},
+  {FRU_ACB_ACCL11, "acb_accl11", "ACB ACCL11 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL11},
+  {FRU_ACB_ACCL12, "acb_accl12", "ACB ACCL12 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   pldm_fru_prsnt,  PLDM_FRU_ACB_ACCL12},
 };
 
-struct fru_dev_info fru_dev_data[] = {
-  {FRU_ALL,   "all",     NULL,            0,  0,    ALL_CAPABILITY, FRU_PATH_NONE,   NULL },
-  {FRU_MB,    "mb",      "Mother Board",  33, 0x51, MB_CAPABILITY,  FRU_PATH_EEPROM, fru_presence},
-  {FRU_SWB,   "swb",     "Switch Board",  3,  0x20, SWB_CAPABILITY, FRU_PATH_PLDM,   swb_presence},
-  {FRU_HMC,   "hmc",     "HMC Board"  ,   9,  0x53,  HMC_CAPABILITY, FRU_PATH_EEPROM,   hgx_presence},
-  {FRU_NIC0,  "nic0",    "Mezz Card 0",   13, 0x50, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
-  {FRU_NIC1,  "nic1",    "Mezz Card 1",   4,  0x52, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
-  {FRU_OCPDBG,   "ocpdbg",  "Debug Board",   14, 0,    0,              FRU_PATH_NONE,   NULL},
-  {FRU_BMC,   "bmc",     "BSM Board",     15, 0x56, BMC_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
-  {FRU_SCM,   "scm",     "SCM Board",     15, 0x50, SCM_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
-  {FRU_VPDB,  "vpdb",    "VPDB Board",    36, 0x52, PDB_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
-  {FRU_HPDB,  "hpdb",    "HPDB Board",    37, 0x51, PDB_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
-  {FRU_FAN_BP0,   "fan_bp0",     "FAN_BP0 Board",     40, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence},
-  {FRU_FAN_BP1,   "fan_bp1",     "FAN_BP1 Board",     41, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence},
-  {FRU_FIO,   "fio",     "FIO Board",     3,  0x20, FIO_CAPABILITY, FRU_PATH_PLDM,   swb_presence},
-  {FRU_HSC,   "hsc",     "HSC Board",     2,  0x51, 0,              FRU_PATH_EEPROM, fru_presence},
-  {FRU_SHSC,  "swb_hsc", "SWB HSC Board", 3,  0x20, 0,              FRU_PATH_PLDM,   swb_presence},
-  // Artemis FRU dev data
-  {FRU_ACB,        "acb",        "Carrier Board",     ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_CAPABILITY,      FRU_PATH_PLDM,   fru_presence},
-  {FRU_MEB,        "meb",        "Memory Exp Board",  MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CAPABILITY,      FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL1,  "acb_accl1",  "ACB ACCL1 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL2,  "acb_accl2",  "ACB ACCL2 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL3,  "acb_accl3",  "ACB ACCL3 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL4,  "acb_accl4",  "ACB ACCL4 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL5,  "acb_accl5",  "ACB ACCL5 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL6,  "acb_accl6",  "ACB ACCL6 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL7,  "acb_accl7",  "ACB ACCL7 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL8,  "acb_accl8",  "ACB ACCL8 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL9,  "acb_accl9",  "ACB ACCL9 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL10, "acb_accl10", "ACB ACCL10 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL11, "acb_accl11", "ACB ACCL11 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-  {FRU_ACB_ACCL12, "acb_accl12", "ACB ACCL12 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY, FRU_PATH_PLDM,   fru_presence},
-};
+uint8_t
+pal_get_pldm_fru_id(uint8_t fru) {
+  return fru_dev_data[fru].pldm_fru_id;
+}
+
+uint8_t
+pal_get_fru_path_type(uint8_t fru) {
+  return fru_dev_data[fru].path;
+}
 
 bool
 pal_is_artemis() { // TODO: Use MB CPLD Offest to check the platform
@@ -199,9 +204,17 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   }
 
   if (fru >= FRU_CNT || fru_dev_data[fru].check_presence == NULL) {
-    *status = 0;
+    *status = FRU_NOT_PRSNT;
   } else {
-    *status = fru_dev_data[fru].check_presence();
+    if (pal_is_artemis() && ((fru >= FRU_ACB_ACCL1 && fru <= FRU_ACB_ACCL12) || fru == FRU_FIO)) {
+      if (fru == FRU_FIO) {
+        *status = pldm_fru_prsnt(fru_dev_data[fru].pldm_fru_id);
+      } else {
+        *status = fru_dev_data[fru].check_presence(fru_dev_data[fru].pldm_fru_id);
+      }
+    } else {
+      *status = fru_dev_data[fru].check_presence(fru);
+    }
   }
   return 0;
 }
@@ -291,19 +304,21 @@ pal_get_fruid_name(uint8_t fru, char *name) {
 
 int
 pal_fruid_write(uint8_t fru, char *path) {
+  uint8_t status = 0;
+  unsigned int caps = 0;
 
-  switch (fru) {
-    case FRU_SWB:
-     return hal_write_pldm_fruid(0, path);
+  if (!path) {
+    syslog(LOG_WARNING, "%s() path pointer is NULL.", __func__);
+    return -1;
+  }
 
-    case FRU_FIO:
-     return hal_write_pldm_fruid(1, path);
-
-    case FRU_SHSC:
-     return hal_write_pldm_fruid(2, path);
-
-    default:
-    break;
+  if (pal_get_fru_capability(fru, &caps) == 0 && (caps & FRU_CAPABILITY_FRUID_WRITE) && pal_is_fru_prsnt(fru, &status) == 0) {
+    if (status == FRU_PRSNT) {
+      return hal_write_pldm_fruid(fru_dev_data[fru].pldm_fru_id, path);
+    } else {
+      syslog(LOG_WARNING, "%s: FRU:%d Not Present", __func__, fru);
+      return -1;
+    }
   }
 
   return -1;

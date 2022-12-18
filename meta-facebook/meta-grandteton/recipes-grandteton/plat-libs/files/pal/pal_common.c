@@ -128,34 +128,71 @@ read_device(const char *device, int *value) {
   return 0;
 }
 
-
 bool
-fru_presence(void) {
-  return true;
+pldm_fru_prsnt(uint8_t pldm_fru_id) {
+  int ret = 0;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t txlen = 0;
+  size_t  rxlen = 0;
+  switch (pldm_fru_id) {
+    case PLDM_FRU_FIO:
+    case PLDM_FRU_ACB_ACCL1:
+    case PLDM_FRU_ACB_ACCL2:
+    case PLDM_FRU_ACB_ACCL3:
+    case PLDM_FRU_ACB_ACCL4:
+    case PLDM_FRU_ACB_ACCL5:
+    case PLDM_FRU_ACB_ACCL6:
+    case PLDM_FRU_ACB_ACCL7:
+    case PLDM_FRU_ACB_ACCL8:
+    case PLDM_FRU_ACB_ACCL9:
+    case PLDM_FRU_ACB_ACCL10:
+    case PLDM_FRU_ACB_ACCL11:
+    case PLDM_FRU_ACB_ACCL12:
+      if (!fru_presence(FRU_ACB)) {
+        return false;
+      }
+      txbuf[txlen++] = pldm_fru_id;
+      ret = pldm_oem_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID, NETFN_OEM_1S_REQ,
+                  OEM_GET_ASIC_CARD_STATUS, txbuf, txlen, rxbuf, &rxlen);
+      if ((ret != 0) || (rxlen < 1) || (rxbuf[0] == FRU_NOT_PRSNT)) {
+        return false;
+      } else {
+        return true;
+      }
+    default:
+      return true;
+  }
 }
 
 bool
-hgx_presence(void) {
+fru_presence(uint8_t fru_id) {
   gpio_value_t value;
-
-  value = gpio_get_value_by_shadow(HMC_PRESENCE);
-  if(value != GPIO_VALUE_INVALID)
-    return value ? false : true;
-
-  return false;
+  switch (fru_id) {
+    case FRU_FIO:
+    case FRU_SHSC:
+    case FRU_SWB:
+      value = gpio_get_value_by_shadow(BIC_READY);
+      if(value != GPIO_VALUE_INVALID) {
+        return value ? false : true;
+      }
+      return false;
+    case FRU_HMC:
+      value = gpio_get_value_by_shadow(HMC_PRESENCE);
+      if(value != GPIO_VALUE_INVALID) {
+        return value ? false : true;
+      }
+      return false;
+    case FRU_ACB:
+      // TODO: Read MB CPLD register
+      return true;
+    case FRU_MEB:
+      // TODO: Read MB CPLD register
+      return false;
+    default:
+      return true;
+  }
 }
-
-bool
-swb_presence(void) {
-  gpio_value_t value;
-
-  value = gpio_get_value_by_shadow(BIC_READY);
-  if(value != GPIO_VALUE_INVALID)
-    return value ? false : true;
-
-  return false;
-}
-
 
 bool
 check_pwron_time(int time) {
@@ -284,7 +321,7 @@ is_swb_hsc_module(void) {
   uint8_t id;
 
   if(!cached) {
-    if(swb_presence()) {
+    if(fru_presence(FRU_SWB)) {
       get_comp_source(FRU_SWB, SWB_HSC_SOURCE, &id);
       if (id == SECOND_SOURCE || id == THIRD_SOURCE)
         val = true;

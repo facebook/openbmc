@@ -38,6 +38,8 @@
 
 #define BIN_MB        "/tmp/fruid_mb.bin"
 #define FRUID_SIZE    512
+#define FRU_READ_RETRY (3)
+
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
  *
@@ -92,118 +94,74 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   return 0;
 }
 
-static void *swb_fru_reader(void *arg) {
-  int retry = 3;
-  char bin[32];
+static void
+*pldm_fru_reader(void *arg) {
+  uint8_t retry = FRU_READ_RETRY;
+  char fru_bin_path[32] = {0};
+  int fru = (int)arg;
+  uint8_t status = 0;
+  pthread_detach(pthread_self());
 
-  sleep(2);
-  if (pal_get_fruid_path(FRU_SWB, bin)) {
-    syslog(LOG_WARNING, "%s: Get Fruid SWB Bin Path Failed", __func__);
+  if (!pal_is_fru_prsnt(fru, &status)) {
+    if (status == FRU_NOT_PRSNT) {
+      syslog(LOG_WARNING, "%s: FRU:%d Not Present", __func__, fru);
+      pthread_exit(NULL);
+    }
   }
 
-  while (retry > 0) {
-    if (hal_read_pldm_fruid(0, bin, FRUID_SIZE) == 0) {
+  if (pal_get_fruid_path(fru, fru_bin_path)) {
+    syslog(LOG_WARNING, "%s: Get FRU:%d Bin Path Failed", __func__, fru);
+  }
+
+  sleep(2);
+  while(retry > 0) {
+    if (hal_read_pldm_fruid(pal_get_pldm_fru_id(fru), fru_bin_path, FRUID_SIZE) == 0) {
       break;
     }
 
     retry--;
     sleep(1);
   }
-  if (retry <= 0) {
-    syslog(LOG_WARNING, "%s: Read SWB FRU Failed", __func__);
+  if (retry == 0) {
+    syslog(LOG_WARNING, "%s: Read FRU:%d Failed", __func__, fru);
   }
-
-  pthread_detach(pthread_self());
-  pthread_exit(NULL);
-}
-
-static void *fio_fru_reader(void *arg) {
-  int retry = 3;
-  char bin[32];
-
-  if (pal_get_fruid_path(FRU_FIO, bin)) {
-    syslog(LOG_WARNING, "%s: Get Fruid FIO Bin Path Failed", __func__);
-  }
-
-  sleep(2);
-  while (retry > 0) {
-    if (hal_read_pldm_fruid(1, bin, FRUID_SIZE) == 0) {
-      break;
-    }
-
-    retry--;
-    sleep(1);
-  }
-  if (retry <= 0) {
-    syslog(LOG_WARNING, "%s: Read FIO FRU Failed", __func__);
-  }
-
-  pthread_detach(pthread_self());
-  pthread_exit(NULL);
-}
-
-static void *hsc_fru_reader(void *arg) {
-  int retry = 3;
-  char bin[32];
-
-  if (pal_get_fruid_path(FRU_SHSC, bin)) {
-    syslog(LOG_WARNING, "%s: Get Fruid SWB_HSC Bin Path Failed", __func__);
-  }
-
-  sleep(2);
-  while (retry > 0) {
-    if (hal_read_pldm_fruid(2, bin, FRUID_SIZE) == 0) {
-      break;
-    }
-
-    retry--;
-    sleep(1);
-  }
-  if (retry <= 0) {
-    syslog(LOG_WARNING, "%s: Read SWB_HSC FRU Failed", __func__);
-  }
-
-  pthread_detach(pthread_self());
   pthread_exit(NULL);
 }
 
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void) {
-  pthread_t tid_swb;
-  pthread_t tid_fio;
-  pthread_t tid_hsc;
+  pthread_t tid_fru[FRU_CNT] = {0};
   char eeprom_path[64] = {0};
   char bin_path[32] = {0};
+  unsigned int caps = 0;
 
-  for (int i=1; i<FRU_CNT; i++) { 
-    if (pal_get_fruid_path(i, bin_path)) {
-      syslog(LOG_WARNING, "%s: Get Fruid%d Bin Path Failed", __func__, i);
+  for (int fru = 1; fru < FRU_CNT; fru ++) {
+    // Get FRU data from PLDM
+    if ( (pal_get_fru_path_type(fru) == FRU_PATH_PLDM) && !pal_get_fru_capability(fru, &caps)) {
+      if ((caps & FRU_CAPABILITY_FRUID_READ)) {
+        if (pthread_create(&tid_fru[fru], NULL, pldm_fru_reader, (void *)fru) < 0) {
+          syslog(LOG_WARNING, "%s: Create pldm_fru_reader Failed, FRU: %d", __func__, fru);
+        }
+      }
       continue;
     }
 
-    if (pal_get_fruid_eeprom_path(i, eeprom_path)) {
-      syslog(LOG_WARNING, "%s: Get Fruid%d EEPROM Path Failed", __func__, i);
+
+    if (pal_get_fruid_path(fru, bin_path)) {
+      syslog(LOG_WARNING, "%s: Get Fruid%d Bin Path Failed", __func__, fru);
+      continue;
+    }
+
+    if (pal_get_fruid_eeprom_path(fru, eeprom_path)) {
+      syslog(LOG_WARNING, "%s: Get Fruid%d EEPROM Path Failed", __func__, fru);
       continue;
     }
 
     if (copy_eeprom_to_bin(eeprom_path, bin_path)) {
-      syslog(LOG_WARNING, "%s: Copy FRU%d EEPROM Failed", __func__, i);
+      syslog(LOG_WARNING, "%s: Copy FRU%d EEPROM Failed", __func__, fru);
       continue;
     }
   }
-
-  if (pthread_create(&tid_swb, NULL, swb_fru_reader, NULL) < 0) {
-    syslog(LOG_WARNING, "%s: Create swb_fru_reader Failed", __func__);
-  }
-
-  if (pthread_create(&tid_fio, NULL, fio_fru_reader, NULL) < 0) {
-    syslog(LOG_WARNING, "%s: Create fio_fru_reader Failed", __func__);
-  }
-
-  if (pthread_create(&tid_hsc, NULL, hsc_fru_reader, NULL) < 0) {
-    syslog(LOG_WARNING, "%s: Create hsc_fru_reader Failed", __func__);
-  }
-
   return 0;
 }
 

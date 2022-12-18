@@ -222,7 +222,7 @@ int plat_vr_init(void) {
   }
 
 //SWB
-  if (swb_presence()) {
+  if (fru_presence(FRU_SWB)) {
     get_comp_source(FRU_SWB, SWB_VR_SOURCE, &id);
     if(id == SECOND_SOURCE) {
       for (i = 0; i < SWB_VR_CNT; i++) {

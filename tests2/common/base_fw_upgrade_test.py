@@ -45,16 +45,16 @@ try:
     sys.path.insert(0, DEV_SERVER_RESOURCE_PATH)
     import fw_json as fw_up
     from constants import (
-        UFW_NAME,
-        UFW_VERSION,
-        UFW_HASH,
-        UFW_HASH_VALUE,
         HashType,
-        UFW_GET_VERSION,
         UFW_CMD,
         UFW_CONDITION,
         UFW_ENTITY_INSTANCE,
+        UFW_GET_VERSION,
+        UFW_HASH,
+        UFW_HASH_VALUE,
+        UFW_NAME,
         UFW_PRIORITY,
+        UFW_VERSION,
     )
     from entity_upgrader import FwEntityUpgrader, FwUpgrader
 except Exception:
@@ -442,6 +442,16 @@ class BaseFwUpgradeTest(object):
             if is_sub_entity_exist:
                 self.json.pop(fw_entity)
                 is_sub_entity_exist = False
+
+        # some entities contains subentities of various types
+        # for example minipack can have both pim16q and pim16o
+        # inserted in the same chassis. Since there will always
+        # be pim in a units, if a subentities is not supported (aka
+        # the pim type is not detected in fpga_ver output) then
+        # we should skip that test. Testing for output of fpga_ver
+        # is covered in openbmc_cit test to ensure all pims are present
+        if not tmp_json_data:
+            self.skipTest("This entity type is not supported... skipping this test")
 
         self.json.update(tmp_json_data)
 

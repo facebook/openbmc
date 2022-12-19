@@ -658,13 +658,13 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       event_type = sel[8] & 0xF;
       estr_idx = (event_type < ARRAY_SIZE(post_err)) ? event_type : (ARRAY_SIZE(post_err) - 1);
 
-      switch(event_type) {
+      switch (event_type) {
         case POST_PXE_BOOT_FAIL:
         case POST_HTTP_BOOT_FAIL:
           if (fail_type == 4 || fail_type == 6) {
-            snprintf(temp_log, sizeof(temp_log), "IPv%d fail",fail_type);
+            snprintf(temp_log, sizeof(temp_log), "IPv%d fail", fail_type);
           } else {
-            snprintf(temp_log, sizeof(temp_log), "Unknown fail(%02X)",fail_type);
+            snprintf(temp_log, sizeof(temp_log), "0x%02X", sel[13]);
           }
           snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, Fail Type: %s, Error Code: 0x%02X",
             general_info, post_err[estr_idx], temp_log, err_code);

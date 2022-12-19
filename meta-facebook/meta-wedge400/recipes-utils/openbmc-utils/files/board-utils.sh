@@ -290,11 +290,10 @@ wedge_power_supply_type() {
     is_pem1=$(i2cget -f -y 24 0x18 0x0 &> /dev/null; echo $?)
     is_pem2=$(i2cget -f -y 25 0x18 0x0 &> /dev/null; echo $?)
     if i2cget -y -f 24 0x58 0x9a s &> /dev/null;then    # PSU1
-        is_psu1_48v=$(i2cget -y -f 24 0x58 0x9a s &)
+        is_psu1_48v=$(i2cget -y -f 24 0x58 0x9a s)
     elif i2cget -y -f 25 0x58 0x9a s &> /dev/null;then  # PSU2
-        is_psu2_48v=$(i2cget -y -f 25 0x58 0x9a s &)
+        is_psu2_48v=$(i2cget -y -f 25 0x58 0x9a s)
     fi
-
     power_type=""
     if [ $# -eq 1 ]; then
         if [ "$1" = "1" ]; then
@@ -320,6 +319,7 @@ wedge_power_supply_type() {
             power_type="PSU"
         fi
     fi
+
     # Detect 48V DC PSU
     if [[ "$is_psu1_48v" = "$DELTA_48V" ||
         "$is_psu1_48v" = "$LITEON_48V" ||

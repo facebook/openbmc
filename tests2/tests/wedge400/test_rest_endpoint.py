@@ -23,12 +23,13 @@ import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
 from tests.wedge400.helper.libpal import (
+    BoardRevision,
+    pal_detect_come_bootup,
+    pal_detect_power_supply_present,
     pal_get_board_type,
     pal_get_board_type_rev,
-    pal_detect_power_supply_present,
-    pal_detect_come_bootup,
-    BoardRevision,
 )
+
 from tests.wedge400.test_data.sensors.sensors import (
     PEM1_SENSORS,
     PEM2_SENSORS,
@@ -37,10 +38,10 @@ from tests.wedge400.test_data.sensors.sensors import (
     SCM_SENSORS_ORIGINAL,
     SCM_SENSORS_RESPIN,
     SMB_SENSORS_W400,
-    SMB_SENSORS_W400RESPIN,
     SMB_SENSORS_W400CEVT,
     SMB_SENSORS_W400CEVT2,
     SMB_SENSORS_W400CRESPIN,
+    SMB_SENSORS_W400RESPIN,
 )
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
@@ -64,6 +65,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     FRUID_FAN4_ENDPOINT = "/api/sys/feutil/fan4"
     SCM_PRESENT_ENDPOINT = "/api/sys/presence/scm"
     PSU_PRESENT_ENDPOINT = "/api/sys/presence/psu"
+    PEM_PRESENT_ENDPOINT = "/api/sys/presence/pem"
     FAN_PRESENT_ENDPOINT = "/api/sys/presence/fan"
     CPLD_FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/cpld"
     FPGA_FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/fpga"
@@ -260,6 +262,17 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.set_endpoint_psu_presence_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.PSU_PRESENT_ENDPOINT, self.endpoint_psu_presence
+        )
+
+    # "/api/sys/presence/pem"
+    def set_endpoint_pem_presence_attributes(self):
+        self.endpoint_pem_presence = ["pem1", "pem2"]
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_endpoint_api_pem_present(self):
+        self.set_endpoint_pem_presence_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.PEM_PRESENT_ENDPOINT, self.endpoint_pem_presence
         )
 
     # "/api/sys/presence/fan"

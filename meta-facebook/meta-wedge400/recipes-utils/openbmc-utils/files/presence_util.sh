@@ -20,6 +20,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
 SMB_DIR=$SMBCPLD_SYSFS_DIR
@@ -34,7 +35,7 @@ function usage
   echo "Usage:"
   echo "     $program "
   echo "     $program <TYPE>"
-  echo "     <TYPE>: scm/fan/psu"
+  echo "     <TYPE>: scm/fan/psu/pem/debug_card"
 }
 
 # Will return <key> : <val>
@@ -74,24 +75,35 @@ function get_fan_presence
 function get_psu_presence
 {
   for i in {1..2}; do
-      key="psu${i}"
-      file="$SMB_DIR/psu_present_${i}_N_int_status"
-      get_presence "$file" "$key"
+    key="psu${i}"
+    file="$SMB_DIR/psu_present_${i}_N_int_status"
+    val=$(head -n1 "$file" | awk '{print substr($0,0,3) }' | sed "s/.x//")
+    if [ "$val" = "0" ]; then
+      type=$(wedge_power_supply_type "$i")
+      if [[ "$type" = "PSU" || "$type" = "PSU48" ]]; then
+        echo "$key : 1"
+        continue
+      fi
+    fi
+    echo "$key : 0"
   done
 }
 
 # Pem 
 function get_pem_presence
 {
-  val=$(lsmod | grep ltc4282)
   for i in {1..2}; do
-    key="pem1${i}"
+    key="pem${i}"
     file="$SMB_DIR/psu_present_${i}_N_int_status"
-    if [ -z "$val" ]; then
-      echo "$key : 0"
-    else
-      get_presense "$file" "$key"
+    val=$(head -n1 "$file" | awk '{print substr($0,0,3) }' | sed "s/.x//")
+    if [ "$val" = "0" ]; then
+      type=$(wedge_power_supply_type "$i")
+      if [ "$type" = "PEM" ]; then
+        echo "$key : 1"
+        continue
+      fi
     fi
+    echo "$key : 0"
   done
 }
 
@@ -118,6 +130,7 @@ if [[ $1 = "" ]]; then
 
   echo "POWER SUPPLIES"
   get_psu_presence
+  get_pem_presence
 
   echo "DEBUG CARD"
   get_debug_card_presence

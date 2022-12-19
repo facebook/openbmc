@@ -22,6 +22,8 @@ LOCAL_URI += "\
     file://pal_bb_sensors.c \
     file://pal_bb_sensors.h \
     file://pal_cover.c \
+    file://pal_acb_sensors.c \
+    file://pal_acb_sensors.h \
     file://plat/meson.build \
     "
 

@@ -14,6 +14,7 @@ extern PAL_SENSOR_MAP mb_sensor_map[];
 extern PAL_SENSOR_MAP hmc_sensor_map[];
 extern PAL_SENSOR_MAP swb_sensor_map[];
 extern PAL_SENSOR_MAP bb_sensor_map[];
+extern PAL_SENSOR_MAP acb_sensor_map[];
 
 extern const uint8_t mb_sensor_list[];
 extern const uint8_t mb_discrete_sensor_list[];
@@ -31,7 +32,7 @@ extern const uint8_t fan_bp1_sensor_list[];
 extern const uint8_t scm_sensor_list[];
 extern const uint8_t hsc_sensor_list[];
 extern const uint8_t shsc_sensor_list[];
-
+extern const uint8_t acb_sensor_list[];
 
 extern size_t mb_sensor_cnt;
 extern size_t mb_discrete_sensor_cnt;
@@ -49,7 +50,7 @@ extern size_t fan_bp1_sensor_cnt;
 extern size_t scm_sensor_cnt;
 extern size_t hsc_sensor_cnt;
 extern size_t shsc_sensor_cnt;
-
+extern size_t acb_sensor_cnt;
 
 struct snr_map sensor_map[] = {
   { FRU_ALL,  NULL,           false},
@@ -67,7 +68,8 @@ struct snr_map sensor_map[] = {
   { FRU_FAN_BP1,  bb_sensor_map,  true },
   { FRU_FIO,  NULL,           false },
   { FRU_HSC,  mb_sensor_map,  true },
-  { FRU_SHSC, swb_sensor_map, true }
+  { FRU_SHSC, swb_sensor_map, true },
+  { FRU_ACB,  acb_sensor_map, true }
 };
 
 
@@ -145,6 +147,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     if (smodule) {
       *sensor_list = (uint8_t *) shsc_sensor_list;
       *cnt = shsc_sensor_cnt;
+    }
+  } else if (fru == FRU_ACB) {
+    if (pal_is_artemis()) {
+      *sensor_list = (uint8_t *) acb_sensor_list;
+      *cnt = acb_sensor_cnt;
+    } else {
+      *sensor_list = NULL;
+      *cnt = 0;
     }
   } else if (fru > MAX_NUM_FRUS) {
     return -1;

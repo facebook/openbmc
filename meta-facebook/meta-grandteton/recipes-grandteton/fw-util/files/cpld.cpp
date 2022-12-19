@@ -14,6 +14,7 @@
 #include "signed_info.hpp"
 
 #define SWB_CPLD_BUS_ID   (7)
+#define ACB_CPLD_BUS_ID   (4)
 
 using namespace std;
 
@@ -25,7 +26,11 @@ cpld_pldm_wr(uint8_t bus, uint8_t addr,
   uint8_t tlen=0;
   int rc;
 
-  tbuf[0] = (SWB_CPLD_BUS_ID << 1) + 1;
+  if (pal_is_artemis()) {
+    tbuf[0] = (ACB_CPLD_BUS_ID << 1) + 1;
+  } else {
+    tbuf[0] = (SWB_CPLD_BUS_ID << 1) + 1;
+  }
   tbuf[1] = addr;
   tbuf[2] = rxlen;
   memcpy(tbuf+3, txbuf, txlen);

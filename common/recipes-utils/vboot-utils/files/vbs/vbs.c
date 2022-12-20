@@ -72,7 +72,7 @@ bool vboot_partition_exist(void)
   return supported;
 }
 
-uint16_t crc16(const uint8_t* data, int len)
+static uint16_t _crc16(const uint8_t* data, int len)
 {
   uint16_t ret = 0;
   int i;
@@ -95,7 +95,7 @@ bool is_vbs_valid(const struct vbs *vbs)
   mvbs.crc = 0;
   mvbs.uboot_exec_address = 0; // This is not set when SPL computes the CRC.
   mvbs.rom_handoff = 0; // SPL clears this before computing the CRC.
-  mvbs.crc = crc16((unsigned char *)&mvbs, sizeof(mvbs));
+  mvbs.crc = _crc16((unsigned char *)&mvbs, sizeof(mvbs));
   return mvbs.crc == vbs->crc;
 }
 

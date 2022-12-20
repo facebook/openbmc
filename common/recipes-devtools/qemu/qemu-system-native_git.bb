@@ -96,6 +96,7 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            file://0066-aspeed-Add-Sandia.patch \
            file://0067-npcm8xx-Enable-EL3.patch \
            file://0068-npcm8xx-Allow-bios-to-be-omitted.patch \
+           file://0069-hw-arm-aspeed-Don-t-initialize-fby35-bmc-GPIO-s.patch \
            "
 PV = "7.0.90+git${SRCPV}"
 

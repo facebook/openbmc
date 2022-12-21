@@ -11,7 +11,7 @@
 
 using namespace std;
 
-#define MAX_RETRY 30
+#define DELAY_ME_RESET 15
 #define MUX_SWITCH_CPLD 0x07
 #define MUX_SWITCH_PCH 0x03
 #define GPIO_HIGH 1
@@ -45,7 +45,7 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
         return -1;
       }
       // in power off condition, ME will be reset. We need to wait enough time for ME ready
-      sleep(5);
+      sleep(DELAY_ME_RESET);
     }
   } else {
     cerr << "Powering off the server forcefully" << endl;
@@ -55,7 +55,7 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
       return -1;
     }
     // in force condition, ME will be reset. We need to wait enough time for ME ready
-    sleep(5);
+    sleep(DELAY_ME_RESET);
   }
 
   cerr << "Putting ME into recovery mode..." << endl;
@@ -91,12 +91,14 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
   cerr << "Switching BIOS SPI MUX for default value..." << endl;
   bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_PCH);
   sleep(3);
-  cerr << "Doing ME Reset..." << endl;
-  me_reset(slot_id);
-  cerr << "Power-cycling the server..." << endl;
   fby3_common_get_bmc_location(&bmc_location);
   if ( bmc_location != NIC_BMC ) {
+    cerr << "Power-cycling the server..." << endl;
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+  } else {
+    cerr << "Doing ME Reset..." << endl;
+    me_reset(slot_id);
+    cerr << "Power-cycling the server..." << endl;
   }
   sleep(5);
   pal_set_server_power(slot_id, SERVER_POWER_ON);

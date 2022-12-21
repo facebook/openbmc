@@ -34,6 +34,8 @@
 /* Unix time difference between 1970 and 1996. */
 #define UNIX_TIMESTAMP_1996   820454400
 
+#define MAX_MULTIRECORD_CACHE_SIZE 1024
+
 /* Array for BCD Plus definition. */
 const char bcd_plus_array[] = "0123456789 -.XXX";
 
@@ -1347,7 +1349,8 @@ int alter_field_content(char **fru_field , char *content) {
 
 int fruid_modify(const char * cur_bin, const char * new_bin, const char * field, const char * content)
 {
-  int fruid_len, ret;
+  int fruid_len = 0;
+  int ret = 0;
   FILE *fruid_fd;
   uint8_t *old_eeprom, *eeprom = NULL;
   int total_field_opt_size = sizeof(fruid_field_all_opt)/sizeof(fruid_field_all_opt[0]);
@@ -1358,9 +1361,14 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
   int content_len;
   int new_fruid_len;
   uint8_t type_length;
+  uint8_t multirecord_cache[MAX_MULTIRECORD_CACHE_SIZE] = {0};
+  uint32_t multirecord_data_length = 0;
 
-  /* Reset parser return value */
-  ret = 0;
+  fruid_header_t fruid_header = {0};
+  fruid_eeprom_t fruid_eeprom = {0};
+
+  memset(&fruid_header, 0, sizeof(fruid_header_t));
+  memset(&fruid_eeprom, 0, sizeof(fruid_eeprom_t));
 
   /* Open the FRUID binary file */
   fruid_fd = fopen(cur_bin, "rb");
@@ -1393,6 +1401,27 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
     fclose(fruid_fd);
     free(old_eeprom);
     return -1;
+  }
+
+  ret = parse_fruid_header(old_eeprom, &fruid_header);
+  if (ret) {
+    fclose(fruid_fd);
+    free(old_eeprom);
+    return ret;
+  }
+  set_fruid_eeprom_offsets(old_eeprom, &fruid_header, &fruid_eeprom);
+
+  /* Cache entire multi-record list */
+  if (fruid_eeprom.multirecord) {
+    uint32_t offset = fruid_header.offset_area.multirecord * FRUID_OFFSET_MULTIPLIER;
+    multirecord_data_length = fruid_len - offset;
+    if (multirecord_data_length > MAX_MULTIRECORD_CACHE_SIZE) {
+        fclose(fruid_fd);
+        free(old_eeprom);
+        printf("Failed to cache multirecord: size: %u\n", multirecord_data_length);
+        return -1;
+    }
+    memcpy(multirecord_cache, old_eeprom + offset, multirecord_data_length);
   }
 
   /* Close the FRUID binary file */
@@ -2000,6 +2029,11 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
     fruid.product.area_len = 0;
   }
 
+  if (fruid_eeprom.multirecord) {
+    memcpy(&eeprom[i], multirecord_cache, multirecord_data_length);
+    i += multirecord_data_length;
+  }
+
   // update header
   int offset = 1;
   eeprom[0] = 0x01; // format version
@@ -2013,6 +2047,10 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
   if (fruid.product.flag == 1) {
     offset += fruid.board.area_len / FRUID_AREA_LEN_MULTIPLIER; // product area offset
     eeprom[4] = offset;
+  }
+  if (fruid_eeprom.multirecord) {
+    offset += fruid.product.area_len / FRUID_AREA_LEN_MULTIPLIER;
+    eeprom[5] = offset;
   }
 
   //  update header checksum

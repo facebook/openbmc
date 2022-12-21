@@ -31,6 +31,8 @@
 
 #define DUAL_FAN_UCR  13500
 #define DUAL_FAN_UNC  10200
+#define SINGLE_FAN_UCR 11500
+#define MAX_FAN_UCR_RETRY 1
 
 #define MAX_SENSORD_FRU MAX_NUM_FRUS
 
@@ -1834,12 +1836,36 @@ read_fan_pwm(uint8_t pwm_id, float *value) {
 static int
 read_fan_speed(uint8_t snr_number, float *value) {
   int rpm = 0;
-  int ret = 0;
+  int ret = 0,ret2 = 0;
+  uint8_t bmc_location = 0;
+  uint8_t fan_type = UNKNOWN_TYPE;
+  int fan_ucr = DUAL_FAN_UCR;
+  static int last_rpm[8] = {0};
+  static int retry[8] = {0};
   uint8_t fan = snr_number - BMC_SENSOR_FAN0_TACH;
   ret = pal_get_fan_speed(fan, &rpm);
   if ( ret < 0 ) {
     ret = READING_NA;
   }
+
+  ret2 = pal_get_fan_type(&bmc_location, &fan_type);
+  if (ret2 < 0 || fan_type != SINGLE_TYPE) {
+    fan_ucr = DUAL_FAN_UCR;
+  } else {
+    fan_ucr = SINGLE_FAN_UCR;
+  }
+
+  if (rpm >= fan_ucr) {
+    if (retry[fan] < MAX_FAN_UCR_RETRY) { // only retry once
+      syslog(LOG_WARNING, "read_fan_speed fan%d UCR retry=%d rpm=%d chnage to %d",fan,retry[fan],rpm,last_rpm[fan]);
+      rpm = last_rpm[fan];
+      retry[fan]++;
+    }
+  } else {
+    retry[fan] = 0;
+    last_rpm[fan] = rpm;
+  }
+
   *value = (float)rpm;
   return ret;
 }

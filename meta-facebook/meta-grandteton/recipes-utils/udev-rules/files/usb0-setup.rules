@@ -1,0 +1,1 @@
+KERNEL=="1-1.1.2:1.0", SUBSYSTEM=="usb", ATTRS{idVendor}=="0525", ACTION=="add", DRIVER=="cdc_ether", RUN+="/usr/local/bin/setup-usbnet.sh"

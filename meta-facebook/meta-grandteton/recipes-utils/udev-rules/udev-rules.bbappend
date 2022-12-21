@@ -1,6 +1,4 @@
-#!/bin/sh
-#
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright 2022-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,19 +14,16 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+LOCAL_URI += " \
+    file://usb0-setup.rules \
+    "
 
-. /usr/local/bin/openbmc-utils.sh
-. /usr/local/fbpackages/utils/ast-functions
+do_install:append() {
+    dst=${D}${sysconfdir}/udev/
+    install -d ${dst}/rules.d
 
-setup_hmc_eeprom () {
-  if [ ! -L "/sys/bus/i2c/drivers/at24/9-0053" ];
-  then
-    i2c_device_add 9 0x53 24c64
-    sleep 1
-    dd if=/sys/class/i2c-dev/i2c-9/device/9-0053/eeprom of=/tmp/fruid_hmc.bin bs=512 count=1
-  fi
+    install -m 0644 usb0-setup.rules ${dst}/rules.d/90-usb0-setup.rules
 }
 
-
-ifconfig usb0 192.168.31.2 netmask 255.255.0.0
-setup_hmc_eeprom
+FILES:${PN} += "${sysconfdir}"

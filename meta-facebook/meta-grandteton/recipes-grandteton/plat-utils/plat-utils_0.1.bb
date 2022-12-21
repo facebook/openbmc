@@ -41,7 +41,7 @@ pkgdir = "utils"
 
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util setup-server-uart.sh "
+binfiles = " sol-util setup-server-uart.sh setup-usbnet.sh"
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 gpiocli "
@@ -78,24 +78,15 @@ do_install() {
 # setup-cover-dev.sh
   install -m 755 setup-cover-dev.sh ${D}${sysconfdir}/init.d/setup-cover-dev.sh
   update-rc.d -r ${D} setup-cover-dev.sh start 60 5 .
-# sync_date.sh
-  install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
-  update-rc.d -r ${D} sync_date.sh start 66 5 .
 # setup-por.sh
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 63 5 .
+# sync_date.sh
+  install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
+  update-rc.d -r ${D} sync_date.sh start 66 5 .
 # setup-lmsensors-cfg.sh
   install -m 755 setup-lmsensors-cfg.sh ${D}${sysconfdir}/init.d/setup-lmsensors-cfg.sh
   update-rc.d -r ${D} setup-lmsensors-cfg.sh start 68 5 .
-# setup-usbnet.sh
-  install -m 755 setup-snr-mon.sh ${D}${sysconfdir}/init.d/setup-snr-mon.sh
-  update-rc.d -r ${D} setup-snr-mon.sh start 89 5 .
-# setup-usbnet.sh
-  install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
-  update-rc.d -r ${D} setup-usbnet.sh start 90 5 .
-# install check_eth0_ipv4.sh
-#  install -m 755 ifup.sh ${D}${sysconfdir}/init.d/ifup.sh
-#  update-rc.d -r ${D} ifup.sh start 100 5 .
 }
 
 FILES:${PN} += "/usr/local ${sysconfdir}"

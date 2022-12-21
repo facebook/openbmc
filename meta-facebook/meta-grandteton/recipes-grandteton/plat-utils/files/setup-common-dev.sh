@@ -572,3 +572,15 @@ gpio_set  FAN14_LED_FAIL 0
 gpio_set  FAN15_LED_FAIL 0
 
 /usr/local/bin/fan-util --set 70
+
+#GPU Reset USB Hub
+if [ "$(is_bmc_por)" -eq 1 ]; then
+  # set gpio 98 LOW
+  pldmd-util -b 3 -e 0x0a raw 0x02 0x39 0x62 0xFF 0x02 0x00 0x00 0x01 0x01
+  # add delay
+  sleep 0.5
+  # set gpio 98 HIGH
+  pldmd-util -b 3 -e 0x0a raw 0x02 0x39 0x62 0xFF 0x02 0x00 0x00 0x01 0x02
+  sleep 3
+fi
+

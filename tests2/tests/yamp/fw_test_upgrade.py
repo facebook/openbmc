@@ -39,7 +39,7 @@ class FwUpgradeTest(unittest.TestCase):
     _COMPONENTS = {
         "sperry": [
             4,
-            "/usr/local/bin/fpga_util lc{entity} program {filename}",  # noqa B950
+            "/usr/local/bin/fpga_util.sh lc{entity} program {filename}",  # noqa B950
         ],  # priority=4, upgrade_cmd
         "dawson": [
             2,

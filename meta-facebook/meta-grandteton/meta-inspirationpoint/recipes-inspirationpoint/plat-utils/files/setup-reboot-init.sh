@@ -29,4 +29,4 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-gpio_set GPIO_READY 0
+gpio_set FM_BMC_SGPIO_READY_N 0

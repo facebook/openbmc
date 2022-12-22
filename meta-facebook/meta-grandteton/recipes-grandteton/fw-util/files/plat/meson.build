@@ -11,7 +11,8 @@ srcs += [
     'nic_mctp.cpp',
     'plat_common.cpp',
     'plat_cover.cpp',
-    'swb_bic.cpp',
+    'swb_common.cpp',
+    'swb_cover.cpp',
     'usbdbg.cpp',
     'vr_fw.cpp',
     'signed_decoder.cpp'

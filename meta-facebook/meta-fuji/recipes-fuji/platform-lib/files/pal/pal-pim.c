@@ -106,7 +106,7 @@ static int pim_dom_fpga_indirect_write(int fru, u_int32_t reg, int value)
 }
 
 static int pim_dom_fpga_mdio_done(int fru, int phy) {
-    int retry = 10;
+    int retry = 0;
     int value = 0;
     int mdio_status_addr = MDIO_BASE(phy) + DOM_FPGA_MDIO_STATUS;
     do {

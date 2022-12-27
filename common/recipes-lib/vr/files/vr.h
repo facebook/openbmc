@@ -98,6 +98,8 @@ void vr_device_unregister(void);
 int vr_probe(void);
 void vr_remove(void);
 int vr_fw_version(int, const char*, char*);
+int vr_fw_full_version(int, const char*, char*, char*);
+void vr_get_fw_avtive_key(struct vr_info*, char*);
 int vr_fw_update(const char*, const char*, bool);
 
 extern int plat_vr_init(void);

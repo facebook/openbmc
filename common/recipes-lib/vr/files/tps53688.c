@@ -186,7 +186,7 @@ tps_parse_file(struct vr_info *info, const char *path) {
 }
 
 static uint16_t
-cal_crc16(uint8_t *data, int len) {
+cal_crc16(uint8_t const *data, int len) {
   uint16_t crc = 0x0000;
   int i, b;
 
@@ -300,7 +300,7 @@ program_tps(uint8_t fru_id, uint8_t bus, uint8_t addr, struct tps_config *config
     }
 
     offset += VR_TPS_BLK_WR_LEN;
-    printf("\rupdated: %d %%  ", (offset/dsize)*10);
+    printf("\rupdated: %d %%  ", (int)(offset/dsize)*10);
     fflush(stdout);
   }
   printf("\n");
@@ -340,11 +340,10 @@ tps_fw_update(struct vr_info *info, void *args) {
   }
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
-    snprintf(ver_key, sizeof(ver_key), "%s_vr_%02xh_new_crc", (char *)info->private_data, info->addr);
+    vr_get_fw_avtive_key(info, ver_key);
     if (pal_load_tps_remaining_wr(info->slot_id, info->addr, &remain, value, &config->crc_exp, UPDATE_VR_CRC) != 0) {
-      snprintf(value, MAX_VALUE_LEN, "Texas Instruments %04X", config->crc_exp);
+      snprintf(value, MAX_VALUE_LEN, "%04x", config->crc_exp);
     }
-
     kv_set(ver_key, value, 0, KV_FPERSIST);
   }
 

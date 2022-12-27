@@ -224,7 +224,8 @@ program_mp2856(uint8_t bus, uint8_t addr, struct mp2856_config *config  ) {
 }
 
 static void
-cache_mp2856_new_crc(struct vr_info *info ) {
+cache_mp2856_new_crc(struct vr_info *info, void *args) {
+  struct mp2856_config *config = (struct mp2856_config *)args;
   int ret = VR_STATUS_FAILURE;
   uint8_t tbuf[16];
   uint8_t crc_user[2];
@@ -234,25 +235,29 @@ cache_mp2856_new_crc(struct vr_info *info ) {
   uint8_t bus = info->bus;
   uint8_t addr = info->addr;
 
-  snprintf(ver_key, sizeof(ver_key), "%s_vr_%02xh_new_crc", (char *)info->private_data, info->addr);
+  vr_get_fw_avtive_key(info, ver_key);
   do {
     if ((ret = mp2856_set_page(bus, addr, VR_MPS_PAGE_1))) {
       break;
     }
-    tbuf[0] = VR_MPS_REG_CRC_NORMAL_CODE;
+
+    tbuf[0] = (config->mode == MP297X) ?
+          VR_MPS_REG_CRC_NORMAL_CODE_297X:VR_MPS_REG_CRC_NORMAL_CODE_2856;
     if ((ret = vr_xfer(bus, addr, tbuf, 1, crc_user, 2))) {
       syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
       break;
     }
 
-    tbuf[0] = VR_MPS_REG_CRC_MULTI_CONFIG;
+    tbuf[0] = (config->mode == MP297X) ?
+          VR_MPS_REG_CRC_MULTI_CONFIG_297X:VR_MPS_REG_CRC_MULTI_CONFIG_2856;
     if ((ret = vr_xfer(bus, addr, tbuf, 1, multi_config, 2))) {
       syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
       break;
     }
 
-    snprintf(value, MAX_VALUE_LEN, "MPS %02X%02X%02X%02X",
+    snprintf(value, MAX_VALUE_LEN, "%02x%02x%02x%02x",
              crc_user[1], crc_user[0], multi_config[1], multi_config[0]);
+
     kv_set(ver_key, value, 0, KV_FPERSIST);
   } while (0);
 
@@ -305,7 +310,7 @@ mp2856_fw_update(struct vr_info *info, void *args) {
   }
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
-    cache_mp2856_new_crc(info);
+    cache_mp2856_new_crc(info, args);
   }
 
   mp2856_set_page(info->bus, info->addr, VR_MPS_PAGE_0);
@@ -405,14 +410,14 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
   if(config->mode == MP285X) {
     while (fgets(line, sizeof(line), fp) != NULL) {
       if (!strncmp(line, "Product ID", 10)) {
-        sscanf(line, "%*[^:]:%s", buf);
+        sscanf(line, "%*[^:]:%9s", buf);
         str=strtok(buf, "MP");
         config->product_id_exp = strtol(str, NULL, 16);
       } else if  (!strncmp(line, "I2C", 3)) {
-        sscanf(line, "%*[^:]:%s", buf);
+        sscanf(line, "%*[^:]:%9s", buf);
         config->addr = strtol(buf, NULL, 16);
       } else if  (!strncmp(line, "4-digi", 6)) {
-        sscanf(line, "%*[^:]:%s", buf);
+        sscanf(line, "%*[^:]:%9s", buf);
         config->cfg_id =  strtol(buf, NULL, 16);
       }
     }

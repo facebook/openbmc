@@ -947,6 +947,10 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
   return completion_code;
 }
 
+bool
+pal_is_support_vr_delay_activate(void){
+  return true;
+}
 int
 pal_postcode_select(int option) {
   int mmap_fd;

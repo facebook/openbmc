@@ -23,6 +23,7 @@
 #include <string.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-pal.h>
+#include <openbmc/kv.h>
 #include "vr.h"
 
 #define CFG_FREE(p) cfg_free((void**)&(p));
@@ -102,6 +103,59 @@ int vr_fw_version(int index, const char *vr_name, char *ver_str)
   } while (0);
 
   return VR_STATUS_FAILURE;
+}
+
+int vr_fw_full_version(int index, const char *vr_name, char *ver_str , char *active_ver_key)
+{
+  struct vr_info *info = dev_list;
+  int i;
+
+  do {
+    if (index >= 0) {
+      if (index >= dev_list_count) {
+        break;
+      }
+
+      info += index;
+    } else {
+      if (!vr_name) {
+        break;
+      }
+
+      for (i = 0; i < dev_list_count; i++, info++) {
+        if (!strcmp(info->dev_name, vr_name))
+          break;
+      }
+      if (i >= dev_list_count) {
+        syslog(LOG_WARNING, "%s: device %s not found", __func__, vr_name);
+        break;
+      }
+    }
+
+    if (!info->ops->get_fw_ver) {
+      break;
+    }
+
+    if (info->ops->get_fw_ver(info, ver_str) < 0) {
+      syslog(LOG_WARNING, "%s: get VR %s version failed", __func__, info->dev_name);
+      break;
+    }
+
+    vr_get_fw_avtive_key(info, active_ver_key);
+
+    return VR_STATUS_SUCCESS;
+  } while (0);
+
+  return VR_STATUS_FAILURE;
+}
+
+void vr_get_fw_avtive_key(struct vr_info *info, char* key)
+{
+  if (info->private_data) {
+    snprintf(key, MAX_KEY_LEN, "%s_vr_%02xh_new_crc", (char *)info->private_data, info->addr);
+  } else {
+    snprintf(key, MAX_KEY_LEN, "vr_%02xh_new_crc", info->addr);
+  }
 }
 
 int vr_fw_update(const char *vr_name, const char *path, bool force)

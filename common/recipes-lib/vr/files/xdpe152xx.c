@@ -151,7 +151,7 @@ cache_xdpe152xx_crc(uint8_t bus, uint8_t addr, char *key, char *sum_str, uint32_
 }
 
 static uint32_t
-cal_crc32(uint32_t *data, int len) {
+cal_crc32(uint32_t const *data, int len) {
   uint32_t crc = 0xFFFFFFFF;
   int i, b;
 
@@ -505,7 +505,6 @@ xdpe152xx_parse_file(struct vr_info *info, const char *path) {
 int
 xdpe152xx_fw_update(struct vr_info *info, void *args) {
   struct xdpe152xx_config *config = (struct xdpe152xx_config *)args;
-  uint8_t remain = 0;
   char ver_key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
 
@@ -530,14 +529,8 @@ xdpe152xx_fw_update(struct vr_info *info, void *args) {
   }
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
-    snprintf(ver_key, sizeof(ver_key), "%s_vr_%02xh_new_crc", (char *)info->private_data, info->addr);
-    if (get_xdpe152xx_remaining_wr(info->bus, info->addr, &remain) < 0) {
-      snprintf(value, sizeof(value), "Infineon %08X, Remaining Writes: Unknown",
-             config->sum_exp);
-    } else {
-      snprintf(value, sizeof(value), "Infineon %08X, Remaining Writes: %u",
-             config->sum_exp, remain);
-    }
+    vr_get_fw_avtive_key(info, ver_key);
+    snprintf(value, sizeof(value), "%08x", config->sum_exp);
     kv_set(ver_key, value, 0, KV_FPERSIST);
   }
 

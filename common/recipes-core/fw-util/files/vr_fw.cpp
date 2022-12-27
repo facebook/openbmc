@@ -2,17 +2,26 @@
 #include <cstring>
 #include <syslog.h>
 #include <openbmc/vr.h>
+#include <openbmc/kv.h>
 #include "vr_fw.h"
 
 using namespace std;
 
+bool get_active_version(const char* key, string& ver) {
+  char value[MAX_VER_STR_LEN] = {0};
+  bool ret = ((kv_get(key, value, NULL, KV_FPERSIST) < 0) && (errno == ENOENT));
+  ver = string(value);
+  return !ret;
+}
+
 int VrComponent::get_version(json& j) {
   char ver[MAX_VER_STR_LEN] = {0};
+  char active_key[MAX_VER_STR_LEN] = {0};
 
   j["PRETTY_COMPONENT"] = dev_name;
 
   try {
-    if (vr_probe() || vr_fw_version(-1, dev_name.c_str(), ver)) {
+    if (vr_probe() || vr_fw_full_version(-1, dev_name.c_str(), ver, active_key)) {
       throw "Error in getting the version of " + dev_name;
     }
     vr_remove();
@@ -44,6 +53,7 @@ int VrComponent::get_version(json& j) {
     tmp_str = str.substr(start, end - start);
     transform(tmp_str.begin(), tmp_str.end(),tmp_str.begin(), ::tolower);
     j["VERSION"] = tmp_str;
+    j["VERSION_ACTIVE"] = (get_active_version(active_key, str)) ? str:string(j["VERSION"]);
     j["PRETTY_VERSION"] = vendor_str + " " + tmp_str;
   } catch (string& err) {
     j["VERSION"] = "NA";

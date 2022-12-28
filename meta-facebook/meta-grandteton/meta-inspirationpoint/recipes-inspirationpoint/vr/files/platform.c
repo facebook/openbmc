@@ -218,6 +218,7 @@ int plat_vr_init(void) {
   } else if (id == THIRD_SOURCE) {
     for (i = 0; i < MB_VR_CNT; i++) {
       vr_list[i].ops =  &mp2856_ops;
+      vr_list[i].addr = mb_inf_vr_addr[i];
     }
   }
 

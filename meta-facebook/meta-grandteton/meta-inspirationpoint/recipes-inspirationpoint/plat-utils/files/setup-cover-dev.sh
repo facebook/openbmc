@@ -32,11 +32,12 @@ mb_sku=$(($(/usr/bin/kv get mb_sku) & 0x0F))
 
 config0="0"
 config1="4"
+config4="1"
 
 #TBD
 #config2="2"
 #config3="6"
-#config4="1"
+
 
 MB_1ST_SOURCE="0"
 MB_2ND_SOURCE="1"
@@ -109,14 +110,24 @@ probe_vr_raa() {
 }
 
 probe_vr_xdpe() {
-   i2c_device_add 20 0x4a xdpe152c4
-   i2c_device_add 20 0x49 xdpe152c4
-   i2c_device_add 20 0x4c xdpe152c4
-   i2c_device_add 20 0x4d xdpe152c4
-   i2c_device_add 20 0x4e xdpe152c4
-   i2c_device_add 20 0x4f xdpe152c4
-   kv set mb_vr_source "$MB_2ND_SOURCE"
+  i2c_device_add 20 0x4a xdpe152c4
+  i2c_device_add 20 0x49 xdpe152c4
+  i2c_device_add 20 0x4c xdpe152c4
+  i2c_device_add 20 0x4d xdpe152c4
+  i2c_device_add 20 0x4e xdpe152c4
+  i2c_device_add 20 0x4f xdpe152c4
+  kv set mb_vr_source "$MB_2ND_SOURCE"
+}
 
+probe_vr_mp2856() {
+  #To do - Probe mp2856 driver
+  i2c_device_add 20 0x49 mp2856
+  i2c_device_add 20 0x4a mp2856
+  i2c_device_add 20 0x4c mp2856
+  i2c_device_add 20 0x4d mp2856
+  i2c_device_add 20 0x4e mp2856
+  i2c_device_add 20 0x4f mp2856
+  kv set mb_vr_source "$MB_3RD_SOURCE"
 }
 
 if [ "$mb_sku" -eq "$config0" ]; then
@@ -127,4 +138,8 @@ elif [ "$mb_sku" -eq "$config1" ]; then
   probe_hsc_ltc
   probe_adc_maxim
   probe_vr_xdpe
+elif [ "$mb_sku" -eq "$config4" ]; then
+  probe_hsc_mp5990
+  probe_adc_ti
+  probe_vr_mp2856
 fi

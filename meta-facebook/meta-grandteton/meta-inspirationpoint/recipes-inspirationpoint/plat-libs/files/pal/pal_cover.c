@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <syslog.h>
 #include "pal.h"
+#include <openbmc/obmc-i2c.h>
 
 int
 parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
@@ -72,4 +73,56 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 
   pal_parse_sel_helper(fru, sel, error_log);
   return 0;
+}
+
+int
+pal_control_mux_to_target_ch(uint8_t bus, uint8_t mux_addr, uint8_t channel)
+{
+  int ret = PAL_ENOTSUP;
+  int fd;
+  char fn[32];
+  uint8_t retry;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if(fd < 0) {
+    syslog(LOG_WARNING,"[%s] Cannot open bus %d", __func__, bus);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+
+  ret = pal_flock_retry(fd);
+  if (ret == -1) {
+   syslog(LOG_WARNING, "[%s] Failed to flock: %s", __func__, strerror(errno));
+   goto error_exit;
+  }
+
+  tbuf[0] = 1 << channel;
+  retry = 3;
+
+  while(retry > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, mux_addr, tbuf, 1, rbuf, 0);
+    if (PAL_EOK == ret){
+      break;
+    }
+    msleep(50);
+    retry--;
+  }
+
+  if(retry == 0) {
+    syslog(LOG_WARNING,"[%s] Cannot switch the mux on bus %d", __func__, bus);
+  }
+
+  if (pal_unflock_retry(fd) == -1) {
+   syslog(LOG_WARNING, "[%s] Failed to unflock: %s", __func__, strerror(errno));
+  }
+
+error_exit:
+  if (fd > 0){
+    close(fd);
+  }
+
+  return ret;
 }

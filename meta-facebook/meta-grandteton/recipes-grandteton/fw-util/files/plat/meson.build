@@ -15,7 +15,8 @@ srcs += [
     'swb_cover.cpp',
     'usbdbg.cpp',
     'vr_fw.cpp',
-    'signed_decoder.cpp'
+    'signed_decoder.cpp',
+    'retimer.cpp'
 ]
 
 deps += [
@@ -31,4 +32,6 @@ deps += [
     dependency('libobmc-mctp'),
     dependency('libpldm-oem'),
     dependency('libvr'),
+    dependency('libretimer'),
+    cc.find_library('pal'),
 ]

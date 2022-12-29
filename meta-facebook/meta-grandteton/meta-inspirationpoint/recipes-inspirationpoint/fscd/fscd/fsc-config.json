@@ -1,5 +1,5 @@
 {
-    "version": "inspirationpint-v1",
+    "version": "inspirationpint-v2",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -278,6 +278,32 @@
           [48, 25],
           [90, 90]
         ]
+      },
+      "retimer_temp_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [60, 25],
+          [65, 30],
+          [70, 40],
+          [80, 55]
+        ]
+      },
+      "retimer_temp_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 96,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
       }
     },
     "fans": {

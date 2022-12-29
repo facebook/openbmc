@@ -179,5 +179,26 @@ max([
       all:hmc_hmc_temp_gb_hsc7_c,
       all:hmc_hmc_temp_gb_hsc8_c,
       all:hmc_hmc_temp_gb_hsc9_c,
-      all:hmc_hmc_temp_gb_hsc10_c]))
+      all:hmc_hmc_temp_gb_hsc10_c])),
+
+  retimer_temp_linear(
+    max([
+      all:mb_mb_retimer0_t_temp_c,
+      all:mb_mb_retimer1_t_temp_c,
+      all:mb_mb_retimer2_t_temp_c,
+      all:mb_mb_retimer3_t_temp_c,
+      all:mb_mb_retimer4_t_temp_c,
+      all:mb_mb_retimer5_t_temp_c,
+      all:mb_mb_retimer6_t_temp_c,
+      all:mb_mb_retimer7_t_temp_c])) +
+  retimer_temp_pid(
+    max([
+      all:mb_mb_retimer0_t_temp_c,
+      all:mb_mb_retimer1_t_temp_c,
+      all:mb_mb_retimer2_t_temp_c,
+      all:mb_mb_retimer3_t_temp_c,
+      all:mb_mb_retimer4_t_temp_c,
+      all:mb_mb_retimer5_t_temp_c,
+      all:mb_mb_retimer6_t_temp_c,
+      all:mb_mb_retimer7_t_temp_c]))
 ])

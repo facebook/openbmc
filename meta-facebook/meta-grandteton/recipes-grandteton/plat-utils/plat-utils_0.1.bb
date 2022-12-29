@@ -87,6 +87,9 @@ do_install() {
 # setup-lmsensors-cfg.sh
   install -m 755 setup-lmsensors-cfg.sh ${D}${sysconfdir}/init.d/setup-lmsensors-cfg.sh
   update-rc.d -r ${D} setup-lmsensors-cfg.sh start 68 5 .
+# setup-snr-mon
+  install -m 755 setup-snr-mon.sh ${D}${sysconfdir}/init.d/setup-snr-mon.sh
+  update-rc.d -r ${D} setup-snr-mon.sh start 89 5 .
 }
 
 FILES:${PN} += "/usr/local ${sysconfdir}"

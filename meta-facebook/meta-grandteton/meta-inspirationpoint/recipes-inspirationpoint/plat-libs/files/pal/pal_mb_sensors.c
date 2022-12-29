@@ -23,6 +23,7 @@
 #include "pal.h"
 #include "pal_common.h"
 #include <openbmc/kv.h>
+#include <openbmc/aries_api.h>
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN    "BATTERY_DETECT"
@@ -63,6 +64,8 @@ static int read_vr_pout(uint8_t fru, uint8_t sensor_num, float  *value);
 static int read_frb3(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_temp(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value);
+
 bool pal_bios_completed(uint8_t fru);
 static uint8_t postcodes_last[256] = {0};
 char g_has_mux[MAX_VALUE_LEN] = {0};
@@ -173,6 +176,14 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_DIMM_CPU1_D4_POWER,
   MB_SNR_DIMM_CPU1_B5_POWER,
   MB_SNR_DIMM_CPU1_D5_POWER,
+  MB_SNR_RETIMER0_TEMP,
+  MB_SNR_RETIMER1_TEMP,
+  MB_SNR_RETIMER2_TEMP,
+  MB_SNR_RETIMER3_TEMP,
+  MB_SNR_RETIMER4_TEMP,
+  MB_SNR_RETIMER5_TEMP,
+  MB_SNR_RETIMER6_TEMP,
+  MB_SNR_RETIMER7_TEMP,
 };
 
 const uint8_t hsc_sensor_list[] = {
@@ -414,6 +425,57 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBF
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
+
+  {"RETIMER0_TEMP", 0, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD0
+  {"RETIMER1_TEMP", 1, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD1
+  {"RETIMER2_TEMP", 2, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD2
+  {"RETIMER3_TEMP", 3, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD3
+  {"RETIMER4_TEMP", 4, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD4
+  {"RETIMER5_TEMP", 5, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD5
+  {"RETIMER6_TEMP", 6, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD6
+  {"RETIMER7_TEMP", 7, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
 };
 
 extern struct snr_map sensor_map[];
@@ -1106,5 +1168,32 @@ int read_frb3(uint8_t fru, uint8_t sensor_num, float *value) {
   ret = check_frb3(fru_id, MB_SNR_PROCESSOR_FAIL, value);
   *value = 0;
   return ret;
+}
+
+static
+int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret = 0;
+  uint8_t bus = I2C_BUS_6;
+  uint8_t addr = 0xE0;
+  uint8_t channel = sensor_map[fru].map[sensor_num].id;
+  float val = 0;
+  static uint8_t retry=0;
+
+  ret = pal_control_mux_to_target_ch(bus, addr, channel);
+
+  if (ret) {
+    return READING_NA;
+  }
+
+  ret = AriesGetTemp(&val);
+
+  if (ret) {
+    retry++;
+    ret = retry_err_handle(retry, 5);
+    return ret;
+  }
+
+  *value = val;
+  return 0;
 }
 

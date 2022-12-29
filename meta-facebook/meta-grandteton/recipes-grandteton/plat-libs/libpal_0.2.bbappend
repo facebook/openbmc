@@ -42,6 +42,7 @@ DEPENDS += " \
     libpldm-oem \
     libsensor-correction \
     libdimm \
+    libretimer \
     apml \
     "
 
@@ -62,5 +63,6 @@ RDEPENDS:${PN} += " \
     libpldm-oem \
     libsensor-correction \
     libdimm \
+    libretimer \
     apml \
     "

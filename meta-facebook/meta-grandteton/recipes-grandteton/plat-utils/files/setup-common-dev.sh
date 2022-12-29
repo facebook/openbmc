@@ -277,6 +277,10 @@ gpio_export_ioexp 37-0023  HPDB_SKU_ID_0    13
 gpio_export_ioexp 37-0023  HPDB_SKU_ID_1    14
 gpio_export_ioexp 37-0023  HPDB_SKU_ID_2    15
 
+i2c_device_add 37 0x25 pca9555
+gpio_export_ioexp 37-0025  FM_HS1_EN_BUSBAR_BUF  1
+gpio_export_ioexp 37-0025  FM_HS2_EN_BUSBAR_BUF  3
+
 kv set hpdb_rev "$(($(gpio_get HPDB_BOARD_ID_2) << 2 |
                     $(gpio_get HPDB_BOARD_ID_1) << 1 |
                     $(gpio_get HPDB_BOARD_ID_0)))"

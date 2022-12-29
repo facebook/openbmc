@@ -335,7 +335,7 @@ pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 //CPU Power Ok Event Handler
 void
 pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  if (!sgpio_valid_check()) 
+  if (!sgpio_valid_check())
     return;
 
   g_server_power_status = curr;
@@ -507,6 +507,18 @@ present_handle (char* desc, gpio_value_t value) {
           (value == GPIO_VALUE_HIGH) ? "not present": "present");
 }
 
+static void
+enable_init (char* desc, gpio_value_t value) {
+  if (value == GPIO_VALUE_LOW)
+    syslog(LOG_CRIT, "FRU: %d , %s disable.", FRU_MB, desc);
+}
+
+static void
+enable_handle (char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "FRU: %d , %s %s.", FRU_MB, desc,
+          (value == GPIO_VALUE_HIGH) ? "enable": "disable");
+}
+
 struct gpiopoll_ioex_config iox_gpios[] = {
   {FAN_BP0_PRSNT,  "FAN_BP0",      IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FAN_BP1_PRSNT,  "FAN_BP1",      IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
@@ -534,7 +546,8 @@ struct gpiopoll_ioex_config iox_gpios[] = {
   {CABLE_PRSNT_A1, "GPU_CABLE_A1", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {CABLE_PRSNT_A2, "GPU_CABLE_A2", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {CABLE_PRSNT_A3, "GPU_CABLE_A3", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
-
+  {FM_HS1_EN_BUSBAR_BUF, "HPDB_HS1_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
+  {FM_HS2_EN_BUSBAR_BUF, "HPDB_HS2_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
 };
 
 void

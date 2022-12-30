@@ -57,11 +57,5 @@ class RetimerComponent : public Component {
     }
 };
 
-RetimerComponent rt0_comp("rt", "retimer0", 0);
-RetimerComponent rt1_comp("rt", "retimer1", 1);
-RetimerComponent rt2_comp("rt", "retimer2", 2);
-RetimerComponent rt3_comp("rt", "retimer3", 3);
-RetimerComponent rt4_comp("rt", "retimer4", 4);
-RetimerComponent rt5_comp("rt", "retimer5", 5);
-RetimerComponent rt6_comp("rt", "retimer6", 6);
-RetimerComponent rt7_comp("rt", "retimer7", 7);
+RetimerComponent rt0_comp("mb", "retimer0", 0);
+RetimerComponent rt1_comp("mb", "retimer1", 4);

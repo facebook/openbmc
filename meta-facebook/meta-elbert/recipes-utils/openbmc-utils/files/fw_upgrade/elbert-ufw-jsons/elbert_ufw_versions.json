@@ -2,7 +2,7 @@
     "bios": {
         "filename": "coreboot-elbert.rom",
         "hash": "sha1sum",
-        "hash_value": "70c1ecb4e69d8926297d7bf6598634d944676954"
+        "hash_value": "ea672e28d3f2939765204d341869d96edeb82ee9"
     },
     "fan": {
         "filename": "elbert_fan.astp",

@@ -178,7 +178,7 @@ start_sled_fsc() {
   #Wait for sensord ready
   for _ in {1..5}; do
     sleep 3
-    if [ "$(kv get bmc_sensor231)" != "" ]; then
+    if [ "$($KV_CMD get bmc_sensor231)" != "" ]; then
       break
     fi
   done
@@ -213,20 +213,16 @@ reload_sled_fsc() {
     fi
   fi
 
-  fscd_status=$(cat /etc/sv/fscd/supervise/stat)
   if [ $run_fscd = false ]; then
-    if [ "$fscd_status" = "run" ]; then
-      sleep 1 && /usr/bin/sv stop fscd
-      echo "slot is pulled out, stop fscd."
-      /usr/local/bin/fan-util --set 100
-    else
-      echo "fscd is already stopped."
-    fi
+    echo "mismatched system config, boost fans!"
+    $KV_CMD set fan_mode_event 2 # boost_mode
   else
-    #if fscd has been running, there is no need to restart
-    if [ "$fscd_status" != "run" ]; then
-      sleep 1 && /usr/bin/sv restart fscd
-    fi
+    $KV_CMD del fan_mode_event 2>/dev/null
+  fi
+
+  fscd_status=$(cat /etc/sv/fscd/supervise/stat)
+  if [ "$fscd_status" != "run" ]; then
+    sleep 1 && /usr/bin/sv restart fscd
   fi
 }
 

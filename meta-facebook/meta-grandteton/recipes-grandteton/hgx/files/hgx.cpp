@@ -154,7 +154,7 @@ float sensor(const std::string& component, const std::string& name) {
 
 } // namespace hgx.
 
-int get_hmc_sensor(const char* component, const char* snr_name, float* value) {
+int get_hgx_sensor(const char* component, const char* snr_name, float* value) {
   try {
     *value = hgx::sensor(component, snr_name);
   } catch (std::exception& e) {
@@ -163,7 +163,7 @@ int get_hmc_sensor(const char* component, const char* snr_name, float* value) {
   return 0;
 }
 
-int get_hmc_ver(const char* component, char *version) {
+int get_hgx_ver(const char* component, char *version) {
   try {
     std::string resStr;
     resStr = hgx::version(component, 0);

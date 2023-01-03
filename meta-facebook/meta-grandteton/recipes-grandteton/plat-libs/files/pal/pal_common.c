@@ -54,7 +54,7 @@ struct source_info comp_source_data[] = {
   {FRU_ALL,   NULL},
   {FRU_MB,    mb_source_data},
   {FRU_SWB,   swb_source_data},
-  {FRU_HMC,   NULL},
+  {FRU_HGX,   NULL},
   {FRU_NIC0,  NULL},
   {FRU_NIC1,  NULL},
   {FRU_OCPDBG,   NULL},
@@ -177,7 +177,7 @@ fru_presence(uint8_t fru_id) {
         return value ? false : true;
       }
       return false;
-    case FRU_HMC:
+    case FRU_HGX:
       value = gpio_get_value_by_shadow(HMC_PRESENCE);
       if(value != GPIO_VALUE_INVALID) {
         return value ? false : true;

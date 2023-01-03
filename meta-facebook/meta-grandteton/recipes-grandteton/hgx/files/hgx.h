@@ -56,8 +56,8 @@ std::string sensorRaw(const std::string& component, const std::string& name);
 extern "C" {
 #endif
 
-int get_hmc_sensor(const char* component, const char* snr_name, float* value);
-int get_hmc_ver(const char* component, char *version);
+int get_hgx_sensor(const char* component, const char* snr_name, float* value);
+int get_hgx_ver(const char* component, char *version);
 
 #ifdef __cplusplus
 }

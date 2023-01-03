@@ -20,15 +20,15 @@
 . /usr/local/bin/openbmc-utils.sh
 . /usr/local/fbpackages/utils/ast-functions
 
-setup_hmc_eeprom () {
+setup_hgx_eeprom () {
   if [ ! -L "/sys/bus/i2c/drivers/at24/9-0053" ];
   then
     i2c_device_add 9 0x53 24c64
     sleep 1
-    dd if=/sys/class/i2c-dev/i2c-9/device/9-0053/eeprom of=/tmp/fruid_hmc.bin bs=512 count=1
+    dd if=/sys/class/i2c-dev/i2c-9/device/9-0053/eeprom of=/tmp/fruid_hgx.bin bs=512 count=1
   fi
 }
 
 
 ifconfig usb0 192.168.31.2 netmask 255.255.0.0
-setup_hmc_eeprom
+setup_hgx_eeprom

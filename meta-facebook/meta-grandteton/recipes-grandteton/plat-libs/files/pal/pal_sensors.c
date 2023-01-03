@@ -11,7 +11,7 @@
 #define SENSOR_SKIP_MAX (1)
 
 extern PAL_SENSOR_MAP mb_sensor_map[];
-extern PAL_SENSOR_MAP hmc_sensor_map[];
+extern PAL_SENSOR_MAP hgx_sensor_map[];
 extern PAL_SENSOR_MAP swb_sensor_map[];
 extern PAL_SENSOR_MAP bb_sensor_map[];
 extern PAL_SENSOR_MAP acb_sensor_map[];
@@ -20,7 +20,7 @@ extern const uint8_t mb_sensor_list[];
 extern const uint8_t mb_discrete_sensor_list[];
 extern const uint8_t swb_sensor_list[];
 extern const uint8_t swb_discrete_sensor_list[];
-extern const uint8_t hmc_sensor_list[];
+extern const uint8_t hgx_sensor_list[];
 extern const uint8_t nic0_sensor_list[];
 extern const uint8_t nic1_sensor_list[];
 extern const uint8_t vpdb_sensor_list[];
@@ -38,7 +38,7 @@ extern size_t mb_sensor_cnt;
 extern size_t mb_discrete_sensor_cnt;
 extern size_t swb_sensor_cnt;
 extern size_t swb_discrete_sensor_cnt;
-extern size_t hmc_sensor_cnt;
+extern size_t hgx_sensor_cnt;
 extern size_t nic0_sensor_cnt;
 extern size_t nic1_sensor_cnt;
 extern size_t vpdb_sensor_cnt;
@@ -56,7 +56,7 @@ struct snr_map sensor_map[] = {
   { FRU_ALL,  NULL,           false},
   { FRU_MB,   mb_sensor_map,  true },
   { FRU_SWB,  swb_sensor_map, true },
-  { FRU_HMC,  hmc_sensor_map, true },
+  { FRU_HGX,  hgx_sensor_map, true },
   { FRU_NIC0, bb_sensor_map,  true },
   { FRU_NIC1, bb_sensor_map,  true },
   { FRU_OCPDBG,  NULL,           false },
@@ -100,9 +100,9 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   } else if (fru == FRU_NIC1) {
     *sensor_list = (uint8_t *) nic1_sensor_list;
     *cnt = nic1_sensor_cnt;
-  } else if (fru == FRU_HMC) {
-    *sensor_list = (uint8_t *) hmc_sensor_list;
-    *cnt = hmc_sensor_cnt;
+  } else if (fru == FRU_HGX) {
+    *sensor_list = (uint8_t *) hgx_sensor_list;
+    *cnt = hgx_sensor_cnt;
   } else if (fru == FRU_VPDB) {
     get_comp_source(fru, VPDB_BRICK_SOURCE, &id);
     if (id == THIRD_SOURCE) {

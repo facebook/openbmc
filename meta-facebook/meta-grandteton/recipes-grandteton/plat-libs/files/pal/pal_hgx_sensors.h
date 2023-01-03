@@ -1,5 +1,5 @@
-#ifndef __PAL_HMC_SENSORS_H__
-#define __PAL_HMC_SENSORS_H__
+#ifndef __PAL_HGX_SENSORS_H__
+#define __PAL_HGX_SENSORS_H__
 
 enum {
   NONE =0,
@@ -7,20 +7,20 @@ enum {
   DVT = 2
 };
 
-// HMC sensor table
+// HGX sensor table
 enum {
   //Baseboard
-  HMC_SNR_PWR_GB_HSC0 = 0x01,
-  HMC_SNR_PWR_GB_HSC1,
-  HMC_SNR_PWR_GB_HSC2,
-  HMC_SNR_PWR_GB_HSC3,
-  HMC_SNR_PWR_GB_HSC4,
-  HMC_SNR_PWR_GB_HSC5,
-  HMC_SNR_PWR_GB_HSC6,
-  HMC_SNR_PWR_GB_HSC7,
-  HMC_SNR_PWR_GB_HSC8,
-  HMC_SNR_PWR_GB_HSC9,
-  HMC_SNR_PWR_GB_HSC10,
+  HGX_SNR_PWR_GB_HSC0 = 0x01,
+  HGX_SNR_PWR_GB_HSC1,
+  HGX_SNR_PWR_GB_HSC2,
+  HGX_SNR_PWR_GB_HSC3,
+  HGX_SNR_PWR_GB_HSC4,
+  HGX_SNR_PWR_GB_HSC5,
+  HGX_SNR_PWR_GB_HSC6,
+  HGX_SNR_PWR_GB_HSC7,
+  HGX_SNR_PWR_GB_HSC8,
+  HGX_SNR_PWR_GB_HSC9,
+  HGX_SNR_PWR_GB_HSC10,
   Total_Power,
   Total_GPU_Power,
   Altitude_Pressure0,
@@ -115,7 +115,7 @@ enum {
   TEMP_GB_NVS1,
   TEMP_GB_NVS2,
   TEMP_GB_NVS3,
-  HMC_SNR_CNT = 0x7f,
+  HGX_SNR_CNT = 0x7f,
 };
 
 #endif

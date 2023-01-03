@@ -4,7 +4,7 @@
 #include <openbmc/obmc_pal_sensors.h>
 #include "pal_mb_sensors.h"
 #include "pal_swb_sensors.h"
-#include "pal_hmc_sensors.h"
+#include "pal_hgx_sensors.h"
 #include "pal_bb_sensors.h"
 
 //CPU INFO

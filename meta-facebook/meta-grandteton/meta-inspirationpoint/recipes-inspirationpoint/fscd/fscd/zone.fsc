@@ -99,87 +99,87 @@ max([
 
   gpu_tray_nvs_linear(
     max([
-      all:hmc_hmc_temp_gb_nvs0_c,
-      all:hmc_hmc_temp_gb_nvs1_c,
-      all:hmc_hmc_temp_gb_nvs2_c,
-      all:hmc_hmc_temp_gb_nvs3_c])),
+      all:hgx_hgx_temp_gb_nvs0_c,
+      all:hgx_hgx_temp_gb_nvs1_c,
+      all:hgx_hgx_temp_gb_nvs2_c,
+      all:hgx_hgx_temp_gb_nvs3_c])),
 
   gpu_tray_gpu_linear(
     max([
-      all:hmc_hmc_temp_gb_gpu0_c,
-      all:hmc_hmc_temp_gb_gpu1_c,
-      all:hmc_hmc_temp_gb_gpu2_c,
-      all:hmc_hmc_temp_gb_gpu3_c,
-      all:hmc_hmc_temp_gb_gpu4_c,
-      all:hmc_hmc_temp_gb_gpu5_c,
-      all:hmc_hmc_temp_gb_gpu6_c,
-      all:hmc_hmc_temp_gb_gpu7_c])) +
+      all:hgx_hgx_temp_gb_gpu0_c,
+      all:hgx_hgx_temp_gb_gpu1_c,
+      all:hgx_hgx_temp_gb_gpu2_c,
+      all:hgx_hgx_temp_gb_gpu3_c,
+      all:hgx_hgx_temp_gb_gpu4_c,
+      all:hgx_hgx_temp_gb_gpu5_c,
+      all:hgx_hgx_temp_gb_gpu6_c,
+      all:hgx_hgx_temp_gb_gpu7_c])) +
   gpu_tray_gpu_pid(
     max([
-      all:hmc_hmc_temp_gb_gpu0_c,
-      all:hmc_hmc_temp_gb_gpu1_c,
-      all:hmc_hmc_temp_gb_gpu2_c,
-      all:hmc_hmc_temp_gb_gpu3_c,
-      all:hmc_hmc_temp_gb_gpu4_c,
-      all:hmc_hmc_temp_gb_gpu5_c,
-      all:hmc_hmc_temp_gb_gpu6_c,
-      all:hmc_hmc_temp_gb_gpu7_c])),
+      all:hgx_hgx_temp_gb_gpu0_c,
+      all:hgx_hgx_temp_gb_gpu1_c,
+      all:hgx_hgx_temp_gb_gpu2_c,
+      all:hgx_hgx_temp_gb_gpu3_c,
+      all:hgx_hgx_temp_gb_gpu4_c,
+      all:hgx_hgx_temp_gb_gpu5_c,
+      all:hgx_hgx_temp_gb_gpu6_c,
+      all:hgx_hgx_temp_gb_gpu7_c])),
 
   gpu_tray_retimer_linear(
     max([
-      all:hmc_hmc_temp_gb_pcieretimer0_c,
-      all:hmc_hmc_temp_gb_pcieretimer1_c,
-      all:hmc_hmc_temp_gb_pcieretimer2_c,
-      all:hmc_hmc_temp_gb_pcieretimer3_c,
-      all:hmc_hmc_temp_gb_pcieretimer4_c,
-      all:hmc_hmc_temp_gb_pcieretimer5_c,
-      all:hmc_hmc_temp_gb_pcieretimer6_c,
-      all:hmc_hmc_temp_gb_pcieretimer7_c])) +
+      all:hgx_hgx_temp_gb_pcieretimer0_c,
+      all:hgx_hgx_temp_gb_pcieretimer1_c,
+      all:hgx_hgx_temp_gb_pcieretimer2_c,
+      all:hgx_hgx_temp_gb_pcieretimer3_c,
+      all:hgx_hgx_temp_gb_pcieretimer4_c,
+      all:hgx_hgx_temp_gb_pcieretimer5_c,
+      all:hgx_hgx_temp_gb_pcieretimer6_c,
+      all:hgx_hgx_temp_gb_pcieretimer7_c])) +
   gpu_tray_retimer_pid(
     max([
-      all:hmc_hmc_temp_gb_pcieretimer0_c,
-      all:hmc_hmc_temp_gb_pcieretimer1_c,
-      all:hmc_hmc_temp_gb_pcieretimer2_c,
-      all:hmc_hmc_temp_gb_pcieretimer3_c,
-      all:hmc_hmc_temp_gb_pcieretimer4_c,
-      all:hmc_hmc_temp_gb_pcieretimer5_c,
-      all:hmc_hmc_temp_gb_pcieretimer6_c,
-      all:hmc_hmc_temp_gb_pcieretimer7_c])),
+      all:hgx_hgx_temp_gb_pcieretimer0_c,
+      all:hgx_hgx_temp_gb_pcieretimer1_c,
+      all:hgx_hgx_temp_gb_pcieretimer2_c,
+      all:hgx_hgx_temp_gb_pcieretimer3_c,
+      all:hgx_hgx_temp_gb_pcieretimer4_c,
+      all:hgx_hgx_temp_gb_pcieretimer5_c,
+      all:hgx_hgx_temp_gb_pcieretimer6_c,
+      all:hgx_hgx_temp_gb_pcieretimer7_c])),
 
   gpu_tray_hbm_linear(
     max([
-      all:hmc_hmc_temp_gb_gpu0_m_c,
-      all:hmc_hmc_temp_gb_gpu1_m_c,
-      all:hmc_hmc_temp_gb_gpu2_m_c,
-      all:hmc_hmc_temp_gb_gpu3_m_c,
-      all:hmc_hmc_temp_gb_gpu4_m_c,
-      all:hmc_hmc_temp_gb_gpu5_m_c,
-      all:hmc_hmc_temp_gb_gpu6_m_c,
-      all:hmc_hmc_temp_gb_gpu7_m_c])) +
+      all:hgx_hgx_temp_gb_gpu0_m_c,
+      all:hgx_hgx_temp_gb_gpu1_m_c,
+      all:hgx_hgx_temp_gb_gpu2_m_c,
+      all:hgx_hgx_temp_gb_gpu3_m_c,
+      all:hgx_hgx_temp_gb_gpu4_m_c,
+      all:hgx_hgx_temp_gb_gpu5_m_c,
+      all:hgx_hgx_temp_gb_gpu6_m_c,
+      all:hgx_hgx_temp_gb_gpu7_m_c])) +
   gpu_tray_hbm_pid(
     max([
-      all:hmc_hmc_temp_gb_gpu0_m_c,
-      all:hmc_hmc_temp_gb_gpu1_m_c,
-      all:hmc_hmc_temp_gb_gpu2_m_c,
-      all:hmc_hmc_temp_gb_gpu3_m_c,
-      all:hmc_hmc_temp_gb_gpu4_m_c,
-      all:hmc_hmc_temp_gb_gpu5_m_c,
-      all:hmc_hmc_temp_gb_gpu6_m_c,
-      all:hmc_hmc_temp_gb_gpu7_m_c])),
+      all:hgx_hgx_temp_gb_gpu0_m_c,
+      all:hgx_hgx_temp_gb_gpu1_m_c,
+      all:hgx_hgx_temp_gb_gpu2_m_c,
+      all:hgx_hgx_temp_gb_gpu3_m_c,
+      all:hgx_hgx_temp_gb_gpu4_m_c,
+      all:hgx_hgx_temp_gb_gpu5_m_c,
+      all:hgx_hgx_temp_gb_gpu6_m_c,
+      all:hgx_hgx_temp_gb_gpu7_m_c])),
 
   gpu_tray_vr_linear(
     max([
-      all:hmc_hmc_temp_gb_hsc0_c,
-      all:hmc_hmc_temp_gb_hsc1_c,
-      all:hmc_hmc_temp_gb_hsc2_c,
-      all:hmc_hmc_temp_gb_hsc3_c,
-      all:hmc_hmc_temp_gb_hsc4_c,
-      all:hmc_hmc_temp_gb_hsc5_c,
-      all:hmc_hmc_temp_gb_hsc6_c,
-      all:hmc_hmc_temp_gb_hsc7_c,
-      all:hmc_hmc_temp_gb_hsc8_c,
-      all:hmc_hmc_temp_gb_hsc9_c,
-      all:hmc_hmc_temp_gb_hsc10_c])),
+      all:hgx_hgx_temp_gb_hsc0_c,
+      all:hgx_hgx_temp_gb_hsc1_c,
+      all:hgx_hgx_temp_gb_hsc2_c,
+      all:hgx_hgx_temp_gb_hsc3_c,
+      all:hgx_hgx_temp_gb_hsc4_c,
+      all:hgx_hgx_temp_gb_hsc5_c,
+      all:hgx_hgx_temp_gb_hsc6_c,
+      all:hgx_hgx_temp_gb_hsc7_c,
+      all:hgx_hgx_temp_gb_hsc8_c,
+      all:hgx_hgx_temp_gb_hsc9_c,
+      all:hgx_hgx_temp_gb_hsc10_c])),
 
   retimer_temp_linear(
     max([

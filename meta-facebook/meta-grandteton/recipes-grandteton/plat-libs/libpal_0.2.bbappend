@@ -17,8 +17,8 @@ LOCAL_URI += "\
     file://pal_mb_sensors.h \
     file://pal_swb_sensors.c \
     file://pal_swb_sensors.h \
-    file://pal_hmc_sensors.c \
-    file://pal_hmc_sensors.h \
+    file://pal_hgx_sensors.c \
+    file://pal_hgx_sensors.h \
     file://pal_bb_sensors.c \
     file://pal_bb_sensors.h \
     file://pal_cover.c \

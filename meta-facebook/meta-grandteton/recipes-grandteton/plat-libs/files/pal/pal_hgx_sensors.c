@@ -2,16 +2,16 @@
 #include <stdio.h>
 #include <syslog.h>
 #include "pal.h"
-#include "pal_hmc_sensors.h"
+#include "pal_hgx_sensors.h"
 #include <openbmc/hgx.h>
 
-struct hmc_snr_info {
-  char *evt_hmc_comp;
+struct hgx_snr_info {
+  char *evt_hgx_comp;
   char *evt_snr_name;
 
-  char *dvt_hmc_comp;
+  char *dvt_hgx_comp;
   char *dvt_snr_name;
-} HMC_SNR_INFO[] = {
+} HGX_SNR_INFO[] = {
   //Baseboard
   {"NULL", "NULL", "NULL", "NULL"},
   {"Baseboard", "PWR_GB_HSC0", "HGX_Chassis_0", "HGX_Chassis_0_HSC_0_Power_0"},
@@ -148,19 +148,19 @@ static int
 read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = -1;
   float val = 0;
-  char hmc_version[256] = {0};
+  char hgx_version[256] = {0};
   const int MAX_RETRY = 30;
   static int build_stage = NONE;
   static uint8_t retry = 0;
-  static uint8_t snr_retry[HMC_SNR_CNT] = {0};
+  static uint8_t snr_retry[HGX_SNR_CNT] = {0};
 
-  if (sensor_num == HMC_SNR_PWR_GB_HSC0 && build_stage == NONE && retry <= MAX_RETRY) {
+  if (sensor_num == HGX_SNR_PWR_GB_HSC0 && build_stage == NONE && retry <= MAX_RETRY) {
     retry++;
-    if (get_hmc_ver("HMC_Firmware", hmc_version) == 0) {
+    if (get_hgx_ver("HGX_Firmware", hgx_version) == 0) {
       build_stage = EVT;
     }
-    else if (get_hmc_ver("HGX_FW_HMC_0", hmc_version) == 0 ||
-             get_hmc_ver("HGX_FW_BMC_0", hmc_version) == 0) {
+    else if (get_hgx_ver("HGX_FW_HGX_0", hgx_version) == 0 ||
+             get_hgx_ver("HGX_FW_BMC_0", hgx_version) == 0) {
       build_stage = DVT;
     }
     else {
@@ -170,10 +170,10 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   }
 
   if (build_stage == EVT) {
-	ret = get_hmc_sensor(HMC_SNR_INFO[sensor_num].evt_hmc_comp, HMC_SNR_INFO[sensor_num].evt_snr_name, &val);
+	ret = get_hgx_sensor(HGX_SNR_INFO[sensor_num].evt_hgx_comp, HGX_SNR_INFO[sensor_num].evt_snr_name, &val);
   }
   else if (build_stage == DVT) {
-	ret = get_hmc_sensor(HMC_SNR_INFO[sensor_num].dvt_hmc_comp, HMC_SNR_INFO[sensor_num].dvt_snr_name, &val);
+	ret = get_hgx_sensor(HGX_SNR_INFO[sensor_num].dvt_hgx_comp, HGX_SNR_INFO[sensor_num].dvt_snr_name, &val);
   }
   else {
     return -1;
@@ -190,7 +190,7 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
-PAL_SENSOR_MAP hmc_sensor_map[] = {
+PAL_SENSOR_MAP hgx_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0
   {"PWR_GB_HSC0" , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x01
   {"PWR_GB_HSC1" , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x02
@@ -328,19 +328,19 @@ PAL_SENSOR_MAP hmc_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
 };
 
-const uint8_t hmc_sensor_list[] = {
+const uint8_t hgx_sensor_list[] = {
   //Baseboard
-  HMC_SNR_PWR_GB_HSC0,
-  HMC_SNR_PWR_GB_HSC1,
-  HMC_SNR_PWR_GB_HSC2,
-  HMC_SNR_PWR_GB_HSC3,
-  HMC_SNR_PWR_GB_HSC4,
-  HMC_SNR_PWR_GB_HSC5,
-  HMC_SNR_PWR_GB_HSC6,
-  HMC_SNR_PWR_GB_HSC7,
-  HMC_SNR_PWR_GB_HSC8,
-  HMC_SNR_PWR_GB_HSC9,
-  HMC_SNR_PWR_GB_HSC10,
+  HGX_SNR_PWR_GB_HSC0,
+  HGX_SNR_PWR_GB_HSC1,
+  HGX_SNR_PWR_GB_HSC2,
+  HGX_SNR_PWR_GB_HSC3,
+  HGX_SNR_PWR_GB_HSC4,
+  HGX_SNR_PWR_GB_HSC5,
+  HGX_SNR_PWR_GB_HSC6,
+  HGX_SNR_PWR_GB_HSC7,
+  HGX_SNR_PWR_GB_HSC8,
+  HGX_SNR_PWR_GB_HSC9,
+  HGX_SNR_PWR_GB_HSC10,
   Total_Power,
   //Total_GPU_Power,
   Altitude_Pressure0,
@@ -437,4 +437,4 @@ const uint8_t hmc_sensor_list[] = {
   TEMP_GB_NVS3,
 };
 
-size_t hmc_sensor_cnt = sizeof(hmc_sensor_list)/sizeof(uint8_t);
+size_t hgx_sensor_cnt = sizeof(hgx_sensor_list)/sizeof(uint8_t);

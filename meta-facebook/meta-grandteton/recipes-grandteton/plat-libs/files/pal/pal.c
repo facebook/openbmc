@@ -60,7 +60,7 @@
 #define NUM_BMC_FRU     1
 
 const char pal_fru_list[] = \
-"all, mb, nic0, nic1, swb, hmc, bmc, scm, vpdb, hpdb, fan_bp0, fan_bp1, fio, hsc, swb_hsc, " \
+"all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp0, fan_bp1, fio, hsc, swb_hsc, " \
 // Artemis fru list
 "acb, meb, acb_accl1, acb_accl2, acb_accl3, acb_accl4, acb_accl5, acb_accl6, acb_accl7, acb_accl8, " \
 "acb_accl9, acb_accl10, acb_accl11, acb_accl12";
@@ -75,7 +75,7 @@ const char pal_server_list[] = "mb";
 
 #define SWB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
-#define HMC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
+#define HGX_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
 #define NIC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | \
                         FRU_CAPABILITY_NETWORK_CARD
@@ -135,7 +135,7 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_ALL,   "all",     NULL,            0,  0,    ALL_CAPABILITY, FRU_PATH_NONE,   NULL, PLDM_FRU_NOT_SUPPORT},
   {FRU_MB,    "mb",      "Mother Board",  33, 0x51, MB_CAPABILITY,  FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_SWB,   "swb",     "Switch Board",  3,  0x20, SWB_CAPABILITY, FRU_PATH_PLDM,   fru_presence,  PLDM_FRU_SWB},
-  {FRU_HMC,   "hmc",     "HMC Board"  ,   9,  0x53,  HMC_CAPABILITY, FRU_PATH_EEPROM,fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_HGX,   "hgx",     "HGX Board"  ,   9,  0x53,  HGX_CAPABILITY, FRU_PATH_EEPROM,fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_NIC0,  "nic0",    "Mezz Card 0",   13, 0x50, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_NIC1,  "nic1",    "Mezz Card 1",   4,  0x52, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_OCPDBG,   "ocpdbg",  "Debug Board",   14, 0,    0,              FRU_PATH_NONE,   NULL,         PLDM_FRU_NOT_SUPPORT},
@@ -736,7 +736,7 @@ int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
   if (pal_is_artemis()) {
     switch (fru) {
       case FRU_SWB:
-      case FRU_HMC:
+      case FRU_HGX:
       case FRU_OCPDBG:
       case FRU_HSC:
       case FRU_SHSC:

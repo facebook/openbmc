@@ -89,18 +89,11 @@ int CpldComponent::update_cpld(const string& image, bool force) {
   char ver_key[MAX_KEY_LEN] = {0};
   char ver[16] = {0};
   uint8_t bmc_location = 0;
-  image_info image_sts = check_image(image, force);
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return ret;
-  }
-
-  if (image_sts.result == false) {
-    syslog(LOG_CRIT, "Update %s on %s Fail. File: %s is not a valid image",
-           get_component_name(fw_comp), fru().c_str(), image.c_str());
-    return FW_STATUS_FAILURE;
   }
 
   if (force) {
@@ -114,6 +107,13 @@ int CpldComponent::update_cpld(const string& image, bool force) {
       printf("%s\n", err.c_str());
       return FW_STATUS_NOT_SUPPORTED;
     }
+  }
+
+  image_info image_sts = check_image(image, force);
+  if (image_sts.result == false) {
+    syslog(LOG_CRIT, "Update %s on %s Fail. File: %s is not a valid image",
+           get_component_name(fw_comp), fru().c_str(), image.c_str());
+    return FW_STATUS_FAILURE;
   }
 
   if (fw_comp == FW_CPLD) {

@@ -88,13 +88,6 @@ bool BicFwComponent::is_recovery() {
 
 int BicFwComponent::update_internal(const string& image, bool force) {
   int ret = FW_STATUS_FAILURE;
-  image_info image_sts = check_image(image, force);
-
-  if (image_sts.result == false) {
-    syslog(LOG_CRIT, "Update %s on %s Fail. File: %s is not a valid image",
-           get_component_name(fw_comp), fru().c_str(), image.c_str());
-    return FW_STATUS_FAILURE;
-  }
 
   try {
     if (!is_recovery()) {
@@ -104,6 +97,13 @@ int BicFwComponent::update_internal(const string& image, bool force) {
   } catch (string& err) {
     cerr << err << endl;
     return FW_STATUS_NOT_SUPPORTED;
+  }
+
+  image_info image_sts = check_image(image, force);
+  if (image_sts.result == false) {
+    syslog(LOG_CRIT, "Update %s on %s Fail. File: %s is not a valid image",
+           get_component_name(fw_comp), fru().c_str(), image.c_str());
+    return FW_STATUS_FAILURE;
   }
 
   ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);

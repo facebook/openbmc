@@ -68,13 +68,6 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   int ret;
   int ret_recovery = 0, ret_reset = 0;
   int server_type = 0;
-  image_info image_sts = check_image(image, force);
-
-  if (image_sts.result == false) {
-    syslog(LOG_CRIT, "Update %s on %s Fail. File: %s is not a valid image",
-           get_component_name(fw_comp), fru().c_str(), image.c_str());
-    return FW_STATUS_FAILURE;
-  }
 
   try {
     cerr << "Checking if the server is ready..." << endl;
@@ -86,6 +79,13 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   if (image.empty() && fd < 0) {
     cerr << "File or fd is required." << endl;
     return FW_STATUS_NOT_SUPPORTED;
+  }
+
+  image_info image_sts = check_image(image, force);
+  if (image_sts.result == false) {
+    syslog(LOG_CRIT, "Update %s on %s Fail. File: %s is not a valid image",
+           get_component_name(fw_comp), fru().c_str(), image.c_str());
+    return FW_STATUS_FAILURE;
   }
 
   if (attempt_server_power_off(force)) {

@@ -34,6 +34,7 @@
 #include <sys/types.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/ncsi.h>
 #include <openbmc/nl-wrapper.h>
@@ -4703,57 +4704,43 @@ pal_clear_cmos(uint8_t slot_id) {
 
 int
 pal_is_cable_connect_baseborad(uint8_t slot_id, uint16_t curr) {
-  uint8_t tbuf[1] = {CABLE_PRSNT_REG};
-  uint8_t rbuf[1] = {0};
-  uint8_t tlen = 1;
-  uint8_t rlen = 1;
-  static uint8_t last_rbuf = 0;
-  int retry = MAX_RETRY;
-  uint8_t mask = 1;
-  int i2cfd = 0;
+  uint8_t tbuf[4] = {CABLE_PRSNT_REG};
+  uint8_t rbuf[4] = {0};
+  uint8_t mask = 1 << (slot_id - 1);
+  int i2cfd = -1;
   int ret = 0;
 
-  if(curr == GPIO_VALUE_LOW) {
-    mask = mask << (slot_id - 1);
-    last_rbuf = (last_rbuf & (~mask));
-    goto exit;
+  if (curr == GPIO_VALUE_LOW) {
+    return 0;
   }
 
   i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if(i2cfd < 0) {
+  if (i2cfd < 0) {
     syslog(LOG_WARNING, "Failed to open bus %d\n", BB_CPLD_BUS);
     return i2cfd;
   }
 
-  for(retry = MAX_RETRY; retry > 0; retry--) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-    if((rbuf[0] ^ last_rbuf) != 0) {
-      last_rbuf = rbuf[0];
-      break;
-    }
-  }
-
-  if(ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, bus = %x tbuf=%d", __func__, CPLD_ADDRESS, tbuf[0]);
+  ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 1, rbuf, 1), MAX_RETRY, 50);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to read BB_CPLD, reg=0x%02x", __func__, tbuf[0]);
     goto exit;
   }
 
   /*
    *  rbuf[0] = 0x0~0xf
-   *  if slot1 is present, bit 1 is 0 else 1.
-   *  if slot2 is present, bit 2 is 0 else 1.
-   *  if slot3 is present, bit 3 is 0 else 1.
-   *  if slot4 is present, bit 4 is 0 else 1.
+   *  if slot1 is present, bit 0 is 0 else 1.
+   *  if slot2 is present, bit 1 is 0 else 1.
+   *  if slot3 is present, bit 2 is 0 else 1.
+   *  if slot4 is present, bit 3 is 0 else 1.
    */
-  mask = mask << (slot_id - 1);
-  if ((rbuf[0] & mask) != 0){
+  if ((rbuf[0] & mask) != 0) {
     syslog(LOG_CRIT, "Slot%u cable is not connected to the baseboard", slot_id);
   } else {
     syslog(LOG_CRIT, "Slot%u cable is not connected to the serverboard", slot_id);
   }
 
 exit:
-  if ( i2cfd >= 0 ) {
+  if (i2cfd >= 0) {
     close(i2cfd);
   }
 

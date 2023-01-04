@@ -3466,7 +3466,6 @@ pal_store_crashdump(uint8_t fru, bool ierr) {
 static int
 pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
-  int i = 0;
   bool is_cri_sel = false;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
@@ -3482,11 +3481,6 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         fan_mode = (event_data[2] == SEL_ASSERT) ? FAN_MODE_BOOST : FAN_MODE_NORMAL;
         snprintf(value, sizeof(value), "%d", fan_mode);
         kv_set(KEY_FAN_MODE_EVENT, value, 0, 0);
-        if (event_data[2] == SEL_ASSERT) {
-          for (i = 0; i < pal_pwm_cnt; i++) {
-            pal_set_fan_speed(i, 100);
-          }
-        }
       }
       break;
     case CPU_DIMM_HOT:

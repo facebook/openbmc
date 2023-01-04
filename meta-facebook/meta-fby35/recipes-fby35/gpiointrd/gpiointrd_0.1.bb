@@ -35,7 +35,19 @@ inherit legacy-packages
 
 pkgdir = "gpiointrd"
 
-DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfby35-common libipmi libfby35-gpio libobmc-i2c libkv libbic libpal libras"
+DEPENDS += "\
+    libbic \
+    libfby35-common \
+    libfby35-gpio \
+    libgpio-ctrl \
+    libipmi \
+    libkv \
+    libobmc-i2c \
+    libpal \
+    libras \
+    update-rc.d-native \
+"
+RDEPENDS:${PN} += "bash"
 CFLAGS += " -DCONFIG_FBY3 "
 
 

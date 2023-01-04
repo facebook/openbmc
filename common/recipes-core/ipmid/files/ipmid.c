@@ -3850,17 +3850,13 @@ oem_get_https_certificate_attr(unsigned char *request, unsigned char req_len,
   int type = req->data[0];
 
   int fd = open(HTTPS_BOOT_CERT_PATH, O_RDONLY);
-  if (fd < 0) {
-    res->cc = CC_UNSPECIFIED_ERROR;
-    return;
-  }
 
   switch (type) {
     case ROOTCERT_SIZE:
     {
       int size = 0;
       struct stat st;
-      if (fstat(fd, &st) == 0) {
+      if (fd >= 0 && fstat(fd, &st) == 0) {
         size = st.st_size;
       }
       data[0] = size & 0xFF; // size LSB
@@ -3874,12 +3870,14 @@ oem_get_https_certificate_attr(unsigned char *request, unsigned char req_len,
       unsigned char buf[1024];
       uint32_t checksum = crc32(0, Z_NULL, 0);
       int rc;
-      do {
-        rc = read(fd, buf, 1024);
-        if (rc > 0) {
-          checksum = crc32(checksum, buf, rc);
-        }
-      } while (rc > 0);
+      if (fd >= 0) {
+        do {
+          rc = read(fd, buf, 1024);
+          if (rc > 0) {
+            checksum = crc32(checksum, buf, rc);
+          }
+        } while (rc > 0);
+      }
 
       memcpy(data, &checksum, 4);
       *res_len = 4;
@@ -3888,6 +3886,9 @@ oem_get_https_certificate_attr(unsigned char *request, unsigned char req_len,
     }
     default:
       res->cc = CC_UNSPECIFIED_ERROR;
+  }
+  if (fd) {
+    close(fd);
   }
   return;
 }

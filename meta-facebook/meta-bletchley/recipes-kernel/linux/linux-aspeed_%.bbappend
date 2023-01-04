@@ -7,5 +7,6 @@ SRC_URI += " \
         file://0005-aspeed-i2c-add-clock-duty-cycle-property.patch \
         file://0006-dt-bindings-aspeed-i2c-add-properties-for-setting-i2.patch \
         file://0007-ARM-dts-aspeed-bletchley-set-manual-clock-for-i2c13.patch \
+        file://0008-drivers-misc-Add-Aspeed-OTP-control-register.patch \
 "
 

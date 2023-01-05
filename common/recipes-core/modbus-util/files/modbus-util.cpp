@@ -200,9 +200,9 @@ int main(int argc, char** argv) {
   auto start = &hex_bytes[0].value;
   auto end = start + hex_bytes.size();
   auto bytes = std::vector<uint8_t>(start, end);
-  auto crc = crc16(bytes.data(), bytes.size());
-  bytes.push_back(crc >> 8);
+  auto crc = crc16_ibm(bytes.data(), bytes.size());
   bytes.push_back(crc & 0xFF);
+  bytes.push_back(crc >> 8);
 
   if (modbus_send(fd, bytes.data(), bytes.size())) {
     printf("Error sending command\n");

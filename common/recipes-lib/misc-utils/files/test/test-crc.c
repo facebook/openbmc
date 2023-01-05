@@ -4,9 +4,10 @@
 
 void test_crc16(struct test_stats *stats)
 {
-	uint8_t buf[] = {0x0c, 0x03, 0x90, 0x00, 0x00, 0x01};
-	uint16_t got = crc16(buf, sizeof(buf));
-	uint16_t expected = 0xa817;
+	// This example is from the Modbus specification.
+	uint8_t buf[] = {0x02, 0x07};
+	uint16_t got = crc16_ibm(buf, sizeof(buf));
+	uint16_t expected = 0x1241;
 
 	if (got != expected) {
 		LOG_DEBUG("crc16 got 0x%04x, expected 0x%04x\n", got, expected);

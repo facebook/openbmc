@@ -52,15 +52,17 @@ static const uint8_t CRC16_HI[] = {
 	0x00, 0xC1, 0x81, 0x40,
 };
 
-uint16_t crc16(const uint8_t *buf, size_t count)
+// https://en.wikipedia.org/wiki/Cyclic_redundancy_check
+// https://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf
+uint16_t crc16_ibm(const uint8_t *buf, size_t count)
 {
 	uint8_t hi = 0xFF;
 	uint8_t lo = 0xFF;
 
 	for (size_t i = 0; i < count; i++) {
-		size_t j = hi ^ buf[i];
-		hi = lo ^ CRC16_HI[j];
-		lo = CRC16_LO[j];
+		size_t j = lo ^ buf[i];
+		lo = hi ^ CRC16_HI[j];
+		hi = CRC16_LO[j];
 	}
 
 	return hi << 8 | lo;

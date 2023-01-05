@@ -118,7 +118,7 @@ int single_instance_unlock(int lock_fd);
 /*
  * CRC utility functions.
  */
-uint16_t crc16(const uint8_t *buf, size_t count);
+uint16_t crc16_ibm(const uint8_t *buf, size_t count);
 uint8_t lrc8(const uint8_t *buf, size_t count);
 
 #ifdef __cplusplus

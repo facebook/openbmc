@@ -4895,7 +4895,7 @@ pal_load_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain, char *
       *remain = MAX_TI_VR_REMAIN_WR;
       bic_set_tps_remaining_wr(fru_id, addr, *remain);
     }
-    if (is_update) {
+    if (is_update && *remain) {
       (*remain)--;
       bic_set_tps_remaining_wr(fru_id, addr, *remain);
     }

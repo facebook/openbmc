@@ -341,6 +341,26 @@ fby35_common_get_sb_rev(uint8_t fru) {
 }
 
 int
+fby35_common_get_1ou_m2_prsnt(uint8_t fru) {
+  int ret = 0;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_M2_PRSNT, (uint8_t *)value)) {
+    return -1;
+  }
+
+  value[0] >>= 1;
+  ret = value[0];
+  snprintf(key, sizeof(key), "fru%u_1ou_m2_prsnt", fru);
+  if (kv_set(key, value, 1, 0)) {
+    syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
+  }
+
+  return ret;
+}
+
+int
 fby35_common_get_sb_pch_bic_pwr_fault(uint8_t fru) {
   int ret = 0;
 
@@ -844,7 +864,7 @@ exit:
 }
 
 uint8_t
-fby35_zero_checksum_calculate(uint8_t *buf, uint8_t len) { 
+fby35_zero_checksum_calculate(uint8_t *buf, uint8_t len) {
   uint8_t i, ret = 0;
 
   for (i = 0; i < len; i++) {

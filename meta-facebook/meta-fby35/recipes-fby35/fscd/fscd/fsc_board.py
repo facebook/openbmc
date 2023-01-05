@@ -27,6 +27,7 @@ from fsc_util import Logger
 fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
 get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR"]
 
+lfby35_hndl = CDLL("libfby35_common.so.0")
 lpal_hndl = CDLL("libpal.so.0")
 lbic_hndl = CDLL("libbic.so.0")
 
@@ -80,21 +81,24 @@ host_ready_map = {
 }
 
 
-def is_halfdome():
+def get_system_conf():
     try:
-        conf = kv.kv_get("sled_system_conf", kv.FPERSIST)
-        if "HD" in conf:
-            return True
-        return False
+        return kv.kv_get("sled_system_conf", kv.FPERSIST)
 
     except Exception:
-        return False
+        return ""
 
 
-if is_halfdome():
+system_conf = get_system_conf()
+if "HD" in system_conf:
     one_fan_fail_tuple = (fan_mode["boost_mode"], 100)
     GPIO_FM_BIOS_POST_CMPLT_BMC_N = 0
     dimm_location_name_map = hd_dimm_location_name_map
+elif "VF" in system_conf:
+    for i in [1, 2, 3, 4]:
+        lfby35_hndl.fby35_common_get_1ou_m2_prsnt(int(i))
+else:
+    pass
 
 
 def board_fan_actions(fan, action="None"):
@@ -162,10 +166,23 @@ def is_host_ready(filename):
         return 0
 
 
-def is_dev_prsnt(filename):
+def is_dimm_prsnt(board, num):
     try:
+        filename = "sys_config/" + fru_map[board]["name"] + dimm_location_name_map[num]
         val = kv.kv_get(filename, kv.FPERSIST, True)
         if val[0] == 1:
+            return 1
+        return 0
+
+    except Exception:
+        return 0
+
+
+def is_e1s_prsnt(board, num):
+    try:
+        filename = fru_map[board]["name"] + "_1ou_m2_prsnt"
+        val = kv.kv_get(filename, 0, True)
+        if (val[0] & (1 << int(num))) == 0:
             return 1
         return 0
 
@@ -202,12 +219,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     return 0
 
                 if "dimm" in sname:
-                    dimm_name = (
-                        "sys_config/"
-                        + fru_map[board]["name"]
-                        + dimm_location_name_map[sname[8 : sname.find("_t")]]
-                    )
-                    return is_dev_prsnt(dimm_name)
+                    return is_dimm_prsnt(board, sname[8 : sname.find("_t")])
+
+                if "vf_e1s" in sname:
+                    return is_e1s_prsnt(board, sname[10 : sname.find("_t")])
 
                 return 1
 
@@ -231,9 +246,7 @@ def get_fan_mode(scenario="None"):
 
 
 def sensor_fail_ignore_check(board, sname):
-    if "e1s_" in sname:
-        return True
-    elif "slot" not in sname:
+    if "slot" not in sname:
         return False
     else:
         (board, sname) = sname.split("_", 1)

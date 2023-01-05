@@ -73,6 +73,7 @@ extern "C" {
 #define CPLD_REG_SB_CLASS           0x00
 #define CPLD_REG_UART_MUX           0x01
 #define CPLD_REG_BIC_READY          0x02
+#define CPLD_REG_M2_PRSNT           0x05
 #define CPLD_REG_REV_ID             0x07
 #define CPLD_REG_PCH_BIC_PWR_FAULT  0x09
 #define CPLD_REG_CPU_PWR_FAULT      0x0A
@@ -553,6 +554,7 @@ int fby35_common_get_bus_id(uint8_t slot_id);
 int fby35_common_is_fru_prsnt(uint8_t fru, uint8_t *val);
 int fby35_common_get_slot_type(uint8_t fru);
 int fby35_common_get_sb_rev(uint8_t fru);
+int fby35_common_get_1ou_m2_prsnt(uint8_t fru);
 int fby35_common_get_sb_pch_bic_pwr_fault(uint8_t fru);
 int fby35_common_get_sb_cpu_pwr_fault(uint8_t fru);
 int fby35_common_get_sb_bic_boot_strap(uint8_t fru);

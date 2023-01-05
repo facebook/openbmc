@@ -729,6 +729,40 @@
             ]
         },
         {
+            "alias": "openbmc-cit-gtartemis-determinator",
+            "args": {
+                "name": "openbmc-cit-gtartemis-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-gtartemis-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform gtartemis"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-grandteton/meta-gtartemis/.*",
+                        "^meta-facebook/meta-grandteton/recipes-.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-halfdome-determinator",
             "args": {
                 "name": "openbmc-cit-halfdome-determinator",

@@ -1134,9 +1134,9 @@ get_pmic_err_str(uint8_t err_type, char* str, uint8_t len) {
   const char *err_str[] = {
     "SWAout OV", "SWBout OV", "SWCout OV", "SWDout OV", "Vin Bulk OV",
     "Vin Mgmt OV", "SWAout UV", "SWBout UV", "SWCout UV", "SWDout UV",
-    "Vin Bulk UV", "Vin Mgmt to Vin buck switchover", "High temp warning",
-    "Vout 1v8 PG", "High current warning", "Current limit warning",
-    "Current temp shutdown", "Unknown"
+    "Vin Bulk UV", "Vin Mgmt to Vin Bulk Switchover", "High Temp Warning",
+    "Vout 1.8V Power Good", "High Current Warning", "Current Limit Warning",
+    "Critical Temp Shutdown", "Unknown"
   };
 
   if (str == NULL) {

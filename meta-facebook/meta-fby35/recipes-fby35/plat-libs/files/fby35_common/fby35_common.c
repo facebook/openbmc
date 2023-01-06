@@ -393,6 +393,69 @@ fby35_common_get_sb_bic_boot_strap(uint8_t fru) {
   return ret;
 }
 
+static int
+fby35_read_bb_cpld(uint8_t bus, uint8_t offset, uint8_t *data) {
+  int ret, i2cfd;
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+
+  if (data == NULL) {
+    return -1;
+  }
+
+  i2cfd = i2c_cdev_slave_open(bus, BB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open bus %u: %s", __func__, bus, strerror(errno));
+    return -1;
+  }
+
+  tbuf[0] = offset;
+  ret = i2c_rdwr_msg_transfer(i2cfd, (BB_CPLD_ADDR << 1), tbuf, 1, rbuf, 1);
+  close(i2cfd);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to read CPLD, offset=%02X", __func__, offset);
+    return -1;
+  }
+  *data = rbuf[0];
+
+  return 0;
+}
+
+int
+fby35_common_get_bb_rev(void) {
+  int ret = 0;
+  uint8_t bmc_location = 0;
+  uint8_t bus = BB_CPLD_BUS;
+  char *key = "board_rev_id";
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (fby35_common_get_bmc_location(&bmc_location) != 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  }
+
+  if (bmc_location == NIC_BMC) {
+    bus = NIC_CPLD_BUS;
+    key = "nic_board_rev_id";
+  }
+
+  if (kv_get(key, value, NULL, 0) == 0) {
+    ret = value[0];
+    return ret;
+  }
+
+  if (retry_cond(!fby35_read_bb_cpld(bus, CPLD_REG_BB_REV, (uint8_t *)value), 3, 50)) {
+    return -1;
+  }
+
+  ret = value[0];
+  if (kv_set(key, value, 1, KV_FCREATE)) {
+    syslog(LOG_WARNING, "%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
+  }
+
+  return ret;
+}
+
 #define CRASHDUMP_BIN       "/usr/bin/autodump.sh"
 
 int

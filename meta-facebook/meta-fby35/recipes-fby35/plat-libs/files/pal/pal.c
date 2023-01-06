@@ -1156,77 +1156,56 @@ int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   int ret = CC_UNSPECIFIED_ERROR;
   uint8_t *data = res_data;
-  int dev = 0, retry = 3;
-  uint8_t tbuf[4] = {0};
-  uint8_t rbuf[4] = {0};
-  uint8_t rlen = 0;
-  uint8_t bmc_location = 0; //the value of bmc_location is board id.
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+  uint8_t rlen = sizeof(rbuf);
+  uint8_t bmc_location = 0;  // the value of bmc_location is board id.
   *res_len = 0;
 
   ret = fby35_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
+  if (ret < 0) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    goto error_exit;
+    return CC_UNSPECIFIED_ERROR;
   }
 
   *data++ = bmc_location;
 
-  if ( bmc_location == BB_BMC ) {
-    dev = open("/dev/i2c-12", O_RDWR);
-    if ( dev < 0 ) {
-      return -1;
-    }
-
-    while ((--retry) > 0) {
-      tbuf[0] = 8;
-      ret = i2c_rdwr_msg_transfer(dev, 0x1E, tbuf, 1, rbuf, 1);
-      if (!ret)
-        break;
-      if (retry)
-        msleep(10);
-    }
-
-    close(dev);
-    if (ret) {
-      *data++ = 0x00; //board rev id
+  // board rev id
+  if (bmc_location == BB_BMC) {
+    ret = fby35_common_get_bb_rev();
+    if (ret < 0) {
+      *data++ = 0x00;
     } else {
-      *data++ = rbuf[0]; //board rev id
+      *data++ = ret;
     }
-
   } else {
-    // Config C can not get rev id form NIC EXP CPLD so far
-    *data++ = 0x00; //board rev id
+    // Config D can not get rev id form NIC EXP CPLD so far
+    *data++ = 0x00;
   }
 
-  *data++ = slot; //slot id
-  *data++ = 0x00; //slot type. server = 0x00
+  *data++ = slot;  // slot id
+  *data++ = 0x00;  // slot type. server = 0x00
+
+  if (fby35_common_check_slot_id(slot) != 0) {
+    *res_len = data - res_data;
+    return CC_SUCCESS;
+  }
 
   // Get SB board ID
-  memset(tbuf, 0, sizeof(tbuf));
-  memset(rbuf, 0, sizeof(rbuf));
-  tbuf[0] = 0x01; //cpld bus id
-  tbuf[1] = 0x42; //slave addr
-  tbuf[2] = 0x01; //read 1 byte
-  tbuf[3] = 0x05; //register offset
-
-  retry = 0;
-  while (retry++ < 3) {
-    ret = bic_ipmb_wrapper(slot, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 4, rbuf, &rlen);
-    if (ret == 0) {
-      break;
-    }
-  }
+  tbuf[0] = 0x01;  // cpld bus id
+  tbuf[1] = 0x42;  // slave addr
+  tbuf[2] = 0x01;  // read 1 byte
+  tbuf[3] = 0x05;  // register offset
+  ret = retry_cond(!bic_ipmb_wrapper(slot, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
+                                     tbuf, 4, rbuf, &rlen), 3, 10);
   if (ret < 0) {
-    *data++ = 0; // dummy data to match the response format
+    *data++ = 0;             // dummy data to match the response format
   } else {
-    *data++ = rbuf[0] >> 4; // bit [7:4]: SB board ID
+    *data++ = rbuf[0] >> 4;  // bit[7:4]: SB board ID
   }
   *res_len = data - res_data;
-  ret = CC_SUCCESS;
 
-error_exit:
-
-  return ret;
+  return CC_SUCCESS;
 }
 
 int

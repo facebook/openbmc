@@ -46,11 +46,8 @@ extern "C" {
 #define BIT_VALUE(list, index) \
            ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
 
-#define NIC_CPLD_BUS 9
-#define BB_CPLD_BUS 12
 #define CPLD_ADDRESS 0x1E
 #define SLOT_BUS_BASE 3
-#define BB_CPLD_BOARD_REV_ID_REGISTER 0x08
 #define SB_CPLD_BOARD_ASD_STATUS_REG  0x1F
 #define CPLD_BB_BUS 0x01
 #define CPLD_SB_BUS 0x01

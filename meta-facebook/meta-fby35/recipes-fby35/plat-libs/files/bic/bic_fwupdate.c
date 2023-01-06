@@ -1066,49 +1066,6 @@ bic_update_fw_fd(uint8_t slot_id, uint8_t comp, int fd, uint8_t force) {
 }
 
 int
-get_board_revid_from_cpld(uint8_t cpld_bus, uint8_t reg_addr, uint8_t* rev_id){
-  int i2cfd = 0;
-  uint8_t rbuf[2] = {0};
-  uint8_t rlen = sizeof(rbuf);
-  uint8_t tbuf[4] = {0};
-  uint8_t tlen = 0;
-  int retry = 0;
-  int ret = 0;
-
-  i2cfd = i2c_cdev_slave_open(cpld_bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
-    goto error_exit;
-  }
-
-  tbuf[0] = reg_addr;
-  tlen = 1;
-  rlen = 1;
-  retry = 0;
-  while (retry < RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      break;
-    }
-  }
-  if (retry == RETRY_TIME) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    ret = -1;
-    goto error_exit;
-  }
-  *rev_id = rbuf[0];
-
-  error_exit:
-  if (i2cfd >= 0)
-    close(i2cfd);
-
-  return ret;
-}
-
-int
 get_board_revid_from_bbbic(uint8_t slot_id, uint8_t* rev_id) {
   uint8_t tbuf[4] = {0x01, 0x1E, 0x01, 0x08}; // 0x01=bus, 0x1E=cpld address, 0x01=read count, 0x08=CPLD offset to get board rev
   uint8_t rbuf[1] = {0};
@@ -1149,17 +1106,11 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
   if ( bmc_location == BB_BMC ) { // class 1
     switch (board_id) {
       case BOARD_ID_BB:
-        if ( kv_get("board_rev_id", value, NULL, 0) == 0 ) {
-          *rev_id = strtol(value, NULL, 10); // convert string to number
-        } else {
-          ret = get_board_revid_from_cpld(BB_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
-          if (ret == 0) {
-            snprintf(value, sizeof(value), "%x", *rev_id);
-            if (kv_set("board_rev_id", (char*)value, 1, KV_FCREATE)) {
-              syslog(LOG_WARNING,"%s: kv_set failed, key: board_rev_id, val: %x", __func__, *rev_id);
-            }
-          }
+        if ((ret = fby35_common_get_bb_rev()) < 0) {
+          return -1;
         }
+        *rev_id = (uint8_t)ret;
+        ret = 0;
         break;
       case BOARD_ID_SB:
         if ((ret = fby35_common_get_sb_rev(slot_id)) < 0) {
@@ -1175,17 +1126,11 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
   } else { // class 2
     switch (board_id) {
       case BOARD_ID_NIC_EXP:
-        if ( kv_get("nic_board_rev_id", value, NULL, 0) == 0 ) {
-          *rev_id = strtol(value, NULL, 10); // convert string to number
-        } else {
-          ret = get_board_revid_from_cpld(NIC_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
-          if (ret == 0) {
-            snprintf(value, sizeof(value), "%x", *rev_id);
-            if (kv_set("nic_board_rev_id", (char*)value, 1, KV_FCREATE)) {
-              syslog(LOG_WARNING,"%s: kv_set failed, key: nic_board_rev_id, val: %x", __func__, *rev_id);
-            }
-          }
+        if ((ret = fby35_common_get_bb_rev()) < 0) {
+          return -1;
         }
+        *rev_id = (uint8_t)ret;
+        ret = 0;
         break;
       case BOARD_ID_BB:
         if ( kv_get("board_rev_id", value, NULL, 0) == 0 ) {

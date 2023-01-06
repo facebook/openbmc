@@ -36,7 +36,6 @@
 #include <facebook/fby35_common.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
-#define POC1_BOARD_ID 0x0
 #define MAX_BLOCK_TIMEOUT 100
 #define MAX_SLED_CYCLE_RETRY 3
 
@@ -66,7 +65,7 @@ slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
   }
-  if ( strcmp(sys_conf, "Type_DPV2") == 0 || strcmp(sys_conf, "Type_HD") == 0 ){
+  if ( strcmp(sys_conf, "Type_DPV2") == 0 || strcmp(sys_conf, "Type_HD") == 0 ) {
     if (slot_id == 2 || slot_id == 4) return;
   }
 
@@ -235,7 +234,7 @@ ocp_nic_hotplug_hndlr(gpiopoll_pin_t *gp __attribute__((unused)), gpio_value_t l
     num_of_safe_fru = 0;
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
       if ((is_fru_prsnt[fru] == true) && (pal_can_change_power(fru) == false)) {
-        if(is_log_asserted[fru] == false) {
+        if (is_log_asserted[fru] == false) {
           syslog(LOG_CRIT, "%s() Postpone to do AC-cycle, FRU: %d is working", __func__, fru);
           is_log_asserted[fru] = true;
         }
@@ -312,39 +311,14 @@ ocp_nic_init(gpiopoll_pin_t *gp __attribute__((unused)), gpio_value_t value) {
 
 static void
 usb_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last __attribute__((unused)), gpio_value_t curr) {
-  int ret = 0, i2cfd = 0, retry=0;
-  uint8_t tbuf[1] = {0x08}, rbuf[1] = {0};
-  uint8_t tlen = 1, rlen = 1;
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
 
   assert(cfg);
-  sscanf(cfg->description, "GPIOS2");
   log_gpio_change(gp, curr, 0, true);
 
   if (curr == GPIO_VALUE_LOW) {
-    i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-    if ( i2cfd < 0 ) {
-      syslog(LOG_WARNING, "Failed to open bus 12\n");
-      return;
-    }
-
-    retry = 0;
-    while (retry < MAX_READ_RETRY) {
-      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-      if ( ret < 0 ) {
-        retry++;
-        msleep(100);
-      } else {
-        break;
-      }
-    }
-    if (retry == MAX_READ_RETRY) {
-      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    }
-    if ( i2cfd > 0 ) close(i2cfd);
-
     // Do not handle in POC1
-    if (rbuf[0] == POC1_BOARD_ID) {
+    if (fby35_common_get_bb_rev() == BB_REV_POC1) {
       return;
     }
 
@@ -528,7 +502,7 @@ main() {
 
   pid_file = open("/var/run/gpiointrd.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
-  if(rc) {
+  if (rc) {
     if (EWOULDBLOCK == errno) {
       syslog(LOG_ERR, "Another gpiointrd instance is running...\n");
       exit(-1);

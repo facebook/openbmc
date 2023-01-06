@@ -557,8 +557,11 @@ program_raa(uint8_t bus, uint8_t addr, struct raa_config *config, bool force) {
 int
 raa_fw_update(struct vr_info *info, void *args) {
   struct raa_config *config = (struct raa_config *)args;
+  uint8_t mode = 0;
+  uint8_t remain = 0;
   char ver_key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
+
 
   if (info == NULL || config == NULL) {
     return VR_STATUS_FAILURE;
@@ -582,7 +585,19 @@ raa_fw_update(struct vr_info *info, void *args) {
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
     vr_get_fw_avtive_key(info, ver_key);
+
+    if (get_raa_hex_mode(info->bus, info->addr, &mode) < 0) {
     snprintf(value, sizeof(value), "%08x", config->crc_exp);
+      snprintf(value, sizeof(value), "Renesas %08X, Remaining Writes: Unknown",
+             config->crc_exp);
+    } else if (get_raa_remaining_wr(info->bus, info->addr, mode, &remain) < 0) {
+      snprintf(value, sizeof(value), "Renesas %08X, Remaining Writes: Unknown",
+             config->crc_exp);
+    } else {
+      snprintf(value, sizeof(value), "Renesas %08X, Remaining Writes: %u",
+             config->crc_exp, remain);
+    }
+
     kv_set(ver_key, value, 0, KV_FPERSIST);
   }
 

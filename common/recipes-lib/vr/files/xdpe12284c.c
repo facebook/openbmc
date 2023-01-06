@@ -452,6 +452,7 @@ xdpe_fw_update(struct vr_info *info, void *args) {
   struct xdpe_config *config = (struct xdpe_config *)args;
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
+  uint8_t remain;
 
   if (info == NULL || config == NULL) {
     return VR_STATUS_FAILURE;
@@ -475,7 +476,11 @@ xdpe_fw_update(struct vr_info *info, void *args) {
 
   if (pal_is_support_vr_delay_activate()) {
     vr_get_fw_avtive_key(info, key);
-    snprintf(value, sizeof(value), "%08x", config->crc_exp);
+    if (get_xdpe122xx_remaining_wr(info->bus, info->addr, &remain) < 0) {
+      snprintf(value, sizeof(value), "Infineon %08X, Remaining Writes: Unknown", config->crc_exp);
+    } else {
+      snprintf(value, sizeof(value), "Infineon %08X, Remaining Writes: %u", config->crc_exp, remain);
+    }
     kv_set(key, value, 0, 0);
   }
 

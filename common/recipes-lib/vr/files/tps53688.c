@@ -341,8 +341,9 @@ tps_fw_update(struct vr_info *info, void *args) {
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
     vr_get_fw_avtive_key(info, ver_key);
+
     if (pal_load_tps_remaining_wr(info->slot_id, info->addr, &remain, value, &config->crc_exp, UPDATE_VR_CRC) != 0) {
-      snprintf(value, MAX_VALUE_LEN, "%04x", config->crc_exp);
+      snprintf(value, MAX_VALUE_LEN, "Texas Instruments %04X", config->crc_exp);
     }
     kv_set(ver_key, value, 0, KV_FPERSIST);
   }

@@ -255,7 +255,7 @@ cache_mp2856_new_crc(struct vr_info *info, void *args) {
       break;
     }
 
-    snprintf(value, MAX_VALUE_LEN, "%02x%02x%02x%02x",
+    snprintf(value, MAX_VALUE_LEN, "MPS %02x%02x%02x%02x",
              crc_user[1], crc_user[0], multi_config[1], multi_config[0]);
 
     kv_set(ver_key, value, 0, KV_FPERSIST);

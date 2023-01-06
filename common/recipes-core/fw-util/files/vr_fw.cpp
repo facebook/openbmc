@@ -30,15 +30,17 @@ int VrComponent::get_version(json& j) {
     // TI:  Texas Instruments $ver
     // MPS: MPS $ver
     string str(ver);
+    string act_str;
     string tmp_str;
+    string rw_str;
     size_t start;
     auto end = str.find(',');
 
     if (end != string::npos) {
       start = str.rfind(' ') + 1;
-      tmp_str = str.substr(start, str.size() - start);
-      transform(tmp_str.begin(), tmp_str.end(),tmp_str.begin(), ::tolower);
-      j["rmng_w"] = tmp_str;
+      rw_str = str.substr(start, str.size() - start);
+      transform(rw_str.begin(), rw_str.end(), rw_str.begin(), ::tolower);
+      j["REMAINING_WRITE"] = rw_str;
     } else {
       end = str.size();
     }
@@ -47,14 +49,30 @@ int VrComponent::get_version(json& j) {
     tmp_str = str.substr(0, start);
     string vendor_str(tmp_str);
     transform(tmp_str.begin(), tmp_str.end(),tmp_str.begin(), ::tolower);
-    j["vendor"] = tmp_str;
+    j["VENDOR"] = tmp_str;
 
     start++;
     tmp_str = str.substr(start, end - start);
     transform(tmp_str.begin(), tmp_str.end(),tmp_str.begin(), ::tolower);
     j["VERSION"] = tmp_str;
-    j["VERSION_ACTIVE"] = (get_active_version(active_key, str)) ? str:string(j["VERSION"]);
-    j["PRETTY_VERSION"] = vendor_str + " " + tmp_str;
+    if(rw_str.empty())
+      j["PRETTY_VERSION"] = vendor_str + " " + tmp_str;
+    else
+      j["PRETTY_VERSION"] = vendor_str + " " + tmp_str + ", Remaining Write: " + rw_str;
+
+    if(get_active_version(active_key, act_str)) {
+      end = act_str.find(',');
+      if (end == string::npos) {
+        end = act_str.size();
+      }
+      start = act_str.rfind(' ', end) + 1;
+
+      tmp_str = act_str.substr(start, end - start);
+      transform(tmp_str.begin(), tmp_str.end(),tmp_str.begin(), ::tolower);
+      j["VERSION_ACTIVE"] = tmp_str;
+    } else {
+      j["VERSION_ACTIVE"] = string(j["VERSION"]);
+    }
   } catch (string& err) {
     j["VERSION"] = "NA";
   }

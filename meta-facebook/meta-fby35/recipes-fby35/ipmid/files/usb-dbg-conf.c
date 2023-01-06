@@ -480,7 +480,7 @@ int plat_get_me_status(uint8_t fru, char *status)
   unsigned char rlen;
   int ret;
 
-  if(fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
     return -1;
   }
 
@@ -499,10 +499,11 @@ int plat_get_board_id(char *id)
   uint8_t pos;
   uint8_t buf[256] = {0x00};
   uint8_t rlen;
+
   if (pal_get_uart_select_from_kv(&pos)) {
     return -1;
   }
-  if(pal_get_board_id(pos, buf, 0, buf, &rlen)) {
+  if (pal_get_board_id(pos, buf, 0, buf, &rlen)) {
     return -1;
   }
 
@@ -569,16 +570,15 @@ int plat_get_extra_sysinfo(uint8_t fru, char *info)
   char post_code_info[32] = {0};
   char postcode[8] = {0};
 
-  if(fru == FRU_ALL) {
+  if (fru == FRU_ALL) {
     fru = FRU_BMC;
   }
 
-  if (!pal_get_fru_name( fru, fru_name)) {
-
+  if (!pal_get_fru_name(fru, fru_name)) {
     sprintf(info, "FRU:%s", fru_name);
   }
 
-  if(fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+  if ((fru != FRU_BMC) && (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD)) {
     if (pal_get_last_postcode(fru, postcode)) {
       sprintf(post_code_info, "\nPOST: NA\n");
     } else {

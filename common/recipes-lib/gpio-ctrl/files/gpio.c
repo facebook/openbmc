@@ -537,6 +537,7 @@ int gpio_set_value_by_shadow(const char *shadow, gpio_value_t value)
     return -1;
   }
   if (gpio_set_value(desc, value)) {
+    gpio_close(desc);
     return -1;
   }
   gpio_close(desc);

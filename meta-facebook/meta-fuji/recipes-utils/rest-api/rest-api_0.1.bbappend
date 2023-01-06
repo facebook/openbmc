@@ -39,6 +39,7 @@ binfiles1 += " \
     rest_sensors.py \
     rest_piminfo.py \
     rest_pimserial.py \
+    rest_pim_present.py \
     rest_system_led_info.py \
     rest_smbinfo.py \
 "

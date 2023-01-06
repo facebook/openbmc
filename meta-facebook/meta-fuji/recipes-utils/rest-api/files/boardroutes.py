@@ -70,4 +70,5 @@ board_routes = [
     "/api/sys/piminfo",
     "/api/sys/smbinfo",
     "/api/sys/scdinfo",
+    "/api/sys/pim_present",
 ]

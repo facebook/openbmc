@@ -21,6 +21,7 @@
 import rest_feutil
 import rest_firmware_info
 import rest_peutil
+import rest_pim_present
 import rest_piminfo
 import rest_pimserial
 import rest_presence
@@ -274,6 +275,13 @@ class boardApp_Handler:
     # Handler for sys/pim_serial resource endpoint
     async def rest_pimserial_hdl(self, request):
         return web.json_response(rest_pimserial.get_pimserial(), dumps=dumps_bytestr)
+
+    # Handler for sys/pim_present resource endpoint
+    # This is redundant, but infra service need this interface.
+    async def rest_pim_present_hdl(self, request):
+        return web.json_response(
+            rest_pim_present.get_pim_present(), dumps=dumps_bytestr
+        )
 
     # Handler for sys/system_led_info endpoint
     async def rest_system_led_info_hdl(self, request):

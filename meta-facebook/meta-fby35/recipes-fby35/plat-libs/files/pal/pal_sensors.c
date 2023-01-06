@@ -1154,7 +1154,8 @@ PAL_HSC_INFO hsc_info_list[] = {
 
 PAL_CHIP_INFO medusa_hsc_list[] = {
   {"ltc4282", "ltc4282", MEDUSA_HSC_LTC4282_ADDR},
-  {"adm1272", "adm1272", MEDUSA_HSC_ADM1272_ADDR}
+  {"adm1272", "adm1272", MEDUSA_HSC_ADM1272_ADDR},
+  {"ltc4287", "ltc4287", MEDUSA_HSC_LTC4287_ADDR}
 };
 
 PAL_PDB_INFO pdb_info_list[] = {
@@ -2842,7 +2843,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   static uint8_t bmc_location = 0;
   static uint8_t config_status[MAX_NODES] = {CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN};
   static bool is_hsc_init = false;
-  static uint8_t hsc_sesnors[BB_HSC_SENSOR_CNT] = {
+  static const uint8_t hsc_sesnors[BB_HSC_SENSOR_CNT] = {
     BMC_SENSOR_HSC_PEAK_IOUT,
     BMC_SENSOR_HSC_PEAK_PIN,
     BMC_SENSOR_HSC_VIN,

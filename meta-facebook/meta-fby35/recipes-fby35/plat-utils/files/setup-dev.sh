@@ -23,6 +23,7 @@
 
 LTC4282_ADDR="44"
 ADM1272_ADDR="1f"
+LTC4287_ADDR="11"
 LTC4282_CONTROL_REG="00"
 
 function init_class1_dev() {
@@ -52,6 +53,8 @@ function init_class1_dev() {
     load_driver=true
   else
     chip="ltc4287"
+    medusa_addr=0x"$LTC4287_ADDR"
+    load_driver=true
   fi
   if [ "$load_driver" = true ]; then
     i2c_device_add 11 $medusa_addr $chip
@@ -81,12 +84,12 @@ function init_exp_dev() {
   for i in {1..4}; do
     bmc_location=$(get_bmc_board_id)
     if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
-      if [ "$(is_server_prsnt $i)" == "0" ]; then
+      if [ "$(is_server_prsnt "$i")" == "0" ]; then
         continue
       fi
-      enable_server_i2c_bus $i
+      enable_server_i2c_bus "$i"
     fi
-    cpld_bus=$(get_cpld_bus $i)
+    cpld_bus=$(get_cpld_bus "$i")
     type_2ou=$(get_2ou_board_type "$cpld_bus")
     # check DPv2 x8 present
     prsnt_x8=$((type_2ou & 0x7))
@@ -94,11 +97,11 @@ function init_exp_dev() {
       i2c_device_add "$cpld_bus" 0x51 24c128
     fi
     # EEPROM on PRoT module
-    if [ "$(is_prot_prsnt $i)" == "1" ]; then
+    if [ "$(is_prot_prsnt "$i")" == "1" ]; then
       i2c_device_add "$cpld_bus" 0x50 24c32
     fi
     # IO-exp on VF2
-    set_vf_gpio $i
+    set_vf_gpio "$i"
   done
 }
 

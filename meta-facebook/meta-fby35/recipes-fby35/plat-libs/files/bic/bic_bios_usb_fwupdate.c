@@ -48,9 +48,10 @@
 #define XFR_STAGING_OFFSET (48*1024*1024)
 #define XFR_WORKING_OFFSET (56*1024*1024)
 
-#define CL_BIC_USB_PORT 4
-#define HD_BIC_USB_PORT 3
-#define RBF_BIC_USB_PORT 1
+#define CL_SB_USB_PORT  4
+#define CL_1OU_USB_PORT 2
+#define HD_SB_USB_PORT  3
+#define HD_1OU_USB_PORT 1
 
 int interface_ref = 0;
 int alt_interface,interface_number;
@@ -84,16 +85,16 @@ int print_configuration(struct libusb_device_handle *hDevice,struct libusb_confi
 int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
 {
   struct libusb_device_handle *hDevice_req;
-  struct libusb_config_descriptor *config;
+  struct libusb_config_descriptor *config = NULL;
   int altsetting_index = 0, endpoint_index = 0, interface_index = 0;
 
   hDevice_req = handle;
   libusb_get_active_config_descriptor(dev, &config);
   print_configuration(hDevice_req, config);
 
-  for ( interface_index=0;interface_index < config->bNumInterfaces;interface_index++) {
+  for (interface_index=0;interface_index < config->bNumInterfaces;interface_index++) {
     const struct libusb_interface *iface = &config->interface[interface_index];
-    for ( altsetting_index=0; altsetting_index < iface->num_altsetting ;altsetting_index++) {
+    for (altsetting_index=0; altsetting_index < iface->num_altsetting ;altsetting_index++) {
       const struct libusb_interface_descriptor *altsetting = &iface->altsetting[altsetting_index];
       printf("    Interface:\n");
       printf("      bInterfaceNumber:   %d\n", altsetting->bInterfaceNumber);
@@ -106,7 +107,6 @@ int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
 
       for(endpoint_index=0; endpoint_index < altsetting->bNumEndpoints ;endpoint_index++) {
         const struct libusb_endpoint_descriptor *endpoint = &altsetting->endpoint[endpoint_index];
-        //endpoint = ep;
         alt_interface = altsetting->bAlternateSetting;
         interface_number = altsetting->bInterfaceNumber;
         printf("      EndPoint Descriptors:\n");
@@ -121,7 +121,7 @@ int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
     printf("-----------------------------------\n");
   }
 
-  libusb_free_config_descriptor(NULL);
+  libusb_free_config_descriptor(config);
   return 0;
 }
 
@@ -191,102 +191,93 @@ receive_bic_usb_packet(usb_dev* udev, uint8_t* pkt, const int receivelen)
 int
 bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id)
 {
-  int ret;
-  int index = 0;
-  char found = 0;
+  int ret, index, recheck;
+  int sb_type = fby35_common_get_slot_type(slot_id);
   ssize_t cnt;
-  uint8_t bmc_location = 0;
-  int recheck = MAX_CHECK_DEVICE_TIME;
+  bool found = false;
+  uint8_t bmc_location = 0, port = 0;
 
-  ret = libusb_init(NULL);
-  if (ret < 0) {
-    printf("Failed to initialise libusb\n");
-    goto error_exit;
-  } else {
-    printf("Init libusb Successful!\n");
+  if (udev == NULL) {
+    syslog(LOG_ERR, "%s[%u] udev shouldn't be null!", __func__, slot_id);
+    return -1;
   }
 
-  do {
+  if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+    syslog(LOG_ERR, "%s[%u] Cannot get the location of BMC", __func__, slot_id);
+    return -1;
+  }
+
+  if (libusb_init(NULL) < 0) {
+    printf("Failed to initialise libusb\n");
+    return -1;
+  }
+  printf("Init libusb Successful!\n");
+
+  for (recheck = 0; recheck < MAX_CHECK_DEVICE_TIME; ++recheck) {
     cnt = libusb_get_device_list(NULL, &udev->devs);
     if (cnt < 0) {
-      printf("There are no USB devices on bus\n");
-      goto error_exit;
+      printf("There are no USB devices on bus -- exit\n");
+      return -1;
     }
     index = 0;
     while ((udev->dev = udev->devs[index++]) != NULL) {
       ret = libusb_get_device_descriptor(udev->dev, &udev->desc);
-      if ( ret < 0 ) {
-        printf("Failed to get device descriptor -- exit\n");
-        libusb_free_device_list(udev->devs,1);
-        goto error_exit;
+      if (ret < 0) {
+        printf("Failed to get device descriptor\n");
+        continue;
       }
 
-      ret = libusb_open(udev->dev,&udev->handle);
-      if ( ret < 0 ) {
-        printf("Error opening device -- exit\n");
-        libusb_free_device_list(udev->devs,1);
-        goto error_exit;
-      }
-
-      if( (vendor_id == udev->desc.idVendor) && (product_id == udev->desc.idProduct) ) {
-        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iManufacturer, (unsigned char*) udev->manufacturer, sizeof(udev->manufacturer));
-        if ( ret < 0 ) {
-          printf("Error get Manufacturer string descriptor -- exit\n");
-          libusb_free_device_list(udev->devs,1);
-          goto error_exit;
-        }
-
-        ret = fby35_common_get_bmc_location(&bmc_location);
-        if (ret < 0) {
-          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-          goto error_exit;
-        }
-
+      if ((vendor_id == udev->desc.idVendor) && (product_id == udev->desc.idProduct)) {
         ret = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
         if (ret < 0) {
           printf("Error get port number\n");
-          libusb_free_device_list(udev->devs,1);
-          goto error_exit;
+          continue;
         }
 
-        if ( bmc_location == BB_BMC ) {
-          if ( udev->path[1] != slot_id) {
+        if (bmc_location == BB_BMC) {
+          if (udev->path[1] != slot_id) {
             continue;
           }
           switch (comp) {
             case FW_BIOS:
-              if ( udev->path[2] != CL_BIC_USB_PORT && udev->path[2] != HD_BIC_USB_PORT) {
-                continue;
-              }
-              break;
-             case FW_PROT:
-              //Only Halfdome support PRoT
-              if (udev->path[2] != HD_BIC_USB_PORT) {
-                continue;
-              }
+            case FW_PROT:
+              port = (sb_type == SERVER_TYPE_HD) ? HD_SB_USB_PORT : CL_SB_USB_PORT;
               break;
             case FW_1OU_CXL:
-              if ( udev->path[2] != RBF_BIC_USB_PORT) {
-                continue;
-              }
+              port = (sb_type == SERVER_TYPE_HD) ? HD_1OU_USB_PORT : CL_1OU_USB_PORT;
               break;
             default:
               fprintf(stderr, "ERROR: not supported component [comp:%u]!\n", comp);
-              goto error_exit;
+              libusb_free_device_list(udev->devs, 1);
+              return -1;
+          }
+          if (udev->path[2] != port) {
+            continue;
           }
         }
-        printf("%04x:%04x (bus %d, device %d)",udev->desc.idVendor, udev->desc.idProduct, libusb_get_bus_number(udev->dev), libusb_get_device_address(udev->dev));
+        printf("%04x:%04x (bus %d, device %d)", udev->desc.idVendor, udev->desc.idProduct, libusb_get_bus_number(udev->dev), libusb_get_device_address(udev->dev));
         printf(" path: %d", udev->path[0]);
         for (index = 1; index < ret; index++) {
           printf(".%d", udev->path[index]);
         }
         printf("\n");
 
-        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iProduct, (unsigned char*) udev->product, sizeof(udev->product));
-        if ( ret < 0 ) {
-          printf("Error get Product string descriptor -- exit\n");
-          libusb_free_device_list(udev->devs,1);
-          goto error_exit;
+        ret = libusb_open(udev->dev, &udev->handle);
+        if (ret < 0) {
+          printf("Error opening device\n");
+          break;
+        }
+
+        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iManufacturer, (unsigned char*)udev->manufacturer, sizeof(udev->manufacturer));
+        if (ret < 0) {
+          printf("Error obtaining the Manufacturer string descriptor\n");
+          break;
+        }
+
+        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iProduct, (unsigned char*)udev->product, sizeof(udev->product));
+        if (ret < 0) {
+          printf("Error obtaining the Product string descriptor\n");
+          break;
         }
 
         printf("Manufactured : %s\n",udev->manufacturer);
@@ -306,69 +297,68 @@ bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t pr
         printf("Max. Packet Size : %d\n",udev->desc.bMaxPacketSize0);
         printf("No. of Configuraions : %d\n",udev->desc.bNumConfigurations);
 
-        found = 1;
+        found = true;
         break;
       }
     }
-
-    if ( found != 1) {
-      sleep(3);
-    } else {
+    if (found) {
       break;
     }
-  } while ((--recheck) > 0);
 
+    libusb_free_device_list(udev->devs, 1);
+    if (udev->handle != NULL) {
+      libusb_close(udev->handle);
+      udev->handle = NULL;
+    }
+    sleep(3);
+  }
 
-  if ( found == 0 ) {
+  if (found == false) {
     printf("Device NOT found -- exit\n");
-    libusb_free_device_list(udev->devs,1);
-    ret = -1;
-    goto error_exit;
+    return -1;
   }
 
   ret = libusb_get_configuration(udev->handle, &udev->config);
-  if ( ret != 0 ) {
+  if (ret != 0) {
     printf("Error in libusb_get_configuration -- exit\n");
-    libusb_free_device_list(udev->devs,1);
-    goto error_exit;
+    libusb_free_device_list(udev->devs, 1);
+    return -1;
   }
 
   printf("Configured value : %d\n", udev->config);
-  if ( udev->config != 1 ) {
-    libusb_set_configuration(udev->handle, 1);
-    if ( ret != 0 ) {
+  if (udev->config != 1) {
+    ret = libusb_set_configuration(udev->handle, 1);
+    if (ret != 0) {
       printf("Error in libusb_set_configuration -- exit\n");
-      libusb_free_device_list(udev->devs,1);
-      goto error_exit;
+      libusb_free_device_list(udev->devs, 1);
+      return -1;
     }
     printf("Device is in configured state!\n");
   }
 
-  libusb_free_device_list(udev->devs, 1);
-
-  if(libusb_kernel_driver_active(udev->handle, udev->ci) == 1) {
+  if (libusb_kernel_driver_active(udev->handle, udev->ci) == 1) {
     printf("Kernel Driver Active\n");
-    if(libusb_detach_kernel_driver(udev->handle, udev->ci) == 0) {
+    if (libusb_detach_kernel_driver(udev->handle, udev->ci) == 0) {
       printf("Kernel Driver Detached!");
     } else {
       printf("Couldn't detach kernel driver -- exit\n");
-      libusb_free_device_list(udev->devs,1);
-      goto error_exit;
+      libusb_free_device_list(udev->devs, 1);
+      return -1;
     }
   }
 
   ret = libusb_claim_interface(udev->handle, udev->ci);
-  if ( ret < 0 ) {
+  if (ret < 0) {
     printf("Couldn't claim interface -- exit. err:%s\n", libusb_error_name(ret));
-    libusb_free_device_list(udev->devs,1);
-    goto error_exit;
+    libusb_free_device_list(udev->devs, 1);
+    return -1;
   }
-  printf("Claimed Interface: %d, EP addr: 0x%02X\n", udev->ci, udev->epaddr);
 
+  printf("Claimed Interface: %d, EP addr: 0x%02X\n", udev->ci, udev->epaddr);
   active_config(udev->dev, udev->handle);
+  libusb_free_device_list(udev->devs, 1);
+
   return 0;
-error_exit:
-  return -1;
 }
 
 static int
@@ -729,12 +719,12 @@ error_exit:
 int
 bic_close_usb_dev(usb_dev* udev)
 {
-  if (libusb_release_interface(udev->handle, udev->ci) < 0) {
-    printf("Couldn't release the interface 0x%X\n", udev->ci);
-  }
-
-  if (udev->handle != NULL )
+  if (udev->handle != NULL) {
+    if (libusb_release_interface(udev->handle, udev->ci) < 0) {
+      printf("Couldn't release the interface 0x%X\n", udev->ci);
+    }
     libusb_close(udev->handle);
+  }
   libusb_exit(NULL);
 
   return 0;
@@ -749,6 +739,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd)
   usb_dev   bic_udev;
   usb_dev*  udev = &bic_udev;
 
+  udev->handle = NULL;
   udev->ci = 1;
   udev->epaddr = USB_INPUT_PORT;
 
@@ -789,6 +780,7 @@ dump_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *path)
   usb_dev   bic_udev;
   usb_dev*  udev = &bic_udev;
 
+  udev->handle = NULL;
   udev->ci = 1;
   udev->epaddr = USB_INPUT_PORT;
 

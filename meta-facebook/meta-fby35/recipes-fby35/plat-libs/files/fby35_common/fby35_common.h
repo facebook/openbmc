@@ -436,7 +436,7 @@ enum {
 };
 
 enum {
-  // BB HSC
+  // BB HSC / Halfdome HSC
   HSC_ADM1278 = 0,
   HSC_LTC4286,
   HSC_MP5990,

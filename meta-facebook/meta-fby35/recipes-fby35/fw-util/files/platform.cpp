@@ -26,7 +26,6 @@ class ClassConfig {
     ClassConfig() {
       uint8_t bmc_location = 0, prsnt;
       uint8_t hsc_type = HSC_UNKNOWN;
-      uint8_t board_rev = UNKNOWN_REV;
       uint8_t card_type = TYPE_1OU_UNKNOWN;
 
       int config_status;
@@ -68,12 +67,6 @@ class ClassConfig {
           prsnt = 0;
         }
         if (prsnt) {
-          if (get_board_rev(FRU_SLOT1, BOARD_ID_SB, &board_rev) == 0) {
-            if (IS_BOARD_REV_MPS(board_rev)) {
-              static MP5990Component hsc_fw1("slot1", "hsc", FRU_SLOT1, 1, 0x16);
-            }
-          }
-
           //slot1 cpld/me/vr
           if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_HD) {
             static CpldComponent cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x44);
@@ -83,12 +76,18 @@ class ClassConfig {
             if(fby35_common_is_prot_card_prsnt(FRU_SLOT1)) {
               static ProtComponent    prot_fw1("slot1", "prot", FW_PROT);
             }
+            if(isSbMpsHsc(FRU_SLOT1)) {
+              static MP5990Component hsc_fw1("slot1", "hsc", FRU_SLOT1, 4, 0x40);
+            }
           } else {
             static CpldComponent cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
             static MeComponent   me_fw1("slot1", "me", FRU_SLOT1);
             static VrComponent   vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN);
             static VrComponent   vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD);
             static VrComponent   vr_vccinfaon_fw1("slot1", "vr_vccinfaon", FW_VR_VCCINFAON);
+            if(isSbMpsHsc(FRU_SLOT1)) {
+              static MP5990Component hsc_fw1("slot1", "hsc", FRU_SLOT1, 1, 0x16);
+            }
           }
           static VrComponent     vr_fw1("slot1", "vr", FW_VR);
 
@@ -136,10 +135,8 @@ class ClassConfig {
           prsnt = 0;
         }
         if (prsnt) {
-          if (get_board_rev(FRU_SLOT2, BOARD_ID_SB, &board_rev) == 0) {
-            if (IS_BOARD_REV_MPS(board_rev)) {
-              static MP5990Component hsc_fw2("slot2", "hsc", FRU_SLOT2, 1, 0x16);
-            }
+          if(isSbMpsHsc(FRU_SLOT2)) {
+            static MP5990Component hsc_fw2("slot2", "hsc", FRU_SLOT2, 1, 0x16);
           }
 
           //slot2 me/vr
@@ -164,12 +161,6 @@ class ClassConfig {
           prsnt = 0;
         }
         if (prsnt) {
-          if (get_board_rev(FRU_SLOT3, BOARD_ID_SB, &board_rev) == 0) {
-            if (IS_BOARD_REV_MPS(board_rev)) {
-              static MP5990Component hsc_fw3("slot3", "hsc", FRU_SLOT3, 1, 0x16);
-            }
-          }
-
           //slot3 cpld/me/vr
           if (fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_HD) {
             static CpldComponent cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x44);
@@ -179,12 +170,18 @@ class ClassConfig {
             if(fby35_common_is_prot_card_prsnt(FRU_SLOT3)) {
               static ProtComponent    prot_fw3("slot3", "prot", FW_PROT);
             }
+            if(isSbMpsHsc(FRU_SLOT3)) {
+              static MP5990Component hsc_fw3("slot3", "hsc", FRU_SLOT3, 4, 0x40);
+            }
           } else {
             static CpldComponent cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
             static MeComponent   me_fw3("slot3", "me", FRU_SLOT3);
             static VrComponent   vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN);
             static VrComponent   vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD);
             static VrComponent   vr_vccinfaon_fw3("slot3", "vr_vccinfaon", FW_VR_VCCINFAON);
+            if(isSbMpsHsc(FRU_SLOT3)) {
+              static MP5990Component hsc_fw3("slot3", "hsc", FRU_SLOT3, 1, 0x16);
+            }
           }
           static VrComponent     vr_fw3("slot3", "vr", FW_VR);
 
@@ -220,10 +217,8 @@ class ClassConfig {
           prsnt = 0;
         }
         if (prsnt) {
-          if (get_board_rev(FRU_SLOT4, BOARD_ID_SB, &board_rev) == 0) {
-            if (IS_BOARD_REV_MPS(board_rev)) {
-              static MP5990Component hsc_fw4("slot4", "hsc", FRU_SLOT4, 1, 0x16);
-            }
+          if(isSbMpsHsc(FRU_SLOT4)) {
+            static MP5990Component hsc_fw4("slot4", "hsc", FRU_SLOT4, 1, 0x16);
           }
 
           //slot4 me/vr
@@ -243,6 +238,24 @@ class ClassConfig {
     ret = bic_get_1ou_type(slot_id, &card_type);
     if (!ret && card_type == TYPE_1OU_RAINBOW_FALLS) {
       return true;
+    }
+    return false;
+  }
+
+  static bool isSbMpsHsc(uint8_t slot_id) {
+    uint8_t board_rev = UNKNOWN_REV;
+    uint8_t hsc_type = 0;
+    bic_gpio_t gpio = {0};
+
+    if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+      if (!bic_get_gpio(slot_id, &gpio, NONE_INTF)) {
+        hsc_type = (BIT_VALUE(gpio, HD_HSC_TYPE_1)) << 1 | BIT_VALUE(gpio, HD_HSC_TYPE_0);
+        return hsc_type == HSC_MP5990;
+      }
+    } else if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_CL) {
+      if (get_board_rev(slot_id, BOARD_ID_SB, &board_rev) == 0) {
+        return IS_BOARD_REV_MPS(board_rev);
+      }
     }
     return false;
   }

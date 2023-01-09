@@ -600,7 +600,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
                     general_info, dimm_location_str,
                     mem_err[event_type], sel[13], (sel[15]<<8)|sel[14]);
           }
-          snprintf(temp_log, sizeof(temp_log), "DIMM %s initialization fails", dimm_str);
+          snprintf(temp_log, sizeof(temp_log), "DIMM %s initialization fails,FRU:%u", dimm_str,fru);
           pal_add_cri_sel(temp_log);
           break;
 

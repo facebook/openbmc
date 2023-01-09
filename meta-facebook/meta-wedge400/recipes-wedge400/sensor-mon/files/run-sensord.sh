@@ -18,6 +18,22 @@
 # Boston, MA 02110-1301 USA
 #
 
-ARGS="scm smb pem1 pem2 psu1 psu2 fan1 fan2 fan3 fan4"
+. /usr/local/bin/openbmc-utils.sh
+
+ARGS="scm smb fan1 fan2 fan3 fan4"
+
+#
+# PSU and PEM will never be plugged to a switch at the same time, and
+# they won't be hotswapped. So we only need to mointor the power units
+# that are plugged at present.
+#
+# TODO: improve the logic to monitor only one PEM.
+#
+if [ "$(wedge_power_supply_type)" = "PEM" ]; then
+    ARGS="$ARGS pem1 pem2"
+else
+    ARGS="$ARGS psu1 psu2"
+fi
+
 #shellcheck disable=SC2086
 exec /usr/local/bin/sensord $ARGS

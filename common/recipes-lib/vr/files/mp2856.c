@@ -481,6 +481,7 @@ cache_mp2856_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
 
 int
 get_mp2856_ver(struct vr_info *info, char *ver_str) {
+  int ret;
   char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
 
   if (info->private_data) {
@@ -493,8 +494,22 @@ get_mp2856_ver(struct vr_info *info, char *ver_str) {
     if (info->xfer) {
       vr_xfer = info->xfer;
     }
-    if (cache_mp2856_crc(info->bus, info->addr, key, tmp_str))
+
+    //Stop sensor polling before read crc from register
+    if (info->sensor_polling_ctrl) {
+      info->sensor_polling_ctrl(false);
+    }
+
+    ret = cache_mp2856_crc(info->bus, info->addr, key, tmp_str);
+
+    //Resume sensor polling
+    if (info->sensor_polling_ctrl) {
+      info->sensor_polling_ctrl(true);
+    }
+
+    if (ret) {
       return VR_STATUS_FAILURE;
+    }
   }
 
   if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN-1))

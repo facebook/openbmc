@@ -128,6 +128,7 @@ cache_xdpe122xx_crc(uint8_t bus, uint8_t addr, char *key, char *sum_str, uint32_
 
 int
 get_xdpe_ver(struct vr_info *info, char *ver_str) {
+  int ret;
   char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
 
   if (info == NULL || ver_str == NULL) {
@@ -143,7 +144,20 @@ get_xdpe_ver(struct vr_info *info, char *ver_str) {
     if (info->xfer) {
       vr_xfer = info->xfer;
     }
-    if (cache_xdpe122xx_crc(info->bus, info->addr, key, tmp_str, NULL)) {
+
+    //Stop sensor polling before read crc from register
+    if (info->sensor_polling_ctrl) {
+      info->sensor_polling_ctrl(false);
+    }
+
+    ret = cache_xdpe122xx_crc(info->bus, info->addr, key, tmp_str, NULL);
+
+    //Resume sensor polling
+    if (info->sensor_polling_ctrl) {
+      info->sensor_polling_ctrl(true);
+    }
+
+    if (ret) {
       return VR_STATUS_FAILURE;
     }
   }

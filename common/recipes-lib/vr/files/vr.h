@@ -89,6 +89,7 @@ struct vr_info {
   struct vr_ops *ops;
   void *private_data;
   int (*xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
+  int (*sensor_polling_ctrl)(bool);
 };
 
 extern void *plat_configs;

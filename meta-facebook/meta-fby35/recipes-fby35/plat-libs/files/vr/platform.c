@@ -101,6 +101,16 @@ plat_xdpe12284c_fw_update(struct vr_info *info, void *args) {
   return ret;
 }
 
+int
+sb_vr_polling_ctrl(bool enable) {
+  return bic_set_vr_monitor_enable(slot_id, enable, NONE_INTF);
+}
+
+int
+exp_1ou_vr_polling_ctrl(bool enable) {
+  return bic_set_vr_monitor_enable(slot_id, enable, FEXP_BIC_INTF);
+}
+
 struct vr_ops rns_ops = {
   .get_fw_ver = get_raa_ver,
   .parse_file = raa_parse_file,
@@ -173,6 +183,7 @@ struct vr_info fby35_vr_list[] = {
     .ops = &rns_ops,
     .private_data = fru_name,
     .xfer = &fby35_vr_rdwr,
+    .sensor_polling_ctrl = sb_vr_polling_ctrl,
   },
   {
     .bus = SB_VR_BUS,
@@ -181,6 +192,7 @@ struct vr_info fby35_vr_list[] = {
     .ops = &rns_ops,
     .private_data = fru_name,
     .xfer = &fby35_vr_rdwr,
+    .sensor_polling_ctrl = sb_vr_polling_ctrl,
   },
   {
     .bus = SB_VR_BUS,
@@ -189,6 +201,7 @@ struct vr_info fby35_vr_list[] = {
     .ops = &rns_ops,
     .private_data = fru_name,
     .xfer = &fby35_vr_rdwr,
+    .sensor_polling_ctrl = sb_vr_polling_ctrl,
   },
   {
     .bus = RBF_BIC_VR_BUS,
@@ -197,6 +210,7 @@ struct vr_info fby35_vr_list[] = {
     .ops = &rns_ops,
     .private_data = fru_exp_name,
     .xfer = &rbf_vr_rdwr,
+    .sensor_polling_ctrl = exp_1ou_vr_polling_ctrl,
   },
   {
     .bus = RBF_BIC_VR_BUS,
@@ -205,6 +219,7 @@ struct vr_info fby35_vr_list[] = {
     .ops = &rns_ops,
     .private_data = fru_exp_name,
     .xfer = &rbf_vr_rdwr,
+    .sensor_polling_ctrl = exp_1ou_vr_polling_ctrl,
   },
   {
     .bus = RBF_BIC_VR_BUS,
@@ -213,6 +228,7 @@ struct vr_info fby35_vr_list[] = {
     .ops = &rns_ops,
     .private_data = fru_exp_name,
     .xfer = &rbf_vr_rdwr,
+    .sensor_polling_ctrl = exp_1ou_vr_polling_ctrl,
   }
 };
 

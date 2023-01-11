@@ -6,6 +6,7 @@
 #include <thread>
 #include "restclient-cpp/connection.h"
 #include "restclient-cpp/restclient.h"
+#include <openbmc/kv.hpp>
 
 #include <fstream>
 #include <streambuf>
@@ -25,6 +26,7 @@ const std::string HMC_URL = "http://192.168.31.1/redfish/v1/";
 const auto HMC_UPDATE_SERVICE = HMC_URL + "UpdateService";
 const auto HMC_TASK_SERVICE = HMC_URL + "TaskService/Tasks/";
 const auto HMC_FW_INVENTORY = HMC_URL + "UpdateService/FirmwareInventory/";
+const auto HGX_TELEMETRY_SERVICE = HMC_URL + "TelemetryService/MetricReports/HGX_PlatformEnvironmentMetrics_0/";
 
 constexpr auto TIME_OUT = 6;
 
@@ -119,6 +121,39 @@ TaskStatus getTaskStatus(const std::string& id) {
   return status;
 }
 
+void getMetricReports() {
+  std::string url = HGX_TELEMETRY_SERVICE;
+  std::string cache_path = "/tmp/cache_store/";
+  std::string snr_path;
+  std::string snr_val;
+  std::string resp;
+  unsigned int pos;
+
+  resp = hgx.get(url);
+  snr_path = cache_path + "sensor_metrics";
+  kv::set("sensor_metrics", resp);
+
+  json jresp = json::parse(resp);
+  json &tempArray = jresp["MetricValues"];
+  for(auto &x : tempArray)
+  {
+    auto jname = x.find("MetricProperty");
+    snr_path = jname.value();
+    pos = snr_path.find_last_of("/\\");
+    snr_path = snr_path.substr(pos+1);
+
+    auto jvalue = x.find("MetricValue");
+    snr_val = jvalue.value();
+    pos = snr_val.find_first_not_of("0123456789");
+    if (pos != 0) {
+      kv::set(snr_path, snr_val);
+    }
+    else {
+      kv::set(snr_path, "");
+    }
+  }
+}
+
 void update(const std::string& path) {
   using namespace std::chrono_literals;
   std::string taskID = updateNonBlocking(path);
@@ -170,6 +205,15 @@ int get_hgx_ver(const char* component, char *version) {
     strcpy(version, resStr.c_str());
   } catch (std::exception& e) {
     return -1;
+  }
+  return 0;
+}
+
+int hgx_get_metric_reports() {
+  try {
+    hgx::getMetricReports();
+  } catch (std::exception& e) {
+      return -1;
   }
   return 0;
 }

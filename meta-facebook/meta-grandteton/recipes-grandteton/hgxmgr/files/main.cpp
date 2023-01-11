@@ -50,6 +50,10 @@ static void do_post(const std::string& subpath, std::string& args) {
   std::cout << out << std::endl;
 }
 
+static void do_get_snr_metric() {
+  hgx::getMetricReports();
+}
+
 int main(int argc, char* argv[]) {
   CLI::App app("HGX Helper Utility");
   app.failure_message(CLI::FailureMessage::help);
@@ -73,11 +77,6 @@ int main(int argc, char* argv[]) {
       "--async", async, "Do not block, return immediately printing the task ID");
   update->callback([&]() { do_update(image, async, json_fmt); });
 
-  std::string taskID{};
-  auto taskid = app.add_subcommand("get-task", "Get Task Status");
-  taskid->add_option("id", taskID, "Task ID")->required();
-  taskid->callback([&]() { do_task_status(taskID, json_fmt); });
-
   std::string fru{};
   std::string sensorName{};
   auto sensor = app.add_subcommand("sensor", "Get sensor value");
@@ -89,6 +88,14 @@ int main(int argc, char* argv[]) {
   auto get = app.add_subcommand("get", "Perform a GET on the redfish subpath");
   get->add_option("SUBPATH", subpath, "Subpath after /redfish/v1")->required();
   get->callback([&]() { do_get(subpath); });
+
+  std::string taskID{};
+  auto taskid = app.add_subcommand("get-task", "Get Task Status");
+  taskid->add_option("id", taskID, "Task ID")->required();
+  taskid->callback([&]() { do_task_status(taskID, json_fmt); });
+
+  auto snr_metrics = app.add_subcommand("get-snr-metrics", "Get sensor metrics from Telemetry service");
+  snr_metrics->callback([&]() { do_get_snr_metric(); });
 
   std::string args{};
   auto post =

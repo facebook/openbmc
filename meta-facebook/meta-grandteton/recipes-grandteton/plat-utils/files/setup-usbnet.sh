@@ -31,4 +31,5 @@ setup_hgx_eeprom () {
 
 
 ifconfig usb0 192.168.31.2 netmask 255.255.0.0
+kv set is_usbnet_ready 1
 setup_hgx_eeprom

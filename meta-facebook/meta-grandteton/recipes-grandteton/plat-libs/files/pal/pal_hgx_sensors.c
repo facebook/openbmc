@@ -4,6 +4,7 @@
 #include "pal.h"
 #include "pal_hgx_sensors.h"
 #include <openbmc/hgx.h>
+#include <openbmc/kv.h>
 
 struct hgx_snr_info {
   char *evt_hgx_comp;
@@ -145,48 +146,91 @@ struct hgx_snr_info {
 
 
 static int
-read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret = -1;
+read_single_snr(uint8_t fru, uint8_t sensor_num, float *value, int build_stage) {
+  int ret = READING_NA;
   float val = 0;
-  char hgx_version[256] = {0};
-  const int MAX_RETRY = 30;
-  static int build_stage = NONE;
-  static uint8_t retry = 0;
-  static uint8_t snr_retry[HGX_SNR_CNT] = {0};
-
-  if (sensor_num == HGX_SNR_PWR_GB_HSC0 && build_stage == NONE && retry <= MAX_RETRY) {
-    retry++;
-    if (get_hgx_ver("HGX_Firmware", hgx_version) == 0) {
-      build_stage = EVT;
-    }
-    else if (get_hgx_ver("HGX_FW_HGX_0", hgx_version) == 0 ||
-             get_hgx_ver("HGX_FW_BMC_0", hgx_version) == 0) {
-      build_stage = DVT;
-    }
-    else {
-      syslog(LOG_WARNING, "Can't read HGX FW version");
-      return -1;
-    }
-  }
+  static uint8_t snr_retry = 0;
 
   if (build_stage == EVT) {
-	ret = get_hgx_sensor(HGX_SNR_INFO[sensor_num].evt_hgx_comp, HGX_SNR_INFO[sensor_num].evt_snr_name, &val);
+    ret = get_hgx_sensor(HGX_SNR_INFO[sensor_num].evt_hgx_comp, HGX_SNR_INFO[sensor_num].evt_snr_name, &val);
   }
   else if (build_stage == DVT) {
-	ret = get_hgx_sensor(HGX_SNR_INFO[sensor_num].dvt_hgx_comp, HGX_SNR_INFO[sensor_num].dvt_snr_name, &val);
-  }
-  else {
-    return -1;
+    ret = get_hgx_sensor(HGX_SNR_INFO[sensor_num].dvt_hgx_comp, HGX_SNR_INFO[sensor_num].dvt_snr_name, &val);
   }
 
   if (ret) {
-    snr_retry[sensor_num]++;
-    return retry_err_handle(snr_retry[sensor_num], 3);
+    snr_retry++;
+    ret = retry_err_handle(snr_retry, 5);
   }
   else {
+    snr_retry = 0;
     *value = val;
   }
-  
+
+  return ret;
+}
+
+static int
+read_kv_snr(uint8_t fru, uint8_t sensor_num, float *value, int build_stage) {
+  int ret = READING_NA;
+  char tmp[32] = {0};
+
+  if (build_stage == EVT) {
+    ret = kv_get(HGX_SNR_INFO[sensor_num].evt_snr_name, tmp, NULL, 0);
+  }
+  else if (build_stage == DVT) {
+    ret = kv_get(HGX_SNR_INFO[sensor_num].dvt_snr_name, tmp, NULL, 0);
+  }
+
+  if (ret) {
+    return READING_NA;
+  }
+
+  *value = atof(tmp);
+  return 0;
+}
+
+static int
+read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret = READING_NA;
+  char tmp[8] = {0};
+  char hmc_version[256] = {0};
+  static int build_stage = NONE;
+  static uint8_t snr_retry = 0;
+
+  ret = kv_get("is_usbnet_ready", tmp, NULL, 0);
+  if (ret || !strncmp(tmp, "0", 1)) {
+    return READING_NA;
+  }
+
+  if (sensor_num == HGX_SNR_PWR_GB_HSC0) {
+    if (get_hgx_ver("HGX_FW_BMC_0", hmc_version) == 0 ||
+        get_hgx_ver("HGX_FW_HMC_0", hmc_version) == 0) {
+      build_stage = DVT;
+    }
+    else if (get_hgx_ver("HMC_Firmware", hmc_version) == 0) {
+      build_stage = EVT;
+    }
+    else {
+      return READING_NA;
+    }
+
+    ret = hgx_get_metric_reports();
+    if (ret) {
+      snr_retry++;
+      ret = retry_err_handle(snr_retry, 5);
+      return ret;
+    }
+    snr_retry = 0;
+  }
+
+  if (sensor_num == Altitude_Pressure0) {
+    ret = read_single_snr(fru, sensor_num, value, build_stage);
+  }
+  else {
+    ret = read_kv_snr(fru, sensor_num, value, build_stage);
+  }
+
   return ret;
 }
 

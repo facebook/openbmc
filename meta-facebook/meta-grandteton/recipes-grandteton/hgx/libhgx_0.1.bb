@@ -15,5 +15,5 @@ LOCAL_URI = " \
     file://hgx.h \
     "
 
-DEPENDS += "restclient-cpp nlohmann-json"
+DEPENDS += "restclient-cpp nlohmann-json libkv"
 RDEPENDS:${PN} += "restclient-cpp"

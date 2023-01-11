@@ -42,6 +42,10 @@ std::string updateNonBlocking(const std::string& path, bool returnJson = false);
 // completes.
 void update(const std::string& path);
 
+// Get HGX's sensors from Telemetry Service
+// status.
+void getMetricReports();
+
 // Get task status (JSON output)
 TaskStatus getTaskStatus(const std::string& id);
 
@@ -56,6 +60,7 @@ std::string sensorRaw(const std::string& component, const std::string& name);
 extern "C" {
 #endif
 
+int hgx_get_metric_reports(void);
 int get_hgx_sensor(const char* component, const char* snr_name, float* value);
 int get_hgx_ver(const char* component, char *version);
 

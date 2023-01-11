@@ -1,1 +1,2 @@
 KERNEL=="1-1*:1.0", SUBSYSTEM=="usb", ATTRS{idVendor}=="0525", ACTION=="add", DRIVER=="cdc_ether", RUN+="/usr/local/bin/setup-usbnet.sh"
+ENV{ID_MODEL}=="RNDIS_Ethernet_Gadget", ACTION=="remove", RUN+="/usr/local/bin/usbnet_not_ready.sh"

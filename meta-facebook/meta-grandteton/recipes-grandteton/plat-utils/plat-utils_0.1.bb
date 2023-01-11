@@ -34,6 +34,7 @@ LOCAL_URI = " \
     file://sync_date.sh \
     file://setup-lmsensors-cfg.sh \
     file://setup-usbnet.sh \
+    file://usbnet_not_ready.sh \
     file://setup-snr-mon.sh \
     "
 
@@ -41,7 +42,7 @@ pkgdir = "utils"
 
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util setup-server-uart.sh setup-usbnet.sh"
+binfiles = " sol-util setup-server-uart.sh setup-usbnet.sh usbnet_not_ready.sh"
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 gpiocli "

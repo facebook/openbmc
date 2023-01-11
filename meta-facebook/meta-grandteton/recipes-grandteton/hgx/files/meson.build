@@ -11,6 +11,7 @@ install_headers(
 cc = meson.get_compiler('cpp')
 libs = [
   cc.find_library('restclient-cpp'),
+  dependency('libkv'),
 ]
 
 srcs = [

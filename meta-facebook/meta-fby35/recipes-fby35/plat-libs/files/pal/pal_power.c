@@ -577,10 +577,6 @@ pal_sled_cycle(void) {
   if ( ret < 0 ) {
     printf("Fail to stop sensord\n");
   }
-  //Move the VR new crc to the tmp
-  for (i = 0; i < MAX_SERVER_BOARD_NUM; i++) {
-    pal_move_vr_new_crc(i+1, PERSIST_TO_TEMP);
-  }
 
   if ( bmc_location == BB_BMC ) {
     for (i = 1; i <= 4; i++) {
@@ -616,7 +612,6 @@ pal_sled_cycle(void) {
     }
     if (retry == MAX_READ_RETRY) {
       syslog(LOG_WARNING, "%s() Failed to do sled cycle, max retry: %d", __func__, retry);
-
     }
   } else {
     if ( bic_inform_sled_cycle() < 0 ) {
@@ -641,11 +636,6 @@ pal_sled_cycle(void) {
 
   if ( system("sv start sensord > /dev/null 2>&1 &") < 0 ) {
     printf("Fail to start sensord\n");
-  }
-
-  //Move files back if sled-cycle fails.
-  for (i = 0; i < MAX_SERVER_BOARD_NUM; i++) {
-    pal_move_vr_new_crc(i+1, TEMP_TO_PERSIST);
   }
 
   return ret;

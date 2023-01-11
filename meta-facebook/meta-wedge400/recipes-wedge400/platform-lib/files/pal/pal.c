@@ -7801,8 +7801,18 @@ bool is_psu48(void)
 {
   char buffer[6];
   FILE *fp;
-  fp = popen("source /usr/local/bin/openbmc-utils.sh;wedge_power_supply_type", "r");
+  const char *key = "is_psu48";
+  char value[MAX_VALUE_LEN] = {0};
+  bool result;
 
+  if (kv_get(key, value, NULL, 0) == 0) {
+    if (strtol(value, NULL, 0) == 0)
+      return false;
+
+    return true;
+  }
+
+  fp = popen("source /usr/local/bin/openbmc-utils.sh;wedge_power_supply_type", "r");
   if(NULL == fp)
      return false;
 
@@ -7810,14 +7820,16 @@ bool is_psu48(void)
     pclose(fp);
     return false;
   }
-
   pclose(fp);
-  if (!strcmp(buffer, "PSU48"))
-  {
-      return true;
+
+  if (!strcmp(buffer, "PSU48")) {
+    result = true;
+    strncpy(value, "1", sizeof(value));
+  } else {
+    result = false;
+    strncpy(value, "0", sizeof(value));
   }
-  else
-  {
-    return false;
-  }
+
+  kv_set(key, value, 0, 0); /* ignore errors */
+  return result;
 }

@@ -43,7 +43,8 @@ get_tps_crc(uint8_t bus, uint8_t addr, uint16_t *crc) {
     return -1;
   }
 
-  tbuf[0] = (devid == VR_TPS53689_DEVID) ? VR_TPS_REG_CRC2 : VR_TPS_REG_CRC;
+  tbuf[0] = (devid == VR_TPS53689_DEVID) || (devid == VR_TPS53685_DEVID)
+                  ? VR_TPS_REG_CRC2 : VR_TPS_REG_CRC;
   if (vr_xfer(bus, addr, tbuf, 1, rbuf, 2) < 0) {
     syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
     return -1;

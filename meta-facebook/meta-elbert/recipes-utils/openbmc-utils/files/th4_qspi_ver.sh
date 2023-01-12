@@ -93,8 +93,16 @@ mnhigh=${hexbytes[$((LOADER_VERSION_OFFSET + 1 ))]}
 mnlow=${hexbytes[$LOADER_VERSION_OFFSET]}
 minor=$(( (mnhigh << 8) | mnlow ))
 
+# Convert version string into major/minor int
+# e.g: D000_05 --> 53248.5
+fwver_major="$(echo "$fwver" | cut -d '_' -f 1)"
+fwver_major_int=$(python -c "print(int('$fwver_major',16))")
+fwver_minor="$(echo "$fwver" | cut -d '_' -f 2)"
+fwver_minor_int=$(python -c "print(int('$fwver_minor',16))")
+
 printf "FIRMWARE_LOADER_VERSION: %d.%d\n" $major $minor
-echo "FIRMWARE_VERSION: $fwver"
+echo "FIRMWARE_VERSION: $fwver_major_int.$fwver_minor_int"
+echo "FIRMWARE_STRING_VERSION: $fwver"
 
 # Print the firmware loader build date
 echo -n "FIRMWARE_LOADER_BUILD_DATE: "

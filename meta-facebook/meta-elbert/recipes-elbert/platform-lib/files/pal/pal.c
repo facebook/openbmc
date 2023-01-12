@@ -746,6 +746,11 @@ pal_is_pim_reset(uint8_t fru, uint8_t *status) {
 }
 
 int
+pal_get_fru_count() {
+  return MAX_NUM_FRUS;
+}
+
+int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   int val;
   char tmp[LARGEST_DEVICE_NAME];

@@ -301,7 +301,7 @@ PAL_PMBUS_INFO hsc_dev_table[] = {
 * High-byte offset of reading always be low-byte offset + 1
 */
 PAL_CPLD_ADC_INFO cpld_adc_list[] = {
-  {0x00, 3.6549},
+  {0x00, 4},
   {0x04, 1},
   {0x06, 1},
   {0x02, 1.544},

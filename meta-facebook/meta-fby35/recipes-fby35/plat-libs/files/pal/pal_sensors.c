@@ -16,11 +16,13 @@
 #include <openbmc/ipmb.h>
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/sensor-correction.h>
+#include <openbmc/misc-utils.h>
 #include "pal.h"
 
 //#define DEBUG
 
 #define MAX_RETRY 3
+#define RETRY_INTERVAL_TIME_MS 50
 #define MAX_SNR_NAME_LEN 32
 #define SDR_PATH "/tmp/sdr_%s.bin"
 
@@ -40,9 +42,16 @@
 #define PWM_INTERVAL_TIME 2
 #define PWM_STEP_RISE_VALUE 20
 
+#define PMBUS_GET_MFR_ID 0x99
+
 #define BB_CPU_VDELTA_48V_UCR 41.8
 
 #define BB_HSC_SENSOR_CNT 7
+
+#define PMBUS_GET_DATA_SIGN(x) ((x) & 0x04)
+#define PMBUS_GET_DATA_LINEAR11(x, y) ((((x) & 0x07) << 8) | (y))
+
+#define PMBUS_NEGATIVE_LINEAR11_DATA 0x04
 
 enum {
   /* Fan Type */
@@ -819,6 +828,17 @@ const uint8_t rns_pdb_sensor_list[] = {
   BMC_SENSOR_PDB_12V_WW_PWR,
 };
 
+const uint8_t flex_pdb_sensor_list[] = {
+  BMC_SENSOR_VPDB_FLEX_1_TEMP,
+  BMC_SENSOR_VPDB_FLEX_2_TEMP,
+  BMC_SENSOR_PDB_48V_FLEX_1_VIN,
+  BMC_SENSOR_PDB_48V_FLEX_2_VIN,
+  BMC_SENSOR_PDB_12V_FLEX_1_VOUT,
+  BMC_SENSOR_PDB_12V_FLEX_2_VOUT,
+  BMC_SENSOR_PDB_FLEX_1_IOUT,
+  BMC_SENSOR_PDB_FLEX_2_IOUT,
+};
+
 /*  PAL_ATTR_INFO:
  *  For the PMBus direct format conversion
  *  X = 1/m × (Y × 10^-R − b)
@@ -864,6 +884,14 @@ PAL_PDB_COEFFICIENT rns_pdb_info_list[] = {
   [PDB_CURRENT] = {0.1},
   [PDB_TEMP] = {1},
   [PDB_POWER] = {0.2},
+};
+
+//Flex
+PAL_PDB_COEFFICIENT flex_pdb_info_list[] = {
+  [PDB_VOLTAGE_OUT] = {0.00048828125},
+  [PDB_VOLTAGE_IN] = {0.125},
+  [PDB_CURRENT] = {0.25},
+  [PDB_TEMP] = {0.25},
 };
 
 PAL_PMBUS_INFO dpv2_efuse_info_list[] = {
@@ -1077,15 +1105,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"PDB_DELTA2_OUTPUT_CURR_A"     , PDB_DELTA_2, read_pdb_iout,     0, {     0,      0,     0,      0,    136,       0,    0,   0}, CURR}, //0xBA
   {"PDB_12V_WW_OUTPUT_CURR_A"     , PDB_RNS    , read_pdb_iout,     0, {     0,      0,     0,      0,    144,       0,    0,   0}, CURR}, //0xBB
   {"PDB_12V_WW_PWR_W"             , PDB_RNS    , read_pdb_pout,     0, {     0,      0,     0,      0,   1800,       0,    0,   0}, POWER}, //0xBC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBF
-
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
+  {"PDB_VPDB_FLEX1_TEMP_C"        , PDB_FLEX_1 , read_pdb_temp,     0, {     0,      0,     0,      0,    115,     130,    0,   0}, TEMP}, //0xBD
+  {"PDB_VPDB_FLEX2_TEMP_C"        , PDB_FLEX_2 , read_pdb_temp,     0, {     0,      0,     0,      0,    115,     130,    0,   0}, TEMP}, //0xBE
+  {"PDB_48V_FLEX1_INPUT_VOLT_V"   , PDB_FLEX_1 , read_pdb_vin ,     0, {    36,  42.72,  43.2,   56.1,  56.61,      62,    0,   0}, VOLT}, //0xBF
+  {"PDB_48V_FLEX2_INPUT_VOLT_V"   , PDB_FLEX_2 , read_pdb_vin ,     0, {    36,  42.72,  43.2,   56.1,  56.61,      62,    0,   0}, VOLT}, //0xC0
+  {"PDB_12V_FLEX1_OUTPUT_VOLT_V"  , PDB_FLEX_1 , read_pdb_vout,     0, { 8.162, 11.125, 11.25,  13.75, 13.875,      15,    0,   0}, VOLT}, //0xC1
+  {"PDB_12V_FLEX2_OUTPUT_VOLT_V"  , PDB_FLEX_2 , read_pdb_vout,     0, { 8.162, 11.125, 11.25,  13.75, 13.875,      15,    0,   0}, VOLT}, //0xC2
+  {"PDB_FLEX1_OUTPUT_CURR_A"      , PDB_FLEX_1 , read_pdb_iout,     0, {     0,      0,     0,      0,    100,       0,    0,   0}, CURR}, //0xC3
+  {"PDB_FLEX2_OUTPUT_CURR_A"      , PDB_FLEX_2 , read_pdb_iout,     0, {     0,      0,     0,      0,    136,       0,    0,   0}, CURR}, //0xC4
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
@@ -1166,7 +1193,9 @@ PAL_CHIP_INFO medusa_hsc_list[] = {
 PAL_PDB_INFO pdb_info_list[] = {
   [PDB_DELTA_1] = {DELTA_1_PDB_ADDR, delta_pdb_info_list},
   [PDB_DELTA_2] = {DELTA_2_PDB_ADDR, delta_pdb_info_list},
-  [PDB_RNS] = {RNS_PDB_ADDR, rns_pdb_info_list}
+  [PDB_RNS] = {RNS_PDB_ADDR, rns_pdb_info_list},
+  [PDB_FLEX_1] = {FLEX_1_PDB_ADDR, flex_pdb_info_list},
+  [PDB_FLEX_2] = {FLEX_2_PDB_ADDR, flex_pdb_info_list}
 };
 
 size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
@@ -1189,6 +1218,7 @@ size_t bmc_dpv2_x8_sensor_cnt = sizeof(bmc_dpv2_x8_sensor_list)/sizeof(uint8_t);
 size_t bic_dpv2_x16_sensor_cnt = sizeof(bic_dpv2_x16_sensor_list)/sizeof(uint8_t);
 size_t rns_pdb_sensor_cnt = sizeof(rns_pdb_sensor_list)/sizeof(uint8_t);
 size_t delta_pdb_sensor_cnt = sizeof(delta_pdb_sensor_list)/sizeof(uint8_t);
+size_t flex_pdb_sensor_cnt = sizeof(flex_pdb_sensor_list)/sizeof(uint8_t);
 
 static int compare(const void *arg1, const void *arg2) {
   return(*(int *)arg2 - *(int *)arg1);
@@ -1268,9 +1298,50 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
 }
 
 int
+pal_get_pdb_mfr_id_length(uint8_t bus, uint8_t addr, uint8_t *mfr_id_length) {
+  uint8_t tbuf[PMBUS_CMD_LEN_MAX] = {0};
+  uint8_t rbuf[PMBUS_RESP_LEN_MAX] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 1;
+  int ret = 0;
+  static int fd = -1;
+
+  tbuf[tlen++] = PMBUS_GET_MFR_ID;
+
+  if (mfr_id_length == NULL) {
+    syslog(LOG_WARNING, "%s() fail due to NULL pointer check", __func__);
+    return -1;
+  }
+
+  if ( fd < 0 ) {
+    fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( fd < 0 ) {
+      syslog(LOG_WARNING, "Failed to open bus %d\n", bus);
+      return fd;
+    }
+  }
+
+  //Get mfr id
+  ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen), MAX_RETRY, RETRY_INTERVAL_TIME_MS);
+  if (ret < 0) {
+    syslog(LOG_CRIT, "%s(): Failed to do i2c_rdwr_msg_transfer\n", __func__);
+    goto exit;
+  }
+  *mfr_id_length = rbuf[0];
+
+exit:
+  if ( fd >= 0 ) {
+    close(fd);
+    fd = -1;
+  }
+  return ret;
+}
+
+int
 pal_get_pdb_sensor_list(size_t *current_bmc_cnt) {
   const uint8_t pdb_bus = 11;
-
+  static bool is_inited = false;
+  static uint8_t mfr_id_length = 0;
   if (current_bmc_cnt == NULL) {
     return -1;
   }
@@ -1284,17 +1355,34 @@ pal_get_pdb_sensor_list(size_t *current_bmc_cnt) {
     *current_bmc_cnt += rns_pdb_sensor_cnt;
     return 0;
   } else if ((i2c_detect_device(pdb_bus, DELTA_1_PDB_ADDR >> 1) == 0) || (i2c_detect_device(pdb_bus, DELTA_2_PDB_ADDR >> 1) == 0)) {
-    if ((*current_bmc_cnt + delta_pdb_sensor_cnt) > MAX_SENSOR_NUM) {
-      syslog(LOG_ERR, "%s() current_bmc_cnt exceeds the limit of max sensor number", __func__);
-      return -1;
+    if (is_inited == false) {
+      if (pal_get_pdb_mfr_id_length(pdb_bus, DELTA_1_PDB_ADDR, &mfr_id_length) < 0) {
+        return -1;
+      }
+      is_inited = true;
     }
-    memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], delta_pdb_sensor_list, delta_pdb_sensor_cnt);
-    *current_bmc_cnt += delta_pdb_sensor_cnt;
-    return 0;
+    if (mfr_id_length == DELTA_MFR_ID_LENGTH) {
+      if ((*current_bmc_cnt + delta_pdb_sensor_cnt) > MAX_SENSOR_NUM) {
+        syslog(LOG_ERR, "%s() current_bmc_cnt exceeds the limit of max sensor number", __func__);
+        return -1;
+      }
+      memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], delta_pdb_sensor_list, delta_pdb_sensor_cnt);
+      *current_bmc_cnt += delta_pdb_sensor_cnt;
+      return 0;
+    } else {
+      if ((*current_bmc_cnt + flex_pdb_sensor_cnt) > MAX_SENSOR_NUM) {
+        syslog(LOG_ERR, "%s() current_bmc_cnt exceeds the limit of max sensor number", __func__);
+        return -1;
+      }
+      memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], flex_pdb_sensor_list, flex_pdb_sensor_cnt);
+      *current_bmc_cnt += flex_pdb_sensor_cnt;
+      return 0;
+    }
   } else {
     syslog(LOG_ERR, "%s() Fail to identify the module of PDB", __func__);
-    return -1;
   }
+
+  return -1;
 }
 
 int
@@ -1333,7 +1421,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
           syslog(LOG_ERR, "%s() Cannot get the PDB sensor list", __func__);
         }
       }
-
       *sensor_list = (uint8_t *) bmc_dynamic_sensor_list;
       *cnt = current_bmc_cnt;
     }
@@ -1884,14 +1971,15 @@ get_pdb_reading(uint8_t pdb_id, uint8_t type, uint16_t cmd, float *value) {
   if ((pdb_id == PDB_RNS) || (cmd == PMBUS_READ_VOUT)) {
     *value = (float)(rbuf[1] << 8 | rbuf[0]);
   // Delta's reponse data need to ignore bits 11~15, except PMBUS_READ_VOUT
-  } else if ((pdb_id == PDB_DELTA_1) || (pdb_id == PDB_DELTA_2)) {
-    *value = (float)(((rbuf[1] & 0x07) << 8) | rbuf[0]);
   } else {
-    ret = READING_NA;
-    goto exit;
+    if (PMBUS_GET_DATA_SIGN(rbuf[1]) == PMBUS_NEGATIVE_LINEAR11_DATA) {
+      *value = (float)((~PMBUS_GET_DATA_LINEAR11(rbuf[1], rbuf[0]) & 0x7FF) + 1);// If the data is negative, get the 2's complement
+      *value *= -1;
+    } else {
+      *value = (float)PMBUS_GET_DATA_LINEAR11(rbuf[1], rbuf[0]);
+    }
   }
 
-  return ret;
 exit:
   if ( fd >= 0 ) {
     close(fd);
@@ -1936,6 +2024,9 @@ read_pdb_iout(uint8_t pdb_id, float *value) {
     return READING_NA;
   }
   *value *= pdb_info_list[pdb_id].coefficient[PDB_CURRENT].data;
+  if ((pdb_id == PDB_FLEX_1) || (pdb_id == PDB_FLEX_2)) {
+    *value -= 0.25; //Decrease fixed offset for accuracy
+  }
   return PAL_EOK;
 }
 

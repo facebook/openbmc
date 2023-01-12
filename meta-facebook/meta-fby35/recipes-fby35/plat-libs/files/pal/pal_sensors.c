@@ -522,7 +522,12 @@ const uint8_t bic_dpv2_x16_sensor_list[] = {
 // BIC Rainbow Falls Sensors
 const uint8_t bic_1ou_rf_sensor_list[] = {
   BIC_1OU_RF_INLET_TEMP,
+  BIC_1OU_RF_CXL_TEMP,
   BIC_1OU_RF_CXL_CNTR_TEMP,
+  BIC_1OU_RF_DIMM_A_TEMP,
+  BIC_1OU_RF_DIMM_B_TEMP,
+  BIC_1OU_RF_DIMM_C_TEMP,
+  BIC_1OU_RF_DIMM_D_TEMP,
   BIC_1OU_RF_P0V9A_SPS_TEMP,
   BIC_1OU_RF_P0V8A_SPS_TEMP,
   BIC_1OU_RF_P0V8D_SPS_TEMP,

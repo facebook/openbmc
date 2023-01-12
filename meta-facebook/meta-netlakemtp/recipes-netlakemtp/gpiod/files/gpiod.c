@@ -84,9 +84,24 @@ cpu_thermal_trip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t c
 }
 
 static void
-cpu_fail_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  syslog(LOG_CRIT, "FRU: %d CPU Fail Warning %s\n", 
-         FRU_SERVER, (curr == GPIO_VALUE_LOW) ? "Assertion" : "Deassertion");
+cat_err_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  uint8_t status = 0;
+  uint8_t fru = 1;
+
+  sleep (2);
+  if (pal_get_server_power(fru, &status) < 0) {
+    syslog(LOG_ERR, "Fail to get server power when CATERR triggered");
+  }
+
+  if (status == SERVER_POWER_ON) {
+    if (curr == GPIO_VALUE_LOW) {
+      syslog(LOG_CRIT, "FRU: %d CPU IERR/CATERR %s\n", FRU_SERVER,
+      "Assertion");
+    } else {
+      syslog(LOG_CRIT, "FRU: %d CPU MCERR/CATERR %s\n", FRU_SERVER,
+      "Assertion");
+    }
+  }
 }
 
 static void
@@ -327,7 +342,7 @@ gpiopoll_config g_gpios[] = {
   {"OCP_DEBUG_PRSNT_N",               "GPIOG2",   GPIO_EDGE_BOTH,     debug_present_handler,     debug_present_init},
   {"FM_BIOS_POST_CMPLT_R_N",          "GPIOH2",   GPIO_EDGE_BOTH,     post_complete_status_handler, NULL},
   {"IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N",   "GPIOH3",   GPIO_EDGE_BOTH,     vr_hot_handler,            NULL},
-  {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_BOTH,     cpu_fail_handler,          NULL},
+  {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_FALLING,  cat_err_handler,           NULL},
   {"RST_BTN_N",                       "GPIOP2",   GPIO_EDGE_BOTH,     reset_button_handler,      NULL},
   {"PWR_BTN_N",                       "GPIOP4",   GPIO_EDGE_BOTH,     power_button_handler,      NULL},
   {"FM_CPU_PROCHOT_LATCH_LVT3_R_N",   "GPIOV3",   GPIO_EDGE_BOTH,     cpu_throttle_handler,      NULL},

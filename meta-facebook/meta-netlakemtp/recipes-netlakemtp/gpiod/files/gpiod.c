@@ -40,7 +40,8 @@
 #define NVME_UNBIND_PATH "/sys/bus/i2c/drivers/pca954x/unbind"
 #define PECI_BIND_PATH "/sys/bus/peci/drivers/intel_peci_client/bind"
 #define PECI_UNBIND_PATH "/sys/bus/peci/drivers/intel_peci_client/unbind"
-#define PCA_954X_BUS_ADDR "7-0071"
+#define PCA954X_BUS_ADDR_WITH_M2_ABC "7-0071"
+#define PCA954X_BUS_ADDR_WITH_M2_DE "7-0073"
 #define PECI_BUS_ADDR "0-30"
 #define POLL_TIMEOUT        -1 /* Forever */
 
@@ -208,9 +209,20 @@ power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t 
       return;
     }
 
-    rc = fputs((char*)PCA_954X_BUS_ADDR, fp);
+    rc = fputs((char*)PCA954X_BUS_ADDR_WITH_M2_ABC, fp);
     fclose(fp);
+    if (rc < 0) {
+      syslog(LOG_WARNING, "%s() m2 bind failed\n", __func__);
+    }
 
+    fp = fopen((char*)NVME_BIND_PATH, "w");
+    if (fp == NULL) {
+      syslog(LOG_INFO, "failed to open device for write %s error: %s", NVME_BIND_PATH, strerror(errno));
+      return;
+    }
+
+    rc = fputs((char*)PCA954X_BUS_ADDR_WITH_M2_DE, fp);
+    fclose(fp);
     if (rc < 0) {
       syslog(LOG_WARNING, "%s() m2 bind failed\n", __func__);
     }
@@ -222,9 +234,20 @@ power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t 
       return;
     }
 
-    rc = fputs((char*)PCA_954X_BUS_ADDR, fp);
+    rc = fputs((char*)PCA954X_BUS_ADDR_WITH_M2_ABC, fp);
     fclose(fp);
+    if (rc < 0) {
+      syslog(LOG_WARNING, "%s() m2 unbind failed\n", __func__);
+    }
 
+    fp = fopen((char*)NVME_UNBIND_PATH, "w");
+    if (fp == NULL) {
+      syslog(LOG_INFO, "failed to open device for write %s error: %s", NVME_UNBIND_PATH, strerror(errno));
+      return;
+    }
+
+    rc = fputs((char*)PCA954X_BUS_ADDR_WITH_M2_DE, fp);
+    fclose(fp);
     if (rc < 0) {
       syslog(LOG_WARNING, "%s() m2 unbind failed\n", __func__);
     }

@@ -113,7 +113,9 @@ enum {
   BMC_M2_A_TEMP = 0x3C,
   BMC_M2_B_TEMP = 0x3D,
   BMC_M2_C_TEMP = 0x3E,
-  BMC_OCP_NIC_TEMP = 0x3F,
+  BMC_M2_D_TEMP = 0x3F,
+  BMC_M2_E_TEMP = 0x40,
+  BMC_OCP_NIC_TEMP = 0x41,
 };
 
 // Sensors under Power Distribution Board (PDB)
@@ -206,6 +208,8 @@ enum {
   NVME_A_TEMP = 0,
   NVME_B_TEMP,
   NVME_C_TEMP,
+  NVME_D_TEMP,
+  NVME_E_TEMP,
 };
 
 //OCP NIC

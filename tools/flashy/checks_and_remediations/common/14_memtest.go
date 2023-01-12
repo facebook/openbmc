@@ -28,7 +28,17 @@ import (
 )
 
 func init() {
-	step.RegisterStep(runMemtestSuite)
+	// XXX T142265469
+	// XXX Disabled for the moment because it causes OOM Killer to
+	// XXX intervene on the BMC.  Typically this kills flashy but
+	// XXX it may kill other things, too.
+	// step.RegisterStep(runMemtestSuite)
+	step.RegisterStep(dummyRunMemtestSuite)
+}
+
+func dummyRunMemtestSuite(stepParams step.StepParams) step.StepExitError {
+	log.Printf("Skipping memtest, see T142265469")
+	return nil
 }
 
 // Equivalent of std::memset(scratchpadPointer, pattern, memtestSize)

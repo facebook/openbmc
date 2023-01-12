@@ -5,7 +5,5 @@
 # Machine Selection
 MACHINE ??= "fbdarwin"
 
-# MACHINE ??= "fbdarwin-fbvboot"
-
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb"
+DISTRO ?= "openbmc-fb-2"

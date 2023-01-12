@@ -85,6 +85,9 @@ typedef struct
 #define UNINITIALIZED_EEPROM 0xFFFF
 #define TI_VR_REMAIN_WR_SIZE 2
 
+//Halfdome TI VR remaining writes
+#define HD_VR_REMAINING_WRITE_OFFSET(addr) ((addr << 1 & 0xf) | 0x40)
+
 typedef struct {
   uint8_t bus_id;
   uint8_t addr;

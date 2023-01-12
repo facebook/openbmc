@@ -98,6 +98,11 @@ enum {
   VDDCR_CPU1_MPS_ADDR = 0x9C,
   VDD11S3_MPS_ADDR = 0x96,
 
+  /*----halfdome TI VR ADDR-----*/
+  VDDCR_CPU0_TI_ADDR = 0x8A,
+  VDDCR_CPU1_TI_ADDR = 0x8C,
+  VDD11S3_TI_ADDR = 0x8E,
+
   /*----Rainbow Falls VR ADDR-----*/
   VR_1OU_V9_ASICA_ADDR = 0xC8,
   VR_1OU_VDDQAB_ADDR = 0xB0,

@@ -32,7 +32,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 clear_all_vr_cache(){
-  sb_vr_list=("c0h" "c4h" "ech" "c2h" "c6h" "c8h" "cch" "d0h" "96h" "9ch" "9eh")
+  sb_vr_list=("c0h" "c4h" "ech" "c2h" "c6h" "c8h" "cch" "d0h" "96h" "9ch" "9eh" "8ah" "8ch" "8eh")
   rbf_vr_list=("b0h" "b4h" "c8h")
   for vr in "${sb_vr_list[@]}"; do
     kv del "slot${slot_num}_vr_${vr}_crc"

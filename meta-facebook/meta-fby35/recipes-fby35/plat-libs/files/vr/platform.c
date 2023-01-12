@@ -20,6 +20,7 @@
 #define HD_VR_RENESAS 0x0
 #define HD_VR_INFINEON 0x1
 #define HD_VR_MPS 0x2
+#define HD_VR_TI 0x3
 
 static uint8_t slot_id = 0;
 static char fru_name[64] = {0};  // prefix of vr version cache (kv)
@@ -271,26 +272,23 @@ void fby35_vr_device_check(void){
 void halfdome_vr_device_check(void){
   uint8_t board_rev = 0;
   int ret = 0;
+  struct vr_ops* hd_vr_ops_list[] = {&rns_ops, &ifx_ops, &mps_ops, &ti_ops};
+  int hd_vr_addr_table[][3] = {
+    {VDDCR_CPU0_ADDR,     VDDCR_CPU1_ADDR,     VDD11S3_ADDR},
+    {VDDCR_CPU0_IFX_ADDR, VDDCR_CPU1_IFX_ADDR, VDD11S3_IFX_ADDR},
+    {VDDCR_CPU0_MPS_ADDR, VDDCR_CPU1_MPS_ADDR, VDD11S3_MPS_ADDR},
+    {VDDCR_CPU0_TI_ADDR,  VDDCR_CPU1_TI_ADDR,  VDD11S3_TI_ADDR}
+  };
 
   ret = get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
   if (ret < 0) {
       printf("Failed to get board revision ID, slot=%d\n", slot_id);
   }
   board_rev = (board_rev & HD_VR_REVID_MASK) >> 4;
-  if(board_rev == HD_VR_INFINEON) {
-    fby35_vr_list[VR_HD_VDDCR_CPU0].addr = VDDCR_CPU0_IFX_ADDR;
-    fby35_vr_list[VR_HD_VDDCR_CPU0].ops = &ifx_ops;
-    fby35_vr_list[VR_HD_VDDCR_CPU1].addr = VDDCR_CPU1_IFX_ADDR;
-    fby35_vr_list[VR_HD_VDDCR_CPU1].ops = &ifx_ops;
-    fby35_vr_list[VR_HD_VDD11S3].addr = VDD11S3_IFX_ADDR;
-    fby35_vr_list[VR_HD_VDD11S3].ops = &ifx_ops;
-  } else if (board_rev == HD_VR_MPS) {
-    fby35_vr_list[VR_HD_VDDCR_CPU0].addr = VDDCR_CPU0_MPS_ADDR;
-    fby35_vr_list[VR_HD_VDDCR_CPU0].ops = &mps_ops;
-    fby35_vr_list[VR_HD_VDDCR_CPU1].addr = VDDCR_CPU1_MPS_ADDR;
-    fby35_vr_list[VR_HD_VDDCR_CPU1].ops = &mps_ops;
-    fby35_vr_list[VR_HD_VDD11S3].addr = VDD11S3_MPS_ADDR;
-    fby35_vr_list[VR_HD_VDD11S3].ops = &mps_ops;
+
+  for (int i = VR_HD_VDDCR_CPU0; i <= VR_HD_VDD11S3; i++) {
+    fby35_vr_list[i].addr = hd_vr_addr_table[board_rev][i - VR_HD_VDDCR_CPU0] ;
+    fby35_vr_list[i].ops = hd_vr_ops_list[board_rev];
   }
 }
 

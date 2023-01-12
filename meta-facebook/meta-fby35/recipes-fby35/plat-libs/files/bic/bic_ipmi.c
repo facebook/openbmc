@@ -2159,7 +2159,9 @@ bic_set_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t remain) {
   tbuf[1] = BIC_EEPROM_ADDR;
   tbuf[2] = 0; //write
   tbuf[3] = VR_REMAINING_WRITE_START_ADDR; //offset
-  tbuf[4] = VR_REMAINING_WRITE_OFFSET(addr); //offset
+  tbuf[4] = (fby35_common_get_slot_type(fru_id) == SERVER_TYPE_HD)
+            ? HD_VR_REMAINING_WRITE_OFFSET(addr)
+            : VR_REMAINING_WRITE_OFFSET(addr); // offset
   tbuf[5] = remain >> 8; //higher byte
   tbuf[6] = remain & 0xff; //lower byte
   tbuf[7] = fby35_zero_checksum_calculate(&tbuf[5], TI_VR_REMAIN_WR_SIZE); //Zero checksum

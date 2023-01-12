@@ -69,7 +69,7 @@ const char pal_dev_fru_list[] = "all, 1U, 2U, 3U, 4U, 1U-dev0, 1U-dev1, 1U-dev2,
 const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
-const char *pal_vr_addr_list[] = {"c0h", "c4h", "ech", "c2h", "c6h", "c8h", "cch", "d0h", "96h", "9ch", "9eh"};
+const char *pal_vr_addr_list[] = {"c0h", "c4h", "ech", "c2h", "c6h", "c8h", "cch", "d0h", "96h", "9ch", "9eh", "8ah", "8ch", "8eh"};
 const char *pal_vr_1ou_addr_list[] = {"b0h", "b4h", "c8h"};
 const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "slot4"};
 const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};

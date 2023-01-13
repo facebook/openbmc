@@ -71,7 +71,7 @@ extern "C" {
 
 extern const char *slot_usage;
 
-#define MAX_NUM_FRUS 13
+#define MAX_NUM_FRUS 14
 #define MAX_NUM_EXPS 4
 
 #define MAX_SYS_REQ_LEN  128  //include the string terminal

@@ -719,7 +719,8 @@
                 {
                     "type": "some_file_matches_some_regexp",
                     "value": [
-                        "^meta-facebook/meta-greatlakes-lf/.*"
+                        "^meta-facebook/meta-fby35/meta-greatlakes/.*",
+                        "^meta-facebook/meta-fby35/recipes-.*"
                     ]
                 }
             ],

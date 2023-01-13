@@ -64,4 +64,5 @@ IMAGE_INSTALL += " \
   apml-util \
   prot-util \
   crashdump-amd \
+  mctpd \
   "

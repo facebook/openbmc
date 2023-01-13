@@ -65,4 +65,5 @@ IMAGE_INSTALL += " \
   dimm-util \
   attest-util \
   tcpdump \
+  mctpd \
   "

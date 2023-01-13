@@ -211,6 +211,7 @@ main(int argc, char **argv) {
   uint8_t data[3] = {0};
   uint8_t check_sys_config = UNKNOWN_CONFIG;
   sys_conf sys_info = {0};
+  int server_type = SERVER_TYPE_NONE;
 
   for ( i = 1; i < argc; i++ ) {
     if ( strcmp("-v", argv[i]) == 0 ) {
@@ -265,9 +266,14 @@ main(int argc, char **argv) {
 
         sys_info.server_info[i-1].is_2ou_present = (riser_exp_bit == 0)?STATUS_PRSNT:STATUS_NOT_PRSNT;
 
+        server_type = fby35_common_get_slot_type(i);
+        if (server_type < 0) {
+          syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, i, server_type);
+        }
+
         if ( sys_info.type == CLASS2 ) {
           server_config = 0xD;
-        } else if (fby35_common_get_slot_type(i) == SERVER_TYPE_HD) {
+        } else if (server_type == SERVER_TYPE_HD) {
           server_config = 0xB;
         } else if ( riser_exp_bit == STATUS_PRSNT ) {
           server_config = 0xB;

@@ -1,0 +1,263 @@
+{
+  "version": "greatlakes_FSCV0.0",
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "non_fanfail_limited_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "sensor_fail_ignore": true,
+  "sensor_filter_all": true,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "fan_dead_boost": {
+    "threshold": 2,
+    "action": "host_shutdown"
+  },
+  "sensor_valid_check": {
+    "(.*)fio_": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)mb_": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)e1s_": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
+  "watchdog": false,
+  "min_rpm": 500,
+  "profiles": {
+    "linear_frontIO_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 25, 70 ],
+        [ 26, 70 ],
+        [ 27, 70 ],
+        [ 28, 70 ],
+        [ 29, 70 ],
+        [ 30, 70 ],
+        [ 31, 70 ],
+        [ 32, 70 ],
+        [ 33, 70 ],
+        [ 34, 70 ],
+        [ 35, 70 ],
+        [ 36, 70 ],
+        [ 37, 70 ],
+        [ 38, 70 ],
+        [ 39, 70 ]
+      ]
+    },
+    "linear_cpu": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [ 46, 70 ],
+        [ 47, 70 ],
+        [ 48, 70 ],
+        [ 49, 70 ],
+        [ 50, 70 ],
+        [ 51, 70 ],
+        [ 52, 70 ],
+        [ 53, 70 ],
+        [ 54, 70 ],
+        [ 55, 70 ],
+        [ 56, 70 ],
+        [ 57, 70 ],
+        [ 58, 70 ],
+        [ 59, 70 ],
+        [ 60, 70 ]
+      ]
+    },
+    "pid_cpu": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 62,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -3.5,
+      "ki": -0.03,
+      "kd": 0
+    },
+    "linear_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [65, 70],
+        [66, 70],
+        [67, 70],
+        [68, 70],
+        [69, 70]
+      ]
+    },
+    "pid_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 75,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 0,
+      "kp": -3,
+      "ki": -0.01,
+      "kd": 0
+    },
+    "linear_nic": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [75, 70],
+        [76, 70],
+        [77, 70],
+        [78, 70],
+        [79, 70],
+        [80, 70],
+        [81, 70],
+        [82, 70],
+        [83, 70],
+        [84, 70],
+        [85, 70],
+        [86, 70],
+        [87, 70],
+        [88, 70],
+        [89, 70],
+        [90, 70]
+      ]
+    },
+    "pid_nic": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 95,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 0,
+      "kp": -1.25,
+      "ki": -0.01,
+      "kd": 0
+    },
+    "linear_boot_drive": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [55, 70],
+        [56, 70],
+        [57, 70],
+        [58, 70],
+        [59, 70],
+        [60, 70],
+        [61, 70],
+        [62, 70],
+        [63, 70],
+        [64, 70],
+        [65, 70]
+      ]
+    },
+    "pid_boot_drive": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 70,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -2.0,
+      "ki": -0.01,
+      "kd": 0
+    },
+    "linear_e1s_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [58, 70],
+        [60, 70],
+        [62, 70]
+      ]
+    },
+    "pid_e1s_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 68,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -1,
+      "ki": -0.035,
+      "kd": 0
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "kv" : "bmc_sensor224"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "1": {
+      "read_source" : {
+        "kv" : "bmc_sensor225"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "2": {
+      "read_source" : {
+        "kv" : "bmc_sensor226"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "3": {
+      "read_source" : {
+        "kv" : "bmc_sensor227"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0],
+      "expr_file": "FSC_CLASS1_type3_10_zone1.fsc"
+    }
+  }
+}

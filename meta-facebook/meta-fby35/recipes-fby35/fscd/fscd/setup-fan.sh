@@ -115,8 +115,14 @@ init_class1_fsc() {
   target_fsc_config=""
   config_type=""
   if [ "$sys_config" = "A" ]; then
-    config_type="1"
-    target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
+    server_type=$(get_server_type 1)
+    if [[ $server_type -eq 4 ]]; then
+      config_type="GL"
+      target_fsc_config="/etc/FSC_CLASS1_GL_config.json"
+    else
+      config_type="1"
+      target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
+    fi
   elif [ "$sys_config" = "B" ]; then
     server_type=$(get_server_type 1)
     if [[ $server_type -eq 2 ]]; then
@@ -136,17 +142,24 @@ init_class1_fsc() {
       target_fsc_config="/etc/FSC_CLASS1_DPV2_config.json"
     fi
   elif [ "$sys_config" = "C" ]; then
-    board_type_1ou=$(get_1ou_board_type slot1)
-    case $board_type_1ou in
-      4)
-        config_type="VF"
-        target_fsc_config="/etc/FSC_CLASS1_type3_10_config.json"
-        ;;
-      *)
-        config_type="1"
-        target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
-        ;;
-    esac
+    server_type=$(get_server_type 1)
+    if [[ $server_type -eq 4 ]]; then
+      config_type="GL"
+      target_fsc_config="/etc/FSC_CLASS1_GL_config.json"
+    else
+      board_type_1ou=$(get_1ou_board_type slot1)
+      case $board_type_1ou in
+        4)
+          config_type="VF"
+          target_fsc_config="/etc/FSC_CLASS1_type3_10_config.json"
+          ;;
+        *)
+          logger -t "fan_check" -p daemon.crit "Fail to get server type, run with the default fan config"
+          config_type="1"
+          target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
+          ;;
+      esac
+    fi
   else
     config_type="1"
     target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
@@ -202,7 +215,7 @@ reload_sled_fsc() {
 
     #Check number of slots
     sys_config="$($KV_CMD get sled_system_conf persistent)"
-    if [[ "$sys_config" =~ ^(Type_(1|10|VF))$ && "$cnt" -eq 4 ]]; then
+    if [[ "$sys_config" =~ ^(Type_(1|10|VF|GL))$ && "$cnt" -eq 4 ]]; then
       run_fscd=true
     elif [[ "$sys_config" =~ ^(Type_(DPV2|HD))$ && "$cnt" -eq 2 ]]; then
       run_fscd=true

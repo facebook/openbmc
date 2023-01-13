@@ -92,6 +92,16 @@ struct cpld_dev_info lattice_dev_list[] = {
     .cpld_dev_id = common_cpld_Get_id_i2c,
   },
   {
+    .name = "LCMXO3_6900C",
+    .dev_id = 0x612BD043,
+    .intf = INTF_I2C,
+    .cpld_open = cpld_dev_open_i2c,
+    .cpld_close = cpld_dev_close_i2c,
+    .cpld_ver = common_cpld_Get_Ver_i2c,
+    .cpld_program = XO2XO3Family_cpld_update_i2c,
+    .cpld_dev_id = common_cpld_Get_id_i2c,
+  },
+  {
     .name = "LCMXO3-9400C",
     .dev_id = 0x612BE043,
     .intf = INTF_I2C,

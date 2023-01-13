@@ -19,6 +19,12 @@ enum {
   HTTP_NOT_FOUND = 404,
 };
 
+enum {
+  HMC_FW_EVT = 0,
+  HMC_FW_DVT = 1,
+  BMC_FW_DVT = 2,
+};
+
 constexpr auto HMC_USR = "root";
 constexpr auto HMC_PWD = "0penBmc";
 
@@ -26,7 +32,68 @@ const std::string HMC_URL = "http://192.168.31.1/redfish/v1/";
 const auto HMC_UPDATE_SERVICE = HMC_URL + "UpdateService";
 const auto HMC_TASK_SERVICE = HMC_URL + "TaskService/Tasks/";
 const auto HMC_FW_INVENTORY = HMC_URL + "UpdateService/FirmwareInventory/";
-const auto HGX_TELEMETRY_SERVICE = HMC_URL + "TelemetryService/MetricReports/HGX_PlatformEnvironmentMetrics_0/";
+const auto HGX_TELEMETRY_SERVICE_EVT = HMC_URL + "/redfish/v1/TelemetryService/MetricReportDefinitions/PlatformEnvironmentMetrics";
+const auto HGX_TELEMETRY_SERVICE_DVT = HMC_URL + "TelemetryService/MetricReports/HGX_PlatformEnvironmentMetrics_0/";
+
+const std::string HMC_PATCH_EVT =
+"{\"HttpPushUriTargets\": [\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_FPGA_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU0_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU1_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU2_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU3_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU4_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU5_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU6_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU7_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_NVSwitch0_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_NVSwitch1_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_NVSwitch2_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_NVSwitch3_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_PCIeSwitch_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_HMC_Firmware\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HMC_Firmware\"\
+]}";
+
+const std::string HMC_PATCH_DVT =
+"{\"HttpPushUriTargets\": [\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_FPGA_0\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_1\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_2\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_3\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_4\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_5\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_6\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_7\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_8\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_0\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_1\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_2\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_3\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_PCIeSwitch_0\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_HMC_0\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_HMC_0\"\
+]}";
+
+const std::string BMC_PATCH_DVT =
+"{\"HttpPushUriTargets\": [\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_FPGA_0\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_1\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_2\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_3\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_4\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_5\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_6\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_7\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_8\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_0\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_1\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_2\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_3\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_PCIeSwitch_0\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_BMC_0\",\
+\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_BMC_0\"\
+]}";
 
 constexpr auto TIME_OUT = 6;
 
@@ -75,6 +142,18 @@ class HGXMgr {
     }
     return result.body;
   }
+
+  static std::string patch(const std::string& url, std::string&& args) {
+    RestClient::Response result;
+    RestClient::Connection conn(url);
+
+    result = conn.patch("", std::move(args));
+
+    if (result.code != HTTP_OK && result.code != HTTP_ACCEPTED) {
+      throw HTTPException(result.code);
+    }
+    return result.body;
+  }
 };
 
 static HGXMgr hgx;
@@ -85,6 +164,10 @@ std::string redfishGet(const std::string& subpath) {
 
 std::string redfishPost(const std::string& subpath, std::string&& args) {
   return hgx.post(HMC_URL + subpath, std::move(args), false);
+}
+
+std::string redfishPatch(const std::string& subpath, std::string&& args) {
+  return hgx.patch(HMC_URL + subpath, std::move(args));
 }
 
 std::string version(const std::string& comp, bool returnJson) {
@@ -108,6 +191,35 @@ std::string updateNonBlocking(const std::string& path, bool returnJson) {
   return resp["Id"];
 }
 
+static int getHMCPhase() {
+  std::string url = "";
+  RestClient::Response result;
+  RestClient::Connection conn("");
+
+  conn.SetTimeout(TIME_OUT);
+  conn.SetBasicAuth(HMC_USR, HMC_PWD);
+
+  url = HMC_FW_INVENTORY + "HGX_FW_BMC_0";
+  result = conn.get(url);
+  if (result.code == HTTP_OK) {
+	return BMC_FW_DVT;
+  }
+
+  url = HMC_FW_INVENTORY + "HGX_FW_HMC_0";
+  result = conn.get(url);
+  if (result.code == HTTP_OK) {
+	return HMC_FW_DVT;
+  }
+
+  url = HMC_FW_INVENTORY + "HMC_Firmware";
+  result = conn.get(url);
+  if (result.code == HTTP_OK) {
+	return HMC_FW_EVT;
+  }
+
+  return -1;
+}
+
 TaskStatus getTaskStatus(const std::string& id) {
   std::string url = HMC_TASK_SERVICE + id;
   TaskStatus status;
@@ -122,7 +234,7 @@ TaskStatus getTaskStatus(const std::string& id) {
 }
 
 void getMetricReports() {
-  std::string url = HGX_TELEMETRY_SERVICE;
+  std::string url = HGX_TELEMETRY_SERVICE_DVT;
   std::string cache_path = "/tmp/cache_store/";
   std::string snr_path;
   std::string snr_val;
@@ -154,7 +266,51 @@ void getMetricReports() {
   }
 }
 
-void update(const std::string& path) {
+int patch_bf_update() {
+  std::string url = "";
+  RestClient::Response result;
+  RestClient::Connection conn("");
+  json jresp;
+  int HMCPhase = -1;
+
+  HMCPhase = getHMCPhase();
+
+  if (HMCPhase == HMC_FW_EVT) {
+    auto data = HMC_PATCH_EVT;
+	hgx.patch(HMC_UPDATE_SERVICE, std::move(data));
+  }
+  else if (HMCPhase == HMC_FW_DVT) {
+    auto data = HMC_PATCH_DVT;
+    hgx.patch(HMC_UPDATE_SERVICE, std::move(data));
+  }
+  else if (HMCPhase == BMC_FW_DVT) {
+    auto data = BMC_PATCH_DVT;
+    hgx.patch(HMC_UPDATE_SERVICE, std::move(data));
+  }
+  else {
+    std::cout << "Patch failed, unknown HMC FW" << std::endl;
+    return -1;
+  }
+
+  conn.SetTimeout(TIME_OUT);
+  conn.SetBasicAuth(HMC_USR, HMC_PWD);
+
+  url = HMC_UPDATE_SERVICE;
+  result = conn.get(url);
+  if (result.code == HTTP_OK) {
+	jresp = json::parse(result.body);
+    std::cout << "Patching: " << std::endl \
+              << jresp["HttpPushUriTargets"] << std::endl;
+  }
+  else {
+    std::cout << "Patch failed" << std::endl;
+    throw HTTPException(result.code);
+  }
+
+  return 0;
+}
+
+int update(const std::string& path) {
   using namespace std::chrono_literals;
   std::string taskID = updateNonBlocking(path);
   std::cout << "Started update task: " << taskID << std::endl;
@@ -167,10 +323,16 @@ void update(const std::string& path) {
     if (status.state != "Running") {
       std::cout << "Update completed with state: " << status.state
                 << " status: " << status.status << std::endl;
-      break;
+      if (status.state == "Completed") {
+        return 0;
+      }
+      else {
+        return -1;
+      }
     }
     std::this_thread::sleep_for(5s);
   }
+  return -1;
 }
 
 std::string sensorRaw(const std::string& component, const std::string& name) {

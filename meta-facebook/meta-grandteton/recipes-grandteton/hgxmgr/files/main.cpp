@@ -50,6 +50,11 @@ static void do_post(const std::string& subpath, std::string& args) {
   std::cout << out << std::endl;
 }
 
+static void do_patch(const std::string& url, std::string& args) {
+  std::string out = hgx::redfishPatch(url, std::move(args));
+  std::cout << out << std::endl;
+}
+
 static void do_get_snr_metric() {
   hgx::getMetricReports();
 }
@@ -103,6 +108,11 @@ int main(int argc, char* argv[]) {
   post->add_option("SUBPATH", subpath, "Subpath after /redfish/v1")->required();
   post->add_option("args", args, "JSON arguments for post")->required();
   post->callback([&]() { do_post(subpath, args); });
+
+  auto patch = app.add_subcommand("patch", "Perform a Patch on the redfish subpath");
+  patch->add_option("SUBPATH", subpath, "Subpath after /redfish/v1")->required();
+  patch->add_option("args", args, "JSON arguments for patch")->required();
+  patch->callback([&]() { do_patch(subpath, args); });
 
   app.require_subcommand(/* min */ 1, /* max */ 1);
 

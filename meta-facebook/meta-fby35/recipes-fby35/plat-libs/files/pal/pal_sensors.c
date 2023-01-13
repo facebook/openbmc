@@ -310,6 +310,72 @@ const uint8_t bic_hd_sensor_list[] = {
   BIC_HD_SENSOR_DIMMK_PWR,
 };
 
+const uint8_t bic_gl_sensor_list[] = {
+  BIC_GL_SENSOR_MB_INLET_TEMP_C,
+  BIC_GL_SENSOR_MB_OUTLET_TEMP_C,
+  BIC_GL_SENSOR_FIO_FRONT_TEMP_C,
+  BIC_GL_SENSOR_MB_SOC_CPU_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMA_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMB_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMC_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMD_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMME_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMF_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMG_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMH_TEMP_C,
+  BIC_GL_SENSOR_MB_SSD0_TEMP_C,
+  BIC_GL_SENSOR_MB_HSC_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_VCCIN_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_EHV_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_FIVRA_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_VCCINF_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_VCCD0_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_VCCD1_TEMP_C,
+  BIC_GL_SENSOR_MB_SOC_THERMAL_MARGIN_C,
+  BIC_GL_SENSOR_MB_SOC_TJMAX_C,
+  BIC_GL_SENSOR_MB_ADC_P12V_STBY_VOLT_V,
+  BIC_GL_SENSOR_MB_ADC_P3V_BAT_VOLT_V,
+  BIC_GL_SENSOR_MB_ADC_P3V3_STBY_VOLT_V,
+  BIC_GL_SENSOR_MB_ADC_P1V8_STBY_VOLT_V,
+  BIC_GL_SENSOR_MB_ADC_P1V05_PCH_VOLT_V,
+  BIC_GL_SENSOR_MB_HSC_INPUT_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_VCCIN_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_VCCINF_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_FIVRA_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_VCCD0_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_VCCD1_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_EHV_VOLT_V,
+  BIC_GL_SENSOR_MB_ADC_VNN_VOLT_V,
+  BIC_GL_SENSOR_MB_ADC_P5V_STBY_VOLT_V,
+  BIC_GL_SENSOR_MB_ADC_P12V_DIMM_VOLT_V,
+  BIC_GL_SENSOR_MB_ADC_P1V2_STBY_VOLT_V,
+  BIC_GL_SENSOR_MB_ADC_P3V3_M2_VOLT_V,
+  BIC_GL_SENSOR_1OU_HSC_OUTPUT_CURR_A,
+  BIC_GL_SENSOR_2OU_HSC_OUTPUT_CURR_A,
+  BIC_GL_SENSOR_MB_VR_VCCIN_CURR_A,
+  BIC_GL_SENSOR_MB_VR_EHV_CURR_A,
+  BIC_GL_SENSOR_MB_VR_FIVRA_CURR_A,
+  BIC_GL_SENSOR_MB_VR_VCCINF_CURR_A,
+  BIC_GL_SENSOR_MB_VR_VCCD0_CURR_A,
+  BIC_GL_SENSOR_MB_VR_VCCD1_CURR_A,
+  BIC_GL_SENSOR_1OU_HSC_INPUT_PWR_W,
+  BIC_GL_SENSOR_2OU_HSC_INPUT_PWR_W,
+  BIC_GL_SENSOR_MB_VR_VCCIN_PWR_W,
+  BIC_GL_SENSOR_MB_VR_EHV_PWR_W,
+  BIC_GL_SENSOR_MB_VR_FIVRA_PWR_W,
+  BIC_GL_SENSOR_MB_VR_VCCINF_PWR_W,
+  BIC_GL_SENSOR_MB_VR_VCCD0_PWR_W,
+  BIC_GL_SENSOR_MB_VR_VCCD1_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMA_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMB_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMC_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMD_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMME_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMF_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMG_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMH_PMIC_PWR_W,
+};
+
 //BIC 2OU EXP Sensors
 const uint8_t bic_2ou_sensor_list[] = {
   BIC_2OU_EXP_SENSOR_OUTLET_TEMP,
@@ -674,6 +740,53 @@ const uint8_t bic_hd_skip_sensor_list[] = {
   BIC_HD_SENSOR_DIMMH_PWR,
   BIC_HD_SENSOR_DIMMI_PWR,
   BIC_HD_SENSOR_DIMMK_PWR,
+};
+
+const uint8_t bic_gl_skip_sensor_list[] = {
+  BIC_GL_SENSOR_MB_SOC_CPU_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMA_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMB_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMC_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMD_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMME_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMF_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMG_TEMP_C,
+  BIC_GL_SENSOR_MB_DIMMH_TEMP_C,
+  BIC_GL_SENSOR_MB_SSD0_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_VCCIN_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_EHV_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_FIVRA_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_VCCINF_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_VCCD0_TEMP_C,
+  BIC_GL_SENSOR_MB_VR_VCCD1_TEMP_C,
+  BIC_GL_SENSOR_MB_SOC_THERMAL_MARGIN_C,
+  BIC_GL_SENSOR_MB_SOC_TJMAX_C,
+  BIC_GL_SENSOR_MB_VR_VCCIN_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_VCCINF_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_FIVRA_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_VCCD0_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_VCCD1_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_EHV_VOLT_V,
+  BIC_GL_SENSOR_MB_VR_VCCIN_CURR_A,
+  BIC_GL_SENSOR_MB_VR_EHV_CURR_A,
+  BIC_GL_SENSOR_MB_VR_FIVRA_CURR_A,
+  BIC_GL_SENSOR_MB_VR_VCCINF_CURR_A,
+  BIC_GL_SENSOR_MB_VR_VCCD0_CURR_A,
+  BIC_GL_SENSOR_MB_VR_VCCD1_CURR_A,
+  BIC_GL_SENSOR_MB_VR_VCCIN_PWR_W,
+  BIC_GL_SENSOR_MB_VR_EHV_PWR_W,
+  BIC_GL_SENSOR_MB_VR_FIVRA_PWR_W,
+  BIC_GL_SENSOR_MB_VR_VCCINF_PWR_W,
+  BIC_GL_SENSOR_MB_VR_VCCD0_PWR_W,
+  BIC_GL_SENSOR_MB_VR_VCCD1_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMA_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMB_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMC_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMD_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMME_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMF_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMG_PMIC_PWR_W,
+  BIC_GL_SENSOR_MB_VR_DIMMH_PMIC_PWR_W,
 };
 
 const uint8_t bic_2ou_skip_sensor_list[] = {
@@ -1203,6 +1316,7 @@ size_t nicexp_sensor_cnt = sizeof(nicexp_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 size_t bic_hd_sensor_cnt = sizeof(bic_hd_sensor_list)/sizeof(uint8_t);
+size_t bic_gl_sensor_cnt = sizeof(bic_gl_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_vf_sensor_cnt = sizeof(bic_1ou_vf_sensor_list)/sizeof(uint8_t);
@@ -1211,6 +1325,7 @@ size_t bic_spe_sensor_cnt = sizeof(bic_spe_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_rf_sensor_cnt = sizeof(bic_1ou_rf_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_hd_skip_sensor_cnt = sizeof(bic_hd_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_gl_skip_sensor_cnt = sizeof(bic_gl_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_skip_sensor_cnt = sizeof(bic_2ou_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_gpv3_skip_sensor_cnt = sizeof(bic_2ou_gpv3_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_vf_skip_sensor_cnt = sizeof(bic_1ou_vf_skip_sensor_list)/sizeof(uint8_t);
@@ -1257,12 +1372,22 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
   uint8_t type_2ou = UNKNOWN_BOARD;
   uint8_t count;
   static uint8_t skip_count[MAX_NODES] = {0};
+  int server_type = SERVER_TYPE_NONE;
+
+  server_type = fby35_common_get_slot_type(fru);
+  if (server_type < 0) {
+    syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, fru, server_type);
+  }
+
 
   if (bic_dynamic_skip_sensor_list[fru-1][0] == 0) {
 
-    if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+    if (server_type == SERVER_TYPE_HD) {
       memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_hd_skip_sensor_list, bic_hd_skip_sensor_cnt);
       count = bic_hd_skip_sensor_cnt;
+    } else if (server_type == SERVER_TYPE_GL) {
+      memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_gl_skip_sensor_list, bic_gl_skip_sensor_cnt);
+      count = bic_gl_skip_sensor_cnt;
     } else {
       memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_skip_sensor_list, bic_skip_sensor_cnt);
       count = bic_skip_sensor_cnt;
@@ -1395,6 +1520,12 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   char key[MAX_KEY_LEN] = {0};
   char hsc_type[MAX_VALUE_LEN] = {0};
   bool is_48v_medusa = false;
+  int server_type = SERVER_TYPE_NONE;
+
+  server_type = fby35_common_get_slot_type(fru);
+  if (server_type < 0) {
+    syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, fru, server_type);
+  }
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -1434,9 +1565,12 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_SLOT2:
   case FRU_SLOT3:
   case FRU_SLOT4:
-    if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+    if (server_type == SERVER_TYPE_HD) {
       memcpy(bic_dynamic_sensor_list[fru-1], bic_hd_sensor_list, bic_hd_sensor_cnt);
       current_cnt = bic_hd_sensor_cnt;
+    } else if (server_type == SERVER_TYPE_GL) {
+      memcpy(bic_dynamic_sensor_list[fru-1], bic_gl_sensor_list, bic_gl_sensor_cnt);
+      current_cnt = bic_gl_sensor_cnt;
     } else {
       memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
       current_cnt = bic_sensor_cnt;

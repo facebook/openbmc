@@ -783,7 +783,7 @@ static int
 read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
-  static uint8_t retry[DIMM_CNT] = {0};
+  static uint8_t retry[MAX_DIMM_NUM] = {0};
 
   if(!is_cpu_socket_occupy(CPU_ID0))
     return READING_NA;
@@ -820,7 +820,7 @@ static int
 read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
-  static uint8_t retry[DIMM_CNT] = {0};
+  static uint8_t retry[MAX_DIMM_NUM] = {0};
 
   if(!is_cpu_socket_occupy(CPU_ID1))
     return READING_NA;

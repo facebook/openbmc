@@ -1967,7 +1967,7 @@ pal_is_slot_server(uint8_t fru)
 {
   int ret = fby35_common_get_slot_type(fru);
 
-  if ((ret == SERVER_TYPE_CL) || (ret == SERVER_TYPE_HD)) {
+  if ((ret == SERVER_TYPE_CL) || (ret == SERVER_TYPE_HD) || (ret == SERVER_TYPE_GL)) {
     return 1;
   }
   return 0;

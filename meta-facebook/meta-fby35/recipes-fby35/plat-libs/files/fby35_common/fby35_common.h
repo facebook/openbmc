@@ -291,6 +291,7 @@ enum {
 enum {
   SERVER_TYPE_CL = 0x0,
   SERVER_TYPE_HD = 0x2,
+  SERVER_TYPE_GL = 0x4,
   SERVER_TYPE_NONE = 0xFF,
 };
 

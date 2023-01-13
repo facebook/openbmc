@@ -313,13 +313,27 @@ void rbf_vr_device_check(void){
   }
 }
 
+void greatlakes_vr_device_check(void){
+  fby35_vr_list[VR_CL_VCCIN].addr = GL_VCCIN_ADDR;
+  fby35_vr_list[VR_CL_VCCD].addr = GL_VCCD_ADDR;
+  fby35_vr_list[VR_CL_VCCINFAON].addr = GL_VCCINFAON_ADDR;
+}
+
 int plat_vr_init(void) {
   int config_status = 0;
   int vr_cnt = sizeof(fby35_vr_list)/sizeof(fby35_vr_list[0]);
   uint8_t type_1ou = TYPE_1OU_UNKNOWN;
+  int server_type = SERVER_TYPE_NONE;
 
-  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+  server_type = fby35_common_get_slot_type(slot_id);
+  if (server_type < 0) {
+    syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, slot_id, server_type);
+  }
+
+  if (server_type == SERVER_TYPE_HD) {
     halfdome_vr_device_check();
+  } else if (server_type == SERVER_TYPE_GL) {
+    greatlakes_vr_device_check();
   } else {
     fby35_vr_device_check();
   }

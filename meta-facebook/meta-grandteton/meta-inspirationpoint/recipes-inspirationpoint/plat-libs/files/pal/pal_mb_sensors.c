@@ -38,7 +38,6 @@
 #define MAX11617_DIR     IIO_DEV_DIR(max1363, 20, 35, 2)
 
 #define SCALING_FACTOR	0.25
-#define GROUP_OF_DIMM_NUM  2
 #define CHANNEL_OF_DIMM_NUM  6
 
 uint8_t DIMM_SLOT_CNT = 0;
@@ -849,7 +848,7 @@ read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 read_dimm_power(uint8_t fru, uint8_t sensor_num, float *value,
-                uint8_t dimm_id, uint8_t cpu_id, bool* cached) {
+                uint8_t dimm_id, uint8_t cpu_id) {
   struct dimm_power d_power;
   oob_status_t ret;
 
@@ -867,7 +866,6 @@ static int
 read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
   static uint8_t retry[MAX_DIMM_NUM] = {0};
-  static bool cached[MAX_DIMM_NUM] = {false};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
   if(!is_cpu_socket_occupy(CPU_ID0))
@@ -881,7 +879,7 @@ read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
     set_apml_channel(CPU_ID0);
   }
 
-  ret = read_dimm_power(fru, sensor_num, value, dimm_id, CPU_ID0, cached);
+  ret = read_dimm_power(fru, sensor_num, value, dimm_id, CPU_ID0);
   if ( ret != 0 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
@@ -895,7 +893,6 @@ static int
 read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
   static uint8_t retry[MAX_DIMM_NUM] = {0};
-  static bool cached[MAX_DIMM_NUM] = {false};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
   if(!is_cpu_socket_occupy(CPU_ID1))
@@ -909,7 +906,7 @@ read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
     set_apml_channel(CPU_ID1);
   }
 
-  ret = read_dimm_power(fru, sensor_num, value, dimm_id, CPU_ID1, cached);
+  ret = read_dimm_power(fru, sensor_num, value, dimm_id, CPU_ID1);
   if ( ret != 0 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);

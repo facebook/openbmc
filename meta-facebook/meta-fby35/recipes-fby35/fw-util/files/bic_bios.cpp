@@ -67,7 +67,7 @@ int BiosComponent::attempt_server_power_off(bool force) {
 int BiosComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret;
   int ret_recovery = 0, ret_reset = 0;
-  int server_type = 0;
+  int server_type = SERVER_TYPE_NONE;
 
   try {
     cerr << "Checking if the server is ready..." << endl;
@@ -94,7 +94,10 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
 
   server_type = fby35_common_get_slot_type(slot_id);
-  if (SERVER_TYPE_HD != server_type) {
+  if (server_type < 0) {
+    syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, slot_id, server_type);
+  }
+  if (server_type == SERVER_TYPE_CL) {
     if (force) {
       sleep(DELAY_ME_RESET);  // to wait for ME reset
     }
@@ -122,7 +125,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
   sleep(1);
 
-  if (SERVER_TYPE_HD != server_type) {
+  if (server_type == SERVER_TYPE_CL) {
     // Have to do ME reset, because we have put ME into recovery mode
     cerr << "Doing ME Reset..." << endl;
     ret_reset = me_reset(slot_id);

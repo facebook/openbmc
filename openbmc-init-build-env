@@ -31,6 +31,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fby3:lf-master
   meta-grandcanyon:lf-master
   meta-greatlakes:lf-master
+  meta-greatlakes-lf:lf-master
   meta-halfdome:lf-master
   meta-qemux86:lf-master
   meta-waimeacanyon:lf-master
@@ -115,7 +116,7 @@ if [ -z "$TEMPLATECONF" ]; then
             if [ "x$machine" = "x$platform" ]; then
                 TEMPLATECONF="$(pwd)/$meta/templates/default"
                 platform=$(basename "$(dirname "$meta")")
-                export MACHINE="${machine}"
+                export MACHINE="${machine/-lf/}"
                 break
             fi
         done

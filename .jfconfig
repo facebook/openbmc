@@ -719,7 +719,40 @@
                 {
                     "type": "some_file_matches_some_regexp",
                     "value": [
-                        "^meta-facebook/meta-greatlakes/.*"
+                        "^meta-facebook/meta-greatlakes-lf/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-greatlakes-lf-determinator",
+            "args": {
+                "name": "openbmc-cit-greatlakes-lf-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-greatlakes-lf-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform greatlakes-lf"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-greatlakes-lf/.*"
                     ]
                 }
             ],

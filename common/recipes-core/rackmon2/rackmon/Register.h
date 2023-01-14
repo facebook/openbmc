@@ -7,6 +7,7 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include "UARTDevice.h"
 
 namespace rackmon {
 
@@ -59,9 +60,8 @@ struct FlagType {
   std::string name;
   uint8_t bitOffset;
   bool operator==(const FlagType& other) const {
-    return value == other.value &&
-      name == other.name &&
-      bitOffset == other.bitOffset;
+    return value == other.value && name == other.name &&
+        bitOffset == other.bitOffset;
   }
 };
 
@@ -253,6 +253,7 @@ struct RegisterMap {
   uint16_t probeRegister;
   uint32_t defaultBaudrate;
   uint32_t preferredBaudrate;
+  Parity parity;
   BaudrateConfig baudConfig{};
   std::vector<SpecialHandlerInfo> specialHandlers;
   std::map<uint16_t, RegisterDescriptor> registerDescriptors;

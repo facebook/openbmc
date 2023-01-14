@@ -106,7 +106,6 @@ class ModbusDevice {
       Modbus& interface,
       uint8_t deviceAddress,
       const RegisterMap& registerMap,
-      Parity parity = Parity::EVEN,
       int numCommandRetries = 5);
   virtual ~ModbusDevice() {
     setDefaultBaudrate();

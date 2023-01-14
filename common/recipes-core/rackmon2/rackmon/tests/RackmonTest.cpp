@@ -21,8 +21,12 @@ class FakeModbus : public Modbus {
  public:
   FakeModbus(uint8_t e, uint8_t mina, uint8_t maxa, uint32_t b)
       : Modbus(), exp_addr(e), min_addr(mina), max_addr(maxa), baud(b) {}
-  void command(Msg& req, Msg& resp, uint32_t b, ModbusTime /* unused */,
-               Parity /* unused */) override {
+  void command(
+      Msg& req,
+      Msg& resp,
+      uint32_t b,
+      ModbusTime /* unused */,
+      Parity /* unused */) override {
     encoder.encode(req);
     EXPECT_GE(req.addr, min_addr);
     EXPECT_LE(req.addr, max_addr);
@@ -65,10 +69,14 @@ class Mock3Modbus : public Modbus {
   Mock3Modbus(uint8_t e, uint8_t mina, uint8_t maxa, uint32_t b)
       : Modbus(), fake_(e, mina, maxa, b) {
     ON_CALL(*this, command(_, _, _, _, _))
-        .WillByDefault(
-            Invoke([this](Msg& req, Msg& resp, uint32_t b, ModbusTime timeout, Parity parity) {
-              return fake_.command(req, resp, b, timeout, parity);
-            }));
+        .WillByDefault(Invoke([this](
+                                  Msg& req,
+                                  Msg& resp,
+                                  uint32_t b,
+                                  ModbusTime timeout,
+                                  Parity parity) {
+          return fake_.command(req, resp, b, timeout, parity);
+        }));
   }
   MOCK_METHOD0(isPresent, bool());
   MOCK_METHOD1(initialize, void(const nlohmann::json& j));

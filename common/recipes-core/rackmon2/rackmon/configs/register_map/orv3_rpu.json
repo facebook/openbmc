@@ -7,6 +7,7 @@
     "probe_register": 36864,
     "default_baudrate": 19200,
     "preferred_baudrate": 19200,
+    "parity": "NONE",
     "registers": [
         {
             "begin": 36864,

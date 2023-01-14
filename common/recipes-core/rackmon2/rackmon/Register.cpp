@@ -4,7 +4,6 @@
 #include <iomanip>
 #include <numeric>
 #include <sstream>
-#include <cinttypes>
 
 using nlohmann::json;
 
@@ -183,6 +182,10 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {RegisterValueType::FLAGS, "FLAGS"},
     })
 
+NLOHMANN_JSON_SERIALIZE_ENUM(
+    Parity,
+    {{Parity::EVEN, "EVEN"}, {Parity::ODD, "ODD"}, {Parity::NONE, "NONE"}})
+
 void from_json(const json& j, RegisterDescriptor& i) {
   j.at("begin").get_to(i.begin);
   j.at("length").get_to(i.length);
@@ -297,19 +300,10 @@ void from_json(const json& j, BaudrateConfig& m) {
 }
 
 void from_json(const json& j, RegisterMap& m) {
-  uint64_t probe_register = 0;
-
   j.at("address_range").get_to(m.applicableAddresses);
-  j.at("probe_register").get_to(probe_register);
-  if (probe_register > std::numeric_limits<uint16_t>::max()) {
-    char err[64];
-    snprintf(err, sizeof(err), "Probe register 0x%" PRIx64 " larger than 0xFFFF",
-             probe_register);
-    throw std::runtime_error(err);
-  }
-  m.probeRegister = static_cast<uint16_t>(probe_register);
-
+  j.at("probe_register").get_to(m.probeRegister);
   j.at("name").get_to(m.name);
+  m.parity = j.value("parity", Parity::EVEN);
   j.at("preferred_baudrate").get_to(m.preferredBaudrate);
   j.at("default_baudrate").get_to(m.defaultBaudrate);
   std::vector<RegisterDescriptor> tmp;

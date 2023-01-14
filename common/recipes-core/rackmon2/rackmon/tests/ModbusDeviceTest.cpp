@@ -82,7 +82,8 @@ TEST_F(ModbusDeviceTest, BasicSetup) {
 
 // Basic command interface is a blind pass through.
 TEST_F(ModbusDeviceTest, BasicCommand) {
-  EXPECT_CALL(get_modbus(), command(Eq(0x3202_M), _, 19200, ModbusTime::zero(), _))
+  EXPECT_CALL(
+      get_modbus(), command(Eq(0x3202_M), _, 19200, ModbusTime::zero(), _))
       .Times(1)
       .WillOnce(SetArgReferee<1>(0x32020304_M));
 
@@ -101,7 +102,7 @@ TEST_F(ModbusDeviceTest, CommandTimeout) {
       .Times(3)
       .WillRepeatedly(Throw(TimeoutException()));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 3);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 3);
 
   Msg req, resp;
   EXPECT_THROW(dev.command(req, resp), TimeoutException);
@@ -127,7 +128,7 @@ TEST_F(ModbusDeviceTest, CommandMisc) {
       .Times(1)
       .WillOnce(Throw(std::runtime_error("")));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 1);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 1);
 
   Msg req, resp;
   EXPECT_THROW(dev.command(req, resp), std::runtime_error);
@@ -150,7 +151,7 @@ TEST_F(ModbusDeviceTest, CommandFlaky) {
         Encoder::decode(resp);
       }));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 3);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 3);
 
   Msg req, resp;
   req.raw = {0x32, 2};
@@ -165,7 +166,7 @@ TEST_F(ModbusDeviceTest, TimeoutInExclusiveMode) {
   EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(1)
       .WillOnce(Throw(TimeoutException()));
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 3);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 3);
   dev.setExclusiveMode(true);
   Msg req, resp;
   req.raw = {0x32, 2};
@@ -180,7 +181,7 @@ TEST_F(ModbusDeviceTest, MakeDormant) {
       .Times(10)
       .WillRepeatedly(Throw(TimeoutException()));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 1);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 1);
 
   for (int i = 0; i < 10; i++) {
     ModbusDeviceInfo status = dev.getInfo();
@@ -343,7 +344,7 @@ TEST_F(ModbusDeviceTest, MonitorInvalidRegOnce) {
       // data(1) = 0x02
       .WillOnce(SetMsgDecode<1>(0x328302_EM));
 
-  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), Parity::EVEN, 1);
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 1);
   // This should see the illegal address error
   dev.reloadRegisters();
   // This should be a no-op.
@@ -765,7 +766,7 @@ TEST(ModbusDeviceBaudrate, BaudrateNegotiationTest) {
       .Times(1)
       .WillOnce(SetMsgDecode<1>(0x050600100001_EM));
   {
-    ModbusDevice dev(mockdev, 5, regmap, Parity::EVEN, 1);
+    ModbusDevice dev(mockdev, 5, regmap, 1);
     dev.reloadRegisters();
     ModbusDeviceValueData data = dev.getValueData();
     EXPECT_EQ(data.deviceAddress, 0x05);
@@ -816,7 +817,7 @@ TEST(ModbusDeviceBaudrate, BaudrateNegotiationRejection) {
       .Times(1)
       .WillOnce(SetMsgDecode<1>(0x05030461626364_EM));
   {
-    ModbusDevice dev(mockdev, 5, regmap, Parity::EVEN, 1);
+    ModbusDevice dev(mockdev, 5, regmap, 1);
     dev.reloadRegisters();
     ModbusDeviceValueData data = dev.getValueData();
     EXPECT_EQ(data.deviceAddress, 0x05);

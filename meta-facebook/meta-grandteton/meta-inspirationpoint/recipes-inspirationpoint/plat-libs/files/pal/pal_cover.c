@@ -43,7 +43,7 @@ parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
   snprintf(temp_log, sizeof(temp_log), "Bank Number %d, ", bank_num);
   strcat(error_log, temp_log);
 
-  snprintf(temp_log, sizeof(temp_log), "CPU %d, Core %d", ((ed[2] & 0xF0) >> 4), (ed[2] & 0x0F));
+  snprintf(temp_log, sizeof(temp_log), "CPU %d, Core %d", ((ed[2] & 0xE0) >> 5), (ed[2] & 0x1F));
   strcat(error_log, temp_log);
 
   return 0;

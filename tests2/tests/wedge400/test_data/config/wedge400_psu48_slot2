@@ -6,7 +6,9 @@ fan2 : 1
 fan3 : 1
 fan4 : 1
 POWER SUPPLIES
-psu1 : 1
+psu1 : 0
 psu2 : 1
+pem1 : 0
+pem2 : 0
 DEBUG CARD
 debug_card : 0

@@ -25,10 +25,12 @@
 
 import unittest
 
-
 from common.base_deployment_config_test import DeploymentConfig
+from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 from utils.test_utils import qemu_check
+
+CONFIG_DIR = "/usr/local/bin/tests2/tests/wedge400/test_data/config/"
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
@@ -45,20 +47,24 @@ class DeploymentConfigTest(DeploymentConfig, unittest.TestCase):
         with open("/tmp/cache_store/power_type", "r") as psutype:
             ptype = psutype.read().strip()
 
-        if (ptype == "PSU48") or (ptype == "PEM"):
+        if ptype == "PEM":
             platform_config_files = [
-                "/usr/local/bin/tests2/tests/wedge400/test_data/config/wedge400_dc_pem_slot1",
-                "/usr/local/bin/tests2/tests/wedge400/test_data/config/wedge400_dc_pem_slot2",
+                "wedge400_dc_pem_slot1",
+                "wedge400_dc_pem_slot2",
+            ]
+        elif ptype == "PSU48":
+            platform_config_files = [
+                "wedge400_psu48_slot1",
+                "wedge400_psu48_slot2",
             ]
         elif ptype == "PSU":
-            platform_config_files = [
-                "/usr/local/bin/tests2/tests/wedge400/test_data/config/wedge400"
-            ]
+            platform_config_files = ["wedge400_psu"]
         else:
             Logger.error("PSU/PEM Eeprom is not programmed !!! ")
 
         desired_configs = []
         for filename in platform_config_files:
-            with open(filename, "r") as f:
+            full_path = CONFIG_DIR + filename
+            with open(full_path, "r") as f:
                 desired_configs.append(f.read().strip())
         return desired_configs

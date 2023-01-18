@@ -109,7 +109,8 @@ enum {
   CONFIG_B_DPV2_X8  = 0x09,
   CONFIG_B_DPV2_X4  = 0x0a,
   CONFIG_C_WF       = 0x0b,
-  CONFIG_C_VF       = 0x0c,
+  CONFIG_C_VF_T10   = 0x0c,
+  CONFIG_C_VF_T3    = 0x0d,
   CONFIG_MFG        = 0xfe,
   CONFIG_UNKNOWN    = 0xff,
 };

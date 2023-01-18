@@ -1894,6 +1894,23 @@ static int pal_get_dpv2_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
   return 0;
 }
 
+static int pal_get_vf2_pcie_config(uint8_t slot, uint8_t *pcie_config) {
+  int prsnt;
+
+  if (pcie_config == NULL) {
+    return -1;
+  }
+
+  if ((prsnt = fby35_common_get_1ou_m2_prsnt(slot)) < 0) {
+    return -1;
+  }
+
+  // T3: SSD 0, 1, X, 3
+  *pcie_config = ((prsnt & 0xB) == 0x0) ? CONFIG_C_VF_T3 : CONFIG_C_VF_T10;
+
+  return 0;
+}
+
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   uint8_t pcie_conf = 0xff;
   uint8_t *data = res_data;
@@ -1931,7 +1948,9 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
         }
         switch (type_1ou) {
           case TYPE_1OU_VERNAL_FALLS_WITH_AST:
-            pcie_conf = CONFIG_C_VF;
+            if (pal_get_vf2_pcie_config(slot, &pcie_conf) != 0) {
+              pcie_conf = CONFIG_C_VF_T10;
+            }
             break;
           case TYPE_1OU_EXP_WITH_6_M2:
             pcie_conf = CONFIG_MFG;

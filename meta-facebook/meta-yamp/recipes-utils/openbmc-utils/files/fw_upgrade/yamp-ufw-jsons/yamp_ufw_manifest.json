@@ -19,7 +19,7 @@
         "condition": "fpga_ver.sh | grep PIM |  awk 'NR==2' | cut -d ' ' -f 4",
         "get_version" : "fpga_ver.sh|grep 16Q|awk 'NR=={entity} + 5'|cut -d ' ' -f 3",
         "continue_on_error" : true,
-        "upgrade_cmd" : "/usr/local/bin/fpga_util lc{entity} program {filename}",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh lc{entity} program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh lcreset -a; sleep 30",
         "priority": 4
     }

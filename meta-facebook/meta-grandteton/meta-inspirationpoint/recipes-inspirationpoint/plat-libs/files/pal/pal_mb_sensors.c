@@ -194,10 +194,10 @@ const uint8_t mb_discrete_sensor_list[] = {
 };
 
 PAL_DPM_DEV_INFO dpm_info_list[] = {
-  {DPM_0, I2C_BUS_34, 0x84, 0.004, 0, 0 },
-  {DPM_1, I2C_BUS_34, 0x88, 0.004, 0, 0 },
-  {DPM_2, I2C_BUS_34, 0x82, 0.004, 0, 0 },
-  {DPM_3, I2C_BUS_34, 0x86, 0.004, 0, 0 },
+  {DPM_0, I2C_BUS_34, 0x82, 0.004, 0, 0 },
+  {DPM_1, I2C_BUS_34, 0x84, 0.004, 0, 0 },
+  {DPM_2, I2C_BUS_34, 0x86, 0.004, 0, 0 },
+  {DPM_3, I2C_BUS_34, 0x88, 0.004, 0, 0 },
   {DPM_4, I2C_BUS_34, 0x8A, 0.004, 0, 0 },
 };
 
@@ -983,7 +983,7 @@ read_mb_temp (uint8_t fru, uint8_t sensor_num, float *value) {
 }
 
 int
-read_dpm_vout(uint8_t fru, uint8_t sensor_num, float *value) {
+read_isl28022(uint8_t fru, uint8_t sensor_num, float *value) {
   int fd = 0, ret = -1;
   char fn[32];
   uint8_t tlen, rlen, addr, bus;
@@ -991,7 +991,6 @@ read_dpm_vout(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t dpm_id = sensor_map[fru].map[sensor_num].id;
-  static uint8_t retry=0;
 
   bus = dpm_info_list[dpm_id].bus;
   addr = dpm_info_list[dpm_id].slv_addr;
@@ -1015,18 +1014,36 @@ read_dpm_vout(uint8_t fru, uint8_t sensor_num, float *value) {
          rbuf[1], rbuf[0], bus, addr);
 #endif
 
-  if( ret < 0 ) {
-    retry++;
-    ret = retry_err_handle(retry, 2);
-    goto err_exit;
-  }
-
   *value = ((rbuf[0] << 8 | rbuf[1]) >> 2) * scale;
-  retry=0;
 err_exit:
   if (fd > 0) {
     close(fd);
   }
+  return ret;
+}
+
+int
+read_dpm_vout(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret = 0;
+  uint8_t dpm_id = sensor_map[fru].map[sensor_num].id;
+  static uint8_t retry[DPM_NUM_CNT] = {0};
+  uint8_t mb_rev;
+
+  if(pal_get_board_rev_id(&mb_rev))
+    return -1;
+
+  if (mb_rev == 0) {
+    ret = read_isl28022(fru, sensor_num, value);
+  } else {
+    ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  }
+
+  if (ret || *value == 0) {
+    retry[dpm_id]++;
+    return retry_err_handle(retry[dpm_id], 2);
+  }
+
+  retry[dpm_id] = 0;
   return ret;
 }
 

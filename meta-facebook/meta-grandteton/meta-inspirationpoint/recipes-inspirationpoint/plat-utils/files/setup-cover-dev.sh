@@ -130,6 +130,19 @@ probe_vr_mp2856() {
   kv set mb_vr_source "$MB_3RD_SOURCE"
 }
 
+#MB DPM
+mbrev=$(kv get mb_rev)
+MB_DVT_BOARD_ID="1"
+
+if [ "$mbrev" -ge "$MB_DVT_BOARD_ID" ]; then
+  i2c_device_add 34 0x41 ina230
+  i2c_device_add 34 0x42 ina230
+  i2c_device_add 34 0x43 ina230
+  i2c_device_add 34 0x44 ina230
+  i2c_device_add 34 0x45 ina230
+  kv set mb_dpm_source "$MB_1ST_SOURCE"
+fi
+
 if [ "$mb_sku" -eq "$config0" ]; then
   probe_hsc_mp5990
   probe_adc_ti

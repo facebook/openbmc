@@ -5,12 +5,15 @@
 #include <chrono>
 #include <thread>
 #include <openbmc/pal.h>
+#include <openbmc/pal_common.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/vr.h>
 #include <openbmc/kv.h>
 #include <syslog.h>
 #include "vr_fw.h"
 #include "bios.h"
+#include "signed_decoder.hpp"
+#include "signed_info.hpp"
 
 using namespace std;
 
@@ -72,14 +75,55 @@ int palBiosComponent::get_version(json& j) {
   return 0;
 }
 
+class GTVrComponent : public VrComponent, public SignComponent {
+  public:
+    GTVrComponent(const string& fru, const string& comp, const string& name,
+      signed_header_t sign_info): VrComponent(fru, comp, name), SignComponent(sign_info, fru) {}
+    int update(string image);
+    int component_update(string image) { return VrComponent::update(image); }
+};
 
+int GTVrComponent::update(string image) {
+  return signed_image_update(image);
+}
+
+class fw_vr_config {
+  public:
+    fw_vr_config() {
+
+      uint8_t source_id = 0;
+      signed_header_t vr_info = {
+        signed_info::PLATFORM_NAME,
+        signed_info::MB_BOARD,
+        signed_info::DVT,
+        signed_info::CPU0_VR_VCCIN,
+        signed_info::VR_SOURCE_INDEX
+      };
+
+      get_comp_source(FRU_MB, MB_VR_SOURCE, &source_id);
+      vr_info.vendor_id = signed_info::VR_SOURCE_INDEX + source_id;
+
+      static GTVrComponent vr_cpu0_vccin("mb", "cpu0_vccin", "VR_CPU0_VCCIN/VCCFA_FIVRA",
+                                        signed_header_t(vr_info, signed_info::CPU0_VR_VCCIN));
+
+      static GTVrComponent vr_cpu0_faon("mb", "cpu0_faon", "VR_CPU0_VCCFAEHV/FAON",
+                                        signed_header_t(vr_info, signed_info::CPU0_VR_FAON));
+
+      static GTVrComponent vr_cpu0_vccd("mb", "cpu0_vccd", "VR_CPU0_VCCD",
+                                        signed_header_t(vr_info, signed_info::CPU0_VR_VCCD));
+
+      static GTVrComponent vr_cpu1_vccin("mb", "cpu1_vccin", "VR_CPU1_VCCIN/VCCFA_FIVRA",
+                                        signed_header_t(vr_info, signed_info::CPU1_VR_VCCIN));
+
+      static GTVrComponent vr_cpu1_faon("mb", "cpu1_faon", "VR_CPU1_VCCFAEHV/FAON",
+                                        signed_header_t(vr_info, signed_info::CPU1_VR_FAON));
+
+      static GTVrComponent vr_cpu1_vccd("mb", "cpu1_vccd", "VR_CPU1_VCCD",
+                                        signed_header_t(vr_info, signed_info::CPU1_VR_VCCD));
+
+    }
+};
 
 palBiosComponent bios("mb", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc",
                       "1e631000.spi", "FM_BMC_MUX_CS_SPI_SEL_0", true, "(F0T_)(.*)");
-VrComponent vr_cpu0_vccin("mb", "cpu0_vccin", "VR_CPU0_VCCIN/VCCFA_FIVRA");
-VrComponent vr_cpu0_faon("mb", "cpu0_faon", "VR_CPU0_VCCFAEHV/FAON");
-VrComponent vr_cpu0_vccd("mb", "cpu0_vccd", "VR_CPU0_VCCD");
-VrComponent vr_cpu1_vccin("mb", "cpu1_vccin", "VR_CPU1_VCCIN/VCCFA_FIVRA");
-VrComponent vr_cpu1_faon("mb", "cpu1_faon", "VR_CPU1_VCCFAEHV/FAON");
-VrComponent vr_cpu1_vccd("mb", "cpu1_vccd", "VR_CPU1_VCCD");
-
+fw_vr_config _fw_vr_config;

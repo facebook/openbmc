@@ -35,6 +35,7 @@ enum EP_ERR {
   BOARD_NOT_MATCH,
   STAGE_NOT_MATCH,
   COMPONENT_NOT_MATCH,
+  SOURCE_NOT_MATCH,
 };
 
 typedef struct {
@@ -49,10 +50,10 @@ struct error_proof_t {
   uint8_t board_id : 5;
   uint8_t stage_id : 3;
   uint8_t component_id;
-  uint8_t instance_id;
+  uint8_t vendor_id;
 };
 
-void SignedDecoder::trim_function(string &str)
+void SignComponent::trim_function(string &str)
 {
   size_t found;
   string whitespaces(" \t\f\v\n\r");
@@ -70,7 +71,7 @@ void SignedDecoder::trim_function(string &str)
   }
 }
 
-int SignedDecoder::check_project_code(uint8_t* data)
+int SignComponent::check_project_code(uint8_t* data)
 {
   string str((char *)data);
   trim_function(str);
@@ -82,7 +83,7 @@ int SignedDecoder::check_project_code(uint8_t* data)
     return PJC_ERR::PJC_SUCCESS;
 }
 
-int SignedDecoder::check_md5(const string &image_path, long offset, long size, uint8_t* data)
+int SignComponent::check_md5(const string &image_path, long offset, long size, uint8_t* data)
 {
   int fd, byte_num, read_bytes, ret = 0;
   char read_buf[MD5_READ_BYTES] = {0};
@@ -143,7 +144,7 @@ exit:
   return ret;
 }
 
-int SignedDecoder::check_error_proof(uint8_t* err_proof) const
+int SignComponent::check_error_proof(uint8_t* err_proof) const
 {
   auto err = reinterpret_cast<error_proof_t*>(err_proof);
 
@@ -153,10 +154,13 @@ int SignedDecoder::check_error_proof(uint8_t* err_proof) const
   if (info.component_id != err->component_id)
     return EP_ERR::COMPONENT_NOT_MATCH;
 
+  if (info.vendor_id != err->vendor_id)
+    return EP_ERR::SOURCE_NOT_MATCH;
+
   return EP_ERR::EP_SUCCESS;
 }
 
-int SignedDecoder::is_image_signed(const string& image_path)
+int SignComponent::is_image_signed(const string& image_path)
 {
   int fd, ret;
   struct stat file_stat;
@@ -215,10 +219,10 @@ int SignedDecoder::is_image_signed(const string& image_path)
   return SIGNED_ERR::SUCCESS;
 }
 
-int SignedDecoder::get_image(string& image_path)
+int SignComponent::get_image(string& image_path)
 {
   int src = -1, dst = -1, ret = SIGNED_ERR::SUCCESS;
-  std::vector<uint8_t> data(image_size);
+  vector<uint8_t> data(image_size);
 
   /*
    *  Copy file with image_size
@@ -276,7 +280,38 @@ file_exit:
   return ret;
 }
 
-int SignedDecoder::delete_image()
+int SignComponent::delete_image()
 {
   return remove(temp_image_path.c_str());
+}
+
+int SignComponent::signed_image_update(string image)
+{
+  int ret = 0;
+
+  ret = is_image_signed(image);
+  if (ret) {
+    printf("Firmware not valid. error(%d)\n", -ret);
+    return -1;
+  }
+
+  ret = get_image(image);
+  if (ret) {
+    printf("Get copy file. error(%d)\n", -ret);
+    return -1;
+  }
+
+  ret = component_update(image);
+  if (ret) {
+    printf("%s\n", image.c_str());
+    printf("Update component with temp file failed. error(%d)\n", ret);
+  }
+
+  ret = delete_image();
+  if (ret) {
+    printf("Remove temp file failed. error(%d)\n", -ret);
+    return -1;
+  }
+
+  return ret;
 }

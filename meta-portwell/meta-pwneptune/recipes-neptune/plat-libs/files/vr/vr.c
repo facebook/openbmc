@@ -550,7 +550,7 @@ vr_read_temp(uint8_t vr, uint8_t loop, float *value) {
   if ((rbuf[1] & 0x08))
     temp |= 0xF000; // If negative, sign extend temp.
   *value = (float)temp * 0.125;
-  
+
   //handle negative temperature value
   if( *value < 0 ) {
     if ( max_negative_retry > 0 ) {

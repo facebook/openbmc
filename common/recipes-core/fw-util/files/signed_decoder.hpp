@@ -22,7 +22,7 @@
  *   Board id     [ 4: 0]
  *   Stage id     [ 7: 5]
  *   Component id [15: 8]
- *   Instance id  [23:16]
+ *   Vendor id    [23:16] (Source id)
  */
 
 struct signed_header_t {
@@ -31,17 +31,17 @@ struct signed_header_t {
   uint8_t board_id{};
   uint8_t stage_id{};
   uint8_t component_id{};
+  uint8_t vendor_id{};
 
   signed_header_t(){}
-  signed_header_t(const std::string& pn, uint8_t bid, uint8_t sid, uint8_t cid):
-            project_name(pn), board_id(bid), stage_id(sid), component_id(cid){}
+  signed_header_t(const std::string& pn, uint8_t bid, uint8_t sid, uint8_t cid, uint8_t vid):
+            project_name(pn), board_id(bid), stage_id(sid), component_id(cid), vendor_id(vid){}
   signed_header_t(const signed_header_t& info, uint8_t component_id):
-            project_name(info.project_name), board_id(info.board_id),
-            stage_id(info.stage_id), component_id(component_id) {}
-
+            project_name(info.project_name), board_id(info.board_id), stage_id(info.stage_id),
+            component_id(component_id), vendor_id(info.vendor_id){}
 };
 
-class SignedDecoder {
+class SignComponent {
   private:
     size_t image_size = 0;
     uint8_t md5[MD5_SIZE] = {0};
@@ -54,12 +54,15 @@ class SignedDecoder {
     static int check_md5(const std::string& image_path, long offset, long size, uint8_t* data);
     int check_error_proof(uint8_t* err_proof) const;
 
-  public:
-    SignedDecoder(const signed_header_t& info, const std::string &fru) : temp_image_path("/tmp/" + fru + "_signed_update.bin"), info(info) {}
-    // check signed info and store.
-    int is_image_signed(const std::string& image_path);
-    // would change original file path to temp file path.
-    int get_image(std::string& image_path);
-    // delete temp file path.
+    // update functions
+    int is_image_signed(const std::string& image_path); // check signed info and store.
+    int get_image(std::string& image_path); // would change original file path to temp file path.
     int delete_image();
+
+  public:
+    SignComponent(const signed_header_t& info, const std::string &fru) :
+                temp_image_path("/tmp/" + fru + "_signed_update.bin"), info(info) {}
+    virtual ~SignComponent() = default;
+    virtual int component_update(std::string /*image*/) {return FW_STATUS_NOT_SUPPORTED;};
+    int signed_image_update(std::string /*image*/);
 };

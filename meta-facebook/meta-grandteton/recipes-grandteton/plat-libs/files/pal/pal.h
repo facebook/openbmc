@@ -31,6 +31,7 @@ extern "C" {
 #include "pal_power.h"
 #include "pal_def.h"
 #include "pal_cfg.h"
+#include "pal_common.h"
 
 #define CMD_GET_MAIN_CPLD_VER   (0x01)
 #define MAIN_CPLD_SLV_ADDR      (0x80)

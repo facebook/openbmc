@@ -59,6 +59,10 @@ static void do_get_snr_metric() {
   hgx::getMetricReports();
 }
 
+static void do_reset() {
+  hgx::FactoryReset();
+}
+
 int main(int argc, char* argv[]) {
   CLI::App app("HGX Helper Utility");
   app.failure_message(CLI::FailureMessage::help);
@@ -113,6 +117,9 @@ int main(int argc, char* argv[]) {
   patch->add_option("SUBPATH", subpath, "Subpath after /redfish/v1")->required();
   patch->add_option("args", args, "JSON arguments for patch")->required();
   patch->callback([&]() { do_patch(subpath, args); });
+
+  auto reset = app.add_subcommand("factory-reset", "Perform factory reset to default");
+  reset->callback([&]() { do_reset(); });
 
   app.require_subcommand(/* min */ 1, /* max */ 1);
 

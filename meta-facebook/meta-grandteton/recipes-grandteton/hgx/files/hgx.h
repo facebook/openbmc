@@ -30,6 +30,9 @@ std::string redfishGet(const std::string& subpath);
 // Example, get on 192.168.31.1/redfish/v1/blah, the subpath = blah
 std::string redfishPost(const std::string& subpath, std::string&& args);
 
+// Perform Factory reset to default
+int FactoryReset();
+
 // Patch a subpath after /redfish/v1
 std::string redfishPatch(const std::string& subpath, std::string&& args);
 

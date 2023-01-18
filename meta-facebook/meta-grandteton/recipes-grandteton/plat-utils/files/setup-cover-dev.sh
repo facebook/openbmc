@@ -132,3 +132,15 @@ else
   kv set mb_hsc_source "$MB_1ST_SOURCE"
 fi
 
+#MB DPM
+mbrev=$(kv get mb_rev)
+MB_DVT_BOARD_ID="3"
+
+if [ "$mbrev" -ge "$MB_DVT_BOARD_ID" ]; then
+  i2c_device_add 34 0x41 ina230
+  i2c_device_add 34 0x42 ina230
+  i2c_device_add 34 0x43 ina230
+  i2c_device_add 34 0x44 ina230
+  i2c_device_add 34 0x45 ina230
+  kv set mb_dpm_source "$MB_1ST_SOURCE"
+fi

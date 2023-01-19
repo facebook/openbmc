@@ -1816,8 +1816,15 @@ pal_post_handle(uint8_t slot, uint8_t status) {
 // Return the Front panel Power Button
 int
 pal_get_board_rev(int *rev) {
+  static int cache = 0xff;
   char path[LARGEST_DEVICE_NAME + 1];
   int val_id_0, val_id_1, val_id_2;
+
+  // keep the value as cache no need to get new value
+  if (cache != 0xff) {
+    *rev = cache;
+    return 0;
+  }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_0, "value");
   if (device_read(path, &val_id_0)) {
@@ -1835,14 +1842,21 @@ pal_get_board_rev(int *rev) {
   }
 
   *rev = val_id_0 | (val_id_1 << 1) | (val_id_2 << 2);
-
+  cache = *rev;
   return 0;
 }
 
 int
 pal_get_board_type(uint8_t *brd_type){
+  static int cache = 0xff;
   char path[LARGEST_DEVICE_NAME + 1];
   int val;
+
+  // keep the value as cache no need to get new value
+  if (cache != 0xff) {
+    *brd_type = cache;
+    return 0;
+  }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_0, "value");
   if (device_read(path, &val)) {
@@ -1851,9 +1865,11 @@ pal_get_board_type(uint8_t *brd_type){
 
   if(val == 0x1){
     *brd_type = BRD_TYPE_WEDGE400;
+    cache = *brd_type;
     return CC_SUCCESS;
   }else if(val == 0x0){
     *brd_type = BRD_TYPE_WEDGE400C;
+    cache = *brd_type;
     return CC_SUCCESS;
   }else{
     return CC_UNSPECIFIED_ERROR;
@@ -1862,8 +1878,15 @@ pal_get_board_type(uint8_t *brd_type){
 
 int
 pal_get_full_board_type(uint8_t *full_brd_type) {
+  static uint8_t cache = 0xff;
   char path[LARGEST_DEVICE_NAME + 1];
   int val_id_0, val_id_1, val_id_2;
+
+  // keep the value as cache no need to get new value
+  if (cache != 0xff) {
+    *full_brd_type = cache;
+    return 0;
+  }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_0, "value");
   if (device_read(path, &val_id_0)) {
@@ -1881,6 +1904,7 @@ pal_get_full_board_type(uint8_t *full_brd_type) {
   }
 
   *full_brd_type = val_id_0 | (val_id_1 << 1) | (val_id_2 << 2);
+  cache = *full_brd_type;
 
   return 0;
 }
@@ -2961,7 +2985,7 @@ cor_th3_volt(uint8_t board_type) {
   return 0;
 }
 
-static int
+int
 fan_sensor_read(uint8_t sensor_num, float *value) {
   int ret = -1;
 
@@ -3631,7 +3655,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
   return ret;
 }
 
-static int
+int
 pem_sensor_read(uint8_t sensor_num, void *value) {
 
   int ret = -1;
@@ -3906,7 +3930,7 @@ pem_sensor_read(uint8_t sensor_num, void *value) {
   return ret;
 }
 
-static int
+int
 psu_sensor_read(uint8_t sensor_num, float *value) {
 
   int ret = -1;
@@ -6624,6 +6648,7 @@ init_led(void)
 int
 set_sled(int brd_rev, uint8_t color, int led_name)
 {
+  static uint8_t prev_state[4] = { 0x0 };
   int dev, ret;
   uint8_t io0_reg = 0x02, io1_reg = 0x03;
   int32_t val_io0, val_io1;
@@ -6631,6 +6656,13 @@ set_sled(int brd_rev, uint8_t color, int led_name)
   int led_id = -1;
   uint8_t brd_type;
   uint8_t brd_type_rev;
+
+  if (prev_state[led_name] != color){
+    prev_state[led_name] = color;
+  } else {
+    return 0;
+  }
+
   pal_get_board_type(&brd_type);
   pal_get_board_type_rev(&brd_type_rev);
 
@@ -6666,18 +6698,21 @@ set_sled(int brd_rev, uint8_t color, int led_name)
     close(dev);
     return -1;
   }
-  val_io0 = i2c_smbus_read_byte_data(dev, 0x02);
-  if(val_io0 < 0) {
-    close(dev);
-    OBMC_ERROR(-1, "%s: i2c_smbus_read_byte_data failed\n", __func__);
-    return -1;
-  }
 
-  val_io1 = i2c_smbus_read_byte_data(dev, 0x03);
-  if(val_io1 < 0) {
-    close(dev);
-    OBMC_ERROR(-1, "%s: i2c_smbus_read_byte_data failed\n", __func__);
-    return -1;
+  if(led_id == SLED_1 || led_id == SLED_2) {
+    val_io0 = i2c_smbus_read_byte_data(dev, 0x02);
+    if(val_io0 < 0) {
+      close(dev);
+      OBMC_ERROR(-1, "%s: i2c_smbus_read_byte_data failed\n", __func__);
+      return -1;
+    }
+  } else {
+    val_io1 = i2c_smbus_read_byte_data(dev, 0x03);
+    if(val_io1 < 0) {
+      close(dev);
+      OBMC_ERROR(-1, "%s: i2c_smbus_read_byte_data failed\n", __func__);
+      return -1;
+    }
   }
 
   clr_val = color;
@@ -6724,7 +6759,7 @@ set_sled(int brd_rev, uint8_t color, int led_name)
  * TODO: we could create a kv pair in scm/fan/psu/smb upgrade commands,
  * and then all we need is checking if the specific kv pair exists.
  */
-static int
+int
 pal_mon_fw_upgrade(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
                    uint8_t *psu_ug, uint8_t *smb_ug)
 {
@@ -6781,282 +6816,6 @@ next_cmd:
   }
 
   return 0;
-}
-
-void set_sys_led(int brd_rev)
-{
-  uint8_t ret = 0;
-  uint8_t prsnt = 0;
-  uint8_t sys_ug = 0, fan_ug = 0, psu_ug = 0, smb_ug = 0;
-  static uint8_t alter_sys = 0;
-  ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
-  if (ret) {
-    set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-    OBMC_WARN("%s: can't get SCM status\n",__func__);
-    return;
-  }
-  if (!prsnt) {
-    set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-    OBMC_WARN("%s: SCM isn't presence\n",__func__);
-    return;
-  }
-
-  pal_mon_fw_upgrade(brd_rev, &sys_ug, &fan_ug, &psu_ug, &smb_ug);
-  if( sys_ug || fan_ug || psu_ug || smb_ug ){
-    if(alter_sys==0){
-      alter_sys = 1;
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-    }else{
-      alter_sys = 0;
-      set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
-    }
-  } else {
-    set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
-  }
-}
-
-void set_fan_led(int brd_rev)
-{
-  int i;
-  float value, unc, lcr;
-  uint8_t fru, prsnt;
-  uint8_t fan_num = MAX_NUM_FAN * 2;//rear & front: MAX_NUM_FAN * 2
-  char sensor_name[LARGEST_DEVICE_NAME];
-  int sensor_num[] = { FAN_SENSOR_FAN1_FRONT_TACH,
-                       FAN_SENSOR_FAN1_REAR_TACH ,
-                       FAN_SENSOR_FAN2_FRONT_TACH,
-                       FAN_SENSOR_FAN2_REAR_TACH ,
-                       FAN_SENSOR_FAN3_FRONT_TACH,
-                       FAN_SENSOR_FAN3_REAR_TACH ,
-                       FAN_SENSOR_FAN4_FRONT_TACH,
-                       FAN_SENSOR_FAN4_REAR_TACH };
-
-  for(i = FRU_FAN1; i <= FRU_FAN4; i++) {
-    pal_is_fru_prsnt(i, &prsnt);
-#ifdef DEBUG
-    OBMC_INFO("fan %d : %d\n",i,prsnt);
-#endif
-    if(!prsnt) {
-      OBMC_WARN("%s: fan %d isn't presence\n",__func__,i-FRU_FAN1+1);
-      goto cleanup;
-    }
-  }
-  for(i = 0; i < fan_num; i++) {
-    fru = FRU_FAN1 + i/2;
-    if(fan_sensor_read(sensor_num[i],&value)) {
-      pal_get_sensor_name(fru, sensor_num[i], sensor_name);
-      OBMC_WARN("%s: can't read sensor sensor id %d (%s)\n", __func__,
-                sensor_num[i], sensor_name);
-      goto cleanup;
-    }
-
-    pal_get_sensor_threshold(fru, sensor_num[i], UCR_THRESH, &unc);
-    pal_get_sensor_threshold(fru, sensor_num[i], LCR_THRESH, &lcr);
-#ifdef DEBUG
-    OBMC_INFO("fan %d\n",i);
-    OBMC_INFO(" val %d\n",value);
-    OBMC_INFO(" ucr %f\n",smb_sensor_threshold[sensor_num[i]][UCR_THRESH]);
-    OBMC_INFO(" lcr %f\n",smb_sensor_threshold[sensor_num[i]][LCR_THRESH]);
-#endif
-    if(value == 0) {
-      pal_get_sensor_name(fru, sensor_num[i], sensor_name);
-      OBMC_WARN("%s: sensor value not available a sensor sensor id %d (%s)\n",
-                __func__, sensor_num[i], sensor_name);
-      goto cleanup;
-    }
-    else if(value > unc){
-      pal_get_sensor_name(fru, sensor_num[i],sensor_name);
-      OBMC_WARN("%s: %s value is over than UNC ( %.2f > %.2f )\n",
-      __func__,sensor_name,value,unc);
-      goto cleanup;
-    }
-    else if(value < lcr){
-      pal_get_sensor_name(fru, sensor_num[i],sensor_name);
-      OBMC_WARN("%s: %s value is under than LCR ( %.2f < %.2f )\n",
-      __func__,sensor_name,value,lcr);
-      goto cleanup;
-    }
-  }
-  set_sled(brd_rev, SLED_CLR_BLUE, SLED_FAN);
-  sleep(LED_INTERVAL);
-  return;
-cleanup:
-  set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
-  sleep(LED_INTERVAL);
-  return;
-}
-
-void set_psu_led(int brd_rev)
-{
-  int i;
-  float value,ucr,lcr;
-  uint8_t fru,ready[4] = { 0 }, prsnts[4] = { 0 };
-  int psu1_sensor_num[] = { PSU1_SENSOR_IN_VOLT,
-                            PSU1_SENSOR_12V_VOLT,
-                            PSU1_SENSOR_STBY_VOLT};
-  int psu2_sensor_num[] = { PSU2_SENSOR_IN_VOLT,
-                            PSU2_SENSOR_12V_VOLT,
-                            PSU2_SENSOR_STBY_VOLT};
-  int pem1_sensor_num[] = { PEM1_SENSOR_IN_VOLT,
-                            PEM1_SENSOR_OUT_VOLT};
-  int pem2_sensor_num[] = { PEM2_SENSOR_IN_VOLT,
-                            PEM2_SENSOR_OUT_VOLT};
-  char sensor_name[LARGEST_DEVICE_NAME];
-  int *sensor_num,sensor_cnt;
-#ifndef ARRAY_SIZE
-  #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
-#endif
-  for( fru = FRU_PEM1 ; fru <= FRU_PSU2 ; fru++){
-    pal_is_fru_prsnt(fru,&prsnts[fru-FRU_PEM1]);
-  }
-
-  // PSU220V need plug both PSU1 and PSU2
-  // PSU48V  can plug only 1 PSU
-  // PEM     can plug only 1 PEM
-  if ( ! prsnts[0] && ! prsnts[1] && ! prsnts[2] && ! prsnts[3] ) {
-    OBMC_WARN("%s: Something wrong can't detect all PSU/PEM \n",__func__);
-    goto cleanup;
-  }
-
-  if ( ! is_psu48() ) {
-    if ( prsnts[0] || prsnts[1] ) {
-      // just only 1 PEM  skip to test another 1
-    } else if ( ! prsnts[2] && prsnts[3] ) {
-      OBMC_WARN("%s: PSU1 isn't presence\n",__func__);
-      goto cleanup;
-    } else if ( prsnts[2] && ! prsnts[3] ) {
-      OBMC_WARN("%s: PSU2 isn't presence\n",__func__);
-      goto cleanup;
-    }
-  } 
-
-  for( fru = FRU_PEM1 ; fru <= FRU_PSU2 ; fru++ ){
-    // skip absent psu
-    if ( !prsnts[fru-FRU_PEM1] ){
-      continue;
-    }
-
-    switch(fru){
-      case FRU_PEM1:
-        sensor_cnt = ARRAY_SIZE(pem1_sensor_num);
-        sensor_num = pem1_sensor_num;  break;
-      case FRU_PEM2:
-        sensor_cnt = ARRAY_SIZE(pem2_sensor_num);
-        sensor_num = pem2_sensor_num;  break;
-      case FRU_PSU1:
-        sensor_cnt = ARRAY_SIZE(psu1_sensor_num);
-        sensor_num = psu1_sensor_num;  break;
-      case FRU_PSU2:
-        sensor_cnt = ARRAY_SIZE(psu2_sensor_num);
-        sensor_num = psu2_sensor_num;  break;
-      default :
-        OBMC_WARN("%s: skip with invalid fru %d\n",__func__,fru);
-        continue;
-    }
-
-    pal_is_fru_ready(fru,&ready[fru-FRU_PEM1]);
-    if(!ready[fru-FRU_PEM1]){
-      if(fru >= FRU_PSU1 && !ready[fru-2]){     // if PSU and PEM aren't ready both
-        OBMC_WARN("%s: PSU%d and PEM%d can't access\n",
-        __func__,fru-FRU_PSU1+1,fru-FRU_PSU1+1);
-        goto cleanup;
-      }
-      continue;
-    }
-
-    for(i = 0; i < sensor_cnt ; i++) {
-      pal_get_sensor_threshold(fru, sensor_num[i], UCR_THRESH, &ucr);
-      pal_get_sensor_threshold(fru, sensor_num[i], LCR_THRESH, &lcr);
-      pal_get_sensor_name(fru, sensor_num[i],sensor_name);
-
-      if(fru >= FRU_PEM1 && fru <= FRU_PEM2){
-        if(pem_sensor_read(sensor_num[i], &value)) {
-          OBMC_WARN("%s: can't access read fru %d sensor id %d (%s)\n",
-          __func__,fru,sensor_num[i],sensor_name);
-          goto cleanup;
-        }
-      }else if(fru >= FRU_PSU1 && fru <= FRU_PSU2){
-        if(psu_sensor_read(sensor_num[i], &value)) {
-          OBMC_WARN("%s: can't access read  fru %d sensor id %d (%s)\n",
-          __func__,fru,sensor_num[i],sensor_name);
-          goto cleanup;
-        }
-      }
-
-      if(value > ucr) {
-        OBMC_WARN("%s: %s value is over than UCR ( %.2f > %.2f )\n",
-        __func__,sensor_name,value,ucr);
-        goto cleanup;
-      }else if(value < lcr){
-        OBMC_WARN("%s: %s value is under than LCR ( %.2f < %.2f )\n",
-        __func__,sensor_name,value,lcr);
-        goto cleanup;
-      }
-    }
-  }
-  set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
-  sleep(LED_INTERVAL);
-  return;
-
-cleanup:
-  set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-  sleep(LED_INTERVAL);
-  return;
-}
-
-void set_scm_led(int brd_rev)
-{
-  static int prev_userver_state = USERVER_STATE_NONE;
-  char path[LARGEST_DEVICE_NAME];
-  char cmd[64];
-  char buffer[256];
-  FILE *fp;
-  int power;
-  int ret;
-  const char *scm_ip_usb = "fe80::ff:fe00:2%usb0";
-
-  snprintf(path, sizeof(path), GPIO_COME_PWRGD, "value");
-  if (device_read(path, &power)) {
-    OBMC_WARN("%s: can't get GPIO value '%s'",__func__,path);
-    return;
-  }
-
-  if (!power) {
-    if (prev_userver_state != USERVER_STATE_POWER_OFF) {
-      OBMC_WARN("%s: micro server is power off\n",__func__);
-      prev_userver_state = USERVER_STATE_POWER_OFF;
-    }
-    set_sled(brd_rev, SLED_CLR_RED, SLED_SMB);
-    return;
-  }
-
-  // -c count = 1 times
-  // -W timeout = 1 secound
-  snprintf(cmd, sizeof(cmd), "ping -c 1 -W 1 %s", scm_ip_usb);
-  fp = popen(cmd,"r");
-  if (!fp) {
-    goto error;
-  }
-
-  while (fgets(buffer, sizeof(buffer), fp) != NULL) {}
-
-  ret = pclose(fp);
-  if(ret == 0) { // PING OK
-    if (prev_userver_state != USERVER_STATE_NORMAL) {
-      OBMC_WARN("%s: micro server in normal state",__func__);
-      prev_userver_state = USERVER_STATE_NORMAL;
-    }
-    set_sled(brd_rev,SLED_CLR_GREEN,SLED_SMB);
-    return;
-  }
-
-error:
-  if (prev_userver_state != USERVER_STATE_PING_DOWN) {
-    OBMC_WARN("%s: can't ping to %s",__func__,scm_ip_usb);
-    prev_userver_state = USERVER_STATE_PING_DOWN;
-  }
-  set_sled(brd_rev,SLED_CLR_YELLOW,SLED_SMB);
-  sleep(LED_INTERVAL);
 }
 
 int

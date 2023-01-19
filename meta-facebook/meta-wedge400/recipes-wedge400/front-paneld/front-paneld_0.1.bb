@@ -24,7 +24,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-DEPENDS:append = "liblog libpal update-rc.d-native"
+DEPENDS:append = "liblog libpal libmisc-utils update-rc.d-native"
 LDFLAGS = "-llog"
 
 LOCAL_URI = " \
@@ -59,4 +59,4 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES:${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
-RDEPENDS:${PN} += " libpal libbic bash"
+RDEPENDS:${PN} += " libpal libbic libmisc-utils bash"

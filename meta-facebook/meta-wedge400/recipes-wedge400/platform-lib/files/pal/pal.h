@@ -614,10 +614,10 @@ enum
 
 enum
 {
-  SLED_SYS = 1,
-  SLED_FAN = 2,
-  SLED_PSU = 3,
-  SLED_SMB = 4,
+  SLED_SYS = 0,
+  SLED_FAN = 1,
+  SLED_PSU = 2,
+  SLED_SMB = 3,
 };
 
 // LED positon at front-panel
@@ -635,22 +635,12 @@ enum
   SCM_LED_AMBER = 0x05,
 };
 
-// userver state use for set_scm_led()
-enum
-{
-  USERVER_STATE_NONE = 0,
-  USERVER_STATE_NORMAL,
-  USERVER_STATE_POWER_OFF,
-  USERVER_STATE_PING_DOWN,
-};
 
 /* Add button function for Debug Card */
 enum {
   HAND_SW_SERVER = 0,
   HAND_SW_BMC = 1
 };
-
-
 
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_post_enable(uint8_t slot);
@@ -665,13 +655,13 @@ int pal_get_full_board_type(uint8_t *full_brd_type);
 int pal_get_board_type_rev(uint8_t *brd_type_rev);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_sensor_discrete_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
+int fan_sensor_read(uint8_t sensor_num, float *value);
+int psu_sensor_read(uint8_t sensor_num, float *value);
+int pem_sensor_read(uint8_t sensor_num, void *value);
 void *generate_dump(void *arg);
-void set_sys_led(int brd_rev);
-void set_fan_led(int brd_rev);
-void set_psu_led(int brd_rev);
-void set_scm_led(int brd_rev);
 int set_sled(int brd_rev, uint8_t color, int led_name);
 void init_led(void);
+int pal_mon_fw_upgrade(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, uint8_t *psu_ug, uint8_t *smb_ug);
 int pal_light_scm_led(uint8_t led_color);
 int wedge400_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 bool pal_is_mcu_working(void);
@@ -682,6 +672,7 @@ int pal_get_dbg_rst_btn(uint8_t *status);
 int pal_get_dbg_uart_btn(uint8_t *status);
 int pal_clr_dbg_uart_btn();
 int pal_switch_uart_mux();
+bool is_psu48(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

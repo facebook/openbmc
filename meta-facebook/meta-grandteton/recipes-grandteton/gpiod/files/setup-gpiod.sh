@@ -28,8 +28,8 @@
 ### END INIT INFO
 
 # shellcheck disable=SC2039
-echo -n "Setup gpio monitoring for Grandteton "
+echo "Setup gpio monitoring for Grandteton "
 
-/usr/local/bin/gpiod &
+runsv /etc/sv/gpiod > /dev/null 2>&1 &
 
 echo "done."

@@ -8,7 +8,7 @@
 #define POLL_TIMEOUT        -1
 #define POWER_ON_STR        "on"
 #define POWER_OFF_STR       "off"
-
+#define DEFER_LOG_TIME      (300 * 1000)
 
 bool server_power_check(uint8_t power_on_time);
 
@@ -57,5 +57,7 @@ void mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
 void *iox_gpio_handle();
 void *gpio_timer();
 
-
+//GPIO Present Event
+void gpio_present_init (gpiopoll_pin_t *desc, gpio_value_t value);
+void gpio_present_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 #endif

@@ -28,6 +28,7 @@ LOCAL_URI = " \
     file://gpiod.h \
     file://gpiod_cover.c \
     file://setup-gpiod.sh \
+    file://run-gpiod.sh \
     "
 
 
@@ -50,6 +51,10 @@ DEPENDS += " \
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/gpiod
+
+  install -m 755 ${S}/run-gpiod.sh ${D}${sysconfdir}/sv/gpiod/run
   install -m 755 ${S}/setup-gpiod.sh ${D}${sysconfdir}/init.d/setup-gpiod.sh
   update-rc.d -r ${D} setup-gpiod.sh start 92 5 .
 }

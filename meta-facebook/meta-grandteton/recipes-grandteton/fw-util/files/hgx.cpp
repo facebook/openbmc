@@ -23,7 +23,7 @@ class HGXComponent : public Component {
       else {
         syslog(LOG_CRIT, "HGX Component %s upgrade initiated", component().c_str());
       }
-      hgx::update(image);
+      hgx::update(_hgxcomp, image);
     } catch (std::exception& e) {
       std::cerr << e.what() << std::endl;
       return -1;

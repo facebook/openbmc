@@ -6,16 +6,16 @@ static void do_version(const std::string& component, bool json_fmt) {
   std::cout << hgx::version(component, json_fmt) << std::endl;
 }
 
-static void do_update(const std::string& path, bool async, bool json_fmt) {
+static void do_update(const std::string& comp, const std::string& path, bool async, bool json_fmt) {
   if (async) {
-    std::string id = hgx::updateNonBlocking(path, json_fmt);
+    std::string id = hgx::updateNonBlocking(comp, path, json_fmt);
     if (!json_fmt) {
       std::cout << "Task ID: " << id << std::endl;
     } else {
       std::cout << id << std::endl;
     }
   } else {
-    hgx::update(path);
+    hgx::update(comp, path);
   }
 }
 
@@ -79,12 +79,14 @@ int main(int argc, char* argv[]) {
   version->callback([&]() { do_version(component, json_fmt); });
 
   bool async = false;
+  std::string comp{};
   std::string image{};
   auto update = app.add_subcommand("update", "Update the component");
+  update->add_option("comp", comp, "Component")->required();
   update->add_option("image", image, "Path to the image")->required();
   update->add_flag(
       "--async", async, "Do not block, return immediately printing the task ID");
-  update->callback([&]() { do_update(image, async, json_fmt); });
+  update->callback([&]() { do_update(comp, image, async, json_fmt); });
 
   std::string fru{};
   std::string sensorName{};

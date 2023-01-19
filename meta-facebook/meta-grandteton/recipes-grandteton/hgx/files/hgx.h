@@ -42,14 +42,14 @@ std::string version(const std::string& comp, bool returnJson = false);
 // Initiate an update and return the task ID.
 // User can call taskStatus to get the current
 // status.
-std::string updateNonBlocking(const std::string& path, bool returnJson = false);
+std::string updateNonBlocking(const std::string& comp, const std::string& path, bool returnJson = false);
 
 // Patch EroT and HMC before updating FW
 int patch_bf_update();
 
 // Initiate an update and wait till the task
 // completes.
-int update(const std::string& path);
+int update(const std::string& comp, const std::string& path);
 
 // Get HGX's sensors from Telemetry Service
 // status.

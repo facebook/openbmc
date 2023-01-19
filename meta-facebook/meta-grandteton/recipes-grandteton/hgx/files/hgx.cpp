@@ -182,9 +182,19 @@ std::string version(const std::string& comp, bool returnJson) {
   return resp["Version"];
 }
 
-std::string updateNonBlocking(const std::string& path, bool returnJson) {
+std::string updateNonBlocking(const std::string& comp, const std::string& path, bool returnJson) {
   std::string url = HMC_UPDATE_SERVICE;
   std::string fp = path;
+
+  if (comp != "") {
+    const std::string targetsPath = "/redfish/v1/UpdateService/FirmwareInventory/";
+    json targetJson;
+    targetJson["HttpPushUriTargets"] = json::array({targetsPath + comp});
+    std::string target = targetJson.dump();
+    std::cout << "target: " << target << std::endl;
+    hgx.patch(url, std::move(target));
+  }
+
   std::string respStr = hgx.post(url, std::move(fp), true);
   if (returnJson) {
     return respStr;
@@ -352,9 +362,9 @@ int patch_bf_update() {
   return 0;
 }
 
-int update(const std::string& path) {
+int update(const std::string& comp, const std::string& path) {
   using namespace std::chrono_literals;
-  std::string taskID = updateNonBlocking(path);
+  std::string taskID = updateNonBlocking(comp, path);
   std::cout << "Started update task: " << taskID << std::endl;
   size_t nextMessage = 0;
   for (int retry = 0; retry < 500; retry++) {

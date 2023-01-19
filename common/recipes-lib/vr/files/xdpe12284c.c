@@ -495,7 +495,7 @@ xdpe_fw_update(struct vr_info *info, void *args) {
     } else {
       snprintf(value, sizeof(value), "Infineon %08X, Remaining Writes: %u", config->crc_exp, remain);
     }
-    kv_set(key, value, 0, 0);
+    kv_set(key, value, 0, KV_FPERSIST);
   }
 
   return VR_STATUS_SUCCESS;

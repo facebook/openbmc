@@ -2511,8 +2511,12 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *sel, char *error_log) {
     SYS_DP_X16_PWR_FAULT  = 0x17,
     SYS_PESW_CONFIG       = 0x18,
     SYS_TLP_TIMEOUT       = 0x19,
-    E1S_1OU_M2_PRESENT    = 0x80,
-    E1S_1OU_HSC_PWR_ALERT = 0x82,
+    E1S_1OU_M2_PRESENT         = 0x80,
+    E1S_1OU_INA230_PWR_ALERT   = 0x81,
+    E1S_1OU_HSC_PWR_ALERT      = 0x82,
+    E1S_1OU_E1S_P12V_FAULT     = 0x83,
+    E1S_1OU_E1S_P3V3_FAULT     = 0x84,
+    E1S_1OU_P12V_EDGE_FAULT    = 0x85,
   };
   uint8_t event_dir = sel[12] & 0x80;
   uint8_t *event_data = &sel[13];
@@ -2629,12 +2633,27 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *sel, char *error_log) {
       pal_get_tlp_timeout_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "TLP Credit Time Out");
       break;
-    case E1S_1OU_HSC_PWR_ALERT:
-      strcat(error_log, "E1S 1OU HSC Power");
-      break;
     case E1S_1OU_M2_PRESENT:
       snprintf(log_msg, sizeof(log_msg), "E1S 1OU M.2 dev%d present", event_data[2]);
       strcat(error_log, log_msg);
+      break;
+    case E1S_1OU_INA230_PWR_ALERT:
+      snprintf(log_msg, sizeof(log_msg), "E1S 1OU INA230 PWR ALERT, alert type:%d", event_data[2]);
+      strcat(error_log, log_msg);
+      break;
+    case E1S_1OU_HSC_PWR_ALERT:
+      strcat(error_log, "E1S 1OU HSC Power");
+      break;
+    case E1S_1OU_E1S_P12V_FAULT:
+      snprintf(log_msg, sizeof(log_msg), "E1S 1OU M.2 dev%d P12V fault", event_data[2]);
+      strcat(error_log, log_msg);
+      break;
+    case E1S_1OU_E1S_P3V3_FAULT:
+      snprintf(log_msg, sizeof(log_msg), "E1S 1OU M.2 dev%d P3V3 fault", event_data[2]);
+      strcat(error_log, log_msg);
+      break;
+    case E1S_1OU_P12V_EDGE_FAULT:
+      strcat(error_log, "E1S 1OU P12V edge fault");
       break;
     case SYS_EVENT_HOST_STALL:
       strcat(error_log, "BIOS stalled");

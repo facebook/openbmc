@@ -709,13 +709,24 @@ read_cpu_thermal_margin(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 read_cpu_pkg_pwr(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t cpu_id = sensor_map[fru].map[sensor_num].id;
-  uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
+  uint8_t rbuf[32] = {0x00};
+  uint8_t domain_id = NMS_SIGNAL_COMPONENT | NMS_DOMAIN_ID_CPU_SUBSYSTEM;
+  uint8_t policy_id = sensor_map[fru].map[sensor_num].id;
+  static uint8_t retry = 0;
+  int ret = 0;
+  NM_RW_INFO info;
 
-  if(!is_cpu_socket_occupy(cpu_id))
-    return READING_NA;
+  get_nm_rw_info(&info.bus, &info.nm_addr, &info.bmc_addr);
+  ret = cmd_NM_get_nm_statistics(info, NMS_GLOBAL_POWER, domain_id, policy_id, rbuf);
 
-  return lib_get_cpu_pkg_pwr(cpu_id, cpu_addr, value);
+  if ( (ret != 0) || (rbuf[6] != CC_SUCCESS) ) {
+    retry++;
+    return retry_err_handle(retry, 5);
+  }
+
+  *value = rbuf[11] << 8 | rbuf[10];
+  retry = 0;
+  return 0;
 }
 
 static int

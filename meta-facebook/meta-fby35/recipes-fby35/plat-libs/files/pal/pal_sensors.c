@@ -914,6 +914,224 @@ const uint8_t bic_1ou_vf_skip_sensor_list[] = {
   BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2D,
 };
 
+const uint8_t bic_op_1ou_sensor_list[] = {
+  BIC_OP_1OU_TEMP_C,
+  BIC_OP_1OU_E1S_SSD0_P12V_VOLT_V,
+  BIC_OP_1OU_E1S_SSD1_P12V_VOLT_V,
+  BIC_OP_1OU_E1S_SSD2_P12V_VOLT_V,
+  BIC_OP_1OU_P12V_EDGE_VOLT_V,
+  BIC_OP_1OU_E1S_SSD0_P3V3_ADC_VOLT_V,
+  BIC_OP_1OU_E1S_SSD1_P3V3_ADC_VOLT_V,
+  BIC_OP_1OU_E1S_SSD2_P3V3_ADC_VOLT_V,
+  BIC_OP_1OU_P3V3_STBY_ADC_VOLT_V,
+  BIC_OP_1OU_P1V8_ADC_VOLT_V,
+  BIC_OP_1OU_P0V9_ADC_VOLT_V,
+  BIC_OP_1OU_P1V2_ADC_VOLT_V,
+  BIC_OP_1OU_E1S_SSD0_P12V_CURR_A,
+  BIC_OP_1OU_E1S_SSD1_P12V_CURR_A,
+  BIC_OP_1OU_E1S_SSD2_P12V_CURR_A,
+  BIC_OP_1OU_P12V_EDGE_CURR_A,
+  BIC_OP_1OU_E1S_SSD0_P12V_PWR_W,
+  BIC_OP_1OU_E1S_SSD1_P12V_PWR_W,
+  BIC_OP_1OU_E1S_SSD2_P12V_PWR_W,
+  BIC_OP_1OU_P12V_EDGE_PWR_W,
+  BIC_OP_1OU_RE_TIMER_TEMP_C,
+  BIC_OP_1OU_E1S_SSD0_TEMP_C,
+  BIC_OP_1OU_E1S_SSD1_TEMP_C,
+  BIC_OP_1OU_E1S_SSD2_TEMP_C,
+};
+
+const uint8_t bic_op_1ou_skip_sensor_list[] = {
+  BIC_OP_1OU_E1S_SSD0_P12V_VOLT_V,
+  BIC_OP_1OU_E1S_SSD1_P12V_VOLT_V,
+  BIC_OP_1OU_E1S_SSD2_P12V_VOLT_V,
+  BIC_OP_1OU_P12V_EDGE_VOLT_V,
+  BIC_OP_1OU_E1S_SSD0_P3V3_ADC_VOLT_V,
+  BIC_OP_1OU_E1S_SSD1_P3V3_ADC_VOLT_V,
+  BIC_OP_1OU_E1S_SSD2_P3V3_ADC_VOLT_V,
+  BIC_OP_1OU_P1V8_ADC_VOLT_V,
+  BIC_OP_1OU_P0V9_ADC_VOLT_V,
+  BIC_OP_1OU_P1V2_ADC_VOLT_V,
+  BIC_OP_1OU_E1S_SSD0_P12V_CURR_A,
+  BIC_OP_1OU_E1S_SSD1_P12V_CURR_A,
+  BIC_OP_1OU_E1S_SSD2_P12V_CURR_A,
+  BIC_OP_1OU_P12V_EDGE_CURR_A,
+  BIC_OP_1OU_E1S_SSD0_P12V_PWR_W,
+  BIC_OP_1OU_E1S_SSD1_P12V_PWR_W,
+  BIC_OP_1OU_E1S_SSD2_P12V_PWR_W,
+  BIC_OP_1OU_P12V_EDGE_PWR_W,
+};
+
+const uint8_t bic_op_2ou_sensor_list[] = {
+  BIC_OP_2OU_TEMP_C,
+  BIC_OP_2OU_E1S_SSD0_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD1_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD2_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD3_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD4_P12V_VOLT_V,
+  BIC_OP_2OU_MAIN_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD0_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD1_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD2_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD3_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD4_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_P3V3_STBY_ADC_VOLT_V,
+  BIC_OP_2OU_P1V8_STBY_ADC_VOLT_V,
+  BIC_OP_2OU_P1V2_STBY_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD0_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD1_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD2_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD3_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD4_P12V_CURR_A,
+  BIC_OP_2OU_MAIN_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD0_P12V_PWR_W,
+  BIC_OP_2OU_E1S_SSD1_P12V_PWR_W,
+  BIC_OP_2OU_E1S_SSD2_P12V_PWR_W,
+  BIC_OP_2OU_E1S_SSD3_P12V_PWR_W,
+  BIC_OP_2OU_E1S_SSD4_P12V_PWR_W,
+  BIC_OP_2OU_MAIN_P12V_PWR_W,
+  BIC_OP_2OU_E1S_SSD0_TEMP_C,
+  BIC_OP_2OU_E1S_SSD1_TEMP_C,
+  BIC_OP_2OU_E1S_SSD2_TEMP_C,
+  BIC_OP_2OU_E1S_SSD3_TEMP_C,
+  BIC_OP_2OU_E1S_SSD4_TEMP_C,
+};
+
+const uint8_t bic_op_2ou_skip_sensor_list[] = {
+  BIC_OP_2OU_E1S_SSD0_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD1_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD2_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD3_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD4_P12V_VOLT_V,
+  BIC_OP_2OU_MAIN_P12V_VOLT_V,
+  BIC_OP_2OU_E1S_SSD0_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD1_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD2_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD3_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD4_P3V3_ADC_VOLT_V,
+  BIC_OP_2OU_E1S_SSD0_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD1_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD2_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD3_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD4_P12V_CURR_A,
+  BIC_OP_2OU_MAIN_P12V_CURR_A,
+  BIC_OP_2OU_E1S_SSD0_P12V_PWR_W,
+  BIC_OP_2OU_E1S_SSD1_P12V_PWR_W,
+  BIC_OP_2OU_E1S_SSD2_P12V_PWR_W,
+  BIC_OP_2OU_E1S_SSD3_P12V_PWR_W,
+  BIC_OP_2OU_E1S_SSD4_P12V_PWR_W,
+  BIC_OP_2OU_MAIN_P12V_PWR_W,
+};
+
+const uint8_t bic_op_3ou_sensor_list[] = {
+  BIC_OP_3OU_TEMP_C,
+  BIC_OP_3OU_E1S_SSD0_P12V_VOLT_V,
+  BIC_OP_3OU_E1S_SSD1_P12V_VOLT_V,
+  BIC_OP_3OU_E1S_SSD2_P12V_VOLT_V,
+  BIC_OP_3OU_P12V_EDGE_VOLT_V,
+  BIC_OP_3OU_E1S_SSD0_P3V3_ADC_VOLT_V,
+  BIC_OP_3OU_E1S_SSD1_P3V3_ADC_VOLT_V,
+  BIC_OP_3OU_E1S_SSD2_P3V3_ADC_VOLT_V,
+  BIC_OP_3OU_P3V3_STBY_ADC_VOLT_V,
+  BIC_OP_3OU_P1V8_ADC_VOLT_V,
+  BIC_OP_3OU_P0V9_ADC_VOLT_V,
+  BIC_OP_3OU_P1V2_ADC_VOLT_V,
+  BIC_OP_3OU_E1S_SSD0_P12V_CURR_A,
+  BIC_OP_3OU_E1S_SSD1_P12V_CURR_A,
+  BIC_OP_3OU_E1S_SSD2_P12V_CURR_A,
+  BIC_OP_3OU_P12V_EDGE_CURR_A,
+  BIC_OP_3OU_E1S_SSD0_P12V_PWR_W,
+  BIC_OP_3OU_E1S_SSD1_P12V_PWR_W,
+  BIC_OP_3OU_E1S_SSD2_P12V_PWR_W,
+  BIC_OP_3OU_P12V_EDGE_PWR_W,
+  BIC_OP_3OU_RE_TIMER_TEMP_C,
+  BIC_OP_3OU_E1S_SSD0_TEMP_C,
+  BIC_OP_3OU_E1S_SSD1_TEMP_C,
+  BIC_OP_3OU_E1S_SSD2_TEMP_C,
+};
+
+const uint8_t bic_op_3ou_skip_sensor_list[] = {
+  BIC_OP_3OU_E1S_SSD0_P12V_VOLT_V,
+  BIC_OP_3OU_E1S_SSD1_P12V_VOLT_V,
+  BIC_OP_3OU_E1S_SSD2_P12V_VOLT_V,
+  BIC_OP_3OU_P12V_EDGE_VOLT_V,
+  BIC_OP_3OU_E1S_SSD0_P3V3_ADC_VOLT_V,
+  BIC_OP_3OU_E1S_SSD1_P3V3_ADC_VOLT_V,
+  BIC_OP_3OU_E1S_SSD2_P3V3_ADC_VOLT_V,
+  BIC_OP_3OU_P1V8_ADC_VOLT_V,
+  BIC_OP_3OU_P0V9_ADC_VOLT_V,
+  BIC_OP_3OU_P1V2_ADC_VOLT_V,
+  BIC_OP_3OU_E1S_SSD0_P12V_CURR_A,
+  BIC_OP_3OU_E1S_SSD1_P12V_CURR_A,
+  BIC_OP_3OU_E1S_SSD2_P12V_CURR_A,
+  BIC_OP_3OU_P12V_EDGE_CURR_A,
+  BIC_OP_3OU_E1S_SSD0_P12V_PWR_W,
+  BIC_OP_3OU_E1S_SSD1_P12V_PWR_W,
+  BIC_OP_3OU_E1S_SSD2_P12V_PWR_W,
+  BIC_OP_3OU_P12V_EDGE_PWR_W,
+};
+
+const uint8_t bic_op_4ou_sensor_list[] = {
+  BIC_OP_4OU_TEMP_C,
+  BIC_OP_4OU_E1S_SSD0_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD1_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD2_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD3_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD4_P12V_VOLT_V,
+  BIC_OP_4OU_MAIN_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD0_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD1_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD2_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD3_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD4_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_P3V3_STBY_ADC_VOLT_V,
+  BIC_OP_4OU_P1V8_STBY_ADC_VOLT_V,
+  BIC_OP_4OU_P1V2_STBY_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD0_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD1_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD2_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD3_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD4_P12V_CURR_A,
+  BIC_OP_4OU_MAIN_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD0_P12V_PWR_W,
+  BIC_OP_4OU_E1S_SSD1_P12V_PWR_W,
+  BIC_OP_4OU_E1S_SSD2_P12V_PWR_W,
+  BIC_OP_4OU_E1S_SSD3_P12V_PWR_W,
+  BIC_OP_4OU_E1S_SSD4_P12V_PWR_W,
+  BIC_OP_4OU_MAIN_P12V_PWR_W,
+  BIC_OP_4OU_E1S_SSD0_TEMP_C,
+  BIC_OP_4OU_E1S_SSD1_TEMP_C,
+  BIC_OP_4OU_E1S_SSD2_TEMP_C,
+  BIC_OP_4OU_E1S_SSD3_TEMP_C,
+  BIC_OP_4OU_E1S_SSD4_TEMP_C,
+};
+
+const uint8_t bic_op_4ou_skip_sensor_list[] = {
+  BIC_OP_4OU_E1S_SSD0_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD1_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD2_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD3_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD4_P12V_VOLT_V,
+  BIC_OP_4OU_MAIN_P12V_VOLT_V,
+  BIC_OP_4OU_E1S_SSD0_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD1_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD2_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD3_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD4_P3V3_ADC_VOLT_V,
+  BIC_OP_4OU_E1S_SSD0_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD1_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD2_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD3_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD4_P12V_CURR_A,
+  BIC_OP_4OU_MAIN_P12V_CURR_A,
+  BIC_OP_4OU_E1S_SSD0_P12V_PWR_W,
+  BIC_OP_4OU_E1S_SSD1_P12V_PWR_W,
+  BIC_OP_4OU_E1S_SSD2_P12V_PWR_W,
+  BIC_OP_4OU_E1S_SSD3_P12V_PWR_W,
+  BIC_OP_4OU_E1S_SSD4_P12V_PWR_W,
+  BIC_OP_4OU_MAIN_P12V_PWR_W,
+};
+
 const uint8_t nic_sensor_list[] = {
   NIC_SENSOR_TEMP,
 };
@@ -1334,6 +1552,14 @@ size_t bic_dpv2_x16_sensor_cnt = sizeof(bic_dpv2_x16_sensor_list)/sizeof(uint8_t
 size_t rns_pdb_sensor_cnt = sizeof(rns_pdb_sensor_list)/sizeof(uint8_t);
 size_t delta_pdb_sensor_cnt = sizeof(delta_pdb_sensor_list)/sizeof(uint8_t);
 size_t flex_pdb_sensor_cnt = sizeof(flex_pdb_sensor_list)/sizeof(uint8_t);
+size_t bic_op_1ou_sensor_cnt = sizeof(bic_op_1ou_sensor_list)/sizeof(uint8_t);
+size_t bic_op_1ou_skip_sensor_cnt = sizeof(bic_op_1ou_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_op_2ou_sensor_cnt = sizeof(bic_op_2ou_sensor_list)/sizeof(uint8_t);
+size_t bic_op_2ou_skip_sensor_cnt = sizeof(bic_op_2ou_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_op_3ou_sensor_cnt = sizeof(bic_op_3ou_sensor_list)/sizeof(uint8_t);
+size_t bic_op_3ou_skip_sensor_cnt = sizeof(bic_op_3ou_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_op_4ou_sensor_cnt = sizeof(bic_op_4ou_sensor_list)/sizeof(uint8_t);
+size_t bic_op_4ou_skip_sensor_cnt = sizeof(bic_op_4ou_skip_sensor_list)/sizeof(uint8_t);
 
 static int compare(const void *arg1, const void *arg2) {
   return(*(int *)arg2 - *(int *)arg1);
@@ -1589,6 +1815,16 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
           case TYPE_1OU_RAINBOW_FALLS:
             memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_rf_sensor_list, bic_1ou_rf_sensor_cnt);
             current_cnt += bic_1ou_rf_sensor_cnt;
+            break;
+          case TYPE_1OU_OLMSTEAD_POINT:
+            memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_1ou_sensor_list, bic_op_1ou_sensor_cnt);
+            current_cnt += bic_op_1ou_sensor_cnt;
+            memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_2ou_sensor_list, bic_op_2ou_sensor_cnt);
+            current_cnt += bic_op_2ou_sensor_cnt;
+            memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_3ou_sensor_list, bic_op_3ou_sensor_cnt);
+            current_cnt += bic_op_3ou_sensor_cnt;
+            memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_4ou_sensor_list, bic_op_4ou_sensor_cnt);
+            current_cnt += bic_op_4ou_sensor_cnt;
             break;
           default:
             syslog(LOG_ERR, "%s() Cannot identify the 1OU board type or 1OU board is not present", __func__);

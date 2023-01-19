@@ -294,6 +294,7 @@ sdr_cache_init(uint8_t slot_id) {
   char sdr_path[64] = {0};
   ssize_t bytes_wr;
   uint8_t bmc_location = 0;
+  uint8_t type_1ou = UNKNOWN_BOARD;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
   sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.bin", slot_id);
@@ -376,7 +377,30 @@ sdr_cache_init(uint8_t slot_id) {
     }
   } else {
     if (PRESENT_1OU == (PRESENT_1OU & present)) {
-      remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
+      ret = bic_get_1ou_type(slot_id, &type_1ou);
+      if (ret == 0) {
+        switch (type_1ou) {
+          case TYPE_1OU_RAINBOW_FALLS:
+          case TYPE_1OU_VERNAL_FALLS_WITH_AST:
+            remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
+            break;
+          case TYPE_1OU_OLMSTEAD_POINT:
+            if (slot_id != FRU_SLOT1) {
+              syslog(LOG_WARNING, "%s() slot %x is not expected on Type 8 system\n", __func__, slot_id);
+              return -1;
+            }
+            remote_f_ret += remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
+            remote_f_ret += remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
+            remote_f_ret += remote_sdr_cache_init(slot_id, EXP3_BIC_INTF);
+            remote_f_ret += remote_sdr_cache_init(slot_id, EXP4_BIC_INTF);
+            break;
+          default:
+            remote_f_ret = 0;
+        }
+      }
+      else {
+        syslog(LOG_WARNING, "%s() Failed to get 1OU board type\n", __func__);
+      }
     }
     if (PRESENT_2OU == (PRESENT_2OU & present)) {
       if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {

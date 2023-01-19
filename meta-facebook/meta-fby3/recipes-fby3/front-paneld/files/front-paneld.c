@@ -89,6 +89,7 @@ static void *
 led_handler() {
 #define DELAY_PERIOD 1
 #define CPLD_STAGE 0x0A
+#define CPLD_10M08 0x1A //PVT, MP
 #define CPLD_VER 0x05
   int i = 0;
   uint8_t slot_hlth = 0;
@@ -160,6 +161,8 @@ led_handler() {
 
         // CPLD firmware version should later than A05.
         if (( rbuf[1] == CPLD_STAGE ) && ( rbuf[0] >= CPLD_VER )) {
+          slot_support[i-1] = true;
+        } else if ( rbuf[1] == CPLD_10M08 ) {
           slot_support[i-1] = true;
         } else {
           slot_support[i-1] = false;

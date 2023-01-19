@@ -53,21 +53,21 @@ MB_1ST_SOURCE="0"
 #MB Expender
 i2c_device_add 29 0x74 pca9539
 # I/O Expander PCA9539 0xE8 BIC and GPU
-gpio_export_ioexp 29-0074 RST_USB_HUB              0
-gpio_export_ioexp 29-0074 RST_SWB_BIC_N            1
-gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_C_N      4
-gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_D_N      5
-gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_B3_N     6
-gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_B2_N     7
+gpio_export_ioexp 29-0074 RST_USB_HUB             0
+gpio_export_ioexp 29-0074 RST_SWB_BIC_N           1
+gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_G_N     4
+gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_H_N     5
+gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_F_N     6
+gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_C_N     7
 
-gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_A2_N     8
-gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_B1_N     9
-gpio_export_ioexp 29-0074 GPU_BASE_ID0             10
-gpio_export_ioexp 29-0074 GPU_BASE_ID1             11
-gpio_export_ioexp 29-0074 GPU_PEX_STRAP0           12
-gpio_export_ioexp 29-0074 GPU_PEX_STRAP1           13
-gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_A1_N     14
-gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_A3_N     15
+gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_D_N     8
+gpio_export_ioexp 29-0074 SWB_CABLE_PRSNT_B_N     9
+gpio_export_ioexp 29-0074 GPU_BASE_ID0            10
+gpio_export_ioexp 29-0074 GPU_BASE_ID1            11
+gpio_export_ioexp 29-0074 GPU_PEX_STRAP0          12
+gpio_export_ioexp 29-0074 GPU_PEX_STRAP1          13
+gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_A_N     14
+gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_E_N     15
 
 #MB FRU
 i2c_device_add 33 0x51 24c64

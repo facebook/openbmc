@@ -2625,7 +2625,12 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_2OU_VR_FAULT   = 0x13,
     SYS_FAN_SERVICE    = 0x14,
     SYS_BB_FW_EVENT    = 0x15,
-    E1S_1OU_HSC_PWR_ALERT = 0x82,
+    E1S_1OU_M2_PRESENT = 0x80,
+    E1S_1OU_INA230_PWR_ALERT   = 0x81,
+    E1S_1OU_HSC_PWR_ALERT      = 0x82,
+    E1S_1OU_P12V_FAULT = 0x83,
+    E1S_1OU_P3V3_FAULT = 0x84,
+    P12V_EDGE_FAULT    = 0x85,
   };
   uint8_t event = event_data[0];
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
@@ -2715,8 +2720,27 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       snprintf(log_msg, sizeof(log_msg), "Baseboard firmware %s update is ongoing", component_str);
       strcat(error_log, log_msg);
       break;
+    case E1S_1OU_M2_PRESENT:
+      snprintf(log_msg, sizeof(log_msg), "E1S 1OU M.2 dev%d present", event_data[2]);
+      strcat(error_log, log_msg);
+      break;
+    case E1S_1OU_INA230_PWR_ALERT:
+      snprintf(log_msg, sizeof(log_msg), "E1S 1OU dev%d INA230 power alert", event_data[2]);
+      strcat(error_log, log_msg);
+      break;
     case E1S_1OU_HSC_PWR_ALERT:
       strcat(error_log, "E1S 1OU HSC power alert");
+      break;
+    case E1S_1OU_P12V_FAULT:
+      snprintf(log_msg, sizeof(log_msg), "E1S 1OU dev%d P12V fault", event_data[2]);
+      strcat(error_log, log_msg);
+      break;
+    case E1S_1OU_P3V3_FAULT:
+      snprintf(log_msg, sizeof(log_msg), "E1S 1OU dev%d P3V3 fault", event_data[2]);
+      strcat(error_log, log_msg);
+      break;
+    case P12V_EDGE_FAULT:
+      strcat(error_log, "P12V Edge fault");
       break;
     default:
       strcat(error_log, "Undefined system event");

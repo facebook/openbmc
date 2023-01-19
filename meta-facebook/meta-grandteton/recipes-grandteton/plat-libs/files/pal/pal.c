@@ -947,6 +947,20 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
   return completion_code;
 }
 
+int
+pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t index = sel[11] & 0x01;
+  char* yellow_track[] = {
+    "Corrected Cache Error",
+    "Persistent Cache Fault"
+  };
+
+  // error_log size 256
+  snprintf(error_log, 256, "%s", yellow_track[index]);
+
+  return 0;
+}
 bool
 pal_is_support_vr_delay_activate(void){
   return true;

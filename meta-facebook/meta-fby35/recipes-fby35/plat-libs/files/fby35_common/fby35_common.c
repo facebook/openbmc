@@ -464,6 +464,11 @@ fby35_common_crashdump(uint8_t fru, bool ierr __attribute__((unused)), bool plat
   char cmd[128] = "\0";
   int cmd_len = sizeof(cmd);
 
+  //This function not appropriate for AMD platforms
+  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+    return -1;
+  }
+
   // Check if the crashdump script exist
   if (access(CRASHDUMP_BIN, F_OK) == -1) {
     syslog(LOG_CRIT, "%s() Try to run autodump for %d but %s is not existed", __func__, fru, CRASHDUMP_BIN);

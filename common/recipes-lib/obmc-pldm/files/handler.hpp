@@ -12,6 +12,17 @@ namespace pldm
 
 using Command = uint8_t;
 
+class pldm_response
+{
+  private:
+    std::vector<uint8_t> response;
+  public:
+    explicit pldm_response(const size_t& resp_size):
+      response(std::vector<uint8_t>(sizeof(pldm_msg_hdr) + resp_size, 0)) {}
+    std::vector<uint8_t>& get() { return response; }
+    pldm_msg* msg() { return reinterpret_cast<pldm_msg*>(response.data()); }
+};
+
 namespace responder
 {
 

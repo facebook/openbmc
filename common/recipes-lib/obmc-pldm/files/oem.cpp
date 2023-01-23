@@ -143,12 +143,6 @@ int encode_ipmi_resp (uint8_t *request, uint8_t instance_id, uint8_t completion_
     msg.push_back(*(rbuf + i));
   }
 
-  //Add MCTP destination eid
-  msg.insert(msg.begin(), 0x0);
-
-  //Add MCTP message type
-  msg.insert(msg.begin(), MCTP_PLDM_TYPE);
-
   return PLDM_SUCCESS;
 }
 

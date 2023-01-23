@@ -75,7 +75,7 @@ connect_to_socket (const char * path, int length)
   return sockfd;
 }
 
-static int 
+static int
 connect_mctp_socket (const std::string &bus)
 {
   std::string path = "mctp-mux" + bus;
@@ -103,7 +103,7 @@ freeBuf (uint8_t* buf)
   }
 }
 
-static void 
+static void
 mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
 {
   int rc = handler->recv_data(fd, &buf, size);
@@ -129,22 +129,25 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
     } else if (msg->hdr.request == PLDM_REQUEST ||
       msg->hdr.request == PLDM_ASYNC_REQUEST_NOTIFY) {
       LOG(INFO) << "Request handle.";
+      uint8_t* resp = nullptr;
+      int resp_bytes;
 
-      uint8_t *resp;
-      int resp_len;
+      try {
+        // handle PLDM msg
+        pldm_msg_handle(buf+PLDMD_MSG_HDR_LEN, size-PLDMD_MSG_HDR_LEN, &resp, &resp_bytes);
 
-      pldm_msg_handle(buf + PLDMD_MSG_HDR_LEN, size - PLDMD_MSG_HDR_LEN, &resp, &resp_len);
-      std::cout << std::hex;
-      for (int i = 0; i < resp_len ; i++) {
-        if(i < PLDM_COMMON_RES_LEN) {
-          std::cout << "PLDM data[" << i << "] = 0x" << unsigned(resp[i]) << "\n";
-        }
-        else {
-          std::cout << "IPMI data[" << i << "] = 0x" << unsigned(resp[i]) << "\n";
-        }
+        // copy response to buf(request)+PLDMD_MSG_HDR_LEN
+        // so can re-use PLDMD_MSG_HDR
+        buf = (uint8_t*)realloc(buf, resp_bytes+PLDMD_MSG_HDR_LEN);
+        memcpy(buf+PLDMD_MSG_HDR_LEN, resp, resp_bytes);
+
+        // send back to MCTP daemon
+        handler->send_data(fd, buf, resp_bytes+PLDMD_MSG_HDR_LEN);
+      } catch (...) {
+        LOG(ERROR) << "Request handle error.";
       }
-      std::cout << std::dec;
-      handler->client_send_data(0, resp, resp_len);
+      freeBuf(resp);
+
     // For response handle
     } else if (msg->hdr.request == PLDM_RESPONSE) {
       uint8_t iid = msg->hdr.instance_id;
@@ -287,7 +290,7 @@ int main (int argc, char** argv)
 
   // parse and execute
   CLI11_PARSE(app, argc, argv);
-  
+
   // init log
   std::string log_path = "/tmp/glog";
   if (mkdir(log_path.c_str(), 0777) == -1) {

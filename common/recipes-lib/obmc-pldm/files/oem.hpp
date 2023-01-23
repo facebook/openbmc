@@ -53,6 +53,7 @@ class Handler : public CmdHandler
                         });
     }
 
+  protected:
     /** @brief Handler for oem(ipmi) commands
      *
      *  @param[in] request - Request message payload

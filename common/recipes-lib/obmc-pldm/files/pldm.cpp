@@ -4,10 +4,12 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include <sys/socket.h>
+#include <memory>
 #include <libpldm/platform.h>
 #include <libpldm/base.h>
 #include <libpldm/pldm.h>
 #include "base.hpp"
+#include "platform.hpp"
 #include "oem.hpp"
 #include "pldm.h"
 
@@ -17,24 +19,37 @@ const char pldm_path[] = "\0pldm-mux";
 const uint8_t MCTP_MSG_TYPE_PLDM = 1;
 
 void pldm_msg_handle (uint8_t* req, size_t req_size, uint8_t** resp, int* resp_bytes) {
-  CmdHandler *handler;
+  std::unique_ptr<CmdHandler> handler;
   Response response;
   auto request = reinterpret_cast<pldm_msg*>(req);
 
   // choosing handler base on PLDM header type.
-  if (request->hdr.type == PLDM_OEM) {
-    handler = new oem::Handler();
-  } else {
-    handler = new base::Handler();
+  switch (request->hdr.type) {
+    case PLDM_PLATFORM:
+      handler = std::make_unique<platform::Handler>();
+      break;
+    case PLDM_OEM:
+      handler = std::make_unique<oem::Handler>();
+      break;
+    default:
+      handler = std::make_unique<base::Handler>();
+      break;
   }
 
   // handle command
   response = handler->handle(request->hdr.command, request, req_size - PLDM_HEADER_SIZE);
-  *resp = (uint8_t*)malloc(response.size());
-  std::copy(response.begin(), response.end(), *resp);
-  *resp_bytes = (int)response.size();
-
-  delete handler;
+  if (response.empty()) {
+    *resp_bytes = 0;
+  } else {
+    *resp = (uint8_t*)malloc(response.size());
+    if (!(*resp)) {
+      *resp_bytes = 0;
+      std::cerr << "Response allocation failure\n";
+    } else {
+      std::copy(response.begin(), response.end(), *resp);
+      *resp_bytes = (int)response.size();
+    }
+  }
 }
 
 static int connect_to_socket (const char * path, int length) {

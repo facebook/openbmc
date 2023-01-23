@@ -18,6 +18,7 @@ libs = [
 srcs = files(
   'pldm.cpp',
   'base.cpp',
+  'platform.cpp',
   'oem.cpp',
   'fw_update.cpp'
 )

@@ -13,6 +13,8 @@ LOCAL_URI = " \
     file://pldm.cpp \
     file://base.hpp \
     file://base.cpp \
+    file://platform.hpp \
+    file://platform.cpp \
     file://oem.hpp \
     file://oem.cpp \
     file://handler.hpp \

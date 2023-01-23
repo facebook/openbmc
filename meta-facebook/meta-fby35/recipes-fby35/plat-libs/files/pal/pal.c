@@ -66,8 +66,8 @@ const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 const char pal_dev_fru_list[] = "all, 1U, 2U, 3U, 4U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13, 2U-X8, 2U-X16";
-const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
-                            "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
+const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 3U-dev0, " \
+                            "3U-dev1, 3U-dev2, 4U-dev0, 4U-dev1, 4U-dev2, 4U-dev3, 4U-dev4";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 const char *pal_vr_addr_list[] = {"c0h", "c4h", "ech", "c2h", "c6h", "c8h", "cch", "d0h", "96h", "9ch", "9eh", "8ah", "8ch", "8eh"};
 const char *pal_vr_1ou_addr_list[] = {"b0h", "b4h", "c8h"};
@@ -5034,6 +5034,38 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
   }
 
   return ret;
+}
+
+int
+pal_get_board_type(uint8_t slot_id, int *config_status, uint8_t *board_type) {
+  int ret = 0;
+
+  if((config_status == NULL) || (board_type == NULL)) {
+    syslog(LOG_ERR, "%s: failed to get board type due to NULL pointer\n", __func__);
+    return POWER_STATUS_ERR;
+  }
+
+  *config_status = bic_is_exp_prsnt(slot_id);
+  if (*config_status < 0) {
+    return POWER_STATUS_FRU_ERR;
+  }
+
+  if ((*config_status & PRESENT_1OU) == PRESENT_1OU) {
+    ret = bic_get_1ou_type(slot_id, board_type);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Cannot get 1ou board_type", __func__);
+      *board_type = M2_BOARD;
+    }
+  } else if ((*config_status & PRESENT_2OU) == PRESENT_2OU){
+    if ( fby35_common_get_2ou_board_type(slot_id, board_type) < 0 ) {
+      return POWER_STATUS_FRU_ERR;
+    }
+  } else {
+    // dev not found
+    return POWER_STATUS_FRU_ERR;
+  }
+
+  return PAL_EOK;
 }
 
 int

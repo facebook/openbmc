@@ -69,14 +69,26 @@ enum {
   M2_REG_1OU = 0x05,
 };
 
-enum {
-  M2_ROOT_PORT0 = 0x0,
-  M2_ROOT_PORT1 = 0x1,
-  M2_ROOT_PORT2 = 0x2,
-  M2_ROOT_PORT3 = 0x3,
-  M2_ROOT_PORT4 = 0x4,
-  M2_ROOT_PORT5 = 0x5,
-};
+typedef enum {
+  OP_E1S_PRSNT_CPLD_REG_1_2OU = 0x04,
+  OP_E1S_PRSNT_CPLD_REG_3_4OU = 0x05,
+} OP_E1S_PRSNT_CPLD_REG;
+
+typedef enum {
+  OP_E1S_MAPPING_TABLE_INDEX_1_3OU = 0x0,
+  OP_E1S_MAPPING_TABLE_INDEX_2_4OU = 0x1,
+} OP_E1S_MAPPING_TABLE_INDEX;
+
+typedef enum {
+  E1S_ENDPOINT0 = 0x0,
+  E1S_ENDPOINT1,
+  E1S_ENDPOINT2,
+  E1S_ENDPOINT3,
+  E1S_ENDPOINT4,
+  E1S_ENDPOINT5,
+  E1S_ENDPOINT6,
+  E1S_ENDPOINT7,
+} E1S_ENDPOINT_NUM;
 
 enum {
   SNR_READ_CACHE = 0,
@@ -90,12 +102,11 @@ enum {
 
 const uint32_t INTEL_MFG_ID = 0x000157;
 
-uint8_t mapping_m2_prsnt[2][6] = { {M2_ROOT_PORT0, M2_ROOT_PORT1, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT2, M2_ROOT_PORT3},
-                                   {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
-uint8_t mapping_e1s_prsnt[2][6] = { {M2_ROOT_PORT4, M2_ROOT_PORT5, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1, M2_ROOT_PORT0},
-                                    {M2_ROOT_PORT1, M2_ROOT_PORT2, M2_ROOT_PORT3, M2_ROOT_PORT4}};
-uint8_t mapping_e1s_pwr[2][6] = { {M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT1, M2_ROOT_PORT0},
-                                  {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1} };
+uint8_t mapping_vf_e1s_prsnt[6] = {E1S_ENDPOINT1, E1S_ENDPOINT2, E1S_ENDPOINT3, E1S_ENDPOINT4};
+uint8_t mapping_op_e1s_prsnt[2][6] = {{E1S_ENDPOINT0, E1S_ENDPOINT1, E1S_ENDPOINT2},
+                                  {E1S_ENDPOINT3, E1S_ENDPOINT4, E1S_ENDPOINT5, E1S_ENDPOINT6, E1S_ENDPOINT7}};
+uint8_t mapping_vf_e1s_pwr[6] = {E1S_ENDPOINT4, E1S_ENDPOINT3, E1S_ENDPOINT2, E1S_ENDPOINT1};
+uint8_t mapping_op_e1s_pwr[6] = {E1S_ENDPOINT1, E1S_ENDPOINT2, E1S_ENDPOINT3, E1S_ENDPOINT4, E1S_ENDPOINT5};
 
 static uint8_t snr_read_support[MAX_SLOT_NUM][MAX_SENSOR_NUM];
 
@@ -1620,7 +1631,7 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
   if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
 
     while (retry) {
-      ret = bic_get_dev_power_status(slot_id, dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF);
+      ret = bic_get_dev_power_status(slot_id, dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF, type_2ou);
       if (!ret)
         break;
       msleep(50);
@@ -1658,46 +1669,36 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
 
 int
 bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, \
-                         uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf) {
+                         uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf, uint8_t board_type) {
   uint8_t tbuf[5] = {0x00}; // IANA ID
   uint8_t rbuf[11] = {0x00};
   uint8_t tlen = 5;
   uint8_t rlen = 0;
   int ret = 0;
-  uint8_t table = 0, board_type = UNKNOWN_BOARD;
-
-  if (intf == FEXP_BIC_INTF) {
-    table = 1;
-    ret = bic_get_1ou_type(slot_id, &board_type);
-    if (ret < 0) {
-      syslog(LOG_ERR, "%s() Cannot get 1ou board_type", __func__);
-      board_type = M2_BOARD;
-    }
-  } else if (intf == REXP_BIC_INTF) {
-    table = 0;
-    ret = fby35_common_get_2ou_board_type(slot_id, &board_type);
-    if (ret < 0) {
-      syslog(LOG_ERR, "%s() Cannot get 2ou board_type", __func__);
-      board_type = M2_BOARD;
-    }
-  } else {
-    return -1;
-  }
 
   // Send the command
   if ((intf == FEXP_BIC_INTF) && (board_type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) {
     // case 1OU E1S
     memcpy(tbuf, (uint8_t *)&VF_IANA_ID, IANA_ID_SIZE);
-    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1];
-  } else {
+    tbuf[3] = mapping_vf_e1s_pwr[dev_id - 1];
+  } else if (board_type == TYPE_1OU_OLMSTEAD_POINT) {
     memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-    if ((intf == REXP_BIC_INTF) && (board_type == E1S_BOARD)) {
-      // case 2OU E1S
-      tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
-    } else {
-      // case 1/2OU M.2
-      tbuf[3] = dev_id;
+    switch(intf) {
+    case FEXP_BIC_INTF:
+    case REXP_BIC_INTF:
+    case EXP3_BIC_INTF:
+    case EXP4_BIC_INTF:
+      tbuf[3] = mapping_op_e1s_pwr[dev_id - 1];
+      break;
+    default:
+      // UNKNOWN_INTF
+      syslog(LOG_ERR, "%s() Fail to get slot: %d device: %d power status, unknown intf %d", __func__, slot_id, dev_id, intf);
+      return BIC_STATUS_FAILURE;
     }
+  }
+  else {
+    syslog(LOG_ERR, "%s() Fail to get slot: %d device: %d power status, unknown board_type %d", __func__, slot_id, dev_id, board_type);
+    return BIC_STATUS_FAILURE;
   }
 
   tbuf[4] = 0x3;  //get power status
@@ -1716,39 +1717,18 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
 }
 
 int
-bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf) {
+bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf, uint8_t board_type) {
   uint8_t tbuf[5]  = {0x00};
   uint8_t rbuf[10] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   uint8_t bus_num = 0;
-  uint8_t table = 0, board_type = UNKNOWN_BOARD;
+  uint8_t table = 0;
   uint8_t prsnt_bit = 0;
   int fd = 0;
   int ret = 0;
 
   do {
-    if (intf == FEXP_BIC_INTF) {
-      table = 1;
-      ret = bic_get_1ou_type(slot_id, &board_type);
-      if (ret < 0) {
-        syslog(LOG_ERR, "%s() Cannot get 1ou board_type", __func__);
-        board_type = M2_BOARD;
-      }
-    } else if (intf == REXP_BIC_INTF) {
-      table = 0;
-      ret = fby35_common_get_2ou_board_type(slot_id, &board_type);
-      if (ret < 0) {
-        syslog(LOG_ERR, "%s() Cannot get 2ou board_type", __func__);
-        board_type = M2_BOARD;
-      }
-
-      // No VPP and hotplug on GPv3, skip it
-      if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) break;
-    } else {
-      return -1;
-    }
-
     bus_num = fby35_common_get_bus_id(slot_id) + 4;
 
     //set the present status of M.2
@@ -1759,22 +1739,47 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
       goto error_exit;
     }
 
-    tbuf[0] = (intf == REXP_BIC_INTF )?M2_REG_2OU:M2_REG_1OU;
-    tlen = 1;
-    rlen = 1;
-    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, ret", __func__, tlen);
+    if (board_type == TYPE_1OU_OLMSTEAD_POINT) {
+      switch (intf) {
+      case FEXP_BIC_INTF: //OP_1OU_EXP
+        tbuf[0] = OP_E1S_PRSNT_CPLD_REG_1_2OU;
+        table = OP_E1S_MAPPING_TABLE_INDEX_1_3OU;
+        break;
+      case REXP_BIC_INTF: //OP_2OU_EXP
+        tbuf[0] = OP_E1S_PRSNT_CPLD_REG_1_2OU;
+        table = OP_E1S_MAPPING_TABLE_INDEX_2_4OU;
+        break;
+      case EXP3_BIC_INTF: //OP_3OU_EXP
+        tbuf[0] = OP_E1S_PRSNT_CPLD_REG_3_4OU;
+        table = OP_E1S_MAPPING_TABLE_INDEX_1_3OU;
+        break;
+      case EXP4_BIC_INTF: //OP_4OU_EXP
+        tbuf[0] = OP_E1S_PRSNT_CPLD_REG_3_4OU;
+        table = OP_E1S_MAPPING_TABLE_INDEX_2_4OU;
+        break;
+      default:
+        syslog(LOG_ERR, "%s() Fail to set slot: %d device: %d power status, unknown intf %d", __func__, slot_id, dev_id, intf);
+        ret = BIC_STATUS_FAILURE;
+        goto error_exit;
+      }
+      prsnt_bit = mapping_op_e1s_prsnt[table][dev_id - 1];
+    } else if (((intf == FEXP_BIC_INTF) && (board_type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) ||
+        ((intf == REXP_BIC_INTF) && (board_type == E1S_BOARD))) {
+      tbuf[0] = (intf == REXP_BIC_INTF )?M2_REG_2OU:M2_REG_1OU;
+      // case 1/2OU E1S
+      prsnt_bit = mapping_vf_e1s_prsnt[dev_id - 1];
+    } else {
+      syslog(LOG_ERR, "%s() Fail to set slot: %d device: %d power status, unknown board_type %d", __func__, slot_id, dev_id, board_type);
+      ret = BIC_STATUS_FAILURE;
       goto error_exit;
     }
 
-    if (((intf == FEXP_BIC_INTF) && (board_type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) ||
-        ((intf == REXP_BIC_INTF) && (board_type == E1S_BOARD))) {
-      // case 1/2OU E1S
-      prsnt_bit = mapping_e1s_prsnt[table][dev_id - 1];
-    } else {
-      // case 1/2OU M.2
-      prsnt_bit = mapping_m2_prsnt[table][dev_id - 1];
+    tlen = 1;
+    rlen = 1;
+    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen); //To get currently E1S present status from CPLD
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, ret", __func__, tlen);
+      goto error_exit;
     }
 
     if ( status == M2_PWR_OFF ) {
@@ -1785,32 +1790,27 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
 
     tlen = 2;
     rlen = 0;
-    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen); //To set E1S present status to specific bit
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
       goto error_exit;
     }
   } while(0);
-
   // Send the command
   if ((intf == FEXP_BIC_INTF) && (board_type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) {
     // case 1OU E1S
     memcpy(tbuf, (uint8_t *)&VF_IANA_ID, IANA_ID_SIZE);
-    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1];
-  } else {
+    tbuf[3] = mapping_vf_e1s_pwr[dev_id - 1];
+  } else if (board_type == TYPE_1OU_OLMSTEAD_POINT){
     memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-    if ((intf == REXP_BIC_INTF) && (board_type == E1S_BOARD)) {
-      // case 2OU E1S
-      tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
-    } else {
-      // case 1/2OU M.2
-      tbuf[3] = dev_id;
-    }
+    tbuf[3] = mapping_op_e1s_pwr[dev_id - 1];
+  } else {
+    ret = BIC_STATUS_FAILURE;
+    goto error_exit;
   }
 
   tbuf[4] = status;  //set power status
   tlen = 5;
-
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
 
 error_exit:

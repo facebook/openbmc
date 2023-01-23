@@ -21,13 +21,6 @@
 
 #define DELAY_VDD_CORE_OFF 20
 
-enum {
-  POWER_STATUS_ALREADY_OK = 1,
-  POWER_STATUS_OK = 0,
-  POWER_STATUS_ERR = -1,
-  POWER_STATUS_FRU_ERR = -2,
-};
-
 static uint8_t m_slot_pwr_ctrl[MAX_NODES+1] = {0};
 
 bool
@@ -680,13 +673,17 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 }
 
 static int
-pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp) {
+pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp, int config_status, uint8_t board_type) {
   const uint8_t st_2ou_idx = DEV_ID0_2OU;
   const uint8_t end_2ou_yv3_idx = DEV_ID5_2OU;
   const uint8_t end_2ou_gpv3_idx = DEV_ID13_2OU;
   int ret = 0;
-  int config_status = 0;
   uint8_t bmc_location = 0;
+
+  if (rsp == NULL) {
+    syslog(LOG_ERR, "%s: failed due to NULL pointer\n", __func__);
+    return POWER_STATUS_ERR;
+  }
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -694,21 +691,31 @@ pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp) {
     return POWER_STATUS_ERR;
   }
 
-  config_status = bic_is_exp_prsnt(slot_id);
-  if (config_status < 0) {
-    return POWER_STATUS_FRU_ERR;
-  }
-
   // Is 1OU dev?
-  if ( (dev_id < st_2ou_idx) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
-    if ( bmc_location == NIC_BMC ) return POWER_STATUS_FRU_ERR;
-    rsp[0] = dev_id;
-    rsp[1] = FEXP_BIC_INTF;
+  if ((config_status & PRESENT_1OU) == PRESENT_1OU) {
+    if (board_type == TYPE_1OU_OLMSTEAD_POINT) {
+      if (dev_id <= DEV_ID3_1OU) {
+        rsp[0] = dev_id;
+        rsp[1] = FEXP_BIC_INTF;
+      } else if (dev_id <= DEV_ID4_2OU) {
+        rsp[0] = dev_id - DEV_ID3_1OU;
+        rsp[1] = REXP_BIC_INTF;
+      } else if (dev_id <= DEV_ID3_3OU) {
+        rsp[0] = dev_id - DEV_ID4_2OU;
+        rsp[1] = EXP3_BIC_INTF;
+      } else if (dev_id <= DEV_ID4_4OU) {
+        rsp[0] = dev_id - DEV_ID3_3OU;
+        rsp[1] = EXP4_BIC_INTF;
+      } else {
+        return POWER_STATUS_FRU_ERR;
+      }
+    } else if (dev_id < st_2ou_idx) {
+      if ( bmc_location == NIC_BMC ) return POWER_STATUS_FRU_ERR;
+      rsp[0] = dev_id;
+      rsp[1] = FEXP_BIC_INTF;
+    }
   } else if (( dev_id >= st_2ou_idx && dev_id <= end_2ou_gpv3_idx) && ((config_status & PRESENT_2OU) == PRESENT_2OU)) {
-    uint8_t type = 0xff;
-    if ( fby35_common_get_2ou_board_type(slot_id, &type) < 0 ) {
-      return POWER_STATUS_FRU_ERR;
-    } else if ( type != GPV3_MCHP_BOARD && type != GPV3_BRCM_BOARD ) {
+    if ( board_type != GPV3_MCHP_BOARD && board_type != GPV3_BRCM_BOARD ) {
       //If dev doesn't belong to GPv3, return
       if ( dev_id > end_2ou_yv3_idx ) return POWER_STATUS_FRU_ERR;
     }
@@ -728,6 +735,8 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
   uint8_t nvme_ready = 0;
   uint8_t intf = 0;
   uint8_t rsp[2] = {0}; //idx0 = dev id, idx1 = intf
+  int config_status = 0;
+  uint8_t board_type = UNKNOWN_BOARD;
 
   if (fby35_common_check_slot_id(slot_id) == 0) {
     /* Check whether the system is 12V off or on */
@@ -738,11 +747,17 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
     /* If 12V-off, return */
     if ((*status) == SERVER_12V_OFF) {
       *status = DEVICE_POWER_OFF;
-      syslog(LOG_WARNING, "pal_get_device_power: pal_is_server_12v_on 12V-off");
+      syslog(LOG_WARNING, "%s() pal_is_server_12v_on 12V-off", __func__);
       return 0;
     }
 
-    if ( pal_is_valid_expansion_dev(slot_id, dev_id, rsp) < 0 ) {
+    ret = pal_get_board_type(slot_id, &config_status, &board_type);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() get board config fail", __func__);
+      return ret;
+    }
+
+    if ( pal_is_valid_expansion_dev(slot_id, dev_id, rsp, config_status, board_type) < 0 ) {
       printf("Device not found \n");
       return POWER_STATUS_FRU_ERR;
     }
@@ -750,7 +765,7 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
     dev_id = rsp[0];
     intf = rsp[1];
     ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, status, \
-                                   NULL, NULL, NULL, NULL, NULL, intf);
+                                   NULL, NULL, NULL, NULL, NULL, intf, board_type);
     if (ret < 0) {
       return -1;
     }
@@ -771,9 +786,11 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
 int
 pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   int ret;
-  uint8_t status, type, type_1ou = TYPE_1OU_UNKNOWN;
+  uint8_t status, type = 0;
   uint8_t intf = 0;
   uint8_t rsp[2] = {0}; //idx0 = dev id, idx1 = intf
+  int config_status = 0;
+  uint8_t board_type = UNKNOWN_BOARD;
 
   ret = fby35_common_check_slot_id(slot_id);
   if ( ret < 0 ) {
@@ -784,7 +801,13 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
     return -1;
   }
 
-  if ( pal_is_valid_expansion_dev(slot_id, dev_id, rsp) < 0 ) {
+  ret = pal_get_board_type(slot_id, &config_status, &board_type);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() get board config fail", __func__);
+    return ret;
+  }
+
+  if ( pal_is_valid_expansion_dev(slot_id, dev_id, rsp, config_status, board_type) < 0 ) {
     printf("Device not found \n");
     return POWER_STATUS_FRU_ERR;
   }
@@ -797,7 +820,7 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
       if (status == DEVICE_POWER_ON) {
         return 1;
       } else {
-        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf);
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf, board_type);
         return ret;
       }
       break;
@@ -806,31 +829,27 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
       if (status == DEVICE_POWER_OFF) {
         return 1;
       } else {
-        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_OFF, intf);
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_OFF, intf, board_type);
         return ret;
       }
       break;
 
     case SERVER_POWER_CYCLE:
       if (status == DEVICE_POWER_ON) {
-        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_OFF, intf);
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_OFF, intf, board_type);
         if (ret < 0) {
           return -1;
         }
-
-        if (intf == FEXP_BIC_INTF) {
-          bic_get_1ou_type(slot_id, &type_1ou);
-        }
-        if (type_1ou == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
+        if (((config_status & PRESENT_1OU) == PRESENT_1OU) && ((board_type == TYPE_1OU_VERNAL_FALLS_WITH_AST) || (board_type == TYPE_1OU_OLMSTEAD_POINT))) {
           sleep(6); // EDSFF timing requirement
         } else {
           sleep(3);
         }
 
-        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf);
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf, board_type);
         return ret;
       } else if (status == DEVICE_POWER_OFF) {
-        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf);
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf, board_type);
         return ret;
       }
       break;

@@ -178,6 +178,13 @@ typedef enum {
   POST_NOT_COMPLETE,
 } BIOS_POST_COMPLETE_STATUS;
 
+typedef enum {
+  POWER_STATUS_ALREADY_OK = 1,
+  POWER_STATUS_OK = 0,
+  POWER_STATUS_ERR = -1,
+  POWER_STATUS_FRU_ERR = -2,
+} POWER_STATUS;
+
 typedef struct {
   uint8_t err_id;
   char *err_des;
@@ -205,6 +212,7 @@ int pal_get_delay_activate_sysfw_ver(uint8_t slot_id, uint8_t *ver);
 int pal_set_last_postcode(uint8_t slot, uint32_t postcode);
 int pal_get_last_postcode(uint8_t slot, char* postcode);
 int pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t bmc_location, const uint8_t config_status);
+int pal_get_board_type(uint8_t slot_id, int *config_status, uint8_t *board_type);
 
 #ifdef __cplusplus
 } // extern "C"

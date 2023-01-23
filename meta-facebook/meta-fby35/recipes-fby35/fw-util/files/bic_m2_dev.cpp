@@ -23,13 +23,20 @@ int M2DevComponent::print_version()
   uint16_t vendor_id = 0;
   static bool is_dual_m2 = false;
   //static uint8_t cnt = 0;
+  int config_status = 0;
+  uint8_t board_type = UNKNOWN_BOARD;
 
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
   try {
     server.ready();
     expansion.ready();
+    ret = pal_get_board_type(slot_id, &config_status, &board_type);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() get board config fail", __func__);
+      return ret;
+    }
     ret = bic_get_dev_power_status(slot_id, idx, &nvme_ready, &status, \
-                                   &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF);
+                                   &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF, board_type);
     if ( ret < 0 ) {
       throw string("Error in getting the version");
     } else if ( idx % 2 > 0 ) {

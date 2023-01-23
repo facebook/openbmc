@@ -512,24 +512,24 @@ fby35_common_dev_id(char *str, uint8_t *dev) {
     *dev = DEV_ID3_2OU;
   } else if (!strcmp(str, "2U-dev4")) {
     *dev = DEV_ID4_2OU;
-  } else if (!strcmp(str, "2U-dev5")) {
-    *dev = DEV_ID5_2OU;
-  } else if (!strcmp(str, "2U-dev6")) {
-    *dev = DEV_ID6_2OU;
-  } else if (!strcmp(str, "2U-dev7")) {
-    *dev = DEV_ID7_2OU;
-  } else if (!strcmp(str, "2U-dev8")) {
-    *dev = DEV_ID8_2OU;
-  } else if (!strcmp(str, "2U-dev9")) {
-    *dev = DEV_ID9_2OU;
-  } else if (!strcmp(str, "2U-dev10")) {
-    *dev = DEV_ID10_2OU;
-  } else if (!strcmp(str, "2U-dev11")) {
-    *dev = DEV_ID11_2OU;
-  } else if (!strcmp(str, "2U-dev12")) {
-    *dev = DEV_ID12_2OU;
-  } else if (!strcmp(str, "2U-dev13")) {
-    *dev = DEV_ID13_2OU;
+  } else if (!strcmp(str, "3U-dev0")) {
+    *dev = DEV_ID0_3OU;
+  } else if (!strcmp(str, "3U-dev1")) {
+    *dev = DEV_ID1_3OU;
+  } else if (!strcmp(str, "3U-dev2")) {
+    *dev = DEV_ID2_3OU;
+  } else if (!strcmp(str, "3U-dev3")) {
+    *dev = DEV_ID3_3OU;
+  } else if (!strcmp(str, "4U-dev0")) {
+    *dev = DEV_ID0_4OU;
+  } else if (!strcmp(str, "4U-dev1")) {
+    *dev = DEV_ID1_4OU;
+  } else if (!strcmp(str, "4U-dev2")) {
+    *dev = DEV_ID2_4OU;
+  } else if (!strcmp(str, "4U-dev3")) {
+    *dev = DEV_ID3_4OU;
+  } else if (!strcmp(str, "4U-dev4")) {
+    *dev = DEV_ID4_4OU;
   } else if (!strcmp(str, "1U")) {
     *dev = BOARD_1OU;
   } else if (!strcmp(str, "2U")) {
@@ -577,24 +577,24 @@ fby35_common_dev_name(uint8_t dev, char *str) {
     strcpy(str, "2U-dev3");
   } else if (dev == DEV_ID4_2OU) {
     strcpy(str, "2U-dev4");
-  } else if (dev == DEV_ID5_2OU) {
-    strcpy(str, "2U-dev5");
-  } else if (dev == DEV_ID6_2OU) {
-    strcpy(str, "2U-dev6");
-  } else if (dev == DEV_ID7_2OU) {
-    strcpy(str, "2U-dev7");
-  } else if (dev == DEV_ID8_2OU) {
-    strcpy(str, "2U-dev8");
-  } else if (dev == DEV_ID9_2OU) {
-    strcpy(str, "2U-dev9");
-  } else if (dev == DEV_ID10_2OU) {
-    strcpy(str, "2U-dev10");
-  } else if (dev == DEV_ID11_2OU) {
-    strcpy(str, "2U-dev11");
-  } else if (dev == DEV_ID12_2OU) {
-    strcpy(str, "2U-dev12");
-  } else if (dev == DEV_ID13_2OU) {
-    strcpy(str, "2U-dev13");
+  } else if (dev == DEV_ID0_3OU) {
+    strcpy(str, "3U-dev0");
+  } else if (dev == DEV_ID1_3OU) {
+    strcpy(str, "3U-dev1");
+  } else if (dev == DEV_ID2_3OU) {
+    strcpy(str, "3U-dev2");
+  } else if (dev == DEV_ID3_3OU) {
+    strcpy(str, "3U-dev3");
+  } else if (dev == DEV_ID0_4OU) {
+    strcpy(str, "4U-dev0");
+  } else if (dev == DEV_ID1_4OU) {
+    strcpy(str, "4U-dev1");
+  } else if (dev == DEV_ID2_4OU) {
+    strcpy(str, "4U-dev2");
+  } else if (dev == DEV_ID3_4OU) {
+    strcpy(str, "4U-dev3");
+  } else if (dev == DEV_ID4_4OU) {
+    strcpy(str, "4U-dev4");
   } else if (dev == BOARD_1OU) {
     strcpy(str, "1U");
   } else if (dev == BOARD_2OU) {

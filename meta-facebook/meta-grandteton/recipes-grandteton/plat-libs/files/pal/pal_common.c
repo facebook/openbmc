@@ -36,12 +36,12 @@ char *hpdb_source_data[] = {
   "hpdb_hsc_source",
 };
 
-char *fan_bp0_source_data[] = {
-  "fan_bp0_fan_chip_source",
-};
-
 char *fan_bp1_source_data[] = {
   "fan_bp1_fan_chip_source",
+};
+
+char *fan_bp2_source_data[] = {
+  "fan_bp2_fan_chip_source",
 };
 
 struct source_info {
@@ -62,8 +62,8 @@ struct source_info comp_source_data[] = {
   {FRU_SCM,   NULL},
   {FRU_VPDB,  vpdb_source_data},
   {FRU_HPDB,  hpdb_source_data},
-  {FRU_FAN_BP0,   fan_bp0_source_data},
   {FRU_FAN_BP1,   fan_bp1_source_data},
+  {FRU_FAN_BP2,   fan_bp2_source_data},
   {FRU_FIO,   NULL},
   {FRU_HSC,   NULL},
   {FRU_SHSC,  NULL},

@@ -255,8 +255,8 @@ HPDB_HSC_MAIN="0"
 echo "Probe HPDB Device"
 #HPDB ID Expender
 i2c_device_add 37 0x23 pca9555
-gpio_export_ioexp 37-0023  FAN_BP0_PRSNT_N  2
-gpio_export_ioexp 37-0023  FAN_BP1_PRSNT_N  3
+gpio_export_ioexp 37-0023  FAN_BP1_PRSNT_N  2
+gpio_export_ioexp 37-0023  FAN_BP2_PRSNT_N  3
 gpio_export_ioexp 37-0023  HPDB_BOARD_ID_0  10
 gpio_export_ioexp 37-0023  HPDB_BOARD_ID_1  11
 gpio_export_ioexp 37-0023  HPDB_BOARD_ID_2  12
@@ -302,26 +302,26 @@ BP_1ST_SOURCE="0"
 BP_2ND_SOURCE="1"
 BP_FAN_MAIN="0"
 echo "Probe FAN Board Device"
-# FAN_BP0 I/O Expander PCA9555
-i2c_device_add 40 0x21 pca9555
-gpio_export_ioexp 40-0021 FAN_BP0_SKU_ID_0    8
-gpio_export_ioexp 40-0021 FAN_BP0_SKU_ID_1    9
-gpio_export_ioexp 40-0021 FAN_BP0_SKU_ID_2    10
-
-kv set fan_bp0_fan_sku "$(($(gpio_get FAN_BP0_SKU_ID_0)))"
-
 # FAN_BP1 I/O Expander PCA9555
-i2c_device_add 41 0x21 pca9555
-gpio_export_ioexp 41-0021 FAN_BP1_SKU_ID_0    8
-gpio_export_ioexp 41-0021 FAN_BP1_SKU_ID_1    9
-gpio_export_ioexp 41-0021 FAN_BP1_SKU_ID_2    10
+i2c_device_add 40 0x21 pca9555
+gpio_export_ioexp 40-0021 FAN_BP1_SKU_ID_0    8
+gpio_export_ioexp 40-0021 FAN_BP1_SKU_ID_1    9
+gpio_export_ioexp 40-0021 FAN_BP1_SKU_ID_2    10
 
 kv set fan_bp1_fan_sku "$(($(gpio_get FAN_BP1_SKU_ID_0)))"
 
-fan_bp0_fan=$(kv get fan_bp0_fan_sku)
-if [ "$fan_bp0_fan" -eq "$BP_FAN_MAIN" ]; then
+# FAN_BP2 I/O Expander PCA9555
+i2c_device_add 41 0x21 pca9555
+gpio_export_ioexp 41-0021 FAN_BP2_SKU_ID_0    8
+gpio_export_ioexp 41-0021 FAN_BP2_SKU_ID_1    9
+gpio_export_ioexp 41-0021 FAN_BP2_SKU_ID_2    10
+
+kv set fan_bp2_fan_sku "$(($(gpio_get FAN_BP2_SKU_ID_0)))"
+
+fan_bp1_fan=$(kv get fan_bp1_fan_sku)
+if [ "$fan_bp1_fan" -eq "$BP_FAN_MAIN" ]; then
 # Max31790
-  # FAN_BP0 Max31790 FAN CHIP
+  # FAN_BP1 Max31790 FAN CHIP
   i2cset -f -y 40 0x20 0x01 0xbb
   i2cset -f -y 40 0x20 0x02 0x08
   i2cset -f -y 40 0x20 0x03 0x19
@@ -352,10 +352,10 @@ if [ "$fan_bp0_fan" -eq "$BP_FAN_MAIN" ]; then
 
   i2c_device_add 40 0x20 max31790
   i2c_device_add 40 0x2f max31790
-  kv set fan_bp0_fan_chip_source "$BP_1ST_SOURCE"
+  kv set fan_bp1_fan_chip_source "$BP_1ST_SOURCE"
 else
-  # FAN_BP0 NCT3763Y FAN CHIP
-  # Config FAN PWM and FAIN FAN_BP0
+  # FAN_BP1 NCT3763Y FAN CHIP
+  # Config FAN PWM and FAIN FAN_BP1
   i2cset -f -y -a 40 0x01 0x20 0xA9
   i2cset -f -y -a 40 0x01 0x21 0x99
   i2cset -f -y -a 40 0x01 0x22 0x9A
@@ -390,12 +390,12 @@ else
   i2cset -f -y -a 40 0x02 0xA7 0x05
   i2cset -f -y -a 40 0x02 0xAB 0x05
   i2cset -f -y -a 40 0x02 0xAF 0x05
-  kv set fan_bp0_fan_chip_source "$BP_2ND_SOURCE"
+  kv set fan_bp1_fan_chip_source "$BP_2ND_SOURCE"
 fi
 
-fan_bp1_fan=$(kv get fan_bp1_fan_sku)
-if [ "$fan_bp1_fan" -eq "$BP_1ST_SOURCE" ]; then
-  # FAN_BP1 MAX31790 FAN CHIP
+fan_bp2_fan=$(kv get fan_bp2_fan_sku)
+if [ "$fan_bp2_fan" -eq "$BP_1ST_SOURCE" ]; then
+  # FAN_BP2 MAX31790 FAN CHIP
   i2cset -f -y 41 0x20 0x01 0xbb
   i2cset -f -y 41 0x20 0x02 0x08
   i2cset -f -y 41 0x20 0x03 0x19
@@ -426,10 +426,10 @@ if [ "$fan_bp1_fan" -eq "$BP_1ST_SOURCE" ]; then
 
   i2c_device_add 41 0x20 max31790
   i2c_device_add 41 0x2f max31790
-  kv set fan_bp1_fan_chip_source "$BP_1ST_SOURCE"
+  kv set fan_bp2_fan_chip_source "$BP_1ST_SOURCE"
 else
-  # FAN_BP1 NCT3763Y FAN CHIP
-  # Config FAN PWM and FAIN FAN_BP1
+  # FAN_BP2 NCT3763Y FAN CHIP
+  # Config FAN PWM and FAIN FAN_BP2
   i2cset -f -y -a 41 0x01 0x20 0xA9
   i2cset -f -y -a 41 0x01 0x21 0x99
   i2cset -f -y -a 41 0x01 0x22 0x9A
@@ -463,7 +463,7 @@ else
   i2cset -f -y -a 41 0x02 0xA7 0x05
   i2cset -f -y -a 41 0x02 0xAB 0x05
   i2cset -f -y -a 41 0x02 0xAF 0x05
-  kv set fan_bp1_fan_chip_source "$BP_2ND_SOURCE"
+  kv set fan_bp2_fan_chip_source "$BP_2ND_SOURCE"
 fi
 
 
@@ -472,8 +472,8 @@ rebind_i2c_dev 40 62 leds-pca955x
 rebind_i2c_dev 41 62 leds-pca955x
 
 # FAN Board FRU
-i2c_device_add 40 0x56 24c64 #FAN_BP0 FRU
-i2c_device_add 41 0x56 24c64 #FAN_BP1 FRU
+i2c_device_add 40 0x56 24c64 #FAN_BP1 FRU
+i2c_device_add 41 0x56 24c64 #FAN_BP2 FRU
 
 gpio_export_ioexp 40-0021 FAN0_PRESENT   7
 gpio_export_ioexp 40-0021 FAN4_PRESENT   6

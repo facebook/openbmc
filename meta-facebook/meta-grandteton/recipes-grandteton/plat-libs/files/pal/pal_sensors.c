@@ -27,8 +27,8 @@ extern const uint8_t vpdb_sensor_list[];
 extern const uint8_t vpdb_1brick_sensor_list[];
 extern const uint8_t vpdb_3brick_sensor_list[];
 extern const uint8_t hpdb_sensor_list[];
-extern const uint8_t fan_bp0_sensor_list[];
 extern const uint8_t fan_bp1_sensor_list[];
+extern const uint8_t fan_bp2_sensor_list[];
 extern const uint8_t scm_sensor_list[];
 extern const uint8_t hsc_sensor_list[];
 extern const uint8_t shsc_sensor_list[];
@@ -45,8 +45,8 @@ extern size_t vpdb_sensor_cnt;
 extern size_t vpdb_1brick_sensor_cnt;
 extern size_t vpdb_3brick_sensor_cnt;
 extern size_t hpdb_sensor_cnt;
-extern size_t fan_bp0_sensor_cnt;
 extern size_t fan_bp1_sensor_cnt;
+extern size_t fan_bp2_sensor_cnt;
 extern size_t scm_sensor_cnt;
 extern size_t hsc_sensor_cnt;
 extern size_t shsc_sensor_cnt;
@@ -64,8 +64,8 @@ struct snr_map sensor_map[] = {
   { FRU_SCM,  bb_sensor_map,  true },
   { FRU_VPDB, bb_sensor_map,  true },
   { FRU_HPDB, bb_sensor_map,  true },
-  { FRU_FAN_BP0,  bb_sensor_map,  true },
   { FRU_FAN_BP1,  bb_sensor_map,  true },
+  { FRU_FAN_BP2,  bb_sensor_map,  true },
   { FRU_FIO,  NULL,           false },
   { FRU_HSC,  mb_sensor_map,  true },
   { FRU_SHSC, swb_sensor_map, true },
@@ -119,12 +119,12 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   } else if (fru == FRU_HPDB) {
     *sensor_list = (uint8_t *) hpdb_sensor_list;
     *cnt = hpdb_sensor_cnt;
-  } else if (fru == FRU_FAN_BP0) {
-    *sensor_list = (uint8_t *) fan_bp0_sensor_list;
-    *cnt = fan_bp0_sensor_cnt;
   } else if (fru == FRU_FAN_BP1) {
     *sensor_list = (uint8_t *) fan_bp1_sensor_list;
     *cnt = fan_bp1_sensor_cnt;
+  } else if (fru == FRU_FAN_BP2) {
+    *sensor_list = (uint8_t *) fan_bp2_sensor_list;
+    *cnt = fan_bp2_sensor_cnt;
   } else if (fru == FRU_SCM) {
     *sensor_list = (uint8_t *) scm_sensor_list;
     *cnt = scm_sensor_cnt;
@@ -529,43 +529,43 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
       pal_get_sensor_name(fru, snr_num, sensor_name);
       sprintf(cmd, "%s %s %.2fVolts - Assert", sensor_name, thresh_name, val);
       break;
-    case FAN_BP0_SNR_FAN0_INLET_SPEED:
-    case FAN_BP0_SNR_FAN1_INLET_SPEED:
-    case FAN_BP1_SNR_FAN2_INLET_SPEED:
-    case FAN_BP1_SNR_FAN3_INLET_SPEED:
-    case FAN_BP0_SNR_FAN4_INLET_SPEED:
-    case FAN_BP0_SNR_FAN5_INLET_SPEED:
-    case FAN_BP1_SNR_FAN6_INLET_SPEED:
-    case FAN_BP1_SNR_FAN7_INLET_SPEED:
-    case FAN_BP0_SNR_FAN8_INLET_SPEED:
-    case FAN_BP0_SNR_FAN9_INLET_SPEED:
-    case FAN_BP1_SNR_FAN10_INLET_SPEED:
-    case FAN_BP1_SNR_FAN11_INLET_SPEED:
-    case FAN_BP0_SNR_FAN12_INLET_SPEED:
-    case FAN_BP0_SNR_FAN13_INLET_SPEED:
-    case FAN_BP1_SNR_FAN14_INLET_SPEED:
-    case FAN_BP1_SNR_FAN15_INLET_SPEED:
+    case FAN_BP1_SNR_FAN0_INLET_SPEED:
+    case FAN_BP1_SNR_FAN1_INLET_SPEED:
+    case FAN_BP2_SNR_FAN2_INLET_SPEED:
+    case FAN_BP2_SNR_FAN3_INLET_SPEED:
+    case FAN_BP1_SNR_FAN4_INLET_SPEED:
+    case FAN_BP1_SNR_FAN5_INLET_SPEED:
+    case FAN_BP2_SNR_FAN6_INLET_SPEED:
+    case FAN_BP2_SNR_FAN7_INLET_SPEED:
+    case FAN_BP1_SNR_FAN8_INLET_SPEED:
+    case FAN_BP1_SNR_FAN9_INLET_SPEED:
+    case FAN_BP2_SNR_FAN10_INLET_SPEED:
+    case FAN_BP2_SNR_FAN11_INLET_SPEED:
+    case FAN_BP1_SNR_FAN12_INLET_SPEED:
+    case FAN_BP1_SNR_FAN13_INLET_SPEED:
+    case FAN_BP2_SNR_FAN14_INLET_SPEED:
+    case FAN_BP2_SNR_FAN15_INLET_SPEED:
       fan_id = snr_num-FAN_SNR_START_INDEX;
       sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
       fan_state_led_ctrl(fru, snr_num, true);
 
       break;
-    case FAN_BP0_SNR_FAN0_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN1_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN2_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN3_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN4_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN5_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN6_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN7_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN8_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN9_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN10_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN11_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN12_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN13_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN14_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN15_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN0_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN1_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN2_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN3_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN4_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN5_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN6_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN7_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN8_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN9_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN10_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN11_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN12_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN13_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN14_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN15_OUTLET_SPEED:
       fan_id = snr_num-FAN_SNR_START_INDEX;
       sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
       break;
@@ -641,42 +641,42 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
       pal_get_sensor_name(fru, snr_num, sensor_name);
       sprintf(cmd, "%s %s %.2fVolts - Deassert", sensor_name, thresh_name, val);
       break;
-    case FAN_BP0_SNR_FAN0_INLET_SPEED:
-    case FAN_BP0_SNR_FAN1_INLET_SPEED:
-    case FAN_BP1_SNR_FAN2_INLET_SPEED:
-    case FAN_BP1_SNR_FAN3_INLET_SPEED:
-    case FAN_BP0_SNR_FAN4_INLET_SPEED:
-    case FAN_BP0_SNR_FAN5_INLET_SPEED:
-    case FAN_BP1_SNR_FAN6_INLET_SPEED:
-    case FAN_BP1_SNR_FAN7_INLET_SPEED:
-    case FAN_BP0_SNR_FAN8_INLET_SPEED:
-    case FAN_BP0_SNR_FAN9_INLET_SPEED:
-    case FAN_BP1_SNR_FAN10_INLET_SPEED:
-    case FAN_BP1_SNR_FAN11_INLET_SPEED:
-    case FAN_BP0_SNR_FAN12_INLET_SPEED:
-    case FAN_BP0_SNR_FAN13_INLET_SPEED:
-    case FAN_BP1_SNR_FAN14_INLET_SPEED:
-    case FAN_BP1_SNR_FAN15_INLET_SPEED:
+    case FAN_BP1_SNR_FAN0_INLET_SPEED:
+    case FAN_BP1_SNR_FAN1_INLET_SPEED:
+    case FAN_BP2_SNR_FAN2_INLET_SPEED:
+    case FAN_BP2_SNR_FAN3_INLET_SPEED:
+    case FAN_BP1_SNR_FAN4_INLET_SPEED:
+    case FAN_BP1_SNR_FAN5_INLET_SPEED:
+    case FAN_BP2_SNR_FAN6_INLET_SPEED:
+    case FAN_BP2_SNR_FAN7_INLET_SPEED:
+    case FAN_BP1_SNR_FAN8_INLET_SPEED:
+    case FAN_BP1_SNR_FAN9_INLET_SPEED:
+    case FAN_BP2_SNR_FAN10_INLET_SPEED:
+    case FAN_BP2_SNR_FAN11_INLET_SPEED:
+    case FAN_BP1_SNR_FAN12_INLET_SPEED:
+    case FAN_BP1_SNR_FAN13_INLET_SPEED:
+    case FAN_BP2_SNR_FAN14_INLET_SPEED:
+    case FAN_BP2_SNR_FAN15_INLET_SPEED:
       fan_id= snr_num-FAN_SNR_START_INDEX;
       sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
       fan_state_led_ctrl(fru, snr_num, false);
       break;
-    case FAN_BP0_SNR_FAN0_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN1_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN2_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN3_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN4_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN5_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN6_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN7_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN8_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN9_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN10_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN11_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN12_OUTLET_SPEED:
-    case FAN_BP0_SNR_FAN13_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN14_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN15_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN0_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN1_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN2_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN3_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN4_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN5_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN6_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN7_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN8_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN9_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN10_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN11_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN12_OUTLET_SPEED:
+    case FAN_BP1_SNR_FAN13_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN14_OUTLET_SPEED:
+    case FAN_BP2_SNR_FAN15_OUTLET_SPEED:
       fan_id = snr_num-FAN_SNR_START_INDEX;
       sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
       break;

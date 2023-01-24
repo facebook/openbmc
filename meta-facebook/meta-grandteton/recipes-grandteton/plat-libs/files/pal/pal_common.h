@@ -29,11 +29,11 @@ enum {
 };
 
 enum {
-  FAN_BP0_FAN_SOURCE,
+  FAN_BP1_FAN_SOURCE,
 };
 
 enum {
-  FAN_BP1_FAN_SOURCE,
+  FAN_BP2_FAN_SOURCE,
 };
 
 bool fru_presence(uint8_t fru_id);

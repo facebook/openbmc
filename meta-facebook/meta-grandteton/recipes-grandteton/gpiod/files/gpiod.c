@@ -608,8 +608,8 @@ enable_handle (char* desc, gpio_value_t value) {
 }
 
 struct gpiopoll_ioex_config iox_gpios[] = {
-  {FAN_BP0_PRSNT, "FAN_BP0",     IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FAN_BP1_PRSNT, "FAN_BP1",     IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN_BP2_PRSNT, "FAN_BP2",     IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FAN0_PRSNT,    "FAN0",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FAN1_PRSNT,    "FAN1",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FAN2_PRSNT,    "FAN2",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},

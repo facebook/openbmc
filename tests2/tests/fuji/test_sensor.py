@@ -112,7 +112,11 @@ class PimSensorTest(SensorUtilTest, unittest.TestCase):
         if not pal_is_fru_prsnt(pal_get_fru_id("pim{}".format(self._pim_id))):
             self.skipTest("pim{} is not present".format(self._pim_id))
         result = self.get_parsed_result()
+        skip_XP3R3V_EARLY = self.check_pim_powerseq_UCD90124A()
         for key in self.get_pim_sensors():
+            # PowerSequence UCD90124A does not have XP3R3V_EARLY sensor, so skipping it
+            if key.find("XP3R3V_EARLY") and skip_XP3R3V_EARLY:
+                continue
             with self.subTest(key=key):
                 self.assertIn(
                     key,
@@ -168,6 +172,23 @@ class PimSensorTest(SensorUtilTest, unittest.TestCase):
             else:
                 raise Exception("PIM board_ver is empty")
         return pim_sensor_type
+
+    def check_pim_powerseq_UCD90124A(self):
+        """
+        Check for PowerSequence UCD90124A CH7 0x40
+        """
+        PATH = "/tmp/cache_store/pim%d_pwrseq_addr" % (self._pim_id)
+        if not os.path.exists(PATH):
+            raise Exception("Path for PIM pwrseq_addr doesn't exist")
+        with open(PATH, "r") as fp:
+            line = fp.readline()
+            if line:
+                if line == "0x40":
+                    return True
+                else:
+                    return False
+            else:
+                raise Exception("PIM pwrseq_addr is empty")
 
 
 class Pim1SensorTest(PimSensorTest, unittest.TestCase):

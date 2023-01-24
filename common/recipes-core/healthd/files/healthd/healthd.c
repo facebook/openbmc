@@ -1881,6 +1881,7 @@ next_run:
 static void *
 log_rearm_check() {
   int ret = 0;
+  size_t i = 0;
   char val[MAX_KEY_LEN] = {0};
 
   while (1) {
@@ -1897,6 +1898,23 @@ log_rearm_check() {
       if (vboot_state_check && vboot_supported()) {
         check_vboot_state();
       }
+      // Log re-arm for CPU usage monitoring
+      if (cpu_monitor_enabled == true) {
+        for (i = 0; i < cpu_threshold_num; i++) {
+          if (cpu_threshold[i].asserted == true && cpu_threshold[i].log_level == LOG_CRIT) {
+            cpu_threshold[i].asserted = false;
+          }
+        }
+      }
+      // Log re-arm for Memory usage monitoring
+      if (mem_monitor_enabled == true) {
+        for (i = 0; i < mem_threshold_num; i++) {
+          if (mem_threshold[i].asserted == true && mem_threshold[i].log_level == LOG_CRIT) {
+            mem_threshold[i].asserted = false;
+          }
+        }
+      }
+
       kv_set(KV_KEY_HEALTHD_REARM, "0", 0, 0);
     }
     sleep(LOG_REARM_CHECK_INTERVAL);

@@ -1,0 +1,559 @@
+From 0d4774debbfc3affed7f89707e864ed128354c2b Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Tue, 7 Jun 2022 07:31:54 -0700
+Subject: [PATCH 09/65] hw/misc: Add byte-by-byte i2c network device
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/misc/i2c-netdev2.c         | 259 ++++++++++++++++++++++++++++++++++
+ hw/misc/meson.build           |   2 +-
+ tests/qtest/aspeed_i2c-test.c | 243 +++++++++++++++++++++++++++++++
+ tests/qtest/meson.build       |   3 +-
+ 4 files changed, 505 insertions(+), 2 deletions(-)
+ create mode 100644 hw/misc/i2c-netdev2.c
+ create mode 100644 tests/qtest/aspeed_i2c-test.c
+
+diff --git a/hw/misc/i2c-netdev2.c b/hw/misc/i2c-netdev2.c
+new file mode 100644
+index 0000000000..52e3b8968f
+--- /dev/null
++++ b/hw/misc/i2c-netdev2.c
+@@ -0,0 +1,259 @@
++#include "qemu/osdep.h"
++#include "qemu/main-loop.h"
++#include "qapi/error.h"
++#include "hw/i2c/i2c.h"
++#include "hw/qdev-properties.h"
++#include "net/net.h"
++#include "net/eth.h"
++#include "block/aio.h"
++
++#define DATA_LEN 1
++#define ACK_LEN 2
++#define START_LEN 3
++#define STOP_LEN 4
++#define DEBUG 0
++
++#if !DEBUG
++#define printf(...)
++#endif
++
++#define TYPE_I2C_NETDEV2 "i2c-netdev2"
++OBJECT_DECLARE_SIMPLE_TYPE(I2CNetdev2, I2C_NETDEV2)
++
++typedef struct I2CNetdev2 I2CNetdev2;
++struct I2CNetdev2 {
++    I2CSlave parent;
++
++    I2CBus *bus;
++    NICConf nic_conf;
++    NICState *nic;
++    QEMUBH *bh;
++
++    uint8_t rx_buf[10];
++    int rx_len;
++    bool rx_ack_pending;
++};
++
++static void print_bytes(const uint8_t *buf, size_t len)
++{
++    int i;
++
++    printf("[");
++    for (i = 0; i < len; i++) {
++        if (i) {
++            printf(", ");
++        }
++        printf("%02x", buf[i]);
++    }
++    printf("]");
++}
++
++static ssize_t i2c_netdev2_nic_receive(NetClientState *nc, const uint8_t *buf, size_t len);
++
++static void i2c_netdev2_nic_cleanup(NetClientState *nc)
++{
++    I2CNetdev2 *s = I2C_NETDEV2(qemu_get_nic_opaque(nc));
++
++    s->nic = NULL;
++}
++
++static NetClientInfo net_client_info = {
++    .type = NET_CLIENT_DRIVER_NIC,
++    .size = sizeof(NetClientState),
++    .receive = i2c_netdev2_nic_receive,
++    .cleanup = i2c_netdev2_nic_cleanup,
++};
++
++static ssize_t i2c_netdev2_nic_receive(NetClientState *nc, const uint8_t *buf, size_t len)
++{
++    printf("%s: rx ", __FILE__);
++    print_bytes(buf, len);
++    printf("\n");
++
++    I2CNetdev2 *s = I2C_NETDEV2(qemu_get_nic_opaque(nc));
++
++    if (len == ACK_LEN) {
++        return len;
++    }
++
++    printf("prev rx_buf: ");
++    print_bytes(s->rx_buf, sizeof(s->rx_buf));
++    printf("\n");
++    
++    assert(len <= sizeof(s->rx_buf));
++    memcpy(s->rx_buf, buf, len);
++    s->rx_len = len;
++
++    printf("next rx_buf: ");
++    print_bytes(s->rx_buf, sizeof(s->rx_buf));
++    printf("\n");
++
++    switch (len) {
++    case START_LEN:
++        i2c_bus_master(s->bus, s->bh);
++        break;
++    case DATA_LEN:
++        qemu_bh_schedule(s->bh);
++        break;
++    case STOP_LEN:
++        qemu_bh_schedule(s->bh);
++        break;
++    default:
++        printf("%s: unexpected packet len: %ld\n", __func__, len);
++        break;
++    }
++
++    return len;
++}
++
++static void i2c_netdev2_slave_mode_rx(void *opaque)
++{
++    I2CNetdev2 *s = opaque;
++    NetClientState *netdev = qemu_get_queue(s->nic);
++    uint8_t rx_addr;
++    uint8_t ack[2] = {1, 0};
++
++    printf("%s: rx_len=%d\n", __func__, s->rx_len);
++
++    if (s->rx_ack_pending) {
++        printf("%s: guest OS ack rx, clearing rx_len\n", __func__);
++        s->rx_ack_pending = false;
++        s->rx_len = 0;
++        qemu_send_packet(netdev, ack, sizeof(ack));
++        return;
++    }
++
++    switch (s->rx_len) {
++    case START_LEN:
++        rx_addr = s->rx_buf[0];
++        assert((rx_addr & 1) == 0);
++        rx_addr >>= 1;
++        if (i2c_start_send_async(s->bus, rx_addr) != 0) {
++            printf("%s: i2c_start_send to 0x%02x failed\n", __func__, rx_addr);
++            ack[0] = 0;
++            i2c_bus_release(s->bus);
++            qemu_send_packet(netdev, ack, sizeof(ack));
++            s->rx_len = 0;
++            return;
++        }
++        break;
++    case DATA_LEN:
++        i2c_send_async(s->bus, s->rx_buf[0]);
++        break;
++    case STOP_LEN:
++        i2c_end_transfer(s->bus);
++        i2c_bus_release(s->bus);
++        return;
++    default:
++        printf("%s: unexpected rx_len %d\n", __func__, s->rx_len);
++        break;
++    }
++
++    s->rx_ack_pending = true;
++}
++
++static void i2c_netdev2_realize(DeviceState *dev, Error **errp)
++{
++    I2CNetdev2 *s = I2C_NETDEV2(dev);
++
++    s->bus = I2C_BUS(qdev_get_parent_bus(dev));
++    s->nic = qemu_new_nic(&net_client_info, &s->nic_conf, TYPE_I2C_NETDEV2, dev->id, s);
++    s->bh = qemu_bh_new(i2c_netdev2_slave_mode_rx, s);
++    s->rx_len = 0;
++}
++
++static int i2c_netdev2_handle_event(I2CSlave *i2c, enum i2c_event event)
++{
++    I2CNetdev2 *s = I2C_NETDEV2(i2c);
++    NetClientState *netdev = qemu_get_queue(s->nic);
++    uint8_t tx_addr = i2c->address << 1;
++    uint8_t start_msg[START_LEN];
++    uint8_t stop_msg[STOP_LEN];
++
++    // printf("%s: %d\n", __func__, event);
++
++    switch (event) {
++    case I2C_START_RECV:
++        printf("%s: RECV UNIMPLEMENTED\n", __func__);
++        abort();
++    case I2C_START_SEND_ASYNC:
++        printf("%s: SEND ASYNC UNIMPLEMENTED\n", __func__);
++        abort();
++    case I2C_START_SEND:
++        // printf("%s: SENDING START MESSAGE PACKET\n", __func__);
++        memset(start_msg, 0, sizeof(start_msg));
++        start_msg[0] = tx_addr;
++        qemu_send_packet(netdev, start_msg, sizeof(start_msg));
++        printf("%s: tx ", __FILE__);
++        print_bytes(start_msg, sizeof(start_msg));
++        printf("\n");
++        //sleep(1);
++        break;
++    case I2C_FINISH:
++        memset(stop_msg, 0, sizeof(stop_msg));
++        qemu_send_packet(netdev, stop_msg, sizeof(stop_msg));
++        printf("%s: tx ", __FILE__);
++        print_bytes(stop_msg, sizeof(stop_msg));
++        printf("\n");
++        //sleep(1);
++        break;
++    case I2C_NACK:
++        printf("%s: NACK UNIMPLEMENTED\n", __func__);
++        abort();
++    }
++
++    return 0;
++}
++
++static uint8_t i2c_netdev2_handle_recv(I2CSlave *i2c)
++{
++    printf("%s: unimplemented\n", __func__);
++    abort();
++}
++
++static int i2c_netdev2_handle_send(I2CSlave *i2c, uint8_t byte)
++{
++    I2CNetdev2 *s = I2C_NETDEV2(i2c);
++    NetClientState *netdev = qemu_get_queue(s->nic);
++    uint8_t data_msg[DATA_LEN] = {byte};
++
++    qemu_send_packet(netdev, data_msg, sizeof(data_msg));
++    printf("%s: tx ", __FILE__);
++    print_bytes(data_msg, sizeof(data_msg));
++    printf("\n");
++    //sleep(1);
++
++    return 0;
++}
++
++static Property i2c_netdev2_props[] = {
++    DEFINE_NIC_PROPERTIES(I2CNetdev2, nic_conf),
++    DEFINE_PROP_END_OF_LIST(),
++};
++
++static void i2c_netdev2_class_init(ObjectClass *cls, void *data)
++{
++    DeviceClass *dc = DEVICE_CLASS(cls);
++    I2CSlaveClass *sc = I2C_SLAVE_CLASS(cls);
++
++    dc->realize = i2c_netdev2_realize;
++    device_class_set_props(dc, i2c_netdev2_props);
++
++    sc->event = i2c_netdev2_handle_event;
++    sc->recv = i2c_netdev2_handle_recv;
++    sc->send = i2c_netdev2_handle_send;
++}
++
++static const TypeInfo i2c_netdev2 = {
++    .name = TYPE_I2C_NETDEV2,
++    .parent = TYPE_I2C_SLAVE,
++    .instance_size = sizeof(I2CNetdev2),
++    .class_init = i2c_netdev2_class_init,
++};
++
++static void register_types(void)
++{
++    type_register_static(&i2c_netdev2);
++}
++
++type_init(register_types);
+diff --git a/hw/misc/meson.build b/hw/misc/meson.build
+index 53226b2649..ec396d0a94 100644
+--- a/hw/misc/meson.build
++++ b/hw/misc/meson.build
+@@ -124,7 +124,7 @@ softmmu_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+ 
+ softmmu_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
+ 
+-softmmu_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-netdev.c'))
++softmmu_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-netdev.c', 'i2c-netdev2.c'))
+ 
+ specific_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))
+ 
+diff --git a/tests/qtest/aspeed_i2c-test.c b/tests/qtest/aspeed_i2c-test.c
+new file mode 100644
+index 0000000000..aaf8c85427
+--- /dev/null
++++ b/tests/qtest/aspeed_i2c-test.c
+@@ -0,0 +1,243 @@
++/*
++ * QTest testcase for the Aspeed I2C Controller.
++ *
++ * Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++ * THE SOFTWARE.
++ */
++
++#include "qemu/osdep.h"
++#include "qemu/bitops.h"
++#include "libqtest-single.h"
++
++#define ASPEED_I2C_BASE 0x1E78A000
++#define ASPEED_I2C_BUS0_BASE (ASPEED_I2C_BASE + 0x80)
++#define I2C_CTRL_GLOBAL 0x0C
++#define   I2C_CTRL_NEW_REG_MODE BIT(2)
++#define I2CD_FUN_CTRL_REG 0x00
++#define   I2CD_SLAVE_EN (0x1 << 1)
++#define   I2CD_MASTER_EN (0x1)
++#define I2CD_INTR_CTRL_REG 0x0c
++#define I2CD_INTR_STS_REG 0x10
++#define   I2CD_INTR_SLAVE_ADDR_RX_MATCH    (0x1 << 7)  /* use RX_DONE */
++#define   I2CD_INTR_NORMAL_STOP            (0x1 << 4)
++#define   I2CD_INTR_RX_DONE                (0x1 << 2)
++#define I2CD_CMD_REG            0x14       /* I2CD Command/Status */
++#define   I2CD_RX_DMA_ENABLE               (0x1 << 9)
++#define   I2CD_TX_DMA_ENABLE               (0x1 << 8)
++#define   I2CD_RX_BUFF_ENABLE              (0x1 << 7)
++#define   I2CD_TX_BUFF_ENABLE              (0x1 << 6)
++#define   I2CD_M_STOP_CMD                  (0x1 << 5)
++#define   I2CD_M_S_RX_CMD_LAST             (0x1 << 4)
++#define   I2CD_M_RX_CMD                    (0x1 << 3)
++#define   I2CD_S_TX_CMD                    (0x1 << 2)
++#define   I2CD_M_TX_CMD                    (0x1 << 1)
++#define   I2CD_M_START_CMD                 (0x1)
++#define I2CD_DEV_ADDR_REG       0x18       /* Slave Device Address */
++#define I2CD_BYTE_BUF_REG       0x20       /* Transmit/Receive Byte Buffer */
++#define   I2CD_BYTE_BUF_TX_SHIFT           0
++#define   I2CD_BYTE_BUF_TX_MASK            0xff
++#define   I2CD_BYTE_BUF_RX_SHIFT           8
++#define   I2CD_BYTE_BUF_RX_MASK            0xff
++
++#define DATA_LEN 1
++#define ACK_LEN 2
++#define START_LEN 3
++#define STOP_LEN 4
++
++static void aspeed_i2c_master_mode_tx(const uint8_t *buf, int len)
++{
++    int i;
++
++    writel(ASPEED_I2C_BUS0_BASE + I2CD_BYTE_BUF_REG, buf[0]);
++    writel(ASPEED_I2C_BUS0_BASE + I2CD_CMD_REG, I2CD_M_START_CMD);
++
++    for (i = 1; i < len; i++) {
++        writel(ASPEED_I2C_BUS0_BASE + I2CD_BYTE_BUF_REG, buf[i]);
++        writel(ASPEED_I2C_BUS0_BASE + I2CD_CMD_REG, I2CD_M_TX_CMD);
++    }
++
++    writel(ASPEED_I2C_BUS0_BASE + I2CD_CMD_REG, I2CD_M_STOP_CMD);
++}
++
++static void aspeed_i2c_slave_mode_enable(uint8_t addr)
++{
++    writel(ASPEED_I2C_BUS0_BASE + I2CD_DEV_ADDR_REG, addr);
++    writel(ASPEED_I2C_BUS0_BASE + I2CD_FUN_CTRL_REG, I2CD_SLAVE_EN);
++}
++
++static int aspeed_i2c_slave_mode_rx(uint8_t *buf, int len)
++{
++    uint32_t sts;
++    uint32_t byte_buf;
++    int i = 0;
++
++    while (i < len) {
++        sts = readl(ASPEED_I2C_BUS0_BASE + I2CD_INTR_STS_REG);
++        if (sts & I2CD_INTR_NORMAL_STOP) {
++            break;
++        }
++        if (sts & I2CD_INTR_RX_DONE) {
++            byte_buf = readl(ASPEED_I2C_BUS0_BASE + I2CD_BYTE_BUF_REG);
++            buf[i++] = (byte_buf >> I2CD_BYTE_BUF_RX_SHIFT) & I2CD_BYTE_BUF_RX_MASK;
++        }
++        writel(ASPEED_I2C_BUS0_BASE + I2CD_INTR_STS_REG, sts);
++    }
++
++    return i;
++}
++
++static uint8_t aspeed_i2c_slave_mode_rx_byte(void)
++{
++    uint8_t buf = 0xff;
++
++    g_assert_cmphex(aspeed_i2c_slave_mode_rx(&buf, sizeof(buf)), ==, 1);
++    return buf;
++}
++
++static int udp_socket;
++
++static void test_write_in_old_byte_mode(void)
++{
++    uint8_t pkt[] = {0x64, 0xde, 0xad, 0xbe, 0xef};
++    uint8_t buf[10];
++    ssize_t n;
++    int i;
++    struct sockaddr_in rx_addr;
++    uint8_t ack[ACK_LEN] = {1, 0};
++
++    rx_addr.sin_family = AF_INET;
++    rx_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
++    rx_addr.sin_port = htons(6000);
++
++    g_assert(!(readl(ASPEED_I2C_BASE + I2C_CTRL_GLOBAL) & I2C_CTRL_NEW_REG_MODE));
++
++    writel(ASPEED_I2C_BUS0_BASE + I2CD_FUN_CTRL_REG, I2CD_MASTER_EN);
++    writel(ASPEED_I2C_BUS0_BASE + I2CD_INTR_CTRL_REG, 0xFFFFFFFF);
++
++    aspeed_i2c_master_mode_tx(pkt, sizeof(pkt));
++
++    n = recv(udp_socket, buf, sizeof(buf), 0);
++    g_assert_cmphex(n, ==, START_LEN);
++    g_assert_cmphex(buf[0], ==, pkt[0]);
++    sendto(udp_socket, ack, sizeof(ack), 0, (const struct sockaddr_in*)&rx_addr, sizeof(rx_addr));
++
++    for (i = 1; i < sizeof(pkt); i++) {
++        n = recv(udp_socket, buf, sizeof(buf), 0);
++        g_assert_cmphex(n, ==, DATA_LEN);
++        g_assert_cmphex(buf[0], ==, pkt[i]);
++        sendto(udp_socket, ack, sizeof(ack), 0, (const struct sockaddr_in*)&rx_addr, sizeof(rx_addr));
++    }
++
++    n = recv(udp_socket, buf, sizeof(buf), 0);
++    g_assert_cmphex(n, ==, STOP_LEN);
++}
++
++static void test_slave_mode_rx_byte_buf(void)
++{
++    uint8_t b;
++    uint32_t sts;
++
++    g_assert(!(readl(ASPEED_I2C_BASE + I2C_CTRL_GLOBAL) & I2C_CTRL_NEW_REG_MODE));
++
++    writel(ASPEED_I2C_BUS0_BASE + I2CD_INTR_STS_REG, 0xFFFFFFFF);
++    writel(ASPEED_I2C_BUS0_BASE + I2CD_INTR_CTRL_REG, 0xFFFFFFFF);
++
++    aspeed_i2c_slave_mode_enable(0x10);
++
++    struct sockaddr_in dst;
++    dst.sin_family = AF_INET;
++    dst.sin_addr.s_addr = inet_addr("127.0.0.1");
++    dst.sin_port = htons(6000);
++
++    uint8_t pkt[] = {0x20, 0xde, 0xad, 0xbe, 0xef};
++    uint8_t buf[10] = {};
++
++    buf[0] = 0x20;
++    sendto(udp_socket, buf, START_LEN, 0, (const struct sockaddr*)&dst, sizeof(dst));
++    b = aspeed_i2c_slave_mode_rx_byte();
++    g_assert_cmphex(b, ==, buf[0]);
++
++    for (int i = 1; i < sizeof(pkt); i++) {
++        buf[0] = pkt[i];
++        sendto(udp_socket, buf, DATA_LEN, 0, (const struct sockaddr*)&dst, sizeof(dst));
++        b = aspeed_i2c_slave_mode_rx_byte();
++        g_assert_cmphex(b, ==, buf[0]);
++    }
++
++    sendto(udp_socket, buf, STOP_LEN, 0, (const struct sockaddr*)&dst, sizeof(dst));
++    for (int i = 0; i < 10000; i++) {
++        sts = readl(ASPEED_I2C_BUS0_BASE + I2CD_INTR_STS_REG);
++        writel(ASPEED_I2C_BUS0_BASE + I2CD_INTR_STS_REG, sts);
++        if (sts & I2CD_INTR_NORMAL_STOP) {
++            break;
++        }
++    }
++    g_assert(sts & I2CD_INTR_NORMAL_STOP);
++}
++
++static int udp_socket_init(const char *ip_addr, uint16_t port)
++{
++    bool reuseaddr = true;
++    struct sockaddr_in addr;
++    int fd;
++
++    fd = socket(AF_INET, SOCK_DGRAM, 0);
++    if (fd == -1) {
++        perror("socket");
++        return -1;
++    }
++
++    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
++
++    addr.sin_family = AF_INET;
++    addr.sin_addr.s_addr = inet_addr(ip_addr);
++    addr.sin_port = htons(port);
++    if (bind(fd, (const struct sockaddr*)&addr, sizeof(addr))) {
++        perror("bind");
++        return -1;
++    }
++
++    return fd;
++}
++
++int main(int argc, char **argv)
++{
++    int ret;
++
++    udp_socket = udp_socket_init("127.0.0.1", 5000);
++    if (udp_socket == -1) {
++        return 1;
++    }
++
++    g_test_init(&argc, &argv, NULL);
++
++    global_qtest = qtest_initf("-machine fby35-bmc "
++                               "-netdev socket,id=socket0,udp=127.0.0.1:5000,localaddr=127.0.0.1:6000 "
++                               "-device i2c-netdev2,bus=aspeed.i2c.bus.0,address=0x32,netdev=socket0");
++
++    qtest_add_func("/ast2600/i2c/write_in_old_byte_mode", test_write_in_old_byte_mode);
++    qtest_add_func("/ast2600/i2c/slave_mode_rx_byte_buf", test_slave_mode_rx_byte_buf);
++
++    ret = g_test_run();
++    qtest_quit(global_qtest);
++    close(udp_socket);
++
++    return ret;
++}
+diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
+index c07a5b1a5f..a96fe11faa 100644
+--- a/tests/qtest/meson.build
++++ b/tests/qtest/meson.build
+@@ -192,7 +192,8 @@ qtests_npcm7xx = \
+ qtests_aspeed = \
+   ['aspeed_hace-test',
+    'aspeed_smc-test',
+-   'aspeed_gpio-test']
++   'aspeed_gpio-test',
++   'aspeed_i2c-test']
+ qtests_arm = \
+   (config_all_devices.has_key('CONFIG_MPS2') ? ['sse-timer-test'] : []) + \
+   (config_all_devices.has_key('CONFIG_CMSDK_APB_DUALTIMER') ? ['cmsdk-apb-dualtimer-test'] : []) + \
+-- 
+2.38.2
+

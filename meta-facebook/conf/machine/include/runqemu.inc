@@ -1,7 +1,15 @@
 IMAGE_CLASSES += "qemuboot"
-EXTRA_IMAGEDEPENDS:append = " \
-    qemu-helper-native:do_addto_recipe_sysroot \
-"
+
+def qemu_helper_for_distro(d):
+    distro = d.getVar('DISTRO_CODENAME')
+
+    if distro in [ 'master' ]:
+        return "qemu-helper-native:do_addto_recipe_sysroot"
+
+    return ""
+
+EXTRA_IMAGEDEPENDS:append = " ${@qemu_helper_for_distro(d)}"
+
 QB_SYSTEM_NAME = "qemu-system-arm"
 QB_MACHINE = "-machine ${MACHINE}-bmc"
 QB_MEM = "2G"

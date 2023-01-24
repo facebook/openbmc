@@ -1,0 +1,70 @@
+From b25a22584068626c70a2797dda81de012eebdcc5 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Tue, 23 Nov 2021 09:22:10 -0800
+Subject: [PATCH 04/65] hw: aspeed_vic: Add heartbeat LED registers
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/intc/aspeed_vic.c         | 15 +++++++++++++++
+ include/hw/intc/aspeed_vic.h |  5 +++++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/hw/intc/aspeed_vic.c b/hw/intc/aspeed_vic.c
+index 5ba06c5262..13c700d4f6 100644
+--- a/hw/intc/aspeed_vic.c
++++ b/hw/intc/aspeed_vic.c
+@@ -168,6 +168,12 @@ static uint64_t aspeed_vic_read(void *opaque, hwaddr offset, unsigned size)
+                       HWADDR_PRIx "\n", __func__, offset);
+         val = 0;
+         break;
++    case 0x60: /* Hardware Heart Beat Status Register */
++        val = s->heartbeat_status & 0x1f;
++        break;
++    case 0x64: /* Heart Beat LED Output */
++        val = s->heartbeat_output & 1;
++        break;
+     default:
+         qemu_log_mask(LOG_GUEST_ERROR,
+                       "%s: Bad register at offset 0x%" HWADDR_PRIx "\n",
+@@ -272,6 +278,13 @@ static void aspeed_vic_write(void *opaque, hwaddr offset, uint64_t data,
+                       "%s: Write of read-only register with offset 0x%"
+                       HWADDR_PRIx "\n", __func__, offset);
+         break;
++    case 0x60: /* Hardware Heart Beat Status Register */
++        /* Only the first 5 bits are RW */
++        s->heartbeat_status = data & 0x1f;
++        break;
++    case 0x64: /* Heart Beat LED Output */
++        s->heartbeat_output = data & 1;
++        break;
+ 
+     default:
+         qemu_log_mask(LOG_GUEST_ERROR,
+@@ -303,6 +316,8 @@ static void aspeed_vic_reset(DeviceState *dev)
+     s->sense = 0x1F07FFF8FFFFULL;
+     s->dual_edge = 0xF800070000ULL;
+     s->event = 0x5F07FFF8FFFFULL;
++    s->heartbeat_status = 0x03;
++    s->heartbeat_output = 0x00;
+ }
+ 
+ #define AVIC_IO_REGION_SIZE 0x20000
+diff --git a/include/hw/intc/aspeed_vic.h b/include/hw/intc/aspeed_vic.h
+index 68d6ab997a..d162d2da07 100644
+--- a/include/hw/intc/aspeed_vic.h
++++ b/include/hw/intc/aspeed_vic.h
+@@ -44,6 +44,11 @@ struct AspeedVICState {
+ 
+     /* 0=low-sensitive/falling-edge, 1=high-sensitive/rising-edge */
+     uint64_t event;
++
++    /* Configure heartbeat LED mode, either hardware or software based */
++    uint64_t heartbeat_status;
++    /* Register for controlling heartbeat LED output in software mode */
++    uint64_t heartbeat_output;
+ };
+ 
+ #endif /* ASPEED_VIC_H */
+-- 
+2.38.2
+

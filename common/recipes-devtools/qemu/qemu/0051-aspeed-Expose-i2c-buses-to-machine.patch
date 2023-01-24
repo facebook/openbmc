@@ -1,0 +1,135 @@
+From f077519aaa4763564371651a2d72594b52f397ad Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Wed, 17 Aug 2022 10:14:07 +0200
+Subject: [PATCH 51/65] aspeed: Expose i2c buses to machine
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+Signed-off-by: Cédric Le Goater <clg@kaod.org>
+---
+ hw/arm/aspeed_soc.c         | 14 ++++++++++++++
+ hw/arm/fby35.c              | 17 +++++++++++++----
+ hw/i2c/aspeed_i2c.c         |  8 +++++++-
+ include/hw/arm/aspeed_soc.h |  2 ++
+ 4 files changed, 36 insertions(+), 5 deletions(-)
+
+diff --git a/hw/arm/aspeed_soc.c b/hw/arm/aspeed_soc.c
+index b05b9dd416..294ddea35d 100644
+--- a/hw/arm/aspeed_soc.c
++++ b/hw/arm/aspeed_soc.c
+@@ -651,6 +651,20 @@ bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp)
+     return true;
+ }
+ 
++void aspeed_soc_i2c_set_bus(AspeedSoCState *s, int bus_id, I2CBus *bus)
++{
++    object_property_set_link(OBJECT(&s->i2c.busses[bus_id]), "bus", OBJECT(bus),
++                             &error_abort);
++}
++
++I2CBus *aspeed_soc_i2c_bus(AspeedSoCState *s, int bus_id)
++{
++    Object *obj;
++
++    obj = object_property_get_link(OBJECT(&s->i2c.busses[bus_id]), "bus", &error_abort);
++    return I2C_BUS(obj);
++}
++
+ void aspeed_mmio_map(AspeedSoCState *s, SysBusDevice *dev, int n, hwaddr addr)
+ {
+     memory_region_add_subregion(s->memory, addr,
+diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
+index 90c04bbc33..e013a479ce 100644
+--- a/hw/arm/fby35.c
++++ b/hw/arm/fby35.c
+@@ -14,6 +14,9 @@
+ #include "hw/qdev-clock.h"
+ #include "hw/arm/aspeed_soc.h"
+ #include "hw/arm/boot.h"
++#include "hw/arm/fby35.h"
++#include "hw/i2c/i2c.h"
++#include "hw/i2c/i2c_mux_pca954x.h"
+ 
+ #define TYPE_FBY35 MACHINE_TYPE_NAME("fby35")
+ OBJECT_DECLARE_SIMPLE_TYPE(Fby35State, FBY35);
+@@ -72,8 +75,6 @@ static void fby35_bmc_init(Fby35State *s)
+ {
+     DriveInfo *drive0 = drive_get(IF_MTD, 0, 0);
+ 
+-    object_initialize_child(OBJECT(s), "bmc", &s->bmc, "ast2600-a3");
+-
+     memory_region_init(&s->bmc_memory, OBJECT(&s->bmc), "bmc-memory",
+                        UINT64_MAX);
+     memory_region_init_ram(&s->bmc_dram, OBJECT(&s->bmc), "bmc-dram",
+@@ -122,8 +123,6 @@ static void fby35_bic_init(Fby35State *s)
+     s->bic_sysclk = clock_new(OBJECT(s), "SYSCLK");
+     clock_set_hz(s->bic_sysclk, 200000000ULL);
+ 
+-    object_initialize_child(OBJECT(s), "bic", &s->bic, "ast1030-a1");
+-
+     memory_region_init(&s->bic_memory, OBJECT(&s->bic), "bic-memory",
+                        UINT64_MAX);
+ 
+@@ -141,8 +140,18 @@ static void fby35_bic_init(Fby35State *s)
+ static void fby35_init(MachineState *machine)
+ {
+     Fby35State *s = FBY35(machine);
++    I2CBus *slot_i2c[4];
++
++    object_initialize_child(OBJECT(s), "bmc", &s->bmc, "ast2600-a3");
++    object_initialize_child(OBJECT(s), "bic", &s->bic, "ast1030-a1");
+ 
+     fby35_bmc_init(s);
++
++    for (int i = 0; i < ARRAY_SIZE(slot_i2c); i++) {
++        slot_i2c[i] = aspeed_soc_i2c_bus(&s->bmc, i);
++    }
++    aspeed_soc_i2c_set_bus(&s->bic, 6, slot_i2c[0]);
++
+     fby35_bic_init(s);
+ }
+ 
+diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
+index e58bd1619e..94a5451020 100644
+--- a/hw/i2c/aspeed_i2c.c
++++ b/hw/i2c/aspeed_i2c.c
+@@ -1258,7 +1258,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
+ 
+     sysbus_init_irq(SYS_BUS_DEVICE(dev), &s->irq);
+ 
+-    s->bus = i2c_init_bus(dev, name);
++    /*
++     * If a bus hasn't been provided to the controller, create one from scratch.
++     */
++    if (!s->bus) {
++        s->bus = i2c_init_bus(dev, name);
++    }
+     s->slave = i2c_slave_create_simple(s->bus, TYPE_ASPEED_I2C_BUS_SLAVE,
+                                        0xff);
+ 
+@@ -1271,6 +1276,7 @@ static Property aspeed_i2c_bus_properties[] = {
+     DEFINE_PROP_UINT8("bus-id", AspeedI2CBus, id, 0),
+     DEFINE_PROP_LINK("controller", AspeedI2CBus, controller, TYPE_ASPEED_I2C,
+                      AspeedI2CState *),
++    DEFINE_PROP_LINK("bus", AspeedI2CBus, bus, TYPE_I2C_BUS, I2CBus *),
+     DEFINE_PROP_END_OF_LIST(),
+ };
+ 
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index 8389200b2d..80f00cf754 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -180,6 +180,8 @@ qemu_irq aspeed_soc_get_irq(AspeedSoCState *s, int dev);
+ bool aspeed_soc_uart_realize(AspeedSoCState *s, Error **errp);
+ void aspeed_soc_uart_set_chr(AspeedSoCState *s, int dev, Chardev *chr);
+ bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp);
++void aspeed_soc_i2c_set_bus(AspeedSoCState *s, int bus_id, I2CBus *bus);
++I2CBus *aspeed_soc_i2c_bus(AspeedSoCState *s, int bus_id);
+ void aspeed_mmio_map(AspeedSoCState *s, SysBusDevice *dev, int n, hwaddr addr);
+ void aspeed_mmio_map_unimplemented(AspeedSoCState *s, SysBusDevice *dev,
+                                    const char *name, hwaddr addr,
+-- 
+2.38.2
+

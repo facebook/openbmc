@@ -1,0 +1,175 @@
+From 1418809a897443f2f3bfa4d284fa08dd591fa457 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Fri, 26 Aug 2022 07:12:09 -0700
+Subject: [PATCH 61/65] tests: Create qtest for Aspeed I2C controller
+
+Initial commit for a qtest for the Aspeed I2C controller. It uses an
+i2c-echo device and tests echoing some bytes back to itself.
+
+This just adds the old register mode byte-buffer mode used in the Linux
+driver, but can be extended to test the new register mode dma-buffer
+mode used in the Zephyr driver.
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+---
+ tests/qtest/aspeed_i2c-test.c | 135 ++++++++++++++++++++++++++++++++++
+ tests/qtest/meson.build       |   1 +
+ 2 files changed, 136 insertions(+)
+ create mode 100644 tests/qtest/aspeed_i2c-test.c
+
+diff --git a/tests/qtest/aspeed_i2c-test.c b/tests/qtest/aspeed_i2c-test.c
+new file mode 100644
+index 0000000000..1db23222f0
+--- /dev/null
++++ b/tests/qtest/aspeed_i2c-test.c
+@@ -0,0 +1,135 @@
++/*
++ * Aspeed I2C Controller Tests
++ *
++ * Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
++ *
++ * This code is licensed under the GPL version 2 or later. See the COPYING
++ * file in the top-level directory.
++ */
++
++#include "qemu/osdep.h"
++#include "qapi/error.h"
++#include "hw/i2c/aspeed_i2c.h"
++#include "libqtest.h"
++
++#define QTEST_SHARED_FIELD_DP32(s, base_addr, reg, field, val) \
++    { \
++        uint32_t a, x; \
++        a = base_addr + ((reg) << 2); \
++        x = qtest_readl(s, a); \
++        x = SHARED_FIELD_DP32(x, field, val); \
++        qtest_writel(s, a, x); \
++    }
++
++#define QTEST_SHARED_FIELD_EX32(s, base_addr, reg, field) \
++    ({ \
++        uint32_t a, x; \
++        a = base_addr + ((reg) << 2); \
++        x = qtest_readl(s, a); \
++        SHARED_FIELD_EX32(x, field); \
++    })
++
++#define QTEST_FIELD_DP32(s, base_addr, reg, field, val) \
++    { \
++        uint32_t a, x; \
++        a = base_addr + (A_ ## reg); \
++        x = qtest_readl(s, a); \
++        x = FIELD_DP32(x, reg, field, val); \
++        qtest_writel(s, a, x); \
++    }
++
++#define QTEST_FIELD_EX32(s, base_addr, reg, field) \
++    ({ \
++        uint32_t a, x; \
++        a = base_addr + (A_ ## reg); \
++        x = qtest_readl(s, a); \
++        FIELD_EX32(x, reg, field); \
++    })
++
++#define ECHO_BUS 0
++#define ECHO_ADDR 0x20
++#define SELF_ADDR 0x10
++
++typedef struct Context Context;
++struct Context {
++    QTestState *qtest;
++    uint32_t base_addr;
++    uint32_t bus_addr[ASPEED_I2C_NR_BUSSES];
++};
++
++static int old_reg_byte_mode_s_rx(QTestState *s, uint32_t bus_addr,
++                                  bool new_mode, uint8_t *buf, int cap)
++{
++    uint32_t intr_sts_addr = new_mode ? A_I2CS_INTR_STS : A_I2CD_INTR_STS;
++    uint32_t intr_sts = 0;
++    int max_iterations = 1000;
++    int len = 0;
++
++    for (int i = 0; i < max_iterations; i++) {
++        intr_sts = qtest_readl(s, bus_addr + intr_sts_addr);
++        if (SHARED_FIELD_EX32(intr_sts, NORMAL_STOP)) {
++            break;
++        }
++        if (SHARED_FIELD_EX32(intr_sts, RX_DONE)) {
++            g_assert(len < cap);
++            buf[len++] = QTEST_SHARED_FIELD_EX32(s, bus_addr, R_I2CD_BYTE_BUF, RX_BUF);
++            qtest_writel(s, bus_addr + intr_sts_addr, SHARED_FIELD_DP32(0, RX_DONE, 1));
++        }
++        usleep(1);
++    }
++    return len;
++}
++
++static void test_old_reg_byte_mode(const void *opaque)
++{
++    Context *ctx = (Context *)opaque;
++    QTestState *s = ctx->qtest;
++    uint32_t global = ctx->base_addr;
++    uint32_t echo_bus = ctx->bus_addr[ECHO_BUS];
++    uint8_t msg[] = {ECHO_ADDR << 1, SELF_ADDR << 1, 0xa, 0xb, 0xc, 0xd};
++    uint8_t buf[64];
++    int len;
++
++    QTEST_FIELD_DP32(s, global, I2C_CTRL_GLOBAL, REG_MODE, 0);
++    QTEST_SHARED_FIELD_DP32(s, echo_bus, R_I2CD_FUN_CTRL, MASTER_EN, 1);
++    QTEST_SHARED_FIELD_DP32(s, echo_bus, R_I2CD_DEV_ADDR, SLAVE_DEV_ADDR1, SELF_ADDR);
++    QTEST_SHARED_FIELD_DP32(s, echo_bus, R_I2CD_FUN_CTRL, SLAVE_EN, 1);
++    qtest_writel(s, echo_bus + A_I2CD_INTR_CTRL, 0xffffffff);
++
++    QTEST_SHARED_FIELD_DP32(s, echo_bus, R_I2CD_BYTE_BUF, TX_BUF, msg[0]);
++    QTEST_SHARED_FIELD_DP32(s, echo_bus, R_I2CD_CMD, M_START_CMD, 1);
++    g_assert(QTEST_SHARED_FIELD_EX32(s, echo_bus, R_I2CD_INTR_STS, TX_ACK));
++    qtest_writel(s, echo_bus + A_I2CD_INTR_STS, SHARED_FIELD_DP32(0, TX_ACK, 1));
++    for (int i = 1; i < ARRAY_SIZE(msg); i++) {
++        QTEST_SHARED_FIELD_DP32(s, echo_bus, R_I2CD_BYTE_BUF, TX_BUF, msg[i]);
++        QTEST_SHARED_FIELD_DP32(s, echo_bus, R_I2CD_CMD, M_TX_CMD, 1);
++        g_assert(QTEST_SHARED_FIELD_EX32(s, echo_bus, R_I2CD_INTR_STS, TX_ACK));
++        qtest_writel(s, echo_bus + A_I2CD_INTR_STS, SHARED_FIELD_DP32(0, TX_ACK, 1));
++    }
++    QTEST_SHARED_FIELD_DP32(s, echo_bus, R_I2CD_CMD, M_STOP_CMD, 1);
++    g_assert(QTEST_SHARED_FIELD_EX32(s, echo_bus, R_I2CD_INTR_STS, NORMAL_STOP));
++    qtest_writel(s, echo_bus + A_I2CD_INTR_STS, SHARED_FIELD_DP32(0, NORMAL_STOP, 1));
++
++    len = old_reg_byte_mode_s_rx(s, echo_bus, false, buf, sizeof(buf));
++    g_assert(len == sizeof(msg) - 1);
++    g_assert(memcmp(&msg[1], buf, len) == 0);
++}
++
++int main(int argc, char **argv)
++{
++    Context ast2600_evb = {};
++
++    g_test_init(&argc, &argv, NULL);
++
++    ast2600_evb.qtest = qtest_initf("-machine ast2600-evb -device i2c-echo,"
++                                    "bus=aspeed.i2c.bus.%d,address=%d",
++                                    ECHO_BUS, ECHO_ADDR);
++    ast2600_evb.base_addr = 0x1E78A000;
++    for (int i = 0; i < ARRAY_SIZE(ast2600_evb.bus_addr); i++) {
++        ast2600_evb.bus_addr[i] = ast2600_evb.base_addr + 0x80 + (i * 0x80);
++    }
++
++    qtest_add_data_func("/ast2600/i2c/old_reg_byte_mode", &ast2600_evb,
++                        test_old_reg_byte_mode);
++    return g_test_run();
++}
+diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
+index 7054cfa975..cde2de1897 100644
+--- a/tests/qtest/meson.build
++++ b/tests/qtest/meson.build
+@@ -193,6 +193,7 @@ qtests_aspeed = \
+   ['aspeed_hace-test',
+    'aspeed_smc-test',
+    'aspeed_gpio-test',
++   'aspeed_i2c-test',
+    'i2c-netdev2-test']
+ qtests_arm = \
+   (config_all_devices.has_key('CONFIG_MPS2') ? ['sse-timer-test'] : []) + \
+-- 
+2.38.2
+

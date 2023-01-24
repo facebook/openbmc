@@ -1,0 +1,45 @@
+From 8f64d0cbf9104fe17750c1511c99f5fb9f351fab Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@meta.com>
+Date: Sun, 18 Dec 2022 14:41:31 -0800
+Subject: [PATCH 65/65] hw/arm/aspeed: Don't initialize fby35-bmc GPIO's
+
+Initializing the GPIO's triggers slot sensor cache initialization in the
+boot sequence, which is extremely slow and annoying and doesn't succeed.
+
+Until we update the BMC's bic-cached setup to be less annoying, it's
+better to just not initialize these GPIO's.
+
+Signed-off-by: Peter Delevoryas <pdel@meta.com>
+---
+ hw/arm/aspeed.c | 9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 84848a87f4..146b698a26 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -1415,21 +1415,12 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
+         aspeed_soc_num_cpus(amc->soc_name);
+ }
+ 
+-static void fby35_reset(MachineState *state, ShutdownCause reason)
+-{
+-    AspeedMachineState *bmc = ASPEED_MACHINE(state);
+-
+-    qemu_devices_reset(reason);
+-    fby35_bmc_reset_gpios(&bmc->soc);
+-}
+-
+ static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
+ {
+     MachineClass *mc = MACHINE_CLASS(oc);
+     AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);
+ 
+     mc->desc       = "Facebook fby35 BMC (Cortex-A7)";
+-    mc->reset      = fby35_reset;
+     amc->fmc_model = "n25q00";
+     amc->num_cs    = 2;
+     amc->macs_mask = ASPEED_MAC3_ON;
+-- 
+2.38.2
+

@@ -1,0 +1,27 @@
+From 4e200d5c1fd32c20e92d761063cc0de0a5658f20 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Tue, 19 Jul 2022 21:42:58 -0700
+Subject: [PATCH 39/65] npcm8xx: Change default bios path to
+ pc-bios/npcm8xx_bootrom.bin
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/arm/npcm8xx_boards.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/arm/npcm8xx_boards.c b/hw/arm/npcm8xx_boards.c
+index e87ecade65..5b9a202f28 100644
+--- a/hw/arm/npcm8xx_boards.c
++++ b/hw/arm/npcm8xx_boards.c
+@@ -29,7 +29,7 @@
+ 
+ #define NPCM845_EVB_POWER_ON_STRAPS 0x000017ff
+ 
+-static const char npcm8xx_default_bootrom[] = "npcm8xx_bootrom.bin";
++static const char npcm8xx_default_bootrom[] = "pc-bios/npcm8xx_bootrom.bin";
+ 
+ static void npcm8xx_load_bootrom(MachineState *machine, NPCM8xxState *soc)
+ {
+-- 
+2.38.2
+

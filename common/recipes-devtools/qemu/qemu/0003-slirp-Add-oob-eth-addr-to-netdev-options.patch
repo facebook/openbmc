@@ -1,0 +1,88 @@
+From 925f1ce1d8201b1aa819c16a50c1bd241040d89e Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Fri, 20 May 2022 01:07:22 -0700
+Subject: [PATCH 03/65] slirp: Add oob-eth-addr to -netdev options
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ net/slirp.c   | 12 ++++++++++--
+ qapi/net.json |  5 ++++-
+ 2 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/net/slirp.c b/net/slirp.c
+index 39c3332c2e..5283c9b036 100644
+--- a/net/slirp.c
++++ b/net/slirp.c
+@@ -414,7 +414,7 @@ static int net_slirp_init(NetClientState *peer, const char *model,
+                           const char *smb_export, const char *vsmbserver,
+                           const char **dnssearch, const char *vdomainname,
+                           const char *tftp_server_name, uint32_t mfr_id,
+-                          Error **errp)
++                          uint8_t oob_eth_addr[ETH_ALEN], Error **errp)
+ {
+     /* default settings according to historic slirp */
+     struct in_addr net  = { .s_addr = htonl(0x0a000200) }; /* 10.0.2.0 */
+@@ -636,6 +636,7 @@ static int net_slirp_init(NetClientState *peer, const char *model,
+     cfg.vdnssearch = dnssearch;
+     cfg.vdomainname = vdomainname;
+     cfg.mfr_id = mfr_id;
++    memcpy(cfg.oob_eth_addr, oob_eth_addr, ETH_ALEN);
+     s->slirp = slirp_new(&cfg, &slirp_cb, s);
+     QTAILQ_INSERT_TAIL(&slirp_stacks, s, entry);
+ 
+@@ -1141,6 +1142,7 @@ int net_init_slirp(const Netdev *netdev, const char *name,
+     const NetdevUserOptions *user;
+     const char **dnssearch;
+     bool ipv4 = true, ipv6 = true;
++    MACAddr oob_eth_addr = {};
+ 
+     assert(netdev->type == NET_CLIENT_DRIVER_USER);
+     user = &netdev->u.user;
+@@ -1165,6 +1167,11 @@ int net_init_slirp(const Netdev *netdev, const char *name,
+     net_init_slirp_configs(user->hostfwd, SLIRP_CFG_HOSTFWD);
+     net_init_slirp_configs(user->guestfwd, 0);
+ 
++    if (user->has_oob_eth_addr && net_parse_macaddr(oob_eth_addr.a, user->oob_eth_addr) < 0) {
++        error_setg(errp, "invalid syntax for OOB ethernet address");
++        return -1;
++    }
++
+     ret = net_slirp_init(peer, "user", name, user->q_restrict,
+                          ipv4, vnet, user->host,
+                          ipv6, user->ipv6_prefix, user->ipv6_prefixlen,
+@@ -1172,7 +1179,8 @@ int net_init_slirp(const Netdev *netdev, const char *name,
+                          user->bootfile, user->dhcpstart,
+                          user->dns, user->ipv6_dns, user->smb,
+                          user->smbserver, dnssearch, user->domainname,
+-                         user->tftp_server_name, user->mfr_id, errp);
++                         user->tftp_server_name, user->mfr_id, oob_eth_addr.a,
++                         errp);
+ 
+     while (slirp_configs) {
+         config = slirp_configs;
+diff --git a/qapi/net.json b/qapi/net.json
+index b93cb63083..4c2e50060f 100644
+--- a/qapi/net.json
++++ b/qapi/net.json
+@@ -170,6 +170,8 @@
+ #
+ # @mfr-id: Manufacturer ID (Private Enterprise Number: IANA)
+ #
++# @oob-eth-addr: Out-of-band ethernet address for BMC
++#
+ # Since: 1.2
+ ##
+ { 'struct': 'NetdevUserOptions',
+@@ -196,7 +198,8 @@
+     '*hostfwd':   ['String'],
+     '*guestfwd':  ['String'],
+     '*tftp-server-name': 'str',
+-    '*mfr-id': 'uint32' } }
++    '*mfr-id': 'uint32',
++    '*oob-eth-addr': 'str' } }
+ 
+ ##
+ # @NetdevTapOptions:
+-- 
+2.38.2
+

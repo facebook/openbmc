@@ -1,0 +1,45 @@
+From f6f982b90fe556e86e2c53ad702da46738c849ab Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Fri, 26 Aug 2022 02:13:04 -0700
+Subject: [PATCH 58/65] tests: Rename aspeed_i2c-test to i2c-netdev2-test
+
+This test is verifying Aspeed I2C, but mostly in the context of the
+i2c-netdev2.
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+---
+ tests/qtest/{aspeed_i2c-test.c => i2c-netdev2-test.c} | 2 +-
+ tests/qtest/meson.build                               | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+ rename tests/qtest/{aspeed_i2c-test.c => i2c-netdev2-test.c} (99%)
+
+diff --git a/tests/qtest/aspeed_i2c-test.c b/tests/qtest/i2c-netdev2-test.c
+similarity index 99%
+rename from tests/qtest/aspeed_i2c-test.c
+rename to tests/qtest/i2c-netdev2-test.c
+index aaf8c85427..59e874e4d4 100644
+--- a/tests/qtest/aspeed_i2c-test.c
++++ b/tests/qtest/i2c-netdev2-test.c
+@@ -1,5 +1,5 @@
+ /*
+- * QTest testcase for the Aspeed I2C Controller.
++ * Tests for using i2c-netdev2 with the Aspeed I2C controller
+  *
+  * Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
+  *
+diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
+index a96fe11faa..7054cfa975 100644
+--- a/tests/qtest/meson.build
++++ b/tests/qtest/meson.build
+@@ -193,7 +193,7 @@ qtests_aspeed = \
+   ['aspeed_hace-test',
+    'aspeed_smc-test',
+    'aspeed_gpio-test',
+-   'aspeed_i2c-test']
++   'i2c-netdev2-test']
+ qtests_arm = \
+   (config_all_devices.has_key('CONFIG_MPS2') ? ['sse-timer-test'] : []) + \
+   (config_all_devices.has_key('CONFIG_CMSDK_APB_DUALTIMER') ? ['cmsdk-apb-dualtimer-test'] : []) + \
+-- 
+2.38.2
+

@@ -1,0 +1,26 @@
+From 1bc8bce93f1e66a0a368034acc2daef16638caf6 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Tue, 19 Jul 2022 16:29:46 -0700
+Subject: [PATCH 38/65] npcm8xx: Increase ram to 2GB
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/arm/npcm8xx_boards.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/arm/npcm8xx_boards.c b/hw/arm/npcm8xx_boards.c
+index b25e387e3e..e87ecade65 100644
+--- a/hw/arm/npcm8xx_boards.c
++++ b/hw/arm/npcm8xx_boards.c
+@@ -235,7 +235,7 @@ static void npcm845_evb_machine_class_init(ObjectClass *oc, void *data)
+ 
+     mc->desc = "Nuvoton NPCM845 Evaluation Board (Cortex-A35)";
+     mc->init = npcm845_evb_init;
+-    mc->default_ram_size = 1 * GiB;
++    mc->default_ram_size = 2 * GiB;
+ };
+ 
+ static const TypeInfo npcm8xx_machine_types[] = {
+-- 
+2.38.2
+

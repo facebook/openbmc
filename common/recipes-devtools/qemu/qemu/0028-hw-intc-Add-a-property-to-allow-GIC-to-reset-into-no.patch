@@ -1,0 +1,33 @@
+From f801bcc1123911a09c1cf57cef34a3ddc813110b Mon Sep 17 00:00:00 2001
+From: Hao Wu <wuhaotsh@google.com>
+Date: Tue, 5 Apr 2022 15:36:35 -0700
+Subject: [PATCH 28/65] hw/intc: Add a property to allow GIC to reset into non
+ secure mode
+
+This property allows certain boards like NPCM8xx to boot the kernel
+directly into non-secure mode. This is necessary since we do not
+support secure boot features for NPCM8xx now.
+
+Signed-off-by: Hao Wu <wuhaotsh@google.com>
+Reviewed-by: Patrick Venture <venture@google.com>
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/intc/arm_gic_common.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hw/intc/arm_gic_common.c b/hw/intc/arm_gic_common.c
+index 7b44d5625b..7ddc5cfbd0 100644
+--- a/hw/intc/arm_gic_common.c
++++ b/hw/intc/arm_gic_common.c
+@@ -358,6 +358,8 @@ static Property arm_gic_common_properties[] = {
+     /* True if the GIC should implement the virtualization extensions */
+     DEFINE_PROP_BOOL("has-virtualization-extensions", GICState, virt_extn, 0),
+     DEFINE_PROP_UINT32("num-priority-bits", GICState, n_prio_bits, 8),
++    /* True if we want to directly booting a kernel into NonSecure */
++    DEFINE_PROP_BOOL("irq-reset-nonsecure", GICState, irq_reset_nonsecure, 0),
+     DEFINE_PROP_END_OF_LIST(),
+ };
+ 
+-- 
+2.38.2
+

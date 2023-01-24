@@ -1,0 +1,133 @@
+From ee166c412021c28cb1e56372bc0da05985bcb3c7 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Wed, 17 Aug 2022 10:14:07 +0200
+Subject: [PATCH 50/65] hw/i2c/pca954x: Add method to get channels
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+I added this helper in the Aspeed machine file a while ago to help
+initialize fuji-bmc i2c devices. This moves it to the official pca954x
+file so that other files can use it.
+
+This does something very similar to pca954x_i2c_get_bus, but I think
+this is useful when you have a very complicated dts with a lot of
+switches, like the fuji dts.
+
+This convenience method lets you write code that produces a flat array
+of I2C buses that matches the naming in the dts. After that you can just
+add individual sensors using the flat array of I2C buses.
+
+See fuji_bmc_i2c_init to understand this point further.
+
+The fuji dts is here for reference:
+
+https://github.com/torvalds/linux/blob/40cb6373b46/arch/arm/boot/dts/aspeed-bmc-facebook-fuji.dts
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+Reviewed-by: Cédric Le Goater <clg@kaod.org>
+Reviewed-by: Patrick Venture <venture@google.com>
+Message-Id: <20220705191400.41632-2-peter@pjd.dev>
+Signed-off-by: Cédric Le Goater <clg@kaod.org>
+---
+ hw/arm/aspeed.c                  | 29 +++++++++--------------------
+ hw/i2c/i2c_mux_pca954x.c         | 10 ++++++++++
+ include/hw/i2c/i2c_mux_pca954x.h | 13 +++++++++++++
+ 3 files changed, 32 insertions(+), 20 deletions(-)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 24f2620275..02dafc15f5 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -833,15 +833,6 @@ static void rainier_bmc_i2c_init(AspeedMachineState *bmc)
+     create_pca9552(soc, 15, 0x60);
+ }
+ 
+-static void get_pca9548_channels(I2CBus *bus, uint8_t mux_addr,
+-                                 I2CBus **channels)
+-{
+-    I2CSlave *mux = i2c_slave_create_simple(bus, "pca9548", mux_addr);
+-    for (int i = 0; i < 8; i++) {
+-        channels[i] = pca954x_i2c_get_bus(mux, i);
+-    }
+-}
+-
+ #define TYPE_LM75 TYPE_TMP105
+ #define TYPE_TMP75 TYPE_TMP105
+ #define TYPE_TMP422 "tmp422"
+@@ -854,20 +845,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+     for (int i = 0; i < 16; i++) {
+         i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
+     }
+-    I2CBus *i2c180 = i2c[2];
+-    I2CBus *i2c480 = i2c[8];
+-    I2CBus *i2c600 = i2c[11];
+ 
+-    get_pca9548_channels(i2c180, 0x70, &i2c[16]);
+-    get_pca9548_channels(i2c480, 0x70, &i2c[24]);
++    pca954x_i2c_get_channels(i2c[2], 0x70, "pca9548", &i2c[16]);
++    pca954x_i2c_get_channels(i2c[8], 0x70, "pca9548", &i2c[24]);
+     /* NOTE: The device tree skips [32, 40) in the alias numbering */
+-    get_pca9548_channels(i2c600, 0x77, &i2c[40]);
+-    get_pca9548_channels(i2c[24], 0x71, &i2c[48]);
+-    get_pca9548_channels(i2c[25], 0x72, &i2c[56]);
+-    get_pca9548_channels(i2c[26], 0x76, &i2c[64]);
+-    get_pca9548_channels(i2c[27], 0x76, &i2c[72]);
++    pca954x_i2c_get_channels(i2c[11], 0x77, "pca9548", &i2c[40]);
++    pca954x_i2c_get_channels(i2c[24], 0x71, "pca9548", &i2c[48]);
++    pca954x_i2c_get_channels(i2c[25], 0x72, "pca9548", &i2c[56]);
++    pca954x_i2c_get_channels(i2c[26], 0x76, "pca9548", &i2c[64]);
++    pca954x_i2c_get_channels(i2c[27], 0x76, "pca9548", &i2c[72]);
+     for (int i = 0; i < 8; i++) {
+-        get_pca9548_channels(i2c[40 + i], 0x76, &i2c[80 + i * 8]);
++        pca954x_i2c_get_channels(i2c[40 + i], 0x76, "pca9548",
++                                 &i2c[80 + i * 8]);
+     }
+ 
+     i2c_slave_create_simple(i2c[17], TYPE_LM75, 0x4c);
+diff --git a/hw/i2c/i2c_mux_pca954x.c b/hw/i2c/i2c_mux_pca954x.c
+index 3945de795c..6b07804546 100644
+--- a/hw/i2c/i2c_mux_pca954x.c
++++ b/hw/i2c/i2c_mux_pca954x.c
+@@ -169,6 +169,16 @@ I2CBus *pca954x_i2c_get_bus(I2CSlave *mux, uint8_t channel)
+     return pca954x->bus[channel];
+ }
+ 
++void pca954x_i2c_get_channels(I2CBus *bus, uint8_t address,
++                              const char *type_name, I2CBus **channels)
++{
++    I2CSlave *mux = i2c_slave_create_simple(bus, type_name, address);
++    Pca954xClass *pc = PCA954X_GET_CLASS(mux);
++    Pca954xState *pca954x = PCA954X(mux);
++
++    memcpy(channels, pca954x->bus, pc->nchans * sizeof(channels[0]));
++}
++
+ static void pca9546_class_init(ObjectClass *klass, void *data)
+ {
+     Pca954xClass *s = PCA954X_CLASS(klass);
+diff --git a/include/hw/i2c/i2c_mux_pca954x.h b/include/hw/i2c/i2c_mux_pca954x.h
+index 3dd25ec983..3a676a30a9 100644
+--- a/include/hw/i2c/i2c_mux_pca954x.h
++++ b/include/hw/i2c/i2c_mux_pca954x.h
+@@ -16,4 +16,17 @@
+  */
+ I2CBus *pca954x_i2c_get_bus(I2CSlave *mux, uint8_t channel);
+ 
++/**
++ * Creates an i2c mux and retrieves all of the channels associated with it.
++ *
++ * @bus: the i2c bus where the i2c mux resides.
++ * @address: the address of the i2c mux on the aforementioned i2c bus.
++ * @type_name: name of the i2c mux type to create.
++ * @channels: an output parameter specifying where to return the channels.
++ *
++ * Returns: None
++ */
++void pca954x_i2c_get_channels(I2CBus *bus, uint8_t address,
++                              const char *type_name, I2CBus **channels);
++
+ #endif
+-- 
+2.38.2
+

@@ -426,7 +426,7 @@ int SwbBicFwRecoveryComponent::fupdate(string image)
 }
 
 //Print Version
-int get_swb_version (uint8_t bus, uint8_t /*eid*/, uint8_t target, vector<uint8_t> &data) {
+int get_swb_version (uint8_t bus, uint8_t eid, uint8_t target, vector<uint8_t> &data) {
   uint8_t tbuf[255] = {0};
   uint8_t rbuf[255] = {0};
   uint8_t tlen=0;
@@ -435,7 +435,7 @@ int get_swb_version (uint8_t bus, uint8_t /*eid*/, uint8_t target, vector<uint8_
 
   tbuf[tlen++] = target;
 
-  rc = pldm_oem_ipmi_send_recv(bus, SWB_BIC_EID,
+  rc = pldm_oem_ipmi_send_recv(bus, eid,
                                NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER,
                                tbuf, tlen,
                                rbuf, &rlen);
@@ -464,7 +464,15 @@ int SwbBicFwComponent::get_version(json& j) {
   } else {
     j["VERSION"] = "Format not supported";
   }
-  j["PRETTY_COMPONENT"] = "SWB BIC";
+  if (pal_is_artemis()) {
+    if (bus == ACB_BIC_BUS) {
+      j["PRETTY_COMPONENT"] = "ACB BIC";
+    } else {
+      j["PRETTY_COMPONENT"] = "MEB BIC";
+    }
+  } else {
+    j["PRETTY_COMPONENT"] = "SWB BIC";
+  }
   return FW_STATUS_SUCCESS;
 }
 
@@ -486,7 +494,11 @@ int SwbPexFwComponent::get_version(json& j) {
   } else {
     j["VERSION"] = "Format not supported";
   }
-  j["PRETTY_COMPONENT"] = string("SWB PEX") + std::to_string(+id);
+  if (pal_is_artemis()) {
+    j["PRETTY_COMPONENT"] = string("ACB PESW") + std::to_string(+id);
+  } else {
+    j["PRETTY_COMPONENT"] = string("SWB PEX") + std::to_string(+id);
+  }
   return FW_STATUS_SUCCESS;
 }
 
@@ -580,11 +592,24 @@ exit:
   return ret;
 }
 
-SwbBicFwComponent bic("swb", "bic", 3, 0x0A, BIC_COMP);
-SwbBicFwRecoveryComponent bic_recovery("swb", "bic_recovery", 3, 0x0A, BIC_COMP);
+class fw_bic_config {
+  public:
+    fw_bic_config() {
+      if (pal_is_artemis()) {
+        static SwbBicFwComponent acb_bic("acb", "bic", ACB_BIC_BUS, ACB_BIC_EID, BIC_COMP);
+        static SwbBicFwComponent meb_bic("meb", "bic", MEB_BIC_BUS, MEB_BIC_EID, BIC_COMP);
+        static SwbPexFwComponent acb_pesw0("acb", "pesw0", ACB_BIC_BUS, ACB_BIC_EID, PEX0_COMP, 0);
+        static SwbPexFwComponent acb_pesw1("acb", "pesw1", ACB_BIC_BUS, ACB_BIC_EID, PEX1_COMP, 1);
+      } else {
+        static SwbBicFwComponent bic("swb", "bic", 3, 0x0A, BIC_COMP);
+        static SwbBicFwRecoveryComponent bic_recovery("swb", "bic_recovery", 3, 0x0A, BIC_COMP);
+        static SwbPexFwComponent swb_pex0("swb", "pex0", 3, 0x0A, PEX0_COMP, 0);
+        static SwbPexFwComponent swb_pex1("swb", "pex1", 3, 0x0A, PEX1_COMP, 1);
+        static SwbPexFwComponent swb_pex2("swb", "pex2", 3, 0x0A, PEX2_COMP, 2);
+        static SwbPexFwComponent swb_pex3("swb", "pex3", 3, 0x0A, PEX3_COMP, 3);
+        static SwbAllPexFwComponent swb_pex("swb", "pex_all", 3, 0x0A);
+      }
+    }
+};
 
-SwbPexFwComponent swb_pex0("swb", "pex0", 3, 0x0A, PEX0_COMP, 0);
-SwbPexFwComponent swb_pex1("swb", "pex1", 3, 0x0A, PEX1_COMP, 1);
-SwbPexFwComponent swb_pex2("swb", "pex2", 3, 0x0A, PEX2_COMP, 2);
-SwbPexFwComponent swb_pex3("swb", "pex3", 3, 0x0A, PEX3_COMP, 3);
-SwbAllPexFwComponent swb_pex("swb", "pex_all", 3, 0x0A);
+fw_bic_config _fw_bic_config;

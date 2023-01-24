@@ -101,12 +101,19 @@ int SwbVrComponent::fupdate(string image) {
   return ret;
 }
 
+class fw_common_config {
+  public:
+    fw_common_config() {
+      static NicExtComponent nic0("nic0", "nic0", "nic0_fw_ver", FRU_NIC0, 0);
+      if (pal_is_artemis()) {
+        static SwbVrComponent vr_pesw_vcc("acb", "pesw_vr", "VR_PESW_VCC");
+      } else {
+        static UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0T", 14, 0x60, false);
+        static UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 14, 0x60, 0x02);  // target ID of bootloader = 0x02
+        static SwbVrComponent vr_pex0_vcc("swb", "pex01_vcc", "VR_PEX01_VCC");
+        static SwbVrComponent vr_pex1_vcc("swb", "pex23_vcc", "VR_PEX23_VCC");
+      }
+    }
+};
 
-// fru_name, component, kv, fru_id, eth_index, ch_id
-NicExtComponent nic0("nic0", "nic0", "nic0_fw_ver", FRU_NIC0, 0);
-
-UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0T", 14, 0x60, false);
-UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 14, 0x60, 0x02);  // target ID of bootloader = 0x02
-
-SwbVrComponent vr_pex0_vcc("swb", "pex01_vcc", "VR_PEX01_VCC");
-SwbVrComponent vr_pex1_vcc("swb", "pex23_vcc", "VR_PEX23_VCC");
+fw_common_config _fw_common_config;

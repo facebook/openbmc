@@ -14,7 +14,12 @@
 #include "signed_info.hpp"
 
 #define SWB_CPLD_BUS_ID   (7)
+
 #define ACB_CPLD_BUS_ID   (4)
+#define ACB_CPLD_ADDR     (0x40)
+
+#define MEB_CPLD_BUS_ID   (12)
+#define MEB_CPLD_ADDR     (0x40)
 
 using namespace std;
 
@@ -25,10 +30,20 @@ cpld_pldm_wr(uint8_t bus, uint8_t addr,
   uint8_t tbuf[255] = {0};
   uint8_t tlen=0;
   int rc;
+  uint8_t bic_eid = 0;
 
   if (pal_is_artemis()) {
-    tbuf[0] = (ACB_CPLD_BUS_ID << 1) + 1;
+    if (bus == ACB_BIC_BUS) {
+      bic_eid = ACB_BIC_EID;
+      tbuf[0] = (ACB_CPLD_BUS_ID << 1) + 1;
+    } else if (bus == MEB_BIC_BUS) {
+      bic_eid = MEB_BIC_EID;
+      tbuf[0] = (MEB_CPLD_BUS_ID << 1) + 1;
+    } else {
+      return -1;
+    }
   } else {
+    bic_eid = SWB_BIC_EID;
     tbuf[0] = (SWB_CPLD_BUS_ID << 1) + 1;
   }
   tbuf[1] = addr;
@@ -37,7 +52,7 @@ cpld_pldm_wr(uint8_t bus, uint8_t addr,
   tlen = txlen + 3;
 
   size_t rlen = 0;
-  rc = pldm_norm_ipmi_send_recv(bus, SWB_BIC_EID,
+  rc = pldm_norm_ipmi_send_recv(bus, bic_eid,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                tbuf, tlen,
                                rxbuf, &rlen);
@@ -92,8 +107,14 @@ int CpldComponent::get_version(json& j) {
   uint8_t ver[4];
   char strbuf[MAX_VALUE_LEN];
   string comp = this->component();
+  string fru  = this->fru();
   transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
-  j["PRETTY_COMPONENT"] = comp;
+  transform(fru.begin(), fru.end(),fru.begin(), ::toupper);
+  if (pal_is_artemis()) {
+    j["PRETTY_COMPONENT"] = fru + " " + comp;
+  } else {
+    j["PRETTY_COMPONENT"] = comp;
+  }
 
   if (!cpld_intf_open(pld_type, INTF_I2C, &attr)) {
     ret = cpld_get_ver((uint32_t *)ver);
@@ -134,13 +155,21 @@ class fw_cpld_config {
         signed_info::CPLD,
         signed_info::ALL_VENDOR,
       };
-      static GTCpldComponent mb_cpld("mb", "mb_cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
 
-      cpld_info.board_id = signed_info::SWB_BOARD;
-      static GTCpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, 3, 0x40, &cpld_pldm_wr, cpld_info);
-
-      cpld_info.board_id = signed_info::SCM_BOARD;
-      static GTCpldComponent scm_cpld("scm", "scm_cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
+      if (pal_is_artemis()) {
+        // TODO: Add Signed INFO
+        static GTCpldComponent mb_cpld("mb", "cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
+        static GTCpldComponent acb_cpld("acb", "cpld", LCMXO3_9400C, ACB_BIC_BUS, ACB_CPLD_ADDR, &cpld_pldm_wr, cpld_info);
+        static GTCpldComponent meb_cpld("meb", "cpld", LCMXO3_9400C, MEB_BIC_BUS, MEB_CPLD_ADDR, &cpld_pldm_wr, cpld_info);
+        cpld_info.board_id = signed_info::SCM_BOARD;
+        static GTCpldComponent scm_cpld("scm", "cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
+      } else {
+        static GTCpldComponent mb_cpld("mb", "mb_cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
+        cpld_info.board_id = signed_info::SWB_BOARD;
+        static GTCpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, 3, 0x40, &cpld_pldm_wr, cpld_info);
+        cpld_info.board_id = signed_info::SCM_BOARD;
+        static GTCpldComponent scm_cpld("scm", "scm_cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
+      }
     }
 };
 

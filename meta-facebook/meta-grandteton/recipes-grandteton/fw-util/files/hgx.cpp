@@ -3,6 +3,7 @@
 #include <iostream>
 #include <syslog.h>
 #include "fw-util.h"
+#include <openbmc/pal.h>
 
 const char * GPU_PRESENT = "GPU_HMC_PRSNT_ISO_R_N";
 
@@ -45,7 +46,6 @@ class HGXComponent : public Component {
   }
 };
 
-static HGXComponent autocomp("hgx", "auto");
 class HGXSystemConfig {
   static bool isEVT() {
     try {
@@ -57,6 +57,9 @@ class HGXSystemConfig {
   }
   public:
     HGXSystemConfig() {
+      if (!pal_is_artemis()) {
+        static HGXComponent autocomp("hgx", "auto");
+      }
       if (gpio_get_value_by_shadow(GPU_PRESENT) == 0) {
         if (isEVT()) {
           static HGXComponent hmc("hgx", "hmc", "HMC_Firmware");

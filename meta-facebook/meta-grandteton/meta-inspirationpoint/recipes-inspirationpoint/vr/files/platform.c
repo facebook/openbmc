@@ -13,8 +13,7 @@
 
 #define MB_VR_BUS_ID   (20)
 #define SWB_VR_BUS_ID  (3)
-#define MB_VR_CNT      (6)
-#define SWB_VR_CNT     (2)
+#define ACB_VR_BUS_ID  (0)
 
 
 enum {
@@ -24,14 +23,27 @@ enum {
   VR_MB_CPU1_VCORE0   = 3,
   VR_MB_CPU1_VCORE1   = 4,
   VR_MB_CPU1_PVDD11   = 5,
-  VR_SWB_PEX01_VCC    = 6,
-  VR_SWB_PEX23_VCC    = 7,
-  VR_CNT,
+  MB_VR_CNT           = 6,
+};
+
+enum {
+  VR_SWB_PEX01_VCC    = 0,
+  VR_SWB_PEX23_VCC,
+  SWB_VR_CNT,
+};
+
+enum {
+  VR_ACB_PESW_VCC     = 0,
+  ACB_VR_CNT,
 };
 
 enum {
   ADDR_SWB_VR_PEX01 = 0xC0,
   ADDR_SWB_VR_PEX23 = 0xC4,
+};
+
+enum {
+  ADDR_ACB_VR_PESW  = 0xC8,
 };
 
 enum {
@@ -51,6 +63,10 @@ enum {
   ADDR_INF_CPU1_VCORE1  = 0x98,
   ADDR_INF_CPU1_PVDD11  = 0x94,
 };
+
+#define MAX_VR_CNT (MB_VR_CNT + ACB_VR_CNT + SWB_VR_CNT)
+
+struct vr_info vr_list[MAX_VR_CNT] = {0};
 
 int swb_vr_map_id(uint8_t addr, uint8_t* id) {
   switch (addr) {
@@ -91,6 +107,29 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   return ret;
 }
 
+static int
+acb_vr_pldm_wr(uint8_t bus, uint8_t addr,
+           uint8_t *txbuf, uint8_t txlen,
+           uint8_t *rxbuf, uint8_t rxlen) {
+  int ret = 0;
+  size_t rlen = 0;
+  uint8_t tbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t tlen=0;
+
+  tbuf[0] = bus;
+  tbuf[1] = addr;
+  tbuf[2] = rxlen;
+  tlen += 3;
+  memcpy(tbuf + tlen, txbuf, txlen);
+  tlen = txlen + tlen;
+
+  ret = pldm_norm_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID,
+                               NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
+                               tbuf, tlen,
+                               rxbuf, &rlen);
+  return ret;
+}
+
 //Renesas VR
 struct vr_ops raa_gen2_3_ops = {
   .get_fw_ver = get_raa_ver,
@@ -126,8 +165,8 @@ struct vr_ops mp2856_ops = {
   .fw_verify = NULL,
 };
 
-//VR Support list
-struct vr_info vr_list[] = {
+// MB VR Support list
+struct vr_info mb_vr_list[] = {
   [VR_MB_CPU0_VCORE0] = {
     .bus = MB_VR_BUS_ID,
     .addr = ADDR_CPU0_VCORE0,
@@ -176,6 +215,9 @@ struct vr_info vr_list[] = {
     .private_data = "mb",
     .xfer = NULL,
   },
+};
+
+struct vr_info swb_vr_list[] = {
   [VR_SWB_PEX01_VCC] = {
     .bus = SWB_VR_BUS_ID,
     .addr = ADDR_SWB_VR_PEX01,
@@ -194,6 +236,18 @@ struct vr_info vr_list[] = {
   },
 };
 
+/* Artemis ACB */
+struct vr_info acb_vr_list[] = {
+  [VR_ACB_PESW_VCC] = {
+    .bus = ACB_VR_BUS_ID,
+    .addr = ADDR_ACB_VR_PESW,
+    .dev_name = "VR_PESW_VCC",
+    .ops = &xdpe152xx_ops,
+    .private_data = "acb",
+    .xfer = acb_vr_pldm_wr,
+  },
+};
+
 uint8_t mb_inf_vr_addr[] = {
   ADDR_INF_CPU0_VCORE0,
   ADDR_INF_CPU0_VCORE1,
@@ -203,35 +257,68 @@ uint8_t mb_inf_vr_addr[] = {
   ADDR_INF_CPU1_PVDD11,
 };
 
+void
+load_artemis_comp_source(void) {
+  uint8_t source = 0;
 
-int plat_vr_init(void) {
-  int ret, i, vr_cnt = sizeof(vr_list)/sizeof(vr_list[0]);
-  uint8_t id;
-
-//MB
-  get_comp_source(FRU_MB, MB_VR_SOURCE, &id);
-  if (id == SECOND_SOURCE) {
-    for (i = 0; i < MB_VR_CNT; i++) {
+  get_comp_source(FRU_MB, MB_VR_SOURCE, &source);
+  // TODO: GET MB source
+  if (source == SECOND_SOURCE) {
+    for (int i = 0; i < MB_VR_CNT; i++) {
       vr_list[i].ops =  &xdpe152xx_ops;
       vr_list[i].addr = mb_inf_vr_addr[i];
     }
-  } else if (id == THIRD_SOURCE) {
-    for (i = 0; i < MB_VR_CNT; i++) {
-      vr_list[i].ops =  &mp2856_ops;
-      vr_list[i].addr = mb_inf_vr_addr[i];
-    }
   }
+  //get_comp_source(FRU_ACB, VR_SOURCE, &source);
+  // TODO: GET ACB source
+}
 
-//SWB
-  if (fru_presence(FRU_SWB)) {
-    get_comp_source(FRU_SWB, SWB_VR_SOURCE, &id);
-    if(id == SECOND_SOURCE) {
-      for (i = 0; i < SWB_VR_CNT; i++) {
-        vr_list[i+MB_VR_CNT].ops = &xdpe12284c_ops;
+int plat_vr_init(void) {
+  int i = 0;
+  int ret = 0;
+  uint8_t vr_cnt = 0;
+  uint8_t id = 0;
+
+  // Add MB VR
+  memcpy(vr_list + vr_cnt, mb_vr_list, MB_VR_CNT*sizeof(struct vr_info));
+  vr_cnt += MB_VR_CNT;
+
+  if (pal_is_artemis()) {
+    // Add ACB VR
+    if (fru_presence(FRU_ACB)) {
+      memcpy(vr_list + vr_cnt,  acb_vr_list, ACB_VR_CNT*sizeof(struct vr_info));
+      vr_cnt += ACB_VR_CNT;
+    }
+    // get artemis VR source
+    load_artemis_comp_source();
+  } else {
+    // get MB VR source
+    get_comp_source(FRU_MB, MB_VR_SOURCE, &id);
+    if (id == SECOND_SOURCE) {
+      for (i = 0; i < MB_VR_CNT; i++) {
+        vr_list[i].ops =  &xdpe152xx_ops;
+        vr_list[i].addr = mb_inf_vr_addr[i];
       }
     } else if (id == THIRD_SOURCE) {
-      for (i = 0; i < SWB_VR_CNT; i++) {
-        vr_list[i+MB_VR_CNT].ops = &mp2856_ops;
+      for (i = 0; i < MB_VR_CNT; i++) {
+        vr_list[i].ops =  &mp2856_ops;
+        vr_list[i].addr = mb_inf_vr_addr[i];
+      }
+    }
+    // Add SWB VR
+    if (fru_presence(FRU_SWB)) {
+      memcpy(vr_list + vr_cnt, swb_vr_list, SWB_VR_CNT*sizeof(struct vr_info));
+      vr_cnt += SWB_VR_CNT;
+      // get SWB VR source
+      get_comp_source(FRU_SWB, SWB_VR_SOURCE, &id);
+      if(id == SECOND_SOURCE) {
+        for (i = 0; i < SWB_VR_CNT; i++) {
+          vr_list[i+MB_VR_CNT].ops = &xdpe12284c_ops;
+        }
+      } else if (id == THIRD_SOURCE) {
+        for (i = 0; i < SWB_VR_CNT; i++) {
+          vr_list[i+MB_VR_CNT].ops = &mp2856_ops;
+        }
       }
     }
   }

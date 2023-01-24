@@ -104,8 +104,9 @@
 #define ACB_BIC_EID 0x0A
 
 // MEB Device Info
-#define MEB_BIC_BUS 0
+#define MEB_BIC_BUS 9
 #define MEB_BIC_ADDR 0x20
+#define MEB_BIC_EID 0x0A
 
 #define GPION_COMMON_SOURCE_OFFSET   (0xE0)
 #define AST_GPIO_BASE                (0x1e780000)

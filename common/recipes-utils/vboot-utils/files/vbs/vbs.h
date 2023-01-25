@@ -36,6 +36,10 @@ struct vbs {
   /* 2C */ uint32_t subordinate_current;/* Status reporting only: the current booted subordinate. */
   /* 30 */ uint32_t uboot_current;      /* Status reporting only: the current booted U-Boot. */
   /* 34 */ uint32_t kernel_current;     /* Status reporting only: the current booted kernel. */
+  /* 38 */ uint8_t vbs_ver;             /* add vbs version for backward compatible */
+  /* 39 */ uint8_t giu_mode;            /* golden image upgrade mode */
+  /* 3A */ uint16_t op_cert_size;       /* vboot operation certificate data size */
+  /* 3C */ uint32_t op_cert;            /* Location of vboot operation certificate data */
 };
 
 bool        vboot_supported(void);

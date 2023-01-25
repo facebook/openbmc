@@ -25,6 +25,7 @@
 #include <time.h>
 #include <syslog.h>
 #include <errno.h>
+#include <stddef.h>
 #include "vbs.h"
 
 /* definition to expand macro then apply to pragma message */
@@ -95,7 +96,7 @@ bool is_vbs_valid(const struct vbs *vbs)
   mvbs.crc = 0;
   mvbs.uboot_exec_address = 0; // This is not set when SPL computes the CRC.
   mvbs.rom_handoff = 0; // SPL clears this before computing the CRC.
-  mvbs.crc = _crc16((unsigned char *)&mvbs, sizeof(mvbs));
+  mvbs.crc = _crc16((unsigned char *)&mvbs, offsetof(struct vbs, vbs_ver));
   return mvbs.crc == vbs->crc;
 }
 

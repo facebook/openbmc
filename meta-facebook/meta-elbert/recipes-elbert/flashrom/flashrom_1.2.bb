@@ -8,6 +8,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 SRC_URI = "https://download.flashrom.org/releases/flashrom-v${PV}.tar.bz2 \
            file://0001-flashrom-GD25LQ256D.patch \
            file://0002-flashrom-remove-duplicate-N25Q256__1E.patch \
+           file://0003-flashrom-W25Q256JW.patch \
            "
 
 SRC_URI[md5sum] = "7f8e4b87087eb12ecee0fcc5445b4956"

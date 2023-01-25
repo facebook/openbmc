@@ -20,24 +20,14 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += "\
     file://bmc_board_rev.sh \
     file://board-utils.sh \
-    file://dump_gpios.sh \
-    file://meta_info.sh \
-    file://oob-eeprom-util.sh \
     file://oob-mdio-util.sh \
-    file://oob-status.sh \
     file://setup-gpio.sh \
     file://setup_board.sh \
-    file://show_tech.py \
     "
 
 OPENBMC_UTILS_FILES += " \
     bmc_board_rev.sh \
-    dump_gpios.sh \
-    meta_info.sh \
-    oob-eeprom-util.sh \
     oob-mdio-util.sh \
-    oob-status.sh \
-    show_tech.py \
     "
 
 # Not needed for fbdarwin

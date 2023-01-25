@@ -71,6 +71,30 @@ def main(addr, len, binary):
     return EC_SUCCESS
 
 
+def fillwith(addr, len, val):
+    try:
+        memfn = None
+        map_base = page_align_down(addr)
+        map_size = page_align_up(addr + len) - map_base
+        data_off = addr - map_base
+        memfn = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
+        with mmap.mmap(
+            memfn,
+            map_size,
+            mmap.MAP_SHARED,
+            mmap.PROT_WRITE,
+            offset=map_base,
+        ) as mm:
+            mm.seek(data_off)
+            if isinstance(val, int):
+                mm.write(bytearray([val] * len))
+            else:
+                mm.write(val.read())
+    finally:
+        if memfn is not None:
+            os.close(memfn)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="dump the physical memory")
     parser.add_argument(
@@ -96,10 +120,35 @@ if __name__ == "__main__":
         action="store_true",
         help="out put as raw binary can pipe feed to hexdump",
     )
-
+    filldata = parser.add_mutually_exclusive_group()
+    filldata.add_argument(
+        "-w",
+        "--fillwith",
+        nargs="?",
+        const="0xDA",
+        type=lambda x: int(x, 0) % 256,
+        help="fill each byte with input value default(0xDA) before dump",
+    )
+    filldata.add_argument(
+        "-i",
+        "--inputfile",
+        type=argparse.FileType("rb"),
+        help="fill with input file before dump",
+    )
     args = parser.parse_args()
 
     try:
+        if args.fillwith:
+            fillwith(args.addr, args.len, args.fillwith)
+        elif args.inputfile:
+            fillwith(args.addr, args.len, args.inputfile)
+            input_size = args.inputfile.tell()
+            if args.binary and input_size < args.len:
+                # overide dump len to input_size to facilitate verify
+                # data in mem is the same as input file
+                print(f"warning: dump out {input_size} bytes only", file=sys.stderr)
+                args.len = input_size
+
         sys.exit(main(args.addr, args.len, args.binary))
     except Exception as e:
         print("Exception: %s" % (str(e)))

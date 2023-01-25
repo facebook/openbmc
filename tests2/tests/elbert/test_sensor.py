@@ -34,6 +34,7 @@ from tests.elbert.test_data.sensors.sensors import (
     SCM_SENSORS,
     SMB_SENSORS,
 )
+from utils.test_utils import qemu_check
 
 
 class ScmSensorTest(SensorUtilTest, unittest.TestCase):
@@ -195,6 +196,7 @@ class PsuSensorTest(SensorUtilTest, unittest.TestCase):
                 )
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Psu1SensorTest(PsuSensorTest, unittest.TestCase):
     def set_psu_id(self):
         self._psu_id = 1
@@ -203,6 +205,7 @@ class Psu1SensorTest(PsuSensorTest, unittest.TestCase):
         super().base_test_psu_sensor_keys()
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Psu2SensorTest(PsuSensorTest, unittest.TestCase):
     def set_psu_id(self):
         self._psu_id = 2
@@ -211,6 +214,7 @@ class Psu2SensorTest(PsuSensorTest, unittest.TestCase):
         super().base_test_psu_sensor_keys()
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Psu3SensorTest(PsuSensorTest, unittest.TestCase):
     def set_psu_id(self):
         self._psu_id = 3
@@ -219,6 +223,7 @@ class Psu3SensorTest(PsuSensorTest, unittest.TestCase):
         super().base_test_psu_sensor_keys()
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Psu4SensorTest(PsuSensorTest, unittest.TestCase):
     def set_psu_id(self):
         self._psu_id = 4
@@ -227,6 +232,7 @@ class Psu4SensorTest(PsuSensorTest, unittest.TestCase):
         super().base_test_psu_sensor_keys()
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class AllSensorTest(SensorUtilTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util all"]

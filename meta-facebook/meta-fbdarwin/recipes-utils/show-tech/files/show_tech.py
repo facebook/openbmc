@@ -21,10 +21,7 @@
 # This script is for dumping debug information on fbdarwin
 
 import argparse
-import os
-import string
 import subprocess
-import time
 
 
 VERSION = "0.10"

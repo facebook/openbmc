@@ -38,7 +38,7 @@
 
 #define BIN_MB        "/tmp/fruid_mb.bin"
 #define FRUID_SIZE    512
-#define FRU_READ_RETRY (3)
+#define MAX_FRU_READ_RETRY (3)
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
@@ -96,11 +96,19 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
 
 static void
 *pldm_fru_reader(void *arg) {
-  uint8_t retry = FRU_READ_RETRY;
+  uint8_t retry = MAX_FRU_READ_RETRY;
   char fru_bin_path[32] = {0};
   int fru = (int)arg;
   uint8_t status = 0;
   pthread_detach(pthread_self());
+  bic_intf fru_bic_info = {0};
+
+  fru_bic_info.fru_id = fru;
+  pal_get_bic_intf(&fru_bic_info);
+
+  if (!pal_is_artemis()) {
+    fru_bic_info.fru_id = pal_get_pldm_fru_id(fru);
+  }
 
   if (!pal_is_fru_prsnt(fru, &status)) {
     if (status == FRU_NOT_PRSNT) {
@@ -115,7 +123,7 @@ static void
 
   sleep(2);
   while(retry > 0) {
-    if (hal_read_pldm_fruid(pal_get_pldm_fru_id(fru), fru_bin_path, FRUID_SIZE) == 0) {
+    if (hal_read_pldm_fruid(fru_bic_info, fru_bin_path, FRUID_SIZE) == 0) {
       break;
     }
 

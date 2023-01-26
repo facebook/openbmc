@@ -1,7 +1,14 @@
 #ifndef __HAL_FRUID_H__
 #define __HAL_FRUID_H__
 
-int hal_read_pldm_fruid(uint8_t fru_id, const char *path, int fru_size);
-int hal_write_pldm_fruid(uint8_t fru_id, const char *path);
+typedef struct {
+  uint8_t fru_id;
+  uint8_t root_fru;
+  uint8_t bus_id;
+  uint8_t bic_eid;
+} bic_intf;
+
+int hal_read_pldm_fruid(bic_intf fru_bic_info, const char *path, int fru_size);
+int hal_write_pldm_fruid(bic_intf fru_bic_info, const char *path);
 #endif
 

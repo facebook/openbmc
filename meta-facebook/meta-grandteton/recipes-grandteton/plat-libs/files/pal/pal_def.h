@@ -108,6 +108,12 @@
 #define MEB_BIC_ADDR 0x20
 #define MEB_BIC_EID 0x0A
 
+typedef struct {
+  uint8_t fru_prsnt;
+  uint8_t fru_type;
+} fru_status;
+/* Artemis End */
+
 #define GPION_COMMON_SOURCE_OFFSET   (0xE0)
 #define AST_GPIO_BASE                (0x1e780000)
 
@@ -222,6 +228,20 @@ enum {
   FRU_ACB_ACCL10,
   FRU_ACB_ACCL11,
   FRU_ACB_ACCL12,
+  FRU_MEB_JCN1,
+  FRU_MEB_JCN2,
+  FRU_MEB_JCN3,
+  FRU_MEB_JCN4,
+  FRU_MEB_JCN5,
+  FRU_MEB_JCN6,
+  FRU_MEB_JCN7,
+  FRU_MEB_JCN8,
+  FRU_MEB_JCN9,
+  FRU_MEB_JCN10,
+  FRU_MEB_JCN11,
+  FRU_MEB_JCN12,
+  FRU_MEB_JCN13,
+  FRU_MEB_JCN14,
   FRU_CNT,
 };
 
@@ -354,20 +374,6 @@ enum PLDM_FRU_ID {
   PLDM_FRU_SWB,
   PLDM_FRU_FIO,
   PLDM_FRU_SHSC,
-  // PLDM Artemis FRU ID to BIC
-  PLDM_FRU_ACB,
-  PLDM_FRU_ACB_ACCL1,
-  PLDM_FRU_ACB_ACCL2,
-  PLDM_FRU_ACB_ACCL3,
-  PLDM_FRU_ACB_ACCL4,
-  PLDM_FRU_ACB_ACCL5,
-  PLDM_FRU_ACB_ACCL6,
-  PLDM_FRU_ACB_ACCL7,
-  PLDM_FRU_ACB_ACCL8,
-  PLDM_FRU_ACB_ACCL9,
-  PLDM_FRU_ACB_ACCL10,
-  PLDM_FRU_ACB_ACCL11,
-  PLDM_FRU_ACB_ACCL12,
 };
 
 enum FRU_PRESENT {
@@ -375,14 +381,34 @@ enum FRU_PRESENT {
   FRU_PRSNT,
 };
 
-enum ARTEMIS_OEM_COMMAND {
-  OEM_GET_ASIC_CARD_STATUS = 0x76,
-};
-
 enum FRU_PATH_TYPE {
   FRU_PATH_NONE,
   FRU_PATH_EEPROM,
   FRU_PATH_PLDM,
 };
+
+/* Artemis */
+enum ARTEMIS_OEM_COMMAND {
+  CMD_OEM_1S_GET_ASIC_CARD_STATUS = 0x76,
+};
+
+// JCN can plug dual or single devices
+enum MEB_JCN_LOCATION {
+  JCN_0_1 = 0, // dual device on location 0 and 1
+  JCN_0, // single device on location 0
+  JCN_1, // single device on location 1
+};
+
+enum MEB_JCN_TYPE {
+  E1S_CARD,
+  E1S_0_CARD,
+  E1S_1_CARD,
+  E1S_0_1_CARD,
+  NIC_CARD,
+  CXL_CARD,
+  UNKNOWN_CARD = 0xff,
+};
+
+/* Artemis End */
 
 #endif

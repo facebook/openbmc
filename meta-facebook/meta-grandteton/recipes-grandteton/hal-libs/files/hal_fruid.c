@@ -37,31 +37,35 @@
 #define MAX_RXBUF_SIZE         (255)
 
 static int
-get_pldm_fruid_info(uint8_t fru_id, ipmi_fruid_info_t *info) {
+get_pldm_fruid_info(bic_intf fru_bic_info, ipmi_fruid_info_t *info) {
   int rc;
-  size_t rxlen = 0;
+  uint8_t txlen = 0;
+  size_t  rxlen = 0;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
 
-  rc = pldm_norm_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
+  txbuf[txlen++] = fru_bic_info.fru_id;
+
+  rc = pldm_norm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO,
-                               &fru_id, 1,
+                               txbuf, txlen,
                                (uint8_t*)info, &rxlen);
 
   return rc;
 }
 
 static int
-_read_pldm_fruid(uint8_t fru_id, uint16_t offset, uint8_t count, uint8_t *rbuf, size_t *rlen) {
+_read_pldm_fruid(bic_intf fru_bic_info, uint16_t offset, uint8_t count, uint8_t *rbuf, size_t *rlen) {
   int rc;
   uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
   uint8_t txlen = 0;
 
-  txbuf[txlen++] = fru_id;
+  txbuf[txlen++] = fru_bic_info.fru_id;
   txbuf[txlen++] = offset & 0xFF;
   txbuf[txlen++] = (offset >> 8) & 0xFF;
   txbuf[txlen++] = count;
 
 
-  rc = pldm_norm_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
+  rc = pldm_norm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_READ_FRUID_DATA,
                                txbuf, txlen,
                                rbuf, rlen);
@@ -69,20 +73,21 @@ _read_pldm_fruid(uint8_t fru_id, uint16_t offset, uint8_t count, uint8_t *rbuf, 
 }
 
 static int
-_write_pldm_fruid(uint8_t fru_id, uint16_t offset, uint8_t count, uint8_t *buf) {
+_write_pldm_fruid(bic_intf fru_bic_info, uint16_t offset, uint8_t count, uint8_t *buf) {
   int rc;
   uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
   uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
   uint8_t txlen = 0;
   size_t  rxlen = 0;
 
-  txbuf[txlen++] = fru_id;
+  txbuf[txlen++] = fru_bic_info.fru_id;
   txbuf[txlen++] = offset & 0xFF;
   txbuf[txlen++] = (offset >> 8) & 0xFF;
   memcpy(txbuf + txlen, buf, count);
   txlen = count + txlen ;
 
-  rc = pldm_norm_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
+  syslog(LOG_INFO, "%s() fru:%d", __func__, fru_bic_info.fru_id);
+  rc = pldm_norm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_WRITE_FRUID_DATA,
                                txbuf, txlen,
                                rxbuf, &rxlen);
@@ -92,7 +97,7 @@ _write_pldm_fruid(uint8_t fru_id, uint16_t offset, uint8_t count, uint8_t *buf) 
   return rc;
 }
 
-int hal_read_pldm_fruid(uint8_t fru_id, const char *path, int fru_size) {
+int hal_read_pldm_fruid(bic_intf fru_bic_info, const char *path, int fru_size) {
   int ret=-1;
   int fd;
   size_t nread, offset;
@@ -113,9 +118,9 @@ int hal_read_pldm_fruid(uint8_t fru_id, const char *path, int fru_size) {
 
   do {
     // Read the FRUID information
-    ret = get_pldm_fruid_info(fru_id, &info);
+    ret = get_pldm_fruid_info(fru_bic_info, &info);
     if (ret) {
-      syslog(LOG_ERR, "%s: get_pldm_fruid_info returns %d", __func__, ret);
+      syslog(LOG_ERR, "%s: FRU: %d get_pldm_fruid_info returns %d", __func__, fru_bic_info.fru_id, ret);
       break;
     }
 
@@ -130,7 +135,7 @@ int hal_read_pldm_fruid(uint8_t fru_id, const char *path, int fru_size) {
     while (nread > 0) {
       count = (nread > FRUID_READ_COUNT_MAX) ? FRUID_READ_COUNT_MAX : nread;
       rlen = sizeof(rbuf);
-      ret = _read_pldm_fruid(fru_id, offset, count, rbuf, &rlen);
+      ret = _read_pldm_fruid(fru_bic_info, offset, count, rbuf, &rlen);
       if (ret || (rlen < 1)) {
         break;
       }
@@ -158,7 +163,7 @@ exit:
 }
 
 int
-hal_write_pldm_fruid(uint8_t fru_id, const char *path) {
+hal_write_pldm_fruid(bic_intf fru_bic_info, const char *path) {
   int fd, ret = -1, count;
   uint16_t offset;
   uint8_t buf[MAX_RXBUF_SIZE] = {0};
@@ -179,7 +184,7 @@ hal_write_pldm_fruid(uint8_t fru_id, const char *path) {
     }
 
     // Write to the FRUID
-    ret = _write_pldm_fruid(fru_id, offset, count, buf);
+    ret = _write_pldm_fruid(fru_bic_info, offset, count, buf);
     if (ret) {
       break;
     }

@@ -269,7 +269,6 @@ load_artemis_comp_source(void) {
       vr_list[i].addr = mb_inf_vr_addr[i];
     }
   }
-  //get_comp_source(FRU_ACB, VR_SOURCE, &source);
   // TODO: GET ACB source
 }
 
@@ -278,6 +277,7 @@ int plat_vr_init(void) {
   int ret = 0;
   uint8_t vr_cnt = 0;
   uint8_t id = 0;
+  uint8_t status = 0;
 
   // Add MB VR
   memcpy(vr_list + vr_cnt, mb_vr_list, MB_VR_CNT*sizeof(struct vr_info));
@@ -285,7 +285,7 @@ int plat_vr_init(void) {
 
   if (pal_is_artemis()) {
     // Add ACB VR
-    if (fru_presence(FRU_ACB)) {
+    if (fru_presence(FRU_ACB, &status) && (status == FRU_PRSNT)) {
       memcpy(vr_list + vr_cnt,  acb_vr_list, ACB_VR_CNT*sizeof(struct vr_info));
       vr_cnt += ACB_VR_CNT;
     }
@@ -306,7 +306,7 @@ int plat_vr_init(void) {
       }
     }
     // Add SWB VR
-    if (fru_presence(FRU_SWB)) {
+    if (fru_presence(FRU_SWB, &status) && (status == FRU_PRSNT)) {
       memcpy(vr_list + vr_cnt, swb_vr_list, SWB_VR_CNT*sizeof(struct vr_info));
       vr_cnt += SWB_VR_CNT;
       // get SWB VR source

@@ -1,6 +1,8 @@
 #ifndef __PAL_COMMON_H__
 #define __PAL_COMMON_H__
 
+#include <openbmc/hal_fruid.h>
+
 enum {
   MAIN_SOURCE = 0,
   SECOND_SOURCE = 1,
@@ -36,8 +38,7 @@ enum {
   FAN_BP2_FAN_SOURCE,
 };
 
-bool fru_presence(uint8_t fru_id);
-bool pldm_fru_prsnt(uint8_t pldm_fru_id);
+bool fru_presence(uint8_t fru_id, uint8_t *status);
 bool is_cpu_socket_occupy(uint8_t cpu_idx);
 bool pal_skip_access_me(void);
 int read_device(const char *device, int *value);

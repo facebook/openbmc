@@ -26,6 +26,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <openbmc/hal_fruid.h>
 #include "pal_sensors.h"
 #include "pal_health.h"
 #include "pal_power.h"
@@ -58,6 +60,9 @@ bool pal_is_artemis(void);
 uint8_t pal_get_pldm_fru_id(uint8_t fru);
 uint8_t pal_get_fru_path_type(uint8_t fru);
 int pal_control_mux_to_target_ch(uint8_t bus, uint8_t mux_addr, uint8_t channel);
+bool pal_is_pldm_fru_prsnt(uint8_t fru, uint8_t *status);
+int pal_get_pldm_fru_status(uint8_t fru, uint8_t dev_id, fru_status *status);
+void pal_get_bic_intf(bic_intf *fru_bic_info);
 
 #ifdef __cplusplus
 } // extern "C"

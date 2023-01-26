@@ -12,6 +12,8 @@
 #include "pal_common.h"
 #include "pal_def.h"
 #include "pal_swb_sensors.h"
+#include <openbmc/hal_fruid.h>
+#include "pal.h"
 
 
 //#define DEBUG
@@ -129,44 +131,7 @@ read_device(const char *device, int *value) {
 }
 
 bool
-pldm_fru_prsnt(uint8_t pldm_fru_id) {
-  int ret = 0;
-  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
-  uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
-  uint8_t txlen = 0;
-  size_t  rxlen = 0;
-  switch (pldm_fru_id) {
-    case PLDM_FRU_FIO:
-    case PLDM_FRU_ACB_ACCL1:
-    case PLDM_FRU_ACB_ACCL2:
-    case PLDM_FRU_ACB_ACCL3:
-    case PLDM_FRU_ACB_ACCL4:
-    case PLDM_FRU_ACB_ACCL5:
-    case PLDM_FRU_ACB_ACCL6:
-    case PLDM_FRU_ACB_ACCL7:
-    case PLDM_FRU_ACB_ACCL8:
-    case PLDM_FRU_ACB_ACCL9:
-    case PLDM_FRU_ACB_ACCL10:
-    case PLDM_FRU_ACB_ACCL11:
-    case PLDM_FRU_ACB_ACCL12:
-      if (!fru_presence(FRU_ACB)) {
-        return false;
-      }
-      txbuf[txlen++] = pldm_fru_id;
-      ret = pldm_oem_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID, NETFN_OEM_1S_REQ,
-                  OEM_GET_ASIC_CARD_STATUS, txbuf, txlen, rxbuf, &rxlen);
-      if ((ret != 0) || (rxlen < 1) || (rxbuf[0] == FRU_NOT_PRSNT)) {
-        return false;
-      } else {
-        return true;
-      }
-    default:
-      return true;
-  }
-}
-
-bool
-fru_presence(uint8_t fru_id) {
+fru_presence(uint8_t fru_id, uint8_t *status) {
   gpio_value_t value;
   switch (fru_id) {
     case FRU_FIO:
@@ -174,22 +139,27 @@ fru_presence(uint8_t fru_id) {
     case FRU_SWB:
       value = gpio_get_value_by_shadow(BIC_READY);
       if(value != GPIO_VALUE_INVALID) {
-        return value ? false : true;
+        *status = value ? FRU_NOT_PRSNT: FRU_PRSNT;
+        return true;
       }
       return false;
     case FRU_HGX:
       value = gpio_get_value_by_shadow(HMC_PRESENCE);
       if(value != GPIO_VALUE_INVALID) {
-        return value ? false : true;
+        *status = value ? FRU_NOT_PRSNT: FRU_PRSNT;
+        return true;
       }
       return false;
     case FRU_ACB:
       // TODO: Read MB CPLD register
+      *status = FRU_PRSNT;
       return true;
     case FRU_MEB:
       // TODO: Read MB CPLD register
-      return false;
+      *status = FRU_PRSNT;
+      return true;
     default:
+      *status = FRU_PRSNT;
       return true;
   }
 }
@@ -319,9 +289,10 @@ is_swb_hsc_module(void) {
   static bool cached = false;
   static bool val = false;
   uint8_t id;
+  uint8_t status = 0;
 
   if(!cached) {
-    if(fru_presence(FRU_SWB)) {
+    if(fru_presence(FRU_SWB, &status) && status == FRU_PRSNT) {
       get_comp_source(FRU_SWB, SWB_HSC_SOURCE, &id);
       if (id == SECOND_SOURCE || id == THIRD_SOURCE)
         val = true;

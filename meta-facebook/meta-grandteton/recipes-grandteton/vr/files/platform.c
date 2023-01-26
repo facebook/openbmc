@@ -206,7 +206,8 @@ uint8_t mb_inf_vr_addr[] = {
 
 int plat_vr_init(void) {
   int ret, i, vr_cnt = sizeof(vr_list)/sizeof(vr_list[0]);
-  uint8_t id;
+  uint8_t id = 0;
+  uint8_t status = 0;
 
 //MB
   get_comp_source(FRU_MB, MB_VR_SOURCE, &id);
@@ -222,7 +223,7 @@ int plat_vr_init(void) {
   }
 
 //SWB
-  if (fru_presence(FRU_SWB)) {
+  if (fru_presence(FRU_SWB, &status) && status == FRU_PRSNT) {
     get_comp_source(FRU_SWB, SWB_VR_SOURCE, &id);
     if(id == SECOND_SOURCE) {
       for (i = 0; i < SWB_VR_CNT; i++) {

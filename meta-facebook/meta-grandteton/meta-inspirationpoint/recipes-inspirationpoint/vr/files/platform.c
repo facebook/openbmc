@@ -13,8 +13,6 @@
 
 #define MB_VR_BUS_ID   (20)
 #define SWB_VR_BUS_ID  (3)
-#define ACB_VR_BUS_ID  (0)
-
 
 enum {
   VR_MB_CPU0_VCORE0   = 0,
@@ -32,9 +30,37 @@ enum {
   SWB_VR_CNT,
 };
 
-enum {
+enum ARTEMIS_ACB_VR {
   VR_ACB_PESW_VCC     = 0,
   ACB_VR_CNT,
+};
+
+enum ARTEMIS_CXL_VR {
+  JCN1_VR_CXL_A0V8_9,
+  JCN1_VR_CXL_VDDQ_AB,
+  JCN1_VR_CXL_VDDQ_CD,
+  JCN2_VR_CXL_A0V8_9,
+  JCN2_VR_CXL_VDDQ_AB,
+  JCN2_VR_CXL_VDDQ_CD,
+  JCN3_VR_CXL_A0V8_9,
+  JCN3_VR_CXL_VDDQ_AB,
+  JCN3_VR_CXL_VDDQ_CD,
+  JCN4_VR_CXL_A0V8_9,
+  JCN4_VR_CXL_VDDQ_AB,
+  JCN4_VR_CXL_VDDQ_CD,
+  JCN9_VR_CXL_A0V8_9,
+  JCN9_VR_CXL_VDDQ_AB,
+  JCN9_VR_CXL_VDDQ_CD,
+  JCN10_VR_CXL_A0V8_9,
+  JCN10_VR_CXL_VDDQ_AB,
+  JCN10_VR_CXL_VDDQ_CD,
+  JCN11_VR_CXL_A0V8_9,
+  JCN11_VR_CXL_VDDQ_AB,
+  JCN11_VR_CXL_VDDQ_CD,
+  JCN12_VR_CXL_A0V8_9,
+  JCN12_VR_CXL_VDDQ_AB,
+  JCN12_VR_CXL_VDDQ_CD,
+  CXL_VR_CNT,
 };
 
 enum {
@@ -42,8 +68,14 @@ enum {
   ADDR_SWB_VR_PEX23 = 0xC4,
 };
 
-enum {
+enum ARTEMIS_ACB_VR_ADDRESS {
   ADDR_ACB_VR_PESW  = 0xC8,
+};
+
+enum ARTEMIS_CXL_VR_ADDRESS {
+  ADDR_CXL_VR_A0V8_9  = 0xC8,
+  AADR_CXL_VR_VDDQ_AB = 0xB0,
+  ADDR_CXL_VR_ADDQ_CD = 0xB4,
 };
 
 enum {
@@ -64,7 +96,7 @@ enum {
   ADDR_INF_CPU1_PVDD11  = 0x94,
 };
 
-#define MAX_VR_CNT (MB_VR_CNT + ACB_VR_CNT + SWB_VR_CNT)
+#define MAX_VR_CNT (MB_VR_CNT + ACB_VR_CNT + SWB_VR_CNT + CXL_VR_CNT)
 
 struct vr_info vr_list[MAX_VR_CNT] = {0};
 
@@ -124,6 +156,29 @@ acb_vr_pldm_wr(uint8_t bus, uint8_t addr,
   tlen = txlen + tlen;
 
   ret = pldm_norm_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID,
+                               NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
+                               tbuf, tlen,
+                               rxbuf, &rlen);
+  return ret;
+}
+
+static int
+cxl_vr_pldm_wr(uint8_t bus, uint8_t addr,
+           uint8_t *txbuf, uint8_t txlen,
+           uint8_t *rxbuf, uint8_t rxlen) {
+  int ret = 0;
+  size_t rlen = 0;
+  uint8_t tbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t tlen=0;
+
+  tbuf[0] = bus;
+  tbuf[1] = addr;
+  tbuf[2] = rxlen;
+  tlen += 3;
+  memcpy(tbuf + tlen, txbuf, txlen);
+  tlen = txlen + tlen;
+
+  ret = pldm_norm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                tbuf, tlen,
                                rxbuf, &rlen);
@@ -248,6 +303,202 @@ struct vr_info acb_vr_list[] = {
   },
 };
 
+/* Artemis CXL */
+struct vr_info cxl_vr_list[] = {
+  [JCN1_VR_CXL_A0V8_9] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_A0V8_9,
+    .dev_name = "MEB JCN1 VR_A0V8_9",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn1",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN1_VR_CXL_VDDQ_AB] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = AADR_CXL_VR_VDDQ_AB,
+    .dev_name = "MEB JCN1 VR_VDDQ_AB",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn1",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN1_VR_CXL_VDDQ_CD] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_ADDQ_CD,
+    .dev_name = "MEB JCN1 VR_VDDQ_CD",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn1",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN2_VR_CXL_A0V8_9] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_A0V8_9,
+    .dev_name = "MEB JCN2 VR_A0V8_9",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn2",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN2_VR_CXL_VDDQ_AB] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = AADR_CXL_VR_VDDQ_AB,
+    .dev_name = "MEB JCN2 VR_VDDQ_AB",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn2",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN2_VR_CXL_VDDQ_CD] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_ADDQ_CD,
+    .dev_name = "MEB JCN2 VR_VDDQ_CD",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn2",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN3_VR_CXL_A0V8_9] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_A0V8_9,
+    .dev_name = "MEB JCN3 VR_A0V8_9",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn3",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN3_VR_CXL_VDDQ_AB] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = AADR_CXL_VR_VDDQ_AB,
+    .dev_name = "MEB JCN3 VR_VDDQ_AB",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn3",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN3_VR_CXL_VDDQ_CD] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_ADDQ_CD,
+    .dev_name = "MEB JCN3 VR_VDDQ_CD",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn3",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN4_VR_CXL_A0V8_9] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_A0V8_9,
+    .dev_name = "MEB JCN4 VR_A0V8_9",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn4",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN4_VR_CXL_VDDQ_AB] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = AADR_CXL_VR_VDDQ_AB,
+    .dev_name = "MEB JCN4 VR_VDDQ_AB",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn4",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN4_VR_CXL_VDDQ_CD] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_ADDQ_CD,
+    .dev_name = "MEB JCN4 VR_VDDQ_CD",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn4",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN9_VR_CXL_A0V8_9] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_A0V8_9,
+    .dev_name = "MEB JCN9 VR_A0V8_9",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn9",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN9_VR_CXL_VDDQ_AB] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = AADR_CXL_VR_VDDQ_AB,
+    .dev_name = "MEB JCN9 VR_VDDQ_AB",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn9",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN9_VR_CXL_VDDQ_CD] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_ADDQ_CD,
+    .dev_name = "MEB JCN9 VR_VDDQ_CD",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn9",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN10_VR_CXL_A0V8_9] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_A0V8_9,
+    .dev_name = "MEB JCN10 VR_A0V8_9",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn10",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN10_VR_CXL_VDDQ_AB] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = AADR_CXL_VR_VDDQ_AB,
+    .dev_name = "MEB JCN10 VR_VDDQ_AB",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn10",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN10_VR_CXL_VDDQ_CD] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_ADDQ_CD,
+    .dev_name = "MEB JCN10 VR_VDDQ_CD",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn10",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN11_VR_CXL_A0V8_9] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_A0V8_9,
+    .dev_name = "MEB JCN11 VR_A0V8_9",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn11",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN11_VR_CXL_VDDQ_AB] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = AADR_CXL_VR_VDDQ_AB,
+    .dev_name = "MEB JCN11 VR_VDDQ_AB",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn11",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN11_VR_CXL_VDDQ_CD] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_ADDQ_CD,
+    .dev_name = "MEB JCN11 VR_VDDQ_CD",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn11",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN12_VR_CXL_A0V8_9] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_A0V8_9,
+    .dev_name = "MEB JCN12 VR_A0V8_9",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn12",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN12_VR_CXL_VDDQ_AB] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = AADR_CXL_VR_VDDQ_AB,
+    .dev_name = "MEB JCN12 VR_VDDQ_AB",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn12",
+    .xfer = cxl_vr_pldm_wr,
+  },
+  [JCN12_VR_CXL_VDDQ_CD] = {
+    .bus = CXL_VR_BUS_ID,
+    .addr = ADDR_CXL_VR_ADDQ_CD,
+    .dev_name = "MEB JCN12 VR_VDDQ_CD",
+    .ops = &xdpe12284c_ops,
+    .private_data = "meb_jcn12",
+    .xfer = cxl_vr_pldm_wr,
+  },
+};
+
 uint8_t mb_inf_vr_addr[] = {
   ADDR_INF_CPU0_VCORE0,
   ADDR_INF_CPU0_VCORE1,
@@ -285,9 +536,14 @@ int plat_vr_init(void) {
 
   if (pal_is_artemis()) {
     // Add ACB VR
-    if (fru_presence(FRU_ACB, &status) && (status == FRU_PRSNT)) {
+    if (pal_is_fru_prsnt(FRU_ACB, &status) == 0 && (status == FRU_PRSNT)) {
       memcpy(vr_list + vr_cnt,  acb_vr_list, ACB_VR_CNT*sizeof(struct vr_info));
       vr_cnt += ACB_VR_CNT;
+    }
+    // Add MEB CXL VR
+    if (pal_is_fru_prsnt(FRU_MEB, &status) == 0 && (status == FRU_PRSNT)) {
+      memcpy(vr_list + vr_cnt,  cxl_vr_list, CXL_VR_CNT*sizeof(struct vr_info));
+      vr_cnt += CXL_VR_CNT;
     }
     // get artemis VR source
     load_artemis_comp_source();

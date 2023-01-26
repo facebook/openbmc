@@ -108,6 +108,15 @@
 #define MEB_BIC_ADDR 0x20
 #define MEB_BIC_EID 0x0A
 
+#define ACB_VR_BUS_ID   (1)
+#define CXL_VR_BUS_ID   (2)
+
+#define CXL_VR_NUM      (3)
+
+// JCN1,2,3,4,9,10,11,12 can plug CXL or E1.S
+// JCN5,6,7,8 plugs E1.S
+#define MAX_CXL_NUM 8
+
 typedef struct {
   uint8_t fru_prsnt;
   uint8_t fru_type;

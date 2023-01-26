@@ -12,6 +12,7 @@ class VrComponent : public Component {
     int get_version(json& j) override;
     int update(std::string image) override;
     int fupdate(std::string image) override;
+    const std::string &get_dev_name(void) const { return dev_name; }
 };
 
 #endif

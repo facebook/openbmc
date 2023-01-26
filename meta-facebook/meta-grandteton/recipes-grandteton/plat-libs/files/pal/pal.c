@@ -1179,6 +1179,93 @@ pal_is_pldm_fru_prsnt(uint8_t fru, uint8_t *status) {
 }
 
 int
+pal_get_root_fru(uint8_t fru, uint8_t *root) {
+  if (!pal_is_artemis()) {
+    return PAL_ENOTSUP;
+  }
+  switch (fru) {
+    case FRU_ACB_ACCL1:
+    case FRU_ACB_ACCL2:
+    case FRU_ACB_ACCL3:
+    case FRU_ACB_ACCL4:
+    case FRU_ACB_ACCL5:
+    case FRU_ACB_ACCL6:
+    case FRU_ACB_ACCL7:
+    case FRU_ACB_ACCL8:
+    case FRU_ACB_ACCL9:
+    case FRU_ACB_ACCL10:
+    case FRU_ACB_ACCL11:
+    case FRU_ACB_ACCL12:
+      *root = FRU_ACB;
+      break;
+    case FRU_MEB_JCN1:
+    case FRU_MEB_JCN2:
+    case FRU_MEB_JCN3:
+    case FRU_MEB_JCN4:
+    case FRU_MEB_JCN5:
+    case FRU_MEB_JCN6:
+    case FRU_MEB_JCN7:
+    case FRU_MEB_JCN8:
+    case FRU_MEB_JCN9:
+    case FRU_MEB_JCN10:
+    case FRU_MEB_JCN11:
+    case FRU_MEB_JCN12:
+    case FRU_MEB_JCN13:
+    case FRU_MEB_JCN14:
+      *root = FRU_MEB;
+      break;
+    default:
+      *root = fru;
+      break;
+  }
+  return PAL_EOK;
+}
+
+bool
+pal_is_fw_update_ongoing(uint8_t fruid) {
+  uint8_t root_fruid = fruid;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  int ret = 0;
+  struct timespec ts;
+
+  pal_get_root_fru(fruid, &root_fruid);
+  snprintf(key, sizeof(key), "fru%d_fwupd", root_fruid);
+  ret = kv_get(key, value, NULL, 0);
+  if (ret < 0) {
+    return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec) {
+    return true;
+  }
+
+  return false;
+}
+
+int
+pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  uint8_t root_fruid = 0;
+
+  pal_get_root_fru(fruid, &root_fruid);
+  snprintf(key, sizeof(key), "fru%d_fwupd", root_fruid);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+
+  if (kv_set(key, value, 0, 0) < 0) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int
 pal_get_pldm_fru_status(uint8_t fru, uint8_t dev_id, fru_status *status) {
   if (!status) {
     syslog(LOG_WARNING, "%s() Status pointer is NULL.", __func__);

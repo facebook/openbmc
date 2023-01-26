@@ -63,6 +63,9 @@ int pal_control_mux_to_target_ch(uint8_t bus, uint8_t mux_addr, uint8_t channel)
 bool pal_is_pldm_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_get_pldm_fru_status(uint8_t fru, uint8_t dev_id, fru_status *status);
 void pal_get_bic_intf(bic_intf *fru_bic_info);
+int pal_get_root_fru(uint8_t fru, uint8_t *root);
+bool pal_is_fw_update_ongoing(uint8_t fruid);
+int pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout);
 
 #ifdef __cplusplus
 } // extern "C"

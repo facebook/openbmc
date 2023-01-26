@@ -19,6 +19,7 @@
 #
 
 import json
+from typing import Tuple
 
 import aiohttp
 
@@ -40,6 +41,45 @@ async def get_modbus_registers_raw():
     return json.dumps(obj)
 
 
+# Takes a string which is expected to be JSON formatted
+# as {"status": "V", "data": [stuff]} and return the split
+# "V", "[stuff]" to the user without decoding the actual
+# JSON. This is allowing us to get to "[stuff]" without
+# actually decoding that JSON thus saving a lot of time
+# in decoding/encoding.
+def pop_status_data(jstr: str) -> Tuple[str, str]:
+    off = jstr.find('"status"')
+    if off == -1:
+        return "INVALID_JSON", jstr
+    pre = jstr[:off].strip()
+    off = jstr.find(":", off)
+    if off == -1:
+        return "INVALID_JSON", jstr
+    off += 1
+    while jstr[off] == " ":
+        off += 1
+    token = jstr[off]
+    off2 = jstr.find(token, off + 1)
+    status = jstr[off + 1 : off2]
+    post = jstr[off2 + 1 :].strip()
+    if pre.endswith(",") and post[0] == "}":
+        pre = pre[:-1]
+    if pre[-1] in ["{", ","] and post[0] == ",":
+        post = post[1:].strip()
+    rem = pre + post
+    rem = rem.strip()
+    if not rem.startswith("{") or not rem.endswith("}"):
+        return "INVALID_JSON", jstr
+    rem = rem[1:-1].strip()
+    if not rem.startswith('"data"'):
+        return "INVALID_JSON", jstr
+    rem = rem[len('"data"') :].strip()
+    if not rem.startswith(":"):
+        return "INVALID_DATA", jstr
+    rem = rem[1:].strip()
+    return status, rem
+
+
 async def get_modbus_registers(request: aiohttp.web.Request) -> aiohttp.web.Response:
     if pyrmd is None:
         raise ModuleNotFoundError()
@@ -57,8 +97,20 @@ async def get_modbus_registers(request: aiohttp.web.Request) -> aiohttp.web.Resp
     except Exception:
         payload = {}
 
-    response = await pyrmd.RackmonAsyncInterface.data(False, payload)
-    return aiohttp.web.json_response(response, dumps=dumps_bytestr)
+    response = await pyrmd.RackmonAsyncInterface.data(
+        raw=False, dataFilter=payload, decodeJson=False
+    )
+    status, data = pop_status_data(response)
+    if status != "SUCCESS":
+        return aiohttp.web.json_response(
+            {"status": "Runtime Error", "details": status},
+            status=400,
+        )
+
+    def null_dumps(obj):
+        return obj
+
+    return aiohttp.web.json_response(data, dumps=null_dumps)
 
 
 async def get_modbus_devices() -> aiohttp.web.Response:

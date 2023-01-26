@@ -1,0 +1,1 @@
+../../../common/recipes-utils/vboot-utils/files/image_meta.py

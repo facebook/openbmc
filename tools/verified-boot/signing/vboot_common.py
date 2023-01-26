@@ -1,0 +1,1 @@
+../../../common/recipes-utils/vboot-utils/files/vboot_common.py

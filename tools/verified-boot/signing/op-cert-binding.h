@@ -1,0 +1,1 @@
+../../../meta-aspeed/recipes-bsp/u-boot/files/u-boot-v2019.04/board/fb-obmc/ast/vboot-op-cert.h

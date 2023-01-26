@@ -15,6 +15,9 @@ extern PAL_SENSOR_MAP hgx_sensor_map[];
 extern PAL_SENSOR_MAP swb_sensor_map[];
 extern PAL_SENSOR_MAP bb_sensor_map[];
 extern PAL_SENSOR_MAP acb_sensor_map[];
+extern PAL_SENSOR_MAP meb_sensor_map[];
+extern PAL_SENSOR_MAP meb_clx_sensor_map[];
+extern PAL_SENSOR_MAP meb_e1s_sensor_map[];
 
 extern const uint8_t mb_sensor_list[];
 extern const uint8_t mb_discrete_sensor_list[];
@@ -33,6 +36,9 @@ extern const uint8_t scm_sensor_list[];
 extern const uint8_t hsc_sensor_list[];
 extern const uint8_t shsc_sensor_list[];
 extern const uint8_t acb_sensor_list[];
+extern const uint8_t meb_sensor_list[];
+extern const uint8_t meb_cxl_sensor_list[];
+extern const uint8_t meb_e1s_sensor_list[];
 
 extern size_t mb_sensor_cnt;
 extern size_t mb_discrete_sensor_cnt;
@@ -51,6 +57,9 @@ extern size_t scm_sensor_cnt;
 extern size_t hsc_sensor_cnt;
 extern size_t shsc_sensor_cnt;
 extern size_t acb_sensor_cnt;
+extern size_t meb_sensor_cnt;
+extern size_t meb_cxl_sensor_cnt;
+extern size_t meb_e1s_sensor_cnt;
 
 struct snr_map sensor_map[] = {
   { FRU_ALL,  NULL,           false},
@@ -69,10 +78,162 @@ struct snr_map sensor_map[] = {
   { FRU_FIO,  NULL,           false },
   { FRU_HSC,  mb_sensor_map,  true },
   { FRU_SHSC, swb_sensor_map, true },
-  { FRU_ACB,  acb_sensor_map, true }
+  { FRU_ACB,  acb_sensor_map, true },
+  { FRU_MEB,  meb_sensor_map, true },
+  { FRU_ACB_ACCL1,  NULL,     false },
+  { FRU_ACB_ACCL2,  NULL,     false },
+  { FRU_ACB_ACCL3,  NULL,     false },
+  { FRU_ACB_ACCL4,  NULL,     false },
+  { FRU_ACB_ACCL5,  NULL,     false },
+  { FRU_ACB_ACCL6,  NULL,     false },
+  { FRU_ACB_ACCL7,  NULL,     false },
+  { FRU_ACB_ACCL8,  NULL,     false },
+  { FRU_ACB_ACCL9,  NULL,     false },
+  { FRU_ACB_ACCL10, NULL,     false },
+  { FRU_ACB_ACCL11, NULL,     false },
+  { FRU_ACB_ACCL12, NULL,     false },
+  { FRU_MEB_JCN1,  meb_clx_sensor_map, true },
+  { FRU_MEB_JCN2,  meb_clx_sensor_map, true },
+  { FRU_MEB_JCN3,  meb_clx_sensor_map, true },
+  { FRU_MEB_JCN4,  meb_clx_sensor_map, true },
+  { FRU_MEB_JCN5,  meb_e1s_sensor_map, true },
+  { FRU_MEB_JCN6,  meb_e1s_sensor_map, true },
+  { FRU_MEB_JCN7,  meb_e1s_sensor_map, true },
+  { FRU_MEB_JCN8,  meb_e1s_sensor_map, true },
+  { FRU_MEB_JCN9,  meb_clx_sensor_map, true },
+  { FRU_MEB_JCN10,  meb_clx_sensor_map, true },
+  { FRU_MEB_JCN11,  meb_clx_sensor_map, true },
+  { FRU_MEB_JCN12,  meb_clx_sensor_map, true },
+  { FRU_MEB_JCN13,  meb_e1s_sensor_map, true },
+  { FRU_MEB_JCN14,  meb_e1s_sensor_map, true }
 };
 
+static int get_jcn_config_string(uint8_t status, char *type_str) {
+  int ret = 0;
 
+  switch (status) {
+  case E1S_CARD:
+  case E1S_0_CARD:
+  case E1S_1_CARD:
+  case E1S_0_1_CARD:
+    snprintf(type_str, MAX_VALUE_LEN, "%s", JCN_CONFIG_STR_E1S);
+    break;
+  case CXL_CARD:
+    snprintf(type_str, MAX_VALUE_LEN, "%s", JCN_CONFIG_STR_CXL);
+    break;
+  case NIC_CARD:
+    snprintf(type_str, MAX_VALUE_LEN, "%s", JCN_CONFIG_STR_NIC);
+    break;
+  default:
+    ret = -1;
+    break;
+  }
+  
+  return ret;
+}
+
+static int pal_get_pldm_jcn_config(uint8_t fru, char *type_str) {
+  fru_status status = {0};
+  int ret = 0;
+  int i = 0;
+
+  if ((fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN4) ||
+      (fru >= FRU_MEB_JCN9 && fru <= FRU_MEB_JCN12)) {
+    for (i = FRU_MEB_JCN1; i <= FRU_MEB_JCN12; i++) {
+      if (i >= FRU_MEB_JCN5 && i <= FRU_MEB_JCN8) {
+        continue; // skip E1.S slots
+      }
+      ret = pal_get_pldm_fru_status(fru, JCN_0_1, &status);
+      if (ret == 0 && status.fru_prsnt == FRU_PRSNT && status.fru_type != UNKNOWN_CARD ) {
+        if(get_jcn_config_string(status.fru_type, type_str) != 0) {
+          return -1;
+        }
+        // found
+        return 0;
+      }
+    }
+  } else if (fru == FRU_MEB_JCN13 || fru == FRU_MEB_JCN14) {
+    ret = pal_get_pldm_fru_status(fru, JCN_0_1, &status);
+    if (ret == 0 && status.fru_prsnt == FRU_PRSNT && status.fru_type != UNKNOWN_CARD ) {
+      if(get_jcn_config_string(status.fru_type, type_str) != 0) {
+          return -1;
+      }
+      return 0;
+    }
+  }
+
+  return -1;
+}
+
+static uint8_t get_meb_jcn_config(uint8_t fru) {
+  char key[MAX_KEY_LEN] = {0};
+  char type_str[MAX_VALUE_LEN] = {0};
+
+  memset(key, 0, MAX_KEY_LEN);
+  memset(type_str, 0, MAX_VALUE_LEN);
+  snprintf(key, sizeof(key), "meb_fru%d_config", fru);
+
+  if (kv_get(key, type_str, NULL, 0) != 0) {
+    // not cached before, get from BIC
+    if (pal_get_pldm_jcn_config(fru, type_str) != 0) {
+      return UNKNOWN_CARD ;
+    }
+    kv_set(key, type_str, 0, 0);
+  }
+
+  // get from cache
+  if (strcmp(type_str, JCN_CONFIG_STR_CXL) == 0) {
+    return CXL_CARD;
+  } else if (strcmp(type_str, JCN_CONFIG_STR_E1S) == 0) {
+    return E1S_CARD;
+  } else if (strcmp(type_str, JCN_CONFIG_STR_NIC) == 0) {
+    return NIC_CARD;
+  } else {
+    return UNKNOWN_CARD ;
+  }
+}
+
+static void reload_sensor_table(uint8_t fru) {
+  uint8_t config = 0;
+
+  if ((fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN4) ||
+      (fru >= FRU_MEB_JCN9 && fru <= FRU_MEB_JCN12) ) {
+    config = get_meb_jcn_config(fru);
+
+    switch (config) {
+      case CXL_CARD:
+        // using default sensor table
+        break;
+      case E1S_CARD:
+        sensor_map[fru].map = meb_e1s_sensor_map;
+        break;
+      default:
+#ifdef DEBUG
+        syslog(LOG_ERR, "[%s] Fail to get meb fru%u, config = %u\n", __func__, fru, config);
+#endif
+        break;
+    }
+  } else if (fru == FRU_MEB_JCN13 || fru == FRU_MEB_JCN14) {
+    config = get_meb_jcn_config(fru);
+
+    switch (config) {
+      case E1S_CARD:
+        // using default sensor table
+        break;
+      case NIC_CARD:
+        // Todo: add nic sensor table
+        // sensor_map[fru].map = meb_nic_sensor_map;
+        break;
+      default:
+#ifdef DEBUG
+        syslog(LOG_ERR, "[%s] Fail to get meb fru%u, config = %u\n", __func__, fru, config);
+#endif
+        break;
+    }
+  }
+
+  return;
+}
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
@@ -156,6 +317,45 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *sensor_list = NULL;
       *cnt = 0;
     }
+  } else if (fru == FRU_MEB) {
+    // include JCN5~JCN8 with E1.S*1
+    if (pal_is_artemis()) {
+      *sensor_list = (uint8_t *) meb_sensor_list;
+      *cnt = meb_sensor_cnt;
+    } else {
+      *sensor_list = NULL;
+      *cnt = 0;
+    }
+  } else if ((fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN4) ||
+             (fru >= FRU_MEB_JCN9 && fru <= FRU_MEB_JCN12)) {
+    // install with CXL*1 or E1.S*2
+    if (pal_is_artemis()) {
+      // default: cxl sensor table
+      *sensor_list = (uint8_t *) meb_cxl_sensor_list;
+      *cnt = meb_cxl_sensor_cnt;
+      if (get_meb_jcn_config(fru) == E1S_CARD) {
+        *sensor_list = (uint8_t *) meb_e1s_sensor_list;
+        *cnt = meb_e1s_sensor_cnt;
+      }
+    } else {
+      *sensor_list = NULL;
+      *cnt = 0;
+    }
+  } else if (fru == FRU_MEB_JCN13 || fru == FRU_MEB_JCN14) {
+    // install with NIC*1 or E1.S*2
+    if (pal_is_artemis()) {
+      // default: e1s sensor table
+      *sensor_list = (uint8_t *) meb_e1s_sensor_list;
+      *cnt = meb_e1s_sensor_cnt;
+      if (get_meb_jcn_config(fru) == NIC_CARD) {
+        // Todo: add NIC sensor table
+        //*sensor_list = (uint8_t *) meb_nic_sensor_list;
+        //*cnt = meb_nic_sensor_cnt;
+      }
+    } else {
+      *sensor_list = NULL;
+      *cnt = 0;
+    }
   } else if (fru > MAX_NUM_FRUS) {
     return -1;
   } else {
@@ -208,6 +408,15 @@ get_map_retry(uint8_t fru)
   static uint8_t bb_retry[256] = {0};
   static uint8_t mb_hsc_retry[16] = {0};
   static uint8_t swb_hsc_retry[16] = {0};
+  static uint8_t acb_retry[MAX_SENSOR_NUMBER + 1] = {0};
+  static uint8_t meb_retry[MAX_SENSOR_NUMBER + 1] = {0};
+  static uint8_t meb_jcn_retry[FRU_MEB_JCN_CNT][MAX_SENSOR_NUMBER + 1] = {0};
+  static bool is_meb_jcn_init = false;
+
+  if (is_meb_jcn_init == false) {
+    memset(meb_jcn_retry, 0, sizeof(meb_jcn_retry));
+    is_meb_jcn_init = true;
+  }
 
   if (fru == FRU_SWB)
     return swb_retry;
@@ -217,6 +426,12 @@ get_map_retry(uint8_t fru)
     return mb_hsc_retry;
   else if (fru == FRU_SHSC)
     return swb_hsc_retry;
+  else if (fru == FRU_ACB)
+    return acb_retry;
+  else if (fru == FRU_MEB)
+    return meb_retry;
+  else if (fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN14)
+    return meb_jcn_retry[fru - FRU_MEB_JCN1];
   else
     return bb_retry;
 }
@@ -229,6 +444,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   int ret=0;
   bool server_off;
   uint8_t *retry = get_map_retry(fru);
+
+  reload_sensor_table(fru);
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
@@ -304,8 +521,10 @@ int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   char fru_name[32] = {0};
   char units_name[8] = {0};
-  uint8_t scale = sensor_map[fru].map[sensor_num].units;
+  uint8_t scale = 0;
 
+  reload_sensor_table(fru);
+  scale = sensor_map[fru].map[sensor_num].units;
 
   if (sensor_map[fru].polling) {
     if (pal_get_fru_name(fru, fru_name) == 0) {
@@ -350,6 +569,8 @@ int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
 
+  reload_sensor_table(fru);
+
   if (sensor_map[fru].polling) {
     switch(thresh) {
       case UCR_THRESH:
@@ -389,7 +610,10 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
 int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
-  uint8_t scale = sensor_map[fru].map[sensor_num].units;
+  uint8_t scale = 0;
+
+  reload_sensor_table(fru);
+  scale = sensor_map[fru].map[sensor_num].units;
 
   if (sensor_map[fru].polling) {
     switch(scale) {

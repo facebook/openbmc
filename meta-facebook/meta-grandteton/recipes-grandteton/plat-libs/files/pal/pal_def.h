@@ -237,6 +237,7 @@ enum {
   FRU_ACB_ACCL10,
   FRU_ACB_ACCL11,
   FRU_ACB_ACCL12,
+  // Artemis MEB CXL/NIC/E1.S board
   FRU_MEB_JCN1,
   FRU_MEB_JCN2,
   FRU_MEB_JCN3,
@@ -252,6 +253,10 @@ enum {
   FRU_MEB_JCN13,
   FRU_MEB_JCN14,
   FRU_CNT,
+};
+
+enum {
+  FRU_MEB_JCN_CNT = 14,
 };
 
 enum {
@@ -381,6 +386,7 @@ enum {
 enum PLDM_FRU_ID {
   PLDM_FRU_NOT_SUPPORT = -1,
   PLDM_FRU_SWB,
+  PLDM_FRU_MEB,
   PLDM_FRU_FIO,
   PLDM_FRU_SHSC,
 };
@@ -399,6 +405,7 @@ enum FRU_PATH_TYPE {
 /* Artemis */
 enum ARTEMIS_OEM_COMMAND {
   CMD_OEM_1S_GET_ASIC_CARD_STATUS = 0x76,
+  CMD_OEM_1S_GET_SENSOR_READING = 0x77,
 };
 
 // JCN can plug dual or single devices

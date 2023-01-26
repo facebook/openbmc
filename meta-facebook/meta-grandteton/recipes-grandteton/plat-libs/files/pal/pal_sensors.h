@@ -6,6 +6,7 @@
 #include "pal_swb_sensors.h"
 #include "pal_hgx_sensors.h"
 #include "pal_bb_sensors.h"
+#include "pal_meb_sensors.h"
 
 //CPU INFO
 #define PECI_CPU0_ADDR            (0x30)

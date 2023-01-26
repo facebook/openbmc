@@ -10,6 +10,7 @@ pal_headers += [
     'pal_bb_sensors.h',
     'pal_def.h',
     'pal_def_cover.h',
+    'pal_meb_sensors.h',
     'pal_acb_sensors.h'
     ]
 
@@ -24,6 +25,7 @@ pal_sources += [
     'pal_bb_sensors.c',
     'pal_hgx_sensors.c',
     'pal_cover.c',
+    'pal_meb_sensors.c',
     'pal_acb_sensors.c'
     ]
 

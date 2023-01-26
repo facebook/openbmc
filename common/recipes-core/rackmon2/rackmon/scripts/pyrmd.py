@@ -154,7 +154,7 @@ class RackmonInterface:
         return req
 
     @classmethod
-    def _execute(cls, cmd):
+    def _execute(cls, cmd, decodeJson=True):
         request = json.dumps(cmd).encode()
         if not os.path.exists("/var/run/rackmond.sock"):
             raise ModbusException()
@@ -185,7 +185,9 @@ class RackmonInterface:
             if not cont_recv:
                 break
         client.close()
-        return json.loads(response.decode())
+        if decodeJson:
+            return json.loads(response.decode())
+        return response.decode()
 
     @classmethod
     def _do(cls, f, *args, **kwargs):
@@ -214,9 +216,12 @@ class RackmonInterface:
         return result["data"]
 
     @classmethod
-    def data(cls, raw=True, dataFilter=None):
-        result = cls._do(cls._data, raw, dataFilter)
-        return result["data"]
+    def data(cls, raw=True, dataFilter=None, decodeJson=True):
+        if decodeJson:
+            result = cls._do(cls._data, raw, dataFilter)
+            return result["data"]
+        cmd = cls._data(raw, dataFilter)
+        return cls._execute(cmd, False)
 
     @classmethod
     def read(cls, addr, reg, length=1, timeout=0):
@@ -235,9 +240,9 @@ class RackmonInterface:
 
 class RackmonAsyncInterface(RackmonInterface):
     @classmethod
-    async def _execute(cls, cmd):
+    async def _execute(cls, cmd, decodeJson=True):
         return await asyncio.get_event_loop().run_in_executor(
-            None, RackmonInterface._execute, cmd
+            None, RackmonInterface._execute, cmd, decodeJson
         )
 
     @classmethod
@@ -267,9 +272,12 @@ class RackmonAsyncInterface(RackmonInterface):
         return result["data"]
 
     @classmethod
-    async def data(cls, raw=True, dataFilter=None):
-        result = await cls._do(cls._data, raw, dataFilter)
-        return result["data"]
+    async def data(cls, raw=True, dataFilter=None, decodeJson=True):
+        if decodeJson:
+            result = await cls._do(cls._data, raw, dataFilter)
+            return result["data"]
+        cmd = cls._data(raw, dataFilter)
+        return await cls._execute(cmd, False)
 
     @classmethod
     async def read(cls, addr, reg, length=1, timeout=0):

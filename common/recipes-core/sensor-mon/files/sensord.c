@@ -579,7 +579,7 @@ snr_monitor(void *arg) {
         }
       }
 
-      if (init_fru_snr_thresh(fru) < 0 || pal_update_sensor_reading_sdr(fru) < 0) {
+      if (pal_update_sensor_reading_sdr(fru) < 0 || init_fru_snr_thresh(fru) < 0) {
         syslog(LOG_DEBUG, "%s : slot%u SDR update fail", __func__, fru);
         sleep(STOP_PERIOD);
         continue;

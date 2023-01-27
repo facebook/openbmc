@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_log_util_test import BaseLogUtilTest
+from utils.test_utils import qemu_check
 
 
 class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):
@@ -70,5 +71,6 @@ class PEM2LogUtilTest(AllLogUtilTest):
     FRU = "pem2"
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class SysLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "sys"

@@ -21,6 +21,7 @@
 //#define DEBUG
 
 #include <linux/errno.h>
+#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <i2c_dev_sysfs.h>
@@ -753,8 +754,6 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
   }
 };
 
-static i2c_dev_data_st scmcpld_data;
-
 /*
  * SCMCPLD i2c addresses.
  */
@@ -783,14 +782,23 @@ static int scmcpld_detect(struct i2c_client *client,
 static int scmcpld_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
 {
-  int n_attrs = sizeof(scmcpld_attr_table) / sizeof(scmcpld_attr_table[0]);
-  return i2c_dev_sysfs_data_init(client, &scmcpld_data,
-                                 scmcpld_attr_table, n_attrs);
+  i2c_dev_data_st *scmcpld_data;
+
+  scmcpld_data = devm_kmalloc(&client->dev, sizeof(*scmcpld_data), GFP_KERNEL);
+  if (scmcpld_data == NULL) {
+    return -ENOMEM;
+  }
+  i2c_set_clientdata(client, scmcpld_data);
+
+  return i2c_dev_sysfs_data_init(client, scmcpld_data,
+                                 scmcpld_attr_table, ARRAY_SIZE(scmcpld_attr_table));
 }
 
 static int scmcpld_remove(struct i2c_client *client)
 {
-  i2c_dev_sysfs_data_clean(client, &scmcpld_data);
+  i2c_dev_data_st *scmcpld_data = i2c_get_clientdata(client);
+
+  i2c_dev_sysfs_data_clean(client, scmcpld_data);
   return 0;
 }
 
@@ -806,19 +814,8 @@ static struct i2c_driver scmcpld_driver = {
   .address_list = normal_i2c,
 };
 
-static int __init scmcpld_mod_init(void)
-{
-  return i2c_add_driver(&scmcpld_driver);
-}
-
-static void __exit scmcpld_mod_exit(void)
-{
-  i2c_del_driver(&scmcpld_driver);
-}
+module_i2c_driver(scmcpld_driver);
 
 MODULE_AUTHOR("Xiaohua Wang");
 MODULE_DESCRIPTION("SCMCPLD Driver");
 MODULE_LICENSE("GPL");
-
-module_init(scmcpld_mod_init);
-module_exit(scmcpld_mod_exit);

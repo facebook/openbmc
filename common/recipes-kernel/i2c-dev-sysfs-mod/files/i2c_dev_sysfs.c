@@ -285,6 +285,7 @@ void i2c_dev_sysfs_data_clean(struct i2c_client *client, i2c_dev_data_st *data)
   if (data->idd_attrs) {
     kfree(data->idd_attrs);
   }
+  mutex_destroy(&data->idd_lock);
   memset(data, 0, sizeof(*data));
 }
 EXPORT_SYMBOL_GPL(i2c_dev_sysfs_data_clean);

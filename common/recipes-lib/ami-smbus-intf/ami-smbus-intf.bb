@@ -13,5 +13,5 @@ LOCAL_URI = " \
 
 inherit meson pkgconfig
 
-DEPENDS += "libkv libobmc-i2c "
+DEPENDS += "libkv libobmc-i2c"
 

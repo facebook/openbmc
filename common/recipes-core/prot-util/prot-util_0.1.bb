@@ -13,4 +13,4 @@ S = "${WORKDIR}/prot-util"
 
 inherit meson pkgconfig
 
-DEPENDS += "cli11 nlohmann-json libpal"
+DEPENDS += "cli11 nlohmann-json libpal libprot ami-smbus-intf fmt"

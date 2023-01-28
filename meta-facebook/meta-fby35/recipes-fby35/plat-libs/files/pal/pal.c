@@ -4924,6 +4924,21 @@ pal_is_prot_bypass(uint8_t fru) {
 }
 
 int
+pal_get_prot_address(uint8_t fru, uint8_t *bus, uint8_t *addr) {
+  int ret = fby35_common_get_bus_id(fru);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
+    return -1;
+  }
+
+  static const int PROT_PLATFIRE_ADDR = 0x51;
+  *bus = (uint8_t)(ret + 4);
+  *addr = PROT_PLATFIRE_ADDR;
+
+  return 0;
+}
+
+int
 pal_set_last_postcode(uint8_t slot, uint32_t postcode) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};

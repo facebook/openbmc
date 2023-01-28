@@ -17,58 +17,252 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <iostream>
-#include <string>
-#include <vector>
-#include <regex>
 #include <CLI/CLI.hpp>
 #include <nlohmann/json.hpp>
+#include <iostream>
+#include <regex>
+#include <string>
+#include <vector>
 
+#include <fmt/format.h>
+#include <getopt.h>
+#include <openbmc/AmiSmbusInterfaceSrcLib.h>
+#include <openbmc/ProtCommonInterface.hpp>
+#include <openbmc/pal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#include <getopt.h>
 #include <unistd.h>
-#include <openbmc/pal.h>
 
-enum {
-  UNKNOW_CMD = 0,
-  BOOT_STATUS = 1,
+enum class ProtUtilCmds {
+  UNKNOW_CMD = -1,
+  SENT_DATA_PACKET = 0,
+  RECEIVE_DATA_PACKET = 1,
+  BOOT_STATUS = 2,
+  FW_UPDATE = 3,
+  SENT_DATA_PACKET_NOACK = 4,
+  READ_MINIFEST = 5,
+  SHOW_LOG = 6,
+  READ_UNIQUE_SERIAL_NUMBER = 7,
+  FLASH_SYNC = 8,
+  DO_RECOVERY = 9,
+  DECOMMISSION = 10,
+  RECOMMISSION = 11,
+  SMBUSFILTER = 12,
+  TIMEBOUNDDEBUG = 13,
+  ATTESTATION = 14,
+  TEST = 0xFF,
 };
 
 static int opt_json = false;
 
-static int do_get_status(uint8_t fru_id) {
-  bool is_module_prsnt;
-  bool is_module_bypass;
+using prot::ProtDevice;
+
+static int do_send_data_packet(uint8_t fru_id, std::vector<uint8_t> data_raw) {
+  uint8_t dev_i2c_bus = 0;
+  uint8_t dev_i2c_addr = 0;
+
+  if (pal_get_prot_address(fru_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
+    std::cout << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
+    return -1;
+  }
+
+  if ((data_raw.size() - 1) > DATA_LAYER_MAX_PAYLOAD) {
+    std::cout << "the max payload is " << DATA_LAYER_MAX_PAYLOAD << std::endl;
+    return -1;
+  }
+
+  ProtDevice prot_dev(fru_id, dev_i2c_bus, dev_i2c_addr);
+
+  if (!prot_dev.isDevOpen()) {
+    std::cout << "Fail to open i2c" << std::endl;
+    return -1;
+  }
+
+  auto rc = prot_dev.protSendDataPacket(data_raw);
+  if (rc != ProtDevice::DevStatus::SUCCESS) {
+    std::cout << "protSendDataPacket failed: " << (int)rc << std::endl;
+    return -1;
+  }
+
+  return 0;
+}
+
+static int do_receive_data_packet(uint8_t fru_id) {
+  DATA_LAYER_PACKET_ACK data_layer_ack{};
+  uint8_t dev_i2c_bus = 0;
+  uint8_t dev_i2c_addr = 0;
+
+  if (pal_get_prot_address(fru_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
+    std::cout << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
+    return -1;
+  }
+
+  ProtDevice prot_dev(fru_id, dev_i2c_bus, dev_i2c_addr);
+  if (!prot_dev.isDevOpen()) {
+    std::cout << "Fail to open i2c" << std::endl;
+    return -1;
+  }
+
+  auto rc = prot_dev.protRecvDataPacket(data_layer_ack);
+  if (rc != ProtDevice::DevStatus::SUCCESS) {
+    std::cout << "protRecvDataPacket failed:" << (int)rc << std::endl;
+    return -1;
+  }
+
+  return 0;
+}
+
+static int do_get_boot_status(uint8_t fru_id) {
+  uint8_t dev_i2c_bus = 0;
+  uint8_t dev_i2c_addr = 0;
+
+  if (pal_get_prot_address(fru_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
+    std::cout << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
+    return -1;
+  }
+
+  ProtDevice prot_dev(fru_id, dev_i2c_bus, dev_i2c_addr);
+  if (!prot_dev.isDevOpen()) {
+    std::cout << "Fail to open i2c" << std::endl;
+    return -1;
+  }
+
+  nlohmann::json j{};
   std::string auth("Auth" + std::to_string(int(fru_id)));
-  std::string sts_str;
-  nlohmann::json j;
+
+  bool is_module_prsnt = pal_is_prot_card_prsnt(fru_id);
 
   do {
-    is_module_prsnt = pal_is_prot_card_prsnt(fru_id);
+    prot::BOOT_STATUS_ACK_PAYLOAD boot_sts{};
+
     j[auth]["Module-Present"] = is_module_prsnt;
     if (!is_module_prsnt) {
       break;
     }
 
-    is_module_bypass = pal_is_prot_bypass(fru_id);
-    sts_str.assign(is_module_bypass ? "BYPASS" : "PFR");
-    j[auth]["Module-Mode"] = sts_str;
+    auto is_module_bypass = pal_is_prot_bypass(fru_id);
+    j[auth]["Module-Mode"] = std::string(is_module_bypass ? "BYPASS" : "PFR");
     if (is_module_bypass) {
       break;
     }
+
+    memset(&boot_sts, 0xff, sizeof(boot_sts));
+    auto rc = prot_dev.portGetBootStatus(boot_sts);
+    if (rc != ProtDevice::DevStatus::SUCCESS) {
+      std::cout << "portGetBootStatus failed: " << (int)rc << std::endl;
+      break;
+    }
+
+    j["SPI_A"]["Status"] = fmt::format(
+        "{:#04x} ({})",
+        boot_sts.SPI_A,
+        prot::ProtSpiInfo::spiStatusString(boot_sts.SPI_A));
+    j["SPI_A"]["BIOS-Version"] =
+        fmt::format("{:#010x}", boot_sts.SPIABiosVersionNumber);
+
+    j["SPI_B"]["Status"] = fmt::format(
+        "{:#04x} ({})",
+        boot_sts.SPI_B,
+        prot::ProtSpiInfo::spiStatusString(boot_sts.SPI_B));
+    j["SPI_B"]["BIOS-Version"] =
+        fmt::format("{:#010x}", boot_sts.SPIBBiosVersionNumber);
+
+    j["Verification-Status"]["active"] = fmt::format(
+        "{:#04x} ({})",
+        boot_sts.ActiveVerificationStatus,
+        prot::ProtSpiInfo::spiVerifyString(boot_sts.ActiveVerificationStatus));
+    j["Verification-Status"]["recovery"] = fmt::format(
+        "{:#04x} ({})",
+        boot_sts.RecoveryVerificationStatus,
+        prot::ProtSpiInfo::spiVerifyString(
+            boot_sts.RecoveryVerificationStatus));
+
   } while (0);
 
   if (opt_json) {
     std::cout << j.dump(4) << std::endl;
   } else {
-    std::cout << auth << " Module Present: " << std::boolalpha << is_module_prsnt << std::noboolalpha << std::endl;
+    std::cout << auth << " Module Present: " << std::boolalpha
+              << is_module_prsnt << std::noboolalpha << std::endl;
     if (is_module_prsnt) {
-      std::cout << auth << " Module Mode: " << j[auth]["Module-Mode"].get<std::string>() << std::endl;
+      std::cout << auth
+                << " Module Mode: " << j[auth]["Module-Mode"].get<std::string>()
+                << std::endl;
     }
+
+    if (j.contains("SPI_A")) {
+      std::cout << "SPI_A Status: " << j["SPI_A"]["Status"].get<std::string>()
+                << std::endl;
+      std::cout << "SPI_A BIOS-Version: "
+                << j["SPI_A"]["BIOS-Version"].get<std::string>() << std::endl;
+    }
+
+    if (j.contains("SPI_B")) {
+      std::cout << "SPI_B Status: " << j["SPI_B"]["Status"].get<std::string>()
+                << std::endl;
+      std::cout << "SPI_B BIOS-Version: "
+                << j["SPI_B"]["BIOS-Version"].get<std::string>() << std::endl;
+    }
+
+    if (j.contains("Verification-Status")) {
+      std::cout << "Verification-Status active: "
+                << j["Verification-Status"]["active"].get<std::string>()
+                << std::endl;
+      std::cout << "Verification-Status recovery: "
+                << j["Verification-Status"]["recovery"].get<std::string>()
+                << std::endl;
+    }
+  }
+
+  return 0;
+}
+
+static int do_show_log(uint8_t fru_id) {
+  uint8_t dev_i2c_bus = 0;
+  uint8_t dev_i2c_addr = 0;
+
+  if (pal_get_prot_address(fru_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
+    std::cout << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
+    return -1;
+  }
+
+  ProtDevice prot_dev(fru_id, dev_i2c_bus, dev_i2c_addr);
+  if (!prot_dev.isDevOpen()) {
+    std::cout << "Fail to open i2c" << std::endl;
+    return -1;
+  }
+
+  size_t log_count = 0;
+  {
+    auto rc = prot_dev.protUfmLogReadoutEntry(log_count);
+    if (rc != ProtDevice::DevStatus::SUCCESS) {
+      std::cout << "portGetBootStatus failed: " << (int)rc << std::endl;
+      return -1;
+    }
+  }
+
+  std::cout
+      << "\n-------------------------- Result --------------------------\n";
+  std::cout << fmt::format("PROT Log Count - {:d} \n", log_count);
+  for (size_t index = 0; index < log_count; index++) {
+    PROT_LOG prot_log;
+
+    auto rc = prot_dev.protGetLogData(index, prot_log);
+    if (rc != ProtDevice::DevStatus::SUCCESS) {
+      std::cout << fmt::format(
+          "protGetLogData failed at index {:d}: {:d}\n", index, (int)rc);
+      return -1;
+    }
+
+    auto log_sptr = prot::ProtLog::create(prot_log);
+    std::cout << fmt::format("LOG {:d} : {}", index, log_sptr->toHexStr())
+              << std::endl;
+    std::cout << log_sptr->toStr() << std::endl;
+
+    msleep(200);
   }
 
   return 0;
@@ -78,7 +272,8 @@ static int parse_args(
     int argc,
     char** argv,
     uint8_t* fru_id,
-    uint8_t* action) {
+    ProtUtilCmds* action,
+    std::vector<uint8_t>& data_raw) {
   std::set<std::string> fru_list;
   std::string fru_list_str(pal_server_list);
   std::regex pattern(R"(\s*,\s*)");
@@ -97,20 +292,40 @@ static int parse_args(
   std::set<std::string> allowed_fru(fru_list);
   app.add_option("fru", fru)->check(CLI::IsMember(allowed_fru))->required();
 
+  auto v_flag = app.add_flag("--verbose");
+
+  auto send_cmd = app.add_subcommand("sendDataPacket", "Send Data Packet");
+  send_cmd->add_option("raw", data_raw, "Raw data to send");
+
+  auto recv_cmd =
+      app.add_subcommand("receiveDataPacket", "Receive Data Packet");
+
   auto status_cmd = app.add_subcommand("status", "Status");
   auto j_flag = status_cmd->add_flag("-j,--json");
 
+  auto log_cmd = app.add_subcommand("log", "Log");
+
   CLI11_PARSE(app, argc, argv);
 
-  if (pal_get_fru_id((char *)fru.c_str(), fru_id) != 0) {
+  ProtDevice::setVerbose((*v_flag) ? true : false);
+
+  if (pal_get_fru_id(const_cast<char*>(fru.c_str()), fru_id) != 0) {
     std::cout << "fru is invalid!\n";
     std::cout << app.help() << std::endl;
     return -1;
   }
 
-  if (status_cmd->parsed()) {
-    opt_json = (*j_flag) ? true:false;
-    *action = BOOT_STATUS;
+  if (send_cmd->parsed()) {
+    *action = ProtUtilCmds::SENT_DATA_PACKET;
+    ProtDevice::setVerbose(true);
+  } else if (recv_cmd->parsed()) {
+    *action = ProtUtilCmds::RECEIVE_DATA_PACKET;
+    ProtDevice::setVerbose(true);
+  } else if (status_cmd->parsed()) {
+    opt_json = (*j_flag) ? true : false;
+    *action = ProtUtilCmds::BOOT_STATUS;
+  } else if (log_cmd->parsed()) {
+    *action = ProtUtilCmds::SHOW_LOG;
   } else {
     std::cout << app.help() << std::endl;
     return -1;
@@ -121,15 +336,21 @@ static int parse_args(
 
 int main(int argc, char** argv) {
   uint8_t fru_id = 0;
-  uint8_t action = UNKNOW_CMD;
-  if (parse_args(argc, argv, &fru_id, &action)) {
+  ProtUtilCmds cmd = ProtUtilCmds::UNKNOW_CMD;
+  std::vector<uint8_t> data_raw;
+  if (parse_args(argc, argv, &fru_id, &cmd, data_raw)) {
     return -1;
   }
 
-  switch (action) {
-    case BOOT_STATUS:
-      do_get_status(fru_id);
-      break;
+  switch (cmd) {
+    case ProtUtilCmds::SENT_DATA_PACKET:
+      return do_send_data_packet(fru_id, data_raw);
+    case ProtUtilCmds::RECEIVE_DATA_PACKET:
+      return do_receive_data_packet(fru_id);
+    case ProtUtilCmds::BOOT_STATUS:
+      return do_get_boot_status(fru_id);
+    case ProtUtilCmds::SHOW_LOG:
+      return do_show_log(fru_id);
     default:
       return -1;
   }

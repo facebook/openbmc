@@ -1,4 +1,4 @@
-project('prot-util', 'c', 'cpp',
+project('prot-util', 'cpp',
     version: '0.1',
     license: 'GPL2',
     default_options: [
@@ -12,7 +12,10 @@ srcs = files(
 )
 
 deps = [
-  dependency('obmc-pal')
+    dependency('fmt'),
+    dependency('libAmiSmbusInterface'),
+    dependency('libprot'),
+    dependency('obmc-pal'),
 ]
 
 prot_util_exe = executable(

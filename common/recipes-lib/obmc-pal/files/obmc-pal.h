@@ -643,6 +643,7 @@ int pal_load_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain, ch
 int pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count);
 bool pal_is_prot_card_prsnt(uint8_t fru);
 bool pal_is_prot_bypass(uint8_t fru);
+int pal_get_prot_address(uint8_t fru, uint8_t *bus, uint8_t *addr);
 int pal_file_line_split(char **dst, char *src, char *delim, int maxsz);
 void *pal_set_fan_speed_thread(void *data);
 int pal_bitcount(unsigned int val);

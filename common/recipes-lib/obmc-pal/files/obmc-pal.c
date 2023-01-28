@@ -3370,6 +3370,12 @@ pal_is_prot_bypass(uint8_t fru)
   return true;
 }
 
+int __attribute__((weak))
+pal_get_prot_address(uint8_t fru, uint8_t *bus, uint8_t *addr)
+{
+  return -1;
+}
+
 int
 pal_file_line_split(char **dst, char *src, char *delim, int maxsz) {
   if ((dst == NULL) || (src == NULL) || (delim == NULL)) {

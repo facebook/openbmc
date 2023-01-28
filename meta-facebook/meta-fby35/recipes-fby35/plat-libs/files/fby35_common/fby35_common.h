@@ -399,7 +399,9 @@ enum {
   FW_VR_VDD11S3,       //10
   FW_VR,
   FW_BIOS,
+  FW_BIOS_SPIB,//Flash on PRoT Module
   FW_PROT,
+  FW_PROT_SPIB,//Flash on PRoT Module
   FW_1OU_BIC,
   FW_1OU_BIC_RCVY,     //15
   FW_1OU_CPLD,

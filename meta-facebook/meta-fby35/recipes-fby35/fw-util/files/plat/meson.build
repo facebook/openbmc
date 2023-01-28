@@ -21,5 +21,6 @@ deps += [
     dependency('libncsi'),
     dependency('libnl-wrapper'),
     dependency('libobmc-i2c'),
+    dependency('libprot'),
     dependency('libvr'),
 ]

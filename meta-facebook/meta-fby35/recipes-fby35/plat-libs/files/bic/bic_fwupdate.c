@@ -742,8 +742,10 @@ get_component_name(uint8_t comp) {
     case FW_VR_VDD11S3:
       return "VDD11_S3";
     case FW_BIOS:
+    case FW_BIOS_SPIB:
       return "BIOS";
     case FW_PROT:
+    case FW_PROT_SPIB:
       return "PRoT";
     case FW_1OU_BIC:
       return "1OU BIC";
@@ -980,6 +982,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       ret = update_bic_cpld_altera(slot_id, path, intf, force);
       break;
     case FW_BIOS:
+    case FW_BIOS_SPIB:
       if (loc != NULL) {
         ret = update_bic_bios(slot_id, comp, path, FORCE_UPDATE_SET);
       } else {
@@ -987,6 +990,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       }
       break;
     case FW_PROT:
+    case FW_PROT_SPIB:
     case FW_1OU_CXL:
       ret = update_bic_usb_bios(slot_id, comp, fd);
       break;

@@ -45,4 +45,4 @@ LOCAL_URI += " \
         "
 
 CXXFLAGS += "-DBIC_SUPPORT"
-DEPENDS += "libbic libfpga libvr libfby35-common libncsi libnl-wrapper libobmc-i2c libmcu"
+DEPENDS += "libbic libfpga libvr libfby35-common libncsi libnl-wrapper libobmc-i2c libmcu libprot"

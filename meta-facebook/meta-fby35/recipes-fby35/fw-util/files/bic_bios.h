@@ -10,6 +10,7 @@ class BiosComponent : public Component {
   uint8_t slot_id = 0;
   uint8_t fw_comp = 0;
   Server server;
+  bool isBypass = false;
   private:
     image_info check_image(const string& image, bool force);
     int attempt_server_power_off(bool force) ;
@@ -17,7 +18,8 @@ class BiosComponent : public Component {
     int update_internal(const std::string& image, int fd, bool force);
   public:
     BiosComponent(const std::string& fru, const std::string& comp, uint8_t _slot_id, uint8_t _fw_comp)
-      : Component(fru, comp), slot_id(_slot_id), fw_comp(_fw_comp), server(_slot_id, fru) {}
+      : Component(fru, comp), slot_id(_slot_id), fw_comp(_fw_comp), server(_slot_id, fru),
+         isBypass(bic_is_prot_bypass(slot_id)) {}
     int update(std::string image) override;
     int update(int fd, bool force) override;
     int fupdate(std::string image) override;

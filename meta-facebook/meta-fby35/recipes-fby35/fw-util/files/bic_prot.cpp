@@ -2,6 +2,7 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <openbmc/pal.h>
+#include <openbmc/ProtCommonInterface.hpp>
 #include "bic_prot.hpp"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
@@ -36,6 +37,16 @@ int ProtComponent::attempt_server_power_off(bool force) {
 
 int ProtComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret;
+  uint8_t dev_i2c_bus;
+  uint8_t dev_i2c_addr;
+  if (pal_get_prot_address(slot_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
+    cerr << "pal_get_prot_address failed, fru: " << slot_id << std::endl;
+    return FW_STATUS_FAILURE;
+  }
+  prot::ProtDevice prot_dev(slot_id, dev_i2c_bus, dev_i2c_addr);
+  if (!prot_dev.isDevOpen()) {
+    return FW_STATUS_FAILURE;
+  }
 
   try {
     cerr << "Checking if the server is ready..." << endl;
@@ -57,8 +68,19 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
       return FW_STATUS_FAILURE;
     }
   } else {
-      cerr << "PRoT only support update on bypas mode for now. Stopping the update!"<< endl;
+    cerr << "PRoT is PFR mode , update to recovery Flash" << endl;
+    prot::BOOT_STATUS_ACK_PAYLOAD boot_sts{};
+    if (prot_dev.portGetBootStatus(boot_sts) == prot::ProtDevice::DevStatus::SUCCESS) {
+      if (static_cast<prot::ProtSpiInfo::SpiStatus>(boot_sts.SPI_A) == prot::ProtSpiInfo::SpiStatus::ACTIVE) {
+        cerr << "SPI_A is Active, updating SPI_B..." << endl;
+        fw_comp = FW_PROT_SPIB;
+      } else {
+        cerr << "SPI_B is Active, updating SPI_A..." << endl;
+      }
+    }
+    if(prot_dev.portRequestRecoverySpiUnlock() != prot::ProtDevice::DevStatus::SUCCESS) {
       return FW_STATUS_FAILURE;
+    }
   }
 
   if (!image.empty()) {
@@ -75,6 +97,15 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
   if(isBypass) {
     cerr << "Power-cycling the server..." << endl;
     pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+  } else {
+    uint8_t status;
+
+    prot_dev.protUpdateComplete();
+    prot_dev.protFwUpdateIntent();
+    if (prot_dev.protGetUpdateStatus(status) != prot::ProtDevice::DevStatus::SUCCESS || status !=0 ) {
+      cerr << "PRoT PFR update failed"<< endl;
+      return FW_STATUS_FAILURE;
+    }
   }
   return ret;
 }

@@ -33,6 +33,7 @@ enum {
   UPDATE_CPLD,
   UPDATE_BIC,
   UPDATE_CXL,
+  UPDATE_BIOS_SPIB,
 };
 
 enum {

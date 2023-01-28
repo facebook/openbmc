@@ -240,7 +240,9 @@ bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t pr
           }
           switch (comp) {
             case FW_BIOS:
+            case FW_BIOS_SPIB:
             case FW_PROT:
+            case FW_PROT_SPIB:
               port = (sb_type == SERVER_TYPE_HD) ? HD_SB_USB_PORT : CL_SB_USB_PORT;
               break;
             case FW_1OU_CXL:
@@ -422,8 +424,13 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
       write_offset = 0;
       write_target = UPDATE_BIOS;
       break;
-
+    case FW_BIOS_SPIB:
+      what = "BIOS SPIB";
+      write_offset = 0;
+      write_target = UPDATE_BIOS_SPIB;
+      break;
     case FW_PROT:
+    case FW_PROT_SPIB:
       what = "PRoT";
       if(bic_is_prot_bypass(slot_id)) {
         printf("PRoT is Bypass mode, updating to offset : 0x%08X \n",XFR_WORKING_OFFSET);
@@ -432,7 +439,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
         printf("PRoT is PFR mode, updating to offset : 0x%08X \n",XFR_STAGING_OFFSET);
         write_offset = XFR_STAGING_OFFSET;
       }
-      write_target = UPDATE_BIOS;
+      write_target = (comp == FW_PROT) ? UPDATE_BIOS : UPDATE_BIOS_SPIB;
       break;
 
     case FW_1OU_CXL:
@@ -542,11 +549,9 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
       if (count > limit) count = limit;
 
       if( last_block && (file_buf_pos + count >= file_buf_num_bytes)) {
-        if (comp == FW_1OU_CXL) {
-          //Enable update end flag for last packet
-          write_target |= 0x80;
-         }
-       }
+        //Enable update end flag for last packet
+        write_target |= 0x80;
+      }
 
       bic_usb_packet *pkt = (bic_usb_packet *) (file_buf + file_buf_pos - sizeof(bic_usb_packet));
       pkt->netfn = NETFN_OEM_1S_REQ << 2;
@@ -757,9 +762,8 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd)
     goto error_exit;
 
   gettimeofday(&end, NULL);
-  if (comp == FW_BIOS || comp == FW_1OU_CXL) {
-    fprintf(stderr, "Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
-  }
+
+  fprintf(stderr, "Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
   ret = 0;
 error_exit:

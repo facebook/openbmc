@@ -3931,6 +3931,12 @@ pal_sdr_init(uint8_t fru) {
 }
 
 int
+pal_update_sensor_reading_sdr(uint8_t fru) {
+  pal_set_sdr_init(fru, false);
+  return pal_sdr_init(fru);
+}
+
+int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   uint8_t scale = sensor_map[sensor_num].units;
 

@@ -35,18 +35,17 @@ clear_all_vr_cache(){
   sb_vr_list=("c0h" "c4h" "ech" "c2h" "c6h" "c8h" "cch" "d0h" "96h" "9ch" "9eh" "8ah" "8ch" "8eh")
   rbf_vr_list=("b0h" "b4h" "c8h")
   for vr in "${sb_vr_list[@]}"; do
-    kv del "slot${slot_num}_vr_${vr}_crc"
-    kv del "slot${slot_num}_vr_${vr}_new_crc" persistent
+    $KV_CMD del "slot${slot_num}_vr_${vr}_crc"
+    $KV_CMD del "slot${slot_num}_vr_${vr}_new_crc" persistent
   done
   for vr in "${rbf_vr_list[@]}"; do
-    kv del "slot${slot_num}_1ou_vr_${vr}_crc"
-    kv del "slot${slot_num}_1ou_vr_${vr}_new_crc" persistent
+    $KV_CMD del "slot${slot_num}_1ou_vr_${vr}_crc"
+    $KV_CMD del "slot${slot_num}_1ou_vr_${vr}_new_crc" persistent
   done
 }
 
 # stop the service first
 sv stop gpiod
-sv stop sensord
 
 slot_num=$1
 PID=$$
@@ -75,13 +74,13 @@ if [ "$(is_server_prsnt "$slot_num")" = "0" ]; then
   gpio_set_value "FM_BMC_SLOT${slot_num}_ISOLATED_EN_R" 0
   rm -f "/tmp/"*"fruid_slot${slot_num}"*
   rm -f "/tmp/"*"sdr_slot${slot_num}"*
-  kv del "slot${slot_num}_cpld_new_ver"
-  kv del "slot${slot_num}_is_m2_exp_prsnt"
-  kv del "slot${slot_num}_get_1ou_type"
-  kv del "fru${slot_num}_2ou_board_type"
-  kv del "fru${slot_num}_sb_type"
-  kv del "fru${slot_num}_sb_rev_id"
-  kv del "fru${slot_num}_is_prot_prsnt"
+  $KV_CMD del "slot${slot_num}_cpld_new_ver"
+  $KV_CMD del "slot${slot_num}_is_m2_exp_prsnt"
+  $KV_CMD del "slot${slot_num}_get_1ou_type"
+  $KV_CMD del "fru${slot_num}_2ou_board_type"
+  $KV_CMD del "fru${slot_num}_sb_type"
+  $KV_CMD del "fru${slot_num}_sb_rev_id"
+  $KV_CMD del "fru${slot_num}_is_prot_prsnt"
   clear_all_vr_cache
   i2c_device_delete "${prot_bus}" 0x50 > /dev/null 2>&1
   set_nic_power
@@ -92,6 +91,7 @@ else
   set_vf_gpio "$slot_num"
   /usr/local/bin/bic-cached -s "slot${slot_num}"
   /usr/local/bin/bic-cached -f "slot${slot_num}"
+  $KV_CMD set "slot${slot_num}_sdr_thresh_update" 1
   /usr/bin/fw-util "slot${slot_num}" --version > /dev/null
 fi
 
@@ -100,4 +100,3 @@ fi
 
 # start the services again
 sv start gpiod
-sv start sensord

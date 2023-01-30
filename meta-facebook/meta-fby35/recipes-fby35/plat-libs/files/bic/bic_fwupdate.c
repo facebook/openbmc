@@ -330,7 +330,7 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp __attribute__((unused)), uin
     if (ret == 0) {
       printf("get new SDR cache from BIC \n");
       memset(cmd, 0, sizeof(cmd));
-      snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached -s slot%d; /usr/bin/kv set slot%d_sdr_thresh_update 1; /usr/bin/sv restart sensord;", slot_id, slot_id);   //retrieve SDR data after BIC FW update
+      snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached -s slot%d; /usr/bin/kv set slot%d_sdr_thresh_update 1", slot_id, slot_id);   //retrieve SDR data after BIC FW update
       log_system(cmd);
     }
   }

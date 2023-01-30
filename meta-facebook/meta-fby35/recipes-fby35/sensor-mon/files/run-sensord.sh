@@ -1,65 +1,25 @@
 #!/bin/bash
+
+# shellcheck source=meta-facebook/meta-fby35/recipes-fby35/plat-utils/files/ast-functions
 . /usr/local/fbpackages/utils/ast-functions
-/bin/echo -n "Setup sensor monitoring for FBY35... "
+
 SLOTS=
 
-read_system_conf() {
-  val=$(get_m2_prsnt_sts "$1")
-
-  system_type="Type_"
-  #0 = 2ou and 1ou are present
-  #4 = 2ou is present
-  #8 = 1ou is present
-  #other = not present
-  if [ "$val" = 0 ]; then
-    system_type=${system_type}10
-  elif [ "$val" = 4 ]; then
-    system_type=${system_type}1
-  elif [ "$val" = 8 ]; then
-    system_type=${system_type}10
-  else
-    system_type=${system_type}1
-  fi
-
-  /usr/bin/kv set "${1}"_system_conf "$system_type"
-}
-
 init_class2_sensord() {
-  SLOTS="slot1 bmc nic"
-  read_system_conf "slot1"
+  SLOTS=(slot1 bmc nic)
 }
 
 init_class1_sensord() {
-  #Check for the slots present and run sensord for those slots only.
-  if [ "$(is_server_prsnt 1)" = "1" ]; then
-    if [ "$(is_slot_12v_on 1)" = "1" ]; then
-      SLOTS="$SLOTS slot1"
-      read_system_conf "slot1"
-    fi
+  sys_config="$($KV_CMD get sled_system_conf persistent)"
+  if [[ "$sys_config" == "Type_8" ]]; then
+    SLOTS=(slot1)
+  elif [[ "$sys_config" =~ ^(Type_(DPV2|HD))$ ]]; then
+    SLOTS=(slot1 slot3)
+  else
+    SLOTS=(slot1 slot2 slot3 slot4)
   fi
 
-  if [ "$(is_server_prsnt 2)" = "1" ]; then
-    if [ "$(is_slot_12v_on 2)" = "1" ]; then
-      SLOTS="$SLOTS slot2"
-      read_system_conf "slot2"
-    fi
-  fi
-
-  if [ "$(is_server_prsnt 3)" = "1" ]; then
-    if [ "$(is_slot_12v_on 3)" = "1" ]; then
-      SLOTS="$SLOTS slot3"
-      read_system_conf "slot3"
-    fi
-  fi
-
-  if [ "$(is_server_prsnt 4)" = "1" ]; then
-    if [ "$(is_slot_12v_on 4)" = "1" ]; then
-      SLOTS="$SLOTS slot4"
-      read_system_conf "slot4"
-    fi
-  fi
-
-  SLOTS="$SLOTS bmc nic"
+  SLOTS+=(bmc nic)
 }
 
 bmc_location=$(get_bmc_board_id)
@@ -73,4 +33,4 @@ else
   /bin/echo -n "Is board id correct(id=$bmc_location)?..."
 fi
 
-exec /usr/local/bin/sensord $SLOTS
+exec /usr/local/bin/sensord "${SLOTS[@]}"

@@ -7,11 +7,8 @@ fi
 
 if [ -n "$DISTRO_OVERRIDE" ]; then
   echo "WARNING: distro is set to ${DISTRO_OVERRIDE} based on DISTRO_OVERRIDE env variable"
-elif [ -z "$DISTRO_DEFAULT" ]; then
-  DISTRO_DEFAULT=zeus
-else
-  echo "WARNING: default distro is set to ${DISTRO_DEFAULT} based on DISTRO_DEFAULT env variable"
 fi
+DISTRO_DEFAULT=lf-master
 
 declare -a PLAT_DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.

@@ -22,5 +22,5 @@ lf_kirkstone_repos=(
     lf-openbmc:ce7bef12b
 )
 lf_langdale_repos=(
-    lf-openbmc:f241bb577
+    lf-openbmc:f4e5dde7f
 )

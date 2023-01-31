@@ -63,8 +63,8 @@ i2c_device_add 8 0x33 fancpld
 i2c_device_add 8 0x48 tmp75
 i2c_device_add 8 0x49 tmp75
 
-# Bus 9
-# 9 0x20 tpm_i2c_infineon added by trousers.init.sh
+# Bus 9   TPM driver for TCSD service
+i2c_device_add 9 0x20 tpm_i2c_infineon
 
 # Bus 12
 i2c_device_add 12 0x31 syscpld

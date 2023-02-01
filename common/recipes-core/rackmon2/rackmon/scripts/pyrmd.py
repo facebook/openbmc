@@ -162,16 +162,23 @@ class RackmonInterface:
         client.settimeout(30)
         client.connect("/var/run/rackmond.sock")
         req_header = struct.pack("@L", len(request))
-        client.send(req_header + request)
+        client.sendall(req_header + request)
         response = bytes()
 
         def recvExact(num):
-            received = 0
-            chunk = bytes()
-            while received < num:
-                chunk += client.recv(num - received)
-                received = len(chunk)
-            return chunk
+            data = bytes()
+            retries = 0
+            maxRetries = 3
+            while len(data) < num:
+                chunk = client.recv(num - len(data))
+                if chunk == b"":
+                    retries += 1
+                    if retries > maxRetries:
+                        raise RuntimeError("Potentially connection closed")
+                    continue
+                retries = 0
+                data += chunk
+            return data
 
         (data_len,) = struct.unpack("@L", recvExact(4))
         response = recvExact(data_len)

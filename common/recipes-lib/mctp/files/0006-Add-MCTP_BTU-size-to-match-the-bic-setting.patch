@@ -1,0 +1,25 @@
+From b51c25041ce0f04f22ffaa53838c40292c6aed80 Mon Sep 17 00:00:00 2001
+From: Eli Huang <Eli_Huang@wiwynn.com>
+Date: Thu, 22 Dec 2022 09:03:59 +0800
+Subject: [PATCH] Add MCTP_BTU size to match the bic setting
+
+---
+ libmctp.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libmctp.h b/libmctp.h
+index fde98f5..d922fe4 100644
+--- a/libmctp.h
++++ b/libmctp.h
+@@ -50,7 +50,7 @@ struct mctp_hdr {
+ 	(((field) >> MCTP_HDR_TAG_SHIFT) & MCTP_HDR_TAG_MASK)
+ 
+ /* Baseline Transmission Unit and packet size */
+-#define MCTP_BTU 64
++#define MCTP_BTU 256
+ #define MCTP_PACKET_SIZE(unit) ((unit) + sizeof(struct mctp_hdr))
+ 
+ #define TX_DISABLED_ERR (-1024)
+-- 
+2.36.1
+

@@ -314,3 +314,21 @@ sgpio_valid_check(){
     return false;
   }
 }
+
+int read_cpld_health(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret = 0;
+  static unsigned int retry;
+
+  ret = sgpio_valid_check();
+  if (!ret) {
+    if (retry_err_handle(retry, 5) == READING_NA) {
+      *value = 1;
+    } else {
+      *value = 0;
+    }
+  } else {
+    *value = 0;
+    retry = 0;
+  }
+  return 0;
+}

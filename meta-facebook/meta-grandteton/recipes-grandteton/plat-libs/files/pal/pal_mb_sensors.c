@@ -59,7 +59,6 @@ static int read_frb3(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int get_nm_rw_info(uint8_t* nm_bus, uint8_t* nm_addr, uint16_t* bmc_addr);
-static int read_cpld_health(uint8_t fru, uint8_t sensor_num, float *value);
 bool pal_bios_completed(uint8_t fru);
 static uint8_t postcodes_last[256] = {0};
 
@@ -1128,23 +1127,4 @@ int read_frb3(uint8_t fru, uint8_t sensor_num, float *value) {
   ret = check_frb3(fru_id, MB_SNR_PROCESSOR_FAIL, value);
   *value = 0;
   return ret;
-}
-
-static
-int read_cpld_health(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret = 0;
-  static unsigned int retry;
-
-  ret = sgpio_valid_check();
-  if (!ret) {
-    if (retry_err_handle(retry, 5) == READING_NA) {
-      *value = 1;
-    } else {
-      *value = 0;
-    }
-  } else {
-    *value = 0;
-    retry = 0;
-  }
-  return 0;
 }

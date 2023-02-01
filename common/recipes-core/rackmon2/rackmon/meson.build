@@ -117,7 +117,7 @@ config_validator = files('scripts/schema_validator.py')
 confchecker_iface = custom_target(
   'check_syntax_iface',
   command: [
-    'python3',
+    get_option('python-path'),
     config_validator,
     files('schemas/InterfaceConfigSchema.json'),
     '@INPUT@',
@@ -131,7 +131,7 @@ confchecker_iface = custom_target(
 confchecker_regmap = custom_target(
   'check_syntax_regmap',
   command: [
-    'python3',
+    get_option('python-path'),
     config_validator,
     files('schemas/RegisterMapConfigSchema.json'),
     '@INPUT@',
@@ -147,7 +147,7 @@ pyrmd_tests = join_paths(meson.source_root(), meson.current_source_dir(), 'tests
 pyrmd_tester = custom_target(
   'check_pyrmd',
   command: [
-    'python3',
+    get_option('python-path'),
     '@INPUT@',
   ],
   input: files(pyrmd_tests),

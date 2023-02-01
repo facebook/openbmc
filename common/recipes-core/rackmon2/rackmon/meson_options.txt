@@ -2,4 +2,4 @@
 option('profiling', type : 'boolean', value : false)
 option('syslog', type : 'boolean', value : true)
 option('orv3', type: 'boolean', value: true)
-
+option('python-path', type: 'string', value: 'python3')

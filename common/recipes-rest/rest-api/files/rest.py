@@ -28,6 +28,8 @@ import os.path
 import ssl
 import sys
 
+import rest_debug
+
 from aiohttp.log import access_logger
 from async_ratelimiter import AsyncRateLimiter
 from common_logging import ACCESS_LOG_FORMAT, get_logger_config
@@ -54,6 +56,8 @@ config = parse_config(configpath)
 
 
 logging.config.dictConfig(get_logger_config(config))
+
+rest_debug.install_sigusr_stack_logger()
 
 
 servers = []

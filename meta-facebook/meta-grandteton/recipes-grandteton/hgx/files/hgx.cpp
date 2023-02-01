@@ -35,7 +35,8 @@ const auto HMC_TASK_SERVICE = HMC_URL + "TaskService/Tasks/";
 const auto HMC_FW_INVENTORY = HMC_URL + "UpdateService/FirmwareInventory/";
 const auto HGX_TELEMETRY_SERVICE_EVT = HMC_URL + "/redfish/v1/TelemetryService/MetricReportDefinitions/PlatformEnvironmentMetrics";
 const auto HGX_TELEMETRY_SERVICE_DVT = HMC_URL + "TelemetryService/MetricReports/HGX_PlatformEnvironmentMetrics_0/";
-const auto HMC_RESET_SERVICE = "/Actions/Manager.ResetToDefaults";
+const auto HMC_FACTORY_RESET_SERVICE = "/Actions/Manager.ResetToDefaults";
+const auto HMC_RESET_SERVICE = "/Actions/Manager.Reset";
 
 const std::string HMC_PATCH_EVT =
 "{\"HttpPushUriTargets\": [\
@@ -289,13 +290,13 @@ int FactoryReset() {
   HMCPhase = getHMCPhase();
 
   if (HMCPhase == HMC_FW_EVT) {
-    url = HMC_URL + "Managers/bmc" + HMC_RESET_SERVICE;
+    url = HMC_URL + "Managers/bmc" + HMC_FACTORY_RESET_SERVICE;
   }
   else if (HMCPhase == HMC_FW_DVT) {
-    url = HMC_URL + "Managers/HGX_HMC_0" + HMC_RESET_SERVICE;
+    url = HMC_URL + "Managers/HGX_HMC_0" + HMC_FACTORY_RESET_SERVICE;
   }
   else if (HMCPhase == BMC_FW_DVT) {
-    url = HMC_URL + "Managers/HGX_BMC_0" + HMC_RESET_SERVICE;
+    url = HMC_URL + "Managers/HGX_BMC_0" + HMC_FACTORY_RESET_SERVICE;
   }
   else {
     std::cout << "Perform HGX factory reset failed, unknown HMC FW" << std::endl;
@@ -316,6 +317,30 @@ int FactoryReset() {
   std::cout << "Perform HGX factory reset..." << std::endl;
   syslog(LOG_CRIT, "Perform HGX factory reset...");
   return 0;
+}
+
+void reset() {
+  std::string url;
+  int HMCPhase = getHMCPhase();
+
+  if (HMCPhase == HMC_FW_EVT) {
+    url = HMC_URL + "Managers/bmc" + HMC_RESET_SERVICE;
+  }
+  else if (HMCPhase == HMC_FW_DVT) {
+    url = HMC_URL + "Managers/HGX_HMC_0" + HMC_RESET_SERVICE;
+  }
+  else if (HMCPhase == BMC_FW_DVT) {
+    url = HMC_URL + "Managers/HGX_BMC_0" + HMC_RESET_SERVICE;
+  }
+  else {
+    std::cout << "Perform HGX factory reset failed, unknown HMC FW" << std::endl;
+    syslog(LOG_CRIT, "Perform HGX factory reset failed, unknown HMC FW");
+    throw std::runtime_error("Unknown HMC Phase");
+  }
+
+  json args;
+  args["ResetType"] = "GracefulRestart";
+  hgx.post(url, args.dump(), false);
 }
 
 int patch_bf_update() {

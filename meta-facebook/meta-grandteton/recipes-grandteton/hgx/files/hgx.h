@@ -33,6 +33,9 @@ std::string redfishPost(const std::string& subpath, std::string&& args);
 // Perform Factory reset to default
 int FactoryReset();
 
+// Graceful-reset the HMC
+void reset();
+
 // Patch a subpath after /redfish/v1
 std::string redfishPatch(const std::string& subpath, std::string&& args);
 

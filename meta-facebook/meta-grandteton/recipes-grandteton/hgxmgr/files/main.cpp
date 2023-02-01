@@ -59,8 +59,12 @@ static void do_get_snr_metric() {
   hgx::getMetricReports();
 }
 
-static void do_reset() {
+static void do_factory_reset() {
   hgx::FactoryReset();
+}
+
+static void do_reset() {
+  hgx::reset();
 }
 
 int main(int argc, char* argv[]) {
@@ -120,7 +124,10 @@ int main(int argc, char* argv[]) {
   patch->add_option("args", args, "JSON arguments for patch")->required();
   patch->callback([&]() { do_patch(subpath, args); });
 
-  auto reset = app.add_subcommand("factory-reset", "Perform factory reset to default");
+  auto freset = app.add_subcommand("factory-reset", "Perform factory reset to default");
+  freset->callback([&]() { do_factory_reset(); });
+
+  auto reset = app.add_subcommand("reset", "Graceful reboot the HMC");
   reset->callback([&]() { do_reset(); });
 
   app.require_subcommand(/* min */ 1, /* max */ 1);

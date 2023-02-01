@@ -837,6 +837,54 @@ pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   return completion_code;
 }
 
+int __attribute__((weak))
+pal_apml_alert_handler(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  int ret;
+  int completion_code = CC_UNSPECIFIED_ERROR;
+  uint8_t status;
+  uint8_t event_version = req_data[3];
+  uint8_t num_of_proc = 0, target_cpu = 0;
+  uint32_t *cpuid;
+
+  *res_len = 0;
+
+  if (!pal_get_server_power(slot, &status) && !status) {
+    syslog(LOG_WARNING, "%s() slot %u is OFF", __func__, slot);
+    return PAL_ENOTSUP;
+  }
+
+  switch (event_version) {
+    case 0x00:
+      if (req_len < 26) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      num_of_proc = req_data[5];
+      target_cpu = req_data[6];
+      cpuid = (uint32_t*)(req_data+7);
+
+      ret = pal_add_apml_crashdump_record(slot, num_of_proc, target_cpu, cpuid);
+      if (0 == ret) {
+        completion_code = CC_SUCCESS;
+      }
+      break;
+    default:
+      syslog(LOG_WARNING, "%s() wrong event version 0x%02x", __func__, event_version);
+      completion_code = PAL_ENOTSUP;
+      break;
+  }
+
+  return completion_code;
+}
+
+int __attribute__((weak))
+pal_add_apml_crashdump_record(uint8_t fru, uint8_t num_of_proc, uint8_t target_cpu, const uint32_t* cpuid)
+{
+  return PAL_ENOTSUP;
+}
+
 uint8_t __attribute__((weak))
 pal_set_psb_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {

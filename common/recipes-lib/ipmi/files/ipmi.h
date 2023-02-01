@@ -550,6 +550,7 @@ enum
 
   CMD_OEM_1S_GET_PCIE_CONFIG = 0x67,
   CMD_OEM_1S_BIC_BRIDGE = 0x74,
+  CMD_OEM_1S_SEND_APML_ALERT_TO_BMC = 0xD0,
 };
 
 // OEM Command Codes for USB basded Debug Card

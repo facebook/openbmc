@@ -565,6 +565,8 @@ int pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh);
 int pal_set_fru_post(uint8_t fru, uint8_t value);
 uint8_t pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 uint8_t pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_apml_alert_handler(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_add_apml_crashdump_record(uint8_t fru, uint8_t num_of_proc, uint8_t target_cpu, const uint32_t* cpuid);
 uint8_t pal_set_psb_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_set_tpm_physical_presence(uint8_t slot, uint8_t presence);
 int pal_get_tpm_physical_presence(uint8_t slot);

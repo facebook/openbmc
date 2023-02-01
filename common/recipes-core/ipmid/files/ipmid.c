@@ -4380,6 +4380,10 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
         res->cc = CC_INVALID_LENGTH;
       }
       break;
+    case CMD_OEM_1S_SEND_APML_ALERT_TO_BMC:
+      syslog(LOG_WARNING, "Get APML alert from fru %d, RAS status %x\n", req->payload_id, req->data[4]);
+      res->cc = pal_apml_alert_handler(req->payload_id, &req->data[0], req_len, &res->data[0], res_len);
+      break;
     default:
       res->cc = CC_INVALID_CMD;
       memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID

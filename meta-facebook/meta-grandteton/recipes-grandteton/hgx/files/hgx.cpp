@@ -33,7 +33,7 @@ const std::string HMC_URL = "http://192.168.31.1/redfish/v1/";
 const auto HMC_UPDATE_SERVICE = HMC_URL + "UpdateService";
 const auto HMC_TASK_SERVICE = HMC_URL + "TaskService/Tasks/";
 const auto HMC_FW_INVENTORY = HMC_URL + "UpdateService/FirmwareInventory/";
-const auto HGX_TELEMETRY_SERVICE_EVT = HMC_URL + "/redfish/v1/TelemetryService/MetricReportDefinitions/PlatformEnvironmentMetrics";
+const auto HGX_TELEMETRY_SERVICE_EVT = HMC_URL + "TelemetryService/MetricReportDefinitions/PlatformEnvironmentMetrics";
 const auto HGX_TELEMETRY_SERVICE_DVT = HMC_URL + "TelemetryService/MetricReports/HGX_PlatformEnvironmentMetrics_0/";
 const auto HMC_FACTORY_RESET_SERVICE = "/Actions/Manager.ResetToDefaults";
 const auto HMC_RESET_SERVICE = "/Actions/Manager.Reset";
@@ -249,21 +249,17 @@ TaskStatus getTaskStatus(const std::string& id) {
 void getMetricReports() {
   std::string url = HGX_TELEMETRY_SERVICE_DVT;
   std::string cache_path = "/tmp/cache_store/";
-  std::string snr_path;
   std::string snr_val;
   std::string resp;
   unsigned int pos;
 
   resp = hgx.get(url);
-  snr_path = cache_path + "sensor_metrics";
-  kv::set("sensor_metrics", resp);
-
   json jresp = json::parse(resp);
   json &tempArray = jresp["MetricValues"];
   for(auto &x : tempArray)
   {
     auto jname = x.find("MetricProperty");
-    snr_path = jname.value();
+    std::string snr_path = jname.value();
     pos = snr_path.find_last_of("/\\");
     snr_path = snr_path.substr(pos+1);
 

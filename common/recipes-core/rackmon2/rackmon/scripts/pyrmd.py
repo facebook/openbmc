@@ -159,9 +159,9 @@ class RackmonInterface:
         if not os.path.exists("/var/run/rackmond.sock"):
             raise ModbusException()
         client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        client.settimeout(20)
+        client.settimeout(30)
         client.connect("/var/run/rackmond.sock")
-        req_header = struct.pack("@H", len(request))
+        req_header = struct.pack("@L", len(request))
         client.send(req_header + request)
         response = bytes()
 
@@ -173,17 +173,8 @@ class RackmonInterface:
                 received = len(chunk)
             return chunk
 
-        def recvChunk():
-            chunk_len_b = recvExact(2)
-            (chunk_len,) = struct.unpack("@H", chunk_len_b)
-            chunk = recvExact(chunk_len)
-            return chunk, len(chunk) == 0xFFFF
-
-        while True:
-            data, cont_recv = recvChunk()
-            response += data
-            if not cont_recv:
-                break
+        (data_len,) = struct.unpack("@L", recvExact(4))
+        response = recvExact(data_len)
         client.close()
         if decodeJson:
             return json.loads(response.decode())

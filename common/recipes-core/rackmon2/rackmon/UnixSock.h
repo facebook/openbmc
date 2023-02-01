@@ -24,8 +24,7 @@ class UnixSock {
   int createService(const std::string& sockPath);
   int createClient(const std::string& sockPath);
 
-  void sendChunk(const char* buf, uint16_t bufLen);
-  bool recvChunk(std::vector<char>& resp);
+  void recvRaw(char* buf, size_t len);
 
  public:
   explicit UnixSock(int fd) : sock_(fd) {}

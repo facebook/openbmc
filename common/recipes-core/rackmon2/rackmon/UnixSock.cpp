@@ -105,69 +105,39 @@ void UnixSock::sendRaw(const char* buf, size_t len) {
   }
 }
 
-void UnixSock::sendChunk(const char* buf, uint16_t bufLen) {
-  sendRaw((const char*)&bufLen, sizeof(bufLen));
-  if (bufLen == 0)
-    return;
-  sendRaw(buf, (size_t)bufLen);
-}
-
-void UnixSock::send(const char* buf, size_t len) {
-  const size_t kMaxChunkSize = 0xffff;
-  // off == len is a special condition where we send a dummy
-  // buf. This special condition of buf_len = 0 is handled
-  // in sendChunk. Hence the condition of off <= len
-  for (size_t off = 0; off <= len; off += kMaxChunkSize) {
-    size_t rem = len - off;
-    size_t csize = rem > kMaxChunkSize ? kMaxChunkSize : rem;
-    sendChunk(buf + off, csize);
-  }
-}
-
-bool UnixSock::recvChunk(std::vector<char>& resp) {
-  uint16_t recvLen;
+void UnixSock::recvRaw(char* buf, size_t len) {
   const int maxRetries = 3;
   int retries = 0;
-  while (::recv(sock_, &recvLen, sizeof(recvLen), 0) < 0) {
-    retries++;
-    if (retries == maxRetries) {
-      throw std::system_error(
-          std::error_code(errno, std::generic_category()), "recv header");
-    }
-  }
-  // Received dummy, that was our last chunk!
-  if (recvLen == 0)
-    return false;
-  size_t off = resp.size();
-  resp.resize(off + recvLen);
-  size_t received = 0;
-  char* recvBuf = resp.data() + off;
-  retries = 0;
-  while (received < recvLen) {
-    int chunkSize = ::recv(sock_, recvBuf, recvLen - received, 0);
-    if (chunkSize < 0) {
+  size_t recvSize = 0;
+  while (recvSize < len) {
+    int sz = ::recv(sock_, buf, len - recvSize, 0);
+    if (sz < 0) {
       retries++;
       if (retries == maxRetries) {
         throw std::system_error(
-            std::error_code(errno, std::generic_category()), "recv body");
+            std::error_code(errno, std::generic_category()), "recv");
       }
       continue;
     }
     retries = 0;
-    received += (size_t)chunkSize;
-    recvBuf += (size_t)chunkSize;
+    recvSize += (size_t)sz;
+    buf += sz;
   }
-  // If we received the max size, we need to receive another
-  // chunk. Return true, so recv() does another iteration.
-  return recvLen == 0xffff;
+}
+
+void UnixSock::send(const char* buf, size_t len) {
+  sendRaw((const char*)&len, sizeof(len));
+  sendRaw(buf, len);
 }
 
 void UnixSock::recv(std::vector<char>& resp) {
-  resp.clear();
-  // recvchunk returns true if there are more chunks to receive.
-  // iterate over it. recvchunk will resize resp as needed.
-  while (recvChunk(resp) == true)
-    ;
+  size_t recvLen = 0;
+  recvRaw((char*)&recvLen, sizeof(recvLen));
+  if (recvLen == 0) {
+    throw std::runtime_error("Zero sized packet received");
+  }
+  resp.resize(recvLen);
+  recvRaw((char*)resp.data(), recvLen);
 }
 
 void UnixService::triggerExit(int /* unused */) {

@@ -172,6 +172,8 @@ vr_master_wr_pre(const string &fru, const string &component, bool is_fw_update) 
     return -1;
   }
 
+  channel_idx = distance(begin(fru_map), fru_it);
+
   if (is_fw_update) {
     // If it's fw update, sleep 2 secs for sensord polling all sensors
     sleep(2);
@@ -182,7 +184,6 @@ vr_master_wr_pre(const string &fru, const string &component, bool is_fw_update) 
     });
     if (vr_addr_it == end(vr_addr_map))
       return -1;
-    channel_idx = distance(begin(vr_addr_map), vr_addr_it);
     snprintf(key, sizeof(key), "%s_vr_%02xh_crc", fru.c_str(), vr_addr_it->vr_addr);
     if (kv_get(key, ver_temp, NULL, 0)) {
       sleep(2);

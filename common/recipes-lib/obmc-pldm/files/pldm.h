@@ -67,7 +67,7 @@ int oem_pldm_recv (int eid, int pldmd_fd,
  * @param[out] resp_msg_len  - caller owned pointer that will be made point to
  *                             the size of the PLDM response msg.
  */
-int oem_pldm_send_recv (uint8_t bus, int eid, 
+int oem_pldm_send_recv (uint8_t bus, int eid,
                         const uint8_t *pldm_req_msg, size_t req_msg_len, 
                         uint8_t **pldm_resp_msg, size_t *resp_msg_len);
 
@@ -111,14 +111,10 @@ void oem_pldm_close (int fd);
  */
 void get_pldm_ipmi_req_hdr (uint8_t *buf);
 void get_pldm_ipmi_req_hdr_w_IANA (uint8_t *buf, uint8_t *IANA, size_t IANA_length);
-int pldm_oem_ipmi_send_recv(uint8_t bus, uint8_t eid,
-                             uint8_t netfn, uint8_t cmd,
-                             uint8_t *txbuf, uint8_t txlen,
-                             uint8_t *rxbuf, size_t *rxlen);
-int pldm_norm_ipmi_send_recv(uint8_t bus, uint8_t eid,
-                             uint8_t netfn, uint8_t cmd,
-                             uint8_t *txbuf, uint8_t txlen,
-                             uint8_t *rxbuf, size_t *rxlen);
+int oem_pldm_ipmi_send_recv(uint8_t bus, uint8_t eid,
+                            uint8_t netfn, uint8_t cmd,
+                            uint8_t *txbuf, uint8_t txlen,
+                            uint8_t *rxbuf, size_t *rxlen);
 
 #ifdef __cplusplus
 }

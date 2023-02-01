@@ -132,10 +132,10 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   tlen = txlen + 2;
 
   size_t rlen = 0;
-  ret = pldm_oem_ipmi_send_recv(bus, SWB_BIC_EID,
-                               NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
-                               tbuf, tlen,
-                               rxbuf, &rlen);
+  ret = oem_pldm_ipmi_send_recv(bus, SWB_BIC_EID,
+                                NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
+                                tbuf, tlen,
+                                rxbuf, &rlen);
   return ret;
 }
 
@@ -155,7 +155,7 @@ acb_vr_pldm_wr(uint8_t bus, uint8_t addr,
   memcpy(tbuf + tlen, txbuf, txlen);
   tlen = txlen + tlen;
 
-  ret = pldm_norm_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID,
+  ret = oem_pldm_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                tbuf, tlen,
                                rxbuf, &rlen);
@@ -178,7 +178,7 @@ cxl_vr_pldm_wr(uint8_t bus, uint8_t addr,
   memcpy(tbuf + tlen, txbuf, txlen);
   tlen = txlen + tlen;
 
-  ret = pldm_norm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
+  ret = oem_pldm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                tbuf, tlen,
                                rxbuf, &rlen);

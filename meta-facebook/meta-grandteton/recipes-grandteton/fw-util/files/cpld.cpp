@@ -52,7 +52,7 @@ cpld_pldm_wr(uint8_t bus, uint8_t addr,
   tlen = txlen + 3;
 
   size_t rlen = 0;
-  rc = pldm_norm_ipmi_send_recv(bus, bic_eid,
+  rc = oem_pldm_ipmi_send_recv(bus, bic_eid,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                tbuf, tlen,
                                rxbuf, &rlen);

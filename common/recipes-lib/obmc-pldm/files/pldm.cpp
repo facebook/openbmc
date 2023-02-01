@@ -256,7 +256,7 @@ void get_pldm_ipmi_req_hdr_w_IANA (uint8_t *buf, uint8_t *IANA, size_t IANA_leng
 }
 
 int
-pldm_oem_ipmi_send_recv(uint8_t bus, uint8_t eid,
+oem_pldm_ipmi_send_recv(uint8_t bus, uint8_t eid,
                         uint8_t netfn, uint8_t cmd,
                         uint8_t *txbuf, uint8_t txlen,
                         uint8_t *rxbuf, size_t *rxlen) {
@@ -273,9 +273,12 @@ pldm_oem_ipmi_send_recv(uint8_t bus, uint8_t eid,
   pldmbuf->payload[payload_len++] = netfn << 2;     // IPMI NetFn
   pldmbuf->payload[payload_len++] = cmd;            // IPMI Cmd
 
-  // IPMI IANA
-  memcpy(pldmbuf->payload + payload_len, IANA, sizeof(IANA));
-  payload_len += sizeof(IANA);
+  // OEM netfn range between 0x30 and 0x3F
+  if(netfn >= 0x30 && netfn <= 0x3F) {
+    // IPMI IANA
+    memcpy(pldmbuf->payload + payload_len, IANA, sizeof(IANA));
+    payload_len += sizeof(IANA);
+  }
 
   // IPMI Data
   memcpy(pldmbuf->payload + payload_len, txbuf, txlen);
@@ -287,6 +290,7 @@ pldm_oem_ipmi_send_recv(uint8_t bus, uint8_t eid,
 
   do {
     rc = oem_pldm_send_recv(bus, eid, tbuf, tlen, &pldm_rbuf, rxlen);
+
     //check ipmi lens
     if(rc || *rxlen < PLDM_IPMI_HEAD_LEN) {
       break;
@@ -297,8 +301,17 @@ pldm_oem_ipmi_send_recv(uint8_t bus, uint8_t eid,
       rc = PLDM_REQUESTER_RECV_FAIL;
       break;
     }
-    *rxlen -= PLDM_OEM_IPMI_DATA_OFFSET;
-    memcpy(rxbuf, pldm_rbuf+PLDM_OEM_IPMI_DATA_OFFSET, *rxlen);
+
+    // OEM netfn range between 0x30 and 0x3F
+    if(netfn >= 0x30 && netfn <= 0x3F) {
+      *rxlen -= PLDM_OEM_IPMI_DATA_OFFSET;
+      memcpy(rxbuf, pldm_rbuf + PLDM_OEM_IPMI_DATA_OFFSET, *rxlen);
+    }
+    else {
+      *rxlen -= PLDM_IPMI_HEAD_LEN;
+      memcpy(rxbuf, pldm_rbuf + PLDM_IPMI_HEAD_LEN, *rxlen);
+    }
+
   } while(0);
 
   if(pldm_rbuf != nullptr) {
@@ -306,53 +319,3 @@ pldm_oem_ipmi_send_recv(uint8_t bus, uint8_t eid,
   }
   return rc;
 }
-
-int
-pldm_norm_ipmi_send_recv(uint8_t bus, uint8_t eid,
-                        uint8_t netfn, uint8_t cmd,
-                        uint8_t *txbuf, uint8_t txlen,
-                        uint8_t *rxbuf, size_t *rxlen) {
-  uint8_t tbuf[255] = {0};
-  uint8_t IANA[] = {0x15, 0xA0, 0x00};
-  size_t payload_len = 0;
-  struct pldm_msg *pldmbuf = (struct pldm_msg *)tbuf;
-
-  // get pldm header$
-  get_pldm_ipmi_req_hdr_w_IANA(tbuf, IANA, sizeof(IANA));
-  payload_len += sizeof(IANA);
-
-  // get ipmi message$
-  pldmbuf->payload[payload_len++] = netfn << 2;     // IPMI NetFn
-  pldmbuf->payload[payload_len++] = cmd;            // IPMI Cmd
-
-  // IPMI Data
-  memcpy(pldmbuf->payload + payload_len, txbuf, txlen);
-  payload_len += txlen;
-
-  size_t tlen = payload_len + PLDM_HEADER_SIZE;
-  int rc=0;
-  uint8_t *pldm_rbuf = nullptr;
-
-  do {
-    rc = oem_pldm_send_recv(bus, eid, tbuf, tlen, &pldm_rbuf, rxlen);
-    //check ipmi lens
-    if(rc || *rxlen < PLDM_IPMI_HEAD_LEN) {
-      rc = PLDM_REQUESTER_RESP_MSG_TOO_SMALL;
-      break;
-    }
-    //ipmi complete code
-    if (pldm_rbuf[PLDM_OEM_IPMI_CC_OFFSET] != 0) {
-      printf("%s CC=0x%x\n", __func__, pldm_rbuf[PLDM_OEM_IPMI_CC_OFFSET] );
-      rc = PLDM_REQUESTER_RECV_FAIL;
-      break;
-    }
-    *rxlen -= PLDM_IPMI_HEAD_LEN;
-    memcpy(rxbuf, pldm_rbuf+PLDM_IPMI_HEAD_LEN, *rxlen);
-  } while(0);
-
-  if(pldm_rbuf != nullptr) {
-    free(pldm_rbuf);
-  }
-  return rc;
-}
-

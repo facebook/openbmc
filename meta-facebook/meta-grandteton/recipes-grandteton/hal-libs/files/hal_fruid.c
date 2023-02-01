@@ -45,7 +45,7 @@ get_pldm_fruid_info(bic_intf fru_bic_info, ipmi_fruid_info_t *info) {
 
   txbuf[txlen++] = fru_bic_info.fru_id;
 
-  rc = pldm_norm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
+  rc = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO,
                                txbuf, txlen,
                                (uint8_t*)info, &rxlen);
@@ -65,7 +65,7 @@ _read_pldm_fruid(bic_intf fru_bic_info, uint16_t offset, uint8_t count, uint8_t 
   txbuf[txlen++] = count;
 
 
-  rc = pldm_norm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
+  rc = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_READ_FRUID_DATA,
                                txbuf, txlen,
                                rbuf, rlen);
@@ -87,7 +87,7 @@ _write_pldm_fruid(bic_intf fru_bic_info, uint16_t offset, uint8_t count, uint8_t
   txlen = count + txlen ;
 
   syslog(LOG_INFO, "%s() fru:%d", __func__, fru_bic_info.fru_id);
-  rc = pldm_norm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
+  rc = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_WRITE_FRUID_DATA,
                                txbuf, txlen,
                                rxbuf, &rxlen);

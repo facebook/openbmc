@@ -239,7 +239,7 @@ static int binding_asti3c_init (struct mctp *mctp, struct binding *binding,
                               mctp_eid_t eid, int n_params,
                               char *const *params __attribute__((unused)))
 {
-  if (n_params != 1) {
+  if (n_params != 2) {
     warnx("i3c binding requires device param");
     return -1;
   }
@@ -250,7 +250,9 @@ static int binding_asti3c_init (struct mctp *mctp, struct binding *binding,
   data->asti3c = mctp_asti3c_init();
   assert(data->asti3c);
 
-  std::string i3c_dev_str = params[0];
+  std::string bus = params[0];
+  std::string pid = params[1];
+  std::string i3c_dev_str = bus + "-" + pid;
   std::string dev = "/dev/bus/i3c/" + i3c_dev_str;
 
   data->out_fd = open(dev.c_str(), O_RDWR);
@@ -294,6 +296,13 @@ static int binding_asti3c_get_out_fd(struct binding *binding) {
 
 static int binding_asti3c_process(struct binding *binding) {
   struct i3c_data *data = (struct i3c_data*)binding->data;
+
+  int ret = lseek(data->in_fd, 0, SEEK_SET);
+  if (ret < 0) {
+    std::cerr<<"Failed to seek\n";
+    return -1;
+  }
+
   return mctp_asti3c_rx(data->asti3c, data->in_fd);
 }
 
@@ -674,7 +683,7 @@ static void usage(const char *progname)
       fprintf(stderr, " %s %s [bus] [bmc_addr_16h]\n", progname, bindings[i].name);
       break;
     case MCTP_OVER_I3C:
-      fprintf(stderr, " %s %s [bus-pid]\n", progname, bindings[i].name);
+      fprintf(stderr, " %s %s [bus] [pid]\n", progname, bindings[i].name);
     }
   }
 }

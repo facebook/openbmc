@@ -84,10 +84,10 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   tlen = txlen + 2;
 
   size_t rlen = 0;
-  ret = pldm_oem_ipmi_send_recv(bus, SWB_BIC_EID,
-                               NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
-                               tbuf, tlen,
-                               rxbuf, &rlen);
+  ret = oem_pldm_ipmi_send_recv(bus, SWB_BIC_EID,
+                                NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
+                                tbuf, tlen,
+                                rxbuf, &rlen);
   return ret;
 }
 

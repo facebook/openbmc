@@ -1291,7 +1291,7 @@ pal_get_pldm_fru_status(uint8_t fru, uint8_t dev_id, fru_status *status) {
 
   txbuf[txlen++] = fru_bic_info.fru_id;
   txbuf[txlen++] = dev_id;
-  ret = pldm_oem_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid, NETFN_OEM_1S_REQ,
+  ret = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid, NETFN_OEM_1S_REQ,
                                 CMD_OEM_1S_GET_ASIC_CARD_STATUS, txbuf, txlen,
                                 rxbuf, &rxlen);
 

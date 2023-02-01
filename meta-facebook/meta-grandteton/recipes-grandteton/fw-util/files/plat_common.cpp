@@ -40,7 +40,7 @@ int set_swb_snr_polling (uint8_t status) {
 
   tbuf[tlen++] = status;
 
-  rc = pldm_oem_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
+  rc = oem_pldm_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
                                NETFN_OEM_1S_REQ,
                                CMD_OEM_1S_DISABLE_SEN_MON,
                                tbuf, tlen,
@@ -203,7 +203,7 @@ vr_master_wr_pre(const string &fru, const string &component, bool is_fw_update) 
   txbuf[4] = (channel << channel_idx);
   txlen += 1;
 
-  ret = pldm_norm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
+  ret = oem_pldm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                txbuf, txlen,
                                rxbuf, &rlen);
@@ -218,7 +218,7 @@ vr_master_wr_pre(const string &fru, const string &component, bool is_fw_update) 
   txbuf[2] = rxlen;
   txbuf[3] = offset;
   txbuf[4] = 0x08; // Channel to VR
-  ret = pldm_norm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
+  ret = oem_pldm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                txbuf, txlen,
                                rxbuf, &rlen);

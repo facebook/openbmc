@@ -372,6 +372,11 @@ enum brd_rev {
   HD_REV_DVT3 = 7,
   HD_REV_PVT  = 8,
 
+  OP_REV_EVT = 0,
+  OP_REV_DVT = 1,
+  OP_REV_PVT = 2,
+  OP_REV_MP = 3,
+
   UNKNOWN_REV = 0xFF,
 };
 
@@ -380,10 +385,9 @@ enum board_id {
   BOARD_ID_BB = 2,
   BOARD_ID_RF = 3,
   BOARD_ID_HD = 4,
+  BOARD_ID_OP = 5,
   BOARD_ID_NIC_EXP = 6,
   BOARD_ID_VF = 7,
-  BOARD_ID_OPA = 8,
-  BOARD_ID_OPB = 9,
 };
 
 enum {

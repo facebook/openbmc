@@ -61,7 +61,6 @@ class ClassConfig {
         //slot1 1ou bic/cpld
         static BicFwComponent    bic_1ou_fw1("slot1", "1ou_bic", "1ou", FW_1OU_BIC);
         static BicFwComponent    bic_1ou_rcvy_fw1("slot1", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
-        static CpldComponent     cpld_1ou_fw1("slot1", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
         if (fby35_common_is_fru_prsnt(FRU_SLOT1, &prsnt)) {
           prsnt = 0;

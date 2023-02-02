@@ -1349,6 +1349,71 @@ bic_get_one_gpio_status(uint8_t slot_id, uint8_t gpio_num, uint8_t *value){
 }
 
 int
+bic_get_exp_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t *value, uint8_t intf) {
+  uint8_t tbuf[5] = {0x00};
+  uint8_t rbuf[5] = {0x00};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  if (value == NULL) {
+    return -1;
+  }
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[3] = 0x00;
+  tbuf[4] = gpio_num;
+  bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
+  *value = rbuf[4] & 0x01;
+
+  return ret;
+}
+
+int
+bic_get_op_board_rev(uint8_t slot_id, uint8_t *rev, uint8_t intf) {
+  enum {
+    GPIO_OPA_BOARD_REV_0 = 20,
+    GPIO_OPA_BOARD_REV_1 = 21,
+    GPIO_OPA_BOARD_REV_2 = 22,
+  };
+  enum {
+    GPIO_OPB_BOARD_REV_0 = 21,
+    GPIO_OPB_BOARD_REV_1 = 22,
+    GPIO_OPB_BOARD_REV_2 = 23,
+  };
+  uint8_t i = 0;
+  uint8_t value = 0;
+  uint8_t gpio_expa_rev[3] = {GPIO_OPA_BOARD_REV_0, GPIO_OPA_BOARD_REV_1, GPIO_OPA_BOARD_REV_2};
+  uint8_t gpio_expb_rev[3] = {GPIO_OPB_BOARD_REV_0, GPIO_OPB_BOARD_REV_1, GPIO_OPB_BOARD_REV_2};
+  uint8_t gpio_index = 0;
+  if (rev == NULL) {
+    return -1;
+  }
+
+  for (i = 0; i < sizeof(gpio_expa_rev); i++) {
+    switch (intf) {
+      case FEXP_BIC_INTF:
+      case EXP3_BIC_INTF:
+        gpio_index = gpio_expa_rev[i];
+        break;
+      case REXP_BIC_INTF:
+      case EXP4_BIC_INTF:
+        gpio_index = gpio_expb_rev[i];
+        break;
+      default:
+        syslog(LOG_WARNING, "%s(): wrong interface %x", __func__, intf);
+        return -1;
+    }
+    if (bic_get_exp_gpio(slot_id, gpio_index, &value, intf) < 0) {
+      return -1;
+    }
+    *rev = (*rev) << 1;
+    *rev |= value;
+  }
+  return 0;
+}
+
+int
 bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
   int ret;
   uint8_t rlen = 0;

@@ -34,8 +34,6 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
       break;
     case FW_1OU_BIC:
     case FW_1OU_BIC_RCVY:
-    case FW_3OU_BIC:
-    case FW_3OU_BIC_RCVY:
       if (bic_get_1ou_type(slot_id, &type) == 0) {
         switch (type) {
           case TYPE_1OU_RAINBOW_FALLS:
@@ -45,16 +43,26 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
             board_id = BOARD_ID_VF;
             break;
           case TYPE_1OU_OLMSTEAD_POINT:
-            board_id = BOARD_ID_OPA;
+            bic_get_op_board_rev(slot_id, &board_rev, FEXP_BIC_INTF);
+            board_id = BOARD_ID_OP;
             break;
         }
       }
       break;
     case FW_2OU_BIC:
     case FW_2OU_BIC_RCVY:
+      bic_get_op_board_rev(slot_id, &board_rev, REXP_BIC_INTF);
+      board_id = BOARD_ID_OP;
+      break;
+    case FW_3OU_BIC:
+    case FW_3OU_BIC_RCVY:
+      bic_get_op_board_rev(slot_id, &board_rev, EXP3_BIC_INTF);
+      board_id = BOARD_ID_OP;
+      break;
     case FW_4OU_BIC:
     case FW_4OU_BIC_RCVY:
-       board_id = BOARD_ID_OPB;
+      bic_get_op_board_rev(slot_id, &board_rev, EXP4_BIC_INTF);
+      board_id = BOARD_ID_OP;
       break;
     case FW_BB_BIC:
       board_id = BOARD_ID_BB;

@@ -962,6 +962,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
   const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "DVT_1C", "PVT", "MP"};
   const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP"};
   const char *rev_hd[] = {"POC", "EVT", "EVT", "EVT", "DVT", "DVT", "DVT", "DVT", "PVT"};
+  const char *rev_op[] = {"EVT", "DVT", "PVT", "MP"};
   const char **board_type = rev_sb;
   uint8_t exp_fw_rev = 0;
   uint8_t err_proof_board_id = 0;
@@ -1088,6 +1089,13 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
         rev_id = ARRAY_SIZE(rev_bb) - 1;
       }
       break;
+    case BOARD_ID_OP:
+      board_type = rev_op;
+      if (rev_id >= ARRAY_SIZE(rev_op)) {
+        rev_id = ARRAY_SIZE(rev_op) - 1;
+      }
+      break;
+
     case BOARD_ID_RF:
     case BOARD_ID_VF:
       return true;
@@ -1113,6 +1121,23 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
       exp_fw_rev = FW_REV_PVT;
     else
       exp_fw_rev = 0;
+  } else if (board_type == rev_op) {
+    switch (rev_id) {
+      case OP_REV_EVT:
+        exp_fw_rev = FW_REV_EVT;
+        break;
+      case OP_REV_DVT:
+        exp_fw_rev = FW_REV_DVT;
+        break;
+      case OP_REV_PVT:
+        exp_fw_rev = FW_REV_PVT;
+        break;
+      case OP_REV_MP:
+        exp_fw_rev = FW_REV_MP;
+        break;
+      default:
+        exp_fw_rev = 0;
+    }
   } else {
     if (BB_REV_EVT <= rev_id && rev_id <= BB_REV_EVT3)
       exp_fw_rev = FW_REV_EVT;

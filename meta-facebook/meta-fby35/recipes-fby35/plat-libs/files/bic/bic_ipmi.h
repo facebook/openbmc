@@ -179,6 +179,7 @@ int bic_get_mb_index(uint8_t *index);
 int bic_get_prot_spare_pins(uint8_t slot_id, uint8_t* value) ;
 bool bic_is_prot_bypass(uint8_t fru);
 int bic_get_sys_fw_ver(uint8_t slot_id, uint8_t *ver);
+int bic_get_op_board_rev(uint8_t slot_id, uint8_t *rev, uint8_t intf);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -64,8 +64,6 @@ const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
-const char pal_dev_fru_list[] = "all, 1U, 2U, 3U, 4U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
-                            "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13, 2U-X8, 2U-X16";
 const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 3U-dev0, " \
                             "3U-dev1, 3U-dev2, 4U-dev0, 4U-dev1, 4U-dev2, 4U-dev3, 4U-dev4";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
@@ -1087,17 +1085,15 @@ pal_get_fru_list(char *list) {
 }
 
 int
-pal_get_dev_list(uint8_t fru, char *list)
-{
-  strcpy(list, pal_dev_fru_list);
-  return 0;
-}
-
-int
 pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
-  int ret = 0;
+  uint8_t bmc_location = 0, prsnt = 0;
 
+  if (caps == NULL) {
+    return -1;
+  }
+
+  *caps = 0;
   switch (fru) {
     case FRU_ALL:
       *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
@@ -1106,9 +1102,15 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
-        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
-        FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
+      if (fby35_common_is_fru_prsnt(fru, &prsnt)) {
+        break;
+      }
+
+      if (prsnt == SLOT_PRESENT) {
+        *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+          FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
+          FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
+      }
       break;
     case FRU_BMC:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
@@ -1118,37 +1120,82 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_ALL |
         FRU_CAPABILITY_NETWORK_CARD;
       break;
-    case FRU_NICEXP:
-      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_READ;
-      break;
     case FRU_BB:
-      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_READ;
-      break;
-    case FRU_OCPDBG:
-      *caps = 0; //OCP debug card not support sensor/FRU
-      break;
-    default:
-      ret = -1;
+      *caps = FRU_CAPABILITY_FRUID_ALL;
+    case FRU_NICEXP:
+      if (fby35_common_get_bmc_location(&bmc_location)) {
+        break;
+      }
+
+      if (bmc_location == NIC_BMC) {
+        *caps |= FRU_CAPABILITY_SENSOR_ALL;
+      }
       break;
   }
-  return ret;
+
+  return 0;
 }
 
 int
 pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
 {
-  if (fru < FRU_SLOT1 || fru > FRU_SLOT4)
+  int config_status = 0;
+  uint8_t type = 0;
+
+  if (caps == NULL) {
     return -1;
-  if (dev >= DEV_ID0_1OU && dev <= DEV_ID13_2OU) {
-    *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
-      (FRU_CAPABILITY_POWER_ALL & (~FRU_CAPABILITY_POWER_RESET));
-  } else if (dev >= BOARD_1OU && dev <= BOARD_2OU_X16) {
-    *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
-  } else if (dev == BOARD_PROT) {
-    *caps = FRU_CAPABILITY_FRUID_ALL;
-  } else {
-    *caps = 0;
   }
+  if (fru < FRU_SLOT1 || fru > FRU_SLOT4) {
+    return -1;
+  }
+
+  *caps = 0;
+  switch (dev) {
+    case BOARD_2OU_X8:
+    case BOARD_2OU_X16:
+      if ((config_status = bic_is_exp_prsnt(fru)) <= 0) {
+        break;
+      }
+      if ((config_status & PRESENT_2OU) != PRESENT_2OU) {
+        break;
+      }
+      if (fby35_common_get_2ou_board_type(fru, &type) != 0) {
+        break;
+      }
+
+      if ((dev == BOARD_2OU_X8 && (type & DPV2_X8_BOARD) == DPV2_X8_BOARD) ||
+          (dev == BOARD_2OU_X16 && (type & DPV2_X16_BOARD) == DPV2_X16_BOARD)) {
+        *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      }
+      break;
+    case BOARD_PROT:
+      if (fby35_common_is_prot_card_prsnt(fru)) {
+        *caps = FRU_CAPABILITY_FRUID_ALL;
+      }
+      break;
+    default:
+      if ((config_status = bic_is_exp_prsnt(fru)) < 0) {
+        config_status = 0;
+      }
+      if ((config_status & PRESENT_1OU) == PRESENT_1OU) {
+        if (dev >= DEV_ID0_1OU && dev <= DEV_ID4_4OU) {
+          *caps = FRU_CAPABILITY_SENSOR_ALL |
+            (FRU_CAPABILITY_POWER_ALL & ~FRU_CAPABILITY_POWER_RESET);
+        } else if (dev == BOARD_1OU) {
+          *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+        } else {
+          if (bic_get_1ou_type(fru, &type)) {
+            type = TYPE_1OU_UNKNOWN;
+          }
+          if (type == TYPE_1OU_OLMSTEAD_POINT &&
+              dev >= BOARD_1OU && dev <= BOARD_4OU) {
+            *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+          }
+        }
+      }
+      break;
+  }
+
   return 0;
 }
 

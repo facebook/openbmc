@@ -41,6 +41,7 @@
 
 #define RECVMSG_TIMEOUT 3
 
+#define CHANNEL_BIT_MASK(a) ((1 << (a)) - 1)
 
 // re-used from
 // https://github.com/sammj/ncsi-netlink
@@ -417,6 +418,88 @@ NCSI_NL_RSP_T * send_nl_msg_libnl(NCSI_NL_MSG_T *nl_msg)
   } else {
     return ret_buf;
   }
+}
+
+static int run_command_set_channel_mask(int ifindex, int channel_num, int channel_id)
+{
+  struct ncsi_msg msg;
+  int ret = 0;
+  /*
+  A package can have up to 32 channels.
+  If the channel id exceeds 31 (0 base), it belongs to the next package.
+  e.g. channel id 0 ~ 31 belongs to package 0
+       channel id 32 ~ 63 belongs to package 1
+  */
+  int package = (channel_id & 0xE0) >> 5;
+
+  ret = setup_ncsi_message(&msg, NCSI_CMD_SET_CHANNEL_MASK, 0);
+  if (ret) {
+    syslog(LOG_ERR, "%s() Failed to setup NCSI message\n", __func__);
+    return -1;
+  }
+
+  ret = nla_put_u32(msg.msg, NCSI_ATTR_IFINDEX, ifindex);
+  if (ret) {
+    syslog(LOG_ERR, "%s() Failed to set ifindex, %s\n", __func__, strerror(errno));
+    goto out;
+  }
+
+  if (package >= 0) {
+    ret = nla_put_u32(msg.msg, NCSI_ATTR_PACKAGE_ID, package);
+    if (ret) {
+      syslog(LOG_ERR, "%s() Failed to set package id, %s\n", __func__, strerror(errno));
+      goto out;
+    }
+  }
+
+  ret = nla_put_u32(msg.msg, NCSI_ATTR_CHANNEL_ID, channel_id);
+  if (ret) {
+    syslog(LOG_ERR, "%s() Failed to set channel id, %s\n", __func__, strerror(errno));
+    goto out;
+  }
+
+  ret = nla_put_u32(msg.msg, NCSI_ATTR_CHANNEL_MASK, CHANNEL_BIT_MASK(channel_num));
+  if (ret) {
+    syslog(LOG_ERR, "%s() Failed to set channel mask, %s\n", __func__, strerror(errno));
+    goto out;
+  }
+
+  ret = nla_put_flag(msg.msg, NCSI_ATTR_MULTI_FLAG);
+  if (ret) {
+    syslog(LOG_ERR, "%s() Failed to set multi-channel flag, %s\n", __func__, strerror(errno));
+    goto out;
+  }
+
+  ret = nl_send_auto(msg.sk, msg.msg);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to send message, %s\n", __func__, strerror(errno));
+    goto out;
+  }
+
+  ret = nl_recvmsgs_default(msg.sk);
+  if (ret) {
+    syslog(LOG_ERR, "%s() Failed to receive message, ret=%d %s\n", __func__, ret, strerror(errno));
+    goto out;
+  }
+
+out:
+  free_ncsi_msg(&msg);
+  return ret;
+}
+
+// Sending set channel mask to kernel via netlink libnl
+int send_nl_set_libnl(char *dev_name, int channel_num, int channel_id)
+{
+  unsigned int ifindex = 0;  // network interface (e.g. eth0)'s ifindex
+
+  ifindex = if_nametoindex(dev_name);
+  // if_nametoindex returns 0 on error
+  if (ifindex == 0) {
+    syslog(LOG_ERR, "Invalid netdev %s %s\n", dev_name, strerror(errno));
+    return -1;
+  }
+
+  return (run_command_set_channel_mask(ifindex, channel_num, channel_id));
 }
 
 // wrapper for rcv msg

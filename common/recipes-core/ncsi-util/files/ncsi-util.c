@@ -43,12 +43,15 @@
 #include "ncsi-util.h"
 #include "brcm-ncsi-util.h"
 #include "nvidia-ncsi-util.h"
+#include <openbmc/nl-wrapper.h>
 
 #ifndef max
 #define max(a, b) ((a) > (b)) ? (a) : (b)
 #endif
 
 #define MAX_SEND_NL_MSG_RETRY 3
+
+#define NCSI_MAX_CHANNEL 32
 
 int nl_conf = -1;  // default value indicating auto-detection
 
@@ -300,6 +303,18 @@ static NCSI_NL_RSP_T * send_nl_msg_retry(NCSI_NL_MSG_T *nl_msg)
   }
 
   return nl_resp;
+}
+
+static int enable_multi_channel(char *dev_name, int channel_num, int channel_id) {
+  int ret = 0;
+
+  //Send set channel mask command to kernel via netlink libnl
+  ret = send_nl_set_libnl(dev_name, channel_num, channel_id);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Fail to enable multi_channel with number of channels %d", __func__, channel_num);
+  }
+
+  return ret;
 }
 
 static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
@@ -556,6 +571,7 @@ static void default_ncsi_util_usage(void) {
   printf("           -b [n]     (optional) buffer size for PLDM FW update [default=1024]\n");
   printf("       -z             send \"PLDM Cancel Update\" cmd \n");
   printf("       -s [n]         socket test\n\n");
+  printf("       -t [channels]  Enable multi channels\n\n");
   printf("Sample debug commands: \n");
   printf("       ncsi-util -n eth0 -c 0 0x50 0 0 0x81 0x19 0 0 0x1b 0\n");
   printf("       ncsi-util 0x8   (AEN Enable)\n");
@@ -580,11 +596,12 @@ static int default_ncsi_util_handler(int argc, char **argv,
   int fupgrade = 0;
   int ret = 0;
   int sockettest = 0;
+  int channel_num = 0;
 
   /*
    * Handle ncsi DMTF command options
    */
-  while ((argflag = getopt(argc, argv, "hs:Sp:z?" NCSI_UTIL_COMMON_OPT_STR)) != -1)
+  while ((argflag = getopt(argc, argv, "hs:Sp:zt:?" NCSI_UTIL_COMMON_OPT_STR)) != -1)
   {
     switch(argflag) {
     case 'h':
@@ -628,6 +645,22 @@ static int default_ncsi_util_handler(int argc, char **argv,
             cancelUpdate = 1;
             printf ("Cancel firmware update...\n");
             break;
+    case 't':
+            channel_num = atoi(optarg);
+            if ((channel_num > 0) && (channel_num <= NCSI_MAX_CHANNEL)) {
+              ret = enable_multi_channel(NCSI_UTIL_DEFAULT_DEV_NAME, channel_num, util_args->channel_id);
+              if (ret < 0) {
+                printf ("Fail to enable multi channel!\n");
+                syslog(LOG_WARNING, "Fail to enable multi channel!");
+              }
+            } else {
+              printf ("The number of Channels is invalid or out of range! (1 ~ 32)\n");
+              /*
+              Currently the maximum number of channels that NCSI driver can accept is 32,
+              you need to modify the NCSI driver to support more than 32 channels.
+              */
+            }
+            return ret;
     case NCSI_UTIL_GETOPT_COMMON_OPT_CHARS:
             // Already handled
             break;

@@ -85,6 +85,7 @@ struct ncsi_msg {
 
 // APIs
 NCSI_NL_RSP_T * send_nl_msg_libnl(NCSI_NL_MSG_T *nl_msg);
+int send_nl_set_libnl(char *dev_name, int channel_num, int channel_id);
 int setup_ncsi_mc_socket(struct nl_sock **sk, unsigned char *dst);
 int islibnl(void);
 int nl_rcv_msg(struct nl_sock *sk);

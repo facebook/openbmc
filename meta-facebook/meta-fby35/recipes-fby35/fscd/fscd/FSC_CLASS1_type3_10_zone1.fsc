@@ -1,8 +1,8 @@
 max([
-  linear_cpu(all:slot1_mb_soc_cpu_temp_c) + pid_cpu(all:slot1_mb_soc_cpu_temp_c),
-  linear_cpu(all:slot2_mb_soc_cpu_temp_c) + pid_cpu(all:slot2_mb_soc_cpu_temp_c),
-  linear_cpu(all:slot3_mb_soc_cpu_temp_c) + pid_cpu(all:slot3_mb_soc_cpu_temp_c),
-  linear_cpu(all:slot4_mb_soc_cpu_temp_c) + pid_cpu(all:slot4_mb_soc_cpu_temp_c),
+  linear_cpu(all:slot1_mb_soc_thermal_margin_c) + pid_cpu(all:slot1_mb_soc_thermal_margin_c),
+  linear_cpu(all:slot2_mb_soc_thermal_margin_c) + pid_cpu(all:slot2_mb_soc_thermal_margin_c),
+  linear_cpu(all:slot3_mb_soc_thermal_margin_c) + pid_cpu(all:slot3_mb_soc_thermal_margin_c),
+  linear_cpu(all:slot4_mb_soc_thermal_margin_c) + pid_cpu(all:slot4_mb_soc_thermal_margin_c),
   linear_frontIO_inlet(
     max([
       all:slot1_fio_front_temp_c,

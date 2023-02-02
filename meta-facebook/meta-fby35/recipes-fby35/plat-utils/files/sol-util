@@ -340,9 +340,9 @@ BAUDRATE=$4
 CPLD_ADDR=
 EXP_CPLD_ADDR=
 DEV_NUM=
-OP_IOEXP_BUS="0x13"
-OP_1OU_IOEXP_ADDR="0x4C"
-OP_3OU_IOEXP_ADDR="0x4E"
+OP_IOEXP_BUS="4"
+OP_1OU_IOEXP_ADDR="0x26"
+OP_3OU_IOEXP_ADDR="0x27"
 
 # Set back to default 57600
 /bin/stty -F "/dev/ttyS$SLOT_NUM" 57600 >/dev/null 2>&1
@@ -396,12 +396,12 @@ if [ -n "$COMP" ]; then
       1ou)
         exp_addr="$OP_1OU_IOEXP_ADDR"
         exp_mux_ctrl=0xFF
-        uart_ch=0x1
+        uart_ch=0x5
       ;;
       2ou)
         exp_addr="$OP_1OU_IOEXP_ADDR"
         exp_mux_ctrl=0xF7
-        uart_ch=0x1
+        uart_ch=0x5
       ;;
       3ou)
         exp_addr="$OP_3OU_IOEXP_ADDR"
@@ -414,8 +414,8 @@ if [ -n "$COMP" ]; then
         uart_ch=0x2
       ;;
     esac
-    /usr/bin/bic-util slot1 0x18 0x52 $OP_IOEXP_BUS $exp_addr 0x0 0x1 $exp_mux_ctrl # Set MUX value
-    /usr/bin/bic-util slot1 0x18 0x52 $OP_IOEXP_BUS $exp_addr 0x0 0x3 0xF7 # Set direction
+    /usr/sbin/i2cset -y $OP_IOEXP_BUS $exp_addr 0x1 $exp_mux_ctrl # Set MUX value
+    /usr/sbin/i2cset -y $OP_IOEXP_BUS $exp_addr 0x3 0xF7 # Set direction
   else
     echo "$COMP is not supported!"
     exit 255

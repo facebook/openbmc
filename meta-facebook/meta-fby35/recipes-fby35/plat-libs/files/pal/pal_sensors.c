@@ -1748,11 +1748,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   bool is_48v_medusa = false;
   int server_type = SERVER_TYPE_NONE;
 
-  server_type = fby35_common_get_slot_type(fru);
-  if (server_type < 0) {
-    syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, fru, server_type);
-  }
-
   ret = fby35_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
@@ -1791,6 +1786,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_SLOT2:
   case FRU_SLOT3:
   case FRU_SLOT4:
+    server_type = fby35_common_get_slot_type(fru);
+    if (server_type < 0) {
+      syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, fru, server_type);
+    }
     if (server_type == SERVER_TYPE_HD) {
       memcpy(bic_dynamic_sensor_list[fru-1], bic_hd_sensor_list, bic_hd_sensor_cnt);
       current_cnt = bic_hd_sensor_cnt;

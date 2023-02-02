@@ -20,3 +20,4 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 LOCAL_URI += " \
     file://setup-fan.sh \
     "
+RDEPENDS:${PN} += "bash"

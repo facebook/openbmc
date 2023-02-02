@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -33,6 +33,16 @@
 
 default_fsc_config_path="/etc/fsc-config.json"
 ln -s /etc/fsc-config.json ${default_fsc_config_path}
+
+for retry in {1..3};
+do
+    bp1_sensor208=$(kv get fan_bp1_sensor208)
+    if [ $? -ne 0 ]; then
+        sleep 3
+    else
+        break
+    fi
+done
 
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

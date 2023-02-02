@@ -156,6 +156,8 @@ def transfer_image(addr, image, block_size_words, block_wait):
         write_block(addr, image[i : i + block_size_words], block_size_words)
         if block_wait:
             wait_write_block(addr)
+        else:
+            time.sleep(0.1)
         if statuspath is None:
             print(
                 "\r[%.2f%%] Sending block %d of %d..."

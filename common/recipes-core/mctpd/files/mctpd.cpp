@@ -26,7 +26,8 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define __unused __attribute__((unused))
-#define SYSFS_SLAVE_QUEUE "/sys/bus/i2c/devices/%d-10%02x/slave-mqueue"
+
+#define HJ_POLLING_INTERVAL_SEC 2
 
 // MCTP Interface
 enum {
@@ -74,6 +75,9 @@ struct ctx {
   int n_clients;
 
   uint8_t tag_flags[8];
+  bool sock_err;
+  std::string bus;
+  int hj_fd;
 };
 
 
@@ -180,7 +184,11 @@ static void client_remove_inactive(struct ctx *ctx)
 
     ctx->n_clients--;
     memmove(&ctx->clients[i], &ctx->clients[i + 1], (ctx->n_clients - i) * sizeof(*ctx->clients));
-    ctx->clients = (struct client*)realloc(ctx->clients, ctx->n_clients * sizeof(*ctx->clients));
+    void* result = (struct client*)realloc(ctx->clients, ctx->n_clients * sizeof(*ctx->clients));
+    if (result == NULL)
+      return;
+    else
+      ctx->clients = (struct client*) result;
   }
 }
 
@@ -253,27 +261,21 @@ static int binding_asti3c_init (struct mctp *mctp, struct binding *binding,
   std::string bus = params[0];
   std::string pid = params[1];
   std::string i3c_dev_str = bus + "-" + pid;
-  std::string dev = "/dev/bus/i3c/" + i3c_dev_str;
+  std::string mqueue_dev = "/sys/bus/i3c/devices/" + i3c_dev_str + "/ibi-mqueue";
 
-  data->out_fd = open(dev.c_str(), O_RDWR);
+  if (access(mqueue_dev.c_str(), W_OK) != 0) {
+    free(data);
+    return -1;
+  }
+  data->out_fd = open(mqueue_dev.c_str(), O_RDWR);
+  data->in_fd = data->out_fd;
   if (data->out_fd < 0) {
     std::cerr << "Fail to open device. fd = " << data->out_fd << "\n";
     mctp_asti3c_free(data->asti3c);
     free(data);
     return -1;
   }
-  std::cout << "i3c device path: " << dev << "\n";
-
-  std::string mqueue_dev = "/sys/bus/i3c/devices/" + i3c_dev_str + "/ibi-mqueue";
-
-  data->in_fd = open(mqueue_dev.c_str(), O_RDONLY);
-  if (data->in_fd < 0) {
-    std::cerr << "Fail to open device. fd = " << data->in_fd << "\n";
-    mctp_asti3c_free(data->asti3c);
-    free(data);
-    return -1;
-  }
-  std::cout << "i3c mqueue device path: " << mqueue_dev << "\n";
+  std::cout << "i3c device path: " << mqueue_dev << "\n";
 
   mctp_register_bus_dynamic_eid(mctp, &((data->asti3c)->binding));
 
@@ -470,7 +472,14 @@ static int socket_process(struct ctx *ctx)
     return -1;
 
   ctx->n_clients++;
-  ctx->clients = (struct client*)realloc(ctx->clients, ctx->n_clients * sizeof(struct client));
+  void* result = (struct client*)realloc(ctx->clients, ctx->n_clients * sizeof(struct client));
+  if (result != NULL) {
+    ctx->clients = (struct client*) result;
+  }
+  else {
+    ctx->n_clients--;
+    return -1;
+  }
 
   client = &ctx->clients[ctx->n_clients - 1];
   memset(client, 0, sizeof(*client));
@@ -574,6 +583,7 @@ static int binding_init(struct ctx *ctx, const char *name, int argc, char *const
 {
   int rc;
 
+  ctx->bus = argv[0];
   ctx->binding = binding_lookup(name);
   if (!ctx->binding) {
     warnx("no such binding '%s'", name);
@@ -614,7 +624,10 @@ static int run_daemon(struct ctx *ctx)
 
   for (;;) {
     if (clients_changed) {
-      ctx->pollfds = (struct pollfd*)realloc(ctx->pollfds, (ctx->n_clients + FD_NR) * sizeof(struct pollfd));
+      void* result = (struct pollfd*)realloc(ctx->pollfds, (ctx->n_clients + FD_NR) * sizeof(struct pollfd));
+      if (result != NULL) {
+        ctx->pollfds = (struct pollfd*) result;
+      }
 
       for (i = 0; i < ctx->n_clients; i++) {
         ctx->pollfds[FD_NR + i].fd = ctx->clients[i].sock;
@@ -688,6 +701,21 @@ static void usage(const char *progname)
   }
 }
 
+int enable_hj_polling(struct ctx *ctx) {
+  int write_count = 0;
+
+  if (ctx->hj_fd < 0) {
+  std::string hj_dev_path =
+      "/sys/bus/i3c/devices/i3c-" + ctx->bus + "/broadcast_hj_enable";
+    ctx->hj_fd = open(hj_dev_path.c_str(), O_WRONLY);
+  }
+  if (ctx->hj_fd >= 0) {
+    write_count = write(ctx->hj_fd, "1", 1);
+    sleep(HJ_POLLING_INTERVAL_SEC);
+  }
+  return (write_count == 1) ? 0 : -1;
+}
+
 int main(int argc, char *const *argv)
 {
   struct ctx *ctx, _ctx;
@@ -734,24 +762,26 @@ int main(int argc, char *const *argv)
 
   ctx->mctp = mctp_init();
   assert(ctx->mctp);
+  ctx->hj_fd = -1;
+  while (1) {
+    rc = binding_init(ctx, argv[optind], argc - optind - 1,  argv + optind + 1);
+    if (!rc) {
+       rc = socket_init(ctx, argv + optind + 1);
+    }
+    if (rc) {
+      ctx->sock_err = true;
+    }
 
-  rc = binding_init(ctx, argv[optind], argc - optind - 1,  argv + optind + 1);
-  if (rc) {
-    return EXIT_FAILURE;
+    if (ctx->sock_err) {
+      enable_hj_polling(ctx);
+    } else {
+      run_daemon(ctx);
+    }
   }
 
-  rc = socket_init(ctx, argv + optind + 1);
-  if (rc) {
-    goto fail;
+  if (ctx->hj_fd) {
+    close(ctx->hj_fd);
   }
-
-  rc = run_daemon(ctx);
-  if (rc) {
-    goto fail;
-  }
-
-  return EXIT_SUCCESS;
-fail:
   ctx->binding->free(ctx->binding);
-  return EXIT_FAILURE;
+  return EXIT_SUCCESS;
 }

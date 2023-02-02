@@ -190,15 +190,9 @@ void RackmonUNIXSocketService::deinitialize() {
 void RackmonUNIXSocketService::handleRequest(
     const std::vector<char>& buf,
     std::unique_ptr<UnixSock> sock) {
-  bool is_json = true;
   std::unique_ptr<json> req = std::make_unique<json>();
   try {
     *req = json::parse(buf);
-  } catch (...) {
-    is_json = false;
-  }
-
-  if (is_json) {
     if ((*req)["type"] == "raw") {
       handleJSONCommand(std::move(req), std::move(sock));
     } else {
@@ -209,8 +203,8 @@ void RackmonUNIXSocketService::handleRequest(
           std::move(sock));
       tid.detach();
     }
-  } else {
-    logError << "Service got invalid JSON" << std::endl;
+  } catch (std::exception& e) {
+    logError << "Handling request failed: " << e.what() << std::endl;
   }
 }
 

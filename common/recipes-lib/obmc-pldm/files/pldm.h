@@ -20,7 +20,7 @@ extern "C"
 /**
  * @brief Test code
  */
-void pldm_msg_handle (uint8_t* req, size_t req_size, uint8_t** resp, int* resp_bytes);
+void pldm_msg_handle (uint8_t payload_id, uint8_t* req, size_t req_size, uint8_t** resp, int* resp_bytes);
 
 /**
  * @brief Send a PLDM request message, don't wait for response. Essentially an

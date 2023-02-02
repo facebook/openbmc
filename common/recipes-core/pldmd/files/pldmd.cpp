@@ -129,12 +129,14 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
     } else if (msg->hdr.request == PLDM_REQUEST ||
       msg->hdr.request == PLDM_ASYNC_REQUEST_NOTIFY) {
       LOG(INFO) << "Request handle.";
+
       uint8_t* resp = nullptr;
       int resp_bytes;
+      uint8_t bus_id = std::stoi( handler->bus );
 
       try {
         // handle PLDM msg
-        pldm_msg_handle(buf+PLDMD_MSG_HDR_LEN, size-PLDMD_MSG_HDR_LEN, &resp, &resp_bytes);
+        pldm_msg_handle(bus_id, buf + PLDMD_MSG_HDR_LEN, size - PLDMD_MSG_HDR_LEN, &resp, &resp_bytes);
 
         // copy response to buf(request)+PLDMD_MSG_HDR_LEN
         // so can re-use PLDMD_MSG_HDR
@@ -150,6 +152,7 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
 
     // For response handle
     } else if (msg->hdr.request == PLDM_RESPONSE) {
+
       uint8_t iid = msg->hdr.instance_id;
       int cfd = handler->get_client_fd(iid);
       if (cfd < 0) {
@@ -158,6 +161,10 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
         // Send back to client, so remove buf[0] & buf[1]
         LOG(INFO) << "Forward to client iid:" << (int)iid;
         handler->send_data(cfd, buf, size);
+        int index = handler->get_client_index(iid);
+        if (index >= 0) {
+          handler->pop_client(index);
+        }
       }
     }
   }
@@ -174,14 +181,16 @@ client_msg_handle (int fd, int index, uint8_t *buf, size_t size)
     LOG(INFO) << "client = "
               << index
               << " disconnect.";
+    freeBuf(buf);
     handler->pop_client(index);
-
   // client message handle
-  } else {
+  } else if (rc >= 0){
     handler->client_send_data(index, buf, size);
+    freeBuf(buf);
+  } else {
+    handler->pop_client(index);
   }
 
-  freeBuf(buf);
 }
 
 static void
@@ -220,10 +229,8 @@ run_daemon ()
 
     // check if there are messages from connected clients
     int client_count = handler->get_client_count();
-    LOG(INFO) << "client_count : " << client_count;
     for (int i = 0; i < client_count; ++i) {
       fd = handler->check_clients(i);
-      LOG(INFO) << "index : " << i << " fd : " << fd;
 
       if (fd) {
         client_msg_handle(fd, i, buf, size);

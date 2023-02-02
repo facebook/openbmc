@@ -120,10 +120,21 @@ pldm_fd_handler::get_client_fd(uint8_t iid)
     return -1;
 }
 
+int
+pldm_fd_handler::get_client_index(uint8_t iid) const
+{
+  auto i = std::find_if(clients_data.cbegin(), clients_data.cend(),
+                        [=](auto c) { return c.instance_id == iid; });
+
+  if (i == clients_data.cend()) return -1;
+  return std::distance(clients_data.cbegin(), i);
+}
+
 void
 pldm_fd_handler::show_clients()
 {
   int index = 0;
+
   for (auto&c:clients_data) {
     LOG(INFO) << "client[" << index++ << "]:";
     LOG(INFO) << "instance id : " << std::hex << c.instance_id;

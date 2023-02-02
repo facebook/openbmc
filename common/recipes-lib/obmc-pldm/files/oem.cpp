@@ -82,7 +82,7 @@ Response Handler::echo (const pldm_msg* request, size_t payloadLength)
   return response;
 }
 
-int encode_ipmi_resp (uint8_t *request, uint8_t instance_id, uint8_t completion_code,
+int encode_ipmi_resp (uint8_t payload_id, uint8_t *request, uint8_t instance_id, uint8_t completion_code,
                       Response & msg, size_t payloadLength)
 {
   if (msg.empty()) {
@@ -110,7 +110,7 @@ int encode_ipmi_resp (uint8_t *request, uint8_t instance_id, uint8_t completion_
   ipmi_mn_req_t *p_ipmi_req = (ipmi_mn_req_t*)tbuf;
   int data_size = int(payloadLength) - 5;
 
-  p_ipmi_req->payload_id = 0;
+  p_ipmi_req->payload_id = payload_id + 1;
   p_ipmi_req->netfn_lun = *((uint8_t *)request + POS_IPMI_NETFN);
   p_ipmi_req->cmd = *((uint8_t *)request + POS_IPMI_CMD);
 
@@ -131,12 +131,13 @@ int encode_ipmi_resp (uint8_t *request, uint8_t instance_id, uint8_t completion_
   for (int i = 0; i < data_size; i++) {
     std::cout << "request[" << i << "] = 0x" << unsigned(p_ipmi_req->data[i]) << "\n";
   }
+
   std::cout << std::dec;
 
   uint8_t rbuf[IPMI_PKT_MAX_SIZE] = {0};
   uint16_t rlen = 0;
 
-  lib_ipmi_handle(tbuf, payloadLength + 1, rbuf, &rlen);
+  lib_ipmi_handle(tbuf, data_size + 3, rbuf, &rlen);
 
   //Add Response data
   for (int i = 0; i < rlen; ++i) {
@@ -153,7 +154,7 @@ Response Handler::ipmi (const pldm_msg* request, size_t payloadLength)
   }
 
   Response response(PLDM_RESP_HEADER_SIZE);
-  auto rc = encode_ipmi_resp((uint8_t*)request, request->hdr.instance_id, PLDM_SUCCESS,
+  auto rc = encode_ipmi_resp(payload_id, (uint8_t*)request, request->hdr.instance_id, PLDM_SUCCESS,
                              response, payloadLength);
 
   if (rc != PLDM_SUCCESS) {

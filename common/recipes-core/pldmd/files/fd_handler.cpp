@@ -57,11 +57,6 @@ struct pollfd* fd_handler::get_pollfd (int index) {
 
 int fd_handler::send_data (int fd, uint8_t * buf, size_t size)
 {
-  LOG(INFO) << "send package length = " << (int)size;
-  for (int i = 0; i < (int)size; ++i)
-    LOG(INFO) << "send_data[" << setfill('0') << setw(2) << i << "] : "
-               << hex << (int)(*(buf+i));
-
   return send (fd, buf, size, 0);
 }
 
@@ -93,12 +88,6 @@ int fd_handler::recv_data (int fd, uint8_t **buf, size_t &size)
     returnCode = -1;
     return returnCode;
   }
-
-
-  LOG(INFO) << "recv package length = " << (int)size;
-  for (int i = 0; i < (int)size; ++i)
-    LOG(INFO) << "recv_data[" << setfill('0') << setw(2) << i << "] : "
-               << hex << (int)(*((*buf)+i));
 
   return returnCode;
 }

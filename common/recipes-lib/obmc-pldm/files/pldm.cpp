@@ -18,7 +18,7 @@ using namespace pldm::responder;
 const char pldm_path[] = "\0pldm-mux";
 const uint8_t MCTP_MSG_TYPE_PLDM = 1;
 
-void pldm_msg_handle (uint8_t* req, size_t req_size, uint8_t** resp, int* resp_bytes) {
+void pldm_msg_handle (uint8_t payload_id, uint8_t* req, size_t req_size, uint8_t** resp, int* resp_bytes) {
   std::unique_ptr<CmdHandler> handler;
   Response response;
   auto request = reinterpret_cast<pldm_msg*>(req);
@@ -35,6 +35,8 @@ void pldm_msg_handle (uint8_t* req, size_t req_size, uint8_t** resp, int* resp_b
       handler = std::make_unique<base::Handler>();
       break;
   }
+
+  handler->payload_id = payload_id;
 
   // handle command
   response = handler->handle(request->hdr.command, request, req_size - PLDM_HEADER_SIZE);

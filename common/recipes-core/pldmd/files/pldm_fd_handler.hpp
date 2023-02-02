@@ -67,6 +67,7 @@ class pldm_fd_handler : public fd_handler
     bool add_client(int fd, uint8_t type);
     void pop_client(int index);
     int get_client_fd(uint8_t iid);
+    int get_client_index(uint8_t iid) const;
     int get_client_count(){ return get_count(clients_data); }
     void show_clients();
 

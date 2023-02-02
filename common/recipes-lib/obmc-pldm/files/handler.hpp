@@ -34,6 +34,7 @@ using HandlerFunc =
 class CmdHandler
 {
   public:
+    uint8_t payload_id;
     /** @brief Invoke a PLDM command handler
      *
      *  @param[in] pldmCommand - PLDM command code

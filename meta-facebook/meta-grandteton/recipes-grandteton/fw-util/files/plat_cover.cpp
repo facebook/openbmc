@@ -79,12 +79,16 @@ class GTVrComponent : public VrComponent, public SignComponent {
   public:
     GTVrComponent(const string& fru, const string& comp, const string& name,
       signed_header_t sign_info): VrComponent(fru, comp, name), SignComponent(sign_info, fru) {}
-    int update(string image);
-    int component_update(string image) { return VrComponent::update(image); }
+    int update(string image) override;
+    int fupdate(string image) override;
+    int component_update(string image, bool force) { return VrComponent::update(image, force); }
 };
 
 int GTVrComponent::update(string image) {
-  return signed_image_update(image);
+  return signed_image_update(image, false);
+}
+int GTVrComponent::fupdate(string image) {
+  return signed_image_update(image, true);
 }
 
 class fw_vr_config {
@@ -94,7 +98,7 @@ class fw_vr_config {
       uint8_t source_id = 0;
       signed_header_t vr_info = {
         signed_info::PLATFORM_NAME,
-        signed_info::MB_BOARD,
+        signed_info::MB,
         signed_info::DVT,
         signed_info::CPU0_VR_VCCIN,
         signed_info::VR_SOURCE_INDEX

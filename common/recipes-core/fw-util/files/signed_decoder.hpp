@@ -63,6 +63,6 @@ class SignComponent {
     SignComponent(const signed_header_t& info, const std::string &fru) :
                 temp_image_path("/tmp/" + fru + "_signed_update.bin"), info(info) {}
     virtual ~SignComponent() = default;
-    virtual int component_update(std::string /*image*/) {return FW_STATUS_NOT_SUPPORTED;};
-    int signed_image_update(std::string /*image*/);
+    virtual int component_update(std::string /*image*/, bool /*force*/) {return FW_STATUS_NOT_SUPPORTED;};
+    int signed_image_update(std::string /*image*/, bool /*force*/);
 };

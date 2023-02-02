@@ -6,10 +6,10 @@ namespace signed_info {
 
   // board id
   enum {
-    ALL_BOARD = 0x00,
-    MB_BOARD  = 0x01,
-    SCM_BOARD,
-    SWB_BOARD,
+    ALL = 0x00,
+    MB  = 0x01,
+    SCM,
+    SWB,
   };
 
   // stage id

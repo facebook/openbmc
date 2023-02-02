@@ -137,12 +137,22 @@ class GTCpldComponent : public CpldComponent, public SignComponent {
       uint8_t type, uint8_t bus, uint8_t addr, int (*cpld_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t),
       signed_header_t sign_info): CpldComponent(fru, comp, type, bus, addr, cpld_xfer),
       SignComponent(sign_info, fru) {}
-    int update(string image);
-    int component_update(string image) { return CpldComponent::update(image); }
+    int update(string image) override;
+    int fupdate(string image) override;
+    int component_update(string image, bool force) {
+      if (force)
+        return CpldComponent::fupdate(image);
+      else
+        return CpldComponent::update(image);
+    }
 };
 
 int GTCpldComponent::update(string image) {
-  return signed_image_update(image);
+  return signed_image_update(image, false);
+}
+
+int GTCpldComponent::fupdate(string image) {
+  return signed_image_update(image, true);
 }
 
 class fw_cpld_config {
@@ -150,7 +160,7 @@ class fw_cpld_config {
     fw_cpld_config(){
       signed_header_t cpld_info = {
         signed_info::PLATFORM_NAME,
-        signed_info::MB_BOARD,
+        signed_info::MB,
         signed_info::DVT,
         signed_info::CPLD,
         signed_info::ALL_VENDOR,
@@ -161,13 +171,13 @@ class fw_cpld_config {
         static GTCpldComponent mb_cpld("mb", "cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
         static GTCpldComponent acb_cpld("acb", "cpld", LCMXO3_9400C, ACB_BIC_BUS, ACB_CPLD_ADDR, &cpld_pldm_wr, cpld_info);
         static GTCpldComponent meb_cpld("meb", "cpld", LCMXO3_9400C, MEB_BIC_BUS, MEB_CPLD_ADDR, &cpld_pldm_wr, cpld_info);
-        cpld_info.board_id = signed_info::SCM_BOARD;
+        cpld_info.board_id = signed_info::SCM;
         static GTCpldComponent scm_cpld("scm", "cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
       } else {
         static GTCpldComponent mb_cpld("mb", "mb_cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
-        cpld_info.board_id = signed_info::SWB_BOARD;
+        cpld_info.board_id = signed_info::SWB;
         static GTCpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, 3, 0x40, &cpld_pldm_wr, cpld_info);
-        cpld_info.board_id = signed_info::SCM_BOARD;
+        cpld_info.board_id = signed_info::SCM;
         static GTCpldComponent scm_cpld("scm", "scm_cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
       }
     }

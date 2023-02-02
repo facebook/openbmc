@@ -285,7 +285,7 @@ int SignComponent::delete_image()
   return remove(temp_image_path.c_str());
 }
 
-int SignComponent::signed_image_update(string image)
+int SignComponent::signed_image_update(string image, bool force)
 {
   int ret = 0;
 
@@ -301,16 +301,15 @@ int SignComponent::signed_image_update(string image)
     return -1;
   }
 
-  ret = component_update(image);
+  ret = component_update(image, force);
   if (ret) {
     printf("%s\n", image.c_str());
     printf("Update component with temp file failed. error(%d)\n", ret);
   }
 
-  ret = delete_image();
-  if (ret) {
-    printf("Remove temp file failed. error(%d)\n", -ret);
-    return -1;
+  int delete_ret = delete_image();
+  if (delete_ret) {
+    printf("Remove temp file failed. error(%d)\n", -delete_ret);
   }
 
   return ret;

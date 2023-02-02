@@ -39,12 +39,13 @@ SHOWTECH_UTILS_FILES = " \
     "
 
 do_install() {
-    install -d ${D}${bindir}
+    localbindir="${D}/usr/local/bin"
+    install -d ${localbindir}
 
     for f in ${SHOWTECH_UTILS_FILES}; do
-        install -m 755 $f ${D}${bindir}/${f}
+        install -m 755 $f ${localbindir}/${f}
     done
 }
 
 RDEPENDS:${PN} += "bash"
-FILES:${PN} = "${bindir}"
+FILES:${PN} = "/usr/local/bin"

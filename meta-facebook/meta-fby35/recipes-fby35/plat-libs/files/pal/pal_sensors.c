@@ -376,34 +376,6 @@ const uint8_t bic_gl_sensor_list[] = {
   BIC_GL_SENSOR_MB_VR_DIMMH_PMIC_PWR_W,
 };
 
-//BIC 2OU EXP Sensors
-const uint8_t bic_2ou_sensor_list[] = {
-  BIC_2OU_EXP_SENSOR_OUTLET_TEMP,
-  BIC_2OU_EXP_SENSOR_P12_VOL,
-  BIC_2OU_EXP_SENSOR_P1V8_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_STBY_VR_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_STBY2_VR_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2A_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2A_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2A_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2B_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2B_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2B_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2C_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2C_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2C_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2D_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2D_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2D_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2E_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2E_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2E_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2F_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2F_TMP,
-};
-
 const uint8_t bic_1ou_vf_sensor_list[] = {
   BIC_1OU_VF_SENSOR_NUM_T_MB_OUTLET_TEMP_T,
   BIC_1OU_VF_SENSOR_NUM_V_12_AUX,
@@ -432,105 +404,6 @@ const uint8_t bic_1ou_vf_sensor_list[] = {
   BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2D,
 };
 
-const uint8_t bic_2ou_gpv3_sensor_list[] = {
-  // temperature
-  BIC_GPV3_INLET_TEMP,
-  BIC_GPV3_PCIE_SW_TEMP,
-
-  // adc voltage
-  BIC_GPV3_ADC_P12V_STBY_VOL,
-  BIC_GPV3_ADC_P3V3_STBY_AUX_VOL,
-  BIC_GPV3_ADC_P1V8_VOL,
-
-  // P3V3 STBY1~3
-  BIC_GPV3_P3V3_STBY1_POWER,
-  BIC_GPV3_P3V3_STBY1_VOLTAGE,
-  BIC_GPV3_P3V3_STBY1_CURRENT,
-  BIC_GPV3_P3V3_STBY1_TEMP,
-  BIC_GPV3_P3V3_STBY2_POWER,
-  BIC_GPV3_P3V3_STBY2_VOLTAGE,
-  BIC_GPV3_P3V3_STBY2_CURRENT,
-  BIC_GPV3_P3V3_STBY2_TEMP,
-  BIC_GPV3_P3V3_STBY3_POWER,
-  BIC_GPV3_P3V3_STBY3_VOLTAGE,
-  BIC_GPV3_P3V3_STBY3_CURRENT,
-  BIC_GPV3_P3V3_STBY3_TEMP,
-
-  //VR P0V84
-  BIC_GPV3_VR_P0V84_POWER,
-  BIC_GPV3_VR_P0V84_VOLTAGE,
-  BIC_GPV3_VR_P0V84_CURRENT,
-  BIC_GPV3_VR_P0V84_TEMP,
-
-  //VR P1V8
-  BIC_GPV3_VR_P1V8_POWER,
-  BIC_GPV3_VR_P1V8_VOLTAGE,
-  BIC_GPV3_VR_P1V8_CURRENT,
-  BIC_GPV3_VR_P1V8_TEMP,
-
-  //PESW PWR = P0V84 + P1V8
-  BIC_GPV3_PESW_PWR,
-
-  //E1S
-  BIC_GPV3_E1S_1_12V_POWER,
-  BIC_GPV3_E1S_1_12V_VOLTAGE,
-  BIC_GPV3_E1S_1_12V_CURRENT,
-  BIC_GPV3_E1S_1_TEMP,
-  BIC_GPV3_E1S_2_12V_POWER,
-  BIC_GPV3_E1S_2_12V_VOLTAGE,
-  BIC_GPV3_E1S_2_12V_CURRENT,
-  BIC_GPV3_E1S_2_TEMP,
-
-  //INA233 DEV0~11
-  BIC_GPV3_INA233_PWR_DEV0,
-  BIC_GPV3_INA233_VOL_DEV0,
-  BIC_GPV3_NVME_TEMP_DEV0,
-
-  BIC_GPV3_INA233_PWR_DEV1,
-  BIC_GPV3_INA233_VOL_DEV1,
-  BIC_GPV3_NVME_TEMP_DEV1,
-
-  BIC_GPV3_INA233_PWR_DEV2,
-  BIC_GPV3_INA233_VOL_DEV2,
-  BIC_GPV3_NVME_TEMP_DEV2,
-
-  BIC_GPV3_INA233_PWR_DEV3,
-  BIC_GPV3_INA233_VOL_DEV3,
-  BIC_GPV3_NVME_TEMP_DEV3,
-
-  BIC_GPV3_INA233_PWR_DEV4,
-  BIC_GPV3_INA233_VOL_DEV4,
-  BIC_GPV3_NVME_TEMP_DEV4,
-
-  BIC_GPV3_INA233_PWR_DEV5,
-  BIC_GPV3_INA233_VOL_DEV5,
-  BIC_GPV3_NVME_TEMP_DEV5,
-
-  BIC_GPV3_INA233_PWR_DEV6,
-  BIC_GPV3_INA233_VOL_DEV6,
-  BIC_GPV3_NVME_TEMP_DEV6,
-
-  BIC_GPV3_INA233_PWR_DEV7,
-  BIC_GPV3_INA233_VOL_DEV7,
-  BIC_GPV3_NVME_TEMP_DEV7,
-
-  BIC_GPV3_INA233_PWR_DEV8,
-  BIC_GPV3_INA233_VOL_DEV8,
-  BIC_GPV3_NVME_TEMP_DEV8,
-
-  BIC_GPV3_INA233_PWR_DEV9,
-  BIC_GPV3_INA233_VOL_DEV9,
-  BIC_GPV3_NVME_TEMP_DEV9,
-
-  BIC_GPV3_INA233_PWR_DEV10,
-  BIC_GPV3_INA233_VOL_DEV10,
-  BIC_GPV3_NVME_TEMP_DEV10,
-
-  BIC_GPV3_INA233_PWR_DEV11,
-  BIC_GPV3_INA233_VOL_DEV11,
-  BIC_GPV3_NVME_TEMP_DEV11,
-};
-
 //BIC BaseBoard Sensors
 const uint8_t bic_bb_sensor_list[] = {
   BB_INLET_TEMP,
@@ -553,29 +426,6 @@ const uint8_t bic_bb_sensor_list[] = {
   BB_HSC_EIN,
   BB_HSC_PEAK_IOUT,
   BB_HSC_PEAK_PIN,
-};
-
-//BIC Sierra Point Expansion Board Sensors
-const uint8_t bic_spe_sensor_list[] = {
-  BIC_SPE_SENSOR_SSD0_TEMP,
-  BIC_SPE_SENSOR_SSD1_TEMP,
-  BIC_SPE_SENSOR_SSD2_TEMP,
-  BIC_SPE_SENSOR_SSD3_TEMP,
-  BIC_SPE_SENSOR_SSD4_TEMP,
-  BIC_SPE_SENSOR_SSD5_TEMP,
-  BIC_SPE_SENSOR_INLET_TEMP,
-  BIC_SPE_SENSOR_12V_EDGE_VOL,
-  BIC_SPE_SENSOR_12V_MAIN_VOL,
-  BIC_SPE_SENSOR_3V3_EDGE_VOL,
-  BIC_SPE_SENSOR_3V3_MAIN_VOL,
-  BIC_SPE_SENSOR_3V3_STBY_VOL,
-  BIC_SPE_SENSOR_SSD0_CUR,
-  BIC_SPE_SENSOR_SSD1_CUR,
-  BIC_SPE_SENSOR_SSD2_CUR,
-  BIC_SPE_SENSOR_SSD3_CUR,
-  BIC_SPE_SENSOR_SSD4_CUR,
-  BIC_SPE_SENSOR_SSD5_CUR,
-  BIC_SPE_SENSOR_12V_MAIN_CUR,
 };
 
 const uint8_t bmc_dpv2_x8_sensor_list[] = {
@@ -787,108 +637,6 @@ const uint8_t bic_gl_skip_sensor_list[] = {
   BIC_GL_SENSOR_MB_VR_DIMMF_PMIC_PWR_W,
   BIC_GL_SENSOR_MB_VR_DIMMG_PMIC_PWR_W,
   BIC_GL_SENSOR_MB_VR_DIMMH_PMIC_PWR_W,
-};
-
-const uint8_t bic_2ou_skip_sensor_list[] = {
-  //BIC 2OU EXP Sensors
-  BIC_2OU_EXP_SENSOR_P1V8_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2A_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2A_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2A_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2B_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2B_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2B_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2C_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2C_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2C_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2D_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2D_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2D_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2E_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2E_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2E_TMP,
-  BIC_2OU_EXP_SENSOR_P3V3_M2F_PWR,
-  BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
-  BIC_2OU_EXP_SENSOR_P3V3_M2F_TMP,
-};
-
-const uint8_t bic_2ou_gpv3_skip_sensor_list[] = {
-  //BIC 2OU GPv3 Sensors
-  BIC_GPV3_PCIE_SW_TEMP, // 0x92
-
-  // adc voltage
-  BIC_GPV3_ADC_P1V8_VOL, //0x9F
-
-  //VR P0V84
-  BIC_GPV3_VR_P0V84_POWER,
-  BIC_GPV3_VR_P0V84_VOLTAGE,
-  BIC_GPV3_VR_P0V84_CURRENT,
-  BIC_GPV3_VR_P0V84_TEMP,
-
-  //VR P1V8
-  BIC_GPV3_VR_P1V8_POWER,
-  BIC_GPV3_VR_P1V8_VOLTAGE,
-  BIC_GPV3_VR_P1V8_CURRENT,
-  BIC_GPV3_VR_P1V8_TEMP,
-
-  //E1S
-  BIC_GPV3_E1S_1_12V_POWER,
-  BIC_GPV3_E1S_1_12V_VOLTAGE,
-  BIC_GPV3_E1S_1_12V_CURRENT,
-  BIC_GPV3_E1S_1_TEMP,
-  BIC_GPV3_E1S_2_12V_POWER,
-  BIC_GPV3_E1S_2_12V_VOLTAGE,
-  BIC_GPV3_E1S_2_12V_CURRENT,
-  BIC_GPV3_E1S_2_TEMP,
-
-  //M.2 devices
-  BIC_GPV3_INA233_PWR_DEV0,
-  BIC_GPV3_INA233_VOL_DEV0,
-  BIC_GPV3_NVME_TEMP_DEV0,
-
-  BIC_GPV3_INA233_PWR_DEV1,
-  BIC_GPV3_INA233_VOL_DEV1,
-  BIC_GPV3_NVME_TEMP_DEV1,
-
-  BIC_GPV3_INA233_PWR_DEV2,
-  BIC_GPV3_INA233_VOL_DEV2,
-  BIC_GPV3_NVME_TEMP_DEV2,
-
-  BIC_GPV3_INA233_PWR_DEV3,
-  BIC_GPV3_INA233_VOL_DEV3,
-  BIC_GPV3_NVME_TEMP_DEV3,
-
-  BIC_GPV3_INA233_PWR_DEV4,
-  BIC_GPV3_INA233_VOL_DEV4,
-  BIC_GPV3_NVME_TEMP_DEV4,
-
-  BIC_GPV3_INA233_PWR_DEV5,
-  BIC_GPV3_INA233_VOL_DEV5,
-  BIC_GPV3_NVME_TEMP_DEV5,
-
-  BIC_GPV3_INA233_PWR_DEV6,
-  BIC_GPV3_INA233_VOL_DEV6,
-  BIC_GPV3_NVME_TEMP_DEV6,
-
-  BIC_GPV3_INA233_PWR_DEV7,
-  BIC_GPV3_INA233_VOL_DEV7,
-  BIC_GPV3_NVME_TEMP_DEV7,
-
-  BIC_GPV3_INA233_PWR_DEV8,
-  BIC_GPV3_INA233_VOL_DEV8,
-  BIC_GPV3_NVME_TEMP_DEV8,
-
-  BIC_GPV3_INA233_PWR_DEV9,
-  BIC_GPV3_INA233_VOL_DEV9,
-  BIC_GPV3_NVME_TEMP_DEV9,
-
-  BIC_GPV3_INA233_PWR_DEV10,
-  BIC_GPV3_INA233_VOL_DEV10,
-  BIC_GPV3_NVME_TEMP_DEV10,
-
-  BIC_GPV3_INA233_PWR_DEV11,
-  BIC_GPV3_INA233_VOL_DEV11,
-  BIC_GPV3_NVME_TEMP_DEV11,
 };
 
 const uint8_t bic_1ou_vf_skip_sensor_list[] = {
@@ -1535,17 +1283,12 @@ size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 size_t bic_hd_sensor_cnt = sizeof(bic_hd_sensor_list)/sizeof(uint8_t);
 size_t bic_gl_sensor_cnt = sizeof(bic_gl_sensor_list)/sizeof(uint8_t);
-size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_vf_sensor_cnt = sizeof(bic_1ou_vf_sensor_list)/sizeof(uint8_t);
-size_t bic_2ou_gpv3_sensor_cnt = sizeof(bic_2ou_gpv3_sensor_list)/sizeof(uint8_t);
-size_t bic_spe_sensor_cnt = sizeof(bic_spe_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_rf_sensor_cnt = sizeof(bic_1ou_rf_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_hd_skip_sensor_cnt = sizeof(bic_hd_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_gl_skip_sensor_cnt = sizeof(bic_gl_skip_sensor_list)/sizeof(uint8_t);
-size_t bic_2ou_skip_sensor_cnt = sizeof(bic_2ou_skip_sensor_list)/sizeof(uint8_t);
-size_t bic_2ou_gpv3_skip_sensor_cnt = sizeof(bic_2ou_gpv3_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_vf_skip_sensor_cnt = sizeof(bic_1ou_vf_skip_sensor_list)/sizeof(uint8_t);
 size_t bmc_dpv2_x8_sensor_cnt = sizeof(bmc_dpv2_x8_sensor_list)/sizeof(uint8_t);
 size_t bic_dpv2_x16_sensor_cnt = sizeof(bic_dpv2_x16_sensor_list)/sizeof(uint8_t);
@@ -1595,7 +1338,6 @@ read_device(const char *device, float *value) {
 int
 get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const uint8_t bmc_location, const uint8_t config_status) {
   uint8_t type = TYPE_1OU_UNKNOWN;
-  uint8_t type_2ou = UNKNOWN_BOARD;
   uint8_t count;
   static uint8_t skip_count[MAX_NODES] = {0};
   int server_type = SERVER_TYPE_NONE;
@@ -1605,9 +1347,7 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
     syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, fru, server_type);
   }
 
-
   if (bic_dynamic_skip_sensor_list[fru-1][0] == 0) {
-
     if (server_type == SERVER_TYPE_HD) {
       memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_hd_skip_sensor_list, bic_hd_skip_sensor_cnt);
       count = bic_hd_skip_sensor_cnt;
@@ -1625,17 +1365,6 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
       if (type == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
         memcpy(&bic_dynamic_skip_sensor_list[fru-1][count], bic_1ou_vf_skip_sensor_list, bic_1ou_vf_skip_sensor_cnt);
         count += bic_1ou_vf_skip_sensor_cnt;
-      }
-    }
-
-    if (((config_status & PRESENT_2OU) == PRESENT_2OU) &&
-        (fby35_common_get_2ou_board_type(fru, &type_2ou) == 0)) {
-      if (type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD) {
-        memcpy(&bic_dynamic_skip_sensor_list[fru-1][count], bic_2ou_gpv3_skip_sensor_list, bic_2ou_gpv3_skip_sensor_cnt);
-        count += bic_2ou_gpv3_skip_sensor_cnt;
-      } else {
-        memcpy(&bic_dynamic_skip_sensor_list[fru-1][count], bic_2ou_skip_sensor_list, bic_2ou_skip_sensor_cnt);
-        count += bic_2ou_skip_sensor_cnt;
       }
     }
 
@@ -1840,24 +1569,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       if (ret < 0) {
         syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
       }
-      if (board_type == E1S_BOARD) { // Sierra point expansion
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_spe_sensor_list, bic_spe_sensor_cnt);
-        current_cnt += bic_spe_sensor_cnt;
-      } else if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);
-        current_cnt += bic_2ou_gpv3_sensor_cnt;
-      } else if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD || (board_type & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
-        if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
-          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bmc_dpv2_x8_sensor_list, bmc_dpv2_x8_sensor_cnt);
-          current_cnt += bmc_dpv2_x8_sensor_cnt;
-        }
-        if ((board_type & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
-          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dpv2_x16_sensor_list, bic_dpv2_x16_sensor_cnt);
-          current_cnt += bic_dpv2_x16_sensor_cnt;
-        }
-      } else {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
-        current_cnt += bic_2ou_sensor_cnt;
+
+      if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bmc_dpv2_x8_sensor_list, bmc_dpv2_x8_sensor_cnt);
+        current_cnt += bmc_dpv2_x8_sensor_cnt;
+      }
+      if ((board_type & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dpv2_x16_sensor_list, bic_dpv2_x16_sensor_cnt);
+        current_cnt += bic_dpv2_x16_sensor_cnt;
       }
     }
 

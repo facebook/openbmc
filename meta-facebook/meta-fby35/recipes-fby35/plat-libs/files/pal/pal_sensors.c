@@ -2452,20 +2452,37 @@ read_curr_leakage(uint8_t snr_number, float *value) {
 #define CURR_LEAKAGE_THRESH  8.00
 #define MEDUSA_CURR_THRESH  10.00
   //static bool is_issued_sel = false;
-  float medusa_curr = 0;
-  float bb_hsc_curr = 0;
-  float total_hsc_iout = 0;
+  float medusa_curr, medusa_pwr = 0;
+  float bb_hsc_curr, bb_hsc_pwr = 0;
+  float total_mb_hsc_curr, total_sb_hsc_pwr = 0;
   uint8_t hsc_output_cur_num = BIC_SENSOR_HSC_OUTPUT_CUR; // Default Crater Lake sensor
+  uint8_t hsc_output_pwr_num = BIC_SENSOR_HSC_INPUT_PWR; // Default Crater Lake sensor
+  char key[MAX_KEY_LEN] = {0};
+  char hsc_type[MAX_VALUE_LEN] = {0};
+  bool is_48v_medusa = false;
 
   if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_HD || fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_HD) {
     hsc_output_cur_num = BIC_HD_SENSOR_HSC_OUTPUT_CUR;
   }
 
-  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_CURR, &medusa_curr) < 0) return READING_NA;
-  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_HSC_IOUT, &bb_hsc_curr) < 0) return READING_NA;
-  if ( read_snr_from_all_slots(hsc_output_cur_num, GET_TOTAL_VAL, &total_hsc_iout) < 0) return READING_NA;
+  snprintf(key, sizeof(key), "bb_hsc_conf");
+  if (kv_get(key, hsc_type, NULL, KV_FPERSIST) < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the key bb_hsc_conf", __func__);
+  } else {
+    is_48v_medusa = strncmp(hsc_type, "ltc4282", sizeof(hsc_type)) ? true : false;
+  }
 
-  *value = (medusa_curr - bb_hsc_curr - total_hsc_iout) / medusa_curr;
+  if (is_48v_medusa) {
+    if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_PWR, &medusa_pwr) < 0) return READING_NA;
+    if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_HSC_PIN, &bb_hsc_pwr) < 0) return READING_NA;
+    if ( read_snr_from_all_slots(hsc_output_pwr_num, GET_TOTAL_VAL, &total_sb_hsc_pwr) < 0) return READING_NA;
+    *value = (medusa_pwr - total_sb_hsc_pwr - bb_hsc_pwr) / medusa_pwr;
+  } else {
+    if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_CURR, &medusa_curr) < 0) return READING_NA;
+    if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_HSC_IOUT, &bb_hsc_curr) < 0) return READING_NA;
+    if ( read_snr_from_all_slots(hsc_output_cur_num, GET_TOTAL_VAL, &total_mb_hsc_curr) < 0) return READING_NA;
+    *value = (medusa_curr - bb_hsc_curr - total_mb_hsc_curr) / medusa_curr;
+  }
   *value *= 100;
   //syslog(LOG_WARNING, "%s() value: %.2f %%, medusa_curr: %.2f, bb_hsc_curr: %.2f, slot_hsc_iout: %.2f", __func__, *value, medusa_curr, bb_hsc_curr, slot_hsc_iout);
 

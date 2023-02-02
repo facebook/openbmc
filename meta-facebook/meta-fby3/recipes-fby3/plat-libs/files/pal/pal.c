@@ -986,6 +986,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
         *caps = 0;
       }
       break;
+    case FRU_OCPDBG:
+      *caps = 0;
+      break;
     default:
       ret = -1;
       break;
@@ -1244,6 +1247,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_2U_SLOT3:
       sprintf(name, "slot3-2U");
+      break;
+    case FRU_OCPDBG:
+      sprintf(name, "ocpdbg");
       break;
     case FRU_AGGREGATE:
       ret = PAL_EOK; //it's the virtual FRU.

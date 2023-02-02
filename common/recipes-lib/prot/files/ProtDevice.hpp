@@ -25,6 +25,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <span>
 
 namespace prot {
 
@@ -36,6 +37,25 @@ struct BOOT_STATUS_ACK_PAYLOAD {
   uint32_t SPIABiosVersionNumber;
   uint32_t SPIBBiosVersionNumber;
   uint8_t Checksum;
+};
+
+struct PROT_VERSION {
+  uint8_t signature[8];
+  uint8_t XFRVersion[8];
+  uint8_t BuildDate[8];
+  uint8_t Time[8];
+  uint8_t SFBVersion[8];
+  uint8_t CFGVersion[8];
+  uint8_t WorkSpaceVersion[8];
+  uint8_t OEMVersion[8];
+  uint8_t ODMVersion[8];
+  uint8_t reserved[8];
+};
+
+struct XFR_VERSION_READ_ACK_PAYLOAD {
+  PROT_VERSION Active;
+  PROT_VERSION Recovery;
+  unsigned short int SiliconRBP;
 };
 
 class ProtDevice {
@@ -70,6 +90,7 @@ class ProtDevice {
   DevStatus protUpdateComplete();
   DevStatus protUfmLogReadoutEntry(size_t& log_count);
   DevStatus protGetLogData(size_t index, PROT_LOG& log);
+  DevStatus protReadXfrVersion(XFR_VERSION_READ_ACK_PAYLOAD& prot_ver);
 
   DevStatus protSendDataPacket(std::vector<uint8_t> data_raw);
   DevStatus protSendDataPacket(uint8_t cmd, uint8_t* payload, size_t length);
@@ -113,5 +134,11 @@ enum class SpiVerify {
 std::string spiStatusString(uint8_t status_val);
 std::string spiVerifyString(uint8_t verify_val);
 }; // namespace ProtSpiInfo
+
+namespace ProtVersion {
+std::string getVerString(const std::span<uint8_t, 8> ver);
+std::string getDateString(const std::span<uint8_t, 8> date);
+std::string getTimeString(const std::span<uint8_t, 8> time);
+}; // namespace ProtVersion
 
 } // end of namespace prot

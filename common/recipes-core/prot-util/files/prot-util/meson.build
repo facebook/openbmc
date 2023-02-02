@@ -2,7 +2,7 @@ project('prot-util', 'cpp',
     version: '0.1',
     license: 'GPL2',
     default_options: [
-        'cpp_std=c++17',
+        'cpp_std=c++20',
         'werror=true'
     ]
 )

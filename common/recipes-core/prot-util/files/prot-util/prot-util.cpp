@@ -180,6 +180,62 @@ static int do_get_boot_status(uint8_t fru_id) {
         prot::ProtSpiInfo::spiVerifyString(
             boot_sts.RecoveryVerificationStatus));
 
+    /*XFR Z.5.0005:: Get XFR FW Versions*/
+    prot::XFR_VERSION_READ_ACK_PAYLOAD prot_ver{};
+    rc = prot_dev.protReadXfrVersion(prot_ver);
+    if (rc != ProtDevice::DevStatus::SUCCESS) {
+      std::cout << "protReadXfrVersion failed: " << (int)rc << std::endl;
+      break;
+    }
+    j["XFR-VERSION"]["SiliconRBP"] =
+        fmt::format("{:#06x}", prot_ver.SiliconRBP);
+
+    {
+      nlohmann::json ver_tmp{};
+
+      ver_tmp["signature"] =
+          prot::ProtVersion::getVerString(prot_ver.Active.signature);
+      ver_tmp["XFRVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Active.XFRVersion);
+      ver_tmp["BuildDate"] =
+          prot::ProtVersion::getDateString(prot_ver.Active.BuildDate);
+      ver_tmp["BuildTime"] =
+          prot::ProtVersion::getTimeString(prot_ver.Active.Time);
+      ver_tmp["SFBVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Active.SFBVersion);
+      ver_tmp["CFGVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Active.CFGVersion);
+      ver_tmp["WorkSpaceVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Active.WorkSpaceVersion);
+      ver_tmp["OEMVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Active.OEMVersion);
+      ver_tmp["ODMVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Active.ODMVersion);
+      j["XFR-VERSION"]["Active"] = std::move(ver_tmp);
+    }
+
+    {
+      nlohmann::json ver_tmp{};
+      ver_tmp["signature"] =
+          prot::ProtVersion::getVerString(prot_ver.Recovery.signature);
+      ver_tmp["XFRVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Recovery.XFRVersion);
+      ver_tmp["BuildDate"] =
+          prot::ProtVersion::getDateString(prot_ver.Recovery.BuildDate);
+      ver_tmp["BuildTime"] =
+          prot::ProtVersion::getTimeString(prot_ver.Recovery.Time);
+      ver_tmp["SFBVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Recovery.SFBVersion);
+      ver_tmp["CFGVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Recovery.CFGVersion);
+      ver_tmp["WorkSpaceVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Recovery.WorkSpaceVersion);
+      ver_tmp["OEMVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Recovery.OEMVersion);
+      ver_tmp["ODMVersion"] =
+          prot::ProtVersion::getVerString(prot_ver.Recovery.ODMVersion);
+      j["XFR-VERSION"]["Recovery"] = std::move(ver_tmp);
+    }
   } while (0);
 
   if (opt_json) {
@@ -213,6 +269,29 @@ static int do_get_boot_status(uint8_t fru_id) {
                 << std::endl;
       std::cout << "Verification-Status recovery: "
                 << j["Verification-Status"]["recovery"].get<std::string>()
+                << std::endl;
+    }
+    if (j.contains("XFR-VERSION")) {
+      std::vector<std::string> ordered_keys{
+          "signature",
+          "XFRVersion",
+          "BuildDate",
+          "BuildTime",
+          "SFBVersion",
+          "CFGVersion",
+          "WorkSpaceVersion",
+          "OEMVersion",
+          "ODMVersion"};
+
+      for (auto& type : {"Active", "Recovery"}) {
+        auto& jv = j["XFR-VERSION"][type];
+        for (auto& k : ordered_keys) {
+          auto prefix = fmt::format("XFR-VERSION {} {}: ", type, k);
+          std::cout << prefix << jv[k].get<std::string>() << std::endl;
+        }
+      }
+      std::cout << "XFR-VERSION SiliconRBP: "
+                << j["XFR-VERSION"]["SiliconRBP"].get<std::string>()
                 << std::endl;
     }
   }

@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <fmt/format.h>
 #include <syslog.h>
 #include <unistd.h>
 #include <openbmc/pal.h>
@@ -122,18 +123,31 @@ int ProtComponent::fupdate(const string image) {
   return update_internal(image, -1, true /* force */);
 }
 
-int ProtComponent::get_ver_str(string&) {
-  uint8_t fruid = 0;
-  int ret = 0;
-
-  ret = pal_get_fru_id((char *)_fru.c_str(), &fruid);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Failed to get fru id");
-    throw runtime_error("Error in getting fru id");
+int ProtComponent::get_ver_str(string& s) {
+  if (isBypass) {
+    throw runtime_error("Not support to get version of Bypass Firmware");
   }
-  throw runtime_error("Not support to get version of Bypass Firmware");
+  uint8_t dev_i2c_bus;
+  uint8_t dev_i2c_addr;
+  if (pal_get_prot_address(slot_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
+    cerr << "pal_get_prot_address failed, fru: " << slot_id << std::endl;
+    return FW_STATUS_FAILURE;
+  }
+  prot::ProtDevice prot_dev(slot_id, dev_i2c_bus, dev_i2c_addr);
+  if (!prot_dev.isDevOpen()) {
+    return FW_STATUS_FAILURE;
+  }
 
-  return FW_STATUS_NOT_SUPPORTED;
+  prot::XFR_VERSION_READ_ACK_PAYLOAD prot_ver{};
+  if (prot_dev.protReadXfrVersion(prot_ver) != prot::ProtDevice::DevStatus::SUCCESS) {
+    return FW_STATUS_FAILURE;
+  }
+
+  s = fmt::format("Tektagon XFR : {}, SFB :{}, CFG :{}",
+      prot::ProtVersion::getVerString(prot_ver.Active.XFRVersion),
+      prot::ProtVersion::getVerString(prot_ver.Active.SFBVersion),
+      prot::ProtVersion::getVerString(prot_ver.Active.CFGVersion));
+  return FW_STATUS_SUCCESS;
 }
 
 int ProtComponent::print_version() {

@@ -14,6 +14,7 @@ srcs += [
 ]
 
 deps += [
+    dependency('fmt'),
     dependency('libbic'),
     dependency('libfby35-common'),
     dependency('libfpga'),

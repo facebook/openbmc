@@ -26,6 +26,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace prot {
@@ -185,6 +186,24 @@ ProtDevice::DevStatus ProtDevice::protGetLogData(size_t index, PROT_LOG& log) {
   return DevStatus::SUCCESS;
 }
 
+ProtDevice::DevStatus ProtDevice::protReadXfrVersion(
+    XFR_VERSION_READ_ACK_PAYLOAD& prot_ver) {
+  DATA_LAYER_PACKET_ACK data_layer_ack{};
+
+  auto rc =
+      protSendRecvDataPacket(CMD_XFR_VERSION_READ, nullptr, 0, data_layer_ack);
+  if (rc != DevStatus::SUCCESS) {
+    return rc;
+  }
+
+  memcpy(
+      &prot_ver,
+      &data_layer_ack.PayLoad[0],
+      sizeof(XFR_VERSION_READ_ACK_PAYLOAD));
+
+  return DevStatus::SUCCESS;
+}
+
 ProtDevice::DevStatus ProtDevice::protSendDataPacket(
     std::vector<uint8_t> data_raw) {
   return protSendDataPacket(
@@ -276,5 +295,37 @@ std::string spiVerifyString(uint8_t verify_val) {
 }
 
 } // namespace ProtSpiInfo
+
+namespace ProtVersion {
+/*Create std::string from non-null terminated char array*/
+std::string getVerString(const std::span<uint8_t, 8> ver) {
+  return std::string(reinterpret_cast<const char*>(ver.data()), ver.size());
+}
+/* DDMMYYYY to YYYY-MM-DD*/
+std::string getDateString(const std::span<uint8_t, 8> date) {
+  return fmt::format(
+      "{:c}{:c}{:c}{:c}-{:c}{:c}-{:c}{:c}",
+      date[4],
+      date[5],
+      date[6],
+      date[7],
+      date[2],
+      date[3],
+      date[0],
+      date[1]);
+}
+/* HHMMSS to HH:MM:SS*/
+std::string getTimeString(const std::span<uint8_t, 8> time) {
+  return fmt::format(
+      "{:c}{:c}:{:c}{:c}:{:c}{:c}",
+      time[0],
+      time[1],
+      time[2],
+      time[3],
+      time[4],
+      time[5]);
+}
+
+} // namespace ProtVersion
 
 } // namespace prot

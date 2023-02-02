@@ -237,6 +237,40 @@ fby35_read_sb_cpld_checked(uint8_t fru, uint8_t offset, uint8_t *data) {
   return 0;
 }
 
+#ifndef IGNORE_CHECK_I3C_DEV_STATUS
+int
+fby35_read_device_status(uint8_t fru) {
+
+  char path[MAX_KEY_LEN] = {0};
+  char buf[MAX_KEY_LEN] = {0};
+  int i3c_bus = fru - 1;
+
+  sprintf(path, "/sys/bus/i3c/devices/%d-%s/device_status",i3c_bus, ASPEED_PID);
+
+  int fd = open(path, O_RDONLY);
+  if( fd < 0 ) {
+    syslog(LOG_CRIT, "%s() Failed to open device status. path = %s ", __func__, path);
+    return -1;
+  }
+
+  int ret = read(fd, buf, MAX_KEY_LEN);
+  if(ret < 0) {
+    close(fd);
+    syslog(LOG_CRIT, "%s() Failed to read device status", __func__);
+    return -1;
+  }
+
+  close(fd);
+
+  int device_status = atoi(buf);
+  if (device_status != 0) {
+    return -1;
+  }
+  
+  return 0;
+}
+#endif
+
 int
 fby35_common_is_bic_ready(uint8_t fru, uint8_t *val) {
   uint8_t rbuf[8] = {0};
@@ -246,8 +280,15 @@ fby35_common_is_bic_ready(uint8_t fru, uint8_t *val) {
   }
   *val = (rbuf[0] & 0x2) >> 1;
 
+#ifndef IGNORE_CHECK_I3C_DEV_STATUS
+  if (fby35_read_device_status(fru)) {
+    return -1;
+  }
+#endif
+
   return 0;
 }
+
 
 int
 fby35_common_get_bus_id(uint8_t slot_id) {

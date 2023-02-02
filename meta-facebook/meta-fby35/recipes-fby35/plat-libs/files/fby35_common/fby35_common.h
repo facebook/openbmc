@@ -144,6 +144,7 @@ extern const char *slot_usage;
 #define SLED_STATUS_REG 0x0D
 #define FRUID_0 0
 
+#define ASPEED_PID "7ec80010000"
 enum {
   FRU_ALL       = 0,
   FRU_SLOT1     = 1,

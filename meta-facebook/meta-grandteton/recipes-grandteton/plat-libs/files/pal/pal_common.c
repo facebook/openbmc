@@ -14,6 +14,7 @@
 #include "pal_swb_sensors.h"
 #include <openbmc/hal_fruid.h>
 #include "pal.h"
+#include <openbmc/kv.h>
 
 
 //#define DEBUG
@@ -132,31 +133,59 @@ read_device(const char *device, int *value) {
 
 bool
 fru_presence(uint8_t fru_id, uint8_t *status) {
-  gpio_value_t value;
+  gpio_value_t gpio_value;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rxbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t txlen = 0;
+  size_t  rxlen = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int ret = 0;
+
   switch (fru_id) {
     case FRU_FIO:
     case FRU_SHSC:
     case FRU_SWB:
-      value = gpio_get_value_by_shadow(BIC_READY);
-      if(value != GPIO_VALUE_INVALID) {
-        *status = value ? FRU_NOT_PRSNT: FRU_PRSNT;
+      gpio_value = gpio_get_value_by_shadow(BIC_READY);
+      if(gpio_value != GPIO_VALUE_INVALID) {
+        *status = gpio_value ? FRU_NOT_PRSNT: FRU_PRSNT;
         return true;
       }
       return false;
     case FRU_HGX:
-      value = gpio_get_value_by_shadow(HMC_PRESENCE);
-      if(value != GPIO_VALUE_INVALID) {
-        *status = value ? FRU_NOT_PRSNT: FRU_PRSNT;
+      gpio_value = gpio_get_value_by_shadow(HMC_PRESENCE);
+      if(gpio_value != GPIO_VALUE_INVALID) {
+        *status = gpio_value ? FRU_NOT_PRSNT: FRU_PRSNT;
         return true;
       }
       return false;
     case FRU_ACB:
-      // TODO: Read MB CPLD register
-      *status = FRU_PRSNT;
-      return true;
     case FRU_MEB:
       // TODO: Read MB CPLD register
-      *status = FRU_PRSNT;
+      // Currently, Use BIC self test for ACB/MEB present
+      bic_intf fru_bic_info = {0};
+
+      fru_bic_info.fru_id = fru_id;
+      pal_get_bic_intf(&fru_bic_info);
+
+      snprintf(key, sizeof(key), "fru%d_prsnt", fru_bic_info.fru_id);
+      if (kv_get(key, value, NULL, 0) == 0) {
+        *status = atoi(value);
+        return true;
+      }
+
+      ret = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
+                                  NETFN_APP_REQ, CMD_APP_GET_SELFTEST_RESULTS,
+                                  txbuf, txlen,
+                                  rxbuf, &rxlen);
+      if (ret == 0) {
+        *status = FRU_PRSNT;
+      } else {
+        *status = FRU_NOT_PRSNT;
+      }
+
+      snprintf(value, sizeof(value), "%d", *status);
+      kv_set(key, value, 0, 0);
       return true;
     default:
       *status = FRU_PRSNT;

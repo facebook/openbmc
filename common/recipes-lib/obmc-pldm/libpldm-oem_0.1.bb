@@ -15,6 +15,7 @@ LOCAL_URI = " \
     file://base.cpp \
     file://platform.hpp \
     file://platform.cpp \
+    file://platform_sensor.cpp \
     file://oem.hpp \
     file://oem.cpp \
     file://handler.hpp \

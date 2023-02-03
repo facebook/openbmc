@@ -15,13 +15,14 @@ libs = [
   dependency('libpldm')
 ]
 
-srcs = files(
+srcs = [
   'pldm.cpp',
   'base.cpp',
   'platform.cpp',
   'oem.cpp',
-  'fw_update.cpp'
-)
+  'fw_update.cpp',
+  'platform_sensor.cpp',
+]
 
 # obmc-pldm-mw library.
 obmc_pldm_mw = shared_library('pldm_oem', srcs,

@@ -4,6 +4,7 @@
 #include "libpldm/states.h"
 #include "handler.hpp"
 #include <stdint.h>
+#include <string>
 #include <map>
 
 namespace pldm
@@ -86,6 +87,9 @@ class Handler : public CmdHandler
      */
     EventMap eventHandlers;
 };
+
+std::string get_sensor_name(uint16_t);
+std::string get_state_message(uint8_t, uint8_t);
 
 } // namespace platform
 } // namespace responder

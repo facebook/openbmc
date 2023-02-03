@@ -91,8 +91,14 @@ int Handler::sensorEvent(const pldm_msg* request, size_t payloadLength,
     if (rc != PLDM_SUCCESS)
       return PLDM_ERROR;
 
-    // TODO: handle PDR
-    //
+    // handle PDR
+    if (get_sensor_name(sensorId) != "UnSupport") {
+      syslog(LOG_CRIT,
+        "Type=0x%02X Cmd=0x%02X stateSensorState: %s eventState:%s (previous:%s)",
+        request->hdr.type, request->hdr.command, get_sensor_name(sensorId).c_str(),
+        get_state_message(sensorOffset, eventState).c_str(),
+        get_state_message(sensorOffset, previousEventState).c_str());
+    }
 
   } else
     return PLDM_ERROR_INVALID_DATA;

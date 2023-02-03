@@ -3,6 +3,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/aries_api.h>
 #include <openbmc/libgpio.h>
+#include "vr_fw.h"
 
 const char * rev_id0 = "FAB_BMC_REV_ID0";
 const char * rev_id1 = "FAB_BMC_REV_ID1";
@@ -61,7 +62,6 @@ class RetimerComponent : public Component {
     }
 };
 
-
 class RetimerSysConfig {
   public:
     RetimerSysConfig() {
@@ -75,6 +75,8 @@ class RetimerSysConfig {
         static RetimerComponent rt5_comp("mb", "retimer5", 5);
         static RetimerComponent rt6_comp("mb", "retimer6", 6);
         static RetimerComponent rt7_comp("mb", "retimer7", 7);
+        static VrComponent rt_vr0("mb", "cpu0_rt_p0v9", "VR_CPU0_RETIMER_P0V9");
+        static VrComponent rt_vr1("mb", "cpu1_rt_p0v9", "VR_CPU1_RETIMER_P0V9");
       }
       else if (gpio_get_value_by_shadow(rev_id0) == 0 &&
                gpio_get_value_by_shadow(rev_id1) == 1) {

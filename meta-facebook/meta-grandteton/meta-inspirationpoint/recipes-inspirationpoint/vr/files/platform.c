@@ -10,6 +10,7 @@
 #include "xdpe12284c.h"
 #include "xdpe152xx.h"
 #include "mp2856.h"
+#include <openbmc/kv.h>
 
 #define MB_VR_BUS_ID   (20)
 #define SWB_VR_BUS_ID  (3)
@@ -22,6 +23,12 @@ enum {
   VR_MB_CPU1_VCORE1   = 4,
   VR_MB_CPU1_PVDD11   = 5,
   MB_VR_CNT           = 6,
+};
+
+enum {
+  VR_MB_CPU0_RT_P0V9   = 0,
+  VR_MB_CPU1_RT_P0V9   = 1,
+  MB_RT_VR_CNT   = 2,
 };
 
 enum {
@@ -96,7 +103,12 @@ enum {
   ADDR_INF_CPU1_PVDD11  = 0x94,
 };
 
-#define MAX_VR_CNT (MB_VR_CNT + ACB_VR_CNT + SWB_VR_CNT + CXL_VR_CNT)
+enum {
+  ADDR_CPU0_RT_P0V9 = 0xC0,
+  ADDR_CPU1_RT_P0V9 = 0xEC,
+};
+
+#define MAX_VR_CNT (MB_VR_CNT + ACB_VR_CNT + SWB_VR_CNT + CXL_VR_CNT + MB_RT_VR_CNT)
 
 struct vr_info vr_list[MAX_VR_CNT] = {0};
 
@@ -269,6 +281,25 @@ struct vr_info mb_vr_list[] = {
     .bus = MB_VR_BUS_ID,
     .addr = ADDR_CPU1_PVDD11,
     .dev_name = "VR_CPU1_PVDD11",
+    .ops = &raa_gen2_3_ops,
+    .private_data = "mb",
+    .xfer = NULL,
+  },
+};
+
+struct vr_info mb_rt_vr_list[] = {
+  [VR_MB_CPU0_RT_P0V9] = {
+    .bus = MB_VR_BUS_ID,
+    .addr = ADDR_CPU0_RT_P0V9,
+    .dev_name = "VR_CPU0_RETIMER_P0V9",
+    .ops = &raa_gen2_3_ops,
+    .private_data = "mb",
+    .xfer = NULL,
+  },
+  [VR_MB_CPU1_RT_P0V9] = {
+    .bus = MB_VR_BUS_ID,
+    .addr = ADDR_CPU1_RT_P0V9,
+    .dev_name = "VR_CPU1_RETIMER_P0V9",
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
@@ -532,6 +563,7 @@ int plat_vr_init(void) {
   uint8_t vr_cnt = 0;
   uint8_t id = 0;
   uint8_t status = 0;
+  char rev_id[MAX_VALUE_LEN] = {0};
 
   // Add MB VR
   memcpy(vr_list + vr_cnt, mb_vr_list, MB_VR_CNT*sizeof(struct vr_info));
@@ -564,6 +596,7 @@ int plat_vr_init(void) {
         vr_list[i].addr = mb_inf_vr_addr[i];
       }
     }
+
     // Add SWB VR
     if (fru_presence(FRU_SWB, &status) && (status == FRU_PRSNT)) {
       memcpy(vr_list + vr_cnt, swb_vr_list, SWB_VR_CNT*sizeof(struct vr_info));
@@ -579,6 +612,13 @@ int plat_vr_init(void) {
           vr_list[i+MB_VR_CNT].ops = &mp2856_ops;
         }
       }
+    }
+
+    //Add Retimer VR
+    kv_get("mb_rev", rev_id, 0, 0);
+    if (!strcmp(rev_id, "1")) {
+      memcpy(vr_list + vr_cnt, mb_rt_vr_list, MB_RT_VR_CNT * sizeof(struct vr_info));
+      vr_cnt += MB_RT_VR_CNT;
     }
   }
   ret = vr_device_register(vr_list, vr_cnt);

@@ -130,7 +130,19 @@ probe_vr_mp2856() {
   kv set mb_vr_source "$MB_3RD_SOURCE"
 }
 
+#MB retimer VR
+probe_mb_retimer_vr() {
+  i2c_device_add 20 0x60 isl69260
+  i2c_device_add 20 0x76 isl69260
+}
+
 #MB DPM
+# rev_id[2:0] | ID2 | ID1 | ID0 |
+# 000         |  0  |  0  |  0  | EVT  (no retimer)
+# 001         |  0  |  0  |  1  | DVT1 (8 retimer)
+# 010         |  0  |  1  |  0  | DVT2 (2 retimer)
+# 011         |  0  |  1  |  1  | PVT  (TBD)
+
 mbrev=$(kv get mb_rev)
 MB_DVT_BOARD_ID="1"
 
@@ -141,6 +153,10 @@ if [ "$mbrev" -ge "$MB_DVT_BOARD_ID" ]; then
   i2c_device_add 34 0x44 ina230
   i2c_device_add 34 0x45 ina230
   kv set mb_dpm_source "$MB_1ST_SOURCE"
+fi
+
+if [ "$mbrev" -eq "$MB_DVT_BOARD_ID" ]; then
+  probe_mb_retimer_vr
 fi
 
 if [ "$mb_sku" -eq "$config0" ]; then

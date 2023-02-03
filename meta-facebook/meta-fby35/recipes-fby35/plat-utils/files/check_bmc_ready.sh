@@ -8,7 +8,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 MAX_RETRY=600         # wait 10 mins before give up
 NOT_READY_DAEMON=""
 
-total_daemon="sensord ipmid fscd front-paneld gpiod gpiointrd ncsid healthd ipmbd_0 ipmbd_1 ipmbd_2 ipmbd_3 ipmbd_9"
+total_daemon="sensord ipmid fscd front-paneld gpiod gpiointrd ncsid healthd ipmbd_9"
 
 sensord_list="flag_sensord_monitor flag_sensord_health"
 ipmid_list="flag_ipmid"
@@ -17,10 +17,6 @@ gpiod_list="flag_gpiod_server_pwr "
 gpiointrd_list="flag_gpiointrd flag_gpiod_fru_miss"
 ncsid_list="flag_ncsid"
 healthd_list="flag_healthd_wtd flag_healthd_hb_led flag_healthd_crit_proc flag_healthd_cpu flag_healthd_mem flag_healthd_bmc_timestamp"
-ipmbd_0_list="flag_ipmbd_rx_0 flag_ipmbd_res_0 flag_ipmbd_req_0"
-ipmbd_1_list="flag_ipmbd_rx_1 flag_ipmbd_res_1 flag_ipmbd_req_1"
-ipmbd_2_list="flag_ipmbd_rx_2 flag_ipmbd_res_2 flag_ipmbd_req_2"
-ipmbd_3_list="flag_ipmbd_rx_3 flag_ipmbd_res_3 flag_ipmbd_req_3"
 ipmbd_9_list="flag_ipmbd_rx_9 flag_ipmbd_res_9 flag_ipmbd_req_9"
 
 check_daemon_flag() {
@@ -40,19 +36,19 @@ check_daemon_status() {
   daemon_name=$1
 
   #check slot present & BIC ready
-  if [ "$daemon_name" = "ipmbd_0" ]; then
+  if [ "$daemon_name" = "mctpd_1" ]; then
     if [ "$(is_sb_bic_ready 1)" != "1" ]; then
       return
     fi
-  elif [ "$daemon_name" = "ipmbd_1" ]; then
+  elif [ "$daemon_name" = "mctpd_2" ]; then
     if [ "$(is_sb_bic_ready 2)" != "1" ]; then
       return
     fi
-  elif [ "$daemon_name" = "ipmbd_2" ]; then
+  elif [ "$daemon_name" = "mctpd_3" ]; then
     if [ "$(is_sb_bic_ready 3)" != "1" ]; then
       return
     fi
-  elif [ "$daemon_name" = "ipmbd_3" ]; then
+  elif [ "$daemon_name" = "mctpd_4" ]; then
     if [ "$(is_sb_bic_ready 4)" != "1" ]; then
       return
     fi
@@ -77,14 +73,6 @@ check_daemon_status() {
       not_ready="$(check_daemon_flag "$ncsid_list" "$daemon_name")"
     elif [ "$daemon_name" = "healthd" ]; then
       not_ready="$(check_daemon_flag "$healthd_list" "$daemon_name")"
-    elif [ "$daemon_name" = "ipmbd_0" ]; then
-      not_ready="$(check_daemon_flag "$ipmbd_0_list" "$daemon_name")"
-    elif [ "$daemon_name" = "ipmbd_1" ]; then
-      not_ready="$(check_daemon_flag "$ipmbd_1_list" "$daemon_name")"
-    elif [ "$daemon_name" = "ipmbd_2" ]; then
-      not_ready="$(check_daemon_flag "$ipmbd_2_list" "$daemon_name")"
-    elif [ "$daemon_name" = "ipmbd_3" ]; then
-      not_ready="$(check_daemon_flag "$ipmbd_3_list" "$daemon_name")"
     elif [ "$daemon_name" = "ipmbd_9" ]; then
       not_ready="$(check_daemon_flag "$ipmbd_9_list" "$daemon_name")"
     else

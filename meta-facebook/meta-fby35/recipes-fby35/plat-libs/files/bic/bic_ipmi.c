@@ -116,7 +116,7 @@ bic_get_std_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_readi
   int ret = 0;
   ipmi_sensor_reading_t std_sensor = {0};
 
-  ret = bic_ipmb_send(slot_id, NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING, &sensor_num, 1, (uint8_t *)&std_sensor, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING, &sensor_num, 1, (uint8_t *)&std_sensor, &rlen, intf);
   if (ret != 0) {
     return ret;
   }
@@ -142,7 +142,7 @@ bic_get_accur_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_rea
   tbuf[tlen++] = sensor_num;
   tbuf[tlen++] = SNR_READ_CACHE;
 
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ACCURACY_SENSOR_READING, tbuf, 5, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ACCURACY_SENSOR_READING, tbuf, 5, rbuf, &rlen, intf);
   if (ret != 0) {
     return ret;
   }
@@ -223,7 +223,7 @@ bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_r
 int
 bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf) {
   uint8_t rlen = 0;
-  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_GET_DEVICE_ID, NULL, 0, (uint8_t *) dev_id, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_GET_DEVICE_ID, NULL, 0, (uint8_t *) dev_id, &rlen, intf);
 }
 
 // APP - Get Device ID
@@ -231,7 +231,7 @@ bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf) {
 int
 bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t intf) {
   uint8_t rlen = 0;
-  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_GET_SELFTEST_RESULTS, NULL, 0, (uint8_t *)self_test_result, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_GET_SELFTEST_RESULTS, NULL, 0, (uint8_t *)self_test_result, &rlen, intf);
 }
 
 // Storage - Get FRUID info
@@ -240,7 +240,7 @@ int
 bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id __attribute__((unused)), ipmi_fruid_info_t *info, uint8_t intf) {
   uint8_t rlen = 0;
   uint8_t fruid = 0;
-  return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO, &fruid, 1, (uint8_t *) info, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO, &fruid, 1, (uint8_t *) info, &rlen, intf);
 }
 
 // Storage - Reserve SDR
@@ -248,7 +248,7 @@ bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id __attribute__((unused)), ipmi
 static int
 _get_sdr_rsv(uint8_t slot_id, uint8_t *rsv, uint8_t intf) {
   uint8_t rlen = 0;
-  return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_RSV_SDR, NULL, 0, (uint8_t *) rsv, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_RSV_SDR, NULL, 0, (uint8_t *) rsv, &rlen, intf);
 }
 
 // OEM - Get extended SDR
@@ -262,7 +262,7 @@ _get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   memcpy(&tbuf[IANA_ID_SIZE], (uint8_t *)req, sizeof(ipmi_sel_sdr_req_t));
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_EXTENDED_SDR, tbuf, tlen, rbuf, rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_EXTENDED_SDR, tbuf, tlen, rbuf, rlen, intf);
   memcpy(res, &rbuf[IANA_ID_SIZE], (*rlen > 3) ? (*rlen - IANA_ID_SIZE) : 0);
   *rlen = (*rlen) - IANA_ID_SIZE;
   return ret;
@@ -354,7 +354,7 @@ _read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uin
   tbuf[2] = (offset >> 8) & 0xFF;
   tbuf[3] = count;
   tlen = 4;
-  return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_READ_FRUID_DATA, tbuf, tlen, rbuf, rlen, intf);
+  return bic_data_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_READ_FRUID_DATA, tbuf, tlen, rbuf, rlen, intf);
 }
 
 int
@@ -407,7 +407,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
 
     ret = _read_fruid(slot_id, fru_id, offset, count, rbuf, &rlen, intf);
     if (ret) {
-      syslog(LOG_ERR, "bic_read_fruid: ipmb_wrapper fails\n");
+      syslog(LOG_ERR, "bic_read_fruid: ipmb send fails\n");
       goto error_exit;
     }
 
@@ -447,7 +447,7 @@ _write_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, ui
   memcpy(&tbuf[3], buf, count);
   tlen = count + 3;
 
-  ret = bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_WRITE_FRUID_DATA, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_WRITE_FRUID_DATA, tbuf, tlen, rbuf, &rlen, intf);
   if ( rbuf[0] != count ) {
     syslog(LOG_WARNING, "%s() Failed to write fruid data. %d != %d \n", __func__, rbuf[0], count);
     return -1;
@@ -521,7 +521,7 @@ _bic_get_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf) {
   }
   tbuf[tlen++] = fw_comp;
 
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, tlen, rbuf, &rlen, intf);
   // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
   if ( ret < 0 || rlen < 4 ) {
     syslog(LOG_ERR, "%s: ret: %d, rlen: %d, slot_id:%x, intf:%x\n", __func__, ret, rlen, slot_id, intf);
@@ -735,7 +735,7 @@ bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[tlen++] = ( enable == true )?0x1:0x0;
 
-  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIC_SNR_MONITOR, tbuf, tlen, rbuf, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIC_SNR_MONITOR, tbuf, tlen, rbuf, &rlen, intf);
 }
 
 int
@@ -764,7 +764,7 @@ bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
   if (ret) {
     memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);  // Fill the IANA ID
     for (retry = 0; retry < 3; retry++) {
-      ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_BOARD_ID, tbuf, 3, rbuf, &rlen, FEXP_BIC_INTF);
+      ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_BOARD_ID, tbuf, 3, rbuf, &rlen, FEXP_BIC_INTF);
       if (ret) {
         continue;
       }
@@ -813,7 +813,7 @@ bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
   tbuf[3] = dev_id; // 0'base
   tbuf[4] = status; // 0->off, 1->on
   while (retry < 3) {
-    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_AMBER_LED, tbuf, 5, rbuf, &rlen, FEXP_BIC_INTF);
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_AMBER_LED, tbuf, 5, rbuf, &rlen, FEXP_BIC_INTF);
     if (ret == 0) break;
     retry++;
   }
@@ -836,7 +836,7 @@ bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t int
   // File the IANA ID
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, tbuf, tlen, rbuf, rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, tbuf, tlen, rbuf, rlen, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "[%s] Cannot get the postcode buffer from slot%d", __func__, slot_id);
   } else {
@@ -864,7 +864,7 @@ bic_get_cpld_ver(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint8_t 
   tbuf[5] = (reg >> 8) & 0xff;
   tbuf[6] = (reg >> 0) & 0xff;
   tlen = 7;
-  int ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  int ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   for (int i = 0; i < rlen; i++) ver[i] = rbuf[3-i];
   return ret;
 }
@@ -884,13 +884,13 @@ bic_get_vr_device_id(uint8_t slot_id, uint8_t *devid, uint8_t *id_len, uint8_t b
   tbuf[2] = 0x01; // read back 1 bytes
   tbuf[3] = 0xAD; // get device id command
   tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
   } else {
     //Get full device id
     tbuf[2] = 1 + rbuf[0] ; // read back length byte + device_id bytes
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+    ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
     } else {
@@ -918,7 +918,7 @@ bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint
   tbuf[3] = 0x02;
   tlen = 4;
 
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to send the command to switch the mux. ret=%d", __func__, ret);
     goto error_exit;
@@ -933,7 +933,7 @@ bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint
   tbuf[6] = 0x00; //data 4
   tlen = 7;
 
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, ver, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, ver, &rlen, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to send the command code to get cpld ver. ret=%d", __func__, ret);
   }
@@ -965,7 +965,7 @@ bic_is_exp_prsnt(uint8_t slot_id) {
   tbuf[3] = 0x05; //register offset
 
   while (retry++ < 3) {
-    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
     if (!ret)
       break;
   }
@@ -1200,7 +1200,7 @@ bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux) {
   tbuf[3] = 0x00; //register offset
   tbuf[4] = mux;  //mux setting
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
 
   if ( ret < 0 ) {
     return -1;
@@ -1227,7 +1227,7 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data) {
   pin = 1 << (gpio % 8);
   tbuf[index] = pin;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   *data = rbuf[3];
   return ret;
 }
@@ -1251,7 +1251,7 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
   tbuf[index] = pin;
   tbuf[13] = data & 0x1f;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   return ret;
 }
 
@@ -1270,7 +1270,7 @@ bic_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value) {
   tbuf[4] = gpio_num;
   tbuf[5] = value;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, NONE_INTF);
 
   if ( ret < 0 ) {
     return -1;
@@ -1294,7 +1294,7 @@ remote_bic_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value, uint8_t in
   tbuf[4] = gpio_num;
   tbuf[5] = value;
 
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
 
   if ( ret < 0 ) {
     return -1;
@@ -1316,7 +1316,7 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf) {
 
   memset(gpio, 0, sizeof(*gpio));
 
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 3, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 3, rbuf, &rlen, intf);
   if (ret != 0 || rlen < 3)
     return -1;
 
@@ -1343,7 +1343,7 @@ bic_get_one_gpio_status(uint8_t slot_id, uint8_t gpio_num, uint8_t *value){
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[3] = 0x00;
   tbuf[4] = gpio_num;
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   *value = rbuf[4] & 0x01;
   return ret;
 }
@@ -1363,7 +1363,7 @@ bic_get_exp_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t *value, uint8_t intf
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[3] = 0x00;
   tbuf[4] = gpio_num;
-  bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
   *value = rbuf[4] & 0x01;
 
   return ret;
@@ -1418,7 +1418,7 @@ bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
   int ret;
   uint8_t rlen = 0;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_SYSTEM_GUID, NULL, 0, guid, &rlen);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_GET_SYSTEM_GUID, NULL, 0, guid, &rlen, NONE_INTF);
   if (rlen != SIZE_SYS_GUID) {
 #ifdef DEBUG
     syslog(LOG_ERR, "bic_get_sys_guid: returned rlen of %d\n");
@@ -1435,7 +1435,7 @@ bic_set_sys_guid(uint8_t slot_id, uint8_t *guid) {
   uint8_t rlen = 0;
   uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_REQ, CMD_OEM_SET_SYSTEM_GUID, guid, SIZE_SYS_GUID, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_REQ, CMD_OEM_SET_SYSTEM_GUID, guid, SIZE_SYS_GUID, rbuf, &rlen, NONE_INTF);
 
   return ret;
 }
@@ -1451,7 +1451,7 @@ bic_do_sled_cycle(uint8_t slot_id) {
   tbuf[3] = 0x2B; //register offset
   tbuf[4] = 0x01; //excecute sled cycle
   tlen = 5;
-  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, NULL, 0, BB_BIC_INTF);
+  return bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, NULL, 0, BB_BIC_INTF);
 }
 
 // Only For Class 2
@@ -1467,7 +1467,7 @@ bic_set_fan_auto_mode(uint8_t crtl, uint8_t *status) {
   tbuf[0] = crtl;
 
   while (retry < 3) {
-    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_FAN_CTRL_STAT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    ret = bic_data_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_FAN_CTRL_STAT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
     if (ret == 0) break;
     retry++;
   }
@@ -1497,7 +1497,7 @@ bic_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
   tbuf[4] = pwm;
 
   while (retry < 3) {
-    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BMC_FAN_CTRL, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    ret = bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BMC_FAN_CTRL, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
     if ( ret == 0 ) break;
     retry++;
   }
@@ -1522,7 +1522,7 @@ bic_manual_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
   tbuf[1] = pwm;
 
   while (retry < 3) {
-    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_SET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    ret = bic_data_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_SET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
     if (ret == 0) break;
     retry++;
   }
@@ -1549,7 +1549,7 @@ bic_get_fan_speed(uint8_t fan_id, float *value) {
   tbuf[3] = fan_id;
 
   while (retry < 3) {
-    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_FAN_RPM, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    ret = bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_FAN_RPM, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
     if (ret == 0) break;
     retry++;
   }
@@ -1578,7 +1578,7 @@ bic_get_fan_pwm(uint8_t fan_id, float *value) {
   tbuf[3] = fan_id;
 
   while (retry < 3) {
-    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    ret = bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
     if (ret == 0) break;
     retry++;
   }
@@ -1601,7 +1601,7 @@ bic_get_mb_prsnt(uint8_t slot, uint8_t *prsnt) {
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[3] = 0x0; // get gpio
   tbuf[4] = (slot == FRU_SLOT1) ? BB_BIC_SLOT1_PRSNT_PIN : BB_BIC_SLOT3_PRSNT_PIN;
-  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, 5, rbuf, &rlen, BB_BIC_INTF) < 0) {
+  if (bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, 5, rbuf, &rlen, BB_BIC_INTF) < 0) {
     syslog(LOG_WARNING, "%s(): fail to get MB present status", __func__);
     return -1;
   }
@@ -1646,7 +1646,7 @@ bic_notify_fan_mode(int mode) {
   sel.snr_num = BIC_SENSOR_SYSTEM_STATUS;
   sel.event_dir_type = SEL_ASSERT;
   fan_event.type = SYS_FAN_EVENT;
-  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
+  if (bic_data_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
     syslog(LOG_WARNING, "%s(): fail to get MB index", __func__);
     return -1;
   }
@@ -1665,7 +1665,7 @@ bic_notify_fan_mode(int mode) {
   memcpy(req.bypass_data, (uint8_t*) &sel, MIN(sizeof(req.bypass_data), sizeof(sel)));
 
   tlen = IANA_ID_SIZE + 1 + sizeof(sel); // IANA ID + interface + add SEL command
-  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF) < 0) {
+  if (bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF) < 0) {
     syslog(LOG_WARNING, "%s(): fail to notify another BMC fan mode changed", __func__);
     return -1;
   }
@@ -1767,7 +1767,7 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
   }
 
   tbuf[4] = 0x3;  //get power status
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
 
   // Ignore first 3 bytes of IANA ID
   *status = rbuf[3];
@@ -1876,7 +1876,8 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
 
   tbuf[4] = status;  //set power status
   tlen = 5;
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
+
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
 
 error_exit:
   if ( fd > 0 ) close(fd);
@@ -1893,7 +1894,7 @@ bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis, uint8_t intf) {
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = dis;  // 1: disable sensor monitor; 0: enable sensor monitor
-  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DISABLE_SEN_MON, tbuf, 4, rbuf, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DISABLE_SEN_MON, tbuf, 4, rbuf, &rlen, intf);
 }
 
 int
@@ -1906,7 +1907,7 @@ bic_set_vr_monitor_enable(uint8_t slot_id, bool enable, uint8_t intf) {
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = ( enable == true )?0x1:0x0;  // 1: enable vr monitor; 0: disable vr monitor
-  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_VR_MON_ENABLE, tbuf, 4, rbuf, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_VR_MON_ENABLE, tbuf, 4, rbuf, &rlen, intf);
 }
 
 int
@@ -1922,7 +1923,7 @@ bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf,
     memcpy(&tbuf[3], wbuf, wcnt);
     tlen += wcnt;
   }
-  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
 
   return ret;
 }
@@ -1937,7 +1938,7 @@ bic_reset(uint8_t slot_id) {
   // Fill the IANA ID
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_COLD_RESET, tbuf, 0, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_COLD_RESET, tbuf, 0, rbuf, &rlen, NONE_INTF);
 
   return ret;
 }
@@ -1956,7 +1957,7 @@ bic_inform_sled_cycle(void) {
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   while (retry < 3) {
-    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_INFORM_SLED_CYCLE, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    ret = bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_INFORM_SLED_CYCLE, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
     if (ret == 0) break;
     retry++;
   }
@@ -1981,7 +1982,7 @@ bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   while (retry < 3) {
-    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_CONFIG, tbuf, tlen, rbuf, &rlen);
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_CONFIG, tbuf, tlen, rbuf, &rlen, NONE_INTF);
     if (ret == 0) break;
     retry++;
   }
@@ -2006,7 +2007,7 @@ bic_get_mb_index(uint8_t *index) {
   }
   memset(tbuf, 0, sizeof(tbuf));
   memset(&resp, 0, sizeof(resp));
-  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
+  if (bic_data_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
     syslog(LOG_WARNING, "%s(): fail to get MB index", __func__);
     return -1;
   }
@@ -2050,7 +2051,7 @@ bic_bypass_to_another_bmc(uint8_t* data, size_t len) {
   memcpy(req.bypass_data, data, MIN(sizeof(req.bypass_data), len));
 
   tlen = sizeof(BYPASS_MSG_HEADER) + len;
-  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF) < 0) {
+  if (bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF) < 0) {
     syslog(LOG_WARNING, "%s(): fail to bypass command to another BMC", __func__);
     return -1;
   }
@@ -2127,8 +2128,8 @@ bic_check_cable_status() {
   int ret = 0;
   int retry = 0;
 
-  while (retry < IPMB_RETRY_TIME) {
-    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_CABLE_STAT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  while (retry < BIC_XFER_RETRY_TIME) {
+    ret = bic_data_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_CABLE_STAT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
     if (ret == 0) {
       break;
     }
@@ -2158,8 +2159,8 @@ bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type) {
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[tlen++] = card_config;
 
-  for (retry = 0; retry < IPMB_RETRY_TIME; retry++) {
-    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_CARD_TYPE, tbuf, tlen, rbuf, &rlen);
+  for (retry = 0; retry < BIC_XFER_RETRY_TIME; retry++) {
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_CARD_TYPE, tbuf, tlen, rbuf, &rlen, NONE_INTF);
     if (ret == 0) {
       break;
     }
@@ -2193,7 +2194,7 @@ bic_get_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain) {
   tbuf[4] = VR_REMAINING_WRITE_OFFSET(addr); //offset
   tlen = 5;
 
-  ret = bic_ipmb_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to send the command to get the remaining writes. ret=%d", __func__, ret);
   }
@@ -2232,7 +2233,7 @@ bic_set_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t remain) {
   tbuf[7] = fby35_zero_checksum_calculate(&tbuf[5], TI_VR_REMAIN_WR_SIZE); //Zero checksum
   tlen = 8;
 
-  ret = bic_ipmb_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to send the command to get the remaining writes. ret=%d", __func__, ret);
   }
@@ -2250,7 +2251,7 @@ bic_request_post_buffer_page_data(uint8_t slot_id, uint8_t page_num, uint8_t *po
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = page_num & 0xFF;
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_CODE_BUF, tbuf, sizeof(tbuf), rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_CODE_BUF, tbuf, sizeof(tbuf), rbuf, &rlen, NONE_INTF);
 
   if(0 != ret)
     goto exit_done;
@@ -2276,7 +2277,7 @@ bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_
   for(int i = 0; i <= MAX_POST_CODE_PAGE; i++)
   {
     tbuf[3] = i & 0xFF;
-    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_CODE_BUF, tbuf, sizeof(tbuf), rbuf, &rlen);
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_CODE_BUF, tbuf, sizeof(tbuf), rbuf, &rlen, NONE_INTF);
 
     if(0 != ret) {
       #ifdef DEBUG
@@ -2312,7 +2313,7 @@ bic_get_prot_spare_pins(uint8_t slot_id, uint8_t* value) {
   tbuf[2] = 0x01; //read 1 byte
   tbuf[3] = 0x0f; //register offset
 
-  if (retry_cond(!bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen), 3, 50)) {
+  if (retry_cond(!bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF), 3, 50)) {
     return -1;
   }
 
@@ -2350,7 +2351,7 @@ bic_get_sys_fw_ver(uint8_t slot_id, uint8_t *ver) {
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIOS_VER, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIOS_VER, tbuf, tlen, rbuf, &rlen);
   if (ret != 0) {
     syslog(LOG_WARNING, "%s: fail to get BIOS version at slot%d", __func__, slot_id);
     return -1;

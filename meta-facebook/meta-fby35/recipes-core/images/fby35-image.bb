@@ -66,4 +66,5 @@ IMAGE_INSTALL += " \
   attest-util \
   tcpdump \
   mctpd \
+  pldmd \
   "

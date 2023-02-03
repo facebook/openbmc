@@ -1243,7 +1243,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   tbuf[1] = 0x42;  // slave addr
   tbuf[2] = 0x01;  // read 1 byte
   tbuf[3] = 0x05;  // register offset
-  ret = retry_cond(!bic_ipmb_wrapper(slot, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
+  ret = retry_cond(!bic_data_wrapper(slot, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                      tbuf, 4, rbuf, &rlen), 3, 10);
   if (ret < 0) {
     *data++ = 0;             // dummy data to match the response format
@@ -1273,7 +1273,7 @@ pal_get_slot_index(unsigned char payload_id)
   }
 
   if ( bmc_location == NIC_BMC ) {
-    ret = bic_ipmb_send(payload_id, NETFN_OEM_REQ, 0xF0, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    ret = bic_data_send(payload_id, NETFN_OEM_REQ, 0xF0, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
     if (ret) {
       return payload_id;
     } else {
@@ -3567,7 +3567,7 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
       memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
       memcpy(&tbuf[3], &event_data[3], 2); // dimm location, error type
       tlen = IANA_ID_SIZE + 2;
-      if (bic_ipmb_wrapper(fru, NETFN_OEM_1S_REQ, BIC_CMD_OEM_NOTIFY_PMIC_ERR, tbuf, tlen, rbuf, &rlen) < 0) {
+      if (bic_data_send(fru, NETFN_OEM_1S_REQ, BIC_CMD_OEM_NOTIFY_PMIC_ERR, tbuf, tlen, rbuf, &rlen, NONE_INTF) < 0) {
         return -1;
       }
       break;
@@ -3837,9 +3837,9 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 
       // Bypass command to Bridge IC
       if (tlen != 0) {
-        ret = bic_ipmb_wrapper(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len);
+        ret = bic_data_send(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len, NONE_INTF);
       } else {
-        ret = bic_ipmb_wrapper(slot, netfn, cmd, NULL, 0, res_data, res_len);
+        ret = bic_data_send(slot, netfn, cmd, NULL, 0, res_data, res_len, NONE_INTF);
       }
 
       if (0 == ret) {

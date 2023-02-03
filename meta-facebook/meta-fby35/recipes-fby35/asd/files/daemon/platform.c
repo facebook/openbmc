@@ -19,9 +19,9 @@ STATUS jtag_ipmb_wrapper(uint8_t fru, uint8_t netfn, uint8_t cmd,
         return ST_ERR;
     }
 
-    if (bic_ipmb_wrapper(fru, netfn, cmd, txbuf, txlen, rxbuf, (uint8_t *)rxlen)) {
+    if (bic_data_send(fru, netfn, cmd, txbuf, txlen, rxbuf, (uint8_t *)rxlen, NONE_INTF)) {
         ASD_log(ASD_LogLevel_Error, stream, option,
-                "bic_ipmb_wrapper failed, slot%u\n", fru);
+                "bic_data send failed, slot%u\n", fru);
         return ST_ERR;
     }
 

@@ -87,7 +87,7 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   ret = oem_pldm_ipmi_send_recv(bus, SWB_BIC_EID,
                                 NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
                                 tbuf, tlen,
-                                rxbuf, &rlen);
+                                rxbuf, &rlen, true);
   return ret;
 }
 

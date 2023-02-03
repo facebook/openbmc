@@ -173,7 +173,7 @@ _switch_pesw_to_recovery(uint8_t slot_id, uint8_t intf, bool is_low) {
   tbuf[tlen++] = (is_low == true)?0:1;
 
   printf("Pulling %s FM_BIC_PESW_RECOVERY_0...\n", (is_low == true)?"donw":"high");
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     printf("Failed to pull %s FM_BIC_PESW_RECOVERY_0\n", (is_low == true)?"donw":"high");
   }
@@ -186,7 +186,7 @@ _switch_i2c_mux_to_pesw(uint8_t slot_id, uint8_t intf) {
   uint8_t rbuf[16] = {0};
   uint8_t tlen = 5;
   uint8_t rlen = 0;
-  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
 }
 
 static int
@@ -228,7 +228,7 @@ _check_pesw_status(uint8_t slot_id, uint8_t intf, uint8_t sel_sts, bool run_rcvr
   printf("\n");
 
   sleep(1);
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x38, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, 0x38, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     printf("%s() Failed to check status: %02X\n", __func__, sel_sts);
     goto error_exit;
@@ -279,7 +279,7 @@ _toggle_pesw(uint8_t slot_id, uint8_t intf, uint8_t type, bool is_rcvry) {
   printf("Send the toggle command ");
   for (int i = 0; i < 7; i++) printf("%02X ", tbuf[i]);
   printf("\n");
-  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x38, tbuf, tlen, rbuf, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_OEM_1S_REQ, 0x38, tbuf, tlen, rbuf, &rlen, intf);
 }
 
 static int
@@ -295,7 +295,7 @@ _get_pcie_sw_update_status(uint8_t slot_id, uint8_t *status) {
   tbuf[IANA_ID_SIZE] = 0x01;
 
   do {
-    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_SWITCH_STATUS, tbuf, 4, rbuf, &rlen, REXP_BIC_INTF);
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_SWITCH_STATUS, tbuf, 4, rbuf, &rlen, REXP_BIC_INTF);
     if ( ret != BIC_STATUS_SUCCESS ) {
       sleep(1);
       syslog(LOG_ERR,"_get_pcie_sw_update_status: slot: %d, retrying..\n", slot_id);
@@ -660,7 +660,7 @@ _enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[3] = 0x09;
   tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x60, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, 0x60, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     printf("Failed to get the device list\n");
     goto error_exit;

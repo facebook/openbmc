@@ -177,7 +177,8 @@ fru_presence(uint8_t fru_id, uint8_t *status) {
       ret = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                   NETFN_APP_REQ, CMD_APP_GET_SELFTEST_RESULTS,
                                   txbuf, txlen,
-                                  rxbuf, &rxlen);
+                                  rxbuf, &rxlen,
+                                  true);
       if (ret == 0) {
         *status = FRU_PRSNT;
       } else {

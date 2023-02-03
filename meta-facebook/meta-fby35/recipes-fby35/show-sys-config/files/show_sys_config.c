@@ -73,7 +73,7 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
   }
 
   do {
-    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   } while ( ret < 0 && retry-- > 0 );
 
   if ( ret < 0 ) {

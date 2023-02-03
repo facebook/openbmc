@@ -135,7 +135,8 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   ret = oem_pldm_ipmi_send_recv(bus, SWB_BIC_EID,
                                 NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
                                 tbuf, tlen,
-                                rxbuf, &rlen);
+                                rxbuf, &rlen,
+                                true);
   return ret;
 }
 
@@ -158,7 +159,8 @@ acb_vr_pldm_wr(uint8_t bus, uint8_t addr,
   ret = oem_pldm_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                tbuf, tlen,
-                               rxbuf, &rlen);
+                               rxbuf, &rlen,
+			       true);
   return ret;
 }
 
@@ -181,7 +183,8 @@ cxl_vr_pldm_wr(uint8_t bus, uint8_t addr,
   ret = oem_pldm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                tbuf, tlen,
-                               rxbuf, &rlen);
+                               rxbuf, &rlen,
+			       true);
   return ret;
 }
 

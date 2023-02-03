@@ -19,6 +19,8 @@ DEPENDS += " \
     libkv \
     libobmc-i2c \
     libusb1 \
+    libpldm \
+    libpldm-oem \
     openssl \
 "
 RDEPENDS:${PN} += "libfby35-common"

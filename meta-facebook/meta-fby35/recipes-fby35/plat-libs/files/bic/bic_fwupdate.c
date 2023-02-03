@@ -140,7 +140,7 @@ _update_fw(uint8_t slot_id, uint8_t target, uint8_t type, uint32_t offset,
 
   tlen = len + 10;
   for (retry = 0; retry < 3; retry++) {
-    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
     if (ret == 0) {
       return ret;
     }
@@ -1111,7 +1111,7 @@ get_board_revid_from_bbbic(uint8_t slot_id, uint8_t* rev_id) {
     return -1;
   }
 
-  int ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  int ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: fail to get board revision ID because IPMB command fail. Ret: %d\n", __func__, ret);
     return ret;

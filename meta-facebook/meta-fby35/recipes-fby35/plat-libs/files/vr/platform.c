@@ -56,7 +56,7 @@ _fby35_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
   tbuf[1] = addr;
   tbuf[2] = rxlen;
   memcpy(&tbuf[3], txbuf, txlen);
-  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
+  return bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                        tbuf, txlen+3, rxbuf, &rxlen, intf);
 }
 

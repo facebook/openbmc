@@ -32,6 +32,8 @@
 #include <sys/types.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include <libpldm/base.h>
+#include <libpldm-oem/pldm.h>
 #include "bic_xfer.h"
 
 const uint32_t IANA_ID = 0x00A015;
@@ -112,7 +114,7 @@ int is_bic_ready(uint8_t slot_id, uint8_t intf __attribute__((unused))) {
 
 // Repack data according to the interface
 int
-bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen, uint8_t intf) {
+bic_data_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen, uint8_t intf) {
   int ret = 0;
   uint8_t tmp_buf[MAX_IPMB_RES_LEN] = {0x0};
   uint8_t rsp_buf[MAX_IPMB_RES_LEN] = {0x0};
@@ -121,7 +123,7 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
 
   switch(intf) {
     case NONE_INTF:
-      ret = bic_ipmb_wrapper(slot_id, netfn, cmd, tbuf, tlen, rbuf, rlen);
+      ret = bic_data_wrapper(slot_id, netfn, cmd, tbuf, tlen, rbuf, rlen);
       break;
     case FEXP_BIC_INTF:
     case BB_BIC_INTF:
@@ -141,7 +143,7 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
       memcpy(&tmp_buf[tmp_len], tbuf, tlen);
       tmp_len += tlen;
 
-      ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tmp_buf, tmp_len, rsp_buf, &rsp_len);
+      ret = bic_data_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tmp_buf, tmp_len, rsp_buf, &rsp_len);
       //rsp_buf[6] is the completion code
       if ( (ret < 0) || (ret == BIC_STATUS_SUCCESS && rsp_buf[6] != CC_SUCCESS) ) {
         syslog(LOG_WARNING, "%s() The 2nd BIC cannot be reached. CC: 0x%02X, intf: 0x%x, ret = %d\n", __func__, rsp_buf[6], intf, ret);
@@ -163,6 +165,80 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
       break;
   }
   return ret;
+}
+
+int bic_data_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
+                     uint8_t *tbuf, uint16_t tlen, uint8_t *rbuf, uint8_t *rlen) {
+  //char sys_conf[16] = {0};
+  int ret = 0;
+
+#ifdef CONFIG_IPMB_XFER
+  ret = bic_ipmb_wrapper(slot_id, netfn, cmd, tbuf, tlen, rbuf, rlen);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): Failed to pack data to ipmb."
+           "slot_id = %d, netfn = 0x%02x, cmd = 0x%02x",
+           __func__, slot_id, netfn, cmd);
+  }
+#else
+  ret = bic_pldm_wrapper(slot_id, netfn, cmd, tbuf, tlen, rbuf, rlen);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): Failed to pack data to pldm."
+           "slot_id = %d, netfn = 0x%02x, cmd = 0x%02x",
+           __func__, slot_id, netfn, cmd);
+  }
+#endif
+
+  return ret;
+}
+
+int bic_pldm_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
+                     uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
+  int ret = 0;
+  uint8_t bus_id = 0;
+  int retry = 0;
+  uint8_t status_12v = 0;
+  size_t rlen = 0;
+
+  ret = fby35_common_get_bus_id(slot_id);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: Wrong Slot ID %d\n", __func__, slot_id);
+    return ret;
+  }
+
+  bus_id = (uint8_t) ret;
+
+  while (retry < BIC_XFER_RETRY_TIME) {
+    // avoid meaningless retry
+    ret = fby35_common_server_stby_pwr_sts(slot_id, &status_12v);
+    if ( ret < 0 || status_12v == 0) {
+      return BIC_STATUS_FAILURE;
+    }
+    if (is_bic_ready(slot_id, NONE_INTF) != BIC_STATUS_SUCCESS) {
+      msleep(BIC_XFER_RETRY_DELAY);
+      retry++;
+      continue;
+    }
+  
+    ret = oem_pldm_ipmi_send_recv(bus_id, 0xA, netfn, cmd, txbuf, txlen, rxbuf, &rlen, false);
+
+    if ((ret == CC_NODE_BUSY) && (++retry < BIC_XFER_RETRY_TIME)) {
+      msleep(BIC_XFER_RETRY_DELAY);
+      continue;
+    }
+    break;
+  }
+
+  if (ret) {
+    syslog(LOG_ERR, "bic_pldm_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Completion Code: 0x%02X ", slot_id, netfn, cmd, ret);
+    if (ret == CC_INVALID_CMD) {
+      return BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
+    }
+    return BIC_STATUS_FAILURE;
+  }
+
+  *rxlen = rlen;
+
+  return BIC_STATUS_SUCCESS;
 }
 
 int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
@@ -207,14 +283,14 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
-  while (retry < IPMB_RETRY_TIME) {
+  while (retry < BIC_XFER_RETRY_TIME) {
     // avoid meaningless retry
     ret = fby35_common_server_stby_pwr_sts(slot_id, &status_12v);
     if ( ret < 0 || status_12v == 0) {
       return BIC_STATUS_FAILURE;
     }
     if (is_bic_ready(slot_id, NONE_INTF) != BIC_STATUS_SUCCESS) {
-      msleep(IPMB_RETRY_DELAY);
+      msleep(BIC_XFER_RETRY_DELAY);
       retry++;
       continue;
     }
@@ -226,13 +302,13 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
         break;
       }
 
-      if (++retry < IPMB_RETRY_TIME) {
-        msleep(IPMB_RETRY_DELAY);
+      if (++retry < BIC_XFER_RETRY_TIME) {
+        msleep(BIC_XFER_RETRY_DELAY);
       }
     } else {
       res = (ipmb_res_t*) rbuf;
-      if ((res->cc == CC_NODE_BUSY) && (++retry < IPMB_RETRY_TIME)) {
-        msleep(IPMB_RETRY_DELAY);
+      if ((res->cc == CC_NODE_BUSY) && (++retry < BIC_XFER_RETRY_TIME)) {
+        msleep(BIC_XFER_RETRY_DELAY);
         continue;
       }
       break;
@@ -266,7 +342,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   dataCksum = ZERO_CKSUM_CONST - dataCksum;
 
   if (dataCksum != rbuf[rlen - 1]) {
-    syslog(LOG_ERR, "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Receive Data cksum does not match (expectative 0x%x, actual 0x%x)", slot_id, netfn, cmd, dataCksum, rbuf[rlen-1]);
+    syslog(LOG_ERR, "bic_data_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Receive Data cksum does not match (expectative 0x%x, actual 0x%x)", slot_id, netfn, cmd, dataCksum, rbuf[rlen-1]);
     return BIC_STATUS_FAILURE;
   }
 
@@ -292,7 +368,7 @@ int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, 
   // Send data length includes IANA ID and interface number
   tlen = txlen + 4;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   if (ret ) {
     return BIC_STATUS_FAILURE;
   }
@@ -360,7 +436,7 @@ send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t of
   }
 
   do {
-    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
     if (ret != BIC_STATUS_SUCCESS) {
       if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE)
         return ret;

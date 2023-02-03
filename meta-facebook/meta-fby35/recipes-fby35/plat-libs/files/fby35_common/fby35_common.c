@@ -295,16 +295,16 @@ fby35_common_get_bus_id(uint8_t slot_id) {
   int bus_id = 0;
   switch(slot_id) {
     case FRU_SLOT1:
-      bus_id = IPMB_SLOT1_I2C_BUS;
+      bus_id = SLOT1_BUS;
     break;
     case FRU_SLOT2:
-      bus_id = IPMB_SLOT2_I2C_BUS;
+      bus_id = SLOT2_BUS;
     break;
     case FRU_SLOT3:
-      bus_id = IPMB_SLOT3_I2C_BUS;
+      bus_id = SLOT3_BUS;
     break;
     case FRU_SLOT4:
-      bus_id = IPMB_SLOT4_I2C_BUS;
+      bus_id = SLOT4_BUS;
     break;
     default:
       bus_id = -1;

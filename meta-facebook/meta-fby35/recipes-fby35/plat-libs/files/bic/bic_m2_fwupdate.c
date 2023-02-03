@@ -60,7 +60,7 @@ bic_mux_select(uint8_t slot_id, uint8_t bus, uint8_t dev_id, uint8_t intf) {
     dev_id -= DEV_ID0_2OU;
   }
   printf("* Mux selecting...bus %d, chn: %d, dev_id: %d\n", bus, chn, dev_id);
-  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  return bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
 }
 
 int
@@ -79,7 +79,7 @@ bic_m2_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wb
   }
 
   do {
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, REXP_BIC_INTF);
+    ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, REXP_BIC_INTF);
     if (ret < 0 ) msleep(100);
     else break;
   } while ( retry-- >= 0 );
@@ -128,7 +128,7 @@ bic_sph_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_s
   tbuf[0] = bus;
   tbuf[1] = ERASE_DEV_FW;
   tlen = 2;
-  if ( bic_ipmb_send(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, tbuf, tlen, rbuf, &rlen, intf) < 0 ) {
+  if ( bic_data_send(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, tbuf, tlen, rbuf, &rlen, intf) < 0 ) {
     printf("* Failed to erase Device CFM0 sector...\n");
     return BIC_STATUS_FAILURE;
   } else if ( rbuf[0] == CC_CAN_NOT_RESPOND && rlen > 0 ) {
@@ -165,7 +165,7 @@ bic_sph_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_s
       tbuf[i + DEV_UPDATE_IPMI_HEAD_SIZE] = reverse_bits(buffer[i]);
     }
 
-    if ( bic_ipmb_send(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, tbuf, (DEV_UPDATE_BATCH_SIZE + DEV_UPDATE_IPMI_HEAD_SIZE), rbuf, &rlen, intf) < 0 ) {
+    if ( bic_data_send(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, tbuf, (DEV_UPDATE_BATCH_SIZE + DEV_UPDATE_IPMI_HEAD_SIZE), rbuf, &rlen, intf) < 0 ) {
       printf("Failed to send SPH image data!\n");
       return BIC_STATUS_FAILURE;
     } else if ( rbuf[0] == CC_CAN_NOT_RESPOND && rlen > 0 ) {

@@ -2,6 +2,8 @@
 #ifndef _PLDM_OEM_H_
 #define _PLDM_OEM_H_
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -114,7 +116,8 @@ void get_pldm_ipmi_req_hdr_w_IANA (uint8_t *buf, uint8_t *IANA, size_t IANA_leng
 int oem_pldm_ipmi_send_recv(uint8_t bus, uint8_t eid,
                             uint8_t netfn, uint8_t cmd,
                             uint8_t *txbuf, uint8_t txlen,
-                            uint8_t *rxbuf, size_t *rxlen);
+                            uint8_t *rxbuf, size_t *rxlen,
+                            bool is_ipmi_iana_auto);
 
 #ifdef __cplusplus
 }

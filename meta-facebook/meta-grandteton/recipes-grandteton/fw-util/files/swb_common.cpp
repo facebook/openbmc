@@ -185,7 +185,7 @@ int send_update_packet (int bus, int eid, uint8_t* buf, ssize_t bufsize,
   rc = oem_pldm_ipmi_send_recv(bus, eid,
                                NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW,
                                tbuf, tlen,
-                               rbuf, &rlen);
+                               rbuf, &rlen, true);
   return rc;
 }
 
@@ -438,7 +438,7 @@ int get_swb_version (uint8_t bus, uint8_t eid, uint8_t target, vector<uint8_t> &
   rc = oem_pldm_ipmi_send_recv(bus, eid,
                                NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER,
                                tbuf, tlen,
-                               rbuf, &rlen);
+                               rbuf, &rlen, true);
   if (rc == 0)
     data = vector<uint8_t>(rbuf, rbuf + rlen);
   return rc;

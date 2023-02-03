@@ -89,7 +89,7 @@ set_register_via_bypass(uint8_t slot_id, int reg, int val, uint8_t intf) {
   SET_WRITE_DATA(txbuf, reg, val, txlen);
 
   while ( retries > 0 ) {
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, intf);
+    ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, intf);
     if (ret) {
       sleep(1);
       retries--;
@@ -127,7 +127,7 @@ get_register_via_bypass(uint8_t slot_id, int reg, int *val, uint8_t intf) {
   SET_READ_DATA(txbuf, reg, txlen);
 
   while ( retries > 0 ) {
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, intf);
+    ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, intf);
     if (ret) {
       sleep(1);
       retries--;
@@ -358,7 +358,7 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
   tlen = len + 10;
 
   do {
-    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
     if ( ret < 0 ) {
       sleep(1);
       printf("_update_fw: slot: %d, target %d, offset: %u, len: %d retrying..\n", slot_id, target, offset, len);

@@ -45,6 +45,8 @@ deps = [
     dependency('libkv'),
     dependency('libobmc-i2c'),
     dependency('libusb-1.0'),
+    dependency('libpldm'),
+    dependency('libpldm-oem')
 ]
 
 install_headers(

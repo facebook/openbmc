@@ -240,10 +240,10 @@ enum {
 };
 
 enum {
-  IPMB_SLOT1_I2C_BUS = 0,
-  IPMB_SLOT2_I2C_BUS = 1,
-  IPMB_SLOT3_I2C_BUS = 2,
-  IPMB_SLOT4_I2C_BUS = 3,
+  SLOT1_BUS = 0,
+  SLOT2_BUS = 1,
+  SLOT3_BUS = 2,
+  SLOT4_BUS = 3,
 
   OCP_DBG_I2C_BUS    = 9,
 };

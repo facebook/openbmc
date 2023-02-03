@@ -44,7 +44,7 @@ int set_swb_snr_polling (uint8_t status) {
                                NETFN_OEM_1S_REQ,
                                CMD_OEM_1S_DISABLE_SEN_MON,
                                tbuf, tlen,
-                               rbuf, &rlen);
+                               rbuf, &rlen, true);
   printf("%s rc=%d", __func__, rc);
   return rc;
 }
@@ -207,7 +207,8 @@ vr_master_wr_pre(const string &fru, const string &component, bool is_fw_update) 
   ret = oem_pldm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                txbuf, txlen,
-                               rxbuf, &rlen);
+                               rxbuf, &rlen,
+			       true);
   if ( ret < 0 ) {
     cout << "ERROR: Switch MUX to CXL failed!" << endl;
     return ret;
@@ -222,7 +223,8 @@ vr_master_wr_pre(const string &fru, const string &component, bool is_fw_update) 
   ret = oem_pldm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID,
                                NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
                                txbuf, txlen,
-                               rxbuf, &rlen);
+			       rxbuf, &rlen,
+			       true);
   if ( ret < 0 ) {
     cout << "ERROR: Switch MUX to VR failed!" << endl;
     return ret;

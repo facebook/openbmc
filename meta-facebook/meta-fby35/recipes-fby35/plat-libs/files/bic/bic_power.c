@@ -63,7 +63,7 @@ bic_server_power_control(uint8_t slot_id, uint8_t val) {
   tbuf[3] = 0x00; //register offset
   tbuf[4] = val;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   return ret;
 }
 
@@ -201,7 +201,7 @@ bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status)
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, tlen);
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   
   if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
     *power_status = BIT_VALUE(rbuf[3], HD_PWRGD_CPU_LVC3) ;
@@ -223,7 +223,7 @@ bic_do_12V_cycle(uint8_t slot_id) {
   // Fill the IANA ID
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
-  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_12V_CYCLE, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  return bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_12V_CYCLE, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
 }
 
 
@@ -246,7 +246,7 @@ bic_get_power_lock_status(uint8_t* status) {
   tbuf[3] = SLED_STATUS_REG;
   tlen = 4;
 
-  int ret = bic_ipmb_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  int ret = bic_data_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: fail to set power lock reg. Ret: %d\n", __func__, ret);
     return ret;
@@ -300,7 +300,7 @@ bic_set_power_lock(uint8_t status) {
 
   tlen = 5;
 
-  ret = bic_ipmb_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  ret = bic_data_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: fail to set power lock reg. Ret: %d\n", __func__, ret);
     return ret;

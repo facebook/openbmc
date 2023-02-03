@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <syslog.h>
 #include <unistd.h>
@@ -48,7 +49,7 @@ get_pldm_fruid_info(bic_intf fru_bic_info, ipmi_fruid_info_t *info) {
   rc = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO,
                                txbuf, txlen,
-                               (uint8_t*)info, &rxlen);
+                               (uint8_t*)info, &rxlen, true);
 
   return rc;
 }
@@ -68,7 +69,7 @@ _read_pldm_fruid(bic_intf fru_bic_info, uint16_t offset, uint8_t count, uint8_t 
   rc = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_READ_FRUID_DATA,
                                txbuf, txlen,
-                               rbuf, rlen);
+                               rbuf, rlen, true);
   return rc;
 }
 
@@ -90,7 +91,7 @@ _write_pldm_fruid(bic_intf fru_bic_info, uint16_t offset, uint8_t count, uint8_t
   rc = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_WRITE_FRUID_DATA,
                                txbuf, txlen,
-                               rxbuf, &rxlen);
+                               rxbuf, &rxlen, true);
   if (rxbuf[0] != count)
     rc = -1;
 

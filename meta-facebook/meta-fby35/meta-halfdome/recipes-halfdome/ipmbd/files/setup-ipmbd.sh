@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -18,15 +18,24 @@
 # Boston, MA 02110-1301 USA
 #
 
-# shellcheck disable=SC1091,SC2039
+### BEGIN INIT INFO
+# Provides:          ipmbd
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:      0 6
+# Short-Description: Provides ipmb message tx/rx service
+#
+### END INIT INFO
+
+# shellcheck source=meta-facebook/meta-fby35/recipes-fby35/plat-utils/files/ast-functions
 . /usr/local/fbpackages/utils/ast-functions
 
-echo -n "Starting MCTP Rx/Tx Daemon.."
-
-init_class1_mctp() {
+init_class1_ipmb() {
   for slot_num in {1..4}; do
-    bus=$((slot_num))
-    runsv /etc/sv/mctpd_${bus} > /dev/null 2>&1 &
+    bus=$((slot_num-1))
+    #echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-${bus}/new_device
+    #runsv /etc/sv/ipmbd_${bus} > /dev/null 2>&1 &
     if [ "$slot_num" -eq 1 ] || [ "$slot_num" -eq 3 ]; then
       slot_present=$(gpio_get PRSNT_MB_BMC_SLOT"${slot_num}"_BB_N)
     else
@@ -34,32 +43,41 @@ init_class1_mctp() {
     fi
     if [ "$slot_present" = "1" ]; then
       usleep 50000
-      sv stop mctpd_${bus}
+      sv stop ipmbd_${bus}
       disable_server_12V_power "${slot_num}"
     else
       enable_server_i2c_bus "${slot_num}"
     fi
   done
+
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-9/new_device
+  runsv /etc/sv/ipmbd_9 > /dev/null 2>&1 &
+
+  # add BMC slave address to NIC I2C bus for MCTP
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device
 }
 
-init_class2_mctp() {
-  runsv /etc/sv/mctpd_1 > /dev/null 2>&1 &
+init_class2_ipmb() {
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-0/new_device
+  runsv /etc/sv/ipmbd_0 > /dev/null 2>&1 &
+
+  # add BMC slave address to NIC I2C bus for MCTP
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device
 }
+
+echo -n "Starting IPMB Rx/Tx Daemon.."
+sleep 10
+ulimit -q 1024000
 
 bmc_location=$(get_bmc_board_id)
 if [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
   #The BMC of class2
-  init_class2_mctp
+  init_class2_ipmb
 elif [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
   #The BMC of class1
-  init_class1_mctp
+  init_class1_ipmb
 else
-  echo -n "setup_mctpd: Is board id correct(id=$bmc_location)?..."
+  echo -n "Is board id correct(id=$bmc_location)?..."
 fi
 
-echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device
-
-runsv /etc/sv/mctpd_8 > /dev/null 2>&1 &
-
-echo "done."
-
+echo "Done."

@@ -69,7 +69,7 @@ get_meb_jcn_sensor(uint8_t fru, uint8_t sensor_num, float *value)
   txbuf[txlen++] = fru;
   txbuf[txlen++] = sensor_num;
   ret = oem_pldm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID, NETFN_OEM_1S_REQ,
-                  CMD_OEM_1S_GET_SENSOR_READING, txbuf, txlen, rxbuf, &rxlen);
+                  CMD_OEM_1S_GET_SENSOR_READING, txbuf, txlen, rxbuf, &rxlen, true);
 
   if (ret != 0 || rxlen != sizeof(oem_1s_sensor_reading_resp)) {
     syslog(LOG_ERR, "%s failed, fru:%u snr:%u ret:%d rxlen: %d\n", __func__, fru, sensor_num, ret, rxlen);

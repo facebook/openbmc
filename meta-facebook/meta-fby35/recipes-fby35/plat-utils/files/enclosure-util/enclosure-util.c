@@ -134,7 +134,7 @@ board_1u_2u_set_mux_select(uint8_t slot_id, uint8_t dev_id) {
   tbuf[3] = 0x00; // offset 00
   tbuf[4] = mux_map[dev_id];
   tlen = 5;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if (ret != 0) {
     syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,tbuf[0],rlen);
     return -1;
@@ -270,7 +270,7 @@ read_nvme_status(uint8_t slot_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
   tbuf[2] = 0x08; //read back 8 bytes
   tbuf[3] = 0x00; // offset 00
   tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if (ret != 0) {
     syslog(LOG_ERR, "%s(): master_write_read failed, bus=%u, offset=%u read length=%u", __func__, bus, tbuf[3], rlen);
     return -1;
@@ -283,7 +283,7 @@ read_nvme_status(uint8_t slot_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
 
   tbuf[2] = 24;  // read back 24 bytes
   tbuf[3] = 0x08;  // offset 08
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if (ret != 0) {
     syslog(LOG_ERR, "%s(): master_write_read failed, bus=%u, offset=%u read length=%u", __func__, bus, tbuf[3], rlen);
     return -1;
@@ -312,7 +312,7 @@ read_nvme_health(uint8_t slot_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
   tbuf[2] = 0x08; // read back 8 bytes
   tbuf[3] = 0x00; // offset 00
   tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if (ret != 0) {
     syslog(LOG_ERR, "%s(): master_write_read failed, bus=%u, offset=%u read length=%u", __func__, bus, tbuf[3], rlen);
     return -1;

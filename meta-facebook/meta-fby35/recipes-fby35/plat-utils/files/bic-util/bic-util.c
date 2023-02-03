@@ -170,7 +170,7 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   }
 
   while (retry >= 0) {
-    ret = bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    ret = bic_data_send(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen, NONE_INTF);
     if (ret == 0)
       break;
 

@@ -33,7 +33,7 @@ util_read_mca_reg(uint8_t slot_id, char* thread_addr, char* mca_reg_addr[]) {
   }
 
   while (retry >= 0) {
-    ret = bic_ipmb_wrapper(slot_id, 0x38, 0x2E, tbuf, tlen, rbuf, &rlen);
+    ret = bic_data_wrapper(slot_id, 0x38, 0x2E, tbuf, tlen, rbuf, &rlen);
     if (ret == 0)
       break;
 
@@ -53,7 +53,7 @@ util_read_mca_reg(uint8_t slot_id, char* thread_addr, char* mca_reg_addr[]) {
   tbuf[tlen++] = 0x00;
   tbuf[tlen++] = rbuf[3];
   while (retry >= 0) {
-    ret = bic_ipmb_wrapper(slot_id, 0x38, 0x2F, tbuf, tlen, rbuf, &rlen);
+    ret = bic_data_wrapper(slot_id, 0x38, 0x2F, tbuf, tlen, rbuf, &rlen);
     if (ret == 0)
       break;
 

@@ -261,7 +261,8 @@ int
 oem_pldm_ipmi_send_recv(uint8_t bus, uint8_t eid,
                         uint8_t netfn, uint8_t cmd,
                         uint8_t *txbuf, uint8_t txlen,
-                        uint8_t *rxbuf, size_t *rxlen) {
+                        uint8_t *rxbuf, size_t *rxlen,
+                        bool is_ipmi_iana_auto) {
   uint8_t tbuf[255] = {0};
   uint8_t IANA[] = {0x15, 0xA0, 0x00};
   size_t payload_len = 0;
@@ -275,11 +276,13 @@ oem_pldm_ipmi_send_recv(uint8_t bus, uint8_t eid,
   pldmbuf->payload[payload_len++] = netfn << 2;     // IPMI NetFn
   pldmbuf->payload[payload_len++] = cmd;            // IPMI Cmd
 
-  // OEM netfn range between 0x30 and 0x3F
-  if(netfn >= 0x30 && netfn <= 0x3F) {
-    // IPMI IANA
-    memcpy(pldmbuf->payload + payload_len, IANA, sizeof(IANA));
-    payload_len += sizeof(IANA);
+  if (is_ipmi_iana_auto == true) {
+    // OEM netfn range between 0x30 and 0x3F
+    if (netfn >= 0x30 && netfn <= 0x3F) {
+      // IPMI IANA
+      memcpy(pldmbuf->payload + payload_len, IANA, sizeof(IANA));
+      payload_len += sizeof(IANA);
+    }
   }
 
   // IPMI Data
@@ -305,7 +308,8 @@ oem_pldm_ipmi_send_recv(uint8_t bus, uint8_t eid,
     }
 
     // OEM netfn range between 0x30 and 0x3F
-    if(netfn >= 0x30 && netfn <= 0x3F) {
+    if((netfn >= 0x30 && netfn <= 0x3F) &&
+       (is_ipmi_iana_auto == true)) {
       *rxlen -= PLDM_OEM_IPMI_DATA_OFFSET;
       memcpy(rxbuf, pldm_rbuf + PLDM_OEM_IPMI_DATA_OFFSET, *rxlen);
     }

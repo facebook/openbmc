@@ -71,7 +71,7 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
   tlen = len + 10;
 
 bic_send:
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   if ((ret) && (retries--)) {
     sleep(1);
     printf("_update_fw: slot: %d, target %d, offset: %u, len: %d retrying..\
@@ -164,7 +164,7 @@ bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len,
   tbuf[11] = (len >> 24) & 0xFF;
 
 bic_send:
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_CKSUM, tbuf, 12, rbuf, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_CKSUM, tbuf, 12, rbuf, &rlen, NONE_INTF);
   if ((ret || (rlen != 4+SIZE_IANA_ID)) && (retries--)) {  // checksum has to be 4 bytes
     sleep(1);
     syslog(LOG_ERR, "bic_get_fw_cksum: slot: %d, target %d, offset: %d, ret: %d, rlen: %d\n", slot_id, target, offset, ret, rlen);
@@ -210,7 +210,9 @@ bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32
   struct bic_get_fw_cksum_sha256_res res = {0};
   uint8_t rlen = sizeof(res);
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_FW_CKSUM_SHA256, (uint8_t *) &req, sizeof(req), (uint8_t *) &res, &rlen);
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_FW_CKSUM_SHA256,
+                      (uint8_t *) &req, sizeof(req), (uint8_t *) &res, &rlen,
+                      NONE_INTF);
   if (ret != 0) {
     return -1;
   }

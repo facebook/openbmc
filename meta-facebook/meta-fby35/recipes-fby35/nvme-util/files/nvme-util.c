@@ -71,7 +71,7 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t dev_id, int argc, char **argv) {
   else printf("To read NVMe %d bytes:\n", tbuf[2]);
 
   do {
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, m_intf);
+    ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, m_intf);
     if (ret < 0 ) msleep(100);
     else break;
   } while ( retry-- >= 0 );

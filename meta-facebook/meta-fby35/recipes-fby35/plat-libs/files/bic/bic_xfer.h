@@ -55,6 +55,7 @@ enum {
   BIC_CMD_OEM_NOTIFY_PMIC_ERR   = 0xB0,
   BIC_CMD_OEM_GET_EXTENDED_SDR  = 0xC0,
   BIC_CMD_OEM_BIOS_VER          = 0xA2,
+  BIC_CMD_OEM_READ_WRITE_DIMM   = 0xB1,
 };
 
 enum {
@@ -84,6 +85,12 @@ enum {
   BICGPV3 = 0x08,
   BIC1OU_E1S = 0x09,
 };
+
+typedef enum {
+  DIMM_SPD = 0x0,
+  DIMM_SPD_NVM,
+  DIMM_PMIC,
+} DIMM_DEVICE_TYPE;
 
 void msleep(int msec);
 int i2c_open(uint8_t bus_id, uint8_t addr_7bit);

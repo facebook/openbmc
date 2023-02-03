@@ -19,5 +19,21 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 LOCAL_URI += " \
     file://setup-fan.sh \
+    file://fsc-config-evt.json \
+    file://fsc-config-2-retimer.json \
+    file://fsc-config-8-retimer.json \
+    file://zone-evt.fsc \
+    file://zone-2-retimer.fsc \
+    file://zone-8-retimer.fsc \
     "
+
+FSC_CONFIG += "fsc-config-evt.json \
+               fsc-config-2-retimer.json \
+               fsc-config-8-retimer.json \
+	      "
+
+FSC_ZONE_CONFIG +="zone-evt.fsc \
+                   zone-2-retimer.fsc \
+                   zone-8-retimer.fsc \
+	          "
 RDEPENDS:${PN} += "bash"

@@ -177,6 +177,12 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_DIMM_CPU1_D5_POWER,
   MB_SNR_RETIMER0_TEMP,
   MB_SNR_RETIMER1_TEMP,
+  MB_SNR_RETIMER2_TEMP,
+  MB_SNR_RETIMER3_TEMP,
+  MB_SNR_RETIMER4_TEMP,
+  MB_SNR_RETIMER5_TEMP,
+  MB_SNR_RETIMER6_TEMP,
+  MB_SNR_RETIMER7_TEMP,
 };
 
 const uint8_t hsc_sensor_list[] = {
@@ -454,13 +460,13 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
   {"RETIMER0_TEMP", 0, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD0
-  {"RETIMER1_TEMP", 4, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD7
+  {"RETIMER1_TEMP", 1, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD1
+  {"RETIMER2_TEMP", 2, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD2
+  {"RETIMER3_TEMP", 3, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD3
+  {"RETIMER4_TEMP", 4, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD4
+  {"RETIMER5_TEMP", 5, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD5
+  {"RETIMER6_TEMP", 6, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD6
+  {"RETIMER7_TEMP", 7, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD7
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
@@ -1186,6 +1192,14 @@ int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t channel = sensor_map[fru].map[sensor_num].id;
   float val = 0;
   static uint8_t retry=0;
+  char rev_id[MAX_VALUE_LEN] = {0};
+
+  kv_get("mb_rev", rev_id, 0, 0);
+  if (!strcmp(rev_id, "2")) {                // 2 retimer SKU
+    if (sensor_num != MB_SNR_RETIMER0_TEMP && sensor_num != MB_SNR_RETIMER4_TEMP) {
+      return READING_NA;
+    }
+  }
 
   ret = pal_control_mux_to_target_ch(bus, addr, channel);
 

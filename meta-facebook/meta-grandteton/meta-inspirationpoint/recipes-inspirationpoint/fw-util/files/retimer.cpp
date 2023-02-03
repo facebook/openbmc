@@ -2,6 +2,10 @@
 #include <sstream>
 #include <openbmc/pal.h>
 #include <openbmc/aries_api.h>
+#include <openbmc/libgpio.h>
+
+const char * rev_id0 = "FAB_BMC_REV_ID0";
+const char * rev_id1 = "FAB_BMC_REV_ID1";
 
 class RetimerComponent : public Component {
   uint8_t bus = 0x6;
@@ -57,5 +61,27 @@ class RetimerComponent : public Component {
     }
 };
 
-RetimerComponent rt0_comp("mb", "retimer0", 0);
-RetimerComponent rt1_comp("mb", "retimer1", 4);
+
+class RetimerSysConfig {
+  public:
+    RetimerSysConfig() {
+      if (gpio_get_value_by_shadow(rev_id0) == 1 &&
+          gpio_get_value_by_shadow(rev_id1) == 0) {
+        static RetimerComponent rt0_comp("mb", "retimer0", 0);
+        static RetimerComponent rt1_comp("mb", "retimer1", 1);
+        static RetimerComponent rt2_comp("mb", "retimer2", 2);
+        static RetimerComponent rt3_comp("mb", "retimer3", 3);
+        static RetimerComponent rt4_comp("mb", "retimer4", 4);
+        static RetimerComponent rt5_comp("mb", "retimer5", 5);
+        static RetimerComponent rt6_comp("mb", "retimer6", 6);
+        static RetimerComponent rt7_comp("mb", "retimer7", 7);
+      }
+      else if (gpio_get_value_by_shadow(rev_id0) == 0 &&
+               gpio_get_value_by_shadow(rev_id1) == 1) {
+        static RetimerComponent rt0_comp("mb", "retimer0", 0);
+        static RetimerComponent rt4_comp("mb", "retimer4", 4);
+      }
+    }
+};
+
+RetimerSysConfig rtConfig;

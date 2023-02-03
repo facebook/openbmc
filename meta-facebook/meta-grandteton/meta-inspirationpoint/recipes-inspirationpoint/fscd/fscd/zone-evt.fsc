@@ -179,14 +179,5 @@ max([
       all:hgx_hgx_temp_gb_hsc7_c,
       all:hgx_hgx_temp_gb_hsc8_c,
       all:hgx_hgx_temp_gb_hsc9_c,
-      all:hgx_hgx_temp_gb_hsc10_c])),
-
-  retimer_temp_linear(
-    max([
-      all:mb_mb_retimer0_t_temp_c,
-      all:mb_mb_retimer1_t_temp_c])) +
-  retimer_temp_pid(
-    max([
-      all:mb_mb_retimer0_t_temp_c,
-      all:mb_mb_retimer1_t_temp_c]))
+      all:hgx_hgx_temp_gb_hsc10_c]))
 ])

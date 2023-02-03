@@ -31,8 +31,29 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 
-default_fsc_config_path="/etc/fsc-config.json"
-ln -s /etc/fsc-config.json ${default_fsc_config_path}
+default_fsc_config="/etc/fsc-config.json"
+if [[ -f ${default_fsc_config} ]]; then
+  rm ${default_fsc_config}
+fi
+
+rev_id=$(kv get mb_rev)
+if [[ "$rev_id" == "1" ]]; then
+    ln -s /etc/fsc-config-8-retimer.json ${default_fsc_config}
+elif [[ "$rev_id" == "2" ]]; then
+    ln -s /etc/fsc-config-2-retimer.json ${default_fsc_config}
+else
+    ln -s /etc/fsc-config-evt.json ${default_fsc_config}
+fi
+
+for retry in {1..3};
+do
+    bp1_sensor208=$(kv get fan_bp1_sensor208)
+    if [ $? -ne 0 ]; then
+        sleep 3
+    else
+        break
+    fi
+done
 
 for retry in {1..3};
 do

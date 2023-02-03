@@ -1559,22 +1559,23 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
 
   if ( (dev_id == BOARD_1OU) && ((config_status & PRESENT_1OU) == PRESENT_1OU) && (bmc_location != NIC_BMC) ) { // 1U
     return bic_write_fruid(fru, 0, path, FEXP_BIC_INTF);
-  } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    if ( fby35_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
-    } else if ( dev_id == BOARD_2OU_X16 && ((type_2ou & DPV2_X16_BOARD) == DPV2_X16_BOARD)) {
-      return bic_write_fruid(fru, 1, path, NONE_INTF);
-    } else if ( dev_id == BOARD_2OU ) {
+  } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU &&
+    (dev_id == BOARD_2OU || dev_id == DPV2_X16_BOARD)) {
+    if ( fby35_common_get_2ou_board_type(fru, &type_2ou) == 0 ) {
+      if ( dev_id == BOARD_2OU_X16 && ((type_2ou & DPV2_X16_BOARD) == DPV2_X16_BOARD)) {
+        return bic_write_fruid(fru, 1, path, NONE_INTF);
+      }
+    }
+    if ( dev_id == BOARD_2OU ) {
       return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
-    } else if ( dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID11_2OU ) {
-      return bic_write_fruid(fru, dev_id - DEV_ID0_2OU + 1, path, REXP_BIC_INTF);
-    } else if ( dev_id == BOARD_3OU ) {
-      return bic_write_fruid(fru, 0, path, EXP3_BIC_INTF);
-    } else if ( dev_id == BOARD_4OU ) {
-      return bic_write_fruid(fru, 0, path, EXP4_BIC_INTF);
     } else {
       printf("Dev%d is not supported on 2OU!\n", dev_id);
+      ret = PAL_ENOTSUP;
     }
+  } else if ((config_status & PRESENT_3OU) == PRESENT_3OU && (dev_id == BOARD_3OU)) {
+    return bic_write_fruid(fru, 0, path, EXP3_BIC_INTF);
+  } else if ((config_status & PRESENT_4OU) == PRESENT_4OU && (dev_id == BOARD_4OU)) {
+    return bic_write_fruid(fru, 0, path, EXP4_BIC_INTF);
   } else {
     printf("%s is not present!\n", (dev_id == BOARD_1OU)?"1OU":"2OU");
     return PAL_ENOTSUP;

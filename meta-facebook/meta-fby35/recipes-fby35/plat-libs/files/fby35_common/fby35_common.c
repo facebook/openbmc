@@ -584,7 +584,7 @@ fby35_common_dev_id(char *str, uint8_t *dev) {
   } else if (!strcmp(str, "3U")) {
     *dev = BOARD_3OU;
   } else if (!strcmp(str, "4U")) {
-    *dev = BOARD_3OU;
+    *dev = BOARD_4OU;
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby35_common_dev_id: Wrong fru id");

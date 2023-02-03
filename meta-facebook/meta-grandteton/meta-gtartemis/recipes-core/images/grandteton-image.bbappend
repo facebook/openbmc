@@ -7,4 +7,5 @@ PROVIDES += "gtartemis-image"
 # Include modules in rootfs
 IMAGE_INSTALL += " \
    usbutils \
+   usbip \
    "

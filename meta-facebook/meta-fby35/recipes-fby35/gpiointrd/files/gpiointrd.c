@@ -67,6 +67,9 @@ slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   }
   if ( strcmp(sys_conf, "Type_DPV2") == 0 || strcmp(sys_conf, "Type_HD") == 0 ) {
     if (slot_id == 2 || slot_id == 4) return;
+  } else if (strcmp(sys_conf, "Type_8") == 0) {
+    if (slot_id != FRU_SLOT1)
+      return;
   }
 
   log_gpio_change(gpdesc, value, 0, true);

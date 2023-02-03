@@ -27,6 +27,7 @@ enum {
   VR_SWB_PEX01_VCC   = 6,
   VR_SWB_PEX23_VCC   = 7,
   VR_CNT,
+  VPDB_BRICK         = 8,
 };
 
 enum {
@@ -191,6 +192,14 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "swb",
     .xfer = vr_pldm_wr,
+  },
+  [VPDB_BRICK] = {
+    .bus = 38,
+    .addr = 0xA8,
+    .dev_name = "VPDB_BRICK",
+    .ops = &raa_gen2_3_ops,
+    .private_data = "mb",
+    .xfer = NULL,
   },
 };
 

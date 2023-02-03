@@ -10,6 +10,7 @@ namespace signed_info {
     MB  = 0x01,
     SCM,
     SWB,
+    VPDB,
   };
 
   // stage id
@@ -30,6 +31,7 @@ namespace signed_info {
     CPU1_VR_VCCIN,
     CPU1_VR_FAON,
     CPU1_VR_VCCD,
+    BRICK,
   };
 
   // vendor id

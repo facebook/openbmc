@@ -291,6 +291,8 @@ enum {
   NO_EXPANSION_PRESENT = 0x0,
   PRESENT_1OU = 0x01,
   PRESENT_2OU = 0x02,
+  PRESENT_3OU = 0x04,
+  PRESENT_4OU = 0x08,
   // In Olmsted point system,
   // 3OU present bit is the same as 2OU present in other platform
   OP_PRESENT_3OU = 0x02,

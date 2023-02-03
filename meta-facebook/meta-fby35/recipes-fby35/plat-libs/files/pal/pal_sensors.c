@@ -1476,6 +1476,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   char hsc_type[MAX_VALUE_LEN] = {0};
   bool is_48v_medusa = false;
   int server_type = SERVER_TYPE_NONE;
+  bool is_op_config = false;
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -1545,6 +1546,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
             current_cnt += bic_1ou_rf_sensor_cnt;
             break;
           case TYPE_1OU_OLMSTEAD_POINT:
+            is_op_config = true;
             memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_1ou_sensor_list, bic_op_1ou_sensor_cnt);
             current_cnt += bic_op_1ou_sensor_cnt;
             memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_2ou_sensor_list, bic_op_2ou_sensor_cnt);
@@ -1564,7 +1566,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     }
 
     // 2OU
-    if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
+    if ( ((config_status & PRESENT_2OU) == PRESENT_2OU) && (!is_op_config)) {
       ret = fby35_common_get_2ou_board_type(fru, &board_type);
       if (ret < 0) {
         syslog(LOG_ERR, "%s() Cannot get board_type", __func__);

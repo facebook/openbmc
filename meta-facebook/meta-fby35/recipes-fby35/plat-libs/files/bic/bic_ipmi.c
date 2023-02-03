@@ -970,12 +970,25 @@ bic_is_exp_prsnt(uint8_t slot_id) {
       break;
   }
   if (ret < 0) {
-    val = -1;
+    return -1;
   } else {
     val = ((rbuf[0] & 0xC) >> 2) ^ 0x3;  // (PRESENT_2OU | PRESENT_1OU)
-    snprintf(tmp_str, sizeof(tmp_str), "%d", val);
-    kv_set(key, tmp_str, 0, 0);
   }
+  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+    uint8_t type_1ou = 0;
+    if ((val & PRESENT_1OU) == PRESENT_1OU) {
+      ret = bic_get_1ou_type(slot_id, &type_1ou);
+      if ((ret == 0) && (type_1ou == TYPE_1OU_OLMSTEAD_POINT)) {
+        // For Olympic 2.0 system, bit 0 is 1OU present status,  bit 1 is 3OU present status
+        if ((val & PRESENT_2OU) == PRESENT_2OU) {
+            val |= (PRESENT_3OU | PRESENT_4OU);
+        }
+        val |= PRESENT_2OU;
+      }
+    }
+  }
+  snprintf(tmp_str, sizeof(tmp_str), "%d", val);
+  kv_set(key, tmp_str, 0, 0);
 
   return val;
 }

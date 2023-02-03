@@ -782,6 +782,18 @@ static mrc_desc_t mrc_warning_code[] = {
   { "ERR_TEMP_THRESHOLD_INVALID", 0xFF, 0x02 },
 };
 
+typedef struct
+{
+  uint8_t base_1ou;
+  uint8_t base_2ou;
+  uint8_t base_3ou;
+  uint8_t base_4ou;
+} SENSOR_BASE_NUM;
+
+SENSOR_BASE_NUM sensor_base_cl = {0x50, 0x80, 0xA0, 0xD0};
+SENSOR_BASE_NUM sensor_base_hd = {0x40, 0x70, 0xA0, 0xD0};
+SENSOR_BASE_NUM sensor_base_gl = {0x60, 0x90, 0xA0, 0xD0};
+
 static int
 pal_key_index(char *key) {
 
@@ -5060,6 +5072,8 @@ int
 pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t bmc_location, const uint8_t config_status) {
   static uint8_t board_type[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
   int ret = 0;
+  uint8_t server_type = 0;
+  static SENSOR_BASE_NUM *sensor_base = NULL;
 
   if(sensor == NULL) {
     syslog(LOG_ERR, "%s: failed to read bic sensor due to NULL pointer\n", __func__);
@@ -5072,20 +5086,41 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
       syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
     }
   }
+  server_type = fby35_common_get_slot_type(fru);
+  if (sensor_base == NULL) {
+    switch (server_type) {
+      case SERVER_TYPE_HD:
+        sensor_base = &sensor_base_hd;
+        break;
+      case SERVER_TYPE_CL:
+        sensor_base = &sensor_base_cl;
+        break;
+      case SERVER_TYPE_GL:
+        sensor_base = &sensor_base_gl;
+        break;
+      default:
+        syslog(LOG_WARNING, "%s(): unknown board type", __func__);
+        return READING_NA;
+    }
+  }
 
   //check snr number first. If it not holds, it will move on
-  if (sensor_num <= 0x48 || (((board_type[fru-1] & DPV2_X16_BOARD) == DPV2_X16_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) &&
+  if (sensor_num < sensor_base->base_1ou || (((board_type[fru-1] & DPV2_X16_BOARD) == DPV2_X16_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) &&
       (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR))) { //server board
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, NONE_INTF);
-  } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
-       ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
+  } else if ( (sensor_num >= sensor_base->base_1ou && sensor_num < sensor_base->base_2ou) && (bmc_location != NIC_BMC) && //1OU
+       ((config_status & PRESENT_1OU) == PRESENT_1OU) ) { // 1OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, FEXP_BIC_INTF);
-  } else if ( ((sensor_num >= 0x80 && sensor_num <= 0xCE) ||     //2OU
-               (sensor_num >= 0x49 && sensor_num <= 0x4D)) &&    //Many sensors are defined in GPv3.
-              ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
-                                                                 //So, we take 0x49 ~ 0x4D here
+  } else if ( (sensor_num >= sensor_base->base_2ou && sensor_num < sensor_base->base_3ou) &&
+              ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //2OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, REXP_BIC_INTF);
-  } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xF1) ) { //BB
+  } else if ( (sensor_num >= sensor_base->base_3ou && sensor_num < sensor_base->base_4ou) &&
+              ((config_status & PRESENT_3OU) == PRESENT_3OU) ) { //3OU
+    ret = bic_get_sensor_reading(fru, sensor_num, sensor, EXP3_BIC_INTF);
+  } else if ( (sensor_num >= sensor_base->base_4ou ) &&
+              ((config_status & PRESENT_4OU) == PRESENT_4OU) ) { //4OU
+    ret = bic_get_sensor_reading(fru, sensor_num, sensor, EXP4_BIC_INTF);
+  } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xF1) && (bmc_location == NIC_BMC)) { //BB
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, BB_BIC_INTF);
   } else {
     return READING_NA;

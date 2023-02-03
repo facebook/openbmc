@@ -175,29 +175,29 @@ workflows:
                             cmm,
                             elbert,
                             emeraldpools,
-                            fbgp2,
-                            fbtp,
-                            fbttn,
-                            fby2,
+                            # fbgp2, Rocko
+                            # fbtp, Rocko
+                            # fbttn, Rocko
+                            # fby2, Rocko
                             fby3,
                             fby35,
                             fuji,
-                            galaxy100,
+                            # galaxy100, Rocko
                             grandcanyon,
                             grandteton,
                             greatlakes,
                             inspirationpoint,
                             halfdome,
-                            lightning,
+                            # lightning, Rocko
                             minipack,
                             northdome,
                             qemux86,
                             sonorapass,
-                            wedge,
+                            # wedge, Rocko
                             wedge100,
                             wedge400,
-                            yamp,
-                            yosemite,
+                            # yamp, Rocko
+                            # yosemite, Rocko
                             ]
             - unit-test:
                 requires:
@@ -212,13 +212,13 @@ workflows:
                             cloudripper,
                             cmm,
                             elbert,
-                            fby2,
+                            # fbtp, Rocko
+                            # fbttn, Rocko
+                            # fby2, Rocko
                             fby3,
                             fby35,
                             fuji,
                             minipack,
                             wedge400,
-                            yamp,
-                            fbttn,
-                            fbtp,
+                            # yamp, Rocko
                             ]

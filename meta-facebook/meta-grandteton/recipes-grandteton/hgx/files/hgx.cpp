@@ -204,7 +204,7 @@ std::string updateNonBlocking(const std::string& comp, const std::string& path, 
   return resp["Id"];
 }
 
-static int getHMCPhase() {
+int getHMCPhase() {
   std::string url = "";
   RestClient::Response result;
   RestClient::Connection conn("");

@@ -54,6 +54,9 @@ int patch_bf_update();
 // completes.
 int update(const std::string& comp, const std::string& path);
 
+// Get HGX's phase
+int getHMCPhase(void);
+
 // Get HGX's sensors from Telemetry Service
 // status.
 void getMetricReports();

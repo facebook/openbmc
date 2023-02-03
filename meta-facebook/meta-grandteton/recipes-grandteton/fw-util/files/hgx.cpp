@@ -7,6 +7,12 @@
 
 const char * GPU_PRESENT = "GPU_HMC_PRSNT_ISO_R_N";
 
+enum {
+  HMC_FW_EVT = 0,
+  HMC_FW_DVT = 1,
+  BMC_FW_DVT = 2,
+};
+
 class HGXComponent : public Component {
   std::string _hgxcomp{};
 
@@ -18,20 +24,36 @@ class HGXComponent : public Component {
       : Component(fru, comp), _hgxcomp(hgxcomp) {}
   int update(std::string image) {
     try {
-      if (_hgxcomp == "") {
-        syslog(LOG_CRIT, "HGX FW upgrade initiated, image: %s", image.c_str());
+      if (component() == "patch") {
+        if (hgx::patch_bf_update() == 0) {
+          syslog(LOG_CRIT, "HGX FW patch: ERoT and HMC");
+        }
       }
       else {
-        syslog(LOG_CRIT, "HGX Component %s upgrade initiated", component().c_str());
+        if (_hgxcomp == "") {
+          syslog(LOG_CRIT, "HGX FW upgrade initiated, image: %s", image.c_str());
+        }
+        else {
+          syslog(LOG_CRIT, "HGX Component %s upgrade initiated", component().c_str());
+        }
+
+        if (hgx::update(_hgxcomp, image) == 0) {
+          syslog(LOG_CRIT, "HGX upgrade completed");
+          sleep(3);
+          if (hgx::getHMCPhase() != BMC_FW_DVT) {
+            hgx::FactoryReset();
+            return 0;
+          }
+        }
       }
-      hgx::update(_hgxcomp, image);
     } catch (std::exception& e) {
       std::cerr << e.what() << std::endl;
-      return -1;
+      syslog(LOG_CRIT, "HGX upgrade failed");
     }
-    syslog(LOG_CRIT, "HGX upgrade completed");
+
     return 0;
   }
+
   int get_version(json& j) {
     if (_hgxcomp == "") {
       return FW_STATUS_NOT_SUPPORTED;
@@ -59,6 +81,7 @@ class HGXSystemConfig {
     HGXSystemConfig() {
       if (!pal_is_artemis()) {
         static HGXComponent autocomp("hgx", "auto");
+        static HGXComponent patchcomp("hgx", "patch", "");
       }
       if (gpio_get_value_by_shadow(GPU_PRESENT) == 0) {
         if (isEVT()) {

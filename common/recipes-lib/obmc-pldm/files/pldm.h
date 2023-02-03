@@ -16,6 +16,7 @@ extern "C"
 #define PLDM_OEM_IPMI_CC_OFFSET      (9)
 #define PLDM_IPMI_HEAD_LEN           (10)
 #define PLDM_OEM_IPMI_DATA_OFFSET    (PLDM_IPMI_HEAD_LEN + IPMI_IANA_LEN)
+#define MCTP_PLDM_MAX_DATA_SIZE      (255)
 
 
 

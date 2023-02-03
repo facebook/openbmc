@@ -17,6 +17,7 @@
  */
 
 #include <iostream>
+#include <thread>
 #include <vector>
 #include <map>
 #include <string>
@@ -103,6 +104,29 @@ freeBuf (uint8_t* buf)
   }
 }
 
+void req_msg_handle(int fd, uint8_t bus_id, std::vector<uint8_t> req, size_t req_size) {
+
+  uint8_t* resp = nullptr;
+  int resp_bytes;
+
+  // handle PLDM msg
+  pldm_msg_handle(bus_id, req.data() + PLDMD_MSG_HDR_LEN, req_size - PLDMD_MSG_HDR_LEN, &resp, &resp_bytes);
+
+  size_t buf_size = resp_bytes + PLDMD_MSG_HDR_LEN;
+  uint8_t* buf = new uint8_t [buf_size];
+
+  // copy response to buf(request)+PLDMD_MSG_HDR_LEN
+  // so can re-use PLDMD_MSG_HDR
+  memcpy(buf, req.data(), PLDMD_MSG_HDR_LEN);
+  memcpy(buf + PLDMD_MSG_HDR_LEN, resp, resp_bytes);
+
+  // send back to MCTP daemon
+  handler->send_data(fd, buf, resp_bytes + PLDMD_MSG_HDR_LEN);
+
+  freeBuf(resp);
+  delete [] buf;
+}
+
 static void
 mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
 {
@@ -117,7 +141,7 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
 
   // Handle message
   } else {
-    auto msg = reinterpret_cast<pldm_msg*>(buf+PLDMD_MSG_HDR_LEN);
+    auto msg = reinterpret_cast<pldm_msg*>(buf + PLDMD_MSG_HDR_LEN);
 
     // For firmware update socket
     if (msg->hdr.type == PLDM_FWUP && (msg->hdr.request == PLDM_REQUEST ||
@@ -130,25 +154,16 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
       msg->hdr.request == PLDM_ASYNC_REQUEST_NOTIFY) {
       LOG(INFO) << "Request handle.";
 
-      uint8_t* resp = nullptr;
-      int resp_bytes;
       uint8_t bus_id = std::stoi( handler->bus );
+      std::vector<uint8_t> req;
 
       try {
-        // handle PLDM msg
-        pldm_msg_handle(bus_id, buf + PLDMD_MSG_HDR_LEN, size - PLDMD_MSG_HDR_LEN, &resp, &resp_bytes);
-
-        // copy response to buf(request)+PLDMD_MSG_HDR_LEN
-        // so can re-use PLDMD_MSG_HDR
-        buf = (uint8_t*)realloc(buf, resp_bytes+PLDMD_MSG_HDR_LEN);
-        memcpy(buf+PLDMD_MSG_HDR_LEN, resp, resp_bytes);
-
-        // send back to MCTP daemon
-        handler->send_data(fd, buf, resp_bytes+PLDMD_MSG_HDR_LEN);
+        req.insert(req.end(), &buf[0], &buf[size]);
+        std::thread msg_handle_thread(req_msg_handle, fd, bus_id, req, size);
+        msg_handle_thread.detach();
       } catch (...) {
         LOG(ERROR) << "Request handle error.";
       }
-      freeBuf(resp);
 
     // For response handle
     } else if (msg->hdr.request == PLDM_RESPONSE) {

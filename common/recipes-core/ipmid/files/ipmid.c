@@ -2626,6 +2626,50 @@ oem_get_boot_order(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_power_limit(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  if ((request == NULL) || (response == NULL) ||(res_len == NULL)) {
+    syslog(LOG_WARNING, "%s() Fail to set power limit due to null pointer check", __func__);
+    return;
+  }
+
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret = 0;
+
+  ret = pal_set_power_limit(req->payload_id, req->data, res->data, res_len);
+
+  if(ret == 0) {
+    res->cc = CC_SUCCESS;
+  } else {
+    res->cc = CC_INVALID_PARAM;
+  }
+}
+
+static void
+oem_get_power_limit(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  if ((request == NULL) || (response == NULL) ||(res_len == NULL)) {
+    syslog(LOG_WARNING, "%s() Fail to get power limit due to null pointer check", __func__);
+    return;
+  }
+
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret = 0;
+
+  ret = pal_get_power_limit(req->payload_id, req->data, res->data, res_len);
+
+  if(ret == 0) {
+    res->cc = CC_SUCCESS;
+  } else {
+    res->cc = CC_INVALID_PARAM;
+  }
+}
+
+static void
 oem_set_tpm_presence(unsigned char *request, unsigned char req_len,
                    unsigned char *response, unsigned char *res_len)
 {
@@ -3930,6 +3974,18 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_BOOT_ORDER:
       oem_get_boot_order(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_POWER_LIMIT:
+      if(length_check(SIZE_CPU_POWER_LIMIT_DATA, req_len, response, res_len)) {
+        break;
+      }
+      oem_set_power_limit(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_POWER_LIMIT:
+      if(length_check(0, req_len, response, res_len)) {
+        break;
+      }
+      oem_get_power_limit(request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_TPM_PRESENCE:
       oem_set_tpm_presence(request, req_len, response, res_len);

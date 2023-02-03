@@ -395,6 +395,8 @@ void pal_get_sys_intf_caps(uint8_t slot, uint8_t *req_data, uint8_t *res_data, u
 int pal_get_80port_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len);
 int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
 int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
+int pal_set_power_limit(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+int pal_get_power_limit(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 void pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 void pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);

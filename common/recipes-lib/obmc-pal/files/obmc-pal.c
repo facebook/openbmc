@@ -359,6 +359,18 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_
   return PAL_ENOTSUP;
 }
 
+int __attribute__((weak))
+pal_set_power_limit(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_get_power_limit(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
+{
+  return PAL_ENOTSUP;
+}
+
 void __attribute__((weak))
 pal_set_boot_option(unsigned char para,unsigned char* pbuff)
 {

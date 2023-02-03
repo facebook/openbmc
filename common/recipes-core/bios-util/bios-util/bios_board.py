@@ -13,6 +13,7 @@ from bios_plat_info import *
 from bios_postcode import *
 from bios_tpm_physical_presence import *
 from bios_force_clear_cmos import force_clear_cmos
+from bios_cpu_package_power_limit import *
 
 
 BIOS_UTIL_CONFIG = "/usr/local/fbpackages/bios-util/bios_support.json"
@@ -23,6 +24,7 @@ supported_commands = [
     "--plat_info",
     "--pcie_port_config",
     "--tpm-physical-presence",
+    "--cpu_package_power_limit",
 ]
 
 
@@ -39,6 +41,10 @@ def bios_main_fru(fru, command):
         tpm_physical_presence(fru, sys.argv[1:])
     elif command == "--force-clear-cmos":
         force_clear_cmos(fru)
+    elif command == "--cpu_package_power_limit":
+        cpu_package_power_limit(fru, sys.argv[1:])
+    else:
+        print("Invalid command: " + str(command))
 
 
 class check_bios_util(object):
@@ -169,6 +175,14 @@ class check_bios_util(object):
                 choices=["enable", "disable", "get"],
                 help="Enable or disable or get PCIe port configuration",
             )
+        if self.cpu_package_power_limit:
+            group.add_argument(
+                "--cpu_package_power_limit",
+                dest="command",
+                action="store",
+                choices=["enable", "disable", "status"],
+                help="Enable or disable or get status of power limit",
+            )
 
         if len(self.argv) > 1 and len(self.argv) == 3:
             args = parser.parse_args(self.argv[1:3])
@@ -252,6 +266,11 @@ class check_bios_util(object):
             )
             self.pcie_ports = self.pcie_ports.split(", ")
         if (
+            "cpu_package_power_limit" in self.bios_support_config
+            and "supported" in self.bios_support_config["cpu_package_power_limit"]
+        ):
+            self.cpu_package_power_limit = self.bios_support_config["cpu_package_power_limit"]["supported"]
+        if (
             "postcode" in self.bios_support_config
             and "supported" in self.bios_support_config["postcode"]
         ):
@@ -277,6 +296,7 @@ class check_bios_util(object):
             or self.postcode
             or self.tpm_presence
             or self.force_clear_cmos
+            or self.cpu_package_power_limit
         ):
             self.bios_util_action = "true"
 
@@ -505,5 +525,18 @@ class check_bios_util(object):
                 return False
 
             args = parser.parse_args(self.argv[4:6])
+
+        return True
+
+    def status(self):
+        if self.argv[2] == "--cpu_package_power_limit":
+            parser = argparse.ArgumentParser(
+                description="get", usage=self.bios_usage_message
+            )
+            args = parser.parse_args(self.argv[4:])
+
+            if len(self.argv) > 4:
+                parser.print_help()
+                return False
 
         return True

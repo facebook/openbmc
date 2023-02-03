@@ -84,6 +84,9 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define SNR_HEALTH_STR "slot%d_sensor_health"
 #define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
 
+#define KEY_POWER_LIMIT "fru%d_power_limit_status"
+#define DEFAULT_POWER_LIMIT 0x01 //power limit status Enable
+
 #define SLOT1_POSTCODE_OFFSET 0x02
 #define SLOT2_POSTCODE_OFFSET 0x03
 #define SLOT3_POSTCODE_OFFSET 0x04
@@ -985,6 +988,55 @@ pal_set_boot_order(uint8_t slot_id, uint8_t *boot, uint8_t *res_data, uint8_t *r
   ret = pal_set_key_value(key, str);
 
 error_exit:
+  return ret;
+}
+
+int
+pal_set_power_limit(uint8_t slot_id, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  int ret = CC_UNSPECIFIED_ERROR;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if ((req_data == NULL) || (res_data == NULL) ||(res_len == NULL)) {
+    syslog(LOG_WARNING, "%s() Fail to set power limit due to null pointer check", __func__);
+    return -1;
+  }
+
+  *res_len = 0;
+
+  snprintf(key, sizeof(key), KEY_POWER_LIMIT, slot_id);
+  snprintf(value, sizeof(value), "0x%02X", req_data[0]);
+  ret = kv_set(key, value, 0, KV_FPERSIST);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, key);
+  }
+
+  return ret;
+}
+
+int
+pal_get_power_limit(uint8_t slot_id, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  int ret = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if ((req_data == NULL) || (res_data == NULL) ||(res_len == NULL)) {
+    syslog(LOG_WARNING, "%s() Fail to get power limit due to null pointer check", __func__);
+    return -1;
+  }
+
+  *res_len = 0;
+
+  snprintf(key, sizeof(key), KEY_POWER_LIMIT, slot_id);
+  ret = kv_get(key, value, NULL, KV_FPERSIST);
+  if (ret < 0) {
+    res_data[*res_len] = DEFAULT_POWER_LIMIT;
+    ret = CC_SUCCESS;
+  } else {
+    res_data[*res_len] = (int)strtol(value, NULL, 16);
+  }
+  *res_len = SIZE_CPU_POWER_LIMIT_DATA;
+
   return ret;
 }
 

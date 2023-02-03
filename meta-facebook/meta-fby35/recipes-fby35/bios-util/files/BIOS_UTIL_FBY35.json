@@ -23,6 +23,9 @@
   },
   "force_clear_cmos": {
     "supported": true
+  },
+  "cpu_package_power_limit": {
+    "supported": true
   }
 }
 

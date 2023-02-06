@@ -30,6 +30,7 @@
 #   BMC SoC                : AST26xx
 #   U-boot Version         : v2019.04
 #   Kernel Version         : 6.0.%
+#   Yocto Release          : lf-dunfell
 #   Init Manager           : systemd
 #   Flash data0 Filesystem : UBIFS
 #   eMMC filesystem        : EXT4
@@ -41,7 +42,6 @@
 
 #
 # TODO:
-#   1. select desired yocto version in "openbmc-init-build-env" automatically.
 #   2. auto-create Chassis and SCM EEPROM in device tree or setup_i2c.sh.
 #   3. auto-generate setup-gpio logic if needed.
 #   4. auto-generate "pwrcpld" driver based on its register map.
@@ -63,6 +63,8 @@ import sys
 OBMC_BUILD_ENV_FILE = "openbmc-init-build-env"
 FBLITE_REF_LAYER = "tools/fboss-lite/fblite-ref-layer"
 OBMC_META_FB = "meta-facebook"
+YOCTO_VER = "lf-dunfell"
+ANCHOR_STR = "# dunfell platforms"
 
 #
 # Predefined keywords in reference layer, and need to be updated when
@@ -119,9 +121,38 @@ def commit_machine_layer(name, machine_layer):
 
         print("Commit the patch to local repo..")
         run_shell_cmd("git add -f %s" % machine_layer)
+        run_shell_cmd("git add -f %s" % OBMC_BUILD_ENV_FILE)
         run_shell_cmd("git commit -F %s" % commit_file)
     finally:
         os.remove(commit_file)
+
+
+def add_new_yocto_version_entry(platname):
+    """insert new yocto version entry for this new platname."""
+    yct_ents = os.path.join(TMP_DIR, "b_env.txt1")
+    other_content = os.path.join(TMP_DIR, "b_env.txt2")
+    env_file = OBMC_BUILD_ENV_FILE
+
+    try:
+        # extract lf-dufell platform entries
+        cmd = "grep '%s' %s  > %s " % (YOCTO_VER, env_file, yct_ents)
+        run_shell_cmd(cmd)
+        # add the new entry for new platform
+        cmd = "sed -i '1 a \ \ meta-%s:%s' %s" % (platname, YOCTO_VER, yct_ents)
+        run_shell_cmd(cmd)
+        #  sort it to be in order.
+        cmd = "sort %s -o %s" % (yct_ents, yct_ents)
+        run_shell_cmd(cmd)
+        # filter the yocto entries from the openbmc_env file
+        cmd = "grep -v '%s' %s  > %s " % (YOCTO_VER, env_file, other_content)
+        run_shell_cmd(cmd)
+        # merge back
+        cmd = "sed -i -e '/%s/r %s' %s" % (ANCHOR_STR, yct_ents, other_content)
+        run_shell_cmd(cmd)
+        shutil.copyfile(other_content, env_file)
+    finally:
+        os.remove(yct_ents)
+        os.remove(other_content)
 
 
 if __name__ == "__main__":
@@ -163,6 +194,11 @@ if __name__ == "__main__":
             if KEY_MODEL_NAME in f_entry:
                 new_name = f_entry.replace(KEY_MODEL_NAME, args.name)
                 os.rename(pathname, os.path.join(root, new_name))
+
+    #
+    # update the openbmc-init-build-env file by adding the new yocto distro[] entry
+    #
+    add_new_yocto_version_entry(args.name)
 
     #
     # Commit the patch in local tree.

@@ -197,9 +197,6 @@ const uint8_t smb_sensor_list_evt[] = {
   SMB_OUTPUT_VOLTAGE_XP0R75V_2,
   SMB_OUTPUT_CURRENT_XP0R75V_2,
   SMB_INPUT_VOLTAGE_2,
-  SMB_TMP422_U20_1_TEMP,
-  SMB_TMP422_U20_2_TEMP,
-  SMB_TMP422_U20_3_TEMP,
   SIM_LM75_U1_TEMP,
   SMB_SENSOR_TEMP1,
   SMB_SENSOR_TEMP2,
@@ -278,9 +275,6 @@ const uint8_t smb_sensor_list_dvt[] = {
   SMB_OUTPUT_VOLTAGE_XP0R75V_2,
   SMB_OUTPUT_CURRENT_XP0R75V_2,
   SMB_INPUT_VOLTAGE_2,
-  SMB_TMP422_U20_1_TEMP,
-  SMB_TMP422_U20_2_TEMP,
-  SMB_TMP422_U20_3_TEMP,
   SIM_LM75_U1_TEMP,
   SMB_SENSOR_TEMP1,
   SMB_SENSOR_TEMP2,
@@ -1720,15 +1714,6 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   dir_smb_sensor_hwmon(FCM_T_HSC_MON_dir, 67, FCM_T_HSC_addr);
 
   switch(sensor_num) {
-    case SMB_TMP422_U20_1_TEMP:
-      ret = read_attr(fru, sensor_num, SMB_TMP422_DEVICE, TEMP(1), value);
-      break;
-    case SMB_TMP422_U20_2_TEMP:
-      ret = read_attr(fru, sensor_num, SMB_TMP422_DEVICE, TEMP(2), value);
-      break;
-    case SMB_TMP422_U20_3_TEMP:
-      ret = read_attr(fru, sensor_num, SMB_TMP422_DEVICE, TEMP(3), value);
-      break;
     case SIM_LM75_U1_TEMP:
       ret = read_attr(fru, sensor_num, SIM_LM75_U1_DEVICE, TEMP(1), value);
       break;
@@ -3741,15 +3726,6 @@ static int
 get_smb_sensor_name(uint8_t sensor_num, char *name) {
 
   switch(sensor_num) {
-    case SMB_TMP422_U20_1_TEMP:
-      sprintf(name, "SMB_TMP422_U20_1_TEMP");
-      break;
-    case SMB_TMP422_U20_2_TEMP:
-      sprintf(name, "SMB_TMP422_U20_2_TEMP");
-      break;
-    case SMB_TMP422_U20_3_TEMP:
-      sprintf(name, "SMB_TMP422_U20_3_TEMP");
-      break;
     case SIM_LM75_U1_TEMP:
       sprintf(name, "SIM_LM75_U1_TEMP");
       break;
@@ -5113,9 +5089,6 @@ static int
 get_smb_sensor_units(uint8_t sensor_num, char *units) {
 
   switch(sensor_num) {
-    case SMB_TMP422_U20_1_TEMP:
-    case SMB_TMP422_U20_2_TEMP:
-    case SMB_TMP422_U20_3_TEMP:
     case SIM_LM75_U1_TEMP:
     case SMB_SENSOR_TEMP1:
     case SMB_SENSOR_TEMP2:
@@ -5728,7 +5701,6 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_SENSOR_FCM_B_HSC_VOLT][LCR_THRESH] = 7.5;
       smb_sensor_threshold[SMB_SENSOR_FCM_T_HSC_POWER_VOLT][LCR_THRESH] = 7.5;
       smb_sensor_threshold[SMB_SENSOR_FCM_B_HSC_POWER_VOLT][LCR_THRESH] = 7.5;
-      smb_sensor_threshold[SMB_TMP422_U20_1_TEMP][UCR_THRESH] = 80;
       smb_sensor_threshold[SIM_LM75_U1_TEMP][UCR_THRESH] = 50;
       smb_sensor_threshold[SMB_SENSOR_TEMP1][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_TEMP2][UCR_THRESH] = 80;
@@ -6076,9 +6048,6 @@ static void
 smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
 
   switch(sensor_num) {
-    case SMB_TMP422_U20_1_TEMP:
-    case SMB_TMP422_U20_2_TEMP:
-    case SMB_TMP422_U20_3_TEMP:
     case SIM_LM75_U1_TEMP:
     case SMB_SENSOR_TEMP1:
     case SMB_SENSOR_TEMP2:

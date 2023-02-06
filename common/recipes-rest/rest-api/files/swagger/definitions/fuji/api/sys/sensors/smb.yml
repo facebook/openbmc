@@ -86,12 +86,6 @@ paths:
                     type: string
                   SMB_INPUT_VOLTAGE_2: 
                     type: string
-                  SMB_TMP422_U20_1_TEMP: 
-                    type: string
-                  SMB_TMP422_U20_2_TEMP: 
-                    type: string
-                  SMB_TMP422_U20_3_TEMP: 
-                    type: string
                   SIM_LM75_U1_TEMP: 
                     type: string
                   SMB_LM75B_U51_1_TEMP: 

@@ -46,7 +46,6 @@ i2c_device_add 13 0x35 iobfpga #IOB FPGA
 i2c_device_add 3 0x48 lm75     #LM75B_1# Thermal sensor
 i2c_device_add 3 0x49 lm75     #LM75B_2# Thermal sensor
 i2c_device_add 3 0x4a lm75     #LM75B_3# Thermal sensor
-i2c_device_add 3 0x4c tmp422   #TMP422# Thermal sensor(TH4)
 
 # # Bus 5
 # # # SMB Power Sequence 1

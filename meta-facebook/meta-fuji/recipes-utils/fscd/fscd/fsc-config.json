@@ -76,7 +76,6 @@
         "valid": {
           "limit": 115,
           "threshold": 20,
-          "fault_tolerant": true,
           "action": "host_shutdown"
         },
         "alarm_major": {

@@ -794,7 +794,8 @@ typedef struct
 } SENSOR_BASE_NUM;
 
 SENSOR_BASE_NUM sensor_base_cl = {0x50, 0x80, 0xA0, 0xD0};
-SENSOR_BASE_NUM sensor_base_hd = {0x40, 0x70, 0xA0, 0xD0};
+SENSOR_BASE_NUM sensor_base_hd = {0x50, 0x80, 0xA0, 0xD0};
+SENSOR_BASE_NUM sensor_base_hd_op = {0x40, 0x70, 0xA0, 0xD0};
 SENSOR_BASE_NUM sensor_base_gl = {0x60, 0x90, 0xA0, 0xD0};
 
 static int
@@ -5126,6 +5127,7 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
   static uint8_t board_type[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
   int ret = 0;
   uint8_t server_type = 0;
+  uint8_t card_type = TYPE_1OU_UNKNOWN;
   static SENSOR_BASE_NUM *sensor_base = NULL;
 
   if(sensor == NULL) {
@@ -5139,11 +5141,22 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
       syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
     }
   }
+  if((config_status & PRESENT_1OU) == PRESENT_1OU) {
+    ret = bic_get_1ou_type(fru, &card_type);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Cannot get 1OU card_type", __func__);
+    }
+  }
+
   server_type = fby35_common_get_slot_type(fru);
   if (sensor_base == NULL) {
     switch (server_type) {
       case SERVER_TYPE_HD:
-        sensor_base = &sensor_base_hd;
+        if (card_type == TYPE_1OU_OLMSTEAD_POINT) {
+          sensor_base = &sensor_base_hd_op;
+        } else {
+          sensor_base = &sensor_base_hd;
+        }
         break;
       case SERVER_TYPE_CL:
         sensor_base = &sensor_base_cl;

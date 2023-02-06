@@ -52,6 +52,12 @@ fi
 echo "Setting fan speed to 50%..."
 /usr/local/bin/set_fan_speed.sh 50
 echo "Done setting fan speed"
+
+if fw_printenv | grep "disable_fscd=yes" > /dev/null 2>&1; then
+    echo "fscd is disabled in uboot_env: fans are running at fixed speed."
+    exit 0
+fi
+
 # Currently, fcmcpld version 0.xx will cause BMC to 
 # run into crash loop, due to fscd's own logic and 
 # its failure to disarm bootup watchdog.

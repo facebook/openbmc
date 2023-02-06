@@ -105,6 +105,11 @@ class AT93CX6SPI(VerboseLogger):
             # no need to read any data.
             write_bits = write_bits + self.bus_width
             read_bits = 0
+        elif (op == 0x0) or (op == 0x3):
+            # If not giving data and opcode is 0 or 3, we are
+            # doing the erase, erase-all, write enable and write
+            # disable commands and each need 9 clocks to operate.
+            read_bits = 0
         else:
             # If not giving data, we are doing either a read
             # command or a set command, so read the result.

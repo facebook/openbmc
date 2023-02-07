@@ -28,8 +28,6 @@ SRC_URI = " \
     git://gitlab.com/qemu-project/berkeley-testfloat-3.git;destsuffix=git/tests/fp/berkeley-testfloat-3;nobranch=1;protocol=https;name=berkeley-testfloat-3;nobranch=1 \
     git://gitlab.com/qemu-project/keycodemapdb.git;destsuffix=git/ui/keycodemapdb;nobranch=1;protocol=https;name=keycodemapdb;nobranch=1 \
     file://0001-aspeed-Zero-extend-flash-files-to-128MB.patch \
-    file://0002-slirp-Add-mfr-id-to-netdev-options.patch \
-    file://0003-slirp-Add-oob-eth-addr-to-netdev-options.patch \
     file://0004-hw-aspeed_vic-Add-heartbeat-LED-registers.patch \
     file://0005-hw-arm-aspeed-Add-fb_machine_class_init.patch \
     file://0006-hw-misc-Add-i2c-netdev-device.patch \
@@ -92,6 +90,7 @@ SRC_URI = " \
     file://0063-npcm8xx-Enable-EL3.patch \
     file://0064-npcm8xx-Allow-bios-to-be-omitted.patch \
     file://0065-hw-arm-aspeed-Don-t-initialize-fby35-bmc-GPIO-s.patch \
+    file://0066-net-slirp-Add-mfr-id-and-oob-eth-addr-parameters.patch \
     "
 PV = "7.2.0+git${SRCPV}"
 

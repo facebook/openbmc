@@ -39,7 +39,7 @@ int __attribute__((weak)) fdt_next_subnode(const void *fdt, int offset)
        node = fdt_next_subnode(fdt, node))
 #endif
 
-#define FLASH_SIZE (32 * 1024 * 1024)
+#define IMAGE_MAX_SIZE (IMAGE_MAX_SIZE_MB * 1024 * 1024)
 
 using namespace std;
 
@@ -323,13 +323,14 @@ class Image {
     fsize = lseek(fd, 0, SEEK_END);
     if (fsize == 0) {
       throw "Zero size image file " + string(file);
-    } else if (fsize > FLASH_SIZE) {
+    } else if (fsize > IMAGE_MAX_SIZE) {
       close(fd);
-      throw string(file) + " over size ( > 32MB )";
+      throw string(file) + " over size ( > " + to_string(IMAGE_MAX_SIZE_MB) +
+          " MB )";
     }
 
     lseek(fd, 0, SEEK_SET);
-    unsigned char *img = (unsigned char *)calloc(FLASH_SIZE, 1);
+    unsigned char *img = (unsigned char *)calloc(IMAGE_MAX_SIZE, 1);
     for (int bread = 0; bread < (int)fsize;) {
       int rc = read(fd, img + bread, fsize - bread);
       if (rc > 0) {

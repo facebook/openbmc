@@ -80,9 +80,17 @@ RDEPENDS:${PN} += "at"
 # the ptest as well to ensure no library dependencies are missing.
 RDEPENDS:${PN}-ptest += "${RDEPENDS:${PN}}"
 
+def define_image_max_size(d):
+    gi_image_size_mb = d.getVar("FBVBOOT_GOLDEN_IMAGE_SIZE_MB", True)
+    if gi_image_size_mb == "64":
+        return "-DIMAGE_MAX_SIZE_MB=64"
+    else:
+        return "-DIMAGE_MAX_SIZE_MB=32"
+
 CXXFLAGS:append = " -Wno-psabi"
 CXXFLAGS:append:mf-tpm1 = " -DCONFIG_TPM1"
 CXXFLAGS:append:mf-tpm2 = " -DCONFIG_TPM2"
+CXXFLAGS:append = " ${@define_image_max_size(d)}"
 
 def meson_cpp_std(d):
     distro = d.getVar('DISTRO_CODENAME', True)
@@ -92,6 +100,18 @@ def meson_cpp_std(d):
 
 EXTRA_OEMESON:append = " ${@meson_cpp_std(d)}"
 
+do_configure:append() {
+    # vboot-meta partition start support 32MB or 64MB golden image size
+    # FIT partition max size = FBVBOOT_GOLDEN_IMAGE_SIZE_MB * 1024 - 0x1A0000 / 1024
+    # default FBVBOOT_GOLDEN_IMAGE_SIZE_MB = 32
+    FIT_PART_SIZE_KB=31104
+    if [ "${FBVBOOT_GOLDEN_IMAGE_SIZE_MB}MB" == "64MB" ]; then
+        FIT_PART_SIZE_KB=63872
+    fi
+    bbnote "configure fit size in image_parts.json as ${FIT_PART_SIZE}"
+    sed -i "s/<FIT_PART_SIZE_PLACE_HOLD>/${FIT_PART_SIZE_KB}/g" ${S}/image_parts.json
+
+}
 
 do_install:append() {
   install -d ${D}${sysconfdir}

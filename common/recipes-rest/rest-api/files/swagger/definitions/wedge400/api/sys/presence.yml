@@ -41,6 +41,12 @@ paths:
                     "psu2": 
                       type: string
                       pattern: "^[0-9]+$"
+                    "pem1": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "pem2": 
+                      type: string
+                      pattern: "^[0-9]+$"
               Actions: 
                 type: array
                 items: 

@@ -12,4 +12,24 @@ paths:
           description: ok
           schema:
             type: object
-            maxProperties: 0
+            additionalProperties: false
+            properties:
+              back_ports:
+                port_1:
+                  pin_1:
+                    type: number
+                  pin_2:
+                    type: number
+                  pin_3:
+                    type: number
+                  pin_4:
+                    type: number
+                port_2:
+                  pin_1:
+                    type: number
+                  pin_2:
+                    type: number
+                  pin_3:
+                    type: number
+                  pin_4:
+                    type: number

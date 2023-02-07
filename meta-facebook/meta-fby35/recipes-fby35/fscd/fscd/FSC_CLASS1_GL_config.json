@@ -12,7 +12,7 @@
   },
   "fan_dead_boost": {
     "threshold": 2,
-    "action": "host_shutdown"
+    "action": "None"
   },
   "sensor_valid_check": {
     "(.*)fio_": {

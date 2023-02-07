@@ -24,6 +24,12 @@ static map<uint8_t, map<uint8_t, string>> halfdome_vr_list = {
   {FW_VR_VDD11S3, {{VDD11S3_ADDR, "VDD11_S3"}}}
 };
 
+static map<uint8_t, map<uint8_t, string>> great_lake_vr_list = {
+  {FW_VR_VCCIN,     {{GL_VCCIN_ADDR, "VCCIN/VCCFA_EHV_FIVRA"}}},
+  {FW_VR_VCCD,      {{GL_VCCD_ADDR, "VCCD"}}},
+  {FW_VR_VCCINFAON, {{GL_VCCINFAON_ADDR, "VCCINFAON/VCCFA_EHV"}}}
+};
+
 static map<uint8_t, map<uint8_t, string>> rainbow_falls_vr_list = {
   {FW_1OU_VR_V9_ASICA, {{VR_1OU_V9_ASICA_ADDR, "1OU_VR_P0V9/P0V8_ASICA"}}},
   {FW_1OU_VR_VDDQAB, {{VR_1OU_VDDQAB_ADDR, "1OU_VR_VDDQAB/D0V8"}}},
@@ -225,6 +231,8 @@ map<uint8_t, map<uint8_t, string>>&  VrComponent::get_vr_list() {
 
   if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
     return halfdome_vr_list;
+  } else if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_GL) {
+    return great_lake_vr_list;
   } else {
     return  crater_lake_vr_list;
   }

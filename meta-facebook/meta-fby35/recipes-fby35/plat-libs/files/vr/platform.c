@@ -314,9 +314,32 @@ void rbf_vr_device_check(void){
 }
 
 void greatlakes_vr_device_check(void){
+  uint8_t rbuf[16], rlen;
+  int i;
+
   fby35_vr_list[VR_CL_VCCIN].addr = GL_VCCIN_ADDR;
   fby35_vr_list[VR_CL_VCCD].addr = GL_VCCD_ADDR;
   fby35_vr_list[VR_CL_VCCINFAON].addr = GL_VCCINFAON_ADDR;
+
+  for (i = VR_CL_VCCIN; i <= VR_CL_VCCINFAON; i++) {
+    rlen = sizeof(rbuf);
+    if (bic_get_vr_device_id(slot_id, rbuf, &rlen, fby35_vr_list[i].bus,
+                             fby35_vr_list[i].addr, NONE_INTF) < 0) {
+      continue;
+    }
+
+    switch (rlen) {
+      case 2:
+        fby35_vr_list[i].ops = &ifx_ops;
+        break;
+      case 6:
+        fby35_vr_list[i].ops = &ti_ops;
+        break;
+      default:
+        fby35_vr_list[i].ops = &rns_ops;
+        break;
+    }
+  }
 }
 
 int plat_vr_init(void) {

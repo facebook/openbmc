@@ -143,7 +143,7 @@ def dump_all_gpio_info():
 
 def obmc_dump():
     fail = False
-    kv.kv_set(STAT_KEY, "Ongoing", FPERSIST)
+    kv.kv_set(STAT_KEY, "Ongoing")
 
     os.mkdir(DUMP_DIR)
     errors = ""
@@ -171,9 +171,9 @@ def obmc_dump():
     sz = os.path.getsize(archive)
     print("Generated:", archive, "of size", sz)
     if fail == False:
-        kv.kv_set(STAT_KEY, "Done", FPERSIST)
+        kv.kv_set(STAT_KEY, "Done")
     else:
-        kv.kv_set(STAT_KEY, "Fail", FPERSIST)
+        kv.kv_set(STAT_KEY, "Fail")
     return archive
 
 
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     try:
-        status = kv.kv_get(STAT_KEY, FPERSIST)
+        status = kv.kv_get(STAT_KEY)
     except Exception:
         status = "Unknown"
 

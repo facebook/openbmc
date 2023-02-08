@@ -748,7 +748,7 @@ static void app_manufacturing_test_on(
   } else if (
       (!memcmp(req->data, "obmc-dump", strlen("obmc-dump"))) &&
       (req_len - ((void*)req->data - (void*)req)) == strlen("obmc-dump")) {
-    if (kv_get(OBMC_DUMP_STAT_KEY, stat_buf, &len, KV_FPERSIST) < 0) {
+    if (kv_get(OBMC_DUMP_STAT_KEY, stat_buf, &len, 0) < 0) {
       is_first_exc = true;
     }
     // If obmc-dump is ongiong, skip the request
@@ -761,7 +761,7 @@ static void app_manufacturing_test_on(
   } else if (
       (!memcmp(req->data, "obmc-dump -s", strlen("obmc-dump -s"))) &&
       (req_len - ((void*)req->data - (void*)req)) == strlen("obmc-dump -s")) {
-    if (kv_get(OBMC_DUMP_STAT_KEY, stat_buf, &len, KV_FPERSIST) < 0) {
+    if (kv_get(OBMC_DUMP_STAT_KEY, stat_buf, &len, 0) < 0) {
       *data++ = DUMP_NEVER;
       goto exit;
     }

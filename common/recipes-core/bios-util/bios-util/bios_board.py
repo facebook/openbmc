@@ -220,6 +220,7 @@ class check_bios_util(object):
         self.bios_util_action = "false"
         self.tpm_presence = False
         self.force_clear_cmos = False
+        self.cpu_package_power_limit = False
         if (
             "boot_mode" in self.bios_support_config
             and "supported" in self.bios_support_config["boot_mode"]

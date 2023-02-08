@@ -211,3 +211,14 @@ wedge_prepare_cpld_update() {
     
     return 0
 }
+
+wdt_set_timeout() {
+    echo "Stop fscd service."
+    /bin/systemctl stop fscd
+
+    echo "Setting WTD1 timeout value to $1 seconds."
+    /usr/local/bin/wdtcli set-timeout "$1"
+
+    echo "Restore fscd service."
+    /bin/systemctl start fscd
+}

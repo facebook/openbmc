@@ -51,12 +51,10 @@ typedef struct {
 
 struct gpio_offset_map {
   uint8_t bmc_ready;
-  uint8_t bios_post_cmplt;
   uint8_t pwrgd_cpu;
   uint8_t rst_pltrst;
   uint8_t bmc_debug_enable;
 } gpio_offset = { BMC_READY,
-                    FM_BIOS_POST_CMPLT_BMC_N,
                     PWRGD_CPU_LVC3,
                     RST_PLTRST_BUF_N,
                     FM_BMC_DEBUG_ENABLE_N }; // default as Crater Lake
@@ -480,7 +478,7 @@ populate_gpio_pins(uint8_t fru) {
   for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GET_BIT(gpio_ass_val, i);
-      ret = y35_get_gpio_name(fru, i, gpios[i].name);
+      ret = y35_get_gpio_name(fru, i, gpios[i].name, false);
       if (ret < 0)
         continue;
     }
@@ -504,15 +502,15 @@ init_gpio_pins() {
 /*Wrapper function to to configure gpio offset to Crater Lake or Halfdome*/
 static void
 init_gpio_offset_map() {
-  int fru = 0;
+  int fru = 0, slot_type = SERVER_TYPE_NONE;
   uint8_t fru_prsnt = 0;
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
     pal_is_fru_prsnt(fru, &fru_prsnt);
     if (fru_prsnt) {
-      if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+      slot_type = fby35_common_get_slot_type(fru);
+      if (slot_type == SERVER_TYPE_HD) {
         gpio_offset.bmc_ready = HD_BMC_READY;
-        gpio_offset.bios_post_cmplt = HD_FM_BIOS_POST_CMPLT_BIC_N;
         gpio_offset.pwrgd_cpu = HD_PWRGD_CPU_LVC3;
         gpio_offset.rst_pltrst = HD_RST_PLTRST_BIC_N;
         gpio_offset.bmc_debug_enable = HD_FM_BMC_DEBUG_ENABLE_N;
@@ -521,6 +519,22 @@ init_gpio_offset_map() {
         cpu_pwr_fault_size = ARRAY_SIZE(hd_cpu_pwr_fault);
         bic_pch_pwr_fault = hd_bic_pch_pwr_fault;
         bic_pch_pwr_fault_size = ARRAY_SIZE(hd_bic_pch_pwr_fault);
+      } else if (slot_type == SERVER_TYPE_GL) {
+        gpio_offset.bmc_ready = GL_BMC_READY;
+        gpio_offset.pwrgd_cpu = GL_PWRGD_CPU_LVC3;
+        gpio_offset.rst_pltrst = GL_RST_PLTRST_BUF_N;
+        gpio_offset.bmc_debug_enable = GL_FM_BMC_DEBUG_ENABLE_R_N;
+      } else {
+        // Crater Lake as default setting
+        gpio_offset.bmc_ready = BMC_READY;
+        gpio_offset.pwrgd_cpu = PWRGD_CPU_LVC3;
+        gpio_offset.rst_pltrst = RST_PLTRST_BUF_N;
+        gpio_offset.bmc_debug_enable = FM_BMC_DEBUG_ENABLE_N;
+
+        cpu_pwr_fault = cl_cpu_pwr_fault;
+        cpu_pwr_fault_size = ARRAY_SIZE(cl_cpu_pwr_fault);
+        bic_pch_pwr_fault = cl_bic_pch_pwr_fault;
+        bic_pch_pwr_fault_size = ARRAY_SIZE(cl_bic_pch_pwr_fault);
       }
       break;
     }
@@ -567,7 +581,7 @@ gpio_monitor_poll(void *ptr) {
 
   int i, ret = 0;
   uint8_t fru = (int)ptr;
-  uint8_t pwr_sts = 0;
+  uint8_t pwr_sts = 0, bios_post_complete = POST_NOT_COMPLETE;
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
   gpio_pin_t *gpios;
   bool chk_bic_pch_pwr_flag = true;
@@ -640,7 +654,9 @@ gpio_monitor_poll(void *ptr) {
                        (GET_BIT(n_pin_val, RST_RSMRST_BMC_N) << 0x2) | \
                        (GET_BIT(n_pin_val, FM_CATERR_LVT3_N ) << 0x3) | \
                        (GET_BIT(n_pin_val, FM_SLPS3_PLD_N) << 0x4);
-    if (GET_BIT(n_pin_val, gpio_offset.bios_post_cmplt) == 0x0) {
+    // Get post complete
+    pal_get_post_complete(fru, &bios_post_complete);
+    if (bios_post_complete == POST_COMPLETE) {
       if (retry_sec[fru-1] == (MAX_READ_RETRY*12)) {
         kv_set(host_key[fru-1], "1", 0, 0);
         bios_post_cmplt[fru-1] = true;

@@ -127,6 +127,7 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 static int key_func_pwr_last_state(int event, void *arg);
 static int key_func_por_cfg(int event, void *arg);
+static int key_func_end_of_post(int event, void *arg);
 
 static uint8_t memory_record_code[4][4] = {0};
 
@@ -205,6 +206,10 @@ struct pal_key_cfg {
   {"slot2_enable_pxe_sel", "0", NULL},
   {"slot3_enable_pxe_sel", "0", NULL},
   {"slot4_enable_pxe_sel", "0", NULL},
+  {"slot1_end_of_post", "1", key_func_end_of_post},
+  {"slot2_end_of_post", "1", key_func_end_of_post},
+  {"slot3_end_of_post", "1", key_func_end_of_post},
+  {"slot4_end_of_post", "1", key_func_end_of_post},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -837,6 +842,40 @@ key_func_por_cfg(int event, void *arg) {
   }
 
   return 0;
+}
+
+static int
+key_func_end_of_post(int event, void *arg) {
+  int i = 0, ret = 0;
+  uint8_t slot_id = 0, value = 0, direction = 0;
+  char key[MAX_KEY_LEN] = {0}, value_str[MAX_VALUE_LEN] = {0};
+
+  // Get slot ID
+  for (i = 0; i < NUM_SERVER_FRU; i++) {
+    if (strstr((char *)arg, pal_server_fru_list[i]) != NULL) {
+      slot_id = i + 1;
+      break;
+    }
+  }
+
+  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_GL) {
+    // Get post complete from BIC after initializing key value.
+    if (event == KEY_AFTER_INI) {
+      snprintf(key, sizeof(key), POST_COMPLETE_STR, slot_id);
+      ret = bic_get_virtual_gpio(slot_id, GL_BIOS_POST_COMPLETE, &value, &direction);
+      // GL BIC virtual gpio post complete: 1, post not complete: 0
+      if (ret < 0) {
+        snprintf(value_str, sizeof(value_str), "%d", POST_COMPLETE_UNKNOWN);
+      } else if (value == 0) {
+        snprintf(value_str, sizeof(value_str), "%d", POST_NOT_COMPLETE);
+      } else {
+        snprintf(value_str, sizeof(value_str), "%d", POST_COMPLETE);
+      }
+      kv_set(key, value_str, 0, KV_FPERSIST);
+    }
+  }
+
+  return ret;
 }
 
 int
@@ -1678,25 +1717,18 @@ pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
   int ret = 0;
   int i, offs = 0;
   uint8_t bios_post_complete = 0;
-  uint8_t post_cmplt_pin = FM_BIOS_POST_CMPLT_BMC_N;
-  bic_gpio_t gpio = {0};
 
   if (ver == NULL) {
     syslog(LOG_ERR, "%s: failed to get system firmware version due to NULL pointer\n", __func__);
     return -1;
   }
 
-  ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
+  ret = pal_get_post_complete(slot_id, &bios_post_complete);
   if ( ret < 0 ) {
-    syslog(LOG_ERR, "%s() bic_get_gpio returns %d\n", __func__, ret);
+    syslog(LOG_ERR, "%s() pal_get_post_complete returns %d\n", __func__, ret);
     return ret;
   }
 
-  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
-    post_cmplt_pin = HD_FM_BIOS_POST_CMPLT_BIC_N;
-  }
-
-  bios_post_complete = BIT_VALUE(gpio, post_cmplt_pin);
   if (bios_post_complete != POST_COMPLETE) {
     syslog(LOG_WARNING, "%s() Failed to get BIOS firmware version because BIOS is not ready", __func__);
     return -1;
@@ -2165,6 +2197,9 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case BB_BIC_SENSOR_SLOT_PRESENT:
           sprintf(name, "SLOT_PRESENT");
           break;
+        case BIOS_END_OF_POST:
+          snprintf(name, MAX_SNR_NAME, "END_OF_POST");
+          break;
         default:
           sprintf(name, "Unknown");
           ret = PAL_ENOTSUP;
@@ -2387,6 +2422,12 @@ pal_parse_vr_alert_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   snprintf(tmp_log, 128, "%s page%d status(0x%02X%02X)", vr_name, page, event_data[2] ,event_data[1]);
   strcat(error_log, tmp_log);
 
+  return PAL_EOK;
+}
+
+static int
+pal_parse_end_of_post_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  strcat(error_log, "OEM System boot event");
   return PAL_EOK;
 }
 
@@ -3095,6 +3136,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
     case VR_ALERT:
       pal_parse_vr_alert_event(fru, event_data, error_log);
       break;
+    case BIOS_END_OF_POST:
+      pal_parse_end_of_post_event(fru, event_data, error_log);
+      break;
     default:
       unknown_snr = true;
       break;
@@ -3573,6 +3617,7 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   uint8_t rlen = 0, tlen = 0;
   uint8_t fan_mode = 0;
   char value[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
 
   switch (snr_num) {
     case CATERR_B:
@@ -3637,15 +3682,24 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         return -1;
       }
       break;
+    case BIOS_END_OF_POST:
+      snprintf(key, MAX_KEY_LEN, POST_COMPLETE_STR, fru);
+      if (event_data[2] == SEL_ASSERT) {
+        // post complete
+        pal_set_key_value(key, STR_VALUE_0);
+      } else {
+        // post not complete
+        pal_set_key_value(key, STR_VALUE_1);
+      }
+      break;
     default:
       return PAL_EOK;
   }
 
   if ( is_cri_sel == true ) {
-    char key[MAX_KEY_LEN] = {0};
     if ( (event_data[2] & 0x80) == 0 ) sel_error_record[fru-1]++;
     else sel_error_record[fru-1]--;
-
+    memset(key, 0, sizeof(key));
     snprintf(key, MAX_KEY_LEN, SEL_ERROR_STR, fru);
     pal_set_key_value(key, (sel_error_record[fru-1] > 0)?"0":"1"); // 0: Assertion,  1: Deassertion
   }
@@ -4510,8 +4564,7 @@ int
 pal_check_slot_cpu_present(uint8_t slot_id) {
   int ret = 0;
   bic_gpio_t gpio = {0};
-  //CPU Present pin default for Crater Lake
-  uint8_t cpu_prsnt_pin = FM_CPU_SKTOCC_LVT3_PLD_N;
+  uint8_t cpu_prsnt_pin = 0;
 
   ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
   if ( ret < 0 ) {
@@ -4519,9 +4572,20 @@ pal_check_slot_cpu_present(uint8_t slot_id) {
     return ret;
   }
 
-  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
-    // CPU Present pin for Halfdome
-    cpu_prsnt_pin = HD_FM_PRSNT_CPU_BIC_N;
+  switch (fby35_common_get_slot_type(slot_id)) {
+    case SERVER_TYPE_CL:
+      cpu_prsnt_pin = FM_CPU_SKTOCC_LVT3_PLD_N;
+      break;
+    case SERVER_TYPE_HD:
+      cpu_prsnt_pin = HD_FM_PRSNT_CPU_BIC_N;
+      break;
+    case SERVER_TYPE_GL:
+      cpu_prsnt_pin = GL_FM_CPU_SKTOCC_LVT3_PLD_N;
+      break;
+    default:
+      //CPU Present pin default for Crater Lake
+      cpu_prsnt_pin = FM_CPU_SKTOCC_LVT3_PLD_N;
+      break;
   }
 
   if (BIT_VALUE(gpio, cpu_prsnt_pin)) {
@@ -4722,6 +4786,8 @@ pal_check_slot_fru(uint8_t slot_id) {
 
 #ifdef CONFIG_HALFDOME
   if ( slot_type != SERVER_TYPE_HD ) {
+#elif CONFIG_GREATLAKES
+  if ( slot_type != SERVER_TYPE_GL ) {
 #else
   if ( slot_type != SERVER_TYPE_CL ) {
 #endif
@@ -5293,3 +5359,53 @@ pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
   }
 }
 
+int
+pal_get_post_complete(uint8_t slot_id, uint8_t *bios_post_complete) {
+  uint8_t post_cmplt_pin = 0;
+  int ret = -1, slot_type = SERVER_TYPE_NONE;
+  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
+  bic_gpio_t gpio = {0};
+
+  if (bios_post_complete == NULL) {
+    syslog(LOG_ERR, "%s: failed to get post complete value due to NULL pointer\n", __func__);
+    return ret;
+  }
+
+  slot_type = fby35_common_get_slot_type(slot_id);
+
+  switch (slot_type) {
+    case SERVER_TYPE_CL:
+    case SERVER_TYPE_HD:
+      // Get BIOS complete pin
+      if (slot_type == SERVER_TYPE_CL) {
+        post_cmplt_pin = FM_BIOS_POST_CMPLT_BMC_N;
+      } else {
+        post_cmplt_pin = HD_FM_BIOS_POST_CMPLT_BIC_N;
+      }
+
+      // Get BIOS complete from BIC GPIO
+      ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
+      if ( ret < 0 ) {
+        syslog(LOG_ERR, "%s() bic_get_gpio returns %d\n", __func__, ret);
+        return ret;
+      }
+
+      *bios_post_complete = BIT_VALUE(gpio, post_cmplt_pin);
+      break;
+    case SERVER_TYPE_GL:
+      // Get BIOS complete from key value
+      snprintf(key, sizeof(key), POST_COMPLETE_STR, slot_id);
+      ret = pal_get_key_value(key, value);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() failed to get key value of %s\n", __func__, key);
+        return ret;
+      }
+
+      *bios_post_complete = atoi(value);
+      break;
+    default:
+      break;
+  }
+
+  return ret;
+}

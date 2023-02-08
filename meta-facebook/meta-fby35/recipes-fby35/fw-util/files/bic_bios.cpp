@@ -216,7 +216,7 @@ int BiosComponent::dump(string image) {
   }
 
   server_type = fby35_common_get_slot_type(slot_id);
-  if (SERVER_TYPE_HD != server_type) {
+  if (server_type == SERVER_TYPE_CL) {
     cerr << "Putting ME into recovery mode..." << endl;
     ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
     if (ret_recovery < 0) {
@@ -231,7 +231,7 @@ int BiosComponent::dump(string image) {
   }
   sleep(1);
 
-  if (SERVER_TYPE_HD != server_type) {
+  if (server_type == SERVER_TYPE_CL) {
     // Have to do ME reset, because we have put ME into recovery mode
     cerr << "Doing ME Reset..." << endl;
     ret_reset = me_reset(slot_id);

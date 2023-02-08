@@ -196,18 +196,30 @@ bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status)
   uint8_t rbuf[16] = {0};
   uint8_t tlen = 3;
   uint8_t rlen = 0;
-
-  int ret;
+  uint8_t gpio_num = 0;
+  int ret, slot_type = SERVER_TYPE_NONE;
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, tlen);
 
   ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, tlen, rbuf, &rlen, NONE_INTF);
-  
-  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
-    *power_status = BIT_VALUE(rbuf[3], HD_PWRGD_CPU_LVC3) ;
-  } else {
-    *power_status = BIT_VALUE(rbuf[3], PWRGD_SYS_PWROK) ;
+
+  slot_type = fby35_common_get_slot_type(slot_id);
+  switch (slot_type) {
+    case SERVER_TYPE_CL:
+      gpio_num = PWRGD_SYS_PWROK;
+      break;
+    case SERVER_TYPE_HD:
+      gpio_num = HD_PWRGD_CPU_LVC3;
+      break;
+    case SERVER_TYPE_GL:
+      gpio_num = GL_PWRGD_CPU_LVC3;
+      break;
+    default:
+      gpio_num = PWRGD_SYS_PWROK;
+      break;
   }
+
+  *power_status = BIT_VALUE(rbuf[3], gpio_num) ;
 
   return ret;
 }

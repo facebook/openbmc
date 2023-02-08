@@ -137,8 +137,8 @@ enum {
 extern gpio_cfg gpio_expander_gpio_table[];
 extern gpio_cfg bmc_gpio_table[]; 
 
-uint8_t y35_get_gpio_list_size(uint8_t fru);
-int y35_get_gpio_name(uint8_t fru, uint8_t gpio, char *name);
+uint8_t y35_get_gpio_list_size(uint8_t fru, bool is_virtual_gpio);
+int y35_get_gpio_name(uint8_t fru, uint8_t gpio, char *name, bool is_virtual_gpio);
 
 #ifdef __cplusplus
 } // extern "C"

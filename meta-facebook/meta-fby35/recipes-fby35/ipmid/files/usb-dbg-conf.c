@@ -480,7 +480,8 @@ int plat_get_me_status(uint8_t fru, char *status)
   unsigned char rlen;
   int ret;
 
-  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+  // ME only on Crater Lake system
+  if (fby35_common_get_slot_type(fru) != SERVER_TYPE_CL) {
     return -1;
   }
 

@@ -160,6 +160,71 @@ const char *hd_gpio_pin_name[] = {
   "HD_HSC_TYPE_1",
 };
 
+//Great Lakes BIC GPIO
+const char *gl_gpio_pin_name[] = {
+  "HSC_TYPE",                        //0
+  "H_CPU_MON_FAIL_LVC3_N",
+  "FM_SLPS3_LVC3_N",
+  "IRQ_BMC_NMI_R_N",
+  "IRQ_UV_DETECT_N",
+  "FM_UV_ADR_TRIGGER_EN_R",
+  "HSC_SET_EN_R",
+  "RST_USB_HUB_N_R",
+  "A_P3V_BAT_SCALED_EN_R",
+  "FM_SLPS4_PLD_N",
+  "FM_CPU0_CD_INIT_ERROR",           //10
+  "FM_HSC_TIMER",
+  "IRQ_SMB_IO_LVC3_STBY_ALRT_N",
+  "IRQ_PVCCD_CPU0_VRHOT_LVC3_N",
+  "DBP_CPU_PREQ_BIC_N",
+  "FM_CPU_THERMTRIP_LATCH_LVT3_N",
+  "FM_CPU_SKTOCC_LVT3_PLD_N",
+  "H_CPU_MEMHOT_OUT_LVC3_N",
+  "RST_PLTRST_SYNC_LVC3_N",
+  "PWRBTN_N",
+  "RST_BMC_R_N",                     //20
+  "H_BMC_PRDY_BUF_N",
+  "BMC_READY",
+  "BIC_READY",
+  "FM_RMCA_LVT3_N",
+  "PWRGD_AUX_PWRGD_BMC_LVC3",
+  "FM_FORCE_ADR_N_R",
+  "PWRGD_CPU_LVC3",
+  "IRQ_HSC_ALERT2_N",
+  "SMB_SENSOR_LVC3_ALERT_N",
+  "FM_CATERR_LVT3_N",                //30
+  "SYS_PWRBTN_LVC3_N",
+  "RST_PLTRST_BUF_N",
+  "IRQ_SML1_PMBUS_ALERT_N",
+  "FM_BMC_DEBUG_ENABLE_R_N",
+  "FM_DBP_PRESENT_N",
+  "FM_FAST_PROCHOT_EN_R_N",
+  "FBRK_R_N",
+  "FM_PEHPCPU_INT",
+  "FAST_PROCHOT_N",
+  "BMC_JTAG_SEL_R",                  //40
+  "H_CPU_ERR0_LVC3_R_N",
+  "H_CPU_ERR1_LVC3_R_N",
+  "H_CPU_ERR2_LVC3_R_N",
+  "FM_MP_PS_FAIL_N",
+  "H_CPU_MEMTRIP_LVC3_N",
+  "FM_CPU_BIC_PROCHOT_LVT3_N",
+  "AUTH_COMPLETE",
+  "BOARD_ID2",
+  "IRQ_PVCCIN_CPU0_VRHOT_N",
+  "IRQ_PVCCINF_CPU0_VRHOT_N",        //50
+  "BOARD_ID0",
+  "BOARD_ID1",
+  "BOARD_ID3",
+  "AUTH_PRSNT_N",
+};
+
+//Great Lakes BIC virtual GPIO
+const char *gl_virtual_gpio_pin_name[] = {
+  "BIOS_POST_COMPLETE",    //0
+  "BIOS_DEBUG_MSG_ENABLE",
+};
+
 /* GPIO Expander gpio table */
 gpio_cfg gpio_expander_gpio_table[] = {
   /* shadow_name, pin_name, direction, value */
@@ -277,20 +342,47 @@ gpio_cfg bmc_gpio_table[] = {
 
 const uint8_t cl_gpio_pin_size = sizeof(cl_gpio_pin_name)/sizeof(cl_gpio_pin_name[0]);
 const uint8_t hd_gpio_pin_size = sizeof(hd_gpio_pin_name)/sizeof(hd_gpio_pin_name[0]);
+const uint8_t gl_gpio_pin_size = sizeof(gl_gpio_pin_name)/sizeof(gl_gpio_pin_name[0]);
+
+//Great Lakes BIC virtual gpio
+const uint8_t gl_virtual_gpio_pin_size = sizeof(gl_virtual_gpio_pin_name)/sizeof(gl_virtual_gpio_pin_name[0]);
 
 uint8_t
-y35_get_gpio_list_size(uint8_t fru) {
+y35_get_gpio_list_size(uint8_t fru, bool is_virtual_gpio) {
+  uint8_t gpio_list_size = 0;
+  int slot_type = SERVER_TYPE_NONE;
 
-  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
-    return  hd_gpio_pin_size;
+  slot_type = fby35_common_get_slot_type(fru);
+  // Virtual GPIO
+  if (is_virtual_gpio == true) {
+    if (slot_type == SERVER_TYPE_GL) {
+      gpio_list_size = gl_virtual_gpio_pin_size;
+    }
+  } else {
+    switch (slot_type) {
+      case SERVER_TYPE_CL:
+        gpio_list_size = cl_gpio_pin_size;
+        break;
+      case SERVER_TYPE_HD:
+        gpio_list_size = hd_gpio_pin_size;
+        break;
+      case SERVER_TYPE_GL:
+        gpio_list_size = gl_gpio_pin_size;
+        break;
+      default:
+        gpio_list_size = cl_gpio_pin_size;
+        break;
+    }
   }
-  return cl_gpio_pin_size;
+
+  return gpio_list_size;
 }
 
 int
-y35_get_gpio_name(uint8_t fru, uint8_t gpio, char *name) {
-  uint8_t gpio_pin_size = cl_gpio_pin_size;
-  const char **gpio_pin_name = cl_gpio_pin_name;
+y35_get_gpio_name(uint8_t fru, uint8_t gpio, char *name, bool is_virtual_gpio) {
+  uint8_t gpio_pin_size = 0;
+  const char **gpio_pin_name = NULL;
+  int slot_type = SERVER_TYPE_NONE;
 
   //TODO: Add support for BMC GPIO pins
   if (fru < 1 || fru > 4) {
@@ -300,14 +392,37 @@ y35_get_gpio_name(uint8_t fru, uint8_t gpio, char *name) {
     return -1;
   }
 
-  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
-    gpio_pin_size = hd_gpio_pin_size;
-    gpio_pin_name = hd_gpio_pin_name;
+  slot_type = fby35_common_get_slot_type(fru);
+  // Virtual GPIO
+  if (is_virtual_gpio == true) {
+    if (slot_type == SERVER_TYPE_GL) {
+      gpio_pin_size = gl_virtual_gpio_pin_size;
+      gpio_pin_name = gl_virtual_gpio_pin_name;
+    }
+  } else {
+    switch (slot_type) {
+      case SERVER_TYPE_CL:
+        gpio_pin_size = cl_gpio_pin_size;
+        gpio_pin_name = cl_gpio_pin_name;
+        break;
+      case SERVER_TYPE_HD:
+        gpio_pin_size = hd_gpio_pin_size;
+        gpio_pin_name = hd_gpio_pin_name;
+        break;
+      case SERVER_TYPE_GL:
+        gpio_pin_size = gl_gpio_pin_size;
+        gpio_pin_name = gl_gpio_pin_name;
+        break;
+      default:
+        gpio_pin_size = cl_gpio_pin_size;
+        gpio_pin_name = cl_gpio_pin_name;
+        break;
+    }
   }
 
-  if (gpio > gpio_pin_size) {
+  if ((gpio > gpio_pin_size) || (gpio_pin_size == 0)) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, "y35_get_gpio_name: Wrong gpio pin %u", gpio);
+    syslog(LOG_WARNING, "y35_get_gpio_name: Wrong gpio pin %u, gpio pin size %d", gpio, gpio_pin_size);
 #endif
     return -1;
   }

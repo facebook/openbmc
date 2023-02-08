@@ -61,6 +61,8 @@ extern "C" {
 #define VR_1OU_NEW_CRC_STR "slot%d_1ou_vr_%s_new_crc"
 #define VR_1OU_CRC_STR "slot%d_1ou_vr_%s_crc"
 
+#define POST_COMPLETE_STR "slot%d_end_of_post"
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];
@@ -175,6 +177,7 @@ enum {
 typedef enum {
   POST_COMPLETE = 0,
   POST_NOT_COMPLETE,
+  POST_COMPLETE_UNKNOWN,
 } BIOS_POST_COMPLETE_STATUS;
 
 typedef enum {
@@ -212,6 +215,7 @@ int pal_set_last_postcode(uint8_t slot, uint32_t postcode);
 int pal_get_last_postcode(uint8_t slot, char* postcode);
 int pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t bmc_location, const uint8_t config_status);
 int pal_get_board_type(uint8_t slot_id, int *config_status, uint8_t *board_type);
+int pal_get_post_complete(uint8_t slot_id, uint8_t *bios_post_complete);
 
 #ifdef __cplusplus
 } // extern "C"

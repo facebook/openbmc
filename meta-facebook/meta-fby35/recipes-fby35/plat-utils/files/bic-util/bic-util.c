@@ -43,6 +43,8 @@ const uint8_t intf_size = 4;
 static const char *option_list[] = {
   "--get_gpio",
   "--set_gpio [gpio_num] [value]",
+  "--get_virtual_gpio",
+  "--set_virtual_gpio [gpio_num] [value]",
   "--check_status",
   "--get_dev_id",
   "--reset",
@@ -233,7 +235,7 @@ static int
 util_get_gpio(uint8_t slot_id) {
   int ret = 0;
   uint8_t i;
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id);
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, false);
   char gpio_pin_name[32] = "\0";
   bic_gpio_t gpio = {0};
 
@@ -245,7 +247,7 @@ util_get_gpio(uint8_t slot_id) {
 
   // Print the gpio index, name and value
   for (i = 0; i < gpio_pin_cnt; i++) {
-    y35_get_gpio_name(slot_id, i, gpio_pin_name);
+    y35_get_gpio_name(slot_id, i, gpio_pin_name, false);
     printf("%d %s: %d\n",i , gpio_pin_name, BIT_VALUE(gpio, i));
   }
 
@@ -254,7 +256,7 @@ util_get_gpio(uint8_t slot_id) {
 
 static int
 util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id);
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, false);
   char gpio_pin_name[32] = "\0";
   int ret = -1;
 
@@ -263,12 +265,60 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
     return ret;
   }
 
-  y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name);
+  y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name, false);
   printf("slot %d: setting [%d]%s to %d\n", slot_id, gpio_num, gpio_pin_name, gpio_val);
 
   ret = bic_set_gpio(slot_id, gpio_num, gpio_val);
   if (ret < 0) {
     printf("%s() bic_set_gpio returns %d\n", __func__, ret);
+  }
+
+  return ret;
+}
+
+static int
+util_get_virtual_gpio(uint8_t slot_id) {
+  int ret = 0, i = 0;
+  uint8_t value = 0;
+  uint8_t direction = 0;
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, true);
+  char gpio_pin_name[32] = "\0";
+
+  if (gpio_pin_cnt == 0) {
+    printf("%s() virtual GPIO count: %d\n", __func__, gpio_pin_cnt);
+    return ret;
+  }
+
+  for (i = 0; i < gpio_pin_cnt; i++) {
+    ret = bic_get_virtual_gpio(slot_id, i, &value, &direction);
+    if (ret < 0) {
+      printf("%s() bic_get_virtual_gpio returns %d\n", __func__, ret);
+      return ret;
+    }
+    y35_get_gpio_name(slot_id, i, gpio_pin_name, true);
+    printf("%d %s: %d\n",i , gpio_pin_name, value);
+  }
+
+  return ret;
+}
+
+static int
+util_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
+  int ret = -1;
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, true);
+  char gpio_pin_name[32] = "\0";
+
+  if ((gpio_num > gpio_pin_cnt) || (gpio_pin_cnt == 0)) {
+    printf("slot %d: Invalid virtual GPIO pin number %d, pin count %d\n", slot_id, gpio_num, gpio_pin_cnt);
+    return ret;
+  }
+
+  y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name, true);
+  printf("slot %d: setting [%d]%s to %d\n", slot_id, gpio_num, gpio_pin_name, gpio_val);
+
+  ret = bic_set_virtual_gpio(slot_id, gpio_num, gpio_val);
+  if (ret < 0) {
+    printf("%s() bic_set_virtual_gpio returns %d\n", __func__, ret);
   }
 
   return ret;
@@ -746,6 +796,19 @@ main(int argc, char **argv) {
         goto err_exit;
       }
       return util_check_usb_port(slot_id, argv[3]);
+    } else if ( strcmp(argv[2], "--get_virtual_gpio") == 0 ) {
+      if ( argc != 3 ) {
+        goto err_exit;
+      }
+      return util_get_virtual_gpio(slot_id);
+    } else if ( strcmp(argv[2], "--set_virtual_gpio") == 0 ) {
+      if ( argc != 5 ) {
+        goto err_exit;
+      }
+      gpio_num = atoi(argv[3]);
+      gpio_val = atoi(argv[4]);
+      if ( gpio_val > 1 ) goto err_exit;
+      return util_set_virtual_gpio(slot_id, gpio_num, gpio_val);
     } else {
       printf("Invalid option: %s\n", argv[2]);
       goto err_exit;

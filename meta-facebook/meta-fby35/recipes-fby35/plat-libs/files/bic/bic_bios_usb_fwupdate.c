@@ -638,6 +638,7 @@ bic_dump_fw_usb(uint8_t slot_id, uint8_t comp, char *path, usb_dev* udev) {
       img_size = 0x1000000;
       break;
     case SERVER_TYPE_CL:
+    case SERVER_TYPE_GL:
       img_size = 0x4000000;
       break;
     default:

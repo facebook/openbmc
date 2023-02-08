@@ -433,6 +433,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
   int ret = 0;
   uint8_t bmc_location = 0;
+  char post_complete[MAX_KEY_LEN] = {0};
 
   ret = fby35_common_check_slot_id(fru);
   if ( ret < 0 ) {
@@ -444,6 +445,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return POWER_STATUS_ERR;
   }
+
+  snprintf(post_complete, sizeof(post_complete), POST_COMPLETE_STR, fru);
 
   switch (cmd) {
     case SERVER_12V_OFF:
@@ -502,6 +505,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_12V_OFF:
+      // Reset post complete value
+      pal_set_key_value(post_complete, STR_VALUE_1);
       if ( bmc_location == NIC_BMC || pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
       }
@@ -512,6 +517,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_12V_CYCLE:
+      // Reset post complete value
+      pal_set_key_value(post_complete, STR_VALUE_1);
       if ( bmc_location == BB_BMC ) {
         if ( pal_get_server_12v_power(fru, &status) < 0 ) {
           return POWER_STATUS_ERR;

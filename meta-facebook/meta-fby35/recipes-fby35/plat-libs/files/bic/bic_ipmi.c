@@ -2379,3 +2379,43 @@ bic_get_sys_fw_ver(uint8_t slot_id, uint8_t *ver) {
 
   return ret;
 }
+
+int
+bic_get_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t *value, uint8_t *direction) {
+  uint8_t tbuf[5] = {0x00};
+  uint8_t rbuf[8] = {0x00};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[3] = 0x00; // Get virtual GPIO
+  tbuf[4] = gpio_num;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_SET_VIRTUAL_GPIO, tbuf, tlen, rbuf, &rlen);
+  *direction = rbuf[6] & 0x01;
+  *value = rbuf[7] & 0x01;
+
+  return ret;
+}
+
+int
+bic_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value) {
+  uint8_t tbuf[6] = {0x00};
+  uint8_t rbuf[5] = {0};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+
+  tbuf[3] = 0x01; // Set virtual GPIO
+  tbuf[4] = gpio_num;
+  tbuf[5] = value;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_SET_VIRTUAL_GPIO, tbuf, tlen, rbuf, &rlen);
+
+  return ret;
+}

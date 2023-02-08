@@ -180,6 +180,8 @@ int bic_get_prot_spare_pins(uint8_t slot_id, uint8_t* value) ;
 bool bic_is_prot_bypass(uint8_t fru);
 int bic_get_sys_fw_ver(uint8_t slot_id, uint8_t *ver);
 int bic_get_op_board_rev(uint8_t slot_id, uint8_t *rev, uint8_t intf);
+int bic_get_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t *value, uint8_t *direction);
+int bic_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value);
 
 #ifdef __cplusplus
 } // extern "C"

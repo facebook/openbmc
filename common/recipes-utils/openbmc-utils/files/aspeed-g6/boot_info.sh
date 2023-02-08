@@ -92,8 +92,12 @@ bmc_boot_from() {
         boot_source=0x00000001
     fi
 
-    # Extend wdt1 timeout value to prevent wdt1 timeout during uboot stag.
-    wdtcli set-timeout 120
+    # Extend wdt1 timeout value to prevent wdt1 timeout during uboot stage.
+    if [ "$(LC_ALL=C type -t wdt_set_timeout)" = function ]; then
+        wdt_set_timeout 120
+    else
+        wdtcli set-timeout 120
+    fi
     echo "BMC will switch to $1 after 2 seconds    ..."
     # Set WDT time out 2s, 0x00000014 = 2s
     devmem "$FMC_WDT2_RELOAD_VAL_REG" 32 0x00000014

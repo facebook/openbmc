@@ -464,68 +464,6 @@ pal_get_pim_hsc( uint8_t fru ) {
   return NULL;
 }
 
-static int get_key_dev_string(uint8_t dev,char *string){
-  switch (dev) {
-    case KEY_PWRSEQ:
-      strcpy(string,KEY_PWRSEQ_ADDR);
-      break;
-    case KEY_PWRSEQ1:
-      strcpy(string,KEY_PWRSEQ1_ADDR);
-      break;
-    case KEY_PWRSEQ2:
-      strcpy(string,KEY_PWRSEQ2_ADDR);
-      break;
-    case KEY_HSC:
-      strcpy(string,KEY_HSC_ADDR);
-      break;
-    case KEY_FCMT_HSC:
-      strcpy(string,KEY_FCMT_HSC_ADDR);
-      break;
-    case KEY_FCMB_HSC:
-      strcpy(string,KEY_FCMB_HSC_ADDR);
-      break;
-    default:
-      return -1;
-  }
-  return 0;
-}
-
-int
-pal_set_dev_addr_to_file(uint8_t fru, uint8_t dev, uint8_t addr) {
-  char fru_name[16];
-  char dev_string[16];
-  char key[MAX_KEY_LEN];
-  char addr_value[8];
-
-  pal_get_fru_name(fru, fru_name);
-  get_key_dev_string(dev, dev_string);
-  sprintf(key, "%s_%s", fru_name, dev_string);
-  sprintf(addr_value, "0x%02X", addr);
-
-  return kv_set(key, addr_value, 0, 0);
-}
-
-int
-pal_get_dev_addr_from_file(uint8_t fru, uint8_t dev) {
-  char fru_name[16];
-  char dev_string[16];
-  char key[MAX_KEY_LEN];
-  char addr[12] = {0};
-
-  pal_get_fru_name(fru, fru_name);
-  get_key_dev_string(dev, dev_string);
-  sprintf(key, "%s_%s", fru_name, dev_string);
-
-  if(kv_get(key, addr, NULL, 0)) {
-#ifdef DEBUG
-    syslog(LOG_WARNING,
-            "pal_get_dev_addr_from_file: %s get %s addr fail", fru_name, key);
-#endif
-    return -1;
-  }
-  return strtoul(addr, NULL, 16);
-}
-
 int pal_get_pim_pedigree(uint8_t fru, int retry){
   int val;
   int ret = -1;

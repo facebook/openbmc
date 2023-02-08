@@ -363,9 +363,6 @@ struct dev_addr_driver* pal_get_pim_ucd(uint8_t fru);
 struct dev_addr_driver* pal_get_pim_hsc(uint8_t fru);
 struct dev_addr_driver* pal_get_scm_hsc();
 
-int pal_set_dev_addr_to_file(uint8_t fru, uint8_t dev, uint8_t addr);
-int pal_get_dev_addr_from_file(uint8_t fru, uint8_t dev);
-
 int pal_clear_thresh_value(uint8_t fru);
 void *generate_dump(void *arg);
 int set_sled(int brd_rev, uint8_t color, uint8_t led_name);

@@ -714,6 +714,70 @@ struct dev_bus_addr SCM_I2C_DEVICE_CHANGE_LIST[SCM_I2C_DEVICE_NUMBER];
 
 bool is_psu48(void);
 
+static int 
+get_key_dev_string(uint8_t dev,char *string){
+  switch (dev) {
+    case KEY_PWRSEQ:
+      strcpy(string,KEY_PWRSEQ_ADDR);
+      break;
+    case KEY_PWRSEQ1:
+      strcpy(string,KEY_PWRSEQ1_ADDR);
+      break;
+    case KEY_PWRSEQ2:
+      strcpy(string,KEY_PWRSEQ2_ADDR);
+      break;
+    case KEY_HSC:
+      strcpy(string,KEY_HSC_ADDR);
+      break;
+    case KEY_FCMT_HSC:
+      strcpy(string,KEY_FCMT_HSC_ADDR);
+      break;
+    case KEY_FCMB_HSC:
+      strcpy(string,KEY_FCMB_HSC_ADDR);
+      break;
+    default:
+      return -1;
+  }
+  return 0;
+}
+
+int
+set_dev_addr_to_file(uint8_t fru, uint8_t dev, uint8_t addr) {
+  char fru_name[16];
+  char dev_string[16];
+  char key[MAX_KEY_LEN];
+  char addr_value[8];
+
+  pal_get_fru_name(fru, fru_name);
+  get_key_dev_string(dev, dev_string);
+  sprintf(key, "%s_%s", fru_name, dev_string);
+  sprintf(addr_value, "0x%02X", addr);
+
+  return kv_set(key, addr_value, 0, 0);
+}
+
+static int
+get_dev_addr_from_file(uint8_t fru, uint8_t dev, uint8_t *addr) {
+  char fru_name[16];
+  char dev_string[16];
+  char key[MAX_KEY_LEN];
+  char str_addr[12] = {0};
+
+  pal_get_fru_name(fru, fru_name);
+  get_key_dev_string(dev, dev_string);
+  sprintf(key, "%s_%s", fru_name, dev_string);
+
+  if(kv_get(key, str_addr, NULL, 0)) {
+#ifdef DEBUG
+    syslog(LOG_WARNING,
+            "get_dev_addr_from_file: %s get %s addr fail", fru_name, key);
+#endif
+    return -1;
+  }
+  *addr=strtoul(str_addr, NULL, 16);
+  return 0;
+}
+
 int
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   switch(fru) {
@@ -1155,7 +1219,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_PIM8:
     pim_id = fru - FRU_PIM1;
     pim_type = pal_get_pim_type_from_file(fru);
-    PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ);
+    get_dev_addr_from_file(fru, KEY_PWRSEQ, &PIM_PWRSEQ_addr);
     *sensor_list = (uint8_t *) pim_sensor_list[pim_id];
     if ( pim_type == PIM_TYPE_16Q) {
       if ( PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
@@ -1420,21 +1484,6 @@ read_attr_integer(const char *device, const char *attr, float *value) {
   return 0;
 }
 
-/*
- * Determine extra divisor of hotswap power output
- * - kernel 4.1.x:
- *   pmbus_core.c use milliwatt for direct format power output,
- *   thus we keep hsc_power_div equal to 1.
- * - Higher kernel versions:
- *   pmbus_core.c use microwatt for direct format power output,
- *   thus we need to set hsc_power_div equal to 1000.
- */
-static int
-hsc_power_div_init(void) {
-  hsc_power_div = 1000;
-  return 0;
-}
-
 static int
 read_hsc_attr(uint8_t fru, uint8_t snr_num, const char *device,
               const char* attr, float r_sense, float *value) {
@@ -1476,16 +1525,19 @@ read_hsc_curr(uint8_t fru, uint8_t snr_num,
 static int
 read_hsc_power(uint8_t fru, uint8_t snr_num,
                const char *device, float r_sense, float *value) {
+/*
+ * Determine extra divisor of hotswap power output
+ * - kernel 4.1.x:
+ *   pmbus_core.c use milliwatt for direct format power output,
+ *   thus we keep hsc_power_div equal to 1.
+ * - Higher kernel versions:
+ *   pmbus_core.c use microwatt for direct format power output,
+ *   thus we need to set hsc_power_div equal to 1000.
+ */
   int ret = -1;
-  static bool hsc_power_div_inited = false;
-
-  if (!hsc_power_div_inited && !hsc_power_div_init()) {
-    hsc_power_div_inited = true;
-  }
-
   ret = read_hsc_attr(fru, snr_num, device, POWER(1), r_sense, value);
   if (!ret)
-    *value = *value / hsc_power_div;
+    *value = *value / 1000;
 
   return ret;
 }
@@ -1588,7 +1640,8 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
               i2c_bus, \
               addr)
 
-  uint8_t SCM_HSC_ADDR = pal_get_dev_addr_from_file(fru, KEY_HSC);
+  uint8_t SCM_HSC_ADDR;
+  get_dev_addr_from_file(fru, KEY_HSC, &SCM_HSC_ADDR);
   dir_scm_sensor_hwmon(HSC_MON_dir, SCM_HSC_DEVICE_CH, SCM_HSC_ADDR);
 
   while (i < scm_sensor_cnt) {
@@ -1680,33 +1733,33 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
             i2c_bus, \
             addr)
 
-  uint8_t SMB_PWRSEQ_1_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ1);
-  uint8_t SMB_PWRSEQ_2_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ2);
-  uint8_t FCM_B_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_FCMB_HSC);
-  uint8_t FCM_T_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_FCMT_HSC);
+  uint8_t SMB_PWRSEQ_1_addr;
+  uint8_t SMB_PWRSEQ_2_addr;
+  uint8_t FCM_B_HSC_addr;
+  uint8_t FCM_T_HSC_addr;
 
-  if(SMB_PWRSEQ_1_addr == -1){
+  if(get_dev_addr_from_file(fru, KEY_PWRSEQ1, &SMB_PWRSEQ_1_addr) == -1){
     SMB_PWRSEQ_1_addr = 0x35;
     syslog(LOG_WARNING, "smb_sensor_read: FAIL get SMB bus5 dev1 addr,"
                         " set to 0x%x", SMB_PWRSEQ_1_addr);
   }
   dir_smb_sensor_hwmon(SMB_PWRSEQ_1_MON_dir, 5, SMB_PWRSEQ_1_addr);
 
-  if(SMB_PWRSEQ_2_addr == -1){
+  if(get_dev_addr_from_file(fru, KEY_PWRSEQ2, &SMB_PWRSEQ_2_addr) == -1){
     SMB_PWRSEQ_2_addr = 0x36;
     syslog(LOG_WARNING, "smb_sensor_read: FAIL get SMB bus5 dev2 addr,"
                         " set to 0x%x", SMB_PWRSEQ_2_addr);
   }
   dir_smb_sensor_hwmon(SMB_PWRSEQ_2_MON_dir, 5, SMB_PWRSEQ_2_addr);
 
-  if(FCM_B_HSC_addr == -1){
+  if(get_dev_addr_from_file(fru, KEY_FCMB_HSC, &FCM_B_HSC_addr) == -1){
     FCM_B_HSC_addr = 0x10;
     syslog(LOG_WARNING, "smb_sensor_read: FAIL get FCM bus75 dev addr,"
                         " set to 0x%x", FCM_B_HSC_addr);
   }
   dir_smb_sensor_hwmon(FCM_B_HSC_MON_dir, 75, FCM_B_HSC_addr);
 
-  if(FCM_T_HSC_addr == -1){
+  if(get_dev_addr_from_file(fru, KEY_FCMT_HSC, &FCM_T_HSC_addr) == -1){
     FCM_T_HSC_addr = 0x10;
     syslog(LOG_WARNING, "smb_sensor_read: FAIL get FCM bus67 dev addr,"
                         " set to 0x%x", FCM_T_HSC_addr);
@@ -1737,11 +1790,11 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       break;
     case SMB_VDDC_SW_POWER_IN:
       ret = read_attr(fru, sensor_num, SMB_VDDC_SW_DEVICE, POWER(1), value);
-      *value = *value / hsc_power_div;
+      *value = *value / 1000;
       break;
     case SMB_VDDC_SW_POWER_OUT:
       ret = read_attr(fru, sensor_num, SMB_VDDC_SW_DEVICE, POWER(3), value);
-      *value = *value / hsc_power_div;
+      *value = *value / 1000;
       break;
     case SMB_VDDC_SW_CURR_IN:
       ret = read_attr(fru, sensor_num, SMB_VDDC_SW_DEVICE, CURR(1), value);
@@ -2173,8 +2226,10 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t pedigree = pal_get_pim_pedigree_from_file(fru);
   uint8_t pimid = fru-FRU_PIM1 + 1;
   uint8_t i2cbus = PIM1_I2CBUS + (pimid - 1) * 8;
-  uint8_t PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ);
-  uint8_t PIM_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_HSC);
+  uint8_t PIM_PWRSEQ_addr;
+  uint8_t PIM_HSC_addr;
+  get_dev_addr_from_file(fru, KEY_PWRSEQ, &PIM_PWRSEQ_addr);
+  get_dev_addr_from_file(fru, KEY_HSC, &PIM_HSC_addr);
 
 #define dir_pim_sensor(str_buffer,i2c_bus,i2c_offset,addr) \
       sprintf(str_buffer, \
@@ -3954,8 +4009,9 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
 static int
 get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
   uint8_t type = pal_get_pim_type_from_file(fru);
-  uint8_t PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ);
+  uint8_t PIM_PWRSEQ_addr;
   uint8_t pimid = fru-FRU_PIM1+1;
+  get_dev_addr_from_file(fru, KEY_PWRSEQ, &PIM_PWRSEQ_addr);
   switch(sensor_num) {
     case PIM1_LM75_TEMP_4A:
     case PIM2_LM75_TEMP_4A:
@@ -7236,7 +7292,7 @@ int pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_PIM7:
     case FRU_PIM8:
       pim_type = pal_get_pim_type_from_file(fru);
-      PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ);
+      get_dev_addr_from_file(fru, KEY_PWRSEQ, &PIM_PWRSEQ_addr);
       if (pim_type == PIM_TYPE_16Q) {
         if ( PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
           cnt = sizeof(pim16q_ucd90124_sensor_list) / sizeof(uint8_t);

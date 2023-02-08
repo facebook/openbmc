@@ -287,7 +287,7 @@ pim_driver_add(uint8_t num) {
                       "driver cannot add.",
                       num, bus_id,  pim_hsc->addr, pim_hsc->chip_name);
     } else {
-      pal_set_dev_addr_to_file(fru, KEY_HSC, pim_hsc->addr);
+      set_dev_addr_to_file(fru, KEY_HSC, pim_hsc->addr);
       syslog(LOG_CRIT, "Load driver: PIM %d Bus:%d Addr:0x%x Chip:%s ",
                       num, bus_id, pim_hsc->addr, pim_hsc->chip_name);
       pim_device[i].bus_id = bus_id;
@@ -330,7 +330,7 @@ pim_driver_add(uint8_t num) {
                         num, bus_id, pim_ucd->addr, 
                         pim_ucd->driver, pim_ucd->chip_name);
     } else {
-      pal_set_dev_addr_to_file(fru, KEY_PWRSEQ, pim_ucd->addr);
+      set_dev_addr_to_file(fru, KEY_PWRSEQ, pim_ucd->addr);
       syslog(LOG_CRIT, "Load driver: PIM %d Bus:%d Addr:0x%x "
                         "Driver:%s Chip:%s",
                         num, bus_id, pim_ucd->addr, 
@@ -430,7 +430,7 @@ scm_driver_add() {
       SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id = bus_id;
       SCM_I2C_DEVICE_CHANGE_LIST[i++].device_address = scm_hsc->addr;
     }
-    pal_set_dev_addr_to_file(FRU_SCM, KEY_HSC, scm_hsc->addr);
+    set_dev_addr_to_file(FRU_SCM, KEY_HSC, scm_hsc->addr);
   }
 
   /* channel 2 of paca9548 */
@@ -959,23 +959,17 @@ simLED_monitor_handler(void *unused) {
         } else {
           leds[SLED_NAME_FAN] = SIM_LED_AMBER;
         }
-      }
-
       //PSU LED
       // BLUE     all PSUs present and INPUT OK,PWR OK
       // AMBER    one or more not present or INPUT OK or PWR OK de-asserted
-      if (!status_ug) { // skip sensor check when firmware is upgrading
         if (psu_check(brd_rev) == 0) {
           leds[SLED_NAME_PSU] = SIM_LED_BLUE;
         } else {
           leds[SLED_NAME_PSU] = SIM_LED_AMBER;
         }
-      }
-
       //SMB LED
       // BLUE   sensor ok
       // AMBER  fail
-      if (!status_ug)  { // skip sensor check when firmware is upgrading
         if (smb_check(brd_rev) == 0) {
           leds[SLED_NAME_SMB] = SIM_LED_BLUE;
         } else {

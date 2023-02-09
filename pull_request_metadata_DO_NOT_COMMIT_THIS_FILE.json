@@ -1,0 +1,16 @@
+{
+    "_README_WHAT_IS_THIS_DIFF_": "This diff is temporary, and will be replaced once the \"convert-pull-request-to-internal-diff\" sandcastle job finishes. For more details, see https:\/\/fburl.com\/pr-import-on-sandcastle",
+    "@nocommit": "This temporary diff should not be landed.",
+    "repository": {
+        "fbid": 1483935741923352,
+        "name": "facebookexternal\/openbmc.celestica"
+    },
+    "pull_request": {
+        "fbid": 3315848878657639,
+        "number": 1441,
+        "name": "qemu: aspeed add montblanc-bmc",
+        "author": "ssinprem",
+        "initiator": "rootkeeper"
+    },
+    "head_sha": "00037086c04e132c11599536136828902bb9a984"
+}

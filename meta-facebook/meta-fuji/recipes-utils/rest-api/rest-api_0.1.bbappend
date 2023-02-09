@@ -26,6 +26,7 @@ LOCAL_URI += " \
     file://rest_sensors.py \
     file://rest_piminfo.py \
     file://rest_pimserial.py \
+    file://rest_pim_present.py \
     file://rest_system_led_info.py \
     file://rest_smbinfo.py \
 "

@@ -58,7 +58,6 @@ DEPENDS += " \
     libnm \
     libobmc-mctp \
     libpldm-oem \
-    libpldm-oem \
     libvr \
     libpal \
     "

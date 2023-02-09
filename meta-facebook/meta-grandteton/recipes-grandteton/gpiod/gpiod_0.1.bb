@@ -46,6 +46,7 @@ DEPENDS += " \
     libkv \
     libobmc-i2c \
     libpeci-sensors \
+    libpldm-oem \
 "
 
 do_install:append() {

@@ -164,6 +164,7 @@ struct gpiopoll_config gpios_list[] = {
   {FM_CPU0_SKTOCC,          "SGPIO112", GPIO_EDGE_BOTH,    gpio_event_handler,         cpu_skt_init},
   {FM_CPU1_SKTOCC,          "SGPIO114", GPIO_EDGE_BOTH,    gpio_event_handler,         cpu_skt_init},
   {FP_AC_PWR_BMC_BTN,       "GPIO18A0", GPIO_EDGE_BOTH,    gpio_event_handler,         NULL},
+  {BIC_READY,               "SGPIO32",  GPIO_EDGE_FALLING, bic_ready_handler,          bic_ready_init},
 };
 
 const uint8_t gpios_cnt = sizeof(gpios_list)/sizeof(gpios_list[0]);

@@ -24,6 +24,7 @@ deps = [
     dependency('libpeci_sensors'),
     dependency('threads'),
     dependency('obmc-pal'),
+    dependency('libpldm-oem'),
 ]
 
 exe = executable('gpiod',

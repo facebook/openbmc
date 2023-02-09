@@ -198,8 +198,8 @@ cache_tda38640_crc(uint8_t bus, uint8_t addr, char *key, char *sum_str) {
   }
 
   snprintf(sum_str, MAX_VALUE_LEN,
-           "Infineon %08X, Remaining Writes: USER:%u, CNFG:%u",
-           checksum, user_remain, cnfg_remain);
+           "Infineon %08X, Remaining Writes: %u",
+           checksum, user_remain);
   kv_set(key, sum_str, 0, 0);
 
   return 0;
@@ -243,8 +243,8 @@ program_tda38640(uint8_t bus, uint8_t addr, struct tda38640_config *config, bool
       return -1;
     }
 
-    printf("Remaining Writes: USER:%u, CNFG:%u\n", user_remain, cnfg_remain);
-    if (!user_remain || !cnfg_remain) {
+    printf("Remaining Writes: %u\n", user_remain);
+    if (!user_remain) {
       syslog(LOG_WARNING, "%s: no remaining writes", __func__);
       return -1;
     }
@@ -320,38 +320,6 @@ program_tda38640(uint8_t bus, uint8_t addr, struct tda38640_config *config, bool
             __func__, addr);
       return -1;
     }
-  }
-
-  // program cnfg section into VR register through i2c
-  for (int l = 0; l < 4; l++) {
-    uint8_t cnfg_data_tbuf[2] = {l, config->cnfg_data[l]};
-    ret |= vr_xfer(bus, addr, cnfg_data_tbuf, 2, NULL, 0);
-  }
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s: Failed to write cnfg data, addr: %x", __func__, addr);
-    return -1;
-  }
-
-  ret = tda38640_prog_cmd(bus, addr, CNFG_WR,
-                          (CNFG_REMAINING_WRITES_MAX - cnfg_remain), NULL);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s: Failed to write prog cnfg cmd, addr:%x", __func__, addr);
-    return -1;
-  }
-
-  msleep(VR_PROGRAM_DELAY);
-
-  for (int retry = VR_PROGRAM_DELAY; retry > 0; retry--) {
-    ret = tda38640_prog_cmd(bus, addr, USER_RD, 0, &rbuf_prog_progress);
-    if (ret >= 0) {
-      break;
-    }
-  }
-
-  if (ret < 0 || ((rbuf_prog_progress & 0x80) != 0x80)) {
-    syslog(LOG_WARNING, "%s: Failed to check program progress done for VR addr:%x",
-          __func__, addr);
-    return -1;
   }
 
   return 0;

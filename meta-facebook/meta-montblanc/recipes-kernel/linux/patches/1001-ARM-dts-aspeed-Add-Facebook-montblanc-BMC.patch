@@ -1,0 +1,49 @@
+From 14e4bfc193875bb86221ef15be3fe97dc8103b43 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Fri, 28 Oct 2022 11:50:15 -0700
+Subject: [PATCH] ARM: dts: aspeed: Add Facebook montblanc BMC
+
+Add initial version of device tree for Facebook montblanc (AST2600) BMC.
+
+montblanc is Facebook's next generation switch platform with an AST2600
+BMC integrated for health monitoring purpose.
+---
+ .../dts/aspeed-bmc-facebook-montblanc.dts     | 26 +++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
+new file mode 100644
+index 000000000000..18fcbc26663e
+--- /dev/null
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
+@@ -0,0 +1,26 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) Meta Platforms, Inc. and affiliates.
++
++/dts-v1/;
++
++#include "ast2600-facebook-netbmc-common.dtsi"
++
++/ {
++	model = "Facebook montblanc BMC";
++	compatible = "facebook,montblanc-bmc", "aspeed,ast2600";
++
++	chosen {
++		stdout-path = &uart1;
++	};
++};
++
++&mac3 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii4_default>;
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
+-- 
+2.30.2
+

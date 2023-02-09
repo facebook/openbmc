@@ -90,86 +90,86 @@ gpio_set BIC_FWSPICK 0
 gpio_set RST_SWB_BIC_N 1
 gpio_set BIC_UART_BMC_SEL 0
 
+
+bic_ready=$(gpio_get FM_SWB_BIC_READY_ISO_R_N)
 #SWB HSC
-cnt=3
-while [ $cnt -ne 0 ]
-do
+if [ "$bic_ready" -eq 0 ]; then
+  cnt=3
+  while [ $cnt -ne 0 ]
+  do
+    sleep 1
+    str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf0 0x00 0x01 |grep "PLDM Data")
+    rev=$?
+    if [ "$rev" -eq 1 ]; then
+      cnt=$(("$cnt"-1))
+      val=0
+    else
+      IFS=' ' read -ra  array <<< "$str"
+      cnt=0
+      for i in "${array[@]}"
+      do
+        array["$cnt"]=${i:2}
+        cnt=$(("$cnt"+1))
+      done
 
-   sleep 1
-   str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf0 0x00 0x01 |grep "PLDM Data")
-   rev=$?
-   if [ "$rev" -eq 1 ]; then
-     cnt=$(("$cnt"-1))
-     val=0
-   else
-     IFS=' ' read -ra  array <<< "$str"
-     cnt=0
-     for i in "${array[@]}"
-     do
-       array["$cnt"]=${i:2}
-       echo "${array["$cnt"]}"
-       cnt=$(("$cnt"+1))
-     done
-
-     int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
-     dec=$((16#${array[11]}|16#${array[12]} << 8))
-     val=$(("$int"+"$dec"))
-     break;
-   fi
-done
+      int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
+      dec=$((16#${array[11]}|16#${array[12]} << 8))
+      val=$(("$int"+"$dec"))
+      break;
+    fi
+  done
 
 #kv set swb_hsc_module "0"
-if [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
-then
-  kv set swb_hsc_source "$SWB_2ND_SOURCE" #ltc4282
-  kv set swb_hsc_module "1"
-elif [ "$val" -gt 1250 ]
-then
-  kv set swb_hsc_source "$SWB_3RD_SOURCE" #ltc4287
-  kv set swb_hsc_module "1"
-else
-  kv set swb_hsc_source "$SWB_1ST_SOURCE" #mp5990
-fi
+  if [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
+  then
+    kv set swb_hsc_source "$SWB_2ND_SOURCE" #ltc4282
+    kv set swb_hsc_module "1"
+  elif [ "$val" -gt 1250 ]
+  then
+    kv set swb_hsc_source "$SWB_3RD_SOURCE" #ltc4287
+    kv set swb_hsc_module "1"
+  else
+    kv set swb_hsc_source "$SWB_1ST_SOURCE" #mp5990
+  fi
 
 #SWB VR
-cnt=3
-while [ "$cnt" -ne 0 ]
-do
-  sleep 1
-  str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf1 0x00 0x01 |grep "PLDM Data")
-  rev=$?
-   if [ "$rev" -eq 1 ]; then
-     cnt=$(("$cnt"-1))
-   else
-     IFS=' ' read -ra  array <<< "$str"
-     cnt=0
-     for i in "${array[@]}"
-     do
-       array["$cnt"]=${i:2}
-       echo "${array["$cnt"]}"
-       cnt=$(("$cnt"+1))
-     done
+  cnt=3
+  while [ "$cnt" -ne 0 ]
+  do
+    sleep 1
+    str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf1 0x00 0x01 |grep "PLDM Data")
+    rev=$?
+    if [ "$rev" -eq 1 ]; then
+      cnt=$(("$cnt"-1))
+    else
+      IFS=' ' read -ra  array <<< "$str"
+      cnt=0
+      for i in "${array[@]}"
+      do
+        array["$cnt"]=${i:2}
+        cnt=$(("$cnt"+1))
+      done
 
-     int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
-     dec=$((16#${array[11]}|16#${array[12]} << 8))
-     val=$(("$int"+"$dec"))
-     break;
-   fi
-done
+      int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
+      dec=$((16#${array[11]}|16#${array[12]} << 8))
+      val=$(("$int"+"$dec"))
+      break;
+    fi
+  done
 
-if [ "$val" -gt 250 ] && [ "$val" -lt 750 ]
-then
-  kv set swb_vr_source "$SWB_2ND_SOURCE" #INF
-elif [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
-then
-  kv set swb_vr_source "$SWB_3RD_SOURCE" #MPS
-elif [ "$val" -gt 1250 ] && [ "$val" -lt 1750 ]
-then
-  kv set swb_vr_source "$SWB_4TH_SOURCE" #TI
-else
-  kv set swb_vr_source "$SWB_1ST_SOURCE" #RAA
+  if [ "$val" -gt 250 ] && [ "$val" -lt 750 ]
+  then
+    kv set swb_vr_source "$SWB_2ND_SOURCE" #INF
+  elif [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
+  then
+    kv set swb_vr_source "$SWB_3RD_SOURCE" #MPS
+  elif [ "$val" -gt 1250 ] && [ "$val" -lt 1750 ]
+  then
+    kv set swb_vr_source "$SWB_4TH_SOURCE" #TI
+  else
+    kv set swb_vr_source "$SWB_1ST_SOURCE" #RAA
+  fi
 fi
-
 
 VPDB_EVT2_BORAD_ID="2"
 VPDB_1ST_SOURCE="0"

@@ -58,7 +58,7 @@ class ClassConfig {
           }
         }
 
-        //slot1 1ou bic/cpld
+        //slot1 1ou bic
         static BicFwComponent    bic_1ou_fw1("slot1", "1ou_bic", "1ou", FW_1OU_BIC);
         static BicFwComponent    bic_1ou_rcvy_fw1("slot1", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
 
@@ -98,18 +98,16 @@ class ClassConfig {
             if (bic_get_1ou_type(FRU_SLOT1, &card_type) < 0) {
               card_type = TYPE_1OU_UNKNOWN;
             }
-            if (isRainbowFalls(FRU_SLOT1)) {
+            if (card_type == TYPE_1OU_RAINBOW_FALLS) {
               static VrComponent  vr_1ou_fw1("slot1", "1ou_vr", FW_1OU_VR);
               static VrComponent  vr_1ou_va0v8_fw1("slot1", "1ou_vr_v9asica", FW_1OU_VR_V9_ASICA);
               static VrComponent  vr_1ou_vddqab_fw1("slot1", "1ou_vr_vddqab", FW_1OU_VR_VDDQAB);
               static VrComponent  vr_1ou_vddqcd_fw1("slot1", "1ou_vr_vddqcd", FW_1OU_VR_VDDQCD);
               static CxlComponent cxl_1ou_fw1("slot1", "cxl", "1ou", FW_1OU_CXL);
             } else if (card_type == TYPE_1OU_OLMSTEAD_POINT) {
-              static BicFwComponent bic_1ou_fw1("slot1", "1ou_bic", "1ou", FW_1OU_BIC);
               static BicFwComponent bic_2ou_fw1("slot1", "2ou_bic", "2ou", FW_2OU_BIC);
               static BicFwComponent bic_3ou_fw1("slot1", "3ou_bic", "3ou", FW_3OU_BIC);
               static BicFwComponent bic_4ou_fw1("slot1", "4ou_bic", "4ou", FW_4OU_BIC);
-              static BicFwComponent bic_1ou_rcvy_fw1("slot1", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
               static BicFwComponent bic_2ou_rcvy_fw1("slot1", "2ou_bic_rcvy", "2ou", FW_2OU_BIC_RCVY);
               static BicFwComponent bic_3ou_rcvy_fw1("slot1", "3ou_bic_rcvy", "3ou", FW_3OU_BIC_RCVY);
               static BicFwComponent bic_4ou_rcvy_fw1("slot1", "4ou_bic_rcvy", "4ou", FW_4OU_BIC_RCVY);
@@ -125,10 +123,9 @@ class ClassConfig {
         static CpldComponent     cpld_fw2("slot2", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
         static BiosComponent     bios_fw2("slot2", "bios", FRU_SLOT2, FW_BIOS);
 
-        //slot2 1ou bic/cpld
+        //slot2 1ou bic
         static BicFwComponent    bic_1ou_fw2("slot2", "1ou_bic", "1ou", FW_1OU_BIC);
         static BicFwComponent    bic_1ou_rcvy_fw2("slot2", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
-        static CpldComponent     cpld_1ou_fw2("slot2", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
         if (fby35_common_is_fru_prsnt(FRU_SLOT2, &prsnt)) {
           prsnt = 0;
@@ -151,10 +148,9 @@ class ClassConfig {
         static BicFwComponent    bic_rcvy_fw3("slot3", "bic_rcvy", "sb", FW_BIC_RCVY);
         static BiosComponent     bios_fw3("slot3", "bios", FRU_SLOT3, FW_BIOS);
 
-        //slot3 1ou bic/cpld
+        //slot3 1ou bic
         static BicFwComponent    bic_1ou_fw3("slot3", "1ou_bic", "1ou", FW_1OU_BIC);
         static BicFwComponent    bic_1ou_rcvy_fw3("slot3", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
-        static CpldComponent     cpld_1ou_fw3("slot3", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
         if (fby35_common_is_fru_prsnt(FRU_SLOT3, &prsnt)) {
           prsnt = 0;
@@ -207,10 +203,9 @@ class ClassConfig {
         static CpldComponent     cpld_fw4("slot4", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
         static BiosComponent     bios_fw4("slot4", "bios", FRU_SLOT4, FW_BIOS);
 
-        //slot4 1ou bic/cpld
+        //slot4 1ou bic
         static BicFwComponent    bic_1ou_fw4("slot4", "1ou_bic", "1ou", FW_1OU_BIC);
         static BicFwComponent    bic_1ou_rcvy_fw4("slot4", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
-        static CpldComponent     cpld_1ou_fw4("slot4", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
         if (fby35_common_is_fru_prsnt(FRU_SLOT4, &prsnt)) {
           prsnt = 0;

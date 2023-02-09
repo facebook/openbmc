@@ -11,9 +11,6 @@
 * P5 - Optional
 
 #### Codebase Requirements
-- [ ] P1 **Upstream all code to Linux Foundation OpenBMC repos**
-    - Upstream all code for the Linux Foundation OpenBMC into open source
-      repos
 - [ ] P0 **Commit all code to FB OpenBMC repos**
     - Initiate pull requests to implement all features into FB OpenBMC
       repos
@@ -21,19 +18,17 @@
 #### BMC Hardware Support
 - [ ] P0 **Aspeed AST-2620**
     - Provide necessary boot and driver support for the AST-2620 BMC
-- [ ] P2 **Nuvoton Arbel or Second Source BMC**
-    - Provide necessary boot and driver support for the Nuvoton Arbel BMC
-      or approved second source BMC vendor
 
 #### Infrastructure
 - [ ] P0 **Yocto**
-    - Enable machine in meta-layer
+    - Enable machine in meta-layer based on lf-master branch
 - [ ] P0 **U-boot Porting**
-    - Port platform specific u-boot changes
+    - Port platform specific u-boot changes. Initial Uboot version is 2019.04
 - [ ] P0 **Kernel Porting**
-    - Port platform specific Kernel changes
+    - Port platform specific Kernel changes.  Initial kernel version is 5.15.
 - [ ] P1 **Flash Layout**
-    - Implement the required flash layout.
+    - Implement the required flash layout.  Support for 64MB writeable flash
+      partition required
 - [ ] P0 **I2C device tree**
     - Create device tree entries for i2c devices (and enable associated
       drivers)
@@ -93,7 +88,7 @@
 
 #### Greatlakes Hardware Enablement
 - [ ] P2 **SLED Cable Presence Detect**
-    - Determine if the SLED cable is present
+    - Determine if the SLED cable is present and connected to the correct SLED
 - [ ] P2 **DDR5 PMIC Power Measurement**
     - Support for DDR5 PMIC power measurements for the PMIC sensor
 - [ ] P2 **DDR5 PMIC Error Injection**
@@ -101,11 +96,17 @@
 - [ ] P3 **Terminus NIC Enablement**
     - Enable the Terminus NIC
 - [ ] P2 **Platform Root of Trust (PRoT) Support**
-    - Enable PRoT HW support on base platform if necessary
+    - Enable PRoT HW support on base platform
 - [ ] P2 **CPLD Board ID/Version Info**
     - Enable detection and logging of board ID and version info for all CPLDs
 - [ ] P2 **DIMM SPD data**
     - Enable detection and logging of all DIMM SPD data
+- [ ] P2 **TI VR Controller FW Update Cycle Counter**
+    - Because TI VR does not store remaining allowed writes, an alternative
+      method must be enabled to print the remaining number of TI VR rewrites
+      upon demand and to update the remaining write (from base of 1000
+      allowed) after each FW write operation.  This should be a port of 
+      what is implemented for YV3.5.
 
 #### User Interface
 - [ ] P0 **OOB/SSH**
@@ -125,7 +126,7 @@
       machine via Network. Redfish APIs and schemas must be used.  The
       Redfish Validator must be executed and meet Redfish requirements
       for all system features
-- [ ] P2 **Host2bmc USB**
+- [ ] P2 **Host2BMC USB**
     - This ether-over-usb recovery channel will only be used during BMC
       recovery scenarios, the design shall support on-demand setup and
       tear-off this channel by host s/w. i.e use OEM IPMI command to
@@ -160,8 +161,6 @@
     - Power cycle an individual slot
 - [ ] P0 **host reset**
     - Reset the host(s)
-- [ ] P0 **recovery mode**
-    - Put the host(s) into recovery mode
 - [ ] P2 **graceful-shutdown**
     - Shutdown the Host by using ACPI gracefully either by user command or
       when user press the front button for < 4 seconds
@@ -173,9 +172,6 @@
     - Cycle 12V to an individual slot
 - [ ] P0 **sled-cycle**
     - Power cycle entire chassis including BMC
-- [ ] P1 **phosphor-state-manager**
-    - Manage host(s) state using LF state management provided by
-      phosphor-state-manager
 - [ ] P2 **Power Failure Detection**
     - Report host power failure reasoning using information from various GPIO
       signals and/or CPLD registers
@@ -209,10 +205,13 @@
       such as Rainbow Falls which contain a FRU EEPROM
 
 #### Sensor Information
-- [ ] P0 **sensor read**
+- [ ] P0 **Sensor read**
     - Read the current status of all sensors of a given FRU
         - sensors on motherboard, Mezzanine card, Rainbow Falls expansion
           card, etc
+- [ ] P1 **Sensor names must align with Common Sensor Naming Specification**
+    - All sensor names must be in alignment with the Meta Common Sensor Naming
+      Specification.
 - [ ] P2 **Display threshold value**
     - When requested, display the threshold values for each sensor (`lnr->unr`)
 - [ ] P2 **Display Current Status**
@@ -247,7 +246,7 @@
 - [ ] P2 **Sensor calibration**
     - The sensor value needs to be adjusted/corrected based on the current PWM
       value
-- [ ] P3 **Conditional Sensor calibration**
+- [ ] P3 **Conditional sensor calibration**
     - The sensor value needs to be adjusted/corrected based on the runtime
       detected configuration changes
 - [ ] P0 **Airflow Sensor**
@@ -271,13 +270,11 @@ Support reading firmware versions of attached components including self.
     - Display version for System and auxiliary CPLDs
 - [ ] P0 **BIOS**
     - Display BIOS Firmware version
-- [ ] P0 **Node Manager/ME**
-    - Display Node Manager/Management Engine Firmware version
 - [ ] P0 **VR**
     - Display firmware version for all attached Voltage regulators
 - [ ] P1 **NIC Mezzanine**
     - Display NIC firmware version
-- [ ] P2 **CXL Card**
+- [ ] P2 **Expansion and CXL Card**
     - Display all expansion/CXL card firmware versions such as for Rainbow
       Falls
 
@@ -314,7 +311,7 @@ Support reading firmware versions of attached components including self.
     - Verify the binary signature for the BIOS
 
 #### Time Sync
-- [ ] P1 **RTC**
+- [ ] P1 **RTC/No-NTP**
     - Enable local RTC device and ensure synchronization on BMC reboot
 - [ ] P2 **NTP Sync**
     - Sync up BMC RTC with NTP server
@@ -457,10 +454,6 @@ Support reading firmware versions of attached components including self.
     - This feature is useful to detect if BMC user space application is not
       running for some catastrophic reason. WDT Expire should trigger BMC
       reset
-- [ ] P0 **Node Manager/ME Health**
-    - Sometimes, Node Manager/ME might be in a bad state. To detect this
-      condition, BMC can send IPMI command to ME and if it does not respond,
-      log appropriate event
 - [ ] P2 **Memory Usage**
     - When BMC's free memory goes below a threshold, BMC can reboot to
       function properly

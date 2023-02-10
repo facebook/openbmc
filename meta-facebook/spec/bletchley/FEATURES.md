@@ -64,7 +64,7 @@
 - [X] P0 **chassis-cycle**
     - TODO: facebookexternal/openbmc.quanta#2617.
     - Power cycle entire chassis.
-- [ ] P1 **phosphor-state-manager**
+- [X] P1 **phosphor-state-manager**
     - Manage host(s) state using LF state management provided by
       phosphor-state-manager.
 - ~~[ ] P2 **Power Failure Detection**~~
@@ -102,7 +102,7 @@
 - [X] P0 **Fan Speed Control (Automatic)**
     - Implement FSC algorithm with user given JSON configuration file with
       various linear/pid profiles for sensors across platform.
-- [ ] P2 **FSC configuration update**
+- [X] P2 **FSC configuration update**
     - Allow user to update the fan configuration.  Allow to try out a new
       configuration and be able to restart the fan control daemon.
 - [ ] P3 **Persistent FSC configuration**
@@ -183,7 +183,7 @@ Support reading firmware versions of attached components including self.
 - [ ] P0 **Identify LED/Power-ON**
     - Chassis Identification by blinking LED: User shall be able to turn ON/OFF
       the identification; And specify the blinking rate to 1/5/10 seconds.
-- [ ] P0 **Heartbeat LED**
+- [X] P0 **Heartbeat LED**
     - TODO: facebookexternal/openbmc.quanta#2623.
     - Allow configuration and use of heartbeat LED.
 
@@ -219,7 +219,7 @@ Support reading firmware versions of attached components including self.
 - [X] P2 **Critical Sensors Frame**
     - Create a frame (with multiple pages) for various sensors in critical stage
       (UCR/LCR/ etc.).
-- [ ] P2 **Critical Logs Frame**
+- [ ] P4 **Critical Logs Frame**
     - Create a frame (with multiple pages) for various logs to show on LCD
       panel.
 - [ ] P4 **User Settings**

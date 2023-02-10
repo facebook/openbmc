@@ -50,3 +50,12 @@
 | ----------- | ------- | ---- | --- | --- | --- | --- | --- | --- |
 | FRONT_PANEL_TEMP      | | C | NA | 40 | 39 | 1 | 0 | NA |
 | FRONT_PANEL_HUMIDTY   | | % | NA | NA | NA | NA | NA | NA |
+
+
+### Virtual Sensor (Calibrated sensor)
+
+| Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
+| ----------- | ------- | ---- | --- | --- | --- | --- | --- | --- |
+| Virtual_CFM_Sensor                  | | CFM | NA | NA | NA | NA | NA | NA |
+| Virtual_Inlet_Temp                  | | C   | NA | 40 | NA | NA | 0  | NA |
+| Virtual_P12V_AUX_HSC_Input_Power    | | W   | NA | NA | NA | NA | NA | NA |

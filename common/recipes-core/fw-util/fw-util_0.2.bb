@@ -21,6 +21,9 @@ LOCAL_URI =+ " \
     file://bic_me.h \
     file://bmc.cpp \
     file://bmc.h \
+    file://libfdt_compat.h \
+    file://image.hpp \
+    file://image.cpp \
     file://check_image.cpp \
     file://extlib.cpp \
     file://extlib.h \

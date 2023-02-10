@@ -21,6 +21,7 @@ if not fdt_dep.found()
 endif
 
 srcs = [
+    'image.cpp',
     'bmc.cpp',
     'check_image.cpp',
     'extlib.cpp',

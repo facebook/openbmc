@@ -89,7 +89,7 @@ class BmcComponentMock : public BmcComponent {
   public:
     BmcComponentMock(std::string fru, std::string comp, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
       : BmcComponent(fru, comp, mtd, vers, w_offset, skip_offset) {}
-  MOCK_METHOD2(is_valid, bool(string &image, bool pfr_active));
+  MOCK_METHOD2(is_valid, bool(const string &image, bool pfr_active));
   MOCK_METHOD1(update, int(string &image));
   MOCK_METHOD0(print_version, int());
   MOCK_METHOD0(sys, System&());

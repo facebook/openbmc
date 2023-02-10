@@ -254,10 +254,10 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"HSC_TEMP", HSC_ID0, read_hsc_temp, true, {120.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x0E
   {"HSC_PEAK_PIN", HSC_ID0, read_hsc_peak_pin, true, {3285.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0F
 
-  {"OUTLET_L_TEMP", TEMP_OUTLET_L, read_mb_temp, true, {55.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x10
+  {"OUTLET_L_TEMP", TEMP_OUTLET_L, read_mb_temp, true, {75.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x10
   {"INLET_L_TEMP", TEMP_INLET_L, read_mb_temp, true, {55.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x11
   {"OUTLET_R_TEMP", TEMP_OUTLET_R, read_mb_temp, true, {75.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x12
-  {"INLET_R_TEMP", TEMP_INLET_R, read_mb_temp, true, {75.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x13
+  {"INLET_R_TEMP", TEMP_INLET_R, read_mb_temp, true, {55.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x13
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x14
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x15
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x16

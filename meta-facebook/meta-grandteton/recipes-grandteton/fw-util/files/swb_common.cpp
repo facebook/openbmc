@@ -1,84 +1,26 @@
-#include "fw-util.h"
-#include "mezz_nic.hpp"
-#include <facebook/bic.h>
 #include <openbmc/kv.h>
 #include <libpldm/base.h>
 #include <libpldm-oem/pldm.h>
-#include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <iomanip>
-#include <sstream>
-#include <string>
 #include <vector>
 #include <array>
 #include <cstdio>
 #include <syslog.h>
 #include <stdio.h>
 #include <termios.h>
-
-using namespace std;
-
-class SwbBicFwComponent : public Component {
-  protected:
-    uint8_t bus, eid, target;
-  public:
-    SwbBicFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
-        : Component(fru, comp), bus(bus), eid(eid), target(target) {}
-    int update(string image) override;
-    int fupdate(string image) override;
-    int get_version(json& j) override;
-};
-
-class SwbBicFwRecoveryComponent : public Component {
-  protected:
-    uint8_t bus, eid, target;
-
-  public:
-    SwbBicFwRecoveryComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
-        :Component(fru, comp), bus(bus), eid(eid), target(target) {}
-
-  int update(string image) override;
-  int fupdate(string image) override;
-};
-
-class SwbPexFwComponent : public SwbBicFwComponent {
-  private:
-    uint8_t id;
-  public:
-    SwbPexFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target, uint8_t id)
-        :SwbBicFwComponent(fru, comp, bus, eid, target), id(id) {}
-    int get_version(json& j) override;
-};
+#include <algorithm>
+#include "swb_common.hpp"
 
 #define PexImageCount 4
 
 struct PexImage {
   uint32_t offset;
   uint32_t size;
-};
-
-class SwbAllPexFwComponent : public Component {
-  private:
-    uint8_t bus, eid;
-    uint8_t target = PEX0_COMP;
-  public:
-    SwbAllPexFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid)
-        :Component(fru, comp), bus(bus), eid(eid) {}
-    int update(string image);
-    int fupdate(string image);
-};
-
-class SwbNicFwComponent : public SwbBicFwComponent {
-  private:
-    uint8_t id;
-  public:
-    SwbNicFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target, uint8_t id)
-        :SwbBicFwComponent(fru, comp, bus, eid, target), id(id) {}
-    int get_version(json& j) override;
 };
 
 
@@ -464,15 +406,17 @@ int SwbBicFwComponent::get_version(json& j) {
   } else {
     j["VERSION"] = "Format not supported";
   }
-  if (pal_is_artemis()) {
-    if (bus == ACB_BIC_BUS) {
-      j["PRETTY_COMPONENT"] = "ACB BIC";
-    } else {
-      j["PRETTY_COMPONENT"] = "MEB BIC";
-    }
-  } else {
-    j["PRETTY_COMPONENT"] = "SWB BIC";
-  }
+
+
+  stringstream comp_str;
+  comp_str << this->alias_fru()
+           << ' '
+           << this->alias_component();
+
+  string rw_str = comp_str.str();
+  transform(rw_str.begin(),rw_str.end(), rw_str.begin(),::toupper);
+
+  j["PRETTY_COMPONENT"] = rw_str;
   return FW_STATUS_SUCCESS;
 }
 
@@ -494,11 +438,17 @@ int SwbPexFwComponent::get_version(json& j) {
   } else {
     j["VERSION"] = "Format not supported";
   }
-  if (pal_is_artemis()) {
-    j["PRETTY_COMPONENT"] = string("ACB PESW") + std::to_string(+id);
-  } else {
-    j["PRETTY_COMPONENT"] = string("SWB PEX") + std::to_string(+id);
-  }
+
+  stringstream comp_str;
+  comp_str << this->alias_fru()
+           << ' '
+           << this->alias_component();
+
+  string rw_str = comp_str.str();
+  transform(rw_str.begin(),rw_str.end(), rw_str.begin(),::toupper);
+
+  j["PRETTY_COMPONENT"] = rw_str;
+
   return FW_STATUS_SUCCESS;
 }
 
@@ -517,11 +467,11 @@ uint32_t_read (int fd, uint32_t& target)
   return ret;
 }
 
-int SwbAllPexFwComponent::fupdate(string image) {
+int SwbPexFwComponent::fupdate(string image) {
   return update(image);
 }
 
-int SwbAllPexFwComponent::update(string image) {
+int SwbPexFwComponent::update(string image) {
 
   // open the binary
   int fd_r = open(image.c_str(), O_RDONLY);
@@ -545,45 +495,45 @@ int SwbAllPexFwComponent::update(string image) {
     if (uint32_t_read(fd_r, images[i].size)   < 0) return -1;
   }
 
+  int num = target - PEX0_COMP;
+
   syslog(LOG_CRIT, "Component %s upgrade initiated\n", this->alias_component().c_str() );
   int ret = 0;
 
-  for (int i = 0; i < PexImageCount; ++i) {
-    try {
-      if (lseek(fd_r, images[i].offset, SEEK_SET) != (off_t)images[i].offset) {
-        printf("%d\n", -errno);
-        cerr << "Cannot seek " << image << endl;
-        ret = -1;
-        goto exit;
-      }
-      uint8_t *memblock = new uint8_t [images[i].size];
-      if (read(fd_r, memblock, images[i].size) != (ssize_t)images[i].size) {
-        cerr << "Cannot read " << image << endl;
-        ret = -1;
-        goto exit;
-      }
-      ret = swb_fw_update(bus, eid, PEX0_COMP+i, memblock, images[i].size);
-      delete[] memblock;
-      if (ret != SWB_FW_UPDATE_SUCCESS) {
-        switch(ret)
-        {
-          case SWB_FW_UPDATE_FAILED:
-            cerr << this->alias_component() << ": update process failed" << endl;
-            break;
-          case SWB_FW_UPDATE_NOT_SUPP_IN_CURR_STATE:
-            cerr << this->alias_component() << ": firmware update not supported in current state." << endl;
-            break;
-          default:
-            cerr << this->alias_component() << ": unknow error (ret: " << ret << ")" << endl;
-            break;
-        }
-        ret = FW_STATUS_FAILURE;
-      }
-
-    } catch (string& err) {
-      printf("%s\n", err.c_str());
-      ret = FW_STATUS_NOT_SUPPORTED;
+  try {
+    if (lseek(fd_r, images[num].offset, SEEK_SET) != (off_t)images[num].offset) {
+      printf("%d\n", -errno);
+      cerr << "Cannot seek " << image << endl;
+      ret = -1;
+      goto exit;
     }
+    uint8_t *memblock = new uint8_t [images[num].size];
+    if (read(fd_r, memblock, images[num].size) != (ssize_t)images[num].size) {
+      cerr << "Cannot read " << image << endl;
+      ret = -1;
+      goto exit;
+    }
+    ret = swb_fw_update(bus, eid, target, memblock, images[num].size);
+    delete[] memblock;
+    if (ret != SWB_FW_UPDATE_SUCCESS) {
+      switch(ret)
+      {
+        case SWB_FW_UPDATE_FAILED:
+          cerr << this->alias_component() << ": update process failed" << endl;
+          break;
+        case SWB_FW_UPDATE_NOT_SUPP_IN_CURR_STATE:
+          cerr << this->alias_component() << ": firmware update not supported in current state." << endl;
+          break;
+        default:
+          cerr << this->alias_component() << ": unknow error (ret: " << ret << ")" << endl;
+          break;
+      }
+      ret = FW_STATUS_FAILURE;
+    }
+
+  } catch (string& err) {
+    printf("%s\n", err.c_str());
+    ret = FW_STATUS_NOT_SUPPORTED;
   }
 
 exit:
@@ -591,25 +541,3 @@ exit:
   close(fd_r);
   return ret;
 }
-
-class fw_bic_config {
-  public:
-    fw_bic_config() {
-      if (pal_is_artemis()) {
-        static SwbBicFwComponent acb_bic("acb", "bic", ACB_BIC_BUS, ACB_BIC_EID, BIC_COMP);
-        static SwbBicFwComponent meb_bic("meb", "bic", MEB_BIC_BUS, MEB_BIC_EID, BIC_COMP);
-        static SwbPexFwComponent acb_pesw0("acb", "pesw0", ACB_BIC_BUS, ACB_BIC_EID, PEX0_COMP, 0);
-        static SwbPexFwComponent acb_pesw1("acb", "pesw1", ACB_BIC_BUS, ACB_BIC_EID, PEX1_COMP, 1);
-      } else {
-        static SwbBicFwComponent bic("swb", "bic", 3, 0x0A, BIC_COMP);
-        static SwbBicFwRecoveryComponent bic_recovery("swb", "bic_recovery", 3, 0x0A, BIC_COMP);
-        static SwbPexFwComponent swb_pex0("swb", "pex0", 3, 0x0A, PEX0_COMP, 0);
-        static SwbPexFwComponent swb_pex1("swb", "pex1", 3, 0x0A, PEX1_COMP, 1);
-        static SwbPexFwComponent swb_pex2("swb", "pex2", 3, 0x0A, PEX2_COMP, 2);
-        static SwbPexFwComponent swb_pex3("swb", "pex3", 3, 0x0A, PEX3_COMP, 3);
-        static SwbAllPexFwComponent swb_pex("swb", "pex_all", 3, 0x0A);
-      }
-    }
-};
-
-fw_bic_config _fw_bic_config;

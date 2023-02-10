@@ -40,6 +40,7 @@ LOCAL_URI += " \
     file://vr_fw.h \
     file://vr_fw.cpp \
     file://swb_common.cpp \
+    file://swb_common.hpp \
     file://swb_cover.cpp \
     file://hgx.cpp \
     file://signed_info.hpp \

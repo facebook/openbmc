@@ -1,0 +1,3 @@
+deps += [
+    dependency('libpldm-oem'),
+]

@@ -62,6 +62,7 @@ extern "C" {
 #define VR_1OU_CRC_STR "slot%d_1ou_vr_%s_crc"
 
 #define POST_COMPLETE_STR "slot%d_end_of_post"
+#define BIOS_NEW_VER_STR "fru%d_delay_activate_sysfw_ver"
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];

@@ -484,6 +484,7 @@ int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_last_pwr_state(uint8_t fru, char *state);
 int pal_get_sys_guid(uint8_t slot, char *guid);
 int pal_set_sys_guid(uint8_t fru, char *guid);
+int pal_clear_bios_delay_activate_ver(int slot);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_set_delay_activate_sysfw_ver(uint8_t slot, uint8_t *ver);

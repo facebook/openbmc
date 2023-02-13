@@ -1225,6 +1225,11 @@ pal_set_sys_guid(uint8_t fru, char *guid)
 }
 
 int __attribute__((weak))
+pal_clear_bios_delay_activate_ver(int slot) {
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver)
 {
   int blk, i, j = 0;
@@ -1284,6 +1289,11 @@ pal_set_sysfw_ver(uint8_t slot, uint8_t *ver)
     sprintf(tstr, "%02x", ver[i]);
     memcpy(&str[offs], tstr, 2);
     offs += 2;
+  }
+
+  //BIOS will send IPMI command to set the currently version while booting, so delay activate version is no need.
+  if (pal_clear_bios_delay_activate_ver(slot)) {
+    syslog(LOG_WARNING, "%s() fail to clear bios delay activate version", __func__);
   }
 
   return kv_set(key, str, 0, KV_FPERSIST);

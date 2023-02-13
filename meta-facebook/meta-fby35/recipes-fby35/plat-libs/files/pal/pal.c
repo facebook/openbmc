@@ -1712,6 +1712,13 @@ pal_sysfw_key_hex_to_char(char *str, uint8_t *ver) {
   }
 }
 
+int pal_clear_bios_delay_activate_ver(int slot) {
+  char ver_key[MAX_KEY_LEN] = {0};
+  snprintf(ver_key, sizeof(ver_key), BIOS_NEW_VER_STR, slot);
+
+  return kv_del(ver_key, KV_FPERSIST);
+}
+
 int
 pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
   int ret = 0;

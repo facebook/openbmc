@@ -13,7 +13,7 @@ rocko_repos=(
 )
 rocko_poky_patch="0001-rocko-backport-support-for-override.patch 0002-Remove-checks-on-python.patch"
 lf_master_repos=(
-    lf-openbmc:2c7df3c13
+    lf-openbmc:b13762bff
 )
 lf_dunfell_repos=(
     lf-openbmc:61a2d43a1

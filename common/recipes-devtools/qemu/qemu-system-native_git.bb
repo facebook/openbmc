@@ -91,6 +91,8 @@ SRC_URI = " \
     file://0064-npcm8xx-Allow-bios-to-be-omitted.patch \
     file://0065-hw-arm-aspeed-Don-t-initialize-fby35-bmc-GPIO-s.patch \
     file://0066-net-slirp-Add-mfr-id-and-oob-eth-addr-parameters.patch \
+    file://0067-aspeed-add-montblanc-bmc.patch \
+    file://0068-hw-eeprom-at24c-for-1-byte-address.patch \
     "
 PV = "7.2.0+git${SRCPV}"
 

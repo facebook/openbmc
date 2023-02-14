@@ -1,0 +1,100 @@
+From 4bb62eb0d26422da48679883d4d6654c4e8ea85b Mon Sep 17 00:00:00 2001
+From: Sittisak Sinprem <ssinprem@celestca.com>
+Date: Thu, 9 Feb 2023 11:33:36 +0700
+Subject: [PATCH] aspeed add montblanc bmc reference from fuji
+
+---
+ hw/arm/aspeed.c | 56 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 146b698a26..3403285c02 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -172,6 +172,10 @@ struct AspeedMachineState {
+ #define FUJI_BMC_HW_STRAP1    0x00000000
+ #define FUJI_BMC_HW_STRAP2    0x00000000
+ 
++/* Montblanc hardware value */
++#define MONTBLANC_BMC_HW_STRAP1    0x00000000
++#define MONTBLANC_BMC_HW_STRAP2    0x00000000
++
+ /* Bletchley hardware value */
+ /* TODO: Leave same as EVB for now. */
+ #define BLETCHLEY_BMC_HW_STRAP1 AST2600_EVB_HW_STRAP1
+@@ -907,6 +911,28 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+     }
+ }
+ 
++static void montblanc_bmc_i2c_init(AspeedMachineState *bmc)
++{
++    AspeedSoCState *soc = &bmc->soc;
++    I2CBus *i2c[16] = {};
++
++    for (int i = 0; i < 16; i++) {
++        i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
++    }
++
++    // Ref from Minipack3_I2C_Tree_V0.6
++    aspeed_eeprom_init(i2c[3], 0x56, 64 * KiB / 8); // SCM EEPROM#2
++    aspeed_eeprom_init(i2c[8], 0x53, 64 * KiB / 8); // FCB_B EEPROM
++
++    // TODO: need to validate address
++    aspeed_eeprom_init(i2c[1], 0x35, 2 * KiB / 8);  // SCM CPLD
++    aspeed_eeprom_init(i2c[5], 0x35, 2 * KiB / 8);  // COMe CPLD
++    aspeed_eeprom_init(i2c[10], 0x35, 2 * KiB / 8); // RunBMC FPGA
++    aspeed_eeprom_init(i2c[12], 0x35, 2 * KiB / 8); // MCB CPLD
++    aspeed_eeprom_init(i2c[13], 0x35, 2 * KiB / 8); // IOB FPGA
++}
++
++
+ static void wedge100_i2c_init(AspeedMachineState *bmc)
+ {
+     AspeedSoCState *soc = &bmc->soc;
+@@ -1389,6 +1415,32 @@ static void aspeed_machine_fuji_class_init(ObjectClass *oc, void *data)
+         aspeed_soc_num_cpus(amc->soc_name);
+ };
+ 
++/* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
++#if HOST_LONG_BITS == 32
++#define MONTBLANC_BMC_RAM_SIZE (1 * GiB)
++#else
++#define MONTBLANC_BMC_RAM_SIZE (2 * GiB)
++#endif
++static void aspeed_machine_montblanc_class_init(ObjectClass *oc, void *data)
++{
++    MachineClass *mc = MACHINE_CLASS(oc);
++    AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);
++
++    mc->desc = "Facebook Montblanc BMC (Cortex-A7)";
++    amc->soc_name = "ast2600-a3";
++    amc->hw_strap1 = MONTBLANC_BMC_HW_STRAP1;
++    amc->hw_strap2 = MONTBLANC_BMC_HW_STRAP2;
++    amc->fmc_model = "mx66l1g45g";
++    amc->spi_model = "mx66l1g45g";
++    amc->num_cs = 2;
++    amc->macs_mask = ASPEED_MAC3_ON;
++    amc->i2c_init = montblanc_bmc_i2c_init;
++    amc->uart_default = ASPEED_DEV_UART1;
++    mc->default_ram_size = MONTBLANC_BMC_RAM_SIZE;
++    mc->default_cpus = mc->min_cpus = mc->max_cpus =
++        aspeed_soc_num_cpus(amc->soc_name);
++};
++
+ /* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
+ #if HOST_LONG_BITS == 32
+ #define BLETCHLEY_BMC_RAM_SIZE (1 * GiB)
+@@ -1606,6 +1658,10 @@ static const TypeInfo aspeed_machine_types[] = {
+         .name          = MACHINE_TYPE_NAME("fuji-bmc"),
+         .parent        = TYPE_ASPEED_MACHINE,
+         .class_init    = aspeed_machine_fuji_class_init,
++    }, {
++        .name          = MACHINE_TYPE_NAME("montblanc-bmc"),
++        .parent        = TYPE_ASPEED_MACHINE,
++        .class_init    = aspeed_machine_montblanc_class_init,
+     }, {
+         .name          = MACHINE_TYPE_NAME("bletchley-bmc"),
+         .parent        = TYPE_ASPEED_MACHINE,
+-- 
+2.25.1
+

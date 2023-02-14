@@ -1,0 +1,41 @@
+From 4abbec4891e7d7df4fa00d74fa0b128d212b57cc Mon Sep 17 00:00:00 2001
+From: Sittisak Sinprem <ssinprem@celestca.com>
+Date: Wed, 1 Feb 2023 14:03:08 +0700
+Subject: [PATCH] hw/eeprom at24c support for 1 byte address
+
+---
+ hw/nvram/eeprom_at24c.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/hw/nvram/eeprom_at24c.c b/hw/nvram/eeprom_at24c.c
+index b32dcce217..7fb9f6b592 100644
+--- a/hw/nvram/eeprom_at24c.c
++++ b/hw/nvram/eeprom_at24c.c
+@@ -89,7 +89,7 @@ uint8_t at24c_eeprom_recv(I2CSlave *s)
+     EEPROMState *ee = AT24C_EE(s);
+     uint8_t ret;
+ 
+-    if (ee->haveaddr == 1) {
++    if (ee->rsize > 256 && ee->haveaddr == 1) {
+         return 0xff;
+     }
+ 
+@@ -106,11 +106,13 @@ int at24c_eeprom_send(I2CSlave *s, uint8_t data)
+ {
+     EEPROMState *ee = AT24C_EE(s);
+ 
+-    if (ee->haveaddr < 2) {
++    if ((ee->rsize > 256 && ee->haveaddr < 2) ||
++        (ee->rsize <= 256 && ee->haveaddr < 1)) {
+         ee->cur <<= 8;
+         ee->cur |= data;
+         ee->haveaddr++;
+-        if (ee->haveaddr == 2) {
++        if ((ee->rsize > 256 && ee->haveaddr == 2) ||
++            (ee->rsize <= 256 && ee->haveaddr == 1)) {
+             ee->cur %= ee->rsize;
+             DPRINTK("Set pointer %04x\n", ee->cur);
+         }
+-- 
+2.25.1
+

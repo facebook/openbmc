@@ -49,54 +49,34 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 0"
+        "kv" : "bmc_sensor224"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 0"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "1": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 1"
+        "kv" : "bmc_sensor225"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "2": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 2"
+        "kv" : "bmc_sensor226"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 1"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "3": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 3"
-      }
-    },
-    "4": {
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 4"
+        "kv" : "bmc_sensor227"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 2"
-      }
-    },
-    "5": {
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 5"
-      }
-    },
-    "6": {
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 6"
-      },
-      "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 3"
-      }
-    },
-    "7": {
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 7"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     }
   },

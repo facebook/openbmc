@@ -116,6 +116,8 @@ class ClassConfig {
         } else {
           static CpldComponent   cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
         }
+        if (card_type == TYPE_1OU_OLMSTEAD_POINT)
+          return;
 
         //slot2 sb bic/cpld/bios
         static BicFwComponent    bic_fw2("slot2", "bic", "sb", FW_SB_BIC);

@@ -1978,7 +1978,7 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
     if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
     else if ( strcmp(sys_conf, "Type_DPV2") == 0 ) config = CONFIG_B;
     else if ( strcmp(sys_conf, "Type_HD") == 0 ) config = CONFIG_B;
-    else if ( strcmp(sys_conf, "Type_17") == 0 ) config = CONFIG_D;
+    else if ( (strcmp(sys_conf, "Type_17") == 0) || (strcmp(sys_conf, "Type_8") == 0)) config = CONFIG_D;
     else syslog(LOG_WARNING, "%s() Couldn't identiy the system type: %s", __func__, sys_conf);
 
     syslog(LOG_INFO, "%s() Get the system type: %s", __func__, sys_conf);
@@ -1990,7 +1990,9 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
   for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
     //Only two slots are present on Config B. Skip slot2 and slot4.
     if ( (config == CONFIG_B) && (i % 2 == 0) ) continue;
-
+    // Config D system only has one slot
+    if ((config == CONFIG_D) && (i != FRU_SLOT1))
+      continue;
     //If one of slots is failed to read, return READING_NA.
     if ( sensor_cache_read(i, target_snr_num, &temp_val) < 0) return READING_NA;
 

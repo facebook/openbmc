@@ -102,6 +102,16 @@ plat_xdpe12284c_fw_update(struct vr_info *info, void *args) {
   return ret;
 }
 
+int sb_vr_remaining_wr(uint8_t addr, uint16_t *remain, bool is_update) {
+  int ret;
+  if(is_update) {
+    ret = bic_set_vr_remaining_wr(slot_id, addr, *remain);
+  } else {
+    ret = bic_get_vr_remaining_wr(slot_id, addr, remain);
+  }
+  return ret;
+}
+
 int
 sb_vr_polling_ctrl(bool enable) {
   return bic_set_vr_monitor_enable(slot_id, enable, NONE_INTF);
@@ -371,7 +381,7 @@ int plat_vr_init(void) {
   }
 
   for (int i = 0; i < vr_cnt; i++) {
-    fby35_vr_list[i].slot_id = slot_id;
+    fby35_vr_list[i].remaining_wr_op = sb_vr_remaining_wr;
   }
 
   return vr_device_register(fby35_vr_list, vr_cnt);

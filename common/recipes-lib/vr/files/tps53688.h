@@ -26,17 +26,14 @@
 #define VR_TPS_DEVID_LEN     6
 #define VR_TPS_TOTAL_WR_SIZE (VR_TPS_BLK_WR_LEN * VR_TPS_NVM_IDX_NUM)
 
+#define MAX_TI_VR_REMAIN_WR 1000
+
 struct tps_config {
   uint8_t addr;
   uint16_t crc_exp;
   uint64_t devid_exp;
   uint8_t data[512];
 };
-
-typedef enum{
-  GET_VR_CRC = 0,
-  UPDATE_VR_CRC,
-} VR_CRC_OPERATION;
 
 int get_tps_ver(struct vr_info*, char*);
 void * tps_parse_file(struct vr_info*, const char*);

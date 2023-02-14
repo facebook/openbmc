@@ -7,6 +7,7 @@
 
 extern int vr_rdwr(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
 static int (*vr_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t) = &vr_rdwr;
+static int (*mps_remaining_wr)(uint8_t addr, uint16_t *remain, bool is_update) = NULL;
 
 static int
 mp2856_set_page(uint8_t bus, uint8_t addr, uint8_t page) {
@@ -143,6 +144,30 @@ mp2856_write_data(uint8_t bus, uint8_t addr, struct mp2856_data *data  ) {
   return VR_STATUS_SUCCESS;
 }
 
+static int
+mp2856_get_remaining_wr_msg(uint8_t addr, uint16_t *remain, char *msg, bool is_update) {
+  if ((mps_remaining_wr == NULL) || (remain == NULL) || (msg == NULL)) {
+    syslog(LOG_WARNING, "%s: fail to load remaining writes due to NULL pointer check \n", __func__);
+    return VR_STATUS_FAILURE;
+  }
+
+  if (mps_remaining_wr(addr, remain, GET_VR_CRC) < 0) {
+    snprintf(msg, MAX_VALUE_LEN, ", Remaining Writes: Unknown");
+  } else {
+    if (*remain == UNINITIALIZED_REMAIN_WR) {
+      *remain = MAX_MP2856_REMAIN_WR;
+      mps_remaining_wr(addr, remain, UPDATE_VR_CRC);
+    }
+    if (is_update && *remain) {
+      (*remain)--;
+      mps_remaining_wr(addr, remain, UPDATE_VR_CRC);
+    }
+    snprintf(msg, MAX_VALUE_LEN, ", Remaining Writes: %u", *remain);
+  }
+
+  return VR_STATUS_SUCCESS;
+}
+
 int
 program_mp2856(uint8_t bus, uint8_t addr, struct mp2856_config *config  ) {
  uint8_t tbuf[16], rbuf[16];
@@ -234,6 +259,8 @@ cache_mp2856_new_crc(struct vr_info *info, void *args) {
   char value[MAX_VALUE_LEN] = {0};
   uint8_t bus = info->bus;
   uint8_t addr = info->addr;
+  uint16_t remain = 0;
+  char remaining_wr_msg[64];
 
   vr_get_fw_avtive_key(info, ver_key);
   do {
@@ -258,6 +285,12 @@ cache_mp2856_new_crc(struct vr_info *info, void *args) {
     snprintf(value, MAX_VALUE_LEN, "MPS %02x%02x%02x%02x",
              crc_user[1], crc_user[0], multi_config[1], multi_config[0]);
 
+    if(mps_remaining_wr) {
+      if(mp2856_get_remaining_wr_msg(addr, &remain, remaining_wr_msg, UPDATE_VR_CRC) == VR_STATUS_SUCCESS) {
+        strncat(value, remaining_wr_msg, MAX_VALUE_LEN-1);
+      }
+    }
+
     kv_set(ver_key, value, 0, KV_FPERSIST);
   } while (0);
 
@@ -270,6 +303,7 @@ int
 mp2856_fw_update(struct vr_info *info, void *args) {
   struct mp2856_config *config = (struct mp2856_config *)args;
   uint16_t product_id = 0;
+  uint16_t remain = 0;
 
   if (info == NULL || config == NULL) {
     return VR_STATUS_FAILURE;
@@ -279,6 +313,10 @@ mp2856_fw_update(struct vr_info *info, void *args) {
 
   if (info->xfer) {
     vr_xfer = info->xfer;
+  }
+  
+  if (info->remaining_wr_op) {
+    mps_remaining_wr = info->remaining_wr_op;
   }
 
   //Check i2c address
@@ -293,6 +331,20 @@ mp2856_fw_update(struct vr_info *info, void *args) {
     syslog(LOG_WARNING, "%s: IC_DEVICE_ID 0x%X mismatch, expect 0x%X",
            __func__, product_id, config->product_id_exp);
     return VR_STATUS_FAILURE;
+  }
+  
+  //Check remaining writes
+  if(mps_remaining_wr) {
+    if (mps_remaining_wr(info->addr, &remain, GET_VR_CRC) == VR_STATUS_SUCCESS) {
+      printf("Remaining writes: %u\n", remain);
+      if (!info->force && (remain <= VR_WARN_REMAIN_WR)) {
+        printf("WARNING: the remaining writes is below the threshold value %d!\n",
+           VR_WARN_REMAIN_WR);
+        printf("Please use \"--force\" option to try again.\n");
+        syslog(LOG_WARNING, "%s: insufficient remaining writes %u", __func__, remain);
+        return VR_STATUS_FAILURE;
+      }
+    }
   }
 
   if(mp2856_is_pwd_unlock(info->bus, info->addr)) {
@@ -449,6 +501,8 @@ cache_mp2856_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
   uint8_t tbuf[16];
   uint8_t crc_user[2];
   uint8_t multi_config[2];
+  uint16_t remain = 0;
+  char remaining_wr_msg[64];
 
   do {
     if ((ret = mp2856_set_page(bus, addr, VR_MPS_PAGE_29))) {
@@ -472,6 +526,13 @@ cache_mp2856_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
 
     snprintf(checksum, MAX_VALUE_LEN, "MPS %02X%02X%02X%02X",
            crc_user[1], crc_user[0], multi_config[1], multi_config[0]);
+    
+    if (mps_remaining_wr) {
+      if(mp2856_get_remaining_wr_msg(addr, &remain, remaining_wr_msg, GET_VR_CRC) == VR_STATUS_SUCCESS) {
+        strncat(checksum, remaining_wr_msg, MAX_VALUE_LEN-1);
+      }
+    }
+
     kv_set(key, checksum, 0, 0);
   } while (0);
 
@@ -495,6 +556,10 @@ get_mp2856_ver(struct vr_info *info, char *ver_str) {
       vr_xfer = info->xfer;
     }
 
+    if (info->remaining_wr_op) {
+      mps_remaining_wr = info->remaining_wr_op;
+    }
+    
     //Stop sensor polling before read crc from register
     if (info->sensor_polling_ctrl) {
       info->sensor_polling_ctrl(false);

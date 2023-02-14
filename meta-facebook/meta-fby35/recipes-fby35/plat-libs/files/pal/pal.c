@@ -107,8 +107,6 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 #define MAX_COMPONENT_LEN 32 //include the string terminal
 
-#define MAX_TI_VR_REMAIN_WR 1000
-
 #define BMC_CPLD_BUS     (12)
 #define NIC_EXP_CPLD_BUS (9)
 #define CPLD_FW_VER_ADDR (0x80)
@@ -5048,35 +5046,6 @@ pal_udbg_get_frame_total_num() {
 bool
 pal_is_support_vr_delay_activate(void){
   return true;
-}
-
-bool
-pal_is_support_ti_vr_remaining_writes(void){
-  return true;
-}
-
-int
-pal_load_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain, char *checksum, uint16_t *crc, bool is_update) {
-  if ((remain == NULL) || (checksum == NULL) || (crc == NULL)) {
-    syslog(LOG_WARNING, "%s: fail to load remaining writes due to NULL pointer check \n", __func__);
-    return -1;
-  }
-
-  if (bic_get_tps_remaining_wr(fru_id, addr, remain) < 0) {
-    snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X, Remaining Writes: Unknown", *crc);
-  } else {
-    if (*remain == UNINITIALIZED_EEPROM) {
-      *remain = MAX_TI_VR_REMAIN_WR;
-      bic_set_tps_remaining_wr(fru_id, addr, *remain);
-    }
-    if (is_update && *remain) {
-      (*remain)--;
-      bic_set_tps_remaining_wr(fru_id, addr, *remain);
-    }
-    snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X, Remaining Writes: %u", *crc, *remain);
-  }
-
-  return 0;
 }
 
 int

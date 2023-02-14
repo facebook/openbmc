@@ -3418,11 +3418,6 @@ pal_is_support_vr_delay_activate(void){
 }
 
 int __attribute__((weak))
-pal_load_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain, char *checksum, uint16_t *crc, bool is_update){
-  return -1;
-}
-
-int __attribute__((weak))
 pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
 {
   return PAL_EOK;

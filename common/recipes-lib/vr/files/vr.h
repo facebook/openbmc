@@ -30,6 +30,7 @@ extern "C" {
 #include <stdbool.h>
 
 #define VR_WARN_REMAIN_WR 3
+#define UNINITIALIZED_REMAIN_WR 0xFFFF
 
 #define MAX_VER_STR_LEN 80
 #define VR_REG_PAGE 0x00
@@ -39,6 +40,11 @@ enum {
   VR_STATUS_FAILURE = -1,
   VR_STATUS_SKIP    = -2,
 };
+
+typedef enum{
+  GET_VR_CRC = 0,
+  UPDATE_VR_CRC,
+} VR_CRC_OPERATION;
 
 struct vr_info;
 
@@ -81,7 +87,6 @@ struct vr_ops {
 struct vr_info {
   uint8_t bus;
   uint8_t addr;
-  uint8_t slot_id;
   uint8_t padding[2];
   uint64_t dev_id;
   char dev_name[64];
@@ -90,6 +95,7 @@ struct vr_info {
   void *private_data;
   int (*xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
   int (*sensor_polling_ctrl)(bool);
+  int (*remaining_wr_op)(uint8_t, uint16_t*, bool);
 };
 
 extern void *plat_configs;

@@ -2188,7 +2188,7 @@ bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type) {
 }
 
 int
-bic_get_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain) {
+bic_get_vr_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain) {
   uint8_t tbuf[32] = {0};
   uint8_t rbuf[4] = {0};
   uint8_t tlen = 0;
@@ -2204,7 +2204,9 @@ bic_get_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain) {
   tbuf[1] = BIC_EEPROM_ADDR;
   tbuf[2] = 3; //read 3 bytes
   tbuf[3] = VR_REMAINING_WRITE_START_ADDR; //offset
-  tbuf[4] = VR_REMAINING_WRITE_OFFSET(addr); //offset
+  tbuf[4] = (fby35_common_get_slot_type(fru_id) == SERVER_TYPE_HD)
+             ? HD_VR_REMAINING_WRITE_OFFSET(addr)
+             : CL_VR_REMAINING_WRITE_OFFSET(addr); // offset
   tlen = 5;
 
   ret = bic_data_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
@@ -2218,7 +2220,7 @@ bic_get_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain) {
     return ret;
   }
 
-  if (fby35_is_zero_checksum_valid(rbuf, TI_VR_REMAIN_WR_SIZE) == false) {
+  if (fby35_is_zero_checksum_valid(rbuf, VR_REMAIN_WR_SIZE) == false) {
     syslog(LOG_WARNING, "%s() Zero checksum is not valid.", __func__);
     return -1;
   }
@@ -2227,7 +2229,7 @@ bic_get_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain) {
 }
 
 int
-bic_set_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t remain) {
+bic_set_vr_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t remain) {
   uint8_t tbuf[32] = {0};
   uint8_t rbuf[4] = {0};
   uint8_t tlen = 0;
@@ -2240,10 +2242,11 @@ bic_set_tps_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t remain) {
   tbuf[3] = VR_REMAINING_WRITE_START_ADDR; //offset
   tbuf[4] = (fby35_common_get_slot_type(fru_id) == SERVER_TYPE_HD)
             ? HD_VR_REMAINING_WRITE_OFFSET(addr)
-            : VR_REMAINING_WRITE_OFFSET(addr); // offset
+            : CL_VR_REMAINING_WRITE_OFFSET(addr); // offset
+
   tbuf[5] = remain >> 8; //higher byte
   tbuf[6] = remain & 0xff; //lower byte
-  tbuf[7] = fby35_zero_checksum_calculate(&tbuf[5], TI_VR_REMAIN_WR_SIZE); //Zero checksum
+  tbuf[7] = fby35_zero_checksum_calculate(&tbuf[5], VR_REMAIN_WR_SIZE); //Zero checksum
   tlen = 8;
 
   ret = bic_data_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);

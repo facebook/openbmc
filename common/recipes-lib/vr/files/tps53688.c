@@ -7,6 +7,7 @@
 
 extern int vr_rdwr(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
 static int (*vr_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t) = &vr_rdwr;
+static int (*tps_remaining_wr)(uint8_t addr, uint16_t *remain, bool is_update) = NULL;
 
 static int
 get_tps_devid(uint8_t bus, uint8_t addr, uint64_t *devid) {
@@ -25,6 +26,31 @@ get_tps_devid(uint8_t bus, uint8_t addr, uint64_t *devid) {
 
   for (i = 0; i < VR_TPS_DEVID_LEN; i++) {
     ((uint8_t *)devid)[i] = rbuf[VR_TPS_DEVID_LEN-i];
+  }
+
+  return 0;
+}
+
+int
+load_tps_remaining_wr(uint8_t addr, uint16_t *remain, char *checksum, uint16_t *crc, bool is_update) {
+  if ((remain == NULL) || (checksum == NULL) || (crc == NULL) || (tps_remaining_wr == NULL)) {
+    syslog(LOG_WARNING, "%s: fail to load remaining writes due to NULL pointer check \n", __func__);
+    return -1;
+  }
+
+  if (tps_remaining_wr(addr, remain, GET_VR_CRC) < 0) {
+    snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X, Remaining Writes: Unknown", *crc);
+  } else {
+    printf("[Debug] TPS remain =%u\n", *remain);
+    if (*remain == UNINITIALIZED_REMAIN_WR) {
+      *remain = MAX_TI_VR_REMAIN_WR;
+      tps_remaining_wr(addr, remain, UPDATE_VR_CRC);
+    }
+    if (is_update && *remain) {
+      (*remain)--;
+      tps_remaining_wr(addr, remain, UPDATE_VR_CRC);
+    }
+    snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X, Remaining Writes: %u", *crc, *remain);
   }
 
   return 0;
@@ -55,7 +81,7 @@ get_tps_crc(uint8_t bus, uint8_t addr, uint16_t *crc) {
 }
 
 static int
-cache_tps_crc(uint8_t fru_id, uint8_t bus, uint8_t addr, char *key, char *checksum, uint16_t *crc) {
+cache_tps_crc(uint8_t bus, uint8_t addr, char *key, char *checksum, uint16_t *crc) {
   uint16_t tmp_crc = 0;
   uint16_t remain = 0;
   char tmp_str[MAX_VALUE_LEN] = {0};
@@ -71,7 +97,7 @@ cache_tps_crc(uint8_t fru_id, uint8_t bus, uint8_t addr, char *key, char *checks
     return -1;
   }
 
-  if (pal_load_tps_remaining_wr(fru_id, addr, &remain, checksum, crc, GET_VR_CRC) != 0) {
+  if ((tps_remaining_wr != NULL) && load_tps_remaining_wr(addr, &remain, checksum, crc, GET_VR_CRC) != 0) {
     snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X", *crc);
   }
 
@@ -100,7 +126,12 @@ get_tps_ver(struct vr_info *info, char *ver_str) {
     if (info->xfer) {
       vr_xfer = info->xfer;
     }
-    if (cache_tps_crc(info->slot_id, info->bus, info->addr, key, tmp_str, NULL))
+
+    if (info->remaining_wr_op) {
+      tps_remaining_wr = info->remaining_wr_op;
+    }
+
+    if (cache_tps_crc(info->bus, info->addr, key, tmp_str, NULL))
       return VR_STATUS_FAILURE;
   }
 
@@ -238,7 +269,7 @@ check_tps_image(uint16_t crc_exp, uint8_t *data) {
 }
 
 static int
-program_tps(uint8_t fru_id, uint8_t bus, uint8_t addr, struct tps_config *config, bool force) {
+program_tps(uint8_t bus, uint8_t addr, struct tps_config *config, bool force) {
   int i, ret = -1;
   uint64_t devid = 0x00;
   uint32_t offset = 0, dsize;
@@ -266,7 +297,7 @@ program_tps(uint8_t fru_id, uint8_t bus, uint8_t addr, struct tps_config *config
   }
 
   // check remaining writes
-  if (pal_load_tps_remaining_wr(fru_id, addr, &remain, checksum, &crc, GET_VR_CRC) == 0) {
+  if ((tps_remaining_wr != NULL) && load_tps_remaining_wr(addr, &remain, checksum, &crc, GET_VR_CRC) == 0) {
     if (!force && (remain <= VR_WARN_REMAIN_WR)) {
       printf("WARNING: the remaining writes is below the threshold value %d!\n",
            VR_WARN_REMAIN_WR);
@@ -336,14 +367,19 @@ tps_fw_update(struct vr_info *info, void *args) {
   if (info->xfer) {
     vr_xfer = info->xfer;
   }
-  if (program_tps(info->slot_id, info->bus, info->addr, config, info->force)) {
+
+  if (info->remaining_wr_op) {
+    tps_remaining_wr = info->remaining_wr_op;
+  }
+
+  if (program_tps(info->bus, info->addr, config, info->force)) {
     return VR_STATUS_FAILURE;
   }
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
     vr_get_fw_avtive_key(info, ver_key);
 
-    if (pal_load_tps_remaining_wr(info->slot_id, info->addr, &remain, value, &config->crc_exp, UPDATE_VR_CRC) != 0) {
+    if ((tps_remaining_wr != NULL) && load_tps_remaining_wr(info->addr, &remain, value, &config->crc_exp, UPDATE_VR_CRC) != 0) {
       snprintf(value, MAX_VALUE_LEN, "Texas Instruments %04X", config->crc_exp);
     }
     kv_set(ver_key, value, 0, KV_FPERSIST);
@@ -372,7 +408,7 @@ tps_fw_verify(struct vr_info *info, void *args) {
   } else {
     snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
   }
-  if (cache_tps_crc(info->slot_id, info->bus, info->addr, key, NULL, &crc)) {
+  if (cache_tps_crc(info->bus, info->addr, key, NULL, &crc)) {
     return VR_STATUS_FAILURE;
   }
 

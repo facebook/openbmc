@@ -343,11 +343,12 @@ DEV_NUM=
 OP_IOEXP_BUS="4"
 OP_1OU_IOEXP_ADDR="0x26"
 OP_3OU_IOEXP_ADDR="0x27"
+CLASS1_SB_BIC_CHANNEL="0x4"
 
 # Set back to default 57600
 /bin/stty -F "/dev/ttyS$SLOT_NUM" 57600 >/dev/null 2>&1
 
-if [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]]; then
+if [[ "$SLED_TYPE" == "Type_17" ]]; then
   if ! [ "$SLOT" == "slot1" ]; then
     echo "$SLOT is empty"
     exit 255
@@ -452,7 +453,11 @@ if [ -n "$COMP" ]; then
           DEV_NUM="0x4"
         fi
       elif [ "$SLED_TYPE" == "Type_8" ]; then
-        DEV_NUM="$uart_ch"
+        if [ "$COMP" == "sb" ]; then
+          DEV_NUM="$CLASS1_SB_BIC_CHANNEL"
+        else
+          DEV_NUM="$uart_ch"
+        fi
       else
         DEV_NUM="0x4"
       fi

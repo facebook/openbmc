@@ -71,6 +71,19 @@ typedef struct
   uint8_t path[8];
 } usb_dev;
 
+/* Sync with openBIC oem_1s_handler.h */
+enum FIRMWARE_COMPONENT {
+  COMPNT_CPLD = 1,
+  COMPNT_BIC,
+  COMPNT_ME,
+  COMPNT_BIOS,
+  COMPNT_PVCCIN,
+  COMPNT_PVCCFA_EHV_FIVRA,
+  COMPNT_PVCCD_HV,
+  COMPNT_PVCCINFAON,
+  COMPNT_PVCCFA_EHV,
+  COMPNT_CXL
+};
 
 enum {
   /*----VR ADDR-----*/

@@ -502,7 +502,7 @@ error_exit:
 static int
 _bic_get_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf) {
   uint8_t tbuf[16] = {0x00};
-  uint8_t rbuf[16] = {0x00};
+  uint8_t rbuf[32] = {0x00};
   uint8_t tlen = IANA_ID_SIZE;
   uint8_t rlen = sizeof(rbuf);
   uint8_t type = TYPE_1OU_UNKNOWN;
@@ -537,6 +537,7 @@ _bic_get_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf) {
     case FW_3OU_BIC:
     case FW_4OU_BIC:
     case FW_BB_BIC:
+    case COMPNT_CXL:
       ver[rlen - 2] = '\0';
       break;
     default:
@@ -563,6 +564,9 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_BB_BIC:
       fw_comp = FW_SB_BIC;
       break;
+    case FW_1OU_CXL:
+      fw_comp = COMPNT_CXL;
+      break;
     default:
       fw_comp = comp;
       break;
@@ -577,6 +581,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
       break;
     case FW_1OU_BIC:
     case FW_1OU_CPLD:
+    case FW_1OU_CXL:
       intf = FEXP_BIC_INTF;
       break;
     case FW_2OU_BIC:
@@ -607,6 +612,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_ME:
     case FW_SB_BIC:
     case FW_1OU_BIC:
+    case FW_1OU_CXL:
     case FW_2OU_BIC:
     case FW_2OU_PESW_CFG_VER:
     case FW_2OU_PESW_FW_VER:

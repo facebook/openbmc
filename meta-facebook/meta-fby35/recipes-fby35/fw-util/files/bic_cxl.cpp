@@ -75,18 +75,15 @@ int CxlComponent::fupdate(const string image) {
   return update_internal(image, -1, true /* force */);
 }
 
-int CxlComponent::get_ver_str(string&) {
-  uint8_t fruid = 0;
-  int ret = 0;
+int CxlComponent::get_ver_str(string& s) {
+  uint8_t ver[32] = {0};
 
-  ret = pal_get_fru_id((char *)_fru.c_str(), &fruid);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Failed to get fru id");
-    throw runtime_error("Error in getting fru id");
+  if(bic_get_fw_ver(slot_id, fw_comp, ver)){
+    return FW_STATUS_FAILURE;
   }
-  throw runtime_error("Not support to get version of CXL");
 
-  return FW_STATUS_NOT_SUPPORTED;
+  s = string(reinterpret_cast<const char*>(ver));
+  return FW_STATUS_SUCCESS;
 }
 
 int CxlComponent::print_version() {

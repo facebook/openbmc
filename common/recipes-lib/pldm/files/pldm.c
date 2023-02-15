@@ -132,9 +132,13 @@ const char *pldm_str_type_name[NUM_PLDM_FW_STR_TYPES] = {
 };
 
 // UUID signature specifying package supports PLDM FW Update
-const char PLDM_FW_UUID[PLDM_FW_UUID_LEN] = {
+const char PLDM_FW_UUID1[PLDM_FW_UUID_LEN] = {
             0xf0, 0x18, 0x87, 0x8c, 0xcb, 0x7d, 0x49, 0x43,
             0x98, 0x00, 0xa0, 0x2f, 0x05, 0x9a, 0xca, 0x02
+        };
+const char PLDM_FW_UUID2[PLDM_FW_UUID_LEN] = {
+            0x12, 0x44, 0xD2, 0x64, 0x8D, 0x7D, 0x47, 0x18,
+            0xA0, 0x30, 0xFC, 0x8A, 0x56, 0x58, 0x7D, 0x5A
         };
 
 const char *
@@ -380,7 +384,8 @@ void pldmCreateCancelUpdateCmd(pldm_cmd_req *pPldmCdb)
 // helper function to check if a given UUID is a PLDM FW Package
 int isPldmFwUuid(char *uuid)
 {
-  return (!strncmp(uuid, PLDM_FW_UUID, PLDM_FW_UUID_LEN));
+  return (!strncmp(uuid, PLDM_FW_UUID1, PLDM_FW_UUID_LEN) ||
+          !strncmp(uuid, PLDM_FW_UUID2, PLDM_FW_UUID_LEN));
 }
 
 

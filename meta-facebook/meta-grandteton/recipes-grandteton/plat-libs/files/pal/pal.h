@@ -66,6 +66,7 @@ void pal_get_bic_intf(bic_intf *fru_bic_info);
 int pal_get_root_fru(uint8_t fru, uint8_t *root);
 bool pal_is_fw_update_ongoing(uint8_t fruid);
 int pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout);
+int pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data);
 
 #ifdef __cplusplus
 } // extern "C"

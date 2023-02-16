@@ -44,6 +44,7 @@
 #include <libpldm/platform.h>
 #include <libpldm-oem/pldm.h>
 #include "pal_common.h"
+#include <pthread.h>
 
 
 #ifndef PLATFORM_NAME
@@ -99,6 +100,17 @@ const char pal_server_list[] = "mb";
 #define MEB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 #define MEB_JCN_CAPABILITY FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 #define ACB_ACCL_CAPABILITY FRU_CAPABILITY_FRUID_ALL
+
+static bool is_fio_handler_running = false;
+
+enum {
+  FIO_BUTTON_ACB_12V_OFF = 1,
+};
+
+enum {
+  ACB_PU10_HSC_ADDR = 0x20,
+  ACB_PU11_HSC_ADDR = 0x26,
+};
 
 struct fru_dev_info {
   uint8_t fru_id;
@@ -1363,4 +1375,80 @@ pal_get_bic_intf(bic_intf *fru_bic_info) {
       break;
   }
   return;
+}
+
+static void *
+fio_button_handler(void *arg) {
+  int ret = 0;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t txlen = 0;
+  size_t  rxlen = 0;
+  uint32_t operation = (uint32_t)arg;
+
+  pthread_detach(pthread_self());
+
+  syslog(LOG_CRIT, "%s Powering off host...", __func__);
+  if (pal_set_server_power(FRU_MB, SERVER_POWER_OFF) < 0) {
+    syslog(LOG_ERR, "%s Fail to power off host", __func__);
+    goto exit;
+  }
+
+  switch(operation) {
+  case FIO_BUTTON_ACB_12V_OFF:
+    txbuf[1] = ACB_PU11_HSC_ADDR;
+    txbuf[3] = 0x1;
+    txbuf[4] = 0x0;
+    txlen = 5;
+    syslog(LOG_CRIT, "%s 12V off ACB", __func__);
+    ret = oem_pldm_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID, NETFN_APP_REQ,
+            CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, true);
+    break;
+  default:
+    syslog(LOG_ERR, "%s invalid data %u", __func__, operation);
+    goto exit;
+  }
+
+  if (ret) {
+    syslog(LOG_ERR, "%s Fail to power control ACB ret: %d", __func__, ret);
+  }
+
+exit:
+  is_fio_handler_running = false;
+  pthread_exit(0);
+}
+
+int
+pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data)
+{
+  pthread_t tid;
+  uint32_t operation = 0;
+
+  if (!pal_is_artemis()) {
+    return 0;
+  }
+  if (data == NULL) {
+    syslog(LOG_ERR, "%s null parameter", __func__);
+    return -1;
+  }
+
+  operation = (uint32_t)(data[2]);
+  if (operation != FIO_BUTTON_ACB_12V_OFF) {
+    return -1;
+  }
+
+  if (is_fio_handler_running) {
+    syslog(LOG_WARNING, "%s() another instance is running", __func__);
+    return -1;
+  }
+
+  is_fio_handler_running = true;
+
+  if (pthread_create(&tid, NULL, fio_button_handler, (void *)operation) < 0) {
+    syslog(LOG_WARNING, "%s() pthread create failed", __func__);
+    is_fio_handler_running = false;
+    return -1;
+  }
+
+  return 0;
 }

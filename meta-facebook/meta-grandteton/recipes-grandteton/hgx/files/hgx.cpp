@@ -1,13 +1,13 @@
 #include <hgx.h>
 #include <nlohmann/json.hpp>
+#include <openbmc/kv.hpp>
 #include <string.h>
+#include <syslog.h>
 #include <chrono>
 #include <iostream>
 #include <thread>
-#include <syslog.h>
 #include "restclient-cpp/connection.h"
 #include "restclient-cpp/restclient.h"
-#include <openbmc/kv.hpp>
 
 #include <fstream>
 #include <streambuf>
@@ -23,14 +23,21 @@ enum {
 constexpr auto HMC_USR = "root";
 constexpr auto HMC_PWD = "0penBmc";
 
-const std::string HMC_URL = "http://192.168.31.1/redfish/v1/";
+const std::string HMC_BASE_URL = "http://192.168.31.1";
+const auto HMC_URL = HMC_BASE_URL + "/redfish/v1/";
 const auto HMC_UPDATE_SERVICE = HMC_URL + "UpdateService";
 const auto HMC_TASK_SERVICE = HMC_URL + "TaskService/Tasks/";
 const auto HMC_FW_INVENTORY = HMC_URL + "UpdateService/FirmwareInventory/";
-const auto HGX_TELEMETRY_SERVICE_EVT = HMC_URL + "TelemetryService/MetricReportDefinitions/PlatformEnvironmentMetrics";
-const auto HGX_TELEMETRY_SERVICE_DVT = HMC_URL + "TelemetryService/MetricReports/HGX_PlatformEnvironmentMetrics_0/";
+const auto HGX_TELEMETRY_SERVICE_EVT = HMC_URL +
+    "TelemetryService/MetricReportDefinitions/PlatformEnvironmentMetrics";
+const auto HGX_TELEMETRY_SERVICE_DVT = HMC_URL +
+    "TelemetryService/MetricReports/HGX_PlatformEnvironmentMetrics_0/";
 const auto HMC_FACTORY_RESET_SERVICE = "/Actions/Manager.ResetToDefaults";
 const auto HMC_RESET_SERVICE = "/Actions/Manager.Reset";
+const auto HMC_DUMP_SERVICE = HMC_URL +
+    "Managers/HGX_BMC_0/LogServices/Dump/Actions/LogService.CollectDiagnosticData";
+const auto SYSTEM_DUMP_SERVICE = HMC_URL +
+    "Systems/HGX_Baseboard_0/LogServices/Dump/Actions/LogService.CollectDiagnosticData";
 
 const std::vector<std::string> HMC_PATCH_TARGETS_EVT = {
   "ERoT_FPGA_Firmware", "ERoT_GPU0_Firmware", "ERoT_GPU1_Firmware",
@@ -271,10 +278,29 @@ void patch_bf_update() {
             << jresp["HttpPushUriTargets"] << std::endl;
 }
 
-int update(const std::string& comp, const std::string& path) {
+std::string dumpNonBlocking(DiagnosticDataType type) {
+  std::string url;
+  const std::map<DiagnosticDataType, std::string> typeMap = {
+      {DiagnosticDataType::MANAGER, "Manager"},
+      {DiagnosticDataType::OEM_SYSTEM, "System"},
+      {DiagnosticDataType::OEM_SELF_TEST, "SelfTest"},
+      {DiagnosticDataType::OEM_FPGA, "FPGA"}};
+  json req;
+  if (type == DiagnosticDataType::MANAGER) {
+    req["DiagnosticDataType"] = "Manager";
+    url = HMC_DUMP_SERVICE;
+  } else {
+    url = SYSTEM_DUMP_SERVICE;
+    req["DiagnosticDataType"] = "OEM";
+    req["OEMDiagnosticDataType"] = "DiagnosticType=" + typeMap.at(type);
+  }
+  std::string respStr = hgx.post(url, req.dump(), false);
+  json resp = json::parse(respStr);
+  return resp["Id"];
+}
+
+TaskStatus waitTask(const std::string& taskID) {
   using namespace std::chrono_literals;
-  std::string taskID = updateNonBlocking(comp, path);
-  std::cout << "Started update task: " << taskID << std::endl;
   size_t nextMessage = 0;
   for (int retry = 0; retry < 500; retry++) {
     TaskStatus status = getTaskStatus(taskID);
@@ -282,18 +308,61 @@ int update(const std::string& comp, const std::string& path) {
       std::cout << status.messages[nextMessage++] << std::endl;
     }
     if (status.state != "Running") {
-      std::cout << "Update completed with state: " << status.state
-                << " status: " << status.status << std::endl;
-      if (status.state == "Completed") {
-        return 0;
-      }
-      else {
-        return -1;
-      }
+      return status;
     }
     std::this_thread::sleep_for(5s);
   }
-  return -1;
+  throw std::runtime_error("Timeout");
+}
+
+std::string findTaskPayloadLocation(const TaskStatus& status) {
+  json taskResp = json::parse(status.resp);
+  for (const std::string hdr : taskResp["Payload"]["HttpHeaders"]) {
+    auto sepLoc = hdr.find(": ");
+    if (sepLoc == hdr.npos) {
+      continue;
+    }
+    std::string tag = hdr.substr(0, sepLoc);
+    std::string val = hdr.substr(sepLoc + 2, hdr.length());
+    if (tag == "Location") {
+      return val;
+    }
+  }
+  throw std::runtime_error("Header did not contain a location!");
+}
+
+void retrieveDump(const std::string& taskID, const std::string& path) {
+  using namespace std::chrono_literals;
+  TaskStatus status = waitTask(taskID);
+  std::string loc = findTaskPayloadLocation(status);
+  std::cout << "Task Additional Data: " << loc << std::endl;
+  json dumpResp = json::parse(hgx.get(HMC_BASE_URL + loc));
+  if (!dumpResp.contains("AdditionalDataURI")) {
+    throw std::runtime_error(
+        "Task result location does not contain an AdditionalDataURI");
+  }
+  std::string attachmentURL = dumpResp["AdditionalDataURI"];
+  std::cout << "Getting attachment from: " << attachmentURL << std::endl;
+  std::string attachment = hgx.get(HMC_BASE_URL + attachmentURL);
+  std::ofstream outfile(path, std::ofstream::binary);
+  outfile.write(&attachment[0], attachment.size());
+}
+
+void dump(DiagnosticDataType type, const std::string& path) {
+  std::string taskID = dumpNonBlocking(type);
+  retrieveDump(taskID, path);
+}
+
+int update(const std::string& comp, const std::string& path) {
+  std::string taskID = updateNonBlocking(comp, path);
+  std::cout << "Started update task: " << taskID << std::endl;
+  TaskStatus status = waitTask(taskID);
+  std::cout << "Update completed with state: " << status.state
+            << " status: " << status.status << std::endl;
+  if (status.state != "Completed") {
+    return -1;
+  }
+  return 0;
 }
 
 std::string sensorRaw(const std::string& component, const std::string& name) {

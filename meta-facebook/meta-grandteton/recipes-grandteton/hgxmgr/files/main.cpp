@@ -1,7 +1,7 @@
 #include <CLI/CLI.hpp>
 #include <openbmc/hgx.h>
-#include <iostream>
 #include <syslog.h>
+#include <iostream>
 
 static void do_version(const std::string& component, bool json_fmt) {
   std::cout << hgx::version(component, json_fmt) << std::endl;
@@ -18,6 +18,30 @@ static void do_update(const std::string& comp, const std::string& path, bool asy
   } else {
     hgx::update(comp, path);
   }
+}
+
+static void do_dump(
+    const std::string& comp,
+    const std::string& path,
+    bool async,
+    bool json_fmt) {
+  const std::map<std::string, hgx::DiagnosticDataType> compMap = {
+      {"hmc", hgx::DiagnosticDataType::MANAGER},
+      {"system", hgx::DiagnosticDataType::OEM_SYSTEM},
+      {"self-test", hgx::DiagnosticDataType::OEM_SELF_TEST},
+      {"fpga", hgx::DiagnosticDataType::OEM_FPGA}};
+  if (async) {
+    std::cout << hgx::dumpNonBlocking(compMap.at(comp)) << std::endl;
+  } else {
+    if (path == "") {
+      throw std::runtime_error("Image is required if synchronous");
+    }
+    hgx::dump(compMap.at(comp), path);
+  }
+}
+
+static void do_dump_retrieve(const std::string& id, const std::string& path) {
+  hgx::retrieveDump(id, path);
 }
 
 static void do_task_status(const std::string& id, bool json_fmt) {
@@ -97,6 +121,25 @@ int main(int argc, char* argv[]) {
   update->add_flag(
       "--async", async, "Do not block, return immediately printing the task ID");
   update->callback([&]() { do_update(comp, image, async, json_fmt); });
+
+  std::set<std::string> allowedComps{"hmc", "system", "self-test", "fpga"};
+  auto dump = app.add_subcommand("dump", "perform a dump");
+  dump->add_option("comp", comp, "What to dump")
+      ->required()
+      ->check(CLI::IsMember(allowedComps));
+  dump->add_option("path", image, "Path to store the dump");
+  dump->add_flag(
+      "--async",
+      async,
+      "Do not block, return immediately printing the task ID");
+  dump->callback([&]() { do_dump(comp, image, async, json_fmt); });
+
+  auto dump_ret =
+      app.add_subcommand("retrieve-dump", "Retrieve a dump given a task ID");
+  dump_ret->add_option("taskID", comp, "Task ID got from dump --async")
+      ->required();
+  dump_ret->add_option("path", image, "Path to store the dump")->required();
+  dump_ret->callback([&]() { do_dump_retrieve(comp, image); });
 
   std::string fru{};
   std::string sensorName{};

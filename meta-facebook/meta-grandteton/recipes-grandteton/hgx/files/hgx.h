@@ -14,6 +14,8 @@ typedef enum HMCPhase {
 
 namespace hgx {
 
+enum class DiagnosticDataType { MANAGER, OEM_SYSTEM, OEM_SELF_TEST, OEM_FPGA };
+
 // Standard HTTP Exception
 struct HTTPException : std::runtime_error {
   int errorCode = 0;
@@ -73,6 +75,15 @@ TaskStatus getTaskStatus(const std::string& id);
 
 // Get the current value of a sensor.
 float sensor(const std::string& component, const std::string& name);
+
+// Get dump
+void dump(DiagnosticDataType type, const std::string& path);
+
+// Trigger Dump Collection
+std::string dumpNonBlocking(DiagnosticDataType type);
+
+// Retrieve data
+void retrieveDump(const std::string& taskID, const std::string& path);
 
 // Request for the value of the sensor, but return all the JSON output
 std::string sensorRaw(const std::string& component, const std::string& name);

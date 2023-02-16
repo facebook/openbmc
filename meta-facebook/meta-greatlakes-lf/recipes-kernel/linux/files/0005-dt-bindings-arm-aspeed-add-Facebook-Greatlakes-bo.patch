@@ -1,0 +1,24 @@
+From deb063aa885a07440a8e0bd007df19a6de918a5b Mon Sep 17 00:00:00 2001
+From: WayneLiu-wiwynn <Wayne_SC_Liu@wiwynn.com>
+Date: Mon, 13 Feb 2023 09:40:46 +0800
+Subject: [PATCH 2/2] dt bindings arm aspeed add Facebook Greatlakes bo
+
+---
+ Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
+index 272626937ecd..1b585e554791 100644
+--- a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
++++ b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
+@@ -78,6 +78,7 @@ properties:
+               - facebook,cloudripper-bmc
+               - facebook,elbert-bmc
+               - facebook,fuji-bmc
++              - facebook,greatlakes-bmc
+               - ibm,everest-bmc
+               - ibm,rainier-bmc
+               - ibm,tacoma-bmc
+-- 
+2.25.1
+

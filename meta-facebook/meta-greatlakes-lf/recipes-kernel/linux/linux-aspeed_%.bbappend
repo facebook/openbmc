@@ -5,5 +5,7 @@ SRC_URI:append = " \
     file://0002-Add-jtag-driver.patch \
     file://0003-Add-pwm-tach-driver.patch \
     file://0004-wdt-aspeed-Reorder-extend-operation.patch \
+    file://0005-dt-bindings-arm-aspeed-add-Facebook-Greatlakes-bo.patch \
+    file://0006-ARM-dts-aspeed-greatlakes-Add-Facebookgreatlakes.patch \
 "
 KERNEL_DEVICETREE = "aspeed-bmc-facebook-greatlakes.dtb"

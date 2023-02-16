@@ -1,22 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2022 Facebook Inc.
 
 /dts-v1/;
 #include "aspeed-g6.dtsi"
 #include <dt-bindings/gpio/aspeed-gpio.h>
-#include <dt-bindings/i2c/i2c.h>
 #include <dt-bindings/leds/leds-pca955x.h>
+#include <dt-bindings/i2c/i2c.h>
 
 / {
 	model = "Meta Platforms Great Lakes BMC";
-	compatible = "aspeed,ast2600";
+	compatible = "facebook,greatlakes-bmc", "aspeed,ast2600";
 
 	aliases {
 		serial4 = &uart5;
-	};
-
-	chosen {
-		stdout-path = &uart5;
-		bootargs = "console=ttyS4,57600n8 root=/dev/ram rw vmalloc=384M";
 	};
 
 	memory@80000000 {
@@ -31,61 +27,6 @@
 			      <&adc1 0>, <&adc1 2>, <&adc1 3>, <&adc1 4>,
 			      <&adc1 5>, <&adc1 6>;
 	};
-
-        fan0: pwm-fan0 {
-                compatible = "pwm-fan";
-                pwms = <&pwm 0 40000 0>;        /* Target freq:25 kHz */
-                cooling-min-state = <0>;
-                cooling-max-state = <3>;
-                #cooling-cells = <2>;
-                cooling-levels = <0 25 128 255>;
-        };
-
-        fan1: pwm-fan1 {
-                compatible = "pwm-fan";
-                pwms = <&pwm 1 40000 0>;        /* Target freq:25 kHz */
-                cooling-min-state = <0>;
-                cooling-max-state = <3>;
-                #cooling-cells = <2>;
-                cooling-levels = <0 15 128 255>;
-        };
-
-        fan2: pwm-fan2 {
-                compatible = "pwm-fan";
-                pwms = <&pwm 2 40000 0>;        /* Target freq:25 kHz */
-                cooling-min-state = <0>;
-                cooling-max-state = <3>;
-                #cooling-cells = <2>;
-                cooling-levels = <0 15 128 255>;
-        };
-
-        fan3: pwm-fan3 {
-                compatible = "pwm-fan";
-                pwms = <&pwm 3 40000 0>;        /* Target freq:25 kHz */
-                cooling-min-state = <0>;
-                cooling-max-state = <3>;
-                #cooling-cells = <2>;
-                cooling-levels = <0 15 128 255>;
-        };
-
-        spi_gpio: spi-gpio {
-                status = "okay";
-                compatible = "spi-gpio";
-                #address-cells = <1>;
-                #size-cells = <0>;
-
-                gpio-sck = <&gpio0 ASPEED_GPIO(X, 3) GPIO_ACTIVE_HIGH>;
-                gpio-mosi = <&gpio0 ASPEED_GPIO(X, 4) GPIO_ACTIVE_HIGH>;
-                gpio-miso = <&gpio0 ASPEED_GPIO(X, 5) GPIO_ACTIVE_HIGH>;
-                num-chipselects = <1>;
-                cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
-
-                tpmdev@0 {
-                        compatible = "tcg,tpm_tis-spi";
-                        spi-max-frequency = <33000000>;
-                        reg = <0>;
-                };
-        };
 };
 
 &uart1 {
@@ -159,69 +100,10 @@
 	};
 };
 
-&pwm {
-        status = "okay";
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_pwm0_default
-                     &pinctrl_pwm1_default
-                     &pinctrl_pwm2_default
-                     &pinctrl_pwm3_default>;
-};
-
-&tach {
-        status = "okay";
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_tach0_default
-                     &pinctrl_tach1_default
-                     &pinctrl_tach2_default
-                     &pinctrl_tach3_default
-                     &pinctrl_tach4_default
-                     &pinctrl_tach5_default
-                     &pinctrl_tach6_default
-                     &pinctrl_tach7_default>;
-        fan@0 {
-                aspeed,min-rpm = <30>;
-                aspeed,tach-ch = <0x00>;
-        };
-
-        fan@1 {
-                aspeed,min-rpm = <30>;
-                aspeed,tach-ch = <0x01>;
-        };
-        fan@2 {
-                aspeed,min-rpm = <30>;
-                aspeed,tach-ch = <0x02>;
-        };
-
-        fan@3 {
-                aspeed,min-rpm = <30>;
-                aspeed,tach-ch = <0x03>;
-        };
-        fan@4 {
-                aspeed,min-rpm = <30>;
-                aspeed,tach-ch = <0x04>;
-        };
-
-        fan@5 {
-                aspeed,min-rpm = <30>;
-                aspeed,tach-ch = <0x05>;
-        };
-        fan@6 {
-                aspeed,min-rpm = <30>;
-                aspeed,tach-ch = <0x06>;
-        };
-
-        fan@7 {
-                aspeed,min-rpm = <30>;
-                aspeed,tach-ch = <0x07>;
-        };
-
-};
-
 &i2c0 {
 	status = "okay";
 	multi-master;
-	ipmb0@10 {
+	ipmb@10 {
 		compatible = "ipmb-dev";
 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 		i2c-protocol;
@@ -231,7 +113,7 @@
 &i2c1 {
 	status = "okay";
 	multi-master;
-	ipmb1@10 {
+	ipmb@10 {
 		compatible = "ipmb-dev";
 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 		i2c-protocol;
@@ -241,7 +123,7 @@
 &i2c2 {
 	status = "okay";
 	multi-master;
-	ipmb2@10 {
+	ipmb@10 {
 		compatible = "ipmb-dev";
 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 		i2c-protocol;
@@ -251,7 +133,7 @@
 &i2c3 {
 	status = "okay";
 	multi-master;
-	ipmb3@10 {
+	ipmb@10 {
 		compatible = "ipmb-dev";
 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 		i2c-protocol;
@@ -276,12 +158,21 @@
 
 &i2c8 {
 	status = "okay";
+        temperature-sensor@1f {
+                compatible = "ti,tmp421";
+                reg = <0x1f>;
+        };
+        // NIC EEPROM
+        eeprom@50 {
+                compatible = "st,24c32";
+                reg = <0x50>;
+        };
 };
 
 &i2c9 {
 	status = "okay";
 	multi-master;
-	ipmb9@10 {
+	ipmb@10 {
 		compatible = "ipmb-dev";
 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 		i2c-protocol;
@@ -294,10 +185,22 @@
 
 &i2c11 {
 	status = "okay";
+        eeprom@51 {
+                compatible = "atmel,24c128";
+                reg = <0x51>;
+        };
+        eeprom@54 {
+                compatible = "atmel,24c128";
+                reg = <0x54>;
+        };
 };
 
 &i2c12 {
 	status = "okay";
+        temperature-sensor@4f {
+                compatible = "lm75";
+                reg = <0x4f>;
+        };
 };
 
 &i2c13 {
@@ -323,12 +226,6 @@
 		     &pinctrl_adc13_default &pinctrl_adc14_default>;
 };
 
-&jtag1 {
-       status = "okay";
-       pinctrl-names = "default";
-       pinctrl-0 = <&pinctrl_jtagm_default>;
-};
-
 &ehci0 {
 	status = "okay";
 };
@@ -339,4 +236,9 @@
 
 &uhci {
 	status = "okay";
+};
+
+&gpio0 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_gpiu1_default &pinctrl_gpiu7_default>;
 };

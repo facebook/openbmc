@@ -168,19 +168,19 @@ bic_data_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
 }
 
 int bic_data_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
-                     uint8_t *tbuf, uint16_t tlen, uint8_t *rbuf, uint8_t *rlen) {
+                     uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
   //char sys_conf[16] = {0};
   int ret = 0;
 
 #ifdef CONFIG_IPMB_XFER
-  ret = bic_ipmb_wrapper(slot_id, netfn, cmd, tbuf, tlen, rbuf, rlen);
+  ret = bic_ipmb_wrapper(slot_id, netfn, cmd, txbuf, txlen, rxbuf, rxlen);
   if (ret < 0) {
     syslog(LOG_ERR, "%s(): Failed to pack data to ipmb."
            "slot_id = %d, netfn = 0x%02x, cmd = 0x%02x",
            __func__, slot_id, netfn, cmd);
   }
 #else
-  ret = bic_pldm_wrapper(slot_id, netfn, cmd, tbuf, tlen, rbuf, rlen);
+  ret = bic_pldm_wrapper(slot_id, netfn, cmd, txbuf, txlen, rxbuf, rxlen);
   if (ret < 0) {
     syslog(LOG_ERR, "%s(): Failed to pack data to pldm."
            "slot_id = %d, netfn = 0x%02x, cmd = 0x%02x",
@@ -210,7 +210,7 @@ int bic_pldm_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   while (retry < BIC_XFER_RETRY_TIME) {
     // avoid meaningless retry
     ret = fby35_common_server_stby_pwr_sts(slot_id, &status_12v);
-    if ( ret < 0 || status_12v == 0) {
+    if (ret < 0 || status_12v == 0) {
       return BIC_STATUS_FAILURE;
     }
     if (is_bic_ready(slot_id, NONE_INTF) != BIC_STATUS_SUCCESS) {
@@ -218,24 +218,19 @@ int bic_pldm_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
       retry++;
       continue;
     }
-  
-    ret = oem_pldm_ipmi_send_recv(bus_id, 0xA, netfn, cmd, txbuf, txlen, rxbuf, &rlen, false);
 
-    if ((ret == CC_NODE_BUSY) && (++retry < BIC_XFER_RETRY_TIME)) {
-      msleep(BIC_XFER_RETRY_DELAY);
-      continue;
-    }
+    ret = oem_pldm_ipmi_send_recv(bus_id, 0xA, netfn, cmd, txbuf, txlen, rxbuf, &rlen, false);
     break;
   }
-
-  if (ret) {
-    syslog(LOG_ERR, "bic_pldm_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Completion Code: 0x%02X ", slot_id, netfn, cmd, ret);
-    if (ret == CC_INVALID_CMD) {
-      return BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
-    }
+  if (retry >= BIC_XFER_RETRY_TIME) {
+    syslog(LOG_ERR, "%s: slot%u netfn: 0x%02X cmd: 0x%02X, retry exceeded", __func__, slot_id, netfn, cmd);
     return BIC_STATUS_FAILURE;
   }
 
+  if (ret) {
+    syslog(LOG_ERR, "%s: slot%u netfn: 0x%02X cmd: 0x%02X, ret: %d", __func__, slot_id, netfn, cmd, ret);
+    return BIC_STATUS_FAILURE;
+  }
   *rxlen = rlen;
 
   return BIC_STATUS_SUCCESS;

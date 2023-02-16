@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -18,14 +18,17 @@
 # Boston, MA 02110-1301 USA
 #
 
-### BEGIN INIT INFO
-# Provides:          setup-fan
-# Required-Start:    board-id
-# Required-Stop:
-# Default-Start:     5
-# Default-Stop:
-# Short-Description: Set fan speed
-### END INIT INFO
+. /usr/local/fbpackages/utils/ast-functions
 
+for retry in {1..10};
+do
+    bp1_sensor208=$(kv get fan_bp1_sensor208)
+    if [ $? -ne 0 ]; then
+        sleep 3
+    else
+        break
+    fi
+done
 
-/etc/init.d/check-fan-cache.sh
+runsv /etc/sv/fscd > /dev/null 2>&1 &
+echo "done."

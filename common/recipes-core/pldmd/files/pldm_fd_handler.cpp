@@ -101,7 +101,7 @@ pldm_fd_handler::pop_client(int index)
   client_change = true;
 }
 
-void 
+void
 pldm_fd_handler::do_pop_client(int index)
 {
   pop_element(clients_data, index);
@@ -118,16 +118,6 @@ pldm_fd_handler::get_client_fd(uint8_t iid)
     return it->fd;
   else
     return -1;
-}
-
-int
-pldm_fd_handler::get_client_index(uint8_t iid) const
-{
-  auto i = std::find_if(clients_data.cbegin(), clients_data.cend(),
-                        [=](auto c) { return c.instance_id == iid; });
-
-  if (i == clients_data.cend()) return -1;
-  return std::distance(clients_data.cbegin(), i);
 }
 
 void
@@ -158,13 +148,13 @@ pldm_fd_handler::client_send_data(int index, uint8_t *buf, size_t size)
   return fd_handler::send_data(mctpd_fd, buf, size);
 }
 
-int 
+int
 pldm_fd_handler::send_fw_client_data(uint8_t * buf, size_t size)
 {
   return fd_handler::send_data(fw_update_client, buf, size);
 }
 
-int 
+int
 pldm_fd_handler::recv_data(int fd, uint8_t** buf, size_t &size)
 {
   int returnCode = fd_handler::recv_data(fd, buf, size);

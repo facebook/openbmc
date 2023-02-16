@@ -28,7 +28,7 @@ enum {
   ERR_SIZE_TOO_SHORT = -2,
 };
 
-enum 
+enum
 {
   MCTP_FD = 0,
   SERV_FD,
@@ -67,7 +67,6 @@ class pldm_fd_handler : public fd_handler
     bool add_client(int fd, uint8_t type);
     void pop_client(int index);
     int get_client_fd(uint8_t iid);
-    int get_client_index(uint8_t iid) const;
     int get_client_count(){ return get_count(clients_data); }
     void show_clients();
 
@@ -78,7 +77,7 @@ class pldm_fd_handler : public fd_handler
     int check_clients(int index);
 
   protected:
-    // to distinguish client connect pldmd with 
+    // to distinguish client connect pldmd with
     // whether pldm-mux or pldm-fwup-mux
     // replace fd_handler::client_fds
     std::vector<pldm_client> clients_data = {};

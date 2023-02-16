@@ -176,10 +176,6 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
         // Send back to client, so remove buf[0] & buf[1]
         LOG(INFO) << "Forward to client iid:" << (int)iid;
         handler->send_data(cfd, buf, size);
-        int index = handler->get_client_index(iid);
-        if (index >= 0) {
-          handler->pop_client(index);
-        }
       }
     }
   }

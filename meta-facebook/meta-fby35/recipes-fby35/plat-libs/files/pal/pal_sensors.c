@@ -1361,42 +1361,35 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
 
 int
 pal_get_pdb_mfr_id_length(uint8_t bus, uint8_t addr, uint8_t *mfr_id_length) {
-  uint8_t tbuf[PMBUS_CMD_LEN_MAX] = {0};
   uint8_t rbuf[PMBUS_RESP_LEN_MAX] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 1;
-  int ret = 0;
+  int ret = 0, rc = 0;
   static int fd = -1;
-
-  tbuf[tlen++] = PMBUS_GET_MFR_ID;
 
   if (mfr_id_length == NULL) {
     syslog(LOG_WARNING, "%s() fail due to NULL pointer check", __func__);
     return -1;
   }
 
-  if ( fd < 0 ) {
+  if (fd < 0) {
     fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-    if ( fd < 0 ) {
-      syslog(LOG_WARNING, "Failed to open bus %d\n", bus);
-      return fd;
+    if (fd < 0) {
+      syslog(LOG_WARNING, "Failed to open bus %d", bus);
+      return -1;
     }
   }
 
-  //Get mfr id
-  ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen), MAX_RETRY, RETRY_INTERVAL_TIME_MS);
+  // Get MFR_ID
+  ret = retry_cond((rc = i2c_smbus_read_block_data(fd, PMBUS_GET_MFR_ID, rbuf)) > 0,
+                   MAX_RETRY, RETRY_INTERVAL_TIME_MS);
   if (ret < 0) {
-    syslog(LOG_CRIT, "%s(): Failed to do i2c_rdwr_msg_transfer\n", __func__);
-    goto exit;
-  }
-  *mfr_id_length = rbuf[0];
-
-exit:
-  if ( fd >= 0 ) {
+    syslog(LOG_ERR, "%s() Failed to read MFR_ID", __func__);
     close(fd);
     fd = -1;
+    return -1;
   }
-  return ret;
+  *mfr_id_length = rc;
+
+  return 0;
 }
 
 int

@@ -317,11 +317,11 @@ main(int argc, char **argv) {
           if (pal_get_pwm_value(i, &pwm) == 0)
             cout << fan_name << " Speed: " << rpm << " RPM (" << +pwm << "%)" << endl;
           else {
-            cout << "Error while getting fan PWM for Fan " << i << endl;
+            cout << "Error while getting fan PWM for Fan " << +i << endl;
             cout << fan_name << " Speed: " << rpm << " RPM" << endl;
           }
         } else {
-          cout << "Error while getting fan speed for Fan " << i << endl;
+          cout << "Error while getting fan speed for Fan " << +i << endl;
         }
       }
     }

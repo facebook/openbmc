@@ -219,7 +219,7 @@ int SignComponent::is_image_signed(const string& image_path)
   return SIGNED_ERR::SUCCESS;
 }
 
-int SignComponent::get_image(string& image_path)
+int SignComponent::get_image(string& image_path, bool force)
 {
   int src = -1, dst = -1, ret = SIGNED_ERR::SUCCESS;
   vector<uint8_t> data(image_size);
@@ -263,11 +263,13 @@ int SignComponent::get_image(string& image_path)
     goto file_exit;
   }
 
-  ret = check_md5(temp_image_path, 0, image_size, md5);
-  if (ret != 0) {
-    syslog(LOG_WARNING, "%s MD5-1 check failed, error code: %d.\n", __func__, -ret);
-    ret = SIGNED_ERR::SIGNED_UNVALID;
-    goto file_exit;
+  if (!force) {
+    ret = check_md5(temp_image_path, 0, image_size, md5);
+    if (ret != 0) {
+      syslog(LOG_WARNING, "%s MD5-1 check failed, error code: %d.\n", __func__, -ret);
+      ret = SIGNED_ERR::SIGNED_UNVALID;
+      goto file_exit;
+    }
   }
 
   image_path = temp_image_path;
@@ -290,12 +292,12 @@ int SignComponent::signed_image_update(string image, bool force)
   int ret = 0;
 
   ret = is_image_signed(image);
-  if (ret) {
+  if (ret && !force) {
     printf("Firmware not valid. error(%d)\n", -ret);
     return -1;
   }
 
-  ret = get_image(image);
+  ret = get_image(image, force);
   if (ret) {
     printf("Get copy file. error(%d)\n", -ret);
     return -1;

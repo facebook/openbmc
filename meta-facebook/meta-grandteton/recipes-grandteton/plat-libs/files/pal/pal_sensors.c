@@ -132,42 +132,30 @@ static int get_jcn_config_string(uint8_t status, char *type_str) {
   return ret;
 }
 
-static int pal_get_pldm_jcn_config(uint8_t fru, char *type_str) {
+static int pal_get_pldm_jcn_config_from_bic(uint8_t fru, char *type_str) {
   fru_status status = {0};
   int ret = 0;
-  int i = 0;
 
-  if ((fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN4) ||
-      (fru >= FRU_MEB_JCN9 && fru <= FRU_MEB_JCN12)) {
-    for (i = FRU_MEB_JCN1; i <= FRU_MEB_JCN12; i++) {
-      if (i >= FRU_MEB_JCN5 && i <= FRU_MEB_JCN8) {
-        continue; // skip E1.S slots
-      }
-      ret = pal_get_pldm_fru_status(fru, JCN_0_1, &status);
-      if (ret == 0 && status.fru_prsnt == FRU_PRSNT && status.fru_type != UNKNOWN_CARD ) {
-        if(get_jcn_config_string(status.fru_type, type_str) != 0) {
-          return -1;
-        }
-        // found
-        return 0;
-      }
+  ret = pal_get_pldm_fru_status(fru, JCN_0_1, &status);
+  if (ret == 0 && status.fru_prsnt == FRU_PRSNT && status.fru_type != UNKNOWN_CARD ) {
+    if(get_jcn_config_string(status.fru_type, type_str) != 0) {
+      return -1;
     }
-  } else if (fru == FRU_MEB_JCN13 || fru == FRU_MEB_JCN14) {
-    ret = pal_get_pldm_fru_status(fru, JCN_0_1, &status);
-    if (ret == 0 && status.fru_prsnt == FRU_PRSNT && status.fru_type != UNKNOWN_CARD ) {
-      if(get_jcn_config_string(status.fru_type, type_str) != 0) {
-          return -1;
-      }
-      return 0;
-    }
+    return 0;
   }
 
   return -1;
 }
 
-static uint8_t get_meb_jcn_config(uint8_t fru) {
+uint8_t pal_get_meb_jcn_config(uint8_t fru) {
   char key[MAX_KEY_LEN] = {0};
   char type_str[MAX_VALUE_LEN] = {0};
+
+  if (fru < FRU_MEB_JCN1 || fru > FRU_MEB_JCN14) {
+    return UNKNOWN_CARD;
+  } else if (fru >= FRU_MEB_JCN5 && fru <= FRU_MEB_JCN8) {
+    return E1S_CARD;
+  }
 
   memset(key, 0, MAX_KEY_LEN);
   memset(type_str, 0, MAX_VALUE_LEN);
@@ -175,7 +163,7 @@ static uint8_t get_meb_jcn_config(uint8_t fru) {
 
   if (kv_get(key, type_str, NULL, 0) != 0) {
     // not cached before, get from BIC
-    if (pal_get_pldm_jcn_config(fru, type_str) != 0) {
+    if (pal_get_pldm_jcn_config_from_bic(fru, type_str) != 0) {
       return UNKNOWN_CARD ;
     }
     kv_set(key, type_str, 0, 0);
@@ -198,7 +186,7 @@ static void reload_sensor_table(uint8_t fru) {
 
   if ((fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN4) ||
       (fru >= FRU_MEB_JCN9 && fru <= FRU_MEB_JCN12) ) {
-    config = get_meb_jcn_config(fru);
+    config = pal_get_meb_jcn_config(fru);
 
     switch (config) {
       case CXL_CARD:
@@ -214,7 +202,7 @@ static void reload_sensor_table(uint8_t fru) {
         break;
     }
   } else if (fru == FRU_MEB_JCN13 || fru == FRU_MEB_JCN14) {
-    config = get_meb_jcn_config(fru);
+    config = pal_get_meb_jcn_config(fru);
 
     switch (config) {
       case E1S_CARD:
@@ -333,7 +321,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       // default: cxl sensor table
       *sensor_list = (uint8_t *) meb_cxl_sensor_list;
       *cnt = meb_cxl_sensor_cnt;
-      if (get_meb_jcn_config(fru) == E1S_CARD) {
+      if (pal_get_meb_jcn_config(fru) == E1S_CARD) {
         *sensor_list = (uint8_t *) meb_e1s_sensor_list;
         *cnt = meb_e1s_sensor_cnt;
       }
@@ -347,7 +335,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       // default: e1s sensor table
       *sensor_list = (uint8_t *) meb_e1s_sensor_list;
       *cnt = meb_e1s_sensor_cnt;
-      if (get_meb_jcn_config(fru) == NIC_CARD) {
+      if (pal_get_meb_jcn_config(fru) == NIC_CARD) {
         // Todo: add NIC sensor table
         //*sensor_list = (uint8_t *) meb_nic_sensor_list;
         //*cnt = meb_nic_sensor_cnt;

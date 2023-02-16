@@ -97,6 +97,10 @@ static void do_reset() {
   hgx::reset();
 }
 
+static void do_event_log(bool json) {
+  hgx::printEventLog(std::cout, json);
+}
+
 int main(int argc, char* argv[]) {
   CLI::App app("HGX Helper Utility");
   app.failure_message(CLI::FailureMessage::help);
@@ -178,6 +182,9 @@ int main(int argc, char* argv[]) {
 
   auto reset = app.add_subcommand("reset", "Graceful reboot the HMC");
   reset->callback([&]() { do_reset(); });
+
+  auto eventlog = app.add_subcommand("event-log", "Retrieve event logs from HGX");
+  eventlog->callback([&]() { do_event_log(json_fmt); });
 
   app.require_subcommand(/* min */ 1, /* max */ 1);
 

@@ -365,6 +365,26 @@ int update(const std::string& comp, const std::string& path) {
   return 0;
 }
 
+void printEventLog(std::ostream& os, bool jsonFmt) {
+  std::string url =
+      HMC_URL + "Systems/HGX_Baseboard_0/LogServices/EventLog/Entries";
+  json entries = json::parse(hgx.get(url));
+  if (jsonFmt) {
+    os << entries["Members"].dump();
+    return;
+  }
+  for (const auto& entry : entries["Members"]) {
+    auto& time = entry["Created"];
+    auto& msg = entry["Message"];
+    auto& resolution = entry["Resolution"];
+    bool resolved = entry["Resolved"];
+    auto& severity = entry["Severity"];
+    auto res_str = resolved ? "RESOLVED" : "UNRESOLVED";
+    os << time << '\t' << severity << '\t' << res_str << '\t' << msg << '\t'
+       << resolution << std::endl;
+  }
+}
+
 std::string sensorRaw(const std::string& component, const std::string& name) {
   constexpr auto fru = "Chassis";
   const std::string url = HMC_URL + fru + "/" + component + "/Sensors/" + name;

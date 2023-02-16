@@ -85,6 +85,9 @@ std::string dumpNonBlocking(DiagnosticDataType type);
 // Retrieve data
 void retrieveDump(const std::string& taskID, const std::string& path);
 
+// Print event log
+void printEventLog(std::ostream& os, bool jsonFmt = false);
+
 // Request for the value of the sensor, but return all the JSON output
 std::string sensorRaw(const std::string& component, const std::string& name);
 } // namespace hgx

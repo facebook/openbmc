@@ -71,10 +71,11 @@ int read_swb_cpld_health(uint8_t fru, uint8_t sensor_num, float *value) {
   rlen = 1;
 
   ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  if (!ret || rbuf[0] != 0xff) {
+  if (ret || rbuf[0] != 0xff) {
     if (retry_err_handle(retry, 5) == READING_NA) {
       *value = 1;
     } else {
+      retry++;
       *value = 0;
     }
   } else {
@@ -83,7 +84,7 @@ int read_swb_cpld_health(uint8_t fru, uint8_t sensor_num, float *value) {
   }
 
 #ifdef DEBUG
-  syslog(LOG_INFO, "%s rbuf[0]=%x\n", __func__, rbuf[0]);
+  syslog(LOG_INFO, "%s ret=%d val=%d rbuf[0]=%x\n", __func__, ret, (int)*value, rbuf[0]);
 #endif
   close(fd);
   return 0;

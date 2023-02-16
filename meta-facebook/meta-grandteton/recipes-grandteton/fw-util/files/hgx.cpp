@@ -79,10 +79,12 @@ class HGXSystemConfig {
   }
   public:
     HGXSystemConfig() {
-      if (!pal_is_artemis()) {
-        static HGXComponent autocomp("hgx", "auto");
-        static HGXComponent patchcomp("hgx", "patch", "");
+      if (pal_is_artemis()) {
+        return;
       }
+      static HGXComponent autocomp("hgx", "auto");
+      static HGXComponent patchcomp("hgx", "patch", "");
+      
       if (gpio_get_value_by_shadow(GPU_PRESENT) == 0) {
         if (isEVT()) {
           static HGXComponent hmc("hgx", "hmc", "HMC_Firmware");

@@ -926,7 +926,7 @@ get_nct7363y_rpm(uint8_t fru, uint8_t sensor_num, float *value) {
   }
 
   //NCT7363Y Tach High Byte
-  reg_map = location ? reg_map : (NCT7363Y_PWM_CNT - reg_map - 1);
+  reg_map = location ? reg_map : (NCT7363Y_PWM_CNT - reg_map - 2 + (reg_map%2)*2);
   tbuf[0] = nct7363y_ctrl_list[reg_map].tach_high;
 
   ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);

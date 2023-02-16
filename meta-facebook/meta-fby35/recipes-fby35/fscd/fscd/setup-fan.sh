@@ -114,8 +114,8 @@ init_class1_fsc() {
   sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
   target_fsc_config=""
   config_type=""
+  server_type=$(get_server_type 1)
   if [ "$sys_config" = "A" ]; then
-    server_type=$(get_server_type 1)
     if [[ $server_type -eq 4 ]]; then
       config_type="GL"
       target_fsc_config="/etc/FSC_CLASS1_GL_config.json"
@@ -124,7 +124,6 @@ init_class1_fsc() {
       target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
     fi
   elif [ "$sys_config" = "B" ]; then
-    server_type=$(get_server_type 1)
     if [[ $server_type -eq 2 ]]; then
       board_type_1ou=$(get_1ou_board_type slot1)
       case $board_type_1ou in
@@ -142,7 +141,6 @@ init_class1_fsc() {
       target_fsc_config="/etc/FSC_CLASS1_DPV2_config.json"
     fi
   elif [ "$sys_config" = "C" ]; then
-    server_type=$(get_server_type 1)
     if [[ $server_type -eq 4 ]]; then
       config_type="GL"
       target_fsc_config="/etc/FSC_CLASS1_GL_config.json"
@@ -163,6 +161,13 @@ init_class1_fsc() {
   else
     config_type="1"
     target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
+  fi
+
+  ### Greatlakes does not have formal fan table, run default fan table(fix 70% PWM)
+    # Todo: After get the Greatlakes formal fan table, need to Check the server type
+  if [[ $server_type -eq 4 ]]; then
+    config_type="GL"
+    target_fsc_config="/etc/FSC_CLASS1_GL_config.json"
   fi
 
   ln -s ${target_fsc_config} ${default_fsc_config_path}
@@ -215,9 +220,9 @@ reload_sled_fsc() {
 
     #Check number of slots
     sys_config="$($KV_CMD get sled_system_conf persistent)"
-    if [[ "$sys_config" =~ ^(Type_(1|10|VF|GL))$ && "$cnt" -eq 4 ]]; then
+    if [[ "$sys_config" =~ ^(Type_(1|10|VF))$ && "$cnt" -eq 4 ]]; then
       run_fscd=true
-    elif [[ "$sys_config" =~ ^(Type_(DPV2|HD))$ && "$cnt" -eq 2 ]]; then
+    elif [[ "$sys_config" =~ ^(Type_(DPV2|HD|GL))$ && "$cnt" -eq 2 ]]; then
       run_fscd=true
     elif [[ "$sys_config" == "Type_8" && "$cnt" -eq 1 ]]; then
       run_fscd=true

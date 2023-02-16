@@ -32,65 +32,35 @@ const auto HGX_TELEMETRY_SERVICE_DVT = HMC_URL + "TelemetryService/MetricReports
 const auto HMC_FACTORY_RESET_SERVICE = "/Actions/Manager.ResetToDefaults";
 const auto HMC_RESET_SERVICE = "/Actions/Manager.Reset";
 
-const std::string HMC_PATCH_EVT =
-"{\"HttpPushUriTargets\": [\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_FPGA_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU0_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU1_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU2_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU3_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU4_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU5_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU6_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_GPU7_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_NVSwitch0_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_NVSwitch1_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_NVSwitch2_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_NVSwitch3_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_PCIeSwitch_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/ERoT_HMC_Firmware\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HMC_Firmware\"\
-]}";
+const std::vector<std::string> HMC_PATCH_TARGETS_EVT = {
+  "ERoT_FPGA_Firmware", "ERoT_GPU0_Firmware", "ERoT_GPU1_Firmware",
+  "ERoT_GPU2_Firmware", "ERoT_GPU3_Firmware", "ERoT_GPU4_Firmware",
+  "ERoT_GPU5_Firmware", "ERoT_GPU6_Firmware", "ERoT_GPU7_Firmware",
+  "ERoT_NVSwitch0_Firmware", "ERoT_NVSwitch1_Firmware",
+  "ERoT_NVSwitch2_Firmware", "ERoT_NVSwitch3_Firmware",
+  "ERoT_PCIeSwitch_Firmware", "ERoT_HMC_Firmware", "HMC_Firmware"
+};
+const std::vector<std::string> HMC_PATCH_TARGETS_DVT = {
+  "HGX_FW_ERoT_FPGA_0", "HGX_FW_ERoT_GPU_SXM_1",
+  "HGX_FW_ERoT_GPU_SXM_2", "HGX_FW_ERoT_GPU_SXM_3",
+  "HGX_FW_ERoT_GPU_SXM_4", "HGX_FW_ERoT_GPU_SXM_5",
+  "HGX_FW_ERoT_GPU_SXM_6", "HGX_FW_ERoT_GPU_SXM_7",
+  "HGX_FW_ERoT_GPU_SXM_8", "HGX_FW_ERoT_NVSwitch_0",
+  "HGX_FW_ERoT_NVSwitch_1", "HGX_FW_ERoT_NVSwitch_2",
+  "HGX_FW_ERoT_NVSwitch_3", "HGX_FW_ERoT_PCIeSwitch_0",
+  "HGX_FW_ERoT_HMC_0", "HGX_FW_HMC_0"
+};
 
-const std::string HMC_PATCH_DVT =
-"{\"HttpPushUriTargets\": [\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_FPGA_0\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_1\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_2\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_3\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_4\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_5\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_6\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_7\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_8\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_0\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_1\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_2\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_3\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_PCIeSwitch_0\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_HMC_0\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_HMC_0\"\
-]}";
-
-const std::string BMC_PATCH_DVT =
-"{\"HttpPushUriTargets\": [\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_FPGA_0\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_1\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_2\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_3\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_4\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_5\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_6\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_7\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_GPU_SXM_8\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_0\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_1\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_2\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_NVSwitch_3\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_PCIeSwitch_0\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_ERoT_BMC_0\",\
-\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_BMC_0\"\
-]}";
+const std::vector<std::string> BMC_PATCH_TARGETS_DVT = {
+  "HGX_FW_ERoT_FPGA_0", "HGX_FW_ERoT_GPU_SXM_1",
+  "HGX_FW_ERoT_GPU_SXM_2", "HGX_FW_ERoT_GPU_SXM_3",
+  "HGX_FW_ERoT_GPU_SXM_4", "HGX_FW_ERoT_GPU_SXM_5",
+  "HGX_FW_ERoT_GPU_SXM_6", "HGX_FW_ERoT_GPU_SXM_7",
+  "HGX_FW_ERoT_GPU_SXM_8", "HGX_FW_ERoT_NVSwitch_0",
+  "HGX_FW_ERoT_NVSwitch_1", "HGX_FW_ERoT_NVSwitch_2",
+  "HGX_FW_ERoT_NVSwitch_3", "HGX_FW_ERoT_PCIeSwitch_0",
+  "HGX_FW_ERoT_BMC_0", "HGX_FW_BMC_0"
+};
 
 constexpr auto TIME_OUT = 6;
 
@@ -284,48 +254,21 @@ void reset() {
   hgx.post(url, json::object({{"ResetType", "GracefulRestart"}}).dump(), false);
 }
 
-int patch_bf_update() {
-  std::string url = "";
-  RestClient::Response result;
-  RestClient::Connection conn("");
-  json jresp;
-  int HMCPhase = -1;
-
-  HMCPhase = getHMCPhase();
-
-  if (HMCPhase == HMC_FW_EVT) {
-    auto data = HMC_PATCH_EVT;
-	hgx.patch(HMC_UPDATE_SERVICE, std::move(data));
+void patch_bf_update() {
+  static const std::map<HMCPhase, const std::vector<std::string>*> patchMap = {
+    {HMCPhase::HMC_FW_EVT, &HMC_PATCH_TARGETS_EVT},
+    {HMCPhase::HMC_FW_DVT, &HMC_PATCH_TARGETS_DVT},
+    {HMCPhase::BMC_FW_DVT, &BMC_PATCH_TARGETS_DVT}
+  };
+  json patchJson = json::object({{"HttpPushUriTargets", json::array()}});
+  for (const auto& target : *patchMap.at(getHMCPhase())) {
+    auto& j = patchJson["HttpPushUriTargets"];
+    j.push_back("/redfish/v1/UpdateService/FirmwareInventory/" + target);
   }
-  else if (HMCPhase == HMC_FW_DVT) {
-    auto data = HMC_PATCH_DVT;
-    hgx.patch(HMC_UPDATE_SERVICE, std::move(data));
-  }
-  else if (HMCPhase == BMC_FW_DVT) {
-    auto data = BMC_PATCH_DVT;
-    hgx.patch(HMC_UPDATE_SERVICE, std::move(data));
-  }
-  else {
-    std::cout << "Patch failed, unknown HMC FW" << std::endl;
-    return -1;
-  }
-
-  conn.SetTimeout(TIME_OUT);
-  conn.SetBasicAuth(HMC_USR, HMC_PWD);
-
-  url = HMC_UPDATE_SERVICE;
-  result = conn.get(url);
-  if (result.code == HTTP_OK) {
-	jresp = json::parse(result.body);
-    std::cout << "Patching: " << std::endl \
-              << jresp["HttpPushUriTargets"] << std::endl;
-  }
-  else {
-    std::cout << "Patch failed" << std::endl;
-    throw HTTPException(result.code);
-  }
-
-  return 0;
+  hgx.patch(HMC_UPDATE_SERVICE, patchJson.dump());
+  auto jresp = json::parse(hgx.get(HMC_UPDATE_SERVICE));
+  std::cout << "Patching: " << std::endl \
+            << jresp["HttpPushUriTargets"] << std::endl;
 }
 
 int update(const std::string& comp, const std::string& path) {

@@ -19,11 +19,8 @@ class HGXComponent : public Component {
   int update(std::string image) {
     try {
       if (component() == "patch") {
-        if (hgx::patch_bf_update() == 0) {
-          syslog(LOG_CRIT, "HGX FW patch: ERoT and HMC");
-        }
-      }
-      else {
+        hgx::patch_bf_update();
+      } else {
         if (_hgxcomp == "") {
           syslog(LOG_CRIT, "HGX FW upgrade initiated, image: %s", image.c_str());
         }
@@ -42,7 +39,7 @@ class HGXComponent : public Component {
       }
     } catch (std::exception& e) {
       std::cerr << e.what() << std::endl;
-      syslog(LOG_CRIT, "HGX upgrade failed");
+      syslog(LOG_CRIT, "HGX upgrade failed: %s", e.what());
     }
 
     return 0;

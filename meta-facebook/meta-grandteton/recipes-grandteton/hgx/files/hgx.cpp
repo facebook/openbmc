@@ -133,14 +133,23 @@ class HGXMgr {
 static HGXMgr hgx;
 
 std::string redfishGet(const std::string& subpath) {
+  if (subpath.starts_with("/redfish/v1")) {
+    return hgx.get(HMC_BASE_URL + subpath);
+  }
   return hgx.get(HMC_URL + subpath);
 }
 
 std::string redfishPost(const std::string& subpath, std::string&& args) {
+  if (subpath.starts_with("/redfish/v1")) {
+    return hgx.post(HMC_BASE_URL + subpath, std::move(args), false);
+  }
   return hgx.post(HMC_URL + subpath, std::move(args), false);
 }
 
 std::string redfishPatch(const std::string& subpath, std::string&& args) {
+  if (subpath.starts_with("/redfish/v1")) {
+    return hgx.patch(HMC_BASE_URL + subpath, std::move(args));
+  }
   return hgx.patch(HMC_URL + subpath, std::move(args));
 }
 

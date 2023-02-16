@@ -1,7 +1,10 @@
 project('libhgx', 'c', 'cpp',
     version: '0.1',
     license: 'GPL2',
-    default_options: ['werror=true'],
+    default_options: [
+      'werror=true',
+      'cpp_std=c++20',
+    ],
     meson_version: '>=0.40')
 
 install_headers(

@@ -1,9 +1,8 @@
 project('hgxmgr', 'c', 'cpp',
     version: '0.1',
     license: 'GPL2',
-    # Meson 0.40 only supports c++1z as an alias for c++17.
     default_options: [
-        'cpp_std=c++1z',
+        'cpp_std=c++20',
         'werror=true',
     ],
     meson_version: '>=0.40',

@@ -1,0 +1,254 @@
+#!/bin/bash
+#
+# Copyright 2023-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+LOGFILE="/var/log/mTerm_$1.log"
+LOGFILE_B="/var/log/mTerm_$1_backup.log"
+readonly EXIT_ERROR=255
+
+usage() {
+  echo "Usage: sol-util [ mb | acb ]"
+  echo "       sol-util [ acb ] [ pesw0 | pesw1 ]"
+  echo "       sol-util [ acb ] [ accl1 | accl2 | ... | accl12 ] [ dev1 | dev2 ] (baudrate)"
+  echo "       sol-util [ mb | acb ] --history"
+  exit 1
+}
+
+microcom_usage() {
+  echo "------------------TERMINAL MULTIPLEXER---------------------"
+  echo "CTRL + x : Terminate the connection."
+  echo "Run in single mode"
+  echo "-----------------------------------------------------------"
+}
+
+check_file_exist() {
+  local path=$1
+  local retry=$2
+  local result=0
+  local i=0
+  while [ $i -le "$retry" ]; do
+    if [ -e "$path" ]; then
+      # if usb path exist
+      result=1
+      break
+    fi
+    sleep 2
+    (( i++ ))
+  done
+  echo $result
+}
+
+get_usb_pesw() {
+#The dev position should be fixed
+  local usb_path=""
+  local baudrate="115200"
+  local prefix="/dev/serial/by-path/"
+  local retry=10
+  local comp="$1"
+
+  [ -n "$3" ] && baudrate="$3"
+
+  case $comp in
+    pesw0)
+    usb_path="platform-1e6a3000.usb-usb-0:1.1.4.1:1.0-port0"
+  ;;
+    pesw1)
+    usb_path="platform-1e6a3000.usb-usb-0:1.1.4.3:1.0-port0"
+  ;;
+  esac
+
+  if [ "$(check_file_exist "${prefix}${usb_path}" ${retry})" = 0 ]; then
+      echo "The $usb_path is invalid"
+      exit "$EXIT_ERROR";
+  fi
+
+  echo "-s ${baudrate} ${prefix}${usb_path}"
+}
+
+get_usb_dev() {
+#The dev position should be fixed
+  local usb_path=""
+  local baudrate="57600"
+  local prefix="/dev/serial/by-path/"
+  local comp="$1"
+  local dev="$2"
+  local retry=10
+
+  [ -n "$3" ] && baudrate="$3"
+
+
+  if [ "$dev" = "dev1" ]; then
+    case $comp in
+      accl1)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.3:1.0-port0"
+    ;;
+      accl2)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.3:1.0-port0"
+    ;;
+      accl3)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.3:1.0-port0"
+    ;;
+      accl4)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.3:1.0-port0"
+    ;;
+      accl5)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.3:1.0-port0"
+    ;;
+      accl6)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.3:1.0-port0"
+    ;;
+      accl7)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.3:1.0-port0"
+    ;;
+      accl8)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.3:1.0-port0"
+    ;;
+      accl9)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.3:1.0-port0"
+    ;;
+      accl10)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.3:1.0-port0"
+    ;;
+      accl11)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.3:1.0-port0"
+    ;;
+      accl12)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.3:1.0-port0"
+    ;;
+    esac
+
+  elif [ "$dev" = "dev2" ]; then
+    case $comp in
+      accl1)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.4:1.0-port0"
+    ;;
+      accl2)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.3:1.0-port0"
+    ;;
+      accl3)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.4:1.0-port0"
+    ;;
+      accl4)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.4:1.0-port0"
+    ;;
+      accl5)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.4:1.0-port0"
+    ;;
+      accl6)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.4:1.0-port0"
+    ;;
+      accl7)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.4:1.0-port0"
+    ;;
+      accl8)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.4:1.0-port0"
+    ;;
+      accl9)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.4:1.0-port0"
+    ;;
+      accl10)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.4:1.0-port0"
+    ;;
+      accl11)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.4:1.0-port0"
+    ;;
+      accl12)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.4:1.0-port0"
+    ;;
+    esac
+  else
+    echo "The $dev is invalid"
+    exit "$EXIT_ERROR";
+  fi
+
+  if [ "$(check_file_exist "${prefix}${usb_path}" ${retry})" = 0 ]; then
+      echo "The $usb_path is invalid"
+      exit "$EXIT_ERROR";
+  fi
+
+  echo "-s ${baudrate} ${prefix}${usb_path}"
+}
+
+SLOT=
+COMP=
+
+if [[ $# -gt 4  ||  $# -lt 1 ]]; then
+  usage
+  exit "$EXIT_ERROR";
+fi
+
+if [ "$1" == "acb" ] || [ "$1" == "mb" ]; then
+  SLOT=$1
+  if [ $# -eq 2 ] && [ "$2" == "--history" ]; then
+    cat "$LOGFILE_B" "$LOGFILE" 2>/dev/null
+    exit 0;
+  elif [ "$SLOT" = "acb" ] && [[ "$2" =~ ^(accl([1-9]|1[0-2]))$  ||  "$2" =~ ^(pesw(0|1))$ ]]; then
+    COMP=$2
+  else
+    if [ $# -ne 1 ]; then
+      usage
+      exit "$EXIT_ERROR";
+    fi
+  fi
+else
+  usage
+  exit "$EXIT_ERROR";
+fi
+
+DEV=$3
+BAUDRATE=$4
+USB_PATH=
+
+# Check Comp and Dev
+if [ -n "$COMP" ]; then
+
+  # check BAUDRATE is a number
+  if [ -n "$BAUDRATE" ]; then
+    if [ "$DEV" != "dev1" ] && [ "$DEV" != "dev2" ]; then
+      usage
+      exit "$EXIT_ERROR";
+    fi
+    if ! [[ "$BAUDRATE" =~ ^[0-9]+$ ]]; then
+      echo "$BAUDRATE should be a number"
+      echo "$EXIT_ERROR";
+    fi
+  fi
+
+  if [ "$SLOT" = "acb" ]; then
+    if [[ "$COMP" =~ ^(accl([1-9]|1[0-2]))$ ]] && [[ "$DEV" =~ ^(dev(1|2)$) ]]; then
+      read -r PARAMETER BAUDRATE USB_PATH <<< "$(get_usb_dev "$COMP" "$DEV" "$BAUDRATE")"
+    elif [[ "$COMP" =~ ^(pesw(0|1))$ ]]; then
+      read -r PARAMETER BAUDRATE USB_PATH <<< "$(get_usb_pesw "$COMP")"
+    else
+      usage
+      exit "$EXIT_ERROR";
+    fi
+  fi
+
+  microcom_usage
+  /usr/bin/microcom "$PARAMETER" "$BAUDRATE" "$USB_PATH"
+  RET=$?
+  exit $RET;
+fi
+
+exec /usr/local/bin/mTerm_client "$SLOT"
+echo
+echo
+echo "-----------------------"
+echo "Exit from SOL session."

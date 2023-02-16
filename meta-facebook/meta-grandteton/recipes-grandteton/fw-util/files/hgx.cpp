@@ -35,7 +35,7 @@ class HGXComponent : public Component {
           syslog(LOG_CRIT, "HGX upgrade completed");
           sleep(3);
           if (hgx::getHMCPhase() != BMC_FW_DVT) {
-            hgx::FactoryReset();
+            hgx::factoryReset();
             return 0;
           }
         }

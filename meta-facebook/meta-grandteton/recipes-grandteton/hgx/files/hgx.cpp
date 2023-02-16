@@ -264,68 +264,24 @@ void getMetricReports() {
   }
 }
 
-int FactoryReset() {
-  const std::string RESET_TO_DEFAULTS = "{\"ResetToDefaultsType\": \"ResetAll\"}";
-  std::string url = "";
-  RestClient::Response result;
-  RestClient::Connection conn("");
-  json jresp;
-  int HMCPhase = -1;
-
-  HMCPhase = getHMCPhase();
-
-  if (HMCPhase == HMC_FW_EVT) {
-    url = HMC_URL + "Managers/bmc" + HMC_FACTORY_RESET_SERVICE;
-  }
-  else if (HMCPhase == HMC_FW_DVT) {
-    url = HMC_URL + "Managers/HGX_HMC_0" + HMC_FACTORY_RESET_SERVICE;
-  }
-  else if (HMCPhase == BMC_FW_DVT) {
-    url = HMC_URL + "Managers/HGX_BMC_0" + HMC_FACTORY_RESET_SERVICE;
-  }
-  else {
-    std::cout << "Perform HGX factory reset failed, unknown HMC FW" << std::endl;
-    syslog(LOG_CRIT, "Perform HGX factory reset failed, unknown HMC FW");
-    return -1;
-  }
-
-  conn.SetTimeout(TIME_OUT);
-  conn.SetBasicAuth(HMC_USR, HMC_PWD);
-
-  result = conn.post(url, RESET_TO_DEFAULTS);
-  if(result.code != HTTP_OK) {
-	std::cout << "Perform HGX factory reset failed" << std::endl;
-	syslog(LOG_CRIT, "Perform HGX factory reset failed");
-   throw HTTPException(result.code);
-  }
-
-  std::cout << "Perform HGX factory reset..." << std::endl;
-  syslog(LOG_CRIT, "Perform HGX factory reset...");
-  return 0;
+void factoryReset() {
+  static const std::map<HMCPhase, std::string> urlMap = {
+    {HMCPhase::HMC_FW_EVT, HMC_URL + "Managers/bmc" + HMC_FACTORY_RESET_SERVICE},
+    {HMCPhase::HMC_FW_DVT, HMC_URL + "Managers/HGX_HMC_0" + HMC_FACTORY_RESET_SERVICE},
+    {HMCPhase::BMC_FW_DVT, HMC_URL + "Managers/HGX_BMC_0" + HMC_FACTORY_RESET_SERVICE}
+  };
+  std::string url = urlMap.at(getHMCPhase());
+  hgx.post(url, json::object({{"ResetToDefaultsType", "ResetAll"}}).dump(), false);
 }
 
 void reset() {
-  std::string url;
-  int HMCPhase = getHMCPhase();
-
-  if (HMCPhase == HMC_FW_EVT) {
-    url = HMC_URL + "Managers/bmc" + HMC_RESET_SERVICE;
-  }
-  else if (HMCPhase == HMC_FW_DVT) {
-    url = HMC_URL + "Managers/HGX_HMC_0" + HMC_RESET_SERVICE;
-  }
-  else if (HMCPhase == BMC_FW_DVT) {
-    url = HMC_URL + "Managers/HGX_BMC_0" + HMC_RESET_SERVICE;
-  }
-  else {
-    std::cout << "Perform HGX factory reset failed, unknown HMC FW" << std::endl;
-    syslog(LOG_CRIT, "Perform HGX factory reset failed, unknown HMC FW");
-    throw std::runtime_error("Unknown HMC Phase");
-  }
-
-  json args;
-  args["ResetType"] = "GracefulRestart";
-  hgx.post(url, args.dump(), false);
+  static const std::map<HMCPhase, std::string> urlMap = {
+    {HMCPhase::HMC_FW_EVT, HMC_URL + "Managers/bmc" + HMC_RESET_SERVICE},
+    {HMCPhase::HMC_FW_DVT, HMC_URL + "Managers/HGX_HMC_0" + HMC_RESET_SERVICE},
+    {HMCPhase::BMC_FW_DVT, HMC_URL + "Managers/HGX_BMC_0" + HMC_RESET_SERVICE}
+  };
+  std::string url = urlMap.at(getHMCPhase());
+  hgx.post(url, json::object({{"ResetType", "GracefulRestart"}}).dump(), false);
 }
 
 int patch_bf_update() {

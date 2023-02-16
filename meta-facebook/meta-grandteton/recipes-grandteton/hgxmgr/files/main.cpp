@@ -1,6 +1,7 @@
 #include <CLI/CLI.hpp>
 #include <openbmc/hgx.h>
 #include <iostream>
+#include <syslog.h>
 
 static void do_version(const std::string& component, bool json_fmt) {
   std::cout << hgx::version(component, json_fmt) << std::endl;
@@ -60,7 +61,12 @@ static void do_get_snr_metric() {
 }
 
 static void do_factory_reset() {
-  hgx::FactoryReset();
+  try {
+    hgx::factoryReset();
+    syslog(LOG_CRIT, "Perform HGX factory reset...");
+  } catch (std::exception& e) {
+    syslog(LOG_CRIT, "Perform HGX factory reset failed: %s", e.what());
+  }
 }
 
 static void do_reset() {

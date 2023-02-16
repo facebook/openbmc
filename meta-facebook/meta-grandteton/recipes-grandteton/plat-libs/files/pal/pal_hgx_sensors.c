@@ -194,7 +194,6 @@ static int
 read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = READING_NA;
   char tmp[8] = {0};
-  char hmc_version[256] = {0};
   static int build_stage = NONE;
   static uint8_t snr_retry = 0;
 
@@ -204,17 +203,18 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   }
 
   if (sensor_num == HGX_SNR_PWR_GB_HSC0) {
-    if (get_hgx_ver("HGX_FW_BMC_0", hmc_version) == 0 ||
-        get_hgx_ver("HGX_FW_HMC_0", hmc_version) == 0) {
-      build_stage = DVT;
+    HMCPhase phase = get_hgx_phase();
+    switch (phase) {
+      case HMC_FW_DVT:
+      case BMC_FW_DVT:
+        build_stage = DVT;
+        break;
+      case HMC_FW_EVT:
+        build_stage = EVT;
+        break;
+      default:
+        return READING_NA;
     }
-    else if (get_hgx_ver("HMC_Firmware", hmc_version) == 0) {
-      build_stage = EVT;
-    }
-    else {
-      return READING_NA;
-    }
-
     ret = hgx_get_metric_reports();
     if (ret) {
       snr_retry++;

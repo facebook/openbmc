@@ -7,12 +7,6 @@
 
 const char * GPU_PRESENT = "GPU_HMC_PRSNT_ISO_R_N";
 
-enum {
-  HMC_FW_EVT = 0,
-  HMC_FW_DVT = 1,
-  BMC_FW_DVT = 2,
-};
-
 class HGXComponent : public Component {
   std::string _hgxcomp{};
 

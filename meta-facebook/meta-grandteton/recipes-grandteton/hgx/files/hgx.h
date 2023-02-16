@@ -1,5 +1,12 @@
 #pragma once
 
+typedef enum HMCPhase {
+  HMC_FW_UNKNOWN = -1,
+  HMC_FW_EVT = 0,
+  HMC_FW_DVT = 1,
+  BMC_FW_DVT = 2,
+} HMCPhase;
+
 #ifdef __cplusplus
 #include <stdexcept>
 #include <string>
@@ -55,7 +62,7 @@ int patch_bf_update();
 int update(const std::string& comp, const std::string& path);
 
 // Get HGX's phase
-int getHMCPhase(void);
+HMCPhase getHMCPhase(void);
 
 // Get HGX's sensors from Telemetry Service
 // status.
@@ -78,6 +85,7 @@ extern "C" {
 int hgx_get_metric_reports(void);
 int get_hgx_sensor(const char* component, const char* snr_name, float* value);
 int get_hgx_ver(const char* component, char *version);
+HMCPhase get_hgx_phase();
 
 #ifdef __cplusplus
 }

@@ -20,12 +20,6 @@ enum {
   HTTP_NOT_FOUND = 404,
 };
 
-enum {
-  HMC_FW_EVT = 0,
-  HMC_FW_DVT = 1,
-  BMC_FW_DVT = 2,
-};
-
 constexpr auto HMC_USR = "root";
 constexpr auto HMC_PWD = "0penBmc";
 
@@ -204,33 +198,28 @@ std::string updateNonBlocking(const std::string& comp, const std::string& path, 
   return resp["Id"];
 }
 
-int getHMCPhase() {
-  std::string url = "";
-  RestClient::Response result;
-  RestClient::Connection conn("");
-
-  conn.SetTimeout(TIME_OUT);
-  conn.SetBasicAuth(HMC_USR, HMC_PWD);
-
-  url = HMC_FW_INVENTORY + "HGX_FW_BMC_0";
-  result = conn.get(url);
-  if (result.code == HTTP_OK) {
-	return BMC_FW_DVT;
+HMCPhase getHMCPhase() {
+  static HMCPhase phase = HMCPhase::HMC_FW_UNKNOWN;
+  // TODO Try to do this with one Get at the root.
+  auto tryPhase = [](const std::string& url) {
+    try {
+      hgx.get(url);
+      return true;
+    } catch (std::exception&) {
+      return false;
+    }
+  };
+  if (phase != HMCPhase::HMC_FW_UNKNOWN) {
+    return phase;
   }
-
-  url = HMC_FW_INVENTORY + "HGX_FW_HMC_0";
-  result = conn.get(url);
-  if (result.code == HTTP_OK) {
-	return HMC_FW_DVT;
+  if (tryPhase(HMC_FW_INVENTORY + "HGX_FW_BMC_0")) {
+    phase = HMCPhase::BMC_FW_DVT;
+  } else if (tryPhase(HMC_FW_INVENTORY + "HGX_FW_HMC_0")) {
+    phase = HMCPhase::HMC_FW_DVT;
+  } else if (tryPhase(HMC_FW_INVENTORY + "HMC_Firmware")) {
+    phase = HMCPhase::HMC_FW_EVT;
   }
-
-  url = HMC_FW_INVENTORY + "HMC_Firmware";
-  result = conn.get(url);
-  if (result.code == HTTP_OK) {
-	return HMC_FW_EVT;
-  }
-
-  return -1;
+  return phase;
 }
 
 TaskStatus getTaskStatus(const std::string& id) {
@@ -451,4 +440,14 @@ int hgx_get_metric_reports() {
       return -1;
   }
   return 0;
+}
+
+HMCPhase get_hgx_phase() {
+  HMCPhase phase;
+  try {
+    phase = hgx::getHMCPhase();
+  } catch (std::exception& e) {
+    phase = HMCPhase::HMC_FW_UNKNOWN;
+  }
+  return phase;
 }

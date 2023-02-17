@@ -23,7 +23,7 @@ LOCAL_URI = " \
     file://fw_update.h \
     "
 
-DEPENDS += "libpldm  libipmi obmc-libpldm"
+DEPENDS += "libpldm libipmi obmc-libpldm"
 RDEPENDS:${PN} += "libpldm  libipmi obmc-libpldm"
 LDFLAGS += "-lpldm -lipmi -lobmc-pldm"
 

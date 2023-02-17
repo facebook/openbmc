@@ -5,6 +5,7 @@
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <memory>
+#include <syslog.h>
 #include <libpldm/platform.h>
 #include <libpldm/base.h>
 #include <libpldm/pldm.h>
@@ -295,14 +296,19 @@ oem_pldm_ipmi_send_recv(uint8_t bus, uint8_t eid,
 
   do {
     rc = oem_pldm_send_recv(bus, eid, tbuf, tlen, &pldm_rbuf, rxlen);
-
-    //check ipmi lens
-    if(rc || *rxlen < PLDM_IPMI_HEAD_LEN) {
+    if(rc) {
       break;
     }
+
+    //check ipmi lens
+    if(*rxlen < PLDM_IPMI_HEAD_LEN) {
+      rc = PLDM_REQUESTER_INVALID_RECV_LEN;
+      break;
+    }
+
     //ipmi complete code
     if (pldm_rbuf[PLDM_OEM_IPMI_CC_OFFSET] != 0) {
-      printf("%s CC=0x%x\n", __func__, pldm_rbuf[PLDM_OEM_IPMI_CC_OFFSET] );
+      syslog(LOG_WARNING, "%s CC=0x%x\n", __func__, pldm_rbuf[PLDM_OEM_IPMI_CC_OFFSET]);
       rc = PLDM_REQUESTER_RECV_FAIL;
       break;
     }

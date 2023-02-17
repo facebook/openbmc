@@ -1,0 +1,219 @@
+#!/bin/sh
+#
+# Copyright 2023-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+readonly EXIT_ERROR=255
+
+show_usage() {
+    echo "Usage: usb-util bus-id acb accl[1...12] [ dev1 | dev2 ]"
+    echo "       usb-util [ bind | unbind ] acb accl[1...12] [ dev1 | dev2 ]"
+}
+
+check_file_exist() {
+    found=0
+    i=0
+    DIR=/sys/bus/usb/devices/"$busid"
+    while [ "$i" -le "$retry" ]; do
+        if [ -d "$DIR" ]; then
+        # if usb path exist
+            found=1
+            break
+        fi
+        sleep 2
+        i=$((i+1))
+    done
+
+    if [ "$found" -eq 0 ]; then
+        echo "bus id: $busid not found"
+        exit "$EXIT_ERROR";
+    fi
+}
+
+get_acb_accl_bus_id() {
+    case "$dev" in
+        dev1)
+        case "$fru" in
+            accl1)
+            busid="1-1.1.1.1.1"
+        ;;
+            accl2)
+            busid="1-1.1.1.2.1"
+        ;;
+            accl3)
+            busid="1-1.1.1.3.1"
+        ;;
+            accl4)
+            busid="1-1.1.1.4.1.1"
+        ;;
+            accl5)
+            busid="1-1.1.1.4.2.1"
+        ;;
+            accl6)
+            busid="1-1.1.1.4.3.1"
+        ;;
+            accl7)
+            busid="1-1.1.2.1.1"
+        ;;
+            accl8)
+            busid="1-1.1.2.2.1"
+        ;;
+            accl9)
+            busid="1-1.1.2.3.1"
+        ;;
+            accl10)
+            busid="1-1.1.2.4.1.1"
+        ;;
+            accl11)
+            busid="1-1.1.2.4.2.1"
+        ;;
+            accl12)
+            busid="1-1.1.2.4.3.1"
+        ;;
+            *)
+            show_usage
+            exit "$EXIT_ERROR";
+        ;;
+        esac
+    ;;
+        dev2)
+        case $fru in
+            accl1)
+            busid="1-1.1.1.1.2"
+        ;;
+            accl2)
+            busid="1-1.1.1.2.2"
+        ;;
+            accl3)
+            busid="1-1.1.1.3.2"
+        ;;
+            accl4)
+            busid="1-1.1.1.4.1.2"
+        ;;
+            accl5)
+            busid="1-1.1.1.4.2.2"
+        ;;
+            accl6)
+            busid="1-1.1.1.4.3.2"
+        ;;
+            accl7)
+            busid="1-1.1.2.1.2"
+        ;;
+            accl8)
+            busid="1-1.1.2.2.2"
+        ;;
+            accl9)
+            busid="1-1.1.2.3.2"
+        ;;
+            accl10)
+            busid="1-1.1.2.4.1.2"
+        ;;
+            accl11)
+            busid="1-1.1.2.4.2.2"
+        ;;
+            accl12)
+            busid="1-1.1.2.4.3.2"
+        ;;
+            *)
+            show_usage
+            exit "$EXIT_ERROR";
+        ;;
+        esac
+    ;;
+        *)
+        show_usage
+        exit "$EXIT_ERROR";
+    ;;
+    esac
+}
+
+bind_usb() {
+    if [ -z "$fru" ] || [ -z "$dev" ]; then
+        show_usage
+        exit "$EXIT_ERROR";
+    fi
+
+    case $fru in
+        accl[1-9]|accl[1][0-2])
+        get_acb_accl_bus_id
+    ;;
+        *)
+        show_usage
+        exit "$EXIT_ERROR";
+    ;;
+    esac
+
+    if [ "$cmd" = "unbind" ] ; then
+        echo "unbind: $busid"
+        usbip unbind --busid "$busid"
+    elif [ "$cmd" = "bind" ]; then
+        check_file_exist
+        modprobe usbip-core
+        modprobe usbip-host
+        usbipd -D
+        sleep 1
+        usbip bind --busid "$busid"
+    else
+        echo "CMD:$cmd not found"
+        show_usage
+        exit "$EXIT_ERROR";
+    fi
+}
+
+get_bus_id() {
+    case "$fru" in
+        accl[1-9]|accl[1][0-2])
+        get_acb_accl_bus_id
+    ;;
+        *)
+        show_usage
+        exit "$EXIT_ERROR";
+    ;;
+    esac
+
+    echo "$fru $dev usb bus id is: $busid"
+}
+
+cmd=$1
+fru=$3
+dev=$4
+busid=
+retry=3
+
+if [ $# -ne 4 ]; then
+  show_usage
+  exit "$EXIT_ERROR";
+fi
+
+case $cmd in
+    bind)
+        bind_usb
+    ;;
+
+    unbind)
+        bind_usb
+    ;;
+
+    bus-id)
+        get_bus_id
+    ;;
+
+    *)
+        show_usage
+        exit "$EXIT_ERROR";
+    ;;
+esac

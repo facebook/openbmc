@@ -19,4 +19,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
     file://sol-util \
+    file://usb-util \
     "
+
+binfiles += " usb-util "
+

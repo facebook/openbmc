@@ -477,7 +477,12 @@ get_sensor_reading(void *sensor_data) {
 
     if ((false == pal_sensor_is_cached(sensor_info->fru, snr_num)) || (true == sensor_info->force)) {
       usleep(50);
-      ret = sensor_raw_read(sensor_info->fru, snr_num, &fvalue);
+      if (pal_is_fw_update_ongoing(sensor_info->fru)) {
+        syslog(LOG_ERR, "Rejects Raw Read due to ongoing firmare upgrade");
+        ret = -1;
+      } else {
+        ret = sensor_raw_read(sensor_info->fru, snr_num, &fvalue);
+      }
     } else {
       ret = sensor_cache_read(sensor_info->fru, snr_num, &fvalue);
     }

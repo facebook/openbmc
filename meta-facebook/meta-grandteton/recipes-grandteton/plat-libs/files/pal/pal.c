@@ -1261,7 +1261,7 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
   struct timespec ts;
-  uint8_t root_fruid = 0;
+  uint8_t root_fruid = fruid;
 
   pal_get_root_fru(fruid, &root_fruid);
   snprintf(key, sizeof(key), "fru%d_fwupd", root_fruid);

@@ -19,117 +19,11 @@
  */
 
 #include "include/aries_i2c.h"
-#include <openbmc/obmc-i2c.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-
-#include <sys/ioctl.h>
-#include <sys/file.h>
-
+#include "include/platform.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-int asteraI2COpenConnection(int i2cBus, int slaveAddress)
-{
-    int file;
-    int quiet = 0;
-    char filename[20];
-    int size = sizeof(filename);
-
-    snprintf(filename, size, "/dev/i2c/%d", i2cBus);
-    filename[size - 1] = '\0';
-    file = open(filename, O_RDWR);
-
-    if (file < 0 && (errno == ENOENT || errno == ENOTDIR))
-    {
-        sprintf(filename, "/dev/i2c-%d", i2cBus);
-        file = open(filename, O_RDWR);
-    }
-
-    if (file < 0 && !quiet)
-    {
-        if (errno == ENOENT)
-        {
-            fprintf(stderr,
-                    "Error: Could not open file "
-                    "`/dev/i2c-%d' or `/dev/i2c/%d': %s\n",
-                    i2cBus, i2cBus, strerror(ENOENT));
-        }
-        else
-        {
-            fprintf(stderr,
-                    "Error: Could not open file "
-                    "`%s': %s\n",
-                    filename, strerror(errno));
-            if (errno == EACCES)
-            {
-                fprintf(stderr, "Run as root?\n");
-            }
-        }
-    }
-    asteraI2CSetSlaveAddress(file, slaveAddress, 0);
-    return file;
-}
-
-int asteraI2CWriteBlockData(int handle, uint8_t cmdCode, uint8_t numBytes,
-                            uint8_t* buf)
-{ 
-    return i2c_smbus_write_i2c_block_data(handle, cmdCode, numBytes, buf);
-}
-
-int asteraI2CReadBlockData(int handle, uint8_t cmdCode, uint8_t numBytes,
-                           uint8_t* buf)
-{
-    return i2c_smbus_read_i2c_block_data(handle, cmdCode, numBytes, buf);
-}
-
-int asteraI2CBlock(int handle)
-{
-    return 0; // Equivalent to ARIES_SUCCESS
-}
-
-int asteraI2CUnblock(int handle)
-{
-    return 0; // Equivalent to ARIES_SUCCESS
-}
-
-/**
- * @brief Set I2C slave address
- *
- * @param[in]  file     I2C handle
- * @param[in]  address  Slave address
- * @param[in]  force    Override user provied slave address with default
- *                      I2C_SLAVE address
- * @return     int      Zero if success, else a negative value
- */
-int asteraI2CSetSlaveAddress(int file, int address, int force)
-{
-    /* With force, let the user read from/write to the registers
-       even when a driver is also running */
-    if (ioctl(file, force ? I2C_SLAVE_FORCE : I2C_SLAVE, address) < 0)
-    {
-        fprintf(stderr, "Error: Could not set address to 0x%02x: %s\n", address,
-                strerror(errno));
-        return -errno;
-    }
-    return 0; // Equivalent to ARIES_SUCCESS
-}
-
-/**
- * @brief Close I2C connection
- *
- * @param[in]  file      I2C handle
- */
-void asteraI2CCloseConnection(int file)
-{
-    close(file);
-}
 
 /*
  * Set Slave address to user-specified value: new7bitSmbusAddr

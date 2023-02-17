@@ -16,6 +16,7 @@ install_headers(
     'include/aries_misc.h',
     'include/aries_mpw_reg_defines.h',
     'include/astera_log.h',
+    'include/platform.h',
     subdir: 'openbmc')
 
 rt_deps = [
@@ -28,7 +29,8 @@ srcs = files(
     'aries_link.c',
     'aries_margin.c',
     'aries_misc.c',
-    'astera_log.c')
+    'astera_log.c',
+    'platform.c')
 
 # Retimer library.
 rt_lib = shared_library('retimer', srcs,

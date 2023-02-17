@@ -25,6 +25,8 @@ LOCAL_URI = "\
     file://include/aries_misc.h \
     file://include/aries_mpw_reg_defines.h \
     file://include/astera_log.h \
+    file://platform.c \
+    file://include/platform.h \
     file://LICENSE \
     "
 

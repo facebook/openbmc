@@ -459,14 +459,14 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
-  {"RETIMER0_TEMP", 0, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD0
-  {"RETIMER1_TEMP", 1, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD1
-  {"RETIMER2_TEMP", 2, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD2
-  {"RETIMER3_TEMP", 3, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD3
-  {"RETIMER4_TEMP", 4, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD4
-  {"RETIMER5_TEMP", 5, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD5
-  {"RETIMER6_TEMP", 6, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD6
-  {"RETIMER7_TEMP", 7, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD7
+  {"RETIMER0_TEMP", 60, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD0
+  {"RETIMER1_TEMP", 61, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD1
+  {"RETIMER2_TEMP", 62, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD2
+  {"RETIMER3_TEMP", 63, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD3
+  {"RETIMER4_TEMP", 64, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD4
+  {"RETIMER5_TEMP", 65, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD5
+  {"RETIMER6_TEMP", 66, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD6
+  {"RETIMER7_TEMP", 67, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD7
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
@@ -1187,35 +1187,30 @@ int read_frb3(uint8_t fru, uint8_t sensor_num, float *value) {
 static
 int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = 0;
-  uint8_t bus = I2C_BUS_6;
-  uint8_t addr = 0xE0;
-  uint8_t channel = sensor_map[fru].map[sensor_num].id;
-  float val = 0;
-  static uint8_t retry=0;
   char rev_id[MAX_VALUE_LEN] = {0};
+  int bus = sensor_map[fru].map[sensor_num].id;
+  int addr = 0x24;
+  float val = 0;
+  static uint8_t retry[8]= {0};
 
   kv_get("mb_rev", rev_id, 0, 0);
   if (!strcmp(rev_id, "2")) {                // 2 retimer SKU
     if (sensor_num != MB_SNR_RETIMER0_TEMP && sensor_num != MB_SNR_RETIMER4_TEMP) {
-      return READING_NA;
+      ret = READING_NA;
+      goto err_exit;
     }
   }
 
-  ret = pal_control_mux_to_target_ch(bus, addr, channel);
+  ret = AriesGetTemp(bus, addr, &val);
 
-  if (ret) {
-    return READING_NA;
-  }
-
-  ret = AriesGetTemp(&val);
-
-  if (ret) {
-    retry++;
-    ret = retry_err_handle(retry, 5);
-    return ret;
+  if (ret < 0) {
+    retry[sensor_num - MB_SNR_RETIMER0_TEMP]++;
+    ret = retry_err_handle(retry[sensor_num - MB_SNR_RETIMER0_TEMP], 5);
+    goto err_exit;
   }
 
   *value = val;
-  return 0;
-}
 
+err_exit:
+  return ret;
+}

@@ -28,6 +28,7 @@
 #include "aries_i2c.h"
 #include "aries_link.h"
 #include "aries_misc.h"
+#include "platform.h"
 
 #ifdef ARIES_MPW
 #include "aries_mpw_reg_defines.h"
@@ -542,10 +543,6 @@ AriesErrorType ariesGetI2CBusClearEventStatus(AriesDeviceType* device,
  * @return     AriesErrorType - Aries error code
  */
 AriesErrorType ariesClearI2CBusClearEventStatus(AriesDeviceType* device);
-
-AriesErrorType AriestFwUpdate(const char* fp);
-AriesErrorType AriesGetFwVersion(uint16_t* version);
-AriesErrorType AriesGetTemp(float* temp);
 
 #ifdef __cplusplus
 }

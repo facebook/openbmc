@@ -6,6 +6,9 @@
 #include <openbmc/libgpio.h>
 #include "vr_fw.h"
 
+#define MAX_RETRY 10
+#define RT_LOCK "/tmp/pal_rt_lock"
+
 const char * rev_id0 = "FAB_BMC_REV_ID0";
 const char * rev_id1 = "FAB_BMC_REV_ID1";
 
@@ -21,9 +24,21 @@ class RetimerComponent : public Component {
       : Component(fru, comp), _bus(bus) {}
 
     int update(std::string image) {
-      int ret = -1;
+      int ret = -1, retry = 0, fd_lock;
+
+      fd_lock = pal_lock(RT_LOCK);
+      while (fd_lock < 0 && retry < MAX_RETRY) {
+        fd_lock = pal_lock(RT_LOCK);
+        retry++;
+        sleep(1);
+      }
+
+      if (ret == MAX_RETRY) {
+        return FW_STATUS_FAILURE;
+      }
 
       ret = AriestFwUpdate(_bus, addr, image.c_str());
+      pal_unlock(fd_lock);
 
       if (ret) {
         return FW_STATUS_FAILURE;
@@ -33,10 +48,22 @@ class RetimerComponent : public Component {
     }
 
     int get_version(json& j) {
-      int ret = -1;
+      int ret = -1, retry =0, fd_lock;
       uint16_t ver[10] = {0};
 
+      fd_lock = pal_lock(RT_LOCK);
+      while (fd_lock < 0 && retry < MAX_RETRY) {
+        fd_lock = pal_lock(RT_LOCK);
+        retry++;
+        sleep(1);
+      }
+
+      if (ret == MAX_RETRY) {
+          return FW_STATUS_FAILURE;
+      }
+
       ret = AriesGetFwVersion(_bus, addr, ver);
+      pal_unlock(fd_lock);
 
       if (ret) {
         j["VERSION"] = "NA";

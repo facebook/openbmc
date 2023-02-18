@@ -1186,12 +1186,18 @@ int read_frb3(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static
 int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret = 0;
+  int ret = 0, fd_lock;
+  const char lock_path[MAX_VALUE_LEN] = "/tmp/pal_rt_lock";
   char rev_id[MAX_VALUE_LEN] = {0};
   int bus = sensor_map[fru].map[sensor_num].id;
   int addr = 0x24;
   float val = 0;
   static uint8_t retry[8]= {0};
+
+  fd_lock = pal_lock(lock_path);
+  if (fd_lock < 0) {
+    return READING_SKIP;
+  }
 
   kv_get("mb_rev", rev_id, 0, 0);
   if (!strcmp(rev_id, "2")) {                // 2 retimer SKU
@@ -1212,5 +1218,6 @@ int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   *value = val;
 
 err_exit:
+  pal_unlock(fd_lock);
   return ret;
 }

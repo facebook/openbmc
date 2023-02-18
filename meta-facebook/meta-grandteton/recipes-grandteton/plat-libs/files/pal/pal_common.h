@@ -50,4 +50,6 @@ bool is_mb_hsc_module(void);
 bool is_swb_hsc_module(void);
 bool sgpio_valid_check(void);
 int read_cpld_health(uint8_t fru, uint8_t sensor_num, float *value);
+int pal_lock(const char *lock_fp);
+int pal_unlock(int fd);
 #endif

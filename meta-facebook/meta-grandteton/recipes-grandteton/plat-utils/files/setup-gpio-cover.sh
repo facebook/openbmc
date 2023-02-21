@@ -159,7 +159,8 @@ gpio_set FM_PECI_SEL_R_N 1
 #sgpio_export FM_JTAG_BMC_MUX_SEL 15
 #gpio_set FM_JTAG_BMC_MUX_SEL 0
 
-#sgpio_export FM_PWR_BTN 19
+sgpio_export FM_ASD_ENABLE 19
+gpio_set FM_ASD_ENABLE 1
 
 sgpio_export TEST_SGPIO_EVENT_LOG 25
 gpio_set TEST_SGPIO_EVENT_LOG 0

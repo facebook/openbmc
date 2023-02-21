@@ -118,6 +118,14 @@ static struct gpiopoll_config gpios_list[] = {
   {FM_OCP0_PRSNT,               "NIC0",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
   {FM_OCP1_PRSNT,               "NIC1",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
   {FM_E1S0_PRSNT,               "E1.S",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
+  {FM_PVDD11_S3_P0_OCP,         "SGPIO14",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
+  {FM_PVDD11_S3_P1_OCP,         "SGPIO16",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
+  {FM_PVDDCR_CPU0_P0_OCP,       "SGPIO122",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
+  {FM_PVDDCR_CPU0_P1_OCP,       "SGPIO124",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
+  {FM_PVDDCR_CPU1_P0_OCP,       "SGPIO126",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
+  {FM_PVDDCR_CPU1_P1_OCP,       "SGPIO128",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
+  {PVDD11_S3_P0_PMALERT,        "SGPIO182",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
+  {PVDD11_S3_P1_PMALERT,        "SGPIO184",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},    
 };
 
 const uint8_t gpios_cnt = sizeof(gpios_list)/sizeof(gpios_list[0]);

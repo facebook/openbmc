@@ -30,7 +30,7 @@
 #   BMC SoC                : AST26xx
 #   U-boot Version         : v2019.04
 #   Kernel Version         : 6.0.%
-#   Yocto Release          : lf-dunfell
+#   Yocto Release          : lf-kirkstone
 #   Init Manager           : systemd
 #   Flash data0 Filesystem : UBIFS
 #   eMMC filesystem        : EXT4
@@ -63,8 +63,8 @@ import sys
 OBMC_BUILD_ENV_FILE = "openbmc-init-build-env"
 FBLITE_REF_LAYER = "tools/fboss-lite/fblite-ref-layer"
 OBMC_META_FB = "meta-facebook"
-YOCTO_VER = "lf-dunfell"
-ANCHOR_STR = "# dunfell platforms"
+YOCTO_VER = "lf-kirkstone"
+ANCHOR_STR = "# kirkstone platforms"
 
 #
 # Predefined keywords in reference layer, and need to be updated when

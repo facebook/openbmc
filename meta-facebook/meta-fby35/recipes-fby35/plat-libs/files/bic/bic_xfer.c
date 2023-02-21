@@ -174,18 +174,8 @@ int bic_data_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
 #ifdef CONFIG_IPMB_XFER
   ret = bic_ipmb_wrapper(slot_id, netfn, cmd, txbuf, txlen, rxbuf, rxlen);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s(): Failed to pack data to ipmb."
-           "slot_id = %d, netfn = 0x%02x, cmd = 0x%02x",
-           __func__, slot_id, netfn, cmd);
-  }
 #else
   ret = bic_pldm_wrapper(slot_id, netfn, cmd, txbuf, txlen, rxbuf, rxlen);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s(): Failed to pack data to pldm."
-           "slot_id = %d, netfn = 0x%02x, cmd = 0x%02x",
-           __func__, slot_id, netfn, cmd);
-  }
 #endif
 
   return ret;

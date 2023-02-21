@@ -116,7 +116,7 @@ main(int argc, char **argv) {
     if (strcmp(argv[3], "on") == 0)
       status = SWB_E1S_AMMBER_LED_ON;
     else if(strcmp(argv[3], "off") == 0)
-      status = SWB_E1S_AMMBER_LED_ON;
+      status = SWB_E1S_AMMBER_LED_OFF;
     else
       goto err_exit;
 

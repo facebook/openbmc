@@ -110,7 +110,7 @@ led_sync_handler() {
       if (gpio_get_value(PCH_BEEP, &value) < 0) {
         fprintf(stderr, "gpio_get_value fail (FM_PCH_BEEP_LED)\n");
       } else {
-        gpio_set_value(PCH_BEEP_OUT, value ? GPIO_VALUE_LOW:GPIO_VALUE_HIGH);
+        gpio_set_value(PCH_BEEP_OUT, value ? GPIO_VALUE_HIGH:GPIO_VALUE_LOW);
         id_on = false;
       }
     // identify = off

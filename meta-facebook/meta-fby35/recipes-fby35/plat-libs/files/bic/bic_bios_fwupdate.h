@@ -79,7 +79,6 @@ typedef struct {
 #define USB_PKT_EXT_HDR_SIZE (sizeof(bic_usb_ext_packet))
 
 int print_configuration(struct libusb_device_handle *hDevice,struct libusb_config_descriptor *config);
-int bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
 int bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
 int send_bic_usb_packet(usb_dev* udev, uint8_t *pkt, const int transferlen);
 int bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id);

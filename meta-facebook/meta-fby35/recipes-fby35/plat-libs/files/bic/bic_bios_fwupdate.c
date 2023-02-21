@@ -137,53 +137,6 @@ check_bios_image(uint8_t slot_id __attribute__((unused)), int fd, long size) {
   return 0;
 }
 
-// Read checksum of various components
-int
-bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum) {
-  uint8_t tbuf[12] = {0x00}; // IANA ID
-  uint8_t rbuf[16] = {0x00};
-  uint8_t rlen = 0;
-  int ret;
-  int retries = 3;
-
-  // Fill the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-  // Fill the component for which firmware is requested
-  tbuf[3] = target;
-
-  // Fill the offset
-  tbuf[4] = (offset) & 0xFF;
-  tbuf[5] = (offset >> 8) & 0xFF;
-  tbuf[6] = (offset >> 16) & 0xFF;
-  tbuf[7] = (offset >> 24) & 0xFF;
-
-  // Fill the length
-  tbuf[8] = (len) & 0xFF;
-  tbuf[9] = (len >> 8) & 0xFF;
-  tbuf[10] = (len >> 16) & 0xFF;
-  tbuf[11] = (len >> 24) & 0xFF;
-
-bic_send:
-  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_CKSUM, tbuf, 12, rbuf, &rlen, NONE_INTF);
-  if ((ret || (rlen != 4+SIZE_IANA_ID)) && (retries--)) {  // checksum has to be 4 bytes
-    sleep(1);
-    syslog(LOG_ERR, "bic_get_fw_cksum: slot: %d, target %d, offset: %d, ret: %d, rlen: %d\n", slot_id, target, offset, ret, rlen);
-    goto bic_send;
-  }
-  if (ret || (rlen != 4+SIZE_IANA_ID)) {
-    return -1;
-  }
-
-#ifdef DEBUG
-  printf("cksum returns: %x:%x:%x::%x:%x:%x:%x\n", rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4], rbuf[5], rbuf[6]);
-#endif
-
-  //Ignore IANA ID
-  memcpy(cksum, &rbuf[SIZE_IANA_ID], rlen-SIZE_IANA_ID);
-
-  return ret;
-}
-
 struct bic_get_fw_cksum_sha256_req {
   uint8_t iana_id[3];
   uint8_t target;
@@ -201,7 +154,7 @@ bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32
   int ret;
   struct bic_get_fw_cksum_sha256_req req = {
     .iana_id = {0x00},
-    .target = target,
+    .target = target & 0x7F,
     .offset = offset,
     .length = len,
   };
@@ -287,7 +240,7 @@ int
 update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
   struct timeval start, end;
   int ret = -1, rc;
-  size_t offset, shift_offset = 0;
+  uint32_t offset, shift_offset = 0;
   volatile uint16_t read_count;
   uint8_t buf[256] = {0};
   uint8_t target;

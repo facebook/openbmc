@@ -2798,20 +2798,57 @@ pal_nic_otp_check(float *value, float unr, float ucr) {
 void
 pal_fan_fail_otp_check(void) {
   uint8_t bmc_location = 0;
-  char sel_str[128] = {0};
   static bool is_fan_fail_otp_asserted = false;
 
-  if (is_fan_fail_otp_asserted == true) return;
-
-  if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
-    syslog(LOG_WARNING, "Failed to get the location of BMC");
+  if (is_fan_fail_otp_asserted) {
+    return;
   }
 
-  if ( is_fan_fail_otp_asserted == false && bmc_location != NIC_BMC) {
+  if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get the location of BMC", __func__);
+  }
+
+  if (bmc_location != NIC_BMC) {
     is_fan_fail_otp_asserted = true;
-    snprintf(sel_str, sizeof(sel_str), "all fans failed");
-    pal_all_slot_power_ctrl(SERVER_12V_OFF, sel_str);
-  } else if (is_fan_fail_otp_asserted == false && bmc_location == NIC_BMC) {
+
+    const char *shadows[] = {
+      "SLOT1_ID0_DETECT_BMC_N",
+      "SLOT1_ID1_DETECT_BMC_N",
+      "SLOT2_ID0_DETECT_BMC_N",
+      "SLOT2_ID1_DETECT_BMC_N",
+      "SLOT3_ID0_DETECT_BMC_N",
+      "SLOT3_ID1_DETECT_BMC_N",
+      "SLOT4_ID0_DETECT_BMC_N",
+      "SLOT4_ID1_DETECT_BMC_N",
+    };
+    uint32_t cable_id = 0;
+
+    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cable_id)) {
+      syslog(LOG_WARNING,"%s: Failed to get slot cable IDs", __func__);
+    }
+
+    // skip when on the bench
+    if (cable_id == 0xFF) {  // all IDs are 11b
+      int exp_prsnt = 0;
+      uint8_t prsnt = 0, type = TYPE_1OU_UNKNOWN;
+
+      if (!fby35_common_is_fru_prsnt(FRU_SLOT1, &prsnt) && (prsnt == SLOT_PRESENT)) {
+        if ((exp_prsnt = bic_is_exp_prsnt(FRU_SLOT1)) < 0) {
+          exp_prsnt = 0;
+        }
+        if ((exp_prsnt & PRESENT_1OU) == PRESENT_1OU) {
+          if (bic_get_1ou_type(FRU_SLOT1, &type) < 0) {
+            type = TYPE_1OU_UNKNOWN;
+          }
+        }
+      }
+      if (type != TYPE_1OU_OLMSTEAD_POINT) {
+        return;
+      }
+    }
+
+    pal_all_slot_power_ctrl(SERVER_12V_OFF, "all fans failed");
+  } else {
     syslog(LOG_CRIT, "Turned off power of slot1 due to all fans failed");
     pal_set_server_power(FRU_SLOT1, SERVER_POWER_OFF);
   }

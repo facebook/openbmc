@@ -124,6 +124,12 @@ struct fru_dev_info {
   int8_t pldm_fru_id;
 };
 
+struct meb_fru_name_info {
+  char *default_name;
+  char *cxl_name;
+  char *e1s_name;
+};
+
 typedef struct {
   uint8_t target;
   uint8_t data[MAX_IPMB_REQ_LEN];
@@ -178,20 +184,32 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_ACB_ACCL10, "acb_accl10", "ACB ACCL10 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_ACB_ACCL11, "acb_accl11", "ACB ACCL11 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_ACB_ACCL12, "acb_accl12", "ACB ACCL12 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN1,   "meb_jcn1",   "MEB JCN1",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN2,   "meb_jcn2",   "MEB JCN2",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN3,   "meb_jcn3",   "MEB JCN3",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN4,   "meb_jcn4",   "MEB JCN4",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN1,   "meb_jcn1",   "MEB CXL8",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN2,   "meb_jcn2",   "MEB CXL7",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN3,   "meb_jcn3",   "MEB CXL6",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN4,   "meb_jcn4",   "MEB CXL5",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN5,   "meb_jcn5",   "MEB JCN5",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN6,   "meb_jcn6",   "MEB JCN6",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN7,   "meb_jcn7",   "MEB JCN7",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN8,   "meb_jcn8",   "MEB JCN8",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN9,   "meb_jcn9",   "MEB JCN9",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN10,  "meb_jcn10",  "MEB JCN10",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN11,  "meb_jcn11",  "MEB JCN11",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN12,  "meb_jcn12",  "MEB JCN12",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN9,   "meb_jcn9",   "MEB CXL3",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN10,  "meb_jcn10",  "MEB CXL4",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN11,  "meb_jcn11",  "MEB CXL1",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN12,  "meb_jcn12",  "MEB CXL2",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN13,  "meb_jcn13",  "MEB JCN13",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN14,  "meb_jcn14",  "MEB JCN14",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+};
+
+// Todo: wait E1S mapping
+struct meb_fru_name_info meb_fru_name_map[] = {
+  [FRU_MEB_JCN1]  = { "meb_jcn1",  "meb_cxl8", "meb_jcn1"},
+  [FRU_MEB_JCN2]  = { "meb_jcn2",  "meb_cxl7", "meb_jcn2"},
+  [FRU_MEB_JCN3]  = { "meb_jcn3",  "meb_cxl6", "meb_jcn3"},
+  [FRU_MEB_JCN4]  = { "meb_jcn4",  "meb_cxl5", "meb_jcn4"},
+  [FRU_MEB_JCN9]  = { "meb_jcn9",  "meb_cxl3", "meb_jcn9"},
+  [FRU_MEB_JCN10] = { "meb_jcn10", "meb_cxl4", "meb_jcn10"},
+  [FRU_MEB_JCN11] = { "meb_jcn11", "meb_cxl1", "meb_jcn11"},
+  [FRU_MEB_JCN12] = { "meb_jcn12", "meb_cxl2", "meb_jcn12"},
 };
 
 uint8_t
@@ -261,10 +279,67 @@ pal_is_slot_server(uint8_t fru) {
 }
 
 int
+pal_get_meb_jcn_fru_name(uint8_t fru, char *name) {
+  uint8_t config = 0;
+
+  if (!name) {
+    syslog(LOG_WARNING, "%s() Name pointer is NULL.", __func__);
+    return -1;
+  }
+  if (fru < FRU_MEB_JCN1 || fru > FRU_MEB_JCN14) {
+    syslog(LOG_WARNING, "%s() invalid fru %u", __func__, fru);
+    return -1;
+  }
+  if ((fru >= FRU_MEB_JCN5 && fru <= FRU_MEB_JCN8) ||
+       fru == FRU_MEB_JCN13 || fru == FRU_MEB_JCN14) {
+    strcpy(name, fru_dev_data[fru].name);
+    return 0;
+  }
+
+  config = pal_get_meb_jcn_config(fru);
+  switch (config) {
+  case E1S_CARD:
+    strcpy(name, meb_fru_name_map[fru].e1s_name);
+    break;
+  case CXL_CARD:
+    strcpy(name, meb_fru_name_map[fru].cxl_name);
+    break;
+  default:
+    strcpy(name, meb_fru_name_map[fru].default_name);
+    break;
+  }
+
+  return 0;
+}
+
+int
+pal_get_meb_jcn_fruid(char *str, uint8_t *fru) {
+  for (int i = FRU_MEB_JCN1; i <= FRU_MEB_JCN12; i++) {
+    if (i >= FRU_MEB_JCN5 && i <= FRU_MEB_JCN8) {
+      continue;
+    }
+    if (!strcmp(str, meb_fru_name_map[i].default_name) ||
+        !strcmp(str, meb_fru_name_map[i].cxl_name) ||
+        !strcmp(str, meb_fru_name_map[i].e1s_name)) {
+       *fru = fru_dev_data[i].fru_id;
+       return 0;
+    }
+  }
+
+  return -1;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!str || !fru) {
     syslog(LOG_WARNING, "%s() Input pointer is NULL.", __func__);
     return -1;
+  }
+
+  if (pal_is_artemis() && strstr(str, "meb_") != NULL) {
+    if (pal_get_meb_jcn_fruid(str, fru) == 0) {
+      return 0;
+    }
   }
 
   for(int i=0; i < FRU_CNT; i++) {
@@ -287,6 +362,13 @@ pal_get_fru_name(uint8_t fru, char *name) {
   if (fru >= FRU_CNT) {
     syslog(LOG_WARNING, "%s(): Input fruid %d is invalid.", __func__, fru);
     return -1;
+  }
+
+  if (pal_is_artemis() && fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN14) {
+    if (pal_get_meb_jcn_fru_name(fru, name) < 0) {
+      return -1;
+    }
+    return 0;
   }
 
   strcpy(name, fru_dev_data[fru].name);

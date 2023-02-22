@@ -28,6 +28,7 @@ LOCAL_URI = " \
     file://psu-update-delta-orv3.py \
     file://psu-update-bel.py \
     file://psu-update-artesyn.py \
+    file://psu-update-aei.py \
     file://orv3-device-update-mailbox.py \
     file://srec.py \
     file://hexfile.py \

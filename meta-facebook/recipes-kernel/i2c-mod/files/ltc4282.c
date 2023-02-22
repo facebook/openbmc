@@ -26,8 +26,6 @@
 #include <linux/i2c.h>
 #include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
-#include <linux/jiffies.h>
-#include <linux/delay.h>
 
 /* chip registers */
 #define LTC4282_CONTROL                 0x00    /* word */
@@ -292,48 +290,63 @@ static struct ltc4282_data *ltc4282_update_adc(struct device *dev, int reg) {
     switch (reg) {
     case ltc4282_reg_vin:
         val = i2c_smbus_read_byte_data(client, LTC4282_ADJUST);
+        if (val < 0) {
+            ret = ERR_PTR(val);
+            goto abort;
+        }
         val |= VOLTAGE_SELECT;
         i2c_smbus_write_byte_data(client, LTC4282_ADJUST, val);
-        if(val | RESOLUTION_16_BIT) {
-            msleep(ADC_16_BIT_MODE_DELAY);
-        } else {
-            msleep(ADC_12_BIT_MODE_DELAY);
-        }
         val = i2c_smbus_read_word_data(client, LTC4282_VSOURCE);
+        if (val < 0) {
+            ret = ERR_PTR(val);
+            goto abort;
+        }
         val = (u16)(val << 8) | (val >> 8);
         break; 
     case ltc4282_reg_vout:
         val = i2c_smbus_read_byte_data(client, LTC4282_ADJUST);
+        if (val < 0) {
+            ret = ERR_PTR(val);
+            goto abort;
+        }
         val &= (~VOLTAGE_SELECT);
         i2c_smbus_write_byte_data(client, LTC4282_ADJUST, val);
-        if(val | RESOLUTION_16_BIT) {
-            msleep(ADC_16_BIT_MODE_DELAY);
-        } else {
-            msleep(ADC_12_BIT_MODE_DELAY);
-        }
         val = i2c_smbus_read_word_data(client, LTC4282_VSOURCE);
+        if (val < 0) {
+            ret = ERR_PTR(val);
+            goto abort;
+        }
         val = (u16)(val << 8) | (val >> 8);
         break; 
     case ltc4282_reg_curr:
         val = i2c_smbus_read_word_data(client, LTC4282_VSENSE);
+        if (val < 0) {
+            ret = ERR_PTR(val);
+            goto abort;
+        }
         val = (u16)(val << 8) | (val >> 8);
         break; 
     case ltc4282_reg_power:
         val = i2c_smbus_read_word_data(client, LTC4282_POWER);
+        if (val < 0) {
+            ret = ERR_PTR(val);
+            goto abort;
+        }
         val = (u16)(val << 8) | (val >> 8);
         break;
     case ltc4282_reg_temp:
         val = i2c_smbus_read_byte_data(client, LTC4282_ADJUST);
-        if(val | VGPIO_SELECT) {
-            val &= (~VGPIO_SELECT);
-            i2c_smbus_write_byte_data(client, LTC4282_ADJUST, val);
+        if (val < 0) {
+            ret = ERR_PTR(val);
+            goto abort;
         }
-        if(val | RESOLUTION_16_BIT) {
-            msleep(ADC_16_BIT_MODE_DELAY);
-        } else {
-            msleep(ADC_12_BIT_MODE_DELAY);
-        }
+        val &= (~VGPIO_SELECT);
+        i2c_smbus_write_byte_data(client, LTC4282_ADJUST, val);
         val = i2c_smbus_read_word_data(client, LTC4282_TEMP);
+        if (val < 0) {
+            ret = ERR_PTR(val);
+            goto abort;
+        }
         val = (u16)(val << 8) | (val >> 8);
         break;
     default:
@@ -368,23 +381,47 @@ static struct ltc4282_data *ltc4282_update_device(struct device *dev) {
             switch (i) {
             case ltc4282_reg_status:
                 val = i2c_smbus_read_word_data(client, LTC4282_STATUS);
+                if (val < 0) {
+                    ret = ERR_PTR(val);
+                    goto abort;
+                }
                 val = (u16)(val << 8) | (val >> 8);
                 break;
             case ltc4282_reg_fault:
                 val = i2c_smbus_read_byte_data(client, LTC4282_FAULT_LOG);
+                if (val < 0) {
+                    ret = ERR_PTR(val);
+                    goto abort;
+                }
                 break; 
             case ltc4282_reg_alert:
                 val = i2c_smbus_read_word_data(client, LTC4282_ALERT);
+                if (val < 0) {
+                    ret = ERR_PTR(val);
+                    goto abort;
+                }
                 val = (u16)(val << 8) | (val >> 8);
                 break;
             case ltc4282_reg_adc_alert:
                 val = i2c_smbus_read_byte_data(client, LTC4282_ADC_ALERT_LOG);
+                if (val < 0) {
+                    ret = ERR_PTR(val);
+                    goto abort;
+                }
                 break; 
             case ltc4282_reg_control:
                 val = i2c_smbus_read_byte_data(client, LTC4282_CONTROL); 
+                if (val < 0) {
+                    ret = ERR_PTR(val);
+                    goto abort;
+                }
                 break;
             case ltc4282_reg_adjust:
                 val = i2c_smbus_read_byte_data(client, LTC4282_ADJUST); 
+                if (val < 0) {
+                    ret = ERR_PTR(val);
+                    goto abort;
+                }
                 break;
             default:
                 val = 0;

@@ -96,10 +96,10 @@ const char pal_server_list[] = "mb";
 #define HSC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
 // Artemis fru capability
-#define ACB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
-#define MEB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
-#define MEB_JCN_CAPABILITY FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
-#define ACB_ACCL_CAPABILITY FRU_CAPABILITY_FRUID_ALL
+#define ACB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
+#define MEB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
+#define MEB_JCN_CAPABILITY FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
+#define ACB_ACCL_CAPABILITY FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_POWER_ALL
 
 static bool is_fio_handler_running = false;
 
@@ -866,27 +866,27 @@ pal_get_pldm_fru_capability(uint8_t fru, unsigned int *caps) {
 
   if (status.fru_prsnt == FRU_NOT_PRSNT) {
     //syslog(LOG_WARNING, "%s() FRU: %d pldm FRU not present", __func__, fru);
-    *caps = FRU_CAPABILITY_SENSOR_ALL;
+    *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL;
     return 0;
   }
 
   switch(status.fru_type) {
     case NIC_CARD:
     case CXL_CARD:
-      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL;
       break;
     case E1S_CARD:
     case E1S_0_CARD:
     case E1S_1_CARD:
     case E1S_0_1_CARD:
-      *caps = FRU_CAPABILITY_SENSOR_ALL;
+      *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL;
       break;
     case UNKNOWN_CARD:
-      *caps = 0;
+      *caps = FRU_CAPABILITY_POWER_ALL;
       syslog(LOG_WARNING, "%s() FRU: %d pldm FRU card unknown", __func__, fru);
       return -1;
     default:
-      *caps = 0;
+      *caps = FRU_CAPABILITY_POWER_ALL;
       syslog(LOG_WARNING, "%s() FRU: %d pldm FRU card not defined", __func__, fru);
       return -1;
     }
@@ -936,7 +936,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
       case FRU_MEB_JCN7:
       case FRU_MEB_JCN8:
         // JCN5-8 doesn't have fruid read write caps and their sensors belong to MEB
-        *caps = 0;
+        *caps = FRU_CAPABILITY_POWER_ALL;
         break;
       default:
         *caps = fru_dev_data[fru].cap;

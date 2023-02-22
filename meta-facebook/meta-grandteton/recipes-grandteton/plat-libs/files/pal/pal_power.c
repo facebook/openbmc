@@ -10,12 +10,39 @@
 #include "pal_def.h"
 #include "pal_common.h"
 #include "pal_power.h"
+#include "pal.h"
+#include <libpldm/pldm.h>
+#include <libpldm/platform.h>
+#include <libpldm-oem/pldm.h>
 
 
 #define DELAY_POWER_ON 1
 #define DELAY_POWER_OFF 6
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_CYCLE 10
+
+enum MEB_CPLD_INFO {
+  MEB_POWER_REG = 0x2,
+  BASE_CARD_POWER_REG = 0x11,
+  MEB_CPLD_BUS = 0x12,
+  MEB_CPLD_ADDR = 0xA0,
+  MEB_CARD_POWER_ENABLE_BIT = 7,
+  MEB_POWER_ENABLE_BIT = 3,
+};
+
+enum ACB_CPLD_INFO {
+  ACB_POWER_REG = 0x3,
+  ACB_CPLD_BUS = 0x5,
+  ACB_CPLD_ADDR = 0xA0,
+  ACB_POWER_ENABLE_BIT = 5,
+  ACB_ACCLA_EN_REG = 0x12,
+  ACB_ACCLB_EN_REG = 0x13,
+};
+
+enum BIT_OPERATION {
+  SET_BIT,
+  CLEAR_BIT,
+};
 
 static bool m_chassis_ctrl = false;
 
@@ -76,14 +103,282 @@ pal_power_button_override(uint8_t fru_id) {
   return power_btn_out_pulse(DELAY_POWER_OFF);
 }
 
+int bic_cpld_reg_bit_opeation(uint8_t bic_bus, uint8_t bic_eid, uint8_t cpld_bus,
+     uint8_t cpld_addr, uint8_t cpld_reg, uint8_t bit, uint8_t operation) {
+  uint8_t ret = 0;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t txlen = 4;
+  size_t  rxlen = 0;
+
+  txbuf[0] = cpld_bus;
+  txbuf[1] = cpld_addr;
+  txbuf[2] = 1;
+  txbuf[3] = cpld_reg;
+
+  // read byte
+  ret = oem_pldm_ipmi_send_recv(bic_bus, bic_eid, NETFN_APP_REQ,
+          CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, true);
+  if (ret || rxlen != 1) {
+    syslog(LOG_WARNING, "%s read register failed, ret %d rxlen %u", __func__, ret, rxlen);
+    return -1;
+  }
+
+  txbuf[2] = 0; // write
+  txlen = 5;
+  rxlen = 0;
+
+  switch (operation) {
+  case SET_BIT:
+    txbuf[4] = rxbuf[0] | (1UL << bit);
+    break;
+  case CLEAR_BIT:
+    txbuf[4] = rxbuf[0] & (~(1UL << bit));
+    break;
+  default:
+    syslog(LOG_WARNING, "%s invalid operation", __func__);
+    return -1;
+  }
+
+  ret = oem_pldm_ipmi_send_recv(bic_bus, bic_eid, NETFN_APP_REQ,
+          CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, true);
+  if (ret) {
+    syslog(LOG_WARNING, "%s write register failed", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_get_fru_power(uint8_t fru, uint8_t *status) {
+  int ret = 0;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t txlen = 4;
+  size_t  rxlen = 0;
+  uint8_t power_enable_bit = 0;
+  uint8_t bic_bus = 0;
+  uint8_t bic_eid = 0;
+  txbuf[2] = 0x1; // read 1 byte
+
+  switch (fru) {
+  case FRU_MEB:
+    bic_bus = MEB_BIC_BUS;
+    bic_eid = MEB_BIC_EID;
+    txbuf[0] = MEB_CPLD_BUS;
+    txbuf[1] = MEB_CPLD_ADDR;  
+    txbuf[3] = MEB_POWER_REG;
+    power_enable_bit = (1 << MEB_POWER_ENABLE_BIT);
+    break;
+  case FRU_MEB_JCN1:
+  case FRU_MEB_JCN2:
+  case FRU_MEB_JCN3:
+  case FRU_MEB_JCN4:
+  case FRU_MEB_JCN5:
+  case FRU_MEB_JCN6:
+  case FRU_MEB_JCN7:
+  case FRU_MEB_JCN8:
+  case FRU_MEB_JCN9:
+  case FRU_MEB_JCN10:
+  case FRU_MEB_JCN11:
+  case FRU_MEB_JCN12:
+  case FRU_MEB_JCN13:
+  case FRU_MEB_JCN14:
+    bic_bus = MEB_BIC_BUS;
+    bic_eid = MEB_BIC_EID;
+    txbuf[0] = MEB_CPLD_BUS;
+    txbuf[1] = MEB_CPLD_ADDR;
+    txbuf[3] = BASE_CARD_POWER_REG + (fru - FRU_MEB_JCN1);
+    power_enable_bit = (1 << MEB_CARD_POWER_ENABLE_BIT);
+    break;
+  case FRU_ACB:
+    bic_bus = ACB_BIC_BUS;
+    bic_eid = ACB_BIC_EID;
+    txbuf[0] = ACB_CPLD_BUS;
+    txbuf[1] = ACB_CPLD_ADDR;
+    txbuf[3] = ACB_POWER_REG;
+    power_enable_bit = 1 << (ACB_POWER_ENABLE_BIT);
+    break;
+  case FRU_ACB_ACCL1:
+  case FRU_ACB_ACCL2:
+  case FRU_ACB_ACCL3:
+  case FRU_ACB_ACCL4:
+  case FRU_ACB_ACCL5:
+  case FRU_ACB_ACCL6:
+    bic_bus = ACB_BIC_BUS;
+    bic_eid = ACB_BIC_EID;
+    txbuf[0] = ACB_CPLD_BUS;
+    txbuf[1] = ACB_CPLD_ADDR;
+    txbuf[3] = ACB_ACCLA_EN_REG;
+    power_enable_bit = (1 << (FRU_ACB_ACCL6 - fru));
+    break;
+  case FRU_ACB_ACCL7:
+  case FRU_ACB_ACCL8:
+  case FRU_ACB_ACCL9:
+  case FRU_ACB_ACCL10:
+  case FRU_ACB_ACCL11:
+  case FRU_ACB_ACCL12:
+    bic_bus = ACB_BIC_BUS;
+    bic_eid = ACB_BIC_EID;
+    txbuf[0] = ACB_CPLD_BUS;
+    txbuf[1] = ACB_CPLD_ADDR;
+    txbuf[3] = ACB_ACCLB_EN_REG;
+    power_enable_bit = (1 << (FRU_ACB_ACCL12 - fru));
+    break;
+  default:
+    return -1;
+  }
+
+  ret = oem_pldm_ipmi_send_recv(bic_bus, bic_eid, NETFN_APP_REQ,
+          CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, true);
+  if (ret || rxlen != 1) {
+    syslog(LOG_WARNING, "%s read register failed, ret %d rxlen %u", __func__, ret, rxlen);
+    return -1;
+  }
+
+  if (rxbuf[0] & power_enable_bit) {
+    *status = SERVER_POWER_ON;
+  } else {
+    *status = SERVER_POWER_OFF;
+  }
+
+  return 0;
+}
+
+int
+pal_set_fru_power(uint8_t fru, uint8_t cmd) {
+  int ret = 0;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t txlen = 5;
+  size_t  rxlen = 0;
+
+  switch (fru) {
+  case FRU_MEB:
+    txbuf[0] = MEB_CPLD_BUS;
+    txbuf[1] = MEB_CPLD_ADDR;
+    txbuf[2] = 0;
+    txbuf[3] = MEB_POWER_REG;
+
+    switch (cmd) {
+    case SERVER_POWER_ON:
+      txbuf[4] |= (1 << MEB_POWER_ENABLE_BIT);
+      break;
+    case SERVER_POWER_OFF:
+      break;
+    default:
+      return -1;
+    }
+    break;
+  case FRU_MEB_JCN1:
+  case FRU_MEB_JCN2:
+  case FRU_MEB_JCN3:
+  case FRU_MEB_JCN4:
+  case FRU_MEB_JCN5:
+  case FRU_MEB_JCN6:
+  case FRU_MEB_JCN7:
+  case FRU_MEB_JCN8:
+  case FRU_MEB_JCN9:
+  case FRU_MEB_JCN10:
+  case FRU_MEB_JCN11:
+  case FRU_MEB_JCN12:
+  case FRU_MEB_JCN13:
+  case FRU_MEB_JCN14:
+    txbuf[0] = MEB_CPLD_BUS;
+    txbuf[1] = MEB_CPLD_ADDR;
+    txbuf[2] = 0;
+    txbuf[3] = BASE_CARD_POWER_REG + (fru - FRU_MEB_JCN1);
+
+    switch (cmd) {
+    case SERVER_POWER_ON:
+      txbuf[4] |= (1 << MEB_CARD_POWER_ENABLE_BIT);
+      break;
+    case SERVER_POWER_OFF:
+      break;
+    default:
+      return -1;
+    }
+    break;
+  case FRU_ACB:
+    switch (cmd) {
+    case SERVER_POWER_ON:
+      ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
+              ACB_CPLD_ADDR, ACB_POWER_REG, ACB_POWER_ENABLE_BIT, SET_BIT);
+      break;
+    case SERVER_POWER_OFF:
+      ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
+              ACB_CPLD_ADDR, ACB_POWER_REG, ACB_POWER_ENABLE_BIT, CLEAR_BIT);
+      break;
+    default:
+      return -1;
+    }
+    return ret;
+  case FRU_ACB_ACCL1:
+  case FRU_ACB_ACCL2:
+  case FRU_ACB_ACCL3:
+  case FRU_ACB_ACCL4:
+  case FRU_ACB_ACCL5:
+  case FRU_ACB_ACCL6:
+    switch (cmd) {
+    case SERVER_POWER_ON:
+      ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
+              ACB_CPLD_ADDR, ACB_ACCLA_EN_REG, FRU_ACB_ACCL6 - fru, SET_BIT);
+      break;
+    case SERVER_POWER_OFF:
+      ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
+              ACB_CPLD_ADDR, ACB_ACCLA_EN_REG, FRU_ACB_ACCL6 - fru, CLEAR_BIT);
+      break;
+    default:
+      return -1;
+    }
+    return ret;
+  case FRU_ACB_ACCL7:
+  case FRU_ACB_ACCL8:
+  case FRU_ACB_ACCL9:
+  case FRU_ACB_ACCL10:
+  case FRU_ACB_ACCL11:
+  case FRU_ACB_ACCL12:
+    switch (cmd) {
+    case SERVER_POWER_ON:
+      ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
+              ACB_CPLD_ADDR, ACB_ACCLB_EN_REG, FRU_ACB_ACCL12 - fru, SET_BIT);
+      break;
+    case SERVER_POWER_OFF:
+      ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
+              ACB_CPLD_ADDR, ACB_ACCLB_EN_REG, FRU_ACB_ACCL12 - fru, CLEAR_BIT);
+      break;
+    default:
+      return -1;
+    }
+    return ret;
+  default:
+    return -1;
+  }
+
+  ret = oem_pldm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID, NETFN_APP_REQ,
+          CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, true);
+  if (ret) {
+    syslog(LOG_WARNING, "%s write register failed", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
 int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
   int ret;
   gpio_desc_t *gdesc = NULL;
   gpio_value_t val;
 
-  if (fru != FRU_MB)
-    return -1;
+  if (fru != FRU_MB) {
+    if (pal_is_artemis()) {
+      return pal_get_fru_power(fru, status);
+    } else {
+      return -1;
+    }
+  }
 
   gdesc = gpio_open_by_shadow(FM_LAST_PWRGD);
   if (gdesc == NULL)
@@ -108,6 +403,14 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
   if (pal_get_server_power(fru, &status) < 0) {
     return -1;
+  }
+
+  if (fru != FRU_MB) {
+    if (pal_is_artemis()) {
+      return pal_set_fru_power(fru, cmd);
+    } else {
+      return -1;
+    }
   }
 
   switch(cmd) {

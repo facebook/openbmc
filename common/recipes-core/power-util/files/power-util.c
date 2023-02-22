@@ -88,8 +88,8 @@ static const char *option_list[] = {
 
 static void
 print_usage() {
-  char fru_list[256] = {0};
-  pal_get_fru_list_by_caps(FRU_CAPABILITY_POWER_STATUS, fru_list, 256);
+  char fru_list[512] = {0};
+  pal_get_fru_list_by_caps(FRU_CAPABILITY_POWER_STATUS, fru_list, 512);
   printf("Usage: power-util [ %s ] [ %s ]\nUsage: power-util sled-cycle\n",
       fru_list, pwr_option_list);
 

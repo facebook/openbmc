@@ -1,4 +1,6 @@
-# Copyright 2022-present Facebook. All Rights Reserved.
+#!/bin/sh
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,12 +17,17 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-LOCAL_URI += " \
-    file://gpiod_cover.c \
-    file://rebind-rt-mux.sh \
-    "
+. /usr/local/bin/openbmc-utils.sh
 
-do_install:append() {
-  install -m 755 ${S}/rebind-rt-mux.sh ${D}${sysconfdir}/init.d/rebind-rt-mux.sh
+rebind_i2c_dev() {
+  dev="$1-00$2"
+  dri=$3
+
+  if [ ! -L "${SYSFS_I2C_DEVICES}/$dev/driver" ]; then
+    if i2c_bind_driver "$dri" "$dev" >/dev/null; then
+      echo "rebind $dev to driver $dri successfully"
+    fi
+  fi
 }
+
+rebind_i2c_dev 6 70 pca954x

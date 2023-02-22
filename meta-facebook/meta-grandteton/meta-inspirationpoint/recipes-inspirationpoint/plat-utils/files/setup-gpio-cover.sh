@@ -116,6 +116,7 @@ sgpio_export FM_RST_CPU1_RESETL_N 200
 sgpio_export FM_CPU0_PROCHOT_R_N 202
 
 sgpio_export BMC_JTAG_SEL_R 228
+sgpio_export RST_PERST_CPUx_SWB_N 230
 sgpio_export P12V_HSC_TEMP_ALERT_R_N 232
 sgpio_export P12V_HSC_T_CRIT_R_N 234
 sgpio_export FM_CPU1_PWRGD_OUT 236

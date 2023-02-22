@@ -11,6 +11,7 @@
 
 const char * rev_id0 = "FAB_BMC_REV_ID0";
 const char * rev_id1 = "FAB_BMC_REV_ID1";
+const char * RST_PESET = "RST_PERST_CPUx_SWB_N";
 
 class RetimerComponent : public Component {
   int _bus = 0;
@@ -25,6 +26,9 @@ class RetimerComponent : public Component {
 
     int update(std::string image) {
       int ret = -1, retry = 0, fd_lock;
+      if(gpio_get_value_by_shadow(RST_PESET) != GPIO_VALUE_HIGH) {
+         return FW_STATUS_FAILURE;
+      }
 
       fd_lock = pal_lock(RT_LOCK);
       while (fd_lock < 0 && retry < MAX_RETRY) {
@@ -50,6 +54,11 @@ class RetimerComponent : public Component {
     int get_version(json& j) {
       int ret = -1, retry =0, fd_lock;
       uint16_t ver[10] = {0};
+
+      if(gpio_get_value_by_shadow(RST_PESET) != GPIO_VALUE_HIGH) {
+          j["VERSION"] = "NA";
+          return FW_STATUS_FAILURE;
+      }
 
       fd_lock = pal_lock(RT_LOCK);
       while (fd_lock < 0 && retry < MAX_RETRY) {

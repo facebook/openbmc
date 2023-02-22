@@ -1188,11 +1188,16 @@ static
 int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = 0, fd_lock;
   const char lock_path[MAX_VALUE_LEN] = "/tmp/pal_rt_lock";
+  const char shadow[MAX_VALUE_LEN] = "RST_PERST_CPUx_SWB_N";
   char rev_id[MAX_VALUE_LEN] = {0};
   int bus = sensor_map[fru].map[sensor_num].id;
   int addr = 0x24;
   float val = 0;
   static uint8_t retry[8]= {0};
+
+  if (gpio_get_value_by_shadow(shadow) != GPIO_VALUE_HIGH) {
+    return READING_NA;
+  }
 
   fd_lock = pal_lock(lock_path);
   if (fd_lock < 0) {

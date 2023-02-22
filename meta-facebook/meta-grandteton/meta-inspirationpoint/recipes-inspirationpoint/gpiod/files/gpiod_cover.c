@@ -83,6 +83,14 @@ device_prsnt_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
   }
 }
 
+static void
+rst_perst_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (system("sh /etc/init.d/rebind-rt-mux.sh &") != 0) {
+    syslog(LOG_CRIT, "Failed to run: %s", __FUNCTION__);
+  }
+}
+
+
 // GPIO table to be monitored
 static struct gpiopoll_config gpios_list[] = {
   // shadow, description, edge, handler, oneshot
@@ -109,10 +117,11 @@ static struct gpiopoll_config gpios_list[] = {
   {FM_CPU0_PWR_FAIL,            "SGPIO174", GPIO_EDGE_BOTH,    pwr_err_event_handler,     NULL},
   {FM_CPU1_PWR_FAIL,            "SGPIO176", GPIO_EDGE_BOTH,    pwr_err_event_handler,     NULL},
   {FM_UV_ADR_TRIGGER,           "SGPIO26",  GPIO_EDGE_BOTH,    gpio_event_handler,        NULL},
-  {FM_PVDDCR_CPU0_P0_PMALERT,   "SGPIO154",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
-  {FM_PVDDCR_CPU0_P1_PMALERT,   "SGPIO156",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
-  {FM_PVDDCR_CPU1_P0_SMB_ALERT, "SGPIO158",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
-  {FM_PVDDCR_CPU1_P1_SMB_ALERT, "SGPIO160",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
+  {FM_PVDDCR_CPU0_P0_PMALERT,   "SGPIO154", GPIO_EDGE_BOTH,    gpio_event_handler,        NULL},
+  {FM_PVDDCR_CPU0_P1_PMALERT,   "SGPIO156", GPIO_EDGE_BOTH,    gpio_event_handler,        NULL},
+  {FM_PVDDCR_CPU1_P0_SMB_ALERT, "SGPIO158", GPIO_EDGE_BOTH,    gpio_event_handler,        NULL},
+  {FM_PVDDCR_CPU1_P1_SMB_ALERT, "SGPIO160", GPIO_EDGE_BOTH,    gpio_event_handler,        NULL},
+  {RST_PERST_N,                 "SGPIO230", GPIO_EDGE_RISING,  rst_perst_event_handler,   NULL},
   {FM_CPU0_PRSNT,               "CPU0",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
   {FM_CPU1_PRSNT,               "CPU1",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},
   {FM_OCP0_PRSNT,               "NIC0",  GPIO_EDGE_BOTH,  device_prsnt_event_handler,     NULL},

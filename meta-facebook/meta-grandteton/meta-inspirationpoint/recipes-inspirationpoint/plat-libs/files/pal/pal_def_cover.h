@@ -36,6 +36,8 @@
 #define FM_PVDDCR_CPU1_P1_OCP    "FM_PVDDCR_CPU1_P1_OCP_N"
 #define PVDD11_S3_P0_PMALERT     "PVDD11_S3_P0_PMALERT"
 #define PVDD11_S3_P1_PMALERT     "PVDD11_S3_P1_PMALERT"
+#define RST_PERST_N              "RST_PERST_CPUx_SWB_N"
+
 
 //GPIO Power Control Cover
 #define FM_LAST_PWRGD            "FM_PWRGD_CPU1_PWROK"

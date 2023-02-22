@@ -913,7 +913,6 @@ fby35_common_check_image_signature(uint8_t board_id, uint8_t *data) {
   }
 
   if (strncmp(sig, (char *)data, PLAT_SIG_SIZE) != 0) {
-    printf("This image is not for Yv3.5 platform \n");
     printf("There is no valid platform signature in image. \n");
     return -1;
   }

@@ -620,10 +620,9 @@ static int cmmcpld_probe(struct i2c_client *client,
                                  cmmcpld_attr_table, n_attrs);
 }
 
-static int cmmcpld_remove(struct i2c_client *client)
+static void cmmcpld_remove(struct i2c_client *client)
 {
   i2c_dev_sysfs_data_clean(client, &cmmcpld_data);
-  return 0;
 }
 
 static struct i2c_driver cmmcpld_driver = {

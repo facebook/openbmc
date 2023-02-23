@@ -349,10 +349,9 @@ static int fancpld_probe(struct i2c_client *client,
                                  fancpld_attr_table, n_attrs);
 }
 
-static int fancpld_remove(struct i2c_client *client)
+static void fancpld_remove(struct i2c_client *client)
 {
   i2c_dev_sysfs_data_clean(client, &fancpld_data);
-  return 0;
 }
 
 static struct i2c_driver fancpld_driver = {

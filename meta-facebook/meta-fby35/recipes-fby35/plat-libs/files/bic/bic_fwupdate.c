@@ -755,6 +755,12 @@ get_component_name(uint8_t comp) {
       return "VCCD";
     case FW_VR_VCCINFAON:
       return "VCCINFAON/VCCFA_EHV";
+    case FW_VR_VCCIN_EHV:
+      return "VCCIN/VCCFA_EHV";
+    case FW_VR_VCCD_HV:
+      return "VCCD_HV";
+    case FW_VR_VCCINF:
+      return "VCCINF/VCCFA_EHV_FIVRA";
     case FW_VR_VDDCRCPU0:
       return "VDDCR_CPU0/VDDCR_SOC";
     case FW_VR_VDDCRCPU1:

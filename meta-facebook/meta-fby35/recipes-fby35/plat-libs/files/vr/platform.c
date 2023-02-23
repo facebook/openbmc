@@ -30,6 +30,9 @@ enum {
   VR_CL_VCCIN = 0,
   VR_CL_VCCD,
   VR_CL_VCCINFAON,
+  VR_GL_VCCIN,
+  VR_GL_VCCD,
+  VR_GL_VCCINF,
   VR_HD_VDDCR_CPU0,
   VR_HD_VDDCR_CPU1,
   VR_HD_VDD11S3,
@@ -189,6 +192,30 @@ struct vr_info fby35_vr_list[] = {
   },
   {
     .bus = SB_VR_BUS,
+    .addr = GL_VCCIN_ADDR,
+    .dev_name = "VCCIN/VCCFA_EHV",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+    .xfer = &fby35_vr_rdwr,
+  },
+  {
+    .bus = SB_VR_BUS,
+    .addr = GL_VCCD_ADDR,
+    .dev_name = "VCCD_HV",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+    .xfer = &fby35_vr_rdwr,
+  },
+  {
+    .bus = SB_VR_BUS,
+    .addr = GL_VCCINF_ADDR,
+    .dev_name = "VCCINF/VCCFA_EHV_FIVRA",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+    .xfer = &fby35_vr_rdwr,
+  },
+  {
+    .bus = SB_VR_BUS,
     .addr = VDDCR_CPU0_ADDR,
     .dev_name = "VDDCR_CPU0/VDDCR_SOC",
     .ops = &rns_ops,
@@ -327,11 +354,7 @@ void greatlakes_vr_device_check(void){
   uint8_t rbuf[16], rlen;
   int i;
 
-  fby35_vr_list[VR_CL_VCCIN].addr = GL_VCCIN_ADDR;
-  fby35_vr_list[VR_CL_VCCD].addr = GL_VCCD_ADDR;
-  fby35_vr_list[VR_CL_VCCINFAON].addr = GL_VCCINFAON_ADDR;
-
-  for (i = VR_CL_VCCIN; i <= VR_CL_VCCINFAON; i++) {
+  for (i = VR_GL_VCCIN; i <= VR_GL_VCCINF; i++) {
     rlen = sizeof(rbuf);
     if (bic_get_vr_device_id(slot_id, rbuf, &rlen, fby35_vr_list[i].bus,
                              fby35_vr_list[i].addr, NONE_INTF) < 0) {

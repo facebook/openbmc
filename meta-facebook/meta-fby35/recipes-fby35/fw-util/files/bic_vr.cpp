@@ -25,9 +25,9 @@ static map<uint8_t, map<uint8_t, string>> halfdome_vr_list = {
 };
 
 static map<uint8_t, map<uint8_t, string>> great_lake_vr_list = {
-  {FW_VR_VCCIN,     {{GL_VCCIN_ADDR, "VCCIN/VCCFA_EHV_FIVRA"}}},
-  {FW_VR_VCCD,      {{GL_VCCD_ADDR, "VCCD"}}},
-  {FW_VR_VCCINFAON, {{GL_VCCINFAON_ADDR, "VCCINFAON/VCCFA_EHV"}}}
+  {FW_VR_VCCIN_EHV, {{GL_VCCIN_ADDR, "VCCIN/VCCFA_EHV"}}},
+  {FW_VR_VCCD_HV, {{GL_VCCD_ADDR, "VCCD_HV"}}},
+  {FW_VR_VCCINF, {{GL_VCCINF_ADDR, "VCCINF/VCCFA_EHV_FIVRA"}}}
 };
 
 static map<uint8_t, map<uint8_t, string>> rainbow_falls_vr_list = {

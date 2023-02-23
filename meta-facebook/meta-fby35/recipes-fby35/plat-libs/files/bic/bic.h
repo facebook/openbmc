@@ -122,9 +122,9 @@ enum {
   VR_1OU_VDDQCD_ADDR = 0xB4,
 
   /*----greatlake VR ADDR-----*/
-  GL_VCCIN_ADDR = 0xDC,
+  GL_VCCIN_ADDR = 0xC0,
   GL_VCCD_ADDR = 0xD4,
-  GL_VCCINFAON_ADDR = 0xC0
+  GL_VCCINF_ADDR = 0xDC,
 };
 
 // M2 info

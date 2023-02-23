@@ -448,8 +448,11 @@ enum {
   FW_3OU_BIC_RCVY,
   FW_4OU_BIC,
   FW_4OU_BIC_RCVY,
+  FW_VR_VCCIN_EHV,     //55
+  FW_VR_VCCD_HV,
+  FW_VR_VCCINF,
   // last id
-  FW_COMPONENT_LAST_ID
+  FW_COMPONENT_LAST_ID,
 };
 
 enum {

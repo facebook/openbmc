@@ -81,9 +81,15 @@ class ClassConfig {
           } else {
             static CpldComponent cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
             static MeComponent   me_fw1("slot1", "me", FRU_SLOT1);
-            static VrComponent   vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN);
-            static VrComponent   vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD);
-            static VrComponent   vr_vccinfaon_fw1("slot1", "vr_vccinfaon", FW_VR_VCCINFAON);
+            if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_GL) {
+              static VrComponent   vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN_EHV);
+              static VrComponent   vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD_HV);
+              static VrComponent   vr_vccinf_fw1("slot1", "vr_vccinf", FW_VR_VCCINF);
+            } else {
+              static VrComponent   vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN);
+              static VrComponent   vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD);
+              static VrComponent   vr_vccinfaon_fw1("slot1", "vr_vccinfaon", FW_VR_VCCINFAON);
+            }
             if(isSbMpsHsc(FRU_SLOT1)) {
               static MP5990Component hsc_fw1("slot1", "hsc", FRU_SLOT1, 1, 0x16);
             }
@@ -173,9 +179,15 @@ class ClassConfig {
           } else {
             static CpldComponent cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
             static MeComponent   me_fw3("slot3", "me", FRU_SLOT3);
-            static VrComponent   vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN);
-            static VrComponent   vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD);
-            static VrComponent   vr_vccinfaon_fw3("slot3", "vr_vccinfaon", FW_VR_VCCINFAON);
+            if (fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_GL) {
+              static VrComponent   vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN_EHV);
+              static VrComponent   vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD_HV);
+              static VrComponent   vr_vccinf_fw3("slot3", "vr_vccinf", FW_VR_VCCINF);
+            } else {
+              static VrComponent   vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN);
+              static VrComponent   vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD);
+              static VrComponent   vr_vccinfaon_fw3("slot3", "vr_vccinfaon", FW_VR_VCCINFAON);
+            }
             if(isSbMpsHsc(FRU_SLOT3)) {
               static MP5990Component hsc_fw3("slot3", "hsc", FRU_SLOT3, 1, 0x16);
             }

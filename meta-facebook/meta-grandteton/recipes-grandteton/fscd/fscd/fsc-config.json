@@ -24,6 +24,16 @@
         "attribute": {
           "type" : "power_status"
         }
+      },
+      "(.*)gpu_sxm": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)nvswitch": {
+        "attribute": {
+          "type" : "power_status"
+        }
       }
     },
     "watchdog": false,

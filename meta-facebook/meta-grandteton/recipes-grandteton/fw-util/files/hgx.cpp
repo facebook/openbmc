@@ -142,22 +142,22 @@ class HGXSystemConfig {
           } else {
             static HGXComponent hmc("hgx", "hmc", "HGX_FW_BMC_0");
           }
-          static HGXComponent gpu0("hgx", "gpu0-fw", "HGX_FW_GPU_SXM_1");
-          static HGXComponent gpu1("hgx", "gpu1-fw", "HGX_FW_GPU_SXM_2");
-          static HGXComponent gpu2("hgx", "gpu2-fw", "HGX_FW_GPU_SXM_3");
-          static HGXComponent gpu3("hgx", "gpu3-fw", "HGX_FW_GPU_SXM_4");
-          static HGXComponent gpu4("hgx", "gpu4-fw", "HGX_FW_GPU_SXM_5");
-          static HGXComponent gpu5("hgx", "gpu5-fw", "HGX_FW_GPU_SXM_6");
-          static HGXComponent gpu6("hgx", "gpu6-fw", "HGX_FW_GPU_SXM_7");
-          static HGXComponent gpu7("hgx", "gpu7-fw", "HGX_FW_GPU_SXM_8");
-          static HGXComponent gpuinfo0("hgx", "gpu0-inforom", "HGX_InfoROM_GPU_SXM_1");
-          static HGXComponent gpuinfo1("hgx", "gpu1-inforom", "HGX_InfoROM_GPU_SXM_2");
-          static HGXComponent gpuinfo2("hgx", "gpu2-inforom", "HGX_InfoROM_GPU_SXM_3");
-          static HGXComponent gpuinfo3("hgx", "gpu3-inforom", "HGX_InfoROM_GPU_SXM_4");
-          static HGXComponent gpuinfo4("hgx", "gpu4-inforom", "HGX_InfoROM_GPU_SXM_5");
-          static HGXComponent gpuinfo5("hgx", "gpu5-inforom", "HGX_InfoROM_GPU_SXM_6");
-          static HGXComponent gpuinfo6("hgx", "gpu6-inforom", "HGX_InfoROM_GPU_SXM_7");
-          static HGXComponent gpuinfo7("hgx", "gpu7-inforom", "HGX_InfoROM_GPU_SXM_8");
+          static HGXComponent gpu0("hgx", "gpu1-fw", "HGX_FW_GPU_SXM_1");
+          static HGXComponent gpu1("hgx", "gpu2-fw", "HGX_FW_GPU_SXM_2");
+          static HGXComponent gpu2("hgx", "gpu3-fw", "HGX_FW_GPU_SXM_3");
+          static HGXComponent gpu3("hgx", "gpu4-fw", "HGX_FW_GPU_SXM_4");
+          static HGXComponent gpu4("hgx", "gpu5-fw", "HGX_FW_GPU_SXM_5");
+          static HGXComponent gpu5("hgx", "gpu6-fw", "HGX_FW_GPU_SXM_6");
+          static HGXComponent gpu6("hgx", "gpu7-fw", "HGX_FW_GPU_SXM_7");
+          static HGXComponent gpu7("hgx", "gpu8-fw", "HGX_FW_GPU_SXM_8");
+          static HGXComponent gpuinfo0("hgx", "gpu1-inforom", "HGX_InfoROM_GPU_SXM_1");
+          static HGXComponent gpuinfo1("hgx", "gpu2-inforom", "HGX_InfoROM_GPU_SXM_2");
+          static HGXComponent gpuinfo2("hgx", "gpu3-inforom", "HGX_InfoROM_GPU_SXM_3");
+          static HGXComponent gpuinfo3("hgx", "gpu4-inforom", "HGX_InfoROM_GPU_SXM_4");
+          static HGXComponent gpuinfo4("hgx", "gpu5-inforom", "HGX_InfoROM_GPU_SXM_5");
+          static HGXComponent gpuinfo5("hgx", "gpu6-inforom", "HGX_InfoROM_GPU_SXM_6");
+          static HGXComponent gpuinfo6("hgx", "gpu7-inforom", "HGX_InfoROM_GPU_SXM_7");
+          static HGXComponent gpuinfo7("hgx", "gpu8-inforom", "HGX_InfoROM_GPU_SXM_8");
           static HGXComponent fpga("hgx", "fpga", "HGX_FW_FPGA_0");
           static HGXComponent nvsw0("hgx", "nvswitch0-fw", "HGX_FW_NVSwitch_0");
           static HGXComponent nvsw1("hgx", "nvswitch1-fw", "HGX_FW_NVSwitch_1");
@@ -178,14 +178,14 @@ class HGXSystemConfig {
           static HGXComponent pretimer7("hgx", "pcieretimer7", "HGX_FW_PCIeRetimer_7");
           static HGXComponent pex0("hgx", "pcie-switch0", "HGX_FW_PCIeSwitch_0");
           static HGXComponent efpga("hgx", "erot-fpga", "HGX_FW_ERoT_FPGA_0");
-          static HGXComponent egpu0("hgx", "erot-gpu0", "HGX_FW_ERoT_GPU_SXM_1");
-          static HGXComponent egpu1("hgx", "erot-gpu1", "HGX_FW_ERoT_GPU_SXM_2");
-          static HGXComponent egpu2("hgx", "erot-gpu2", "HGX_FW_ERoT_GPU_SXM_3");
-          static HGXComponent egpu3("hgx", "erot-gpu3", "HGX_FW_ERoT_GPU_SXM_4");
-          static HGXComponent egpu4("hgx", "erot-gpu4", "HGX_FW_ERoT_GPU_SXM_5");
-          static HGXComponent egpu5("hgx", "erot-gpu5", "HGX_FW_ERoT_GPU_SXM_6");
-          static HGXComponent egpu6("hgx", "erot-gpu6", "HGX_FW_ERoT_GPU_SXM_7");
-          static HGXComponent egpu7("hgx", "erot-gpu7", "HGX_FW_ERoT_GPU_SXM_8");
+          static HGXComponent egpu0("hgx", "erot-gpu1", "HGX_FW_ERoT_GPU_SXM_1");
+          static HGXComponent egpu1("hgx", "erot-gpu2", "HGX_FW_ERoT_GPU_SXM_2");
+          static HGXComponent egpu2("hgx", "erot-gpu3", "HGX_FW_ERoT_GPU_SXM_3");
+          static HGXComponent egpu3("hgx", "erot-gpu4", "HGX_FW_ERoT_GPU_SXM_4");
+          static HGXComponent egpu4("hgx", "erot-gpu5", "HGX_FW_ERoT_GPU_SXM_5");
+          static HGXComponent egpu5("hgx", "erot-gpu6", "HGX_FW_ERoT_GPU_SXM_6");
+          static HGXComponent egpu6("hgx", "erot-gpu7", "HGX_FW_ERoT_GPU_SXM_7");
+          static HGXComponent egpu7("hgx", "erot-gpu8", "HGX_FW_ERoT_GPU_SXM_8");
           if (isHMC) {
             static HGXComponent ehmc("hgx", "erot-hmc", "HGX_FW_ERoT_HMC_0");
           } else {

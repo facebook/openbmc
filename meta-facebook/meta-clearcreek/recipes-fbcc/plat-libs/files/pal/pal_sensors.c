@@ -963,6 +963,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           break;
         case PWM:
           sprintf(units, "PCT");
+          break;
         default:
           return -1;
       }

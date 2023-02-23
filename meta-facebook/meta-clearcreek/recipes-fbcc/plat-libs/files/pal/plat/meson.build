@@ -20,4 +20,5 @@ pal_deps += [
     dependency('libcrypto'),
     dependency('libobmc-sensors'),
     dependency('libssl'),
+    dependency('libmisc-utils')
     ]

@@ -15,6 +15,7 @@ LOCAL_URI += " \
 
 DEPENDS += " \
     libobmc-sensors \
+    libmisc-utils \
     libgpio-ctrl \
     libobmc-i2c \
     switchtec-user \
@@ -22,6 +23,7 @@ DEPENDS += " \
     "
 RDEPENDS:${PN} += " \
     libobmc-sensors \
+    libmisc-utils \
     libgpio-ctrl \
     libobmc-i2c \
     switchtec-user \

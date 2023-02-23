@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <time.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensors.h>

@@ -25,6 +25,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <sys/time.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
 #include "pal.h"

@@ -103,7 +103,6 @@ enum {
 #define READING_SKIP    (1)
 #define READING_NA      (-2)
 #define ERR_NOT_READY   (-2)
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 //CPLD Device Info
 #define CPLD_PWR_STATE_ADDR1    (0x2E)

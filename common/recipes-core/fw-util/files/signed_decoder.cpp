@@ -160,7 +160,7 @@ int SignComponent::check_error_proof(uint8_t* err_proof) const
   return EP_ERR::EP_SUCCESS;
 }
 
-int SignComponent::is_image_signed(const string& image_path)
+int SignComponent::is_image_signed(const string& image_path, bool force)
 {
   int fd, ret;
   struct stat file_stat;
@@ -170,6 +170,11 @@ int SignComponent::is_image_signed(const string& image_path)
   if (stat(image_path.c_str(), &file_stat) < 0) {
     syslog(LOG_WARNING, "%s failed to open %s to check file infomation.\n", __func__, image_path.c_str());
     return SIGNED_ERR::FILE_UNVALID;
+  }
+
+  if (force) {
+    image_size = (long)file_stat.st_size;
+    return SIGNED_ERR::SUCCESS;
   }
 
   fd = open(image_path.c_str(), O_RDONLY);
@@ -291,7 +296,7 @@ int SignComponent::signed_image_update(string image, bool force)
 {
   int ret = 0;
 
-  ret = is_image_signed(image);
+  ret = is_image_signed(image, force);
   if (ret && !force) {
     printf("Firmware not valid. error(%d)\n", -ret);
     return -1;

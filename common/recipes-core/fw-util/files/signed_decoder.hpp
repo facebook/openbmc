@@ -55,7 +55,7 @@ class SignComponent {
     int check_error_proof(uint8_t* err_proof) const;
 
     // update functions
-    int is_image_signed(const std::string& image_path); // check signed info and store.
+    int is_image_signed(const std::string& image_path, bool force); // check signed info and store.
     int get_image(std::string& /*image*/, bool /*force*/); // would change original file path to temp file path.
     int delete_image();
 

@@ -68,6 +68,11 @@
 static bool enable_debug_card = false;
 
 /*
+ * Default delay (in seconds) in the main loop of monitoring threads.
+ */
+static const int thread_loop_delay_sec = 3;
+
+/*
  * Record current debug card UART position,
  * position value will be accessed in debug_card_handler,
  * pwr_btn_handler and rst_btn_handler.
@@ -368,7 +373,7 @@ scm_monitor_handler(void *unused) {
     }
 scm_mon_out:
     prev = curr;
-    sleep(1);
+    sleep(thread_loop_delay_sec);
   }
   return 0;
 }
@@ -495,7 +500,7 @@ pim_monitor_handler(void *unused) {
       }
     }
 pim_mon_out:
-    sleep(1);
+    sleep(thread_loop_delay_sec);
   }
   return 0;
 }
@@ -519,7 +524,8 @@ simLED_monitor_handler(void *unused) {
   pal_get_board_rev(&brd_rev);
   init_led();
   while(1) {
-    sleep(1);
+    sleep(thread_loop_delay_sec);
+
     if (sys_ug == 0) {
       if (interval[0] == 0) {
         interval[0] = INTERVAL_MAX;
@@ -651,7 +657,7 @@ debug_card_out:
     if (curr == 1)
       msleep(500);
     else
-      sleep(1);
+      sleep(thread_loop_delay_sec);
   }
 
   return 0;
@@ -672,7 +678,7 @@ pwr_btn_handler(void *unused) {
     ret = get_handsw_pos(&pos);
     pthread_mutex_unlock(&pos_mutex);
     if (ret || pos == HAND_SW_BMC) {
-      sleep(1);
+      sleep(thread_loop_delay_sec);
       continue;
     }
 

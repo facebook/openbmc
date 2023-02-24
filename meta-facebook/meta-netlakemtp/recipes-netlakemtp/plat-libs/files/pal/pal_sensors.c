@@ -910,6 +910,8 @@ read_nic_temp(uint8_t id, float *value) {
     usleep(SENSOR_RETRY_INTERVAL_USEC);
   }
 
+  close(fd);
+
   if (ret < 0) {
     return ERR_SENSOR_NA;
   }
@@ -927,8 +929,6 @@ read_nic_temp(uint8_t id, float *value) {
       ret = ERR_SENSOR_NA;
     }
   }
-
-  close(fd);
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get reading %x-%x", __func__,

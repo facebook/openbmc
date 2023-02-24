@@ -225,12 +225,12 @@ reset_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 }
 
 static void
-power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  kv_set(PWR_GOOD_KV_KEY, (curr == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
+set_nvme_probe_status(gpio_value_t value) {
+  kv_set(PWR_GOOD_KV_KEY, (value == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
   FILE *fp;
   int rc = 0;
 
-  if (curr == GPIO_VALUE_HIGH) {
+  if (value == GPIO_VALUE_HIGH) {
     syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);
     fp = fopen((char*)NVME_BIND_PATH, "w");
     if (fp == NULL) {
@@ -284,12 +284,22 @@ power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t 
 }
 
 static void
-post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  kv_set(POST_CMPLT_KV_KEY, (curr == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
+power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  set_nvme_probe_status(curr);
+}
+
+static void
+power_good_status_init(gpiopoll_pin_t *gp, gpio_value_t value) {
+  set_nvme_probe_status(value);
+}
+
+static void
+set_peci_probe_status(gpio_value_t value) {
+  kv_set(POST_CMPLT_KV_KEY, (value == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
   FILE *fp;
   int rc = 0;
 
-  if (curr == GPIO_VALUE_LOW) {
+  if (value == GPIO_VALUE_LOW) {
     syslog(LOG_CRIT, "FRU: %d, Post complete", FRU_SERVER);
     fp = fopen((char*)PECI_BIND_PATH, "w");
 
@@ -324,6 +334,16 @@ post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value
       syslog(LOG_WARNING, "%s() peci driver unbind failed\n", __func__);
     }
   }
+}
+
+static void
+post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  set_peci_probe_status(curr);
+}
+
+static void
+post_complete_status_init(gpiopoll_pin_t *gp, gpio_value_t value) {
+  set_peci_probe_status(value);
 }
 
 // thread for display post code led
@@ -389,11 +409,11 @@ static struct
 gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"FM_THERMTRIP_R_N",                "GPIOF3",   GPIO_EDGE_BOTH,     cpu_thermal_trip_handler,  NULL},
-  {"PWRGD_PCH_R_PWROK",               "GPIOF4",   GPIO_EDGE_BOTH,     power_good_status_handler, NULL},
+  {"PWRGD_PCH_R_PWROK",               "GPIOF4",   GPIO_EDGE_BOTH,     power_good_status_handler, power_good_status_init},
   {"UART_CH_SELECT",                  "GPIOG0",   GPIO_EDGE_FALLING,  uart_button_handler,       NULL},
   {"OCP_DEBUG_PRSNT_N",               "GPIOG2",   GPIO_EDGE_BOTH,     debug_present_handler,     debug_present_init},
   {"IRQ_SMI_ACTIVE_R_N",              "GPIOH0",   GPIO_EDGE_FALLING,  smi_handler,               NULL},
-  {"FM_BIOS_POST_CMPLT_R_N",          "GPIOH2",   GPIO_EDGE_BOTH,     post_complete_status_handler, NULL},
+  {"FM_BIOS_POST_CMPLT_R_N",          "GPIOH2",   GPIO_EDGE_BOTH,     post_complete_status_handler, post_complete_status_init},
   {"IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N",   "GPIOH3",   GPIO_EDGE_BOTH,     vr_hot_handler,            NULL},
   {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_FALLING,  cat_err_handler,           NULL},
   {"RST_BTN_N",                       "GPIOP2",   GPIO_EDGE_BOTH,     reset_button_handler,      NULL},

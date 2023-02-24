@@ -431,9 +431,7 @@ read_peci(uint8_t id, float *value) {
     sensors_reinit();
     sleep(POWER_ON_SENSOR_RETRY_SEC);
     ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
-    if (ret == 0) {
-      retryDIMM = SENSOR_RETRY_TIME;
-    } else {
+    if (ret != 0) {
       retryDIMM++;
     }
   }
@@ -1017,6 +1015,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       ret = sensor.read_sensor(sensor.id, (float * ) value);
     } else {
       ret = SENSOR_NA;
+      retryDIMM = 0;
     }
   } else {
     ret = ERR_SENSOR_NA;

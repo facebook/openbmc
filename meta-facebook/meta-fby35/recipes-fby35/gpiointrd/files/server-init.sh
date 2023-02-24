@@ -75,6 +75,7 @@ if [ "$(is_server_prsnt "$slot_num")" = "0" ]; then
   rm -f "/tmp/"*"fruid_slot${slot_num}"*
   rm -f "/tmp/"*"sdr_slot${slot_num}"*
   $KV_CMD del "slot${slot_num}_cpld_new_ver"
+  $KV_CMD del "slot${slot_num}_prot_ver"
   $KV_CMD del "slot${slot_num}_is_m2_exp_prsnt"
   $KV_CMD del "slot${slot_num}_get_1ou_type"
   $KV_CMD del "fru${slot_num}_2ou_board_type"

@@ -233,6 +233,8 @@ server_power_12v_off(uint8_t fru) {
 
   pal_clear_vr_crc(fru);
 
+  snprintf(cmd, sizeof(cmd), FRU_ID_COMPONENT_VER_KEY, fru, "prot");
+  kv_del(cmd, 0);
   snprintf(cmd, sizeof(cmd), FRU_ID_CPLD_NEW_VER_KEY, fru);
   kv_del(cmd, 0);
 

@@ -2,6 +2,7 @@
 #include <fmt/format.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <openbmc/kv.hpp>
 #include <openbmc/pal.h>
 #include <openbmc/ProtCommonInterface.hpp>
 #include "bic_prot.hpp"
@@ -127,6 +128,16 @@ int ProtComponent::get_ver_str(string& s) {
   if (isBypass) {
     throw runtime_error("Not support to get version of Bypass Firmware");
   }
+
+  auto ver_key = fmt::format("slot{}_{}_ver", slot_id, component());
+
+  try {
+    s = kv::get(ver_key);
+    return FW_STATUS_SUCCESS;
+  } catch (const std::exception& err) {
+    //do nothing, if exception in get kv, read ver from PRoT device
+  }
+
   uint8_t dev_i2c_bus;
   uint8_t dev_i2c_addr;
   if (pal_get_prot_address(slot_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
@@ -147,6 +158,13 @@ int ProtComponent::get_ver_str(string& s) {
       prot::ProtVersion::getVerString(prot_ver.Active.XFRVersion),
       prot::ProtVersion::getVerString(prot_ver.Active.SFBVersion),
       prot::ProtVersion::getVerString(prot_ver.Active.CFGVersion));
+
+  try {
+    kv::set(ver_key, s);
+  } catch (const std::exception& err) {
+    syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %s", __func__, ver_key.c_str(), s.c_str());
+  }
+
   return FW_STATUS_SUCCESS;
 }
 

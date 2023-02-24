@@ -84,7 +84,7 @@ int send_bic_usb_packet(usb_dev* udev, uint8_t *pkt, const int transferlen);
 int bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id);
 int bic_close_usb_dev(usb_dev* udev);
 int update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force);
-int update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd);
+int update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd, uint8_t force);
 
 #ifdef __cplusplus
 } // extern "C"

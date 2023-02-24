@@ -294,6 +294,42 @@ std::string spiVerifyString(uint8_t verify_val) {
   return verify_str_vec[verify_val];
 }
 
+updateProperty::updateProperty(
+    const BOOT_STATUS_ACK_PAYLOAD& boot_status,
+    uint8_t spiA = 0,
+    uint8_t spiB = 1)
+    : mSpiA(spiA), mSpiB(spiB) {
+  auto spiA_status =
+      static_cast<prot::ProtSpiInfo::SpiStatus>(boot_status.SPI_A);
+  auto spiB_status =
+      static_cast<prot::ProtSpiInfo::SpiStatus>(boot_status.SPI_B);
+
+  if (spiA_status == prot::ProtSpiInfo::SpiStatus::ACTIVE) {
+    std::cout << "SPI_A is Active, updating SPI_B..." << std::endl;
+    target = mSpiB;
+  } else if (spiB_status == prot::ProtSpiInfo::SpiStatus::ACTIVE) {
+    std::cout << "SPI_B is Active, updating SPI_A..." << std::endl;
+    target = mSpiA;
+  } else if (
+      spiA_status == prot::ProtSpiInfo::SpiStatus::DECOMMSION &&
+      spiB_status == prot::ProtSpiInfo::SpiStatus::DECOMMSION) {
+    std::cout << "Both SPI are Decommsion ,update to SPI_B..." << std::endl;
+    target = mSpiB;
+    isPfrUpdate = false;
+  } else if (
+      spiA_status == prot::ProtSpiInfo::SpiStatus::DIRTY &&
+      spiB_status == prot::ProtSpiInfo::SpiStatus::DIRTY) {
+    std::cout << "Both SPI are Dirty , update to SPI_A..." << std::endl;
+    target = mSpiA;
+    isPfrUpdate = false;
+  } else {
+    auto err = fmt::format(
+        "Undefined XFR boot status: SPI_A: {}, SPI_B: {}",
+        spiStatusString(boot_status.SPI_A),
+        spiStatusString(boot_status.SPI_B));
+    throw std::runtime_error(err);
+  }
+}
 } // namespace ProtSpiInfo
 
 namespace ProtVersion {

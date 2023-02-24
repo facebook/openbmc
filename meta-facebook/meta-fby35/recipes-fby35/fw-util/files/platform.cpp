@@ -74,6 +74,8 @@ class ClassConfig {
             static VrComponent   vr_vdd11s3_fw1("slot1", "vr_vdd11s3", FW_VR_VDD11S3);
             if(fby35_common_is_prot_card_prsnt(FRU_SLOT1)) {
               static ProtComponent    prot_fw1("slot1", "prot", FW_PROT);
+              static BiosComponent   bios_fw1_a("slot1", "bios_spia", FRU_SLOT1, FW_BIOS, true);
+              static BiosComponent   bios_fw1_b("slot1", "bios_spib", FRU_SLOT1, FW_BIOS_SPIB, true);
             }
             if(isSbMpsHsc(FRU_SLOT1)) {
               static MP5990Component hsc_fw1("slot1", "hsc", FRU_SLOT1, 4, 0x40);
@@ -172,6 +174,8 @@ class ClassConfig {
             static VrComponent   vr_vdd11s3_fw3("slot3", "vr_vdd11s3", FW_VR_VDD11S3);
             if(fby35_common_is_prot_card_prsnt(FRU_SLOT3)) {
               static ProtComponent    prot_fw3("slot3", "prot", FW_PROT);
+              static BiosComponent   bios_fw3_a("slot3", "bios_spia", FRU_SLOT3, FW_BIOS, true);
+              static BiosComponent   bios_fw3_b("slot3", "bios_spib", FRU_SLOT3, FW_BIOS_SPIB, true);
             }
             if(isSbMpsHsc(FRU_SLOT3)) {
               static MP5990Component hsc_fw3("slot3", "hsc", FRU_SLOT3, 4, 0x40);

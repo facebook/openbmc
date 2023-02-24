@@ -4,6 +4,7 @@
 #include "server.h"
 #include "bic_fw.h"
 #include <openbmc/pal.h>
+#include <openbmc/ProtCommonInterface.hpp>
 #include <facebook/bic_xfer.h>
 
 using std::string;
@@ -15,6 +16,7 @@ class ProtComponent : public Component {
   bool isBypass= false;
   private:
     int attempt_server_power_off(bool force) ;
+    bool checkPfrUpdate(prot::ProtDevice& prot_dev);
     int get_ver_str(std::string& s);
     int update_internal(const std::string& image, int fd, bool force);
   public:

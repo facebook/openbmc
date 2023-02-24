@@ -2,7 +2,6 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <openbmc/pal.h>
-#include <openbmc/ProtCommonInterface.hpp>
 #include "bic_bios.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
@@ -65,10 +64,26 @@ int BiosComponent::attempt_server_power_off(bool force) {
   return -1;
 }
 
+bool BiosComponent::checkPfrUpdate(prot::ProtDevice& prot_dev) {
+  if (specificSpi){
+      return false;
+  }
+    cerr << "PRoT is PFR mode , update to recovery Flash" << endl;
+    prot::BOOT_STATUS_ACK_PAYLOAD boot_sts{};
+    if (prot_dev.portGetBootStatus(boot_sts) == prot::ProtDevice::DevStatus::SUCCESS) {
+      prot::ProtSpiInfo::updateProperty upateProp(boot_sts, FW_BIOS, FW_BIOS_SPIB);
+      fw_comp = upateProp.target;
+      return upateProp.isPfrUpdate;
+    } else {
+      throw runtime_error("Error in getting XFR Boot Status");
+    }
+}
+
 int BiosComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret;
   int ret_recovery = 0, ret_reset = 0;
   int server_type = SERVER_TYPE_NONE;
+  bool pfr_update = false;
   uint8_t dev_i2c_bus = 0;
   uint8_t dev_i2c_addr = 0;
   if (pal_get_prot_address(slot_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
@@ -100,32 +115,31 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
 
   server_type = fby35_common_get_slot_type(slot_id);
+  if (server_type < 0) {
+    syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, slot_id, server_type);
+    return FW_STATUS_FAILURE;
+  }
 
-  if(SERVER_TYPE_HD != server_type || isBypass) {
+  if(isBypass) {
     if(attempt_server_power_off(force)) {
       cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
       return FW_STATUS_FAILURE;
     }
   } else {
-    cerr << "PRoT is PFR mode , update to recovery Flash" << endl;
-    prot::BOOT_STATUS_ACK_PAYLOAD boot_sts{};
-    if (prot_dev.portGetBootStatus(boot_sts) == prot::ProtDevice::DevStatus::SUCCESS) {
-      if (static_cast<prot::ProtSpiInfo::SpiStatus>(boot_sts.SPI_A) == prot::ProtSpiInfo::SpiStatus::ACTIVE) {
-        cerr << "SPI_A is Active, updating SPI_B..." << endl;
-        fw_comp = FW_BIOS_SPIB;
-      } else {
-        cerr << "SPI_B is Active, updating SPI_A..." << endl;
-      }
-    }
-    if(prot_dev.portRequestRecoverySpiUnlock() != prot::ProtDevice::DevStatus::SUCCESS) {
+    try {
+      pfr_update = checkPfrUpdate(prot_dev);
+    } catch(const runtime_error& err) {
+      cerr << "XFR Error: "<< err.what() <<  endl;
       return FW_STATUS_FAILURE;
+    }
+
+    if (pfr_update) {
+      if( prot_dev.portRequestRecoverySpiUnlock() !=  prot::ProtDevice::DevStatus::SUCCESS) {
+        return FW_STATUS_FAILURE;
+      }
     }
   }
 
-  server_type = fby35_common_get_slot_type(slot_id);
-  if (server_type < 0) {
-    syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, slot_id, server_type);
-  }
   if (server_type == SERVER_TYPE_CL) {
     if (force) {
       sleep(DELAY_ME_RESET);  // to wait for ME reset
@@ -172,13 +186,15 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
       pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
     }
   } else {
-    uint8_t status;
+    if (pfr_update) {
+        uint8_t status;
 
-    prot_dev.protUpdateComplete();
-    prot_dev.protFwUpdateIntent();
-    if (prot_dev.protGetUpdateStatus(status) != prot::ProtDevice::DevStatus::SUCCESS || status !=0 ) {
-      cerr << "BIOS PFR update failed"<< endl;
-      return FW_STATUS_FAILURE;
+        prot_dev.protUpdateComplete();
+        prot_dev.protFwUpdateIntent();
+        if (prot_dev.protGetUpdateStatus(status) != prot::ProtDevice::DevStatus::SUCCESS || status !=0 ) {
+          cerr << "BIOS PFR update failed"<< endl;
+          return FW_STATUS_FAILURE;
+        }
     }
   }
 
@@ -210,8 +226,8 @@ int BiosComponent::dump(string image) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  if (attempt_server_power_off(false)) {
-    cerr << "Failed to Power Off Server " << slot_id << ". Stopping the dmup!" << endl;
+  if (attempt_server_power_off(true)) {
+    cerr << "Failed to Power Off Server " << slot_id << ". Stopping the dump!" << endl;
     return FW_STATUS_FAILURE;
   }
 
@@ -225,7 +241,7 @@ int BiosComponent::dump(string image) {
     sleep(1);
   }
 
-  ret = dump_bic_usb_bios(slot_id, FW_BIOS, (char *)image.c_str());
+  ret = dump_bic_usb_bios(slot_id, fw_comp, (char *)image.c_str());
   if (ret != 0) {
     cerr << "BIOS dump failed. ret = " << ret << endl;
   }
@@ -279,6 +295,11 @@ int BiosComponent::print_version() {
   string ver("");
   uint8_t str[MAX_SIZE_SYSFW_VER] = {0};
 
+  if (specificSpi) {
+    //only for update/dump
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
   try {
     server.ready();
     if ( get_ver_str(ver) < 0 ) {
@@ -303,6 +324,12 @@ int BiosComponent::print_version() {
 
 int BiosComponent::get_version(json& j) {
   string ver("");
+
+  if (specificSpi) {
+    //only for update/dump
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
   try {
     server.ready();
     if ( get_ver_str(ver) < 0 ) {

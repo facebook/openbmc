@@ -36,10 +36,6 @@ enum {
   UPDATE_BIOS_SPIB,
 };
 
-enum {
-  DUMP_BIOS = 0,
-};
-
 // Update from file.
 int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force);
 

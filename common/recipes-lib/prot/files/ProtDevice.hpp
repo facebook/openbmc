@@ -23,9 +23,9 @@
 #include <openbmc/AmiSmbusInterfaceSrcLib.h>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
-#include <span>
 
 namespace prot {
 
@@ -129,6 +129,20 @@ enum class SpiStatus {
 enum class SpiVerify {
   SUCCESS = 0,
   FAIL,
+};
+
+class updateProperty {
+ public:
+  uint8_t target = 0;
+  bool isPfrUpdate = true;
+  updateProperty(
+      const BOOT_STATUS_ACK_PAYLOAD& boot_status,
+      uint8_t spiA,
+      uint8_t spiB);
+
+ private:
+  uint8_t mSpiA = 0;
+  uint8_t mSpiB = 1;
 };
 
 std::string spiStatusString(uint8_t status_val);

@@ -369,7 +369,7 @@ bic_have_checksum_sha256(uint8_t slot_id) {
 }
 
 int
-bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
+bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t force)
 {
   int rc = 0;
   uint8_t *buf = NULL;
@@ -397,11 +397,16 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
     case FW_PROT_SPIB:
       what = "PRoT";
       if (bic_is_prot_bypass(slot_id)) {
-        printf("PRoT is Bypass mode, updating to offset: 0x%08X \n", XFR_WORKING_OFFSET);
+        printf("PRoT is Bypass mode, updating to offset: 0x%08X \n",XFR_WORKING_OFFSET);
         write_offset = XFR_WORKING_OFFSET;
       } else {
-        printf("PRoT is PFR mode, updating to offset: 0x%08X \n", XFR_STAGING_OFFSET);
-        write_offset = XFR_STAGING_OFFSET;
+        if (force) {
+          printf("force update to Working Area, updating to offset: 0x%08X \n",XFR_WORKING_OFFSET);
+          write_offset = XFR_WORKING_OFFSET;
+        } else {
+          printf("PRoT is PFR mode, updating to offset: 0x%08X \n",XFR_STAGING_OFFSET);
+          write_offset = XFR_STAGING_OFFSET;
+        }
       }
       write_target = (comp == FW_PROT) ? UPDATE_BIOS : UPDATE_BIOS_SPIB;
       break;
@@ -581,6 +586,7 @@ bic_dump_fw_usb(uint8_t slot_id, uint8_t comp, char *path, usb_dev* udev) {
   uint32_t offset = 0, next_doffset;
   uint32_t dsize;
   uint32_t img_size = 0;
+  uint8_t read_target = 0;
   uint8_t read_count;
   uint8_t buf[256];
   bic_usb_dump_req_packet *pkt = (bic_usb_dump_req_packet *)malloc(sizeof(bic_usb_dump_req_packet));
@@ -602,10 +608,18 @@ bic_dump_fw_usb(uint8_t slot_id, uint8_t comp, char *path, usb_dev* udev) {
       img_size = 0x4000000;
   }
 
-  if (comp != FW_BIOS) {
-    printf("ERROR: only support dump BIOS image!\n");
-    goto error_exit;
+  switch (comp) {
+    case FW_BIOS:
+      read_target = UPDATE_BIOS;
+      break;
+    case FW_BIOS_SPIB:
+      read_target = UPDATE_BIOS_SPIB;
+      break;
+    default:
+      printf("ERROR: only support dump BIOS image!\n");
+      goto error_exit;
   }
+
   printf("dumping fw on slot %d:\n", slot_id);
 
   fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -625,7 +639,7 @@ bic_dump_fw_usb(uint8_t slot_id, uint8_t comp, char *path, usb_dev* udev) {
     pkt->cmd = CMD_OEM_1S_READ_FW_IMAGE;
     // Fill the IANA ID
     memcpy(pkt->iana, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-    pkt->target = DUMP_BIOS;
+    pkt->target = read_target;
     pkt->offset = offset;
     pkt->length = read_count;
     udev->epaddr = USB_INPUT_PORT;
@@ -654,6 +668,7 @@ bic_dump_fw_usb(uint8_t slot_id, uint8_t comp, char *path, usb_dev* udev) {
     if (offset >= next_doffset) {
       switch (comp) {
         case FW_BIOS:
+        case FW_BIOS_SPIB:
           _set_fw_update_ongoing(slot_id, 60);
           printf("\rdumped bios: %u %%", offset/dsize);
           break;
@@ -693,7 +708,7 @@ bic_close_usb_dev(usb_dev* udev)
 }
 
 int
-update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd)
+update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd, uint8_t force)
 {
   struct timeval start, end;
   char key[64];
@@ -714,7 +729,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd)
   gettimeofday(&start, NULL);
 
   // sending file
-  ret = bic_update_fw_usb(slot_id, comp, fd, udev);
+  ret = bic_update_fw_usb(slot_id, comp, fd, udev, force);
   if (ret < 0)
     goto error_exit;
 

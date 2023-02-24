@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <openbmc/kv.hpp>
 #include <openbmc/pal.h>
-#include <openbmc/ProtCommonInterface.hpp>
 #include "bic_prot.hpp"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
@@ -37,8 +36,21 @@ int ProtComponent::attempt_server_power_off(bool force) {
   return 0;
 }
 
+bool ProtComponent::checkPfrUpdate(prot::ProtDevice& prot_dev) {
+    cerr << "PRoT is PFR mode , update to recovery Flash" << endl;
+    prot::BOOT_STATUS_ACK_PAYLOAD boot_sts{};
+    if (prot_dev.portGetBootStatus(boot_sts) == prot::ProtDevice::DevStatus::SUCCESS) {
+      prot::ProtSpiInfo::updateProperty upateProp(boot_sts, FW_PROT, FW_PROT_SPIB);
+      fw_comp = upateProp.target;
+      return upateProp.isPfrUpdate;
+    } else {
+      throw runtime_error("Error in getting XFR Boot Status");
+    }
+}
+
 int ProtComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret;
+  bool pfr_update = false;
   uint8_t dev_i2c_bus;
   uint8_t dev_i2c_addr;
   if (pal_get_prot_address(slot_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
@@ -70,18 +82,20 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
       return FW_STATUS_FAILURE;
     }
   } else {
-    cerr << "PRoT is PFR mode , update to recovery Flash" << endl;
-    prot::BOOT_STATUS_ACK_PAYLOAD boot_sts{};
-    if (prot_dev.portGetBootStatus(boot_sts) == prot::ProtDevice::DevStatus::SUCCESS) {
-      if (static_cast<prot::ProtSpiInfo::SpiStatus>(boot_sts.SPI_A) == prot::ProtSpiInfo::SpiStatus::ACTIVE) {
-        cerr << "SPI_A is Active, updating SPI_B..." << endl;
-        fw_comp = FW_PROT_SPIB;
-      } else {
-        cerr << "SPI_B is Active, updating SPI_A..." << endl;
+    try {
+      // --force to force recovery, updating to SPIA working area directly
+      if(!force) {
+        pfr_update = checkPfrUpdate(prot_dev);
       }
-    }
-    if(prot_dev.portRequestRecoverySpiUnlock() != prot::ProtDevice::DevStatus::SUCCESS) {
+    } catch(const runtime_error& err) {
+      cerr << "XFR Error: "<< err.what() <<  endl;
       return FW_STATUS_FAILURE;
+    }
+
+    if (pfr_update) {
+      if(prot_dev.portRequestRecoverySpiUnlock() != prot::ProtDevice::DevStatus::SUCCESS) {
+        return FW_STATUS_FAILURE;
+      }
     }
   }
 
@@ -100,13 +114,15 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
     cerr << "Power-cycling the server..." << endl;
     pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
   } else {
+    if (pfr_update) {
     uint8_t status;
 
-    prot_dev.protUpdateComplete();
-    prot_dev.protFwUpdateIntent();
-    if (prot_dev.protGetUpdateStatus(status) != prot::ProtDevice::DevStatus::SUCCESS || status !=0 ) {
-      cerr << "PRoT PFR update failed"<< endl;
-      return FW_STATUS_FAILURE;
+      prot_dev.protUpdateComplete();
+      prot_dev.protFwUpdateIntent();
+      if (prot_dev.protGetUpdateStatus(status) != prot::ProtDevice::DevStatus::SUCCESS || status !=0 ) {
+        cerr << "PRoT PFR update failed"<< endl;
+        return FW_STATUS_FAILURE;
+      }
     }
   }
   return ret;

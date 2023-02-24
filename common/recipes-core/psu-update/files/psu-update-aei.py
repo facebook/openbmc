@@ -89,6 +89,13 @@ class StatusRegister:
             ]
         )
 
+    def getSet(self):
+        return {
+            field
+            for bit, field in enumerate(self._fields_)
+            if field != "RESERVED" and ((1 << bit) & self.val) != 0
+        }
+
 
 def write_status():
     global status
@@ -133,7 +140,9 @@ def isp_enter(addr):
         raise BadAEIResponse()
     st = isp_get_status(addr)
     if not st["FULL_IMAGE_RECV_PENDING"]:
-        print("PSU not ready to receive image after entering ISP mode. Status:", str(st))
+        print(
+            "PSU not ready to receive image after entering ISP mode. Status:", str(st)
+        )
         raise BadAEIResponse()
 
 
@@ -192,6 +201,39 @@ def transfer_image(addr, image):
         sys.stdout.flush()
 
 
+def wait_update_complete(addr):
+    last_set = set()
+    error_fields = {
+        "FULL_IMAGE_RECEIVED_CORRUPT",
+        "PRIMARY_DSP_CHECKSUM_FAILED",
+        "SECONDARY_DSP_CHECKSUM_FAILED",
+        "LOGIC_DSP_CHECKSUM_FAILED",
+        "PRIMARY_DSP_UPDATE_FAILED",
+        "SECONDARY_DSP_UPDATE_FAILED",
+    }
+    max_time = 360
+    for _ in range(max_time):
+        try:
+            status = isp_get_status(addr)
+            set_fields = status.getSet()
+            errors = set_fields.intersection(error_fields)
+            if errors:
+                raise ValueError("ERROR: " + " ".join(errors))
+            if last_set != set_fields:
+                if status.val == 0:
+                    print("PSU Rebooted!")
+                    break
+                added = set_fields - last_set
+                last_set = set_fields
+                print("ALERT:", " ".join(added))
+        except Exception:
+            # Ignore timeouts and other issues as the thing resets
+            pass
+        time.sleep(1)
+    else:
+        raise ValueError("Timed out waiting for PSU to reset")
+
+
 def update_device(addr, filename):
     status_state("pausing_monitoring")
     rmd.pause()
@@ -210,7 +252,7 @@ def update_device(addr, filename):
     status_state("Exit ISP Mode")
     isp_exit(addr)
     status_state("Wait update to complete. Sleeping for ~6min")
-    time.sleep(352)
+    wait_update_complete(addr)
     status_state("done")
 
 

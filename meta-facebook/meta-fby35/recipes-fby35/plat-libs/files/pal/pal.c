@@ -226,6 +226,8 @@ MAPTOSTRING root_port_common_mapping[] = {
     { 0x01, 0, 0xFF, "Class 1", "NIC"}, //  Endpoint of Class 1 NIC
     { 0x00, 5, 0xFF, "Num 0", "SB" },   //  Root port of Boot Drive
     { 0x02, 0, 0xFF, "Num 0", "SB" },   //  Endpoint of Boot Drive
+    { 0xC0, 1, 0xFF, "CXL", "1OU" },   //  Root port of RBF CXL
+    { 0xFF, 0, 0xFF, "CXL", "1OU" },   //  Endpoint of RBF CXL
 };
 
 MAPTOSTRING root_port_mapping[] = {

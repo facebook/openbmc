@@ -210,6 +210,7 @@ def arg_parser():
             "churchillmono",
             "sandia",
             "grandteton",
+            "montblanc",
         ],
     )
     parser.add_argument(

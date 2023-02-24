@@ -105,6 +105,35 @@ cat_err_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   }
 }
 
+static void *
+smi_monitor() {
+  for (int polling = 0; polling < 90; polling++) {
+    if (gpio_get_value_by_shadow("IRQ_SMI_ACTIVE_R_N") == GPIO_VALUE_LOW) {
+      sleep(1);
+      continue;
+    } else {
+      return NULL;
+    }
+  }
+
+  syslog(LOG_CRIT, "FRU: %d SMI stuck low over 90s %s\n", FRU_SERVER,
+  "Assertion");
+  return NULL;
+}
+
+static void
+smi_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  uint8_t status = 0;
+  uint8_t fru = 1;
+  pthread_t tid_smi_monitor;
+
+  if (curr == GPIO_VALUE_LOW) {
+    if (pthread_create(&tid_smi_monitor, NULL, smi_monitor, NULL) == 0) {
+      pthread_detach(tid_smi_monitor);
+    }
+  }
+}
+
 static void
 dimm_hot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   syslog(LOG_CRIT, "FRU: %d DIMM Hot Warning %s\n",
@@ -363,6 +392,7 @@ gpiopoll_config g_gpios[] = {
   {"PWRGD_PCH_R_PWROK",               "GPIOF4",   GPIO_EDGE_BOTH,     power_good_status_handler, NULL},
   {"UART_CH_SELECT",                  "GPIOG0",   GPIO_EDGE_FALLING,  uart_button_handler,       NULL},
   {"OCP_DEBUG_PRSNT_N",               "GPIOG2",   GPIO_EDGE_BOTH,     debug_present_handler,     debug_present_init},
+  {"IRQ_SMI_ACTIVE_R_N",              "GPIOH0",   GPIO_EDGE_FALLING,  smi_handler,               NULL},
   {"FM_BIOS_POST_CMPLT_R_N",          "GPIOH2",   GPIO_EDGE_BOTH,     post_complete_status_handler, NULL},
   {"IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N",   "GPIOH3",   GPIO_EDGE_BOTH,     vr_hot_handler,            NULL},
   {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_FALLING,  cat_err_handler,           NULL},

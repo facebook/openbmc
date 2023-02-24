@@ -62,7 +62,7 @@ void BmcBiosComponent::set_ME_Mode(uint8_t mode) {
 
   ret = netlakemtp_common_me_ipmb_wrapper(NETFN_NM_REQ, CMD_NM_FORCE_ME_RECOVERY, tbuf, sizeof(tbuf), rbuf_quitMERecovery, &rlen);
   if (ret < 0) {
-    cout << "Failed to switch ME status" << endl;
+    syslog(LOG_WARNING, "Failed to switch ME status\n");
   }
 }
 
@@ -118,7 +118,7 @@ int BmcBiosComponent::getSelftestResult() {
 
   ret = netlakemtp_common_me_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_GET_SELFTEST_RESULTS, NULL, 0, rbuf_getSelftestResult, &rlen);
   if (ret < 0) {
-    cout << "Failed to get selftest result, retry" << endl;
+    syslog(LOG_INFO, "Getting selftest result is not ready, ret=%d\n", ret);
   } else if (rbuf_getSelftestResult[0] == 0x81 && rbuf_getSelftestResult[1] == 0x2) {
     cout << "Selftest result: ME recovery entered" << endl;
     return 0;

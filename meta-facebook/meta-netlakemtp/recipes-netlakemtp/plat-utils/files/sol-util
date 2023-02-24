@@ -19,13 +19,13 @@
 #
 
 usage() {
-  echo "Usage: sol-util [ server ]"
-  echo "       sol-util [ server ] --history"
+  echo "Usage: sol-util [ server hsuart ]"
+  echo "       sol-util [ server hsuart ] --history"
   exit 0
 }
 
 
-if [ "$1" = "server" ]
+if [ "$1" = "server" ] || [ "$1" = "hsuart" ]
 then
   SERVER=$1 
 else

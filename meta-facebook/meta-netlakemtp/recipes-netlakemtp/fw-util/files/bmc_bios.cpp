@@ -152,8 +152,8 @@ int BmcBiosComponent::setMeRecovery(uint8_t retry) {
 
 void BmcBiosComponent::spiMuxSelCPLD(uint8_t spiOwner) {
   int fd = 0, ret = -1;
-  uint8_t bus = CPLD_BUS;
-  uint8_t addr = CPLD_ADDR;
+  uint8_t bus = CPLD_SPI_MUX_BUS;
+  uint8_t addr = CPLD_SPI_MUX_ADDR;
   uint8_t tbufGetSPI = CPLD_SPI_MUX_REG;
   uint8_t tlenGetSPI = sizeof(tbufGetSPI);
   uint8_t rbuf;

@@ -26,6 +26,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -58,6 +59,13 @@
 
 #define FW_UPDATE_ONGOING 1
 #define CRASHDUMP_ONGOING 2
+
+/*
+ * Below flag is used to enable the monitoring of debug card and front
+ * panel power/reset buttons.
+ * The feature is disabled by default.
+ */
+static bool enable_debug_card = false;
 
 /*
  * Record current debug card UART position,
@@ -813,6 +821,57 @@ rst_btn_out:
   return 0;
 }
 
+static void
+dump_usage(const char *prog_name)
+{
+  int i;
+  struct {
+    const char *opt;
+    const char *desc;
+  } options[] = {
+    {"-h|--help", "print this help message"},
+    {"-d|--enable-debug-card", "enable debug card monitoring"},
+    {NULL, NULL},
+  };
+
+  printf("Usage: %s [options] ", prog_name);
+  for (i = 0; options[i].opt != NULL; i++) {
+    printf("    %-24s - %s\n", options[i].opt, options[i].desc);
+  }
+}
+
+static int
+parse_cmdline_args(int argc, char* const argv[])
+{
+  struct option long_opts[] = {
+    {"help",              no_argument, NULL, 'h'},
+    {"enable-debug-card", no_argument, NULL, 'd'},
+    {NULL,               0,           NULL, 0},
+  };
+
+  while (1) {
+    int opt_index = 0;
+    int ret = getopt_long(argc, argv, "hd", long_opts, &opt_index);
+    if (ret == -1)
+      break; /* end of arguments */
+
+    switch (ret) {
+    case 'h':
+      dump_usage(argv[0]);
+      exit(0);
+
+    case 'd':
+      enable_debug_card = true;
+      break;
+
+    default:
+      return -1;
+    }
+  } /* while */
+
+  return 0;
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_scm_monitor;
@@ -824,6 +883,10 @@ main (int argc, char * const argv[]) {
   int rc;
   int pid_file;
   int brd_rev;
+
+  if (parse_cmdline_args(argc, argv) != 0) {
+    return -1;
+  }
 
   signal(SIGTERM, exithandler);
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
@@ -863,7 +926,7 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  if (brd_rev != BOARD_REV_EVTA) {
+  if (enable_debug_card && (brd_rev != BOARD_REV_EVTA)) {
     if ((rc = pthread_create(&tid_debug_card, NULL,
                              debug_card_handler, NULL))) {
       syslog(LOG_WARNING, "failed to create debug card thread: %s",

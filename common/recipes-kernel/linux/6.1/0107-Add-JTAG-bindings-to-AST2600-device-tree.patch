@@ -1,0 +1,43 @@
+From 495547c3c68ef7d57ef87548db0514b3975d8821 Mon Sep 17 00:00:00 2001
+From: Eli Huang <Eli_Huang@wiwynn.com>
+Date: Fri, 5 Aug 2022 09:59:19 +0800
+Subject: [PATCH 107/107] Add JTAG bindings to AST2600 device tree.
+
+---
+ arch/arm/boot/dts/aspeed-g6.dtsi | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed-g6.dtsi
+index 6447211975aa..5646f612ccf7 100644
+--- a/arch/arm/boot/dts/aspeed-g6.dtsi
++++ b/arch/arm/boot/dts/aspeed-g6.dtsi
+@@ -397,6 +397,26 @@ scu_ic1: interrupt-controller@570 {
+ 				};
+ 			};
+ 
++                        jtag0: jtag@1e6e4000 {
++                                compatible = "aspeed,ast2600-jtag";
++                                reg = <0x1e6e4000 0x40 0x1e6e2040 0x8 0x1e6e2418 0x4>;
++                                clocks = <&syscon ASPEED_CLK_APB1>;
++                                resets = <&syscon ASPEED_RESET_JTAG_MASTER>;
++                                interrupts = <27>;
++                                status = "disabled";
++                        };
++
++                        jtag1: jtag@1e6e4100 {
++                                compatible = "aspeed,ast2600-jtag";
++                                reg = <0x1e6e4100 0x40 0x1e6e2050 0x8 0x1e6e2418 0x4>;
++                                clocks = <&syscon ASPEED_CLK_AHB>;
++                                resets = <&syscon ASPEED_RESET_JTAG_MASTER2>;
++                                interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
++                                pinctrl-names = "default";
++                                pinctrl-0 = <&pinctrl_jtagm_default>;
++                                status = "disabled";
++                        };
++
+ 			rng: hwrng@1e6e2524 {
+ 				compatible = "timeriomem_rng";
+ 				reg = <0x1e6e2524 0x4>;
+-- 
+2.39.2
+

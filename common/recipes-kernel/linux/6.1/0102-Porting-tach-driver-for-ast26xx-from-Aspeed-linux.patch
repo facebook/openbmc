@@ -1,7 +1,7 @@
-From 33f4e9159701d0942f9b894a8b02ef61e26481e3 Mon Sep 17 00:00:00 2001
+From 6011a733272c9387981e3d1f66e513f1f6a46e18 Mon Sep 17 00:00:00 2001
 From: Howard Chiu <howard10703049@gmail.com>
 Date: Thu, 2 Dec 2021 10:26:23 +0800
-Subject: [PATCH 3/7] Porting tach driver for ast26xx from Aspeed linux
+Subject: [PATCH 102/107] Porting tach driver for ast26xx from Aspeed linux
 
 Aspeed did not commit tach driver to upstream for ast2600 series yet.
 To support ast26xx on OpenBMC, we need this driver and update the g6 device tree as well.
@@ -17,7 +17,7 @@ Signed-off-by: Howard Chiu <howard.chiu@quantatw.com>
  create mode 100644 drivers/hwmon/tach-aspeed-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed-g6.dtsi
-index b94ccdb52..6f159ef1e 100644
+index cc2f8b785917..60070bbc16ff 100644
 --- a/arch/arm/boot/dts/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed-g6.dtsi
 @@ -327,6 +327,28 @@ apb {
@@ -46,14 +46,14 @@ index b94ccdb52..6f159ef1e 100644
 +				};
 +			};
 +
- 			syscon: syscon@1e6e2000 {
- 				compatible = "aspeed,ast2600-scu", "syscon", "simple-mfd";
- 				reg = <0x1e6e2000 0x1000>;
+ 			hace: crypto@1e6d0000 {
+ 				compatible = "aspeed,ast2600-hace";
+ 				reg = <0x1e6d0000 0x200>;
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index e70d9614b..d0f6165c2 100644
+index a5253abb7ea7..843df7afdad6 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -402,6 +402,14 @@ config SENSORS_ASPEED
+@@ -411,6 +411,14 @@ config SENSORS_ASPEED
  	  This driver can also be built as a module. If so, the module
  	  will be called aspeed_pwm_tacho.
  
@@ -69,10 +69,10 @@ index e70d9614b..d0f6165c2 100644
  	tristate "Attansic ATXP1 VID controller"
  	depends on I2C
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 007e829d1..9e2a932fb 100644
+index c5cd7e3a67ff..a3bf5b438e0f 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
-@@ -54,6 +54,7 @@ obj-$(CONFIG_SENSORS_ARM_SCMI)	+= scmi-hwmon.o
+@@ -53,6 +53,7 @@ obj-$(CONFIG_SENSORS_ARM_SCMI)	+= scmi-hwmon.o
  obj-$(CONFIG_SENSORS_ARM_SCPI)	+= scpi-hwmon.o
  obj-$(CONFIG_SENSORS_AS370)	+= as370-hwmon.o
  obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
@@ -82,7 +82,7 @@ index 007e829d1..9e2a932fb 100644
  obj-$(CONFIG_SENSORS_AXI_FAN_CONTROL) += axi-fan-control.o
 diff --git a/drivers/hwmon/tach-aspeed-ast2600.c b/drivers/hwmon/tach-aspeed-ast2600.c
 new file mode 100644
-index 000000000..0b2551fc1
+index 000000000000..0b2551fc1711
 --- /dev/null
 +++ b/drivers/hwmon/tach-aspeed-ast2600.c
 @@ -0,0 +1,388 @@
@@ -475,5 +475,5 @@ index 000000000..0b2551fc1
 +MODULE_DESCRIPTION("ASPEED Fan tach device driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.30.2
+2.39.2
 

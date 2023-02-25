@@ -1,7 +1,8 @@
-From cd1f3f587ee548dfcdf73ff89a6a5cd5f94c6322 Mon Sep 17 00:00:00 2001
+From 8f1bf3d99b0f2411aefd3dde22bbd77bf7ed256f Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 10 Feb 2022 15:20:41 +0800
-Subject: [PATCH 4/8] ARM: dts: aspeed: bletchley: enable PWM and TACH support
+Subject: [PATCH 500/501] ARM: dts: aspeed: bletchley: enable PWM and TACH
+ support
 
 Enable pwm and tach support, add pwm-fan for fan controlling
 
@@ -14,7 +15,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 79 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
-index e899de681f475..5b2616305180f 100644
+index e899de681f47..5b2616305180 100644
 --- a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
 +++ b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
 @@ -280,6 +280,26 @@ vbus_sled6: vbus_sled6 {
@@ -108,5 +109,5 @@ index e899de681f475..5b2616305180f 100644
 +	};
 +};
 -- 
-2.31.1
+2.39.2
 

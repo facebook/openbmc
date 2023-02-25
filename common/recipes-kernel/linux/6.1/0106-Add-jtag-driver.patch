@@ -1,7 +1,7 @@
-From 3dcbc572854ae20322304e55fe7979112b5c2a1f Mon Sep 17 00:00:00 2001
+From 597a281416e51c66e432ab9ae0eb74a11bb62785 Mon Sep 17 00:00:00 2001
 From: Eli Huang <Eli_Huang@wiwynn.com>
 Date: Fri, 5 Aug 2022 10:07:52 +0800
-Subject: [PATCH 2/4] Add jtag driver
+Subject: [PATCH 106/107] Add jtag driver
 
 ---
  drivers/Kconfig            |    1 +
@@ -31,10 +31,10 @@ index 19ee995bd0ae..ea09db580996 100644
 +source "drivers/jtag/Kconfig"
  endmenu
 diff --git a/drivers/Makefile b/drivers/Makefile
-index 057857258bfd..a1550bf734b6 100644
+index bdf1c66141c9..6654c736a1fa 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -188,3 +188,4 @@ obj-$(CONFIG_COUNTER)		+= counter/
+@@ -189,3 +189,4 @@ obj-$(CONFIG_COUNTER)		+= counter/
  obj-$(CONFIG_MOST)		+= most/
  obj-$(CONFIG_PECI)		+= peci/
  obj-$(CONFIG_HTE)		+= hte/
@@ -1939,5 +1939,5 @@ index 000000000000..3f9e1953f5a4
 +
 +#endif /* __UAPI_LINUX_JTAG_H */
 -- 
-2.35.1
+2.39.2
 

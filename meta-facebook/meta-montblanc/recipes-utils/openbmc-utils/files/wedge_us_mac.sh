@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,11 +16,19 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+# Get output from seutil
+seutil_output=$(seutil | grep 'Local MAC:')
 
-LOCAL_URI += "\
-    file://board-utils.sh \
-    file://setup_i2c.sh \
-    file://wedge_us_mac.sh \
-    "
+# Check if the read was successful and output matches with our format
+match=$(echo "$seutil_output" | grep -c 'Local MAC: [0-9a-f][0-9a-f]:')
+if [ "$match" = "1" ]; then
+    # Mac address: xx:xx:xx:xx:xx:xx
+    echo "$seutil_output" | cut -d ' ' -f 3
+    exit 0
+else
+    echo "Cannot find out the microserver MAC" 1>&2
+    exit 1
+fi
+

@@ -225,7 +225,7 @@ std::string getPlatformName(const std::string_view& uboot) {
       size_t matchedStrLen = static_cast<size_t>(matchResults.length(1));
       auto matchedStr = checkStr.data() + matchResults.position(1);
       std::string_view vers{matchedStr, matchedStrLen};
-      std::string_view platform = vers.substr(0, vers.find_last_of('-'));
+      std::string_view platform = vers.substr(0, vers.find_first_of('-'));
       return std::string(platform.data(), platform.length());
     }
     off += keyStr.length();

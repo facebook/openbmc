@@ -16,6 +16,7 @@ srcs += [
     'usbdbg.cpp',
     'vr_fw.cpp',
     'signed_decoder.cpp',
+    'pldm_comp.cpp',
     'retimer.cpp'
 ]
 
@@ -33,5 +34,6 @@ deps += [
     dependency('libpldm-oem'),
     dependency('libvr'),
     dependency('libretimer'),
+    dependency('libpldm'),
     cc.find_library('pal'),
 ]

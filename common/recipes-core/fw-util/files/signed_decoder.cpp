@@ -9,81 +9,7 @@
 
 using namespace std;
 
-enum SIGNED_ERR {
-  SUCCESS = 0,
-  SIGNED_UNVALID,
-  FILE_UNVALID
-};
-
-enum PJC_ERR {
-  PJC_SUCCESS = 0,
-  NOT_MATCH,
-};
-
-enum MD5_ERR {
-  MD5_SUCCESS = 0,
-  SIZE_ERROR,
-  FILE_ERROR,
-  MD5_INIT_ERROR,
-  MD5_UPDATE_ERROR,
-  MD5_FINAL_ERROR,
-  MD5_CHECKSUM_ERROR,
-};
-
-enum EP_ERR {
-  EP_SUCCESS = 0,
-  BOARD_NOT_MATCH,
-  STAGE_NOT_MATCH,
-  COMPONENT_NOT_MATCH,
-  SOURCE_NOT_MATCH,
-};
-
-typedef struct {
-  uint8_t MD5_1[MD5_SIZE];
-  uint8_t Project_Code[PROJECT_CODE_SIZE];
-  uint8_t FW_Version[FW_VERSION_SIZE];
-  uint8_t Error_Proof[ERROR_PROOF];
-  uint8_t MD5_2[MD5_SIZE];
-} FW_IMG_INFO;
-
-struct error_proof_t {
-  uint8_t board_id : 5;
-  uint8_t stage_id : 3;
-  uint8_t component_id;
-  uint8_t vendor_id;
-};
-
-void SignComponent::trim_function(string &str)
-{
-  size_t found;
-  string whitespaces(" \t\f\v\n\r");
-
-  /*found = str.find_first_not_of(whitespaces);
-  if (found != string::npos) {
-    str.erase(0, found);
-  }*/
-
-  found = str.find_last_not_of(whitespaces);
-  if (found != string::npos) {
-    str.erase(found+1);
-  } else {
-    str.clear();
-  }
-}
-
-int SignComponent::check_project_code(uint8_t* data)
-{
-  string str((char *)data);
-  trim_function(str);
-
-  int ret = str.compare(info.project_name);
-  if (ret != 0)
-    return PJC_ERR::NOT_MATCH;
-  else
-    return PJC_ERR::PJC_SUCCESS;
-}
-
-int SignComponent::check_md5(const string &image_path, long offset, long size, uint8_t* data)
+int InfoChecker::check_md5(const string &image_path, long offset, long size, uint8_t* data)
 {
   int fd, byte_num, read_bytes, ret = 0;
   char read_buf[MD5_READ_BYTES] = {0};
@@ -144,20 +70,67 @@ exit:
   return ret;
 }
 
-int SignComponent::check_error_proof(uint8_t* err_proof) const
+int InfoChecker::check_header_info(const signed_header_t& img_info)
 {
-  auto err = reinterpret_cast<error_proof_t*>(err_proof);
+  if (comp_info.project_name.compare(img_info.project_name) != 0) {
+    syslog(LOG_WARNING, "%s PROJECT_NAME_NOT_MATCH\n", __func__);
+    return INFO_ERR::PROJECT_NAME_NOT_MATCH;
+  }
 
-  if (info.board_id != err->board_id)
-    return EP_ERR::BOARD_NOT_MATCH;
+  if (comp_info.board_id != img_info.board_id) {
+    syslog(LOG_WARNING, "%s BOARD_NOT_MATCH\n", __func__);
+    return INFO_ERR::BOARD_NOT_MATCH;
+  }
 
-  if (info.component_id != err->component_id)
-    return EP_ERR::COMPONENT_NOT_MATCH;
+  if (comp_info.component_id != img_info.component_id) {
+    syslog(LOG_WARNING, "%s COMPONENT_NOT_MATCH\n", __func__);
+    return INFO_ERR::COMPONENT_NOT_MATCH;
+  }
 
-  if (info.vendor_id != err->vendor_id)
-    return EP_ERR::SOURCE_NOT_MATCH;
+  if (comp_info.vendor_id != img_info.vendor_id) {
+    syslog(LOG_WARNING, "%s SOURCE_NOT_MATCH\n", __func__);
+    return INFO_ERR::SOURCE_NOT_MATCH;
+  }
 
-  return EP_ERR::EP_SUCCESS;
+  return INFO_ERR::EP_SUCCESS;
+}
+
+struct error_proof_t {
+  uint8_t board_id : 5;
+  uint8_t stage_id : 3;
+  uint8_t component_id;
+  uint8_t vendor_id;
+};
+
+void SignComponent::trim_function(string &str)
+{
+  size_t found;
+  string whitespaces(" \t\f\v\n\r");
+
+  found = str.find_last_not_of(whitespaces);
+  if (found != string::npos) {
+    str.erase(found+1);
+  } else {
+    str.clear();
+  }
+}
+
+signed_header_t SignComponent::get_info(FW_IMG_INFO& file_info)
+{
+  signed_header_t info{};
+
+  auto err = reinterpret_cast<error_proof_t*>(file_info.Error_Proof);
+  info.board_id     = err->board_id;
+  info.stage_id     = err->stage_id;
+  info.component_id = err->component_id;
+  info.vendor_id    = err->vendor_id;
+
+  auto str = string((char*)file_info.Project_Code);
+  str.resize(PROJECT_CODE_SIZE);
+  trim_function(str);
+  info.project_name = str;
+
+  return info;
 }
 
 int SignComponent::is_image_signed(const string& image_path, bool force)
@@ -169,64 +142,60 @@ int SignComponent::is_image_signed(const string& image_path, bool force)
 
   if (stat(image_path.c_str(), &file_stat) < 0) {
     syslog(LOG_WARNING, "%s failed to open %s to check file infomation.\n", __func__, image_path.c_str());
-    return SIGNED_ERR::FILE_UNVALID;
+    return FORMAT_ERR::INVALID_SIGNATURE;
   }
 
   if (force) {
     image_size = (long)file_stat.st_size;
-    return SIGNED_ERR::SUCCESS;
+    return FORMAT_ERR::SUCCESS;
   }
 
   fd = open(image_path.c_str(), O_RDONLY);
   if (fd < 0) {
     syslog(LOG_WARNING, "%s Cannot open %s for reading\n", __func__, image_path.c_str());
-    return SIGNED_ERR::FILE_UNVALID;
+    return FORMAT_ERR::INVALID_SIGNATURE;
   }
 
   info_offs = file_stat.st_size - SIGN_INFO_SIZE;
   if (lseek(fd, info_offs, SEEK_SET) != info_offs) {
     close(fd);
     syslog(LOG_WARNING, "%s Cannot seek %s\n", __func__, image_path.c_str());
-    return SIGNED_ERR::FILE_UNVALID;
+    return FORMAT_ERR::INVALID_SIGNATURE;
   }
 
   if (read(fd, &file_info, SIGN_INFO_SIZE) != SIGN_INFO_SIZE) {
     close(fd);
     syslog(LOG_WARNING, "%s Cannot read %s\n", __func__, image_path.c_str());
-    return SIGNED_ERR::FILE_UNVALID;
+    return FORMAT_ERR::INVALID_SIGNATURE;
   }
   close(fd);
   image_size = (long)info_offs;
 
-  if (!check_project_code(file_info.Project_Code)) {
-    return SIGNED_ERR::SIGNED_UNVALID;
-  }
-
   ret = check_md5(image_path, 0, info_offs, file_info.MD5_1);
   if (ret != 0) {
     syslog(LOG_WARNING, "%s MD5-1 check failed, error code: %d.\n", __func__, -ret);
-    return SIGNED_ERR::SIGNED_UNVALID;
+    return FORMAT_ERR::INVALID_SIGNATURE;
   }
 
   ret = check_md5(image_path, info_offs, SIGN_INFO_SIZE-MD5_SIZE, file_info.MD5_2);
   if (ret != 0) {
     syslog(LOG_WARNING, "%s MD5-2 check failed, error code: %d.\n", __func__, -ret);
-    return SIGNED_ERR::SIGNED_UNVALID;
+    return FORMAT_ERR::INVALID_SIGNATURE;
   }
 
-  ret = check_error_proof(file_info.Error_Proof);
+  ret = check_header_info(get_info(file_info));
   if (ret != 0) {
-    syslog(LOG_WARNING, "%s Error proof check failed, error code: %d.\n", __func__, -ret);
-    return SIGNED_ERR::SIGNED_UNVALID;
+    syslog(LOG_WARNING, "%s Info check failed, error code: %d.\n", __func__, -ret);
+    return FORMAT_ERR::INVALID_SIGNATURE;
   }
 
   memcpy(md5, file_info.MD5_1, MD5_SIZE);
-  return SIGNED_ERR::SUCCESS;
+  return FORMAT_ERR::SUCCESS;
 }
 
 int SignComponent::get_image(string& image_path, bool force)
 {
-  int src = -1, dst = -1, ret = SIGNED_ERR::SUCCESS;
+  int src = -1, dst = -1, ret = FORMAT_ERR::SUCCESS;
   vector<uint8_t> data(image_size);
 
   /*
@@ -235,25 +204,25 @@ int SignComponent::get_image(string& image_path, bool force)
   src = open(image_path.c_str(), O_RDONLY);
   if (src < 0) {
     syslog(LOG_WARNING, "%s Cannot open %s for reading\n", __func__, image_path.c_str());
-    return SIGNED_ERR::FILE_UNVALID;
+    return FORMAT_ERR::INVALID_SIGNATURE;
   }
 
   dst = open(temp_image_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
   if (dst < 0) {
     close(src);
     syslog(LOG_WARNING, "%s Cannot open %s for writing\n", __func__, temp_image_path.c_str());
-    return SIGNED_ERR::FILE_UNVALID;
+    return FORMAT_ERR::INVALID_SIGNATURE;
   }
 
   if (read(src, data.data(), data.size()) != (int)image_size) {
     syslog(LOG_WARNING, "%s Cannot read %s\n", __func__, image_path.c_str());
-    ret = SIGNED_ERR::FILE_UNVALID;
+    ret = FORMAT_ERR::INVALID_SIGNATURE;
     goto file_exit;
   }
 
   if (write(dst, data.data(), data.size()) != (int)image_size) {
     syslog(LOG_WARNING, "%s Cannot write %s\n", __func__, temp_image_path.c_str());
-    ret = SIGNED_ERR::FILE_UNVALID;
+    ret = FORMAT_ERR::INVALID_SIGNATURE;
     goto file_exit;
   }
   close(src);
@@ -264,7 +233,7 @@ int SignComponent::get_image(string& image_path, bool force)
   // chmod to 0400 (read only)
   if (chmod(temp_image_path.c_str(), S_IRUSR) < 0) {
     syslog(LOG_WARNING, "%s Cannot change %s mode\n", __func__, temp_image_path.c_str());
-    ret = SIGNED_ERR::FILE_UNVALID;
+    ret = FORMAT_ERR::INVALID_SIGNATURE;
     goto file_exit;
   }
 
@@ -272,7 +241,7 @@ int SignComponent::get_image(string& image_path, bool force)
     ret = check_md5(temp_image_path, 0, image_size, md5);
     if (ret != 0) {
       syslog(LOG_WARNING, "%s MD5-1 check failed, error code: %d.\n", __func__, -ret);
-      ret = SIGNED_ERR::SIGNED_UNVALID;
+      ret = FORMAT_ERR::INVALID_SIGNATURE;
       goto file_exit;
     }
   }

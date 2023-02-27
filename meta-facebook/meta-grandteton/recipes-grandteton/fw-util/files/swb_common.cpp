@@ -181,7 +181,7 @@ int swb_fw_update (uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data,
 
     if (last_offset + dsize <= offset) {
       pal_set_fw_update_ongoing(FRU_SWB, 60);
-      printf("\rupdated: %d %%", offset/dsize*10);
+      printf("\rupdated: %d %%",(int)(offset/dsize*10));
       fflush(stdout);
       last_offset += dsize;
     }
@@ -485,7 +485,7 @@ int SwbPexFwComponent::update(string image) {
     return -1;
 
   if (count != PexImageCount) {
-    fprintf(stderr, "There should be %d images not %d.\n", PexImageCount, count);
+    fprintf(stderr, "There should be %d images not %d.\n", PexImageCount, (int)count);
     return -1;
   }
 
@@ -540,4 +540,70 @@ exit:
   syslog(LOG_CRIT, "Component %s upgrade completed\n", this->alias_component().c_str() );
   close(fd_r);
   return ret;
+}
+
+void GTPldmComponent::store_device_id_record(pldm_firmware_device_id_record& /*id_record*/,
+                                uint16_t& descriper_type,
+                                variable_field& descriper_data)
+{
+  if (descriper_type == PLDM_FWUP_VENDOR_DEFINED) {
+    string type = (const char*)descriper_data.ptr+2;
+    string data = (const char*)descriper_data.ptr+2+descriper_data.ptr[1];
+    type.resize(descriper_data.ptr[1]);
+    data.resize(descriper_data.length-descriper_data.ptr[1]-2);
+    if (type == "Platform") {
+      img_info.project_name = data;
+    } else if (type == "BoardID") {
+      auto& map = pldm_signed_info::board_map;
+      img_info.board_id = (map.find(data)!=map.end()) ? map.at(data):0xFF;
+    } else if (type == "Stage") {
+      auto& map = pldm_signed_info::stage_map;
+      img_info.stage_id = (map.find(data)!=map.end()) ? map.at(data):0xFF;
+    }
+  }
+}
+
+void GTPldmComponent::store_comp_img_info(pldm_component_image_information& comp_info,
+                          variable_field& comp_verstr)
+{
+  // comp id
+  img_info.component_id = comp_info.comp_identifier;
+
+  // comp vendor
+  string vendor, verstr = (const char *)comp_verstr.ptr;
+  verstr.resize(comp_verstr.length);
+  stringstream input_stringstream(verstr);
+  if (getline(input_stringstream, vendor, '_')) {
+    auto& map = pldm_signed_info::vendor_map;
+    img_info.vendor_id = (map.find(vendor)!=map.end()) ? map.at(vendor):0xFF;
+  }
+}
+
+void GTPldmComponent::print()
+{
+  printf("project name : %s\n", img_info.project_name.c_str());
+  printf("board_id     : %02X\n", img_info.board_id);
+  printf("stage_id     : %02X\n", img_info.stage_id);
+  printf("component_id : %02X\n", img_info.component_id);
+  printf("vendor_id    : %02X\n", img_info.vendor_id);
+}
+
+int GTSwbBicFwComponent::update(string image)
+{
+  return try_pldm_update(image, false);
+}
+
+int GTSwbBicFwComponent::fupdate(string image)
+{
+  return try_pldm_update(image, true);
+}
+
+int GTSwbPexFwComponent::update(string image)
+{
+  return try_pldm_update(image, false);
+}
+
+int GTSwbPexFwComponent::fupdate(string image)
+{
+  return try_pldm_update(image, true);
 }

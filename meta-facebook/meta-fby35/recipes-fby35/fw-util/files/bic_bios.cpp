@@ -1,16 +1,15 @@
 #include <cstdio>
 #include <syslog.h>
 #include <unistd.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/pal.h>
 #include "bic_bios.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
-#include <openbmc/pal.h>
-#include <openbmc/kv.h>
 
 using namespace std;
 
-#define MAX_RETRY 30
+#define FORCED_OFF 1
 #define DELAY_ME_RESET 5
 
 image_info BiosComponent::check_image(const string& image, bool force) {
@@ -42,33 +41,36 @@ image_info BiosComponent::check_image(const string& image, bool force) {
 }
 
 int BiosComponent::attempt_server_power_off(bool force) {
-  int ret, retry_count;
-  uint8_t status;
+  uint8_t status = SERVER_POWER_ON;
 
-  for (retry_count = 0; retry_count < MAX_RETRY; retry_count++) {
-    ret = pal_get_server_power(slot_id, &status);
-    cerr << "Server power status: " << (int) status << endl;
-    if ((ret == 0) && (status == SERVER_POWER_OFF)) {
-      return 0;
-    } else {
-      uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
-      if ((retry_count == 0) || force) {
-        cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
-        pal_set_server_power(slot_id, power_cmd);
+  if (!force) {
+    cerr << "Powering off the server gracefully" << endl;
+    pal_set_server_power(slot_id, SERVER_GRACEFUL_SHUTDOWN);
+    if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 60, 1000)) {
+      cerr << "Retry force powering off the server..." << endl;
+      pal_set_server_power(slot_id, SERVER_POWER_OFF);
+      if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+        return -1;
       }
-      sleep(2);
+      return FORCED_OFF;
     }
+  } else {
+    cerr << "Force powering off the server" << endl;
+    pal_set_server_power(slot_id, SERVER_POWER_OFF);
+    if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+      return -1;
+    }
+    return FORCED_OFF;
   }
 
-  // Exceeded retry limit.
-  return -1;
+  return 0;
 }
 
 bool BiosComponent::checkPfrUpdate(prot::ProtDevice& prot_dev) {
-  if (specificSpi){
+  if (specificSpi) {
       return false;
   }
-    cerr << "PRoT is PFR mode , update to recovery Flash" << endl;
+    cerr << "PRoT is PFR mode, update to recovery Flash" << endl;
     prot::BOOT_STATUS_ACK_PAYLOAD boot_sts{};
     if (prot_dev.portGetBootStatus(boot_sts) == prot::ProtDevice::DevStatus::SUCCESS) {
       prot::ProtSpiInfo::updateProperty upateProp(boot_sts, FW_BIOS, FW_BIOS_SPIB);
@@ -81,7 +83,7 @@ bool BiosComponent::checkPfrUpdate(prot::ProtDevice& prot_dev) {
 
 int BiosComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret;
-  int ret_recovery = 0, ret_reset = 0;
+  int ret_recovery = 0, ret_reset = 0, ret_pwroff = 0;
   int server_type = SERVER_TYPE_NONE;
   bool pfr_update = false;
   uint8_t dev_i2c_bus = 0;
@@ -120,8 +122,8 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     return FW_STATUS_FAILURE;
   }
 
-  if(isBypass) {
-    if(attempt_server_power_off(force)) {
+  if (SERVER_TYPE_HD != server_type || isBypass) {
+    if (attempt_server_power_off(force) < 0) {
       cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
       return FW_STATUS_FAILURE;
     }
@@ -134,14 +136,14 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     }
 
     if (pfr_update) {
-      if( prot_dev.portRequestRecoverySpiUnlock() !=  prot::ProtDevice::DevStatus::SUCCESS) {
+      if (prot_dev.portRequestRecoverySpiUnlock() !=  prot::ProtDevice::DevStatus::SUCCESS) {
         return FW_STATUS_FAILURE;
       }
     }
   }
 
   if (server_type == SERVER_TYPE_CL) {
-    if (force) {
+    if (ret_pwroff == FORCED_OFF) {
       sleep(DELAY_ME_RESET);  // to wait for ME reset
     }
     cerr << "Putting ME into recovery mode..." << endl;
@@ -174,7 +176,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     ret_reset = me_reset(slot_id);
     sleep(DELAY_ME_RESET);
   }
-  if(SERVER_TYPE_HD != server_type || isBypass) {
+  if (SERVER_TYPE_HD != server_type || isBypass) {
     cerr << "Power-cycling the server..." << endl;
 
     // 12V-cycle is necessary for concerning BIOS/ME crash case
@@ -191,7 +193,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
 
         prot_dev.protUpdateComplete();
         prot_dev.protFwUpdateIntent();
-        if (prot_dev.protGetUpdateStatus(status) != prot::ProtDevice::DevStatus::SUCCESS || status !=0 ) {
+        if (prot_dev.protGetUpdateStatus(status) != prot::ProtDevice::DevStatus::SUCCESS || status != 0) {
           cerr << "BIOS PFR update failed"<< endl;
           return FW_STATUS_FAILURE;
         }
@@ -226,7 +228,7 @@ int BiosComponent::dump(string image) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  if (attempt_server_power_off(true)) {
+  if (attempt_server_power_off(true) < 0) {
     cerr << "Failed to Power Off Server " << slot_id << ". Stopping the dump!" << endl;
     return FW_STATUS_FAILURE;
   }

@@ -63,9 +63,9 @@ class FscSensorBase(object):
         self.last_error_time = 0
         self.last_error_level = None
         if "fru_format_transform" in dir(fsc_board):
-          self.fru_format_transform = True
+            self.fru_format_transform = True
         else:
-          self.fru_format_transform = False
+            self.fru_format_transform = False
 
     @abc.abstractmethod
     def read(self, **kwargs):
@@ -80,11 +80,42 @@ class FscSensorBase(object):
         """
         pass
 
+    def write_util(self, value):
+        """
+        Writes to write_source using util.
+
+        Arguments:
+            value: value to be set to the sensor
+
+        Return:
+            N/A
+        """
+        if self.write_source is None:
+            return
+
+        cmd = self.write_source % (int(value * self.max_duty_register / 100))
+        Logger.debug("Setting value using cmd=%s" % cmd)
+        response = ""
+        try:
+            response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            if response.find("Error") != -1:
+                raise Exception("Write failed with response=%s" % response)
+        except Exception:
+            Logger.crit("Exception with cmd=%s response=%s" % (cmd, response))
+            raise
+
 
 class FscSensorSourceSysfs(FscSensorBase):
     """
     Class for FSC sensor source for sysfs
     """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.write_type == "util":
+            self.write_func = self.write_util
+        else:
+            self.write_func = self.write_sysfs
 
     def get_hwmon_source(self):
         # After BMC comes up this hwmon device is setup once and we can cache
@@ -96,12 +127,12 @@ class FscSensorSourceSysfs(FscSensorBase):
         self.hwmon_source = None
         result = re.split("hwmon", self.read_source)
         if os.path.isdir(result[0]):
-            construct_hwmon_path = result[0] + "hwmon"
+            hwmon_path_prefix = result[0] + "hwmon"
             x = None
-            for x in os.listdir(construct_hwmon_path):
+            for x in os.listdir(hwmon_path_prefix):
                 if x.startswith("hwmon"):
                     construct_hwmon_path = (
-                        construct_hwmon_path + "/" + x + "/" + result[2].split("/")[1]
+                        hwmon_path_prefix + "/" + x + "/" + result[2].split("/")[1]
                     )
                     if os.path.exists(construct_hwmon_path):
                         self.hwmon_source = construct_hwmon_path
@@ -138,6 +169,15 @@ class FscSensorSourceSysfs(FscSensorBase):
             self.read_source_fail_counter += 1
 
     def write(self, value):
+        try:
+            self.write_func(value)
+        except SystemExit:
+            Logger.debug("SystemExit from sensor write")
+            raise
+        except Exception:
+            pass
+
+    def write_sysfs(self, value):
         """
         Writes to write_source using echo to sysfs location
         echo #value > sysfs_path
@@ -189,14 +229,13 @@ class FscSensorSourceUtil(FscSensorBase):
         cmd = self.read_source
         if "fru" in kwargs:
             if "inf" in kwargs and kwargs["inf"] is not None:
-                cmd += " " + kwargs["fru"] +" --filter"
-                inf =  kwargs["inf"]
+                cmd += " " + kwargs["fru"] + " --filter"
+                inf = kwargs["inf"]
                 for name in inf["ext_vars"]:
                     sdata = name.split(":")
                     board = sdata[0]
                     if board != kwargs["fru"]:
                         continue
-                    #sname = sdata[1]
                     cmd += " " + sdata[1]
             elif "num" in kwargs and len(kwargs["num"]):
                 cmd = ""
@@ -220,35 +259,26 @@ class FscSensorSourceUtil(FscSensorBase):
         return data
 
     def write(self, value):
-        """
-        Writes to write_source using util.
-
-        Arguments:
-            value: value to be set to the sensor
-
-        Return:
-            N/A
-        """
-        if self.write_source is None:
-            return
-        cmd = self.write_source % (int(value * self.max_duty_register / 100))
-        Logger.debug("Setting value using cmd=%s" % cmd)
-        response = ""
         try:
-            response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-            if response.find("Error") != -1:
-                raise Exception("Write failed with response=%s" % response)
+            self.write_util(value)
         except SystemExit:
             Logger.debug("SystemExit from sensor write")
             raise
         except Exception:
-            Logger.crit("Exception with cmd=%s response=%s" % (cmd, response))
+            pass
 
 
 class FscSensorSourceKv(FscSensorBase):
     """
     Class for FSC sensor source for kv
     """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.write_type == "util":
+            self.write_func = self.write_util
+        else:
+            self.write_func = self.write_kv
 
     def read(self, **kwargs):
         """
@@ -274,16 +304,13 @@ class FscSensorSourceKv(FscSensorBase):
         return data
 
     def write(self, value):
-        if self.write_source is None:
-            return
-
         try:
-            self.write_func[self.write_type](self, value)
+            self.write_func(value)
         except SystemExit:
             Logger.debug("SystemExit from sensor write")
             raise
         except Exception:
-            Logger.crit("Exception with write=%s" % self.write_source)
+            pass
 
     def write_kv(self, value):
         """
@@ -295,36 +322,14 @@ class FscSensorSourceKv(FscSensorBase):
         Return:
             N/A
         """
+        if self.write_source is None:
+            return
 
         try:
             kv_set(self.write_source, str(value * self.max_duty_register / 100))
         except Exception:
+            Logger.crit("Exception with write=%s" % self.write_source)
             raise
-
-    def write_util(self, value):
-        """
-        Writes to write_source using util.
-
-        Arguments:
-            value: value to be set to the sensor
-
-        Return:
-            N/A
-        """
-
-        cmd = self.write_source % (int(value * self.max_duty_register / 100))
-        Logger.debug("Setting value using cmd=%s" % cmd)
-        try:
-            response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-            if response.find("Error") != -1:
-                raise Exception("Write failed with response=%s" % response)
-        except Exception:
-            raise
-
-    write_func = {
-        'kv' : write_kv,
-        'util' : write_util,
-    }
 
 
 class FscSensorSourceJson(FscSensorBase):

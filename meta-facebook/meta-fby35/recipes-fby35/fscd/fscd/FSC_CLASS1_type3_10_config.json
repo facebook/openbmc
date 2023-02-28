@@ -219,7 +219,7 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 0"
+        "sysfs" : "/sys/class/hwmon/hwmon*/fan1_input"
       },
       "write_source" : {
         "util" : "/usr/local/bin/fan-util --set %d"
@@ -227,7 +227,7 @@
     },
     "1": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 1"
+        "sysfs" : "/sys/class/hwmon/hwmon*/fan3_input"
       },
       "write_source" : {
         "util" : "/usr/local/bin/fan-util --set %d"
@@ -235,7 +235,7 @@
     },
     "2": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 2"
+        "sysfs" : "/sys/class/hwmon/hwmon*/fan5_input"
       },
       "write_source" : {
         "util" : "/usr/local/bin/fan-util --set %d"
@@ -243,7 +243,7 @@
     },
     "3": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 3"
+        "sysfs" : "/sys/class/hwmon/hwmon*/fan7_input"
       },
       "write_source" : {
         "util" : "/usr/local/bin/fan-util --set %d"

@@ -31,6 +31,7 @@ RECORD_DIR = "/tmp/cache_store/"
 SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record/"
 KEY_FAN_MODE_EVENT = "fan_mode_event"
 
+
 class SensorAssertCheck(object):
     def __init__(self, name):
         self.name = name
@@ -97,11 +98,16 @@ class Fan(object):
                         max_duty_register = pTable["write_source"]["max_duty_register"]
                     else:
                         max_duty_register = 100
+                    if "util" in pTable["write_source"]:
+                        write_type = "util"
+                    else:
+                        write_type = "sysfs"
                     self.source = FscSensorSourceSysfs(
                         name=fan_name,
                         read_source=pTable["read_source"]["sysfs"],
-                        write_source=pTable["write_source"]["sysfs"],
+                        write_source=pTable["write_source"][write_type],
                         max_duty_register=max_duty_register,
+                        write_type=write_type,
                     )
                 else:
                     self.source = FscSensorSourceSysfs(

@@ -186,6 +186,9 @@ int main(int argc, char* argv[]) {
   auto eventlog = app.add_subcommand("event-log", "Retrieve event logs from HGX");
   eventlog->callback([&]() { do_event_log(json_fmt); });
 
+  auto timeSync = app.add_subcommand("time-sync", "Sync current BMC time with HGX");
+  timeSync->callback([&]() { hgx::syncTime(); });
+
   app.require_subcommand(/* min */ 1, /* max */ 1);
 
   CLI11_PARSE(app, argc, argv);

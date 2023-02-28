@@ -6,6 +6,7 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include "time_utils.hpp"
 #include "restclient-cpp/connection.h"
 #include "restclient-cpp/restclient.h"
 
@@ -392,6 +393,12 @@ void printEventLog(std::ostream& os, bool jsonFmt) {
     os << time << '\t' << severity << '\t' << res_str << '\t' << msg << '\t'
        << resolution << std::endl;
   }
+}
+
+void syncTime() {
+  std::string url = HMC_URL + "Managers/HGX_BMC_0";
+  json data = json::object({{"DateTime", hgx::time::now()}});
+  hgx.patch(url, data.dump());
 }
 
 std::string sensorRaw(const std::string& component, const std::string& name) {

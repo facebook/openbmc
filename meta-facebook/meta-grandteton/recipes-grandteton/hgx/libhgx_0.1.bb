@@ -13,6 +13,7 @@ LOCAL_URI = " \
     file://meson.build \
     file://hgx.cpp \
     file://hgx.h \
+    file://time_utils.hpp \
     "
 
 DEPENDS += "restclient-cpp nlohmann-json libkv"

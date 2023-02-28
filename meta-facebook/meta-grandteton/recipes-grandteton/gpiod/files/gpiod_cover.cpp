@@ -28,8 +28,8 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <pthread.h>
-#include <openbmc/pal.h>
 #include <openbmc/peci_sensors.h>
+#include <openbmc/pal.h>
 #include <openbmc/pal_def.h>
 #include "gpiod.h"
 
@@ -87,7 +87,7 @@ ierr_mcerr_event_log(bool is_caterr, const char *err_type) {
 }
 
 static void *
-ierr_mcerr_event_handler() {
+ierr_mcerr_event_handler(void *) {
   uint8_t caterr_cnt = 0;
   gpio_value_t value;
 

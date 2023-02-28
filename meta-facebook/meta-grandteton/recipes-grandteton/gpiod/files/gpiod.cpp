@@ -170,7 +170,7 @@ cpu_skt_init(gpiopoll_pin_t *desc, gpio_value_t value) {
   gpio_value_t prev_value = GPIO_VALUE_INVALID;
   snprintf(key, sizeof(key), "cpu%d_skt_status", cpu_id);
   if (kv_get(key, kvalue, NULL, KV_FPERSIST) == 0) {
-    prev_value = atoi( kvalue);
+    prev_value = (gpio_value_t)atoi(kvalue);
   }
   snprintf(kvalue, sizeof(kvalue), "%d", value);
   kv_set(key, kvalue, 0, KV_FPERSIST);
@@ -238,7 +238,7 @@ uv_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   if (!sgpio_valid_check())
     return;
 
-  char* str = "HSC Under Voltage Warning";
+  const char* str = "HSC Under Voltage Warning";
   log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str);
 }
 
@@ -484,7 +484,7 @@ platform_reset_init(gpiopoll_pin_t *desc, gpio_value_t value) {
 
 // Thread for gpio timer
 void
-*gpio_timer() {
+*gpio_timer(void *) {
   uint8_t status = 0;
   uint8_t fru = FRU_MB;
   long int pot;
@@ -510,14 +510,14 @@ void
         str[0] = '\0';
       if (status == SERVER_POWER_ON) {
         if (strncmp(str, POWER_ON_STR, strlen(POWER_ON_STR)) != 0) {
-          pal_set_last_pwr_state(fru, POWER_ON_STR);
+          pal_set_last_pwr_state(fru, (char *)POWER_ON_STR);
           syslog(LOG_INFO, "last pwr state updated to on\n");
         }
       } else {
         // wait until PowerOnTime < -2 to make sure it's not AC lost
         // Handle corner case during sled-cycle due to BMC residual electricity (1.2sec)
         if (pot < -2 && strncmp(str, POWER_OFF_STR, strlen(POWER_OFF_STR)) != 0) {
-          pal_set_last_pwr_state(fru, POWER_OFF_STR);
+          pal_set_last_pwr_state(fru, (char *)POWER_OFF_STR);
           syslog(LOG_INFO, "last pwr state updated to off\n");
         }
       }
@@ -640,7 +640,7 @@ struct gpiopoll_ioex_config iox_gpios[] = {
 };
 
 void
-*iox_gpio_handle()
+*iox_gpio_handle(void *)
 {
   int i, status;
   int size = sizeof(iox_gpios)/sizeof(iox_gpios[0]);

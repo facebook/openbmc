@@ -54,8 +54,8 @@ void pch_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
 void mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 
 //Thread Monitor
-void *iox_gpio_handle();
-void *gpio_timer();
+void *iox_gpio_handle(void*);
+void *gpio_timer(void*);
 
 //GPIO Present Event
 void gpio_present_init (gpiopoll_pin_t *desc, gpio_value_t value);

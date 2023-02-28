@@ -1,5 +1,5 @@
 project('gpiod',
-    'c',
+    'cpp',
     version: '0.1',
     license: 'GPL2',
     default_options: [
@@ -10,12 +10,12 @@ project('gpiod',
 
 
 sources = [
-    'gpiod.c',
-    'gpiod_cover.c'
+    'gpiod.cpp',
+    'gpiod_cover.cpp'
 ]
 
 
-cc = meson.get_compiler('c')
+cc = meson.get_compiler('cpp')
 deps = [
     dependency('libgpio-ctrl'),
     dependency('libnm'),

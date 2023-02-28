@@ -20,13 +20,13 @@ DESCRIPTION = "Daemon for monitoring the gpio signals"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPL-2.0-or-later"
-LIC_FILES_CHKSUM = "file://gpiod.c;beginline=4;endline=16;md5=3598c23c3531e1f059568c83d4174cc0"
+LIC_FILES_CHKSUM = "file://gpiod.cpp;beginline=4;endline=16;md5=3598c23c3531e1f059568c83d4174cc0"
 
 LOCAL_URI = " \
     file://meson.build \
-    file://gpiod.c \
+    file://gpiod.cpp \
     file://gpiod.h \
-    file://gpiod_cover.c \
+    file://gpiod_cover.cpp \
     file://setup-gpiod.sh \
     file://run-gpiod.sh \
     "

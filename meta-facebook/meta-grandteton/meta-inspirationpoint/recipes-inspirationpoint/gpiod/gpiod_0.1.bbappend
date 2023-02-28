@@ -17,7 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
-    file://gpiod_cover.c \
+    file://gpiod_cover.cpp \
     file://rebind-rt-mux.sh \
     "
 

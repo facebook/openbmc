@@ -850,17 +850,17 @@ key_func_end_of_post(int event, void *arg) {
   uint8_t slot_id = 0, value = 0, direction = 0;
   char key[MAX_KEY_LEN] = {0}, value_str[MAX_VALUE_LEN] = {0};
 
-  // Get slot ID
-  for (i = 0; i < NUM_SERVER_FRU; i++) {
-    if (strstr((char *)arg, pal_server_fru_list[i]) != NULL) {
-      slot_id = i + 1;
-      break;
+  if (event == KEY_AFTER_INI) {
+    // Get slot ID
+    for (i = 0; i < NUM_SERVER_FRU; i++) {
+      if (strstr((char *)arg, pal_server_fru_list[i]) != NULL) {
+        slot_id = i + 1;
+        break;
+      }
     }
-  }
 
-  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_GL) {
-    // Get post complete from BIC after initializing key value.
-    if (event == KEY_AFTER_INI) {
+    if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_GL) {
+      // Get post complete from BIC after initializing key value.
       snprintf(key, sizeof(key), POST_COMPLETE_STR, slot_id);
       ret = bic_get_virtual_gpio(slot_id, GL_BIOS_POST_COMPLETE, &value, &direction);
       // GL BIC virtual gpio post complete: 1, post not complete: 0

@@ -29,6 +29,7 @@ UseMTU=no
 [DHCP]
 UseDomains=yes
 UseNTP=yes
+ClientIdentifier=mac
 VendorClassIdentifier=OpenBMC:VENDOR_SERIAL_HERE
 
 [DHCPv6]

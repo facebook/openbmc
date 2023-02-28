@@ -1,6 +1,11 @@
 #ifndef __PECI_SENSORS_H__
 #define __PECI_SENSORS_H__
 
+#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //PECI CMD INFO
 #define PECI_RETRY_TIMES                        (10)
 #define PECI_CMD_RD_PKG_CONFIG                  (0xA1)
@@ -72,5 +77,10 @@ int cmd_peci_dimm_thermal_reading(uint8_t cpu_addr, uint8_t channel, uint8_t* te
 int cmd_peci_get_cpu_err_num(uint8_t cpu_addr, int* num, uint8_t is_caterr);
 int cmd_peci_accumulated_energy(uint8_t cpu_addr, uint32_t* value);
 int cmd_peci_total_time(uint8_t cpu_addr, uint32_t* value);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

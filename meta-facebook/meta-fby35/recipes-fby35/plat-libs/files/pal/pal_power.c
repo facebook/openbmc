@@ -23,11 +23,6 @@
 
 static uint8_t m_slot_pwr_ctrl[MAX_NODES+1] = {0};
 
-bool
-is_server_off(void) {
-  return POWER_STATUS_OK;
-}
-
 static int
 pal_set_VF_power_off(uint8_t fru) {
   int i2cfd = 0, bus = 0, ret = 0;
@@ -395,9 +390,9 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
   return ret;
 }
 
-int
+static int
 pal_set_bic_power_off(int fru) {
-  int i2cfd = 0, bus = 0, tlen = 0, rlen = 0, retry = 0, ret = 0;
+  int i2cfd = 0, bus = 0, ret = 0;
   uint8_t tbuf[2] = {0};
 
   bus = fby35_common_get_bus_id(fru) + 4;
@@ -409,21 +404,11 @@ pal_set_bic_power_off(int fru) {
 
   tbuf[0] = CPLD_PWR_OFF_BIC_REG;
   tbuf[1] = 0; // power off
-  tlen = 2;
-  rlen = 0;
-  retry = 0;
-  while (retry < RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      break;
-    }
-  }
-  if (retry == RETRY_TIME) {
+  ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 2, NULL, 0),
+                   RETRY_TIME, 100);
+  close(i2cfd);
+  if (ret < 0) {
     syslog(LOG_CRIT, "%s(): Failed to do i2c_rdwr_msg_transfer\n", __func__);
-    ret = -1;
   }
 
   return ret;
@@ -560,7 +545,7 @@ pal_sled_cycle(void) {
   int i = 0;
   uint8_t bmc_location = 0, is_fru_present = 0, status = 0;
   uint8_t tbuf[2] = {0};
-  int tlen = 0, retry = 0, i2cfd = 0;
+  int i2cfd = 0;
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -601,19 +586,11 @@ pal_sled_cycle(void) {
 
     tbuf[0] = 0x2B;
     tbuf[1] = 0x01;
-    tlen = 2;
-    retry = 0;
-    while (retry < MAX_READ_RETRY) {
-      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
-      if ( ret < 0 ) {
-        retry++;
-        msleep(100);
-      } else {
-        break;
-      }
-    }
-    if (retry == MAX_READ_RETRY) {
-      syslog(LOG_WARNING, "%s() Failed to do sled cycle, max retry: %d", __func__, retry);
+    ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, 2, NULL, 0),
+                     MAX_READ_RETRY, 100);
+    close(i2cfd);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Failed to do sled cycle", __func__);
     }
   } else {
     if ( bic_inform_sled_cycle() < 0 ) {
@@ -683,20 +660,10 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 
 static int
 pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp, int config_status, uint8_t board_type) {
-  const uint8_t st_2ou_idx = DEV_ID0_2OU;
-  const uint8_t end_2ou_yv3_idx = DEV_ID5_2OU;
-  const uint8_t end_2ou_gpv3_idx = DEV_ID13_2OU;
-  int ret = 0;
   uint8_t bmc_location = 0;
 
   if (rsp == NULL) {
     syslog(LOG_ERR, "%s: failed due to NULL pointer\n", __func__);
-    return POWER_STATUS_ERR;
-  }
-
-  ret = fby35_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return POWER_STATUS_ERR;
   }
 
@@ -718,18 +685,21 @@ pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp, int co
       } else {
         return POWER_STATUS_FRU_ERR;
       }
-    } else if (dev_id < st_2ou_idx) {
-      if ( bmc_location == NIC_BMC ) return POWER_STATUS_FRU_ERR;
+    } else {
+      if (dev_id > DEV_ID3_1OU) {
+        return POWER_STATUS_FRU_ERR;
+      }
+      if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+        syslog(LOG_ERR, "%s: Cannot get the location of BMC", __func__);
+        return POWER_STATUS_FRU_ERR;
+      }
+      if (bmc_location == NIC_BMC) {
+        return POWER_STATUS_FRU_ERR;
+      }
+
       rsp[0] = dev_id;
       rsp[1] = FEXP_BIC_INTF;
     }
-  } else if (( dev_id >= st_2ou_idx && dev_id <= end_2ou_gpv3_idx) && ((config_status & PRESENT_2OU) == PRESENT_2OU)) {
-    if ( board_type != GPV3_MCHP_BOARD && board_type != GPV3_BRCM_BOARD ) {
-      //If dev doesn't belong to GPv3, return
-      if ( dev_id > end_2ou_yv3_idx ) return POWER_STATUS_FRU_ERR;
-    }
-    rsp[0] = dev_id - 4;
-    rsp[1] = REXP_BIC_INTF;
   } else {
     // dev not found
     return POWER_STATUS_FRU_ERR;
@@ -824,7 +794,7 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   dev_id = rsp[0];
   intf = rsp[1];
 
-  switch(cmd) {
+  switch (cmd) {
     case SERVER_POWER_ON:
       if (status == DEVICE_POWER_ON) {
         return 1;

@@ -42,7 +42,7 @@ read_logs() {
 
     echo -n "{'Date':'$(date -u "+%Y-%m-%d %T")'"
     echo -n ",'Source':'$fault_source'"
-    echo -n ",'Log':'$(i2cget -y "$bus" 0x4e 0xea s | awk '{print$(NF)}')'"
+    echo -n ",'Log':'$(i2cget -y "$bus" 0x4e 0xea s)'"
 
     eb="$(i2cget -y "$bus" 0x4e 0xeb w)"
 
@@ -51,7 +51,7 @@ read_logs() {
     for (( i = 0 ; i < "$len" ; i++ ))
     do
       i2cset -y "$bus" 0x4e 0xeb "0x$len$(printf '%02x' "$i")" w
-      man="$(i2cget -y "$bus" 0x4e 0xec | awk '{print$(NF)}')"
+      man="$(i2cget -y "$bus" 0x4e 0xec s)"
       exp="$(i2cget -y "$bus" 0x4e 0x20 | tail -n 1)"
       echo -n ",'detail_$i':{'m':'$man','e':'$exp'}"
     done

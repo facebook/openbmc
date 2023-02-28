@@ -1,7 +1,7 @@
 From 00ee1be78b3be4915031b380df1d5f0c9c0546ca Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Nov 2021 13:59:32 +0800
-Subject: [PATCH 100/107] dt-bindings: Add bindings for aspeed pwm-tach.
+Subject: [PATCH 100/126] dt-bindings: Add bindings for aspeed pwm-tach.
 
 This patch adds device binding for aspeed pwm-tach device which is a
 multi-function device include pwm and tach function and pwm/tach device

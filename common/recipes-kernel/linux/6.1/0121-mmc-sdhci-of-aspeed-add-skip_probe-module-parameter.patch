@@ -1,0 +1,68 @@
+From 7cd8a4ab80647100eb548fc906ad91cf1d573dab Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Tue, 18 Oct 2022 11:38:44 -0700
+Subject: [PATCH 121/126] mmc: sdhci-of-aspeed: add "skip_probe" module
+ parameter
+
+Add "skip_probe" module parameter to allow users to skip mmc device
+probe at boot up time.
+
+This is a hack, and it's need to workaround below error (for example,
+T79173094):
+
+> mmc0: Got data interrupt 0x00100000 even though no data operation was in progress.
+> mmc0: sdhci: ============ SDHCI REGISTER DUMP ===========
+> mmc0: sdhci: Sys addr:  0x00000000 | Version:  0x00000001
+> mmc0: sdhci: Blk size:  0x00000000 | Blk cnt:  0x00000000
+> mmc0: sdhci: Argument:  0x00000000 | Trn mode: 0x00000000
+> mmc0: sdhci: Present:   0x01f70000 | Host ctl: 0x00000000
+> mmc0: sdhci: Power:     0x0000000f | Blk gap:  0x00000000
+> mmc0: sdhci: Wake-up:   0x00000000 | Clock:    0x00008007
+> mmc0: sdhci: Timeout:   0x00000000 | Int stat: 0x00108000
+> ...
+---
+ drivers/mmc/host/sdhci-of-aspeed.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/drivers/mmc/host/sdhci-of-aspeed.c b/drivers/mmc/host/sdhci-of-aspeed.c
+index ba6677bf7372..be6fe5db2b1a 100644
+--- a/drivers/mmc/host/sdhci-of-aspeed.c
++++ b/drivers/mmc/host/sdhci-of-aspeed.c
+@@ -77,6 +77,22 @@ struct aspeed_sdhci {
+ 	const struct aspeed_sdhci_phase_desc *phase_desc;
+ };
+ 
++/*
++ * "skip_probe" flag is used to bypass below kernel panic (repetitive
++ * interrupt) when probing mmc controller at boot up time. The error has
++ * been reported on various OpenBMC platforms, such as wedge400, elbert
++ * and etc.
++ *
++ * "Got data interrupt 0x00000002 even though no data operation was in progress"
++ *
++ * XXX THIS IS A HACK. It needs to be dropped when the issue is root caused
++ * and fixed.
++ */
++static int skip_probe = 0;
++module_param(skip_probe, int, 0);
++MODULE_PARM_DESC(skip_probe,
++		 "Set skip_probe to 1 to skip device probe (default=0)");
++
+ /*
+  * The function sets the mirror register for updating
+  * capbilities of the current slot.
+@@ -372,6 +388,11 @@ static int aspeed_sdhci_probe(struct platform_device *pdev)
+ 	int slot;
+ 	int ret;
+ 
++	if (skip_probe) {
++		dev_info(&pdev->dev, "skip_probe parameter is set. Exiting\n");
++		return -ENODEV;
++	}
++
+ 	aspeed_pdata = of_device_get_match_data(&pdev->dev);
+ 	if (!aspeed_pdata) {
+ 		dev_err(&pdev->dev, "Missing platform configuration data\n");
+-- 
+2.39.2
+

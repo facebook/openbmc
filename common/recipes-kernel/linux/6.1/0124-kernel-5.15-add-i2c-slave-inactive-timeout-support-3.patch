@@ -1,0 +1,220 @@
+From b6615291e1f55c0b8892232687ee561057b395b3 Mon Sep 17 00:00:00 2001
+From: Jae Hyun Yoo <jae.hyun.yoo@linux.intel.com>
+Date: Tue, 13 Sep 2022 08:56:54 -0700
+Subject: [PATCH 124/126] kernel 5.15: add i2c slave inactive timeout support
+ (#3194)
+
+Summary:
+backport below patches to kernel 5.15 to support i2c slave inactive timeout.
+- i2c: aspeed: add slave inactive timeout support (https://lore.kernel.org/all/20191021202414.17484-3-jae.hyun.yoo@linux.intel.com/#r)
+- kernel 5.10: handle slave_state in abnormal,SDA/SCL timeout interrupt (13aa404568286b7f8f326c36d767b708be378069)
+
+X-link: https://github.com/facebookexternal/openbmc.quanta/pull/3194
+
+Reviewed By: williamspatrick
+
+Differential Revision: D39470095
+
+Pulled By: garnermic
+
+fbshipit-source-id: 019a949fcc6c09d93141e781ca5c2bbe0f8bf580
+---
+ drivers/i2c/busses/i2c-aspeed.c | 92 ++++++++++++++++++++++++++++++---
+ 1 file changed, 86 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-aspeed.c b/drivers/i2c/busses/i2c-aspeed.c
+index cc6a77f5d899..feaab995ac21 100644
+--- a/drivers/i2c/busses/i2c-aspeed.c
++++ b/drivers/i2c/busses/i2c-aspeed.c
+@@ -7,6 +7,7 @@
+  *  Copyright 2017 Google, Inc.
+  */
+ 
++#include <linux/bitfield.h>
+ #include <linux/clk.h>
+ #include <linux/completion.h>
+ #include <linux/err.h>
+@@ -44,6 +45,7 @@
+ 
+ /* Device Register Definition */
+ /* 0x00 : I2CD Function Control Register  */
++#define ASPEED_I2CD_BUS_AUTO_RECOVERY_EN		BIT(17)
+ #define ASPEED_I2CD_MULTI_MASTER_DIS			BIT(15)
+ #define ASPEED_I2CD_SDA_DRIVE_1T_EN			BIT(8)
+ #define ASPEED_I2CD_M_SDA_DRIVE_1T_EN			BIT(7)
+@@ -59,10 +61,14 @@
+ #define ASPEED_I2CD_TIME_SCL_HIGH_MASK			GENMASK(19, 16)
+ #define ASPEED_I2CD_TIME_SCL_LOW_SHIFT			12
+ #define ASPEED_I2CD_TIME_SCL_LOW_MASK			GENMASK(15, 12)
++#define ASPEED_I2CD_TIME_TIMEOUT_BASE_DIVISOR_SHIFT	8
++#define ASPEED_I2CD_TIME_TIMEOUT_BASE_DIVISOR_MASK	GENMASK(9, 8)
+ #define ASPEED_I2CD_TIME_BASE_DIVISOR_MASK		GENMASK(3, 0)
+ #define ASPEED_I2CD_TIME_SCL_REG_MAX			GENMASK(3, 0)
++
+ /* 0x08 : I2CD Clock and AC Timing Control Register #2 */
+-#define ASPEED_NO_TIMEOUT_CTRL				0
++#define ASPEED_I2CD_TIMEOUT_CYCLES_SHIFT		0
++#define ASPEED_I2CD_TIMEOUT_CYCLES_MASK			GENMASK(4, 0)
+ 
+ /* 0x0c : I2CD Interrupt Control Register &
+  * 0x10 : I2CD Interrupt Status Register
+@@ -71,6 +77,7 @@
+  * status bits.
+  */
+ #define ASPEED_I2CD_INTR_RECV_MASK			0xf000ffff
++#define ASPEED_I2CD_INTR_SLAVE_INACTIVE_TIMEOUT		BIT(15)
+ #define ASPEED_I2CD_INTR_SDA_DL_TIMEOUT			BIT(14)
+ #define ASPEED_I2CD_INTR_BUS_RECOVER_DONE		BIT(13)
+ #define ASPEED_I2CD_INTR_SLAVE_MATCH			BIT(7)
+@@ -86,8 +93,20 @@
+ 		 ASPEED_I2CD_INTR_SCL_TIMEOUT |				       \
+ 		 ASPEED_I2CD_INTR_ABNORMAL |				       \
+ 		 ASPEED_I2CD_INTR_ARBIT_LOSS)
++
++/*
++ * The SDA/SCL timeout or abnormal START/STOP may occur during
++ * a slave operation
++ */
++#define ASPEED_I2CD_INTR_SLAVE_ERRORS					       \
++		(ASPEED_I2CD_INTR_SLAVE_INACTIVE_TIMEOUT |		       \
++		 ASPEED_I2CD_INTR_SDA_DL_TIMEOUT |			       \
++		 ASPEED_I2CD_INTR_SCL_TIMEOUT |				       \
++		 ASPEED_I2CD_INTR_ABNORMAL)
++
+ #define ASPEED_I2CD_INTR_ALL						       \
+-		(ASPEED_I2CD_INTR_SDA_DL_TIMEOUT |			       \
++		(ASPEED_I2CD_INTR_SLAVE_INACTIVE_TIMEOUT |		       \
++		 ASPEED_I2CD_INTR_SDA_DL_TIMEOUT |			       \
+ 		 ASPEED_I2CD_INTR_BUS_RECOVER_DONE |			       \
+ 		 ASPEED_I2CD_INTR_SCL_TIMEOUT |				       \
+ 		 ASPEED_I2CD_INTR_ABNORMAL |				       \
+@@ -155,6 +174,7 @@ struct aspeed_i2c_bus {
+ 	unsigned long			parent_clk_frequency;
+ 	u32				bus_frequency;
+ 	u32				duty_cycle;
++	u32				hw_timeout_ms;
+ 	/* Transaction state. */
+ 	enum aspeed_i2c_master_state	master_state;
+ 	struct i2c_msg			*msgs;
+@@ -244,6 +264,14 @@ static int aspeed_i2c_recover_bus(struct aspeed_i2c_bus *bus)
+ }
+ 
+ #if IS_ENABLED(CONFIG_I2C_SLAVE)
++static int aspeed_i2c_check_slave_error(u32 irq_status)
++{
++	if (irq_status & ASPEED_I2CD_INTR_SLAVE_ERRORS)
++		return -EIO;
++
++	return 0;
++}
++
+ static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
+ {
+ 	u32 command, irq_handled = 0;
+@@ -254,6 +282,14 @@ static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
+ 	if (!slave)
+ 		return 0;
+ 
++	if (aspeed_i2c_check_slave_error(irq_status)) {
++		dev_dbg(bus->dev, "received slave error interrupt: 0x%08x\n",
++			irq_status);
++		irq_handled |= (irq_status & ASPEED_I2CD_INTR_SLAVE_ERRORS);
++		bus->slave_state = ASPEED_I2C_SLAVE_INACTIVE;
++		return irq_handled;
++	}
++
+ 	command = readl(bus->base + ASPEED_I2C_CMD_REG);
+ 
+ 	/* Slave was requested, restart state machine. */
+@@ -397,7 +433,7 @@ static void aspeed_i2c_next_msg_or_stop(struct aspeed_i2c_bus *bus)
+ 	}
+ }
+ 
+-static int aspeed_i2c_is_irq_error(u32 irq_status)
++static int aspeed_i2c_check_master_error(u32 irq_status)
+ {
+ 	if (irq_status & ASPEED_I2CD_INTR_ARBIT_LOSS)
+ 		return -EAGAIN;
+@@ -428,9 +464,9 @@ static u32 aspeed_i2c_master_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
+ 	 * should clear the command queue effectively taking us back to the
+ 	 * INACTIVE state.
+ 	 */
+-	ret = aspeed_i2c_is_irq_error(irq_status);
++	ret = aspeed_i2c_check_master_error(irq_status);
+ 	if (ret) {
+-		dev_dbg(bus->dev, "received error interrupt: 0x%08x\n",
++		dev_dbg(bus->dev, "received master error interrupt: 0x%08x\n",
+ 			irq_status);
+ 		irq_handled |= (irq_status & ASPEED_I2CD_INTR_MASTER_ERRORS);
+ 		if (bus->master_state != ASPEED_I2C_MASTER_INACTIVE) {
+@@ -918,6 +954,7 @@ static u32 aspeed_i2c_25xx_get_clk_reg_val(struct device *dev, u32 divisor, u32
+ /* precondition: bus.lock has been acquired. */
+ static int aspeed_i2c_init_clk(struct aspeed_i2c_bus *bus)
+ {
++	u32 timeout_base_divisor, timeout_tick_us, timeout_cycles;
+ 	u32 divisor, clk_reg_val;
+ 
+ 	divisor = DIV_ROUND_UP(bus->parent_clk_frequency, bus->bus_frequency);
+@@ -926,8 +963,46 @@ static int aspeed_i2c_init_clk(struct aspeed_i2c_bus *bus)
+ 			ASPEED_I2CD_TIME_THDSTA_MASK |
+ 			ASPEED_I2CD_TIME_TACST_MASK);
+ 	clk_reg_val |= bus->get_clk_reg_val(bus->dev, divisor, bus->duty_cycle);
++
++	if (bus->hw_timeout_ms) {
++		u8 div_max = ASPEED_I2CD_TIME_TIMEOUT_BASE_DIVISOR_MASK >>
++			     ASPEED_I2CD_TIME_TIMEOUT_BASE_DIVISOR_SHIFT;
++		u8 cycles_max = ASPEED_I2CD_TIMEOUT_CYCLES_MASK >>
++				ASPEED_I2CD_TIMEOUT_CYCLES_SHIFT;
++
++		timeout_base_divisor = 0;
++
++		do {
++			timeout_tick_us = 1000 * (16384 <<
++						  (timeout_base_divisor << 1)) /
++					  (bus->parent_clk_frequency / 1000);
++
++			if (timeout_base_divisor == div_max ||
++			    timeout_tick_us * ASPEED_I2CD_TIMEOUT_CYCLES_MASK >=
++			    bus->hw_timeout_ms * 1000)
++				break;
++		} while (timeout_base_divisor++ < div_max);
++
++		if (timeout_tick_us) {
++			timeout_cycles = DIV_ROUND_UP(bus->hw_timeout_ms * 1000,
++						      timeout_tick_us);
++			if (timeout_cycles == 0)
++				timeout_cycles = 1;
++			else if (timeout_cycles > cycles_max)
++				timeout_cycles = cycles_max;
++		} else {
++			timeout_cycles = 0;
++		}
++	} else {
++		timeout_base_divisor = 0;
++		timeout_cycles = 0;
++	}
++
++	clk_reg_val |= FIELD_PREP(ASPEED_I2CD_TIME_TIMEOUT_BASE_DIVISOR_MASK,
++				  timeout_base_divisor);
++
+ 	writel(clk_reg_val, bus->base + ASPEED_I2C_AC_TIMING_REG1);
+-	writel(ASPEED_NO_TIMEOUT_CTRL, bus->base + ASPEED_I2C_AC_TIMING_REG2);
++	writel(timeout_cycles, bus->base + ASPEED_I2C_AC_TIMING_REG2);
+ 
+ 	return 0;
+ }
+@@ -942,6 +1017,11 @@ static int aspeed_i2c_init(struct aspeed_i2c_bus *bus,
+ 	/* Disable everything. */
+ 	writel(0, bus->base + ASPEED_I2C_FUN_CTRL_REG);
+ 
++	device_property_read_u32(&pdev->dev, "aspeed,hw-timeout-ms",
++				 &bus->hw_timeout_ms);
++	if (bus->hw_timeout_ms)
++		fun_ctrl_reg |= ASPEED_I2CD_BUS_AUTO_RECOVERY_EN;
++
+ 	ret = aspeed_i2c_init_clk(bus);
+ 	if (ret < 0)
+ 		return ret;
+-- 
+2.39.2
+

@@ -1,7 +1,7 @@
 From 05203d25fb968506aaea9d6893943e0687848294 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Nov 2021 13:59:33 +0800
-Subject: [PATCH 101/107] pwm: Add Aspeed ast2600 PWM support
+Subject: [PATCH 101/126] pwm: Add Aspeed ast2600 PWM support
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

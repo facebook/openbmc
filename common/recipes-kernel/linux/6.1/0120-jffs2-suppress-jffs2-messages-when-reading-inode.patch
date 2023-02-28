@@ -1,0 +1,88 @@
+From f086c27fd77e85deb726a3872d2ed61aa1375b4a Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Thu, 26 Sep 2019 16:03:16 -0700
+Subject: [PATCH 120/126] jffs2: suppress jffs2 messages when reading inode
+
+Summary:
+
+Instead of dumping node-header-crc-error/magic-bitmask-error logs per
+node, we suppress such messages and print a summary for each inode. By
+doing this, thousands lines of "annoying" jffs2 logs can be shorten to
+just a few lines of summary message.
+
+Test Plan:
+
+1) booted up linux 5.15 on CMM and wedge successfully.
+
+Reviewers: tfang, amithash, benwei, mikechoi, #openbmc
+
+Reviewed By: mikechoi
+
+Subscribers: jhshi
+
+Differential Revision: https://phabricator.intern.facebook.com/D17669544
+
+@fb-note-start
+The patch is created mainly because we've seen some BMC instances falling
+into reboot loop because thousands lines of jffs2 messages slow down
+bootup process which triggers watchdog timeout.
+The patch is recommended for all BMC platforms depending on jffs2.
+@fb-note-end
+---
+ fs/jffs2/readinode.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/fs/jffs2/readinode.c b/fs/jffs2/readinode.c
+index 03b4f99614be..4766072f2e34 100644
+--- a/fs/jffs2/readinode.c
++++ b/fs/jffs2/readinode.c
+@@ -986,6 +986,9 @@ static int jffs2_get_inode_nodes(struct jffs2_sb_info *c, struct jffs2_inode_inf
+ 	union jffs2_node_union *node;
+ 	size_t retlen;
+ 	int len, err;
++	unsigned long node_total = 0;
++	unsigned long node_crc_error = 0;
++	unsigned long node_magic_error = 0;
+ 
+ 	rii->mctime_ver = 0;
+ 
+@@ -1055,22 +1058,18 @@ static int jffs2_get_inode_nodes(struct jffs2_sb_info *c, struct jffs2_inode_inf
+ 		}
+ 
+ 		node = (union jffs2_node_union *)buf;
++		node_total++;
+ 
+ 		/* No need to mask in the valid bit; it shouldn't be invalid */
+ 		if (je32_to_cpu(node->u.hdr_crc) != crc32(0, node, sizeof(node->u)-4)) {
+-			JFFS2_NOTICE("Node header CRC failed at %#08x. {%04x,%04x,%08x,%08x}\n",
+-				     ref_offset(ref), je16_to_cpu(node->u.magic),
+-				     je16_to_cpu(node->u.nodetype),
+-				     je32_to_cpu(node->u.totlen),
+-				     je32_to_cpu(node->u.hdr_crc));
++			node_crc_error++;
+ 			jffs2_dbg_dump_node(c, ref_offset(ref));
+ 			jffs2_mark_node_obsolete(c, ref);
+ 			goto cont;
+ 		}
+ 		if (je16_to_cpu(node->u.magic) != JFFS2_MAGIC_BITMASK) {
+ 			/* Not a JFFS2 node, whinge and move on */
+-			JFFS2_NOTICE("Wrong magic bitmask 0x%04x in node header at %#08x.\n",
+-				     je16_to_cpu(node->u.magic), ref_offset(ref));
++			node_magic_error++;
+ 			jffs2_mark_node_obsolete(c, ref);
+ 			goto cont;
+ 		}
+@@ -1129,6 +1128,10 @@ static int jffs2_get_inode_nodes(struct jffs2_sb_info *c, struct jffs2_inode_inf
+ 
+ 	f->highest_version = rii->highest_version;
+ 
++	if (node_crc_error != 0 || node_magic_error != 0)
++		JFFS2_NOTICE("inode #%u: total %lu nodes, crc_error %lu, magic_error %lu\n",
++			     f->inocache->ino, node_total, node_crc_error, node_magic_error);
++
+ 	dbg_readinode("nodes of inode #%u were read, the highest version is %u, latest_mctime %u, mctime_ver %u.\n",
+ 		      f->inocache->ino, rii->highest_version, rii->latest_mctime,
+ 		      rii->mctime_ver);
+-- 
+2.39.2
+

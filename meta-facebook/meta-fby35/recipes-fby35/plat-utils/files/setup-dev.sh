@@ -25,6 +25,7 @@ LTC4282_ADDR="44"
 ADM1272_ADDR="1f"
 LTC4287_ADDR="11"
 LTC4282_CONTROL_REG="00"
+LTC4287_CONTROL_REG="47"
 
 function init_class1_dev() {
   #create the device of the inlet/outlet temp.
@@ -52,6 +53,9 @@ function init_class1_dev() {
     medusa_addr=0x"$ADM1272_ADDR"
     load_driver=true
   else
+    curr_val="$(/usr/sbin/i2cget -y 11 0x"$LTC4287_ADDR" 0x"$LTC4287_CONTROL_REG")"
+    set_oc_auto_retry=$((curr_val | (0x07 << 3)))
+    /usr/sbin/i2cset -y 11 0x"$LTC4287_ADDR" 0x"$LTC4287_CONTROL_REG" "$(printf '0x%x' $set_oc_auto_retry)"
     chip="ltc4287"
     medusa_addr=0x"$LTC4287_ADDR"
     load_driver=true

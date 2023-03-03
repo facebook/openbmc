@@ -11,14 +11,14 @@ This document tracks the features planned for platform <PLATFORM>
 
 ## Infrastructure
 - [ ] P0 **U-boot Porting** Port platform specific u-boot changes
-- [ ] P0 **5.x Kernel Porting** Port platform specific Kernel changes
-- [ ] P0 **I2C Driver porting** Port latest i2cdriver to 5.0
+- [ ] P0 **6.x Kernel Porting** Port platform specific Kernel changes
+- [ ] P0 **I2C Driver porting** Port latest i2cdriver to latest kernel version
 - [ ] P0 **GPIO driver porting** Port GPIO configuration to ensure we are using gpiocli
-- [ ] P0 **PWM/Tach driver porting** Port to use the new 5.0 kernel interface of PWM/Tach
-- [ ] P0 **ADC Driver porting** Port latest ADC settings on the new 5.0 kernel interface
-- [ ] P0 **NCSI driver potting** Port NCSI driver to 5.0. Port NCSID to new driver interface
-- [ ] P0 **EMMC Driver verification** Test emmc driver
-- [ ] P0 **LPC Driver verification** Test LPC/KCS Driver and port kcsd to new driver
+- [ ] P0 **PWM/Tach driver porting** Port to use the latest kernel interface of PWM/Tach
+- [ ] P0 **ADC Driver porting** Port latest ADC settings on the latest kernel interface
+- [ ] P0 **NCSI driver potting** Port NCSI driver to the latest kernel. Port NCSID to new driver interface
+- [ ] P0 **EMMC Driver verification** Test emmc driver on the latest kernel
+- [ ] P0 **LPC Driver verification** Test LPC/KCS Driver and port kcsd to new driver on the latest kernel
 - [ ] P0 **IPMB support** Port ipmbd to new driver
 - [ ] P0 **PECI support** Port PECI driver to latest kernel.
 

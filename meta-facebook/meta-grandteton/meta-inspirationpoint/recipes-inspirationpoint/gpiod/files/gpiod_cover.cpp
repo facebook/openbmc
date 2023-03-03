@@ -135,6 +135,7 @@ static struct gpiopoll_config gpios_list[] = {
   {FM_PVDDCR_CPU1_P1_OCP,       "SGPIO128",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
   {PVDD11_S3_P0_PMALERT,        "SGPIO182",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},
   {PVDD11_S3_P1_PMALERT,        "SGPIO184",  GPIO_EDGE_BOTH,   gpio_event_handler,        NULL},    
+  {HMC_READY,               "HMC_READY", GPIO_EDGE_BOTH, hmc_ready_handler,          hmc_ready_init},
 };
 
 const uint8_t gpios_cnt = sizeof(gpios_list)/sizeof(gpios_list[0]);

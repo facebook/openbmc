@@ -42,6 +42,10 @@ void cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t c
 void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 void cpu_error_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 
+// HMC Ready event
+void hmc_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
+void hmc_ready_init(gpiopoll_pin_t *desc, gpio_value_t value);
+
 //HSC EVENT
 void sml1_pmbus_alert_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 void oc_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);

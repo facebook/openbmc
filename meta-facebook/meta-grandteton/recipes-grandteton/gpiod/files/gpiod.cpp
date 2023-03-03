@@ -34,6 +34,7 @@
 #include <openbmc/pal_def.h>
 #include <openbmc/pal_common.h>
 #include <libpldm-oem/pldm.h>
+#include <openbmc/hgx.h>
 #include "gpiod.h"
 
 
@@ -706,4 +707,28 @@ bic_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
     return;
   if (curr == GPIO_VALUE_LOW)
     set_pldm_event_receiver();
+}
+
+static void hmc_ready() {
+  syslog(LOG_INFO, "HGX: Syncing time to HMC");
+  hgx::syncTime();
+}
+
+void
+hmc_ready_init(gpiopoll_pin_t *desc, gpio_value_t value)
+{
+  if (value == GPIO_VALUE_HIGH) {
+    hmc_ready();
+  }
+}
+
+void
+hmc_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  syslog(LOG_CRIT, "FRU: %d %s: HMC_READY - GPU_BASE_HMC_READY_ISO_R",
+      FRU_HGX,
+      curr == GPIO_VALUE_HIGH ? "ASSERT" : "DEASSERT");
+  if (curr == GPIO_VALUE_HIGH) {
+    hmc_ready();
+  }
 }

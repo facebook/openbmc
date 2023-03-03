@@ -47,6 +47,7 @@ DEPENDS += " \
     libobmc-i2c \
     libpeci-sensors \
     libpldm-oem \
+    libhgx \
 "
 
 do_install:append() {

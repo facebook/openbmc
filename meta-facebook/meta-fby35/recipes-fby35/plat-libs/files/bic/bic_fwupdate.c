@@ -841,6 +841,8 @@ get_component_name(uint8_t comp) {
       return "4OU BIC";
     case FW_4OU_BIC_RCVY:
       return "4OU BIC_Recovery";
+    case FW_VPDB_VR:
+      return "VPDB VR";
     default:
       return "Unknown";
   }

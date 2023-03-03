@@ -267,7 +267,14 @@ struct vr_info fby35_vr_list[] = {
     .private_data = fru_exp_name,
     .xfer = &rbf_vr_rdwr,
     .sensor_polling_ctrl = exp_1ou_vr_polling_ctrl,
-  }
+  },
+  {
+    .bus = VPDB_VR_BUS,
+    .addr = VPDB_VR_ADDR,
+    .dev_name = "VPDB_VR",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+  },
 };
 
 void plat_vr_preinit(uint8_t slot, const char *name) {
@@ -381,25 +388,27 @@ int plat_vr_init(void) {
   uint8_t type_1ou = TYPE_1OU_UNKNOWN;
   int server_type = SERVER_TYPE_NONE;
 
-  server_type = fby35_common_get_slot_type(slot_id);
-  if (server_type < 0) {
-    syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, slot_id, server_type);
-  }
+  if (slot_id != FRU_BMC) {
+    server_type = fby35_common_get_slot_type(slot_id);
+    if (server_type < 0) {
+      syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, slot_id, server_type);
+    }
 
-  if (server_type == SERVER_TYPE_HD) {
-    halfdome_vr_device_check();
-  } else if (server_type == SERVER_TYPE_GL) {
-    greatlakes_vr_device_check();
-  } else {
-    fby35_vr_device_check();
-  }
+    if (server_type == SERVER_TYPE_HD) {
+      halfdome_vr_device_check();
+    } else if (server_type == SERVER_TYPE_GL) {
+      greatlakes_vr_device_check();
+    } else {
+      fby35_vr_device_check();
+    }
 
-  config_status = bic_is_exp_prsnt(slot_id);
-  if (config_status < 0) config_status = 0;
-  if (((config_status & PRESENT_1OU) == PRESENT_1OU) &&
-    (bic_get_1ou_type(slot_id, &type_1ou) == 0)) {
-    if (type_1ou == TYPE_1OU_RAINBOW_FALLS) {
-      rbf_vr_device_check();
+    config_status = bic_is_exp_prsnt(slot_id);
+    if (config_status < 0) config_status = 0;
+    if (((config_status & PRESENT_1OU) == PRESENT_1OU) &&
+      (bic_get_1ou_type(slot_id, &type_1ou) == 0)) {
+      if (type_1ou == TYPE_1OU_RAINBOW_FALLS) {
+        rbf_vr_device_check();
+      }
     }
   }
 

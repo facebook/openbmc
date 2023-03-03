@@ -11,6 +11,7 @@ srcs += [
     'nic_ext.cpp',
     'platform.cpp',
     'usbdbg.cpp',
+    'vpdb_vr.cpp',
 ]
 
 deps += [

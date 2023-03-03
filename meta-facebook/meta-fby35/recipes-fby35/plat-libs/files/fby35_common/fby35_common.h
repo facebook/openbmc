@@ -70,6 +70,8 @@ extern "C" {
 #define NIC_FRU_ADDR 0x50
 #define DPV2_FRU_ADDR 0x51
 #define PROT_FRU_ADDR 0x50
+#define VPDB_VR_BUS 11
+#define VPDB_VR_ADDR 0xb4
 #define I2C_PATH "/sys/class/i2c-dev/i2c-%d/device/new_device"
 #define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
 #define MAX_FRU_PATH_LEN 128
@@ -453,6 +455,7 @@ enum {
   FW_VR_VCCIN_EHV,     //55
   FW_VR_VCCD_HV,
   FW_VR_VCCINF,
+  FW_VPDB_VR,
   // last id
   FW_COMPONENT_LAST_ID,
 };

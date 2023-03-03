@@ -9,10 +9,15 @@
 #include "bic_me.h"
 #include "bic_bios.h"
 #include "bic_vr.h"
+#include "vpdb_vr.h"
 #include "bic_cxl.h"
 #include "usbdbg.h"
 #include "mp5990.h"
 #include "bic_prot.hpp"
+#include <openbmc/obmc-i2c.h>
+#include <openbmc/kv.hpp>
+
+#define RNS_PDB_ADDR 0xB4
 
 NicExtComponent nic_fw("nic", "nic", "nic_fw_ver", FRU_NIC, 0x00);
 
@@ -27,6 +32,7 @@ class ClassConfig {
       uint8_t bmc_location = 0, prsnt;
       uint8_t hsc_type = HSC_UNKNOWN;
       uint8_t card_type = TYPE_1OU_UNKNOWN;
+      uint8_t pdb_bus = 11;
 
       int config_status;
 
@@ -56,6 +62,10 @@ class ClassConfig {
           if (hsc_type == HSC_MP5990) {
             static MP5990Component hsc_bb("bmc", "hsc", FRU_BMC, 11, 0x40);
           }
+        }
+
+        if (is_48v_medusa() && (i2c_detect_device(pdb_bus, RNS_PDB_ADDR >> 1) == 0)) {
+          static VpdbVrComponent vpdb_vr("bmc", "vpdb_vr", FW_VPDB_VR);
         }
 
         //slot1 1ou bic
@@ -270,6 +280,19 @@ class ClassConfig {
       }
     }
     return false;
+  }
+
+  static bool is_48v_medusa() {
+    try {
+      auto value = kv::get("bb_hsc_conf", kv::region::persist);
+      if (value == "ltc4282") {
+        return false;
+      }
+    } catch (const kv::key_does_not_exist&) {
+      syslog(LOG_WARNING, "%s() Cannot get the key bb_hsc_conf", __func__);
+    }
+
+    return true;
   }
 };
 

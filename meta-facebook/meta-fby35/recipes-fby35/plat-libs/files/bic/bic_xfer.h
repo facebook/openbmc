@@ -94,7 +94,6 @@ typedef enum {
 
 void msleep(int msec);
 int i2c_open(uint8_t bus_id, uint8_t addr_7bit);
-int i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount);
 int is_bic_ready(uint8_t slot_id, uint8_t intf);
 int bic_data_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen, uint8_t intf);
 int bic_data_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen);

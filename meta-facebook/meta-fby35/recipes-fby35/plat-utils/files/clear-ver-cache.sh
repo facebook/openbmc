@@ -39,3 +39,5 @@ if [ "$(is_bmc_por)" -eq 1 ]; then
     clear_vr_cache $i
   done
 fi
+
+/usr/bin/kv del bmc_vr_*_crc persistent

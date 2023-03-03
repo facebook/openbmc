@@ -104,7 +104,7 @@ std::string toISO8061ExtendedStr(std::chrono::duration<IntType, Period> t)
     out += padZeros(subsec.count(), 6);
   }
 
-  out += "-08:00"; // PST
+  out += "-00:00";
   return out;
 }
 

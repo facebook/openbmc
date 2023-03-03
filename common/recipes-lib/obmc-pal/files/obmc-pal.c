@@ -739,8 +739,8 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       break;
 
     case UNIFIED_BOOT_GUARD:
-      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: Boot Guard ACM Failure Events(0x%02X), Error Class(0x%02X), Error Code(0x%02X)",
-              general_info, sel[8], sel[9]);
+      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: Boot Guard ACM Failure Events(0x%02X), Error Class(0x%02X), Major Error Code(0x%02X), Minor Error Code(0x%02X)",
+              general_info, sel[12], sel[13], sel[14]);
       break;
 
     case UNIFIED_PPR_EVENT:

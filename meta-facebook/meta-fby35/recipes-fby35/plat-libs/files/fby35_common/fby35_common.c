@@ -249,14 +249,14 @@ fby35_read_device_status(uint8_t fru) {
 
   int fd = open(path, O_RDONLY);
   if( fd < 0 ) {
-    syslog(LOG_CRIT, "%s() Failed to open device status. path = %s ", __func__, path);
+    syslog(LOG_WARNING, "%s() Failed to open device status. path = %s ", __func__, path);
     return -1;
   }
 
   int ret = read(fd, buf, MAX_KEY_LEN);
   if(ret < 0) {
     close(fd);
-    syslog(LOG_CRIT, "%s() Failed to read device status", __func__);
+    syslog(LOG_WARNING, "%s() Failed to read device status", __func__);
     return -1;
   }
 
@@ -266,7 +266,7 @@ fby35_read_device_status(uint8_t fru) {
   if (device_status != 0) {
     return -1;
   }
-  
+
   return 0;
 }
 #endif

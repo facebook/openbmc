@@ -585,28 +585,56 @@ ioex_table_polling_once(struct gpiopoll_ioex_config *ioex_gpios,
   }
 }
 
+static
+void iox_log_gpio_change(uint8_t fru,
+                     char* desc,
+                     useconds_t log_delay,
+                     const char* str) {
+
+  struct delayed_log *log = (struct delayed_log *)malloc(sizeof(struct delayed_log));
+  pthread_t tid_delay_log;
+
+  memset(log->msg, 0, sizeof(log->msg));
+  snprintf(log->msg, sizeof(log->msg), "FRU: %d , %s %s", fru, str, desc);
+
+  if (log_delay == 0) {
+    syslog(LOG_CRIT, "%s", log->msg);
+  } else {
+    log->usec = log_delay;
+    if (pthread_create(&tid_delay_log, NULL, delay_log, (void *)log)) {
+      free(log);
+      log = NULL;
+    }
+  }
+}
+
+
 static void
 present_init (char* desc, gpio_value_t value) {
-  if (value == GPIO_VALUE_HIGH)
-    syslog(LOG_CRIT, "FRU: %d , %s not present.", FRU_MB, desc);
+  if (value == GPIO_VALUE_HIGH) {
+    const char* str = "not present";
+    iox_log_gpio_change(FRU_MB, desc, 0, str);
+  }
 }
 
 static void
 present_handle (char* desc, gpio_value_t value) {
-  syslog(LOG_CRIT, "FRU: %d , %s %s.", FRU_MB, desc,
-          (value == GPIO_VALUE_HIGH) ? "not present": "present");
+  const char* str = value? "not present": "present";
+  iox_log_gpio_change(FRU_MB, desc, 0, str);
 }
 
 static void
 enable_init (char* desc, gpio_value_t value) {
-  if (value == GPIO_VALUE_LOW)
-    syslog(LOG_CRIT, "FRU: %d , %s disable.", FRU_MB, desc);
+  if (value == GPIO_VALUE_LOW) {
+    const char* str = "disable";
+    iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str);
+  }
 }
 
 static void
 enable_handle (char* desc, gpio_value_t value) {
-  syslog(LOG_CRIT, "FRU: %d , %s %s.", FRU_MB, desc,
-          (value == GPIO_VALUE_HIGH) ? "enable": "disable");
+  const char* str = value? "enable": "disable";
+  iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str);
 }
 
 struct gpiopoll_ioex_config iox_gpios[] = {

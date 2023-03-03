@@ -26,8 +26,6 @@ ADM1272_ADDR="1f"
 LTC4287_ADDR="11"
 LTC4282_CONTROL_REG="00"
 
-NCSI_CMD_GET_CAPABILITY="0x16"
-
 function init_class1_dev() {
   #create the device of the inlet/outlet temp.
   i2c_device_add 12 0x4e lm75
@@ -107,13 +105,6 @@ function init_exp_dev() {
   done
 }
 
-function init_nic_multi_channel() {
-  channel_num="$(/usr/bin/ncsi-util "$NCSI_CMD_GET_CAPABILITY" 2> /dev/null | sed -n "15p" | tr -cd "0-9")"
-  if [ "$channel_num" -gt "1" ]; then
-    /usr/bin/ncsi-util -t "$channel_num"
-  fi
-}
-
 echo "Setup devs for fby35..."
 
 #create the device of mezz card
@@ -130,8 +121,6 @@ elif [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
 else
   echo -n "Is board id correct(id=$bmc_location)?..."
 fi
-
-init_nic_multi_channel
 
 init_exp_dev
 

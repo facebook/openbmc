@@ -128,7 +128,7 @@ static int get_jcn_config_string(uint8_t status, char *type_str) {
     ret = -1;
     break;
   }
-  
+
   return ret;
 }
 
@@ -681,7 +681,6 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   char sensor_name[32];
   char thresh_name[10];
   uint8_t fan_id;
-  uint8_t cpu_id;
 
   switch (thresh) {
     case UNR_THRESH:
@@ -707,82 +706,19 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
       exit(-1);
   }
 
-  switch(snr_num) {
-    case MB_SNR_CPU0_TEMP:
-    case MB_SNR_CPU1_TEMP:
-      cpu_id = snr_num - MB_SNR_CPU0_TEMP;
-      sprintf(cmd, "P%d Temp %s %3.0fC - Assert",cpu_id, thresh_name, val);
-      break;
-    case SCM_SNR_P12V:
-    case SCM_SNR_P5V:
-    case SCM_SNR_P3V3:
-    case SCM_SNR_P2V5:
-    case SCM_SNR_P1V8:
-    case SCM_SNR_PGPPA:
-    case SCM_SNR_P1V2:
-    case SCM_SNR_P1V0:
-    case MB_SNR_ADC128_P12V_AUX:
-    case NB_SNR_ADC128_P5V:
-    case MB_SNR_ADC128_P3V3:
-    case MB_SNR_ADC128_P3V3_AUX:
-    case MB_SNR_E1S_P12V_IOUT:
-    case MB_SNR_P3V_BAT:
-    case MB_SNR_HSC_VIN:
-    case MB_SNR_VR_CPU0_VCCIN_VOLT:
-    case MB_SNR_VR_CPU0_VCCFA_FIVRA_VOLT:
-    case MB_SNR_VR_CPU0_VCCIN_FAON_VOLT:
-    case MB_SNR_VR_CPU0_VCCFA_VOLT:
-    case MB_SNR_VR_CPU0_VCCD_HV_VOLT:
-    case MB_SNR_VR_CPU1_VCCIN_VOLT:
-    case MB_SNR_VR_CPU1_VCCFA_FIVRA_VOLT:
-    case MB_SNR_VR_CPU1_VCCIN_FAON_VOLT:
-    case MB_SNR_VR_CPU1_VCCFA_VOLT:
-    case MB_SNR_VR_CPU1_VCCD_HV_VOLT:
+  if (sensor_map[fru].map[snr_num].units == VOLT) {
       pal_get_sensor_name(fru, snr_num, sensor_name);
       sprintf(cmd, "%s %s %.2fVolts - Assert", sensor_name, thresh_name, val);
-      break;
-    case FAN_BP1_SNR_FAN0_INLET_SPEED:
-    case FAN_BP1_SNR_FAN1_INLET_SPEED:
-    case FAN_BP2_SNR_FAN2_INLET_SPEED:
-    case FAN_BP2_SNR_FAN3_INLET_SPEED:
-    case FAN_BP1_SNR_FAN4_INLET_SPEED:
-    case FAN_BP1_SNR_FAN5_INLET_SPEED:
-    case FAN_BP2_SNR_FAN6_INLET_SPEED:
-    case FAN_BP2_SNR_FAN7_INLET_SPEED:
-    case FAN_BP1_SNR_FAN8_INLET_SPEED:
-    case FAN_BP1_SNR_FAN9_INLET_SPEED:
-    case FAN_BP2_SNR_FAN10_INLET_SPEED:
-    case FAN_BP2_SNR_FAN11_INLET_SPEED:
-    case FAN_BP1_SNR_FAN12_INLET_SPEED:
-    case FAN_BP1_SNR_FAN13_INLET_SPEED:
-    case FAN_BP2_SNR_FAN14_INLET_SPEED:
-    case FAN_BP2_SNR_FAN15_INLET_SPEED:
-      fan_id = snr_num-FAN_SNR_START_INDEX;
+  } else if (sensor_map[fru].map[snr_num].units == FAN){
+      fan_id = sensor_map[fru].map[snr_num].id;
       sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
       fan_state_led_ctrl(fru, snr_num, true);
-
-      break;
-    case FAN_BP1_SNR_FAN0_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN1_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN2_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN3_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN4_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN5_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN6_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN7_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN8_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN9_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN10_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN11_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN12_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN13_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN14_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN15_OUTLET_SPEED:
-      fan_id = snr_num-FAN_SNR_START_INDEX;
-      sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
-      break;
-    default:
-      return;
+  } else if (sensor_map[fru].map[snr_num].units == POWER) {
+      pal_get_sensor_name(fru, snr_num, sensor_name);
+      sprintf(cmd, "%s %s %dW - Assert", sensor_name, thresh_name, (int)val);
+  } else if (sensor_map[fru].map[snr_num].units == TEMP) {
+      pal_get_sensor_name(fru, snr_num, sensor_name);
+      sprintf(cmd, "%s %s %.2fC - Assert", sensor_name, thresh_name, val);
   }
   pal_add_cri_sel(cmd);
 }
@@ -793,7 +729,6 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   char sensor_name[32];
   char thresh_name[10];
   uint8_t fan_id;
-  uint8_t cpu_id;
 
   switch (thresh) {
     case UNR_THRESH:
@@ -819,81 +754,20 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
       exit(-1);
   }
 
-  switch(snr_num) {
-    case MB_SNR_CPU0_TEMP:
-    case MB_SNR_CPU1_TEMP:
-      cpu_id = snr_num - MB_SNR_CPU0_TEMP;
-      sprintf(cmd, "P%d Temp %s %3.0fC - Deassert",cpu_id, thresh_name, val);
-      break;
-    case SCM_SNR_P12V:
-    case SCM_SNR_P5V:
-    case SCM_SNR_P3V3:
-    case SCM_SNR_P2V5:
-    case SCM_SNR_P1V8:
-    case SCM_SNR_PGPPA:
-    case SCM_SNR_P1V2:
-    case SCM_SNR_P1V0:
-    case MB_SNR_P3V_BAT:
-    case MB_SNR_ADC128_P12V_AUX:
-    case NB_SNR_ADC128_P5V:
-    case MB_SNR_ADC128_P3V3:
-    case MB_SNR_ADC128_P3V3_AUX:
-    case MB_SNR_E1S_P12V_IOUT:
-    case MB_SNR_HSC_VIN:
-    case MB_SNR_VR_CPU0_VCCIN_VOLT:
-    case MB_SNR_VR_CPU0_VCCFA_FIVRA_VOLT:
-    case MB_SNR_VR_CPU0_VCCIN_FAON_VOLT:
-    case MB_SNR_VR_CPU0_VCCFA_VOLT:
-    case MB_SNR_VR_CPU0_VCCD_HV_VOLT:
-    case MB_SNR_VR_CPU1_VCCIN_VOLT:
-    case MB_SNR_VR_CPU1_VCCFA_FIVRA_VOLT:
-    case MB_SNR_VR_CPU1_VCCIN_FAON_VOLT:
-    case MB_SNR_VR_CPU1_VCCFA_VOLT:
-    case MB_SNR_VR_CPU1_VCCD_HV_VOLT:
+
+  if (sensor_map[fru].map[snr_num].units == VOLT) {
       pal_get_sensor_name(fru, snr_num, sensor_name);
       sprintf(cmd, "%s %s %.2fVolts - Deassert", sensor_name, thresh_name, val);
-      break;
-    case FAN_BP1_SNR_FAN0_INLET_SPEED:
-    case FAN_BP1_SNR_FAN1_INLET_SPEED:
-    case FAN_BP2_SNR_FAN2_INLET_SPEED:
-    case FAN_BP2_SNR_FAN3_INLET_SPEED:
-    case FAN_BP1_SNR_FAN4_INLET_SPEED:
-    case FAN_BP1_SNR_FAN5_INLET_SPEED:
-    case FAN_BP2_SNR_FAN6_INLET_SPEED:
-    case FAN_BP2_SNR_FAN7_INLET_SPEED:
-    case FAN_BP1_SNR_FAN8_INLET_SPEED:
-    case FAN_BP1_SNR_FAN9_INLET_SPEED:
-    case FAN_BP2_SNR_FAN10_INLET_SPEED:
-    case FAN_BP2_SNR_FAN11_INLET_SPEED:
-    case FAN_BP1_SNR_FAN12_INLET_SPEED:
-    case FAN_BP1_SNR_FAN13_INLET_SPEED:
-    case FAN_BP2_SNR_FAN14_INLET_SPEED:
-    case FAN_BP2_SNR_FAN15_INLET_SPEED:
-      fan_id= snr_num-FAN_SNR_START_INDEX;
+  } else if (sensor_map[fru].map[snr_num].units == FAN){
+      fan_id = sensor_map[fru].map[snr_num].id;
       sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
-      fan_state_led_ctrl(fru, snr_num, false);
-      break;
-    case FAN_BP1_SNR_FAN0_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN1_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN2_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN3_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN4_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN5_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN6_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN7_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN8_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN9_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN10_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN11_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN12_OUTLET_SPEED:
-    case FAN_BP1_SNR_FAN13_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN14_OUTLET_SPEED:
-    case FAN_BP2_SNR_FAN15_OUTLET_SPEED:
-      fan_id = snr_num-FAN_SNR_START_INDEX;
-      sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
-      break;
-    default:
-      return;
+      fan_state_led_ctrl(fru, snr_num, true);
+  } else if (sensor_map[fru].map[snr_num].units == POWER) {
+      pal_get_sensor_name(fru, snr_num, sensor_name);
+      sprintf(cmd, "%s %s %dW - Deassert", sensor_name, thresh_name, (int)val);
+  } else if (sensor_map[fru].map[snr_num].units == TEMP) {
+      pal_get_sensor_name(fru, snr_num, sensor_name);
+      sprintf(cmd, "%s %s %.2fC - Deassert", sensor_name, thresh_name, val);
   }
   pal_add_cri_sel(cmd);
 

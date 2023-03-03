@@ -41,7 +41,6 @@ load_tps_remaining_wr(uint8_t addr, uint16_t *remain, char *checksum, uint16_t *
   if (tps_remaining_wr(addr, remain, GET_VR_CRC) < 0) {
     snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X, Remaining Writes: Unknown", *crc);
   } else {
-    printf("[Debug] TPS remain =%u\n", *remain);
     if (*remain == UNINITIALIZED_REMAIN_WR) {
       *remain = MAX_TI_VR_REMAIN_WR;
       tps_remaining_wr(addr, remain, UPDATE_VR_CRC);

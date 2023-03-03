@@ -168,7 +168,8 @@ gpio_set TEST_SGPIO_EVENT_LOG 0
 sgpio_export IRQ_BMC_PCH_NMI_N 27
 gpio_set IRQ_BMC_PCH_NMI_N 1
 
-#sgpio_export FM_RISER1_JTAG_SEL_R_N 29
+sgpio_export BMC_FORCE_NM_THROTTLE_N 29
+gpio_set BMC_FORCE_NM_THROTTLE_N 1
 
 #sgpio_export FM_RISER2_JTAG_SEL_R_N 31
 

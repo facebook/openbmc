@@ -100,3 +100,31 @@ paths:
                       type: string
                   Secondary Boot Triggered:
                     type: boolean
+                  mmc-info:
+                    type: object
+                    additionalProperties: false
+                    # XXX ideally this should be an `additionalProperties` object or `patternProperties
+                    # to express any key (and not just "/dev/mmcblk0"), but flex (our validator) doesn't
+                    # seem to support either. As of H2 2021, it's unlikely BMCs will have more than one
+                    # mmc device, so it should be good for now
+                    # https://swagger.io/docs/specification/data-models/dictionaries/
+                    # https://json-schema.org/understanding-json-schema/reference/object.html#pattern-properties
+                    properties:
+                      "/dev/mmcblk0":
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          CID_MID:
+                            type: integer
+                          CID_PNM:
+                            type: string
+                          CID_PRV_MAJOR:
+                            type: integer
+                          CID_PRV_MINOR:
+                            type: integer
+                          EXT_CSD_PRE_EOL_INFO:
+                            type: integer
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A:
+                            type: integer
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B:
+                            type: integer

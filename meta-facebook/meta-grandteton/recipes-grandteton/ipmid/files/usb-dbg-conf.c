@@ -361,11 +361,14 @@ static dbg_gpio_desc_t gdesc[] = {
   { 0x17, 0, 3, "FM_UART_SWITCH" },
 };
 
+static sensor_desc_t hsc_cri_sensor[] = {
+    {"HSC_PWR:",  MB_SNR_HSC_PIN, "W", FRU_MB, 1},
+    {"HSC_VOL:",  MB_SNR_HSC_VIN, "V", FRU_MB, 2},
+};
+
 static sensor_desc_t cri_sensor[] = {
     {"P0_TEMP:", MB_SNR_CPU0_TEMP, "C", FRU_MB, 0},
     {"P1_TEMP:", MB_SNR_CPU1_TEMP, "C", FRU_MB, 0},
-    {"HSC_PWR:",  MB_SNR_HSC_PIN, "W", FRU_MB, 1},
-    {"HSC_VOL:",  MB_SNR_HSC_VIN, "V", FRU_MB, 2},
     {"FAN0_INLET_SP:",   FAN_BP1_SNR_FAN0_INLET_SPEED,   "RPM", FRU_FAN_BP1, 0},
     {"FAN0_OUTLET_SP:",  FAN_BP1_SNR_FAN0_OUTLET_SPEED,  "RPM", FRU_FAN_BP1, 0},
     {"FAN1_INLET_SP:",   FAN_BP1_SNR_FAN1_INLET_SPEED,   "RPM", FRU_FAN_BP1, 0},
@@ -445,18 +448,25 @@ int plat_get_gdesc(uint8_t fru, dbg_gpio_desc_t **desc, size_t *desc_count)
 
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
-  static sensor_desc_t *cached_desc = NULL;
-  static size_t cached_desc_cnt = 0;
+  static sensor_desc_t sensors[255];
+  bool module = is_mb_hsc_module();
+  uint8_t hsc_cnt = sizeof(hsc_cri_sensor) / sizeof(hsc_cri_sensor[0]);
+  uint8_t cri_cnt = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
 
   if (!desc || !desc_count) {
     return -1;
   }
 
-  cached_desc = cri_sensor;
-  cached_desc_cnt = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+  if(module) {
+    for (int i=0; i<hsc_cnt; i++)
+      hsc_cri_sensor[i].fru= FRU_HSC;
+  }
 
-  *desc = cached_desc;
-  *desc_count = cached_desc_cnt;
+  memcpy(sensors, &cri_sensor, sizeof(cri_sensor));
+  memcpy(&sensors[cri_cnt], &hsc_cri_sensor, sizeof(hsc_cri_sensor));
+
+  *desc = sensors;
+  *desc_count = cri_cnt + hsc_cnt;
 
   return 0;
 }

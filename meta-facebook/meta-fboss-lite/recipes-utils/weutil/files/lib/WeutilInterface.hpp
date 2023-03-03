@@ -47,6 +47,7 @@ enum fieldId {
 };
 
 std::vector<std::string> listEepromDevices();
+std::string eepromFormat(std::string& devName);
 std::optional<std::string> eepromNameToPath(const std::string& devName);
 std::map<fieldId, std::pair<std::string, std::string>> eepromParse(
     const std::string& eepromDeviceName);

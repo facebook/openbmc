@@ -1979,6 +1979,7 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
   }
 
   int i = 0;
+  uint8_t active_slot = 0, status = 0;
   float temp_val = 0;
   for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
     //Only two slots are present on Config B. Skip slot2 and slot4.
@@ -1986,8 +1987,18 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
     // Config D system only has one slot
     if ((config == CONFIG_D) && (i != FRU_SLOT1))
       continue;
-    //If one of slots is failed to read, return READING_NA.
+
+    // Check activated slots.
+    if ((pal_is_fru_prsnt(i, &status) == PAL_EOK) && (status == SLOT_NOT_PRESENT)) {
+      continue;
+    }
+    if ((pal_get_server_12v_power(i, &status) == PAL_EOK) && (status == SERVER_12V_OFF)){
+      continue;
+    }
+
+    //if one of slot is 12V-on but read sensor fail, return READING_NA
     if ( sensor_cache_read(i, target_snr_num, &temp_val) < 0) return READING_NA;
+    active_slot |= 1U << i;
 
     if ( action == GET_MAX_VAL ) {
       if ( temp_val > *val ) *val = temp_val;
@@ -1998,7 +2009,7 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
     }
   }
 
-  return PAL_EOK;
+  return (active_slot > 0) ? PAL_EOK : READING_NA;
 }
 
 static int

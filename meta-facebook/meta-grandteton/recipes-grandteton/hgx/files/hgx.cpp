@@ -215,7 +215,7 @@ TaskStatus getTaskStatus(const std::string& id) {
   status.resp = hgx.get(url);
   json resp = json::parse(status.resp);
   resp.at("TaskState").get_to(status.state);
-  resp.at("TaskStatus").get_to(status.status);
+  status.status = resp.value("TaskStatus", "Unknown");
   for (auto& j : resp.at("Messages")) {
     status.messages.emplace_back(j.at("Message"));
   }
@@ -309,13 +309,15 @@ std::string dumpNonBlocking(DiagnosticDataType type) {
   return resp["Id"];
 }
 
-TaskStatus waitTask(const std::string& taskID) {
+TaskStatus waitTask(const std::string& taskID, bool verbose = true) {
   using namespace std::chrono_literals;
   size_t nextMessage = 0;
   for (int retry = 0; retry < 500; retry++) {
     TaskStatus status = getTaskStatus(taskID);
-    for (; nextMessage < status.messages.size(); nextMessage++) {
-      std::cout << status.messages[nextMessage++] << std::endl;
+    if (verbose) {
+      for (; nextMessage < status.messages.size(); nextMessage++) {
+        std::cout << status.messages[nextMessage++] << std::endl;
+      }
     }
     if (status.state != "Running") {
       return status;
@@ -413,6 +415,32 @@ float sensor(const std::string& component, const std::string& name) {
   float val;
   resp.at("Reading").get_to(val);
   return val;
+}
+
+std::vector<std::string> integrityComponents() {
+  json resp = json::parse(hgx.get(HMC_URL + "ComponentIntegrity"));
+  std::vector<std::string> comps{};
+  for (auto& comp : resp.at("Members")) {
+    std::string url = comp.at("@odata.id");
+    comps.push_back(url.substr(url.find_last_of('/') + 1));
+  }
+  return comps;
+}
+
+std::string getMeasurement(const std::string& comp) {
+  std::string url = HMC_URL + "ComponentIntegrity/" + comp;
+  json respMember = json::parse(hgx.get(url));
+  std::string targetURL = respMember.at("Actions")
+    .at("#ComponentIntegrity.SPDMGetSignedMeasurements")
+    .at("target");
+  json data = json::object();
+  // TODO we can potentially provide parameters
+  // {"SlotID": 0, "MeasurementIndices": [1], "Nonce": "<hash>"}
+  json respTask = json::parse(hgx.post(HMC_BASE_URL + targetURL, data.dump(), false));
+  std::string taskID = respTask.at("Id");
+  TaskStatus status = waitTask(taskID, false);
+  std::string loc = findTaskPayloadLocation(status);
+  return hgx.get(HMC_BASE_URL + loc);
 }
 
 } // namespace hgx.

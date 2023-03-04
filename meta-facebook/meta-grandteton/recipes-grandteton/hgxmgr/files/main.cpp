@@ -101,6 +101,21 @@ static void do_event_log(bool json) {
   hgx::printEventLog(std::cout, json);
 }
 
+static void do_list_attest_components(void) {
+ auto comps = hgx::integrityComponents();
+ for (const auto& comp : comps) {
+   std::cout << comp << std::endl;
+ }
+}
+
+static void do_attestation(const std::string& comp) {
+  auto comps = hgx::integrityComponents();
+  if (std::find(comps.begin(), comps.end(), comp) == comps.end()) {
+    throw std::runtime_error("Unknown component: " + comp);
+  }
+  std::cout << hgx::getMeasurement(comp) << std::endl;
+}
+
 int main(int argc, char* argv[]) {
   CLI::App app("HGX Helper Utility");
   app.failure_message(CLI::FailureMessage::help);
@@ -188,6 +203,14 @@ int main(int argc, char* argv[]) {
 
   auto timeSync = app.add_subcommand("time-sync", "Sync current BMC time with HGX");
   timeSync->callback([&]() { hgx::syncTime(); });
+
+  auto measurement = app.add_subcommand("attest", "Get SPDM measurements");
+  auto listM = measurement->add_subcommand("list", "List components supporting measurements");
+  listM->callback([&]() { do_list_attest_components(); });
+  auto measure = measurement->add_subcommand("get", "Get measurements");
+  measure->add_option("component", args, "Component for which we want the measurements")->required();
+  measure->callback([&]() { do_attestation(args); });
+  measurement->require_subcommand(1, 1);
 
   app.require_subcommand(/* min */ 1, /* max */ 1);
 

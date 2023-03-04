@@ -91,6 +91,12 @@ void printEventLog(std::ostream& os, bool jsonFmt = false);
 // Sync current BMC Time
 void syncTime();
 
+// Get components supporting measurements
+std::vector<std::string> integrityComponents();
+
+// Get component measurement
+std::string getMeasurement(const std::string& comp);
+
 // Request for the value of the sensor, but return all the JSON output
 std::string sensorRaw(const std::string& component, const std::string& name);
 } // namespace hgx

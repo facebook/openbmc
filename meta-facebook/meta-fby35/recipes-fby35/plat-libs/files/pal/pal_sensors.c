@@ -83,6 +83,7 @@ static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_hsc_peak_iout(uint8_t hsc_id, float *value);
 static int read_hsc_peak_pin(uint8_t hsc_id, float *value);
 static int read_medusa_val(uint8_t snr_number, float *value);
+static int read_medusa_adc_val(uint8_t snr_number, float *value);
 static int read_cached_val(uint8_t snr_number, float *value);
 static int read_fan_speed(uint8_t snr_number, float *value);
 static int read_fan_pwm(uint8_t pwm_id, float *value);
@@ -900,6 +901,11 @@ const uint8_t flex_pdb_sensor_list[] = {
   BMC_SENSOR_PDB_FLEX_2_IOUT,
 };
 
+const uint8_t medusa_adc_sensor_list[] = {
+  BMC_SENSOR_MEDUSA_VSENSE_VDELTA_MAX,
+  BMC_SENSOR_MEDUSA_GND_SENSE_VDELTA_MAX,
+};
+
 /*  PAL_ATTR_INFO:
  *  For the PMBus direct format conversion
  *  X = 1/m × (Y × 10^-R − b)
@@ -1177,26 +1183,26 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-//{                      SensorName,      ID,     FUNCTION, PWR_STATUS, {   LNR,    LCR,   LNC,    UNC,    UCR,     UNR,  Pos, Neg}, Unit}
-  {"BB_HSC_PEAK_OUTPUT_CURR_A"     , HSC_ID0, read_hsc_peak_iout,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, CURR}, //0xC8
-  {"BB_HSC_PEAK_INPUT_PWR_W"       , HSC_ID0, read_hsc_peak_pin ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, POWER}, //0xC9
-  {"BB_FAN_PWR_W"                  ,    0xCA, read_cached_val   ,    0, {     0,      0,     0,      0,201.465,  544.88,    0,   0}, POWER}, //0xCA
+//{                      SensorName,      ID,       FUNCTION, PWR_STATUS, {   LNR,    LCR,   LNC,    UNC,    UCR,     UNR,  Pos, Neg}, Unit}
+  {"BB_HSC_PEAK_OUTPUT_CURR_A"     , HSC_ID0, read_hsc_peak_iout ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, CURR}, //0xC8
+  {"BB_HSC_PEAK_INPUT_PWR_W"       , HSC_ID0, read_hsc_peak_pin  ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, POWER}, //0xC9
+  {"BB_FAN_PWR_W"                  ,    0xCA, read_cached_val    ,    0, {     0,      0,     0,      0,201.465,  544.88,    0,   0}, POWER}, //0xCA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
-  {"BB_CPU_CL_VDELTA_VOLT_V"       ,    0xCC, read_pdb_cl_vdelta,    0, {     0,      0,     0,      0,    0.9,       0,    0,   0}, VOLT}, //0xCC
-  {"BB_PMON_CURRENT_LEAKAGE_CURR_A",    0xCD, read_curr_leakage ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, PERCENT}, //0xCD
-  {"BB_CPU_PDB_VDELTA_VOLT_V"      ,    0xCE, read_cached_val   ,    0, {     0,      0,     0,      0,    0.8,       0,    0,   0}, VOLT}, //0xCE
-  {"BB_MEDUSA_VDELTA_VOLT_V"       ,    0xCF, read_medusa_val   ,    0, {     0,      0,     0,      0,    0.5,       0,    0,   0}, VOLT}, //0xCF
-  {"BB_MEDUSA_CURR_A"              ,    0xD0, read_medusa_val   ,    0, {     0,      0,     0,      0,    144,       0,    0,   0}, CURR}, //0xD0
-  {"BB_MEDUSA_PWR_W"               ,    0xD1, read_medusa_val   ,    0, {     0,      0,     0,      0,   1800,       0,    0,   0}, POWER}, //0xD1
-  {"BB_ADC_NIC_P12V_VOLT_V"        ,   ADC12, read_adc_val      ,    0, { 10.17,  10.68,  10.8,   13.2,  13.32,   14.91,    0,   0}, VOLT},//0xD2
-  {"BB_NIC_PWR_W"                  ,    0xD3, read_cached_val   ,    0, {     0,      0,     0,      0,   82.5, 101.875,    0,   0}, POWER},//0xD3
-  {"BB_ADC_P1V0_STBY_VOLT_V"       ,    ADC7, read_adc_val      ,    0, {  0.83,   0.92,  0.93,   1.07,   1.08,    1.13,    0,   0}, VOLT}, //0xD4
-  {"BB_ADC_P0V6_STBY_VOLT_V"       ,    ADC8, read_adc_val      ,    0, {     0,  0.552, 0.558,  0.642,  0.648,       0,    0,   0}, VOLT}, //0xD5
-  {"BB_ADC_P3V3_RGM_STBY_VOLT_V"   ,   ADC13, read_adc_val      ,    0, {     0,  3.036, 3.069,  3.531,  3.564,       0,    0,   0}, VOLT}, //0xD6
-  {"BB_ADC_P5V_USB_VOLT_V"         ,    ADC4, read_adc_val      ,    0, {  4.15,    4.6,  4.65,   5.35,    5.4,    5.65,    0,   0}, VOLT}, //0xD7
-  {"BB_ADC_P3V3_NIC_VOLT_V"        ,   ADC14, read_adc_val      ,    0, {  2.95,   2.97, 3.003,  3.597,  3.630,   3.729,    0,   0}, VOLT}, //0xD8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
+  {"BB_CPU_CL_VDELTA_VOLT_V"       ,    0xCC, read_pdb_cl_vdelta ,    0, {     0,      0,     0,      0,    0.9,       0,    0,   0}, VOLT}, //0xCC
+  {"BB_PMON_CURRENT_LEAKAGE_CURR_A",    0xCD, read_curr_leakage  ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, PERCENT}, //0xCD
+  {"BB_CPU_PDB_VDELTA_VOLT_V"      ,    0xCE, read_cached_val    ,    0, {     0,      0,     0,      0,    0.8,       0,    0,   0}, VOLT}, //0xCE
+  {"BB_MEDUSA_VDELTA_VOLT_V"       ,    0xCF, read_medusa_val    ,    0, {     0,      0,     0,      0,    0.5,       0,    0,   0}, VOLT}, //0xCF
+  {"BB_MEDUSA_CURR_A"              ,    0xD0, read_medusa_val    ,    0, {     0,      0,     0,      0,    144,       0,    0,   0}, CURR}, //0xD0
+  {"BB_MEDUSA_PWR_W"               ,    0xD1, read_medusa_val    ,    0, {     0,      0,     0,      0,   1800,       0,    0,   0}, POWER}, //0xD1
+  {"BB_ADC_NIC_P12V_VOLT_V"        ,   ADC12, read_adc_val       ,    0, { 10.17,  10.68,  10.8,   13.2,  13.32,   14.91,    0,   0}, VOLT},//0xD2
+  {"BB_NIC_PWR_W"                  ,    0xD3, read_cached_val    ,    0, {     0,      0,     0,      0,   82.5, 101.875,    0,   0}, POWER},//0xD3
+  {"BB_ADC_P1V0_STBY_VOLT_V"       ,    ADC7, read_adc_val       ,    0, {  0.83,   0.92,  0.93,   1.07,   1.08,    1.13,    0,   0}, VOLT}, //0xD4
+  {"BB_ADC_P0V6_STBY_VOLT_V"       ,    ADC8, read_adc_val       ,    0, {     0,  0.552, 0.558,  0.642,  0.648,       0,    0,   0}, VOLT}, //0xD5
+  {"BB_ADC_P3V3_RGM_STBY_VOLT_V"   ,   ADC13, read_adc_val       ,    0, {     0,  3.036, 3.069,  3.531,  3.564,       0,    0,   0}, VOLT}, //0xD6
+  {"BB_ADC_P5V_USB_VOLT_V"         ,    ADC4, read_adc_val       ,    0, {  4.15,    4.6,  4.65,   5.35,    5.4,    5.65,    0,   0}, VOLT}, //0xD7
+  {"BB_ADC_P3V3_NIC_VOLT_V"        ,   ADC14, read_adc_val       ,    0, {  2.95,   2.97, 3.003,  3.597,  3.630,   3.729,    0,   0}, VOLT}, //0xD8
+  {"BB_MEDUSA_VSENSE_VDELTA_MAX_V" ,    0xD9, read_medusa_adc_val,    0, {     0,      0,     0,      0,    0.5,       0,    0,   0}, VOLT}, //0xD9
+  {"BB_MEDUSA_GND_SENSE_VDELTA_MAX_V",    0xDA, read_medusa_adc_val,    0, {     0,      0,     0,      0,    0.5,       0,    0,   0}, VOLT}, //0xDA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDD
@@ -1251,6 +1257,12 @@ PAL_CHIP_INFO medusa_hsc_list[] = {
   {"ltc4287", "ltc4287", MEDUSA_HSC_LTC4287_ADDR}
 };
 
+PAL_CHIP_INFO medusa_adc_list[] = {
+  [MEDUSA_ADC_LTC2992] = {"ltc2992", "ltc2992", MEDUSA_ADC_LTC2992_ADDR},
+  [MEDUSA_ADC_INA238_PSU] = {"ina238", "ina238", MEDUSA_ADC_INA238_PSU_ADDR},
+  [MEDUSA_ADC_INA238_GND] = {"ina238", "ina238", MEDUSA_ADC_INA238_GND_ADDR}
+};
+
 PAL_PDB_INFO pdb_info_list[] = {
   [PDB_DELTA_1] = {DELTA_1_PDB_ADDR, delta_pdb_info_list},
   [PDB_DELTA_2] = {DELTA_2_PDB_ADDR, delta_pdb_info_list},
@@ -1277,6 +1289,7 @@ size_t bic_dpv2_x16_sensor_cnt = sizeof(bic_dpv2_x16_sensor_list)/sizeof(uint8_t
 size_t rns_pdb_sensor_cnt = sizeof(rns_pdb_sensor_list)/sizeof(uint8_t);
 size_t delta_pdb_sensor_cnt = sizeof(delta_pdb_sensor_list)/sizeof(uint8_t);
 size_t flex_pdb_sensor_cnt = sizeof(flex_pdb_sensor_list)/sizeof(uint8_t);
+size_t medusa_adc_sensor_cnt = sizeof(medusa_adc_sensor_list)/sizeof(uint8_t);
 size_t bic_op_1ou_sensor_cnt = sizeof(bic_op_1ou_sensor_list)/sizeof(uint8_t);
 size_t bic_op_1ou_skip_sensor_cnt = sizeof(bic_op_1ou_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_op_2ou_sensor_cnt = sizeof(bic_op_2ou_sensor_list)/sizeof(uint8_t);
@@ -1441,6 +1454,18 @@ pal_get_pdb_sensor_list(size_t *current_bmc_cnt) {
 }
 
 int
+pal_get_medusa_adc_sensor_list(char *medusa_adc_type, size_t *current_bmc_cnt) {
+  if (current_bmc_cnt == NULL) {
+    return -1;
+  }
+
+  memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], medusa_adc_sensor_list, medusa_adc_sensor_cnt);
+  *current_bmc_cnt += medusa_adc_sensor_cnt;
+
+  return 0;
+}
+
+int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   int ret = 0, config_status = 0;
   uint8_t bmc_location = 0, type = TYPE_1OU_UNKNOWN;
@@ -1449,6 +1474,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   size_t current_bmc_cnt = 0;
   char key[MAX_KEY_LEN] = {0};
   char hsc_type[MAX_VALUE_LEN] = {0};
+  char medusa_adc_type[MAX_VALUE_LEN] = {0};
   bool is_48v_medusa = false;
   int server_type = SERVER_TYPE_NONE;
   bool is_op_config = false;
@@ -1476,6 +1502,13 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
         ret = pal_get_pdb_sensor_list(&current_bmc_cnt);
         if (ret < 0) {
           syslog(LOG_ERR, "%s() Cannot get the PDB sensor list", __func__);
+        }
+        snprintf(key, sizeof(key), "medusa_adc_chip");
+        if (kv_get(key, medusa_adc_type, NULL, 0) == 0) { // If the key exists, It's new type of 48V medusa
+          ret = pal_get_medusa_adc_sensor_list(medusa_adc_type, &current_bmc_cnt);
+          if (ret < 0) {
+            syslog(LOG_ERR, "%s() Cannot get the PDB sensor list", __func__);
+          }
         }
       }
       *sensor_list = (uint8_t *) bmc_dynamic_sensor_list;
@@ -2284,6 +2317,62 @@ read_cached_val(uint8_t snr_number, float *value) {
   }
 
   return PAL_EOK;
+}
+
+static int
+read_medusa_adc_val(uint8_t snr_number, float *value) {
+  char chip[32] = {0};
+  static char medusa_adc_type[16] = {0};
+  static float max_value = 0;
+  static float gnd_max_value = 0;
+  static bool is_cached = false;
+  int ret = READING_NA;
+  int i = 0;
+
+  if (value == NULL) {
+    return READING_NA;
+  }
+
+  if (!is_cached) {
+    if (kv_get("medusa_adc_chip", medusa_adc_type, NULL, 0) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to read medusa_adc_chip", __func__);
+      return ret;
+    }
+    is_cached = true;
+  }
+
+  for (i = 0; i < sizeof(medusa_adc_list)/sizeof(medusa_adc_list[0]); i++) {
+    if (strncmp(medusa_adc_type, medusa_adc_list[i].chip_name, sizeof(medusa_adc_type)) == 0) {
+      snprintf(chip, sizeof(chip), "%s-i2c-11-%x",
+        medusa_adc_list[i].driver, medusa_adc_list[i].target_addr);
+      break;
+    }
+  }
+
+  switch(snr_number) {
+    case BMC_SENSOR_MEDUSA_VSENSE_VDELTA_MAX:
+      ret = sensors_read(chip, "BB_MEDUSA_VSENSE_VDELTA_MAX", value);
+      if (max_value > abs(*value)) {
+        *value = max_value;
+      } else {
+        max_value = abs(*value);
+      }
+      break;
+    case BMC_SENSOR_MEDUSA_GND_SENSE_VDELTA_MAX:
+      if (strncmp(medusa_adc_type, medusa_adc_list[MEDUSA_ADC_INA238_GND].chip_name, sizeof(medusa_adc_type)) == 0) {
+        snprintf(chip, sizeof(chip), "%s-i2c-11-%x",
+          medusa_adc_list[MEDUSA_ADC_INA238_GND].driver, medusa_adc_list[MEDUSA_ADC_INA238_GND].target_addr);
+      }
+      ret = sensors_read(chip, "BB_MEDUSA_GND_SENSE_VDELTA_MAX", value);
+      if (gnd_max_value > abs(*value)) {
+        *value = gnd_max_value;
+      } else {
+        gnd_max_value = abs(*value);
+      }
+      break;
+  }
+
+  return ret;
 }
 
 static int

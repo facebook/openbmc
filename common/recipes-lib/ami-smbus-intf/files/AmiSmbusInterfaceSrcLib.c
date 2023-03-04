@@ -30,6 +30,11 @@
       printf(fmt, ##args);  \
   } while (0)
 
+#define ERROR(fmt, args...) \
+  do {                      \
+    fprintf(stderr, fmt, ##args);  \
+  } while (0)
+
 static bool debug_enable = false;
 
 void EnableAmiSmbusInterfaceDebug(
@@ -184,7 +189,7 @@ int SendDataPacketThroughLinkLayer(
     } while ((package_retry_count < 5) && ReSendNeeded);
 
     if (ReSendNeeded) {
-      printf("platfire ack keep busy after retry 5 times, please try later \n");
+      ERROR("platfire ack keep busy after retry 5 times, please try later \n");
       return -1;
     }
 
@@ -273,7 +278,7 @@ int datalayer_send_receive(
   do {
     ret = sent_data_packet(slot_id, fd, command, data_payload, data_payload_length);
     if (ret) {
-      printf("sent_data_packet fail \n");
+      ERROR("sent_data_packet fail \n");
       retry--;
       sleep(1);
       continue;
@@ -294,12 +299,12 @@ int datalayer_send_receive(
     
     if (delay > 0) {
       sleep(delay);
-      printf("sleep %ds \n", delay); 
+      DEBUG("sleep %ds \n", delay);
     }
     
     ret = DataLayerReceiveFromPlatFire(slot_id, fd, DataLayerAckBuffer);
     if (ret) {
-      printf("DataLayerReceiveFromPlatFire fail \n");
+      ERROR("DataLayerReceiveFromPlatFire fail \n");
       retry--;
       sleep(1);
       continue;
@@ -325,11 +330,11 @@ int sent_data_packet(
   unsigned int index = 0;
   unsigned int linklayer_ack_delay = get_linklayer_ack_delay(command);
 
-  if (data_payload_length > DATA_LAYER_EXTEND_MAX_PAYLOAD) {
-    printf("the data length > DATA_LAYER_EXTEND_MAX_PAYLOAD(%d) \n", DATA_LAYER_EXTEND_MAX_PAYLOAD);
+  if (data_payload_length >= DATA_LAYER_EXTEND_MAX_PAYLOAD) {
+    ERROR("the data length >= DATA_LAYER_EXTEND_MAX_PAYLOAD(%d) \n", DATA_LAYER_EXTEND_MAX_PAYLOAD);
     return -1;
   } else if (data_payload_length >= DATA_LAYER_MAX_PAYLOAD) {
-    printf("data_payload_length > DATA_LAYER_MAX_PAYLOAD, use 2 bytes DataPacket.Length \n");
+    DEBUG("data_payload_length > DATA_LAYER_MAX_PAYLOAD, use 2 bytes DataPacket.Length \n");
     DATA_LAYER_PACKET_EXTEND* packet_ext = (DATA_LAYER_PACKET_EXTEND*)data;
     packet_ext->Command = command;
     //  ++ command & length 2 bytes & Flag & CheckSum
@@ -415,7 +420,7 @@ int DataLayerReceiveFromPlatFire(
         retry++;
         continue;
       } else {
-        printf("get response fail after 5 retry \n");
+        ERROR("get response fail after 5 retry \n");
         return -1;
       }
     }
@@ -452,7 +457,7 @@ int DataLayerReceiveFromPlatFire(
       (((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag == ACK_BUSY_FLAG) ||
       (((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag == CHECKSUM_FAILURE) ||
       (((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag == DECOMMISSIONED)) {
-    printf("unexcepting FLAG : %d \n\n", ((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag);
+    ERROR("unexpected FLAG : %d \n\n", ((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag);
     return -1;
   }
   
@@ -522,7 +527,7 @@ int LinkLayerReceiveAcknowledgment(
     unsigned char r_session_id =
         ((LINK_LAYER_PACKET_ACK_MASTER*)ReceiveBuffer)->Command;
     if (r_session_id != session_id) {
-      printf(
+      ERROR(
           "session_id mismatch, expect: 0x%02X actual: 0x%02X\n",
           session_id,
           r_session_id);

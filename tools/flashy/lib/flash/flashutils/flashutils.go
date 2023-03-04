@@ -94,7 +94,17 @@ var CheckAnyFlashDeviceValid = func() error {
 		return nil
 	}
 
-	flashDeviceIDs := []string{"mtd:flash0", "mtd:flash1"}
+	flashDeviceIDs := []string{
+		"mtd:flash0",
+		"mtd:flash1",
+	}
+	// LF-OpenBMC uses "bmc" and "alt-bmc".
+	if utils.IsLFOpenBMC() {
+		flashDeviceIDs = []string{
+			"mtd:bmc",
+			"mtd:alt-bmc",
+		}
+	}
 
 	for _, deviceID := range flashDeviceIDs {
 		err := CheckFlashDeviceValid(deviceID)

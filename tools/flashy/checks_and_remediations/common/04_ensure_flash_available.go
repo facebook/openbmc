@@ -60,6 +60,12 @@ func ensureFlashAvailable(stepParams step.StepParams) step.StepExitError {
 		return nil
 	}
 
+	// LF systems don't have this issue.
+	if utils.IsLFOpenBMC() {
+		log.Printf("LF-OpenBMC, skipping flash availability check")
+		return nil
+	}
+
 	// Bail out if the partition is already visble.
 	cmd := []string{"grep", "flash0", utils.ProcMtdFilePath}
 	_, err, stdout, stderr := utils.RunCommand(cmd, 30*time.Second)

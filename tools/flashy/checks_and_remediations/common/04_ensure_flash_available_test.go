@@ -38,16 +38,19 @@ func TestEnsureFlashAvailable(t *testing.T) {
 	log.SetOutput(&buf)
 	fileExistsOrig := fileutils.FileExists
 	runCommandOrig := utils.RunCommand
+	isLfOrig := utils.IsLFOpenBMC
 
 	defer func() {
 		log.SetOutput(os.Stderr)
 		fileutils.FileExists = fileExistsOrig
 		utils.RunCommand = runCommandOrig
+		utils.IsLFOpenBMC = isLfOrig
 	}()
 
 	cases := []struct {
 		name              string
 		vbootUtilExists   bool
+		lfOpenBMC	  bool
 		failGrep          bool
 		failPrint         bool
 		failSet           bool
@@ -58,6 +61,18 @@ func TestEnsureFlashAvailable(t *testing.T) {
 		{
 			name:              "vboot case",
 			vbootUtilExists:   true,
+			lfOpenBMC:         false,
+			failGrep:          false,
+			failPrint:         false,
+			failSet:           false,
+			printOutput:       "derp",
+			grepOutput:        "foo",
+			want:              nil,
+		},
+		{
+			name:              "lf-openbmc case",
+			vbootUtilExists:   false,
+			lfOpenBMC:         true,
 			failGrep:          false,
 			failPrint:         false,
 			failSet:           false,
@@ -68,6 +83,7 @@ func TestEnsureFlashAvailable(t *testing.T) {
 		{
 			name:              "non-vboot case",
 			vbootUtilExists:   false,
+			lfOpenBMC:         false,
 			failGrep:          false,
 			failPrint:         false,
 			failSet:           false,
@@ -78,6 +94,7 @@ func TestEnsureFlashAvailable(t *testing.T) {
 		{
 			name:              "remediation case",
 			vbootUtilExists:   false,
+			lfOpenBMC:         false,
 			failGrep:          true,
 			failPrint:         false,
 			failSet:           false,
@@ -88,6 +105,7 @@ func TestEnsureFlashAvailable(t *testing.T) {
 		{
 			name:              "fw_printenv broken because reasons",
 			vbootUtilExists:   false,
+			lfOpenBMC:         false,
 			failGrep:          false,
 			failPrint:         true,
 			failSet:           false,
@@ -98,6 +116,7 @@ func TestEnsureFlashAvailable(t *testing.T) {
 		{
 			name:              "fw_printenv broken because missing flash",
 			vbootUtilExists:   false,
+			lfOpenBMC:         false,
 			failGrep:          false,
 			failPrint:         true,
 			failSet:           false,
@@ -108,6 +127,7 @@ func TestEnsureFlashAvailable(t *testing.T) {
 		{
 			name:              "fw_setenv broken",
 			vbootUtilExists:   false,
+			lfOpenBMC:         false,
 			failGrep:          false,
 			failPrint:         false,
 			failSet:           true,
@@ -143,6 +163,9 @@ func TestEnsureFlashAvailable(t *testing.T) {
 					}
 				}
 				return 0, errors.Errorf("err3"), "", "err3"
+			}
+			utils.IsLFOpenBMC = func() (bool) {
+				return tc.lfOpenBMC
 			}
 			got := ensureFlashAvailable(step.StepParams{})
 			step.CompareTestExitErrors(tc.want, got, t)

@@ -54,6 +54,7 @@ type MtdInfo struct {
 
 const ProcMtdFilePath = "/proc/mtd"
 const etcIssueFilePath = "/etc/issue"
+const etcOsReleaseFilePath = "/etc/os-release"
 const procMountsPath = "/proc/mounts"
 
 // other flashers + the "flashy" binary
@@ -339,6 +340,20 @@ var IsOpenBMC = func() (bool, error) {
 		isOpenBMC = strings.Contains(string(etcIssueBuf), ancient_magic)
 	}
 	return isOpenBMC, nil
+}
+
+// IsLFOpenBMC check whether the system is running LF-OpenBMC
+// by checking whether the string "OPENBMC_TARGET_MACHINE" exists
+// in /etc/os-release.
+var IsLFOpenBMC = func() (bool) {
+	const magic = "OPENBMC_TARGET_MACHINE"
+
+	osReleaseBuf, err := fileutils.ReadFile(etcOsReleaseFilePath)
+	if err != nil {
+		return false
+	}
+
+	return strings.Contains(string(osReleaseBuf), magic)
 }
 
 // CheckOtherFlasherRunning return an error if any other flashers are running.

@@ -686,6 +686,56 @@ func TestIsOpenBMC(t *testing.T) {
 	}
 }
 
+func TestIsLFOpenBMC(t *testing.T) {
+	// mock and defer restore ReadFile
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+	cases := []struct {
+		name             string
+		readFileContents string
+		readFileError    error
+		want             bool
+	}{
+		{
+			name: "Is LFOpenBMC",
+			readFileContents: `OPENBMC_TARGET_MACHINE=foo`,
+			readFileError: nil,
+			want:          true,
+		},
+		{
+			name:             "Not OpenBMC",
+			readFileContents: `foobar`,
+			readFileError:    nil,
+			want:             false,
+		},
+		{
+			name:             "/etc/os-release file read error",
+			readFileContents: "",
+			readFileError:    errors.Errorf("file read error"),
+			want:             false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				if filename != "/etc/os-release" {
+					t.Errorf("filename: want '%v' got '%v'",
+						"/etc/os-release", filename)
+				}
+				return []byte(tc.readFileContents), tc.readFileError
+			}
+
+			got := IsLFOpenBMC()
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
+	}
+}
+
+
 func TestCheckOtherFlasherRunning(t *testing.T) {
 	// mock and defer restore
 	// getOtherCmdlines and checkNoBaseNameExistsInCmdlines

@@ -70,6 +70,9 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 		} else {
 			log.Printf("Finished restarting healthd")
 		}
+	// Linux Foundation uses systemd to pet the watchdog directly.
+	} else if utils.IsLFOpenBMC() {
+		log.Printf("LF-OpenBMC, letting systemd maintain the watchdog")
 	} else {
 		utils.PetWatchdog()
 	}

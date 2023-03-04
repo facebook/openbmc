@@ -510,6 +510,12 @@ func tryPetWatchdog() bool {
 //   are no concurrent instances of wdtcli, the watchdog timeout will be
 //   extended and the watchdog petted.
 var PetWatchdog = func() {
+    // LF-OpenBMC relies on systemd to pet the watchdog, so there is nothing
+    // to do here.
+    if IsLFOpenBMC() {
+        return
+    }
+
 	for i := 0; i < 10; i++ {
 		if tryPetWatchdog() {
 			log.Printf("Watchdog petted")

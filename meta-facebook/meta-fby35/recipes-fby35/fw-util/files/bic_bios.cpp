@@ -43,6 +43,10 @@ image_info BiosComponent::check_image(const string& image, bool force) {
 int BiosComponent::attempt_server_power_off(bool force) {
   uint8_t status = SERVER_POWER_ON;
 
+  if (!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF) {
+    return 0;
+  }
+
   if (!force) {
     cerr << "Powering off the server gracefully" << endl;
     pal_set_server_power(slot_id, SERVER_GRACEFUL_SHUTDOWN);

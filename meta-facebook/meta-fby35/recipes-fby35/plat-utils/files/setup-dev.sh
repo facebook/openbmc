@@ -32,8 +32,6 @@ INA238_ADDR_PSU="44"
 INA238_ADDR_GND="41"
 MEDUSA_48V_IO_EXP_ADDR="49"
 
-NCSI_CMD_GET_CAPABILITY="0x16"
-
 function init_48V_medusa() {
   local medusa_adc_addr=("$LTC2992_ADDR" "$INA238_ADDR_PSU" "$INA238_ADDR_GND")
   local medusa_adc_devs=("ltc2992" "ina238" "ina238")
@@ -91,10 +89,6 @@ function init_class1_dev() {
     i2c_device_add 11 $medusa_addr $chip
   fi
 
-  # /mnt/data/kv_store checking, and create one if not exist
-  if [ ! -d /mnt/data/kv_store ]; then
-    /bin/mkdir -p /mnt/data/kv_store
-  fi
   kv set bb_hsc_conf $chip persistent
 
   # check nic power to see if it's need to be set to standby mode
@@ -157,8 +151,6 @@ fi
 if i2cget -f -y "$MEDUSA_HSC_BUS" 0x"$MEDUSA_48V_IO_EXP_ADDR" 0 >/dev/null 2>&1; then
   init_48V_medusa
 fi
-
-init_nic_multi_channel
 
 init_exp_dev
 

@@ -21,12 +21,14 @@
 # shellcheck source=common/recipes-utils/openbmc-utils/files/openbmc-utils.sh
 . /usr/local/bin/openbmc-utils.sh
 
+FRUS=(slot1 slot2 slot3 slot4 bmc)
+
 clear_vr_cache() {
-  local slot=$1
+  local fru=$1
   local list
   local cache
 
-  if list=$(ls /mnt/data/kv_store/slot"${slot}"_*vr_*_crc 2>/dev/null); then
+  if list=$(ls /mnt/data/kv_store/"${fru}"_*vr_*_crc 2>/dev/null); then
     mapfile list <<< "$list"
     for cache in "${list[@]}"; do
       /usr/bin/kv del "$(basename "$cache")" persistent
@@ -35,9 +37,7 @@ clear_vr_cache() {
 }
 
 if [ "$(is_bmc_por)" -eq 1 ]; then
-  for i in {1..4}; do
-    clear_vr_cache $i
+  for i in "${FRUS[@]}"; do
+    clear_vr_cache "$i"
   done
 fi
-
-/usr/bin/kv del bmc_vr_*_crc persistent

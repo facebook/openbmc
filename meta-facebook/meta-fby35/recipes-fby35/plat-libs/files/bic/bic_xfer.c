@@ -238,11 +238,13 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     if ( ret < 0 || status_12v == 0) {
       return BIC_STATUS_FAILURE;
     }
+#ifndef CONFIG_HALFDOME
     if (is_bic_ready(slot_id, NONE_INTF) != BIC_STATUS_SUCCESS) {
       msleep(BIC_XFER_RETRY_DELAY);
       retry++;
       continue;
     }
+#endif
     // Invoke IPMB library handler
     lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 

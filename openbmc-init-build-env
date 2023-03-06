@@ -37,17 +37,13 @@ PLAT_DISTRO_OVERRIDES=(
   meta-waimeacanyon:lf-master
 # langdale platforms (latest)
 # kirkstone platforms (pending upgrade)
-  meta-churchillmono:lf-kirkstone
   meta-fbdarwin:lf-kirkstone
-  meta-sandia:lf-kirkstone
 # dunfell platforms (pending upgrade)
-  meta-cloudripper:lf-dunfell
   meta-cmm:lf-dunfell
   meta-elbert:lf-dunfell
   meta-fbsp:lf-dunfell
   meta-fuji:lf-dunfell
   meta-minipack:lf-dunfell
-  meta-netlakemtp:lf-dunfell
   meta-wedge100:lf-dunfell
   meta-wedge400:lf-dunfell
 # Legacy platforms pending kernel upgrade
@@ -57,10 +53,17 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fby2-gpv2:rocko
   meta-galaxy100:rocko
   meta-lightning:rocko
-  meta-minilaketb:rocko
   meta-wedge:rocko
   meta-yamp:rocko
   meta-yosemite:rocko
+# Below Network OpenBMC platforms are not widely deployed (prototype
+# hardware, etc), but we will keep the entries until all the units are
+# retired.
+  meta-churchillmono:lf-kirkstone
+  meta-cloudripper:lf-dunfell
+  meta-netlakemtp:lf-dunfell
+  meta-minilaketb:rocko
+  meta-sandia:lf-kirkstone
 )
 
 platform="$1"

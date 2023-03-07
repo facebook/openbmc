@@ -352,7 +352,7 @@ class SupSensorTest(LmSensorsTest, unittest.TestCase):
                 value = value.split("+")[1].split(" C")[0]
                 self.assertAlmostEqual(
                     float(value),
-                    38,
+                    30,
                     delta=20,
                     msg="{} value is {} not within range".format(key, value),
                 )

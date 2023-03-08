@@ -89,12 +89,15 @@ probe_hsc_ltc() {
 probe_adc_ti() {
   i2cset -f -y 20 0x1d 0x0b 0x02
   i2c_device_add 20 0x1d adc128d818
+  i2cset -f -y 26 0x1d 0x0b 0x02
+  i2c_device_add 26 0x1d adc128d818
   kv set mb_adc_source "$MB_1ST_SOURCE"
 
 }
 
 probe_adc_maxim() {
   i2c_device_add 20 0x35 max11617
+  i2c_device_add 26 0x35 max11617
   kv set mb_adc_source "$MB_2ND_SOURCE"
 }
 

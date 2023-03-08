@@ -183,6 +183,14 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_RETIMER5_TEMP,
   MB_SNR_RETIMER6_TEMP,
   MB_SNR_RETIMER7_TEMP,
+  MB_SNR_P5V_AUX_ADC,
+  MB_SNR_P1V8_AUX_ADC,
+  MB_SNR_P1V2_AUX_ADC,
+  MB_SNR_P1V8_CPU0_RT_1D_ADC,
+  MB_SNR_P1V8_CPU1_RT_1D_ADC,
+  MB_SNR_PVDD_33_S5_ADC,
+  MB_SNR_PVDD18_S5_P0_ADC,
+  MB_SNR_PVDD18_S5_P1_ADC,
 };
 
 const uint8_t hsc_sensor_list[] = {
@@ -214,6 +222,7 @@ PAL_I2C_BUS_INFO e1s_info_list[] = {
 
 char *adc128_devs[] = {
   "adc128d818-i2c-20-1d",
+  "adc128d818-i2c-26-1d",
 };
 
 char *max11617_devs[] = {
@@ -467,14 +476,14 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"RETIMER5_TEMP", 65, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD5
   {"RETIMER6_TEMP", 66, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD6
   {"RETIMER7_TEMP", 67, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
+  {"P5V_AUX_ADC"        , ADC_CH8,  read_iic_adc_val, 0, {5.26, 0, 0, 4.74, 0, 0, 0, 0}, VOLT}, //0xD8
+  {"P1V8_AUX_ADC"       , ADC_CH9,  read_iic_adc_val, 0, {1.90, 0, 0, 1.70, 0, 0, 0, 0}, VOLT}, //0xD9
+  {"P1V2_AUX_ADC"       , ADC_CH10, read_iic_adc_val, 0, {1.27, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xDA
+  {"P1V8_CPU0_RT_1D_ADC", ADC_CH11, read_iic_adc_val, 0, {1.90, 0, 0, 1.70, 0, 0, 0, 0}, VOLT}, //0xDB
+  {"P1V8_CPU1_RT_1D_ADC", ADC_CH12, read_iic_adc_val, 0, {1.90, 0, 0, 1.70, 0, 0, 0, 0}, VOLT}, //0xDC
+  {"PVDD_33_S5_ADC"     , ADC_CH13, read_iic_adc_val, 0, {3.46, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xDD
+  {"PVDD18_S5_P0_ADC"   , ADC_CH14, read_iic_adc_val, 0, {1.87, 0, 0, 1.73, 0, 0, 0, 0}, VOLT}, //0xDE
+  {"PVDD18_S5_P1_ADC"   , ADC_CH15, read_iic_adc_val, 0, {1.87, 0, 0, 1.73, 0, 0, 0, 0}, VOLT}, //0xDF
 };
 
 extern struct snr_map sensor_map[];

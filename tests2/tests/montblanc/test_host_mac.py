@@ -26,4 +26,4 @@ from utils.test_utils import qemu_check
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class HostMacTest(BaseHostMacTest, unittest.TestCase):
     def set_host_mac(self):
-        self.host_mac_cmd = ["/usr/local/bin/wedge_us_mac.sh"]
+        self.host_mac_cmd = [". openbmc-utils.sh && userver_mac_addr"]

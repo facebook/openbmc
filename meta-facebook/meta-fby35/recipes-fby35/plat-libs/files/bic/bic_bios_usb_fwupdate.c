@@ -363,9 +363,9 @@ calc_checksum_sha256(const void *buf, size_t len, uint8_t *out) {
 }
 
 static bool
-bic_have_checksum_sha256(uint8_t slot_id) {
+bic_have_checksum_sha256(uint8_t slot_id, uint8_t target, uint8_t intf) {
   uint8_t cs[STRONG_DIGEST_LENGTH];
-  return (bic_get_fw_cksum_sha256(slot_id, UPDATE_BIOS, 0, BIOS_UPDATE_BLK_SIZE, cs) == 0);
+  return (bic_get_fw_cksum_sha256(slot_id, target, 0, BIOS_UPDATE_BLK_SIZE, cs, intf) == 0);
 }
 
 int
@@ -376,6 +376,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
   uint8_t write_target = 0;
   uint32_t write_offset = 0;
   const char *what = NULL;
+  uint8_t intf = NONE_INTF;
 
   if (udev == NULL) {
     syslog(LOG_ERR, "%s[%u] udev shouldn't be null!", __func__, slot_id);
@@ -414,6 +415,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
       what = "CXL";
       write_offset = 0;
       write_target = UPDATE_CXL;
+      intf = FEXP_BIC_INTF;
       break;
     default:
       fprintf(stderr, "ERROR: not supported component [comp:%u]!\n", comp);
@@ -437,7 +439,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
 
   int num_blocks_written = 0, num_blocks_skipped = 0;
   uint8_t fcs[STRONG_DIGEST_LENGTH], cs[STRONG_DIGEST_LENGTH];
-  if ((dedup || verify) && !bic_have_checksum_sha256(slot_id)) {
+  if ((dedup || verify) && !bic_have_checksum_sha256(slot_id, write_target, intf)) {
     fprintf(stderr, "Checksum function is unavailable, disabling "
             "deduplication and verification.\n");
     dedup = false;
@@ -489,7 +491,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
       }
     }
     if (dedup) {
-      rc = bic_get_fw_cksum_sha256(slot_id, write_target, write_offset, file_buf_num_bytes, cs);
+      rc = bic_get_fw_cksum_sha256(slot_id, write_target, write_offset, file_buf_num_bytes, cs, intf);
       if (rc == 0 && memcmp(cs, fcs, STRONG_DIGEST_LENGTH) == 0) {
         write_offset += file_buf_num_bytes;
         num_blocks_skipped++;
@@ -546,7 +548,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
 
       // Verify written data
       if (verify && last_pkt) {
-        rc = bic_get_fw_cksum_sha256(slot_id, write_target, write_offset, file_buf_num_bytes, cs);
+        rc = bic_get_fw_cksum_sha256(slot_id, write_target, write_offset, file_buf_num_bytes, cs, intf);
         if (rc != 0) {
           fprintf(stderr, "bic_get_fw_cksum_sha256 @ 0x%08X failed\n", write_offset);
           attempts--;

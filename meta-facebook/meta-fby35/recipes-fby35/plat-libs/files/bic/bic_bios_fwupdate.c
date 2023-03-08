@@ -150,7 +150,7 @@ struct bic_get_fw_cksum_sha256_res {
 } __attribute__((packed));
 
 int
-bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum) {
+bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum, uint8_t intf) {
   int ret;
   struct bic_get_fw_cksum_sha256_req req = {
     .iana_id = {0x00},
@@ -165,7 +165,7 @@ bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32
 
   ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_FW_CKSUM_SHA256,
                       (uint8_t *) &req, sizeof(req), (uint8_t *) &res, &rlen,
-                      NONE_INTF);
+                      intf);
   if (ret != 0) {
     return -1;
   }

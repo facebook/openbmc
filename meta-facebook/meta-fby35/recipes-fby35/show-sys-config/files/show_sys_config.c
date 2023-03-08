@@ -65,10 +65,10 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
   uint8_t rbuf[1] = {0x00};
   uint8_t tlen = 4;
   uint8_t rlen = 0;
-  uint8_t bic_ready;
+  uint8_t bic_ready = 0;
 
   ret = fby35_common_is_bic_ready(slot_id, &bic_ready);
-  if ( ret < 0 || bic_ready != 1 ) {
+  if (!ret && bic_ready != 1) {
     return UTIL_EXECUTION_FAIL;
   }
 

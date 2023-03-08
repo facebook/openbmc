@@ -273,22 +273,28 @@ fby35_read_device_status(uint8_t fru) {
 
 int
 fby35_common_is_bic_ready(uint8_t fru, uint8_t *val) {
+  int ret;
   uint8_t rbuf[8] = {0};
 
-  if (fby35_read_sb_cpld(fru, CPLD_REG_BIC_READY, rbuf)) {
-    return -1;
+  ret = fby35_read_sb_cpld(fru, CPLD_REG_BIC_READY, rbuf);
+  if (ret == 0) {
+    if (!(*val = (rbuf[0] & 0x2) >> 1)) {
+      return 0;
+    }
   }
-  *val = (rbuf[0] & 0x2) >> 1;
 
 #ifndef IGNORE_CHECK_I3C_DEV_STATUS
   if (fby35_read_device_status(fru)) {
-    return -1;
+    // failed to read device status, consider not ready
+    *val = 0;
+    return 0;
   }
 #endif
 
-  return 0;
+  // BIC will be also considered ready when ret is non-zero
+  // e.g. SB_CPLD is unavailable && check I3C status succeeded
+  return ret;
 }
-
 
 int
 fby35_common_get_bus_id(uint8_t slot_id) {

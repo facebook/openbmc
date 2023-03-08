@@ -61,3 +61,29 @@ int i2c_delete_device(int bus, uint16_t addr) {
              addr, bus);
     return system(cmd);
 }
+
+int i2c_device_read_word_data(int bus, uint16_t addr, uint8_t reg_offset_command) {
+    int fd = -1, rc = -1;
+
+    fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+    if (fd == -1)
+        return -1;
+
+    rc = i2c_smbus_read_word_data(fd, reg_offset_command);
+    i2c_cdev_slave_close(fd);
+
+    return rc;
+}
+
+int i2c_device_read_byte_data(int bus, uint16_t addr, uint8_t reg_offset_command) {
+    int fd = -1, rc = -1;
+
+    fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+    if (fd == -1)
+        return -1;
+
+    rc = i2c_smbus_read_byte_data(fd, reg_offset_command);
+    i2c_cdev_slave_close(fd);
+
+    return rc;
+}

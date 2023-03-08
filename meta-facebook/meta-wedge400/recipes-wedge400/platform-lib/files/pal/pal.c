@@ -38,6 +38,9 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <math.h>
+#include <dirent.h>
+#include <libgen.h>
+#include <sys/stat.h>
 #include <openbmc/log.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/kv.h>
@@ -2386,22 +2389,10 @@ pal_set_th3_power(int option) {
 }
 
 static int check_dir_exist(const char *device) {
-  char cmd[LARGEST_DEVICE_NAME + 1];
-  FILE *fp;
-  char cmd_ret;
-  int ret=-1;
+  struct stat sb;
 
   // Check if device exists
-  snprintf(cmd, LARGEST_DEVICE_NAME, "[ -e %s ];echo $?", device);
-  fp = popen(cmd, "r");
-  if(NULL == fp)
-     return -1;
-
-  cmd_ret = fgetc(fp);
-  ret = pclose(fp);
-  if(-1 == ret)
-    return -1;
-  if('0' != cmd_ret) {
+  if (!(stat(device, &sb) == 0 && S_ISDIR(sb.st_mode))) {
     return -1;
   }
 
@@ -7390,75 +7381,35 @@ pal_get_hand_sw(uint8_t *pos) {
 /* Return the Front Panel Power Button */
 int
 pal_get_dbg_pwr_btn(uint8_t *status) {
-   char cmd[MAX_KEY_LEN + 32] = {0};
-  char value[MAX_VALUE_LEN];
-  char *p;
-  FILE *fp;
-  int val = 0;
+  int bus = 4;
+  uint16_t addr = 0x27;
+  uint8_t reg_offset = 1;
+  uint8_t val;
 
-  sprintf(cmd, "/usr/sbin/i2cget -f -y 4 0x27 1");
-  fp = popen(cmd, "r");
-  if (!fp) {
-    return -1;
-  }
-
-  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
-    pclose(fp);
-    return -1;
-  }
-
-  for (p = value; *p != '\0'; p++) {
-    if (*p == '\n' || *p == '\r') {
-      *p = '\0';
-      break;
-    }
-  }
-
-  sscanf(value, "%x", (unsigned int *) &val);
+  val = i2c_device_read_byte_data(bus, addr, reg_offset);
   if ((!(val & 0x2)) && (val & 0x1)) {
     *status = 1;      /* PWR BTN status pressed */
     syslog(LOG_WARNING, "%s PWR pressed  0x%x\n", __FUNCTION__, val);
   } else {
     *status = 0;      /* PWR BTN status cleared */
   }
-  pclose(fp);
   return 0;
 }
 
 /* Return the Debug Card Reset Button status */
 int
 pal_get_dbg_rst_btn(uint8_t *status) {
-  char cmd[MAX_KEY_LEN + 32] = {0};
-  char value[MAX_VALUE_LEN];
-  char *p;
-  FILE *fp;
-  int val = 0;
+  int bus = 4;
+  uint16_t addr = 0x27;
+  uint8_t reg_offset = 1;
+  uint8_t val;
 
-  sprintf(cmd, "/usr/sbin/i2cget -f -y 4 0x27 1");
-  fp = popen(cmd, "r");
-  if (!fp) {
-    return -1;
-  }
-
-  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
-    pclose(fp);
-    return -1;
-  }
-
-  for (p = value; *p != '\0'; p++) {
-    if (*p == '\n' || *p == '\r') {
-      *p = '\0';
-      break;
-    }
-  }
-
-  sscanf(value, "%x", (unsigned int *) &val);
+  val = i2c_device_read_byte_data(bus, addr, reg_offset);
   if ((!(val & 0x1)) && (val & 0x2)) {
     *status = 1;      /* RST BTN status pressed */
   } else {
     *status = 0;      /* RST BTN status cleared */
   }
-  pclose(fp);
   return 0;
 }
 
@@ -7490,30 +7441,12 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
 /* Return the Debug Card UART Sel Button status */
 int
 pal_get_dbg_uart_btn(uint8_t *status) {
-  char cmd[MAX_KEY_LEN + 32] = {0};
-  char value[MAX_VALUE_LEN];
-  char *p;
-  FILE *fp;
-  int val = 0;
+  int bus = 4;
+  uint16_t addr = 0x27;
+  uint8_t reg_offset = 3;
+  uint8_t val;
 
-  sprintf(cmd, "/usr/sbin/i2cget -f -y 4 0x27 3");
-  fp = popen(cmd, "r");
-  if (!fp) {
-    return -1;
-  }
-
-  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
-    pclose(fp);
-    return -1;
-  }
-  pclose(fp);
-  for (p = value; *p != '\0'; p++) {
-    if (*p == '\n' || *p == '\r') {
-      *p = '\0';
-      break;
-    }
-  }
-  sscanf(value, "%x", (unsigned int *) &val);
+  val = i2c_device_read_byte_data(bus, addr, reg_offset);
   if (!(val & 0x80)) {
     *status = 1;      /* UART BTN status pressed */
   } else {
@@ -7571,15 +7504,15 @@ bool is_psu48(void)
     return true;
   }
 
-  fp = popen("source /usr/local/bin/openbmc-utils.sh;wedge_power_supply_type", "r");
+  fp = fopen("/tmp/cache_store/power_type", "r");
   if(NULL == fp)
      return false;
 
   if (fgets(buffer, sizeof(buffer), fp) == NULL) {
-    pclose(fp);
+    fclose(fp);
     return false;
   }
-  pclose(fp);
+  fclose(fp);
 
   if (!strcmp(buffer, "PSU48")) {
     result = true;

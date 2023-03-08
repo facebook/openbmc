@@ -31,7 +31,8 @@ extern "C" {
 int i2c_detect_device(int bus, uint16_t addr);
 int i2c_add_device(int bus, uint16_t addr, const char *device_name);
 int i2c_delete_device(int bus, uint16_t addr);
-
+int i2c_device_read_word_data(int bus, uint16_t addr, uint8_t reg_offset_command);
+int i2c_device_read_byte_data(int bus, uint16_t addr, uint8_t reg_offset_command);
 #ifdef __cplusplus
 } // extern "C"
 #endif

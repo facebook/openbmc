@@ -97,8 +97,12 @@ static void do_reset() {
   hgx::reset();
 }
 
-static void do_event_log(bool json) {
-  hgx::printEventLog(std::cout, json);
+static void do_event_log(bool clear, bool json) {
+  if (clear) {
+    hgx::clearEventLog();
+  } else {
+    hgx::printEventLog(std::cout, json);
+  }
 }
 
 static void do_list_attest_components(void) {
@@ -198,8 +202,10 @@ int main(int argc, char* argv[]) {
   auto reset = app.add_subcommand("reset", "Graceful reboot the HMC");
   reset->callback([&]() { do_reset(); });
 
+  bool eventClear = false;
   auto eventlog = app.add_subcommand("event-log", "Retrieve event logs from HGX");
-  eventlog->callback([&]() { do_event_log(json_fmt); });
+  eventlog->add_flag("--clear", eventClear, "Clears the event Log");
+  eventlog->callback([&]() { do_event_log(eventClear, json_fmt); });
 
   auto timeSync = app.add_subcommand("time-sync", "Sync current BMC time with HGX");
   timeSync->callback([&]() { hgx::syncTime(); });

@@ -17,6 +17,7 @@
 enum {
   HTTP_OK = 200,
   HTTP_ACCEPTED = 202,
+  HTTP_NO_CONTENT = 204,
   HTTP_BAD_REQUEST = 400,
   HTTP_NOT_FOUND = 404,
 };
@@ -112,7 +113,8 @@ class HGXMgr {
       result =  conn.post("", std::move(args));
     }
 
-    if (result.code != HTTP_OK && result.code != HTTP_ACCEPTED) {
+    if (result.code != HTTP_OK && result.code != HTTP_ACCEPTED &&
+        result.code != HTTP_NO_CONTENT) {
       throw HTTPException(result.code);
     }
     return result.body;
@@ -395,6 +397,13 @@ void printEventLog(std::ostream& os, bool jsonFmt) {
     os << time << '\t' << severity << '\t' << res_str << '\t' << msg << '\t'
        << resolution << std::endl;
   }
+}
+
+void clearEventLog() {
+  std::string url = HMC_URL +
+      "Systems/HGX_Baseboard_0/LogServices/EventLog/Actions/LogService.ClearLog";
+  json data = json::object();
+  hgx.post(url, data.dump(), false);
 }
 
 void syncTime() {

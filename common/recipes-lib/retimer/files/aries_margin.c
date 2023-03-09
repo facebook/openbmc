@@ -29,6 +29,7 @@ extern "C" {
  */
 AriesErrorType ariesMarginNoCommand(AriesRxMarginType* marginDevice)
 {
+    (void)marginDevice;
     ASTERA_WARN("Sending this out of band doesn't do anything");
     return ARIES_SUCCESS;
 }
@@ -38,6 +39,7 @@ AriesErrorType ariesMarginNoCommand(AriesRxMarginType* marginDevice)
  */
 AriesErrorType ariesMarginAccessRetimerRegister(AriesRxMarginType* marginDevice)
 {
+    (void)marginDevice;
     ASTERA_WARN("Register access is not implemented yet");
     return ARIES_SUCCESS;
 }
@@ -49,6 +51,7 @@ AriesErrorType
     ariesMarginReportMarginControlCapabilities(AriesRxMarginType* marginDevice,
                                                int* capabilities)
 {
+    (void)marginDevice;
     ASTERA_INFO("Reporting Margin Control Capabilities:");
     ASTERA_INFO("  M_VOLTAGE_SUPPORTED = %d", VOLTAGESUPPORTED);
     ASTERA_INFO("  M_IND_UP_DOWN_VOLTAGE = %d", INDUPDOWNVOLTAGE);
@@ -70,6 +73,7 @@ AriesErrorType
 AriesErrorType ariesMarginReportNumVoltageSteps(AriesRxMarginType* marginDevice,
                                                 int* numVoltageSteps)
 {
+    (void)marginDevice;
     *numVoltageSteps = NUMVOLTAGESTEPS;
     return ARIES_SUCCESS;
 }
@@ -80,6 +84,7 @@ AriesErrorType ariesMarginReportNumVoltageSteps(AriesRxMarginType* marginDevice,
 AriesErrorType ariesMarginReportNumTimingSteps(AriesRxMarginType* marginDevice,
                                                int* numTimingSteps)
 {
+    (void)marginDevice;
     *numTimingSteps = NUMTIMINGSTEPS;
     return ARIES_SUCCESS;
 }
@@ -90,6 +95,7 @@ AriesErrorType ariesMarginReportNumTimingSteps(AriesRxMarginType* marginDevice,
 AriesErrorType ariesMarginReportMaxTimingOffset(AriesRxMarginType* marginDevice,
                                                 int* maxTimingOffset)
 {
+    (void)marginDevice;
     *maxTimingOffset = MAXTIMINGOFFSET;
     return ARIES_SUCCESS;
 }
@@ -101,6 +107,7 @@ AriesErrorType
     ariesMarginReportMaxVoltageOffset(AriesRxMarginType* marginDevice,
                                       int* maxVoltageOffset)
 {
+    (void)marginDevice;
     *maxVoltageOffset = MAXVOLTAGEOFFSET;
     return ARIES_SUCCESS;
 }
@@ -112,6 +119,7 @@ AriesErrorType
     ariesMarginReportSamplingRateVoltage(AriesRxMarginType* marginDevice,
                                          int* samplingRateVoltage)
 {
+    (void)marginDevice;
     *samplingRateVoltage = SAMPLINGRATEVOLTAGE;
     return ARIES_SUCCESS;
 }
@@ -123,6 +131,7 @@ AriesErrorType
     ariesMarginReportSamplingRateTiming(AriesRxMarginType* marginDevice,
                                         int* samplingRateTiming)
 {
+    (void)marginDevice;
     *samplingRateTiming = NUMTIMINGSTEPS;
     return ARIES_SUCCESS;
 }
@@ -132,6 +141,7 @@ AriesErrorType
  */
 AriesErrorType ariesMarginReportSampleCount(AriesRxMarginType* marginDevice)
 {
+    (void)marginDevice;
     ASTERA_WARN("We support sampling rates instead of sample count");
     return ARIES_SUCCESS;
 }
@@ -142,6 +152,7 @@ AriesErrorType ariesMarginReportSampleCount(AriesRxMarginType* marginDevice)
 AriesErrorType ariesMarginReportMaxLanes(AriesRxMarginType* marginDevice,
                                          int* maxLanes)
 {
+    (void)marginDevice;
     *maxLanes = MAXLANES;
     return ARIES_SUCCESS;
 }
@@ -170,15 +181,16 @@ AriesErrorType ariesMarginSetErrorCountLimit(AriesRxMarginType* marginDevice,
  * Reset the phase and voltage offset and disable margining
  */
 AriesErrorType ariesMarginGoToNormalSettings(AriesRxMarginType* marginDevice,
-                                             AriesPseudoPortType port, int lane)
+                                             AriesPseudoPortType port,
+                                             int* lane, int laneCount)
 {
     AriesErrorType rc;
 
-    rc = ariesMarginPmaRxMarginStop(marginDevice, port, lane);
-    CHECK_SUCCESS(rc)
+    rc = ariesMarginPmaRxMarginStop(marginDevice, port, lane, laneCount);
+    CHECK_SUCCESS(rc);
 
-    rc = ariesMarginClearErrorLog(marginDevice, port, lane);
-    CHECK_SUCCESS(rc)
+    // rc = ariesMarginClearErrorLog(marginDevice, port, lane, laneCount);
+    // CHECK_SUCCESS(rc);
 
     return ARIES_SUCCESS;
 }
@@ -187,9 +199,14 @@ AriesErrorType ariesMarginGoToNormalSettings(AriesRxMarginType* marginDevice,
  * Clears error count of a given port and lane
  */
 AriesErrorType ariesMarginClearErrorLog(AriesRxMarginType* marginDevice,
-                                        AriesPseudoPortType port, int lane)
+                                        AriesPseudoPortType port, int* lane,
+                                        int laneCount)
 {
-    marginDevice->errorCount[port][lane] = 0;
+    int ln;
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        marginDevice->errorCount[port][lane[ln]] = 0;
+    }
     return ARIES_SUCCESS;
 }
 
@@ -197,133 +214,148 @@ AriesErrorType ariesMarginClearErrorLog(AriesRxMarginType* marginDevice,
  * Margin the device at a specified timing offset
  */
 AriesErrorType ariesMarginStepMarginToTimingOffset(
-    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int lane,
-    int direction, int steps, double dwell, int* eCount)
+    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int* lane,
+    int* direction, int* steps, int laneCount, double dwell, int* eCount)
 {
     AriesErrorType rc;
-    if (direction != 0 && direction != 1)
+    int ln;
+
+    for (ln = 0; ln < laneCount; ln++)
     {
-        ASTERA_ERROR("Unsupported direction argument, must be 1 or 0");
-        return ARIES_INVALID_ARGUMENT;
+        if (direction[ln] != 0 && direction[ln] != 1)
+        {
+            ASTERA_ERROR("Unsupported direction argument, must be 1 or 0");
+            return ARIES_INVALID_ARGUMENT;
+        }
+        if (steps[ln] > NUMTIMINGSTEPS)
+        {
+            ASTERA_ERROR(
+                "Unsupported Lane Margining command: Exceeded NumTimingSteps");
+            return ARIES_INVALID_ARGUMENT;
+        }
     }
-    else if (steps > NUMTIMINGSTEPS)
-    {
-        ASTERA_ERROR(
-            "Unsupported Lane Margining command: Exceeded NumTimingSteps");
-        return ARIES_INVALID_ARGUMENT;
-    }
-    else
+
+    rc = ariesMarginPmaRxMarginTiming(marginDevice, port, lane, direction,
+                                      steps, laneCount);
+    CHECK_SUCCESS(rc);
+    usleep((int)(dwell * 1000000));
+    rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane, laneCount);
+    CHECK_SUCCESS(rc);
+    if (marginDevice->do1XAnd0XCapture)
     {
         rc = ariesMarginPmaRxMarginTiming(marginDevice, port, lane, direction,
-                                          steps);
-        CHECK_SUCCESS(rc)
-        usleep((int)(dwell * 1000000));
-        rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane);
-        CHECK_SUCCESS(rc)
-        if (marginDevice->do1XAnd0XCapture)
+                                          steps, laneCount);
+        CHECK_SUCCESS(rc);
+        usleep((int)(dwell * 100000));
+        rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane,
+                                             laneCount);
+        CHECK_SUCCESS(rc);
+    }
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        if (marginDevice->errorCount[port][lane[ln]] > 63)
         {
-            rc = ariesMarginPmaRxMarginTiming(marginDevice, port, lane,
-                                              direction, steps);
-            CHECK_SUCCESS(rc)
-            usleep((int)(dwell * 100000));
-            rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane);
-            CHECK_SUCCESS(rc)
+            marginDevice->errorCount[port][lane[ln]] = 63;
         }
-        if (marginDevice->errorCount[port][lane] > 63)
-        {
-            marginDevice->errorCount[port][lane] = 63;
-        }
-        if (marginDevice->errorCount[port][lane] >
+        if (marginDevice->errorCount[port][lane[ln]] >
             marginDevice->errorCountLimit)
         {
             ASTERA_DEBUG(
                 "Error count on port %d lane %d exceeded error count limit: %d > %d",
-                port, lane, marginDevice->errorCount[port][lane],
+                port, lane[ln], marginDevice->errorCount[port][lane[ln]],
                 marginDevice->errorCountLimit);
-            *eCount = marginDevice->errorCount[port][lane];
+            eCount[ln] = marginDevice->errorCount[port][lane[ln]];
             ASTERA_DEBUG("Port %d lane %d is going back to default settings",
-                         port, lane);
-            rc = ariesMarginGoToNormalSettings(marginDevice, port, lane);
-            CHECK_SUCCESS(rc)
-            return ARIES_SUCCESS;
+                         port, lane[ln]);
+            rc = ariesMarginGoToNormalSettings(marginDevice, port, lane + ln,
+                                               1);
+            CHECK_SUCCESS(rc);
         }
         else
         {
             ASTERA_DEBUG(
                 "Margining time is in progress on port %d lane %d. Current error count is: %d",
-                port, lane, marginDevice->errorCount[port][lane]);
-            *eCount = marginDevice->errorCount[port][lane];
-            return ARIES_SUCCESS;
+                port, lane[ln], marginDevice->errorCount[port][lane[ln]]);
+            eCount[ln] = marginDevice->errorCount[port][lane[ln]];
         }
     }
+    return ARIES_SUCCESS;
 }
 
 /*
  * Margin the device at a specified voltage offset
  */
 AriesErrorType ariesMarginStepMarginToVoltageOffset(
-    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int lane,
-    int direction, int steps, double dwell, int* eCount)
+    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int* lane,
+    int* direction, int* steps, int laneCount, double dwell, int* eCount)
 {
     AriesErrorType rc;
-    if (direction != 0 && direction != 1)
+    int ln;
+
+    for (ln = 0; ln < laneCount; ln++)
     {
-        ASTERA_ERROR("Unsupported direction argument, must be 0 or 1");
-        return ARIES_INVALID_ARGUMENT;
+        if (direction[ln] != 0 && direction[ln] != 1)
+        {
+            ASTERA_ERROR("Unsupported direction argument, must be 0 or 1");
+            return ARIES_INVALID_ARGUMENT;
+        }
+        if (steps[ln] > NUMVOLTAGESTEPS)
+        {
+            ASTERA_ERROR(
+                "Unsupported Lane Margining command: Exceeded NumTimingSteps");
+            return ARIES_INVALID_ARGUMENT;
+        }
     }
-    else if (steps > NUMVOLTAGESTEPS)
+
+    rc = ariesMarginPmaRxMarginVoltage(marginDevice, port, lane, direction,
+                                       steps, laneCount);
+    CHECK_SUCCESS(rc);
+    usleep((int)(dwell * 100000));
+    rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane, laneCount);
+    CHECK_SUCCESS(rc);
+    if (marginDevice->do1XAnd0XCapture)
     {
-        ASTERA_ERROR(
-            "Unsupported Lane Margining command: Exceeded NumTimingSteps");
-        return ARIES_INVALID_ARGUMENT;
-    }
-    else
-    {
+        for (ln = 0; ln < laneCount; ln++)
+        {
+            direction[ln] = 1 - direction[ln];
+        }
         rc = ariesMarginPmaRxMarginVoltage(marginDevice, port, lane, direction,
-                                           steps);
-        CHECK_SUCCESS(rc)
+                                           steps, laneCount);
+        CHECK_SUCCESS(rc);
         usleep((int)(dwell * 100000));
-        rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane);
-        CHECK_SUCCESS(rc)
-        if (marginDevice->do1XAnd0XCapture)
+        rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane,
+                                             laneCount);
+        CHECK_SUCCESS(rc);
+    }
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        if (marginDevice->errorCount[port][lane[ln]] > 63)
         {
-            direction = 1 - direction;
-            rc = ariesMarginPmaRxMarginVoltage(marginDevice, port, lane,
-                                               direction, steps);
-            CHECK_SUCCESS(rc)
-            usleep((int)(dwell * 100000));
-            rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane);
-            CHECK_SUCCESS(rc)
+            marginDevice->errorCount[port][lane[ln]] = 63;
         }
-        if (marginDevice->errorCount[port][lane] > 63)
-        {
-            marginDevice->errorCount[port][lane] = 63;
-        }
-        if (marginDevice->errorCount[port][lane] >
+        if (marginDevice->errorCount[port][lane[ln]] >
             marginDevice->errorCountLimit)
         {
             ASTERA_DEBUG(
                 "Error count on port %d lane %d exceeded error count limit: %d > %d",
-                port, lane, marginDevice->errorCount[port][lane],
+                port, lane[ln], marginDevice->errorCount[port][lane[ln]],
                 marginDevice->errorCountLimit);
-            *eCount = marginDevice->errorCount[port][lane];
+            eCount[ln] = marginDevice->errorCount[port][lane[ln]];
             ASTERA_DEBUG("Port %d lane %d is going back to default settings",
-                         port, lane);
-            rc = ariesMarginGoToNormalSettings(marginDevice, port, lane);
-            CHECK_SUCCESS(rc)
-
-            return ARIES_SUCCESS;
+                         port, lane[ln]);
+            rc = ariesMarginGoToNormalSettings(marginDevice, port, lane + ln,
+                                               1);
+            CHECK_SUCCESS(rc);
         }
         else
         {
             ASTERA_DEBUG(
                 "Margining voltage is in progress on port %d lane %d. Current error count is: %d",
-                port, lane, marginDevice->errorCount[port][lane]);
-            *eCount = marginDevice->errorCount[port][lane];
-
-            return ARIES_SUCCESS;
+                port, lane[ln], marginDevice->errorCount[port][lane[ln]]);
+            eCount[ln] = marginDevice->errorCount[port][lane[ln]];
         }
     }
+    return ARIES_SUCCESS;
 }
 
 /*
@@ -331,6 +363,7 @@ AriesErrorType ariesMarginStepMarginToVoltageOffset(
  */
 AriesErrorType ariesMarginVendorDefined(AriesRxMarginType* marginDevice)
 {
+    (void)marginDevice;
     ASTERA_WARN("Vendor defined function is not implemented yet");
     return ARIES_SUCCESS;
 }
@@ -339,54 +372,59 @@ AriesErrorType ariesMarginVendorDefined(AriesRxMarginType* marginDevice)
  * Tell the retimer we are finished margining
  */
 AriesErrorType ariesMarginPmaRxMarginStop(AriesRxMarginType* marginDevice,
-                                          AriesPseudoPortType port, int lane)
+                                          AriesPseudoPortType port, int* lane,
+                                          int laneCount)
 {
     AriesErrorType rc;
     int side, quadSlice, quadSliceLane;
+    int ln;
 
-    rc = ariesMarginDeterminePmaSideAndQs(marginDevice, port, lane, &side,
-                                          &quadSlice, &quadSliceLane);
-    CHECK_SUCCESS(rc)
-
-    uint8_t dataWord[2];
-    rc = ariesReadWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, dataWord);
-    CHECK_SUCCESS(rc)
-    uint8_t en = (dataWord[0] >> 1) & 0x1; // enable has offset of 1
-
-    if (en == 1)
+    for (ln = 0; ln < laneCount; ln++)
     {
-        // Setting OVRD enable to 0 for rx IQ
-        // Offset of 12, width of 1
-        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 12, 0, 1);
-        CHECK_SUCCESS(rc)
-        // Setting OVRD enable to 0 for margin vdac
-        // Offset of 11, width of 1
-        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 11, 0, 1);
-        CHECK_SUCCESS(rc)
-        // Setting OVRD enable to 0 for margin in progress
-        // Offset of 13, width of 1
-        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 13, 0, 1);
-        CHECK_SUCCESS(rc)
+        rc = ariesMarginDeterminePmaSideAndQs(
+            marginDevice, port, lane[ln], &side, &quadSlice, &quadSliceLane);
+        CHECK_SUCCESS(rc);
 
-        rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane);
-        CHECK_SUCCESS(rc)
-
-        // Setting OVRD enable to 0 for margin error clear
-        // Offset of 1, width of 1
-        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+        uint8_t dataWord[2];
+        rc = ariesReadWordPmaLaneMainMicroIndirect(
             marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 1, 0, 1);
-        CHECK_SUCCESS(rc)
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, dataWord);
+        CHECK_SUCCESS(rc);
+        uint8_t en = (dataWord[0] >> 1) & 0x1; // enable has offset of 1
+
+        if (en == 1)
+        {
+            // Setting OVRD enable to 0 for rx IQ
+            // Offset of 12, width of 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 12, 0, 1);
+            CHECK_SUCCESS(rc);
+            // Setting OVRD enable to 0 for margin vdac
+            // Offset of 11, width of 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 11, 0, 1);
+            CHECK_SUCCESS(rc);
+            // Setting OVRD enable to 0 for margin in progress
+            // Offset of 13, width of 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 13, 0, 1);
+            CHECK_SUCCESS(rc);
+
+            rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane + ln,
+                                                 1);
+            CHECK_SUCCESS(rc);
+
+            // Setting OVRD enable to 0 for margin error clear
+            // Offset of 1, width of 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 1, 0, 1);
+            CHECK_SUCCESS(rc);
+        }
     }
-
     return ARIES_SUCCESS;
 }
 
@@ -394,269 +432,45 @@ AriesErrorType ariesMarginPmaRxMarginStop(AriesRxMarginType* marginDevice,
  * Set margin timing sampler to a specified time value
  */
 AriesErrorType ariesMarginPmaRxMarginTiming(AriesRxMarginType* marginDevice,
-                                            AriesPseudoPortType port, int lane,
-                                            int direction, int steps)
+                                            AriesPseudoPortType port, int* lane,
+                                            int* direction, int* steps,
+                                            int laneCount)
 {
     AriesErrorType rc;
+    int ln;
 
     // Determine pma side and qs from device port and lane
     int side, quadSlice, quadSliceLane;
-    rc = ariesMarginDeterminePmaSideAndQs(marginDevice, port, lane, &side,
-                                          &quadSlice, &quadSliceLane);
-    CHECK_SUCCESS(rc)
-
-    // positive deltaValues move the slicer to the left
-    // assume the direction is left and if it is right we will overwrite
-    // deltaValue later
-    uint8_t deltaValue = steps;
-
-    // negative deltaValues move the slicer to the right
-    // if the direction is right, and we want to move at least 1 step then take
-    // the negation of our steps, so we move the opposite direction
-    if (direction == 1 && steps > 0) // right and not 0 steps
+    for (ln = 0; ln < laneCount; ln++)
     {
-        deltaValue = ((~steps + 1) & 0x7f);
-    }
+        rc = ariesMarginDeterminePmaSideAndQs(
+            marginDevice, port, lane[ln], &side, &quadSlice, &quadSliceLane);
+        CHECK_SUCCESS(rc);
 
-    // Setting IQ OVRD to 1 and setting the IQ value
-    // offset 12, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 12, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 5, width 7
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 5, deltaValue, 7);
-    CHECK_SUCCESS(rc)
+        // positive deltaValues move the slicer to the left
+        // assume the direction is left and if it is right we will overwrite
+        // deltaValue later
+        uint8_t deltaValue = steps[ln];
 
-    // set Rx margin error clear ovrd en to 1 and Rx margin error clear ovrd to
-    // 1 ALS-105: Stop a dummy req being generated by keeping Margin error clear
-    // high in case iq value is unchanged form last command offset 1, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 1, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 0, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 0, 1, 1);
-    CHECK_SUCCESS(rc)
-
-    // set rxX margin in prog
-    // offset 13, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 13, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 12, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 12, 1, 1);
-    CHECK_SUCCESS(rc)
-
-    rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane);
-    CHECK_SUCCESS(rc)
-
-    return ARIES_SUCCESS;
-}
-
-/*
- * Set margin voltage sampler to a specified voltage
- */
-AriesErrorType ariesMarginPmaRxMarginVoltage(AriesRxMarginType* marginDevice,
-                                             AriesPseudoPortType port, int lane,
-                                             int direction, int steps)
-{
-    AriesErrorType rc;
-
-    // Determine pma side and qs from device port and lane
-    int side, quadSlice, quadSliceLane;
-    rc = ariesMarginDeterminePmaSideAndQs(marginDevice, port, lane, &side,
-                                          &quadSlice, &quadSliceLane);
-    CHECK_SUCCESS(rc)
-
-    // positive vdacValues move the slicer up
-    // assume the direction is up and if it is down we will overwrite deltaValue
-    // later
-
-    uint16_t vdacValue = steps;
-
-    // negative vdacValues move the slicer down
-    // if the direction is down, and we want to move at least 1 step then take
-    // the negation of our steps, so we move the opposite direction (aka down)
-    if (direction == 1 && steps > 0) // down or not 0 steps
-    {
-        vdacValue = ((~steps + 1) & 0x1ff);
-    }
-
-    // set VDAC override to 1 and set the VDAC value
-    // offset 11, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 11, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 2, width 9
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 2, vdacValue, 9);
-    CHECK_SUCCESS(rc)
-
-    // set Rx margin error clear ovrd en to 1 and Rx margin error clear ovrd to
-    // 1 ALS-105: Stop a dummy req being generated by keeping Margin error clear
-    // high in case iq value is unchanged form last command offset 1, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 1, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 0, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 0, 1, 1);
-    CHECK_SUCCESS(rc)
-
-    // set rxX margin in prog
-    // offset 13, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 13, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 12, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 12, 1, 1);
-    CHECK_SUCCESS(rc)
-
-    rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane);
-    CHECK_SUCCESS(rc)
-
-    return ARIES_SUCCESS;
-}
-
-/*
- * Set margin sampler to specified timing and voltage
- */
-AriesErrorType ariesMarginPmaTimingVoltageOffset(
-    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int lane,
-    int timeDirection, int timeSteps, int voltageDirection, int voltageSteps,
-    double dwell, int* eCount)
-{
-    AriesErrorType rc;
-
-    // Determine pma side and qs from device port and lane
-    int side, quadSlice, quadSliceLane;
-    rc = ariesMarginDeterminePmaSideAndQs(marginDevice, port, lane, &side,
-                                          &quadSlice, &quadSliceLane);
-    CHECK_SUCCESS(rc)
-
-    // get the 1X eye capture
-    uint16_t deltaValue, vdacValue;
-    deltaValue = timeSteps;
-    vdacValue = voltageSteps;
-
-    if (timeDirection == 1 && timeSteps != 0)
-    {
-        deltaValue = ((~timeSteps + 1) & 0x7f);
-    }
-
-    if (voltageDirection == 1 && timeSteps != 0)
-    {
-        vdacValue = ((~voltageSteps + 1) & 0x1ff);
-    }
-
-    // set IQ override to 1 and set the IQ value
-    // offset 12, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 12, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 5, width 7
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 5, deltaValue, 7);
-    CHECK_SUCCESS(rc)
-    // set VDAC override to 1 and set the VDAC value
-    // offset 11, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 11, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 2, width 9
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 2, vdacValue, 9);
-    CHECK_SUCCESS(rc)
-
-    // set Rx margin error clear ovrd en to 1 and Rx margin error clear ovrd to
-    // 1 ALS-105: Stop a dummy req being generated by keeping Margin error clear
-    // high in case iq value is unchanged form last command offset 1, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 1, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 0, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 0, 1, 1);
-    CHECK_SUCCESS(rc)
-
-    // set rxX margin in prog
-    // offset 13, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 13, 1, 1);
-    CHECK_SUCCESS(rc)
-    // offset 12, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 12, 1, 1);
-    CHECK_SUCCESS(rc)
-
-    rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane);
-    CHECK_SUCCESS(rc)
-    CHECK_SUCCESS(rc)
-
-    usleep((int)(dwell * 100000));
-
-    rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane);
-    CHECK_SUCCESS(rc)
-
-    if (marginDevice->do1XAnd0XCapture)
-    {
-        voltageDirection = 1 - voltageDirection;
-
-        if (timeDirection == 1 && timeSteps != 0)
+        // negative deltaValues move the slicer to the right
+        // if the direction is right, and we want to move at least 1 step then
+        // take the negation of our steps, so we move the opposite direction
+        if (direction[ln] == 1 && steps[ln] > 0) // right and not 0 steps
         {
-            deltaValue = ((~timeSteps + 1) & 0x7f);
+            deltaValue = ((~steps[ln] + 1) & 0x7f);
         }
 
-        if (voltageDirection == 1 && timeSteps != 0)
-        {
-            vdacValue = ((~voltageSteps + 1) & 0x1ff);
-        }
-
-        // set IQ override to 1 and set the IQ value
+        // Setting IQ OVRD to 1 and setting the IQ value
         // offset 12, width 1
         rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
             marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
             ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 12, 1, 1);
-        CHECK_SUCCESS(rc)
-        // offset 5, with 7
+        CHECK_SUCCESS(rc);
+        // offset 5, width 7
         rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
             marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
             ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 5, deltaValue, 7);
-        CHECK_SUCCESS(rc)
-        // set VDAC override to 1 and set the VDAC value
-        // offset 11, with 1
-        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 11, 1, 1);
-        CHECK_SUCCESS(rc)
-        // offset 2, width 9
-        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 2, vdacValue, 9);
-        CHECK_SUCCESS(rc)
+        CHECK_SUCCESS(rc);
 
         // set Rx margin error clear ovrd en to 1 and Rx margin error clear ovrd
         // to 1 ALS-105: Stop a dummy req being generated by keeping Margin
@@ -665,38 +479,285 @@ AriesErrorType ariesMarginPmaTimingVoltageOffset(
         rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
             marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
             ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 1, 1, 1);
-        CHECK_SUCCESS(rc)
+        CHECK_SUCCESS(rc);
         // offset 0, width 1
         rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
             marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
             ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 0, 1, 1);
-        CHECK_SUCCESS(rc)
+        CHECK_SUCCESS(rc);
 
         // set rxX margin in prog
         // offset 13, width 1
         rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
             marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
             ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 13, 1, 1);
-        CHECK_SUCCESS(rc)
+        CHECK_SUCCESS(rc);
         // offset 12, width 1
         rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
             marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
             ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 12, 1, 1);
-        CHECK_SUCCESS(rc)
+        CHECK_SUCCESS(rc);
+    }
+    rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane, laneCount);
+    CHECK_SUCCESS(rc);
 
-        rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane);
-        CHECK_SUCCESS(rc)
+    return ARIES_SUCCESS;
+}
+
+/*
+ * Set margin voltage sampler to a specified voltage
+ */
+AriesErrorType ariesMarginPmaRxMarginVoltage(AriesRxMarginType* marginDevice,
+                                             AriesPseudoPortType port,
+                                             int* lane, int* direction,
+                                             int* steps, int laneCount)
+{
+    AriesErrorType rc;
+    int side, quadSlice, quadSliceLane;
+    int ln;
+
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        // Determine pma side and qs from device port and lane
+        rc = ariesMarginDeterminePmaSideAndQs(
+            marginDevice, port, lane[ln], &side, &quadSlice, &quadSliceLane);
+        CHECK_SUCCESS(rc);
+
+        // positive vdacValues move the slicer up
+        // assume the direction is up and if it is down we will overwrite
+        // deltaValue later
+
+        uint16_t vdacValue = steps[ln];
+
+        // negative vdacValues move the slicer down
+        // if the direction is down, and we want to move at least 1 step then
+        // take the negation of our steps, so we move the opposite direction
+        // (aka down)
+        if (direction[ln] == 1 && steps[ln] > 0) // down or not 0 steps
+        {
+            vdacValue = ((~steps[ln] + 1) & 0x1ff);
+        }
+
+        // set VDAC override to 1 and set the VDAC value
+        // offset 11, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 11, 1, 1);
+        CHECK_SUCCESS(rc);
+        // offset 2, width 9
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 2, vdacValue, 9);
+        CHECK_SUCCESS(rc);
+
+        // set Rx margin error clear ovrd en to 1 and Rx margin error clear ovrd
+        // to 1 ALS-105: Stop a dummy req being generated by keeping Margin
+        // error clear high in case iq value is unchanged form last command
+        // offset 1, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 1, 1, 1);
+        CHECK_SUCCESS(rc);
+        // offset 0, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 0, 1, 1);
+        CHECK_SUCCESS(rc);
+
+        // set rxX margin in prog
+        // offset 13, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 13, 1, 1);
+        CHECK_SUCCESS(rc);
+        // offset 12, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 12, 1, 1);
+        CHECK_SUCCESS(rc);
+    }
+
+    rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane, laneCount);
+    CHECK_SUCCESS(rc);
+
+    return ARIES_SUCCESS;
+}
+
+/*
+ * Set margin sampler to specified timing and voltage
+ */
+AriesErrorType ariesMarginPmaTimingVoltageOffset(
+    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int* lane,
+    int* timeDirection, int* timeSteps, int* voltageDirection,
+    int* voltageSteps, int laneCount, double dwell, int* eCount)
+{
+    AriesErrorType rc;
+    int side, quadSlice, quadSliceLane;
+    uint16_t deltaValue = 0, vdacValue = 0;
+    int ln;
+
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        // Determine pma side and qs from device port and lane
+        rc = ariesMarginDeterminePmaSideAndQs(
+            marginDevice, port, lane[ln], &side, &quadSlice, &quadSliceLane);
+        CHECK_SUCCESS(rc);
+
+        // get the 1X eye capture
+        deltaValue = timeSteps[ln];
+        vdacValue = voltageSteps[ln];
+
+        if (timeDirection[ln] == 1 && timeSteps[ln] != 0)
+        {
+            deltaValue = ((~timeSteps[ln] + 1) & 0x7f);
+        }
+
+        if (voltageDirection[ln] == 1 && timeSteps[ln] != 0)
+        {
+            vdacValue = ((~voltageSteps[ln] + 1) & 0x1ff);
+        }
+
+        // set IQ override to 1 and set the IQ value
+        // offset 12, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 12, 1, 1);
+        CHECK_SUCCESS(rc);
+        // offset 5, width 7
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 5, deltaValue, 7);
+        CHECK_SUCCESS(rc);
+        // set VDAC override to 1 and set the VDAC value
+        // offset 11, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 11, 1, 1);
+        CHECK_SUCCESS(rc);
+        // offset 2, width 9
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 2, vdacValue, 9);
+        CHECK_SUCCESS(rc);
+
+        // set Rx margin error clear ovrd en to 1 and Rx margin error clear ovrd
+        // to 1 ALS-105: Stop a dummy req being generated by keeping Margin
+        // error clear high in case iq value is unchanged form last command
+        // offset 1, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 1, 1, 1);
+        CHECK_SUCCESS(rc);
+        // offset 0, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 0, 1, 1);
+        CHECK_SUCCESS(rc);
+
+        // set rxX margin in prog
+        // offset 13, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 13, 1, 1);
+        CHECK_SUCCESS(rc);
+        // offset 12, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 12, 1, 1);
+        CHECK_SUCCESS(rc);
+    }
+
+    rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane, laneCount);
+    CHECK_SUCCESS(rc);
+
+    usleep((int)(dwell * 100000));
+
+    rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane, laneCount);
+    CHECK_SUCCESS(rc);
+
+    if (marginDevice->do1XAnd0XCapture)
+    {
+        for (ln = 0; ln < laneCount; ln++)
+        {
+            voltageDirection[ln] = 1 - voltageDirection[ln];
+
+            if (timeDirection[ln] == 1 && timeSteps[ln] != 0)
+            {
+                deltaValue = ((~timeSteps[ln] + 1) & 0x7f);
+            }
+
+            if (voltageDirection[ln] == 1 && timeSteps[ln] != 0)
+            {
+                vdacValue = ((~voltageSteps[ln] + 1) & 0x1ff);
+            }
+
+            // set IQ override to 1 and set the IQ value
+            // offset 12, width 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 12, 1, 1);
+            CHECK_SUCCESS(rc);
+            // offset 5, with 7
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_7, 5, deltaValue, 7);
+            CHECK_SUCCESS(rc);
+            // set VDAC override to 1 and set the VDAC value
+            // offset 11, with 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 11, 1, 1);
+            CHECK_SUCCESS(rc);
+            // offset 2, width 9
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 2, vdacValue, 9);
+            CHECK_SUCCESS(rc);
+
+            // set Rx margin error clear ovrd en to 1 and Rx margin error clear
+            // ovrd to 1 ALS-105: Stop a dummy req being generated by keeping
+            // Margin error clear high in case iq value is unchanged form last
+            // command offset 1, width 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 1, 1, 1);
+            CHECK_SUCCESS(rc);
+            // offset 0, width 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 0, 1, 1);
+            CHECK_SUCCESS(rc);
+
+            // set rxX margin in prog
+            // offset 13, width 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 13, 1, 1);
+            CHECK_SUCCESS(rc);
+            // offset 12, width 1
+            rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9, 12, 1, 1);
+            CHECK_SUCCESS(rc);
+        }
+
+        rc = ariesMarginPmaRxReqAckHandshake(marginDevice, port, lane,
+                                             laneCount);
+        CHECK_SUCCESS(rc);
 
         usleep((int)(dwell * 100000));
 
-        rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane);
-        CHECK_SUCCESS(rc)
+        rc = ariesMarginPmaRxMarginGetECount(marginDevice, port, lane,
+                                             laneCount);
+        CHECK_SUCCESS(rc);
     }
 
-    if (marginDevice->errorCount[port][lane] > 63)
-        marginDevice->errorCount[port][lane] = 63;
-
-    *eCount = marginDevice->errorCount[port][lane];
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        if (marginDevice->errorCount[port][lane[ln]] > 63)
+            marginDevice->errorCount[port][lane[ln]] = 63;
+        eCount[ln] = marginDevice->errorCount[port][lane[ln]];
+    }
 
     return ARIES_SUCCESS;
 }
@@ -707,28 +768,33 @@ AriesErrorType ariesMarginPmaTimingVoltageOffset(
  */
 AriesErrorType ariesMarginPmaRxMarginGetECount(AriesRxMarginType* marginDevice,
                                                AriesPseudoPortType port,
-                                               int lane)
+                                               int* lane, int laneCount)
 {
     // Determine pma side and quad slice
     AriesErrorType rc;
     int side, quadSlice, quadSliceLane;
-    rc = ariesMarginDeterminePmaSideAndQs(marginDevice, port, lane, &side,
-                                          &quadSlice, &quadSliceLane);
-    CHECK_SUCCESS(rc)
+    int ln;
 
-    // Get error count from error count register
-    uint8_t dataWord[2];
-    rc = ariesReadWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_RX_CTL_RX_MARGIN_ERROR, dataWord);
-    CHECK_SUCCESS(rc)
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        rc = ariesMarginDeterminePmaSideAndQs(
+            marginDevice, port, lane[ln], &side, &quadSlice, &quadSliceLane);
+        CHECK_SUCCESS(rc);
 
-    uint8_t eCount =
-        dataWord[0] &
-        0x3f; // eCount is only 6 bits wide. We want the first 6 bits.
+        // Get error count from error count register
+        uint8_t dataWord[2];
+        rc = ariesReadWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_RX_CTL_RX_MARGIN_ERROR, dataWord);
+        CHECK_SUCCESS(rc);
 
-    // update errorCount array
-    marginDevice->errorCount[port][lane] += eCount;
+        uint8_t eCount =
+            dataWord[0] &
+            0x3f; // eCount is only 6 bits wide. We want the first 6 bits.
+
+        // update errorCount array
+        marginDevice->errorCount[port][lane[ln]] += eCount;
+    }
 
     return ARIES_SUCCESS;
 }
@@ -738,65 +804,80 @@ AriesErrorType ariesMarginPmaRxMarginGetECount(AriesRxMarginType* marginDevice,
  */
 AriesErrorType ariesMarginPmaRxReqAckHandshake(AriesRxMarginType* marginDevice,
                                                AriesPseudoPortType port,
-                                               int lane)
+                                               int* lane, int laneCount)
 {
     AriesErrorType rc;
     int side, quadSlice, quadSliceLane;
-    rc = ariesMarginDeterminePmaSideAndQs(marginDevice, port, lane, &side,
-                                          &quadSlice, &quadSliceLane);
-    CHECK_SUCCESS(rc)
+    int ln;
 
-    // Assert rxX_req
-    // Force 0
-    // Offset 5, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 5, 1, 1);
-    CHECK_SUCCESS(rc)
-    // Offset 4, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 4, 0, 1);
-    CHECK_SUCCESS(rc)
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        rc = ariesMarginDeterminePmaSideAndQs(
+            marginDevice, port, lane[ln], &side, &quadSlice, &quadSliceLane);
+        CHECK_SUCCESS(rc);
 
-    // Force 1
-    // Offset 5, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 5, 1, 1);
-    CHECK_SUCCESS(rc)
-    // Offset 4, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 4, 1, 1);
-    CHECK_SUCCESS(rc)
+        // Assert rxX_req
+        // Force 0
+        // Offset 5, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 5, 1, 1);
+        CHECK_SUCCESS(rc);
+        // Offset 4, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 4, 0, 1);
+        CHECK_SUCCESS(rc);
+
+        // Force 1
+        // Offset 5, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 5, 1, 1);
+        CHECK_SUCCESS(rc);
+        // Offset 4, width 1
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 4, 1, 1);
+        CHECK_SUCCESS(rc);
+    }
 
     // Check for ack
     uint8_t dataWord[2];
     uint8_t ack = 0x0;
     int count = 0;
-    while (ack == 0)
+    while (!ack && count <= 0x3fff)
     {
-        rc = ariesReadWordPmaLaneMainMicroIndirect(
-            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-            ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_PCS_OUT, dataWord);
-        ack = dataWord[0] & 0x1; // only care about first bit
-        CHECK_SUCCESS(rc)
-        count += 1;
-
-        if (count > 0x3fff)
+        ack = 1;
+        for (ln = 0; ln < laneCount; ln++)
         {
-            ASTERA_ERROR("During Rx req handshake, ACK timed out");
-            break;
+            rc = ariesReadWordPmaLaneMainMicroIndirect(
+                marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+                ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_PCS_OUT, dataWord);
+            CHECK_SUCCESS(rc);
+            if (!(dataWord[0] & 0x1))
+            {
+                ack = 0;
+            }
         }
+        count += 1;
+    }
+    if (!ack)
+    {
+        ASTERA_ERROR("During Rx req handshake, ACK timed out");
     }
     // Set rxX_req override to 0
     // Offset 5, width 1
-    rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
-        marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
-        ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 5, 0, 1);
-    CHECK_SUCCESS(rc)
-
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        rc = ariesMarginDeterminePmaSideAndQs(
+            marginDevice, port, lane[ln], &side, &quadSlice, &quadSliceLane);
+        CHECK_SUCCESS(rc);
+        rc = ariesReadWriteWordPmaLaneMainMicroIndirect(
+            marginDevice->device->i2cDriver, side, quadSlice, quadSliceLane,
+            ARIES_PMA_RAWLANE_DIG_PCS_XF_ATE_OVRD_IN, 5, 0, 1);
+        CHECK_SUCCESS(rc);
+    }
     return ARIES_SUCCESS;
 }
 
@@ -908,28 +989,34 @@ AriesErrorType ariesMarginDeterminePmaSideAndQs(AriesRxMarginType* marginDevice,
 }
 
 AriesErrorType ariesGetLaneRecoveryCount(AriesRxMarginType* marginDevice,
-                                         int lane, int* recoveryCount)
+                                         int* lane, int laneCount,
+                                         int* recoveryCount)
 {
     AriesErrorType rc;
     AriesBifurcationType bifMode;
     uint8_t byteVal[1];
     int linkId;
     int address;
+    int ln;
 
     // Get current bifurcation settings
     rc = ariesGetBifurcationMode(marginDevice->device, &bifMode);
     CHECK_SUCCESS(rc);
 
     // Use bifurcation settings and lane to determine linkId
-    ariesGetLinkId(bifMode, lane, &linkId);
-    address = marginDevice->device->mm_print_info_struct_addr;
-    address += ARIES_PRINT_INFO_STRUCT_LNK_RECOV_ENTRIES_PTR_OFFSET + linkId;
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        ariesGetLinkId(bifMode, lane[ln], &linkId);
+        address = marginDevice->device->mm_print_info_struct_addr;
+        address += ARIES_PRINT_INFO_STRUCT_LNK_RECOV_ENTRIES_PTR_OFFSET +
+                   linkId;
 
-    // Read recovery count
-    rc = ariesReadByteDataMainMicroIndirect(marginDevice->device->i2cDriver,
-                                            address, byteVal);
-    CHECK_SUCCESS(rc);
-    *recoveryCount = byteVal[0];
+        // Read recovery count
+        rc = ariesReadByteDataMainMicroIndirect(marginDevice->device->i2cDriver,
+                                                address, byteVal);
+        CHECK_SUCCESS(rc);
+        recoveryCount[ln] = byteVal[0];
+    }
 
     return ARIES_SUCCESS;
 }
@@ -937,120 +1024,286 @@ AriesErrorType ariesGetLaneRecoveryCount(AriesRxMarginType* marginDevice,
  * determines eye height using binary search
  */
 AriesErrorType ariesCheckEye(AriesRxMarginType* marginDevice,
-                             AriesPseudoPortType port, int lane, double dwell,
-                             double*** eyeResults)
+                             AriesPseudoPortType port, int* lane, int laneCount,
+                             double dwell, double*** eyeResults)
 {
     AriesErrorType rc;
+    int* recovCount = (int*)malloc(sizeof(int) * laneCount);
+    int* recovCount2 = (int*)malloc(sizeof(int) * laneCount);
+    int* low = (int*)malloc(sizeof(int) * laneCount);
+    int* high = (int*)malloc(sizeof(int) * laneCount);
+    int* steps = (int*)malloc(sizeof(int) * laneCount);
+    int* direction = (int*)malloc(sizeof(int) * laneCount);
+    int* errorCount = (int*)malloc(sizeof(int) * laneCount);
+    int left_right, down_up, ln;
+    if (recovCount == NULL || recovCount2 == NULL || low == NULL ||
+        high == NULL || steps == NULL || direction == NULL ||
+        errorCount == NULL)
+    {
+        free(recovCount);
+        free(recovCount2);
+        free(low);
+        free(high);
+        free(steps);
+        free(direction);
+        free(errorCount);
+        ASTERA_ERROR("Failed to allocate memory for ariesCheckEye");
+        return ARIES_FAILURE;
+    }
+    rc = ariesGetLaneRecoveryCount(marginDevice, lane, laneCount, recovCount);
+    if (rc != ARIES_SUCCESS)
+    {
+        free(recovCount);
+        free(recovCount2);
+        free(low);
+        free(high);
+        free(steps);
+        free(direction);
+        free(errorCount);
+        return rc;
+    }
 
-    // get initial error count
-    int recovCount;
-    rc = ariesGetLaneRecoveryCount(marginDevice, lane, &recovCount);
-    CHECK_SUCCESS(rc);
-    ASTERA_INFO("Begining margining on lane %d", lane);
-    // timing
-    int i;
-    for (i = 0; i < 2; i++)
+    for (left_right = 0; left_right < 2; left_right++)
     { // 0:left, 1:right
-        rc = ariesMarginGoToNormalSettings(marginDevice, port, lane);
-        CHECK_SUCCESS(rc)
-        int low = 0;
-        int high = NUMTIMINGSTEPS;
-        int steps;
-        while (low != high)
+        rc = ariesMarginGoToNormalSettings(marginDevice, port, lane, laneCount);
+        if (rc != ARIES_SUCCESS)
         {
-            steps = (low + high + 1) / 2;
-            rc = ariesMarginClearErrorLog(marginDevice, port, lane);
-            CHECK_SUCCESS(rc)
-            ASTERA_DEBUG("Checking timing offset direction %d steps %d", i,
-                         steps);
-            int errorCount = 0;
-            rc = ariesMarginStepMarginToTimingOffset(
-                marginDevice, port, lane, i, steps, dwell, &errorCount);
-            CHECK_SUCCESS(rc)
-            if (errorCount > marginDevice->errorCountLimit)
+            free(recovCount);
+            free(recovCount2);
+            free(low);
+            free(high);
+            free(steps);
+            free(direction);
+            free(errorCount);
+            return rc;
+        }
+        for (ln = 0; ln < laneCount; ln++)
+        {
+            low[ln] = 0;
+            high[ln] = NUMTIMINGSTEPS;
+            direction[ln] = left_right;
+        }
+        while (memcmp(low, high, sizeof(int) * laneCount))
+        {
+            for (ln = 0; ln < laneCount; ln++)
             {
-                // can't be here anymore. We saw too many errors here
-                high = steps - 1;
+                steps[ln] = (low[ln] + high[ln] + 1) / 2;
+                ASTERA_DEBUG(
+                    "Checking timing offset lane %d direction %d steps %d",
+                    lane[ln], left_right, steps[ln]);
             }
-            else
+            rc = ariesMarginClearErrorLog(marginDevice, port, lane, laneCount);
+            if (rc != ARIES_SUCCESS)
             {
-                low = steps;
-                if (steps == NUMTIMINGSTEPS)
+                free(recovCount);
+                free(recovCount2);
+                free(low);
+                free(high);
+                free(steps);
+                free(direction);
+                free(errorCount);
+                return rc;
+            }
+
+            memset(errorCount, 0, sizeof(int) * laneCount);
+
+            rc = ariesMarginStepMarginToTimingOffset(
+                marginDevice, port, lane, direction, steps, laneCount, dwell,
+                errorCount);
+            if (rc != ARIES_SUCCESS)
+            {
+                free(recovCount);
+                free(recovCount2);
+                free(low);
+                free(high);
+                free(steps);
+                free(direction);
+                free(errorCount);
+                return rc;
+            }
+            for (ln = 0; ln < laneCount; ln++)
+            {
+                if (errorCount[ln] > marginDevice->errorCountLimit)
                 {
-                    ASTERA_DEBUG(
-                        "We reached maximum timing offset, exiting margining");
-                    break;
+                    // can't be here anymore. We saw too many errors here
+                    high[ln] = steps[ln] - 1;
+                    if (high[ln] < low[ln])
+                    {
+                        low[ln] = high[ln];
+                    }
                 }
+                else
+                {
+                    low[ln] = steps[ln];
+                    if (steps[ln] == NUMTIMINGSTEPS)
+                    {
+                        ASTERA_DEBUG(
+                            "We reached maximum timing offset, exiting margining");
+                    }
+                }
+                eyeResults[port][lane[ln]][left_right] = low[ln];
             }
         }
-        eyeResults[port][lane][i] = low;
     }
 
     // voltage
-    for (i = 0; i < 2; i++)
+    for (down_up = 0; down_up < 2; down_up++)
     { // 0:up, 1:down
-        rc = ariesMarginGoToNormalSettings(marginDevice, port, lane);
-        CHECK_SUCCESS(rc)
-        int low = 0;
-        int high = NUMVOLTAGESTEPS;
-        int steps;
-        while (low != high)
+        rc = ariesMarginGoToNormalSettings(marginDevice, port, lane, laneCount);
+        if (rc != ARIES_SUCCESS)
         {
-            steps = (low + high + 1) / 2;
-            rc = ariesMarginClearErrorLog(marginDevice, port, lane);
-            CHECK_SUCCESS(rc)
-            ASTERA_DEBUG("Checking voltage offset direction %d steps %d", i,
-                         steps);
-            int errorCount = 0;
-            rc = ariesMarginStepMarginToVoltageOffset(
-                marginDevice, port, lane, i, steps, dwell, &errorCount);
-            CHECK_SUCCESS(rc)
-            if (errorCount > marginDevice->errorCountLimit)
+            free(recovCount);
+            free(recovCount2);
+            free(low);
+            free(high);
+            free(steps);
+            free(direction);
+            free(errorCount);
+            return rc;
+        }
+        for (ln = 0; ln < laneCount; ln++)
+        {
+            low[ln] = 0;
+            high[ln] = NUMVOLTAGESTEPS;
+            direction[ln] = down_up;
+        }
+        while (memcmp(low, high, sizeof(int) * laneCount))
+        {
+            for (ln = 0; ln < laneCount; ln++)
             {
-                // can't be here anymore. We saw too many errors here
-                high = steps - 1;
+                steps[ln] = (low[ln] + high[ln] + 1) / 2;
+                ASTERA_DEBUG(
+                    "Checking voltage offset lane %d direction %d steps %d",
+                    lane[ln], down_up, steps[ln]);
             }
-            else
+            rc = ariesMarginClearErrorLog(marginDevice, port, lane, laneCount);
+            if (rc != ARIES_SUCCESS)
             {
-                low = steps;
-                if (steps == NUMVOLTAGESTEPS)
+                free(recovCount);
+                free(recovCount2);
+                free(low);
+                free(high);
+                free(steps);
+                free(direction);
+                free(errorCount);
+                return rc;
+            }
+            memset(errorCount, 0, sizeof(int) * laneCount);
+
+            rc = ariesMarginStepMarginToVoltageOffset(
+                marginDevice, port, lane, direction, steps, laneCount, dwell,
+                errorCount);
+            if (rc != ARIES_SUCCESS)
+            {
+                free(recovCount);
+                free(recovCount2);
+                free(low);
+                free(high);
+                free(steps);
+                free(direction);
+                free(errorCount);
+                return rc;
+            }
+            for (ln = 0; ln < laneCount; ln++)
+            {
+                if (errorCount[ln] > marginDevice->errorCountLimit)
                 {
-                    ASTERA_DEBUG(
-                        "We reached maximum voltage offset, exiting margining");
-                    break;
+                    // can't be here anymore. We saw too many errors here
+                    high[ln] = steps[ln] - 1;
+                    if (high[ln] < low[ln])
+                    {
+                        low[ln] = high[ln];
+                    }
                 }
+                else
+                {
+                    low[ln] = steps[ln];
+                    if (steps[ln] == NUMTIMINGSTEPS)
+                    {
+                        ASTERA_DEBUG(
+                            "We reached maximum voltage offset, exiting margining");
+                    }
+                }
+                eyeResults[port][lane[ln]][down_up + 2] = low[ln];
             }
         }
-        eyeResults[port][lane][i + 2] = low;
+    }
+
+    rc = ariesMarginGoToNormalSettings(marginDevice, port, lane, laneCount);
+    if (rc != ARIES_SUCCESS)
+    {
+        free(recovCount);
+        free(recovCount2);
+        free(low);
+        free(high);
+        free(steps);
+        free(direction);
+        free(errorCount);
+        return rc;
+    }
+    rc = ariesMarginClearErrorLog(marginDevice, port, lane, laneCount);
+    if (rc != ARIES_SUCCESS)
+    {
+        free(recovCount);
+        free(recovCount2);
+        free(low);
+        free(high);
+        free(steps);
+        free(direction);
+        free(errorCount);
+        return rc;
     }
 
     // Check recovery count again. if they are different then a recovery
     // happened
-    int recovCount2;
-    rc = ariesGetLaneRecoveryCount(marginDevice, lane, &recovCount2);
-    CHECK_SUCCESS(rc);
-
-    if (recovCount != recovCount2)
+    rc = ariesGetLaneRecoveryCount(marginDevice, lane, laneCount, recovCount2);
+    if (rc != ARIES_SUCCESS)
     {
-        ASTERA_WARN("%d recoveries occured while margining this lane",
-                    (recovCount2 - recovCount) / 2);
+        free(recovCount);
+        free(recovCount2);
+        free(low);
+        free(high);
+        free(steps);
+        free(direction);
+        free(errorCount);
+        return rc;
     }
-    eyeResults[port][lane][4] = (recovCount2 - recovCount) / 2;
+
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        if (recovCount2[ln] != recovCount[ln])
+        {
+            ASTERA_WARN("%d recoveries occured while margining lane %d",
+                        (recovCount2[ln] - recovCount[ln]) / 2, lane[ln]);
+        }
+    }
+    for (ln = 0; ln < laneCount; ln++)
+    {
+        eyeResults[port][lane[ln]][4] = (recovCount2[ln] - recovCount[ln]) / 2;
+        double eyeWidthLeft = eyeResults[port][lane[ln]][0] /
+                              (double)NUMTIMINGSTEPS * (double)MAXTIMINGOFFSET;
+        double eyeWidthRight = eyeResults[port][lane[ln]][1] /
+                               (double)NUMTIMINGSTEPS * (double)MAXTIMINGOFFSET;
+        double eyeHeightUp = eyeResults[port][lane[ln]][2] /
+                             (double)NUMVOLTAGESTEPS * (double)MAXVOLTAGEOFFSET;
+        double eyeHeightDown = eyeResults[port][lane[ln]][3] /
+                               (double)NUMVOLTAGESTEPS *
+                               (double)MAXVOLTAGEOFFSET;
+        ASTERA_INFO("Eye stats for port %d lane %d", port, lane[ln]);
+        ASTERA_INFO("  Width = -%.2fUI to %.2fUI", eyeWidthLeft / 100.0,
+                    eyeWidthRight / 100.0);
+        ASTERA_INFO("  Height = -%.0fmV to %.0fmV", eyeHeightDown * 10.0,
+                    eyeHeightUp * 10.0);
+    }
+    free(recovCount);
+    free(recovCount2);
+    free(low);
+    free(high);
+    free(steps);
+    free(direction);
+    free(errorCount);
 
     // Print results
-    double eyeWidthLeft = eyeResults[port][lane][0] / (double)NUMTIMINGSTEPS *
-                          (double)MAXTIMINGOFFSET;
-    double eyeWidthRight = eyeResults[port][lane][1] / (double)NUMTIMINGSTEPS *
-                           (double)MAXTIMINGOFFSET;
-    double eyeHeightUp = eyeResults[port][lane][2] / (double)NUMVOLTAGESTEPS *
-                         (double)MAXVOLTAGEOFFSET;
-    double eyeHeightDown = eyeResults[port][lane][3] / (double)NUMVOLTAGESTEPS *
-                           (double)MAXVOLTAGEOFFSET;
-    ASTERA_INFO("Eye stats for port %d lane %d", port, lane);
-    ASTERA_INFO("  Width = -%.2fUI to %.2fUI", eyeWidthLeft / 100.0,
-                eyeWidthRight / 100.0);
-    ASTERA_INFO("  Height = -%.0fmV to %.0fmV", eyeHeightDown * 10.0,
-                eyeHeightUp * 10.0);
     return ARIES_SUCCESS;
 }
 
@@ -1079,99 +1332,50 @@ AriesErrorType ariesLogEye(AriesRxMarginType* marginDevice,
     char filepath[ARIES_PATH_MAX];
     snprintf(filepath, ARIES_PATH_MAX, "%s_%d.csv", filename, port);
 
+    int* lanes = (int*)malloc(sizeof(int) * width);
+    if (lanes == NULL)
+    {
+        ASTERA_ERROR("Failed to allocate memory for ariesLogEye");
+        return ARIES_FAILURE;
+    }
+    int ln;
+    for (ln = 0; ln < width; ln++)
+    {
+        lanes[ln] = startLane + ln;
+    }
+    rc = ariesCheckEye(marginDevice, port, lanes, width, dwell, eyeResults);
+    if (rc != ARIES_SUCCESS)
+    {
+        free(lanes);
+        return rc;
+    }
+
     FILE* fp;
     fp = fopen(filepath, "w");
     // Adding header
     fprintf(
         fp,
         "Lane,Timing_neg_UI%%,Timing_pos_UI%%,Timing_tot_UI%%,Voltage_neg_mV,Voltage_pos_mV,Voltage_tot_mV,Recoveries\n");
-    int i;
-    for (i = startLane; i < startLane + width; i++)
+    for (ln = startLane; ln < startLane + width; ln++)
     {
-        rc = ariesCheckEye(marginDevice, port, i, dwell, eyeResults);
-        CHECK_SUCCESS(rc)
-        double eyeWidthLeft = eyeResults[port][i][0] / (double)NUMTIMINGSTEPS *
+        double eyeWidthLeft = eyeResults[port][ln][0] / (double)NUMTIMINGSTEPS *
                               (double)MAXTIMINGOFFSET;
-        double eyeWidthRight = eyeResults[port][i][1] / (double)NUMTIMINGSTEPS *
-                               (double)MAXTIMINGOFFSET;
-        double eyeHeightUp = eyeResults[port][i][2] / (double)NUMVOLTAGESTEPS *
+        double eyeWidthRight = eyeResults[port][ln][1] /
+                               (double)NUMTIMINGSTEPS * (double)MAXTIMINGOFFSET;
+        double eyeHeightUp = eyeResults[port][ln][2] / (double)NUMVOLTAGESTEPS *
                              (double)MAXVOLTAGEOFFSET;
-        double eyeHeightDown = eyeResults[port][i][3] /
+        double eyeHeightDown = eyeResults[port][ln][3] /
                                (double)NUMVOLTAGESTEPS *
                                (double)MAXVOLTAGEOFFSET;
-        double recoveries = eyeResults[port][i][4];
-        fprintf(fp, "%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.0f\n", i, eyeWidthLeft,
+        double recoveries = eyeResults[port][ln][4];
+        fprintf(fp, "%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.0f\n", ln, eyeWidthLeft,
                 eyeWidthRight, eyeWidthLeft + eyeWidthRight, eyeHeightDown * 10,
                 eyeHeightUp * 10, (eyeHeightUp + eyeHeightDown) * 10,
                 recoveries);
     }
 
     fclose(fp);
-    return ARIES_SUCCESS;
-}
-
-/*
- * Determine eye by going step by step
- */
-AriesErrorType ariesSweepEye(AriesRxMarginType* marginDevice,
-                             AriesPseudoPortType port, int lane, double dwell,
-                             double**** eyeResults)
-{
-    AriesErrorType rc;
-
-    // get initial error count
-    int recovCount;
-    rc = ariesGetLaneRecoveryCount(marginDevice, lane, &recovCount);
-    CHECK_SUCCESS(rc);
-    ASTERA_INFO("Begining margining on lane %d", lane);
-    // timing
-    int i;
-    for (i = 0; i < 2; i++)
-    {
-        int steps;
-        for (steps = 0; steps <= NUMTIMINGSTEPS; steps++)
-        {
-            rc = ariesMarginClearErrorLog(marginDevice, port, lane);
-            CHECK_SUCCESS(rc)
-            ASTERA_DEBUG("Checking timing offset direction %d steps %d", i,
-                         steps);
-            int errorCount = 0;
-            rc = ariesMarginStepMarginToTimingOffset(
-                marginDevice, port, lane, i, steps, dwell, &errorCount);
-            CHECK_SUCCESS(rc)
-            eyeResults[port][lane][i][steps] = errorCount;
-        }
-    }
-    // voltage
-    for (i = 0; i < 2; i++)
-    {
-        int steps;
-        for (steps = 0; steps <= NUMVOLTAGESTEPS; steps++)
-        {
-            rc = ariesMarginClearErrorLog(marginDevice, port, lane);
-            CHECK_SUCCESS(rc)
-            ASTERA_DEBUG("Checking voltage offset direction %d steps %d", i,
-                         steps);
-            int errorCount = 0;
-            rc = ariesMarginStepMarginToVoltageOffset(
-                marginDevice, port, lane, i, steps, dwell, &errorCount);
-            CHECK_SUCCESS(rc)
-            eyeResults[port][lane][i + 2][steps] = errorCount;
-        }
-    }
-
-    // Check recovery count again. if they are different then a recovery
-    // happened
-    int recovCount2;
-    rc = ariesGetLaneRecoveryCount(marginDevice, lane, &recovCount2);
-    CHECK_SUCCESS(rc);
-
-    if (recovCount != recovCount2)
-    {
-        ASTERA_WARN("%d recoveries occured while margining this lane",
-                    (recovCount2 - recovCount) / 2);
-    }
-
+    free(lanes);
     return ARIES_SUCCESS;
 }
 
@@ -1184,27 +1388,32 @@ AriesErrorType ariesEyeDiagram(AriesRxMarginType* marginDevice,
 {
     AriesErrorType rc;
 
-    int* timingOffsets = (int*)malloc(sizeof(int) * NUMTIMINGSTEPS + 1);
+    int* timingOffsets = (int*)malloc(sizeof(int) * NUMTIMINGSTEPS * 2 + 1);
     int voltageOffsets[] = {70,  60,  50,  40,  30,  20,  10, 0,
                             -10, -20, -30, -40, -50, -60, -70};
-    int i;
+    int timingOffset;
     if (rate == 3)
     {
-        for (i = 0; i < NUMTIMINGSTEPS + 1; i++)
+        for (timingOffset = 0; timingOffset < NUMTIMINGSTEPS + 1;
+             timingOffset++)
         {
-            timingOffsets[i] = (-NUMTIMINGSTEPS * 2) + (4 * i);
+            timingOffsets[timingOffset] = (-NUMTIMINGSTEPS * 2) +
+                                          (4 * timingOffset);
         }
     }
     else if (rate >= 4 && rate < 6)
     {
-        for (i = 0; i < NUMTIMINGSTEPS + 1; i++)
+        for (timingOffset = 0; timingOffset < NUMTIMINGSTEPS + 1;
+             timingOffset++)
         {
-            timingOffsets[i] = (-NUMTIMINGSTEPS) + (2 * i);
+            timingOffsets[timingOffset] = (-NUMTIMINGSTEPS) +
+                                          (2 * timingOffset);
         }
     }
     else
     {
         ASTERA_ERROR("%d is not a valid rate", rate);
+        free(timingOffsets);
         return ARIES_INVALID_ARGUMENT;
     }
 
@@ -1213,7 +1422,7 @@ AriesErrorType ariesEyeDiagram(AriesRxMarginType* marginDevice,
 
     // get initial error count
     int recovCount;
-    rc = ariesGetLaneRecoveryCount(marginDevice, lane, &recovCount);
+    rc = ariesGetLaneRecoveryCount(marginDevice, &lane, 1, &recovCount);
     CHECK_SUCCESS(rc);
 
     FILE* fp;
@@ -1222,14 +1431,15 @@ AriesErrorType ariesEyeDiagram(AriesRxMarginType* marginDevice,
     for (voltageOffset = 0; voltageOffset < 15; voltageOffset++)
     {
         fprintf(fp, "%3d,,", voltageOffsets[voltageOffset]);
-        for (i = 0; i < NUMTIMINGSTEPS + 1; i++)
+        for (timingOffset = 0; timingOffset < NUMTIMINGSTEPS + 1;
+             timingOffset++)
         {
-            rc = ariesMarginClearErrorLog(marginDevice, port, lane);
+            rc = ariesMarginClearErrorLog(marginDevice, port, &lane, 1);
             CHECK_SUCCESS(rc);
 
             int errorCount = 0;
             int timeDirection = 0;
-            if (timingOffsets[i] < 0)
+            if (timingOffsets[timingOffset] < 0)
             {
                 timeDirection = 0; // left
             }
@@ -1237,7 +1447,7 @@ AriesErrorType ariesEyeDiagram(AriesRxMarginType* marginDevice,
             {
                 timeDirection = 1; // right
             }
-            int timeSteps = abs(timingOffsets[i]);
+            int timeSteps = abs(timingOffsets[timingOffset]);
 
             int voltageDirection = 0;
             if (voltageOffsets[voltageOffset] < 0)
@@ -1250,28 +1460,29 @@ AriesErrorType ariesEyeDiagram(AriesRxMarginType* marginDevice,
             }
             int voltageSteps = abs(voltageOffsets[voltageOffset]);
 
-            ASTERA_DEBUG("Checking offset x=%d,y=%d", timingOffsets[i],
+            ASTERA_DEBUG("Checking offset x=%d,y=%d",
+                         timingOffsets[timingOffset],
                          voltageOffsets[voltageOffset]);
             rc = ariesMarginPmaTimingVoltageOffset(
-                marginDevice, port, lane, timeDirection, timeSteps,
-                voltageDirection, voltageSteps, dwell, &errorCount);
-            CHECK_SUCCESS(rc)
-            eyeResults[port][lane][i][voltageOffset] = errorCount;
+                marginDevice, port, &lane, &timeDirection, &timeSteps,
+                &voltageDirection, &voltageSteps, 1, dwell, &errorCount);
+            CHECK_SUCCESS(rc);
+            eyeResults[port][lane][timingOffset][voltageOffset] = errorCount;
             fprintf(fp, "%3d,", errorCount);
         }
         fprintf(fp, "\n");
     }
     fprintf(fp, "\n");
     fprintf(fp, "   ,,");
-    for (i = 0; i < NUMTIMINGSTEPS + 1; i++)
+    for (timingOffset = 0; timingOffset < NUMTIMINGSTEPS + 1; timingOffset++)
     {
-        fprintf(fp, "%3d,", timingOffsets[i]);
+        fprintf(fp, "%3d,", timingOffsets[timingOffset]);
     }
     fprintf(fp, "\n");
     fclose(fp);
 
     int recovCount2;
-    rc = ariesGetLaneRecoveryCount(marginDevice, lane, &recovCount2);
+    rc = ariesGetLaneRecoveryCount(marginDevice, &lane, 1, &recovCount2);
     CHECK_SUCCESS(rc);
 
     // Check recovery count again. if they are different then a recovery

@@ -25,6 +25,7 @@
 #include "aries_error.h"
 #include "aries_api_types.h"
 #include "astera_log.h"
+#include "aries_api.h"
 #include "aries_i2c.h"
 
 #ifdef ARIES_MPW
@@ -64,7 +65,8 @@ extern "C" {
 AriesErrorType ariesReadFwVersion(AriesI2CDriverType* i2cDriver, int offset,
                                   uint8_t* dataVal);
 
-AriesErrorType ariesDeassertReset(AriesI2CDriverType* i2cDriver);
+int ariesFirmwareIsAtLeast(AriesDeviceType* device, uint8_t major,
+                           uint8_t minor, uint16_t build);
 
 AriesErrorType ariesI2CMasterSetPage(AriesI2CDriverType* i2cDriver, int page);
 
@@ -177,22 +179,6 @@ AriesErrorType
 AriesErrorType ariesGetTempCalibrationCodes(AriesDeviceType* device);
 
 /**
- * @brief Enable thermal shutdown in Aries
- *
- * @param[in]  device   Aries Device struct
- * @return     AriesErrorType - Aries error code
- */
-AriesErrorType ariesEnableThermalShutdown(AriesDeviceType* device);
-
-/**
- * @brief Disable thermal shutdown in Aries
- *
- * @param[in]  device   Aries Device struct
- * @return     AriesErrorType - Aries error code
- */
-AriesErrorType ariesDisableThermalShutdown(AriesDeviceType* device);
-
-/**
  * @brief Get max. temp reading across all PMAs
  *
  * @param[in]  device   Aries Device struct
@@ -207,6 +193,24 @@ AriesErrorType ariesReadPmaTempMax(AriesDeviceType* device);
  * @return     AriesErrorType - Aries error code
  */
 AriesErrorType ariesReadPmaAvgTemp(AriesDeviceType* device);
+
+AriesErrorType ariesReadPmaAvgTempDirect(AriesDeviceType* device);
+
+/**
+ * @brief Enable thermal shutdown in Aries
+ *
+ * @param[in]  device   Aries Device struct
+ * @return     AriesErrorType - Aries error code
+ */
+AriesErrorType ariesEnableThermalShutdown(AriesDeviceType* device);
+
+/**
+ * @brief Disable thermal shutdown in Aries
+ *
+ * @param[in]  device   Aries Device struct
+ * @return     AriesErrorType - Aries error code
+ */
+AriesErrorType ariesDisableThermalShutdown(AriesDeviceType* device);
 
 /**
  * @brief Get PMA Temp reading
@@ -714,8 +718,6 @@ AriesErrorType ariesGetPathHWState(AriesLinkType* link, int lane, int direction,
 AriesErrorType ariesSetPortOrientation(AriesDeviceType* device,
                                        uint8_t orientation);
 
-AriesErrorType ariesSetMMReset(AriesDeviceType* device, bool value);
-
 AriesErrorType ariesPipeRxAdapt(AriesDeviceType* device, int side, int lane);
 
 AriesErrorType ariesPipeFomGet(AriesDeviceType* device, int side, int lane,
@@ -723,6 +725,9 @@ AriesErrorType ariesPipeFomGet(AriesDeviceType* device, int side, int lane,
 
 AriesErrorType ariesPipeRxStandbySet(AriesDeviceType* device, int side,
                                      int lane, bool value);
+
+AriesErrorType ariesPipeTxElecIdleSet(AriesDeviceType* device, int side,
+                                      int lane, bool value);
 
 AriesErrorType ariesPipeRxEqEval(AriesDeviceType* device, int side, int lane,
                                  bool value);
@@ -755,14 +760,11 @@ AriesErrorType ariesPipeDeepmhasisSet(AriesDeviceType* device, int side,
 AriesErrorType ariesPipeRxPolaritySet(AriesDeviceType* device, int side,
                                       int lane, int value);
 
-AriesErrorType ariesPipeTxElecIdleSet(AriesDeviceType* device, int side,
-                                      int lane, bool value);
-
 AriesErrorType ariesPipeRxTermSet(AriesDeviceType* device, int side, int lane,
                                   bool value);
 
 AriesErrorType ariesPipeBlkAlgnCtrlSet(AriesDeviceType* device, int side,
-                                       int lane, bool value);
+                                       int lane, bool value, bool enable);
 
 AriesErrorType ariesPMABertPatChkSts(AriesDeviceType* device, int side,
                                      int lane, int* ecount);
@@ -790,6 +792,9 @@ AriesErrorType ariesPMATxDataEnSet(AriesDeviceType* device, int side, int lane,
 
 AriesErrorType ariesPMAPCSRxReqBlock(AriesDeviceType* device, int side,
                                      int lane);
+
+AriesErrorType ariesPMAVregVrefSet(AriesDeviceType* device, int side, int lane,
+                                   int rate);
 
 /**
  * @brief Read multiple data bytes from Aries over I2C. Purposely force an error

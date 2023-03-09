@@ -52,8 +52,6 @@ extern "C" {
         }                                                                      \
     }
 
-void asteraI2CCloseConnection(int file);
-
 /**
  * @brief Low-level I2C method to open a connection.
  *
@@ -561,6 +559,32 @@ AriesErrorType ariesReadRetimerRegister(AriesI2CDriverType* i2cDriver, int side,
 AriesErrorType ariesWriteRetimerRegister(AriesI2CDriverType* i2cDriver,
                                          int side, int lane, uint16_t baseAddr,
                                          uint8_t numBytes, uint8_t* data);
+
+/**
+ * @brief Read the contents of an Aries wide register.
+ *
+ * @param[in]  i2cDriver    I2C driver responsible for the transaction(s)
+ * @param[in]  address      16-bit base address
+ * @param[in]  width        Size of wide register in bytes
+ * @param[in]  values       Byte array containing data to be written
+ * @return     AriesErrorType - Aries error code
+ */
+AriesErrorType ariesReadWideRegister(AriesI2CDriverType* i2cDriver,
+                                     uint32_t address, uint8_t width,
+                                     uint8_t* values);
+
+/**
+ * @brief Write the contents of an Aries wide register.
+ *
+ * @param[in]  i2cDriver    I2C driver responsible for the transaction(s)
+ * @param[in]  address      16-bit base address
+ * @param[in]  width        Size of wide register in bytes
+ * @param[in]  values       Byte array containing data to be written
+ * @return     AriesErrorType - Aries error code
+ */
+AriesErrorType ariesWriteWideRegister(AriesI2CDriverType* i2cDriver,
+                                      uint32_t address, uint8_t width,
+                                      uint8_t* values);
 
 /**
  * @brief Set lock on bus (Aries transaction)

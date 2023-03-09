@@ -46,7 +46,7 @@
 extern "C" {
 #endif
 
-#define ARIES_SDK_VERSION "2.9"
+#define ARIES_SDK_VERSION "2.13.1"
 
 /**
  * @brief Return the SDK version
@@ -55,17 +55,6 @@ extern "C" {
  */
 const char* ariesGetSDKVersion(void);
 
-/**
- * @brief Initialize Aries device
- *
- * Capture the FW version, device id, vendor id and revision id and store
- * the values in the device struct
- *
- * @param[in,out]  device  Aries device struct
- * @param[in]  recoveryAddr  Desired I2C (7-bit) address in case ARP needs
- *                           to be run
- * @return     AriesErrorType - Aries error code
- */
 AriesErrorType ariesInitDevice(AriesDeviceType* device, uint8_t recoveryAddr);
 
 /**
@@ -78,6 +67,17 @@ AriesErrorType ariesInitDevice(AriesDeviceType* device, uint8_t recoveryAddr);
  * @return     AriesErrorType - Aries error code
  */
 AriesErrorType ariesFWStatusCheck(AriesDeviceType* device);
+
+/**
+ * @brief Checks if Aries device is running compliance FW
+ *
+ * Checks the ate_customer_board and self_test compile options to determine
+ * if compliance FW is running on the device, rather than mission-mode FW.
+ *
+ * @param[in,out]  device  Aries device struct
+ * @return     AriesErrorType - Aries error code
+ */
+AriesErrorType ariesComplianceFWGet(AriesDeviceType* device);
 
 /**
  * @brief Update the EEPROM page variables
@@ -131,6 +131,21 @@ AriesErrorType ariesGetBifurcationMode(AriesDeviceType* device,
 AriesErrorType ariesSetHwReset(AriesDeviceType* device, uint8_t reset);
 
 /**
+ * @brief Set the Main Micro and I2C Master Reset.
+ *
+ * This function sets the register to assert reset (1) or de-assert reset (0).
+ * Asserting the MM reset will halt firmware execution and de-asserting will
+ * cause firmware to reload
+ * Asserting the I2C master reset can be used to keep the Retimer from sending
+ * transactions on the I2C bus connected to the EEPROM
+ *
+ * @param[in]  device   Struct containing device information
+ * @param[in]  reset      Reset assert (1) or de-assert (0)
+ * @return     AriesErrorType - Aries error code
+ */
+AriesErrorType ariesSetMMI2CMasterReset(AriesDeviceType* device, uint8_t reset);
+
+/**
  * @brief Set the I2C Master Reset.
  *
  * This function sets the register to assert reset (1) or de-assert reset (0).
@@ -157,6 +172,19 @@ AriesErrorType ariesSetI2CMasterReset(AriesDeviceType* device, uint8_t reset);
 AriesErrorType ariesUpdateFirmware(AriesDeviceType* device,
                                    const char* filename,
                                    AriesFWImageFormatType fileType);
+
+/**
+ * @brief Update the FW image in the EEPROM connected to the Retimer via buffer
+ *
+ * The firmware image preloaded into a buffer will be written to the EEPROM
+ * attached to the Retimer then verified using the optimal method.
+ *
+ * @param[in]  device  Struct containing device information
+ * @param[in]  image   Pointer to buffer of bytes containing image
+ * @return     AriesErrorType - Aries error code
+ */
+AriesErrorType ariesUpdateFirmwareViaBuffer(AriesDeviceType* device,
+                                            uint8_t* image);
 
 /**
  * @brief Get the progress of the FW update in percent complete.
@@ -244,26 +272,6 @@ AriesErrorType ariesCheckEEPROMCrc(AriesDeviceType* device, uint8_t* image);
 AriesErrorType ariesCheckEEPROMImageCrcBytes(AriesDeviceType* device,
                                              uint8_t* crcBytes,
                                              uint8_t* numCrcBytes);
-
-/**
- * @brief Load a FW image into the EEPROM connected to the Retimer.
- *
- * This method will only write the bytes different between the current loaded
- * image and the new image
- *
- * @param[in]  device  Struct containing device information
- * @param[in]  imageCurrent     Pointer to byte array containing the data in the
- * EEPROM currently
- * @param[in]  sizeCurrent  Size of imageCurrent
- * @param[in]  imageNew     Pointer to byte array containing the data to be
- * written to the EEPROM
- * @param[in]  sizeNew  Size of imageNew
- * @return     AriesErrorType - Aries error code
- */
-AriesErrorType ariesWriteEEPROMImageDelta(AriesDeviceType* device,
-                                          uint8_t* imageCurrent,
-                                          int sizeCurrent, uint8_t* imageNew,
-                                          int sizeNew);
 
 /**
  * @brief Read a byte from the EEPROM.
@@ -442,6 +450,22 @@ AriesErrorType ariesTestModeTxConfig(AriesDeviceType* device,
                                      bool enable);
 
 /**
+ * @brief Aries Test Mode transmitter single lane configuration
+ *
+ * @param[in]  device  Struct containing device information
+ * @param[in]  pattern  Desired PRBS data pattern
+ * @param[in]  preset  Desired Tx preset setting
+ * @param[in]  enable  Enable (1) or disable (0) flag
+ * @param[in]  side    Side of chip
+ * @param[in]  lane    Lane to configure
+ * @return     AriesErrorType - Aries error code
+ */
+AriesErrorType ariesTestModeTxConfigLane(AriesDeviceType* device,
+                                         AriesPRBSPatternType pattern,
+                                         int preset, int side, int lane,
+                                         bool enable);
+
+/**
  * @brief Aries Test Mode receiver configuration
  *
  * @param[in]  device  Struct containing device information
@@ -471,6 +495,19 @@ AriesErrorType ariesTestModeRxEcountRead(AriesDeviceType* device, int* ecount);
  * @return     AriesErrorType - Aries error code
  */
 AriesErrorType ariesTestModeRxEcountClear(AriesDeviceType* device);
+
+/**
+ * @brief Aries Test Mode clear single lane error count
+ *
+ * Reads ecount values for a single lane on one side and populates an array
+ *
+ * @param[in]  device  Struct containing device information
+ * @param[in]  side    Side of chip
+ * @param[in]  lane    Lane to clear error count for
+ * @return     AriesErrorType - Aries error code
+ */
+AriesErrorType ariesTestModeRxEcountClearLane(AriesDeviceType* device, int side,
+                                              int lane);
 
 /**
  * @brief Aries Test Mode read FoM
@@ -525,7 +562,7 @@ AriesErrorType ariesOvertempStatusGet(AriesDeviceType* device, bool* value);
  * When an errant I2C transaction (e.g. a transaction intervening between the
  * Write and Read portions of a Aries Read transaction, or a transaction which
  * does not follow the specified transaction format) causes the Aries I2C slave
- * to get into a stuck state, the Aries FW will detect and clear this staAriesDevicePartTypete.
+ * to get into a stuck state, the Aries FW will detect and clear this state.
  * This API reads back status to show if such an event has occured (1) or
  * not (0). This is a sticky status.
  *

@@ -185,7 +185,7 @@ AriesErrorType ariesCheckLinkHealth(AriesLinkType* link)
                                dataWord);
         CHECK_SUCCESS(rc);
 
-        // FoM vaue is 7:0 of word.
+        // FoM value is 7:0 of word
         thisLaneFoM = dataWord[0];
         if (thisLaneFoM <= minFoM)
         {
@@ -205,7 +205,7 @@ AriesErrorType ariesCheckLinkHealth(AriesLinkType* link)
                                dataWord);
         CHECK_SUCCESS(rc);
 
-        // FoM vaue is 7:0 of word.
+        // FoM value is 7:0 of word
         thisLaneFoM = dataWord[0];
         if (thisLaneFoM <= minFoM)
         {
@@ -290,7 +290,7 @@ AriesErrorType ariesGetLinkRecoveryCount(AriesLinkType* link,
     uint8_t dataByte[1];
     uint32_t address;
 
-    // Set One Batch Mode
+    // Get current recovery count value
     address = link->device->mm_print_info_struct_addr +
               ARIES_PRINT_INFO_STRUCT_LNK_RECOV_ENTRIES_PTR_OFFSET +
               link->config.linkId;
@@ -314,7 +314,7 @@ AriesErrorType ariesClearLinkRecoveryCount(AriesLinkType* link)
     uint8_t dataByte[1];
     uint32_t address;
 
-    // Set One Batch Mode
+    // Set current recovery count value
     dataByte[0] = 0;
     address = link->device->mm_print_info_struct_addr +
               ARIES_PRINT_INFO_STRUCT_LNK_RECOV_ENTRIES_PTR_OFFSET +
@@ -458,7 +458,6 @@ AriesErrorType ariesGetLinkStateDetailed(AriesLinkType* link)
     float dsppSpeed = 0.0;
 
     // Update link state parameters
-    // rc = ariesGetLinkState(link);
     rc = ariesCheckLinkHealth(link);
     CHECK_SUCCESS(rc);
 
@@ -1373,17 +1372,28 @@ AriesErrorType ariesLinkDumpDebugInfo(AriesLinkType* link)
     AriesErrorType rc;
 
     // Capture detailed debug information
-    // This function prints detailed state information to a file
+    // This function prints Aries chip ID, FW version, SDK version,
+    // and the detailed link state information to a file
     rc = ariesLinkPrintDetailedState(link, ".", "link_state_detailed");
     CHECK_SUCCESS(rc);
     // This function prints Aries LTSSM logs to a file
     rc = ariesLinkPrintMicroLogs(link, ".", "ltssm_micro_log");
     CHECK_SUCCESS(rc);
-    // This function prints Aries chip ID, FW version, and SDK version to a file
-    rc = ariesLinkPrintDeviceInfo(link, ".", "device_info");
-    CHECK_SUCCESS(rc);
 
     return ARIES_SUCCESS;
+}
+
+// Deprecated! Will be removed in future release
+AriesErrorType ariesPrintMicroLogs(AriesLinkType* link, const char* basepath,
+                                   const char* filename);
+AriesErrorType ariesPrintMicroLogs(AriesLinkType* link, const char* basepath,
+                                   const char* filename)
+{
+    ASTERA_WARN("ariesPrintMicroLogs() has been deprecated "
+                "and will be removed in a future major version release "
+                "of the Aries C SDK! "
+                "Please use ariesLinkPrintMicroLogs() instead");
+    return ariesLinkPrintMicroLogs(link, basepath, filename);
 }
 
 AriesErrorType ariesLinkPrintMicroLogs(AriesLinkType* link,
@@ -1435,7 +1445,7 @@ AriesErrorType ariesLinkPrintMicroLogs(AriesLinkType* link,
     {
         fprintf(
             fp,
-            "# Encountered error during ariesLinkPrintMicroLogs->ariesLTSSMLoggerInit. Closing file.\n");
+            "# Encountered error during ariesLinkPrintMicroLogs->ariesLTSSMLoggerInit. Closing file\n");
         fclose(fp);
         return rc;
     }
@@ -1446,7 +1456,7 @@ AriesErrorType ariesLinkPrintMicroLogs(AriesLinkType* link,
     {
         fprintf(
             fp,
-            "# Encountered error during ariesLinkPrintMicroLogs->ariesLTSSMLoggerPrintEn. Closing file.\n");
+            "# Encountered error during ariesLinkPrintMicroLogs->ariesLTSSMLoggerPrintEn. Closing file\n");
         fclose(fp);
         return rc;
     }
@@ -1463,7 +1473,7 @@ AriesErrorType ariesLinkPrintMicroLogs(AriesLinkType* link,
     {
         fprintf(
             fp,
-            "# Encountered error during ariesLinkPrintMicroLogs->ariesPrintLog. Closing file.\n");
+            "# Encountered error during ariesLinkPrintMicroLogs->ariesPrintLog. Closing file\n");
         fclose(fp);
         return rc;
     }
@@ -1487,13 +1497,29 @@ AriesErrorType ariesLinkPrintMicroLogs(AriesLinkType* link,
     {
         fprintf(
             fp,
-            "# Encountered error during ariesLinkPrintMicroLogs->ariesPrintLog. Closing file.\n");
+            "# Encountered error during ariesLinkPrintMicroLogs->ariesPrintLog. Closing file\n");
         fclose(fp);
         return rc;
     }
     fclose(fp);
 
     return ARIES_SUCCESS;
+}
+
+// Deprecated! Will be removed in future release
+AriesErrorType ariesPrintLinkDetailedState(AriesLinkType* link,
+                                           const char* basepath,
+                                           const char* filename);
+
+AriesErrorType ariesPrintLinkDetailedState(AriesLinkType* link,
+                                           const char* basepath,
+                                           const char* filename)
+{
+    ASTERA_WARN("ariesPrintLinkDetailedState() has been deprecated "
+                "and will be removed in a future major version release "
+                "of the Aries C SDK! "
+                "Please use ariesLinkPrintDetailedState() instead");
+    return ariesLinkPrintDetailedState(link, basepath, filename);
 }
 
 // Capture the detailed link state and print it to file
@@ -1521,6 +1547,10 @@ AriesErrorType ariesLinkPrintDetailedState(AriesLinkType* link,
     rc = ariesCheckDeviceHealth(link->device);
     CHECK_SUCCESS(rc);
 
+    // Check firmware state
+    rc = ariesFWStatusCheck(link->device);
+    CHECK_SUCCESS(rc);
+
     // Get Link state
     rc = ariesGetLinkStateDetailed(&link[0]);
     CHECK_SUCCESS(rc);
@@ -1546,6 +1576,14 @@ AriesErrorType ariesLinkPrintDetailedState(AriesLinkType* link,
 
     // Aries device struct parameters
     fprintf(fp, "aries_device = {}\n");
+    fprintf(fp, "aries_device['c_sdk_version'] = \"%s\"\n",
+            ariesGetSDKVersion());
+    fprintf(fp, "aries_device['fw_version_major'] = %d\n",
+            link->device->fwVersion.major);
+    fprintf(fp, "aries_device['fw_version_minor'] = %d\n",
+            link->device->fwVersion.minor);
+    fprintf(fp, "aries_device['fw_version_build'] = %d\n",
+            link->device->fwVersion.build);
     int b = 0;
     for (b = 0; b < 12; b += 1)
     {
@@ -1818,76 +1856,6 @@ AriesErrorType ariesLinkPrintDetailedState(AriesLinkType* link,
         }
         fprintf(fp, "\n");
     }
-    fclose(fp);
-
-    return ARIES_SUCCESS;
-}
-
-AriesErrorType ariesLinkPrintDeviceInfo(AriesLinkType* link,
-                                        const char* basepath,
-                                        const char* filename)
-{
-    AriesErrorType rc;
-    uint8_t i;
-    char filepath[ARIES_PATH_MAX];
-    FILE* fp;
-
-    if (!link || !basepath || !filename)
-    {
-        ASTERA_ERROR("Invalid link or basepath or filename passed");
-        return ARIES_INVALID_ARGUMENT;
-    }
-
-    if (strlen(basepath) == 0 || strlen(filename) == 0)
-    {
-        ASTERA_ERROR("Can't load a file without the basepath or filename");
-        return ARIES_INVALID_ARGUMENT;
-    }
-
-    // File is printed as a python dict so that we can post-process it to a
-    // readable format as log messages
-    snprintf(filepath, ARIES_PATH_MAX, "%s/%s_%d.py", basepath, filename,
-             link->config.linkId);
-
-    fp = fopen(filepath, "w");
-    if (fp == NULL)
-    {
-        ASTERA_ERROR("Could not open the specified filepath");
-        return ARIES_INVALID_ARGUMENT;
-    }
-
-    fprintf(fp, "# AUTOGENERATED FILE. DO NOT EDIT #\n");
-    fprintf(fp, "# GENERATED WTIH C SDK VERSION %s #\n\n\n",
-            ariesGetSDKVersion());
-
-    fprintf(fp, "c_sdk_version = \"%s\"\n", ariesGetSDKVersion());
-    fprintf(fp, "fw_version_major = %d\n", link->device->fwVersion.major);
-    fprintf(fp, "fw_version_minor = %d\n", link->device->fwVersion.minor);
-    fprintf(fp, "fw_version_build = %d\n", link->device->fwVersion.build);
-
-    rc = ariesGetTempCalibrationCodes(link->device);
-
-    fprintf(fp, "chip_id = [%d", link->device->chipID[0]);
-    for (i = 1; i < 12; i++)
-    {
-        fprintf(fp, ", %d", link->device->chipID[i]);
-    }
-    fprintf(fp, "]\n");
-    fprintf(fp, "lot_number = [%d", link->device->lotNumber[0]);
-    for (i = 1; i < 6; i++)
-    {
-        fprintf(fp, ", %d", link->device->chipID[i]);
-    }
-    fprintf(fp, "]\n");
-
-    rc = ariesGetCurrentTemp(link->device);
-    CHECK_SUCCESS(rc);
-    fprintf(fp, "current_temp = %.2f\n", link->device->currentTempC);
-
-    rc = ariesGetMaxTemp(link->device);
-    CHECK_SUCCESS(rc);
-    fprintf(fp, "max_temp = %.2f\n", link->device->maxTempC);
-
     fclose(fp);
 
     return ARIES_SUCCESS;

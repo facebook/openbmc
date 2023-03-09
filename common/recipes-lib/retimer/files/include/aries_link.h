@@ -171,11 +171,6 @@ AriesErrorType ariesLinkPrintDetailedState(AriesLinkType* link,
                                            const char* basepath,
                                            const char* filename);
 
-// Print device, FW, and SDK version info to file
-AriesErrorType ariesLinkPrintDeviceInfo(AriesLinkType* link,
-                                        const char* basepath,
-                                        const char* filename);
-
 // Print the micro logger entries
 AriesErrorType ariesPrintLog(AriesLinkType* link, AriesLTSSMLoggerEnumType log,
                              FILE* fp);

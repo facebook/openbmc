@@ -33,8 +33,38 @@ const char* ariesGetSDKVersion(void)
     return ARIES_SDK_VERSION;
 }
 
-/*
- * Initialize the device data structure
+/**
+ * @brief Initialize Aries device data structure
+ *
+ * Capture the FW version, device id, vendor id and revision id and store
+ * the values in the device struct
+ *
+ * BMC should wait until the Retimer has had the opportunity to exit reset and
+ * load firmware before initializing the ariesDevice object with the
+ * ariesInitDevice() API. This can be accomplished by any of the following:
+ * - Wait until the device’s GPIO0 pin is high, indicating FW load is complete
+ * - Wait >1.8 seconds after the device’s RESET_N pin is de-asserted low and
+ * REFCLK is present
+ * - Check with the ariesFWStatusCheck(AriesDeviceType* device) API
+ *
+ * If the BMC cannot implement these checks, then BMC can poll for device ready
+ * status purely in software:
+ * - Run the ariesInitDevice() API
+ * - If FW has not yet loaded successfully, then wait for 2 seconds before
+ * calling ariesInitDevice() again. FW load successful is indicated by:
+ *   + device->mmHeartbeatOkay, and
+ *   + (device->fwVersion.major != 0) || (device->fwVersion.minor != 0) ||
+ * (device->fwVersion.build != 0)
+ * - Do not call ariesInitDevice() after it has been established that FW is
+ * loaded, as this would be a redundant
+ * - ariesInitDevice() need not (and should not) be called again after it is
+ * determined FW has loaded. Device monitoring can proceed once it is
+ * established that FW has loaded successfully.
+ *
+ * @param[in,out]  device  Aries device struct
+ * @param[in]  recoveryAddr  Desired I2C (7-bit) address in case ARP needs
+ *                           to be run
+ * @return     AriesErrorType - Aries error code
  */
 AriesErrorType ariesInitDevice(AriesDeviceType* device, uint8_t recoveryAddr)
 {
@@ -46,6 +76,7 @@ AriesErrorType ariesInitDevice(AriesDeviceType* device, uint8_t recoveryAddr)
     rc = ariesCheckConnectionHealth(device, recoveryAddr);
     CHECK_SUCCESS(rc);
 
+    device->i2cDriver->mmWideRegisterValid = 0;
     // Set lock = 0 (if it hasnt been set before)
     if (device->i2cDriver->lockInit == 0)
     {
@@ -53,25 +84,21 @@ AriesErrorType ariesInitDevice(AriesDeviceType* device, uint8_t recoveryAddr)
         device->i2cDriver->lockInit = 1;
     }
 
-    rc = ariesFWStatusCheck(device);
-    CHECK_SUCCESS(rc);
-
     // Initialize eeprom struct by setting all values to default values
     device->eeprom.pageSize = ARIES_EEPROM_PAGE_SIZE;
     device->eeprom.pageCount = ARIES_EEPROM_PAGE_COUNT;
     device->eeprom.maxBurstSize = ARIES_MAX_BURST_SIZE;
 
-    // Initialize MM-assist FW update parameters (optimizations made starting
-    // with FW 1.24.0 and later)
-    if ((device->fwVersion.major < 1) ||
-        ((device->fwVersion.major == 1) && (device->fwVersion.minor < 24)))
-    {
-        // Use non-optimized FW update parameters
-        device->eeprom.blockBaseAddr = ARIES_EEPROM_BLOCK_BASE_ADDR_WIDE;
-        device->eeprom.blockCmdModifier = ARIES_EEPROM_BLOCK_CMD_MODIFIER_WIDE;
-        device->eeprom.blockWriteSize = ARIES_EEPROM_BLOCK_WRITE_SIZE_WIDE;
-    }
-    else
+    // Initialize default FW update parameters
+    device->eeprom.blockBaseAddr = ARIES_EEPROM_BLOCK_BASE_ADDR_WIDE;
+    device->eeprom.blockCmdModifier = ARIES_EEPROM_BLOCK_CMD_MODIFIER_WIDE;
+    device->eeprom.blockWriteSize = ARIES_EEPROM_BLOCK_WRITE_SIZE_WIDE;
+
+    rc = ariesFWStatusCheck(device);
+    CHECK_SUCCESS(rc);
+
+    // FW update optimizations made starting with FW 1.24.0 and later
+    if (ariesFirmwareIsAtLeast(device, 1, 24, 0))
     {
         // Use optimized FW update parameters
         device->eeprom.blockBaseAddr = ARIES_EEPROM_BLOCK_BASE_ADDR_NOWIDE;
@@ -80,8 +107,15 @@ AriesErrorType ariesInitDevice(AriesDeviceType* device, uint8_t recoveryAddr)
         device->eeprom.blockWriteSize = ARIES_EEPROM_BLOCK_WRITE_SIZE_NOWIDE;
     }
 
+    // MM Wide Register access improvements starting with FW 2.2.0 and later
+    if (ariesFirmwareIsAtLeast(device, 2, 2, 0))
+    {
+        device->i2cDriver->mmWideRegisterValid = 1;
+    }
+
     // Capture vendor id, device id and rev number
-    rc = ariesReadBlockData(device->i2cDriver, 0x4, 4, dataBytes);
+    rc = ariesReadWideRegister(device->i2cDriver, ARIES_GLB_PARAM_REG1_ADDR, 4,
+                               dataBytes);
     CHECK_SUCCESS(rc);
     device->vendorId = ((dataBytes[3] << 8) + dataBytes[2]);
     device->deviceId = dataBytes[1];
@@ -90,15 +124,7 @@ AriesErrorType ariesInitDevice(AriesDeviceType* device, uint8_t recoveryAddr)
     // Get link_path_struct size
     // Prior to FW 1.1.52, this size is 38
     device->linkPathStructSize = ARIES_LINK_PATH_STRUCT_SIZE;
-    if ((device->fwVersion.major >= 1) && (device->fwVersion.minor >= 1) &&
-        (device->fwVersion.build >= 52))
-    {
-        rc = ariesReadBlockDataMainMicroIndirect(
-            device->i2cDriver, ARIES_LINK_PATH_STRUCT_SIZE_ADDR, 1, dataByte);
-        CHECK_SUCCESS(rc);
-        device->linkPathStructSize = dataByte[0];
-    }
-    else if ((device->fwVersion.major >= 1) && (device->fwVersion.minor >= 2))
+    if (ariesFirmwareIsAtLeast(device, 1, 1, 52))
     {
         rc = ariesReadBlockDataMainMicroIndirect(
             device->i2cDriver, ARIES_LINK_PATH_STRUCT_SIZE_ADDR, 1, dataByte);
@@ -106,45 +132,50 @@ AriesErrorType ariesInitDevice(AriesDeviceType* device, uint8_t recoveryAddr)
         device->linkPathStructSize = dataByte[0];
     }
 
-    // Get the al print info struct offset for Main Micro
-    rc = ariesReadBlockDataMainMicroIndirect(
-        device->i2cDriver,
-        (ARIES_MAIN_MICRO_FW_INFO + ARIES_MM_AL_PRINT_INFO_STRUCT_ADDR), 2,
-        dataWord);
-    CHECK_SUCCESS(rc);
-    device->mm_print_info_struct_addr = AL_MAIN_SRAM_DMEM_OFFSET +
-                                        (dataWord[1] << 8) + dataWord[0];
+    if (device->mmHeartbeatOkay)
+    {
+        // Get the al print info struct offset for Main Micro
+        rc = ariesReadBlockDataMainMicroIndirect(
+            device->i2cDriver,
+            (ARIES_MAIN_MICRO_FW_INFO + ARIES_MM_AL_PRINT_INFO_STRUCT_ADDR), 2,
+            dataWord);
+        CHECK_SUCCESS(rc);
+        device->mm_print_info_struct_addr = AL_MAIN_SRAM_DMEM_OFFSET +
+                                            (dataWord[1] << 8) + dataWord[0];
 
-    // Get the gp ctrl status struct offset for Main Micro
-    rc = ariesReadBlockDataMainMicroIndirect(
-        device->i2cDriver,
-        (ARIES_MAIN_MICRO_FW_INFO + ARIES_MM_GP_CTRL_STS_STRUCT_ADDR), 2,
-        dataWord);
-    CHECK_SUCCESS(rc);
-    device->mm_gp_ctrl_sts_struct_addr = AL_MAIN_SRAM_DMEM_OFFSET +
-                                         (dataWord[1] << 8) + dataWord[0];
+        // Get the gp ctrl status struct offset for Main Micro
+        rc = ariesReadBlockDataMainMicroIndirect(
+            device->i2cDriver,
+            (ARIES_MAIN_MICRO_FW_INFO + ARIES_MM_GP_CTRL_STS_STRUCT_ADDR), 2,
+            dataWord);
+        CHECK_SUCCESS(rc);
+        device->mm_gp_ctrl_sts_struct_addr = AL_MAIN_SRAM_DMEM_OFFSET +
+                                             (dataWord[1] << 8) + dataWord[0];
 
-    // Get AL print info struct address for path micros
-    // All Path Micros will have same address, so get for PM 4 (present on both
-    // x16 and x8 devices)
-    rc = ariesReadBlockDataPathMicroIndirect(
-        device->i2cDriver, 4,
-        (ARIES_PATH_MICRO_FW_INFO_ADDRESS + ARIES_PM_AL_PRINT_INFO_STRUCT_ADDR),
-        2, dataWord);
-    CHECK_SUCCESS(rc);
-    device->pm_print_info_struct_addr = AL_PATH_SRAM_DMEM_OFFSET +
-                                        (dataWord[1] << 8) + dataWord[0];
+        // Get AL print info struct address for path micros
+        // All Path Micros will have same address, so get for PM 4 (present on
+        // both x16 and x8 devices)
+        rc = ariesReadBlockDataPathMicroIndirect(
+            device->i2cDriver, 4,
+            (ARIES_PATH_MICRO_FW_INFO_ADDRESS +
+             ARIES_PM_AL_PRINT_INFO_STRUCT_ADDR),
+            2, dataWord);
+        CHECK_SUCCESS(rc);
+        device->pm_print_info_struct_addr = AL_PATH_SRAM_DMEM_OFFSET +
+                                            (dataWord[1] << 8) + dataWord[0];
 
-    // Get GP ctrl status struct address for path micros
-    // All Path Micros will have same address, so get for PM 4 (present on both
-    // x16 and x8 devices)
-    rc = ariesReadBlockDataPathMicroIndirect(
-        device->i2cDriver, 4,
-        (ARIES_PATH_MICRO_FW_INFO_ADDRESS + ARIES_PM_GP_CTRL_STS_STRUCT_ADDR),
-        2, dataWord);
-    CHECK_SUCCESS(rc);
-    device->pm_gp_ctrl_sts_struct_addr = AL_PATH_SRAM_DMEM_OFFSET +
-                                         (dataWord[1] << 8) + dataWord[0];
+        // Get GP ctrl status struct address for path micros
+        // All Path Micros will have same address, so get for PM 4 (present on
+        // both x16 and x8 devices)
+        rc = ariesReadBlockDataPathMicroIndirect(
+            device->i2cDriver, 4,
+            (ARIES_PATH_MICRO_FW_INFO_ADDRESS +
+             ARIES_PM_GP_CTRL_STS_STRUCT_ADDR),
+            2, dataWord);
+        CHECK_SUCCESS(rc);
+        device->pm_gp_ctrl_sts_struct_addr = AL_PATH_SRAM_DMEM_OFFSET +
+                                             (dataWord[1] << 8) + dataWord[0];
+    }
 
     rc = ariesGetTempCalibrationCodes(device);
     CHECK_SUCCESS(rc);
@@ -236,6 +267,9 @@ AriesErrorType ariesFWStatusCheck(AriesDeviceType* device)
             dataWord);
         CHECK_SUCCESS(rc);
         device->fwVersion.build = (dataWord[1] << 8) + dataWord[0];
+
+        rc = ariesComplianceFWGet(device);
+        CHECK_SUCCESS(rc);
     }
     else
     {
@@ -243,6 +277,29 @@ AriesErrorType ariesFWStatusCheck(AriesDeviceType* device)
         device->mmHeartbeatOkay = false;
     }
 
+    return ARIES_SUCCESS;
+}
+
+/*
+ * Checks if Aries device is running compliance FW
+ */
+AriesErrorType ariesComplianceFWGet(AriesDeviceType* device)
+{
+    AriesErrorType rc;
+    uint8_t fw_ate_customer_board = 0;
+    uint8_t fw_self_test = 0;
+
+    rc = ariesReadBlockDataMainMicroIndirect(
+        device->i2cDriver,
+        (ARIES_MAIN_MICRO_FW_INFO + ARIES_MM_FW_ATE_CUSTOMER_BOARD), 1,
+        &fw_ate_customer_board);
+    CHECK_SUCCESS(rc);
+    rc = ariesReadBlockDataMainMicroIndirect(
+        device->i2cDriver, (ARIES_MAIN_MICRO_FW_INFO + ARIES_MM_FW_SELF_TEST),
+        1, &fw_self_test);
+    CHECK_SUCCESS(rc);
+
+    device->fwVersion.isComplianceFW = (fw_ate_customer_board || fw_self_test);
     return ARIES_SUCCESS;
 }
 
@@ -268,13 +325,15 @@ AriesErrorType ariesSetBifurcationMode(AriesDeviceType* device,
     AriesErrorType rc;
     uint8_t dataBytes[4];
 
-    rc = ariesReadBlockData(device->i2cDriver, 0x0, 4, dataBytes);
+    rc = ariesReadWideRegister(device->i2cDriver, ARIES_GLB_PARAM_REG0_ADDR, 4,
+                               dataBytes);
     CHECK_SUCCESS(rc);
 
     // Bifurcation setting is in bits 12:7
     dataBytes[0] = ((bifur & 0x01) << 7) | (dataBytes[0] & 0x7f);
     dataBytes[1] = ((bifur & 0x3e) >> 1) | (dataBytes[1] & 0xe0);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x0, 4, dataBytes);
+    rc = ariesWriteWideRegister(device->i2cDriver, ARIES_GLB_PARAM_REG0_ADDR, 4,
+                                dataBytes);
     CHECK_SUCCESS(rc);
 
     return ARIES_SUCCESS;
@@ -289,7 +348,8 @@ AriesErrorType ariesGetBifurcationMode(AriesDeviceType* device,
     AriesErrorType rc;
     uint8_t dataBytes[4];
 
-    rc = ariesReadBlockData(device->i2cDriver, 0x0, 4, dataBytes);
+    rc = ariesReadWideRegister(device->i2cDriver, ARIES_GLB_PARAM_REG0_ADDR, 4,
+                               dataBytes);
     CHECK_SUCCESS(rc);
     *bifur = ((dataBytes[1] & 0x1f) << 1) + ((dataBytes[0] & 0x80) >> 7);
 
@@ -306,16 +366,70 @@ AriesErrorType ariesSetHwReset(AriesDeviceType* device, uint8_t reset)
 
     if (reset == 1) // Put retimer into reset
     {
+        // Disable MM assisted wide register accesses since MM is in reset
+        device->i2cDriver->mmWideRegisterValid = 0;
+        // Assert full device reset
         dataWord[0] = 0xff;
         dataWord[1] = 0x06;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, dataWord);
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_HW_RST_ADDR, 2,
+                                    dataWord);
         CHECK_SUCCESS(rc);
     }
     else if (reset == 0) // Take retimer out of reset (FW will reload)
     {
+        // De-assert full device reset
         dataWord[0] = 0x0;
         dataWord[1] = 0x0;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, dataWord);
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_HW_RST_ADDR, 2,
+                                    dataWord);
+        CHECK_SUCCESS(rc);
+    }
+    else
+    {
+        return ARIES_INVALID_ARGUMENT;
+    }
+
+    return ARIES_SUCCESS;
+}
+
+/*
+ * Set the Main Micro and I2C Master Reset.
+ */
+AriesErrorType ariesSetMMI2CMasterReset(AriesDeviceType* device, uint8_t reset)
+{
+    AriesErrorType rc;
+    uint8_t dataWord[2];
+
+    if (reset == 1) // Put MM and I2C Master into reset
+    {
+        // Disable MM assisted wide register accesses since MM is in reset
+        device->i2cDriver->mmWideRegisterValid = 0;
+        // Assert MM reset
+        dataWord[0] = 0x0;
+        dataWord[1] = 0x4;
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_SW_RST_ADDR, 2,
+                                    dataWord);
+        CHECK_SUCCESS(rc);
+        // Assert MM reset and I2C reset
+        dataWord[0] = 0x0;
+        dataWord[1] = 0x6;
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_SW_RST_ADDR, 2,
+                                    dataWord);
+        CHECK_SUCCESS(rc);
+        // Assert MM reset (de-assert I2C reset)
+        dataWord[0] = 0x0;
+        dataWord[1] = 0x4;
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_SW_RST_ADDR, 2,
+                                    dataWord);
+        CHECK_SUCCESS(rc);
+    }
+    else if (reset == 0) // Take MM and I2C Master out of reset
+    {
+        // De-assert MM reset
+        dataWord[0] = 0x0;
+        dataWord[1] = 0x0;
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_SW_RST_ADDR, 2,
+                                    dataWord);
         CHECK_SUCCESS(rc);
     }
     else
@@ -336,28 +450,26 @@ AriesErrorType ariesSetI2CMasterReset(AriesDeviceType* device, uint8_t reset)
 
     if (reset == 1) // Put I2C Master into reset
     {
-        // Assert MM reset
+        // Assert I2C reset
         dataWord[0] = 0x0;
-        dataWord[1] = 0x4;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, dataWord);
+        dataWord[1] = 0x2;
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_SW_RST_ADDR, 2,
+                                    dataWord);
         CHECK_SUCCESS(rc);
-        // Assert MM reset and I2C reset
-        dataWord[0] = 0x0;
-        dataWord[1] = 0x6;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, dataWord);
-        CHECK_SUCCESS(rc);
-        // Assert MM reset (de-assert I2C reset)
-        dataWord[0] = 0x0;
-        dataWord[1] = 0x4;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, dataWord);
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_HW_RST_ADDR, 2,
+                                    dataWord);
         CHECK_SUCCESS(rc);
     }
     else if (reset == 0) // Take I2C Master out of reset
     {
-        // De-assert MM reset
+        // De-assert I2C reset
         dataWord[0] = 0x0;
         dataWord[1] = 0x0;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, dataWord);
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_HW_RST_ADDR, 2,
+                                    dataWord);
+        CHECK_SUCCESS(rc);
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_SW_RST_ADDR, 2,
+                                    dataWord);
         CHECK_SUCCESS(rc);
     }
     else
@@ -376,8 +488,6 @@ AriesErrorType ariesUpdateFirmware(AriesDeviceType* device,
                                    AriesFWImageFormatType fileType)
 {
     AriesErrorType rc;
-    bool legacyMode = false;
-    bool checksumVerifyFailed = false;
     uint8_t image[ARIES_EEPROM_MAX_NUM_BYTES];
 
     if (fileType == ARIES_FW_IMAGE_FORMAT_IHX)
@@ -406,8 +516,25 @@ AriesErrorType ariesUpdateFirmware(AriesDeviceType* device,
         return ARIES_INVALID_ARGUMENT;
     }
 
+    rc = ariesUpdateFirmwareViaBuffer(device, image);
+    CHECK_SUCCESS(rc);
+
+    return ARIES_SUCCESS;
+}
+
+/*
+ * Update the FW image in the EEPROM connected to the Retimer via buffer.
+ */
+AriesErrorType ariesUpdateFirmwareViaBuffer(AriesDeviceType* device,
+                                            uint8_t* image)
+{
+    AriesErrorType rc;
+    bool legacyMode = false;
+    bool checksumVerifyFailed = false;
+
     // Enable legacy mode if ARP is enabled or not running valid FW
-    if (device->arpEnable || !device->mmHeartbeatOkay)
+    if (device->arpEnable || !device->mmHeartbeatOkay ||
+        device->fwVersion.isComplianceFW)
     {
         legacyMode = true;
     }
@@ -435,6 +562,38 @@ AriesErrorType ariesUpdateFirmware(AriesDeviceType* device,
     // Optionally, it can be manually enabled by sending a 1 as the 4th argument
     if (legacyMode || checksumVerifyFailed)
     {
+        if (legacyMode)
+        {
+            // To massively speed up verify process, reset the device and check
+            // for a heartbeat. If the device is alive we can do a main micro
+            // assisted byte-by-byte verify, otherwise we need to do a legacy
+            // byte-by-byte verify which takes a long time.
+            ASTERA_INFO("Attempting device reset");
+            rc = ariesSetHwReset(device, 1);
+            CHECK_SUCCESS(rc);
+            // Wait 10 ms before de-asserting
+            usleep(10000);
+            // De-assert HW reset
+            rc = ariesSetHwReset(device, 0);
+            CHECK_SUCCESS(rc);
+            usleep(10000);
+            // Wait for 5s before checking heartbeat
+            usleep(5000000);
+            // Check for heartbeat
+            rc = ariesFWStatusCheck(device);
+            CHECK_SUCCESS(rc);
+            // If we have a valid heartbeat disable legacy mode
+            if (device->mmHeartbeatOkay)
+            {
+                ASTERA_INFO(
+                    "Heartbeat detected, using main micro assisted verify");
+                legacyMode = false;
+            }
+            else
+            {
+                ASTERA_INFO("Heartbeat NOT detected, using legacy verify");
+            }
+        }
         // Verify EEPROM programming by reading EEPROM and comparing data with
         // expected image. In case there is a failure, the API will attempt a
         // rewrite once
@@ -472,13 +631,8 @@ AriesErrorType ariesWriteEEPROMImage(AriesDeviceType* device, uint8_t* values,
     int currentPage = 0;
     AriesErrorType rc;
 
-    // Deassert HW and SW resets
-    uint8_t tmpData[2];
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
-    CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    // Deassert HW/SW resets
+    rc = ariesSetHwReset(device, 0);
     CHECK_SUCCESS(rc);
 
     // Update device FW update progress state
@@ -487,39 +641,14 @@ AriesErrorType ariesWriteEEPROMImage(AriesDeviceType* device, uint8_t* values,
     // If operating in legacy mode, put MM in reset
     if (legacyMode)
     {
-        tmpData[0] = 0;
-        tmpData[1] = 4;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
-        CHECK_SUCCESS(rc);
-        tmpData[0] = 0;
-        tmpData[1] = 6;
-        /*rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); //
-         * hw_rst*/
-        /*CHECK_SUCCESS(rc);*/
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
-        CHECK_SUCCESS(rc);
-        tmpData[0] = 0;
-        tmpData[1] = 4;
-        /*rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); //
-         * hw_rst*/
-        /*CHECK_SUCCESS(rc);*/
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
+        rc = ariesSetMMI2CMasterReset(device, 1);
         CHECK_SUCCESS(rc);
     }
     else
     {
-        tmpData[0] = 0;
-        tmpData[1] = 2;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
+        rc = ariesSetI2CMasterReset(device, 1);
         CHECK_SUCCESS(rc);
-        tmpData[0] = 0;
-        tmpData[1] = 0;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
+        rc = ariesSetI2CMasterReset(device, 0);
         CHECK_SUCCESS(rc);
     }
 
@@ -582,13 +711,7 @@ AriesErrorType ariesWriteEEPROMImage(AriesDeviceType* device, uint8_t* values,
     bool mainMicroWriteAssist = false;
     if (!legacyMode)
     {
-        if ((device->fwVersion.major >= 1) && (device->fwVersion.minor >= 1))
-        {
-            mainMicroWriteAssist = true;
-        }
-        else if ((device->fwVersion.major >= 1) &&
-                 (device->fwVersion.minor >= 0) &&
-                 (device->fwVersion.build >= 48))
+        if (ariesFirmwareIsAtLeast(device, 1, 0, 48))
         {
             mainMicroWriteAssist = true;
         }
@@ -738,15 +861,11 @@ AriesErrorType ariesWriteEEPROMImage(AriesDeviceType* device, uint8_t* values,
     // Update device FW update progress state
     device->fwUpdateProg = ARIES_FW_UPDATE_PROGRESS_WRITE_DONE;
 
-    // Assert HW resets for I2C master interface
-    tmpData[0] = 0x00;
-    tmpData[1] = 0x02;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
-    CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    // Assert HW/SW resets for I2C master interface
+    rc = ariesSetI2CMasterReset(device, 1);
     CHECK_SUCCESS(rc);
 
-    usleep(1000);
+    usleep(2000);
 
     return ARIES_SUCCESS;
 }
@@ -771,55 +890,24 @@ AriesErrorType ariesVerifyEEPROMImage(AriesDeviceType* device, uint8_t* values,
     matchError = ARIES_SUCCESS;
     firstByte = true;
 
-    // Deassert HW and SW resets
-    uint8_t tmpData[2];
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
-    CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    // Deassert HW/SW resets
+    rc = ariesSetHwReset(device, 0);
     CHECK_SUCCESS(rc);
 
     // Update device FW update progress state
     device->fwUpdateProg = ARIES_FW_UPDATE_PROGRESS_VERIFY_0;
 
+    // If operating in legacy mode, put MM in reset
     if (legacyMode)
     {
-        tmpData[0] = 0;
-        tmpData[1] = 4;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
-        CHECK_SUCCESS(rc);
-
-        tmpData[0] = 0;
-        tmpData[1] = 6;
-        /*rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); //
-         * hw_rst*/
-        /*CHECK_SUCCESS(rc);*/
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
-        CHECK_SUCCESS(rc);
-
-        tmpData[0] = 0;
-        tmpData[1] = 4;
-        /*rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); //
-         * hw_rst*/
-        /*CHECK_SUCCESS(rc);*/
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
+        rc = ariesSetMMI2CMasterReset(device, 1);
         CHECK_SUCCESS(rc);
     }
     else
     {
-        tmpData[0] = 0;
-        tmpData[1] = 2;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
+        rc = ariesSetI2CMasterReset(device, 1);
         CHECK_SUCCESS(rc);
-        tmpData[0] = 0;
-        tmpData[1] = 0;
-        rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2,
-                                 tmpData); // sw_rst
+        rc = ariesSetI2CMasterReset(device, 0);
         CHECK_SUCCESS(rc);
     }
 
@@ -870,16 +958,9 @@ AriesErrorType ariesVerifyEEPROMImage(AriesDeviceType* device, uint8_t* values,
     time(&start_t);
 
     bool mainMicroAssist = false;
-
     if (!legacyMode)
     {
-        if ((device->fwVersion.major >= 1) && (device->fwVersion.minor >= 1))
-        {
-            mainMicroAssist = true;
-        }
-        else if ((device->fwVersion.major >= 1) &&
-                 (device->fwVersion.minor >= 0) &&
-                 (device->fwVersion.build >= 50))
+        if (ariesFirmwareIsAtLeast(device, 1, 0, 50))
         {
             mainMicroAssist = true;
         }
@@ -1054,13 +1135,10 @@ AriesErrorType ariesVerifyEEPROMImage(AriesDeviceType* device, uint8_t* values,
     // Update device FW update progress state
     device->fwUpdateProg = ARIES_FW_UPDATE_PROGRESS_VERIFY_DONE;
 
-    // Assert HW resets for I2C master interface
-    tmpData[0] = 0x00;
-    tmpData[1] = 0x02;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
+    // Assert HW/SW resets for I2C master interface
+    rc = ariesSetI2CMasterReset(device, 1);
     CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
-    CHECK_SUCCESS(rc);
+
     usleep(2000);
 
     return matchError;
@@ -1082,26 +1160,17 @@ AriesErrorType ariesVerifyEEPROMImageViaChecksum(AriesDeviceType* device,
 
     ASTERA_INFO("Starting Main Micro assisted EEPROM verify via checksum");
 
-    // Deassert HW and SW resets
-    uint8_t tmpData[2];
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
-    CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    // Deassert HW/SW resets
+    rc = ariesSetHwReset(device, 0);
     CHECK_SUCCESS(rc);
 
     // Update device FW update progress state
     device->fwUpdateProg = ARIES_FW_UPDATE_PROGRESS_VERIFY_0;
 
     // Reset I2C Master
-    tmpData[0] = 0;
-    tmpData[1] = 2;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    rc = ariesSetI2CMasterReset(device, 1);
     CHECK_SUCCESS(rc);
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    rc = ariesSetI2CMasterReset(device, 0);
     CHECK_SUCCESS(rc);
 
     // Set page address
@@ -1249,6 +1318,12 @@ AriesErrorType ariesVerifyEEPROMImageViaChecksum(AriesDeviceType* device,
     // Update device FW update progress state
     device->fwUpdateProg = ARIES_FW_UPDATE_PROGRESS_VERIFY_DONE;
 
+    // Assert HW/SW resets for I2C master interface
+    rc = ariesSetI2CMasterReset(device, 1);
+    CHECK_SUCCESS(rc);
+
+    usleep(2000);
+
     if (!isPass)
     {
         return ARIES_EEPROM_VERIFY_FAILURE;
@@ -1310,13 +1385,8 @@ AriesErrorType ariesCheckEEPROMImageCrcBytes(AriesDeviceType* device,
     AriesErrorType rc;
     uint8_t dataByte[1];
 
-    // Deassert HW and SW resets
-    uint8_t tmpData[2];
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
-    CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    // Deassert HW/SW resets
+    rc = ariesSetHwReset(device, 0);
     CHECK_SUCCESS(rc);
 
     // Init I2C Master
@@ -1374,115 +1444,11 @@ AriesErrorType ariesCheckEEPROMImageCrcBytes(AriesDeviceType* device,
 
     *numCrcBytes = numBlocks;
 
-    // Assert HW resets for I2C master interface
-    tmpData[0] = 0x00;
-    tmpData[1] = 0x02;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
+    // Assert HW/SW resets for I2C master interface
+    rc = ariesSetI2CMasterReset(device, 1);
     CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
-    CHECK_SUCCESS(rc);
+
     usleep(2000);
-
-    return ARIES_SUCCESS;
-}
-
-/*
- * Program EEPROM, but only write bytes which are different from current
- * step
- */
-AriesErrorType ariesWriteEEPROMImageDelta(AriesDeviceType* device,
-                                          uint8_t* imageCurrent,
-                                          int sizeCurrent, uint8_t* imageNew,
-                                          int sizeNew)
-{
-    AriesErrorType rc;
-    AriesEEPROMDeltaType differences[ARIES_EEPROM_MAX_NUM_BYTES];
-
-    if (sizeCurrent != sizeNew)
-    {
-        ASTERA_WARN("Image sizes need to be equal");
-        return ARIES_EEPROM_WRITE_ERROR;
-    }
-
-    // Iterate over array and check differences
-    int addrIdx;
-    int diffIdx = 0;
-    for (addrIdx = 0; addrIdx < sizeNew; addrIdx++)
-    {
-        if (imageCurrent[addrIdx] != imageNew[addrIdx])
-        {
-            differences[diffIdx].address = addrIdx;
-            differences[diffIdx].data = imageNew[addrIdx];
-            diffIdx++;
-        }
-    }
-
-    // If less than 25% of image is different, we can use this mode
-    // Else recommend MM-assist mode
-    if (diffIdx > ARIES_EEPROM_MAX_NUM_BYTES / 4)
-    {
-        ASTERA_INFO("Image difference large");
-        ASTERA_INFO("Please use MM-assist write mode to program EEPROM");
-        return ARIES_EEPROM_WRITE_ERROR;
-    }
-
-    // De-assert HW and SW resets and reset I2C Master
-    uint8_t tmpData[2];
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
-    CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
-    CHECK_SUCCESS(rc);
-
-    tmpData[0] = 0;
-    tmpData[1] = 4;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
-    CHECK_SUCCESS(rc);
-
-    tmpData[0] = 0;
-    tmpData[1] = 6;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
-    CHECK_SUCCESS(rc);
-
-    tmpData[0] = 0;
-    tmpData[1] = 4;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
-    CHECK_SUCCESS(rc);
-
-    rc = ariesI2cMasterSoftReset(device->i2cDriver);
-    CHECK_SUCCESS(rc);
-    usleep(2000);
-
-    // Init I2C Master
-    rc = ariesI2CMasterInit(device->i2cDriver);
-    CHECK_SUCCESS(rc);
-
-    // Set Page address to 0
-    uint8_t currentPage = 0;
-    rc = ariesI2CMasterSetPage(device->i2cDriver, currentPage);
-    CHECK_SUCCESS(rc);
-
-    int wrIndex;
-    uint8_t dataByte[1];
-    for (wrIndex = 0; wrIndex < diffIdx; wrIndex++)
-    {
-        // Check if page needs to be updated
-        int addr = differences[diffIdx].address;
-        uint8_t pageNum = floor(addr / ARIES_EEPROM_BANK_SIZE);
-        if (pageNum != currentPage)
-        {
-            rc = ariesI2CMasterSetPage(device->i2cDriver, pageNum);
-            CHECK_SUCCESS(rc);
-            currentPage = pageNum;
-        }
-
-        dataByte[0] = differences[diffIdx].data;
-
-        rc = ariesI2CMasterRewriteAndVerifyByte(device->i2cDriver, addr,
-                                                dataByte);
-        CHECK_SUCCESS(rc);
-    }
 
     return ARIES_SUCCESS;
 }
@@ -1495,21 +1461,14 @@ AriesErrorType ariesReadEEPROMByte(AriesDeviceType* device, int addr,
 {
     AriesErrorType rc;
 
-    // Deassert HW reset for I2C master interface
-    uint8_t tmpData[2];
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
+    // Deassert HW/SW resets
+    rc = ariesSetHwReset(device, 0);
     CHECK_SUCCESS(rc);
 
     // Toggle SW reset for I2C master interface
-    tmpData[0] = 0;
-    tmpData[1] = 2;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    rc = ariesSetI2CMasterReset(device, 1);
     CHECK_SUCCESS(rc);
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    rc = ariesSetI2CMasterReset(device, 0);
     CHECK_SUCCESS(rc);
 
     // Set page address
@@ -1522,12 +1481,10 @@ AriesErrorType ariesReadEEPROMByte(AriesDeviceType* device, int addr,
     CHECK_SUCCESS(rc);
 
     // Assert HW/SW resets for I2C master interface
-    tmpData[0] = 0x00;
-    tmpData[1] = 0x02;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
+    rc = ariesSetI2CMasterReset(device, 1);
     CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
-    CHECK_SUCCESS(rc);
+
+    usleep(2000);
 
     return ARIES_SUCCESS;
 }
@@ -1540,21 +1497,14 @@ AriesErrorType ariesWriteEEPROMByte(AriesDeviceType* device, int addr,
 {
     AriesErrorType rc;
 
-    // Deassert HW reset for I2C master interface
-    uint8_t tmpData[2];
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
+    // Deassert HW/SW resets
+    rc = ariesSetHwReset(device, 0);
     CHECK_SUCCESS(rc);
 
     // Toggle SW reset for I2C master interface
-    tmpData[0] = 0;
-    tmpData[1] = 2;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    rc = ariesSetI2CMasterReset(device, 1);
     CHECK_SUCCESS(rc);
-    tmpData[0] = 0;
-    tmpData[1] = 0;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
+    rc = ariesSetI2CMasterReset(device, 0);
     CHECK_SUCCESS(rc);
 
     // Set page address
@@ -1567,12 +1517,10 @@ AriesErrorType ariesWriteEEPROMByte(AriesDeviceType* device, int addr,
     CHECK_SUCCESS(rc);
 
     // Assert HW/SW resets for I2C master interface
-    tmpData[0] = 0x00;
-    tmpData[1] = 0x02;
-    rc = ariesWriteBlockData(device->i2cDriver, 0x600, 2, tmpData); // hw_rst
+    rc = ariesSetI2CMasterReset(device, 1);
     CHECK_SUCCESS(rc);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, tmpData); // sw_rst
-    CHECK_SUCCESS(rc);
+
+    usleep(2000);
 
     return ARIES_SUCCESS;
 }
@@ -1636,7 +1584,8 @@ AriesErrorType ariesCheckDeviceHealth(AriesDeviceType* device)
 
     // Check if retimer slave address is correct
     // This can be done by perfroming a simple read
-    rc = ariesReadBlockData(device->i2cDriver, 0x0, 4, dataBytes);
+    rc = ariesReadWideRegister(device->i2cDriver, ARIES_GLB_PARAM_REG0_ADDR, 4,
+                               dataBytes);
     if (rc != ARIES_SUCCESS)
     {
         ASTERA_ERROR("Reads to retimer aren't working");
@@ -1671,6 +1620,10 @@ AriesErrorType ariesGetMaxTemp(AriesDeviceType* device)
  */
 AriesErrorType ariesGetCurrentTemp(AriesDeviceType* device)
 {
+    if (!device->mmHeartbeatOkay || device->fwVersion.isComplianceFW)
+    {
+        return ariesReadPmaAvgTempDirect(device);
+    }
     return ariesReadPmaAvgTemp(device);
 }
 
@@ -1685,7 +1638,8 @@ AriesErrorType ariesSetMaxDataRate(AriesDeviceType* device,
     uint32_t val;
     uint32_t mask;
 
-    rc = ariesReadBlockData(device->i2cDriver, 0, 4, dataBytes);
+    rc = ariesReadWideRegister(device->i2cDriver, ARIES_GLB_PARAM_REG0_ADDR, 4,
+                               dataBytes);
     CHECK_SUCCESS(rc);
     val = dataBytes[0] + (dataBytes[1] << 8) + (dataBytes[2] << 16) +
           (dataBytes[3] << 24);
@@ -1699,7 +1653,8 @@ AriesErrorType ariesSetMaxDataRate(AriesDeviceType* device,
     dataBytes[2] = (val >> 16) & 0xff;
     dataBytes[3] = (val >> 24) & 0xff;
 
-    rc = ariesWriteBlockData(device->i2cDriver, 0, 4, dataBytes);
+    rc = ariesWriteWideRegister(device->i2cDriver, ARIES_GLB_PARAM_REG0_ADDR, 4,
+                                dataBytes);
     CHECK_SUCCESS(rc);
 
     return ARIES_SUCCESS;
@@ -1823,63 +1778,23 @@ AriesErrorType ariesTestModeEnable(AriesDeviceType* device)
     int qs;
     int qsLane;
 
-    // Assert register PERST
-    ASTERA_INFO("Assert internal PERST");
-    dataByte[0] = 0x00;
-    rc = ariesWriteByteData(device->i2cDriver, 0x604,
-                            dataByte); // Assert for Links[7:0]
-    CHECK_SUCCESS(rc);
-    usleep(100000); // 100 ms
-
-    // Put MM in reset
-    ASTERA_INFO("Put MM into reset");
-    rc = ariesSetMMReset(device, true);
-    CHECK_SUCCESS(rc);
-    usleep(100000); // 100 ms
-
-    // Verify
-    // rc = ariesReadBlockData(device->i2cDriver, 0x602, 2, dataWord);
-    // CHECK_SUCCESS(rc);
-    // uint8_t mm_reset = dataWord[1] >> 2;
-    // ASTERA_INFO("Read back MM reset: %d", mm_reset);
-
-    // MM could have been halted in the middle of a temp sensor reading. Undo
-    // those overrides.
+    // Enable RX terminations
     for (side = 0; side < 2; side++)
     {
         for (lane = 0; lane < 16; lane++)
         {
-            qs = lane / 4;
-            qsLane = lane % 4;
-            // Disable the temp sensor (one control bit per PMA instance)
-            if (qsLane == 0)
-            {
-                rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs, 0xed,
-                                              dataWord);
-                CHECK_SUCCESS(rc);
-                dataWord[0] &= ~(1 << 3);
-                rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
-                                               0xed, dataWord);
-                CHECK_SUCCESS(rc);
-                rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs, 0xea,
-                                              dataWord);
-                CHECK_SUCCESS(rc);
-                dataWord[0] &= ~(1 << 5);
-                dataWord[0] &= ~(1 << 6);
-                rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
-                                               0xea, dataWord);
-                CHECK_SUCCESS(rc);
-            }
-            // Un-freeze PMA FW
-            rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs,
-                                              qsLane, 0x2060, dataWord);
-            CHECK_SUCCESS(rc);
-            dataWord[1] &= ~(1 << 6);
-            rc = ariesWriteWordPmaLaneIndirect(device->i2cDriver, side, qs,
-                                               qsLane, 0x2060, dataWord);
+            rc = ariesPipeRxTermSet(device, side, lane, true);
             CHECK_SUCCESS(rc);
         }
     }
+    usleep(100000); // 100 ms
+
+    // Assert register PERST for Links[7:0]
+    dataByte[0] = 0x00;
+    rc = ariesWriteByteData(device->i2cDriver, 0x604, dataByte);
+    CHECK_SUCCESS(rc);
+    usleep(100000); // 100 ms
+
     // In some versions of FW, MPLLB output divider is overriden to /2. Undo
     // this change.
     for (side = 0; side < 2; side++)
@@ -1891,13 +1806,21 @@ AriesErrorType ariesTestModeEnable(AriesDeviceType* device)
             // one control bit per PMA instance
             if (qsLane == 0)
             {
-                dataWord[0] = 0x20;
+                // MPLLB_TX_CLK_DIV_OVRD_EN = 0
+                dataWord[0] = 0x00;
                 dataWord[1] = 0x00;
                 rc = ariesWriteWordPmaIndirect(
                     device->i2cDriver, side, qs,
                     ARIES_PMA_SUP_DIG_MPLLB_OVRD_IN_0, dataWord);
                 CHECK_SUCCESS(rc);
             }
+            // Also change ROPLL value back to /16 instead of /8
+            dataWord[0] = 0x00;
+            dataWord[1] = 0x80;
+            rc = ariesWriteWordPmaLaneIndirect(
+                device->i2cDriver, side, qs, qsLane,
+                ARIES_PMA_LANE_DIG_ANA_ROPLL_ANA_OUT_2, dataWord);
+            CHECK_SUCCESS(rc);
         }
     }
     // Put Receivers into standby
@@ -1928,24 +1851,13 @@ AriesErrorType ariesTestModeEnable(AriesDeviceType* device)
     }
     usleep(10000); // 10 ms
 
-    // Enable RX terminations
-    for (side = 0; side < 2; side++)
-    {
-        for (lane = 0; lane < 16; lane++)
-        {
-            rc = ariesPipeRxTermSet(device, side, lane, true);
-            CHECK_SUCCESS(rc);
-        }
-    }
-    usleep(10000); // 10 ms
-
     // Disable PCS block align control
     for (side = 0; side < 2; side++)
     {
         // One blockaligncontrol control for every grouping of two lanes
         for (lane = 0; lane < 16; lane += 2)
         {
-            rc = ariesPipeBlkAlgnCtrlSet(device, side, lane, false);
+            rc = ariesPipeBlkAlgnCtrlSet(device, side, lane, false, true);
             CHECK_SUCCESS(rc);
         }
     }
@@ -1982,9 +1894,12 @@ AriesErrorType ariesTestModeDisable(AriesDeviceType* device)
                 device->i2cDriver, side, qs, qsLane,
                 ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1, dataWord);
             CHECK_SUCCESS(rc);
-            // Disable Rx terminations
-            rc = ariesPipeRxTermSet(device, side, lane, false);
-            CHECK_SUCCESS(rc);
+        }
+    }
+    for (side = 0; side < 2; side++)
+    {
+        for (lane = 0; lane < 16; lane++)
+        {
             // Undo Rx inversion overrides
             rc = ariesPMARxInvertSet(device, side, lane, false, false);
             CHECK_SUCCESS(rc);
@@ -1998,40 +1913,77 @@ AriesErrorType ariesTestModeDisable(AriesDeviceType* device)
             // Turn off PRBS checkers
             rc = ariesPMABertPatChkConfig(device, side, lane, 0);
             CHECK_SUCCESS(rc);
+        }
+    }
+    for (side = 0; side < 2; side++)
+    {
+        for (lane = 0; lane < 16; lane++)
+        {
             // Undo block align control override
-            rc = ariesPipeBlkAlgnCtrlSet(device, side, lane, false);
+            rc = ariesPipeBlkAlgnCtrlSet(device, side, lane, false, false);
             CHECK_SUCCESS(rc);
+        }
+    }
+    for (side = 0; side < 2; side++)
+    {
+        for (lane = 0; lane < 16; lane++)
+        {
             // Undo Tx/Rx data enable override
             rc = ariesPMATxDataEnSet(device, side, lane, false);
             CHECK_SUCCESS(rc);
             rc = ariesPMARxDataEnSet(device, side, lane, false);
             CHECK_SUCCESS(rc);
+        }
+    }
+    for (side = 0; side < 2; side++)
+    {
+        for (lane = 0; lane < 16; lane++)
+        {
             // Rate change to Gen1
             if ((lane % 2) == 0)
             {
                 // Rate is controlled for each group of two lanes, so only do
                 // this once per pair
-                rc = ariesPipeRateChange(device, side, lane,
-                                         1); // rate=1 for Gen1
+                // rate=1 for Gen1
+                rc = ariesPipeRateChange(device, side, lane, 1);
                 CHECK_SUCCESS(rc);
             }
+        }
+    }
+    for (side = 0; side < 2; side++)
+    {
+        for (lane = 0; lane < 16; lane++)
+        {
             // Powerdown to P1 (P1 is value 2)
             rc = ariesPipePowerdownSet(device, side, lane,
                                        ARIES_PIPE_POWERDOWN_P1);
             CHECK_SUCCESS(rc);
+        }
+    }
+    for (side = 0; side < 2; side++)
+    {
+        for (lane = 0; lane < 16; lane++)
+        {
             // Undo Rxstandby override
             rc = ariesPipeRxStandbySet(device, side, lane, false);
             CHECK_SUCCESS(rc);
         }
     }
+    for (side = 0; side < 2; side++)
+    {
+        for (lane = 0; lane < 16; lane++)
+        {
+            // Disable Rx terminations
+            rc = ariesPipeRxTermSet(device, side, lane, false);
+            CHECK_SUCCESS(rc);
+        }
+    }
 
-    // Take MM out of reset
-    rc = ariesSetMMReset(device, false);
-    CHECK_SUCCESS(rc);
     // De-assert register PERST
     dataByte[0] = 0xff;
     rc = ariesWriteByteData(device->i2cDriver, 0x604, dataByte);
     CHECK_SUCCESS(rc);
+    usleep(100000); // 100 ms
 
     return ARIES_SUCCESS;
 }
@@ -2046,6 +1998,21 @@ AriesErrorType ariesTestModeRateChange(AriesDeviceType* device,
     int side;
     int lane;
 
+    // Disable Tx and Rx so rate change is successful
+    rc = ariesTestModeRxConfig(device, DISABLED, false);
+    CHECK_SUCCESS(rc);
+    ariesTestModeTxConfig(device, DISABLED, 0, false);
+    CHECK_SUCCESS(rc);
+
+    for (side = 0; side < 2; side++)
+    {
+        for (lane = 0; lane < 16; lane++)
+        {
+            rc = ariesPMAVregVrefSet(device, side, lane, rate);
+            CHECK_SUCCESS(rc);
+        }
+    }
+
     for (side = 0; side < 2; side++)
     {
         // Rate is controlled for each grouping of two lanes, so only do this
@@ -2054,8 +2021,8 @@ AriesErrorType ariesTestModeRateChange(AriesDeviceType* device,
         {
             rc = ariesPipeRateChange(device, side, lane, rate);
             CHECK_SUCCESS(rc);
-            usleep(50000); // 50 ms
         }
+        usleep(100000); // 100 ms
         // Confirm that every lane changed rate successfully
         for (lane = 0; lane < 16; lane++)
         {
@@ -2142,6 +2109,65 @@ AriesErrorType ariesTestModeTxConfig(AriesDeviceType* device,
 }
 
 /*
+ * Aries Test Mode transmitter single lane configuration
+ */
+AriesErrorType ariesTestModeTxConfigLane(AriesDeviceType* device,
+                                         AriesPRBSPatternType pattern,
+                                         int preset, int side, int lane,
+                                         bool enable)
+{
+    AriesErrorType rc;
+    uint8_t dataByte[1];
+    int rate;
+    int de;
+    AriesPRBSPatternType mode = DISABLED;
+
+    // Decode the pattern argument
+    if (enable)
+    {
+        // Set the generator mode (pattern)
+        mode = pattern;
+
+        // Check any Path's rate (assumption is they're all the same)
+        // qs_2, pth_wrap_0 is absolute lane 8
+        rc = ariesReadRetimerRegister(
+            device->i2cDriver, 0, 8,
+            ARIES_RET_PTH_GBL_MAC_PHY_RATE_AND_PCLK_RATE_ADDR, 1, dataByte);
+        CHECK_SUCCESS(rc);
+        rate = dataByte[0] & 0x7;
+        if (rate >= 2) // rate==2 is Gen3
+        {
+            // For Gen3/4/5, use presets
+            de = ARIES_PIPE_DEEMPHASIS_DE_NONE;
+            if (preset < 0)
+            {
+                preset = 0;
+            }
+            else if (preset > 10)
+            {
+                preset = 10;
+            }
+        }
+        else
+        {
+            // For Gen1/2, use de-emphasis -3.5dB (default)
+            de = 1;
+            preset = ARIES_PIPE_DEEMPHASIS_PRESET_NONE;
+        }
+        rc = ariesPipeDeepmhasisSet(device, side, lane, de, preset, 0, 44, 0);
+        CHECK_SUCCESS(rc);
+    }
+    rc = ariesPMABertPatGenConfig(device, side, lane, mode);
+    CHECK_SUCCESS(rc);
+    usleep(10000); // 10 ms
+    rc = ariesPMATxDataEnSet(device, side, lane, enable);
+    CHECK_SUCCESS(rc);
+    usleep(10000); // 10 ms
+
+    return ARIES_SUCCESS;
+}
+
+/*
  * Aries Test Mode receiver configuration
  */
 AriesErrorType ariesTestModeRxConfig(AriesDeviceType* device,
@@ -2202,9 +2228,6 @@ AriesErrorType ariesTestModeRxConfig(AriesDeviceType* device,
                 usleep(10000); // 10 ms
             }
         }
-        // Clear patter checkers
-        // rc = ariesTestModeRxEcountClear(device);
-        // CHECK_SUCCESS(rc);
         // Detect/correct polarity
         for (side = 0; side < 2; side++)
         {
@@ -2290,6 +2313,22 @@ AriesErrorType ariesTestModeRxEcountClear(AriesDeviceType* device)
             CHECK_SUCCESS(rc);
         }
     }
+
+    return ARIES_SUCCESS;
+}
+
+/*
+ * Aries Test Mode clear single lane error count
+ */
+AriesErrorType ariesTestModeRxEcountClearLane(AriesDeviceType* device, int side,
+                                              int lane)
+{
+    AriesErrorType rc;
+
+    rc = ariesPMABertPatChkToggleSync(device, side, lane);
+    CHECK_SUCCESS(rc);
+    rc = ariesPMABertPatChkToggleSync(device, side, lane);
+    CHECK_SUCCESS(rc);
 
     return ARIES_SUCCESS;
 }

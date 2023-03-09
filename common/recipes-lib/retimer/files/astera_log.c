@@ -74,7 +74,7 @@ void asteraLogSetFp(FILE* fp)
     AsteraLogger.fp = fp;
 }
 
-void asteraLogSetCallback(void(*ptr))
+void asteraLogSetCallback(void (*ptr)())
 {
     AsteraLogger.ptr = ptr;
 }

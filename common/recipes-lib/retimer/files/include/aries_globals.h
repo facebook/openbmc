@@ -131,13 +131,25 @@
 //////////////////////////////////////////////////////////////
 
 /** PMA 0, 1 read */
-#define ARIES_RD_PID_IND_PMA0 6
-#define ARIES_RD_PID_IND_PMA1 7
+#define ARIES_MM_RD_PID_IND_PMA0 0x6
+#define ARIES_MM_RD_PID_IND_PMA1 0x7
 
 /** PMA 0, 1, and broadcast write */
-#define ARIES_WR_PID_IND_PMA0 0xf
-#define ARIES_WR_PID_IND_PMA1 0x10
-#define ARIES_WR_PID_IND_PMAX 0x11
+#define ARIES_MM_WR_PID_IND_PMA0 0xf
+#define ARIES_MM_WR_PID_IND_PMA1 0x10
+#define ARIES_MM_WR_PID_IND_PMAX 0x11
+
+/** Wide register reads */
+#define ARIES_MM_RD_WIDE_REG_2B 0x1d
+#define ARIES_MM_RD_WIDE_REG_3B 0x1e
+#define ARIES_MM_RD_WIDE_REG_4B 0x1f
+#define ARIES_MM_RD_WIDE_REG_5B 0x20
+
+/** Wide register writes */
+#define ARIES_MM_WR_WIDE_REG_2B 0x21
+#define ARIES_MM_WR_WIDE_REG_3B 0x22
+#define ARIES_MM_WR_WIDE_REG_4B 0x23
+#define ARIES_MM_WR_WIDE_REG_5B 0x24
 
 ///////////////////////////////////////////////////////////
 //////////// Temperature measurement constants ////////////
@@ -159,14 +171,12 @@
 #define ARIES_TEMP_OFFSET_MAX 625
 
 /** Aries max temp ADC code CSR */
-#define ARIES_MAX_TEMP_ADC_CSR 0x424
 #define ARIES_ALL_TIME_MAX_TEMP_ADC_CSR 0x424
 
 /** Aries current max temp ADC code CSR */
 #define ARIES_CURRENT_MAX_TEMP_ADC_CSR 0x428
 
 /** Aries current average temp ADC code CSR */
-#define ARIES_CURRENT_TEMP_ADC_CSR 0x42c
 #define ARIES_CURRENT_AVG_TEMP_ADC_CSR 0x42c
 
 /** Aries temp calibration uncertainty offset */

@@ -28,7 +28,11 @@
 #include <time.h>
 #include <stdbool.h>
 
-#define LOG_VERSION "0.2.0"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define LOG_VERSION "0.2.1"
 
 typedef void (*logLockFn)(void* udata, int lock);
 
@@ -58,10 +62,14 @@ enum
 void asteraLogSetUdata(void* udata);
 void asteraLogSetLock(logLockFn fn);
 void asteraLogSetFp(FILE* fp);
-void asteraLogSetCallback(void(*ptr));
+void asteraLogSetCallback(void (*ptr)());
 void asteraLogSetLevel(int level);
 void asteraLogSetQuiet(int enable);
 
 void asteraLogMsg(int level, const char* file, int line, const char* fmt, ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ASTERA_LOG_H_ */

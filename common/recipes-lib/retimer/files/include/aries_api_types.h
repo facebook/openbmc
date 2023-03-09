@@ -265,8 +265,9 @@ typedef struct AriesI2CDriver
     int slaveAddr;                   // Slave Address
     AriesI2CFormatType i2cFormat;    // I2C format (Astera or Intel)
     AriesI2CPECEnableType pecEnable; // Enable PEC
-    int lock;      // Counter indicating if device reads are locked
-    bool lockInit; // Flag indicating if lock has been initialized
+    bool mmWideRegisterValid; // Flag for MM assisted Wide Register access
+    int lock;                 // Counter indicating if device reads are locked
+    bool lockInit;            // Flag indicating if lock has been initialized
 } AriesI2CDriverType;
 
 /**
@@ -274,9 +275,10 @@ typedef struct AriesI2CDriver
  */
 typedef struct AriesFWVersion
 {
-    uint8_t major;  // FW version major release value
-    uint8_t minor;  // FW version minor release value
-    uint16_t build; // FW version build release value
+    uint8_t major;       // FW version major release value
+    uint8_t minor;       // FW version minor release value
+    uint16_t build;      // FW version build release value
+    bool isComplianceFW; // Flag to indicate compliance FW
 } AriesFWVersionType;
 
 /**

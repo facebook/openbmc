@@ -151,14 +151,37 @@ AriesErrorType ariesReadFwVersion(AriesI2CDriverType* i2cDriver, int offset,
     return ARIES_SUCCESS;
 }
 
+int ariesFirmwareIsAtLeast(AriesDeviceType* device, uint8_t major,
+                           uint8_t minor, uint16_t build)
+{
+    if ((device->fwVersion.major == 0) && (device->fwVersion.minor == 0) &&
+        (device->fwVersion.build == 0))
+    {
+        return false;
+    }
+    else if ((device->fwVersion.major > major) ||
+             ((device->fwVersion.major == major) &&
+              (device->fwVersion.minor > minor)) ||
+             ((device->fwVersion.major == major) &&
+              (device->fwVersion.minor == minor) &&
+              (device->fwVersion.build >= build)))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 /*
  * I2C Master init for EEPROM Write-Thru
  */
 AriesErrorType ariesI2CMasterInit(AriesI2CDriverType* i2cDriver)
 {
+    AriesErrorType rc;
     uint8_t dataByte[1];
     uint8_t dataWord[2];
-    AriesErrorType rc;
 
     dataByte[0] = 0;
     rc = ariesI2CMasterWriteCtrlReg(i2cDriver, 0x6c, 1, dataByte);
@@ -256,7 +279,7 @@ AriesErrorType ariesI2CMasterSetFrequency(AriesI2CDriverType* i2cDriver,
     // self.csr.misc.hw_rst = 0x200
     dataWord[0] = 0x0;
     dataWord[1] = 0x2;
-    rc = ariesWriteBlockData(i2cDriver, ARIES_HW_RST_ADDR, 2, dataWord);
+    rc = ariesWriteWideRegister(i2cDriver, ARIES_HW_RST_ADDR, 2, dataWord);
     CHECK_SUCCESS(rc);
 
     // Set IC_ENABLE=0 to allow changing the LCNT/HCNT settings
@@ -273,11 +296,11 @@ AriesErrorType ariesI2CMasterSetFrequency(AriesI2CDriverType* i2cDriver,
     rc = ariesWriteByteData(i2cDriver, ARIES_I2C_MST_CMD_ADDR, dataByte);
     CHECK_SUCCESS(rc);
 
-    // U-reset I2C IP
+    // Unreset I2C IP
     // self.csr.misc.hw_rst = 0x0
     dataWord[0] = 0x0;
     dataWord[1] = 0x0;
-    rc = ariesWriteBlockData(i2cDriver, ARIES_HW_RST_ADDR, 2, dataWord);
+    rc = ariesWriteWideRegister(i2cDriver, ARIES_HW_RST_ADDR, 2, dataWord);
     CHECK_SUCCESS(rc);
 
     // Set IC_FS_SCL_HCNT
@@ -884,37 +907,7 @@ AriesErrorType ariesI2CMasterSetPage(AriesI2CDriverType* i2cDriver, int page)
 }
 
 /*
- * De-assert HW and SW resets
- */
-AriesErrorType ariesDeassertReset(AriesI2CDriverType* i2cDriver)
-{
-    AriesErrorType rc;
-    uint8_t hwRstR[2];
-    uint8_t hwRstW[2];
-    uint8_t swRstR[2];
-    uint8_t swRstW[2];
-
-    // De-assert HW Reset
-    rc = ariesReadBlockData(i2cDriver, 0x600, 2, hwRstR);
-    CHECK_SUCCESS(rc);
-    hwRstW[0] = hwRstR[0] & 0xff;
-    hwRstW[1] = hwRstR[1] & 0xD;
-    rc = ariesWriteBlockData(i2cDriver, 0x600, 2, hwRstW);
-    CHECK_SUCCESS(rc);
-
-    // De-assert SW Reset
-    rc = ariesReadBlockData(i2cDriver, 0x602, 2, swRstR);
-    CHECK_SUCCESS(rc);
-    swRstW[0] = swRstR[0] & 0xff;
-    swRstW[1] = swRstR[1] & 0xD;
-    rc = ariesWriteBlockData(i2cDriver, 0x602, 2, swRstW);
-    CHECK_SUCCESS(rc);
-
-    return ARIES_SUCCESS;
-}
-
-/*
- * Get temp caliberation codes and add to device settings
+ * Get temp calibration codes and add to device settings
  */
 AriesErrorType ariesGetTempCalibrationCodes(AriesDeviceType* device)
 {
@@ -927,285 +920,315 @@ AriesErrorType ariesGetTempCalibrationCodes(AriesDeviceType* device)
     uint8_t offset;
     uint8_t calCode;
 
-    // eFuse read procedure
-    lc = ariesLock(device->i2cDriver);
-    CHECK_SUCCESS(lc);
-    // 1. Switch to refclk/8 clock for TCK
-    // self.csr.misc.efuse_cntl.sms_clk_sel = 1
-    rc = ariesReadBlockData(device->i2cDriver, 0x8ec, 5, dataBytes5);
-    if (rc != ARIES_SUCCESS)
+    // Only read from eFuse once - if we haven't done so already
+    if (device->tempCalCodeAvg == 0)
     {
-        lc = ariesUnlock(device->i2cDriver);
+        // eFuse read procedure
+        lc = ariesLock(device->i2cDriver);
         CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // Assert bit 25
-    dataBytes5[3] |= (1 << 1);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x8ec, 5, dataBytes5);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // 2. Assert efuse_load
-    // self.csr.misc.sms_efuse_cntl.sms_efuse_load = 1
-    rc = ariesReadByteData(device->i2cDriver, 0x8f6, dataByte);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // Assert bit 7
-    dataByte[0] |= (1 << 7);
-    rc = ariesWriteByteData(device->i2cDriver, 0x8f6, dataByte);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // 3. Assert smart_test
-    // self.csr.misc.efuse_cntl.smart_test = 1
-    rc = ariesReadBlockData(device->i2cDriver, 0x8ec, 5, dataBytes5);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // Assert bit 24
-    dataBytes5[3] |= (1 << 0);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x8ec, 5, dataBytes5);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // 4. De-assert smart_test
-    // self.csr.misc.efuse_cntl.smart_test = 0
-    rc = ariesReadBlockData(device->i2cDriver, 0x8ec, 5, dataBytes5);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // De-assert bit 24
-    dataBytes5[3] &= ~(1 << 0);
-    rc = ariesWriteBlockData(device->i2cDriver, 0x8ec, 5, dataBytes5);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // 5. De-assert efuse_load
-    // self.csr.misc.sms_efuse_cntl.sms_efuse_load = 0
-    rc = ariesReadByteData(device->i2cDriver, 0x8f6, dataByte);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // De-assert bit 7
-    dataByte[0] &= ~(1 << 7);
-    rc = ariesWriteByteData(device->i2cDriver, 0x8f6, dataByte);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-
-    // Read eFuse “primary page invalid” bit and adjust offset accordingly
-    // Set address
-    dataByte[0] = 63;
-    rc = ariesWriteByteData(device->i2cDriver, 0x8f6, dataByte);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // Read data
-    rc = ariesReadByteData(device->i2cDriver, 0x8f7, dataByte);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    invalid = dataByte[0];
-
-    if (invalid & 0x80)
-    {
-        offset = 64;
-    }
-    else
-    {
-        offset = 0;
-    }
-
-    // Determine calibration codes
-    // Set address
-    dataByte[0] = 48 + offset;
-    rc = ariesWriteByteData(device->i2cDriver, 0x8f6, dataByte);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    // Read data
-    rc = ariesReadByteData(device->i2cDriver, 0x8f7, dataByte);
-    if (rc != ARIES_SUCCESS)
-    {
-        lc = ariesUnlock(device->i2cDriver);
-        CHECK_SUCCESS(lc);
-        return rc;
-    }
-    flag = dataByte[0];
-
-    // Compute PMA A calibration codes
-    int qs;
-    for (qs = 0; qs < 4; qs++)
-    {
-        if (flag & 0x4)
+        // 1. Switch to refclk/8 clock for TCK
+        // self.csr.misc.efuse_cntl.sms_clk_sel = 1
+        rc = ariesReadWideRegister(device->i2cDriver, ARIES_EFUSE_CNTL, 5,
+                                   dataBytes5);
+        if (rc != ARIES_SUCCESS)
         {
-            dataByte[0] = 34 + (qs * 4) + offset;
-            rc = ariesWriteByteData(device->i2cDriver, 0x8f6, dataByte);
-            if (rc != ARIES_SUCCESS)
-            {
-                lc = ariesUnlock(device->i2cDriver);
-                CHECK_SUCCESS(lc);
-                return rc;
-            }
-            rc = ariesReadByteData(device->i2cDriver, 0x8f7, dataByte);
-            if (rc != ARIES_SUCCESS)
-            {
-                lc = ariesUnlock(device->i2cDriver);
-                CHECK_SUCCESS(lc);
-                return rc;
-            }
-            calCode = dataByte[0];
-            if (calCode == 0)
-            {
-                calCode = 84;
-            }
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // Assert bit 25
+        dataBytes5[3] |= (1 << 1);
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_EFUSE_CNTL, 5,
+                                    dataBytes5);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // 2. Assert efuse_load
+        // self.csr.misc.sms_efuse_cntl.sms_efuse_load = 1
+        rc = ariesReadByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                               dataByte);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // Assert bit 7
+        dataByte[0] |= (1 << 7);
+        rc = ariesWriteByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                                dataByte);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // 3. Assert smart_test
+        // self.csr.misc.efuse_cntl.smart_test = 1
+        rc = ariesReadWideRegister(device->i2cDriver, ARIES_EFUSE_CNTL, 5,
+                                   dataBytes5);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // Assert bit 24
+        dataBytes5[3] |= (1 << 0);
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_EFUSE_CNTL, 5,
+                                    dataBytes5);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // 4. De-assert smart_test
+        // self.csr.misc.efuse_cntl.smart_test = 0
+        rc = ariesReadWideRegister(device->i2cDriver, ARIES_EFUSE_CNTL, 5,
+                                   dataBytes5);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // De-assert bit 24
+        dataBytes5[3] &= ~(1 << 0);
+        rc = ariesWriteWideRegister(device->i2cDriver, ARIES_EFUSE_CNTL, 5,
+                                    dataBytes5);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // 5. De-assert efuse_load
+        // self.csr.misc.sms_efuse_cntl.sms_efuse_load = 0
+        rc = ariesReadByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                               dataByte);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // De-assert bit 7
+        dataByte[0] &= ~(1 << 7);
+        rc = ariesWriteByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                                dataByte);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+
+        // Read eFuse “primary page invalid” bit and adjust offset accordingly
+        // Set address
+        dataByte[0] = 63;
+        rc = ariesWriteByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                                dataByte);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // Read data
+        rc = ariesReadWideRegister(device->i2cDriver, ARIES_SMS_EFUSE_STS, 2,
+                                   dataBytes5);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        invalid = dataBytes5[0];
+
+        if (invalid & 0x80)
+        {
+            offset = 64;
         }
         else
         {
-            calCode = 84;
+            offset = 0;
         }
-        device->tempCalCodePmaA[qs] = calCode;
-    }
 
-    // Compute PMA B calibration codes
-    for (qs = 0; qs < 4; qs++)
-    {
-        if (flag & 0x04)
+        // Determine calibration codes
+        // Set address
+        dataByte[0] = 48 + offset;
+        rc = ariesWriteByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                                dataByte);
+        if (rc != ARIES_SUCCESS)
         {
-            dataByte[0] = 32 + (qs * 4) + offset;
-            rc = ariesWriteByteData(device->i2cDriver, 0x8f6, dataByte);
-            if (rc != ARIES_SUCCESS)
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        // Read data
+        rc = ariesReadWideRegister(device->i2cDriver, ARIES_SMS_EFUSE_STS, 2,
+                                   dataBytes5);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+        flag = dataBytes5[0];
+
+        // Compute PMA A calibration codes
+        int qs;
+        for (qs = 0; qs < 4; qs++)
+        {
+            if (flag & 0x4)
             {
-                lc = ariesUnlock(device->i2cDriver);
-                CHECK_SUCCESS(lc);
-                return rc;
+                dataByte[0] = 34 + (qs * 4) + offset;
+                rc = ariesWriteByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                                        dataByte);
+                if (rc != ARIES_SUCCESS)
+                {
+                    lc = ariesUnlock(device->i2cDriver);
+                    CHECK_SUCCESS(lc);
+                    return rc;
+                }
+                rc = ariesReadWideRegister(device->i2cDriver,
+                                           ARIES_SMS_EFUSE_STS, 2, dataBytes5);
+                if (rc != ARIES_SUCCESS)
+                {
+                    lc = ariesUnlock(device->i2cDriver);
+                    CHECK_SUCCESS(lc);
+                    return rc;
+                }
+                calCode = dataBytes5[0];
+                if (calCode == 0)
+                {
+                    calCode = 84;
+                }
             }
-            rc = ariesReadByteData(device->i2cDriver, 0x8f7, dataByte);
-            if (rc != ARIES_SUCCESS)
-            {
-                lc = ariesUnlock(device->i2cDriver);
-                CHECK_SUCCESS(lc);
-                return rc;
-            }
-            calCode = dataByte[0];
-            if (calCode == 0)
+            else
             {
                 calCode = 84;
             }
+            device->tempCalCodePmaA[qs] = calCode;
+        }
+
+        // Compute PMA B calibration codes
+        for (qs = 0; qs < 4; qs++)
+        {
+            if (flag & 0x04)
+            {
+                dataByte[0] = 32 + (qs * 4) + offset;
+                rc = ariesWriteByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                                        dataByte);
+                if (rc != ARIES_SUCCESS)
+                {
+                    lc = ariesUnlock(device->i2cDriver);
+                    CHECK_SUCCESS(lc);
+                    return rc;
+                }
+                rc = ariesReadWideRegister(device->i2cDriver,
+                                           ARIES_SMS_EFUSE_STS, 2, dataBytes5);
+                if (rc != ARIES_SUCCESS)
+                {
+                    lc = ariesUnlock(device->i2cDriver);
+                    CHECK_SUCCESS(lc);
+                    return rc;
+                }
+                calCode = dataBytes5[0];
+                if (calCode == 0)
+                {
+                    calCode = 84;
+                }
+            }
+            else
+            {
+                calCode = 84;
+            }
+            device->tempCalCodePmaB[qs] = calCode;
+        }
+
+        // Calcualte the average PMA calibration code
+        if (device->partNumber == ARIES_PTX16)
+        {
+            device->tempCalCodeAvg =
+                (device->tempCalCodePmaA[0] + device->tempCalCodePmaA[1] +
+                 device->tempCalCodePmaA[2] + device->tempCalCodePmaA[3] +
+                 device->tempCalCodePmaB[0] + device->tempCalCodePmaB[1] +
+                 device->tempCalCodePmaB[2] + device->tempCalCodePmaB[3] +
+                 8 / 2) /
+                8; // Add denominator/2 to cause integer rounding
+        }
+        else if (device->partNumber == ARIES_PTX08)
+        {
+            device->tempCalCodeAvg =
+                (device->tempCalCodePmaA[1] + device->tempCalCodePmaA[2] +
+                 device->tempCalCodePmaB[1] + device->tempCalCodePmaB[2] +
+                 4 / 2) /
+                4; // Add denominator/2 to cause integer rounding
         }
         else
         {
-            calCode = 84;
+            lc = ariesUnlock(device->i2cDriver);
+            CHECK_SUCCESS(lc);
+            return ARIES_INVALID_ARGUMENT;
         }
-        device->tempCalCodePmaB[qs] = calCode;
-    }
 
-    // Calcualte the average PMA calibration code
-    if (device->partNumber == ARIES_PTX16)
-    {
-        device->tempCalCodeAvg =
-            (device->tempCalCodePmaA[0] + device->tempCalCodePmaA[1] +
-             device->tempCalCodePmaA[2] + device->tempCalCodePmaA[3] +
-             device->tempCalCodePmaB[0] + device->tempCalCodePmaB[1] +
-             device->tempCalCodePmaB[2] + device->tempCalCodePmaB[3] + 8 / 2) /
-            8; // Add denominator/2 to cause integer rounding
-    }
-    else if (device->partNumber == ARIES_PTX08)
-    {
-        device->tempCalCodeAvg =
-            (device->tempCalCodePmaA[1] + device->tempCalCodePmaA[2] +
-             device->tempCalCodePmaB[1] + device->tempCalCodePmaB[2] + 4 / 2) /
-            4; // Add denominator/2 to cause integer rounding
-    }
-    else
-    {
+        // Read 12-byte chip ID
+        int b = 0;
+        for (b = 0; b < 12; b++)
+        {
+            // Chip ID starts at byte 0 in eFuse
+            dataByte[0] = 0 + b + offset;
+            rc = ariesWriteByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                                    dataByte);
+            if (rc != ARIES_SUCCESS)
+            {
+                lc = ariesUnlock(device->i2cDriver);
+                CHECK_SUCCESS(lc);
+                return rc;
+            }
+            rc = ariesReadWideRegister(device->i2cDriver, ARIES_SMS_EFUSE_STS,
+                                       2, dataBytes5);
+            if (rc != ARIES_SUCCESS)
+            {
+                lc = ariesUnlock(device->i2cDriver);
+                CHECK_SUCCESS(lc);
+                return rc;
+            }
+            device->chipID[b] = dataBytes5[0];
+        }
+
+        // Read 6-byte lot number
+        for (b = 0; b < 6; b++)
+        {
+            // Lot number starts at byte 16 in eFuse
+            dataByte[0] = 16 + b + offset;
+            rc = ariesWriteByteData(device->i2cDriver, ARIES_SMS_EFUSE_CNTL,
+                                    dataByte);
+            if (rc != ARIES_SUCCESS)
+            {
+                lc = ariesUnlock(device->i2cDriver);
+                CHECK_SUCCESS(lc);
+                return rc;
+            }
+            rc = ariesReadByteData(device->i2cDriver, ARIES_SMS_EFUSE_STS,
+                                   dataBytes5);
+            if (rc != ARIES_SUCCESS)
+            {
+                lc = ariesUnlock(device->i2cDriver);
+                CHECK_SUCCESS(lc);
+                return rc;
+            }
+            device->lotNumber[b] = dataBytes5[0];
+        }
+
         lc = ariesUnlock(device->i2cDriver);
         CHECK_SUCCESS(lc);
-        return ARIES_INVALID_ARGUMENT;
     }
-
-    // Read 12-byte chip ID
-    int b = 0;
-    for (b = 0; b < 12; b++)
-    {
-        dataByte[0] = 0 + b + offset; // Chip ID starts at byte 0 in eFuse
-        rc = ariesWriteByteData(device->i2cDriver, 0x8f6, dataByte);
-        if (rc != ARIES_SUCCESS)
-        {
-            lc = ariesUnlock(device->i2cDriver);
-            CHECK_SUCCESS(lc);
-            return rc;
-        }
-        rc = ariesReadByteData(device->i2cDriver, 0x8f7, dataByte);
-        if (rc != ARIES_SUCCESS)
-        {
-            lc = ariesUnlock(device->i2cDriver);
-            CHECK_SUCCESS(lc);
-            return rc;
-        }
-        device->chipID[b] = dataByte[0];
-    }
-
-    // Read 6-byte lot number
-    for (b = 0; b < 6; b++)
-    {
-        dataByte[0] = 16 + b + offset; // Lot number starts at byte 16 in eFuse
-        rc = ariesWriteByteData(device->i2cDriver, 0x8f6, dataByte);
-        if (rc != ARIES_SUCCESS)
-        {
-            lc = ariesUnlock(device->i2cDriver);
-            CHECK_SUCCESS(lc);
-            return rc;
-        }
-        rc = ariesReadByteData(device->i2cDriver, 0x8f7, dataByte);
-        if (rc != ARIES_SUCCESS)
-        {
-            lc = ariesUnlock(device->i2cDriver);
-            CHECK_SUCCESS(lc);
-            return rc;
-        }
-        device->lotNumber[b] = dataByte[0];
-    }
-
-    lc = ariesUnlock(device->i2cDriver);
-    CHECK_SUCCESS(lc);
 
     return ARIES_SUCCESS;
 }
@@ -1220,16 +1243,13 @@ AriesErrorType ariesReadPmaTempMax(AriesDeviceType* device)
     uint8_t dataBytes[4];
     int adcCode;
 
-    if ((device->fwVersion.major < 1) ||
-        ((device->fwVersion.major == 1) && (device->fwVersion.minor < 1)) ||
-        ((device->fwVersion.major == 1) && (device->fwVersion.minor == 1) &&
-         (device->fwVersion.build < 31)))
+    if (!ariesFirmwareIsAtLeast(device, 1, 1, 31))
     {
         return ARIES_TEMP_READ_NOT_READY;
     }
 
-    rc = ariesReadBlockData(device->i2cDriver, ARIES_MAX_TEMP_ADC_CSR, 4,
-                            dataBytes);
+    rc = ariesReadWideRegister(device->i2cDriver,
+                               ARIES_ALL_TIME_MAX_TEMP_ADC_CSR, 4, dataBytes);
     CHECK_SUCCESS(rc);
     adcCode = (dataBytes[3] << 24) + (dataBytes[2] << 16) +
               (dataBytes[1] << 8) + dataBytes[0];
@@ -1256,15 +1276,13 @@ AriesErrorType ariesReadPmaAvgTemp(AriesDeviceType* device)
     uint8_t dataBytes[4];
     int adcCode;
 
-    if ((device->fwVersion.major < 1) ||
-        ((device->fwVersion.major == 1) && (device->fwVersion.minor == 0) &&
-         (device->fwVersion.build < 42)))
+    if (!ariesFirmwareIsAtLeast(device, 1, 0, 42))
     {
         return ARIES_TEMP_READ_NOT_READY;
     }
 
-    rc = ariesReadBlockData(device->i2cDriver, ARIES_CURRENT_TEMP_ADC_CSR, 4,
-                            dataBytes);
+    rc = ariesReadWideRegister(device->i2cDriver,
+                               ARIES_CURRENT_AVG_TEMP_ADC_CSR, 4, dataBytes);
     CHECK_SUCCESS(rc);
     adcCode = (dataBytes[3] << 24) + (dataBytes[2] << 16) +
               (dataBytes[1] << 8) + dataBytes[0];
@@ -1280,6 +1298,147 @@ AriesErrorType ariesReadPmaAvgTemp(AriesDeviceType* device)
     return ARIES_SUCCESS;
 }
 
+AriesErrorType ariesReadPmaAvgTempDirect(AriesDeviceType* device)
+{
+    AriesErrorType rc;
+    uint8_t dataBytes[2];
+    int side;
+    int qs;
+    int adcCode;
+
+    adcCode = 0;
+    for (side = 0; side < 2; side++)
+    {
+        for (qs = 0; qs < 4; qs++)
+        {
+            // Unfreeze FW
+            rc = ariesReadWordPmaIndirect(
+                device->i2cDriver, side, qs,
+                ARIES_PMA_RAWLANE_DIG_FSM_FSM_OVRD_CTL + 0x4000, dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[1] |= 0x40;
+            rc = ariesWriteWordPmaIndirect(
+                device->i2cDriver, side, qs,
+                ARIES_PMA_RAWLANE_DIG_FSM_FSM_OVRD_CTL + 0x4000, dataBytes);
+            CHECK_SUCCESS(rc);
+
+            // Temp Sensor Enable
+            rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs,
+                                          ARIES_PMA_SUP_ANA_BG, dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[0] |= 0x08;
+            rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
+                                           ARIES_PMA_SUP_ANA_BG, dataBytes);
+            CHECK_SUCCESS(rc);
+
+            rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs,
+                                          ARIES_PMA_SUP_ANA_RTUNE_CTRL,
+                                          dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[0] |= 0x60;
+            dataBytes[0] &= ~0x18;
+            rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
+                                           ARIES_PMA_SUP_ANA_RTUNE_CTRL,
+                                           dataBytes);
+            CHECK_SUCCESS(rc);
+
+            rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs,
+                                          ARIES_PMA_SUP_DIG_RTUNE_DEBUG,
+                                          dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[0] &= ~0x18;
+            rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
+                                           ARIES_PMA_SUP_DIG_RTUNE_DEBUG,
+                                           dataBytes);
+            CHECK_SUCCESS(rc);
+            usleep(10000);
+
+            rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs,
+                                          ARIES_PMA_SUP_ANA_RTUNE_CTRL,
+                                          dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[0] |= 0x80;
+            dataBytes[0] &= ~0x04;
+            rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
+                                           ARIES_PMA_SUP_ANA_RTUNE_CTRL,
+                                           dataBytes);
+            CHECK_SUCCESS(rc);
+
+            // Temp Sensor Read
+            rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs,
+                                          ARIES_PMA_SUP_DIG_RTUNE_DEBUG,
+                                          dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[0] |= 0x02;
+            rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
+                                           ARIES_PMA_SUP_DIG_RTUNE_DEBUG,
+                                           dataBytes);
+            CHECK_SUCCESS(rc);
+            usleep(10000);
+
+            rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs,
+                                          ARIES_PMA_SUP_DIG_RTUNE_STAT,
+                                          dataBytes);
+            CHECK_SUCCESS(rc);
+            adcCode += ((dataBytes[1] << 8) + dataBytes[0]);
+
+            rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs,
+                                          ARIES_PMA_SUP_DIG_RTUNE_DEBUG,
+                                          dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[0] &= ~0x02;
+            rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
+                                           ARIES_PMA_SUP_DIG_RTUNE_DEBUG,
+                                           dataBytes);
+            CHECK_SUCCESS(rc);
+
+            // Temp Sensor Disable
+            rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs,
+                                          ARIES_PMA_SUP_ANA_BG, dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[0] &= ~0x08;
+            rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
+                                           ARIES_PMA_SUP_ANA_BG, dataBytes);
+            CHECK_SUCCESS(rc);
+
+            rc = ariesReadWordPmaIndirect(device->i2cDriver, side, qs,
+                                          ARIES_PMA_SUP_ANA_RTUNE_CTRL,
+                                          dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[0] &= ~0xe0;
+            rc = ariesWriteWordPmaIndirect(device->i2cDriver, side, qs,
+                                           ARIES_PMA_SUP_ANA_RTUNE_CTRL,
+                                           dataBytes);
+            CHECK_SUCCESS(rc);
+
+            // Freeze FW
+            rc = ariesReadWordPmaIndirect(
+                device->i2cDriver, side, qs,
+                ARIES_PMA_RAWLANE_DIG_FSM_FSM_OVRD_CTL, dataBytes);
+            CHECK_SUCCESS(rc);
+            dataBytes[1] &= ~0x40;
+            rc = ariesWriteWordPmaIndirect(
+                device->i2cDriver, side, qs,
+                ARIES_PMA_RAWLANE_DIG_FSM_FSM_OVRD_CTL, dataBytes);
+            CHECK_SUCCESS(rc);
+        }
+    }
+
+    // Take average of all 8 sensors
+    adcCode = adcCode / 8;
+
+    if (adcCode == 0)
+    {
+        return ARIES_TEMP_READ_NOT_READY;
+    }
+
+    // Convert ACD code to deg C
+    device->currentTempC = 110 +
+                           ((adcCode - (device->tempCalCodeAvg + 250)) * -0.32);
+
+    return ARIES_SUCCESS;
+}
+
 /*
  * Enable thermal shutdown in Aries
  */
@@ -1287,8 +1446,8 @@ AriesErrorType ariesEnableThermalShutdown(AriesDeviceType* device)
 {
     AriesErrorType rc;
     uint8_t dataBytes[4] = {0, 0, 0, 1};
-    rc = ariesWriteBlockData(device->i2cDriver, ARIES_EN_THERMAL_SHUTDOWN, 4,
-                             dataBytes);
+    rc = ariesWriteWideRegister(device->i2cDriver, ARIES_EN_THERMAL_SHUTDOWN, 4,
+                                dataBytes);
     CHECK_SUCCESS(rc);
 
     return ARIES_SUCCESS;
@@ -1301,8 +1460,8 @@ AriesErrorType ariesDisableThermalShutdown(AriesDeviceType* device)
 {
     AriesErrorType rc;
     uint8_t dataBytes[4] = {0, 0, 0, 0};
-    rc = ariesWriteBlockData(device->i2cDriver, ARIES_EN_THERMAL_SHUTDOWN, 4,
-                             dataBytes);
+    rc = ariesWriteWideRegister(device->i2cDriver, ARIES_EN_THERMAL_SHUTDOWN, 4,
+                                dataBytes);
     CHECK_SUCCESS(rc);
 
     return ARIES_SUCCESS;
@@ -1354,7 +1513,7 @@ AriesErrorType ariesGetPortOrientation(AriesDeviceType* device,
     AriesErrorType rc;
     uint8_t dataBytes[4];
 
-    rc = ariesReadBlockData(device->i2cDriver, 0x10, 4, dataBytes);
+    rc = ariesReadWideRegister(device->i2cDriver, 0x10, 4, dataBytes);
     CHECK_SUCCESS(rc);
 
     // Oriention Val is bit 8
@@ -1372,14 +1531,14 @@ AriesErrorType ariesSetPortOrientation(AriesDeviceType* device,
     AriesErrorType rc;
     uint8_t dataBytes[4];
 
-    rc = ariesReadBlockData(device->i2cDriver, 0x10, 4, dataBytes);
+    rc = ariesReadWideRegister(device->i2cDriver, 0x10, 4, dataBytes);
     CHECK_SUCCESS(rc);
 
     // Orientation is bit 8 in this reg
     dataBytes[1] &= 0xfe;
     dataBytes[1] |= (orientation & 0x1);
 
-    rc = ariesWriteBlockData(device->i2cDriver, 0x10, 4, dataBytes);
+    rc = ariesWriteWideRegister(device->i2cDriver, 0x10, 4, dataBytes);
     CHECK_SUCCESS(rc);
 
     return ARIES_SUCCESS;
@@ -1846,7 +2005,7 @@ AriesErrorType ariesGetRxVgaCode(AriesLinkType* link, int side, int absLane,
     CHECK_SUCCESS(rc);
 
     // Need bits 9:0
-    *vgaCode = (((dataWord[1] & 0x03) << 8) + dataWord[0]) >> 5;
+    *vgaCode = (((dataWord[1] & 0x03) << 8) + dataWord[0]) >> 6;
     return ARIES_SUCCESS;
 }
 
@@ -2591,8 +2750,8 @@ AriesErrorType ariesGetMinFoMVal(AriesDeviceType* device, int side, int pathID,
     // Set up reg address
     dataWord[0] = address & 0xff;
     dataWord[1] = (address >> 8) & 0xff;
-    rc = ariesWriteBlockData(device->i2cDriver,
-                             ARIES_PMA_MM_ASSIST_REG_ADDR_OFFSET, 2, dataWord);
+    rc = ariesWriteBlockData(device->i2cDriver, ARIES_MM_ASSIST_REG_ADDR_OFFSET,
+                             2, dataWord);
     if (rc != ARIES_SUCCESS)
     {
         lc = ariesUnlock(device->i2cDriver);
@@ -2602,8 +2761,8 @@ AriesErrorType ariesGetMinFoMVal(AriesDeviceType* device, int side, int pathID,
 
     // Path ID is represented in upper 4 bits of this byte
     dataByte[0] = pathID << 4;
-    rc = ariesWriteByteData(device->i2cDriver,
-                            ARIES_PMA_MM_ASSIST_PATH_ID_OFFSET, dataByte);
+    rc = ariesWriteByteData(device->i2cDriver, ARIES_MM_ASSIST_PATH_ID_OFFSET,
+                            dataByte);
     if (rc != ARIES_SUCCESS)
     {
         lc = ariesUnlock(device->i2cDriver);
@@ -2612,8 +2771,8 @@ AriesErrorType ariesGetMinFoMVal(AriesDeviceType* device, int side, int pathID,
     }
 
     // Set up PMA side
-    dataByte[0] = ARIES_PMA_MM_ASSIST_SIDE0_RD + side;
-    rc = ariesWriteByteData(device->i2cDriver, ARIES_PMA_MM_ASSIST_CMD_OFFSET,
+    dataByte[0] = ARIES_MM_RD_PID_IND_PMA0 + side;
+    rc = ariesWriteByteData(device->i2cDriver, ARIES_MM_ASSIST_CMD_OFFSET,
                             dataByte);
     if (rc != ARIES_SUCCESS)
     {
@@ -2623,7 +2782,7 @@ AriesErrorType ariesGetMinFoMVal(AriesDeviceType* device, int side, int pathID,
     }
 
     // Get data (LSB and MSB)
-    rc = ariesReadByteData(device->i2cDriver, ARIES_PMA_MM_ASSIST_DATA0_OFFSET,
+    rc = ariesReadByteData(device->i2cDriver, ARIES_MM_ASSIST_DATA_OFFSET,
                            dataByte);
     if (rc != ARIES_SUCCESS)
     {
@@ -2632,7 +2791,7 @@ AriesErrorType ariesGetMinFoMVal(AriesDeviceType* device, int side, int pathID,
         return rc;
     }
     data[0] = dataByte[0];
-    rc = ariesReadByteData(device->i2cDriver, ARIES_PMA_MM_ASSIST_DATA1_OFFSET,
+    rc = ariesReadByteData(device->i2cDriver, ARIES_MM_ASSIST_STS_OFFSET,
                            dataByte);
     if (rc != ARIES_SUCCESS)
     {
@@ -3231,50 +3390,51 @@ AriesErrorType ariesParseIhxLine(char* line, uint8_t* bytes, int* addr,
     }
     ptr = line + 1;
 
-    if (!sscanf(ptr, "%02x", &len))
+    if (!sscanf(ptr, "%02x", (unsigned int*)&len))
     {
         return ARIES_FAILURE;
     }
     ptr += 2;
 
-    if (strlen(line) < (11 + (len * 2)))
+    if (strlen(line) < (size_t)(11 + (len * 2)))
     {
         return ARIES_FAILURE;
     }
-    if (!sscanf(ptr, "%04x", addr))
+    if (!sscanf(ptr, "%04x", (unsigned int*)addr))
     {
         return ARIES_FAILURE;
     }
     ptr += 4;
 
-    if (!sscanf(ptr, "%02x", status))
+    if (!sscanf(ptr, "%02x", (unsigned int*)status))
     {
         return ARIES_FAILURE;
     }
     ptr += 2;
-    sum = (len & 255) + ((*addr >> 8) & 255) + (*addr & 255) + (*status & 255);
+    sum = (len & 0xff) + ((*addr >> 8) & 0xff) + (*addr & 0xff) +
+          (*status & 0xff);
 
     while (*num != len)
     {
-        int ret = sscanf(ptr, "%02x", &val);
+        int ret = sscanf(ptr, "%02x", (unsigned int*)&val);
         bytes[*num] = (uint8_t)val;
         if (!ret)
         {
             return ARIES_FAILURE;
         }
         ptr += 2;
-        sum += bytes[*num] & 255;
+        sum += bytes[*num] & 0xff;
         (*num)++;
         if (*num >= 256)
         {
             return ARIES_FAILURE;
         }
     }
-    if (!sscanf(ptr, "%02x", &cksum))
+    if (!sscanf(ptr, "%02x", (unsigned int*)&cksum))
     {
         return ARIES_FAILURE;
     }
-    if (((sum & 255) + (cksum & 255)) & 255)
+    if (((sum & 0xff) + (cksum & 0xff)) & 0xff)
     {
         return ARIES_FAILURE; /* checksum error */
     }
@@ -3609,122 +3769,66 @@ void ariesGetCrcBytesImage(uint8_t* image, uint8_t* crcBytes,
     *numCrcBytes = numBlocks;
 }
 
-AriesErrorType ariesSetMMReset(AriesDeviceType* device, bool value)
-{
-    AriesErrorType rc;
-    uint8_t dataWord[2];
-
-    /*
-    rc = ariesReadBlockData(device->i2cDriver, 0x602, 2, dataWord);
-    CHECK_SUCCESS(rc);
-    if (value)
-    {
-        dataWord[1] |= (1 << 2);
-    }
-    else
-    {
-        dataWord[1] &= ~(1 << 2);
-    }
-    */
-    if (value)
-    {
-        dataWord[1] = 0x04;
-        dataWord[0] = 0x00;
-    }
-    else
-    {
-        dataWord[1] = 0x00;
-        dataWord[0] = 0x00;
-    }
-    rc = ariesWriteBlockData(device->i2cDriver, 0x602, 2, dataWord);
-    CHECK_SUCCESS(rc);
-    // if (reset == True):
-    //         self.csr.misc.sw_rst = (self.csr.misc.sw_rst.value | (1 << 10))
-    //     else:
-    //         self.csr.misc.sw_rst = (self.csr.misc.sw_rst.value & ~(1 << 10))
-    return ARIES_SUCCESS;
-}
-
 AriesErrorType ariesPipeRxAdapt(AriesDeviceType* device, int side, int lane)
 {
     AriesErrorType rc;
     uint8_t dataByte[2];
-    uint8_t sigdet;
-    uint8_t qs = floor(lane / 4);
-    uint8_t pma_ln = (lane % 4);
+    int qs = lane / 4;
+    int qsLane = lane % 4;
 
-    // # First confirm there is signal detect
-    //  sigdet =
-    //  ipid.__dict__['LANE'+str(pma_ln)+'_DIG_ASIC_RX_ASIC_OUT_0'].SIGDET_LF.value
-    rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, pma_ln,
-                                      ARIES_PMA_LANE_DIG_ASIC_RX_ASIC_OUT_0,
-                                      dataByte);
-    CHECK_SUCCESS(rc);
-    sigdet = (dataByte[0] >> 2) & 1;
-    if (sigdet == 0)
-    {
-        // logger.warning("Side:%s, Lane:%2d, Signal not detected" % (side,
-        // lane))
-        ASTERA_INFO(
-            "Side:%d, Lane:%2d, Signal not detected! Confirm link partner transmitter is enabled",
-            side, lane);
-    }
-
-    // ipid.__dict__['RAWLANE'+str(pma_ln)+'_DIG_PCS_XF_RX_OVRD_IN_1'].REQ_OVRD_VAL=0
-    // ipid.__dict__['RAWLANE'+str(pma_ln)+'_DIG_PCS_XF_RX_OVRD_IN_1'].REQ_OVRD_EN=0
-    rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, pma_ln,
+    // Clear Rx Req Override Enable
+    rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, qsLane,
                                       ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1,
                                       dataByte);
     dataByte[0] &= ~(1 << 3); // REQ_OVRD_EN is bit 3
     dataByte[0] &= ~(1 << 2); // REQ_OVRD_VAL is bit 2
     rc = ariesWriteWordPmaLaneIndirect(
-        device->i2cDriver, side, qs, pma_ln,
+        device->i2cDriver, side, qs, qsLane,
         ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1, dataByte);
     CHECK_SUCCESS(rc);
 
-    // rx_data_en_set(ipid=ipid, lane=pma_ln, en=0)
+    // Clear Tx Data Enable
     rc = ariesPMARxDataEnSet(device, side, lane, false);
     CHECK_SUCCESS(rc);
 
-    // self.csr.__dict__['qs_'+str(qs)].__dict__['pth_wrap_'+str(pth_wrap)].__dict__['ret_pth_ln'+str(ret_ln)].mac_phy_rxstandby=2
+    // Clear PIPE Rx Standby
     rc = ariesPipeRxStandbySet(device, side, lane, false);
     CHECK_SUCCESS(rc);
 
-    // self.csr.__dict__['qs_'+str(qs)].__dict__['pth_wrap_'+str(pth_wrap)].__dict__['ret_pth_ln'+str(ret_ln)].mac_phy_rxeqeval=3
+    // Clear PhyStatus
+    rc = ariesPipePhyStatusClear(device, side, lane);
+    CHECK_SUCCESS(rc);
+
+    // Set PIPE Rx EQ Eval
     rc = ariesPipeRxEqEval(device, side, lane, true);
     CHECK_SUCCESS(rc);
 
-    // time.sleep(0.1)
-    usleep(ARIES_PIPE_RXEQEVAL_TIME_US);
+    // Wait for PhyStatus == 1
+    rc = ariesPipePhyStatusToggle(device, side, lane);
+    CHECK_SUCCESS(rc);
 
-    // self.csr.__dict__['qs_'+str(qs)].__dict__['pth_wrap_'+str(pth_wrap)].__dict__['ret_pth_ln'+str(ret_ln)].mac_phy_rxeqeval=2
+    // Clear PIPE Rx EQ Eval
     rc = ariesPipeRxEqEval(device, side, lane, false);
     CHECK_SUCCESS(rc);
 
-    // rx_data_en_set(ipid=ipid, lane=pma_ln, en=1)
+    // Set Tx Data Enable
     rc = ariesPMARxDataEnSet(device, side, lane, true);
     CHECK_SUCCESS(rc);
 
     int i;
     for (i = 0; i < 20; i++)
     {
-        // ipid.__dict__['RAWLANE'+str(pma_ln)+'_DIG_PCS_XF_RX_OVRD_IN_1'].REQ_OVRD_VAL=0
-        // ipid.__dict__['RAWLANE'+str(pma_ln)+'_DIG_PCS_XF_RX_OVRD_IN_1'].REQ_OVRD_EN=1
         rc = ariesReadWordPmaLaneIndirect(
-            device->i2cDriver, side, qs, pma_ln,
+            device->i2cDriver, side, qs, qsLane,
             ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1, dataByte);
         dataByte[0] |= (1 << 3);  // REQ_OVRD_EN is bit 3
         dataByte[0] &= ~(1 << 2); // REQ_OVRD_VAL is bit 2
         rc = ariesWriteWordPmaLaneIndirect(
-            device->i2cDriver, side, qs, pma_ln,
+            device->i2cDriver, side, qs, qsLane,
             ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1, dataByte);
         CHECK_SUCCESS(rc);
 
-        // rxvalid =
-        // ipid.__dict__['LANE'+str(pma_ln)+'_DIG_ASIC_RX_ASIC_OUT_0'].VALID.value
-        // #logger.info("Side:%s, Lane:%2d, PHY rx_valid = %d" % (side, lane,
-        // rxvalid))
-        rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, pma_ln,
+        rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, qsLane,
                                           ARIES_PMA_LANE_DIG_ASIC_RX_ASIC_OUT_0,
                                           dataByte);
         CHECK_SUCCESS(rc);
@@ -3732,13 +3836,12 @@ AriesErrorType ariesPipeRxAdapt(AriesDeviceType* device, int side, int lane)
 
         if (rxvalid == 0)
         {
-            // ipid.__dict__['RAWLANE'+str(pma_ln)+'_DIG_PCS_XF_RX_OVRD_IN_1'].REQ_OVRD_EN=0
             rc = ariesReadWordPmaLaneIndirect(
-                device->i2cDriver, side, qs, pma_ln,
+                device->i2cDriver, side, qs, qsLane,
                 ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1, dataByte);
             dataByte[0] &= ~(1 << 3); // REQ_OVRD_EN is bit 3
             rc = ariesWriteWordPmaLaneIndirect(
-                device->i2cDriver, side, qs, pma_ln,
+                device->i2cDriver, side, qs, qsLane,
                 ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1, dataByte);
             CHECK_SUCCESS(rc);
         }
@@ -3754,18 +3857,17 @@ AriesErrorType ariesPipeRxAdapt(AriesDeviceType* device, int side, int lane)
             "Side:%d, Lane:%2d, RxValid=0! Confirm link partner transmitter is enabled at the correct data rate",
             side, lane);
     }
-    // ipid.__dict__['RAWLANE'+str(pma_ln)+'_DIG_PCS_XF_RX_OVRD_IN_1'].REQ_OVRD_EN=1
-    rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, pma_ln,
+
+    rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, qsLane,
                                       ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1,
                                       dataByte);
     dataByte[0] |= (1 << 3);  // REQ_OVRD_EN is bit 3
     dataByte[0] &= ~(1 << 2); // REQ_OVRD_VAL is bit 2
     rc = ariesWriteWordPmaLaneIndirect(
-        device->i2cDriver, side, qs, pma_ln,
+        device->i2cDriver, side, qs, qsLane,
         ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1, dataByte);
     CHECK_SUCCESS(rc);
 
-    // self.csr.__dict__['qs_'+str(qs)].__dict__['pth_wrap_'+str(pth_wrap)].__dict__['ret_pth_ln'+str(ret_ln)].mac_phy_rxstandby=3
     rc = ariesPipeRxStandbySet(device, side, lane, true);
     CHECK_SUCCESS(rc);
 
@@ -3777,8 +3879,7 @@ AriesErrorType ariesPipeFomGet(AriesDeviceType* device, int side, int lane,
 {
     AriesErrorType rc;
     uint8_t dataByte[1];
-    // fom =
-    // self.csr.__dict__['qs_'+str(qs)].__dict__['pth_wrap_'+str(pth_wrap)].__dict__['ret_pth_ln'+str(ret_ln)].phy_mac_fomfeedback.value
+
     rc = ariesReadRetimerRegister(device->i2cDriver, side, lane,
                                   ARIES_RET_PTH_LN_PHY_MAC_FOMFEEDBACK_ADDR, 1,
                                   dataByte);
@@ -3807,6 +3908,39 @@ AriesErrorType ariesPipeRxStandbySet(AriesDeviceType* device, int side,
     return ARIES_SUCCESS;
 }
 
+AriesErrorType ariesPipeTxElecIdleSet(AriesDeviceType* device, int side,
+                                      int lane, bool value)
+{
+    AriesErrorType rc;
+    uint8_t dataByte[1];
+    uint8_t adjSide = 0;
+    uint8_t lane_base = lane & 0xfe; // for access to ret_pth_gbl register, use
+                                     // a ret_pth_ln offset of 0
+
+    // txdatavalid and txelecidle for pid N (N even) is captured in path N+1
+    adjSide = side ? 0 : 1;
+
+    // The MAC must always have TxDataValid asserted when TxElecIdle transitions
+    // to either asserted or deasserted
+    dataByte[0] = 0xf;
+    rc = ariesWriteRetimerRegister(device->i2cDriver, adjSide, lane_base,
+                                   ARIES_RET_PTH_GBL_MAC_PHY_TXDATAVALID_ADDR,
+                                   1, dataByte);
+    CHECK_SUCCESS(rc);
+    dataByte[0] = (3 << 2) | (value << 1) | value;
+    rc = ariesWriteRetimerRegister(device->i2cDriver, adjSide, lane_base,
+                                   ARIES_RET_PTH_GBL_MAC_PHY_TXELECIDLE_ADDR, 1,
+                                   dataByte);
+    CHECK_SUCCESS(rc);
+    dataByte[0] = 0x0;
+    rc = ariesWriteRetimerRegister(device->i2cDriver, adjSide, lane_base,
+                                   ARIES_RET_PTH_GBL_MAC_PHY_TXDATAVALID_ADDR,
+                                   1, dataByte);
+    CHECK_SUCCESS(rc);
+
+    return ARIES_SUCCESS;
+}
+
 AriesErrorType ariesPipeRxEqEval(AriesDeviceType* device, int side, int lane,
                                  bool value)
 {
@@ -3830,18 +3964,73 @@ AriesErrorType ariesPipeRxEqEval(AriesDeviceType* device, int side, int lane,
 AriesErrorType ariesPipePhyStatusClear(AriesDeviceType* device, int side,
                                        int lane)
 {
+    AriesErrorType rc;
+    uint8_t dataByte[1];
+    uint8_t adjSide = 0;
+
+    // PhyStatus for pid N (N even) is captured in path N+1
+    adjSide = side ? 0 : 1;
+
+    // Write 1 to bits 2:1 to clear these flags
+    dataByte[0] = 0x6;
+    rc = ariesWriteRetimerRegister(device->i2cDriver, adjSide, lane,
+                                   ARIES_RET_PTH_LN_PHY_MAC_PHYSTATUS_ADDR, 1,
+                                   dataByte);
+    CHECK_SUCCESS(rc);
+
     return ARIES_SUCCESS;
 }
 
 AriesErrorType ariesPipePhyStatusGet(AriesDeviceType* device, int side,
                                      int lane, bool* value)
 {
+    AriesErrorType rc;
+    uint8_t dataByte[1];
+    uint8_t adjSide = 0;
+
+    // PhyStatus for pid N (N even) is captured in path N+1
+    adjSide = side ? 0 : 1;
+
+    rc = ariesReadRetimerRegister(device->i2cDriver, adjSide, lane,
+                                  ARIES_RET_PTH_LN_PHY_MAC_PHYSTATUS_ADDR, 1,
+                                  dataByte);
+    CHECK_SUCCESS(rc);
+
+    if ((dataByte[0] & 0x6) == 0)
+    {
+        *value = 0;
+    }
+    else
+    {
+        *value = 1;
+    }
+
     return ARIES_SUCCESS;
 }
 
 AriesErrorType ariesPipePhyStatusToggle(AriesDeviceType* device, int side,
                                         int lane)
 {
+    AriesErrorType rc;
+    uint8_t count = 0;
+    bool phyStatus = 0;
+
+    while (count < 100)
+    {
+        rc = ariesPipePhyStatusGet(device, side, lane, &phyStatus);
+        CHECK_SUCCESS(rc);
+        if (phyStatus == 1)
+        {
+            break;
+        }
+        count++;
+    }
+
+    if (phyStatus == 0)
+    {
+        ASTERA_ERROR("Side:%d, Lane:%2d, PhyStatus=0", side, lane);
+    }
+
     return ARIES_SUCCESS;
 }
 
@@ -3850,20 +4039,44 @@ AriesErrorType ariesPipePowerdownSet(AriesDeviceType* device, int side,
 {
     AriesErrorType rc;
     uint8_t dataByte[1];
+    uint8_t curPowerState;
     uint8_t lane_base = lane & 0xfe; // for access to ret_pth_gbl register, use
                                      // a ret_pth_ln offset of 0
-    dataByte[0] = (1 << 4) | (value & 0xf); // bit 4 is en
-    rc = ariesWriteRetimerRegister(device->i2cDriver, side, lane_base,
-                                   ARIES_RET_PTH_GBL_MAC_PHY_POWERDOWN_ADDR, 1,
-                                   dataByte);
+    // Put paths into new Pstate if not already
+    rc = ariesReadRetimerRegister(device->i2cDriver, side, lane_base,
+                                  ARIES_RET_PTH_GBL_MAC_PHY_POWERDOWN_ADDR, 1,
+                                  dataByte);
     CHECK_SUCCESS(rc);
-
-    // Verify
-    // rc = ariesReadRetimerRegister(device->i2cDriver, side, lane_base,
-    //    ARIES_RET_PTH_GBL_MAC_PHY_POWERDOWN_ADDR, 1, dataByte);
-    // CHECK_SUCCESS(rc);
-    // ASTERA_INFO("Side:%d, Lane:%2d, mac_phy_powerdown = 0x%x", side, lane,
-    // dataByte[0]);
+    curPowerState = dataByte[0] & 0xf;
+    if (curPowerState != value)
+    {
+        // If we are transitioning P0 -> P1
+        if (curPowerState == 0 && value == 2)
+        {
+            // Put Transmitters into electrical idle
+            rc = ariesPipeTxElecIdleSet(device, side, lane, true);
+            CHECK_SUCCESS(rc);
+        }
+        // Clear PhyStatus
+        rc = ariesPipePhyStatusClear(device, side, lane);
+        CHECK_SUCCESS(rc);
+        // Set Powerdown
+        dataByte[0] = (1 << 4) | (value & 0xf); // bit 4 is en
+        rc = ariesWriteRetimerRegister(device->i2cDriver, side, lane_base,
+                                       ARIES_RET_PTH_GBL_MAC_PHY_POWERDOWN_ADDR,
+                                       1, dataByte);
+        CHECK_SUCCESS(rc);
+        // Wait for PhyStatus == 1
+        rc = ariesPipePhyStatusToggle(device, side, lane);
+        CHECK_SUCCESS(rc);
+        // If we are transitioning P0 -> P1
+        if (curPowerState == 2 && value == 0)
+        {
+            // Take Transmitters out of electrical idle
+            rc = ariesPipeTxElecIdleSet(device, side, lane, false);
+            CHECK_SUCCESS(rc);
+        }
+    }
 
     return ARIES_SUCCESS;
 }
@@ -3873,8 +4086,8 @@ AriesErrorType ariesPipePowerdownCheck(AriesDeviceType* device, int side,
 {
     AriesErrorType rc;
     uint8_t dataWord[2];
-    uint8_t qs = floor(lane / 4);
-    uint8_t qsLane = lane % 4;
+    int qs = lane / 4;
+    int qsLane = lane % 4;
 
     // Read the txX_pstate register
     rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, qsLane,
@@ -3960,38 +4173,37 @@ AriesErrorType ariesPipeRateChange(AriesDeviceType* device, int side, int lane,
     if (curPipeRate != pipeRate)
     {
         // Put receveiers into standby (both receivers in the path)
-        ariesPipeRxStandbySet(device, side, lane_base, true);
-        ariesPipeRxStandbySet(device, side, lane_base + 1, true);
-        usleep(10000); // 10 ms
-
-        // self.pipe_phystatus_clear(pid);
-
-        // change rate in the controller logic (Note: this is a wide register
-        // read) rmlh = self.csr.__dict__['qs_' + str(qs)].__dict__['pth_wrap_'
-        // + str(pth_wrap)].ret_pth_gbl.pt_snps_rmlh.value # rate is bits 22:20
-        // rmlh = (rmlh & 0x18fffff) | (rate << 20)
-        // self.csr.__dict__['qs_' + str(qs)].__dict__['pth_wrap_' +
-        // str(pth_wrap)].ret_pth_gbl.pt_snps_rmlh = rmlh
-
-        // change rate on the PIPE interface
-        // self.csr.__dict__['qs_' + str(qs)].__dict__['pth_wrap_' +
-        // str(pth_wrap)].ret_pth_gbl.mac_phy_rate_and_pclk_rate = 0x88 | (rate
-        // << 4) | rate # Bit 7 and bit 3 are override enable for pclk_rate and
-        // rate, respectively
+        rc = ariesPipeRxStandbySet(device, side, lane_base, true);
+        CHECK_SUCCESS(rc);
+        rc = ariesPipeRxStandbySet(device, side, lane_base + 1, true);
+        CHECK_SUCCESS(rc);
+        // Put Transmitters into electrical idle
+        rc = ariesPipeTxElecIdleSet(device, side, lane, true);
+        CHECK_SUCCESS(rc);
+        // Clear PhyStatus
+        rc = ariesPipePhyStatusClear(device, side, lane);
+        CHECK_SUCCESS(rc);
+        // Change rate on the PIPE interface
+        // Bit 7 and bit 3 are override enable for pclk_rate and rate,
+        // respectively
         dataByte[0] = 0x88 | (pipeRate << 4) | (pipeRate & 0xf);
         rc = ariesWriteRetimerRegister(
             device->i2cDriver, side, lane_base,
             ARIES_RET_PTH_GBL_MAC_PHY_RATE_AND_PCLK_RATE_ADDR, 1, dataByte);
         CHECK_SUCCESS(rc);
+        // Wait for PhyStatus == 1
+        rc = ariesPipePhyStatusToggle(device, side, lane);
+        CHECK_SUCCESS(rc);
+        // Take Receivers out of standby
+        rc = ariesPipeRxStandbySet(device, side, lane_base, false);
+        CHECK_SUCCESS(rc);
+        rc = ariesPipeRxStandbySet(device, side, lane_base + 1, false);
+        CHECK_SUCCESS(rc);
+        // Take Transmitters out of electrical idle
+        rc = ariesPipeTxElecIdleSet(device, side, lane, false);
+        CHECK_SUCCESS(rc);
+    }
 
-        // # Wait for PhyStatus == 1
-        // #self.wait_phystatus_toggle([pid])
-    }
-    else
-    {
-        ASTERA_INFO("Current rate is Gen%d. Skipping rate change to Gen%d",
-                    (curPipeRate + 1), rate);
-    }
     return ARIES_SUCCESS;
 }
 
@@ -4000,8 +4212,8 @@ AriesErrorType ariesPipeRateCheck(AriesDeviceType* device, int side, int lane,
 {
     AriesErrorType rc;
     uint8_t dataWord[2];
-    uint8_t qs = floor(lane / 4);
-    uint8_t qsLane = lane % 4;
+    int qs = lane / 4;
+    int qsLane = lane % 4;
     if ((rate > 5) || (rate < 1))
     {
         ASTERA_ERROR("rate argument must be 1, 2, ..., or 5");
@@ -4186,12 +4398,6 @@ AriesErrorType ariesPipeRxPolaritySet(AriesDeviceType* device, int side,
     return ARIES_SUCCESS;
 }
 
-AriesErrorType ariesPipeTxElecIdleSet(AriesDeviceType* device, int side,
-                                      int lane, bool value)
-{
-    return ARIES_SUCCESS;
-}
-
 AriesErrorType ariesPipeRxTermSet(AriesDeviceType* device, int side, int lane,
                                   bool value)
 {
@@ -4210,7 +4416,7 @@ AriesErrorType ariesPipeRxTermSet(AriesDeviceType* device, int side, int lane,
 }
 
 AriesErrorType ariesPipeBlkAlgnCtrlSet(AriesDeviceType* device, int side,
-                                       int lane, bool value)
+                                       int lane, bool value, bool enable)
 {
     AriesErrorType rc;
     uint8_t lane_base = lane & 0xfe; // for access to ret_pth_gbl register, use
@@ -4219,7 +4425,7 @@ AriesErrorType ariesPipeBlkAlgnCtrlSet(AriesDeviceType* device, int side,
     // self.csr.__dict__['qs_' + str(qs)].__dict__['pth_wrap_' +
     // str(pth_wrap)].ret_pth_gbl.mac_phy_blockaligncontrol = (1 << 1) |
     // blockaligncontrol # en is bit 1
-    dataByte[0] = value ? 3 : 2; // bit 1 is enable
+    dataByte[0] = (enable << 1) | value; // bit 1 is enable
     rc = ariesWriteRetimerRegister(
         device->i2cDriver, side, lane_base,
         ARIES_RET_PTH_GBL_MAC_PHY_BLOCKALIGNCONTROL_ADDR, 1, dataByte);
@@ -4425,11 +4631,11 @@ AriesErrorType ariesPMABertPatGenConfig(AriesDeviceType* device, int side,
     int qs = 0;
     int qsLane = 0;
 
+    qs = lane / 4;
+    qsLane = lane % 4;
     // ASTERA_INFO("Side:%d, Lane:%2d, PRBS generator mode: %d", side, lane,
     // mode);
 
-    qs = lane / 4;
-    qsLane = lane % 4;
     // As per datasheet Table 11-340: when changing modes, you must change to
     // disabled (0) first
     rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, qsLane,
@@ -4463,7 +4669,7 @@ AriesErrorType ariesPMARxDataEnSet(AriesDeviceType* device, int side, int lane,
     int qs = 0;
     int qsLane = 0;
 
-    qs = floor(lane / 4);
+    qs = lane / 4;
     qsLane = lane % 4;
     rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, qsLane,
                                       ARIES_PMA_LANE_DIG_ASIC_RX_OVRD_IN_0,
@@ -4527,7 +4733,7 @@ AriesErrorType ariesPMAPCSRxReqBlock(AriesDeviceType* device, int side,
     int qs = 0;
     int qsLane = 0;
 
-    qs = floor(lane / 4);
+    qs = lane / 4;
     qsLane = lane % 4;
     rc = ariesReadWordPmaLaneIndirect(device->i2cDriver, side, qs, qsLane,
                                       ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1,
@@ -4539,6 +4745,121 @@ AriesErrorType ariesPMAPCSRxReqBlock(AriesDeviceType* device, int side,
         device->i2cDriver, side, qs, qsLane,
         ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1, dataWord);
     CHECK_SUCCESS(rc);
+
+    return ARIES_SUCCESS;
+}
+
+AriesErrorType ariesPMAVregVrefSet(AriesDeviceType* device, int side, int lane,
+                                   int rate)
+{
+    AriesErrorType rc;
+    uint8_t dataByte[1];
+    uint8_t dataWord[2];
+    int qs = 0;
+    int qsLane = 0;
+
+    qs = lane / 4;
+    qsLane = lane % 4;
+
+    rc = ariesReadByteData(device->i2cDriver, 0x924, dataByte);
+    CHECK_SUCCESS(rc);
+
+    // for A0 devices changing between G1-2 to G3-5
+    if ((dataByte[0] & 1) == 0)
+    {
+        if (rate <= 2)
+        {
+            // Vreg
+            rc = ariesReadWordPmaLaneIndirect(
+                device->i2cDriver, side, qs, qsLane,
+                ARIES_PMA_LANE_ANA_RX_VREG_CTRL2, dataWord);
+            CHECK_SUCCESS(rc);
+            dataWord[0] |= (1 << 7);
+            dataWord[0] &= ~(1 << 6);
+            rc = ariesWriteWordPmaLaneIndirect(
+                device->i2cDriver, side, qs, qsLane,
+                ARIES_PMA_LANE_ANA_RX_VREG_CTRL2, dataWord);
+            CHECK_SUCCESS(rc);
+
+            // Vref
+            // There is one control bit per PMA instance
+            if ((qsLane % 4) == 0)
+            {
+                rc = ariesReadWordPmaIndirect(
+                    device->i2cDriver, side, qs,
+                    ARIES_PMA_SUP_ANA_SWITCH_MISC_MEAS, dataWord);
+                CHECK_SUCCESS(rc);
+                dataWord[0] &= ~(1 << 5);
+                dataWord[0] &= ~(1 << 4);
+                rc = ariesWriteWordPmaIndirect(
+                    device->i2cDriver, side, qs,
+                    ARIES_PMA_SUP_ANA_SWITCH_MISC_MEAS, dataWord);
+                CHECK_SUCCESS(rc);
+            }
+        }
+        else
+        {
+            // Vreg
+            rc = ariesReadWordPmaLaneIndirect(
+                device->i2cDriver, side, qs, qsLane,
+                ARIES_PMA_LANE_ANA_RX_VREG_CTRL2, dataWord);
+            CHECK_SUCCESS(rc);
+            dataWord[0] &= ~(1 << 7);
+            dataWord[0] |= (1 << 6);
+            rc = ariesWriteWordPmaLaneIndirect(
+                device->i2cDriver, side, qs, qsLane,
+                ARIES_PMA_LANE_ANA_RX_VREG_CTRL2, dataWord);
+            CHECK_SUCCESS(rc);
+
+            // Vref
+            // There is one control bit per PMA instance
+            if ((qsLane % 4) == 0)
+            {
+                rc = ariesReadWordPmaIndirect(
+                    device->i2cDriver, side, qs,
+                    ARIES_PMA_SUP_ANA_SWITCH_MISC_MEAS, dataWord);
+                CHECK_SUCCESS(rc);
+                dataWord[0] |= (1 << 5);
+                dataWord[0] &= ~(1 << 4);
+                rc = ariesWriteWordPmaIndirect(
+                    device->i2cDriver, side, qs,
+                    ARIES_PMA_SUP_ANA_SWITCH_MISC_MEAS, dataWord);
+                CHECK_SUCCESS(rc);
+            }
+        }
+    }
+    // for B0 devices changing between G1-3 to G4-5
+    else
+    {
+        if (rate <= 3)
+        {
+            // Vreg
+            rc = ariesReadWordPmaLaneIndirect(
+                device->i2cDriver, side, qs, qsLane,
+                ARIES_PMA_LANE_ANA_RX_VREG_CTRL2, dataWord);
+            CHECK_SUCCESS(rc);
+            dataWord[0] &= ~(1 << 5);
+            dataWord[0] &= ~(1 << 4);
+            rc = ariesWriteWordPmaLaneIndirect(
+                device->i2cDriver, side, qs, qsLane,
+                ARIES_PMA_LANE_ANA_RX_VREG_CTRL2, dataWord);
+            CHECK_SUCCESS(rc)
+        }
+        else
+        {
+            // Vreg
+            rc = ariesReadWordPmaLaneIndirect(
+                device->i2cDriver, side, qs, qsLane,
+                ARIES_PMA_LANE_ANA_RX_VREG_CTRL2, dataWord);
+            CHECK_SUCCESS(rc);
+            dataWord[0] &= ~(1 << 5);
+            dataWord[0] |= (1 << 4);
+            rc = ariesWriteWordPmaLaneIndirect(
+                device->i2cDriver, side, qs, qsLane,
+                ARIES_PMA_LANE_ANA_RX_VREG_CTRL2, dataWord);
+            CHECK_SUCCESS(rc)
+        }
+    }
 
     return ARIES_SUCCESS;
 }

@@ -656,7 +656,6 @@ AriesErrorType ariesReadBlockData(AriesI2CDriverType* i2cDriver,
                 // First write address you wish to read from
                 rc = asteraI2CWriteBlockData(i2cDriver->handle, wrCmdCode,
                                              wrBufLength, writeBuf);
-
                 if (rc != ARIES_SUCCESS)
                 {
                     lc = ariesUnlock(i2cDriver);
@@ -678,14 +677,13 @@ AriesErrorType ariesReadBlockData(AriesI2CDriverType* i2cDriver,
                 // read
                 readBytes = asteraI2CReadBlockData(i2cDriver->handle, rdCmdCode,
                                                    readBufLen, readBuf);
-                /*printf("Read (Rd): ");
-                printf("0x%02x ", rdCmdCode);
-                for (int i = 0; i < readBufLen; i++)
-                {
-                  printf("0x%02x ", readBuf[i]);
-                }
-                printf("\n");*/
-                
+                /*printf("Read (Rd): ");*/
+                /*printf("0x%02x ", rdCmdCode);*/
+                /*for (i = 0; i < readBufLen; i++)*/
+                /*{*/
+                /*printf("0x%02x ", readBuf[i]);*/
+                /*}*/
+                /*printf("\n");*/
                 if (readBytes != readBufLen)
                 {
                     ASTERA_TRACE(
@@ -784,7 +782,7 @@ AriesErrorType ariesReadBlockDataMainMicroIndirectA0(
         // Write eeprom addr
         uint8_t eepromAddrBytes[3];
         int eepromAccAddr = address - AL_MAIN_SRAM_DMEM_OFFSET + byteIndex;
-        eepromAddrBytes[0] = (eepromAccAddr)&0xff;
+        eepromAddrBytes[0] = eepromAccAddr & 0xff;
         eepromAddrBytes[1] = (eepromAccAddr >> 8) & 0xff;
         eepromAddrBytes[2] = (eepromAccAddr >> 16) & 0xff;
         rc = ariesWriteBlockData(i2cDriver, microIndStructOffset, 3,
@@ -809,7 +807,7 @@ AriesErrorType ariesReadBlockDataMainMicroIndirectA0(
         }
 
         // Test successfull access
-        uint8_t status = 1;
+        uint8_t status = 0xff;
         uint8_t rdata[1];
         uint8_t count = 0;
         while ((status != 0) && (count < 0xff))
@@ -822,7 +820,7 @@ AriesErrorType ariesReadBlockDataMainMicroIndirectA0(
                 CHECK_SUCCESS(lc);
                 return rc;
             }
-            status = rdata[0] & 0x1;
+            status = rdata[0];
             count += 1;
         }
 
@@ -992,7 +990,7 @@ AriesErrorType ariesWriteBlockDataMainMicroIndirectA0(
         // Write eeprom addr
         uint8_t eepromAddrBytes[3];
         int eepromAccAddr = address - AL_MAIN_SRAM_DMEM_OFFSET + byteIndex;
-        eepromAddrBytes[0] = (eepromAccAddr)&0xff;
+        eepromAddrBytes[0] = eepromAccAddr & 0xff;
         eepromAddrBytes[1] = (eepromAccAddr >> 8) & 0xff;
         eepromAddrBytes[2] = (eepromAccAddr >> 16) & 0xff;
         rc = ariesWriteBlockData(i2cDriver, microIndStructOffset, 3,
@@ -1028,7 +1026,7 @@ AriesErrorType ariesWriteBlockDataMainMicroIndirectA0(
         }
 
         // Test successfull access
-        uint8_t status = 1;
+        uint8_t status = 0xff;
         uint8_t rdata[1];
         uint8_t count = 0;
         while ((status != 0) && (count < 0xff))
@@ -1041,7 +1039,7 @@ AriesErrorType ariesWriteBlockDataMainMicroIndirectA0(
                 CHECK_SUCCESS(lc);
                 return rc;
             }
-            status = rdata[0] & 0x1;
+            status = rdata[0];
             count += 1;
         }
 
@@ -1261,15 +1259,14 @@ AriesErrorType
     {
         return ARIES_INVALID_ARGUMENT;
     }
-    else
-    {
-        // uint32_t microIndStructOffset = 0x4200 * pathID;
-        uint32_t microIndStructOffset = 0x4200 +
-                                        (pathID * ARIES_PATH_WRP_STRIDE);
-        AriesErrorType rc = ariesReadBlockDataMainMicroIndirectMPW(
-            i2cDriver, microIndStructOffset, address, numBytes, values);
-        return rc;
-    }
+
+    AriesErrorType rc;
+    uint32_t microIndStructOffset = 0x4200 + (pathID * ARIES_PATH_WRP_STRIDE);
+
+    rc = ariesReadBlockDataMainMicroIndirectMPW(i2cDriver, microIndStructOffset,
+                                                address, numBytes, values);
+
+    return rc;
 }
 
 /*
@@ -1280,8 +1277,9 @@ AriesErrorType ariesReadByteDataPathMicroIndirect(AriesI2CDriverType* i2cDriver,
                                                   uint32_t address,
                                                   uint8_t* value)
 {
-    AriesErrorType rc = ariesReadBlockDataPathMicroIndirect(i2cDriver, pathID,
-                                                            address, 1, value);
+    AriesErrorType rc;
+    rc = ariesReadBlockDataPathMicroIndirect(i2cDriver, pathID, address, 1,
+                                             value);
     return rc;
 }
 
@@ -1297,14 +1295,14 @@ AriesErrorType
     {
         return ARIES_INVALID_ARGUMENT;
     }
-    else
-    {
-        uint32_t microIndStructOffset = 0x4200 +
-                                        (pathID * ARIES_PATH_WRP_STRIDE);
-        AriesErrorType rc = ariesWriteBlockDataMainMicroIndirectMPW(
-            i2cDriver, microIndStructOffset, address, numBytes, values);
-        return rc;
-    }
+
+    AriesErrorType rc;
+    uint32_t microIndStructOffset = 0x4200 + (pathID * ARIES_PATH_WRP_STRIDE);
+
+    rc = ariesWriteBlockDataMainMicroIndirectMPW(
+        i2cDriver, microIndStructOffset, address, numBytes, values);
+
+    return rc;
 }
 
 /*
@@ -1315,8 +1313,9 @@ AriesErrorType
                                         uint8_t pathID, uint32_t address,
                                         uint8_t* value)
 {
-    AriesErrorType rc = ariesWriteBlockDataPathMicroIndirect(i2cDriver, pathID,
-                                                             address, 1, value);
+    AriesErrorType rc;
+    rc = ariesWriteBlockDataPathMicroIndirect(i2cDriver, pathID, address, 1,
+                                              value);
     return rc;
 }
 
@@ -1597,7 +1596,7 @@ AriesErrorType ariesReadWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
     addr[0] = address & 0xff;
     addr[1] = (address >> 8) & 0xff;
     addr[2] = (address >> 16) & 0xff;
-    rc = ariesWriteBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_REG_ADDR_OFFSET, 3,
+    rc = ariesWriteBlockData(i2cDriver, ARIES_MM_ASSIST_REG_ADDR_OFFSET, 3,
                              addr);
     if (rc != ARIES_SUCCESS)
     {
@@ -1610,14 +1609,14 @@ AriesErrorType ariesReadWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
     uint8_t dataByte[1];
     if (side == 0)
     {
-        dataByte[0] = ARIES_RD_PID_IND_PMA0;
+        dataByte[0] = ARIES_MM_RD_PID_IND_PMA0;
     }
     else
     {
-        dataByte[0] = ARIES_RD_PID_IND_PMA1;
+        dataByte[0] = ARIES_MM_RD_PID_IND_PMA1;
     }
 
-    rc = ariesWriteBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_CMD_OFFSET, 1,
+    rc = ariesWriteBlockData(i2cDriver, ARIES_MM_ASSIST_CMD_OFFSET, 1,
                              dataByte);
     if (rc != ARIES_SUCCESS)
     {
@@ -1631,7 +1630,7 @@ AriesErrorType ariesReadWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
     int status = 1;
     while ((status != 0) && (count < 100))
     {
-        rc = ariesReadBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_CMD_OFFSET, 1,
+        rc = ariesReadBlockData(i2cDriver, ARIES_MM_ASSIST_CMD_OFFSET, 1,
                                 dataByte);
         if (rc != ARIES_SUCCESS)
         {
@@ -1653,7 +1652,7 @@ AriesErrorType ariesReadWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
     }
 
     // Read 2 bytes of data
-    rc = ariesReadBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_DATA0_OFFSET, 1,
+    rc = ariesReadBlockData(i2cDriver, ARIES_MM_ASSIST_DATA_OFFSET, 1,
                             dataByte);
     if (rc != ARIES_SUCCESS)
     {
@@ -1662,8 +1661,7 @@ AriesErrorType ariesReadWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
         return rc;
     }
     data[0] = dataByte[0];
-    rc = ariesReadBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_DATA1_OFFSET, 1,
-                            dataByte);
+    rc = ariesReadBlockData(i2cDriver, ARIES_MM_ASSIST_STS_OFFSET, 1, dataByte);
     if (rc != ARIES_SUCCESS)
     {
         lc = ariesUnlock(i2cDriver);
@@ -1700,7 +1698,7 @@ AriesErrorType ariesWriteWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
     addr[0] = address & 0xff;
     addr[1] = (address >> 8) & 0xff;
     addr[2] = (address >> 16) & 0xff;
-    rc = ariesWriteBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_REG_ADDR_OFFSET, 3,
+    rc = ariesWriteBlockData(i2cDriver, ARIES_MM_ASSIST_REG_ADDR_OFFSET, 3,
                              addr);
     if (rc != ARIES_SUCCESS)
     {
@@ -1711,7 +1709,7 @@ AriesErrorType ariesWriteWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
 
     // Write 2 bytes of data
     dataByte[0] = data[0];
-    rc = ariesWriteBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_DATA0_OFFSET, 1,
+    rc = ariesWriteBlockData(i2cDriver, ARIES_MM_ASSIST_DATA_OFFSET, 1,
                              dataByte);
     if (rc != ARIES_SUCCESS)
     {
@@ -1720,7 +1718,7 @@ AriesErrorType ariesWriteWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
         return rc;
     }
     dataByte[0] = data[1];
-    rc = ariesWriteBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_DATA1_OFFSET, 1,
+    rc = ariesWriteBlockData(i2cDriver, ARIES_MM_ASSIST_STS_OFFSET, 1,
                              dataByte);
     if (rc != ARIES_SUCCESS)
     {
@@ -1732,18 +1730,18 @@ AriesErrorType ariesWriteWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
     // Set command
     if (side == 0)
     {
-        dataByte[0] = ARIES_WR_PID_IND_PMA0;
+        dataByte[0] = ARIES_MM_WR_PID_IND_PMA0;
     }
     if (side == 1)
     {
-        dataByte[0] = ARIES_WR_PID_IND_PMA1;
+        dataByte[0] = ARIES_MM_WR_PID_IND_PMA1;
     }
     else
     {
-        dataByte[0] = ARIES_WR_PID_IND_PMAX;
+        dataByte[0] = ARIES_MM_WR_PID_IND_PMAX;
     }
 
-    rc = ariesWriteBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_CMD_OFFSET, 1,
+    rc = ariesWriteBlockData(i2cDriver, ARIES_MM_ASSIST_CMD_OFFSET, 1,
                              dataByte);
     if (rc != ARIES_SUCCESS)
     {
@@ -1757,7 +1755,7 @@ AriesErrorType ariesWriteWordPmaMainMicroIndirect(AriesI2CDriverType* i2cDriver,
     int status = 1;
     while ((status != 0) && (count < 100))
     {
-        rc = ariesReadBlockData(i2cDriver, ARIES_PMA_MM_ASSIST_CMD_OFFSET, 1,
+        rc = ariesReadBlockData(i2cDriver, ARIES_MM_ASSIST_CMD_OFFSET, 1,
                                 dataByte);
         CHECK_SUCCESS(rc);
         status = dataByte[0];
@@ -1935,6 +1933,216 @@ AriesErrorType ariesWriteRetimerRegister(AriesI2CDriverType* i2cDriver,
            pth_wrap * ARIES_PATH_WRP_STRIDE + qs * ARIES_QS_STRIDE;
     rc = ariesWriteBlockData(i2cDriver, addr, numBytes, data);
     CHECK_SUCCESS(rc);
+    return ARIES_SUCCESS;
+}
+
+AriesErrorType ariesReadWideRegister(AriesI2CDriverType* i2cDriver,
+                                     uint32_t address, uint8_t width,
+                                     uint8_t* values)
+{
+    if (i2cDriver->mmWideRegisterValid)
+    {
+        AriesErrorType rc;
+        AriesErrorType lc;
+        uint8_t dataByte[1];
+        uint8_t addr[3];
+
+        lc = ariesLock(i2cDriver);
+        CHECK_SUCCESS(lc);
+
+        // Write address (3 bytes)
+        addr[0] = address & 0xff;
+        addr[1] = (address >> 8) & 0xff;
+        addr[2] = (address >> 16) & 0x01;
+        rc = ariesWriteBlockData(i2cDriver, ARIES_MM_ASSIST_SPARE_0_OFFSET, 3,
+                                 addr);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+
+        // Set command based on width
+        if (width == 2)
+        {
+            dataByte[0] = ARIES_MM_RD_WIDE_REG_2B;
+        }
+        else if (width == 3)
+        {
+            dataByte[0] = ARIES_MM_RD_WIDE_REG_3B;
+        }
+        else if (width == 4)
+        {
+            dataByte[0] = ARIES_MM_RD_WIDE_REG_4B;
+        }
+        else if (width == 5)
+        {
+            dataByte[0] = ARIES_MM_RD_WIDE_REG_5B;
+        }
+        else
+        {
+            return ARIES_INVALID_ARGUMENT;
+        }
+
+        rc = ariesWriteByteData(i2cDriver, ARIES_MM_ASSIST_CMD_OFFSET,
+                                dataByte);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+
+        // Check access status
+        int count = 0;
+        int status = 0xff;
+        while ((status != 0) && (count < 100))
+        {
+            rc = ariesReadByteData(i2cDriver, ARIES_MM_ASSIST_CMD_OFFSET,
+                                   dataByte);
+            if (rc != ARIES_SUCCESS)
+            {
+                lc = ariesUnlock(i2cDriver);
+                CHECK_SUCCESS(lc);
+                return rc;
+            }
+            status = dataByte[0];
+
+            usleep(ARIES_MM_STATUS_TIME);
+            count += 1;
+        }
+
+        if (status != 0)
+        {
+            lc = ariesUnlock(i2cDriver);
+            CHECK_SUCCESS(lc);
+            return ARIES_PMA_MM_ACCESS_FAILURE;
+        }
+
+        // Read N bytes of data based on width
+        rc = ariesReadBlockData(i2cDriver, ARIES_MM_ASSIST_SPARE_3_OFFSET,
+                                width, values);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+
+        lc = ariesUnlock(i2cDriver);
+        CHECK_SUCCESS(lc);
+    }
+    else
+    {
+        return ariesReadBlockData(i2cDriver, address, width, values);
+    }
+
+    return ARIES_SUCCESS;
+}
+
+AriesErrorType ariesWriteWideRegister(AriesI2CDriverType* i2cDriver,
+                                      uint32_t address, uint8_t width,
+                                      uint8_t* values)
+{
+    if (i2cDriver->mmWideRegisterValid)
+    {
+        AriesErrorType rc;
+        AriesErrorType lc;
+        uint8_t dataByte[1];
+        uint8_t addr[3];
+
+        lc = ariesLock(i2cDriver);
+        CHECK_SUCCESS(lc);
+
+        // Write address (3 bytes)
+        addr[0] = address & 0xff;
+        addr[1] = (address >> 8) & 0xff;
+        addr[2] = (address >> 16) & 0x01;
+        rc = ariesWriteBlockData(i2cDriver, ARIES_MM_ASSIST_SPARE_0_OFFSET, 3,
+                                 addr);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+
+        // Write N bytes of data based on width
+        rc = ariesWriteBlockData(i2cDriver, ARIES_MM_ASSIST_SPARE_3_OFFSET,
+                                 width, values);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+
+        // Set command based on width
+        if (width == 2)
+        {
+            dataByte[0] = ARIES_MM_WR_WIDE_REG_2B;
+        }
+        else if (width == 3)
+        {
+            dataByte[0] = ARIES_MM_WR_WIDE_REG_3B;
+        }
+        else if (width == 4)
+        {
+            dataByte[0] = ARIES_MM_WR_WIDE_REG_4B;
+        }
+        else if (width == 5)
+        {
+            dataByte[0] = ARIES_MM_WR_WIDE_REG_5B;
+        }
+        else
+        {
+            return ARIES_INVALID_ARGUMENT;
+        }
+
+        rc = ariesWriteByteData(i2cDriver, ARIES_MM_ASSIST_CMD_OFFSET,
+                                dataByte);
+        if (rc != ARIES_SUCCESS)
+        {
+            lc = ariesUnlock(i2cDriver);
+            CHECK_SUCCESS(lc);
+            return rc;
+        }
+
+        // Check access status
+        int count = 0;
+        int status = 0xff;
+        while ((status != 0) && (count < 100))
+        {
+            rc = ariesReadByteData(i2cDriver, ARIES_MM_ASSIST_CMD_OFFSET,
+                                   dataByte);
+            if (rc != ARIES_SUCCESS)
+            {
+                lc = ariesUnlock(i2cDriver);
+                CHECK_SUCCESS(lc);
+                return rc;
+            }
+            status = dataByte[0];
+
+            usleep(ARIES_MM_STATUS_TIME);
+            count += 1;
+        }
+
+        if (status != 0)
+        {
+            lc = ariesUnlock(i2cDriver);
+            CHECK_SUCCESS(lc);
+            return ARIES_PMA_MM_ACCESS_FAILURE;
+        }
+
+        lc = ariesUnlock(i2cDriver);
+        CHECK_SUCCESS(lc);
+    }
+    else
+    {
+        return ariesWriteBlockData(i2cDriver, address, width, values);
+    }
+
     return ARIES_SUCCESS;
 }
 

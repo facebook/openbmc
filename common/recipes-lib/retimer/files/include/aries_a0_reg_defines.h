@@ -25,6 +25,10 @@
 ///////////////////////// Global Regs /////////////////////////
 ///////////////////////////////////////////////////////////////
 
+/** Aries global param reg0 register */
+#define ARIES_GLB_PARAM_REG0_ADDR 0x0
+/** Aries global param reg0 register */
+#define ARIES_GLB_PARAM_REG1_ADDR 0x4
 /** Main Micro reg offset for EEPROM assist (data)*/
 #define ARIES_MM_EEPROM_ASSIST_DATA_ADDR 0x410
 /** Main Micro reg offset for EEPROM assist (cmd)*/
@@ -45,6 +49,15 @@
 
 /** HW reset reg */
 #define ARIES_HW_RST_ADDR 0x600
+/** SW reset reg */
+#define ARIES_SW_RST_ADDR 0x602
+
+/** Efuse control register */
+#define ARIES_EFUSE_CNTL 0x8ec
+/** SMS Efuse control register */
+#define ARIES_SMS_EFUSE_CNTL 0x8f6
+/** SMS Efuse status register */
+#define ARIES_SMS_EFUSE_STS 0x8f7
 
 /** Main Micro Heartbeat reg */
 #define ARIES_MM_HEARTBEAT_ADDR 0x923
@@ -119,6 +132,12 @@
 
 /** Aries Link Struct Addr offset */
 #define ARIES_MM_LINK_STRUCT_ADDR_OFFSET 10
+
+/** Aries FW build option FW_ATE_CUSTOMER_BOARD offset */
+#define ARIES_MM_FW_ATE_CUSTOMER_BOARD 50
+
+/** Aries FW build option FW_SELF_TEST offset*/
+#define ARIES_MM_FW_SELF_TEST 53
 
 /**AL print info struct address (Path Micro) */
 #define ARIES_PM_AL_PRINT_INFO_STRUCT_ADDR 4
@@ -225,23 +244,38 @@
 ////////////////////// PMA registers //////////////////////
 ///////////////////////////////////////////////////////////
 
-/** PMA Slice 0 Cmd register address*/
+/** PMA Slice 0 Cmd register address */
 #define ARIES_PMA_QS0_CMD_ADDRESS 0x4400
 
-/** PMA Slice 0 Address_1 register address*/
+/** PMA Slice 0 Address_1 register address */
 #define ARIES_PMA_QS0_ADDR_1_ADDRESS 0x4401
 
-/** PMA Slice 0 Address_0 register address*/
+/** PMA Slice 0 Address_0 register address */
 #define ARIES_PMA_QS0_ADDR_0_ADDRESS 0x4402
 
-/** PMA Slice 0 Data_0 register address*/
+/** PMA Slice 0 Data_0 register address */
 #define ARIES_PMA_QS0_DATA_0_ADDRESS 0x4403
 
-/** PMA Slice 0 Data_1 register address*/
+/** PMA Slice 0 Data_1 register address */
 #define ARIES_PMA_QS0_DATA_1_ADDRESS 0x4404
 
-/** PMA offset for SUP_DIG_MPLLB_OVRD_IN_0*/
+/** PMA offset for SUP_DIG_MPLLB_OVRD_IN_0 */
 #define ARIES_PMA_SUP_DIG_MPLLB_OVRD_IN_0 0x13
+
+/** PMA offset for ARIES_PMA_SUP_DIG_RTUNE_DEBUG */
+#define ARIES_PMA_SUP_DIG_RTUNE_DEBUG 0x60
+
+/** PMA offset for ARIES_PMA_SUP_DIG_RTUNE_STAT */
+#define ARIES_PMA_SUP_DIG_RTUNE_STAT 0x62
+
+/** PMA offset for ARIES_PMA_SUP_ANA_RTUNE_CTRL */
+#define ARIES_PMA_SUP_ANA_RTUNE_CTRL 0xea
+
+/** PMA offset for SUP_ANA_SWITCH_MISC_MEAS */
+#define ARIES_PMA_SUP_ANA_SWITCH_MISC_MEAS 0xec
+
+/** PMA offset for ARIES_PMA_SUP_ANA_BG */
+#define ARIES_PMA_SUP_ANA_BG 0xed
 
 /** Reg offset for PMA register LANE_DIG_ASIC_TX_OVRD_IN_0 */
 #define ARIES_PMA_LANE_DIG_ASIC_TX_OVRD_IN_0 0x1001
@@ -303,6 +337,12 @@
 /** Reg offset for PMA register LANE_DIG_RX_ADPTCTL_DFE_TAP8_STATUS */
 #define ARIES_PMA_LANE_DIG_RX_ADPTCTL_DFE_TAP8_STATUS 0x10d0
 
+/** Reg offset for PMA register LANE_DIG_ANA_ROPLL_ANA_OUT_2 */
+#define ARIES_PMA_LANE_DIG_ANA_ROPLL_ANA_OUT_2 0x1132
+
+/** Reg offset for PMA register LANE_ANA_RX_VREG_CTRL2 */
+#define ARIES_PMA_LANE_ANA_RX_VREG_CTRL2 0x11da
+
 /** Reg offset for PMA register RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1 */
 #define ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_1 0x2006
 
@@ -321,36 +361,67 @@
 /** Reg offset for PMA register RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9 */
 #define ARIES_PMA_RAWLANE_DIG_PCS_XF_RX_OVRD_IN_9 0x203a
 
+/** Reg offset for PMA register ARIES_PMA_RAWLANE_DIG_FSM_FSM_OVRD_CTL */
+#define ARIES_PMA_RAWLANE_DIG_FSM_FSM_OVRD_CTL 0x2060
+
 /** Reg offset for PMA register RAWLANE_DIG_RX_CTL_RX_ADAPT_MM_FOM */
 #define ARIES_PMA_RAWLANE_DIG_RX_CTL_RX_ADAPT_MM_FOM 0x2109
 
 /** Reg offset for PMA register RAWLANE_DIG_RX_CTL_RX_MARGIN_ERROR */
 #define ARIES_PMA_RAWLANE_DIG_RX_CTL_RX_MARGIN_ERROR 0x212d
 
-///////////////////////////////////////////////////////////
-////////// Offsets for MM assisted PMA accesses ///////////
-///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
+////////// Offsets for MM assisted accesses ///////////
+///////////////////////////////////////////////////////
 
-/** Reg offset to specify Address for MM assisted PMA Read */
-#define ARIES_PMA_MM_ASSIST_REG_ADDR_OFFSET 0xd99
+// Legacy Address and Data registers (using wide registers)
+/** Reg offset to specify Address for MM assisted accesses */
+#define ARIES_MM_ASSIST_REG_ADDR_OFFSET 0xd99
 
-/** Reg offset to specify Path ID for MM assisted PMA Read */
-#define ARIES_PMA_MM_ASSIST_PATH_ID_OFFSET 0xd9b
+/** Reg offset to specify Path ID for MM assisted accesses */
+#define ARIES_MM_ASSIST_PATH_ID_OFFSET 0xd9b
 
-/** Reg offset to specify Command for MM assisted PMA Read */
-#define ARIES_PMA_MM_ASSIST_DATA0_OFFSET 0xd9c
+/** Reg offset to specify Data for MM assisted accesses */
+#define ARIES_MM_ASSIST_DATA_OFFSET 0xd9c
 
-/** Reg offset to specify Command for MM assisted PMA Read */
-#define ARIES_PMA_MM_ASSIST_CMD_OFFSET 0xd9d
+/** Reg offset to specify Command for MM assisted accesses */
+#define ARIES_MM_ASSIST_CMD_OFFSET 0xd9d
 
-/** Reg offset to specify Command for MM assisted PMA Read */
-#define ARIES_PMA_MM_ASSIST_DATA1_OFFSET 0xd9e
+/** Reg offset to specify Status for MM assisted accesses */
+#define ARIES_MM_ASSIST_STS_OFFSET 0xd9e
 
-/** Command to signify PMA read for side 0 */
-#define ARIES_PMA_MM_ASSIST_SIDE0_RD 0x6
+// New Address and Data registers (not using wide registers)
+/** Reg offset to MM SPARE 0 used specify Address[7:0] for MM assisted accesses
+ */
+#define ARIES_MM_ASSIST_SPARE_0_OFFSET 0xd9f
 
-/** Command to signify PMA write for side 0 */
-#define ARIES_PMA_MM_ASSIST_SIDE0_WR 0xf
+/** Reg offset to MM SPARE 1 used specify Address[15:8] for MM assisted accesses
+ */
+#define ARIES_MM_ASSIST_SPARE_1_OFFSET 0xda0
+
+/** Reg offset to MM SPARE 2 used specify Address[16] for MM assisted accesses
+ */
+#define ARIES_MM_ASSIST_SPARE_2_OFFSET 0xda1
+
+/** Reg offset to MM SPARE 3 used specify Data Byte 0 for MM assisted accesses
+ */
+#define ARIES_MM_ASSIST_SPARE_3_OFFSET 0xda2
+
+/** Reg offset to MM SPARE 4 used specify Data Byte 1 for MM assisted accesses
+ */
+#define ARIES_MM_ASSIST_SPARE_4_OFFSET 0xda3
+
+/** Reg offset to MM SPARE 5 used specify Data Byte 2 for MM assisted accesses
+ */
+#define ARIES_MM_ASSIST_SPARE_5_OFFSET 0xda4
+
+/** Reg offset to MM SPARE 6 used specify Data Byte 3 for MM assisted accesses
+ */
+#define ARIES_MM_ASSIST_SPARE_6_OFFSET 0xda5
+
+/** Reg offset to MM SPARE 7 used specify Data Byte 4 for MM assisted accesses
+ */
+#define ARIES_MM_ASSIST_SPARE_7_OFFSET 0xda6
 
 ///////////////////////////////////////////////////////////
 ////////////////////// Common offsets /////////////////////
@@ -464,8 +535,20 @@
 /** Reg offset for PIPE Powerdown */
 #define ARIES_RET_PTH_GBL_MAC_PHY_POWERDOWN_ADDR 0x4609
 
-/** Reg offset for PIPE Powerdown */
+/** Reg offset for PIPE BlockAlignControl */
+#define ARIES_RET_PTH_GBL_MAC_PHY_BLOCKALIGNCONTROL_ADDR 0x460c
+
+/** Reg offset for PIPE Rate and PCLK Rate */
 #define ARIES_RET_PTH_GBL_MAC_PHY_RATE_AND_PCLK_RATE_ADDR 0x460e
+
+/** Reg offset for PIPE TxDataValid */
+#define ARIES_RET_PTH_GBL_MAC_PHY_TXDATAVALID_ADDR 0x4610
+
+/** Reg offset for PIPE TxElecIdle */
+#define ARIES_RET_PTH_GBL_MAC_PHY_TXELECIDLE_ADDR 0x4611
+
+/** Reg offset for PIPE Rx termination */
+#define ARIES_RET_PTH_LN_PCS_RX_TERMINATION_ADDR 0x48d8
 
 /** Reg offset for PIPE Tx deemphasis */
 #define ARIES_RET_PTH_LN_MAC_PHY_TXDEEMPH_ADDR 0x491c
@@ -476,16 +559,13 @@
 /** Reg offset for PIPE Rx polarity */
 #define ARIES_RET_PTH_LN_MAC_PHY_RXPOLARITY_ADDR 0x4921
 
-/** Reg offset for PIPE Rx termination */
-#define ARIES_RET_PTH_LN_PCS_RX_TERMINATION_ADDR 0x48d8
+/** Reg offset for PIPE RxEqEval */
+#define ARIES_RET_PTH_LN_MAC_PHY_RXEQEVAL_ADDR 0x4927
 
-/** Reg offset for PIPE BlockAlignControl */
-#define ARIES_RET_PTH_GBL_MAC_PHY_BLOCKALIGNCONTROL_ADDR 0x460c
+/** Reg offset for PIPE PhyStatus */
+#define ARIES_RET_PTH_LN_PHY_MAC_PHYSTATUS_ADDR 0x4981
 
 /** Reg offset for PIPE FomFeedback */
 #define ARIES_RET_PTH_LN_PHY_MAC_FOMFEEDBACK_ADDR 0x498c
-
-/** Reg offset for PIPE RxEqEval */
-#define ARIES_RET_PTH_LN_MAC_PHY_RXEQEVAL_ADDR 0x4927
 
 #endif

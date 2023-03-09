@@ -187,7 +187,7 @@ AriesErrorType ariesMarginSetErrorCountLimit(AriesRxMarginType* marginDevice,
  */
 AriesErrorType ariesMarginGoToNormalSettings(AriesRxMarginType* marginDevice,
                                              AriesPseudoPortType port,
-                                             int lane);
+                                             int* lane, int laneCount);
 
 /**
  * @brief Margin Command to clears error count of a given port and lane
@@ -198,7 +198,8 @@ AriesErrorType ariesMarginGoToNormalSettings(AriesRxMarginType* marginDevice,
  * @return AriesErrorType - Aries error code
  */
 AriesErrorType ariesMarginClearErrorLog(AriesRxMarginType* marginDevice,
-                                        AriesPseudoPortType port, int lane);
+                                        AriesPseudoPortType port, int* lane,
+                                        int laneCount);
 
 /**
  * @brief Margin Command to Sets the margin sampler to a specific time offset
@@ -213,8 +214,8 @@ AriesErrorType ariesMarginClearErrorLog(AriesRxMarginType* marginDevice,
  * @return AriesErrorType - Aries error code
  */
 AriesErrorType ariesMarginStepMarginToTimingOffset(
-    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int lane,
-    int direction, int steps, double dwell, int* eCount);
+    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int* lane,
+    int* direction, int* steps, int laneCount, double dwell, int* eCount);
 
 /**
  * @brief Margin Command to Sets the margin sampler to a specific voltage offset
@@ -229,8 +230,8 @@ AriesErrorType ariesMarginStepMarginToTimingOffset(
  * @return AriesErrorType - Aries error code
  */
 AriesErrorType ariesMarginStepMarginToVoltageOffset(
-    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int lane,
-    int direction, int steps, double dwell, int* eCount);
+    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int* lane,
+    int* direction, int* steps, int laneCount, double dwell, int* eCount);
 
 /**
  * @brief Margin Command for vendor defined
@@ -251,7 +252,8 @@ AriesErrorType ariesMarginVendorDefined(AriesRxMarginType* marginDevice);
  * @return AriesErrorType - Aries error code
  */
 AriesErrorType ariesMarginPmaRxMarginStop(AriesRxMarginType* marginDevice,
-                                          AriesPseudoPortType port, int lane);
+                                          AriesPseudoPortType port, int* lane,
+                                          int laneCount);
 
 /**
  * @brief Sets the PMA registers to margin a specified time value
@@ -264,8 +266,9 @@ AriesErrorType ariesMarginPmaRxMarginStop(AriesRxMarginType* marginDevice,
  * @return AriesErrorType - Aries error code
  */
 AriesErrorType ariesMarginPmaRxMarginTiming(AriesRxMarginType* marginDevice,
-                                            AriesPseudoPortType port, int lane,
-                                            int direction, int steps);
+                                            AriesPseudoPortType port, int* lane,
+                                            int* direction, int* steps,
+                                            int laneCount);
 
 /**
  * @brief Sets the PMA registers to margin a specified voltage value
@@ -278,8 +281,9 @@ AriesErrorType ariesMarginPmaRxMarginTiming(AriesRxMarginType* marginDevice,
  * @return AriesErrorType - Aries error code
  */
 AriesErrorType ariesMarginPmaRxMarginVoltage(AriesRxMarginType* marginDevice,
-                                             AriesPseudoPortType port, int lane,
-                                             int direction, int steps);
+                                             AriesPseudoPortType port,
+                                             int* lane, int* direction,
+                                             int* steps, int laneCount);
 
 /**
  * @brief Sets the PMA registers to margin a specified voltage and time value
@@ -298,9 +302,9 @@ AriesErrorType ariesMarginPmaRxMarginVoltage(AriesRxMarginType* marginDevice,
  * @return AriesErrorType - Aries error code
  */
 AriesErrorType ariesMarginPmaTimingVoltageOffset(
-    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int lane,
-    int timeDirection, int timeSteps, int voltageDirection, int voltageSteps,
-    double dwell, int* eCount);
+    AriesRxMarginType* marginDevice, AriesPseudoPortType port, int* lane,
+    int* timeDirection, int* timeSteps, int* voltageDirection,
+    int* voltageSteps, int laneCount, double dwell, int* eCount);
 
 /**
  * @brief Gets the number of errors that have occurred on a specific port and
@@ -313,7 +317,7 @@ AriesErrorType ariesMarginPmaTimingVoltageOffset(
  */
 AriesErrorType ariesMarginPmaRxMarginGetECount(AriesRxMarginType* marginDevice,
                                                AriesPseudoPortType port,
-                                               int lane);
+                                               int* lane, int laneCount);
 
 /**
  * @brief Perform Rx Request/Ack Handshake
@@ -325,7 +329,7 @@ AriesErrorType ariesMarginPmaRxMarginGetECount(AriesRxMarginType* marginDevice,
  */
 AriesErrorType ariesMarginPmaRxReqAckHandshake(AriesRxMarginType* marginDevice,
                                                AriesPseudoPortType port,
-                                               int lane);
+                                               int* lane, int laneCount);
 
 /**
  * @brief Determines the pma side and quadslice of a port and lane
@@ -352,7 +356,8 @@ AriesErrorType ariesMarginDeterminePmaSideAndQs(AriesRxMarginType* marginDevice,
  * @param[out] recoveryCount Variable to store the recovery count in
  */
 AriesErrorType ariesGetLaneRecoveryCount(AriesRxMarginType* marginDevice,
-                                         int lane, int* recoveryCount);
+                                         int* lane, int laneCount,
+                                         int* recoveryCount);
 
 /**
  * @brief Determines eye stats for a given port and lane using binary search
@@ -365,8 +370,8 @@ AriesErrorType ariesGetLaneRecoveryCount(AriesRxMarginType* marginDevice,
  * @return AriesErrorType - Aries error code
  */
 AriesErrorType ariesCheckEye(AriesRxMarginType* marginDevice,
-                             AriesPseudoPortType port, int lane, double dwell,
-                             double*** eyeResults);
+                             AriesPseudoPortType port, int* lane, int laneCount,
+                             double dwell, double*** eyeResults);
 
 /**
  * @brief Calculates the eye for each lane on the port on the device and outputs

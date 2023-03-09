@@ -131,7 +131,7 @@ int send_update_packet (int bus, int eid, uint8_t* buf, ssize_t bufsize,
   return rc;
 }
 
-int swb_fw_update (uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data, uint32_t file_size)
+int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data, uint32_t file_size)
 {
   int ret = SWB_FW_UPDATE_FAILED;
 
@@ -180,7 +180,7 @@ int swb_fw_update (uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data,
     }
 
     if (last_offset + dsize <= offset) {
-      pal_set_fw_update_ongoing(FRU_SWB, 60);
+      pal_set_fw_update_ongoing(fruid, 60);
       printf("\rupdated: %d %%",(int)(offset/dsize*10));
       fflush(stdout);
       last_offset += dsize;
@@ -199,9 +199,12 @@ exit:
 static
 int fw_update_proc (const string& image, bool /*force*/,
                     uint8_t bus, uint8_t eid,
-                    uint8_t target, const string& comp)
+                    uint8_t target, const string& comp, const string& fru)
 {
   struct stat st;
+  uint8_t fruid = 0;
+
+  pal_get_fru_id((char *)fru.c_str(), &fruid);
 
   // open the binary
   int fd_r = open(image.c_str(), O_RDONLY);
@@ -223,7 +226,7 @@ int fw_update_proc (const string& image, bool /*force*/,
   syslog(LOG_CRIT, "Component %s upgrade initiated\n", comp.c_str() );
 
   try {
-    int ret = swb_fw_update(bus, eid, target, memblock, r_size);
+    int ret = swb_fw_update(fruid, bus, eid, target, memblock, r_size);
     delete[] memblock;
     close(fd_r);
     if (ret != SWB_FW_UPDATE_SUCCESS) {
@@ -252,12 +255,12 @@ int fw_update_proc (const string& image, bool /*force*/,
 
 int SwbBicFwComponent::update(string image)
 {
-  return fw_update_proc(image, false, bus, eid, target, this->alias_component());
+  return fw_update_proc(image, false, bus, eid, target, this->alias_component(), this->alias_fru());
 }
 
 int SwbBicFwComponent::fupdate(string image)
 {
-  return fw_update_proc(image, true, bus, eid, target, this->alias_component());
+  return fw_update_proc(image, true, bus, eid, target, this->alias_component(), this->alias_fru());
 }
 
 int
@@ -335,7 +338,7 @@ int SwbBicFwRecoveryComponent::update(string image)
   if (ret)
     return ret;
 
-  ret = fw_update_proc(image, false, bus, eid, target, this->alias_component());
+  ret = fw_update_proc(image, false, bus, eid, target, this->alias_component(), this->alias_fru());
 
   sleep (2);
   if (gpio_set_value_by_shadow("BIC_FWSPICK", GPIO_VALUE_LOW)) {
@@ -364,7 +367,7 @@ int SwbBicFwRecoveryComponent::fupdate(string image)
   if (ret)
     return ret;
 
-  return fw_update_proc(image, false, bus, eid, target, this->alias_component());
+  return fw_update_proc(image, false, bus, eid, target, this->alias_component(), this->alias_fru());
 }
 
 //Print Version
@@ -473,6 +476,9 @@ int SwbPexFwComponent::fupdate(string image) {
 
 int SwbPexFwComponent::update(string image) {
 
+  uint8_t fruid = 0;
+  pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
+
   // open the binary
   int fd_r = open(image.c_str(), O_RDONLY);
   if (fd_r < 0) {
@@ -513,7 +519,7 @@ int SwbPexFwComponent::update(string image) {
       ret = -1;
       goto exit;
     }
-    ret = swb_fw_update(bus, eid, target, memblock, images[num].size);
+    ret = swb_fw_update(fruid, bus, eid, target, memblock, images[num].size);
     delete[] memblock;
     if (ret != SWB_FW_UPDATE_SUCCESS) {
       switch(ret)

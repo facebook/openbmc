@@ -34,7 +34,7 @@
 #define DUAL_FAN_UCR 13500
 #define DUAL_FAN_UNC 10200
 
-#define FAN_15K_LCR  1500
+#define FAN_15K_LCR  1200
 #define FAN_15K_UNC  13500
 #define FAN_15K_UCR  16500
 

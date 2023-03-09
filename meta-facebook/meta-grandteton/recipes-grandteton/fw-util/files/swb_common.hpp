@@ -44,6 +44,14 @@ class SwbPexFwComponent : public SwbBicFwComponent {
     int fupdate(string image);
 };
 
+// Artemis ACB PCIE SWITCH Component
+class AcbPeswFwComponent : public SwbBicFwComponent {
+  public:
+    AcbPeswFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
+        :SwbBicFwComponent(fru, comp, bus, eid, target) {}
+    int get_version(json& j) override;
+};
+
 class GTPldmComponent : public PldmComponent {
   protected:
     void store_device_id_record(pldm_firmware_device_id_record& /*id_record*/,

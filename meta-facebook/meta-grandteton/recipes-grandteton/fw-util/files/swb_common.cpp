@@ -613,3 +613,35 @@ int GTSwbPexFwComponent::fupdate(string image)
 {
   return try_pldm_update(image, true);
 }
+
+int AcbPeswFwComponent::get_version(json &j) {
+  vector<uint8_t> ver = {};
+
+  // Get PESW Version
+  int ret = get_swb_version(bus, eid, target, ver);
+  if (ret != 0 || ver.empty()) {
+    j["VERSION"] = "NA";
+  } else if (ver[1] == 4){
+    stringstream ver_str;
+    ver_str << std::hex << std::setfill('0')
+      << std::setw(2) << +ver[5] << '.'
+      << std::setw(2) << +ver[4] << '.'
+      << std::setw(2) << +ver[3] << '.'
+      << std::setw(2) << +ver[2];
+    j["VERSION"] = ver_str.str();
+  } else {
+    j["VERSION"] = "Format not supported";
+  }
+
+  stringstream comp_str;
+  comp_str << this->alias_fru()
+           << ' '
+           << this->alias_component();
+
+  string rw_str = comp_str.str();
+  transform(rw_str.begin(),rw_str.end(), rw_str.begin(),::toupper);
+
+  j["PRETTY_COMPONENT"] = rw_str;
+
+  return FW_STATUS_SUCCESS;
+}

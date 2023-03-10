@@ -173,6 +173,7 @@ class Fscd(object):
         self.board_fan_mode = BoardFanMode()
         self.need_rearm = False
         self.multi_fan_fail = None
+        self.standby_fan_fail = None
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -242,6 +243,9 @@ class Fscd(object):
             self.fan_recovery_time = self.fsc_config["fan_recovery_time"]
         if "multi_fan_fail" in self.fsc_config:
             self.multi_fan_fail = self.fsc_config["multi_fan_fail"]
+        if "standby_fan_fail" in self.fsc_config:
+            self.standby_fan_fail = self.fsc_config["standby_fan_fail"]
+
 
     def build_profiles(self):
         self.sensors = {}
@@ -768,7 +772,11 @@ class Fscd(object):
                             "Failed fans: %s"
                             % (", ".join([str(i.label) for i in dead_fans]))
                         )
-                        if dead > 1 and self.multi_fan_fail:
+                        if self.standby_fan_fail and not self.get_fan_power_status():
+                            mode = fan_mode["standby_boost_mode"]
+                            pwmval = self.standby_fan_fail["fan_pwm"]
+
+                        elif dead > 1 and self.multi_fan_fail:
                             for fan_count, set_fan_pwm in self.multi_fan_fail["data"]:
                                 if dead >= fan_count:
                                     #choose the higher PWM
@@ -780,6 +788,17 @@ class Fscd(object):
                                         sensors=sensors_tuples, ctx=ctx, ignore_mode=False
                                         )
                                         mode = zone.get_set_fan_mode(mode, action="read")
+
+                            if "host_action" in list(self.multi_fan_fail.keys()):
+                                act, cnt = self.multi_fan_fail["host_action"]
+                                if act == "shutdown" and dead >= cnt:
+                                    if (self.get_fan_power_status()):
+                                        self.fsc_host_action(
+                                            action="host_shutdown",
+                                            cause="Host Shutdown fans are bad for more than "
+                                            + str(fan_count),
+                                        )
+                                        mode = fan_mode["standby_boost_mode"]
 
                         elif self.board_fan_mode.is_scenario_supported("one_fan_failure"):
                             # user define
@@ -857,6 +876,7 @@ class Fscd(object):
                     pwmval = zone.last_pwm + self.ramp_rate
             zone.last_pwm = pwmval
 
+            print("last pwm val=%d" % pwmval)
             if hasattr(zone.pwm_output, "__iter__"):
                 for output in zone.pwm_output:
                     self.machine.set_pwm(self.fans.get(str(output)), pwmval)

@@ -51,6 +51,7 @@ enum {
   TRANSIT = 1,
   BOOST = 2,
   PROGRESSION = 3,
+  SB_BOOST = 4,
 };
 
 static void
@@ -180,6 +181,9 @@ fan_mode_check(bool printMode) {
         break;
       case PROGRESSION:
         cout << "Fan Mode: Progression" << endl;
+        break;
+      case SB_BOOST:
+        cout << "Fan Mode: Standby Boost" << endl;
         break;
       default:
         cout << "Fan Mode: Unknown" << endl;

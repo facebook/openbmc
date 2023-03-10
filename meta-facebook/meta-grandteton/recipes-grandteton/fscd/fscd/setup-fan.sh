@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -17,15 +17,5 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
-### BEGIN INIT INFO
-# Provides:          setup-fan
-# Required-Start:    board-id
-# Required-Stop:
-# Default-Start:     5
-# Default-Stop:
-# Short-Description: Set fan speed
-### END INIT INFO
-
 
 /etc/init.d/check-fan-cache.sh

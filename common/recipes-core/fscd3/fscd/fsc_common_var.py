@@ -16,4 +16,4 @@
 # Boston, MA 02110-1301 USA
 #
 
-fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
+fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3, "standby_boost_mode": 4}

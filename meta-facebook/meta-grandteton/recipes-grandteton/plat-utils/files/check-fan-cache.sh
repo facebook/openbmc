@@ -30,5 +30,9 @@ do
     fi
 done
 
-runsv /etc/sv/fscd > /dev/null 2>&1 &
+i2cget -f -y 8 0x48 0x01
+rev=$?
+if [ "$rev" -ne 0 ]; then
+    runsv /etc/sv/fscd > /dev/null 2>&1 &
+fi
 echo "done."

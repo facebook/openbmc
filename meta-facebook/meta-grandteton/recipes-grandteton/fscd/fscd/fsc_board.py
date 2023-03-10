@@ -15,13 +15,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from ctypes import CDLL, c_char_p
-from subprocess import PIPE, Popen, check_output
-from fsc_util import Logger
-import re
 import os
+import re
+from ctypes import c_char_p, CDLL
+from subprocess import check_output, PIPE, Popen
+
 import kv
 import libgpio
+from fsc_util import Logger
 
 lpal_hndl = CDLL("libpal.so.0")
 
@@ -37,12 +38,15 @@ def board_fan_actions(fan, action="None"):
 
 
 def board_host_actions(action="None", cause="None"):
+    FRU_MB = 1
     """
     Override the method to define fan specific actions like:
     - handling host power off
     - alarming/syslogging criticals
     """
-    Logger.warn("Host needs action %s and cause %s" % (str(action), str(cause)))
+    if "host_shutdown" in action:
+        Logger.warn("system power off")
+        lpal_hndl.pal_power_button_override(FRU_MB)
     pass
 
 

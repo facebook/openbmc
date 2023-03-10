@@ -22,6 +22,7 @@ LOCAL_URI += " \
     file://setup-pwon-snr.sh \
     file://sync_date.sh \
     file://setup-reboot-init.sh \
+    file://setup-server-uart.sh \
     "
 
 do_install:append() {

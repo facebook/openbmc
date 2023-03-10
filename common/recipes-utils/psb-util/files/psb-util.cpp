@@ -35,11 +35,9 @@
 
 #define PSB_ENABLE_READ_CACHE  0
 
-#ifndef PSB_EEPROM_BUS
-#define PSB_EEPROM_BUS 0x05
-#endif
-
 using nlohmann::json;
+
+extern int plat_read_psb_eeprom(uint8_t fru, uint8_t cpu, uint8_t *rbuf, size_t rsize);
 
 struct psb_util_args_t {
   uint8_t fruid;
@@ -174,22 +172,11 @@ cal_checksum8(const uint8_t* data, size_t length) {
 
 static int
 read_psb_from_eeprom(uint8_t slot, struct psb_config_info *pc_info) {
-  int ret;
-  uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
   const struct psb_eeprom* eeprom = (const struct psb_eeprom*) rbuf;
   uint8_t cks;
-  tbuf[0] = PSB_EEPROM_BUS;             // bus
-  tbuf[1] = 0xA0;                       // dev addr
-  tbuf[2] = sizeof(struct psb_eeprom);  // read count
-  tbuf[3] = 0x00;                       // write data addr (MSB)
-  tbuf[4] = 0x00;                       // write data addr (LSB)
-  tlen = 5;
 
-  ret = bic_ipmb_wrapper(slot, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
+  if (plat_read_psb_eeprom(slot, 0, rbuf, sizeof(struct psb_eeprom))) {
     return PSB_ERROR_READ_EEPROM_FAIL;
   }
 

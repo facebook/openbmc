@@ -11,6 +11,7 @@ inherit legacy-packages
 
 LOCAL_URI = " \
     file://psb-util.cpp \
+    file://psb-platform.cpp \
     file://meson.build \
     "
 

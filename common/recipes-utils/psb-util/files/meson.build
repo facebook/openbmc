@@ -15,7 +15,7 @@ deps = [
 ]
 
 apml_util_exe = executable('psb-util',
-    'psb-util.cpp',
+    'psb-util.cpp', 'psb-platform.cpp',
     dependencies: deps,
     install: true,
 )

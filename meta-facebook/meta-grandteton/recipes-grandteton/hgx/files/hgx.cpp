@@ -294,7 +294,7 @@ std::string dumpNonBlocking(DiagnosticDataType type) {
   std::string url;
   const std::map<DiagnosticDataType, std::string> typeMap = {
       {DiagnosticDataType::MANAGER, "Manager"},
-      {DiagnosticDataType::OEM_SYSTEM, "System"},
+      {DiagnosticDataType::OEM_EROT, "EROT"},
       {DiagnosticDataType::OEM_SELF_TEST, "SelfTest"},
       {DiagnosticDataType::OEM_FPGA, "FPGA"}};
   json req;

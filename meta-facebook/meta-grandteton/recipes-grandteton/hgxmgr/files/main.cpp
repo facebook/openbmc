@@ -27,7 +27,7 @@ static void do_dump(
     bool json_fmt) {
   const std::map<std::string, hgx::DiagnosticDataType> compMap = {
       {"hmc", hgx::DiagnosticDataType::MANAGER},
-      {"system", hgx::DiagnosticDataType::OEM_SYSTEM},
+      {"erot", hgx::DiagnosticDataType::OEM_EROT},
       {"self-test", hgx::DiagnosticDataType::OEM_SELF_TEST},
       {"fpga", hgx::DiagnosticDataType::OEM_FPGA}};
   if (async) {
@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
       "--async", async, "Do not block, return immediately printing the task ID");
   update->callback([&]() { do_update(comp, image, async, json_fmt); });
 
-  std::set<std::string> allowedComps{"hmc", "system", "self-test", "fpga"};
+  std::set<std::string> allowedComps{"hmc", "erot", "self-test", "fpga"};
   auto dump = app.add_subcommand("dump", "perform a dump");
   dump->add_option("comp", comp, "What to dump")
       ->required()

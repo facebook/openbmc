@@ -120,6 +120,57 @@ int asteraI2CUnblock(int handle)
     return 0; // Equivalent to ARIES_SUCCESS
 }
 
+AriesErrorType AriesInit(int bus, int addr)
+{
+    AriesDeviceType* ariesDevice;
+    AriesI2CDriverType* i2cDriver;
+    AriesErrorType rc;
+    int ariesHandle;
+    int i2cBus = bus;
+    int ariesSlaveAddress = addr;
+    AriesDevicePartType partNumber = ARIES_PTX16;
+
+    asteraLogSetLevel(2);
+
+    // Open connection to Aries Retimer
+    ariesHandle = asteraI2COpenConnection(i2cBus, ariesSlaveAddress);
+
+    // Initialize I2C Driver for SDK transactions
+    i2cDriver = (AriesI2CDriverType*)malloc(sizeof(AriesI2CDriverType));
+    i2cDriver->handle = ariesHandle;
+    i2cDriver->slaveAddr = ariesSlaveAddress;
+    i2cDriver->pecEnable = ARIES_I2C_PEC_DISABLE;
+    i2cDriver->i2cFormat = ARIES_I2C_FORMAT_ASTERA;
+    // Flag to indicate lock has not been initialized. Call ariesInitDevice()
+    // later to initialize.
+    i2cDriver->lockInit = 0;
+
+    // Initialize Aries device structure
+    ariesDevice = (AriesDeviceType*)malloc(sizeof(AriesDeviceType));
+    ariesDevice->i2cDriver = i2cDriver;
+    ariesDevice->i2cBus = i2cBus;
+    ariesDevice->partNumber = partNumber;
+
+
+    rc = ariesInitDevice(ariesDevice, ariesSlaveAddress);
+    if (rc != ARIES_SUCCESS)
+    {
+       ASTERA_ERROR("Init device failed");
+    }
+
+    uint8_t dataBytes[4];
+    rc = ariesReadBlockData(i2cDriver, 0, 4, dataBytes);
+    if (rc != ARIES_SUCCESS)
+    {
+        ASTERA_ERROR("Failed to read gbl_param_reg0");
+        return rc;
+    }
+    int glb_param_reg0 = (dataBytes[3] << 24) + (dataBytes[2] << 16) +
+                         (dataBytes[1] << 8) + dataBytes[0];
+
+    return rc;
+}
+
 AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
 {
     AriesDeviceType* ariesDevice;
@@ -147,6 +198,14 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
     ariesDevice->i2cBus = i2cBus;
     ariesDevice->partNumber = partNumber;
 
+    // -------------------------------------------------------------------------
+    // INITIALIZATION
+    // -------------------------------------------------------------------------
+    // Check Connection and Init device
+    // If the connection is not good, the ariesInitDevice() API will enable ARP
+    // and update the i2cDriver with the new address. It also checks for the
+    // Main Micro heartbeat before reading the FW version. In case the heartbeat
+    // is not up, it sets the firmware version to 0.0.0.
     rc = ariesInitDevice(ariesDevice, ariesSlaveAddress);
     if (rc != ARIES_SUCCESS)
     {
@@ -161,11 +220,19 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
         ASTERA_ERROR("Failed to update the firmware image. RC = %d", rc);
     }
 
+    // Reboot device to check if FW version was applied
+    // Assert HW reset
     ASTERA_INFO("Performing Retimer HW reset ...");
     rc = ariesSetHwReset(ariesDevice, 1);
+    CHECK_SUCCESS(rc);
+    // Wait 10 ms before de-asserting
     usleep(10000);
+    // De-assert HW reset
     rc = ariesSetHwReset(ariesDevice, 0);
-    usleep(2000000);
+    CHECK_SUCCESS(rc);
+    usleep(10000);
+
+    usleep(5000000);
 
     rc = ariesInitDevice(ariesDevice, ariesSlaveAddress);
     if (rc != ARIES_SUCCESS)
@@ -209,16 +276,7 @@ AriesErrorType AriesGetFwVersion(int bus, int addr, uint16_t* ver)
     ariesDevice->i2cBus = i2cBus;
     ariesDevice->partNumber = partNumber;
 
-    rc = ariesInitDevice(ariesDevice, ariesSlaveAddress);
-    if (rc != ARIES_SUCCESS)
-    {
-        ASTERA_ERROR("Init device failed");
-        return rc;
-    }
-
-    //ASTERA_INFO("SDK Version: %s", ariesGetSDKVersion());
-    //ASTERA_INFO("FW Version: %d.%d.%d", ariesDevice->fwVersion.major,
-    //            ariesDevice->fwVersion.minor, ariesDevice->fwVersion.build);
+    ariesFWStatusCheck(ariesDevice);
 
     ver[0] = ariesDevice->fwVersion.major;
     ver[1] = ariesDevice->fwVersion.minor;
@@ -255,28 +313,9 @@ AriesErrorType AriesGetTemp(int bus, int addr, float* temp)
     ariesDevice->i2cBus = i2cBus;
     ariesDevice->partNumber = partNumber;
 
-    rc = ariesInitDevice(ariesDevice, ariesSlaveAddress);
-    if (rc != ARIES_SUCCESS)
-    {
-        ASTERA_ERROR("Init device failed");
-        return rc;
-    }
-
-    uint8_t dataBytes[4];
-    rc = ariesReadBlockData(i2cDriver, 0, 4, dataBytes);
-    if (rc != ARIES_SUCCESS)
-    {
-        ASTERA_ERROR("Failed to read gbl_param_reg0");
-        return rc;
-    }
-    int glb_param_reg0 = (dataBytes[3] << 24) + (dataBytes[2] << 16) +
-                         (dataBytes[1] << 8) + dataBytes[0];
-    //ASTERA_ERROR("glb_param_reg0 = 0x%08x", glb_param_reg0);
-
     // Read Temperature
     rc = ariesGetCurrentTemp(ariesDevice);
     CHECK_SUCCESS(rc);
-    //ASTERA_ERROR("Current Temp: %.2f C", ariesDevice->currentTempC);
 
     *temp = ariesDevice->currentTempC;
     // Close all open connections

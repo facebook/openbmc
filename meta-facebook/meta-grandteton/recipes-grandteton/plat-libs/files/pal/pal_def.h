@@ -373,6 +373,13 @@ enum {
   I2C_BUS_58,
   I2C_BUS_59,
   I2C_BUS_60,
+  I2C_BUS_61,
+  I2C_BUS_62,
+  I2C_BUS_63,
+  I2C_BUS_64,
+  I2C_BUS_65,
+  I2C_BUS_66,
+  I2C_BUS_67,
 };
 
 enum {

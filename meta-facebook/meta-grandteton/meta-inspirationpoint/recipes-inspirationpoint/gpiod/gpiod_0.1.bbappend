@@ -20,6 +20,11 @@ LOCAL_URI += " \
     file://gpiod_cover.cpp \
     file://rebind-rt-mux.sh \
     "
+DEPENDS += " \
+    libretimer \
+    "
+
+RDEPENDS:${PN} += "libretimer"
 
 do_install:append() {
   install -m 755 ${S}/rebind-rt-mux.sh ${D}${sysconfdir}/init.d/rebind-rt-mux.sh

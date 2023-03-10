@@ -19,6 +19,7 @@ int asteraI2CBlock(int handle);
 
 int asteraI2CUnblock(int handle);
 
+AriesErrorType AriesInit(int bus, int addr);
 AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp);
 AriesErrorType AriesGetFwVersion(int bus, int addr, uint16_t* version);
 AriesErrorType AriesGetTemp(int bus, int addr, float* temp);

@@ -8,10 +8,13 @@ project('psb-util', 'cpp',
     ],
 )
 
+add_project_arguments('-Wno-psabi', language: 'cpp')
+
 cc = meson.get_compiler('cpp')
 deps = [
+    dependency('libkv'),
+    dependency('obmc-pal'),
     cc.find_library('bic'),
-    cc.find_library('pal'),
 ]
 
 apml_util_exe = executable('psb-util',

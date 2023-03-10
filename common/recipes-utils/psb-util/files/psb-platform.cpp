@@ -5,6 +5,10 @@
 #define PSB_EEPROM_BUS 0x05
 #endif
 
+uint8_t plat_num_cpu(uint8_t /* fru_id */) {
+  return 1;
+}
+
 int plat_read_psb_eeprom(uint8_t fru, uint8_t /* cpu */, uint8_t *rbuf, size_t rsize) {
   int ret;
   std::fill(rbuf, rbuf + rsize, 0);

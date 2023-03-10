@@ -29,15 +29,17 @@
 #include <fcntl.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
-#include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include <CLI/CLI.hpp>
+#include <openbmc/kv.hpp>
+
 
 #define PSB_ENABLE_READ_CACHE  0
 
 using nlohmann::json;
 
 extern int plat_read_psb_eeprom(uint8_t fru, uint8_t cpu, uint8_t *rbuf, size_t rsize);
+extern uint8_t plat_num_cpu(uint8_t fru_id);
 
 struct psb_util_args_t {
   uint8_t fruid;
@@ -108,7 +110,7 @@ const char* err_msg[] = {
   "unknow error",                       // PSB_ERROR_UNKNOW
 };
 
-static const char*
+static std::string
 get_psb_err_msg(const int psb_err_code) {
   if (psb_err_code >= PSB_SUCCESS &&
       psb_err_code <= PSB_ERROR_UNKNOW) {
@@ -120,42 +122,41 @@ get_psb_err_msg(const int psb_err_code) {
 
 #if PSB_ENABLE_READ_CACHE
 static void
-del_psb_cache(uint8_t slot) {
-  char key[MAX_KEY_LEN] = {0};
-
-  snprintf(key,MAX_KEY_LEN, "slot%d_psb_config_raw", slot);
-  if (kv_del(key, 0) < 0) {
-    syslog(LOG_ERR, "%s(): failed to delete PSB cache file: %s", __func__, key);
+del_psb_cache(uint8_t slot, uint8_t cpu_id) {
+  std::string key = "fru" + std::to_string(+slot)
+    + "_cpu" + std::to_string(+cpu_id) + "_psb_config_raw";
+  try {
+    kv::del(key);
+  } catch (std::exception &ex) {
+    syslog(LOG_ERR, "%s(): failed to delete PSB cache file: %s", __func__, key.c_str());
   }
 }
 
 static int
-read_psb_from_cache(uint8_t slot, struct psb_config_info *pc_info) {
-  int ret;
-  char key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
-  size_t len;
-
-  snprintf(key,MAX_KEY_LEN, "slot%d_psb_config_raw", slot);
-  ret = kv_get(key, value, &len, 0);
-  if (ret != 0) {
+read_psb_from_cache(uint8_t slot, uint8_t cpu_id, struct psb_config_info *pc_info) {
+  std::string key = "fru" + std::to_string(+slot)
+    + "_cpu" + std::to_string(+cpu_id) + "_psb_config_raw";
+  try {
+    std::string value = kv::get(key);
+    if (value.size() != sizeof(struct psb_config_info)) {
+      return PSB_ERROR_KV_NOT_AVAIL;
+    }
+    memcpy(pc_info, value.data(), sizeof(struct psb_config_info));
+  } catch (std::exception&) {
     return PSB_ERROR_KV_NOT_AVAIL;
   }
-
-  memcpy(pc_info, value, sizeof(struct psb_config_info));
   return PSB_SUCCESS;
 }
 
 static void
-store_psb_to_cache(uint8_t slot, struct psb_config_info *pc_info) {
-  char key[MAX_KEY_LEN] = {0};
-  size_t len = sizeof(struct psb_config_info);
-
-  snprintf(key,MAX_KEY_LEN, "slot%d_psb_config_raw", slot);
-
-  if (kv_set(key, (uint8_t*)pc_info, len, 0)) {
-    syslog(LOG_ERR, "%s(): failed to store psb info to cache file: %s",
-      __func__, key);
+store_psb_to_cache(uint8_t slot, uint8_t cpu_id, struct psb_config_info *pc_info) {
+  std::string key = "fru" + std::to_string(+slot)
+    + "_cpu" + std::to_string(+cpu_id) + "_psb_config_raw";
+  std::string value((char *)pc_info, (char *)pc_info + sizeof(struct psb_config_info));
+  try {
+    kv::set(key, value);
+  } catch (std::exception& ex) {
+    syslog(LOG_ERR, "%s(): failed to store psb. error:%s", __func__, ex.what());
   }
 }
 #endif
@@ -171,12 +172,12 @@ cal_checksum8(const uint8_t* data, size_t length) {
 }
 
 static int
-read_psb_from_eeprom(uint8_t slot, struct psb_config_info *pc_info) {
+read_psb_from_eeprom(uint8_t slot, uint8_t cpu_id, struct psb_config_info *pc_info) {
   uint8_t rbuf[16] = {0};
   const struct psb_eeprom* eeprom = (const struct psb_eeprom*) rbuf;
   uint8_t cks;
 
-  if (plat_read_psb_eeprom(slot, 0, rbuf, sizeof(struct psb_eeprom))) {
+  if (plat_read_psb_eeprom(slot, cpu_id, rbuf, sizeof(struct psb_eeprom))) {
     return PSB_ERROR_READ_EEPROM_FAIL;
   }
 
@@ -192,7 +193,7 @@ read_psb_from_eeprom(uint8_t slot, struct psb_config_info *pc_info) {
 }
 
 static int
-read_psb_config(uint8_t slot, struct psb_config_info *pc_info) {
+read_psb_config(uint8_t slot, uint8_t cpu_id, struct psb_config_info *pc_info) {
   int  ret;
   uint8_t status = 0;
 
@@ -209,13 +210,18 @@ read_psb_config(uint8_t slot, struct psb_config_info *pc_info) {
   }
 
 #if PSB_ENABLE_READ_CACHE
-  ret = read_psb_from_cache(slot, pc_info);
+  ret = read_psb_from_cache(slot, cpu_id, pc_info);
   if (ret == PSB_SUCCESS) {
     return ret;
   }
 #endif
 
-  ret = read_psb_from_eeprom(slot, pc_info);
+  ret = read_psb_from_eeprom(slot, cpu_id, pc_info);
+#if PSB_ENABLE_READ_CACHE
+  if (ret == 0) {
+    store_psb_to_cache(slot, cpu_id, pc_info);
+  }
+#endif
   return ret;
 }
 
@@ -239,10 +245,11 @@ print_psb_config(const struct psb_config_info *psb_info) {
 }
 
 static json
-get_psb_config_json(const uint8_t fru_id, const char* fru_name, const struct psb_config_info *psb_info) {
+get_psb_config_json(const uint8_t fru_id, const uint8_t cpu_id, const char* fru_name, const struct psb_config_info *psb_info) {
   json obj = json::object();
   obj["fru id"] = int(fru_id);
   obj["fru name"] = fru_name;
+  obj["cpu id"] = +cpu_id;
   obj["PlatformVendorID"] = psb_info->platform_vendor_id;
   obj["PlatformModelID"] = psb_info->platform_model_id;
   obj["BiosKeyRevisionID"] = psb_info->bios_key_revision_id;
@@ -262,7 +269,7 @@ get_psb_config_json(const uint8_t fru_id, const char* fru_name, const struct psb
 
 int
 do_action(uint8_t fru_id, json *jarray) {
-  int ret;
+  int ret = -1;
   struct psb_config_info psb_info;
   char fru_name[32];
 
@@ -271,27 +278,36 @@ do_action(uint8_t fru_id, json *jarray) {
   }
 
   if (!jarray) {
-    printf("==================================\n");
-    printf("%s\n", fru_name);
-    printf("==================================\n");
+    std::cout << "==================================\n";
+    std::cout << fru_name << std::endl;
+    std::cout << "==================================\n";
   }
 
-  ret = read_psb_config(fru_id, &psb_info);
-  if (ret != PSB_SUCCESS) {
-    if (!jarray) {
-      printf("error msg: %s\n", get_psb_err_msg(ret));
-    } else {
-      json obj = json::object();
-      obj["fru id"] = +fru_id;
-      obj["fru name"] = fru_name;
-      obj["error msg"] = get_psb_err_msg(ret);
-      (*jarray).push_back(obj);
+  for (uint8_t cpu_id = 0; cpu_id < plat_num_cpu(fru_id); cpu_id++) {
+    if (!jarray && plat_num_cpu(fru_id) > 1) {
+      std::cout << "==================================\n";
+      std::cout << "CPU: " << +cpu_id << std::endl;
+      std::cout << "==================================\n";
     }
-  } else {
-    if (!jarray) {
-      print_psb_config(&psb_info);
+    ret = read_psb_config(fru_id, cpu_id, &psb_info);
+    if (ret != PSB_SUCCESS) {
+      std::string error = get_psb_err_msg(ret);
+      if (!jarray) {
+        std::cout << "error msg: " << error << std::endl;
+      } else {
+        json obj = json::object();
+        obj["cpu id"] = +cpu_id;
+        obj["fru id"] = +fru_id;
+        obj["fru name"] = fru_name;
+        obj["error msg"] = error;
+        (*jarray).push_back(obj);
+      }
     } else {
-      (*jarray).push_back(get_psb_config_json(fru_id, fru_name, &psb_info));
+      if (!jarray) {
+        print_psb_config(&psb_info);
+      } else {
+        (*jarray).push_back(get_psb_config_json(fru_id, cpu_id, fru_name, &psb_info));
+      }
     }
   }
 

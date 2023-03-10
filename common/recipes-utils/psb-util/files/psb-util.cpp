@@ -31,9 +31,7 @@
 #include <nlohmann/json.hpp>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
-
-#define CTRL_FLAG_DEBUG     0x01
-#define CTRL_FLAG_JSON_FMT  0x02
+#include <CLI/CLI.hpp>
 
 #define PSB_ENABLE_READ_CACHE  0
 
@@ -44,13 +42,13 @@
 using nlohmann::json;
 
 struct psb_util_args_t {
-  int fruid;
-  uint8_t ctrl_flags;
+  uint8_t fruid;
+  bool debug;
   bool print_help;
   bool json_fmt;
 };
 
-static struct psb_util_args_t psb_util_args = {-1, 0, false, false};
+static struct psb_util_args_t psb_util_args = {FRU_ALL, 0, false, false};
 
 struct psb_config_info {
   uint8_t platform_vendor_id;                 // Byte[0] : 0-7
@@ -111,14 +109,6 @@ const char* err_msg[] = {
   "invalid PSB info",                   // PSB_ERROR_INVAL_DATA
   "unknow error",                       // PSB_ERROR_UNKNOW
 };
-
-static void
-print_usage_help(void) {
-  printf("Usage: psb-util <all|slot1|slot2|slot3|slot4> [Options]\n");
-  printf("Options:\n");
-  printf("    -h, --help      Print this help message and exit\n");
-  printf("    -j, --json      Print PSB info in JSON format\n");
-}
 
 static const char*
 get_psb_err_msg(const int psb_err_code) {
@@ -284,70 +274,6 @@ get_psb_config_json(const uint8_t fru_id, const char* fru_name, const struct psb
 }
 
 int
-parse_args(int argc, char **argv) {
-  int ret;
-  uint8_t fru;
-  char fruname[32];
-  static struct option long_opts[] = {
-    {"help", no_argument, 0, 'h'},
-    {"debug", no_argument, 0, 'd'},
-    {"json", no_argument, 0, 'j'},
-    {0,0,0,0},
-  };
-
-  psb_util_args.fruid = -1;
-  psb_util_args.ctrl_flags = 0;
-  psb_util_args.print_help = false;
-  psb_util_args.json_fmt = false;
-
-  if (argc < 2) {
-    printf("Not enough argument\n");
-    goto err_exit;
-  } else {
-    strcpy(fruname, argv[1]);
-  }
-
-  while(1) {
-    ret = getopt_long(argc, argv, "hdj", long_opts, NULL);
-    if (ret == -1) {
-      break;
-    }
-
-    switch (ret) {
-      case 'h':
-        psb_util_args.print_help = true;
-        return 0;
-      case 'd':
-        psb_util_args.ctrl_flags |= CTRL_FLAG_DEBUG;
-        break;
-      case 'j':
-        psb_util_args.json_fmt = true;
-        break;
-      default:
-        goto err_exit;
-    }
-  }
-
-  if(pal_get_fru_id(fruname, &fru) != 0 ) {
-    psb_util_args.print_help = true;
-    printf("Wrong fru: %s\n", fruname);
-    goto err_exit;
-  } else if (fru > MAX_NODES) {   // fru > 4
-    printf("Wrong fru: %s\n", fruname);
-    psb_util_args.print_help = true;
-    goto err_exit;
-  } else {
-    psb_util_args.fruid = fru;
-  }
-
-  return 0;
-
-err_exit:
-  return -1;
-}
-
-
-int
 do_action(uint8_t fru_id, json *jarray) {
   int ret;
   struct psb_config_info psb_info;
@@ -385,27 +311,55 @@ do_action(uint8_t fru_id, json *jarray) {
   return ret;
 }
 
+std::set<std::string> get_allowed_frus() {
+  std::set<std::string> ret{"all"};
+  for (uint8_t fru = 1; fru <= pal_get_fru_count(); fru++) {
+    unsigned int caps;
+    if (pal_get_fru_capability(fru, &caps)) {
+      continue;
+    }
+    if (!(caps & FRU_CAPABILITY_SERVER)) {
+      continue;
+    }
+    char name[128];
+    if (pal_get_fru_name(fru, name)) {
+      continue;
+    }
+    ret.insert(std::string(name));
+  }
+  return ret;
+}
+
 int
-main(int argc, char **argv) {
+main(int argc, char *argv[]) {
   int ret = 0;
   json array = json::array();
+  std::set<std::string> allowed_frus = get_allowed_frus();
+  CLI::App app("PSB Utility");
+  app.failure_message(CLI::FailureMessage::help);
+  std::string fru{};
+  app.add_option("fru", fru, "FRU to show PSB")->check(CLI::IsMember(allowed_frus))->required();
+  app.add_flag("--json", psb_util_args.json_fmt, "Print output as JSON formatted");
+  app.add_flag("-d,--debug", psb_util_args.debug, "Enable Debug");
 
-  if (parse_args(argc, argv) != 0) {
-    print_usage_help();
+  CLI11_PARSE(app, argc, argv);
+  if (fru == "all") {
+    psb_util_args.fruid = FRU_ALL;
+  } else if (pal_get_fru_id((char *)fru.c_str(), &psb_util_args.fruid)) {
+    std::cerr << "Could not get FRUID For " << fru << std::endl;
     return -1;
   }
 
-  if (psb_util_args.print_help) {
-    print_usage_help();
-    return 0;
-  }
-
   if (psb_util_args.fruid == FRU_ALL) {
-    size_t i;
-    for (i=1; i<=MAX_NODES; i++) {
+    for (uint8_t i = 1; i <= pal_get_fru_count(); i++) {
+      unsigned int caps;
+      if (pal_get_fru_capability(i, &caps) || 
+          !(caps & FRU_CAPABILITY_SERVER)) {
+        continue;
+      }
       ret |= do_action(i, (psb_util_args.json_fmt)?&array:NULL);
       if (!psb_util_args.json_fmt) {
-        printf("\n");
+        std::cout << std::endl;
       }
     }
   } else {

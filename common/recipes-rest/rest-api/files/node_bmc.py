@@ -244,7 +244,7 @@ class bmcNode(node):
             with open(tpm1_caps) as f:
                 for line in f:
                     if "TCG version:" in line:
-                        out_str = line.strip("TCG version: ").strip("\n")
+                        out_str = line.strip("TCG version: ").strip("\n")  # noqa B005
         elif os.path.isfile("/usr/bin/tpm2_getcap"):
             cmd_list = []
             cmd_list.append(
@@ -270,7 +270,9 @@ class bmcNode(node):
             with open(tpm1_caps) as f:
                 for line in f:
                     if "Firmware version:" in line:
-                        out_str = line.strip("Firmware version: ").strip("\n")
+                        out_str = line.strip("Firmware version: ").strip(  # noqa B005
+                            "\n"
+                        )
         elif os.path.isfile("/usr/bin/tpm2_getcap"):
             cmd_list = []
             cmd_list.append(
@@ -313,6 +315,8 @@ class bmcNode(node):
         return meminfo
 
     async def getInformation(self, param=None):
+        loop = asyncio.get_event_loop()
+
         # Get Platform Name
         name = rest_pal_legacy.pal_get_platform_name()
 
@@ -411,15 +415,8 @@ class bmcNode(node):
         spi1_vendor = await getSPIVendor(1)
 
         # ASD status - check if ASD daemon/asd-test is currently running
-        asd_status = False
-        for proc in psutil.process_iter():
-            try:
-                proc_name = proc.name().lower()
-            except Exception:
-                continue
-            if re.match("[a]sd", proc_name) or re.match("[y]aapd", proc_name):
-                asd_status = True
-                break
+        asd_status = await loop.run_in_executor(None, self._check_asd_status)
+
         boot_from_secondary = is_boot_from_secondary()
 
         vboot_info = await get_vboot_status()
@@ -463,6 +460,17 @@ class bmcNode(node):
         if not t.TYPE_CHECKING:
             os.spawnvpe("sleep 5; /sbin/reboot", shell=True)
         return {"result": "success"}
+
+    def _check_asd_status(self):
+        # ASD status - check if ASD daemon/asd-test is currently running
+        running_cmdlines = subprocess.run(
+            "cat /proc/[0-9]*/cmdline",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            shell=True,
+        ).stdout
+
+        return b"asd" in running_cmdlines or b"yaapd" in running_cmdlines
 
 
 def get_node_bmc():

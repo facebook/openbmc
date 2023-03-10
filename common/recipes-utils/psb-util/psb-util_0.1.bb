@@ -16,5 +16,5 @@ LOCAL_URI = " \
 
 pkgdir = "psb-util"
 
-DEPENDS = " libbic libpal libkv jansson"
-RDEPENDS:${PN} += " libbic libpal libkv jansson"
+DEPENDS = " libbic libpal libkv nlohmann-json"
+RDEPENDS:${PN} += " libbic libpal libkv"

@@ -12,7 +12,6 @@ cc = meson.get_compiler('cpp')
 deps = [
     cc.find_library('bic'),
     cc.find_library('pal'),
-    cc.find_library('jansson'),
 ]
 
 apml_util_exe = executable('psb-util',

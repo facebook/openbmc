@@ -27,7 +27,8 @@
 #include <getopt.h>
 #include <stdbool.h>
 #include <fcntl.h>
-#include <jansson.h>
+#include <iostream>
+#include <nlohmann/json.hpp>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
 
@@ -39,6 +40,8 @@
 #ifndef PSB_EEPROM_BUS
 #define PSB_EEPROM_BUS 0x05
 #endif
+
+using nlohmann::json;
 
 struct psb_util_args_t {
   int fruid;
@@ -241,6 +244,7 @@ read_psb_config(uint8_t slot, struct psb_config_info *pc_info) {
 
 static void
 print_psb_config(const struct psb_config_info *psb_info) {
+  
   printf("PlatformVendorID:             0x%02X\n", psb_info->platform_vendor_id);
   printf("PlatformModelID:              0x%02X\n", psb_info->platform_model_id);
   printf("BiosKeyRevisionID:            0x%02X\n", psb_info->bios_key_revision_id);
@@ -257,28 +261,27 @@ print_psb_config(const struct psb_config_info *psb_info) {
   printf("HSTIStatePSPDebugLockOn:      0x%02X\n", psb_info->hstistate_psp_debug_lock_on);
 }
 
-static json_t *
+static json
 get_psb_config_json(const uint8_t fru_id, const char* fru_name, const struct psb_config_info *psb_info) {
-  json_t *obj = json_object();
-  json_object_set_new(obj, "fru id", json_integer(fru_id));
-  json_object_set_new(obj, "fru name", json_string(fru_name));
-  json_object_set_new(obj, "PlatformVendorID", json_integer(psb_info->platform_vendor_id));
-  json_object_set_new(obj, "PlatformModelID", json_integer(psb_info->platform_model_id));
-  json_object_set_new(obj, "BiosKeyRevisionID", json_integer(psb_info->bios_key_revision_id));
-  json_object_set_new(obj, "RootKeySelect", json_integer(psb_info->root_key_select));
-  json_object_set_new(obj, "PlatformSecureBootEn", json_integer(psb_info->platform_secure_boot_en));
-  json_object_set_new(obj, "DisableBiosKeyAntiRollback", json_integer(psb_info->disable_bios_key_antirollback));
-  json_object_set_new(obj, "DisableAmdKeyUsage", json_integer(psb_info->disable_amd_key_usage));
-  json_object_set_new(obj, "DisableSecureDebugUnlock", json_integer(psb_info->disable_secure_debug_unlock));
-  json_object_set_new(obj, "CustomerKeyLock", json_integer(psb_info->customer_key_lock));
-  json_object_set_new(obj, "PSBStatus", json_integer(psb_info->psb_status));
-  json_object_set_new(obj, "PSBFusingReadiness", json_integer(psb_info->psb_fusing_readiness));
-  json_object_set_new(obj, "HSTIStatePSPSecureEn", json_integer(psb_info->hstistate_psp_secure_en));
-  json_object_set_new(obj, "HSTIStatePSPPlatformSecureEn", json_integer(psb_info->hstistate_psp_platform_secure_en));
-  json_object_set_new(obj, "HSTIStatePSPDebugLockOn", json_integer(psb_info->hstistate_psp_debug_lock_on));
+  json obj = json::object();
+  obj["fru id"] = int(fru_id);
+  obj["fru name"] = fru_name;
+  obj["PlatformVendorID"] = psb_info->platform_vendor_id;
+  obj["PlatformModelID"] = psb_info->platform_model_id;
+  obj["BiosKeyRevisionID"] = psb_info->bios_key_revision_id;
+  obj["RootKeySelect"] = psb_info->root_key_select;
+  obj["PlatformSecureBootEn"] = psb_info->platform_secure_boot_en;
+  obj["DisableBiosKeyAntiRollback"] = psb_info->disable_bios_key_antirollback;
+  obj["DisableAmdKeyUsage"] = psb_info->disable_amd_key_usage;
+  obj["DisableSecureDebugUnlock"] = psb_info->disable_secure_debug_unlock;
+  obj["CustomerKeyLock"] = psb_info->customer_key_lock;
+  obj["PSBStatus"] = psb_info->psb_status;
+  obj["PSBFusingReadiness"] = psb_info->psb_fusing_readiness;
+  obj["HSTIStatePSPSecureEn"] = psb_info->hstistate_psp_secure_en;
+  obj["HSTIStatePSPPlatformSecureEn"] = psb_info->hstistate_psp_platform_secure_en;
+  obj["HSTIStatePSPDebugLockOn"] = psb_info->hstistate_psp_debug_lock_on;
   return obj;
 }
-
 
 int
 parse_args(int argc, char **argv) {
@@ -345,7 +348,7 @@ err_exit:
 
 
 int
-do_action(uint8_t fru_id, json_t *jarray) {
+do_action(uint8_t fru_id, json *jarray) {
   int ret;
   struct psb_config_info psb_info;
   char fru_name[32];
@@ -365,17 +368,17 @@ do_action(uint8_t fru_id, json_t *jarray) {
     if (!jarray) {
       printf("error msg: %s\n", get_psb_err_msg(ret));
     } else {
-      json_t *err_obj = json_object();
-      json_object_set_new(err_obj, "fru id", json_integer(fru_id));
-      json_object_set_new(err_obj, "fru name", json_string(fru_name));
-      json_object_set_new(err_obj, "error msg", json_string(get_psb_err_msg(ret)));
-      json_array_append_new(jarray, err_obj);
+      json obj = json::object();
+      obj["fru id"] = +fru_id;
+      obj["fru name"] = fru_name;
+      obj["error msg"] = get_psb_err_msg(ret);
+      (*jarray).push_back(obj);
     }
   } else {
     if (!jarray) {
       print_psb_config(&psb_info);
     } else {
-      json_array_append_new(jarray, get_psb_config_json(fru_id, fru_name, &psb_info));
+      (*jarray).push_back(get_psb_config_json(fru_id, fru_name, &psb_info));
     }
   }
 
@@ -385,7 +388,7 @@ do_action(uint8_t fru_id, json_t *jarray) {
 int
 main(int argc, char **argv) {
   int ret = 0;
-  json_t *array = json_array();
+  json array = json::array();
 
   if (parse_args(argc, argv) != 0) {
     print_usage_help();
@@ -400,20 +403,17 @@ main(int argc, char **argv) {
   if (psb_util_args.fruid == FRU_ALL) {
     size_t i;
     for (i=1; i<=MAX_NODES; i++) {
-      ret |= do_action(i, (psb_util_args.json_fmt)?array:NULL);
+      ret |= do_action(i, (psb_util_args.json_fmt)?&array:NULL);
       if (!psb_util_args.json_fmt) {
         printf("\n");
       }
     }
   } else {
-    ret = do_action(psb_util_args.fruid, (psb_util_args.json_fmt)?array:NULL);
+    ret = do_action(psb_util_args.fruid, (psb_util_args.json_fmt)?&array:NULL);
   }
 
   if (psb_util_args.json_fmt) {
-    json_dumpf(array, stdout, 4);
-    printf("\n");
+    std::cout << array.dump(4) << std::endl;
   }
-
-  json_decref(array);
   return ret;
 }

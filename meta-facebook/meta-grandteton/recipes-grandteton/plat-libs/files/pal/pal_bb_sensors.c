@@ -324,7 +324,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x81
   {"MEZZ0_P12V_CURR", ADC_CH1, read_iic_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x82
   {"MEZZ0_P12V_PWR", MEZZ0, read_nic0_power, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x83
-  {"MEZZ0_TEMP", TEMP_MEZZ0, read_bb_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x84
+  {"MEZZ0_TEMP", TEMP_MEZZ0, read_bb_temp, true, {105, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x84
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x85
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x86
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x87
@@ -333,7 +333,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
   {"MEZZ1_P12V_CURR", ADC_CH2, read_iic_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8A
   {"MEZZ1_P12V_PWR", MEZZ1, read_nic1_power, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x8B
-  {"MEZZ1_TEMP", TEMP_MEZZ1, read_bb_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x8C
+  {"MEZZ1_TEMP", TEMP_MEZZ1, read_bb_temp, true, {105, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x8C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8F

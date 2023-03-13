@@ -119,7 +119,7 @@ max([
       all:hgx_hgx_gpu_sxm_5_temp_0_c,
       all:hgx_hgx_gpu_sxm_6_temp_0_c,
       all:hgx_hgx_gpu_sxm_7_temp_0_c,
-      all:hgx_hgx_gpu_sxm_8_temp__c])) +
+      all:hgx_hgx_gpu_sxm_8_temp_0_c])) +
   gpu_tray_gpu_pid(
     max([
       all:hgx_hgx_gpu_sxm_1_temp_0_c,

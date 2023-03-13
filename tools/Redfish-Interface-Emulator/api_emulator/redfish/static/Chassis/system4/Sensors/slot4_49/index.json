@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server4/Sensors/slot4_49",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "49",
+  "Name": "slot4/slot4/MB_VR_VCCIN_CURR_A",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 42.20000076293945,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Amps ",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 0
+    },
+    "LowerCritical": {
+      "Reading": 0
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 119
+    },
+    "UpperCritical": {
+      "Reading": 141
+    },
+    "UpperFatal": {
+      "Reading": 180
+    }
+  }
+}

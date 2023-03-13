@@ -1,0 +1,13 @@
+{
+  "Name": "Composed-1",
+  "Links": {
+    "ResourceBlocks": [
+      {
+        "@odata.id": "/redfish/v1/CompositionService/ResourceBlocks/Block-1"
+      },
+      {
+        "@odata.id": "/redfish/v1/CompositionService/ResourceBlocks/Block-2"
+      }
+    ]
+  }
+}

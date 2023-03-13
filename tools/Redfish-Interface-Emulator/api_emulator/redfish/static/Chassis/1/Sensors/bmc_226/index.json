@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/Sensors/bmc_226",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "226",
+  "Name": "bmc/bmc/BB_FAN2_TACH_RPM",
+  "Oem": {},
+  "PhysicalContext": "Fan",
+  "Reading": 10481.0,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "RPM",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 0
+    },
+    "LowerCritical": {
+      "Reading": 500
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 8500
+    },
+    "UpperCritical": {
+      "Reading": 11500
+    },
+    "UpperFatal": {
+      "Reading": 0
+    }
+  }
+}

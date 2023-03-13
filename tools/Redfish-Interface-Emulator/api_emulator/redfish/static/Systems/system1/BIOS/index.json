@@ -1,0 +1,17 @@
+{
+  "@odata.type": "#Bios.v1_2_0.Bios",
+  "Id": "BIOS",
+  "Name": "BIOS Information",
+  "Links": {
+    "ActiveSoftwareImage": {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_bios"
+    },
+    "SoftwareImages": [
+      {
+        "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_bios"
+      }
+    ],
+    "SoftwareImages@odata.count": 1
+  },
+  "@odata.id": "/redfish/v1/Systems/system1/BIOS"
+}

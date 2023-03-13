@@ -1,0 +1,60 @@
+{
+  "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+  "@odata.type": "#Chassis.v1_21_0.Chassis",
+  "Id": "system1",
+  "Name": "Meta GreatLakes system1",
+  "Assembly": {
+    "@odata.id": "/redfish/v1/Chassis/system1/Assembly"
+  },
+  "Certificates": {
+    "@odata.id": "/redfish/v1/Chassis/system1/Certificates"
+  },
+  "ChassisType": "Blade",
+  "HotPluggable": false,
+  "LocationIndicatorActive": "off",
+  "LogServices": {
+    "@odata.id": "/redfish/v1/Chassis/system1/LogServices"
+  },
+  "Manufacturer": "Wiwynn",
+  "MaxPowerWatts": "300",
+  "MinPowerWatts": "250",
+  "Model": "GreatLakes EVT1 BIC",
+  "NetworkAdapters": {
+    "@odata.id": "/redfish/v1/Chassis/system1/NetworkAdapters"
+  },
+  "PartNumber": "Aspeed AST-1030",
+  "PoweredByParent": true,
+  "PowerState": "On",
+  "Replaceable": false,
+  "Sensors": {
+    "@odata.id": "/redfish/v1/Chassis/system1/Sensors"
+  },
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "ThermalDirection": "FrontToBack",
+  "ThermalManagedByParent": true,
+  "UUID": "12345678-1234-1234-1234-123456789ABC",
+  "Version": "YoCL035",
+  "Links": {
+    "Cables": {
+      "@odata.id": "/redfish/v1/Chassis/system1/Cables"
+    },
+    "ComputerSystems": [
+      {
+        "@odata.id": "/redfish/v1/Systems/system1"
+      }    
+    ],
+    "ContainedBy" : {
+      "@odata.id": "/redfish/v1/Chassis/1"
+    },
+    "Fans": {
+      "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans"
+    },
+    "ManagedBy": {
+        "@odata.id": "/redfish/v1/Managers/bmc"
+    }
+  },
+  "@odata.id": "/redfish/v1/Chassis/system1"
+}

@@ -1,0 +1,75 @@
+{
+  "@odata.type": "#Assembly.v1_4_0.Assembly",
+  "Id": "Assembly",
+  "Name": "Great Lakes FRU Data",
+  "Assemblies": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/system3/Assembly#/Assemblies/0",
+      "Description": "Server board 3",
+      "MemberId": "0",
+      "Oem": {
+        "FruData": {
+          "@odata.type": "#FruData.ComputerSystem",
+          "FruInformation": {
+            "Chassis Type": "Rack Mount Chassis",
+            "Chassis Part Number": "N/A",
+            "Chassis Serial Number": "N/A",
+            "Chassis Custom Data 1": "D1NY542200285",
+            "Board Mfg Date": "Fri Jan 21 13:02:00 2022",
+            "Board Mfg": "Wiwynn",
+            "Board Product": "Crater Lake-Class1",
+            "Board Serial": "WT2920205ZNSD",
+            "Board Part Number": "B81.04G10.0029",
+            "Board FRU ID": "1.0",
+            "Board Custom Data 1": "02-000484",
+            "Board Custom Data 2": "PCB Supllier - GCE",
+            "Product Manufacturer": "Wiwynn",
+            "Product Name": "Crater Lake EVT2",
+            "Product Part Number": "BZA.04G01.0014",
+            "Product Version": "YoCL035",
+            "Product Serial": "BZA04G010014209000CMA1",
+            "Product Asset Tag": "BH36633",
+            "Product FRU ID": "1.0",
+            "Product Custom Data 1": "01-005997",
+            "Product Custom Data 2": "N/A"
+          }
+        }
+      },
+      "PhysicalContext": "SystemBoard",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system3/Assembly#/Assemblies/1",
+      "Description": "NIC",
+      "MemberId": "1",
+      "Oem": {
+        "FruData": {
+          "@odata.type": "#FruData.NetworkAdapter",
+          "FruInformation": {
+            "Board Mfg Date": "Fri Jan 21 13:02:00 2022",
+            "Board Mfg": "Mellanox",
+            "Board Product": "Mellanox ConnectX-6 DX OCP3.0",
+            "Board Serial": "MT2145J10064",
+            "Board Part Number": "MCX623435MC-CDAE_FB",
+            "Board FRU ID": "FRU Version 0.02",
+            "Product Manufacturer": "Mellanox",
+            "Product Name": "Mellanox ConnectX-6 DX OCP3.0",
+            "Product Part Number": "MCX623435MC_CDAE_FB",
+            "Product Version": "A9",
+            "Product Serial": "MT2145J10064",
+            "Product Custom Data 3": "ConnectX-6 DX"
+          }
+        }
+      },
+      "PhysicalContext": "NetworkingDevice",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ],
+  "@odata.id": "/redfish/v1/Chassis/system3/Assembly"
+}

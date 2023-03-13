@@ -1,0 +1,12 @@
+{
+    "@odata.context": "/redfish/v1/$metadata/TaskService/Links/Members/$entity",
+    "@odata.id": "/redfish/v1/TaskService/1",
+    "@odata.type": "#TaskService.0.94.0.Task",
+    "Id": "1",
+    "Name": "Task 1",
+    "Modified": "2012-03-07T14:44",
+    "TaskState": "Completed",
+    "StartTime": "2012-03-07T14:44",
+    "EndTime": "2012-03-07T14:45",
+    "TaskStatus": "OK"
+}

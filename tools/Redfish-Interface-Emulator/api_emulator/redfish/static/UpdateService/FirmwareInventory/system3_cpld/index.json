@@ -1,0 +1,22 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "system3_cpld_fw",
+  "Name": "system3 SB CPLD Firmware",
+  "SoftwareId": "system3_cpld",
+  "Oem": {
+    "VersionAfterActivation": "00010E10"
+  },
+  "SoftwareId": "system3_cpld",
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "00010E10",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_cpld"
+}

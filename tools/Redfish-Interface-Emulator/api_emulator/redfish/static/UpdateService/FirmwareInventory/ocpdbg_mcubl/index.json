@@ -1,0 +1,18 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "ocpdbg_mcubl",
+  "Name": "OCP Debug MCU Bootloader Firmware",
+  "SoftwareId": "ocp",
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "NA",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/ocpdbg_mcubl"
+}

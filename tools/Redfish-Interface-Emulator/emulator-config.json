@@ -1,0 +1,8 @@
+{
+  "MODE": "Local",
+  "HTTPS": "Disable",
+  "TRAYS": [],
+  "STATIC": "Enable",
+  "SPEC": "Redfish",
+  "MOCKUPFOLDERS": ["Redfish"]
+}

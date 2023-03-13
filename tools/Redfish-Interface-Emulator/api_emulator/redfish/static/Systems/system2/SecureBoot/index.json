@@ -1,0 +1,4 @@
+{
+    "@odata.id": "/redfish/v1/Systems/system2/SecureBoot",
+    "State": "Not implemented yet"
+}

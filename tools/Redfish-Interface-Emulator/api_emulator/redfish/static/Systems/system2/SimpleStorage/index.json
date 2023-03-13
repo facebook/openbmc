@@ -1,0 +1,14 @@
+{
+  "@odata.type": "#SimpleStorageCollection.SimpleStorageCollection",
+  "Name": "Simple Storage Collection",
+  "Members@odata.count": 2,
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/system2/SimpleStorage/E1s"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system2/SimpleStorage/VernalFalls2"
+    }
+  ],
+  "@odata.id": "/redfish/v1/Systems/system2/SimpleStorage"
+}

@@ -1,0 +1,26 @@
+{
+  "@odata.type": "#MemoryCollection.MemoryCollection",
+  "Name": "Memory Collection",
+  "Members@odata.count": 6,
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/Memory/DIMM_A0"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/Memory/DIMM_A2"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/Memory/DIMM_A3"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/Memory/DIMM_A4"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/Memory/DIMM_A6"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/Memory/DIMM_A7"
+    }
+  ],
+  "@odata.id": "/redfish/v1/Systems/system3/Memory"
+}

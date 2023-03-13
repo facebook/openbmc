@@ -1,0 +1,18 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "system1_1ou_bic_fw",
+  "Name": "system1 1OU Bridge-IC Version",
+  "SoftwareId": "system1_1ou_bic",
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "NA (1ou is empty)",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_1ou_bic"
+}

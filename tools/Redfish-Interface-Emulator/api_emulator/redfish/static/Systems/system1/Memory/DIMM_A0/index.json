@@ -1,0 +1,33 @@
+{
+  "@odata.type": "#Memory.v1_16_0.Memory",
+  "Name": "DIMM_A0",
+  "Id": "DIMM_A0",
+  "CapacityMiB": 16384,
+  "Location": {
+    "PartLocation": {
+      "LocationOrdinalValue": 0,
+      "ServiceLabel": "DIMM A0"
+    }
+  },
+  "Manufacturer": "SK Hynix",
+  "MemoryType": "DRAM",
+  "Oem": {
+    "ManufacturingDate": "2021 Week38",
+    "PMICErrorsReported": [
+      "SWAout OV",
+      "High temp warning"
+    ],
+    "PMICVendor": "MPS",
+    "RegisterVendor": "Montage",
+    "Speed": "4800 MT/s",
+    "Type": "DDR5 SDRAM"
+  },
+  "OperatingSpeedMhz": "4800",
+  "PartNumber": "HMCG78MEBRA107N",
+  "SerialNumber": "13A2BD14",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "@odata.id": "/redfish/v1/Systems/system1/Memory/DIMM_A0"
+}

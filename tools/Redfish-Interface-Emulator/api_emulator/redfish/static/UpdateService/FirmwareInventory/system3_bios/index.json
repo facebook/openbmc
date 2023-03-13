@@ -1,0 +1,27 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "system3_bios_fw",
+  "Name": "BIOS Firmware",
+  "SoftwareId": "system3_bios",
+  "RelatedItem": [
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/BIOS"
+    }
+  ],
+  "RelatedItem@odata.count": 1,
+  "Oem": {
+    "VersionAfterActivation": "Y35CLE18"
+  },
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "Y35CLE18",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_bios"
+}

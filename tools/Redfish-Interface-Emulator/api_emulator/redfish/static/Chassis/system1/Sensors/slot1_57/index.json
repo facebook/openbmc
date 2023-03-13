@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server1/Sensors/slot1_57",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "57",
+  "Name": "slot1/slot1/MB_HSC_INPUT_PWR_W",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 8.770000457763672,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Watts ",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 0
+    },
+    "LowerCritical": {
+      "Reading": 0
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 360
+    },
+    "UpperCritical": {
+      "Reading": 399
+    },
+    "UpperFatal": {
+      "Reading": 499
+    }
+  }
+}

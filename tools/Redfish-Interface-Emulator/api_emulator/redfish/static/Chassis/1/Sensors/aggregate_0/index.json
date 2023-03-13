@@ -1,0 +1,19 @@
+{
+  "@odata.type": "#Sensor.v1_6_0.Sensor",
+  "Id": "0",
+  "Name": "Chassis/Chassis/BB_SYSTEM_AIRFLOW_CFM",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Reading": 45.944828033447266,
+  "ReadingUnits": "CFM",
+  "ReadingRangeMin": -99999,
+  "ReadingRangeMax": 99999,
+  "ReadingTime": "",
+  "ReadingType": "AirFlow",
+  "Thresholds": {},
+  "@odata.id": "/redfish/v1/Chassis/1/Sensors/aggregate_0"
+}

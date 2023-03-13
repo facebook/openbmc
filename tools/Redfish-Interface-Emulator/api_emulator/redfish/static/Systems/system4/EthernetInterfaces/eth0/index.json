@@ -1,0 +1,41 @@
+{
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "4",
+  "Name": "System4 Ethernet Interface",
+  "Description": "System4 NIC 1",
+  "EthernetInterface": "Physical",
+  "FQDN": "rtptest8700.snc1.facebook.com",
+  "HostName": "rtptest8700.snc1.facebook.com",
+  "InterfaceEnabled": true,
+  "IPv4Addresses": [
+  ],
+  "IPv4StaticAddresses": [
+  ],
+  "IPv6Addresses": [
+  ],
+  "IPv6AddressPolicyTable": [
+  ],
+  "IPv6DefaultGateway": "",
+  "IPv6StaticAddresses": [
+  ],
+  "Links": {
+    "Chassis": {
+      "@odata.id": "/redfish/v1/Chassis/1"
+    }
+  },
+  "LinkStatus": "LinkUp",
+  "MACAddress": "08:c0:eb:8a:95:5f",
+  "MTUSize": 1500,
+  "NameServers": [
+  ],
+  "PermanentMACAddress": "08:c0:eb:8a:95:5f",
+  "SpeedMbps": 0,
+  "StaticNameServers": [
+  ],
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK",
+    "HealthRollup": "OK"
+  },
+  "@odata.id": "/redfish/v1/Systems/system4/EthernetInterfaces/eth0"
+}

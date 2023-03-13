@@ -1,0 +1,17 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Systems/Links/Members/1/Links/SimpleNetwork/$entity",
+    "@odata.id": "/redfish/v1/Systems/1/SimpleNetwork",
+    "@odata.type": "EthernetNetworkInterface.1.00.0.EthernetNetworkInterfaceCollection",
+    "Name": "NIC Collection",
+    
+    "Description": "Simple Network Collection",
+    "links": {
+        "Members@odata.count": 1,
+        "Members": [
+            {
+                "@odata.id": "/redfish/v1/Systems/1/SimpleNetwork/1"
+            }
+        ],
+        "Oem": {}
+    }
+}

@@ -1,0 +1,20 @@
+{
+  "@odata.type": "#FanCollection.FanCollection",
+  "Name": "Fan Collection",
+  "Members@odata.count": 4,
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans/Fan0"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans/Fan1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans/Fan2"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans/Fan3"
+    }
+  ],
+  "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans"
+}

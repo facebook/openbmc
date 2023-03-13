@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server4/Sensors/slot4_38",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "38",
+  "Name": "slot4/slot4/MB_ADC_P12V_DIMM_VOLT_V",
+  "Oem": {},
+  "PhysicalContext": "Memory",
+  "Reading": 12.260000228881836,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Volts ",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 10
+    },
+    "LowerCritical": {
+      "Reading": 9
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 14
+    },
+    "UpperCritical": {
+      "Reading": 14
+    },
+    "UpperFatal": {
+      "Reading": 0
+    }
+  }
+}

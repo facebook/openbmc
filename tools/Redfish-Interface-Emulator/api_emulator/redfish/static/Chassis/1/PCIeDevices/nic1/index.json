@@ -1,0 +1,4 @@
+{
+    "@odata.id": "/redfish/v1/Chassis/1/PCIeDevices/nic1",
+    "State": "Not implemented yet"
+}

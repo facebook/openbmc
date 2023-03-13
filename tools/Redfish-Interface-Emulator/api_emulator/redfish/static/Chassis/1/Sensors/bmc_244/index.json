@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/Sensors/bmc_244",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "244",
+  "Name": "bmc/bmc/BB_P1V2_STBY_VOLT_V",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 1.2100000381469727,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Volts",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 1
+    },
+    "LowerCritical": {
+      "Reading": 1
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 1
+    },
+    "UpperCritical": {
+      "Reading": 1
+    },
+    "UpperFatal": {
+      "Reading": 1
+    }
+  }
+}

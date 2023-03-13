@@ -1,0 +1,27 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "bmc_fscd",
+  "Name": "BMC FSCD",
+  "SoftwareId": "fscd",
+  "RelatedItem": [
+    {
+      "@odata.id": "/redfish/v1/Managers/bmc"
+    }
+  ],
+  "RelatedItem@odata.count": 1,
+  "Oem": {
+    "VersionAfterActivation": "FSCV1.0"
+  },
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "FSCV1.0",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/bmc_fscd"
+}

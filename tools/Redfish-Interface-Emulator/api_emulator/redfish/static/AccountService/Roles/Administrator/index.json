@@ -1,0 +1,19 @@
+{
+  "@odata.type": "#Role.v1_3_1.Role",
+  "Id": "Administrator",
+  "Name": "User Role",
+  "Description": "Administrator User Role",
+  "IsPredefined": true,
+  "Restricted": false,
+  "RoleId": "Administrator",
+  "UserName": "root",
+  "AssignedPrivileges": [
+    "Login",
+    "ConfigureUsers",
+    "ConfigureManager",
+    "ConfigureComponents",
+    "ConfigureSelf"
+  ],
+  "OemPrivileges": [],
+  "@odata.id": "/redfish/v1/AccountService/Roles/Administrator"
+}

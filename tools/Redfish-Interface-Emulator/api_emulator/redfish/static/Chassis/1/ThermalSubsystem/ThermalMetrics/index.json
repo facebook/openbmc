@@ -1,0 +1,4 @@
+{
+    "@odata.id": "/redfish/v1/Chassis/1/ThermalSystem/ThermalMetrics",
+    "State": "Not implemented yet"
+}

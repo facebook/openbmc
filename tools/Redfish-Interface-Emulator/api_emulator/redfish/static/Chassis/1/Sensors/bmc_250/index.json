@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/Sensors/bmc_250",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "250",
+  "Name": "bmc/bmc/BB_HSC_OUTPUT_CURR_A",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 7.190000057220459,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Amps",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 0
+    },
+    "LowerCritical": {
+      "Reading": 0
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 0
+    },
+    "UpperCritical": {
+      "Reading": 23
+    },
+    "UpperFatal": {
+      "Reading": 31
+    }
+  }
+}

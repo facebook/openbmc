@@ -1,0 +1,13 @@
+{
+  "@odata.id": "/redfish/v1/AccountService/Roles",
+  "@odata.type": "#RoleCollection.RoleCollection",
+  "Description": "BMC User Roles",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/AccountService/Roles/Administrator"
+    }
+  ],
+  "Members@odata.count": 1,
+  "Name": "Roles Collection"
+}
+

@@ -1,0 +1,96 @@
+{
+  "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+  "@odata.type": "#Chassis.v1_21_0.Chassis",
+  "Id": "1",
+  "Name": "Meta GreatLakes enclosure",
+  "Assembly": {
+    "@odata.id": "/redfish/v1/Chassis/1/Assembly"
+  },
+  "AssetTag": null,
+  "Certificates": {
+    "@odata.id": "/redfish/v1/Chassis/1/Certificates"
+  },
+  "ChassisType": "RackMount",
+  "HotPluggable": false,
+  "LocationIndicatorActive": "off",
+  "LogServices": {
+    "@odata.id": "/redfish/v1/Chassis/1/LogServices"
+  },
+  "Manufacturer": "Wiwynn",
+  "MaxPowerWatts": "1500",
+  "MinPowerWatts": "800",
+  "Model": "GreatLakes EVT1",
+  "NetworkAdapters": {
+    "@odata.id": "/redfish/v1/Chassis/1/NetworkAdapters"
+  },
+  "PartNumber": "166472-S44",
+  "PCIeDevices": {
+    "@odata.id": "/redfish/v1/Chassis/1/PCIeDevices/nic1"
+  },
+  "PhysicalSecurity": {
+    "IntrusionSensor": "Normal",
+    "IntrusionSensorNumber": "48",
+    "IntrusionSensorReArm": "Automatic"
+  },
+  "PowerState": "On",
+  "Replaceable": false,
+  "Sensors": {
+    "@odata.id": "/redfish/v1/Chassis/1/Sensors"
+  },
+  "SerialNumber": "WTT2209018M1A",
+  "SKU": "",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "ThermalDirection": "FrontToBack",
+  "ThermalManagedByParent": false,
+  "ThermalSubsystem": {
+    "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem"
+  },
+  "TrustedComponent": {
+      "@odata.id": "/redfish/v1/Chassis/1/TrustedComponent"
+  },
+  "UUID": "12345678-1234-1234-1234-123456789ABC",
+  "Version": "1.0",
+  "Links": {
+    "Cables": {
+      "@odata.id": "/redfish/v1/Chassis/1/Cables"
+    },
+    "ComputerSystems": [
+      {
+        "@odata.id": "/redfish/v1/Systems/system1"
+      },
+      {
+        "@odata.id": "/redfish/v1/Systems/system2"
+      },
+      {
+        "@odata.id": "/redfish/v1/Systems/system3"
+      },
+      {
+        "@odata.id": "/redfish/v1/Systems/system4"
+      }
+    ],
+    "Contains": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/system1"
+      },
+      {
+        "@odata.id": "/redfish/v1/Chassis/system2"
+      },
+      {
+        "@odata.id": "/redfish/v1/Chassis/system3"
+      },
+      {
+        "@odata.id": "/redfish/v1/Chassis/system4"
+      }
+    ],
+    "Fans": {
+      "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans"
+    },
+    "ManagedBy": {
+        "@odata.id": "/redfish/v1/Managers/bmc"
+    }
+  },
+  "@odata.id": "/redfish/v1/Chassis/1"
+}

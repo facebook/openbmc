@@ -1,0 +1,19 @@
+{
+  "@odata.id": "/redfish/v1/Systems/system2/LogServices/PostCodes",
+  "@odata.type": "#LogService.v1_3_1.LogService",
+  "Actions": {
+    "#LogService.ClearLog": {
+      "target": "/redfish/v1/Systems/system2/LogServices/PostCodes/Actions/LogService.ClearLog"
+    }
+  },
+  "DateTime": "2022-09-12T18:44:10+00:00",
+  "DateTimeLocalOffset": "+00:00",
+  "Description": "POST Code Log Service",
+  "Entries": {
+    "@odata.id": "/redfish/v1/Systems/system2/LogServices/PostCodes/Entries"
+  },
+  "Id": "BIOS POST Code Log",
+  "Name": "POST Code Log Service",
+  "OverWritePolicy": "WrapsWhenFull"
+}
+

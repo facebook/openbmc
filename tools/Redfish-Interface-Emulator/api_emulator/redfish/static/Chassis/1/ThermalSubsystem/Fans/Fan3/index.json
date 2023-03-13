@@ -1,0 +1,44 @@
+{
+  "@odata.type": "#Fan.v1_3_0.Fan",
+  "Id": "Fan3",
+  "HotPluggable": true,
+  "Links": {
+    "CoolingChassis": [
+      {
+        "@odata.id": "/redfish/v1/Chassis"
+      }
+    ]
+  },
+  "Location": {
+    "PartLocation": {
+      "ServiceLabel": "Chassis Fan 3",
+      "LocationType": "Backplane",
+      "LocationOrdinalValue": 3
+    }
+  },
+  "LocationIndicatorActive": false,
+  "Manufacturer": "Delta Fans",
+  "Model": "ABCD-1234",
+  "Name": "Fan 3",
+  "Oem": {
+    "FanMode": "Normal",
+    "FSCD Driver": "linear_cpu+pid_cpu(slot2:mb_soc_cpu_temp_c)",
+    "SensorFail": "None",
+    "FanFail": "None"
+  },
+  "PartNumber": "123456-133",
+  "PhysicalContext": "Chassis",
+  "Replaceable": true,
+  "SerialNumber": "AD1234-1234",
+  "SparePartNumber": "123456-134",
+  "SpeedPercent": {
+    "Reading": 25,
+    "SpeedRPM": 3145,
+    "DataSourceUri": "/redfish/v1/Chassis/Sensors/Fan3"
+  },
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans/Fan3"
+}

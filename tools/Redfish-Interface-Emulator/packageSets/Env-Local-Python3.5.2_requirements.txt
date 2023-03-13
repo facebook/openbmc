@@ -1,0 +1,15 @@
+aniso8601==1.2.1
+chardet==3.0.4
+Flask==1.0.0
+Flask-HTTPAuth==3.2.3
+Flask-RESTful==0.3.6
+itsdangerous==0.24
+Jinja2==2.11.3
+MarkupSafe==1.0
+python-dateutil==2.6.1
+pytz==2017.2
+requests==2.20.0
+six==1.10.0
+StringGenerator==0.2.0
+urllib3==1.26.5
+Werkzeug==0.15.3

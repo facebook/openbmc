@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/Sensors/bmc_246",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "246",
+  "Name": "bmc/bmc/BB_MEDUSA_OUTPUT_VOLT_V",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 12.119999885559082,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Volts",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 11
+    },
+    "LowerCritical": {
+      "Reading": 11
+    },
+    "LowerFatal": {
+      "Reading": 9
+    },
+    "UpperCaution": {
+      "Reading": 13
+    },
+    "UpperCritical": {
+      "Reading": 13
+    },
+    "UpperFatal": {
+      "Reading": 13
+    }
+  }
+}

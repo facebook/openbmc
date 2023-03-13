@@ -1,0 +1,110 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Systems/Links/Members/$entity", 
+    "@odata.id": "/redfish/v1/Systems/1",
+    "@odata.type": "#ComputerSystem.1.00.0.ComputerSystem",
+    "Id": "1",
+    "Name": "My Computer System",
+    
+    "SystemType": "Physical",
+    "AssetTag": "free form asset tag",
+    "Manufacturer": "Manufacturer Name",
+    "Model": "Model Name",
+    "SKU": "",
+    "SerialNumber": "2M220100SL",
+    "PartNumber": "",
+    "Description": "Description of server",
+    "UUID": "00000000-0000-0000-0000-000000000000 - need common format - need common schema callout?",
+    
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK",
+        "HealthRollUp": "OK"
+    },
+    "IndicatorLED": "Off",
+    "Power": "On",
+    "Boot": {
+        "BootSourceOverrideEnabled": "Once",
+        "BootSourceOverrideTarget": "Pxe",
+        "BootSourceOverrideSupported": [
+            "None",
+            "Pxe",
+            "Floppy",
+            "Cd",
+            "Usb",
+            "Hdd",
+            "BiosSetup",
+            "Utilities",
+            "Diags",
+            "UefiTarget"
+        ],
+        "UefiTargetBootSourceOverride": "uefi device path"
+    },
+    "BiosVersion": "P79 v1.00 (09/20/2013)",
+    "Processors": {
+        "Count": 8,
+        "Model": "Multi-Core Intel(R) Xeon(R) processor 7xxx Series",
+        "Status": {
+            "State": "Enabled",
+            "Health": "OK",
+            "HealthRollUp": "OK"
+        }
+    },
+    "Memory": {
+        "TotalSystemMemoryGB": 16,
+        "Status": {
+            "State": "Enabled",
+            "Health": "OK",
+            "HealthRollUp": "OK"
+        }
+    },
+    "Links": {
+        "Chassis": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/1"
+            }
+        ],
+        "ManagedBy": [
+            {"@odata.id": "/redfish/v1/Managers/1"}
+        ],
+        "SimpleNetwork": {
+            "@odata.id": "/redfish/v1/Systems/1/SimpleNetwork"
+        },
+        "SimpleStorage": {
+            "@odata.id": "/redfish/v1/Systems/1/SimpleStorage"
+        },
+        "Oem": {}
+    },
+    "Actions": {
+        "#ComputerSystem.Reset": {
+            "target": "/rest/v1/Systems/1/Actions/ComputerSystem.Reset",
+            "ResetType@DMTF.AllowableValues": [
+                "On",
+                "ForceOff",
+                "GracefulRestart",
+                "ForceRestart",
+                "Nmi",
+                "GracefulRestart",
+                "ForceOn",
+                "PushPowerButton"
+            ]
+        },
+        "Oem": {
+            "http://Contoso.com/Schema/CustomTypes#Contoso.Reset": {
+                "target": "/redfish/v1/Systems/1/OEM/Contoso/Actions/Contoso.Reset"
+            }
+        }
+    },
+    "Oem": {
+        "Contoso": {
+            "@odata.type": "http://Contoso.com/Schema#Contoso.ComputerSystem",
+            "ProductionLocation": {
+                "FacilityName": "PacWest Production Facility",
+                "Country": "USA"
+            }
+        },
+        "Chipwise": {
+            "@odata.type": "http://Chipwise.com/Schema#Chipwise.ComputerSystem",
+            "Style": "Executive"
+        }
+    }
+}

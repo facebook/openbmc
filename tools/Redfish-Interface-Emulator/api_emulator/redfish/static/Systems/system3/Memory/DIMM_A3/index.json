@@ -1,0 +1,32 @@
+{
+  "@odata.type": "#Memory.v1_16_0.Memory",
+  "Name": "DIMM_A3",
+  "Id": "DIMM_A3",
+  "CapacityMiB": 16384,
+  "Location": {
+    "PartLocation": {
+      "LocationOrdinalValue": 2,
+      "ServiceLabel": "DIMM A3"
+    }
+  },
+  "Manufacturer": "SK Hynix",
+  "MemoryType": "DRAM",
+  "Oem": {
+    "ManufacturingDate": "2021 Week38",
+    "PMICErrorsReported": [
+      "No Error"
+    ],
+    "PMICVendor": "MPS",
+    "RegisterVendor": "Montage",
+    "Speed": "4800 MT/s",
+    "Type": "DDR5 SDRAM"
+  },
+  "OperatingSpeedMhz": "4800",
+  "PartNumber": "HMCG78MEBRA107N",
+  "SerialNumber": "13A2BD16",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "@odata.id": "/redfish/v1/Systems/system3/Memory/DIMM_A3"
+}

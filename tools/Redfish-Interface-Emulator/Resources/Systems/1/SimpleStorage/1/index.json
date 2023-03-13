@@ -1,0 +1,48 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Systems/Links/Members/1/Links/SimpleStorage/Links/Members/$entity",
+    "@odata.id": "/redfish/v1/Systems/1/SimpleStorage/1",
+    "@odata.type": "#SimpleStorage.1.00.0.SimpleStorage",
+    "Id": "1",
+    "Name": "Simple Storage Controller",
+    "Description": "System SATA",
+    "UEFIDevicePath": "UEFI Device Path",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK",
+        "HealthRollUp": "Degraded"
+    },
+    "Devices": [
+        {
+            "Name": "Drive 1",
+            "Manufacturer": "ACME",
+            "Model": "Drive Model string",
+            "Size": "1 TB",
+            "Status": {
+                "State": "Enabled",
+                "Health": "OK"
+            }
+        },
+        {
+            "Name": "Drive 2",
+            "Manufacturer": "SuperDuperSSD",
+            "Size": "500 GB",
+            "Model": "Drive Model string",
+            "Status": {
+                "State": "Enabled",
+                "Health": "Degraded"
+            }
+        },
+        {
+            "Name": "Drive 3",
+            "Status": {
+                "State": "Absent"
+            }
+        },
+        {
+            "Name": "Drive 4",
+            "Status": {
+                "State": "Absent"
+            }
+        }
+    ]
+}

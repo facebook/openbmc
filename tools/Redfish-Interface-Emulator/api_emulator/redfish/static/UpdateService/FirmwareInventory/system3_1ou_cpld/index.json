@@ -1,0 +1,18 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "system3_1ou_cpld_fw",
+  "Name": "system3 1OU CPLD Version",
+  "SoftwareId": "bmc",
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "NA (1ou is empty)",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_1ou_cpld"
+}

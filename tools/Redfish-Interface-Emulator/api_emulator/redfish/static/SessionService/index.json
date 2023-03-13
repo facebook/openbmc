@@ -1,0 +1,16 @@
+{
+    "@odata.context": "/rest/v1/$metadata#SessionService",
+    "@odata.id": "/rest/v1/SessionService",
+    "@odata.type": "#Session.0.94.0.SessionCollection",
+    "Name": "Session Collection",
+    "Description": "Manager User Sessions",
+    "Modified": "2013-01-31T23:45:08+00:00",
+    "Links": {
+        "Members@odata.count": 1,
+        "Members": [
+            {
+                "@odata.id": "/redfish/v1/SessionService/Administrator1"
+            }
+        ]
+    }
+}

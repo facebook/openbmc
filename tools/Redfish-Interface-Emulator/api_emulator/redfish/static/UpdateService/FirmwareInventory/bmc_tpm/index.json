@@ -1,0 +1,27 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "bmc_tpm",
+  "Name": "BMC TPM",
+  "SoftwareId": "tpm",
+  "RelatedItem": [
+    {
+      "@odata.id": "/redfish/v1/Managers/bmc"
+    }
+  ],
+  "RelatedItem@odata.count": 1,
+  "Oem": {
+    "VersionAfterActivation": "7.85"
+  },
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "7.85",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/bmc_tpm"
+}

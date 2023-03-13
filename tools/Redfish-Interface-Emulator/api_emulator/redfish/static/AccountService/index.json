@@ -1,0 +1,45 @@
+{
+  "@odata.type": "#AccountService.v1_11_1.AccountService",
+  "Id": "AccountService",
+  "Name": "Account Service",
+  "Description": "BMC Account Service",
+  "AccountLockoutCounterResetAfter": 30,
+  "AccountLockoutCounterResetEnabled": true,
+  "AccountLockoutDuration": 30,
+  "AccountLockoutThreshold": 5,
+  "Accounts": {
+    "@odata.id": "/redfish/v1/AccountService/Accounts"
+  },
+  "AuthFailureLoggingThreshold": 3,
+  "LocalAccountAuth": "Enabled",
+  "MaxPasswordLength": 20,
+  "MinPasswordLength": 8,
+  "Oem": {
+    "OpenBMC": {
+      "@odata.id": "/redfish/v1/AccountService#/Oem/OpenBMC",
+      "@odata.type": "#OemAccountService.v1_0_0.AccountService",
+      "AuthMethods": {
+        "BasicAuth": true,
+        "Cookie": true,
+        "SessionToken": true,
+        "TLS": true,
+        "XToken": true
+      }
+    }
+  },
+  "Roles": {
+    "@odata.id": "/redfish/v1/AccountService/Roles"
+  },
+  "ServiceEnabled": true,
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "SupportedAccountTypes": [
+    "HostConsole",
+    "IPMI",
+    "ManagerConsole",
+    "Redfish"
+  ],
+  "@odata.id": "/redfish/v1/AccountService"
+}

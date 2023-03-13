@@ -1,0 +1,140 @@
+{
+  "@odata.type": "#Manager.v1_16_0.Manager",
+  "Id": "BMC",
+  "Name": "Great Lakes BMC",
+  "AdditionalFirmwareVersions": {
+    "Bootloader": "uboot-2022.07",
+    "Kernel": "5.15",
+    "OSDistribution": "Linux"
+  },
+  "AutoDSTEnabled": false,
+  "CommandShell": {
+    "ServiceEnabled": true,
+    "MaxConcurrentSessions": 4,
+    "ConnectTypesSupported": [
+      "SSH",
+      "IPMI"
+    ]
+  },
+  "DateTime": "2022-11-10T04:14:33-08:00",
+  "DateTimeLocalOffset": "-08:00",
+  "Description": "Great Lakes BMC",
+  "EthernetInterfaces": {
+    "@odata.id": "/redfish/v1/Managers/BMC/EthernetInterfaces"
+  },
+  "FirmwareVersion": "4.4.6521",
+  "HostInterfaces": {
+    "@odata.id": "/redfish/v1/Managers/BMC/HostInterfaces"
+  },
+  "LastResetTime": "2022-11-09T04:14:33-08:00",
+  "Links": {
+    "ManagerForServers": [
+      {
+        "@odata.id": "/redfish/v1/Systems/system1"
+      },
+      {
+        "@odata.id": "/redfish/v1/Systems/system2"
+      },
+      {
+        "@odata.id": "/redfish/v1/Systems/system3"
+      },
+      {
+        "@odata.id": "/redfish/v1/Systems/system4"
+      }
+    ],
+    "ManagerForChassis": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/1"
+      }
+    ],
+    "ManagerForManagers": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/system1"
+      },
+      {
+        "@odata.id": "/redfish/v1/Chassis/system2"
+      },
+      {
+        "@odata.id": "/redfish/v1/Chassis/system3"
+      },
+      {
+        "@odata.id": "/redfish/v1/Chassis/system4"
+      }
+    ],
+    "ManagerInChassis": {
+      "@odata.id": "/redfish/v1/Chassis/1"
+    },
+    "Oem": {},
+    "SoftwareImages": [
+      {
+        "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory"
+      }
+    ]
+  },
+  "LocationIndicatorActive": false,
+  "LogServices": {
+    "@odata.id": "/redfish/v1/Managers/BMC/LogServices"
+  },
+  "ManagerType": "BMC",
+  "Manufacturer": "Aspeed",
+  "Model": "Aspeed 2620",
+  "NetworkProtocol": {
+    "@odata.id": "/redfish/v1/Managers/BMC/NetworkProtocol"
+  },
+  "Oem": {
+    "VbootData": {
+      "@odata.type": "#VbootData.Manager",
+      "VbootInformation": {
+        "RomExecutedFrom": "0x00000000",
+        "RomKEKCertificates": "0x00018538",
+        "ROMHandoffMarker": "0x00000000",
+        "U-BootExecutedFrom": "0x28104000",
+        "CertificatesFallback": "Fri Oct 9 16:01:05 2020",
+        "CertificatesTime": "Fri Oct 9 16:01:05 2020",
+        "U-BootFallback": "Wed Sep 28 14:40:10 2022",
+        "U-BootTime": "Thu Oct 6 10:01:59 2022",
+        "KernelFallback": "not set",
+        "KernelTime": "not set",
+        "Flags": {
+          "ForceRecovery": false,
+          "HardwareEnforce": false,
+          "SoftwareEnforce": false,
+          "RecoveryBoot": false,
+          "RecoveryRetried": false,
+          "Flash0Signed": false,
+          "Flash0Locked": false,
+          "Flash1Signed": false,
+          "Flash1Locked": false
+        },
+        "RomU-BootVersion": "2019.04",
+        "StatusCRC": "0xee97",
+        "TPM2Status": "0",
+        "StatusType": "3",
+        "StatusCode": "35",
+        "StatusComment": "U-Boot FIT did not contain the /keys node"
+      }
+    }
+  },
+  "PowerState": "On",
+  "SerialInterfaces": {
+    "@odata.id": "/redfish/v1/Managers/BMC/SerialInterfaces"
+  },
+  "ServiceEntryPointUUID": "92384634-2938-2342-8820-489239905423",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "TimeZoneName" : "PST",
+  "UUID": "58893887-8974-2487-2389-841168418919",
+  "Actions": {
+    "#Manager.Reset": {
+      "target": "/redfish/v1/Managers/BMC/Actions/Manager.Reset",
+      "ResetType@Redfish.AllowableValues": [
+        "ForceRestart",
+        "GracefulRestart"
+      ]
+    },
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/Managers/BMC"
+}

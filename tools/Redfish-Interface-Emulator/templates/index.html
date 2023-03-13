@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <title>Redfish Interface Emulator</title>
+    <style>
+        /* Partially Taken from: http://getbootstrap.com/examples/cover/cover.css */
+        /* Links */
+        a,
+        a:focus,
+        a:hover {
+          color: #FF0000;
+        }
+        /*
+         * Base structure
+         */
+        html,
+        body {
+          height: 100%;
+          background-color: #333333;
+          font-family: Arial, Helvetica, sans-serif;
+          overflow: hidden;
+        }
+        body {
+          color: #fff;
+          text-align: center;
+          text-shadow: 0 1px 3px rgba(0,0,0,.5);
+        }
+        .cover-heading {
+            font-size: 36px;
+        }
+        .lead {
+            font-size: 22px;
+        }
+        /* Extra markup and styles for table-esque vertical and horizontal centering */
+        .site-wrapper {
+          display: table;
+          width: 100%;
+          height: 100%; /* For at least Firefox */
+          min-height: 100%;
+          -webkit-box-shadow: inset 0 0 100px rgba(0,0,0,.5);
+                  box-shadow: inset 0 0 100px rgba(0,0,0,.5);
+        }
+        .site-wrapper-inner {
+          display: table-cell;
+          vertical-align: top;
+        }
+        .cover-container {
+          margin-right: auto;
+          margin-left: auto;
+        }
+        /* Padding for spacing */
+        .inner {
+          padding: 30px;
+        }
+        /*
+         * Cover
+         */
+        .cover {
+          padding: 0 20px;
+        }
+        .cover .btn-lg {
+          padding: 10px 20px;
+          font-weight: bold;
+        }
+        /*
+         * Footer
+         */
+        .mastfoot {
+          color: #999; /* IE8 proofing */
+          color: rgba(255,255,255,.5);
+        }
+        /*
+         * Affix and center
+         */
+        @media (min-width: 768px) {
+          /* Pull out the header and footer */
+          .mastfoot {
+            position: fixed;
+            bottom: 0;
+          }
+          /* Start the vertical centering */
+          .site-wrapper-inner {
+            vertical-align: middle;
+          }
+          /* Handle the widths */
+          .mastfoot,
+          .cover-container {
+            width: 100%; /* Must be percentage or pixels for horizontal alignment */
+          }
+        }
+        @media (min-width: 992px) {
+          .mastfoot,
+          .cover-container {
+            width: 700px;
+          }
+        }
+    </style>
+  </head>
+  <body>
+    <div class="site-wrapper">
+      <div class="site-wrapper-inner">
+        <div class="cover-container">
+          <div class="cover">
+            <h1 class="cover-heading">Welcome to the Redfish Interface Emulator.</h1>
+            <p class="lead">This emulator emulates the Redfish Specification <a
+href="https://www.dmtf.org/standards/redfish">here</a>.
+	      <br>
+	      Append ./redfish/v1 to the URL to retrieve the Service Root or click <a href="browse.html">here</a> for a GUI Redfish browser.
+	      <br>
+          </div>
+          <div class="mastfoot">
+            <div class="inner">
+              <p>Original developed by Intel Corporation</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

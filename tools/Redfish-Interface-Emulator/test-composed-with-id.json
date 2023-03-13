@@ -1,0 +1,14 @@
+{
+  "Id":"Composed-1",
+  "Name": "Composed Computer System",
+  "Links": {
+    "ResourceBlocks": [
+      {
+        "@odata.id": "/redfish/v1/CompositionService/ResourceBlocks/Block-1"
+      },
+      {
+        "@odata.id": "/redfish/v1/CompositionService/ResourceBlocks/Block-2"
+      }
+    ]
+  }
+}

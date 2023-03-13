@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server4/Sensors/slot4_34",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "34",
+  "Name": "slot4/slot4/MB_ADC_P3V3_STBY_VOLT_V",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 3.3499999046325684,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Volts ",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 3
+    },
+    "LowerCritical": {
+      "Reading": 3
+    },
+    "LowerFatal": {
+      "Reading": 2
+    },
+    "UpperCaution": {
+      "Reading": 3
+    },
+    "UpperCritical": {
+      "Reading": 3
+    },
+    "UpperFatal": {
+      "Reading": 3
+    }
+  }
+}

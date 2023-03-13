@@ -1,0 +1,20 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Systems/Links/Members/1/Links/SimpleNetwork/Links/Members/$entity", 
+    "@odata.id": "/redfish/v1/Systems/1/SimpleNetwork/1",    
+    "@odata.type": "EthernetNetworkInterface.1.00.0.EhternetNetworkInterface",
+    "Id": "1",
+    "Name": "VLAN Network Interface",
+    "Description": "System NIC 1 V",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "VLANEnable":"True",
+    "VLANId":101,
+        "Links": {
+        "VLANs": {
+            "@odata.id": "/redfish/v1/Systems/1/SimpleNetwork/1/VLANs"
+        },
+        "Oem": {}
+    }
+}

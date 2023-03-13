@@ -1,0 +1,152 @@
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory",
+  "@odata.type": "#SoftwareInventoryCollection.SoftwareInventoryCollection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/bmc_fw"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/bmc_cpld"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/bmc_fscd"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/bmc_rom"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/bmc_tpm"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/nic_fw"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/ocpdbg_mcu"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/ocpdbg_mcubl"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_1ou_bic"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_1ou_cpld"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_bic"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_bios"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_cpld"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_me"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_vr"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_vr_vccd"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_vr_vccin"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system1_vr_vccinfaon"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_1ou_bic"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_1ou_cpld"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_bic"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_bios"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_cpld"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_me"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_vr"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_vr_vccd"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_vr_vccin"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_vr_vccinfaon"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_1ou_bic"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_1ou_cpld"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_bic"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_bios"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_cpld"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_me"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_vr"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_vr_vccd"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_vr_vccin"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system3_vr_vccinfaon"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_1ou_bic"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_1ou_cpld"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_bic"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_bios"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_cpld"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_me"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_vr"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_vr_vccd"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_vr_vccin"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system4_vr_vccinfaon"
+    }
+  ],
+  "Members@odata.count": 48,
+  "Name": "Software Inventory Collection"
+}

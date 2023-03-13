@@ -1,0 +1,27 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "bmc_fw",
+  "Name": "BMC Firmware",
+  "SoftwareId": "bmc",
+  "RelatedItem": [
+    {
+      "@odata.id": "/redfish/v1/Managers/bmc"
+    }
+  ],
+  "RelatedItem@odata.count": 1,
+  "Oem": {
+    "VersionAfterActivation": "fby35-v2022.37.1"
+  },
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "fby35-v2022.37.1",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/bmc_fw"
+}

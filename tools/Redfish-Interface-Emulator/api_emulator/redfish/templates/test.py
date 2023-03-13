@@ -1,0 +1,11 @@
+{u'@odata.context': '/redfish/v1/$metadata#ResourceBlock.ResourceBlock',
+ u'@odata.id': '{rb_oid}',
+ u'@odata.type': u'#ResourceBlock.v1_0_0.ResourceBlock',
+ u'CompositionStatus': {u'CompositionState': 'Unused'},
+ u'Id': '{rb_id}',
+ u'Links': {u'Chassis': [{u'@odata.id': '{chassis_oid}'}],
+            u'Zones': [{u'@odata.id': '{rz_oid}'}],
+            u'Zones@odata.navigationLink': 'n'},
+ u'Processors': [{u'@odata.id': '{cpu_oid}'}],
+ u'ResourceBlockType': ['Processor'],
+ u'Status': {u'Health': 'OK', u'State': 'Enabled'}}

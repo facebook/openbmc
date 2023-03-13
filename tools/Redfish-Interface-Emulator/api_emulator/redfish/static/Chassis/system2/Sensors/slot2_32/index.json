@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server2/Sensors/slot2_32",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "32",
+  "Name": "slot2/slot2/MB_ADC_P12V_STBY_VOLT_V",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 12.260000228881836,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Volts ",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 10
+    },
+    "LowerCritical": {
+      "Reading": 10
+    },
+    "LowerFatal": {
+      "Reading": 10
+    },
+    "UpperCaution": {
+      "Reading": 13
+    },
+    "UpperCritical": {
+      "Reading": 13
+    },
+    "UpperFatal": {
+      "Reading": 14
+    }
+  }
+}

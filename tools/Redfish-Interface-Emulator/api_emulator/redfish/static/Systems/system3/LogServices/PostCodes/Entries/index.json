@@ -1,0 +1,9 @@
+{
+  "@odata.id": "/redfish/v1/Systems/system3/LogServices/PostCodes/Entries",
+  "@odata.type": "#LogEntryCollection.LogEntryCollection",
+  "Description": "Collection of POST Code Log Entries",
+  "Members": [],
+  "Members@odata.count": 0,
+  "Name": "BIOS POST Code Log Entries"
+}
+

@@ -1,0 +1,49 @@
+{
+  "@odata.type": "#SimpleStorage.v1_3_1.SimpleStorage",
+  "Id": "1",
+  "Name": "Vernal Falls 2.0 Expansion Card",
+  "Description": "Vernal Falls 2.0",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Devices": [
+    {
+      "Name": "Bay1",
+      "Manufacturer": "TBD",
+      "Model": "DriveModelA",
+      "CapacityBytes": "1020054732800",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    },
+    {
+      "Name": "Bay2",
+      "Manufacturer": "TBD",
+      "Model": "DriveModelA",
+      "CapacityBytes": "1020054732800",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    },
+    {
+      "Name": "Bay3",
+      "Manufacturer": "TBD",
+      "Model": "DriveModelA",
+      "CapacityBytes": "1020054732800",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    },
+    {
+      "Name": "Bay4",
+      "Status": {
+        "State": "Absent"
+      }
+    }
+  ],
+  "@odata.id": "/redfish/v1/Systems/system3/SimpleStorage/VernalFalls2"
+}

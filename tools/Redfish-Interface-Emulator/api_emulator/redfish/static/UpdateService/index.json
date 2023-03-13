@@ -1,0 +1,36 @@
+{
+  "@odata.type": "#UpdateService.v1_11_1.UpdateService",
+  "Id": "UpdateService",
+  "Name": "Update service",
+  "FirmwareInventory": {
+    "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory"
+  },
+  "HttpPushUri": "/redfish/v1/UpdateService/update",
+  "HttpPushUriOptions": {
+    "ForceUpdate": false,
+    "HttpPushUriOptions": {
+      "HttpPushUriApplyTime": {
+        "ApplyTime": "Immediate"
+      }
+    }
+  },
+  "MaxImageSizeByte": 67108864,
+  "ServiceEnabled": true,
+  "SoftwareInventory": {
+    "@odata.id": "/redfish/v1/UpdateService/SoftwareInventory"
+  },
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK",
+    "HealthRollup": "OK"
+  },
+  "Actions": {
+    "#UpdateService.SimpleUpdate": {
+      "target": "/redfish/v1/UpdateService/Actions/SimpleUpdate",
+      "@Redfish.ActionInfo": "/redfish/v1/UpdateService/SimpleUpdateActionInfo"
+    },
+    "Oem": {}
+  },
+  "Oem": {},
+  "@odata.id": "/redfish/v1/UpdateService"
+}

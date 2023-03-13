@@ -1,0 +1,22 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "system2_cpld_fw",
+  "Name": "system2 SB CPLD Firmware",
+  "SoftwareId": "system2_cpld",
+  "Oem": {
+    "VersionAfterActivation": "00010E10"
+  },
+  "SoftwareId": "system2_cpld",
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "00010E10",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/system2_cpld"
+}

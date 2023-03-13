@@ -1,0 +1,163 @@
+{
+  "@odata.type": "#ComputerSystem.v1_19_0.ComputerSystem",
+  "Actions": {
+    "#ComputerSystem.Reset": {
+      "target": "/redfish/v1/Systems/system2/Actions/ComputerSystem.Reset",
+      "ResetType@Redfish.AllowableValues": [
+        "On",
+        "Off",
+        "GracefulShutdown",
+        "Cycle",
+        "Reset",
+        "12V-off",
+        "12V-on",
+        "12V-cycle",
+        "Sled-cycle"
+      ]
+    },
+    "Oem": {
+      "#Contoso.Reset": {
+        "target": "/redfish/v1/Systems/system2/Oem/Contoso/Actions/Contoso.Reset"
+      }
+    }
+  },
+  "AssetTag": "BH36633",
+  "Bios": {
+    "@odata.id": "/redfish/v1/Systems/system2/BIOS"
+  },
+  "BiosVersion": "Y35CLE18",
+  "BootProgress": {
+    "LastBootTimeSeconds": "110",
+    "LastState": "OSRunning",
+    "LastStateTime": "202211031400"
+  },
+  "Description": "Yosemite v3.5",
+  "EthernetInterfaces": {
+    "@odata.id": "/redfish/v1/Systems/system2/EthernetInterfaces"
+  },
+  "HostingRoles": [
+    "ApplicationServer"
+  ],
+  "HostName": "rtptest554.snc8.facebook.com",
+  "HostWatchdogTimer": {
+    "FunctionEnabled": true,
+    "Status": {
+      "State": "Enabled",
+      "Health": "OK",
+      "HealthRollup": "OK"
+    },
+    "TimeoutAction": "PowerCycle"
+  },
+  "Id": "system2",
+  "LastResetTime": "202211021211",
+  "Links": {
+    "Chassis": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/system2"
+      },
+      {
+        "@odata.id": "/redfish/v1/Chassis/1"
+      }
+    ],
+    "CooledBy": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans"
+      }
+    ],
+    "ManagedBy": [
+      {
+        "@odata.id": "/redfish/v1/Managers/BMC"
+      }
+    ]
+  },
+  "LocationIndicatorActive": false,
+  "LogServices": {
+    "@odata.id": "/redfish/v1/Systems/system2/LogServices"
+  },
+  "Manufacturer": "Wiwynn",
+  "Memory": {
+    "@odata.id": "/redfish/v1/Systems/system2/Memory"
+  }, 
+  "MemorySummary": {
+    "TotalSystemMemoryGiB": 96,
+    "TotalSystemPersistentMemoryGiB": 0,
+    "MemoryMirroring": "None"
+  },
+  "Model": "Crater Lake EVT2",
+  "Name": "rtptest554.snc8.facebook.com",
+  "Oem": {
+    "FruData": {
+      "@odata.type": "#FruData.ComputerSystem",
+      "FruInformation": {
+        "Chassis Type": "Rack Mount Chassis",
+        "Chassis Part Number": "N/A",
+        "Chassis Serial Number": "N/A",
+        "Chassis Custom Data 1": "D1NY542200285",
+        "Board Mfg Date": "Fri Jan 21 13:02:00 2022",
+        "Board Mfg": "Wiwynn",
+        "Board Product": "Crater Lake-Class1",
+        "Board Serial": "WT2920205ZNSD",
+        "Board Part Number": "B81.04G10.0029",
+        "Board FRU ID": "1.0",
+        "Board Custom Data 1": "02-000484",
+        "Board Custom Data 2": "PCB Supllier - GCE",
+        "Product Manufacturer": "Wiwynn",
+        "Product Name": "Crater Lake EVT2",
+        "Product Part Number": "BZA.04G01.0014",
+        "Product Version": "YoCL035",
+        "Product Serial": "BZA04G010014209000CMA1",
+        "Product Asset Tag": "BH36633",
+        "Product FRU ID": "1.0",
+        "Product Custom Data 1": "01-005997",
+        "Product Custom Data 2": "N/A"
+      }
+    }
+  },
+  "PartNumber": "BZA.04G01.0014",
+  "PowerCycleDelaySeconds": "15",
+  "PowerOffDelaySeconds": "5",
+  "PowerOnDelaySeconds": "10",
+  "PowerRestorePolicy": "LastState",
+  "PowerState": "On",
+  "ProcessorSummary": {
+    "Count": 1,
+    "Model": "Sapphire Rapids "
+  },
+  "SecureBoot": {
+    "@odata.id": "/redfish/v1/Systems/system2/SecureBoot"
+  },
+  "SerialConsole": {
+    "IPMI": {
+      "ServiceEnabled": true
+    },
+    "MaxConcurrentSessions": 15,
+    "SSH": {
+      "HotKeySequenceDisplay": "Press ~. to exit console",
+      "Port": 2200,
+      "ServiceEnabled": true
+    }
+  },
+  "SerialNumber": "BZA04G010014209000CMA1",
+  "SimpleStorage": {
+    "@odata.id": "/redfish/v1/Systems/system2/SimpleStorage"
+  },
+  "SKU": "",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK",
+    "HealthRollup": "OK"
+  },
+  "SystemType": "Physical",
+  "TrustedModules": [
+    {
+      "FirmwareVersion": "A.YZ",
+      "InterfaceType": "TPM2_0",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ],
+  "UUID": "ce94bc54-5fa8-5c6c-a600401f5e3df491",
+  "@odata.id": "/redfish/v1/Systems/system2"
+}

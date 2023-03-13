@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/1/Sensors/bmc_247",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "247",
+  "Name": "bmc/bmc/BB_HSC_INPUT_VOLT_V",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 12.079999923706055,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Volts",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 10
+    },
+    "LowerCritical": {
+      "Reading": 10
+    },
+    "LowerFatal": {
+      "Reading": 10
+    },
+    "UpperCaution": {
+      "Reading": 13
+    },
+    "UpperCritical": {
+      "Reading": 13
+    },
+    "UpperFatal": {
+      "Reading": 14
+    }
+  }
+}

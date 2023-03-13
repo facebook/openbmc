@@ -1,0 +1,170 @@
+{
+  "@odata.type": "#SensorCollection.SensorCollection",
+  "Name": "Chassis sensors",
+  "Members@odata.count": 54,
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_2"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_3"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_4"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_5"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_20"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_21"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_6"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_7"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_9"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_10"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_11"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_12"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_13"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_14"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_15"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_16"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_17"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_18"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_19"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_32"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_33"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_34"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_35"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_36"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_37"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_38"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_39"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_40"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_41"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_42"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_44"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_45"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_46"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_47"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_48"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_49"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_50"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_51"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_52"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_53"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_56"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_57"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_58"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_60"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_61"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_62"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_63"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_30"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_31"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_54"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_55"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_66"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2/Sensors/slot2_71"
+    }
+  ],
+  "@odata.id": "/redfish/v1/Chassis/system2/Sensors"
+}

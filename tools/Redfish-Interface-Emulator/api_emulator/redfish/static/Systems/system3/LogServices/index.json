@@ -1,0 +1,18 @@
+{
+  "@odata.id": "/redfish/v1/Systems/system3/LogServices",
+  "@odata.type": "#LogServiceCollection.LogServiceCollection",
+  "Description": "Collection of LogServices for system3",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/LogServices/EventLog"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/LogServices/HostLogger"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system3/LogServices/PostCodes"
+    }
+  ],
+  "Members@odata.count": 3,
+  "Name": "System Log Services Collection"
+}

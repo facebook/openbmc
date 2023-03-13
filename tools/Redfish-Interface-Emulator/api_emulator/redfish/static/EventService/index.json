@@ -1,0 +1,39 @@
+{
+    "@Redfish.Copyright": "Copyright 2014-2019 DMTF. All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#EventService",
+    "@odata.id": "/redfish/v1/EventService",
+    "@odata.type": "#EventService.1.0.0.EventService",
+    "Id": "EventService",
+    "Name": "Event Service",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "ServiceEnabled": true,
+    "DeliveryRetryAttempts": 3,
+    "DeliveryRetryIntervalInSeconds": 60,
+    "EventTypesForSubscription": [
+        "StatusChange",
+        "ResourceUpdated",
+        "ResourceAdded",
+        "ResourceRemoved",
+        "Alert"
+    ],
+    "Subscriptions": {
+        "@odata.id": "/redfish/v1/EventService/Subscriptions"
+    },
+    "Actions": {
+        "#EventService.SendTestEvent": {
+            "target": "/redfish/v1/EventService/Actions/EventService.SendTestEvent",
+            "EventType@Redfish.AllowableValues": [
+                "StatusChange",
+                "ResourceUpdated",
+                "ResourceAdded",
+                "ResourceRemoved",
+                "Alert"
+            ]
+        },
+        "Oem": {}
+    },
+    "Oem": {}
+}

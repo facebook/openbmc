@@ -1,0 +1,14 @@
+{
+    "@Redfish.Copyright": "Copyright 2014-2019 DMTF. All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFileCollection.MessageRegistryFileCollection",
+    "@odata.id": "/redfish/v1/Registries",
+    "@odata.type": "#MessageRegistryFileCollection.MessageRegistryFileCollection",
+    "Name": "Registry File Collection",
+    "Description": "Registry Repository",
+    "Members@odata.count": 1,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Registries/Base.1.0.0"
+        }
+    ]
+}

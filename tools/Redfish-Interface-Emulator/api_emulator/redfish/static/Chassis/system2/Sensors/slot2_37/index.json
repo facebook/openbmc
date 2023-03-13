@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server2/Sensors/slot2_37",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "37",
+  "Name": "slot2/slot2/MB_ADC_P5V_STBY_VOLT_V",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 4.949999809265137,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Volts ",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 4
+    },
+    "LowerCritical": {
+      "Reading": 4
+    },
+    "LowerFatal": {
+      "Reading": 3
+    },
+    "UpperCaution": {
+      "Reading": 5
+    },
+    "UpperCritical": {
+      "Reading": 5
+    },
+    "UpperFatal": {
+      "Reading": 5
+    }
+  }
+}

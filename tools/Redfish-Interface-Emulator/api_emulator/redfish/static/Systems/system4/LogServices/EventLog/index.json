@@ -1,0 +1,21 @@
+{
+  "@odata.id": "/redfish/v1/Systems/system4/LogServices/EventLog",
+  "@odata.type": "#LogService.v1_3_1.LogService",
+  "Actions": {
+    "#LogService.ClearLog": {
+      "target": "/redfish/v1/Systems/system4/LogServices/EventLog/Actions/LogService.ClearLog"
+    }
+  },
+  "AutoDSTEnabled": false,
+  "DateTime": "2022-09-12T18:41:43+00:00",
+  "DateTimeLocalOffset": "+00:00",
+  "Description": "System Event Log Service",
+  "Entries": {
+    "@odata.id": "/redfish/v1/Systems/system4/LogServices/EventLog/Entries"
+  },
+  "Id": "EventLog",
+  "Name": "Event Log Service",
+  "OverWritePolicy": "WrapsWhenFull",
+  "ServiceEnabled": true
+}
+

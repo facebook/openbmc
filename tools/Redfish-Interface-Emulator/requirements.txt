@@ -1,0 +1,13 @@
+Flask
+aniso8601
+itsdangerous
+Jinja2
+MarkupSafe
+pytz
+requests
+six
+Werkzeug
+StringGenerator
+flask_restful
+urllib3
+flask_httpauth 

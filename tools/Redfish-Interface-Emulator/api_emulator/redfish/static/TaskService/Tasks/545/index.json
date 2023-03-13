@@ -1,0 +1,18 @@
+{
+  "@odata.type": "#Task.v1_6_1.Task",
+  "HidePayload": true,
+  "Id": "545",
+  "Name": "Task 545",
+  "PercentComplete": "50",
+  "TaskState": "Running",
+  "StartTime": "2022-03-07T14:44+06:00",
+  "TaskMonitor": "/redfish/v1/TaskService/taskmon/545",
+  "Messages": [
+    {
+      "MessageId": "Update.1.0.1.UpdateInProgress",
+      "Message": "An update is in progress.",
+      "Severity": "OK"
+    }
+  ],
+  "@odata.id": "/redfish/v1/TaskService/Tasks/545"
+}

@@ -1,0 +1,76 @@
+name: Release and Publish
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number'
+        required: true
+      changes_1:
+        description: 'Change entry'
+        required: true
+      changes_2:
+        description: 'Change entry'
+        required: false
+      changes_3:
+        description: 'Change entry'
+        required: false
+      changes_4:
+        description: 'Change entry'
+        required: false
+      changes_5:
+        description: 'Change entry'
+        required: false
+      changes_6:
+        description: 'Change entry'
+        required: false
+      changes_7:
+        description: 'Change entry'
+        required: false
+      changes_8:
+        description: 'Change entry'
+        required: false
+jobs:
+  release_build:
+    name: Build the release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        token: ${{secrets.GITHUB_TOKEN}}
+    - name: Build the changelog text
+      run: |
+        echo 'CHANGES<<EOF' >> $GITHUB_ENV
+        echo "## [${{github.event.inputs.version}}] - $(date +'%Y-%m-%d')" >> $GITHUB_ENV
+        echo "- ${{github.event.inputs.changes_1}}" >> $GITHUB_ENV
+        if [[ -n "${{github.event.inputs.changes_2}}" ]]; then echo "- ${{github.event.inputs.changes_2}}" >> $GITHUB_ENV; fi
+        if [[ -n "${{github.event.inputs.changes_3}}" ]]; then echo "- ${{github.event.inputs.changes_3}}" >> $GITHUB_ENV; fi
+        if [[ -n "${{github.event.inputs.changes_4}}" ]]; then echo "- ${{github.event.inputs.changes_4}}" >> $GITHUB_ENV; fi
+        if [[ -n "${{github.event.inputs.changes_5}}" ]]; then echo "- ${{github.event.inputs.changes_5}}" >> $GITHUB_ENV; fi
+        if [[ -n "${{github.event.inputs.changes_6}}" ]]; then echo "- ${{github.event.inputs.changes_6}}" >> $GITHUB_ENV; fi
+        if [[ -n "${{github.event.inputs.changes_7}}" ]]; then echo "- ${{github.event.inputs.changes_7}}" >> $GITHUB_ENV; fi
+        if [[ -n "${{github.event.inputs.changes_8}}" ]]; then echo "- ${{github.event.inputs.changes_8}}" >> $GITHUB_ENV; fi
+        echo "" >> $GITHUB_ENV
+        echo 'EOF' >> $GITHUB_ENV
+    - name: Update version numbers
+      run: |
+        sed -i -E 's/__version__ = .+/__version__ = '\'${{github.event.inputs.version}}\''/' api_emulator/version.py
+    - name: Update the changelog
+      run: |
+        ex CHANGELOG.md <<eof
+        3 insert
+        $CHANGES
+        .
+        xit
+        eof
+    - name: Commit and push the updates
+      run: |
+        git config user.name "GitHub Release Workflow"
+        git config user.email "<>"
+        git add CHANGELOG.md api_emulator/version.py
+        git commit -s -m "${{github.event.inputs.version}} versioning"
+        git push origin master
+    - name: Make the release
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      run: |
+        gh release create ${{github.event.inputs.version}} -t ${{github.event.inputs.version}} -n "Changes since last release:"$'\n\n'"$CHANGES"

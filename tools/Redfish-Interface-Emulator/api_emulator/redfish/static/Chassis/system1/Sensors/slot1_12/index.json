@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server1/Sensors/slot1_12",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "12",
+  "Name": "slot1/slot1/MB_DIMMA7_TEMP_C",
+  "Oem": {},
+  "PhysicalContext": "Memory",
+  "Reading": -99999,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "C ",
+  "Status": {
+    "Health": "Critical",
+    "State": "UnavailableOffline"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 0
+    },
+    "LowerCritical": {
+      "Reading": 0
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 0
+    },
+    "UpperCritical": {
+      "Reading": 85
+    },
+    "UpperFatal": {
+      "Reading": 0
+    }
+  }
+}

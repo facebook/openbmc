@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server1/Sensors/slot1_2",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "2",
+  "Name": "slot1/slot1/MB_OUTLET_TEMP_C",
+  "Oem": {},
+  "PhysicalContext": "Exhaust",
+  "Reading": 17.0,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "C ",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 0
+    },
+    "LowerCritical": {
+      "Reading": 0
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 0
+    },
+    "UpperCritical": {
+      "Reading": 93
+    },
+    "UpperFatal": {
+      "Reading": 150
+    }
+  }
+}

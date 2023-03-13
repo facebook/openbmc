@@ -1,0 +1,99 @@
+{
+  "@odata.type": "#EthernetInterface.v1_9_0.EthernetInterface",
+  "Id": "1",
+  "Name": "Manager Ethernet Interface",
+  "Description": "Manager NIC 1",
+  "DHCPv4": {
+    "DHCPEnabled": true,
+    "UseDomainName": true,
+    "UseDNSServers": true,
+    "UseNTPServers": true
+  },
+  "DHCPv6": {
+    "OperatingMode": "Enabled",
+    "UseDNSServers": true,
+    "UseDomainName": true,
+    "UseNTPServers": true,
+    "UseRapidCommit": false
+  },
+  "EthernetInterface": "Physical",
+  "FQDN": "sled2403bo-oob.02.snc8.facebook.com",
+  "FullDuplex": true,
+  "HostName": "sled2403bo-oob.02.snc8.facebook.com",
+  "InterfaceEnabled": true,
+  "IPv4Addresses": [
+    {
+      "Address": "169.254.9.117",
+      "SubnetMask": "255.255.0.0",
+      "AddressOrigin": "IPv4LinkLocal",
+      "Gateway": "0.0.0.0"
+    }
+  ],
+  "IPv4StaticAddresses": [
+  ],
+  "IPv6Addresses": [
+    {
+      "Address": "2401:db00:180:2029:face:0:360:0",
+      "PrefixLength": 128,
+      "AddressOrigin": "DHCPv6",
+      "AddressState": "Preferred",
+      "Oem": {}
+    },
+    {
+      "Address": "2401:db00:180:2029:ac0:ebff:fe8a:96cd",
+      "AddressOrigin": "DHCPv6",
+      "AddressState": null,
+      "PrefixLength": 64
+    },
+    {
+      "Address": "fe80::ac0:ebff:fe8a:96cd",
+      "AddressOrigin": "LinkLocal",
+      "AddressState": null,
+      "PrefixLength": 64
+    }
+  ],
+  "IPv6AddressPolicyTable": [
+  ],
+  "IPv6DefaultGateway": "fe80::c018:50ff:fe56:31e6",
+  "IPv6StaticAddresses": [
+  ],
+  "Links": {
+    "Chassis": {
+      "@odata.id": "/redfish/v1/Chassis/1"
+    },
+    "HostInterface": {
+      "@odata.id": "/redfish/v1/Managers/BMC/EthernetInterfaces/eth0"
+    },
+    "NetworkDeviceFunctions": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/1/NetworkAdapters/nic1/NetworkDeviceFunctions/1"
+      }
+    ],
+    "Ports": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/1/NetworkAdapters/nic1/Ports"
+      }
+    ]
+  },
+  "LinkStatus": "LinkUp",
+  "MACAddress": "08:c0:eb:8a:96:cd",
+  "MTUSize": 1500,
+  "NameServers": [
+    "2401:db00:eef0:a53::",
+    "2401:db00:eef0:b53::"
+  ],
+  "PermanentMACAddress": "08:c0:eb:8a:96:cd",
+  "SpeedMbps": 1000,
+  "StatelessAddressAutoConfig": {
+    "IPv4AutoConfigEnabled": false,
+    "IPv6AutoConfigEnabled": true
+  },
+  "StaticNameServers": [
+  ],
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK",
+    "HealthRollup": "OK"
+  },
+  "@odata.id": "/redfish/v1/Managers/BMC/EthernetInterfaces/eth0"
+}

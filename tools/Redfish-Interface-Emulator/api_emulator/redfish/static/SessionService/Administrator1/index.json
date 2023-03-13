@@ -1,0 +1,11 @@
+{
+    "@odata.context": "/redfish/v1/$metadata/SessionService/Links/Members/$entity",
+    "@odata.id": "/redfish/v1/SessionService/Administrator1",
+    "@odata.type": "#SessionService.0.94.0.Session",
+    "Id": "Administrator1",
+    "Name": "User Session",
+    "Description": "Manager User Session",
+    "Modified": "2013-01-31T23:45:08+00:00",
+    "UserName": "Administrator",
+    "Oem": {}
+}

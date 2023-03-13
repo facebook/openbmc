@@ -1,0 +1,54 @@
+{
+  "@odata.id": "/redfish/v1/Systems/system4/LogServices/EventLog/Entries",
+  "@odata.type": "#LogEntryCollection.LogEntryCollection",
+  "Description": "Collection of System Event Log Entries",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/system4/LogServices/EventLog/Entries/1",
+      "@odata.type": "#LogEntry.v1_13_0.LogEntry",
+      "AdditionalDataURI": "/redfish/v1/Systems/system4/LogServices/EventLog/Entries/1/attachment",
+      "Created": "2022-08-25T17:20:36+00:00",
+      "EntryType": "Event",
+      "Id": "1",
+      "Message": "xyz.openbmc_project.State.Error.CriticalServiceFailure",
+      "Modified": "2022-08-25T17:20:36+00:00",
+      "Name": "System Event Log Entry",
+      "Originator": "BMC",
+      "OriginatorType": "Internal",
+      "Resolved": false,
+      "Severity": "Critical"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system4/LogServices/EventLog/Entries/2",
+      "@odata.type": "#LogEntry.v1_13_0.LogEntry",
+      "AdditionalDataURI": "/redfish/v1/Systems/system4/LogServices/EventLog/Entries/2/attachment",
+      "Created": "2022-08-26T08:28:18+00:00",
+      "EntryType": "Event",
+      "Id": "2",
+      "Message": "xyz.openbmc_project.State.Error.CriticalServiceFailure",
+      "Modified": "2022-08-26T08:28:18+00:00",
+      "Name": "System Event Log Entry",
+      "Originator": "BMC",
+      "OriginatorType": "Internal",
+      "Resolved": false,
+      "Severity": "Critical"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/system4/LogServices/EventLog/Entries/3",
+      "@odata.type": "#LogEntry.v1_13_0.LogEntry",
+      "AdditionalDataURI": "/redfish/v1/Systems/system4/LogServices/EventLog/Entries/3/attachment",
+      "Created": "2022-08-26T08:36:08+00:00",
+      "EntryType": "Event",
+      "Id": "3",
+      "Message": "xyz.openbmc_project.State.Error.CriticalServiceFailure",
+      "Modified": "2022-08-26T08:36:08+00:00",
+      "Name": "System Event Log Entry",
+      "Originator": "BMC",
+      "OriginatorType": "Internal",
+      "Resolved": false,
+      "Severity": "Critical"
+    }
+  ],
+  "Members@odata.count": 3,
+  "Name": "System Event Log Entries"
+}

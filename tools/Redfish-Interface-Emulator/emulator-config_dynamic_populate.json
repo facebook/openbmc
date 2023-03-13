@@ -1,0 +1,8 @@
+{
+  "MODE": "Local",
+  "HTTPS": "Disable",
+  "TRAYS": [],
+  "POPULATE": "infragen/populate-config.json",
+  "SPEC": "Redfish",
+  "MOCKUPFOLDERS": ["Redfish"]
+}

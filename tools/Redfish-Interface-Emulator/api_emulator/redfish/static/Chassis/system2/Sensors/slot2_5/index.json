@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server2/Sensors/slot2_5",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "5",
+  "Name": "slot2/slot2/MB_SOC_CPU_TEMP_C",
+  "Oem": {},
+  "PhysicalContext": "CPU",
+  "Reading": 55.0,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "C ",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 0
+    },
+    "LowerCritical": {
+      "Reading": 0
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 0
+    },
+    "UpperCritical": {
+      "Reading": 84
+    },
+    "UpperFatal": {
+      "Reading": 0
+    }
+  }
+}

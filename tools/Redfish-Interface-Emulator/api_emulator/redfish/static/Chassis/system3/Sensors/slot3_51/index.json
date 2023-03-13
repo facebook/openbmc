@@ -1,0 +1,36 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/server3/Sensors/slot3_51",
+  "@odata.type": "#Sensor.v1_2_0.Sensor",
+  "Id": "51",
+  "Name": "slot3/slot3/MB_VR_EHV_CURR_A",
+  "Oem": {},
+  "PhysicalContext": "Chassis",
+  "Reading": 0.6000000238418579,
+  "ReadingRangeMax": 99999,
+  "ReadingRangeMin": -99999,
+  "ReadingUnits": "Amps ",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thresholds": {
+    "LowerCaution": {
+      "Reading": 0
+    },
+    "LowerCritical": {
+      "Reading": 0
+    },
+    "LowerFatal": {
+      "Reading": 0
+    },
+    "UpperCaution": {
+      "Reading": 5
+    },
+    "UpperCritical": {
+      "Reading": 6
+    },
+    "UpperFatal": {
+      "Reading": 18
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Systems/Links/Members/1/Links/SimpleNetwork/Links/Members/1/Links/VLANs/$entity",
+    "@odata.id": "/redfish/v1/Systems/1/SimpleNetwork/1/VLANs",
+    "@odata.type": "#VLanNetworkInterface.1.00.0.VLANNetworkInterfaceCollection",
+    "Name": "VLAN Network Interface Collection",
+    "Links": {
+        "Members@odata.count":2,
+        "Members": [
+            {
+              "@odata.id": "/redfish/v1/Systems/1/SimpleNetwork/1/VLANs/1"
+            },
+            {
+              "@odata.id": "/redfish/v1/Systems/1/SimpleNetwork/1/VLANs/2"
+            }
+        ]
+    }
+}

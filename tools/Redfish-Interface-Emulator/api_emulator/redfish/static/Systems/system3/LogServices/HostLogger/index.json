@@ -1,0 +1,11 @@
+{
+  "@odata.id": "/redfish/v1/Systems/system3/LogServices/HostLogger",
+  "@odata.type": "#LogService.v1_3_1.LogService",
+  "Description": "Host Logger Service",
+  "Entries": {
+    "@odata.id": "/redfish/v1/Systems/system3/LogServices/HostLogger/Entries"
+  },
+  "Id": "HostLogger",
+  "Name": "Host Logger Service"
+}
+

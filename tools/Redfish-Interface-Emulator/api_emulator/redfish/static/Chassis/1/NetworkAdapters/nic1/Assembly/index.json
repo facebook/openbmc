@@ -1,0 +1,37 @@
+{
+  "@odata.type": "#Assembly.v1_4_0.Assembly",
+  "Id": "Assembly",
+  "Name": "Great Lakes FRU Data",
+  "Assemblies": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/1/NetworkAdapters/nic1/Assembly#/Assemblies/0",
+      "Description": "NIC",
+      "MemberId": "0",
+      "Oem": {
+        "FruData": {
+          "@odata.type": "#FruData.NetworkAdapter",
+          "FruInformation": {
+            "Board Mfg Date": "Fri Jan 21 13:02:00 2022",
+            "Board Mfg": "Mellanox",
+            "Board Product": "Mellanox ConnectX-6 DX OCP3.0",
+            "Board Serial": "MT2145J10064",
+            "Board Part Number": "MCX623435MC-CDAE_FB",
+            "Board FRU ID": "FRU Version 0.02",
+            "Product Manufacturer": "Mellanox",
+            "Product Name": "Mellanox ConnectX-6 DX OCP3.0",
+            "Product Part Number": "MCX623435MC_CDAE_FB",
+            "Product Version": "A9",
+            "Product Serial": "MT2145J10064",
+            "Product Custom Data 3": "ConnectX-6 DX"
+          }
+        }
+      },
+      "PhysicalContext": "NetworkingDevice",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ],
+  "@odata.id": "/redfish/v1/Chassis/1/NetworkAdapters/nic1/Assembly"
+}

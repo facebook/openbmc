@@ -1,0 +1,26 @@
+{
+  "@odata.type": "#ChassisCollection.ChassisCollection",
+  "Name": "Chassis Collection",
+  "Members@odata.count": 6,
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system2"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system3"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/system4"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/nic"
+    }
+  ],
+  "@odata.id": "/redfish/v1/Chassis"
+}

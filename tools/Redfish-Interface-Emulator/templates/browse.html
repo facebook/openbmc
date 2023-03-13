@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Redfish Explorer</title>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+    <style>
+        pre {
+            color: green;
+            padding: 0;
+            border: 0;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="jsonpath" style="color:blue;font-family:monospace;font-weight:bold">
+    <span style="border: 1px solid blue; cursor:pointer">/redfish/v1/</span>
+</div>
+<div id="jsondata" style="display: inline-block"></div>
+<script type="text/javascript">
+    regex=/\/redfish\/v1\/CompositionService\/ResourceBlocks\/[a-zA-Z0-9-_]+$/
+    load({data:'/redfish/v1'});
+    function load(event) {
+        url=event.data;
+        showpath(url);
+        $.get(url,display);
+    }
+
+    function make_clickable_span(txt,path) {
+        return $('<span style="margin: 1px; border:1px solid blue; cursor:pointer">'+txt+'</span>').click(path,load);
+    }
+
+    function showpath(path) {
+        $('#jsonpath').text('');
+        resturl='/redfish/v1';
+        $('#jsonpath').append(make_clickable_span('/redfish/v1','/redfish/v1'));
+        var path=path.split('/');
+        for (var i=3;i<path.length;i++) {
+            var resturl=resturl+'/'+path[i];
+            $('#jsonpath').append(make_clickable_span(path[i],resturl));
+        }
+        compose=false;
+        if (path.length == 6) {
+            if (path[4] == 'ResourceZones') {
+              $('#jsonpath').append('<button onclick="do_compose()">compose</button>');
+              compose=true;
+              blocks={}
+            }
+        }
+    }
+
+    function do_compose() {
+        if (Object.keys(blocks).length == 0) {
+            alert("select at least one resource block");
+            return;
+        }
+        var name=prompt('Name of composed infrastructure','composed-1');
+        var blks=Object.keys(blocks)
+        var rbs=[]
+        for (i in blks) rbs.push({'@odata.id':blks[i]})
+        post_data={'Name':name,'Links':{'ResourceBlocks':rbs}};
+        var xhttp = new XMLHttpRequest();
+        xhttp.onload = function() {load({data:'/redfish/v1/Systems/'+name})};
+        xhttp.open('POST','/redfish/v1/Systems',true);
+        xhttp.setRequestHeader("Content-Type", "application/json");
+        xhttp.send(JSON.stringify(post_data));
+    }
+
+    function add_to_list(event) {
+        if (event.data in blocks)
+            delete blocks[event.data]
+        else blocks[event.data]='';
+    }
+
+    function display(data,status) {
+        if (compose)
+            zone_info=data;
+        $('#jsondata').text('');
+        var txt=JSON.stringify(data,null,4).split('\n');
+        for (var line in txt) {
+            if (txt[line].includes('"@odata.id"')) {
+                var odata_info=txt[line].split('"');
+                var line_i=$('<pre></pre>').text(odata_info[0]+odata_info[1]+': ').append(make_clickable_span(odata_info[3],odata_info[3]));
+                if (compose) {
+                    if (regex.test(odata_info[3])) {
+                        line_i.append($('<input type="checkbox">').click(odata_info[3], add_to_list));
+                    }
+                }
+            } else {
+                var line_i=$('<pre></pre>').text(txt[line]);
+                del_compose=false;
+                if (txt[line].includes('"SystemType": "Composed"')) {
+                    del_compose=true;
+                    id=data['@odata.id'];
+                    dlbtn=$('<button>delete</button>').click(id,do_delcompose);
+                    $('#jsonpath').append(dlbtn);
+                }
+            }
+            $('#jsondata').append(line_i);
+        }
+    }
+
+    function do_delcompose(event) {
+        id=event.data;
+        console.log(id);
+        var xhttp = new XMLHttpRequest();
+        xhttp.onload = function() {load({data:'/redfish/v1/Systems'})};
+        xhttp.open('DELETE',id,true);
+        xhttp.setRequestHeader("Content-Type", "application/json");
+        xhttp.send();
+    }
+
+</script>
+</body>
+</html>

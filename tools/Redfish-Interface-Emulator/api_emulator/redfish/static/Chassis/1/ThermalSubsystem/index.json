@@ -1,0 +1,42 @@
+{
+  "@odata.type": "#ThermalSubsystem.v1_0_0.ThermalSubsystem",
+  "Id": "ThermalSubsystem",
+  "Name": "Thermal Subsystem for 1",
+  "FanRedundancy": [
+    {
+      "MaxSupportedInGroup": 4,
+      "MinNeededInGroup": 3,
+      "RedundancyGroup": [
+        {
+          "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans/Fan0"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans/Fan1"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans/Fan2"
+        },
+        {
+          "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans/Fan3"
+        }
+      ],
+      "RedundancyType": "NPlusM",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ],
+  "Fans": {
+    "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/Fans"
+  },
+  "Oem": {},
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "ThermalMetrics": {
+    "@odata.id": "/redfish/v1/Chassis/1/ThermalSubsystem/ThermalMetrics"
+  },
+  "@odata.id": "/redfish/v1/Chassis/1U/ThermalSubsystem"
+}

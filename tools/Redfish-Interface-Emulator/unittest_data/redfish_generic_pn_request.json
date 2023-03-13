@@ -1,0 +1,23 @@
+{
+    "Action": "CreateGenericComputerSystem",
+
+    "NumberOfProcessors": "2",
+    "TotalSystemMemoryGB": "4",
+    "NumberOfNetworkPorts": "1",
+    "Devices": [
+        {
+            "Name": "Drive 1",
+            "Size": "120 GB"
+        },
+        {
+            "Name": "Drive 2",
+            "Size": "250 GB"
+        }
+    ],
+
+    "Boot": {
+        "BootSourceOverrideEnabled": "True",
+        "BootSourceOverrideTarget": "PXE",
+        "UefiSourceOverrideEnabled": "…"
+    }
+}

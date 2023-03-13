@@ -1,0 +1,25 @@
+{
+  "@odata.type": "#SoftwareInventory.v1_8_0.SoftwareInventory",
+  "Id": "nic_fw",
+  "Name": "NIC Firmware",
+  "Manufacturer": "Mellanox",
+  "SoftwareId": "nic",
+  "RelatedItem": [
+    {
+      "@odata.id": "/redfish/v1/Managers/BMC/EthernetInterfaces"
+    }
+  ],
+  "RelatedItem@odata.count": 1,
+  "Status": {
+    "State": "Enabled",
+    "HealthRollup": "OK",
+    "Health": "OK"
+  },
+  "Updateable": true,
+  "Version": "22.31.1654",
+  "WriteProtected": false,
+  "Actions": {
+    "Oem": {}
+  },
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/nic_fw"
+}

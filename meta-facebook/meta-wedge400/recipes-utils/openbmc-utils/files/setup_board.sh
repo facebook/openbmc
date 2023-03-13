@@ -58,9 +58,8 @@ brd_rev=$(wedge_board_rev)
 #Read PSU type from eeprom and save to cache
 pwr_type=$(wedge_power_supply_type)
 
-mkdir -p /tmp/cache_store
-echo "$brd_type" > /tmp/cache_store/board_type
-echo "$pwr_type" > /tmp/cache_store/power_type
+/usr/bin/kv set "board_type" "$brd_type"
+/usr/bin/kv set "power_type" "$pwr_type"
 
 # Check board type to select lmsensor configuration
 if [ $((brd_type)) -eq 0 ]; then

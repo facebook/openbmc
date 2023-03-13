@@ -42,6 +42,7 @@ LOCAL_URI += " \
     file://swb_common.cpp \
     file://swb_common.hpp \
     file://swb_cover.cpp \
+    file://vpdb_common.cpp \
     file://hgx.cpp \
     file://signed_info.hpp \
     file://retimer.cpp \

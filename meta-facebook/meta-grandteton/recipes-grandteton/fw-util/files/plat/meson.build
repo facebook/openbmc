@@ -13,6 +13,7 @@ srcs += [
     'plat_cover.cpp',
     'swb_common.cpp',
     'swb_cover.cpp',
+    'vpdb_common.cpp',
     'usbdbg.cpp',
     'vr_fw.cpp',
     'signed_decoder.cpp',

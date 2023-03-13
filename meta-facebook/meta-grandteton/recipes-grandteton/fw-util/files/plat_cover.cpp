@@ -124,18 +124,6 @@ class fw_vr_config {
 
       static GTVrComponent vr_cpu1_vccd("mb", "cpu1_vccd", "VR_CPU1_VCCD",
                                         signed_header_t(vr_info, signed_info::CPU1_VR_VCCD));
-
-      get_comp_source(FRU_VPDB, VPDB_BRICK_SOURCE, &source_id);
-      if (source_id == THIRD_SOURCE) {
-        signed_header_t vr_info = {
-          signed_info::PLATFORM_NAME,
-          signed_info::VPDB,
-          signed_info::DVT,
-          signed_info::BRICK,
-          signed_info::ALL_VENDOR
-        };
-        static GTVrComponent vpdb_brick("vpdb", "brick", "VPDB_BRICK", vr_info);
-      }
     }
 };
 

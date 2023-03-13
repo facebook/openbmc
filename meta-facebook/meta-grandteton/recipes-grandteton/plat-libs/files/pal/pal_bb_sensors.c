@@ -442,9 +442,9 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"FAN15_INLET_SPEED",  FAN_TACH_ID30, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEE
   {"FAN15_OUTLET_SPEED", FAN_TACH_ID31, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEF
 
-  {"P12V_VOLT",  ADC0, read_adc_val, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF0
-  {"P5V_VOLT",   ADC1, read_adc_val, false, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xF1
-  {"P3V3_VOLT",  ADC2, read_adc_val, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xF2
+  {"P12V_VOLT",  ADC0, read_adc_val, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF0
+  {"P5V_VOLT",   ADC1, read_adc_val, true, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xF1
+  {"P3V3_VOLT",  ADC2, read_adc_val, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xF2
   {"P2V5_VOLT",  ADC3, read_adc_val, true, {2.625, 0, 0, 2.375, 0, 0, 0, 0}, VOLT}, //0xF3
   {"P1V8_VOLT",  ADC4, read_adc_val, true, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT}, //0xF4
   {"PGPPA_VOLT", ADC5, read_adc_val, true, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT}, //0xF5

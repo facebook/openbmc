@@ -161,14 +161,14 @@ static int do_get_boot_status(uint8_t fru_id) {
         boot_sts.SPI_A,
         prot::ProtSpiInfo::spiStatusString(boot_sts.SPI_A));
     j["SPI_A"]["BIOS-Version"] =
-        fmt::format("{:#010x}", boot_sts.SPIABiosVersionNumber);
+        prot::ProtVersion::getVerString(boot_sts.SPIABiosVersionNumber);
 
     j["SPI_B"]["Status"] = fmt::format(
         "{:#04x} ({})",
         boot_sts.SPI_B,
         prot::ProtSpiInfo::spiStatusString(boot_sts.SPI_B));
     j["SPI_B"]["BIOS-Version"] =
-        fmt::format("{:#010x}", boot_sts.SPIBBiosVersionNumber);
+       prot::ProtVersion::getVerString(boot_sts.SPIBBiosVersionNumber);
 
     j["Verification-Status"]["active"] = fmt::format(
         "{:#04x} ({})",

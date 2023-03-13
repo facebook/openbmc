@@ -334,7 +334,7 @@ updateProperty::updateProperty(
 
 namespace ProtVersion {
 /*Create std::string from non-null terminated char array*/
-std::string getVerString(const std::span<uint8_t, 8> ver) {
+std::string getVerString(const std::span<uint8_t> ver) {
   return std::string(reinterpret_cast<const char*>(ver.data()), ver.size());
 }
 /* DDMMYYYY to YYYY-MM-DD*/

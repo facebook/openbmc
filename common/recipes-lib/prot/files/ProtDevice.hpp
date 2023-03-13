@@ -34,8 +34,8 @@ struct BOOT_STATUS_ACK_PAYLOAD {
   uint8_t SPI_B;
   uint8_t ActiveVerificationStatus; // 0 Success 1 Failure.
   uint8_t RecoveryVerificationStatus;
-  uint32_t SPIABiosVersionNumber;
-  uint32_t SPIBBiosVersionNumber;
+  uint8_t SPIABiosVersionNumber[4];
+  uint8_t SPIBBiosVersionNumber[4];
   uint8_t Checksum;
 };
 
@@ -150,7 +150,7 @@ std::string spiVerifyString(uint8_t verify_val);
 }; // namespace ProtSpiInfo
 
 namespace ProtVersion {
-std::string getVerString(const std::span<uint8_t, 8> ver);
+std::string getVerString(const std::span<uint8_t> ver);
 std::string getDateString(const std::span<uint8_t, 8> date);
 std::string getTimeString(const std::span<uint8_t, 8> time);
 }; // namespace ProtVersion

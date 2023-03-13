@@ -7491,11 +7491,8 @@ pal_switch_uart_mux() {
 
 bool is_psu48(void)
 {
-  char buffer[6];
-  FILE *fp;
   const char *key = "is_psu48";
   char value[MAX_VALUE_LEN] = {0};
-  bool result;
 
   if (kv_get(key, value, NULL, 0) == 0) {
     if (strtol(value, NULL, 0) == 0)
@@ -7504,24 +7501,16 @@ bool is_psu48(void)
     return true;
   }
 
-  fp = fopen("/tmp/cache_store/power_type", "r");
-  if(NULL == fp)
-     return false;
-
-  if (fgets(buffer, sizeof(buffer), fp) == NULL) {
-    fclose(fp);
+  if (kv_get("power_type", value, NULL, 0) < 0) {
+    OBMC_ERROR(errno, "unable to determine power type");
     return false;
   }
-  fclose(fp);
 
-  if (!strcmp(buffer, "PSU48")) {
-    result = true;
-    strncpy(value, "1", sizeof(value));
-  } else {
-    result = false;
-    strncpy(value, "0", sizeof(value));
+  if (!strcmp(value, "PSU48")) {
+    kv_set(key, "1", 0, 0);
+    return true;
   }
 
-  kv_set(key, value, 0, 0); /* ignore errors */
-  return result;
+  kv_set(key, "0", 0, 0);
+  return false;
 }

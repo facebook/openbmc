@@ -52,4 +52,5 @@ IMAGE_INSTALL += " \
   name-util \
   threshold-util \
   mtd-utils \
+  redfish-events \
 "

@@ -130,7 +130,7 @@ struct Register {
 
   explicit Register(const RegisterDescriptor& d);
   Register(const Register& other);
-  Register(Register&& other);
+  Register(Register&& other) noexcept;
 
   RegisterReading& getActive() {
     return isFirstActive ? value_.first : value_.second;
@@ -197,7 +197,7 @@ struct RegisterStore {
   // write.
   std::vector<Register> history_;
   int32_t idx_ = 0;
-  mutable std::mutex historyMutex_{};
+  mutable std::recursive_mutex historyMutex_{};
   // Allows for us to disable individual registers if the device
   // does not support it.
   bool enabled_ = true;
@@ -218,20 +218,14 @@ struct RegisterStore {
   void endReloadRegister();
 
   // Returns a reference to the last written value (Back of the list)
-  Register& back() {
-    return idx_ == 0 ? history_.back() : history_[idx_ - 1];
-  }
-  const Register& back() const {
-    return idx_ == 0 ? history_.back() : history_[idx_ - 1];
-  }
+  Register& back();
+  const Register& back() const;
+
   // Returns the front (Next to write) reference
-  Register& front() {
-    return history_[idx_];
-  }
+  Register& front();
+
   // Advances the front.
-  void operator++() {
-    idx_ = (idx_ + 1) % history_.size();
-  }
+  void operator++();
 
   // register address accessor
   uint16_t regAddr() const {

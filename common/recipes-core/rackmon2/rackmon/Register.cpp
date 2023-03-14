@@ -140,7 +140,7 @@ Register::Register(const Register& other)
                               : value_.second.timestamp),
       value(other.isFirstActive ? value_.first.value : value_.second.value) {}
 
-Register::Register(Register&& other)
+Register::Register(Register&& other) noexcept
     : value_(std::move(other.value_)),
       isFirstActive(other.isFirstActive),
       desc(other.desc),
@@ -191,13 +191,14 @@ void RegisterStore::disable() {
 }
 
 std::vector<uint16_t>& RegisterStore::beginReloadRegister() {
+  std::unique_lock lk(historyMutex_);
   return front().getInactive().value;
 }
 
 void RegisterStore::endReloadRegister() {
+  std::unique_lock lk(historyMutex_);
   front().getInactive().timestamp = std::time(nullptr);
   // Update the front and bump indexs.
-  std::unique_lock lk(historyMutex_);
   front().swapActive();
   // If we care about changes only and the values
   // look the same, then ignore it.
@@ -207,6 +208,26 @@ void RegisterStore::endReloadRegister() {
     return;
   }
   ++(*this);
+}
+
+Register& RegisterStore::back() {
+  std::unique_lock lk(historyMutex_);
+  return idx_ == 0 ? history_.back() : history_[idx_ - 1];
+}
+
+const Register& RegisterStore::back() const {
+  std::unique_lock lk(historyMutex_);
+  return idx_ == 0 ? history_.back() : history_[idx_ - 1];
+}
+
+Register& RegisterStore::front() {
+  std::unique_lock lk(historyMutex_);
+  return history_[idx_];
+}
+
+void RegisterStore::operator++() {
+  std::unique_lock lk(historyMutex_);
+  idx_ = (idx_ + 1) % history_.size();
 }
 
 RegisterStore::operator RegisterStoreValue() const {

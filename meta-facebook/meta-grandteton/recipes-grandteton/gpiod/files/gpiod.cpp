@@ -24,8 +24,11 @@
 #include <errno.h>
 #include <syslog.h>
 #include <assert.h>
+#include <thread>
+#include <chrono>
 #include <sys/types.h>
 #include <sys/file.h>
+#include <future>
 #include <pthread.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
@@ -737,16 +740,38 @@ bic_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
     set_pldm_event_receiver();
 }
 
-static void hmc_ready() {
-  syslog(LOG_INFO, "HGX: Syncing time to HMC");
-  hgx::syncTime();
+static void hmc_ready(bool startup) {
+  using namespace std::literals;
+  static std::future<void> worker;
+  auto hmc_provision = [startup] {
+    using namespace std::literals;
+    syslog(LOG_INFO, "HGX: Syncing time to HMC");
+    while (1) {
+      try {
+        hgx::syncTime();
+        break;
+      } catch (std::exception& e) {
+        syslog(LOG_WARNING, "HGX: Failed to get to HMC: %s", e.what());
+        std::this_thread::sleep_for(1s);
+      }
+    }
+  };
+  // Create the future thread only if we have an invalid future (First
+  // call of this function since start-up) or if the previous future
+  // has completed and a 0s wait for it succeeds. Else if the wait fails,
+  // the previous future is still running, so dont create another.
+  if (!worker.valid() || worker.wait_for(0s) == std::future_status::ready) {
+    worker = std::async(std::launch::async, hmc_provision);
+  } else {
+    syslog(LOG_WARNING, "HGX: Previous provision thread is still running");
+  }
 }
 
 void
 hmc_ready_init(gpiopoll_pin_t *desc, gpio_value_t value)
 {
   if (value == GPIO_VALUE_HIGH) {
-    hmc_ready();
+    hmc_ready(true);
   }
 }
 
@@ -757,6 +782,6 @@ hmc_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
       FRU_HGX,
       curr == GPIO_VALUE_HIGH ? "ASSERT" : "DEASSERT");
   if (curr == GPIO_VALUE_HIGH) {
-    hmc_ready();
+    hmc_ready(false);
   }
 }

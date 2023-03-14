@@ -65,25 +65,25 @@ static int do_send_data_packet(uint8_t fru_id, std::vector<uint8_t> data_raw) {
   uint8_t dev_i2c_addr = 0;
 
   if (pal_get_prot_address(fru_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
-    std::cout << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
+    std::cerr << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
     return -1;
   }
 
   if ((data_raw.size() - 1) > DATA_LAYER_MAX_PAYLOAD) {
-    std::cout << "the max payload is " << DATA_LAYER_MAX_PAYLOAD << std::endl;
+    std::cerr << "the max payload is " << DATA_LAYER_MAX_PAYLOAD << std::endl;
     return -1;
   }
 
   ProtDevice prot_dev(fru_id, dev_i2c_bus, dev_i2c_addr);
 
   if (!prot_dev.isDevOpen()) {
-    std::cout << "Fail to open i2c" << std::endl;
+    std::cerr << "Fail to open i2c" << std::endl;
     return -1;
   }
 
   auto rc = prot_dev.protSendDataPacket(data_raw);
   if (rc != ProtDevice::DevStatus::SUCCESS) {
-    std::cout << "protSendDataPacket failed: " << (int)rc << std::endl;
+    std::cerr << "protSendDataPacket failed: " << (int)rc << std::endl;
     return -1;
   }
 
@@ -96,19 +96,19 @@ static int do_receive_data_packet(uint8_t fru_id) {
   uint8_t dev_i2c_addr = 0;
 
   if (pal_get_prot_address(fru_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
-    std::cout << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
+    std::cerr << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
     return -1;
   }
 
   ProtDevice prot_dev(fru_id, dev_i2c_bus, dev_i2c_addr);
   if (!prot_dev.isDevOpen()) {
-    std::cout << "Fail to open i2c" << std::endl;
+    std::cerr << "Fail to open i2c" << std::endl;
     return -1;
   }
 
   auto rc = prot_dev.protRecvDataPacket(data_layer_ack);
   if (rc != ProtDevice::DevStatus::SUCCESS) {
-    std::cout << "protRecvDataPacket failed:" << (int)rc << std::endl;
+    std::cerr << "protRecvDataPacket failed:" << (int)rc << std::endl;
     return -1;
   }
 
@@ -120,13 +120,13 @@ static int do_get_boot_status(uint8_t fru_id) {
   uint8_t dev_i2c_addr = 0;
 
   if (pal_get_prot_address(fru_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
-    std::cout << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
+    std::cerr << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
     return -1;
   }
 
   ProtDevice prot_dev(fru_id, dev_i2c_bus, dev_i2c_addr);
   if (!prot_dev.isDevOpen()) {
-    std::cout << "Fail to open i2c" << std::endl;
+    std::cerr << "Fail to open i2c" << std::endl;
     return -1;
   }
 
@@ -152,7 +152,7 @@ static int do_get_boot_status(uint8_t fru_id) {
     memset(&boot_sts, 0xff, sizeof(boot_sts));
     auto rc = prot_dev.portGetBootStatus(boot_sts);
     if (rc != ProtDevice::DevStatus::SUCCESS) {
-      std::cout << "portGetBootStatus failed: " << (int)rc << std::endl;
+      std::cerr << "portGetBootStatus failed: " << (int)rc << std::endl;
       break;
     }
 
@@ -184,7 +184,7 @@ static int do_get_boot_status(uint8_t fru_id) {
     prot::XFR_VERSION_READ_ACK_PAYLOAD prot_ver{};
     rc = prot_dev.protReadXfrVersion(prot_ver);
     if (rc != ProtDevice::DevStatus::SUCCESS) {
-      std::cout << "protReadXfrVersion failed: " << (int)rc << std::endl;
+      std::cerr << "protReadXfrVersion failed: " << (int)rc << std::endl;
       break;
     }
     j["XFR-VERSION"]["SiliconRBP"] =
@@ -304,13 +304,13 @@ static int do_show_log(uint8_t fru_id) {
   uint8_t dev_i2c_addr = 0;
 
   if (pal_get_prot_address(fru_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
-    std::cout << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
+    std::cerr << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
     return -1;
   }
 
   ProtDevice prot_dev(fru_id, dev_i2c_bus, dev_i2c_addr);
   if (!prot_dev.isDevOpen()) {
-    std::cout << "Fail to open i2c" << std::endl;
+    std::cerr << "Fail to open i2c" << std::endl;
     return -1;
   }
 
@@ -318,7 +318,7 @@ static int do_show_log(uint8_t fru_id) {
   {
     auto rc = prot_dev.protUfmLogReadoutEntry(log_count);
     if (rc != ProtDevice::DevStatus::SUCCESS) {
-      std::cout << "portGetBootStatus failed: " << (int)rc << std::endl;
+      std::cerr << "portGetBootStatus failed: " << (int)rc << std::endl;
       return -1;
     }
   }
@@ -331,7 +331,7 @@ static int do_show_log(uint8_t fru_id) {
 
     auto rc = prot_dev.protGetLogData(index, prot_log);
     if (rc != ProtDevice::DevStatus::SUCCESS) {
-      std::cout << fmt::format(
+      std::cerr << fmt::format(
           "protGetLogData failed at index {:d}: {:d}\n", index, (int)rc);
       return -1;
     }
@@ -389,8 +389,8 @@ static int parse_args(
   ProtDevice::setVerbose((*v_flag) ? true : false);
 
   if (pal_get_fru_id(const_cast<char*>(fru.c_str()), fru_id) != 0) {
-    std::cout << "fru is invalid!\n";
-    std::cout << app.help() << std::endl;
+    std::cerr << "fru is invalid!\n";
+    std::cerr << app.help() << std::endl;
     return -1;
   }
 

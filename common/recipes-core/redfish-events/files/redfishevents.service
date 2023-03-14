@@ -1,0 +1,13 @@
+[Unit]
+Description=Redfish Event Subscriber
+Wants=openbmc_gpio_setup.service fscd.service
+After=fscd.service
+
+[Service]
+ExecStart=/usr/bin/redfish-events.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=60s
+
+[Install]
+WantedBy=multi-user.target

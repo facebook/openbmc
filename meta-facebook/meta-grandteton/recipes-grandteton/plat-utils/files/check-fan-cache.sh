@@ -20,9 +20,9 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-for retry in {1..10};
+for retry in {1..20};
 do
-    bp1_sensor208=$(kv get fan_bp1_sensor208)
+    bp2_sensor238=$(kv get fan_bp2_sensor238)
     if [ $? -ne 0 ]; then
         sleep 3
     else
@@ -33,6 +33,7 @@ done
 i2cget -f -y 8 0x48 0x01
 rev=$?
 if [ "$rev" -ne 0 ]; then
+    echo "Start fscd"
     runsv /etc/sv/fscd > /dev/null 2>&1 &
 fi
 echo "done."

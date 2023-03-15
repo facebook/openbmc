@@ -18,4 +18,4 @@
 # Boston, MA 02110-1301 USA
 #
 
-/etc/init.d/check-fan-cache.sh
+/etc/init.d/check-fan-cache.sh &

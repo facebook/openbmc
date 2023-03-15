@@ -27,5 +27,8 @@ SRC_URI:append = " \
     file://0123-Kernel-5.15-i2c-add-a-slave-backend-to-receive-and-q.patch \
     file://0124-kernel-5.15-add-i2c-slave-inactive-timeout-support-3.patch \
     file://0125-port-xdpe132g5c-pmbus-driver-from-linux-5.10-to-6.0.patch \
+"
+
+SRC_URI:append:aspeed-g5 = " \
     file://0126-Added-shutdown-path-in-spi_aspeed_smc-driver.patch \
 "

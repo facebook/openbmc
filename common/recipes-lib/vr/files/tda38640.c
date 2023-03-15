@@ -344,7 +344,10 @@ get_tda38640_ver(struct vr_info *info, char *ver_str) {
   if (kv_get(key, ver_str, &max_ver_str_len, 0)) {
     if (info->xfer) {
       vr_xfer = info->xfer;
+    }  else {
+      vr_xfer = &vr_rdwr;
     }
+
     if (cache_tda38640_crc(info->bus, info->addr, key, ver_str)) {
       return VR_STATUS_FAILURE;
     }
@@ -475,6 +478,8 @@ tda38640_fw_update(struct vr_info *info, void *args) {
   printf("Update VR: %s\n", info->dev_name);
   if (info->xfer) {
     vr_xfer = info->xfer;
+  } else {
+    vr_xfer = &vr_rdwr;
   }
 
   if (program_tda38640(info->bus, info->addr, config, info->force)) {

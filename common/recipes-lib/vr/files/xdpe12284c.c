@@ -143,6 +143,8 @@ get_xdpe_ver(struct vr_info *info, char *ver_str) {
   if (kv_get(key, tmp_str, NULL, 0)) {
     if (info->xfer) {
       vr_xfer = info->xfer;
+    } else {
+      vr_xfer = &vr_rdwr;
     }
 
     //Stop sensor polling before read crc from register
@@ -483,7 +485,10 @@ xdpe_fw_update(struct vr_info *info, void *args) {
 
   if (info->xfer) {
     vr_xfer = info->xfer;
+  } else {
+    vr_xfer = &vr_rdwr;
   }
+
   if (program_xdpe122xx(info->bus, info->addr, config, info->force)) {
     return VR_STATUS_FAILURE;
   }

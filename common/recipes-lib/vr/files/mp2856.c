@@ -554,12 +554,14 @@ get_mp2856_ver(struct vr_info *info, char *ver_str) {
   if (kv_get(key, tmp_str, NULL, 0)) {
     if (info->xfer) {
       vr_xfer = info->xfer;
+    } else {
+      vr_xfer = &vr_rdwr;
     }
 
     if (info->remaining_wr_op) {
       mps_remaining_wr = info->remaining_wr_op;
     }
-    
+
     //Stop sensor polling before read crc from register
     if (info->sensor_polling_ctrl) {
       info->sensor_polling_ctrl(false);

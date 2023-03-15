@@ -300,7 +300,10 @@ get_raa_ver(struct vr_info *info, char *ver_str) {
   if (kv_get(key, tmp_str, NULL, 0)) {
     if (info->xfer) {
       vr_xfer = info->xfer;
+    } else {
+      vr_xfer = &vr_rdwr;
     }
+
     if (cache_raa_crc(info->bus, info->addr, key, tmp_str, NULL)) {
       return VR_STATUS_FAILURE;
     }
@@ -578,7 +581,10 @@ raa_fw_update(struct vr_info *info, void *args) {
 
   if (info->xfer) {
     vr_xfer = info->xfer;
+  } else {
+    vr_xfer = &vr_rdwr;
   }
+
   if (program_raa(info->bus, info->addr, config, info->force)) {
     return VR_STATUS_FAILURE;
   }
@@ -626,6 +632,7 @@ raa_fw_verify(struct vr_info *info, void *args) {
   } else {
     snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
   }
+   
   if (cache_raa_crc(info->bus, info->addr, key, NULL, &crc)) {
     return VR_STATUS_FAILURE;
   }

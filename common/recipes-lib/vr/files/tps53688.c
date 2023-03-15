@@ -121,9 +121,12 @@ get_tps_ver(struct vr_info *info, char *ver_str) {
   } else {
     snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
   }
+
   if (kv_get(key, tmp_str, NULL, 0)) {
     if (info->xfer) {
       vr_xfer = info->xfer;
+    } else {
+      vr_xfer = &vr_rdwr;
     }
 
     if (info->remaining_wr_op) {
@@ -365,6 +368,8 @@ tps_fw_update(struct vr_info *info, void *args) {
 
   if (info->xfer) {
     vr_xfer = info->xfer;
+  } else {
+    vr_xfer = &vr_rdwr;
   }
 
   if (info->remaining_wr_op) {

@@ -375,7 +375,10 @@ get_xdpe152xx_ver(struct vr_info *info, char *ver_str) {
   if (kv_get(key, tmp_str, NULL, 0)) {
     if (info->xfer) {
       vr_xfer = info->xfer;
+    }  else {
+      vr_xfer = &vr_rdwr;
     }
+
     if (cache_xdpe152xx_crc(info->bus, info->addr, key, tmp_str, NULL)) {
       return VR_STATUS_FAILURE;
     }
@@ -524,7 +527,10 @@ xdpe152xx_fw_update(struct vr_info *info, void *args) {
 
   if (info->xfer) {
     vr_xfer = info->xfer;
+  } else {
+    vr_xfer = &vr_rdwr;
   }
+
   if (program_xdpe152xx(info->bus, info->addr, config, info->force)) {
     return VR_STATUS_FAILURE;
   }

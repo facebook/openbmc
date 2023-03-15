@@ -66,6 +66,12 @@ get_meb_jcn_sensor(uint8_t fru, uint8_t sensor_num, float *value)
   size_t  rxlen = 0;
   oem_1s_sensor_reading_resp *resp;
 
+  if (sensor_num >= CXL_DIMM_A_TEMP && sensor_num <= CXL_DIMM_D_TEMP) {
+    if (pal_bios_completed(FRU_MB) != true) {
+      return READING_NA;
+    }
+  }
+
   txbuf[txlen++] = fru;
   txbuf[txlen++] = sensor_num;
   ret = oem_pldm_ipmi_send_recv(MEB_BIC_BUS, MEB_BIC_EID, NETFN_OEM_1S_REQ,
@@ -185,6 +191,11 @@ PAL_SENSOR_MAP meb_clx_sensor_map[] = {
   {"P0V8_ASICD_PWR", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x1D
   {"PVDDQ_AB_PWR", 0, get_meb_jcn_sensor, false, {15.249, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x1E
   {"PVDDQ_CD_PWR", 0, get_meb_jcn_sensor, false, {15.249, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x1F
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x20
+  {"DIMM_A_TEMP", 0, get_meb_jcn_sensor, false, {95, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x21
+  {"DIMM_B_TEMP", 0, get_meb_jcn_sensor, false, {85, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x22
+  {"DIMM_C_TEMP", 0, get_meb_jcn_sensor, false, {85, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x23
+  {"DIMM_D_TEMP", 0, get_meb_jcn_sensor, false, {85, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x24
 };
 
 PAL_SENSOR_MAP meb_e1s_sensor_map[] = {
@@ -283,6 +294,11 @@ const uint8_t meb_cxl_sensor_list[] = {
   CXL_SENSOR_P0V8_ASICD_PWR,
   CXL_SENSOR_PVDDQ_AB_PWR,
   CXL_SENSOR_PVDDQ_CD_PWR,
+  //CXL_CTRL_TEMP,
+  CXL_DIMM_A_TEMP,
+  CXL_DIMM_B_TEMP,
+  CXL_DIMM_C_TEMP,
+  CXL_DIMM_D_TEMP,
 };
 
 const uint8_t meb_e1s_sensor_list[] = {

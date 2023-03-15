@@ -54,18 +54,57 @@ exit:
   return rc;
 }
 
+static int
+get_accl_sensor(uint8_t fru, uint8_t sensor_num, float *value) 
+{
+  int ret = 0;
+  int16_t integer = 0;
+  float decimal=0;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t txlen = 0;
+  size_t  rxlen = 0;
+  oem_1s_sensor_reading_resp *resp;
+
+  txbuf[txlen++] = fru;
+  txbuf[txlen++] = sensor_num;
+  ret = oem_pldm_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID, NETFN_OEM_1S_REQ,
+                  CMD_OEM_1S_GET_SENSOR_READING, txbuf, txlen, rxbuf, &rxlen, true);
+
+  if (ret != 0 || rxlen != sizeof(oem_1s_sensor_reading_resp)) {
+    syslog(LOG_ERR, "%s failed, fru:%u snr:%u ret:%d rxlen: %d\n", __func__, fru, sensor_num, ret, rxlen);
+    return READING_NA;
+  }
+
+  resp = (oem_1s_sensor_reading_resp*)rxbuf;
+  if (resp->status) { // not present or not power on
+    return READING_NA;
+  }
+
+  integer = resp->integer_l | resp->integer_h << 8;
+  decimal = (float)(resp->fraction_l | resp->fraction_h << 8)/1000;
+
+  if (integer >= 0) {
+    *value = (float)integer + decimal;
+  } else {
+    *value = (float)integer - decimal;
+  }
+
+  return ret;
+}
+
 PAL_SENSOR_MAP acb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x00
-  {"Inlet Temp",  0, get_acb_sensor, true,  {50, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x01
-  {"Outlet Temp", 0, get_acb_sensor, true,  {55, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x02
-  {"HSC1 TEMP ",  0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
-  {"HSC2 TEMP",   0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x04
-  {"PEX0 TEMP",   0, get_acb_sensor, false, {0, 0, 115, 0, 0, 0, 0, 0},  TEMP}, // 0x05
-  {"PEX1 TEMP",   0, get_acb_sensor, false, {0, 0, 115, 0, 0, 0, 0, 0},  TEMP}, // 0x06
+  {"OUTLET_1_TEMP", 0, get_acb_sensor, true,  {50, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x01
+  {"OUTLET_2_TEMP", 0, get_acb_sensor, true,  {55, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x02
+  {"HSC1_TEMP ",  0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
+  {"HSC2_TEMP",   0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x04
+  {"PEX0_TEMP",   0, get_acb_sensor, false, {0, 0, 115, 0, 0, 0, 0, 0},  TEMP}, // 0x05
+  {"PEX1_TEMP",   0, get_acb_sensor, false, {0, 0, 115, 0, 0, 0, 0, 0},  TEMP}, // 0x06
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x07
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x08
-  {"P12V_AUX_1", 0, get_acb_sensor, true, {130, 0, 139, 0, 0, 0, 0, 0}, TEMP}, // 0x09
-  {"P12V_AUX_2", 0, get_acb_sensor, true, {130, 0, 139, 0, 0, 0, 0, 0}, TEMP}, // 0x0A
+  {"POWER_BRICK_1_TEMP", 0, get_acb_sensor, true, {130, 0, 139, 0, 0, 0, 0, 0}, TEMP}, // 0x09
+  {"POWER_BRICK_2_TEMP", 0, get_acb_sensor, true, {130, 0, 139, 0, 0, 0, 0, 0}, TEMP}, // 0x0A
   {"P51V_AUX_L", 0, get_acb_sensor, true, {52.53, 52.02, 62, 49.47, 49.98, 38, 0, 0}, VOLT}, // 0x0B
   {"P51V_AUX_R", 0, get_acb_sensor, true, {52.53, 52.02, 62, 49.47, 49.98, 38, 0, 0}, VOLT}, // 0x0C
   {"P12V_AUX_1", 0, get_acb_sensor, true, {13.2, 12.96, 14.33, 10.8, 11.04, 10.091, 0, 0}, VOLT}, // 0x0D
@@ -145,158 +184,54 @@ PAL_SENSOR_MAP acb_sensor_map[] = {
   {"P51V_STBY_R", 0, get_acb_sensor, true,  {52.53, 52.02, 62, 49.47, 49.98, 38, 0, 0},  VOLT}, // 0x54
   {"P51V_STBY_L", 0, get_acb_sensor, true,  {1838.55, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x55
   {"P51V_STBY_R", 0, get_acb_sensor, true,  {1838.55, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x56
-  {"P0V8_VDD_1",  0, get_acb_sensor, false, {0.824, 0.808, 0.84, 0.776, 0.792, 0.76, 0, 0},  VOLT}, // 0x57
-  {"P0V8_VDD_2",  0, get_acb_sensor, false, {0.824, 0.808, 0.84, 0.776, 0.792, 0.76, 0, 0},  VOLT}, // 0x58
+  {"P0V8_VDD_1",  0, get_acb_sensor, false, {0.824, 0.816, 0.84, 0.776, 0.784, 0.76, 0, 0},  VOLT}, // 0x57
+  {"P0V8_VDD_2",  0, get_acb_sensor, false, {0.824, 0.816, 0.84, 0.776, 0.784, 0.76, 0, 0},  VOLT}, // 0x58
   {"P0V8_VDD_1",  0, get_acb_sensor, false, {47, 0, 57, 0, 0, 0, 0, 0},  CURR}, // 0x59
   {"P0V8_VDD_2",  0, get_acb_sensor, false, {47, 0, 57, 0, 0, 0, 0, 0},  CURR}, // 0x5A
   {"P0V8_VDD_1",  0, get_acb_sensor, false, {38.728, 0, 47.88, 0, 0, 0, 0, 0},  POWER}, // 0x5B
   {"P0V8_VDD_2",  0, get_acb_sensor, false, {38.728, 0, 47.88, 0, 0, 0, 0, 0},  POWER}, // 0x5C
   {"P51V_STBY_L", 0, get_acb_sensor, true,  {35, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x5D
   {"P51V_STBY_R", 0, get_acb_sensor, true,  {35, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x5E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x5F
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x60
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x61
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x62
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x63
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x64
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x65
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x66
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x67
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x68
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x69
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6F
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x70
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x71
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x72
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x73
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x74
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x75
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x76
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x77
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x78
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x79
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x7A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x7B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x7C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x7D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x7E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x7F
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x80
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x81
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x82
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x83
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x84
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x85
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x86
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x87
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x88
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x89
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x8A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x8B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x8C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x8D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x8E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x8F
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x90
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x91
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x92
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x93
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x94
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x95
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x96
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x97
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x98
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x99
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x9A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x9B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x9C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x9D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x9E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x9F
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xA9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xAA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xAB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xAC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xAD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xAE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xAF
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xB9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xBA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xBB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xBC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xBD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xBE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0xBF
+  {"P0V8_1_VDD_TEMP", 0, get_acb_sensor, true,  {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x5F
+  {"P0V8_2_VDD_TEMP", 0, get_acb_sensor, true,  {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x60
+  {"P1V25_1_VDD(P12V_1_M_AUX)", 0, get_acb_sensor, false, {13.2, 12.96, 14.33, 10.8, 11.04, 10.091, 0, 0}, VOLT}, // 0x61
+  {"P1V25_2_VDD(P12V_2_M_AUX)", 0, get_acb_sensor, false, {13.2, 12.96, 14.33, 10.8, 11.04, 10.091, 0, 0}, VOLT}, // 0x62
+  {"P1V25_1_VDD(P12V_1_M_AUX)", 0, get_acb_sensor, false, {2.48, 0, 2.92, 0, 0, 0, 0, 0}, CURR}, // 0x63
+  {"P1V25_2_VDD(P12V_2_M_AUX)", 0, get_acb_sensor, false, {2.48, 0, 2.92, 0, 0, 0, 0, 0}, CURR}, // 0x64
+  {"P1V25_1_VDD(P12V_1_M_AUX)", 0, get_acb_sensor, false, {32.736, 0, 41.8436, 0, 0, 0, 0, 0}, POWER}, // 0x65
+  {"P1V25_2_VDD(P12V_2_M_AUX)", 0, get_acb_sensor, false, {32.736, 0, 41.8436, 0, 0, 0, 0, 0}, POWER}, // 0x66
+  {"INLET_TEMP", 0, get_acb_sensor, false, {50, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x67
+};
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
-
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
-
-
+PAL_SENSOR_MAP accl_sensor_map[] = {
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x00
+  {"Freya_1_Temp",  0, get_accl_sensor, false,  {98, 85, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x01
+  {"Freya_2_Temp",  0, get_accl_sensor, false,  {98, 85, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x02
+  {"P12V_EFUSE_VOL",  0, get_accl_sensor, false,  {13.2, 12.96, 14.33, 10.8, 11.04, 10.091, 0, 0}, VOLT}, // 0x03
+  {"P3V3_1_VOL",  0, get_accl_sensor, false,  {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0}, VOLT}, // 0x04
+  {"P3V3_2_VOL",  0, get_accl_sensor, false,  {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0}, VOLT}, // 0x05
+  {"Freya_1_VOL_1",  0, get_accl_sensor, false,  {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x06
+  {"Freya_1_VOL_2",  0, get_accl_sensor, false,  {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x07
+  {"P12V_EFUSE_CUR",  0, get_accl_sensor, false,  {5.5, 0, 7.2, 0, 0, 0, 0, 0}, CURR}, // 0x08
+  {"P3V3_1_CUR",  0, get_accl_sensor, false,  {8.4, 0, 11.5, 0, 0, 0, 0, 0}, CURR}, // 0x09
+  {"P3V3_2_CUR",  0, get_accl_sensor, false,  {8.4, 0, 11.5, 0, 0, 0, 0, 0}, CURR}, // 0x0A
+  {"Freya_2_VOL_1",  0, get_accl_sensor, false,  {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x0B
+  {"Freya_2_VOL_2",  0, get_accl_sensor, false,  {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x0C
+  {"P12V_EFUSE_PWR",  0, get_accl_sensor, false,  {67.1, 0, 87.8, 0, 0, 0, 0, 0}, POWER}, // 0x0D
+  {"P3V3_1_PWR",  0, get_accl_sensor, false,  {27.72, 0, 37.9, 0, 0, 0, 0, 0}, POWER}, // 0x0E
+  {"P3V3_2_PWR",  0, get_accl_sensor, false,  {27.72, 0, 37.9, 0, 0, 0, 0, 0}, POWER}, // 0x0F
 };
 
 const uint8_t acb_sensor_list[] = {
   ACB_SENSOR_INLET_TEMP,
-  ACB_SENSOR_OUTLET_TEMP,
+  ACB_SENSOR_OUTLET_1_TEMP,
+  ACB_SENSOR_OUTLET_2_TEMP,
   ACB_SENSOR_HSC_1_TEMP,
   ACB_SENSOR_HSC_2_TEMP,
   ACB_SENSOR_PEX0_TEMP,
   ACB_SENSOR_PEX1_TEMP,
-  ACB_SENSOR_P12V_AUX_1_TEMP,
-  ACB_SENSOR_P12V_AUX_2_TEMP,
+  ACB_SENSOR_POWER_BRICK_1_TEMP,
+  ACB_SENSOR_POWER_BRICK_2_TEMP,
   ACB_SENSOR_P51V_AUX_L_VOL,
   ACB_SENSOR_P51V_AUX_R_VOL,
   ACB_SENSOR_P12V_AUX_1_VOL,
@@ -369,6 +304,33 @@ const uint8_t acb_sensor_list[] = {
   ACB_SENSOR_P0V8_VDD_2_PWR,
   ACB_SENSOR_P51V_STBY_L_CUR,
   ACB_SENSOR_P51V_STBY_R_CUR,
+  ACB_SENSOR_P0V8_1_VDD_TEMP,
+  ACB_SENSOR_P0V8_2_VDD_TEMP,
+  ACB_SENSOR_P1V25_1_VDD_P12V_1_M_AUX_VOL,
+  ACB_SENSOR_P1V25_2_VDD_P12V_2_M_AUX_VOL,
+  ACB_SENSOR_P1V25_1_VDD_P12V_1_M_AUX_CUR,
+  ACB_SENSOR_P1V25_2_VDD_P12V_2_M_AUX_CUR,
+  ACB_SENSOR_P1V25_1_VDD_P12V_1_M_AUX_PWR,
+  ACB_SENSOR_P1V25_2_VDD_P12V_2_M_AUX_PWR,
+};
+
+const uint8_t accl_sensor_list[] = {
+  ACCL_Freya_1_Temp,
+  ACCL_Freya_2_Temp,
+  ACCL_P12V_EFUSE_VOL,
+  ACCL_P3V3_1_VOL,
+  ACCL_P3V3_2_VOL,
+  ACCL_Freya_1_VOL_1,
+  ACCL_Freya_1_VOL_2,
+  ACCL_P12V_EFUSE_CUR,
+  ACCL_P3V3_1_CUR,
+  ACCL_P3V3_2_CUR,
+  ACCL_Freya_2_VOL_1,
+  ACCL_Freya_2_VOL_2,
+  ACCL_P12V_EFUSE_PWR,
+  ACCL_P3V3_1_PWR,
+  ACCL_P3V3_2_PWR,
 };
 
 size_t acb_sensor_cnt = sizeof(acb_sensor_list)/sizeof(uint8_t);
+size_t accl_sensor_cnt = sizeof(accl_sensor_list)/sizeof(uint8_t);

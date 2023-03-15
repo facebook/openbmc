@@ -15,6 +15,7 @@ extern PAL_SENSOR_MAP hgx_sensor_map[];
 extern PAL_SENSOR_MAP swb_sensor_map[];
 extern PAL_SENSOR_MAP bb_sensor_map[];
 extern PAL_SENSOR_MAP acb_sensor_map[];
+extern PAL_SENSOR_MAP accl_sensor_map[];
 extern PAL_SENSOR_MAP meb_sensor_map[];
 extern PAL_SENSOR_MAP meb_clx_sensor_map[];
 extern PAL_SENSOR_MAP meb_e1s_sensor_map[];
@@ -36,6 +37,7 @@ extern const uint8_t scm_sensor_list[];
 extern const uint8_t hsc_sensor_list[];
 extern const uint8_t shsc_sensor_list[];
 extern const uint8_t acb_sensor_list[];
+extern const uint8_t accl_sensor_list[];
 extern const uint8_t meb_sensor_list[];
 extern const uint8_t meb_cxl_sensor_list[];
 extern const uint8_t meb_e1s_sensor_list[];
@@ -57,6 +59,7 @@ extern size_t scm_sensor_cnt;
 extern size_t hsc_sensor_cnt;
 extern size_t shsc_sensor_cnt;
 extern size_t acb_sensor_cnt;
+extern size_t accl_sensor_cnt;
 extern size_t meb_sensor_cnt;
 extern size_t meb_cxl_sensor_cnt;
 extern size_t meb_e1s_sensor_cnt;
@@ -80,18 +83,18 @@ struct snr_map sensor_map[] = {
   { FRU_SHSC, swb_sensor_map, true },
   { FRU_ACB,  acb_sensor_map, true },
   { FRU_MEB,  meb_sensor_map, true },
-  { FRU_ACB_ACCL1,  NULL,     false },
-  { FRU_ACB_ACCL2,  NULL,     false },
-  { FRU_ACB_ACCL3,  NULL,     false },
-  { FRU_ACB_ACCL4,  NULL,     false },
-  { FRU_ACB_ACCL5,  NULL,     false },
-  { FRU_ACB_ACCL6,  NULL,     false },
-  { FRU_ACB_ACCL7,  NULL,     false },
-  { FRU_ACB_ACCL8,  NULL,     false },
-  { FRU_ACB_ACCL9,  NULL,     false },
-  { FRU_ACB_ACCL10, NULL,     false },
-  { FRU_ACB_ACCL11, NULL,     false },
-  { FRU_ACB_ACCL12, NULL,     false },
+  { FRU_ACB_ACCL1,  accl_sensor_map, true },
+  { FRU_ACB_ACCL2,  accl_sensor_map, true },
+  { FRU_ACB_ACCL3,  accl_sensor_map, true },
+  { FRU_ACB_ACCL4,  accl_sensor_map, true },
+  { FRU_ACB_ACCL5,  accl_sensor_map, true },
+  { FRU_ACB_ACCL6,  accl_sensor_map, true },
+  { FRU_ACB_ACCL7,  accl_sensor_map, true },
+  { FRU_ACB_ACCL8,  accl_sensor_map, true },
+  { FRU_ACB_ACCL9,  accl_sensor_map, true },
+  { FRU_ACB_ACCL10, accl_sensor_map, true },
+  { FRU_ACB_ACCL11, accl_sensor_map, true },
+  { FRU_ACB_ACCL12, accl_sensor_map, true },
   { FRU_MEB_JCN1,  meb_clx_sensor_map, true },
   { FRU_MEB_JCN2,  meb_clx_sensor_map, true },
   { FRU_MEB_JCN3,  meb_clx_sensor_map, true },
@@ -305,6 +308,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *sensor_list = NULL;
       *cnt = 0;
     }
+  } else if (fru >= FRU_ACB_ACCL1 && fru <= FRU_ACB_ACCL12) {
+    if (pal_is_artemis()) {
+      *sensor_list = (uint8_t *) accl_sensor_list;
+      *cnt = accl_sensor_cnt;
+    } else {
+      *sensor_list = NULL;
+      *cnt = 0;
+    }
   } else if (fru == FRU_MEB) {
     // include JCN5~JCN8 with E1.S*1
     if (pal_is_artemis()) {
@@ -397,13 +408,15 @@ get_map_retry(uint8_t fru)
   static uint8_t mb_hsc_retry[16] = {0};
   static uint8_t swb_hsc_retry[16] = {0};
   static uint8_t acb_retry[MAX_SENSOR_NUMBER + 1] = {0};
+  static uint8_t accl_retry[FRU_ACB_ACCL_CNT][MAX_SENSOR_NUMBER + 1] = {0};
   static uint8_t meb_retry[MAX_SENSOR_NUMBER + 1] = {0};
   static uint8_t meb_jcn_retry[FRU_MEB_JCN_CNT][MAX_SENSOR_NUMBER + 1] = {0};
-  static bool is_meb_jcn_init = false;
+  static bool is_retry_table_init = false;
 
-  if (is_meb_jcn_init == false) {
+  if (is_retry_table_init == false) {
     memset(meb_jcn_retry, 0, sizeof(meb_jcn_retry));
-    is_meb_jcn_init = true;
+    memset(accl_retry, 0, sizeof(accl_retry));
+    is_retry_table_init = true;
   }
 
   if (fru == FRU_SWB)
@@ -416,6 +429,8 @@ get_map_retry(uint8_t fru)
     return swb_hsc_retry;
   else if (fru == FRU_ACB)
     return acb_retry;
+  else if (fru >= FRU_ACB_ACCL1 && fru <= FRU_ACB_ACCL12)
+    return accl_retry[fru - FRU_ACB_ACCL1];
   else if (fru == FRU_MEB)
     return meb_retry;
   else if (fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN14)

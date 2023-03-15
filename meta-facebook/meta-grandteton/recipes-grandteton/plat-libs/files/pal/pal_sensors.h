@@ -151,6 +151,14 @@ enum {
   FAN_CTRL_ID1,
 };
 
+typedef struct {
+  uint8_t status;
+  uint8_t integer_l;
+  uint8_t integer_h;
+  uint8_t fraction_l;
+  uint8_t fraction_h;
+} oem_1s_sensor_reading_resp;
+
 int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max);
 int retry_err_handle(uint8_t retry_curr, uint8_t retry_max);
 int pal_sensor_monitor_initial(void);

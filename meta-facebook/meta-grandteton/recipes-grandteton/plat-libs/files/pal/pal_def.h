@@ -261,7 +261,8 @@ enum {
   FRU_CNT,
 };
 
-enum {
+enum FRU_DEV_COUNT {
+  FRU_ACB_ACCL_CNT = 12,
   FRU_MEB_JCN_CNT = 14,
 };
 

@@ -100,19 +100,16 @@ enum {
   CXL_SENSOR_P0V8_ASICD_PWR,
   CXL_SENSOR_PVDDQ_AB_PWR,
   CXL_SENSOR_PVDDQ_CD_PWR,
+  CXL_CTRL_TEMP,
+  CXL_DIMM_A_TEMP,
+  CXL_DIMM_B_TEMP,
+  CXL_DIMM_C_TEMP,
+  CXL_DIMM_D_TEMP,
 };
 
 enum {
   E1S_SENSOR_E1S_0_TEMP =1,
   E1S_SENSOR_E1S_1_TEMP,
 };
-
-typedef struct {
-  uint8_t status;
-  uint8_t integer_l;
-  uint8_t integer_h;
-  uint8_t fraction_l;
-  uint8_t fraction_h;
-} oem_1s_sensor_reading_resp;
 
 #endif

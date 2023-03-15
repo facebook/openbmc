@@ -30,6 +30,7 @@
 # shellcheck disable=SC2039
 echo "Setup gpio monitoring for Grandteton "
 
+sleep 1
 runsv /etc/sv/gpiod > /dev/null 2>&1 &
 
 echo "done."

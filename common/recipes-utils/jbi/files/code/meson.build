@@ -19,6 +19,7 @@ sources = [
 deps = [
     dependency('liblog'),
     dependency('libgpio-ctrl'),
+    dependency('libmisc-utils'),
 ]
 
 exe = executable('jbi',

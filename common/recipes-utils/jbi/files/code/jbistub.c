@@ -82,8 +82,10 @@ typedef unsigned long DWORD;
 #include <openbmc/libgpio.h>
 #include <openbmc/hr_nanosleep.h>
 #include <openbmc/log.h>
+#include <openbmc/misc-utils.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <linux/version.h>
 #endif
 
 #if PORT == DOS
@@ -160,6 +162,7 @@ static const char *g_tms_shadow;
 static const char *g_tdo_shadow;
 static const char *g_tdi_shadow;
 static int g_jtag_dev = -1;
+static int g_bitbang_pkt = true;
 static gpio_desc_t *g_gpio_tck;
 static gpio_desc_t *g_gpio_tms;
 static gpio_desc_t *g_gpio_tdo;
@@ -278,6 +281,11 @@ struct tck_bitbang {
   unsigned char tdo;
 } __attribute__((__packed__));
 
+struct bitbang_packet {
+  struct tck_bitbang *data;
+  unsigned int length;
+} __attribute__((__packed__));
+
 static void jtag_swio_write(int fd, int value) {
   if (lseek(fd, 0, SEEK_SET) < 0) {
     fprintf(stderr, "%s: lseek failed\n", __func__);
@@ -325,7 +333,10 @@ static int initialize_jtag_swio(void) {
   if ((g_jtag_dev = open(JTAG_CHAR_DEV, O_RDWR)) < 0) {
     OBMC_ERROR(errno, "failed to open jtag device %s", JTAG_CHAR_DEV);
   } else {
-    /* Use ioctl(JTAG_IOCBITBANG) if successfully open Kernel 5.6 JTAG driver */
+    /* Use ioctl(JTAG_IOCBITBANG) if successfully open Kernel 5.x JTAG driver */
+    if (get_kernel_version() < KERNEL_VERSION(5, 10, 0)) {
+      g_bitbang_pkt = false;
+    }
     return 0;
   }
 
@@ -360,6 +371,8 @@ error:
 static int jbi_jtag_swio(int tms, int tdi, int read_tdo) {
   int tdo = 0;
   struct tck_bitbang bitbang;
+  struct bitbang_packet bb_packet = { .data = &bitbang, .length = 1 };
+  void *p_bitbang = (g_bitbang_pkt) ? (void *)&bb_packet : (void *)&bitbang;
 
   if (!jtag_hardware_initialized) {
     if (initialize_jtag_swio()) {
@@ -373,7 +386,7 @@ static int jbi_jtag_swio(int tms, int tdi, int read_tdo) {
     bitbang.tms = tms ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
     bitbang.tdi = tdi ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
     bitbang.tdo = 0;
-    if (ioctl(g_jtag_dev, JTAG_IOCBITBANG, &bitbang) < 0) {
+    if (ioctl(g_jtag_dev, JTAG_IOCBITBANG, p_bitbang) < 0) {
       fprintf(stderr, "%s: ioctl(JTAG_IOCBITBANG) failed\n", __func__);
       return -1;
     }

@@ -22,6 +22,7 @@ srcs += [
 ]
 
 deps += [
+    dependency('fmt'),
     dependency('libnm'),
     dependency('libbic'),
     dependency('libfpga'),

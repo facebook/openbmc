@@ -6,6 +6,7 @@ project('libpldm-oem', 'cpp',
 
 install_headers(
     'pldm.h',
+    'oem_pldm.hpp',
     'fw_update.h',
     subdir: 'libpldm-oem')
 
@@ -20,6 +21,7 @@ srcs = [
   'base.cpp',
   'platform.cpp',
   'oem.cpp',
+  'oem_pldm.cpp',
   'fw_update.cpp',
   'platform_sensor.cpp',
 ]

@@ -1,17 +1,13 @@
 #include <cstdio>
 #include <cstring>
 #include <syslog.h>
-#include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
-#include <openbmc/cpld.h>
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
-#include "fw-util.h"
 #include <libpldm/pldm.h>
 #include <libpldm/platform.h>
 #include <libpldm-oem/pldm.h>
-#include "signed_decoder.hpp"
-#include "signed_info.hpp"
+#include "cpld.hpp"
 
 #define SWB_CPLD_BUS_ID   (7)
 
@@ -59,19 +55,7 @@ cpld_pldm_wr(uint8_t bus, uint8_t addr,
   return rc;
 }
 
-class CpldComponent : public Component {
-  uint8_t pld_type;
-  i2c_attr_t attr;
-  int _update(const char *path, uint8_t is_signed, i2c_attr_t attr);
 
-  public:
-    CpldComponent(const string &fru, const string &comp, uint8_t type, uint8_t bus, uint8_t addr,
-      int (*cpld_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t))
-      : Component(fru, comp), pld_type(type), attr{bus, addr, cpld_xfer} {}
-    int update(string image) override;
-    int fupdate(string image) override;
-    int get_version(json& j) override;
-};
 
 int CpldComponent::_update(const char *path, uint8_t is_signed, i2c_attr_t attr ) {
   int ret = -1;
@@ -131,22 +115,6 @@ int CpldComponent::get_version(json& j) {
   return FW_STATUS_SUCCESS;
 }
 
-class GTCpldComponent : public CpldComponent, public SignComponent {
-  public:
-    GTCpldComponent(const string &fru, const string &comp,
-      uint8_t type, uint8_t bus, uint8_t addr, int (*cpld_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t),
-      signed_header_t sign_info): CpldComponent(fru, comp, type, bus, addr, cpld_xfer),
-      SignComponent(sign_info, fru) {}
-    int update(string image) override;
-    int fupdate(string image) override;
-    int component_update(string image, bool force) {
-      if (force)
-        return CpldComponent::fupdate(image);
-      else
-        return CpldComponent::update(image);
-    }
-};
-
 int GTCpldComponent::update(string image) {
   return signed_image_update(image, false);
 }
@@ -175,8 +143,6 @@ class fw_cpld_config {
         static GTCpldComponent scm_cpld("scm", "cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
       } else {
         static GTCpldComponent mb_cpld("mb", "mb_cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
-        cpld_info.board_id = signed_info::SWB;
-        static GTCpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, 3, 0x40, &cpld_pldm_wr, cpld_info);
         cpld_info.board_id = signed_info::SCM;
         static GTCpldComponent scm_cpld("scm", "scm_cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
       }

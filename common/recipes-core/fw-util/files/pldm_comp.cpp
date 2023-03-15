@@ -3,7 +3,7 @@
 #include <syslog.h>   // for syslog
 #include <unistd.h>   // for close()
 #include <libpldm-oem/fw_update.h>
-
+#include <libpldm-oem/oem_pldm.hpp>
 #include <cstdio>
 
 using namespace std;
@@ -254,20 +254,106 @@ exit:
 
 int PldmComponent::try_pldm_update(const string& image, bool force) {
 
-  if (isPldmImageValid(image)) {
-    printf("Firmware is not valid pldm firmware. update with IPMI over PLDM.\n");
-    return comp_update(image);
-
-  } else {
-    if (force) {
+  if (force) {
+    // force update
+    if (isPldmImageValid(image) == 0) {
       return pldm_update(image);
     } else {
-      if (check_header_info(img_info)) {
-        printf("PLDM firmware package info not valid.\n");
-        return -1;
-      } else {
-        return pldm_update(image);
+      cout << "The image is not a valid PLDM image. "
+           << "update with IPMI over PLDM."
+           << endl;
+      return comp_update(image);
+    }
+  } else {
+    // normal update
+    if (isPldmImageValid(image) != 0) {
+      cout << "The image is not a valid PLDM image."
+           << endl;
+      return -1;
+    }
+    if (check_header_info(img_info)) {
+      cout << "The PLDM header info of the image is invalid."
+           << endl;
+      return -1;
+    }
+    return pldm_update(image);
+  }
+}
+
+int PldmComponent::get_firmware_parameter()
+{
+  vector<uint8_t> response{};
+  vector<uint8_t> request {
+    0x80,
+    PLDM_FWUP,
+    PLDM_GET_FIRMWARE_PARAMETERS
+  };
+
+  int ret = oem_pldm_send_recv(bus, eid, request, response);
+  if (ret == 0) {
+    pldm_get_firmware_parameters_resp fwParams;
+    variable_field activeCompImageSetVerStr;
+    variable_field pendingCompImageSetVerStr;
+    variable_field compParamTable;
+    ret = decode_get_firmware_parameters_resp(
+        (pldm_msg*)response.data(), response.size(), &fwParams, &activeCompImageSetVerStr,
+        &pendingCompImageSetVerStr, &compParamTable);
+
+    // decode failed
+    if (ret) {
+      std::cerr << "Decoding GetFirmwareParameters response failed, EID="
+                << unsigned(eid) << ", RC=" << ret << "\n";
+      ret = -DECODE_FAIL;
+
+    // completion code != 0x00
+    } else if (fwParams.completion_code) {
+      std::cerr << "GetFirmwareParameters response failed with error "
+                    "completion code, EID="
+                << unsigned(eid)
+                << ", CC=" << unsigned(fwParams.completion_code) << "\n";
+      ret = -DECODE_FAIL;
+
+    // success
+    } else {
+      auto compParamPtr = compParamTable.ptr;
+      auto compParamTableLen = compParamTable.length;
+      pldm_component_parameter_entry compEntry{};
+      variable_field activeCompVerStr{};
+      variable_field pendingCompVerStr{};
+
+      while (fwParams.comp_count-- && (compParamTableLen > 0)) {
+        ret = decode_get_firmware_parameters_resp_comp_entry(
+            compParamPtr, compParamTableLen, &compEntry,
+            &activeCompVerStr, &pendingCompVerStr);
+
+        // decode component table failed
+        if (ret) {
+          std::cerr << "Decoding component parameter table entry failed, EID="
+                    << unsigned(eid) << ", RC=" << ret << "\n";
+          ret = -DECODE_FAIL;
+          break;
+        }
+
+        // stored
+        store_firmware_parameter(
+          fwParams,
+          activeCompImageSetVerStr,
+          pendingCompImageSetVerStr,
+          compEntry,
+          activeCompVerStr,
+          pendingCompVerStr
+        );
+
+        compParamPtr += sizeof(pldm_component_parameter_entry) +
+                          activeCompVerStr.length + pendingCompVerStr.length;
+        compParamTableLen -= sizeof(pldm_component_parameter_entry) +
+                                activeCompVerStr.length + pendingCompVerStr.length;
       }
     }
+  } else {
+    std::cerr << "Function oem_pldm_send_recv() error, EID="
+                << unsigned(eid) << ", RC=" << ret << "\n";
   }
+
+  return ret;
 }

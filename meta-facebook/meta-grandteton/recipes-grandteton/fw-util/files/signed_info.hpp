@@ -1,6 +1,8 @@
+#pragma once
 #include <string>
 #include <unordered_map>
 #include <openbmc/pal_def.h>
+#include "signed_decoder.hpp"
 
 namespace signed_info {
 
@@ -76,6 +78,17 @@ namespace pldm_signed_info {
     {"mps",      MPS},
     {"lattice",  LATTICE},
     {"broadcom", BROADCOM}
+  };
+
+  const std::unordered_map<uint8_t, std::string> comp_str_t = {
+    {VR0_COMP, "vr0"},
+    {VR1_COMP, "vr1"},
+    {BIC_COMP, "bic"},
+    {PEX0_COMP, "pex0"},
+    {PEX1_COMP, "pex1"},
+    {PEX2_COMP, "pex2"},
+    {PEX3_COMP, "pex3"},
+    {CPLD_COMP, "cpld"}
   };
 
   const signed_header_t gt_swb_comps = {

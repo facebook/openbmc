@@ -1,4 +1,4 @@
-#include <openbmc/kv.h>
+#include <openbmc/kv.hpp>
 #include <libpldm/base.h>
 #include <libpldm-oem/pldm.h>
 #include <openbmc/libgpio.h>
@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <termios.h>
 #include <algorithm>
+#include <fmt/format.h>
 #include "swb_common.hpp"
 
 #define PexImageCount 4
@@ -548,9 +549,81 @@ exit:
   return ret;
 }
 
-void GTPldmComponent::store_device_id_record(pldm_firmware_device_id_record& /*id_record*/,
-                                uint16_t& descriper_type,
-                                variable_field& descriper_data)
+static
+int set_swb_snr_polling (uint8_t status) {
+  uint8_t tbuf[255] = {0};
+  uint8_t rbuf[255] = {0};
+  uint8_t tlen=0;
+  size_t rlen = 0;
+  int rc;
+
+  tbuf[tlen++] = status;
+
+  rc = oem_pldm_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
+                               NETFN_OEM_1S_REQ,
+                               CMD_OEM_1S_DISABLE_SEN_MON,
+                               tbuf, tlen,
+                               rbuf, &rlen, true);
+
+  cout << __func__ << " rc = " << rc << endl;
+  return rc;
+}
+
+int SwbVrComponent::update_proc(string image, bool force) {
+  int ret;
+  string comp = this->component();
+
+  if (vr_probe() < 0) {
+    cout << "VR probe failed!" << endl;
+    return -1;
+  }
+
+  syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
+  ret = vr_fw_update(name.c_str(), (char *)image.c_str(), force);
+  if (ret < 0) {
+    cout << "ERROR: VR Firmware update failed!" << endl;
+  } else {
+    syslog(LOG_CRIT, "Component %s %s completed", comp.c_str(), force? "force upgrade": "upgrade");
+  }
+
+  vr_remove();
+  return ret;
+}
+
+int SwbVrComponent::update(string image) {
+  int ret;
+
+  ret = set_swb_snr_polling(0x00);
+  if (ret)
+   return ret;
+
+  ret = update_proc(image, 0);
+
+  if(set_swb_snr_polling(0x01))
+    cout << "set snr polling start fail." << endl;
+
+  return ret;
+}
+
+int SwbVrComponent::fupdate(string image) {
+  int ret;
+
+  ret = set_swb_snr_polling(0x00);
+  if (ret)
+   return ret;
+
+  ret = update_proc(image, 1);
+
+  if(set_swb_snr_polling(0x01))
+    cout << "set snr polling start fail." << endl;
+
+  return ret;
+}
+
+void GTPldmComponent::store_device_id_record(
+                          pldm_firmware_device_id_record& /*id_record*/,
+                                                uint16_t& descriper_type,
+                                          variable_field& descriper_data)
 {
   if (descriper_type == PLDM_FWUP_VENDOR_DEFINED) {
     string type = (const char*)descriper_data.ptr+2;
@@ -569,8 +642,9 @@ void GTPldmComponent::store_device_id_record(pldm_firmware_device_id_record& /*i
   }
 }
 
-void GTPldmComponent::store_comp_img_info(pldm_component_image_information& comp_info,
-                          variable_field& comp_verstr)
+void GTPldmComponent::store_comp_img_info(
+                          pldm_component_image_information& comp_info,
+                                            variable_field& comp_verstr)
 {
   // comp id
   img_info.component_id = comp_info.comp_identifier;
@@ -585,33 +659,131 @@ void GTPldmComponent::store_comp_img_info(pldm_component_image_information& comp
   }
 }
 
-void GTPldmComponent::print()
+void GTPldmComponent::store_firmware_parameter(
+                 pldm_get_firmware_parameters_resp& /*fwParams*/,
+                                    variable_field& activeCompImageSetVerStr,
+                                    variable_field& /*pendingCompImageSetVerStr*/,
+                    pldm_component_parameter_entry& compEntry,
+                                    variable_field& activeCompVerStr,
+                                    variable_field& /*pendingCompVerStr*/)
 {
-  printf("project name : %s\n", img_info.project_name.c_str());
-  printf("board_id     : %02X\n", img_info.board_id);
-  printf("stage_id     : %02X\n", img_info.stage_id);
-  printf("component_id : %02X\n", img_info.component_id);
-  printf("vendor_id    : %02X\n", img_info.vendor_id);
+  string bic_ver = (const char*)activeCompImageSetVerStr.ptr;
+  string bic_key = "swb_bic_active_ver";
+  string comp_ver = (const char*)activeCompVerStr.ptr;
+  string comp_key = fmt::format("swb_{}_active_ver", pldm_signed_info::comp_str_t.at(compEntry.comp_identifier));
+
+  bic_ver.resize(activeCompImageSetVerStr.length-1);
+  comp_ver.resize(activeCompVerStr.length);
+
+  kv::set(bic_key,  bic_ver);
+  kv::set(comp_key, comp_ver);
+}
+
+int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& comp, uint8_t target)
+{
+  string comp_key = fmt::format("swb_{}_active_ver", pldm_signed_info::comp_str_t.at(target));
+  string comp_ver;
+
+  try {
+    comp_ver = kv::get(comp_key, kv::region::temp);
+    j["VERSION"] = comp_ver;
+  } catch (...) {
+    get_firmware_parameter();
+    comp_ver = kv::get(comp_key, kv::region::temp);
+    if (!comp_ver.empty()) {
+      j["VERSION"] = comp_ver;
+    } else {
+      j["VERSION"] = "NA";
+    }
+  }
+
+  stringstream comp_str;
+  comp_str << fru << ' ' << comp;
+  string rw_str = comp_str.str();
+  transform(rw_str.begin(),rw_str.end(), rw_str.begin(),::toupper);
+  j["PRETTY_COMPONENT"] = rw_str;
+
+  return FW_STATUS_SUCCESS;
 }
 
 int GTSwbBicFwComponent::update(string image)
 {
-  return try_pldm_update(image, false);
+  int ret = try_pldm_update(image, false);
+  if (ret == 0)
+    get_firmware_parameter();
+  return ret;
 }
 
 int GTSwbBicFwComponent::fupdate(string image)
 {
-  return try_pldm_update(image, true);
+  int ret = try_pldm_update(image, true);
+  if (ret == 0)
+    get_firmware_parameter();
+  return ret;
+}
+
+int GTSwbBicFwComponent::get_version(json& j) {
+  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
 }
 
 int GTSwbPexFwComponent::update(string image)
 {
-  return try_pldm_update(image, false);
+  int ret = try_pldm_update(image, false);
+  if (ret == 0)
+    get_firmware_parameter();
+  return ret;
 }
 
 int GTSwbPexFwComponent::fupdate(string image)
 {
-  return try_pldm_update(image, true);
+  int ret = try_pldm_update(image, true);
+  if (ret == 0)
+    get_firmware_parameter();
+  return ret;
+}
+
+int GTSwbPexFwComponent::get_version(json& j) {
+  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+}
+
+int GTSwbVrComponent::update(string image)
+{
+  int ret = try_pldm_update(image, false);
+  if (ret == 0)
+    get_firmware_parameter();
+  return ret;
+}
+
+int GTSwbVrComponent::fupdate(string image)
+{
+  int ret = try_pldm_update(image, true);
+  if (ret == 0)
+    get_firmware_parameter();
+  return ret;
+}
+
+int GTSwbVrComponent::get_version(json& j) {
+  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+}
+
+int GTSwbCpldComponent::update(string image)
+{
+  int ret = try_pldm_update(image, false);
+  if (ret == 0)
+    get_firmware_parameter();
+  return ret;
+}
+
+int GTSwbCpldComponent::fupdate(string image)
+{
+  int ret = try_pldm_update(image, true);
+  if (ret == 0)
+    get_firmware_parameter();
+  return ret;
+}
+
+int GTSwbCpldComponent::get_version(json& j) {
+  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
 }
 
 int AcbPeswFwComponent::get_version(json &j) {

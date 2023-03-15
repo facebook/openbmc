@@ -3,6 +3,7 @@
 #define _PLDM_OEM_H_
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -48,7 +49,7 @@ int oem_pldm_send (int eid, int pldmd_fd,
  * @param[in]  eid           - destination MCTP eid
  * @param[in]  pldmd_fd      - target fd (:=PLDM Daemon fd)
  * @param[out] pldm_resp_msg - *pldm_resp_msg will point to PLDM response msg,
- *                             this function allocates memory, caller to 
+ *                             this function allocates memory, caller to
  *                             free(*pldm_resp_msg) on success.
  * @param[out] resp_msg_len  - caller owned pointer that will be made point to
  *                             the size of the PLDM response msg.
@@ -57,7 +58,7 @@ int oem_pldm_recv (int eid, int pldmd_fd,
                 uint8_t **pldm_resp_msg, size_t *resp_msg_len);
 
 /**
- * @brief Send a PLDM request message to PLDM Daemon. Wait for corresponding 
+ * @brief Send a PLDM request message to PLDM Daemon. Wait for corresponding
           response message, which once received, is returned to the caller.
  *
  * @param[in]  bus           - bus number
@@ -65,17 +66,17 @@ int oem_pldm_recv (int eid, int pldmd_fd,
  * @param[in]  pldm_req_msg  - caller owned pointer to PLDM request msg
  * @param[in]  req_msg_len   - size of PLDM request msg
  * @param[out] pldm_resp_msg - *pldm_resp_msg will point to PLDM response msg,
- *                             this function allocates memory, caller to 
+ *                             this function allocates memory, caller to
  *                             free(*pldm_resp_msg) on success.
  * @param[out] resp_msg_len  - caller owned pointer that will be made point to
  *                             the size of the PLDM response msg.
  */
 int oem_pldm_send_recv (uint8_t bus, int eid,
-                        const uint8_t *pldm_req_msg, size_t req_msg_len, 
+                        const uint8_t *pldm_req_msg, size_t req_msg_len,
                         uint8_t **pldm_resp_msg, size_t *resp_msg_len);
 
 /**
- * @brief Send a PLDM request message to PLDM Daemon. Wait for corresponding 
+ * @brief Send a PLDM request message to PLDM Daemon. Wait for corresponding
           response message, which once received, is returned to the caller.
  *
  * @param[in]  eid           - destination MCTP eid
@@ -83,13 +84,13 @@ int oem_pldm_send_recv (uint8_t bus, int eid,
  * @param[in]  pldm_req_msg  - caller owned pointer to PLDM request msg
  * @param[in]  req_msg_len   - size of PLDM request msg
  * @param[out] pldm_resp_msg - *pldm_resp_msg will point to PLDM response msg,
- *                             this function allocates memory, caller to 
+ *                             this function allocates memory, caller to
  *                             free(*pldm_resp_msg) on success.
  * @param[out] resp_msg_len  - caller owned pointer that will be made point to
  *                             the size of the PLDM response msg.
  */
 int oem_pldm_send_recv_w_fd (int eid, int pldmd_fd,
-                        const uint8_t *pldm_req_msg, size_t req_msg_len, 
+                        const uint8_t *pldm_req_msg, size_t req_msg_len,
                         uint8_t **pldm_resp_msg, size_t *resp_msg_len);
 
 /**
@@ -107,7 +108,7 @@ void oem_pldm_close (int fd);
 
 /**
  * @brief Get PLDM request header for ipmi message.
- * @param[in]  buf           - Full PLDM message that transfer by PLDM daemon or 
+ * @param[in]  buf           - Full PLDM message that transfer by PLDM daemon or
  *                             PLDM library function.
  * @param[in]  IANA          - PLDM-IPMI message is an OEM command, payload include IANA.
  * @param[in]  IANA_length   - IANA length.

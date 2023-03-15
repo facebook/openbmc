@@ -12,7 +12,6 @@
 #include <syslog.h>
 #include "vr_fw.h"
 #include "bios.h"
-#include "signed_decoder.hpp"
 #include "signed_info.hpp"
 
 using namespace std;

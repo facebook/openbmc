@@ -5,7 +5,7 @@ DESCRIPTION = "Middleware for Openbmc PLDM Library"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPL-2.0-or-later"
-LIC_FILES_CHKSUM = "file://pldm.h;beginline=4;endline=16;md5=178b8383f06db5a78edaba6520950d55"
+LIC_FILES_CHKSUM = "file://pldm.h;beginline=4;endline=16;md5=7daca318951174622e8e12a585f4e4a0"
 
 LOCAL_URI = " \
     file://meson.build \
@@ -18,6 +18,8 @@ LOCAL_URI = " \
     file://platform_sensor.cpp \
     file://oem.hpp \
     file://oem.cpp \
+    file://oem_pldm.cpp \
+    file://oem_pldm.hpp \
     file://handler.hpp \
     file://fw_update.cpp \
     file://fw_update.h \

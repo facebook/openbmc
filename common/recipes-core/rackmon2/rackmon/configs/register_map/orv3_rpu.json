@@ -50,6 +50,30 @@
             "name": "RPU_Coolant_Inlet_Pressure_kPa"
         },
         {
+            "begin": 36869,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_Power_W"
+        },
+        {
+            "begin": 36870,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "AALC_Total_Power_W"
+        },
+        {
+            "begin": 36871,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_Input_Volt_V"
+        },
+        {
             "begin": 36872,
             "length": 1,
             "format": "FLOAT",
@@ -191,6 +215,26 @@
             "name": "HEX_Fan_PWM_TACH_Pct"
         },
         {
+            "begin": 37121,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Power_W"
+        },
+        {
+            "begin": 37122,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Input_Volt_V"
+        },
+        {
+            "begin": 37123,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Input_Current_V"
+        },
+        {
             "begin": 37124,
             "length": 1,
             "format": "INTEGER",
@@ -301,6 +345,8 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
+                [11, "RPU_HSC_Status"],
+                [10, "RPU_Air_Inlet_Thermometer_Status"],
                 [9, "HX_Water_Inlet_Thermometer_Status"],
                 [8, "HEX_Air_Inlet2_Thermometer_Status"],
                 [7, "HEX_Air_Inlet1_Thermometer_Status"],
@@ -357,6 +403,7 @@
                 [14, "HEX_Fan_Group3_Comms_Status"],
                 [13, "HEX_Fan_Group2_Comms_Status"],
                 [12, "HEX_Fan_Group1_Comms_Status"],
+                [10, "HEX_Coil_Dirty"],
                 [9, "HEX_Fan10_Status"],
                 [8, "HEX_Fan9_Status"],
                 [7, "HEX_Fan8_Status"],
@@ -418,6 +465,7 @@
                 [9, "Enable_Manual_Control"],
                 [8, "Set_Pump_Group2"],
                 [7, "Set_Pump_Group1"],
+                [6, "RPU_Remote_Power_Cycle"],
                 [5, "System_Stop"],
                 [4, "Auto_Tune_Pressure_Balance_Control_On"],
                 [3, "Auto_Tune_Flow_Control_On"],

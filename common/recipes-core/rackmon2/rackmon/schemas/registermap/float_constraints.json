@@ -14,7 +14,7 @@
     },
     "else": {
       "not": {
-        "required": ["precision"]
+        "required": ["precision", "scale", "shift"]
       }
     }
   }

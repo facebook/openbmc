@@ -38,6 +38,12 @@
         "minimum": 0,
         "maximum": 31
       },
+      "scale": {
+        "type": "number"
+      },
+      "shift": {
+        "type": "number"
+      },
       "flags": {
         "type": "array",
         "minItems": 1,

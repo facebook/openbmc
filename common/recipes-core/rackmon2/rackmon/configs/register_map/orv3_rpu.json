@@ -12,37 +12,49 @@
         {
             "begin": 36864,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "RPU_Coolant_Flow_Rate_LPM"
         },
         {
             "begin": 36865,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "RPU_Coolant_Outlet_Temp_C"
         },
         {
             "begin": 36866,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "RPU_Coolant_Inlet_Temp_C"
         },
         {
             "begin": 36867,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "RPU_Coolant_Outlet_Pressure_kPa"
         },
         {
             "begin": 36868,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "RPU_Coolant_Inlet_Pressure_kPa"
         },
         {
             "begin": 36872,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "RPU_Air_Inlet_Temp_C"
         },
         {
@@ -100,7 +112,9 @@
         {
             "begin": 36881,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "AALC_Cooling_Capacity_W"
         },
         {
@@ -239,31 +253,41 @@
         {
             "begin": 37134,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "HEX_Air_Outlet1_Temp_C"
         },
         {
             "begin": 37135,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "HEX_Air_Outlet2_Temp_C"
         },
         {
             "begin": 37136,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "HEX_Air_Inlet1_Temp_C"
         },
         {
             "begin": 37137,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "HEX_Air_Inlet2_Temp_C"
         },
         {
             "begin": 37138,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "HEX_Water_Inlet_Temp_C"
         },
         {
@@ -349,13 +373,17 @@
         {
             "begin": 37888,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "Auto_Tune_Coolant_Flow_Rate_Target_Set"
         },
         {
             "begin": 37889,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "Auto_Tune_Coolant_Outlet_Temperature_Target_Set"
         },
         {

@@ -1,0 +1,272 @@
+#!/usr/bin/python3 -B
+#
+# Usually I would do this:
+#   !/usr/bin/env -S python3 -B
+# But, the default python3 on devservers is a managed environment for which
+# the system RPM for `python3-sh` doesn't get used.
+
+import argparse
+import os
+import json
+import subprocess
+from pathlib import Path
+from io import IOBase
+from typing import Any, Dict, List, Optional
+from sh import git  # type: ignore
+
+import yaml
+
+header = """## Features
+
+    ### Overview
+
+    #### Priority Legend
+    * P0 - Needed for power-on
+    * P1 - Needed for EVT entry
+    * P2 - EVT exit gating
+    * P3 - DVT exit gating
+    * P4 - PVT exit gating
+    * P5 - Optional
+
+"""
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+NORMAL = "\033[0m"
+
+def find_file(name: str, machine: argparse.Namespace) -> Optional[str]:
+    # Check in the machine directory
+    base_file_name = os.path.join(machine.file, name)
+    #print(YELLOW + f"Searching for {base_file_name}\n" + NORMAL)
+    if os.path.isfile(base_file_name):
+        return base_file_name
+
+    # Check in the common and third-party directories
+    for t in machine.tags:
+        common_file_name = os.path.join("common", t, name)
+        #print(YELLOW + f"Searching for {common_file_name}\n" + NORMAL)
+        if os.path.isfile(common_file_name):
+            return common_file_name
+        third_party_file_name = os.path.join("third-party", name)
+        #print(YELLOW + f"Searching for {third_party_file_name}\n" + NORMAL)
+        if os.path.isfile(third_party_file_name):
+            return third_party_file_name
+    return None
+
+
+def write_title(output: IOBase, machine: argparse.Namespace) -> None:
+    print(f"# OpenBMC Feature Requirements for {machine.name}", file=output)
+    print(file=output)
+
+    print("Version: ", get_version(machine.name), file=output)
+    print(file=output)
+
+    print("Owners:\n", file=output)
+    for o in machine.owner:
+        print(f"- {o}", file=output)
+    print(file=output)
+    print(header, file=output)
+
+
+def get_version(machine: str) -> str:
+    tags: List[str] = git.tag("--points-at", "HEAD", _tty_out=False).splitlines()
+
+    for t in tags:
+        if machine.lower() in t:
+            return t
+
+    d: str = git.describe(
+        "--dirty", "--always", "--match", f"{machine.lower()}-*"
+    ).strip()
+    if machine.lower() not in d:
+        d = f"{machine.lower()}-{d}"
+    return d
+
+
+def parse_feature_list(outfile: IOBase, feature_list: list, machine: argparse.Namespace) -> None:
+
+    def parse_feature(element, dir_name=""):
+        nonlocal outfile
+        nonlocal machine
+        if type(element) is list:
+            section_name = os.path.basename(dir_name)
+            print(f"\n#### {section_name}\n", file=outfile)
+            for item in element:
+                feature_name = item["File"].replace(".md", "").replace("-", " ").strip()
+                print(f"- [ ] {item['Priority']} **{feature_name}**", file=outfile)
+            parse_feature(item, dir_name)
+            dir_name = os.path.dirname(dir_name)
+        elif type(element) is dict:
+            for key, value in element.items():
+                if dir_name == "":
+                    dir_name = key
+                else:
+                    dir_name = dir_name + "/" + key
+                parse_feature(value, dir_name)
+                dir_name = os.path.dirname(dir_name)
+        else:
+            if dir_name == "":
+                dir_name = element
+            else:
+                dir_name = dir_name + "/" + element
+    parse_feature(feature_list, "")
+
+
+def build_features(out_file: str, machine: argparse.Namespace) -> None:
+    out_file = os.path.join(machine.file, out_file)
+    for f in machine.feature_list:
+        file_name = f.upper() + ".json"
+        print(GREEN + f"Finding feature file ... {file_name}   machine is {machine}\n" + NORMAL)
+        file = find_file(file_name, machine)
+        if not file:
+            print(RED + f"Feature file {file_name} was not found..." + NORMAL)
+            return False
+        #else:
+        #    continue
+        try:
+            with open(file, "r") as feature_file, open(out_file, "a") as out:
+                feature_list = json.load(feature_file)
+                parse_feature_list(out, feature_list, machine)
+        except:
+            print(RED + f"Invalid JSON data found in feature file {file}" + NORMAL)
+            return False
+    return True
+
+
+def write_section(section: str, output: IOBase, machine: argparse.Namespace) -> None:
+    contents = []
+    exp_contents = []
+    print(GREEN + f"Writing section {section}\n" + NORMAL)
+    file_name = section.upper() + ".md"
+    file = find_file(file_name, machine)
+    if not file:
+        # If the FEATURES.md file is not found, build it from scratch.
+        # For all other files, raise an exception if they are missing.
+        if file_name == "FEATURES.md":
+            retCode = build_features(file_name, machine)
+            if retCode is False:
+                raise Exception(f"Unable to build {section} from scratch")
+            file = find_file(file_name, machine)
+            if not file:
+                raise Exception(f"Unable to find section file: {section}")
+            print(GREEN + f"Feature file {file} successfully created." + NORMAL)
+        else:
+            raise Exception(f"Unable to find section file: {section}")
+    try:
+        with open(file, "r") as section_file:
+            contents = section_file.readlines()
+    except:
+        raise Exception(f"Unable to find feature file {file}")
+    print(GREEN + "Feature file successfully loaded." + NORMAL)
+
+    if f"expand_{section}" in globals():
+        contents = globals()[f"expand_{section}"](contents, machine)
+    for c in contents:
+        output.write(c)
+
+    print(file=output)
+
+
+def expand_features(lines: List[str], machine: argparse.Namespace) -> List[str]:
+
+    subsection = None
+    fixed = []
+    tail = []
+
+    for l in lines:
+        if l.startswith("####"):
+
+            subtitle = l[4:].strip()
+            subsection = "".join([x if x.isalnum() else "-" for x in subtitle.lower()])
+
+            if subsection.lower() in ["priority-legend"]:
+                continue
+
+            l = f"#### [{l[4:].strip()}](#s-{subsection})\n"
+            tail.append(f"### {subtitle} {{#s-{subsection}}}\n")
+
+            subsection_file = find_file(f"features/{subsection}.md", machine)
+            if subsection_file:
+                with open(subsection_file, "r") as sf:
+                    tail = tail + sf.readlines() + ["\n"]
+
+        elif l.startswith("- ["):
+            task = l.strip().split("**")[:-1]
+            taskname = "".join([x if x.isalnum() else "-" for x in task[1].lower()])
+
+            task_file = find_file(f"features/{subsection}/{taskname}.md", machine)
+            if task_file:
+                l = f"{task[0]}**[{task[1]}](#s-{subsection}-{taskname})**\n"
+                tail.append(f"#### {task[1]} {{#s-{subsection}-{taskname}}}\n")
+
+                with open(task_file, "r") as tf:
+                    tail = tail + tf.readlines() + ["\n"]
+            else:
+                print(YELLOW + f"Warning: did not find features/{subsection}/{taskname}.md" + NORMAL)
+
+        fixed.append(l)
+
+    return fixed + ["\n"] + tail
+
+
+def create_docx(filename):
+    if filename is None:
+        return
+    if Path(filename).is_file() and Path(filename).suffix != "":
+        outfilename = filename.replace(".md", ".docx")
+    else:
+        outfilename = filename + ".docx"
+    cmd = ["pandoc", "-s", filename, "-o", outfilename]
+    result = subprocess.run(cmd)
+    if result.returncode == 0:
+        print(GREEN + f"Output docx file {outfilename} successfully generated" + NORMAL)
+    else:
+        print(RED + f"Error: Unable to generate docx file.  Please ensure pandoc is installed." + NORMAL)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-m",
+        "--machine",
+        dest="machine",
+        action="store",
+        required=True,
+        help="Path to machine spec",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        dest="output",
+        action="store",
+        required=True,
+        help="Output file",
+    )
+
+    args = parser.parse_args()
+
+    if not args.machine:
+        raise Exception(f"Missing machine spec: {args.machine}")
+    if not args.output:
+        raise Exception("Missing output file")
+    working_path = "./"
+    cwd = os.getcwd().rsplit("/")
+    if cwd != args.machine:
+        working_path = os.path.join(working_path, args.machine)
+    yaml_file_name = working_path + "/" + args.machine + ".yaml"
+    with open(yaml_file_name, "r") as yaml_file:
+        machine = argparse.Namespace(**yaml.safe_load(yaml_file), file=args.machine)
+
+    with open(args.output, "w") as output:
+        write_title(output, machine)
+
+        for s in machine.sections:
+            write_section(s, output, machine)
+
+        print(file=output)
+    create_docx(args.output)
+    print(GREEN + "Feature file generation completed." + NORMAL)
+
+
+if __name__ == "__main__":
+    main()

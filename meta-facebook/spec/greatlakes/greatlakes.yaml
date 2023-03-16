@@ -7,4 +7,6 @@ tags:
 sections:
   - overview
   - features
-  - sensors
+feature_list:
+  - default-meta-multihost-features
+  - intel-features

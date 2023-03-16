@@ -254,29 +254,21 @@ exit:
 
 int PldmComponent::try_pldm_update(const string& image, bool force) {
 
-  if (force) {
-    // force update
-    if (isPldmImageValid(image) == 0) {
+  if (isPldmImageValid(image)) {
+    std::cerr << "Firmware is not valid pldm firmware. update with IPMI over PLDM.\n";
+    return comp_update(image);
+
+  } else {
+    if (force) {
       return pldm_update(image);
     } else {
-      cout << "The image is not a valid PLDM image. "
-           << "update with IPMI over PLDM."
-           << endl;
-      return comp_update(image);
+      if (check_header_info(img_info)) {
+        std::cerr << "PLDM firmware package info not valid.\n";
+        return -1;
+      } else {
+        return pldm_update(image);
+      }
     }
-  } else {
-    // normal update
-    if (isPldmImageValid(image) != 0) {
-      cout << "The image is not a valid PLDM image."
-           << endl;
-      return -1;
-    }
-    if (check_header_info(img_info)) {
-      cout << "The PLDM header info of the image is invalid."
-           << endl;
-      return -1;
-    }
-    return pldm_update(image);
   }
 }
 

@@ -24,13 +24,13 @@ GTSwbPexFwComponent swb_pex2("swb", "pex2", SWB_BUS_ID, SWB_BIC_EID, PEX2_COMP,
 GTSwbPexFwComponent swb_pex3("swb", "pex3", SWB_BUS_ID, SWB_BIC_EID, PEX3_COMP,
                             signed_header_t(gt_swb_comps, PEX3_COMP, BROADCOM));
 
-GTSwbVrComponent vr_pex0_vcc("swb", "pex01_vcc", "VR_PEX01_VCC", SWB_BUS_ID, SWB_BIC_EID, VR0_COMP,
-                            signed_header_t(gt_swb_comps, VR0_COMP));
-GTSwbVrComponent vr_pex1_vcc("swb", "pex23_vcc", "VR_PEX23_VCC", SWB_BUS_ID, SWB_BIC_EID, VR1_COMP,
-                            signed_header_t(gt_swb_comps, VR1_COMP));
-
-GTSwbCpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, SWB_BUS_ID, 0x40, &cpld_pldm_wr,
-                            SWB_BIC_EID, CPLD_COMP, signed_header_t(gt_swb_comps, CPLD_COMP, LATTICE));
+// GTSwbVrComponent vr_pex0_vcc("swb", "pex01_vcc", "VR_PEX01_VCC", SWB_BUS_ID, SWB_BIC_EID, VR0_COMP,
+//                             signed_header_t(gt_swb_comps, VR0_COMP));
+// GTSwbVrComponent vr_pex1_vcc("swb", "pex23_vcc", "VR_PEX23_VCC", SWB_BUS_ID, SWB_BIC_EID, VR1_COMP,
+//                             signed_header_t(gt_swb_comps, VR1_COMP));
+//
+// GTSwbCpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, SWB_BUS_ID, 0x40, &cpld_pldm_wr,
+//                             SWB_BIC_EID, CPLD_COMP, signed_header_t(gt_swb_comps, CPLD_COMP, LATTICE));
 }
 
 

@@ -722,9 +722,9 @@ int GTSwbBicFwComponent::fupdate(string image)
   return ret;
 }
 
-int GTSwbBicFwComponent::get_version(json& j) {
-  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
-}
+// int GTSwbBicFwComponent::get_version(json& j) {
+//   return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+// }
 
 int GTSwbPexFwComponent::update(string image)
 {
@@ -742,9 +742,9 @@ int GTSwbPexFwComponent::fupdate(string image)
   return ret;
 }
 
-int GTSwbPexFwComponent::get_version(json& j) {
-  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
-}
+// int GTSwbPexFwComponent::get_version(json& j) {
+//   return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+// }
 
 int GTSwbVrComponent::update(string image)
 {

@@ -98,7 +98,7 @@ class GTSwbBicFwComponent : public SwbBicFwComponent, public GTPldmComponent {
                         GTPldmComponent(info, fru, comp, bus, eid){}
     int update(string /*image*/) override;
     int fupdate(string /*image*/) override;
-    int get_version(json& /*json*/) override;
+    // int get_version(json& /*json*/) override;
     int comp_update(const string& image) { return SwbBicFwComponent::update(image); }
 };
 
@@ -110,7 +110,7 @@ class GTSwbPexFwComponent : public SwbPexFwComponent, public GTPldmComponent {
                         GTPldmComponent(info, fru, comp, bus, eid){}
     int update(string /*image*/) override;
     int fupdate(string /*image*/) override;
-    int get_version(json& /*json*/) override;
+    // int get_version(json& /*json*/) override;
     int comp_update(const string& image) { return SwbPexFwComponent::update(image); }
 };
 

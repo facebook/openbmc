@@ -290,6 +290,8 @@ class fw_common_config {
       } else {
         static UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0T", 14, 0x60, false);
         static UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 14, 0x60, 0x02);  // target ID of bootloader = 0x02
+        static SwbVrComponent vr_pex0_vcc("swb", "pex01_vcc", "VR_PEX01_VCC");
+        static SwbVrComponent vr_pex1_vcc("swb", "pex23_vcc", "VR_PEX23_VCC");
       }
     }
 };

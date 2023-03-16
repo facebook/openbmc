@@ -257,3 +257,14 @@
 #### intel
 
 - [ ] P0 **diagnostics at scale debug**
+
+#### platform-specific-requirements
+
+- [ ] P2 **sled cable presence detect**
+- [ ] P2 **ddr5 pmic power measurement**
+- [ ] P2 **ddr5 pmic error injection**
+- [ ] P3 **terminus nic enablement**
+- [ ] P2 **platform root of trust support**
+- [ ] P2 **cpld board id version info**
+- [ ] P2 **dimm spd data**
+- [ ] P2 **ti vr controller fw update cycle counter**

@@ -10,3 +10,4 @@ sections:
 feature_list:
   - default-meta-multihost-features
   - intel-features
+  - platform-features

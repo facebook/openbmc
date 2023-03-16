@@ -37,18 +37,15 @@ NORMAL = "\033[0m"
 def find_file(name: str, machine: argparse.Namespace) -> Optional[str]:
     # Check in the machine directory
     base_file_name = os.path.join(machine.file, name)
-    #print(YELLOW + f"Searching for {base_file_name}\n" + NORMAL)
     if os.path.isfile(base_file_name):
         return base_file_name
 
-    # Check in the common and third-party directories
+    # Check in the common, third-party and features directories
     for t in machine.tags:
         common_file_name = os.path.join("common", t, name)
-        #print(YELLOW + f"Searching for {common_file_name}\n" + NORMAL)
         if os.path.isfile(common_file_name):
             return common_file_name
         third_party_file_name = os.path.join("third-party", name)
-        #print(YELLOW + f"Searching for {third_party_file_name}\n" + NORMAL)
         if os.path.isfile(third_party_file_name):
             return third_party_file_name
     return None
@@ -121,8 +118,7 @@ def build_features(out_file: str, machine: argparse.Namespace) -> None:
         if not file:
             print(RED + f"Feature file {file_name} was not found..." + NORMAL)
             return False
-        #else:
-        #    continue
+        print(GREEN + f"Feature file {file_name} was found." + NORMAL)
         try:
             with open(file, "r") as feature_file, open(out_file, "a") as out:
                 feature_list = json.load(feature_file)
@@ -189,11 +185,12 @@ def expand_features(lines: List[str], machine: argparse.Namespace) -> List[str]:
             if subsection_file:
                 with open(subsection_file, "r") as sf:
                     tail = tail + sf.readlines() + ["\n"]
+            else:
+                print(YELLOW + f"Warning: did not find subsection {subsection}.md file" + NORMAL)
 
         elif l.startswith("- ["):
             task = l.strip().split("**")[:-1]
             taskname = "".join([x if x.isalnum() else "-" for x in task[1].lower()])
-
             task_file = find_file(f"features/{subsection}/{taskname}.md", machine)
             if task_file:
                 l = f"{task[0]}**[{task[1]}](#s-{subsection}-{taskname})**\n"
@@ -202,7 +199,7 @@ def expand_features(lines: List[str], machine: argparse.Namespace) -> List[str]:
                 with open(task_file, "r") as tf:
                     tail = tail + tf.readlines() + ["\n"]
             else:
-                print(YELLOW + f"Warning: did not find features/{subsection}/{taskname}.md" + NORMAL)
+                print(RED + f"Warning: did not find features/{subsection}/{taskname}.md" + NORMAL)
 
         fixed.append(l)
 

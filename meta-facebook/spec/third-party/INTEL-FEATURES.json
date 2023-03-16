@@ -1,10 +1,10 @@
 {
   "third-party": {
     "intel": [
-      {
-        "Priority": "P0",
-        "File": "diagnostics-at-scale-debug.md"
-      }
-    ]
+        {
+          "Priority": "P0",
+          "File": "diagnostics-at-scale-debug.md"
+        }
+      ]
   }
 }

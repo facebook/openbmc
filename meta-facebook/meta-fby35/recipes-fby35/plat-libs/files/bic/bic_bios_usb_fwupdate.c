@@ -181,10 +181,9 @@ int
 bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id)
 {
   int ret, index, recheck;
-  int sb_type = fby35_common_get_slot_type(slot_id);
   ssize_t cnt;
   bool found = false;
-  uint8_t bmc_location = 0, port = 0;
+  uint8_t bmc_location = 0, port1 = 0, port2 = 0;
 
   if (udev == NULL) {
     syslog(LOG_ERR, "%s[%u] udev shouldn't be null!", __func__, slot_id);
@@ -232,17 +231,19 @@ bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t pr
             case FW_BIOS_SPIB:
             case FW_PROT:
             case FW_PROT_SPIB:
-              port = (sb_type == SERVER_TYPE_HD) ? HD_SB_USB_PORT : CL_SB_USB_PORT;
+              port1 = HD_SB_USB_PORT;
+              port2 = CL_SB_USB_PORT;
               break;
             case FW_1OU_CXL:
-              port = (sb_type == SERVER_TYPE_HD) ? HD_1OU_USB_PORT : CL_1OU_USB_PORT;
+              port1 = HD_1OU_USB_PORT;
+              port2 = CL_1OU_USB_PORT;
               break;
             default:
               fprintf(stderr, "ERROR: not supported component [comp:%u]!\n", comp);
               libusb_free_device_list(udev->devs, 1);
               return -1;
           }
-          if (udev->path[2] != port) {
+          if (udev->path[2] != port1 && udev->path[2] != port2)  {
             continue;
           }
         }

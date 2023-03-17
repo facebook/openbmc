@@ -9,7 +9,8 @@
 
 using namespace std;
 
-#define MAX_RETRY 30
+constexpr auto MAX_RETRY = 30;
+constexpr auto P1V8_ASIC_EN_R = 0x11;
 
 int CxlComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret, retry_count;
@@ -47,11 +48,15 @@ int CxlComponent::update_internal(const std::string& image, int fd, bool force) 
     return -1;
   }
 
+  sleep(3);  //Avoid start update during CXL power off sequence
   if (!image.empty()) {
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
   } else {
     ret = bic_update_fw_fd(slot_id, fw_comp, fd, force);
   }
+
+  //Disable RBF 1V8
+  remote_bic_set_gpio(slot_id, P1V8_ASIC_EN_R, 0, FEXP_BIC_INTF);
 
   if (ret != 0) {
     cerr << "CXL update failed. ret = " << ret << endl;

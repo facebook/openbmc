@@ -380,7 +380,7 @@ static int run_wedge_power(const char* action) {
 }
 
 int pal_get_server_power(uint8_t slot_id, uint8_t* status) {
-  int ret;
+  int ret = -1;
   uint8_t retry = MAX_READ_RETRY;
   char value[MAX_VALUE_LEN];
   char sysfs_value[4] = {0};
@@ -997,10 +997,6 @@ pal_get_pim_type(uint8_t fru, int retry) {
   while (ret != 0 || !strstr(eeprom.fbw_product_asset, "88-") && retry--) {
     msleep(500);
     ret = elbert_eeprom_parse(fru_name, &eeprom);
-  }
-
-  if (ret) {
-    return -1;
   }
 
   // Elbert uses product_asset instead of product_number for SKU field

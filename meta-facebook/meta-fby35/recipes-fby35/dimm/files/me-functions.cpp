@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <facebook/bic_xfer.h>
+#include <facebook/bic_ipmi.h>
 #include "dimm.h"
 #include "dimm-util-plat.h"
 
@@ -342,6 +343,7 @@ util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, u
   uint8_t bus_id = 0;
   uint8_t addr = 0;
   uint32_t spd_offset = ((offset & 0x780) << 1) | (0x80 | (offset & 0x7F));
+  uint8_t mux = 0;
   int ret = 0;
 
   if (rxbuf == NULL) {
@@ -358,9 +360,14 @@ util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, u
     return bic_read_dimm_smbus(slot_id, bus_id, addr, 2, spd_offset, len, rxbuf);
   }
 
-  ret = bic_read_dimm_i3c(slot_id, bus_id, dimm, 2, offset, len, rxbuf, DIMM_SPD_NVM);
+  if ((bic_get_i3c_mux_position(slot_id, &mux) < 0) || (mux == I3C_MUX_TO_CPU)) {
+    ret = nm_read_dimm_smbus(slot_id, bus_id, addr, 2, spd_offset, len, rxbuf);
+  } else {
+    ret = bic_read_dimm_i3c(slot_id, bus_id, dimm, 2, offset, len, rxbuf, DIMM_SPD_NVM);
+  }
+
   if (ret < 0) {
-    return nm_read_dimm_smbus(slot_id, bus_id, addr, 2, spd_offset, len, rxbuf);
+    return -1;
   }
 
   return len;
@@ -433,6 +440,7 @@ util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, u
   uint8_t addr = 0;
   uint32_t pmic_offset = offset;
   int ret = 0;
+  uint8_t mux = 0;
 
   if (rxbuf == NULL) {
     return -1;
@@ -448,9 +456,14 @@ util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, u
     return bic_read_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, rxbuf);
   }
 
-  ret = bic_read_dimm_i3c(slot_id, bus_id, dimm, 1, pmic_offset, len, rxbuf, DIMM_PMIC);
+  if ((bic_get_i3c_mux_position(slot_id, &mux) < 0) || (mux == I3C_MUX_TO_CPU)) {
+    ret = nm_read_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, rxbuf);
+  } else {
+    ret = bic_read_dimm_i3c(slot_id, bus_id, dimm, 1, pmic_offset, len, rxbuf, DIMM_PMIC);
+  }
+
   if (ret < 0) {
-    return nm_read_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, rxbuf);
+    return -1;
   }
 
   return len;

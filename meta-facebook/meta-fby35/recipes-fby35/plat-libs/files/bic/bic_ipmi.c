@@ -2287,6 +2287,33 @@ exit_done:
 }
 
 int
+bic_get_i3c_mux_position(uint8_t slot_id, uint8_t *mux) {
+  int ret;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 0;
+  uint8_t tlen = IANA_ID_SIZE;
+
+  if (mux == NULL) {
+    syslog(LOG_WARNING, "%s: fail to get i3c mux due to NULL pointer check \n", __func__);
+    return -1;
+  }
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_I3C_MUX, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to send the command to get the I3C mux position. ret=%d", __func__, ret);
+    return ret;
+  }
+
+  *mux = rbuf[IANA_ID_SIZE];
+
+  return ret;
+}
+
+int
 bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_t input_len, uint32_t *output_len) {
   int ret = 0;
   uint8_t tbuf[4] = {0};

@@ -56,6 +56,7 @@ enum {
   BIC_CMD_OEM_GET_EXTENDED_SDR  = 0xC0,
   BIC_CMD_OEM_BIOS_VER          = 0xA2,
   BIC_CMD_OEM_READ_WRITE_DIMM   = 0xB1,
+  BIC_CMD_OEM_GET_I3C_MUX       = 0xB2,
 };
 
 enum {
@@ -91,6 +92,11 @@ typedef enum {
   DIMM_SPD_NVM,
   DIMM_PMIC,
 } DIMM_DEVICE_TYPE;
+
+typedef enum {
+  I3C_MUX_TO_CPU = 0x0,
+  I3C_MUX_TO_BIC = 0x1,
+} I3C_MUX_POSITION;
 
 void msleep(int msec);
 int i2c_open(uint8_t bus_id, uint8_t addr_7bit);

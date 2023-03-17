@@ -76,10 +76,12 @@ do {                                                                        \
 
 #define SB_TYPE_CLASS1       0x01
 #define SB_TYPE_CLASS2       0x02
-#define UART_CH_RCVY_1OU     0x05
+#define UART_CH_RCVY_1OU     0x01
 #define UART_CH_RCVY_2OU     0x02
 #define UART_CH_RCVY_SB      0x03
 #define UART_CH_RCVY_BB      0x04
+#define UART_CH_RCVY_OP_1_2  0x05
+#define UART_CH_RCVY_OP_3_4  0x02
 #define FORCE_BOOT_FROM_SPI  0x00
 #define FORCE_BOOT_FROM_UART 0x01
 #define OP_1OU_IOEXP_ADDR    0x4C
@@ -373,10 +375,10 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
     uint8_t component;
   } OP_BIC_RCVY_INFO;
   static const OP_BIC_RCVY_INFO op_info[4] = {
-    {FW_1OU_BIC, 1, OP_1OU_IOEXP_ADDR, OP_1OU_IOEXP_ADDR, UART_CH_RCVY_1OU, FW_1OU_BIC_RCVY},
-    {FW_2OU_BIC, 0, OP_1OU_IOEXP_ADDR, OP_2OU_IOEXP_ADDR, UART_CH_RCVY_1OU, FW_2OU_BIC_RCVY},
-    {FW_3OU_BIC, 1, OP_3OU_IOEXP_ADDR, OP_3OU_IOEXP_ADDR, UART_CH_RCVY_2OU, FW_3OU_BIC_RCVY},
-    {FW_4OU_BIC, 0, OP_3OU_IOEXP_ADDR, OP_4OU_IOEXP_ADDR, UART_CH_RCVY_2OU, FW_4OU_BIC_RCVY},
+    {FW_1OU_BIC, 1, OP_1OU_IOEXP_ADDR, OP_1OU_IOEXP_ADDR, UART_CH_RCVY_OP_1_2, FW_1OU_BIC_RCVY},
+    {FW_2OU_BIC, 0, OP_1OU_IOEXP_ADDR, OP_2OU_IOEXP_ADDR, UART_CH_RCVY_OP_1_2, FW_2OU_BIC_RCVY},
+    {FW_3OU_BIC, 1, OP_3OU_IOEXP_ADDR, OP_3OU_IOEXP_ADDR, UART_CH_RCVY_OP_3_4, FW_3OU_BIC_RCVY},
+    {FW_4OU_BIC, 0, OP_3OU_IOEXP_ADDR, OP_4OU_IOEXP_ADDR, UART_CH_RCVY_OP_3_4, FW_4OU_BIC_RCVY},
   };
 
   if (path == NULL) {

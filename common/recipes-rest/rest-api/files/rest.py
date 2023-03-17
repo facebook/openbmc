@@ -79,6 +79,8 @@ servers.extend([loop.create_server(handler, "*", port) for port in config["ports
 
 if config["ssl_certificate"] and os.path.isfile(config["ssl_certificate"]):
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    # Disable insecure < TLS1.2 ciphers
+    ssl_context.options |= (ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
     if config["ssl_ca_certificate"]:
         # Set up mutual TLS authentication if config has ssl_ca_certificate
         ssl_context.load_verify_locations(config["ssl_ca_certificate"])

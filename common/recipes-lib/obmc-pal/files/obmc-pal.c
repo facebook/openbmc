@@ -856,6 +856,7 @@ pal_apml_alert_handler(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t
   int completion_code = CC_UNSPECIFIED_ERROR;
   uint8_t status;
   uint8_t event_version = req_data[3];
+  uint8_t ras_status = req_data[4];
   uint8_t num_of_proc = 0, target_cpu = 0;
   uint32_t *cpuid;
 
@@ -877,7 +878,7 @@ pal_apml_alert_handler(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t
       target_cpu = req_data[6];
       cpuid = (uint32_t*)(req_data+7);
 
-      ret = pal_add_apml_crashdump_record(slot, num_of_proc, target_cpu, cpuid);
+      ret = pal_add_apml_crashdump_record(slot, ras_status, num_of_proc, target_cpu, cpuid);
       if (0 == ret) {
         completion_code = CC_SUCCESS;
       }
@@ -892,7 +893,7 @@ pal_apml_alert_handler(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t
 }
 
 int __attribute__((weak))
-pal_add_apml_crashdump_record(uint8_t fru, uint8_t num_of_proc, uint8_t target_cpu, const uint32_t* cpuid)
+pal_add_apml_crashdump_record(uint8_t fru, uint8_t ras_status, uint8_t num_of_proc, uint8_t target_cpu, const uint32_t* cpuid)
 {
   return PAL_ENOTSUP;
 }

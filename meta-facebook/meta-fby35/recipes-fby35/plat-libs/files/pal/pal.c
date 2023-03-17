@@ -5387,3 +5387,29 @@ pal_get_post_complete(uint8_t slot_id, uint8_t *bios_post_complete) {
 
   return ret;
 }
+
+int
+pal_add_apml_crashdump_record(uint8_t fru, uint8_t ras_status, uint8_t num_of_proc, uint8_t target_cpu, const uint32_t* cpuid) {
+  int ret = 0;
+  char cmd[128] = "\0";
+  int cmd_len = sizeof(cmd);
+
+  // Check if the crashdump script exist
+  if (access(APMLDUMP_BIN, F_OK) == -1) {
+    syslog(LOG_CRIT, "%s() Try to run apmldump for %d but %s is not existed", __func__, fru, APMLDUMP_BIN);
+    return ret;
+  }
+
+  if (cpuid == NULL) {
+    return -1;
+  }
+
+  snprintf(cmd, cmd_len, "%s slot%d %d %d %d %08X %08X %08X %08X &", APMLDUMP_BIN, fru, ras_status, num_of_proc, target_cpu, cpuid[0], cpuid[1], cpuid[2], cpuid[3]);
+
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    return -1;
+  }
+
+  return 0;
+}

@@ -63,6 +63,7 @@ extern "C" {
 
 #define POST_COMPLETE_STR "slot%d_end_of_post"
 #define BIOS_NEW_VER_STR "fru%d_delay_activate_sysfw_ver"
+#define APMLDUMP_BIN "/usr/bin/autodump_amd.sh"
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];

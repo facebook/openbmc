@@ -2089,15 +2089,21 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   }
 
   if ( bmc_location == BB_BMC ) {
+    if ((config_status & PRESENT_1OU) == PRESENT_1OU) {
+      if ( bic_get_1ou_type(slot, &type_1ou) != 0 ) {
+        pcie_conf = CONFIG_C;
+        goto done;
+      }
+      if (type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
+        pcie_conf = CONFIG_OP;
+        goto done;
+      }
+    }
     switch (config_status & (PRESENT_2OU|PRESENT_1OU)) {
       case 0:
         pcie_conf = CONFIG_A;
         break;
       case PRESENT_1OU:
-        if ( bic_get_1ou_type(slot, &type_1ou) != 0 ) {
-          pcie_conf = CONFIG_C;
-          break;
-        }
         switch (type_1ou) {
           case TYPE_1OU_VERNAL_FALLS_WITH_AST:
             if (pal_get_vf2_pcie_config(slot, &pcie_conf) != 0) {
@@ -2128,6 +2134,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     pcie_conf = CONFIG_D;
   }
 
+done:
   *data++ = pcie_conf;
   *res_len = data - res_data;
   return ret;

@@ -103,6 +103,12 @@ rst_perst_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
   }
 }
 
+static void
+rst_perst_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
+  if (curr) {
+    rst_perst_event_handler(desc, curr, curr);
+  }
+}
 
 // GPIO table to be monitored
 static struct gpiopoll_config gpios_list[] = {
@@ -134,7 +140,7 @@ static struct gpiopoll_config gpios_list[] = {
   {FM_PVDDCR_CPU0_P1_PMALERT,   "SGPIO156",  GPIO_EDGE_BOTH,    gpio_event_handler,         NULL},
   {FM_PVDDCR_CPU1_P0_SMB_ALERT, "SGPIO158",  GPIO_EDGE_BOTH,    gpio_event_handler,         NULL},
   {FM_PVDDCR_CPU1_P1_SMB_ALERT, "SGPIO160",  GPIO_EDGE_BOTH,    gpio_event_handler,         NULL},
-  {RST_PERST_N,                 "SGPIO230",  GPIO_EDGE_RISING,  rst_perst_event_handler,    NULL},
+  {RST_PERST_N,                 "SGPIO230",  GPIO_EDGE_RISING,  rst_perst_event_handler,    rst_perst_init_handler},
   {FM_CPU0_PRSNT,               "CPU0",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
   {FM_CPU1_PRSNT,               "CPU1",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
   {FM_OCP0_PRSNT,               "NIC0",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},

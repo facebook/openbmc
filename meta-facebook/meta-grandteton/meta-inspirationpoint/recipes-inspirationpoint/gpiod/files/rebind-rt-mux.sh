@@ -19,15 +19,18 @@
 
 . /usr/local/bin/openbmc-utils.sh
 
+RETRY=0
+
 rebind_i2c_dev() {
   dev="$1-00$2"
   dri=$3
 
-  if [ ! -L "${SYSFS_I2C_DEVICES}/$dev/driver" ]; then
-    if i2c_bind_driver "$dri" "$dev" >/dev/null; then
-      echo "rebind $dev to driver $dri successfully"
-    fi
-  fi
+  while [ ! -L "${SYSFS_I2C_DEVICES}/$dev/driver" ] && [ $RETRY -lt 10 ];
+  do
+    sleep 1
+    i2c_bind_driver "$dri" "$dev"
+    ((RETRY++))
+  done
 }
 
 rebind_i2c_dev 6 70 pca954x

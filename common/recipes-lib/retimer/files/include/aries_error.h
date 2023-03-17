@@ -83,7 +83,10 @@ typedef enum
     ARIES_EEPROM_CRC_BYTE_FAIL = -15,
 
     /** Temperature read value not ready */
-    ARIES_TEMP_READ_NOT_READY = -16
+    ARIES_TEMP_READ_NOT_READY = -16,
+
+    /** OUT OF MEMORY */
+    ARIES_OUT_OF_MEMORY = -17
 } AriesErrorType;
 
 #ifdef __cplusplus

@@ -3,6 +3,9 @@
  * @brief Definition of platform functions for the SDK.
  */
 
+#ifndef PLATFORM_H_
+#define PLATFORM_H_
+
 #include "aries_api.h"
 
 #ifdef __cplusplus
@@ -23,7 +26,10 @@ AriesErrorType AriesInit(int bus, int addr);
 AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp);
 AriesErrorType AriesGetFwVersion(int bus, int addr, uint16_t* version);
 AriesErrorType AriesGetTemp(int bus, int addr, float* temp);
+AriesErrorType AriesMargin(int id, const char* type, const char* fp);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

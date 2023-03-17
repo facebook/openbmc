@@ -13,10 +13,32 @@
 #include <linux/i2c-dev.h>
 #include <openbmc/obmc-i2c.h>
 #include "include/platform.h"
+#include "include/aries_margin.h"
+#include "include/aries_link.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define NUM_RETIMERS 1
+#define NUM_LINKS_PER_RETIMER 1
+#define NUM_TOTAL_LINKS NUM_RETIMERS * NUM_LINKS_PER_RETIMER
+
+typedef struct {
+    int bus;
+    int addr;
+} RETIMER_DEV;
+
+RETIMER_DEV RT_DEV_INFO[] = {
+   {60, 0x24},
+   {61, 0x24},
+   {62, 0x24},
+   {63, 0x24},
+   {64, 0x24},
+   {65, 0x24},
+   {66, 0x24},
+   {67, 0x24},
+};
 
 /**
  * @brief Set I2C slave address
@@ -137,6 +159,11 @@ AriesErrorType AriesInit(int bus, int addr)
 
     // Initialize I2C Driver for SDK transactions
     i2cDriver = (AriesI2CDriverType*)malloc(sizeof(AriesI2CDriverType));
+
+    if (i2cDriver == NULL) {
+        return ARIES_OUT_OF_MEMORY;
+    }
+
     i2cDriver->handle = ariesHandle;
     i2cDriver->slaveAddr = ariesSlaveAddress;
     i2cDriver->pecEnable = ARIES_I2C_PEC_DISABLE;
@@ -147,6 +174,11 @@ AriesErrorType AriesInit(int bus, int addr)
 
     // Initialize Aries device structure
     ariesDevice = (AriesDeviceType*)malloc(sizeof(AriesDeviceType));
+
+    if (ariesDevice == NULL) {
+        return ARIES_OUT_OF_MEMORY;
+    }
+
     ariesDevice->i2cDriver = i2cDriver;
     ariesDevice->i2cBus = i2cBus;
     ariesDevice->partNumber = partNumber;
@@ -168,6 +200,17 @@ AriesErrorType AriesInit(int bus, int addr)
     int glb_param_reg0 = (dataBytes[3] << 24) + (dataBytes[2] << 16) +
                          (dataBytes[1] << 8) + dataBytes[0];
 
+
+    asteraI2CCloseConnection(ariesHandle);
+
+    if (ariesDevice) {
+        free(ariesDevice);
+    }
+
+    if (i2cDriver) {
+        free(i2cDriver);
+    }
+
     return rc;
 }
 
@@ -186,6 +229,11 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
     ariesHandle = asteraI2COpenConnection(i2cBus, ariesSlaveAddress);
 
     i2cDriver = (AriesI2CDriverType*)malloc(sizeof(AriesI2CDriverType));
+
+    if (i2cDriver == NULL) {
+        return ARIES_OUT_OF_MEMORY;
+    }
+
     i2cDriver->handle = ariesHandle;
     i2cDriver->slaveAddr = ariesSlaveAddress;
     i2cDriver->pecEnable = ARIES_I2C_PEC_DISABLE;
@@ -194,6 +242,10 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
     i2cDriver->lockInit = 0;
 
     ariesDevice = (AriesDeviceType*)malloc(sizeof(AriesDeviceType));
+    if (ariesDevice == NULL) {
+        return ARIES_OUT_OF_MEMORY;
+    }
+
     ariesDevice->i2cDriver = i2cDriver;
     ariesDevice->i2cBus = i2cBus;
     ariesDevice->partNumber = partNumber;
@@ -230,8 +282,6 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
     // De-assert HW reset
     rc = ariesSetHwReset(ariesDevice, 0);
     CHECK_SUCCESS(rc);
-    usleep(10000);
-
     usleep(5000000);
 
     rc = ariesInitDevice(ariesDevice, ariesSlaveAddress);
@@ -245,6 +295,14 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
                 ariesDevice->fwVersion.minor, ariesDevice->fwVersion.build);
 
     asteraI2CCloseConnection(ariesHandle);
+
+    if (ariesDevice) {
+        free(ariesDevice);
+    }
+
+    if (i2cDriver) {
+        free(i2cDriver);
+    }
 
     return ARIES_SUCCESS;
 }
@@ -284,6 +342,14 @@ AriesErrorType AriesGetFwVersion(int bus, int addr, uint16_t* ver)
 
     asteraI2CCloseConnection(ariesHandle);
 
+    if (ariesDevice) {
+        free(ariesDevice);
+    }
+
+    if (i2cDriver) {
+        free(i2cDriver);
+    }
+
     return ARIES_SUCCESS;
 }
 
@@ -301,6 +367,10 @@ AriesErrorType AriesGetTemp(int bus, int addr, float* temp)
 
     ariesHandle = asteraI2COpenConnection(i2cBus, ariesSlaveAddress);
     i2cDriver = (AriesI2CDriverType*)malloc(sizeof(AriesI2CDriverType));
+    if (i2cDriver == NULL) {
+        return ARIES_OUT_OF_MEMORY;
+    }
+
     i2cDriver->handle = ariesHandle;
     i2cDriver->slaveAddr = ariesSlaveAddress;
     i2cDriver->pecEnable = ARIES_I2C_PEC_DISABLE;
@@ -309,9 +379,14 @@ AriesErrorType AriesGetTemp(int bus, int addr, float* temp)
     i2cDriver->lockInit = 0;
 
     ariesDevice = (AriesDeviceType*)malloc(sizeof(AriesDeviceType));
+    if (ariesDevice == NULL) {
+        return ARIES_OUT_OF_MEMORY;
+    }
+
     ariesDevice->i2cDriver = i2cDriver;
     ariesDevice->i2cBus = i2cBus;
     ariesDevice->partNumber = partNumber;
+    ariesDevice->tempCalCodeAvg = 84;
 
     // Read Temperature
     rc = ariesGetCurrentTemp(ariesDevice);
@@ -320,6 +395,172 @@ AriesErrorType AriesGetTemp(int bus, int addr, float* temp)
     *temp = ariesDevice->currentTempC;
     // Close all open connections
     asteraI2CCloseConnection(ariesHandle);
+
+    if (ariesDevice) {
+        free(ariesDevice);
+    }
+
+    if (i2cDriver) {
+        free(i2cDriver);
+    }
+
+    return ARIES_SUCCESS;
+}
+
+AriesErrorType AriesMargin(int id, const char* type, const char* fname)
+{
+    AriesDeviceType* ariesDevice;
+    AriesI2CDriverType* i2cDriver;
+    AriesErrorType rc;
+    int ariesHandle;
+    int i2cBus = RT_DEV_INFO[id].bus;
+    int ariesSlaveAddress = RT_DEV_INFO[id].addr;
+    AriesDevicePartType partNumber = ARIES_PTX16;
+
+    asteraLogSetLevel(2);
+
+    // Open connection to Aries Retimer
+    ariesHandle = asteraI2COpenConnection(i2cBus, ariesSlaveAddress);
+
+    i2cDriver = (AriesI2CDriverType*)malloc(sizeof(AriesI2CDriverType));
+    if (i2cDriver == NULL) {
+        return ARIES_OUT_OF_MEMORY;
+    }
+
+    i2cDriver->handle = ariesHandle;
+    i2cDriver->slaveAddr = ariesSlaveAddress;
+    i2cDriver->pecEnable = ARIES_I2C_PEC_DISABLE;
+    i2cDriver->i2cFormat = ARIES_I2C_FORMAT_ASTERA;
+    i2cDriver->lockInit = 0;
+
+    ariesDevice = (AriesDeviceType*)malloc(sizeof(AriesDeviceType));
+    if (ariesDevice == NULL) {
+        return ARIES_OUT_OF_MEMORY;
+    }
+
+    ariesDevice->i2cDriver = i2cDriver;
+    ariesDevice->i2cBus = i2cBus;
+    ariesDevice->partNumber = partNumber;
+
+    rc = ariesInitDevice(ariesDevice, ariesSlaveAddress);
+    if (rc != ARIES_SUCCESS)
+    {
+      ASTERA_ERROR("Init device failed");
+      return rc;
+    }
+
+    // Get device orientation
+    int o;
+    rc = ariesGetPortOrientation(ariesDevice, &o);
+    CHECK_SUCCESS(rc);
+
+    AriesOrientationType orientation;
+    if (o == 0)
+    {
+      orientation = ARIES_ORIENTATION_NORMAL;
+    }
+    else if (o == 1)
+    {
+      orientation = ARIES_ORIENTATION_REVERSED;
+    }
+    else
+    {
+      ASTERA_ERROR("Could not determine port orientation");
+      return ARIES_INVALID_ARGUMENT;
+    }
+
+    uint8_t* ec1 = (uint8_t*)malloc(sizeof(uint8_t) * 16);
+    uint8_t* ec2 = (uint8_t*)malloc(sizeof(uint8_t) * 16);
+    uint8_t** ec = (uint8_t**)malloc(sizeof(uint8_t*) * 2);
+    ec[0] = ec1;
+    ec[1] = ec2;
+
+    // Initialize our margin device. This will store important information about
+    // the device we will margin
+    AriesRxMarginType* marginDevice = (AriesRxMarginType*)malloc(
+       sizeof(AriesRxMarginType));
+    if (marginDevice == NULL) {
+      return ARIES_OUT_OF_MEMORY;
+    }
+
+    marginDevice->device = ariesDevice;
+    marginDevice->partNumber = partNumber;
+    marginDevice->orientation = orientation;
+    marginDevice->do1XAnd0XCapture = true;
+    marginDevice->errorCountLimit = 4;
+    marginDevice->errorCount = ec;
+
+    int width;
+    if (marginDevice->partNumber == ARIES_PTX16)
+    {
+      width = 16;
+    }
+    else if (marginDevice->partNumber == ARIES_PTX08)
+    {
+      width = 8;
+    }
+
+    // Initialize our eyeResults array that we will store the results from
+    // ariesLogEye() in (the results will also be saved to a file)
+    double*** eyeResults = (double***)malloc(sizeof(double**) * 2);
+    if (eyeResults == NULL) {
+        return ARIES_OUT_OF_MEMORY;
+    }
+
+    int i = 0;
+    for (i = 0; i < 2; i++)
+    {
+      eyeResults[i] = (double**)malloc(sizeof(double*) * width);
+      int j;
+      for (j = 0; j < width; j++)
+      {
+        eyeResults[i][j] = (double*)malloc(sizeof(double) * 5);
+      }
+    }
+
+    // Run the ariesLogEye method to check the eye stats for all the lanes on
+    // the Up stream pseudo port on this device and save them to a document
+    if (!strcmp(type, "up")) {
+      ariesLogEye(marginDevice, ARIES_UP_STREAM_PSEUDO_PORT, width, fname,
+             0, 0.5, eyeResults);
+    }
+    else if (!strcmp(type, "down")) {
+      ariesLogEye(marginDevice, ARIES_UP_STREAM_PSEUDO_PORT, width, fname,
+             0, 0.5, eyeResults);
+    }
+    else {
+      ASTERA_ERROR("Unknown type");
+    }
+
+    asteraI2CCloseConnection(ariesHandle);
+
+    if (ec1) {
+        free(ec1);
+    }
+
+    if (ec2) {
+        free(ec2);
+    }
+
+    if (ec) {
+        free(ec);
+    }
+
+    if (eyeResults) {
+        free(eyeResults);
+    }
+
+    if (marginDevice) {
+        free(marginDevice);
+    }
+
+    if (ariesDevice) {
+        free(ariesDevice);
+    }
+
+    if (i2cDriver) {
+        free(i2cDriver);
+    }
 
     return ARIES_SUCCESS;
 }

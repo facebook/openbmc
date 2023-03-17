@@ -2799,12 +2799,17 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     E1S_1OU_P12V_FAULT = 0x83,
     E1S_1OU_P3V3_FAULT = 0x84,
     P12V_EDGE_FAULT    = 0x85,
+    E1S_INA233_ALERT   = 0x86,
   };
   uint8_t event = event_data[0];
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
   char fan_mode_str[FAN_MODE_STR_LEN] = {0};
   char component_str[MAX_COMPONENT_LEN] = {0};
+  uint8_t type_1ou = 0;
 
+  if (bic_get_1ou_type(fru, &type_1ou)) {
+    type_1ou = TYPE_1OU_UNKNOWN;
+  }
   switch (event) {
     case SYS_SOC_THERM_TRIP:
       strcat(error_log, "SOC thermal trip");
@@ -2889,7 +2894,11 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, log_msg);
       break;
     case E1S_1OU_M2_PRESENT:
-      snprintf(log_msg, sizeof(log_msg), "E1S 1OU M.2 dev%d present", event_data[2]);
+      if (type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
+        snprintf(log_msg, sizeof(log_msg), "E1S %dOU E1.S dev%d present", event_data[1] + 1, event_data[2]);
+      } else {
+        snprintf(log_msg, sizeof(log_msg), "E1S 1OU M.2 dev%d present", event_data[2]);
+      }
       strcat(error_log, log_msg);
       break;
     case E1S_1OU_INA230_PWR_ALERT:
@@ -2900,15 +2909,33 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, "E1S 1OU HSC power alert");
       break;
     case E1S_1OU_P12V_FAULT:
-      snprintf(log_msg, sizeof(log_msg), "E1S 1OU dev%d P12V fault", event_data[2]);
+      if (type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
+        snprintf(log_msg, sizeof(log_msg), "E1S %dOU dev%d P12V fault", event_data[1] + 1, event_data[2]);
+      } else {
+        snprintf(log_msg, sizeof(log_msg), "E1S 1OU dev%d P12V fault", event_data[2]);
+      }
       strcat(error_log, log_msg);
       break;
     case E1S_1OU_P3V3_FAULT:
-      snprintf(log_msg, sizeof(log_msg), "E1S 1OU dev%d P3V3 fault", event_data[2]);
+      if (type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
+        snprintf(log_msg, sizeof(log_msg), "E1S %dOU dev%d P3V3 fault", event_data[1] + 1, event_data[2]);
+      } else {
+        snprintf(log_msg, sizeof(log_msg), "E1S 1OU dev%d P3V3 fault", event_data[2]);
+      }
       strcat(error_log, log_msg);
       break;
     case P12V_EDGE_FAULT:
       strcat(error_log, "P12V Edge fault");
+      break;
+    case E1S_INA233_ALERT:
+      if (event_data[2] == 0x5) {
+        snprintf(log_msg, sizeof(log_msg), "E1S %dOU P12V EDGE fault", event_data[1] + 1);
+      } else if (event_data[2] == 0x6) {
+        snprintf(log_msg, sizeof(log_msg), "E1S %dOU P12V MAIN fault", event_data[1] + 1);
+      } else {
+        snprintf(log_msg, sizeof(log_msg), "E1S %dOU dev%d INA233 alert", event_data[1] + 1, event_data[2]);
+      }
+      strcat(error_log, log_msg);
       break;
     default:
       strcat(error_log, "Undefined system event");

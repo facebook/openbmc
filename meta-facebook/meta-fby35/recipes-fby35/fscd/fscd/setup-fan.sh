@@ -131,6 +131,10 @@ init_class1_fsc() {
         config_type="8"
         target_fsc_config="/etc/FSC_CLASS1_type8_config.json"
         ;;
+      2)
+        config_type="HD"
+        target_fsc_config="/etc/FSC_CLASS1_HD_RBF_config.json"
+        ;;
       *)
         config_type="HD"
         target_fsc_config="/etc/FSC_CLASS1_HD_config.json"

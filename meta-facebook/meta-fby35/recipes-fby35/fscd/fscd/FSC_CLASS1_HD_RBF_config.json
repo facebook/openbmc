@@ -1,5 +1,5 @@
 {
-  "version": "halfdome-v2023.03.07",
+  "version": "halfdome-rbf-v2023.03.07",
   "pwm_transition_value": 80,
   "pwm_boost_value": 80,
   "non_fanfail_limited_boost_value": 80,
@@ -24,6 +24,11 @@
       "attribute": {
         "type" : "power_status"
       }
+    },
+    "(.*)rf_": {
+      "attribute": {
+        "type" : "power_status"
+      }
     }
   },
   "watchdog": false,
@@ -38,16 +43,15 @@
       "negative_hysteresis": 1,
       "data": [
         [ 25, 8 ],
-        [ 27, 9 ],
-        [ 29, 10 ],
-        [ 31, 11 ],
-        [ 33, 12 ],
-        [ 35, 13 ],
-        [ 37, 15 ],
-        [ 39, 17 ],
-        [ 41, 20 ],
-        [ 43, 30 ],
-        [ 45, 40 ]
+        [ 28, 9 ],
+        [ 30, 10 ],
+        [ 33, 11 ],
+        [ 35, 12 ],
+        [ 37, 13 ],
+        [ 39, 14 ],
+        [ 41, 15 ],
+        [ 43, 16 ],
+        [ 45, 17 ]
       ]
     },
     "linear_cpu": {
@@ -59,8 +63,8 @@
       "negative_hysteresis": 2,
       "data": [
         [ 59, 8 ],
-        [ 62, 9 ],
-        [ 65, 14 ]
+        [ 62, 14 ],
+        [ 65, 18 ]
       ]
     },
     "pid_cpu": {
@@ -68,7 +72,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 69,
+      "setpoint": 71,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -3,
@@ -83,9 +87,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [66, 8],
-        [69, 9],
-        [72, 10]
+        [65, 8],
+        [70, 10],
+        [73, 13]
       ]
     },
     "pid_dimm": {
@@ -95,7 +99,7 @@
       "type": "pid",
       "setpoint": 75,
       "negative_hysteresis": 2,
-      "positive_hysteresis": 0,
+      "positive_hysteresis": 1,
       "kp": -3,
       "ki": -0.035,
       "kd": 0
@@ -108,9 +112,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [74, 8],
-        [77, 9],
-        [80, 10]
+        [79, 8],
+        [82, 9],
+        [85, 10]
       ]
     },
     "pid_nic": {
@@ -133,8 +137,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [62, 8],
-        [65, 9]
+        [59, 8],
+        [62, 9],
+        [65, 10]
       ]
     },
     "pid_boot_drive": {
@@ -143,6 +148,31 @@
       },
       "type": "pid",
       "setpoint": 68,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.5,
+      "ki": -0.02,
+      "kd": 0
+    },
+    "linear_rbf_cxl": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [71, 8],
+        [74, 9],
+        [77, 10]
+      ]
+    },
+    "pid_rbf_cxl": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 80,
       "negative_hysteresis": 2,
       "positive_hysteresis": 1,
       "kp": -1.5,
@@ -187,7 +217,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "FSC_CLASS1_HD_zone1.fsc"
+      "expr_file": "FSC_CLASS1_HD_RBF_zone1.fsc"
     }
   }
 }

@@ -1,0 +1,61 @@
+max([
+  linear_cpu(all:slot1_mb_soc_cpu_temp_c) + pid_cpu(all:slot1_mb_soc_cpu_temp_c),
+  linear_cpu(all:slot3_mb_soc_cpu_temp_c) + pid_cpu(all:slot3_mb_soc_cpu_temp_c),
+  linear_frontIO_inlet(
+    max([
+      all:slot1_fio_front_temp_c,
+      all:slot3_fio_front_temp_c])),
+  linear_dimm(
+    max([
+      all:slot1_mb_dimma0_temp_c,
+      all:slot1_mb_dimma1_temp_c,
+      all:slot1_mb_dimma2_temp_c,
+      all:slot1_mb_dimma4_temp_c,
+      all:slot1_mb_dimma6_temp_c,
+      all:slot1_mb_dimma7_temp_c,
+      all:slot1_mb_dimma8_temp_c,
+      all:slot1_mb_dimma10_temp_c,
+      all:slot3_mb_dimma0_temp_c,
+      all:slot3_mb_dimma1_temp_c,
+      all:slot3_mb_dimma2_temp_c,
+      all:slot3_mb_dimma4_temp_c,
+      all:slot3_mb_dimma6_temp_c,
+      all:slot3_mb_dimma7_temp_c,
+      all:slot3_mb_dimma8_temp_c,
+      all:slot3_mb_dimma10_temp_c])) +
+  pid_dimm(
+    max([
+      all:slot1_mb_dimma0_temp_c,
+      all:slot1_mb_dimma1_temp_c,
+      all:slot1_mb_dimma2_temp_c,
+      all:slot1_mb_dimma4_temp_c,
+      all:slot1_mb_dimma6_temp_c,
+      all:slot1_mb_dimma7_temp_c,
+      all:slot1_mb_dimma8_temp_c,
+      all:slot1_mb_dimma10_temp_c,
+      all:slot3_mb_dimma0_temp_c,
+      all:slot3_mb_dimma1_temp_c,
+      all:slot3_mb_dimma2_temp_c,
+      all:slot3_mb_dimma4_temp_c,
+      all:slot3_mb_dimma6_temp_c,
+      all:slot3_mb_dimma7_temp_c,
+      all:slot3_mb_dimma8_temp_c,
+      all:slot3_mb_dimma10_temp_c])),
+  linear_nic(all:nic_nic_temp_c) + pid_nic(all:nic_nic_temp_c),
+  linear_boot_drive(
+    max([
+      all:slot1_mb_ssd0_m2a_temp_c,
+      all:slot3_mb_ssd0_m2a_temp_c])) +
+  pid_boot_drive(
+    max([
+      all:slot1_mb_ssd0_m2a_temp_c,
+      all:slot3_mb_ssd0_m2a_temp_c])),
+  linear_rbf_cxl(
+    max([
+      all:slot1_rf_cxl_cntr_temp_c,
+      all:slot3_rf_cxl_cntr_temp_c])) +
+  pid_rbf_cxl(
+    max([
+      all:slot1_rf_cxl_cntr_temp_c,
+      all:slot3_rf_cxl_cntr_temp_c]))
+])

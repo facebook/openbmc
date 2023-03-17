@@ -91,7 +91,12 @@ def get_system_conf():
 
 system_conf = get_system_conf()
 if "HD" in system_conf:
-    one_fan_fail_tuple = (fan_mode["boost_mode"], 100)
+    one_fan_fail_tuple = (fan_mode["boost_mode"], 80)
+    get_fan_mode_scenario_list = [
+            "one_fan_failure",
+            "sensor_hit_UCR",
+            "sensor_fail",
+        ]
     GPIO_FM_BIOS_POST_CMPLT_BMC_N = 0
     dimm_location_name_map = hd_dimm_location_name_map
 elif "VF" in system_conf:
@@ -241,7 +246,9 @@ def get_fan_mode(scenario="None"):
     elif "sensor_hit_UCR" in scenario:
         pwm = 100
         return fan_mode["boost_mode"], pwm
-
+    elif "sensor_fail" in scenario:
+        pwm = 80
+        return fan_mode["boost_mode"], pwm
     pass
 
 

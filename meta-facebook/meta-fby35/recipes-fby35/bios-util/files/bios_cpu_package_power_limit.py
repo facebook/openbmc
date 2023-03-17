@@ -28,10 +28,12 @@ def cpu_package_power_limit(fru, argv):
             result = kv.kv_set(
                     "fru" + str(fru) + "_power_limit_status", "0x81", kv.FPERSIST
                     )
+            print("Done. Need a power cycle to take the power-limit-enable effect")
         elif option == "disable":
             result = kv.kv_set(
                     "fru" + str(fru) + "_power_limit_status", "0x80", kv.FPERSIST
                     )
+            print("Done. Need a power cycle to take the power-limit-disable effect")
         else:
             print("Invalid argument " + str(option))
             return False

@@ -59,7 +59,7 @@ bic_server_power_control(uint8_t slot_id, uint8_t val) {
 
   tbuf[0] = 0x01; //bus id
   tbuf[1] = 0x42; //slave addr
-  tbuf[2] = 0x01; //read 1 byte 
+  tbuf[2] = 0x01; //read 1 byte
   tbuf[3] = 0x00; //register offset
   tbuf[4] = val;
 
@@ -73,7 +73,6 @@ bic_server_power_on(uint8_t slot_id) {
   int sts_cnt = sizeof(pwr_seq);
   int ret;
   int i;
-  
   for (i = 0; i < sts_cnt; i++) {
     ret = bic_server_power_control(slot_id, pwr_seq[i]);
     if ( ret < 0 ) {
@@ -81,7 +80,7 @@ bic_server_power_on(uint8_t slot_id) {
       return ret;
     }
 
-    if ( POWER_BTN_LOW == pwr_seq[i] ) sleep(1);    
+    if ( POWER_BTN_LOW == pwr_seq[i] ) sleep(1);
   }
 
   return ret;
@@ -92,8 +91,28 @@ bic_server_power_off_with_param(uint8_t slot_id, uint8_t gs_flag) {
   uint8_t pwr_seq[3] = {POWER_BTN_HIGH, POWER_BTN_LOW, POWER_BTN_HIGH};
   int sts_cnt = sizeof(pwr_seq);
   int ret;
-  int i;
+  uint8_t i;
   int delay = 0;
+  uint8_t type_1ou = 0;
+  uint8_t exp_intf[4] = {FEXP_BIC_INTF, REXP_BIC_INTF, EXP3_BIC_INTF, EXP4_BIC_INTF};
+  uint8_t tbuf[3] = {0};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 3;
+  uint8_t rlen = 0;
+
+  if (slot_id == FRU_SLOT1) {
+    ret = bic_get_1ou_type(FRU_SLOT1, &type_1ou);
+    if ((ret == 0) && (type_1ou == TYPE_1OU_OLMSTEAD_POINT)) {
+      ret = bic_is_exp_prsnt(FRU_SLOT1);
+      memcpy(tbuf, (uint8_t *)&IANA_ID, tlen);
+      for (i = 0; i < sizeof(exp_intf); i++) {
+        if (GETBIT(ret, i) == 1) {
+          bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_NOTIFY_DC_OFF, tbuf, tlen, rbuf, &rlen, exp_intf[i]);
+        }
+      }
+      msleep(200);
+    }
+  }
 
   for (i = 0; i < sts_cnt; i++) {
     ret = bic_server_power_control(slot_id, pwr_seq[i]);
@@ -101,11 +120,11 @@ bic_server_power_off_with_param(uint8_t slot_id, uint8_t gs_flag) {
       printf("%s() Cannot set power state to %02X\n", __func__, pwr_seq[i]);
       return ret;
     }
- 
+
     if ( POWER_BTN_LOW == pwr_seq[i] ) {
       delay = (gs_flag == GRACEFUL_POWER_OFF)?DELAY_GRACEFUL_SHUTDOWN:DELAY_POWER_OFF;
       sleep(delay);
-    } 
+    }
   }
 
   return ret;
@@ -186,7 +205,7 @@ bic_server_power_cycle(uint8_t slot_id) {
     }
   }
 
-  return ret; 
+  return ret;
 }
 
 int

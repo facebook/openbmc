@@ -57,6 +57,7 @@ enum {
   BIC_CMD_OEM_BIOS_VER          = 0xA2,
   BIC_CMD_OEM_READ_WRITE_DIMM   = 0xB1,
   BIC_CMD_OEM_GET_I3C_MUX       = 0xB2,
+  BIC_CMD_OEM_NOTIFY_DC_OFF     = 0xD1,
 };
 
 enum {

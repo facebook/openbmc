@@ -18,7 +18,8 @@ sources = [
 ]
 
 deps = [
-    dependency('libfby35-common')
+    dependency('libfby35-common'),
+    dependency('libbic'),
 ]
 
 install_headers(

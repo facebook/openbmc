@@ -22,19 +22,35 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <errno.h>
 #include <syslog.h>
 #include <stdint.h>
-#include <pthread.h>
 #include <ctype.h>
-#include <facebook/bic.h>
-#include <facebook/bic_bios_fwupdate.h>
+#include <getopt.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
+#include <facebook/bic.h>
+#include <facebook/bic_bios_fwupdate.h>
 #include <facebook/fby35_common.h>
 #include <facebook/fby35_gpio.h>
 #include <sys/time.h>
 #include <time.h>
+
+enum {
+  UTIL_GET_GPIO = 0x0,
+  UTIL_SET_GPIO,
+  UTIL_GET_VGPIO,
+  UTIL_SET_VGPIO,
+  UTIL_GET_DEV_ID,
+  UTIL_RESET,
+  UTIL_GET_POSTCODE,
+  UTIL_GET_SDR,
+  UTIL_READ_SENSOR,
+  UTIL_CHECK_STS,
+  UTIL_CLEAR_CMOS,
+  UTIL_PERF_TEST,
+  UTIL_CHECK_USB,
+  UTIL_FILE,
+};
 
 static uint8_t bmc_location = 0xff;
 static const char *intf_name[4] = {"Server Board", "Front Expansion Board", "Riser Expansion Board", "Baseboard"};
@@ -45,16 +61,34 @@ static const char *option_list[] = {
   "--set_gpio [gpio_num] [value]",
   "--get_virtual_gpio",
   "--set_virtual_gpio [gpio_num] [value]",
-  "--check_status",
   "--get_dev_id",
   "--reset",
   "--get_post_code",
   "--get_sdr",
   "--read_sensor",
-  "--perf_test [loop_count] (0 to run forever)",
+  "--check_status",
   "--clear_cmos",
+  "--perf_test [loop_count] (0 to run forever)",
+  "--check_usb_port",
   "--file [path]",
-  "--check_usb_port [sb|1ou|2ou]",
+};
+
+static const struct option options[] = {
+  {"get_gpio",         no_argument,       0, UTIL_GET_GPIO},
+  {"set_gpio",         required_argument, 0, UTIL_SET_GPIO},
+  {"get_virtual_gpio", no_argument,       0, UTIL_GET_VGPIO},
+  {"set_virtual_gpio", required_argument, 0, UTIL_SET_VGPIO},
+  {"get_dev_id",       no_argument,       0, UTIL_GET_DEV_ID},
+  {"reset",            no_argument,       0, UTIL_RESET},
+  {"get_post_code",    no_argument,       0, UTIL_GET_POSTCODE},
+  {"get_sdr",          no_argument,       0, UTIL_GET_SDR},
+  {"read_sensor",      no_argument,       0, UTIL_READ_SENSOR},
+  {"check_status",     no_argument,       0, UTIL_CHECK_STS},
+  {"clear_cmos",       no_argument,       0, UTIL_CLEAR_CMOS},
+  {"perf_test",        required_argument, 0, UTIL_PERF_TEST},
+  {"check_usb_port",   no_argument,       0, UTIL_CHECK_USB},
+  {"file",             required_argument, 0, UTIL_FILE},
+  {0, 0, 0, 0}
 };
 
 static void
@@ -104,11 +138,11 @@ util_check_status(uint8_t slot_id) {
 
 // Test to Get device ID
 static int
-util_get_device_id(uint8_t slot_id) {
+util_get_device_id(uint8_t slot_id, uint8_t intf) {
   int ret = 0;
   ipmi_dev_id_t id = {0};
 
-  ret = bic_get_dev_id(slot_id, &id, NONE_INTF);
+  ret = bic_get_dev_id(slot_id, &id, intf);
   if (ret) {
     printf("util_get_device_id: bic_get_dev_id returns %d\n", ret);
     return ret;
@@ -129,9 +163,9 @@ util_get_device_id(uint8_t slot_id) {
 
 // reset BIC
 static int
-util_bic_reset(uint8_t slot_id) {
+util_bic_reset(uint8_t slot_id, uint8_t intf) {
   int ret = 0;
-  ret = bic_reset(slot_id);
+  ret = bic_reset(slot_id, intf);
   printf("Performing BIC reset, status %d\n", ret);
   return ret;
 }
@@ -160,7 +194,7 @@ util_is_numeric(char **argv) {
 }
 
 static int
-process_command(uint8_t slot_id, int argc, char **argv) {
+process_command(uint8_t slot_id, int argc, char **argv, uint8_t intf) {
   int i, ret, retry = 2;
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
@@ -172,7 +206,7 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   }
 
   while (retry >= 0) {
-    ret = bic_data_send(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen, NONE_INTF);
+    ret = bic_data_send(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen, intf);
     if (ret == 0)
       break;
 
@@ -195,7 +229,7 @@ process_command(uint8_t slot_id, int argc, char **argv) {
 }
 
 static int
-process_file(uint8_t slot_id, char *path) {
+process_file(uint8_t slot_id, char *path, uint8_t intf) {
 #define MAX_ARG_NUM 64
   FILE *fp;
   int argc;
@@ -224,7 +258,7 @@ process_file(uint8_t slot_id, char *path) {
       continue;
     }
 
-    process_command(slot_id, argc, argv);
+    process_command(slot_id, argc, argv, intf);
   }
   fclose(fp);
 
@@ -232,45 +266,55 @@ process_file(uint8_t slot_id, char *path) {
 }
 
 static int
-util_get_gpio(uint8_t slot_id) {
+util_get_gpio(uint8_t slot_id, uint8_t intf) {
   int ret = 0;
   uint8_t i;
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, false);
-  char gpio_pin_name[32] = "\0";
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, false, intf);
+  char gpio_pin_name[64] = {0};
   bic_gpio_t gpio = {0};
 
-  ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
-  if ( ret < 0 ) {
+  if (gpio_pin_cnt == 0) {
+    printf("%s() unsupported board type\n", __func__);
+    return -1;
+  }
+
+  ret = bic_get_gpio(slot_id, &gpio, intf);
+  if (ret < 0) {
     printf("%s() bic_get_gpio returns %d\n", __func__, ret);
     return ret;
   }
 
   // Print the gpio index, name and value
   for (i = 0; i < gpio_pin_cnt; i++) {
-    y35_get_gpio_name(slot_id, i, gpio_pin_name, false);
+    y35_get_gpio_name(slot_id, i, gpio_pin_name, false, intf);
     printf("%d %s: %d\n",i , gpio_pin_name, BIT_VALUE(gpio, i));
   }
 
-  return ret;
+  return 0;
 }
 
 static int
-util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, false);
-  char gpio_pin_name[32] = "\0";
-  int ret = -1;
+util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf) {
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, false, intf);
+  char gpio_pin_name[64] = {0};
+  int ret = 0;
 
-  if ( gpio_num > gpio_pin_cnt ) {
-    printf("slot %d: Invalid GPIO pin number %d\n", slot_id, gpio_num);
-    return ret;
+  if (gpio_pin_cnt == 0) {
+    printf("%s() unsupported board type\n", __func__);
+    return -1;
   }
 
-  y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name, false);
+  if (gpio_num >= gpio_pin_cnt) {
+    printf("slot %d: Invalid GPIO pin number %d\n", slot_id, gpio_num);
+    return -1;
+  }
+
+  y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name, false, intf);
   printf("slot %d: setting [%d]%s to %d\n", slot_id, gpio_num, gpio_pin_name, gpio_val);
 
-  ret = bic_set_gpio(slot_id, gpio_num, gpio_val);
+  ret = remote_bic_set_gpio(slot_id, gpio_num, gpio_val, intf);
   if (ret < 0) {
-    printf("%s() bic_set_gpio returns %d\n", __func__, ret);
+    printf("%s() remote_bic_set_gpio returns %d\n", __func__, ret);
   }
 
   return ret;
@@ -281,7 +325,7 @@ util_get_virtual_gpio(uint8_t slot_id) {
   int ret = 0, i = 0;
   uint8_t value = 0;
   uint8_t direction = 0;
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, true);
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, true, NONE_INTF);
   char gpio_pin_name[32] = "\0";
 
   if (gpio_pin_cnt == 0) {
@@ -295,7 +339,7 @@ util_get_virtual_gpio(uint8_t slot_id) {
       printf("%s() bic_get_virtual_gpio returns %d\n", __func__, ret);
       return ret;
     }
-    y35_get_gpio_name(slot_id, i, gpio_pin_name, true);
+    y35_get_gpio_name(slot_id, i, gpio_pin_name, true, NONE_INTF);
     printf("%d %s: %d\n",i , gpio_pin_name, value);
   }
 
@@ -305,7 +349,7 @@ util_get_virtual_gpio(uint8_t slot_id) {
 static int
 util_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
   int ret = -1;
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, true);
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id, true, NONE_INTF);
   char gpio_pin_name[32] = "\0";
 
   if ((gpio_num > gpio_pin_cnt) || (gpio_pin_cnt == 0)) {
@@ -313,7 +357,7 @@ util_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
     return ret;
   }
 
-  y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name, true);
+  y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name, true, NONE_INTF);
   printf("slot %d: setting [%d]%s to %d\n", slot_id, gpio_num, gpio_pin_name, gpio_val);
 
   ret = bic_set_virtual_gpio(slot_id, gpio_num, gpio_val);
@@ -325,7 +369,7 @@ util_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
 }
 
 static int
-util_perf_test(uint8_t slot_id, int loopCount) {
+util_perf_test(uint8_t slot_id, int loopCount, uint8_t intf) {
 #define NUM_SLOTS FRU_SLOT4
   enum cmd_profile_type {
     CMD_AVG_DURATION = 0x0,
@@ -357,7 +401,7 @@ util_perf_test(uint8_t slot_id, int loopCount) {
   while(1) {
     gettimeofday(&tv1, NULL);
 
-    ret = bic_get_dev_id(slot_id, &id, NONE_INTF);
+    ret = bic_get_dev_id(slot_id, &id, intf);
     if (ret) {
       printf("util_perf_test: bic_get_dev_id returns %d, loop=%d\n", ret, i);
       return ret;
@@ -584,7 +628,7 @@ util_bic_clear_cmos(uint8_t slot_id) {
 }
 
 int
-util_check_usb_port(uint8_t slot_id, char *comp) {
+util_check_usb_port(uint8_t slot_id, uint8_t intf) {
   uint8_t tbuf[512], rbuf[512] = {0};
   uint8_t fw_comp;
   int i, ret = -1;
@@ -594,11 +638,6 @@ util_check_usb_port(uint8_t slot_id, char *comp) {
   usb_dev bic_udev;
   usb_dev *udev = &bic_udev;
 
-  if (comp == NULL) {
-    syslog(LOG_ERR, "%s: comp shouldn't be null!", __func__);
-    return -1;
-  }
-
   for (i = 0; i < transferlen; ++i) {
     tbuf[i] = i + 1;
   }
@@ -607,9 +646,9 @@ util_check_usb_port(uint8_t slot_id, char *comp) {
   udev->ci = 1;
   udev->epaddr = USB_INPUT_PORT;
 
-  if (strcmp("sb", comp) == 0) {
+  if (intf == NONE_INTF) {
     fw_comp = FW_BIOS;
-  } else if (strcmp("1ou", comp) == 0) {
+  } else if (intf == FEXP_BIC_INTF) {
     fw_comp = FW_1OU_CXL;
   } else {
     fw_comp = 0xFF;
@@ -677,12 +716,13 @@ exit:
 
 int
 main(int argc, char **argv) {
+  int ret = 0, i = 0;
+  int opt_idx = 2;  // option: argv[opt_idx]
   uint8_t slot_id = 0;
   uint8_t is_fru_present = 0;
-  int ret = 0;
   uint8_t gpio_num = 0;
   uint8_t gpio_val = 0;
-  int i = 0;
+  uint8_t intf = NONE_INTF;
 
   if (argc < 3) {
     goto err_exit;
@@ -713,109 +753,135 @@ main(int argc, char **argv) {
     }
   }
 
-  if ( strncmp(argv[2], "--", 2) == 0 ) {
-    if ( strcmp(argv[2], "--get_gpio") == 0 ) {
-      if ( argc != 3 ) {
-        goto err_exit;
+  if (strcmp(argv[opt_idx], "sb") == 0) {
+    intf = NONE_INTF;
+    ++opt_idx;
+  } else if (strcmp(argv[opt_idx], "1ou") == 0) {
+    if (slot_id != FRU_ALL) {
+      ret = bic_is_exp_prsnt(slot_id);
+      if (!(ret > 0 && (ret & PRESENT_1OU) == PRESENT_1OU)) {
+        printf("%s %s is not present!\n", argv[1], argv[2]);
+        return -1;
       }
-      return util_get_gpio(slot_id);
-    } else if ( strcmp(argv[2], "--set_gpio") == 0 ) {
-      if ( argc != 5 ) {
-        goto err_exit;
-      }
-
-      gpio_num = atoi(argv[3]);
-      gpio_val = atoi(argv[4]);
-      if ( gpio_val > 1 ) goto err_exit;
-      return util_set_gpio(slot_id, gpio_num, gpio_val);
-    } else if ( strcmp(argv[2], "--check_status") == 0 ) {
-      if ( argc != 3 ) {
-        goto err_exit;
-      }
-      return util_check_status(slot_id);
-    } else if ( strcmp(argv[2], "--get_dev_id") == 0 ) {
-      if ( argc != 3 ) {
-        goto err_exit;
-      }
-      return util_get_device_id(slot_id);
-    } else if ( strcmp(argv[2], "--get_sdr") == 0 ) {
-      if ( argc != 3 ) {
-        goto err_exit;
-      }
-      return util_get_sdr(slot_id);
-    } else if ( strcmp(argv[2], "--read_sensor") == 0 ) {
-      if ( argc != 3 ) {
-        goto err_exit;
-      }
-      return util_read_sensor(slot_id);
-    } else if ( strcmp(argv[2], "--reset") == 0 ) {
-      if ( argc != 3 ) {
-        goto err_exit;
-      }
-      return util_bic_reset(slot_id);
-    } else if ( strcmp(argv[2], "--get_post_code") == 0 ) {
-      if ( argc != 3 ) {
-        goto err_exit;
-      }
-      if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
-        return util_print_dword_postcode_buf(slot_id);
-      } else {
-        return util_get_postcode(slot_id);
-      }
-    } else if ( strcmp(argv[2], "--perf_test") == 0 ) {
-      if ( argc != 4 ) {
-        goto err_exit;
-      }
-      else return util_perf_test(slot_id, atoi(argv[3]));
-    } else if (!strcmp(argv[2], "--clear_cmos")) {
-      if ( argc != 3 ) {
-        goto err_exit;
-      }
-      return util_bic_clear_cmos(slot_id);
-    } else if ( strcmp(argv[2], "--file") == 0 ) {
-      if ( argc != 4 ) {
-        goto err_exit;
-      }
-      if ( slot_id == FRU_ALL ) {
-        if ( bmc_location != NIC_BMC ) {
-          for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
-            ret = pal_is_fru_prsnt(i, &is_fru_present);
-            if ( ret < 0 || is_fru_present == 0 ) {
-              printf("slot%d is not present!\n", i);
-            } else process_file(i, argv[3]);
-          }
-        } else process_file(FRU_SLOT1, argv[3]);
-        return 0;
-      } else return process_file(slot_id, argv[3]);
-    } else if ( strcmp(argv[2], "--check_usb_port") == 0 ) {
-      if ( argc != 4 ) {
-        goto err_exit;
-      }
-      if ( (strcmp("sb", argv[3]) != 0) && (strcmp("1ou", argv[3]) != 0) && (strcmp("2ou", argv[3]) != 0) ) {
-        printf("Invalid component: %s\n", argv[3]);
-        goto err_exit;
-      }
-      return util_check_usb_port(slot_id, argv[3]);
-    } else if ( strcmp(argv[2], "--get_virtual_gpio") == 0 ) {
-      if ( argc != 3 ) {
-        goto err_exit;
-      }
-      return util_get_virtual_gpio(slot_id);
-    } else if ( strcmp(argv[2], "--set_virtual_gpio") == 0 ) {
-      if ( argc != 5 ) {
-        goto err_exit;
-      }
-      gpio_num = atoi(argv[3]);
-      gpio_val = atoi(argv[4]);
-      if ( gpio_val > 1 ) goto err_exit;
-      return util_set_virtual_gpio(slot_id, gpio_num, gpio_val);
-    } else {
-      printf("Invalid option: %s\n", argv[2]);
-      goto err_exit;
     }
-  } else if (argc >= 4) {
-    if (util_is_numeric(argv + 2)) {
-      return process_command(slot_id, (argc - 2), (argv + 2));
+    intf = FEXP_BIC_INTF;
+    ++opt_idx;
+  } else {
+    intf = NONE_INTF;
+  }
+
+  if (strncmp(argv[opt_idx], "--", 2) == 0) {
+    ret = getopt_long(argc, argv, "", options, NULL);
+    switch (ret) {
+      case UTIL_GET_GPIO:
+      case UTIL_GET_VGPIO:
+        if (argc != (opt_idx+1)) {
+          goto err_exit;
+        }
+        if (ret == UTIL_GET_VGPIO) {
+          if (intf != NONE_INTF) {
+            goto err_exit;
+          }
+          return util_get_virtual_gpio(slot_id);
+        }
+        return util_get_gpio(slot_id, intf);
+      case UTIL_SET_GPIO:
+      case UTIL_SET_VGPIO:
+        if (argc != (opt_idx+3)) {
+          goto err_exit;
+        }
+        gpio_num = atoi(argv[opt_idx+1]);
+        gpio_val = atoi(argv[opt_idx+2]);
+        if (gpio_val > 1) {
+          goto err_exit;
+        }
+        if (ret == UTIL_SET_VGPIO) {
+          if (intf != NONE_INTF) {
+            goto err_exit;
+          }
+          return util_set_virtual_gpio(slot_id, gpio_num, gpio_val);
+        }
+        return util_set_gpio(slot_id, gpio_num, gpio_val, intf);
+      case UTIL_GET_DEV_ID:
+        if (argc != (opt_idx+1)) {
+          goto err_exit;
+        }
+        return util_get_device_id(slot_id, intf);
+      case UTIL_RESET:
+        if (argc != (opt_idx+1)) {
+          goto err_exit;
+        }
+        return util_bic_reset(slot_id, intf);
+      case UTIL_GET_POSTCODE:
+        if (argc != (opt_idx+1) || intf != NONE_INTF) {
+          goto err_exit;
+        }
+        if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+          return util_print_dword_postcode_buf(slot_id);
+        }
+        return util_get_postcode(slot_id);
+      case UTIL_GET_SDR:
+        if (argc != (opt_idx+1) || intf != NONE_INTF) {
+          goto err_exit;
+        }
+        return util_get_sdr(slot_id);
+      case UTIL_READ_SENSOR:
+        if (argc != (opt_idx+1) || intf != NONE_INTF) {
+          goto err_exit;
+        }
+        return util_read_sensor(slot_id);
+      case UTIL_CHECK_STS:
+        if (argc != (opt_idx+1) || intf != NONE_INTF) {
+          goto err_exit;
+        }
+        return util_check_status(slot_id);
+      case UTIL_CLEAR_CMOS:
+        if (argc != (opt_idx+1) || intf != NONE_INTF) {
+          goto err_exit;
+        }
+        return util_bic_clear_cmos(slot_id);
+      case UTIL_PERF_TEST:
+        if (argc != (opt_idx+2)) {
+          goto err_exit;
+        }
+        return util_perf_test(slot_id, atoi(optarg), intf);
+      case UTIL_CHECK_USB:
+        if (argc != (opt_idx+1)) {
+          goto err_exit;
+        }
+        return util_check_usb_port(slot_id, intf);
+      case UTIL_FILE:
+        if (argc != (opt_idx+2)) {
+          goto err_exit;
+        }
+        if (slot_id == FRU_ALL) {
+          if (bmc_location == NIC_BMC) {
+            return process_file(FRU_SLOT1, optarg, intf);
+          }
+          for (i = FRU_SLOT1; i <= FRU_SLOT4; i++) {
+            if (pal_is_fru_prsnt(i, &is_fru_present) || !is_fru_present) {
+              printf("slot%d is not present!\n", i);
+              continue;
+            }
+            if (intf == FEXP_BIC_INTF) {
+              ret = bic_is_exp_prsnt(i);
+              if (!(ret > 0 && (ret & PRESENT_1OU) == PRESENT_1OU)) {
+                printf("slot%d 1ou is not present!\n", i);
+                continue;
+              }
+            }
+            process_file(i, optarg, intf);
+          }
+          return 0;
+        }
+        return process_file(slot_id, optarg, intf);
+      default:
+        printf("Invalid option: %s\n", argv[opt_idx]);
+        goto err_exit;
+    }
+  } else if (argc >= (opt_idx+2)) {
+    if (util_is_numeric(argv + opt_idx)) {
+      return process_command(slot_id, (argc - opt_idx), (argv + opt_idx), intf);
     } else {
       goto err_exit;
     }

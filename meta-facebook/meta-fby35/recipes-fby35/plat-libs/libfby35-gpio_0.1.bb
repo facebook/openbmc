@@ -28,4 +28,4 @@ S = "${WORKDIR}/fby35_gpio"
 inherit meson pkgconfig
 
 DEPENDS += "libfby35-common libbic libgpio-ctrl"
-RDEPENDS:${PN} += "libfby35-common"
+RDEPENDS:${PN} += "libfby35-common libbic"

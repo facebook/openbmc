@@ -478,7 +478,7 @@ populate_gpio_pins(uint8_t fru) {
   for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GET_BIT(gpio_ass_val, i);
-      ret = y35_get_gpio_name(fru, i, gpios[i].name, false);
+      ret = y35_get_gpio_name(fru, i, gpios[i].name, false, NONE_INTF);
       if (ret < 0)
         continue;
     }

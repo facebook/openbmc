@@ -33,6 +33,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-greatlakes-lf:lf-master
   meta-halfdome:lf-master
   meta-inspirationpoint:lf-master
+  meta-montblanc:lf-master
   meta-qemux86:lf-master
   meta-waimeacanyon:lf-master
 # langdale platforms (latest)

@@ -21,6 +21,7 @@ import os
 import unittest
 
 from common.base_sensor_test import LmSensorsTest
+from utils.test_utils import qemu_check
 
 
 class AstAdcIsa0000SensorTest(LmSensorsTest, unittest.TestCase):
@@ -48,6 +49,7 @@ class AstAdcIsa0000SensorTest(LmSensorsTest, unittest.TestCase):
                 )
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Galaxy100Ec12c033SensorTest(LmSensorsTest, unittest.TestCase):
     GALAXY100_EC_12C_0_33_DRIVER = [
         "CPU Voltage",

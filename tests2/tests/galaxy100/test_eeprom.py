@@ -21,8 +21,10 @@ import unittest
 
 from common.base_eeprom_test import CommonEepromTest
 from utils.cit_logger import Logger
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class EepromTest(CommonEepromTest, unittest.TestCase):
     _FABRIC_CARD_NAMES = ["GALAXY-FC", "GALAXY-FAB"]
     _LC_CARD_NAMES = ["GALAXY-LC"]

@@ -18,10 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 import os
-import re
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
+from utils.test_utils import qemu_check
 
 
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
@@ -89,6 +89,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_chassis_eeprom_attributes(self):
         self.endpoint_chassis_eeprom_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_mb_chassis_eeprom(self):
         self.set_endpoint_chassis_eeprom_attributes()
         self.verify_endpoint_attributes(

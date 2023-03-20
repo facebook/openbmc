@@ -52,11 +52,27 @@ chassis_power_cycle() {
 }
 
 bmc_mac_addr() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    weutil_output=$(weutil -e CHASSIS | grep 'Local MAC:' | cut -d ' ' -f 3)
+
+    if [ -n "$weutil_output" ]; then
+        # Mac address: xx:xx:xx:xx:xx:xx
+        echo "$weutil_output" 
+        return 0
+    else
+        echo "Cannot find out the BMC MAC" 1>&2
+        return 1
+    fi
 }
 
 userver_mac_addr() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    weutil_output=$(weutil -e SCM | grep 'Local MAC:' | cut -d ' ' -f 3)
+
+    if [ -n "$weutil_output" ]; then
+        # Mac address: xx:xx:xx:xx:xx:xx
+        echo "$weutil_output" 
+        return 0
+    else
+        echo "Cannot find out the microserver MAC" 1>&2
+        return 1
+    fi
 }

@@ -191,6 +191,8 @@ int bic_get_sys_fw_ver(uint8_t slot_id, uint8_t *ver);
 int bic_get_op_board_rev(uint8_t slot_id, uint8_t *rev, uint8_t intf);
 int bic_get_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t *value, uint8_t *direction);
 int bic_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value);
+int bic_op_read_e1s_reg(uint8_t dev_id, uint8_t addr, uint8_t offset, uint8_t rlen, uint8_t *rbuf, uint8_t intf);
+int bic_op_get_e1s_present(uint8_t dev_id, uint8_t intf, uint8_t* status);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -58,6 +58,7 @@ enum {
   BIC_CMD_OEM_READ_WRITE_DIMM   = 0xB1,
   BIC_CMD_OEM_GET_I3C_MUX       = 0xB2,
   BIC_CMD_OEM_NOTIFY_DC_OFF     = 0xD1,
+  BIC_CMD_OEM_READ_WRITE_SSD    = 0x36,
 };
 
 enum {
@@ -98,6 +99,32 @@ typedef enum {
   I3C_MUX_TO_CPU = 0x0,
   I3C_MUX_TO_BIC = 0x1,
 } I3C_MUX_POSITION;
+
+typedef struct {
+  uint8_t dev_id;
+  uint8_t dev_index;
+  uint8_t intf;
+} dev_info;
+
+static const dev_info op_dev_info[] = {
+  //dev_id, dev_index, intf
+  {DEV_ID0_1OU, 0, FEXP_BIC_INTF},
+  {DEV_ID1_1OU, 1, FEXP_BIC_INTF},
+  {DEV_ID2_1OU, 2, FEXP_BIC_INTF},
+  {DEV_ID0_2OU, 0, REXP_BIC_INTF},
+  {DEV_ID1_2OU, 1, REXP_BIC_INTF},
+  {DEV_ID2_2OU, 2, REXP_BIC_INTF},
+  {DEV_ID3_2OU, 3, REXP_BIC_INTF},
+  {DEV_ID4_2OU, 4, REXP_BIC_INTF},
+  {DEV_ID0_3OU, 0, EXP3_BIC_INTF},
+  {DEV_ID1_3OU, 1, EXP3_BIC_INTF},
+  {DEV_ID2_3OU, 2, EXP3_BIC_INTF},
+  {DEV_ID0_4OU, 0, EXP4_BIC_INTF},
+  {DEV_ID1_4OU, 1, EXP4_BIC_INTF},
+  {DEV_ID2_4OU, 2, EXP4_BIC_INTF},
+  {DEV_ID3_4OU, 3, EXP4_BIC_INTF},
+  {DEV_ID4_4OU, 4, EXP4_BIC_INTF}
+};
 
 void msleep(int msec);
 int i2c_open(uint8_t bus_id, uint8_t addr_7bit);

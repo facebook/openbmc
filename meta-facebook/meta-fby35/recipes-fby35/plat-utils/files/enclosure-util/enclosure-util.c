@@ -28,6 +28,7 @@
 #include <openbmc/nvme-mi.h>
 #include <openbmc/pal.h>
 #include <facebook/fby35_common.h>
+#include <facebook/bic_ipmi.h>
 
 #define CMD_DRIVE_STATUS 0
 #define CMD_DRIVE_HEALTH 1
@@ -36,6 +37,8 @@
 #define NVME_SMART_WARNING_MASK_BIT 0x1F  // check bit 0~4
 #define NVME_SSD_I2C_ADDR 0xD4
 #define MAX_SERIAL_NUM 20
+
+#define ERR_DEV_NOT_PRESENT -2
 
 
 char path[64] = {0};
@@ -187,10 +190,44 @@ const nvme_ops_t gpv3_ops = {
   .board_post_setup = gpv3_board_post_setup,
 };
 
+//==============================================================================
+// Olmstead point
+//==============================================================================
+static uint8_t op_dev_count = sizeof(op_dev_info) / sizeof(dev_info);
+
+static int
+op_nvme_get_bus_intf(uint8_t dev_id, uint8_t *dev_index, uint8_t *intf) {
+  int i = 0;
+  for (i = 0; i < op_dev_count; i++) {
+    if (op_dev_info[i].dev_id == dev_id) {
+      *dev_index = op_dev_info[i].dev_index;
+      *intf = op_dev_info[i].intf;
+      return 0;
+    }
+  }
+  return -1;
+}
+
+const nvme_ops_t op_e1s_ops = {
+  .nvme_get_bus_intf = op_nvme_get_bus_intf,
+  .nvme_set_mux_select = NULL,
+  .board_pre_setup = NULL,
+  .board_post_setup = NULL,
+};
+
+
 static void
 print_usage_help(void) {
-  printf("Usage: enclosure-util <slot1|slot2|slot3|slot4> --drive-status <all|1U-dev[0..3]|2U-dev[0..13]>\n");
-  printf("       enclosure-util <slot1|slot2|slot3|slot4> --drive-health\n");
+  int ret = 0;
+  uint8_t type_1ou = 0;
+  ret = bic_get_1ou_type(FRU_SLOT1, &type_1ou);
+  if ((type_1ou == TYPE_1OU_OLMSTEAD_POINT) && (ret == 0)) {
+    printf("Usage: enclosure-util slot1 --drive-status <all|1U-dev[0..2]|2U-dev[0..4]3U-dev[0..2]|4U-dev[0..4]>\n");
+    printf("       enclosure-util slot1 --drive-health\n");
+  } else {
+    printf("Usage: enclosure-util <slot1|slot2|slot3|slot4> --drive-status <all|1U-dev[0..3]>\n");
+    printf("       enclosure-util <slot1|slot2|slot3|slot4> --drive-health\n");
+  }
 }
 
 static int
@@ -253,11 +290,50 @@ drive_health(ssd_data *ssd, bool is_gpv3) {
 }
 
 static int
+read_nvme_reg(uint8_t slot_id, uint8_t dev_id, uint8_t addr, uint8_t offset,
+  uint8_t *rbuf, uint8_t rlen, uint8_t intf) {
+  uint8_t type_1ou = 0;
+  uint8_t rxlen = 0;
+  uint8_t txlen = 0;
+  uint8_t tbuf[4] = {0};
+  int ret = 0;
+  uint8_t present_status = 0;
+
+  if (rbuf == NULL) {
+    return -1;
+  }
+  if (bic_get_1ou_type(slot_id, &type_1ou) != 0) {
+    syslog(LOG_ERR, "Failed to get slot%d 1ou board type\n", slot_id);
+    return -1;
+  }
+  if (type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
+    if (slot_id != FRU_SLOT1) {
+      printf("Not supported FRU: %x\n", slot_id);
+      return -1;
+    }
+    ret = bic_op_get_e1s_present(dev_id, intf, &present_status);
+    if ((present_status == NOT_PRESENT) && (ret == 0)) {
+      return ERR_DEV_NOT_PRESENT;
+    }
+    ret = bic_op_read_e1s_reg(dev_id, addr, offset, rlen, rbuf, intf);
+  } else {
+    tbuf[0] = (dev_id << 1) + 1;
+    tbuf[1] = addr;
+    tbuf[2] = rlen; //read back 8 bytes
+    tbuf[3] = offset; // offset 00
+    txlen = 4;
+    ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, txlen, rbuf, &rxlen, intf);
+  }
+  if (ret < 0) {
+    syslog(LOG_ERR, "master_write_read failed, dev_id=%u, offset=0x%x read length=%d", dev_id, offset, rlen);
+  }
+
+  return ret;
+}
+
+static int
 read_nvme_status(uint8_t slot_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
-  uint8_t tbuf[8] = {0};
   uint8_t rbuf[64] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
   int ret;
 
   if (!ssd) {
@@ -265,28 +341,17 @@ read_nvme_status(uint8_t slot_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
     return -1;
   }
 
-  tbuf[0] = (bus << 1) + 1;
-  tbuf[1] = NVME_SSD_I2C_ADDR;
-  tbuf[2] = 0x08; //read back 8 bytes
-  tbuf[3] = 0x00; // offset 00
-  tlen = 4;
-  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  ret = read_nvme_reg(slot_id, bus, NVME_SSD_I2C_ADDR, 0x00, rbuf, 8, intf);
   if (ret != 0) {
-    syslog(LOG_ERR, "%s(): master_write_read failed, bus=%u, offset=%u read length=%u", __func__, bus, tbuf[3], rlen);
-    return -1;
+    return ret;
   }
-
   ssd->sflgs = rbuf[1];
   ssd->warning = rbuf[2];
   ssd->temp = rbuf[3];
   ssd->pdlu = rbuf[4];
-
-  tbuf[2] = 24;  // read back 24 bytes
-  tbuf[3] = 0x08;  // offset 08
-  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  ret = read_nvme_reg(slot_id, bus, NVME_SSD_I2C_ADDR, 0x08, rbuf, 24, intf);
   if (ret != 0) {
-    syslog(LOG_ERR, "%s(): master_write_read failed, bus=%u, offset=%u read length=%u", __func__, bus, tbuf[3], rlen);
-    return -1;
+    return ret;
   }
   ssd->vendor = (rbuf[1] << 8) | rbuf[2];
   memcpy(ssd->serial_num, &rbuf[3], MAX_SERIAL_NUM);
@@ -294,28 +359,20 @@ read_nvme_status(uint8_t slot_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
   return 0;
 }
 
+
 static int
 read_nvme_health(uint8_t slot_id, uint8_t bus, uint8_t intf, ssd_data* ssd) {
-  uint8_t tbuf[8] = {0};
   uint8_t rbuf[64] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret;
+  int ret = 0;
 
   if (!ssd) {
     syslog(LOG_ERR, "%s(): invalid ssd pointer", __func__);
     return -1;
   }
 
-  tbuf[0] = (bus << 1) + 1;
-  tbuf[1] = NVME_SSD_I2C_ADDR;
-  tbuf[2] = 0x08; // read back 8 bytes
-  tbuf[3] = 0x00; // offset 00
-  tlen = 4;
-  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  ret = read_nvme_reg(slot_id, bus, NVME_SSD_I2C_ADDR, 0x0, rbuf, 8, intf);
   if (ret != 0) {
-    syslog(LOG_ERR, "%s(): master_write_read failed, bus=%u, offset=%u read length=%u", __func__, bus, tbuf[3], rlen);
-    return -1;
+    return ret;
   }
 
   ssd->sflgs = rbuf[1];
@@ -329,6 +386,7 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, sys_config_t* sy
   uint8_t bus = 0;
   uint8_t intf = 0;
   ssd_data ssd;
+  int ret = 0;
 
   memset(&ssd, 0x00, sizeof(ssd_data));
 
@@ -353,14 +411,20 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, sys_config_t* sy
 
   printf("slot%u-%s : ", slot_id, str);
   if (cmd == CMD_DRIVE_STATUS) {
-    if (read_nvme_status(slot_id, bus, intf, &ssd) < 0) {
+    ret = read_nvme_status(slot_id, bus, intf, &ssd);
+    if (ret == ERR_DEV_NOT_PRESENT) {
+      printf("Not present\n");
+    } else if (ret < 0) {
       printf("NA\n");
     } else {
       print_drive_status(&ssd);
       printf("\n");
     }
   } else if (cmd == CMD_DRIVE_HEALTH) {
-    if (read_nvme_health(slot_id, bus, intf, &ssd) < 0) {
+    ret = read_nvme_health(slot_id, bus, intf, &ssd);
+    if (ret == ERR_DEV_NOT_PRESENT) {
+      printf("Not present\n");
+    } else if (ret < 0) {
       printf("NA\n");
     } else {
       printf("%s\n", (drive_health(&ssd, (sys_conf->nvme_ops == &gpv3_ops)) == 0)?"Normal":"Abnormal");
@@ -423,25 +487,11 @@ setup_sys_config(uint8_t slot_id, sys_config_t* sys_conf) {
     }
   }
 
-  // get 2OU board type
-  if ((sys_conf->present & PRESENT_2OU) == PRESENT_2OU) {
-    if (fby35_common_get_2ou_board_type(sys_conf->slot_id, &sys_conf->type_2ou) < 0) {
-      printf("Failed to get slot%d 2ou board type\n", sys_conf->slot_id);
-      return -1;
-    }
-  }
-
   // config setup
   if (sys_conf->present == PRESENT_1OU && sys_conf->type_1ou == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
     sys_conf->dev_start = DEV_ID0_1OU;
     sys_conf->dev_end = DEV_ID3_1OU;
     sys_conf->nvme_ops = &vf_1u_ops;
-  } else if (sys_conf->present == PRESENT_2OU &&
-      (sys_conf->type_2ou == GPV3_MCHP_BOARD ||
-      sys_conf->type_2ou == GPV3_BRCM_BOARD)) {
-    sys_conf->dev_start = DEV_ID0_2OU;
-    sys_conf->dev_end = DEV_ID13_2OU;
-    sys_conf->nvme_ops = &gpv3_ops;
   } else if (sys_conf->present == PRESENT_1OU) {
     sys_conf->dev_start = DEV_ID0_1OU;
     sys_conf->dev_end = DEV_ID3_1OU;
@@ -454,6 +504,10 @@ setup_sys_config(uint8_t slot_id, sys_config_t* sys_conf) {
     sys_conf->dev_start = DEV_ID0_1OU;
     sys_conf->dev_end = DEV_ID5_2OU;
     sys_conf->nvme_ops = &board_1u_2u_ops;
+  } else if (sys_conf->type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
+    sys_conf->dev_start = DEV_ID0_1OU;
+    sys_conf->dev_end = DEV_ID4_4OU;
+    sys_conf->nvme_ops = &op_e1s_ops;
   } else {
     printf("Please check the board config \n");
     return -1;
@@ -468,6 +522,7 @@ main(int argc, char **argv) {
   uint8_t slot_id = 0;
   uint8_t dev_id = 0;
   struct sigaction sa;
+  int i = 0;
 
   if (argc != 3 && argc != 4) {
     print_usage_help();
@@ -515,8 +570,15 @@ main(int argc, char **argv) {
 
   if ((argc == 4) && !strcmp(argv[2], "--drive-status")) {
     if (!strcmp(argv[3], "all")) {
-      for (int i = g_sys_conf.dev_start; i <= g_sys_conf.dev_end; i++) {
-        read_nvme_data(g_sys_conf.slot_id, i, CMD_DRIVE_STATUS, &g_sys_conf);
+      if (g_sys_conf.type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
+        // Olmstead point device ID is not continuous
+        for (i = 0; i < op_dev_count; i++) {
+          read_nvme_data(g_sys_conf.slot_id, op_dev_info[i].dev_id, CMD_DRIVE_STATUS, &g_sys_conf);
+        }
+      } else {
+        for (int i = g_sys_conf.dev_start; i <= g_sys_conf.dev_end; i++) {
+          read_nvme_data(g_sys_conf.slot_id, i, CMD_DRIVE_STATUS, &g_sys_conf);
+        }
       }
     } else {
       ret = pal_get_dev_id(argv[3], &dev_id);
@@ -532,8 +594,15 @@ main(int argc, char **argv) {
       read_nvme_data(g_sys_conf.slot_id, dev_id, CMD_DRIVE_STATUS, &g_sys_conf);
     }
   } else if ((argc == 3) && !strcmp(argv[2], "--drive-health")) {
-    for (int i = g_sys_conf.dev_start; i <= g_sys_conf.dev_end; i++) {
-      read_nvme_data(g_sys_conf.slot_id, i, CMD_DRIVE_HEALTH, &g_sys_conf);
+    if (g_sys_conf.type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
+      // Olmstead point device ID is not continuous
+      for (i = 0; i < op_dev_count; i++) {
+        read_nvme_data(g_sys_conf.slot_id, op_dev_info[i].dev_id, CMD_DRIVE_HEALTH, &g_sys_conf);
+      }
+    } else {
+      for (int i = g_sys_conf.dev_start; i <= g_sys_conf.dev_end; i++) {
+        read_nvme_data(g_sys_conf.slot_id, i, CMD_DRIVE_STATUS, &g_sys_conf);
+      }
     }
   } else {
     print_usage_help();

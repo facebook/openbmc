@@ -2455,3 +2455,88 @@ bic_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value) {
 
   return ret;
 }
+
+// Read SSD Register
+// Netfn: 0x38, Cmd: 0x36
+// Currently Olmstead point only
+int
+bic_op_read_e1s_reg(uint8_t dev_id, uint8_t addr, uint8_t offset, uint8_t rlen, uint8_t *rbuf, uint8_t intf) {
+  uint8_t txbuf[7] = {0x00};
+  uint8_t rxbuf[64] = {0x00};
+  uint8_t txlen = 7;
+  uint8_t rxlen = 0;
+  int ret = 0;
+
+  if (!rbuf) {
+    return -1;
+  }
+  // Fill the IANA ID
+  memcpy(txbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  txbuf[3] = dev_id;
+  txbuf[4] = addr;
+  txbuf[5] = rlen;
+  txbuf[6] = offset;
+  ret = bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_READ_WRITE_SSD, txbuf, txlen, rxbuf, &rxlen, intf);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): fail to get register from BIC", __func__);
+    return -1;
+  }
+  memcpy(rbuf, (uint8_t *)&(rxbuf[3]), rxlen - 3);
+
+  return 0;
+}
+
+int
+bic_op_get_e1s_present(uint8_t dev_id, uint8_t intf, uint8_t* status) {
+  enum OPA_E1S_PRSNT {
+    OPA_E1S_0_PRSNT_N = 9,
+    OPA_E1S_1_PRSNT_N = 10,
+    OPA_E1S_2_PRSNT_N = 11,
+  };
+  enum OPB_E1S_PRSNT {
+    OPB_E1S_0_PRSNT_N = 10,
+    OPB_E1S_1_PRSNT_N = 11,
+    OPB_E1S_2_PRSNT_N = 12,
+    OPB_E1S_3_PRSNT_N = 13,
+    OPB_E1S_4_PRSNT_N = 14,
+  };
+  uint8_t opa_e1s_prnst_gpio[3] = {OPA_E1S_0_PRSNT_N, OPA_E1S_1_PRSNT_N, OPA_E1S_2_PRSNT_N};
+  uint8_t opb_e1s_prnst_gpio[5] = {OPB_E1S_0_PRSNT_N, OPB_E1S_1_PRSNT_N, OPB_E1S_2_PRSNT_N,
+          OPB_E1S_3_PRSNT_N, OPB_E1S_4_PRSNT_N};
+  uint8_t tbuf[5] = {0x00};
+  uint8_t rbuf[5] = {0x00};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  if (!status) {
+    return -1;
+  }
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[3] = 0x00;
+  switch (intf) {
+    case FEXP_BIC_INTF:
+    case EXP3_BIC_INTF:
+      if (dev_id >= sizeof(opa_e1s_prnst_gpio)) {
+        printf("Invalid device ID %d\n", dev_id);
+      } else {
+        tbuf[4] = opa_e1s_prnst_gpio[dev_id];
+      }
+      break;
+    case REXP_BIC_INTF:
+    case EXP4_BIC_INTF:
+      if (dev_id >= sizeof(opb_e1s_prnst_gpio)) {
+        printf("Invalid device ID %d\n", dev_id);
+      } else {
+        tbuf[4] = opb_e1s_prnst_gpio[dev_id];
+      }
+      break;
+    default:
+      syslog(LOG_WARNING, "%s(): not supported intf: %x", __func__, intf);
+      return -1;
+  }
+  ret = bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
+  *status = ((rbuf[4] & 0x01) == 1) ? NOT_PRESENT : PRESENT;
+  return ret;
+}

@@ -86,6 +86,7 @@ if [ "$(is_server_prsnt "$slot_num")" = "0" ]; then
   i2c_device_delete "${prot_bus}" 0x50 > /dev/null 2>&1
   set_nic_power
 else
+  /usr/bin/sv start "mctpd_${slot_num}" > /dev/null 2>&1
   /usr/bin/sv start ipmbd_${bus} > /dev/null 2>&1
   /usr/local/bin/power-util "slot${slot_num}" 12V-on
   i2c_device_add "${prot_bus}" 0x50 24c32 > /dev/null 2>&1

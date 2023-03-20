@@ -33,4 +33,4 @@ else
   /bin/echo -n "Is board id correct(id=$bmc_location)?..."
 fi
 
-exec /usr/local/bin/sensord "${SLOTS[@]}"
+SENSORD_HOTSWAP_SUPPORT=1 exec /usr/local/bin/sensord "${SLOTS[@]}"

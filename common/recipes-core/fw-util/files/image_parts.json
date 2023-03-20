@@ -27,7 +27,7 @@
     },
     "unified-fit": {
       "offset": 1664,
-      "size":  <FIT_PART_SIZE_PLACE_HOLD>,
+      "size":  63872,
       "type": "fit",
       "num-nodes": 2
     }

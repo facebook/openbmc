@@ -55,6 +55,16 @@ int System::vboot_support_status(void)
   return VBOOT_NO_ENFORCE;
 }
 
+bool System::vboot_timestamp(uint32_t& fallback, uint32_t& current) {
+  struct vbs *v = vboot_status();
+  if (!v) {
+    return false;
+  }
+  fallback = v->uboot_last;
+  current = v->uboot_current;
+  return true;
+}
+
 bool System::get_mtd_name(string name, string &dev, size_t& size, size_t& erasesize)
 {
   FILE* partitions = fopen("/proc/mtd", "r");

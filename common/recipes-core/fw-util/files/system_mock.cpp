@@ -42,6 +42,23 @@ int System::vboot_support_status(void)
   return VBOOT_NO_SUPPORT;
 }
 
+bool System::vboot_timestamp(uint32_t& fallback, uint32_t& current) {
+  const char* env = std::getenv("FWUTIL_SWENFORCE");
+  if (!env) {
+    return false;
+  }
+  fallback = current = 0;
+  env = std::getenv("FWUTIL_VBOOT_TSP_CURRENT");
+  if (env) {
+    current = std::stoi(env);
+  }
+  env = std::getenv("FWUTIL_VBOOT_TSP_FALLBACK");
+  if (env) {
+    fallback = std::stoi(env);
+  }
+  return true;
+}
+
 bool System::get_mtd_name(string name, string &dev, size_t& size, size_t& erasesize)
 {
   map<string, string> mtd_map = {

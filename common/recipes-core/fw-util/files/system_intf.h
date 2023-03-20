@@ -21,6 +21,7 @@ class System {
 
     virtual int runcmd(const std::string &cmd);
     virtual int vboot_support_status();
+    virtual bool vboot_timestamp(uint32_t& fallback, uint32_t& current);
     virtual bool get_mtd_name(std::string name, std::string &dev, size_t& size, size_t& esize);
     virtual bool get_mtd_name(std::string name) {
       std::string unused;

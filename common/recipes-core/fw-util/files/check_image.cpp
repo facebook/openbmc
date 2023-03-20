@@ -149,11 +149,40 @@ void validateFITNode(const void* fdt, int node, size_t maxSize) {
   }
 }
 
+bool findTimestamp(const void* fdt, unsigned int& timestamp) {
+  int keysp = fdt_subnode_offset(fdt, 0, "keys");
+  if (keysp < 0) {
+    return false;
+  }
+  int fdt1p = fdt_subnode_offset(fdt, keysp, "fdt@1");
+  if (fdt1p < 0) {
+    return false;
+  }
+  int signaturep = fdt_subnode_offset(fdt, fdt1p, "signature@1");
+  if (signaturep < 0) {
+    return false;
+  }
+
+  int off = fdt_path_offset(fdt, "/");
+  if (off < 0) {
+    return false;
+  }
+  int len = 0;
+  const unsigned char* data =
+      (const unsigned char*)fdt_getprop(fdt, off, "timestamp", &len);
+  if (!data || len != 4) {
+    return false;
+  }
+  timestamp = ntohl(*(uint32_t*)data);
+  return true;
+}
+
 void validateFIT(
     const Image& image,
     size_t offset,
     size_t size,
-    size_t numExpectedNodes) {
+    size_t numExpectedNodes,
+    unsigned int& signTimestamp) {
   const void* fdt = image.peek(offset, size);
   if (numExpectedNodes < 1 || size < FDT_V17_SIZE ||
       fdt_check_header(fdt) != 0) {
@@ -187,6 +216,7 @@ void validateFIT(
   if (numNodes < numExpectedNodes) {
     throw std::runtime_error("Unexpected number of FDT nodes");
   }
+  findTimestamp(fdt, signTimestamp);
 }
 
 void getMeta(const Image& img, json& desc) {
@@ -250,7 +280,7 @@ void validatePlatformName(const Image& image, const std::string& machine) {
   }
 }
 
-void validateMeta(const Image& image) {
+void validateMeta(const Image& image, uint32_t& timestamp) {
   json desc;
   getMeta(image, desc);
   for (const auto& part : desc["part_infos"]) {
@@ -260,7 +290,8 @@ void validateMeta(const Image& image) {
     std::string name = part["name"];
     if (part["type"] == "fit") {
       std::cout << "Validating FIT " << name << std::endl;
-      validateFIT(image, part["offset"], part["size"], part["num-nodes"]);
+      validateFIT(
+          image, part["offset"], part["size"], part["num-nodes"], timestamp);
     } else if (part["type"] == "rom" || part["type"] == "raw") {
       std::cout << "Validating RAW " << name << std::endl;
       validateRaw(image, part["offset"], part["size"], part["md5"]);
@@ -271,7 +302,7 @@ void validateMeta(const Image& image) {
   }
 }
 
-void validateLayout(const Image& image, json& layout) {
+void validateLayout(const Image& image, json& layout, uint32_t& timestamp) {
   for (auto& partition : layout.items()) {
     auto& desc = partition.value();
     std::string partType = desc["type"];
@@ -284,7 +315,7 @@ void validateLayout(const Image& image, json& layout) {
     offset *= 1024;
     size *= 1024;
     if (partType == "fit") {
-      validateFIT(image, offset, size, numNodes);
+      validateFIT(image, offset, size, numNodes, timestamp);
     } else if (partType == "legacy") {
       validateLegacy(image, offset, size);
     } else {
@@ -293,46 +324,68 @@ void validateLayout(const Image& image, json& layout) {
   }
 }
 
-void validateLegacy(const Image& image, const std::string& partsPath) {
+void validateLegacy(
+    const Image& image,
+    const std::string& partsPath,
+    uint32_t& timestamp) {
   std::ifstream ifs(partsPath);
   json parts = json::parse(ifs);
   for (auto& image_layout : parts.items()) {
     try {
       // At least one layout should succeed.
-      validateLayout(image, image_layout.value());
+      validateLayout(image, image_layout.value(), timestamp);
       return;
     } catch (std::exception& e) {
+      timestamp = 0;
       continue;
     }
   }
   throw std::runtime_error("None of the Partition validators succeeded");
 }
 
+void checkDowngrade(System& sys, uint32_t timestamp) {
+  uint32_t fallback = 0;
+  uint32_t current = 0;
+  if (sys.vboot_timestamp(fallback, current)) {
+    if (timestamp == 0) {
+      std::cerr << "WARNING: Image is unsigned" << std::endl;
+      return;
+    }
+    if (timestamp < current && timestamp != fallback) {
+      std::cerr << "WARNING: Downgrade to unsupported image" << std::endl;
+    }
+  }
+}
+
 void validate(
     const std::string& path,
     const std::string& machine,
     bool isMeta,
-    const std::string& partsPath) {
+    const std::string& partsPath,
+    uint32_t& timestamp) {
   Image image(path);
   if (image.size() < 0x00F00000 + (64 * 1024)) {
     throw std::runtime_error("Image too small");
   }
   validatePlatformName(image, machine);
   if (isMeta) {
-    validateMeta(image);
+    validateMeta(image, timestamp);
   } else {
-    validateLegacy(image, partsPath);
+    validateLegacy(image, partsPath, timestamp);
   }
 }
 
 #ifndef TEST_STANDALONE_VALIDATOR
 bool BmcComponent::is_valid(const std::string& image, bool /* pfr_active */) {
+  uint32_t timestamp = 0;
   try {
     validate(
         image,
         sys().name(),
         sys().get_mtd_name("meta"),
-        "/etc/image_parts.json");
+        "/etc/image_parts.json",
+        timestamp);
+    checkDowngrade(sys(), timestamp);
   } catch (std::exception& ex) {
     std::cerr << ex.what() << std::endl;
     return false;
@@ -341,11 +394,15 @@ bool BmcComponent::is_valid(const std::string& image, bool /* pfr_active */) {
 }
 #else
 int main(int argc, char* argv[]) {
+  System system;
   if (argc < 5) {
     std::cerr << "USAGE: " << argv[0]
               << " IMAGE_PATH PLATFORM_NAME META_OR_NOT PARTS_PATH\n";
     return -1;
   }
-  validate(argv[1], argv[2], strcmp(argv[3], "true") == 0, argv[4]);
+  uint32_t timestamp = 0;
+  validate(argv[1], argv[2], strcmp(argv[3], "true") == 0, argv[4], timestamp);
+  std::cout << "Found timestamp: " << timestamp << std::endl;
+  checkDowngrade(system, timestamp);
 }
 #endif

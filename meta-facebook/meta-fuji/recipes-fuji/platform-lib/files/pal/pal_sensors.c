@@ -5157,6 +5157,7 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_FCM_T_TEMP2:
     case SMB_SENSOR_FCM_B_TEMP1:
     case SMB_SENSOR_FCM_B_TEMP2:
+    case SMB_VDDC_SW_TEMP:
     case SMB_SENSOR_TH4_HIGH:
       sprintf(units, "C");
       break;

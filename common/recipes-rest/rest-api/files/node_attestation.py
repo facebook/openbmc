@@ -37,7 +37,11 @@ except ImportError:
     DEVICE_ATTESTATION_AVAILABLE = False
     # Doing this so that we don't break obmc attestation
 
+import asyncio
+import threading
+
 from aiohttp.web import Application
+from aiohttp.web_exceptions import HTTPRequestTimeout
 from compute_rest_shim import RestShim
 from node import node
 
@@ -55,6 +59,10 @@ def setup_attestation_endpoints(app: Application) -> None:
     # Always try to keep these in sync with the CLI
     sysinfo_shim = RestShim(NodeSystemInfo(), "/api/attestation/system_information")
     app.router.add_get(sysinfo_shim.path, sysinfo_shim.get_handler)
+    # Trigger an initial update
+    t = threading.Thread(target=NodeSystemInfo.updateInformation)
+    t.setDaemon(True)
+    t.start()
 
     tpm_actions = ["ek-cert", "create-aik", "pcr-quote", "challenge-aik", "load-aik"]
     tpm_shim = RestShim(get_tpm_nodes(tpm_actions), "/api/attestation/tpm")
@@ -72,35 +80,78 @@ def setup_attestation_endpoints(app: Application) -> None:
 
 
 class NodeSystemInfo(node):
-    @staticmethod
+    cache_lock = threading.Lock()
+    system_info_cache = None
+    cached_algo = ""
+
+    @classmethod
     # GET /attestation/system_information
-    async def getInformation(param):
-        args = {}
-        # Default args
-        args["algo"] = "sha256"
-        args["flash0"] = "/dev/flash0"
-        args["flash1"] = "/dev/flash1"
-        args["recal"] = False
+    def updateInformation(cls, algo="sha256", have_lock=False):
+        if not have_lock:
+            cls.cache_lock.acquire()
+
+        try:
+            args = {}
+            # Default args
+            args["algo"] = algo
+            args["flash0"] = "/dev/flash0"
+            args["flash1"] = "/dev/flash1"
+            args["recal"] = False
+            if args["algo"] not in ACCEPTABLE_ALGORITHMS:
+                raise Exception(
+                    "Only acceptable algos are: {}".format(str(ACCEPTABLE_ALGORITHMS))
+                )
+            cls.system_info_cache = {}
+            cls.cached_algo = algo
+            # Let's get the system hashes first
+            cls.system_info_cache[
+                "system_hashes"
+            ] = obmc_attestation.measure.return_measure(args)
+            tpm_object = obmc_attestation.tpm2.Tpm2v4()
+            # Let's get the TPM static info like TPM version
+            cls.system_info_cache["tpm_info"] = tpm_object.get_tpm_static_information()
+
+        finally:
+            if not have_lock:
+                cls.cache_lock.release()
+
+    @classmethod
+    async def getInformation(cls, param):
+        algo = "sha256"
         # We update the params if any were passed
         for argument in param.keys():
             if argument not in ["algo"]:
                 raise Exception("You are allowed to specify only algo")
-        args.update(param)
-        if args["algo"] not in ACCEPTABLE_ALGORITHMS:
-            raise Exception(
-                "Only acceptable algos are: {}".format(str(ACCEPTABLE_ALGORITHMS))
-            )
-        result = {}
-        # Let's get the system hashes first
-        result["system_hashes"] = obmc_attestation.measure.return_measure(args)
-        tpm_object = obmc_attestation.tpm2.Tpm2v4()
-        # Let's get the TPM static info like TPM version
-        result["tpm_info"] = tpm_object.get_tpm_static_information()
-        # Let's get the system static info like kernel version
-        result[
-            "system_info"
-        ] = await obmc_attestation.helpers.get_system_static_information()
-        return result
+            algo = param["algo"]
+
+        loop = asyncio.get_event_loop()
+
+        # If we can't get the lock for the cached information in 30s, raise
+        # a timeout error to the requester.
+        got_lock = await loop.run_in_executor(
+            None, lambda: cls.cache_lock.acquire(timeout=30)
+        )
+        if not got_lock:
+            raise HTTPRequestTimeout
+
+        try:
+            if cls.system_info_cache is None or algo != cls.cached_algo:
+                await loop.run_in_executor(
+                    None, lambda: cls.updateInformation(algo=algo, have_lock=True)
+                )
+
+            # Get the static system info like kernel version
+            # We can't cache this in updateInformation() because it's async, so
+            # add it in here if necessary.
+            if "system_info" not in cls.system_info_cache:
+                cls.system_info_cache[
+                    "system_info"
+                ] = await obmc_attestation.helpers.get_system_static_information()
+
+        finally:
+            cls.cache_lock.release()
+
+        return cls.system_info_cache
 
 
 class NodeTPM(node):

@@ -53,6 +53,7 @@ enum class ProtUtilCmds {
   SMBUSFILTER = 12,
   TIMEBOUNDDEBUG = 13,
   ATTESTATION = 14,
+  READ_LEVEL0_PUBKEY = 15,
   TEST = 0xFF,
 };
 
@@ -347,6 +348,37 @@ static int do_show_log(uint8_t fru_id) {
   return 0;
 }
 
+static int do_read_level0_pubkey(uint8_t fru_id) {
+  uint8_t dev_i2c_bus = 0;
+  uint8_t dev_i2c_addr = 0;
+
+  if (pal_get_prot_address(fru_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
+    std::cerr << "pal_get_prot_address failed, fru: " << fru_id << std::endl;
+    return -1;
+  }
+
+  ProtDevice prot_dev(fru_id, dev_i2c_bus, dev_i2c_addr);
+  if (!prot_dev.isDevOpen()) {
+    std::cerr << "Fail to open i2c" << std::endl;
+    return -1;
+  }
+
+  std::vector<uint8_t> pubkey;
+  auto rc = prot_dev.protLevel0PubKeyRead(pubkey);
+  if (rc != ProtDevice::DevStatus::SUCCESS) {
+    std::cerr << "protLevel0PubKeyRead failed: " << (int)rc << std::endl;
+    return -1;
+  }
+
+  std::cout << "0x";
+  for(auto& v : pubkey) {
+    std::cout << fmt::format("{:02x}",v);
+  }
+  std::cout << std::endl;
+
+  return 0;
+}
+
 static int parse_args(
     int argc,
     char** argv,
@@ -384,6 +416,8 @@ static int parse_args(
 
   auto log_cmd = app.add_subcommand("log", "Log");
 
+  auto read_pubkey_cmd = app.add_subcommand("read_pubkey", "Read Level0 Public Key");
+
   CLI11_PARSE(app, argc, argv);
 
   ProtDevice::setVerbose((*v_flag) ? true : false);
@@ -405,6 +439,8 @@ static int parse_args(
     *action = ProtUtilCmds::BOOT_STATUS;
   } else if (log_cmd->parsed()) {
     *action = ProtUtilCmds::SHOW_LOG;
+  } else if (read_pubkey_cmd->parsed()) {
+    *action = ProtUtilCmds::READ_LEVEL0_PUBKEY;
   } else {
     std::cout << app.help() << std::endl;
     return -1;
@@ -430,6 +466,8 @@ int main(int argc, char** argv) {
       return do_get_boot_status(fru_id);
     case ProtUtilCmds::SHOW_LOG:
       return do_show_log(fru_id);
+    case ProtUtilCmds::READ_LEVEL0_PUBKEY:
+      return do_read_level0_pubkey(fru_id);
     default:
       return -1;
   }

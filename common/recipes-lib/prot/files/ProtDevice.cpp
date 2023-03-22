@@ -204,6 +204,23 @@ ProtDevice::DevStatus ProtDevice::protReadXfrVersion(
   return DevStatus::SUCCESS;
 }
 
+ProtDevice::DevStatus ProtDevice::protLevel0PubKeyRead(
+    std::vector<uint8_t>& pubkey) {
+  DATA_LAYER_PACKET_ACK data_layer_ack{};
+
+  auto rc =
+      protSendRecvDataPacket(CMD_LEVEL0_PUBKEY_READ, nullptr, 0, data_layer_ack);
+  if (rc != DevStatus::SUCCESS) {
+    return rc;
+  }
+
+  pubkey.assign(
+      &data_layer_ack.PayLoad[0],
+      &data_layer_ack.PayLoad[0] + LEVEL0_PUBKEY_LENGTH);
+
+  return DevStatus::SUCCESS;
+}
+
 ProtDevice::DevStatus ProtDevice::protSendDataPacket(
     std::vector<uint8_t> data_raw) {
   return protSendDataPacket(

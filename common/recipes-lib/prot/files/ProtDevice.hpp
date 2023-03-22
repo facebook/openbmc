@@ -29,6 +29,8 @@
 
 namespace prot {
 
+constexpr auto LEVEL0_PUBKEY_LENGTH = 64;
+
 struct BOOT_STATUS_ACK_PAYLOAD {
   uint8_t SPI_A; // 0 Active 1 Recovery 2 Dirty 3 Update Stage 4 Decommission
   uint8_t SPI_B;
@@ -91,6 +93,7 @@ class ProtDevice {
   DevStatus protUfmLogReadoutEntry(size_t& log_count);
   DevStatus protGetLogData(size_t index, PROT_LOG& log);
   DevStatus protReadXfrVersion(XFR_VERSION_READ_ACK_PAYLOAD& prot_ver);
+  DevStatus protLevel0PubKeyRead(std::vector<uint8_t>& pubkey);
 
   DevStatus protSendDataPacket(std::vector<uint8_t> data_raw);
   DevStatus protSendDataPacket(uint8_t cmd, uint8_t* payload, size_t length);

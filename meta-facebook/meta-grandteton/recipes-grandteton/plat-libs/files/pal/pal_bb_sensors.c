@@ -834,7 +834,7 @@ set_nct7363y_duty(uint8_t fan_id, uint8_t pwm) {
   //NCT7363Y Tach High Byte
   reg_map = location ? reg_map : (NCT7363Y_PWM_CNT - reg_map - 2);
   tbuf[0] = nct7363y_ctrl_list[reg_map].pwm_reg;
-  tbuf[1] = round((float)pwm*255/100);
+  tbuf[1] = round((float)pwm*127/100);
 
   ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 2, rbuf, 0);
   if( ret < 0 ) {
@@ -887,7 +887,7 @@ get_nct7363y_duty(uint8_t fan_id, uint8_t* pwm) {
     goto err_exit;
   }
 
-  *pwm = round((float)rbuf[0]*100/255);
+  *pwm = round((float)rbuf[0]*100/127);
   retry=0;
 err_exit:
   if (fd > 0) {

@@ -25,10 +25,26 @@
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
 
+static uint8_t op_dev_count = sizeof(op_dev_info) / sizeof(dev_info);
+static char* op_led_status[] = {"OFF", "ON", "BLINK"};
+
+uint8_t type = TYPE_1OU_UNKNOWN;
+enum LED_ACTION{
+  ACTION_OFF    = 0x0,
+  ACTION_ON     = 0x1,
+  ACTION_BLINK  = 0x2,
+  ACTION_STOP   = 0x3,
+  ACTION_STATUS = 0x4,
+};
+
 static void
 print_usage(void) {
   printf("Usage: \n");
-  printf("fpc-util <slot1|slot2|slot3|slot4> <1U-dev0|1U-dev1|1U-dev2|1U-dev3> --identify <on/off>\n");
+  if (type == TYPE_1OU_OLMSTEAD_POINT) {
+    printf("fpc-util slot1 <1U-dev[0..2]|2U-dev[0..4]3U-dev[0..2]|4U-dev[0..4]> --identify <on|off|blink|stop|status>\n");
+  } else {
+    printf("fpc-util <slot1|slot2|slot3|slot4> <1U-dev0|1U-dev1|1U-dev2|1U-dev3> --identify <on/off>\n");
+  }
   printf("fpc-util sled --identify <on/off>\n");
 }
 
@@ -42,6 +58,10 @@ main(int argc, char **argv) {
   bool is_dev = false;
   bool is_led_on = false;
   int ret = -1;
+  int i = 0;
+  uint8_t action = 0;
+  uint8_t intf = 0;
+  uint8_t present_status = 0;
 
   // fpc-util slot[1|2|3|4] --identify [on|off]
   // fpc-util slot[1|2|3|4] <dev> --identify [on|off]
@@ -65,9 +85,15 @@ main(int argc, char **argv) {
   }
 
   if ( strcmp(argv[on_off_idx], "on") == 0 ) {
-    is_led_on = true;
+    action = ACTION_ON;
   } else if ( strcmp(argv[on_off_idx], "off") == 0 ) {
-    is_led_on = false;
+    action = ACTION_OFF;
+  } else if ( strcmp(argv[on_off_idx], "status") == 0 ) {
+    action = ACTION_STATUS;
+  } else if ( strcmp(argv[on_off_idx], "blink") == 0 ) {
+    action = ACTION_BLINK;
+  } else if ( strcmp(argv[on_off_idx], "stop") == 0 ) {
+    action = ACTION_STOP;
   } else {
     goto err_exit;
   }
@@ -89,7 +115,6 @@ main(int argc, char **argv) {
     }
   }
   if ( is_dev == true ) {
-    uint8_t type = TYPE_1OU_UNKNOWN;
     uint8_t dev_id = DEV_NONE;
 
     // check the location
@@ -115,9 +140,9 @@ main(int argc, char **argv) {
       goto err_exit;
     }
 
-    if ( bic_get_1ou_type(fru, &type) < 0 || type != TYPE_1OU_VERNAL_FALLS_WITH_AST ) {
-      printf("Device identification only support in E1S 1OU board, get %02X (Expected: %02X)\n",
-             type, TYPE_1OU_VERNAL_FALLS_WITH_AST);
+    if ( bic_get_1ou_type(fru, &type) < 0 ||
+      (type != TYPE_1OU_VERNAL_FALLS_WITH_AST && type != TYPE_1OU_OLMSTEAD_POINT)) {
+      printf("Device identification only support in E1S board, get board type %02X\n", type);
       goto err_exit;
     }
 
@@ -127,19 +152,47 @@ main(int argc, char **argv) {
       goto err_exit;
     }
 
-    // is dev_id 2ou device?
-    if ( dev_id >= DEV_ID0_2OU ) {
-      printf("%s is not supported!\n", argv[2]);
-      goto err_exit;
+    if (type == TYPE_1OU_OLMSTEAD_POINT) {
+      for (i = 0; i < op_dev_count; i++) {
+        if (op_dev_info[i].dev_id == dev_id) {
+          dev_id = op_dev_info[i].dev_index;
+          intf = op_dev_info[i].intf;
+        }
+      }
+      ret = bic_op_get_e1s_present(dev_id, intf, &present_status);
+      if ((present_status == NOT_PRESENT) && (ret == 0)) {
+        printf("%s %s is not present\n", argv[1], argv[2]);
+        return -1;
+      }
+    } else {
+      intf = FEXP_BIC_INTF;
     }
 
-    if ( is_led_on == true ) {
-      ret = bic_set_amber_led(fru, dev_id, 0x01);
-    } else {
-      ret = bic_set_amber_led(fru, dev_id, 0x00);
-    }
-    printf("fpc-util: identification for %s %s is set to %s %ssuccessfully\n", \
+    switch (action) {
+      case ACTION_STATUS:
+        if (bic_get_amber_led(fru, dev_id, &status, intf)) {
+          printf("Failed to get %s %s LED status\n", argv[1], argv[2]);
+        } else {
+          if (status >= sizeof(op_led_status)) {
+            printf("Undefined LED status\n");
+            return -1;
+          }
+          printf("%s %s LED status: %s\n", argv[1], argv[2], op_led_status[status]);
+        }
+
+        break;
+      case ACTION_OFF:
+      case ACTION_ON:
+      case ACTION_BLINK:
+      case ACTION_STOP:
+          ret = bic_set_amber_led(fru, dev_id, action, intf);
+          printf("fpc-util: identification for %s %s is set to %s %ssuccessfully\n", \
                          argv[1], argv[2], argv[4], (ret < 0)?"un":"");
+          break;
+      default:
+        printf("Invalid action: %x\n", action);
+        return -1;
+    }
   } else {
     if (fru == FRU_ALL) {
       ret = 0;

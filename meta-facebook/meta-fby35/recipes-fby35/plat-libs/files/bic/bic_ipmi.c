@@ -806,7 +806,7 @@ bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
 }
 
 int
-bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
+bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf) {
   uint8_t tbuf[5] = {0x00};
   uint8_t rbuf[2] = {0};
   uint8_t rlen = 0;
@@ -819,13 +819,37 @@ bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
   tbuf[3] = dev_id; // 0'base
   tbuf[4] = status; // 0->off, 1->on
   while (retry < 3) {
-    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_AMBER_LED, tbuf, 5, rbuf, &rlen, FEXP_BIC_INTF);
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_AMBER_LED, tbuf, 5, rbuf, &rlen, intf);
     if (ret == 0) break;
     retry++;
   }
 
   if (ret != 0) {
     syslog(LOG_WARNING, "[%s] fail at slot%u dev%u", __func__, slot_id, dev_id);
+  }
+
+  return ret;
+}
+
+int
+bic_get_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t* status, uint8_t intf) {
+  uint8_t tbuf[5] = {0x00};
+  uint8_t rbuf[4] = {0};
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  if (!status) {
+    return -1;
+  }
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+
+  tbuf[3] = dev_id; // 0'base
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_AMBER_LED, tbuf, 4, rbuf, &rlen, intf);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "[%s] fail at slot%u dev%u", __func__, slot_id, dev_id);
+  } else {
+    *status = rbuf[3];
   }
 
   return ret;

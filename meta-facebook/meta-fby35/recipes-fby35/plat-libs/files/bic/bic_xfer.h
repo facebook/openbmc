@@ -38,6 +38,7 @@ extern const uint32_t VF_IANA_ID;
 
 enum {
   BIC_CMD_OEM_SET_AMBER_LED     = 0x39,
+  BIC_CMD_OEM_GET_AMBER_LED     = 0x3A,
   BIC_CMD_OEM_GET_SET_GPIO      = 0x41,
   BIC_CMD_OEM_FW_CKSUM_SHA256   = 0x43,
   BIC_CMD_OEM_BMC_FAN_CTRL      = 0x50,

@@ -1069,7 +1069,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
       break;
   }
   if (retry > RETRY_3_TIME) { //if the third retry still failed, return -1
-    syslog(LOG_CRIT, "%s: Restart using Recovery Firmware failed..., retried: %d", __func__,  retry);
+    syslog(LOG_CRIT, "%s: FRU: %d, Restart using Recovery Firmware failed..., retried: %d", __func__, slot_id, retry);
     return -1;
   }
 
@@ -1112,7 +1112,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
     }
   }
   if (retry > RETRY_3_TIME) { //if the third retry still failed, return -1
-    syslog(LOG_CRIT, "%s: Restore Factory Default failed..., retried: %d", __func__,  retry);
+    syslog(LOG_CRIT, "%s: FRU: %d, Restore Factory Default failed..., retried: %d", __func__, slot_id, retry);
     return -1;
   }
   return 0;
@@ -1223,7 +1223,7 @@ me_reset(uint8_t slot_id) {
     break;
   }
   if (retry > RETRY_3_TIME) { //if the third retry still failed, return -1
-    syslog(LOG_CRIT, "%s: ME Reset failed..., retried: %d", __func__,  retry);
+    syslog(LOG_CRIT, "%s: FRU: %d, ME Reset failed..., retried: %d", __func__, slot_id, retry);
     return -1;
   }
   return 0;

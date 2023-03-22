@@ -10,7 +10,7 @@
 using namespace std;
 
 #define FORCED_OFF 1
-#define DELAY_ME_RESET 5
+#define DELAY_ME_RESET 10
 
 image_info BiosComponent::check_image(const string& image, bool force) {
   int ret = 0;
@@ -127,7 +127,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
 
   if (SERVER_TYPE_HD != server_type || isBypass) {
-    if (attempt_server_power_off(force) < 0) {
+    if ((ret_pwroff = attempt_server_power_off(force)) < 0) {
       cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
       return FW_STATUS_FAILURE;
     }
@@ -239,6 +239,7 @@ int BiosComponent::dump(string image) {
 
   server_type = fby35_common_get_slot_type(slot_id);
   if (server_type == SERVER_TYPE_CL) {
+    sleep(DELAY_ME_RESET);
     cerr << "Putting ME into recovery mode..." << endl;
     ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
     if (ret_recovery < 0) {

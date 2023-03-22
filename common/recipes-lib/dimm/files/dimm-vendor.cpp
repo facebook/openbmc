@@ -32,6 +32,7 @@ static dimm_mfg dimm_manufacturer[] = {
  { 0xd086, "Silego"   },
  { 0x9d86, "Rambus"   },
  { 0x2a0b, "MPS"      },
+ { 0x8c8a, "Richtek"  },
 };
 
 const char *

@@ -350,12 +350,27 @@ updateProperty::updateProperty(
 } // namespace ProtSpiInfo
 
 namespace ProtVersion {
+inline bool isDataDigits(const std::span<uint8_t> raw) {
+  for (auto& v : raw) {
+    if (!isdigit(v)) return false;
+  }
+  return true;
+}
+
 /*Create std::string from non-null terminated char array*/
 std::string getVerString(const std::span<uint8_t> ver) {
-  return std::string(reinterpret_cast<const char*>(ver.data()), ver.size());
+  std::stringstream ss;
+  for (auto& v : ver) {
+    if (isprint(v)) ss << v ;
+  }
+  return ss.str();
 }
 /* DDMMYYYY to YYYY-MM-DD*/
 std::string getDateString(const std::span<uint8_t, 8> date) {
+  if (!isDataDigits(date)) {
+    return std::string();
+  }
+
   return fmt::format(
       "{:c}{:c}{:c}{:c}-{:c}{:c}-{:c}{:c}",
       date[4],
@@ -369,6 +384,10 @@ std::string getDateString(const std::span<uint8_t, 8> date) {
 }
 /* HHMMSS to HH:MM:SS*/
 std::string getTimeString(const std::span<uint8_t, 8> time) {
+  if (!isDataDigits(time.subspan(0,6))) {
+    return std::string();
+  }
+
   return fmt::format(
       "{:c}{:c}:{:c}{:c}:{:c}{:c}",
       time[0],

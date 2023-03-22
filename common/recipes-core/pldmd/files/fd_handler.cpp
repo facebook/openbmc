@@ -19,7 +19,7 @@ fd_handler::polling() {
 void
 fd_handler::update_pollfds() {
 
-  if (!client_change) 
+  if (!client_change)
     return;
 
   size_t index;
@@ -41,7 +41,7 @@ fd_handler::update_pollfds() {
   client_change = false;
 };
 
-int 
+int
 fd_handler::check_pollfds (int index)
 {
   struct pollfd* pfd = get_pollfd(index);
@@ -60,23 +60,23 @@ int fd_handler::send_data (int fd, uint8_t * buf, size_t size)
   return send (fd, buf, size, 0);
 }
 
-int fd_handler::recv_data (int fd, uint8_t **buf, size_t &size) 
+int fd_handler::recv_data (int fd, uint8_t **buf, size_t &size)
 {
   int returnCode = 0;
   ssize_t peekedLength = recv(fd, nullptr, 0, MSG_PEEK | MSG_TRUNC);
 
-  if (peekedLength <= 0) {
-    // stream socket peer has performed an orderly shutdown.
-    if (peekedLength == 0 && errno == 0)
-      returnCode = -1;
-    else {
-      returnCode = -errno;
-      LOG(ERROR) << "recv system call failed, RC = " 
+  // stream socket peer has performed an orderly shutdown.
+  if (peekedLength == 0)
+    return -1;
+
+  if (peekedLength < 0) {
+    if (errno != ECONNRESET) {
+      LOG(ERROR) << "recv system call failed, RC = "
                 << (int)peekedLength
                 << ", -errno = "
-                << returnCode;
+                << -errno;
     }
-    return returnCode;
+    return -errno;
   }
 
   size = peekedLength;
@@ -86,7 +86,6 @@ int fd_handler::recv_data (int fd, uint8_t **buf, size_t &size)
     if (errno != ECONNRESET)
       LOG(ERROR) << "can't receive from client";
     returnCode = -1;
-    return returnCode;
   }
 
   return returnCode;
@@ -110,7 +109,7 @@ fd_handler::init_tx_server_fd (int fd) {
 }
 
 /* init server socket for clients */
-void 
+void
 fd_handler::init_server_fd (int& fd, const std::string &path)
 {
   int returnCode = 0;

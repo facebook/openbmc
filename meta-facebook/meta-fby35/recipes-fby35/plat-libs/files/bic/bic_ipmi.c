@@ -519,7 +519,11 @@ _bic_get_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf) {
   } else {
     memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   }
-  tbuf[tlen++] = fw_comp;
+  if ((fw_comp == FW_1OU_RETIMER) || (fw_comp == FW_3OU_RETIMER)) {
+    tbuf[tlen++] = UPDATE_RETIMER; // firmware type: retimer
+  } else {
+    tbuf[tlen++] = fw_comp;
+  }
 
   ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, tlen, rbuf, &rlen, intf);
   // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
@@ -567,6 +571,10 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_1OU_CXL:
       fw_comp = COMPNT_CXL;
       break;
+    case FW_1OU_RETIMER:
+    case FW_3OU_RETIMER:
+      fw_comp = UPDATE_RETIMER;
+      break;
     default:
       fw_comp = comp;
       break;
@@ -582,6 +590,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_1OU_BIC:
     case FW_1OU_CPLD:
     case FW_1OU_CXL:
+    case FW_1OU_RETIMER:
       intf = FEXP_BIC_INTF;
       break;
     case FW_2OU_BIC:
@@ -599,6 +608,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
       intf = BB_BIC_INTF;
       break;
     case FW_3OU_BIC:
+    case FW_3OU_RETIMER:
       intf = EXP3_BIC_INTF;
       break;
     case FW_4OU_BIC:
@@ -623,6 +633,8 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_BB_BIC:
     case FW_3OU_BIC:
     case FW_4OU_BIC:
+    case FW_1OU_RETIMER:
+    case FW_3OU_RETIMER:
       ret = _bic_get_fw_ver(slot_id, fw_comp, ver, intf);
       break;
     case FW_1OU_CPLD:

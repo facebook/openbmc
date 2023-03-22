@@ -28,12 +28,13 @@ extern "C" {
 #define AST_BIC_IPMB_WRITE_COUNT_MAX 224
 #define PKT_SIZE (64*1024)
 
-enum {
+enum UPDATE_FW_TYPE{
   UPDATE_BIOS = 0,
   UPDATE_CPLD,
   UPDATE_BIC,
   UPDATE_CXL,
   UPDATE_BIOS_SPIB,
+  UPDATE_RETIMER,
 };
 
 // Update from file.

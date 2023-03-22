@@ -724,24 +724,6 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
   return ret;
 }
 
-static int
-stop_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
-  int ret = 0;
-  printf("* Turning off BIC sensor monitor...\n");
-  ret = bic_enable_ssd_sensor_monitor(slot_id, false, intf);
-  sleep(2);
-  return ret;
-}
-
-static int
-start_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
-  int ret = 0;
-  printf("* Turning on BIC sensor monitor...\n");
-  ret = bic_enable_ssd_sensor_monitor(slot_id, true, intf);
-  sleep(2);
-  return ret;
-}
-
 char*
 get_component_name(uint8_t comp) {
   switch (comp) {
@@ -861,13 +843,103 @@ end_with (char* str, uint8_t str_len, char* pattern, uint8_t pattern_len) {
 }
 
 static int
+update_bic_retimer(uint8_t slot_id, char* path, uint8_t intf) {
+#define RETIMER_UPDATE_PACKET_SIZE 128
+  size_t file_size = 0;
+  int fd = -1;
+  uint32_t image_size = 0;
+  struct timeval start, end;
+  int ret = 0;
+  uint32_t dsize = 0, last_offset = 0;
+  uint32_t offset = 0;
+  volatile uint16_t read_count = 0;
+  uint8_t buf[256] = {0};
+  uint8_t target = UPDATE_RETIMER;
+  ssize_t count = 0;
+  bool is_latest_packet = false;
+  int retry = 3;
+
+  if (path == NULL) {
+    syslog(LOG_WARNING, "%s() NULL file path\n", __func__);
+    return -1;
+  }
+  //get fd and file size
+  fd = open_and_get_size(path, &file_size);
+  if ( fd < 0 ) {
+    syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d\n", __func__, path, fd);
+    goto error_exit;
+  }
+  // Find the latest non-zero byte as the end of image
+  for (image_size = file_size; image_size > 0; image_size--) {
+    lseek(fd, image_size, SEEK_SET);
+    if (read(fd, buf, 1) < 0) {
+      syslog(LOG_WARNING, "%s(): read failed while calculating size", __func__);
+      break;
+    }
+    if ((buf[0] != 0x0)) {
+      break;
+    }
+  }
+  dsize = image_size / 100;
+  gettimeofday(&start, NULL);
+
+  lseek(fd, 0, SEEK_SET);
+  while (1) {
+    read_count = RETIMER_UPDATE_PACKET_SIZE;
+    // Read from file
+    count = read(fd, buf, read_count);
+    if (count < 0) {
+      if ((retry == 0) || (errno != EINTR)) {
+        syslog(LOG_WARNING, "%s(): read image failed, offset = %x", __func__, offset);
+        ret = -1;
+        goto error_exit;
+      } else {
+        retry--;
+        continue;
+      }
+    }
+    if ((offset + count) >= image_size) {
+      target |= 0x80; //to indicate last byte to bic
+      is_latest_packet = true;
+      count = image_size - offset + 1;
+    }
+    // Send data to Bridge-IC
+    ret = _update_fw(slot_id, target, TYPE_1OU_OLMSTEAD_POINT, offset, count, buf, intf);
+    if (ret) {
+      goto error_exit;
+    }
+
+    // Update counter
+    offset += count;
+    if ((last_offset + dsize) <= offset) {
+      _set_fw_update_ongoing(slot_id, 60); //60s timeout for flag
+      printf("\rupdated retimer: %u %%", offset/dsize);
+      fflush(stdout);
+      last_offset += dsize;
+    }
+    if (is_latest_packet) {
+      break;
+    }
+  }
+  printf("\n");
+  gettimeofday(&end, NULL);
+  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
+
+error_exit:
+  printf("\n");
+  if (fd >= 0) {
+    close(fd);
+  }
+  return ret;
+}
+
+static int
 bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint8_t force) {
   int ret = BIC_STATUS_SUCCESS;
   uint8_t intf = 0x0;
   char ipmb_content[] = "ipmb";
   char tmp_posfix[] = "-tmp";
   char* loc = NULL;
-  bool stop_bic_monitoring = false;
   bool stop_fscd_service = false;
   uint8_t bmc_location = 0;
   uint8_t status = 0;
@@ -909,12 +981,6 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, origin_path);
 
   uint8_t board_type = 0;
-  if ( fby35_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
-    syslog(LOG_WARNING, "Failed to get 2ou board type\n");
-  } else if ( board_type == GPV3_MCHP_BOARD ||
-              board_type == GPV3_BRCM_BOARD ) {
-    stop_bic_monitoring = true;
-  }
 
   //get the intf
   switch (comp) {
@@ -925,6 +991,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       break;
     case FW_1OU_BIC:
     case FW_1OU_BIC_RCVY:
+    case FW_1OU_RETIMER:
       intf = FEXP_BIC_INTF;
       break;
     case FW_2OU_BIC:
@@ -946,6 +1013,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       break;
     case FW_3OU_BIC:
     case FW_3OU_BIC_RCVY:
+    case FW_3OU_RETIMER:
       intf = EXP3_BIC_INTF;
       break;
     case FW_4OU_BIC:
@@ -1041,38 +1109,13 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
         ret = update_bic_mchp(slot_id, comp, path, intf, force, (loc != NULL)?false:true);
       }
       break;
-    case FW_2OU_M2_DEV0:
-    case FW_2OU_M2_DEV1:
-    case FW_2OU_M2_DEV2:
-    case FW_2OU_M2_DEV3:
-    case FW_2OU_M2_DEV4:
-    case FW_2OU_M2_DEV5:
-    case FW_2OU_M2_DEV6:
-    case FW_2OU_M2_DEV7:
-    case FW_2OU_M2_DEV8:
-    case FW_2OU_M2_DEV9:
-    case FW_2OU_M2_DEV10:
-    case FW_2OU_M2_DEV11:
-      if ( stop_bic_monitoring == true && stop_bic_sensor_monitor(slot_id, intf) < 0 ) {
-        printf("* Failed to stop bic sensor monitor\n");
-        break;
-      }
-      uint8_t nvme_ready = 0, type = 0;
-      ret = bic_get_dev_info(slot_id, (comp - FW_2OU_M2_DEV0) + 1, &nvme_ready ,&status, &type);
-      if (ret) {
-        printf("* Failed to read m.2 device's info\n");
-        ret = BIC_STATUS_FAILURE;
-        break;
-      } else {
-        ret = update_bic_m2_fw(slot_id, comp, path, intf, force, type);
-      }
-      //run it anyway
-      if ( stop_bic_monitoring == true && start_bic_sensor_monitor(slot_id, intf) < 0 ) {
-        printf("* Failed to start bic sensor monitor\n");
-        ret = BIC_STATUS_FAILURE;
-        break;
-      }
+    case FW_1OU_RETIMER:
+    case FW_3OU_RETIMER:
+      ret = update_bic_retimer(slot_id, path, intf);
       break;
+    default:
+      syslog(LOG_WARNING, "%s(): component %x not supported", __func__, comp);
+      return -1;
   }
   if (stop_fscd_service == true) {
     printf("Set fan mode to auto and start fscd\n");

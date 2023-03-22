@@ -29,6 +29,8 @@ LOCAL_URI += " \
         file://bic_prot.hpp \
         file://bic_vr.cpp \
         file://bic_vr.h \
+        file://bic_retimer.cpp \
+        file://bic_retimer.h \
         file://bmc_cpld.cpp \
         file://bmc_cpld.h \
         file://expansion.cpp \

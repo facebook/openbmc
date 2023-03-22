@@ -11,6 +11,7 @@
 #include "bic_vr.h"
 #include "vpdb_vr.h"
 #include "bic_cxl.h"
+#include "bic_retimer.h"
 #include "usbdbg.h"
 #include "mp5990.h"
 #include "bic_prot.hpp"
@@ -126,6 +127,8 @@ class ClassConfig {
               static BicFwComponent bic_2ou_fw1("slot1", "2ou_bic", "2ou", FW_2OU_BIC);
               static BicFwComponent bic_3ou_fw1("slot1", "3ou_bic", "3ou", FW_3OU_BIC);
               static BicFwComponent bic_4ou_fw1("slot1", "4ou_bic", "4ou", FW_4OU_BIC);
+              static RetimerFwComponent retimer_1ou_fw1("slot1", "1ou_retimer", "1ou", FW_1OU_RETIMER);
+              static RetimerFwComponent retimer_3ou_fw1("slot1", "3ou_retimer", "3ou", FW_3OU_RETIMER);
               static BicFwComponent bic_2ou_rcvy_fw1("slot1", "2ou_bic_rcvy", "2ou", FW_2OU_BIC_RCVY);
               static BicFwComponent bic_3ou_rcvy_fw1("slot1", "3ou_bic_rcvy", "3ou", FW_3OU_BIC_RCVY);
               static BicFwComponent bic_4ou_rcvy_fw1("slot1", "4ou_bic_rcvy", "4ou", FW_4OU_BIC_RCVY);

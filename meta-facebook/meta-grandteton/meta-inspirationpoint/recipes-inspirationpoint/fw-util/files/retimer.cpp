@@ -53,7 +53,7 @@ class RetimerComponent : public Component {
 
     int get_version(json& j) {
       int ret = -1, retry =0, fd_lock;
-      uint16_t ver[10] = {0};
+      uint16_t ver[3] = {0};
 
       if(gpio_get_value_by_shadow(RST_PESET) != GPIO_VALUE_HIGH) {
           j["VERSION"] = "NA";
@@ -82,7 +82,7 @@ class RetimerComponent : public Component {
       std::stringstream ss;
       ss << +ver[0] << '.'
          << +ver[1] << '.'
-         << +ver[2] << +ver[3];
+         << +ver[2];
       j["VERSION"] = ss.str();
 
       return FW_STATUS_SUCCESS;

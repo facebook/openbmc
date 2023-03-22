@@ -50,4 +50,4 @@ int PLDMNicComponent::update(string image) {
   return ret;
 }
 
-PLDMNicComponent nic1("nic1", "nic1", "NIC", 0x0, 4);
+PLDMNicComponent nic1("nic1", "nic1", "NIC", 0x22, 4);

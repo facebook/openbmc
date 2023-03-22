@@ -75,6 +75,7 @@ LOCAL_URI = " \
     file://UnixSock.h \
     file://RackmonSvcUnix.cpp \
     file://RackmonCliUnix.cpp \
+    file://ModbusUtil.cpp \
     "
 # Configuration files
 LOCAL_URI += " \

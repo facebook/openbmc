@@ -19,15 +19,18 @@ common = files(
     'Modbus.cpp',
     'Msg.cpp',
     'UARTDevice.cpp',
+
+)
+svc_common = common + files(
     'ModbusDevice.cpp',
     'Register.cpp',
     'Rackmon.cpp',
     'UnixSock.cpp',
 )
-srcs = common + files(
+srcs = svc_common + files(
     'RackmonSvcUnix.cpp',
 )
-test_srcs = common + files(
+test_srcs = svc_common + files(
     'tests/Main.cpp',
     'tests/MsgTest.cpp',
     'tests/DeviceTest.cpp',
@@ -77,6 +80,13 @@ rackmond_exe = executable(
 rackmon_cli_exe = executable(
   'rackmoncli',
   files('RackmonCliUnix.cpp', 'UnixSock.cpp'),
+  dependencies: deps,
+  install: true,
+  install_dir: 'local/bin'
+)
+modbus_util_exe = executable(
+  'modbus-util',
+  common + files('ModbusUtil.cpp'),
   dependencies: deps,
   install: true,
   install_dir: 'local/bin'

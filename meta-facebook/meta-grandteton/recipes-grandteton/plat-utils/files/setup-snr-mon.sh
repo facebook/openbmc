@@ -50,3 +50,17 @@ if [ $rev -eq 0 ];
 then
   sed -i "2{s/$/ swb_hsc/}" /etc/sv/sensord/run
 fi
+
+
+kv set mb_polling_status      1
+kv set swb_polling_status     1
+kv set hgx_polling_status     1
+kv set nic0_polling_status    1
+kv set nic1_polling_status    1
+kv set scm_polling_status     1
+kv set vpdb_polling_status    1
+kv set hpdb_polling_status,   1
+kv set fan_bp1_polling_status 1
+kv set fan_bp2_polling_status 1
+kv set hsc_polling_status     1
+kv set swb_hsc_polling_status 1

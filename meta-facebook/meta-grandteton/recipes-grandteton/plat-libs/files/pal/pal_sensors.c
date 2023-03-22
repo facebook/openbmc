@@ -399,6 +399,26 @@ int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max) {
   return 0;
 }
 
+int check_polling_status(uint8_t fru){
+  char key[MAX_KEY_LEN] = {0};
+  char val[MAX_VALUE_LEN] = {0};
+  char name[32] = {0};
+
+  pal_get_fru_name(fru, name);
+  snprintf(key, sizeof(key), "%s_polling_status", name);
+
+  if(kv_get(key, val, 0, 0)) {
+    //syslog(LOG_CRIT, " %s not key  - FRU: %d", __func__, fru);
+    return sensor_map[fru].polling;
+  }
+
+  if(atoi(val) == 1) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 static uint8_t*
 get_map_retry(uint8_t fru)
 {
@@ -454,7 +474,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
 
   server_off = is_server_off();
-  if (sensor_map[fru].polling) {
+  if (check_polling_status(fru)) {
     if (server_off) {
       if (sensor_map[fru].map[sensor_num].stby_read == true) {
         ret = sensor_map[fru].map[sensor_num].read_sensor(fru, sensor_num, (float*) value);
@@ -529,7 +549,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   reload_sensor_table(fru);
   scale = sensor_map[fru].map[sensor_num].units;
 
-  if (sensor_map[fru].polling) {
+  if (check_polling_status(fru)) {
     if (pal_get_fru_name(fru, fru_name) == 0) {
       for (int i = 0; i < strlen(fru_name); i++)
         fru_name[i] = toupper(fru_name[i]);
@@ -574,7 +594,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
 
   reload_sensor_table(fru);
 
-  if (sensor_map[fru].polling) {
+  if (check_polling_status(fru)) {
     switch(thresh) {
       case UCR_THRESH:
         *val = sensor_map[fru].map[sensor_num].snr_thresh.ucr_thresh;

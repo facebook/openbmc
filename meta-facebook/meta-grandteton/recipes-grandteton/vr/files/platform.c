@@ -3,6 +3,7 @@
 #include <string.h>
 #include <openbmc/pal.h>
 #include <openbmc/pal_common.h>
+#include <openbmc/kv.h>
 #include <libpldm/pldm.h>
 #include <libpldm/platform.h>
 #include <libpldm-oem/pldm.h>
@@ -95,6 +96,12 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   return ret;
 }
 
+
+static int mb_vr_polling_ctrl(bool enable) {
+
+ return  kv_set("mb_polling_status", (enable) ? "1" : "0", 0, 0);
+}
+
 //Renesas VR
 struct vr_ops raa_gen2_3_ops = {
   .get_fw_ver = get_raa_ver,
@@ -139,6 +146,7 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU0_VCCFA] = {
     .bus = MB_VR_BUS_ID,
@@ -147,6 +155,7 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU0_VCCD] = {
     .bus = MB_VR_BUS_ID,
@@ -155,6 +164,7 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU1_VCCIN] = {
     .bus = MB_VR_BUS_ID,
@@ -163,6 +173,7 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU1_VCCFA] = {
     .bus = MB_VR_BUS_ID,
@@ -171,6 +182,7 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU1_VCCD] = {
     .bus = MB_VR_BUS_ID,
@@ -179,6 +191,7 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_SWB_PEX01_VCC] = {
     .bus = SWB_VR_BUS_ID,
@@ -187,6 +200,8 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "swb",
     .xfer = vr_pldm_wr,
+    .sensor_polling_ctrl = NULL,
+
   },
   [VR_SWB_PEX23_VCC] = {
     .bus = SWB_VR_BUS_ID,
@@ -195,6 +210,7 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "swb",
     .xfer = vr_pldm_wr,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_VPDB_BRICK] = {
     .bus = VPDB_VR_BUS_ID,
@@ -203,6 +219,7 @@ struct vr_info vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "vpdb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
 };
 
@@ -225,12 +242,13 @@ int plat_vr_init(void) {
   get_comp_source(FRU_MB, MB_VR_SOURCE, &id);
   if (id == SECOND_SOURCE) {
     for (i = 0; i < MB_VR_CNT; i++) {
-      vr_list[i].ops =  &xdpe152xx_ops;
+      vr_list[i].ops = &xdpe152xx_ops;
       vr_list[i].addr = mb_inf_vr_addr[i];
     }
   } else if (id == THIRD_SOURCE) {
     for (i = 0; i < MB_VR_CNT; i++) {
-      vr_list[i].ops =  &mp2856_ops;
+      vr_list[i].ops = &mp2856_ops;
+      vr_list[i].sensor_polling_ctrl = &mb_vr_polling_ctrl;
     }
   }
 

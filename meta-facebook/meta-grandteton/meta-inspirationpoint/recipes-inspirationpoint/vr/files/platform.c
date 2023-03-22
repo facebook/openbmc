@@ -152,6 +152,11 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   return ret;
 }
 
+static int mb_vr_polling_ctrl(bool enable) {
+
+ return  kv_set("mb_polling_status", (enable) ? "1" : "0", 0, 0);
+}
+
 static int
 acb_vr_pldm_wr(uint8_t bus, uint8_t addr,
            uint8_t *txbuf, uint8_t txlen,
@@ -244,6 +249,7 @@ struct vr_info mb_vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU0_VCORE1] = {
     .bus = MB_VR_BUS_ID,
@@ -252,6 +258,7 @@ struct vr_info mb_vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU0_PVDD11] = {
     .bus = MB_VR_BUS_ID,
@@ -260,6 +267,7 @@ struct vr_info mb_vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU1_VCORE0] = {
     .bus = MB_VR_BUS_ID,
@@ -268,6 +276,7 @@ struct vr_info mb_vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU1_VCORE1] = {
     .bus = MB_VR_BUS_ID,
@@ -276,6 +285,7 @@ struct vr_info mb_vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
   [VR_MB_CPU1_PVDD11] = {
     .bus = MB_VR_BUS_ID,
@@ -284,6 +294,7 @@ struct vr_info mb_vr_list[] = {
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+    .sensor_polling_ctrl = NULL,
   },
 };
 
@@ -594,6 +605,7 @@ int plat_vr_init(void) {
       for (i = 0; i < MB_VR_CNT; i++) {
         vr_list[i].ops =  &mp2856_ops;
         vr_list[i].addr = mb_inf_vr_addr[i];
+        vr_list[i].sensor_polling_ctrl = &mb_vr_polling_ctrl;
       }
     }
 

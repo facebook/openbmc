@@ -159,3 +159,12 @@ class GTSwbCpldComponent : public CpldComponent, public GTPldmComponent {
     int get_version(json& /*json*/) override;
     int comp_update(const string& image) { return CpldComponent::update(image); }
 };
+
+//Artemis Meb Cxl Component
+class MebCxlFwComponent : public SwbBicFwComponent {
+  public:
+    MebCxlFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
+        :SwbBicFwComponent(fru, comp, bus, eid, target) {}
+    int get_version(json& j) override;
+};
+

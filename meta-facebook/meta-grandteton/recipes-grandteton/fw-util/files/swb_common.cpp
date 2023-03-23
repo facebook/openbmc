@@ -35,6 +35,9 @@ struct PexImage {
 
 #define MAX_PLDM_IPMI_PAYLOAD (224)
 
+// Artemis CXL FW PAYLOAD
+#define MAX_CXL_PLDM_IPMI_PAYLOAD (128)
+
 enum {
   SWB_FW_UPDATE_SUCCESS                =  0,
   SWB_FW_UPDATE_FAILED                 = -1,
@@ -132,7 +135,7 @@ int send_update_packet (int bus, int eid, uint8_t* buf, ssize_t bufsize,
   return rc;
 }
 
-int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data, uint32_t file_size)
+int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data, uint32_t file_size, const string& comp)
 {
   int ret = SWB_FW_UPDATE_FAILED;
 
@@ -152,9 +155,17 @@ int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint
 
   while (1)
   {
+    // CXL send packets in blocks of 180 bytes
+    if (comp.compare(0, 3, "cxl") == 0) {
+      cout << "CXL fw udpate comp: " <<  comp << endl;
+      read_count = ((offset + MAX_CXL_PLDM_IPMI_PAYLOAD) < boundary) ?
+                    MAX_CXL_PLDM_IPMI_PAYLOAD : boundary - offset;
+      cout << "CXL fw udpate readcount: " <<  read_count << endl;
+    } else {
     // send packets in blocks of 64K
-    read_count = ((offset + MAX_PLDM_IPMI_PAYLOAD) < boundary) ?
+      read_count = ((offset + MAX_PLDM_IPMI_PAYLOAD) < boundary) ?
                   MAX_PLDM_IPMI_PAYLOAD : boundary - offset;
+    }
 
     if(offset >= file_size)
       break;
@@ -227,7 +238,8 @@ int fw_update_proc (const string& image, bool /*force*/,
   syslog(LOG_CRIT, "Component %s upgrade initiated\n", comp.c_str() );
 
   try {
-    int ret = swb_fw_update(fruid, bus, eid, target, memblock, r_size);
+
+    int ret = swb_fw_update(fruid, bus, eid, target, memblock, r_size, comp);
     delete[] memblock;
     close(fd_r);
     if (ret != SWB_FW_UPDATE_SUCCESS) {
@@ -456,6 +468,43 @@ int SwbPexFwComponent::get_version(json& j) {
   return FW_STATUS_SUCCESS;
 }
 
+int MebCxlFwComponent::get_version(json& j) {
+  vector<uint8_t> ver = {};
+  int ret = 0;
+
+  // Check if post complete
+  if (pal_bios_completed(FRU_MB)) {
+    // Get Meb Cxl Version
+    ret = get_swb_version(bus, eid, target, ver);
+
+    if (ret != 0 || ver.empty()) {
+      j["VERSION"] = "NA";
+    } else if (ver[1] == MEB_CXL_FW_RESP_LEN) {
+      stringstream ver_str;
+      // ver[0] = component id, ver[1] = fw version length
+      for(std::size_t i = 2; i <= MEB_CXL_FW_RESP_LEN; i ++) {
+        ver_str << std::hex << ver[i];
+      }
+      j["VERSION"] = ver_str.str();
+    } else {
+      j["VERSION"] = "Format not supported";
+    }
+  } else {
+    j["VERSION"] = "NA";
+  }
+
+  stringstream comp_str;
+  comp_str << this->alias_fru()
+           << ' '
+           << this->alias_component();
+
+  string rw_str = comp_str.str();
+  transform(rw_str.begin(),rw_str.end(), rw_str.begin(),::toupper);
+
+  j["PRETTY_COMPONENT"] = rw_str;
+  return FW_STATUS_SUCCESS;
+}
+
 static ssize_t
 uint32_t_read (int fd, uint32_t& target)
 {
@@ -520,7 +569,7 @@ int SwbPexFwComponent::update(string image) {
       ret = -1;
       goto exit;
     }
-    ret = swb_fw_update(fruid, bus, eid, target, memblock, images[num].size);
+    ret = swb_fw_update(fruid, bus, eid, target, memblock, images[num].size, this->alias_component());
     delete[] memblock;
     if (ret != SWB_FW_UPDATE_SUCCESS) {
       switch(ret)

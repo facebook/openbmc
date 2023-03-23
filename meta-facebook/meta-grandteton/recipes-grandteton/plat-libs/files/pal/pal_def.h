@@ -209,6 +209,19 @@ enum {
   NIC5_COMP,
   NIC6_COMP,
   NIC7_COMP,
+  //Artemis Meb CXL
+  CXL1_COMP,
+  CXL2_COMP,
+  CXL3_COMP,
+  CXL4_COMP,
+  CXL5_COMP,
+  CXL6_COMP,
+  CXL7_COMP,
+  CXL8_COMP,
+};
+
+enum FW_RESP_LENGTH {
+  MEB_CXL_FW_RESP_LEN = 16,
 };
 
 enum {

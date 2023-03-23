@@ -1,3 +1,5 @@
+#!/bin/sh
+#
 # Copyright 2023-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,14 +16,11 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+connect_uart2_4() {
+  printf "uart2" > /sys/devices/platform/ahb/ahb:apb/1e789000.lpc/1e789098.uart_routing/uart4
+  printf "uart4" > /sys/devices/platform/ahb/ahb:apb/1e789000.lpc/1e789098.uart_routing/uart2
+}
 
-LOCAL_URI += " \
-    file://sol-util \
-    file://usb-util \
-    file://setup-server-uart.sh \
-    "
-
-binfiles += " usb-util "
-
+connect_uart2_4

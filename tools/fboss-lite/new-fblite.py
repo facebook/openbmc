@@ -30,7 +30,7 @@
 #   BMC SoC                : AST26xx
 #   U-boot Version         : v2019.04
 #   Kernel Version         : 6.0.%
-#   Yocto Release          : lf-kirkstone
+#   Yocto Release          : lf-master
 #   Init Manager           : systemd
 #   Flash data0 Filesystem : UBIFS
 #   eMMC filesystem        : EXT4
@@ -63,8 +63,6 @@ import sys
 OBMC_BUILD_ENV_FILE = "openbmc-init-build-env"
 FBLITE_REF_LAYER = "tools/fboss-lite/fblite-ref-layer"
 OBMC_META_FB = "meta-facebook"
-YOCTO_VER = "lf-kirkstone"
-ANCHOR_STR = "# kirkstone platforms"
 
 #
 # Predefined keywords in reference layer, and need to be updated when
@@ -128,23 +126,26 @@ def commit_machine_layer(name, machine_layer):
 
 
 def add_new_yocto_version_entry(platname):
-    """insert new yocto version entry for this new platname."""
+    """insert new yocto version entry for new platform."""
+    YOCTO_VER = "lf-master"
+    SEARCH_STR = ":" + YOCTO_VER
+    ANCHOR_STR = "# master rolling-release platforms"
     yct_ents = os.path.join(TMP_DIR, "b_env.txt1")
     other_content = os.path.join(TMP_DIR, "b_env.txt2")
     env_file = OBMC_BUILD_ENV_FILE
 
     try:
-        # extract lf-dufell platform entries
-        cmd = "grep '%s' %s  > %s " % (YOCTO_VER, env_file, yct_ents)
+        # extract lf-master platform entries
+        cmd = "grep '%s' %s  > %s " % (SEARCH_STR, env_file, yct_ents)
         run_shell_cmd(cmd)
         # add the new entry for new platform
-        cmd = "sed -i '1 a \ \ meta-%s:%s' %s" % (platname, YOCTO_VER, yct_ents)
+        cmd = "sed -i '1 a \ \ meta-%s%s' %s" % (platname, SEARCH_STR, yct_ents)
         run_shell_cmd(cmd)
         #  sort it to be in order.
         cmd = "sort %s -o %s" % (yct_ents, yct_ents)
         run_shell_cmd(cmd)
         # filter the yocto entries from the openbmc_env file
-        cmd = "grep -v '%s' %s  > %s " % (YOCTO_VER, env_file, other_content)
+        cmd = "grep -v '%s' %s  > %s " % (SEARCH_STR, env_file, other_content)
         run_shell_cmd(cmd)
         # merge back
         cmd = "sed -i -e '/%s/r %s' %s" % (ANCHOR_STR, yct_ents, other_content)

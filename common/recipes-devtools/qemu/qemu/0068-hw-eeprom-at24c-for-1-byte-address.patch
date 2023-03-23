@@ -1,41 +1,87 @@
-From 4abbec4891e7d7df4fa00d74fa0b128d212b57cc Mon Sep 17 00:00:00 2001
-From: Sittisak Sinprem <ssinprem@celestca.com>
-Date: Wed, 1 Feb 2023 14:03:08 +0700
+From 572992e1324dd693397558c7bf6b078929f4128f Mon Sep 17 00:00:00 2001
+From: Sittisak Sinprem <ssinprem@celestica.com>
+Date: Thu, 16 Mar 2023 14:25:15 +0700
 Subject: [PATCH] hw/eeprom at24c support for 1 byte address
 
+ref: https://gitlab.com/qemu-project/qemu/-/commit/1e001a5a712a41d9acc1bd6cdef0eaf8270c9555
+
+Signed-off-by: Sittisak Sinprem <ssinprem@celestica.com>
 ---
- hw/nvram/eeprom_at24c.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ hw/nvram/eeprom_at24c.c | 30 +++++++++++++++++++++++++++---
+ 1 file changed, 27 insertions(+), 3 deletions(-)
 
 diff --git a/hw/nvram/eeprom_at24c.c b/hw/nvram/eeprom_at24c.c
-index b32dcce217..7fb9f6b592 100644
+index b32dcce217..b523b2d535 100644
 --- a/hw/nvram/eeprom_at24c.c
 +++ b/hw/nvram/eeprom_at24c.c
-@@ -89,7 +89,7 @@ uint8_t at24c_eeprom_recv(I2CSlave *s)
+@@ -41,6 +41,13 @@ struct EEPROMState {
+     uint16_t cur;
+     /* total size in bytes */
+     uint32_t rsize;
++    /*
++     * address byte number
++     *  for  24c01, 24c02 size <= 256 byte, use only 1 byte
++     *  otherwise size > 256, use 2 byte
++     */
++    uint8_t asize;
++
+     bool writable;
+     /* cells changed since last START? */
+     bool changed;
+@@ -89,7 +96,11 @@ uint8_t at24c_eeprom_recv(I2CSlave *s)
      EEPROMState *ee = AT24C_EE(s);
      uint8_t ret;
  
 -    if (ee->haveaddr == 1) {
-+    if (ee->rsize > 256 && ee->haveaddr == 1) {
++    /*
++     * If got the byte address but not completely with address size
++     * will return the invalid value
++     */
++    if (ee->haveaddr > 0 && ee->haveaddr < ee->asize) {
          return 0xff;
      }
  
-@@ -106,11 +106,13 @@ int at24c_eeprom_send(I2CSlave *s, uint8_t data)
+@@ -106,11 +117,11 @@ int at24c_eeprom_send(I2CSlave *s, uint8_t data)
  {
      EEPROMState *ee = AT24C_EE(s);
  
 -    if (ee->haveaddr < 2) {
-+    if ((ee->rsize > 256 && ee->haveaddr < 2) ||
-+        (ee->rsize <= 256 && ee->haveaddr < 1)) {
++    if (ee->haveaddr < ee->asize) {
          ee->cur <<= 8;
          ee->cur |= data;
          ee->haveaddr++;
 -        if (ee->haveaddr == 2) {
-+        if ((ee->rsize > 256 && ee->haveaddr == 2) ||
-+            (ee->rsize <= 256 && ee->haveaddr == 1)) {
++        if (ee->haveaddr == ee->asize) {
              ee->cur %= ee->rsize;
              DPRINTK("Set pointer %04x\n", ee->cur);
          }
+@@ -153,6 +164,18 @@ static void at24c_eeprom_realize(DeviceState *dev, Error **errp)
+     }
+ 
+     ee->mem = g_malloc0(ee->rsize);
++
++    /*
++     * If address size didn't define with property set
++     *   value is 0 as default, setting it by Rom size detecting.
++     */
++    if (ee->asize == 0) {
++        if (ee->rsize <= 256) {
++            ee->asize = 1;
++        } else {
++            ee->asize = 2;
++        }
++    }
+ }
+ 
+ static
+@@ -196,6 +219,7 @@ void at24c_eeprom_init(I2CBus *bus, uint8_t address, const uint8_t *rom, uint32_
+ 
+ static Property at24c_eeprom_props[] = {
+     DEFINE_PROP_UINT32("rom-size", EEPROMState, rsize, 0),
++    DEFINE_PROP_UINT8("address-size", EEPROMState, asize, 0),
+     DEFINE_PROP_BOOL("writable", EEPROMState, writable, true),
+     DEFINE_PROP_DRIVE("drive", EEPROMState, blk),
+     DEFINE_PROP_END_OF_LIST()
 -- 
 2.25.1
 

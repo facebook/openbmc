@@ -16,7 +16,8 @@ declare -a PLAT_DISTRO_OVERRIDES
 # Please keep in alphabetical order
 
 PLAT_DISTRO_OVERRIDES=(
-# master / rolling-release platforms
+# DON'T modify the next line! It is used as the anchor string in new-fblite.py
+# master rolling-release platforms
   meta-bletchley:lf-master
   meta-clearcreek:lf-master
   meta-evb-npcm845:lf-master

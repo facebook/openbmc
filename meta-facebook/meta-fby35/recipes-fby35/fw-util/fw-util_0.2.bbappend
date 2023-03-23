@@ -21,10 +21,6 @@ LOCAL_URI += " \
         file://plat/meson.build \
         file://bic_cxl.cpp \
         file://bic_cxl.h \
-        file://bic_m2_dev.cpp \
-        file://bic_m2_dev.h \
-        file://bic_pcie_sw.cpp \
-        file://bic_pcie_sw.h \
         file://bic_prot.cpp \
         file://bic_prot.hpp \
         file://bic_vr.cpp \

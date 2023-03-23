@@ -1,7 +1,5 @@
 srcs += [
     'bic_cxl.cpp',
-    'bic_m2_dev.cpp',
-    'bic_pcie_sw.cpp',
     'bic_prot.cpp',
     'bic_vr.cpp',
     'bic_retimer.cpp',

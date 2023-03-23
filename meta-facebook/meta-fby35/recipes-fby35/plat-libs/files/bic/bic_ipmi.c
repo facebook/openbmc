@@ -2410,9 +2410,13 @@ bic_get_prot_spare_pins(uint8_t slot_id, uint8_t* value) {
 bool
 bic_is_prot_bypass(uint8_t fru)
 {
+  if (fby35_common_get_slot_type(fru) != SERVER_TYPE_HD) {
+    //Only HD enable prot now, treat CL and GL as bypass by default
+    return true;
+  }
   uint8_t spare_status = 0xFF;
   int ret = bic_get_prot_spare_pins(fru, &spare_status);
-  if(ret < 0) {
+  if (ret < 0) {
     syslog(LOG_WARNING, "%s() bic_get_prot_spare_pins fail, returns %d\n", __func__, ret);
     return false;
   }

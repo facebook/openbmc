@@ -604,6 +604,7 @@ bool fby35_is_zero_checksum_valid(uint8_t *buf, uint8_t len);
 bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, uint8_t rev_id);
 int fby35_common_get_bb_hsc_type(uint8_t* type);
 bool fby35_common_is_prot_card_prsnt(uint8_t fru) ;
+bool fby35_common_is_prot_auth_complete(uint8_t fru) ;
 int copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 
 #ifdef __cplusplus

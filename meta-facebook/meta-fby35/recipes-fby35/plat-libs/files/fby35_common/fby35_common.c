@@ -1271,13 +1271,24 @@ fby35_common_is_prot_card_prsnt(uint8_t fru) {
   if (fby35_read_sb_cpld_checked(fru, CPLD_REG_PROT, (uint8_t *)value)) {
     return false;
   }
-
+  //Bit 0: AUTH_PRSNT_CPLD_N
   value[0] = (value[0] & 0x01) ^ 0x01;
   if (kv_set(key, value, 1, KV_FCREATE)) {
     syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
   }
 
   return value[0] ? true : false;
+}
+
+bool
+fby35_common_is_prot_auth_complete(uint8_t fru) {
+  uint8_t value = 0;
+
+  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_PROT, &value)) {
+    return false;
+  }
+  //Bit 1: AUTH_COMPLETE_R
+  return value & 0x02;
 }
 
 /*

@@ -122,19 +122,29 @@ pal_power_policy_control(uint8_t slot, char *last_ps) {
   power_policy = (*chassis_sts >> 5);
 
   //Check power policy and last power state
-  if (power_policy == POWER_CFG_LPS) {
-    if (!last_ps) {
-      pal_get_last_pwr_state(slot, pwr_state);
-      last_ps = pwr_state;
-    }
-    if (!(strcmp(last_ps, "on"))) {
+  switch (power_policy) {
+    case POWER_CFG_LPS:
+      if (!last_ps) {
+        pal_get_last_pwr_state(slot, pwr_state);
+        last_ps = pwr_state;
+      }
+      if (strcmp(last_ps, "on") != 0) {
+        //do nothing if last pw state is not on
+        break;
+      }
+      // last pw state is on, do power on
+    case POWER_CFG_ON:
       sleep(3);
+      if (!bic_is_prot_bypass(slot)) {
+        printf("waiting for PRoT AUTH_COMPLETE...\n");
+        //wait AUTH_COMPLETE signal
+        retry_cond(fby35_common_is_prot_auth_complete(slot), 120, 1000);
+      }
       pal_set_server_power(slot, SERVER_POWER_ON);
-    }
-  }
-  else if (power_policy == POWER_CFG_ON) {
-    sleep(3);
-    pal_set_server_power(slot, SERVER_POWER_ON);
+      break;
+    default:
+      //do nothing
+      break;
   }
 }
 

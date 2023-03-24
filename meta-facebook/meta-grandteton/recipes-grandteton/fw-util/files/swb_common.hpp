@@ -160,6 +160,12 @@ class GTSwbCpldComponent : public CpldComponent, public GTPldmComponent {
     int comp_update(const string& image) { return CpldComponent::update(image); }
 };
 
+class SwbPLDMNicComponent : public PLDMNicComponent {
+  public:
+    SwbPLDMNicComponent(std::string fru, std::string comp, std::string key, uint8_t eid, uint8_t bus):
+      PLDMNicComponent(fru, comp, key, eid, bus) {}
+    int update(string /*image*/) override;
+};
 //Artemis Meb Cxl Component
 class MebCxlFwComponent : public SwbBicFwComponent {
   public:

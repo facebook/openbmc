@@ -6,7 +6,7 @@
 #include <libpldm-oem/pldm.h>
 #include <libpldm-oem/fw_update.h>
 #include "mezz_nic.hpp"
-#include "fw-util.h"
+#include "signed_info.hpp"
 
 using namespace std;
 

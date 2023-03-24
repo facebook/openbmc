@@ -2,9 +2,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <libpldm-oem/pldm.h>
-#include "pal_swb_sensors.h"
-#include "pal.h"
 #include <openbmc/obmc-i2c.h>
+#include "pal_swb_sensors.h"
+#include "pal_sensors.h"
 #include "syslog.h"
 
 int

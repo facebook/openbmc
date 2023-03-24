@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <openbmc/pal_def.h>
+#include <openbmc/pal_swb_sensors.h>
 #include "signed_decoder.hpp"
 
 namespace signed_info {
@@ -97,5 +98,16 @@ namespace pldm_signed_info {
     signed_info::PVT,
     0x00, // component id
     0x00, // vendor id
+  };
+
+  const std::unordered_map<std::string, uint8_t> swb_nic_t = {
+    {"SWB_NIC0", SWB_SENSOR_TEMP_NIC_0},
+    {"SWB_NIC1", SWB_SENSOR_TEMP_NIC_1},
+    {"SWB_NIC2", SWB_SENSOR_TEMP_NIC_2},
+    {"SWB_NIC3", SWB_SENSOR_TEMP_NIC_3},
+    {"SWB_NIC4", SWB_SENSOR_TEMP_NIC_4},
+    {"SWB_NIC5", SWB_SENSOR_TEMP_NIC_5},
+    {"SWB_NIC6", SWB_SENSOR_TEMP_NIC_6},
+    {"SWB_NIC7", SWB_SENSOR_TEMP_NIC_7}
   };
 }

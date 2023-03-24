@@ -7,6 +7,7 @@
 #include "pal_hgx_sensors.h"
 #include "pal_bb_sensors.h"
 #include "pal_meb_sensors.h"
+#include "pal.h"
 
 //CPU INFO
 #define PECI_CPU0_ADDR            (0x30)
@@ -161,10 +162,7 @@ typedef struct {
 
 int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max);
 int retry_err_handle(uint8_t retry_curr, uint8_t retry_max);
-int pal_sensor_monitor_initial(void);
 uint8_t pal_get_meb_jcn_config(uint8_t fru);
-//int get_fan_chip_dev_id(uint8_t fru, uint8_t* dev_id);
 
-extern const char pal_fru_list[];
 extern const char pal_server_list[];
 #endif

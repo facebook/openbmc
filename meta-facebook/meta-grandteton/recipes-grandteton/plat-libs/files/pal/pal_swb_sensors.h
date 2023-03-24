@@ -1,7 +1,6 @@
 #ifndef __PAL_SWB_SENSORS_H__
 #define __PAL_SWB_SENSORS_H__
 
-#include "pal_sensors.h"
 #include <libpldm/base.h>
 #include <libpldm/platform.h>
 

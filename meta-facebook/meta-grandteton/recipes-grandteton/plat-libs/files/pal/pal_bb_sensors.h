@@ -240,7 +240,6 @@ enum {
   NCT7363Y_PWM_CNT,
 };
 
-int pal_sensor_monitor_initial(void);
 bool pal_check_nic_prsnt(uint8_t fru);
 
 extern size_t pal_pwm_cnt;

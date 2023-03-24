@@ -866,3 +866,40 @@ int AcbPeswFwComponent::get_version(json &j) {
 
   return FW_STATUS_SUCCESS;
 }
+
+static int
+bic_sensor_polling_enabled(uint8_t sensor_num, bool enable)
+{
+  uint8_t tbuf[255] = {0};
+  uint8_t rbuf[255] = {0};
+  uint8_t tlen=0;
+  size_t rlen = 0;
+  int rc;
+
+  tbuf[tlen++] = 0x01;
+  tbuf[tlen++] = (enable) ? 0x01 : 0x00;
+  tbuf[tlen++] = sensor_num;
+
+  rc = oem_pldm_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
+                               NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_DELAY_ACTIVATE_SYSFW,
+                               tbuf, tlen,
+                               rbuf, &rlen, true);
+  return rc;
+}
+
+int SwbPLDMNicComponent::update(string image)
+{
+  int ret = 0;
+  auto& map = pldm_signed_info::swb_nic_t;
+
+  if (map.find(_ver_key) == map.end()) {
+    std::cerr << "Nic card key error, unable to disable bic polling." << std::endl;
+    ret = -1;
+  } else {
+    bic_sensor_polling_enabled(map.at(_ver_key), false);
+    ret = PLDMNicComponent::update(image);
+    bic_sensor_polling_enabled(map.at(_ver_key), true);
+  }
+
+  return ret;
+}

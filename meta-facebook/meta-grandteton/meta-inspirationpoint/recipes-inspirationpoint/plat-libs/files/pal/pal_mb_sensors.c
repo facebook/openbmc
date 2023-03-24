@@ -249,7 +249,7 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"E1S_P3V3_VOLT", DPM_0, read_dpm_vout, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x01
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x02
   {"E1S_P12V_CURR", ADC_CH7, read_iic_adc_val, false, {2.71, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x03
-  {"E1S_P12V_PWR", E1S_0, read_e1s_power, false, {25.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x04
+  {"E1S_P12V_PWR", E1S_0, read_e1s_power, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x04
   {"E1S_TEMP", E1S_0, read_e1s_temp, false, {70.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x05
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x06
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x07

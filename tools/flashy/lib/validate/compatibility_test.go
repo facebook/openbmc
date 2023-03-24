@@ -108,7 +108,7 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			exampleImageFilePath := "/opt/upgrade/mock"
+			exampleImageFilePath := "/run/upgrade/mock"
 			utils.GetOpenBMCVersionFromIssueFile = func() (string, error) {
 				return tc.etcIssueVer, nil
 			}

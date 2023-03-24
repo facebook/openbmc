@@ -131,7 +131,7 @@ func TestFlashCp(t *testing.T) {
 			mmapFileErr:        errors.Errorf("mmap failed"),
 			runFlashProcessErr: nil,
 			want: errors.Errorf("Can't mmap image file " +
-				"'/opt/upgrade/image': mmap failed"),
+				"'/run/upgrade/image': mmap failed"),
 		},
 		{
 			name:               "flash process failed",
@@ -156,7 +156,7 @@ func TestFlashCp(t *testing.T) {
 	}
 
 	exampleDeviceFilePath := "/dev/mtd42"
-	exampleImageFilePath := "/opt/upgrade/image"
+	exampleImageFilePath := "/run/upgrade/image"
 	mtdinfouser := mtd_info_user{erasesize: 4}
 	exampleMockFile := &mockFlashDeviceFile{
 		deviceFilePath: exampleDeviceFilePath,
@@ -286,7 +286,7 @@ func TestRunFlashProcess(t *testing.T) {
 	}
 
 	exampleDeviceFilePath := "/dev/mtd42"
-	exampleImageFilePath := "/opt/upgrade/image"
+	exampleImageFilePath := "/run/upgrade/image"
 	exampleImageData := []byte("foobar")
 	exampleImFile := imageFile{
 		exampleImageFilePath,
@@ -567,7 +567,7 @@ func TestFlashImage(t *testing.T) {
 
 	imData := []byte("foobar")
 	imFile := imageFile{
-		name: "/opt/upgrade/image",
+		name: "/run/upgrade/image",
 		data: imData,
 	}
 	m := mtd_info_user{
@@ -589,7 +589,7 @@ func TestFlashImage(t *testing.T) {
 			name:     "write failed",
 			roOffset: 0,
 			writeErr: errors.Errorf("write failed"),
-			want: errors.Errorf("Failed to flash image '/opt/upgrade/image' " +
+			want: errors.Errorf("Failed to flash image '/run/upgrade/image' " +
 				"on to flash device '/dev/mtd5': 0B flashed: write failed"),
 		},
 		{
@@ -647,7 +647,7 @@ func TestVerifyFlash(t *testing.T) {
 
 	imData := []byte("foobar")
 	imFile := imageFile{
-		name: "/opt/upgrade/image",
+		name: "/run/upgrade/image",
 		data: imData,
 	}
 	m := mtd_info_user{

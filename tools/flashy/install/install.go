@@ -39,7 +39,8 @@ import (
 
 // flashy _MUST_ be installed here
 // checkInstallPath will confirm and error out if not
-const flashyInstallPath = "/opt/flashy/flashy"
+const flashyInstallPath1 = "/run/flashy/flashy"
+const flashyInstallPath2 = "/opt/flashy/flashy"
 
 // Install runs a few checks before running the installation procedure for flashy.
 func Install(stepParams step.StepParams) {
@@ -79,9 +80,9 @@ func checkIsOpenBMC(clowntown bool) {
 // checkInstallPath checks whether flashy is installed in the right path.
 func checkInstallPath() {
 	exPath := fileutils.GetExecutablePath()
-	if exPath != flashyInstallPath {
+	if exPath != flashyInstallPath1 && exPath != flashyInstallPath2 {
 		log.Fatalf(`Unable to install flashy. Flashy should be installed in '%v',
- currently installed in '%v' instead.`, flashyInstallPath, exPath)
+ currently installed in '%v' instead.`, flashyInstallPath1, exPath)
 	}
 }
 

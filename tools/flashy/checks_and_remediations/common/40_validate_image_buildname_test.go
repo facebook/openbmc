@@ -64,7 +64,7 @@ func TestValidateImageBuildname(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			exampleImageFilePath := "/opt/upgrade/mock"
+			exampleImageFilePath := "/run/upgrade/mock"
 			validate.CheckImageBuildNameCompatibility = func(imageFilePath string) error {
 				if exampleImageFilePath != imageFilePath {
 					t.Errorf("imageFilePath: want '%v' got '%v'", exampleImageFilePath, imageFilePath)

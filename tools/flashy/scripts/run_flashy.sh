@@ -19,10 +19,17 @@
 # Run this script on an OpenBMC to upgrade via flashy.
 set -eo pipefail
 
-# Path to image on OpenBMC
-openbmc_image_path="/opt/upgrade/image"
-# Path to Flashy on OpenBMC
-openbmc_flashy_path="/opt/flashy/flashy"
+if [ -d /run/flashy -o ! -d /opt/flashy ]; then
+    # Path to image on OpenBMC
+    openbmc_image_path="/run/upgrade/image"
+    # Path to Flashy on OpenBMC
+    openbmc_flashy_path="/run/flashy"
+else
+    # Path to image on OpenBMC
+    openbmc_image_path="/opt/upgrade/image"
+    # Path to Flashy on OpenBMC
+    openbmc_flashy_path="/opt/flashy"
+fi
 
 usage="Usage:
 $(basename "$0") --device DEVICE_ID
@@ -71,14 +78,14 @@ initialize() {
     echo "Buildname: $buildname" >&2
 
     echo "Installing flashy" >&2
-    /opt/flashy/flashy --install \
+    ${openbmc_flashy_path}/flashy --install \
         || handle_flashy_error "$?"
 }
 
 run_checks_and_remediations() {
     echo "Getting common checks and remediations..." >&2
     local common_steps_output=""
-    common_steps_output=$(find /opt/flashy/checks_and_remediations/common \
+    common_steps_output=$(find "${openbmc_flashy_path}/checks_and_remediations/common" \
         -type l -maxdepth 1 | sort) \
         || (echo "Error: no common checks and remediations found" >&2 \
         && exit 1)
@@ -92,14 +99,14 @@ run_checks_and_remediations() {
     echo "Running common checks and remediations" >&2
     for step in "${common_steps[@]}"
     do
-        "$step" --imagepath /opt/upgrade/image --device "$device_id"\
+        "$step" --imagepath "$openbmc_image_path" --device "$device_id"\
         || handle_flashy_error "$?"
     done
 
 
     echo "Getting platform-specific checks and remediations..." >&2
     local platform_steps_output=""
-    platdir="/opt/flashy/checks_and_remediations/$buildname"
+    platdir="${openbmc_flashy_path}/checks_and_remediations/$buildname"
     if [ -d "$platdir" ]; then
         platform_steps_output="$(find "$platdir" -type l -maxdepth 1 | sort)"
     else
@@ -120,14 +127,14 @@ run_checks_and_remediations() {
     echo "Running platform-specific checks and remediations" >&2
     for step in "${platform_steps[@]}"
     do
-        "$step" --imagepath /opt/upgrade/image --device "$device_id" \
+        "$step" --imagepath "$openbmc_image_path" --device "$device_id" \
         || handle_flashy_error "$?"
     done
 }
 
 run_flash() {
     echo "Starting to flash..." >&2
-    /opt/flashy/flash_procedure/flash_"$buildname" \
+    "${openbmc_flashy_path}/flash_procedure/flash_$buildname" \
     --imagepath "$openbmc_image_path" --device "$device_id" \
     || handle_flashy_error "$?"
     echo "Flashing succeeded. It is safe to reboot this system." >&2
@@ -172,7 +179,7 @@ esac
 done
 
 [ -n "$device_id" ] || exit_argument_required "device"
-[ -f "$openbmc_flashy_path" ] || \
+[ -f "${openbmc_flashy_path}/flashy" ] || \
     exit_file_required "Flashy" $openbmc_flashy_path
 [ -f "$openbmc_image_path" ] || \
     exit_file_required "Image" $openbmc_image_path

@@ -20,9 +20,9 @@
 set -eo pipefail
 
 # Path to image on OpenBMC
-openbmc_image_path="/opt/upgrade/image"
+openbmc_image_path="/run/upgrade/image"
 # Path to Flashy on OpenBMC
-openbmc_flashy_path="/opt/flashy/flashy"
+openbmc_flashy_path="/run/flashy/flashy"
 # Path to run_flashy upgrade script from project root/release folder
 run_flashy_script_path="scripts/run_flashy.sh"
 # Path to flashy, empty means build from project root
@@ -78,7 +78,7 @@ initialize() {
     fi
 
     echo "Making installation directories on OpenBMC..." >&2
-    "${sshcmd[@]}" "mkdir -p /opt/flashy /opt/upgrade"
+    "${sshcmd[@]}" "mkdir -p /run/flashy /run/upgrade"
 
     echo "Copying flashy..." >&2
     scpfile "$path_to_flashy" "$openbmc_flashy_path"
@@ -132,7 +132,7 @@ check_second_argument_supplied() {
 # Flash device ID to flash (e.g. mtd:flash0)
 device_id=""
 # Path to OpenBMC image on local system
-# i.e. what we scp to $host as "/opt/upgrade/image"
+# i.e. what we scp to $host as "/run/upgrade/image"
 imagepath=""
 # OpenBMC hostname
 host=""

@@ -136,23 +136,23 @@ func TestRunFwUtilCmd(t *testing.T) {
 	}{
 		{
 			name:          "basic succeeding",
-			imageFilePath: "/opt/upgrade/image",
+			imageFilePath: "/run/upgrade/image",
 			cmdRet: cmdRetType{
 				0, nil, "", "",
 			},
-			wantCmd: "bash -c fw-util bmc --update bmc /opt/upgrade/image > /dev/null",
+			wantCmd: "bash -c fw-util bmc --update bmc /run/upgrade/image > /dev/null",
 			want:    nil,
 		},
 		{
 			name:          "cmd failed",
-			imageFilePath: "/opt/upgrade/image",
+			imageFilePath: "/run/upgrade/image",
 			cmdRet: cmdRetType{
 				1,
 				errors.Errorf("fw-util failed"),
 				"failed (stdout)",
 				"failed (stderr)",
 			},
-			wantCmd: "bash -c fw-util bmc --update bmc /opt/upgrade/image > /dev/null",
+			wantCmd: "bash -c fw-util bmc --update bmc /run/upgrade/image > /dev/null",
 			want: errors.Errorf(
 				"Flashing failed with exit code %v, error: %v, stdout: '', stderr: ''",
 				1, "fw-util failed",

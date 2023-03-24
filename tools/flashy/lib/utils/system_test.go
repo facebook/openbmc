@@ -887,11 +887,11 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 			name: "base name exists (4)",
 			readFileRet: map[string]interface{}{
 				"/proc/42/cmdline": ReadFileRetType{[]byte(
-					"/opt/flashy/checks_and_remediations/common/00_dummy_step\x00-device\x00mtd:flash0",
+					"/run/flashy/checks_and_remediations/common/00_dummy_step\x00-device\x00mtd:flash0",
 				), nil},
 			},
 			want: errors.Errorf("'00_dummy_step' found in cmdline " +
-				"'/opt/flashy/checks_and_remediations/common/00_dummy_step -device mtd:flash0'"),
+				"'/run/flashy/checks_and_remediations/common/00_dummy_step -device mtd:flash0'"),
 		},
 	}
 

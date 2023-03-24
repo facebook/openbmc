@@ -39,7 +39,7 @@ func TestValidateImageFileSize(t *testing.T) {
 		flashutils.GetFlashDevice = getFlashDeviceOrig
 	}()
 
-	const mockImageFilePath = "/opt/flashy/image"
+	const mockImageFilePath = "/run/flashy/image"
 	const mockDeviceID = "/dev/mtd5"
 
 	cases := []struct {
@@ -68,7 +68,7 @@ func TestValidateImageFileSize(t *testing.T) {
 		{
 			name:      "Failed to get imSize",
 			imSizeErr: errors.Errorf("failed"),
-			want:      errors.Errorf("Unable to get size of image file '/opt/flashy/image': failed"),
+			want:      errors.Errorf("Unable to get size of image file '/run/flashy/image': failed"),
 		},
 		{
 			name:           "Failed to get flash device",
@@ -108,7 +108,7 @@ func TestValidateImageFile(t *testing.T) {
 		fileutils.GetFileSize = getFileSizeOrig
 	}()
 
-	const imageFileName = "/opt/upgrade/image"
+	const imageFileName = "/run/upgrade/image"
 	imageData := []byte("abcd")
 
 	cases := []struct {
@@ -130,7 +130,7 @@ func TestValidateImageFile(t *testing.T) {
 			mmapErr:     errors.Errorf("mmap error"),
 			validateErr: nil,
 			want: errors.Errorf("Unable to read image file '%v': %v",
-				"/opt/upgrade/image", "mmap error"),
+				"/run/upgrade/image", "mmap error"),
 		},
 		{
 			name:        "validation error",

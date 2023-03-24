@@ -78,7 +78,7 @@ func TestValidateImagePartitions(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			imageFileName := "/opt/upgrade/image"
+			imageFileName := "/run/upgrade/image"
 			utils.IsPfrSystem = func() bool {
 				return tc.isPfrSystem
 			}

@@ -115,11 +115,18 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
     pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
   } else {
     if (pfr_update) {
-    uint8_t status;
+      uint8_t status;
 
+      cerr << "Sending XFR UPDATE_COMPLTE CMD..."<< endl;
       prot_dev.protUpdateComplete();
+      cerr << "Sending XFR FW_UPDATE_INTENT ..."<< endl;
       prot_dev.protFwUpdateIntent();
-      if (prot_dev.protGetUpdateStatus(status) != prot::ProtDevice::DevStatus::SUCCESS || status !=0 ) {
+      if (prot_dev.protGetUpdateStatus(status) != prot::ProtDevice::DevStatus::SUCCESS) {
+        cerr << "Failed to get PRoT PFR update status"<< endl;
+        return FW_STATUS_FAILURE;
+      }
+      cerr << "XFR update status : "<< prot::ProtUpdateStatus::updateStatusString(status) << endl;
+      if (status) {
         cerr << "PRoT PFR update failed"<< endl;
         return FW_STATUS_FAILURE;
       }

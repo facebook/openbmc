@@ -152,6 +152,10 @@ std::string spiStatusString(uint8_t status_val);
 std::string spiVerifyString(uint8_t verify_val);
 }; // namespace ProtSpiInfo
 
+namespace ProtUpdateStatus {
+std::string updateStatusString(uint8_t status_val);
+}
+
 namespace ProtVersion {
 std::string getVerString(const std::span<uint8_t> ver);
 std::string getDateString(const std::span<uint8_t, 8> date);

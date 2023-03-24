@@ -349,6 +349,22 @@ updateProperty::updateProperty(
 }
 } // namespace ProtSpiInfo
 
+namespace ProtUpdateStatus {
+std::string updateStatusString(uint8_t status_val) {
+  const static std::vector<std::string> status_str_vec = {
+      "Verification success",
+      "Manifest verification fails",
+      "Hash Mismatch",
+  };
+
+  if (status_val >= status_str_vec.size()) {
+    return "undefined";
+  }
+
+  return status_str_vec[status_val];
+}
+}
+
 namespace ProtVersion {
 inline bool isDataDigits(const std::span<uint8_t> raw) {
   for (auto& v : raw) {

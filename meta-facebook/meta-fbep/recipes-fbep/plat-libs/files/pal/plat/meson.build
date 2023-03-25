@@ -11,12 +11,12 @@ pal_sources += [
     ]
 
 pal_deps += [
-    cc.find_library('gpio-ctrl'),
-    cc.find_library('obmc-i2c'),
+    dependency('libgpio-ctrl'),
+    dependency('libobmc-i2c'),
     dependency('libobmc-sensors'),
     cc.find_library('switchtec'),
     cc.find_library('asic'),
-    cc.find_library('libpex'),
+    dependency('libpex'),
     dependency('libcrypto'),
     dependency('libssl'),
     ]

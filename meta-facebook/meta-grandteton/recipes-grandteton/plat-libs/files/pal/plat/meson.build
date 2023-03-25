@@ -31,12 +31,12 @@ pal_sources += [
 
 pal_deps += [
     cc.find_library('apml64'),
-    cc.find_library('gpio-ctrl'),
-    cc.find_library('hal_fruid'),
-    cc.find_library('nm'),
-    cc.find_library('obmc-i2c'),
+    dependency('libgpio-ctrl'),
+    dependency('libhal'),
+    dependency('libnm'),
+    dependency('libobmc-i2c'),
     cc.find_library('peci'),
-    cc.find_library('peci_sensors'),
+    dependency('libpeci_sensors'),
     cc.find_library('sensor-correction'),
     dependency('libdimm'),
     dependency('libpldm-oem'),

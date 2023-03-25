@@ -9,10 +9,10 @@ install_headers('fbwc_fruid.h', subdir: 'facebook')
 cc = meson.get_compiler('c')
 
 fbwc_fruid_deps = [
-    cc.find_library('fbwc_common'),
-    cc.find_library('fruid'),
-    cc.find_library('bic'),
-    cc.find_library('exp'),
+    dependency('libfbwc_common'),
+    dependency('libfruid'),
+    dependency('libbic'),
+    dependency('libexp'),
 ]
 
 # FBWC fruid library.

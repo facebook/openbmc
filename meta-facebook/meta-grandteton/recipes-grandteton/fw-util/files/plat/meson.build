@@ -37,5 +37,5 @@ deps += [
     dependency('libvr'),
     dependency('libretimer'),
     dependency('libpldm'),
-    cc.find_library('pal'),
+    dependency('obmc-pal'),
 ]

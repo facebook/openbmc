@@ -7,8 +7,8 @@ project('exp-cached', 'c',
 cc = meson.get_compiler('c')
 
 dep_libs = [
-    cc.find_library('pal'),
-    cc.find_library('exp'),
+    dependency('obmc-pal'),
+    dependency('libexp'),
     dependency('threads'),
     dependency('libkv'),
 ]

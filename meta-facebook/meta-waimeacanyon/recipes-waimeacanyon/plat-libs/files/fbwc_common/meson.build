@@ -9,7 +9,7 @@ install_headers('fbwc_common.h', subdir: 'facebook')
 cc = meson.get_compiler('c')
 
 fbwc_common_deps = [
-    cc.find_library('gpio-ctrl'),
+    dependency('libgpio-ctrl'),
     dependency('openssl'),
     dependency('libkv'),
     dependency('libobmc-i2c'),

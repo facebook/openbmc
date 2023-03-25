@@ -11,10 +11,10 @@ pal_headers += [
 
 
 pal_deps += [
-    cc.find_library('fbwc_fruid'),
-    cc.find_library('gpio-ctrl'),
-    cc.find_library('libbic'),
-    cc.find_library('libexp'),
+    dependency('libfbwc_fruid'),
+    dependency('libgpio-ctrl'),
+    dependency('libbic'),
+    dependency('libexp'),
     dependency('libncsi'),
     dependency('libobmc-sensors'),
     ]

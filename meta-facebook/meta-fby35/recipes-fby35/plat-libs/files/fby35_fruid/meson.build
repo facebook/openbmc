@@ -20,7 +20,7 @@ sources = [
 ]
 
 deps = [
-    cc.find_library('fby35_common'),
+    dependency('libfby35-common'),
 ]
 
 install_headers(

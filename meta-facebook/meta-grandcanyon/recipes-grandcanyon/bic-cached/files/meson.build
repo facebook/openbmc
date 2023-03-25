@@ -7,8 +7,8 @@ project('bic-cached', 'c',
 cc = meson.get_compiler('c')
 
 dep_libs = [
-    cc.find_library('pal'),
-    cc.find_library('bic'),
+    dependency('obmc-pal'),
+    dependency('libbic'),
     dependency('threads'),
 ]
 

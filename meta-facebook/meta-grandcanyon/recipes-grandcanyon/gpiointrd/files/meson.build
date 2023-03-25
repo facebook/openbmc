@@ -7,10 +7,10 @@ project('gpiointrd', 'c',
 cc = meson.get_compiler('c')
 
 dep_libs = [
-    cc.find_library('gpio-ctrl'),
-    cc.find_library('fbgc_gpio'),
-    cc.find_library('fbgc_common'),
-    cc.find_library('pal'),
+    dependency('libgpio-ctrl'),
+    dependency('libfbgc_gpio'),
+    dependency('libfbgc_common'),
+    dependency('obmc-pal'),
     dependency('threads'),
     dependency('libkv'),
 ]

@@ -10,7 +10,7 @@ cc = meson.get_compiler('c')
 
 dep_libs = [
     dependency('libipmb'),
-    cc.find_library('fbwc_common'),
+    dependency('libfbwc_common'),
     ]
 
 # Expander library.

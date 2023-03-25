@@ -6,8 +6,8 @@ project('usb2jtag-util', 'c',
 
 cc = meson.get_compiler('c')
 deps = [
-    cc.find_library('usb-1.0'),
-    cc.find_library('ftdi1'),
+    dependency('libusb-1.0'),
+    dependency('libftdi1'),
     dependency('libobmc-i2c'),
     dependency('libmpsse'),
 ]

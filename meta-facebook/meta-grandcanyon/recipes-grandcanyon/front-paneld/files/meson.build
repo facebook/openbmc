@@ -7,7 +7,7 @@ project('front-paneld', 'c',
 cc = meson.get_compiler('c')
 
 dep_libs = [
-    cc.find_library('pal'),
+    dependency('obmc-pal'),
     dependency('threads'),
     dependency('libfbgc_common'),
     dependency('libkv'),

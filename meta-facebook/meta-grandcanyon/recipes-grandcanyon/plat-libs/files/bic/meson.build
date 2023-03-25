@@ -32,14 +32,14 @@ bic_sources = [
 ]
 
 bic_deps = [
-    cc.find_library('ipmb'),
-    cc.find_library('fbgc_common'),
-    cc.find_library('usb-1.0'),
-    cc.find_library('kv'),
-    cc.find_library('obmc-i2c'),
-    cc.find_library('gpio-ctrl'),
-    cc.find_library('fbgc_gpio'),
-    cc.find_library('crypto'),
+    dependency('libipmb'),
+    dependency('libfbgc_common'),
+    dependency('libusb-1.0'),
+    dependency('libkv'),
+    dependency('libobmc-i2c'),
+    dependency('libgpio-ctrl'),
+    dependency('libfbgc_gpio'),
+    dependency('libcrypto'),
 ]
 
 install_headers(bic_headers, subdir: 'facebook')

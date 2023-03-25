@@ -1,3 +1,3 @@
 libs += [
-  cc.find_library('bic'),
+  dependency('libbic'),
 ]

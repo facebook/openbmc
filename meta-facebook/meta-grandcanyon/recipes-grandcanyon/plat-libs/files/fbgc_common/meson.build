@@ -9,8 +9,8 @@ install_headers('fbgc_common.h', subdir: 'facebook')
 cc = meson.get_compiler('c')
 
 fbgc_common_deps = [
-    cc.find_library('gpio-ctrl'),
-    cc.find_library('fbgc_gpio'),
+    dependency('libgpio-ctrl'),
+    dependency('libfbgc_gpio'),
     dependency('openssl'),
     dependency('libkv'),
     dependency('libobmc-i2c'),

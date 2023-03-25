@@ -9,9 +9,9 @@ srcs += [
 ]
 
 deps += [
-    cc.find_library('bic'),
-    cc.find_library('fbgc_common'),
-    cc.find_library('libexp'),
+    dependency('libbic'),
+    dependency('libfbgc_common'),
+    dependency('libexp'),
     dependency('libfpga'),
     dependency('libipc'),
     dependency('libncsi'),

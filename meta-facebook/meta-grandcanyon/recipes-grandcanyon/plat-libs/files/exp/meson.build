@@ -10,7 +10,7 @@ cc = meson.get_compiler('c')
 
 dep_libs = [
     dependency('libipmb'),
-    cc.find_library('fbgc_common'),
+    dependency('libfbgc_common'),
     ]
 
 # Expander library.

@@ -10,7 +10,7 @@ install_headers(
 
 cc = meson.get_compiler('c')
 libs_fruid = [
-  cc.find_library('libipmi'),
+  dependency('libipmi'),
   dependency('libpldm-oem'),
 ]
 

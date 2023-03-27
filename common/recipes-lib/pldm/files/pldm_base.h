@@ -61,6 +61,7 @@ typedef enum pldm_types {
   PLDM_BIOS_CTRL   =  3,
   PLDM_FRUDATA     =  4,
   PLDM_FW_UPDATE   =  5,
+  PLDM_REDFISH_DEVICE_ENABLEMENT = 6,
   PLDM_RSV,
 } pldmTypes;
 

@@ -279,6 +279,7 @@ KNOWN_USAGE_STRINGS = {
     "pkill": [
         "pkill [-l|-SIGNAL] [-fnovx] [-s SID|-P PPID|PATTERN]",
         "pkill [-l|-SIGNAL] [-xfvno] [-s SID|-P PPID|PATTERN]",  # BusyBox v1.35.0
+        "pkill [-l|-SIGNAL] [-xfvnoe] [-s SID|-P PPID|PATTERN]",  # BusyBox v1.36.0
     ],
     "printf": ["printf [-v var] format [arguments]"],
     "ps": ["ps"],
@@ -327,6 +328,7 @@ KNOWN_USAGE_STRINGS = {
         "sort [-nrugMcszbdfimSTokt] [-o FILE] [-k start[.offset][opts][,end[.offset][opts]] [-t CHAR] [FILE]...",  # noqa: B950
         "sort [-nrugMcszbdfiokt] [-o FILE] [-k start[.offset][opts][,end[.offset][opts]] [-t CHAR] [FILE]...",  # BusyBox 1.30.1  # noqa: B950
         "sort [-nrugMcszbdfiokt] [-o FILE] [-k START[.OFS][OPTS][,END[.OFS][OPTS]] [-t CHAR] [FILE]...",  # BusyBox v1.35.0
+        "sort [-nrughMcszbdfiokt] [-o FILE] [-k START[.OFS][OPTS][,END[.OFS][OPTS]] [-t CHAR] [FILE]...",  # BusyBox v1.36.0  # noqa: B950
     ],
     "stat": [
         "stat [OPTIONS] FILE...",

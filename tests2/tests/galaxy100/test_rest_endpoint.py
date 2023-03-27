@@ -79,6 +79,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_scm_attributes(self):
         self.endpoint_fruid_scm_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_mb_fruid_scm(self):
         self.set_endpoint_fruid_scm_attributes()
         self.verify_endpoint_attributes(
@@ -100,6 +101,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_seutil_attributes(self):
         self.endpoint_seutil_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_mb_seutil(self):
         self.set_endpoint_seutil_attributes()
         self.verify_endpoint_attributes(

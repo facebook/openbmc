@@ -47,6 +47,7 @@ do {                                                                        \
 #define IOM_NUM 4
 #define CCIX_NUM 4
 #define CS_NUM 8
+#define WDT_NBIO_DATA_NUM 3
 
 enum AMDCRD_DATA_TYPE{
   TYPE_MCA_BANK       = 0x01,
@@ -61,6 +62,7 @@ enum AMDCRD_DATA_TYPE{
   TYPE_CCIX_BANK      = 0x0A,
   TYPE_CS_BANK        = 0x0B,
   TYPE_PCIE_AER_BANK  = 0x0C,
+  TYPE_WDT_REG_BANK   = 0x0D,
 
   TYPE_CONTROL_PKT    = 0x80,
   TYPE_HEADER_BANK    = 0x81,
@@ -317,6 +319,17 @@ typedef struct {
   uint16_t err_src_id;
   uint32_t lane_err_sts;
 } __attribute__((packed)) amdcrd_pcie_aer_bank_t;
+
+//==============================================================================
+// Type 0x0D: SMU/PSP/PTDMA Watchdog Timers regester bank
+//==============================================================================
+typedef struct {
+  uint8_t nbio;
+  char reg_name[32];
+  uint32_t addr;
+  uint8_t count;
+  uint32_t reg_data[WDT_NBIO_DATA_NUM];
+} __attribute__((packed)) amdcrd_wdt_reg_bank_t;
 
 //==============================================================================
 // Type 0x80: Control Packet

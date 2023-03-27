@@ -55,6 +55,7 @@ static uint8_t amdcrd_iom_bank_handler (FILE* fp, const uint8_t idx, const amdcr
 static uint8_t amdcrd_ccix_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_ccix_bank_t* pbank);
 static uint8_t amdcrd_cs_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_cs_bank_t* pbank);
 static uint8_t amdcrd_pcie_aer_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_pcie_aer_bank_t* pbank);
+static uint8_t amdcrd_wdt_reg_bank_handler(FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_reg_bank_t* pbank);
 static uint8_t amdcrd_ctrl_pkt_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_ctrl_pkt_t* ppkt, uint8_t* res_data, uint8_t* res_len);
 static void* generate_dump(void* arg);
 
@@ -246,6 +247,10 @@ pal_amdcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, ui
 
     case TYPE_PCIE_AER_BANK:
       completion_code = amdcrd_pcie_aer_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_pcie_aer_bank_t*)data_ptr);
+      break;
+
+    case TYPE_WDT_REG_BANK:
+      completion_code = amdcrd_wdt_reg_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_wdt_reg_bank_t*)data_ptr);
       break;
 
     case TYPE_CONTROL_PKT:
@@ -505,6 +510,29 @@ amdcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr
 out:
   return completion_code;
 }
+
+static uint8_t
+amdcrd_wdt_reg_bank_handler(FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_reg_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  fprintf(fp, "  [NBIO%u] %s\n", pbank->nbio,pbank->reg_name);
+  fprintf(fp, "    Address:0x%08X \n", pbank->addr);
+  fprintf(fp, "    Data count:%d \n", pbank->count);
+  fprintf(fp, "    Data:\n");
+  for (i=0;i<pbank->count;i++) {
+    fprintf(fp, "      %d:0x%08X\n", i, pbank->reg_data[i]);
+  }
+  fprintf(fp, "\n");
+
+  out:
+    return completion_code;
+  }
 
 static uint8_t
 amdcrd_tcdx_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_tcdx_bank_t* pbank) {

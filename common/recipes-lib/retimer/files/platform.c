@@ -388,6 +388,18 @@ AriesErrorType AriesGetTemp(int bus, int addr, float* temp)
     ariesDevice->partNumber = partNumber;
     ariesDevice->tempCalCodeAvg = 84;
 
+    rc = ariesFWStatusCheck(ariesDevice);
+    if (rc != ARIES_SUCCESS) {
+        return rc;
+    }
+
+    if (ariesFirmwareIsAtLeast(ariesDevice, 2, 2, 0)) {
+        ariesDevice->i2cDriver->mmWideRegisterValid = 1;
+    }
+    else {
+        ariesDevice->i2cDriver->mmWideRegisterValid = 0;
+    }
+
     // Read Temperature
     rc = ariesGetCurrentTemp(ariesDevice);
     CHECK_SUCCESS(rc);

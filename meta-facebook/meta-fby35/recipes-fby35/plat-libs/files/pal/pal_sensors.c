@@ -950,7 +950,7 @@ PAL_PDB_COEFFICIENT rns_pdb_info_list[] = {
   [PDB_VOLTAGE_IN] = {0.1},
   [PDB_CURRENT] = {0.1},
   [PDB_TEMP] = {1},
-  [PDB_POWER] = {0.2},
+  [PDB_POWER] = {5},
 };
 
 //Flex

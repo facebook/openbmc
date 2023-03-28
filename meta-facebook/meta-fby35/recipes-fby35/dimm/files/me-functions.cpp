@@ -18,8 +18,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <facebook/bic_power.h>
 #include <facebook/bic_xfer.h>
-#include <facebook/bic_ipmi.h>
 #include "dimm.h"
 #include "dimm-util-plat.h"
 
@@ -249,12 +249,11 @@ nm_write_dimm_smbus(uint8_t slot_id, uint8_t bus_id, uint8_t addr, uint8_t offs_
 
 static int
 bic_read_dimm_i3c(uint8_t slot_id, uint8_t bus_id, uint8_t dimm, uint8_t offs_len,
-                   uint32_t offset, uint8_t len, uint8_t *rxbuf, uint8_t device_type) {
-  uint8_t tbuf[16] = {0x00}; // IANA ID
+                  uint32_t offset, uint8_t len, uint8_t *rxbuf, uint8_t device_type) {
+  uint8_t tbuf[16] = {0x00};
   uint8_t rbuf[64] = {0x00};
-  uint8_t rlen = len;
+  uint8_t rlen = sizeof(rbuf);
   uint8_t tlen = IANA_ID_SIZE;
-  int ret = 0;
 
   // Fill the IANA ID
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
@@ -264,21 +263,22 @@ bic_read_dimm_i3c(uint8_t slot_id, uint8_t bus_id, uint8_t dimm, uint8_t offs_le
   memcpy(&tbuf[tlen], &offset, offs_len);
   tlen += offs_len;
 
-  ret = bic_data_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_READ_WRITE_DIMM, tbuf, tlen, rbuf, &rlen);
+  if (bic_data_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_READ_WRITE_DIMM,
+                       tbuf, tlen, rbuf, &rlen)) {
+    return -1;
+  }
 
   memcpy(rxbuf, &rbuf[IANA_ID_SIZE], len);
-
-  return ret;
+  return len;
 }
 
 static int
 bic_write_dimm_i3c(uint8_t slot_id, uint8_t bus_id, uint8_t dimm, uint8_t offs_len,
                    uint32_t offset, uint8_t len, uint8_t *txbuf, uint8_t device_type) {
-  uint8_t tbuf[64] = {0x00}; // IANA ID
+  uint8_t tbuf[64] = {0x00};
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = sizeof(rbuf);
   uint8_t tlen = IANA_ID_SIZE;
-  int ret = 0;
 
   // Fill the IANA ID
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
@@ -290,9 +290,12 @@ bic_write_dimm_i3c(uint8_t slot_id, uint8_t bus_id, uint8_t dimm, uint8_t offs_l
   memcpy(&tbuf[tlen], txbuf, len);
   tlen += len;
 
-  ret = bic_data_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_READ_WRITE_DIMM, tbuf, tlen, rbuf, &rlen);
+  if (bic_data_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_READ_WRITE_DIMM,
+                       tbuf, tlen, rbuf, &rlen)) {
+    return -1;
+  }
 
-  return ret;
+  return len;
 }
 
 static int
@@ -342,9 +345,8 @@ int
 util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf) {
   uint8_t bus_id = 0;
   uint8_t addr = 0;
+  uint8_t status = 0;
   uint32_t spd_offset = ((offset & 0x780) << 1) | (0x80 | (offset & 0x7F));
-  uint8_t mux = 0;
-  int ret = 0;
 
   if (rxbuf == NULL) {
     return -1;
@@ -360,17 +362,11 @@ util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, u
     return bic_read_dimm_smbus(slot_id, bus_id, addr, 2, spd_offset, len, rxbuf);
   }
 
-  if ((bic_get_i3c_mux_position(slot_id, &mux) < 0) || (mux == I3C_MUX_TO_CPU)) {
-    ret = nm_read_dimm_smbus(slot_id, bus_id, addr, 2, spd_offset, len, rxbuf);
-  } else {
-    ret = bic_read_dimm_i3c(slot_id, bus_id, dimm, 2, offset, len, rxbuf, DIMM_SPD_NVM);
+  if (bic_get_server_power_status(slot_id, &status) < 0 || status) {
+    return nm_read_dimm_smbus(slot_id, bus_id, addr, 2, spd_offset, len, rxbuf);
   }
 
-  if (ret < 0) {
-    return -1;
-  }
-
-  return len;
+  return bic_read_dimm_i3c(slot_id, bus_id, dimm, 2, offset, len, rxbuf, DIMM_SPD_NVM);
 }
 
 int
@@ -438,9 +434,8 @@ int
 util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf) {
   uint8_t bus_id = 0;
   uint8_t addr = 0;
+  uint8_t status = 0;
   uint32_t pmic_offset = offset;
-  int ret = 0;
-  uint8_t mux = 0;
 
   if (rxbuf == NULL) {
     return -1;
@@ -456,25 +451,19 @@ util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, u
     return bic_read_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, rxbuf);
   }
 
-  if ((bic_get_i3c_mux_position(slot_id, &mux) < 0) || (mux == I3C_MUX_TO_CPU)) {
-    ret = nm_read_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, rxbuf);
-  } else {
-    ret = bic_read_dimm_i3c(slot_id, bus_id, dimm, 1, pmic_offset, len, rxbuf, DIMM_PMIC);
+  if (bic_get_server_power_status(slot_id, &status) < 0 || status) {
+    return nm_read_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, rxbuf);
   }
 
-  if (ret < 0) {
-    return -1;
-  }
-
-  return len;
+  return bic_read_dimm_i3c(slot_id, bus_id, dimm, 1, pmic_offset, len, rxbuf, DIMM_PMIC);
 }
 
 int
 util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf) {
   uint8_t bus_id = 0;
   uint8_t addr = 0;
+  uint8_t status = 0;
   uint32_t pmic_offset = offset;
-  int ret = 0;
 
   if (txbuf == NULL) {
     return -1;
@@ -490,10 +479,9 @@ util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, 
     return bic_write_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, txbuf);
   }
 
-  ret = bic_write_dimm_i3c(slot_id, bus_id, dimm, 1, pmic_offset, len, txbuf, DIMM_PMIC);
-  if (ret < 0){
+  if (bic_get_server_power_status(slot_id, &status) < 0 || status) {
     return nm_write_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, txbuf);
   }
 
-  return len;
+  return bic_write_dimm_i3c(slot_id, bus_id, dimm, 1, pmic_offset, len, txbuf, DIMM_PMIC);
 }

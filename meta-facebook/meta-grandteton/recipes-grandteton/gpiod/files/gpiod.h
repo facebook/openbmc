@@ -17,6 +17,10 @@ void gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
 void gpio_event_pson_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 void gpio_event_pson_3s_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 
+//SGPIO EVENT
+void sgpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
+
+
 //DEBUG CARD EVENT
 void usb_dbg_card_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 void uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);

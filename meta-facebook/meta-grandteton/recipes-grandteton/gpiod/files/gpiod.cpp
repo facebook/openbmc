@@ -372,12 +372,19 @@ mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
 
 // Generic Event Handler for GPIO changes
 void
-gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+sgpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   if (!sgpio_valid_check())
     return;
 
   log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL);
 }
+
+// Generic Event Handler for GPIO changes
+void
+gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+}
+
 
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON
 

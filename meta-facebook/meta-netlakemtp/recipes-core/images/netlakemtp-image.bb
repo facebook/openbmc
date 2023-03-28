@@ -40,4 +40,6 @@ IMAGE_INSTALL += " \
   threshold-util \
   plat-utils \
   mac-util \
+  usbutils \
+  usb-console \
   "

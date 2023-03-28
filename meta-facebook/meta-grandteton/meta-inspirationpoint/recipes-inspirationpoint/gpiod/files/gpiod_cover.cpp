@@ -167,8 +167,8 @@ int main(int argc, char **argv)
 {
   int rc, pid_file;
   gpiopoll_desc_t *polldesc;
-//   pthread_t tid_ierr_mcerr_event;
   pthread_t tid_gpio_timer;
+  pthread_t tid_iox_gpio_handle;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -187,6 +187,12 @@ int main(int argc, char **argv)
       exit(1);
     }
 
+    //Create thread for platform reset event filter check
+    if (pthread_create(&tid_iox_gpio_handle, NULL, iox_gpio_handle, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for iox_gpio_handler\n");
+      exit(1);
+    }
+
     polldesc = gpio_poll_open(gpios_list, gpios_cnt);
     if (!polldesc) {
       syslog(LOG_CRIT, "FRU: %d Cannot start poll operation on GPIOs", FRU_MB);
@@ -199,6 +205,7 @@ int main(int argc, char **argv)
   }
 
   pthread_join(tid_gpio_timer, NULL);
+  pthread_join(tid_iox_gpio_handle, NULL);
 
   return 0;
 }

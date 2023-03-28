@@ -37,9 +37,9 @@ if [ $# -gt 1 ]; then
     usage
   fi
   if [ "$2" = "--history" ]; then
-    LOGFILE="/var/log/mTerm_server.log"
-    LOGFILE_B="/var/log/mTerm_server_backup.log"
-    cat $LOGFILE_B $LOGFILE 2>/dev/null
+    LOGFILE="/var/log/mTerm_$SERVER.log"
+    LOGFILE_B="/var/log/mTerm_"$SERVER"_backup.log"
+    cat "$LOGFILE_B" "$LOGFILE" 2>/dev/null
     exit 0
   else
     usage

@@ -70,49 +70,49 @@ index e899de681f475..253d11eef0c0d 100644
 +	tach0-I@0 {
 +		reg = <0x00>;
 +		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <300>;
++		aspeed,min-rpm = <700>;
 +	};
 +
 +	tach0-O@1 {
 +		reg = <0x01>;
 +		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <300>;
++		aspeed,min-rpm = <700>;
 +	};
 +
 +	tach1-I@2 {
 +		reg = <0x02>;
 +		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <300>;
++		aspeed,min-rpm = <700>;
 +	};
 +
 +	tach1-O@3 {
 +		reg = <0x03>;
 +		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <300>;
++		aspeed,min-rpm = <700>;
 +	};
 +
 +	tach2-I@4 {
 +		reg = <0x04>;
 +		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <300>;
++		aspeed,min-rpm = <700>;
 +	};
 +
 +	tach2-O@5 {
 +		reg = <0x05>;
 +		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <300>;
++		aspeed,min-rpm = <700>;
 +	};
 +
 +	tach3-I@6 {
 +		reg = <0x06>;
 +		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <300>;
++		aspeed,min-rpm = <700>;
 +	};
 +
 +	tach3-O@7 {
 +		reg = <0x07>;
 +		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <300>;
++		aspeed,min-rpm = <700>;
 +	};
 +};
 -- 

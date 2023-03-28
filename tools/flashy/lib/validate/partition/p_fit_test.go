@@ -394,7 +394,7 @@ func TestValidateImageNode(t *testing.T) {
 				Children: []*dt.Node{},
 			},
 			want: errors.Errorf("Error getting sha256 checksum: " +
-				"Child node with name 'hash@1' not found in children"),
+				"Child node with name 'hash-1' not found in children"),
 		},
 		{
 			name: "checksums do not match",
@@ -737,7 +737,7 @@ func TestFitGetSHA256ChecksumFromImageNode(t *testing.T) {
 		wantErr   error
 	}{
 		{
-			name: "successfully gotten",
+			name: "successfully gotten (hash@1)",
 			imageNode: &dt.Node{
 				Children: []*dt.Node{
 					{
@@ -764,7 +764,29 @@ func TestFitGetSHA256ChecksumFromImageNode(t *testing.T) {
 				Children: []*dt.Node{},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Child node with name 'hash@1' not found in children"),
+			wantErr: errors.Errorf("Child node with name 'hash-1' not found in children"),
+		},
+		{
+			name: "successfully gotten (hash-1)",
+			imageNode: &dt.Node{
+				Children: []*dt.Node{
+					{
+						Name: "hash-1",
+						Properties: []dt.Property{
+							{
+								Name:  "algo",
+								Value: []byte("sha256\x00"),
+							},
+							{
+								Name:  "value",
+								Value: []byte("abcdabcdabcdabcdabcdabcdabcdabcd"),
+							},
+						},
+					},
+				},
+			},
+			want:    []byte("abcdabcdabcdabcdabcdabcdabcdabcd"),
+			wantErr: nil,
 		},
 		{
 			name: "no algo node in hash@1",

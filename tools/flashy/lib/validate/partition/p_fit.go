@@ -223,9 +223,13 @@ func (p *FitPartition) getDataFromImageNodeViaDataLink(imageNode *dt.Node) ([]by
 func (p *FitPartition) getSHA256ChecksumFromImageNode(imageNode *dt.Node) ([]byte, error) {
 	// get the sha256 digest stored in the image
 	// info is stored in a hashNode
+	// fb-openbmc uses 'hash@1', lf-openbmc uses 'hash-1'
 	hashNode, err := getNodeFromChildren(imageNode.Children, "hash@1")
 	if err != nil {
-		return nil, err
+		hashNode, err = getNodeFromChildren(imageNode.Children, "hash-1")
+		if err != nil {
+			return nil, err
+		}
 	}
 	// make sure the algo in the hashNode is sha256
 	algoProp, err := getPropertyFromNode(hashNode, "algo")

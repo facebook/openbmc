@@ -7,6 +7,7 @@
 #include <openbmc/obmc-i2c.h>
 #include "xdpe152xx.h"
 #include "tda38640.h"
+#include "mp2856.h"
 
 enum {
   VR_1V05_STBY = 0,
@@ -65,6 +66,22 @@ struct vr_ops iftda_ops = {
   .fw_verify = NULL,
 };
 
+struct vr_ops mps_ops = {
+  .get_fw_ver = get_mp2856_ver,
+  .parse_file = mp2856_parse_file,
+  .validate_file = NULL,
+  .fw_update = mp2856_fw_update,
+  .fw_verify = NULL,
+};
+
+struct vr_ops mps2993_ops = {
+  .get_fw_ver = get_mp2993_ver,
+  .parse_file = mp2856_parse_file,
+  .validate_file = NULL,
+  .fw_update = mp2856_fw_update,
+  .fw_verify = NULL,
+};
+
 struct vr_info netlakemtp_vr_list[] = {
   [VR_1V05_STBY] = {
     .bus = VR_BUS,
@@ -108,11 +125,81 @@ struct vr_info netlakemtp_vr_list[] = {
   },
 };
 
+struct vr_info netlakemtp_vr_second_list[] = {
+  [VR_1V05_STBY] = {
+    .bus = VR_BUS,
+    .addr = VR_P1V05_STBY_ADDR,
+    .dev_name = "VR_1V05_STBY",
+    .ops = &mps_ops,
+    .private_data = "server",
+    .xfer = &netlakemtp_vr_rdwr,
+  },
+  [VR_VNN_PCH] = {
+    .bus = VR_BUS,
+    .addr = VR_PVNN_PCH_ADDR,
+    .dev_name = "VR_VNN_PCH",
+    .ops = &mps_ops,
+    .private_data = "server",
+    .xfer = &netlakemtp_vr_rdwr,
+  },
+  [VR_VCCIN_1V8_STBY] = {
+    .bus = VR_BUS,
+    .addr = VR_PVCCIN_ADDR,
+    .dev_name = "VR_VCCIN/VR_1V8_STBY",
+    .ops = &mps2993_ops,
+    .private_data = "server",
+    .xfer = &netlakemtp_vr_rdwr,
+  },
+  [VR_VCCANA_CPU] = {
+    .bus = VR_BUS,
+    .addr = VR_PVCCANCPU_ADDR,
+    .dev_name = "VR_VCCANA_CPU",
+    .ops = &mps_ops,
+    .private_data = "server",
+    .xfer = &netlakemtp_vr_rdwr,
+  },
+  [VR_VDDQ] = {
+    .bus = VR_BUS,
+    .addr = VR_PVDDQ_ABC_CPU_ADDR,
+    .dev_name = "VR_VDDQ",
+    .ops = &mps_ops,
+    .private_data = "server",
+    .xfer = &netlakemtp_vr_rdwr,
+  },
+};
+
 int plat_vr_init(void) {
   int ret;
-  int vr_cnt = sizeof(netlakemtp_vr_list)/sizeof(netlakemtp_vr_list[0]);
+  int i2cfd = 0;
+  uint8_t rev_id;
+  uint8_t tlen = 1;
+  uint8_t rev_id_reg = CPLD_REV_ID_REG;
+  int vr_cnt;
 
-  ret = vr_device_register(netlakemtp_vr_list, vr_cnt );
+  i2cfd = i2c_cdev_slave_open(CPLD_BUS, CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_ERR, "Failed to open CPLD, fd=%x\n", i2cfd);
+    return -1;
+  }
+
+  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDR, &rev_id_reg, tlen, &rev_id, sizeof(rev_id));
+  close(i2cfd);
+  if (ret < 0) {
+    syslog(LOG_ERR, "Failed to get board revision form fpga\n");
+    ret = -1;
+  }
+
+  int sku = ((int)rev_id & 0x08) >> 3;
+  if (sku == 0) {
+    vr_cnt = sizeof(netlakemtp_vr_list)/sizeof(netlakemtp_vr_list[0]);
+    ret = vr_device_register(netlakemtp_vr_list, vr_cnt );
+  } else if (sku == 1) {
+    vr_cnt = sizeof(netlakemtp_vr_second_list)/sizeof(netlakemtp_vr_second_list[0]);
+    ret = vr_device_register(netlakemtp_vr_second_list, vr_cnt );
+  } else {
+    syslog(LOG_ERR, "Invalid board revision got from fpga.");
+  }
+
   if (ret < 0) {
     vr_device_unregister();
   }

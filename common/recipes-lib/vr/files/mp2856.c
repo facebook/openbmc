@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <string.h>
+#include <unistd.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
 #include "mp2856.h"
@@ -84,6 +85,35 @@ mp2856_enable_mtp_page_rw(uint8_t bus, uint8_t addr) {
 }
 
 static int
+mp2993_switch_mtp_page_rw(uint8_t bus, uint8_t addr, bool is_enable) {
+  uint8_t tbuf[16], rbuf[16];
+
+  if(mp2856_set_page(bus, addr, VR_MPS_PAGE_1) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+
+  tbuf[0] = VR_MPS_REG_MTP_PAGE_EN_2993;
+  if (vr_xfer(bus, addr, tbuf, 1, rbuf, 2) < 0) {
+    syslog(LOG_WARNING, "%s: read 0x%02X failed", __func__, tbuf[0]);
+    return VR_STATUS_FAILURE;
+  }
+
+  tbuf[1]= rbuf[0];
+  if (is_enable == true) {
+    tbuf[2]= rbuf[1] | MASK_MTP_BYTE_RW_EN_2993;
+  } else {
+    tbuf[2]= rbuf[1] & MASK_MTP_BYTE_RW_LOCK_2993;
+  }
+
+  if (vr_xfer(bus, addr, tbuf, 3, rbuf, 0) < 0) {
+    syslog(LOG_WARNING, "%s: write 0x%02X failed", __func__, tbuf[0]);
+    return VR_STATUS_FAILURE;
+  }
+
+  return VR_STATUS_SUCCESS;
+}
+
+static int
 mp2856_unlock_write_protect_mode(uint8_t bus, uint8_t addr) {
   uint8_t tbuf[16], rbuf[16];
   tbuf[0] = VR_MPS_REG_MFR_VR_CONFIG2;
@@ -123,6 +153,24 @@ mp2856_unlock_write_protect_mode(uint8_t bus, uint8_t addr) {
 }
 
 static int
+mp2993_unlock_write_protect_mode(uint8_t bus, uint8_t addr) {
+  uint8_t tbuf[16], rbuf[16];
+
+  if(mp2856_set_page(bus, addr, VR_MPS_PAGE_0) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+
+  tbuf[0] = VR_MPS_REG_WRITE_PROTECT;
+  tbuf[1] = MP2993_DISABLE_WRITE_PROTECT;
+  if (vr_xfer(bus, addr, tbuf, 2, rbuf, 0) < 0) {
+    syslog(LOG_WARNING, "%s: write 0x%02X failed", __func__, tbuf[0]);
+    return VR_STATUS_FAILURE;
+  }
+
+  return VR_STATUS_SUCCESS;
+}
+
+static int
 mp2856_write_data(uint8_t bus, uint8_t addr, struct mp2856_data *data  ) {
   uint8_t tbuf[16], rbuf[16];
   uint8_t txlen = 0;
@@ -139,6 +187,28 @@ mp2856_write_data(uint8_t bus, uint8_t addr, struct mp2856_data *data  ) {
 
   if (vr_xfer(bus, addr, tbuf, txlen, rbuf, 0)) {
     syslog(LOG_WARNING, "%s: write register 0x%02X failed", __func__, tbuf[0]);
+    return VR_STATUS_FAILURE;
+  }
+  return VR_STATUS_SUCCESS;
+}
+
+static int
+mp2993_page_plus_write(uint8_t bus, uint8_t addr, struct mp2856_data *data  ) {
+  uint8_t tbuf[16], rbuf[16];
+  uint8_t txlen = 0;
+
+  tbuf[0] = VR_MPS_REG_PAGE_PLUS_WRITE,
+  memcpy(&tbuf[1], &data->reg_data[0],  data->reg_len);
+  txlen = data->reg_len+1;
+
+#ifdef DEBUG
+  for(int i=0; i<txlen; i++)
+   printf("tx[%d]=%x ", i, tbuf[i]);
+  printf(" txlen=%d\n", txlen);
+#endif
+
+  if (vr_xfer(bus, addr, tbuf, txlen, rbuf, 0)) {
+    syslog(LOG_WARNING, "%s: write register 0x%02X failed", __func__, tbuf[3]);
     return VR_STATUS_FAILURE;
   }
   return VR_STATUS_SUCCESS;
@@ -248,6 +318,83 @@ program_mp2856(uint8_t bus, uint8_t addr, struct mp2856_config *config  ) {
   return VR_STATUS_SUCCESS;
 }
 
+int
+program_mp2993(uint8_t bus, uint8_t addr, struct mp2856_config *config  ) {
+ uint8_t tbuf[16], rbuf[16];
+ uint8_t page = 0;
+ int i, ret =0;
+ int page3_start = 0;
+ struct mp2856_data *data;
+
+  if(mp2856_set_page(bus, addr, VR_MPS_PAGE_0) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+
+  //Program Page0/1/2
+  for (i = 0; i < config->wr_cnt; i++) {
+    data = &config->pdata[i];
+    if (data->page == 3 ) {
+      page3_start = i;
+      break;
+    }
+    if( page != data->page) {
+      if(mp2856_set_page(bus, addr, data->page) < 0) {
+        return VR_STATUS_FAILURE;
+      }
+      page = data->page;
+    }
+    mp2856_write_data(bus, addr, data);
+    printf("\rupdated: %d %%  ", ((i+1)*100)/config->wr_cnt);
+    fflush(stdout);
+  }
+
+  //Store registers to MTP
+  if(mp2856_set_page(bus, addr, VR_MPS_PAGE_0) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+  tbuf[0] = VR_MPS_CMD_STORE_NORMAL_CODE_2993;
+  if ((ret = vr_xfer(bus, addr, tbuf, 1, rbuf, 0))) {
+    syslog(LOG_WARNING, "%s: write register 0x%02X failed", __func__, tbuf[0]);
+    return VR_STATUS_FAILURE;
+  }
+  //Wait CMD STORE_NORMAL_CODE finish
+  sleep(1);
+
+  if (mp2993_switch_mtp_page_rw(bus, addr, true) < 0) {
+    printf("ERROR: Enable MTP PAGE RW FAILED!\n");
+    return VR_STATUS_FAILURE;
+  }
+
+  if(mp2856_set_page(bus, addr, VR_MPS_PAGE_3) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+
+  //Program Page3/4
+  for (i = page3_start; i < config->wr_cnt; i++) {
+    data = &config->pdata[i];
+    if (data->page != 3 ){
+      break;
+    }
+
+    mp2993_page_plus_write(bus, addr, data);
+    //Each command wait 20ms by following MPS programming guide
+    msleep(20);
+    printf("\rupdated: %d %%  ", ((i+1)*100)/config->wr_cnt);
+    fflush(stdout);
+  }
+  printf("\n");
+
+  if (mp2993_switch_mtp_page_rw(bus, addr, false) < 0) {
+    printf("ERROR: Enable MTP PAGE RW FAILED!\n");
+    return VR_STATUS_FAILURE;
+  }
+
+  //Wait 100 ms after lock mtp page by following MPS programming guide
+  msleep(100);
+
+  return VR_STATUS_SUCCESS;
+}
+
 static void
 cache_mp2856_new_crc(struct vr_info *info, void *args) {
   struct mp2856_config *config = (struct mp2856_config *)args;
@@ -352,13 +499,26 @@ mp2856_fw_update(struct vr_info *info, void *args) {
     return VR_STATUS_FAILURE;
   }
 
-  if(mp2856_unlock_write_protect_mode(info->bus, info->addr)) {
-    syslog(LOG_WARNING, "%s: Unlock MTP Write protection failed", __func__);
-    return VR_STATUS_FAILURE;
-  }
-
-  if(program_mp2856(info->bus, info->addr, config)) {
-    return VR_STATUS_FAILURE;
+  switch (config->mode) {
+  case MP285X:
+  case MP297X:
+    if(mp2856_unlock_write_protect_mode(info->bus, info->addr)) {
+      syslog(LOG_WARNING, "%s: Unlock MTP Write protection failed", __func__);
+      return VR_STATUS_FAILURE;
+    }
+    if(program_mp2856(info->bus, info->addr, config)) {
+      return VR_STATUS_FAILURE;
+    }
+    break;
+  case MP2993:
+    if(mp2993_unlock_write_protect_mode(info->bus, info->addr)) {
+      syslog(LOG_WARNING, "%s: Unlock MTP Write protection failed", __func__);
+      return VR_STATUS_FAILURE;
+    }
+    if(program_mp2993(info->bus, info->addr, config)) {
+      return VR_STATUS_FAILURE;
+    }
+    break;
   }
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
@@ -440,7 +600,7 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
           config->pdata[dcnt].reg_len = len;
           break;
         case ATE_WRITE_TYPE:
-          if (!strncmp(str, "B2", 2)) {
+          if (!strncmp(str, "B", 1)) {
             memmove(&config->pdata[dcnt].reg_data[1], &config->pdata[dcnt].reg_data[0], config->pdata[dcnt].reg_len);
             config->pdata[dcnt].reg_data[0] = config->pdata[dcnt].reg_len;
             config->pdata[dcnt].reg_len += 1;
@@ -465,6 +625,10 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
         sscanf(line, "%*[^:]:%9s", buf);
         str=strtok(buf, "MP");
         config->product_id_exp = strtol(str, NULL, 16);
+        if (config->product_id_exp == MP2993_PRODUCT_ID ){
+          config->mode = MP2993;
+          config->product_id_exp = 0x93;
+        }
       } else if  (!strncmp(line, "I2C", 3)) {
         sscanf(line, "%*[^:]:%9s", buf);
         config->addr = strtol(buf, NULL, 16);
@@ -540,6 +704,41 @@ cache_mp2856_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
   return ret;
 }
 
+static int
+cache_mp2993_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
+  int ret = VR_STATUS_FAILURE;
+  uint8_t tbuf[16];
+  uint8_t crc[5];
+  uint8_t multi_config[2];
+  uint16_t remain = 0;
+  char remaining_wr_msg[64];
+
+  do {
+    if ((ret = mp2856_set_page(bus, addr, VR_MPS_PAGE_0))) {
+      break;
+    }
+    tbuf[0] = VR_MPS_REG_CRC_2993;
+    if ((ret = vr_xfer(bus, addr, tbuf, 1, crc, 5))) {
+      syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
+      break;
+    }
+
+    snprintf(checksum, MAX_VALUE_LEN, "MPS %02X%02X%02X%02X",
+           crc[4], crc[3], crc[2], crc[1]);
+
+    if (mps_remaining_wr) {
+      if(mp2856_get_remaining_wr_msg(addr, &remain, remaining_wr_msg, GET_VR_CRC) == VR_STATUS_SUCCESS) {
+        strncat(checksum, remaining_wr_msg, MAX_VALUE_LEN-1);
+      }
+    }
+
+    kv_set(key, checksum, 0, 0);
+  } while (0);
+
+  mp2856_set_page(bus, addr, VR_MPS_PAGE_0);
+  return ret;
+}
+
 int
 get_mp2856_ver(struct vr_info *info, char *ver_str) {
   int ret;
@@ -568,6 +767,49 @@ get_mp2856_ver(struct vr_info *info, char *ver_str) {
     }
 
     ret = cache_mp2856_crc(info->bus, info->addr, key, tmp_str);
+
+    //Resume sensor polling
+    if (info->sensor_polling_ctrl) {
+      info->sensor_polling_ctrl(true);
+    }
+
+    if (ret) {
+      return VR_STATUS_FAILURE;
+    }
+  }
+
+  if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN-1))
+    return VR_STATUS_FAILURE;
+
+  return VR_STATUS_SUCCESS;
+}
+
+int
+get_mp2993_ver(struct vr_info *info, char *ver_str) {
+  int ret;
+  char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
+
+  if (info->private_data) {
+    snprintf(key, sizeof(key), "%s_vr_%02xh_crc", (char *)info->private_data, info->addr);
+  } else {
+    snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
+  }
+
+  if (kv_get(key, tmp_str, NULL, 0)) {
+    if (info->xfer) {
+      vr_xfer = info->xfer;
+    }
+
+    if (info->remaining_wr_op) {
+      mps_remaining_wr = info->remaining_wr_op;
+    }
+
+    //Stop sensor polling before read crc from register
+    if (info->sensor_polling_ctrl) {
+      info->sensor_polling_ctrl(false);
+    }
+
+    ret = cache_mp2993_crc(info->bus, info->addr, key, tmp_str);
 
     //Resume sensor polling
     if (info->sensor_polling_ctrl) {

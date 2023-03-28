@@ -8,8 +8,10 @@
 #define VR_MPS_PAGE_0    0x00
 #define VR_MPS_PAGE_1    0x01
 #define VR_MPS_PAGE_2    0x02
+#define VR_MPS_PAGE_3    0x03
 #define VR_MPS_PAGE_29   0x29
 #define VR_MPS_PAGE_2A   0x2A
+
 
 
 /*Page0 */
@@ -19,8 +21,10 @@
 #define VR_MPS_REG_STATUS_CML         0x7E
 
 #define VR_MPS_CMD_STORE_NORMAL_CODE  0xF1
+#define VR_MPS_CMD_STORE_NORMAL_CODE_2993  0x15
 
 /*Page1 */
+#define VR_MPS_REG_MTP_PAGE_EN_2993   0x04
 #define VR_MPS_REG_MFR_VR_CONFIG2     0x35
 #define VR_MPS_REG_MFR_MTP_PMBUS_CTRL 0x4F
 #define VR_MPS_REG_CRC_NORMAL_CODE_2856    0xAD
@@ -37,16 +41,26 @@
 /*Page2A */
 #define VR_MPS_REG_MULTI_CONFIG       0xBF
 
+/*Page3 */
+#define VR_MPS_REG_PAGE_PLUS_WRITE    0x05
+
+/*CRC for MP2993 */
+#define VR_MPS_REG_CRC_2993           0xB8
+
 /* STATUS_CML bit[3] */
 #define MASK_PWD_MATCH                0x08
 /* MFR_VR_CONFIG2 bit[2] */
 #define  MASK_WRITE_PROTECT_MODE      0x04
 /* MFR_MTP_PMBUS_CTRL bit[5] */
 #define  MASK_MTP_BYTE_RW_EN          0x20
+#define  MASK_MTP_BYTE_RW_EN_2993     0x80
+#define  MASK_MTP_BYTE_RW_LOCK_2993   0x7f
 
 #define MP2856_DISABLE_WRITE_PROTECT 0x63
+#define MP2993_DISABLE_WRITE_PROTECT 0x00
 #define MP2856_PRODUCT_ID 0x2856
 #define MP2857_PRODUCT_ID 0x2857
+#define MP2993_PRODUCT_ID 0x2993
 
 #define MAX_MP2856_REMAIN_WR 1000
 
@@ -88,10 +102,12 @@ struct mp2856_config {
 enum {
   MP285X,
   MP297X,
+  MP2993,
 };
 
 void* mp2856_parse_file(struct vr_info*, const char*);
 int mp2856_fw_update(struct vr_info*, void*);
 int get_mp2856_ver(struct vr_info*, char*);
+int get_mp2993_ver(struct vr_info*, char*);
 
 #endif

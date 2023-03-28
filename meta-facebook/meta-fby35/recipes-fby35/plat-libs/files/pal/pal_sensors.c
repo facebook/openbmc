@@ -1222,7 +1222,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BB_PWM2_TACH_PCT"        ,       PWM_2, read_fan_pwm   ,          0, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xEA
   {"BB_PWM3_TACH_PCT"        ,       PWM_3, read_fan_pwm   ,          0, {      0,      0,      0,     0,     0,      0,   0,   0}, PERCENT}, //0xEB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
-  {"BB_INLET_TEMP_C"         ,  TEMP_INLET, read_temp      ,          0, {      0,      0,      0,     0,    50,    150,   0,   0}, TEMP}, //0xED
+  {"BB_INLET_TEMP_C"         ,  TEMP_INLET, read_temp      ,          0, {      0,      0,      0,     0,    45,    150,   0,   0}, TEMP}, //0xED
   {"BB_OUTLET_TEMP_C"        , TEMP_OUTLET, read_temp      ,          0, {      0,      0,      0,     0,    55,    150,   0,   0}, TEMP}, //0xEE
   {"NIC_TEMP_C"              ,    TEMP_NIC, read_temp      ,          0, {      0,      0,      0,     0,   105,    120,   0,   0}, TEMP}, //0xEF
   {"BB_P5V_VOLT_V"           ,        ADC0, read_adc_val   ,          0, {   4.15,   4.45,    4.5,   5.5,  5.55,   5.65,   0,   0}, VOLT}, //0xF0
@@ -1233,7 +1233,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BB_P2V5_STBY_VOLT_V"     ,        ADC3, read_adc_val   ,          0, {      0,    2.3,  2.325, 2.675,   2.7,      0,   0,   0}, VOLT}, //0xF5
   {"BB_MEDUSA_OUTPUT_VOLT_V" ,        0xF6, read_medusa_val,          0, {   9.25, 11.125,  11.25, 13.75,13.875,   13.9,   0,   0}, VOLT}, //0xF6
   {"BB_HSC_INPUT_VOLT_V"     ,     HSC_ID0, read_hsc_vin   ,          0, { 10.091,  10.68,   10.8, 13.20, 13.32, 14.333,   0,   0}, VOLT}, //0xF7
-  {"BB_HSC_TEMP_C"           ,     HSC_ID0, read_hsc_temp  ,          0, {      0,      0,      0,     0,    55,    125,   0,   0}, TEMP}, //0xF8
+  {"BB_HSC_TEMP_C"           ,     HSC_ID0, read_hsc_temp  ,          0, {      0,      0,      0,     0,    51,    125,   0,   0}, TEMP}, //0xF8
   {"BB_HSC_INPUT_PWR_W"      ,     HSC_ID0, read_hsc_pin   ,          0, {      0,      0,      0,     0, 287.5, 398.75,   0,   0}, POWER}, //0xF9
   {"BB_HSC_OUTPUT_CURR_A"    ,     HSC_ID0, read_hsc_iout  ,          0, {      0,      0,      0,     0,    23,   31.9,   0,   0}, CURR}, //0xFA
   {"BB_ADC_FAN_OUTPUT_CURR_A",       ADC10, read_adc_val   ,          0, {      0,      0,      0,     0, 14.52,   39.2,   0,   0}, CURR}, //0xFB

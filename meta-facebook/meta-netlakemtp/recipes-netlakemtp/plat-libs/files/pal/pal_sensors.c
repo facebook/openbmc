@@ -607,6 +607,9 @@ read_pmbus(uint8_t id, float *value) {
           syslog(LOG_ERR, "%s() Failed to get reading by linear-16 format %d-%d\n",
               __func__, bus, addr);
         }
+      } else if ((rbuf_vout_mode == 0x40)) {
+        // MP9941/MP2993 direct mode
+        *value = (float)((rbuf_reading_raw[1] * 256) + rbuf_reading_raw[0]) * 0.001;
       } else {
         *value = 0;
         syslog(LOG_ERR, "%s() VOUT_MODE is not supported for device %d-%d\n",

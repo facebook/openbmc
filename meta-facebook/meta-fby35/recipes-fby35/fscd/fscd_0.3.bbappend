@@ -36,6 +36,8 @@ LOCAL_URI += " \
     file://FSC_CLASS1_GL_config.json \
     "
 
+RDEPENDS:${PN} += "bash"
+
 FSC_CONFIG += "FSC_CLASS1_type1_config.json \
                FSC_CLASS1_DPV2_config.json \
                FSC_CLASS1_HD_config.json \

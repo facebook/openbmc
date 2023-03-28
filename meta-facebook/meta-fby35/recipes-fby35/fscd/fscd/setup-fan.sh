@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -42,14 +42,14 @@ CLASS1_GET_BOARD_REVID="/usr/sbin/i2cget -y 12 0x0f 0x08"
 #For config D, we get the Baseboard revision from BB BPLD. command: bic-util slot1 IPMI Send request message to BIC, IANA, BB bic, IPMI Master write read, CPLD i2cbus addr register
 CLASS2_GET_BOARD_REVID="/usr/bin/bic-util slot1 0xe0 0x2 ""$IANA_ID"" 0x10 0x18 0x52 0x1 0x1e 0x1 0x8 "
 
-check_dvt_fan(){
+check_dvt_fan() {
   local fan_type=$1
   if [ "$fan_type" = "$TYPE_DUAL_FAN" ]; then
     logger -t "fan_check" -p daemon.crit "Fan slot $i is dual fan, please install single fan in DVT system"
   fi
 }
 
-check_evt_fan(){
+check_evt_fan() {
   local fan_type=$1
   if [ "$fan_type" = "$TYPE_DUAL_FAN" ]; then
     if [ "$sys_config" = "A" ]; then
@@ -111,7 +111,6 @@ check_fan_type() {
 }
 
 init_class1_fsc() {
-  sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
   target_fsc_config=""
   config_type=""
   server_type=$(get_server_type 1)
@@ -184,16 +183,6 @@ init_class2_fsc() {
 }
 
 start_sled_fsc() {
-  if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
-    #The BMC of class1
-    init_class1_fsc
-  elif [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
-    #The BMC of class2
-    init_class2_fsc
-  else
-    echo -n "Is board id correct(id=$bmc_location)?..."
-    exit 255
-  fi
   check_fan_type
 
   echo "Setup fscd for fby35..."
@@ -206,10 +195,12 @@ start_sled_fsc() {
   done
 
   runsv /etc/sv/fscd > /dev/null 2>&1 &
+
+  #boost fans if one of the blades is not present
+  reload_sled_fsc
 }
 
 reload_sled_fsc() {
-  bmc_location=$(get_bmc_board_id)
   if [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
     #The BMC of class2 need to check the present status from BB BIC
     slot1_prsnt=$(bic-util slot1 0xe0 0x2 "$IANA_ID" 0x10 0xe0 0x41 "$IANA_ID" 0x0 15 | awk '{print $12}')
@@ -249,20 +240,27 @@ reload_sled_fsc() {
 }
 
 start_fscd() {
-  start_sled_fsc
-  #if one of the blades is not present, stop fscd
-  reload_sled_fsc
+  if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
+    init_class1_fsc
+  elif [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
+    init_class2_fsc
+  else
+    echo -n "Is board id correct(id=$bmc_location)?..."
+    exit 255
+  fi
+
+  (start_sled_fsc &)
 }
 
 case "$1" in
   start)
     echo "Setup fan speed..."
     /usr/local/bin/fan-util --set 70
-    (start_fscd &)&
+    start_fscd
   ;;
 
   reload)
-    #if one of the blades is pulled out, stop fscd
+    #boost fans if one of the blades is not present
     reload_sled_fsc
   ;;
 

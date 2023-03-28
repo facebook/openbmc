@@ -40,6 +40,12 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
     case FRU_SCM:
       sprintf(key, "scm_sensor_health");
     break;
+    case FRU_HSC:
+      sprintf(key, "hsc_sensor_health");
+    break;
+    case FRU_SHSC:
+      sprintf(key, "swb_hsc_sensor_health");
+    break;
     default:
       return -1;
   }

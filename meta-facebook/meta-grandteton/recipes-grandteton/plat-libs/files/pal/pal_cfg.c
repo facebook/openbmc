@@ -35,6 +35,8 @@ typedef enum {
   FAN_BP1_SNR_HEALTH,
   FAN_BP2_SNR_HEALTH,
   SCM_SNR_HEALTH,
+  HSC_SNR_HEALTH,
+  SHSC_SNR_HEALTH,
   SV_SEL_ERR,
   SV_BOOT_ORDER,
   CPU0_PPIN,
@@ -48,30 +50,33 @@ struct pal_key_cfg {
   char *name;
   char *def_val;
   int (*function)(int, void*);
+  bool enable;
 } key_cfg[] = {
   /* name, default value, function */
-  {SV_LAST_PWR_ST,  "pwr_server_last_state", "on",           key_func_lps},
-  {SV_SYSFW_VER,    "fru1_sysfw_ver",        "0",            NULL},
-  {SLED_IDENTIFY,   "identify_sled",         "off",          NULL},
-  {SLED_TIMESTAMP,  "timestamp_sled",        "0",            NULL},
-  {SV_POR_CFG,      "server_por_cfg",        "on",           key_func_por_policy},
-  {SV_SNR_HEALTH,   "server_sensor_health",  "1",            NULL},
-  {SWB_SNR_HEALTH,  "swb_sensor_health",     "1",            NULL},
-  {HGX_SNR_HEALTH,  "hgx_sensor_health",     "1",            NULL},
-  {NIC0_SNR_HEALTH, "nic0_sensor_health",    "1",            NULL},
-  {NIC1_SNR_HEALTH, "nic1_sensor_health",    "1",            NULL},
-  {VPDB_SNR_HEALTH, "vpdb_sensor_health",    "1",            NULL},
-  {HPDB_SNR_HEALTH, "hpdb_sensor_health",    "1",            NULL},
-  {FAN_BP1_SNR_HEALTH,  "fan_bp1_sensor_health",     "1",            NULL},
-  {FAN_BP2_SNR_HEALTH,  "fan_bp2_sensor_health",     "1",            NULL},
-  {SCM_SNR_HEALTH,  "scm_sensor_health",     "1",            NULL},
-  {SV_SEL_ERR,      "server_sel_error",      "1",            NULL},
-  {SV_BOOT_ORDER,   "server_boot_order",     "0100090203ff", NULL},
-  {CPU0_PPIN,       "cpu0_ppin",             "",             NULL},
-  {CPU1_PPIN,       "cpu1_ppin",             "",             NULL},
-  {NTP_SERVER,      "ntp_server",            "",             NULL},
+  {SV_LAST_PWR_ST,      "pwr_server_last_state", "on",           key_func_lps, true},
+  {SV_SYSFW_VER,        "fru1_sysfw_ver",        "0",            NULL, true},
+  {SLED_IDENTIFY,       "identify_sled",         "off",          NULL, true},
+  {SLED_TIMESTAMP,      "timestamp_sled",        "0",            NULL, true},
+  {SV_POR_CFG,          "server_por_cfg",        "on",           key_func_por_policy},
+  {SV_SNR_HEALTH,       "server_sensor_health",  "1",            NULL, true},
+  {SWB_SNR_HEALTH,      "swb_sensor_health",     "1",            NULL, true},
+  {HGX_SNR_HEALTH,      "hgx_sensor_health",     "1",            NULL, true},
+  {NIC0_SNR_HEALTH,     "nic0_sensor_health",    "1",            NULL, true},
+  {NIC1_SNR_HEALTH,     "nic1_sensor_health",    "1",            NULL, true},
+  {VPDB_SNR_HEALTH,     "vpdb_sensor_health",    "1",            NULL, true},
+  {HPDB_SNR_HEALTH,     "hpdb_sensor_health",    "1",            NULL, true},
+  {FAN_BP1_SNR_HEALTH,  "fan_bp1_sensor_health", "1",            NULL, true},
+  {FAN_BP2_SNR_HEALTH,  "fan_bp2_sensor_health", "1",            NULL, true},
+  {SCM_SNR_HEALTH,      "scm_sensor_health",     "1",            NULL, true},
+  {HSC_SNR_HEALTH,      "hsc_sensor_health",     "1",            NULL, false},
+  {SHSC_SNR_HEALTH,     "swb_hsc_sensor_health", "1",            NULL, false},
+  {SV_SEL_ERR,          "server_sel_error",      "1",            NULL, true},
+  {SV_BOOT_ORDER,       "server_boot_order",     "0100090203ff", NULL, true},
+  {CPU0_PPIN,           "cpu0_ppin",             "",             NULL, true},
+  {CPU1_PPIN,           "cpu1_ppin",             "",             NULL, true},
+  {NTP_SERVER,          "ntp_server",            "",             NULL, true},
   /* Add more Keys here */
-  {LAST_ID, LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
+  {LAST_ID, LAST_KEY, LAST_KEY, NULL, true} /* This is the last key of the list */
 };
 
 static int
@@ -377,13 +382,21 @@ pal_dump_key_value(void) {
   int i;
   char value[MAX_VALUE_LEN];
 
+  if(is_mb_hsc_module())
+    key_cfg[HSC_SNR_HEALTH].enable = true;
+
+  if(is_swb_hsc_module())
+    key_cfg[SHSC_SNR_HEALTH].enable = true;
+
   for (i = 0; key_cfg[i].id != LAST_ID; i++) {
-    printf("%s:", key_cfg[i].name);
-    memset(value, 0, sizeof(value));
-    if (kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST) < 0) {
-      printf("\n");
-    } else {
-      printf("%s\n", value);
+    if (key_cfg[i].enable) {
+      printf("%s:", key_cfg[i].name);
+      memset(value, 0, sizeof(value));
+      if (kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST) < 0) {
+        printf("\n");
+      } else {
+        printf("%s\n", value);
+      }
     }
   }
 }

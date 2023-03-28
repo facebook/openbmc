@@ -8,33 +8,9 @@
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 
+extern int attempt_server_power_off(uint8_t slot, bool force);
+
 using namespace std;
-
-constexpr auto  MAX_RETRY = 30;
-
-int ProtComponent::attempt_server_power_off(bool force) {
-  int ret, retry_count;
-  uint8_t status;
-
-  for (retry_count = 0; retry_count < MAX_RETRY; retry_count++) {
-    ret = pal_get_server_power(slot_id, &status);
-    cerr << "Server power status: " << (int) status << endl;
-    if ((ret == 0) && (status == SERVER_POWER_OFF)) {
-      break;
-    } else {
-      uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
-      if ((retry_count == 0) || force) {
-        cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
-        pal_set_server_power(slot_id, power_cmd);
-      }
-      sleep(2);
-    }
-  }
-  if (retry_count == MAX_RETRY) {
-    return -1;
-}
-  return 0;
-}
 
 bool ProtComponent::checkPfrUpdate(prot::ProtDevice& prot_dev) {
     cerr << "PRoT is PFR mode , update to recovery Flash" << endl;
@@ -75,16 +51,16 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  if(isBypass) {
+  if (isBypass) {
     cerr << "PRoT is Bypaas mode , try to off server first" << endl;
-    if(attempt_server_power_off(force)) {
+    if (attempt_server_power_off(slot_id, force) < 0) {
       cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
       return FW_STATUS_FAILURE;
     }
   } else {
     try {
       // --force to force recovery, updating to SPIA working area directly
-      if(!force) {
+      if (!force) {
         pfr_update = checkPfrUpdate(prot_dev);
       }
     } catch(const runtime_error& err) {
@@ -93,7 +69,7 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
     }
 
     if (pfr_update) {
-      if(prot_dev.portRequestRecoverySpiUnlock() != prot::ProtDevice::DevStatus::SUCCESS) {
+      if (prot_dev.portRequestRecoverySpiUnlock() != prot::ProtDevice::DevStatus::SUCCESS) {
         return FW_STATUS_FAILURE;
       }
     }
@@ -110,7 +86,7 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
   }
 
   sleep(1);
-  if(isBypass) {
+  if (isBypass) {
     cerr << "Power-cycling the server..." << endl;
     pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
   } else {

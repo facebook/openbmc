@@ -12,6 +12,36 @@ using namespace std;
 #define FORCED_OFF 1
 #define DELAY_ME_RESET 10
 
+int attempt_server_power_off(uint8_t slot, bool force) {
+  uint8_t status = SERVER_POWER_ON;
+
+  if (!pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF) {
+    return 0;
+  }
+
+  if (!force) {
+    cerr << "Powering off the server gracefully" << endl;
+    pal_set_server_power(slot, SERVER_GRACEFUL_SHUTDOWN);
+    if (retry_cond(!pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF, 60, 1000)) {
+      cerr << "Retry force powering off the server..." << endl;
+      pal_set_server_power(slot, SERVER_POWER_OFF);
+      if (retry_cond(!pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+        return -1;
+      }
+      return FORCED_OFF;
+    }
+  } else {
+    cerr << "Force powering off the server" << endl;
+    pal_set_server_power(slot, SERVER_POWER_OFF);
+    if (retry_cond(!pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+      return -1;
+    }
+    return FORCED_OFF;
+  }
+
+  return 0;
+}
+
 image_info BiosComponent::check_image(const string& image, bool force) {
   int ret = 0;
   uint8_t board_id = 0, board_rev = 0;
@@ -38,36 +68,6 @@ image_info BiosComponent::check_image(const string& image, bool force) {
   }
 
   return image_sts;
-}
-
-int BiosComponent::attempt_server_power_off(bool force) {
-  uint8_t status = SERVER_POWER_ON;
-
-  if (!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF) {
-    return 0;
-  }
-
-  if (!force) {
-    cerr << "Powering off the server gracefully" << endl;
-    pal_set_server_power(slot_id, SERVER_GRACEFUL_SHUTDOWN);
-    if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 60, 1000)) {
-      cerr << "Retry force powering off the server..." << endl;
-      pal_set_server_power(slot_id, SERVER_POWER_OFF);
-      if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
-        return -1;
-      }
-      return FORCED_OFF;
-    }
-  } else {
-    cerr << "Force powering off the server" << endl;
-    pal_set_server_power(slot_id, SERVER_POWER_OFF);
-    if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
-      return -1;
-    }
-    return FORCED_OFF;
-  }
-
-  return 0;
 }
 
 bool BiosComponent::checkPfrUpdate(prot::ProtDevice& prot_dev) {
@@ -127,7 +127,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
 
   if (SERVER_TYPE_HD != server_type || isBypass) {
-    if ((ret_pwroff = attempt_server_power_off(force)) < 0) {
+    if ((ret_pwroff = attempt_server_power_off(slot_id, force)) < 0) {
       cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
       return FW_STATUS_FAILURE;
     }
@@ -239,7 +239,7 @@ int BiosComponent::dump(string image) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  if (attempt_server_power_off(true) < 0) {
+  if (attempt_server_power_off(slot_id, true) < 0) {
     cerr << "Failed to Power Off Server " << slot_id << ". Stopping the dump!" << endl;
     return FW_STATUS_FAILURE;
   }

@@ -16,7 +16,6 @@ class BiosComponent : public Component {
 
  private:
   image_info check_image(const string& image, bool force);
-  int attempt_server_power_off(bool force);
   bool checkPfrUpdate(prot::ProtDevice& prot_dev);
   int get_ver_str(std::string& s);
   int update_internal(const std::string& image, int fd, bool force);

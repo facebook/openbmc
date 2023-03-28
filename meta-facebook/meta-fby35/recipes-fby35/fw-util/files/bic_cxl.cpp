@@ -7,14 +7,14 @@
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
 
+extern int attempt_server_power_off(uint8_t slot, bool force);
+
 using namespace std;
 
-constexpr auto MAX_RETRY = 30;
 constexpr auto P1V8_ASIC_EN_R = 0x11;
 
 int CxlComponent::update_internal(const std::string& image, int fd, bool force) {
-  int ret, retry_count;
-  uint8_t status;
+  int ret;
 
   try {
     cerr << "Checking if the server is ready..." << endl;
@@ -29,23 +29,10 @@ int CxlComponent::update_internal(const std::string& image, int fd, bool force) 
     cerr << "File or fd is required." << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
-  for (retry_count = 0; retry_count < MAX_RETRY; retry_count++) {
-    ret = pal_get_server_power(slot_id, &status);
-    cerr << "Server power status: " << (int) status << endl;
-    if ((ret == 0) && (status == SERVER_POWER_OFF)) {
-      break;
-    } else {
-      uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
-      if ((retry_count == 0) || force) {
-        cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
-        pal_set_server_power(slot_id, power_cmd);
-      }
-      sleep(2);
-    }
-  }
-  if (retry_count == MAX_RETRY) {
+
+  if (attempt_server_power_off(slot_id, force) < 0) {
     cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
-    return -1;
+    return FW_STATUS_FAILURE;
   }
 
   sleep(3);  //Avoid start update during CXL power off sequence
@@ -83,7 +70,7 @@ int CxlComponent::fupdate(const string image) {
 int CxlComponent::get_ver_str(string& s) {
   uint8_t ver[32] = {0};
 
-  if(bic_get_fw_ver(slot_id, fw_comp, ver)){
+  if (bic_get_fw_ver(slot_id, fw_comp, ver)) {
     return FW_STATUS_FAILURE;
   }
 

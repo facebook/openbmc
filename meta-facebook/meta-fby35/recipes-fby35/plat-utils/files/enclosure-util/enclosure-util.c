@@ -63,16 +63,6 @@ typedef struct {
 
 sys_config_t g_sys_conf = {0};
 
-static int
-ssd_monitor_enable(uint8_t slot_id, uint8_t intf, bool enable) {
-  int ret = 0;
-  ret = bic_enable_ssd_sensor_monitor(slot_id, enable, intf);
-  if ( enable == false ) {
-    msleep(100);
-  }
-  return ret;
-}
-
 //==============================================================================
 // VF_1U
 //==============================================================================
@@ -94,100 +84,6 @@ const nvme_ops_t vf_1u_ops = {
   .nvme_set_mux_select = NULL,
   .board_pre_setup = NULL,
   .board_post_setup = NULL,
-};
-
-//==============================================================================
-// M.2 1OU & 2OU
-//==============================================================================
-static int
-board_1u_2u_nvme_get_bus_intf(uint8_t dev_id, uint8_t *bus, uint8_t *intf) {
-  const uint8_t bus_map_table[] = { 0, 2, 2, 4, 4, 2, 2, 4, 4, 6, 6};
-
-  if (dev_id >= DEV_ID0_1OU && dev_id <= DEV_ID3_1OU) {
-    *intf = FEXP_BIC_INTF;
-  } else if (dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID5_2OU) {
-    *intf = REXP_BIC_INTF;
-  } else {
-    return -1;
-  }
-
-  *bus = bus_map_table[dev_id];
-  return 0;
-}
-
-static int
-board_1u_2u_set_mux_select(uint8_t slot_id, uint8_t dev_id) {
-  const uint8_t mux_map[] = { 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
-
-  uint8_t bus = 0;
-  uint8_t intf = 0;
-  uint8_t tbuf[8] = {0};
-  uint8_t rbuf[64] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret;
-
-  if (board_1u_2u_nvme_get_bus_intf(dev_id, &bus, &intf) < 0) {
-    return -1;
-  }
-
-  tbuf[0] = (bus << 1) + 1;
-  tbuf[1] = 0x02; // mux address
-  tbuf[2] = 0;    // read back 8 bytes
-  tbuf[3] = 0x00; // offset 00
-  tbuf[4] = mux_map[dev_id];
-  tlen = 5;
-  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if (ret != 0) {
-    syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,tbuf[0],rlen);
-    return -1;
-  }
-  return 0;
-}
-
-const nvme_ops_t board_1u_2u_ops = {
-  .nvme_get_bus_intf = board_1u_2u_nvme_get_bus_intf,
-  .nvme_set_mux_select = board_1u_2u_set_mux_select,
-  .board_pre_setup = NULL,
-  .board_post_setup = NULL,
-};
-
-//==============================================================================
-// GPV3
-//==============================================================================
-static int
-gpv3_nvme_get_bus_intf(uint8_t dev_id, uint8_t *bus, uint8_t *intf) {
-  if (dev_id < DEV_ID0_2OU || dev_id > DEV_ID13_2OU) {
-    return -1;
-  }
-  *bus = get_gpv3_bus_number(dev_id);
-  *intf = REXP_BIC_INTF;
-  return 0;
-}
-
-static int
-gpv3_1u_2u_set_mux_select(uint8_t slot_id, uint8_t dev_id) {
-  if (pal_gpv3_mux_select(slot_id, dev_id) != BIC_STATUS_SUCCESS) {
-    return -1;
-  }
-  return 0;
-}
-
-static int
-gpv3_board_pre_setup(uint8_t slot_id) {
-  return ssd_monitor_enable(slot_id, false, REXP_BIC_INTF);
-}
-
-static int
-gpv3_board_post_setup(uint8_t slot_id) {
-  return ssd_monitor_enable(slot_id, true, REXP_BIC_INTF);
-}
-
-const nvme_ops_t gpv3_ops = {
-  .nvme_get_bus_intf = gpv3_nvme_get_bus_intf,
-  .nvme_set_mux_select = gpv3_1u_2u_set_mux_select,
-  .board_pre_setup = gpv3_board_pre_setup,
-  .board_post_setup = gpv3_board_post_setup,
 };
 
 //==============================================================================
@@ -273,15 +169,12 @@ print_drive_status(ssd_data *ssd) {
 }
 
 static int
-drive_health(ssd_data *ssd, bool is_gpv3) {
+drive_health(ssd_data *ssd) {
   if (!ssd)
     return NVME_BAD_HEALTH;
 
-  if (! is_gpv3) { // Not GPv3
-    // since accelerator doesn't implement SMART WARNING, do not check it.
-    if ((ssd->warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
-      return NVME_BAD_HEALTH;
-  }
+  if ((ssd->warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
+    return NVME_BAD_HEALTH;
 
   if ((ssd->sflgs & NVME_SFLGS_MASK_BIT) != NVME_SFLGS_MASK_BIT)
     return NVME_BAD_HEALTH;
@@ -317,10 +210,16 @@ read_nvme_reg(uint8_t slot_id, uint8_t dev_id, uint8_t addr, uint8_t offset,
     }
     ret = bic_op_read_e1s_reg(dev_id, addr, offset, rlen, rbuf, intf);
   } else {
+    if (type_1ou == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
+      ret = fby35_common_get_1ou_m2_prsnt(slot_id);
+      if (ret & (1 << (5 - dev_id))) {  // busnum to devnum: 5 - dev_id
+        return ERR_DEV_NOT_PRESENT;
+      }
+    }
     tbuf[0] = (dev_id << 1) + 1;
     tbuf[1] = addr;
-    tbuf[2] = rlen; //read back 8 bytes
-    tbuf[3] = offset; // offset 00
+    tbuf[2] = rlen;
+    tbuf[3] = offset;
     txlen = 4;
     ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, txlen, rbuf, &rxlen, intf);
   }
@@ -427,7 +326,7 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, sys_config_t* sy
     } else if (ret < 0) {
       printf("NA\n");
     } else {
-      printf("%s\n", (drive_health(&ssd, (sys_conf->nvme_ops == &gpv3_ops)) == 0)?"Normal":"Abnormal");
+      printf("%s\n", (drive_health(&ssd) == 0)?"Normal":"Abnormal");
     }
   } else {
     printf("Unknown command\n");
@@ -492,18 +391,6 @@ setup_sys_config(uint8_t slot_id, sys_config_t* sys_conf) {
     sys_conf->dev_start = DEV_ID0_1OU;
     sys_conf->dev_end = DEV_ID3_1OU;
     sys_conf->nvme_ops = &vf_1u_ops;
-  } else if (sys_conf->present == PRESENT_1OU) {
-    sys_conf->dev_start = DEV_ID0_1OU;
-    sys_conf->dev_end = DEV_ID3_1OU;
-    sys_conf->nvme_ops = &board_1u_2u_ops;
-  } else if (sys_conf->present == PRESENT_2OU) {
-    sys_conf->dev_start = DEV_ID0_2OU;
-    sys_conf->dev_end = DEV_ID5_2OU;
-    sys_conf->nvme_ops = &board_1u_2u_ops;
-  } else if (sys_conf->present == (PRESENT_1OU + PRESENT_2OU)) {
-    sys_conf->dev_start = DEV_ID0_1OU;
-    sys_conf->dev_end = DEV_ID5_2OU;
-    sys_conf->nvme_ops = &board_1u_2u_ops;
   } else if (sys_conf->type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
     sys_conf->dev_start = DEV_ID0_1OU;
     sys_conf->dev_end = DEV_ID4_4OU;
@@ -576,7 +463,7 @@ main(int argc, char **argv) {
           read_nvme_data(g_sys_conf.slot_id, op_dev_info[i].dev_id, CMD_DRIVE_STATUS, &g_sys_conf);
         }
       } else {
-        for (int i = g_sys_conf.dev_start; i <= g_sys_conf.dev_end; i++) {
+        for (i = g_sys_conf.dev_start; i <= g_sys_conf.dev_end; i++) {
           read_nvme_data(g_sys_conf.slot_id, i, CMD_DRIVE_STATUS, &g_sys_conf);
         }
       }
@@ -600,8 +487,8 @@ main(int argc, char **argv) {
         read_nvme_data(g_sys_conf.slot_id, op_dev_info[i].dev_id, CMD_DRIVE_HEALTH, &g_sys_conf);
       }
     } else {
-      for (int i = g_sys_conf.dev_start; i <= g_sys_conf.dev_end; i++) {
-        read_nvme_data(g_sys_conf.slot_id, i, CMD_DRIVE_STATUS, &g_sys_conf);
+      for (i = g_sys_conf.dev_start; i <= g_sys_conf.dev_end; i++) {
+        read_nvme_data(g_sys_conf.slot_id, i, CMD_DRIVE_HEALTH, &g_sys_conf);
       }
     }
   } else {

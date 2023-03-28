@@ -23,7 +23,7 @@ def cpu_package_power_limit(fru, argv):
                 else:
                     print("Power limit status: disable")
             except kv.KeyNotFoundFailure as e:
-                print("Power limit status: unknown")
+                print("Power limit status: uninitialized")
         elif option == "enable":
             result = kv.kv_set(
                     "fru" + str(fru) + "_power_limit_status", "0x81", kv.FPERSIST

@@ -85,7 +85,7 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
 
 #define KEY_POWER_LIMIT "fru%d_power_limit_status"
-#define DEFAULT_POWER_LIMIT 0x01 //power limit status Enable
+#define UNINITIAL_POWER_LIMIT 0x02
 
 #define SLOT1_POSTCODE_OFFSET 0x02
 #define SLOT2_POSTCODE_OFFSET 0x03
@@ -1070,7 +1070,7 @@ pal_get_power_limit(uint8_t slot_id, uint8_t *req_data, uint8_t *res_data, uint8
   snprintf(key, sizeof(key), KEY_POWER_LIMIT, slot_id);
   ret = kv_get(key, value, NULL, KV_FPERSIST);
   if (ret < 0) {
-    res_data[*res_len] = DEFAULT_POWER_LIMIT;
+    res_data[*res_len] = UNINITIAL_POWER_LIMIT;
     ret = CC_SUCCESS;
   } else {
     res_data[*res_len] = (int)strtol(value, NULL, 16);

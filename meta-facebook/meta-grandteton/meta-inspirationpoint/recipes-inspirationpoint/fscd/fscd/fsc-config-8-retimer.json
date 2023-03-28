@@ -1,5 +1,5 @@
 {
-    "version": "inspirationpint-v2",
+    "version": "inspirationpint-v5",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -48,8 +48,8 @@
         "negative_hysteresis": 2,
         "data": [
           [25, 25],
-          [30, 28],
-          [35, 30],
+          [30, 30],
+          [35, 35],
           [40, 40],
           [45, 90]
         ]
@@ -62,11 +62,10 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [45, 25],
-          [50, 30],
-          [60, 35],
-          [65, 40],
-          [70, 45]
+          [55, 25],
+          [65, 30],
+          [70, 35],
+          [74, 45]
         ]
       },
       "cpu_tray_cpu_pid": {
@@ -89,10 +88,10 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [56, 25],
-          [58, 30],
-          [65, 40],
-          [70, 45]
+          [55, 25],
+          [65, 35],
+          [70, 40],
+          [75, 45]
         ]
       },
       "cpu_tray_dimm_pid": {
@@ -197,14 +196,14 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 1,
+        "positive_hysteresis": 0,
         "negative_hysteresis": 1,
         "data": [
           [49, 25],
-          [63, 44],
-          [67, 50],
-          [72, 60],
-          [76, 70],
+          [63, 48],
+          [68, 50],
+          [71, 55],
+          [76, 58],
           [82, 90]
         ]
       },
@@ -213,9 +212,9 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 1,
+        "positive_hysteresis": 0,
         "negative_hysteresis": 2,
-        "setpoint": 78,
+        "setpoint": 79,
         "kp": -3.5,
         "ki": -0.035,
         "kd": 0
@@ -229,11 +228,9 @@
         "negative_hysteresis": 1,
         "data": [
           [80, 25],
-          [82, 35],
-          [84, 45],
-          [86, 55],
-          [88, 60],
-          [90, 65],
+          [86, 30],
+          [92, 40],
+          [95, 50],
           [107, 90]
         ]
       },
@@ -254,14 +251,14 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 1,
+        "positive_hysteresis": 0,
         "negative_hysteresis": 1,
         "data": [
           [62, 25],
-          [63, 43],
-          [78, 49],
-          [82, 59],
-          [86, 69],
+          [69, 43],
+          [78, 47],
+          [82, 50],
+          [85, 55],
           [92, 90]
         ]
       },
@@ -270,10 +267,10 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 1,
+        "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "setpoint": 88,
-        "kp": -3.5,
+        "kp": -3,
         "ki": -0.035,
         "kd": 0
       },
@@ -297,10 +294,9 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [60, 25],
-          [65, 30],
-          [70, 40],
-          [80, 55]
+          [70, 25],
+          [80, 30],
+          [95, 90]
         ]
       },
       "retimer_temp_pid": {
@@ -310,7 +306,7 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
-        "setpoint": 96,
+        "setpoint": 90,
         "kp": -3,
         "ki": -0.0035,
         "kd": 0

@@ -1,17 +1,34 @@
-From 4bb62eb0d26422da48679883d4d6654c4e8ea85b Mon Sep 17 00:00:00 2001
-From: Sittisak Sinprem <ssinprem@celestca.com>
-Date: Thu, 9 Feb 2023 11:33:36 +0700
+From cae698c3e638628fcd1690caaa1e82a5e70a1131 Mon Sep 17 00:00:00 2001
+From: Sittisak Sinprem <ssinprem@celestica.com>
+Date: Mon, 27 Mar 2023 16:43:29 +0700
 Subject: [PATCH] aspeed add montblanc bmc reference from fuji
 
+- I2C list follow I2C Tree v1.6 20230320
+- fru eeprom data use FB FRU format version 4
+
+Signed-off-by: Sittisak Sinprem <ssinprem@celestica.com>
 ---
- hw/arm/aspeed.c | 56 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 56 insertions(+)
+ hw/arm/aspeed.c        | 68 ++++++++++++++++++++++++++++++++++++++++++
+ hw/arm/aspeed_eeprom.c | 45 ++++++++++++++++++++++++++++
+ hw/arm/aspeed_eeprom.h | 17 +++++++++++
+ hw/arm/meson.build     |  1 +
+ 4 files changed, 131 insertions(+)
+ create mode 100644 hw/arm/aspeed_eeprom.c
+ create mode 100644 hw/arm/aspeed_eeprom.h
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 146b698a26..3403285c02 100644
+index 146b698a26..26fb258ef3 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -172,6 +172,10 @@ struct AspeedMachineState {
+@@ -14,6 +14,7 @@
+ #include "hw/arm/boot.h"
+ #include "hw/arm/aspeed.h"
+ #include "hw/arm/aspeed_soc.h"
++#include "hw/arm/aspeed_eeprom.h"
+ #include "hw/i2c/i2c_mux_pca954x.h"
+ #include "hw/i2c/smbus_eeprom.h"
+ #include "hw/misc/pca9552.h"
+@@ -172,6 +173,10 @@ struct AspeedMachineState {
  #define FUJI_BMC_HW_STRAP1    0x00000000
  #define FUJI_BMC_HW_STRAP2    0x00000000
  
@@ -22,7 +39,7 @@ index 146b698a26..3403285c02 100644
  /* Bletchley hardware value */
  /* TODO: Leave same as EVB for now. */
  #define BLETCHLEY_BMC_HW_STRAP1 AST2600_EVB_HW_STRAP1
-@@ -907,6 +911,28 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -907,6 +912,39 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
      }
  }
  
@@ -35,23 +52,34 @@ index 146b698a26..3403285c02 100644
 +        i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
 +    }
 +
-+    // Ref from Minipack3_I2C_Tree_V0.6
-+    aspeed_eeprom_init(i2c[3], 0x56, 64 * KiB / 8); // SCM EEPROM#2
-+    aspeed_eeprom_init(i2c[8], 0x53, 64 * KiB / 8); // FCB_B EEPROM
++    /* Ref from Minipack3_I2C_Tree_V1.6 20230320 */
++    at24c_eeprom_init(i2c[3], 0x56, montblanc_scm_fruid, 8192, true);
++    at24c_eeprom_init(i2c[6], 0x53, montblanc_fcm_fruid, 8192, true);
 +
-+    // TODO: need to validate address
-+    aspeed_eeprom_init(i2c[1], 0x35, 2 * KiB / 8);  // SCM CPLD
-+    aspeed_eeprom_init(i2c[5], 0x35, 2 * KiB / 8);  // COMe CPLD
-+    aspeed_eeprom_init(i2c[10], 0x35, 2 * KiB / 8); // RunBMC FPGA
-+    aspeed_eeprom_init(i2c[12], 0x35, 2 * KiB / 8); // MCB CPLD
-+    aspeed_eeprom_init(i2c[13], 0x35, 2 * KiB / 8); // IOB FPGA
++    /* CPLD and FPGA */
++    aspeed_eeprom_init(i2c[1], 0x35, 256);  /* SCM CPLD */
++    aspeed_eeprom_init(i2c[5], 0x35, 256);  /* COMe CPLD TODO: need to update */
++    aspeed_eeprom_init(i2c[12], 0x60, 256); /* MCB PWR CPLD */
++    aspeed_eeprom_init(i2c[13], 0x35, 256); /* IOB FPGA */
++
++    /* on BMC board */
++    aspeed_eeprom_init(i2c[8], 0x51, 8192);          /* BMC EEPROM */
++    i2c_slave_create_simple(i2c[8], TYPE_LM75, 0x48); /* Thermal Sensor */
++
++    /* COMe Sensor/EEPROM */
++    aspeed_eeprom_init(i2c[0], 0x56, 16384);          /* FRU EEPROM */
++    i2c_slave_create_simple(i2c[0], TYPE_LM75, 0x48); /* INLET Sensor */
++    i2c_slave_create_simple(i2c[0], TYPE_LM75, 0x4A); /* OUTLET Sensor */
++
++    /* It expects a pca9555 but a pca9552 is compatible */
++    create_pca9552(soc, 4, 0x27);
 +}
 +
 +
  static void wedge100_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = &bmc->soc;
-@@ -1389,6 +1415,32 @@ static void aspeed_machine_fuji_class_init(ObjectClass *oc, void *data)
+@@ -1389,6 +1427,32 @@ static void aspeed_machine_fuji_class_init(ObjectClass *oc, void *data)
          aspeed_soc_num_cpus(amc->soc_name);
  };
  
@@ -84,7 +112,7 @@ index 146b698a26..3403285c02 100644
  /* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
  #if HOST_LONG_BITS == 32
  #define BLETCHLEY_BMC_RAM_SIZE (1 * GiB)
-@@ -1606,6 +1658,10 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -1606,6 +1670,10 @@ static const TypeInfo aspeed_machine_types[] = {
          .name          = MACHINE_TYPE_NAME("fuji-bmc"),
          .parent        = TYPE_ASPEED_MACHINE,
          .class_init    = aspeed_machine_fuji_class_init,
@@ -95,6 +123,92 @@ index 146b698a26..3403285c02 100644
      }, {
          .name          = MACHINE_TYPE_NAME("bletchley-bmc"),
          .parent        = TYPE_ASPEED_MACHINE,
+diff --git a/hw/arm/aspeed_eeprom.c b/hw/arm/aspeed_eeprom.c
+new file mode 100644
+index 0000000000..b2f88103b7
+--- /dev/null
++++ b/hw/arm/aspeed_eeprom.c
+@@ -0,0 +1,45 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * SPDX-License-Identifier: GPL-2.0-only
++ */
++
++#include "aspeed_eeprom.h"
++
++const uint8_t montblanc_scm_fruid[8192] = {
++    0xfb, 0xfb, 0x04, 0xff, 0x01, 0x0d, 0x4d, 0x49, 0x4e, 0x49, 0x50, 0x41,
++    0x43, 0x4b, 0x33, 0x5f, 0x53, 0x43, 0x4d, 0x02, 0x08, 0x30, 0x30, 0x30,
++    0x30, 0x30, 0x30, 0x30, 0x30, 0x03, 0x08, 0x30, 0x30, 0x30, 0x30, 0x30,
++    0x30, 0x30, 0x30, 0x04, 0x0c, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
++    0x30, 0x30, 0x30, 0x05, 0x0c, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
++    0x30, 0x30, 0x30, 0x06, 0x0c, 0x52, 0x33, 0x32, 0x31, 0x34, 0x47, 0x58,
++    0x58, 0x58, 0x58, 0x58, 0x58, 0x07, 0x0d, 0x47, 0x58, 0x58, 0x58, 0x58,
++    0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x08, 0x01, 0x04, 0x09,
++    0x01, 0x05, 0x0a, 0x01, 0x00, 0x0b, 0x0d, 0x53, 0x58, 0x58, 0x58, 0x58,
++    0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x0c, 0x03, 0x43, 0x4c,
++    0x53, 0x0d, 0x08, 0x32, 0x30, 0x32, 0x33, 0x30, 0x31, 0x30, 0x31, 0x0e,
++    0x04, 0x41, 0x50, 0x43, 0x42, 0x0f, 0x03, 0x43, 0x54, 0x48, 0x10, 0x06,
++    0x12, 0x34, 0xab, 0xcd, 0xef, 0x21, 0x11, 0x06, 0x12, 0x34, 0xab, 0xcd,
++    0xef, 0x22, 0x12, 0x02, 0x00, 0x01, 0x13, 0x03, 0x53, 0x43, 0x4d, 0xfa,
++    0x02, 0x53, 0x48,
++};
++
++const uint8_t montblanc_fcm_fruid[8192] = {
++    0xfb, 0xfb, 0x04, 0xff, 0x01, 0x09, 0x4d, 0x49, 0x4e, 0x49, 0x50, 0x41,
++    0x43, 0x4b, 0x33, 0x02, 0x08, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
++    0x30, 0x03, 0x08, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x04,
++    0x0c, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x05,
++    0x0c, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x06,
++    0x0c, 0x52, 0x33, 0x32, 0x31, 0x34, 0x47, 0x58, 0x58, 0x58, 0x58, 0x58,
++    0x58, 0x07, 0x0d, 0x47, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58,
++    0x58, 0x58, 0x58, 0x58, 0x08, 0x01, 0x04, 0x09, 0x01, 0x05, 0x0a, 0x01,
++    0x00, 0x0b, 0x0d, 0x53, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58, 0x58,
++    0x58, 0x58, 0x58, 0x58, 0x0c, 0x03, 0x43, 0x4c, 0x53, 0x0d, 0x08, 0x32,
++    0x30, 0x32, 0x33, 0x30, 0x31, 0x30, 0x31, 0x0e, 0x04, 0x41, 0x50, 0x43,
++    0x42, 0x0f, 0x03, 0x43, 0x54, 0x48, 0x10, 0x06, 0x12, 0x34, 0xab, 0xcd,
++    0xef, 0x10, 0x11, 0x06, 0x12, 0x34, 0xab, 0xcd, 0xef, 0x11, 0x12, 0x02,
++    0x00, 0x01, 0x13, 0x03, 0x46, 0x43, 0x4d, 0xfa, 0x02, 0xa5, 0x09,
++};
++
++const size_t montblanc_scm_fruid_len = sizeof(montblanc_scm_fruid);
++const size_t montblanc_fcm_fruid_len = sizeof(montblanc_fcm_fruid);
+diff --git a/hw/arm/aspeed_eeprom.h b/hw/arm/aspeed_eeprom.h
+new file mode 100644
+index 0000000000..66b358dcb5
+--- /dev/null
++++ b/hw/arm/aspeed_eeprom.h
+@@ -0,0 +1,17 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * SPDX-License-Identifier: GPL-2.0-only
++ */
++
++#ifndef ASPEED_EEPROM_H
++#define ASPEED_EEPROM_H
++
++#include "qemu/osdep.h"
++
++extern const uint8_t montblanc_scm_fruid[];
++extern const uint8_t montblanc_fcm_fruid[];
++extern const size_t montblanc_scm_fruid_len;
++extern const size_t montblanc_fcm_fruid_len;
++
++#endif
+diff --git a/hw/arm/meson.build b/hw/arm/meson.build
+index 4339bd9f51..37dc51804f 100644
+--- a/hw/arm/meson.build
++++ b/hw/arm/meson.build
+@@ -53,6 +53,7 @@ arm_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+   'aspeed.c',
+   'aspeed_ast2600.c',
+   'aspeed_ast10x0.c',
++  'aspeed_eeprom.c',
+   'fby35.c'))
+ arm_ss.add(when: 'CONFIG_MPS2', if_true: files('mps2.c'))
+ arm_ss.add(when: 'CONFIG_MPS2', if_true: files('mps2-tz.c'))
 -- 
 2.25.1
 

@@ -17,7 +17,7 @@ LOCAL_URI = " \
     "
 
 DEPENDS = " libfby35-common libbic libpal update-rc.d-native"
-RDEPENDS:${PN} = " libfby35-common libbic bash"
+RDEPENDS:${PN} = " bash"
 
 pkgdir = "bic-cached"
 

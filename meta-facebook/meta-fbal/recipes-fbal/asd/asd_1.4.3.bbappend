@@ -6,9 +6,4 @@ DEPENDS += "libkv \
             libgpio-ctrl \
            "
 
-RDEPENDS:${PN} += "libkv  \
-                   libipmi \
-                   libgpio-ctrl \
-                  "
-
 LDFLAGS =+ " -lkv -lipmi -lgpio-ctrl "

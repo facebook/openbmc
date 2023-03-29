@@ -15,5 +15,5 @@ LOCAL_URI = " \
 
 LDFLAGS += " -lpal "
 DEPENDS += " libobmc-i2c libusb1 libftdi libmpsse libpal "
-RDEPENDS:${PN} += " libobmc-i2c libftdi libmpsse libpal "
+RDEPENDS:${PN} += " libftdi "
 

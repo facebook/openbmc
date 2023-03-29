@@ -17,7 +17,6 @@ LOCAL_URI = " \
     "
 
 DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfbgc-common libfbgc-gpio "
-RDEPENDS:${PN} += " libpal libgpio-ctrl libfbgc-common libfbgc-gpio "
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d

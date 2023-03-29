@@ -23,10 +23,4 @@ DEPENDS += " \
     libmisc-utils \
     "
 
-# These shouldn't be needed but are because we aren't properly versioning the
-# shared libraries contained in these recipes.
-RDEPENDS:${PN} += " \
-    libfby35-common \
-    "
-
 CFLAGS += " -Wall -Werror "

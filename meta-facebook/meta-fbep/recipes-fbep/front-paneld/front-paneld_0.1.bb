@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a
 
 LDFLAGS += "-lpal -lgpio-ctrl -lasic"
 DEPENDS:append = "libpal libgpio-ctrl libasic update-rc.d-native"
-RDEPENDS:${PN} += "libpal libgpio-ctrl libasic "
+RDEPENDS:${PN} += "libasic "
 
 LOCAL_URI = " \
     file://Makefile \

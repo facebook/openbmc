@@ -16,7 +16,6 @@ LOCAL_URI = " \
 
 LDFLAGS += "-pthread -lpal -lkv -lgpio-ctrl"
 DEPENDS:append = "update-rc.d-native libpal libkv libgpio-ctrl "
-RDEPENDS:${PN} += "libpal libkv libgpio-ctrl "
 
 binfiles = "front-paneld"
 

@@ -16,4 +16,3 @@ LOCAL_URI = " \
     "
 
 DEPENDS = "libbic libpal libipmi libipmb libfbgc-common"
-RDEPENDS:${PN} += "libbic libpal libipmi libipmb libfbgc-common"

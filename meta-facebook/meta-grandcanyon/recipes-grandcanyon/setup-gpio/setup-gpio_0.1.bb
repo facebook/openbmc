@@ -17,7 +17,6 @@ binfiles = "setup-gpio \
            "
 DEPENDS += " libpal libgpio-ctrl libfbgc-gpio libphymem "
 DEPENDS += " update-rc.d-native "
-RDEPENDS:${PN} += " libpal libgpio-ctrl libfbgc-gpio libphymem "
 
 pkgdir = "setup-gpio"
 

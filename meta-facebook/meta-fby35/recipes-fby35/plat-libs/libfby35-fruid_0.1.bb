@@ -28,4 +28,3 @@ S = "${WORKDIR}/fby35_fruid"
 inherit meson pkgconfig
 
 DEPENDS += "libfby35-common"
-RDEPENDS:${PN} += "libfby35-common"

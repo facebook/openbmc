@@ -34,7 +34,7 @@ binfiles = "gpiod \
 
 LDFLAGS += "-lpal -lgpio-ctrl -lasic -lobmc-i2c "
 DEPENDS += " libpal libgpio-ctrl libasic libobmc-i2c update-rc.d-native "
-RDEPENDS:${PN} = "libpal libgpio-ctrl libasic libobmc-i2c"
+RDEPENDS:${PN} = "libasic"
 
 pkgdir = "gpiod"
 

@@ -9,7 +9,6 @@ LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a
 
 
 DEPENDS:append = "libpal update-rc.d-native"
-RDEPENDS:${PN} += "libpal"
 
 inherit meson pkgconfig
 

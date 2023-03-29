@@ -22,4 +22,3 @@ LOCAL_URI += " \
     "
 
 DEPENDS += "libbic"
-RDEPENDS:${PN} += "libbic"

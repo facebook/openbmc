@@ -12,7 +12,6 @@ SRC_URI = "file://fbwc_fruid \
           "
 
 DEPENDS += "libfbwc-common libfruid libbic libexp"
-RDEPENDS:${PN} += "libfbwc-common libfruid libbic libexp"
 
 S = "${WORKDIR}/fbwc_fruid"
 

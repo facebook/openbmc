@@ -41,6 +41,6 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES:${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
-RDEPENDS:${PN} += " libfby3-common libpal libbic libkv libobmc-i2c "
+RDEPENDS:${PN} += " libfby3-common libbic "
 
 LDFLAGS = " -lobmc-i2c "

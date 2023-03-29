@@ -28,6 +28,3 @@ LOCAL_URI += " \
 DEPENDS += " \
     libretimer \
     "
-
-RDEPENDS:${PN} += "libretimer"
-

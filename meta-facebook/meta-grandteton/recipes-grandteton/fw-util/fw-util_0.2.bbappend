@@ -66,5 +66,3 @@ DEPENDS += " \
     libpldm \
     fmt \
     "
-
-RDEPENDS:${PN} += "libmcu libpal libfpga libvr libncsi libnl-wrapper libkv libobmc-i2c libnm libbic libpldm-oem libobmc-mctp libipmi libpldm-oem libgpio-ctrl libhgx fmt"

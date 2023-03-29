@@ -13,6 +13,5 @@ inherit meson pkgconfig
 S = "${WORKDIR}/bic-util"
 
 DEPENDS += "libbic libpal libfbgc-common libfbgc-gpio"
-RDEPENDS:${PN} += "libbic libpal libfbgc-common libfbgc-gpio"
 
 FILES:${PN} = "${bindir}"

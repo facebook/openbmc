@@ -14,6 +14,5 @@ SRC_URI = "file://enclosure-util \
 S = "${WORKDIR}/enclosure-util"
 
 DEPENDS += " libfbgc-common libipmb libexp libpal "
-RDEPENDS:${PN} += " libfbgc-common libipmb libexp libpal "
 
 FILES:${PN} = "${bindir}"

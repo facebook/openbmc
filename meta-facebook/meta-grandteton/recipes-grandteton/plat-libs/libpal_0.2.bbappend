@@ -51,20 +51,7 @@ DEPENDS += " \
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
 RDEPENDS:${PN} += " \
-    libhgx \
-    libhal \
-    libgpio-ctrl \
-    libncsi \
-    libnl-wrapper \
-    libnm \
-    libobmc-i2c \
-    libobmc-pmbus \
-    libobmc-sensors \
     libpeci \
-    libpeci-sensors \
-    libpldm-oem \
     libsensor-correction \
-    libdimm \
-    libretimer \
     apml \
     "

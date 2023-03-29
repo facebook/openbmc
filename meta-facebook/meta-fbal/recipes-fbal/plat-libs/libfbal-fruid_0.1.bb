@@ -10,7 +10,6 @@ SRC_URI = "file://fbal_fruid \
           "
 
 DEPENDS += "libipmi libipmb"
-RDEPENDS:${PN} += "libipmb"
 LDFLAGS += "-lipmb"
 
 S = "${WORKDIR}/fbal_fruid"

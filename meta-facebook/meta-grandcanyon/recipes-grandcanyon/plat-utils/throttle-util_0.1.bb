@@ -13,6 +13,5 @@ SRC_URI = "file://throttle-util \
 S = "${WORKDIR}/throttle-util"
 
 DEPENDS += " libbic libpal libfbgc-common libobmc-i2c "
-RDEPENDS:${PN} += " libbic libpal libfbgc-common libobmc-i2c "
 
 FILES:${PN} = "${bindir}"

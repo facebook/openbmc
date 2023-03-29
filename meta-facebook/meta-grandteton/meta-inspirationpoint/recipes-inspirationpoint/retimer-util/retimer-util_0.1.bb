@@ -15,6 +15,5 @@ LOCAL_URI = " \
     "
 
 DEPENDS += "libretimer libpal cli11"
-RDEPENDS:${PN} += "libretimer libpal"
 
 FILES:${PN} = "${prefix}/local/bin"

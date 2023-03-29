@@ -13,7 +13,6 @@ LOCAL_URI = " \
     "
 
 DEPENDS += "libipmi libpldm-oem"
-RDEPENDS:${PN} += "libpldm-oem"
 LDFLAGS += "-lpldm_oem"
 
 

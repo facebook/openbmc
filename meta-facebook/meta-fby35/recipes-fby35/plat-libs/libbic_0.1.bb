@@ -23,5 +23,3 @@ DEPENDS += " \
     libpldm-oem \
     openssl \
 "
-RDEPENDS:${PN} += "libfby35-common"
-

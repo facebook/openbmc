@@ -14,7 +14,6 @@ SRC_URI = "file://bic \
 LDFLAGS = "-lusb-1.0"
 
 DEPENDS += " python3-setuptools libobmc-i2c libgpio-ctrl libkv libipmb libfbwc-common libusb1 openssl"
-RDEPENDS:${PN} += "libobmc-i2c libgpio-ctrl libkv libipmb libfbwc-common libusb1"
 
 S = "${WORKDIR}/bic"
 

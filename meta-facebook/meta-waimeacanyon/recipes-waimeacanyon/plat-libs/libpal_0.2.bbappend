@@ -15,14 +15,3 @@ DEPENDS += " \
     libncsi \
     libexp \
     "
-
-# These shouldn't be needed but are because we aren't properly versioning the
-# shared libraries contained in these recipes.
-RDEPENDS:${PN} += " \
-    libfbwc-fruid \
-    libgpio-ctrl \
-    libbic \
-    libobmc-sensors \
-    libncsi \
-    libexp \
-    "

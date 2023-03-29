@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS += "libipmi libipmb libfruid libasic update-rc.d-native"
-RDEPENDS:${PN} += "libipmi libfruid libipmb libasic "
+RDEPENDS:${PN} += "libasic "
 LDFLAGS += "-lfruid -lipmb -lasic "
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"

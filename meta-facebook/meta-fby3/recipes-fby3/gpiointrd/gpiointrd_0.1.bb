@@ -31,7 +31,7 @@ LOCAL_URI = " \
     "
 
 DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfby3-common libipmi libfby3-gpio libobmc-i2c libkv libbic libpal libras"
-RDEPENDS:${PN} += " libpal libgpio-ctrl libfby3-common libipmi libfby3-gpio libobmc-i2c libkv libbic libpal libras"
+RDEPENDS:${PN} += " libfby3-common libfby3-gpio libbic"
 CFLAGS += " -DCONFIG_FBY3 "
 LDFLAGS += " -lpal -lgpio-ctrl -lfby3_common -lipmi -lbic -lfby3_gpio -lobmc-i2c -lkv -lpal -lras"
 

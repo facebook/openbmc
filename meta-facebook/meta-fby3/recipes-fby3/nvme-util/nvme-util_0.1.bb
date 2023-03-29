@@ -14,7 +14,7 @@ LOCAL_URI = " \
 CFLAGS += " -Wall -Werror -lbic -D_XOPEN_SOURCE "
 LDFLAGS += " -lbic -lpal -lfby3_common"
 DEPENDS += " libbic libpal libfby3-common "
-RDEPENDS:${PN} += " libbic libpal libfby3-common "
+RDEPENDS:${PN} += " libbic libfby3-common "
 
 do_install() {
   install -d ${D}${bindir}

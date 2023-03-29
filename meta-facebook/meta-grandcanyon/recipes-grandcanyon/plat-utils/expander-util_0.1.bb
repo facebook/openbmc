@@ -20,6 +20,5 @@ do_install() {
 }
 
 DEPENDS += " libipmb libfbgc-common "
-RDEPENDS:${PN} += " libipmb libfbgc-common "
 
 FILES:${PN} = "${bindir}"

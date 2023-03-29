@@ -15,6 +15,5 @@ LOCAL_URI = " \
     "
 
 DEPENDS += "libhgx cli11"
-RDEPENDS:${PN} += "libhgx"
 
 FILES:${PN} = "${prefix}/local/bin"

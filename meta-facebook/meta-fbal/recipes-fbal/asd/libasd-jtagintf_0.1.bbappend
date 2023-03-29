@@ -6,5 +6,3 @@ SRC_URI += "file://interface/SoftwareJTAGHandler.c \
            "
 LDFLAGS += "-lgpio-ctrl -lpal"
 DEPENDS += "libpal libgpio-ctrl"
-RDEPENDS:${PN} += "libpal libgpio-ctrl"
-

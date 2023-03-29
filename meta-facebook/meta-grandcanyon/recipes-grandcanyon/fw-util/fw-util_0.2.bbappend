@@ -55,4 +55,3 @@ DEPENDS += " \
     libncsi \
     libnl-wrapper \
     "
-RDEPENDS:${PN} += "libbic libfbgc-common libexp"

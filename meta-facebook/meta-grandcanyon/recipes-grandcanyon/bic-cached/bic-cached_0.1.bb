@@ -10,7 +10,6 @@ LIC_FILES_CHKSUM = "file://bic-cached.c;beginline=5;endline=17;md5=da35978751a9d
 inherit meson pkgconfig
 
 DEPENDS:append = " libbic libpal update-rc.d-native "
-RDEPENDS:${PN} += " libbic libpal "
 
 LOCAL_URI = " \
     file://meson.build \

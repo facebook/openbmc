@@ -28,11 +28,6 @@ RDEPENDS:${PN} += " \
     libbic \
     libfby3-common \
     libfby3-fruid \
-    libgpio-ctrl \
-    libncsi \
-    libnl-wrapper \
-    libobmc-i2c \
-    libobmc-sensors \
     libsensor-correction \
     "
 

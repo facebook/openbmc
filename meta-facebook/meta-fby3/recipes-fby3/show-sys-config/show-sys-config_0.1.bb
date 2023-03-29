@@ -19,7 +19,7 @@ pkgdir = "show_sys_config"
 CFLAGS += " -Wall -Werror "
 LDFLAGS = "-lipmi -lipmb -lbic -lpal -lfby3_common -ljansson"
 DEPENDS = "libbic libpal libipmi libipmb libfby3-common jansson"
-RDEPENDS:${PN} += "libbic libpal libipmi libipmb libfby3-common jansson"
+RDEPENDS:${PN} += "libbic libfby3-common jansson"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

@@ -20,7 +20,6 @@ LOCAL_URI = " \
 
 LDFLAGS += "-lpal -lobmc-i2c -lkv"
 DEPENDS += " libpal update-rc.d-native libfbgc-common libobmc-i2c libipc libkv "
-RDEPENDS:${PN} += " libpal libfbgc-common libobmc-i2c libipc libkv "
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d

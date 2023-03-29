@@ -17,5 +17,5 @@ do_install() {
 }
 
 DEPENDS += " libbic libnvme-mi libpal libfby3-common"
-RDEPENDS:${PN} += " libbic libnvme-mi libpal libfby3-common"
+RDEPENDS:${PN} += " libbic libfby3-common"
 FILES:${PN} = "${bindir}"

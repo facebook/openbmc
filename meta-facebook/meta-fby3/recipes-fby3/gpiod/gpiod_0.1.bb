@@ -36,7 +36,7 @@ CFLAGS += " -lbic -lfby3_gpio -lpal -lobmc-i2c -lfby3_common -lkv -lfruid"
 
 DEPENDS += " libbic libfby3-gpio libpal libobmc-i2c libfby3-common libkv libfruid"
 DEPENDS += "update-rc.d-native"
-RDEPENDS:${PN} += " libbic libfby3-gpio libpal libobmc-i2c libfby3-common libkv libfruid"
+RDEPENDS:${PN} += " libbic libfby3-gpio libfby3-common"
 
 pkgdir = "gpiod"
 

@@ -14,7 +14,7 @@ S = "${WORKDIR}/bic-util"
 CFLAGS += "-Wall -Werror -lbic -D_XOPEN_SOURCE"
 LDFLAGS = "-lbic -lpal -lfby3_common -lfby3_gpio -lusb-1.0"
 DEPENDS += "libbic libpal libfby3-common libfby3-gpio"
-RDEPENDS:${PN} += "libbic libpal libfby3-common libfby3-gpio"
+RDEPENDS:${PN} += "libbic libfby3-common libfby3-gpio"
 
 do_install() {
   install -d ${D}${bindir}

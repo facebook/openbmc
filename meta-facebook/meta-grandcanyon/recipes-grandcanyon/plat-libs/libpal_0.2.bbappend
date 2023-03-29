@@ -20,19 +20,3 @@ DEPENDS += " \
     libphymem \
     libnvme-mi \
     "
-# These shouldn't be needed but are because we aren't properly versioning the
-# shared libraries contained in these recipes.
-RDEPENDS:${PN} += " \
-    libfbgc-common \
-    libfbgc-fruid \
-    libobmc-sensors \
-    libobmc-i2c \
-    libgpio-ctrl \
-    libfbgc-gpio \
-    libexp \
-    libbic \
-    libncsi \
-    libnl-wrapper \
-    libphymem \
-    libnvme-mi \
-    "

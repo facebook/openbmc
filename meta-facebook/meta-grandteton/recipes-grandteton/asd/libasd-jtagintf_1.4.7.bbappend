@@ -2,6 +2,5 @@
 FILESEXTRAPATHS:append := "${THISDIR}/files:"
 
 DEPENDS += "libpal"
-RDEPENDS:${PN} += "libpal"
 
 LDFLAGS =+ "-lgpio-ctrl -lpal"

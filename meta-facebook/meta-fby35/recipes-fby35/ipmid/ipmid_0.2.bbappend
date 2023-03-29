@@ -16,7 +16,6 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS += " libipmi libfruid update-rc.d-native libsdr libfby35-fruid libncsi libfby35-common"
-RDEPENDS:${PN} += "libipmi libfruid libsdr libfby35-fruid libbic libncsi libfby35-common"
 
 CFLAGS += "-DCONFIG_FBY35"
 LDFLAGS += " -lipmb -lbic -lncsi -lfby35_fruid -lfby35_common"

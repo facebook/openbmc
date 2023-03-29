@@ -20,10 +20,6 @@ DEPENDS += " \
     libpex \
     "
 RDEPENDS:${PN} += " \
-    libgpio-ctrl \
-    libobmc-i2c \
-    libobmc-sensors \
     libasic \
     switchtec-user \
-    libpex \
     "

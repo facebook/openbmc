@@ -16,7 +16,6 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS += "libipmi libipmb libfruid update-rc.d-native libhal"
-RDEPENDS:${PN} += "libipmi libipmb libfruid libhal"
 LDFLAGS += "-lipmb -lfruid -lhal_fruid"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"

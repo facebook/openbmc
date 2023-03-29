@@ -14,6 +14,5 @@ S = "${WORKDIR}/expander-util"
 inherit meson pkgconfig
 
 DEPENDS += "libexp libpal"
-RDEPENDS:${PN} += "libexp libpal"
 
 FILES:${PN} = "${bindir}"

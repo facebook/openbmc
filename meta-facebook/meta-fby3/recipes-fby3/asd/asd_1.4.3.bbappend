@@ -8,9 +8,7 @@ DEPENDS += "libbic \
            "
 
 RDEPENDS:${PN} += "libbic \
-                   libkv  \
                    libfby3-common \
-                   libipmi \
                   "
 
 LDFLAGS =+ " -lkv -lfby3_common -lbic -lipmi "

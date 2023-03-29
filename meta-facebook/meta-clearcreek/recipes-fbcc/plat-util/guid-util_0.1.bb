@@ -17,6 +17,5 @@ do_install() {
 }
 
 DEPENDS += " libpal "
-RDEPENDS:${PN} += "libpal"
 
 FILES:${PN} = "${bindir}"

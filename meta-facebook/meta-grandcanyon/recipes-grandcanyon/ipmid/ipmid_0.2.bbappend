@@ -16,7 +16,6 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS += " libipmi libfruid libfbgc-common libpal libbic "
-RDEPENDS:${PN} += "libipmi libfruid libfbgc-common libpal libbic "
 
 LDFLAGS += " -lipmb -lfbgc_common -lpal -lbic"
 

@@ -21,5 +21,4 @@ LOCAL_URI += " \
     "
 
 DEPENDS += "libpldm-oem"
-RDEPENDS:${PN} += "libpldm-oem"
 LDFLAGS += "-lpldm -lpldm_oem"

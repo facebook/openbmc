@@ -33,12 +33,5 @@ DEPENDS += " \
 # shared libraries contained in these recipes.
 RDEPENDS:${PN} += " \
     libfbal-fruid \
-    libgpio-ctrl \
-    libncsi \
-    libnl-wrapper \
-    libnm \
-    libobmc-i2c \
-    libobmc-pmbus \
-    libobmc-sensors \
     libpeci \
     "

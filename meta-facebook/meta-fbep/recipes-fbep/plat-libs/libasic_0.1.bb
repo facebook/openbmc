@@ -11,7 +11,6 @@ SRC_URI = "file://asic \
           "
 LDFLAGS += "-lobmc-i2c -lgpio-ctrl "
 DEPENDS += "libobmc-i2c libgpio-ctrl "
-RDEPENDS:${PN} += "libobmc-i2c "
 
 S = "${WORKDIR}/asic"
 

@@ -28,7 +28,6 @@ SRC_URI = "file://fbgc_gpio \
           "
 
 DEPENDS += " libgpio-ctrl "
-RDEPENDS:${PN} += " libgpio-ctrl "
 
 S = "${WORKDIR}/fbgc_gpio"
 

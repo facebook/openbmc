@@ -7,10 +7,4 @@ DEPENDS += "libbic \
             libipmi \
            "
 
-RDEPENDS:${PN} += "libbic \
-                   libkv  \
-                   libfbgc-common \
-                   libipmi \
-                  "
-
 LDFLAGS =+ " -lkv -lfbgc_common -lbic -lipmi "

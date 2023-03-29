@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -26,7 +26,7 @@ PV = "0.1"
 
 LOCAL_URI = " \
     file://Makefile \
-    file://pwrcpld.c \
+    file://mcbcpld.c \
     file://COPYING \
     "
 

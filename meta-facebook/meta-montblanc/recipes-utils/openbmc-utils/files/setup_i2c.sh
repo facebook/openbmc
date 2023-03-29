@@ -23,3 +23,8 @@
 # FRU EEPROM
 i2c_device_add 3 0x56 24c64    # SCM FRU EEPROM#2
 i2c_device_add 8 0x53 24c64    # FCB_B EEPROM
+
+# FPGA / CPLD
+i2c_device_add 1 0x35 scmcpld
+i2c_device_add 12 0x60 mcbcpld
+

@@ -37,6 +37,7 @@ struct PexImage {
 
 // Artemis CXL FW PAYLOAD
 #define MAX_CXL_PLDM_IPMI_PAYLOAD (128)
+#define MAX_CXL_FW_UPDATE_RETRY   (5)
 
 enum {
   SWB_FW_UPDATE_SUCCESS                =  0,
@@ -150,6 +151,12 @@ int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint
   // Write chunks of binary data in a loop
   uint32_t dsize = file_size/10;
   uint32_t last_offset = 0;
+  int retry = MAX_CXL_FW_UPDATE_RETRY;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t txlen = 0;
+  size_t rxlen = 0;
+
 
   gettimeofday(&start, NULL);
 
@@ -157,10 +164,8 @@ int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint
   {
     // CXL send packets in blocks of 180 bytes
     if (comp.compare(0, 3, "cxl") == 0) {
-      cout << "CXL fw udpate comp: " <<  comp << endl;
       read_count = ((offset + MAX_CXL_PLDM_IPMI_PAYLOAD) < boundary) ?
                     MAX_CXL_PLDM_IPMI_PAYLOAD : boundary - offset;
-      cout << "CXL fw udpate readcount: " <<  read_count << endl;
     } else {
     // send packets in blocks of 64K
       read_count = ((offset + MAX_PLDM_IPMI_PAYLOAD) < boundary) ?
@@ -182,9 +187,22 @@ int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint
 
     memcpy(buf, file_data+offset, count);
     // Send data to Bridge-IC
-    if (send_update_packet(bus, eid, buf, count, target, offset))
-       goto exit;
 
+    if (send_update_packet(bus, eid, buf, count, target, offset)) {
+      if (comp.compare(0, 3, "cxl") == 0) {
+        retry--;
+        if (retry >= 0) {
+          sleep(1);
+          continue;
+        } else {
+          cout << endl << "Retry reached MAX, update failed!" << endl;
+          goto exit;
+        }
+      }
+      goto exit;
+    }
+
+    retry = MAX_CXL_FW_UPDATE_RETRY;
     // Update counter
     offset += count;
     if (offset >= boundary) {
@@ -196,6 +214,22 @@ int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint
       printf("\rupdated: %d %%",(int)(offset/dsize*10));
       fflush(stdout);
       last_offset += dsize;
+    }
+  }
+
+  // Artemis CXL needs activation
+  if (comp.compare(0, 3, "cxl") == 0) {
+    cout << endl << "Update success, sleep 10 secs and active " << comp << endl;
+    sleep(10);
+    txbuf[0] = target;
+    txlen += 1;
+    ret = oem_pldm_ipmi_send_recv(bus, eid,
+                                NETFN_OEM_1S_REQ, CMD_OEM_1S_ACTIVE_CXL,
+                                txbuf, txlen,
+                                rxbuf, &rxlen, true);
+    if (ret < 0) {
+      cout << endl << "Active " << comp << " Failed!" << endl;
+      goto exit;
     }
   }
 

@@ -442,6 +442,7 @@ enum FRU_PATH_TYPE {
 enum ARTEMIS_OEM_COMMAND {
   CMD_OEM_1S_GET_ASIC_CARD_STATUS = 0x76,
   CMD_OEM_1S_GET_SENSOR_READING = 0x77,
+  CMD_OEM_1S_ACTIVE_CXL         = 0x78,
 };
 
 // JCN can plug dual or single devices

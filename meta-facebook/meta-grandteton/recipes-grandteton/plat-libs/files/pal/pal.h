@@ -48,7 +48,6 @@ int pal_postcode_select(int option);
 int pal_uart_select_led_set(void);
 int pal_get_platform_id(uint8_t *id);
 int pal_get_mb_position(uint8_t* pos);
-int pal_get_board_rev_id(uint8_t *id);
 void fru_eeprom_mb_check(char* mb_path);
 bool is_cpu_socket_occupy(uint8_t cpu_idx);
 int pal_get_syscfg_text(char *text);

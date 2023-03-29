@@ -1044,7 +1044,7 @@ read_dpm_vout(uint8_t fru, uint8_t sensor_num, float *value) {
   static uint8_t retry[DPM_NUM_CNT] = {0};
   uint8_t mb_rev;
 
-  if(pal_get_board_rev_id(&mb_rev))
+  if(pal_get_board_rev_id(FRU_MB, &mb_rev))
     return -1;
 
   if (mb_rev == 0) {

@@ -52,4 +52,5 @@ bool sgpio_valid_check(void);
 int read_cpld_health(uint8_t fru, uint8_t sensor_num, float *value);
 int pal_lock(const char *lock_fp);
 int pal_unlock(int fd);
+int pal_get_board_rev_id(uint8_t fru, uint8_t *id);
 #endif

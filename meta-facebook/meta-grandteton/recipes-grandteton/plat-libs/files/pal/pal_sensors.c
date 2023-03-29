@@ -22,20 +22,32 @@ extern PAL_SENSOR_MAP meb_e1s_sensor_map[];
 
 extern const uint8_t mb_sensor_list[];
 extern const uint8_t mb_discrete_sensor_list[];
+
 extern const uint8_t swb_sensor_list[];
 extern const uint8_t swb_discrete_sensor_list[];
+
 extern const uint8_t hgx_sensor_list[];
+
 extern const uint8_t nic0_sensor_list[];
 extern const uint8_t nic1_sensor_list[];
+
 extern const uint8_t vpdb_sensor_list[];
 extern const uint8_t vpdb_1brick_sensor_list[];
 extern const uint8_t vpdb_3brick_sensor_list[];
+extern const uint8_t vpdb_adc_sensor_list[];
+
 extern const uint8_t hpdb_sensor_list[];
+extern const uint8_t hpdb_adc_sensor_list[];
+
 extern const uint8_t fan_bp1_sensor_list[];
 extern const uint8_t fan_bp2_sensor_list[];
+
 extern const uint8_t scm_sensor_list[];
+
 extern const uint8_t hsc_sensor_list[];
+
 extern const uint8_t shsc_sensor_list[];
+
 extern const uint8_t acb_sensor_list[];
 extern const uint8_t accl_sensor_list[];
 extern const uint8_t meb_sensor_list[];
@@ -44,20 +56,32 @@ extern const uint8_t meb_e1s_sensor_list[];
 
 extern size_t mb_sensor_cnt;
 extern size_t mb_discrete_sensor_cnt;
+
 extern size_t swb_sensor_cnt;
 extern size_t swb_discrete_sensor_cnt;
+
 extern size_t hgx_sensor_cnt;
+
 extern size_t nic0_sensor_cnt;
 extern size_t nic1_sensor_cnt;
+
 extern size_t vpdb_sensor_cnt;
 extern size_t vpdb_1brick_sensor_cnt;
 extern size_t vpdb_3brick_sensor_cnt;
+extern size_t vpdb_adc_sensor_cnt;
+
 extern size_t hpdb_sensor_cnt;
+extern size_t hpdb_adc_sensor_cnt;
+
 extern size_t fan_bp1_sensor_cnt;
 extern size_t fan_bp2_sensor_cnt;
+
 extern size_t scm_sensor_cnt;
+
 extern size_t hsc_sensor_cnt;
+
 extern size_t shsc_sensor_cnt;
+
 extern size_t acb_sensor_cnt;
 extern size_t accl_sensor_cnt;
 extern size_t meb_sensor_cnt;
@@ -230,9 +254,11 @@ int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   int ret=0;
   uint8_t id;
+  uint8_t rev;
   static uint8_t snr_mb_tmp[255]={0};
   static uint8_t snr_swb_tmp[255]={0};
   static uint8_t snr_vpdb_tmp[64]={0};
+  static uint8_t snr_hpdb_tmp[64]={0};
   bool module = is_mb_hsc_module();
   bool smodule = is_swb_hsc_module();
 
@@ -260,17 +286,29 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     if (id == THIRD_SOURCE) {
       memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
       memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_1brick_sensor_list, vpdb_1brick_sensor_cnt);
-      *sensor_list = snr_vpdb_tmp;
       *cnt = vpdb_sensor_cnt + vpdb_1brick_sensor_cnt;
     } else {
       memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
       memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_3brick_sensor_list, vpdb_3brick_sensor_cnt);
-      *sensor_list = snr_vpdb_tmp;
       *cnt = vpdb_sensor_cnt + vpdb_3brick_sensor_cnt;
     }
+    // ADC sensor only support PVT2
+    if(!pal_get_board_rev_id(FRU_VPDB, &rev) && rev >= PDB_REV_PVT2) {
+      memcpy(&snr_vpdb_tmp[*cnt], vpdb_adc_sensor_list, vpdb_adc_sensor_cnt);
+      *cnt += vpdb_adc_sensor_cnt;
+    }
+    *sensor_list = snr_vpdb_tmp;
+
   } else if (fru == FRU_HPDB) {
-    *sensor_list = (uint8_t *) hpdb_sensor_list;
-    *cnt = hpdb_sensor_cnt;
+    memcpy(snr_hpdb_tmp, hpdb_sensor_list, hpdb_sensor_cnt);
+    *cnt = vpdb_sensor_cnt;
+    // ADC sensor only support PVT2
+    if(!pal_get_board_rev_id(FRU_HPDB, &rev) && rev >= PDB_REV_PVT2) {
+      memcpy(&snr_hpdb_tmp[*cnt], hpdb_adc_sensor_list, hpdb_adc_sensor_cnt);
+      *cnt += hpdb_adc_sensor_cnt;
+    }
+    *sensor_list = snr_hpdb_tmp;
+
   } else if (fru == FRU_FAN_BP1) {
     *sensor_list = (uint8_t *) fan_bp1_sensor_list;
     *cnt = fan_bp1_sensor_cnt;

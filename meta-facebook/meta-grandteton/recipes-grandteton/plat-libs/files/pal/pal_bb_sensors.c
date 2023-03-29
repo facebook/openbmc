@@ -58,9 +58,13 @@ const uint8_t vpdb_sensor_list[] = {
   PDBV_SNR_HSC0_PIN,
   PDBV_SNR_HSC0_TEMP,
   PDBV_SNR_ADC128_P3V3_AUX,
+};
+
+const uint8_t vpdb_adc_sensor_list[] = {
   PDBV_SNR_CABLE0_PLUS,
   PDBV_SNR_CABLE0_MINUS,
 };
+
 
 const uint8_t vpdb_3brick_sensor_list[] = {
   PDBV_SNR_BRICK0_VOUT,
@@ -92,6 +96,9 @@ const uint8_t hpdb_sensor_list[] = {
   PDBH_SNR_HSC2_IOUT,
   PDBH_SNR_HSC2_PIN,
   PDBH_SNR_HSC2_TEMP,
+};
+
+const uint8_t hpdb_adc_sensor_list[] = {
   PDBH_SNR_CABLE1_PLUS,
   PDBH_SNR_CABLE1_MINUS,
   PDBH_SNR_CABLE2_PLUS,
@@ -464,7 +471,9 @@ size_t nic1_sensor_cnt = sizeof(nic1_sensor_list)/sizeof(uint8_t);
 size_t vpdb_sensor_cnt = sizeof(vpdb_sensor_list)/sizeof(uint8_t);
 size_t vpdb_1brick_sensor_cnt = sizeof(vpdb_1brick_sensor_list)/sizeof(uint8_t);
 size_t vpdb_3brick_sensor_cnt = sizeof(vpdb_3brick_sensor_list)/sizeof(uint8_t);
+size_t vpdb_adc_sensor_cnt = sizeof(vpdb_adc_sensor_list)/sizeof(uint8_t);
 size_t hpdb_sensor_cnt = sizeof(hpdb_sensor_list)/sizeof(uint8_t);
+size_t hpdb_adc_sensor_cnt = sizeof(hpdb_adc_sensor_list)/sizeof(uint8_t);
 size_t fan_bp1_sensor_cnt = sizeof(fan_bp1_sensor_list)/sizeof(uint8_t);
 size_t fan_bp2_sensor_cnt = sizeof(fan_bp2_sensor_list)/sizeof(uint8_t);
 size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);

@@ -734,18 +734,6 @@ pal_get_fru_list(char *list) {
 }
 
 int
-pal_get_board_rev_id(uint8_t *id) {
-  char value[MAX_VALUE_LEN] = {0};
-
-  if (kv_get("mb_rev", value, NULL, 0)) {
-    return -1;
-  }
-
-  *id = (uint8_t)atoi(value);
-  return 0;
-}
-
-int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   int ret;
   uint8_t platform_id  = 0x00;
@@ -758,7 +746,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
     return completion_code;
   }
 
-  ret = pal_get_board_rev_id(&board_rev_id);
+  ret = pal_get_board_rev_id(FRU_MB, &board_rev_id);
   if (ret) {
     *res_len = 0x00;
     return completion_code;

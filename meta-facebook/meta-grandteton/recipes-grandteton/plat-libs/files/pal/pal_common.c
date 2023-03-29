@@ -401,3 +401,23 @@ int pal_unlock(int fd)
   close(fd);
   return 0;
 }
+
+int
+pal_get_board_rev_id(uint8_t fru, uint8_t *id) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  char name[32];
+
+  if(pal_get_fru_name(fru, name))
+    return -1;
+
+  snprintf(key, sizeof(key), "%s_rev", name);
+
+  if (kv_get(key, value, NULL, 0)) {
+    return -1;
+  }
+
+  *id = (uint8_t)atoi(value);
+  return 0;
+}
+

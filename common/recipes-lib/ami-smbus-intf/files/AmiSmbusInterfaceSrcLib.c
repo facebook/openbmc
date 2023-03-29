@@ -43,6 +43,33 @@ void EnableAmiSmbusInterfaceDebug(
   debug_enable = enable;
 }
 
+static int get_session_id(unsigned char slot_id, bool next)
+{
+  char key[128] = {0};
+  char value[128] = {0};
+  unsigned char session_id = 0;
+
+  snprintf(key, sizeof(key), PROT_SESSION_KEY, slot_id);
+  //the session id range (6 bits), the range from 0x10 to 0x3E
+  //Except 0x3F to aviod conflict with SMBUS_READ_COMMAND
+  if (kv_get(key, value, NULL, 0)) {
+    session_id = 0x10;
+  } else {
+    session_id = (unsigned char)strtoul(value, NULL, 0);
+    if (next) {
+      session_id++;
+      if (session_id > 0x3E) {
+        session_id = 0x10;
+      }
+    }
+  }
+
+  DEBUG("session_id = %d \n", session_id);
+  snprintf(value, 128, "%d", session_id);
+  kv_set(key, value, 0, 0);
+  return session_id;
+}
+
 int SmbusWriteBlockExecute(
   int fd,
   unsigned char command,
@@ -86,8 +113,6 @@ int SendDataPacketThroughLinkLayer(
   int ret = 0;
   //This is datalayer session id will increment for every data layer transaction
   unsigned char session_id = 0;
-  char key[128] = {0};
-  char value[128] = {0};
 
   if (data_payload_length > 255) {
     DATA_LAYER_PACKET_EXTEND* data_packet = (DATA_LAYER_PACKET_EXTEND*)DataPacket;
@@ -98,20 +123,7 @@ int SendDataPacketThroughLinkLayer(
     AckNeeded = (data_packet->Flag & ACK_FLAG) >> 2;
     package_size = data_payload_length + 4;
   }
-  snprintf(key, sizeof(key), PROT_SESSION_KEY, slot_id);
-  //the session id range (6 bits), the range from 0x10 to 0x3F
-  if (kv_get(key, value, NULL, 0)) {
-    session_id = 0x10;
-  } else {
-    session_id = (unsigned char)strtoul(value, NULL, 0);
-    session_id++;
-    if (session_id > 0x3F) {
-      session_id = 0x10;
-    }
-  }
-  DEBUG("session_id = %d \n", session_id);
-  snprintf(value, 128, "%d", session_id);
-  kv_set(key, value, 0, 0);
+  session_id = get_session_id(slot_id, true);
 
   Source = DataPacket;
   totalPackageCount = (package_size / LINK_LAYER_MAX_LOAD);
@@ -393,23 +405,11 @@ int DataLayerReceiveFromPlatFire(
   LINK_LAYER_PACKET_ACK_MASTER* LinkLayerPkgBuffer = (LINK_LAYER_PACKET_ACK_MASTER*)RecieveBuffer;
   int ret = -1;
   int Start = 0;
-  char key[128] = {0};
-  char value[128] = {0};
   unsigned char session_id = 0;
   unsigned char checksum = 0;
   int retry = 0;
 
-  snprintf(key, sizeof(key), PROT_SESSION_KEY, slot_id);
-  if (kv_get(key, value, NULL, 0)) {
-    session_id = 0;
-    DEBUG("session_id = %d \n", session_id);
-    kv_set(key, "0", 0, 0);
-  } else {
-    session_id = (unsigned char)strtoul(value, NULL, 0);
-    DEBUG("session_id = %d \n", session_id);
-    snprintf(value, 128, "%d", session_id);
-    kv_set(key, value, 0, 0);
-  }
+  session_id = get_session_id(slot_id, false);
 
   do {
     MicroSecondDelay(200 * 1000); 

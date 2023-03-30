@@ -709,7 +709,6 @@ cache_mp2993_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
   int ret = VR_STATUS_FAILURE;
   uint8_t tbuf[16];
   uint8_t crc[5];
-  uint8_t multi_config[2];
   uint16_t remain = 0;
   char remaining_wr_msg[64];
 

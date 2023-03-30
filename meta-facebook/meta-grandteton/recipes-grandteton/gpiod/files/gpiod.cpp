@@ -37,6 +37,7 @@
 #include <openbmc/pal_def.h>
 #include <openbmc/pal_common.h>
 #include <libpldm-oem/pldm.h>
+#include <libpldm-oem/pal_pldm.hpp>
 #include <openbmc/hgx.h>
 #include "gpiod.h"
 
@@ -89,6 +90,42 @@ bool server_power_check(uint8_t power_on_time) {
   return true;
 }
 
+static void*
+delay_get_firmware(void* arg) {
+  unsigned int* delay = (unsigned int*)arg;
+  pthread_detach(pthread_self());
+  syslog(LOG_INFO, "Get swb firmware: start delay(%u).", *delay);
+  sleep(*delay);
+  pal_pldm_get_firmware_parameter(SWB_BUS_ID, SWB_BIC_EID);
+  free(delay);
+  delay = NULL;
+  pthread_exit(NULL);
+}
+
+static
+void bic_get_firmware (unsigned int _delay) {
+  unsigned int *delay = (unsigned int*) malloc (sizeof(unsigned int));
+  pthread_t tid_delay_get_firmware;
+
+  if (delay == NULL) {
+    syslog(LOG_WARNING, "Get swb firmware failed.");
+    return;
+  }
+
+  *delay = _delay;
+  if (*delay == 0) {
+    pal_pldm_get_firmware_parameter(SWB_BUS_ID, SWB_BIC_EID);
+    free(delay);
+    delay = NULL;
+  } else {
+    if (pthread_create(&tid_delay_get_firmware, NULL, delay_get_firmware, (void*)delay)) {
+      syslog(LOG_WARNING, "pthread_create for delay_get_firmware");
+      free(delay);
+      delay = NULL;
+    }
+  }
+}
+
 // Thread for delay event
 static void*
 delay_log(void *arg) {
@@ -131,6 +168,8 @@ void log_gpio_change(uint8_t fru,
 
   if (log_delay == 0) {
     syslog(LOG_CRIT, "%s", log->msg);
+    free(log);
+    log = NULL;
   } else {
     log->usec = log_delay;
     if (pthread_create(&tid_delay_log, NULL, delay_log, (void *)log)) {
@@ -441,6 +480,9 @@ pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   g_cpu_pwrgd_trig = true;
   log_gpio_change(FRU_MB, desc, curr, 0, NULL);
   reset_timer(&g_power_on_sec);
+
+  if (curr == GPIO_VALUE_HIGH)
+    bic_get_firmware(15);
 }
 
 //Uart Select on DEBUG Card Event Handler
@@ -743,8 +785,10 @@ bic_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
   if (!sgpio_valid_check())
     return;
-  if (curr == GPIO_VALUE_LOW)
+  if (curr == GPIO_VALUE_LOW) {
+    bic_get_firmware(1);
     set_pldm_event_receiver();
+  }
 }
 
 static void hmc_ready(bool startup) {

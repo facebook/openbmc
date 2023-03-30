@@ -40,7 +40,7 @@ int PLDMNicComponent::update(string image) {
 
   syslog(LOG_CRIT, "Component %s upgrade initiated", _component.c_str());
 
-  ret = obmc_pldm_fw_update(_bus_id, _eid, (char *)image.c_str());
+  ret = oem_pldm_fw_update(_bus_id, _eid, (char *)image.c_str());
 
   if (ret)
     syslog(LOG_CRIT, "Component %s upgrade fail", _component.c_str());

@@ -15,28 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#pragma once
 
-#ifndef _OBMC_MCTP_H_
-#define _OBMC_MCTP_H_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <openbmc/ncsi.h>
-#include <openbmc/pldm.h>
-#include "pldm.h"
-
-// PLDM Struct
-struct pldm_hdr {
-  uint8_t RQD_IID;
-  uint8_t Command_Type;
-  uint8_t Command_Code;
-} __attribute__((packed));
-
-int obmc_pldm_fw_update (uint8_t bus, uint8_t dst_eid, char *path);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-#endif /* _OBMC_MCTP_H_ */
+int parse_pldm_package (const char *path);
+int oem_pldm_fw_update (uint8_t bus, uint8_t eid, const char *path, uint8_t specified_comp = 0xFF);

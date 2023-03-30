@@ -9,6 +9,7 @@ LIC_FILES_CHKSUM = "file://pldm.h;beginline=4;endline=16;md5=7daca318951174622e8
 
 LOCAL_URI = " \
     file://meson.build \
+    file://plat/meson.build \
     file://pldm.h \
     file://pldm.cpp \
     file://base.hpp \
@@ -25,8 +26,8 @@ LOCAL_URI = " \
     file://fw_update.h \
     "
 
-DEPENDS += "libpldm libipmi obmc-libpldm"
-RDEPENDS:${PN} += "libpldm  libipmi obmc-libpldm"
-LDFLAGS += "-lpldm -lipmi -lobmc-pldm"
+DEPENDS += "libpldm libipmi"
+RDEPENDS:${PN} += "libpldm  libipmi"
+LDFLAGS += "-lpldm -lipmi"
 
 inherit meson pkgconfig

@@ -130,11 +130,13 @@ static pldm_requester_rc_t mctp_recv (mctp_eid_t eid, int mctp_fd,
 
     if (length != bytes) {
       free(*pldm_resp_msg);
+      *pldm_resp_msg = nullptr;
       return PLDM_REQUESTER_INVALID_RECV_LEN;
     }
     if ((mctp_prefix[0] != eid) ||
         (mctp_prefix[1] != MCTP_MSG_TYPE_PLDM)) {
       free(*pldm_resp_msg);
+      *pldm_resp_msg = nullptr;
       return PLDM_REQUESTER_NOT_PLDM_MSG;
     }
     *resp_msg_len = pldm_len;

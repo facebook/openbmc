@@ -77,13 +77,6 @@ class GTPldmComponent : public PldmComponent {
     void store_comp_img_info(
             pldm_component_image_information& /*comp_info*/,
                               variable_field& /*comp_verstr*/) override;
-    void store_firmware_parameter(
-           pldm_get_firmware_parameters_resp& /*fwParams*/,
-                              variable_field& /*activeCompImageSetVerStr*/,
-                              variable_field& /*pendingCompImageSetVerStr*/,
-              pldm_component_parameter_entry& /*compEntry*/,
-                              variable_field& /*activeCompVerStr*/,
-                              variable_field& /*pendingCompVerStr*/) override;
   public:
     GTPldmComponent(const signed_header_t& info, const string& fru, const std::string &comp,
                   uint8_t bus, uint8_t eid): PldmComponent(info, comp, bus, eid), fru(fru) {}
@@ -98,7 +91,7 @@ class GTSwbBicFwComponent : public SwbBicFwComponent, public GTPldmComponent {
                         GTPldmComponent(info, fru, comp, bus, eid){}
     int update(string /*image*/) override;
     int fupdate(string /*image*/) override;
-    // int get_version(json& /*json*/) override;
+    int get_version(json& /*json*/) override;
     int comp_update(const string& image) { return SwbBicFwComponent::update(image); }
 };
 
@@ -110,7 +103,7 @@ class GTSwbPexFwComponent : public SwbPexFwComponent, public GTPldmComponent {
                         GTPldmComponent(info, fru, comp, bus, eid){}
     int update(string /*image*/) override;
     int fupdate(string /*image*/) override;
-    // int get_version(json& /*json*/) override;
+    int get_version(json& /*json*/) override;
     int comp_update(const string& image) { return SwbPexFwComponent::update(image); }
 };
 
@@ -162,7 +155,8 @@ class GTSwbCpldComponent : public CpldComponent, public GTPldmComponent {
 
 class SwbPLDMNicComponent : public PLDMNicComponent {
   public:
-    SwbPLDMNicComponent(std::string fru, std::string comp, std::string key, uint8_t eid, uint8_t bus):
+    SwbPLDMNicComponent(const std::string& fru, const std::string& comp,
+                        const std::string& key, uint8_t eid, uint8_t bus):
       PLDMNicComponent(fru, comp, key, eid, bus) {}
     int update(string /*image*/) override;
 };

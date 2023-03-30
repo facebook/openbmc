@@ -143,8 +143,6 @@ class fw_cpld_config {
         static GTCpldComponent scm_cpld("scm", "cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
       } else {
         static GTCpldComponent mb_cpld("mb", "mb_cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
-        cpld_info.board_id = signed_info::SWB;
-        static GTCpldComponent swb_cpld("swb", "swb_cpld", LCMXO3_9400C, 3, 0x40, &cpld_pldm_wr, cpld_info);
         cpld_info.board_id = signed_info::SCM;
         static GTCpldComponent scm_cpld("scm", "scm_cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
       }

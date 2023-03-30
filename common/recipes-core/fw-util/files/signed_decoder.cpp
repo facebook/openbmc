@@ -82,7 +82,8 @@ int InfoChecker::check_header_info(const signed_header_t& img_info)
     return INFO_ERR::BOARD_NOT_MATCH;
   }
 
-  if (comp_info.component_id != img_info.component_id) {
+  if (comp_info.component_id != COMPONENT_VERIFY_SKIPPED &&
+    comp_info.component_id != img_info.component_id) {
     syslog(LOG_WARNING, "%s COMPONENT_NOT_MATCH\n", __func__);
     return INFO_ERR::COMPONENT_NOT_MATCH;
   }

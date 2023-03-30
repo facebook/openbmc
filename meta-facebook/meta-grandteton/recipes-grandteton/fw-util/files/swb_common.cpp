@@ -1,6 +1,7 @@
 #include <openbmc/kv.hpp>
 #include <libpldm/base.h>
 #include <libpldm-oem/pldm.h>
+#include <libpldm-oem/pal_pldm.hpp>
 #include <openbmc/libgpio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -736,45 +737,25 @@ void GTPldmComponent::store_comp_img_info(
   string vendor, verstr = (const char *)comp_verstr.ptr;
   verstr.resize(comp_verstr.length);
   stringstream input_stringstream(verstr);
-  if (getline(input_stringstream, vendor, '_')) {
+  if (getline(input_stringstream, vendor, ' ')) {
     auto& map = pldm_signed_info::vendor_map;
     img_info.vendor_id = (map.find(vendor)!=map.end()) ? map.at(vendor):0xFF;
   }
 }
 
-void GTPldmComponent::store_firmware_parameter(
-                 pldm_get_firmware_parameters_resp& /*fwParams*/,
-                                    variable_field& activeCompImageSetVerStr,
-                                    variable_field& /*pendingCompImageSetVerStr*/,
-                    pldm_component_parameter_entry& compEntry,
-                                    variable_field& activeCompVerStr,
-                                    variable_field& /*pendingCompVerStr*/)
-{
-  string bic_ver = (const char*)activeCompImageSetVerStr.ptr;
-  string bic_key = "swb_bic_active_ver";
-  string comp_ver = (const char*)activeCompVerStr.ptr;
-  string comp_key = fmt::format("swb_{}_active_ver", pldm_signed_info::comp_str_t.at(compEntry.comp_identifier));
-
-  bic_ver.resize(activeCompImageSetVerStr.length-1);
-  comp_ver.resize(activeCompVerStr.length);
-
-  kv::set(bic_key,  bic_ver);
-  kv::set(comp_key, comp_ver);
-}
-
 int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& comp, uint8_t target)
 {
-  string comp_key = fmt::format("swb_{}_active_ver", pldm_signed_info::comp_str_t.at(target));
-  string comp_ver;
+  string active_key = fmt::format("swb_{}_active_ver",  pldm_signed_info::comp_str_t.at(target));
+  string active_ver;
 
   try {
-    comp_ver = kv::get(comp_key, kv::region::temp);
-    j["VERSION"] = comp_ver;
+    active_ver = kv::get(active_key, kv::region::temp);
+    j["VERSION"] = active_ver;
   } catch (...) {
-    get_firmware_parameter();
-    comp_ver = kv::get(comp_key, kv::region::temp);
-    if (!comp_ver.empty()) {
-      j["VERSION"] = comp_ver;
+    pal_pldm_get_firmware_parameter(bus, eid);
+    active_ver = kv::get(active_key, kv::region::temp);
+    if (!active_ver.empty()) {
+      j["VERSION"] = active_ver;
     } else {
       j["VERSION"] = "NA";
     }
@@ -791,58 +772,40 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
 
 int GTSwbBicFwComponent::update(string image)
 {
-  int ret = try_pldm_update(image, false);
-  if (ret == 0)
-    get_firmware_parameter();
-  return ret;
+  return try_pldm_update(image, false);
 }
 
 int GTSwbBicFwComponent::fupdate(string image)
 {
-  int ret = try_pldm_update(image, true);
-  if (ret == 0)
-    get_firmware_parameter();
-  return ret;
+  return try_pldm_update(image, true);
 }
 
-// int GTSwbBicFwComponent::get_version(json& j) {
-//   return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
-// }
+int GTSwbBicFwComponent::get_version(json& j) {
+  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+}
 
 int GTSwbPexFwComponent::update(string image)
 {
-  int ret = try_pldm_update(image, false);
-  if (ret == 0)
-    get_firmware_parameter();
-  return ret;
+  return try_pldm_update(image, false, target);
 }
 
 int GTSwbPexFwComponent::fupdate(string image)
 {
-  int ret = try_pldm_update(image, true);
-  if (ret == 0)
-    get_firmware_parameter();
-  return ret;
+  return try_pldm_update(image, true, target);
 }
 
-// int GTSwbPexFwComponent::get_version(json& j) {
-//   return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
-// }
+int GTSwbPexFwComponent::get_version(json& j) {
+  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+}
 
 int GTSwbVrComponent::update(string image)
 {
-  int ret = try_pldm_update(image, false);
-  if (ret == 0)
-    get_firmware_parameter();
-  return ret;
+  return try_pldm_update(image, false);
 }
 
 int GTSwbVrComponent::fupdate(string image)
 {
-  int ret = try_pldm_update(image, true);
-  if (ret == 0)
-    get_firmware_parameter();
-  return ret;
+  return try_pldm_update(image, true);
 }
 
 int GTSwbVrComponent::get_version(json& j) {
@@ -851,18 +814,12 @@ int GTSwbVrComponent::get_version(json& j) {
 
 int GTSwbCpldComponent::update(string image)
 {
-  int ret = try_pldm_update(image, false);
-  if (ret == 0)
-    get_firmware_parameter();
-  return ret;
+  return try_pldm_update(image, false);
 }
 
 int GTSwbCpldComponent::fupdate(string image)
 {
-  int ret = try_pldm_update(image, true);
-  if (ret == 0)
-    get_firmware_parameter();
-  return ret;
+  return try_pldm_update(image, true);
 }
 
 int GTSwbCpldComponent::get_version(json& j) {

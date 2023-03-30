@@ -73,12 +73,12 @@ namespace pldm_signed_info {
   };
 
   const std::unordered_map<std::string, uint8_t> vendor_map = {
-    {"aspeed",   ASPEED},
-    {"renesas",  RENESAS},
-    {"Infineon", INFINEON},
-    {"mps",      MPS},
-    {"lattice",  LATTICE},
-    {"broadcom", BROADCOM}
+    {"ast1030",      ASPEED},
+    {"isl69259",     RENESAS},
+    {"xdpe12284c",   INFINEON},
+    {"mp2971",       MPS},
+    {"LCMXO3-9400C", LATTICE},
+    {"pex89000",     BROADCOM}
   };
 
   const std::unordered_map<uint8_t, std::string> comp_str_t = {

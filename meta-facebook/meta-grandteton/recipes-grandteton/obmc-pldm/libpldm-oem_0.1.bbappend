@@ -18,4 +18,14 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
     file://platform_sensor.cpp \
+    file://pal_pldm.hpp \
+    file://pal_pldm.cpp \
+    file://plat/meson.build \
     "
+
+DEPENDS += " \
+      libkv \
+      fmt \
+    "
+
+RDEPENDS:${PN} += "libkv fmt"

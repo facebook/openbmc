@@ -4,13 +4,13 @@ project('libpldm-oem', 'cpp',
     default_options: ['werror=true', 'cpp_std=c++17'],
     meson_version: '>=0.40')
 
-install_headers(
-    'pldm.h',
-    'oem_pldm.hpp',
-    'fw_update.h',
-    subdir: 'libpldm-oem')
-
 cc = meson.get_compiler('cpp')
+
+hdrs = [
+  'pldm.h',
+  'oem_pldm.hpp',
+  'fw_update.h',
+]
 
 libs = [
   dependency('libpldm')
@@ -25,6 +25,12 @@ srcs = [
   'fw_update.cpp',
   'platform_sensor.cpp',
 ]
+
+subdir('plat')
+
+install_headers(
+  hdrs,
+  subdir: 'libpldm-oem')
 
 # obmc-pldm-mw library.
 obmc_pldm_mw = shared_library('pldm_oem', srcs,

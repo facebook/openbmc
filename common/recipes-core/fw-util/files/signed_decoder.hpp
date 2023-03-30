@@ -33,6 +33,8 @@ enum INFO_ERR {
   SOURCE_NOT_MATCH,
 };
 
+const uint8_t COMPONENT_VERIFY_SKIPPED = 0xFF;
+
 /*
  * Signed Image would be => Image + Sign_info
  *

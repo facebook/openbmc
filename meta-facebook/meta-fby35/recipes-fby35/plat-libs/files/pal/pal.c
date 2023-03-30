@@ -2800,6 +2800,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     E1S_1OU_P3V3_FAULT = 0x84,
     P12V_EDGE_FAULT    = 0x85,
     E1S_INA233_ALERT   = 0x86,
+    E1S_12V_OV_ALERT   = 0x87,
   };
   uint8_t event = event_data[0];
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
@@ -2934,6 +2935,14 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
         snprintf(log_msg, sizeof(log_msg), "E1S %dOU P12V MAIN fault", event_data[1] + 1);
       } else {
         snprintf(log_msg, sizeof(log_msg), "E1S %dOU dev%d INA233 alert", event_data[1] + 1, event_data[2]);
+      }
+      strcat(error_log, log_msg);
+      break;
+    case E1S_12V_OV_ALERT:
+      if (event_data[2] == 0x1) {
+        snprintf(log_msg, sizeof(log_msg), "E1S 1OU P12V AUX OV");
+      } else {
+        snprintf(log_msg, sizeof(log_msg), "E1S 1OU P12V EDGE OV");
       }
       strcat(error_log, log_msg);
       break;

@@ -113,7 +113,7 @@ class RedfishEventHandler(web.Application):
         sev = event.get("Severity", "Unknown")
         msev = event.get("MessageSeverity", sev)
         msg = event.get("Message", "Unknown")
-        margs = " ".join(event.get("MessageArgs", []))
+        margs = " ".join(f'"{arg}"' for arg in event.get("MessageArgs", []))
         log = "CreateTime: " + tsp
         log += " Severity: " + msev
         log += " Message: " + msg

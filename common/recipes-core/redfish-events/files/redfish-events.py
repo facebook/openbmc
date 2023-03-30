@@ -113,10 +113,12 @@ class RedfishEventHandler(web.Application):
         sev = event.get("Severity", "Unknown")
         msev = event.get("MessageSeverity", sev)
         msg = event.get("Message", "Unknown")
+        mid = event.get("MessageId", "Unknown")
         margs = " ".join(f'"{arg}"' for arg in event.get("MessageArgs", []))
         log = "CreateTime: " + tsp
         log += " Severity: " + msev
         log += " Message: " + msg
+        log += " MessageId: " + mid
         log += " MessageArgs: " + margs
         # TODO Probably we might want to do this only for certain msev
         logging.info(log)

@@ -53,4 +53,5 @@ IMAGE_INSTALL += " \
   threshold-util \
   mtd-utils \
   redfish-events \
+  i3c-tools \
 "

@@ -1094,6 +1094,61 @@ read_voltage_e1s(uint8_t id, float *value) {
   return ret;
 }
 
+static void
+handle_nic_p12v_status_timestamp() {
+  uint8_t nic_p12v_status = 0;
+  int ret = 0, nic_p12v_timestamp = 0, current_time = 0;
+  char status_key[MAX_KEY_LEN] = {0}, timestamp_key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0}, tstr[MAX_VALUE_LEN] = {0};
+  struct timespec ts = {0};
+
+  // Get NIC P12V status
+  snprintf(status_key, sizeof(status_key), NIC_P12V_STATUS_STR);
+  ret = kv_get(status_key, value, NULL, 0);
+  if (ret < 0) {
+    // Set NIC P12V status is normal
+    if (pal_set_cached_value(status_key, STR_VALUE_0) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to set NIC P12V status\n", __func__);
+      return;
+    }
+  } else {
+    nic_p12v_status = atoi(value);
+  }
+
+  // Get NIC P12V deassert timestamp
+  snprintf(timestamp_key, sizeof(timestamp_key), NIC_P12V_TIMESTAMP_STR);
+  ret = kv_get(timestamp_key, value, NULL, 0);
+  if (ret < 0) {
+    // Clear NIC P12V deassert timestamp to 0
+    if (pal_set_cached_value(timestamp_key, STR_VALUE_0) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to clear NIC P12V deassert timestamp\n", __func__);
+      return;
+    }
+  } else {
+    nic_p12v_timestamp = atoi(value);
+  }
+
+  if ((nic_p12v_status == NIC_P12V_IS_DROPPED) && (nic_p12v_timestamp != 0)) {
+    // Get current timestamp
+    clock_gettime(CLOCK_REALTIME, &ts);
+    snprintf(tstr, sizeof(tstr), "%ld", ts.tv_sec);
+    current_time = atoi(tstr);
+
+    if (abs(current_time - nic_p12v_timestamp) > 5) {
+      // Set NIC P12V status to normal
+      if (pal_set_cached_value(status_key, STR_VALUE_0) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to set NIC P12V status is normal\n", __func__);
+        return;
+      }
+      // Set NIC P12V deassert timestamp to 0
+      if (pal_set_cached_value(timestamp_key, STR_VALUE_0) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to clear NIC P12V deassert timestamp\n", __func__);
+        return;
+      }
+    }
+  }
+}
+
 static int
 read_voltage_nic(uint8_t id, float *value) {
   int ret = 0;
@@ -1106,6 +1161,11 @@ read_voltage_nic(uint8_t id, float *value) {
   if ((pal_is_fru_prsnt(FRU_NIC, &prsnt_status) < 0) || 
       (prsnt_status == FRU_ABSENT)) {
     return ERR_SENSOR_NA;
+  }
+
+  // NIC P12V voltage sensor
+  if (id == ADC128_IN6) {
+    handle_nic_p12v_status_timestamp();
   }
 
   ret = read_dpb_vol_wrapper(id, value);
@@ -2703,4 +2763,47 @@ int pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
   }
 
   return 0;
+}
+
+void
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
+{
+  char key[MAX_KEY_LEN] = {0};
+
+  if ((fru == FRU_NIC) && (snr_num == NIC_SENSOR_P12V) && (thresh == LCR_THRESH)) {
+    // Set NIC P12V status is dropped.
+    snprintf(key, sizeof(key), NIC_P12V_STATUS_STR);
+    if (pal_set_cached_value(key, STR_VALUE_1) < 0) {
+      syslog(LOG_WARNING, "%s: Failed to set NIC P12V status when NIC P12V is dropped.\n", __func__);
+    }
+
+    // Clear NIC P12V deassert timestamp
+    snprintf(key, sizeof(key), NIC_P12V_TIMESTAMP_STR);
+    if (pal_set_cached_value(key, STR_VALUE_0) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to clear NIC P12V LCR deassert timestamp", __func__);
+    }
+  }
+
+  return;
+}
+
+void
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char tstr[MAX_VALUE_LEN] = {0};
+  struct timespec ts = {0};
+
+  if ((fru == FRU_NIC) && (snr_num == NIC_SENSOR_P12V) && (thresh == LCR_THRESH)) {
+    snprintf(key, sizeof(key), NIC_P12V_TIMESTAMP_STR);
+
+    // Set NIC P12V deassert timestamp
+    clock_gettime(CLOCK_REALTIME, &ts);
+    snprintf(tstr, sizeof(tstr), "%ld", ts.tv_sec);
+    if (pal_set_cached_value(key, tstr) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to set NIC P12V LCR deassert timestamp", __func__);
+    }
+  }
+
+  return;
 }

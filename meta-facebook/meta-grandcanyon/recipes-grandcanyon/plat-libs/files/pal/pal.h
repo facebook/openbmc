@@ -163,6 +163,9 @@ extern "C" {
 #define HEARTBEAT_NORMAL                  1
 #define HEARTBEAT_ABNORMAL                0
 
+#define NIC_P12V_STATUS_STR     "nic_p12v_status"
+#define NIC_P12V_TIMESTAMP_STR  "nic_p12v_lcr_deassert_timestamp"
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -438,6 +441,11 @@ enum DEV_LED_STATUS {
   DEV_LED_BLINKING = 0x2,
 };
 
+enum NIC_P12V_STATUS {
+  NIC_P12V_IS_NORMAL,
+  NIC_P12V_IS_DROPPED,
+};
+
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_status_led(uint8_t fru, status_led_color color);
 int pal_set_e1s_led(uint8_t fru, e1s_led_id id, enum LED_HIGH_ACTIVE status);
@@ -486,6 +494,9 @@ int pal_clear_event_only_error_ack();
 int pal_check_server_power_change_correct(uint8_t action);
 int pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len);
 int pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver);
+int pal_nic_poweroff_action();
+int pal_nic_poweron_action();
+int pal_reset_nic();
 
 #ifdef __cplusplus
 } // extern "C"

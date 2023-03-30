@@ -66,6 +66,9 @@
 
 #define PWM_ZONE            0
 
+#define CHECK_NIC_P12V_RETRY_TIME_S 15
+#define PCIE_LINK_DROP_ERR_ID       0x5A
+
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
 // export to sensor-util
@@ -131,6 +134,7 @@ struct pal_key_cfg {
   {"timestamp_sled", "0", NULL},
   {"heartbeat_health", "1", NULL},
   {"fan_dead_rearm", "0", NULL},
+  {"check_nic_pcie_link_drop", "0", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
@@ -138,6 +142,7 @@ struct pal_key_cfg {
 char * cfg_support_key_list[] = {
   "server_por_cfg",
   "system_info",
+  "check_nic_pcie_link_drop",
   NULL /* This is the last key of the list */
 };
 
@@ -215,6 +220,8 @@ PCIE_ERR_DECODE pcie_err_table[] = {
   {0xA1, "SERR (non-AER)"},
   {0xFF, "None"}
 };
+
+static int nic_is_resetting = 0;
 
 static int
 pal_key_index(char *key) {
@@ -2489,18 +2496,78 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   return ret;
 }
 
+// Thread for checking NIC P12V status to reset NIC.
+static void *
+check_nic_p12v_status(void *arg)
+{
+  int i = 0;
+  uint8_t nic_p12v_status = 0;
+  char status_key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
+
+  pthread_detach(pthread_self());
+  if (nic_is_resetting) return (NULL);
+  nic_is_resetting = 1;
+
+  snprintf(status_key, sizeof(status_key), NIC_P12V_STATUS_STR);
+
+  while (i < CHECK_NIC_P12V_RETRY_TIME_S) {
+    if (pal_get_cached_value(status_key, value) != 0) {
+      syslog(LOG_WARNING, "%s() Failed to get NIC P12V status\n", __func__);
+      break;
+    } else {
+      nic_p12v_status = atoi(value);
+    }
+
+    if (nic_p12v_status == NIC_P12V_IS_DROPPED) {
+      syslog(LOG_CRIT, "FRU: %d Reset NIC because NIC PCIe link error and NIC P12V LCR detected\n", FRU_NIC);
+      if (pal_reset_nic() == 0) {
+        break;
+      }
+    }
+
+    i++;
+    sleep(1);
+  }
+
+  nic_is_resetting = 0;
+  pthread_exit(NULL);
+}
+
 int
 pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
+  uint8_t error_type = 0;
+  uint8_t err_id1 = 0, err_id2 = 0;
   char key[MAX_KEY_LEN] = {0};
   char val[MAX_VALUE_LEN] = {0};
-  int sel_event_error_record = 0;
+  int sel_event_error_record = 0, check_nic_p12v_enable = 0;
+  pthread_t tid_check_nic_p12V;
 
   if (sel == NULL) {
     syslog(LOG_ERR, "%s(): Failed to handle OEM unified sel due to NULL parameter.", __func__);
     return PAL_ENOTREADY;
   }
 
+  error_type = general_info & 0x0f;
+  err_id2 = sel[14];
+  err_id1 = sel[15];
+
+  // Check if the feature to detect NIC PCIe link drop is enable
+  snprintf(key, sizeof(key), "check_nic_pcie_link_drop");
+  if (pal_get_key_value(key, val) == 0) {
+    check_nic_p12v_enable = atoi(val);
+  }
+
+  // Use nic_is_resetting to prevent recreating the thread when NIC power off
+  if ((check_nic_p12v_enable) && (error_type == UNIFIED_PCIE_ERR) && (!nic_is_resetting)) {
+    if ((err_id1 == PCIE_LINK_DROP_ERR_ID) || (err_id2 == PCIE_LINK_DROP_ERR_ID)) {
+      // Create thread to check NIC P12V status
+      pthread_create(&tid_check_nic_p12V, NULL, check_nic_p12v_status, NULL);
+    }
+  }
+
   // Update SEL event error record
+  memset(key, 0, sizeof(key));
+  memset(val, 0, sizeof(val));
   snprintf(key, sizeof(key), "sel_event_error_record");
   if (kv_get(key, val, NULL, 0) == 0) {
     sel_event_error_record = atoi(val);
@@ -4254,4 +4321,77 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
   }
 
   return;
+}
+
+
+int
+pal_nic_poweroff_action() {
+  int ret = 0;
+
+  // Disable NIC power
+  ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_NIC_FULL_PWR_EN_R), GPIO_VALUE_LOW);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to disable NIC power.\n", __func__);
+    return -1;
+  }
+
+  ret = run_command("/etc/init.d/networking stop");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to disable network stack.\n", __func__);
+    return -1;
+  }
+
+  ret = run_command("sv stop ncsid");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to stop NCSI daemon.\n", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_nic_poweron_action() {
+  int ret = 0;
+
+  // Enable NIC power
+  ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_NIC_FULL_PWR_EN_R), GPIO_VALUE_HIGH);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to enable NIC power.\n", __func__);
+    return -1;
+  }
+
+  ret = run_command("/etc/init.d/networking restart");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to enable network stack.\n", __func__);
+    return -1;
+  }
+
+  ret = run_command("sv start ncsid");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to start NCSI daemon.\n", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_reset_nic() {
+  int ret = 0;
+
+  ret = pal_nic_poweroff_action();
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to do NIC power off action.\n", __func__);
+    return -1;
+  }
+
+  ret = pal_nic_poweron_action();
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to do NIC power on action.\n", __func__);
+    return -1;
+  }
+
+  syslog(LOG_CRIT, "FRU: %d Reset NIC successfully\n", FRU_NIC);
+  return 0;
 }

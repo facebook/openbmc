@@ -46,16 +46,20 @@ func TestExposeRealFlash0OnSecondaryBoot(t *testing.T) {
 	WDT2_STATUS_REG_ADDR_ORIG := WDT2_STATUS_REG_ADDR
 	WDT2_CLR_STATUS_REG_ADDR_ORIG := WDT2_CLR_STATUS_REG_ADDR
 	MmapDevMemRwOrig := MmapDevMemRw
+	GetOpenBMCVersionFromIssueFileOrig := utils.GetOpenBMCVersionFromIssueFile
+
 
 	defer func() { WDT2_STATUS_REG_ADDR = WDT2_STATUS_REG_ADDR_ORIG }()
 	defer func() { WDT2_CLR_STATUS_REG_ADDR = WDT2_CLR_STATUS_REG_ADDR_ORIG }()
 	defer func() { MmapDevMemRw = MmapDevMemRwOrig }()
+	defer func() { utils.GetOpenBMCVersionFromIssueFile = GetOpenBMCVersionFromIssueFileOrig }()
 
 	mock_mem := []byte{0, 1, 0, 0, 0, 0, 0, 0}
 
 	WDT2_STATUS_REG_ADDR = 0
 	WDT2_CLR_STATUS_REG_ADDR = 4
 	MmapDevMemRw = func() ([]byte, error) { return mock_mem, nil }
+	utils.GetOpenBMCVersionFromIssueFile = func() (string, error) { return "wedge400-v2023.03.0", nil }
 
 	t.Run("Should not call ResetWDT2StatusReg() if flag is not active", func(t *testing.T) {
 		mock_mem = []byte{0, 1, 0, 0, 0, 0, 0, 0}
@@ -181,4 +185,28 @@ func TestExposeRealFlash0OnSecondaryBoot(t *testing.T) {
 
 	})
 
+	t.Run("Should bail out if running old versions of galaxy cmm", func(t *testing.T) {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+
+		GetMachineOrig := utils.GetMachine
+		defer func() { utils.GetMachine = GetMachineOrig }()
+		utils.GetMachine = func() (string, error) { return "armv6l", nil }
+
+		utils.GetOpenBMCVersionFromIssueFile = func() (string, error) { return "cmm-v29", nil}
+
+		res := ExposeRealFlash0OnSecondaryBoot(step.StepParams{})
+
+		if res != nil {
+			t.Errorf("Expected ExposeRealFlash0OnSecondaryBoot() to return nil, got %v", res)
+		}
+
+		re_expected_log_buffer := "" +
+			"^[^\n]+Old galaxy cmm version detected .cmm-v29., skipping step..."
+
+		if !regexp.MustCompile(re_expected_log_buffer).Match(buf.Bytes()) {
+			t.Errorf("Unexpected log buffer: %v", buf.String())
+		}
+
+	})
 }

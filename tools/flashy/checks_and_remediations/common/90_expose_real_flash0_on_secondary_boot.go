@@ -54,9 +54,20 @@ func ExposeRealFlash0OnSecondaryBoot(stepParams step.StepParams) step.StepExitEr
 		return step.ExitSafeToReboot{Err: errors.Errorf("Unable to fetch machine: %v", err)}
 	}
 
+	etcIssueVer, err := utils.GetOpenBMCVersionFromIssueFile()
+	if err != nil {
+		return step.ExitSafeToReboot{Err: errors.Errorf("Unable to fetch /etc/issue: %v", err)}
+	}
+
 	// Bail if not running on AST2400 (armv5tejl) nor AST2500 (armv6l)
 	if machine != "armv5tejl" && machine != "armv6l" {
 		log.Printf("Remediation handles only AST2400 and AST2500")
+		return nil
+	}
+
+	// WDT2 reset logic doesn't work on old versions of cmm (it keeps rebooting to the other flash)
+	if etcIssueVer == "cmm-v29" {
+		log.Printf("Old galaxy cmm version detected (%v), skipping step...", etcIssueVer)
 		return nil
 	}
 
@@ -119,4 +130,3 @@ var MmapDevMemRw = func() ([]byte, error) {
 
 	return mem, nil
 }
-	

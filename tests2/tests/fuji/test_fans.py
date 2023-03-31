@@ -21,8 +21,8 @@ import time
 import unittest
 
 from common.base_fans_test import CommonShellBasedFansTest
+from tests.fuji.helper.libpal import pal_get_fru_id, pal_is_fru_prsnt
 from utils.cit_logger import Logger
-from tests.fuji.helper.libpal import pal_is_fru_prsnt, pal_get_fru_id
 from utils.test_utils import qemu_check
 
 
@@ -43,210 +43,39 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         self.kill_fan_controller()
         self.start_fan_controller()
 
-    def test_fan1_read(self):
+    def fan_read_test_impl(self, fan_id):
         """
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan1")):
-            self.skipTest("fan1 is not present")
+        if not pal_is_fru_prsnt(pal_get_fru_id(f"fan{fan_id}")):
+            self.skipTest(f"fan{fan_id} is not present")
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
         time.sleep(2)
-        super().fan_read(fan=1)
+        super().fan_read(fan=fan_id)
 
-    def test_fan2_read(self):
+    def fan_set_pwm_test_impl(self, fan_id, pwm):
         """
         For each fan read and test speed
         """
         Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan2")):
-            self.skipTest("fan2 is not present")
-        self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_read(fan=2)
-
-    def test_fan3_read(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan3")):
-            self.skipTest("fan3 is not present")
-        self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_read(fan=3)
-
-    def test_fan4_read(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan4")):
-            self.skipTest("fan4 is not present")
-        self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_read(fan=4)
-
-    def test_fan5_read(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan5")):
-            self.skipTest("fan5 is not present")
-        self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_read(fan=5)
-
-    def test_fan6_read(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan6")):
-            self.skipTest("fan6 is not present")
-        self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_read(fan=6)
-
-    def test_fan7_read(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan7")):
-            self.skipTest("fan7 is not present")
-        self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_read(fan=7)
-
-    def test_fan8_read(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan8")):
-            self.skipTest("fan8 is not present")
-        self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_read(fan=8)
-
-    def test_fan1_pwm_set(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan1")):
-            self.skipTest("fan1 is not present")
+        if not pal_is_fru_prsnt(pal_get_fru_id(f"fan{fan_id}")):
+            self.skipTest(f"fan{fan_id} is not present")
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
         # Sleep needed to test and make sure that we won't run
         # into accessing sysfs path issue causing test to fail
         time.sleep(2)
-        super().fan_set_and_read(fan_id=1, pwm=0)
+        super().fan_set_and_read(fan_id=fan_id, pwm=pwm)
 
-    def test_fan2_pwm_set(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan2")):
-            self.skipTest("fan2 is not present")
-        self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_set_and_read(fan_id=2, pwm=30)
+    def test_fans_read(self):
+        for i in range(1, 9):
+            with self.subTest(fan_id=i):
+                self.fan_read_test_impl(i)
 
-    def test_fan3_pwm_set(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan3")):
-            self.skipTest("fan3 is not present")
-        self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_set_and_read(fan_id=3, pwm=50)
-
-    def test_fan4_pwm_set(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan4")):
-            self.skipTest("fan4 is not present")
-        self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_set_and_read(fan_id=4, pwm=70)
-
-    def test_fan5_pwm_set(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan5")):
-            self.skipTest("fan5 is not present")
-        self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_set_and_read(fan_id=4, pwm=80)
-
-    def test_fan6_pwm_set(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan6")):
-            self.skipTest("fan6 is not present")
-        self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_set_and_read(fan_id=4, pwm=50)
-
-    def test_fan7_pwm_set(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan7")):
-            self.skipTest("fan7 is not present")
-        self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_set_and_read(fan_id=4, pwm=40)
-
-    def test_fan8_pwm_set(self):
-        """
-        For each fan read and test speed
-        """
-        Logger.log_testname(self._testMethodName)
-        if not pal_is_fru_prsnt(pal_get_fru_id("fan8")):
-            self.skipTest("fan8 is not present")
-        self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
-        # Sleep needed to test and make sure that we won't run
-        # into accessing sysfs path issue causing test to fail
-        time.sleep(2)
-        super().fan_set_and_read(fan_id=4, pwm=30)
+    def test_fans_pwm_set(self):
+        for i in range(1, 9):
+            with self.subTest(fan_id=i):
+                pwm = i * 10
+                self.fan_set_pwm_test_impl(i, pwm)

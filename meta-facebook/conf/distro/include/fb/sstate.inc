@@ -19,4 +19,6 @@ SSTATE_MIRRORS ?= "\
   file://.* \
   file:///data/users/openbmc/openbmc.sstatecache/LAST/.sstate/PATH \
   file://.* \
-  file:///data/sandcastle/temp/openbmc_sstate/.sstate/PATH "
+  file:///data/sandcastle/temp/openbmc_sstate/.sstate/PATH \
+  file://.* \
+  file:///data/sandcastle/temp/skycastle/openbmc_sstate/.sstate/PATH "

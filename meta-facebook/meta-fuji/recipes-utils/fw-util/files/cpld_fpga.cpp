@@ -15,13 +15,13 @@ class CpldFpgaComponent : public Component {
   int print_version() {
     uint8_t ver[8] = {0};
     string comp_upper(comp);
-    size_t find_len = 0;
+    std::string::size_type find_len;
 
     transform(comp_upper.begin(), comp_upper.end(),
               comp_upper.begin(), ::toupper);
     find_len = comp_upper.find("_");
     if (find_len != string::npos) {
-      comp_upper.replace(find_len, 1, " ");
+      comp_upper[find_len] = ' ';
     }
 
     printf("%s: ", comp_upper.c_str());

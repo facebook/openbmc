@@ -77,7 +77,6 @@ typedef struct {
 
 static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static sensor_path_t snr_path[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
-static uint8_t sdr_fru_update_flag[MAX_NUM_FRUS] = {0};
 static bool init_threshold_done[MAX_NUM_FRUS+1] = {false};
 
 // List of BIC sensors which need to do negative reading handle
@@ -707,14 +706,12 @@ size_t psu2_sensor_cnt = sizeof(psu2_sensor_list)/sizeof(uint8_t);
 size_t psu3_sensor_cnt = sizeof(psu3_sensor_list)/sizeof(uint8_t);
 size_t psu4_sensor_cnt = sizeof(psu4_sensor_list)/sizeof(uint8_t);
 
-static int hsc_power_div = 1;
-
 struct dev_bus_addr PIM_I2C_DEVICE_CHANGE_LIST[MAX_PIM][PIM_I2C_DEVICE_NUMBER];
 struct dev_bus_addr SCM_I2C_DEVICE_CHANGE_LIST[SCM_I2C_DEVICE_NUMBER];
 
 bool is_psu48(void);
 
-static int 
+static int
 get_key_dev_string(uint8_t dev,char *string){
   switch (dev) {
     case KEY_PWRSEQ:
@@ -1146,7 +1143,7 @@ pal_set_pim_thresh(uint8_t fru) {
 }
 
 int
-pal_clear_sensor_cache_value(uint8_t fru) { 
+pal_clear_sensor_cache_value(uint8_t fru) {
   int ret;
   char cmd[128];
   char fruname[16] = {0};
@@ -2223,7 +2220,6 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
   int ret = -1;
   uint8_t type = pal_get_pim_type_from_file(fru);
-  uint8_t pedigree = pal_get_pim_pedigree_from_file(fru);
   uint8_t pimid = fru-FRU_PIM1 + 1;
   uint8_t i2cbus = PIM1_I2CBUS + (pimid - 1) * 8;
   uint8_t PIM_PWRSEQ_addr;
@@ -2463,7 +2459,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
       if ( type == PIM_TYPE_16Q ) { // XP0R8V_PHY
         if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
             PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR ||
             PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR ) {
           ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
@@ -2501,7 +2497,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       if ( type == PIM_TYPE_16Q ) { // DVDD_PHY4
         if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
                   PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
         } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
@@ -2525,7 +2521,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       if ( type == PIM_TYPE_16Q ) { // DVDD_PHY3
         if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
                   PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
         } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
@@ -2574,14 +2570,14 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       if ( type == PIM_TYPE_16Q ) { // DVDD_PHY1
         if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
                   PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
         } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
         } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
-        } 
+        }
       } else if ( type == PIM_TYPE_16O ) { // XP1R8V_OBO
         ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
       }
@@ -2598,7 +2594,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       if ( type == PIM_TYPE_16Q ) { // XP1R8V_EARLY
         if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
                   PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
         } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
@@ -2622,7 +2618,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       if ( type == PIM_TYPE_16Q ) { // XP1R8V_PHYIO
         if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
                   PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
         } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
@@ -2646,7 +2642,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       if ( type == PIM_TYPE_16Q ) {
         if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
                   PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
           ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
         } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
@@ -3552,7 +3548,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_PIM7:
     case FRU_PIM8:
       ret = pim_sensor_read(fru, sensor_num, value);
-      if (sensor_num == 
+      if (sensor_num ==
         (PIM1_SENSOR_QSFP_TEMP+((fru-FRU_PIM1)*PIM_SENSOR_CNT))
       ) {
         delay = 100;
@@ -6611,8 +6607,7 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   sensor_desc_t *snr_desc;
 
   snr_desc = get_sensor_desc(fru, snr_num);
-  strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
-  snr_desc->name[sizeof(snr_desc->name)-1] = 0;
+  snprintf(snr_desc->name, sizeof(snr_desc->name), "%s", psnr->name);
 
   pal_set_def_key_value();
 
@@ -7266,7 +7261,7 @@ int bic_sensor_sdr_path(uint8_t fru, char *path) {
 }
 
 int pal_get_sensor_util_timeout(uint8_t fru) {
-  uint8_t pim_id = 0, pim_type = 0 ,PIM_PWRSEQ_addr;
+  uint8_t pim_type = 0, PIM_PWRSEQ_addr;
   size_t cnt = 0;
   int brd_type_rev = 0;
 

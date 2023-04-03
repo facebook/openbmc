@@ -12,4 +12,4 @@ requests==2.20.0
 six==1.10.0
 StringGenerator==0.2.0
 urllib3==1.26.5
-Werkzeug==0.15.3
+Werkzeug==2.2.3

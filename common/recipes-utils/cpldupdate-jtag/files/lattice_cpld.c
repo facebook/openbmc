@@ -120,9 +120,9 @@ static int read_status_register(unsigned int *status, int ustime)
         printf("%s(%d) - failed to write LSC_READ_STATUS command to cpld\n", __FILE__, __LINE__);
         return -1;
     }
-    
+
     usleep(ustime);
-    
+
     ret = read_data_register(JTAG_STATE_IDLE, &dr_data, 32);
     if(ret < 0){
         printf("%s(%d) - failed to write data from cpld\n", __FILE__, __LINE__);
@@ -142,9 +142,9 @@ static int read_busy_register(unsigned int *status, int ustime)
         printf("%s(%d) - failed to write LSC_READ_STATUS command to cpld\n", __FILE__, __LINE__);
         return -1;
     }
-    
+
     usleep(ustime);
-    
+
     ret = read_data_register(JTAG_STATE_IDLE, &dr_data, 8);
     if(ret < 0){
         printf("%s(%d) - failed to write data from cpld\n", __FILE__, __LINE__);
@@ -188,20 +188,20 @@ int check_cpld_status(unsigned int options, int seconds)
 
 int check_cpld_busy(unsigned int options, int seconds)
 {
-    unsigned int status;
+    unsigned int status = 0;
     int ret;
     int read_status_time = 3000;
     int check_time = 1000;
-    int counter = seconds*(1000*1000/(read_status_time+check_time));
-    
-    while(counter--){
+    int counter = seconds * (1000 * 1000 / (read_status_time + check_time));
+
+    while (counter--) {
         ret = read_busy_register(&status, read_status_time);
-        if(ret < 0){
+        if (ret < 0) {
             printf("%s(%d) - failed to read cpld status\n", __FILE__, __LINE__);
             return -1;
         }
 
-        if((status&options) == 0){
+        if ((status & options) == 0) {
             return 0;
         }
         usleep(check_time);
@@ -216,12 +216,12 @@ cpld_device_t *scan_cpld_device()
     int ret = 0;
     int i;
     cpld_device_t *pcpld_device = NULL;
-    
+
     ret = read_device_id(&tempId);
     if(ret < 0){
         printf("%s(%d) - failed to read cpld device id \n", __FILE__, __LINE__);
         return NULL;
-    } 
+    }
 
     for(i = 0; i < sizeof(device_list)/sizeof(cpld_device_t); i++){
         if(tempId == device_list[i].dev_id){
@@ -257,7 +257,7 @@ int preload()
         goto end_of_func;
     }
     memset(dr_data, 0xff, buffer_size);
-    
+
     rc = write_data_register(JTAG_STATE_IDLE, dr_data, bits);
     if(rc < 0){
         printf("Failed to write data register\n");
@@ -281,7 +281,7 @@ int enter_configuration_mode(int mode)
         printf("Offline Mode\n");
         inst = ISC_ENABLE;
     }
-    
+
     rc = write_onebyte_instruction(JTAG_STATE_IDLE, inst);
     if(rc < 0){
         goto end_of_func;
@@ -312,14 +312,14 @@ int exit_configuration_mode()
     if(rc < 0){
         printf("%s(%d) - failed to write instruction ISC_NOOP\n", __FUNCTION__, __LINE__);
         return -1;
-    } 
+    }
     usleep(1000);
     rc = write_onebyte_instruction(JTAG_STATE_IDLE, ISC_DISABLE);
     if(rc < 0){
         printf("%s(%d) - failed to write instruction ISC_DISABLE\n", __FUNCTION__, __LINE__);
         return -1;
-    } 
-    
+    }
+
     usleep(1000);
     rc = write_onebyte_instruction(JTAG_STATE_IDLE, ISC_NOOP);
     if(rc < 0){
@@ -342,7 +342,7 @@ int erase_cpld(unsigned char option, int num_of_loops)
     if(rc < 0){
         printf("%s(%d) - failed to write instruction ISC_ERASE\n", __FUNCTION__, __LINE__);
         return -1;
-    } 
+    }
 
     rc = write_onebyte_opcode(JTAG_STATE_IDLE, option);
     if(rc < 0){
@@ -367,8 +367,8 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
     unsigned int *page_buffer;
     int used_pages = 0;
 
-    /* 
-     * To reduce the CPLD program time, only program the used pages. 
+    /*
+     * To reduce the CPLD program time, only program the used pages.
      */
     used_pages = jedec_get_cfg_fuse()/(bytes_per_page*BITS_OF_ONE_BYTE);
     if(used_pages == 0){
@@ -379,7 +379,7 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
     if(used_pages > num_of_pages){
         used_pages = num_of_pages;
     }
-    
+
     page_buffer = (unsigned int *)malloc(bytes_per_page);
     if(NULL == page_buffer){
         printf("%s(%d) - failed to allocate page buffer\n",  __FUNCTION__, __LINE__);
@@ -397,7 +397,7 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
         printf("%s(%d) - failed to write opcode\n",  __FUNCTION__, __LINE__);
         goto end_of_func;
     }
-    
+
     for (row = 0 ; row < used_pages; row++){
         enum jtag_endstate endstate;
         rc = jtag_get_status(global_jtag_object, &endstate);
@@ -422,7 +422,7 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
             printf("%s(%d) - failed to write data to cpld\n",  __FUNCTION__, __LINE__);
             goto end_of_func;
         }
-        
+
         run_test_idle(0, JTAG_STATE_IDLE, 2);
         usleep(1000);
 
@@ -640,8 +640,8 @@ int verify_configuration(int bytes_per_page, int num_of_pages)
     unsigned int jed_data;
     unsigned int *page_buffer;
 
-    /* 
-     * To reduce the CPLD program time, only verify the used pages. 
+    /*
+     * To reduce the CPLD program time, only verify the used pages.
      */
     used_pages = jedec_get_cfg_fuse()/(bytes_per_page*BITS_OF_ONE_BYTE);
     if(used_pages == 0){
@@ -652,7 +652,7 @@ int verify_configuration(int bytes_per_page, int num_of_pages)
     if(used_pages > num_of_pages){
         used_pages = num_of_pages;
     }
-    
+
     page_buffer = (unsigned int *)malloc(bytes_per_page);
     if(NULL == page_buffer){
         printf("%s(%d) - failed to allocate page buffer\n",  __FUNCTION__, __LINE__);
@@ -682,7 +682,7 @@ int verify_configuration(int bytes_per_page, int num_of_pages)
     usleep(3000);
 
     printf("Verify config pages: %d \n", used_pages);
-    
+
     for (row = 0 ; row < used_pages; row++) {
         memset(page_buffer, 0, bytes_per_page);
         read_data_register(JTAG_STATE_IDLE, page_buffer, bytes_per_page*BITS_OF_ONE_BYTE);

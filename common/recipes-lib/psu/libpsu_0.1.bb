@@ -32,8 +32,8 @@ LOCAL_URI = " \
 
 LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog -lwedge_eeprom"
 
-DEPENDS += "libfruid libpal libobmc-i2c liblog"
-RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog"
+DEPENDS += "libfruid libpal libobmc-i2c liblog libwedge-eeprom"
+RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog libwedge-eeprom"
 
 
 do_install() {

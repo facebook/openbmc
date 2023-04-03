@@ -27,6 +27,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fby2-nd:lf-master
   meta-fby35:lf-master
   meta-fby3:lf-master
+  meta-fuji:lf-master
   meta-grandcanyon:lf-master
   meta-grandteton:lf-master
   meta-gtartemis:lf-master
@@ -44,7 +45,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-cmm:lf-dunfell
   meta-elbert:lf-dunfell
   meta-fbsp:lf-dunfell
-  meta-fuji:lf-dunfell
   meta-minipack:lf-dunfell
   meta-wedge100:lf-dunfell
   meta-wedge400:lf-dunfell

@@ -25,6 +25,10 @@
       "changes_only": {
         "type": "boolean"
       },
+      "interval": {
+        "type": "integer",
+        "minimum": 0
+      },
       "format": {
         "type": "string",
         "enum": ["RAW", "STRING", "INTEGER", "FLOAT", "FLAGS"]

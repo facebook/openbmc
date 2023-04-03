@@ -23,12 +23,13 @@ package partition
 type PartitionConfigType = string
 
 const (
-	IGNORE       PartitionConfigType = "IGNORE"
-	LEGACY_UBOOT                     = "LEGACY_UBOOT"
-	UBOOT                            = "UBOOT"
-	FIT                              = "FIT"
-	FBMETA_MD5                       = "FBMETA_MD5"
-	FBMETA_IMAGE                     = "FBMETA_IMAGE"
+	IGNORE        PartitionConfigType = "IGNORE"
+	LEGACY_UBOOT                      = "LEGACY_UBOOT"
+	UBOOT                             = "UBOOT"
+	FIT                               = "FIT"
+	FBMETA_MD5                        = "FBMETA_MD5"
+	FBMETA_IMAGE                      = "FBMETA_IMAGE"
+	LFMETA_SHA256                     = "LFMETA_SHA256"
 )
 
 // ImageFormat represents a layout format for images.

@@ -72,7 +72,9 @@ var getAllPartitionsFromPartitionConfigs = func(
 
 	for _, pInfo := range partitionConfigs {
 		// make sure the beginning offset is not larger than the image
-		if pInfo.Offset > uint32(len(data)) {
+		// partitions of the IGNORE format can be not present in the image, and
+		// that is ok.
+		if pInfo.Offset > uint32(len(data)) && pInfo.Type != IGNORE {
 			return nil, errors.Errorf("Wanted start offset (%v) larger than image file size (%v)",
 				pInfo.Offset, len(data))
 		}
@@ -84,20 +86,24 @@ var getAllPartitionsFromPartitionConfigs = func(
 		// but that would require operating on a new copy of the image in memory.
 		// Golang mmap unfortunately doesn't expose the addr argument to allow
 		// fixed mapping (we could map a 23MB image file over a 32MB /dev/zero file)
-		pOffsetEnd, err := utils.AddU32(pInfo.Size, pInfo.Offset)
-		if err != nil {
-			return nil, errors.Errorf("Unable to get offset end: %v", err)
-		}
-		if uint32(len(data)) < pOffsetEnd {
-			actualPartitionSize := uint32(len(data)) - pInfo.Offset
-			pInfo.Size = actualPartitionSize
-			pOffsetEnd = uint32(len(data))
-		}
+		var pData []byte
+		if uint32(len(data)) > pInfo.Offset {
+			pOffsetEnd, err := utils.AddU32(pInfo.Size, pInfo.Offset)
+			if err != nil {
+				return nil, errors.Errorf("Unable to get offset end: %v", err)
+			}
 
-		// only pass in region of data defined as the partition
-		pData, err := utils.BytesSliceRange(data, pInfo.Offset, pOffsetEnd)
-		if err != nil {
-			return nil, errors.Errorf("Unable to extract partition data: %v", err)
+			if uint32(len(data)) < pOffsetEnd {
+				actualPartitionSize := uint32(len(data)) - pInfo.Offset
+				pInfo.Size = actualPartitionSize
+				pOffsetEnd = uint32(len(data))
+			}
+
+			// only pass in region of data defined as the partition
+			pData, err = utils.BytesSliceRange(data, pInfo.Offset, pOffsetEnd)
+			if err != nil {
+				return nil, errors.Errorf("Unable to extract partition data: %v", err)
+			}
 		}
 		args := PartitionFactoryArgs{
 			Data:  pData,

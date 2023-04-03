@@ -80,6 +80,19 @@ var ImageFormats = []ImageFormat{
 		},
 	},
 	{
+		Name: "lf-meta",
+		PartitionConfigs: []PartitionConfigInfo{
+			{
+				// pass in the whole image and let LFMetaImagePartition deal with
+				// finding the partitionConfigs and checksums
+				Name:   "lfmeta-image",
+				Offset: 0,
+				Size:   128 * 1024 * 1024,
+				Type:   LFMETA_IMAGE,
+			},
+		},
+	},
+	{
 		Name: "vboot",
 		PartitionConfigs: []PartitionConfigInfo{
 			{

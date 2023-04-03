@@ -28,7 +28,7 @@ import (
 // (2) Make sure Offset and Size are multiples of 1024 (prevent accidental kB entry)
 //     As of now we don't have any sizes/offsets requiring a higher precision.
 // (3) Make sure FIT partitions specify FitImageNodes (fw-util assumes 1 if not specified)
-// (4) Make sure final Size + Offset <= 32768 * 1024 (32MB)
+// (4) Make sure final Size + Offset <= 128 * 1024 * 1024 (128MB)
 func TestImageFormats(t *testing.T) {
 	for _, format := range ImageFormats {
 		lastEndOffset := uint32(0)
@@ -56,8 +56,8 @@ func TestImageFormats(t *testing.T) {
 
 			lastEndOffset = config.Size + config.Offset
 		}
-		if lastEndOffset > 32768*1024 {
-			t.Errorf("Image format %v' more than 32MB!", format)
+		if lastEndOffset > 128*1024*1024 {
+			t.Errorf("Image format %v' more than 128MB!", format)
 		}
 	}
 }

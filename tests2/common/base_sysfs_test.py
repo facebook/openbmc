@@ -18,45 +18,35 @@
 # Boston, MA 02110-1301 USA
 #
 import os
+
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.sysfs_utils import SysfsUtils
 
 
-class BaseSwitchTest(object):
+class BaseSysfsTest(object):
     def setUp(self):
-        Logger.start(name=self._testMethodName)
         self.path = None
+        self.files_to_test = None
+        Logger.start(name=self._testMethodName)
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
     @abstractmethod
-    def set_swtich_node_cmd(self):
+    def setPath(self):
         pass
 
-    def check_smb_syscpld_nodes_value(self, filename):
-        Logger.info("filename is {}".format(filename))
-        if not os.path.isfile(filename):
-            return [False, filename, "access", None]
-        node_data = SysfsUtils.read_int(filename)
-        if not isinstance(node_data, int):
-            return [False, filename, "read", node_data]
-        if node_data == 0x1:
-            return [True, None, None, None]
-        else:
-            return [False, filename, "read", node_data]
+    @abstractmethod
+    def setFilesToTest(self):
+        pass
 
-    def test_syscpld_nodes_GB_turn_on(self):
-        self.set_swtich_node_cmd()
-        syscpld_nodes_value = self.check_smb_syscpld_nodes_value(self.path)
-        self.assertTrue(
-            syscpld_nodes_value[0],
-            "{} path failed {} with value {}".format(
-                syscpld_nodes_value[1],
-                syscpld_nodes_value[2],
-                syscpld_nodes_value[3],
-            ),
-        )
+    def test_valid_files(self):
+        self.setPath()
+        self.setFilesToTest()
+        self.assertTrue(os.path.exists(self.path))
+        for filename in self.files_to_test:
+            filepath = os.path.join(self.path, filename)
+            self.assertIsNotNone(SysfsUtils.read_int(filepath))

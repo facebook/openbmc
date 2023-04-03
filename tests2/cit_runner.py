@@ -92,7 +92,16 @@ class Tests:
         return value example : tests.wedge100.test_eeprom.EepromTest.test_odm_pcb
         """
         test_string = testitem.split("(")
-        test_path = test_string[1].split(")")[0] + "." + test_string[0]
+        test_path = test_string[1].split(")")[0]
+        """
+        Test item has different path with different python version
+        example:
+        on 3.8  set_psu_cmd (tests.fuji.test_psu.Psu1Test)
+        on 3.11 set_psu_cmd (tests.fuji.test_psu.Psu1Test.set_psu_cmd)
+        """
+        if test_path.split(".")[-1].strip() != test_string[0].strip():
+            test_path = test_path + "." + test_string[0]
+
         return test_path.strip()
 
     def get_all_platform_tests(self):

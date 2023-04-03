@@ -29,6 +29,7 @@ const (
 	FIT                               = "FIT"
 	FBMETA_MD5                        = "FBMETA_MD5"
 	FBMETA_IMAGE                      = "FBMETA_IMAGE"
+	LFMETA_IMAGE                      = "LFMETA_IMAGE"
 	LFMETA_SHA256                     = "LFMETA_SHA256"
 )
 

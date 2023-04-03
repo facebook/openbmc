@@ -88,6 +88,8 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
     rackmond_.stop();
   } else if (cmd == "resume") {
     rackmond_.start();
+  } else if (cmd == "rescan") {
+    rackmond_.forceScan();
   } else if (cmd == "getMonitorData") {
     ModbusDeviceFilter devFilter{};
     ModbusRegisterFilter regFilter{};
@@ -130,7 +132,8 @@ void RackmonUNIXSocketService::handleJSONCommand(
     std::unique_ptr<UnixSock> cli) {
   const json& req = *reqPtr;
   auto print_msg = [&req](std::exception& e) {
-    logError << "ERROR Executing: " << req["type"] << " " << e.what() << std::endl;
+    logError << "ERROR Executing: " << req["type"] << " " << e.what()
+             << std::endl;
   };
   json resp;
 

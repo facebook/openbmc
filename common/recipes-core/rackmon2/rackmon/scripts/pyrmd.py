@@ -141,6 +141,10 @@ class RackmonInterface:
         return {"type": "resume"}
 
     @classmethod
+    def _rescan(cls):
+        return {"type": "rescan"}
+
+    @classmethod
     def _list(cls):
         return {"type": "listModbusDevices"}
 
@@ -209,6 +213,10 @@ class RackmonInterface:
         cls._do(cls._resume)
 
     @classmethod
+    def rescan(cls):
+        cls._do(cls._rescan)
+
+    @classmethod
     def list(cls):
         result = cls._do(cls._list)
         return result["data"]
@@ -263,6 +271,10 @@ class RackmonAsyncInterface(RackmonInterface):
     @classmethod
     async def resume(cls):
         await cls._do(cls._resume)
+
+    @classmethod
+    async def rescan(cls):
+        await cls._do(cls._rescan)
 
     @classmethod
     async def list(cls):

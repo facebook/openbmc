@@ -527,6 +527,11 @@ int main(int argc, const char** argv) {
     do_cmd("resume", json_fmt);
   });
 
+  // Rescan
+  app.add_subcommand("rescan", "Force rescan all busses")->callback([&]() {
+    do_cmd("rescan", json_fmt);
+  });
+
   app.require_subcommand(/* min */ 1, /* max */ 1);
 
   CLI11_PARSE(app, argc, argv);

@@ -30,14 +30,13 @@ path_to_flashy=""
 # Dry run, skips running flashy
 dry_run="false"
 
-options=(-o "LogLevel=error" -o "StrictHostKeyChecking=no")
-options+=(-o "UserKnownHostsFile=/dev/null")
-sshpassCmd=(sshpass -p0penBmc)
-sshcmd=("${sshpassCmd[@]}" ssh "${options[@]}")
+options=""
+sshpassCmd=""
+sshcmd=""
 
 usage="Usage:
 $(basename "$0") \
---device DEVICE_ID --imagepath IMAGE_PATH --host OPENBMC_HOSTNAME --path-to-flashy PATH_TO_FLASHY (--dry_run)
+--device DEVICE_ID --imagepath IMAGE_PATH --host OPENBMC_HOSTNAME --port OPENBMC_HOSTPORT --path-to-flashy PATH_TO_FLASHY (--dry_run)
 
 Run this script to upgrade a remote OpenBMC.
 
@@ -45,6 +44,8 @@ Example DEVICE_ID: \"mtd:flash0\"
 
 Supply --dry_run to only run the initialize step (does not actually run flashy on the device,
 but copies over required files.)
+
+If --port is supplied, it will connect to BMC on that specific host port.
 
 If --path-to-flashy is supplied, it is assumed that flashy is already built--this is true if you
 are using the prebuilt released flashy.
@@ -57,6 +58,7 @@ scpfile() {
     file=${1:?Please specify file to scp}
     dst=${2:?Please specify destination directory}
     local target=""
+    local scpOptions=("${options[@]}")
     target=$host
 
     if [[ "$target" =~ .*:.* ]]
@@ -64,7 +66,12 @@ scpfile() {
         target="[$host]"
     fi
 
-    "${sshpassCmd[@]}" scp "${options[@]}" "$file" "root@$target:$dst"
+    if [[ -n "$port" ]]
+    then
+	    scpOptions+=(-P "$port")
+    fi
+
+    "${sshpassCmd[@]}" scp "${scpOptions[@]}" "$file" "root@$target:$dst"
 }
 
 initialize() {
@@ -136,6 +143,7 @@ device_id=""
 imagepath=""
 # OpenBMC hostname
 host=""
+port=""
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -159,6 +167,12 @@ case $key in
     --host)
     check_second_argument_supplied "$@"
     host="$2"
+    shift
+    shift
+    ;;
+    --port)
+    check_second_argument_supplied "$@"
+    port="$2"
     shift
     shift
     ;;
@@ -204,9 +218,18 @@ fi
 [ -n "$imagepath" ] || exit_argument_required "imagepath"
 [ -f "$imagepath" ] || exit_file_required "Image" "$imagepath"
 
+options=(-o "LogLevel=error" -o "StrictHostKeyChecking=no")
+options+=(-o "UserKnownHostsFile=/dev/null")
+sshCmdOptions=("${options[@]}")
+if [[ -n "$port" ]]
+then
+    sshCmdOptions+=(-p "$port")
+fi
+sshpassCmd=(sshpass -p0penBmc)
+sshcmd=("${sshpassCmd[@]}" ssh "${sshCmdOptions[@]}")
 sshcmd+=("root@$host")
 
-echo "Running a remote upgrade on '$host' with image '$imagepath'"
+echo "Running a remote upgrade on '$host' $port with image '$imagepath'"
 if [ -t 0 ]
 then
     confirm_continue

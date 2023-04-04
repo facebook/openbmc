@@ -30,5 +30,5 @@ SRC_URI:append = " \
 "
 
 SRC_URI:append:aspeed-g5 = " \
-    file://0126-Added-shutdown-path-in-spi_aspeed_smc-driver.patch \
+    file://0151-spi-aspeed-add-shutdown-path-for-AST25XX-SPI-control.patch \
 "

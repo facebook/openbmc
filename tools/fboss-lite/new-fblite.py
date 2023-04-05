@@ -157,11 +157,27 @@ def add_new_yocto_version_entry(platname):
 
 
 if __name__ == "__main__":
-    """Create a new fboss-lite machine layer."""
+    """Create a new fboss-lite machine layer and/or new base CIT test suit"""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-n", "--name", type=str, required=True, help="model name of the new platform"
     )
+
+    parser.add_argument(
+        "-p",
+        "--purpose",
+        type=str,
+        required=False,
+        help="Create machine layer, and/or base CIT test suit, \
+            default is 'machine_layer'",
+        choices=[
+            "machine_layer",
+            "cit",
+            "all",
+        ],
+        default="machine_layer",
+    )
+
     args = parser.parse_args()
 
     #
@@ -169,39 +185,50 @@ if __name__ == "__main__":
     #
     setup_exec_env()
 
-    #
-    # Copy reference layer to the machine layer
-    #
-    machine_layer = os.path.join(OBMC_META_FB, "meta-%s" % args.name)
-    if os.path.exists(machine_layer):
-        print("Error: %s was already created. Exiting!" % machine_layer)
-        sys.exit(1)
-    print("Copy %s to %s.." % (FBLITE_REF_LAYER, machine_layer))
-    shutil.copytree(FBLITE_REF_LAYER, machine_layer)
+    if args.purpose == "machine_layer" or args.purpose == "all":
+        #
+        # Copy reference layer to the machine layer
+        #
+        machine_layer = os.path.join(OBMC_META_FB, "meta-%s" % args.name)
+        if os.path.exists(machine_layer):
+            print("Error: %s was already created. Exiting!" % machine_layer)
+            sys.exit(1)
+        print("Copy %s to %s.." % (FBLITE_REF_LAYER, machine_layer))
+        shutil.copytree(FBLITE_REF_LAYER, machine_layer)
 
-    #
-    # Update files with proper values in the machine layer
-    #
-    for root, _dirs, files in os.walk(machine_layer):
-        if not files:
-            continue
+        #
+        # Update files with proper values in the machine layer
+        #
+        for root, _dirs, files in os.walk(machine_layer):
+            if not files:
+                continue
 
-        print("processing files under %s.." % root)
-        for f_entry in files:
-            pathname = os.path.join(root, f_entry)
-            update_machine_code(pathname, args.name)
+            print("processing files under %s.." % root)
+            for f_entry in files:
+                pathname = os.path.join(root, f_entry)
+                update_machine_code(pathname, args.name)
 
-            # Rename leaf files if needed
-            if KEY_MODEL_NAME in f_entry:
-                new_name = f_entry.replace(KEY_MODEL_NAME, args.name)
-                os.rename(pathname, os.path.join(root, new_name))
+                # Rename leaf files if needed
+                if KEY_MODEL_NAME in f_entry:
+                    new_name = f_entry.replace(KEY_MODEL_NAME, args.name)
+                    os.rename(pathname, os.path.join(root, new_name))
 
-    #
-    # update the openbmc-init-build-env file by adding the new yocto distro[] entry
-    #
-    add_new_yocto_version_entry(args.name)
+        #
+        # update the openbmc-init-build-env file by adding the new yocto distro[] entry
+        #
+        add_new_yocto_version_entry(args.name)
 
-    #
-    # Commit the patch in local tree.
-    #
-    commit_machine_layer(args.name, machine_layer)
+        #
+        # Commit the patch in local tree.
+        #
+        commit_machine_layer(args.name, machine_layer)
+
+    if args.purpose == "cit" or args.purpose == "all":
+        #
+        # Update cit_runner.py
+        #
+
+        #
+        # Copy base CIT cases to test2/test/<model_name>
+        #
+        print("Adding base cit test cases")

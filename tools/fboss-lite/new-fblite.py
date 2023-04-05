@@ -78,6 +78,7 @@ KEY_MODEL_NAME = "@FBMODEL@"
 #
 TMP_DIR = "/tmp"
 COMMIT_TEMPLATE = "tools/fboss-lite/commit-template.txt"
+COMMIT_TEMPLATE_CIT = "tools/fboss-lite/commit-template-cit.txt"
 
 
 def run_shell_cmd(cmd):
@@ -205,6 +206,29 @@ def update_cit_runner(platname):
     print("Updated cit_runner")
 
 
+def commit_cit_changes(name):
+    """Commit the cit code to local repo."""
+    cit_commit_file = os.path.join(TMP_DIR, "cit_commit.txt")
+    cit_folder = os.path.join(CIT_TEST_DIR, "%s" % args.name)
+
+    try:
+        # Prepare commit message
+        shutil.copyfile(COMMIT_TEMPLATE_CIT, cit_commit_file)
+        cmd = "sed -i -e 's/%s/%s/g' %s" % (
+            KEY_MODEL_NAME,
+            name,
+            cit_commit_file,
+        )
+        run_shell_cmd(cmd)
+
+        print("Commit the CIT patch to local repo..")
+        run_shell_cmd("git add -f %s" % cit_folder)
+        run_shell_cmd("git add -f %s" % CIT_RUNNER)
+        run_shell_cmd("git commit -F %s" % cit_commit_file)
+    finally:
+        os.remove(cit_commit_file)
+
+
 if __name__ == "__main__":
     """Create a new fboss-lite machine layer and/or new base CIT test suit"""
     parser = argparse.ArgumentParser()
@@ -283,3 +307,7 @@ if __name__ == "__main__":
         update_cit_code(args.name)
 
         print("Added base CIT suit for %s" % (args.name))
+
+        commit_cit_changes(args.name)
+
+        print("Committed base CIT suit for %s " % (args.name))

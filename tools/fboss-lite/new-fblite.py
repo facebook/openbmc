@@ -55,7 +55,7 @@ import os
 import shutil
 import subprocess
 import sys
-
+from pathlib import Path
 
 #
 # Global files and directories.
@@ -63,7 +63,9 @@ import sys
 OBMC_BUILD_ENV_FILE = "openbmc-init-build-env"
 FBLITE_REF_LAYER = "tools/fboss-lite/fblite-ref-layer"
 OBMC_META_FB = "meta-facebook"
+CIT_REF_CASES = "tools/fboss-lite/cit-ref-cases"
 CIT_RUNNER = "tests2/cit_runner.py"
+CIT_TEST_DIR = "tests2/tests"
 
 #
 # Predefined keywords in reference layer, and need to be updated when
@@ -157,6 +159,40 @@ def add_new_yocto_version_entry(platname):
         os.remove(other_content)
 
 
+def update_cit_code(platname):
+    """Add new CIT directory for new model and common CIT cases"""
+    cit_plat_path = "%s/%s" % (CIT_TEST_DIR, platname)
+    if os.path.exists(cit_plat_path):
+        print("Error: %s was already created. Exiting!" % cit_plat_path)
+        sys.exit(1)
+    shutil.copytree(CIT_REF_CASES, cit_plat_path)
+
+    #
+    # Replace @FBMODEL@ with capitalized platform name
+    platname_prefix = platname.capitalize()
+
+    for root, _dirs, files in os.walk(cit_plat_path):
+        if not files:
+            continue
+
+        print("processing CIT scripts under %s.." % root)
+        for f_entry in files:
+            old_pathname = os.path.join(root, f_entry)
+            # remove ".template" sufffix, if exists
+            if Path(old_pathname).match("*.template"):
+                pathname = os.path.join(root, Path(old_pathname).stem)
+                os.rename(old_pathname, pathname)
+            else:
+                pathname = old_pathname
+
+            cmd = "sed -i -e 's/%s/%s/g' %s" % (
+                KEY_MODEL_NAME,
+                platname_prefix,
+                pathname,
+            )
+            run_shell_cmd(cmd)
+
+
 def update_cit_runner(platname):
     """Add new model name to cit_runner.py"""
     CIT_PLATFORM_ANCHOR = "Add new platform name here"
@@ -244,4 +280,6 @@ if __name__ == "__main__":
         #
         # Copy base CIT cases to test2/test/<model_name>
         #
+        update_cit_code(args.name)
+
         print("Added base CIT suit for %s" % (args.name))

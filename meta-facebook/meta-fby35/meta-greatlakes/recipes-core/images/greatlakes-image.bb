@@ -44,7 +44,6 @@ IMAGE_INSTALL += " \
   crashdump \
   throttle-util \
   bios-util \
-  nvme-util \
   show-sys-config \
   bic-util \
   usb2jtag-util \

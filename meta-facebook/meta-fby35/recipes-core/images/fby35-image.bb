@@ -45,7 +45,6 @@ IMAGE_INSTALL += " \
   me-util \
   throttle-util \
   bios-util \
-  nvme-util \
   show-sys-config \
   bic-util \
   usb2jtag-util \

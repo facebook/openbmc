@@ -220,6 +220,7 @@ def arg_parser():
             "sandia",
             "grandteton",
             "montblanc",
+            # Add new platform name here -- for anchor purpose, do not remove
         ],
     )
     parser.add_argument(

@@ -63,6 +63,7 @@ import sys
 OBMC_BUILD_ENV_FILE = "openbmc-init-build-env"
 FBLITE_REF_LAYER = "tools/fboss-lite/fblite-ref-layer"
 OBMC_META_FB = "meta-facebook"
+CIT_RUNNER = "tests2/cit_runner.py"
 
 #
 # Predefined keywords in reference layer, and need to be updated when
@@ -156,6 +157,18 @@ def add_new_yocto_version_entry(platname):
         os.remove(other_content)
 
 
+def update_cit_runner(platname):
+    """Add new model name to cit_runner.py"""
+    CIT_PLATFORM_ANCHOR = "Add new platform name here"
+    cmd = "sed -i '/%s/i \\            \"%s\",' %s" % (
+        CIT_PLATFORM_ANCHOR,
+        platname,
+        CIT_RUNNER,
+    )
+    run_shell_cmd(cmd)
+    print("Updated cit_runner")
+
+
 if __name__ == "__main__":
     """Create a new fboss-lite machine layer and/or new base CIT test suit"""
     parser = argparse.ArgumentParser()
@@ -227,8 +240,8 @@ if __name__ == "__main__":
         #
         # Update cit_runner.py
         #
-
+        update_cit_runner(args.name)
         #
         # Copy base CIT cases to test2/test/<model_name>
         #
-        print("Adding base cit test cases")
+        print("Added base CIT suit for %s" % (args.name))

@@ -98,6 +98,7 @@ KNOWN_USAGE_STRINGS = {
         "chattr [-pRVf] [-+=aAcCdDeijPsStTuFx] [-v version] files...",
         "chattr [-R] [-v VERSION] [-+=AacDdijsStTu] FILE...",  # BusyBox 1.31.1
         "chattr [-R] [-v VERSION] [-p PROJID] [-+=AacDdijsStTu] FILE...",  # BusyBox v1.35.0
+        "chattr [-RVf] [-+=aAcCdDeijPsStTuFx] [-p project] [-v version] files...",
     ],
     "chgrp": [
         "chgrp [-RhLHP]... GROUP FILE...",

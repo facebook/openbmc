@@ -79,33 +79,31 @@ function server_sync {
   fi
 }
 
+function update_ntp_config_from_kv() {
+  local ntp_server
+  ntp_server=$(/usr/bin/kv get ntp_server persistent)
+  if [ -z "$ntp_server" ]; then
+    return
+  fi
+
+  sed -i "s/.*# REPLACE WITH KV.*/server $ntp_server iburst # REPLACE WITH KV/" /etc/ntp.conf
+  /etc/init.d/ntpd restart
+}
+
 # Sync BMC's date with one of the four servers
 function sync_date {
-  if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-    server_sync
-  else
-    if date | grep '2018' > /dev/null ; then
-      ntp_server=$(/usr/bin/kv get "ntp_server" persistent)
-      echo "NTP server sync failed ntp_server:$ntp_server"
-      logger -p user.info "NTP server sync failed ntp_server:$ntp_server"
-      /usr/sbin/ntpdate  -u $ntp_server
-      if date | grep '2018'  > /dev/null ; then
-        echo "NTP server sync failed again ntp_server:$ntp_server"
-        logger -p user.info "NTP server sync failed again ntp_server:$ntp_server"
-        server_sync
-      else
-        echo "NTP server sync success after try ntpdate"
-        logger -p user.info "NTP server sync success after try ntpdate"
-        test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
-        echo 1 > /tmp/sync_date
-      fi
-    else
-      ntp_server=$(/usr/bin/kv get "ntp_server" persistent)
-      # logger -p user.info "NTP server sync success ntp_server:$ntp_server"
-      test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
-      echo 1 > /tmp/sync_date
+  local NTP_DELAY_COUNT
+
+  update_ntp_config_from_kv
+
+  NTP_DELAY_COUNT=0
+  while [ $NTP_DELAY_COUNT -lt 30 ];
+  do
+    if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
+      server_sync
+      break
     fi
-  fi
+  done
 }
 
 sync_date

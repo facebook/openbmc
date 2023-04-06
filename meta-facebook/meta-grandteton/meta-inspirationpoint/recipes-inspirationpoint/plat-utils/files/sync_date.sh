@@ -25,13 +25,15 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 DEBUG_ENABLE=false
 
-is_ntp_enabled() {
+update_ntp_config_from_kv() {
   local ntp_server
   ntp_server=$(/usr/bin/kv get ntp_server persistent)
-  if ! /usr/sbin/ntpdate -q "$ntp_server" > /dev/null ; then
-    return 1 # disabled
+  if [ -z "$ntp_server" ]; then
+    return
   fi
-  return 0 # enabled
+
+  sed -i "s/.*# REPLACE WITH KV.*/server $ntp_server iburst # REPLACE WITH KV/" /etc/ntp.conf
+  /etc/init.d/ntpd restart
 }
 
 is_ntp_time_synced() {
@@ -60,7 +62,7 @@ ntp_sync_delay() {
     NTP_DELAY_COUNT=0
     echo "[$(/bin/date)] ntp is enabled, ntp_server: $(/usr/bin/kv get ntp_server persistent)"
 
-    while [ $NTP_DELAY_COUNT -lt 60 ];
+    while [ $NTP_DELAY_COUNT -lt 30 ];
     do
       if is_ntp_time_synced ; then
         break
@@ -81,9 +83,8 @@ sync_date()
   if [ "$(is_bmc_por)" -eq 1 ]; then
 
     sleep 5
-    if is_ntp_enabled ; then
-      ntp_sync_delay
-    fi
+    update_ntp_config_from_kv
+    ntp_sync_delay
     echo Syncing up BMC time with server...
   fi
 }

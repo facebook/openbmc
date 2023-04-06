@@ -10,7 +10,6 @@ RDEPENDS:${PN} += " \
   curl \
   iproute2 \
   libndp \
-  ntpdate \
   openssh-sftp-server \
   "
 

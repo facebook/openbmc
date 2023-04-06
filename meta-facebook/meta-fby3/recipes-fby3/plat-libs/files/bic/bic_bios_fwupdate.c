@@ -83,7 +83,7 @@ bic_send:
 }
 
 static int
-check_bios_image(uint8_t slot_id, int fd, long size) {
+check_bios_image(uint8_t slot_id __attribute__((unused)), int fd, long size) {
   int offs, rcnt, end;
   uint8_t *buf;
   uint8_t ver_sig[] = { 0x46, 0x49, 0x44, 0x04, 0x78, 0x00 };
@@ -99,6 +99,7 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
   offs = size - BIOS_VER_REGION_SIZE;
   if (lseek(fd, offs, SEEK_SET) != (off_t)offs) {
     syslog(LOG_ERR, "%s: lseek to %d failed", __func__, offs);
+    free(buf);
     return -1;
   }
 
@@ -237,12 +238,13 @@ verify_bios_image(uint8_t slot_id, int fd, long size) {
 
   if ((offset = lseek(fd, 0, SEEK_SET))) {
     syslog(LOG_ERR, "%s: fail to init file offset %d, errno=%d", __func__, offset, errno);
+    free(tbuf);
     return -1;
   }
   while (1) {
     count = read(fd, tbuf, BIOS_VERIFY_PKT_SIZE);
     if (count <= 0) {
-      if (offset >= size) {
+      if (offset >= (size_t)size) {
         ret = 0;
       }
       break;
@@ -253,7 +255,7 @@ verify_bios_image(uint8_t slot_id, int fd, long size) {
       tcksum += tbuf[i];
     }
 
-    target = ((offset + count) >= size) ? (UPDATE_BIOS | last_pkt) : UPDATE_BIOS;
+    target = ((offset + count) >= (size_t)size) ? (UPDATE_BIOS | last_pkt) : UPDATE_BIOS;
 
     // Get the checksum of binary image
     rc = bic_get_fw_cksum(slot_id, target, offset, count, (uint8_t*)&gcksum);
@@ -343,7 +345,7 @@ update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
   while (1) {
     memset(buf, 0xFF, sizeof(buf));
     // For BIOS, send packets in blocks of 64K
-    if ((offset+IPMB_WRITE_COUNT_MAX) > (i * BIOS_ERASE_PKT_SIZE)) {
+    if ((offset+IPMB_WRITE_COUNT_MAX) > (size_t)(i * BIOS_ERASE_PKT_SIZE)) {
       read_count = (i * BIOS_ERASE_PKT_SIZE) - offset;
       i++;
     } else {

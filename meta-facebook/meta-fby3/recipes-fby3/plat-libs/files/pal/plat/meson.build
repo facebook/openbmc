@@ -10,7 +10,7 @@ pal_sources += [
     ]
 
 pal_deps += [
-    cc.find_library('bic'),
+    dependency('libbic'),
     cc.find_library('fby3_common'),
     cc.find_library('fby3_fruid'),
     dependency('libgpio-ctrl'),

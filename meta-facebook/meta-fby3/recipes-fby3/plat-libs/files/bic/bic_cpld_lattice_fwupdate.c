@@ -654,7 +654,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info) {
   unsigned int JED_CheckSum = 0;
   int copy_size;
   int current_addr=0;
-  int i;
+  size_t i;
   int ret = 0;
   int cf_size_used = 0; //(cf_size * LATTICE_COL_SIZE) / 8; // unit: bytes
 
@@ -883,7 +883,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info) {
   return ret;
 }
 
-int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
+int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t force __attribute__((unused))) {
   int ret = 0;
   uint32_t fsize = 0;
   uint32_t record_offset = 0;
@@ -944,7 +944,7 @@ int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
     }
 
     //step 5 - send data and check the status
-    int i, data_idx, idx; //two vars are used in for-loop
+    size_t i, data_idx, idx; //two vars are used in for-loop
 #if 1
     printf("[Update CPLD via Exp BIC]\n");
     for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
@@ -1395,7 +1395,7 @@ bic_update_cpld_lattice_usb(uint8_t slot_id, uint8_t intf, const char *image, us
 
     int transferlen = 0;
     int transferred = 0;
-    int data_idx, idx, i;
+    size_t data_idx, idx, i;
     printf("[Update CPLD via USB]\n");
     while (1) {
       memset(data, 0xFF, sizeof(data));
@@ -1514,7 +1514,7 @@ bic_close_exp_usb_dev(usb_dev* udev) {
 }
 
 int
-update_bic_cpld_lattice_usb(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
+update_bic_cpld_lattice_usb(uint8_t slot_id, char *image, uint8_t intf, uint8_t force __attribute__((unused))) {
   struct timeval start, end;
   int ret = 0;
   usb_dev   bic_udev;

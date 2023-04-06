@@ -253,13 +253,13 @@ Max10_erase_sector(uint8_t slot_id, SectorType_t secType, uint8_t intf) {
   int done = 0;
 
   //Control register bit 20~22
-  enum{
-    Sector_erase_CFM0   = 0b101 << 20,
-    Sector_erase_CFM1   = 0b100 << 20,
-    Sector_erase_CFM2   = 0b011 << 20,
-    Sector_erase_UFM0   = 0b010 << 20,
-    Sector_erase_UFM1   = 0b001 << 20,
-    Sector_erase_NotSet = 0b111 << 20,
+  enum {
+    Sector_erase_CFM0   = 0x05 /*0b101*/ << 20,
+    Sector_erase_CFM1   = 0x04 /*0b100*/ << 20,
+    Sector_erase_CFM2   = 0x03 /*0b011*/ << 20,
+    Sector_erase_UFM0   = 0x02 /*0b010*/ << 20,
+    Sector_erase_UFM1   = 0x01 /*0b001*/ << 20,
+    Sector_erase_NotSet = 0x07 /*0b111*/ << 20,
   };
 
   value = read_register(slot_id, ON_CHIP_FLASH_IP_CSR_CTRL_REG, intf);
@@ -525,6 +525,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
       } else {
         printf("The size of image is not expected!\n");
       }
+      /*fall through*/
     case FORCE_UPDATE_SET:
       /*fall through*/
     default:
@@ -581,7 +582,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
     }
 
     //if all data are sent, break it.
-    if ( offset == read_bytes ) break;
+    if ( offset == (size_t)read_bytes ) break;
   }
 
   //step 5 - protect sectors

@@ -100,7 +100,7 @@ int i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount)
   return BIC_STATUS_SUCCESS;
 }
 
-int is_bic_ready(uint8_t slot_id, uint8_t intf) {
+int is_bic_ready(uint8_t slot_id __attribute__((unused)), uint8_t intf __attribute__((unused))) {
   //TODO: 1. check the ready pin of server bic by reading GPIO
   //send a command to BIC2 to see if it can be reached
   return BIC_STATUS_SUCCESS;

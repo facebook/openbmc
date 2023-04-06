@@ -195,7 +195,7 @@ bic_sph_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_s
 }
 
 int
-_update_brcm_fw(uint8_t slot_id, uint8_t bus, uint8_t target, uint32_t offset, uint16_t count, uint8_t * buf) {
+_update_brcm_fw(uint8_t slot_id, uint8_t bus, uint8_t target __attribute__((unused)), uint32_t offset, uint16_t count, uint8_t * buf) {
   uint8_t wbuf[256], rbuf[256];
   int ret = 0;
   int rlen = 0; // write
@@ -454,7 +454,7 @@ bic_vk_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_si
 }
 
 
-int update_bic_m2_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, uint8_t type) {
+int update_bic_m2_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force __attribute__((unused)), uint8_t type) {
   int fd = 0;
   int ret = 0;
   int file_size = 0;

@@ -459,7 +459,7 @@ cal_TI_crc16(vr *dev) {
     crc16_accum = (crc_shift ^ CRC16_LUT[index]) & 0xFFFF;
   }
 
-  return ( crc16_accum == (crc16_result[1] << 8 | crc16_result[0]))?0:-1;
+  return ( crc16_accum == (uint32_t)(crc16_result[1] << 8 | crc16_result[0]))?0:-1;
 }
 
 static int
@@ -540,7 +540,7 @@ error_exit:
 }
 
 static int
-vr_TI_program(uint8_t slot_id, vr *dev, uint8_t force) {
+vr_TI_program(uint8_t slot_id, vr *dev, uint8_t force __attribute__((unused))) {
 #define TI_USER_NVM_INDEX   0xF5
 #define TI_USER_NVM_EXECUTE 0xF6
 #define TI_NVM_CHECKSUM     0xF0
@@ -1053,7 +1053,7 @@ error_exit:
 }
 
 static int
-vr_VY_program(uint8_t slot_id, vr *dev, uint8_t force) {
+vr_VY_program(uint8_t slot_id __attribute__((unused)), vr *dev __attribute__((unused)), uint8_t force __attribute__((unused))) {
   /*not supported*/
   return BIC_STATUS_FAILURE;
 }
@@ -1136,7 +1136,7 @@ error_exit:
 }
 
 static int
-vr_ON_program(uint8_t slot_id, vr *dev, uint8_t force) {
+vr_ON_program(uint8_t slot_id __attribute__((unused)), vr *dev __attribute__((unused)), uint8_t force __attribute__((unused))) {
   /*not supported*/
   return BIC_STATUS_FAILURE;
 }

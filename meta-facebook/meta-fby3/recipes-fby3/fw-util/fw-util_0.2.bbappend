@@ -59,4 +59,4 @@ DEPENDS += " \
     libnl-wrapper \
     "
 
-RDEPENDS:${PN} += "libbic libfby3-common"
+RDEPENDS:${PN} += "libfby3-common"

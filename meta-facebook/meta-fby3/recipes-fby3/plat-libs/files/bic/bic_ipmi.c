@@ -160,7 +160,7 @@ bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t int
 // Storage - Get FRUID info
 // Netfn: 0x0A, Cmd: 0x10
 int
-bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uint8_t intf) {
+bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id __attribute__((unused)), ipmi_fruid_info_t *info, uint8_t intf) {
   uint8_t rlen = 0;
   uint8_t fruid = 0;
   return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO, &fruid, 1, (uint8_t *) info, &rlen, intf);
@@ -309,7 +309,7 @@ _verify_fruid(uint8_t *data, int fru_size) {
 
   // start checking from chassis(2) to product(5)
   // for internal and multi-record area, they are not supported.
-  for (int i = HDR_CHASSIS_AREA_IDX; i < HDR_FIELD_END; i++ ) {
+  for (int i = HDR_CHASSIS_AREA_IDX; i < HDR_FIELD_END && i < fru_size; i++ ) {
     uint8_t *st_idx = &data[i];
     if ( *st_idx == 0 ) continue;
     *st_idx *= 8; // in multiples of 8 bytes
@@ -323,7 +323,7 @@ _verify_fruid(uint8_t *data, int fru_size) {
 }
 
 bool
-bic_is_crit_act_ongoing(uint8_t fruid) {
+bic_is_crit_act_ongoing(uint8_t fruid __attribute__((unused))) {
   char value[MAX_VALUE_LEN] = {0};
   int ret = kv_get("pwr_lock", value, NULL, 0);
 
@@ -357,7 +357,7 @@ bic_is_fw_update_ongoing(uint8_t fruid) {
   }
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
+  if (strtoul(value, NULL, 10) > (long unsigned int)ts.tv_sec)
      return true;
 
   return false;
@@ -1119,7 +1119,7 @@ bic_get_card_type(uint8_t slot_id, uint8_t select, uint8_t *type) {
   }
 
   if (select != GET_1OU) {
-    printf("[%s] only support get 1OU card type \n", __FUNCTION__);
+    printf("[%s] only support get 1OU card type \n", __func__);
     return -1;
   }
 
@@ -1249,7 +1249,7 @@ bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t int
 
 // Custom Command for getting cpld version
 int
-bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
+bic_get_cpld_ver(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
   uint8_t tbuf[32] = {0};
   uint8_t rbuf[4] = {0};
   uint8_t tlen = 0;
@@ -1271,7 +1271,7 @@ bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8
 
 // Custom Command for getting vr version/device id
 int
-bic_get_vr_device_id(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr, uint8_t intf) {
+bic_get_vr_device_id(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr, uint8_t intf) {
   uint8_t tbuf[32] = {0};
   uint8_t tlen = 0;
   int ret = 0;
@@ -1590,7 +1590,7 @@ bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, c
 }
 
 int
-bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
+bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
   uint8_t tbuf[32] = {0};
   uint8_t rbuf[4] = {0};
   uint8_t tlen = 0;
@@ -2341,7 +2341,7 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
   uint8_t retry = MAX_READ_RETRY;
   uint16_t reversed_vender_sph = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
-  M2_DEV_INFO m2_dev_info = {};
+  M2_DEV_INFO m2_dev_info = {0};
 
   if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
     type_2ou = CWC_MCHP_BOARD;
@@ -2771,6 +2771,7 @@ bic_bypass_to_another_bmc(uint8_t* data, uint8_t len) {
   uint8_t rlen = 0;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   char iana_id[IANA_LEN] = {0x9c, 0x9c, 0x0};
+  size_t llen = (size_t)len;
   BYPASS_MSG req = {0};
 
   if (data == NULL) {
@@ -2783,7 +2784,7 @@ bic_bypass_to_another_bmc(uint8_t* data, uint8_t len) {
 
   memcpy(req.iana_id, iana_id, MIN(sizeof(req.iana_id), sizeof(iana_id)));
   req.bypass_intf = BMC_INTF;
-  memcpy(req.bypass_data, data, MIN(sizeof(req.bypass_data), len));
+  memcpy(req.bypass_data, data, MIN(sizeof(req.bypass_data), llen));
 
   tlen = sizeof(BYPASS_MSG_HEADER) + len;
 

@@ -51,7 +51,7 @@
 /*******************************************************************************************************/
 
 int
-bic_update_fw_usb_brcm(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
+bic_update_fw_usb_brcm(uint8_t slot_id __attribute__((unused)), uint8_t comp __attribute__((unused)), int fd, usb_dev* udev)
 {
   int ret = -1;
   uint8_t *buf = NULL;

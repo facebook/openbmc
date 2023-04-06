@@ -99,7 +99,7 @@ static uint8_t top_gpv3_usb_ports[] = {1, 3, 1, 2, 3};
 static uint8_t bot_gpv3_usb_ports[] = {1, 3, 4, 2, 3};
 
 // PESW_IMG_CNT + 1 is for the path of blob image
-char pesw_image_path[PESW_IMG_CNT+1][PATH_MAX+1] = {};
+char pesw_image_path[PESW_IMG_CNT+1][PATH_MAX+1] = {{"\0"}, {"\0"}, {"\0"}, {"\0"}, {"\0"}};
 
 static int
 _process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, bool is_usb, bool is_rcvry, bool is_blob_image, int *image_location_blob);
@@ -250,7 +250,7 @@ _check_blob_image(char *image, uint8_t *type, uint8_t *file_s_info, bool *is_blo
     *type |= 0x1 << file;
 
     // it would not be zero if it's a signed image
-    for ( i = 1; i < ARRAY_SIZE(temp_offset); i++ ) {
+    for ( i = 1; i < (int)ARRAY_SIZE(temp_offset); i++ ) {
       temp_offset[0] += temp_offset[i];
     }
 
@@ -829,7 +829,7 @@ bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *c
       last_offset += dsize;
     }
 
-    if ( write_offset >= file_size ) {
+    if ( write_offset >= (size_t)file_size ) {
       break;
     }
   }
@@ -1201,7 +1201,7 @@ error_exit:
   return ret;
 }
 
-int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool is_usb) {
+int update_bic_mchp(uint8_t slot_id, uint8_t comp __attribute__((unused)), char *image, uint8_t intf, uint8_t force, bool is_usb) {
   int ret = BIC_STATUS_FAILURE;
   bool is_rcvry = false;
   uint8_t type = 0;

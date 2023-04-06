@@ -892,7 +892,7 @@ exit:
 }
 
 static int
-is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size){
+is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size __attribute__((unused))){
 #define BICBL_TAG 0x00
 #define BICBR_TAG 0x01
 #define BICBL_OFFSET 0x3f00
@@ -1073,7 +1073,7 @@ error_exit:
 }
 
 static int
-is_valid_ast_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, char *img_path, int fd, int file_size){
+is_valid_ast_bic_image(uint8_t slot_id __attribute__((unused)), uint8_t comp, uint8_t intf, char *img_path, int fd, int file_size){
   uint8_t err_proof_board_id = 0;
   uint8_t err_proof_stage = 0;
   uint8_t err_proof_component = 0;
@@ -1218,7 +1218,7 @@ update_ast_bic(uint8_t slot_id, int fd, int file_size, uint8_t intf) {
       break;
     }
 
-    if ((offset + count) >= file_size) {
+    if ((offset + count) >= (size_t)file_size) {
       target |= 0x80;
     }
     // Send data to Bridge-IC
@@ -1243,7 +1243,7 @@ update_ast_bic(uint8_t slot_id, int fd, int file_size, uint8_t intf) {
 
   gettimeofday(&end, NULL);
   printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
-  if (offset >= file_size) {
+  if (offset >= (size_t)file_size) {
     update_rc = 0;
   }
 
@@ -1418,7 +1418,7 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
       break;
     }
 
-    if ((offset + read_bytes) >= file_size) {
+    if ((offset + read_bytes) >= (size_t)file_size) {
       comp |= 0x80;
     }
     ret = send_image_data_via_bic(slot_id, comp, intf, offset, read_bytes, 0x0, buf);
@@ -1890,7 +1890,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
                           update_bic_cpld_lattice_usb(slot_id, path, intf, force);
 
       if ( (ret == BIC_STATUS_SUCCESS && stop_bic_monitoring) && \
-           (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 );
+           (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 ) {
+      }
 
       break;
     case FW_BB_CPLD:
@@ -1952,7 +1953,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       // start polling again
       if ( (ret == BIC_STATUS_SUCCESS && stop_bic_monitoring) && \
            (((ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0) || \
-           ((ret = ctrl_pesw_error_monitor(slot_id, intf, !stop_bic_monitoring)) < 0)) );
+           ((ret = ctrl_pesw_error_monitor(slot_id, intf, !stop_bic_monitoring)) < 0)) ) {
+      }
 
       break;
     case FW_2OU_M2_DEV0:
@@ -2016,7 +2018,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       }
 
       if ( (ret == BIC_STATUS_SUCCESS && stop_bic_monitoring) && \
-           (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 );
+           (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 ) {
+      }
 
       break;
   } /*end of switch*/

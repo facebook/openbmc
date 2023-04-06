@@ -25,7 +25,6 @@ DEPENDS += " \
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
 RDEPENDS:${PN} += " \
-    libbic \
     libfby3-common \
     libfby3-fruid \
     libsensor-correction \

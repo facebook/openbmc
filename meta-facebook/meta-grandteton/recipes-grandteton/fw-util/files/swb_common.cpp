@@ -211,7 +211,7 @@ int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint
     }
 
     if (last_offset + dsize <= offset) {
-      pal_set_fw_update_ongoing(fruid, 60);
+      pal_set_fw_update_ongoing(fruid, 120);
       printf("\rupdated: %d %%",(int)(offset/dsize*10));
       fflush(stdout);
       last_offset += dsize;

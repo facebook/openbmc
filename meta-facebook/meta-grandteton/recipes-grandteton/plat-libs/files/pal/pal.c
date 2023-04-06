@@ -1313,23 +1313,76 @@ pal_is_fw_update_ongoing(uint8_t fruid) {
 }
 
 int
-pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
+_pal_kv_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
   struct timespec ts;
-  uint8_t root_fruid = fruid;
 
-  pal_get_root_fru(fruid, &root_fruid);
-  snprintf(key, sizeof(key), "fru%d_fwupd", root_fruid);
-
+  snprintf(key, sizeof(key), "fru%d_fwupd", fruid);
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += tmout;
   snprintf(value, sizeof(value), "%ld", ts.tv_sec);
-
   if (kv_set(key, value, 0, 0) < 0) {
     return -1;
   }
+  return 0;
+}
 
+int
+pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
+  uint8_t root_fruid = fruid;
+
+  switch (fruid) {
+    case FRU_ACB:
+    case FRU_ACB_ACCL1:
+    case FRU_ACB_ACCL2:
+    case FRU_ACB_ACCL3:
+    case FRU_ACB_ACCL4:
+    case FRU_ACB_ACCL5:
+    case FRU_ACB_ACCL6:
+    case FRU_ACB_ACCL7:
+    case FRU_ACB_ACCL8:
+    case FRU_ACB_ACCL9:
+    case FRU_ACB_ACCL10:
+    case FRU_ACB_ACCL11:
+    case FRU_ACB_ACCL12:
+      if ( _pal_kv_set_fw_update_ongoing(FRU_ACB, tmout) < 0 ) {
+        return -1;
+      }
+      for (int fru_id = FRU_ACB_ACCL1; fru_id <= FRU_ACB_ACCL12; fru_id ++) {
+        if ( _pal_kv_set_fw_update_ongoing(fru_id, tmout) < 0 ) {
+          return -1;
+        }
+      }
+      break;
+    case FRU_MEB:
+    case FRU_MEB_JCN1:
+    case FRU_MEB_JCN2:
+    case FRU_MEB_JCN3:
+    case FRU_MEB_JCN4:
+    case FRU_MEB_JCN5:
+    case FRU_MEB_JCN6:
+    case FRU_MEB_JCN7:
+    case FRU_MEB_JCN8:
+    case FRU_MEB_JCN9:
+    case FRU_MEB_JCN10:
+    case FRU_MEB_JCN11:
+    case FRU_MEB_JCN12:
+    case FRU_MEB_JCN13:
+    case FRU_MEB_JCN14:
+      if ( _pal_kv_set_fw_update_ongoing(FRU_MEB, tmout) < 0 ) {
+        return -1;
+      }
+      for (int fru_id = FRU_MEB_JCN1; fru_id <= FRU_MEB_JCN14; fru_id ++) {
+        if ( _pal_kv_set_fw_update_ongoing(fru_id, tmout) < 0 ) {
+          return -1;
+        }
+      }
+      break;
+    default:
+      pal_get_root_fru(fruid, &root_fruid);
+      return _pal_kv_set_fw_update_ongoing(root_fruid, tmout);
+  }
   return 0;
 }
 

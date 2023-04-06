@@ -37,7 +37,7 @@
       }
     },
     "watchdog": false,
-    "min_rpm": 600,
+    "min_rpm": 965,
     "profiles": {
       "cpu_tray_scm_linear": {
         "read_source" : {

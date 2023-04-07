@@ -72,6 +72,9 @@ extern "C" {
 #define MURATA2K_FWID_LENGTH     11
 #define MURATA2K_BYTE_PER_BLK    16
 
+#define PSU_EEPROM_MAGIC_WORD 0xfbfb
+#define PSU_MAX_BLACKBOX_LEN (sizeof(blackbox_info_t)/sizeof(uint8_t))
+
 typedef struct _i2c_info_t {
   int fd;
   uint8_t bus;
@@ -113,11 +116,11 @@ typedef struct _blackbox_info_t {
   uint8_t temp2[2];
   uint8_t temp3[2];
   uint8_t fan_speed[2];
-  uint8_t fan2_speed[2];
   uint8_t pri_code_ver[2];
   uint8_t sec_code_ver[2];
   uint8_t optn_time_total[4];
   uint8_t optn_time_present[4];
+  uint8_t status_other;
 } blackbox_info_t;
 
 typedef struct _delta_hdr_t {

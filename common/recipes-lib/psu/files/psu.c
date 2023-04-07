@@ -1642,7 +1642,7 @@ get_blackbox_info(uint8_t num, const char *option) {
   uint8_t clear_cmd[3] = {0xfb, 0xaa, 0x55};
   uint32_t time_total = 0, time_present = 0;
   uint8_t block[I2C_SMBUS_BLOCK_MAX + 1];
-  uint8_t byte_buf[42];
+  uint8_t byte_buf[PSU_MAX_BLACKBOX_LEN+1];
   blackbox_info_t blackbox;
   time_info_t total;
   time_info_t present;
@@ -1677,13 +1677,13 @@ get_blackbox_info(uint8_t num, const char *option) {
   if ((!strncmp(option, "--print", strlen("--print")))) {
     for (read_cmd[2] = 0; read_cmd[2] < 5; read_cmd[2]++) {
       ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
-                                    read_cmd, 3, byte_buf, 44);
+                                    read_cmd, 3, byte_buf, PSU_MAX_BLACKBOX_LEN);
       if (ret) {
         printf("PSU%d blackbox page %d read fail!\n", psu_num, read_cmd[2]);
         close(psu[num].fd);
         return -1;
       }
-      memcpy(&blackbox, byte_buf, 42);
+      memcpy(&blackbox, byte_buf, PSU_MAX_BLACKBOX_LEN);
 
       time_total = blackbox.optn_time_total[0] |
                    blackbox.optn_time_total[1] << 8 |
@@ -1724,10 +1724,10 @@ get_blackbox_info(uint8_t num, const char *option) {
                         present.day, present.hour, present.min, present.sec);
       printf("%-19s (0x88) : %.2f V", "\nIN_VOLT",
                                               linear_convert(blackbox.vin));
-      printf("%-19s (0x89) : %.2f V", "\n12V_VOLT",
-                                              linear_convert(blackbox.vout));
-      printf("%-19s (0x8B) : %.2f A", "\nIN_CURR",
+      printf("%-19s (0x89) : %.2f A", "\nIN_CURR",
                                               linear_convert(blackbox.iin));
+      printf("%-19s (0x8B) : %.2f V", "\n12V_VOLT",
+                                              linear_convert(blackbox.vout));
       printf("%-19s (0x8C) : %.2f A", "\n12V_CURR",
                                               linear_convert(blackbox.iout));
       printf("%-19s (0x8D) : %.2f C", "\nTEMP1",
@@ -1736,15 +1736,14 @@ get_blackbox_info(uint8_t num, const char *option) {
                                               linear_convert(blackbox.temp2));
       printf("%-19s (0x8F) : %.2f C", "\nTEMP3",
                                               linear_convert(blackbox.temp3));
-      if (!strncmp((char *)block, LITEON_MODEL_DC, strlen(LITEON_MODEL_DC)) ||
-          !strncmp((char *)block, DELTA_MODEL_DC, strlen(DELTA_MODEL_DC))) {
-            printf("%-19s (0x90) : %.2f RPM", "\nFAN_SPEED",
-                                          linear_convert(blackbox.fan_speed));
-            printf("%-19s (0x91) : %.2f RPM\n", "\nFAN_SPEED2",
-                                          linear_convert(blackbox.fan2_speed));
-      } else {
-            printf("%-19s (0x90) : %.2f RPM\n", "\nFAN_SPEED",
-                                          linear_convert(blackbox.fan_speed));
+      printf("%-19s (0x90) : %.2f RPM", "\nFAN_SPEED",
+                                              linear_convert(blackbox.fan_speed));
+      // The new blackbox format supports 42 bytes count for Delta and Liteon DC48 volt.
+      if((!strncmp((char *)block, DELTA_MODEL_DC, strlen(DELTA_MODEL_DC)) || 
+          !strncmp((char *)block, LITEON_MODEL_DC, strlen(LITEON_MODEL_DC))) &&
+          blackbox.len == 42)
+      {
+        printf("%-19s (0x7F) : 0x%02x", "\nSTATUS_OTHER", blackbox.status_other);
       }
     }
   } else if ((!strncmp(option, "--clear", strlen("--clear")))) {

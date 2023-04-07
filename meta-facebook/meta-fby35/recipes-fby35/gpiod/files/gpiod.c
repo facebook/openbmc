@@ -125,6 +125,15 @@ static const char *hd_cpu_pwr_fault[] = {
   "P3V3_M2",      // bit5
   "P12V_MEM",     // bit6
 };
+// Refer to CPLD specification's offset 0Ah.
+static const char *gl_cpu_pwr_fault[] = {
+  "PVCCD0_HV_CPU",          // bit0
+  "PVCCD1_HV_CPU",          // bit1
+  "PVCCIN_CPU0",            // bit2
+  "PVCCINF_CPU0",           // bit3
+  "PVCCFA_EHV_FIVRA_CPU",   // bit4
+};
+
 
 static const char **cpu_pwr_fault = cl_cpu_pwr_fault;
 static size_t cpu_pwr_fault_size = ARRAY_SIZE(cl_cpu_pwr_fault);
@@ -260,6 +269,10 @@ init_gpio_offset_map() {
         gpio_offset.pwrgd_cpu = GL_PWRGD_CPU_LVC3;
         gpio_offset.rst_pltrst = GL_RST_PLTRST_BUF_N;
         gpio_offset.bmc_debug_enable = GL_FM_BMC_DEBUG_ENABLE_R_N;
+
+        cpu_pwr_fault = gl_cpu_pwr_fault;
+        cpu_pwr_fault_size = ARRAY_SIZE(gl_cpu_pwr_fault);
+
       } else {
         // Crater Lake as default setting
         gpio_offset.bmc_ready = BMC_READY;

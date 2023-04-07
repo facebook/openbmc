@@ -272,6 +272,8 @@ delta_img_hdr_parse(const char *file_path) {
     printf("MCU: primary\n");
   } else if (delta_hdr.uc == 0x20) {
     printf("MCU: secondary\n");
+  } else if (delta_hdr.uc == 0xff) {
+    printf("MCU: primary and secondary\n");
   } else {
     printf("MCU: unknown number 0x%x\n", delta_hdr.uc);
     ret = -1;
@@ -368,6 +370,8 @@ delta_fw_transmit(uint8_t num, const char *path) {
     printf("-- Transmit Primary Firmware --\n");
   } else if (delta_hdr.uc == 0x20){
     printf("-- Transmit Secondary Firmware --\n");
+  } else if (delta_hdr.uc == 0xff){
+    printf("-- Transmit Primary and Secondary Firmwares --\n");
   }
 
   while (block_total <= fw_block) {
@@ -383,6 +387,8 @@ delta_fw_transmit(uint8_t num, const char *path) {
       if (delta_hdr.uc == 0x10) {
         msleep(25);
       } else if (delta_hdr.uc == 0x20) {
+        msleep(5);
+      } else if (delta_hdr.uc == 0xff) {
         msleep(5);
       }
 
@@ -480,6 +486,8 @@ update_delta_psu(uint8_t num, const char *file_path,
       msleep(4000);
     } else if (delta_hdr.uc == 0x20) {
       msleep(2000);
+    } else if (delta_hdr.uc == 0xff) {
+      msleep(22000);
     }
 #ifdef DEBUG
     ret = delta_boot_flag(num, BOOT_MODE, READ);

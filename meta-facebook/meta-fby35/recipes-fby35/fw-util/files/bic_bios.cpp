@@ -11,6 +11,9 @@ using namespace std;
 
 #define FORCED_OFF 1
 #define DELAY_ME_RESET 10
+#define POWER_OFF_RETRY_DELAY 1000
+#define GRACEFUL_OFF_MAX_RETRY 60
+#define FORCE_OFF_MAX_RETRY 5
 
 int attempt_server_power_off(uint8_t slot, bool force) {
   uint8_t status = SERVER_POWER_ON;
@@ -22,10 +25,16 @@ int attempt_server_power_off(uint8_t slot, bool force) {
   if (!force) {
     cerr << "Powering off the server gracefully" << endl;
     pal_set_server_power(slot, SERVER_GRACEFUL_SHUTDOWN);
-    if (retry_cond(!pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF, 60, 1000)) {
+    if (retry_cond(
+        !pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF,
+        GRACEFUL_OFF_MAX_RETRY,
+        POWER_OFF_RETRY_DELAY)) {
       cerr << "Retry force powering off the server..." << endl;
       pal_set_server_power(slot, SERVER_POWER_OFF);
-      if (retry_cond(!pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+      if (retry_cond(
+          !pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF,
+          FORCE_OFF_MAX_RETRY,
+          POWER_OFF_RETRY_DELAY)) {
         return -1;
       }
       return FORCED_OFF;
@@ -33,7 +42,10 @@ int attempt_server_power_off(uint8_t slot, bool force) {
   } else {
     cerr << "Force powering off the server" << endl;
     pal_set_server_power(slot, SERVER_POWER_OFF);
-    if (retry_cond(!pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+    if (retry_cond(
+        !pal_get_server_power(slot, &status) && status == SERVER_POWER_OFF,
+        FORCE_OFF_MAX_RETRY,
+        POWER_OFF_RETRY_DELAY)) {
       return -1;
     }
     return FORCED_OFF;

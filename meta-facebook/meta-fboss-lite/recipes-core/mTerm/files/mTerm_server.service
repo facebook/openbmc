@@ -22,7 +22,6 @@ After=setup_board.service openbmc_gpio_setup.service setup_i2c.service
 Wants=setup_board.service
 
 [Service]
-ExecStartPre=/usr/local/bin/us_console.sh connect
 ExecStart=/usr/local/bin/mTerm_server wedge /dev/@TERM@ @BAUDRATE@
 
 [Install]

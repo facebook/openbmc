@@ -18,7 +18,4 @@
 # Boston, MA 02110-1301 USA
 #
 
-if [ -x /usr/local/bin/us_console.sh ]; then
-    /usr/local/bin/us_console.sh connect
-fi
 exec /usr/local/bin/mTerm_server wedge @TERM@ @BAUDRATE@

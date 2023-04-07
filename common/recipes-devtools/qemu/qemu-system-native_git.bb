@@ -99,6 +99,7 @@ PV = "7.2.0+git${SRCPV}"
 PACKAGECONFIG ??= "fdt slirp pie "
 
 EXTRA_OECONF:append = " --target-list=${@get_qemu_system_target_list(d)}"
+EXTRA_OECONF:append = " --disable-guest-agent"
 EXTRA_OECONF:remove = "--meson=meson"
 
 do_install:append() {

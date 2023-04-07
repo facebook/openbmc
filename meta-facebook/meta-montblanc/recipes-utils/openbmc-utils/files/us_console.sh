@@ -1,5 +1,6 @@
+#!/bin/sh
 #
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,14 +17,28 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-[Unit]
-Description=mTerm server monitoring
-After=setup_board.service openbmc_gpio_setup.service setup_i2c.service
-Wants=setup_board.service
 
-[Service]
-ExecStartPre=/usr/local/bin/us_console.sh connect
-ExecStart=/usr/local/bin/mTerm_server wedge /dev/@TERM@ @BAUDRATE@
+usage() {
+    echo "$0 <connect | disconnect>"
+}
 
-[Install]
-WantedBy=multi-user.target
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
+uart_sel="$(i2c_device_sysfs_abspath 1-0035)/uart_select"
+
+if [ $# -ne 1 ]; then
+    usage
+    exit 1
+fi
+
+if [ "$1" = "connect" ]; then
+    # ignore error code when run with qemu
+    echo 0x0 > "$uart_sel" || exit 0
+elif [ "$1" = "disconnect" ]; then
+    # ignore error code when run with qemu
+    echo 0x1 > "$uart_sel" || exit 0
+else
+    usage
+    exit 1
+fi

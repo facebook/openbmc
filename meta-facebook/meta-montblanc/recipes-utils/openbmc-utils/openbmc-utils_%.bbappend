@@ -20,4 +20,9 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += "\
     file://board-utils.sh \
     file://setup_i2c.sh \
+    file://us_console.sh \
+    "
+
+OPENBMC_UTILS_FILES += " \
+    us_console.sh \
     "

@@ -1009,8 +1009,9 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
   const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP"};
   const char *rev_hd[] = {"POC", "EVT", "EVT", "EVT", "DVT", "DVT", "DVT", "DVT", "PVT"};
   const char *rev_op[] = {"EVT", "DVT", "PVT", "MP"};
+  const char *rev_gl[] = {"POC", "EVT", "RSVD", "DVT", "RSVD", "PVT", "MP"};
   const char **board_type = rev_sb;
-  uint8_t exp_fw_rev = 0;
+  uint8_t fw_rev = 0;
   uint8_t err_proof_board_id = 0;
   uint8_t err_proof_stage = 0;
   uint8_t err_proof_component = 0;
@@ -1141,7 +1142,14 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
         rev_id = ARRAY_SIZE(rev_op) - 1;
       }
       break;
-
+    case BOARD_ID_GL:
+      board_type = rev_gl;
+      //Great Lakes hw stage: rev_id bit[3:0]
+      rev_id = REVISION_ID(rev_id);
+      if (rev_id >= ARRAY_SIZE(rev_gl)) {
+        rev_id = ARRAY_SIZE(rev_gl) - 1;
+      }
+      break;
     case BOARD_ID_RF:
     case BOARD_ID_VF:
       return true;
@@ -1149,55 +1157,75 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
 
   if (board_type == rev_sb) {
     if (SB_REV_EVT <= rev_id && rev_id <= SB_REV_EVT_MPS)
-      exp_fw_rev = FW_REV_EVT;
+      fw_rev = FW_REV_EVT;
     else if (SB_REV_DVT <= rev_id && rev_id <= SB_REV_DVT_MPS)
-      exp_fw_rev = FW_REV_DVT;
+      fw_rev = FW_REV_DVT;
     else if (SB_REV_PVT <= rev_id && rev_id <= SB_REV_PVT_MPS)
-      exp_fw_rev = FW_REV_PVT;
+      fw_rev = FW_REV_PVT;
     else if (SB_REV_MP <= rev_id && rev_id <= SB_REV_MP_MPS)
-      exp_fw_rev = FW_REV_MP;
+      fw_rev = FW_REV_MP;
     else
-      exp_fw_rev = 0;
+      fw_rev = 0;
   } else if (board_type == rev_hd) {
     if (HD_REV_EVT <= rev_id && rev_id <= HD_REV_EVT2)
-      exp_fw_rev = FW_REV_EVT;
+      fw_rev = FW_REV_EVT;
     else if (HD_REV_DVT <= rev_id && rev_id <= HD_REV_DVT3)
-      exp_fw_rev = FW_REV_DVT;
+      fw_rev = FW_REV_DVT;
     else if (HD_REV_PVT <= rev_id)
-      exp_fw_rev = FW_REV_PVT;
+      fw_rev = FW_REV_PVT;
     else
-      exp_fw_rev = 0;
+      fw_rev = 0;
   } else if (board_type == rev_op) {
     switch (rev_id) {
       case OP_REV_EVT:
-        exp_fw_rev = FW_REV_EVT;
+        fw_rev = FW_REV_EVT;
         break;
       case OP_REV_DVT:
-        exp_fw_rev = FW_REV_DVT;
+        fw_rev = FW_REV_DVT;
         break;
       case OP_REV_PVT:
-        exp_fw_rev = FW_REV_PVT;
+        fw_rev = FW_REV_PVT;
         break;
       case OP_REV_MP:
-        exp_fw_rev = FW_REV_MP;
+        fw_rev = FW_REV_MP;
         break;
       default:
-        exp_fw_rev = 0;
+        fw_rev = 0;
+    }
+  } else if (board_type == rev_gl) {
+    switch (rev_id) {
+      case GL_REV_POC:
+        fw_rev = FW_REV_POC;
+        break;
+      case GL_REV_EVT:
+        fw_rev = FW_REV_EVT;
+        break;
+      case GL_REV_DVT:
+        fw_rev = FW_REV_DVT;
+        break;
+      case GL_REV_PVT:
+        fw_rev = FW_REV_PVT;
+        break;
+      case GL_REV_MP:
+        fw_rev = FW_REV_MP;
+        break;
+      default: // RVSD
+        fw_rev = 0;
     }
   } else {
     if (BB_REV_EVT <= rev_id && rev_id <= BB_REV_EVT3)
-      exp_fw_rev = FW_REV_EVT;
+      fw_rev = FW_REV_EVT;
     else if (rev_id == BB_REV_DVT || rev_id == BB_REV_DVT_1C)
-      exp_fw_rev = FW_REV_DVT;
+      fw_rev = FW_REV_DVT;
     else if (rev_id == BB_REV_PVT)
-      exp_fw_rev = FW_REV_PVT;
+      fw_rev = FW_REV_PVT;
     else if (rev_id == BB_REV_MP)
-      exp_fw_rev = FW_REV_MP;
+      fw_rev = FW_REV_MP;
     else
-      exp_fw_rev = 0;
+      fw_rev = 0;
   }
 
-  switch (exp_fw_rev) {
+  switch (fw_rev) {
     case FW_REV_POC:
       if (err_proof_stage != FW_REV_POC) {
         printf("Please use POC firmware on POC system\nTo force the update, please use the --force option.\n");

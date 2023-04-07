@@ -21,10 +21,15 @@ image_info CpldComponent::check_image(const string& image, bool force) {
   }
 
   if (fw_comp == FW_CPLD) {
-    if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
-      board_id = BOARD_ID_HD;
-    } else {
-      board_id = BOARD_ID_SB;
+    switch (fby35_common_get_slot_type(slot_id)) {
+      case SERVER_TYPE_HD:
+        board_id = BOARD_ID_HD;
+        break;
+      case SERVER_TYPE_GL:
+        board_id = BOARD_ID_GL;
+        break;
+      default:
+        board_id = BOARD_ID_SB;
     }
     ret = get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
   } else {  // CPLD on BIC Baseboard (Class 2)

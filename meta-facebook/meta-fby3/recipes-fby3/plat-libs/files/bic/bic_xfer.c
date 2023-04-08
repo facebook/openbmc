@@ -148,7 +148,7 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
           ret = BIC_STATUS_FAILURE;
           break;
         }
-      } else { 
+      } else {
         //catch the data and ignore the packet of the bypass command.
         *rlen = rsp_len - 7;
         memmove(rbuf, &rsp_buf[7], *rlen);
@@ -181,7 +181,7 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
       if ( (ret < 0) || (ret == BIC_STATUS_SUCCESS && (rsp_buf[6] != CC_SUCCESS || rsp_buf[13] != CC_SUCCESS)) ) {
         if ( rsp_buf[6] != CC_SUCCESS || rsp_buf[13] != CC_SUCCESS ) {
           syslog(LOG_WARNING, "%s() The Exp BIC cannot be reached. CC0:0x%02X, CC1:0x%02X, intf:0x%x\n", __func__, rsp_buf[6], rsp_buf[13], intf);
-        } 
+        }
         syslog(LOG_WARNING, "%s() Netfn:%02X, Cmd:%02X Ret:%d\n", __func__, netfn << 2, cmd, ret);
         switch(rsp_buf[13] == CC_SUCCESS ? rsp_buf[6] : rsp_buf[13]) {
         case CC_NOT_SUPP_IN_CURR_STATE:
@@ -191,7 +191,7 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
           ret = BIC_STATUS_FAILURE;
           break;
         }
-      } else { 
+      } else {
         //catch the data and ignore the packet of the bypass command.
         *rlen = rsp_len - 14;
         memmove(rbuf, &rsp_buf[14], *rlen);
@@ -287,7 +287,14 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   // Handle IPMB response
   if (res->cc) {
-    syslog(LOG_ERR, "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Completion Code: 0x%02X ", slot_id, netfn, cmd, res->cc);
+    // it is common to identify BIC compatible capablities via probing whether a
+    // specific command is supported. To avoid spamming syslog, not log error
+    // message when CC_INVALID_CMD is responed.
+    if (res->cc != CC_INVALID_CMD) {
+      syslog(LOG_ERR,
+      "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Completion Code: 0x%02X",
+      slot_id, netfn, cmd, res->cc);
+    }
     return BIC_STATUS_FAILURE;
   }
 

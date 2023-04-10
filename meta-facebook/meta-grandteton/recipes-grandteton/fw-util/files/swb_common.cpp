@@ -752,12 +752,11 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
     active_ver = kv::get(active_key, kv::region::temp);
     j["VERSION"] = active_ver;
   } catch (...) {
-    pal_pldm_get_firmware_parameter(bus, eid);
-    active_ver = kv::get(active_key, kv::region::temp);
-    if (!active_ver.empty()) {
-      j["VERSION"] = active_ver;
+    if (pal_pldm_get_firmware_parameter(bus, eid) < 0) {
+      return comp_get_version(j);
     } else {
-      j["VERSION"] = "NA";
+      active_ver = kv::get(active_key, kv::region::temp);
+      j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
     }
   }
 

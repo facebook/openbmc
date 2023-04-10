@@ -28,7 +28,7 @@ pldm_firmware_parameter_handle (
                 pldm_component_parameter_entry& compEntry,
                                 variable_field& activeCompVerStr,
                                 variable_field& /*pendingCompVerStr*/) {
-  string bic_ver = (const char*)activeCompImageSetVerStr.ptr;
+  string bic_ver = (activeCompImageSetVerStr.length == 0)?"":(const char*)activeCompImageSetVerStr.ptr;
   string bic_active_key  = "swb_bic_active_ver";
   string comp_name = comp_str_t[compEntry.comp_identifier];
   string comp_active_ver = (activeCompVerStr.length == 0)?"":(const char*)activeCompVerStr.ptr;
@@ -52,7 +52,12 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
   };
 
   int ret = oem_pldm_send_recv(bus, eid, request, response);
+
   if (ret == 0) {
+    auto pldm_resp = reinterpret_cast<pldm_msg*>(response.data());
+    if (pldm_resp->payload[0] != 0x00) // completion code
+      return -1;
+
     pldm_get_firmware_parameters_resp fwParams{};
     variable_field activeCompImageSetVerStr{};
     variable_field pendingCompImageSetVerStr{};

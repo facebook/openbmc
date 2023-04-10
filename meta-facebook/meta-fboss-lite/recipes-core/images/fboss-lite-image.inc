@@ -14,7 +14,7 @@ IMAGE_INSTALL += " \
   mterm \
   openbmc-utils \
   usb-console \
-  wedge-eeprom \
+  weutil \
   weutil-dhcp-id \
   ipmi-lite   \
   "

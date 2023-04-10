@@ -7,3 +7,5 @@ IMAGE_INSTALL += " \
   show-tech \
   "
 IMAGE_INSTALL:remove = "ipmi-lite"
+IMAGE_INSTALL:remove = "weutil"
+IMAGE_INSTALL:append = " wedge-eeprom"

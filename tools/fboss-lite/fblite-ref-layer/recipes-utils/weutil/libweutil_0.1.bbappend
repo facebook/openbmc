@@ -1,11 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/lib:"
-LOCAL_URI += "file://eeprom.conf \
+LOCAL_URI += "file://eeprom.json \
               file://meta_eeprom_v4_sample.bin \
               "
-
-do_install:append() {
-  install -d  ${D}${sysconfdir}/weutil
-  install -m 644 ${S}/eeprom.conf  ${D}${sysconfdir}/weutil/eeprom.conf
-  install -m 644 ${S}/meta_eeprom_v4_sample.bin      ${D}${sysconfdir}/weutil/meta_eeprom_v4_sample.bin
-}
 

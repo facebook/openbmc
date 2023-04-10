@@ -1,0 +1,24 @@
+--------------------------------------------------------------------------------
+FBOSS-lite code auto generation usage:
+--------------------------------------------------------------------------------
+
+usage: ./new-fblite.py [-h] -n NAME [-p {machine_layer,cit,all}]
+
+1. If creating new NPI openbmc image only:
+./new-fblite.py -n <platform name> -p machine_layer
+or
+./new-fblite.py -n <platform name> (This is default option for "-p")
+
+After executing above line, a git commit will be created in your local branch
+
+2. If creating basic CIT frame work only:
+./new-fblite.py -n <platform name> -p cit
+After executing above line, a git commit will be created in your local branch
+
+3. If both creating machine layer and CIT are intended:
+./new-fblite.py -n <platform name> -p all
+Two commits will be generated, one for machine layer and another for CIT
+
+
+Notes:
+The parameter "-n NAME" is required

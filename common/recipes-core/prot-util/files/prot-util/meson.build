@@ -9,12 +9,14 @@ project('prot-util', 'cpp',
 
 srcs = files(
     'prot-util.cpp',
+    'SysCpldDevice.cpp',
 )
 
 deps = [
     dependency('fmt'),
     dependency('libAmiSmbusInterface'),
     dependency('libprot'),
+    dependency('libobmc-i2c'),
     dependency('obmc-pal'),
 ]
 

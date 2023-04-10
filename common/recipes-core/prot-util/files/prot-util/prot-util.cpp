@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
 #include <CLI/CLI.hpp>
 #include <nlohmann/json.hpp>
 #include <iostream>
@@ -35,6 +36,8 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include "SysCpldDevice.hpp"
 
 enum class ProtUtilCmds {
   UNKNOW_CMD = -1,
@@ -60,6 +63,7 @@ enum class ProtUtilCmds {
 static int opt_json = false;
 
 using prot::ProtDevice;
+using sysCpld::CpldDevice;
 
 static int do_send_data_packet(uint8_t fru_id, std::vector<uint8_t> data_raw) {
   uint8_t dev_i2c_bus = 0;
@@ -131,11 +135,12 @@ static int do_get_boot_status(uint8_t fru_id) {
     return -1;
   }
 
+  CpldDevice cpld_dev(fru_id, dev_i2c_bus, sysCpld::sys_cpld_addr);
+
   nlohmann::json j{};
   std::string auth("Auth" + std::to_string(int(fru_id)));
 
   bool is_module_prsnt = pal_is_prot_card_prsnt(fru_id);
-
   do {
     prot::BOOT_STATUS_ACK_PAYLOAD boot_sts{};
 
@@ -146,6 +151,22 @@ static int do_get_boot_status(uint8_t fru_id) {
 
     auto is_module_bypass = pal_is_prot_bypass(fru_id);
     j[auth]["Module-Mode"] = std::string(is_module_bypass ? "BYPASS" : "PFR");
+
+    try {
+      auto is_auth_cmplt = cpld_dev.isAuthComplete();
+      j[auth]["Auth-Complete"] = is_auth_cmplt;
+    } catch(const std::runtime_error& err) {
+      j[auth]["Auth-Complete"] = nullptr;
+    }
+
+    try {
+      auto is_boot_fail = cpld_dev.isBootFail();
+      j[auth]["Boot-Fail"] = is_boot_fail;
+    } catch(const std::runtime_error& err) {
+      j[auth]["Boot-Fail"] = nullptr;
+    }
+
+
     if (is_module_bypass) {
       break;
     }
@@ -248,6 +269,9 @@ static int do_get_boot_status(uint8_t fru_id) {
       std::cout << auth
                 << " Module Mode: " << j[auth]["Module-Mode"].get<std::string>()
                 << std::endl;
+
+      std::cout << auth << " Auth-Complete: " << j[auth]["Auth-Complete"] << std::endl;
+      std::cout << auth << " Boot-Fail: " << j[auth]["Boot-Fail"] << std::endl;
     }
 
     if (j.contains("SPI_A")) {

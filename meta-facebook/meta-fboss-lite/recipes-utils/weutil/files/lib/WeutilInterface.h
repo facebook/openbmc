@@ -10,17 +10,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 #include <stdint.h>
 #include <map>
 #include <string>
 #include <vector>
+#include <optional>
 
-// TODO: change default to chassis_epprom
+// TODO: change to chassis_eeprom
 #define DEFAULT_EEPROM_NAME "dummy_eeprom"
 
 //
-//  META-FBOSS EEPROM fields.
+//  META-FBOSS EEPROM V4 fields.
 //
 enum fieldId {
   VERSION = 0,
@@ -46,8 +48,8 @@ enum fieldId {
   CRC16
 };
 
-std::vector<std::string> listEepromDevices();
-std::string eepromFormat(std::string& devName);
+std::map<std::string, std::string> listEepromDevices();
 std::optional<std::string> eepromNameToPath(const std::string& devName);
 std::map<fieldId, std::pair<std::string, std::string>> eepromParse(
     const std::string& eepromDeviceName);
+std::string eepromFormat(std::string& eName);

@@ -243,24 +243,6 @@ MAPTOSTRING root_port_mapping[] = {
     { 0x15, 3, 0x1D, "Num 5", "2OU"}, //Port 0x1D
 };
 
-MAPTOSTRING root_port_mapping_gpv3[] = {
-    // bus, device, port, silk screen, location
-    { 0x17, 0, 0x01, "Num 0", "2OU"},
-    { 0x17, 1, 0x02, "Num 1", "2OU"},
-    { 0x17, 2, 0x03, "Num 2", "2OU"},
-    { 0x17, 3, 0x04, "Num 3", "2OU"},
-    { 0x17, 4, 0x05, "Num 4", "2OU"},
-    { 0x17, 5, 0x06, "Num 5", "2OU"},
-    { 0x17, 6, 0x07, "Num 6", "2OU"},
-    { 0x17, 7, 0x08, "Num 7", "2OU"},
-    { 0x65, 0, 0x09, "Num 8", "2OU"},
-    { 0x65, 1, 0x0A, "Num 9", "2OU"},
-    { 0x65, 2, 0x0B, "Num 10", "2OU"},
-    { 0x65, 3, 0x0C, "Num 11", "2OU"},
-    { 0x17, 8, 0x0D, "E1S 0", "2OU"},
-    { 0x65, 4, 0x0E, "E1S 1", "2OU"},
-};
-
 MAPTOSTRING root_port_mapping_e1s[] = {
     // XCC
     { 0x7F, 1, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
@@ -2614,7 +2596,7 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
       break;
     } else config_status = (uint8_t)ret;
 
-    // For Config C and D, there are EDSFF_1U, E1S_BOARD and GPv3 architecture
+    // For Config C and D, there are EDSFF_1U and E1S_BOARD
     // BMC should select the corresponding table.
     // For Config B and A, root_port_mapping should be selected.
     // only check it when 1OU is present
@@ -2643,10 +2625,6 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
     // case 1/2OU E1S
     *tbl = root_port_mapping_e1s;
     *cnt = sizeof(root_port_mapping_e1s)/sizeof(MAPTOSTRING);
-  } else if ( (board_2u == GPV3_MCHP_BOARD || board_2u == GPV3_BRCM_BOARD) && \
-              (*bmc_location == NIC_BMC) ) {
-    *tbl = root_port_mapping_gpv3;
-    *cnt = sizeof(root_port_mapping_gpv3)/sizeof(MAPTOSTRING);
   } else {
     *tbl = root_port_common_mapping;
     *cnt = sizeof(root_port_common_mapping)/sizeof(MAPTOSTRING);
@@ -4606,11 +4584,6 @@ pal_set_slot_led(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 }
 
 int
-pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type) {
-  return bic_get_dev_info(slot_id, dev_id, nvme_ready, status, type);
-}
-
-int
 pal_check_slot_cpu_present(uint8_t slot_id) {
   int ret = 0;
   bic_gpio_t gpio = {0};
@@ -4790,15 +4763,6 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
   pclose(fp);
 
   return CC_SUCCESS;
-}
-
-int
-pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id) {
-  if ( bic_mux_select(slot_id, get_gpv3_bus_number(dev_id), dev_id, REXP_BIC_INTF) < 0 ) {
-    printf("* Failed to select MUX\n");
-    return BIC_STATUS_FAILURE;
-  }
-  return BIC_STATUS_SUCCESS;
 }
 
 bool

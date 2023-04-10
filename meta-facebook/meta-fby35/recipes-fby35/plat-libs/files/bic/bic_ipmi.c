@@ -638,22 +638,8 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
       ret = _bic_get_fw_ver(slot_id, fw_comp, ver, intf);
       break;
     case FW_1OU_CPLD:
-      ret = bic_get_exp_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);
-      break;
     case FW_2OU_CPLD:
-      {
-        uint8_t board_type = 0;
-        if ( fby35_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
-          syslog(LOG_WARNING, "Failed to get 2ou board type\n");
-        }
-
-        if ( board_type == GPV3_MCHP_BOARD ||
-             board_type == GPV3_BRCM_BOARD ) {
-          ret = _bic_get_fw_ver(slot_id, fw_comp, ver, intf);
-        } else {
-          ret = bic_get_exp_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);
-        }
-      }
+      ret = bic_get_exp_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);
       break;
     case FW_BB_CPLD:
       ret = bic_get_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);
@@ -661,85 +647,6 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   }
 
   return ret;
-}
-
-uint8_t
-get_gpv3_bus_number(uint8_t dev_id) {
-  switch(dev_id) {
-    case FW_2OU_M2_DEV0:
-    case FW_2OU_M2_DEV1:
-    case DEV_ID0_2OU:
-    case DEV_ID1_2OU:
-      return 0x2;
-    case FW_2OU_M2_DEV2:
-    case FW_2OU_M2_DEV3:
-    case DEV_ID2_2OU:
-    case DEV_ID3_2OU:
-      return 0x4;
-    case FW_2OU_M2_DEV4:
-    case FW_2OU_M2_DEV5:
-    case DEV_ID4_2OU:
-    case DEV_ID5_2OU:
-      return 0x6;
-    case FW_2OU_M2_DEV6:
-    case FW_2OU_M2_DEV7:
-    case DEV_ID6_2OU:
-    case DEV_ID7_2OU:
-      return 0x5;
-    case FW_2OU_M2_DEV8:
-    case FW_2OU_M2_DEV9:
-    case DEV_ID8_2OU:
-    case DEV_ID9_2OU:
-      return 0x7;
-    case FW_2OU_M2_DEV10:
-    case FW_2OU_M2_DEV11:
-    case DEV_ID10_2OU:
-    case DEV_ID11_2OU:
-      return 0x3;
-    case DEV_ID12_2OU:
-    case DEV_ID13_2OU:
-      return 0x9;
-  }
-
-  return 0xff;
-}
-
-uint8_t
-get_gpv3_channel_number(uint8_t dev_id) {
-  switch(dev_id) {
-    case FW_2OU_M2_DEV0:
-    case FW_2OU_M2_DEV2:
-    case FW_2OU_M2_DEV4:
-    case FW_2OU_M2_DEV6:
-    case FW_2OU_M2_DEV8:
-    case FW_2OU_M2_DEV10:
-    case DEV_ID0_2OU:
-    case DEV_ID2_2OU:
-    case DEV_ID4_2OU:
-    case DEV_ID6_2OU:
-    case DEV_ID8_2OU:
-    case DEV_ID10_2OU:
-      return 0x1;
-    case FW_2OU_M2_DEV1:
-    case FW_2OU_M2_DEV3:
-    case FW_2OU_M2_DEV5:
-    case FW_2OU_M2_DEV7:
-    case FW_2OU_M2_DEV9:
-    case FW_2OU_M2_DEV11:
-    case DEV_ID1_2OU:
-    case DEV_ID3_2OU:
-    case DEV_ID5_2OU:
-    case DEV_ID7_2OU:
-    case DEV_ID9_2OU:
-    case DEV_ID11_2OU:
-      return 0x0;
-    case DEV_ID12_2OU: // E1.S A
-      return 0x4;
-    case DEV_ID13_2OU: // E1.S B
-      return 0x8;
-  }
-
-  return 0xff;
 }
 
 int
@@ -1726,65 +1633,6 @@ bic_notify_fan_mode(int mode) {
   }
 
   return 0;
-}
-
-int
-bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type) {
-  int ret = 0;
-  uint8_t retry = MAX_READ_RETRY;
-  uint16_t vendor_id = 0, reversed_vender_sph = 0;
-  uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
-  uint8_t type_2ou = UNKNOWN_BOARD;
-
-  ret = bic_is_exp_prsnt(slot_id);
-  if ((ret < 0) || ((ret & PRESENT_2OU) != PRESENT_2OU)) {
-    syslog(LOG_WARNING,"%s() Cannot get 2ou board", __func__);
-    *type = DEV_TYPE_UNKNOWN;
-    return -1;
-  }
-  ret = fby35_common_get_2ou_board_type(slot_id, &type_2ou);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING,"%s() Cannot get 2ou board type", __func__);
-    *type = DEV_TYPE_UNKNOWN;
-    return -1;
-  }
-  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
-
-    while (retry) {
-      ret = bic_get_dev_power_status(slot_id, dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF, type_2ou);
-      if (!ret)
-        break;
-      msleep(50);
-      retry--;
-    }
-    //syslog(LOG_WARNING, "bic_get_dev_power_status: dev_id %d nvme_ready %d status %d",dev_id, *nvme_ready, *status);
-    reversed_vender_sph = (((VENDOR_SPH << 8) & 0xFF00) | ((VENDOR_SPH >> 8) & 0x00FF));
-
-    if (*nvme_ready) {
-      if ( meff == MEFF_DUAL_M2 ) {
-        *type = DEV_TYPE_DUAL_M2;
-      } else{
-        if (ffi == FFI_ACCELERATOR) {
-          if (vendor_id == VENDOR_BRCM) {
-            *type = DEV_TYPE_BRCM_ACC;
-          } else if (vendor_id == VENDOR_SPH || vendor_id == reversed_vender_sph) {
-            *type = DEV_TYPE_SPH_ACC;
-          } else {
-            *type = DEV_TYPE_M2;
-          }
-        } else {
-          *type = DEV_TYPE_SSD;
-        }
-      }
-    } else {
-      *type = DEV_TYPE_UNKNOWN;
-    }
-    return 0;
-  }
-
-  *type = DEV_TYPE_UNKNOWN;
-
-  return -1;
 }
 
 int

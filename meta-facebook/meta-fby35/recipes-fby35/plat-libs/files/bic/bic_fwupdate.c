@@ -39,8 +39,6 @@
 #include "bic_xfer.h"
 #include "bic_bios_fwupdate.h"
 #include "bic_cpld_altera_fwupdate.h"
-#include "bic_m2_fwupdate.h"
-#include "bic_mchp_pciesw_fwupdate.h"
 
 //#define DEBUG
 
@@ -980,8 +978,6 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, origin_path, force);
   syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, origin_path);
 
-  uint8_t board_type = 0;
-
   //get the intf
   switch (comp) {
     case FW_ME:
@@ -1101,13 +1097,6 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_PROT_SPIB:
     case FW_1OU_CXL:
       ret = update_bic_usb_bios(slot_id, comp, fd, force);
-      break;
-    case FW_2OU_PESW:
-      if (board_type == GPV3_BRCM_BOARD) {
-        ret = BIC_STATUS_FAILURE; /*not supported*/
-      } else {
-        ret = update_bic_mchp(slot_id, comp, path, intf, force, (loc != NULL)?false:true);
-      }
       break;
     case FW_1OU_RETIMER:
     case FW_3OU_RETIMER:

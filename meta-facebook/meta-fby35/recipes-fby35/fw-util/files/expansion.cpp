@@ -23,10 +23,6 @@ void ExpansionBoard::ready()
       return;
   }
 
-  //we check the present status of GPv3 board by using one of devices
-  if ( fw_comp >= FW_2OU_M2_DEV0 && fw_comp <= FW_2OU_M2_DEV11 )
-    fw_comp = FW_2OU_M2_DEV0;
-
   ret = bic_is_exp_prsnt(slot_id);
   if ( ret < 0 ) {
     throw "Failed to get the config from " + fru + ":" + board_name;

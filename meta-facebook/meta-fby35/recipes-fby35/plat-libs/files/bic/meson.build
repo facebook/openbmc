@@ -19,8 +19,6 @@ headers = [
     'bic_cpld_altera_fwupdate.h',
     'bic_fwupdate.h',
     'bic_ipmi.h',
-    'bic_m2_fwupdate.h',
-    'bic_mchp_pciesw_fwupdate.h',
     'bic_power.h',
     'bic_xfer.h',
 ]
@@ -31,8 +29,6 @@ sources = [
     'bic_cpld_altera_fwupdate.c',
     'bic_fwupdate.c',
     'bic_ipmi.c',
-    'bic_m2_fwupdate.c',
-    'bic_mchp_pciesw_fwupdate.c',
     'bic_power.c',
     'bic_xfer.c',
 ]

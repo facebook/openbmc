@@ -160,7 +160,6 @@ int bic_manual_set_fan_speed(uint8_t fan_id, uint8_t pwm);
 int bic_get_fan_speed(uint8_t fan_id, float *value);
 int bic_get_fan_pwm(uint8_t fan_id, float *value);
 int bic_do_12V_cycle(uint8_t slot_id);
-int bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);
 int bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, \
                              uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf, uint8_t board_type);
 int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf, uint8_t board_type);
@@ -169,8 +168,6 @@ int bic_reset(uint8_t slot_id, uint8_t intf);
 int bic_inform_sled_cycle(void);
 int bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf);
 int bic_set_vr_monitor_enable(uint8_t slot_id, bool enable, uint8_t intf);
-uint8_t get_gpv3_bus_number(uint8_t dev_id);
-uint8_t get_gpv3_channel_number(uint8_t dev_id);
 int bic_notify_fan_mode(int mode);
 int bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config);
 int bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option);

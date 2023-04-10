@@ -1,0 +1,18 @@
+{
+  "platform" : "montblanc" ,
+  "eeprom devices" : [
+  {
+      "name" : "dummy_eeprom",
+      "sysfs_path" : "/etc/weutil/meta_eeprom_v4_sample.bin"
+  },
+  {
+      "name" : "chassis_eeprom",
+      "sysfs_path" : "/sys/bus/i2c/devices/i2c-13/13-0060/eeprom"
+
+  },
+  {
+      "name" : "fan_eeprom",
+      "sysfs_path" : "/sys/bus/i2c/devices/i2c-5/5-0050/eeprom"
+  }
+  ]
+}

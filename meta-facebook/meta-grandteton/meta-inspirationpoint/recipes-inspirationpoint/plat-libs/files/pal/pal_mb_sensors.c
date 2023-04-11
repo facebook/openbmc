@@ -24,6 +24,7 @@
 #include "pal_common.h"
 #include <openbmc/kv.h>
 #include <openbmc/aries_api.h>
+#include <openbmc/dimm.h>
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN    "BATTERY_DETECT"
@@ -64,6 +65,7 @@ static int read_frb3(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value);
 
 bool pal_bios_completed(uint8_t fru);
 static uint8_t postcodes_last[256] = {0};
@@ -205,6 +207,30 @@ const uint8_t mb_discrete_sensor_list[] = {
 //  MB_SENSOR_POWER_FAIL,
 //  MB_SENSOR_MEMORY_LOOP_FAIL,
   MB_SNR_PROCESSOR_FAIL,
+  MB_SNR_DIMM_CPU0_A0_STATE,
+  MB_SNR_DIMM_CPU0_C0_STATE,
+  MB_SNR_DIMM_CPU0_A1_STATE,
+  MB_SNR_DIMM_CPU0_C1_STATE,
+  MB_SNR_DIMM_CPU0_A2_STATE,
+  MB_SNR_DIMM_CPU0_C2_STATE,
+  MB_SNR_DIMM_CPU0_A3_STATE,
+  MB_SNR_DIMM_CPU0_C3_STATE,
+  MB_SNR_DIMM_CPU0_A4_STATE,
+  MB_SNR_DIMM_CPU0_C4_STATE,
+  MB_SNR_DIMM_CPU0_A5_STATE,
+  MB_SNR_DIMM_CPU0_C5_STATE,
+  MB_SNR_DIMM_CPU1_B0_STATE,
+  MB_SNR_DIMM_CPU1_D0_STATE,
+  MB_SNR_DIMM_CPU1_B1_STATE,
+  MB_SNR_DIMM_CPU1_D1_STATE,
+  MB_SNR_DIMM_CPU1_B2_STATE,
+  MB_SNR_DIMM_CPU1_D2_STATE,
+  MB_SNR_DIMM_CPU1_B3_STATE,
+  MB_SNR_DIMM_CPU1_D3_STATE,
+  MB_SNR_DIMM_CPU1_B4_STATE,
+  MB_SNR_DIMM_CPU1_D4_STATE,
+  MB_SNR_DIMM_CPU1_B5_STATE,
+  MB_SNR_DIMM_CPU1_D5_STATE,
 };
 
 PAL_DPM_DEV_INFO dpm_info_list[] = {
@@ -434,35 +460,35 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBB
+  {"CPU0_DIMM_A0_STATE", DIMM_ID0, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB0
+  {"CPU0_DIMM_A1_STATE", DIMM_ID1, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB1
+  {"CPU0_DIMM_A2_STATE", DIMM_ID2, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB2
+  {"CPU0_DIMM_A3_STATE", DIMM_ID3, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB3
+  {"CPU0_DIMM_A4_STATE", DIMM_ID4, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB4
+  {"CPU0_DIMM_A5_STATE", DIMM_ID5, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB5
+  {"CPU0_DIMM_A6_STATE", DIMM_ID6, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB6
+  {"CPU0_DIMM_A7_STATE", DIMM_ID7, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB7
+  {"CPU0_DIMM_A8_STATE", DIMM_ID8, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB8
+  {"CPU0_DIMM_A9_STATE", DIMM_ID9, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB9
+  {"CPU0_DIMM_A10_STATE", DIMM_ID10, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBA
+  {"CPU0_DIMM_A11_STATE", DIMM_ID11, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
+  {"CPU1_DIMM_B0_STATE", DIMM_ID16, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC0
+  {"CPU1_DIMM_B1_STATE", DIMM_ID17, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC1
+  {"CPU1_DIMM_B2_STATE", DIMM_ID18, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC2
+  {"CPU1_DIMM_B3_STATE", DIMM_ID19, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC3
+  {"CPU1_DIMM_B4_STATE", DIMM_ID20, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC4
+  {"CPU1_DIMM_B5_STATE", DIMM_ID21, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC5
+  {"CPU1_DIMM_B6_STATE", DIMM_ID22, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC6
+  {"CPU1_DIMM_B7_STATE", DIMM_ID23, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC7
+  {"CPU1_DIMM_B8_STATE", DIMM_ID24, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC8
+  {"CPU1_DIMM_B9_STATE", DIMM_ID25, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC9
+  {"CPU1_DIMM_B10_STATE", DIMM_ID26, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCA
+  {"CPU1_DIMM_B11_STATE", DIMM_ID27, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
@@ -1233,5 +1259,55 @@ int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
 
 err_exit:
   pal_unlock(fd_lock);
+  return ret;
+}
+
+static
+int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value) {
+  uint8_t dimm_id = sensor_map[fru].map[sensor_num].id; // dimm_id 0-31
+  uint8_t dimm_num = dimm_id%PER_CPU_DIMM_NUMBER_MAX;   // per cpu dimm number 0-15
+  uint8_t cpu_id = dimm_id/PER_CPU_DIMM_NUMBER_MAX;     // cpu_id:CPU0/CPU1
+  uint8_t err_cnt = 0;
+  const char *err_list[MAX_PMIC_ERR_TYPE] = {0};
+  int ret, i, index=0;
+  static bool flag[MAX_DIMM_NUM][MAX_PMIC_ERR_TYPE]= {false};
+  bool curr[MAX_PMIC_ERR_TYPE] = {false};
+  bool tag=false;
+  char name[64] = {0};
+  const char shadow[MAX_VALUE_LEN] = "FM_SPD_REMOTE_EN_R";
+
+  if (gpio_get_value_by_shadow(shadow) != GPIO_VALUE_HIGH) {
+    return READING_NA;
+  }
+
+  *value = 0;
+  ret = pmic_list_err(fru, cpu_id, dimm_num, err_list, &err_cnt);
+  if(!ret) {
+    for (i = 0; i < err_cnt; i++) {
+      index = pmic_err_index(err_list[i]);
+      curr[index] = true;
+#ifdef DEBUG
+      syslog(LOG_CRIT, "%s cpu%d dimm%d err_num%d %s\n", __func__, cpu_id, dimm_id, index, err_list[i]);
+#endif
+    }
+    for (i = 0; i < MAX_PMIC_ERR_TYPE; i++) {
+      tag = curr[i] ^ flag[dimm_id][i];
+#ifdef DEBUG
+      syslog(LOG_CRIT, "%s dimm%d curr=%d flag%d",
+                         __func__, dimm_id, curr[i], flag[dimm_id][i] );
+#endif
+      if(tag) {
+        pmic_err_name(i, name);
+        if(curr[i] == true)
+           syslog(LOG_CRIT, "ASSERT DIMM_LABEL=%s Error %s", 
+		get_dimm_label(cpu_id, dimm_num), name);
+        else
+	   syslog(LOG_CRIT, "DEASSERT DIMM_LABEL=%s Error %s", 
+	        get_dimm_label(cpu_id, dimm_num), name);
+
+        flag[dimm_id][i] = curr[i];
+      }
+    }
+  }
   return ret;
 }

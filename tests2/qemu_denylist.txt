@@ -18,6 +18,7 @@ tests.fuji.test_interface.InterfaceTest.test_usb0_v6_interface
 tests.fuji.test_process_running.ProcessRunningTest.test_installed_processes
 tests.fuji.test_sensor.SmbSensorTest.test_smb_sensor_keys
 tests.fuji.test_i2c_driver_presence.FujiI2cDriverPresenceTest.test_i2c_driver_presence
+tests.fuji.test_scmcpld_sysfs.SCMCPLDSysfsTest.test_valid_files
 tests.wedge400.test_sensor.Fan1SensorTest.test_fan1_sensor_keys
 tests.wedge400.test_sensor.Fan2SensorTest.test_fan2_sensor_keys
 tests.wedge400.test_sensor.Fan3SensorTest.test_fan3_sensor_keys

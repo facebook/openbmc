@@ -301,7 +301,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   } else if (fru == FRU_HPDB) {
     memcpy(snr_hpdb_tmp, hpdb_sensor_list, hpdb_sensor_cnt);
-    *cnt = vpdb_sensor_cnt;
+    *cnt = hpdb_sensor_cnt;
     // ADC sensor only support PVT2
     if(!pal_get_board_rev_id(FRU_HPDB, &rev) && rev >= PDB_REV_PVT2) {
       memcpy(&snr_hpdb_tmp[*cnt], hpdb_adc_sensor_list, hpdb_adc_sensor_cnt);

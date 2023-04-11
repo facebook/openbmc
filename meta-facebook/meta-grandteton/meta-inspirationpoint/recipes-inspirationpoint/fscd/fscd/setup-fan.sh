@@ -37,12 +37,10 @@ if [[ -f ${default_fsc_config} ]]; then
 fi
 
 rev_id=$(kv get mb_rev)
-if [[ "$rev_id" == "1" ]]; then
-    ln -s /etc/fsc-config-8-retimer.json ${default_fsc_config}
-elif [[ "$rev_id" == "2" ]]; then
-    ln -s /etc/fsc-config-2-retimer.json ${default_fsc_config}
+if [[ "$rev_id" == "2" ]]; then
+  ln -s /etc/fsc-config-2-retimer.json ${default_fsc_config}
 else
-    ln -s /etc/fsc-config-evt.json ${default_fsc_config}
+  ln -s /etc/fsc-config-8-retimer.json ${default_fsc_config}
 fi
 
 /etc/init.d/check-fan-cache.sh

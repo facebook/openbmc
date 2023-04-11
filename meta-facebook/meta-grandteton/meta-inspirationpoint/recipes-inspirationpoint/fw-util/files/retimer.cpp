@@ -92,8 +92,12 @@ class RetimerComponent : public Component {
 class RetimerSysConfig {
   public:
     RetimerSysConfig() {
-      if (gpio_get_value_by_shadow(rev_id0) == 1 &&
-          gpio_get_value_by_shadow(rev_id1) == 0) {
+      if (gpio_get_value_by_shadow(rev_id0) == 0 &&
+          gpio_get_value_by_shadow(rev_id1) == 1) {
+        static RetimerComponent rt0_comp("mb", "retimer0", 60);
+        static RetimerComponent rt4_comp("mb", "retimer4", 64);
+      }
+      else {
         static RetimerComponent rt0_comp("mb", "retimer0", 60);
         static RetimerComponent rt1_comp("mb", "retimer1", 61);
         static RetimerComponent rt2_comp("mb", "retimer2", 62);
@@ -104,11 +108,6 @@ class RetimerSysConfig {
         static RetimerComponent rt7_comp("mb", "retimer7", 67);
         static VrComponent rt_vr0("mb", "cpu0_rt_p0v9", "VR_CPU0_RETIMER_P0V9");
         static VrComponent rt_vr1("mb", "cpu1_rt_p0v9", "VR_CPU1_RETIMER_P0V9");
-      }
-      else if (gpio_get_value_by_shadow(rev_id0) == 0 &&
-               gpio_get_value_by_shadow(rev_id1) == 1) {
-        static RetimerComponent rt0_comp("mb", "retimer0", 60);
-        static RetimerComponent rt4_comp("mb", "retimer4", 64);
       }
     }
 };

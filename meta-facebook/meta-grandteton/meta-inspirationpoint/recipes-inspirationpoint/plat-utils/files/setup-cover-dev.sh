@@ -148,6 +148,7 @@ probe_mb_retimer_vr() {
 
 mbrev=$(kv get mb_rev)
 MB_DVT_BOARD_ID="1"
+MB_PVT_BOARD_ID="3"
 
 if [ "$mbrev" -ge "$MB_DVT_BOARD_ID" ]; then
   i2c_device_add 34 0x41 ina230
@@ -158,7 +159,8 @@ if [ "$mbrev" -ge "$MB_DVT_BOARD_ID" ]; then
   kv set mb_dpm_source "$MB_1ST_SOURCE"
 fi
 
-if [ "$mbrev" -eq "$MB_DVT_BOARD_ID" ]; then
+if [ "$mbrev" -eq "$MB_DVT_BOARD_ID" &&
+     "$mbrev" -ge "$MB_PVT_BOARD_ID" ]; then
   probe_mb_retimer_vr
 fi
 

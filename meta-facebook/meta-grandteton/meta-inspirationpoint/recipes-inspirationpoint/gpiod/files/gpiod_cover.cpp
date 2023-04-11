@@ -96,7 +96,8 @@ rst_perst_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
   if (!strcmp(rev_id, "2")) {
     AriesInit(I2C_BUS_60, 0x24);
     AriesInit(I2C_BUS_64, 0x24);
-  } else if (!strcmp(rev_id, "1")) {
+  }
+  else {
     for (int bus = I2C_BUS_60; bus <= I2C_BUS_67; bus++) {
       AriesInit(bus, 0x24);
     }

@@ -628,7 +628,7 @@ int plat_vr_init(void) {
 
     //Add Retimer VR
     kv_get("mb_rev", rev_id, 0, 0);
-    if (!strcmp(rev_id, "1")) {
+    if (strcmp(rev_id, "2")) {
       memcpy(vr_list + vr_cnt, mb_rt_vr_list, MB_RT_VR_CNT * sizeof(struct vr_info));
       vr_cnt += MB_RT_VR_CNT;
     }

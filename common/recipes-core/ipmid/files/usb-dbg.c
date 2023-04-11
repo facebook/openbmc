@@ -518,6 +518,11 @@ plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer) {
     *count += 1;
   }
 
+  if (num >= 5) {
+    buffer[*count] = 5;
+    *count += 1;
+  }
+
   return 0;
 }
 

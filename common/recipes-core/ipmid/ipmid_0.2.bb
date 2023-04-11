@@ -52,6 +52,8 @@ LOCAL_URI = " \
     file://run-ipmid.sh \
     file://setup-ipmid.sh \
     file://ipmid.service \
+    file://postcode-amd.c \
+    file://postcode-amd.h \
     "
 
 install_sysv() {

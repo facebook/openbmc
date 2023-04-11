@@ -5049,7 +5049,11 @@ error_exit:
 
 int
 pal_udbg_get_frame_total_num() {
+#ifdef CONFIG_HALFDOME
+  return 5;
+#else
   return 4;
+#endif
 }
 
 bool

@@ -11498,6 +11498,6 @@ int pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 
 #if defined CONFIG_FBY2_ND
 int pal_udbg_get_frame_total_num() {
-  return 4;
+  return 5;
 }
 #endif

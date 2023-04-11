@@ -12,6 +12,9 @@
 #include <syslog.h>
 
 #include "usb-dbg-conf.h"
+#if defined CONFIG_POSTCODE_AMD
+#include "postcode-amd.h"
+#endif
 
 #define ESCAPE "\x1B"
 #define ESC_ALT ESCAPE"[5;7m"
@@ -494,6 +497,42 @@ int plat_get_me_status(uint8_t fru, char *status)
   strcpy(status, (rbuf[3] & 0x80) ? "recovert_mode" : "operation mode");
   return 0;
 }
+
+#if defined CONFIG_HALFDOME
+
+int plat_dword_postcode_buf(uint8_t fru, char *status) {
+  int ret = 0;
+  uint32_t len;
+  uint32_t intput_len = 0;
+  int i;
+  uint32_t * dw_postcode_buf = malloc( 30 * sizeof(uint32_t));
+  char temp_str[128]  = {0};
+  if (dw_postcode_buf) {
+    intput_len = 30;
+  } else {
+    syslog(LOG_ERR, "%s Error, failed to allocate dw_postcode buffer", __func__);
+    intput_len = 0;
+    return -1;
+  }
+
+  ret = bic_request_post_buffer_dword_data(fru, dw_postcode_buf, intput_len, &len);
+  if (ret) {
+    syslog(LOG_WARNING, "plat_dword_postcode_buf, FRU: %d, bic_request_post_buffer_dword_data ret: %d\n", fru, ret);
+    free(dw_postcode_buf);
+    return ret;
+  }
+
+  for (i = 0; i < len; i++) {
+    pal_parse_amd_post_code_helper(dw_postcode_buf[i],temp_str);
+    strcat(status, temp_str);
+  }
+  if(dw_postcode_buf)
+    free(dw_postcode_buf);
+
+  return ret;
+
+}
+#endif
 
 int plat_get_board_id(char *id)
 {

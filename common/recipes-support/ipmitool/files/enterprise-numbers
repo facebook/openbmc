@@ -1,0 +1,21 @@
+PRIVATE ENTERPRISE NUMBERS
+
+(last updated 2023-03-30)
+
+SMI Network Management Private Enterprise Codes:
+
+Prefix: iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
+
+This file is https://www.iana.org/assignments/enterprise-numbers.txt
+
+Decimal
+| Organization
+| | Contact
+| | | Email
+| | | | 
+
+0
+  OpenBMC Project
+    Patrick Williams
+      patrick&stwcx.xyz
+

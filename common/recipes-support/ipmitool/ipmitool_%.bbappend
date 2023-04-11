@@ -12,13 +12,27 @@ LDFLAGS:append:openbmc-fb = " -lipmb -lipmi -lpal"
 
 SRC_URI:append:openbmc-fb = " \
     file://${@ipmitool_patch_dir(d)}/0001-add-facebook-openbmc-interface.patch \
+    file://enterprise-numbers \
     file://obmc \
     "
+
 
 do_copyfile() {
 }
 
 do_copyfile:append:openbmc-fb () {
   cp -vr ${WORKDIR}/obmc ${S}/src/plugins/
+  cp -vr ${WORKDIR}/enterprise-numbers ${S}/enterprise-numbers
 }
+
 addtask copyfile after do_patch before do_configure
+
+do_install:append:openbmc-fb() {
+  install -d ${D}/usr/share/misc
+
+  if "${@bb.utils.contains('PV', '1.8.19', 'true', 'false', d)}"; then
+    install -m 755 ${S}/enterprise-numbers ${D}/usr/share/misc/
+  fi
+}
+FILES:${PN} += "/usr/share/misc"
+

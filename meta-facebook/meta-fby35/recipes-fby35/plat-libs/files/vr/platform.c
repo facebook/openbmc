@@ -22,6 +22,13 @@
 #define HD_VR_MPS 0x2
 #define HD_VR_TI 0x3
 
+int hd_vr_addr_table[][3] = {
+  {VDDCR_CPU0_ADDR,     VDDCR_CPU1_ADDR,     VDD11S3_ADDR},
+  {VDDCR_CPU0_IFX_ADDR, VDDCR_CPU1_IFX_ADDR, VDD11S3_IFX_ADDR},
+  {VDDCR_CPU0_MPS_ADDR, VDDCR_CPU1_MPS_ADDR, VDD11S3_MPS_ADDR},
+  {VDDCR_CPU0_TI_ADDR,  VDDCR_CPU1_TI_ADDR,  VDD11S3_TI_ADDR}
+};
+
 static uint8_t slot_id = 0;
 static char fru_name[64] = {0};  // prefix of vr version cache (kv)
 static char fru_exp_name[64] = {0};  // prefix of expansion board vr version cache (kv)
@@ -317,12 +324,6 @@ void halfdome_vr_device_check(void){
   uint8_t board_rev = 0;
   int ret = 0;
   struct vr_ops* hd_vr_ops_list[] = {&rns_ops, &ifx_ops, &mps_ops, &ti_ops};
-  int hd_vr_addr_table[][3] = {
-    {VDDCR_CPU0_ADDR,     VDDCR_CPU1_ADDR,     VDD11S3_ADDR},
-    {VDDCR_CPU0_IFX_ADDR, VDDCR_CPU1_IFX_ADDR, VDD11S3_IFX_ADDR},
-    {VDDCR_CPU0_MPS_ADDR, VDDCR_CPU1_MPS_ADDR, VDD11S3_MPS_ADDR},
-    {VDDCR_CPU0_TI_ADDR,  VDDCR_CPU1_TI_ADDR,  VDD11S3_TI_ADDR}
-  };
 
   ret = get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
   if (ret < 0) {

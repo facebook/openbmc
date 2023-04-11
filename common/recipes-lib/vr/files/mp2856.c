@@ -429,7 +429,7 @@ cache_mp2856_new_crc(struct vr_info *info, void *args) {
       break;
     }
 
-    snprintf(value, MAX_VALUE_LEN, "MPS %02x%02x%02x%02x",
+    snprintf(value, MAX_VALUE_LEN, "MPS %02X%02X%02X%02X",
              crc_user[1], crc_user[0], multi_config[1], multi_config[0]);
 
     if(mps_remaining_wr) {

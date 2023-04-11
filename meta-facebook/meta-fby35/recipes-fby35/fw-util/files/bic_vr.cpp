@@ -8,6 +8,7 @@
 
 extern "C" {
 extern void plat_vr_preinit(uint8_t slot, const char *name);
+extern int hd_vr_addr_table[][3];
 }
 
 using namespace std;
@@ -18,11 +19,13 @@ static map<uint8_t, map<uint8_t, string>> crater_lake_vr_list = {
   {FW_VR_VCCINFAON, {{VCCINFAON_ADDR, "VCCINFAON/VCCFA_EHV"}}}
 };
 
-static map<uint8_t, map<uint8_t, string>> halfdome_vr_list = {
-  {FW_VR_VDDCRCPU0, {{VDDCR_CPU0_ADDR, "VDDCR_CPU0/VDDCR_SOC"}}},
-  {FW_VR_VDDCRCPU1, {{VDDCR_CPU1_ADDR, "VDDCR_CPU1/VDDIO"}}},
-  {FW_VR_VDD11S3, {{VDD11S3_ADDR, "VDD11_S3"}}}
-};
+/*
+ * halfdome vr address are different from each vr vendor
+ * each slot obtain its own vr list according to vr vendor
+ * */
+static map<uint8_t, map<uint8_t, map<uint8_t, string>>> halfdome_vr_table;
+static vector<string> halfdome_vr_names = {
+    "VDDCR_CPU0/VDDCR_SOC", "VDDCR_CPU1/VDDIO", "VDD11_S3"};
 
 static map<uint8_t, map<uint8_t, string>> great_lake_vr_list = {
   {FW_VR_VCCIN_EHV, {{GL_VCCIN_ADDR, "VCCIN/VCCFA_EHV"}}},
@@ -230,7 +233,18 @@ map<uint8_t, map<uint8_t, string>>&  VrComponent::get_vr_list() {
   }
 
   if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
-    return halfdome_vr_list;
+    if (!halfdome_vr_table.contains(slot_id)) {
+      //Generate vr list of a slot if not exist
+      uint8_t board_rev = 0, vr_type = 0;
+      get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
+      vr_type = get_vr_type(board_rev);
+
+      for (int vr_comp = FW_VR_VDDCRCPU0; vr_comp <= FW_VR_VDD11S3; vr_comp++ ) {
+        auto idx = vr_comp - FW_VR_VDDCRCPU0;
+        halfdome_vr_table[slot_id][vr_comp] = {{hd_vr_addr_table[vr_type][idx], halfdome_vr_names[idx]}};
+      }
+    }
+    return halfdome_vr_table[slot_id];
   } else if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_GL) {
     return great_lake_vr_list;
   } else {

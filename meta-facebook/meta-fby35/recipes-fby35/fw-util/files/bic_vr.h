@@ -26,4 +26,12 @@ class VrComponent : public Component {
     int get_version(json& j) override;
 };
 
+/* Definition of Halfdome board rev id:
+ *   HW Stage : bit[3:0]
+ *   VR Type   : bit[5:4]
+* */
+static inline int get_vr_type(uint8_t board_rev ) {
+  return (board_rev >> 4) & 0x3;
+}
+
 #endif

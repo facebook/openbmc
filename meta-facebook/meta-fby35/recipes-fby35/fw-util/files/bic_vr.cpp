@@ -1,10 +1,12 @@
 #include <cstdio>
+#include <openbmc/kv.hpp>
+#include <fmt/format.h>
 #include <syslog.h>
 #include <openbmc/vr.h>
 #include <facebook/fby35_common.h>
 #include <facebook/bic.h>
+
 #include "bic_vr.h"
-#include <openbmc/kv.h>
 
 extern "C" {
 extern void plat_vr_preinit(uint8_t slot, const char *name);
@@ -108,10 +110,10 @@ int VrComponent::get_ver_str(const string& name, string& s) {
 }
 
 int VrComponent::print_version() {
+  constexpr auto key_format = "slot{}_{}vr_{:x}h_new_crc";
   string ver("");
   map<uint8_t, map<uint8_t, string>>::iterator iter;
-  char ver_key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
+  bool is_1ou = false;
   auto& list = get_vr_list();
 
   switch (fw_comp) {
@@ -121,6 +123,7 @@ int VrComponent::print_version() {
       break;
     case FW_1OU_VR:
       rbf_vr_printed = true;
+      is_1ou = true;
       iter = list.begin();
       break;
     case FW_1OU_VR_V9_ASICA:
@@ -131,6 +134,7 @@ int VrComponent::print_version() {
         // so "1ou_vr_xxx" does not need to print version
         return FW_STATUS_SUCCESS;
       }
+      is_1ou = true;
       iter = list.find(fw_comp);
       break;
     default:
@@ -150,15 +154,17 @@ int VrComponent::print_version() {
         throw "Error in getting the version of " + vr->second;
       }
       cout << vr->second << " Version: " << ver << endl;
-      snprintf(ver_key, sizeof(ver_key), "slot%d_vr_%02xh_new_crc", slot_id, vr->first);
+
+      auto key = fmt::format(key_format, slot_id, is_1ou ? "1ou_" : "", vr->first);
       //The key will be set, if VR firmware updating is success.
-      if (kv_get(ver_key, value, NULL, KV_FPERSIST) == 0) {
+      try {
+        auto value = kv::get(key, kv::region::persist);
         cout << vr->second << " Version after activation: " << value << endl;
-      } else { // no update before
+      } catch (const std::exception& e) { // no update before
         cout << vr->second << " Version after activation: " << ver << endl;
       }
     } catch (string& err) {
-      printf("%s Version : NA (%s)\n", vr->second.c_str(), err.c_str());
+      cout << fmt::format("{} Version : NA ({})",vr->second, err)  << endl;
     }
     if (fw_comp != FW_VR && fw_comp != FW_1OU_VR) {
       break;

@@ -575,6 +575,7 @@ int plat_vr_init(void) {
   uint8_t id = 0;
   uint8_t status = 0;
   char rev_id[MAX_VALUE_LEN] = {0};
+  char sku_id[MAX_VALUE_LEN] = {0};
 
   // Add MB VR
   memcpy(vr_list + vr_cnt, mb_vr_list, MB_VR_CNT*sizeof(struct vr_info));
@@ -628,7 +629,13 @@ int plat_vr_init(void) {
 
     //Add Retimer VR
     kv_get("mb_rev", rev_id, 0, 0);
+    kv_get("mb_sku", sku_id, 0, 0);
     if (strcmp(rev_id, "2")) {
+      if (!strcmp(sku_id, "20")) {
+        //3nd source
+        mb_rt_vr_list[0].ops = &xdpe152xx_ops;
+        mb_rt_vr_list[1].ops = &xdpe152xx_ops;
+      }
       memcpy(vr_list + vr_cnt, mb_rt_vr_list, MB_RT_VR_CNT * sizeof(struct vr_info));
       vr_cnt += MB_RT_VR_CNT;
     }

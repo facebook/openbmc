@@ -23,12 +23,12 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 . /usr/local/bin/openbmc-utils.sh
 
 mb_sku=$(($(/usr/bin/kv get mb_sku) & 0x0F))
-# sku_id[3:0] | HSC     | ADC        | VR             | config
-# 0000        | MPS5990 | ADC128D818 | RAA229620      |   0
-# 0100        | LTC4282 | MAXIM11617 | XDPE192C3B     |   1
-# 0010        | TBD     | ADC128D818 | RAA229620      |   2
-# 0110        | LTC4286 | MAXIM11617 | MP2857GQKT-001 |   3
-# 0001        | MPS5990 | ADC128D818 | MP2857GQKT-001 |   4
+# sku_id[3:0] | HSC     | ADC        | VR             | RT VR        |config
+# 0000        | MPS5990 | ADC128D818 | RAA229620      | ISL69260IRAZ |  0
+# 0100        | LTC4282 | MAXIM11617 | XDPE192C3B     | XDPE15284D   |  1
+# 0010        | TBD     | ADC128D818 | RAA229620      | TBD          |  2
+# 0110        | LTC4286 | MAXIM11617 | MP2857GQKT-001 | TBD          |  3
+# 0001        | MPS5990 | ADC128D818 | MP2857GQKT-001 | ISL69260IRAZ |  4
 
 config0="0"
 config1="4"
@@ -134,9 +134,14 @@ probe_vr_mp2856() {
 }
 
 #MB retimer VR
-probe_mb_retimer_vr() {
+probe_mb_retimer_vr_isl() {
   i2c_device_add 20 0x60 isl69260
   i2c_device_add 20 0x76 isl69260
+}
+
+probe_mb_retimer_vr_xdpe() {
+  i2c_device_add 20 0x60 xdpe152c4
+  i2c_device_add 20 0x76 xdpe152c4
 }
 
 #MB DPM
@@ -168,12 +173,15 @@ if [ "$mb_sku" -eq "$config0" ]; then
   probe_hsc_mp5990
   probe_adc_ti
   probe_vr_raa
+  probe_mb_retimer_vr_isl
 elif [ "$mb_sku" -eq "$config1" ]; then
   probe_hsc_ltc
   probe_adc_maxim
   probe_vr_xdpe
+  probe_mb_retimer_vr_xdpe
 elif [ "$mb_sku" -eq "$config4" ]; then
   probe_hsc_mp5990
   probe_adc_ti
   probe_vr_mp2856
+  probe_mb_retimer_vr_isl
 fi

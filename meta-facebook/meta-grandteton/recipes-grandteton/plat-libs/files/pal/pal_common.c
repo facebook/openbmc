@@ -33,10 +33,12 @@ char *swb_source_data[] = {
 char *vpdb_source_data[] = {
   "vpdb_hsc_source",
   "vpdb_brick_source",
+  "vpdb_adc_source",
 };
 
 char *hpdb_source_data[] = {
   "hpdb_hsc_source",
+  "hpdb_adc_source",
 };
 
 char *fan_bp1_source_data[] = {

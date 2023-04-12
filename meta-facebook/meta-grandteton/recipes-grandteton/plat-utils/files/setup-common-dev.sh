@@ -172,7 +172,7 @@ if [ "$bic_ready" -eq 0 ]; then
 fi
 
 VPDB_EVT2="2"
-VPDB_PVT2="5"
+VPDB_PVT="5"
 VPDB_1ST_SOURCE="0"
 VPDB_2ND_SOURCE="1"
 VPDB_3RD_SOURCE="2"
@@ -242,13 +242,15 @@ else
   fi
 fi
 
-if [ "$vrev" -gt "$VPDB_PVT2" ]; then
+if [ "$vrev" -gt "$VPDB_PVT" ]; then
   if [ "$(gpio_get VPDB_SKU_ID_0)" -eq $VPDB_1ST_SOURCE ]; then
     i2c_device_add 36 0x67 ltc2945
     i2c_device_add 36 0x68 ltc2945
+    kv set vpdb_adc_source "$VPDB_1ST_SOURCE"
   else
     i2c_device_add 36 0x40 ina238
     i2c_device_add 36 0x41 ina238
+    kv set vpdb_adc_source "$VPDB_2ST_SOURCE"
   fi
 fi
 # VPDB FRU
@@ -257,7 +259,7 @@ i2c_device_add 36 0x52 24c64 #VPDB FRU
 
 
 #***HPDB Board Device Probe***
-HPDB_PVT2=5
+HPDB_PVT=5
 HPDB_1ST_SOURCE="0"
 HPDB_2ND_SOURCE="1"
 #HPDB_3RD_SOURCE="2"
@@ -304,17 +306,19 @@ else
   kv set hpdb_hsc_source "$HPDB_2ND_SOURCE"
 fi
 
-if [ "$hrev" -gt "$HPDB_PVT2" ]; then
-  if [ "$(gpio_get HPDB_SKU_ID_0)" -eq "$HPDB_1ST_SOURCE" ]; then
+if [ "$hrev" -gt "$HPDB_PVT" ]; then
+  if [ "$(gpio_get HPDB_SKU_ID_1)" -eq "$HPDB_1ST_SOURCE" ]; then
     i2c_device_add 37 0x69 ltc2945
     i2c_device_add 37 0x6a ltc2945
     i2c_device_add 37 0x6b ltc2945
     i2c_device_add 37 0x6c ltc2945
+    kv set hpdb_adc_source "$HPDB_1ST_SOURCE"
   else
     i2c_device_add 37 0x42 ina238
     i2c_device_add 37 0x43 ina238
     i2c_device_add 37 0x44 ina238
     i2c_device_add 37 0x45 ina238
+    kv set hpdb_adc_source "$HPDB_2ST_SOURCE"
   fi
 fi
 

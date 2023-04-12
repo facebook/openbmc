@@ -361,8 +361,8 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
   {"P3V3_AUX_IN6_VOLT", ADC_CH6, read_iic_adc_val, true, {3.35, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0xA1
-  {"CABLE0_PLUS",  0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xA2
-  {"CABLE0_MINUS", 0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xA3
+  {"CABLE0_PLUS",  0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xA2
+  {"CABLE0_MINUS", 0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xA3
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
@@ -390,10 +390,10 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"HSC1_VOUT_VOLT", HPDB_HSC_ID1, read_bb_sensor, true, {56, 0, 0, 46, 0, 0, 0, 0}, VOLT},  //0xBA
   {"HSC2_VOUT_VOLT", HPDB_HSC_ID2, read_bb_sensor, true, {56, 0, 0, 46, 0, 0, 0, 0}, VOLT},  //0xBB
-  {"CABLE1_PLUS",  0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBC
-  {"CABLE1_MINUS", 0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBD
-  {"CABLE2_PLUS",  0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBE
-  {"CABLE2_MINUS", 0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBF
+  {"CABLE1_PLUS",  0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBC
+  {"CABLE1_MINUS", 0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBD
+  {"CABLE2_PLUS",  0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBE
+  {"CABLE2_MINUS", 0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBF
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
@@ -547,12 +547,16 @@ read_bb_sensor(uint8_t fru, uint8_t sensor_num, float *value) {
   static int retry[255];
 
   ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
-  if (*value == 0) {
+
+  if (ret) {
+    retry[sensor_num]++;
+    return retry_err_handle(retry[sensor_num], 2);
+  } else if (*value == 0) {
     retry[sensor_num]++;
     return retry_skip_handle(retry[sensor_num], 2);
+  } else {
+    retry[sensor_num] = 0;
   }
-
-  retry[sensor_num] = 0;
 
   if(sensor_num == SCM_SNR_BMC_TEMP)
     inlet_temp_calibration(fru, sensor_num, value);

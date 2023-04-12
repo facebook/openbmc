@@ -28,6 +28,7 @@ enum {
   TEMP = 1,
   CURR,
   VOLT,
+  mVOLT,
   FAN,
   POWER,
   ENRGY,

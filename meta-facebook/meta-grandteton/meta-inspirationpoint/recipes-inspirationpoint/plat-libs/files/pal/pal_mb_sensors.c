@@ -37,6 +37,7 @@
 #define IIO_AIN_NAME       "in_voltage%d_raw"
 
 #define MAX11617_DIR     IIO_DEV_DIR(max1363, 20, 35, 2)
+#define MAX11617_RT_DIR  IIO_DEV_DIR(max1363, 26, 35, 3)
 
 #define SCALING_FACTOR	0.25
 #define CHANNEL_OF_DIMM_NUM  6
@@ -253,6 +254,7 @@ char *adc128_devs[] = {
 
 char *max11617_devs[] = {
   MAX11617_DIR,
+  MAX11617_RT_DIR
 };
 
 PAL_ADC_CH_INFO max11617_ch_info[] = {
@@ -264,6 +266,14 @@ PAL_ADC_CH_INFO max11617_ch_info[] = {
   {ADC_CH5, 511,   470},
   {ADC_CH6, 511,   470},
   {ADC_CH7, 120,   25},
+  {ADC_CH8, 18000,  9090},
+  {ADC_CH9,  5110,  18000},
+  {ADC_CH10, 5110,  18000},
+  {ADC_CH11, 5110,  18000},
+  {ADC_CH12, 5110,  18000},
+  {ADC_CH13, 5110,  4700},
+  {ADC_CH14, 5110,  18000},
+  {ADC_CH15, 5110,  18000},
 };
 
 char **adc_chips = adc128_devs;
@@ -580,7 +590,7 @@ static int sensors_read_maxim(const char *dev, int channel, float *data)
   float R2 = max11617_ch_info[channel].r2;
 
 
-  snprintf(ain_name, sizeof(ain_name), IIO_AIN_NAME, channel);
+  snprintf(ain_name, sizeof(ain_name), IIO_AIN_NAME, channel%8);
   snprintf(dev_dir, sizeof(dev_dir), dev, ain_name);
 
   if(access(dev_dir, F_OK)) {

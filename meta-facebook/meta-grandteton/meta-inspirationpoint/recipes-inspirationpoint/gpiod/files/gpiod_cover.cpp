@@ -155,6 +155,7 @@ static struct gpiopoll_config gpios_list[] = {
   {GPU_FPGA_THERM_OVERT,        "SGPIO40",   GPIO_EDGE_FALLING, sgpio_event_handler,        NULL},
   {GPU_FPGA_DEVIC_OVERT,        "SGPIO42",   GPIO_EDGE_FALLING, sgpio_event_handler,        NULL},
   {FP_AC_PWR_BMC_BTN,           "GPIO18A0",  GPIO_EDGE_BOTH,    gpio_event_handler,         NULL},
+  {FM_BIOS_POST_CMPLT,          "SGPIO146",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
 };
 
 const uint8_t gpios_cnt = sizeof(gpios_list)/sizeof(gpios_list[0]);

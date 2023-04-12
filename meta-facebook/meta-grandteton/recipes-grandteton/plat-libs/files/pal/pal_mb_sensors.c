@@ -596,8 +596,6 @@ static int sensors_read_maxim(const char *dev, int channel, float *data)
 
 
   *data = (float)val * 2048 / 4096 * (R1 + R2) / R2 /1000;
-  if(channel == ADC_CH1 || channel == ADC_CH2)
-    *data = 0.0056 * pow(*data, 2) + 1.158 * (*data) + 0.07;
   return 0;
 }
 

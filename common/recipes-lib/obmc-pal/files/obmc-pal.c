@@ -548,11 +548,17 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "No DIMM in System",
     "Reserved"
   };
+  char *mem_ppr_repair_time[] = {
+    "Boot time",
+    "Autonomous",
+    "Run time",
+    "Reserved"
+  };
   char *mem_ppr_event[] = {
     "PPR success",
     "PPR fail",
     "PPR request",
-    "N/A"
+    "Reserved"
   };
   char *upi_event[] = {
     "Successful LLR without Phy Reinit",
@@ -716,8 +722,8 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       event_type = sel[12] & 0x0F;
       switch (event_type) {
         case MEM_PPR:
-          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s",
-                  general_info, dimm_location_str, mem_ppr_event[sel[13]&0x03]);
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s, %s",
+                  general_info, dimm_location_str, mem_ppr_repair_time[sel[13]>>2&0x03], mem_ppr_event[sel[13]&0x03]);
           break;
         case MEM_NO_DIMM:
           snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MemEvent(0x%02X), DIMM Failure Event: %s",

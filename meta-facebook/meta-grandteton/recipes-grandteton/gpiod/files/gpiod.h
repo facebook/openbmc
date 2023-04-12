@@ -72,4 +72,8 @@ void gpio_present_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
 //SWB EVENT
 void bic_ready_init (gpiopoll_pin_t *desc, gpio_value_t value);
 void bic_ready_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
+
+//GPU EVENT
+void nv_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
+
 #endif

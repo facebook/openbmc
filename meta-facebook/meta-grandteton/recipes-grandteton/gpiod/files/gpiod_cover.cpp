@@ -166,8 +166,8 @@ struct gpiopoll_config gpios_list[] = {
   {FP_AC_PWR_BMC_BTN,       "GPIO18A0",  GPIO_EDGE_BOTH,    gpio_event_handler,         NULL},
   {BIC_READY,               "SGPIO32",   GPIO_EDGE_FALLING, bic_ready_handler,          bic_ready_init},
   {HMC_READY,               "SGPIO64",   GPIO_EDGE_BOTH,    hmc_ready_handler,          hmc_ready_init},
-  {GPU_FPGA_THERM_OVERT,    "SGPIO40",   GPIO_EDGE_FALLING, sgpio_event_handler,        NULL},
-  {GPU_FPGA_DEVIC_OVERT,    "SGPIO42",   GPIO_EDGE_FALLING, sgpio_event_handler,        NULL},
+  {GPU_FPGA_THERM_OVERT,    "SGPIO40",   GPIO_EDGE_FALLING, nv_event_handler,           NULL},
+  {GPU_FPGA_DEVIC_OVERT,    "SGPIO42",   GPIO_EDGE_FALLING, nv_event_handler,           NULL},
 };
 
 const uint8_t gpios_cnt = sizeof(gpios_list)/sizeof(gpios_list[0]);

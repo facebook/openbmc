@@ -29,6 +29,7 @@ LOCAL_URI = " \
     file://gpiod_cover.cpp \
     file://setup-gpiod.sh \
     file://run-gpiod.sh \
+    file://dump-nv-reg.sh \
     "
 
 
@@ -49,6 +50,7 @@ DEPENDS += " \
     libpldm-oem \
     libhgx \
 "
+RDEPENDS:${PN} = "bash"
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d
@@ -58,5 +60,6 @@ do_install:append() {
 
   install -m 755 ${S}/run-gpiod.sh ${D}${sysconfdir}/sv/gpiod/run
   install -m 755 ${S}/setup-gpiod.sh ${D}${sysconfdir}/init.d/setup-gpiod.sh
+  install -m 755 ${S}/dump-nv-reg.sh ${D}/usr/local/bin/dump-nv-reg.sh
   update-rc.d -r ${D} setup-gpiod.sh start 92 5 .
 }

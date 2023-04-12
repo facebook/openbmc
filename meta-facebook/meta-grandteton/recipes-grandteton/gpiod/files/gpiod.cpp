@@ -836,3 +836,16 @@ hmc_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
     hmc_ready(false);
   }
 }
+
+void
+nv_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check())
+    return;
+
+  if(curr == GPIO_VALUE_LOW)
+    if (system("/usr/local/bin/dump-nv-reg.sh &"))
+      syslog(LOG_WARNING, "Failed to start NVDIA reg dump\n");
+
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL);
+}
+

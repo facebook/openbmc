@@ -26,6 +26,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashcp"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
@@ -175,30 +176,44 @@ func TestFlashCp(t *testing.T) {
 func TestFlashCpAndValidate(t *testing.T) {
 	// mock and defer restore flashcp.FlashCp
 	flashCpOrig := flashcp.FlashCp
+	renameFileOrig := fileutils.RenameFile
 	defer func() {
 		flashcp.FlashCp = flashCpOrig
+		fileutils.RenameFile = renameFileOrig
 	}()
 
 	cases := []struct {
 		name          string
 		flashCpErr    error
+		renameErr     error
 		want          error
 	}{
 		{
 			name:          "succeeded",
 			flashCpErr:    nil,
+			renameErr:     nil,
 			want:          nil,
 		},
 		{
 			name:          "flashCpErr error",
 			flashCpErr:    errors.Errorf("flashing failed"),
+			renameErr:     nil,
 			want:          errors.Errorf("flashing failed"),
+		},
+		{
+			name:          "succeeded, with rename failure",
+			flashCpErr:    nil,
+			renameErr:     errors.Errorf("aw nuts"),
+			want:          nil,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			exampleImageFilePath := "/img/mock"
+			fileutils.RenameFile = func(from string, to string) (error) {
+				return tc.renameErr
+			}
 			flashcp.FlashCp = func(imageFilePath, flashDevicePath string, offset uint32) error {
 				if offset != 42 {
 					t.Errorf("offset: want '%v' got '%v'", 42, offset)

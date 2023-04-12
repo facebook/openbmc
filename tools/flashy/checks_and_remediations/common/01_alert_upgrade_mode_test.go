@@ -87,28 +87,58 @@ func TestWallAlert(t *testing.T) {
 func TestUpdateMOTD(t *testing.T) {
 	// mock and defer restore WriteFileWithTimeout
 	writeFileOrig := fileutils.WriteFileWithTimeout
+	fileExistsOrig := fileutils.FileExists
+	renameFileOrig := fileutils.RenameFile
 	defer func() {
 		fileutils.WriteFileWithTimeout = writeFileOrig
+		fileutils.FileExists = fileExistsOrig
+		fileutils.RenameFile = renameFileOrig
 	}()
 	cases := []struct {
 		name         string
 		writeFileErr error
+		renameErr    error
+		backupExists bool
 		want         error
 	}{
 		{
 			name:         "succeeded",
 			writeFileErr: nil,
+			renameErr:    nil,
+			backupExists: false,
+			want:         nil,
+		},
+		{
+			name:         "succeeded",
+			writeFileErr: nil,
+			renameErr:    errors.Errorf("oopsie daisy"),
+			backupExists: false,
+			want:         nil,
+		},
+		{
+			name:         "succeeded",
+			writeFileErr: nil,
+			renameErr:    nil,
+			backupExists: true,
 			want:         nil,
 		},
 		{
 			name:         "WriteFile failed",
 			writeFileErr: errors.Errorf("WriteFile failed"),
+			renameErr:    nil,
+			backupExists: false,
 			want:         errors.Errorf("Warning: MOTD update failed: WriteFile failed"),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			fileutils.FileExists = func(filename string) bool {
+				return tc.backupExists
+			}
+			fileutils.RenameFile = func(from string, to string) error {
+				return tc.renameErr
+			}
 			fileutils.WriteFileWithTimeout = func(filename string, data []byte, perm os.FileMode, timeout time.Duration) error {
 				if "/etc/motd" != filename {
 					t.Errorf("filename: want '%v' got '%v'", "/etc/motd", filename)

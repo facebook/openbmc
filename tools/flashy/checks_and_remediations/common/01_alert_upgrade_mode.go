@@ -21,6 +21,7 @@ package common
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -85,6 +86,12 @@ var wallAlert = func() error {
 }
 
 var updateMOTD = func() error {
+	if !fileutils.PathExists("/etc/motd.bak") {
+		err := fileutils.RenameFile("/etc/motd", "/etc/motd.bak")
+		if err != nil {
+			log.Printf("Error saving /etc/motd, ignoring: %v", err)
+		}
+	}
 	err := fileutils.WriteFileWithTimeout(
 		"/etc/motd", []byte(motdContents), 0644, 5*time.Second,
 	)

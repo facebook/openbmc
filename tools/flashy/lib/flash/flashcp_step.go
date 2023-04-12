@@ -22,6 +22,7 @@ package flash
 import (
 	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashcp"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
@@ -73,7 +74,11 @@ var flashCpAndValidate = func(
 	if err != nil {
 		log.Printf("FlashCp failed: %v", err)
 	} else {
-		log.Printf("Flashcp succeeded")
+		log.Printf("FlashCp succeeded")
+	}
+	err2 := fileutils.RenameFile("/etc/motd.bak", "/etc/motd")
+	if err2 != nil {
+		log.Printf("Error restoring /etc/motd, ignoring: %v", err2)
 	}
 	return err
 }

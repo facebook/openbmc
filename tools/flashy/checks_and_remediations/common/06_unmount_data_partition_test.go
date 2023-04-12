@@ -38,18 +38,21 @@ func TestUnmountDataPartition(t *testing.T) {
 	runDataPartitionUnmountProcessOrig := runDataPartitionUnmountProcess
 	remountRODataPartitionOrig := remountRODataPartition
 	validateSshdConfigOrig := validateSshdConfig
+	isLfOrig := utils.IsLFOpenBMC
 	defer func() {
 		utils.IsDataPartitionMounted = isDataPartitionMountedOrig
 		logger.StartSyslog = startSyslogOrig
 		runDataPartitionUnmountProcess = runDataPartitionUnmountProcessOrig
 		remountRODataPartition = remountRODataPartitionOrig
 		validateSshdConfig = validateSshdConfigOrig
+		utils.IsLFOpenBMC = isLfOrig
 	}()
 
 	logger.StartSyslog = func() {}
 
 	cases := []struct {
 		name           string
+		isLFOpenBMC    bool
 		dataPartExists bool
 		dataPartErr    error
 		unmountErr     error
@@ -59,6 +62,7 @@ func TestUnmountDataPartition(t *testing.T) {
 	}{
 		{
 			name:           "data part exists and successfully unmounted",
+			isLFOpenBMC:    false,
 			dataPartExists: true,
 			dataPartErr:    nil,
 			unmountErr:     nil,
@@ -68,6 +72,7 @@ func TestUnmountDataPartition(t *testing.T) {
 		},
 		{
 			name:           "data part does not exist",
+			isLFOpenBMC:    false,
 			dataPartExists: false,
 			dataPartErr:    nil,
 			unmountErr:     nil,
@@ -77,6 +82,7 @@ func TestUnmountDataPartition(t *testing.T) {
 		},
 		{
 			name:           "data part check failed",
+			isLFOpenBMC:    false,
 			dataPartExists: false,
 			dataPartErr:    errors.Errorf("check failed"),
 			unmountErr:     nil,
@@ -88,6 +94,7 @@ func TestUnmountDataPartition(t *testing.T) {
 		},
 		{
 			name:           "unmount failed, remount passed",
+			isLFOpenBMC:    false,
 			dataPartExists: true,
 			dataPartErr:    nil,
 			unmountErr:     errors.Errorf("unmount failed"),
@@ -97,6 +104,7 @@ func TestUnmountDataPartition(t *testing.T) {
 		},
 		{
 			name:           "unmount failed, remount failed",
+			isLFOpenBMC:    false,
 			dataPartExists: true,
 			dataPartErr:    nil,
 			unmountErr:     errors.Errorf("unmount failed"),
@@ -108,6 +116,7 @@ func TestUnmountDataPartition(t *testing.T) {
 		},
 		{
 			name:           "successfully unmounted but sshd config corrupt",
+			isLFOpenBMC:    false,
 			dataPartExists: true,
 			dataPartErr:    nil,
 			unmountErr:     nil,
@@ -118,11 +127,24 @@ func TestUnmountDataPartition(t *testing.T) {
 					"sshd config corrupt"),
 			},
 		},
+		{
+			name:           "LF OpenBMC, do nothing",
+			isLFOpenBMC:    true,
+			dataPartExists: false,
+			dataPartErr:    nil,
+			unmountErr:     nil,
+			remountErr:     nil,
+			sshdConfigErr:  nil,
+			want:           nil,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			umountCalled := false
 			remountCalled := false
+			utils.IsLFOpenBMC = func() (bool) {
+				return tc.isLFOpenBMC
+			}
 			utils.IsDataPartitionMounted = func() (bool, error) {
 				return tc.dataPartExists, tc.dataPartErr
 			}

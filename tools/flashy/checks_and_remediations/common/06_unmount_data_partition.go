@@ -44,6 +44,13 @@ var mount = syscall.Mount
 // may be corrupted by the preexisting data0 partition.
 // Also, should there be a need to format data0, this step is necessary.
 func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
+	// With LF OpenBMC at Meta, /mnt/data is currently an eMMC device.
+	// It won't be flashed so there's no need to unmount.
+	if utils.IsLFOpenBMC() {
+		log.Printf("Skipping this on LF OpenBMC.")
+		return nil
+	}
+
 	dataMounted, err := utils.IsDataPartitionMounted()
 	if err != nil {
 		return step.ExitSafeToReboot{

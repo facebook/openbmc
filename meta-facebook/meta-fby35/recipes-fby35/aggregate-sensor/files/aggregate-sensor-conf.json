@@ -47,6 +47,9 @@
           },
           "cfm0_hd": {
             "expression": "( rpm0 * 0.0045 ) + ( rpm1 * 0.0045 ) + ( rpm2 * 0.0045 ) + ( rpm3 * 0.0045 )"
+          },
+          "cfm0_gl": {
+            "expression": "( rpm0 * 0.0195 ) + ( rpm1 * 0.0195 ) + ( rpm2 * 0.0195 ) + ( rpm3 * 0.0195 )"
           }
        },
        "linear_expressions": {
@@ -56,7 +59,8 @@
          "T15": "cfm0 - 9.9157",
          "T8" : "cfm0_t8 - 5.687368",
          "HD" : "cfm0_hd - 10.709",
-         "VF" : "cfm0 - 10.164"
+         "VF" : "cfm0 - 10.164",
+         "GL" : "cfm0_gl - 8.379"
        },
        "condition": {
          "key": "sled_system_conf",
@@ -69,7 +73,8 @@
            "Type_15": "T15",
            "Type_8" : "T8",
            "Type_HD": "HD",
-           "Type_VF": "VF"
+           "Type_VF": "VF",
+           "Type_GL": "GL"
          }
        }
       }

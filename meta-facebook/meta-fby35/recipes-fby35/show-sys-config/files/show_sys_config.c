@@ -273,11 +273,14 @@ main(int argc, char **argv) {
 
         if ( sys_info.type == CLASS2 ) {
           server_config = 0xD;
-        } else if (server_type == SERVER_TYPE_HD) {
+        } else if (
+            server_type == SERVER_TYPE_HD || server_type == SERVER_TYPE_GL) {
           server_config = 0xB;
-        } else if ( riser_exp_bit == STATUS_PRSNT ) {
+        } else if (riser_exp_bit == STATUS_PRSNT) {
           server_config = 0xB;
-        } else if ( front_exp_bit == STATUS_PRSNT && riser_exp_bit == STATUS_NOT_PRSNT ) {
+        } else if (
+            front_exp_bit == STATUS_PRSNT &&
+            riser_exp_bit == STATUS_NOT_PRSNT) {
           server_config = 0xC;
         } else {
           server_config = 0xA;

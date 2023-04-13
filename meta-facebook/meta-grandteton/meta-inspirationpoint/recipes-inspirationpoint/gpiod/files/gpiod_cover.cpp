@@ -88,6 +88,8 @@ static void
 rst_perst_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   char rev_id[20] = {0};
 
+  sleep(10);
+
   if (system("sh /etc/init.d/rebind-rt-mux.sh &") != 0) {
     syslog(LOG_CRIT, "Failed to run: %s", __FUNCTION__);
   }

@@ -1,20 +1,20 @@
-From dbfb8a46d5cd700371342a645755732da48d4d85 Mon Sep 17 00:00:00 2001
-From: Patrick Williams <patrick@stwcx.xyz>
-Date: Mon, 3 Oct 2022 18:42:49 -0500
-Subject: [PATCH] add facebook openbmc interface
+From 6a9345141c47e072f99e1cff8bfe6752441226a6 Mon Sep 17 00:00:00 2001
+From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
+Date: Thu, 13 Apr 2023 10:08:33 +0800
+Subject: [PATCH] add facebook openbmc interface and use it as default
+ interface
 
-Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
 ---
- configure.ac            | 19 +++++++++++++++++++
+ configure.ac            | 25 ++++++++++++++++++++++---
  src/plugins/Makefile.am |  4 ++--
  src/plugins/ipmi_intf.c | 17 ++++++++++++-----
- 3 files changed, 33 insertions(+), 7 deletions(-)
+ 3 files changed, 36 insertions(+), 10 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
-index d6ba62b..6dd4bcb 100644
+index 23b637e..28d8ccf 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -86,6 +86,7 @@ xenable_intf_lipmi=yes
+@@ -72,6 +72,7 @@ xenable_intf_lipmi=yes
  xenable_intf_open=yes
  #xenable_intf_serial=yes
  xenable_intf_usb=no
@@ -22,7 +22,7 @@ index d6ba62b..6dd4bcb 100644
  xenable_ipmishell=yes
  
  dnl set some things so we build with GNU tools on Solaris
-@@ -252,6 +253,22 @@ if test "x$xenable_intf_usb" = "xyes"; then
+@@ -238,6 +239,22 @@ if test "x$xenable_intf_usb" = "xyes"; then
  	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB usb/libintf_usb.la"
  fi
  
@@ -45,7 +45,24 @@ index d6ba62b..6dd4bcb 100644
  dnl enable IPMIv2.0 RMCP+ LAN interface
  AC_ARG_ENABLE([intf-lanplus],
  	[AC_HELP_STRING([--enable-intf-lanplus],
-@@ -745,6 +762,7 @@ AC_CONFIG_FILES([Makefile
+@@ -666,13 +683,13 @@ AC_TRY_COMPILE([],[
+ )
+ 
+ dnl if no environment variable is set, set the default value for the default intf
+-if test "${xenable_intf_open}" = "yes"; then
+-   DEFAULT_INTF_NO_ENV=open
++if test "${xenable_intf_obmc}" = "yes"; then
++   DEFAULT_INTF_NO_ENV=obmc
+ else dnl macOS does not build open interface, it defaults to lan
+    DEFAULT_INTF_NO_ENV=lan
+ fi
+ dnl allow for a default interface to be set on configure
+-AC_ARG_VAR(DEFAULT_INTF, [Set the default interface to use (default='open' if available, 'lan' otherwise)])
++AC_ARG_VAR(DEFAULT_INTF, [Set the default interface to use (default='obmc' if available, 'lan' otherwise)])
+ 
+ dnl set the default value for the default interface environment variable
+ if test "x${DEFAULT_INTF}" = "x"; then
+@@ -731,6 +748,7 @@ AC_CONFIG_FILES([Makefile
  		src/plugins/bmc/Makefile
  		src/plugins/dbus/Makefile
  		src/plugins/usb/Makefile
@@ -53,7 +70,7 @@ index d6ba62b..6dd4bcb 100644
  		src/plugins/lipmi/Makefile
  		src/plugins/serial/Makefile
  		src/plugins/dummy/Makefile
-@@ -765,6 +783,7 @@ AC_MSG_RESULT([  imb     : $xenable_intf_imb])
+@@ -751,6 +769,7 @@ AC_MSG_RESULT([  imb     : $xenable_intf_imb])
  AC_MSG_RESULT([  bmc     : $xenable_intf_bmc])
  AC_MSG_RESULT([  dbus    : $xenable_intf_dbus])
  AC_MSG_RESULT([  usb     : $xenable_intf_usb])
@@ -124,5 +141,5 @@ index e424a64..de7bbd5 100644
  	&ipmi_open_intf,
  #endif
 -- 
-2.35.1
+2.25.1
 

@@ -537,7 +537,7 @@ AriesErrorType AriesMargin(int id, const char* type, const char* fname)
              0, 0.5, eyeResults);
     }
     else if (!strcmp(type, "down")) {
-      ariesLogEye(marginDevice, ARIES_UP_STREAM_PSEUDO_PORT, width, fname,
+      ariesLogEye(marginDevice, ARIES_DOWN_STREAM_PSEUDO_PORT, width, fname,
              0, 0.5, eyeResults);
     }
     else {

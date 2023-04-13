@@ -94,6 +94,9 @@ void clearEventLog();
 // Sync current BMC Time
 void syncTime();
 
+// Set HGX FW version in KV store
+int setFWVersion();
+
 // Get components supporting measurements
 std::vector<std::string> integrityComponents();
 

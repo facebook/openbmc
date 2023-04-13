@@ -156,13 +156,49 @@ std::string redfishPatch(const std::string& subpath, std::string&& args) {
   return hgx.patch(HMC_URL + subpath, std::move(args));
 }
 
+int setFWVersion() {
+  const auto exp = "UpdateService/FirmwareInventory?$expand=*($levels=1)";
+
+  if (getHMCPhase() < HMCPhase::BMC_FW_DVT) {
+    return -1;
+  }
+
+  json resp = json::parse(redfishGet(exp));
+  for(const auto& comp : resp["Members"])
+  {
+    if (!comp.contains("Id") || !comp.contains("Version")) {
+      return -1;
+    }
+
+    auto& fp = comp["Id"];
+    auto& ver = comp["Version"];
+
+    if (fp.dump().find("HGX_") != std::string::npos) {
+      kv::set(fp, ver);
+    }
+  }
+
+  return 0;
+}
+
 std::string version(const std::string& comp, bool returnJson) {
   std::string url = HMC_FW_INVENTORY + comp;
-  std::string respStr = hgx.get(url);
+
   if (returnJson) {
+    std::string respStr = hgx.get(url);
     return respStr;
   }
-  json resp = json::parse(respStr);
+
+  if (getHMCPhase() >= HMCPhase::BMC_FW_DVT) {
+    try {
+      auto ver = kv::get(comp);
+      return ver;
+    } catch (std::filesystem::filesystem_error& e) {
+      hgx::setFWVersion();
+    }
+  }
+
+  json resp = json::parse(hgx.get(url));
   return resp["Version"];
 }
 
@@ -226,7 +262,6 @@ TaskStatus getTaskStatus(const std::string& id) {
 
 void getMetricReports() {
   std::string url = HGX_TELEMETRY_SERVICE_DVT;
-  std::string cache_path = "/tmp/cache_store/";
   std::string snr_val;
   std::string resp;
   unsigned int pos;

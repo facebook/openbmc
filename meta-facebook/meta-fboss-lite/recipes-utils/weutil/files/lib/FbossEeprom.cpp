@@ -80,8 +80,8 @@ bool EepromFboss::parseTlvField() {
           "/" + std::to_string(it->second.second));
     }
     dict_[id] = val;
-
-    if (id == mappingTbl_[CRC16] || runOutBuf()) {
+    if (id == mappingTbl_[CRC16]) {
+      eepromDataSz_ = pos_;
       return false;
     }
   } else {
@@ -101,7 +101,7 @@ bool EepromFboss::parseTlvField() {
 bool EepromFboss::crc16Check(uint16_t crcVal) {
   uint16_t crc;
   /* the CRC16 calculation covers all eeprom data except the CRC16 TLV field. */
-  crc = crc16_ccitt(0xffff, &buf_[0], bufSz_ - 4);
+  crc = crc16_ccitt(0xffff, &buf_[0], eepromDataSz_ - 4);
   crc = ~crc;
   if (crcVal != crc) {
     throw std::runtime_error(

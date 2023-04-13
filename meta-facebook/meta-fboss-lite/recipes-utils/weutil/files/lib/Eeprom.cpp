@@ -22,7 +22,8 @@ using namespace std;
 
 namespace weutil {
 
-Eeprom::Eeprom(const std::string& eFile, const uint16_t off) : pos_(0) {
+Eeprom::Eeprom(const std::string& eFile, const uint16_t off)
+    : pos_(0), eepromDataSz_(0) {
   std::ifstream file(eFile, std::ios::binary);
   // get eeprom file size:
   file.seekg(0, std::ios::end);
@@ -38,10 +39,6 @@ Eeprom::Eeprom(const std::string& eFile, const uint16_t off) : pos_(0) {
   file.close();
 };
 
-bool Eeprom::runOutBuf() {
-  return pos_ >= bufSz_;
-}
-
 /*
  * TODO: take care of endianness
  * lucky, both armv7 and X86 are little-endian.
@@ -50,8 +47,8 @@ int Eeprom::readInt32() {
   int res = 0;
   if (pos_ + 4 > bufSz_) {
     throw std::runtime_error(
-        "32 over the boundary of eeprom buf size " + std::to_string(pos_ + 4) +
-        "/" + std::to_string(bufSz_));
+        "readInt32(): over the boundary of eeprom buf size " +
+        std::to_string(pos_ + 4) + "/" + std::to_string(bufSz_));
   }
   res = readInt8();
   res = readInt8() << 8 | res;
@@ -68,8 +65,8 @@ int Eeprom::readInt16() {
   int res = 0;
   if (pos_ + 2 > bufSz_) {
     throw std::runtime_error(
-        "16 over the boundary of eeprom buf size " + std::to_string(pos_ + 4) +
-        "/" + std::to_string(bufSz_));
+        "readInt16(): over the boundary of eeprom buf size " +
+        std::to_string(pos_ + 2) + "/" + std::to_string(bufSz_));
   }
   res = readInt8();
   res = readInt8() << 8 | res;
@@ -80,8 +77,8 @@ int Eeprom::readInt8() {
   int res = 0;
   if (pos_ + 1 > bufSz_) {
     throw std::runtime_error(
-        "8 over the boundary of eeprom buf size " + std::to_string(pos_ + 4) +
-        "/" + std::to_string(bufSz_));
+        "readInt8(): over the boundary of eeprom buf size " +
+        std::to_string(pos_ + 1) + "/" + std::to_string(bufSz_));
   }
   res = buf_[pos_++];
   return res & 0xff;
@@ -120,8 +117,8 @@ std::string Eeprom::readStr(const int& len) {
 
   if (len <= 0) {
     throw std::runtime_error(
-        "str over the boundary of eeprom buf size " + std::to_string(pos_ + 4) +
-        "/" + std::to_string(bufSz_));
+        "readStr() over the boundary of eeprom buf size " +
+        std::to_string(pos_ + len) + "/" + std::to_string(bufSz_));
   }
 
   for (i = 0; i < len && pos_ < bufSz_; i++) {

@@ -38,7 +38,6 @@ class Eeprom {
   enum vFormat { VT_INT8, VT_INT16, VT_INT32, VT_STRMAC, VT_HEXMAC, VT_STR };
 
   std::tuple<int, int, std::string> nextTlv(std::map<int, vFormat>&);
-  bool runOutBuf();
   int readInt8();
   int readInt16();
   int readInt32();
@@ -57,6 +56,7 @@ class Eeprom {
   std::vector<uint8_t> buf_;
   uint16_t pos_; // the index of buf_[].
   int bufSz_;
+  uint16_t eepromDataSz_; // valid eeprom data size, except the CRC16 field.
 };
 
 } // namespace weutil

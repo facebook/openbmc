@@ -76,9 +76,7 @@ var flashCpAndValidate = func(
 	} else {
 		log.Printf("FlashCp succeeded")
 	}
-	err2 := fileutils.RenameFile("/etc/motd.bak", "/etc/motd")
-	if err2 != nil {
-		log.Printf("Error restoring /etc/motd, ignoring: %v", err2)
-	}
+	// reset motd back to default on LF OpenBMC
+	_ = fileutils.RemoveFile("/run/mnt-persist/etc-data/motd")
 	return err
 }

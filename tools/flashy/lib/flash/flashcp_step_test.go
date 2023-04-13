@@ -176,34 +176,34 @@ func TestFlashCp(t *testing.T) {
 func TestFlashCpAndValidate(t *testing.T) {
 	// mock and defer restore flashcp.FlashCp
 	flashCpOrig := flashcp.FlashCp
-	renameFileOrig := fileutils.RenameFile
+	removeFileOrig := fileutils.RemoveFile
 	defer func() {
 		flashcp.FlashCp = flashCpOrig
-		fileutils.RenameFile = renameFileOrig
+		fileutils.RemoveFile = removeFileOrig
 	}()
 
 	cases := []struct {
 		name          string
 		flashCpErr    error
-		renameErr     error
+		removeErr     error
 		want          error
 	}{
 		{
 			name:          "succeeded",
 			flashCpErr:    nil,
-			renameErr:     nil,
+			removeErr:     nil,
 			want:          nil,
 		},
 		{
 			name:          "flashCpErr error",
 			flashCpErr:    errors.Errorf("flashing failed"),
-			renameErr:     nil,
+			removeErr:     nil,
 			want:          errors.Errorf("flashing failed"),
 		},
 		{
-			name:          "succeeded, with rename failure",
+			name:          "succeeded, with remove failure",
 			flashCpErr:    nil,
-			renameErr:     errors.Errorf("aw nuts"),
+			removeErr:     errors.Errorf("aw nuts"),
 			want:          nil,
 		},
 	}
@@ -211,8 +211,8 @@ func TestFlashCpAndValidate(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			exampleImageFilePath := "/img/mock"
-			fileutils.RenameFile = func(from string, to string) (error) {
-				return tc.renameErr
+			fileutils.RemoveFile = func(filename string) (error) {
+				return tc.removeErr
 			}
 			flashcp.FlashCp = func(imageFilePath, flashDevicePath string, offset uint32) error {
 				if offset != 42 {

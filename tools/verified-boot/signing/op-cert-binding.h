@@ -1,1 +1,1 @@
-../../../meta-aspeed/recipes-bsp/u-boot/files/u-boot-v2019.04/board/fb-obmc/ast/vboot-op-cert.h
+../../../meta-aspeed/recipes-bsp/u-boot/files/u-boot-v2019.04/arch/arm/include/asm/arch-aspeed/giu_def.h

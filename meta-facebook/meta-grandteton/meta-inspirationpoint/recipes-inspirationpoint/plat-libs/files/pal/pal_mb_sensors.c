@@ -979,7 +979,7 @@ read_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value) {
   char source[10] = {0};
 
   ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
-  if (ret) {
+  if (ret < 0) {
    return ret;
   }
 
@@ -992,7 +992,7 @@ read_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value) {
     *value = (*value * 1.3459 - 0.1993);
   }
 
-  return ret;
+  return 0;
 }
 
 static int
@@ -1002,7 +1002,7 @@ read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
 
   ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 
-  if (ret) {
+  if (ret < 0) {
     return ret;
   }
 
@@ -1015,7 +1015,7 @@ read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
     *value = (*value * 1.3481 - 2.7754);
   }
 
-  return ret;
+  return 0;
 }
 
 static int
@@ -1079,14 +1079,22 @@ read_dpm_vout(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t dpm_id = sensor_map[fru].map[sensor_num].id;
   static uint8_t retry[DPM_NUM_CNT] = {0};
   uint8_t mb_rev;
+  uint8_t mb_sku = 0;
 
   if(pal_get_board_rev_id(FRU_MB, &mb_rev))
+    return -1;
+
+  if(pal_get_board_sku_id(FRU_MB, &mb_sku))
     return -1;
 
   if (mb_rev == 0) {
     ret = read_isl28022(fru, sensor_num, value);
   } else {
-    ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+    if ((mb_sku & 0x0F) == GTA_CONFIG_9) { // config 9 (Artemis EVT2)
+      ret = read_isl28022(fru, sensor_num, value);
+    } else {
+      ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+    }
   }
 
   if (ret || *value == 0) {

@@ -30,9 +30,15 @@ mb_sku=$(($(/usr/bin/kv get mb_sku) & 0x0F))
 # 0110        | LTC4286 | MAXIM11617 | MP2857GQKT-001 | TBD          |  3
 # 0001        | MPS5990 | ADC128D818 | MP2857GQKT-001 | ISL69260IRAZ |  4
 
+# Artemis
+# 1001        | LTC4282 | ADC128D818 | XDPE192C3B     |   9
+
 config0="0"
 config1="4"
 config4="1"
+
+# Artemis
+config9="9"
 
 #TBD
 #config2="2"
@@ -156,16 +162,18 @@ MB_DVT_BOARD_ID="1"
 MB_PVT_BOARD_ID="3"
 
 if [ "$mbrev" -ge "$MB_DVT_BOARD_ID" ]; then
-  i2c_device_add 34 0x41 ina230
-  i2c_device_add 34 0x42 ina230
-  i2c_device_add 34 0x43 ina230
-  i2c_device_add 34 0x44 ina230
-  i2c_device_add 34 0x45 ina230
+  if [ "$mb_sku" -ne "$config9" ]; then
+    i2c_device_add 34 0x41 ina230
+    i2c_device_add 34 0x42 ina230
+    i2c_device_add 34 0x43 ina230
+    i2c_device_add 34 0x44 ina230
+    i2c_device_add 34 0x45 ina230
+  fi
   kv set mb_dpm_source "$MB_1ST_SOURCE"
 fi
 
-if [ "$mbrev" -eq "$MB_DVT_BOARD_ID" &&
-     "$mbrev" -ge "$MB_PVT_BOARD_ID" ]; then
+if [ "$mbrev" -eq "$MB_DVT_BOARD_ID" ] &&
+   [ "$mbrev" -ge "$MB_PVT_BOARD_ID" ]; then
   probe_mb_retimer_vr
 fi
 
@@ -184,4 +192,9 @@ elif [ "$mb_sku" -eq "$config4" ]; then
   probe_adc_ti
   probe_vr_mp2856
   probe_mb_retimer_vr_isl
+# Artemis config
+elif [ "$mb_sku" -eq "$config9" ]; then
+  probe_hsc_ltc
+  probe_adc_ti
+  probe_vr_xdpe
 fi

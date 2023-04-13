@@ -462,6 +462,10 @@ enum MEB_JCN_TYPE {
   UNKNOWN_CARD = 0xff,
 };
 
+enum GTA_SKU_ID {
+  GTA_CONFIG_9 = 9,
+};
+
 /* Artemis End */
 
 #endif

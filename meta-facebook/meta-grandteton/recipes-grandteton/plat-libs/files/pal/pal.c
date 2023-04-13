@@ -900,7 +900,6 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
       case FRU_SWB:
       case FRU_HGX:
       case FRU_OCPDBG:
-      case FRU_HSC:
       case FRU_SHSC:
         *caps = 0; // Not in Artemis
         break;
@@ -925,6 +924,13 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
       case FRU_MEB_JCN8:
         // JCN5-8 doesn't have fruid read write caps and their sensors belong to MEB
         *caps = FRU_CAPABILITY_POWER_ALL;
+        break;
+      case FRU_HSC:
+        if (is_mb_hsc_module()) {
+          *caps = HSC_CAPABILITY;
+        } else {
+          *caps = 0;
+        }
         break;
       default:
         *caps = fru_dev_data[fru].cap;

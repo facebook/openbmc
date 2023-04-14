@@ -88,10 +88,10 @@ typedef struct _dimm_info {
 } _dimm_info;
 
 typedef struct {
-  uint8_t start_code;
+  uint16_t start_code;
   char dimm_location[8];
-  uint8_t major_code;
-  uint8_t minor_code;
+  uint16_t major_code;
+  uint16_t minor_code;
 } DIMM_PATTERN;
 
 typedef struct {
@@ -108,8 +108,8 @@ typedef enum {
 
 typedef struct _mrc_desc {
   char    desc[64];
-  uint8_t major_code;
-  uint8_t minor_code;
+  uint16_t major_code;
+  uint16_t minor_code;
 } mrc_desc_t;
 
 enum {
@@ -438,9 +438,10 @@ int pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd);
 int pal_power_button_override(uint8_t slot_id);
 int pal_sled_cycle(void);
 int pal_post_handle(uint8_t slot, uint8_t status);
-int pal_mrc_warning_detect(uint8_t slot, uint8_t status);
+int pal_mrc_warning_detect(uint8_t slot, uint32_t status);
 bool pal_is_mrc_warning_occur(uint8_t slot);
-int pal_get_dimm_loop_pattern(uint8_t slot, DIMM_PATTERN *dimm_loop_pattern);
+int pal_get_mrc_warning_count(uint8_t slot, uint8_t* count);
+int pal_get_dimm_loop_pattern(uint8_t slot, uint8_t index, DIMM_PATTERN *dimm_loop_pattern);
 int pal_set_rst_btn(uint8_t slot, uint8_t status);
 int pal_set_led(uint8_t led, uint8_t status);
 int pal_set_hb_led(uint8_t status);
@@ -644,7 +645,7 @@ bool pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num);
 int pal_is_jumper_enable(uint8_t fru, uint8_t *status);
 int pal_register_sensor_failure_tolerance_policy(uint8_t fru);
 bool pal_is_support_vr_delay_activate(void);
-int pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count);
+int pal_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc);
 bool pal_is_prot_card_prsnt(uint8_t fru);
 bool pal_is_prot_bypass(uint8_t fru);
 int pal_get_prot_address(uint8_t fru, uint8_t *bus, uint8_t *addr);

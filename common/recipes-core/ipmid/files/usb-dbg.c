@@ -1019,9 +1019,9 @@ udbg_get_postcode (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, u
 
 static int
 udbg_get_memory_loop_pattern (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
-  char str[64] = "";
-  mrc_desc_t *mrc_warning_list = NULL;
-  size_t mrc_count = 0;
+  char dimm_loca[64] = "";
+  char mcr_desc[64] = "";
+  uint8_t mrc_warning_count = 0;
   int ret = 0;
   uint8_t pos = plat_get_fru_sel();
   DIMM_PATTERN dimm_loop_pattern = {0, "", 0, 0};
@@ -1048,27 +1048,23 @@ udbg_get_memory_loop_pattern (uint8_t frame, uint8_t page, uint8_t *next, uint8_
     frame_mrc.max_page = 10;
     snprintf(frame_mrc.title, 32, "DIMM loop");
 
-    if (pal_is_mrc_warning_occur(pos)) {
-      ret = pal_get_dimm_loop_pattern(pos, &dimm_loop_pattern);
+    pal_get_mrc_warning_count(pos, &mrc_warning_count);
+    for (size_t i = 0; i < mrc_warning_count; i++) {
+      ret = pal_get_dimm_loop_pattern(pos, i, &dimm_loop_pattern);
       if (ret < 0) {
-        syslog(LOG_ERR, "%s() Fail to get DIMM loop pattern", __func__);
-        return -1;
+        syslog(LOG_ERR, "%s() Fail to get DIMM loop pattern at index %u", __func__, i);
+        continue;
       }
 
-      ret = pal_get_mrc_desc(pos, &mrc_warning_list, &mrc_count);
+      ret = pal_get_mrc_desc(pos, dimm_loop_pattern.major_code, dimm_loop_pattern.minor_code, mcr_desc);
       if (ret < 0) {
-        return -1;
+        syslog(LOG_ERR, "%s() Fail to get MRC description", __func__);
+        continue;
       }
 
-      for (int i = 0; i < mrc_count; i++) {
-        if ((mrc_warning_list[i].major_code == dimm_loop_pattern.major_code) && (mrc_warning_list[i].minor_code == dimm_loop_pattern.minor_code)) {
-          snprintf(str, sizeof(str), "DIMM %s", (dimm_loop_pattern.dimm_location));
-          frame_mrc.append(&frame_mrc, str, 0);
-          snprintf(str, sizeof(str), "%s", mrc_warning_list[i].desc);
-          frame_mrc.append(&frame_mrc, str, 1);
-          break;
-        }
-      }
+      snprintf(dimm_loca, sizeof(dimm_loca), "DIMM %s", (dimm_loop_pattern.dimm_location));
+      frame_mrc.append(&frame_mrc, dimm_loca, 0);
+      frame_mrc.append(&frame_mrc, mcr_desc, 1);
     }
   }
 

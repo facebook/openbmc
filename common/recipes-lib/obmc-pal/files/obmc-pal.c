@@ -1012,7 +1012,7 @@ pal_post_handle(uint8_t slot, uint8_t status)
 }
 
 int __attribute__((weak))
-pal_mrc_warning_detect(uint8_t slot, uint8_t status)
+pal_mrc_warning_detect(uint8_t slot, uint32_t status)
 {
   return PAL_EOK;
 }
@@ -1023,7 +1023,13 @@ pal_is_mrc_warning_occur(uint8_t slot) {
 }
 
 int __attribute__((weak))
-pal_get_dimm_loop_pattern(uint8_t slot, DIMM_PATTERN *dimm_loop_pattern) {
+pal_get_mrc_warning_count(uint8_t slot, uint8_t* count) {
+  *count = 0;
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_dimm_loop_pattern(uint8_t slot, uint8_t index, DIMM_PATTERN *dimm_loop_pattern) {
   return PAL_EOK;
 }
 
@@ -3425,7 +3431,7 @@ pal_is_support_vr_delay_activate(void){
 }
 
 int __attribute__((weak))
-pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
+pal_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc)
 {
   return PAL_EOK;
 }

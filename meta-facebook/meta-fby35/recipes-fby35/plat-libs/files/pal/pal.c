@@ -127,7 +127,7 @@ static int key_func_pwr_last_state(int event, void *arg);
 static int key_func_por_cfg(int event, void *arg);
 static int key_func_end_of_post(int event, void *arg);
 
-static uint8_t memory_record_code[4][4] = {0};
+static uint8_t memory_record_code[4][256] = {0};
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -3489,7 +3489,7 @@ pal_post_display(uint8_t uart_select, uint8_t postcode) {
 }
 
 int
-pal_mrc_warning_detect(uint8_t slot, uint8_t postcode) {
+__mrc_warning_detect(uint8_t slot, uint8_t postcode) {
   static uint8_t mrc_position = 0;
   static uint8_t post_match_count = 0;
   static bool pattern_in_rule = false;
@@ -3533,23 +3533,98 @@ pal_mrc_warning_detect(uint8_t slot, uint8_t postcode) {
   return -1;
 }
 
-bool
-pal_is_mrc_warning_occur(uint8_t slot) {
-  int ret = 0;
+int
+__amd_mrc_warning_detect(uint8_t slot, uint32_t postcode) {
+  static uint32_t mrc_position = 0;
+  static uint32_t total_error = 0;
+  static bool pattern_detected = false;
+  uint16_t* record_buf = (uint16_t*) memory_record_code[slot];
+  const uint32_t max_error_count = 256 / (2 * 6);
+  bool need_start_over = false;
+  int ret = -1;
   char key[MAX_KEY_LEN] = "";
   char value[MAX_VALUE_LEN] = {0};
-  uint8_t mrc_status = 0;
   snprintf(key, sizeof(key), "slot%d_mrc_warning", slot);
 
-  ret = kv_get(key, value, NULL, 0);
-  if (ret == 0) {
-    mrc_status = (uint8_t)strtol(value, NULL, 10); // convert string to number
-    if (mrc_status == 1) { // if the key is set 1, no need to check the rest process.
-      return true;
+  // AMD 4 Bytes postcode DIMM looping rule
+  // 0. [DD EE 00 00]: fixed tag
+  // 1. [DD EE 00 TT]: TT is total error count
+  // 2. [DD EE 00 II]: II is error index
+  // 3. [DD EE 00 XX]: XX is dimm location
+  // 4. [DD EE 00 YY]: YY is major error code
+  // 5. [DD EE ZZ ZZ]: ZZ is minor error code (2 bytes)
+
+  if ((postcode & 0xFFFF0000) != 0xDDEE0000) {
+    need_start_over = true;
+  } else if (!pattern_detected) {
+    if ((mrc_position % 6) == 0) {
+      // DIMM loop fixed tag
+      if (postcode != 0xDDEE0000) {
+        need_start_over = true;
+      } else {
+        record_buf[mrc_position++] = postcode & 0x0000FFFF;
+      }
+    } else if ((mrc_position % 6) == 1) {
+      // total error count
+      if (total_error == 0) {
+        total_error = (postcode & 0x0000FFFF);
+        total_error = (total_error < max_error_count) ? total_error : max_error_count;
+      }
+      record_buf[mrc_position++] = total_error;
+    } else {
+      record_buf[mrc_position++] = postcode & 0x0000FFFF;
     }
   }
 
-  return false;
+  if (need_start_over) {
+    mrc_position = 0;
+    total_error = 0;
+    pattern_detected = false;
+  }
+
+  if (total_error != 0 && mrc_position >= (total_error * 6)) {
+    pattern_detected = true;
+    snprintf(value, sizeof(value), "%u", total_error);
+    ret = kv_set(key, value, 0, 0);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, key);
+    }
+  }
+
+  return ret;
+}
+
+int
+pal_mrc_warning_detect(uint8_t slot, uint32_t postcode) {
+#ifdef CONFIG_HALFDOME
+  int slot_type = fby35_common_get_slot_type(slot);
+  if (slot_type == SERVER_TYPE_HD)
+    return __amd_mrc_warning_detect(slot, postcode);
+#endif
+  return __mrc_warning_detect(slot, postcode);
+}
+
+bool
+pal_is_mrc_warning_occur(uint8_t slot) {
+  uint8_t count = 0;
+  pal_get_mrc_warning_count(slot, &count);
+  return (count != 0);
+}
+
+int
+pal_get_mrc_warning_count(uint8_t slot, uint8_t* count) {
+  int ret = 0;
+  char key[MAX_KEY_LEN] = "";
+  char value[MAX_VALUE_LEN] = {0};
+
+  snprintf(key, sizeof(key), "slot%d_mrc_warning", slot);
+  ret = kv_get(key, value, NULL, 0);
+  if (ret == 0) {
+    *count = (uint8_t)strtol(value, NULL, 10); // convert string to number
+    return PAL_EOK;
+  }
+
+  return -1;
 }
 
 int
@@ -3570,19 +3645,33 @@ pal_clear_mrc_warning(uint8_t slot) {
 }
 
 int
-pal_get_dimm_loop_pattern(uint8_t slot, DIMM_PATTERN *dimm_loop_pattern) {
-  int ret = 0;
-
+pal_get_dimm_loop_pattern(uint8_t slot, uint8_t index, DIMM_PATTERN *dimm_loop_pattern) {
   if (!dimm_loop_pattern) {
     return -1;
   }
 
-  dimm_loop_pattern->start_code = memory_record_code[slot][0];
-  snprintf(dimm_loop_pattern->dimm_location, sizeof(dimm_loop_pattern->dimm_location), "A%d", memory_record_code[slot][1]);
-  dimm_loop_pattern->major_code = memory_record_code[slot][2];
-  dimm_loop_pattern->minor_code = memory_record_code[slot][3];
+#ifdef CONFIG_HALFDOME
+  int slot_type = fby35_common_get_slot_type(slot);
+  if (slot_type == SERVER_TYPE_HD) {
+    uint16_t* record_buf = (uint16_t*) memory_record_code[slot];
+    uint8_t total_error = record_buf[1];
 
-  return ret;
+    if (index > total_error)
+      return -1;
+
+    dimm_loop_pattern->start_code = record_buf[(index * 6) + 0];
+    snprintf(dimm_loop_pattern->dimm_location, sizeof(dimm_loop_pattern->dimm_location), "%02X", record_buf[(index * 6) + 3]);
+    dimm_loop_pattern->major_code = record_buf[(index * 6) + 4];
+    dimm_loop_pattern->minor_code = record_buf[(index * 6) + 5];
+    return 0;
+  }
+#endif
+  dimm_loop_pattern->start_code = memory_record_code[slot][(index * 4) + 0];
+  snprintf(dimm_loop_pattern->dimm_location, sizeof(dimm_loop_pattern->dimm_location), "A%d", memory_record_code[slot][(index * 4) + 1]);
+  dimm_loop_pattern->major_code = memory_record_code[slot][(index * 4) + 2];
+  dimm_loop_pattern->minor_code = memory_record_code[slot][(index * 4) + 3];
+
+  return 0;
 }
 
 // Handle the received post code, display it on debug card
@@ -5062,22 +5151,81 @@ pal_is_support_vr_delay_activate(void){
 }
 
 int
-pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
-{
-  if (!desc) {
-    syslog(LOG_ERR, "%s() Variable: desc NULL pointer ERROR", __func__);
+__get_mrc_desc(uint16_t major, uint16_t minor, char *desc) {
+  size_t mrc_count = sizeof(mrc_warning_code) / sizeof(mrc_desc_t);
+
+  if (desc == NULL) {
     return -1;
   }
 
-  if (!desc_count) {
-    syslog(LOG_ERR, "%s() Variable: desc_count NULL pointer ERROR", __func__);
-    return -1;
+  for (size_t i = 0; i < mrc_count; i++) {
+    if ((mrc_warning_code[i].major_code == major) && (mrc_warning_code[i].minor_code == minor)) {
+      snprintf(desc, 64, "%s", mrc_warning_code[i].desc);
+      return 0;
+    }
   }
 
-  *desc = mrc_warning_code;
-  *desc_count = sizeof(mrc_warning_code) / sizeof(mrc_warning_code[0]);
-
+  snprintf(desc, 64, "UNKNOW_MAJOR_%02X_MINOR_%02X", major, minor);
   return 0;
+}
+
+int
+__amd_get_mrc_desc(uint16_t major, uint16_t minor, char *desc) {
+  if (desc == NULL) {
+    return -1;
+  }
+
+  if (minor == 0x4001) {
+    snprintf(desc, 64, "ABL_MEM_PMU_TRAIN_ERROR");
+  } else if (minor == 0x4003) {
+    snprintf(desc, 64, "ABL_MEM_AGESA_MEMORY_TEST_ERROR");
+  } else if (minor == 0x4020) {
+    snprintf(desc, 64, "ABL_MEM_ERROR_MIXED_ECC_AND_NON_ECC_DIMM_IN_SYSTEM");
+  } else if (minor == 0x4021) {
+    snprintf(desc, 64, "ABL_MEM_ERROR_MIXED_3DS_AND_NON_3DS _DIMM_IN_CHANNEL");
+  } else if (minor == 0x4022) {
+    snprintf(desc, 64, "ABL_MEM_ERROR_MIXED_X4_AND_X8_DIMM_IN_CHANNEL");
+  } else if (minor == 0x4028) {
+    snprintf(desc, 64, "ABL_MEM_ERROR_MIXED_DIFFERENT_ECC_SIZE_DIMM_IN_CHANNEL");
+  } else if (minor == 0x4029) {
+    snprintf(desc, 64, "ABL_MEM_WARNING_MEM_INSTALLED_ON_DISCONNECTED_CHANNEL");
+  } else if (minor == 0x402A) {
+    snprintf(desc, 64, "ABL_MEM_RRW_ERROR");
+  } else if (minor == 0x4030) {
+    snprintf(desc, 64, "ABL_MEM_ERROR_MBIST_RESULTS_ERROR");
+  } else if (minor == 0x4033) {
+    snprintf(desc, 64, "ABL_MEM_ERROR_LRDIMM_MIXMFG");
+  } else if (minor == 0x4065) {
+    snprintf(desc, 64, "ABL_CCD_BIST_FAILURE");
+  } else if (minor == 0x4067) {
+    snprintf(desc, 64, "ABL_MEM_MEMORY_HEALING_BIST_ERROR");
+  } else if (minor == 0x406A) {
+    snprintf(desc, 64, "ABL_MEM_ERROR_MODULE_POPULATION_ORDER");
+  } else if (minor == 0x406B) {
+    snprintf(desc, 64, "ABL_MEM_ERROR_PMIC_ERROR");
+  } else if (minor == 0x406C) {
+    snprintf(desc, 64, "ABL_MEM_CHANNEL_POPULATION_ORDER");
+  } else if (minor == 0x406D) {
+    snprintf(desc, 64, "ABL_MEM_SPD_VERIFY_CRC_ERROR");
+  } else if (minor == 0x406E) {
+    snprintf(desc, 64, "ABL_MEM_ERROR_PMIC_REAL_TIME_ERROR");
+  } else {
+    snprintf(desc, 64, "UNKNOW_MINOR_DDEE%04X", minor);
+  }
+  return 0;
+}
+
+int
+pal_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc) {
+#ifdef CONFIG_HALFDOME
+  uint8_t server_type;
+
+  server_type = fby35_common_get_slot_type(fru);
+  if (server_type == SERVER_TYPE_HD) {
+    return __amd_get_mrc_desc(major, minor, desc);
+  }
+#endif
+  return __get_mrc_desc(major, minor, desc);
 }
 
 bool
@@ -5169,10 +5317,51 @@ pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *res_data, si
 
 int
 pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
+  uint8_t prsnt = 0;
+  uint8_t uart_select = 0;
+  int ret = -1;
 
   // update current post code to debug card's SYS Info page
   pal_set_last_postcode(slot, postcode_dw);
 
+  // Check for debug card presence
+  ret = pal_is_debug_card_prsnt(&prsnt);
+  if (ret) {
+    return ret;
+  }
+
+  // No debug card  present, return
+  if (prsnt == 0) {
+    return 0;
+  }
+
+  // Get the UART SELECT from kv, avoid large access CPLD in a short time
+  ret = pal_get_uart_select_from_kv(&uart_select);
+  if (ret) {
+    return ret;
+  }
+
+  // If the give server is not selected, return
+  if (uart_select != slot) {
+    return 0;
+  }
+
+  // dimm looping frame
+  if (pal_is_mrc_warning_occur(slot) == false) {
+    pal_mrc_warning_detect(slot, postcode_dw);
+  }
+
+  // Display the post code in the debug card
+  if ((postcode_dw & 0xFFFF0000) != 0xDDEE0000) {
+    return 0;
+  }
+
+  if ((postcode_dw >> 8) & 0xFF) {
+    pal_post_display(slot, (postcode_dw >> 8) & 0xFF);
+    msleep(500);
+  }
+
+  pal_post_display(slot, postcode_dw & 0xFF);
   return 0;
 }
 #endif

@@ -58,7 +58,7 @@ ProtDevice::DevStatus ProtDevice::openDev() {
   auto fd = i2c_cdev_slave_open(m_bus, m_addr, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
     auto e = errno;
-    std::cout << "i2c device open failed (" << e << "), bus: " << m_bus
+    std::cerr << "i2c device open failed (" << e << "), bus: " << m_bus
               << ", addr: " << m_addr << ", fd: " << fd << std::endl;
     return DevStatus::OPEN_FAILED;
   }
@@ -176,7 +176,7 @@ ProtDevice::DevStatus ProtDevice::protGetLogData(size_t index, PROT_LOG& log) {
   }
 
   if (data_layer_ack.Length != 14) {
-    std::cout << fmt::format(
+    std::cerr << fmt::format(
         "the log data length is invalid, length: {:d}\n",
         data_layer_ack.Length);
     return DevStatus::PROT_DATA_RECV_FAILED;
@@ -230,13 +230,13 @@ ProtDevice::DevStatus ProtDevice::protSendDataPacket(
 ProtDevice::DevStatus
 ProtDevice::protSendDataPacket(uint8_t cmd, uint8_t* payload, size_t length) {
   if (!isDevOpen()) {
-    std::cout << "device not opened, fd: " << m_fd << std::endl;
+    std::cerr << "device not opened, fd: " << m_fd << std::endl;
     return DevStatus::OPEN_FAILED;
   }
 
   auto ret = sent_data_packet(m_fruid, m_fd, cmd, payload, length);
   if (ret) {
-    std::cout << fmt::format(
+    std::cerr << fmt::format(
                      "sent_data_packet fail, cmd: {:#04x}, ret: {}", cmd, ret)
               << std::endl;
     return DevStatus::PROT_CMD_FAILED;
@@ -250,7 +250,7 @@ ProtDevice::DevStatus ProtDevice::protRecvDataPacket(
   auto ret = DataLayerReceiveFromPlatFire(
       m_fruid, m_fd, (unsigned char*)&data_layer_ack);
   if (ret) {
-    std::cout << "DataLayerReceiveFromPlatFire fail, ret: " << ret << std::endl;
+    std::cerr << "DataLayerReceiveFromPlatFire fail, ret: " << ret << std::endl;
     return DevStatus::PROT_DATA_RECV_FAILED;
   }
 

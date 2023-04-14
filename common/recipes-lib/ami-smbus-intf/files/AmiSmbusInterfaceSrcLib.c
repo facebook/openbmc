@@ -453,12 +453,14 @@ int DataLayerReceiveFromPlatFire(
     DEBUG(" successful\n\n");
   }
 
-  if ((((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag == ACK_CMD_UNSUPPORTED) || 
-      (((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag == ACK_BUSY_FLAG) ||
-      (((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag == CHECKSUM_FAILURE) ||
-      (((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag == DECOMMISSIONED)) {
-    ERROR("unexpected FLAG : %d \n\n", ((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag);
-    return -1;
+  unsigned char flag= ((DATA_LAYER_PACKET_ACK*)RecieveDataBuffer)->Flag;
+  switch (flag) {
+    case ACK_CMD_UNSUPPORTED:
+    case ACK_BUSY_FLAG:
+    case CHECKSUM_FAILURE:
+    case DECOMMISSIONED:
+      ERROR("unexpected FLAG (0x%02X) : %s \n\n", flag, data_pkg_err_msg[flag]);
+      return -1;
   }
   
   memset(DataLayerAckBuffer, 0, sizeof(DATA_LAYER_PACKET_ACK));

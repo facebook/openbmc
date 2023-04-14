@@ -76,6 +76,15 @@ enum {
   CMD_LEVEL0_PUBKEY_READ = 0x99,
 };
 
+ static const char* data_pkg_err_msg[] = {
+  "",    // RESERVED(0x00)
+  "Unsupported command received",    //ACK_CMD_UNSUPPORTED(0x01)
+  "XFR is Busy, please try later...",    //ACK_BUSY_FLAG(0x02)
+  "",    //NOACK_FLAG(0x03)
+  "",    //ACK_FLAG(0x04)
+  "Checksum failure, need to resend Data packet",    //CHECKSUM_FAILURE(0x05)
+  "XFR is decommissioned",     //DECOMMISSIONED(0x06)
+};
 
 ///
 ///  LinkLayer send packet structure

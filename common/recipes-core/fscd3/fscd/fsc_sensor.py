@@ -103,7 +103,8 @@ class FscSensorBase(object):
         except Exception:
             val = response.rstrip('\n').split('\n')
             for element in val:
-              Logger.crit("Exception with cmd=%s response=%s" % (cmd, element))
+                if(element.find("Error") != -1):
+                    Logger.crit("Exception with cmd=%s response=%s" % (cmd, element))
             raise
 
 

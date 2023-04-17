@@ -18,5 +18,5 @@
 # Boston, MA 02110-1301 USA
 #
 
-exec /usr/local/bin/mTerm_server acb /dev/ttyS5
+exec /usr/local/bin/mTerm_server cb /dev/ttyS5
 

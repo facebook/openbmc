@@ -21,7 +21,7 @@ After=setup_board.service openbmc_gpio_setup.service setup_i2c.service
 Wants=setup_board.service
 
 [Service]
-ExecStart=/usr/local/bin/mTerm_server acb /dev/ttyS5
+ExecStart=/usr/local/bin/mTerm_server cb /dev/ttyS5
 
 [Install]
 WantedBy=multi-user.target

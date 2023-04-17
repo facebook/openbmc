@@ -23,10 +23,10 @@ LOGFILE_B="/var/log/mTerm_$1_backup.log"
 readonly EXIT_ERROR=255
 
 usage() {
-  echo "Usage: sol-util [ mb | acb ]"
-  echo "       sol-util [ acb ] [ pesw0 | pesw1 ]"
-  echo "       sol-util [ acb ] [ accl1 | accl2 | ... | accl12 ] [ dev1 | dev2 ] (baudrate)"
-  echo "       sol-util [ mb | acb ] --history"
+  echo "Usage: sol-util [ mb | cb ]"
+  echo "       sol-util [ cb ] [ pesw0 | pesw1 ]"
+  echo "       sol-util [ cb ] [ accl1 | accl2 | ... | accl12 ] [ dev1 | dev2 ] (baudrate)"
+  echo "       sol-util [ mb | cb ] --history"
   exit 1
 }
 
@@ -193,12 +193,12 @@ if [[ $# -gt 4  ||  $# -lt 1 ]]; then
   exit "$EXIT_ERROR";
 fi
 
-if [ "$1" == "acb" ] || [ "$1" == "mb" ]; then
+if [ "$1" == "cb" ] || [ "$1" == "mb" ]; then
   SLOT=$1
   if [ $# -eq 2 ] && [ "$2" == "--history" ]; then
     cat "$LOGFILE_B" "$LOGFILE" 2>/dev/null
     exit 0;
-  elif [ "$SLOT" = "acb" ] && [[ "$2" =~ ^(accl([1-9]|1[0-2]))$  ||  "$2" =~ ^(pesw(0|1))$ ]]; then
+  elif [ "$SLOT" = "cb" ] && [[ "$2" =~ ^(accl([1-9]|1[0-2]))$  ||  "$2" =~ ^(pesw(0|1))$ ]]; then
     COMP=$2
   else
     if [ $# -ne 1 ]; then
@@ -230,7 +230,7 @@ if [ -n "$COMP" ]; then
     fi
   fi
 
-  if [ "$SLOT" = "acb" ]; then
+  if [ "$SLOT" = "cb" ]; then
     if [[ "$COMP" =~ ^(accl([1-9]|1[0-2]))$ ]] && [[ "$DEV" =~ ^(dev(1|2)$) ]]; then
       read -r PARAMETER BAUDRATE USB_PATH <<< "$(get_usb_dev "$COMP" "$DEV" "$BAUDRATE")"
     elif [[ "$COMP" =~ ^(pesw(0|1))$ ]]; then

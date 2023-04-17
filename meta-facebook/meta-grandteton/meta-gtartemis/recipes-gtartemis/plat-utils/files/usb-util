@@ -20,8 +20,8 @@
 readonly EXIT_ERROR=255
 
 show_usage() {
-    echo "Usage: usb-util bus-id acb accl[1...12] [ dev1 | dev2 ]"
-    echo "       usb-util [ bind | unbind ] acb accl[1...12] [ dev1 | dev2 ]"
+    echo "Usage: usb-util bus-id cb accl[1...12] [ dev1 | dev2 ]"
+    echo "       usb-util [ bind | unbind ] cb accl[1...12] [ dev1 | dev2 ]"
 }
 
 check_file_exist() {

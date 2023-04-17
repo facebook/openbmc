@@ -186,7 +186,7 @@ uint8_t pal_get_meb_jcn_config(uint8_t fru) {
 
   memset(key, 0, MAX_KEY_LEN);
   memset(type_str, 0, MAX_VALUE_LEN);
-  snprintf(key, sizeof(key), "meb_fru%d_config", fru);
+  snprintf(key, sizeof(key), "mc_fru%d_config", fru);
 
   if (kv_get(key, type_str, NULL, 0) != 0) {
     // not cached before, get from BIC

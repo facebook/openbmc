@@ -65,8 +65,8 @@
 const char pal_fru_list[] = \
 "all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, " \
 // Artemis fru list
-"acb, meb, acb_accl1, acb_accl2, acb_accl3, acb_accl4, acb_accl5, acb_accl6, acb_accl7, acb_accl8, " \
-"acb_accl9, acb_accl10, acb_accl11, acb_accl12";
+"cb, mc, cb_accl1, cb_accl2, cb_accl3, cb_accl4, cb_accl5, cb_accl6, cb_accl7, cb_accl8, " \
+"cb_accl9, cb_accl10, cb_accl11, cb_accl12";
 
 const char pal_server_list[] = "mb";
 
@@ -170,46 +170,46 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_HSC,   "hsc",     "HSC Board",     2,  0x51, 0,              FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_SHSC,  "swb_hsc", "SWB HSC Board", 3,  0x20, 0,              FRU_PATH_PLDM,   fru_presence, PLDM_FRU_SHSC},
   // Artemis FRU dev data
-  {FRU_ACB,        "acb",        "Carrier Board",     ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_CAPABILITY,       FRU_PATH_PLDM,   fru_presence,    PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB,        "meb",        "Memory Exp Board",  MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CAPABILITY,       FRU_PATH_PLDM,   fru_presence,    PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL1,  "acb_accl1",  "ACB ACCL1 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL2,  "acb_accl2",  "ACB ACCL2 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL3,  "acb_accl3",  "ACB ACCL3 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL4,  "acb_accl4",  "ACB ACCL4 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL5,  "acb_accl5",  "ACB ACCL5 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL6,  "acb_accl6",  "ACB ACCL6 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL7,  "acb_accl7",  "ACB ACCL7 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL8,  "acb_accl8",  "ACB ACCL8 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL9,  "acb_accl9",  "ACB ACCL9 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL10, "acb_accl10", "ACB ACCL10 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL11, "acb_accl11", "ACB ACCL11 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_ACB_ACCL12, "acb_accl12", "ACB ACCL12 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN1,   "meb_jcn1",   "MEB CXL8",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN2,   "meb_jcn2",   "MEB CXL7",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN3,   "meb_jcn3",   "MEB CXL6",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN4,   "meb_jcn4",   "MEB CXL5",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN5,   "meb_jcn5",   "MEB JCN5",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN6,   "meb_jcn6",   "MEB JCN6",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN7,   "meb_jcn7",   "MEB JCN7",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN8,   "meb_jcn8",   "MEB JCN8",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN9,   "meb_jcn9",   "MEB CXL3",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN10,  "meb_jcn10",  "MEB CXL4",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN11,  "meb_jcn11",  "MEB CXL1",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN12,  "meb_jcn12",  "MEB CXL2",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN13,  "meb_jcn13",  "MEB JCN13",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN14,  "meb_jcn14",  "MEB JCN14",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB,        "cb",        "Carrier Board",     ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_CAPABILITY,       FRU_PATH_PLDM,   fru_presence,    PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB,        "mc",        "Memory Exp Board",  MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CAPABILITY,       FRU_PATH_PLDM,   fru_presence,    PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL1,  "cb_accl1",  "CB ACCL1 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL2,  "cb_accl2",  "CB ACCL2 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL3,  "cb_accl3",  "CB ACCL3 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL4,  "cb_accl4",  "CB ACCL4 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL5,  "cb_accl5",  "CB ACCL5 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL6,  "cb_accl6",  "CB ACCL6 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL7,  "cb_accl7",  "CB ACCL7 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL8,  "cb_accl8",  "CB ACCL8 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL9,  "cb_accl9",  "CB ACCL9 Card",    ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL10, "cb_accl10", "CB ACCL10 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL11, "cb_accl11", "CB ACCL11 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_ACB_ACCL12, "cb_accl12", "CB ACCL12 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN1,   "mc_jcn1",   "MC CXL8",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN2,   "mc_jcn2",   "MC CXL7",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN3,   "mc_jcn3",   "MC CXL6",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN4,   "mc_jcn4",   "MC CXL5",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN5,   "mc_jcn5",   "MC JCN5",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN6,   "mc_jcn6",   "MC JCN6",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN7,   "mc_jcn7",   "MC JCN7",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN8,   "mc_jcn8",   "MC JCN8",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN9,   "mc_jcn9",   "MC CXL3",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN10,  "mc_jcn10",  "MC CXL4",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN11,  "mc_jcn11",  "MC CXL1",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN12,  "mc_jcn12",  "MC CXL2",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN13,  "mc_jcn13",  "MC JCN13",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN14,  "mc_jcn14",  "MC JCN14",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
 };
 
 // Todo: wait E1S mapping
 struct meb_fru_name_info meb_fru_name_map[] = {
-  [FRU_MEB_JCN1]  = { "meb_jcn1",  "meb_cxl8", "meb_jcn1"},
-  [FRU_MEB_JCN2]  = { "meb_jcn2",  "meb_cxl7", "meb_jcn2"},
-  [FRU_MEB_JCN3]  = { "meb_jcn3",  "meb_cxl6", "meb_jcn3"},
-  [FRU_MEB_JCN4]  = { "meb_jcn4",  "meb_cxl5", "meb_jcn4"},
-  [FRU_MEB_JCN9]  = { "meb_jcn9",  "meb_cxl3", "meb_jcn9"},
-  [FRU_MEB_JCN10] = { "meb_jcn10", "meb_cxl4", "meb_jcn10"},
-  [FRU_MEB_JCN11] = { "meb_jcn11", "meb_cxl1", "meb_jcn11"},
-  [FRU_MEB_JCN12] = { "meb_jcn12", "meb_cxl2", "meb_jcn12"},
+  [FRU_MEB_JCN1]  = { "mc_jcn1",  "mc_cxl8", "mc_jcn1"},
+  [FRU_MEB_JCN2]  = { "mc_jcn2",  "mc_cxl7", "mc_jcn2"},
+  [FRU_MEB_JCN3]  = { "mc_jcn3",  "mc_cxl6", "mc_jcn3"},
+  [FRU_MEB_JCN4]  = { "mc_jcn4",  "mc_cxl5", "mc_jcn4"},
+  [FRU_MEB_JCN9]  = { "mc_jcn9",  "mc_cxl3", "mc_jcn9"},
+  [FRU_MEB_JCN10] = { "mc_jcn10", "mc_cxl4", "mc_jcn10"},
+  [FRU_MEB_JCN11] = { "mc_jcn11", "mc_cxl1", "mc_jcn11"},
+  [FRU_MEB_JCN12] = { "mc_jcn12", "mc_cxl2", "mc_jcn12"},
 };
 
 uint8_t
@@ -336,7 +336,7 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     return -1;
   }
 
-  if (pal_is_artemis() && strstr(str, "meb_") != NULL) {
+  if (pal_is_artemis() && strstr(str, "mc_") != NULL) {
     if (pal_get_meb_jcn_fruid(str, fru) == 0) {
       return 0;
     }

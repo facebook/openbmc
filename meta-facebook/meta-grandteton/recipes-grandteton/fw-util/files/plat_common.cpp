@@ -42,14 +42,14 @@ struct addr_map {
 };
 
 struct fruid_map fru_map[] = {
-  {FRU_MEB_JCN1,  "meb_cxl8"},
-  {FRU_MEB_JCN2,  "meb_cxl7"},
-  {FRU_MEB_JCN3,  "meb_cxl6"},
-  {FRU_MEB_JCN4,  "meb_cxl5"},
-  {FRU_MEB_JCN9,  "meb_cxl3"},
-  {FRU_MEB_JCN10, "meb_cxl4"},
-  {FRU_MEB_JCN11, "meb_cxl1"},
-  {FRU_MEB_JCN12, "meb_cxl2"},
+  {FRU_MEB_JCN1,  "mc_cxl8"},
+  {FRU_MEB_JCN2,  "mc_cxl7"},
+  {FRU_MEB_JCN3,  "mc_cxl6"},
+  {FRU_MEB_JCN4,  "mc_cxl5"},
+  {FRU_MEB_JCN9,  "mc_cxl3"},
+  {FRU_MEB_JCN10, "mc_cxl4"},
+  {FRU_MEB_JCN11, "mc_cxl1"},
+  {FRU_MEB_JCN12, "mc_cxl2"},
 };
 
 static int
@@ -262,31 +262,31 @@ class fw_common_config {
     fw_common_config() {
       static NicExtComponent nic0("nic0", "nic0", "nic0_fw_ver", FRU_NIC0, 0);
       if (pal_is_artemis()) {
-        static SwbVrComponent vr_pesw_vcc("acb", "pesw_vr", "VR_PESW_VCC");
-        static CxlVrComponent vr_jcn1_a0v8_9  ("meb_cxl8", "vr_p0v89a",         "MEB CXL8 VR_P0V89A");
-        static CxlVrComponent vr_jcn1_vddq_ab ("meb_cxl8", "vr_p0v8d_pvddq_ab", "MEB CXL8 VR_P0V8D_PVDDQ_AB");
-        static CxlVrComponent vr_jcn1_vddq_cd ("meb_cxl8", "vr_pvddq_cd",       "MEB CXL8 VR_PVDDQ_CD");
-        static CxlVrComponent vr_jcn2_a0v8_9  ("meb_cxl7", "vr_p0v89a",         "MEB CXL7 VR_P0V89A");
-        static CxlVrComponent vr_jcn2_vddq_ab ("meb_cxl7", "vr_p0v8d_pvddq_ab", "MEB CXL7 VR_P0V8D_PVDDQ_AB");
-        static CxlVrComponent vr_jcn2_vddq_cd ("meb_cxl7", "vr_pvddq_cd",       "MEB CXL7 VR_PVDDQ_CD");
-        static CxlVrComponent vr_jcn3_a0v8_9  ("meb_cxl6", "vr_p0v89a",         "MEB CXL6 VR_P0V89A");
-        static CxlVrComponent vr_jcn3_vddq_ab ("meb_cxl6", "vr_p0v8d_pvddq_ab", "MEB CXL6 VR_P0V8D_PVDDQ_AB");
-        static CxlVrComponent vr_jcn3_vddq_cd ("meb_cxl6", "vr_pvddq_cd",       "MEB CXL6 VR_PVDDQ_CD");
-        static CxlVrComponent vr_jcn4_a0v8_9  ("meb_cxl5", "vr_p0v89a",         "MEB CXL5 VR_P0V89A");
-        static CxlVrComponent vr_jcn4_vddq_ab ("meb_cxl5", "vr_p0v8d_pvddq_ab", "MEB CXL5 VR_P0V8D_PVDDQ_AB");
-        static CxlVrComponent vr_jcn4_vddq_cd ("meb_cxl5", "vr_pvddq_cd",       "MEB CXL5 VR_PVDDQ_CD");
-        static CxlVrComponent vr_jcn9_a0v8_9  ("meb_cxl3", "vr_p0v89a",         "MEB CXL3 VR_P0V89A");
-        static CxlVrComponent vr_jcn9_vddq_ab ("meb_cxl3", "vr_p0v8d_pvddq_ab", "MEB CXL3 VR_P0V8D_PVDDQ_AB");
-        static CxlVrComponent vr_jcn9_vddq_cd ("meb_cxl3", "vr_pvddq_cd",       "MEB CXL3 VR_PVDDQ_CD");
-        static CxlVrComponent vr_jcn10_a0v8_9 ("meb_cxl4", "vr_p0v89a",         "MEB CXL4 VR_P0V89A");
-        static CxlVrComponent vr_jcn10_vddq_ab("meb_cxl4", "vr_p0v8d_pvddq_ab", "MEB CXL4 VR_P0V8D_PVDDQ_AB");
-        static CxlVrComponent vr_jcn10_vddq_cd("meb_cxl4", "vr_pvddq_cd",       "MEB CXL4 VR_PVDDQ_CD");
-        static CxlVrComponent vr_jcn11_a0v8_9 ("meb_cxl1", "vr_p0v89a",         "MEB CXL1 VR_P0V89A");
-        static CxlVrComponent vr_jcn11_vddq_ab("meb_cxl1", "vr_p0v8d_pvddq_ab", "MEB CXL1 VR_P0V8D_PVDDQ_AB");
-        static CxlVrComponent vr_jcn11_vddq_cd("meb_cxl1", "vr_pvddq_cd",       "MEB CXL1 VR_PVDDQ_CD");
-        static CxlVrComponent vr_jcn12_a0v8_9 ("meb_cxl2", "vr_p0v89a",         "MEB CXL2 VR_P0V89A");
-        static CxlVrComponent vr_jcn12_vddq_ab("meb_cxl2", "vr_p0v8d_pvddq_ab", "MEB CXL2 VR_P0V8D_PVDDQ_AB");
-        static CxlVrComponent vr_jcn12_vddq_cd("meb_cxl2", "vr_pvddq_cd",       "MEB CXL2 VR_PVDDQ_CD");
+        static SwbVrComponent vr_pesw_vcc("cb", "pesw_vr", "VR_PESW_VCC");
+        static CxlVrComponent vr_jcn1_a0v8_9  ("mc_cxl8", "vr_p0v89a",         "MC CXL8 VR_P0V89A");
+        static CxlVrComponent vr_jcn1_vddq_ab ("mc_cxl8", "vr_p0v8d_pvddq_ab", "MC CXL8 VR_P0V8D_PVDDQ_AB");
+        static CxlVrComponent vr_jcn1_vddq_cd ("mc_cxl8", "vr_pvddq_cd",       "MC CXL8 VR_PVDDQ_CD");
+        static CxlVrComponent vr_jcn2_a0v8_9  ("mc_cxl7", "vr_p0v89a",         "MC CXL7 VR_P0V89A");
+        static CxlVrComponent vr_jcn2_vddq_ab ("mc_cxl7", "vr_p0v8d_pvddq_ab", "MC CXL7 VR_P0V8D_PVDDQ_AB");
+        static CxlVrComponent vr_jcn2_vddq_cd ("mc_cxl7", "vr_pvddq_cd",       "MC CXL7 VR_PVDDQ_CD");
+        static CxlVrComponent vr_jcn3_a0v8_9  ("mc_cxl6", "vr_p0v89a",         "MC CXL6 VR_P0V89A");
+        static CxlVrComponent vr_jcn3_vddq_ab ("mc_cxl6", "vr_p0v8d_pvddq_ab", "MC CXL6 VR_P0V8D_PVDDQ_AB");
+        static CxlVrComponent vr_jcn3_vddq_cd ("mc_cxl6", "vr_pvddq_cd",       "MC CXL6 VR_PVDDQ_CD");
+        static CxlVrComponent vr_jcn4_a0v8_9  ("mc_cxl5", "vr_p0v89a",         "MC CXL5 VR_P0V89A");
+        static CxlVrComponent vr_jcn4_vddq_ab ("mc_cxl5", "vr_p0v8d_pvddq_ab", "MC CXL5 VR_P0V8D_PVDDQ_AB");
+        static CxlVrComponent vr_jcn4_vddq_cd ("mc_cxl5", "vr_pvddq_cd",       "MC CXL5 VR_PVDDQ_CD");
+        static CxlVrComponent vr_jcn9_a0v8_9  ("mc_cxl3", "vr_p0v89a",         "MC CXL3 VR_P0V89A");
+        static CxlVrComponent vr_jcn9_vddq_ab ("mc_cxl3", "vr_p0v8d_pvddq_ab", "MC CXL3 VR_P0V8D_PVDDQ_AB");
+        static CxlVrComponent vr_jcn9_vddq_cd ("mc_cxl3", "vr_pvddq_cd",       "MC CXL3 VR_PVDDQ_CD");
+        static CxlVrComponent vr_jcn10_a0v8_9 ("mc_cxl4", "vr_p0v89a",         "MC CXL4 VR_P0V89A");
+        static CxlVrComponent vr_jcn10_vddq_ab("mc_cxl4", "vr_p0v8d_pvddq_ab", "MC CXL4 VR_P0V8D_PVDDQ_AB");
+        static CxlVrComponent vr_jcn10_vddq_cd("mc_cxl4", "vr_pvddq_cd",       "MC CXL4 VR_PVDDQ_CD");
+        static CxlVrComponent vr_jcn11_a0v8_9 ("mc_cxl1", "vr_p0v89a",         "MC CXL1 VR_P0V89A");
+        static CxlVrComponent vr_jcn11_vddq_ab("mc_cxl1", "vr_p0v8d_pvddq_ab", "MC CXL1 VR_P0V8D_PVDDQ_AB");
+        static CxlVrComponent vr_jcn11_vddq_cd("mc_cxl1", "vr_pvddq_cd",       "MC CXL1 VR_PVDDQ_CD");
+        static CxlVrComponent vr_jcn12_a0v8_9 ("mc_cxl2", "vr_p0v89a",         "MC CXL2 VR_P0V89A");
+        static CxlVrComponent vr_jcn12_vddq_ab("mc_cxl2", "vr_p0v8d_pvddq_ab", "MC CXL2 VR_P0V8D_PVDDQ_AB");
+        static CxlVrComponent vr_jcn12_vddq_cd("mc_cxl2", "vr_pvddq_cd",       "MC CXL2 VR_PVDDQ_CD");
       } else {
         static UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0T", 14, 0x60, false);
         static UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 14, 0x60, 0x02);  // target ID of bootloader = 0x02

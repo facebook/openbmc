@@ -202,7 +202,7 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  if (sensor_num == HGX_SNR_PWR_GB_HSC0) {
+  if (sensor_num == HGX_SNR_PWR_GB_HSC0 || build_stage == NONE) {
     HMCPhase phase = get_hgx_phase();
     switch (phase) {
       case HMC_FW_DVT:

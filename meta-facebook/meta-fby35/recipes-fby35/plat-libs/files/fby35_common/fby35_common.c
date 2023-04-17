@@ -34,6 +34,7 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/misc-utils.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/i2c_device.h>
 #include "fby35_common.h"
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
@@ -205,7 +206,7 @@ fby35_read_sb_cpld(uint8_t fru, uint8_t offset, uint8_t *data) {
 
 static int
 fby35_read_sb_cpld_checked(uint8_t fru, uint8_t offset, uint8_t *data) {
-  uint8_t prsnt = 0, stby_pwr = 0;
+  uint8_t prsnt = 0;
 
   if (data == NULL) {
     return -1;
@@ -223,10 +224,8 @@ fby35_read_sb_cpld_checked(uint8_t fru, uint8_t offset, uint8_t *data) {
     return -1;
   }
 
-  if (fby35_common_server_stby_pwr_sts(fru, &stby_pwr)) {
-    return -1;
-  }
-  if (!stby_pwr) {
+  // Check CPLD is valid before read CPLD register
+  if (!fby35_common_is_sb_cpld_valid(fru)) {
     return -1;
   }
 
@@ -1317,6 +1316,31 @@ fby35_common_is_prot_auth_complete(uint8_t fru) {
   }
   //Bit 1: AUTH_COMPLETE_R
   return value & 0x02;
+}
+
+bool
+fby35_common_is_sb_cpld_valid(uint8_t fru) {
+
+  uint8_t data = 0;
+  uint8_t bus = fru + 3;
+
+  // If CPLD is not detected, it means serverboard is really 12V-off.
+  if (i2c_detect_device(bus, SB_CPLD_ADDR) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to detect SB CPLD", __func__);
+    return false;
+  }
+
+  if (fby35_read_sb_cpld(fru, CPLD_REG_CPLD_STATUS, &data) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to access SB CPLD", __func__);
+    return false;
+  }
+
+  if (data == CPLD_VALID) {
+    return true;
+  } else {
+    syslog(LOG_WARNING, "%s: SB CPLD is invalid", __func__);
+    return false;
+  }
 }
 
 /*

@@ -77,18 +77,18 @@ extern "C" {
 #define MAX_FRU_PATH_LEN 128
 #define FRU_SIZE        512
 
-#define CPLD_REG_BB_REV             0x08
-
 #define CPLD_REG_SB_CLASS           0x00
 #define CPLD_REG_UART_MUX           0x01
 #define CPLD_REG_BIC_READY          0x02
 #define CPLD_REG_M2_PRSNT           0x05
 #define CPLD_REG_REV_ID             0x07
+#define CPLD_REG_BB_REV             0x08
 #define CPLD_REG_PCH_BIC_PWR_FAULT  0x09
 #define CPLD_REG_CPU_PWR_FAULT      0x0A
 #define CPLD_REG_RISER              0x0D
 #define CPLD_REG_SB_BIC_BOOT_STRAP  0x10
 #define CPLD_REG_BOARD              0x11
+#define CPLD_REG_CPLD_STATUS        0x13
 #define CPLD_REG_1OU_BIC_BOOT_STRAP 0x22
 #define CPLD_REG_PROT               0x23
 
@@ -505,6 +505,10 @@ typedef enum {
   SLOT_PRESENT,
 } PRESENT_STATUS;
 
+enum SB_CPLD_STATUS {
+  CPLD_VALID = 0x0,
+};
+
 static const char *gpio_server_prsnt[] =
 {
   "",
@@ -612,6 +616,7 @@ int fby35_common_get_bb_hsc_type(uint8_t* type);
 bool fby35_common_is_prot_card_prsnt(uint8_t fru) ;
 bool fby35_common_is_prot_auth_complete(uint8_t fru) ;
 int copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
+bool fby35_common_is_sb_cpld_valid(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

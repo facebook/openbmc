@@ -103,6 +103,16 @@ static const char *hd_bic_pwr_fault[] = {
   "PVDD18_S5",  // bit4
 };
 
+// Refer to GL CPLD SPEC(I2C address: 0x0F, offset: 09h)
+static const char *gl_bic_pwr_fault[] = {
+  "P1V8_STBY",        // bit0
+  "P1V2_STBY",        // bit1
+  "P1V05_STBY",       // bit2
+  "PVCCFA_EHV_CPU",   // bit3
+  "PVNN_MAIN_CPU0",   // bit4
+  "RSVD",             // bit5
+};
+
 static const char *bic_pch_pwr_fault_str = "PCH/BIC";
 static const char **bic_pch_pwr_fault = cl_bic_pch_pwr_fault;
 static size_t bic_pch_pwr_fault_size = ARRAY_SIZE(cl_bic_pch_pwr_fault);
@@ -272,6 +282,8 @@ init_gpio_offset_map() {
 
         cpu_pwr_fault = gl_cpu_pwr_fault;
         cpu_pwr_fault_size = ARRAY_SIZE(gl_cpu_pwr_fault);
+        bic_pch_pwr_fault = gl_bic_pwr_fault;
+        bic_pch_pwr_fault_size = ARRAY_SIZE(gl_bic_pwr_fault);
 
       } else {
         // Crater Lake as default setting
@@ -363,10 +375,12 @@ gpio_monitor_poll(void *ptr) {
 
       ret = pal_get_server_12v_power(fru, &pwr_sts);
       if (ret == PAL_EOK) {
-        if (pwr_sts == SERVER_12V_ON && chk_bic_pch_pwr_flag) {
-          check_bic_pch_pwr_fault(fru);
-          chk_bic_pch_pwr_flag = false;
-        } else if (pwr_sts == SERVER_12V_OFF) {
+        // CPLD makes serverboard 12V off when BIC power fault occurs.
+        if (pwr_sts == SERVER_12V_OFF) {
+          if (chk_bic_pch_pwr_flag) {
+            check_bic_pch_pwr_fault(fru);
+            chk_bic_pch_pwr_flag = false;
+          }
           set_12v_off_flag(fru, false);
           SET_BIT(o_pin_val, gpio_offset.pwrgd_cpu, 0);
           SET_BIT(o_pin_val, gpio_offset.rst_pltrst, 0);

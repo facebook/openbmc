@@ -226,6 +226,48 @@ async def post_modbus_read_file(request: aiohttp.web.Request) -> aiohttp.web.Res
     return aiohttp.web.json_response(response)
 
 
+async def post_modbus_control(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    if pyrmd is None:
+        return aiohttp.web.json_response(
+            {
+                "status": "Bad Request",
+                "details": "Unsupported on current configuration",
+            },
+            status=400,
+        )
+    try:
+        payload = await request.json()
+        jsonschema.validate(payload, CONTROL_SCHEMA)
+
+    except ValueError as e:
+        return aiohttp.web.json_response(
+            {
+                "status": "Bad Request",
+                "details": "Invalid payload: " + str(e),
+            },
+            status=400,
+        )
+
+    response = {}
+    cmd = payload["req"]
+    # Get soliton beam lock so we don't race with it or modbuscmd
+    async with SolitonBeamFlock():
+        try:
+            if cmd == "pause":
+                await pyrmd.RackmonAsyncInterface.pause()
+            elif cmd == "resume":
+                await pyrmd.RackmonAsyncInterface.resume()
+            elif cmd == "rescan":
+                await pyrmd.RackmonAsyncInterface.rescan()
+            response["status"] = "SUCCESS"
+        except pyrmd.ModbusException as e:
+            response["status"] = str(e)
+        except Exception:
+            response["status"] = "ERR_IO_FAILURE"
+
+    return aiohttp.web.json_response(response)
+
+
 class SolitonBeamFlock:
     async def __aenter__(self):
         self.lock_file = self._open_lock_file()
@@ -361,4 +403,13 @@ READ_FILE_SCHEMA = {
             },
         }
     },
+}
+
+CONTROL_SCHEMA = {
+    "title": "Rackmon Control",
+    "description": "Schema to define the rackmon control commands",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["req"],
+    "properties": {"req": {"type": "string", "enum": ["pause", "resume", "rescan"]}},
 }

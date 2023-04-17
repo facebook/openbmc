@@ -45,6 +45,11 @@
 #define PECI_BUS_ADDR "0-30"
 #define POLL_TIMEOUT        -1 /* Forever */
 
+enum GPIO_DETECT {
+  INIT = 0,
+  IRQ,
+};
+
 // Thread for gpio timer
 static void *
 server_power_monitor() {
@@ -225,13 +230,16 @@ reset_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 }
 
 static void
-set_nvme_probe_status(gpio_value_t value) {
+set_nvme_probe_status(gpio_value_t value, uint8_t gpio_change) {
   kv_set(PWR_GOOD_KV_KEY, (value == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
   FILE *fp;
   int rc = 0;
 
   if (value == GPIO_VALUE_HIGH) {
-    syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);
+    if (gpio_change == IRQ) {
+      syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);
+    }
+
     fp = fopen((char*)NVME_BIND_PATH, "w");
     if (fp == NULL) {
       syslog(LOG_INFO, "failed to open device for write %s error: %s", NVME_BIND_PATH, strerror(errno));
@@ -256,7 +264,10 @@ set_nvme_probe_status(gpio_value_t value) {
       syslog(LOG_WARNING, "%s() m2 bind failed\n", __func__);
     }
   } else {
-    syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SERVER);
+    if (gpio_change == IRQ) {
+      syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SERVER);
+    }
+
     fp = fopen((char*)NVME_UNBIND_PATH, "w");
     if (fp == NULL) {
       syslog(LOG_INFO, "failed to open device for write %s error: %s", NVME_UNBIND_PATH, strerror(errno));
@@ -285,24 +296,26 @@ set_nvme_probe_status(gpio_value_t value) {
 
 static void
 power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  set_nvme_probe_status(curr);
+  set_nvme_probe_status(curr, IRQ);
 }
 
 static void
 power_good_status_init(gpiopoll_pin_t *gp, gpio_value_t value) {
-  set_nvme_probe_status(value);
+  set_nvme_probe_status(value, INIT);
 }
 
 static void
-set_peci_probe_status(gpio_value_t value) {
+set_peci_probe_status(gpio_value_t value, uint8_t gpio_change) {
   kv_set(POST_CMPLT_KV_KEY, (value == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
   FILE *fp;
   int rc = 0;
 
   if (value == GPIO_VALUE_LOW) {
-    syslog(LOG_CRIT, "FRU: %d, Post complete", FRU_SERVER);
-    fp = fopen((char*)PECI_BIND_PATH, "w");
+    if (gpio_change == IRQ) {
+      syslog(LOG_CRIT, "FRU: %d, Post complete", FRU_SERVER);
+    }
 
+    fp = fopen((char*)PECI_BIND_PATH, "w");
     if (fp == NULL) {
       int err = errno;
       syslog(LOG_INFO, "failed to open device for write %s error: %s", PECI_BIND_PATH, strerror(errno));
@@ -338,12 +351,12 @@ set_peci_probe_status(gpio_value_t value) {
 
 static void
 post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  set_peci_probe_status(curr);
+  set_peci_probe_status(curr, IRQ);
 }
 
 static void
 post_complete_status_init(gpiopoll_pin_t *gp, gpio_value_t value) {
-  set_peci_probe_status(value);
+  set_peci_probe_status(value, INIT);
 }
 
 // thread for display post code led

@@ -600,16 +600,22 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 			etcIssueContents: `OpenBMC Release`,
 			etcIssueReadErr:  nil,
 			want:             "",
-			wantErr: errors.Errorf("Unable to get version from /etc/issue: %v",
-				"No match for regex '^Open ?BMC Release (?P<version>[^\\s]+)' for input 'OpenBMC Release'"),
+			wantErr:          errors.Errorf("Unable to get version from /etc/issue: missing version info"),
 		},
 		{
 			name:             "openbmc wrong case ",
 			etcIssueContents: `openbmc Release wedge100-v2020.07.1`,
 			etcIssueReadErr:  nil,
-			want:             "",
-			wantErr: errors.Errorf("Unable to get version from /etc/issue: %v",
-				"No match for regex '^Open ?BMC Release (?P<version>[^\\s]+)' for input 'openbmc Release wedge100-v2020.07.1'"),
+			want:             "wedge100-v2020.07.1",
+			wantErr:          nil,
+		},
+		{
+			name:             "early bletchley",
+			etcIssueContents: `Facebook OpenBMC bletchley-v2023.02.1 \\n \\l
+`,
+			etcIssueReadErr:  nil,
+			want:             "bletchley-v2023.02.1",
+			wantErr:          nil,
 		},
 	}
 	for _, tc := range cases {

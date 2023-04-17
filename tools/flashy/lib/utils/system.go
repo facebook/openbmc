@@ -291,17 +291,18 @@ var SystemdAvailable = func() (bool, error) {
 // in old images.
 var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	const rVersion = "version"
-	etcIssueVersionRegEx := fmt.Sprintf(`^Open ?BMC Release (?P<%v>[^\s]+)`, rVersion)
+	const re = `^(?P<facebook>facebook )?open ?bmc(?P<release> release)? ?(?P<%v>[^\s]+)`
+	etcIssueVersionRegEx := fmt.Sprintf(re, rVersion)
 
 	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {
 		return "", errors.Errorf("Error reading %v: %v",
 			etcIssueFilePath, err)
 	}
-	etcIssueStr := string(etcIssueBuf)
+	etcIssueStr := strings.ToLower(string(etcIssueBuf))
 
 	// handle ancient galaxy100 linecard release with missing version info
-	if strings.HasPrefix(etcIssueStr, "OpenBMC Release \n") {
+	if strings.HasPrefix(etcIssueStr, "openbmc release \n") {
 		return "unknown-v1", nil
 	}
 
@@ -315,8 +316,16 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 				etcIssueFilePath, err)
 	}
 
-	// really old releases don't have the build name
+	// greedy matching will cause corrupt /etc/issue to yield "release"
 	version := etcIssueMap[rVersion]
+	if version == "release" {
+		// does not match regex
+		return "",
+			errors.Errorf("Unable to get version from %v: missing version info",
+				etcIssueFilePath)
+	}
+
+	// really old releases don't have the build name
 	if version[0] == 'v' && !strings.Contains(version, "-") {
 		version = "unknown-" + version
 	}

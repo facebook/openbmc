@@ -164,3 +164,24 @@ const char *vboot_time(char *time_str, size_t buf_size, uint32_t t)
   }
   return time_str;
 }
+
+uint8_t vboot_vbs_version(struct vbs* vbs) {
+  if (!vbs) {
+    return 0;
+  }
+
+  /* Check CRC2 to make sure we can use vbs->vbs_ver */
+  uint16_t crc2 = vbs->crc2;
+  vbs->crc2 = 0;
+  bool crc2_valid =
+      (crc2 ==
+       _crc16(
+           &vbs->vbs_ver, sizeof(struct vbs) - offsetof(struct vbs, vbs_ver)));
+  vbs->crc2 = crc2;
+
+  if (!crc2_valid) {
+    return 0;
+  }
+
+  return vbs->vbs_ver;
+}

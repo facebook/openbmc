@@ -28,7 +28,7 @@ struct vbs {
   /* 19 */ uint8_t error_type;          /* Type of error, or 0 for success */
   /* 1A */ uint8_t error_code;          /* Unique error code, or 0 for success */
   /* 1B */ uint8_t error_tpm;           /* The last-most-recent error from the TPM. */
-  /* 1C */ uint16_t crc;                /* A CRC of the vbs structure */
+  /* 1C */ uint16_t crc;                /* A CRC covers the legacy vbs structure */
   /* 1E */ uint16_t error_tpm2;         /* The last-most-recent error from the TPM2. */
   /* 20 */ uint32_t subordinate_last;   /* Status reporting only: the last booted subordinate. */
   /* 24 */ uint32_t uboot_last;         /* Status reporting only: the last booted U-Boot. */
@@ -36,10 +36,12 @@ struct vbs {
   /* 2C */ uint32_t subordinate_current;/* Status reporting only: the current booted subordinate. */
   /* 30 */ uint32_t uboot_current;      /* Status reporting only: the current booted U-Boot. */
   /* 34 */ uint32_t kernel_current;     /* Status reporting only: the current booted kernel. */
+  /* ----------------------- End of the legacy vbs structrue -----------------*/
   /* 38 */ uint8_t vbs_ver;             /* add vbs version for backward compatible */
   /* 39 */ uint8_t giu_mode;            /* golden image upgrade mode */
   /* 3A */ uint16_t op_cert_size;       /* vboot operation certificate data size */
   /* 3C */ uint32_t op_cert;            /* Location of vboot operation certificate data */
+  /* 40 */ uint16_t crc2;               /* crc2 covers new fields from include vbs_ver */
 };
 
 bool        vboot_supported(void);
@@ -47,6 +49,7 @@ bool        vboot_partition_exists(void);
 struct vbs *vboot_status(void);
 const char *vboot_error(uint32_t error_code);
 const char *vboot_time(char *buf, size_t buf_len, uint32_t time);
+uint8_t vboot_vbs_version(struct vbs *vbs);
 
 #define VBS_ERROR_TABLE \
   VBS_ERROR(VBS_SUCCESS, 0, "OpenBMC was verified correctly"), \

@@ -481,8 +481,6 @@ pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(FRU_MB, desc, curr, 0, NULL);
   reset_timer(&g_power_on_sec);
 
-  if (curr == GPIO_VALUE_HIGH)
-    bic_get_firmware(15);
 }
 
 //Uart Select on DEBUG Card Event Handler
@@ -496,6 +494,12 @@ uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   pal_uart_select_led_set();
 
 }
+
+void
+pex_fw_ver_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  bic_get_firmware(15);
+}
+
 
 // Event Handler for GPIOF6 platform reset changes
 void

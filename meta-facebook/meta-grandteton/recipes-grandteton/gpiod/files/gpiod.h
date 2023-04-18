@@ -33,6 +33,9 @@ void pwr_reset_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cur
 void pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 void pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 
+void pex_fw_ver_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
+
+
 //CPU EVENT
 void cpu_caterr_init(gpiopoll_pin_t *desc, gpio_value_t value);
 void cpu_skt_init(gpiopoll_pin_t *desc, gpio_value_t value);

@@ -127,6 +127,8 @@ sgpio_export FM_HDD_LED_N 206
 sgpio_export FM_PFR_NO_SERVICE_ACT_N 208
 sgpio_export FM_PFR_UPDATE_N 210
 
+sgpio_export CPLD_POWER_FAIL_ALERT 240
+
 sgpio_export CPLD_SGPIO_READY_ID0 248
 sgpio_export CPLD_SGPIO_READY_ID1 250
 sgpio_export CPLD_SGPIO_READY_ID2 252

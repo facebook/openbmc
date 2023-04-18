@@ -40,4 +40,5 @@
 #define FM_JTAG_BMC_MUX_SEL      "FM_JTAG_BMC_MUX_SEL" //Choice BMC to CPLD or BMC to CPU/PCH
 #define FM_BMC_CPU_PWR_DEBUG_N   "FM_BMC_CPU_FBRK_OUT_N"
 
+#define PEX_FW_VER_UPDATE        "RST_PLTRST_PLD_N"
 #endif

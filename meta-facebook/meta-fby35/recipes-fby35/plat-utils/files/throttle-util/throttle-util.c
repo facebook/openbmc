@@ -77,6 +77,27 @@ static const struct option hd_options[] = {
   {0, 0, 0, 0}
 };
 
+/* Refer to CPLD spec address:0xf offset:0x3
+Throttle Source control (Enable=1,Disable=0)
+Bit 7:IRQ_PVCCINF_CPU0_VRHOT_N
+Bit 6:IRQ_PVCCD_CPU0_VRHOT_LVC3_N
+Bit 5:FM_HSC_TIMER
+Bit 4:IRQ_UV_DETECT_N
+Bit 3:FAST_PROCHOT_N
+Bit 2:IRQ_PVCCIN_CPU0_VRHOT_N
+Bit 1:RSVD
+Bit 0:IRQ_SML1_PMBUS_ALERT_N, FM_THROTTLE_N */
+static const struct option gl_options[] = {
+    {"IRQ_PVCCINF_CPU0_VRHOT_N", no_argument, 0, 7},
+    {"IRQ_PVCCD_CPU0_VRHOT_LVC3_N", no_argument, 0, 6},
+    {"FM_HSC_TIMER", no_argument, 0, 5},
+    {"IRQ_UV_DETECT_N", no_argument, 0, 4},
+    {"FAST_PROCHOT_N", no_argument, 0, 3},
+    {"IRQ_PVCCIN_CPU0_VRHOT_N", no_argument, 0, 2},
+    {"IRQ_SML1_PMBUS_ALERT_N", no_argument, 0, 0},
+    {"FM_THROTTLE_N", no_argument, 0, 0},
+    {0, 0, 0, 0}};
+
 static const struct option *options = cl_options;
 
 static void
@@ -179,6 +200,8 @@ main(int argc, char **argv) {
   }
   if (slot_type == SERVER_TYPE_HD) {
     options = hd_options;
+  } else if (slot_type == SERVER_TYPE_GL) {
+    options = gl_options;
   }
 
   if (argc < 3 || argc > 4) {

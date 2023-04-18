@@ -1,0 +1,197 @@
+From 4ae11530b9b3e38b402f26ecacd6e9e97b0ee82b Mon Sep 17 00:00:00 2001
+From: Scott Smith <smithscott@meta.com>
+Date: Mon, 10 Apr 2023 11:12:58 -0700
+Subject: [PATCH] hwmon: pmbus: add ir35215 driver
+
+Summary:
+Add pmbus ir35215 driver
+
+Test Plan:
+1. check device and driver installation
+```
+root@fboss312380834-oob:~# ls -l /sys/bus/i2c/devices/1-0047/
+lrwxrwxrwx    1 root     root             0 Apr 12 15:02 driver -> ../../../../../../../../bus/i2c/drivers/ir35215
+drwxr-xr-x    3 root     root             0 Apr 12 15:02 hwmon
+-r--r--r--    1 root     root          4096 Apr 12 15:26 modalias
+-r--r--r--    1 root     root          4096 Apr 12 15:26 name
+-rw-r--r--    1 root     root          4096 Apr 12 15:26 pec
+drwxr-xr-x    2 root     root             0 Apr 12 15:26 power
+lrwxrwxrwx    1 root     root             0 Apr 12 15:05 subsystem -> ../../../../../../../../bus/i2c
+-rw-r--r--    1 root     root          4096 Apr 12 15:02 uevent
+root@fboss312380834-oob:~# cat /sys/bus/i2c/devices/1-0047/name
+ir35215
+root@fboss312380834-oob:~# ls /sys/bus/i2c/devices/1-0047/hwmon/hwmon8/
+curr1_input       curr3_crit        curr4_input       in1_label         in2_min_alarm     in3_max_alarm     in4_lcrit_alarm   power1_input      power4_label      temp2_crit_alarm
+curr1_label       curr3_crit_alarm  curr4_label       in1_min           in3_crit          in3_min           in4_max           power1_label      subsystem         temp2_input
+curr1_max         curr3_input       curr4_max         in1_min_alarm     in3_crit_alarm    in3_min_alarm     in4_max_alarm     power2_alarm      temp1_crit        temp2_max
+curr1_max_alarm   curr3_label       curr4_max_alarm   in2_crit          in3_input         in4_crit          in4_min           power2_input      temp1_crit_alarm  temp2_max_alarm
+curr2_input       curr3_max         device            in2_crit_alarm    in3_label         in4_crit_alarm    in4_min_alarm     power2_label      temp1_input       uevent
+curr2_label       curr3_max_alarm   in1_crit          in2_input         in3_lcrit         in4_input         name              power3_input      temp1_max
+curr2_max         curr4_crit        in1_crit_alarm    in2_label         in3_lcrit_alarm   in4_label         power             power3_label      temp1_max_alarm
+curr2_max_alarm   curr4_crit_alarm  in1_input         in2_min           in3_max           in4_lcrit         power1_alarm      power4_input      temp2_crit
+root@fboss312380834-oob:~#
+```
+
+2. Check sensor command
+```
+root@fboss312380834-oob:~# ls /sys/bus/i2c/devices/1-0047/hwmon/hwmon8/
+curr1_input       curr3_crit        curr4_input       in1_label         in2_min_alarm     in3_max_alarm     in4_lcrit_alarm   power1_input      power4_label      temp2_crit_alarm
+curr1_label       curr3_crit_alarm  curr4_label       in1_min           in3_crit          in3_min           in4_max           power1_label      subsystem         temp2_input
+curr1_max         curr3_input       curr4_max         in1_min_alarm     in3_crit_alarm    in3_min_alarm     in4_max_alarm     power2_alarm      temp1_crit        temp2_max
+curr1_max_alarm   curr3_label       curr4_max_alarm   in2_crit          in3_input         in4_crit          in4_min           power2_input      temp1_crit_alarm  temp2_max_alarm
+curr2_input       curr3_max         device            in2_crit_alarm    in3_label         in4_crit_alarm    in4_min_alarm     power2_label      temp1_input       uevent
+curr2_label       curr3_max_alarm   in1_crit          in2_input         in3_lcrit         in4_input         name              power3_input      temp1_max
+curr2_max         curr4_crit        in1_crit_alarm    in2_label         in3_lcrit_alarm   in4_label         power             power3_label      temp1_max_alarm
+curr2_max_alarm   curr4_crit_alarm  in1_input         in2_min           in3_max           in4_lcrit         power1_alarm      power4_input      temp2_crit
+root@fboss312380834-oob:~# sensors ir35215-*
+ir35215-i2c-1-4d
+Adapter: 1e78a080.i2c-bus
+Chip 3V3 Left Input Voltage:  +12.03 V  (min = +10.50 V, crit max = +14.56 V)
+PVDD0P8 Input Voltage:        +12.03 V  (min =  +0.06 V, crit max = +14.56 V)
+Chip 3V3 Left Output Voltage:  +3.31 V  (crit min =  +1.40 V, min =  +2.80 V)
+                                        (max =  +3.60 V, crit max =  +3.80 V)
+PVDD0P8 Output Voltage:        +0.80 V  (crit min =  +0.50 V, min =  +0.60 V)
+                                        (max =  +0.90 V, crit max =  +2.05 V)
+Chip 3V3 Left Temp:            +18.0 C  (high = +100.0 C, crit = +125.0 C)
+PVDD0P8 Temp:                  +19.0 C  (high = +100.0 C, crit = +125.0 C)
+Chip 3V3 Left Input Power:    1000.00 mW
+PVDD0P8 Input Power:            0.00 W
+Chip 3V3 Left Output Power:   1000.00 mW
+PVDD0P8 Output Power:           0.00 W
+Chip 3V3 Left Input Current:   +0.06 A  (max = +30.00 A)
+PVDD0P8 Input Current:         +0.00 A  (max = +30.00 A)
+Chip 3V3 Left Output Current:  +0.95 A  (max = +61.75 A, crit max = +110.40 A)
+PVDD0P8 Output Current:        +0.39 A  (max = +17.09 A, crit max = +21.26 A)
+
+ir35215-i2c-1-47
+Adapter: 1e78a080.i2c-bus
+Chip 3V3 Right Input Voltage:  +11.94 V  (min = +10.50 V, crit max = +14.56 V)
+TRVDD0R8 Input Voltage:        +11.94 V  (min =  +0.06 V, crit max = +14.56 V)
+Chip 3V3 Right Output Voltage:  +3.31 V  (crit min =  +1.40 V, min =  +2.80 V)
+                                         (max =  +3.60 V, crit max =  +3.80 V)
+TRVDD0R8 Output Voltage:        +0.79 V  (crit min =  +0.50 V, min =  +0.60 V)
+                                         (max =  +0.90 V, crit max =  +2.05 V)
+Chip 3V3 Right Temp:            +19.0 C  (high = +100.0 C, crit = +125.0 C)
+TRVDD0R8 Temp:                  +19.0 C  (high = +100.0 C, crit = +125.0 C)
+Chip 3V3 Right Input Power:      0.00 W
+TRVDD0R8 Input Power:          500.00 mW
+Chip 3V3 Right Output Power:     0.00 W
+TRVDD0R8 Output Power:           0.00 W
+Chip 3V3 Right Input Current:   +0.00 A  (max = +30.00 A)
+TRVDD0R8 Input Current:         +0.03 A  (max = +30.00 A)
+Chip 3V3 Right Output Current:  +0.01 A  (max = +62.06 A, crit max = +111.71 A)
+TRVDD0R8 Output Current:        +1.52 A  (max = +84.97 A, crit max = +90.97 A)
+```
+---
+ drivers/hwmon/pmbus/Kconfig   |  9 +++++
+ drivers/hwmon/pmbus/Makefile  |  1 +
+ drivers/hwmon/pmbus/ir35215.c | 65 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 75 insertions(+)
+ create mode 100644 drivers/hwmon/pmbus/ir35215.c
+
+diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
+index 59d9a7430499..4185982814a7 100644
+--- a/drivers/hwmon/pmbus/Kconfig
++++ b/drivers/hwmon/pmbus/Kconfig
+@@ -114,6 +114,15 @@ config SENSORS_INSPUR_IPSPS
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called inspur-ipsps.
+ 
++config SENSORS_IR35215
++       tristate "Infineon IR35215"
++       help
++         If you say yes here you get hardware monitoring support for the
++         Infineon IR35215 controller.
++
++         This driver can also be built as a module. If so, the module will
++         be called ir35215.
++
+ config SENSORS_IR35221
+ 	tristate "Infineon IR35221"
+ 	help
+diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
+index 3ae019916267..13636e38ee36 100644
+--- a/drivers/hwmon/pmbus/Makefile
++++ b/drivers/hwmon/pmbus/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_SENSORS_FSP_3Y)	+= fsp-3y.o
+ obj-$(CONFIG_SENSORS_IBM_CFFPS)	+= ibm-cffps.o
+ obj-$(CONFIG_SENSORS_DPS920AB)	+= dps920ab.o
+ obj-$(CONFIG_SENSORS_INSPUR_IPSPS) += inspur-ipsps.o
++obj-$(CONFIG_SENSORS_IR35215)   += ir35215.o
+ obj-$(CONFIG_SENSORS_IR35221)	+= ir35221.o
+ obj-$(CONFIG_SENSORS_IR36021)	+= ir36021.o
+ obj-$(CONFIG_SENSORS_IR38064)	+= ir38064.o
+diff --git a/drivers/hwmon/pmbus/ir35215.c b/drivers/hwmon/pmbus/ir35215.c
+new file mode 100644
+index 000000000000..92d59e78bfd0
+--- /dev/null
++++ b/drivers/hwmon/pmbus/ir35215.c
+@@ -0,0 +1,65 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Hardware monitoring driver for Infineon IR35215
++ *
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ */
++
++#include <linux/err.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include "pmbus.h"
++
++static const u32 functionality = PMBUS_HAVE_TEMP
++	| PMBUS_HAVE_VIN | PMBUS_HAVE_VOUT
++	| PMBUS_HAVE_IIN | PMBUS_HAVE_IOUT
++	| PMBUS_HAVE_PIN | PMBUS_HAVE_POUT
++	| PMBUS_HAVE_STATUS_VOUT | PMBUS_HAVE_STATUS_IOUT
++	| PMBUS_HAVE_STATUS_INPUT | PMBUS_HAVE_STATUS_TEMP;
++
++static struct pmbus_driver_info ir35215_info = {
++	.pages = 2,
++	.format[PSC_VOLTAGE_IN] = linear,
++	.format[PSC_VOLTAGE_OUT] = linear,
++	.format[PSC_CURRENT_IN] = linear,
++	.format[PSC_CURRENT_OUT] = linear,
++	.format[PSC_POWER] = linear,
++	.format[PSC_TEMPERATURE] = linear,
++	.func[0] = functionality,
++	.func[1] = functionality,
++};
++
++static int ir35215_probe(struct i2c_client *client)
++{
++	/*
++	 * IR35215 devices may not stay in page 0 during device
++	 * probe which leads to probe failure (read status word failed).
++	 * So let's set the device to page 0 at the beginning.
++	 */
++	i2c_smbus_write_byte_data(client, PMBUS_PAGE, 0);
++	return pmbus_do_probe(client, &ir35215_info);
++}
++
++static const struct i2c_device_id ir35215_id[] = {
++	{ "ir35215", 0 },
++	{}
++};
++MODULE_DEVICE_TABLE(i2c, ir35215_id);
++
++static struct i2c_driver ir35215_driver = {
++	.driver = {
++		   .name = "ir35215",
++	},
++	.probe_new = ir35215_probe,
++	.id_table = ir35215_id,
++};
++
++module_i2c_driver(ir35215_driver);
++
++MODULE_AUTHOR("Tao Ren <rentao.bupt@gmail.com>");
++MODULE_DESCRIPTION("PMBus driver for Infineon IR35215");
++MODULE_LICENSE("GPL");
++MODULE_IMPORT_NS(PMBUS);
+-- 
+2.34.1
+

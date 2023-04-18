@@ -87,7 +87,7 @@ static int add_cfg_item_str(const char* name, char* str_val) {
   }
   strncpy(ptr->name, name, MAX_NAME_SIZE - 1);
   ptr->type = STRING;
-  strncpy(ptr->u.str, str_val, MAX_NAME_SIZE - 1);
+  strncpy(ptr->u.str, str_val, MAX_VAL_STR_SIZE - 1);
   INSERT_CFG_ENT(ptr);
   return 0;
 }

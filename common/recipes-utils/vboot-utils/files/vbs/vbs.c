@@ -185,3 +185,18 @@ uint8_t vboot_vbs_version(struct vbs* vbs) {
 
   return vbs->vbs_ver;
 }
+
+const char* vboot_giu_mode_name(uint8_t giu_mode) {
+  switch (giu_mode) {
+    case GIU_NONE:
+      return "NONE";
+    case GIU_VROM:
+      return "VROM";
+    case GIU_RECV:
+      return "RECV";
+    case GIU_OPEN:
+      return "OPEN";
+    default:
+      return "NA";
+  }
+}

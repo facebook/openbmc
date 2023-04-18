@@ -49,7 +49,13 @@ bool        vboot_partition_exists(void);
 struct vbs *vboot_status(void);
 const char *vboot_error(uint32_t error_code);
 const char *vboot_time(char *buf, size_t buf_len, uint32_t time);
-uint8_t vboot_vbs_version(struct vbs *vbs);
+uint8_t     vboot_vbs_version(struct vbs *vbs);
+
+#define GIU_NONE 0  /* not execute golden image upgrade */
+#define GIU_VROM 1  /* upgrade the rom of golden image with op-cert*/
+#define GIU_RECV 2 /* upgrade recovery image of golden image w/o op-cert */
+#define GIU_OPEN 0xEA /* leave the flash HWP de-assert, for development */
+const char *vboot_giu_mode_name(uint8_t giu_mode);
 
 #define VBS_ERROR_TABLE \
   VBS_ERROR(VBS_SUCCESS, 0, "OpenBMC was verified correctly"), \

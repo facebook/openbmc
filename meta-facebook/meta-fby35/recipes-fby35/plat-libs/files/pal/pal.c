@@ -2095,6 +2095,9 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
           case TYPE_1OU_EXP_WITH_6_M2:
             pcie_conf = CONFIG_MFG;
             break;
+          case TYPE_1OU_RAINBOW_FALLS:
+            pcie_conf = CONFIG_B_RF;
+            break;
           default:
             pcie_conf = CONFIG_C;
             break;

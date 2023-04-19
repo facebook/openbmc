@@ -819,10 +819,12 @@ pal_get_fan_name(uint8_t num, char *name) {
   return 0;
 }
 
+//Fan-Util Callback function
 int
 pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
   uint8_t dev_id=0;
   uint8_t fru;
+  uint8_t retry=0;
 
   if (fan >= pal_pwm_cnt) {
     syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
@@ -837,15 +839,26 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
   if (get_fan_chip_dev_id(fru, &dev_id))
     return -1;
 
-  return fan_ctrl_map[dev_id].set_duty(fan, pwm);
+  while(1) {
+    if (fan_ctrl_map[dev_id].set_duty(fan, pwm)) {
+       retry++;
+       if (retry_err_handle(retry, 3) == READING_NA)
+         return READING_NA;
+
+       usleep(100000);
+    } else {
+      break;
+    }
+  }
+  return 0;
 }
 
 int
 pal_get_fan_speed(uint8_t tach, int *rpm) {
-  int ret=0;
   uint8_t sensor_num = FAN_SNR_START_INDEX + tach;
   float speed = 0;
   uint8_t fru;
+  uint8_t retry = 0;
 
   if (tach >= pal_tach_cnt || !is_fan_present(tach/2)) {
     syslog(LOG_INFO, "%s: tach number is invalid - %d", __func__, tach);
@@ -857,9 +870,20 @@ pal_get_fan_speed(uint8_t tach, int *rpm) {
   else
     fru = FRU_FAN_BP2;
 
-  ret = read_fan_speed(fru, sensor_num, &speed);
+  while(1) {
+    if (read_fan_speed(fru, sensor_num, &speed)) {
+       retry++;
+       if (retry_err_handle(retry, 3) == READING_NA)
+         return READING_NA;
+
+       usleep(100000);
+    } else {
+      break;
+    }
+  }
+
   *rpm = (int)speed;
-  return ret;
+  return 0;
 }
 
 int
@@ -867,7 +891,7 @@ pal_get_pwm_value(uint8_t tach, uint8_t *value) {
   uint8_t fan = tach/2;
   uint8_t dev_id = 0;
   uint8_t fru;
-  int ret;
+  uint8_t retry = 0;
 
   if (fan >= pal_pwm_cnt || !is_fan_present(fan)) {
 //    syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
@@ -882,6 +906,17 @@ pal_get_pwm_value(uint8_t tach, uint8_t *value) {
   if (get_fan_chip_dev_id(fru, &dev_id))
     return -1;
 
-  ret = fan_ctrl_map[dev_id].get_duty(fan, value);
-  return ret;
+  while(1) {
+    if (fan_ctrl_map[dev_id].get_duty(fan, value)) {
+       retry++;
+       if (retry_err_handle(retry, 3) == READING_NA)
+         return READING_NA;
+
+       usleep(100000);
+    } else {
+      break;
+    }
+  }
+
+  return 0;
 }

@@ -269,7 +269,7 @@ struct gpiopoll_config gpios_list[] = {
   {FM_CPU1_MEM_HOT_N,       "SGPIO124",       GPIO_EDGE_BOTH,    gpio_event_pson_3s_handler, NULL},
   {FM_CPU0_MEM_THERMTRIP_N, "SGPIO122",       GPIO_EDGE_FALLING, mem_thermtrip_handler,      NULL},
   {FM_CPU1_MEM_THERMTRIP_N, "SGPIO158",       GPIO_EDGE_FALLING, mem_thermtrip_handler,      NULL},
-  {FM_SYS_THROTTLE,         "SGPIO198",       GPIO_EDGE_BOTH,    gpio_event_pson_handler,    NULL},
+  {FM_SYS_THROTTLE,         "SGPIO20",        GPIO_EDGE_BOTH,    gpio_event_pson_handler,    NULL},
   {FM_PCH_THERMTRIP_N,      "SGPIO28",        GPIO_EDGE_BOTH,    pch_thermtrip_handler,      NULL},
   {FM_CPU0_VCCIN_VR_HOT,    "SGPIO154",       GPIO_EDGE_BOTH,    cpu0_pvccin_handler,        cpu_vr_hot_init},
   {FM_CPU1_VCCIN_VR_HOT,    "SGPIO120",       GPIO_EDGE_BOTH,    cpu1_pvccin_handler,        cpu_vr_hot_init},

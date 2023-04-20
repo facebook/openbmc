@@ -186,10 +186,6 @@ pim_driver_add(uint8_t num) {
            LM25066 ]
            LM75
  * CH5     DOMFPGA     DOMFPGA
- * CH6   [ UCD90160 or
- *         UCD90160A or
- *         UCD90124A or
- *         ADM1266 ]
  * CH7                 SI5391B
 */
   uint8_t bus = ((num - 1) * 8) + 80;
@@ -202,7 +198,6 @@ pim_driver_add(uint8_t num) {
   sleep(2);
 
   struct dev_addr_driver *pim_hsc = pal_get_pim_hsc(fru);
-  struct dev_addr_driver *pim_ucd = pal_get_pim_ucd(fru);
   /* 0 channel of paca9548 */
   /* need to add DOM FPGA before getting PIM Type*/
   bus_id = bus + PIM_DOM_DEVICE_CH  ;
@@ -294,52 +289,6 @@ pim_driver_add(uint8_t num) {
       pim_device[i++].device_address = pim_hsc->addr;
     }
   }
-
-  /* channel 6 of paca9548 */
-  bus_id = bus + PIM_MP2975_DEVICE_CH  ;
-  if (pal_add_i2c_device(bus_id, PIM_MP2975_ADDR, MP2975_DRIVER)) {
-      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
-                       "driver cannot add.",
-                       num, bus_id, PIM_MP2975_ADDR, MP2975_DRIVER);
-  } else {
-    pim_device[i].bus_id = bus_id;
-    pim_device[i++].device_address = PIM_MP2975_ADDR;
-  }
-
-  /* detect channel 6 of paca9548
-   * MP     UCD90160    0x34
-   * Respin UCD90160    0x64
-   *        UCD90160A   0x65
-   *        UCD90124A   0x40
-   *        ADM1266     0x44
-   */
-  bus_id = bus + PIM_PWRSEQ_DEVICE_CH;
-  if ( pim_ucd == NULL ) {
-    syslog(LOG_CRIT, "Cannot find device:  %s:0x%02x %s:0x%02x %s:0x%02x "
-                      "%s:0x%02x %s:0x%02x on PIM %d Bus:%d",
-                      UCD90160A_DRIVER,  PIM_UCD90160_MP_ADDR,
-                      UCD90160A_DRIVER,  PIM_UCD90160A_ADDR,
-                      UCD90160_DRIVER,   PIM_UCD90160_ADDR,
-                      UCD90124A_DRIVER,  PIM_UCD90124A_ADDR,
-                      ADM1266_DRIVER,    PIM_ADM1266_ADDR,
-                      num, bus_id);
-  } else {
-    if (pal_add_i2c_device(bus_id, pim_ucd->addr, (char*)pim_ucd->driver)) {
-      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s Chip:%s"
-                        "driver cannot add.",
-                        num, bus_id, pim_ucd->addr, 
-                        pim_ucd->driver, pim_ucd->chip_name);
-    } else {
-      set_dev_addr_to_file(fru, KEY_PWRSEQ, pim_ucd->addr);
-      syslog(LOG_CRIT, "Load driver: PIM %d Bus:%d Addr:0x%x "
-                        "Driver:%s Chip:%s",
-                        num, bus_id, pim_ucd->addr, 
-                        pim_ucd->driver, pim_ucd->chip_name);
-      pim_device[i].bus_id = bus_id;
-      pim_device[i++].device_address = pim_ucd->addr;
-    }
-  }
-
   run_command(". openbmc-utils.sh && i2c_check_driver_binding fix-binding");
 }
 

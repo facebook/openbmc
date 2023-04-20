@@ -125,14 +125,6 @@ char * def_val_list[] = {
 
 sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
-struct dev_addr_driver PIM_UCD_addr_list[] = {
-  { PIM_UCD90160_MP_ADDR, UCD90160_DRIVER,  "ucd90160_MP"},
-  { PIM_UCD90160_ADDR,    UCD90160_DRIVER,  "ucd90160_respin"},
-  { PIM_UCD90160A_ADDR,   UCD90160A_DRIVER, "ucd90160A_respin"},
-  { PIM_UCD90124A_ADDR,   UCD90124A_DRIVER, "ucd90124A"},
-  { PIM_ADM1266_ADDR,     ADM1266_DRIVER,   "adm1266"},
-};
-
 struct dev_addr_driver PIM_HSC_addr_list[] = {
   { PIM_HSC_ADM1278_ADDR, ADM1278_DRIVER, "adm1278"},
   { PIM_HSC_LM25066_ADDR, LM25066_DRIVER, "lm25066"},
@@ -430,20 +422,6 @@ pal_get_scm_hsc() {
       syslog(LOG_WARNING, "[%s] SCM_HSC_addr: 0x%x", __func__, SCM_HSC_addr_list[i].addr);
 #endif
       return &(SCM_HSC_addr_list[i]);
-    }
-  }
-  return NULL;
-}
-
-struct dev_addr_driver*
-pal_get_pim_ucd( uint8_t fru ) {
-  uint8_t bus = ((fru - FRU_PIM1) * 8) + 80 + PIM_PWRSEQ_DEVICE_CH;
-  for (int i=0;i<sizeof(PIM_UCD_addr_list)/sizeof(struct dev_addr_driver);i++){
-    if (i2c_detect_sensor(bus, PIM_UCD_addr_list[i].addr) != -1) {
-#if DEBUG
-      syslog(LOG_WARNING, "[%s] PIM%d_UCD_addr: 0x%x", __func__, fru - FRU_PIM1 + 1, PIM_UCD_addr_list[i].addr);
-#endif
-      return &(PIM_UCD_addr_list[i]);
     }
   }
   return NULL;

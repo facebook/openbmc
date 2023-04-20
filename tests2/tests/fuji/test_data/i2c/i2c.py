@@ -77,7 +77,6 @@ def minipack2_get_pim_i2c_tree(pim):
         {"channel": 2, "addr": 0x48, "name": "tmp75", "driver": "lm75"},
         {"channel": 3, "addr": 0x4B, "name": "tmp75", "driver": "lm75"},
         {"channel": 4, "addr": 0x4A, "name": "tmp75", "driver": "lm75"},
-        {"channel": 6, "addr": 0x6B, "name": "mp2975", "driver": "mp2975"},
     ]
     devices = {}
     for device in list:
@@ -125,13 +124,6 @@ def minipack2_get_pim_alternate_i2c(pim):
         return []
     bus = 80 + ((pim - 1) * 8)
     list = [
-        [
-            {"channel": 6, "addr": 0x34, "name": "ucd90160", "driver": "ucd9000"},
-            {"channel": 6, "addr": 0x64, "name": "ucd90160", "driver": "ucd9000"},
-            {"channel": 6, "addr": 0x65, "name": "ucd90160", "driver": "ucd9000"},
-            {"channel": 6, "addr": 0x40, "name": "ucd9012*", "driver": "ucd9000"},
-            {"channel": 6, "addr": 0x44, "name": "adm1266", "driver": "adm1266"},
-        ],
         [
             {"channel": 4, "addr": 0x10, "name": "adm1278", "driver": "adm1275"},
             {"channel": 4, "addr": 0x44, "name": "lm25066", "driver": "lm25066"},

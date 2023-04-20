@@ -333,54 +333,6 @@ const uint8_t pim16q_sensor_list[] =
   PIM1_POWER_VOLTAGE,
   PIM1_SENSOR_HSC_CURR,
   PIM1_SENSOR_HSC_POWER,
-  PIM1_UCD90160_VOLT1,
-  PIM1_UCD90160_VOLT2,
-  PIM1_UCD90160_VOLT3,
-  PIM1_UCD90160_VOLT4,
-  PIM1_UCD90160_VOLT5,
-  PIM1_UCD90160_VOLT6,
-  PIM1_UCD90160_VOLT7,
-  PIM1_UCD90160_VOLT8,
-  PIM1_UCD90160_VOLT9,
-  PIM1_UCD90160_VOLT10,
-  PIM1_UCD90160_VOLT11,
-  PIM1_UCD90160_VOLT12,
-  PIM1_UCD90160_VOLT13,
-  PIM1_MP2975_INPUT_VOLTAGE,
-  PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-  PIM1_MP2975_OUTPUT_CURRENT_XP0R8V,
-  PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-  PIM1_MP2975_OUTPUT_CURRENT_XP3R3V
-};
-
-// PIM16Q with UCD90124 will be remove XP3R3V_EARLY aka PIM1_UCD90160_VOLT2
-const uint8_t pim16q_ucd90124_sensor_list[] =
-{
-  PIM1_LM75_TEMP_4A,
-  PIM1_LM75_TEMP_4B,
-  PIM1_LM75_TEMP_48,
-  PIM1_SENSOR_QSFP_TEMP,
-  PIM1_SENSOR_HSC_VOLT,
-  PIM1_POWER_VOLTAGE,
-  PIM1_SENSOR_HSC_CURR,
-  PIM1_SENSOR_HSC_POWER,
-  PIM1_UCD90160_VOLT1,
-  PIM1_UCD90160_VOLT3,
-  PIM1_UCD90160_VOLT4,
-  PIM1_UCD90160_VOLT5,
-  PIM1_UCD90160_VOLT6,
-  PIM1_UCD90160_VOLT7,
-  PIM1_UCD90160_VOLT8,
-  PIM1_UCD90160_VOLT9,
-  PIM1_UCD90160_VOLT10,
-  PIM1_UCD90160_VOLT11,
-  PIM1_UCD90160_VOLT12,
-  PIM1_UCD90160_VOLT13,
-  PIM1_MP2975_INPUT_VOLTAGE,
-  PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-  PIM1_MP2975_OUTPUT_CURRENT_XP0R8V,
-  PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-  PIM1_MP2975_OUTPUT_CURRENT_XP3R3V
 };
 
 const uint8_t pim16o_sensor_list[] =
@@ -392,18 +344,6 @@ const uint8_t pim16o_sensor_list[] =
   PIM1_POWER_VOLTAGE,
   PIM1_SENSOR_HSC_CURR,
   PIM1_SENSOR_HSC_POWER,
-  PIM1_UCD90160_VOLT1,
-  PIM1_UCD90160_VOLT2,
-  PIM1_UCD90160_VOLT3,
-  PIM1_UCD90160_VOLT4,
-  PIM1_UCD90160_VOLT5,
-  PIM1_UCD90160_VOLT6,
-  PIM1_UCD90160_VOLT7,
-  PIM1_UCD90160_VOLT8,
-  PIM1_UCD90160_VOLT9,
-  PIM1_UCD90160_VOLT10,
-  PIM1_UCD90160_VOLT11,
-  PIM1_UCD90160_VOLT12,
 };
 
 const uint8_t pem1_sensor_list[] = {
@@ -795,7 +735,7 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 static void
 pim_thresh_array_init(uint8_t fru) {
   int i = 0;
-  int type, pedigree, pim_phy_type;
+  int type;
 
   syslog(LOG_WARNING,
             "pim_thresh_array_init: PIM %d init threshold array", fru - FRU_PIM1 + 1);
@@ -811,7 +751,6 @@ pim_thresh_array_init(uint8_t fru) {
       i = fru - FRU_PIM1;
       type = pal_get_pim_type_from_file(fru);
       if (type == PIM_TYPE_16Q) {
-        pim_phy_type = pal_get_pim_phy_type_from_file(fru);
         pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 58;
         pim_sensor_threshold[PIM1_LM75_TEMP_4A+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 80;
         pim_sensor_threshold[PIM1_LM75_TEMP_4B+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 85;
@@ -828,110 +767,7 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_SENSOR_HSC_POWER+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 315.14;
         pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 28.89;
         pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 26.26;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT1+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.795;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT1+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 3.63;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT1+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 2.97;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT1+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 2.805;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT2+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.795;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT2+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 3.63;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT2+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 2.97;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT2+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 2.805;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT3+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.875;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT3+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 2.75;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT3+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 2.25;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT3+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 2.125;
-        if (pim_phy_type == PIM_16Q_PHY_7NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.035;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0.99;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.81;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.765;
-        } else if (pim_phy_type == PIM_16Q_PHY_16NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.92;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0.88;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.72;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.68;
-        }
-        if (pim_phy_type == PIM_16Q_PHY_7NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.8625;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0.825;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.675;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.6375;
-        } else if (pim_phy_type == PIM_16Q_PHY_16NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.92;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0.88;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.72;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.68;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.265;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 1.21;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.99;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.935;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.92;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0.88;
-        if (pim_phy_type == PIM_16Q_PHY_7NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.5;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.45;
-        } else if (pim_phy_type == PIM_16Q_PHY_16NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.72;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.68;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.92;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0.88;
-        if (pim_phy_type == PIM_16Q_PHY_7NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.5;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.45;
-        } else if (pim_phy_type == PIM_16Q_PHY_16NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.72;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.68;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.92;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0.88;
-        if (pim_phy_type == PIM_16Q_PHY_7NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.5;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.45;
-        } else if (pim_phy_type == PIM_16Q_PHY_16NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.72;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.68;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.92;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0.88;
-        if (pim_phy_type == PIM_16Q_PHY_7NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.5;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.45;
-        } else if (pim_phy_type == PIM_16Q_PHY_16NM) {
-          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.72;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.68;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.07;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 1.98;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 1.62;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.53;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.07;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 1.98;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 1.62;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.53;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.07;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 1.98;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 1.62;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.53;
-        pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 13.8;
-        pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 13.2;
-        pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 10.8;
-        pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 10.2;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.862;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0.825;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.675;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.638;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.795;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 3.63;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 2.97;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 2.805;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP0R8V+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 49.46;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP0R8V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 44.95;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP3R3V+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 49.46;
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP3R3V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 44.95;
       } else if (type == PIM_TYPE_16O) {
-        pedigree = pal_get_pim_pedigree_from_file(fru);
         pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 60;
         pim_sensor_threshold[PIM1_LM75_TEMP_4B+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 65;
         pim_sensor_threshold[PIM1_LM75_TEMP_4B+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 10;
@@ -949,130 +785,6 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_SENSOR_HSC_POWER+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0;
         pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 15;
         pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0;
-        // CHANNEL 1  PIMx_XP3R3V       3.3V
-        pim_sensor_threshold[PIM1_UCD90160_VOLT1+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.498;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT1+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT1+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT1+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.102;
-        // CHANNEL 2  PIMx_XP2R5V       2.5V
-        pim_sensor_threshold[PIM1_UCD90160_VOLT2+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.65;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT2+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT2+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT2+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 2.35;
-        // CHANNEL 3  PIMx_XP1R1V       1.1V
-        pim_sensor_threshold[PIM1_UCD90160_VOLT3+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.166;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT3+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT3+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT3+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.034;
-        // CHANNEL 4  PIMx_XP1R8V       1.8V
-        pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.908;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT4+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.692;
-        // CHANNEL 5  PIMx_XP3R3V_OBO   3.3V
-        pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.498;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.102;
-        // CHANNEL 6  PIMx_XP8R0V_OBO
-        if (pedigree == PIM_16O_SIMULATE) { // 3.3V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.498;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.102;
-        } else if (pedigree == PIM_16O_ALPHA1 || pedigree == PIM_16O_ALPHA2) { // 8V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 8.48;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 7.52;
-        } else if (pedigree == PIM_16O_ALPHA3) { // 8.6V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 9.46;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 7.74;
-        } else if (pedigree >= PIM_16O_ALPHA4 && pedigree <= PIM_16O_BETA) { // 8.5V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 9.35;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 7.65;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        // CHANNEL 7 PIMx_XP0R65V_OBO
-        if (pedigree == PIM_16O_SIMULATE) { // 0.75V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.776;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.724;
-        } else if (pedigree >= PIM_16O_ALPHA1 && pedigree <= PIM_16O_BETA) { // 0.65V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.67275;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.62725;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        // CHANNEL 8 PIMx_XP0R94V_OBO
-        if (pedigree == PIM_16O_SIMULATE) { // 1.1V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.139;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.062;
-        } else if (pedigree >= PIM_16O_ALPHA1 && pedigree <= PIM_16O_BETA) { // 0.946V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.97911;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.91289;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        // CHANNEL 9  PIMx_XP1R15V_OBO  1.15V
-        pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.19;
-        pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.1;
-        // CHANNEL 10  PIMx_XP1R8V_OBO
-        if (pedigree == PIM_16O_SIMULATE) { // 1.8V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.863;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.737;
-        } else if (pedigree >= PIM_16O_ALPHA1 && pedigree <= PIM_16O_BETA) { // 2.2V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.42;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.98;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        // CHANNEL 11  PIMx_XP2R0V_OBO
-        if (pedigree == PIM_16O_SIMULATE) { // 2.0V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.07;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.93;
-        } else if (pedigree >= PIM_16O_ALPHA1 && pedigree <= PIM_16O_BETA) { // 1.85V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.035;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.665;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        // CHANNEL 12  PIMx_XP4R0V_OBO
-        if (pedigree == PIM_16O_SIMULATE) { // 3.6V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.816;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.384;
-        } else if (pedigree == PIM_16O_ALPHA1 || pedigree == PIM_16O_ALPHA6) { // 3.0V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.3;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 2.7;
-        } else if (pedigree == PIM_16O_ALPHA2 || pedigree == PIM_16O_ALPHA4 || pedigree == PIM_16O_BETA ) { // 4.0V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 4.4;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.6;
-        } else if (pedigree == PIM_16O_ALPHA3 || pedigree == PIM_16O_ALPHA5) { // 3.5V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.85;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.15;
-        }
-        pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-
-        pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0; // unset
-
-        pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP0R8V+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP0R8V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP3R3V+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0; //unset
-        pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP3R3V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; //unset
       }
       break;
   }
@@ -1090,35 +802,35 @@ pal_set_pim_thresh(uint8_t fru) {
   switch(fru) {
     case FRU_PIM1:
       snr_first_num = PIM1_LM75_TEMP_4A;
-      snr_last_num = PIM1_MP2975_OUTPUT_CURRENT_XP3R3V;
+      snr_last_num = PIM1_SENSOR_HSC_POWER;
       break;
     case FRU_PIM2:
       snr_first_num = PIM2_LM75_TEMP_4A;
-      snr_last_num = PIM2_MP2975_OUTPUT_CURRENT_XP3R3V;
+      snr_last_num = PIM2_SENSOR_HSC_POWER;
       break;
     case FRU_PIM3:
       snr_first_num = PIM3_LM75_TEMP_4A;
-      snr_last_num = PIM3_MP2975_OUTPUT_CURRENT_XP3R3V;
+      snr_last_num = PIM3_SENSOR_HSC_POWER;
       break;
     case FRU_PIM4:
       snr_first_num = PIM4_LM75_TEMP_4A;
-      snr_last_num = PIM4_MP2975_OUTPUT_CURRENT_XP3R3V;
+      snr_last_num = PIM4_SENSOR_HSC_POWER;
       break;
     case FRU_PIM5:
       snr_first_num = PIM5_LM75_TEMP_4A;
-      snr_last_num = PIM5_MP2975_OUTPUT_CURRENT_XP3R3V;
+      snr_last_num = PIM5_SENSOR_HSC_POWER;
       break;
     case FRU_PIM6:
       snr_first_num = PIM6_LM75_TEMP_4A;
-      snr_last_num = PIM6_MP2975_OUTPUT_CURRENT_XP3R3V;
+      snr_last_num = PIM6_SENSOR_HSC_POWER;
       break;
     case FRU_PIM7:
       snr_first_num = PIM7_LM75_TEMP_4A;
-      snr_last_num = PIM7_MP2975_OUTPUT_CURRENT_XP3R3V;
+      snr_last_num = PIM7_SENSOR_HSC_POWER;
       break;
     case FRU_PIM8:
       snr_first_num = PIM8_LM75_TEMP_4A;
-      snr_last_num = PIM8_MP2975_OUTPUT_CURRENT_XP3R3V;
+      snr_last_num = PIM8_SENSOR_HSC_POWER;
       break;
     default:
       return -1;
@@ -1186,7 +898,7 @@ pal_clear_thresh_value(uint8_t fru) {
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
-  uint8_t pim_type, pim_id, PIM_PWRSEQ_addr;
+  uint8_t pim_type, pim_id;
   int brd_type_rev;
   pal_get_board_rev(&brd_type_rev);
 
@@ -1216,16 +928,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_PIM8:
     pim_id = fru - FRU_PIM1;
     pim_type = pal_get_pim_type_from_file(fru);
-    get_dev_addr_from_file(fru, KEY_PWRSEQ, &PIM_PWRSEQ_addr);
     *sensor_list = (uint8_t *) pim_sensor_list[pim_id];
     if ( pim_type == PIM_TYPE_16Q) {
-      if ( PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        *cnt = sizeof(pim16q_ucd90124_sensor_list) / sizeof(uint8_t);
-        memcpy(*sensor_list,pim16q_ucd90124_sensor_list,*cnt);
-      } else {
-        *cnt = sizeof(pim16q_sensor_list) / sizeof(uint8_t);
-        memcpy(*sensor_list,pim16q_sensor_list,*cnt);
-      }
+      *cnt = sizeof(pim16q_sensor_list) / sizeof(uint8_t);
+      memcpy(*sensor_list,pim16q_sensor_list,*cnt);
     } else if ( pim_type == PIM_TYPE_16O) {
       *cnt = sizeof(pim16o_sensor_list) / sizeof(uint8_t);
       memcpy(*sensor_list,pim16o_sensor_list,*cnt);
@@ -2222,9 +1928,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t type = pal_get_pim_type_from_file(fru);
   uint8_t pimid = fru-FRU_PIM1 + 1;
   uint8_t i2cbus = PIM1_I2CBUS + (pimid - 1) * 8;
-  uint8_t PIM_PWRSEQ_addr;
   uint8_t PIM_HSC_addr;
-  get_dev_addr_from_file(fru, KEY_PWRSEQ, &PIM_PWRSEQ_addr);
   get_dev_addr_from_file(fru, KEY_HSC, &PIM_HSC_addr);
 
 #define dir_pim_sensor(str_buffer,i2c_bus,i2c_offset,addr) \
@@ -2348,366 +2052,6 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         }
       }
       break;
-    case PIM1_UCD90160_VOLT1:
-    case PIM2_UCD90160_VOLT1:
-    case PIM3_UCD90160_VOLT1:
-    case PIM4_UCD90160_VOLT1:
-    case PIM5_UCD90160_VOLT1:
-    case PIM6_UCD90160_VOLT1:
-    case PIM7_UCD90160_VOLT1:
-    case PIM8_UCD90160_VOLT1: // XP3R3V
-      dir_pim_sensor_hwmon(
-          full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (type == PIM_TYPE_16Q) {
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
-        }
-      } else if (type == PIM_TYPE_16O) {
-        ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT2:
-    case PIM2_UCD90160_VOLT2:
-    case PIM3_UCD90160_VOLT2:
-    case PIM4_UCD90160_VOLT2:
-    case PIM5_UCD90160_VOLT2:
-    case PIM6_UCD90160_VOLT2:
-    case PIM7_UCD90160_VOLT2:
-    case PIM8_UCD90160_VOLT2:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (type == PIM_TYPE_16Q) { // XP3R3V_EARLY
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
-        } else if (
-            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
-          syslog(
-              LOG_CRIT,
-              "pim_sensor_read: PIM_PWRSEQ_addr == %d"
-              "(PIM_UCD90120A_ADDR) shouldn't have PIM_UCD90160_VOLT2 sensor",
-              PIM_UCD90120A_ADDR);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
-        }
-      } else if (type == PIM_TYPE_16O) { // XP2R5V
-        ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT3:
-    case PIM2_UCD90160_VOLT3:
-    case PIM3_UCD90160_VOLT3:
-    case PIM4_UCD90160_VOLT3:
-    case PIM5_UCD90160_VOLT3:
-    case PIM6_UCD90160_VOLT3:
-    case PIM7_UCD90160_VOLT3:
-    case PIM8_UCD90160_VOLT3:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if ( type == PIM_TYPE_16Q ) { // XP2R5V_EARLY
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
-        }
-      } else if ( type == PIM_TYPE_16O ) { // XP1R1V
-        ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT4:
-    case PIM2_UCD90160_VOLT4:
-    case PIM3_UCD90160_VOLT4:
-    case PIM4_UCD90160_VOLT4:
-    case PIM5_UCD90160_VOLT4:
-    case PIM6_UCD90160_VOLT4:
-    case PIM7_UCD90160_VOLT4:
-    case PIM8_UCD90160_VOLT4:
-      dir_pim_sensor_hwmon(
-          full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (type == PIM_TYPE_16Q) { // TXDRV_PHY
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
-        } else if (
-            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
-        }
-      } else if (type == PIM_TYPE_16O) { // XP1R8V
-        ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT5:
-    case PIM2_UCD90160_VOLT5:
-    case PIM3_UCD90160_VOLT5:
-    case PIM4_UCD90160_VOLT5:
-    case PIM5_UCD90160_VOLT5:
-    case PIM6_UCD90160_VOLT5:
-    case PIM7_UCD90160_VOLT5:
-    case PIM8_UCD90160_VOLT5:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if ( type == PIM_TYPE_16Q ) { // XP0R8V_PHY
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR ) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
-        }
-      } else if ( type == PIM_TYPE_16O ) { // XP3R3V_OBO
-        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT6:
-    case PIM2_UCD90160_VOLT6:
-    case PIM3_UCD90160_VOLT6:
-    case PIM4_UCD90160_VOLT6:
-    case PIM5_UCD90160_VOLT6:
-    case PIM6_UCD90160_VOLT6:
-    case PIM7_UCD90160_VOLT6:
-    case PIM8_UCD90160_VOLT6:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if ( type == PIM_TYPE_16Q ) { // XP1R1V_EARLY
-          ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
-      } else if ( type == PIM_TYPE_16O ) { // XP8R0V_OBO
-        ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT7:
-    case PIM2_UCD90160_VOLT7:
-    case PIM3_UCD90160_VOLT7:
-    case PIM4_UCD90160_VOLT7:
-    case PIM5_UCD90160_VOLT7:
-    case PIM6_UCD90160_VOLT7:
-    case PIM7_UCD90160_VOLT7:
-    case PIM8_UCD90160_VOLT7:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if ( type == PIM_TYPE_16Q ) { // DVDD_PHY4
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(17), value);
-        }
-      } else if ( type == PIM_TYPE_16O ) { // XP0R65V_OBO
-        ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT8:
-    case PIM2_UCD90160_VOLT8:
-    case PIM3_UCD90160_VOLT8:
-    case PIM4_UCD90160_VOLT8:
-    case PIM5_UCD90160_VOLT8:
-    case PIM6_UCD90160_VOLT8:
-    case PIM7_UCD90160_VOLT8:
-    case PIM8_UCD90160_VOLT8:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if ( type == PIM_TYPE_16Q ) { // DVDD_PHY3
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(14), value);
-        }
-      } else if ( type == PIM_TYPE_16O ) { // XP0R94V_OBO
-        ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT9:
-    case PIM2_UCD90160_VOLT9:
-    case PIM3_UCD90160_VOLT9:
-    case PIM4_UCD90160_VOLT9:
-    case PIM5_UCD90160_VOLT9:
-    case PIM6_UCD90160_VOLT9:
-    case PIM7_UCD90160_VOLT9:
-    case PIM8_UCD90160_VOLT9:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (type == PIM_TYPE_16Q) { // DVDD_PHY2
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
-        } else if (
-            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
-          ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
-        }
-      } else if (type == PIM_TYPE_16O) { // XP1R15V_OBO
-        ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT10:
-    case PIM2_UCD90160_VOLT10:
-    case PIM3_UCD90160_VOLT10:
-    case PIM4_UCD90160_VOLT10:
-    case PIM5_UCD90160_VOLT10:
-    case PIM6_UCD90160_VOLT10:
-    case PIM7_UCD90160_VOLT10:
-    case PIM8_UCD90160_VOLT10:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if ( type == PIM_TYPE_16Q ) { // DVDD_PHY1
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
-        }
-      } else if ( type == PIM_TYPE_16O ) { // XP1R8V_OBO
-        ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT11:
-    case PIM2_UCD90160_VOLT11:
-    case PIM3_UCD90160_VOLT11:
-    case PIM4_UCD90160_VOLT11:
-    case PIM5_UCD90160_VOLT11:
-    case PIM6_UCD90160_VOLT11:
-    case PIM7_UCD90160_VOLT11:
-    case PIM8_UCD90160_VOLT11:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if ( type == PIM_TYPE_16Q ) { // XP1R8V_EARLY
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(16), value);
-        }
-      } else if ( type == PIM_TYPE_16O ) { // XP2R0V_OBO
-        ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT12:
-    case PIM2_UCD90160_VOLT12:
-    case PIM3_UCD90160_VOLT12:
-    case PIM4_UCD90160_VOLT12:
-    case PIM5_UCD90160_VOLT12:
-    case PIM6_UCD90160_VOLT12:
-    case PIM7_UCD90160_VOLT12:
-    case PIM8_UCD90160_VOLT12:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if ( type == PIM_TYPE_16Q ) { // XP1R8V_PHYIO
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(15), value);
-        }
-      } else if ( type == PIM_TYPE_16O ) { // XP4R0V_OBO
-        ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
-      }
-      break;
-    case PIM1_UCD90160_VOLT13:
-    case PIM2_UCD90160_VOLT13:
-    case PIM3_UCD90160_VOLT13:
-    case PIM4_UCD90160_VOLT13:
-    case PIM5_UCD90160_VOLT13:
-    case PIM6_UCD90160_VOLT13:
-    case PIM7_UCD90160_VOLT13:
-    case PIM8_UCD90160_VOLT13: // XP1R8V_PHYAVDD
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if ( type == PIM_TYPE_16Q ) {
-        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
-                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
-        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
-        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-          ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
-        }
-      }
-      break;
-    case PIM1_MP2975_INPUT_VOLTAGE:
-    case PIM2_MP2975_INPUT_VOLTAGE:
-    case PIM3_MP2975_INPUT_VOLTAGE:
-    case PIM4_MP2975_INPUT_VOLTAGE:
-    case PIM5_MP2975_INPUT_VOLTAGE:
-    case PIM6_MP2975_INPUT_VOLTAGE:
-    case PIM7_MP2975_INPUT_VOLTAGE:
-    case PIM8_MP2975_INPUT_VOLTAGE:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
-       ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
-       break;
-    case PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
-       ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
-       break;
-    case PIM1_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM2_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM4_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM5_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM6_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM7_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM8_MP2975_OUTPUT_CURRENT_XP0R8V:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
-       ret = read_attr(fru, sensor_num, full_name, CURR(2), value);
-       break;
-    case PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
-       ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
-	   *value = *value * 3;
-       break;
-    case PIM1_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM2_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM3_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM4_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM5_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM6_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM7_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM8_MP2975_OUTPUT_CURRENT_XP3R3V:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
-       ret = read_attr(fru, sensor_num, full_name, CURR(3), value);
-       break;
     default:
       ret = READING_NA;
       break;
@@ -3660,8 +3004,6 @@ get_scm_sensor_name(uint8_t sensor_num, char *name) {
     case BIC_SENSOR_MB_OUTLET_TEMP:
       sprintf(name, "MB_OUTLET_TEMP");
       break;
-    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
-      sprintf(name, "PIM3_MP2975_OUTPUT_CURR_XP0R8V");
     case BIC_SENSOR_MB_INLET_TEMP:
       sprintf(name, "MB_INLET_TEMP");
       break;
@@ -4005,9 +3347,7 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
 static int
 get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
   uint8_t type = pal_get_pim_type_from_file(fru);
-  uint8_t PIM_PWRSEQ_addr;
   uint8_t pimid = fru-FRU_PIM1+1;
-  get_dev_addr_from_file(fru, KEY_PWRSEQ, &PIM_PWRSEQ_addr);
   switch(sensor_num) {
     case PIM1_LM75_TEMP_4A:
     case PIM2_LM75_TEMP_4A:
@@ -4097,226 +3437,6 @@ get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
     case PIM7_SENSOR_HSC_POWER:
     case PIM8_SENSOR_HSC_POWER:
       sprintf(name, "PIM%d_POWER",pimid);
-      break;
-    case PIM1_UCD90160_VOLT1:
-    case PIM2_UCD90160_VOLT1:
-    case PIM3_UCD90160_VOLT1:
-    case PIM4_UCD90160_VOLT1:
-    case PIM5_UCD90160_VOLT1:
-    case PIM6_UCD90160_VOLT1:
-    case PIM7_UCD90160_VOLT1:
-    case PIM8_UCD90160_VOLT1:
-      sprintf(name, "PIM%d_XP3R3V",pimid);
-      break;
-    case PIM1_UCD90160_VOLT2:
-    case PIM2_UCD90160_VOLT2:
-    case PIM3_UCD90160_VOLT2:
-    case PIM4_UCD90160_VOLT2:
-    case PIM5_UCD90160_VOLT2:
-    case PIM6_UCD90160_VOLT2:
-    case PIM7_UCD90160_VOLT2:
-    case PIM8_UCD90160_VOLT2:
-      if (type==PIM_TYPE_16Q) {
-        if(PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR)
-          syslog(LOG_CRIT, "get_pim_sensor_name: pim%d(%d) "
-            "shouldn't have UCD90160_VOLT2 sensor", pimid, PIM_UCD90120A_ADDR);
-        else
-          sprintf(name, "PIM%d_XP3R3V_EARLY",pimid);
-      } else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP2R5V",pimid);
-      break;
-    case PIM1_UCD90160_VOLT3:
-    case PIM2_UCD90160_VOLT3:
-    case PIM3_UCD90160_VOLT3:
-    case PIM4_UCD90160_VOLT3:
-    case PIM5_UCD90160_VOLT3:
-    case PIM6_UCD90160_VOLT3:
-    case PIM7_UCD90160_VOLT3:
-    case PIM8_UCD90160_VOLT3:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_XP2R5V_EARLY",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP1R1V",pimid);
-      break;
-    case PIM1_UCD90160_VOLT4:
-    case PIM2_UCD90160_VOLT4:
-    case PIM3_UCD90160_VOLT4:
-    case PIM4_UCD90160_VOLT4:
-    case PIM5_UCD90160_VOLT4:
-    case PIM6_UCD90160_VOLT4:
-    case PIM7_UCD90160_VOLT4:
-    case PIM8_UCD90160_VOLT4:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_TXDRV_PHY",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP1R8V",pimid);
-      break;
-    case PIM1_UCD90160_VOLT5:
-    case PIM2_UCD90160_VOLT5:
-    case PIM3_UCD90160_VOLT5:
-    case PIM4_UCD90160_VOLT5:
-    case PIM5_UCD90160_VOLT5:
-    case PIM6_UCD90160_VOLT5:
-    case PIM7_UCD90160_VOLT5:
-    case PIM8_UCD90160_VOLT5:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_XP0R8V_PHY",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP3R3V_OBO",pimid);
-      break;
-    case PIM1_UCD90160_VOLT6:
-    case PIM2_UCD90160_VOLT6:
-    case PIM3_UCD90160_VOLT6:
-    case PIM4_UCD90160_VOLT6:
-    case PIM5_UCD90160_VOLT6:
-    case PIM6_UCD90160_VOLT6:
-    case PIM7_UCD90160_VOLT6:
-    case PIM8_UCD90160_VOLT6:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_XP1R1V_EARLY",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP8R0V_OBO",pimid);
-      break;
-    case PIM1_UCD90160_VOLT7:
-    case PIM2_UCD90160_VOLT7:
-    case PIM3_UCD90160_VOLT7:
-    case PIM4_UCD90160_VOLT7:
-    case PIM5_UCD90160_VOLT7:
-    case PIM6_UCD90160_VOLT7:
-    case PIM7_UCD90160_VOLT7:
-    case PIM8_UCD90160_VOLT7:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_DVDD_PHY4",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP0R65V_OBO",pimid);
-      break;
-    case PIM1_UCD90160_VOLT8:
-    case PIM2_UCD90160_VOLT8:
-    case PIM3_UCD90160_VOLT8:
-    case PIM4_UCD90160_VOLT8:
-    case PIM5_UCD90160_VOLT8:
-    case PIM6_UCD90160_VOLT8:
-    case PIM7_UCD90160_VOLT8:
-    case PIM8_UCD90160_VOLT8:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_DVDD_PHY3",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP0R94V_OBO",pimid);
-      break;
-    case PIM1_UCD90160_VOLT9:
-    case PIM2_UCD90160_VOLT9:
-    case PIM3_UCD90160_VOLT9:
-    case PIM4_UCD90160_VOLT9:
-    case PIM5_UCD90160_VOLT9:
-    case PIM6_UCD90160_VOLT9:
-    case PIM7_UCD90160_VOLT9:
-    case PIM8_UCD90160_VOLT9:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_DVDD_PHY2",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP1R15V_OBO",pimid);
-      break;
-    case PIM1_UCD90160_VOLT10:
-    case PIM2_UCD90160_VOLT10:
-    case PIM3_UCD90160_VOLT10:
-    case PIM4_UCD90160_VOLT10:
-    case PIM5_UCD90160_VOLT10:
-    case PIM6_UCD90160_VOLT10:
-    case PIM7_UCD90160_VOLT10:
-    case PIM8_UCD90160_VOLT10:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_DVDD_PHY1",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP1R8V_OBO",pimid);
-      break;
-    case PIM1_UCD90160_VOLT11:
-    case PIM2_UCD90160_VOLT11:
-    case PIM3_UCD90160_VOLT11:
-    case PIM4_UCD90160_VOLT11:
-    case PIM5_UCD90160_VOLT11:
-    case PIM6_UCD90160_VOLT11:
-    case PIM7_UCD90160_VOLT11:
-    case PIM8_UCD90160_VOLT11:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_XP1R8V_EARLY",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP2R0V_OBO",pimid);
-      break;
-    case PIM1_UCD90160_VOLT12:
-    case PIM2_UCD90160_VOLT12:
-    case PIM3_UCD90160_VOLT12:
-    case PIM4_UCD90160_VOLT12:
-    case PIM5_UCD90160_VOLT12:
-    case PIM6_UCD90160_VOLT12:
-    case PIM7_UCD90160_VOLT12:
-    case PIM8_UCD90160_VOLT12:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_XP1R8V_PHYIO",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP4R0V_OBO",pimid);
-      break;
-    case PIM1_UCD90160_VOLT13:
-    case PIM2_UCD90160_VOLT13:
-    case PIM3_UCD90160_VOLT13:
-    case PIM4_UCD90160_VOLT13:
-    case PIM5_UCD90160_VOLT13:
-    case PIM6_UCD90160_VOLT13:
-    case PIM7_UCD90160_VOLT13:
-    case PIM8_UCD90160_VOLT13:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_XP1R8V_PHYAVDD",pimid);
-      else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_UCD90160_VOLT13(unuse)",pimid);
-      break;
-    case PIM1_MP2975_INPUT_VOLTAGE:
-    case PIM2_MP2975_INPUT_VOLTAGE:
-    case PIM3_MP2975_INPUT_VOLTAGE:
-    case PIM4_MP2975_INPUT_VOLTAGE:
-    case PIM5_MP2975_INPUT_VOLTAGE:
-    case PIM6_MP2975_INPUT_VOLTAGE:
-    case PIM7_MP2975_INPUT_VOLTAGE:
-    case PIM8_MP2975_INPUT_VOLTAGE:
-      sprintf(name, "PIM%d_MP2975_INPUT_VOLTAGE",pimid);
-      break;
-    case PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-      sprintf(name, "PIM%d_MP2975_OUTPUT_VOL_XP0R8V",pimid);
-      break;
-    case PIM1_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM2_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM4_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM5_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM6_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM7_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM8_MP2975_OUTPUT_CURRENT_XP0R8V:
-      sprintf(name, "PIM%d_MP2975_OUTPUT_CURR_XP0R8V",pimid);
-      break;
-    case PIM1_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM2_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM3_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM4_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM5_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM6_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM7_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM8_MP2975_OUTPUT_CURRENT_XP3R3V:
-      sprintf(name, "PIM%d_MP2975_OUTPUT_CURR_XP3R3V",pimid);
-      break;
-    case PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-      sprintf(name, "PIM%d_MP2975_OUTPUT_VOL_XP3R3V",pimid);
       break;
     default:
       return -1;
@@ -5276,22 +4396,6 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
     case PIM6_SENSOR_HSC_CURR:
     case PIM7_SENSOR_HSC_CURR:
     case PIM8_SENSOR_HSC_CURR:
-    case PIM1_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM2_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM3_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM4_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM5_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM6_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM7_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM8_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM1_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM2_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM4_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM5_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM6_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM7_MP2975_OUTPUT_CURRENT_XP0R8V:
-    case PIM8_MP2975_OUTPUT_CURRENT_XP0R8V:
       sprintf(units, "Amps");
       break;
     case PIM1_SENSOR_HSC_POWER:
@@ -5320,134 +4424,6 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
     case PIM6_POWER_VOLTAGE:
     case PIM7_POWER_VOLTAGE:
     case PIM8_POWER_VOLTAGE:
-    case PIM1_UCD90160_VOLT1:
-    case PIM1_UCD90160_VOLT2:
-    case PIM1_UCD90160_VOLT3:
-    case PIM1_UCD90160_VOLT4:
-    case PIM1_UCD90160_VOLT5:
-    case PIM1_UCD90160_VOLT6:
-    case PIM1_UCD90160_VOLT7:
-    case PIM1_UCD90160_VOLT8:
-    case PIM1_UCD90160_VOLT9:
-    case PIM1_UCD90160_VOLT10:
-    case PIM1_UCD90160_VOLT11:
-    case PIM1_UCD90160_VOLT12:
-    case PIM1_UCD90160_VOLT13:
-    case PIM2_UCD90160_VOLT1:
-    case PIM2_UCD90160_VOLT2:
-    case PIM2_UCD90160_VOLT3:
-    case PIM2_UCD90160_VOLT4:
-    case PIM2_UCD90160_VOLT5:
-    case PIM2_UCD90160_VOLT6:
-    case PIM2_UCD90160_VOLT7:
-    case PIM2_UCD90160_VOLT8:
-    case PIM2_UCD90160_VOLT9:
-    case PIM2_UCD90160_VOLT10:
-    case PIM2_UCD90160_VOLT11:
-    case PIM2_UCD90160_VOLT12:
-    case PIM2_UCD90160_VOLT13:
-    case PIM3_UCD90160_VOLT1:
-    case PIM3_UCD90160_VOLT2:
-    case PIM3_UCD90160_VOLT3:
-    case PIM3_UCD90160_VOLT4:
-    case PIM3_UCD90160_VOLT5:
-    case PIM3_UCD90160_VOLT6:
-    case PIM3_UCD90160_VOLT7:
-    case PIM3_UCD90160_VOLT8:
-    case PIM3_UCD90160_VOLT9:
-    case PIM3_UCD90160_VOLT10:
-    case PIM3_UCD90160_VOLT11:
-    case PIM3_UCD90160_VOLT12:
-    case PIM3_UCD90160_VOLT13:
-    case PIM4_UCD90160_VOLT1:
-    case PIM4_UCD90160_VOLT2:
-    case PIM4_UCD90160_VOLT3:
-    case PIM4_UCD90160_VOLT4:
-    case PIM4_UCD90160_VOLT5:
-    case PIM4_UCD90160_VOLT6:
-    case PIM4_UCD90160_VOLT7:
-    case PIM4_UCD90160_VOLT8:
-    case PIM4_UCD90160_VOLT9:
-    case PIM4_UCD90160_VOLT10:
-    case PIM4_UCD90160_VOLT11:
-    case PIM4_UCD90160_VOLT12:
-    case PIM4_UCD90160_VOLT13:
-    case PIM5_UCD90160_VOLT1:
-    case PIM5_UCD90160_VOLT2:
-    case PIM5_UCD90160_VOLT3:
-    case PIM5_UCD90160_VOLT4:
-    case PIM5_UCD90160_VOLT5:
-    case PIM5_UCD90160_VOLT6:
-    case PIM5_UCD90160_VOLT7:
-    case PIM5_UCD90160_VOLT8:
-    case PIM5_UCD90160_VOLT9:
-    case PIM5_UCD90160_VOLT10:
-    case PIM5_UCD90160_VOLT11:
-    case PIM5_UCD90160_VOLT12:
-    case PIM5_UCD90160_VOLT13:
-    case PIM6_UCD90160_VOLT1:
-    case PIM6_UCD90160_VOLT2:
-    case PIM6_UCD90160_VOLT3:
-    case PIM6_UCD90160_VOLT4:
-    case PIM6_UCD90160_VOLT5:
-    case PIM6_UCD90160_VOLT6:
-    case PIM6_UCD90160_VOLT7:
-    case PIM6_UCD90160_VOLT8:
-    case PIM6_UCD90160_VOLT9:
-    case PIM6_UCD90160_VOLT10:
-    case PIM6_UCD90160_VOLT11:
-    case PIM6_UCD90160_VOLT12:
-    case PIM6_UCD90160_VOLT13:
-    case PIM7_UCD90160_VOLT1:
-    case PIM7_UCD90160_VOLT2:
-    case PIM7_UCD90160_VOLT3:
-    case PIM7_UCD90160_VOLT4:
-    case PIM7_UCD90160_VOLT5:
-    case PIM7_UCD90160_VOLT6:
-    case PIM7_UCD90160_VOLT7:
-    case PIM7_UCD90160_VOLT8:
-    case PIM7_UCD90160_VOLT9:
-    case PIM7_UCD90160_VOLT10:
-    case PIM7_UCD90160_VOLT11:
-    case PIM7_UCD90160_VOLT12:
-    case PIM7_UCD90160_VOLT13:
-    case PIM8_UCD90160_VOLT1:
-    case PIM8_UCD90160_VOLT2:
-    case PIM8_UCD90160_VOLT3:
-    case PIM8_UCD90160_VOLT4:
-    case PIM8_UCD90160_VOLT5:
-    case PIM8_UCD90160_VOLT6:
-    case PIM8_UCD90160_VOLT7:
-    case PIM8_UCD90160_VOLT8:
-    case PIM8_UCD90160_VOLT9:
-    case PIM8_UCD90160_VOLT10:
-    case PIM8_UCD90160_VOLT11:
-    case PIM8_UCD90160_VOLT12:
-    case PIM8_UCD90160_VOLT13:
-    case PIM1_MP2975_INPUT_VOLTAGE:
-    case PIM2_MP2975_INPUT_VOLTAGE:
-    case PIM3_MP2975_INPUT_VOLTAGE:
-    case PIM4_MP2975_INPUT_VOLTAGE:
-    case PIM5_MP2975_INPUT_VOLTAGE:
-    case PIM6_MP2975_INPUT_VOLTAGE:
-    case PIM7_MP2975_INPUT_VOLTAGE:
-    case PIM8_MP2975_INPUT_VOLTAGE:
-    case PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V:
       sprintf(units, "Volts");
       break;
     default:
@@ -6198,26 +5174,6 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM1_SENSOR_HSC_POWER:
       *value = 30;
       break;
-    case PIM1_UCD90160_VOLT1:
-    case PIM1_UCD90160_VOLT2:
-    case PIM1_UCD90160_VOLT3:
-    case PIM1_UCD90160_VOLT4:
-    case PIM1_UCD90160_VOLT5:
-    case PIM1_UCD90160_VOLT6:
-    case PIM1_UCD90160_VOLT7:
-    case PIM1_UCD90160_VOLT8:
-    case PIM1_UCD90160_VOLT9:
-    case PIM1_UCD90160_VOLT10:
-    case PIM1_UCD90160_VOLT11:
-    case PIM1_UCD90160_VOLT12:
-    case PIM1_UCD90160_VOLT13:
-    case PIM1_MP2975_INPUT_VOLTAGE:
-    case PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM1_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM1_MP2975_OUTPUT_CURRENT_XP0R8V:
-      *value = 60;
-      break;
     case PIM2_LM75_TEMP_4A:
     case PIM2_LM75_TEMP_4B:
     case PIM2_LM75_TEMP_48:
@@ -6226,26 +5182,6 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM2_SENSOR_HSC_CURR:
     case PIM2_SENSOR_HSC_POWER:
       *value = 30;
-      break;
-    case PIM2_UCD90160_VOLT1:
-    case PIM2_UCD90160_VOLT2:
-    case PIM2_UCD90160_VOLT3:
-    case PIM2_UCD90160_VOLT4:
-    case PIM2_UCD90160_VOLT5:
-    case PIM2_UCD90160_VOLT6:
-    case PIM2_UCD90160_VOLT7:
-    case PIM2_UCD90160_VOLT8:
-    case PIM2_UCD90160_VOLT9:
-    case PIM2_UCD90160_VOLT10:
-    case PIM2_UCD90160_VOLT11:
-    case PIM2_UCD90160_VOLT12:
-    case PIM2_UCD90160_VOLT13:
-    case PIM2_MP2975_INPUT_VOLTAGE:
-    case PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM2_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM2_MP2975_OUTPUT_CURRENT_XP0R8V:
-      *value = 60;
       break;
     case PIM3_LM75_TEMP_4A:
     case PIM3_LM75_TEMP_4B:
@@ -6256,25 +5192,6 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM3_SENSOR_HSC_POWER:
       *value = 30;
       break;
-    case PIM3_UCD90160_VOLT1:
-    case PIM3_UCD90160_VOLT2:
-    case PIM3_UCD90160_VOLT3:
-    case PIM3_UCD90160_VOLT4:
-    case PIM3_UCD90160_VOLT5:
-    case PIM3_UCD90160_VOLT6:
-    case PIM3_UCD90160_VOLT7:
-    case PIM3_UCD90160_VOLT8:
-    case PIM3_UCD90160_VOLT9:
-    case PIM3_UCD90160_VOLT10:
-    case PIM3_UCD90160_VOLT11:
-    case PIM3_UCD90160_VOLT12:
-    case PIM3_UCD90160_VOLT13:
-    case PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM3_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
-      *value = 60;
-      break;
     case PIM4_LM75_TEMP_4A:
     case PIM4_LM75_TEMP_4B:
     case PIM4_LM75_TEMP_48:
@@ -6283,26 +5200,6 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM4_SENSOR_HSC_CURR:
     case PIM4_SENSOR_HSC_POWER:
       *value = 30;
-      break;
-    case PIM4_UCD90160_VOLT1:
-    case PIM4_UCD90160_VOLT2:
-    case PIM4_UCD90160_VOLT3:
-    case PIM4_UCD90160_VOLT4:
-    case PIM4_UCD90160_VOLT5:
-    case PIM4_UCD90160_VOLT6:
-    case PIM4_UCD90160_VOLT7:
-    case PIM4_UCD90160_VOLT8:
-    case PIM4_UCD90160_VOLT9:
-    case PIM4_UCD90160_VOLT10:
-    case PIM4_UCD90160_VOLT11:
-    case PIM4_UCD90160_VOLT12:
-    case PIM4_UCD90160_VOLT13:
-    case PIM4_MP2975_INPUT_VOLTAGE:
-    case PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM4_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM4_MP2975_OUTPUT_CURRENT_XP0R8V:
-      *value = 60;
       break;
     case PIM5_LM75_TEMP_4A:
     case PIM5_LM75_TEMP_4B:
@@ -6313,26 +5210,6 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM5_SENSOR_HSC_POWER:
       *value = 30;
       break;
-    case PIM5_UCD90160_VOLT1:
-    case PIM5_UCD90160_VOLT2:
-    case PIM5_UCD90160_VOLT3:
-    case PIM5_UCD90160_VOLT4:
-    case PIM5_UCD90160_VOLT5:
-    case PIM5_UCD90160_VOLT6:
-    case PIM5_UCD90160_VOLT7:
-    case PIM5_UCD90160_VOLT8:
-    case PIM5_UCD90160_VOLT9:
-    case PIM5_UCD90160_VOLT10:
-    case PIM5_UCD90160_VOLT11:
-    case PIM5_UCD90160_VOLT12:
-    case PIM5_UCD90160_VOLT13:
-    case PIM5_MP2975_INPUT_VOLTAGE:
-    case PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM5_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM5_MP2975_OUTPUT_CURRENT_XP0R8V:
-      *value = 60;
-      break;
     case PIM6_LM75_TEMP_4A:
     case PIM6_LM75_TEMP_4B:
     case PIM6_LM75_TEMP_48:
@@ -6341,26 +5218,6 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM6_SENSOR_HSC_CURR:
     case PIM6_SENSOR_HSC_POWER:
       *value = 30;
-      break;
-    case PIM6_UCD90160_VOLT1:
-    case PIM6_UCD90160_VOLT2:
-    case PIM6_UCD90160_VOLT3:
-    case PIM6_UCD90160_VOLT4:
-    case PIM6_UCD90160_VOLT5:
-    case PIM6_UCD90160_VOLT6:
-    case PIM6_UCD90160_VOLT7:
-    case PIM6_UCD90160_VOLT8:
-    case PIM6_UCD90160_VOLT9:
-    case PIM6_UCD90160_VOLT10:
-    case PIM6_UCD90160_VOLT11:
-    case PIM6_UCD90160_VOLT12:
-    case PIM6_UCD90160_VOLT13:
-    case PIM6_MP2975_INPUT_VOLTAGE:
-    case PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM6_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM6_MP2975_OUTPUT_CURRENT_XP0R8V:
-      *value = 60;
       break;
     case PIM7_LM75_TEMP_4A:
     case PIM7_LM75_TEMP_4B:
@@ -6371,26 +5228,6 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM7_SENSOR_HSC_POWER:
       *value = 30;
       break;
-    case PIM7_UCD90160_VOLT1:
-    case PIM7_UCD90160_VOLT2:
-    case PIM7_UCD90160_VOLT3:
-    case PIM7_UCD90160_VOLT4:
-    case PIM7_UCD90160_VOLT5:
-    case PIM7_UCD90160_VOLT6:
-    case PIM7_UCD90160_VOLT7:
-    case PIM7_UCD90160_VOLT8:
-    case PIM7_UCD90160_VOLT9:
-    case PIM7_UCD90160_VOLT10:
-    case PIM7_UCD90160_VOLT11:
-    case PIM7_UCD90160_VOLT12:
-    case PIM7_UCD90160_VOLT13:
-    case PIM7_MP2975_INPUT_VOLTAGE:
-    case PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM7_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM7_MP2975_OUTPUT_CURRENT_XP0R8V:
-      *value = 60;
-      break;
     case PIM8_LM75_TEMP_4A:
     case PIM8_LM75_TEMP_4B:
     case PIM8_LM75_TEMP_48:
@@ -6399,26 +5236,6 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM8_SENSOR_HSC_CURR:
     case PIM8_SENSOR_HSC_POWER:
       *value = 30;
-      break;
-    case PIM8_UCD90160_VOLT1:
-    case PIM8_UCD90160_VOLT2:
-    case PIM8_UCD90160_VOLT3:
-    case PIM8_UCD90160_VOLT4:
-    case PIM8_UCD90160_VOLT5:
-    case PIM8_UCD90160_VOLT6:
-    case PIM8_UCD90160_VOLT7:
-    case PIM8_UCD90160_VOLT8:
-    case PIM8_UCD90160_VOLT9:
-    case PIM8_UCD90160_VOLT10:
-    case PIM8_UCD90160_VOLT11:
-    case PIM8_UCD90160_VOLT12:
-    case PIM8_UCD90160_VOLT13:
-    case PIM8_MP2975_INPUT_VOLTAGE:
-    case PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-    case PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-    case PIM8_MP2975_OUTPUT_CURRENT_XP3R3V:
-    case PIM8_MP2975_OUTPUT_CURRENT_XP0R8V:
-      *value = 60;
       break;
     case PIM1_SENSOR_QSFP_TEMP:
     case PIM2_SENSOR_QSFP_TEMP:
@@ -7261,7 +6078,7 @@ int bic_sensor_sdr_path(uint8_t fru, char *path) {
 }
 
 int pal_get_sensor_util_timeout(uint8_t fru) {
-  uint8_t pim_type = 0, PIM_PWRSEQ_addr;
+  uint8_t pim_type = 0;
   size_t cnt = 0;
   int brd_type_rev = 0;
 
@@ -7288,13 +6105,8 @@ int pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_PIM7:
     case FRU_PIM8:
       pim_type = pal_get_pim_type_from_file(fru);
-      get_dev_addr_from_file(fru, KEY_PWRSEQ, &PIM_PWRSEQ_addr);
       if (pim_type == PIM_TYPE_16Q) {
-        if ( PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-          cnt = sizeof(pim16q_ucd90124_sensor_list) / sizeof(uint8_t);
-        } else {
-          cnt = sizeof(pim16q_sensor_list) / sizeof(uint8_t);
-        }
+        cnt = sizeof(pim16q_sensor_list) / sizeof(uint8_t);
       } else if (pim_type == PIM_TYPE_16O) {
         cnt = sizeof(pim16o_sensor_list) / sizeof(uint8_t);
       }

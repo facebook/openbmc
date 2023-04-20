@@ -40,42 +40,6 @@ paths:
                     type: string
                   PIM6_POWER: 
                     type: string
-                  PIM6_XP3R3V: 
-                    type: string
-                  PIM6_XP3R3V_EARLY: 
-                    type: string
-                  PIM6_XP2R5V_EARLY: 
-                    type: string
-                  PIM6_TXDRV_PHY: 
-                    type: string
-                  PIM6_XP0R8V_PHY: 
-                    type: string
-                  PIM6_XP1R1V_EARLY: 
-                    type: string
-                  PIM6_DVDD_PHY4: 
-                    type: string
-                  PIM6_DVDD_PHY3: 
-                    type: string
-                  PIM6_DVDD_PHY2: 
-                    type: string
-                  PIM6_DVDD_PHY1: 
-                    type: string
-                  PIM6_XP1R8V_EARLY: 
-                    type: string
-                  PIM6_XP1R8V_PHYIO: 
-                    type: string
-                  PIM6_XP1R8V_PHYAVDD: 
-                    type: string
-                  PIM6_MP2975_INPUT_VOLTAGE: 
-                    type: string
-                  PIM6_MP2975_OUTPUT_VOL_XP0R8V: 
-                    type: string
-                  PIM6_MP2975_OUTPUT_CURR_XP0R8V: 
-                    type: string
-                  PIM6_MP2975_OUTPUT_VOL_XP3R3V: 
-                    type: string
-                  PIM6_MP2975_OUTPUT_CURR_XP3R3V: 
-                    type: string
               Actions: 
                 type: array
                 items: 

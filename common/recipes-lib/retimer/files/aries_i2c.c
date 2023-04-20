@@ -19,7 +19,6 @@
  */
 
 #include "include/aries_i2c.h"
-#include "include/platform.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -28,7 +28,6 @@
 #include "aries_i2c.h"
 #include "aries_link.h"
 #include "aries_misc.h"
-#include "platform.h"
 
 #ifdef ARIES_MPW
 #include "aries_mpw_reg_defines.h"

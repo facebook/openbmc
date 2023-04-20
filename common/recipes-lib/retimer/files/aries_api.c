@@ -19,7 +19,6 @@
  */
 
 #include "include/aries_api.h"
-#include "include/platform.h"
 
 #ifdef __cplusplus
 extern "C" {

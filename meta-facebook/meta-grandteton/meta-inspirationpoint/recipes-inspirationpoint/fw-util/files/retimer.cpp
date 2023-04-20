@@ -2,7 +2,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <openbmc/pal.h>
-#include <openbmc/aries_api.h>
+#include <openbmc/platform.h>
 #include <openbmc/libgpio.h>
 #include "vr_fw.h"
 

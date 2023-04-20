@@ -1,5 +1,5 @@
 #include <CLI/CLI.hpp>
-#include <openbmc/aries_api.h>
+#include <openbmc/platform.h>
 #include <openbmc/pal.h>
 #include <syslog.h>
 #include <iostream>

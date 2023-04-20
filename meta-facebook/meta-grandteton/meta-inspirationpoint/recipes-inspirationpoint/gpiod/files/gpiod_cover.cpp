@@ -86,23 +86,8 @@ device_prsnt_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
 
 static void
 rst_perst_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  char rev_id[20] = {0};
-
-  sleep(10);
-
   if (system("sh /etc/init.d/rebind-rt-mux.sh &") != 0) {
     syslog(LOG_CRIT, "Failed to run: %s", __FUNCTION__);
-  }
-
-  kv_get("mb_rev", rev_id, 0, 0);
-  if (!strcmp(rev_id, "2")) {
-    AriesInit(I2C_BUS_60, 0x24);
-    AriesInit(I2C_BUS_64, 0x24);
-  }
-  else {
-    for (int bus = I2C_BUS_60; bus <= I2C_BUS_67; bus++) {
-      AriesInit(bus, 0x24);
-    }
   }
 }
 

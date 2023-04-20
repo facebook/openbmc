@@ -23,7 +23,7 @@
 #include "pal.h"
 #include "pal_common.h"
 #include <openbmc/kv.h>
-#include <openbmc/aries_api.h>
+#include <openbmc/platform.h>
 #include <openbmc/dimm.h>
 
 //#define DEBUG
@@ -504,14 +504,14 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
-  {"RETIMER0_TEMP", 60, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD0
-  {"RETIMER1_TEMP", 61, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD1
-  {"RETIMER2_TEMP", 62, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD2
-  {"RETIMER3_TEMP", 63, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD3
-  {"RETIMER4_TEMP", 64, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD4
-  {"RETIMER5_TEMP", 65, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD5
-  {"RETIMER6_TEMP", 66, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD6
-  {"RETIMER7_TEMP", 67, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD7
+  {"RETIMER0_TEMP", 0, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD0
+  {"RETIMER1_TEMP", 1, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD1
+  {"RETIMER2_TEMP", 2, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD2
+  {"RETIMER3_TEMP", 3, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD3
+  {"RETIMER4_TEMP", 4, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD4
+  {"RETIMER5_TEMP", 5, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD5
+  {"RETIMER6_TEMP", 6, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD6
+  {"RETIMER7_TEMP", 7, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD7
   {"P5V_AUX_ADC"        , ADC_CH8,  read_iic_adc_val, 0, {5.26, 0, 0, 4.74, 0, 0, 0, 0}, VOLT}, //0xD8
   {"P1V8_AUX_ADC"       , ADC_CH9,  read_iic_adc_val, 0, {1.90, 0, 0, 1.70, 0, 0, 0, 0}, VOLT}, //0xD9
   {"P1V2_AUX_ADC"       , ADC_CH10, read_iic_adc_val, 0, {1.27, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xDA
@@ -1239,22 +1239,23 @@ int read_frb3(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static
 int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret = 0, fd_lock;
+  int ret = 0, fd_lock = -1;
   const char lock_path[MAX_VALUE_LEN] = "/tmp/pal_rt_lock";
   const char shadow[MAX_VALUE_LEN] = "RST_PERST_CPUx_SWB_N";
   char rev_id[MAX_VALUE_LEN] = {0};
-  int bus = sensor_map[fru].map[sensor_num].id;
-  int addr = 0x24;
   float val = 0;
   static uint8_t retry[8]= {0};
 
+  static AriesDeviceType ariesDevice[8];
+  static AriesI2CDriverType i2cDriver[8];
+  int rt_id = sensor_map[fru].map[sensor_num].id;
+  int bus = RT_DEV_INFO[rt_id].bus;
+  int addr = RT_DEV_INFO[rt_id].addr;
+
+  static int is_init[8] = {0};
+
   if (gpio_get_value_by_shadow(shadow) != GPIO_VALUE_HIGH) {
     return READING_NA;
-  }
-
-  fd_lock = pal_lock(lock_path);
-  if (fd_lock < 0) {
-    return READING_SKIP;
   }
 
   kv_get("mb_rev", rev_id, 0, 0);
@@ -1265,7 +1266,26 @@ int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     }
   }
 
-  ret = AriesGetTemp(bus, addr, &val);
+  fd_lock = pal_lock(lock_path);
+  if (fd_lock < 0) {
+    return READING_SKIP;
+  }
+
+  if (is_init[rt_id] == 0) {
+    sleep(1);
+    ret = SetupAriesDevice(&ariesDevice[rt_id], &i2cDriver[rt_id], bus, addr);
+    if (ret != ARIES_SUCCESS) {
+      goto err_exit;
+    }
+
+    is_init[rt_id] = 1;
+
+    //skip the first time for PCIe train completed
+    ret = READING_SKIP;
+    goto err_exit;
+  }
+
+  ret = AriesGetTemp(&ariesDevice[rt_id], &i2cDriver[rt_id], bus, addr, &val);
 
   if (ret < 0) {
     retry[sensor_num - MB_SNR_RETIMER0_TEMP]++;

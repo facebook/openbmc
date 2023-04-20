@@ -12,6 +12,7 @@ class CxlComponent : public Component {
   Server server;
   ExpansionBoard expansion;
   private:
+    image_info check_image(const string& image, bool force);
     int get_ver_str(std::string& s);
     int update_internal(const std::string& image, int fd, bool force);
   public:

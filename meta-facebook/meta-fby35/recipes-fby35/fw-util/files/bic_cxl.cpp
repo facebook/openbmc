@@ -13,6 +13,22 @@ using namespace std;
 
 constexpr auto P1V8_ASIC_EN_R = 0x11;
 
+
+image_info CxlComponent::check_image(const string& image, bool force) {
+  image_info image_sts = {"", false, false};
+
+  if (force == true) {
+    image_sts.result = true;
+  }
+
+  if (fby35_common_is_valid_img(image.c_str(), fw_comp, BOARD_ID_RF, 0) == true) {
+    image_sts.result = true;
+    image_sts.sign = true;
+  }
+
+  return image_sts;
+}
+
 int CxlComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret;
 
@@ -28,6 +44,13 @@ int CxlComponent::update_internal(const std::string& image, int fd, bool force) 
   if (image.empty() && fd < 0) {
     cerr << "File or fd is required." << endl;
     return FW_STATUS_NOT_SUPPORTED;
+  }
+
+  image_info image_sts = check_image(image, force);
+  if (image_sts.result == false) {
+    syslog(LOG_CRIT, "Update %s on %s Fail. File: %s is not a valid image",
+           get_component_name(fw_comp), fru().c_str(), image.c_str());
+    return FW_STATUS_FAILURE;
   }
 
   if (attempt_server_power_off(slot_id, force) < 0) {

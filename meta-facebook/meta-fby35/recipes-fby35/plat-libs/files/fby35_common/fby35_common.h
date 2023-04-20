@@ -332,6 +332,7 @@ enum comp_id {
   COMP_CPLD = 1,
   COMP_BIC  = 2,
   COMP_BIOS = 3,
+  COMP_CXL  = 4,
 };
 
 enum fw_rev {

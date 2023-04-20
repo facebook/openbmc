@@ -1108,6 +1108,12 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
         return false;
       }
       break;
+    case FW_1OU_CXL:
+      if (err_proof_component != COMP_CXL) {
+        printf("Not a valid CXL firmware image.\n");
+        return false;
+      }
+      break;
   }
 
   if (err_proof_board_id != board_id) {

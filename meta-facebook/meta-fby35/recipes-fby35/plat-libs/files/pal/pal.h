@@ -189,6 +189,7 @@ typedef enum {
   POWER_STATUS_OK = 0,
   POWER_STATUS_ERR = -1,
   POWER_STATUS_FRU_ERR = -2,
+  POWER_STATUS_FAN_FAIL = -3,
 } POWER_STATUS;
 
 typedef struct {

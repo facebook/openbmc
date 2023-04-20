@@ -15,4 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-CFLAGS:prepend = " -DFRU_DEVICE_LIST "
+CFLAGS:prepend = " -DFRU_DEVICE_LIST -DENABLE_FORCE_POWER_CMD"

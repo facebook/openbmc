@@ -140,7 +140,7 @@ pal_power_policy_control(uint8_t slot, char *last_ps) {
         //wait AUTH_COMPLETE signal
         retry_cond(fby35_common_is_prot_auth_complete(slot), 120, 1000);
       }
-      pal_set_server_power(slot, SERVER_POWER_ON);
+      pal_set_server_power(slot, SERVER_FORCE_POWER_ON);
       break;
     default:
       //do nothing
@@ -424,6 +424,21 @@ pal_set_bic_power_off(int fru) {
   return ret;
 }
 
+static bool
+pal_is_fan_fail_otp(void) {
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (kv_get("fan_fail_otp", value, NULL, 0)) {
+    return false;
+  }
+
+  if (atoi(value) > 0) {
+    return true;
+  }
+
+  return false;
+}
+
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
@@ -431,6 +446,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   int ret = 0;
   uint8_t bmc_location = 0;
   char post_complete[MAX_KEY_LEN] = {0};
+  bool force = false;
 
   ret = fby35_common_check_slot_id(fru);
   if ( ret < 0 ) {
@@ -449,6 +465,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
     case SERVER_12V_OFF:
     case SERVER_12V_CYCLE:
     case SERVER_12V_ON:
+    case SERVER_FORCE_12V_ON:
       //do nothing
       break;
     default:
@@ -463,12 +480,29 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   }
 
   switch(cmd) {
+    case SERVER_FORCE_POWER_ON:
+      force = true;
     case SERVER_POWER_ON:
-      if ( status == SERVER_POWER_ON ) return POWER_STATUS_ALREADY_OK;
-      if ( bmc_location != NIC_BMC) {
-        ret = pal_server_set_nic_power(SERVER_POWER_ON); //only check it on class 1
-      } else ret = PAL_EOK;
-      return (ret == PAL_ENOTSUP)?POWER_STATUS_ERR:server_power_on(fru);
+      if (status == SERVER_POWER_ON) {
+        return POWER_STATUS_ALREADY_OK;
+      }
+      if (status != SERVER_POWER_OFF) {
+        // unexpected status, BIC is probably unavailable
+        return POWER_STATUS_ERR;
+      }
+      if (!force && pal_is_fan_fail_otp()) {
+        printf("Failed to power fru %u to ON state due to fan fail...\n", fru);
+        syslog(LOG_CRIT, "SERVER_POWER_ON failed for FRU: %u due to fan fail", fru);
+        return POWER_STATUS_FAN_FAIL;
+      }
+      if (bmc_location != NIC_BMC) {
+        if (pal_server_set_nic_power(SERVER_POWER_ON)) {
+          return POWER_STATUS_ERR;
+        }
+      }
+      if (server_power_on(fru) < 0) {
+        return POWER_STATUS_ERR;
+      }
       break;
 
     case SERVER_POWER_OFF:
@@ -477,12 +511,25 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
+        // assuming that user has force power on the fru, so fan_fail is not checked here
         return bic_server_power_cycle(fru);
-      } else if (status == SERVER_POWER_OFF) {
-        if ( bmc_location != NIC_BMC) {
-          ret = pal_server_set_nic_power(SERVER_POWER_ON); //only check it on class 1
-        } else ret = PAL_EOK;
-        return (ret == PAL_ENOTSUP)?POWER_STATUS_ERR:server_power_on(fru);
+      }
+      if (status != SERVER_POWER_OFF) {
+        // unexpected status, BIC is probably unavailable
+        return POWER_STATUS_ERR;
+      }
+      if (pal_is_fan_fail_otp()) {
+        printf("Failed to power cycle fru %u due to fan fail...\n", fru);
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE failed for FRU: %u due to fan fail", fru);
+        return POWER_STATUS_FAN_FAIL;
+      }
+      if (bmc_location != NIC_BMC) {
+        if (pal_server_set_nic_power(SERVER_POWER_ON)) {
+          return POWER_STATUS_ERR;
+        }
+      }
+      if (server_power_on(fru) < 0) {
+        return POWER_STATUS_ERR;
       }
       break;
 
@@ -494,11 +541,23 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       return (status == SERVER_POWER_OFF)?POWER_STATUS_ERR:bic_server_power_reset(fru);
       break;
 
+    case SERVER_FORCE_12V_ON:
+      force = true;
     case SERVER_12V_ON:
-      if ( bmc_location == NIC_BMC || pal_get_server_12v_power(fru, &status) < 0 ) {
+      if (bmc_location == NIC_BMC || pal_get_server_12v_power(fru, &status) < 0) {
         return POWER_STATUS_ERR;
       }
-      return (status == SERVER_12V_ON)?POWER_STATUS_ALREADY_OK:server_power_12v_on(fru);
+      if (status == SERVER_12V_ON) {
+        return POWER_STATUS_ALREADY_OK;
+      }
+      if (!force && pal_is_fan_fail_otp()) {
+        printf("Failed to 12V Power fru %u to ON state due to fan fail...\n", fru);
+        syslog(LOG_CRIT, "SERVER_12V_ON failed for FRU: %u due to fan fail", fru);
+        return POWER_STATUS_FAN_FAIL;
+      }
+      if (server_power_12v_on(fru) < 0) {
+        return POWER_STATUS_ERR;
+      }
       break;
 
     case SERVER_12V_OFF:
@@ -514,31 +573,37 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_12V_CYCLE:
-      // Reset post complete value
-      pal_set_key_value(post_complete, STR_VALUE_1);
-      if ( bmc_location == BB_BMC ) {
-        if ( pal_get_server_12v_power(fru, &status) < 0 ) {
+      if (bmc_location == BB_BMC) {
+        if (pal_get_server_12v_power(fru, &status) < 0) {
           return POWER_STATUS_ERR;
         }
-
-        if (status == SERVER_12V_OFF) {
-          return server_power_12v_on(fru);
-        } else {
+        if (status == SERVER_12V_ON) {
+          // assuming that user has force 12V power on the fru, so fan_fail is not checked here
+          pal_set_key_value(post_complete, STR_VALUE_1);  // reset post complete value
           pal_set_bic_power_off(fru);
-          if ( server_power_12v_off(fru) < 0 ) {
+          if (server_power_12v_off(fru) < 0) {
             return POWER_STATUS_ERR;
           }
           sleep(DELAY_12V_CYCLE);
-          if ( server_power_12v_on(fru) < 0 ) {
+          if (server_power_12v_on(fru) < 0) {
+            return POWER_STATUS_ERR;
+          }
+        } else {
+          if (pal_is_fan_fail_otp()) {
+            printf("Failed to 12V Power cycle fru %u due to fan fail...\n", fru);
+            syslog(LOG_CRIT, "SERVER_12V_CYCLE failed for FRU: %u due to fan fail", fru);
+            return POWER_STATUS_FAN_FAIL;
+          }
+          if (server_power_12v_on(fru) < 0) {
             return POWER_STATUS_ERR;
           }
         }
       } else {
-        if ( bic_do_12V_cycle(fru) < 0 ) {
+        pal_set_key_value(post_complete, STR_VALUE_1);  // reset post complete value
+        if (bic_do_12V_cycle(fru) < 0) {
           return POWER_STATUS_ERR;
         }
       }
-
       break;
 
     default:

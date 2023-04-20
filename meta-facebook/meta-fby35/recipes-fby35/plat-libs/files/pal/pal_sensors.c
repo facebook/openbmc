@@ -2947,6 +2947,7 @@ pal_fan_fail_otp_check(void) {
       }
     }
 
+    kv_set("fan_fail_otp", STR_VALUE_1, 0, 0);
     pal_all_slot_power_ctrl(SERVER_12V_OFF, "all fans failed");
   } else {
     syslog(LOG_CRIT, "Turned off power of slot1 due to all fans failed");

@@ -99,13 +99,8 @@ rst_perst_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
 }
 
 // GPIO table to be monitored
-static struct gpiopoll_config gpios_list[] = {
+static struct gpiopoll_config gpios_plat_list[] = {
   // shadow, description, edge, handler, oneshot
-  {FP_RST_BTN_IN_N,             "GPIOP2",    GPIO_EDGE_BOTH,    pwr_reset_handler,          NULL},
-  {FP_PWR_BTN_IN_N,             "GPIOP0",    GPIO_EDGE_BOTH,    pwr_button_handler,         NULL},
-  {FM_UARTSW_LSB_N,             "SGPIO106",  GPIO_EDGE_BOTH,    uart_select_handle,         NULL},
-  {FM_UARTSW_MSB_N,             "SGPIO108",  GPIO_EDGE_BOTH,    uart_select_handle,         NULL},
-  {FM_POST_CARD_PRES_N,         "GPIOZ6",    GPIO_EDGE_BOTH,    usb_dbg_card_handler,       NULL},
   {IRQ_UV_DETECT_N,             "SGPIO188",  GPIO_EDGE_BOTH,    uv_detect_handler,          NULL},
   {IRQ_OC_DETECT_N,             "SGPIO178",  GPIO_EDGE_BOTH,    oc_detect_handler,          NULL},
   {IRQ_HSC_FAULT_N,             "SGPIO36",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
@@ -138,61 +133,39 @@ static struct gpiopoll_config gpios_list[] = {
   {FM_PVDD11_S3_P1_OCP,         "SGPIO16",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {PVDD11_S3_P0_PMALERT,        "SGPIO182",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {PVDD11_S3_P1_PMALERT,        "SGPIO184",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {HMC_READY,                   "SGPIO64",   GPIO_EDGE_BOTH,    hmc_ready_handler,          hmc_ready_init},
-  {GPU_FPGA_THERM_OVERT,        "SGPIO40",   GPIO_EDGE_FALLING, sgpio_event_handler,        NULL},
-  {GPU_FPGA_DEVIC_OVERT,        "SGPIO42",   GPIO_EDGE_FALLING, sgpio_event_handler,        NULL},
-  {FP_AC_PWR_BMC_BTN,           "GPIO18A0",  GPIO_EDGE_BOTH,    gpio_event_handler,         NULL},
   {FM_BIOS_POST_CMPLT,          "SGPIO146",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {PEX_FW_VER_UPDATE,     "PEX_VER_UPDATE",  GPIO_EDGE_RISING,  pex_fw_ver_handle,          NULL},
 };
 
-const uint8_t gpios_cnt = sizeof(gpios_list)/sizeof(gpios_list[0]);
+int get_gpios_plat_list(struct gpiopoll_config** list) {
+
+  uint8_t cnt = sizeof(gpios_plat_list)/sizeof(gpios_plat_list[0]);
+  *list = gpios_plat_list;
+
+  return cnt;
+}
 
 
+pthread_t tid_gpio_timer;
+pthread_t tid_iox_gpio_handle;
 
-int main(int argc, char **argv)
-{
-  int rc, pid_file;
-  gpiopoll_desc_t *polldesc;
-  pthread_t tid_gpio_timer;
-  pthread_t tid_iox_gpio_handle;
+int gpiod_plat_thread_create(void) {
 
-  pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
-  rc = flock(pid_file, LOCK_EX | LOCK_NB);
-  if (rc) {
-    if (EWOULDBLOCK == errno) {
-      syslog(LOG_ERR, "Another gpiod instance is running...\n");
-      exit(-1);
-    }
-  } else {
-    openlog("gpiod", LOG_CONS, LOG_DAEMON);
-    syslog(LOG_INFO, "gpiod: daemon started");
-
-    //Create thread for platform reset event filter check
-    if (pthread_create(&tid_gpio_timer, NULL, gpio_timer, NULL) < 0) {
-      syslog(LOG_WARNING, "pthread_create for platform_reset_filter_handler\n");
-      exit(1);
-    }
-
-    //Create thread for platform reset event filter check
-    if (pthread_create(&tid_iox_gpio_handle, NULL, iox_gpio_handle, NULL) < 0) {
-      syslog(LOG_WARNING, "pthread_create for iox_gpio_handler\n");
-      exit(1);
-    }
-
-    polldesc = gpio_poll_open(gpios_list, gpios_cnt);
-    if (!polldesc) {
-      syslog(LOG_CRIT, "FRU: %d Cannot start poll operation on GPIOs", FRU_MB);
-    } else {
-      if (gpio_poll(polldesc, POLL_TIMEOUT)) {
-        syslog(LOG_CRIT, "FRU: %d Poll returned error", FRU_MB);
-      }
-      gpio_poll_close(polldesc);
-    }
+  //Create thread for platform reset event filter check
+  if (pthread_create(&tid_gpio_timer, NULL, gpio_timer, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for platform_reset_filter_handler\n");
+    return -1;
   }
 
-  pthread_join(tid_gpio_timer, NULL);
-  pthread_join(tid_iox_gpio_handle, NULL);
+  //Create thread for platform reset event filter check
+  if (pthread_create(&tid_iox_gpio_handle, NULL, iox_gpio_handle, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for iox_gpio_handler\n");
+    return -1;
+  }
 
   return 0;
+}
+
+void gpiod_plat_thread_finish(void) {
+  pthread_join(tid_gpio_timer, NULL);
+  pthread_join(tid_iox_gpio_handle, NULL);
 }

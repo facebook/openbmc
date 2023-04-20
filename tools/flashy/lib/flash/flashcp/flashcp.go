@@ -273,22 +273,26 @@ var eraseFlashDevice = func(
 		return errors.Errorf("Failed to get erase length: %v", err)
 	}
 	// length if erasesize is 0 (won't over/under-flow here due to m.erasesize > 0)
-	imageErasesizeLength := uint32((imageAndEraseSize-1)/m.erasesize) * m.erasesize
-	eraseLength := imageErasesizeLength - eraseStart
+	eraseEnd := uint32((imageAndEraseSize-1)/m.erasesize) * m.erasesize
 
+	// erase the flash one block at a time, like flash_eraseall does.
+	// this used to wipe the entire device with a single ioctl, but
+	// that could lock up the system in kernel mode for the duration.
 	log.Printf("Erasing flash device: start: %v, length: %v (end: %v)",
-		eraseStart, eraseLength, eraseStart+eraseLength)
-	e := erase_info_user{
-		start:  eraseStart,
-		length: eraseLength,
-	}
+		eraseStart, eraseEnd-eraseStart, eraseEnd)
+	for off := uint32(eraseStart); off < eraseEnd; off += m.erasesize {
+		e := erase_info_user{
+			start:  off,
+			length: m.erasesize,
+		}
 
-	err = IOCTL(deviceFile.Fd(), MEMERASE, uintptr(unsafe.Pointer(&e)))
-	if err != nil {
-		errMsg := fmt.Sprintf("Flash device '%v' erase failed: %v",
-			deviceFile.Name(), err)
-		log.Print(errMsg)
-		return errors.Errorf("%v", errMsg)
+		err = IOCTL(deviceFile.Fd(), MEMERASE, uintptr(unsafe.Pointer(&e)))
+		if err != nil {
+			errMsg := fmt.Sprintf("Flash device '%v' erase failed: %v",
+				deviceFile.Name(), err)
+			log.Print(errMsg)
+			return errors.Errorf("%v", errMsg)
+		}
 	}
 
 	log.Printf("Finished erasing flash device '%v'", deviceFile.Name())
@@ -302,20 +306,36 @@ var flashImage = func(
 	imFile imageFile,
 	roOffset uint32,
 ) error {
+	const chunkSize = uint32(1048576)
+	fileSize := uint32(len(imFile.data))
+
 	log.Printf("Flashing image '%v' on to flash device '%v'", imFile.name, deviceFile.Name())
 
-	activeImageData, err := utils.BytesSliceRange(imFile.data, roOffset, uint32(len(imFile.data)))
-	if err != nil {
-		return errors.Errorf("Unable to get image data after roOffset (%v): %v", roOffset, err)
+	if roOffset >= fileSize {
+		return errors.Errorf("roOffset (%v) >= file size (%v)", roOffset, fileSize)
 	}
 
-	// use Pwrite, WriteAt may call Pwrite multiple times under the hood
-	n, err := fileutils.Pwrite(int(deviceFile.Fd()), activeImageData, int64(roOffset))
-	if err != nil {
-		return errors.Errorf("Failed to flash image '%v' on to flash device '%v': "+
-			"%vB flashed: %v",
-			imFile.name, deviceFile.Name(), n, err,
-		)
+	// flash the device in many large chunks rather than attempting to
+	// do it all with a single system call.  prevents us from locking
+	// up the system in kernel mode in the event of a kernel bug.
+	for off := roOffset; off < fileSize; off += chunkSize {
+		size := uint32(fileSize - off)
+		if size > chunkSize {
+			size = chunkSize
+		}
+		activeImageData, err := utils.BytesSliceRange(imFile.data, off, off + size)
+		if err != nil {
+			return errors.Errorf("Unable to get image data after roOffset (%v): %v", roOffset, err)
+		}
+
+		// use Pwrite, WriteAt may call Pwrite multiple times under the hood
+		n, err := fileutils.Pwrite(int(deviceFile.Fd()), activeImageData, int64(off))
+		if err != nil {
+			return errors.Errorf("Failed to flash image '%v' on to flash device '%v': "+
+				"%vB flashed: %v",
+				imFile.name, deviceFile.Name(), n, err,
+			)
+		}
 	}
 
 	log.Printf("Finished flashing image '%v' on to flash device '%v'",

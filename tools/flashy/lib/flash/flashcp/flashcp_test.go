@@ -466,7 +466,7 @@ func TestEraseFlashDevice(t *testing.T) {
 			roOffset:       0,
 			mtdErasesize:   4,
 			wantEraseStart: 0,
-			wantEraseLen:   8,
+			wantEraseLen:   4,
 			ioctlErr:       nil,
 			want:           nil,
 		},
@@ -484,7 +484,7 @@ func TestEraseFlashDevice(t *testing.T) {
 			roOffset:       0,
 			mtdErasesize:   4,
 			wantEraseStart: 0,
-			wantEraseLen:   8,
+			wantEraseLen:   4,
 			ioctlErr:       errors.Errorf("erase failed"),
 			want:           errors.Errorf("Flash device '/dev/mtd5' erase failed: erase failed"),
 		},
@@ -502,7 +502,7 @@ func TestEraseFlashDevice(t *testing.T) {
 			roOffset:       2,
 			mtdErasesize:   4,
 			wantEraseStart: 0,
-			wantEraseLen:   8,
+			wantEraseLen:   4,
 			ioctlErr:       nil,
 			want:           nil,
 		},
@@ -511,7 +511,7 @@ func TestEraseFlashDevice(t *testing.T) {
 			roOffset:       1,
 			mtdErasesize:   2,
 			wantEraseStart: 0,
-			wantEraseLen:   6,
+			wantEraseLen:   2,
 			ioctlErr:       nil,
 			want:           nil,
 		},
@@ -520,7 +520,7 @@ func TestEraseFlashDevice(t *testing.T) {
 			roOffset:       0,
 			mtdErasesize:   math.MaxUint32 - 4,
 			wantEraseStart: 0,
-			wantEraseLen:   8,
+			wantEraseLen:   math.MaxUint32 - 4,
 			ioctlErr:       nil,
 			want:           errors.Errorf("Failed to get erase length: Unsigned integer overflow for (6+4294967291)"),
 		},
@@ -535,7 +535,12 @@ func TestEraseFlashDevice(t *testing.T) {
 			m := mtd_info_user{
 				erasesize: tc.mtdErasesize,
 			}
+			again := false
 			IOCTL = func(fd, name, data uintptr) error {
+				if again {
+					return tc.ioctlErr
+				}
+				again = true
 				if fd != 42 {
 					t.Errorf("fd: want '42' got '%v'", fd)
 				}
@@ -602,7 +607,7 @@ func TestFlashImage(t *testing.T) {
 			name:     "roOffset too large",
 			roOffset: 100,
 			writeErr: nil,
-			want:     errors.Errorf("Unable to get image data after roOffset (100): Slice start (100) > end (6)"),
+			want:     errors.Errorf("roOffset (100) >= file size (6)"),
 		},
 	}
 	for _, tc := range cases {

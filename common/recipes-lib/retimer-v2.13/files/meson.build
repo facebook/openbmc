@@ -43,4 +43,4 @@ pkg = import('pkgconfig')
 pkg.generate(libraries: [rt_lib],
     name: meson.project_name(),
     version: meson.project_version(),
-    description: 'Aries retimer Library')
+    description: 'Aries retimer Library v2.13')

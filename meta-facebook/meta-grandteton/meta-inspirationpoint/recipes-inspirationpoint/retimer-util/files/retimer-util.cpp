@@ -27,6 +27,26 @@ static void do_margin(int id, std::string& type, std::string& file) {
   pal_unlock(fd_lock);
 }
 
+static void do_print_link (int id) {
+  int fd_lock = -1, retry = 0;
+
+  while (fd_lock < 0 && retry < MAX_RETRY)
+  {
+    if (retry == MAX_RETRY) {
+      std::cout<< "Other process are using" << std::endl;
+      return;
+    }
+
+    fd_lock = pal_lock(RT_LOCK);
+    retry++;
+    sleep(1);
+  }
+
+  AriesPrintState(id);
+
+  pal_unlock(fd_lock);
+}
+
 /*static void do_update(const std::string& comp, const std::string& path, bool async, bool json_fmt) {
 }*/
 
@@ -47,6 +67,11 @@ int main(int argc, char* argv[]) {
     ->check(CLI::IsMember({"up", "down"}))->required();
   margin->add_option("FILE", margin_file, "The file name of margin test result")->required();
   margin->callback([&]() { do_margin(rt_id, margin_type, margin_file); });
+
+  std::string link_file{};
+  auto link = app.add_subcommand("link", "Dump link status");
+  link->add_option("ID", rt_id, "Retimer ID 0-7")->check(CLI::Range(0, 7))->required();
+  link->callback([&]() { do_print_link(rt_id); });
 
   app.require_subcommand(/* min */ 1, /* max */ 1);
 

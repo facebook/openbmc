@@ -21,7 +21,6 @@ LOCAL_URI += " \
     file://rebind-rt-mux.sh \
     "
 DEPENDS += " \
-    libretimer \
     "
 
 do_install:append() {

@@ -26,7 +26,6 @@ deps = [
     dependency('obmc-pal'),
     dependency('libpldm-oem'),
     dependency('libhgx'),
-    dependency('libretimer'),
 ]
 
 exe = executable('gpiod',

@@ -1,6 +1,6 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 SUMMARY = "Aries Retimer Library"
-DESCRIPTION = "library for Aries Retimer"
+DESCRIPTION = "library for Aries Retimer v2.09"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPL-2.0-or-later"

@@ -210,8 +210,8 @@ pal_get_fru_power(uint8_t fru, uint8_t *status) {
     bic_eid = ACB_BIC_EID;
     txbuf[0] = ACB_CPLD_BUS;
     txbuf[1] = ACB_CPLD_ADDR;
-    txbuf[3] = ACB_ACCLA_EN_REG;
-    power_enable_bit = (1 << (FRU_ACB_ACCL6 - fru));
+    txbuf[3] = ACB_ACCLB_EN_REG;
+    power_enable_bit = (1 << (fru - FRU_ACB_ACCL1));
     break;
   case FRU_ACB_ACCL7:
   case FRU_ACB_ACCL8:
@@ -223,8 +223,8 @@ pal_get_fru_power(uint8_t fru, uint8_t *status) {
     bic_eid = ACB_BIC_EID;
     txbuf[0] = ACB_CPLD_BUS;
     txbuf[1] = ACB_CPLD_ADDR;
-    txbuf[3] = ACB_ACCLB_EN_REG;
-    power_enable_bit = (1 << (FRU_ACB_ACCL12 - fru));
+    txbuf[3] = ACB_ACCLA_EN_REG;
+    power_enable_bit = (1 << (fru - FRU_ACB_ACCL7));
     break;
   default:
     return -1;
@@ -323,11 +323,11 @@ pal_set_fru_power(uint8_t fru, uint8_t cmd) {
     switch (cmd) {
     case SERVER_POWER_ON:
       ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_ACCLA_EN_REG, FRU_ACB_ACCL6 - fru, SET_BIT);
+              ACB_CPLD_ADDR, ACB_ACCLB_EN_REG, fru - FRU_ACB_ACCL1, SET_BIT);
       break;
     case SERVER_POWER_OFF:
       ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_ACCLA_EN_REG, FRU_ACB_ACCL6 - fru, CLEAR_BIT);
+              ACB_CPLD_ADDR, ACB_ACCLB_EN_REG, fru - FRU_ACB_ACCL1, CLEAR_BIT);
       break;
     default:
       return -1;
@@ -342,11 +342,11 @@ pal_set_fru_power(uint8_t fru, uint8_t cmd) {
     switch (cmd) {
     case SERVER_POWER_ON:
       ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_ACCLB_EN_REG, FRU_ACB_ACCL12 - fru, SET_BIT);
+              ACB_CPLD_ADDR, ACB_ACCLA_EN_REG, fru - FRU_ACB_ACCL7, SET_BIT);
       break;
     case SERVER_POWER_OFF:
       ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_ACCLB_EN_REG, FRU_ACB_ACCL12 - fru, CLEAR_BIT);
+              ACB_CPLD_ADDR, ACB_ACCLA_EN_REG, fru - FRU_ACB_ACCL7, CLEAR_BIT);
       break;
     default:
       return -1;

@@ -29,6 +29,11 @@ static delta_hdr_t delta_hdr;
 static murata_hdr_t murata_hdr;
 static murata2k_hdr_t murata2k_hdr;
 
+typedef struct _dc_psu_info_t {
+  const char *vendor;
+  const char *eeprom_type;
+} dc_psu_info_t;
+
 pmbus_info_t pmbus[] = {
   {"MFR_ID", 0x99},
   {"MFR_MODEL", 0x9a},
@@ -1430,12 +1435,14 @@ get_ac_psu_eeprom_info(uint8_t num) {
 }
 
 static void
-print_dc_psu_fru_eeprom(i2c_info_t *psu_info,
-              struct wedge_eeprom_st fruid, uint8_t num) {
+print_dc_psu_fru_eeprom(struct wedge_eeprom_st fruid, uint8_t num) {
     /* Print format */
-  printf("%-27s: PSU%d (Bus:%d Addr:0x%x)", "\nFRU Information",
-                          num + 1, (psu_info+num)->bus,
-                          (psu_info+num)->eeprom_addr);
+  printf(
+      "%-27s: PSU%d (Bus:%d Addr:0x%x)",
+      "\nFRU Information",
+      num + 1,
+      psu[num].bus,
+      psu[num].eeprom_addr);
   printf("%-27s: %s", "\n---------------", "-----------------------");
   printf("\n%-32s: %d", "Version", fruid.fbw_version);
   printf("\n%-32s: %s", "Product Name", fruid.fbw_product_name);
@@ -1473,29 +1480,52 @@ print_dc_psu_fru_eeprom(i2c_info_t *psu_info,
   printf("\n");
 }
 
-static int
-get_dc_psu_eeprom_info(i2c_info_t *psu_info,uint8_t num) {
-  int ret = -1;
-  char eeprom[16];
+static const char *
+get_eeprom_name_by_vendor(const char *vendor_name) {
+  static const dc_psu_info_t psu_to_eeprom_name_map[] = {
+      {LITEON_MODEL_DC, "24c02"},
+      {DELTA_MODEL_DC, "24c64"},
+  };
 
-  struct wedge_eeprom_st fruid_pem;
-  snprintf(eeprom, sizeof(eeprom), "%s", "24c02");
-  i2c_add_device((psu_info+num)->bus, (psu_info+num)->eeprom_addr, eeprom);
-  ret = wedge_eeprom_parse((psu_info+num)->eeprom_file, &fruid_pem);
-  i2c_delete_device((psu_info+num)->bus, (psu_info+num)->eeprom_addr);
-  printf("print EEPROM info ret = 0x%x!\n", ret);
-  if (ret) {
-    snprintf(eeprom, sizeof(eeprom), "%s", "24c64");
-    i2c_add_device((psu_info+num)->bus, (psu_info+num)->eeprom_addr, eeprom);
-    ret = wedge_eeprom_parse((psu_info+num)->eeprom_file, &fruid_pem);
-    i2c_delete_device((psu_info+num)->bus, (psu_info+num)->eeprom_addr);
-    if (ret) {
-      printf("Failed print EEPROM info ret = 0x%x!\n", ret);
-      return -1;
-    }
+  if (vendor_name == NULL) {
+    printf("Vendor Name is NULL");
+    return NULL;
   }
 
-  print_dc_psu_fru_eeprom(psu_info, fruid_pem, num);
+  for (size_t i = 0;
+       i < (sizeof(psu_to_eeprom_name_map) / sizeof(psu_to_eeprom_name_map[0]));
+       i++) {
+    if (!strncmp(
+	    psu_to_eeprom_name_map[i].vendor,
+	    vendor_name,
+	    strlen(psu_to_eeprom_name_map[i].vendor))) {
+      return psu_to_eeprom_name_map[i].eeprom_type;
+    }
+  }
+  return NULL;
+}
+
+static int
+get_dc_psu_eeprom_info(uint8_t num, const char *psu_mfr_model) {
+  int ret = -1;
+  struct wedge_eeprom_st fruid_pem;
+
+  const char *eeprom_type = get_eeprom_name_by_vendor(psu_mfr_model);
+  if (eeprom_type == NULL) {
+    printf("Failed to determine EEPROM type for vendor %s", psu_mfr_model);
+    return -1;
+  }
+
+  i2c_add_device(psu[num].bus, psu[num].eeprom_addr, eeprom_type);
+  ret = wedge_eeprom_parse(psu[num].eeprom_file, &fruid_pem);
+  i2c_delete_device(psu[num].bus, psu[num].eeprom_addr);
+
+  if (ret) {
+    printf("Failed print EEPROM info ret = 0x%x!\n", ret);
+    return -1;
+  }
+
+  print_dc_psu_fru_eeprom(fruid_pem, num);
 
   return 0;
 }
@@ -1520,7 +1550,7 @@ get_eeprom_info(uint8_t num) {
 
   if (!strncmp((char *)block, LITEON_MODEL_DC, strlen(LITEON_MODEL_DC)) ||
     !strncmp((char *)block, DELTA_MODEL_DC, strlen(DELTA_MODEL_DC))) {
-    ret = get_dc_psu_eeprom_info(psu, num);
+    ret = get_dc_psu_eeprom_info(num, (char *)block);
   }
   else {
     ret = get_ac_psu_eeprom_info(num);

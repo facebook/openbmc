@@ -742,6 +742,14 @@ int GTPldmComponent::is_pldm_info_valid()
         img_info.component_id = comp.compImageInfo.comp_identifier;
       }
     }
+  } else {
+    // multi comp image should have the same vendor
+    string vendor;
+    stringstream input_stringstream(comp_infos[0].compVersion);
+    if (getline(input_stringstream, vendor, ' ')) {
+      auto& map = pldm_signed_info::vendor_map;
+      img_info.vendor_id = (map.find(vendor)!=map.end()) ? map.at(vendor):0xFF;
+    }
   }
 
   return check_header_info(img_info);

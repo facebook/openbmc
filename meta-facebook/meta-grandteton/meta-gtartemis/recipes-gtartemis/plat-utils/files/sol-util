@@ -23,9 +23,9 @@ LOGFILE_B="/var/log/mTerm_$1_backup.log"
 readonly EXIT_ERROR=255
 
 usage() {
-  echo "Usage: sol-util [ mb | cb ]"
-  echo "       sol-util [ cb ] [ pesw0 | pesw1 ]"
-  echo "       sol-util [ cb ] [ accl1 | accl2 | ... | accl12 ] [ dev1 | dev2 ] (baudrate)"
+  echo "Usage: sol-util [ mb | cb | cb_pesw0 | cb_pesw1 ]"
+  echo "       sol-util [ cb_accl[1..12]_[1..2] ] uart[0..3] (baudrate)"
+  echo "       e.g. sol-util cb_accl1_1 uart0"
   echo "       sol-util [ mb | cb ] --history"
   exit 1
 }
@@ -62,15 +62,16 @@ get_usb_pesw() {
   local retry=10
   local comp="$1"
 
-  [ -n "$3" ] && baudrate="$3"
-
   case $comp in
-    pesw0)
-    usb_path="platform-1e6a3000.usb-usb-0:1.1.4.1:1.0-port0"
-  ;;
-    pesw1)
-    usb_path="platform-1e6a3000.usb-usb-0:1.1.4.3:1.0-port0"
-  ;;
+    cb_pesw0)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.4.1:1.0-port0"
+    ;;
+    cb_pesw1)
+      usb_path="platform-1e6a3000.usb-usb-0:1.1.4.3:1.0-port0"
+    ;;
+    *)
+      echo "The $comp is invalid"
+      exit "$EXIT_ERROR";
   esac
 
   if [ "$(check_file_exist "${prefix}${usb_path}" ${retry})" = 0 ]; then
@@ -86,100 +87,501 @@ get_usb_dev() {
   local usb_path=""
   local baudrate="57600"
   local prefix="/dev/serial/by-path/"
-  local comp="$1"
-  local dev="$2"
+  local slot="$1"
+  local comp="$2"
   local retry=10
 
   [ -n "$3" ] && baudrate="$3"
 
-
-  if [ "$dev" = "dev1" ]; then
-    case $comp in
-      accl1)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.3:1.0-port0"
+  case $slot in
+    cb_accl1_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl2)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.3:1.0-port0"
+    cb_accl1_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl3)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.3:1.0-port0"
+    cb_accl2_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl4)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.3:1.0-port0"
+    cb_accl2_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl5)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.3:1.0-port0"
+    cb_accl3_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl6)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.3:1.0-port0"
+    cb_accl3_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl7)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.3:1.0-port0"
+    cb_accl4_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl8)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.3:1.0-port0"
+    cb_accl4_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl9)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.3:1.0-port0"
+    cb_accl5_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl10)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.3:1.0-port0"
+    cb_accl5_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl11)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.3:1.0-port0"
+    cb_accl6_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl12)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.3:1.0-port0"
+    cb_accl6_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-    esac
-
-  elif [ "$dev" = "dev2" ]; then
-    case $comp in
-      accl1)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.4:1.0-port0"
+    cb_accl7_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl2)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.3:1.0-port0"
+    cb_accl7_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl3)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.4:1.0-port0"
+    cb_accl8_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl4)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.4:1.0-port0"
+    cb_accl8_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl5)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.2.4:1.0-port0"
+    cb_accl9_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl6)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.3.4:1.0-port0"
+    cb_accl9_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.4.1.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl7)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.1.4:1.0-port0"
+    cb_accl10_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl8)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.2.4:1.0-port0"
+    cb_accl10_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.3.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl9)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.3.4:1.0-port0"
+    cb_accl11_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl10)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.1.4:1.0-port0"
+    cb_accl11_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.2.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl11)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.2.4:1.0-port0"
+    cb_accl12_1)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.3:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.3:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.3:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.3:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-      accl12)
-      usb_path="platform-1e6a3000.usb-usb-0:1.1.2.4.3.4:1.0-port0"
+    cb_accl12_2)
+      case $comp in
+        uart0)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.4:1.0-port0"
+        ;;
+        uart1)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.4:1.1-port0"
+        ;;
+        uart2)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.4:1.2-port0"
+        ;;
+        uart3)
+          usb_path="platform-1e6a3000.usb-usb-0:1.1.1.1.4:1.3-port0"
+        ;;
+        *)
+          echo "The $comp is invalid"
+          exit "$EXIT_ERROR";
+        ;;
+      esac
     ;;
-    esac
-  else
-    echo "The $dev is invalid"
-    exit "$EXIT_ERROR";
-  fi
+    *)
+      echo "The $slot is invalid"
+      exit "$EXIT_ERROR"
+  esac
 
   if [ "$(check_file_exist "${prefix}${usb_path}" ${retry})" = 0 ]; then
-      echo "The $usb_path is invalid"
-      exit "$EXIT_ERROR";
+    echo "The $usb_path is invalid"
+    exit "$EXIT_ERROR";
   fi
 
   echo "-s ${baudrate} ${prefix}${usb_path}"
@@ -188,17 +590,17 @@ get_usb_dev() {
 SLOT=
 COMP=
 
-if [[ $# -gt 4  ||  $# -lt 1 ]]; then
+if [[ $# -gt 3  ||  $# -lt 1 ]]; then
   usage
   exit "$EXIT_ERROR";
 fi
 
-if [ "$1" == "cb" ] || [ "$1" == "mb" ]; then
+if [ "$1" = "mb" ] || [ "$1" = "cb" ] || [[ "$1" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]]; then
   SLOT=$1
   if [ $# -eq 2 ] && [ "$2" == "--history" ]; then
     cat "$LOGFILE_B" "$LOGFILE" 2>/dev/null
     exit 0;
-  elif [ "$SLOT" = "cb" ] && [[ "$2" =~ ^(accl([1-9]|1[0-2]))$  ||  "$2" =~ ^(pesw(0|1))$ ]]; then
+  elif [[ "$SLOT" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]] && [[ "$2" =~ ^(uart[0-3])$ ]]; then
     COMP=$2
   else
     if [ $# -ne 1 ]; then
@@ -206,39 +608,40 @@ if [ "$1" == "cb" ] || [ "$1" == "mb" ]; then
       exit "$EXIT_ERROR";
     fi
   fi
+elif [[ "$1" =~ ^(cb_pesw(0|1))$ ]]; then
+  SLOT=$1
+  COMP=$1
 else
   usage
   exit "$EXIT_ERROR";
 fi
 
-DEV=$3
-BAUDRATE=$4
+BAUDRATE=$3
 USB_PATH=
 
-# Check Comp and Dev
+# Check Comp and SLOT
 if [ -n "$COMP" ]; then
 
   # check BAUDRATE is a number
   if [ -n "$BAUDRATE" ]; then
-    if [ "$DEV" != "dev1" ] && [ "$DEV" != "dev2" ]; then
-      usage
-      exit "$EXIT_ERROR";
-    fi
     if ! [[ "$BAUDRATE" =~ ^[0-9]+$ ]]; then
       echo "$BAUDRATE should be a number"
       echo "$EXIT_ERROR";
     fi
   fi
 
-  if [ "$SLOT" = "cb" ]; then
-    if [[ "$COMP" =~ ^(accl([1-9]|1[0-2]))$ ]] && [[ "$DEV" =~ ^(dev(1|2)$) ]]; then
-      read -r PARAMETER BAUDRATE USB_PATH <<< "$(get_usb_dev "$COMP" "$DEV" "$BAUDRATE")"
-    elif [[ "$COMP" =~ ^(pesw(0|1))$ ]]; then
-      read -r PARAMETER BAUDRATE USB_PATH <<< "$(get_usb_pesw "$COMP")"
+  if [[ "$SLOT" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]]; then
+    if [[ "$COMP" =~ ^(uart[0-3])$ ]]; then
+      read -r PARAMETER BAUDRATE USB_PATH <<< "$(get_usb_dev "$SLOT" "$COMP" "$BAUDRATE")"
     else
       usage
       exit "$EXIT_ERROR";
     fi
+  elif [[ "$SLOT" =~ ^(cb_pesw(0|1))$ ]]; then
+    read -r PARAMETER BAUDRATE USB_PATH <<< "$(get_usb_pesw "$COMP")"
+  else
+    usage
+    exit "$EXIT_ERROR";
   fi
 
   microcom_usage

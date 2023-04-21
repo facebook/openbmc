@@ -9,7 +9,7 @@ cc = meson.get_compiler('cpp')
 hdrs = [
   'pldm.h',
   'oem_pldm.hpp',
-  'fw_update.h',
+  'fw_update.hpp',
 ]
 
 libs = [

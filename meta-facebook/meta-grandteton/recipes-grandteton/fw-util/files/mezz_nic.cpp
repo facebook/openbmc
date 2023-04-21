@@ -4,7 +4,7 @@
 #include <libpldm/base.h>
 #include <libpldm/firmware_update.h>
 #include <libpldm-oem/pldm.h>
-#include <libpldm-oem/fw_update.h>
+#include <libpldm-oem/fw_update.hpp>
 #include "mezz_nic.hpp"
 #include "signed_info.hpp"
 

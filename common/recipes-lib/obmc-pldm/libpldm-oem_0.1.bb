@@ -23,7 +23,7 @@ LOCAL_URI = " \
     file://oem_pldm.hpp \
     file://handler.hpp \
     file://fw_update.cpp \
-    file://fw_update.h \
+    file://fw_update.hpp \
     "
 
 DEPENDS += "libpldm libipmi"

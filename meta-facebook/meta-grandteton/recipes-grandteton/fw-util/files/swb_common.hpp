@@ -68,20 +68,14 @@ class AcbPeswFwComponent : public SwbBicFwComponent {
 
 class GTPldmComponent : public PldmComponent {
   private:
-    std::string fru;
-  protected:
-    void store_device_id_record(
-              pldm_firmware_device_id_record& /*id_record*/,
-                                    uint16_t& /*descriper_type*/,
-                              variable_field& /*descriper_data*/) override;
-    void store_comp_img_info(
-            pldm_component_image_information& /*comp_info*/,
-                              variable_field& /*comp_verstr*/) override;
+    int is_pldm_info_valid();
+
   public:
     GTPldmComponent(const signed_header_t& info, const string& fru, const std::string &comp,
-                  uint8_t bus, uint8_t eid): PldmComponent(info, comp, bus, eid), fru(fru) {}
+                  uint8_t bus, uint8_t eid): PldmComponent(info, fru, comp, bus, eid) {}
+    int try_pldm_update(const std::string& /*image*/, bool /*force*/, uint8_t specified_comp = 0xFF);
     int gt_get_version(json& /*j*/, const string& /*fru*/, const string& /*comp*/, uint8_t /*target*/);
-    virtual int comp_get_version(json& /*j*/) { return -1; }
+    virtual int comp_version(json& /*j*/) { return -1; }
 };
 
 class GTSwbBicFwComponent : public SwbBicFwComponent, public GTPldmComponent {
@@ -92,9 +86,10 @@ class GTSwbBicFwComponent : public SwbBicFwComponent, public GTPldmComponent {
                         GTPldmComponent(info, fru, comp, bus, eid){}
     int update(string /*image*/) override;
     int fupdate(string /*image*/) override;
-    int get_version(json& /*json*/) override;
-    int comp_update(const string& image) { return SwbBicFwComponent::update(image); }
-    int comp_get_version(json& j) override { return SwbBicFwComponent::get_version(j); }
+    int get_version(json& j) override;
+    int comp_update(const string& image) override { return SwbBicFwComponent::update(image); }
+    int comp_fupdate(const string& image) override { return SwbBicFwComponent::fupdate(image); }
+    int comp_version(json& j) override { return SwbBicFwComponent::get_version(j); }
 };
 
 class GTSwbPexFwComponent : public SwbPexFwComponent, public GTPldmComponent {
@@ -106,8 +101,9 @@ class GTSwbPexFwComponent : public SwbPexFwComponent, public GTPldmComponent {
     int update(string /*image*/) override;
     int fupdate(string /*image*/) override;
     int get_version(json& /*json*/) override;
-    int comp_update(const string& image) { return SwbPexFwComponent::update(image); }
-    int comp_get_version(json& j) override { return SwbPexFwComponent::get_version(j); }
+    int comp_update(const string& image) override { return SwbPexFwComponent::update(image); }
+    int comp_fupdate(const string& image) override { return SwbPexFwComponent::fupdate(image); }
+    int comp_version(json& j) override { return SwbPexFwComponent::get_version(j); }
 };
 
 class GTSwbVrComponent : public SwbVrComponent, public GTPldmComponent {
@@ -137,8 +133,9 @@ class GTSwbVrComponent : public SwbVrComponent, public GTPldmComponent {
     int update(string /*image*/) override;
     int fupdate(string /*image*/) override;
     int get_version(json& /*json*/) override;
-    int comp_update(const string& image) { return SwbVrComponent::update(image); }
-    int comp_get_version(json& j) override { return SwbVrComponent::get_version(j); }
+    int comp_update(const string& image) override { return SwbVrComponent::update(image); }
+    int comp_fupdate(const string& image) override { return SwbVrComponent::fupdate(image); }
+    int comp_version(json& j) override { return SwbVrComponent::get_version(j); }
 };
 
 class GTSwbCpldComponent : public CpldComponent, public GTPldmComponent {
@@ -154,8 +151,9 @@ class GTSwbCpldComponent : public CpldComponent, public GTPldmComponent {
     int update(string /*image*/) override;
     int fupdate(string /*image*/) override;
     int get_version(json& /*json*/) override;
-    int comp_update(const string& image) { return CpldComponent::update(image); }
-    int comp_get_version(json& j) override { return CpldComponent::get_version(j); }
+    int comp_update(const string& image) override { return CpldComponent::update(image); }
+    int comp_fupdate(const string& image) override { return CpldComponent::fupdate(image); }
+    int comp_version(json& j) override { return CpldComponent::get_version(j); }
 };
 
 class SwbPLDMNicComponent : public PLDMNicComponent {

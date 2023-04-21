@@ -6,39 +6,23 @@
 
 class PldmComponent : public InfoChecker
 {
-  private:
-    std::string component;
-    size_t offset = 0;
-    pldm_package_header_information pkgHeader{};
-    int read_pkg_header_info(int /*fd*/);
-    int read_device_id_record(int /*fd*/);
-    int read_comp_image_info(int /*fd*/);
-    int pldm_update(const std::string& /*image*/, uint8_t specified_comp = 0xFF);
-
   protected:
     // Basic info to be record
+    std::string fru;
+    std::string component;
     uint8_t bus, eid;
-    std::vector<uint8_t> img_uuid{};
-    signed_header_t img_info{};
-    int check_UUID() const;
-
-    /* store data after decode image */
-    virtual void store_fw_package_hdr(
-                     pldm_package_header_information&  /*hdr*/) {}
-    virtual void store_device_id_record(
-                      pldm_firmware_device_id_record& /*id_record*/,
-                                            uint16_t& /*descriper_type*/,
-                                      variable_field& /*descriper_data*/) {};
-    virtual void store_comp_img_info(
-                    pldm_component_image_information& /*comp_info*/,
-                                      variable_field& /*comp_verstr*/) {};
+    int find_image_index(uint8_t /*target_id*/) const;
+    int get_raw_image(const std::string& /*image*/, std::string& /*raw_image*/);
+    int del_raw_image() const;
 
   public:
-    PldmComponent(const signed_header_t& info, const std::string &comp,
-                  uint8_t bus, uint8_t eid): InfoChecker(info), component(comp),
-                  bus(bus), eid(eid) {}
+    PldmComponent(const signed_header_t& info, const std::string &fru, const std::string &comp,
+                  uint8_t bus, uint8_t eid): InfoChecker(info),
+                  fru(fru), component(comp), bus(bus), eid(eid) {}
     virtual ~PldmComponent() = default;
-    int isPldmImageValid(const std::string& /*image*/);
-    int try_pldm_update(const std::string& /*image*/, bool /*force*/, uint8_t specified_comp = 0xFF);
+    int pldm_update(const std::string& /*image*/, uint8_t specified_comp = 0xFF);
+    virtual int pldm_version(json& /*json*/) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int comp_update(const std::string& /*image*/) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int comp_fupdate(const std::string& /*image*/) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int comp_version(json& /*json*/) { return FW_STATUS_NOT_SUPPORTED; }
 };

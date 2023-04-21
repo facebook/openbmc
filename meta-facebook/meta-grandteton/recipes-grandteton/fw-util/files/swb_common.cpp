@@ -1,6 +1,7 @@
 #include <openbmc/kv.hpp>
 #include <libpldm/base.h>
 #include <libpldm-oem/pldm.h>
+#include <libpldm-oem/fw_update.hpp>
 #include <libpldm-oem/pal_pldm.hpp>
 #include <openbmc/libgpio.h>
 #include <unistd.h>
@@ -704,42 +705,104 @@ int SwbVrComponent::fupdate(string image) {
   return ret;
 }
 
-void GTPldmComponent::store_device_id_record(
-                          pldm_firmware_device_id_record& /*id_record*/,
-                                                uint16_t& descriper_type,
-                                          variable_field& descriper_data)
+int GTPldmComponent::is_pldm_info_valid()
 {
-  if (descriper_type == PLDM_FWUP_VENDOR_DEFINED) {
-    string type = (const char*)descriper_data.ptr+2;
-    string data = (const char*)descriper_data.ptr+2+descriper_data.ptr[1];
-    type.resize(descriper_data.ptr[1]);
-    data.resize(descriper_data.length-descriper_data.ptr[1]-2);
-    if (type == "Platform") {
-      img_info.project_name = data;
-    } else if (type == "BoardID") {
-      auto& map = pldm_signed_info::board_map;
-      img_info.board_id = (map.find(data)!=map.end()) ? map.at(data):0xFF;
-    } else if (type == "Stage") {
-      auto& map = pldm_signed_info::stage_map;
-      img_info.stage_id = (map.find(data)!=map.end()) ? map.at(data):0xFF;
+  signed_header_t img_info{};
+  auto dev_records = oem_get_pkg_device_record();
+  auto comp_infos = oem_get_pkg_comp_img_info();
+
+  // right now, device record should be only one
+  for(auto&descriper:dev_records[0].recordDescriptors) {
+    if (descriper.type == PLDM_FWUP_VENDOR_DEFINED) {
+      string type = descriper.data.c_str()+2;
+      string data = descriper.data.c_str()+2+descriper.data.at(1);
+      type.resize(descriper.data.at(1));
+      data.resize(descriper.data.size()-descriper.data.at(1)-2);
+      if (type == "Platform") {
+        img_info.project_name = data;
+      } else if (type == "BoardID") {
+        auto& map = pldm_signed_info::board_map;
+        img_info.board_id = (map.find(data)!=map.end()) ? map.at(data):0xFF;
+      } else if (type == "Stage") {
+        auto& map = pldm_signed_info::stage_map;
+        img_info.stage_id = (map.find(data)!=map.end()) ? map.at(data):0xFF;
+      }
     }
   }
+
+  if (comp_info.component_id != COMPONENT_VERIFY_SKIPPED) {
+    for(auto&comp:comp_infos) {
+      if (comp.compImageInfo.comp_identifier == comp_info.component_id) {
+        string vendor;
+        stringstream input_stringstream(comp.compVersion);
+        if (getline(input_stringstream, vendor, ' ')) {
+          auto& map = pldm_signed_info::vendor_map;
+          img_info.vendor_id = (map.find(vendor)!=map.end()) ? map.at(vendor):0xFF;
+        }
+        img_info.component_id = comp.compImageInfo.comp_identifier;
+      }
+    }
+  }
+
+  return check_header_info(img_info);
 }
 
-void GTPldmComponent::store_comp_img_info(
-                          pldm_component_image_information& comp_info,
-                                            variable_field& comp_verstr)
+int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t specified_comp)
 {
-  // comp id
-  img_info.component_id = comp_info.comp_identifier;
+  int isValidImage = oem_parse_pldm_package(image.c_str());
 
-  // comp vendor
-  string vendor, verstr = (const char *)comp_verstr.ptr;
-  verstr.resize(comp_verstr.length);
-  stringstream input_stringstream(verstr);
-  if (getline(input_stringstream, vendor, ' ')) {
-    auto& map = pldm_signed_info::vendor_map;
-    img_info.vendor_id = (map.find(vendor)!=map.end()) ? map.at(vendor):0xFF;
+  // Legacy way
+  if (is_pldm_supported(bus, eid) < 0) {
+    if (force) {
+      return comp_fupdate(image);
+    } else {
+      // PLDM image
+      if (isValidImage == 0) {
+        // Try to discard PLDM header
+        // Pex not support.
+        if (component.find("pex") != std::string::npos) {
+          cerr << "Pex not support PLDM image transfer" << endl;
+          return -1;
+        } else {
+          string raw_image{};
+          if (get_raw_image(image, raw_image) == FORMAT_ERR::SUCCESS) {
+            int ret = comp_fupdate(raw_image);
+            del_raw_image();
+            return ret;
+          } else {
+            cerr << "Can not do PLDM image transfer" << endl;
+            return -1;
+          }
+        }
+      // Raw image
+      } else {
+        return comp_update(image);
+      }
+    }
+  // PLDM way
+  } else {
+    if (force) {
+      if (isValidImage == 0) {
+        cout << "PLDM image detected." << endl;
+        return pldm_update(image, specified_comp);
+      } else {
+        cout << "Raw image detected." << endl;
+        return comp_update(image);
+      }
+    } else {
+      if (isValidImage == 0) {
+        if (is_pldm_info_valid() == 0) {
+          return pldm_update(image, specified_comp);
+        } else {
+          cerr << "Non-valid package info." << endl;
+          return -1;
+        }
+        return is_pldm_info_valid();
+      } else {
+        cerr << "Non-valid image header." << endl;
+        return -1;
+      }
+    }
   }
 }
 
@@ -753,7 +816,7 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
     j["VERSION"] = active_ver;
   } catch (...) {
     if (pal_pldm_get_firmware_parameter(bus, eid) < 0) {
-      return comp_get_version(j);
+      return comp_version(j);
     } else {
       active_ver = kv::get(active_key, kv::region::temp);
       j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;

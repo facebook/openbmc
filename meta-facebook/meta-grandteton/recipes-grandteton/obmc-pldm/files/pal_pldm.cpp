@@ -2,6 +2,7 @@
 #include "oem_pldm.hpp"
 #include <iostream>
 #include <vector>
+#include <set>
 #include <syslog.h>
 #include <fmt/format.h>
 #include <openbmc/kv.hpp>
@@ -20,14 +21,26 @@ const std::vector<std::string> comp_str_t = {
   "cpld"
 };
 
+static void delete_version_cache()
+{
+  for (auto&comp_name:comp_str_t) {
+    try {
+      auto key = fmt::format("swb_{}_active_ver", comp_name);
+      kv::del(key, kv::region::temp);
+    } catch (kv::key_does_not_exist&) {
+      syslog(LOG_WARNING, "delete version cache failed.");
+    }
+  }
+}
+
 static void
 pldm_firmware_parameter_handle (
-             pldm_get_firmware_parameters_resp& /*fwParams*/,
-                                variable_field& activeCompImageSetVerStr,
-                                variable_field& /*pendingCompImageSetVerStr*/,
-                pldm_component_parameter_entry& compEntry,
-                                variable_field& activeCompVerStr,
-                                variable_field& /*pendingCompVerStr*/) {
+       const pldm_get_firmware_parameters_resp& /*fwParams*/,
+                          const variable_field& activeCompImageSetVerStr,
+                          const variable_field& /*pendingCompImageSetVerStr*/,
+          const pldm_component_parameter_entry& compEntry,
+                          const variable_field& activeCompVerStr,
+                          const variable_field& /*pendingCompVerStr*/) {
   string bic_ver = (activeCompImageSetVerStr.length == 0)?"":(const char*)activeCompImageSetVerStr.ptr;
   string bic_active_key  = "swb_bic_active_ver";
   string comp_name = comp_str_t[compEntry.comp_identifier];
@@ -37,8 +50,8 @@ pldm_firmware_parameter_handle (
   bic_ver.resize(activeCompImageSetVerStr.length);
   comp_active_ver.resize(activeCompVerStr.length);
 
-  kv::set(bic_active_key,  bic_ver);
-  kv::set(comp_active_key,  comp_active_ver);
+  kv::set(bic_active_key, bic_ver, kv::region::temp);
+  kv::set(comp_active_key, comp_active_ver, kv::region::temp);
 }
 
 int
@@ -55,8 +68,10 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
 
   if (ret == 0) {
     auto pldm_resp = reinterpret_cast<pldm_msg*>(response.data());
-    if (pldm_resp->payload[0] != 0x00) // completion code
+    if (pldm_resp->payload[0] != 0x00) {
+      delete_version_cache();
       return -1;
+    }
 
     pldm_get_firmware_parameters_resp fwParams{};
     variable_field activeCompImageSetVerStr{};
@@ -74,13 +89,14 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
       ret = -1;
 
     // completion code != 0x00
-    } else if (fwParams.completion_code) {
-      syslog(LOG_WARNING, "GetFirmwareParameters response failed with error, rc = %d.", ret);
-      std::cerr << "GetFirmwareParameters response failed with error "
-                    "completion code, EID="
-                << unsigned(eid)
-                << ", CC=" << unsigned(fwParams.completion_code) << "\n";
-      ret = -1;
+    // } else if (fwParams.completion_code) {
+    //   syslog(LOG_WARNING, "GetFirmwareParameters response failed with error, rc = %d.", ret);
+    //   std::cerr << "GetFirmwareParameters response failed with error "
+    //                 "completion code, EID="
+    //             << unsigned(eid)
+    //             << ", CC=" << unsigned(fwParams.completion_code) << "\n";
+    //   delete_version_cache();
+    //   ret = -1;
 
     // success
     } else {
@@ -128,4 +144,10 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
   }
 
   return ret;
+}
+
+int
+is_pldm_supported(uint8_t bus, uint8_t eid)
+{
+  return pal_pldm_get_firmware_parameter(bus, eid);
 }

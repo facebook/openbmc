@@ -74,7 +74,7 @@ struct signed_header_t {
 
 class InfoChecker {
   protected:
-    signed_header_t comp_info;
+    signed_header_t comp_info{};
     static int check_md5(const std::string& image_path, long offset, long size, uint8_t* data);
     int check_header_info(const signed_header_t&);
 

@@ -16,6 +16,29 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #pragma once
+#include <vector>
+#include <libpldm/firmware_update.h>
 
-int parse_pldm_package (const char *path);
+struct device_id_record_descriptor {
+  uint16_t type;
+  std::string data;
+};
+
+struct firmware_device_id_record_t {
+  pldm_firmware_device_id_record deviceIdRecHeader;
+  std::string applicableComponents;
+  std::string compImageSetVersionStr;
+  std::string fwDevicePkgData;
+  std::vector<struct device_id_record_descriptor> recordDescriptors;
+};
+
+struct component_image_info_t {
+  pldm_component_image_information compImageInfo;
+  std::string compVersion;
+};
+
+int oem_parse_pldm_package (const char *path);
 int oem_pldm_fw_update (uint8_t bus, uint8_t eid, const char *path, uint8_t specified_comp = 0xFF);
+
+const std::vector<firmware_device_id_record_t>& oem_get_pkg_device_record();
+const std::vector<component_image_info_t>& oem_get_pkg_comp_img_info();

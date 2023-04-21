@@ -22,10 +22,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <algorithm>
-#include <libpldm/firmware_update.h>
 #include "pldm.h"
 #include "oem_pldm.hpp"
-#include "fw_update.h"
+#include "fw_update.hpp"
 
 #define MAX_TRANSFER_SIZE 1024
 
@@ -55,21 +54,8 @@ enum TRANSFER_TAG {
   StartAndEnd = 0x5
 };
 
-struct firmware_device_id_record_t {
-  pldm_firmware_device_id_record deviceIdRecHeader;
-  string applicableComponents;
-  string compImageSetVersionStr;
-  string recordDescriptors;
-  string fwDevicePkgData;
-};
-
-struct component_image_info_t {
-  pldm_component_image_information compImageInfo;
-  string compVersion;
-};
-
 const int maxTransferSize = 1024;
-// It will re-init when function call parse_pldm_package()
+// It will re-init when function call oem_parse_pldm_package()
 pldm_package_header_information pkg_header{};
 vector<firmware_device_id_record_t> pkg_devices{};
 vector<component_image_info_t> pkg_comps{};
@@ -173,22 +159,23 @@ read_device_id_record(int fd)
     }
     dev_record.applicableComponents = variable_field_to_str(applicableComponents);
     dev_record.compImageSetVersionStr = variable_field_to_str(compImageSetVersionStr);
-    dev_record.recordDescriptors = variable_field_to_str(recordDescriptors);
     dev_record.fwDevicePkgData = variable_field_to_str(fwDevicePkgData);
-    pkg_devices.emplace_back(dev_record);
 
     // decode Descriptors
+    dev_record.recordDescriptors.clear();
     for (uint8_t j = 0; j < deviceIdRecHeader.descriptor_count; ++j) {
-      uint16_t descriptorType = 0;
+      device_id_record_descriptor descriptor{};
       variable_field descriptorData{};
 
       ret = decode_descriptor_type_length_value(
           recordDescriptors.ptr, recordDescriptors.length,
-          &descriptorType, &descriptorData);
+          &descriptor.type, &descriptorData);
       if (ret) {
         syslog(LOG_WARNING, "%s decode failed (descriptor)\n", __func__);
         return FORMAT_ERR::DECODE_FAIL;
       }
+      descriptor.data = variable_field_to_str(descriptorData);
+      dev_record.recordDescriptors.emplace_back(descriptor);
 
       auto nextDescriptorOffset =
           sizeof(pldm_descriptor_tlv().descriptor_type) +
@@ -197,6 +184,8 @@ read_device_id_record(int fd)
       recordDescriptors.ptr += nextDescriptorOffset;
       recordDescriptors.length -= nextDescriptorOffset;
     }
+
+    pkg_devices.emplace_back(dev_record);
   }
   return ret;
 }
@@ -275,7 +264,7 @@ is_uuid_valid()
   return (any_of(uuids.begin(), uuids.end(), is_uuid_match)) ? 0 : 1;
 }
 
-int parse_pldm_package (const char *path)
+int oem_parse_pldm_package (const char *path)
 {
   int ret = -1;
   pkg_header = {};
@@ -289,22 +278,22 @@ int parse_pldm_package (const char *path)
   }
 
   if (read_pkg_header_info(fd)) {
-    cerr << "Package Header Info is unvalid." << endl;
+    syslog(LOG_WARNING, "Package Header Info is unvalid.");
     goto exit;
   }
 
   if (read_device_id_record(fd)) {
-    cerr << "Device Id Record is unvalid." << endl;
+    syslog(LOG_WARNING, "Device Id Record is unvalid.");
     goto exit;
   }
 
   if (read_comp_image_info(fd)) {
-    cerr << "Component Image Info is unvalid." << endl;
+    syslog(LOG_WARNING, "Component Image Info is unvalid.");
     goto exit;
   }
 
   if (is_uuid_valid()) {
-    cerr << "UUID is unvalid." << endl;
+    syslog(LOG_WARNING, "UUID is unvalid.");
     goto exit;
   }
 
@@ -546,14 +535,6 @@ pldm_request_firmware_data_handle(int sockfd, uint8_t eid, size_t comps_index,
          << "/0x" << setfill('0') << setw(8) << hex << compSize
          << ", size : 0x"  << setfill('0') << setw(8) << hex << length
          << flush;
-
-    if (offset + length >= compSize) {
-      cout << "\rDownload "
-           << "offset : 0x"  << setfill('0') << setw(8) << hex << offset + length
-           << "/0x" << setfill('0') << setw(8) << hex << compSize
-           << ", size : 0x"  << setfill('0') << setw(8) << hex << length
-           << endl;
-    }
   }
 
   return oem_pldm_send(sockfd, eid, response);
@@ -585,7 +566,7 @@ pldm_transfer_complete_handle(int sockfd, uint8_t eid, vector<uint8_t>& request,
   // SUCCESS
   else {
     status = FW_DEVICE_STATUS::VERIFY;
-    cout << "TransferComplete." << endl;
+    cout << "\nTransferComplete." << endl;
   }
 
   ret = encode_transfer_complete_resp(
@@ -764,7 +745,7 @@ int oem_pldm_fw_update(uint8_t bus, uint8_t eid, const char* path, uint8_t speci
     return -1;
   }
 
-  ret = parse_pldm_package(path);
+  ret = oem_parse_pldm_package(path);
   if (ret < 0) {
     cerr << "Failed to parse pldm package header." << endl;
     close(sockfd);
@@ -862,4 +843,14 @@ exit:
   close(sockfd);
   close(file);
   return ret;
+}
+
+const vector<firmware_device_id_record_t>& oem_get_pkg_device_record()
+{
+  return pkg_devices;
+}
+
+const vector<component_image_info_t>& oem_get_pkg_comp_img_info()
+{
+  return pkg_comps;
 }

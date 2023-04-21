@@ -20,6 +20,7 @@
 #include "swb_common.hpp"
 
 #define PexImageCount 4
+#define GTAPeswImageCount 2
 
 struct PexImage {
   uint32_t offset;
@@ -563,6 +564,14 @@ int SwbPexFwComponent::fupdate(string image) {
 int SwbPexFwComponent::update(string image) {
 
   uint8_t fruid = 0;
+  uint8_t image_count = 0;
+
+  if (pal_is_artemis()) {
+    image_count = GTAPeswImageCount;
+  } else {
+    image_count = PexImageCount;
+  }
+
   pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
 
   // open the binary
@@ -576,13 +585,13 @@ int SwbPexFwComponent::update(string image) {
   if (uint32_t_read(fd_r, count) < 0)
     return -1;
 
-  if (count != PexImageCount) {
-    fprintf(stderr, "There should be %d images not %d.\n", PexImageCount, (int)count);
+  if (count != image_count) {
+    fprintf(stderr, "There should be %d images not %d.\n", image_count, (int)count);
     return -1;
   }
 
   struct PexImage images[PexImageCount];
-  for (int i = 0; i < PexImageCount; ++i) {
+  for (int i = 0; i < image_count; ++i) {
     if (uint32_t_read(fd_r, images[i].offset) < 0) return -1;
     if (uint32_t_read(fd_r, images[i].size)   < 0) return -1;
   }

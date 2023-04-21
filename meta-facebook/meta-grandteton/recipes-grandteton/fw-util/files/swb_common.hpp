@@ -59,10 +59,10 @@ class SwbVrComponent : public VrComponent {
 };
 
 // Artemis ACB PCIE SWITCH Component
-class AcbPeswFwComponent : public SwbBicFwComponent {
+class AcbPeswFwComponent : public SwbPexFwComponent {
   public:
     AcbPeswFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
-        :SwbBicFwComponent(fru, comp, bus, eid, target) {}
+        :SwbPexFwComponent(fru, comp, bus, eid, target) {}
     int get_version(json& j) override;
 };
 

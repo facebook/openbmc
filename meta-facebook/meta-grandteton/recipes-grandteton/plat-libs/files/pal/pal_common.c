@@ -163,6 +163,10 @@ fru_presence(uint8_t fru_id, uint8_t *status) {
       return false;
     case FRU_ACB:
     case FRU_MEB:
+      if (!pal_is_artemis()) {
+        *status = FRU_NOT_PRSNT;
+        return true;
+      }
       // TODO: Read MB CPLD register
       // Currently, Use BIC self test for ACB/MEB present
       bic_intf fru_bic_info = {0};

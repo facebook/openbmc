@@ -1238,6 +1238,11 @@ pal_is_pldm_fru_prsnt(uint8_t fru, uint8_t *status) {
   int ret = 0;
   fru_status pldm_fru_status = {0};
 
+  if (!pal_is_artemis()) {
+    *status = FRU_NOT_PRSNT;
+    return true;
+  }
+
   // FRU on JCN is dual type
   ret = pal_get_pldm_fru_status(fru, JCN_0_1, &pldm_fru_status);
 

@@ -519,6 +519,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "Received invalid boot order request from BMC",
     "System HTTP boot fail",
     "BIOS fails to get the certificate from BMC",
+    "Password cleared by jumper",
     "Reserved"
   };
   char *cert_event[] = {

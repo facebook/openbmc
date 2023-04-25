@@ -931,6 +931,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-montblanc-determinator",
+            "args": {
+                "name": "openbmc-cit-montblanc-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-montblanc-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform montblanc"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-montblanc/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-northdome-determinator",
             "args": {
                 "name": "openbmc-cit-northdome-determinator",

@@ -20,7 +20,7 @@
 import unittest
 
 from common.base_fru_test import CommonFruTest
-from utils.test_utils import qemu_check, check_fru_availability
+from utils.test_utils import check_fru_availability, qemu_check
 
 
 class FruSlot1Test(CommonFruTest, unittest.TestCase):

@@ -21,7 +21,7 @@ import unittest
 
 from common.base_sensor_test import SensorUtilTest
 from tests.fby35.test_data.sensors.sensors import SENSORS
-from utils.test_utils import qemu_check, check_fru_availability
+from utils.test_utils import check_fru_availability, qemu_check
 
 
 class Slot1SensorTest(SensorUtilTest, unittest.TestCase):

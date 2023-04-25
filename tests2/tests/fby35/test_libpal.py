@@ -23,7 +23,7 @@ from utils.test_utils import qemu_check
 
 
 class LibPalTest(common.base_libpal_test.LibPalTest):
-    PLATFORM_NAME = "yosemitev3"
+    PLATFORM_NAME = "yosemite35"
 
     @unittest.skip("disable due to T92189295")
     def test_sensor_raw_read(self):

@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_fw_util_test import CommonFwUtilTest
+from utils.test_utils import qemu_check
 
 PLATFORM = "fby35"
 
@@ -28,6 +29,7 @@ class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):
     def set_platform(self):
         self.platform = PLATFORM
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_version_header(self):
         for fru, comps in self.fw_util_info.items():
             for comp_name in comps.keys():

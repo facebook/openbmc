@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 import unittest
+import os
 
 from common.base_i2c_driver_presence_test import BaseI2cDriverPresenceTest
 
@@ -29,7 +30,6 @@ class FujiI2cDriverPresenceTest(BaseI2cDriverPresenceTest, unittest.TestCase):
             "mp2975",
             "scmcpld",
             "iobfpga",
-            "adm1275",
             "lm75",
             "tmp421",
             "ucd9000",
@@ -40,3 +40,11 @@ class FujiI2cDriverPresenceTest(BaseI2cDriverPresenceTest, unittest.TestCase):
             "smb_syscpld",
             "domfpga",
         ]
+
+        """ To update alternate i2c driver """
+        adm1275_path = "/sys/bus/i2c/devices/16-0010"
+        lm25066_path = "/sys/bus/i2c/devices/16-0044"
+        if os.path.isdir(adm1275_path):
+            self.i2c_driver_list.append("adm1275")
+        elif os.path.isdir(lm25066_path):
+            self.i2c_driver_list.append("lm25066")

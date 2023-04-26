@@ -60,14 +60,8 @@ class HGXComponent : public Component {
 };
 
 class HGXSystemConfig {
-  static bool isEVT() {
-    try {
-      hgx::version("HMC_Firmware");
-      return true;
-    } catch (std::exception&) {
-      return false;
-    }
-  }
+  HMCPhase phase = hgx::getHMCPhase();
+
   public:
     HGXSystemConfig() {
       if (pal_is_artemis()) {
@@ -77,7 +71,7 @@ class HGXSystemConfig {
       static HGXComponent patchcomp("hgx", "patch", "");
       
       if (gpio_get_value_by_shadow(GPU_PRESENT) == 0) {
-        if (isEVT()) {
+        if (phase == HMCPhase::HMC_FW_EVT) {
           static HGXComponent hmc("hgx", "hmc", "HMC_Firmware");
           static HGXComponent gpu0("hgx", "gpu0-fw", "GPU0Firmware");
           static HGXComponent gpu1("hgx", "gpu1-fw", "GPU1Firmware");
@@ -130,14 +124,7 @@ class HGXSystemConfig {
           static HGXComponent epax("hgx", "erot-pax", "ERoT_PCIeSwitch_Firmware");
         } else {
           // Newer HMC uses "BMC" as the component name
-          bool isHMC;
-          try {
-            hgx::version("HGX_FW_HMC_0");
-            isHMC = true;
-          } catch (std::exception&) {
-            isHMC = false;
-          };
-          if (isHMC) {
+          if (phase == HMCPhase::HMC_FW_DVT) {
             static HGXComponent hmc("hgx", "hmc", "HGX_FW_HMC_0");
           } else {
             static HGXComponent hmc("hgx", "hmc", "HGX_FW_BMC_0");
@@ -186,7 +173,7 @@ class HGXSystemConfig {
           static HGXComponent egpu5("hgx", "erot-gpu6", "HGX_FW_ERoT_GPU_SXM_6");
           static HGXComponent egpu6("hgx", "erot-gpu7", "HGX_FW_ERoT_GPU_SXM_7");
           static HGXComponent egpu7("hgx", "erot-gpu8", "HGX_FW_ERoT_GPU_SXM_8");
-          if (isHMC) {
+          if (phase == HMCPhase::HMC_FW_DVT) {
             static HGXComponent ehmc("hgx", "erot-hmc", "HGX_FW_ERoT_HMC_0");
           } else {
             static HGXComponent ehmc("hgx", "erot-hmc", "HGX_FW_ERoT_BMC_0");

@@ -1663,6 +1663,54 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
             snprintf(temp_log, sizeof(temp_log), ", TPM Self-Test FAIL Detected");
             strcat(error_log, temp_log);
             break;
+          case 0xD0:
+            snprintf(temp_log, sizeof(temp_log), ", DXE CPU error");
+            strcat(error_log, temp_log);
+            break;
+          case 0xD1:
+            snprintf(temp_log, sizeof(temp_log), ", DXE North bridge error");
+            strcat(error_log, temp_log);
+            break;
+          case 0xD2:
+            snprintf(temp_log, sizeof(temp_log), ", DXE South bridge error");
+            strcat(error_log, temp_log);
+            break;
+          case 0xD3:
+            snprintf(temp_log, sizeof(temp_log), ", DXE ARCH protocol not available");
+            strcat(error_log, temp_log);
+            break;
+          case 0xD4:
+            snprintf(temp_log, sizeof(temp_log), ", DXE PCI bus out of resources");
+            strcat(error_log, temp_log);
+            break;
+          case 0xD5:
+            snprintf(temp_log, sizeof(temp_log), ", DXE legacy OPROM no space");
+            strcat(error_log, temp_log);
+            break;
+          case 0xD6:
+            snprintf(temp_log, sizeof(temp_log), ", DXE no console output");
+            strcat(error_log, temp_log);
+            break;
+          case 0xD7:
+            snprintf(temp_log, sizeof(temp_log), ", DXE no console input");
+            strcat(error_log, temp_log);
+            break;
+          case 0xD8:
+            snprintf(temp_log, sizeof(temp_log), ", DXE invalid password");
+            strcat(error_log, temp_log);
+            break;
+          case 0xD9:
+            snprintf(temp_log, sizeof(temp_log), ", Error loading Boot Option (Load image returned error)");
+            strcat(error_log, temp_log);
+            break;
+          case 0xDA:
+            snprintf(temp_log, sizeof(temp_log), ", Boot Option is failed (Start image returned error)");
+            strcat(error_log, temp_log);
+            break;
+          case 0xDB:
+            snprintf(temp_log, sizeof(temp_log), ", BIOS can't access flash part, while flashing BIOS");
+            strcat(error_log, temp_log);
+            break;
           default:
             break;
         }

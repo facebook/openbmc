@@ -5,7 +5,7 @@
 #include "dimm.h"
 
 #define PMIC_ERR_INJ_REG 0x35
-#define ERR_PATTERN_LEN  6
+#define ERR_PATTERN_LEN  7
 #define PMIC_WRITE_PROTECT_BIT 2
 
 #define STR_SWA_OV     "SWAout_OV"
@@ -75,26 +75,26 @@ typedef struct {
   err_inject_reg einj_reg;
 } pmic_err_info;
 
-static const uint8_t pmic_err_pattern_idx[ERR_PATTERN_LEN] = {0x5, 0x6, 0x8, 0x9, 0xA, 0xB};
+static const uint8_t pmic_err_pattern_idx[ERR_PATTERN_LEN] = {0x5, 0x6, 0x8, 0x9, 0xA, 0xB, 0x33};
 static const pmic_err_info pmic_err[MAX_PMIC_ERR_TYPE] = {
-  // R05, R06,  R08,  R09,  R0A,	R0B,   CAMP,  err_str,        err_type,    uv/ov,   rail,         enable
-  {{0x42, 0x08, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWA_OV,     {TYPE_UNDEF, VOLT_OV, RAIL_SWA_OUT, ERR_INJ_ENABLE}},
-  {{0x22, 0x04, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWB_OV,     {TYPE_UNDEF, VOLT_OV, RAIL_SWB_OUT, ERR_INJ_ENABLE}},
-  {{0x12, 0x02, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWC_OV,     {TYPE_UNDEF, VOLT_OV, RAIL_SWC_OUT, ERR_INJ_ENABLE}},
-  {{0x0A, 0x01, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWD_OV,     {TYPE_UNDEF, VOLT_OV, RAIL_SWD_OUT, ERR_INJ_ENABLE}},
-  {{0x04, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_BULK_OV,    {TYPE_UNDEF, VOLT_OV, RAIL_VIN_BULK, ERR_INJ_ENABLE}},
-  {{0x00, 0x00, 0x02, 0x00, 0x02, 0x00}, false, STR_MGMT_OV,    {TYPE_UNDEF, VOLT_OV, RAIL_VIN_MGMT, ERR_INJ_ENABLE}},
-  {{0x42, 0x80, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWA_UV,     {TYPE_UNDEF, VOLT_UV, RAIL_SWA_OUT, ERR_INJ_ENABLE}},
-  {{0x22, 0x40, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWB_UV,     {TYPE_UNDEF, VOLT_UV, RAIL_SWB_OUT, ERR_INJ_ENABLE}},
-  {{0x12, 0x20, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWC_UV,     {TYPE_UNDEF, VOLT_UV, RAIL_SWC_OUT, ERR_INJ_ENABLE}},
-  {{0x0A, 0x10, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWD_UV,     {TYPE_UNDEF, VOLT_UV, RAIL_SWD_OUT, ERR_INJ_ENABLE}},
-  {{0x00, 0x00, 0x80, 0x00, 0x00, 0x00}, true,  STR_BULK_UV,    {TYPE_UNDEF, VOLT_UV, RAIL_VIN_BULK, ERR_INJ_ENABLE}},
-  {{0x00, 0x00, 0x00, 0x10, 0x02, 0x00}, false, STR_SWITCHOVER, {TYPE_SWITCHOVER, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
-  {{0x00, 0x00, 0x00, 0x80, 0x02, 0x00}, false, STR_HIGH_TEMP,  {TYPE_HIGH_TEMP, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
-  {{0x00, 0x00, 0x00, 0x20, 0x02, 0x00}, false, STR_PG_1V8,     {TYPE_PG_1V8, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
-  {{0x00, 0x00, 0x00, 0x0F, 0x02, 0x00}, false, STR_HIGH_CURR,  {TYPE_HIGH_CURR, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
-  {{0x00, 0x00, 0x00, 0x00, 0x02, 0xF0}, false, STR_CURR_LIMIT, {TYPE_CURR_LIMIT, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
-  {{0x00, 0x00, 0x40, 0x00, 0x00, 0x00}, true,  STR_CRIT_TEMP,  {TYPE_CRIT_TEMP, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}}
+  // R05, R06,  R08,  R09,  R0A,	R0B,  R33,   CAMP,  err_str,        err_type,    uv/ov,   rail,         enable
+  {{0x42, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWA_OV,     {TYPE_UNDEF, VOLT_OV, RAIL_SWA_OUT, ERR_INJ_ENABLE}},
+  {{0x22, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWB_OV,     {TYPE_UNDEF, VOLT_OV, RAIL_SWB_OUT, ERR_INJ_ENABLE}},
+  {{0x12, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWC_OV,     {TYPE_UNDEF, VOLT_OV, RAIL_SWC_OUT, ERR_INJ_ENABLE}},
+  {{0x0A, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWD_OV,     {TYPE_UNDEF, VOLT_OV, RAIL_SWD_OUT, ERR_INJ_ENABLE}},
+  {{0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_BULK_OV,    {TYPE_UNDEF, VOLT_OV, RAIL_VIN_BULK, ERR_INJ_ENABLE}},
+  {{0x00, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00}, false, STR_MGMT_OV,    {TYPE_UNDEF, VOLT_OV, RAIL_VIN_MGMT, ERR_INJ_ENABLE}},
+  {{0x42, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWA_UV,     {TYPE_UNDEF, VOLT_UV, RAIL_SWA_OUT, ERR_INJ_ENABLE}},
+  {{0x22, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWB_UV,     {TYPE_UNDEF, VOLT_UV, RAIL_SWB_OUT, ERR_INJ_ENABLE}},
+  {{0x12, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWC_UV,     {TYPE_UNDEF, VOLT_UV, RAIL_SWC_OUT, ERR_INJ_ENABLE}},
+  {{0x0A, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00}, true,  STR_SWD_UV,     {TYPE_UNDEF, VOLT_UV, RAIL_SWD_OUT, ERR_INJ_ENABLE}},
+  {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08}, true,  STR_BULK_UV,    {TYPE_UNDEF, VOLT_UV, RAIL_VIN_BULK, ERR_INJ_ENABLE}},
+  {{0x00, 0x00, 0x00, 0x10, 0x02, 0x00, 0x00}, false, STR_SWITCHOVER, {TYPE_SWITCHOVER, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
+  {{0x00, 0x00, 0x00, 0x80, 0x02, 0x00, 0x00}, false, STR_HIGH_TEMP,  {TYPE_HIGH_TEMP, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
+  {{0x00, 0x00, 0x00, 0x20, 0x02, 0x00, 0x00}, false, STR_PG_1V8,     {TYPE_PG_1V8, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
+  {{0x00, 0x00, 0x00, 0x0F, 0x02, 0x00, 0x00}, false, STR_HIGH_CURR,  {TYPE_HIGH_CURR, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
+  {{0x00, 0x00, 0x00, 0x00, 0x02, 0xF0, 0x00}, false, STR_CURR_LIMIT, {TYPE_CURR_LIMIT, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}},
+  {{0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00}, true,  STR_CRIT_TEMP,  {TYPE_CRIT_TEMP, VOLT_UNDEF, RAIL_UNDEF, ERR_INJ_ENABLE}}
 };
 
 int
@@ -159,7 +159,7 @@ pmic_rdwr_with_retry(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset,
 
 int
 pmic_list_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, const char **err_list, uint8_t *err_cnt) {
-  uint8_t data[16] = {0};
+  uint8_t data[64] = {0};
   uint8_t err_idx, reg_idx;
   uint8_t reg, pattern;
 
@@ -169,6 +169,11 @@ pmic_list_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, const char **err_list, 
 
   // read R05 ~ R0B
   if (pmic_rdwr_with_retry(fru_id, cpu, dimm, 0x05, 0, 7, &data[5]) != 0) {
+    return -1;
+  }
+
+  // read R33
+  if (pmic_rdwr_with_retry(fru_id, cpu, dimm, 0x33, 0, 1, &data[0x33]) != 0) {
     return -1;
   }
 

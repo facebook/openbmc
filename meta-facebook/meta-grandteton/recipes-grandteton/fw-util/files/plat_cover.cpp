@@ -32,16 +32,14 @@ class palBiosComponent : public BiosComponent {
 
 bool palBiosComponent::get_active_version(string& ver) {
   char value[MAX_VALUE_LEN] = {0};
-  bool ret = ((kv_get(key.c_str(), value, NULL, KV_FPERSIST) < 0) && (errno == ENOENT));
-  ver = string(value);
-  return ret && !ver.empty();
+  bool keyNotExist = ((kv_get(key.c_str(), value, NULL, KV_FPERSIST) < 0) && (errno == ENOENT));
+  if (!keyNotExist)
+    ver = string(value);
+  return keyNotExist;
 }
 
 int palBiosComponent::update_finish(void) {
-  string verstr;
-  if (get_active_version(verstr)) { // no update before
-    kv_set(key.c_str(), _ver_after_active.c_str(), 0, KV_FPERSIST);
-  }
+  kv_set(key.c_str(), _ver_after_active.c_str(), 0, KV_FPERSIST);
   sys().runcmd(string("/sbin/fw_setenv por_ls on"));
   sys().output << "To complete the upgrade, please perform 'power-util sled-cycle'" << endl;
   return 0;

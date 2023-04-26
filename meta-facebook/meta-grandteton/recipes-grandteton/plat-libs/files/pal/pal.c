@@ -330,6 +330,28 @@ pal_get_meb_jcn_fruid(char *str, uint8_t *fru) {
 }
 
 int
+pal_get_80port_lcc_page_record(uint8_t slot, uint8_t page_num, uint8_t *buf, size_t max_len, size_t *len) {
+  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
+
+  if (buf == NULL || len == NULL || max_len == 0)
+    return -1;
+
+  if (!pal_is_slot_server(slot)) {
+    syslog(LOG_WARNING, "pal_get_80port_record: slot %d is not supported", slot);
+    return PAL_ENOTSUP;
+  }
+
+  snprintf(key, sizeof(key), "lcc_postcode_%d", page_num);
+  if ((kv_get(key, value, NULL, 0) < 0) && (errno == ENOENT)) {
+    syslog(LOG_WARNING, "kv_get fail\n");
+  } else {
+    memcpy(buf, value, MAX_VALUE_LEN);
+    *len = (size_t)MAX_VALUE_LEN;
+  }
+  return 0;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!str || !fru) {
     syslog(LOG_WARNING, "%s() Input pointer is NULL.", __func__);

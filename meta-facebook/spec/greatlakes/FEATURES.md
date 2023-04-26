@@ -1,23 +1,23 @@
 #### bic-support
 
-- [ ] P0 **bic gpio support**
+- [X] P0 **bic gpio support**
 - [ ] P0 **bic i3c support**
 - [ ] P1 **bic info**
-- [ ] P0 **bic ipmb support**
+- [X] P0 **bic ipmb support**
 - [ ] P0 **bic mctp support**
-- [ ] P0 **bic reset**
+- [X] P0 **bic reset**
 - [ ] P2 **bic secure boot**
-- [ ] P0 **bic self test**
+- [X] P0 **bic self test**
 - [ ] P0 **bic slot clear cmos support**
-- [ ] P0 **bic slot postcode data**
-- [ ] P1 **bic slot sdr data**
-- [ ] P0 **bic slot sensor data**
-- [ ] P1 **bic status check**
-- [ ] P2 **bic usb connection status**
+- [X] P0 **bic slot postcode data**
+- [X] P1 **bic slot sdr data**
+- [X] P0 **bic slot sensor data**
+- [X] P1 **bic status check**
+- [X] P2 **bic usb connection status**
 
 #### bmc-hardware-support
 
-- [ ] P0 **aspeed**
+- [X] P0 **aspeed**
 - [ ] P2 **nuvoton**
 
 #### bmc-reset
@@ -29,10 +29,10 @@
 #### configuration
 
 - [ ] P1 **configuration cmos restore oem command**
-- [ ] P0 **configuration cmos restore physical reset**
-- [ ] P2 **configuration get platform info**
-- [ ] P0 **configuration set boot order sequence**
-- [ ] P1 **configuration set power policy**
+- [X] P0 **configuration cmos restore physical reset**
+- [X] P2 **configuration get platform info**
+- [X] P0 **configuration set boot order sequence**
+- [X] P1 **configuration set power policy**
 
 #### design-for-test
 
@@ -53,7 +53,7 @@
 
 #### event-logs
 
-- [ ] P1 **log events to persistent storage**
+- [X] P1 **log events to persistent storage**
 
 #### firmware-signature-checking
 
@@ -63,44 +63,44 @@
 
 #### firmware-update
 
-- [ ] P0 **firmware update bic**
-- [ ] P0 **firmware update bic recovery**
-- [ ] P0 **firmware update bios**
-- [ ] P0 **firmware update cpld**
-- [ ] P2 **firmware update expansion bic**
-- [ ] P2 **firmware update expansion bic recovery**
+- [X] P0 **firmware update bic**
+- [X] P0 **firmware update bic recovery**
+- [X] P0 **firmware update bios**
+- [X] P0 **firmware update cpld**
+- [X] P2 **firmware update expansion bic**
+- [X] P2 **firmware update expansion bic recovery**
 - [ ] P3 **firmware update flashy**
-- [ ] P1 **firmware update**
-- [ ] P1 **firmware update nic**
-- [ ] P0 **firmware update openbmc**
-- [ ] P0 **firmware update vr**
+- [X] P1 **firmware update**
+- [X] P1 **firmware update nic**
+- [X] P0 **firmware update openbmc**
+- [X] P0 **firmware update vr**
 - [ ] P4 **wipe workflows**
 
 #### firmware-versions
 
-- [ ] P0 **firmware version bic**
-- [ ] P0 **firmware version bios**
-- [ ] P0 **firmware version cpld**
-- [ ] P2 **firmware version expansion card**
-- [ ] P1 **firmware version nic**
-- [ ] P0 **firmware version openbmc**
-- [ ] P0 **firmware versions**
-- [ ] P0 **firmware version vr**
+- [X] P0 **firmware version bic**
+- [X] P0 **firmware version bios**
+- [X] P0 **firmware version cpld**
+- [X] P2 **firmware version expansion card**
+- [X] P1 **firmware version nic**
+- [X] P0 **firmware version openbmc**
+- [X] P0 **firmware versions**
+- [X] P0 **firmware version vr**
 
 #### front-panel-control
 
 - [ ] P2 **fpc console selection switch**
 - [ ] P2 **fpc debug card console**
 - [ ] P2 **fpc debug card reset button**
-- [ ] P0 **fpc heartbeat led**
-- [ ] P2 **fpc identity led**
+- [X] P0 **fpc heartbeat led**
+- [X] P2 **fpc identity led**
 - [ ] P0 **fpc sled cycle**
 
 #### fru-information
 
-- [ ] P2 **fru information**
-- [ ] P1 **fru read fru**
-- [ ] P1 **fru update fru**
+- [X] P2 **fru information**
+- [X] P1 **fru read fru**
+- [X] P1 **fru update fru**
 
 #### health-monitoring
 
@@ -108,28 +108,28 @@
 - [ ] P2 **health monitoring cpu usage**
 - [ ] P1 **health monitoring disable auto reboots**
 - [ ] P2 **health monitoring memory usage**
-- [ ] P0 **health monitoring wdt**
+- [X] P0 **health monitoring wdt**
 
 #### hot-plug-services
 
-- [ ] P1 **hot plug service fan speed**
+- [X] P1 **hot plug service fan speed**
 - [ ] P2 **hot plug service sdr caching**
 - [ ] P2 **hot plug service sled insertion**
 
 #### infrastructure
 
-- [ ] P0 **adc device support**
+- [X] P0 **adc device support**
 - [ ] P2 **cpld gpio expander register layout**
-- [ ] P0 **flash layout**
-- [ ] P0 **gpio device support**
-- [ ] P0 **gpio driver porting**
-- [ ] P0 **i2c device support**
-- [ ] P0 **kernel**
-- [ ] P0 **pwm tach device support**
+- [X] P0 **flash layout**
+- [X] P0 **gpio device support**
+- [X] P0 **gpio driver porting**
+- [X] P0 **i2c device support**
+- [X] P0 **kernel**
+- [X] P0 **pwm tach device support**
 - [ ] P1 **qemu**
-- [ ] P0 **spi device support**
-- [ ] P0 **u boot porting**
-- [ ] P0 **yocto**
+- [X] P0 **spi device support**
+- [X] P0 **u boot porting**
+- [X] P0 **yocto**
 
 #### lcd-debug-card
 
@@ -144,19 +144,19 @@
 
 - [ ] P2 **misc dimm location matching**
 - [ ] P2 **misc enclosure util**
-- [ ] P1 **misc guid util**
+- [X] P1 **misc guid util**
 - [ ] P1 **misc json format**
 - [ ] P4 **misc ods scuba integration**
 - [ ] P4 **misc ods sensor names**
 - [ ] P2 **misc openbmc test automation**
-- [ ] P0 **misc reset default factory settings**
+- [X] P0 **misc reset default factory settings**
 
 #### network
 
-- [ ] P0 **nic host to bmc support**
-- [ ] P1 **nic ipv4**
-- [ ] P0 **nic ipv6**
-- [ ] P1 **nic monitoring and upgrade**
+- [X] P0 **nic host to bmc support**
+- [X] P1 **nic ipv4**
+- [X] P0 **nic ipv6**
+- [X] P1 **nic monitoring and upgrade**
 - [ ] P2 **nic multi channel support**
 - [ ] P2 **nic ncsi aen notifications**
 - [ ] P2 **nic network link status detection**
@@ -169,7 +169,7 @@
 
 #### post-code
 
-- [ ] P1 **post code history**
+- [X] P1 **post code history**
 
 #### power-control
 
@@ -177,17 +177,17 @@
 - [ ] P1 **expansion card power off**
 - [ ] P1 **expansion card power on**
 - [ ] P1 **phosphor state manager support**
-- [ ] P2 **power failure detection**
-- [ ] P0 **power status**
-- [ ] P0 **sled cycle**
-- [ ] P0 **slot 12v cycle**
-- [ ] P0 **slot 12v off**
-- [ ] P0 **slot 12v on**
-- [ ] P0 **slot cycle**
-- [ ] P2 **slot graceful shutdown**
-- [ ] P0 **slot power off**
-- [ ] P0 **slot power on**
-- [ ] P0 **slot reset**
+- [X] P2 **power failure detection**
+- [X] P0 **power status**
+- [X] P0 **sled cycle**
+- [X] P0 **slot 12v cycle**
+- [X] P0 **slot 12v off**
+- [X] P0 **slot 12v on**
+- [X] P0 **slot cycle**
+- [X] P2 **slot graceful shutdown**
+- [X] P0 **slot power off**
+- [X] P0 **slot power on**
+- [X] P0 **slot reset**
 
 #### security
 
@@ -208,50 +208,50 @@
 #### sensors
 
 - [ ] P3 **sensor automatic snapshot**
-- [ ] P2 **sensor caching**
-- [ ] P1 **sensor common naming spec**
-- [ ] P2 **sensor display current status**
-- [ ] P2 **sensor display thresholds**
-- [ ] P3 **sensor history**
-- [ ] P0 **sensor information**
+- [X] P2 **sensor caching**
+- [X] P1 **sensor common naming spec**
+- [X] P2 **sensor display current status**
+- [X] P2 **sensor display thresholds**
+- [X] P3 **sensor history**
+- [X] P0 **sensor information**
 
 #### serial-over-lan
 
-- [ ] P0 **bic uart access**
-- [ ] P1 **expansion card uart access**
-- [ ] P0 **host sol access**
-- [ ] P0 **m term**
-- [ ] P1 **sol console history**
+- [X] P0 **bic uart access**
+- [X] P1 **expansion card uart access**
+- [X] P0 **host sol access**
+- [X] P0 **m term**
+- [X] P1 **sol console history**
 - [ ] P1 **sol host logger**
 
 #### thermal-management
 
-- [ ] P0 **airflow sensor**
+- [X] P0 **airflow sensor**
 - [ ] P3 **conditional sensor calibration**
 - [ ] P2 **cpu throttle support**
-- [ ] P1 **fan control automatic**
-- [ ] P0 **fan control manual**
+- [X] P1 **fan control automatic**
+- [X] P0 **fan control manual**
 - [ ] P2 **fsc configuration update**
 - [ ] P2 **fsc persistent configuration**
 - [ ] P1 **nic otp protection**
 - [ ] P2 **sensor calibration**
-- [ ] P1 **sled otp protection**
+- [X] P1 **sled otp protection**
 - [ ] P3 **thermal management**
 
 #### time-sync
 
 - [ ] P2 **time ntp sync**
 - [ ] P1 **time rtc**
-- [ ] P0 **time timezone**
+- [X] P0 **time timezone**
 
 #### user-interface
 
 - [ ] P0 **generic user interface**
 - [ ] P2 **host2bmc usb**
-- [ ] P0 **inband ethernet**
-- [ ] P1 **inband kcs**
+- [X] P0 **inband ethernet**
+- [X] P1 **inband kcs**
 - [ ] P2 **oob rest**
-- [ ] P0 **oob ssh**
+- [X] P0 **oob ssh**
 - [ ] P2 **redfish**
 
 #### intel
@@ -260,7 +260,7 @@
 
 #### platform-specific-requirements
 
-- [ ] P2 **sled cable presence detect**
+- [X] P2 **sled cable presence detect**
 - [ ] P2 **ddr5 pmic power measurement**
 - [ ] P2 **ddr5 pmic error injection**
 - [ ] P3 **terminus nic enablement**
@@ -268,3 +268,4 @@
 - [ ] P2 **cpld board id version info**
 - [ ] P2 **dimm spd data**
 - [ ] P2 **ti vr controller fw update cycle counter**
+

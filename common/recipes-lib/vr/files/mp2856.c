@@ -238,6 +238,18 @@ mp2856_get_remaining_wr_msg(uint8_t addr, uint16_t *remain, char *msg, bool is_u
   return VR_STATUS_SUCCESS;
 }
 
+static int
+mp2985h_get_remaining_wr_msg(uint8_t addr, uint16_t *remain, char *msg, bool is_update) {
+  if ((mps_remaining_wr == NULL) || (remain == NULL) || (msg == NULL)) {
+    syslog(LOG_WARNING, "%s: Failed to load remaining writes due to NULL pointer check \n", __func__);
+    return VR_STATUS_FAILURE;
+  }
+  // TODO: Support to get mp2985h's remaining write
+  snprintf(msg, MAX_REMAIN_WR_MSG, ", Remaining Writes: Not supported");
+
+  return VR_STATUS_SUCCESS;
+}
+
 int
 program_mp2856(uint8_t bus, uint8_t addr, struct mp2856_config *config  ) {
  uint8_t tbuf[16], rbuf[16];
@@ -738,6 +750,42 @@ cache_mp2993_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
   return ret;
 }
 
+static int
+cache_mp2985h_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
+  int ret = VR_STATUS_FAILURE;
+  uint8_t tbuf[16];
+  uint8_t crc[5];
+  uint16_t remain = 0;
+  char remaining_wr_msg[MAX_REMAIN_WR_MSG];
+
+  do {
+    if (mp2856_set_page(bus, addr, VR_MPS_PAGE_1) < 0) {
+      break;
+    }
+    tbuf[0] = VR_MPS_REG_CRC_2985H;
+    if (vr_xfer(bus, addr, tbuf, 1, crc, 5) < 0) {
+      syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
+      break;
+    }
+
+    snprintf(checksum, MAX_VALUE_LEN, "MPS %02X%02X%02X%02X",
+           crc[4], crc[3], crc[2], crc[1]);
+
+    if (mps_remaining_wr != NULL) {
+      if(mp2985h_get_remaining_wr_msg(addr, &remain, remaining_wr_msg, GET_VR_CRC) == VR_STATUS_SUCCESS) {
+        strncat(checksum, remaining_wr_msg, MAX_REMAIN_WR_MSG);
+      }
+    }
+
+    kv_set(key, checksum, 0, 0);
+  } while (0);
+
+  if (mp2856_set_page(bus, addr, VR_MPS_PAGE_0) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+  return ret;
+}
+
 int
 get_mp2856_ver(struct vr_info *info, char *ver_str) {
   int ret;
@@ -816,6 +864,49 @@ get_mp2993_ver(struct vr_info *info, char *ver_str) {
     }
 
     if (ret) {
+      return VR_STATUS_FAILURE;
+    }
+  }
+
+  if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN-1))
+    return VR_STATUS_FAILURE;
+
+  return VR_STATUS_SUCCESS;
+}
+
+int
+get_mp2985h_ver(struct vr_info *info, char *ver_str) {
+  int ret;
+  char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
+
+  if (info->private_data != NULL) {
+    snprintf(key, sizeof(key), "%s_vr_%02xh_crc", (char *)info->private_data, info->addr);
+  } else {
+    snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
+  }
+
+  if (kv_get(key, tmp_str, NULL, 0)) {
+    if (info->xfer != NULL) {
+      vr_xfer = info->xfer;
+    }
+
+    if (info->remaining_wr_op != NULL) {
+      mps_remaining_wr = info->remaining_wr_op;
+    }
+
+    //Stop sensor polling before read crc from register
+    if (info->sensor_polling_ctrl != NULL) {
+      info->sensor_polling_ctrl(false);
+    }
+
+    ret = cache_mp2985h_crc(info->bus, info->addr, key, tmp_str);
+
+    //Resume sensor polling
+    if (info->sensor_polling_ctrl != NULL) {
+      info->sensor_polling_ctrl(true);
+    }
+
+    if (ret < 0) {
       return VR_STATUS_FAILURE;
     }
   }

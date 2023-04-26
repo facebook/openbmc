@@ -252,6 +252,23 @@ map<uint8_t, map<uint8_t, string>>&  VrComponent::get_vr_list() {
     }
     return halfdome_vr_table[slot_id];
   } else if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_GL) {
+    switch (fby35_common_get_sb_rev(slot_id)) {
+    case FW_REV_EVT: {
+      // Erase great_lake_vr_list's components
+      map<uint8_t, map<uint8_t, string>>::iterator iter;
+      iter = great_lake_vr_list.find(FW_VR_VCCD_HV);
+      great_lake_vr_list.erase(iter);
+      iter = great_lake_vr_list.find(FW_VR_VCCINF);
+      great_lake_vr_list.erase(iter);
+      // Insert new components to great_lake_vr_list
+      great_lake_vr_list.insert(
+          pair<uint8_t, map<uint8_t, string>>(FW_VR_VCCD_HV, {{GL_EVT_VCCD_ADDR, "VCCD_HV"}}));
+      great_lake_vr_list.insert(pair<uint8_t, map<uint8_t, string>>(
+          FW_VR_VCCINF, {{GL_EVT_VCCINF_ADDR, "VCCINF/VCCFA_EHV_FIVRA"}}));
+    } break;
+    default:
+      break;
+    }
     return great_lake_vr_list;
   } else {
     return  crater_lake_vr_list;

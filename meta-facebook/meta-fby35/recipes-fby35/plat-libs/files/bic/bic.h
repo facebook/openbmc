@@ -125,6 +125,11 @@ enum {
   GL_VCCIN_ADDR = 0xC0,
   GL_VCCD_ADDR = 0xD4,
   GL_VCCINF_ADDR = 0xDC,
+
+  /*----greatlake EVT VR ADDR-----*/ // Refer to page 9 of "GREAT LAKES_EVT_20230412
+  GL_EVT_VCCIN_ADDR = 0xC0,
+  GL_EVT_VCCD_ADDR = 0xE4,
+  GL_EVT_VCCINF_ADDR = 0xC4,
 };
 
 // M2 info

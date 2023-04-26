@@ -164,11 +164,27 @@ struct vr_ops mps_ops = {
   .fw_verify = NULL,
 };
 
+struct vr_ops mps_mp2985h_ops = {
+  .get_fw_ver = get_mp2985h_ver,
+  .parse_file = NULL,
+  .validate_file = NULL,
+  .fw_update = NULL,
+  .fw_verify = NULL,
+};
+
 struct vr_ops ifx_xdpe12284_ops = {
   .get_fw_ver = get_xdpe_ver,
   .parse_file = xdpe_parse_file,
   .validate_file = NULL,
   .fw_update = plat_xdpe12284c_fw_update,
+  .fw_verify = NULL,
+};
+
+struct vr_ops none_ops = {
+  .get_fw_ver = NULL,
+  .parse_file = NULL,
+  .validate_file = NULL,
+  .fw_update = NULL,
   .fw_verify = NULL,
 };
 
@@ -204,6 +220,7 @@ struct vr_info fby35_vr_list[] = {
     .ops = &rns_ops,
     .private_data = fru_name,
     .xfer = &fby35_vr_rdwr,
+    .sensor_polling_ctrl = sb_vr_polling_ctrl,
   },
   {
     .bus = SB_VR_BUS,
@@ -212,6 +229,7 @@ struct vr_info fby35_vr_list[] = {
     .ops = &rns_ops,
     .private_data = fru_name,
     .xfer = &fby35_vr_rdwr,
+    .sensor_polling_ctrl = sb_vr_polling_ctrl,
   },
   {
     .bus = SB_VR_BUS,
@@ -220,6 +238,7 @@ struct vr_info fby35_vr_list[] = {
     .ops = &rns_ops,
     .private_data = fru_name,
     .xfer = &fby35_vr_rdwr,
+    .sensor_polling_ctrl = sb_vr_polling_ctrl,
   },
   {
     .bus = SB_VR_BUS,
@@ -358,11 +377,28 @@ void rbf_vr_device_check(void){
   }
 }
 
-void greatlakes_vr_device_check(void){
+void greatlakes_vr_device_check(void) {
   uint8_t rbuf[16], rlen;
   int i;
 
   for (i = VR_GL_VCCIN; i <= VR_GL_VCCINF; i++) {
+    switch (fby35_common_get_sb_rev(slot_id)) {
+    case FW_REV_EVT:
+      switch (fby35_vr_list[i].addr) {
+      case GL_VCCIN_ADDR:
+        fby35_vr_list[i].addr = GL_EVT_VCCIN_ADDR;
+        break;
+      case GL_VCCD_ADDR:
+        fby35_vr_list[i].addr = GL_EVT_VCCD_ADDR;
+        break;
+      case GL_VCCINF_ADDR:
+        fby35_vr_list[i].addr = GL_EVT_VCCINF_ADDR;
+        break;
+      }
+    default:
+      break;
+    }
+
     rlen = sizeof(rbuf);
     if (bic_get_vr_device_id(slot_id, rbuf, &rlen, fby35_vr_list[i].bus,
                              fby35_vr_list[i].addr, NONE_INTF) < 0) {
@@ -370,15 +406,22 @@ void greatlakes_vr_device_check(void){
     }
 
     switch (rlen) {
-      case 2:
-        fby35_vr_list[i].ops = &ifx_ops;
-        break;
-      case 6:
-        fby35_vr_list[i].ops = &ti_ops;
-        break;
-      default:
-        fby35_vr_list[i].ops = &rns_ops;
-        break;
+    case 1:
+      fby35_vr_list[i].ops = &mps_mp2985h_ops;
+      break;
+    case 2:
+      fby35_vr_list[i].ops = &ifx_ops;
+      break;
+    case 4:
+      fby35_vr_list[i].ops = &rns_ops;
+      break;
+    case 6:
+      fby35_vr_list[i].ops = &ti_ops;
+      break;
+    default:
+      syslog(LOG_WARNING, "Failed to initialize VR operation. Device ID's rlen: %d", rlen);
+      fby35_vr_list[i].ops = &none_ops;
+      break;
     }
   }
 }

@@ -47,6 +47,9 @@
 /*CRC for MP2993 */
 #define VR_MPS_REG_CRC_2993           0xB8
 
+/*CRC for MP2985H */
+#define VR_MPS_REG_CRC_2985H           0xB8
+
 /* STATUS_CML bit[3] */
 #define MASK_PWD_MATCH                0x08
 /* MFR_VR_CONFIG2 bit[2] */
@@ -63,6 +66,8 @@
 #define MP2993_PRODUCT_ID 0x2993
 
 #define MAX_MP2856_REMAIN_WR 1000
+
+#define MAX_REMAIN_WR_MSG 64
 
 enum {
   BYTE_WRITE_READ = 0,
@@ -109,5 +114,6 @@ void* mp2856_parse_file(struct vr_info*, const char*);
 int mp2856_fw_update(struct vr_info*, void*);
 int get_mp2856_ver(struct vr_info*, char*);
 int get_mp2993_ver(struct vr_info*, char*);
+int get_mp2985h_ver(struct vr_info*, char*);
 
 #endif

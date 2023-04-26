@@ -53,7 +53,6 @@ static long int g_reset_sec = 0;
 static long int g_power_on_sec = 0;
 static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static gpio_value_t g_server_power_status = GPIO_VALUE_INVALID;
-static bool g_cpu_pwrgd_trig = false;
 
 enum {
   IOEX_GPIO_STANDBY,
@@ -377,6 +376,14 @@ pch_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   log_gpio_change(FRU_MB, desc, curr, 0, NULL);
 }
 
+static void prochot_reason(char *reason)
+{
+  if (gpio_get_value_by_shadow(IRQ_UV_DETECT_N) == GPIO_VALUE_LOW)
+    strcpy(reason, "UV");
+  if (gpio_get_value_by_shadow(IRQ_OC_DETECT_N) == GPIO_VALUE_LOW)
+    strcpy(reason, "OC");
+}
+
 void
 cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   char cmd[128] = {0};
@@ -395,6 +402,13 @@ cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) 
   if (curr) {
     strcat(cmd, " DEASSERT");
   } else {
+    char reason[32] = "";
+    strcat(cmd, " by ");
+    prochot_reason(reason);
+    strcat(cmd, reason);
+    syslog(LOG_CRIT, "FRU: %d ASSERT: %s - %s (reason: %s)\n",
+           FRU_MB, cfg->description, cfg->shadow, reason);
+
     strcat(cmd, " ASSERT");
   }
   pal_add_cri_sel(cmd);
@@ -517,12 +531,17 @@ pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 
 //CPU Power Ok Event Handler
 void
+pwr_good_init(gpiopoll_pin_t *desc, gpio_value_t value) {
+  g_server_power_status = value;
+  return;
+}
+
+void
 pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   if (!sgpio_valid_check())
     return;
 
   g_server_power_status = curr;
-  g_cpu_pwrgd_trig = true;
   log_gpio_change(FRU_MB, desc, curr, 0, NULL);
   reset_timer(&g_power_on_sec);
 

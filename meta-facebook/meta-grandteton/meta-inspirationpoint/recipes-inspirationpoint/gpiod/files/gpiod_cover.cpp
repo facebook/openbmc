@@ -113,7 +113,7 @@ static struct gpiopoll_config gpios_plat_list[] = {
   {FM_CPU_ERR1_N,               "SGPIO144",  GPIO_EDGE_BOTH,    cpu_error_handler,          NULL},
   {FM_SYS_THROTTLE,             "SGPIO20" ,  GPIO_EDGE_BOTH,    gpio_event_pson_handler,    NULL},
   {RST_PLTRST_N,                "SGPIO200",  GPIO_EDGE_BOTH,    platform_reset_handle,      platform_reset_init},
-  {FM_LAST_PWRGD,               "SGPIO240",  GPIO_EDGE_BOTH,    pwr_good_handler,           NULL},
+  {FM_LAST_PWRGD,               "SGPIO240",  GPIO_EDGE_BOTH,    pwr_good_handler,           pwr_good_init},
   {FM_CPU0_SKTOCC,              "SGPIO112",  GPIO_EDGE_BOTH,    sgpio_event_handler,        cpu_skt_init},
   {FM_CPU1_SKTOCC,              "SGPIO114",  GPIO_EDGE_BOTH,    sgpio_event_handler,        cpu_skt_init},
   {FM_CPU0_PWR_FAIL,            "SGPIO174",  GPIO_EDGE_BOTH,    pwr_err_event_handler,      NULL},

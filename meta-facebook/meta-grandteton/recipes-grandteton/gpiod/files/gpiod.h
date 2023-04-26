@@ -47,6 +47,7 @@ void uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
 
 //Power EVENT
 void platform_reset_init(gpiopoll_pin_t *desc, gpio_value_t value);
+void pwr_good_init(gpiopoll_pin_t *desc, gpio_value_t value);
 
 void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 void pwr_reset_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);

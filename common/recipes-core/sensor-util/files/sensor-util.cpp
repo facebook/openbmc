@@ -104,12 +104,12 @@ const char *sensor_status[] = {
 static void
 print_usage() {
 
-  char fru_list[256] = {0};
-  char pal_fru_list_sensor_history_t[256] = {0};
+  char fru_list[512] = {0};
+  char pal_fru_list_sensor_history_t[512] = {0};
   pal_get_fru_list(fru_list);
-  pal_get_fru_list_by_caps(FRU_CAPABILITY_SENSOR_READ, fru_list, 256);
+  pal_get_fru_list_by_caps(FRU_CAPABILITY_SENSOR_READ, fru_list, 512);
   //default to standard FRU list
-  pal_get_fru_list_by_caps(FRU_CAPABILITY_SENSOR_HISTORY, pal_fru_list_sensor_history_t, 256);
+  pal_get_fru_list_by_caps(FRU_CAPABILITY_SENSOR_HISTORY, pal_fru_list_sensor_history_t, 512);
   printf("Usage: sensor-util [fru] <sensor num> <option> ..\n");
   printf("       sensor-util [fru] <option> ..\n\n");
   printf("       [fru]           : %s\n", fru_list);

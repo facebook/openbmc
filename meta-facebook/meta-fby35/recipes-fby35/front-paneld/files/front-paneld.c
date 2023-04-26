@@ -108,6 +108,9 @@ led_handler() {
         // if it's FRU_STATUS_BAD, get the current power status
         if ( pal_get_server_power(i, &status) < 0 ) {
           syslog(LOG_WARNING,"%s() failed to get the power status of slot%d\n", __func__, i);
+        } else if (status == SERVER_12V_ON) { //Means BIC is not ready, skip this loop
+          sleep(DELAY_PERIOD);
+          continue;
         } else {
           // set status
           slot_err[i] = true;

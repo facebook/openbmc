@@ -150,7 +150,7 @@ int bic_pldm_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   int ret = 0;
   uint8_t bus_id = 0;
   int retry = 0;
-  uint8_t status_12v = 0;
+  uint8_t status_12v = 0, smbus_isolated = ISOLATED_DISABLE;
   size_t rlen = 0;
 
   ret = fby35_common_get_bus_id(slot_id);
@@ -163,17 +163,25 @@ int bic_pldm_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   while (retry < BIC_XFER_RETRY_TIME) {
     // avoid meaningless retry
+    ret = fby35_common_server_smbus_isolated(slot_id, &smbus_isolated);
+    if ((ret == 0) && (smbus_isolated == ISOLATED_ENABLE)) {
+      return BIC_STATUS_NOT_READY;
+    }
+
     ret = fby35_common_server_stby_pwr_sts(slot_id, &status_12v);
     if (ret < 0 || status_12v == 0) {
-      return BIC_STATUS_FAILURE;
+      return BIC_STATUS_NOT_READY;
     }
     if (is_bic_ready(slot_id, NONE_INTF) != BIC_STATUS_SUCCESS) {
+      return BIC_STATUS_NOT_READY;
+    }
+
+    ret = oem_pldm_ipmi_send_recv(bus_id, 0xA, netfn, cmd, txbuf, txlen, rxbuf, &rlen, false);
+    if (ret) {
       msleep(BIC_XFER_RETRY_DELAY);
       retry++;
       continue;
     }
-
-    ret = oem_pldm_ipmi_send_recv(bus_id, 0xA, netfn, cmd, txbuf, txlen, rxbuf, &rlen, false);
     break;
   }
   if (retry >= BIC_XFER_RETRY_TIME) {
@@ -203,7 +211,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   uint8_t bus_id;
   uint8_t dataCksum;
   int retry = 0;
-  uint8_t status_12v = 0;
+  uint8_t status_12v = 0, smbus_isolated = ISOLATED_DISABLE;
 
   ret = fby35_common_get_bus_id(slot_id);
   if (ret < 0) {
@@ -234,6 +242,10 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   while (retry < BIC_XFER_RETRY_TIME) {
     // avoid meaningless retry
+    ret = fby35_common_server_smbus_isolated(slot_id, &smbus_isolated);
+    if ((ret == 0) && (smbus_isolated == ISOLATED_ENABLE)) {
+      return BIC_STATUS_FAILURE;
+    }
     ret = fby35_common_server_stby_pwr_sts(slot_id, &status_12v);
     if ( ret < 0 || status_12v == 0) {
       return BIC_STATUS_FAILURE;

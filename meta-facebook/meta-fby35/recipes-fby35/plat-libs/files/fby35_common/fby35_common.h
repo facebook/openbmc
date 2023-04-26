@@ -510,6 +510,16 @@ enum SB_CPLD_STATUS {
   CPLD_VALID = 0x0,
 };
 
+typedef enum {
+  CPLD_READ = 0,
+  CPLD_WRITE = 1,
+} CPLD_ACTION;
+
+typedef enum {
+  ISOLATED_ENABLE = 0,
+  ISOLATED_DISABLE = 1,
+} SMBUS_ISOLATED_STATUS;
+
 static const char *gpio_server_prsnt[] =
 {
   "",
@@ -589,6 +599,7 @@ typedef struct {
 int fby35_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);
 int fby35_common_is_bic_ready(uint8_t fru, uint8_t *val);
 int fby35_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val);
+int fby35_common_server_smbus_isolated(uint8_t fru, uint8_t *val);
 int fby35_common_get_bmc_location(uint8_t *id);
 int fby35_common_get_fru_id(char *str, uint8_t *fru);
 int fby35_common_check_slot_id(uint8_t fru);
@@ -618,6 +629,7 @@ bool fby35_common_is_prot_card_prsnt(uint8_t fru) ;
 bool fby35_common_is_prot_auth_complete(uint8_t fru) ;
 int copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 bool fby35_common_is_sb_cpld_valid(uint8_t fru);
+int fby35_common_sb_set_amber_led(uint8_t fru, uint8_t *tbuf, uint8_t tlen);
 
 #ifdef __cplusplus
 } // extern "C"

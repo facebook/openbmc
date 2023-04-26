@@ -1697,8 +1697,9 @@ pal_sysfw_key_hex_to_char(char *str, uint8_t *ver) {
 int pal_clear_bios_delay_activate_ver(int slot) {
   char ver_key[MAX_KEY_LEN] = {0};
   snprintf(ver_key, sizeof(ver_key), BIOS_NEW_VER_STR, slot);
+  kv_del(ver_key, KV_FPERSIST);
 
-  return kv_del(ver_key, KV_FPERSIST);
+  return PAL_EOK;
 }
 
 int
@@ -4591,23 +4592,12 @@ pal_handle_oem_1s_asd_msg_in(uint8_t slot, uint8_t *data, uint8_t data_len)
 int
 pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode) {
   int ret = 0;
-  int i2cfd = -1;
-  uint8_t bus = 0;
+  int tlen = 0;
+  uint8_t tbuf[2] = {0};
 
-  ret = fby35_common_get_bus_id(fru);
-  if ( ret < 0 ) {
-    printf("%s() Couldn't get the bus id of fru%d\n", __func__, fru);
-    goto err_exit;
-  }
-  bus = (uint8_t)ret + 4;
+  tbuf[tlen++] = 0x0;
+  tbuf[tlen++] = (led_on == true) ? 0x01 : 0x00;
 
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    printf("%s() Couldn't open i2c bus%d, err: %s\n", __func__, bus, strerror(errno));
-    goto err_exit;
-  }
-
-  uint8_t tbuf[2] = {0x0, (led_on == true)?0x01:0x00};
   if ( led_mode == LED_LOCATE_MODE ) {
     /* LOCATE_MODE */
     // 0x0f 01h: off
@@ -4625,13 +4615,8 @@ pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode) {
     syslog(LOG_WARNING, "%s() fru:%d, led_on:%d, led_mode:%d\n", __func__, fru, led_on, led_mode);
   }
 
-  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, 2, NULL, 0);
-  if ( ret < 0 ) {
-    printf("%s() Couldn't write data to addr %02X, err: %s\n",  __func__, SB_CPLD_ADDR, strerror(errno));
-  }
+  ret = fby35_common_sb_set_amber_led(fru, tbuf, tlen);
 
-err_exit:
-  if ( i2cfd > 0 ) close(i2cfd);
   return ret;
 }
 
@@ -5439,7 +5424,7 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
     return READING_NA;
   }
 
-  if ( ret < 0 ) {
+  if ( ret == BIC_STATUS_FAILURE ) {
     syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
   }
 

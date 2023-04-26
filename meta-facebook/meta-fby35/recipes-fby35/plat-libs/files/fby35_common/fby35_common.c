@@ -147,6 +147,37 @@ fby35_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
 }
 
 int
+fby35_common_server_smbus_isolated(uint8_t fru, uint8_t *val) {
+  int ret = 0;
+  uint8_t bmc_location = 0;
+  gpio_value_t gpio_value;
+
+  if (val == NULL) {
+    syslog(LOG_ERR, "%s: fru %d failed to get smbus isolate due to NULL pointer\n", __func__, fru);
+    return -1;
+  }
+
+  ret = fby35_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
+
+  if ( bmc_location == BB_BMC ) {
+    gpio_value = gpio_get_value_by_shadow(gpio_server_i2c_isolated[fru]);
+    if ( gpio_value == GPIO_VALUE_INVALID ) {
+      return -1;
+    }
+    *val = (uint8_t)gpio_value;
+  } else {
+    //class2 didn't have i2c isolated
+    *val = ISOLATED_DISABLE;
+  }
+
+  return ret;
+}
+
+int
 fby35_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
   int ret = 0;
   uint8_t bmc_location = 0;
@@ -205,8 +236,41 @@ fby35_read_sb_cpld(uint8_t fru, uint8_t offset, uint8_t *data) {
 }
 
 static int
-fby35_read_sb_cpld_checked(uint8_t fru, uint8_t offset, uint8_t *data) {
-  uint8_t prsnt = 0;
+fby35_write_sb_cpld(uint8_t fru, uint8_t *tbuf, uint8_t tlen) {
+  int ret = 0, i2cfd = -1;
+  uint8_t bus = 0;
+
+  if (tbuf == NULL) {
+    syslog(LOG_ERR, "%s: failed to write sb cpld due to NULL pointer\n", __func__);
+    return -1;
+  }
+
+  ret = fby35_common_get_bus_id(fru);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
+    return -1;
+  }
+
+  bus = (uint8_t)(ret + 4);
+  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open bus %u: %s", __func__, bus, strerror(errno));
+    return -1;
+  }
+
+  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, NULL, 0);
+  close(i2cfd);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to write CPLD, offset=%02X", __func__, tbuf[0]);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+fby35_read_write_sb_cpld_checked(uint8_t fru, uint8_t offset, uint8_t *data, uint8_t tlen, uint8_t action) {
+  uint8_t prsnt = 0, smbus_isolated = 0;
 
   if (data == NULL) {
     return -1;
@@ -224,13 +288,26 @@ fby35_read_sb_cpld_checked(uint8_t fru, uint8_t offset, uint8_t *data) {
     return -1;
   }
 
+  if (fby35_common_server_smbus_isolated(fru, &smbus_isolated)) {
+    return -1;
+  }
+  if (smbus_isolated == ISOLATED_ENABLE) {
+    return -1;
+  }
+
   // Check CPLD is valid before read CPLD register
   if (!fby35_common_is_sb_cpld_valid(fru)) {
     return -1;
   }
 
-  if (retry_cond(!fby35_read_sb_cpld(fru, offset, data), 3, 50)) {
-    return -1;
+  if (action == CPLD_READ) { //If the action is read, the tlen is no need.
+    if (retry_cond(!fby35_read_sb_cpld(fru, offset, data), 3, 50)) {
+      return -1;
+    }
+  } else { //If the action is write the offset is no need, the data is contain the offset.
+    if (retry_cond(!fby35_write_sb_cpld(fru, data, tlen), 3, 50)) {
+      return -1;
+    }
   }
 
   return 0;
@@ -350,7 +427,7 @@ fby35_common_get_slot_type(uint8_t fru) {
     return ret;
   }
 
-  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_BOARD, (uint8_t *)value)) {
+  if (fby35_read_write_sb_cpld_checked(fru, CPLD_REG_BOARD, (uint8_t *)value, 0, CPLD_READ)) {
     return -1;
   }
 
@@ -374,7 +451,7 @@ fby35_common_get_sb_rev(uint8_t fru) {
     return ret;
   }
 
-  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_REV_ID, (uint8_t *)value)) {
+  if (fby35_read_write_sb_cpld_checked(fru, CPLD_REG_REV_ID, (uint8_t *)value, 0, CPLD_READ)) {
     return -1;
   }
 
@@ -392,7 +469,7 @@ fby35_common_get_1ou_m2_prsnt(uint8_t fru) {
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
 
-  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_M2_PRSNT, (uint8_t *)value)) {
+  if (fby35_read_write_sb_cpld_checked(fru, CPLD_REG_M2_PRSNT, (uint8_t *)value, 0, CPLD_READ)) {
     return -1;
   }
 
@@ -410,7 +487,7 @@ int
 fby35_common_get_sb_pch_bic_pwr_fault(uint8_t fru) {
   int ret = 0;
 
-  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_PCH_BIC_PWR_FAULT, (uint8_t *)&ret)) {
+  if (fby35_read_write_sb_cpld_checked(fru, CPLD_REG_PCH_BIC_PWR_FAULT, (uint8_t *)&ret, 0, CPLD_READ)) {
     return -1;
   }
 
@@ -421,7 +498,7 @@ int
 fby35_common_get_sb_cpu_pwr_fault(uint8_t fru) {
   int ret = 0;
 
-  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_CPU_PWR_FAULT, (uint8_t *)&ret)) {
+  if (fby35_read_write_sb_cpld_checked(fru, CPLD_REG_CPU_PWR_FAULT, (uint8_t *)&ret, 0, CPLD_READ)) {
     return -1;
   }
 
@@ -432,7 +509,18 @@ int
 fby35_common_get_sb_bic_boot_strap(uint8_t fru) {
   int ret = 0;
 
-  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_SB_BIC_BOOT_STRAP, (uint8_t *)&ret)) {
+  if (fby35_read_write_sb_cpld_checked(fru, CPLD_REG_SB_BIC_BOOT_STRAP, (uint8_t *)&ret, 0, CPLD_READ)) {
+    return -1;
+  }
+
+  return ret;
+}
+
+int
+fby35_common_sb_set_amber_led(uint8_t fru, uint8_t *tbuf, uint8_t tlen) {
+  int ret = 0;
+
+  if (fby35_read_write_sb_cpld_checked(fru, 0, tbuf, tlen, CPLD_WRITE)) {
     return -1;
   }
 
@@ -679,7 +767,7 @@ fby35_common_get_2ou_board_type(uint8_t fru, uint8_t *board_type) {
     return 0;
   }
 
-  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_RISER, board_type)) {
+  if (fby35_read_write_sb_cpld_checked(fru, CPLD_REG_RISER, board_type, 0, CPLD_READ)) {
     return -1;
   }
 
@@ -1301,7 +1389,7 @@ fby35_common_is_prot_card_prsnt(uint8_t fru) {
     return value[0] ? true : false;
   }
 
-  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_PROT, (uint8_t *)value)) {
+  if (fby35_read_write_sb_cpld_checked(fru, CPLD_REG_PROT, (uint8_t *)value, 0, CPLD_READ)) {
     return false;
   }
   //Bit 0: AUTH_PRSNT_CPLD_N
@@ -1317,7 +1405,7 @@ bool
 fby35_common_is_prot_auth_complete(uint8_t fru) {
   uint8_t value = 0;
 
-  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_PROT, &value)) {
+  if (fby35_read_write_sb_cpld_checked(fru, CPLD_REG_PROT, &value, 0, CPLD_READ)) {
     return false;
   }
   //Bit 1: AUTH_COMPLETE_R

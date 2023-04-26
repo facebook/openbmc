@@ -63,11 +63,12 @@ enum {
   BIC_CMD_OEM_READ_WRITE_SSD    = 0x36,
 };
 
-enum {
+typedef enum {
   BIC_STATUS_SUCCESS                =  0,
   BIC_STATUS_FAILURE                = -1,
   BIC_STATUS_NOT_SUPP_IN_CURR_STATE = -2,
-};
+  BIC_STATUS_NOT_READY      = -3,
+} BIC_STATUS;
 
 enum {
   FEXP_BIC_INTF = 0x05, // 1OU

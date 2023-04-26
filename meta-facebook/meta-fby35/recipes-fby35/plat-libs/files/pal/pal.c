@@ -3206,12 +3206,12 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
         pal_get_pcie_err_string(fru, &sel[10], &sil, &location, err1_desc, err2_desc);
 
         snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/%s,"
-                            "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X%s, ErrID1: 0x%02X%s",
-                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_desc, sel[15], err1_desc);
+                            "ErrID2: 0x%02X%s, ErrID1: 0x%02X%s",
+                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, sel[14], err2_desc, sel[15], err1_desc);
       } else {
         snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X,"
-                            "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
-                general_info, ((sel[9]<<8)|sel[8]),sel[11], sel[10] >> 3, sel[10] & 0x7, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
+                            "ErrID2: 0x%02X, ErrID1: 0x%02X",
+                general_info, ((sel[9]<<8)|sel[8]),sel[11], sel[10] >> 3, sel[10] & 0x7, sel[14], sel[15]);
       }
       sprintf(temp_log, "PCIe Error ,FRU:%u", fru);
       pal_add_cri_sel(temp_log);

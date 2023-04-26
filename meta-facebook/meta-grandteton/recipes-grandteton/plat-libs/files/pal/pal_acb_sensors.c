@@ -126,8 +126,8 @@ PAL_SENSOR_MAP acb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x1D
   {"P1V8_1_VDD",  0, get_acb_sensor, false, {1.926, 1.89, 0, 1.674, 1.71, 0, 0, 0}, VOLT}, // 0x1E
   {"P1V8_2_VDD",  0, get_acb_sensor, false, {1.926, 1.89, 0, 1.674, 1.71, 0, 0, 0}, VOLT}, // 0x1F
-  {"P1V25_1_VDD", 0, get_acb_sensor, false, {1.2875, 1.2625, 1.3125, 1.2125, 1.2375, 1.1875, 0, 0}, VOLT}, // 0x20
-  {"P1V25_2_VDD", 0, get_acb_sensor, false, {1.2875, 1.2625, 1.3125, 1.2125, 1.2375, 1.1875, 0, 0}, VOLT}, // 0x21
+  {"P1V25_1_VDD", 0, get_acb_sensor, false, {1.2875, 1.275, 1.3125, 1.2125, 1.225, 1.1875, 0, 0}, VOLT}, // 0x20
+  {"P1V25_2_VDD", 0, get_acb_sensor, false, {1.2875, 1.275, 1.3125, 1.2125, 1.225, 1.1875, 0, 0}, VOLT}, // 0x21
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x22
   {"P12V_ACCL1",  0, get_acb_sensor, false, {13.2, 12.96, 14.33, 10.8, 11.04, 10.091, 0, 0}, VOLT}, // 0x23
   {"P12V_ACCL2",  0, get_acb_sensor, false, {13.2, 12.96, 14.33, 10.8, 11.04, 10.091, 0, 0}, VOLT}, // 0x24

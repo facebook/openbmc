@@ -70,16 +70,14 @@ pal_is_bmc_por(void)
 
 int __attribute__((weak))
 pal_bmc_reboot(int cmd) {
-  // sync filesystem caches
-  sync();
-
-  if (cmd == 0) {
-    return run_command("/sbin/reboot");
-  }
-
   // flag for healthd logging reboot cause
   run_command("/etc/init.d/setup-reboot.sh > /dev/null 2>&1");
-  return reboot(cmd);
+
+  // sync filesystem caches and wait 1 sec
+  sync();
+  sleep(1);
+
+  return run_command("/sbin/reboot");;
 }
 
 int __attribute__((weak))

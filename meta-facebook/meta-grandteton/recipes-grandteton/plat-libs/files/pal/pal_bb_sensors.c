@@ -518,7 +518,8 @@ inlet_temp_calibration(uint8_t fru, uint8_t sensor_num, float *value)
 {
   int i, cnt = 0;
   float pwm_avg;
-  uint8_t pwm, pwm_all = 0;
+  uint8_t pwm = 0;
+  uint32_t pwm_all = 0;
   static bool is_inited = false;
 
   for (i = 0; i < FAN_PWM_CNT; ++i) {

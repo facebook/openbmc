@@ -187,17 +187,13 @@ static int pal_lpc_snoop_read(uint8_t *buf, size_t max_len, size_t *rlen)
 static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
 {
   const char *dev_path = "/dev/aspeed-lpc-pcc";
-  const char *cache_key = "postcode";
-  uint8_t cache[MAX_VALUE_LEN * 2];
-  size_t len = 0, cache_len = 0;
+  char key[MAX_KEY_LEN] = {0};
+  uint8_t cache[MAX_CACHE_LEN];
+  uint8_t four_byte_post[4] = {0};
+  size_t len = 0, cache_len = 0, port = 0;
+  static size_t index = 0;
   int fd;
   uint16_t postcode;
-
-  if (kv_get(cache_key, (char *)cache, &len, 0)) {
-    len = cache_len = 0;
-  } else {
-    cache_len = len;
-  }
 
   fd = open(dev_path, O_RDONLY | O_NONBLOCK);
   if (fd < 0) {
@@ -205,17 +201,36 @@ static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
   }
   while (len < sizeof(cache) &&
       read(fd, &postcode, 2) == 2) {
-    cache[len++] = postcode & 0x00FF;
+      port = ((postcode & 0xFF00) >> 8);
+      if ((index == 0 && port == LCC_PORT1)
+      || (index == 1 && port == LCC_PORT2)
+      || (index == 2 && port == LCC_PORT3)
+      || (index == 3 && port == LCC_PORT4)) {
+        four_byte_post[index] = postcode & 0x00FF;
+      } else {
+        index = 0;
+        continue;
+      }
+
+      if(index == 3) {
+        cache[len] = four_byte_post[0];
+        cache[len+1] = four_byte_post[1];
+        cache[len+2] = four_byte_post[2];
+        cache[len+3] = four_byte_post[3];
+        len+=4;
+        index = 0;
+      }
+      index++;
   }
   close(fd);
 
-  if (len > cache_len) {
-    if (len > MAX_VALUE_LEN) {
-      memmove(cache, &cache[len - MAX_VALUE_LEN], MAX_VALUE_LEN);
-      len = MAX_VALUE_LEN;
-    }
-    if (kv_set(cache_key, (char *)cache, len, 0)) {
-      syslog(LOG_CRIT, "%zu postcodes dropped\n", len - cache_len);
+  for(int page_num = 1; page_num <= MAX_PAGE_NUM; page_num++) {
+    snprintf(key, sizeof(key), "lcc_postcode_%d", page_num);
+    memmove(cache, &cache[cache_len], MAX_VALUE_LEN);
+    cache_len += MAX_VALUE_LEN;
+
+    if (kv_set(key, (char *)cache, MAX_VALUE_LEN, 0)) {
+      syslog(LOG_WARNING, "kv_set fail\n");
     }
   }
   len = len > max_len ? max_len : len;

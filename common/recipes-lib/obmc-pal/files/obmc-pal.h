@@ -56,6 +56,14 @@ extern "C" {
 // GUID
 #define GUID_SIZE 16
 
+// lcc postcode
+#define MAX_CACHE_LEN 2048
+#define LCC_PORT1 0x40
+#define LCC_PORT2 0x41
+#define LCC_PORT3 0x42
+#define LCC_PORT4 0x43
+#define MAX_PAGE_NUM 4
+
 /* To hold the sensor info and calculated threshold values from the SDR */
 /* To hold the sensor info and calculated threshold values from the SDR */
 typedef struct {
@@ -597,6 +605,7 @@ int pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *st
 int pal_fw_update_prepare(uint8_t fru, const char *comp);
 int pal_fw_update_finished(uint8_t fru, const char *comp, int status);
 int pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *buf, size_t max_len, size_t *len);
+int pal_get_80port_lcc_page_record(uint8_t slot, uint8_t page_num, uint8_t *buf, size_t max_len, size_t *len);
 bool pal_is_modify_sel_time(uint8_t *sel, int size);
 int pal_update_sensor_reading_sdr (uint8_t fru);
 int pal_set_usb_path (uint8_t slot, uint8_t endpoint);

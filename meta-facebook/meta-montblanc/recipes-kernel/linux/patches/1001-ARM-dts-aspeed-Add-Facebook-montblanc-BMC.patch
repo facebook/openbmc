@@ -1,23 +1,25 @@
-From 14e4bfc193875bb86221ef15be3fe97dc8103b43 Mon Sep 17 00:00:00 2001
-From: Tao Ren <taoren@meta.com>
-Date: Fri, 28 Oct 2022 11:50:15 -0700
+From f8c36d8eaa1516721756e50ed8c695b46a11a288 Mon Sep 17 00:00:00 2001
+From: Bin Huang <binhuang@meta.com>
+Date: Tue, 11 Apr 2023 14:14:00 +0700
 Subject: [PATCH] ARM: dts: aspeed: Add Facebook montblanc BMC
 
 Add initial version of device tree for Facebook montblanc (AST2600) BMC.
 
 montblanc is Facebook's next generation switch platform with an AST2600
 BMC integrated for health monitoring purpose.
+
+Signed-off-by: Bin Huang <binhuang@meta.com>
 ---
- .../dts/aspeed-bmc-facebook-montblanc.dts     | 26 +++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ .../dts/aspeed-bmc-facebook-montblanc.dts     | 36 +++++++++++++++++++
+ 1 file changed, 36 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
 
 diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
 new file mode 100644
-index 000000000000..18fcbc26663e
+index 000000000000..a605245695a9
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,36 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) Meta Platforms, Inc. and affiliates.
 +
@@ -34,16 +36,25 @@ index 000000000000..18fcbc26663e
 +	};
 +};
 +
++&mdio1 {
++	status = "okay";
++
++	ethphy3: ethernet-phy@0 {
++		compatible = "ethernet-phy-id0141.0dd1",
++					"ethernet-phy-ieee802.3-c22";
++		reg = <0x00>;
++		marvell,reg-init =
++			<0x2  0x15 0xffcf 0x0000>, // disable RGMII Delay
++		    <0x12 0x14 0x7ff8 0x8002>; // mode RGMII to 1000Base-X
++	};
++};
++
 +&mac3 {
 +	status = "okay";
 +	phy-mode = "rgmii";
++	phy-handle = <&ethphy3>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pinctrl_rgmii4_default>;
-+	fixed-link {
-+		speed = <1000>;
-+		full-duplex;
-+	};
 +};
--- 
-2.30.2
-
+--
+2.25.1

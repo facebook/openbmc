@@ -178,6 +178,7 @@ dump_cpld_reg(void* arg) {
   uint8_t rbuf[16] = {0};
   uint8_t addr = MB_CPLD_FAIL_ADDR;
   uint8_t bus = I2C_BUS_7;
+  unsigned long long flag=0;
   const char *power_fail_log[] = {
     "PSU_PWR_FAULT",
     "BMC_PWR_FAULT",
@@ -249,11 +250,16 @@ dump_cpld_reg(void* arg) {
     uint8_t val = rbuf[i];
     for(int j=0; j<8; j++) {
       if((val & (1 <<j)) == (1 << j)) {
-        syslog(LOG_CRIT, "Power Fail Event: %s Assert\n", power_fail_log[j]);
+        flag |= 1 << (i*8 + j);
       }
     }
   }
 
+  usleep(300000); //delay 300ms
+  for(int k=0; k<64; k++) {
+    if((flag & (((unsigned long long)1) <<k)) == (((unsigned long long)1) << k))
+      syslog(LOG_CRIT, "Power Fail Event: %s Assert\n", power_fail_log[k]);
+  }
 close:
   i2c_cdev_slave_close(fd);
 exit:

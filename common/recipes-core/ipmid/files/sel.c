@@ -344,7 +344,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
       ret = pal_sel_handler(fru, sensor_num, &sel[10]);
 
     syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
-        "Sensor: %s (0x%02X), Event Data: (%s) %s ",
+        "Sensor: %s (0x%02X), Event Data: (%s) %s",
         fru,
         error_type, record_type,
         time,
@@ -363,7 +363,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
           sel[13], sel[14], sel[15]);
 
     syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), Time: %s, "
-        "MFG ID: %s, OEM Data: (%s) %s ",
+        "MFG ID: %s, OEM Data: (%s) %s",
         fru,
         error_type, record_type,
         time,
@@ -389,7 +389,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
           sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
 
       syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), "
-          "OEM Data: (%s) %s ",
+          "OEM Data: (%s) %s",
           fru,
           error_type, record_type,
           oem_data, error_log);

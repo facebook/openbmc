@@ -32,28 +32,63 @@ int MTDComponent::update(std::string image)
 int MTDComponent::dump(std::string image)
 {
   string dev;
-  string comp = this->component();
-  int ret;
-
   size_t size, erasesize;
+  static constexpr size_t BUFSIZE = 4096;
+  auto KB = [](auto x){ return x / 1024; };
+
   if (!sys().get_mtd_name(_mtd_name, dev, size, erasesize)) {
     return FW_STATUS_FAILURE;
   }
 
-  sys().output << "Reading fom device: " << dev << endl;
-  stringstream cmd;
-  cmd << "mtd_debug" << ' '
-      << "read" << ' '
-      << dev << ' '
-      << "0" << ' '
-      << size <<' '
-      << image;
-
-  ret = sys().runcmd(cmd.str());
-  if (ret == 0) {
-    return FW_STATUS_SUCCESS;
+  ifstream ifs(dev.c_str(), ios::in | ios::binary);
+  if (!ifs.is_open()) {
+    sys().error << "ERROR: Failed to open " << dev << endl;
+    return FW_STATUS_FAILURE;
   }
-  return FW_STATUS_FAILURE;
+
+  ofstream ofs(image.c_str(), ios::out | ios::binary);
+  if (!ofs.is_open()) {
+    ifs.close();
+    sys().error << "ERROR: Failed to open " << image << endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  char buf[BUFSIZE];
+  size_t remaining = size;
+  uint64_t written;
+
+  sys().output << "Reading from device: " << dev << endl;
+  for (written = 0; written < size;) {
+    ifs.read(buf, min(sizeof(buf), remaining));
+    if (ifs.fail()) {
+      if (errno == EINTR) {
+        ifs.clear();
+        continue;
+      }
+      sys().error << "ERROR: Failed to read " << dev << endl;
+      return FW_STATUS_FAILURE;
+    }
+    ofs.write(buf, ifs.gcount());
+    if (ofs.fail()) {
+      if (errno == EINTR) {
+        ofs.clear();
+        ifs.seekg(-ifs.gcount(), ios::cur);
+        continue;
+      }
+      sys().error << "ERROR: Failed to write " << image << endl;
+      return FW_STATUS_FAILURE;
+    }
+    written += ifs.gcount();
+    remaining -= ifs.gcount();
+
+    cout << "\rReading kb: " << KB(written) << "/" << KB(size)
+         << " (" << (written * 100 / size) << "%)" << flush;
+  }
+  cout << endl;
+  ifs.close();
+  ofs.close();
+
+  return FW_STATUS_SUCCESS;
 }
 
 

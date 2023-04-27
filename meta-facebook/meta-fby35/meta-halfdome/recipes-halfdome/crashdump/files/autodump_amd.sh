@@ -1,5 +1,12 @@
 #!/bin/bash
 
+amd_warm_reset() {
+  /usr/bin/bic-util "$SLOT_NAME" 0x18 0x52 0x00 0x42 0x00 0x00 0xFF
+  /usr/bin/bic-util "$SLOT_NAME" 0x18 0x52 0x00 0x42 0x00 0x00 0xFB
+  sleep 0.5
+  /usr/bin/bic-util "$SLOT_NAME" 0x18 0x52 0x00 0x42 0x00 0x00 0xFF
+}
+
 SLOT_NAME=$1
 
 case $SLOT_NAME in
@@ -85,17 +92,17 @@ rm $PID_FILE
 if [ -r $CONFIG_FILE ]; then
   RESET_OPTION=$(tail -n 1 "${CONFIG_FILE}")
 else
-  RESET_OPTION=2
+  RESET_OPTION=0
 fi
 
 case $RESET_OPTION in
   0)
     logger -t "ipmid" -p daemon.crit "Dump completed, warm reset FRU: $SLOT_NUM"
-    /usr/local/bin/power-util $SLOT_NAME reset
+    amd_warm_reset
     ;;
   1)
     logger -t "ipmid" -p daemon.crit "Dump completed, cold reset FRU: $SLOT_NUM"
-    /usr/local/bin/power-util $SLOT_NAME reset
+    /usr/local/bin/power-util "$SLOT_NAME" reset
     ;;
   2)
     logger -t "ipmid" -p daemon.crit "Dump completed, no reset FRU: $SLOT_NUM"

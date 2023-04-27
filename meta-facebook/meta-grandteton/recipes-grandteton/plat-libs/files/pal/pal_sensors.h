@@ -145,6 +145,8 @@ enum {
   VR_ID7,
   VR_ID8,
   VR_ID9,
+  VR_ID10,
+  VR_ID11,
   VR_NUM_CNT,
 };
 

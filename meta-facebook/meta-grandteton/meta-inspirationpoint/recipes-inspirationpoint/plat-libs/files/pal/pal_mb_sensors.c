@@ -194,6 +194,14 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_PVDD_33_S5_ADC,
   MB_SNR_PVDD18_S5_P0_ADC,
   MB_SNR_PVDD18_S5_P1_ADC,
+  MB_SNR_VR_RT_P0V9_VDD1_TEMP,
+  MB_SNR_VR_RT_P0V9_VDD1_VOUT,
+  MB_SNR_VR_RT_P0V9_VDD1_IOUT,
+  MB_SNR_VR_RT_P0V9_VDD1_POUT,
+  MB_SNR_VR_RT_P0V9_VDD2_TEMP,
+  MB_SNR_VR_RT_P0V9_VDD2_VOUT,
+  MB_SNR_VR_RT_P0V9_VDD2_IOUT,
+  MB_SNR_VR_RT_P0V9_VDD2_POUT,
 };
 
 const uint8_t hsc_sensor_list[] = {
@@ -504,22 +512,31 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
-  {"RETIMER0_TEMP", 0, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD0
-  {"RETIMER1_TEMP", 1, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD1
-  {"RETIMER2_TEMP", 2, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD2
-  {"RETIMER3_TEMP", 3, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD3
-  {"RETIMER4_TEMP", 4, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD4
-  {"RETIMER5_TEMP", 5, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD5
-  {"RETIMER6_TEMP", 6, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD6
-  {"RETIMER7_TEMP", 7, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD7
-  {"P5V_AUX_ADC"        , ADC_CH8,  read_iic_adc_val, 0, {5.26, 0, 0, 4.74, 0, 0, 0, 0}, VOLT}, //0xD8
-  {"P1V8_AUX_ADC"       , ADC_CH9,  read_iic_adc_val, 0, {1.90, 0, 0, 1.70, 0, 0, 0, 0}, VOLT}, //0xD9
-  {"P1V2_AUX_ADC"       , ADC_CH10, read_iic_adc_val, 0, {1.27, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xDA
-  {"P1V8_CPU0_RT_1D_ADC", ADC_CH11, read_iic_adc_val, 0, {1.90, 0, 0, 1.70, 0, 0, 0, 0}, VOLT}, //0xDB
-  {"P1V8_CPU1_RT_1D_ADC", ADC_CH12, read_iic_adc_val, 0, {1.90, 0, 0, 1.70, 0, 0, 0, 0}, VOLT}, //0xDC
-  {"PVDD_33_S5_ADC"     , ADC_CH13, read_iic_adc_val, 0, {3.46, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xDD
-  {"PVDD18_S5_P0_ADC"   , ADC_CH14, read_iic_adc_val, 0, {1.87, 0, 0, 1.73, 0, 0, 0, 0}, VOLT}, //0xDE
-  {"PVDD18_S5_P1_ADC"   , ADC_CH15, read_iic_adc_val, 0, {1.87, 0, 0, 1.73, 0, 0, 0, 0}, VOLT}, //0xDF
+  {"RETIMER0_TEMP", 0, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD0
+  {"RETIMER1_TEMP", 1, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD1
+  {"RETIMER2_TEMP", 2, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD2
+  {"RETIMER3_TEMP", 3, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD3
+  {"RETIMER4_TEMP", 4, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD4
+  {"RETIMER5_TEMP", 5, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD5
+  {"RETIMER6_TEMP", 6, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD6
+  {"RETIMER7_TEMP", 7, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD7
+  {"P5V_AUX_ADC"        , ADC_CH8,  read_iic_adc_val, false, {5.26, 0, 0, 4.74, 0, 0, 0, 0}, VOLT}, //0xD8
+  {"P1V8_AUX_ADC"       , ADC_CH9,  read_iic_adc_val, false, {1.90, 0, 0, 1.70, 0, 0, 0, 0}, VOLT}, //0xD9
+  {"P1V2_AUX_ADC"       , ADC_CH10, read_iic_adc_val, false, {1.27, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xDA
+  {"P1V8_CPU0_RT_1D_ADC", ADC_CH11, read_iic_adc_val, false, {1.85, 0, 0, 1.76, 0, 0, 0, 0}, VOLT}, //0xDB
+  {"P1V8_CPU1_RT_1D_ADC", ADC_CH12, read_iic_adc_val, false, {1.85, 0, 0, 1.76, 0, 0, 0, 0}, VOLT}, //0xDC
+  {"PVDD_33_S5_ADC"     , ADC_CH13, read_iic_adc_val, false, {3.46, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xDD
+  {"PVDD18_S5_P0_ADC"   , ADC_CH14, read_iic_adc_val, false, {1.87, 0, 0, 1.73, 0, 0, 0, 0}, VOLT}, //0xDE
+  {"PVDD18_S5_P1_ADC"   , ADC_CH15, read_iic_adc_val, false, {1.87, 0, 0, 1.73, 0, 0, 0, 0}, VOLT}, //0xDF
+
+  {"VR_RT_P0V9_VDD1_TEMP", VR_ID10, read_vr_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xE0
+  {"VR_RT_P0V9_VDD1_VOUT", VR_ID10, read_vr_vout, false, {0.93, 0, 0, 0.87, 0, 0, 0}, VOLT}, //0xE1
+  {"VR_RT_P0V9_VDD1_IOUT", VR_ID10, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xE2
+  {"VR_RT_P0V9_VDD1_POUT", VR_ID10, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xE3
+  {"VR_RT_P0V9_VDD2_TEMP", VR_ID11, read_vr_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xE4
+  {"VR_RT_P0V9_VDD2_VOUT", VR_ID11, read_vr_vout, false, {0.93, 0, 0, 0.87, 0, 0, 0}, VOLT}, //0xE5
+  {"VR_RT_P0V9_VDD2_IOUT", VR_ID11, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xE6
+  {"VR_RT_P0V9_VDD2_POUT", VR_ID11, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xE7
 };
 
 extern struct snr_map sensor_map[];

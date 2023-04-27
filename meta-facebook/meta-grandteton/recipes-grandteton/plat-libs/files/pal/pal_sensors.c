@@ -803,6 +803,16 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
       sprintf(cmd, "%s %s %.2fC - Assert", sensor_name, thresh_name, val);
   }
   pal_add_cri_sel(cmd);
+
+  switch (thresh) {
+    case UNR_THRESH:
+    case LNR_THRESH:
+      if (fru == FRU_MB && snr_num >= MB_SNR_RETIMER0_TEMP &&
+          snr_num <= MB_SNR_RETIMER7_TEMP) {
+        pal_set_server_power(FRU_MB, SERVER_POWER_OFF);
+      }
+    break;
+  }
 }
 
 void

@@ -1,5 +1,5 @@
 {
-    "version": "grandteton-v7",
+    "version": "grandteton-v8",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -195,7 +195,7 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 0,
+        "positive_hysteresis": 1,
         "negative_hysteresis": 2,
         "data": [
           [71, 25],
@@ -254,35 +254,6 @@
         "ki": -0.035,
         "kd": 0
       },
-      "gpu_tray_retimer_linear": {
-        "read_source" : {
-          "util" : "/usr/local/bin/sensor-util"
-        },
-        "type": "linear",
-        "positive_hysteresis": 1,
-        "negative_hysteresis": 1,
-        "data": [
-          [80, 25],
-          [82, 35],
-          [84, 45],
-          [86, 55],
-          [88, 60],
-          [90, 65],
-          [107, 90]
-        ]
-      },
-      "gpu_tray_retimer_pid": {
-        "read_source" : {
-          "util" : "/usr/local/bin/sensor-util"
-        },
-        "type": "pid",
-        "positive_hysteresis": 1,
-        "negative_hysteresis": 2,
-        "setpoint": 102,
-        "kp": -3.5,
-        "ki": -0.035,
-        "kd": 0
-      },
       "gpu_tray_hbm_linear": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"
@@ -322,6 +293,61 @@
           [48, 25],
           [90, 90]
         ]
+      },
+      "gpu_tray_retimer_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
+        "data": [
+          [80, 25],
+          [82, 35],
+          [84, 45],
+          [86, 55],
+          [88, 60],
+          [90, 65],
+          [107, 90]
+        ]
+      },
+      "gpu_tray_retimer_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 2,
+        "setpoint": 102,
+        "kp": -3.5,
+        "ki": -0.035,
+        "kd": 0
+      },
+      "gpu_fpga_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
+        "data": [
+          [65, 30],
+          [70, 40],
+          [75, 50],
+          [80, 60]
+        ]
+      },
+      "gpu_fpga_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 2,
+        "setpoint": 90,
+        "kp": -3.5,
+        "ki": -0.035,
+        "kd": 0
       }
     },
     "fans": {

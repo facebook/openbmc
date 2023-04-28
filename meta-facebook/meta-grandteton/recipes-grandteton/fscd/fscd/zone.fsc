@@ -131,27 +131,6 @@ max([
       all:hgx_hgx_gpu_sxm_7_temp_0_c,
       all:hgx_hgx_gpu_sxm_8_temp_0_c])),
 
-  gpu_tray_retimer_linear(
-    max([
-      all:hgx_hgx_pcieretimer_0_temp_c,
-      all:hgx_hgx_pcieretimer_1_temp_c,
-      all:hgx_hgx_pcieretimer_2_temp_c,
-      all:hgx_hgx_pcieretimer_3_temp_c,
-      all:hgx_hgx_pcieretimer_4_temp_c,
-      all:hgx_hgx_pcieretimer_5_temp_c,
-      all:hgx_hgx_pcieretimer_6_temp_c,
-      all:hgx_hgx_pcieretimer_7_temp_c])) +
-  gpu_tray_retimer_pid(
-    max([
-      all:hgx_hgx_pcieretimer_0_temp_c,
-      all:hgx_hgx_pcieretimer_1_temp_c,
-      all:hgx_hgx_pcieretimer_2_temp_c,
-      all:hgx_hgx_pcieretimer_3_temp_c,
-      all:hgx_hgx_pcieretimer_4_temp_c,
-      all:hgx_hgx_pcieretimer_5_temp_c,
-      all:hgx_hgx_pcieretimer_6_temp_c,
-      all:hgx_hgx_pcieretimer_7_temp_c])),
-
   gpu_tray_hbm_linear(
     max([
       all:hgx_hgx_gpu_sxm_1_dram_temp_c,
@@ -185,5 +164,30 @@ max([
       all:hgx_hgx_hsc_7_temp_c,
       all:hgx_hgx_hsc_8_temp_c,
       all:hgx_hgx_hsc_9_temp_c,
-      all:hgx_hgx_standby_hsc_temp_c]))
+      all:hgx_hgx_standby_hsc_temp_c])),
+
+  gpu_tray_retimer_linear(
+    max([
+      all:hgx_hgx_pcieretimer_0_temp_c,
+      all:hgx_hgx_pcieretimer_1_temp_c,
+      all:hgx_hgx_pcieretimer_2_temp_c,
+      all:hgx_hgx_pcieretimer_3_temp_c,
+      all:hgx_hgx_pcieretimer_4_temp_c,
+      all:hgx_hgx_pcieretimer_5_temp_c,
+      all:hgx_hgx_pcieretimer_6_temp_c,
+      all:hgx_hgx_pcieretimer_7_temp_c])) +
+  gpu_tray_retimer_pid(
+    max([
+      all:hgx_hgx_pcieretimer_0_temp_c,
+      all:hgx_hgx_pcieretimer_1_temp_c,
+      all:hgx_hgx_pcieretimer_2_temp_c,
+      all:hgx_hgx_pcieretimer_3_temp_c,
+      all:hgx_hgx_pcieretimer_4_temp_c,
+      all:hgx_hgx_pcieretimer_5_temp_c,
+      all:hgx_hgx_pcieretimer_6_temp_c,
+      all:hgx_hgx_pcieretimer_7_temp_c])),
+
+  gpu_fpga_linear(all:hgx_fpga_0_temp_c),
+
+  gpu_fpga_pid(all:hgx_fpga_0_temp_c)
 ])

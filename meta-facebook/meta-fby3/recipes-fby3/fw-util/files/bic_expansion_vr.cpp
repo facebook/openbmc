@@ -127,6 +127,7 @@ int VrExtComponent::update(string image)
 {
   int ret = 0;
   try {
+    pal_set_delay_after_fw_update_ongoing();
     server.ready();
     expansion.ready();
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);

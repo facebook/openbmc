@@ -101,6 +101,7 @@ int VrComponent::update(string image)
 {
   int ret = 0;
   try {
+    pal_set_delay_after_fw_update_ongoing();
     server.ready();
     ret = set_pfr_i2c_filter(slot_id, DISABLE_PFR_I2C_FILTER);
     if (ret < 0) return -1;

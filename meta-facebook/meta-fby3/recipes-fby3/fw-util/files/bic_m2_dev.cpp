@@ -199,6 +199,8 @@ int M2DevComponent::update_internal(string image, bool /*force*/) {
       throw string("Failed to get BMC's location");
     }
 
+    pal_set_delay_after_fw_update_ongoing();
+
     // check the status of the board
     server.ready();
     expansion.ready();

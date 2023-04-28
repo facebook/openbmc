@@ -273,6 +273,7 @@ int pal_get_2ou_board_type(uint8_t fru, uint8_t *type_2ou);
 int pal_is_sensor_num_exceed(uint8_t sensor_num);
 int pal_get_m2_config(uint8_t fru, uint8_t *config);
 void pal_get_fru_intf(uint8_t fru, uint8_t *intf);
+int pal_set_delay_after_fw_update_ongoing();
 
 #ifdef __cplusplus
 } // extern "C"

@@ -13,6 +13,7 @@ using namespace std;
 int BicFwExtComponent::update_internal(string image, bool force) {
   int ret = 0;
   try {
+     pal_set_delay_after_fw_update_ongoing();
     server.ready();
     expansion.ready();
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), (force)?FORCE_UPDATE_SET:FORCE_UPDATE_UNSET);
@@ -119,6 +120,7 @@ int BicFwExtComponent::get_version(json& j) {
 int BicFwExtBlComponent::update_internal(string image, bool force) {
   int ret = 0;
   try {
+    pal_set_delay_after_fw_update_ongoing();
     server.ready();
     expansion.ready();
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), (force)?FORCE_UPDATE_SET:FORCE_UPDATE_UNSET);

@@ -72,6 +72,7 @@ int PCIESWComponent::update_internal(string& image, bool force) {
   uint8_t board_type = 0xff;
 
   try {
+    pal_set_delay_after_fw_update_ongoing();
     server.ready();
     expansion.ready();
 

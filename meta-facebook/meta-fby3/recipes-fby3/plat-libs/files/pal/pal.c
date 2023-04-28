@@ -791,7 +791,6 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   // the destructor in fw-util(system.cpp) will call set_update_ongoing twice
   // add the flag to avoid running it again
   if ( tmout == 0 ) {
-    sleep(3);
     is_called = true;
   }
 
@@ -805,22 +804,25 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
     return PAL_ENOTSUP;
   }
 
-  // preprocess function
-  if ( tmout > 0 ) {
-    // when fw_update_ongoing is set, need to wait for a while
-    // make sure all daemons pending by pal_is_fw_update_ongoing
-    if (pal_is_cwc() == PAL_EOK) {
-      sleep(15);
-    } else {
-      sleep(5);
-    }
-  }
-
   // set pwr_lock_flag to prevent unexpected power control
   if ( (bmc_location == NIC_BMC) && \
        (bic_set_crit_act_flag((tmout > 0)?SEL_ASSERT:SEL_DEASSERT) < 0) ) {
     printf("Failed to set power lock, dir_type = %s\n", (tmout > 0)?"ASSERT":"DEASSERT");
     return PAL_ENOTSUP;
+  }
+
+  return PAL_EOK;
+}
+
+int
+pal_set_delay_after_fw_update_ongoing()
+{
+  // when fw_update_ongoing is set, need to wait for a while
+  // make sure all daemons pending by pal_is_fw_update_ongoing
+  if (pal_is_cwc() == PAL_EOK) {
+    sleep(15);
+  } else {
+    sleep(5);
   }
 
   return PAL_EOK;

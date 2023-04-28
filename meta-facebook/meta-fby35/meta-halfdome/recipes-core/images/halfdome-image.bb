@@ -61,7 +61,6 @@ IMAGE_INSTALL += " \
   attest-util \
   psb-util \
   apml-util \
-  prot-util \
   crashdump-amd \
   mctpd \
   apmldump \

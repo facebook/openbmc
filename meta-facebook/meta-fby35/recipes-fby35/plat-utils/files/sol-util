@@ -38,7 +38,9 @@ show_usage() {
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [sb, bb, 1ou, 2ou, 3ou, 4ou] bic"
   echo "       sol-util [ slot1 | slot3 ] 1ou  cxl"
-  echo "       sol-util [ slot1 | slot3 ] sb   prot"
+  if [ "$(is_prot_prsnt 1)" == "1" ] || [ "$(is_prot_prsnt 3)" == "1" ]; then
+    echo "       sol-util [ slot1 | slot3 ] sb   prot"
+  fi
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [1ou, 2ou] [dev0|dev1|...|devN|pesw] (baudrate)"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
 }
@@ -465,7 +467,7 @@ if [ -n "$COMP" ]; then
       DEV_NUM="0x6"
       [[ "$(is_gpv3_board "$EXP_BOARD_TYPE")" == "1" ]] && DEV_NUM="0xC"
     fi
-  elif [ "$DEV" == "prot" ] && [ "$COMP" == "sb" ] ; then
+  elif [ "$DEV" == "prot" ] && [ "$COMP" == "sb" ] && [ "$(is_prot_prsnt "$SLOT_NUM")" == "1" ]; then
     DEV_NUM="0x6"
   elif [ "$DEV" == "cxl" ] && [ "$COMP" == "1ou" ] ; then
     /bin/stty -F "/dev/ttyS$SLOT_NUM" 115200 >/dev/null 2>&1

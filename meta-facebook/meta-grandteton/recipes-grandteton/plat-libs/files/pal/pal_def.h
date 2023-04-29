@@ -313,13 +313,14 @@ enum {
 };
 
 enum {
-  PDB_REV_PO = 0,
-  PDB_REV_EVT,
-  PDB_REV_EVT2,
-  PDB_REV_DVT,
-  PDB_REV_DVT2,
-  PDB_REV_PVT,
-  PDB_REV_PVT2,
+  PDB_REV_PO             = 0,
+  PDB_REV_EVT            = 1,
+  PDB_REV_EVT2           = 2,
+  PDB_REV_DVT            = 3,
+  VPDB_DISCRETE_REV_PVT  = 3,
+  PDB_REV_DVT2           = 4,
+  PDB_REV_PVT            = 5,
+  PDB_REV_PVT2           = 6,
 
 };
 // Sensors Under Side Plane

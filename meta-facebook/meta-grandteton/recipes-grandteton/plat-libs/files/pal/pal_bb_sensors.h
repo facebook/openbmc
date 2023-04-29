@@ -148,12 +148,30 @@ enum {
   VPDB_HSC_CNT,
 };
 
+//VPDB ADC INFO
+enum {
+  VPDB_ADC_ID0,
+  VPDB_ADC_ID1,
+  VPDB_ADC_CNT,
+};
+
+
 //HPDB HSC INFO
 enum {
   HPDB_HSC_ID1,
   HPDB_HSC_ID2,
   HPDB_HSC_CNT,
 };
+
+//HPDB ADC INFO
+enum {
+  HPDB_ADC_ID0,
+  HPDB_ADC_ID1,
+  HPDB_ADC_ID2,
+  HPDB_ADC_ID3,
+  HPDB_ADC_CNT,
+};
+
 
 //BRICK INFO
 enum {

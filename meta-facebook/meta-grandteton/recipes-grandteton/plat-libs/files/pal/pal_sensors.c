@@ -287,22 +287,27 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
       memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_1brick_sensor_list, vpdb_1brick_sensor_cnt);
       *cnt = vpdb_sensor_cnt + vpdb_1brick_sensor_cnt;
+      // ADC sensor only support greater than PVT in discrete Sku
+      if(!pal_get_board_rev_id(FRU_VPDB, &rev) && rev > VPDB_DISCRETE_REV_PVT) {
+        memcpy(&snr_vpdb_tmp[*cnt], vpdb_adc_sensor_list, vpdb_adc_sensor_cnt);
+        *cnt += vpdb_adc_sensor_cnt;
+      }
     } else {
       memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
       memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_3brick_sensor_list, vpdb_3brick_sensor_cnt);
       *cnt = vpdb_sensor_cnt + vpdb_3brick_sensor_cnt;
-    }
-    // ADC sensor only support PVT2
-    if(!pal_get_board_rev_id(FRU_VPDB, &rev) && rev >= PDB_REV_PVT2) {
-      memcpy(&snr_vpdb_tmp[*cnt], vpdb_adc_sensor_list, vpdb_adc_sensor_cnt);
-      *cnt += vpdb_adc_sensor_cnt;
+      // ADC sensor only support greater than PVT in normal Sku
+      if(!pal_get_board_rev_id(FRU_VPDB, &rev) && rev >= PDB_REV_PVT2 ) {
+        memcpy(&snr_vpdb_tmp[*cnt], vpdb_adc_sensor_list, vpdb_adc_sensor_cnt);
+        *cnt += vpdb_adc_sensor_cnt;
+      }
     }
     *sensor_list = snr_vpdb_tmp;
 
   } else if (fru == FRU_HPDB) {
     memcpy(snr_hpdb_tmp, hpdb_sensor_list, hpdb_sensor_cnt);
     *cnt = hpdb_sensor_cnt;
-    // ADC sensor only support PVT2
+    // ADC sensor only support greater than PVT
     if(!pal_get_board_rev_id(FRU_HPDB, &rev) && rev >= PDB_REV_PVT2) {
       memcpy(&snr_hpdb_tmp[*cnt], hpdb_adc_sensor_list, hpdb_adc_sensor_cnt);
       *cnt += hpdb_adc_sensor_cnt;

@@ -173,6 +173,7 @@ fi
 
 VPDB_EVT2="2"
 VPDB_PVT="5"
+VPDB_DISCRETE_PVT="3"
 VPDB_1ST_SOURCE="0"
 VPDB_2ND_SOURCE="1"
 VPDB_3RD_SOURCE="2"
@@ -219,6 +220,18 @@ if [ "$vsku" -eq "2" ] || [ "$vsku" -eq "5" ]; then
   brick_driver="raa228006"
   i2c_device_add 38 0x54 $brick_driver
   kv set vpdb_brick_source "$VPDB_3RD_SOURCE"
+
+  if [ "$vrev" -gt "$VPDB_DISCRETE_PVT" ]; then
+    if [ "$(gpio_get VPDB_SKU_ID_0)" -eq $VPDB_1ST_SOURCE ]; then
+      i2c_device_add 36 0x67 ltc2945
+      i2c_device_add 36 0x68 ltc2945
+      kv set vpdb_adc_source "$VPDB_1ST_SOURCE"
+    else
+      i2c_device_add 36 0x40 ina238
+      i2c_device_add 36 0x41 ina238
+      kv set vpdb_adc_source "$VPDB_2ST_SOURCE"
+    fi
+  fi
 else
   brick_driver="bmr491"
   vpdb_brick=$(gpio_get VPDB_SKU_ID_1)
@@ -240,17 +253,18 @@ else
     i2c_device_add 38 0x6a $brick_driver
     i2c_device_add 38 0x6b $brick_driver
   fi
-fi
 
-if [ "$vrev" -gt "$VPDB_PVT" ]; then
-  if [ "$(gpio_get VPDB_SKU_ID_0)" -eq $VPDB_1ST_SOURCE ]; then
-    i2c_device_add 36 0x67 ltc2945
-    i2c_device_add 36 0x68 ltc2945
-    kv set vpdb_adc_source "$VPDB_1ST_SOURCE"
-  else
-    i2c_device_add 36 0x40 ina238
-    i2c_device_add 36 0x41 ina238
-    kv set vpdb_adc_source "$VPDB_2ST_SOURCE"
+  #vpdb ADC sensors
+  if [ "$vrev" -gt "$VPDB_PVT" ]; then
+    if [ "$(gpio_get VPDB_SKU_ID_0)" -eq $VPDB_1ST_SOURCE ]; then
+      i2c_device_add 36 0x67 ltc2945
+      i2c_device_add 36 0x68 ltc2945
+      kv set vpdb_adc_source "$VPDB_1ST_SOURCE"
+    else
+      i2c_device_add 36 0x40 ina238
+      i2c_device_add 36 0x41 ina238
+      kv set vpdb_adc_source "$VPDB_2ST_SOURCE"
+    fi
   fi
 fi
 # VPDB FRU

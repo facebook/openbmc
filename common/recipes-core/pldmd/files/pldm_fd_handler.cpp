@@ -37,7 +37,7 @@ pldm_fd_handler::update_pollfds()
 
   size_t index;
   size_t fd_count = get_count(tx_server_fds, server_fds, clients_data);
-  LOG(INFO) << "update_pollfds : fd_count = " << (int)fd_count;
+  DLOG(INFO) << "update_pollfds : fd_count = " << (int)fd_count;
 
   void* result = realloc(pollfds, fd_count * sizeof(struct pollfd));
   if( result == NULL )
@@ -81,12 +81,8 @@ pldm_fd_handler::add_client(int fd, uint8_t type)
   if (type == UPDATE_CLIENT) {
     fw_update_client = fd;
     is_fw_update_active = true;
+    LOG(INFO) << "Add client UPDATE_CLIENT successflly.";
   }
-
-  std::string msg;
-  if(type == NORMAL_CLIENT) msg = "NORMAL_CLIENT";
-  if(type == UPDATE_CLIENT) msg = "UPDATE_CLIENT";
-  LOG(INFO) << "Add client " << msg.c_str() << " successflly.";
 
   return true;
 }
@@ -126,10 +122,10 @@ pldm_fd_handler::show_clients()
   int index = 0;
 
   for (auto&c:clients_data) {
-    LOG(INFO) << "client[" << index++ << "]:";
-    LOG(INFO) << "instance id : " << std::hex << c.instance_id;
-    LOG(INFO) << "client type : " << std::hex << c.client_type;
-    LOG(INFO) << "fd          : " << c.fd;
+    DLOG(INFO) << "client[" << index++ << "]:";
+    DLOG(INFO) << "instance id : " << std::hex << c.instance_id;
+    DLOG(INFO) << "client type : " << std::hex << c.client_type;
+    DLOG(INFO) << "fd          : " << c.fd;
   }
 }
 
@@ -144,7 +140,7 @@ pldm_fd_handler::client_send_data(int index, uint8_t *buf, size_t size)
     msg->hdr.instance_id = clients_data[index].instance_id;
   }
 
-  LOG(INFO) << "Forward to mctp daemon.";
+  DLOG(INFO) << "Forward to mctp daemon.";
   return fd_handler::send_data(mctpd_fd, buf, size);
 }
 
@@ -174,8 +170,7 @@ int
 pldm_fd_handler::check_mctpd_socket()
 {
   int fd = check_pollfds(MCTP_FD);
-  if (fd)
-    LOG(INFO) << "Receive data from mctpd.";
+  DLOG_IF(INFO, fd) << "Receive data from mctpd.";
   return fd;
 }
 
@@ -183,8 +178,7 @@ int
 pldm_fd_handler::check_pldmd_socket()
 {
   int fd = check_pollfds(SERV_FD);
-  if (fd)
-    LOG(INFO) << "Receive new client's connection.";
+  DLOG_IF(INFO, fd) << "Receive new client's connection.";
   return fd;
 }
 
@@ -192,8 +186,7 @@ int
 pldm_fd_handler::check_pldmd_fwupdate_socket()
 {
   int fd = check_pollfds(SERV_FWUP_FD);
-  if (fd)
-    LOG(INFO) << "Receive new fw-update client's connection.";
+  LOG_IF(INFO, fd) << "Receive new fw-update client's connection.";
   return fd;
 }
 
@@ -202,11 +195,8 @@ pldm_fd_handler::check_clients(int index)
 {
   int pollfds_index = (int)get_count(tx_server_fds, server_fds) + index;
   int fd = check_pollfds(pollfds_index);
-  LOG(INFO) << "pollfds_index : " << pollfds_index;
-
-  if (fd)
-    LOG(INFO) << "Receive data from client = " << index;
-
+  DLOG(INFO) << "pollfds_index : " << pollfds_index;
+  DLOG_IF(INFO, fd) << "Receive data from client = " << index;
   return fd;
 }
 

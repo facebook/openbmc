@@ -131,7 +131,7 @@ static void
 mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
 {
   int rc = handler->recv_data(fd, &buf, size);
-  LOG(INFO) << "mctpd_msg_handle rc = " << rc;
+  DLOG(INFO) << "mctpd_msg_handle rc = " << rc;
 
   // MCTP daemon close socket, then PLDM daemon is useless
   if (rc == ERR_END_OF_FILE) {
@@ -146,13 +146,13 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
     // For firmware update socket
     if (msg->hdr.type == PLDM_FWUP && (msg->hdr.request == PLDM_REQUEST ||
       msg->hdr.request == PLDM_ASYNC_REQUEST_NOTIFY)) {
-      LOG(INFO) << "Forward to fwupdate client.";
+      DLOG(INFO) << "Forward to fwupdate client.";
       handler->send_fw_client_data(buf, size);
 
     // For request handle
     } else if (msg->hdr.request == PLDM_REQUEST ||
       msg->hdr.request == PLDM_ASYNC_REQUEST_NOTIFY) {
-      LOG(INFO) << "Request handle.";
+      DLOG(INFO) << "Request handle.";
 
       uint8_t bus_id = std::stoi( handler->bus );
       std::vector<uint8_t> req;
@@ -174,7 +174,7 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
         LOG(ERROR) << "can't find client with instance id = " << (int)iid;
       } else {
         // Send back to client, so remove buf[0] & buf[1]
-        LOG(INFO) << "Forward to client iid:" << (int)iid;
+        DLOG(INFO) << "Forward to client iid = " << (int)iid;
         handler->send_data(cfd, buf, size);
       }
     }
@@ -189,9 +189,7 @@ client_msg_handle (int fd, int index, uint8_t *buf, size_t size)
 
   // client disconnected.
   if (rc == ERR_END_OF_FILE) {
-    LOG(INFO) << "client = "
-              << index
-              << " disconnect.";
+    DLOG(INFO) << "client = " << index << " disconnect.";
     freeBuf(buf);
     handler->pop_client(index);
   // client message handle
@@ -229,7 +227,6 @@ run_daemon ()
   for (;;) {
 
     handler->update_pollfds();
-    handler->show_clients();
     handler->polling();
 
     // check if there are messages from mctpd

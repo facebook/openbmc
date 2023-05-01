@@ -30,6 +30,7 @@ pldmd_exe = executable(
     'pldmd',
     srcs,
     dependencies: deps,
+    cpp_args: ['-DNDEBUG'],
     install: true,
     install_dir : 'local/bin'
 )

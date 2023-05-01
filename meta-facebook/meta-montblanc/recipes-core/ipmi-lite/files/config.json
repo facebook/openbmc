@@ -1,0 +1,15 @@
+{
+    "platform" : "montblanc",
+    "configure" : [
+        {
+            "name" : "eth_intf_name" ,
+            "type": "string",
+            "val" : "eth0.4088"
+        },
+        {
+            "name" : "max_slot_num" ,
+            "type": "number",
+            "val" : 1
+        }
+    ]
+}

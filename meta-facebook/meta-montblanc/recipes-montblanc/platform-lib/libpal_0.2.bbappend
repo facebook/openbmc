@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,10 +15,30 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-require recipes-core/images/fboss-lite-image.inc
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
-IMAGE_INSTALL += " \
-    mdio-util \
-    log-util-v2 \
+LOCAL_URI += " \
+    file://plat/meson.build \
+    file://pal.c \
+    file://pal.h \
     "
-    
+
+DEPENDS += " \
+    libgpio-ctrl \
+    liblog \
+    libmisc-utils \
+    libobmc-i2c \
+    libsensor-correction \
+    libwedge-eeprom \
+    "
+
+# These shouldn't be needed but are because we aren't properly versioning the
+# shared libraries contained in these recipes.
+RDEPENDS:${PN} += " \
+    libgpio-ctrl \
+    liblog \
+    libmisc-utils \
+    libobmc-i2c \
+    libsensor-correction \
+    libwedge-eeprom \
+    "

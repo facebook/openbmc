@@ -26,6 +26,7 @@ PV = "0.1"
 
 LOCAL_URI = " \
     file://Makefile \
+    file://scmcpld.c \
     file://mcbcpld.c \
     file://COPYING \
     "

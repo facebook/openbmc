@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-obj-m := mcbcpld.o
+obj-m := scmcpld.o mcbcpld.o
 
 ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
 

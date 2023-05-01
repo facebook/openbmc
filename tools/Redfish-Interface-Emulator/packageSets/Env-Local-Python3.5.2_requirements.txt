@@ -1,6 +1,6 @@
 aniso8601==1.2.1
 chardet==3.0.4
-Flask==1.0.0
+Flask==2.3.2
 Flask-HTTPAuth==3.2.3
 Flask-RESTful==0.3.6
 itsdangerous==0.24

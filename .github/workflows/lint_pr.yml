@@ -80,7 +80,7 @@ jobs:
       - name: Check for cppcheck output
         if: env.contains_c_source == 'true'
         run : |
-          if [ -s /tmp/cppcheck_file_list.log ]; then
+          if [ -s /tmp/cppcheck.log ]; then
             exit 1
           fi
 

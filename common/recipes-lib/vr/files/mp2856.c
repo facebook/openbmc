@@ -759,7 +759,7 @@ cache_mp2985h_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
   char remaining_wr_msg[MAX_REMAIN_WR_MSG];
 
   do {
-    if (mp2856_set_page(bus, addr, VR_MPS_PAGE_1) < 0) {
+    if (mp2856_set_page(bus, addr, VR_MPS_PAGE_0) < 0) {
       break;
     }
     tbuf[0] = VR_MPS_REG_CRC_2985H;

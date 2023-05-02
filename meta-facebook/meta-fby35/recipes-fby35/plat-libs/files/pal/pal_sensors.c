@@ -479,6 +479,42 @@ const uint8_t bic_1ou_rf_sensor_list[] = {
   BIC_1OU_RF_PVDDQ_CD_SPS_PWR,
 };
 
+// BIC Niagara Falls Sensors
+const uint8_t bic_1ou_nf_sensor_list[] = {
+  BIC_1OU_NF_INLET_TEMP,
+  BIC_1OU_NF_CXL_CNTR_TEMP,
+  BIC_1OU_NF_P0V85_ASIC_TEMP,
+  BIC_1OU_NF_PVDDQ_AB_TEMP,
+  BIC_1OU_NF_P0V8_ASIC_TEMP,
+  BIC_1OU_NF_PVDDQ_CD_TEMP,
+  BIC_1OU_NF_P1V2_STBY_VOL,
+  BIC_1OU_NF_P1V2_ASIC_VOL,
+  BIC_1OU_NF_P1V8_ASIC_VOL,
+  BIC_1OU_NF_PVPP_AB_VOL,
+  BIC_1OU_NF_PVPP_CD_VOL,
+  BIC_1OU_NF_PVTT_AB_VOL,
+  BIC_1OU_NF_PVTT_CD_VOL,
+  BIC_1OU_NF_P0V75_ASIC_VOL,
+  BIC_1OU_NF_P12V_STBY_VOL,
+  BIC_1OU_NF_P3V3_STBY_VOL,
+  BIC_1OU_NF_P0V85_ASIC_VOL,
+  BIC_1OU_NF_PVDDQ_AB_VOL,
+  BIC_1OU_NF_P0V8_ASIC_VOL,
+  BIC_1OU_NF_PVDDQ_CD_VOL,
+  BIC_1OU_NF_P12V_STBY_CUR,
+  BIC_1OU_NF_P3V3_STBY_CUR,
+  BIC_1OU_NF_P0V85_ASIC_CUR,
+  BIC_1OU_NF_PVDDQ_AB_CUR,
+  BIC_1OU_NF_P0V8_ASIC_CUR,
+  BIC_1OU_NF_PVDDQ_CD_CUR,
+  BIC_1OU_NF_P12V_STBY_PWR,
+  BIC_1OU_NF_P3V3_STBY_PWR,
+  BIC_1OU_NF_P0V85_ASIC_PWR,
+  BIC_1OU_NF_PVDDQ_AB_PWR,
+  BIC_1OU_NF_P0V8_ASIC_PWR,
+  BIC_1OU_NF_PVDDQ_CD_PWR,
+};
+
 const uint8_t bic_skip_sensor_list[] = {
   BIC_SENSOR_PCH_TEMP,
   BIC_SENSOR_CPU_TEMP,
@@ -643,6 +679,33 @@ const uint8_t bic_1ou_vf_skip_sensor_list[] = {
   BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2D,
   BIC_1OU_VF_SENSOR_NUM_ADC_3V3_VOL_M2D,
   BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2D,
+};
+
+const uint8_t bic_1ou_nf_skip_sensor_list[] = {
+  BIC_1OU_NF_CXL_CNTR_TEMP,
+  BIC_1OU_NF_P0V85_ASIC_TEMP,
+  BIC_1OU_NF_PVDDQ_AB_TEMP,
+  BIC_1OU_NF_P0V8_ASIC_TEMP,
+  BIC_1OU_NF_PVDDQ_CD_TEMP,
+  BIC_1OU_NF_P1V2_ASIC_VOL,
+  BIC_1OU_NF_P1V8_ASIC_VOL,
+  BIC_1OU_NF_PVPP_AB_VOL,
+  BIC_1OU_NF_PVPP_CD_VOL,
+  BIC_1OU_NF_PVTT_AB_VOL,
+  BIC_1OU_NF_PVTT_CD_VOL,
+  BIC_1OU_NF_P0V75_ASIC_VOL,
+  BIC_1OU_NF_P0V85_ASIC_VOL,
+  BIC_1OU_NF_PVDDQ_AB_VOL,
+  BIC_1OU_NF_P0V8_ASIC_VOL,
+  BIC_1OU_NF_PVDDQ_CD_VOL,
+  BIC_1OU_NF_P0V85_ASIC_CUR,
+  BIC_1OU_NF_PVDDQ_AB_CUR,
+  BIC_1OU_NF_P0V8_ASIC_CUR,
+  BIC_1OU_NF_PVDDQ_CD_CUR,
+  BIC_1OU_NF_P0V85_ASIC_PWR,
+  BIC_1OU_NF_PVDDQ_AB_PWR,
+  BIC_1OU_NF_P0V8_ASIC_PWR,
+  BIC_1OU_NF_PVDDQ_CD_PWR,
 };
 
 const uint8_t bic_op_1ou_sensor_list[] = {
@@ -1280,10 +1343,12 @@ size_t bic_gl_sensor_cnt = sizeof(bic_gl_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_vf_sensor_cnt = sizeof(bic_1ou_vf_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_rf_sensor_cnt = sizeof(bic_1ou_rf_sensor_list)/sizeof(uint8_t);
+size_t bic_1ou_nf_sensor_cnt = sizeof(bic_1ou_nf_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_hd_skip_sensor_cnt = sizeof(bic_hd_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_gl_skip_sensor_cnt = sizeof(bic_gl_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_vf_skip_sensor_cnt = sizeof(bic_1ou_vf_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_1ou_nf_skip_sensor_cnt = sizeof(bic_1ou_nf_skip_sensor_list)/sizeof(uint8_t);
 size_t bmc_dpv2_x8_sensor_cnt = sizeof(bmc_dpv2_x8_sensor_list)/sizeof(uint8_t);
 size_t bic_dpv2_x16_sensor_cnt = sizeof(bic_dpv2_x16_sensor_list)/sizeof(uint8_t);
 size_t rns_pdb_sensor_cnt = sizeof(rns_pdb_sensor_list)/sizeof(uint8_t);
@@ -1360,6 +1425,9 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
       if (type == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
         memcpy(&bic_dynamic_skip_sensor_list[fru-1][count], bic_1ou_vf_skip_sensor_list, bic_1ou_vf_skip_sensor_cnt);
         count += bic_1ou_vf_skip_sensor_cnt;
+      } else if (type == TYPE_1OU_NIAGARA_FALLS) {
+        memcpy(&bic_dynamic_skip_sensor_list[fru-1][count], bic_1ou_nf_skip_sensor_list, bic_1ou_nf_skip_sensor_cnt);
+        count += bic_1ou_nf_skip_sensor_cnt;
       }
     }
 
@@ -1563,6 +1631,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
             current_cnt += bic_op_3ou_sensor_cnt;
             memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_4ou_sensor_list, bic_op_4ou_sensor_cnt);
             current_cnt += bic_op_4ou_sensor_cnt;
+            break;
+          case TYPE_1OU_NIAGARA_FALLS:
+            memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_nf_sensor_list, bic_1ou_nf_sensor_cnt);
+            current_cnt += bic_1ou_nf_sensor_cnt;
             break;
           default:
             syslog(LOG_ERR, "%s() Cannot identify the 1OU board type or 1OU board is not present", __func__);

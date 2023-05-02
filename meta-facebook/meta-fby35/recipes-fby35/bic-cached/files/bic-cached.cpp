@@ -138,6 +138,7 @@ fruid_cache_init(uint8_t slot_id) {
         switch (type_1ou) {
           case TYPE_1OU_RAINBOW_FALLS:
           case TYPE_1OU_VERNAL_FALLS_WITH_AST:
+          case TYPE_1OU_NIAGARA_FALLS:
             remote_f_ret = remote_fruid_cache_init(slot_id, FRUID_0, FEXP_BIC_INTF);
             break;
           case TYPE_1OU_OLMSTEAD_POINT:
@@ -382,6 +383,7 @@ sdr_cache_init(uint8_t slot_id) {
         switch (type_1ou) {
           case TYPE_1OU_RAINBOW_FALLS:
           case TYPE_1OU_VERNAL_FALLS_WITH_AST:
+          case TYPE_1OU_NIAGARA_FALLS:
             remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
             break;
           case TYPE_1OU_OLMSTEAD_POINT:

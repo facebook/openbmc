@@ -163,3 +163,58 @@
 | MB_VR_DIMMG_PMIC_PWR_W | 0x3E | W | NA | 31.91623988 | 31.6002375 | NA | NA | NA |
 | MB_VR_DIMMH_PMIC_PWR_W | 0x3F | W | NA | 31.91623988 | 31.6002375 | NA | NA | NA |
 
+### 1OU board - Niagara Falls
+
+#### Temperature Monitoring
+
+| Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| NF_1OU_BOARD_INLET_TEMP_C | 0x50 | C | NA | NA | NA | NA | NA | NA |
+| NF_CXL_CNTR_TEMP_C | 0x51 | C | NA | NA | NA | NA | NA | NA |
+| NF_VR_P0V85_ASIC_TEMP_C | 0x52 | C | NA | NA | NA | NA | NA | NA |
+| NF_VR_PVDDQ_AB_TEMP_C | 0x53 | C | NA | NA | NA | NA | NA | NA |
+| NF_VR_P0V8_ASIC_TEMP_C | 0x54 | C | NA | NA | NA | NA | NA | NA |
+| NF_VR_PVDDQ_CD_TEMP_C | 0x55 | C | NA | NA | NA | NA | NA | NA |
+
+#### Voltage Monitoring
+
+| Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| NF_ADC_P1V2_STBY_VOLT_V | 0x57 | V | NA | NA | NA | NA | NA | NA |
+| NF_ADC_P1V2_ASIC_VOLT_V | 0x58 | V | NA | NA | NA | NA | NA | NA |
+| NF_ADC_P1V8_ASIC_VOLT_V | 0x59 | V | NA | NA | NA | NA | NA | NA |
+| NF_ADC_PVPP_AB_VOLT_V | 0x5A | V | NA | NA | NA | NA | NA | NA |
+| NF_ADC_PVPP_CD_VOLT_V | 0x5B | V | NA | NA | NA | NA | NA | NA |
+| NF_ADC_PVTT_AB_VOLT_V | 0x5C | V | NA | NA | NA | NA | NA | NA |
+| NF_ADC_PVTT_CD_VOLT_V | 0x5D | V | NA | NA | NA | NA | NA | NA |
+| NF_ADC_P0V75_ASIC_VOLT_V | 0x5E | V | NA | NA | NA | NA | NA | NA |
+| NF_INA233_P12V_STBY_VOLT_V | 0x5F | V | NA | NA | NA | NA | NA | NA |
+| NF_INA233_P3V3_STBY_VOLT_V | 0x60 | V | NA | NA | NA | NA | NA | NA |
+| NF_VR_P0V85_ASIC_VOLT_V | 0x61 | V | NA | NA | NA | NA | NA | NA |
+| NF_VR_PVDDQ_AB_VOLT_V | 0x62 | V | NA | NA | NA | NA | NA | NA |
+| NF_VR_P0V8_ASIC_VOLT_V | 0x63 | V | NA | NA | NA | NA | NA | NA |
+| NF_VR_PVDDQ_CD_VOLT_V | 0x64 | V | NA | NA | NA | NA | NA | NA |
+
+
+#### Current Monitoring
+
+| Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| NF_INA233_P12V_STBY_CURR_A | 0x65 | A | NA | NA | NA | NA | NA | NA |
+| NF_INA233_P3V3_STBY_CURR_A | 0x66 | A | NA | NA | NA | NA | NA | NA |
+| NF_VR_P0V85_ASIC_CURR_A | 0x67 | A | NA | NA | NA | NA | NA | NA |
+| NF_VR_PVDDQ_AB_CURR_A| 0x68 | A | NA | NA | NA | NA | NA | NA |
+| NF_VR_P0V8_ASIC_CURR_A | 0x69 | A | NA | NA | NA | NA | NA | NA |
+| NF_VR_PVDDQ_CD_CURR_A | 0x6A | A | NA | NA | NA | NA | NA | NA |
+
+
+#### Power Monitoring
+
+| Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| NF_INA233_P12V_STBY_PWR_W | 0x6B | W | NA | NA | NA | NA | NA | NA |
+| NF_INA233_P3V3_STBY_PWR_W | 0x6C | W | NA | NA | NA | NA | NA | NA |
+| NF_VR_P0V85_ASIC_PWR_W | 0x6D | W | NA | NA | NA | NA | NA | NA |
+| NF_VR_PVDDQ_AB_PWR_W | 0x6E | W | NA | NA | NA | NA | NA | NA |
+| NF_VR_P0V8_ASIC_PWR_W | 0x6F | W | NA | NA | NA | NA | NA | NA |
+| NF_VR_PVDDQ_CD_PWR_W | 0x70 | W | NA | NA | NA | NA | NA | NA |

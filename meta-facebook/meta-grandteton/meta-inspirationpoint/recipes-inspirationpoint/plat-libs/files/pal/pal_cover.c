@@ -2,6 +2,7 @@
 #include <syslog.h>
 #include "pal.h"
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/kv.h>
 
 int
 parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
@@ -125,4 +126,11 @@ error_exit:
   }
 
   return ret;
+}
+
+int
+pal_clear_psb_cache(void) {
+  char key[MAX_KEY_LEN] = {0};
+  snprintf(key, sizeof(key), "slot%d_psb_config_raw", FRU_MB);
+  return kv_del(key, KV_FPERSIST);
 }

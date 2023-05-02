@@ -62,6 +62,8 @@
 
 #define PLDM_FRU_CAPABILITY "fru%d_capability"
 
+#define PSB_CONFIG_RAW "slot%d_psb_config_raw"
+
 const char pal_fru_list[] = \
 "all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, " \
 // Artemis fru list
@@ -1248,6 +1250,33 @@ pal_uart_select_led_set(void) {
   }
 
   return 0;
+}
+
+uint8_t save_psb_config_info_to_kvstore(uint8_t slot, uint8_t* req_data, uint8_t req_len) {
+  char key[MAX_KEY_LEN] = {0};
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+
+  snprintf(key,MAX_KEY_LEN, PSB_CONFIG_RAW, slot);
+  if (kv_set(key, (const char*)req_data, req_len, KV_FPERSIST) == 0) {
+    completion_code = CC_SUCCESS;
+  }
+  return completion_code;
+}
+
+
+uint8_t
+pal_set_psb_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+
+  if ((slot > 0) && (slot <= MAX_NODES)) {
+    completion_code = save_psb_config_info_to_kvstore(
+        slot,
+        req_data,
+        req_len - IPMI_MN_REQ_HDR_SIZE);
+    return completion_code;
+  } else {
+    return CC_PARAM_OUT_OF_RANGE;
+  }
 }
 
 bool

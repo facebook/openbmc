@@ -584,6 +584,8 @@ platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   else
     kv_set("snr_pwron_flag", 0, 0, 0);
 
+  pal_clear_psb_cache();
+
   log_gpio_change(FRU_MB, desc, curr, 0, NULL);
 }
 

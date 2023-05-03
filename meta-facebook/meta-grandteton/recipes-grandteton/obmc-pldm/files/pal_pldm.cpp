@@ -50,6 +50,10 @@ pldm_firmware_parameter_handle (
   bic_ver.resize(activeCompImageSetVerStr.length);
   comp_active_ver.resize(activeCompVerStr.length);
 
+  // when BIC cannot access its component, it would return ERROR:%d string.
+  auto found = comp_active_ver.find("ERROR:");
+  comp_active_ver = (found == std::string::npos) ? comp_active_ver:"NA";
+
   kv::set(bic_active_key, bic_ver, kv::region::temp);
   kv::set(comp_active_key, comp_active_ver, kv::region::temp);
 }

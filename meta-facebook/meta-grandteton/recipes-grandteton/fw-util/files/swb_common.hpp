@@ -67,7 +67,8 @@ class AcbPeswFwComponent : public SwbPexFwComponent {
 };
 
 class GTPldmComponent : public PldmComponent {
-  private:
+  protected:
+    string comp_verify_str{};
     int is_pldm_info_valid();
 
   public:
@@ -76,6 +77,7 @@ class GTPldmComponent : public PldmComponent {
     int try_pldm_update(const std::string& /*image*/, bool /*force*/, uint8_t specified_comp = 0xFF);
     int gt_get_version(json& /*j*/, const string& /*fru*/, const string& /*comp*/, uint8_t /*target*/);
     virtual int comp_version(json& /*j*/) { return -1; }
+    virtual int comp_verify() { return INFO_ERR::EP_SUCCESS; };
 };
 
 class GTSwbBicFwComponent : public SwbBicFwComponent, public GTPldmComponent {
@@ -136,6 +138,7 @@ class GTSwbVrComponent : public SwbVrComponent, public GTPldmComponent {
     int comp_update(const string& image) override { return SwbVrComponent::update(image); }
     int comp_fupdate(const string& image) override { return SwbVrComponent::fupdate(image); }
     int comp_version(json& j) override { return SwbVrComponent::get_version(j); }
+    int comp_verify();
 };
 
 class GTSwbCpldComponent : public CpldComponent, public GTPldmComponent {

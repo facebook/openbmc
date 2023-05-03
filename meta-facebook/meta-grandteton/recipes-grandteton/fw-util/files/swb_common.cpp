@@ -747,6 +747,7 @@ int GTPldmComponent::is_pldm_info_valid()
     for(auto&comp:comp_infos) {
       if (comp.compImageInfo.comp_identifier == comp_info.component_id) {
         string vendor;
+        comp_verify_str = comp.compVersion; // comp_verify()
         stringstream input_stringstream(comp.compVersion);
         if (getline(input_stringstream, vendor, ' ')) {
           auto& map = pldm_signed_info::vendor_map;
@@ -765,7 +766,7 @@ int GTPldmComponent::is_pldm_info_valid()
     }
   }
 
-  return check_header_info(img_info);
+  return check_header_info(img_info) || comp_verify();
 }
 
 int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t specified_comp)
@@ -818,7 +819,6 @@ int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t sp
           cerr << "Non-valid package info." << endl;
           return -1;
         }
-        return is_pldm_info_valid();
       } else {
         cerr << "Non-valid image header." << endl;
         return -1;
@@ -898,6 +898,69 @@ int GTSwbVrComponent::fupdate(string image)
 
 int GTSwbVrComponent::get_version(json& j) {
   return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+}
+
+int GTSwbVrComponent::comp_verify()
+{
+  // MPS no need to check CRC
+  if (comp_info.vendor_id == pldm_signed_info::MPS)
+    return 0;
+
+  // in case that cache not yet established.
+  auto img_comp_info = oem_get_pkg_comp_img_info();
+  json json_ver;
+  gt_get_version(json_ver, this->alias_fru(), this->alias_component(), target);
+
+  // variable for parsing
+  string ver_str = json_ver["VERSION"];
+  vector<string> words{};
+  string ver_checksum{};
+  string img_checksum{};
+  string token{};
+  size_t pos;
+
+  // get current checksum
+  while ((pos = ver_str.find(' ')) != std::string::npos) {
+    token = ver_str.substr(0, pos);
+    words.push_back(token);
+    ver_str.erase(0, pos + 1);
+  }
+  words.push_back(ver_str);
+  if (words.size() < 2) {
+    cerr << "Can not get current version checksum." << endl;
+    return -1;
+  } else if (words[1].size() < 8) {
+    cerr << "Can not get valid current version checksum." << endl;
+    return -1;
+  } else {
+    ver_checksum = words[1];
+    ver_checksum.resize(8);
+  }
+
+  // get image checksum
+  words.clear();
+  while ((pos = comp_verify_str.find(' ')) != std::string::npos) {
+    token = comp_verify_str.substr(0, pos);
+    words.push_back(token);
+    comp_verify_str.erase(0, pos + 1);
+  }
+  words.push_back(comp_verify_str);
+  if (words.size() < 2) {
+    cerr << "Can not get image version checksum." << endl;
+    return -1;
+  } else if (words[1].size() < 8) {
+    cerr << "Can not get valid image version checksum." << endl;
+    return -1;
+  } else {
+    img_checksum = words[1];
+    img_checksum.resize(8);
+  }
+
+  if (ver_checksum == img_checksum) {
+    cerr << "Detected the same CRC, please use --force." << endl;
+    return -1;
+  } else
+    return 0;
 }
 
 int GTSwbCpldComponent::update(string image)

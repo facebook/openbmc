@@ -18,8 +18,7 @@
 #include <vector>
 #include <optional>
 
-// TODO: change to chassis_eeprom
-#define DEFAULT_EEPROM_NAME "dummy_eeprom"
+#define DEFAULT_EEPROM_NAME "chassis_eeprom"
 
 //
 //  META-FBOSS EEPROM V4 fields.

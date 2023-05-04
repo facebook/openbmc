@@ -29,6 +29,7 @@ from utils.shell_util import run_cmd
 class BaseLogUtilTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
+        self.set_fru_id()
 
     def validate_fru_id(self, fru_id, regex=None):
         """
@@ -57,6 +58,13 @@ class BaseLogUtilTest(object):
         self.assertRegex(
             app_name, regex, "incorrect app name found: {}".format(app_name)
         )
+
+    def set_fru_id(self):
+        """
+        for spacific FRU need to override this function
+        to define FRU_ID with fru id number by integer type
+        """
+        self.FRU_ID = None
 
     def test_log_format(self):
         """
@@ -131,6 +139,16 @@ class BaseLogUtilTest(object):
         Logger.info("running cmd: {}".format(" ".join(cmd)))
         out = run_cmd(cmd)
         cmd = ["log-util", self.FRU, "--print"]
-        pattern = r"log-util: User cleared " + self.FRU + r" logs"
+
+        """
+        the output log-util will show with 'FRU: {FRU_ID}'
+        for spacific testing need to define FRU_ID for each fru
+        except 'all' and 'sys'
+        """
+        if self.FRU_ID is not None:
+            pattern = r"log-util: User cleared FRU: " + str(self.FRU_ID) + r" logs"
+        else:
+            pattern = r"log-util: User cleared " + self.FRU + r" logs"
+
         out = run_cmd(cmd)
         self.assertRegex(out, pattern, "unexpected output: {}".format(out))

@@ -331,7 +331,8 @@ std::string dumpNonBlocking(DiagnosticDataType type) {
       {DiagnosticDataType::MANAGER, "Manager"},
       {DiagnosticDataType::OEM_EROT, "EROT"},
       {DiagnosticDataType::OEM_SELF_TEST, "SelfTest"},
-      {DiagnosticDataType::OEM_FPGA, "FPGA"}};
+      {DiagnosticDataType::OEM_FPGA, "FPGA"},
+      {DiagnosticDataType::OEM_RETIMER, "RetLTSSM"}};
   json req;
   if (type == DiagnosticDataType::MANAGER) {
     req["DiagnosticDataType"] = "Manager";

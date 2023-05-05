@@ -29,7 +29,8 @@ static void do_dump(
       {"hmc", hgx::DiagnosticDataType::MANAGER},
       {"erot", hgx::DiagnosticDataType::OEM_EROT},
       {"self-test", hgx::DiagnosticDataType::OEM_SELF_TEST},
-      {"fpga", hgx::DiagnosticDataType::OEM_FPGA}};
+      {"fpga", hgx::DiagnosticDataType::OEM_FPGA},
+      {"retimer", hgx::DiagnosticDataType::OEM_RETIMER}};
   if (async) {
     std::cout << hgx::dumpNonBlocking(compMap.at(comp)) << std::endl;
   } else {
@@ -145,7 +146,7 @@ int main(int argc, char* argv[]) {
       "--async", async, "Do not block, return immediately printing the task ID");
   update->callback([&]() { do_update(comp, image, async, json_fmt); });
 
-  std::set<std::string> allowedComps{"hmc", "erot", "self-test", "fpga"};
+  std::set<std::string> allowedComps{"hmc", "erot", "self-test", "fpga", "retimer"};
   auto dump = app.add_subcommand("dump", "perform a dump");
   dump->add_option("comp", comp, "What to dump")
       ->required()

@@ -14,7 +14,7 @@ typedef enum HMCPhase {
 
 namespace hgx {
 
-enum class DiagnosticDataType { MANAGER, OEM_EROT, OEM_SELF_TEST, OEM_FPGA };
+enum class DiagnosticDataType { MANAGER, OEM_EROT, OEM_SELF_TEST, OEM_FPGA, OEM_RETIMER };
 
 // Standard HTTP Exception
 struct HTTPException : std::runtime_error {

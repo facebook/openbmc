@@ -217,20 +217,32 @@ static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
         cache[len+3] = four_byte_post[3];
         len+=4;
         index = 0;
+      } else {
+        index++;
       }
-      index++;
   }
   close(fd);
 
-  for(int page_num = 1; page_num <= MAX_PAGE_NUM; page_num++) {
-    snprintf(key, sizeof(key), "lcc_postcode_%d", page_num);
-    memmove(cache, &cache[cache_len], MAX_VALUE_LEN);
-    cache_len += MAX_VALUE_LEN;
-
-    if (kv_set(key, (char *)cache, MAX_VALUE_LEN, 0)) {
-      syslog(LOG_WARNING, "kv_set fail\n");
+  if(len != 0) {
+    for(int page_num = 1; page_num <= MAX_PAGE_NUM; page_num++) {
+      snprintf(key, sizeof(key), "lcc_postcode_%d", page_num);
+      if(len >= (cache_len + MAX_VALUE_LEN)) {
+        memmove(cache, &cache[cache_len], MAX_VALUE_LEN);
+        cache_len += MAX_VALUE_LEN;
+      } else {
+        memmove(cache, &cache[cache_len], len - cache_len);
+        if (kv_set(key, (char *)cache, len - cache_len, 0)) {
+          syslog(LOG_WARNING, "kv_set fail\n");
+        }
+        break;
+      }
+    
+      if (kv_set(key, (char *)cache, MAX_VALUE_LEN, 0)) {
+        syslog(LOG_WARNING, "kv_set fail\n");
+      }
     }
   }
+
   len = len > max_len ? max_len : len;
   memcpy(buf, cache, len);
   *rlen = len;

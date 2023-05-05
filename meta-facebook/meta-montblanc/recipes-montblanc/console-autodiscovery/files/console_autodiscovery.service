@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,11 +14,16 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=Print magic key console auto discovery at boot
+Wants=setup_i2c.service setup_gpio.service
+After=setup_i2c.service setup_gpio.service
 
-require recipes-core/images/fboss-lite-image.inc
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/console_autodiscovery.py
 
-IMAGE_INSTALL += " \
-    mdio-util \
-    log-util-v2 \
-    console-autodiscovery \
-    "
+[Install]
+WantedBy=multi-user.target

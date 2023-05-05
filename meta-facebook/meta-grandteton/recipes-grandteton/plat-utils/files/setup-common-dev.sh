@@ -33,6 +33,8 @@ rebind_i2c_dev() {
     fi
   fi
 }
+#echo set SGPIO ready
+gpio_set FM_BMC_SGPIO_READY_N 1
 
 echo "Probe MB MUX"
 rebind_i2c_dev 1 70 pca954x
@@ -654,8 +656,4 @@ if [ "$(is_bmc_por)" -eq 1 ]; then
   pldmd-util -b 3 -e 0x0a raw 0x02 0x39 0x62 0xFF 0x02 0x00 0x00 0x01 0x02
   sleep 3
 fi
-
-
-#Set NIC1 EID to 0x22
-mctp-util -d 0x4 0x64 0x00 0x00 0x80 0x01 0x00 0x22
 

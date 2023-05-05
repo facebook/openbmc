@@ -202,5 +202,3 @@ gpio_set IRQ_SMI_ACTIVE_N_R 1
 sgpio_export IRQ_TPM_SPI_R1_N 115
 gpio_set IRQ_TPM_SPI_R1_N 1
 
-sgpio_export FM_BMC_SGPIO_READY_N 37
-gpio_set FM_BMC_SGPIO_READY_N 1

@@ -220,6 +220,3 @@ gpio_set CLK_BUF1_GPU_FPGA_OE_R_N 0
 sgpio_export FM_BMC_CPU_FBRK_OUT_N 71
 gpio_set FM_BMC_CPU_FBRK_OUT_N 1
 
-sgpio_export GPIO_READY 37
-gpio_set GPIO_READY 1
-

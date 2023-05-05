@@ -37,6 +37,7 @@ LOCAL_URI = " \
     file://usbnet_not_ready.sh \
     file://setup-snr-mon.sh \
     file://check-fan-cache.sh \
+    file://setup-reboot-init.sh \
     "
 
 pkgdir = "utils"
@@ -94,6 +95,9 @@ do_install() {
   update-rc.d -r ${D} setup-snr-mon.sh start 89 5 .
 # check-fan-cache.sh
   install -m 755 check-fan-cache.sh ${D}${sysconfdir}/init.d/check-fan-cache.sh
+# setup-reboot-init.sh
+  install -m 755 setup-reboot-init.sh ${D}${sysconfdir}/init.d/setup-reboot-init.sh
+  update-rc.d -r ${D} setup-reboot-init.sh stop 01 6 .
 }
 
 FILES:${PN} += "/usr/local ${sysconfdir}"

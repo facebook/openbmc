@@ -18,15 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 
-### BEGIN INIT INFO
-# Provides:          gpio-cover
-# Required-Start:
-# Required-Stop:
-# Default-Start:     S
-# Default-Stop:
-# Short-Description: Set up GPIO pins as appropriate can be cover
-### END INIT INFO
-
 . /usr/local/fbpackages/utils/ast-functions
 
 gpio_set FM_BMC_SGPIO_READY_N 0
+
+cat /tmp/gpionames/FM_BMC_SGPIO_READY_N/value

@@ -197,14 +197,14 @@ void log_gpio_change(uint8_t fru,
   assert(cfg);
 
   if(!log) {
-    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+    syslog(LOG_CRIT, "FRU: %d %s: %s - %s\n", fru, value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
     return;
   }
 
   memset(log->msg, 0, sizeof(log->msg));
   if(str == NULL) {
-    snprintf(log->msg, sizeof(log->msg), "%s: %s - %s\n",
-             value ? "DEASSERT" : "ASSERT", cfg->description, cfg->shadow);
+    snprintf(log->msg, sizeof(log->msg), "FRU: %d %s: %s - %s\n",
+             fru, value ? "DEASSERT" : "ASSERT", cfg->description, cfg->shadow);
   } else {
     snprintf(log->msg, sizeof(log->msg), "FRU: %d %s: %s\n",
              fru, str, value ? "Deassertion": "Assertion");
@@ -395,11 +395,10 @@ cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) 
   if(!server_power_check(3))
     return;
 
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
-
   //LCD debug card critical SEL support
   strcat(cmd, "CPU FPH");
   if (curr) {
+    log_gpio_change(FRU_MB, desc, curr, 0, NULL);
     strcat(cmd, " DEASSERT");
   } else {
     char reason[32] = "";
@@ -494,7 +493,7 @@ gpio_event_pson_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
   if (g_server_power_status != GPIO_VALUE_HIGH)
     return;
 
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL);
 }
 
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON 3S

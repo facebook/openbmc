@@ -60,13 +60,14 @@ class HGXComponent : public Component {
 };
 
 class HGXSystemConfig {
-  HMCPhase phase = hgx::getHMCPhase();
+  HMCPhase phase;
 
   public:
     HGXSystemConfig() {
       if (pal_is_artemis()) {
         return;
       }
+      phase = hgx::getHMCPhase();
       static HGXComponent autocomp("hgx", "auto");
       static HGXComponent patchcomp("hgx", "patch", "");
       

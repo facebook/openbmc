@@ -23,8 +23,10 @@ class fw_common_config {
   public:
     fw_common_config() {
       static NicExtComponent nic0("nic0", "nic0", "nic0_fw_ver", FRU_NIC0, 0);
-      static UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0T", 14, 0x60, false);
-      static UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 14, 0x60, 0x02);  // target ID of bootloader = 0x02
+      if (!pal_is_artemis()) {
+        static UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0T", 14, 0x60, false);
+        static UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 14, 0x60, 0x02);  // target ID of bootloader = 0x02
+      }
     }
 };
 

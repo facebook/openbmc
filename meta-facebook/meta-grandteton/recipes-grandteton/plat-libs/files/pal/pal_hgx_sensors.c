@@ -294,7 +294,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"GPU_SXM_1_PWR"      , 0 , read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31
   {"GPU_SXM_1_VOL"      , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x32
   {"GPU_SXM_1_TEMP_0"   , 0 , read_snr, false, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x33
-  {"GPU_SXM_1_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, 0.0, 0, 0, 0, 0}, TEMP}, //0x34
+  {"GPU_SXM_1_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, -0.01, 0, 0, 0, 0}, TEMP}, //0x34
   {"GPU_SXM_1_DRAM_PWR" , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x35
   {"GPU_SXM_1_DRAM_TEMP", 0 , read_snr, false, {95.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x36
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                 //0x37
@@ -302,7 +302,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"GPU_SXM_2_PWR"      , 0 , read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x39
   {"GPU_SXM_2_VOL"      , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x3A
   {"GPU_SXM_2_TEMP_0"   , 0 , read_snr, false, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x3B
-  {"GPU_SXM_2_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, 0.0, 0, 0, 0, 0}, TEMP}, //0x3C
+  {"GPU_SXM_2_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, -0.01, 0, 0, 0, 0}, TEMP}, //0x3C
   {"GPU_SXM_2_DRAM_PWR" , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3D
   {"GPU_SXM_2_DRAM_TEMP", 0 , read_snr, false,  {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x3E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                 //0x3F
@@ -311,7 +311,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"GPU_SXM_3_PWR"      , 0 , read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x41
   {"GPU_SXM_3_VOL"      , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x42
   {"GPU_SXM_3_TEMP_0"   , 0 , read_snr, false, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x43
-  {"GPU_SXM_3_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, 0.0, 0, 0, 0, 0}, TEMP}, //0x44
+  {"GPU_SXM_3_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, -0.01, 0, 0, 0, 0}, TEMP}, //0x44
   {"GPU_SXM_3_DRAM_PWR" , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x45
   {"GPU_SXM_3_DRAM_TEMP", 0 , read_snr, false, {95.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x46
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                 //0x47
@@ -319,7 +319,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"GPU_SXM_4_PWR"      , 0 , read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x49
   {"GPU_SXM_4_VOL"      , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x4A
   {"GPU_SXM_4_TEMP_0"   , 0 , read_snr, false, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x4B
-  {"GPU_SXM_4_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, 0.0, 0, 0, 0, 0}, TEMP}, //0x4C
+  {"GPU_SXM_4_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, -0.01, 0, 0, 0, 0}, TEMP}, //0x4C
   {"GPU_SXM_4_DRAM_PWR" , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4D
   {"GPU_SXM_4_DRAM_TEMP", 0 , read_snr, false, {95.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x4E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                 //0x4F
@@ -328,7 +328,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"GPU_SXM_5_PWR"      , 0 , read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x51
   {"GPU_SXM_5_VOL"      , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x52
   {"GPU_SXM_5_TEMP_0"   , 0 , read_snr, false, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x53
-  {"GPU_SXM_5_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, 0.0, 0, 0, 0, 0}, TEMP}, //0x54
+  {"GPU_SXM_5_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, -0.01, 0, 0, 0, 0}, TEMP}, //0x54
   {"GPU_SXM_5_DRAM_PWR" , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x55
   {"GPU_SXM_5_DRAM_TEMP", 0 , read_snr, false, {95.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x56
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                 //0x57
@@ -336,7 +336,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"GPU_SXM_6_PWR"      , 0 , read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x59
   {"GPU_SXM_6_VOL"      , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x5A
   {"GPU_SXM_6_TEMP_0"   , 0 , read_snr, false, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x5B
-  {"GPU_SXM_6_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, 0.0, 0, 0, 0, 0}, TEMP}, //0x5C
+  {"GPU_SXM_6_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, -0.01, 0, 0, 0, 0}, TEMP}, //0x5C
   {"GPU_SXM_6_DRAM_PWR" , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x5D
   {"GPU_SXM_6_DRAM_TEMP", 0 , read_snr, false, {95.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                 //0x5F
@@ -345,7 +345,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"GPU_SXM_7_PWR"      , 0 , read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x61
   {"GPU_SXM_7_VOL"      , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x62
   {"GPU_SXM_7_TEMP_0"   , 0 , read_snr, false, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x63
-  {"GPU_SXM_7_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, 0.0, 0, 0, 0, 0}, TEMP}, //0x64
+  {"GPU_SXM_7_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, -0.01, 0, 0, 0, 0}, TEMP}, //0x64
   {"GPU_SXM_7_DRAM_PWR" , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x65
   {"GPU_SXM_7_DRAM_TEMP", 0 , read_snr, false, {95.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x66
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                 //0x67
@@ -353,7 +353,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"GPU_SXM_8_PWR"      , 0 , read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x69
   {"GPU_SXM_8_VOL"      , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x6A
   {"GPU_SXM_8_TEMP_0"   , 0 , read_snr, false, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6B
-  {"GPU_SXM_8_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, 0.0, 0, 0, 0, 0}, TEMP}, //0x6C
+  {"GPU_SXM_8_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, -0.01, 0, 0, 0, 0}, TEMP}, //0x6C
   {"GPU_SXM_8_DRAM_PWR" , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x6D
   {"GPU_SXM_8_DRAM_TEMP", 0 , read_snr, false, {95.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                 //0x6F

@@ -869,20 +869,46 @@ static void hmc_ready(bool startup) {
   }
 }
 
+static void
+hmc_ready_mon() {
+  using namespace std::literals;
+  static std::future<void> worker;
+  auto hmc_ready_mon_thr = [] {
+    constexpr auto timeout = 6min;
+    constexpr auto poll_time = 5s;
+    for (int i = 0; i < timeout / poll_time; i++) {
+      std::this_thread::sleep_for(poll_time);
+      auto val = gpio_get_value_by_shadow("GPU_BASE_HMC_READY_ISO_R");
+      if (val == GPIO_VALUE_HIGH) {
+        return;
+      }
+    }
+    syslog(LOG_CRIT, "FRU: %d HMC_READY - ASSERT Timed out", FRU_HGX);
+  };
+  if (!worker.valid() || worker.wait_for(0s) == std::future_status::ready) {
+    worker = std::async(std::launch::async, hmc_ready_mon_thr);
+  } else {
+    syslog(LOG_WARNING, "HGX: Previous HMC Ready waiter thread is still running");
+  }
+}
+
 void
 hmc_ready_init(gpiopoll_pin_t *desc, gpio_value_t value)
 {
   if (value == GPIO_VALUE_HIGH) {
     hmc_ready(true);
+  } else {
+    hmc_ready_mon();
   }
 }
 
 void
 hmc_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
   if (curr == GPIO_VALUE_HIGH) {
     hmc_ready(false);
+  } else {
+    hmc_ready_mon();
   }
 }
 

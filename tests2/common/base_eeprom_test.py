@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,7 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
@@ -46,6 +45,13 @@ class BaseEepromTest(object):
     @abstractmethod
     def set_location_on_fabric(self):
         pass
+
+    def set_odm_pcba_number(self):
+        self.odm_pcba_part_number = "ODM PCBA Part Number"
+        self.odm_pcba_serial_number = "ODM PCBA Serial Number"
+
+    def set_eeprom_location(self):
+        self.test_eeprom_location = "Location on Fabric"
 
     def run_eeprom_cmd(self):
         self.assertNotEqual(self.eeprom_cmd, None, "EEPROM command not set")
@@ -98,9 +104,10 @@ class CommonEepromTest(BaseEepromTest):
         self.assertIn("Product Part Number", self.eeprom_info)
 
     def test_odm_pcb(self):
+        self.set_odm_pcba_number()
         self.get_eeprom_info()
-        self.assertIn("ODM PCBA Part Number", self.eeprom_info)
-        self.assertIn("ODM PCBA Serial Number", self.eeprom_info)
+        self.assertIn(self.odm_pcba_part_number, self.eeprom_info)
+        self.assertIn(self.odm_pcba_serial_number, self.eeprom_info)
 
     def test_asset_tag(self):
         self.get_eeprom_info()
@@ -128,10 +135,11 @@ class CommonEepromTest(BaseEepromTest):
 
     def test_location_on_fabric(self):
         self.set_location_on_fabric()
+        self.set_eeprom_location()
         self.get_eeprom_info()
         found = False
         name = (
-            self.eeprom_info.split("Location on Fabric")[1]
+            self.eeprom_info.split(self.test_eeprom_location)[1]
             .split(": ")[1]
             .split("\n")[0]
         )

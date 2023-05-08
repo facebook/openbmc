@@ -148,7 +148,7 @@ static void set_smbus_extera_params(struct ctx *ctx, uint8_t eid, struct mctp_sm
   smbus_params->slave_addr = addr;
 }
 
-static void tx_message(struct ctx *ctx, mctp_eid_t eid, uint8_t *msg, size_t len, bool tag_owner, uint8_t tag) {
+static int tx_message(struct ctx *ctx, mctp_eid_t eid, uint8_t *msg, size_t len, bool tag_owner, uint8_t tag) {
 
   std::string_view name = ctx->binding->name;
   if (name == "smbus") {
@@ -156,18 +156,24 @@ static void tx_message(struct ctx *ctx, mctp_eid_t eid, uint8_t *msg, size_t len
     smbus_params = &_smbus_params;
     set_smbus_extera_params(ctx, eid, smbus_params);
 
-    mctp_message_tx(ctx->mctp, eid, (void *)msg, len, tag_owner, tag, (void*)smbus_params);
+    if (mctp_message_tx(ctx->mctp, eid, (void *)msg, len, tag_owner, tag, (void*)smbus_params) < 0) {
+      return -1;
+    }
   }
   else if (name == "asti3c") {
     struct mctp_asti3c_pkt_private pkt_private = { .fd = ctx->binding->get_fdout(ctx->binding) };
 
     if (mctp_message_tx(ctx->mctp, eid, (void *)msg, len, tag_owner, tag, &pkt_private) < 0) {
       std::cerr << "Fail to transfer MCTP message.\n";
+      return -1;
     }
   }
   else {
     std::cerr<<"Error : missing binding name\n";
+    return -1;
   }
+
+  return 0;
 }
 
 static void client_remove_inactive(struct ctx *ctx)
@@ -569,8 +575,30 @@ static int client_process_recv(struct ctx *ctx, int idx)
     //Loop back Test
     rx_message(dest_eid, ctx, (uint8_t *)ctx->buf + 1, rc - 1, 0, 0, NULL);
   } else {
+    static constexpr int TX_RETRIES_MAX = 3;
+    static constexpr int TX_RETRY_DELAY = 30000;    // 30 ms
+    static constexpr uint8_t OFFSET_TYPE = 1;       // Msg Type
+    static constexpr uint8_t OFFSET_IID = 2;        // Instance ID
+    static constexpr uint8_t OFFSET_COMP = 5;       // PLDM Completion Code
+    static constexpr uint8_t PLDM_COMP_ERR = 0x01;
+    uint8_t *buf = (uint8_t *)ctx->buf;
+    int retry;
+
     tag_owner = get_mctp_tag_owner(ctx->buf);
-    tx_message(ctx, dest_eid, (uint8_t *)ctx->buf + 1, rc - 1, tag_owner, client->msg_tag);
+    for (retry = 0;
+         tx_message(ctx, dest_eid, &buf[1], rc - 1, tag_owner, client->msg_tag) < 0 &&
+         ++retry <= TX_RETRIES_MAX;) {
+      usleep(TX_RETRY_DELAY);
+    }
+    if (retry > TX_RETRIES_MAX) {
+      if (buf[OFFSET_TYPE] == MSG_TYPE_PLDM) {
+        // send back a response with PLDM error completion code to avoid
+        // PLDM requester being blocked until timeout
+        buf[OFFSET_IID] &= 0x7F;  // mark as response
+        buf[OFFSET_COMP] = PLDM_COMP_ERR;
+        rx_message(dest_eid, ctx, &buf[1], OFFSET_COMP, 0, 0, NULL);
+      }
+    }
   }
   return 0;
 

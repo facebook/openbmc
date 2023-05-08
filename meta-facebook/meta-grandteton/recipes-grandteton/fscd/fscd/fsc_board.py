@@ -45,7 +45,7 @@ def board_host_actions(action="None", cause="None"):
     - alarming/syslogging criticals
     """
     if "host_shutdown" in action:
-        Logger.warn("system power off")
+        Logger.crit(f"FRU: {FRU_MB} FSC Host shutdown action with cause: {cause}")
         lpal_hndl.pal_power_button_override(FRU_MB)
     pass
 

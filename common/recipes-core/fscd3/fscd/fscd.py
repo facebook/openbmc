@@ -795,7 +795,7 @@ class Fscd(object):
                                     if (self.get_fan_power_status()):
                                         self.fsc_host_action(
                                             action="host_shutdown",
-                                            cause="Host Shutdown fans are bad for more than "
+                                            cause="Bad fan count exceeded threshold: "
                                             + str(fan_count),
                                         )
                                         mode = fan_mode["standby_boost_mode"]

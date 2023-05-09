@@ -215,6 +215,7 @@ static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
         cache[len+1] = four_byte_post[1];
         cache[len+2] = four_byte_post[2];
         cache[len+3] = four_byte_post[3];
+        pal_check_psb_error(cache[len+3], cache[len]);
         len+=4;
         index = 0;
       } else {
@@ -441,6 +442,12 @@ pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
 uint8_t __attribute__((weak))
 pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
   return 0;
+}
+
+int __attribute__((weak))
+pal_check_psb_error(uint8_t head, uint8_t last)
+{
+  return PAL_EOK;
 }
 
 uint8_t __attribute__((weak))

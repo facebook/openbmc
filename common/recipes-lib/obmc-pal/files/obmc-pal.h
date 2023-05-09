@@ -659,6 +659,7 @@ bool pal_is_prot_card_prsnt(uint8_t fru);
 bool pal_is_prot_bypass(uint8_t fru);
 int pal_get_prot_address(uint8_t fru, uint8_t *bus, uint8_t *addr);
 int pal_file_line_split(char **dst, char *src, char *delim, int maxsz);
+int pal_check_psb_error(uint8_t head, uint8_t last);
 void *pal_set_fan_speed_thread(void *data);
 int pal_bitcount(unsigned int val);
 

@@ -129,6 +129,102 @@ error_exit:
 }
 
 int
+pal_check_psb_error(uint8_t head, uint8_t last) {
+  if(head == 0xEE) {
+    switch (last) {
+      case 0x03:
+        syslog(LOG_CRIT, "PSB Event(EE0003) Error in BIOS Directory Table - Too many directory entries");
+        break;
+      case 0x04:
+        syslog(LOG_CRIT, "PSB Event(EE0004) Internal error - Invalid parameter");
+        break;
+      case 0x05:
+        syslog(LOG_CRIT, "PSB Event(EE0005) Internal error - Invalid data length");
+        break;
+      case 0x0B:
+        syslog(LOG_CRIT, "PSB Event(EE000B) Internal error - Out of resources");
+        break;
+      case 0x10:
+        syslog(LOG_CRIT, "PSB Event(EE0010) Error in BIOS Directory Table - Reset image destination invalid");
+        break;
+      case 0x13:
+        syslog(LOG_CRIT, "PSB Event(EE0013) Error retrieving FW header during FW validation");
+        break;
+      case 0x14:
+        syslog(LOG_CRIT, "PSB Event(EE0014) Invalid key size");
+        break;
+      case 0x18:
+        syslog(LOG_CRIT, "PSB Event(EE0018) Error validating binary");
+        break;
+      case 0x22:
+        syslog(LOG_CRIT, "PSB Event(EE0022) P0: BIOS signing key entry not found");
+        break;
+      case 0x3E:
+        syslog(LOG_CRIT, "PSB Event(EE003E) P0: Error reading fuse info");
+        break;
+      case 0x62:
+        syslog(LOG_CRIT, "PSB Event(EE0062) Internal error - Error mapping fuse");
+        break;
+      case 0x64:
+        syslog(LOG_CRIT, "PSB Event(EE0064) P0: Timeout error attempting to fuse");
+        break;
+      case 0x69:
+        syslog(LOG_CRIT, "PSB Event(EE0069) BIOS OEM key revoked");
+        break;
+      case 0x6C:
+        syslog(LOG_CRIT, "PSB Event(EE006C) P0: Error in BIOS Directory Table - Reset image not found");
+        break;
+      case 0x6F:
+        syslog(LOG_CRIT, "PSB Event(EE006F) P0: OEM BIOS Signing Key Usage flag violation");
+        break;
+      case 0x78:
+        syslog(LOG_CRIT, "PSB Event(EE0078) P0: BIOS RTM Signature entry not found");
+        break;
+      case 0x79:
+        syslog(LOG_CRIT, "PSB Event(EE0079) P0: BIOS Copy to DRAM failed");
+        break;
+      case 0x7A:
+        syslog(LOG_CRIT, "PSB Event(EE007A) P0: BIOS RTM Signature verification failed");
+        break;
+      case 0x7B:
+        syslog(LOG_CRIT, "PSB Event(EE007B) P0: OEM BIOS Signing Key failed signature verification");
+        break;
+      case 0x7C:
+        syslog(LOG_CRIT, "PSB Event(EE007C) P0: Platform Vendor ID and/or Model ID binding violation");
+        break;
+      case 0x7D:
+        syslog(LOG_CRIT, "PSB Event(EE007D) P0: BIOS Copy bit is unset for reset image");
+        break;
+      case 0x7E:
+        syslog(LOG_CRIT, "PSB Event(EE007E) P0: Requested fuse is already blown, reblow will cause ASIC malfunction");
+        break;
+      case 0x7F:
+        syslog(LOG_CRIT, "PSB Event(EE007F) P0: Error with actual fusing operation");
+        break;
+      case 0x80:
+        syslog(LOG_CRIT, "PSB Event(EE0080) P1: Error reading fuse info");
+        break;
+      case 0x81:
+        syslog(LOG_CRIT, "PSB Event(EE0081) P1: Platform Vendor ID and/or Model ID binding violation");
+        break;
+      case 0x82:
+        syslog(LOG_CRIT, "PSB Event(EE0082) P1: Requested fuse is already blown, reblow will cause ASIC malfunction");
+        break;
+      case 0x83:
+        syslog(LOG_CRIT, "PSB Event(EE0083) P1: Error with actual fusing operation");
+        break;
+      case 0x92:
+        syslog(LOG_CRIT, "PSB Event(EE0092) P0: Error in BIOS Directory Table - Firmware type not found");
+        break;
+      default:
+        break;
+    }
+  }
+
+  return 0;
+}
+
+int
 pal_clear_psb_cache(void) {
   char key[MAX_KEY_LEN] = {0};
   snprintf(key, sizeof(key), "slot%d_psb_config_raw", FRU_MB);

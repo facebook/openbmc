@@ -29,6 +29,11 @@ pal_clear_psb_cache(void) {
 }
 
 int
+pal_check_psb_error(uint8_t head, uint8_t last) {
+  return 0;
+}
+
+int
 pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t index = sel[11] & 0x01;

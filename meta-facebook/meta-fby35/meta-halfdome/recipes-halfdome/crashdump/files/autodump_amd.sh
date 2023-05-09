@@ -90,7 +90,7 @@ rm $PID_FILE
 # 2 ---> no reset
 
 if [ -r $CONFIG_FILE ]; then
-  RESET_OPTION=$(tail -n 1 "${CONFIG_FILE}")
+  RESET_OPTION=$(/usr/bin/python -m json.tool "${CONFIG_FILE}" | grep "systemRecovery" | awk -F ': ' '{print $2}')
 else
   RESET_OPTION=0
 fi

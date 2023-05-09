@@ -4361,6 +4361,8 @@ pal_nic_poweron_action() {
     return -1;
   }
 
+  // Wait 15 seconds to prevent network interface start timeout.
+  sleep(15);
   ret = run_command("/etc/init.d/networking restart");
   if (ret != 0) {
     syslog(LOG_WARNING, "%s(): Failed to enable network stack.\n", __func__);

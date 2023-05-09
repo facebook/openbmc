@@ -1,0 +1,187 @@
+{
+    "bmc": {
+        "bmc": {
+            "version header": "BMC Version"
+        },
+        "cpld": {
+            "version header": "BMC CPLD Version"
+        },
+        "fscd": {
+            "version header": "Fan Speed Controller Version"
+        },
+        "rom": {
+            "version header": "ROM Version"
+        },
+        "tpm": {
+            "version header": "TPM Version"
+        }
+    },
+    "nic": {
+        "nic": {
+            "version header": [
+                "Broadcom NIC Version",
+                "Mellanox NIC Version"
+            ]
+        }
+    },
+    "ocpdbg": {
+        "mcu": {
+            "version header": "MCU Version"
+        },
+        "mcubl": {
+            "version header": "MCU Bootloader Version"
+        }
+    },
+    "slot1": {
+        "1ou_bic": {
+            "version header": "1OU Bridge-IC Version"
+        },
+        "1ou_bicbl": {
+            "version header": "1OU Bridge-IC Bootloader Version"
+        },
+        "1ou_cpld": {
+            "version header": "1OU CPLD Version"
+        },
+        "2ou_bic": {
+            "version header": "2OU Bridge-IC Version"
+        },
+        "2ou_bicbl": {
+            "version header": "2OU Bridge-IC Bootloader Version"
+        },
+        "2ou_cpld": {
+            "version header": "2OU CPLD Version"
+        },
+        "bic": {
+            "version header": "SB Bridge-IC Version"
+        },
+        "bicbl": {
+            "version header": "SB Bridge-IC Bootloader Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "SB CPLD Version"
+        },
+        "me": {
+            "version header": "ME Version"
+        },
+        "vr": {
+            "version header": "VCCIN_VSA Version"
+        }
+    },
+    "slot2": {
+        "1ou_bic": {
+            "version header": "1OU Bridge-IC Version"
+        },
+        "1ou_bicbl": {
+            "version header": "1OU Bridge-IC Bootloader Version"
+        },
+        "1ou_cpld": {
+            "version header": "1OU CPLD Version"
+        },
+        "2ou_bic": {
+            "version header": "2OU Bridge-IC Version"
+        },
+        "2ou_bicbl": {
+            "version header": "2OU Bridge-IC Bootloader Version"
+        },
+        "2ou_cpld": {
+            "version header": "2OU CPLD Version"
+        },
+        "bic": {
+            "version header": "SB Bridge-IC Version"
+        },
+        "bicbl": {
+            "version header": "SB Bridge-IC Bootloader Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "SB CPLD Version"
+        },
+        "me": {
+            "version header": "ME Version"
+        },
+        "vr": {
+            "version header": "VCCIN_VSA Version"
+        }
+    },
+    "slot3": {
+        "1ou_bic": {
+            "version header": "1OU Bridge-IC Version"
+        },
+        "1ou_bicbl": {
+            "version header": "1OU Bridge-IC Bootloader Version"
+        },
+        "1ou_cpld": {
+            "version header": "1OU CPLD Version"
+        },
+        "2ou_bic": {
+            "version header": "2OU Bridge-IC Version"
+        },
+        "2ou_bicbl": {
+            "version header": "2OU Bridge-IC Bootloader Version"
+        },
+        "2ou_cpld": {
+            "version header": "2OU CPLD Version"
+        },
+        "bic": {
+            "version header": "SB Bridge-IC Version"
+        },
+        "bicbl": {
+            "version header": "SB Bridge-IC Bootloader Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "SB CPLD Version"
+        },
+        "me": {
+            "version header": "ME Version"
+        },
+        "vr": {
+            "version header": "VCCIN_VSA Version"
+        }
+    },
+    "slot4": {
+        "1ou_bic": {
+            "version header": "1OU Bridge-IC Version"
+        },
+        "1ou_bicbl": {
+            "version header": "1OU Bridge-IC Bootloader Version"
+        },
+        "1ou_cpld": {
+            "version header": "1OU CPLD Version"
+        },
+        "2ou_bic": {
+            "version header": "2OU Bridge-IC Version"
+        },
+        "2ou_bicbl": {
+            "version header": "2OU Bridge-IC Bootloader Version"
+        },
+        "2ou_cpld": {
+            "version header": "2OU CPLD Version"
+        },
+        "bic": {
+            "version header": "SB Bridge-IC Version"
+        },
+        "bicbl": {
+            "version header": "SB Bridge-IC Bootloader Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "SB CPLD Version"
+        },
+        "me": {
+            "version header": "ME Version"
+        },
+        "vr": {
+            "version header": "VCCIN_VSA Version"
+        }
+    }
+}

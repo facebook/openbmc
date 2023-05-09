@@ -129,6 +129,14 @@ static const dev_info op_dev_info[] = {
   {DEV_ID4_4OU, 4, EXP4_BIC_INTF}
 };
 
+static const dev_info vf_dev_info[] = {
+  //dev_id, dev_index, intf
+  {DEV_ID0_1OU, 0, FEXP_BIC_INTF},
+  {DEV_ID1_1OU, 1, FEXP_BIC_INTF},
+  {DEV_ID2_1OU, 2, FEXP_BIC_INTF},
+  {DEV_ID3_1OU, 3, FEXP_BIC_INTF}
+};
+
 void msleep(int msec);
 int i2c_open(uint8_t bus_id, uint8_t addr_7bit);
 int is_bic_ready(uint8_t slot_id, uint8_t intf);

@@ -25,6 +25,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
 
+static uint8_t vf_dev_count = sizeof(vf_dev_info) / sizeof(dev_info);
 static uint8_t op_dev_count = sizeof(op_dev_info) / sizeof(dev_info);
 static char* op_led_status[] = {"OFF", "ON", "BLINK"};
 
@@ -165,7 +166,12 @@ main(int argc, char **argv) {
         return -1;
       }
     } else {
-      intf = FEXP_BIC_INTF;
+      for (i = 0; i < vf_dev_count; i++) {
+        if (vf_dev_info[i].dev_id == dev_id) {
+          dev_id = vf_dev_info[i].dev_index;
+          intf = vf_dev_info[i].intf;
+        }
+      }
     }
 
     switch (action) {
@@ -194,6 +200,17 @@ main(int argc, char **argv) {
         return -1;
     }
   } else {
+    switch (action) {
+      case ACTION_OFF:
+        is_led_on = false;
+        break;
+      case ACTION_ON:
+        is_led_on = true;
+        break;
+      default:
+        printf("Invalid action: %x\n", action);
+        return -1;
+    }
     if (fru == FRU_ALL) {
       ret = 0;
       for (fru = FRU_SLOT1; fru <= FRU_SLOT4; fru++) {

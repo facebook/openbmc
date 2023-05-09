@@ -49,13 +49,17 @@ if ! [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
   if [[ $(is_sb_bic_ready 4) == "1" ]]; then
     /usr/bin/fw-util slot4 --version vr > /dev/null
   fi
+  # Get the MFR ID
+  MFR_ID=$(i2cget -y 11 0x40 0x99 i 4) > /dev/null
+  # For ADM1278, "0x41 0x44 0x49" = "ADI"
+  if [[ "$MFR_ID" == "0x03 0x41 0x44 0x49" ]]; then
+    #enable the register of the temperature of hsc
+    /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i
 
-  #enable the register of the temperature of hsc
-  /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i
-
-  # Clear PEAK_PIN & PEAK_IOUT register
-  /usr/sbin/i2cset -y 11 0x40 0xd0 0x0000 w
-  /usr/sbin/i2cset -y 11 0x40 0xda 0x0000 w
+    # Clear PEAK_PIN & PEAK_IOUT register
+    /usr/sbin/i2cset -y 11 0x40 0xd0 0x0000 w
+    /usr/sbin/i2cset -y 11 0x40 0xda 0x0000 w
+  fi
 else
   /usr/bin/fw-util slot1 --version vr > /dev/null
 fi

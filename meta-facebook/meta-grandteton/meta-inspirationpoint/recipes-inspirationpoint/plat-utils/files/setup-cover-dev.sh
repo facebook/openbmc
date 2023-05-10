@@ -197,4 +197,5 @@ elif [ "$mb_sku" -eq "$config9" ]; then
   probe_hsc_ltc
   probe_adc_ti
   probe_vr_xdpe
+  probe_mb_retimer_vr_xdpe
 fi

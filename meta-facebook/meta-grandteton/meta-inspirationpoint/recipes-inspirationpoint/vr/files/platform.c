@@ -626,19 +626,19 @@ int plat_vr_init(void) {
         }
       }
     }
+  }
 
-    //Add Retimer VR
-    kv_get("mb_rev", rev_id, 0, 0);
-    kv_get("mb_sku", sku_id, 0, 0);
-    if (strcmp(rev_id, "2")) {
-      if (!strcmp(sku_id, "20")) {
-        //3nd source
-        mb_rt_vr_list[0].ops = &xdpe152xx_ops;
-        mb_rt_vr_list[1].ops = &xdpe152xx_ops;
-      }
-      memcpy(vr_list + vr_cnt, mb_rt_vr_list, MB_RT_VR_CNT * sizeof(struct vr_info));
-      vr_cnt += MB_RT_VR_CNT;
+  //Add Retimer VR
+  kv_get("mb_rev", rev_id, 0, 0);
+  kv_get("mb_sku", sku_id, 0, 0);
+  if (strcmp(rev_id, "2")) {
+    if (!strcmp(sku_id, "20") || !strcmp(sku_id, "25")) {
+      //3nd source
+      mb_rt_vr_list[0].ops = &xdpe152xx_ops;
+      mb_rt_vr_list[1].ops = &xdpe152xx_ops;
     }
+    memcpy(vr_list + vr_cnt, mb_rt_vr_list, MB_RT_VR_CNT * sizeof(struct vr_info));
+    vr_cnt += MB_RT_VR_CNT;
   }
   ret = vr_device_register(vr_list, vr_cnt);
   if (ret < 0) {

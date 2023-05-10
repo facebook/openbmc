@@ -392,67 +392,75 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             return False
         return True
 
-    platform_type = pal_get_board_type()
-    # Wedge400 need to skip vddcore
-    if platform_type == "Wedge400C":
-        # "/api/sys/vddcore"
-        @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
-        def test_endpoint_api_sys_vddcore_get(self):
-            # test accessing get vdd core
-            volt = self.get_vddcore()
-            if volt is None:
-                self.fail("get vddcore failed")
+    # "/api/sys/vddcore"
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_endpoint_api_sys_vddcore_get(self):
+        platform_type = pal_get_board_type()
+        # Wedge400 need to skip vddcore
+        if platform_type != "Wedge400C":
+            self.skipTest("Skip vddcore test on {} platform".format(platform_type))
 
-        # "/api/sys/vddcore/{#vddcore_value}"
-        @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
-        def test_endpoint_api_sys_vddcore_post(self):
-            # save default value
-            default_volt = self.get_vddcore()
-            if default_volt is None:
-                self.fail("can't get default value")
+        # test accessing get vdd core
+        volt = self.get_vddcore()
+        if volt is None:
+            self.fail("get vddcore failed")
 
-            # test setting vdd core to target value
-            target_volt = 750
-            if not self.set_vddcore(target_volt):
-                self.fail(
-                    "failed to set vddcore to target value {}".format(target_volt)
+    # "/api/sys/vddcore/{#vddcore_value}"
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_endpoint_api_sys_vddcore_post(self):
+        platform_type = pal_get_board_type()
+        # Wedge400 need to skip vddcore
+        if platform_type != "Wedge400C":
+            self.skipTest("Skip vddcore test on {} platform".format(platform_type))
+
+        # save default value
+        default_volt = self.get_vddcore()
+        if default_volt is None:
+            self.fail("can't get default value")
+
+        # test setting vdd core to target value
+        target_volt = 750
+        if not self.set_vddcore(target_volt):
+            self.fail("failed to set vddcore to target value {}".format(target_volt))
+
+        # test get back vddcore to check value is changed to target value
+        time.sleep(3)
+        current_volt = self.get_vddcore()
+        if abs(current_volt - target_volt) > 10:
+            self.fail(
+                "VDD_CORE not changed target:{}, current:{}".format(
+                    target_volt, current_volt
                 )
-
-            # test get back vddcore to check value is changed to target value
-            time.sleep(3)
-            current_volt = self.get_vddcore()
-            if abs(current_volt - target_volt) > 10:
-                self.fail(
-                    "VDD_CORE not changed target:{}, current:{}".format(
-                        target_volt, current_volt
-                    )
-                )
-
-            # set vddcore back to default value
-            if not self.set_vddcore(default_volt):
-                self.fail(
-                    "failed to set vddcore back to default value {}".format(
-                        default_volt
-                    )
-                )
-
-        # "/api/sys/switch_reset"
-        def set_endpoint_api_sys_switch_reset_attributes(self):
-            self.endpoint_switch_reset_attributes = ["cycle_reset", "only_reset"]
-
-        @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
-        def test_endpoint_api_sys_switch_reset(self):
-            self.set_endpoint_api_sys_switch_reset_attributes()
-
-            self.verify_endpoint_attributes(
-                RestEndpointTest.SWITCHRESET_ENDPOINT,
-                self.endpoint_switch_reset_attributes,
             )
 
-            # As COME handles the switch chip, it will reboot after verifying endpoint api
-            # /api/sys/switch_reset/cycle_reset and /api/sys/switch_reset/only_reset.
-            # In order to ensure proper COME reboot, we must do COME reboot cleanup once more.
-            run_shell_cmd("/usr/local/bin/wedge_power.sh reset")
-            # waiting for COME reboot
-            if pal_detect_come_bootup() == 1:
-                Logger.warn("Timeout, ping come is over!")
+        # set vddcore back to default value
+        if not self.set_vddcore(default_volt):
+            self.fail(
+                "failed to set vddcore back to default value {}".format(default_volt)
+            )
+
+    # "/api/sys/switch_reset"
+    def set_endpoint_api_sys_switch_reset_attributes(self):
+        self.endpoint_switch_reset_attributes = ["cycle_reset", "only_reset"]
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_endpoint_api_sys_switch_reset(self):
+        platform_type = pal_get_board_type()
+        # Wedge400 need to skip vddcore
+        if platform_type != "Wedge400C":
+            self.skipTest("Skip vddcore test on Wedge400 platform")
+
+        self.set_endpoint_api_sys_switch_reset_attributes()
+
+        self.verify_endpoint_attributes(
+            RestEndpointTest.SWITCHRESET_ENDPOINT,
+            self.endpoint_switch_reset_attributes,
+        )
+
+        # As COME handles the switch chip, it will reboot after verifying endpoint api
+        # /api/sys/switch_reset/cycle_reset and /api/sys/switch_reset/only_reset.
+        # In order to ensure proper COME reboot, we must do COME reboot cleanup once more.
+        run_shell_cmd("/usr/local/bin/wedge_power.sh reset")
+        # waiting for COME reboot
+        if pal_detect_come_bootup() == 1:
+            Logger.warn("Timeout, ping come is over!")

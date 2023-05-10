@@ -177,7 +177,7 @@ class FwEntityUpgrader(object):
                         str(cur_major), str(cur_minor)
                     )
                 )
-                need_to_upgrade = (pkg_major, pkg_minor) > (cur_major, cur_minor)
+                need_to_upgrade = (pkg_major, pkg_minor) != (cur_major, cur_minor)
 
             else:
                 logging.warning("Couldnt parse version, defaulting to upgrade")
@@ -189,7 +189,7 @@ class FwEntityUpgrader(object):
             logging.debug(
                 "Current Version (after parsing) : {}".format(str(current_ver))
             )
-            need_to_upgrade = package_ver > current_ver
+            need_to_upgrade = package_ver != current_ver
         return need_to_upgrade
 
     # Step 3

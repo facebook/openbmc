@@ -287,12 +287,12 @@ class ClassConfig {
 
   static bool is_48v_medusa() {
     try {
-      auto value = kv::get("bb_hsc_conf", kv::region::persist);
+      auto value = kv::get("medusa_hsc_conf", kv::region::persist);
       if (value == "ltc4282") {
         return false;
       }
     } catch (const kv::key_does_not_exist&) {
-      syslog(LOG_WARNING, "%s() Cannot get the key bb_hsc_conf", __func__);
+      syslog(LOG_WARNING, "%s() Cannot get the key medusa_hsc_conf", __func__);
     }
 
     return true;

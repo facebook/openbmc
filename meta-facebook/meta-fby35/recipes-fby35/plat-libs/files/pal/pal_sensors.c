@@ -1560,9 +1560,9 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     } else {
       memcpy(bmc_dynamic_sensor_list, bmc_sensor_list, bmc_sensor_cnt);
       current_bmc_cnt = bmc_sensor_cnt;
-      snprintf(key, sizeof(key), "bb_hsc_conf");
+      snprintf(key, sizeof(key), "medusa_hsc_conf");
       if (kv_get(key, hsc_type, NULL, KV_FPERSIST) < 0) {
-        syslog(LOG_WARNING, "%s() Cannot get the key bb_hsc_conf", __func__);
+        syslog(LOG_WARNING, "%s() Cannot get the key medusa_hsc_conf", __func__);
       } else {
         is_48v_medusa = strncmp(hsc_type, "ltc4282", sizeof(hsc_type)) ? true : false;
       }
@@ -2280,9 +2280,9 @@ read_curr_leakage(uint8_t snr_number, float *value) {
     hsc_output_cur_num = BIC_HD_SENSOR_HSC_OUTPUT_CUR;
   }
 
-  snprintf(key, sizeof(key), "bb_hsc_conf");
+  snprintf(key, sizeof(key), "medusa_hsc_conf");
   if (kv_get(key, hsc_type, NULL, KV_FPERSIST) < 0) {
-    syslog(LOG_WARNING, "%s() Cannot get the key bb_hsc_conf", __func__);
+    syslog(LOG_WARNING, "%s() Cannot get the key meudsa_hsc_conf", __func__);
   } else {
     is_48v_medusa = strncmp(hsc_type, "ltc4282", sizeof(hsc_type)) ? true : false;
   }
@@ -2459,8 +2459,8 @@ read_medusa_val(uint8_t snr_number, float *value) {
   int i = 0;
 
   if ( is_cached == false) {
-    if ( kv_get("bb_hsc_conf", hsc_conf, NULL, KV_FPERSIST) < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to read bb_hsc_conf", __func__);
+    if ( kv_get("medusa_hsc_conf", hsc_conf, NULL, KV_FPERSIST) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to read meudsa_hsc_conf", __func__);
       return ret;
     }
 
@@ -3499,7 +3499,7 @@ pal_medusa_hsc_threshold_init() {
   if (is_inited == true) {
     return 0;
   }
-  if (kv_get("bb_hsc_conf", hsc_type, NULL, KV_FPERSIST) < 0) {
+  if (kv_get("medusa_hsc_conf", hsc_type, NULL, KV_FPERSIST) < 0) {
     return -1;
   } else {
     // 12V medusa: LTC4282
@@ -3525,7 +3525,7 @@ pal_vpdb_threshold_init() {
   if (is_inited == true) {
     return 0;
   }
-  if (kv_get("bb_hsc_conf", hsc_type, NULL, KV_FPERSIST) < 0) {
+  if (kv_get("medusa_hsc_conf", hsc_type, NULL, KV_FPERSIST) < 0) {
     return -1;
   } else {
     // 12V medusa: LTC4282

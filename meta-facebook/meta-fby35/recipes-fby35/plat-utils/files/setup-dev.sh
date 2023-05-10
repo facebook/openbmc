@@ -114,7 +114,7 @@ function init_class1_dev() {
     fi
   fi
 
-  kv set bb_hsc_conf $chip persistent
+  kv set medusa_hsc_conf $chip persistent
 
   # check nic power to see if it's need to be set to standby mode
   set_nic_power

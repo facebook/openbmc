@@ -5,6 +5,16 @@
     "sample_interval_ms": 3000,
     "fan_recovery_time": 2,
     "sensor_filter_all": true,
+    "pwm_sensor_boost_value": 80,
+    "standby_fan_fail": {
+      "fan_pwm": 20
+    },
+    "multi_fan_fail": {
+      "data": [
+        [2, 100]
+      ],
+      "host_action": ["shutdown", 4]
+    },
     "boost": {
       "fan_fail": true,
       "sensor_fail": true

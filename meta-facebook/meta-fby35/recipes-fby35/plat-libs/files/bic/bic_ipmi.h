@@ -191,6 +191,7 @@ int bic_get_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t *value, uint
 int bic_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value);
 int bic_op_read_e1s_reg(uint8_t dev_id, uint8_t addr, uint8_t offset, uint8_t rlen, uint8_t *rbuf, uint8_t intf);
 int bic_op_get_e1s_present(uint8_t dev_id, uint8_t intf, uint8_t* status);
+int bic_vf_get_e1s_present(uint8_t slot_id, uint8_t dev_id, uint8_t *status);
 
 #ifdef __cplusplus
 } // extern "C"

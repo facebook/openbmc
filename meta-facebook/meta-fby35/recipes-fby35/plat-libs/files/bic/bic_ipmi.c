@@ -1642,11 +1642,15 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
   uint8_t rbuf[11] = {0x00};
   uint8_t tlen = 5;
   uint8_t rlen = 0;
+  uint8_t prsnt = PRESENT;
   int ret = 0;
 
   // Send the command
   if ((intf == FEXP_BIC_INTF) && (board_type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) {
     // case 1OU E1S
+    if ((bic_vf_get_e1s_present(slot_id, dev_id - 1, &prsnt) == 0) && (prsnt == NOT_PRESENT)) {
+      return BIC_STATUS_FAILURE;
+    }
     memcpy(tbuf, (uint8_t *)&VF_IANA_ID, IANA_ID_SIZE);
     tbuf[3] = mapping_vf_e1s_pwr[dev_id - 1];
   } else if (board_type == TYPE_1OU_OLMSTEAD_POINT) {
@@ -2427,4 +2431,37 @@ bic_op_get_e1s_present(uint8_t dev_id, uint8_t intf, uint8_t* status) {
   ret = bic_data_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
   *status = ((rbuf[4] & 0x01) == 1) ? NOT_PRESENT : PRESENT;
   return ret;
+}
+
+int
+bic_vf_get_e1s_present(uint8_t slot_id, uint8_t dev_id, uint8_t *status) {
+  enum VF_E1S_PRSNT {
+    VF_PRSNT_E1S_3_N = 49,
+    VF_PRSNT_E1S_2_N = 50,
+    VF_PRSNT_E1S_1_N = 51,
+    VF_PRSNT_E1S_0_N = 52,
+  };
+  uint8_t prnst_gpio[4] = {VF_PRSNT_E1S_0_N, VF_PRSNT_E1S_1_N, VF_PRSNT_E1S_2_N, VF_PRSNT_E1S_3_N};
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+  uint8_t rlen = 0;
+
+  if (status == NULL) {
+    return -1;
+  }
+  if (dev_id >= sizeof(prnst_gpio)) {
+    return -1;
+  }
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[3] = 0x00;
+  tbuf[4] = prnst_gpio[dev_id];
+  if (bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO,
+                    tbuf, 5, rbuf, &rlen, FEXP_BIC_INTF) != 0) {
+    return -1;
+  }
+  *status = (rbuf[4] & 0x01) ? NOT_PRESENT : PRESENT;
+
+  return 0;
 }

@@ -736,6 +736,7 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 static int
 pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp, int config_status, uint8_t board_type) {
   uint8_t bmc_location = 0;
+  uint8_t prsnt = PRESENT;
 
   if (rsp == NULL) {
     syslog(LOG_ERR, "%s: failed due to NULL pointer\n", __func__);
@@ -761,6 +762,7 @@ pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp, int co
         return POWER_STATUS_FRU_ERR;
       }
     } else {
+      // Vernal Falls
       if (dev_id > DEV_ID3_1OU) {
         return POWER_STATUS_FRU_ERR;
       }
@@ -769,6 +771,11 @@ pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp, int co
         return POWER_STATUS_FRU_ERR;
       }
       if (bmc_location == NIC_BMC) {
+        return POWER_STATUS_FRU_ERR;
+      }
+
+      if (bic_vf_get_e1s_present(slot_id, dev_id - 1, &prsnt) == 0 &&
+          prsnt == NOT_PRESENT) {
         return POWER_STATUS_FRU_ERR;
       }
 
@@ -802,7 +809,7 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
     if ((*status) == SERVER_12V_OFF) {
       *status = DEVICE_POWER_OFF;
       syslog(LOG_WARNING, "%s() pal_is_server_12v_on 12V-off", __func__);
-      return 0;
+      return POWER_STATUS_ERR;
     }
 
     ret = pal_get_board_type(slot_id, &config_status, &board_type);
@@ -851,10 +858,6 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
     return POWER_STATUS_FRU_ERR;
   }
 
-  if (pal_get_device_power(slot_id, dev_id, &status, &type) < 0) {
-    return -1;
-  }
-
   ret = pal_get_board_type(slot_id, &config_status, &board_type);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() get board config fail", __func__);
@@ -864,6 +867,10 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   if ( pal_is_valid_expansion_dev(slot_id, dev_id, rsp, config_status, board_type) < 0 ) {
     printf("Device not found \n");
     return POWER_STATUS_FRU_ERR;
+  }
+
+  if (pal_get_device_power(slot_id, dev_id, &status, &type) < 0) {
+    return -1;
   }
 
   dev_id = rsp[0];

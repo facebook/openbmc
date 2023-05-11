@@ -161,10 +161,6 @@ main(int argc, char **argv) {
         }
       }
       ret = bic_op_get_e1s_present(dev_id, intf, &present_status);
-      if ((present_status == NOT_PRESENT) && (ret == 0)) {
-        printf("%s %s is not present\n", argv[1], argv[2]);
-        return -1;
-      }
     } else {
       for (i = 0; i < vf_dev_count; i++) {
         if (vf_dev_info[i].dev_id == dev_id) {
@@ -172,6 +168,11 @@ main(int argc, char **argv) {
           intf = vf_dev_info[i].intf;
         }
       }
+      ret = bic_vf_get_e1s_present(fru, dev_id, &present_status);
+    }
+    if ((ret == 0) && (present_status == NOT_PRESENT)) {
+      printf("%s %s is not present\n", argv[1], argv[2]);
+      return -1;
     }
 
     switch (action) {

@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "SCM INLET Temp",
+      "fru": 8,
+      "id": 251,
+      "correction": {
+        "type": "conditional_table",
+        "tables": {
+          "T1": [
+            [20,  3],
+            [25,  2.5],
+            [30,  1.9],
+            [40,  1.4],
+            [50,  1.3],
+            [60,  0.9],
+            [70,  1.1],
+            [80,  0.8],
+            [90,  0.9],
+            [100, 0.9]
+          ]
+        },
+        "condition": {
+          "key": "scm_inlet_conf",
+          "key_type": "persistent",
+          "default_table": "T1",
+          "value_map": {
+            "Type_D": "T1",
+            "Type_0": "T1"
+          }
+        }
+      }
+    }
+  ]
+}

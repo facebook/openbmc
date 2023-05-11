@@ -20,6 +20,7 @@
 #include <string.h>
 #include <facebook/bic_power.h>
 #include <facebook/bic_xfer.h>
+#include <openbmc/kv.h>
 #include "dimm.h"
 #include "dimm-util-plat.h"
 
@@ -152,6 +153,23 @@ get_dimm_cache_id(uint8_t cpu, uint8_t dimm) {
   }
 
   return dimm_cache_id[cpu][dimm];
+}
+
+bool
+is_dimm_present(uint8_t slot_id, uint8_t dimm) {
+#define MAX_KEY_SIZE 100
+  char key[MAX_KEY_SIZE] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_location", slot_id, cl_dimm_cache_id[0][dimm]);
+   if (kv_get(key, (char *)value, NULL, KV_FPERSIST) < 0) {
+     return false;
+   } else {
+     if (value[0] == 0xff) {
+      return false;
+     }
+   }
+   return true;
 }
 
 static int
@@ -351,7 +369,9 @@ util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, u
   if (rxbuf == NULL) {
     return -1;
   }
-
+  if (!is_dimm_present(slot_id, dimm)) {
+    return -1;
+  }
   // SPR CPU supports 2 SPD buses
   if (dimm >= (num_dimms_per_cpu/2)) {
     bus_id = 1;
@@ -374,6 +394,10 @@ util_set_EE_page(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t /*page_
   uint8_t bus_id = 0;
   uint8_t addr = 0;
   uint8_t buf[8];
+
+  if (!is_dimm_present(slot_id, dimm)) {
+    return -1;
+  }
 
   if (direct_xfer) {
     // SPR CPU supports 2 SPD buses
@@ -440,6 +464,9 @@ util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, u
   if (rxbuf == NULL) {
     return -1;
   }
+  if (!is_dimm_present(slot_id, dimm)) {
+    return -1;
+  }
 
   // SPR CPU supports 2 SPD buses
   if (dimm >= (num_dimms_per_cpu/2)) {
@@ -466,6 +493,9 @@ util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, 
   uint32_t pmic_offset = offset;
 
   if (txbuf == NULL) {
+    return -1;
+  }
+  if (!is_dimm_present(slot_id, dimm)) {
     return -1;
   }
 

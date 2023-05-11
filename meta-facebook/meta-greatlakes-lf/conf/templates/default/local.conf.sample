@@ -1,5 +1,5 @@
 #
 # Local configuration file for building the OpenBMC image.
 #
-MACHINE ??= "greatlakes"
+MACHINE = "greatlakes-lf"
 DISTRO ?= "openbmc-fb-lf"

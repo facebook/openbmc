@@ -124,10 +124,10 @@ PAL_SENSOR_MAP acb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x1B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x1C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x1D
-  {"P1V8_1_VDD",  0, get_acb_sensor, false, {1.926, 1.89, 0, 1.674, 1.71, 0, 0, 0}, VOLT}, // 0x1E
-  {"P1V8_2_VDD",  0, get_acb_sensor, false, {1.926, 1.89, 0, 1.674, 1.71, 0, 0, 0}, VOLT}, // 0x1F
-  {"P1V25_1_VDD", 0, get_acb_sensor, false, {1.2875, 1.275, 1.3125, 1.2125, 1.225, 1.1875, 0, 0}, VOLT}, // 0x20
-  {"P1V25_2_VDD", 0, get_acb_sensor, false, {1.2875, 1.275, 1.3125, 1.2125, 1.225, 1.1875, 0, 0}, VOLT}, // 0x21
+  {"P1V8_1_VDD",  0, get_acb_sensor, false, {0, 0, 1.89, 0, 0, 1.71, 0, 0}, VOLT}, // 0x1E
+  {"P1V8_2_VDD",  0, get_acb_sensor, false, {0, 0, 1.89, 0, 0, 1.71, 0, 0}, VOLT}, // 0x1F
+  {"P1V25_1_VDD", 0, get_acb_sensor, false, {0, 0, 1.3125, 0, 0, 1.1875, 0, 0}, VOLT}, // 0x20
+  {"P1V25_2_VDD", 0, get_acb_sensor, false, {0, 0, 1.3125, 0, 0, 1.1875, 0, 0}, VOLT}, // 0x21
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x22
   {"P12V_ACCL1",  0, get_acb_sensor, false, {13.2, 12.96, 14.33, 10.8, 11.04, 10.091, 0, 0}, VOLT}, // 0x23
   {"P12V_ACCL2",  0, get_acb_sensor, false, {13.2, 12.96, 14.33, 10.8, 11.04, 10.091, 0, 0}, VOLT}, // 0x24
@@ -184,8 +184,8 @@ PAL_SENSOR_MAP acb_sensor_map[] = {
   {"P51V_STBY_R", 0, get_acb_sensor, true,  {52.53, 52.02, 62, 49.47, 49.98, 38, 0, 0},  VOLT}, // 0x54
   {"P51V_STBY_L", 0, get_acb_sensor, true,  {1838.55, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x55
   {"P51V_STBY_R", 0, get_acb_sensor, true,  {1838.55, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x56
-  {"P0V8_VDD_1",  0, get_acb_sensor, false, {0.824, 0.816, 0.84, 0.776, 0.784, 0.76, 0, 0},  VOLT}, // 0x57
-  {"P0V8_VDD_2",  0, get_acb_sensor, false, {0.824, 0.816, 0.84, 0.776, 0.784, 0.76, 0, 0},  VOLT}, // 0x58
+  {"P0V8_VDD_1",  0, get_acb_sensor, false, {0, 0, 0.84, 0, 0, 0.76, 0, 0},  VOLT}, // 0x57
+  {"P0V8_VDD_2",  0, get_acb_sensor, false, {0, 0, 0.84, 0, 0, 0.76, 0, 0},  VOLT}, // 0x58
   {"P0V8_VDD_1",  0, get_acb_sensor, false, {47, 0, 57, 0, 0, 0, 0, 0},  CURR}, // 0x59
   {"P0V8_VDD_2",  0, get_acb_sensor, false, {47, 0, 57, 0, 0, 0, 0, 0},  CURR}, // 0x5A
   {"P0V8_VDD_1",  0, get_acb_sensor, false, {38.728, 0, 47.88, 0, 0, 0, 0, 0},  POWER}, // 0x5B

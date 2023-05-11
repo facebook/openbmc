@@ -104,24 +104,24 @@ PAL_SENSOR_MAP meb_sensor_map[] = {
   {"Inlet Temp", 0, get_meb_sensor, false, {65, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
   {"Outlet Temp", 0, get_meb_sensor, false, {95, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
   {"PU4 Temp", 0, get_meb_sensor, false, {145, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
-  {"P12V_AUX_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x04
+  {"P12V_AUX_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x04
   {"P3V3_AUX_VOL", 0, get_meb_sensor, false, {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0},  VOLT}, // 0x05
   {"P1V2_AUX_VOL", 0, get_meb_sensor, false, {1.284, 1.26, 1.36, 1.116, 1.14, 0.996, 0, 0},  VOLT}, // 0x06
   {"P3V3_VOL", 0, get_meb_sensor, false, {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0},  VOLT}, // 0x07
-  {"P12V_AUX_CARD1_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x08
-  {"P12V_AUX_CARD2_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x09
-  {"P12V_AUX_CARD3_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x0A
-  {"P12V_AUX_CARD4_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x0B
-  {"P12V_AUX_CARD5_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x0C
-  {"P12V_AUX_CARD6_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x0D
-  {"P12V_AUX_CARD7_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x0E
-  {"P12V_AUX_CARD8_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x0F
-  {"P12V_AUX_CARD9_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x10
-  {"P12V_AUX_CARD10_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x11
-  {"P12V_AUX_CARD11_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x12
-  {"P12V_AUX_CARD12_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x13
-  {"P12V_AUX_CARD13_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x14
-  {"P12V_AUX_CARD14_VOL", 0, get_meb_sensor, false, {12.566, 12.444, 14, 11.834, 11.956, 8, 0, 0},  VOLT}, // 0x15
+  {"P12V_AUX_CARD1_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x08
+  {"P12V_AUX_CARD2_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x09
+  {"P12V_AUX_CARD3_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0A
+  {"P12V_AUX_CARD4_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0B
+  {"P12V_AUX_CARD5_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0C
+  {"P12V_AUX_CARD6_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0D
+  {"P12V_AUX_CARD7_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0E
+  {"P12V_AUX_CARD8_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0F
+  {"P12V_AUX_CARD9_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x10
+  {"P12V_AUX_CARD10_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x11
+  {"P12V_AUX_CARD11_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x12
+  {"P12V_AUX_CARD12_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x13
+  {"P12V_AUX_CARD13_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x14
+  {"P12V_AUX_CARD14_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x15
   {"P12V_AUX_CUR", 0, get_meb_sensor, false, {73.1, 0, 95, 0, 0, 0, 0, 0},  CURR}, // 0x16
   {"P12V_AUX_CARD1_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x17
   {"P12V_AUX_CARD2_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x18

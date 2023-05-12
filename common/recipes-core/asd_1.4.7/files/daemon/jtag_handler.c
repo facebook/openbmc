@@ -915,26 +915,20 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
         }
     }
 #else
-    struct bitbang_packet bitbang = {NULL, 0};
-
-    if (state == NULL)
-        return ST_ERR;
-
     if (number_of_cycles > MAX_WAIT_CYCLES)
         return ST_ERR;
 
-    // Execute wait cycles in SW and HW mode
-    ASD_log(ASD_LogLevel_Debug, stream, option, "Wait %d cycles",
-            number_of_cycles);
-
-    bitbang.data = state->bitbang_data;
-    bitbang.length = number_of_cycles;
-
-    if (ioctl(state->JTAG_driver_handle, JTAG_IOCBITBANG, &bitbang) < 0)
+    if (state->sw_mode)
     {
-        ASD_log(ASD_LogLevel_Error, stream, option,
-                "ioctl JTAG_IOCBITBANG failed");
-        return ST_ERR;
+        for (unsigned int i = 0; i < number_of_cycles; i++)
+        {
+            if (ioctl(state->JTAG_driver_handle, JTAG_IOCBITBANG, &state->bitbang_data[i]) < 0)
+            {
+                ASD_log(ASD_LogLevel_Error, stream, option,
+                        "ioctl JTAG_IOCBITBANG failed");
+                return ST_ERR;
+            }
+        }
     }
 #endif
     return ST_OK;

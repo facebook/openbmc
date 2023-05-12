@@ -20,6 +20,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/plat_conf:"
 SRC_URI += "\
             file://grandteton.cfg \
             file://0005-ASD-Add-Shift-IR-DR-from-Exit-IR-DR-for-HW2-JTAG-xfe.patch \
+	    file://0006-change-bitbang-to-single-bit.patch \
 	"
 
 KERNEL_MODULE_AUTOLOAD += " \

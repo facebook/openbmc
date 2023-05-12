@@ -934,14 +934,17 @@ const uint8_t nic_sensor_list[] = {
 const uint8_t bmc_discrete_sensor_list[] = {
 };
 
-const uint8_t delta_pdb_sensor_list[] = {
+const uint8_t delta_pdb_1_sensor_list[] = {
   BMC_SENSOR_VPDB_DELTA_1_TEMP,
-  BMC_SENSOR_VPDB_DELTA_2_TEMP,
   BMC_SENSOR_PDB_48V_DELTA_1_VIN,
-  BMC_SENSOR_PDB_48V_DELTA_2_VIN,
   BMC_SENSOR_PDB_12V_DELTA_1_VOUT,
-  BMC_SENSOR_PDB_12V_DELTA_2_VOUT,
   BMC_SENSOR_PDB_DELTA_1_IOUT,
+};
+
+const uint8_t delta_pdb_2_sensor_list[] = {
+  BMC_SENSOR_VPDB_DELTA_2_TEMP,
+  BMC_SENSOR_PDB_48V_DELTA_2_VIN,
+  BMC_SENSOR_PDB_12V_DELTA_2_VOUT,
   BMC_SENSOR_PDB_DELTA_2_IOUT,
 };
 
@@ -953,14 +956,17 @@ const uint8_t rns_pdb_sensor_list[] = {
   BMC_SENSOR_PDB_12V_WW_PWR,
 };
 
-const uint8_t flex_pdb_sensor_list[] = {
+const uint8_t flex_pdb_1_sensor_list[] = {
   BMC_SENSOR_VPDB_FLEX_1_TEMP,
-  BMC_SENSOR_VPDB_FLEX_2_TEMP,
   BMC_SENSOR_PDB_48V_FLEX_1_VIN,
-  BMC_SENSOR_PDB_48V_FLEX_2_VIN,
   BMC_SENSOR_PDB_12V_FLEX_1_VOUT,
-  BMC_SENSOR_PDB_12V_FLEX_2_VOUT,
   BMC_SENSOR_PDB_FLEX_1_IOUT,
+};
+
+const uint8_t flex_pdb_2_sensor_list[] = {
+  BMC_SENSOR_VPDB_FLEX_2_TEMP,
+  BMC_SENSOR_PDB_48V_FLEX_2_VIN,
+  BMC_SENSOR_PDB_12V_FLEX_2_VOUT,
   BMC_SENSOR_PDB_FLEX_2_IOUT,
 };
 
@@ -1352,8 +1358,10 @@ size_t bic_1ou_nf_skip_sensor_cnt = sizeof(bic_1ou_nf_skip_sensor_list)/sizeof(u
 size_t bmc_dpv2_x8_sensor_cnt = sizeof(bmc_dpv2_x8_sensor_list)/sizeof(uint8_t);
 size_t bic_dpv2_x16_sensor_cnt = sizeof(bic_dpv2_x16_sensor_list)/sizeof(uint8_t);
 size_t rns_pdb_sensor_cnt = sizeof(rns_pdb_sensor_list)/sizeof(uint8_t);
-size_t delta_pdb_sensor_cnt = sizeof(delta_pdb_sensor_list)/sizeof(uint8_t);
-size_t flex_pdb_sensor_cnt = sizeof(flex_pdb_sensor_list)/sizeof(uint8_t);
+size_t delta_pdb_1_sensor_cnt = sizeof(delta_pdb_1_sensor_list)/sizeof(uint8_t);
+size_t delta_pdb_2_sensor_cnt = sizeof(delta_pdb_2_sensor_list)/sizeof(uint8_t);
+size_t flex_pdb_1_sensor_cnt = sizeof(flex_pdb_1_sensor_list)/sizeof(uint8_t);
+size_t flex_pdb_2_sensor_cnt = sizeof(flex_pdb_2_sensor_list)/sizeof(uint8_t);
 size_t medusa_adc_sensor_cnt = sizeof(medusa_adc_sensor_list)/sizeof(uint8_t);
 size_t bic_op_1ou_sensor_cnt = sizeof(bic_op_1ou_sensor_list)/sizeof(uint8_t);
 size_t bic_op_1ou_skip_sensor_cnt = sizeof(bic_op_1ou_skip_sensor_list)/sizeof(uint8_t);
@@ -1490,28 +1498,45 @@ pal_get_pdb_sensor_list(size_t *current_bmc_cnt) {
     memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], rns_pdb_sensor_list, rns_pdb_sensor_cnt);
     *current_bmc_cnt += rns_pdb_sensor_cnt;
     return 0;
-  } else if ((i2c_detect_device(pdb_bus, DELTA_1_PDB_ADDR >> 1) == 0) || (i2c_detect_device(pdb_bus, DELTA_2_PDB_ADDR >> 1) == 0)) {
+  } else if (i2c_detect_device(pdb_bus, DELTA_1_PDB_ADDR >> 1) == 0) {
     if (is_inited == false) {
       if (pal_get_pdb_mfr_id_length(pdb_bus, DELTA_1_PDB_ADDR, &mfr_id_length) < 0) {
         return -1;
       }
       is_inited = true;
     }
-    if (mfr_id_length == DELTA_MFR_ID_LENGTH) {
-      if ((*current_bmc_cnt + delta_pdb_sensor_cnt) > MAX_SENSOR_NUM) {
+
+    if (mfr_id_length == DELTA_MFR_ID_LENGTH) { //Delta module
+      if ((*current_bmc_cnt + delta_pdb_1_sensor_cnt) > MAX_SENSOR_NUM) {
         syslog(LOG_ERR, "%s() current_bmc_cnt exceeds the limit of max sensor number", __func__);
         return -1;
       }
-      memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], delta_pdb_sensor_list, delta_pdb_sensor_cnt);
-      *current_bmc_cnt += delta_pdb_sensor_cnt;
+      memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], delta_pdb_1_sensor_list, delta_pdb_1_sensor_cnt);
+      *current_bmc_cnt += delta_pdb_1_sensor_cnt;
+      if (i2c_detect_device(pdb_bus, DELTA_2_PDB_ADDR >> 1) == 0) { //Delta module 2 is only exist in DVT
+        if ((*current_bmc_cnt + delta_pdb_2_sensor_cnt) > MAX_SENSOR_NUM) {
+          syslog(LOG_ERR, "%s() current_bmc_cnt exceeds the limit of max sensor number", __func__);
+          return -1;
+        }
+        memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], delta_pdb_2_sensor_list, delta_pdb_2_sensor_cnt);
+        *current_bmc_cnt += delta_pdb_2_sensor_cnt;
+      }
       return 0;
-    } else {
-      if ((*current_bmc_cnt + flex_pdb_sensor_cnt) > MAX_SENSOR_NUM) {
+    } else { //Flex module
+      if ((*current_bmc_cnt + flex_pdb_1_sensor_cnt) > MAX_SENSOR_NUM) {
         syslog(LOG_ERR, "%s() current_bmc_cnt exceeds the limit of max sensor number", __func__);
         return -1;
       }
-      memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], flex_pdb_sensor_list, flex_pdb_sensor_cnt);
-      *current_bmc_cnt += flex_pdb_sensor_cnt;
+      memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], flex_pdb_1_sensor_list, flex_pdb_1_sensor_cnt);
+      *current_bmc_cnt += flex_pdb_1_sensor_cnt;
+      if (i2c_detect_device(pdb_bus, FLEX_2_PDB_ADDR >> 1) == 0) { //Flex module 2 is only exist in DVT
+        if ((*current_bmc_cnt + flex_pdb_2_sensor_cnt) > MAX_SENSOR_NUM) {
+          syslog(LOG_ERR, "%s() current_bmc_cnt exceeds the limit of max sensor number", __func__);
+          return -1;
+        }
+        memcpy(&bmc_dynamic_sensor_list[*current_bmc_cnt], flex_pdb_2_sensor_list, flex_pdb_2_sensor_cnt);
+        *current_bmc_cnt += flex_pdb_2_sensor_cnt;
+      }
       return 0;
     }
   } else {

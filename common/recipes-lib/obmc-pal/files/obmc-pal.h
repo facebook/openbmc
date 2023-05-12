@@ -272,6 +272,7 @@ enum {
   UNIFIED_UPI_EVENT  = 0xB,
   UNIFIED_BOOT_GUARD = 0xC,
   UNIFIED_PPR_EVENT  = 0xD,
+  UNIFIED_CXL_MEM_ERR = 0xE,
 };
 
 enum {

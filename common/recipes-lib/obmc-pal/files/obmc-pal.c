@@ -536,6 +536,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "Memory Parity Error (PCC=0)",
     "Memory Parity Error (PCC=1)",
     "Memory PMIC Error",
+    "CXL Memory training error",
     "Reserved"
   };
   char *upi_err[] = {
@@ -787,6 +788,14 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: PPR Events(0x%02X), %s. Dimm Info: (%02X%02X%02X%02X%02X%02X%02X).",
               general_info, ppr_event[event_type], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
       break;
+
+    case UNIFIED_CXL_MEM_ERR:
+    {
+      event_type = sel[12] & 0xF;
+      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: CXL Memory Error(0x%02X), Bus %02X/Dev %02X/Fun %02X, Controller ID(0x%02X), DIMM Failure Event: %s",
+        general_info, sel[9], sel[10]>>4, sel[10]&0xF, sel[13], mem_err[event_type]);
+      break;
+    }
 
     default:
       snprintf(error_log, ERR_LOG_SIZE, "Undefined Error Type(0x%02X), Raw: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",

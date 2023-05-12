@@ -7,6 +7,25 @@ amd_warm_reset() {
   /usr/bin/bic-util "$SLOT_NAME" 0x18 0x52 0x00 0x42 0x00 0x00 0xFF
 }
 
+dump_sensor_history() 
+{
+  l_SLOT=$1
+  l_SENSOR_HISTORY=180
+
+  /usr/local/bin/sensor-util "$l_SLOT" --history $l_SENSOR_HISTORY \
+   && /usr/local/bin/sensor-util bmc --history $l_SENSOR_HISTORY \
+   && /usr/local/bin/sensor-util nic --history $l_SENSOR_HISTORY 
+}
+
+dump_sensor_threshold()
+{
+  l_SLOT=$1
+
+  /usr/local/bin/sensor-util "$l_SLOT" --threshold \
+   && /usr/local/bin/sensor-util bmc --threshold \
+   && /usr/local/bin/sensor-util nic --threshold
+}
+
 SLOT_NAME=$1
 
 case $SLOT_NAME in
@@ -35,12 +54,16 @@ PID_FILE="/var/run/autodump${SLOT_NUM}.pid"
 CURRENT_INDEX_FILE="/var/lib/amd-ras/fru${SLOT_NUM}_current_index"
 DUMP_UTIL='/usr/bin/amd-ras'
 CONFIG_FILE="/var/lib/amd-ras/config_file"
+FRUID_UTIL="/usr/local/bin/fruid-util"
+FW_UTIL="/usr/bin/fw-util"
 
 # check number of crashdump file exists
 [ -r $CURRENT_INDEX_FILE ] && PREVIOUS_INDEX=$(cat $CURRENT_INDEX_FILE) || PREVIOUS_INDEX=0
 
+CURT_DTIME=$(date +"%Y%m%d-%H%M%S")
+INFODUMP_FILE="/var/lib/amd-ras/fru${SLOT_NUM}_crashdump_info"
 DUMP_FILE="/var/lib/amd-ras/fru${SLOT_NUM}_ras-error${PREVIOUS_INDEX}.cper"
-LOG_ARCHIVE="/mnt/data/fru${SLOT_NUM}_ras-error${PREVIOUS_INDEX}.tar.gz"
+LOG_ARCHIVE="/mnt/data/fru${SLOT_NUM}_ras-error${PREVIOUS_INDEX}_${CURT_DTIME}.tar.gz"
 
 # check crashdump binary file exists
 if [ ! -f $DUMP_UTIL ]; then
@@ -65,6 +88,31 @@ kv set "fru${SLOT_NUM}_crashdump" "$((sys_runtime+600))"
 
 logger -t "ipmid" -p daemon.crit "Crashdump for FRU: $SLOT_NUM started"
 
+#HEADER LINE for the dump
+echo "Crash Dump generated at $(date)" > "$INFODUMP_FILE"
+{
+  # Get BMC version & hostname
+  echo "Get BMC version info: "
+  "$FW_UTIL" bmc --version
+  uname -a
+  cat /etc/issue
+
+  # Get fw info
+
+  echo "Get firmware version info: "
+  "$FW_UTIL" "$SLOT_NAME" "--version"
+
+  # Get FRUID info
+  echo "Get FRUID Info:"
+  "$FRUID_UTIL" "$SLOT_NAME"
+
+  # Sensors & sensor thresholds
+  echo "Sensor history at dump:"
+  dump_sensor_history "$SLOT_NAME"
+  echo "Sensor threshold at dump:"
+  dump_sensor_threshold "$SLOT_NAME"
+} >> "$INFODUMP_FILE"
+
 RAS_STATUS=$2
 NUM_OF_PROC=$3
 TARGET_CPU=$4
@@ -77,7 +125,7 @@ $DUMP_UTIL --fru "$SLOT_NUM" --ras "$RAS_STATUS" --ncpu "$NUM_OF_PROC" --tcpu "$
 
 [ -r $CURRENT_INDEX_FILE ] && CURRENT_INDEX=$(cat $CURRENT_INDEX_FILE) || CURRENT_INDEX=0
 if [ "$PREVIOUS_INDEX" != "$CURRENT_INDEX" ]; then
-    tar zcf "$LOG_ARCHIVE" -C "$(dirname "$DUMP_FILE")" "$(basename "$DUMP_FILE")" && \
+    tar zcf "$LOG_ARCHIVE" -C "$(dirname "$DUMP_FILE")" "$(basename "$DUMP_FILE")" "$(basename "$INFODUMP_FILE")" && \
     rm -rf "$DUMP_FILE" && \
     logger -t "ipmid" -p daemon.crit "Crashdump for FRU: $SLOT_NUM is generated at $LOG_ARCHIVE"
 fi

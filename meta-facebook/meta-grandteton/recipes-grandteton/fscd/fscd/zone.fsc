@@ -187,7 +187,7 @@ max([
       all:hgx_hgx_pcieretimer_6_temp_c,
       all:hgx_hgx_pcieretimer_7_temp_c])),
 
-  gpu_fpga_linear(all:hgx_fpga_0_temp_c),
+  gpu_fpga_linear(all:hgx_hgx_fpga_0_temp_c),
 
-  gpu_fpga_pid(all:hgx_fpga_0_temp_c)
+  gpu_fpga_pid(all:hgx_hgx_fpga_0_temp_c)
 ])

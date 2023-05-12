@@ -26,4 +26,4 @@ S = "${WORKDIR}/code"
 inherit meson pkgconfig
 inherit legacy-packages
 
-DEPENDS += "hr-nanosleep liblog libgpio-ctrl libmisc-utils"
+DEPENDS += "hr-nanosleep liblog libgpio-ctrl"

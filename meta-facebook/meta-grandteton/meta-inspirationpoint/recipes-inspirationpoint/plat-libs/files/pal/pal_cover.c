@@ -224,6 +224,10 @@ pal_check_psb_error(uint8_t head, uint8_t last) {
   return 0;
 }
 
+int pal_udbg_get_frame_total_num() {
+  return 5;
+}
+
 int
 pal_clear_psb_cache(void) {
   char key[MAX_KEY_LEN] = {0};

@@ -6,6 +6,10 @@
 #include <openbmc/pal.h>
 #include <openbmc/ipmb.h>
 #include "usb-dbg-conf.h"
+#include <syslog.h>
+#if defined CONFIG_POSTCODE_AMD
+#include "postcode-amd.h"
+#endif
 
 //These postcodes are defined in document "F08 BIOS Specification" Revision: 2A
 static post_desc_t pdesc_phase1[] = {
@@ -524,6 +528,38 @@ int plat_get_board_id(char *id)
     return 0;
   }
   return -1;
+}
+
+int plat_dword_postcode_buf(uint8_t fru, char *status) {
+  int ret = 0;
+  uint32_t len;
+  uint32_t intput_len = 0;
+  int i;
+  uint32_t * dw_postcode_buf = malloc( 30 * sizeof(uint32_t));
+  char temp_str[128]  = {0};
+  if (dw_postcode_buf) {
+    intput_len = 30;
+  } else {
+    syslog(LOG_ERR, "%s Error, failed to allocate dw_postcode buffer", __func__);
+    intput_len = 0;
+    return -1;
+  }
+
+  ret = pal_get_post_buffer_dword_data(fru, dw_postcode_buf, intput_len, &len);
+  if (ret) {
+    syslog(LOG_WARNING, "plat_dword_postcode_buf, FRU: %d, pal_get_post_buffer_dword_data ret: %d\n", fru, ret);
+    free(dw_postcode_buf);
+    return ret;
+  }
+
+  for (i = 0; i < len; i++) {
+    pal_parse_amd_post_code_helper(dw_postcode_buf[i],temp_str);
+    strcat(status, temp_str);
+  }
+  free(dw_postcode_buf);
+
+  return ret;
+
 }
 
 int plat_get_syscfg_text(uint8_t fru, char *syscfg)

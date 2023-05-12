@@ -17,6 +17,7 @@
 
 DEPENDS += "libipmi libipmb libfruid update-rc.d-native libhal"
 LDFLAGS += "-lipmb -lfruid -lhal_fruid"
+CFLAGS += " -DCONFIG_POSTCODE_AMD "
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += "\

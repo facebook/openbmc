@@ -1,5 +1,5 @@
 {
-  "version": "halfdome-v2023.03.07",
+  "version": "halfdome-v2023.05.11",
   "pwm_transition_value": 80,
   "pwm_boost_value": 80,
   "non_fanfail_limited_boost_value": 80,
@@ -60,6 +60,8 @@
       "data": [
         [ 59, 8 ],
         [ 62, 9 ],
+        [ 63, 11 ],
+        [ 64, 13 ],
         [ 65, 14 ]
       ]
     },
@@ -68,7 +70,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 69,
+      "setpoint": 71,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -3,

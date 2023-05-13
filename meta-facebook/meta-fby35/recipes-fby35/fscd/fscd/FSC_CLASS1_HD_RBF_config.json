@@ -1,5 +1,5 @@
 {
-  "version": "halfdome-rbf-v2023.03.07",
+  "version": "halfdome-rbf-v2023.05.11",
   "pwm_transition_value": 80,
   "pwm_boost_value": 80,
   "non_fanfail_limited_boost_value": 80,
@@ -49,9 +49,9 @@
         [ 35, 12 ],
         [ 37, 13 ],
         [ 39, 14 ],
-        [ 41, 15 ],
-        [ 43, 16 ],
-        [ 45, 17 ]
+        [ 41, 20 ],
+        [ 43, 30 ],
+        [ 45, 40 ]
       ]
     },
     "linear_cpu": {
@@ -60,10 +60,14 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 2,
+      "negative_hysteresis": 3,
       "data": [
         [ 59, 8 ],
-        [ 62, 14 ],
+        [ 60, 9 ],
+        [ 61, 10 ],
+        [ 62, 12 ],
+        [ 63, 14 ],
+        [ 64, 16 ],
         [ 65, 18 ]
       ]
     },

@@ -796,10 +796,15 @@ do_pldm_discovery(nl_usr_sk_t *sfd, NCSI_NL_RSP_T *resp_buf)
       // if device supports "Platform Control & Monitoring", then discovery sensors and
       //   initialize sensor threshold
       if (i == PLDM_MONITORING) {
+#ifdef CONFIG_PLDM_SENSORS_DISABLE
+        gEnablePldmMonitoring = 0;
+        continue;
+#endif
         do_pldm_sensor_thresh_init(sfd, &pldmReq, resp_buf);
 
         // Enable PLDM sensor monitoring
         gEnablePldmMonitoring = 1;
+
       }
     }
   }

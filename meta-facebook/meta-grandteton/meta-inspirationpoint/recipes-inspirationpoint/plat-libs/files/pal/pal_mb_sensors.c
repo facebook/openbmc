@@ -304,7 +304,7 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"HSC_VOLT", HSC_ID0, read_hsc_vin,  true, {13.3, 0, 0, 10.7, 0, 0, 0, 0}, VOLT}, //0x0B
   {"HSC_CURR", HSC_ID0, read_hsc_iout, true, {240.0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x0C
   {"HSC_PWR", HSC_ID0, read_hsc_pin,  true, {2926.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0D
-  {"HSC_TEMP", HSC_ID0, read_hsc_temp, true, {120.0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x0E
+  {"HSC_TEMP", HSC_ID0, read_hsc_temp, true, {120.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x0E
   {"HSC_PEAK_PIN", HSC_ID0, read_hsc_peak_pin, true, {3285.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0F
 
   {"OUTLET_L_TEMP", TEMP_OUTLET_L, read_mb_temp, true, {75.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x10
@@ -385,7 +385,7 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"VR_CPU1_PVDDIO_CURR", VR_ID8, read_vr_iout, false, {150, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X56
   {"VR_CPU1_PVDDIO_PWR", VR_ID8, read_vr_pout, false, {195, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x57
   {"VR_CPU1_PVDD11_VOLT", VR_ID9, read_vr_vout, false, {1.17, 0, 0, 1.04, 0, 0, 0, 0}, VOLT}, //0x58
-  {"VR_CPU1_PVDD11_TEMP", VR_ID9, read_vr_temp, false, {105.0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x59
+  {"VR_CPU1_PVDD11_TEMP", VR_ID9, read_vr_temp, false, {105.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x59
   {"VR_CPU1_PVDD11_CURR", VR_ID9, read_vr_iout, false, {85, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X5A
   {"VR_CPU1_PVDD11_PWR", VR_ID9, read_vr_pout, false, {99, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x5B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5C

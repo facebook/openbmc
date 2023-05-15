@@ -57,7 +57,6 @@ class BaseRestEndpointException(Exception):
 
 
 class BaseRestEndpointTest(object):
-
     CURL_CMD6 = "http://localhost:8080{}"
 
     WAIT_UNTIL_REACHABLE_ENDPOINT = "http://localhost:8080/api"
@@ -215,13 +214,35 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     FRUID_ENDPOINT = "/api/sys/mb/fruid"
     BMC_ENDPOINT = "/api/sys/bmc"
 
-    # Attrbutes for common endpoints
+    # Attributes for common endpoints
     MB_ATTRIBUTES = ["fruid"]
     FRUID_ATTRIBUTES = [
         "Assembled At",
         "Local MAC",
         "Product Asset Tag",
         "Product Name",
+    ]
+    FRUID_ATTRIBUTES_V4 = [
+        "Version",
+        "Product Name",
+        "Product Part Number",
+        "System Assembly Part Number",
+        "Meta PCBA Part Number",
+        "Meta PCB Part Number",
+        "ODM/JDM PCBA Part Number",
+        "ODM/JDM PCBA Serial Number",
+        "Product Production State",
+        "Product Version",
+        "Product Sub-Version",
+        "Product Serial Number",
+        "System Manufacturer",
+        "System Manufacturing Date",
+        "PCB Manufacturer",
+        "Assembled at",
+        "Local MAC",
+        "Extended MAC Base",
+        "Extended MAC Address Size",
+        "EEPROM location on Fabric",
     ]
 
     BMC_ATTRIBUTES = [

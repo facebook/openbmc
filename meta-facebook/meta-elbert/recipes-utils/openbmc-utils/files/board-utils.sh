@@ -241,6 +241,9 @@ disable_power_security_mode() {
     else
         # If security is enabled, disable security by writing the correct password
         i2cset -f -y "$bus" "$dev" "$UCD_SECURITY_REG" 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
+        # Make the security disable permanent. Otherwise a subsequent STORE_DEFAULT_ALL command
+        # will persist the security setting.
+        i2cset -f -y "$bus" "$dev" "$UCD_SECURITY_REG" 0x06 0xff 0xff 0xff 0xff 0xff 0xff i
         locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" s | awk '{print $(NF)}')")"
         if [ "$locked" -eq 0 ]; then
             return 0

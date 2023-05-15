@@ -19,7 +19,7 @@ lf_dunfell_repos=(
     lf-openbmc:841583d6b
 )
 lf_kirkstone_repos=(
-    lf-openbmc:ce7bef12b
+    lf-openbmc:821a859c1
 )
 lf_langdale_repos=(
     lf-openbmc:f4e5dde7f

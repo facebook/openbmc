@@ -163,7 +163,7 @@ elif [ "$1" = "write" ]; then
         bios_image="$TEMP_BIOS_IMAGE"
     fi
     echo "Writing flash content..."
-    flashrom -n -f -p linux_mtd:dev="$SCM_MTD" -w "$bios_image" || exit 1
+    retry_command 5 flashrom -n -f -p linux_mtd:dev="$SCM_MTD" -w "$bios_image" || exit 1
     sleep 1
     echo "Verifying flash content..."
     # Retry verification up to 5 times

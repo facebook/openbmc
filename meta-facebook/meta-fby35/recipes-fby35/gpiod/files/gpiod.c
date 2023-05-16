@@ -384,6 +384,7 @@ gpio_monitor_poll(void *ptr) {
           set_12v_off_flag(fru, false);
           SET_BIT(o_pin_val, gpio_offset.pwrgd_cpu, 0);
           SET_BIT(o_pin_val, gpio_offset.rst_pltrst, 0);
+          pal_update_ierr_status(fru, SEL_DEASSERT);
         }
       }
 
@@ -441,6 +442,9 @@ gpio_monitor_poll(void *ptr) {
          (GET_BIT(n_pin_val, gpio_offset.pwrgd_cpu) != GET_BIT(o_pin_val, gpio_offset.pwrgd_cpu))) {
       rst_timer(fru);
       set_pwrgd_cpu_flag(fru, true);
+      if (GET_BIT(n_pin_val, gpio_offset.pwrgd_cpu) == 0) {
+        pal_update_ierr_status(fru, SEL_DEASSERT);
+      }
       //update the value since the bit is not monitored
       SET_BIT(o_pin_val, gpio_offset.pwrgd_cpu, GET_BIT(n_pin_val, gpio_offset.pwrgd_cpu));
     }

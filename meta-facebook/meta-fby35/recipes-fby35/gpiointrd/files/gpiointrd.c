@@ -128,6 +128,8 @@ slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last __attribute__((unused))
     pal_check_slot_cpu_present(slot_id);
     pal_check_slot_fru(slot_id);
     pal_clear_mrc_warning(slot_id);
+  } else {
+    pal_update_ierr_status(slot_id, SEL_DEASSERT);
   }
 }
 

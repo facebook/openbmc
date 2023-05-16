@@ -122,6 +122,7 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define ERR_DESC_LEN 64
 
 #define KEY_FAN_MODE_EVENT "fan_mode_event"
+#define KEY_IERR_STATUS "ierr_status"
 
 static int key_func_pwr_last_state(int event, void *arg);
 static int key_func_por_cfg(int event, void *arg);
@@ -3729,6 +3730,41 @@ pal_store_crashdump(uint8_t fru, bool ierr) {
   return fby35_common_crashdump(fru, ierr, false);
 }
 
+int
+pal_update_ierr_status(uint8_t slot, uint8_t status) {
+  char value[MAX_VALUE_LEN] = {0};
+  char mode[MAX_VALUE_LEN] = {0};
+
+  if (kv_get(KEY_IERR_STATUS, value, NULL, 0) < 0) {
+    if (status == SEL_DEASSERT) {
+      return -1;
+    }
+  }
+  /*
+    BIT[4:1] record IERR status of each slot
+    1: Aseert
+    0: De-assert
+  */
+  switch(status) {
+    case SEL_ASSERT:
+      value[0] |= (slot << 1);
+      break;
+    case SEL_DEASSERT:
+      value[0] &= ~(slot << 1);
+    default:
+      return -1;
+  }
+
+  if (value[0] == 0) {
+    kv_del(KEY_FAN_MODE_EVENT, 0);
+  } else {
+    snprintf(mode, sizeof(mode), "%x", FAN_MODE_BOOST);
+    kv_set(KEY_FAN_MODE_EVENT, mode, 0, 0);
+  }
+  kv_set(KEY_IERR_STATUS, value, 0, 0);
+  return 0;
+}
+
 static int
 pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
@@ -3736,8 +3772,6 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t rlen = 0, tlen = 0;
-  uint8_t fan_mode = 0;
-  char value[MAX_VALUE_LEN] = {0};
   char key[MAX_KEY_LEN] = {0};
 
   switch (snr_num) {
@@ -3745,9 +3779,7 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
       is_cri_sel = true;
       pal_store_crashdump(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
       if (event_data[3] == 0x00) { // IERR
-        fan_mode = (event_data[2] == SEL_ASSERT) ? FAN_MODE_BOOST : FAN_MODE_NORMAL;
-        snprintf(value, sizeof(value), "%d", fan_mode);
-        kv_set(KEY_FAN_MODE_EVENT, value, 0, 0);
+        pal_update_ierr_status(fru, event_data[2]);
       }
       break;
     case CPU_DIMM_HOT:

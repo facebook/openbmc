@@ -113,6 +113,34 @@ mp2993_switch_mtp_page_rw(uint8_t bus, uint8_t addr, bool is_enable) {
   return VR_STATUS_SUCCESS;
 }
 
+static int mps_enable_test_mode(uint8_t bus, uint8_t addr, bool is_enable) {
+  uint8_t tbuf[16], rbuf[16];
+
+  if (mp2856_set_page(bus, addr, VR_MPS_PAGE_1) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+
+  tbuf[0] = VR_MPS_REG_MTP_PAGE_EN;
+  if (vr_xfer(bus, addr, tbuf, 1, rbuf, 2) < 0) {
+    syslog(LOG_WARNING, "%s: read 0x%02X failed", __func__, tbuf[0]);
+    return VR_STATUS_FAILURE;
+  }
+
+  tbuf[1] = rbuf[0];
+  if (is_enable == true) {
+    tbuf[2] = rbuf[1] | MASK_EN_TEST_MODE_BYTE;
+  } else {
+    tbuf[2] = rbuf[1] & MASK_DIS_TEST_MODE_BYTE;
+  }
+
+  if (vr_xfer(bus, addr, tbuf, 3, rbuf, 0) < 0) {
+    syslog(LOG_WARNING, "%s: write 0x%02X failed", __func__, tbuf[0]);
+    return VR_STATUS_FAILURE;
+  }
+
+  return VR_STATUS_SUCCESS;
+}
+
 static int
 mp2856_unlock_write_protect_mode(uint8_t bus, uint8_t addr) {
   uint8_t tbuf[16], rbuf[16];
@@ -163,6 +191,29 @@ mp2993_unlock_write_protect_mode(uint8_t bus, uint8_t addr) {
   tbuf[0] = VR_MPS_REG_WRITE_PROTECT;
   tbuf[1] = MP2993_DISABLE_WRITE_PROTECT;
   if (vr_xfer(bus, addr, tbuf, 2, rbuf, 0) < 0) {
+    syslog(LOG_WARNING, "%s: write 0x%02X failed", __func__, tbuf[0]);
+    return VR_STATUS_FAILURE;
+  }
+
+  return VR_STATUS_SUCCESS;
+}
+
+static int mp2985h_disable_store_fault_triggering(uint8_t bus, uint8_t addr) {
+  uint8_t tbuf[16], rbuf[16];
+
+  if (mps_enable_test_mode(bus, addr, true) != 0) {
+    printf("%s: Failed to enable entering page 3\n", __func__);
+    return VR_STATUS_FAILURE;
+  }
+
+  if (mp2856_set_page(bus, addr, VR_MPS_PAGE_3) != 0) {
+    return VR_STATUS_FAILURE;
+  }
+
+  tbuf[0] = VR_MPS_REG_DISABLE_STORE_FAULT_TRIGGERING;
+  tbuf[1] = MP2985H_DISABLE_STORE_FAULT_TRIGGERING_BYTE0;
+  tbuf[2] = MP2985H_DISABLE_STORE_FAULT_TRIGGERING_BYTE1;
+  if (vr_xfer(bus, addr, tbuf, 3, rbuf, 0) != 0) {
     syslog(LOG_WARNING, "%s: write 0x%02X failed", __func__, tbuf[0]);
     return VR_STATUS_FAILURE;
   }
@@ -238,14 +289,48 @@ mp2856_get_remaining_wr_msg(uint8_t addr, uint16_t *remain, char *msg, bool is_u
   return VR_STATUS_SUCCESS;
 }
 
-static int
-mp2985h_get_remaining_wr_msg(uint8_t addr, uint16_t *remain, char *msg, bool is_update) {
+static int mps_get_remaining_wr_msg(
+    uint8_t mode,
+    uint8_t addr,
+    uint16_t* remain,
+    char* msg,
+    bool is_update) {
   if ((mps_remaining_wr == NULL) || (remain == NULL) || (msg == NULL)) {
-    syslog(LOG_WARNING, "%s: Failed to load remaining writes due to NULL pointer check \n", __func__);
+    syslog(
+        LOG_WARNING,
+        "%s: fail to load remaining writes due to NULL pointer check \n",
+        __func__);
     return VR_STATUS_FAILURE;
   }
-  // TODO: Support to get mp2985h's remaining write
-  snprintf(msg, MAX_REMAIN_WR_MSG, ", Remaining Writes: Not supported");
+
+  if (mps_remaining_wr(addr, remain, GET_VR_CRC) != 0) {
+    snprintf(msg, MAX_VALUE_LEN, ", Remaining Writes: Unknown");
+  } else {
+    if (*remain == UNINITIALIZED_REMAIN_WR) {
+      switch (mode) {
+        case MP2985H:
+          *remain = MAX_MP2985H_REMAIN_WR;
+          break;
+        case MP285X:
+        case MP297X:
+        case MP2993:
+          *remain = MAX_MP2856_REMAIN_WR;
+          break;
+        default:
+          syslog(
+              LOG_WARNING,
+              "%s: failed to get VR model when initializing remaining writes\n",
+              __func__);
+          return VR_STATUS_FAILURE;
+      }
+      mps_remaining_wr(addr, remain, UPDATE_VR_CRC);
+    }
+    if (is_update && (*remain)) {
+      (*remain)--;
+      mps_remaining_wr(addr, remain, UPDATE_VR_CRC);
+    }
+    snprintf(msg, MAX_VALUE_LEN, ", Remaining Writes: %u", *remain);
+  }
 
   return VR_STATUS_SUCCESS;
 }
@@ -455,6 +540,32 @@ cache_mp2856_new_crc(struct vr_info *info, void *args) {
 
 }
 
+static void cache_mp2985h_new_crc(struct vr_info* info, void* args) {
+  struct mp2856_config* config = (struct mp2856_config*)args;
+  char ver_key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  char remaining_wr_msg[64];
+  uint8_t addr = info->addr;
+  uint16_t remain = 0;
+
+  vr_get_fw_avtive_key(info, ver_key);
+
+  snprintf(
+      value,
+      MAX_VALUE_LEN,
+      "MPS %04X%04X",
+      config->crc_code[0],
+      config->crc_code[1]);
+  if (mps_remaining_wr != NULL) {
+    if (mps_get_remaining_wr_msg(
+            config->mode, addr, &remain, remaining_wr_msg, UPDATE_VR_CRC) ==
+        VR_STATUS_SUCCESS) {
+      strncat(value, remaining_wr_msg, MAX_VALUE_LEN - 1);
+    }
+  }
+  kv_set(ver_key, value, 0, KV_FPERSIST);
+}
+
 /* WARNING:
  * From programing guide:Do not issue any PMBus read command during program
  * Page2 Registers, thus platform should stop VR sensor polling before updating! */
@@ -493,48 +604,99 @@ mp2856_fw_update(struct vr_info *info, void *args) {
   }
   
   //Check remaining writes
-  if(mps_remaining_wr) {
-    if (mps_remaining_wr(info->addr, &remain, GET_VR_CRC) == VR_STATUS_SUCCESS) {
-      printf("Remaining writes: %u\n", remain);
-      if (!info->force && (remain <= VR_WARN_REMAIN_WR)) {
-        printf("WARNING: the remaining writes is below the threshold value %d!\n",
-           VR_WARN_REMAIN_WR);
-        printf("Please use \"--force\" option to try again.\n");
-        syslog(LOG_WARNING, "%s: insufficient remaining writes %u", __func__, remain);
-        return VR_STATUS_FAILURE;
-      }
+  if (mps_remaining_wr != NULL) {
+    switch (config->mode) {
+      case MP285X:
+      case MP297X:
+      case MP2993:
+      case MP2985H:
+        if (mps_remaining_wr(info->addr, &remain, GET_VR_CRC) ==
+            VR_STATUS_SUCCESS) {
+          printf("Remaining writes: %u\n", remain);
+          if (!info->force && (remain <= VR_WARN_REMAIN_WR)) {
+            printf(
+                "WARNING: the remaining writes is below the threshold value %d!\n",
+                VR_WARN_REMAIN_WR);
+            printf("Please use \"--force\" option to try again.\n");
+            syslog(
+                LOG_WARNING,
+                "%s: insufficient remaining writes %u",
+                __func__,
+                remain);
+            return VR_STATUS_FAILURE;
+          }
+        }
+        break;
+      default:
+        printf("Remaining writes: Not supported\n");
+        break;
     }
   }
-
-  if(mp2856_is_pwd_unlock(info->bus, info->addr)) {
-    syslog(LOG_WARNING, "%s: PWD UNLOCK failed", __func__);
-    return VR_STATUS_FAILURE;
+  switch (config->mode) {
+    case MP285X:
+    case MP297X:
+    case MP2993:
+      if (mp2856_is_pwd_unlock(info->bus, info->addr)) {
+        syslog(LOG_WARNING, "%s: PWD UNLOCK failed", __func__);
+        return VR_STATUS_FAILURE;
+      }
+    default:
+      // MP2985H doesn't need to unlock pwd.
+      break;
   }
 
   switch (config->mode) {
   case MP285X:
   case MP297X:
-    if(mp2856_unlock_write_protect_mode(info->bus, info->addr)) {
-      syslog(LOG_WARNING, "%s: Unlock MTP Write protection failed", __func__);
-      return VR_STATUS_FAILURE;
+      if (mp2856_unlock_write_protect_mode(info->bus, info->addr) != 0) {
+        syslog(LOG_WARNING, "%s: Unlock MTP Write protection failed", __func__);
+        return VR_STATUS_FAILURE;
+      }
+      if (program_mp2856(info->bus, info->addr, config) != 0) {
+        return VR_STATUS_FAILURE;
+      }
+    break;
+  case MP2993:
+    if (mp2993_unlock_write_protect_mode(info->bus, info->addr) != 0) {
+        syslog(LOG_WARNING, "%s: Unlock MTP Write protection failed", __func__);
+        return VR_STATUS_FAILURE;
     }
-    if(program_mp2856(info->bus, info->addr, config)) {
+    if(program_mp2993(info->bus, info->addr, config)) {
       return VR_STATUS_FAILURE;
     }
     break;
-  case MP2993:
-    if(mp2993_unlock_write_protect_mode(info->bus, info->addr)) {
+  case MP2985H:
+    if (mp2993_unlock_write_protect_mode(info->bus, info->addr) != 0) {
       syslog(LOG_WARNING, "%s: Unlock MTP Write protection failed", __func__);
       return VR_STATUS_FAILURE;
     }
-    if(program_mp2993(info->bus, info->addr, config)) {
+    /* This function is use to special fault happen and will store the fault
+     * status to MTP. In order to prevent mis-trigger this function, would
+     * disable this function on programming process.
+     */
+    if (mp2985h_disable_store_fault_triggering(info->bus, info->addr) != 0) {
+      syslog(
+          LOG_WARNING,
+          "%s: Failed to disable store fault triggering",
+          __func__);
+      return VR_STATUS_FAILURE;
+    }
+
+    if (program_mp2993(info->bus, info->addr, config) != 0) {
       return VR_STATUS_FAILURE;
     }
     break;
   }
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
-    cache_mp2856_new_crc(info, args);
+  switch (config->mode) {
+    case MP2985H:
+      cache_mp2985h_new_crc(info, args);
+      break;
+    default:
+      cache_mp2856_new_crc(info, args);
+      break;
+  }
   }
 
   mp2856_set_page(info->bus, info->addr, VR_MPS_PAGE_0);
@@ -584,6 +746,24 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
 
   while (fgets(line, sizeof(line), fp) != NULL) {
     if (!strncmp(line, "END", 3)) {
+      continue;
+    } else if (!strncmp(
+                   line, "CRC_CHECK_START", 15)) { // Parse CRC code from image
+      int crc_cnt = 0;
+      while (fgets(line, sizeof(line), fp) != NULL &&
+             crc_cnt < 2) { // CRC code is in the next two lines.
+        char* token = strtok(line, "\t");
+        int count = 0;
+        while (token != NULL) {
+          if (count == 5) { // CRC code is in sixth column.
+            config->crc_code[crc_cnt] = strtol(token, NULL, 16);
+            break;
+          }
+          token = strtok(NULL, "\t");
+          count++;
+        }
+        crc_cnt++;
+      }
       break;
     }
 
@@ -631,10 +811,17 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
   }
   config->wr_cnt = dcnt;
 
-  if(config->mode == MP285X) {
+  if (config->mode == MP285X) {
     while (fgets(line, sizeof(line), fp) != NULL) {
       if (!strncmp(line, "Product ID", 10)) {
         sscanf(line, "%*[^:]:%9s", buf);
+
+        if (!strncmp(buf, "MP2985H", 7)) {
+          config->mode = MP2985H;
+          config->product_id_exp = MP2985H_MODULE_ID;
+          continue;
+        }
+
         str=strtok(buf, "MP");
         config->product_id_exp = strtol(str, NULL, 16);
         if (config->product_id_exp == MP2993_PRODUCT_ID ){
@@ -772,7 +959,9 @@ cache_mp2985h_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
            crc[4], crc[3], crc[2], crc[1]);
 
     if (mps_remaining_wr != NULL) {
-      if(mp2985h_get_remaining_wr_msg(addr, &remain, remaining_wr_msg, GET_VR_CRC) == VR_STATUS_SUCCESS) {
+      if (mps_get_remaining_wr_msg(
+              MP2985H, addr, &remain, remaining_wr_msg, GET_VR_CRC) ==
+          VR_STATUS_SUCCESS) {
         strncat(checksum, remaining_wr_msg, MAX_REMAIN_WR_MSG);
       }
     }

@@ -166,9 +166,9 @@ struct vr_ops mps_ops = {
 
 struct vr_ops mps_mp2985h_ops = {
   .get_fw_ver = get_mp2985h_ver,
-  .parse_file = NULL,
+  .parse_file = mp2856_parse_file,
   .validate_file = NULL,
-  .fw_update = NULL,
+  .fw_update = plat_mp2856_fw_update,
   .fw_verify = NULL,
 };
 

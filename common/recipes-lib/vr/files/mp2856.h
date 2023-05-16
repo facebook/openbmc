@@ -31,6 +31,7 @@
 #define VR_MPS_REG_CRC_MULTI_CONFIG_2856   0xAF
 #define VR_MPS_REG_CRC_NORMAL_CODE_297X    0xAB
 #define VR_MPS_REG_CRC_MULTI_CONFIG_297X   0xAD
+#define VR_MPS_REG_MTP_PAGE_EN 0x04
 
 /*Page2 */
 #define VR_MPS_CMD_STORE_MULTI_CODE   0xF3
@@ -43,6 +44,7 @@
 
 /*Page3 */
 #define VR_MPS_REG_PAGE_PLUS_WRITE    0x05
+#define VR_MPS_REG_DISABLE_STORE_FAULT_TRIGGERING 0x51
 
 /*CRC for MP2993 */
 #define VR_MPS_REG_CRC_2993           0xB8
@@ -58,14 +60,22 @@
 #define  MASK_MTP_BYTE_RW_EN          0x20
 #define  MASK_MTP_BYTE_RW_EN_2993     0x80
 #define  MASK_MTP_BYTE_RW_LOCK_2993   0x7f
+#define MASK_EN_TEST_MODE_BYTE 0x80
+#define MASK_DIS_TEST_MODE_BYTE 0x7f
 
 #define MP2856_DISABLE_WRITE_PROTECT 0x63
 #define MP2993_DISABLE_WRITE_PROTECT 0x00
+
+#define MP2985H_DISABLE_STORE_FAULT_TRIGGERING_BYTE0 0x10
+#define MP2985H_DISABLE_STORE_FAULT_TRIGGERING_BYTE1 0x00
+
 #define MP2856_PRODUCT_ID 0x2856
 #define MP2857_PRODUCT_ID 0x2857
 #define MP2993_PRODUCT_ID 0x2993
+#define MP2985H_MODULE_ID 0x0185
 
 #define MAX_MP2856_REMAIN_WR 1000
+#define MAX_MP2985H_REMAIN_WR 100
 
 #define MAX_REMAIN_WR_MSG 64
 
@@ -95,19 +105,22 @@ struct mp2856_data {
   uint8_t reg_len;
 };
 
+// This config is for all MPS model
 struct mp2856_config {
   uint8_t mode;
   uint8_t addr;
   uint16_t cfg_id;
   uint16_t wr_cnt;
   uint16_t product_id_exp;
-  struct mp2856_data pdata[720];
+  uint16_t crc_code[2];
+  struct mp2856_data pdata[1024];
 };
 
-enum {
+enum config_mode {
   MP285X,
   MP297X,
   MP2993,
+  MP2985H,
 };
 
 void* mp2856_parse_file(struct vr_info*, const char*);

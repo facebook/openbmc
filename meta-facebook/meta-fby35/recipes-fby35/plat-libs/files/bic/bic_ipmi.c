@@ -2097,10 +2097,35 @@ bic_get_vr_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain) {
   tbuf[0] = BIC_EEPROM_BUS;
   tbuf[1] = BIC_EEPROM_ADDR;
   tbuf[2] = 3; //read 3 bytes
-  tbuf[3] = VR_REMAINING_WRITE_START_ADDR; //offset
-  tbuf[4] = (fby35_common_get_slot_type(fru_id) == SERVER_TYPE_HD)
-             ? HD_VR_REMAINING_WRITE_OFFSET(addr)
-             : CL_VR_REMAINING_WRITE_OFFSET(addr); // offset
+  tbuf[3] = VR_REMAINING_WRITE_START_ADDR; // High byte offset
+
+  switch (fby35_common_get_slot_type(fru_id)) { // Low byte offset
+    case SERVER_TYPE_HD:
+      tbuf[4] = HD_VR_REMAINING_WRITE_OFFSET(addr);
+      break;
+    case SERVER_TYPE_GL:
+      switch (addr) {
+      case GL_ADDR_VCCIN:
+        tbuf[4] = VCCIN_REMAINING_WR_OFFSET;
+        break;
+      case GL_ADDR_POC_VCCD:
+      case GL_ADDR_EVT_VCCD:
+        tbuf[4] = VCCD_REMAINING_WR_OFFSET;
+        break;
+      case GL_ADDR_POC_VCCINF:
+      case GL_ADDR_EVT_VCCINF:
+        tbuf[4] = VCCINF_REMAINING_WR_OFFSET;
+        break;
+      }
+      break;
+    case SERVER_TYPE_CL:
+      tbuf[4] = CL_VR_REMAINING_WRITE_OFFSET(addr);
+      break;
+    default:
+      syslog(LOG_WARNING, "%s: fail to get slot type\n", __func__);
+      return -1;
+  }
+
   tlen = 5;
 
   ret = bic_data_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
@@ -2133,10 +2158,34 @@ bic_set_vr_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t remain) {
   tbuf[0] = BIC_EEPROM_BUS;
   tbuf[1] = BIC_EEPROM_ADDR;
   tbuf[2] = 0; //write
-  tbuf[3] = VR_REMAINING_WRITE_START_ADDR; //offset
-  tbuf[4] = (fby35_common_get_slot_type(fru_id) == SERVER_TYPE_HD)
-            ? HD_VR_REMAINING_WRITE_OFFSET(addr)
-            : CL_VR_REMAINING_WRITE_OFFSET(addr); // offset
+  tbuf[3] = VR_REMAINING_WRITE_START_ADDR; // High byte offset
+
+  switch (fby35_common_get_slot_type(fru_id)) { // Low byte offset
+    case SERVER_TYPE_HD:
+      tbuf[4] = HD_VR_REMAINING_WRITE_OFFSET(addr);
+      break;
+    case SERVER_TYPE_GL:
+      switch (addr) {
+      case GL_ADDR_VCCIN:
+        tbuf[4] = VCCIN_REMAINING_WR_OFFSET;
+        break;
+      case GL_ADDR_POC_VCCD:
+      case GL_ADDR_EVT_VCCD:
+        tbuf[4] = VCCD_REMAINING_WR_OFFSET;
+        break;
+      case GL_ADDR_POC_VCCINF:
+      case GL_ADDR_EVT_VCCINF:
+        tbuf[4] = VCCINF_REMAINING_WR_OFFSET;
+        break;
+      }
+      break;
+    case SERVER_TYPE_CL:
+      tbuf[4] = CL_VR_REMAINING_WRITE_OFFSET(addr);
+      break;
+    default:
+      syslog(LOG_WARNING, "%s: fail to get slot type\n", __func__);
+      return -1;
+  }
 
   tbuf[5] = remain >> 8; //higher byte
   tbuf[6] = remain & 0xff; //lower byte

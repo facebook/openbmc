@@ -57,8 +57,25 @@ enum {
   UNKNOWN_CMD = 0xFF,
 };
 
-typedef struct
-{
+enum GL_VR_address {
+  GL_ADDR_VCCIN = 0xC0,
+  GL_ADDR_POC_VCCD = 0xD4,
+  GL_ADDR_POC_VCCINF = 0xDC,
+  GL_ADDR_EVT_VCCD = 0xE4,
+  GL_ADDR_EVT_VCCINF = 0xC4,
+};
+/*
+ * Define VR remaining write's offset (3 byte: High byte offset, Low byte
+ * offset, chksum) VCCIN: 0x0A40~ 0x0A42. VCCD:  0x0A43~ 0x0A45. VCCINF:0x0A46~
+ * 0x0A48.
+ */
+enum VR_remaining_wr_offset {
+  VCCIN_REMAINING_WR_OFFSET = 0x40,
+  VCCD_REMAINING_WR_OFFSET = 0x43,
+  VCCINF_REMAINING_WR_OFFSET = 0x46,
+};
+
+typedef struct {
   uint8_t iana_id[3];
   uint32_t value;
   uint8_t flags;
@@ -77,7 +94,7 @@ typedef struct
 #define MAX_POSTCODE_NUM  1024
 #define PSB_EEPROM_BUS 0x03
 
-//VR remaining writes
+// Define VR remaining writes at EEPROM's 0x0A40
 #define VR_REMAINING_WRITE_START_ADDR 0x0A
 #define BIC_EEPROM_BUS 0x2
 #define BIC_EEPROM_ADDR 0xA8

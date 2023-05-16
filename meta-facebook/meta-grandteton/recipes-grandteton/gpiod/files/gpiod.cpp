@@ -120,6 +120,8 @@ struct gpiopoll_config gpios_common_list[] = {
   {GPU_FPGA_THERM_OVERT,    "SGPIO40",        GPIO_EDGE_FALLING, nv_event_handler,           NULL},
   {GPU_FPGA_DEVIC_OVERT,    "SGPIO42",        GPIO_EDGE_FALLING, nv_event_handler,           NULL},
   {PEX_FW_VER_UPDATE,       "PEX_VER_UPDATE", GPIO_EDGE_RISING,  pex_fw_ver_handle,          NULL},
+  {FM_SMB_1_ALERT_GPU,      "SGPIO208",       GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
+  {FM_SMB_2_ALERT_GPU,      "SGPIO210",       GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
 };
 
 

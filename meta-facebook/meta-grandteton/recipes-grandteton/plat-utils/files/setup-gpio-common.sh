@@ -273,6 +273,9 @@ sgpio_export FM_THERMAL_ALERT_R_N 110
 
 sgpio_export PCIE_M2_SSD0_PRSNT_N 190
 
+sgpio_export FM_SMB_1_ALERT_GPU_ISO_N 208
+sgpio_export FM_SMB_2_ALERT_GPU_ISO_N 210
+
 sgpio_export FM_BOARD_BMC_SKU_ID4 212
 sgpio_export FM_BOARD_BMC_SKU_ID3 214
 sgpio_export FM_BOARD_BMC_SKU_ID2 216

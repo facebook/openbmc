@@ -1,5 +1,5 @@
 {
-    "version": "inspirationpint-v5",
+    "version": "inspirationpint-v6",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -92,7 +92,7 @@
         "negative_hysteresis": 2,
         "setpoint": 76,
         "kp": -3,
-        "ki": -0.0035,
+        "ki": -0.035,
         "kd": 0
       },
       "cpu_tray_dimm_linear": {
@@ -199,8 +199,8 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 0,
-        "negative_hysteresis": 0,
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
         "data": [
           [58, 25],
           [90, 90]
@@ -230,7 +230,7 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "setpoint": 79,
-        "kp": -3.5,
+        "kp": -3,
         "ki": -0.035,
         "kd": 0
       },
@@ -294,8 +294,8 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 0,
-        "negative_hysteresis": 0,
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
         "data": [
           [48, 25],
           [90, 90]
@@ -329,6 +329,7 @@
     },
     "fans": {
       "0": {
+        "label" : "Fan 0 Inlet",
         "read_source" : {
           "kv" : "fan_bp1_sensor208"
         },
@@ -337,6 +338,16 @@
         }
       },
       "1": {
+        "label" : "Fan 0 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor209"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "2": {
+        "label" : "Fan 1 Inlet",
         "read_source" : {
           "kv" : "fan_bp1_sensor210"
         },
@@ -344,7 +355,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "2": {
+      "3": {
+        "label" : "Fan 1 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor211"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "4": {
+        "label" : "Fan 2 Inlet",
         "read_source" : {
           "kv" : "fan_bp2_sensor212"
         },
@@ -352,7 +373,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "3": {
+      "5": {
+        "label" : "Fan 2 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor213"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "6": {
+        "label" : "Fan 3 Inlet",
         "read_source" : {
           "kv" : "fan_bp2_sensor214"
         },
@@ -360,7 +391,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "4": {
+      "7": {
+        "label" : "Fan 3 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor215"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "8": {
+        "label" : "Fan 4 Inlet",
         "read_source" : {
           "kv" : "fan_bp1_sensor216"
         },
@@ -368,7 +409,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "5": {
+      "9": {
+        "label" : "Fan 4 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor217"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "10": {
+        "label" : "Fan 5 Inlet",
         "read_source" : {
           "kv" : "fan_bp1_sensor218"
         },
@@ -376,7 +427,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "6": {
+      "11": {
+        "label" : "Fan 5 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor219"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "12": {
+        "label" : "Fan 6 Inlet",
         "read_source" : {
           "kv" : "fan_bp2_sensor220"
         },
@@ -384,7 +445,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "7": {
+      "13": {
+        "label" : "Fan 6 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor221"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "14": {
+        "label" : "Fan 7 Inlet",
         "read_source" : {
           "kv" : "fan_bp2_sensor222"
         },
@@ -392,7 +463,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "8": {
+      "15": {
+        "label" : "Fan 7 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor223"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "16": {
+        "label" : "Fan 8 Inlet",
         "read_source" : {
           "kv" : "fan_bp1_sensor224"
         },
@@ -400,7 +481,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "9": {
+      "17": {
+        "label" : "Fan 8 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor225"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "18": {
+        "label" : "Fan 9 Inlet",
         "read_source" : {
           "kv" : "fan_bp1_sensor226"
         },
@@ -408,7 +499,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "10": {
+      "19": {
+        "label" : "Fan 9 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor227"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "20": {
+        "label" : "Fan 10 Inlet",
         "read_source" : {
           "kv" : "fan_bp2_sensor228"
         },
@@ -416,7 +517,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "11": {
+      "21": {
+        "label" : "Fan 10 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor229"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "22": {
+        "label" : "Fan 11 Inlet",
         "read_source" : {
           "kv" : "fan_bp2_sensor230"
         },
@@ -424,7 +535,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "12": {
+       "23": {
+        "label" : "Fan 11 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor231"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "24": {
+        "label" : "Fan 12 Inlet",
         "read_source" : {
           "kv" : "fan_bp1_sensor232"
         },
@@ -432,7 +553,17 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "13": {
+      "25": {
+        "label" : "Fan 12 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor233"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "26": {
+        "label" : "Fan 13 Inlet",
         "read_source" : {
           "kv" : "fan_bp1_sensor234"
         },
@@ -440,7 +571,18 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "14": {
+      "27": {
+        "label" : "Fan 13 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor235"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+
+      "28": {
+        "label" : "Fan 14 Inlet",
         "read_source" : {
           "kv" : "fan_bp2_sensor236"
         },
@@ -448,9 +590,28 @@
           "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
-      "15": {
+      "29": {
+        "label" : "Fan 14 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor237"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "30": {
+        "label" : "Fan 15 Inlet",
         "read_source" : {
           "kv" : "fan_bp2_sensor238"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "31": {
+        "label" : "Fan 15 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor239"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"

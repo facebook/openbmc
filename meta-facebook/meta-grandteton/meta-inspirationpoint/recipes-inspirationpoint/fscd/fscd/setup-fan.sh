@@ -43,4 +43,4 @@ else
   ln -s /etc/fsc-config-8-retimer.json ${default_fsc_config}
 fi
 
-/etc/init.d/check-fan-cache.sh
+/etc/init.d/check-fan-cache.sh &

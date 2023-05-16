@@ -2,13 +2,13 @@
 
 - [X] P0 **bic gpio support**
 - [ ] P0 **bic i3c support**
-- [ ] P1 **bic info**
+- [X] P1 **bic info**
 - [X] P0 **bic ipmb support**
 - [ ] P0 **bic mctp support**
 - [X] P0 **bic reset**
-- [ ] P2 **bic secure boot**
+- ~~[ ] P2 **bic secure boot**~~ (Not support this feature)
 - [X] P0 **bic self test**
-- [ ] P0 **bic slot clear cmos support**
+- ~~[ ] P0 **bic slot clear cmos support**~~ (Not support this feature)
 - [X] P0 **bic slot postcode data**
 - [X] P1 **bic slot sdr data**
 - [X] P0 **bic slot sensor data**
@@ -18,13 +18,13 @@
 #### bmc-hardware-support
 
 - [X] P0 **aspeed**
-- [ ] P2 **nuvoton**
+- ~~[ ] P2 **nuvoton**~~ (Not support this feature)
 
 #### bmc-reset
 
 - [ ] P2 **bmc reset host side**
 - [ ] P2 **bmc reset recovery redfish**
-- [ ] P0 **bmc reset recovery ssh**
+- [X] P0 **bmc reset recovery ssh**
 
 #### configuration
 
@@ -38,11 +38,11 @@
 
 - [ ] P0 **dft asd jumper detection**
 - [ ] P2 **dft bmc network recovery**
-- [ ] P3 **dft firmware downgrade**
-- [ ] P2 **dft firmware version reporting**
-- [ ] P2 **dft firmware wdt auto recovery**
-- [ ] P2 **dft nic reseat handling**
-- [ ] P2 **dft power on error handling**
+- [X] P3 **dft firmware downgrade**
+- [X] P2 **dft firmware version reporting**
+- [X] P2 **dft firmware wdt auto recovery**
+- [X] P2 **dft nic reseat handling**
+- [X] P2 **dft power on error handling**
 
 #### diagnostics
 
@@ -104,51 +104,51 @@
 
 #### health-monitoring
 
-- [ ] P2 **health monitoring configuration**
-- [ ] P2 **health monitoring cpu usage**
+- [X] P2 **health monitoring configuration**
+- [X] P2 **health monitoring cpu usage**
 - [ ] P1 **health monitoring disable auto reboots**
-- [ ] P2 **health monitoring memory usage**
+- [X] P2 **health monitoring memory usage**
 - [X] P0 **health monitoring wdt**
 
 #### hot-plug-services
 
 - [X] P1 **hot plug service fan speed**
-- [ ] P2 **hot plug service sdr caching**
-- [ ] P2 **hot plug service sled insertion**
+- [X] P2 **hot plug service sdr caching**
+- [X] P2 **hot plug service sled insertion**
 
 #### infrastructure
 
 - [X] P0 **adc device support**
-- [ ] P2 **cpld gpio expander register layout**
+- [X] P2 **cpld gpio expander register layout (access through I2C raw command)**
 - [X] P0 **flash layout**
 - [X] P0 **gpio device support**
 - [X] P0 **gpio driver porting**
 - [X] P0 **i2c device support**
 - [X] P0 **kernel**
 - [X] P0 **pwm tach device support**
-- [ ] P1 **qemu**
+- ~~[ ] P1 **qemu**~~ (Not support this feature)
 - [X] P0 **spi device support**
 - [X] P0 **u boot porting**
 - [X] P0 **yocto**
 
 #### lcd-debug-card
 
-- [ ] P2 **lcd debug card critical log frame**
-- [ ] P2 **lcd debug card critical sensor frame**
-- [ ] P2 **lcd debug card gpio**
+- [X] P2 **lcd debug card critical log frame**
+- [X] P2 **lcd debug card critical sensor frame**
+- [X] P2 **lcd debug card gpio**
 - [ ] P2 **lcd debug card memory loop code**
-- [ ] P2 **lcd debug card post**
-- [ ] P2 **lcd debug card user settings**
+- [X] P2 **lcd debug card post**
+- [X] P2 **lcd debug card user settings**
 
 #### miscellaneous
 
 - [ ] P2 **misc dimm location matching**
-- [ ] P2 **misc enclosure util**
+- ~~[ ] P2 **misc enclosure util**~~ (Not support this feature)
 - [X] P1 **misc guid util**
 - [ ] P1 **misc json format**
 - [ ] P4 **misc ods scuba integration**
 - [ ] P4 **misc ods sensor names**
-- [ ] P2 **misc openbmc test automation**
+- ~~[ ] P2 **misc openbmc test automation**~~ (Not support this feature)
 - [X] P0 **misc reset default factory settings**
 
 #### network
@@ -160,7 +160,7 @@
 - [ ] P2 **nic multi channel support**
 - [ ] P2 **nic ncsi aen notifications**
 - [ ] P2 **nic network link status detection**
-- [ ] P0 **nic ocpv3 support**
+- [X] P0 **nic ocpv3 support**
 
 #### pldm
 
@@ -173,10 +173,10 @@
 
 #### power-control
 
-- [ ] P1 **expansion card power cycle**
-- [ ] P1 **expansion card power off**
-- [ ] P1 **expansion card power on**
-- [ ] P1 **phosphor state manager support**
+- ~~[ ] P1 **expansion card power cycle**~~ (Not support this feature)
+- ~~[ ] P1 **expansion card power off**~~ (Not support this feature)
+- ~~[ ] P1 **expansion card power on**~~ (Not support this feature)
+- ~~[ ] P1 **phosphor state manager support**~~ (Not support this feature)
 - [X] P2 **power failure detection**
 - [X] P0 **power status**
 - [X] P0 **sled cycle**
@@ -191,7 +191,7 @@
 
 #### security
 
-- [ ] P1 **prot support**
+- ~~[ ] P1 **prot support**~~ (Not support this feature)
 - [ ] P3 **security attest util**
 - [ ] P2 **security signed firmware update**
 - [ ] P2 **tpm 20 boot measurement**
@@ -222,7 +222,7 @@
 - [X] P0 **host sol access**
 - [X] P0 **m term**
 - [X] P1 **sol console history**
-- [ ] P1 **sol host logger**
+- ~~[ ] P1 **sol host logger**~~ (Not support this feature)
 
 #### thermal-management
 
@@ -233,21 +233,21 @@
 - [X] P0 **fan control manual**
 - [ ] P2 **fsc configuration update**
 - [ ] P2 **fsc persistent configuration**
-- [ ] P1 **nic otp protection**
+- [X] P1 **nic otp protection**
 - [ ] P2 **sensor calibration**
 - [X] P1 **sled otp protection**
-- [ ] P3 **thermal management**
+- [X] P3 **thermal management**
 
 #### time-sync
 
-- [ ] P2 **time ntp sync**
+- [X] P2 **time ntp sync**
 - [ ] P1 **time rtc**
 - [X] P0 **time timezone**
 
 #### user-interface
 
-- [ ] P0 **generic user interface**
-- [ ] P2 **host2bmc usb**
+- [X] P0 **generic user interface**
+- ~~[ ] P2 **host2bmc usb**~~ (Not support this feature)
 - [X] P0 **inband ethernet**
 - [X] P1 **inband kcs**
 - [ ] P2 **oob rest**
@@ -264,8 +264,8 @@
 - [ ] P2 **ddr5 pmic power measurement**
 - [ ] P2 **ddr5 pmic error injection**
 - [ ] P3 **terminus nic enablement**
-- [ ] P2 **platform root of trust support**
-- [ ] P2 **cpld board id version info**
+- ~~[ ] P2 **platform root of trust support**~~ (Not support this feature)
+- [X] P2 **cpld board id version info**
 - [ ] P2 **dimm spd data**
-- [ ] P2 **ti vr controller fw update cycle counter**
+- [X] P2 **mps vr controller fw update cycle counter**
 

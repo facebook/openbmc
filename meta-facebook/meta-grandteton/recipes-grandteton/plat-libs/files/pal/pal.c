@@ -1651,3 +1651,49 @@ pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data)
 
   return 0;
 }
+
+int
+pal_handle_oem_1s_dev_power(uint8_t fru, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  int ret = 0;
+
+  if (!pal_is_artemis()) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_WARNING, "%s: Failed to handle device power due to parameters are NULL.", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  *res_len = 0;
+
+  if ((req_len < 2) || (req_len > 3)) {
+    return CC_INVALID_LENGTH;
+  }
+
+  // get device power
+  if ((req_data[1] == GET_DEV_POWER) && (req_len == 2)) {
+    ret = pal_get_fru_power(req_data[0], &res_data[0]);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: Failed to get device %u power, ret %d", __func__, req_data[0], ret);
+      return CC_UNSPECIFIED_ERROR;
+    }
+    *res_len = 1;
+
+  // set device power
+  } else if ((req_data[1] == SET_DEV_POWER) && (req_len == 3)) {
+    if ((req_data[2] != DEVICE_POWER_ON) && (req_data[2] != DEVICE_POWER_OFF)) {
+      syslog(LOG_WARNING, "%s: Failed to set device power by invalid action: 0x%02X.", __func__, req_data[2]);
+      return CC_UNSPECIFIED_ERROR;
+    }
+    ret = pal_set_fru_power(req_data[0], req_data[2]);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: Failed to set device %u power, ret %d", __func__, req_data[0], ret);
+      return CC_UNSPECIFIED_ERROR;
+    }   
+  } else {
+      return CC_UNSPECIFIED_ERROR;
+  }
+
+  return CC_SUCCESS;
+}

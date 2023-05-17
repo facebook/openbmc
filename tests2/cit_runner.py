@@ -4,8 +4,6 @@ import os
 import sys
 import unittest
 
-BMC_START_DIR = "/usr/local/bin/tests2/tests/"
-
 
 class RunTest:
     def __init__(self):
@@ -247,7 +245,7 @@ def arg_parser():
         "-s",
         help="Path for where test discovery should start \
                         default: /usr/local/bin/tests2/tests/",
-        default=BMC_START_DIR,
+        default="",
     )
 
     parser.add_argument("--stress", help="run all stress tests", action="store_true")
@@ -362,6 +360,12 @@ if __name__ == "__main__":
     if not args.platform:
         print("Platform needed to run tests, pass --platform arg. Exiting..")
         clean_on_exit(1)
+
+    if not args.start_dir:
+        if os.path.exists("/run/tests2/tests/"):
+            args.start_dir = "/run/tests2/tests/"
+        else:
+            args.start_dir = "/usr/local/bin/tests2/tests/"
 
     tests = Tests(args.platform, args.start_dir, pattern, args.denylist)
     test_paths = tests.get_all_platform_tests()

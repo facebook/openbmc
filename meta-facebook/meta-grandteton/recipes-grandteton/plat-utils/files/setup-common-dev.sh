@@ -211,7 +211,7 @@ if [ "$vpdb_hsc" -eq "$VPDB_HSC_MAIN" ] && [ "$vrev" -gt 1 ]; then
   i2c_device_add 38 0x44 ltc4286
   kv set vpdb_hsc_source "$VPDB_1ST_SOURCE"
 else
-  i2cset -y -f 38 0x10 0xd4 0x3F1C w
+  i2cset -y -f 38 0x10 0xd4 0x3F1F w
   i2c_device_add 38 0x10 adm1272
   kv set vpdb_hsc_source "$VPDB_2ND_SOURCE"
 fi
@@ -315,8 +315,8 @@ if [ "$hpdb_hsc" -eq "$HPDB_HSC_MAIN" ] && [ "$hrev" -gt 1 ]; then
   i2c_device_add 39 0x41 ltc4286
   kv set hpdb_hsc_source "$HPDB_1ST_SOURCE"
 else
-  i2cset -y -f 39 0x13 0xd4 0x3F1C w
-  i2cset -y -f 39 0x1c 0xd4 0x3F1C w
+  i2cset -y -f 39 0x13 0xd4 0x3F1F w
+  i2cset -y -f 39 0x1c 0xd4 0x3F1F w
   i2c_device_add 39 0x13 adm1272
   i2c_device_add 39 0x1c adm1272
   kv set hpdb_hsc_source "$HPDB_2ND_SOURCE"

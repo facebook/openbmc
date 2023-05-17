@@ -7,5 +7,5 @@ ALTERNATIVE_TARGET[python] = "${bindir}/python3"
 # Even though python3 is built with --without-ensurepip, it still installs
 # a large, compressed version of pip.  Remove it to free up the space.
 do_install:append:class-target() {
-    rm -rf ${D}${libdir}/python${PYTHON_MAJMIN}/ensurepip
+    rm -rf ${D}${libdir}/python${PYTHON_MAJMIN}/ensurepip/_bundled
 }

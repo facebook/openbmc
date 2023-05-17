@@ -170,6 +170,30 @@ static const i2c_dev_attr_st mcbcpld_attrs[] = {
     0x11, 7, 1,
   },
   {
+    "pwr_come_en",
+    "0: COMe power is off\n"
+    "1: COMe power is on\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x14, 0, 1,
+  },
+  {
+    "pwr_force_off",
+    "0: COMe power is off\n"
+    "1: COMe power is on\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x14, 1, 1,
+  },
+  {
+    "pwr_come_cycle_n",
+    "write 0 to trigger CPLD power cycling COMe\n"
+    "then this bit will auto set to 1 after Power cycle finish",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x14, 2, 1,
+  },
+  {
     "timer_base_10ms",
     "default: 0",
     I2C_DEV_ATTR_SHOW_DEFAULT,

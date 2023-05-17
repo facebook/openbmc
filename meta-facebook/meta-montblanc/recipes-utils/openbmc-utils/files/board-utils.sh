@@ -23,10 +23,9 @@
 
 MCBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-0060)
 
-# FIXME: need to update to use MCB CPLD instead
-# PWR_FORCE_OFF="${SCMCPLD_SYSFS_DIR}/pwr_force_off"
-# PWR_COME_EN="${SCMCPLD_SYSFS_DIR}/pwr_come_en"
-# PWR_COME_CYCLE_N="${SCMCPLD_SYSFS_DIR}/pwr_come_cycle_n"
+PWR_FORCE_OFF="${MCBCPLD_SYSFS_DIR}/pwr_force_off"
+PWR_COME_EN="${MCBCPLD_SYSFS_DIR}/pwr_come_en"
+PWR_COME_CYCLE_N="${MCBCPLD_SYSFS_DIR}/pwr_come_cycle_n"
 
 TIMER_BASE_10S="${MCBCPLD_SYSFS_DIR}/timer_base_10s"
 TIMER_BASE_1S="${MCBCPLD_SYSFS_DIR}/timer_base_1s"
@@ -46,11 +45,6 @@ wedge_board_rev() {
 }
 
 userver_power_is_on() {
-    # FIXME: need to update to use MCB
-    echo "NOT SUPPORT YET"
-    return 0
-
-    # TODO: need to test on real unit on bring-up
     val1=$(head -n 1 < "$PWR_FORCE_OFF" 2> /dev/null)
     val2=$(head -n 1 < "$PWR_COME_EN" 2> /dev/null)
 
@@ -62,32 +56,17 @@ userver_power_is_on() {
 }
 
 userver_power_on() {
-    # FIXME: need to update to use MCB
-    echo "NOT SUPPORT YET"
-    return 0
-
-    # TODO: need to test on real unit on bring-up
     echo 1 > "$PWR_FORCE_OFF"
     echo 1 > "$PWR_COME_EN"
     return 0
 }
 
 userver_power_off() {
-    # FIXME: need to update to use MCB
-    echo "NOT SUPPORT YET"
-    return 0
-
-    # TODO: need to test on real unit on bring-up
     echo 0 > "$PWR_FORCE_OFF"
     return 0
 }
 
 userver_reset() {
-    # FIXME: need to update to use MCB
-    echo "NOT SUPPORT YET"
-    return 0;
-
-    # TODO: need to test on real unit on bring-up
     # write 0 to trigger CPLD power cycling COMe
     # then this bit will auto set to 1 after Power cycle finish
     echo 0 > "$PWR_COME_CYCLE_N"

@@ -6,7 +6,6 @@ PR = "r1"
 inherit packagegroup
 
 RDEPENDS:${PN} += " \
-  bind-utils \
   curl \
   iproute2 \
   libndp \

@@ -12,5 +12,5 @@ do_install:prepend() {
 }
 
 FILES:${PN} += "${sysconfdir}/init.d/hostname.sh"
-RDEPENDS:${PN} += "bash iproute2 bind-utils"
+RDEPENDS:${PN} += "bash iproute2"
 DEPENDS += "update-rc.d-native"

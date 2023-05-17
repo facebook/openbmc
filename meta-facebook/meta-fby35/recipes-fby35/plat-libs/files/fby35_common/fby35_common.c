@@ -1246,6 +1246,9 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
     case BOARD_ID_RF:
     case BOARD_ID_VF:
       return true;
+    default:
+      printf("Unknown board id: 0x%x", (unsigned int)board_id);
+      return false;
   }
 
   if (board_type == rev_sb) {

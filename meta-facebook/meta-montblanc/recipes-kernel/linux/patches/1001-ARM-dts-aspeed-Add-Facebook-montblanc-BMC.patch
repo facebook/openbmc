@@ -1,6 +1,6 @@
-From f8c36d8eaa1516721756e50ed8c695b46a11a288 Mon Sep 17 00:00:00 2001
+From f8ef1507f391023ecd1eeedf1a88ab2b89ff92f9 Mon Sep 17 00:00:00 2001
 From: Bin Huang <binhuang@meta.com>
-Date: Tue, 11 Apr 2023 14:14:00 +0700
+Date: Wed, 10 May 2023 15:39:38 +0700
 Subject: [PATCH] ARM: dts: aspeed: Add Facebook montblanc BMC
 
 Add initial version of device tree for Facebook montblanc (AST2600) BMC.
@@ -10,16 +10,16 @@ BMC integrated for health monitoring purpose.
 
 Signed-off-by: Bin Huang <binhuang@meta.com>
 ---
- .../dts/aspeed-bmc-facebook-montblanc.dts     | 36 +++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ .../dts/aspeed-bmc-facebook-montblanc.dts     | 56 +++++++++++++++++++
+ 1 file changed, 56 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
 
 diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
 new file mode 100644
-index 000000000000..a605245695a9
+index 000000000000..1c93259714ea
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,56 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) Meta Platforms, Inc. and affiliates.
 +
@@ -34,6 +34,26 @@ index 000000000000..a605245695a9
 +	chosen {
 +		stdout-path = &uart1;
 +	};
++};
++
++&lpc_ctrl {
++	status = "okay";
++	flash = <&spi1>;
++};
++
++&kcs1 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca0>;
++};
++
++&kcs2 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca8>;
++};
++
++&kcs3 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca2>;
 +};
 +
 +&mdio1 {

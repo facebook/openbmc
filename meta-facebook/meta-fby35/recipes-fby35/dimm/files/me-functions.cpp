@@ -75,7 +75,7 @@ static const char *hd_dimm_label[NUM_CPU_FBY35][MAX_DIMM_PER_CPU] = {
 };
 
 static uint8_t hd_dimm_cache_id[NUM_CPU_FBY35][MAX_DIMM_PER_CPU] = {
-  { 0, 1, 2, 3, 4, 5, 6, 7, },
+  { 0, 1, 2, 4, 6, 7, 8, 10},
 };
 
 static uint8_t *spd_addr = cl_spd_addr;

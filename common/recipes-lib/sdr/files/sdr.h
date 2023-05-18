@@ -42,7 +42,7 @@ int sdr_get_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
 int sdr_get_sensor_units(uint8_t fru, uint8_t snr_num, char *units);
 int sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr);
 
-#define FORMAT_CONV(X) ((int)(X*100 + 0.5)*0.01)  //take the second decimal place
+#define FORMAT_CONV(X) ((X < 0) ? (int)(X*100 - 0.5)*0.01 : (int)(X*100 + 0.5)*0.01)  //take the second decimal place
 
 #ifdef __cplusplus
 } // extern "C"

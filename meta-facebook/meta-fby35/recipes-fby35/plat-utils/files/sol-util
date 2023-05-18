@@ -45,23 +45,6 @@ show_usage() {
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
 }
 
-select_expansion_uart() {
-  local bus=$1
-  local addr=$2
-  local data=$3
-  local board_type=$4
-  local curr_sts=0
-
-  if [[ -n "$board_type" ]] && [[ "$board_type" = "0x00" ]] || [[ "$board_type" = "0x03" ]]; then
-    curr_sts=$data
-  else
-    curr_sts=$(/usr/sbin/i2cget -y "$bus" "$addr" 0)
-    curr_sts=$((curr_sts & 0x0f))
-    curr_sts=$((curr_sts | data << 4))
-  fi
-  /usr/sbin/i2cset -y "$bus" "$addr" 0 "$curr_sts"
-}
-
 get_slot_num() {
   local slot_num=0
   case $1 in
@@ -498,9 +481,6 @@ if [ -n "$COMP" ]; then
       set_uart_src "$I2C_NUM" "$SB_CPLD_ADDR" 0x01 0x01
     else
       set_uart_src "$I2C_NUM" "$SB_CPLD_ADDR" 0x01 0x02
-    fi
-    if [ -n "$EXP_CPLD_ADDR" ]; then
-      select_expansion_uart "$I2C_NUM" "$EXP_CPLD_ADDR" "$DEV_NUM" "$EXP_BOARD_TYPE"
     fi
   fi
 else

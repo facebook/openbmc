@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <syslog.h>
 #include <openbmc/pal.h>
 #include <openbmc/pal_common.h>
 #include <libpldm/pldm.h>
@@ -14,6 +15,10 @@
 
 #define MB_VR_BUS_ID   (20)
 #define SWB_VR_BUS_ID  (3)
+#define MB_EEPROM_BUS  33
+#define MB_EEPROM_ADDR 0x51
+#define FRU_EEPROM "/sys/class/i2c-dev/i2c-%d/device/%d-00%x/eeprom"
+#define MB_EEPROM_BASE_OFFSET 0x1810
 
 enum {
   VR_MB_CPU0_VCORE0   = 0,
@@ -568,6 +573,92 @@ load_artemis_comp_source(void) {
   // TODO: GET ACB source
 }
 
+uint16_t
+mb_get_mps_remaining_offset(uint8_t addr) {
+  addr = (((addr + 2) & 0xf) | 0x40);
+  return MB_EEPROM_BASE_OFFSET + addr; 
+}
+
+int
+mb_set_vr_remaining_wr(uint8_t addr, uint16_t *remain) {
+  int fd;
+  ssize_t bytes_wr;
+  errno = 0;
+  char mb_path[128] = {0};
+  uint16_t offset;
+
+  sprintf(mb_path, FRU_EEPROM, MB_EEPROM_BUS, MB_EEPROM_BUS, MB_EEPROM_ADDR);
+
+  // check for file presence
+  if (access(mb_path, F_OK)) {
+    syslog(LOG_ERR, "mb_set_vr_remaining_wr: unable to access %s: %s", mb_path, strerror(errno));
+    return errno;
+  }
+
+  fd = open(mb_path, O_WRONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "mb_set_vr_remaining_wr: unable to open %s: %s", mb_path, strerror(errno));
+    return errno;
+  }
+
+  offset = mb_get_mps_remaining_offset(addr);
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_wr = write(fd, remain, sizeof(*remain));
+  if (bytes_wr != sizeof(*remain)) {
+    syslog(LOG_ERR, "mb_set_vr_remaining_wr: write to %s failed: %s", mb_path, strerror(errno));
+  }
+
+  close(fd);
+  return errno;
+}
+
+int
+mb_get_vr_remaining_wr(uint8_t addr, uint16_t *remain) {
+  int fd;
+  ssize_t bytes_rd;
+  errno = 0;
+  char mb_path[128] = {0};
+  uint16_t offset;
+
+  sprintf(mb_path, FRU_EEPROM, MB_EEPROM_BUS, MB_EEPROM_BUS, MB_EEPROM_ADDR);
+
+  // check for file presence
+  if (access(mb_path, F_OK)) {
+    syslog(LOG_ERR, "mb_get_vr_remaining_wr: unable to access %s: %s", mb_path, strerror(errno));
+    return errno;
+  }
+
+  fd = open(mb_path, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "mb_get_vr_remaining_wr: unable to open %s: %s", mb_path, strerror(errno));
+    return errno;
+  }
+
+  offset = mb_get_mps_remaining_offset(addr);
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_rd = read(fd, remain, sizeof(*remain));
+  if (bytes_rd != sizeof(*remain)) {
+    syslog(LOG_ERR, "mb_get_vr_remaining_wr: read from %s failed: %s", mb_path, strerror(errno));
+  }
+
+  close(fd);
+  return errno;
+}
+
+int mb_vr_remaining_wr(uint8_t addr, uint16_t *remain, bool is_update) {
+  int ret;
+  if(is_update) {
+    ret = mb_set_vr_remaining_wr(addr, remain);
+  } else {
+    ret = mb_get_vr_remaining_wr(addr, remain);
+  }
+  return ret;
+}
+
 int plat_vr_init(void) {
   int i = 0;
   int ret = 0;
@@ -607,6 +698,7 @@ int plat_vr_init(void) {
         vr_list[i].ops =  &mp2856_ops;
         vr_list[i].addr = mb_inf_vr_addr[i];
         vr_list[i].sensor_polling_ctrl = &mb_vr_polling_ctrl;
+        vr_list[i].remaining_wr_op = mb_vr_remaining_wr;
       }
     }
 

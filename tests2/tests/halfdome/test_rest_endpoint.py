@@ -21,7 +21,7 @@ import functools
 import unittest
 
 from common.base_rest_endpoint_test import BaseRestEndpointTest
-from tests.fby35.test_data.restendpoints.restendpoints import REST_END_POINTS
+from tests.halfdome.test_data.restendpoints.restendpoints import REST_END_POINTS
 from utils.test_utils import qemu_check
 
 

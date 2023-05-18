@@ -22,7 +22,7 @@ import unittest
 from common.base_fw_util_test import CommonFwUtilTest
 from utils.test_utils import qemu_check
 
-PLATFORM = "fby35"
+PLATFORM = "halfdome"
 
 
 class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):

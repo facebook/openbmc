@@ -20,7 +20,7 @@
 import unittest
 
 from common.base_gpio_test import BaseGpioTest
-from tests.fby35.test_data.gpio.gpio import GPIOS
+from tests.halfdome.test_data.gpio.gpio import GPIOS
 from utils.test_utils import qemu_check
 
 

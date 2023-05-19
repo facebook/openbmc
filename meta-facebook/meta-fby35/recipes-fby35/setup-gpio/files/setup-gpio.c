@@ -34,6 +34,9 @@
 #define SCU_BASE        0x1E6E2000
 #define REG_SCU630      0x630
 
+#define ADC_BASE        0x1E6E9000
+#define REG_ENGINE_CTRL 0x100
+
 #define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
 
 int setup_gpio_with_value(const char *chip_name, const char *shadow_name, const char *pin_name, int offset, gpio_direction_t direction, gpio_value_t value)
@@ -162,6 +165,16 @@ main(int argc, char **argv) {
 	reg_value = reg_value | 0x00040000;
 	phymem_set_dword(SCU_BASE, REG_SCU630, reg_value);
 
+	/*
+		Disable ADC channel 9
+		[23:16] Channel enable.
+			1: Enable
+			0: Skip
+		ADC00[17] for channel 9.
+	*/
+	phymem_get_dword(ADC_BASE, REG_ENGINE_CTRL, &reg_value);
+	reg_value = reg_value & ~(1 << 17);
+	phymem_set_dword(ADC_BASE, REG_ENGINE_CTRL, reg_value);
 
 	printf("done.\n");
 

@@ -42,6 +42,7 @@
 
 #define PSU_DELAY 15
 #define PMBUS_MFR_MODEL  0x9a
+#define VOUT_MODE -9
 
 typedef enum {
   DELTA_2400,
@@ -137,7 +138,7 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
 
   if (!strncmp(block, "ECD15020056", 11)) {
     model = DELTA_2400;
-  } else if (!strncmp(block, "PS-2242-3A", 10)) {
+  } else if (!strncmp(block, "PS-2242-3A", 10) || !strncmp(block, "PS-2242-9A", 10)) {
     model = LITEON_2400;
   } else {
     model = UNKNOWN;
@@ -206,7 +207,7 @@ static ssize_t psu_vout_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
-      result = linear_convert(LINEAR_16, result, -9);
+      result = linear_convert(LINEAR_16, result, VOUT_MODE);
       break;
     default:
       break;

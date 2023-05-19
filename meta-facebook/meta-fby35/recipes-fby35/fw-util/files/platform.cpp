@@ -78,35 +78,63 @@ class ClassConfig {
         }
         if (prsnt) {
           //slot1 cpld/me/vr
-          if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_HD) {
-            static CpldComponent cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x44);
-            static VrComponent   vr_vddcpu0_fw1("slot1", "vr_vddcrcpu0", FW_VR_VDDCRCPU0);
-            static VrComponent   vr_vddcpu1_fw1("slot1", "vr_vddcrcpu1", FW_VR_VDDCRCPU1);
-            static VrComponent   vr_vdd11s3_fw1("slot1", "vr_vdd11s3", FW_VR_VDD11S3);
-            if(fby35_common_is_prot_card_prsnt(FRU_SLOT1)) {
-              static ProtComponent    prot_fw1("slot1", "prot", FW_PROT);
-              static BiosComponent   bios_fw1_a("slot1", "bios_spia", FRU_SLOT1, FW_BIOS, true);
-              static BiosComponent   bios_fw1_b("slot1", "bios_spib", FRU_SLOT1, FW_BIOS_SPIB, true);
+          switch (fby35_common_get_slot_type(FRU_SLOT1)) {
+            case SERVER_TYPE_CL: {
+              static CpldComponent cpld_fw1(
+                  "slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
+              static MeComponent me_fw1("slot1", "me", FRU_SLOT1);
+              static VrComponent vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN);
+              static VrComponent vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD);
+              static VrComponent vr_vccinfaon_fw1(
+                  "slot1", "vr_vccinfaon", FW_VR_VCCINFAON);
+              if (isSbMpsHsc(FRU_SLOT1)) {
+                static MP5990Component hsc_fw1(
+                    "slot1", "hsc", FRU_SLOT1, 1, 0x16);
+              }
+              break;
             }
-            if(isSbMpsHsc(FRU_SLOT1)) {
-              static MP5990Component hsc_fw1("slot1", "hsc", FRU_SLOT1, 4, 0x40);
+            case SERVER_TYPE_HD: {
+              static CpldComponent cpld_fw1(
+                  "slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x44);
+              static VrComponent vr_vddcpu0_fw1(
+                  "slot1", "vr_vddcrcpu0", FW_VR_VDDCRCPU0);
+              static VrComponent vr_vddcpu1_fw1(
+                  "slot1", "vr_vddcrcpu1", FW_VR_VDDCRCPU1);
+              static VrComponent vr_vdd11s3_fw1(
+                  "slot1", "vr_vdd11s3", FW_VR_VDD11S3);
+              if (fby35_common_is_prot_card_prsnt(FRU_SLOT1)) {
+                static ProtComponent prot_fw1("slot1", "prot", FW_PROT);
+                static BiosComponent bios_fw1_a(
+                    "slot1", "bios_spia", FRU_SLOT1, FW_BIOS, true);
+                static BiosComponent bios_fw1_b(
+                    "slot1", "bios_spib", FRU_SLOT1, FW_BIOS_SPIB, true);
+              }
+              if (isSbMpsHsc(FRU_SLOT1)) {
+                static MP5990Component hsc_fw1(
+                    "slot1", "hsc", FRU_SLOT1, 4, 0x40);
+              }
+              break;
             }
-          } else {
-            static CpldComponent cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
-            static MeComponent   me_fw1("slot1", "me", FRU_SLOT1);
-            if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_GL) {
-              static VrComponent   vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN_EHV);
-              static VrComponent   vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD_HV);
-              static VrComponent   vr_vccinf_fw1("slot1", "vr_vccinf", FW_VR_VCCINF);
-            } else {
-              static VrComponent   vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN);
-              static VrComponent   vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD);
-              static VrComponent   vr_vccinfaon_fw1("slot1", "vr_vccinfaon", FW_VR_VCCINFAON);
+            case SERVER_TYPE_GL: {
+              static CpldComponent cpld_fw1(
+                  "slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
+              static VrComponent vr_vccin_fw1(
+                  "slot1", "vr_vccin", FW_VR_VCCIN_EHV);
+              static VrComponent vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD_HV);
+              static VrComponent vr_vccinf_fw1(
+                  "slot1", "vr_vccinf", FW_VR_VCCINF);
+              if (isSbMpsHsc(FRU_SLOT1)) {
+                static MP5990Component hsc_fw1(
+                    "slot1", "hsc", FRU_SLOT1, 1, 0x16);
+              }
+              break;
             }
-            if(isSbMpsHsc(FRU_SLOT1)) {
-              static MP5990Component hsc_fw1("slot1", "hsc", FRU_SLOT1, 1, 0x16);
-            }
+            default:
+              syslog(
+                  LOG_WARNING, "%s() Cannot indentify the slot type", __func__);
+              break;
           }
+
           static VrComponent     vr_fw1("slot1", "vr", FW_VR);
 
           //slot1 1ou vr
@@ -179,36 +207,64 @@ class ClassConfig {
           prsnt = 0;
         }
         if (prsnt) {
-          //slot3 cpld/me/vr
-          if (fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_HD) {
-            static CpldComponent cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x44);
-            static VrComponent   vr_vddcpu0_fw3("slot3", "vr_vddcrcpu0", FW_VR_VDDCRCPU0);
-            static VrComponent   vr_vddcpu1_fw3("slot3", "vr_vddcrcpu1", FW_VR_VDDCRCPU1);
-            static VrComponent   vr_vdd11s3_fw3("slot3", "vr_vdd11s3", FW_VR_VDD11S3);
-            if(fby35_common_is_prot_card_prsnt(FRU_SLOT3)) {
-              static ProtComponent    prot_fw3("slot3", "prot", FW_PROT);
-              static BiosComponent   bios_fw3_a("slot3", "bios_spia", FRU_SLOT3, FW_BIOS, true);
-              static BiosComponent   bios_fw3_b("slot3", "bios_spib", FRU_SLOT3, FW_BIOS_SPIB, true);
+          // slot3 cpld/me/vr
+          switch (fby35_common_get_slot_type(FRU_SLOT3)) {
+            case SERVER_TYPE_CL: {
+              static CpldComponent cpld_fw3(
+                  "slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
+              static MeComponent me_fw3("slot3", "me", FRU_SLOT3);
+              static VrComponent vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN);
+              static VrComponent vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD);
+              static VrComponent vr_vccinfaon_fw3(
+                  "slot3", "vr_vccinfaon", FW_VR_VCCINFAON);
+              if (isSbMpsHsc(FRU_SLOT3)) {
+                static MP5990Component hsc_fw3(
+                    "slot3", "hsc", FRU_SLOT3, 1, 0x16);
+              }
+              break;
             }
-            if(isSbMpsHsc(FRU_SLOT3)) {
-              static MP5990Component hsc_fw3("slot3", "hsc", FRU_SLOT3, 4, 0x40);
+            case SERVER_TYPE_HD: {
+              static CpldComponent cpld_fw3(
+                  "slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x44);
+              static VrComponent vr_vddcpu0_fw3(
+                  "slot3", "vr_vddcrcpu0", FW_VR_VDDCRCPU0);
+              static VrComponent vr_vddcpu1_fw3(
+                  "slot3", "vr_vddcrcpu1", FW_VR_VDDCRCPU1);
+              static VrComponent vr_vdd11s3_fw3(
+                  "slot3", "vr_vdd11s3", FW_VR_VDD11S3);
+              if (fby35_common_is_prot_card_prsnt(FRU_SLOT3)) {
+                static ProtComponent prot_fw3("slot3", "prot", FW_PROT);
+                static BiosComponent bios_fw3_a(
+                    "slot3", "bios_spia", FRU_SLOT3, FW_BIOS, true);
+                static BiosComponent bios_fw3_b(
+                    "slot3", "bios_spib", FRU_SLOT3, FW_BIOS_SPIB, true);
+              }
+              if (isSbMpsHsc(FRU_SLOT3)) {
+                static MP5990Component hsc_fw3(
+                    "slot3", "hsc", FRU_SLOT3, 4, 0x40);
+              }
+              break;
             }
-          } else {
-            static CpldComponent cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
-            static MeComponent   me_fw3("slot3", "me", FRU_SLOT3);
-            if (fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_GL) {
-              static VrComponent   vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN_EHV);
-              static VrComponent   vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD_HV);
-              static VrComponent   vr_vccinf_fw3("slot3", "vr_vccinf", FW_VR_VCCINF);
-            } else {
-              static VrComponent   vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN);
-              static VrComponent   vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD);
-              static VrComponent   vr_vccinfaon_fw3("slot3", "vr_vccinfaon", FW_VR_VCCINFAON);
+            case SERVER_TYPE_GL: {
+              static CpldComponent cpld_fw3(
+                  "slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
+              static VrComponent vr_vccin_fw3(
+                  "slot3", "vr_vccin", FW_VR_VCCIN_EHV);
+              static VrComponent vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD_HV);
+              static VrComponent vr_vccinf_fw3(
+                  "slot3", "vr_vccinf", FW_VR_VCCINF);
+              if (isSbMpsHsc(FRU_SLOT3)) {
+                static MP5990Component hsc_fw3(
+                    "slot3", "hsc", FRU_SLOT3, 1, 0x16);
+              }
+              break;
             }
-            if(isSbMpsHsc(FRU_SLOT3)) {
-              static MP5990Component hsc_fw3("slot3", "hsc", FRU_SLOT3, 1, 0x16);
-            }
+            default:
+              syslog(
+                  LOG_WARNING, "%s() Cannot indentify the slot type", __func__);
+              break;
           }
+
           static VrComponent     vr_fw3("slot3", "vr", FW_VR);
 
           //slot3 1ou vr

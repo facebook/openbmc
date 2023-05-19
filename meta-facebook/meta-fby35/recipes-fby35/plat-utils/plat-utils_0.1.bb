@@ -30,14 +30,13 @@ LOCAL_URI = " \
     file://setup-dev.sh \
     file://sol-util \
     file://check_eth0_ipv4.sh \
-    file://recovery-bic-util \
     file://check_bmc_ready.sh \
     "
 
 pkgdir = "utils"
 
 # the tools for BMC will be installed in the image
-binfiles = " sync_date.sh sol-util recovery-bic-util check_bmc_ready.sh "
+binfiles = " sync_date.sh sol-util check_bmc_ready.sh "
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 "

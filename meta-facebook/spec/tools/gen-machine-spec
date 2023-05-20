@@ -6,33 +6,30 @@
 # the system RPM for `python3-sh` doesn't get used.
 
 import argparse
-import os
 import json
+import os
 import subprocess
-from pathlib import Path
 from io import IOBase
-from typing import Any, Dict, List, Optional
-from sh import git  # type: ignore
+from pathlib import Path
+from typing import Any, List, Optional
 
 import yaml
+from sh import git  # type: ignore
 
-header = """## Features
+header = """Priority Legend:
 
-    ### Overview
-
-    #### Priority Legend
-    * P0 - Needed for power-on
-    * P1 - Needed for EVT entry
-    * P2 - EVT exit gating
-    * P3 - DVT exit gating
-    * P4 - PVT exit gating
-    * P5 - Optional
-
+- P0 - Needed for power-on
+- P1 - Needed for EVT entry
+- P2 - EVT exit gating
+- P3 - DVT exit gating
+- P4 - PVT exit gating
+- P5 - Optional
 """
 RED = "\033[91m"
 GREEN = "\033[92m"
 YELLOW = "\033[93m"
 NORMAL = "\033[0m"
+
 
 def find_file(name: str, machine: argparse.Namespace) -> Optional[str]:
     # Check in the machine directory
@@ -66,7 +63,9 @@ def write_title(output: IOBase, machine: argparse.Namespace) -> None:
 
 
 def get_version(machine: str) -> str:
-    tags: List[str] = git.tag("--points-at", "HEAD", _tty_out=False).splitlines()
+    tags: List[str] = git.tag(
+        "--points-at", "HEAD", _tty_out=False
+    ).splitlines()
 
     for t in tags:
         if machine.lower() in t:
@@ -80,17 +79,23 @@ def get_version(machine: str) -> str:
     return d
 
 
-def parse_feature_list(outfile: IOBase, feature_list: list, machine: argparse.Namespace) -> None:
-
-    def parse_feature(element, dir_name=""):
+def parse_feature_list(
+    outfile: IOBase, feature_list: List[str], machine: argparse.Namespace
+) -> None:
+    def parse_feature(element: Any, dir_name: str = "") -> None:
         nonlocal outfile
         nonlocal machine
         if type(element) is list:
             section_name = os.path.basename(dir_name)
             print(f"\n#### {section_name}\n", file=outfile)
             for item in element:
-                feature_name = item["File"].replace(".md", "").replace("-", " ").strip()
-                print(f"- [ ] {item['Priority']} **{feature_name}**", file=outfile)
+                feature_name = (
+                    item["File"].replace(".md", "").replace("-", " ").strip()
+                )
+                print(
+                    f"- [ ] {item['Priority']} **{feature_name}**",
+                    file=outfile,
+                )
             parse_feature(item, dir_name)
             dir_name = os.path.dirname(dir_name)
         elif type(element) is dict:
@@ -106,14 +111,19 @@ def parse_feature_list(outfile: IOBase, feature_list: list, machine: argparse.Na
                 dir_name = element
             else:
                 dir_name = dir_name + "/" + element
+
     parse_feature(feature_list, "")
 
 
-def build_features(out_file: str, machine: argparse.Namespace) -> None:
+def build_features(out_file: str, machine: argparse.Namespace) -> bool:
     out_file = os.path.join(machine.file, out_file)
     for f in machine.feature_list:
         file_name = f.upper() + ".json"
-        print(GREEN + f"Finding feature file ... {file_name}   machine is {machine}\n" + NORMAL)
+        print(
+            GREEN
+            + f"Finding feature file ... {file_name}   machine is {machine}\n"
+            + NORMAL
+        )
         file = find_file(file_name, machine)
         if not file:
             print(RED + f"Feature file {file_name} was not found..." + NORMAL)
@@ -124,14 +134,19 @@ def build_features(out_file: str, machine: argparse.Namespace) -> None:
                 feature_list = json.load(feature_file)
                 parse_feature_list(out, feature_list, machine)
         except:
-            print(RED + f"Invalid JSON data found in feature file {file}" + NORMAL)
+            print(
+                RED
+                + f"Invalid JSON data found in feature file {file}"
+                + NORMAL
+            )
             return False
     return True
 
 
-def write_section(section: str, output: IOBase, machine: argparse.Namespace) -> None:
+def write_section(
+    section: str, output: IOBase, machine: argparse.Namespace
+) -> None:
     contents = []
-    exp_contents = []
     print(GREEN + f"Writing section {section}\n" + NORMAL)
     file_name = section.upper() + ".md"
     file = find_file(file_name, machine)
@@ -145,7 +160,9 @@ def write_section(section: str, output: IOBase, machine: argparse.Namespace) -> 
             file = find_file(file_name, machine)
             if not file:
                 raise Exception(f"Unable to find section file: {section}")
-            print(GREEN + f"Feature file {file} successfully created." + NORMAL)
+            print(
+                GREEN + f"Feature file {file} successfully created." + NORMAL
+            )
         else:
             raise Exception(f"Unable to find section file: {section}")
     try:
@@ -163,50 +180,69 @@ def write_section(section: str, output: IOBase, machine: argparse.Namespace) -> 
     print(file=output)
 
 
-def expand_features(lines: List[str], machine: argparse.Namespace) -> List[str]:
-
+def expand_features(
+    lines: List[str], machine: argparse.Namespace
+) -> List[str]:
     subsection = None
     fixed = []
     tail = []
 
-    for l in lines:
-        if l.startswith("####"):
-
-            subtitle = l[4:].strip()
-            subsection = "".join([x if x.isalnum() else "-" for x in subtitle.lower()])
+    for line in lines:
+        if line.startswith("####"):
+            subtitle = line[4:].strip()
+            subsection = "".join(
+                [x if x.isalnum() else "-" for x in subtitle.lower()]
+            )
 
             if subsection.lower() in ["priority-legend"]:
                 continue
 
-            l = f"#### [{l[4:].strip()}](#s-{subsection})\n"
-            tail.append(f"### {subtitle} {{#s-{subsection}}}\n")
+            line = f"#### [{line[4:].strip()}](#s-{subsection})\n"
+            tail.append(f"### {subtitle} {{#s-{subsection}}}\n\n")
 
             subsection_file = find_file(f"features/{subsection}.md", machine)
             if subsection_file:
                 with open(subsection_file, "r") as sf:
                     tail = tail + sf.readlines() + ["\n"]
             else:
-                print(YELLOW + f"Warning: did not find subsection {subsection}.md file" + NORMAL)
+                print(
+                    YELLOW
+                    + f"Warning: did not find subsection {subsection}.md file"
+                    + NORMAL
+                )
 
-        elif l.startswith("- ["):
-            task = l.strip().split("**")[:-1]
-            taskname = "".join([x if x.isalnum() else "-" for x in task[1].lower()])
-            task_file = find_file(f"features/{subsection}/{taskname}.md", machine)
+        elif line.startswith("- ["):
+            task = line.strip().split("**")[:-1]
+            taskname = "".join(
+                [x if x.isalnum() else "-" for x in task[1].lower()]
+            )
+            task_file = find_file(
+                f"features/{subsection}/{taskname}.md", machine
+            )
             if task_file:
-                l = f"{task[0]}**[{task[1]}](#s-{subsection}-{taskname})**\n"
-                tail.append(f"#### {task[1]} {{#s-{subsection}-{taskname}}}\n")
+                line = (
+                    f"{task[0]}**[{task[1]}](#s-{subsection}-{taskname})**\n"
+                )
+                tail.append(
+                    f"#### {task[1]} {{#s-{subsection}-{taskname}}}\n\n"
+                )
 
                 with open(task_file, "r") as tf:
                     tail = tail + tf.readlines() + ["\n"]
             else:
-                print(RED + f"Warning: did not find features/{subsection}/{taskname}.md" + NORMAL)
+                print(
+                    RED
+                    + "Warning: did not find"
+                    f" features/{subsection}/{taskname}.md"
+                    + NORMAL
+                )
 
-        fixed.append(l)
+        fixed.append(line)
 
     return fixed + ["\n"] + tail
 
 
-def create_docx(filename):
+def create_docx(filename: str) -> None:
     if filename is None:
         return
     if Path(filename).is_file() and Path(filename).suffix != "":
@@ -216,9 +252,18 @@ def create_docx(filename):
     cmd = ["pandoc", "-s", filename, "-o", outfilename]
     result = subprocess.run(cmd)
     if result.returncode == 0:
-        print(GREEN + f"Output docx file {outfilename} successfully generated" + NORMAL)
+        print(
+            GREEN
+            + f"Output docx file {outfilename} successfully generated"
+            + NORMAL
+        )
     else:
-        print(RED + f"Error: Unable to generate docx file.  Please ensure pandoc is installed." + NORMAL)
+        print(
+            RED
+            + "Error: Unable to generate docx file.  Please ensure pandoc is"
+            " installed."
+            + NORMAL
+        )
 
 
 def main() -> None:
@@ -252,7 +297,9 @@ def main() -> None:
         working_path = os.path.join(working_path, args.machine)
     yaml_file_name = working_path + "/" + args.machine + ".yaml"
     with open(yaml_file_name, "r") as yaml_file:
-        machine = argparse.Namespace(**yaml.safe_load(yaml_file), file=args.machine)
+        machine = argparse.Namespace(
+            **yaml.safe_load(yaml_file), file=args.machine
+        )
 
     with open(args.output, "w") as output:
         write_title(output, machine)

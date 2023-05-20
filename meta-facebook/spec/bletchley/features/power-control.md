@@ -1,13 +1,13 @@
 #### Managed Hosts
 
 We should be able to provide power control of the managed hosts by both Redfish
-and internal DBus interfaces.  The managed hosts shall support the following
+and internal DBus interfaces. The managed hosts shall support the following
 power control operations:
 
-* on - Power ON the host (AC relay on + power button on)
-* off - Power OFF the host (power button off + AC relay off)
-* cycle - Power cycle the host (on + off)
-* reboot - (power button off, power button on)
+- on - Power ON the host (AC relay on + power button on)
+- off - Power OFF the host (power button off + AC relay off)
+- cycle - Power cycle the host (on + off)
+- reboot - (power button off, power button on)
 
 There should also be a method to put the managed host into recovery mode (DFU)
 as part of a power on operation.

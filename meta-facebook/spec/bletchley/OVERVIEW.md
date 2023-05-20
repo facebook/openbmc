@@ -4,7 +4,6 @@ Bletchley is a chassis hosting six (6) Mac Mini devices housed in individual
 sleds.  Within the chassis is a baseboard containing an AST2600 as a BMC to
 provide system management for the entire Bletchley unit.
 
-
 ### BMC Software
 
 The Bletchley BMC will run the [Linux Foundation OpenBMC](https://github.com/openbmc/openbmc)

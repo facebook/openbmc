@@ -14,5 +14,3 @@ into the Recovery image.
 
 The initramfs must contain the full rootfs image so that the BMC image can be
 updated while running.
-
-

@@ -8,7 +8,7 @@ Jinja2==2.11.3
 MarkupSafe==1.0
 python-dateutil==2.6.1
 pytz==2017.2
-requests==2.20.0
+requests==2.31.0
 six==1.10.0
 StringGenerator==0.2.0
 urllib3==1.26.5

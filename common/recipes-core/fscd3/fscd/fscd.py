@@ -876,7 +876,6 @@ class Fscd(object):
                     pwmval = zone.last_pwm + self.ramp_rate
             zone.last_pwm = pwmval
 
-            print("last pwm val=%d" % pwmval)
             if hasattr(zone.pwm_output, "__iter__"):
                 for output in zone.pwm_output:
                     self.machine.set_pwm(self.fans.get(str(output)), pwmval)

@@ -33,8 +33,6 @@ SRC_URI += " \
 do_install:append() {
     install -m 644 -D ${WORKDIR}/journald-maxlevel.conf ${D}${systemd_unitdir}/journald.conf.d/maxlevel.conf
 
-    # The journal will store its logs in tmpfs and yocto's default will kill the BMC
-    sed -i -e 's/.*RuntimeMaxUse.*/RuntimeMaxUse=20M/' ${D}${sysconfdir}/systemd/journald.conf
     sed -i -e 's/.*ForwardToSyslog.*/ForwardToSyslog=yes/' ${D}${sysconfdir}/systemd/journald.conf
 
     # Create /var/log/{wtmp,lastlog} at boot

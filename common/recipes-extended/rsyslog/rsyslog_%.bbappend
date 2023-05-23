@@ -11,3 +11,10 @@ SRC_URI += " \
         'file://0001-initd-use-flock-on-start-stop-daemon.patch;patchdir=${WORKDIR}', \
         d)} \
 "
+
+do_install:append() {
+    # Force rsyslog to create a PID file so that logrotate works correctly.
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+        sed -i -e 's@-iNONE@-i/var/run/rsyslogd.pid@' ${D}${base_libdir}/systemd/system/rsyslog.service
+    fi
+}

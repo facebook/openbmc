@@ -737,8 +737,6 @@ pim_thresh_array_init(uint8_t fru) {
   int i = 0;
   int type;
 
-  syslog(LOG_WARNING,
-            "pim_thresh_array_init: PIM %d init threshold array", fru - FRU_PIM1 + 1);
   switch (fru) {
     case FRU_PIM1:
     case FRU_PIM2:

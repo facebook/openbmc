@@ -1252,7 +1252,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-//{                      SensorName,      ID,       FUNCTION, PWR_STATUS, {   LNR,    LCR,   LNC,    UNC,    UCR,     UNR,  Pos, Neg}, Unit}
+//{                      SensorName,      ID, FUNCTION,      PWR_STATUS, {   LNR,    LCR,   LNC,    UNC,    UCR,     UNR,  Pos, Neg}, Unit}
   {"BB_HSC_PEAK_OUTPUT_CURR_A"     , HSC_ID0, read_hsc_peak_iout ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, CURR}, //0xC8
   {"BB_HSC_PEAK_INPUT_PWR_W"       , HSC_ID0, read_hsc_peak_pin  ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, POWER}, //0xC9
   {"BB_FAN_PWR_W"                  ,    0xCA, read_cached_val    ,    0, {     0,      0,     0,      0,201.465,  544.88,    0,   0}, POWER}, //0xCA
@@ -1270,8 +1270,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BB_ADC_P3V3_RGM_STBY_VOLT_V"   ,   ADC13, read_adc_val       ,    0, {     0,  3.036, 3.069,  3.531,  3.564,       0,    0,   0}, VOLT}, //0xD6
   {"BB_ADC_P5V_USB_VOLT_V"         ,    ADC4, read_adc_val       ,    0, {  4.15,    4.6,  4.65,   5.35,    5.4,    5.65,    0,   0}, VOLT}, //0xD7
   {"BB_ADC_P3V3_NIC_VOLT_V"        ,   ADC14, read_adc_val       ,    0, {  2.95,   2.97, 3.003,  3.597,  3.630,   3.729,    0,   0}, VOLT}, //0xD8
-  {"BB_MEDUSA_VSENSE_VDELTA_MAX_V" ,    0xD9, read_medusa_adc_val,    0, {     0,      0,     0,      0,    0.5,       0,    0,   0}, VOLT}, //0xD9
-  {"BB_MEDUSA_GND_SENSE_VDELTA_MAX_V",    0xDA, read_medusa_adc_val,    0, {     0,      0,     0,      0,    0.5,       0,    0,   0}, VOLT}, //0xDA
+  {"BB_MEDUSA_VSENSE_VDELTA_V"     ,    0xD9, read_medusa_adc_val,    0, {     0,      0,     0,      0,   0.34,       0,    0,   0}, VOLT}, //0xD9
+  {"BB_MEDUSA_GND_SENSE_VDELTA_V"  ,    0xDA, read_medusa_adc_val,    0, {     0,      0,     0,      0,    0.4,       0,    0,   0}, VOLT}, //0xDA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDD
@@ -2421,8 +2421,6 @@ static int
 read_medusa_adc_val(uint8_t snr_number, float *value) {
   char chip[32] = {0};
   static char medusa_adc_type[16] = {0};
-  static float max_value = 0;
-  static float gnd_max_value = 0;
   static bool is_cached = false;
   int ret = READING_NA;
   int i = 0;
@@ -2449,24 +2447,14 @@ read_medusa_adc_val(uint8_t snr_number, float *value) {
 
   switch(snr_number) {
     case BMC_SENSOR_MEDUSA_VSENSE_VDELTA_MAX:
-      ret = sensors_read(chip, "BB_MEDUSA_VSENSE_VDELTA_MAX", value);
-      if (max_value > abs(*value)) {
-        *value = max_value;
-      } else {
-        max_value = abs(*value);
-      }
+      ret = sensors_read(chip, "BB_MEDUSA_VSENSE_VDELTA_V", value);
       break;
     case BMC_SENSOR_MEDUSA_GND_SENSE_VDELTA_MAX:
       if (strncmp(medusa_adc_type, medusa_adc_list[MEDUSA_ADC_INA238_GND].chip_name, sizeof(medusa_adc_type)) == 0) {
         snprintf(chip, sizeof(chip), "%s-i2c-11-%x",
           medusa_adc_list[MEDUSA_ADC_INA238_GND].driver, medusa_adc_list[MEDUSA_ADC_INA238_GND].target_addr);
       }
-      ret = sensors_read(chip, "BB_MEDUSA_GND_SENSE_VDELTA_MAX", value);
-      if (gnd_max_value > abs(*value)) {
-        *value = gnd_max_value;
-      } else {
-        gnd_max_value = abs(*value);
-      }
+      ret = sensors_read(chip, "BB_MEDUSA_GND_SENSE_VDELTA_V", value);
       break;
   }
 

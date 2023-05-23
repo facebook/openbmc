@@ -680,7 +680,7 @@ handle_get_link_status(NCSI_Response_Packet *resp)
     i += nwrite;
     nleft -= nwrite;
     nwrite = snprintf(logbuf + i, nleft, "OEM:0x%lx ", (unsigned long)ntohl(linkresp->oem_link_status));
-    syslog(LOG_WARNING, "%s", logbuf);
+    syslog(LOG_INFO, "%s", logbuf);
     prevLinkStatus = currentLinkStatus;
   }
   return 0;
@@ -707,7 +707,7 @@ handle_get_version_id(NCSI_Response_Packet *resp)
   if (memcmp(vidresp->fw_ver, nic_fw_ver, sizeof(nic_fw_ver))) {
     lseek(fd, 0, SEEK_SET);
     if (write(fd, vidresp, sizeof(Get_Version_ID_Response)) == sizeof(Get_Version_ID_Response)) {
-      syslog(LOG_WARNING, "updated %s", NIC_FW_VER_PATH);
+      syslog(LOG_INFO, "updated %s", NIC_FW_VER_PATH);
     }
   }
   close(fd);

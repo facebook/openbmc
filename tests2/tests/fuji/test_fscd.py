@@ -17,22 +17,27 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import re
 import time
 import unittest
-import re
 
 from common.base_fscd_test import BaseFscdTest
-from tests.fuji.helper.libpal import pal_get_board_rev, BoardRevision
+from tests.fuji.helper.libpal import BoardRevision, pal_get_board_rev
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import qemu_check
+from utils.test_utils import fscd_config_dir, fscd_test_data_dir, qemu_check
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FscdTest(BaseFscdTest, unittest.TestCase):
-
-    TEST_DATA_PATH = "/usr/local/bin/tests2/tests/fuji/test_data/fscd"
+    TEST_DATA_PATH = None
     DEFAULT_TEMP = 26000
+
+    def setUp(self, config=None, test_data_path=None):
+        self.TEST_DATA_PATH = "{}/fuji/test_data/fscd".format(
+            fscd_test_data_dir("fuji")
+        )
+        super().setUp(config, test_data_path)
 
     def power_host_on(self):
         retry = 5
@@ -129,14 +134,15 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
 
 
 class FscdTestPwmFuji(FscdTest):
+
+    TEST_CONFIG_PATH = "{}/fuji/test_data/fscd".format(fscd_config_dir())
+
     def setUp(self):
         self.brd_rev = pal_get_board_rev()
         if self.brd_rev is None:
-            self.brd_rev = "Undefined" # This problem should be fixed in libpal after figuring out all the board revisions and their corresponding platforms.
-            Logger.info(
-                "[FSCD Testing] got undefined platform. Running test anyway."
-            )
-        if re.search(r'EVT[1-3]', self.brd_rev):
+            self.brd_rev = "Undefined"  # This problem should be fixed in libpal after figuring out all the board revisions and their corresponding platforms.
+            Logger.info("[FSCD Testing] got undefined platform. Running test anyway.")
+        if re.search(r"EVT[1-3]", self.brd_rev):
             Logger.info(
                 "[FSCD Testing] skip fscd test on {} platform".format(self.brd_rev)
             )
@@ -149,12 +155,11 @@ class FscdTestPwmFuji(FscdTest):
                 )
             )
 
-
         # Backup original config
         run_shell_cmd("cp /etc/fsc/zone.fsc /etc/fsc/zone.fsc.orig")
         # Overwrite fscd config
-        run_shell_cmd("cp {}/zone.fsc /etc/fsc/zone.fsc".format(super().TEST_DATA_PATH))
-        super().setUp(config=config_file, test_data_path=super().TEST_DATA_PATH)
+        run_shell_cmd("cp {}/zone.fsc /etc/fsc/zone.fsc".format(self.TEST_CONFIG_PATH))
+        super().setUp(config=config_file, test_data_path=self.TEST_CONFIG_PATH)
 
     def tearDown(self):
         # Recover original config

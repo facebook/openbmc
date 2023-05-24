@@ -34,7 +34,7 @@ class OpenBMCTester:
     def __init__(self, hostname, platform):
         self.platform = platform
         self.hostname = hostname
-        self.bmc_start_dir = "/usr/local/bin/tests2"
+        self.bmc_start_dir = "/run/tests2"
 
 
 def arg_parse():

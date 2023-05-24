@@ -22,7 +22,7 @@
     "profiles": {
       "linear_inlet": {
         "read_source" : {
-          "sysfs" : "/usr/local/bin/tests2/tests/cloudripper/test_data/fscd/inlet/temp1_input",
+          "sysfs" : "/run/tests2/tests/cloudripper/test_data/fscd/inlet/temp1_input",
           "offset_table": []
         },
         "read_limit": {
@@ -66,7 +66,7 @@
       },
       "linear_switch": {
         "read_source" : {
-          "sysfs" : "/usr/local/bin/tests2/tests/cloudripper/test_data/fscd/switch/temp1_input"
+          "sysfs" : "/run/tests2/tests/cloudripper/test_data/fscd/switch/temp1_input"
         },
         "read_limit": {
           "valid": {
@@ -93,7 +93,7 @@
       },
       "linear_userver": {
         "read_source" : {
-          "sysfs" : "/usr/local/bin/tests2/tests/cloudripper/test_data/fscd/userver/temp1_input"
+          "sysfs" : "/run/tests2/tests/cloudripper/test_data/fscd/userver/temp1_input"
         },
         "read_limit": {
           "alarm_major": {
@@ -115,7 +115,7 @@
       "JSON_MAX_TEMP": {
         "fru" : "scm",
         "read_source" : {
-          "sysfs" : "/usr/local/bin/tests2/tests/cloudripper/test_data/fscd/json-max/temp1_input"
+          "sysfs" : "/run/tests2/tests/cloudripper/test_data/fscd/json-max/temp1_input"
         },
         "type": "incrementpid",
         "setpoint": 65,

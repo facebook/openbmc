@@ -20,7 +20,7 @@
   "profiles": {
     "linear_inlet": {
       "read_source" : {
-        "sysfs" : "/usr/local/bin/tests2/tests/yamp/test_data/fscd/inlet/temp2_input"
+        "sysfs" : "/run/tests2/tests/yamp/test_data/fscd/inlet/temp2_input"
       },
       "read_limit": {
         "valid": {
@@ -53,7 +53,7 @@
     },
     "linear_th3": {
       "read_source" : {
-        "sysfs" : "/usr/local/bin/tests2/tests/yamp/test_data/fscd/th3/temp2_input"
+        "sysfs" : "/run/tests2/tests/yamp/test_data/fscd/th3/temp2_input"
       },
       "read_limit": {
         "valid": {

@@ -23,6 +23,10 @@ import re
 import subprocess
 
 from utils.cit_logger import Logger
+from utils.shell_util import run_shell_cmd
+
+run_test_dir = "/run/tests2/"
+usr_test_dir = "/usr/local/bin/tests2"
 
 
 def check_fru_availability(fru: str) -> bool:
@@ -74,7 +78,10 @@ def check_board_product(fru: str = None, product: str = None) -> bool:
 
 
 def qemu_check():
-    return os.path.exists("/usr/local/bin/tests2/dummy_qemu")
+    if os.path.exists(run_test_dir):
+        return os.path.exists("{}/dummy_qemu".format(run_test_dir))
+    else:
+        return os.path.exists("{}/dummy_qemu".format(usr_test_dir))
 
 
 def mac_verify(mac):
@@ -102,3 +109,49 @@ def read_data_from_filepath(path):
 
 def running_systemd():
     return "systemd" in os.readlink("/proc/1/exe")
+
+
+def tests_dir():
+    if os.path.exists(run_test_dir):
+        return "{}/tests/".format(run_test_dir)
+    else:
+        return "{}/tests/".format(usr_test_dir)
+
+
+# TODO: Stop gap solution. After D45972779 commit, this will be replaced
+# by tests_dir()
+def fscd_test_data_dir(platform):
+    if not os.path.exists("{}/tests/".format(run_test_dir)):
+        run_shell_cmd(
+            "mkdir -p {}/tests/{}/test_data/fscd/userver".format(run_test_dir, platform)
+        )
+        run_shell_cmd(
+            "mkdir -p {}/tests/{}/test_data/fscd/switch".format(run_test_dir, platform)
+        )
+        run_shell_cmd(
+            "mkdir -p {}/tests/{}/test_data/fscd/intake".format(run_test_dir, platform)
+        )
+        run_shell_cmd(
+            "mkdir -p {}/tests/{}/test_data/fscd/outlet".format(run_test_dir, platform)
+        )
+        run_shell_cmd(
+            "mkdir -p {}/tests/{}/test_data/fscd/json-max".format(
+                run_test_dir, platform
+            )
+        )
+        run_shell_cmd(
+            "mkdir -p {}/tests/{}/test_data/fscd/th3".format(run_test_dir, platform)
+        )
+        run_shell_cmd(
+            "mkdir -p {}/tests/{}/test_data/fscd/inlet".format(run_test_dir, platform)
+        )
+    return "{}/tests/".format(run_test_dir)
+
+
+# TODO: Stop gap solution. After D45972779 commit, this will be replaced
+# by tests_dir()
+def fscd_config_dir():
+    if os.path.exists("{}/cit_runner.py".format(run_test_dir)):
+        return "{}/tests/".format(run_test_dir)
+    else:
+        return "{}/tests/".format(usr_test_dir)

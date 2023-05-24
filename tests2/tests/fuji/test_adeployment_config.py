@@ -25,14 +25,15 @@
 
 import unittest
 
-
 from common.base_deployment_config_test import DeploymentConfig
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import qemu_check
+from utils.test_utils import fscd_config_dir, qemu_check
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class DeploymentConfigTest(DeploymentConfig, unittest.TestCase):
+    TEST_CONFIG_PATH = "{}/fuji/test_data/config".format(fscd_config_dir())
+
     def get_device_config(self):
         return run_shell_cmd("presence_util.sh").strip()
 
@@ -47,13 +48,11 @@ class DeploymentConfigTest(DeploymentConfig, unittest.TestCase):
 
         if ptype == "PSU48":
             platform_config_files = [
-                "/usr/local/bin/tests2/tests/fuji/test_data/config/fuji_dc_4pims",
-                "/usr/local/bin/tests2/tests/fuji/test_data/config/fuji_dc_5pims",
+                "{}/fuji_dc_4pims".format(self.TEST_CONFIG_PATH),
+                "{}/fuji_dc_5pims".format(self.TEST_CONFIG_PATH),
             ]
         elif ptype == "PSU":
-            platform_config_files = [
-                "/usr/local/bin/tests2/tests/fuji/test_data/config/fuji"
-            ]
+            platform_config_files = ["{}/fuji".format(self.TEST_CONFIG_PATH)]
         else:
             Logger.error("PSU Eeprom is not programmed !!! ")
 

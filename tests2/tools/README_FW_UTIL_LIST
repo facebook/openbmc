@@ -1,7 +1,7 @@
 How to get fw-util FRU/Components list
 1. On your devserver in the ~/local/openbmc directory, run the following command:
-scp -r tests2 <your OpenBMC>:/usr/local/bin
-2. On your OpenBMC in the /usr/local/bin/tests2/tools director, run the
+scp -r tests2 <your OpenBMC>:/run
+2. On your OpenBMC in the /run/tests2/tools director, run the
 follwing command:
 python gen_fw_util_list.py --json-format
-3. This tools will then create a json file contain fw-util FRU/Components infomration in file: /usr/local/bin/tests2/tools/fw_util_list.json
+3. This tools will then create a json file contain fw-util FRU/Components infomration in file: /run/tests2/tools/fw_util_list.json

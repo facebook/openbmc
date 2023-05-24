@@ -24,14 +24,19 @@ from common.base_fscd_test import BaseFscdTest
 from tests.wedge400.helper.libpal import pal_get_board_type
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import qemu_check
+from utils.test_utils import fscd_config_dir, fscd_test_data_dir, qemu_check
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FscdTest(BaseFscdTest, unittest.TestCase):
-
-    TEST_DATA_PATH = "/usr/local/bin/tests2/tests/wedge400/test_data/fscd"
+    TEST_DATA_PATH = None
     DEFAULT_TEMP = 28000
+
+    def setUp(self, config=None, test_data_path=None):
+        self.TEST_DATA_PATH = "{}/wedge400/test_data/fscd".format(
+            fscd_test_data_dir("wedge400")
+        )
+        super().setUp(config, test_data_path)
 
     def power_host_on(self):
         retry = 5
@@ -129,6 +134,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
 
 class FscdTestPwm(FscdTest):
     brd_type = None
+    TEST_CONFIG_PATH = "{}/wedge400/test_data/fscd".format(fscd_config_dir())
 
     def setUp(self):
         self.brd_type = pal_get_board_type()
@@ -146,10 +152,10 @@ class FscdTestPwm(FscdTest):
             # Overwrite fscd config
             run_shell_cmd(
                 "cp {}/zone-w400.fsc /etc/fsc/zone-w400.fsc".format(
-                    super().TEST_DATA_PATH
+                    self.TEST_CONFIG_PATH
                 )
             )
-            super().setUp(config=config_file, test_data_path=super().TEST_DATA_PATH)
+            super().setUp(config=config_file, test_data_path=self.TEST_CONFIG_PATH)
         elif self.brd_type == "Wedge400C":
             config_file = "fsc-config-wedge400c.json"
             Logger.info(
@@ -162,10 +168,10 @@ class FscdTestPwm(FscdTest):
             # Overwrite fscd config
             run_shell_cmd(
                 "cp {}/zone-w400c.fsc /etc/fsc/zone-w400c.fsc".format(
-                    super().TEST_DATA_PATH
+                    self.TEST_CONFIG_PATH
                 )
             )
-            super().setUp(config=config_file, test_data_path=super().TEST_DATA_PATH)
+            super().setUp(config=config_file, test_data_path=self.TEST_CONFIG_PATH)
         else:
             self.fail("Invalid platform!")
 

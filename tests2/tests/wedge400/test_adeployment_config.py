@@ -28,9 +28,9 @@ import unittest
 from common.base_deployment_config_test import DeploymentConfig
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import qemu_check
+from utils.test_utils import fscd_config_dir, qemu_check
 
-CONFIG_DIR = "/usr/local/bin/tests2/tests/wedge400/test_data/config/"
+CONFIG_DIR = "{}/wedge400/test_data/config/".format(fscd_config_dir())
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")

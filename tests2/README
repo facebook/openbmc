@@ -4,7 +4,7 @@ CITv2 is based on Python unittest framework that can help standardize test decis
 How to use it ?
 --------------------------------------------------------------------------
 1) Load BMC image on target that supports python unittest
-2) SCP the whole tests2 folder to target /usr/local/bin
+2) SCP the whole tests2 folder to target /run
 3) To invoke tests, use the runner:
 # python cit_runner.py --help
 usage: cit_runner.py [-h] [--list-tests] [--platform {wedge,wedge100}]
@@ -19,7 +19,7 @@ optional arguments:
                         tests.wedge100.test_eeprom.EepromTest.test_odm_pcb
   --start-dir START_DIR
                         Path for where test discovery should start default:
-                        /usr/local/bin/tests2/tests/
+                        /run/tests2/tests/
    -c, --cli-logging    To log all cli being called during the CIT run. The output
                         will be stored at /tmp/cli.txt
 
@@ -107,8 +107,8 @@ How to use CIT for firmware upgrade test? The commands example assume user is in
 root openBMC code repo.
 -------------------------------------------------------------------------------
 1- Flash the BMC image (must support python unittest) that you want to use for testing on the box.
-2- scp test2 folder to target /usr/local/bin
-   Ex: scp -r test2 <target-bmc-unit-IP>:/usr/local/bin/
+2- scp test2 folder to target /run
+   Ex: scp -r test2 <target-bmc-unit-IP>:/run/
 3- scp tools/fw_upgrade folder to target /tmp/
    Ex: scp -r tools/fw_upgrade <target-bmc-unit-IP>:/tmp/fw_upgrade/
 4- scp all the firmware binaries to target /tmp/fw_upgrade/

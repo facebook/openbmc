@@ -23,12 +23,18 @@ import unittest
 from common.base_fscd_test import BaseFscdTest
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import fscd_config_dir, fscd_test_data_dir
 
 
 class FscdTest(BaseFscdTest, unittest.TestCase):
-
-    TEST_DATA_PATH = "/usr/local/bin/tests2/tests/wedge100/test_data/fscd"
+    TEST_DATA_PATH = None
     DEFAULT_TEMP = 23000
+
+    def setUp(self, config=None, test_data_path=None):
+        self.TEST_DATA_PATH = "{}/wedge100/test_data/fscd".format(
+            fscd_test_data_dir("wedge100")
+        )
+        super().setUp(config, test_data_path)
 
     def power_host_on(self):
         retry = 5
@@ -121,9 +127,11 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
 
 
 class FscdTestPwm(FscdTest):
+    TEST_CONFIG_PATH = "{}/wedge100/test_data/fscd".format(fscd_config_dir())
+
     def setUp(self):
         super().setUp(
-            config="fsc-config-test1.json", test_data_path=super().TEST_DATA_PATH
+            config="fsc-config-test1.json", test_data_path=self.TEST_CONFIG_PATH
         )
 
     def test_fscd_intake_23_duty_cycle_38(self):

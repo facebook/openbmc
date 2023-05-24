@@ -1,8 +1,8 @@
 How to Get List of GPIOs:
 1. On your devserver in the ~/local/openbmc directory, run the following command:
-scp -r tests2 <your OpenBMC>:/usr/local/bin
-2. On your OpenBMC in the /usr/local/bin/tests2/tools director, run the
+scp -r tests2 <your OpenBMC>:/run
+2. On your OpenBMC in the /run/tests2/tools director, run the
 follwing command:
 python gen_gpio_list.py --json-format -d out
-3. Open the file named "out" located in /usr/local/bin/tests2/tools in a text
+3. Open the file named "out" located in /run/tests2/tools in a text
 editor. This file will contain a list of the GPIOs and their details

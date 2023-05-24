@@ -19,7 +19,7 @@
   "profiles": {
     "linear_userver": {
       "read_source" : {
-        "sysfs" : "/usr/local/bin/tests2/tests/wedge100/test_data/fscd/userver/temp1_input"
+        "sysfs" : "/run/tests2/tests/wedge100/test_data/fscd/userver/temp1_input"
 
       },
       "read_limit": {
@@ -45,7 +45,7 @@
     },
     "linear_switch": {
       "read_source" : {
-        "sysfs" : "/usr/local/bin/tests2/tests/wedge100/test_data/fscd/switch/temp1_input"
+        "sysfs" : "/run/tests2/tests/wedge100/test_data/fscd/switch/temp1_input"
       },
       "read_limit": {
         "valid": {
@@ -70,7 +70,7 @@
     },
     "linear_intake": {
       "read_source" : {
-        "sysfs" : "/usr/local/bin/tests2/tests/wedge100/test_data/fscd/intake/temp1_input"
+        "sysfs" : "/run/tests2/tests/wedge100/test_data/fscd/intake/temp1_input"
       },
       "read_limit": {
         "valid": {
@@ -95,7 +95,7 @@
     },
     "linear_outlet": {
       "read_source" : {
-        "sysfs" : "/usr/local/bin/tests2/tests/wedge100/test_data/fscd/outlet/temp1_input"
+        "sysfs" : "/run/tests2/tests/wedge100/test_data/fscd/outlet/temp1_input"
       },
       "read_limit": {
         "valid": {

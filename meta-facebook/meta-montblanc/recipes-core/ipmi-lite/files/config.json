@@ -10,6 +10,11 @@
             "name" : "max_slot_num" ,
             "type": "number",
             "val" : 1
+        },
+        {
+            "name" : "sysfw_ver_server" ,
+            "type": "kv-access",
+            "comment" : "COMe BIOS version"
         }
     ]
 }

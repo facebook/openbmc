@@ -154,6 +154,9 @@ gpio_set FM_JTAG_BMC_MUX_SEL_R1 0
 sgpio_export FM_SMB_RT_ROM_SEL 29
 gpio_set FM_SMB_RT_ROM_SEL 0
 
+sgpio_export NV_DUMP_END 33
+gpio_set NV_DUMP_END 0
+
 sgpio_export FM_BIOS_DEBUG_EN_N 41
 gpio_set FM_BIOS_DEBUG_EN_N 1
 

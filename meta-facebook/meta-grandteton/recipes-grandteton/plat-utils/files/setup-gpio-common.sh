@@ -310,9 +310,6 @@ gpio_set RST_BMC_RSTBTN_OUT_R_N 1
 sgpio_export BMC_READY_N 23
 gpio_set BMC_READY_N 1
 
-sgpio_export NV_DUMP_END 31
-gpio_set NV_DUMP_END 0
-
 sgpio_export FM_BMC_SGPIO_READY_N 37
 
 sgpio_export GPU_NVS_PWR_BRAKE_R_N 43

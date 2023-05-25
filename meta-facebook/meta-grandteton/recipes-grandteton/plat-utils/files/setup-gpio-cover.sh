@@ -171,6 +171,8 @@ gpio_set IRQ_BMC_PCH_NMI_N 1
 sgpio_export BMC_FORCE_NM_THROTTLE_N 29
 gpio_set BMC_FORCE_NM_THROTTLE_N 1
 
+sgpio_export NV_DUMP_END 31
+gpio_set NV_DUMP_END 0
 
 #sgpio_export RST_RSMRST_R_N 33
 

@@ -26,48 +26,47 @@ from utils.test_utils import qemu_check
 class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "all"
 
-    @unittest.skip("not available")
-    def test_log_clear(self):
-        pass
 
-
-class SMBLogUtilTest(AllLogUtilTest):
+class SMBLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "smb"
 
+    def set_fru_id(self):
+        self.FRU_ID = pal_get_fru_id(self.FRU)
 
-class SCMLogUtilTest(AllLogUtilTest):
+
+class SCMLogUtilTest(SMBLogUtilTest):
     FRU = "scm"
 
 
-class FAN1LogUtilTest(AllLogUtilTest):
+class FAN1LogUtilTest(SMBLogUtilTest):
     FRU = "fan1"
 
 
-class FAN2LogUtilTest(AllLogUtilTest):
+class FAN2LogUtilTest(SMBLogUtilTest):
     FRU = "fan2"
 
 
-class FAN3LogUtilTest(AllLogUtilTest):
+class FAN3LogUtilTest(SMBLogUtilTest):
     FRU = "fan3"
 
 
-class FAN4LogUtilTest(AllLogUtilTest):
+class FAN4LogUtilTest(SMBLogUtilTest):
     FRU = "fan4"
 
 
-class PSU1LogUtilTest(AllLogUtilTest):
+class PSU1LogUtilTest(SMBLogUtilTest):
     FRU = "psu1"
 
 
-class PSU2LogUtilTest(AllLogUtilTest):
+class PSU2LogUtilTest(SMBLogUtilTest):
     FRU = "psu2"
 
 
-class PEM1LogUtilTest(AllLogUtilTest):
+class PEM1LogUtilTest(SMBLogUtilTest):
     FRU = "pem1"
 
 
-class PEM2LogUtilTest(AllLogUtilTest):
+class PEM2LogUtilTest(SMBLogUtilTest):
     FRU = "pem2"
 
 

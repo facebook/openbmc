@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-from ctypes import CDLL, byref, c_uint8
+from ctypes import CDLL, byref, c_uint8, pointer, c_char_p
 import subprocess
 
 # When tests are discovered out of BMC there is no libpal
@@ -123,3 +123,15 @@ def pal_detect_come_bootup(timeout=300):
         return 1
     else:
         return 0
+
+
+def pal_get_fru_id(fru_name: str) -> int:
+    """Given a FRU name, return the corresponding fru id"""
+    c_fru_name = c_char_p(fru_name.encode("utf-8"))  # noqa
+    c_fru_id = c_uint8(0)
+
+    ret = lpal_hndl.pal_get_fru_id(c_fru_name, pointer(c_fru_id))
+    if ret != 0:
+        raise ValueError("Invalid FRU name: " + repr(fru_name))
+
+    return c_fru_id.value

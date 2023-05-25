@@ -20,69 +20,69 @@
 import unittest
 
 from common.base_log_util_test import BaseLogUtilTest
+from tests.fuji.helper.libpal import pal_get_fru_id
 
 
 class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "all"
 
-    @unittest.skip("not available")
-    def test_log_clear(self):
-        pass
 
-
-class SMBLogUtilTest(AllLogUtilTest):
+class SMBLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "smb"
 
+    def set_fru_id(self):
+        self.FRU_ID = pal_get_fru_id(self.FRU)
 
-class SCMLogUtilTest(AllLogUtilTest):
+
+class SCMLogUtilTest(SMBLogUtilTest):
     FRU = "scm"
 
 
-class PIM1LogUtilTest(AllLogUtilTest):
+class PIM1LogUtilTest(SMBLogUtilTest):
     FRU = "pim1"
 
 
-class PIM2LogUtilTest(AllLogUtilTest):
+class PIM2LogUtilTest(SMBLogUtilTest):
     FRU = "pim2"
 
 
-class PIM3LogUtilTest(AllLogUtilTest):
+class PIM3LogUtilTest(SMBLogUtilTest):
     FRU = "pim3"
 
 
-class PIM4LogUtilTest(AllLogUtilTest):
+class PIM4LogUtilTest(SMBLogUtilTest):
     FRU = "pim4"
 
 
-class PIM5LogUtilTest(AllLogUtilTest):
+class PIM5LogUtilTest(SMBLogUtilTest):
     FRU = "pim5"
 
 
-class PIM6LogUtilTest(AllLogUtilTest):
+class PIM6LogUtilTest(SMBLogUtilTest):
     FRU = "pim6"
 
 
-class PIM7LogUtilTest(AllLogUtilTest):
+class PIM7LogUtilTest(SMBLogUtilTest):
     FRU = "pim7"
 
 
-class PIM8LogUtilTest(AllLogUtilTest):
+class PIM8LogUtilTest(SMBLogUtilTest):
     FRU = "pim8"
 
 
-class PSU1LogUtilTest(AllLogUtilTest):
+class PSU1LogUtilTest(SMBLogUtilTest):
     FRU = "psu1"
 
 
-class PSU2LogUtilTest(AllLogUtilTest):
+class PSU2LogUtilTest(SMBLogUtilTest):
     FRU = "psu2"
 
 
-class PSU3LogUtilTest(AllLogUtilTest):
+class PSU3LogUtilTest(SMBLogUtilTest):
     FRU = "psu3"
 
 
-class PSU4LogUtilTest(AllLogUtilTest):
+class PSU4LogUtilTest(SMBLogUtilTest):
     FRU = "psu4"
 
 

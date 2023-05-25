@@ -100,7 +100,7 @@ i2c_open(uint8_t bus, uint8_t addr) {
  * N is a 5 bit, two's complement integer.
  */
 static float
-linear_convert(uint8_t value[]) {
+linear_convert(const uint8_t value[]) {
   uint16_t data = (value[1] << 8) | value[0];
   int y = 0, n = 0;
   float x = 0;
@@ -283,7 +283,16 @@ delta_img_hdr_parse(const char *file_path) {
     printf("MCU: unknown number 0x%x\n", delta_hdr.uc);
     ret = -1;
   }
-  printf("Ver: %d.%d\n", delta_hdr.app_fw_major, delta_hdr.app_fw_minor);
+  
+  if( delta_hdr.uc == 0xff ){
+    printf("Pri Ver: %d.%d\n", delta_hdr.app_fw_major, delta_hdr.app_fw_minor);
+    printf("Sec Ver: %d.%d\n", delta_hdr.bl_fw_major, delta_hdr.bl_fw_minor);
+  }
+  else{
+    printf("Ver: %d.%d\n", delta_hdr.app_fw_major, delta_hdr.app_fw_minor);
+  }
+  printf("Transmit: %d bytes\n", delta_hdr.byte_per_blk);
+  printf("Block size: %d\n", delta_hdr.blk_per_page);
   close(fd_file);
 
   return ret;
@@ -332,10 +341,12 @@ delta_fw_transmit(uint8_t num, const char *path) {
   uint16_t block_size = delta_hdr.blk_per_page;
   uint16_t page_num_max = delta_hdr.page_end;
   uint32_t fw_block = block_size * (page_num_max - page_num_lo + 1);
-  uint8_t block[I2C_SMBUS_BLOCK_MAX] = {0};
-  uint8_t fw_buf[16];
+  uint8_t data[delta_hdr.byte_per_blk + 7];
+  uint8_t fw_buf[delta_hdr.byte_per_blk];
   uint8_t *fw_data = NULL;
+  uint8_t pec;
   int ret = 0;
+  memset(&data[0], 0, sizeof(data));
 
   fw_len = check_file_len(path);
   if (fw_len < 0) {
@@ -370,7 +381,6 @@ delta_fw_transmit(uint8_t num, const char *path) {
     ret = -1;
     goto exit;
   }
-
   if (delta_hdr.uc == 0x10) {
     printf("-- Transmit Primary Firmware --\n");
   } else if (delta_hdr.uc == 0x20){
@@ -380,29 +390,46 @@ delta_fw_transmit(uint8_t num, const char *path) {
   }
 
   while (block_total <= fw_block) {
-    block[0] = delta_hdr.uc;
+    data[0] = psu[num].pmbus_addr << 1;
+    data[3] = delta_hdr.uc;
+    pec = 0;
 
-    /* block[1] - Block Num LO
-       block[2] - Block Num HI */
-    if (block[1] < block_size) {
-      memcpy(&fw_buf[0], &fw_data[byte_index], 16);
-      memcpy(&block[3], &fw_buf, 16);
-      i2c_smbus_write_block_data(psu[num].fd, DATA_TO_RAM,
-                                      19, block);
-      if (delta_hdr.uc == 0x10) {
-        msleep(25);
-      } else if (delta_hdr.uc == 0x20) {
-        msleep(5);
-      } else if (delta_hdr.uc == 0xff) {
-        msleep(5);
+    /* block[4] - Block Num LO
+       block[5] - Block Num HI */
+    if (data[4] < block_size) {
+      data[1] = DATA_TO_RAM;
+      data[2] = delta_hdr.byte_per_blk + 3;
+      memcpy(&fw_buf[0], &fw_data[byte_index], delta_hdr.byte_per_blk);
+      memcpy(&data[6], &fw_buf, delta_hdr.byte_per_blk);
+      for (int k = 0; k < sizeof(data) - 1; k++){
+        pec = pec_calc(pec, data[k]);
+      }
+      data[ delta_hdr.byte_per_blk + 6 ] = pec;
+      i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
+                          &data[1], sizeof(data) - 1, NULL, 0);
+
+      /* 0xF2 delay */
+      if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL_DC, 
+          strlen(LITEON_MODEL_DC)) && delta_hdr.uc == 0xff) {
+          msleep(70);
+      }
+      else{
+        if (delta_hdr.uc == 0x10) {
+            msleep(25);
+        } else if (delta_hdr.uc == 0x20) {
+            msleep(5);
+        } else if (delta_hdr.uc == 0xff) {
+            msleep(5);
+        }
       }
 
-      block[1]++;
-      block[2] = 0;
+
+      data[4]++;
+      data[5] = 0;
       block_total++;
-      byte_index = byte_index + 16;
-      printf("-- (%d/%d) (%d%%/100%%) --\r",
-                  block_total, fw_block, (100 * block_total) / fw_block);
+      byte_index += delta_hdr.byte_per_blk;
+      printf("-- (%d/%u) (%d%%/100%%) --\r",
+                  block_total, fw_block, (100 * block_total) / (int)fw_block);
 #ifdef DEBUG
       if (delta_boot_flag(num, BOOT_MODE, READ) & 0x20) {
         printf("-- FW transmission error --\n");
@@ -411,18 +438,32 @@ delta_fw_transmit(uint8_t num, const char *path) {
       }
 #endif
     } else {
-      block[1] = (page_num_lo & 0xff);
-      block[2] = ((page_num_lo >> 8) & 0xff);
-      i2c_smbus_write_block_data(psu[num].fd, DATA_TO_FLASH,
-                                      3, block);
-      msleep(90);
+      data[1] = DATA_TO_FLASH;
+      data[2] = 3;
+      data[4] = (page_num_lo & 0xff);
+      data[5] = ((page_num_lo >> 8) & 0xff);
+      for (int k = 0; k < 6; k++){
+        pec = pec_calc(pec, data[k]);
+      }
+      data[6] = pec;
+      i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
+                          &data[1], 6, NULL, 0);
+      /* 0xF3 delay */
+      if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL_DC, 
+          strlen(LITEON_MODEL_DC)) && delta_hdr.uc == 0xff) {
+            msleep(150);
+      }
+      else{
+            msleep(90);
+      }
+  
       if (page_num_lo == page_num_max) {
         printf("\n");
         goto exit;
       } else {
         page_num_lo++;
-        block[1] = 0;
-        block[2] = 0;
+        data[4] = 0;
+        data[5] = 0;
       }
     }
   }
@@ -457,8 +498,14 @@ update_delta_psu(uint8_t num, const char *file_path,
   }
   if (ret == DELTA_1500 || ret == LITEON_1500 || ret == DELTA_2000 ||
                            ret == LITEON_DC_48 || ret == DELTA_DC_48) {
-    if (delta_hdr.byte_per_blk != 16) {
-      printf("Image block size invalid!\n");
+    if (delta_hdr.byte_per_blk != 16 && 
+        (ret == DELTA_1500 || ret == DELTA_2000 || ret == DELTA_DC_48)) {
+      printf("Delta's image block size invalid!\n");
+      return UPDATE_SKIP;
+    }
+    if ((delta_hdr.byte_per_blk != 16 && delta_hdr.byte_per_blk != 32) &&
+        (ret == LITEON_1500 || ret == LITEON_DC_48)) {
+      printf("Liteon's image block size invalid!\n");
       return UPDATE_SKIP;
     }
 
@@ -466,15 +513,18 @@ update_delta_psu(uint8_t num, const char *file_path,
       ERR_PRINT("delta_img_hdr_parse()");
       return UPDATE_SKIP;
     }
-
+#ifdef DEBUG
+    printf("-- Debug mode --\n");
+#endif
     delta_unlock_upgrade(num);
-    msleep(20);
+    msleep(20); // 0xF0 delay
     delta_boot_flag(num, BOOT_MODE, WRITE);
-    msleep(2500);
+    msleep(2500); // 0xF1 delay
 #ifdef DEBUG
     ret = delta_boot_flag(num, BOOT_MODE, READ) & 0xf;
     if ((delta_hdr.uc == 0x10 && ret != 0x0c) ||
-        (delta_hdr.uc == 0x20 && ret != 0x0d)) {
+        (delta_hdr.uc == 0x20 && ret != 0x0d) ||
+        (delta_hdr.uc == 0xff && ret != 0x0f)){
       printf("-- Set Bootloader Mode Error --\n");
       return -1;
     }
@@ -484,15 +534,13 @@ update_delta_psu(uint8_t num, const char *file_path,
     }
 
     delta_crc_transmit(num);
-    msleep(1500);
-    delta_boot_flag(num, NORMAL_MODE, WRITE);
-
-    if (delta_hdr.uc == 0x10) {
-      msleep(4000);
-    } else if (delta_hdr.uc == 0x20) {
-      msleep(2000);
-    } else if (delta_hdr.uc == 0xff) {
-      msleep(22000);
+    /* 0xF4 delay */
+    if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL_DC, 
+        strlen(LITEON_MODEL_DC)) && delta_hdr.uc == 0xff) {
+        msleep(10000);
+      }
+    else{
+        msleep(1500);
     }
 #ifdef DEBUG
     ret = delta_boot_flag(num, BOOT_MODE, READ);
@@ -512,8 +560,25 @@ update_delta_psu(uint8_t num, const char *file_path,
         printf("-- Secondary CRC16 Application Checksum Wrong --\n");
         return -1;
       }
+    } else if ((ret & 0x7) == 0x7) {
+      if (ret & 0x80) {
+        printf("-- Pri and Sec FW Identifier Error --\n");
+        return -1;
+      } else if (ret & 0x40) {
+        printf("-- Pri and Sec CRC16 Application Checksum Wrong --\n");
+        return -1;
+      }
     }
 #endif
+    delta_boot_flag(num, NORMAL_MODE, WRITE);
+    /* 0xF1 delay */
+    if (delta_hdr.uc == 0x10) {
+      msleep(4000);
+    } else if (delta_hdr.uc == 0x20) {
+      msleep(2000);
+    } else if (delta_hdr.uc == 0xff) {
+      msleep(22000);
+    }
     printf("-- Upgrade Done --\n");
     return 0;
   } else {

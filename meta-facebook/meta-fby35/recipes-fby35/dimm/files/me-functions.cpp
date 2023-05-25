@@ -161,7 +161,7 @@ is_dimm_present(uint8_t slot_id, uint8_t dimm) {
   char key[MAX_KEY_SIZE] = {0};
   char value[MAX_VALUE_LEN] = {0};
 
-  snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_location", slot_id, cl_dimm_cache_id[0][dimm]);
+  snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_location", slot_id, dimm_cache_id[0][dimm]);
    if (kv_get(key, (char *)value, NULL, KV_FPERSIST) < 0) {
      return false;
    } else {

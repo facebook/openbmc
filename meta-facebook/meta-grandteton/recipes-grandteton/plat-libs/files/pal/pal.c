@@ -60,7 +60,6 @@
 #define NUM_NIC_FRU     2
 #define NUM_BMC_FRU     1
 
-#define PLDM_FRU_CAPABILITY "fru%d_capability"
 
 #define PSB_CONFIG_RAW "slot%d_psb_config_raw"
 
@@ -102,7 +101,7 @@ const char pal_server_list[] = "mb";
 // Artemis fru capability
 #define ACB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
 #define MEB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
-#define MEB_JCN_CAPABILITY FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
+#define MEB_CXL_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
 #define ACB_ACCL_CAPABILITY FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
 
 static bool is_fio_handler_running = false;
@@ -126,12 +125,6 @@ struct fru_dev_info {
   uint8_t path;
   bool (*check_presence) (uint8_t fru, uint8_t *status);
   int8_t pldm_fru_id;
-};
-
-struct meb_fru_name_info {
-  char *default_name;
-  char *cxl_name;
-  char *e1s_name;
 };
 
 typedef struct {
@@ -188,32 +181,20 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_ACB_ACCL10, "cb_accl10", "CB ACCL10 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_ACB_ACCL11, "cb_accl11", "CB ACCL11 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_ACB_ACCL12, "cb_accl12", "CB ACCL12 Card",   ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_ACCL_CAPABILITY,  FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN1,   "mc_jcn1",   "MC CXL8",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN2,   "mc_jcn2",   "MC CXL7",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN3,   "mc_jcn3",   "MC CXL6",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN4,   "mc_jcn4",   "MC CXL5",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN1,   "mc_cxl8",   "MC CXL8",          MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CXL_CAPABILITY, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN2,   "mc_cxl7",   "MC CXL7",          MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CXL_CAPABILITY, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN3,   "mc_cxl6",   "MC CXL6",          MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CXL_CAPABILITY, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN4,   "mc_cxl5",   "MC CXL5",          MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CXL_CAPABILITY, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN5,   "mc_jcn5",   "MC JCN5",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN6,   "mc_jcn6",   "MC JCN6",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN7,   "mc_jcn7",   "MC JCN7",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN8,   "mc_jcn8",   "MC JCN8",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_NONE,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN9,   "mc_jcn9",   "MC CXL3",          MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN10,  "mc_jcn10",  "MC CXL4",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN11,  "mc_jcn11",  "MC CXL1",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-  {FRU_MEB_JCN12,  "mc_jcn12",  "MC CXL2",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN9,   "mc_cxl3",   "MC CXL3",          MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CXL_CAPABILITY, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN10,  "mc_cxl4",   "MC CXL4",          MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CXL_CAPABILITY, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN11,  "mc_cxl1",   "MC CXL1",          MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CXL_CAPABILITY, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  {FRU_MEB_JCN12,  "mc_cxl2",   "MC CXL2",          MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CXL_CAPABILITY, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN13,  "mc_jcn13",  "MC JCN13",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN14,  "mc_jcn14",  "MC JCN14",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
-};
-
-// Todo: wait E1S mapping
-struct meb_fru_name_info meb_fru_name_map[] = {
-  [FRU_MEB_JCN1]  = { "mc_jcn1",  "mc_cxl8", "mc_jcn1"},
-  [FRU_MEB_JCN2]  = { "mc_jcn2",  "mc_cxl7", "mc_jcn2"},
-  [FRU_MEB_JCN3]  = { "mc_jcn3",  "mc_cxl6", "mc_jcn3"},
-  [FRU_MEB_JCN4]  = { "mc_jcn4",  "mc_cxl5", "mc_jcn4"},
-  [FRU_MEB_JCN9]  = { "mc_jcn9",  "mc_cxl3", "mc_jcn9"},
-  [FRU_MEB_JCN10] = { "mc_jcn10", "mc_cxl4", "mc_jcn10"},
-  [FRU_MEB_JCN11] = { "mc_jcn11", "mc_cxl1", "mc_jcn11"},
-  [FRU_MEB_JCN12] = { "mc_jcn12", "mc_cxl2", "mc_jcn12"},
 };
 
 uint8_t
@@ -283,57 +264,6 @@ pal_is_slot_server(uint8_t fru) {
 }
 
 int
-pal_get_meb_jcn_fru_name(uint8_t fru, char *name) {
-  uint8_t config = 0;
-
-  if (!name) {
-    syslog(LOG_WARNING, "%s() Name pointer is NULL.", __func__);
-    return -1;
-  }
-  if (fru < FRU_MEB_JCN1 || fru > FRU_MEB_JCN14) {
-    syslog(LOG_WARNING, "%s() invalid fru %u", __func__, fru);
-    return -1;
-  }
-  if ((fru >= FRU_MEB_JCN5 && fru <= FRU_MEB_JCN8) ||
-       fru == FRU_MEB_JCN13 || fru == FRU_MEB_JCN14) {
-    strcpy(name, fru_dev_data[fru].name);
-    return 0;
-  }
-
-  config = pal_get_meb_jcn_config(fru);
-  switch (config) {
-  case E1S_CARD:
-    strcpy(name, meb_fru_name_map[fru].e1s_name);
-    break;
-  case CXL_CARD:
-    strcpy(name, meb_fru_name_map[fru].cxl_name);
-    break;
-  default:
-    strcpy(name, meb_fru_name_map[fru].default_name);
-    break;
-  }
-
-  return 0;
-}
-
-int
-pal_get_meb_jcn_fruid(char *str, uint8_t *fru) {
-  for (int i = FRU_MEB_JCN1; i <= FRU_MEB_JCN12; i++) {
-    if (i >= FRU_MEB_JCN5 && i <= FRU_MEB_JCN8) {
-      continue;
-    }
-    if (!strcmp(str, meb_fru_name_map[i].default_name) ||
-        !strcmp(str, meb_fru_name_map[i].cxl_name) ||
-        !strcmp(str, meb_fru_name_map[i].e1s_name)) {
-       *fru = fru_dev_data[i].fru_id;
-       return 0;
-    }
-  }
-
-  return -1;
-}
-
-int
 pal_get_80port_lcc_page_record(uint8_t slot, uint8_t page_num, uint8_t *buf, size_t max_len, size_t *len) {
   char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
 
@@ -388,12 +318,6 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     return -1;
   }
 
-  if (pal_is_artemis() && strstr(str, "mc_") != NULL) {
-    if (pal_get_meb_jcn_fruid(str, fru) == 0) {
-      return 0;
-    }
-  }
-
   for(int i=0; i < FRU_CNT; i++) {
     if (!strcmp(str, fru_dev_data[i].name)) {
        *fru = fru_dev_data[i].fru_id;
@@ -414,13 +338,6 @@ pal_get_fru_name(uint8_t fru, char *name) {
   if (fru >= FRU_CNT) {
     syslog(LOG_WARNING, "%s(): Input fruid %d is invalid.", __func__, fru);
     return -1;
-  }
-
-  if (pal_is_artemis() && fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN14) {
-    if (pal_get_meb_jcn_fru_name(fru, name) < 0) {
-      return -1;
-    }
-    return 0;
   }
 
   strcpy(name, fru_dev_data[fru].name);
@@ -887,56 +804,6 @@ pal_get_sensor_util_timeout(uint8_t fru) {
 }
 
 int
-pal_get_pldm_fru_capability(uint8_t fru, unsigned int *caps) {
-  fru_status status = {0};
-  char key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
-
-  snprintf(key, sizeof(key), PLDM_FRU_CAPABILITY, fru);
-  if (kv_get(key, value, NULL, 0) == 0) {
-    *caps = atoi(value);
-    return 0;
-  }
-
-  // Board on JCN is dual type
-  if (pal_get_pldm_fru_status(fru, JCN_0_1, &status) < 0) {
-    syslog(LOG_WARNING, "%s() FRU: %d get pldm FRU present failed", __func__, fru);
-    return -1;
-  }
-
-  if (status.fru_prsnt == FRU_NOT_PRSNT) {
-    //syslog(LOG_WARNING, "%s() FRU: %d pldm FRU not present", __func__, fru);
-    *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL;
-    return 0;
-  }
-
-  switch(status.fru_type) {
-    case NIC_CARD:
-    case CXL_CARD:
-      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL;
-      break;
-    case E1S_CARD:
-    case E1S_0_CARD:
-    case E1S_1_CARD:
-    case E1S_0_1_CARD:
-      *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL;
-      break;
-    case UNKNOWN_CARD:
-      *caps = FRU_CAPABILITY_POWER_ALL;
-      syslog(LOG_WARNING, "%s() FRU: %d pldm FRU card unknown", __func__, fru);
-      return -1;
-    default:
-      *caps = FRU_CAPABILITY_POWER_ALL;
-      syslog(LOG_WARNING, "%s() FRU: %d pldm FRU card not defined", __func__, fru);
-      return -1;
-    }
-  snprintf(value, sizeof(value), "%u", *caps);
-  kv_set(key, value, 0, 0);
-
-  return 0;
-}
-
-int
 pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
   if (!caps) {
     syslog(LOG_WARNING, "%s() Capability pointer is NULL.", __func__);
@@ -954,28 +821,6 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
       case FRU_OCPDBG:
       case FRU_SHSC:
         *caps = 0; // Not in Artemis
-        break;
-      case FRU_MEB_JCN1:
-      case FRU_MEB_JCN2:
-      case FRU_MEB_JCN3:
-      case FRU_MEB_JCN4:
-      case FRU_MEB_JCN9:
-      case FRU_MEB_JCN10:
-      case FRU_MEB_JCN11:
-      case FRU_MEB_JCN12:
-      case FRU_MEB_JCN13:
-      case FRU_MEB_JCN14:
-        if (pal_get_pldm_fru_capability(fru, caps) != 0) {
-          syslog(LOG_WARNING, "%s() FRU: %d get pldm capability failed", __func__, fru);
-          return -1;
-        }
-        break;
-      case FRU_MEB_JCN5:
-      case FRU_MEB_JCN6:
-      case FRU_MEB_JCN7:
-      case FRU_MEB_JCN8:
-        // JCN5-8 doesn't have fruid read write caps and their sensors belong to MEB
-        *caps = FRU_CAPABILITY_POWER_ALL;
         break;
       case FRU_HSC:
         if (is_mb_hsc_module()) {

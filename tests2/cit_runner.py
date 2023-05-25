@@ -221,6 +221,7 @@ def arg_parser():
             "grandteton",
             "montblanc",
             "halfdome",
+            "bletchley",
             # Add new platform name here -- for anchor purpose, do not remove
         ],
     )

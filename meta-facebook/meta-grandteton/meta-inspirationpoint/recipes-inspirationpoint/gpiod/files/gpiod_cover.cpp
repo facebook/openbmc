@@ -119,10 +119,6 @@ static struct gpiopoll_config gpios_plat_list[] = {
   {FM_CPU0_PWR_FAIL,            "SGPIO174",  GPIO_EDGE_BOTH,    pwr_err_event_handler,      NULL},
   {FM_CPU1_PWR_FAIL,            "SGPIO176",  GPIO_EDGE_BOTH,    pwr_err_event_handler,      NULL},
   {FM_UV_ADR_TRIGGER,           "SGPIO26",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {FM_PVDDCR_CPU0_P0_PMALERT,   "SGPIO154",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {FM_PVDDCR_CPU0_P1_PMALERT,   "SGPIO156",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {FM_PVDDCR_CPU1_P0_SMB_ALERT, "SGPIO158",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {FM_PVDDCR_CPU1_P1_SMB_ALERT, "SGPIO160",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {RST_PERST_N,                 "SGPIO230",  GPIO_EDGE_RISING,  rst_perst_event_handler,    rst_perst_init_handler},
   {FM_CPU0_PRSNT,               "CPU0",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
   {FM_CPU1_PRSNT,               "CPU1",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
@@ -131,8 +127,6 @@ static struct gpiopoll_config gpios_plat_list[] = {
   {FM_E1S0_PRSNT,               "E1.S",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
   {FM_PVDD11_S3_P0_OCP,         "SGPIO14",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {FM_PVDD11_S3_P1_OCP,         "SGPIO16",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {PVDD11_S3_P0_PMALERT,        "SGPIO182",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {PVDD11_S3_P1_PMALERT,        "SGPIO184",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {FM_BIOS_POST_CMPLT,          "SGPIO146",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
 };
 

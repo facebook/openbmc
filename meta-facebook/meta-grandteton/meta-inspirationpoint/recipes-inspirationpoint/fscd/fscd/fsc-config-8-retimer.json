@@ -49,6 +49,11 @@
         "attribute": {
           "type" : "power_status"
         }
+      },
+      "(.*)vr": {
+        "attribute": {
+          "type" : "power_status"
+        }
       }
     },
     "watchdog": false,
@@ -63,8 +68,8 @@
         "negative_hysteresis": 2,
         "data": [
           [25, 25],
-          [30, 30],
-          [35, 35],
+          [30, 28],
+          [35, 30],
           [40, 40],
           [45, 90]
         ]
@@ -141,7 +146,7 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
-        "setpoint": 80,
+        "setpoint": 85,
         "kp": -3,
         "ki": -0.0035,
         "kd": 0
@@ -179,7 +184,8 @@
         "negative_hysteresis": 2,
         "data": [
           [71, 25],
-          [73, 30]
+          [73, 30],
+          [80, 40]
         ]
       },
       "swb_tray_switch_pid": {
@@ -189,7 +195,7 @@
         "type": "pid",
         "positive_hysteresis": 1,
         "negative_hysteresis": 2,
-        "setpoint": 80,
+        "setpoint": 85,
         "kp": -3,
         "ki": -0.035,
         "kd": 0
@@ -211,14 +217,14 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 0,
+        "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
           [49, 25],
-          [63, 48],
-          [68, 50],
-          [71, 55],
-          [76, 58],
+          [63, 35],
+          [67, 40],
+          [72, 48],
+          [75, 55],
           [82, 90]
         ]
       },
@@ -243,9 +249,11 @@
         "negative_hysteresis": 1,
         "data": [
           [80, 25],
-          [86, 30],
-          [92, 40],
-          [95, 50],
+          [84, 30],
+          [86, 33],
+          [88, 35],
+          [92, 45],
+          [97, 50],
           [107, 90]
         ]
       },
@@ -266,13 +274,13 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 0,
+        "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
           [62, 25],
-          [69, 43],
-          [78, 47],
-          [82, 50],
+          [63, 35],
+          [78, 40],
+          [82, 48],
           [85, 55],
           [92, 90]
         ]
@@ -282,20 +290,20 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 0,
+        "positive_hysteresis": 2,
         "negative_hysteresis": 2,
         "setpoint": 88,
-        "kp": -3,
+        "kp": -3.5,
         "ki": -0.035,
         "kd": 0
       },
-      "gpu_tray_vr_linear": {
+      "gpu_tray_hsc_linear": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 1,
-        "negative_hysteresis": 1,
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
         "data": [
           [48, 25],
           [90, 90]
@@ -324,6 +332,58 @@
         "setpoint": 90,
         "kp": -3,
         "ki": -0.0035,
+        "kd": 0
+      },
+      "cpu_tray_vr_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [80, 25],
+          [90, 30],
+          [115, 90]
+        ]
+      },
+      "cpu_tray_vr_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 100,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
+      },
+      "gpu_fpga_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
+        "data": [
+          [65, 30],
+          [70, 35],
+          [80, 40],
+          [85, 45],
+          [95, 90]
+        ]
+      },
+      "gpu_fpga_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 2,
+        "setpoint": 90,
+        "kp": -3.5,
+        "ki": -0.035,
         "kd": 0
       }
     },

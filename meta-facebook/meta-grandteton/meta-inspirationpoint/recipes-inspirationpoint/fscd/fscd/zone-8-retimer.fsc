@@ -167,7 +167,7 @@ max([
       all:hgx_hgx_gpu_sxm_7_dram_temp_c,
       all:hgx_hgx_gpu_sxm_8_dram_temp_c])),
 
-  gpu_tray_vr_linear(
+  gpu_tray_hsc_linear(
     max([
       all:hgx_hgx_hsc_0_temp_c,
       all:hgx_hgx_hsc_1_temp_c,
@@ -200,5 +200,32 @@ max([
       all:mb_mb_retimer4_temp_c,
       all:mb_mb_retimer5_temp_c,
       all:mb_mb_retimer6_temp_c,
-      all:mb_mb_retimer7_temp_c]))
+      all:mb_mb_retimer7_temp_c])),
+
+  gpu_fpga_linear(all:hgx_hgx_fpga_0_temp_c) + gpu_fpga_pid(all:hgx_hgx_fpga_0_temp_c),
+
+  cpu_tray_vr_linear(
+    max([
+      all:mb_mb_vr_cpu0_vcore0_temp_c,
+      all:mb_mb_vr_cpu0_soc_temp_c,
+      all:mb_mb_vr_cpu0_vcore1_temp_c,
+      all:mb_mb_vr_cpu0_pvddio_temp_c,
+      all:mb_mb_vr_cpu0_pvdd11_temp_c,
+      all:mb_mb_vr_cpu1_vcore0_temp_c,
+      all:mb_mb_vr_cpu1_soc_temp_c,
+      all:mb_mb_vr_cpu1_vcore1_temp_c,
+      all:mb_mb_vr_cpu1_pvddio_temp_c,
+      all:mb_mb_vr_cpu1_pvdd11_temp_c])) +
+  cpu_tray_vr_pid(
+    max([
+      all:mb_mb_vr_cpu0_vcore0_temp_c,
+      all:mb_mb_vr_cpu0_soc_temp_c,
+      all:mb_mb_vr_cpu0_vcore1_temp_c,
+      all:mb_mb_vr_cpu0_pvddio_temp_c,
+      all:mb_mb_vr_cpu0_pvdd11_temp_c,
+      all:mb_mb_vr_cpu1_vcore0_temp_c,
+      all:mb_mb_vr_cpu1_soc_temp_c,
+      all:mb_mb_vr_cpu1_vcore1_temp_c,
+      all:mb_mb_vr_cpu1_pvddio_temp_c,
+      all:mb_mb_vr_cpu1_pvdd11_temp_c]))
 ])

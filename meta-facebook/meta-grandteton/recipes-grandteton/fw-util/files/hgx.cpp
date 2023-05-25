@@ -67,11 +67,11 @@ class HGXSystemConfig {
       if (pal_is_artemis()) {
         return;
       }
-      phase = hgx::getHMCPhase();
       static HGXComponent autocomp("hgx", "auto");
       static HGXComponent patchcomp("hgx", "patch", "");
-      
+
       if (gpio_get_value_by_shadow(GPU_PRESENT) == 0) {
+        phase = hgx::getHMCPhase();
         if (phase == HMCPhase::HMC_FW_EVT) {
           static HGXComponent hmc("hgx", "hmc", "HMC_Firmware");
           static HGXComponent gpu0("hgx", "gpu0-fw", "GPU0Firmware");

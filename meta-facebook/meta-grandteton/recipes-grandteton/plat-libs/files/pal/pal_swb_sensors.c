@@ -156,38 +156,38 @@ PAL_SENSOR_MAP swb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x3E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x3F
   {"PEX0_VR_TEMP", 0, get_swb_sensor, false, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, // 0x40
-  {"PEX0_P0V8_VOLT", 0, get_swb_sensor, false, {0.84, 0, 0, 0.76, 0, 0, 0, 0}, VOLT}, // 0x41
+  {"PEX0_P0V8_VOLT", 0, get_swb_sensor, false, {0.88, 0, 0, 0.72, 0, 0, 0, 0}, VOLT}, // 0x41
   {"PEX0_P0V8_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x42
   {"PEX0_P0V8_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x43
-  {"PEX0_P1V25_VOLT", 0, get_swb_sensor, false, {1.3125, 0, 0, 1.1875, 0, 0, 0, 0}, VOLT}, // 0x44
+  {"PEX0_P1V25_VOLT", 0, get_swb_sensor, false, {1.375, 0, 0, 1.125, 0, 0, 0, 0}, VOLT}, // 0x44
   {"PEX0_P1V25_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x45
   {"PEX0_P1V25_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x46
   {"PEX1_VR_TEMP", 0, get_swb_sensor, false, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, // 0x47
-  {"PEX1_P0V8_VOLT", 0, get_swb_sensor, false, {0.84, 0, 0, 0.76, 0, 0, 0, 0}, VOLT}, // 0x48
+  {"PEX1_P0V8_VOLT", 0, get_swb_sensor, false, {0.88, 0, 0, 0.72, 0, 0, 0, 0}, VOLT}, // 0x48
   {"PEX1_P0V8_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x49
   {"PEX1_P0V8_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x4A
-  {"PEX1_P1V25_VOLT", 0, get_swb_sensor, false, {1.3125, 0, 0, 1.1875, 0, 0, 0, 0}, VOLT}, // 0x4B
+  {"PEX1_P1V25_VOLT", 0, get_swb_sensor, false, {1.375, 0, 0, 1.125, 0, 0, 0, 0}, VOLT}, // 0x4B
   {"PEX1_P1V25_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x4C
   {"PEX1_P1V25_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x4D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x4E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x4F
   {"PEX2_VR_TEMP", 0, get_swb_sensor, false, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, // 0x50
-  {"PEX2_P0V8_VOLT", 0, get_swb_sensor, false, {0.84, 0, 0, 0.76, 0, 0, 0, 0}, VOLT}, // 0x51
+  {"PEX2_P0V8_VOLT", 0, get_swb_sensor, false, {0.88, 0, 0, 0.72, 0, 0, 0, 0}, VOLT}, // 0x51
   {"PEX2_P0V8_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x52
   {"PEX2_P0V8_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x53
-  {"PEX2_P1V25_VOLT", 0, get_swb_sensor, false, {1.3125, 0, 0, 1.1875, 0, 0, 0, 0}, VOLT}, // 0x54
+  {"PEX2_P1V25_VOLT", 0, get_swb_sensor, false, {1.375, 0, 0, 1.125, 0, 0, 0, 0}, VOLT}, // 0x54
   {"PEX2_P1V25_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x55
   {"PEX2_P1V25_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x56
   {"PEX3_VR_TEMP", 0, get_swb_sensor, false, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, // 0x57
-  {"PEX3_P0V8_VOLT", 0, get_swb_sensor, false, {0.84, 0, 0, 0.76, 0, 0, 0, 0}, VOLT}, // 0x58
+  {"PEX3_P0V8_VOLT", 0, get_swb_sensor, false, {0.88, 0, 0, 0.72, 0, 0, 0, 0}, VOLT}, // 0x58
   {"PEX3_P0V8_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x59
   {"PEX3_P0V8_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x5A
-  {"PEX3_P1V25_VOLT", 0, get_swb_sensor, false, {1.3125, 0, 0, 1.1875, 0, 0, 0, 0}, VOLT}, // 0x5B
+  {"PEX3_P1V25_VOLT", 0, get_swb_sensor, false, {1.375, 0, 0, 1.125, 0, 0, 0, 0}, VOLT}, // 0x5B
   {"PEX3_P1V25_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x5C
   {"PEX3_P1V25_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x5D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x5F
-  {"PEX_P1V8_VOLT", 0, get_swb_sensor, false, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT}, // 0x60
+  {"PEX_P1V8_VOLT", 0, get_swb_sensor, false, {1.98, 0, 0, 1.62, 0, 0, 0, 0}, VOLT}, // 0x60
   {"PEX_P1V8_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x61
   {"PEX_P1V8_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x62
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x63

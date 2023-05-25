@@ -340,8 +340,8 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
 
-  {"HSC0_VOUT_VOLT", VPDB_HSC_ID0, read_bb_sensor, true, {56.0, 0, 0, 46.0, 0, 0, 0, 0}, VOLT}, //0x8F
-  {"HSC0_VIN_VOLT",  VPDB_HSC_ID0, read_bb_sensor, true, {56.0, 0, 0, 46.0, 0, 0, 0, 0}, VOLT}, //0x90
+  {"HSC0_VOUT_VOLT", VPDB_HSC_ID0, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0x8F
+  {"HSC0_VIN_VOLT",  VPDB_HSC_ID0, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0x90
   {"HSC0_CURR",      VPDB_HSC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x91
   {"HSC0_PWR",       VPDB_HSC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x92
   {"HSC0_TEMP",      VPDB_HSC_ID0, read_bb_sensor, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x93
@@ -360,7 +360,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"BRICK2_TEMP", BRICK_ID2, read_bb_sensor, true, {115.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x9F
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
-  {"P3V3_AUX_IN6_VOLT", ADC_CH6, read_iic_adc_val, true, {3.35, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0xA1
+  {"P3V3_AUX_IN6_VOLT", ADC_CH6, read_iic_adc_val, true, {3.6, 0, 0, 3.1, 0, 0, 0, 0}, VOLT}, //0xA1
   {"MEDUSA_POSITIVE_VDROP",  VPDB_ADC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xA2
   {"MEDUSA_RETURN_VDROP",    VPDB_ADC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xA3
 
@@ -377,19 +377,19 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
 
-  {"HSC1_VIN_VOLT", HPDB_HSC_ID1, read_bb_sensor, true, {56.0, 0, 0, 46.0, 0, 0, 0, 0}, VOLT}, //0xB0
+  {"HSC1_VIN_VOLT", HPDB_HSC_ID1, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xB0
   {"HSC1_CURR",     HPDB_HSC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB1
   {"HSC1_PWR",      HPDB_HSC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB2
   {"HSC1_TEMP",     HPDB_HSC_ID1, read_bb_sensor, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0xB3
   {"HSC1_PEAK_PIN", HPDB_HSC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB4
-  {"HSC2_VIN_VOLT", HPDB_HSC_ID2, read_bb_sensor, true, {56.0, 0, 0, 46.0, 0, 0, 0, 0}, VOLT}, //0xB5
+  {"HSC2_VIN_VOLT", HPDB_HSC_ID2, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xB5
   {"HSC2_CURR",     HPDB_HSC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB6
   {"HSC2_PWR",      HPDB_HSC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
   {"HSC2_TEMP",     HPDB_HSC_ID2, read_bb_sensor, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0xB8
   {"HSC2_PEAK_PIN", HPDB_HSC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB9
 
-  {"HSC1_VOUT_VOLT", HPDB_HSC_ID1, read_bb_sensor, true, {56, 0, 0, 46, 0, 0, 0, 0}, VOLT},  //0xBA
-  {"HSC2_VOUT_VOLT", HPDB_HSC_ID2, read_bb_sensor, true, {56, 0, 0, 46, 0, 0, 0, 0}, VOLT},  //0xBB
+  {"HSC1_VOUT_VOLT", HPDB_HSC_ID1, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xBA
+  {"HSC2_VOUT_VOLT", HPDB_HSC_ID2, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xBB
   {"MEDUSA0_POSITIVE_VDROP", HPDB_ADC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBC
   {"MEDUSA0_RETURN_VDROP",   HPDB_ADC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBD
   {"MEDUSA1_POSITIVE_VDROP", HPDB_ADC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBE
@@ -447,13 +447,13 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"FAN15_OUTLET_SPEED", FAN_TACH_ID31, read_fan_speed, true, {17000.0, 0, 0, 965.0, 0, 0, 0, 0}, FAN}, //0xEF
 
   {"P12V_VOLT",  ADC0, read_adc_val, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF0
-  {"P5V_VOLT",   ADC1, read_adc_val, true, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xF1
-  {"P3V3_VOLT",  ADC2, read_adc_val, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xF2
+  {"P5V_VOLT",   ADC1, read_adc_val, true, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT}, //0xF1
+  {"P3V3_VOLT",  ADC2, read_adc_val, true, {3.53, 0, 0, 3.07, 0, 0, 0, 0}, VOLT}, //0xF2
   {"P2V5_VOLT",  ADC3, read_adc_val, true, {2.625, 0, 0, 2.375, 0, 0, 0, 0}, VOLT}, //0xF3
   {"P1V8_VOLT",  ADC4, read_adc_val, true, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT}, //0xF4
   {"PGPPA_VOLT", ADC5, read_adc_val, true, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT}, //0xF5
   {"P1V2_VOLT",  ADC6, read_adc_val, true, {1.26, 0, 0, 1.14, 0, 0, 0, 0}, VOLT}, //0xF6
-  {"P1V0_VOLT",  ADC8, read_adc_val, true, {1.05, 0, 0, 0.95, 0, 0, 0, 0}, VOLT}, //0xF7
+  {"P1V0_VOLT",  ADC8, read_adc_val, true, {1.08, 0, 0, 0.92, 0, 0, 0, 0}, VOLT}, //0xF7
   {"BMC_P12V_VOLT", DPM_4, read_dpm_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFA

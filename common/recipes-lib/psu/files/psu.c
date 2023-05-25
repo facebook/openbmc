@@ -1652,7 +1652,7 @@ get_psu_info(uint8_t num) {
             optn_time = block[0] | block[1] << 8 |
                         block[2] << 16 | block[3] << 24;
             optn = time_convert(optn_time);
-            printf("%dD:%dH:%dM:%dS", optn.day, optn.hour, optn.min, optn.sec);
+            printf("%uD:%uH:%uM:%uS", optn.day, optn.hour, optn.min, optn.sec);
           }
         }
         break;
@@ -1748,9 +1748,9 @@ get_blackbox_info(uint8_t num, const char *option) {
                                              blackbox.vsb_status_vout);
       printf("%-19s (0xD5) : 0x%02x", "\nSTATUS_ISTBY",
                                              blackbox.vsb_status_iout);
-      printf("%-19s (0xD8) : %dD:%dH:%dM:%dS", "\nOPTN_TIME_TOTAL",
+      printf("%-19s (0xD8) : %uD:%uH:%uM:%uS", "\nOPTN_TIME_TOTAL",
                                 total.day, total.hour, total.min, total.sec);
-      printf("%-19s (0xD9) : %dD:%dH:%dM:%dS", "\nOPTN_TIME_PRESENT",
+      printf("%-19s (0xD9) : %uD:%uH:%uM:%uS", "\nOPTN_TIME_PRESENT",
                         present.day, present.hour, present.min, present.sec);
       printf("%-19s (0x88) : %.2f V", "\nIN_VOLT",
                                               linear_convert(blackbox.vin));

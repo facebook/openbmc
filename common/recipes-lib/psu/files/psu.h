@@ -207,8 +207,8 @@ enum {
 
 int is_psu_prsnt(uint8_t num, uint8_t *status);
 int get_mfr_model(uint8_t num, uint8_t *block);
-int do_update_psu(uint8_t num, const char *file, const char *vendor);
-int get_eeprom_info(uint8_t mum);
+int do_update_psu(uint8_t num, const char *file_path, const char *vendor);
+int get_eeprom_info(uint8_t num);
 int get_psu_info(uint8_t num);
 int get_blackbox_info(uint8_t num, const char *option);
 

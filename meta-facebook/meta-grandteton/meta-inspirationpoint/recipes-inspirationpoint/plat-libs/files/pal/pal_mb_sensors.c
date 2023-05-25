@@ -1236,6 +1236,45 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
     pal_get_sensor_name(fru_id, sensor_num, sensor_name);
     snprintf(error, sizeof(error), "FRB3 failure");
     _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, frb3_fail, error);
+
+    /* Workaround_for_Genoa_Erratum_#1477 */
+    char rev_id[MAX_VALUE_LEN] = {0};
+    kv_get("mb_rev", rev_id, 0, 0);
+
+    int fd = 0, ret = -1;
+    char fn[32];
+    uint8_t tlen, rlen, addr, bus;
+    uint8_t tbuf[16] = {0};
+    uint8_t rbuf[16] = {0};
+    uint8_t dimm_pwr_ok = 0xF0;
+
+    bus = I2C_BUS_7;
+    addr = 0x46;
+
+    snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+    fd = open(fn, O_RDWR);
+    if (fd < 0) {
+      return ret;
+    }
+
+    tbuf[0] = 0x15;
+    tlen = 1;
+    rlen = 1;
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+    close(fd);
+
+    if (ret == 0) {
+      dimm_pwr_ok = (rbuf[0] & 0xF0);
+    }
+    else {
+      syslog(LOG_CRIT, "%s, dump CPLD reg failed, ret = %d\n", __func__, ret);
+    }
+
+    if (strcmp(rev_id, "4") && dimm_pwr_ok == 0) {
+      syslog(LOG_CRIT, "Detect Genoa System Hang (FRB3/No DIMM Power OK): 0x%2x\n", dimm_pwr_ok);
+      pal_sled_cycle();
+    }
+    /* Workaround_for_Genoa_Erratum_#1477 */
   }
 
   return 0;

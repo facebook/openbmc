@@ -4,6 +4,8 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.h>
 
+#define LCC_POSTCODE_CACHE_NAME "lcc_postcode_%d"
+
 int
 parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
   uint8_t *ed = &event_data[3];
@@ -229,8 +231,65 @@ int pal_udbg_get_frame_total_num() {
 }
 
 int
+pal_get_post_buffer_page_dword_data(uint8_t slot, uint8_t page_num, uint8_t *port_buff, uint8_t *output_len) {
+  char key[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (port_buff == NULL)
+    return -1;
+
+  sprintf(key, LCC_POSTCODE_CACHE_NAME, page_num);
+  if ((kv_get(key, value, NULL, 0) < 0) && (errno == ENOENT)) {
+    syslog(LOG_WARNING, "kv_get fail key:%s\n", key);
+  } else {
+    for(int index = 0; index < MAX_VALUE_LEN; index+=(sizeof(uint32_t)/sizeof(uint8_t))) {
+      port_buff[index] = value[index+3];
+      port_buff[index+1] = value[index+2];
+      port_buff[index+2] = value[index+1];
+      port_buff[index+3] = value[index];
+    }
+  }
+  *output_len = 0xFF;
+
+  return 0;
+}
+
+int
+pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *res_data, size_t max_len, size_t *res_len) {
+
+  int ret;
+  uint8_t status;
+  uint8_t len;
+
+  if (slot != FRU_MB) {
+    return PAL_ENOTSUP;
+  }
+
+  ret = pal_is_fru_prsnt(FRU_MB, &status);
+  if (ret < 0) {
+     return -1;
+  }
+  if (status == 0) {
+    return PAL_ENOTREADY;
+  }
+
+  ret = is_server_off();
+  if(ret > 0) {
+    return PAL_ENOTREADY;
+  }
+
+  // Send command to get 80 port record from Bridge IC
+  ret = pal_get_post_buffer_page_dword_data(slot, page_num, res_data, &len);
+  if (ret == 0)
+    *res_len = (size_t)len;
+
+  return ret;
+}
+
+int
 pal_clear_psb_cache(void) {
   char key[MAX_KEY_LEN] = {0};
   snprintf(key, sizeof(key), "slot%d_psb_config_raw", FRU_MB);
   return kv_del(key, KV_FPERSIST);
 }
+

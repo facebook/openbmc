@@ -24,5 +24,7 @@ int get_xdpe152xx_ver(struct vr_info*, char*);
 void * xdpe152xx_parse_file(struct vr_info*, const char*);
 int xdpe152xx_fw_update(struct vr_info*, void*);
 int xdpe152xx_fw_verify(struct vr_info*, void*);
+int xdpe152xx_unlock_reg(struct vr_info*);
+int xdpe152xx_lock_reg(struct vr_info*);
 
 #endif

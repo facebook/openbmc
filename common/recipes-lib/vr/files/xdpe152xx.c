@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <string.h>
+#include <unistd.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
 #include "xdpe152xx.h"
@@ -24,6 +25,7 @@
 
 enum {
   PMBUS_STS_CML       = 0x7E,
+  IFX_MFR_DISABLE_SECURITY_ONCE = 0xCB,
   IFX_MFR_AHB_ADDR    = 0xCE,
   IFX_MFR_REG_WRITE   = 0xDE,
   IFX_MFR_REG_READ    = 0xDF,
@@ -40,6 +42,8 @@ enum {
 extern int vr_rdwr(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
 static int (*vr_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t) = &vr_rdwr;
 
+const uint32_t REG_LOCK_PASSWORD = 0x7F48680C;
+
 static int
 xdpe152xx_mfr_fw(uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t *resp) {
   uint8_t tbuf[16], rbuf[16];
@@ -53,6 +57,7 @@ xdpe152xx_mfr_fw(uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t
       return -1;
     }
   }
+  usleep(300);
 
   tbuf[0] = IFX_MFR_FW_CMD;
   tbuf[1] = code;
@@ -83,6 +88,44 @@ xdpe152xx_mfr_fw(uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t
     memcpy(resp, rbuf+1, 4);
   }
 
+  return 0;
+}
+
+int
+xdpe152xx_unlock_reg(struct vr_info *info) {
+  uint8_t tbuf[16] = {0}, rbuf[16] = {0};
+  tbuf[0] = IFX_MFR_DISABLE_SECURITY_ONCE;
+  tbuf[1] = 4;  // block write 4 bytes
+
+  if (info->xfer) {
+    vr_xfer = info->xfer;
+  } else {
+    vr_xfer = &vr_rdwr;
+  }
+  memcpy(&tbuf[2], (uint8_t *)&REG_LOCK_PASSWORD, 4);
+  if (vr_xfer(info->bus, info->addr, tbuf, 6, rbuf, 0) < 0) {
+    syslog(LOG_WARNING, "%s: Block write 0x%02X failed", __func__, tbuf[0]);
+    return -1;
+  }
+  return 0;
+}
+
+int
+xdpe152xx_lock_reg(struct vr_info *info) {
+  uint8_t tbuf[16] = {0}, rbuf[16] = {0};
+  tbuf[0] = IFX_MFR_DISABLE_SECURITY_ONCE;
+  tbuf[1] = 4;  // block write 4 bytes
+  tbuf[2] = 0x1; // lock
+
+  if (info->xfer) {
+    vr_xfer = info->xfer;
+  } else {
+    vr_xfer = &vr_rdwr;
+  }
+  if (vr_xfer(info->bus, info->addr, tbuf, 6, rbuf, 0) < 0) {
+    syslog(LOG_WARNING, "%s: Block write 0x%02X failed", __func__, tbuf[0]);
+    return -1;
+  }
   return 0;
 }
 

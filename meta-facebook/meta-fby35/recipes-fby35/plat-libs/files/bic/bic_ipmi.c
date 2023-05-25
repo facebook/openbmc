@@ -1805,6 +1805,19 @@ bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis, uint8_t intf) {
 }
 
 int
+bic_set_vr_sensor_monitor(uint8_t slot_id, uint8_t action, uint8_t intf) {
+  uint8_t tbuf[8] = {0x00}; // IANA ID
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen = sizeof(rbuf);
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+
+  tbuf[3] = action;
+  return bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_STOP_VR_MONITOR, tbuf, 4, rbuf, &rlen, intf);
+}
+
+int
 bic_set_vr_monitor_enable(uint8_t slot_id, bool enable, uint8_t intf) {
   uint8_t tbuf[8] = {0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};

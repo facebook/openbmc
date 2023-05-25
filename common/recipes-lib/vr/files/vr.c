@@ -219,6 +219,36 @@ int vr_fw_update(const char *vr_name, const char *path, bool force)
   return VR_STATUS_FAILURE;
 }
 
+int vr_unlock_reg(const char *vr_name) {
+  struct vr_info *info = dev_list;
+  int i = 0;
+
+  for (i = 0; i < dev_list_count; i++, info++) {
+    if (!vr_name || !strcmp(info->dev_name, vr_name)) {  // traverse all for unspecified vr_name
+      if (!info->ops->unlock_reg) {
+        return VR_STATUS_FAILURE;
+      }
+      return info->ops->unlock_reg(info);
+    }
+  }
+  return VR_STATUS_FAILURE;
+}
+
+int vr_lock_reg(const char *vr_name) {
+  struct vr_info *info = dev_list;
+  int i = 0;
+
+  for (i = 0; i < dev_list_count; i++, info++) {
+    if (!vr_name || !strcmp(info->dev_name, vr_name)) {  // traverse all for unspecified vr_name
+      if (!info->ops->lock_reg) {
+        return VR_STATUS_FAILURE;
+      }
+      return info->ops->lock_reg(info);
+    }
+  }
+  return VR_STATUS_FAILURE;
+}
+
 int i2c_io(int fd, uint8_t addr, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt)
 {
   int ret = -1;

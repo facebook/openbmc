@@ -32,6 +32,7 @@ int hd_vr_addr_table[][3] = {
 static uint8_t slot_id = 0;
 static char fru_name[64] = {0};  // prefix of vr version cache (kv)
 static char fru_exp_name[64] = {0};  // prefix of expansion board vr version cache (kv)
+static bool need_unlock = false;
 
 enum {
   VR_CL_VCCIN = 0,
@@ -45,8 +46,17 @@ enum {
   VR_HD_VDD11S3,
   VR_RBF_A0V8,
   VR_RBF_VDDQAB,
-  VR_RBF_VDDQCD
+  VR_RBF_VDDQCD,
+
+  VR_COMP_MAX, // should be latest
 };
+
+enum {
+  VR_MONITOR_DISABLE = 0,
+  VR_MONITOR_ENABLE = 1,
+} VR_MONITOR_CTRL;
+
+static bool is_reg_unlock[VR_COMP_MAX] = {0};
 
 static int
 _fby35_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
@@ -146,6 +156,8 @@ struct vr_ops ifx_ops = {
   .validate_file = NULL,
   .fw_update = xdpe152xx_fw_update,
   .fw_verify = NULL,
+  .unlock_reg = xdpe152xx_unlock_reg,
+  .lock_reg = xdpe152xx_lock_reg,
 };
 
 struct vr_ops ti_ops = {
@@ -328,6 +340,7 @@ void fby35_vr_device_check(void){
     switch (rlen) {
       case 2:
         fby35_vr_list[i].ops = &ifx_ops;
+        need_unlock = true;
         break;
       case 6:
         fby35_vr_list[i].ops = &ti_ops;
@@ -337,6 +350,7 @@ void fby35_vr_device_check(void){
         break;
     }
   }
+  msleep(1);
 }
 
 void halfdome_vr_device_check(void){
@@ -431,6 +445,8 @@ int plat_vr_init(void) {
   int vr_cnt = sizeof(fby35_vr_list)/sizeof(fby35_vr_list[0]);
   uint8_t type_1ou = TYPE_1OU_UNKNOWN;
   int server_type = SERVER_TYPE_NONE;
+  int ret = 0;
+  int i = 0;
 
   if (slot_id != FRU_BMC) {
     server_type = fby35_common_get_slot_type(slot_id);
@@ -460,12 +476,34 @@ int plat_vr_init(void) {
     fby35_vr_list[i].remaining_wr_op = sb_vr_remaining_wr;
   }
 
-  return vr_device_register(fby35_vr_list, vr_cnt);
+  ret = vr_device_register(fby35_vr_list, vr_cnt);
+  if (need_unlock) {
+    bic_set_vr_sensor_monitor(slot_id, VR_MONITOR_DISABLE, NONE_INTF);
+    msleep(10);
+    for (i = VR_CL_VCCIN; i <= VR_CL_VCCINFAON; i++) {
+      if (!vr_unlock_reg(fby35_vr_list[i].dev_name)) {
+        is_reg_unlock[i] = true;
+      }
+    }
+  }
+
+  return ret;
 }
 
 void plat_vr_exit(void) {
+  int i = 0;
+
   if (plat_configs) {
     free(plat_configs);
+  }
+  if (need_unlock) {
+    for (i = VR_CL_VCCIN; i <= VR_CL_VCCINFAON; i++) {
+      if (is_reg_unlock[i] == true) {
+        vr_lock_reg(fby35_vr_list[i].dev_name);
+        is_reg_unlock[i] = false;
+      }
+    }
+    bic_set_vr_sensor_monitor(slot_id, VR_MONITOR_ENABLE, NONE_INTF);
   }
 
   return;

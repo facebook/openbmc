@@ -82,6 +82,9 @@ struct vr_ops {
    * 	Retrun -1 if failed, otherwise 0.
    */
   int (*fw_verify)(struct vr_info*, void*);
+
+  int (*unlock_reg)(struct vr_info*);
+  int (*lock_reg)(struct vr_info*);
 };
 
 struct vr_info {
@@ -108,6 +111,8 @@ int vr_fw_version(int, const char*, char*);
 int vr_fw_full_version(int, const char*, char*, char*);
 void vr_get_fw_avtive_key(struct vr_info*, char*);
 int vr_fw_update(const char*, const char*, bool);
+int vr_unlock_reg(const char *vr_name);
+int vr_lock_reg(const char *vr_name);
 
 extern int plat_vr_init(void);
 extern void plat_vr_exit(void);

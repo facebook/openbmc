@@ -1,5 +1,5 @@
 {
-    "version": "grandteton-v8",
+    "version": "grandteton-v8.5",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -44,6 +44,11 @@
         "attribute": {
           "type" : "power_status"
         }
+      },
+      "(.*)vr": {
+        "attribute": {
+          "type" : "power_status"
+        }
       }
     },
     "watchdog": false,
@@ -72,11 +77,10 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [-49, 25],
-          [-44, 28],
-          [-34, 30],
-          [-29, 40],
-          [-25, 50]
+          [-33, 25],
+          [-29, 30],
+          [-24, 35],
+          [-19, 40]
         ]
       },
       "cpu_tray_cpu_pid": {
@@ -86,7 +90,7 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
-        "setpoint": -21,
+        "setpoint": -14,
         "kp": -3,
         "ki": -0.0035,
         "kd": 0
@@ -101,8 +105,9 @@
         "data": [
           [56, 25],
           [58, 30],
-          [65, 40],
-          [70, 45]
+          [65, 35],
+          [70, 38],
+          [75, 40]
         ]
       },
       "cpu_tray_dimm_pid": {
@@ -137,7 +142,32 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
-        "setpoint": 80,
+        "setpoint": 85,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
+      },
+      "cpu_tray_vr_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [80, 25],
+          [90, 30],
+          [115, 90]
+        ]
+      },
+      "cpu_tray_vr_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 100,
         "kp": -3,
         "ki": -0.0035,
         "kd": 0
@@ -161,7 +191,7 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 80,
+        "setpoint": 85,
         "kp": -3,
         "ki": -0.015,
         "kd": 0
@@ -199,7 +229,8 @@
         "negative_hysteresis": 2,
         "data": [
           [71, 25],
-          [73, 30]
+          [73, 30],
+          [80, 40]
         ]
       },
       "swb_tray_switch_pid": {
@@ -209,7 +240,7 @@
         "type": "pid",
         "positive_hysteresis": 1,
         "negative_hysteresis": 2,
-        "setpoint": 80,
+        "setpoint": 85,
         "kp": -3,
         "ki": -0.035,
         "kd": 0
@@ -235,10 +266,10 @@
         "negative_hysteresis": 1,
         "data": [
           [49, 25],
-          [63, 44],
-          [67, 50],
-          [72, 60],
-          [76, 65],
+          [63, 35],
+          [67, 40],
+          [72, 48],
+          [75, 55],
           [82, 90]
         ]
       },
@@ -263,10 +294,10 @@
         "negative_hysteresis": 1,
         "data": [
           [62, 25],
-          [63, 43],
-          [78, 49],
-          [82, 59],
-          [86, 65],
+          [63, 35],
+          [78, 40],
+          [82, 48],
+          [85, 55],
           [92, 90]
         ]
       },
@@ -303,11 +334,11 @@
         "negative_hysteresis": 1,
         "data": [
           [80, 25],
-          [82, 35],
-          [84, 45],
-          [86, 55],
-          [88, 60],
-          [90, 65],
+          [84, 30],
+          [86, 33],
+          [88, 35],
+          [92, 45],
+          [97, 50],
           [107, 90]
         ]
       },
@@ -332,9 +363,10 @@
         "negative_hysteresis": 1,
         "data": [
           [65, 30],
-          [70, 40],
-          [75, 50],
-          [80, 60]
+          [70, 35],
+          [80, 40],
+          [85, 45],
+          [95, 90]
         ]
       },
       "gpu_fpga_pid": {

@@ -47,6 +47,32 @@ max([
 
   cpu_tray_nic_linear(all:nic1_nic1_mezz1_temp_c) + cpu_tray_nic_pid(all:nic1_nic1_mezz1_temp_c),
 
+  cpu_tray_vr_linear(
+    max([
+      all:mb_mb_vr_cpu0_vccin_temp_c,
+      all:mb_mb_vr_cpu0_fivra_temp_c,
+      all:mb_mb_vr_cpu0_faon_temp_c,
+      all:mb_mb_vr_cpu0_vccfa_temp_c,
+      all:mb_mb_vr_cpu0_vccd_hv_temp_c,
+      all:mb_mb_vr_cpu1_vccin_temp_c,
+      all:mb_mb_vr_cpu1_fivra_temp_c,
+      all:mb_mb_vr_cpu1_faon_temp_c,
+      all:mb_mb_vr_cpu1_vccfa_temp_c,
+      all:mb_mb_vr_cpu1_vccd_hv_temp_c])) +
+  cpu_tray_vr_pid(
+    max([
+      all:mb_mb_vr_cpu0_vccin_temp_c,
+      all:mb_mb_vr_cpu0_fivra_temp_c,
+      all:mb_mb_vr_cpu0_faon_temp_c,
+      all:mb_mb_vr_cpu0_vccfa_temp_c,
+      all:mb_mb_vr_cpu0_vccd_hv_temp_c,
+      all:mb_mb_vr_cpu1_vccin_temp_c,
+      all:mb_mb_vr_cpu1_fivra_temp_c,
+      all:mb_mb_vr_cpu1_faon_temp_c,
+      all:mb_mb_vr_cpu1_vccfa_temp_c,
+      all:mb_mb_vr_cpu1_vccd_hv_temp_c])),
+
+
 
   swb_tray_nic_linear(
     max([
@@ -187,7 +213,5 @@ max([
       all:hgx_hgx_pcieretimer_6_temp_c,
       all:hgx_hgx_pcieretimer_7_temp_c])),
 
-  gpu_fpga_linear(all:hgx_hgx_fpga_0_temp_c),
-
-  gpu_fpga_pid(all:hgx_hgx_fpga_0_temp_c)
+  gpu_fpga_linear(all:hgx_hgx_fpga_0_temp_c) + gpu_fpga_pid(all:hgx_hgx_fpga_0_temp_c)
 ])

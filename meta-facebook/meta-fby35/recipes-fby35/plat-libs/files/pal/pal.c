@@ -222,6 +222,7 @@ MAPTOSTRING root_port_common_mapping[] = {
     // QS
     { 0xBB, 1, 0x5A, "Num 0", "SB" },   // root_port=0x5A, Boot Drive
     { 0xBB, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
+    { 0x00, 0, 0xFF, "ieh4", "ieh" },   //  ieh device
     // Halfdome
     { 0x00, 3, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC
     { 0x01, 0, 0xFF, "Class 1", "NIC"}, //  Endpoint of Class 1 NIC
@@ -293,6 +294,7 @@ PCIE_ERR_DECODE pcie_err_tab[] = {
     {0x5A, "LER was triggered by ERR_FATAL"},
     {0xA0, "PERR (non-AER)"},
     {0xA1, "SERR (non-AER)"},
+    {0xF3, "Receiver Error"},
     {0xFF, "None"}
 };
 

@@ -13,7 +13,7 @@ init_class1_sensord() {
   sys_config="$($KV_CMD get sled_system_conf persistent)"
   if [[ "$sys_config" == "Type_8" ]]; then
     SLOTS=(slot1)
-  elif [[ "$sys_config" =~ ^(Type_(DPV2|HD))$ ]]; then
+  elif [[ "$sys_config" =~ ^(Type_(DPV2|HD|GL))$ ]]; then
     SLOTS=(slot1 slot3)
   else
     SLOTS=(slot1 slot2 slot3 slot4)

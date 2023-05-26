@@ -110,7 +110,8 @@ static inline void fbw_copy_product_number(
   for (i = 0; i < 2; i++) {
     *dst++ = *cur++;
   }
-  *dst++ = '-';
+  /* Check if input is N/A */
+  *dst++ = (*(cur+1)  == '\0' ? *cur++ : '-');
   for (i = 0; i < 6; i++) {
     *dst++ = *cur++;
   }
@@ -128,7 +129,8 @@ static inline void fbw_copy_assembly_number(
   for (i = 0; i < 2; i++) {
     *dst++ = *cur++;
   }
-  *dst++ = '-';
+  /* Check if input is N/A */
+  *dst++ = (*(cur+1)  == '\0' ? *cur++ : '-');
   for (i = 0; i < 7; i++) {
     *dst++ = *cur++;
   }
@@ -150,7 +152,8 @@ static inline void fbw_copy_facebook_pcb_part(
   for (i = 0; i < 3; i++) {
     *dst++ = *cur++;
   }
-  *dst++ = '-';
+  /* Check if input is N/A */
+  *dst++ = (*cur == '\0' ? *cur : '-');
   for (i = 0; i < 6; i++) {
     *dst++ = *cur++;
   }
@@ -217,7 +220,7 @@ static int fbw_parse_buffer(
   int rc = 0;
   const uint8_t* cur = buf;
   uint16_t magic;
-  int crc_len;
+  int crc_len = 0;
   uint8_t crc8;
 
   memset(eeprom, 0, sizeof(*eeprom));

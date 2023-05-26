@@ -178,10 +178,10 @@ func TestRunCommand(t *testing.T) {
 			wantExitCode: 127,
 			wantErr:      errors.Errorf("exit status 127"),
 			wantStdout:   "",
-			wantStderr:   "bash: ech0: command not found\n",
+			wantStderr:   "bash: line 1: ech0: command not found\n",
 			logContainsSeq: []string{
 				"Running command 'bash -c ech0 openbmc' with 30s timeout",
-				"stderr: bash: ech0: command not found",
+				"stderr: bash: line 1: ech0: command not found",
 				"Command 'bash -c ech0 openbmc' exited with code 127 after",
 			},
 		},

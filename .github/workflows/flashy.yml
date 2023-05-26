@@ -14,7 +14,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run unit tests
         run: tools/flashy/scripts/run_unit_tests.sh
 
@@ -24,7 +24,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build flashy
         run: tools/flashy/build.sh
       - name: Upload artifact
@@ -42,7 +42,7 @@ jobs:
       - flashy-build
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Download flashy build
         uses: actions/download-artifact@v2
         with:

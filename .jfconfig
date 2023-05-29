@@ -1312,7 +1312,7 @@
                 "type": "lego",
                 "vcs": "openbmc-git"
             },
-            "command": "SandcastleOpenBMCBuilderCommand",
+            "command": "SandcastleOpenBMCDiffCommand",
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {

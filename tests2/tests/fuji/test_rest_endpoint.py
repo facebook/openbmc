@@ -21,24 +21,24 @@ import os
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
-from tests.fuji.helper.libpal import pal_is_fru_prsnt, pal_get_fru_id
+from tests.fuji.helper.libpal import pal_get_fru_id, pal_is_fru_prsnt
 from tests.fuji.test_data.sensors.sensor import (
-    PIM1_SENSORS_16Q,
     PIM1_SENSORS_16O,
-    PIM2_SENSORS_16Q,
+    PIM1_SENSORS_16Q,
     PIM2_SENSORS_16O,
-    PIM3_SENSORS_16Q,
+    PIM2_SENSORS_16Q,
     PIM3_SENSORS_16O,
-    PIM4_SENSORS_16Q,
+    PIM3_SENSORS_16Q,
     PIM4_SENSORS_16O,
-    PIM5_SENSORS_16Q,
+    PIM4_SENSORS_16Q,
     PIM5_SENSORS_16O,
-    PIM6_SENSORS_16Q,
+    PIM5_SENSORS_16Q,
     PIM6_SENSORS_16O,
-    PIM7_SENSORS_16Q,
+    PIM6_SENSORS_16Q,
     PIM7_SENSORS_16O,
-    PIM8_SENSORS_16Q,
+    PIM7_SENSORS_16Q,
     PIM8_SENSORS_16O,
+    PIM8_SENSORS_16Q,
     PSU1_SENSORS,
     PSU2_SENSORS,
     PSU3_SENSORS,
@@ -192,7 +192,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             else:
                 Logger.info("/api/sys/sensors: get PIM{} sensors None".format(pim + 1))
 
-    @unittest.skip("FIXME T127573953")
     def test_endpoint_api_sys_sensors(self):
         self.set_endpoint_sensors_attributes()
         self.verify_endpoint_attributes(

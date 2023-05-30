@@ -90,23 +90,35 @@ def get_smb_sensors():
 
 
 def get_psu1_sensors():
-    return {"Information": get_fru_sensor("psu1", removeNA=True), \
-            "Actions": [], "Resources": []}
+    return {
+        "Information": get_fru_sensor("psu1", removeNA=True),
+        "Actions": [],
+        "Resources": [],
+    }
 
 
 def get_psu2_sensors():
-    return {"Information": get_fru_sensor("psu2", removeNA=True), \
-            "Actions": [], "Resources": []}
+    return {
+        "Information": get_fru_sensor("psu2", removeNA=True),
+        "Actions": [],
+        "Resources": [],
+    }
 
 
 def get_psu3_sensors():
-    return {"Information": get_fru_sensor("psu3", removeNA=True), \
-            "Actions": [], "Resources": []}
+    return {
+        "Information": get_fru_sensor("psu3", removeNA=True),
+        "Actions": [],
+        "Resources": [],
+    }
 
 
 def get_psu4_sensors():
-    return {"Information": get_fru_sensor("psu4", removeNA=True), \
-            "Actions": [], "Resources": []}
+    return {
+        "Information": get_fru_sensor("psu4", removeNA=True),
+        "Actions": [],
+        "Resources": [],
+    }
 
 
 def get_pim1_sensors():
@@ -141,6 +153,10 @@ def get_pim8_sensors():
     return {"Information": get_fru_sensor("pim8"), "Actions": [], "Resources": []}
 
 
+def get_aggregate_sensors():
+    return {"Information": get_fru_sensor("aggregate"), "Actions": [], "Resources": []}
+
+
 def get_all_sensors():
     result = []
     # FRUs of /usr/local/bin/sensor-util commands
@@ -163,8 +179,7 @@ def get_all_sensors():
     ]
 
     for fru in frus:
-        sresult = get_fru_sensor(fru,
-                removeNA=True if fru.startswith("psu") else False)
+        sresult = get_fru_sensor(fru, removeNA=True if fru.startswith("psu") else False)
         result.append(sresult)
 
     fresult = {"Information": result, "Actions": [], "Resources": frus}

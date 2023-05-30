@@ -272,6 +272,12 @@ class boardApp_Handler:
     async def rest_sensors_pim8_hdl(self, request):
         return web.json_response(rest_sensors.get_pim8_sensors(), dumps=dumps_bytestr)
 
+    # Handler for sys/sensors/aggregate resource endpoint
+    async def rest_sensors_aggregate_hdl(self, request):
+        return web.json_response(
+            rest_sensors.get_aggregate_sensors(), dumps=dumps_bytestr
+        )
+
     # Handler for sys/pim_serial resource endpoint
     async def rest_pimserial_hdl(self, request):
         return web.json_response(rest_pimserial.get_pimserial(), dumps=dumps_bytestr)

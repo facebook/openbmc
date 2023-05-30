@@ -21,6 +21,7 @@ import unittest
 
 from common.base_log_util_test import BaseLogUtilTest
 from utils.test_utils import qemu_check
+from wedge400.helper.libpal import pal_get_fru_id
 
 
 class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):

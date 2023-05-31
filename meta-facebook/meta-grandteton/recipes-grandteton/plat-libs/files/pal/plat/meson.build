@@ -41,6 +41,7 @@ pal_deps += [
     dependency('libdimm'),
     dependency('libpldm-oem'),
     dependency('libhgx'),
+    dependency('libmisc-utils'),
     dependency('libncsi'),
     dependency('libnl-wrapper'),
     dependency('libobmc-pmbus'),

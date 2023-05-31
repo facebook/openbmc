@@ -33,6 +33,7 @@ DEPENDS += " \
     libhgx \
     libhal \
     libgpio-ctrl \
+    libmisc-utils \
     libncsi \
     libnl-wrapper \
     libnm \

@@ -16,6 +16,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/nm.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/peci_sensors.h>
 #include <openbmc/pmbus.h>
@@ -41,6 +42,9 @@
 
 #define SCALING_FACTOR	0.25
 #define CHANNEL_OF_DIMM_NUM  6
+
+#define APML_SNR_START_INDEX  MB_SNR_DIMM_CPU0_A0_TEMP
+#define DELAY_APML_MUX  100  // 100 ms
 
 uint8_t DIMM_SLOT_CNT = 0;
 //static float InletCalibration = 0;
@@ -69,8 +73,9 @@ static int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value);
 
 bool pal_bios_completed(uint8_t fru);
+
+static bool g_has_mux = true;
 static uint8_t postcodes_last[256] = {0};
-char g_has_mux[MAX_VALUE_LEN] = {0};
 
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP_R,
@@ -707,27 +712,39 @@ err_exit:
   return ret;
 }
 
-static int set_apml_channel(uint8_t cpu_id) {
-  int ret = 0;
+static int apml_channel_lock(uint8_t cpu_id) {
+  int ret = 0, lfd = -1;
 
-  if (gpio_get_value_by_shadow(GPIO_APML_MUX2_SEL) == GPIO_VALUE_HIGH && cpu_id == CPU_ID0) {
-    ret = gpio_set_value_by_shadow(GPIO_APML_MUX2_SEL, GPIO_VALUE_LOW);
-  }
-  else if (gpio_get_value_by_shadow(GPIO_APML_MUX2_SEL) == GPIO_VALUE_LOW && cpu_id == CPU_ID1) {
-    ret = gpio_set_value_by_shadow(GPIO_APML_MUX2_SEL, GPIO_VALUE_HIGH);
-  }
-  else {
-    //do nothing
+  if (g_has_mux == false) {
+    return -1;
   }
 
-  if (ret) {
-    syslog(LOG_WARNING, "%s, set apml sgpio fail", __FUNCTION__);
-  }
-  else {
-    sleep(1);
+  lfd = single_instance_lock_blocked("apml_mux");
+  if (lfd < 0) {
+    syslog(LOG_WARNING, "%s, get apml_mux lock failed", __FUNCTION__);
   }
 
-  return ret;
+  gpio_value_t expected_value = cpu_id == CPU_ID0 ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH;
+  gpio_value_t current_value = gpio_get_value_by_shadow(GPIO_APML_MUX2_SEL);
+  if (current_value != expected_value) {
+    ret = gpio_set_value_by_shadow(GPIO_APML_MUX2_SEL, expected_value);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s, set apml sgpio fail", __FUNCTION__);
+      if (lfd >= 0) {
+        single_instance_unlock(lfd);
+      }
+      return ret;
+    }
+    msleep(DELAY_APML_MUX);
+  }
+
+  return lfd;
+}
+
+static void apml_channel_unlock(int lock) {
+  if (lock >= 0) {
+    single_instance_unlock(lock);
+  }
 }
 
 static int reset_mux() {
@@ -760,7 +777,7 @@ static int reset_mux() {
 static int
 read_cpu_pkg_pwr(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t cpu_id = sensor_map[fru].map[sensor_num].id;
-  int ret;
+  int ret, lock = -1;
   char* cpu_chips[] = {
     "sbrmi-i2c-0-3c",
     "sbrmi-i2c-0-38",
@@ -774,11 +791,9 @@ read_cpu_pkg_pwr(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  if (!strcmp( g_has_mux, "0")) {
-    set_apml_channel(cpu_id);
-  }
-
+  lock = apml_channel_lock(cpu_id);
   ret = sensors_read(cpu_chips[cpu_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  apml_channel_unlock(lock);
   if (ret) {
     retry[cpu_id]++;
     return retry_err_handle(retry[cpu_id], 3);
@@ -791,7 +806,7 @@ read_cpu_pkg_pwr(uint8_t fru, uint8_t sensor_num, float *value) {
 static int
 read_cpu_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t cpu_id = sensor_map[fru].map[sensor_num].id;
-  int ret;
+  int ret, lock = -1;
   char* cpu_chips[] = {
     "sbtsi-i2c-0-4c",
     "sbtsi-i2c-0-48",
@@ -805,11 +820,9 @@ read_cpu_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   if(!is_cpu_socket_occupy(cpu_id))
     return READING_NA;
 
-  if (!strcmp( g_has_mux, "0")) {
-    set_apml_channel(cpu_id);
-  }
-
+  lock = apml_channel_lock(cpu_id);
   ret = sensors_read(cpu_chips[cpu_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  apml_channel_unlock(lock);
   if (ret) {
     retry[cpu_id]++;
     return retry_err_handle(retry[cpu_id], 3);
@@ -849,7 +862,8 @@ read_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value,
 
 static int
 read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret;
+  int ret, lock = -1;
+  char has_mux[MAX_VALUE_LEN] = {0};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
   static uint8_t retry[MAX_DIMM_NUM] = {0};
 
@@ -860,18 +874,22 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  kv_get("apml_mux", g_has_mux, 0, 0);
-  if (!strcmp(g_has_mux, "0")) {
-    set_apml_channel(CPU_ID0);
-  }
-  else if (!strcmp(g_has_mux, "1") && sensor_num == DIMM_SNR_START_INDEX) {
-    ret = reset_mux();
-    if (ret < 0) {
-      syslog(LOG_WARNING, "%s, reset mux fail", __FUNCTION__);
+  if (sensor_num == APML_SNR_START_INDEX) {
+    kv_get("apml_mux", has_mux, 0, 0);
+    if (!strcmp(has_mux, "0")) {
+      g_has_mux = true;
+    } else if (!strcmp(has_mux, "1")) {
+      g_has_mux = false;
+      ret = reset_mux();
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s, reset mux fail", __FUNCTION__);
+      }
     }
   }
 
+  lock = apml_channel_lock(CPU_ID0);
   ret = read_dimm_temp(fru, sensor_num, value, dimm_id, CPU_ID0);
+  apml_channel_unlock(lock);
   if ( ret != 0 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 3);
@@ -886,7 +904,7 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret;
+  int ret, lock = -1;
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
   static uint8_t retry[MAX_DIMM_NUM] = {0};
 
@@ -897,11 +915,9 @@ read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  if (!strcmp( g_has_mux, "0")) {
-    set_apml_channel(CPU_ID1);
-  }
-
+  lock = apml_channel_lock(CPU_ID1);
   ret = read_dimm_temp(fru, sensor_num, value, dimm_id, CPU_ID1);
+  apml_channel_unlock(lock);
   if ( ret != 0 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 3);
@@ -932,7 +948,7 @@ read_dimm_power(uint8_t fru, uint8_t sensor_num, float *value,
 
 static int
 read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret;
+  int ret, lock = -1;
   static uint8_t retry[MAX_DIMM_NUM] = {0};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
@@ -943,11 +959,9 @@ read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  if (!strcmp( g_has_mux, "0")) {
-    set_apml_channel(CPU_ID0);
-  }
-
+  lock = apml_channel_lock(CPU_ID0);
   ret = read_dimm_power(fru, sensor_num, value, dimm_id, CPU_ID0);
+  apml_channel_unlock(lock);
   if ( ret != 0 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
@@ -959,7 +973,7 @@ read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret;
+  int ret, lock = -1;
   static uint8_t retry[MAX_DIMM_NUM] = {0};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
@@ -970,11 +984,9 @@ read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  if (!strcmp( g_has_mux, "0")) {
-    set_apml_channel(CPU_ID1);
-  }
-
+  lock = apml_channel_lock(CPU_ID1);
   ret = read_dimm_power(fru, sensor_num, value, dimm_id, CPU_ID1);
+  apml_channel_unlock(lock);
   if ( ret != 0 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);

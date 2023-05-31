@@ -1046,6 +1046,220 @@ int SwbPLDMNicComponent::update(string image)
   return ret;
 }
 
+int
+cb_bic_recovery_pre() {
+  // Set CB BIC boot from UART through CB CPLD
+  if (system("i2cset -y 11 0x5c 0x40 0x01 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set CB BIC boot from UART through CB CPLD failed", __func__);
+    return -1;
+  }
+  if (gpio_set_value_by_shadow("RST_SWB_BIC_N", GPIO_VALUE_LOW)) {
+     syslog(LOG_WARNING, "[%s] Set RST_SWB_BIC_N Low failed\n", __func__);
+     return -1;
+  }
+  sleep(1);
+  if (gpio_set_value_by_shadow("RST_SWB_BIC_N", GPIO_VALUE_HIGH)) {
+     syslog(LOG_WARNING, "[%s] Set RST_SWB_BIC_N High failed\n", __func__);
+     return -1;
+  }
+  if (system("i2cset -y 11 0x5c 0x31 0x00 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set UART MUX to CB BIC failed", __func__);
+    return -1;
+  }
+  return 0;
+}
+
+int
+mc_bic_recovery_pre() {
+  // Set MC BIC boot from UART through CB CPLD
+  if (system("i2cset -y 69 0x60 0x40 0x01 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set MC BIC boot from UART through MC CPLD failed", __func__);
+    return -1;
+  }
+  if (system("i2cset -y 11 0x5c 0x31 0x01 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set CB UART SEL to MC board through CB CPLD failed", __func__);
+    return -1;
+  }
+  if (system("i2cset -y 69 0x60 0x42 0x00 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set MC MUX to MC BIC failed", __func__);
+    return -1;
+  }
+  if (system("i2cset -y 69 0x60 0x41 0x00 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set MC BIC RESET LOW through MC CPLD failed", __func__);
+    return -1;
+  }
+  sleep(1);
+  if (system("i2cset -y 69 0x60 0x41 0x01 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set MC BIC RESET HIGH through MC CPLD failed", __func__);
+    return -1;
+  }
+  sleep(1);
+  return 0;
+}
+
+int
+gta_bic_recovery_pre(string image, uint8_t fruid, bool /*force*/) {
+  if (fruid == FRU_ACB) {
+    if (cb_bic_recovery_pre() < 0) {
+      return -1;
+    }
+  } else if (fruid == FRU_MEB) {
+    if (mc_bic_recovery_pre() < 0) {
+      return -1;
+    }
+  } else {
+    syslog(LOG_WARNING, "%s() Unknown FRU: %u", __func__, fruid);
+    return -1;
+  }
+
+  sleep(2);
+  char cmd[64] = {0};
+  snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%d 115200", GTA_BIC_UART_ID);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    return -1;
+  }
+
+  struct stat st;
+  if (stat(image.c_str(), &st) < 0) {
+    cerr << "Cannot check " << image << " file information" << endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  uint8_t head[4];
+  head[0] = st.st_size;
+  head[1] = st.st_size >> 8;
+  head[2] = st.st_size >> 16;
+  head[3] = st.st_size >> 24;
+
+  snprintf(cmd, sizeof(cmd), "echo -n -e '\\x%x\\x%x\\x%x\\x%x' > /dev/ttyS%d",
+           head[0], head[1], head[2], head[3], GTA_BIC_UART_ID);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    return -1;
+  }
+
+  snprintf(cmd, sizeof(cmd), "cat %s > /dev/ttyS%d", image.c_str(), GTA_BIC_UART_ID);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    return -1;
+  }
+
+  snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%d 57600", GTA_BIC_UART_ID);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    return -1;
+  }
+  sleep(2);
+  return 0;
+}
+
+int
+cb_bic_recovery_post() {
+  if (system("i2cset -y 11 0x5c 0x40 0x00 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set CB BIC boot from SPI through CB CPLD failed", __func__);
+    return -1;
+  }
+  if (gpio_set_value_by_shadow("RST_SWB_BIC_N", GPIO_VALUE_LOW)) {
+     syslog(LOG_WARNING, "[%s] Set RST_SWB_BIC_N Low failed\n", __func__);
+     return -1;
+  }
+  sleep(1);
+  if (gpio_set_value_by_shadow("RST_SWB_BIC_N", GPIO_VALUE_HIGH)) {
+     syslog(LOG_WARNING, "[%s] Set RST_SWB_BIC_N High failed\n", __func__);
+     return -1;
+  }
+  return 0;
+}
+
+int
+mc_bic_recovery_post() {
+  if (system("i2cset -y 69 0x60 0x40 0x00 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set MC BIC boot from SPI through MC CPLD failed", __func__);
+    return -1;
+  }
+  if (system("i2cset -y 69 0x60 0x41 0x00 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set MC BIC RESET LOW through MC CPLD failed", __func__);
+    return -1;
+  }
+  sleep(1);
+  if (system("i2cset -y 69 0x60 0x41 0x01 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set MC BIC RESET HIGH through MC CPLD failed", __func__);
+    return -1;
+  }
+  if (system("i2cset -y 11 0x5c 0x31 0x00 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set CB UART SEL to CB board through CB CPLD failed", __func__);
+    return -1;
+  }
+  if (system("i2cset -y 69 0x60 0x42 0x01 & > /dev/null")) {
+    syslog(LOG_WARNING, "[%s] Set MC MUX to MC CPLD failed", __func__);
+    return -1;
+  }
+  return 0;
+}
+
+int
+gta_bic_recovery_post(uint8_t fruid, bool /*force*/) {
+  if (fruid == FRU_ACB) {
+    if (cb_bic_recovery_post() < 0) {
+      return -1;
+    }
+  } else if (fruid == FRU_MEB) {
+    if (mc_bic_recovery_post() < 0) {
+      return -1;
+    }
+  } else {
+    syslog(LOG_WARNING, "%s() Unknown FRU: %u", __func__, fruid);
+    return -1;
+  }
+
+  return 0;
+}
+
+int GtaBicFwRecoveryComponent::update(string image) {
+  int ret = 0;
+  uint8_t fruid = 0;
+
+  pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
+  cout << "Do " << this->alias_fru() << " " << this->alias_component() << " init..." << endl;
+  ret = gta_bic_recovery_pre(image, fruid, false);
+  if (ret < 0) {
+    cout << "Recovery init Failed" << endl;
+    goto exit;
+  }
+  cout << "Recovery init Successed" << endl;
+  ret = fw_update_proc(image, false, bus, eid, target, this->alias_component(), this->alias_fru());
+  sleep(2);
+  if (ret < 0) {
+    goto exit;
+  }
+exit:
+  gta_bic_recovery_post(fruid, false);
+  return ret;
+}
+
+int GtaBicFwRecoveryComponent::fupdate(string image) {
+  int ret = 0;
+  uint8_t fruid = 0;
+
+  pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
+  cout << "Do " << this->alias_fru() << " " << this->alias_component() << " init..." << endl;
+  ret = gta_bic_recovery_pre(image, fruid, true);
+  if (ret < 0) {
+    cout << "Recovery init Failed" << endl;
+    goto exit;
+  }
+  cout << "Recovery init Successed" << endl;
+  ret = fw_update_proc(image, false, bus, eid, target, this->alias_component(), this->alias_fru());
+  sleep(2);
+  if (ret < 0) {
+    goto exit;
+  }
+exit:
+  gta_bic_recovery_post(fruid, true);
+  return ret;
+}
+
 namespace pldm_signed_info
 {
   class swb_fw_common_config {

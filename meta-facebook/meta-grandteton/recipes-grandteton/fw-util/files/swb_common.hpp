@@ -166,6 +166,7 @@ class SwbPLDMNicComponent : public PLDMNicComponent {
       PLDMNicComponent(fru, comp, key, eid, bus) {}
     int update(string /*image*/) override;
 };
+
 //Artemis Meb Cxl Component
 class MebCxlFwComponent : public SwbBicFwComponent {
   public:
@@ -174,3 +175,14 @@ class MebCxlFwComponent : public SwbBicFwComponent {
     int get_version(json& j) override;
 };
 
+class GtaBicFwRecoveryComponent : public Component {
+  protected:
+    uint8_t bus, eid, target;
+
+  public:
+    GtaBicFwRecoveryComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
+        :Component(fru, comp), bus(bus), eid(eid), target(target) {}
+
+  int update(string image) override;
+  int fupdate(string image) override;
+};

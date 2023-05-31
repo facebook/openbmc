@@ -107,6 +107,7 @@
 
 /* Artemis */
 // ACB Device Info
+#define GTA_BIC_UART_ID 5
 #define ACB_BIC_BUS 3
 #define ACB_BIC_ADDR 0x20
 #define ACB_BIC_EID 0x0A

@@ -277,3 +277,6 @@ CxlVrComponent vr_jcn2_vddq_cd ("mc_cxl7", "vr_pvddq_cd",       "MC CXL7 VR_PVDD
 CxlVrComponent vr_jcn1_a0v8_9  ("mc_cxl8", "vr_p0v89a",         "MC CXL8 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL8_VR_P089A_COMP);
 CxlVrComponent vr_jcn1_vddq_ab ("mc_cxl8", "vr_p0v8d_pvddq_ab", "MC CXL8 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL8_VR_P0V8D_PVDDQ_AB_COMP);
 CxlVrComponent vr_jcn1_vddq_cd ("mc_cxl8", "vr_pvddq_cd",       "MC CXL8 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL8_VR_PVDDQ_CD_COMP);
+
+GtaBicFwRecoveryComponent cb_bic_recovery("cb", "bic_recovery", ACB_BIC_BUS, ACB_BIC_EID, BIC_COMP);
+GtaBicFwRecoveryComponent mc_bic_recovery("mc", "bic_recovery", MEB_BIC_BUS, MEB_BIC_EID, BIC_COMP);

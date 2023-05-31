@@ -205,21 +205,21 @@ PAL_SENSOR_MAP acb_sensor_map[] = {
 
 PAL_SENSOR_MAP accl_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x00
-  {"Freya_1_Temp",  0, get_accl_sensor, false,  {98, 85, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x01
-  {"Freya_2_Temp",  0, get_accl_sensor, false,  {98, 85, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x02
-  {"P12V_EFUSE_VOL",  0, get_accl_sensor, false,  {13.2, 12.96, 14.33, 10.8, 11.04, 10.091, 0, 0}, VOLT}, // 0x03
-  {"P3V3_1_VOL",  0, get_accl_sensor, false,  {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0}, VOLT}, // 0x04
-  {"P3V3_2_VOL",  0, get_accl_sensor, false,  {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0}, VOLT}, // 0x05
-  {"Freya_1_VOL_1",  0, get_accl_sensor, false,  {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x06
-  {"Freya_1_VOL_2",  0, get_accl_sensor, false,  {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x07
-  {"P12V_EFUSE_CUR",  0, get_accl_sensor, false,  {5.5, 0, 7.2, 0, 0, 0, 0, 0}, CURR}, // 0x08
-  {"P3V3_1_CUR",  0, get_accl_sensor, false,  {8.4, 0, 11.5, 0, 0, 0, 0, 0}, CURR}, // 0x09
-  {"P3V3_2_CUR",  0, get_accl_sensor, false,  {8.4, 0, 11.5, 0, 0, 0, 0, 0}, CURR}, // 0x0A
-  {"Freya_2_VOL_1",  0, get_accl_sensor, false,  {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x0B
-  {"Freya_2_VOL_2",  0, get_accl_sensor, false,  {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x0C
-  {"P12V_EFUSE_PWR",  0, get_accl_sensor, false,  {67.1, 0, 87.8, 0, 0, 0, 0, 0}, POWER}, // 0x0D
-  {"P3V3_1_PWR",  0, get_accl_sensor, false,  {27.72, 0, 37.9, 0, 0, 0, 0, 0}, POWER}, // 0x0E
-  {"P3V3_2_PWR",  0, get_accl_sensor, false,  {27.72, 0, 37.9, 0, 0, 0, 0, 0}, POWER}, // 0x0F
+  {"Freya_1_Temp",  0, get_accl_sensor, false,  {98, 85, 102, 0, 0, 0, 0, 0}, TEMP}, // 0x01
+  {"Freya_2_Temp",  0, get_accl_sensor, false,  {98, 85, 102, 0, 0, 0, 0, 0}, TEMP}, // 0x02
+  {"P12V_EFUSE_VOL",  0, get_accl_sensor, false,  {12.566, 12.444, 12.81, 11.834, 11.9563, 11.59, 0, 0}, VOLT}, // 0x03
+  {"P3V3_1_VOL",  0, get_accl_sensor, false,  {3.399, 3.366, 3.465, 3.201, 3.234, 3.135, 0, 0}, VOLT}, // 0x04
+  {"P3V3_2_VOL",  0, get_accl_sensor, false,  {3.399, 3.366, 3.465, 3.201, 3.234, 3.135, 0, 0}, VOLT}, // 0x05
+  {"Freya_1_VOL_1",  0, get_accl_sensor, false,  {3.399, 3.366, 3.465, 3.201, 3.234, 3.135, 0, 0}, VOLT}, // 0x06
+  {"Freya_1_VOL_2",  0, get_accl_sensor, false,  {3.399, 3.366, 3.465, 3.201, 3.234, 3.135, 0, 0}, VOLT}, // 0x07
+  {"P12V_EFUSE_CUR",  0, get_accl_sensor, false,  {9.29, 9.2, 12.06, 0, 0, 0, 0, 0}, CURR}, // 0x08
+  {"P3V3_1_CUR",  0, get_accl_sensor, false,  {17.16, 17, 22, 0, 0, 0, 0, 0}, CURR}, // 0x09
+  {"P3V3_2_CUR",  0, get_accl_sensor, false,  {17.16, 17, 22, 0, 0, 0, 0, 0}, CURR}, // 0x0A
+  {"Freya_2_VOL_1",  0, get_accl_sensor, false,  {3.399, 3.366, 3.465, 3.201, 3.234, 3.135, 0, 0}, VOLT}, // 0x0B
+  {"Freya_2_VOL_2",  0, get_accl_sensor, false,  {3.399, 3.366, 3.465, 3.201, 3.234, 3.135, 0, 0}, VOLT}, // 0x0C
+  {"P12V_EFUSE_PWR",  0, get_accl_sensor, false,  {113.3, 112.2, 147.13, 0, 0, 0, 0, 0}, POWER}, // 0x0D
+  {"P3V3_1_PWR",  0, get_accl_sensor, false,  {56.65, 56.1, 72.6, 0, 0, 0, 0, 0}, POWER}, // 0x0E
+  {"P3V3_2_PWR",  0, get_accl_sensor, false,  {56.65, 56.1, 72.6, 0, 0, 0, 0, 0}, POWER}, // 0x0F
 };
 
 const uint8_t acb_sensor_list[] = {

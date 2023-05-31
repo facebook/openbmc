@@ -1,6 +1,8 @@
 #ifndef __XDPE152XX_H__
 #define __XDPE152XX_H__
 
+// Support XDPE1x2xx Series : XDPE152xx/XDPE192xx/XDPE1A2xx
+
 #include "vr.h"
 
 #define MAX_SECT_DATA_NUM 200

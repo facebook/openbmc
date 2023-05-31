@@ -15,16 +15,23 @@
 
 #define DATA_LEN_IN_LINE 5
 #define SECT_TRIM 0x02
-#define IFX_CONF_SIZE 1344  // Config(604) + PMBus(504) + SVID(156) + PMBusPartial(80)
-#define REMAINING_TIMES(x) (((x[1] << 8) | x[0]) / IFX_CONF_SIZE)
+#define XDPE15284C_CONF_SIZE 1344  // Config(604) + PMBus(504) + SVID(156) + PMBusPartial(80)
+#define XDPE19283B_CONF_SIZE 1416  // Config(728) + PMBus(568) + SVID(120)
+#define REMAINING_TIMES(x, y) (((x[1] << 8) | x[0]) / (y))
+
+#define IFX_IC_DEV_ID_LEN 2
 
 #define CRC32_POLY 0xEDB88320  // polynomial
 
 #define VR_WRITE_DELAY  10   // 10 ms
 #define VR_RELOAD_DELAY 500  // 500 ms
 
+#define PRODUCT_ID_XDPE15284 0x8A
+#define PRODUCT_ID_XDPE19283 0x95
+
 enum {
   PMBUS_STS_CML       = 0x7E,
+  PMBUS_IC_DEVICE_ID  = 0xAD,
   IFX_MFR_DISABLE_SECURITY_ONCE = 0xCB,
   IFX_MFR_AHB_ADDR    = 0xCE,
   IFX_MFR_REG_WRITE   = 0xDE,
@@ -39,10 +46,48 @@ enum {
   GET_CRC       = 0x2D,
 };
 
+enum revision_code{
+  REV_A = 0x00,
+  REV_B,
+  REV_C,
+  REV_D,
+};
+
 extern int vr_rdwr(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
 static int (*vr_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t) = &vr_rdwr;
 
 const uint32_t REG_LOCK_PASSWORD = 0x7F48680C;
+
+static int
+xdpe152xx_get_devid(uint8_t bus, uint8_t addr, uint8_t *devid) {
+  uint8_t tbuf[16], rbuf[16];
+
+  tbuf[0] = PMBUS_IC_DEVICE_ID;
+  if (vr_xfer(bus, addr, tbuf, 1, rbuf, IFX_IC_DEV_ID_LEN+1) < 0) {
+    syslog(LOG_WARNING, "%s: read IC_DEVICE_ID failed", __func__);
+
+    return -1;
+  }
+
+  memcpy(devid, &rbuf[1], IFX_IC_DEV_ID_LEN);
+
+  return 0;
+}
+
+static int
+get_xdpe152xx_config_size(uint8_t product_id, uint8_t rev_code) {
+  int size = XDPE15284C_CONF_SIZE;
+
+  switch (product_id) {
+    case PRODUCT_ID_XDPE19283:
+      if (rev_code == REV_B) {
+        size = XDPE19283B_CONF_SIZE;
+      }
+      break;
+  }
+
+  return size;
+}
 
 static int
 xdpe152xx_mfr_fw(uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t *resp) {
@@ -123,7 +168,7 @@ xdpe152xx_lock_reg(struct vr_info *info) {
 
 static int
 get_xdpe152xx_remaining_wr(uint8_t bus, uint8_t addr, uint8_t *remain) {
-  uint8_t tbuf[16] = {0}, rbuf[16];
+  uint8_t tbuf[16] = {0}, rbuf[16], devid[2] = {0};
 
   if (remain == NULL) {
     return -1;
@@ -133,7 +178,13 @@ get_xdpe152xx_remaining_wr(uint8_t bus, uint8_t addr, uint8_t *remain) {
     syslog(LOG_WARNING, "%s: Failed to get vr remaining writes", __func__);
     return -1;
   }
-  *remain = REMAINING_TIMES(rbuf);
+
+  if (xdpe152xx_get_devid(bus, addr, devid) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get vr ic device id", __func__);
+  }
+  int conf_size = get_xdpe152xx_config_size(devid[1], devid[0]);
+
+  *remain = REMAINING_TIMES(rbuf, conf_size);
 
   return 0;
 }

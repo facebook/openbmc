@@ -68,8 +68,8 @@ xdpe152xx_mfr_fw(uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t
 
   if (resp) {
     tbuf[0] = IFX_MFR_FW_CMD_DATA;
-    if (vr_xfer(bus, addr, tbuf, 1, rbuf, 1) < 0) {
-      syslog(LOG_WARNING, "%s: Get block read length failed", __func__);
+    if (vr_xfer(bus, addr, tbuf, 1, rbuf, 6) < 0) {
+      syslog(LOG_WARNING, "%s: Block read 0x%02X failed", __func__, tbuf[0]);
       return -1;
     }
 
@@ -77,14 +77,6 @@ xdpe152xx_mfr_fw(uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t
       syslog(LOG_WARNING, "%s: Unexpected data, len = %u", __func__, rbuf[0]);
       return -1;
     }
-
-    // block bytes + read length 1 byte
-    uint8_t rlen_with_block = rbuf[0] + 1;
-    if (vr_xfer(bus, addr, tbuf, 1, rbuf, rlen_with_block) < 0) {
-      syslog(LOG_WARNING, "%s: Read 0x%02X bytes failed", __func__, rlen_with_block);
-      return -1;
-    }
-
     memcpy(resp, rbuf+1, 4);
   }
 

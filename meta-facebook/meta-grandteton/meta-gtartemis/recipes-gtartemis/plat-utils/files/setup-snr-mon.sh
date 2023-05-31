@@ -1,4 +1,6 @@
-# Copyright 2022-present Facebook. All Rights Reserved.
+#!/bin/bash
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,21 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-CFLAGS += "-DSENSOR_FAIL_DETECT"
-SENSORD_MONITORED_FRUS = "\ 
-        mb \
-        nic0 nic1 \
-        vpdb \
-        hpdb \
-        fan_bp1 fan_bp2 \
-        scm \
-        cb \
-        mc \
-        mc_cxl1 mc_cxl2 mc_cxl3 mc_cxl4 \
-        mc_cxl5 mc_cxl6 mc_cxl7 mc_cxl8 \
-        cb_accl1 cb_accl2 cb_accl3 cb_accl4 \
-        cb_accl5 cb_accl6 cb_accl7 cb_accl8 \
-        cb_accl9 cb_accl10 cb_accl11 cb_accl12 \
-        hsc \
-        "
+
+kv set mb_polling_status      1
+kv set nic0_polling_status    1
+kv set nic1_polling_status    1
+kv set scm_polling_status     1
+kv set vpdb_polling_status    1
+kv set hpdb_polling_status    1
+kv set fan_bp1_polling_status 1
+kv set fan_bp2_polling_status 1

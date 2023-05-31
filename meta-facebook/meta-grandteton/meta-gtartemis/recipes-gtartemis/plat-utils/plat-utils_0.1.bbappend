@@ -21,6 +21,7 @@ LOCAL_URI += " \
     file://sol-util \
     file://usb-util \
     file://setup-server-uart.sh \
+    file://setup-snr-mon.sh \
     "
 
 binfiles += " usb-util "

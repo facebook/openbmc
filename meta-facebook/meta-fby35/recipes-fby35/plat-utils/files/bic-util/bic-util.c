@@ -334,12 +334,18 @@ util_get_virtual_gpio(uint8_t slot_id) {
   }
 
   for (i = 0; i < gpio_pin_cnt; i++) {
+    // Ignore the empty GPIO name
+    ret = y35_get_gpio_name(slot_id, i, gpio_pin_name, true, NONE_INTF);
+    if (ret != 0) {
+      continue;
+    }
+
     ret = bic_get_virtual_gpio(slot_id, i, &value, &direction);
     if (ret < 0) {
       printf("%s() bic_get_virtual_gpio returns %d\n", __func__, ret);
       return ret;
     }
-    y35_get_gpio_name(slot_id, i, gpio_pin_name, true, NONE_INTF);
+
     printf("%d %s: %d\n",i , gpio_pin_name, value);
   }
 
@@ -357,7 +363,12 @@ util_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
     return ret;
   }
 
-  y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name, true, NONE_INTF);
+  ret = y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name, true, NONE_INTF);
+  if (ret != 0) {
+    printf("slot %d: fail to get GPIO name of virtual GPIO pin number %d\n", slot_id, gpio_num);
+    return ret;
+  }
+
   printf("slot %d: setting [%d]%s to %d\n", slot_id, gpio_num, gpio_pin_name, gpio_val);
 
   ret = bic_set_virtual_gpio(slot_id, gpio_num, gpio_val);

@@ -226,7 +226,8 @@ const char *gl_gpio_pin_name[] = {
 //Great Lakes BIC virtual GPIO
 const char *gl_virtual_gpio_pin_name[] = {
   "BIOS_POST_COMPLETE",    //0
-  "BIOS_DEBUG_MSG_ENABLE",
+  "",                      //1
+  "ADR_MODE0",             //2
 };
 
 //Vernal Falls BIC GPIO
@@ -621,6 +622,10 @@ y35_get_gpio_name(uint8_t fru, uint8_t gpio, char *name, bool is_virtual_gpio, u
 #ifdef DEBUG
     syslog(LOG_WARNING, "y35_get_gpio_name: Wrong gpio pin %u, gpio pin size %d", gpio, gpio_pin_size);
 #endif
+    return -1;
+  }
+
+  if (strcmp(gpio_pin_name[gpio], "") == 0) {
     return -1;
   }
 

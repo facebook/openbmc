@@ -360,7 +360,7 @@ enum gl_gpio {
 
 enum gl_virtual_gpio {
   GL_BIOS_POST_COMPLETE = 0,
-  GL_BIOS_DEBUG_MSG_ENABLE,
+  GL_ADR_MODE0 = 2,
 };
 
 enum {

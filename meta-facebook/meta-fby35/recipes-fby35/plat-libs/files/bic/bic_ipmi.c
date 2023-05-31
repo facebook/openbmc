@@ -2383,9 +2383,13 @@ bic_get_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t *value, uint8_t 
   tbuf[3] = 0x00; // Get virtual GPIO
   tbuf[4] = gpio_num;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_SET_VIRTUAL_GPIO, tbuf, tlen, rbuf, &rlen);
-  *direction = rbuf[6] & 0x01;
-  *value = rbuf[7] & 0x01;
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_SET_VIRTUAL_GPIO, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if (ret != 0 || rlen < 3) {
+    return -1;
+  }
+
+  *direction = rbuf[5] & 0x01;
+  *value = rbuf[6] & 0x01;
 
   return ret;
 }

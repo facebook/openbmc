@@ -23,7 +23,7 @@ LOGFILE_B="/var/log/mTerm_$1_backup.log"
 readonly EXIT_ERROR=255
 
 usage() {
-  echo "Usage: sol-util [ mb | cb | cb_pesw0 | cb_pesw1 ]"
+  echo "Usage: sol-util [ mb | cb | mc | cb_pesw0 | cb_pesw1 ]"
   echo "       sol-util [ cb_accl[1..12]_[1..2] ] uart[0..3] (baudrate)"
   echo "       e.g. sol-util cb_accl1_1 uart0"
   echo "       sol-util [ mb | cb ] --history"
@@ -595,7 +595,7 @@ if [[ $# -gt 3  ||  $# -lt 1 ]]; then
   exit "$EXIT_ERROR";
 fi
 
-if [ "$1" = "mb" ] || [ "$1" = "cb" ] || [[ "$1" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]]; then
+if [ "$1" = "mb" ] || [ "$1" = "cb" ] || [ "$1" = "mc" ] || [[ "$1" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]]; then
   SLOT=$1
   if [ $# -eq 2 ] && [ "$2" == "--history" ]; then
     cat "$LOGFILE_B" "$LOGFILE" 2>/dev/null
@@ -648,6 +648,16 @@ if [ -n "$COMP" ]; then
   /usr/bin/microcom "$PARAMETER" "$BAUDRATE" "$USB_PATH"
   RET=$?
   exit $RET;
+fi
+
+if [ "$1" = "cb" ]; then
+  i2cset -y 11 0x5c 0x31 0x00
+  sleep 1
+elif [ "$1" = "mc" ]; then
+  SLOT="cb"  # CB service since CB/MC using same UART but different MUX
+  i2cset -y 11 0x5c 0x31 0x01 # CB MUX SEL to MC board (L: CB BIC, H: MC BOARD)
+  i2cset -y 69 0x60 0x42 0x00 # MC MUX SEL to MC BIC (H: MC CPLD; L: MC BIC)
+  sleep 1
 fi
 
 exec /usr/local/bin/mTerm_client "$SLOT"

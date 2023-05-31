@@ -1,4 +1,4 @@
-## Sensors {#sensors}
+﻿## Sensors {#sensors}
 
 ### Baseboard
 
@@ -84,28 +84,28 @@
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| MB_INLET_TEMP_C | 0x01 | C | 150 | 60 | NA | NA | NA | NA |
-| MB_OUTLET_TEMP_C | 0x02 | C | 150 | 80 | NA | NA | NA | NA |
-| FIO_FRONT_TEMP_C | 0x03 | C | NA | 40 | NA | NA | NA | NA |
-| MB_SOC_CPU_TEMP_C | 0x04 | C | NA　 | 105 | NA | NA | NA | NA |
-| MB_DIMMA_TEMP_C | 0x05 | C | NA | 85 | NA | NA | NA | NA |
-| MB_DIMMB_TEMP_C | 0x06 | C | NA | 85 | NA | NA | NA | NA |
-| MB_DIMMC_TEMP_C | 0x07 | C | NA | 85 | NA | NA | NA | NA |
-| MB_DIMMD_TEMP_C | 0x08 | C | NA | 85 | NA | NA | NA | NA |
-| MB_DIMME_TEMP_C | 0x09 | C | NA | 85 | NA | NA | NA | NA |
-| MB_DIMMF_TEMP_C | 0x0A | C | NA | 85 | NA | NA | NA | NA |
-| MB_DIMMG_TEMP_C | 0x0B | C | NA | 85 | NA | NA | NA | NA |
-| MB_DIMMH_TEMP_C | 0x0C | C | NA | 85 | NA | NA | NA | NA |
-| MB_SSD0_TEMP_C | 0x0D | C | NA | 75 | NA | NA | NA | NA |
-| MB_HSC_TEMP_C | 0x0E | C | 125 | 80 | NA | NA | NA | NA |
-| MB_VR_VCCIN_TEMP_C | 0x0F | C | 125 | 100 | NA | NA | NA | NA |
-| MB_VR_EHV_TEMP_C | 0x10 | C | 125 | 100 | NA | NA | NA | NA |
-| MB_VR_FIVRA_TEMP_C | 0x11 | C | 125 | 100 | NA | NA | NA | NA |
-| MB_VR_VCCINF_TEMP_C | 0x12 | C | 125 | 100 | NA | NA | NA | NA |
-| MB_VR_VCCD0_TEMP_C | 0x13 | C | 125 | 100 | NA | NA | NA | NA |
-| MB_VR_VCCD1_TEMP_C | 0x14 | C | 125 | 100 | NA | NA | NA | NA |
-| MB_SOC_THERMAL_MARGIN_C | 0x15 | C | 125 | 0 | NA | NA | NA | NA |
-| MB_SOC_TJMAX_C | 0x16 | C | 125 | 105 | NA | NA | NA | NA |
+| MB_INLET_TEMP_C | 0x01 | C | 150 | 150 | 60 | NA | NA | NA |
+| MB_OUTLET_TEMP_C | 0x02 | C | 150 | 150 | 80 | NA | NA | NA |
+| FIO_FRONT_TEMP_C | 0x03 | C | 150 | 150 | 40 | NA | NA | NA |
+| MB_SOC_CPU_TEMP_C | 0x04 | C | 91　 | NA | NA | NA | NA | NA |
+| MB_DIMMA_TEMP_C | 0x05 | C | NA | NA | 85 | NA | NA | NA |
+| MB_DIMMB_TEMP_C | 0x06 | C | NA | NA | 85 | NA | NA | NA |
+| MB_DIMMC_TEMP_C | 0x07 | C | NA | NA | 85 | NA | NA | NA |
+| MB_DIMMD_TEMP_C | 0x08 | C | NA | NA | 85 | NA | NA | NA |
+| MB_DIMME_TEMP_C | 0x09 | C | NA | NA | 85 | NA | NA | NA |
+| MB_DIMMF_TEMP_C | 0x0A | C | NA | NA | 85 | NA | NA | NA |
+| MB_DIMMG_TEMP_C | 0x0B | C | NA | NA | 85 | NA | NA | NA |
+| MB_DIMMH_TEMP_C | 0x0C | C | NA | NA | 85 | NA | NA | NA |
+| MB_SSD0_TEMP_C | 0x0D | C | 93 | 93 | 77 | NA | NA | NA |
+| MB_HSC_TEMP_C | 0x0E | C | 175 | 175 | 80 | NA | NA | NA |
+| MB_VR_VCCIN_TEMP_C | 0x0F | C | 125 | 125 | 100 | NA | NA | NA |
+| MB_VR_EHV_TEMP_C | 0x10 | C | 125 | 125 | 100 | NA | NA | NA |
+| MB_VR_FIVRA_TEMP_C | 0x11 | C | 125 | 125 | 100 | NA | NA | NA |
+| MB_VR_VCCINF_TEMP_C | 0x12 | C | 125 | 125 | 100 | NA | NA | NA |
+| MB_VR_VCCD0_TEMP_C | 0x13 | C | 125 | 125 | 100 | NA | NA | NA |
+| MB_VR_VCCD1_TEMP_C | 0x14 | C | 125 | 125 | 100 | NA | NA | NA |
+| MB_SOC_THERMAL_MARGIN_C | 0x15 | C | NA | NA | 0 | NA | NA | NA |
+| MB_SOC_TJMAX_C | 0x16 | C | NA | NA | NA | NA | NA | NA |
 
 #### Voltage Monitoring
 
@@ -133,27 +133,27 @@
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| MB_HSC_OUTPUT_CURR_A | 0x28 | A | 68 | 55.4 | 69.36 | NA | NA | NA |
-| MB_HSC_OUTPUT_CURR_A | 0x29 | A | 84 | 68.2 | 85.68 | NA | NA | NA |
-| MB_VR_VCCIN_CURR_A | 0x2A | A | 306 | 264 | 312.12 | NA | NA | NA |
-| MB_VR_EHV_CURR_A | 0x2B | A | 7 | 4.7 | 7.14 | NA | NA | NA |
-| MB_VR_FIVRA_CURR_A | 0x2C | A | 69 | 53 | 70.38 | NA | NA | NA |
-| MB_VR_VCCINF_CURR_A | 0x2D | A | 66 | 52 | 67.32 | NA | NA | NA |
-| MB_VR_VCCD0_CURR_A | 0x2E | A | 40 | 27.5 | 40.8 | NA | NA | NA |
-| MB_VR_VCCD1_CURR_A | 0x2F | A | 40 | 27.5 | 40.8 | NA | NA | NA |
+| MB_HSC_OUTPUT_CURR_A | 0x28 | A | 68 | 60.94 | 58.17 | NA | NA | NA |
+| MB_HSC_OUTPUT_CURR_A | 0x29 | A | 84 | 75.02 | 71.61 | NA | NA | NA |
+| MB_VR_VCCIN_CURR_A | 0x2A | A | 306 | 290.4 | 277.2 | NA | NA | NA |
+| MB_VR_EHV_CURR_A | 0x2B | A | 7 | 5.17 | 4.935 | NA | NA | NA |
+| MB_VR_FIVRA_CURR_A | 0x2C | A | 69 | 62.7 | 59.85 | NA | NA | NA |
+| MB_VR_VCCINF_CURR_A | 0x2D | A | 66 | 60.5 | 57.75 | NA | NA | NA |
+| MB_VR_VCCD0_CURR_A | 0x2E | A | 40 | 30.25 | 28.875 | NA | NA | NA |
+| MB_VR_VCCD1_CURR_A | 0x2F | A | 40 | 30.25 | 28.875 | NA | NA | NA |
 
 #### Power Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| MB_HSC_INPUT_PWR_W | 0x30 | W | 850 | 692.5 | 867 | NA | NA | NA |
-| MB_HSC_INPUT_PWR_W | 0x31 | W | 1050 | 852.5 | 1071 | NA | NA | NA |
-| MB_VR_VCCIN_PWR_W | 0x32 | W | 559.98 | 475.2 | 561.816 | NA | NA | NA |
-| MB_VR_EHV_PWR_W | 0x33 | W | 12.6 | 8.46 | 12.852 | NA | NA | NA |
-| MB_VR_FIVRA_PWR_W | 0x34 | W | 124.2 | 95.4 | 879.75 | NA | NA | NA |
-| MB_VR_VCCINF_PWR_W | 0x35 | W | 56.1 | 44.2 | 57.222 | NA | NA | NA |
-| MB_VR_VCCD0_PWR_W | 0x36 | W | 44 | 30.25 | 44.88 | NA | NA | NA |
-| MB_VR_VCCD1_PWR_W | 0x37 | W | 44 | 30.25 | 44.88 | NA | NA | NA |
+| MB_HSC_INPUT_PWR_W | 0x30 | W | 850 | 761.75 | 727.125 | NA | NA | NA |
+| MB_HSC_INPUT_PWR_W | 0x31 | W | 1050 | 937.75 | 895.125 | NA | NA | NA |
+| MB_VR_VCCIN_PWR_W | 0x32 | W | 559.98 | 522.72 | 498.96 | NA | NA | NA |
+| MB_VR_EHV_PWR_W | 0x33 | W | 12.6 | 9.306 | 8.883 | NA | NA | NA |
+| MB_VR_FIVRA_PWR_W | 0x34 | W | 124.2 | 112.86 | 107.73 | NA | NA | NA |
+| MB_VR_VCCINF_PWR_W | 0x35 | W | 56.1 | 51.425 | 49.0875 | NA | NA | NA |
+| MB_VR_VCCD0_PWR_W | 0x36 | W | 44 | 33.275 | 31.7625 | NA | NA | NA |
+| MB_VR_VCCD1_PWR_W | 0x37 | W | 44 | 33.275 | 31.7625 | NA | NA | NA |
 | MB_VR_DIMMA_PMIC_PWR_W | 0x38 | W | NA | 31.91623988 | 31.6002375 | NA | NA | NA |
 | MB_VR_DIMMB_PMIC_PWR_W | 0x39 | W | NA | 31.91623988 | 31.6002375 | NA | NA | NA |
 | MB_VR_DIMMC_PMIC_PWR_W | 0x3A | W | NA | 31.91623988 | 31.6002375 | NA | NA | NA |

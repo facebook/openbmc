@@ -1,0 +1,1 @@
+SUBSYSTEM=="mtd", DEVPATH=="*/1e630000.spi/*/spi1/spi1.0/*", ATTRS{name}=="spi-flash" RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /dev/%k /run/devmap/spi-devices/spi1-flash"

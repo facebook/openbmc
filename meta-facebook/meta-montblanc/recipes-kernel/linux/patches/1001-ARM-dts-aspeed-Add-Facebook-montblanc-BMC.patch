@@ -10,8 +10,8 @@ BMC integrated for health monitoring purpose.
 
 Signed-off-by: Bin Huang <binhuang@meta.com>
 ---
- .../dts/aspeed-bmc-facebook-montblanc.dts     | 69 +++++++++++++++++++
- 1 file changed, 69 insertions(+)
+ .../dts/aspeed-bmc-facebook-montblanc.dts     | 84 +++++++++++++++++++
+ 1 file changed, 84 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
 
 diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
@@ -19,7 +19,7 @@ new file mode 100644
 index 000000000000..1c93259714ea
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,84 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) Meta Platforms, Inc. and affiliates.
 +
@@ -33,6 +33,21 @@ index 000000000000..1c93259714ea
 +
 +	chosen {
 +		stdout-path = &uart1;
++	};
++	
++	spi_gpio: spi-gpio {
++		num-chipselects = <3>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>,
++				<0>,	/* device reg=<1> does not exist */
++				<&gpio0 ASPEED_GPIO(X, 2) GPIO_ACTIVE_HIGH>;
++	
++		eeprom@2 {
++			compatible = "atmel,at93c46d";
++			spi-max-frequency = <250000>;
++			data-size = <16>;
++			spi-cs-high;
++			reg = <2>;
++		};
 +	};
 +};
 +

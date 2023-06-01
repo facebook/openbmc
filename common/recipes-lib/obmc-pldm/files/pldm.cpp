@@ -178,9 +178,17 @@ int oem_pldm_send_recv (uint8_t bus, int eid,
                                      pldm_req_msg, req_msg_len,
                                      pldm_resp_msg, resp_msg_len);
 
-  // printf("%s return code = %d\n", __func__, (int)rc);
   oem_pldm_close(pldmd_fd);
-  return rc;
+
+  if (rc != PLDM_REQUESTER_SUCCESS) {
+    return PLDM_ERROR_NOT_READY;
+  }
+
+  if(*resp_msg_len < PLDM_RESP_HEADER_SIZE)
+     return PLDM_ERROR_INVALID_LENGTH;
+
+  auto cc = *(*pldm_resp_msg+PLDM_RESP_HEADER_SIZE-1);
+  return cc ;
 }
 
 int oem_pldm_send_recv_w_fd (int eid, int pldmd_fd,
@@ -299,6 +307,7 @@ oem_pldm_ipmi_send_recv(uint8_t bus, uint8_t eid,
   do {
     rc = oem_pldm_send_recv(bus, eid, tbuf, tlen, &pldm_rbuf, rxlen);
     if(rc) {
+      rc = PLDM_REQUESTER_RECV_FAIL;
       break;
     }
 

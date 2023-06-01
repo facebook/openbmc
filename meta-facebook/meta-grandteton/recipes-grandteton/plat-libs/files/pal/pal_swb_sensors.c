@@ -30,7 +30,7 @@ get_swb_sensor(uint8_t fru, uint8_t sensor_num, float *value)
 
   rc = oem_pldm_send_recv(SWB_BUS_ID, SWB_BIC_EID, tbuf, tlen, &rbuf, &rlen);
 
-  if (rc == 0) {
+  if (rc == PLDM_SUCCESS) {
     resp= (struct pldm_snr_reading_t*)rbuf;
     if (resp->data.completion_code || resp->data.sensor_operational_state) {
       rc = -1;

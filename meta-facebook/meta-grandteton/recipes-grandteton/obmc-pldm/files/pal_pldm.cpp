@@ -70,13 +70,7 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
 
   int ret = oem_pldm_send_recv(bus, eid, request, response);
 
-  if (ret == 0) {
-    auto pldm_resp = reinterpret_cast<pldm_msg*>(response.data());
-    if (pldm_resp->payload[0] != 0x00) {
-      delete_version_cache();
-      return -1;
-    }
-
+  if (ret == PLDM_SUCCESS) {
     pldm_get_firmware_parameters_resp fwParams{};
     variable_field activeCompImageSetVerStr{};
     variable_field pendingCompImageSetVerStr{};
@@ -141,10 +135,12 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
                                 activeCompVerStr.length + pendingCompVerStr.length;
       }
     }
+  } else if (ret == PLDM_ERROR_UNSUPPORTED_PLDM_CMD) {
+    delete_version_cache();
+    ret = -1;
   } else {
     syslog(LOG_WARNING, "Function oem_pldm_send_recv() error, rc = %d.", ret);
-    std::cerr << "Function oem_pldm_send_recv() error, EID="
-                << unsigned(eid) << ", RC=" << ret << "\n";
+    ret = -1;
   }
 
   return ret;

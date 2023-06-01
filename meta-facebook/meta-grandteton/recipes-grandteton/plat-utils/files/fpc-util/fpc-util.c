@@ -79,6 +79,8 @@ set_swb_amber_led(uint8_t e1s_id, uint8_t status)
   tbuf[tlen++] = status;
 
   rc = oem_pldm_send_recv(SWB_BUS_ID, SWB_BIC_EID, tbuf, tlen, &rbuf, &rlen);
+  if(rbuf)
+    free(rbuf);
   return rc;
 }
 

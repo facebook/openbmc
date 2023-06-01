@@ -24,7 +24,7 @@ int PLDMNicComponent::get_version(json& j) {
   j["PRETTY_COMPONENT"] = "Mellanox " + _ver_key;
 
   int rc = oem_pldm_send_recv(_bus_id, _eid, tbuf, tlen, &rbuf, &rlen);
-  if (rc == 0) {
+  if (rc == PLDM_SUCCESS) {
     std::string ret{};
     for (int i = 0; i < 10; ++i)
       ret += (char)*(rbuf + i + 14);
@@ -32,6 +32,10 @@ int PLDMNicComponent::get_version(json& j) {
   } else {
     j["VERSION"] = "NA";
   }
+
+  if(rbuf)
+    free(rbuf);
+
   return FW_STATUS_SUCCESS;
 }
 

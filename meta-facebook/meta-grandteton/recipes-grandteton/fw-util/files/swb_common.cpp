@@ -227,7 +227,7 @@ int swb_fw_update (uint8_t fruid, uint8_t bus, uint8_t eid, uint8_t target, uint
                                 NETFN_OEM_1S_REQ, CMD_OEM_1S_ACTIVE_CXL,
                                 txbuf, txlen,
                                 rxbuf, &rxlen, true);
-    if (ret < 0) {
+    if (ret != 0) {
       cout << endl << "Active " << comp << " Failed!" << endl;
       goto exit;
     }

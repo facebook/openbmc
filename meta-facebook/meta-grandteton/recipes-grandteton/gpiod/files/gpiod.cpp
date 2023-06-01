@@ -811,8 +811,7 @@ set_pldm_event_receiver()
   tbuf[tlen++] = 0x00; // heartbeatTimer
 
   rc = oem_pldm_send_recv(SWB_BUS_ID, SWB_BIC_EID, tbuf, tlen, &rbuf, &rlen);
-
-  if (rc == 0) {
+  if (rc == PLDM_SUCCESS) {
     syslog(LOG_INFO, "Set PLDM event receiver success.");
   }
 

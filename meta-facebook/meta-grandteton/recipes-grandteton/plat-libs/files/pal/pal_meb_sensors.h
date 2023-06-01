@@ -9,6 +9,11 @@
 #define JCN_CONFIG_STR_E1S "e1s"
 #define JCN_CONFIG_STR_NIC "nic"
 
+#define MEB_MP5990_DEVICE_NAME "mp5990"
+#define MEB_MP5990_BIND_DIR    "/sys/bus/i2c/drivers/mp5990/70-0040"
+#define MEB_MP5990_BUS         70
+#define MEB_MP5990_ADDR        0x40
+
 // MEB sensor table
 enum {
   MEB_SENSOR_INLET_TEMP = 1,

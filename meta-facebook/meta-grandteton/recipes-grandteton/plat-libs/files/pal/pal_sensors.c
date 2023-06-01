@@ -889,3 +889,18 @@ pal_sensor_discrete_check(uint8_t fru,
   }
   return 0;
 }
+
+int
+pal_sensor_monitor_initial(void) {
+  if (pal_is_artemis()) {
+    if (access(MEB_MP5990_BIND_DIR, F_OK) != 0) {
+      if (i2c_add_device(MEB_MP5990_BUS, MEB_MP5990_ADDR, MEB_MP5990_DEVICE_NAME) < 0) {
+        syslog(LOG_ERR, "[%s] Fail to load MEB HSC driver\n", __func__);
+        return -1;
+      }
+      sensors_reinit();
+    }
+  }
+
+  return 0;
+}

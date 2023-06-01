@@ -6,6 +6,9 @@
 #include "pal.h"
 #include <openbmc/obmc-i2c.h>
 #include "syslog.h"
+#include <openbmc/obmc-sensors.h>
+
+extern struct snr_map sensor_map[];
 
 static int
 get_meb_sensor(uint8_t fru, uint8_t sensor_num, float *value) 
@@ -99,12 +102,18 @@ get_meb_jcn_sensor(uint8_t fru, uint8_t sensor_num, float *value)
   return ret;
 }
 
+static int
+get_meb_hsc_sensor(uint8_t fru, uint8_t sensor_num, float *value)
+{
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+}
+
 PAL_SENSOR_MAP meb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
   {"Inlet Temp", 0, get_meb_sensor, false, {65, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
   {"Outlet Temp", 0, get_meb_sensor, false, {95, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
-  {"PU4 Temp", 0, get_meb_sensor, false, {145, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
-  {"P12V_AUX_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x04
+  {"PU4 Temp", 0, get_meb_hsc_sensor, false, {145, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
+  {"P12V_AUX_VOL", 0, get_meb_hsc_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x04
   {"P3V3_AUX_VOL", 0, get_meb_sensor, false, {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0},  VOLT}, // 0x05
   {"P1V2_AUX_VOL", 0, get_meb_sensor, false, {1.284, 1.26, 1.36, 1.116, 1.14, 0.996, 0, 0},  VOLT}, // 0x06
   {"P3V3_VOL", 0, get_meb_sensor, false, {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0},  VOLT}, // 0x07
@@ -122,7 +131,7 @@ PAL_SENSOR_MAP meb_sensor_map[] = {
   {"P12V_AUX_CARD12_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x13
   {"P12V_AUX_CARD13_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x14
   {"P12V_AUX_CARD14_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x15
-  {"P12V_AUX_CUR", 0, get_meb_sensor, false, {73.1, 0, 95, 0, 0, 0, 0, 0},  CURR}, // 0x16
+  {"P12V_AUX_CUR", 0, get_meb_hsc_sensor, false, {73.1, 0, 95, 0, 0, 0, 0, 0},  CURR}, // 0x16
   {"P12V_AUX_CARD1_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x17
   {"P12V_AUX_CARD2_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x18
   {"P12V_AUX_CARD3_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x19
@@ -137,7 +146,7 @@ PAL_SENSOR_MAP meb_sensor_map[] = {
   {"P12V_AUX_CARD12_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x22
   {"P12V_AUX_CARD13_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x23
   {"P12V_AUX_CARD14_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x24
-  {"P12V_AUX_PWR", 0, get_meb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x25
+  {"P12V_AUX_PWR", 0, get_meb_hsc_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x25
   {"P12V_AUX_CARD1_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x26
   {"P12V_AUX_CARD2_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x27
   {"P12V_AUX_CARD3_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x28

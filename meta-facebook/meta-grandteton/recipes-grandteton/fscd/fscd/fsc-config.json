@@ -1,5 +1,5 @@
 {
-    "version": "grandteton-v8.5",
+    "version": "grandteton-v8.6",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -362,8 +362,7 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [65, 30],
-          [70, 35],
+          [65, 25],
           [80, 40],
           [85, 45],
           [95, 90]

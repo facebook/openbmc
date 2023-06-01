@@ -347,7 +347,7 @@ class ClassConfig {
       if (value == "ltc4282") {
         return false;
       }
-    } catch (const kv::key_does_not_exist&) {
+    } catch (const std::exception&) {
       syslog(LOG_WARNING, "%s() Cannot get the key medusa_hsc_conf", __func__);
     }
 

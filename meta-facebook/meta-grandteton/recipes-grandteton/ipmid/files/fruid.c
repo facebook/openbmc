@@ -104,6 +104,7 @@ static void
   bic_intf fru_bic_info = {0};
 
   fru_bic_info.fru_id = fru;
+  fru_bic_info.dev_id = DEV_NONE;
   pal_get_bic_intf(&fru_bic_info);
 
   if (!pal_is_artemis()) {
@@ -136,12 +137,72 @@ static void
   pthread_exit(NULL);
 }
 
+static int
+pldm_dev_fru_reader(uint8_t fru, uint8_t dev) {
+  uint8_t retry = MAX_FRU_READ_RETRY;
+  char dev_fruid_bin_path[MAX_FRUID_PATH_LEN] = {0};
+  uint8_t status = 0;
+  bic_intf fru_bic_info = {0};
+
+  fru_bic_info.fru_id = fru;
+  fru_bic_info.dev_id = dev;
+  pal_get_bic_intf(&fru_bic_info);
+
+  if (!pal_is_dev_prsnt(fru, dev, &status)) {
+    if (status == FRU_NOT_PRSNT) {
+      syslog(LOG_WARNING, "%s: FRU: %u Dev: %u Not Present", __func__, fru, dev);
+      return 0;
+    }
+  }
+
+  if (pal_get_dev_fruid_path(fru, dev, dev_fruid_bin_path)) {
+    syslog(LOG_WARNING, "%s: Get FRU: %u DEV: %u Bin Path Failed", __func__, fru, dev);
+    return -1;
+  }
+
+  /* Tansfer fru id + device id into component id
+     FRU component id
+     ACCL1 = 18
+     ...
+     ACCL12 = 29
+     ACCL1 DEV1 = 30
+     ACCL1 DEV2 = 31
+     ...
+     ACCL12 DEV1 = 52
+     ACCL12 DEV2 = 53
+    
+    e.g. ACCL1 DEV1
+     This formula get ID = base(30) + 2*(fru(18) - FRU_ACB_ACCL1(18)) + (dev(1) - 1) = 30
+    e.g. ACCL12 DEV2
+     ID = base(30) + 2*(fru(29) - FRU_ACB_ACCL1(18)) + (dev(2) - 1) = 53
+  */
+  fru_bic_info.dev_id = (DEV_ID_BASE + 2*(fru - FRU_ACB_ACCL1) + (dev - 1));
+
+  sleep(2);
+
+  while(retry > 0) {
+    if (hal_read_pldm_fruid(fru_bic_info, dev_fruid_bin_path, FRUID_SIZE) == 0) {
+      break;
+    }
+
+    retry--;
+    sleep(1);
+  }
+
+  if (retry == 0) {
+    return -1;
+  }
+
+  return 0;
+}
+
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void) {
   pthread_t tid_fru[FRU_CNT] = {0};
   char eeprom_path[64] = {0};
   char bin_path[32] = {0};
   unsigned int caps = 0;
+  uint8_t dev_num = 0;
 
   for (int fru = 1; fru < FRU_CNT; fru ++) {
     // Get FRU data from PLDM
@@ -149,6 +210,14 @@ int plat_fruid_init(void) {
       if ((caps & FRU_CAPABILITY_FRUID_READ)) {
         if (pthread_create(&tid_fru[fru], NULL, pldm_fru_reader, (void *)fru) < 0) {
           syslog(LOG_WARNING, "%s: Create pldm_fru_reader Failed, FRU: %d", __func__, fru);
+        }
+      }
+      if ((caps & FRU_CAPABILITY_HAS_DEVICE)) {
+        pal_get_num_devs(fru, &dev_num);
+        for (int dev = 1; dev <= dev_num; dev ++) {
+          if (pldm_dev_fru_reader(fru, dev) < 0) {
+            syslog(LOG_WARNING, "%s() Get FRU: %u DEV %u FRUID failed", __func__, fru, dev);
+          }
         }
       }
       continue;

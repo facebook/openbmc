@@ -68,6 +68,7 @@ int pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout);
 int pal_clear_psb_cache(void);
 int pal_get_post_buffer_dword_data(uint8_t slot, uint32_t *port_buff, uint32_t input_len, uint32_t *output_len);
 int pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data);
+int pal_is_dev_prsnt(uint8_t fru, uint8_t dev, uint8_t *status);
 
 #ifdef __cplusplus
 } // extern "C"

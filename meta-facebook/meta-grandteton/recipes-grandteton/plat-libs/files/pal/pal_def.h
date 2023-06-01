@@ -125,6 +125,11 @@
 // JCN1,2,3,4,9,10,11,12 can plug CXL or E1.S
 // JCN5,6,7,8 plugs E1.S
 #define MAX_CXL_NUM 8
+#define MAX_DEV_NAME 8
+#define MAX_FRUID_NAME 64
+#define MAX_FRUID_PATH_LEN 64
+
+#define GTA_FRUID_DEV_PATH "/tmp/fruid_%s_dev%d.bin"
 
 typedef struct {
   uint8_t fru_prsnt;
@@ -500,6 +505,46 @@ enum MEB_JCN_TYPE {
 
 enum GTA_SKU_ID {
   GTA_CONFIG_9 = 9,
+};
+
+enum DEVICES_NUMBER {
+  ACCL_DEV_NUM = 2,
+  CB_DEV_NUM = 24,
+};
+
+enum DEVICE_ID {
+  DEV_ID1 = 1,
+  DEV_ID2,
+};
+
+// Component ID
+enum CB_FRU_COMPONENT {
+  // CB Devices
+  DEV_ID_BASE  = 0x1E,
+  FAC1_DEV1_FRU_ID = 0x1E,
+  FAC1_DEV2_FRU_ID,
+  FAC2_DEV1_FRU_ID,
+  FAC2_DEV2_FRU_ID,
+  FAC3_DEV1_FRU_ID,
+  FAC3_DEV2_FRU_ID,
+  FAC4_DEV1_FRU_ID,
+  FAC4_DEV2_FRU_ID,
+  FAC5_DEV1_FRU_ID,
+  FAC5_DEV2_FRU_ID,
+  FAC6_DEV1_FRU_ID,
+  FAC6_DEV2_FRU_ID,
+  FAC7_DEV1_FRU_ID,
+  FAC7_DEV2_FRU_ID,
+  FAC8_DEV1_FRU_ID,
+  FAC8_DEV2_FRU_ID,
+  FAC9_DEV1_FRU_ID,
+  FAC9_DEV2_FRU_ID,
+  FAC10_DEV1_FRU_ID,
+  FAC10_DEV2_FRU_ID,
+  FAC11_DEV1_FRU_ID,
+  FAC11_DEV2_FRU_ID,
+  FAC12_DEV1_FRU_ID,
+  FAC12_DEV2_FRU_ID,
 };
 
 /* Artemis End */

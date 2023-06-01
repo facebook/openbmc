@@ -102,7 +102,7 @@ const char pal_server_list[] = "mb";
 #define ACB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
 #define MEB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
 #define MEB_CXL_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
-#define ACB_ACCL_CAPABILITY FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
+#define ACB_ACCL_CAPABILITY FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL | FRU_CAPABILITY_HAS_DEVICE
 
 static bool is_fio_handler_running = false;
 
@@ -887,8 +887,19 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
   return 0;
 }
 
-int pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
-{
+int pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps) {
+  if (pal_is_artemis()) {
+    if ( fru >= FRU_ACB_ACCL1 && fru <= FRU_ACB_ACCL12 ) {
+      if ((dev >= DEV_ID1 && dev <= DEV_ID2)) {
+        *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      } else {
+        *caps = 0;
+      }
+    } else {
+      *caps = 0;
+    }
+    return 0;
+  }
   return -1;
 }
 
@@ -1541,4 +1552,110 @@ pal_handle_oem_1s_dev_power(uint8_t fru, uint8_t *req_data, uint8_t req_len, uin
   }
 
   return CC_SUCCESS;
+}
+
+int
+pal_get_num_devs(uint8_t fru, uint8_t *num_devs) {
+  switch (fru) {
+    case FRU_ACB_ACCL1:
+    case FRU_ACB_ACCL2:
+    case FRU_ACB_ACCL3:
+    case FRU_ACB_ACCL4:
+    case FRU_ACB_ACCL5:
+    case FRU_ACB_ACCL6:
+    case FRU_ACB_ACCL7:
+    case FRU_ACB_ACCL8:
+    case FRU_ACB_ACCL9:
+    case FRU_ACB_ACCL10:
+    case FRU_ACB_ACCL11:
+    case FRU_ACB_ACCL12:
+      *num_devs = ACCL_DEV_NUM;
+      break;
+    default:
+      *num_devs = 0;
+  }
+  return PAL_EOK;
+}
+
+int
+pal_get_dev_name(uint8_t fru, uint8_t dev, char *name) {
+  switch (dev) {
+    case DEV_ID1:
+      strncpy(name, "dev1", MAX_DEV_NAME);
+      break;
+    case DEV_ID2:
+      strncpy(name, "dev2", MAX_DEV_NAME);
+      break;
+    default:
+      syslog(LOG_WARNING, "%s() FRU: %u wrong device id: %u", __func__,fru, dev);
+      return -1;
+  }
+  return 0;
+}
+
+int
+pal_get_dev_id(char *dev_str, uint8_t *dev) {
+  if (!strncmp(dev_str, "all", MAX_DEV_NAME)) {
+    *dev = FRU_ALL;
+  } else if (!strncmp(dev_str, "dev1", MAX_DEV_NAME)) {
+    *dev = DEV_ID1;
+  } else if (!strncmp(dev_str, "dev2", MAX_DEV_NAME)) {
+    *dev = DEV_ID2;
+  } else {
+    syslog(LOG_WARNING, "%s() Wrong device name: %s", __func__, dev_str);
+    return -1;
+  }
+  return 0;
+}
+
+int
+pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name) {
+  char temp_name[MAX_FRUID_NAME] = {0};
+  char dev_name[MAX_DEV_NAME] = {0};
+
+  if (pal_get_fruid_name(fru, name) < 0) {
+    syslog(LOG_WARNING, "%s() Wrong FRU: %u", __func__, fru);
+    return -1;
+  }
+
+  if (pal_get_dev_name(fru, dev, dev_name) < 0) {
+    syslog(LOG_WARNING, "%s() Wrong device ID: %u", __func__, dev);
+    return -1;
+  }
+
+  snprintf(temp_name, MAX_FRUID_NAME, "%s %s", name, dev_name);
+  strncpy(name, temp_name, MAX_FRUID_NAME);
+  return 0;
+}
+
+int
+pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
+  char fru_name[MAX_FRUID_NAME] = {0};
+
+  if (pal_get_fru_name(fru, fru_name) < 0) {
+    syslog(LOG_WARNING, "%s() Wrong FRU: %u", __func__, fru);
+    return -1;
+  }
+  snprintf(path, MAX_FRUID_PATH_LEN, GTA_FRUID_DEV_PATH, fru_name, dev_id);
+  return 0;
+}
+
+int
+pal_is_dev_prsnt(uint8_t fru, uint8_t dev, uint8_t *status) {
+  fru_status dev_status = {0};
+
+  if (!status) {
+    syslog(LOG_WARNING, "%s() Pointer is NULL.", __func__);
+    return -1;
+  }
+  if (pal_get_pldm_fru_status(fru, dev, &dev_status) < 0) {
+    syslog(LOG_WARNING, "%s() FRU: %u get device id: %u present failed", __func__, fru, dev);
+    return -1;
+  }
+  if (dev_status.fru_prsnt == FRU_PRSNT) {
+    *status = FRU_PRSNT; 
+  } else {
+    *status = FRU_NOT_PRSNT;
+  }
+  return 0;
 }

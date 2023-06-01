@@ -36,6 +36,7 @@
 #define FRUID_WRITE_COUNT_MAX  (0x20)
 #define MAX_TXBUF_SIZE         (255)
 #define MAX_RXBUF_SIZE         (255)
+#define NONE_DEV               (0xFF)
 
 static int
 get_pldm_fruid_info(bic_intf fru_bic_info, ipmi_fruid_info_t *info) {
@@ -44,7 +45,11 @@ get_pldm_fruid_info(bic_intf fru_bic_info, ipmi_fruid_info_t *info) {
   size_t  rxlen = 0;
   uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
 
-  txbuf[txlen++] = fru_bic_info.fru_id;
+  if (fru_bic_info.dev_id == NONE_DEV) {
+    txbuf[txlen++] = fru_bic_info.fru_id;
+  } else {
+    txbuf[txlen++] = fru_bic_info.dev_id;
+  }
 
   rc = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO,
@@ -54,13 +59,17 @@ get_pldm_fruid_info(bic_intf fru_bic_info, ipmi_fruid_info_t *info) {
   return rc;
 }
 
-static int
+int
 _read_pldm_fruid(bic_intf fru_bic_info, uint16_t offset, uint8_t count, uint8_t *rbuf, size_t *rlen) {
   int rc;
   uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
   uint8_t txlen = 0;
 
-  txbuf[txlen++] = fru_bic_info.fru_id;
+  if (fru_bic_info.dev_id == NONE_DEV) {
+    txbuf[txlen++] = fru_bic_info.fru_id;
+  } else {
+    txbuf[txlen++] = fru_bic_info.dev_id;
+  }
   txbuf[txlen++] = offset & 0xFF;
   txbuf[txlen++] = (offset >> 8) & 0xFF;
   txbuf[txlen++] = count;
@@ -87,7 +96,6 @@ _write_pldm_fruid(bic_intf fru_bic_info, uint16_t offset, uint8_t count, uint8_t
   memcpy(txbuf + txlen, buf, count);
   txlen = count + txlen ;
 
-  syslog(LOG_INFO, "%s() fru:%d", __func__, fru_bic_info.fru_id);
   rc = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
                                NETFN_STORAGE_REQ, CMD_STORAGE_WRITE_FRUID_DATA,
                                txbuf, txlen,

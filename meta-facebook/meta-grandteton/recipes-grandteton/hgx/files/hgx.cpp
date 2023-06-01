@@ -173,7 +173,7 @@ int setFWVersion() {
     auto& fp = comp["Id"];
     auto& ver = comp["Version"];
 
-    if (fp.dump().find("HGX_") != std::string::npos) {
+    if (fp.dump().find("HGX_") != std::string::npos && ver.dump() != "\"\"") {
       kv::set(fp, ver);
     }
   }

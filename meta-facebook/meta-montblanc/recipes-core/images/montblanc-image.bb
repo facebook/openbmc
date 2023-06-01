@@ -22,4 +22,5 @@ IMAGE_INSTALL += " \
     log-util-v2 \
     console-autodiscovery \
     kcsd \
+    flashrom \
     "

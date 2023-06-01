@@ -165,50 +165,51 @@ struct pal_key_cfg {
   char *name;
   char *def_val;
   int (*function)(int, void*);
+  uint32_t region;
 } key_cfg[] = {
   /* name, default value, function */
-  {"fru1_sysfw_ver", "0", NULL},
-  {"fru2_sysfw_ver", "0", NULL},
-  {"fru3_sysfw_ver", "0", NULL},
-  {"fru4_sysfw_ver", "0", NULL},
-  {"pwr_server1_last_state", "on", key_func_pwr_last_state},
-  {"pwr_server2_last_state", "on", key_func_pwr_last_state},
-  {"pwr_server3_last_state", "on", key_func_pwr_last_state},
-  {"pwr_server4_last_state", "on", key_func_pwr_last_state},
-  {"timestamp_sled", "0", NULL},
-  {"slot1_por_cfg", "lps", key_func_por_cfg},
-  {"slot2_por_cfg", "lps", key_func_por_cfg},
-  {"slot3_por_cfg", "lps", key_func_por_cfg},
-  {"slot4_por_cfg", "lps", key_func_por_cfg},
-  {"slot1_boot_order", "0100090203ff", NULL},
-  {"slot2_boot_order", "0100090203ff", NULL},
-  {"slot3_boot_order", "0100090203ff", NULL},
-  {"slot4_boot_order", "0100090203ff", NULL},
-  {"slot1_cpu_ppin", "0", NULL},
-  {"slot2_cpu_ppin", "0", NULL},
-  {"slot3_cpu_ppin", "0", NULL},
-  {"slot4_cpu_ppin", "0", NULL},
-  {"fru1_restart_cause", "3", NULL},
-  {"fru2_restart_cause", "3", NULL},
-  {"fru3_restart_cause", "3", NULL},
-  {"fru4_restart_cause", "3", NULL},
-  {"slot1_sensor_health", "1", NULL},
-  {"slot2_sensor_health", "1", NULL},
-  {"slot3_sensor_health", "1", NULL},
-  {"slot4_sensor_health", "1", NULL},
-  {"slot1_sel_error", "1", NULL},
-  {"slot2_sel_error", "1", NULL},
-  {"slot3_sel_error", "1", NULL},
-  {"slot4_sel_error", "1", NULL},
-  {"ntp_server", "", NULL},
-  {"slot1_enable_pxe_sel", "0", NULL},
-  {"slot2_enable_pxe_sel", "0", NULL},
-  {"slot3_enable_pxe_sel", "0", NULL},
-  {"slot4_enable_pxe_sel", "0", NULL},
-  {"slot1_end_of_post", "1", key_func_end_of_post},
-  {"slot2_end_of_post", "1", key_func_end_of_post},
-  {"slot3_end_of_post", "1", key_func_end_of_post},
-  {"slot4_end_of_post", "1", key_func_end_of_post},
+  {"fru1_sysfw_ver", "0", NULL, KV_FPERSIST},
+  {"fru2_sysfw_ver", "0", NULL, KV_FPERSIST},
+  {"fru3_sysfw_ver", "0", NULL, KV_FPERSIST},
+  {"fru4_sysfw_ver", "0", NULL, KV_FPERSIST},
+  {"pwr_server1_last_state", "on", key_func_pwr_last_state, KV_FPERSIST},
+  {"pwr_server2_last_state", "on", key_func_pwr_last_state, KV_FPERSIST},
+  {"pwr_server3_last_state", "on", key_func_pwr_last_state, KV_FPERSIST},
+  {"pwr_server4_last_state", "on", key_func_pwr_last_state, KV_FPERSIST},
+  {"timestamp_sled", "0", NULL, KV_FPERSIST},
+  {"slot1_por_cfg", "lps", key_func_por_cfg, KV_FPERSIST},
+  {"slot2_por_cfg", "lps", key_func_por_cfg, KV_FPERSIST},
+  {"slot3_por_cfg", "lps", key_func_por_cfg, KV_FPERSIST},
+  {"slot4_por_cfg", "lps", key_func_por_cfg, KV_FPERSIST},
+  {"slot1_boot_order", "0100090203ff", NULL, KV_FPERSIST},
+  {"slot2_boot_order", "0100090203ff", NULL, KV_FPERSIST},
+  {"slot3_boot_order", "0100090203ff", NULL, KV_FPERSIST},
+  {"slot4_boot_order", "0100090203ff", NULL, KV_FPERSIST},
+  {"slot1_cpu_ppin", "0", NULL, KV_FPERSIST},
+  {"slot2_cpu_ppin", "0", NULL, KV_FPERSIST},
+  {"slot3_cpu_ppin", "0", NULL, KV_FPERSIST},
+  {"slot4_cpu_ppin", "0", NULL, KV_FPERSIST},
+  {"fru1_restart_cause", "3", NULL, KV_FPERSIST},
+  {"fru2_restart_cause", "3", NULL, KV_FPERSIST},
+  {"fru3_restart_cause", "3", NULL, KV_FPERSIST},
+  {"fru4_restart_cause", "3", NULL, KV_FPERSIST},
+  {"slot1_sensor_health", "1", NULL, 0},
+  {"slot2_sensor_health", "1", NULL, 0},
+  {"slot3_sensor_health", "1", NULL, 0},
+  {"slot4_sensor_health", "1", NULL, 0},
+  {"slot1_sel_error", "1", NULL, KV_FPERSIST},
+  {"slot2_sel_error", "1", NULL, KV_FPERSIST},
+  {"slot3_sel_error", "1", NULL, KV_FPERSIST},
+  {"slot4_sel_error", "1", NULL, KV_FPERSIST},
+  {"ntp_server", "", NULL, KV_FPERSIST},
+  {"slot1_enable_pxe_sel", "0", NULL, KV_FPERSIST},
+  {"slot2_enable_pxe_sel", "0", NULL, KV_FPERSIST},
+  {"slot3_enable_pxe_sel", "0", NULL, KV_FPERSIST},
+  {"slot4_enable_pxe_sel", "0", NULL, KV_FPERSIST},
+  {"slot1_end_of_post", "1", key_func_end_of_post, KV_FPERSIST},
+  {"slot2_end_of_post", "1", key_func_end_of_post, KV_FPERSIST},
+  {"slot3_end_of_post", "1", key_func_end_of_post, KV_FPERSIST},
+  {"slot4_end_of_post", "1", key_func_end_of_post, KV_FPERSIST},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -871,7 +872,7 @@ pal_get_key_value(char *key, char *value) {
   if ((index = pal_key_index(key)) < 0)
     return -1;
 
-  return kv_get(key, value, NULL, KV_FPERSIST);
+  return kv_get(key, value, NULL, key_cfg[index].region);
 }
 
 int
@@ -887,34 +888,31 @@ pal_set_key_value(char *key, char *value) {
       return ret;
   }
 
-  return kv_set(key, value, 0, KV_FPERSIST);
+  return kv_set(key, value, 0, key_cfg[index].region);
 }
 
 void
 pal_dump_key_value(void) {
-  int ret;
-  int i = 0;
-  char value[MAX_VALUE_LEN] = {0x0};
+  int i;
 
-  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+  for (i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; ++i) {
+    char value[MAX_VALUE_LEN] = {0};
+
     printf("%s:", key_cfg[i].name);
-    if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
-    printf("\n");
-  } else {
-    printf("%s\n",  value);
-  }
-    i++;
-    memset(value, 0, MAX_VALUE_LEN);
+    if (kv_get(key_cfg[i].name, value, NULL, key_cfg[i].region) < 0) {
+      printf("\n");
+    } else {
+      printf("%s\n", value);
+    }
   }
 }
 
 int
-pal_set_def_key_value() {
+pal_set_def_key_value(void) {
   int i;
-  //char key[MAX_KEY_LEN] = {0};
 
-  for(i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
-    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
+  for (i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; ++i) {
+    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | key_cfg[i].region)) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
 #endif

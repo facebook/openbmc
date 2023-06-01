@@ -8,7 +8,7 @@ POST_CODE_FILE = "/tmp/post_code_buffer.bin"
 
 def postcode(fru, tmp_file):
     try:
-        postcodes = pal_get_4byte_postcode(fru)
+        postcodes = pal_get_4byte_postcode(fru, range(0, 18))
     except ValueError:
         return False
     except Exception as e:

@@ -193,10 +193,10 @@ def pal_get_postcode(fru: int) -> List[int]:
     return ret
 
 
-def pal_get_4byte_postcode(fru: int):
+def pal_get_4byte_postcode(fru: int, pages: range = range(1, 17)):
     ret = []
-    MAX_PAGE_NUM = int(16)
-    for i in range(1, (MAX_PAGE_NUM + 1)):
+
+    for i in pages:
         postcodes = (ctypes.c_uint * 256)()
         page = ctypes.c_uint8(i)
         plen = ctypes.c_uint(0)
@@ -210,6 +210,7 @@ def pal_get_4byte_postcode(fru: int):
             ret.append((postcodes[i]))
 
     return ret
+
 
 def pal_get_4byte_postcode_lcc(fru: int):
     ret = []
@@ -228,6 +229,7 @@ def pal_get_4byte_postcode_lcc(fru: int):
             ret.append((postcodes[i]))
 
     return ret
+
 
 ## Sensor reading functions
 def pal_sensor_is_cached(fru_id: int, snr_num: int) -> bool:

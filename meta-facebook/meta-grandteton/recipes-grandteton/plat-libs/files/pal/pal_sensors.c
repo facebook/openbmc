@@ -4,6 +4,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/libgpio.h>
+#include <libpldm-oem/pldm.h>
 #include "pal.h"
 #include "pal_common.h"
 
@@ -172,6 +173,52 @@ static int pal_get_pldm_jcn_config_from_bic(uint8_t fru, char *type_str) {
   }
 
   return -1;
+}
+
+int
+get_pldm_sensor(uint8_t bus, uint8_t eid, uint8_t sensor_num, float *value)
+{
+  uint8_t tbuf[255] = {0};
+  uint8_t* rbuf = (uint8_t *) NULL;//, tmp;
+  struct pldm_snr_reading_t* resp;
+  uint8_t tlen = 0;
+  size_t  rlen = 0;
+  int16_t integer=0;
+  float decimal=0;
+  int rc;
+
+  struct pldm_msg* pldmbuf = (struct pldm_msg *)tbuf;
+  pldmbuf->hdr.request = 1;
+  pldmbuf->hdr.type    = PLDM_PLATFORM;
+  pldmbuf->hdr.command = PLDM_GET_SENSOR_READING;
+  tlen = PLDM_HEADER_SIZE;
+  tbuf[tlen++] = sensor_num;
+  tbuf[tlen++] = 0;
+  tbuf[tlen++] = 0;
+
+  rc = oem_pldm_send_recv(bus, eid, tbuf, tlen, &rbuf, &rlen);
+
+  if (rc == PLDM_SUCCESS) {
+    resp= (struct pldm_snr_reading_t*)rbuf;
+    if (resp->data.completion_code || resp->data.sensor_operational_state) {
+      rc = -1;
+      goto exit;
+    }
+    integer = resp->data.present_reading[0] | resp->data.present_reading[1] << 8;
+    decimal = (float)(resp->data.present_reading[2] | resp->data.present_reading[3] << 8)/1000;
+
+    if (integer >= 0)
+      *value = (float)integer + decimal;
+    else
+      *value = (float)integer - decimal;
+  }
+
+exit:
+  if (rbuf)
+    free(rbuf);
+
+  return rc;
+
 }
 
 uint8_t pal_get_meb_jcn_config(uint8_t fru) {

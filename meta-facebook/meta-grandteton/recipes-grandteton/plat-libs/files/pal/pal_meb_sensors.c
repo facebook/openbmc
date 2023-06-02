@@ -13,48 +13,7 @@ extern struct snr_map sensor_map[];
 static int
 get_meb_sensor(uint8_t fru, uint8_t sensor_num, float *value) 
 {
-  uint8_t tbuf[MAX_TXBUF_SIZE] = {0};
-  uint8_t* rbuf = (uint8_t *) NULL;
-  struct pldm_snr_reading_t* resp;
-  uint8_t tlen = 0;
-  size_t  rlen = 0;
-  int16_t integer = 0;
-  float decimal = 0;
-  int ret;
-
-  struct pldm_msg* pldmbuf = (struct pldm_msg *)tbuf;
-  pldmbuf->hdr.request = 1;
-  pldmbuf->hdr.type    = PLDM_PLATFORM;
-  pldmbuf->hdr.command = PLDM_GET_SENSOR_READING;
-  tlen = PLDM_HEADER_SIZE;
-  tbuf[tlen++] = sensor_num;
-  tbuf[tlen++] = 0;
-  tbuf[tlen++] = 0;
-
-  ret = oem_pldm_send_recv(MEB_BIC_BUS, MEB_BIC_EID, tbuf, tlen, &rbuf, &rlen);
-
-  if (ret == 0) {
-    resp= (struct pldm_snr_reading_t*)rbuf;
-    if (resp->data.completion_code || resp->data.sensor_operational_state) {
-      ret = -1;
-      goto exit;
-    }
-    integer = resp->data.present_reading[0] | resp->data.present_reading[1] << 8;
-    decimal = (float)(resp->data.present_reading[2] | resp->data.present_reading[3] << 8)/1000;
-
-    if (integer >= 0) {
-      *value = (float)integer + decimal;
-    } else {
-      *value = (float)integer - decimal;
-    }
-  }
-
-exit:
-  if (rbuf) {
-    free(rbuf);
-  }
-
-  return ret;
+  return get_pldm_sensor(MEB_BIC_BUS, MEB_BIC_EID, sensor_num, value);
 }
 
 static int

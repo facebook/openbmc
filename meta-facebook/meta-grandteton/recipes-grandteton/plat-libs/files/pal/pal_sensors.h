@@ -166,6 +166,7 @@ typedef struct {
 int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max);
 int retry_err_handle(uint8_t retry_curr, uint8_t retry_max);
 uint8_t pal_get_meb_jcn_config(uint8_t fru);
+int get_pldm_sensor(uint8_t bus, uint8_t eid, uint8_t sensor_num, float *value);
 
 extern const char pal_server_list[];
 #endif

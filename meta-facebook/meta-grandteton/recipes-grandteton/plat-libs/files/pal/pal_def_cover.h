@@ -1,6 +1,10 @@
 #ifndef __HAL_PALDEF_COVER_H__
 #define __HAL_PALDEF_COVER_H__
 
+//BUS number
+#define HSC_BUS_NUM              (2)
+
+
 //GPIO EVENT Cover
 #define IRQ_UV_DETECT_N          "IRQ_UV_DETECT_N"
 #define IRQ_OC_DETECT_N          "IRQ_OC_DETECT_N"

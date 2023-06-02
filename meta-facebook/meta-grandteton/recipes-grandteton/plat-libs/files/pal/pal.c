@@ -164,7 +164,7 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_FAN_BP1,   "fan_bp1",     "FAN_BP1 Board",     40, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_FAN_BP2,   "fan_bp2",     "FAN_BP2 Board",     41, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_FIO,   "fio",     "FIO Board",     3,  0x20, FIO_CAPABILITY, FRU_PATH_PLDM,   fru_presence, PLDM_FRU_FIO},
-  {FRU_HSC,   "hsc",     "HSC Board",     2,  0x51, 0,              FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_HSC,   "hsc",     "HSC Board",     HSC_BUS_NUM,  0x51, 0,              FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_SHSC,  "swb_hsc", "SWB HSC Board", 3,  0x20, 0,              FRU_PATH_PLDM,   fru_presence, PLDM_FRU_SHSC},
   // Artemis FRU dev data
   {FRU_ACB,        "cb",        "Carrier Board",     ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_CAPABILITY,       FRU_PATH_PLDM,   fru_presence,    PLDM_FRU_NOT_SUPPORT},

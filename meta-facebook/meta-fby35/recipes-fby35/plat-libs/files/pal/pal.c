@@ -2130,12 +2130,25 @@ done:
 int
 pal_is_slot_server(uint8_t fru)
 {
-  int ret = fby35_common_get_slot_type(fru);
-
-  if ((ret == SERVER_TYPE_CL) || (ret == SERVER_TYPE_HD) || (ret == SERVER_TYPE_GL)) {
-    return 1;
+  int ret = 0;
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      ret = fby35_common_get_slot_type(fru);
+      switch (ret) {
+        case SERVER_TYPE_CL:
+        case SERVER_TYPE_HD:
+        case SERVER_TYPE_GL:
+          return 1;
+        default:
+          return 0;
+      }
+      break;
+    default:
+      return 0;
   }
-  return 0;
 }
 
 int

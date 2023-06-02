@@ -304,7 +304,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"GPU_SXM_2_TEMP_0"   , 0 , read_snr, false, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x3B
   {"GPU_SXM_2_TEMP_1"   , 0 , read_snr, false, {0, 0, 0, -0.01, 0, 0, 0, 0}, TEMP}, //0x3C
   {"GPU_SXM_2_DRAM_PWR" , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3D
-  {"GPU_SXM_2_DRAM_TEMP", 0 , read_snr, false,  {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x3E
+  {"GPU_SXM_2_DRAM_TEMP", 0 , read_snr, false, {95.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x3E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                 //0x3F
 
   {"GPU_SXM_3_ENRGY"    , 0 , read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY}, //0x40

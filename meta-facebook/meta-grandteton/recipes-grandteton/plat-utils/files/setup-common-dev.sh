@@ -194,11 +194,25 @@ gpio_export_ioexp 36-0022  VPDB_SKU_ID_0    13
 gpio_export_ioexp 36-0022  VPDB_SKU_ID_1    14
 gpio_export_ioexp 36-0022  VPDB_SKU_ID_2    15
 
-kv set vpdb_rev "$(($(gpio_get VPDB_BOARD_ID_2) << 2 |
-                   $(gpio_get VPDB_BOARD_ID_1) << 1 |
-                   $(gpio_get VPDB_BOARD_ID_0)))"
+i2cget -f -y 36 0x25 0x00
+rev=$?
+if [ "$rev" -eq 0 ]; then
+  gpio_export_ioexp 36-0025  VPDB_BOARD_ID_3_IO   0
+  gpio_export_ioexp 36-0025  VPDB_SKU_ID_3_IO     15
+  VPDB_BOARD_ID_3=$VPDB_BOARD_ID_3_IO
+  VPDB_SKU_ID_3=$VPDB_SKU_ID_3_IO
+else
+  VPDB_BOARD_ID_3=0
+  VPDB_SKU_ID_3=0
+fi
 
-kv set vpdb_sku "$(($(gpio_get VPDB_SKU_ID_2) << 2 |
+kv set vpdb_rev "$((VPDB_BOARD_ID_3 << 3 |
+                    $(gpio_get VPDB_BOARD_ID_2) << 2 |
+                    $(gpio_get VPDB_BOARD_ID_1) << 1 |
+                    $(gpio_get VPDB_BOARD_ID_0)))"
+
+kv set vpdb_sku "$((VPDB_SKU_ID_3 << 3 |
+                    $(gpio_get VPDB_SKU_ID_2) << 2 |
                     $(gpio_get VPDB_SKU_ID_1) << 1 |
                     $(gpio_get VPDB_SKU_ID_0)))"
 
@@ -298,9 +312,28 @@ i2c_device_add 37 0x25 pca9555
 gpio_export_ioexp 37-0025  FM_HS1_EN_BUSBAR_BUF  1
 gpio_export_ioexp 37-0025  FM_HS2_EN_BUSBAR_BUF  3
 
-kv set hpdb_rev "$(($(gpio_get HPDB_BOARD_ID_2) << 2 |
-                    $(gpio_get HPDB_BOARD_ID_1) << 1 |
-                    $(gpio_get HPDB_BOARD_ID_0)))"
+i2cget -f -y 37 0x25 0x00
+rev=$?
+if [ "$rev" -eq 0 ]; then
+  gpio_export_ioexp 37-0025  HPDB_BOARD_ID_3_IO    15
+  HPDB_BOARD_ID_3=$HPDB_BOARD_ID_3_IO
+else
+  HPDB_BOARD_ID_3=0
+fi
+
+
+hpdb_rc="$(($(gpio_get HPDB_BOARD_ID_2) << 2 |
+      $(gpio_get HPDB_BOARD_ID_1) << 1 |
+      $(gpio_get HPDB_BOARD_ID_0)))"
+
+
+if [ $hpdb_rc -ge 11 ] && [ $hpdb_rc -le 15 ]; then
+   HPDB_BOARD_ID_3=0
+fi
+
+kv set hpdb_rev "$((HPDB_BOARD_ID_3 << 3 | hpdb_rc))"
+
+
 
 kv set hpdb_sku "$(($(gpio_get HPDB_SKU_ID_2) << 2 |
                     $(gpio_get HPDB_SKU_ID_1) << 1 |
@@ -334,7 +367,7 @@ if [ "$hrev" -gt "$HPDB_PVT" ]; then
     i2c_device_add 37 0x43 ina238
     i2c_device_add 37 0x44 ina238
     i2c_device_add 37 0x45 ina238
-    kv set hpdb_adc_source "$HPDB_2ST_SOURCE"
+    kv set hpdb_adc_source "$HPDB_2ND_SOURCE"
   fi
 fi
 

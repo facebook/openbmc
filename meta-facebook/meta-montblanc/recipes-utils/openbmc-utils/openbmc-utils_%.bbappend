@@ -22,8 +22,10 @@ LOCAL_URI += "\
     file://setup_i2c.sh \
     file://setup-gpio.sh\
     file://spi_util.sh \
+    file://read_INA230.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
     spi_util.sh \
+    read_INA230.sh \
     "

@@ -19,6 +19,8 @@ require recipes-core/images/fboss-lite-image.inc
 
 IMAGE_INSTALL += " \
     mdio-util \
+    ipmbd \
+    ipmb-util \
     log-util-v2 \
     console-autodiscovery \
     kcsd \

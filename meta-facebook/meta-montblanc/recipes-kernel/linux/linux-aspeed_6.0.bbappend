@@ -17,5 +17,15 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
 
+#
+# Include patch files from meta-aspeed layer
+#
+SRC_URI += "file://patches/0501-i2c-add-a-slave-backend-to-receive-and-q.patch \
+            file://patches/0502-add-i2c-slave-inactive-timeout-support.patch \
+           "
+
+#
+# Include wedge400-specific patches
+#
 SRC_URI += "file://1001-ARM-dts-aspeed-Add-Facebook-montblanc-BMC.patch \
            "

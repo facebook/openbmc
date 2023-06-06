@@ -1,6 +1,5 @@
-#!/bin/bash
 #
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,18 +15,22 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-# shellcheck disable=SC1091
-. /usr/local/bin/openbmc-utils.sh
+inherit systemd
 
-# FRU EEPROM
-i2c_device_add 3 0x56 24c64    # SCM FRU EEPROM#2
-i2c_device_add 6 0x53 24c64    # FCB_B EEPROM
-i2c_device_add 8 0x51 24c64    # BMC EEPROM
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+LOCAL_URI += " \
+    file://ipmbd.target \
+    file://ipmbd@.service \
+    "
 
-# FPGA / CPLD
-i2c_device_add 12 0x60 mcbcpld
+RDEPENDS:${PN} += "bash"
 
-# CPU IPMI
-ulimit -q 1024000
-i2c_device_add 5 0x1010 slave-mqueue  # mqueue for ipmi from COMe CPU
+do_install:append() {
+  install -d ${D}${systemd_system_unitdir}
+  install -m 0644 ${S}/ipmbd.target ${D}${systemd_system_unitdir}
+  install -m 0644 ${S}/ipmbd@.service ${D}${systemd_system_unitdir}
+}
+
+SYSTEMD_SERVICE:${PN} += "ipmbd@.service ipmbd.target"

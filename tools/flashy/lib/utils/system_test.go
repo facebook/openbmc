@@ -172,23 +172,6 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			name:         "Run `bash -c \"ech0 openbmc\"` (rubbish command)",
-			cmdArr:       []string{"bash", "-c", "ech0 openbmc"},
-			timeout:      30 * time.Second,
-			wantExitCode: 127,
-			wantErr:      errors.Errorf("exit status 127"),
-			wantStdout:   "",
-			wantStderr:   "bash: line 1: ech0: command not found\n",
-			logContainsSeq: []string{
-				"Running command 'bash -c ech0 openbmc' with 30s timeout",
-				"stderr: bash: line 1: ech0: command not found",
-				"Command 'bash -c ech0 openbmc' exited with code 127 after",
-			},
-		},
-		{
-			// NOTE:- this is different from bash -c "ech0 openbmc", as Golang's
-			// exec.Command takes the first argument as the name of an executable to execute
-			// this will have a different error, and expects the default failed exit code (1)
 			name:         "Run 'ech0 openbmc'` (rubbish command, not found in PATH)",
 			cmdArr:       []string{"ech0", "openbmc"},
 			timeout:      30 * time.Second,

@@ -25,7 +25,7 @@ from common.base_fscd_test import BaseFscdTest
 from tests.fuji.helper.libpal import BoardRevision, pal_get_board_rev
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import fscd_config_dir, fscd_test_data_dir, qemu_check
+from utils.test_utils import tests_dir, qemu_check
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
@@ -35,7 +35,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
 
     def setUp(self, config=None, test_data_path=None):
         self.TEST_DATA_PATH = "{}/fuji/test_data/fscd".format(
-            fscd_test_data_dir("fuji")
+            tests_dir()
         )
         super().setUp(config, test_data_path)
 
@@ -135,7 +135,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
 
 class FscdTestPwmFuji(FscdTest):
 
-    TEST_CONFIG_PATH = "{}/fuji/test_data/fscd".format(fscd_config_dir())
+    TEST_CONFIG_PATH = "{}/fuji/test_data/fscd".format(tests_dir())
 
     def setUp(self):
         self.brd_rev = pal_get_board_rev()

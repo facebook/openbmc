@@ -23,7 +23,7 @@ import unittest
 from common.base_fscd_test import BaseFscdTest
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import fscd_config_dir, fscd_test_data_dir
+from utils.test_utils import tests_dir
 
 
 class FscdTest(BaseFscdTest, unittest.TestCase):
@@ -32,7 +32,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
 
     def setUp(self, config=None, test_data_path=None):
         self.TEST_DATA_PATH = "{}/wedge100/test_data/fscd".format(
-            fscd_test_data_dir("wedge100")
+            tests_dir()
         )
         super().setUp(config, test_data_path)
 
@@ -127,7 +127,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
 
 
 class FscdTestPwm(FscdTest):
-    TEST_CONFIG_PATH = "{}/wedge100/test_data/fscd".format(fscd_config_dir())
+    TEST_CONFIG_PATH = "{}/wedge100/test_data/fscd".format(tests_dir())
 
     def setUp(self):
         super().setUp(

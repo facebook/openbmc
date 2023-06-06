@@ -23,7 +23,7 @@ import unittest
 from common.base_fscd_test import BaseFscdTest
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import fscd_config_dir, fscd_test_data_dir, qemu_check
+from utils.test_utils import qemu_check, tests_dir
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
@@ -33,7 +33,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
 
     def setUp(self, config=None, test_data_path=None):
         self.TEST_DATA_PATH = "{}/cloudripper/test_data/fscd".format(
-            fscd_test_data_dir("cloudripper")
+            tests_dir()
         )
         super().setUp(config, test_data_path)
 
@@ -141,7 +141,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
 
 
 class FscdTestPwmCloudripper(FscdTest):
-    TEST_CONFIG_PATH = "{}/cloudripper/test_data/fscd".format(fscd_config_dir())
+    TEST_CONFIG_PATH = "{}/cloudripper/test_data/fscd".format(tests_dir())
 
     def setUp(self):
         config_file = "FSC-Cloudripper-config.json"

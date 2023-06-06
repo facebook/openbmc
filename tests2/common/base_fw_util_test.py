@@ -25,7 +25,7 @@ from typing import List, Union
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import fscd_config_dir
+from utils.test_utils import tests_dir
 
 
 class BaseFwUtilTest(object):
@@ -50,7 +50,7 @@ class BaseFwUtilTest(object):
         self.set_platform()
         with open(
             "{}/{}/test_data/fwutil/fw_util_list.json".format(
-                fscd_config_dir(), self.platform
+                tests_dir(), self.platform
             )
         ) as f:
             self.fw_util_info = json.load(f)

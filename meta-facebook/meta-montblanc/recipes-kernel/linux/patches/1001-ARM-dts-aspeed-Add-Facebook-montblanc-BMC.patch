@@ -10,8 +10,8 @@ BMC integrated for health monitoring purpose.
 
 Signed-off-by: Bin Huang <binhuang@meta.com>
 ---
- .../dts/aspeed-bmc-facebook-montblanc.dts     | 80 +++++++++++++++++++
- 1 file changed, 80 insertions(+)
+ .../dts/aspeed-bmc-facebook-montblanc.dts     | 110 +++++++++++++++++++
+ 1 file changed, 110 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
 
 diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
@@ -19,7 +19,7 @@ new file mode 100644
 index 000000000000..1c93259714ea
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
-@@ -0,0 +1,80 @@
+@@ -0,0 +1,110 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) Meta Platforms, Inc. and affiliates.
 +
@@ -77,6 +77,36 @@ index 000000000000..1c93259714ea
 +	peci-client@30 {
 +		compatible = "intel,peci-client";
 +		reg = <0x30>;
++	};
++};
++
++&spi1 {
++	status = "okay";
++
++	/*
++	* Customize reg resource size to 32MB (maximum flash size on the
++	* bus) to avoid wasting vmalloc space.
++	*/
++	reg = < 0x1e630000 0xc4
++			0x30000000 0x2000000 >;
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		label = "spi1.0";
++		spi-rx-bus-width = <1>;
++		spi-max-frequency = <5000000>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++		
++			flash1@0 {
++				reg = <0x0 0x2000000>;
++				label = "spi-flash";
++			};
++		};
 +	};
 +};
 +

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Run unit tests
@@ -22,14 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Build flashy
         run: tools/flashy/build.sh
       - name: Upload artifact
         if: github.ref == 'refs/heads/helium'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: flashy
           path: tools/flashy/build/flashy

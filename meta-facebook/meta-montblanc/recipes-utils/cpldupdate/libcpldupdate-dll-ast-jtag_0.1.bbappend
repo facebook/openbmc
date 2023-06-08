@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,16 +15,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-require recipes-core/images/fboss-lite-image.inc
-
-IMAGE_INSTALL += " \
-    mdio-util \
-    ipmbd \
-    ipmb-util \
-    log-util-v2 \
-    console-autodiscovery \
-    kcsd \
-    flashrom \
-    jbi \
-    libcpldupdate-dll-ast-jtag \
-    "
+cmake_do_configure:append() {
+    # Montblanc use AST2620 Jtag Controller master 2
+    JTAG_SYSFS_DIR="/sys/devices/platform/ahb/ahb:apb/1e6e4100.jtag/"
+    echo >> ${S}/CMakeLists.txt
+    echo "add_compile_definitions(JTAG_SYSFS_DIR=\"${JTAG_SYSFS_DIR}\")" >> ${S}/CMakeLists.txt
+    echo >> ${S}/CMakeLists.txt
+}

@@ -23,9 +23,11 @@ LOCAL_URI += "\
     file://setup-gpio.sh\
     file://spi_util.sh \
     file://read_INA230.sh \
+    file://cpld_update.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
     spi_util.sh \
     read_INA230.sh \
+    cpld_update.sh \
     "

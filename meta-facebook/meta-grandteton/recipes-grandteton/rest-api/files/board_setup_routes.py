@@ -19,8 +19,14 @@
 #
 
 import json
+import typing as t
+from dataclasses import dataclass, field
+from enum import Enum
+
 from aiohttp.web import Application
+
 from compute_rest_shim import RestShim
+from node import node
 from node_bmc import get_node_bmc
 from node_fruid import get_node_fruid
 from node_logs import get_node_logs
@@ -29,130 +35,113 @@ from node_sensors import get_node_sensors
 from node_server import get_node_server_2s
 from node_sled import get_node_sled
 
-HTTP_GET  = 1
-HTTP_POST = 2
-HTTP_BOTH = HTTP_GET + HTTP_POST
 
-def plat_add_route(app, node):
+class HttpMethod(Enum):
+    GET = 1
+    POST = 2
 
-    shim = RestShim(node["construct_func"](*node["construct_func_args"]), node["path"])
 
-    if node["http_func"] == HTTP_GET:
+@dataclass
+class HttpRoute:
+    path: str
+    http_methods: t.List[HttpMethod] = field(default_factory=list)
+    constructor: t.Callable[[], node] = field(default=None)
+    next_routes: t.List["HttpRoute"] = field(default_factory=list)
+
+
+def plat_add_route(app, route: HttpRoute):
+
+    shim = RestShim(route.constructor(), route.path)
+
+    if HttpMethod.GET in route.http_methods:
         app.router.add_get(shim.path, shim.get_handler)
-    elif node["http_func"] == HTTP_POST:
-        app.router.add_post(shim.path, shim.post_handler)
-    elif node["http_func"] == HTTP_BOTH:
-        app.router.add_get(shim.path, shim.get_handler)
+    if HttpMethod.POST in route.http_methods:
         app.router.add_post(shim.path, shim.post_handler)
 
-    for nextnode in node["next"]:
-        plat_add_route(app, node["next"][nextnode])
+    for next_route in route.next_routes:
+        plat_add_route(app, next_route)
+
 
 # Initialize Platform specific Resource Tree
 def setup_board_routes(app: Application, write_enabled: bool):
 
-    routes = {
-        "path": "/api/server",
-        "http_func": HTTP_BOTH,
-        "construct_func": get_node_sled,
-        "construct_func_args": [],
-        "next": {
-            "mb": {
-                "path": "/api/server/mb",
-                "http_func": HTTP_BOTH,
-                "construct_func": get_node_server_2s,
-                "construct_func_args": [1, "mb"],
-                "next": {
-                    "fruid": {
-                        "path": "/api/server/mb/fruid",
-                        "http_func": HTTP_BOTH,
-                        "construct_func": get_node_fruid,
-                        "construct_func_args": ["mb"],
-                        "next": {},
-                    },
-                    "bmc": {
-                        "path": "/api/server/mb/bmc",
-                        "http_func": HTTP_BOTH,
-                        "construct_func": get_node_sled,
-                        "construct_func_args": [],
-                        "next": {},
-                    },
-                    "sensors":{
-                        "path": "/api/server/mb/sensors",
-                        "http_func": HTTP_BOTH,
-                        "construct_func": get_node_sensors,
-                        "construct_func_args": ["mb"],
-                        "next": {},
-                    },
-                    "logs":{
-                        "path": "/api/server/mb/logs",
-                        "http_func": HTTP_BOTH,
-                        "construct_func": get_node_logs,
-                        "construct_func_args": ["mb"],
-                        "next": {},
-                    },
-                },
-            },
-            "mezz0":{
-                "path": "/api/server/mezz0",
-                "http_func": HTTP_GET,
-                "construct_func": get_node_mezz,
-                "construct_func_args": [],
-                "next": {
-                    "fruid": {
-                        "path": "/api/server/mezz0/fruid",
-                        "http_func": HTTP_BOTH,
-                        "construct_func": get_node_fruid,
-                        "construct_func_args": ["nic0"],
-                        "next": {},
-                    },
-                    "sensors":{
-                        "path": "/api/server/mezz0/sensors",
-                        "http_func": HTTP_BOTH,
-                        "construct_func": get_node_sensors,
-                        "construct_func_args": ["nic0"],
-                        "next": {},
-                    },
-                    "logs":{
-                        "path": "/api/server/mezz0/logs",
-                        "http_func": HTTP_BOTH,
-                        "construct_func": get_node_logs,
-                        "construct_func_args": ["nic0"],
-                        "next": {},
-                    },
-                },
-            },
-            "mezz1":{
-                "path": "/api/server",
-                "http_func": HTTP_GET,
-                "construct_func": get_node_mezz,
-                "construct_func_args": [],
-                "next": {
-                    "fruid": {
-                        "path": "/api/server/mezz1/fruid",
-                        "http_func": HTTP_GET,
-                        "construct_func": get_node_fruid,
-                        "construct_func_args": ["nic1"],
-                        "next": {}
-                    },
-                    "sensors":{
-                        "path": "/api/server/mezz1/sensors",
-                        "http_func": HTTP_BOTH,
-                        "construct_func": get_node_sensors,
-                        "construct_func_args": ["nic1"],
-                        "next": {}
-                    },
-                    "logs":{
-                        "path": "/api/server/mezz1/logs",
-                        "http_func": HTTP_BOTH,
-                        "construct_func": get_node_logs,
-                        "construct_func_args": ["nic1"],
-                        "next": {}
-                    },
-                }
-            },
-        }
-    }
+    routes = HttpRoute(
+        path="/api/server",
+        http_methods=[HttpMethod.GET, HttpMethod.POST],
+        constructor=lambda: get_node_sled(),
+        next_routes=[
+            HttpRoute(
+                path="/api/server/mb",
+                http_methods=[HttpMethod.GET, HttpMethod.POST],
+                constructor=lambda: get_node_server_2s(1, "mb"),
+                next_routes=[
+                    HttpRoute(
+                        path="/api/server/mb/fruid",
+                        http_methods=[HttpMethod.GET, HttpMethod.POST],
+                        constructor=lambda: get_node_fruid("mb"),
+                    ),
+                    HttpRoute(
+                        path="/api/server/mb/bmc",
+                        http_methods=[HttpMethod.GET, HttpMethod.POST],
+                        constructor=lambda: get_node_sled(),
+                    ),
+                    HttpRoute(
+                        path="/api/server/mb/sensors",
+                        http_methods=[HttpMethod.GET, HttpMethod.POST],
+                        constructor=lambda: get_node_sensors("mb"),
+                    ),
+                    HttpRoute(
+                        path="/api/server/mb/logs",
+                        http_methods=[HttpMethod.GET, HttpMethod.POST],
+                        constructor=lambda: get_node_logs("mb"),
+                    ),
+                ],
+            ),
+            HttpRoute(
+                path="/api/server/mezz0",
+                http_methods=[HttpMethod.GET],
+                constructor=lambda: get_node_mezz(),
+                next_routes=[
+                    HttpRoute(
+                        path="/api/server/mezz0/fruid",
+                        http_methods=[HttpMethod.GET],
+                        constructor=lambda: get_node_fruid("nic0"),
+                    ),
+                    HttpRoute(
+                        path="/api/server/mezz0/sensors",
+                        http_methods=[HttpMethod.GET, HttpMethod.POST],
+                        constructor=lambda: get_node_sensors("nic0"),
+                    ),
+                    HttpRoute(
+                        path="/api/server/mezz0/logs",
+                        http_methods=[HttpMethod.GET, HttpMethod.POST],
+                        constructor=lambda: get_node_logs("nic0"),
+                    ),
+                ],
+            ),
+            HttpRoute(
+                path="/api/server/mezz1",
+                http_methods=[HttpMethod.GET],
+                constructor=lambda: get_node_mezz(),
+                next_routes=[
+                    HttpRoute(
+                        path="/api/server/mezz1/fruid",
+                        http_methods=[HttpMethod.GET],
+                        constructor=lambda: get_node_fruid("nic1"),
+                    ),
+                    HttpRoute(
+                        path="/api/server/mezz1/sensors",
+                        http_methods=[HttpMethod.GET, HttpMethod.POST],
+                        constructor=lambda: get_node_sensors("nic1"),
+                    ),
+                    HttpRoute(
+                        path="/api/server/mezz1/logs",
+                        http_methods=[HttpMethod.GET, HttpMethod.POST],
+                        constructor=lambda: get_node_logs("nic1"),
+                    ),
+                ],
+            ),
+        ],
+    )
 
     plat_add_route(app, routes)
-

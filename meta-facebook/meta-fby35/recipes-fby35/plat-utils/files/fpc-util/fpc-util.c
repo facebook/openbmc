@@ -41,6 +41,9 @@ enum LED_ACTION{
 static void
 print_usage(void) {
   printf("Usage: \n");
+  if (type == TYPE_1OU_UNKNOWN) {
+    bic_get_1ou_type(FRU_SLOT1, &type);
+  }
   if (type == TYPE_1OU_OLMSTEAD_POINT) {
     printf("fpc-util slot1 <1U-dev[0..2]|2U-dev[0..4]3U-dev[0..2]|4U-dev[0..4]> --identify <on|off|blink|stop|status>\n");
   } else {

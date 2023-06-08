@@ -2447,16 +2447,16 @@ bic_op_read_e1s_reg(uint8_t dev_id, uint8_t addr, uint8_t offset, uint8_t rlen, 
 int
 bic_op_get_e1s_present(uint8_t dev_id, uint8_t intf, uint8_t* status) {
   enum OPA_E1S_PRSNT {
-    OPA_E1S_0_PRSNT_N = 9,
+    OPA_E1S_0_PRSNT_N = 11,
     OPA_E1S_1_PRSNT_N = 10,
-    OPA_E1S_2_PRSNT_N = 11,
+    OPA_E1S_2_PRSNT_N = 9,
   };
   enum OPB_E1S_PRSNT {
-    OPB_E1S_0_PRSNT_N = 10,
-    OPB_E1S_1_PRSNT_N = 11,
+    OPB_E1S_0_PRSNT_N = 14,
+    OPB_E1S_1_PRSNT_N = 13,
     OPB_E1S_2_PRSNT_N = 12,
-    OPB_E1S_3_PRSNT_N = 13,
-    OPB_E1S_4_PRSNT_N = 14,
+    OPB_E1S_3_PRSNT_N = 11,
+    OPB_E1S_4_PRSNT_N = 10,
   };
   uint8_t opa_e1s_prnst_gpio[3] = {OPA_E1S_0_PRSNT_N, OPA_E1S_1_PRSNT_N, OPA_E1S_2_PRSNT_N};
   uint8_t opb_e1s_prnst_gpio[5] = {OPB_E1S_0_PRSNT_N, OPB_E1S_1_PRSNT_N, OPB_E1S_2_PRSNT_N,

@@ -64,8 +64,14 @@ const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
-const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 3U-dev0, " \
+
+#ifdef CONFIG_HALFDOME
+const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 3U-dev0, " \
                             "3U-dev1, 3U-dev2, 4U-dev0, 4U-dev1, 4U-dev2, 4U-dev3, 4U-dev4";
+#else
+const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3";
+#endif
+
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 const char *pal_vr_addr_list[] = {"c0h", "c4h", "ech", "c2h", "c6h", "c8h", "cch", "d0h", "96h", "9ch", "9eh", "8ah", "8ch", "8eh", "d4h", "dch", "e4h"};
 const char *pal_vr_1ou_addr_list[] = {"b0h", "b4h", "c8h"};

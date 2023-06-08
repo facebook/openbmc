@@ -625,6 +625,7 @@ fby35_common_crashdump(uint8_t fru, bool ierr __attribute__((unused)), bool plat
 
 int
 fby35_common_dev_id(char *str, uint8_t *dev) {
+  int slot_type = fby35_common_get_slot_type(FRU_SLOT1);
 
   if (!strcmp(str, "all")) {
     *dev = FRU_ALL;
@@ -684,7 +685,18 @@ fby35_common_dev_id(char *str, uint8_t *dev) {
 #endif
     return -1;
   }
-
+  // block the none-exist device in different config
+  if (slot_type == SERVER_TYPE_HD) {
+    // VF only
+    if (*dev == DEV_ID3_1OU) {
+      return -1;
+    }
+  } else {
+    // Olmstead point only
+    if ((*dev >= DEV_ID0_2OU) && (*dev <= DEV_ID4_4OU)) {
+      return -1;
+    }
+  }
   return 0;
 }
 

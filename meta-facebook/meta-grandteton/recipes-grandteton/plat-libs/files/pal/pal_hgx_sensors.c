@@ -182,7 +182,7 @@ read_kv_snr(uint8_t fru, uint8_t sensor_num, float *value, int build_stage) {
     ret = kv_get(HGX_SNR_INFO[sensor_num].dvt_snr_name, tmp, NULL, 0);
   }
 
-  if (ret) {
+  if (ret || !strcmp(tmp, "NA")) {
     return READING_NA;
   }
 

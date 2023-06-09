@@ -276,6 +276,14 @@ void getMetricReports() {
     pos = snr_path.find_last_of("/\\");
     snr_path = snr_path.substr(pos+1);
 
+    if (x.contains("Oem") && x["Oem"].contains("Nvidia") &&
+        x["Oem"]["Nvidia"].contains("MetricValueStale")) {
+      if (x["Oem"]["Nvidia"]["MetricValueStale"].dump() == "true") {
+        kv::set(snr_path, "NA");
+        return;
+      }
+    }
+
     auto jvalue = x.find("MetricValue");
     snr_val = jvalue.value();
     pos = snr_val.find_first_not_of("0123456789");

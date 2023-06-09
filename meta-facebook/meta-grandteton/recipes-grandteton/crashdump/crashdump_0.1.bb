@@ -35,7 +35,7 @@ LOCAL_URI += " \
 pkgdir = "crashdump"
 binfiles = "autodump.sh dump.sh"
 
-do_install:append() {
+do_install:append:grandteton() {
   install -d ${D}${sysconfdir}/peci
   install -m 644 crashdump_p0_coreid ${D}${sysconfdir}/peci/crashdump_p0_coreid
   install -m 644 crashdump_p0_msr ${D}${sysconfdir}/peci/crashdump_p0_msr

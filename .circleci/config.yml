@@ -216,7 +216,7 @@ workflows:
                             # fbttn, Rocko
                             # fby2, Rocko
                             fby3,
-                            fby35,
+                            # fby35, FIXME cannot reach console T155505379
                             fuji,
                             minipack,
                             wedge400,

@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_log_util_test import BaseLogUtilTest
+from tests.wedge400.helper.libpal import pal_get_fru_id
 from utils.test_utils import qemu_check
 
 

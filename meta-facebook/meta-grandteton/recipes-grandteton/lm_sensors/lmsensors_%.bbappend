@@ -6,8 +6,10 @@ SRC_URI += "file://common.conf \
             file://cover.conf \
             file://evt.conf \
             file://evt2.conf \
-            file://adm1272-1.conf \
-            file://adm1272-2.conf \
+            file://hpdb-adm1272-1.conf \
+            file://hpdb-adm1272-2.conf \
+            file://vpdb-adm1272-1.conf \
+            file://vpdb-adm1272-2.conf \
            "
 
 FILES:${PN}-libsensors += "${sysconfdir}/sensors_cfg"
@@ -20,6 +22,8 @@ do_install:append() {
     install -m 644 ../cover.conf ${D}${sysconfdir}/sensors.d/cover.conf
     install -m 644 ../evt.conf   ${D}${sysconfdir}/sensors_cfg/evt.conf
     install -m 644 ../evt2.conf ${D}${sysconfdir}/sensors_cfg/evt2.conf
-    install -m 644 ../adm1272-1.conf ${D}${sysconfdir}/sensors_cfg/adm1272-1.conf
-    install -m 644 ../adm1272-2.conf ${D}${sysconfdir}/sensors_cfg/adm1272-2.conf
+    install -m 644 ../hpdb-adm1272-1.conf ${D}${sysconfdir}/sensors_cfg/hpdb-adm1272-1.conf
+    install -m 644 ../hpdb-adm1272-2.conf ${D}${sysconfdir}/sensors_cfg/hpdb-adm1272-2.conf
+    install -m 644 ../vpdb-adm1272-1.conf ${D}${sysconfdir}/sensors_cfg/vpdb-adm1272-1.conf
+    install -m 644 ../vpdb-adm1272-2.conf ${D}${sysconfdir}/sensors_cfg/vpdb-adm1272-2.conf
 }

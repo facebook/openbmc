@@ -12,10 +12,50 @@ else
   ln -s /etc/sensors_cfg/evt.conf /etc/sensors.d/rev.conf
 fi
 
-HPDB_ADM1272_1="0"
-if [ "$(gpio_get HPDB_SKU_ID_0)" -eq $HPDB_ADM1272_1 ]; then
-  ln -s /etc/sensors_cfg/adm1272-1.conf /etc/sensors.d/adm1272.conf
-else
-  ln -s /etc/sensors_cfg/adm1272-2.conf /etc/sensors.d/adm1272.conf
-fi
 
+#VPDB ADM1272 config
+for i in {1..5}
+do
+  rev=$(fruid-util vpdb |grep "Board Part Number" | awk -F ":" '{print $2}' | awk '{gsub(/^ +| +$/,"")}1')
+  rc=$?
+
+  if [ "$rc" == 1 ]; then
+    sleep 1
+  elif [ "$rev" == "35F0TPB0000" ]; then
+    ln -s /etc/sensors_cfg/vpdb-adm1272-1.conf /etc/sensors.d/vpdb_adm1272.conf
+    break
+  elif [ "$rev" == "35F0TPB0020" ] || [ "$rev" == "35F0TPB0040" ]; then
+    ln -s /etc/sensors_cfg/vpdb-adm1272-2.conf /etc/sensors.d/vpdb_adm1272.conf
+    break
+  else
+    break
+  fi
+
+  if [ $i -eq 5 ]; then
+    ln -s /etc/sensors_cfg/vpdb-adm1272-1.conf /etc/sensors.d/vpdb_adm1272.conf
+  fi
+done
+
+
+#HPDB ADM1272 config
+for i in {1..5}
+  do
+  rev=$(fruid-util hpdb |grep "Board Part Number" | awk -F ":" '{print $2}' | awk '{gsub(/^ +| +$/,"")}1')
+  rc=$?
+
+  if [ "$rc" == 1 ]; then
+    sleep 1
+  elif [ "$rev" == "35F0TPB0060" ]; then
+    ln -s /etc/sensors_cfg/hpdb-adm1272-2.conf /etc/sensors.d/hpdb_adm1272.conf
+    break
+  elif [ "$rev" == "35F0TPB0010" ] || [ "$rev" == "35F0TPB0090" ]; then
+    ln -s /etc/sensors_cfg/hpdb-adm1272-1.conf /etc/sensors.d/hpdb_adm1272.conf
+    break
+  else
+    break
+  fi
+
+  if [ $i -eq 5 ]; then
+    ln -s /etc/sensors_cfg/hpdb-adm1272-1.conf /etc/sensors.d/hpdb_adm1272.conf
+  fi
+done

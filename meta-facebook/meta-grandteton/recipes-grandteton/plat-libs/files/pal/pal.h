@@ -70,6 +70,11 @@ int pal_get_post_buffer_dword_data(uint8_t slot, uint32_t *port_buff, uint32_t i
 int pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data);
 int pal_is_dev_prsnt(uint8_t fru, uint8_t dev, uint8_t *status);
 
+int apml_channel_lock(uint8_t cpu_id);
+void apml_channel_unlock(int lock);
+bool pal_check_apml_ras_status(uint8_t soc_num, uint8_t *ras_sts);
+int pal_get_cpu_id(uint8_t soc_num);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

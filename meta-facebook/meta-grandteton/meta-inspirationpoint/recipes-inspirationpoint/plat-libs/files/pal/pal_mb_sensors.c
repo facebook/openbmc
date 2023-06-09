@@ -712,7 +712,8 @@ err_exit:
   return ret;
 }
 
-static int apml_channel_lock(uint8_t cpu_id) {
+int
+apml_channel_lock(uint8_t cpu_id) {
   int ret = 0, lfd = -1;
 
   if (g_has_mux == false) {
@@ -741,7 +742,8 @@ static int apml_channel_lock(uint8_t cpu_id) {
   return lfd;
 }
 
-static void apml_channel_unlock(int lock) {
+void
+apml_channel_unlock(int lock) {
   if (lock >= 0) {
     single_instance_unlock(lock);
   }

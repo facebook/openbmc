@@ -1,5 +1,8 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <syslog.h>
+#include <esmi_cpuid_msr.h>
+#include <esmi_rmi.h>
 #include "pal.h"
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.h>
@@ -293,3 +296,60 @@ pal_clear_psb_cache(void) {
   return kv_del(key, KV_FPERSIST);
 }
 
+bool
+pal_check_apml_ras_status(uint8_t soc_num, uint8_t *ras_sts) {
+  oob_status_t ret;
+  int lock = -1;
+
+  if (!is_cpu_socket_occupy(soc_num)) {
+    return false;
+  }
+
+  lock = apml_channel_lock(soc_num);
+  ret = read_sbrmi_ras_status(soc_num, ras_sts);
+  apml_channel_unlock(lock);
+  if (ret == OOB_SUCCESS && *ras_sts) {
+    return true;
+  }
+
+  return false;
+}
+
+int
+pal_get_cpu_id(uint8_t soc_num) {
+  oob_status_t ret;
+  int lock = -1, retry = 2;
+  uint32_t core_id = 0;
+  uint32_t eax = 0, ebx = 0, ecx = 0, edx = 0;
+  char key[MAX_KEY_LEN];
+  char cpuid[MAX_VALUE_LEN], value[MAX_VALUE_LEN] = {0};
+
+  if (!is_cpu_socket_occupy(soc_num)) {
+    return -1;
+  }
+
+  for (; retry >= 0; --retry) {
+    lock = apml_channel_lock(soc_num);
+    ret = esmi_oob_cpuid(soc_num, core_id, &eax, &ebx, &ecx, &edx);
+    apml_channel_unlock(lock);
+    if (ret == OOB_SUCCESS) {
+      break;
+    }
+    if (retry > 0) {
+      msleep(100);
+    }
+  }
+  if (ret != OOB_SUCCESS) {
+    return -1;
+  }
+
+  snprintf(key, sizeof(key), "cpu%u_id", soc_num);
+  snprintf(cpuid, sizeof(cpuid), "%08x %08x %08x %08x", eax, ebx, ecx, edx);
+  if (kv_get(key, value, NULL, KV_FPERSIST) == 0) {
+    if (strncmp(cpuid, value, sizeof(cpuid)) == 0) {
+      return 0;
+    }
+  }
+
+  return kv_set(key, cpuid, 0, KV_FPERSIST);
+}

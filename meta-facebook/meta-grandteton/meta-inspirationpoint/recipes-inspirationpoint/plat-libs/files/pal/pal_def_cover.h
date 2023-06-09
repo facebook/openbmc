@@ -38,6 +38,8 @@
 #define PVDD11_S3_P1_PMALERT     "PVDD11_S3_P1_PMALERT"
 #define RST_PERST_N              "RST_PERST_CPUx_SWB_N"
 #define PEX_FW_VER_UPDATE        "RST_PERST_CPUx_SWB_N"
+#define APML_CPU0_ALERT          "APML_CPU0_ALERT_R_N"
+#define APML_CPU1_ALERT          "APML_CPU1_ALERT_R_N"
 
 //GPIO Power Control Cover
 #define FM_LAST_PWRGD            "FM_PWRGD_CPU1_PWROK"

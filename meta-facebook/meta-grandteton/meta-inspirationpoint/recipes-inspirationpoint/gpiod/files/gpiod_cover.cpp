@@ -35,6 +35,9 @@
 #include <openbmc/aries_api.h>
 #include "gpiod.h"
 
+#define AUTODUMP_BIN  "/usr/local/bin/autodump.sh"
+#define AUTODUMP_LOCK "/var/run/autodump.lock"
+
 static void
 pwr_err_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
@@ -98,6 +101,49 @@ rst_perst_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
   }
 }
 
+static void
+post_comp_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
+  if (curr == GPIO_VALUE_LOW) {
+    pal_get_cpu_id(0);
+    pal_get_cpu_id(1);
+  }
+}
+
+static void
+post_comp_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  sgpio_event_handler(desc, last, curr);
+  post_comp_init_handler(desc, curr);
+}
+
+static void
+apml_alert_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  uint8_t soc_num, ras_status;
+
+  soc_num = cfg->shadow[8] - '0';  // "APML_CPUx_ALERT_R_N"
+  if (pal_check_apml_ras_status(soc_num, &ras_status)) {
+    int fd = open(AUTODUMP_LOCK, O_CREAT | O_RDWR, 0666);
+    if (flock(fd, LOCK_EX | LOCK_NB) && (errno == EWOULDBLOCK)) {
+      close(fd);
+      return;
+    }
+
+    if (system(AUTODUMP_BIN)) {
+      syslog(LOG_WARNING, "%s[%u] Failed to launch crashdump", __FUNCTION__, soc_num);
+    }
+    flock(fd, LOCK_UN);
+    close(fd);
+  }
+  sleep(1);
+}
+
+static void
+apml_alert_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
+  if (curr == GPIO_VALUE_LOW) {
+    apml_alert_event_handler(desc, curr, curr);
+  }
+}
+
 // GPIO table to be monitored
 static struct gpiopoll_config gpios_plat_list[] = {
   // shadow, description, edge, handler, oneshot
@@ -127,7 +173,9 @@ static struct gpiopoll_config gpios_plat_list[] = {
   {FM_E1S0_PRSNT,               "E1.S",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
   {FM_PVDD11_S3_P0_OCP,         "SGPIO14",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {FM_PVDD11_S3_P1_OCP,         "SGPIO16",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {FM_BIOS_POST_CMPLT,          "SGPIO146",  GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
+  {FM_BIOS_POST_CMPLT,          "SGPIO146",  GPIO_EDGE_BOTH,    post_comp_event_handler,    post_comp_init_handler},
+  {APML_CPU0_ALERT,             "SGPIO10",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
+  {APML_CPU1_ALERT,             "SGPIO12",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
 };
 
 int get_gpios_plat_list(struct gpiopoll_config** list) {

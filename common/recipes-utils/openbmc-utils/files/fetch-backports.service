@@ -18,9 +18,9 @@
 
 [Unit]
 Description=Persistent hook to be run after the network starts
-After=nss-lookup.target hostname.service
+After=nss-lookup.target hostname.service sshdgenkeys.service
 Wants=nss-lookup.target
-Before=sshdgenkeys.service restapi.service
+Before=restapi.service
 ConditionFileIsExecutable=/mnt/data/etc/rc.local
 
 [Service]

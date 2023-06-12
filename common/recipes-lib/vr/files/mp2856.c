@@ -939,7 +939,6 @@ cache_mp2993_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
 
 static int
 cache_mp2985h_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
-  int ret = VR_STATUS_FAILURE;
   uint8_t tbuf[16];
   uint8_t crc[5];
   uint16_t remain = 0;
@@ -972,7 +971,7 @@ cache_mp2985h_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
   if (mp2856_set_page(bus, addr, VR_MPS_PAGE_0) < 0) {
     return VR_STATUS_FAILURE;
   }
-  return ret;
+  return VR_STATUS_SUCCESS;
 }
 
 int

@@ -17,7 +17,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
     file://power-on.sh \
-    file://program_sb_cpld_addr.sh \
     "
 
-binfiles:append = " program_sb_cpld_addr.sh "

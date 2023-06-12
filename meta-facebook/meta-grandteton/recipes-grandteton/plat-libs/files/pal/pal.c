@@ -63,8 +63,6 @@
 
 #define PSB_CONFIG_RAW "slot%d_psb_config_raw"
 
-#define LCC_POSTCODE_CACHE "lcc_postcode_1"
-
 const char pal_fru_list[] = \
 "all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, " \
 // Artemis fru list
@@ -260,54 +258,6 @@ int
 pal_is_slot_server(uint8_t fru) {
   if (fru == FRU_MB)
     return 1;
-  return 0;
-}
-
-int
-pal_get_80port_lcc_page_record(uint8_t slot, uint8_t page_num, uint8_t *buf, size_t max_len, size_t *len) {
-  char key[MAX_KEY_LEN] = {0}, value[MAX_VALUE_LEN] = {0};
-
-  if (buf == NULL || len == NULL || max_len == 0)
-    return -1;
-
-  if (!pal_is_slot_server(slot)) {
-    syslog(LOG_WARNING, "pal_get_80port_record: slot %d is not supported", slot);
-    return PAL_ENOTSUP;
-  }
-
-  snprintf(key, sizeof(key), "lcc_postcode_%d", page_num);
-  if ((kv_get(key, value, NULL, 0) < 0) && (errno == ENOENT)) {
-    syslog(LOG_WARNING, "kv_get fail\n");
-  } else {
-    memcpy(buf, value, MAX_VALUE_LEN);
-    *len = (size_t)MAX_VALUE_LEN;
-  }
-  return 0;
-}
-
-int
-pal_get_post_buffer_dword_data(uint8_t slot, uint32_t *port_buff, uint32_t input_len, uint32_t *output_len) {
-  char value[MAX_VALUE_LEN] = {0};
-  size_t totol_length = 0;
-
-  if (port_buff == NULL || input_len == 0)
-    return -1;
-
-  if (!pal_is_slot_server(slot)) {
-    syslog(LOG_WARNING, "pal_get_80port_record: slot %d is not supported", slot);
-    return PAL_ENOTSUP;
-  }
-
-  if ((kv_get(LCC_POSTCODE_CACHE, value, NULL, 0) < 0) && (errno == ENOENT)) {
-    syslog(LOG_WARNING, "kv_get fail\n");
-  } else {
-    for(int index = 0; totol_length < input_len; index+=(sizeof(uint32_t)/sizeof(uint8_t))) {
-      port_buff[totol_length] = value[index] | (value[index+1] << 8) | (value[index+2] << 16) | (value[index+3] << 24);
-      totol_length++;
-    }
-  }
-  *output_len = totol_length;
-
   return 0;
 }
 

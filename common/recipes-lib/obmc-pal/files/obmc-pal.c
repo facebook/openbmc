@@ -182,71 +182,137 @@ static int pal_lpc_snoop_read(uint8_t *buf, size_t max_len, size_t *rlen)
   return PAL_EOK;
 }
 
+// This function will read out driver FIFO,
+// should avoid calling this function by multiple threads
 static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
 {
   const char *dev_path = "/dev/aspeed-lpc-pcc";
-  char key[MAX_KEY_LEN] = {0};
-  uint8_t cache[MAX_CACHE_LEN];
-  uint8_t four_byte_post[4] = {0};
-  size_t len = 0, cache_len = 0, port = 0;
-  static size_t index = 0;
-  int fd;
-  uint16_t postcode;
+  int fd, offs;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  bool new_data = false;
+  size_t len, half1, half2;
+  uint8_t page, port, index = 0;
+  uint16_t one_code;
+  uint32_t post_code = 0;
+  static uint32_t post_fifo[PCC_FIFO_SIZE] = {0};
+  static int data_in = 0, data_out = 0;
+  static bool init_fifo = true;
+
+  if (init_fifo) {
+    init_fifo = false;
+    // initialize fifo from existing cache store
+    for (page = 1; page <= PCC_PAGE; ++page) {
+      snprintf(key, sizeof(key), "pcc_postcode_%u", page);
+      if (kv_get(key, value, &len, 0) != 0) {
+        break;
+      }
+      if (len > sizeof(value)) {
+        syslog(LOG_WARNING, "%s: unexpected len %zu", __func__, len);
+        break;
+      }
+      memcpy(&post_fifo[data_in], value, len);
+      data_in += (len / sizeof(uint32_t));
+    }
+  }
 
   fd = open(dev_path, O_RDONLY | O_NONBLOCK);
   if (fd < 0) {
     return PAL_ENOTREADY;
   }
-  while (len < sizeof(cache) &&
-      read(fd, &postcode, 2) == 2) {
-      port = ((postcode & 0xFF00) >> 8);
-      if ((index == 0 && port == LCC_PORT1)
-      || (index == 1 && port == LCC_PORT2)
-      || (index == 2 && port == LCC_PORT3)
-      || (index == 3 && port == LCC_PORT4)) {
-        four_byte_post[index] = postcode & 0x00FF;
-      } else {
-        index = 0;
-        continue;
-      }
 
-      if(index == 3) {
-        cache[len] = four_byte_post[0];
-        cache[len+1] = four_byte_post[1];
-        cache[len+2] = four_byte_post[2];
-        cache[len+3] = four_byte_post[3];
-        pal_check_psb_error(cache[len+3], cache[len]);
-        len+=4;
-        index = 0;
-      } else {
-        index++;
+  // read postcodes from the FIFO of lpc-pcc driver, and put in cache store
+  while (read(fd, &one_code, sizeof(one_code)) == sizeof(one_code)) {
+    port = one_code >> 8;
+    if ((index == 0 && port == PCC_PORT1) ||
+        (index == 1 && port == PCC_PORT2) ||
+        (index == 2 && port == PCC_PORT3) ||
+        (index == 3 && port == PCC_PORT4)) {
+      post_code |= (one_code & 0xFF) << (index * 8);
+    } else {
+      // discard incomplete remnants
+      index = 0;
+      post_code = 0;
+      continue;
+    }
+
+    if (index == 3) {
+      // use a simple FIFO (ring buffer) for easier drop old postcodes
+      post_fifo[data_in] = post_code;
+      data_in = (data_in + 1) % PCC_FIFO_SIZE;
+      if (data_in == data_out) {
+        data_out = (data_out + 1) % PCC_FIFO_SIZE;
       }
+      pal_check_psb_error(post_code >> 24, post_code);
+      index = 0;
+      post_code = 0;
+      new_data = true;
+    } else {
+      index++;
+    }
   }
   close(fd);
 
-  if(len != 0) {
-    for(int page_num = 1; page_num <= MAX_PAGE_NUM; page_num++) {
-      snprintf(key, sizeof(key), "lcc_postcode_%d", page_num);
-      if(len >= (cache_len + MAX_VALUE_LEN)) {
-        memmove(cache, &cache[cache_len], MAX_VALUE_LEN);
-        cache_len += MAX_VALUE_LEN;
+  if (new_data) {
+    // store up to 64 postcodes per page (kv)
+    for (page = 1, offs = data_out; page <= PCC_PAGE;
+         ++page, offs = (offs + PCC_SIZE)%PCC_FIFO_SIZE) {
+      snprintf(key, sizeof(key), "pcc_postcode_%u", page);
+      if ((offs + PCC_SIZE) <= data_in) {
+        len = PCC_SIZE * sizeof(uint32_t);
+        memcpy(value, &post_fifo[offs], len);
       } else {
-        memmove(cache, &cache[cache_len], len - cache_len);
-        if (kv_set(key, (char *)cache, len - cache_len, 0)) {
-          syslog(LOG_WARNING, "kv_set fail\n");
+        if (offs <= data_in) {
+          len = (data_in - offs) * sizeof(uint32_t);
+          memcpy(value, &post_fifo[offs], len);
+        } else {
+          len = (data_in < data_out) ? (PCC_SIZE * sizeof(uint32_t)) : 0;
+          if (len == 0) {  // no more data
+            break;
+          }
+          half1 = (PCC_FIFO_SIZE - offs) * sizeof(uint32_t);
+          if (half1 > len) {
+            half1 = len;
+          }
+          half2 = len - half1;
+          memcpy(value, &post_fifo[offs], half1);
+          if (half2 > 0) {
+            memcpy(&value[half1], &post_fifo[0], half2);
+          }
         }
-        break;
       }
-    
-      if (kv_set(key, (char *)cache, MAX_VALUE_LEN, 0)) {
-        syslog(LOG_WARNING, "kv_set fail\n");
+      kv_set(key, value, len, 0);
+      if (len < (PCC_SIZE * sizeof(uint32_t))) {  // no more data
+        break;
       }
     }
   }
 
-  len = len > max_len ? max_len : len;
-  memcpy(buf, cache, len);
+  // reply the latest postcodes to caller's buffer
+  len = (data_in + PCC_FIFO_SIZE - data_out)%PCC_FIFO_SIZE;
+  max_len /= sizeof(uint32_t);  // truncate if max_len is not multiple of 4 bytes
+  if (len > max_len) {
+    len = max_len;
+  }
+  if (len > 0) {
+    offs = (data_in + PCC_FIFO_SIZE - len)%PCC_FIFO_SIZE;
+    len *= sizeof(uint32_t);
+    if ((offs + len/sizeof(uint32_t)) <= data_in) {
+      memcpy(buf, &post_fifo[offs], len);
+    } else {
+      half1 = (PCC_FIFO_SIZE - offs) * sizeof(uint32_t);
+      if (half1 > len) {
+        half1 = len;
+      }
+      half2 = len - half1;
+      memcpy(buf, &post_fifo[offs], half1);
+      if (half2 > 0) {
+        memcpy(&buf[half1], &post_fifo[0], half2);
+      }
+    }
+  }
   *rlen = len;
+
   return PAL_EOK;
 }
 
@@ -366,11 +432,14 @@ pal_get_80port_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len)
     return pal_lpc_snoop_read_legacy(buf, max_len, len);
   } else if (access("/dev/aspeed-lpc-snoop0", F_OK) == 0) {
     return pal_lpc_snoop_read(buf, max_len, len);
-  } else if (access("/dev/aspeed-lpc-pcc", F_OK) == 0) {
-    return pal_lpc_pcc_read(buf, max_len, len);
   } else {
     return PAL_ENOTSUP;
   }
+}
+
+int __attribute__((weak))
+pal_get_lpc_pcc_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len) {
+  return pal_lpc_pcc_read(buf, max_len, len);
 }
 
 int __attribute__((weak))

@@ -535,35 +535,25 @@ int plat_get_board_id(char *id)
 }
 
 int plat_dword_postcode_buf(uint8_t fru, char *status) {
-  int ret = 0;
-  uint32_t len;
-  uint32_t intput_len = 0;
-  int i;
-  uint32_t * dw_postcode_buf = malloc( 30 * sizeof(uint32_t));
-  char temp_str[128]  = {0};
-  if (dw_postcode_buf) {
-    intput_len = 30;
-  } else {
-    syslog(LOG_ERR, "%s Error, failed to allocate dw_postcode buffer", __func__);
-    intput_len = 0;
+  uint32_t dw_postcodes[30];  // to display the latest 30 postcodes
+  size_t i, len = 0, total_len = 0;
+  char temp_str[128];
+
+  if (pal_get_80port_record(fru, (uint8_t *)dw_postcodes,
+                            sizeof(dw_postcodes), &len)) {
     return -1;
   }
 
-  ret = pal_get_post_buffer_dword_data(fru, dw_postcode_buf, intput_len, &len);
-  if (ret) {
-    syslog(LOG_WARNING, "plat_dword_postcode_buf, FRU: %d, pal_get_post_buffer_dword_data ret: %d\n", fru, ret);
-    free(dw_postcode_buf);
-    return ret;
-  }
-
-  for (i = 0; i < len; i++) {
-    pal_parse_amd_post_code_helper(dw_postcode_buf[i],temp_str);
+  len /= sizeof(uint32_t);
+  for (i = 0; i < len; ++i) {
+    pal_parse_amd_post_code_helper(dw_postcodes[i], temp_str);
+    if ((total_len += strlen(temp_str)) >= 2048) {  // limit in 2KB
+      break;
+    }
     strcat(status, temp_str);
   }
-  free(dw_postcode_buf);
 
-  return ret;
-
+  return 0;
 }
 
 int plat_get_syscfg_text(uint8_t fru, char *syscfg)

@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 import sys
 
-from pal import pal_get_4byte_postcode_lcc
+from pal import pal_get_4byte_postcode
 
 POST_CODE_FILE = "/tmp/post_code_buffer.bin"
 
 
 def postcode(fru, tmp_file):
     try:
-        postcodes = pal_get_4byte_postcode_lcc(fru)
+        postcodes = pal_get_4byte_postcode(fru, range(1, 5))
     except ValueError:
         return False
     except Exception as e:

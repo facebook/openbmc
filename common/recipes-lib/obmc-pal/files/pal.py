@@ -212,25 +212,6 @@ def pal_get_4byte_postcode(fru: int, pages: range = range(1, 17)):
     return ret
 
 
-def pal_get_4byte_postcode_lcc(fru: int):
-    ret = []
-    MAX_PAGE_NUM = int(4)
-    for i in range(1, (MAX_PAGE_NUM + 1)):
-        postcodes = (ctypes.c_uint * 256)()
-        page = ctypes.c_uint8(i)
-        plen = ctypes.c_uint(0)
-        status = libpal.pal_get_80port_lcc_page_record(
-            fru, page, ctypes.byref(postcodes), 256, ctypes.byref(plen)
-        )
-
-        if status != 0:
-            raise ValueError("Error %d returned by PAL API" % (status))
-        for i in range(0, int(plen.value / 4)):
-            ret.append((postcodes[i]))
-
-    return ret
-
-
 ## Sensor reading functions
 def pal_sensor_is_cached(fru_id: int, snr_num: int) -> bool:
     return bool(libpal.pal_sensor_is_cached(fru_id, snr_num))

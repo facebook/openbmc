@@ -75,7 +75,6 @@ static int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value);
 bool pal_bios_completed(uint8_t fru);
 
 static bool g_has_mux = true;
-static uint8_t postcodes_last[256] = {0};
 
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP_R,
@@ -1200,10 +1199,11 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static unsigned int retry = 0;
   static uint8_t frb3_fail = 0x10; // bit 4: FRB3 failure
   static time_t rst_time = 0;
+  static uint8_t postcodes_last[256] = {0};
   uint8_t postcodes[256] = {0};
   struct stat file_stat;
   int rc;
-  size_t len = 0;
+  size_t len = 0, cmp_len = sizeof(postcodes);
   char sensor_name[32] = {0};
   char error[32] = {0};
 
@@ -1217,23 +1217,24 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
     // assume fail till we know it is not
     frb3_fail = 0x10; // bit 4: FRB3 failure
     retry = 0;
+    cmp_len = sizeof(postcodes);
     // cache current postcode buffer
-    if (stat("/tmp/DWR", &file_stat) != 0) {
-      memset(postcodes_last, 0, sizeof(postcodes_last));
-      pal_get_80port_record(FRU_MB, postcodes_last, sizeof(postcodes_last), &len);
-    }
+    memset(postcodes_last, 0, sizeof(postcodes_last));
+    pal_get_lpc_pcc_record(FRU_MB, postcodes_last, sizeof(postcodes_last), &len);
   }
 
+  rc = pal_get_lpc_pcc_record(FRU_MB, postcodes, cmp_len, &len);
   if (frb3_fail) {
     // KCS transaction
     if (stat("/tmp/kcs_touch", &file_stat) == 0 && file_stat.st_mtime > rst_time)
       frb3_fail = 0;
 
     // Port 80 updated
-    memset(postcodes, 0, sizeof(postcodes));
-    rc = pal_get_80port_record(FRU_MB, postcodes, sizeof(postcodes), &len);
-    if (rc == PAL_EOK && memcmp(postcodes_last, postcodes, 256) != 0) {
+    if (rc == PAL_EOK && memcmp(postcodes_last, postcodes, sizeof(postcodes))) {
       frb3_fail = 0;
+      // reduce the arg copy of pal_get_lpc_pcc_record(),
+      // just to keep updating postcode in cache store
+      cmp_len = 0;
     }
 
     // BIOS POST COMPLT, in case BMC reboot when system idle in OS

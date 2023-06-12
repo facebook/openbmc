@@ -842,7 +842,7 @@ end_with (char* str, uint8_t str_len, char* pattern, uint8_t pattern_len) {
 
 static int
 update_bic_retimer(uint8_t slot_id, char* path, uint8_t intf) {
-#define RETIMER_UPDATE_PACKET_SIZE 128
+#define RETIMER_UPDATE_PACKET_SIZE 64
   size_t file_size = 0;
   int fd = -1;
   uint32_t image_size = 0;

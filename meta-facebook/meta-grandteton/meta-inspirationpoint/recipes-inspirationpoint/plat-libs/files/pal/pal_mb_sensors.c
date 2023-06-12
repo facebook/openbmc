@@ -24,7 +24,8 @@
 #include "pal.h"
 #include "pal_common.h"
 #include <openbmc/kv.h>
-#include <openbmc/platform.h>
+#include <openbmc/aries_common.h>
+#include <openbmc/plat.h>
 #include <openbmc/dimm.h>
 
 //#define DEBUG

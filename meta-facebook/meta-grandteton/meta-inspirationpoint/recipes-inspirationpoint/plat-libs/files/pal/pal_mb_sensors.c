@@ -1284,7 +1284,9 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
       syslog(LOG_CRIT, "%s, dump CPLD reg failed, ret = %d\n", __func__, ret);
     }
 
-    if (strcmp(rev_id, "4") && dimm_pwr_ok == 0) {
+
+    int id = atoi(rev_id);
+    if (id < 4 && dimm_pwr_ok == 0) {
       syslog(LOG_CRIT, "Detect Genoa System Hang (FRB3/No DIMM Power OK): 0x%2x\n", dimm_pwr_ok);
       pal_sled_cycle();
     }

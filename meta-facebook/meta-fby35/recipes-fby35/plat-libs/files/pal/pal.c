@@ -2795,6 +2795,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_2OU_VR_FAULT   = 0x13,
     SYS_FAN_SERVICE    = 0x14,
     SYS_BB_FW_EVENT    = 0x15,
+    SYS_AMD_ALERT_L    = 0x20,
     E1S_1OU_M2_PRESENT = 0x80,
     E1S_1OU_INA230_PWR_ALERT   = 0x81,
     E1S_1OU_HSC_PWR_ALERT      = 0x82,
@@ -2894,6 +2895,26 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
         strncpy(component_str, "unknown component", sizeof(component_str));
       }
       snprintf(log_msg, sizeof(log_msg), "Baseboard firmware %s update is ongoing", component_str);
+      strcat(error_log, log_msg);
+      break;
+    case SYS_AMD_ALERT_L:
+      enum {
+        FATAL_ERR = 0x01,
+        FCH_ERR =  0x02,
+        RESET_CTRL_ERR = 0x04,
+      };
+      uint8_t ras_error = event_data[1];
+
+      snprintf(log_msg, sizeof(log_msg), "Alert_L RAS_STATUS(0x%02X), ", ras_error);
+      if (ras_error & FATAL_ERR) {
+        strcat(log_msg, "RAS fatal error");
+      } else if (ras_error & FCH_ERR) {
+        strcat(log_msg, "FCH reset error");
+      } else if (ras_error & RESET_CTRL_ERR) {
+        strcat(log_msg, "Control fabric error");
+      } else {
+        strcat(log_msg, "Undefine error");
+      }
       strcat(error_log, log_msg);
       break;
     case E1S_1OU_M2_PRESENT:

@@ -817,7 +817,12 @@ util_pmic_err(uint8_t fru_id, uint8_t dimm, bool /*json*/, uint8_t* options) {
   } else if (options[0] == OPTION_CLEAR_ERR) {
     for (cpu = startCPU; cpu < endCPU; cpu++) {
       for (dimm_num = startDimm; dimm_num < endDimm; dimm_num++) {
-        get_spd5_pmic_vendor(fru_id, cpu, dimm_num, pmic_vendor);
+        printf("DIMM %s: ", get_dimm_label(cpu, dimm_num));
+        ret = get_spd5_pmic_vendor(fru_id, cpu, dimm_num, pmic_vendor);
+        if (ret < 0) {
+          printf("NO DIMM\n");
+          continue;
+        }
         if (strncmp(pmic_vendor, "MPS", sizeof(pmic_vendor)) == 0) {
           // MPS PMIC clear function have some known issue, temporary disable error clear option.
           printf("Clear failed. Clear function is not supported currently with MPS PMIC.\n");

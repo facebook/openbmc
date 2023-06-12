@@ -6,6 +6,13 @@
 
 using std::string;
 
+enum class VendorID
+{
+  ASTERA_LABS = 0,
+  MONTAGE = 1,
+  UNKNOWN_VENDOR = 0xff,
+};
+
 class RetimerFwComponent : public Component {
   uint8_t slot_id;
   uint8_t fw_comp;
@@ -15,6 +22,7 @@ class RetimerFwComponent : public Component {
   private:
     int get_ver_str(string& s);
     int update_internal(const std::string& image, bool force);
+    int get_vendor_id(VendorID* vendor_id);
   public:
     RetimerFwComponent(const string& fru, const string& comp, const string& brd, uint8_t comp_id)
       : Component(fru, comp), slot_id(fru.at(4) - '0'), fw_comp(comp_id), board(brd),

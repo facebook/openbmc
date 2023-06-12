@@ -2295,7 +2295,7 @@ read_curr_leakage(uint8_t snr_number, float *value) {
   //static bool is_issued_sel = false;
   float medusa_curr, medusa_pwr = 0;
   float bb_hsc_curr, bb_hsc_pwr = 0;
-  float total_mb_hsc_curr, total_sb_hsc_pwr = 0;
+  float total_mb_hsc_curr = 0, total_sb_hsc_pwr = 0;
   uint8_t hsc_output_cur_num = BIC_SENSOR_HSC_OUTPUT_CUR; // Default Crater Lake sensor
   uint8_t hsc_output_pwr_num = BIC_SENSOR_HSC_INPUT_PWR; // Default Crater Lake sensor
   char key[MAX_KEY_LEN] = {0};
@@ -2304,6 +2304,13 @@ read_curr_leakage(uint8_t snr_number, float *value) {
 
   if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_HD || fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_HD) {
     hsc_output_cur_num = BIC_HD_SENSOR_HSC_OUTPUT_CUR;
+  } else if (
+      fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_GL ||
+      fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_GL) {
+    hsc_output_pwr_num = BIC_GL_SENSOR_MB_HSC_INPUT_PWR_W;
+    hsc_output_cur_num = BIC_GL_SENSOR_MB_HSC_OUTPUT_CURR_A;
+  } else { // slots are CL or empty
+    ;
   }
 
   snprintf(key, sizeof(key), "medusa_hsc_conf");

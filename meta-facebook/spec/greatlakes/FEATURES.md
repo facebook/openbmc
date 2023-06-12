@@ -57,9 +57,9 @@
 
 #### firmware-signature-checking
 
-- [ ] P2 **bic binary signature check**
+- [X] P2 **bic binary signature check**
 - [ ] P2 **bios signature check**
-- [ ] P2 **expansion card binary signature check**
+- ~~[ ] P2 **expansion card binary signature check**~~  (Not support this feature)
 
 #### firmware-update
 
@@ -193,7 +193,7 @@
 
 - ~~[ ] P1 **prot support**~~ (Not support this feature)
 - [ ] P3 **security attest util**
-- [ ] P2 **security signed firmware update**
+- [X] P2 **security signed firmware update**
 - [ ] P2 **tpm 20 boot measurement**
 - [ ] P2 **tpm 20 test**
 - [ ] P1 **verified boot dual flash**

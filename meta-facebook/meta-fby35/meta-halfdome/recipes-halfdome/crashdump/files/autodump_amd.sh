@@ -124,10 +124,12 @@ CPUID_EDX=$8
 $DUMP_UTIL --fru "$SLOT_NUM" --ras "$RAS_STATUS" --ncpu "$NUM_OF_PROC" --tcpu "$TARGET_CPU"  --bid 0 --cid "$CPUID_EAX" "$CPUID_EBX" "$CPUID_ECX" "$CPUID_EDX"
 
 [ -r $CURRENT_INDEX_FILE ] && CURRENT_INDEX=$(cat $CURRENT_INDEX_FILE) || CURRENT_INDEX=0
-if [ "$PREVIOUS_INDEX" != "$CURRENT_INDEX" ]; then
+if [ "$PREVIOUS_INDEX" != "$CURRENT_INDEX" ] || [ -f $INFODUMP_FILE ]; then
     tar zcf "$LOG_ARCHIVE" -C "$(dirname "$DUMP_FILE")" "$(basename "$DUMP_FILE")" "$(basename "$INFODUMP_FILE")" && \
-    rm -rf "$DUMP_FILE" && \
-    logger -t "ipmid" -p daemon.crit "Crashdump for FRU: $SLOT_NUM is generated at $LOG_ARCHIVE"
+    rm -rf "$DUMP_FILE"
+    if [ -f "$LOG_ARCHIVE" ];then
+      logger -t "ipmid" -p daemon.crit "Crashdump for FRU: $SLOT_NUM is generated at $LOG_ARCHIVE"
+    fi
 fi
 
 # Remove current pid file
@@ -141,6 +143,15 @@ if [ -r $CONFIG_FILE ]; then
   RESET_OPTION=$(/usr/bin/python -m json.tool "${CONFIG_FILE}" | grep "systemRecovery" | awk -F ': ' '{print $2}')
 else
   RESET_OPTION=0
+fi
+
+if [ "$RESET_OPTION" -eq 0 ]; then
+  FCH_ERR=$((RAS_STATUS & 0x02))
+  RST_CTRL_ERR=$((RAS_STATUS & 0x04))
+  #Force cold reset to recover system
+  if [ "$FCH_ERR" -ne 0 ] || [ "$RST_CTRL_ERR" -ne 0 ];then
+    RESET_OPTION=1
+  fi
 fi
 
 case $RESET_OPTION in

@@ -192,6 +192,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             else:
                 Logger.info("/api/sys/sensors: get PIM{} sensors None".format(pim + 1))
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_sensors(self):
         self.set_endpoint_sensors_attributes()
         self.verify_endpoint_attributes(

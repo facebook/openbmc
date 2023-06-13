@@ -1,0 +1,47 @@
+From f50acc7804d1f42e7baf240547593b2730eadaab Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Fri, 9 Jun 2023 16:28:47 -0700
+Subject: [PATCH] Add support to build on centOS9
+
+Summary:
+Change hosttools to not expect python/python2*.
+Change oe-tools to correctly parse gcc version when its in the
+double digits (Example, it was failing with GCC 10)
+
+Signed-off-by: Amithash Prasad <amithash@meta.com>
+---
+ meta/conf/bitbake.conf | 4 ++--
+ meta/lib/oe/utils.py   | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/meta/conf/bitbake.conf b/meta/conf/bitbake.conf
+index d4754dd5bf..526619aa60 100644
+--- a/meta/conf/bitbake.conf
++++ b/meta/conf/bitbake.conf
+@@ -477,8 +477,8 @@ HOSTTOOLS += " \
+     cpp cut date dd diff diffstat dirname du echo egrep env expand expr false \
+     fgrep file find flock g++ gawk gcc getconf getopt git grep gunzip gzip \
+     head hostname id install ld ldd ln ls make makeinfo md5sum mkdir mknod \
+-    mktemp mv nm objcopy objdump od patch perl pod2man pr printf pwd python python2 \
+-    python2.7 python3 ranlib readelf readlink rm rmdir rpcgen sed sh sha256sum \
++    mktemp mv nm objcopy objdump od patch perl pod2man pr printf pwd \
++    python3 ranlib readelf readlink rm rmdir rpcgen sed sh sha256sum \
+     sleep sort split stat strings strip tail tar tee test touch tr true uname \
+     uniq wc wget which xargs \
+ "
+diff --git a/meta/lib/oe/utils.py b/meta/lib/oe/utils.py
+index 643ab78df7..e8c4f6b23c 100644
+--- a/meta/lib/oe/utils.py
++++ b/meta/lib/oe/utils.py
+@@ -285,7 +285,7 @@ def host_gcc_version(d):
+     except subprocess.CalledProcessError as e:
+         bb.fatal("Error running %s --version: %s" % (compiler, e.output.decode("utf-8")))
+ 
+-    match = re.match(".* (\d\.\d)\.\d.*", output.split('\n')[0])
++    match = re.match(r".* (\d+\.\d+)\.\d+.*", output.split('\n')[0])
+     if not match:
+         bb.fatal("Can't get compiler version from %s --version output" % compiler)
+ 
+-- 
+2.39.1
+

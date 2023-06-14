@@ -10,5 +10,5 @@ CONFIG_PHY_FIXED=y
 
 # Platform specific override
 CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-fblite"
-CONFIG_SYS_CONFIG_NAME="facebook_fblite"
+CONFIG_SYS_CONFIG_NAME="facebook_fbmontblanc"
 CONFIG_SYS_PROMPT="montblanc-boot=> "

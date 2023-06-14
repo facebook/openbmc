@@ -971,11 +971,12 @@ pal_apml_alert_handler(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t
 {
   int ret;
   int completion_code = CC_UNSPECIFIED_ERROR;
+  size_t len;
   uint8_t status;
   uint8_t event_version = req_data[3];
   uint8_t ras_status = req_data[4];
   uint8_t num_of_proc = 0, target_cpu = 0;
-  uint32_t *cpuid;
+  uint32_t cpuid[8];  // 4x dwords per cpu
 
   *res_len = 0;
 
@@ -993,7 +994,9 @@ pal_apml_alert_handler(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t
 
       num_of_proc = req_data[5];
       target_cpu = req_data[6];
-      cpuid = (uint32_t*)(req_data+7);
+      len = req_len - IPMI_MN_REQ_HDR_SIZE - 7;
+      len = (len >= sizeof(cpuid)) ? sizeof(cpuid) : sizeof(cpuid)/2;
+      memcpy(cpuid, &req_data[7], len);
 
       ret = pal_add_apml_crashdump_record(slot, ras_status, num_of_proc, target_cpu, cpuid);
       if (0 == ret) {

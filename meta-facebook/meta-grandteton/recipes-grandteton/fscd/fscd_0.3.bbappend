@@ -19,13 +19,16 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 LOCAL_URI += " \
     file://setup-fan.sh \
-    file://fsc-config.json \
+    file://fsc-config-500w.json \
+    file://fsc-config-700w.json \
     file://zone.fsc \
     file://fsc_board.py \
     "
 
-FSC_CONFIG += "fsc-config.json \
-              " 
+FSC_CONFIG += " \
+            fsc-config-500w.json \
+            fsc-config-700w.json \
+            "
 
 FSC_ZONE_CONFIG +="zone.fsc \
                   "

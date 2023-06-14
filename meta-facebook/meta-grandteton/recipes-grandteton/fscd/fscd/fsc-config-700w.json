@@ -1,5 +1,5 @@
 {
-    "version": "grandteton-v8.6",
+    "version": "grandteton-v8.6 700w",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -62,10 +62,10 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [25, 25],
-          [30, 28],
-          [35, 30],
-          [40, 40],
+          [25, 40],
+          [30, 43],
+          [35, 45],
+          [40, 55],
           [45, 90]
         ]
       },
@@ -78,9 +78,9 @@
         "negative_hysteresis": 2,
         "data": [
           [-33, 25],
-          [-29, 30],
-          [-24, 35],
-          [-19, 40]
+          [-29, 35],
+          [-24, 45],
+          [-19, 50]
         ]
       },
       "cpu_tray_cpu_pid": {
@@ -104,10 +104,10 @@
         "negative_hysteresis": 2,
         "data": [
           [56, 25],
-          [58, 30],
-          [65, 35],
-          [70, 38],
-          [75, 40]
+          [58, 35],
+          [65, 45],
+          [70, 50],
+          [75, 55]
         ]
       },
       "cpu_tray_dimm_pid": {
@@ -131,7 +131,7 @@
         "negative_hysteresis": 2,
         "data": [
           [65, 25],
-          [70, 30],
+          [70, 45],
           [95, 90]
         ]
       },
@@ -156,7 +156,7 @@
         "negative_hysteresis": 2,
         "data": [
           [80, 25],
-          [90, 30],
+          [90, 45],
           [115, 90]
         ]
       },
@@ -181,6 +181,7 @@
         "negative_hysteresis": 2,
         "data": [
           [62, 25],
+          [70, 45],
           [95, 90]
         ]
       },
@@ -205,7 +206,7 @@
         "negative_hysteresis": 4,
         "data": [
           [50, 25],
-          [55, 30]
+          [55, 45]
         ]
       },
       "swb_tray_E1S_pid": {
@@ -229,8 +230,8 @@
         "negative_hysteresis": 2,
         "data": [
           [71, 25],
-          [73, 30],
-          [80, 40]
+          [73, 45],
+          [80, 55]
         ]
       },
       "swb_tray_switch_pid": {
@@ -250,8 +251,8 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 0,
-        "negative_hysteresis": 0,
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
         "data": [
           [58, 25],
           [90, 90]
@@ -265,12 +266,12 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [49, 25],
-          [63, 35],
-          [67, 40],
-          [72, 48],
-          [75, 55],
-          [82, 90]
+          [49, 50],
+          [59, 65],
+          [64, 75],
+          [69, 80],
+          [74, 85],
+          [82, 100]
         ]
       },
       "gpu_tray_gpu_pid": {
@@ -278,8 +279,8 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 1,
-        "negative_hysteresis": 2,
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 3,
         "setpoint": 79,
         "kp": -3.5,
         "ki": -0.035,
@@ -293,12 +294,12 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [62, 25],
-          [63, 35],
-          [78, 40],
-          [82, 48],
-          [85, 55],
-          [92, 90]
+          [62, 50],
+          [63, 65],
+          [78, 75],
+          [82, 80],
+          [85, 85],
+          [92, 100]
         ]
       },
       "gpu_tray_hbm_pid": {
@@ -306,7 +307,7 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 1,
+        "positive_hysteresis": 2,
         "negative_hysteresis": 2,
         "setpoint": 88,
         "kp": -3.5,
@@ -318,8 +319,8 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis": 0,
-        "negative_hysteresis": 0,
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
         "data": [
           [48, 25],
           [90, 90]
@@ -333,13 +334,12 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [80, 25],
-          [84, 30],
-          [86, 33],
-          [88, 35],
-          [92, 45],
-          [97, 50],
-          [107, 90]
+          [80, 40],
+          [84, 50],
+          [88, 60],
+          [92, 70],
+          [97, 80],
+          [107, 100]
         ]
       },
       "gpu_tray_retimer_pid": {
@@ -362,7 +362,8 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [65, 25],
+          [65, 30],
+          [70, 35],
           [80, 40],
           [85, 45],
           [95, 90]

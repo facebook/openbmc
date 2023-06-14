@@ -153,9 +153,13 @@ receive_bic_usb_packet(usb_dev* udev, uint8_t* pkt, const int receivelen)
   while (true) {
     ret = libusb_bulk_transfer(udev->handle, udev->epaddr, pkt, receivelen, &received, 3000);
     if (ret != 0) {
-      printf("Error in receiving data! err = %d (%s)\n", ret, libusb_error_name(ret));
       retries--;
       if (!retries) {
+        syslog(
+            LOG_INFO,
+            "Error in receiving data! err = %d (%s)\n",
+            ret,
+            libusb_error_name(ret));
         return -1;
       }
       msleep(100);
@@ -378,6 +382,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
   uint32_t write_offset = 0;
   const char *what = NULL;
   uint8_t intf = NONE_INTF;
+  char error_message[100] = {0};
 
   if (udev == NULL) {
     syslog(LOG_ERR, "%s[%u] udev shouldn't be null!", __func__, slot_id);
@@ -532,7 +537,13 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
       udev->epaddr = USB_INPUT_PORT;
       rc = send_bic_usb_packet(udev, pkt_buf, USB_PKT_HDR_SIZE + count);
       if (rc < 0) {
-        fprintf(stderr, "failed to write %zu bytes @ 0x%08X: %d\n", count, write_offset, rc);
+        snprintf(
+            error_message,
+            sizeof(error_message),
+            "failed to write %zu bytes @ 0x%08X: %d\n",
+            count,
+            write_offset,
+            rc);
         attempts--;
         file_buf_pos = 0;
         continue;
@@ -541,7 +552,8 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
       udev->epaddr = USB_OUTPUT_PORT;
       rc = receive_bic_usb_packet(udev, pkt_buf, USB_PKT_RES_HDR_SIZE + IANA_ID_SIZE);
       if (rc != 0) {
-        fprintf(stderr, "Return code: 0x%X\n", rc);
+        snprintf(
+            error_message, sizeof(error_message), "Return code: 0x%X\n", rc);
         attempts--;
         file_buf_pos = 0;
         continue;
@@ -551,14 +563,24 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
       if (verify && last_pkt) {
         rc = bic_get_fw_cksum_sha256(slot_id, write_target, write_offset, file_buf_num_bytes, cs, intf);
         if (rc != 0) {
-          fprintf(stderr, "bic_get_fw_cksum_sha256 @ 0x%08X failed\n", write_offset);
+          snprintf(
+              error_message,
+              sizeof(error_message),
+              "bic_get_fw_cksum_sha256 @ 0x%08X failed\n",
+              write_offset);
           attempts--;
           file_buf_pos = 0;
           continue;
         }
         if (memcmp(cs, fcs, STRONG_DIGEST_LENGTH) != 0) {
-          fprintf(stderr, "Data checksum mismatch @ 0x%08X (0x%016"PRIx64" vs 0x%016"PRIx64")\n",
-                  write_offset, *(uint64_t *)cs, *(uint64_t *)fcs);
+          snprintf(
+              error_message,
+              sizeof(error_message),
+              "Data checksum mismatch @ 0x%08X (0x%016" PRIx64
+              " vs 0x%016" PRIx64 ")\n",
+              write_offset,
+              *(uint64_t*)cs,
+              *(uint64_t*)fcs);
           attempts--;
           file_buf_pos = 0;
           continue;
@@ -567,6 +589,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, uint8_t 
       file_buf_pos += count;
     }
     if (attempts == 0) {
+      printf("%s\n", error_message);
       break;
     }
 

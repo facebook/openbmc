@@ -456,8 +456,8 @@ int main(int argc, char *argv[])
           if (signal_received.load()) {
             syslog(LOG_DEBUG, "fw-util: previously received signal=%d", signal_received.load());
             syslog(LOG_DEBUG, "fw-util: Terminate request handled");
-            cout << "Aborted action due to signal\n";
-            return -1;
+            cout << "Aborted action due to signal = " << signal_received.load() << endl;
+            return ret;
           }
         }
       }

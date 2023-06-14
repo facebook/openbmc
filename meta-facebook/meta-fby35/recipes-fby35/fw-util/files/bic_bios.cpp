@@ -63,11 +63,21 @@ image_info BiosComponent::check_image(const string& image, bool force) {
     image_sts.result = true;
   }
 
-  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
-    board_id = BOARD_ID_HD;
-  } else {
-    board_id = BOARD_ID_SB;
+  switch (fby35_common_get_slot_type(slot_id)) {
+    case SERVER_TYPE_HD:
+      board_id = BOARD_ID_HD;
+      break;
+    case SERVER_TYPE_GL:
+      board_id = BOARD_ID_GL;
+      break;
+    case SERVER_TYPE_CL:
+      board_id = BOARD_ID_SB;
+      break;
+    default:
+      syslog(LOG_WARNING, "Failed to identify Board ID.");
+      break;
   }
+
   ret = get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
   if (ret < 0) {
     cerr << "Failed to get board revision ID" << endl;

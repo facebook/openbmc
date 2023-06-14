@@ -24,10 +24,12 @@ from tests.wedge400.helper.libpal import pal_get_fru_id
 from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "all"
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class SMBLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "smb"
 

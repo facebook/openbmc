@@ -2272,11 +2272,20 @@ read_pdb_cl_vdelta(uint8_t snr_number, float *value) {
   float medusa_vout = 0;
   float min_hsc_vin = 0;
   uint8_t hsc_input_vol_num = BIC_SENSOR_HSC_INPUT_VOL; // Default Crater Lake sensor
+  bool type_found = false;
 
-  if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_HD || fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_HD) {
-    hsc_input_vol_num = BIC_HD_SENSOR_HSC_INPUT_VOL;
+  for (uint8_t i = FRU_SLOT1; i <= FRU_SLOT4; i++) {
+    uint8_t slot_type = fby35_common_get_slot_type(i);
+    if (slot_type == SERVER_TYPE_HD) {
+      hsc_input_vol_num = BIC_HD_SENSOR_HSC_INPUT_VOL;
+    }
+    if (slot_type != SERVER_TYPE_NONE) {
+      type_found = true;
+      break;
+    }
   }
 
+  if ( !type_found) return READING_NA;
   if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_VOUT, &medusa_vout) < 0) return READING_NA;
   if ( read_snr_from_all_slots(hsc_input_vol_num, GET_MIN_VAL, &min_hsc_vin) < 0) return READING_NA;
 

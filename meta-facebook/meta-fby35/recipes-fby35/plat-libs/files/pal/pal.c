@@ -3791,6 +3791,7 @@ pal_update_ierr_status(uint8_t slot, uint8_t status) {
       break;
     case SEL_DEASSERT:
       value[0] &= ~(slot << 1);
+      break;
     default:
       return -1;
   }

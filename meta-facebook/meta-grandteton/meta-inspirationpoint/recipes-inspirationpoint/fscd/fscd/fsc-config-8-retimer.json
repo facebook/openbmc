@@ -367,8 +367,7 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [65, 30],
-          [70, 35],
+          [65, 25],
           [80, 40],
           [85, 45],
           [95, 90]

@@ -22,6 +22,7 @@ LOCAL_URI += " \
     file://setup-pwon-snr.sh \
     file://sync_date.sh \
     file://setup-server-uart.sh \
+    file://check-fan-cache.sh \
     "
 
 do_install:append() {

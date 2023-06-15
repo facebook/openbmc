@@ -51,30 +51,31 @@ struct pal_key_cfg {
   char *def_val;
   int (*function)(int, void*);
   bool enable;
+  uint32_t region;
 } key_cfg[] = {
   /* name, default value, function */
-  {SV_LAST_PWR_ST,      "pwr_server_last_state", "on",           key_func_lps,        true},
-  {SV_SYSFW_VER,        "fru1_sysfw_ver",        "0",            NULL,                true},
-  {SLED_IDENTIFY,       "identify_sled",         "off",          NULL,                true},
-  {SLED_TIMESTAMP,      "timestamp_sled",        "0",            NULL,                true},
-  {SV_POR_CFG,          "server_por_cfg",        "on",           key_func_por_policy, true},
-  {SV_SNR_HEALTH,       "server_sensor_health",  "1",            NULL,                true},
-  {SWB_SNR_HEALTH,      "swb_sensor_health",     "1",            NULL,                true},
-  {HGX_SNR_HEALTH,      "hgx_sensor_health",     "1",            NULL,                true},
-  {NIC0_SNR_HEALTH,     "nic0_sensor_health",    "1",            NULL,                true},
-  {NIC1_SNR_HEALTH,     "nic1_sensor_health",    "1",            NULL,                true},
-  {VPDB_SNR_HEALTH,     "vpdb_sensor_health",    "1",            NULL,                true},
-  {HPDB_SNR_HEALTH,     "hpdb_sensor_health",    "1",            NULL,                true},
-  {FAN_BP1_SNR_HEALTH,  "fan_bp1_sensor_health", "1",            NULL,                true},
-  {FAN_BP2_SNR_HEALTH,  "fan_bp2_sensor_health", "1",            NULL,                true},
-  {SCM_SNR_HEALTH,      "scm_sensor_health",     "1",            NULL,                true},
-  {HSC_SNR_HEALTH,      "hsc_sensor_health",     "1",            NULL,                false},
-  {SHSC_SNR_HEALTH,     "swb_hsc_sensor_health", "1",            NULL,                false},
-  {SV_SEL_ERR,          "server_sel_error",      "1",            NULL,                true},
-  {SV_BOOT_ORDER,       "server_boot_order",     "0100090203ff", NULL,                true},
-  {CPU0_PPIN,           "cpu0_ppin",             "",             NULL,                true},
-  {CPU1_PPIN,           "cpu1_ppin",             "",             NULL,                true},
-  {NTP_SERVER,          "ntp_server",            "",             NULL,                true},
+  {SV_LAST_PWR_ST,      "pwr_server_last_state", "on",           key_func_lps,        true,  KV_FPERSIST},
+  {SV_SYSFW_VER,        "fru1_sysfw_ver",        "0",            NULL,                true,  KV_FPERSIST},
+  {SLED_IDENTIFY,       "identify_sled",         "off",          NULL,                true,  KV_FPERSIST},
+  {SLED_TIMESTAMP,      "timestamp_sled",        "0",            NULL,                true,  KV_FPERSIST},
+  {SV_POR_CFG,          "server_por_cfg",        "on",           key_func_por_policy, true,  KV_FPERSIST},
+  {SV_SNR_HEALTH,       "server_sensor_health",  "1",            NULL,                true,  0},
+  {SWB_SNR_HEALTH,      "swb_sensor_health",     "1",            NULL,                true,  0},
+  {HGX_SNR_HEALTH,      "hgx_sensor_health",     "1",            NULL,                true,  0},
+  {NIC0_SNR_HEALTH,     "nic0_sensor_health",    "1",            NULL,                true,  0},
+  {NIC1_SNR_HEALTH,     "nic1_sensor_health",    "1",            NULL,                true,  0},
+  {VPDB_SNR_HEALTH,     "vpdb_sensor_health",    "1",            NULL,                true,  0},
+  {HPDB_SNR_HEALTH,     "hpdb_sensor_health",    "1",            NULL,                true,  0},
+  {FAN_BP1_SNR_HEALTH,  "fan_bp1_sensor_health", "1",            NULL,                true,  0},
+  {FAN_BP2_SNR_HEALTH,  "fan_bp2_sensor_health", "1",            NULL,                true,  0},
+  {SCM_SNR_HEALTH,      "scm_sensor_health",     "1",            NULL,                true,  0},
+  {HSC_SNR_HEALTH,      "hsc_sensor_health",     "1",            NULL,                false, 0},
+  {SHSC_SNR_HEALTH,     "swb_hsc_sensor_health", "1",            NULL,                false, 0},
+  {SV_SEL_ERR,          "server_sel_error",      "1",            NULL,                true,  KV_FPERSIST},
+  {SV_BOOT_ORDER,       "server_boot_order",     "0100090203ff", NULL,                true,  KV_FPERSIST},
+  {CPU0_PPIN,           "cpu0_ppin",             "",             NULL,                true,  KV_FPERSIST},
+  {CPU1_PPIN,           "cpu1_ppin",             "",             NULL,                true,  KV_FPERSIST},
+  {NTP_SERVER,          "ntp_server",            "",             NULL,                true,  KV_FPERSIST},
   /* Add more Keys here */
   {LAST_ID, LAST_KEY, LAST_KEY, NULL, true} /* This is the last key of the list */
 };
@@ -143,7 +144,7 @@ pal_get_key_value(char *key, char *value) {
   if ((index = pal_key_index(key)) < 0)
     return -1;
 
-  return kv_get(key, value, NULL, KV_FPERSIST);
+  return kv_get(key, value, NULL, key_cfg[index].region);
 }
 
 int
@@ -159,7 +160,7 @@ pal_set_key_value(char *key, char *value) {
       return ret;
   }
 
-  return kv_set(key, value, 0, KV_FPERSIST);
+  return kv_set(key, value, 0, key_cfg[index].region);
 }
 
 static int
@@ -214,7 +215,7 @@ pal_set_def_key_value(void) {
   char key[MAX_KEY_LEN] = {0};
 
   for (i = 0; key_cfg[i].id != LAST_ID; i++) {
-    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
+    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | key_cfg[i].region)) {
       syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
     }
     if (key_cfg[i].function) {
@@ -392,7 +393,7 @@ pal_dump_key_value(void) {
     if (key_cfg[i].enable) {
       printf("%s:", key_cfg[i].name);
       memset(value, 0, sizeof(value));
-      if (kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST) < 0) {
+      if (kv_get(key_cfg[i].name, value, NULL, key_cfg[i].region) < 0) {
         printf("\n");
       } else {
         printf("%s\n", value);

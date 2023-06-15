@@ -1,0 +1,89 @@
+From 7535237e2ef7798076c5008454c786d7f7e3c7fb Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Thu, 2 May 2019 17:42:15 -0700
+Subject: [PATCH 1001/1003] net/ncsi: allow to customize MC's MAC address
+ offset via Kconfig
+
+Summary:
+
+BMC's MAC address is usually obtained from NC-SI Network Controller in
+NC-SI environment. Some NICs provide "get_bmc_mac" command and the
+response can be applied to BMC directly, but there are also NICs with
+"get_base_mac" command and people need to add an offset to the "base
+MAC" to get BMC's MAC address.
+
+This patch introduces a kconfig option to allow people to override the
+"default" offset (1), and it's currently used on Yamp because the offset
+is 2 on Yamp (BMC_MAC_ADDR = NCSI_NIC_BASE_MAC_ADDR + 2).
+
+The patch was rejected by upstream means we will need to figure out
+another way to solve the problem, potentially using dts entry or moving
+the mac-offset logic to u-boot.
+
+Test Plan:
+
+1) booted up linux 5.10 on yamp: MAC is assigned with correct address and
+   BMC is reachable from outside the chassis.
+
+Reviewers: tfang, amithash, benwei, mikechoi, #openbmc
+
+Reviewed By: benwei
+
+Differential Revision: https://phabricator.intern.facebook.com/D15243878
+
+Signature: 15243878:1557258796:10b68669563af69a82b59c9fc4debc1293da285b
+---
+ net/ncsi/Kconfig    |  9 +++++++++
+ net/ncsi/ncsi-rsp.c | 12 ++++++++++--
+ 2 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/net/ncsi/Kconfig b/net/ncsi/Kconfig
+index ea1dd32b6b1f..18dfef8c5fdc 100644
+--- a/net/ncsi/Kconfig
++++ b/net/ncsi/Kconfig
+@@ -23,3 +23,12 @@ config NCSI_OEM_CMD_KEEP_PHY
+ 	help
+ 	  This allows to keep PHY link up and prevents any channel resets during
+ 	  the host load.
++
++config NET_NCSI_MC_MAC_OFFSET
++	int
++	prompt "Offset of Management Controller's MAC Address"
++	depends on NCSI_OEM_CMD_GET_MAC
++	default 1
++	help
++	  This defines the offset between Network Controller's (base) MAC
++	  address and Management Controller's MAC address.
+diff --git a/net/ncsi/ncsi-rsp.c b/net/ncsi/ncsi-rsp.c
+index 6447a09932f5..3ec996574211 100644
+--- a/net/ncsi/ncsi-rsp.c
++++ b/net/ncsi/ncsi-rsp.c
+@@ -662,6 +662,11 @@ static int ncsi_rsp_handler_oem_bcm_gma(struct ncsi_request *nr)
+ 	struct ncsi_rsp_oem_pkt *rsp;
+ 	struct sockaddr saddr;
+ 	int ret = 0;
++#ifdef CONFIG_NET_NCSI_MC_MAC_OFFSET
++	int mac_offset = CONFIG_NET_NCSI_MC_MAC_OFFSET;
++#else
++	int mac_offset = 1;
++#endif
+ 
+ 	/* Get the response header */
+ 	rsp = (struct ncsi_rsp_oem_pkt *)skb_network_header(nr->rsp);
+@@ -669,8 +674,11 @@ static int ncsi_rsp_handler_oem_bcm_gma(struct ncsi_request *nr)
+ 	saddr.sa_family = ndev->type;
+ 	ndev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
+ 	memcpy(saddr.sa_data, &rsp->data[BCM_MAC_ADDR_OFFSET], ETH_ALEN);
+-	/* Increase mac address by 1 for BMC's address */
+-	eth_addr_inc((u8 *)saddr.sa_data);
++	/* Management Controller's MAC address is calculated by adding
++	 * the offset to Network Controller's (base) MAC address.
++	 */
++	while (mac_offset-- > 0)
++		eth_addr_inc((u8 *)saddr.sa_data);
+ 	if (!is_valid_ether_addr((const u8 *)saddr.sa_data))
+ 		return -ENXIO;
+ 
+-- 
+2.34.1
+

@@ -107,6 +107,32 @@ struct gpiopoll_ioex_config iox_gpios[] = {
   {FM_HS2_EN_BUSBAR_BUF, "HPDB_HS2_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
 };
 
+struct gpiopoll_ioex_config gta_iox_gpios[] = {
+  {FAN_BP1_PRSNT, "FAN_BP1",     IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN_BP2_PRSNT, "FAN_BP2",     IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN0_PRSNT,    "FAN0",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN1_PRSNT,    "FAN1",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN2_PRSNT,    "FAN2",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN3_PRSNT,    "FAN3",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN4_PRSNT,    "FAN4",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN5_PRSNT,    "FAN5",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN6_PRSNT,    "FAN6",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN7_PRSNT,    "FAN7",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN8_PRSNT,    "FAN8",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN9_PRSNT,    "FAN9",        IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN10_PRSNT,   "FAN10",       IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN11_PRSNT,   "FAN11",       IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN12_PRSNT,   "FAN12",       IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN13_PRSNT,   "FAN13",       IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN14_PRSNT,   "FAN14",       IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FAN15_PRSNT,   "FAN15",       IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {CABLE_PRSNT_G, "ACB_CABLE_G", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {CABLE_PRSNT_B, "ACB CABLE_B", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {CABLE_PRSNT_A, "MEB_CABLE_A", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {FM_HS1_EN_BUSBAR_BUF, "HPDB_HS1_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
+  {FM_HS2_EN_BUSBAR_BUF, "HPDB_HS2_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
+};
+
 struct gpiopoll_config gpios_common_list[] = {
   // shadow, description, edge, handler, oneshot
   {FP_RST_BTN_IN_N,         "GPIOP2",         GPIO_EDGE_BOTH,    pwr_reset_handler,          NULL},
@@ -116,15 +142,12 @@ struct gpiopoll_config gpios_common_list[] = {
   {FM_POST_CARD_PRES_N,     "GPIOZ6",         GPIO_EDGE_BOTH,    usb_dbg_card_handler,       NULL},
   {FP_AC_PWR_BMC_BTN,       "GPIO18A0",       GPIO_EDGE_BOTH,    gpio_event_handler,         NULL},
   {BIC_READY,               "SGPIO32",        GPIO_EDGE_BOTH,    bic_ready_handler,          bic_ready_init},
-  {HMC_READY,               "SGPIO64",        GPIO_EDGE_BOTH,    hmc_ready_handler,          hmc_ready_init},
   {GPU_FPGA_THERM_OVERT,    "SGPIO40",        GPIO_EDGE_FALLING, nv_event_handler,           NULL},
   {GPU_FPGA_DEVIC_OVERT,    "SGPIO42",        GPIO_EDGE_FALLING, nv_event_handler,           NULL},
   {PEX_FW_VER_UPDATE,       "PEX_VER_UPDATE", GPIO_EDGE_RISING,  pex_fw_ver_handle,          NULL},
   {FM_SMB_2_ALERT_GPU,      "SGPIO208",       GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {FM_SMB_1_ALERT_GPU,      "SGPIO210",       GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
 };
-
-
 
 bool server_power_check(uint8_t power_on_time) {
   uint8_t status = 0;
@@ -764,8 +787,9 @@ void
 *iox_gpio_handle(void *)
 {
   int i, status;
-  int size = sizeof(iox_gpios)/sizeof(iox_gpios[0]);
+  int size = pal_is_artemis() ? ARRAY_SIZE(gta_iox_gpios) : ARRAY_SIZE(iox_gpios);
   int init_flag[size];
+  gpiopoll_ioex_config *iox_gpio_table = pal_is_artemis() ? gta_iox_gpios : iox_gpios;
 
   for (i = 0; i < size; ++i)
     init_flag[i] = false;
@@ -773,7 +797,7 @@ void
   while (1) {
     if (pal_get_server_power(FRU_MB, (uint8_t*)&status) < 0)
       status = -1;
-    ioex_table_polling_once(iox_gpios, init_flag, size, status);
+    ioex_table_polling_once(iox_gpio_table, init_flag, size, status);
     sleep(1);
   }
 

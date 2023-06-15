@@ -75,6 +75,7 @@ struct gpiopoll_config gpios_plat_list[] = {
   {FM_CPU0_SKTOCC,          "SGPIO112",       GPIO_EDGE_BOTH,    sgpio_event_handler,        cpu_skt_init},
   {FM_CPU1_SKTOCC,          "SGPIO114",       GPIO_EDGE_BOTH,    sgpio_event_handler,        cpu_skt_init},
   {CPLD_POWER_FAIL_ALERT,   "SGPI240",        GPIO_EDGE_RISING,  cpld_event_handler,         NULL},
+  {HMC_READY,               "SGPIO64",        GPIO_EDGE_BOTH,    hmc_ready_handler,          hmc_ready_init},
 };
 
 //IERR and MCERR Event Handler
@@ -285,13 +286,11 @@ cpld_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 }
 
 int get_gpios_plat_list(struct gpiopoll_config** list) {
-
-  uint8_t cnt = sizeof(gpios_plat_list)/sizeof(gpios_plat_list[0]);
+  uint8_t cnt = ARRAY_SIZE(gpios_plat_list);
   *list = gpios_plat_list;
 
   return cnt;
 }
-
 
 pthread_t tid_ierr_mcerr_event;
 pthread_t tid_gpio_timer;

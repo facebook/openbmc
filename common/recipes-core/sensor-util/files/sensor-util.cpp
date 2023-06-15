@@ -918,7 +918,7 @@ int
 main(int argc, char **argv) {
 
   int ret = 0;
-  uint8_t fru, pair_fru;
+  uint8_t fru, pair_fru, status;
   int num;
   bool threshold;
   bool history;
@@ -955,6 +955,20 @@ main(int argc, char **argv) {
       if (history_clear || history) {
         check_caps |= FRU_CAPABILITY_SENSOR_HISTORY;
       }
+
+      ret = pal_is_fru_prsnt(fru, &status);
+      if (ret < 0) {
+        printf("failed to get present status for fru: %s\n\n", fruname);
+        return ret;
+      }
+
+      // FRU not present
+      if (status == 0) {
+        printf("%s is not present!\n\n", fruname);
+        print_usage();
+        return ret;
+      }
+
       ret = pal_get_fru_capability(fru, &caps);
       if (ret < 0 || ((caps & check_caps) != check_caps)) {
         print_usage();

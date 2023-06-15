@@ -1,12 +1,5 @@
 #!/bin/bash
 
-amd_warm_reset() {
-  /usr/bin/bic-util "$SLOT_NAME" 0x18 0x52 0x00 0x42 0x00 0x00 0xFF
-  /usr/bin/bic-util "$SLOT_NAME" 0x18 0x52 0x00 0x42 0x00 0x00 0xFB
-  sleep 0.5
-  /usr/bin/bic-util "$SLOT_NAME" 0x18 0x52 0x00 0x42 0x00 0x00 0xFF
-}
-
 dump_sensor_history() 
 {
   l_SLOT=$1
@@ -51,19 +44,12 @@ esac
 # File format autodump<slot_id>.pid (See pal_is_crashdump_ongoing()
 # function definition)
 PID_FILE="/var/run/autodump${SLOT_NUM}.pid"
-CURRENT_INDEX_FILE="/var/lib/amd-ras/fru${SLOT_NUM}_current_index"
+DUMP_DIR='/var/lib/amd-ras'
+CURRENT_INDEX_FILE="$DUMP_DIR/fru${SLOT_NUM}_current_index"
+INFODUMP_FILE="$DUMP_DIR/fru${SLOT_NUM}_crashdump_info"
 DUMP_UTIL='/usr/bin/amd-ras'
-CONFIG_FILE="/var/lib/amd-ras/config_file"
 FRUID_UTIL="/usr/local/bin/fruid-util"
 FW_UTIL="/usr/bin/fw-util"
-
-# check number of crashdump file exists
-[ -r $CURRENT_INDEX_FILE ] && PREVIOUS_INDEX=$(cat $CURRENT_INDEX_FILE) || PREVIOUS_INDEX=0
-
-CURT_DTIME=$(date +"%Y%m%d-%H%M%S")
-INFODUMP_FILE="/var/lib/amd-ras/fru${SLOT_NUM}_crashdump_info"
-DUMP_FILE="/var/lib/amd-ras/fru${SLOT_NUM}_ras-error${PREVIOUS_INDEX}.cper"
-LOG_ARCHIVE="/mnt/data/fru${SLOT_NUM}_ras-error${PREVIOUS_INDEX}_${CURT_DTIME}.tar.gz"
 
 # check crashdump binary file exists
 if [ ! -f $DUMP_UTIL ]; then
@@ -85,6 +71,13 @@ fi
 sys_runtime=$(awk '{print $1}' /proc/uptime)
 sys_runtime=$(printf "%0.f" "$sys_runtime")
 kv set "fru${SLOT_NUM}_crashdump" "$((sys_runtime+600))"
+
+# check number of crashdump file exists
+[ -r $CURRENT_INDEX_FILE ] && PREVIOUS_INDEX=$(cat $CURRENT_INDEX_FILE) || PREVIOUS_INDEX=0
+
+CURT_DTIME=$(date +"%Y%m%d-%H%M%S")
+DUMP_FILE="$DUMP_DIR/fru${SLOT_NUM}_ras-error${PREVIOUS_INDEX}.cper"
+LOG_ARCHIVE="/mnt/data/fru${SLOT_NUM}_ras-error${PREVIOUS_INDEX}_${CURT_DTIME}.tar.gz"
 
 logger -t "ipmid" -p daemon.crit "Crashdump for FRU: $SLOT_NUM started"
 
@@ -124,51 +117,16 @@ CPUID_EDX=$8
 $DUMP_UTIL --fru "$SLOT_NUM" --ras "$RAS_STATUS" --ncpu "$NUM_OF_PROC" --tcpu "$TARGET_CPU"  --bid 0 --cid "$CPUID_EAX" "$CPUID_EBX" "$CPUID_ECX" "$CPUID_EDX"
 
 [ -r $CURRENT_INDEX_FILE ] && CURRENT_INDEX=$(cat $CURRENT_INDEX_FILE) || CURRENT_INDEX=0
-if [ "$PREVIOUS_INDEX" != "$CURRENT_INDEX" ] || [ -f $INFODUMP_FILE ]; then
-    tar zcf "$LOG_ARCHIVE" -C "$(dirname "$DUMP_FILE")" "$(basename "$DUMP_FILE")" "$(basename "$INFODUMP_FILE")" && \
-    rm -rf "$DUMP_FILE"
-    if [ -f "$LOG_ARCHIVE" ];then
-      logger -t "ipmid" -p daemon.crit "Crashdump for FRU: $SLOT_NUM is generated at $LOG_ARCHIVE"
-    fi
+if [ "$PREVIOUS_INDEX" == "$CURRENT_INDEX" ]; then
+  DUMP_FILE=
+fi
+
+IFS=" " read -r -a LOGS <<< "$(basename "$INFODUMP_FILE") $(basename "$DUMP_FILE")"
+tar zcf "$LOG_ARCHIVE" -C "$DUMP_DIR" "${LOGS[@]}" && rm -rf "$DUMP_FILE"
+if [ -f "$LOG_ARCHIVE" ]; then
+  logger -t "ipmid" -p daemon.crit "Crashdump for FRU: $SLOT_NUM is generated at $LOG_ARCHIVE"
 fi
 
 # Remove current pid file
 rm $PID_FILE
-
-# 0 ---> warm
-# 1 ---> cold
-# 2 ---> no reset
-
-if [ -r $CONFIG_FILE ]; then
-  RESET_OPTION=$(/usr/bin/python -m json.tool "${CONFIG_FILE}" | grep "systemRecovery" | awk -F ': ' '{print $2}')
-else
-  RESET_OPTION=0
-fi
-
-if [ "$RESET_OPTION" -eq 0 ]; then
-  FCH_ERR=$((RAS_STATUS & 0x02))
-  RST_CTRL_ERR=$((RAS_STATUS & 0x04))
-  #Force cold reset to recover system
-  if [ "$FCH_ERR" -ne 0 ] || [ "$RST_CTRL_ERR" -ne 0 ];then
-    RESET_OPTION=1
-  fi
-fi
-
-case $RESET_OPTION in
-  0)
-    logger -t "ipmid" -p daemon.crit "Dump completed, warm reset FRU: $SLOT_NUM"
-    amd_warm_reset
-    ;;
-  1)
-    logger -t "ipmid" -p daemon.crit "Dump completed, cold reset FRU: $SLOT_NUM"
-    /usr/local/bin/power-util "$SLOT_NAME" reset
-    ;;
-  2)
-    logger -t "ipmid" -p daemon.crit "Dump completed, no reset FRU: $SLOT_NUM"
-    ;;
-  *)
-    logger -t "ipmid" -p daemon.crit "Dump completed, Crashdump Reset Policy is not valid"
-    ;;
-esac
-
 exit 0

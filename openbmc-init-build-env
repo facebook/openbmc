@@ -48,6 +48,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-minipack:lf-dunfell
   meta-wedge100:lf-dunfell
   meta-wedge400:lf-dunfell
+  meta-yamp:lf-dunfell
 # Legacy platforms pending kernel upgrade
   meta-fbtp:rocko
   meta-fbttn:rocko
@@ -56,7 +57,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-galaxy100:rocko
   meta-lightning:rocko
   meta-wedge:rocko
-  meta-yamp:rocko
   meta-yosemite:rocko
 # Below Network OpenBMC platforms are not widely deployed (prototype
 # hardware, etc), but we will keep the entries until all the units are

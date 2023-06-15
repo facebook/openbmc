@@ -144,6 +144,92 @@ apml_alert_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
   }
 }
 
+static void*
+delay_prochot_logging(void *arg) {
+  pthread_detach(pthread_self());
+
+  if (arg == NULL) {
+    syslog(LOG_CRIT, "%s null parameter\n", __func__);
+    pthread_exit(NULL);
+  }
+
+  struct delayed_prochot_log *log = (struct delayed_prochot_log*)arg;
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(log->desc);
+  char cmd[128] = {0};
+
+  if (!sgpio_valid_check()) {
+    goto end;
+  }
+  assert(cfg);
+
+  /* prevent false alarm when prochot pin fallen 2~3 ms earlier
+   * than CPU power good pin during host 12V off 
+   */
+  msleep(DELAY_LOG_CPU_PROCHOT_MS);
+
+  if(!server_power_check(3)) {
+    goto end;
+  }
+
+  //LCD debug card critical SEL support
+  strcat(cmd, "CPU FPH");
+  if (log->curr) {
+    syslog(LOG_CRIT, "Record time delay %dms, FRU: %d %s: %s - %s\n",
+      DELAY_LOG_CPU_PROCHOT_MS, FRU_MB, log->curr ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+    strcat(cmd, " DEASSERT");
+  } else {
+    char reason[32] = "";
+    strcat(cmd, " by ");
+    prochot_reason(reason);
+    strcat(cmd, reason);
+    syslog(LOG_CRIT, "Record time delay %dms, FRU: %d ASSERT: %s - %s (reason: %s)\n",
+           DELAY_LOG_CPU_PROCHOT_MS, FRU_MB, cfg->description, cfg->shadow, reason);
+    strcat(cmd, " ASSERT");
+  }
+  pal_add_cri_sel(cmd);
+
+end:
+  if (log) {
+    free(log);
+  }
+
+  pthread_exit(NULL);
+}
+
+static void
+gta_cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  pthread_t tid_delay_prochot_log;
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  struct delayed_prochot_log *log = (struct delayed_prochot_log *)malloc(sizeof(struct delayed_prochot_log));
+
+  assert(cfg);
+
+  if(!log) {
+    syslog(LOG_CRIT, "FRU: %d %s: %s - %s\n", FRU_MB, curr ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+    return;
+  }
+
+  log->desc = desc;
+  log->last = last;
+  log->curr = curr;
+
+  if (pthread_create(&tid_delay_prochot_log, NULL, delay_prochot_logging, (void *)log)) {
+    syslog(LOG_CRIT, "FRU: %d %s: %s - %s\n", FRU_MB, curr ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+    free(log);
+  }
+
+  return;
+}
+
+static void
+cpu_prochot_handler_wrapper(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (pal_is_artemis()) {
+    gta_cpu_prochot_handler(desc, last, curr);
+  } else {
+    cpu_prochot_handler(desc, last, curr);
+  }
+}
+
 // GPIO table to be monitored
 static struct gpiopoll_config gpios_plat_list[] = {
   // shadow, description, edge, handler, oneshot
@@ -151,8 +237,8 @@ static struct gpiopoll_config gpios_plat_list[] = {
   {IRQ_OC_DETECT_N,             "SGPIO178",  GPIO_EDGE_BOTH,    oc_detect_handler,          NULL},
   {IRQ_HSC_FAULT_N,             "SGPIO36",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {IRQ_HSC_ALERT_N,             "SGPIO2",    GPIO_EDGE_BOTH,    sml1_pmbus_alert_handler,   NULL},
-  {FM_CPU0_PROCHOT_N,           "SGPIO202",  GPIO_EDGE_BOTH,    cpu_prochot_handler,        NULL},
-  {FM_CPU1_PROCHOT_N,           "SGPIO186",  GPIO_EDGE_BOTH,    cpu_prochot_handler,        NULL},
+  {FM_CPU0_PROCHOT_N,           "SGPIO202",  GPIO_EDGE_BOTH,    cpu_prochot_handler_wrapper,NULL},
+  {FM_CPU1_PROCHOT_N,           "SGPIO186",  GPIO_EDGE_BOTH,    cpu_prochot_handler_wrapper,NULL},
   {FM_CPU0_THERMTRIP_N,         "SGPIO136",  GPIO_EDGE_BOTH,    cpu_thermtrip_handler,      NULL},
   {FM_CPU1_THERMTRIP_N,         "SGPIO118",  GPIO_EDGE_BOTH,    cpu_thermtrip_handler,      NULL},
   {FM_CPU_ERR0_N,               "SGPIO142",  GPIO_EDGE_BOTH,    cpu_error_handler,          NULL},

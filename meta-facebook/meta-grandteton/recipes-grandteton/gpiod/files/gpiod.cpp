@@ -378,7 +378,7 @@ pch_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   log_gpio_change(FRU_MB, desc, curr, 0, NULL);
 }
 
-static void prochot_reason(char *reason)
+void prochot_reason(char *reason)
 {
   if (gpio_get_value_by_shadow(IRQ_UV_DETECT_N) == GPIO_VALUE_LOW)
     strcpy(reason, "UV");

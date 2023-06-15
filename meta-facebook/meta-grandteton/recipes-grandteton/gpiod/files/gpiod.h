@@ -10,6 +10,14 @@
 #define POWER_OFF_STR       "off"
 #define DEFER_LOG_TIME      (300 * 1000)
 
+struct delayed_prochot_log {
+  gpiopoll_pin_t *desc;
+  gpio_value_t last;
+  gpio_value_t curr;
+};
+
+#define DELAY_LOG_CPU_PROCHOT_MS 5
+
 bool server_power_check(uint8_t power_on_time);
 
 int gpiod_plat_thread_create(void);
@@ -17,6 +25,7 @@ void gpiod_plat_thread_finish(void);
 
 int get_gpios_common_list(struct gpiopoll_config** list);
 int get_gpios_plat_list(struct gpiopoll_config** list);
+void prochot_reason(char *reason);
 
 //Thread Monitor
 void *iox_gpio_handle(void*);

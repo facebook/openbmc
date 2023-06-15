@@ -372,11 +372,11 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"VR_CPU1_VCCIN_TEMP", VR_ID5, read_vr_temp, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x49
   {"VR_CPU1_VCCIN_CURR", VR_ID5, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X4A
   {"VR_CPU1_VCCIN_PWR", VR_ID5, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4B
-  {"VR_CPU1_FIVRA_VOLT", VR_ID6, read_vr_vout, false, {1.2, 0, 0, 0.6, 0, 0, 0, 0}, VOLT}, //0x4C
+  {"VR_CPU1_FIVRA_VOLT", VR_ID6, read_vr_vout, false, {2.06, 0, 0, 1.44, 0, 0, 0, 0}, VOLT}, //0x4C
   {"VR_CPU1_FIVRA_TEMP", VR_ID6, read_vr_temp, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x4D
   {"VR_CPU1_FIVRA_CURR", VR_ID6, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X4E
   {"VR_CPU1_FIVRA_PWR", VR_ID6, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4F
-  {"VR_CPU1_FAON_VOLT", VR_ID7, read_vr_vout, false, {2.06, 0, 0, 1.44, 0, 0, 0, 0}, VOLT}, //0x50
+  {"VR_CPU1_FAON_VOLT", VR_ID7, read_vr_vout, false, {1.2, 0, 0, 0.6, 0, 0, 0, 0}, VOLT}, //0x50
   {"VR_CPU1_FAON_TEMP", VR_ID7, read_vr_temp, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x51
   {"VR_CPU1_FAON_CURR", VR_ID7, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X52
   {"VR_CPU1_FAON_PWR", VR_ID7, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x53

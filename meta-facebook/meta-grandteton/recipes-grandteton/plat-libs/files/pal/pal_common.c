@@ -43,10 +43,12 @@ char *hpdb_source_data[] = {
 
 char *fan_bp1_source_data[] = {
   "fan_bp1_fan_chip_source",
+  "fan_bp1_fan_led_source",
 };
 
 char *fan_bp2_source_data[] = {
   "fan_bp2_fan_chip_source",
+  "fan_bp2_fan_led_source",
 };
 
 struct source_info {

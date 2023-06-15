@@ -32,10 +32,13 @@ enum {
 
 enum {
   FAN_BP1_FAN_SOURCE,
+  FAN_BP1_LED_SOURCE,
+
 };
 
 enum {
   FAN_BP2_FAN_SOURCE,
+  FAN_BP2_LED_SOURCE,
 };
 
 bool fru_presence(uint8_t fru_id, uint8_t *status);

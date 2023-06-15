@@ -387,7 +387,11 @@ gpio_export_ioexp 40-0021 FAN_BP1_SKU_ID_0    8
 gpio_export_ioexp 40-0021 FAN_BP1_SKU_ID_1    9
 gpio_export_ioexp 40-0021 FAN_BP1_SKU_ID_2    10
 
-kv set fan_bp1_fan_sku "$(($(gpio_get FAN_BP1_SKU_ID_0)))"
+kv set fan_bp1_fan_sku "$(($(gpio_get FAN_BP1_SKU_ID_2) << 2 |
+                           $(gpio_get FAN_BP1_SKU_ID_1) << 1 |
+                           $(gpio_get FAN_BP1_SKU_ID_0)))"
+
+
 
 # FAN_BP2 I/O Expander PCA9555
 i2c_device_add 41 0x21 pca9555
@@ -395,9 +399,13 @@ gpio_export_ioexp 41-0021 FAN_BP2_SKU_ID_0    8
 gpio_export_ioexp 41-0021 FAN_BP2_SKU_ID_1    9
 gpio_export_ioexp 41-0021 FAN_BP2_SKU_ID_2    10
 
-kv set fan_bp2_fan_sku "$(($(gpio_get FAN_BP2_SKU_ID_0)))"
+kv set fan_bp2_fan_sku "$(($(gpio_get FAN_BP2_SKU_ID_2) << 2 |
+                           $(gpio_get FAN_BP2_SKU_ID_1) << 1 |
+                           $(gpio_get FAN_BP2_SKU_ID_0)))"
 
-fan_bp1_fan=$(kv get fan_bp1_fan_sku)
+
+
+fan_bp1_fan=$(gpio_get FAN_BP1_SKU_ID_0)
 if [ "$fan_bp1_fan" -eq "$BP_FAN_MAIN" ]; then
 # Max31790
   # FAN_BP1 Max31790 FAN CHIP
@@ -490,7 +498,7 @@ else
   kv set fan_bp1_fan_chip_source "$BP_2ND_SOURCE"
 fi
 
-fan_bp2_fan=$(kv get fan_bp2_fan_sku)
+fan_bp2_fan=$(gpio_get FAN_BP2_SKU_ID_0)
 if [ "$fan_bp2_fan" -eq "$BP_1ST_SOURCE" ]; then
   # FAN_BP2 MAX31790 FAN CHIP
   i2cset -f -y 41 0x20 0x01 0xbb
@@ -581,6 +589,8 @@ else
   kv set fan_bp2_fan_chip_source "$BP_2ND_SOURCE"
 fi
 
+FAN_BP1_LED_SKU=$(gpio_get FAN_BP1_SKU_ID_1)
+FAN_BP2_LED_SKU=$(gpio_get FAN_BP2_SKU_ID_1)
 
 # FAN LED Device"
 rebind_i2c_dev 40 62 leds-pca955x
@@ -607,6 +617,7 @@ gpio_export_ioexp 41-0021 FAN3_PRESENT   0
 gpio_export_ioexp 41-0021 FAN7_PRESENT   1
 gpio_export_ioexp 41-0021 FAN11_PRESENT  2
 gpio_export_ioexp 41-0021 FAN15_PRESENT  3
+
 
 # I/O Expander PCA955X FAN LED
 gpio_export_ioexp 40-0062  FAN1_LED_GOOD   0
@@ -643,39 +654,59 @@ gpio_export_ioexp 41-0062  FAN6_LED_FAIL   13
 gpio_export_ioexp 41-0062  FAN2_LED_GOOD   14
 gpio_export_ioexp 41-0062  FAN2_LED_FAIL   15
 
-gpio_set  FAN0_LED_GOOD  1
-gpio_set  FAN1_LED_GOOD  1
-gpio_set  FAN2_LED_GOOD  1
-gpio_set  FAN3_LED_GOOD  1
-gpio_set  FAN4_LED_GOOD  1
-gpio_set  FAN5_LED_GOOD  1
-gpio_set  FAN6_LED_GOOD  1
-gpio_set  FAN7_LED_GOOD  1
-gpio_set  FAN8_LED_GOOD  1
-gpio_set  FAN9_LED_GOOD  1
-gpio_set  FAN10_LED_GOOD 1
-gpio_set  FAN11_LED_GOOD 1
-gpio_set  FAN12_LED_GOOD 1
-gpio_set  FAN13_LED_GOOD 1
-gpio_set  FAN14_LED_GOOD 1
-gpio_set  FAN15_LED_GOOD 1
+if [ "$FAN_BP1_LED_SKU" -eq "$BP_FAN_MAIN" ]; then
+  FAN_LED_GOOD=1
+  FAN_LED_FAIL=0
+  kv set fan_bp1_fan_led_source "$BP_1ST_SOURCE"
+else
+  FAN_LED_GOOD=0
+  FAN_LED_FAIL=1
+  kv set fan_bp1_fan_led_source "$BP_2ND_SOURCE"
+fi
 
-gpio_set  FAN0_LED_FAIL  0
-gpio_set  FAN1_LED_FAIL  0
-gpio_set  FAN2_LED_FAIL  0
-gpio_set  FAN3_LED_FAIL  0
-gpio_set  FAN4_LED_FAIL  0
-gpio_set  FAN5_LED_FAIL  0
-gpio_set  FAN6_LED_FAIL  0
-gpio_set  FAN7_LED_FAIL  0
-gpio_set  FAN8_LED_FAIL  0
-gpio_set  FAN9_LED_FAIL  0
-gpio_set  FAN10_LED_FAIL 0
-gpio_set  FAN11_LED_FAIL 0
-gpio_set  FAN12_LED_FAIL 0
-gpio_set  FAN13_LED_FAIL 0
-gpio_set  FAN14_LED_FAIL 0
-gpio_set  FAN15_LED_FAIL 0
+if [ "$FAN_BP2_LED_SKU" -eq "$BP_FAN_MAIN" ]; then
+  FAN_LED_GOOD=1
+  FAN_LED_FAIL=0
+  kv set fan_bp2_fan_led_source "$BP_1ST_SOURCE"
+else
+  FAN_LED_GOOD=0
+  FAN_LED_FAIL=1
+  kv set fan_bp2_fan_led_source "$BP_2ND_SOURCE"
+fi
+
+gpio_set  FAN0_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN1_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN2_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN3_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN4_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN5_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN6_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN7_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN8_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN9_LED_GOOD  $FAN_LED_GOOD
+gpio_set  FAN10_LED_GOOD $FAN_LED_GOOD
+gpio_set  FAN11_LED_GOOD $FAN_LED_GOOD
+gpio_set  FAN12_LED_GOOD $FAN_LED_GOOD
+gpio_set  FAN13_LED_GOOD $FAN_LED_GOOD
+gpio_set  FAN14_LED_GOOD $FAN_LED_GOOD
+gpio_set  FAN15_LED_GOOD $FAN_LED_GOOD
+
+gpio_set  FAN0_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN1_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN2_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN3_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN4_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN5_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN6_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN7_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN8_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN9_LED_FAIL  $FAN_LED_FAIL
+gpio_set  FAN10_LED_FAIL $FAN_LED_FAIL
+gpio_set  FAN11_LED_FAIL $FAN_LED_FAIL
+gpio_set  FAN12_LED_FAIL $FAN_LED_FAIL
+gpio_set  FAN13_LED_FAIL $FAN_LED_FAIL
+gpio_set  FAN14_LED_FAIL $FAN_LED_FAIL
+gpio_set  FAN15_LED_FAIL $FAN_LED_FAIL
 
 /usr/local/bin/fan-util --set 70
 

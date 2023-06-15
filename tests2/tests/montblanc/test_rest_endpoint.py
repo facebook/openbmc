@@ -20,6 +20,8 @@
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
+
+from tests.montblanc.test_data.sensors.sensor import SENSORS_PECI
 from utils.test_utils import qemu_check
 
 
@@ -48,7 +50,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/sensors"
     def set_endpoint_sensors_attributes(self):
-        self.endpoint_sensors_attrb = []
+        self.endpoint_sensors_attrb = SENSORS_PECI
 
     # "/api/sys/server"
     def set_endpoint_server_attributes(self):

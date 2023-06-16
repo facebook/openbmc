@@ -528,7 +528,7 @@ plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer) {
 
 int
 plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t phase,  uint8_t *end, uint8_t *length, uint8_t *buffer) {
-  int target, pdesc_size;
+  int target, pdesc_size = 0;
   post_phase_desc_t *post_phase;
   size_t post_phase_desc_cnt, i;
   post_desc_t *ptr = NULL;

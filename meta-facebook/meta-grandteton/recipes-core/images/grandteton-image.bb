@@ -53,4 +53,5 @@ IMAGE_INSTALL += " \
   threshold-util \
   redfish-events \
   i3c-tools \
+  retimer-util \
 "

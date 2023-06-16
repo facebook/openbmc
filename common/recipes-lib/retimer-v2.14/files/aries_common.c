@@ -23,13 +23,13 @@ extern "C" {
 #define NUM_TOTAL_LINKS NUM_RETIMERS * NUM_LINKS_PER_RETIMER
 
 int __attribute__((weak))
-get_dev_bus(uint8_t retimerId)
+get_dev_bus(const char *fru, int8_t retimerId)
 {
   return -1;
 }
 
 int __attribute__((weak))
-get_dev_addr(uint8_t retimerId)
+get_dev_addr(const char *fru, uint8_t retimerId)
 {
   return -1;
 }
@@ -155,7 +155,7 @@ AriesErrorType SetupAriesDevice (AriesDeviceType* ariesDevice,
 
   i2cDriver->handle = asteraI2COpenConnection(bus, addr);
   if (i2cDriver->handle < 0) {
-    return ARIES_I2C_OPEN_FAILURE;
+    CHECK_SUCCESS(ARIES_I2C_OPEN_FAILURE);
   }
 
   i2cDriver->slaveAddr = addr;
@@ -192,7 +192,7 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
 
   i2cDriver.handle = asteraI2COpenConnection(bus, addr);
   if (i2cDriver.handle < 0) {
-    return ARIES_I2C_OPEN_FAILURE;
+    CHECK_SUCCESS(ARIES_I2C_OPEN_FAILURE);
   }
 
   rc = ariesUpdateFirmware(&ariesDevice, fp, ARIES_FW_IMAGE_FORMAT_IHX);
@@ -238,6 +238,33 @@ AriesErrorType AriesGetFwVersion(int bus, int addr, uint16_t* ver)
   return ARIES_SUCCESS;
 }
 
+AriesErrorType AriesGetHealth(const char *fru, int retimerID, uint8_t *health)
+{
+  AriesDeviceType ariesDevice;
+  AriesI2CDriverType i2cDriver;
+  AriesErrorType rc;
+  int bus = get_dev_bus(fru, retimerID) ;
+  int addr = get_dev_addr(fru, retimerID);
+
+  if(bus == -1 || addr == -1) {
+    CHECK_SUCCESS(ARIES_INVALID_ARGUMENT);
+  }
+
+  asteraLogSetLevel(2);
+
+  rc = SetupAriesDevice(&ariesDevice, &i2cDriver, bus, addr);
+  CHECK_SUCCESS(rc);
+
+  if (ariesDevice.mmHeartbeatOkay) {
+    *health |= 0x1;
+  }
+  if (ariesDevice.codeLoadOkay) {
+    *health |= 0x1 << 1;
+  }
+
+  return rc;
+}
+
 AriesErrorType AriesGetTemp(AriesDeviceType* ariesDevice,
         AriesI2CDriverType* i2cDriver, int bus, int addr, float* temp)
 {
@@ -247,7 +274,7 @@ AriesErrorType AriesGetTemp(AriesDeviceType* ariesDevice,
 
   i2cDriver->handle = asteraI2COpenConnection(bus, addr);
   if (i2cDriver->handle < 0) {
-    return ARIES_I2C_OPEN_FAILURE;
+    CHECK_SUCCESS(ARIES_I2C_OPEN_FAILURE);
   }
 
   rc = ariesGetCurrentTemp(ariesDevice);
@@ -259,22 +286,42 @@ AriesErrorType AriesGetTemp(AriesDeviceType* ariesDevice,
   return ARIES_SUCCESS;
 }
 
-AriesErrorType AriesMargin(int retimerID, const char* type, const char* fname)
+AriesErrorType AriesMargin(const char *fru, int retimerID, const char* type, const char* fname)
 {
   AriesDeviceType ariesDevice;
   AriesI2CDriverType i2cDriver;
   AriesErrorType rc;
-  int bus = get_dev_bus(retimerID) ;
-  int addr = get_dev_addr(retimerID);
+  int bus = get_dev_bus(fru, retimerID) ;
+  int addr = get_dev_addr(fru, retimerID);
 
   asteraLogSetLevel(2);
+
+  if(bus == -1 || addr == -1) {
+    CHECK_SUCCESS(ARIES_INVALID_ARGUMENT);
+  }
 
   rc = SetupAriesDevice(&ariesDevice, &i2cDriver, bus, addr);
   CHECK_SUCCESS(rc);
 
   i2cDriver.handle = asteraI2COpenConnection(bus, addr);
   if (i2cDriver.handle < 0) {
-    return ARIES_I2C_OPEN_FAILURE;
+    CHECK_SUCCESS(ARIES_I2C_OPEN_FAILURE);
+  }
+
+  AriesLinkType link;
+  link.device = &ariesDevice;
+  link.config.linkId = 0;
+  link.config.partNumber = ariesDevice.partNumber;
+  link.config.maxWidth = 16;
+  link.config.startLane = 0;
+
+  rc = ariesCheckLinkHealth(&link);
+  if(link.state.state == ARIES_STATE_FWD) {
+    ASTERA_INFO("link state: ARIES_STATE_FWD");
+  }
+  else {
+    ASTERA_ERROR("link state: %d", link.state.state);
+    CHECK_ERR_RETURN(rc, i2cDriver.handle);
   }
 
   // Get device orientation
@@ -351,34 +398,36 @@ AriesErrorType AriesMargin(int retimerID, const char* type, const char* fname)
   }
   CHECK_ERR_LOGGING(rc);
 
-  if (rc) {
-    free(ec1);
-    free(ec2);
-    free(ec);
-    free(eyeResults);
-    free(marginDevice);
-  }
+  free(ec1);
+  free(ec2);
+  free(ec);
+  free(eyeResults);
+  free(marginDevice);
 
   asteraI2CCloseConnection(i2cDriver.handle);
   return rc;
 }
 
-AriesErrorType AriesPrintState(int retimerID)
+AriesErrorType AriesPrintState(const char *fru, int retimerID)
 {
   AriesDeviceType ariesDevice;
   AriesI2CDriverType i2cDriver;
   AriesErrorType rc;
-  int bus = get_dev_bus(retimerID) ;
-  int addr = get_dev_addr(retimerID);
+  int bus = get_dev_bus(fru, retimerID) ;
+  int addr = get_dev_addr(fru, retimerID);
 
   asteraLogSetLevel(2);
+
+  if(bus == -1 || addr == -1) {
+    CHECK_SUCCESS(ARIES_INVALID_ARGUMENT);
+  }
 
   rc = SetupAriesDevice(&ariesDevice, &i2cDriver, bus, addr);
   CHECK_SUCCESS(rc);
 
   i2cDriver.handle = asteraI2COpenConnection(bus, addr);
   if (i2cDriver.handle < 0) {
-    return ARIES_I2C_OPEN_FAILURE;
+    CHECK_SUCCESS(ARIES_I2C_OPEN_FAILURE);
   }
 
   AriesLinkType link;
@@ -389,7 +438,12 @@ AriesErrorType AriesPrintState(int retimerID)
   link.config.startLane = 0;
 
   rc = ariesCheckLinkHealth(&link);
-  ASTERA_INFO("link = %d", link.state.state);
+  if(link.state.state == ARIES_STATE_FWD) {
+    ASTERA_INFO("link state: ARIES_STATE_FWD");
+  }
+  else {
+    ASTERA_ERROR("link state: %d", link.state.state);
+  }
   CHECK_ERR_LOGGING(rc);
 
   if (link.state.recoveryCount > 0) {
@@ -399,9 +453,9 @@ AriesErrorType AriesPrintState(int retimerID)
   }
  
   ASTERA_INFO("Capture log...");
-  rc = ariesLinkDumpDebugInfo(&link);
+  rc = ariesLinkDumpDebugInfo(&link, fru, retimerID);
+  CHECK_ERR_RETURN(rc, i2cDriver.handle);
   ASTERA_INFO("log capture done");
-  CHECK_ERR_LOGGING(rc);
  
   asteraI2CCloseConnection(i2cDriver.handle);
   return rc;

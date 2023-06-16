@@ -67,14 +67,17 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp);
 // Get FW update
 AriesErrorType AriesGetFwVersion(int bus, int addr, uint16_t* version);
 
+// Get FW Health
+AriesErrorType AriesGetHealth(const char *fru, int retimerID, uint8_t *health);
+
 // Get Current Temp
 AriesErrorType AriesGetTemp(AriesDeviceType* ariesDevice,
         AriesI2CDriverType* i2cDriver, int bus, int addr, float* temp);
 
 // Logs eye results to a file
-AriesErrorType AriesMargin(int id, const char* type, const char* fp);
+AriesErrorType AriesMargin(const char *fru, int id, const char* type, const char* fp);
 
-AriesErrorType AriesPrintState(int id);
+AriesErrorType AriesPrintState(const char *fru, int id);
 
 #ifdef __cplusplus
 }

@@ -1433,17 +1433,20 @@ AriesErrorType ariesLTSSMLoggerReadEntry(AriesLinkType* link,
     return ARIES_SUCCESS;
 }
 
-AriesErrorType ariesLinkDumpDebugInfo(AriesLinkType* link)
+AriesErrorType ariesLinkDumpDebugInfo(AriesLinkType* link, const char*fru, int id)
 {
     AriesErrorType rc;
 
     // Capture detailed debug information
     // This function prints Aries chip ID, FW version, SDK version,
     // and the detailed link state information to a file
-    rc = ariesLinkPrintDetailedState(link, ".", "link_state_detailed");
+    char fileName[256];
+    sprintf(fileName, "%s_%d_link_state_detailed", fru, id);
+    rc = ariesLinkPrintDetailedState(link, ".", fileName);
     CHECK_SUCCESS(rc);
     // This function prints Aries LTSSM logs to a file
-    rc = ariesLinkPrintMicroLogs(link, ".", "ltssm_micro_log");
+    sprintf(fileName, "%s_%d_ltssm_micro_log", fru, id);
+    rc = ariesLinkPrintMicroLogs(link, ".", fileName);
     CHECK_SUCCESS(rc);
 
     return ARIES_SUCCESS;

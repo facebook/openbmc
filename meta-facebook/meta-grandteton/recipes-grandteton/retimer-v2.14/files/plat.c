@@ -6,7 +6,7 @@
 int get_dev_bus(const char *fru, uint8_t retimerId)
 {
   if(!strcmp(fru, "mb"))
-    return RT_DEV_INFO[retimerId].bus;
+    return -1;
   else if(!strcmp(fru, "hgx"))
     return HGX_RT_DEV_INFO[retimerId].bus;
   else
@@ -16,7 +16,7 @@ int get_dev_bus(const char *fru, uint8_t retimerId)
 int get_dev_addr(const char *fru, uint8_t retimerId)
 {
   if(!strcmp(fru, "mb"))
-    return RT_DEV_INFO[retimerId].addr;
+    return -1;
   else if(!strcmp(fru, "hgx"))
     return HGX_RT_DEV_INFO[retimerId].addr;
   else

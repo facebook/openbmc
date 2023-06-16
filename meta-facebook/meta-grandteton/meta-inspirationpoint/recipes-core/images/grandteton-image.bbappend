@@ -13,6 +13,5 @@ IMAGE_INSTALL:remove = " \
 
 IMAGE_INSTALL += " \
    apml \
-   retimer-util \
    psb-util \   
    "

@@ -159,7 +159,7 @@ AriesErrorType ariesLTSSMLoggerReadEntry(AriesLinkType* link,
                                          AriesLTSSMEntryType* entry);
 
 // Dump all the debug info from the retimer
-AriesErrorType ariesLinkDumpDebugInfo(AriesLinkType* link);
+AriesErrorType ariesLinkDumpDebugInfo(AriesLinkType* link, const char*fru, int id);
 
 // Function to iterate over logger and print entry
 AriesErrorType ariesLinkPrintMicroLogs(AriesLinkType* link,

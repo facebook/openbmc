@@ -222,6 +222,8 @@ PCIE_ERR_DECODE pcie_err_table[] = {
 };
 
 static int nic_is_resetting = 0;
+static bool cycle_thread_is_running = false;
+pthread_mutex_t cycle_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int
 pal_key_index(char *key) {
@@ -2404,6 +2406,48 @@ pal_store_crashdump() {
   return PAL_EOK;
 }
 
+static void *
+pal_cycle_host_after_acd_dump(void *arg) {
+    char path[MAX_PATH_LEN] = {0};
+    uint8_t fru = (uint8_t)(uintptr_t)arg;
+
+    pthread_detach(pthread_self());
+    snprintf(path, sizeof(path), SERVER_CRASHDUMP_PID_PATH);
+
+    // wait crash dump finished
+    while (access(path, F_OK) == 0) {
+      sleep(1);
+    }
+
+    syslog(LOG_CRIT, "%s: power cycle server", __func__);
+    pal_set_server_power(fru, SERVER_POWER_CYCLE);
+
+    pthread_mutex_lock(&cycle_thread_lock);
+    cycle_thread_is_running = false;
+    pthread_mutex_unlock(&cycle_thread_lock);
+
+    pthread_exit(NULL);
+}
+
+static void
+pal_host_stall_handler(uint8_t fru) {
+  pthread_t tid;
+
+  pthread_mutex_lock(&cycle_thread_lock);
+
+  if (cycle_thread_is_running == false) {
+    cycle_thread_is_running = true;
+    if (pthread_create(&tid, NULL, pal_cycle_host_after_acd_dump, (void*)(uintptr_t)fru) < 0) {
+      syslog(LOG_WARNING, "%s Create thread failed!\n", __func__);
+      cycle_thread_is_running = false;
+    }
+  }
+
+  pthread_mutex_unlock(&cycle_thread_lock);
+
+  return;
+}
+
 static int
 pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
@@ -2411,6 +2455,7 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
   char key[MAX_KEY_LEN] = {0};
   char val[MAX_VALUE_LEN] = {0};
   uint8_t event_dir = EVENT_DEASSERT;
+  uint8_t event_data1 = 0;
   int sel_error_record = 0, sel_event_error_record = 0;
 
   if (event_data == NULL) {
@@ -2420,6 +2465,7 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
 
   // Event Dir is used to check the assertion of event. Refer to IPMI v2.0 Section 32.1.
   event_dir = event_data[2] & 0x80;
+  event_data1 = event_data[3];
 
   switch (snr_num) {
     case CATERR_B:
@@ -2429,6 +2475,11 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
     case CPU_DIMM_HOT:
     case PWR_ERR:
       is_err_server_sel = true;
+      break;
+    case BIC_SENSOR_SYSTEM_STATUS:
+      if (event_data1 == SYS_EVENT_HOST_STALL) {
+        pal_host_stall_handler(FRU_SERVER);
+      }
       break;
     default:
       break;
@@ -3163,6 +3214,9 @@ pal_parse_sys_sts_event(uint8_t *event_data, char *error_log) {
       break;
     case SYS_OV_DETECT:
       strcat(error_log, "VCCIO Over Voltage Fault");
+      break;
+    case SYS_EVENT_HOST_STALL:
+      strcat(error_log, "BIOS stalled");
       break;
     default:
       strcat(error_log, "Undefined system event");

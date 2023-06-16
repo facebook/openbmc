@@ -261,6 +261,7 @@ enum {
   SYS_VCCIO_FAULT    = 0x0D,
   SYS_SMI_STUCK_LOW  = 0x0E,
   SYS_OV_DETECT      = 0x0F,
+  SYS_EVENT_HOST_STALL = 0x20,
 };
 
 enum {

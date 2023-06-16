@@ -5422,6 +5422,9 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   sensor_desc_t *snr_desc;
 
   snr_desc = get_sensor_desc(fru, snr_num);
+  if (snr_desc == NULL) {
+    return -1;
+  }
   snprintf(snr_desc->name, sizeof(snr_desc->name), "%s", psnr->name);
 
   pal_set_def_key_value();

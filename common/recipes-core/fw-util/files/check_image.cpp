@@ -231,7 +231,7 @@ void getMeta(const Image& img, json& desc) {
   std::string obj2 = str.substr(end + 1, str.length() + 1);
   json metaDesc = json::parse(obj2);
   std::string currMd5 = getMd5(data, obj1.length());
-  if (currMd5 != metaDesc["meta_md5"]) {
+  if (metaDesc["meta_md5"] != currMd5) {
     throw std::runtime_error("meta md5 mismatch!");
   }
   desc = json::parse(obj1);

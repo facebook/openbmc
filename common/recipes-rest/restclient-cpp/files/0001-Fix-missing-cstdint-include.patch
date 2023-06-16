@@ -1,0 +1,29 @@
+From 154df8f3b21b8b5312866987e1ce4f60b983a70b Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Fri, 16 Jun 2023 10:02:55 -0500
+Subject: [PATCH] Fix missing cstdint include
+
+The previous code did not compile under GCC-13 because libstdcpp
+headers have changed such that cstdint is not included implicitly.
+Add cstdint include when `uint64_t` types are used.
+
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+---
+ include/restclient-cpp/connection.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/restclient-cpp/connection.h b/include/restclient-cpp/connection.h
+index 5f82c7c..12984fe 100644
+--- a/include/restclient-cpp/connection.h
++++ b/include/restclient-cpp/connection.h
+@@ -13,6 +13,7 @@
+ #include <string>
+ #include <map>
+ #include <cstdlib>
++#include <cstdint>
+ 
+ #include "restclient-cpp/restclient.h"
+ #include "restclient-cpp/version.h"
+-- 
+2.39.3
+

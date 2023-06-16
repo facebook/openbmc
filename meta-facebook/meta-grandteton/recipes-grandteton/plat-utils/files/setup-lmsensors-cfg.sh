@@ -19,15 +19,13 @@ do
   rev=$(fruid-util vpdb |grep "Board Part Number" | awk -F ":" '{print $2}' | awk '{gsub(/^ +| +$/,"")}1')
   rc=$?
 
-  if [ "$rc" == 1 ]; then
+  if [ "$rc" == 1 ] || [ -z "$rev" ]; then
     sleep 1
   elif [ "$rev" == "35F0TPB0000" ]; then
     ln -s /etc/sensors_cfg/vpdb-adm1272-1.conf /etc/sensors.d/vpdb_adm1272.conf
     break
   elif [ "$rev" == "35F0TPB0020" ] || [ "$rev" == "35F0TPB0040" ]; then
     ln -s /etc/sensors_cfg/vpdb-adm1272-2.conf /etc/sensors.d/vpdb_adm1272.conf
-    break
-  else
     break
   fi
 
@@ -43,15 +41,13 @@ for i in {1..5}
   rev=$(fruid-util hpdb |grep "Board Part Number" | awk -F ":" '{print $2}' | awk '{gsub(/^ +| +$/,"")}1')
   rc=$?
 
-  if [ "$rc" == 1 ]; then
+  if [ "$rc" == 1 ] || [ -z "$rev" ]; then
     sleep 1
   elif [ "$rev" == "35F0TPB0060" ]; then
     ln -s /etc/sensors_cfg/hpdb-adm1272-2.conf /etc/sensors.d/hpdb_adm1272.conf
     break
   elif [ "$rev" == "35F0TPB0010" ] || [ "$rev" == "35F0TPB0090" ]; then
     ln -s /etc/sensors_cfg/hpdb-adm1272-1.conf /etc/sensors.d/hpdb_adm1272.conf
-    break
-  else
     break
   fi
 

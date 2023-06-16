@@ -1,0 +1,22 @@
+From b8fcc89b74c9128a13b07cc15a0ce25dca0cd97e Mon Sep 17 00:00:00 2001
+From: Nikias Bassen <nikias@gmx.li>
+Date: Mon, 24 Apr 2023 12:23:49 +0200
+Subject: [PATCH] git-version-gen: Prevent multiple lines of output
+
+---
+ git-version-gen | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/git-version-gen b/git-version-gen
+index f6cb31c..d868952 100755
+--- a/git-version-gen
++++ b/git-version-gen
+@@ -16,4 +16,5 @@ else
+     fi
+   fi
+ fi
++VER=`printf %s "$VER" | head -n1`
+ printf %s "$VER"
+-- 
+2.39.3
+

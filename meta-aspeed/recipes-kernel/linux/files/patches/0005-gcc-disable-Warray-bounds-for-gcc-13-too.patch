@@ -1,0 +1,63 @@
+From 0da6e5fd6c3726723e275603426e09178940dace Mon Sep 17 00:00:00 2001
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 23 Apr 2023 09:56:20 -0700
+Subject: [PATCH] gcc: disable '-Warray-bounds' for gcc-13 too
+
+We started disabling '-Warray-bounds' for gcc-12 originally on s390,
+because it resulted in some warnings that weren't realistically fixable
+(commit 8b202ee21839: "s390: disable -Warray-bounds").
+
+That s390-specific issue was then found to be less common elsewhere, but
+generic (see f0be87c42cbd: "gcc-12: disable '-Warray-bounds' universally
+for now"), and then later expanded the version check was expanded to
+gcc-11 (5a41237ad1d4: "gcc: disable -Warray-bounds for gcc-11 too").
+
+And it turns out that I was much too optimistic in thinking that it's
+all going to go away, and here we are with gcc-13 showing all the same
+issues.  So instead of expanding this one version at a time, let's just
+disable it for gcc-11+, and put an end limit to it only when we actually
+find a solution.
+
+Yes, I'm sure some of this is because the kernel just does odd things
+(like our "container_of()" use, but also knowingly playing games with
+things like linker tables and array layouts).
+
+And yes, some of the warnings are likely signs of real bugs, but when
+there are hundreds of false positives, that doesn't really help.
+
+Oh well.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ init/Kconfig | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+index 1fb5f313d18f..c88bb30a8b0b 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -890,18 +890,14 @@ config CC_IMPLICIT_FALLTHROUGH
+ 	default "-Wimplicit-fallthrough=5" if CC_IS_GCC && $(cc-option,-Wimplicit-fallthrough=5)
+ 	default "-Wimplicit-fallthrough" if CC_IS_CLANG && $(cc-option,-Wunreachable-code-fallthrough)
+ 
+-# Currently, disable gcc-11,12 array-bounds globally.
+-# We may want to target only particular configurations some day.
++# Currently, disable gcc-11+ array-bounds globally.
++# It's still broken in gcc-13, so no upper bound yet.
+ config GCC11_NO_ARRAY_BOUNDS
+ 	def_bool y
+ 
+-config GCC12_NO_ARRAY_BOUNDS
+-	def_bool y
+-
+ config CC_NO_ARRAY_BOUNDS
+ 	bool
+-	default y if CC_IS_GCC && GCC_VERSION >= 110000 && GCC_VERSION < 120000 && GCC11_NO_ARRAY_BOUNDS
+-	default y if CC_IS_GCC && GCC_VERSION >= 120000 && GCC_VERSION < 130000 && GCC12_NO_ARRAY_BOUNDS
++	default y if CC_IS_GCC && GCC_VERSION >= 110000 && GCC11_NO_ARRAY_BOUNDS
+ 
+ #
+ # For architectures that know their GCC __int128 support is sound
+-- 
+2.39.3
+

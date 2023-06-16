@@ -6,17 +6,20 @@ namespace pldm
 {
 
 int InstanceId::next() {
+  static uint8_t last_idx = 0;
   uint8_t idx = 0;
-  while (idx < id.size() && id.test(idx)) {
-    ++idx;
-  }
+  idx = last_idx + 1;
 
-  if (idx == id.size()) {
-    return -1;
+  for (uint8_t i = 0; i < id.size(); i ++, idx ++) {
+    if (idx >= id.size()) {
+      idx = 0;
+    }
+    if (!id.test(idx)) {
+      last_idx = idx;
+      return idx;
+    }
   }
-
-  id.set(idx);
-  return idx;
+  return -1;
 }
 
 } // namespace pldm

@@ -8,4 +8,4 @@ LOCAL_URI += " \
         file://dimm-util-plat.h \
         "
 
-DEPENDS += "libnm libobmc-i3c fmt"
+DEPENDS += "libnodemanager libobmc-i3c fmt"

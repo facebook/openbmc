@@ -58,7 +58,7 @@ DEPENDS += " \
     libmcu \
     libncsi \
     libnl-wrapper \
-    libnm \
+    libnodemanager \
     libobmc-mctp \
     libpldm-oem \
     libvr \

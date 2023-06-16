@@ -11,7 +11,7 @@ srcs += [
 ]
 
 deps += [
-    dependency('libnm'),
+    dependency('libnodemanager'),
     dependency('libast-jtag'),
     dependency('libfpga'),
     dependency('libmcu'),

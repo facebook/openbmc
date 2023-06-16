@@ -37,7 +37,7 @@ LOCAL_URI += "\
 
 DEPENDS += " \
     libmcu \
-    libnm \
+    libnodemanager \
     libfpga \
     libast-jtag \
     libvr \

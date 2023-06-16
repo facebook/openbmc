@@ -33,7 +33,7 @@ pal_deps += [
     cc.find_library('apml64'),
     dependency('libgpio-ctrl'),
     dependency('libhal'),
-    dependency('libnm'),
+    dependency('libnodemanager'),
     dependency('libobmc-i2c'),
     cc.find_library('peci'),
     dependency('libpeci_sensors'),

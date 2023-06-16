@@ -4,5 +4,5 @@ sources += [
 
 deps += [
     dependency('libipmb'),
-    dependency('libnm'),
+    dependency('libnodemanager'),
 ]

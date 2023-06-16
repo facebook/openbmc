@@ -23,7 +23,7 @@ srcs += [
 
 deps += [
     dependency('fmt'),
-    dependency('libnm'),
+    dependency('libnodemanager'),
     dependency('libbic'),
     dependency('libfpga'),
     dependency('libgpio-ctrl'),

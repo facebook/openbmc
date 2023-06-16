@@ -30,9 +30,9 @@ LOCAL_URI = " \
 
 binfiles = "gpiod \
            "
-DEPENDS += "libpal libgpio-ctrl update-rc.d-native libnm libkv"
-RDEPENDS:${PN} += "libpal libnm libgpio-ctrl libkv"
-LDFLAGS += "-pthread -lpal -lnm -lgpio-ctrl -lkv"
+DEPENDS += "libpal libgpio-ctrl update-rc.d-native libnodemanager libkv"
+RDEPENDS:${PN} += "libpal libnodemanager libgpio-ctrl libkv"
+LDFLAGS += "-pthread -lpal -lnodemanager -lgpio-ctrl -lkv"
 
 pkgdir = "gpiod"
 

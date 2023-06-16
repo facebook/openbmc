@@ -18,7 +18,7 @@ sources = [
 cc = meson.get_compiler('cpp')
 deps = [
     dependency('libgpio-ctrl'),
-    dependency('libnm'),
+    dependency('libnodemanager'),
     dependency('libkv'),
     dependency('libobmc-i2c'),
     dependency('libpeci_sensors'),

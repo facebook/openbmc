@@ -36,7 +36,7 @@ DEPENDS += " \
     libmisc-utils \
     libncsi \
     libnl-wrapper \
-    libnm \
+    libnodemanager \
     libobmc-i2c \
     libobmc-pmbus \
     libobmc-sensors \

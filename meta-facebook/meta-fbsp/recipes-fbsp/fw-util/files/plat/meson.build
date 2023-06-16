@@ -15,6 +15,6 @@ deps += [
     dependency('libfpga'),
     dependency('libmcu'),
     dependency('libnl-wrapper'),
-    dependency('libnm'),
+    dependency('libnodemanager'),
     dependency('libvr'),
 ]

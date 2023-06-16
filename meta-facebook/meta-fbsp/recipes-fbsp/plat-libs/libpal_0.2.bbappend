@@ -15,7 +15,7 @@ DEPENDS += " \
     libme \
     libncsi \
     libnl-wrapper \
-    libnm \
+    libnodemanager \
     libobmc-i2c \
     libobmc-pmbus \
     libobmc-sensors \
@@ -28,7 +28,7 @@ RDEPENDS:${PN} += " \
     libgpio-ctrl \
     libme \
     libnl-wrapper \
-    libnm \
+    libnodemanager \
     libobmc-i2c \
     libobmc-sensors \
     libpeci \

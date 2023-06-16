@@ -43,6 +43,6 @@ DEPENDS += " \
     libmcu \
     libncsi \
     libnl-wrapper \
-    libnm \
+    libnodemanager \
     libvr \
     "

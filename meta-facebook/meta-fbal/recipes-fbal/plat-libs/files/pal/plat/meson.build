@@ -20,7 +20,7 @@ pal_sources += [
 pal_deps += [
     cc.find_library('fbal-fruid'),
     dependency('libgpio-ctrl'),
-    dependency('libnm'),
+    dependency('libnodemanager'),
     dependency('libobmc-i2c'),
     dependency('libobmc-pmbus'),
     cc.find_library('peci'),

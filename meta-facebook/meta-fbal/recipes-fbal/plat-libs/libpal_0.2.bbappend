@@ -22,7 +22,7 @@ DEPENDS += " \
     libgpio-ctrl \
     libncsi \
     libnl-wrapper \
-    libnm \
+    libnodemanager \
     libobmc-i2c \
     libobmc-pmbus \
     libobmc-sensors \

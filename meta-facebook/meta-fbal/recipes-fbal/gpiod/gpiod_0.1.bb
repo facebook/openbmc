@@ -30,8 +30,8 @@ LOCAL_URI = " \
 
 binfiles = "gpiod \
            "
-DEPENDS += "libpal libgpio-ctrl update-rc.d-native libnm libkv libobmc-i2c"
-LDFLAGS += "-pthread -lpal -lnm -lgpio-ctrl -lkv -lobmc-i2c"
+DEPENDS += "libpal libgpio-ctrl update-rc.d-native libnodemanager libkv libobmc-i2c"
+LDFLAGS += "-pthread -lpal -lnodemanager -lgpio-ctrl -lkv -lobmc-i2c"
 
 pkgdir = "gpiod"
 

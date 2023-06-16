@@ -1,4 +1,4 @@
-project('libnm', 'c',
+project('libnodemanager', 'c',
     version: '0.1',
     license: 'LGPL2',
     default_options: ['werror=true'],
@@ -27,7 +27,7 @@ srcs = files(
 
 # nm library.
 nm_lib = shared_library(
-    'nm',
+    'nodemanager',
     srcs,
     dependencies: deps,
     version: meson.project_version(),

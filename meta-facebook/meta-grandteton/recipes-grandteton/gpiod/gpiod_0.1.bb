@@ -43,7 +43,7 @@ DEPENDS += " \
     libpal \
     libgpio-ctrl \
     update-rc.d-native \
-    libnm \
+    libnodemanager \
     libkv \
     libobmc-i2c \
     libpeci-sensors \

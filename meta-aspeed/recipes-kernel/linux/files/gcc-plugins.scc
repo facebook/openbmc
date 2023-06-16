@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable GCC Plugins"
+define KFEATURE_COMPATIBILITY all
+
+kconf non-hardware gcc-plugins.cfg

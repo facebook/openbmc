@@ -28,11 +28,6 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-# shellcheck disable=SC1091
-. /usr/local/bin/openbmc-utils.sh
-. /usr/local/fbpackages/utils/ast-functions
-
-
 #MB_HSC_MODULE="1"  # ltc4282/ltc4286
 kv get mb_hsc_module
 rev=$?

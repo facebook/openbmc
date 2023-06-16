@@ -19,8 +19,9 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-# shellcheck disable=SC1091
+# shellcheck source=common/recipes-utils/openbmc-utils/files/openbmc-utils.sh
 . /usr/local/bin/openbmc-utils.sh
+# shellcheck source=meta-facebook/meta-grandteton/recipes-grandteton/plat-utils/files/ast-functions
 . /usr/local/fbpackages/utils/ast-functions
 
 rebind_i2c_dev() {
@@ -50,7 +51,6 @@ i2c_device_add 22 0x48 stlm75
 i2c_device_add 23 0x48 stlm75
 i2c_device_add 24 0x48 stlm75
 
-MB_1ST_SOURCE="0"
 
 #MB Expender
 i2c_device_add 29 0x74 pca9539
@@ -245,7 +245,7 @@ if [ "$vsku" -eq "2" ] || [ "$vsku" -eq "5" ]; then
     else
       i2c_device_add 36 0x40 ina238
       i2c_device_add 36 0x41 ina238
-      kv set vpdb_adc_source "$VPDB_2ST_SOURCE"
+      kv set vpdb_adc_source "$VPDB_2ND_SOURCE"
     fi
   fi
 else
@@ -279,7 +279,7 @@ else
     else
       i2c_device_add 36 0x40 ina238
       i2c_device_add 36 0x41 ina238
-      kv set vpdb_adc_source "$VPDB_2ST_SOURCE"
+      kv set vpdb_adc_source "$VPDB_2ND_SOURCE"
     fi
   fi
 fi

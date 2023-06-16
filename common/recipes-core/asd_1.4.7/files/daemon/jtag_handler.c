@@ -547,7 +547,7 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, enum jtag_states tap_state)
     params.to_state = tap_state;
 #else
     struct jtag_tap_state tap_state_t;
-    tap_state_t.from = state->active_chain->tap_state;
+    //tap_state_t.from = state->active_chain->tap_state;
     tap_state_t.endstate = tap_state;
     tap_state_t.reset =
         (tap_state == jtag_tlr) ? JTAG_FORCE_RESET : JTAG_NO_RESET;
@@ -709,7 +709,7 @@ STATUS JTAG_shift_hw(JTAG_Handler* state, unsigned int number_of_bits,
         return ST_ERR;
     }
 
-    xfer.from = current_state;
+    //xfer.from = current_state;
     xfer.endstate = end_tap_state;
     xfer.type = (current_state == jtag_shf_ir) ? JTAG_SIR_XFER : JTAG_SDR_XFER;
     xfer.length = number_of_bits;
@@ -743,7 +743,7 @@ STATUS JTAG_shift_hw(JTAG_Handler* state, unsigned int number_of_bits,
             ASD_log(ASD_LogLevel_Error, stream, option,
                     "memcpy_s: input to output copy buffer failed.");
         }
-        xfer.tdio = (__u64)output;
+        xfer.tdio = (__u64)(uintptr_t)output;
     }
     else
     {
@@ -753,7 +753,7 @@ STATUS JTAG_shift_hw(JTAG_Handler* state, unsigned int number_of_bits,
             ASD_log(ASD_LogLevel_Error, stream, option,
                     "memcpy_s: input to tdio buffer copy failed.");
         }
-        xfer.tdio = (__u64)tdio;
+        xfer.tdio = (__u64)(uintptr_t)tdio;
     }
     if (ioctl(state->JTAG_driver_handle, JTAG_IOCXFER, &xfer) < 0)
     {
@@ -833,7 +833,7 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
     struct jtag_xfer xfer;
     unsigned char tdio[MAX_DATA_SIZE];
 
-    xfer.from = current_tap_state;
+    //xfer.from = current_tap_state;
     xfer.endstate = end_tap_state;
     xfer.type =
         (current_tap_state == jtag_shf_ir) ? JTAG_SIR_XFER : JTAG_SDR_XFER;
@@ -848,7 +848,7 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
             ASD_log(ASD_LogLevel_Error, stream, option,
                     "memcpy_s: input to output copy buffer failed.");
         }
-        xfer.tdio = (__u64)output;
+        xfer.tdio = (__u64)(uintptr_t)output;
     }
     else
     {
@@ -858,7 +858,7 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
             ASD_log(ASD_LogLevel_Error, stream, option,
                     "memcpy_s: input to tdio buffer copy failed.");
         }
-        xfer.tdio = (__u64)tdio;
+        xfer.tdio = (__u64)(uintptr_t)tdio;
     }
     if (ioctl(state->JTAG_driver_handle, JTAG_IOCXFER, &xfer) < 0)
     {

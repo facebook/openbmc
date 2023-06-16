@@ -199,3 +199,12 @@ elif [ "$mb_sku" -eq "$config9" ]; then
   probe_vr_xdpe
   probe_mb_retimer_vr_xdpe
 fi
+
+if ! i2cget -f -y 0 0x70 0 >/dev/null 2>&1; then
+  kv set apml_mux 0
+else
+  i2cset -f -y 0 0x70 0x46 0x01
+  i2cset -f -y 0 0x70 0x40 0xc0
+  i2cset -f -y 0 0x70 0x41 0xc0
+  kv set apml_mux 1
+fi

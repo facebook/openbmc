@@ -101,6 +101,7 @@ PACKAGECONFIG ??= "fdt slirp pie "
 EXTRA_OECONF:append = " --target-list=${@get_qemu_system_target_list(d)}"
 EXTRA_OECONF:append = " --disable-guest-agent"
 EXTRA_OECONF:remove = "--meson=meson"
+EXTRA_OECONF:remove = "--disable-libdw"
 
 do_install:append() {
     # The following is also installed by qemu-native

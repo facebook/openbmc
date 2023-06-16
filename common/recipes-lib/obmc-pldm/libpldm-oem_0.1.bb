@@ -5,7 +5,7 @@ DESCRIPTION = "Middleware for Openbmc PLDM Library"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPL-2.0-or-later"
-LIC_FILES_CHKSUM = "file://pldm.h;beginline=4;endline=16;md5=7daca318951174622e8e12a585f4e4a0"
+LIC_FILES_CHKSUM = "file://pldm.h;beginline=1;endline=1;md5=dcde81a56f7a67fc2c0d15658020f83a"
 
 LOCAL_URI = " \
     file://meson.build \

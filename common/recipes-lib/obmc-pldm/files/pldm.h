@@ -1,9 +1,10 @@
-
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 #ifndef _PLDM_OEM_H_
 #define _PLDM_OEM_H_
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C"

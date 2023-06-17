@@ -622,6 +622,8 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "System HTTP boot fail",
     "BIOS fails to get the certificate from BMC",
     "Password cleared by jumper",
+    "DXE FV check failure",
+    "AMD ABL failure",
     "Reserved"
   };
   char *cert_event[] = {
@@ -794,6 +796,13 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
           snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, Failure Detail: %s",
             general_info, post_err[estr_idx], cert_event[cert_event_idx]);
           break;
+        case POST_AMD_ABL_FAIL:
+          {
+            uint16_t abl_err_code = sel[15] <<8 | sel[14];
+            snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, ABL Error Code: 0x%04X",
+              general_info, post_err[estr_idx], abl_err_code);
+            break;
+          }  
         default:
           snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: POST(0x%02X), POST Failure Event: %s", general_info, post_err[estr_idx]);
           break;

@@ -296,6 +296,7 @@ enum {
   POST_INVALID_BOOT_ORDER = 0x5,
   POST_HTTP_BOOT_FAIL     = 0x6,
   POST_GET_CERT_FAIL      = 0x7,
+  POST_AMD_ABL_FAIL       = 0xA,
 };
 
 enum {

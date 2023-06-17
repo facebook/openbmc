@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <string>
 #include <sys/poll.h>
@@ -27,8 +28,8 @@ class fd_handler
 
   protected:
     /*
-     * pollfds = 
-     *   { 
+     * pollfds =
+     *   {
      *     tx server fd,
      *         .
      *         .

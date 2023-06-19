@@ -395,6 +395,7 @@ KNOWN_USAGE_STRINGS = {
         "unzip [-lnopq] FILE[.zip] [FILE]... [-x FILE...] [-d DIR]",  # noqa: B950
         "unzip [-lnojpq] FILE[.zip] [FILE]... [-x FILE...] [-d DIR]",  # BusyBox 1.30.1
         "unzip [-lnojpq] FILE[.zip] [FILE]... [-x FILE]... [-d DIR]",  # BusyBox v1.35.0
+        "unzip [-lnojpqK] FILE[.zip] [FILE]... [-x FILE]... [-d DIR]",  # BusyBox v1.36.1
     ],
     "uptime": ["uptime"],
     "users": ["users"],

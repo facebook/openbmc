@@ -33,6 +33,7 @@ LOCAL_URI += " \
     file://setup_i2c.sh \
     file://spi_util.sh \
     file://reset_fancpld.sh \
+    file://reset_oob_switch.sh \
     file://setup_i2c.service \
     file://power-on.service \
     file://setup_board.service \
@@ -49,6 +50,7 @@ OPENBMC_UTILS_FILES += " \
     reset_qsfp_mux.sh \
     spi_util.sh \
     reset_fancpld.sh \
+    reset_oob_switch.sh \
     "
 
 DEPENDS:append = " update-rc.d-native"

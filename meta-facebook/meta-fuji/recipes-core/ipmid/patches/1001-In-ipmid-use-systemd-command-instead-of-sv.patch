@@ -1,0 +1,29 @@
+From de69d7785182ef329143ec361129db34e1d87ae6 Mon Sep 17 00:00:00 2001
+From: Bin Huang <binhuang@meta.com>
+Date: Thu, 8 Jun 2023 12:57:27 +0000
+Subject: [PATCH] In ipmid use systemd command instead of sv
+
+---
+ ipmid.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/ipmid.c b/ipmid.c
+index a8c30e6..b0652e5 100644
+--- a/ipmid.c
++++ b/ipmid.c
+@@ -3595,10 +3595,10 @@ oem_set_fscd(unsigned char *request, unsigned char req_len,
+   switch (data)
+   {
+     case 0x00:
+-      sprintf(cmd, "sv force-stop fscd");
++      sprintf(cmd, "systemctl stop fscd.service");
+       break;
+     case 0x01:
+-      sprintf(cmd, "sv start fscd");
++      sprintf(cmd, "systemctl start fscd.service");
+       break;
+     default:
+       res->cc = CC_INVALID_CMD;
+-- 
+2.25.1
+

@@ -1,0 +1,31 @@
+From 77e6f52911a6a2ea91c9da992c2b0c75fd6fd320 Mon Sep 17 00:00:00 2001
+From: Bin Huang <binhuang@meta.com>
+Date: Thu, 8 Jun 2023 13:10:39 +0000
+Subject: [PATCH] In bic use systemd command instead of sv
+
+---
+ bic.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/bic.c b/bic.c
+index dc5c9fe..d847b03 100644
+--- a/bic.c
++++ b/bic.c
+@@ -814,7 +814,7 @@ static int prepare_update_bic(uint8_t slot_id, int ifd, int size) {
+   uint8_t rcount;
+ 
+   /* Kill ipmb daemon for this slot */
+-  run_shell_cmd("sv stop ipmbd_0");
++  run_shell_cmd("systemctl stop ipmbd.service");
+   sleep(1);
+   OBMC_INFO("stopped ipmbd for slot %u\n", slot_id);
+ 
+@@ -1054,7 +1054,7 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
+ 
+   // Restart ipmbd daemon
+   sleep(1);
+-  run_shell_cmd("sv start ipmbd_0");
++  run_shell_cmd("systemctl start ipmbd.service");
+ 
+ error_exit:
+   syslog(LOG_CRIT, "updating bic firmware is exiting, ret=%d\n", ret);

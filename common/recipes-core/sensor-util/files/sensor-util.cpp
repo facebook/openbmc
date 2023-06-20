@@ -951,26 +951,26 @@ main(int argc, char **argv) {
     if (fru != FRU_ALL) {
       unsigned int check_caps = FRU_CAPABILITY_SENSOR_READ;
 
-      //Check if the input FRU supports requied capability
+      //Check if the input FRU supports required capability
       if (history_clear || history) {
         check_caps |= FRU_CAPABILITY_SENSOR_HISTORY;
       }
 
+      ret = pal_get_fru_capability(fru, &caps);
+      if (ret < 0 || ((caps & check_caps) != check_caps)) {
+        print_usage();
+        return ret;
+      }
+
+      //Show "[fruname] is not present" message when the FRU supports required capability but is not present.
       ret = pal_is_fru_prsnt(fru, &status);
       if (ret < 0) {
         printf("failed to get present status for fru: %s\n\n", fruname);
         return ret;
       }
 
-      // FRU not present
       if (status == 0) {
         printf("%s is not present!\n\n", fruname);
-        print_usage();
-        return ret;
-      }
-
-      ret = pal_get_fru_capability(fru, &caps);
-      if (ret < 0 || ((caps & check_caps) != check_caps)) {
         print_usage();
         return ret;
       }

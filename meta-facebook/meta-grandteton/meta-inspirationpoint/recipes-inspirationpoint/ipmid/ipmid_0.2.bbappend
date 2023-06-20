@@ -15,11 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS += "libipmi libipmb libfruid update-rc.d-native libhal"
-LDFLAGS += "-lipmb -lfruid -lhal_fruid"
-
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-LOCAL_URI += "\
-    file://fruid.c \
-    file://usb-dbg-conf.c \
-    "
+CFLAGS:prepend = "-DCONFIG_POSTCODE_AMD"

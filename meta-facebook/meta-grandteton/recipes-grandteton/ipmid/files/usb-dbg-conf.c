@@ -7,7 +7,7 @@
 #include <openbmc/ipmb.h>
 #include "usb-dbg-conf.h"
 #include <syslog.h>
-#if defined CONFIG_POSTCODE_AMD
+#if defined(CONFIG_POSTCODE_AMD)
 #include "postcode-amd.h"
 #endif
 
@@ -411,6 +411,7 @@ static sensor_desc_t cri_sensor[] = {
     {"P1_VR_TEMP:",  MB_SNR_VR_CPU1_VCCIN_TEMP, "C", FRU_MB, 0},
     {"P0_VR_POWER:", MB_SNR_VR_CPU0_VCCIN_POWER, "W", FRU_MB, 0},
     {"P1_VR_POWER:", MB_SNR_VR_CPU1_VCCIN_POWER, "W", FRU_MB, 1},
+#if !defined(CONFIG_POSTCODE_AMD)
     {"P0_DIMMA_TEMP:", MB_SNR_DIMM_CPU0_GRPA_TEMP, "C", FRU_MB, 0},
     {"P0_DIMMB_TEMP:", MB_SNR_DIMM_CPU0_GRPB_TEMP, "C", FRU_MB, 0},
     {"P0_DIMMC_TEMP:", MB_SNR_DIMM_CPU0_GRPC_TEMP, "C", FRU_MB, 0},
@@ -427,6 +428,32 @@ static sensor_desc_t cri_sensor[] = {
     {"P1_DIMMF_TEMP:", MB_SNR_DIMM_CPU1_GRPF_TEMP, "C", FRU_MB, 0},
     {"P1_DIMMG_TEMP:", MB_SNR_DIMM_CPU1_GRPG_TEMP, "C", FRU_MB, 0},
     {"P1_DIMMH_TEMP:", MB_SNR_DIMM_CPU1_GRPH_TEMP, "C", FRU_MB, 0},
+#else
+    {"P0_DIMMA0_TEMP:",  MB_SNR_DIMM_CPU0_A0_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA1_TEMP:",  MB_SNR_DIMM_CPU0_A1_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA2_TEMP:",  MB_SNR_DIMM_CPU0_A2_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA3_TEMP:",  MB_SNR_DIMM_CPU0_A3_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA4_TEMP:",  MB_SNR_DIMM_CPU0_A4_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA5_TEMP:",  MB_SNR_DIMM_CPU0_A5_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA6_TEMP:",  MB_SNR_DIMM_CPU0_A6_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA7_TEMP:",  MB_SNR_DIMM_CPU0_A7_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA8_TEMP:",  MB_SNR_DIMM_CPU0_A8_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA9_TEMP:",  MB_SNR_DIMM_CPU0_A9_TEMP,  "C", FRU_MB, 0},
+    {"P0_DIMMA10_TEMP:", MB_SNR_DIMM_CPU0_A10_TEMP, "C", FRU_MB, 0},
+    {"P0_DIMMA11_TEMP:", MB_SNR_DIMM_CPU0_A11_TEMP, "C", FRU_MB, 0},
+    {"P1_DIMMB0_TEMP:",  MB_SNR_DIMM_CPU1_B0_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB1_TEMP:",  MB_SNR_DIMM_CPU1_B1_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB2_TEMP:",  MB_SNR_DIMM_CPU1_B2_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB3_TEMP:",  MB_SNR_DIMM_CPU1_B3_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB4_TEMP:",  MB_SNR_DIMM_CPU1_B4_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB5_TEMP:",  MB_SNR_DIMM_CPU1_B5_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB6_TEMP:",  MB_SNR_DIMM_CPU1_B6_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB7_TEMP:",  MB_SNR_DIMM_CPU1_B7_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB8_TEMP:",  MB_SNR_DIMM_CPU1_B8_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB9_TEMP:",  MB_SNR_DIMM_CPU1_B9_TEMP,  "C", FRU_MB, 0},
+    {"P1_DIMMB10_TEMP:", MB_SNR_DIMM_CPU1_B10_TEMP, "C", FRU_MB, 0},
+    {"P1_DIMMB11_TEMP:", MB_SNR_DIMM_CPU1_B11_TEMP, "C", FRU_MB, 0},
+#endif
 };
 
 bool plat_supported(void)
@@ -486,6 +513,7 @@ uint8_t plat_get_fru_sel(void)
 
 int plat_get_me_status(uint8_t fru, char *status)
 {
+#if !defined(CONFIG_POSTCODE_AMD)
   char buf[256];
   ipmb_req_t *req;
   ipmb_res_t *res;
@@ -515,6 +543,7 @@ int plat_get_me_status(uint8_t fru, char *status)
   } else {
     strcpy(status, "unknown");
   }
+#endif
   return -1;
 }
 
@@ -534,6 +563,7 @@ int plat_get_board_id(char *id)
   return -1;
 }
 
+#if defined(CONFIG_POSTCODE_AMD)
 int plat_dword_postcode_buf(uint8_t fru, char *status) {
   uint32_t dw_postcodes[30];  // to display the latest 30 postcodes
   size_t i, len = 0, total_len = 0;
@@ -555,6 +585,7 @@ int plat_dword_postcode_buf(uint8_t fru, char *status) {
 
   return 0;
 }
+#endif
 
 int plat_get_syscfg_text(uint8_t fru, char *syscfg)
 {

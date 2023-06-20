@@ -2481,6 +2481,8 @@ read_medusa_adc_val(uint8_t snr_number, float *value) {
 static int
 read_medusa_val(uint8_t snr_number, float *value) {
   static bool is_cached = false;
+  static bool medusa_vin_valid = false;
+  static bool medusa_vout_valid = false;
   static float medusa_vin = 0;
   static float medusa_vout = 0;
   static char chip[32] = {0};
@@ -2507,12 +2509,20 @@ read_medusa_val(uint8_t snr_number, float *value) {
 
   switch(snr_number) {
     case BMC_SENSOR_MEDUSA_VIN:
-      ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VIN", value);
-      medusa_vin = *value;
+      if ((ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VIN", value)) < 0) {
+        medusa_vin_valid =  false;
+      } else {
+        medusa_vin_valid =  true;
+        medusa_vin = *value;
+      }
       break;
     case BMC_SENSOR_MEDUSA_VOUT:
-      ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VOUT", value);
-      medusa_vout = *value;
+      if ((ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VOUT", value)) < 0) {
+        medusa_vout_valid =  false;
+      } else {
+        medusa_vout_valid =  true;
+        medusa_vout = *value;
+      }
       break;
     case BMC_SENSOR_MEDUSA_CURR:
       ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_CURR", value);
@@ -2521,10 +2531,13 @@ read_medusa_val(uint8_t snr_number, float *value) {
       ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_PWR", value);
       break;
     case BMC_SENSOR_MEDUSA_VDELTA:
-      *value = medusa_vin - medusa_vout;
-      //prevent sensor-util to show -0.00 volts
-      if ( *value < 0 ) *value = 0;
-      ret = PAL_EOK;
+      //This sensor only valid if both medusa_vin and medusa_vout read succcess
+      if (medusa_vin_valid && medusa_vout_valid) {
+        *value = medusa_vin - medusa_vout;
+        //prevent sensor-util to show -0.00 volts
+        if ( *value < 0 ) *value = 0;
+        ret = PAL_EOK;
+      }
       break;
   }
 

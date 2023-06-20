@@ -280,7 +280,7 @@ void getMetricReports() {
         x["Oem"]["Nvidia"].contains("MetricValueStale")) {
       if (x["Oem"]["Nvidia"]["MetricValueStale"].dump() == "true") {
         kv::set(snr_path, "NA");
-        return;
+        continue;
       }
     }
 

@@ -43,8 +43,7 @@ if [ "$rev" -ne 0 ]; then
       echo "Don't enable fscd due to fan not present"
     else
       echo "Start fscd"
-      #runsv /etc/sv/fscd > /dev/null 2>&1 &
-      fan-util --set 50
+      runsv /etc/sv/fscd > /dev/null 2>&1 &
     fi
 fi
 echo "done."

@@ -469,12 +469,12 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 uint8_t plat_get_fru_sel(void)
 {
   uint8_t pos;
-  if (pal_get_uart_select_from_kv(&pos)) {
-    return  0;
+
+  if (pal_get_uart_select(&pos)) {
+    return 0;
   }
   return pos;
 }
-
 
 int plat_get_me_status(uint8_t fru, char *status)
 {
@@ -536,13 +536,10 @@ int plat_dword_postcode_buf(uint8_t fru, char *status) {
 
 int plat_get_board_id(char *id)
 {
-  uint8_t pos;
+  uint8_t pos = plat_get_fru_sel();
   uint8_t buf[256] = {0x00};
   uint8_t rlen;
 
-  if (pal_get_uart_select_from_kv(&pos)) {
-    return -1;
-  }
   if (pal_get_board_id(pos, buf, 0, buf, &rlen)) {
     return -1;
   }

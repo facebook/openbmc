@@ -198,7 +198,7 @@ typedef struct {
 } err_t;
 
 int pal_get_uart_select_from_cpld(uint8_t *uart_select);
-int pal_get_uart_select_from_kv(uint8_t *uart_select);
+int pal_get_uart_select(uint8_t *uart_select);
 int pal_get_cpld_ver(uint8_t fru, uint8_t *ver);
 int pal_check_sled_managment_cable_id(uint8_t slot_id, bool log, uint8_t *cbl_val, uint8_t bmc_location);
 int pal_set_nic_perst(uint8_t fru, uint8_t val);

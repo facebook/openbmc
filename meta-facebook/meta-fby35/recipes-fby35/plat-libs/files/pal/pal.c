@@ -3417,18 +3417,22 @@ pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts) {
 }
 
 int
-pal_get_uart_select_from_kv(uint8_t *uart_select) {
+pal_get_uart_select(uint8_t *uart_select) {
   char value[MAX_VALUE_LEN] = {0};
-  uint8_t loc;
-  int ret = -1;
 
-  ret = kv_get("debug_card_uart_select", value, NULL, 0);
-  if (!ret) {
-    loc = atoi(value);
-    *uart_select = loc;
+  if (kv_get("debug_card_uart_select", value, NULL, 0) == 0) {
+    *uart_select = atoi(value);
+    return 0;
   }
 
-  return ret;
+  if (pal_get_uart_select_from_cpld(uart_select)) {
+    return -1;
+  }
+  char str[8] = {0};
+  snprintf(str, sizeof(str), "%u", *uart_select);
+  kv_set("debug_card_uart_select", str, 0, 0);
+
+  return 0;
 }
 
 int
@@ -3738,7 +3742,7 @@ pal_post_handle(uint8_t slot, uint8_t postcode) {
   }
 
   // Get the UART SELECT from kv, avoid large access CPLD in a short time
-  ret = pal_get_uart_select_from_kv(&uart_select);
+  ret = pal_get_uart_select(&uart_select);
   if (ret) {
     return ret;
   }
@@ -5397,7 +5401,7 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
   }
 
   // Get the UART SELECT from kv, avoid large access CPLD in a short time
-  ret = pal_get_uart_select_from_kv(&uart_select);
+  ret = pal_get_uart_select(&uart_select);
   if (ret) {
     return ret;
   }

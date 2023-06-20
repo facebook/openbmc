@@ -511,7 +511,7 @@ cpld_io_mon() {
     }
 
     // Get the uart position
-    if ( pal_get_uart_select_from_kv(&uart_pos) < 0 ) {
+    if ( pal_get_uart_select(&uart_pos) < 0 ) {
       usleep(DELAY_GPIOD_READ); //sleep
       continue;
     }

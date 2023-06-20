@@ -933,7 +933,7 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
   uint8_t *data = res_data;
 
   if (slot == FRU_BB) {  // handle the case, command sent from debug Card
-    ret = pal_get_uart_select_from_kv(&uart_select);
+    ret = pal_get_uart_select(&uart_select);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s() Failed to get debug_card_uart_select\n", __func__);
     }

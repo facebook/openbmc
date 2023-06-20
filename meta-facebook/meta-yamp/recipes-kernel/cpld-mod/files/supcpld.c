@@ -349,10 +349,9 @@ static int supcpld_probe(struct i2c_client *client,
                                  supcpld_attr_table, n_attrs);
 }
 
-static int supcpld_remove(struct i2c_client *client)
+static void supcpld_remove(struct i2c_client *client)
 {
   i2c_dev_sysfs_data_clean(client, &supcpld_data);
-  return 0;
 }
 
 static struct i2c_driver supcpld_driver = {

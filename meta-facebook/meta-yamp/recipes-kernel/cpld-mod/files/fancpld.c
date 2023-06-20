@@ -89,7 +89,6 @@ static bool detect_fan_presence(struct device *dev,
                                 char *buf)
 {
   struct i2c_client *client = to_i2c_client(dev);
-  i2c_dev_data_st *data = i2c_get_clientdata(client);
   i2c_sysfs_attr_st *i2c_attr = TO_I2C_SYSFS_ATTR(attr);
   const i2c_dev_attr_st *dev_attr = i2c_attr->isa_i2c_attr;
   int instance = -1, i = 0;
@@ -548,10 +547,9 @@ static int fancpld_probe(struct i2c_client *client,
                                  fancpld_attr_table, n_attrs);
 }
 
-static int fancpld_remove(struct i2c_client *client)
+static void fancpld_remove(struct i2c_client *client)
 {
   i2c_dev_sysfs_data_clean(client, &fancpld_data);
-  return 0;
 }
 
 static struct i2c_driver fancpld_driver = {

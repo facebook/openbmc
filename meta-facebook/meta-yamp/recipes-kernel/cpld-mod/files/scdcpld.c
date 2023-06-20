@@ -582,10 +582,9 @@ static int scdcpld_probe(struct i2c_client *client,
                                  scdcpld_attr_table, n_attrs);
 }
 
-static int scdcpld_remove(struct i2c_client *client)
+static void scdcpld_remove(struct i2c_client *client)
 {
   i2c_dev_sysfs_data_clean(client, &scdcpld_data);
-  return 0;
 }
 
 static struct i2c_driver scdcpld_driver = {

@@ -38,12 +38,12 @@ def main():
     version = yamp_board_rev(soc_gpio_table, board_gpio_rev_table)
     # In order to satisy/unsatisfy conditions in setup_board_gpio()
     # modify the registers
-    if version is 1:
+    if version == 1:
         print("Using GPIO P1 table ", end="")
         setup_board_gpio(soc_gpio_table, board_gpio_table_p1)
     else:
         print("Unexpected board version %s. Using GPIO P1 table. " % version, end="")
-        setup_board_gpio(soc_gpio_table, board_gpio_table_p2)
+        setup_board_gpio(soc_gpio_table, board_gpio_table_p1)
     print("Done")
     sys.stdout.flush()
     return 0

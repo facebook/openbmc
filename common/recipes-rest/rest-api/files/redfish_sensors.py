@@ -1,4 +1,5 @@
 import typing as t
+from asyncio import BoundedSemaphore, wait_for
 from functools import lru_cache
 
 import aggregate_sensor
@@ -15,6 +16,9 @@ except Exception:
     fru_name_map = {}
 
 aggregate_sensor.aggregate_sensor_init()
+
+_SENSOR_LOCK = BoundedSemaphore(1)
+_SENSOR_LOCK_TIMEOUT = 60
 
 
 # controller for /redfish/v1/Chassis/{fru}/Sensors
@@ -40,7 +44,13 @@ async def get_redfish_sensors_for_server_name(
             dumps=dumps_bytestr,
             status=400,
         )
-    members_json = await _get_sensor_members(server_name, fru_names, expand_level > 0)
+    try:
+        await wait_for(_SENSOR_LOCK.acquire(), _SENSOR_LOCK_TIMEOUT)
+        members_json = await _get_sensor_members(
+            server_name, fru_names, expand_level > 0
+        )
+    finally:
+        _SENSOR_LOCK.release()
     body = {
         "@odata.type": "#SensorCollection.SensorCollection",
         "Name": "Chassis sensors",
@@ -68,7 +78,11 @@ async def get_redfish_sensor_handler(request: web.Request) -> web.Response:
     # This call could block the event loop too, but the risk of that is really low.
     # This call takes ~0.2 seconds to run on average
     # also this endpoint is not exercised in prod, as we use Sensors?$expand=1
-    sensor = _get_sensor(target_fru_name, sensor_id)
+    try:
+        await wait_for(_SENSOR_LOCK.acquire(), _SENSOR_LOCK_TIMEOUT)
+        sensor = _get_sensor(target_fru_name, sensor_id)
+    finally:
+        _SENSOR_LOCK.release()
     if sensor:
         body = _render_sensor_body(server_name, sensor)
     else:
@@ -87,6 +101,7 @@ async def get_redfish_sensor_handler(request: web.Request) -> web.Response:
 
 @common_force_async
 def _get_sensor_members(parent_resource: str, fru_names: t.List[str], expand: bool):
+    assert _SENSOR_LOCK.locked()
     members_json = []
     for fru in fru_names:
         if redfish_chassis_helper.is_libpal_supported():
@@ -115,6 +130,7 @@ def _get_sensor_members(parent_resource: str, fru_names: t.List[str], expand: bo
 def _get_sensor(
     fru_name: str, sensor_id: t.Union[int, str]
 ) -> t.Optional[redfish_chassis_helper.SensorDetails]:
+    assert _SENSOR_LOCK.locked()
     if fru_name == "aggregate":
         sensor = redfish_chassis_helper.get_aggregate_sensor(sensor_id)  # type: ignore
         return sensor

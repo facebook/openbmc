@@ -17,6 +17,9 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
+PACKAGECONFIG += "disable-watchdog"
+PACKAGECONFIG += "boot-info"
+
 LOCAL_URI += " \
     file://bios_util.sh \
     file://board-utils.sh \

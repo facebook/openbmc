@@ -3101,7 +3101,7 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
 static int
 pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status) {
 #define BIC_SENSOR_READ_NA 0x20
-  int ret = 0;
+  int ret = 0, slot_type = SERVER_TYPE_NONE;
   uint8_t power_status = 0;
   ipmi_extend_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
@@ -3151,36 +3151,47 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     return READING_NA;
   }
 
+  slot_type = fby35_common_get_slot_type(fru);
   if(sensor.read_type == ACCURATE_CMD_4BYTE) {
     *value = ((int16_t)((sensor.value & 0xFFFF0000) >> 16)) * 0.001 + ((int16_t)(sensor.value & 0x0000FFFF)) ;
 
-    if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
-      //Apply value correction for Half Dome
-      switch (sensor_num) {
-        case BIC_HD_SENSOR_FIO_TEMP:
-          apply_frontIO_correction(fru, sensor_num, value, bmc_location);
-          break;
+    switch (slot_type) {
+      case SERVER_TYPE_HD:
+        //Apply value correction for Half Dome
+        switch (sensor_num) {
+          case BIC_HD_SENSOR_FIO_TEMP:
+            apply_frontIO_correction(fru, sensor_num, value, bmc_location);
+            break;
 
-        default:
-          break;
-      }
-    } else if (fby35_common_get_slot_type(fru) == SERVER_TYPE_CL) {
-      //Apply value correction for Crater Lake
-      switch (sensor_num) {
-        case BIC_SENSOR_FIO_TEMP:
-          apply_frontIO_correction(fru, sensor_num, value, bmc_location);
-          break;
+          default:
+            break;
+        }
+        break;
 
-        case BIC_SENSOR_CPU_THERM_MARGIN:
-          if ( *value > 0 ) *value = -(*value);
-          break;
+      case SERVER_TYPE_CL:
+        //Apply value correction for Crater Lake
+        switch (sensor_num) {
+          case BIC_SENSOR_FIO_TEMP:
+            apply_frontIO_correction(fru, sensor_num, value, bmc_location);
+            break;
 
-        default:
-          break;
-      }
-    } else {
-      syslog(LOG_WARNING, "%s()  fru%x, unknown slot type 0x%x", __func__, fru, fby35_common_get_slot_type(fru));
+          case BIC_SENSOR_CPU_THERM_MARGIN:
+            if ( *value > 0 ) *value = -(*value);
+            break;
+
+          default:
+            break;
+        }
+        break;
+
+      case SERVER_TYPE_GL:
+        break;
+
+      default:
+        syslog(LOG_WARNING, "%s()  fru%x, unknown slot type 0x%x", __func__, fru, slot_type);
+        break;
     }
+
     return 0;
   } else if ( sensor.read_type == ACCURATE_CMD) {
     uint32_t val = ((sensor.value & 0xff) << 8) + ((sensor.value & 0xff00) >> 8);
@@ -3240,7 +3251,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     *value /= 256;
   }
   //  Apply value correction for Crater Lake
-  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_CL) {
+  if (slot_type == SERVER_TYPE_CL) {
     switch (sensor_num) {
       case BIC_SENSOR_FIO_TEMP:
         apply_frontIO_correction(fru, sensor_num, value, bmc_location);

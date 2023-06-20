@@ -5578,7 +5578,6 @@ pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
         return CC_UNSPECIFIED_ERROR;
       }
       res_data[0] = strtol(cvalue,NULL,10);
-      syslog(LOG_WARNING, "%s: slot%d GET PXE SEL ENABLE/DISABLE %d", __func__, slot, res_data[0]);
     } else if (cmd == 0x2) { // SET
       if (req_len < 6) {
         syslog(LOG_WARNING, "%s: slot%d SET no value to PXE SEL ENABLE/DISABLE", __func__, slot);

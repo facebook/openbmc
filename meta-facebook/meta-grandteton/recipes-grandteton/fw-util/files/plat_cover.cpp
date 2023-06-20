@@ -40,7 +40,6 @@ bool palBiosComponent::get_active_version(string& ver) {
 
 int palBiosComponent::update_finish(void) {
   kv_set(key.c_str(), _ver_after_active.c_str(), 0, KV_FPERSIST);
-  sys().runcmd(string("/sbin/fw_setenv por_ls on"));
   sys().output << "To complete the upgrade, please perform 'power-util sled-cycle'" << endl;
   return 0;
 }

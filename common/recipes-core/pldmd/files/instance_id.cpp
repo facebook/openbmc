@@ -16,6 +16,7 @@ int InstanceId::next() {
     }
     if (!id.test(idx)) {
       last_idx = idx;
+      id.set(idx);
       return idx;
     }
   }

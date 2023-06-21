@@ -43,7 +43,12 @@
 #include <sys/un.h>
 #include "pal.h"
 
+#ifdef CONFIG_HALFDOME
+#define PLATFORM_NAME "halfdome"
+#else
 #define PLATFORM_NAME "yosemite35"
+#endif
+
 #define LAST_KEY "last_key"
 
 #define OFFSET_SYS_GUID 0x17F0

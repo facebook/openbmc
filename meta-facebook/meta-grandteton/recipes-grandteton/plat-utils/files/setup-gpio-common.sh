@@ -137,7 +137,7 @@ gpio_export LED_POSTCODE_7 GPION7
 
 # ==GPIOO==
 # FM_PCH_TPM_PRSNT
-gpio_export FM_PCH_TPM_PRSNT GPIOO5
+gpio_export FM_BIOS_TPM_PRSNT_IN GPIOO5
 
 # ==GPIOP==
 # SYS_BMC_PWRBTN_IN
@@ -321,4 +321,5 @@ gpio_set GPU_WP_HW_CTRL_R_N 0
 sgpio_export BMC_MONITER 51
 gpio_set BMC_MONITER 0
 
-
+sgpio_export FM_BIOS_TPM_PRSNT_OUT 57
+gpio_set FM_BIOS_TPM_PRSNT_OUT "$(gpio_get FM_BIOS_TPM_PRSNT_IN)"

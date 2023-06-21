@@ -163,12 +163,6 @@ gpio_set FM_BIOS_DEBUG_EN_N 1
 sgpio_export CLK_GEN2_BMC_RC_OE_R_N 47
 gpio_set CLK_GEN2_BMC_RC_OE_R_N 0
 
-sgpio_export FM_BMC_TPM_PRES_N_R 57
-gpio_set FM_BMC_TPM_PRES_N_R 1
-
-sgpio_export IRQ_PCH_TPM_SPI_N 61
-gpio_set IRQ_PCH_TPM_SPI_N 1
-
 sgpio_export USB_OC0_REAR_R_N 63
 gpio_set USB_OC0_REAR_R_N 1
 

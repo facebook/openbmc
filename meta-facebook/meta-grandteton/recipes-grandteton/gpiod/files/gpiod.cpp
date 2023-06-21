@@ -135,18 +135,19 @@ struct gpiopoll_ioex_config gta_iox_gpios[] = {
 
 struct gpiopoll_config gpios_common_list[] = {
   // shadow, description, edge, handler, oneshot
-  {FP_RST_BTN_IN_N,         "GPIOP2",         GPIO_EDGE_BOTH,    pwr_reset_handler,          NULL},
-  {FP_PWR_BTN_IN_N,         "GPIOP0",         GPIO_EDGE_BOTH,    pwr_button_handler,         NULL},
-  {FM_UARTSW_LSB_N,         "SGPIO106",       GPIO_EDGE_BOTH,    uart_select_handle,         NULL},
-  {FM_UARTSW_MSB_N,         "SGPIO108",       GPIO_EDGE_BOTH,    uart_select_handle,         NULL},
-  {FM_POST_CARD_PRES_N,     "GPIOZ6",         GPIO_EDGE_BOTH,    usb_dbg_card_handler,       NULL},
-  {FP_AC_PWR_BMC_BTN,       "GPIO18A0",       GPIO_EDGE_BOTH,    gpio_event_handler,         NULL},
-  {BIC_READY,               "SGPIO32",        GPIO_EDGE_BOTH,    bic_ready_handler,          bic_ready_init},
-  {GPU_FPGA_THERM_OVERT,    "SGPIO40",        GPIO_EDGE_FALLING, nv_event_handler,           NULL},
-  {GPU_FPGA_DEVIC_OVERT,    "SGPIO42",        GPIO_EDGE_FALLING, nv_event_handler,           NULL},
-  {PEX_FW_VER_UPDATE,       "PEX_VER_UPDATE", GPIO_EDGE_RISING,  pex_fw_ver_handle,          NULL},
-  {FM_SMB_2_ALERT_GPU,      "SGPIO208",       GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
-  {FM_SMB_1_ALERT_GPU,      "SGPIO210",       GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
+  {FP_RST_BTN_IN_N,      "GPIOP2",         GPIO_EDGE_BOTH,    pwr_reset_handler,    NULL},
+  {FP_PWR_BTN_IN_N,      "GPIOP0",         GPIO_EDGE_BOTH,    pwr_button_handler,   NULL},
+  {FM_UARTSW_LSB_N,      "SGPIO106",       GPIO_EDGE_BOTH,    uart_select_handle,   NULL},
+  {FM_UARTSW_MSB_N,      "SGPIO108",       GPIO_EDGE_BOTH,    uart_select_handle,   NULL},
+  {FM_POST_CARD_PRES_N,  "GPIOZ6",         GPIO_EDGE_BOTH,    usb_dbg_card_handler, NULL},
+  {FP_AC_PWR_BMC_BTN,    "GPIO18A0",       GPIO_EDGE_BOTH,    gpio_event_handler,   NULL},
+  {BIC_READY,            "SGPIO32",        GPIO_EDGE_BOTH,    bic_ready_handler,    bic_ready_init},
+  {GPU_FPGA_THERM_OVERT, "SGPIO40",        GPIO_EDGE_FALLING, nv_event_handler,     NULL},
+  {GPU_FPGA_DEVIC_OVERT, "SGPIO42",        GPIO_EDGE_FALLING, nv_event_handler,     NULL},
+  {PEX_FW_VER_UPDATE,    "PEX_VER_UPDATE", GPIO_EDGE_RISING,  pex_fw_ver_handle,    NULL},
+  {FM_SMB_2_ALERT_GPU,   "SGPIO208",       GPIO_EDGE_BOTH,    sgpio_event_handler,  NULL},
+  {FM_SMB_1_ALERT_GPU,   "SGPIO210",       GPIO_EDGE_BOTH,    sgpio_event_handler,  NULL},
+  {BIOS_TPM_PRESENT_IN,  "GPIOO5",         GPIO_EDGE_BOTH,    tpm_sync_handler,     NULL},
 };
 
 bool server_power_check(uint8_t power_on_time) {
@@ -507,6 +508,12 @@ gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(FRU_MB, desc, curr, 0, NULL);
 }
 
+// Generic Event Handler for GPIO changes
+void
+tpm_sync_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  gpio_set_value_by_shadow(BIOS_TPM_PRESENT_OUT, curr);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+}
 
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON
 

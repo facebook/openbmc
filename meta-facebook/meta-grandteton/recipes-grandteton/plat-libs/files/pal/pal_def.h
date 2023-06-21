@@ -11,6 +11,8 @@
 #define FM_UARTSW_MSB_N          "FM_UARTSW_MSB_N"
 #define FM_POST_CARD_PRES_N      "FM_DEBUG_PORT_PRSNT_N_IN"
 #define FM_CPU_CATERR_N          "H_CPU_CATERR_LVC2_R2_N"
+#define BIOS_TPM_PRESENT_IN      "FM_BIOS_TPM_PRSNT_IN"
+#define BIOS_TPM_PRESENT_OUT     "FM_BIOS_TPM_PRSNT_OUT"
 
 //GPIO Power Control Common
 #define FP_RST_BTN_IN_N          "ID_RST_BTN_BMC_IN"

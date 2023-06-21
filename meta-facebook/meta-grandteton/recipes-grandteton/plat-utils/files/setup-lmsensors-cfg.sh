@@ -16,7 +16,7 @@ fi
 #VPDB ADM1272 config
 for i in {1..5}
 do
-  rev=$(fruid-util vpdb |grep "Board Part Number" | awk -F ":" '{print $2}' | awk '{gsub(/^ +| +$/,"")}1')
+  rev=$(fruid-util vpdb 2>/dev/null |grep "Board Part Number" | awk -F ":" '{print $2}' | awk '{gsub(/^ +| +$/,"")}1')
   rc=$?
 
   if [ "$rc" == 1 ] || [ -z "$rev" ]; then
@@ -38,7 +38,7 @@ done
 #HPDB ADM1272 config
 for i in {1..5}
   do
-  rev=$(fruid-util hpdb |grep "Board Part Number" | awk -F ":" '{print $2}' | awk '{gsub(/^ +| +$/,"")}1')
+  rev=$(fruid-util hpdb 2>/dev/null |grep "Board Part Number" | awk -F ":" '{print $2}' | awk '{gsub(/^ +| +$/,"")}1')
   rc=$?
 
   if [ "$rc" == 1 ] || [ -z "$rev" ]; then

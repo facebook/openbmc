@@ -35,7 +35,9 @@ echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-3/new_device  #BIC
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-4/new_device  #NIC
 
 #Set NIC1 EID to 0x22
-/usr/local/bin/mctp-util -d 0x4 0x64 0x00 0x00 0x80 0x01 0x00 0x22
+if ! /usr/local/bin/mctp-util -d 0x4 0x64 0x0 0x00 0x80 0x01 0x00 0x22 >/dev/null; then
+  echo "Failed to set nic1 EID"
+fi
 
 
 echo -n "Starting MCTPD Rx/Tx Daemon.."

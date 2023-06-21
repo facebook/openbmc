@@ -29,20 +29,12 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 #MB_HSC_MODULE="1"  # ltc4282/ltc4286
-kv get mb_hsc_module
-rev=$?
-
-if [ $rev -eq 0 ];
-then
+if kv get mb_hsc_module >/dev/null; then
   sed -i "2{s/$/ hsc/}" /etc/sv/sensord/run
 fi
 
 #SWB_HSC_MODULE="1"  # ltc4282/ltc4286
-kv get swb_hsc_module
-rev=$?
-
-if [ $rev -eq 0 ];
-then
+if kv get swb_hsc_module >/dev/null; then
   sed -i "2{s/$/ swb_hsc/}" /etc/sv/sensord/run
 fi
 

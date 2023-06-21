@@ -24,6 +24,15 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # shellcheck source=meta-facebook/meta-grandteton/recipes-grandteton/plat-utils/files/ast-functions
 . /usr/local/fbpackages/utils/ast-functions
 
+read_dev() {
+  for _ in {1..3}; do
+    if /usr/sbin/i2cget -f -y "$1" "$2" "$3" 2>/dev/null; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 rebind_i2c_dev() {
   dev="$1-00$2"
   dri=$3
@@ -194,9 +203,7 @@ gpio_export_ioexp 36-0022  VPDB_SKU_ID_0    13
 gpio_export_ioexp 36-0022  VPDB_SKU_ID_1    14
 gpio_export_ioexp 36-0022  VPDB_SKU_ID_2    15
 
-i2cget -f -y 36 0x25 0x00
-rev=$?
-if [ "$rev" -eq 0 ]; then
+if read_dev 36 0x25 0 >/dev/null; then
   gpio_export_ioexp 36-0025  VPDB_BOARD_ID_3_IO   0
   gpio_export_ioexp 36-0025  VPDB_SKU_ID_3_IO     15
   VPDB_BOARD_ID_3=$VPDB_BOARD_ID_3_IO
@@ -312,9 +319,7 @@ i2c_device_add 37 0x25 pca9555
 gpio_export_ioexp 37-0025  FM_HS1_EN_BUSBAR_BUF  1
 gpio_export_ioexp 37-0025  FM_HS2_EN_BUSBAR_BUF  3
 
-i2cget -f -y 37 0x25 0x00
-rev=$?
-if [ "$rev" -eq 0 ]; then
+if read_dev 37 0x25 0 >/dev/null; then
   gpio_export_ioexp 37-0025  HPDB_BOARD_ID_3_IO    15
   HPDB_BOARD_ID_3=$HPDB_BOARD_ID_3_IO
 else
@@ -712,12 +717,13 @@ gpio_set  FAN15_LED_FAIL $FAN_LED_FAIL
 
 #GPU Reset USB Hub
 if [ "$(is_bmc_por)" -eq 1 ]; then
+  echo "Reset SWB USB Hub"
   # set gpio 98 LOW
-  pldmd-util -b 3 -e 0x0a raw 0x02 0x39 0x62 0xFF 0x02 0x00 0x00 0x01 0x01
+  pldmd-util -b 3 -e 0x0a raw 0x02 0x39 0x62 0xFF 0x02 0x00 0x00 0x01 0x01 >/dev/null
   # add delay
   sleep 0.5
   # set gpio 98 HIGH
-  pldmd-util -b 3 -e 0x0a raw 0x02 0x39 0x62 0xFF 0x02 0x00 0x00 0x01 0x02
+  pldmd-util -b 3 -e 0x0a raw 0x02 0x39 0x62 0xFF 0x02 0x00 0x00 0x01 0x02 >/dev/null
   sleep 3
 fi
 

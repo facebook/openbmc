@@ -1,0 +1,46 @@
+From 611d6f1b3fe5bb4102ceb2382728e60397f65497 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Wed, 14 Jun 2023 15:30:57 -0700
+Subject: [PATCH 1/2] [OE-core] [PATCH] linux/portdefs.h: Fix pseudo to work
+ with glibc 2.33
+
+In glibc 2.33, they've removed the _STAT_VER and _MKNOD_VER definitions
+from public headers. They have no plans to add these back so pseudo needs
+to attempt its own definitions. There is some protection as if they were
+wrong and there was a mismatch, we'd get an error art runtime.
+
+Signed-off-by: Richard Purdie <richard.pur...@linuxfoundation.org>
+---
+ ports/linux/portdefs.h | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/ports/linux/portdefs.h b/ports/linux/portdefs.h
+index d419365..3060621 100644
+--- a/ports/linux/portdefs.h
++++ b/ports/linux/portdefs.h
+@@ -32,3 +32,22 @@ GLIBC_COMPAT_SYMBOL(memcpy,2.0);
+ 
+ #include <linux/capability.h>
+ #include <sys/syscall.h>
++
++#ifndef _STAT_VER
++#if defined (__aarch64__)
++#define _STAT_VER 0
++#elif defined (__x86_64__)
++#define _STAT_VER 1
++#else
++#define _STAT_VER 3
++#endif
++#endif
++#ifndef _MKNOD_VER
++#if defined (__aarch64__)
++#define _MKNOD_VER 0
++#elif defined (__x86_64__)
++#define _MKNOD_VER 0
++#else
++#define _MKNOD_VER 1
++#endif
++#endif
+-- 
+2.39.1
+

@@ -1,0 +1,39 @@
+In glibc 2.33, they've removed the _STAT_VER and _MKNOD_VER definitions
+from public headers. They have no plans to add these back so pseudo needs
+to attempt its own definitions. There is some protection as if they were
+wrong and there was a mismatch, we'd get an error art runtime.
+
+Signed-off-by: Richard Purdie <richard.pur...@linuxfoundation.org>
+---
+ ports/linux/portdefs.h | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/ports/linux/portdefs.h b/ports/linux/portdefs.h
+index a92e969..9545550 100644
+--- a/ports/linux/portdefs.h
++++ b/ports/linux/portdefs.h
+@@ -34,3 +34,22 @@ GLIBC_COMPAT_SYMBOL(memcpy,2.0);
+ #include <sys/syscall.h>
+ #include <sys/prctl.h>
+ #include <linux/seccomp.h>
++
++#ifndef _STAT_VER
++#if defined (__aarch64__)
++#define _STAT_VER 0
++#elif defined (__x86_64__)
++#define _STAT_VER 1
++#else
++#define _STAT_VER 3
++#endif
++#endif
++#ifndef _MKNOD_VER
++#if defined (__aarch64__)
++#define _MKNOD_VER 0
++#elif defined (__x86_64__)
++#define _MKNOD_VER 0
++#else
++#define _MKNOD_VER 1
++#endif
++#endif
+-- 
+2.27.0

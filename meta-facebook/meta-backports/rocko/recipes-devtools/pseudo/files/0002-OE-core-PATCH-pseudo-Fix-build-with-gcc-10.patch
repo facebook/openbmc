@@ -1,0 +1,37 @@
+From 3a0facf81784df3be639949f72f665d1b76568a6 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Wed, 14 Jun 2023 15:47:27 -0700
+Subject: [PATCH 2/2] [OE-core] [PATCH pseudo] Fix build with gcc 10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add a missing typedef in front of the pseudo_access_t definition. Otherwise
+pseudo_access_t ends up being a global enum, defined each time pseudo_ipc.h
+is included.
+
+This fixes the following link time error with gcc 10:
+
+  multiple definition of `pseudo_access_t'
+
+Signed-off-by: Vincent Stehlé <vincent.ste...@arm.com>
+---
+ pseudo_ipc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pseudo_ipc.h b/pseudo_ipc.h
+index caeae5c..d945257 100644
+--- a/pseudo_ipc.h
++++ b/pseudo_ipc.h
+@@ -29,7 +29,7 @@ typedef struct {
+ 	char path[];
+ } pseudo_msg_t;
+ 
+-enum {
++typedef enum {
+ 	PSA_EXEC = 1,
+ 	PSA_WRITE = (PSA_EXEC << 1),
+ 	PSA_READ = (PSA_WRITE << 1),
+-- 
+2.39.1
+

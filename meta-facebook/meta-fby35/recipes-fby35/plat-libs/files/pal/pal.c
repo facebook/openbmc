@@ -1182,32 +1182,66 @@ pal_get_fru_list(char *list) {
   return PAL_EOK;
 }
 
+
 int
 pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
-  uint8_t bmc_location = 0, prsnt = 0;
+  uint8_t bmc_location = 0;
+  static bool is_inited = false;
+  static uint8_t config = CONFIG_A;
 
   if (caps == NULL) {
     return -1;
   }
 
+  //try to get the system type. The default config is CONFIG_A.
+  if ( is_inited == false ) {
+    char sys_conf[16] = {0};
+    if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
+      return READING_NA;
+    }
+
+    if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
+    else if ( strcmp(sys_conf, "Type_DPV2") == 0 ) config = CONFIG_B;
+    else if ( strcmp(sys_conf, "Type_HD") == 0 ) config = CONFIG_B;
+    else if ( (strcmp(sys_conf, "Type_17") == 0) || (strcmp(sys_conf, "Type_8") == 0)) config = CONFIG_D;
+    else if ( strcmp(sys_conf, "Type_VF") == 0 ) config = CONFIG_C;
+    else if ( strcmp(sys_conf, "Type_GL") == 0 ) config = CONFIG_B;
+    else syslog(LOG_WARNING, "%s() Couldn't identify the system type: %s", __func__, sys_conf);
+
+    is_inited = true;
+  }
+
+  /*
+   *   CONFIG_A: slot1 slot2 slot3 slot4
+   *   CONFIG_B: slot1 slot3
+   *   CONFIG_C: slot1 slot2 slot3 slot4
+   *   CONFIG_D: slot1
+   */
   *caps = 0;
   switch (fru) {
     case FRU_ALL:
       *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
       break;
     case FRU_SLOT1:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
+        FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
+      break;
     case FRU_SLOT2:
-    case FRU_SLOT3:
     case FRU_SLOT4:
-      if (fby35_common_is_fru_prsnt(fru, &prsnt)) {
-        break;
-      }
-
-      if (prsnt == SLOT_PRESENT) {
+      if ((config == CONFIG_A) || (config == CONFIG_C)) {
         *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
-          FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
-          FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
+        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
+        FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
+      }
+      break;
+    case FRU_SLOT3:
+      if (config != CONFIG_D) {
+        *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
+        FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
       }
       break;
     case FRU_BMC:

@@ -17,3 +17,4 @@ DISTRO ?= "openbmc-fb"
 # Most build logic is represented in the U-Boot recipes.
 # IMAGE_FEATURES += " verified-boot "
 
+ASSUME_PROVIDED_append = "qemu-native"

@@ -7,3 +7,5 @@ MACHINE ??= "galaxy100"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"
+
+ASSUME_PROVIDED_append = "qemu-native"

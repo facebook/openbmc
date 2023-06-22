@@ -1,0 +1,25 @@
+From f3f7dc1cb4eea16b71529a324177555c673dbb79 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Tue, 20 Jun 2023 10:26:44 -0700
+Subject: [PATCH] Include limits header
+
+This is needed to use numeric_limits
+---
+ Source/cmServerProtocol.cxx | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Source/cmServerProtocol.cxx b/Source/cmServerProtocol.cxx
+index a5c1a23..b1ab758 100644
+--- a/Source/cmServerProtocol.cxx
++++ b/Source/cmServerProtocol.cxx
+@@ -24,6 +24,7 @@
+ #endif
+ 
+ #include <algorithm>
++#include <limits>
+ #include <string>
+ #include <vector>
+ 
+-- 
+2.39.1
+

@@ -1,0 +1,25 @@
+From a8614fe3237a736c642aff85fdb93ca8bc8f150c Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Tue, 20 Jun 2023 11:45:43 -0700
+Subject: [PATCH] Fix redundant declaration of yylloc
+
+---
+ dtc-lexer.l | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dtc-lexer.l b/dtc-lexer.l
+index fd825eb..b5fff4b 100644
+--- a/dtc-lexer.l
++++ b/dtc-lexer.l
+@@ -38,7 +38,7 @@ LINECOMMENT	"//".*\n
+ #include "srcpos.h"
+ #include "dtc-parser.tab.h"
+ 
+-YYLTYPE yylloc;
++//extern YYLTYPE yylloc;
+ extern bool treesource_error;
+ 
+ /* CAUTION: this will stop working if we ever use yyless() or yyunput() */
+-- 
+2.39.1
+

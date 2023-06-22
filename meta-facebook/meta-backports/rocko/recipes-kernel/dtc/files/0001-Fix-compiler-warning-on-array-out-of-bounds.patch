@@ -1,0 +1,35 @@
+From ee6555bafd1d67b8d3769f5b5f577662eb31653f Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Tue, 20 Jun 2023 10:52:05 -0700
+Subject: [PATCH] Fix compiler warning on array out of bounds
+
+fdt_set_* macros takes in the pointer to the fdt header.
+fdtdump was taking advantage of the fact that the magic
+was at the start of the struct to get away from defining
+the whole struct. newer GCCs are not happy with that.
+---
+ fdtdump.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fdtdump.c b/fdtdump.c
+index 4eaade9..5c01402 100644
+--- a/fdtdump.c
++++ b/fdtdump.c
+@@ -205,11 +205,12 @@ int main(int argc, char *argv[])
+ 
+ 	/* try and locate an embedded fdt in a bigger blob */
+ 	if (scan) {
+-		unsigned char smagic[FDT_MAGIC_SIZE];
++		struct fdt_header hdr;
++		unsigned char *smagic = (unsigned char *)&hdr.magic;
+ 		char *p = buf;
+ 		char *endp = buf + len;
+ 
+-		fdt_set_magic(smagic, FDT_MAGIC);
++		fdt_set_magic(&hdr, FDT_MAGIC);
+ 
+ 		/* poor man's memmem */
+ 		while ((endp - p) >= FDT_MAGIC_SIZE) {
+-- 
+2.39.1
+

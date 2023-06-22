@@ -216,7 +216,8 @@ void log_gpio_change(uint8_t fru,
                      gpiopoll_pin_t *desc,
                      gpio_value_t value,
                      useconds_t log_delay,
-                     const char* str) {
+                     const char* str,
+                     const char* usrdef_str) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
   struct delayed_log *log = (struct delayed_log *)malloc(sizeof(struct delayed_log));
   pthread_t tid_delay_log;
@@ -228,12 +229,21 @@ void log_gpio_change(uint8_t fru,
   }
 
   memset(log->msg, 0, sizeof(log->msg));
-  if(str == NULL) {
-    snprintf(log->msg, sizeof(log->msg), "FRU: %d %s: %s - %s\n",
-             fru, value ? "DEASSERT" : "ASSERT", cfg->description, cfg->shadow);
-  } else {
+
+  if (usrdef_str != NULL) {
+    // User provides the entire log message to print.
+    snprintf(log->msg, sizeof(log->msg), "%s\n", usrdef_str);
+  } else if (str != NULL) {
+    // User provides event name which had an assertion/deassertion.
     snprintf(log->msg, sizeof(log->msg), "FRU: %d %s: %s\n",
-             fru, str, value ? "Deassertion": "Assertion");
+        fru, str, value ? "Deassertion": "Assertion");
+  } else {
+    // Infer the event name from the GPIO description
+    snprintf(log->msg, sizeof(log->msg), "FRU: %d %s: %s - %s\n",
+             fru,
+             value ? "DEASSERT" : "ASSERT",
+             cfg->description,
+             cfg->shadow);
   }
 
   if (log_delay == 0) {
@@ -268,7 +278,7 @@ gpio_present_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
 void
 cpu_vr_hot_init(gpiopoll_pin_t *desc, gpio_value_t value) {
   if(value == GPIO_VALUE_LOW )
-    log_gpio_change(FRU_MB, desc, value, 0, NULL);
+    log_gpio_change(FRU_MB, desc, value, 0, NULL, NULL);
 
   return;
 }
@@ -288,7 +298,7 @@ cpu_skt_init(gpiopoll_pin_t *desc, gpio_value_t value) {
   snprintf(kvalue, sizeof(kvalue), "%d", value);
   kv_set(key, kvalue, 0, KV_FPERSIST);
   if(value != prev_value ) {
-    log_gpio_change(FRU_MB, desc, value, 0, NULL);
+    log_gpio_change(FRU_MB, desc, value, 0, NULL, NULL);
   }
 }
 
@@ -298,7 +308,7 @@ cpu0_pvccin_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) 
     return;
 
   const char* str = "CPU0 PVCCIN VR HOT Warning";
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str, NULL);
 }
 
 void
@@ -307,7 +317,7 @@ cpu1_pvccin_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) 
     return;
 
   const char* str = "CPU1 PVCCIN VR HOT Warning";
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str, NULL);
 }
 
 void
@@ -316,7 +326,7 @@ cpu0_pvccd_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
     return;
 
   const char* str = "CPU0 PVCCD VR HOT Warning";
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str, NULL);
 }
 
 void
@@ -325,7 +335,7 @@ cpu1_pvccd_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
     return;
 
   const char* str = "CPU1 PVCCD VR HOT Warning";
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str, NULL);
 }
 
 void
@@ -334,7 +344,7 @@ sml1_pmbus_alert_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t c
     return;
 
   const char* str = "HSC OC Warning";
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str, NULL);
 }
 
 void
@@ -343,7 +353,7 @@ oc_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
     return;
 
   const char* str = "HSC Surge Current Warning";
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str, NULL);
 }
 
 void
@@ -352,7 +362,7 @@ uv_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
     return;
 
   const char* str = "HSC Under Voltage Warning";
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, str, NULL);
 }
 
 static inline long int
@@ -399,7 +409,7 @@ pch_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   if (g_reset_sec < 10)
     return;
 
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
 void prochot_reason(char *reason)
@@ -413,6 +423,7 @@ void prochot_reason(char *reason)
 void
 cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   char cmd[128] = {0};
+  char str[1024] = {0};
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
 
   if (!sgpio_valid_check()) return;
@@ -424,16 +435,17 @@ cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) 
   //LCD debug card critical SEL support
   strcat(cmd, "CPU FPH");
   if (curr) {
-    log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+    log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
     strcat(cmd, " DEASSERT");
   } else {
     char reason[32] = "";
     strcat(cmd, " by ");
     prochot_reason(reason);
     strcat(cmd, reason);
-    syslog(LOG_CRIT, "FRU: %d ASSERT: %s - %s (reason: %s)\n",
-           FRU_MB, cfg->description, cfg->shadow, reason);
 
+    snprintf(str, sizeof(str), "FRU: %d ASSERT: %s - %s (reason: %s)",
+           FRU_MB, cfg->description, cfg->shadow, reason);
+    log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, str);
     strcat(cmd, " ASSERT");
   }
   pal_add_cri_sel(cmd);
@@ -467,7 +479,7 @@ cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
     return;
 
   thermtrip_add_cri_sel(cfg->shadow, curr);
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, NULL);
 }
 
 void
@@ -478,7 +490,7 @@ cpu_error_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   if (g_server_power_status != GPIO_VALUE_HIGH)
     return;
 
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, NULL);
 }
 
 void
@@ -489,7 +501,7 @@ mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   if (g_server_power_status != GPIO_VALUE_HIGH)
     return;
 
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, NULL);
 }
 
 
@@ -499,20 +511,20 @@ sgpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) 
   if (!sgpio_valid_check())
     return;
 
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, NULL);
 }
 
 // Generic Event Handler for GPIO changes
 void
 gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
 // Generic Event Handler for GPIO changes
 void
 tpm_sync_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   gpio_set_value_by_shadow(BIOS_TPM_PRESENT_OUT, curr);
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON
@@ -525,7 +537,7 @@ gpio_event_pson_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
   if (g_server_power_status != GPIO_VALUE_HIGH)
     return;
 
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, NULL);
 }
 
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON 3S
@@ -537,27 +549,27 @@ gpio_event_pson_3s_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
   if(!server_power_check(3))
     return;
 
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
 //Usb Debug Card Event Handler
 void
 usb_dbg_card_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   syslog(LOG_CRIT, "Debug Card %s\n", curr ? "Extraction": "Insertion");
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
 //Reset Button Event Handler
 void
 pwr_reset_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
 //Power Button Event Handler
 void
 pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   pal_set_restart_cause(FRU_MB, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
 //CPU Power Ok Event Handler
@@ -573,7 +585,7 @@ pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
     return;
 
   g_server_power_status = curr;
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
   reset_timer(&g_power_on_sec);
 
 }
@@ -585,7 +597,7 @@ uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
     return;
 
   g_uart_switch_count = 2;
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
   pal_uart_select_led_set();
 
 }
@@ -617,7 +629,7 @@ platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
 
   pal_clear_psb_cache();
 
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
 void
@@ -859,7 +871,7 @@ bic_ready_init(gpiopoll_pin_t *desc, gpio_value_t value)
   set_pldm_event_receiver();
 
   if (value == GPIO_VALUE_HIGH)
-    log_gpio_change(FRU_MB, desc, value, 0, NULL);
+    log_gpio_change(FRU_MB, desc, value, 0, NULL, NULL);
 }
 
 void
@@ -871,7 +883,7 @@ bic_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
     bic_get_firmware(1);
     set_pldm_event_receiver();
   }
-  log_gpio_change(FRU_MB, desc, curr, 0, NULL);
+  log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
 static void hmc_ready(bool startup) {
@@ -953,7 +965,7 @@ nv_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
     if (system("/usr/local/bin/dump-nv-reg.sh &"))
       syslog(LOG_WARNING, "Failed to start NVDIA reg dump\n");
 
-  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL);
+  log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, NULL);
 }
 
 

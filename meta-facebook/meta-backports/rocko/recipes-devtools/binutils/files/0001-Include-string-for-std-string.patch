@@ -1,0 +1,24 @@
+From 1ec0e24e67b9b82c58b09e4e232d8a340cdb1477 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Wed, 14 Jun 2023 16:30:34 -0700
+Subject: [PATCH] Include <string> for std::string
+
+---
+ gold/errors.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/gold/errors.h b/gold/errors.h
+index f0a50b65c2c..2859e574d06 100644
+--- a/gold/errors.h
++++ b/gold/errors.h
+@@ -24,6 +24,7 @@
+ #define GOLD_ERRORS_H
+ 
+ #include <cstdarg>
++#include <string>
+ 
+ #include "gold-threads.h"
+ 
+-- 
+2.39.1
+

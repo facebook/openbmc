@@ -15,12 +15,12 @@ Reviewed-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
  drivers/pwm/Kconfig              |  10 +
  drivers/pwm/Makefile             |   1 +
- drivers/pwm/pwm-aspeed-ast2600.c | 325 +++++++++++++++++++++++++++++++
- 3 files changed, 336 insertions(+)
+ drivers/pwm/pwm-aspeed-ast2600.c | 326 +++++++++++++++++++++++++++++++
+ 3 files changed, 337 insertions(+)
  create mode 100644 drivers/pwm/pwm-aspeed-ast2600.c
 
 diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 60d13a949bc5..752a2379cb7c 100644
+index 60d13a949bc58..752a2379cb7c4 100644
 --- a/drivers/pwm/Kconfig
 +++ b/drivers/pwm/Kconfig
 @@ -51,6 +51,16 @@ config PWM_AB8500
@@ -41,7 +41,7 @@ index 60d13a949bc5..752a2379cb7c 100644
  	tristate "Atmel PWM support"
  	depends on ARCH_AT91 || COMPILE_TEST
 diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 7bf1a29f02b8..5169c34056e6 100644
+index 7bf1a29f02b84..5169c34056e67 100644
 --- a/drivers/pwm/Makefile
 +++ b/drivers/pwm/Makefile
 @@ -2,6 +2,7 @@
@@ -54,10 +54,10 @@ index 7bf1a29f02b8..5169c34056e6 100644
  obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
 diff --git a/drivers/pwm/pwm-aspeed-ast2600.c b/drivers/pwm/pwm-aspeed-ast2600.c
 new file mode 100644
-index 000000000000..bf54eeb70372
+index 0000000000000..6ff04deea9979
 --- /dev/null
 +++ b/drivers/pwm/pwm-aspeed-ast2600.c
-@@ -0,0 +1,325 @@
+@@ -0,0 +1,326 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + * Copyright (C) 2021 Aspeed Technology Inc.
@@ -159,7 +159,7 @@ index 000000000000..bf54eeb70372
 +	return container_of(chip, struct aspeed_pwm_data, chip);
 +}
 +
-+static void aspeed_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
++static int aspeed_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
 +				 struct pwm_state *state)
 +{
 +	struct device *dev = chip->dev;
@@ -201,6 +201,7 @@ index 000000000000..bf54eeb70372
 +	state->enabled = pin_en;
 +	dev_dbg(dev, "get period: %lldns, duty_cycle: %lldns", state->period,
 +		state->duty_cycle);
++	return 0;
 +}
 +
 +static int aspeed_pwm_apply(struct pwm_chip *chip, struct pwm_device *pwm,

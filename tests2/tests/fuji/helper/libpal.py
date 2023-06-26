@@ -105,3 +105,12 @@ def pal_get_fru_id(fru_name: str) -> int:
         raise ValueError("Invalid FRU name: " + repr(fru_name))
 
     return c_fru_id.value
+
+
+def pal_get_pim_inserted_list():
+    pim_list = []
+    for pim_number in range(8):
+        pim = "pim{}".format(pim_number + 1)
+        if pal_is_fru_prsnt(pal_get_fru_id(pim)):
+            pim_list.append(pim_number)
+    return pim_list

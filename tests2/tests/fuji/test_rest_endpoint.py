@@ -21,7 +21,11 @@ import os
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
-from tests.fuji.helper.libpal import pal_get_fru_id, pal_is_fru_prsnt
+from tests.fuji.helper.libpal import (
+    pal_get_fru_id,
+    pal_is_fru_prsnt,
+    pal_get_pim_inserted_list,
+)
 from tests.fuji.test_data.sensors.sensor import (
     PIM1_SENSORS_16O,
     PIM1_SENSORS_16Q,
@@ -155,7 +159,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             3: PSU3_SENSORS,
             4: PSU4_SENSORS,
         }
-        pim_list = [0, 1, 2, 3, 4, 5, 6, 7]
+        pim_list = pal_get_pim_inserted_list()
         pim_16q_sensor_list = {
             0: PIM1_SENSORS_16Q,
             1: PIM2_SENSORS_16Q,

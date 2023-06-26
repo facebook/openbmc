@@ -24,12 +24,17 @@ for index in 1 2 3 4 5 6 7 8
 do
     pim_path=${SMBCPLD_SYSFS_DIR}/pim_fpga_cpld_${index}_prsnt_n_status
     pim_prsnt=$(cat $pim_path 2> /dev/null | head -n 1)
+    cache_file="/tmp/pim${index}_serial.txt"
     
-    #pimserial cache file doesn't exist, but pim is present
-    if [ ! -f /tmp/pim${index}_serial.txt ] && [ "${pim_prsnt}" == 0x0 ]; then
-        /usr/local/bin/peutil $index |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim${index}_serial.txt
+    # Refresh pimserial cache file when
+    #   1) the pim is present, and
+    #   2) the cache file doesn't exist or it doesn't contain valid strings
+    if [ ! -s "$cache_file" ] || [ -z "$(cat $cache_file)" ]; then
+        if [ "${pim_prsnt}" == 0x0 ]; then
+            /usr/local/bin/peutil $index |grep Product|grep Serial|cut -d ' ' -f 4 > "$cache_file"
+        fi
     fi
-    serial=$(cat /tmp/pim${index}_serial.txt)
+    serial="$(cat $cache_file)"
     echo PIM${index} : ${serial}
 done
 

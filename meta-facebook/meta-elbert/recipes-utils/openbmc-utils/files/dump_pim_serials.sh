@@ -24,13 +24,15 @@ source /usr/local/bin/openbmc-utils.sh
 for index in 2 3 4 5 6 7 8 9
 do
     pim_prsnt="$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$index"_present)"
-    if [ ! -f /tmp/pim"$index"_serial.txt ]; then
+    cache_file=/tmp/pim"$index"_serial.txt
+
+    if [ ! -s "$cache_file" ] || [ -z "$(cat $cache_file)" ]; then
         if [ "$((pim_prsnt))" -eq 1 ]; then
-            /usr/bin/weutil pim"$index" |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim"$index"_serial.txt
+            /usr/bin/weutil pim"$index" |grep Product|grep Serial|cut -d ' ' -f 4 > "$cache_file"
         else
-            echo '' > /tmp/pim"$index"_serial.txt
+            echo '' > "$cache_file"
         fi
     fi
-    serial="$(cat /tmp/pim"$index"_serial.txt)"
+    serial="$(cat $cache_file)"
     echo PIM${index} : "$serial"
 done

@@ -92,15 +92,16 @@ std::string Eeprom::readHexMac(const int& len) {
         "invalid MAC address length: " + std::to_string(len));
   }
 
+  //MAC bytes are little endian
   for (int i = 0; i < 6; i++) {
     int a = readInt8();
     int hv = (a & 0xf0) >> 4;
     int lv = a & 0xf;
-    macStr += (hv < 10) ? '0' + hv : 'A' + hv - 10;
-    macStr += (lv < 10) ? '0' + lv : 'A' + lv - 10;
-    macStr += ':';
+    macStr = static_cast<char>((lv < 10) ? '0' + lv : 'A' + lv - 10) + macStr;
+    macStr = static_cast<char>((hv < 10) ? '0' + hv : 'A' + hv - 10) + macStr;
+    macStr = ':'+ macStr;
   }
-  macStr.pop_back();
+  macStr.erase(0,1);
   return macStr;
 }
 

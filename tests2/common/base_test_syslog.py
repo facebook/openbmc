@@ -7,6 +7,7 @@
 import random
 import string
 import syslog
+import time
 
 
 class BaseTestSyslog:
@@ -17,6 +18,8 @@ class BaseTestSyslog:
         # executions
         msg = "".join(random.sample(string.ascii_lowercase, self.MSG_LENGTH))
         syslog.syslog(msg)
+        # added sleep to ensure the random string is logged in syslog
+        time.sleep(1)
         # Binary read and search in case there is garbage in the log file
         with open("/var/log/messages", "rb") as m:
             self.assertIn(msg.encode(), m.read())

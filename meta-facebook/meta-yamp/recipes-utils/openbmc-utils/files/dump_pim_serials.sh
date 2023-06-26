@@ -20,10 +20,12 @@
 
 for index in 1 2 3 4 5 6 7 8
 do
-    if [ ! -f /tmp/pim${index}_serial.txt ]; then
-        /usr/bin/weutil lc${index} |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim${index}_serial.txt
+    cache_file="/tmp/pim${index}_serial.txt"
+
+    if [ ! -s "$cache_file" ] || [ -z "$(cat $cache_file)" ]; then
+        /usr/bin/weutil lc${index} |grep Product|grep Serial|cut -d ' ' -f 4 > "$cache_file"
     fi
-    serial=`cat /tmp/pim${index}_serial.txt`
+    serial="$(cat $cache_file)"
     echo PIM${index} : ${serial}
 done
 

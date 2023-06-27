@@ -36,7 +36,7 @@ class CHASSISEepromTest(CommonEepromTest, unittest.TestCase):
         self.product_name = ["MINIPACK3"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ["FCM"]
+        self.location_on_fabric = ["FCB"]
 
     def set_eeprom_location(self):
         self.test_eeprom_location = "EEPROM location on Fabric"
@@ -79,6 +79,12 @@ class BMCEepromTest(CommonEepromTest, unittest.TestCase):
 
     def test_local_mac(self):
         self.local_mac = []
+
+    def test_product_part_number(self):
+        self.product_part_number = []
+
+    def test_product_serial_number(self):
+        self.product_serial_number = []
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")

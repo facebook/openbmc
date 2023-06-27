@@ -3,7 +3,7 @@ owner:
 - Michael Garner <garnermic@meta.com>
 tags:
 - greatlakes
-- lf-openbmc
+- meta-openbmc
 sections:
   - overview
   - features

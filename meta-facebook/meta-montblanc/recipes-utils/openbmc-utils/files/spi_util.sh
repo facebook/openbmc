@@ -57,9 +57,12 @@ mtd_driver_rebind_spi1() {
     mtd_driver_unbind_spi1
     echo ${SPI1_DRIVER} > ${ASPEED_SMC_PATH}bind
 
+    # add more delay to make sure the driver has probe done. 
+    sleep 1;
+
     SPI1_MTD_PATH=$(realpath /run/devmap/spi-devices/spi1-flash)
     if [ ! -e "$SPI1_MTD_PATH" ]; then
-        echo "cannot find SPI1 MTD path"
+        echo "cannot find SPI1 MTD path [$SPI1_MTD_PATH]"
         exit 1
     fi
     SPI1_MTD_INDEX=$(echo "$SPI1_MTD_PATH" | sed 's_/dev/mtd__g')

@@ -6,12 +6,11 @@
 # the system RPM for `python3-sh` doesn't get used.
 
 import argparse
-import json
 import os
 import subprocess
 from io import IOBase
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 from sh import git  # type: ignore
@@ -79,45 +78,26 @@ def get_version(machine: str) -> str:
 
 
 def parse_feature_list(
-    outfile: IOBase, feature_list: List[str], machine: argparse.Namespace
+    outfile: IOBase,
+    feature_list: Dict[str, List[Dict[str, str]]],
+    machine: argparse.Namespace,
 ) -> None:
-    def parse_feature(element: Any, dir_name: str = "") -> None:
-        nonlocal outfile
-        nonlocal machine
-        if type(element) is list:
-            section_name = os.path.basename(dir_name)
-            print(f"\n#### {section_name}\n", file=outfile)
-            for item in element:
-                feature_name = (
-                    item["File"].replace(".md", "").replace("-", " ").strip()
-                )
-                print(
-                    f"- [ ] {item['Priority']} **{feature_name}**",
-                    file=outfile,
-                )
-            parse_feature(item, dir_name)
-            dir_name = os.path.dirname(dir_name)
-        elif type(element) is dict:
-            for key, value in element.items():
-                if dir_name == "":
-                    dir_name = key
-                else:
-                    dir_name = dir_name + "/" + key
-                parse_feature(value, dir_name)
-                dir_name = os.path.dirname(dir_name)
-        else:
-            if dir_name == "":
-                dir_name = element
-            else:
-                dir_name = dir_name + "/" + element
+    for section_name, section_features in feature_list.items():
+        print(f"\n#### {section_name}\n", file=outfile)
 
-    parse_feature(feature_list, "")
+        for feature in section_features:
+            feature_name = (
+                feature["file"].replace(".md", "").replace("-", " ").strip()
+            )
+            print(
+                f"- [ ] {feature['priority']} **{feature_name}**", file=outfile
+            )
 
 
 def build_features(out_file: str, machine: argparse.Namespace) -> bool:
     out_file = os.path.join(machine.file, out_file)
     for f in machine.feature_list:
-        file_name = f.upper() + ".json"
+        file_name = f.upper() + ".yaml"
         print(
             GREEN
             + f"Finding feature file ... {file_name}   machine is {machine}\n"
@@ -130,14 +110,15 @@ def build_features(out_file: str, machine: argparse.Namespace) -> bool:
         print(GREEN + f"Feature file {file_name} was found." + NORMAL)
         try:
             with open(file, "r") as feature_file, open(out_file, "a") as out:
-                feature_list = json.load(feature_file)
+                feature_list = yaml.safe_load(feature_file)
                 parse_feature_list(out, feature_list, machine)
-        except:
+        except Exception as e:
             print(
                 RED
                 + f"Invalid JSON data found in feature file {file}"
                 + NORMAL
             )
+            print(e)
             return False
     return True
 

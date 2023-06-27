@@ -17,8 +17,8 @@
 
 #### bmc-hardware-support
 
-- [X] P0 **aspeed**
-- ~~[ ] P2 **nuvoton**~~ (Not support this feature)
+- [X] P0 **aspeed 2620**
+- ~~[ ] P2 **nuvoton arbel**~~ (Not support this feature)
 
 #### bmc-reset
 

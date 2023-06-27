@@ -1,0 +1,25 @@
+Platform Specific Requirements:
+  - file: sled-cable-presence-detect.md
+    priority: P2
+    title: Sled Cable Presence Detect
+  - file: ddr5-pmic-power-measurement.md
+    priority: P2
+    title: DDR5 PMIC Power Measurement
+  - file: ddr5-pmic-error-injection.md
+    priority: P2
+    title: DDR5 PMIC Error Injection
+  - file: terminus-nic-enablement.md
+    priority: P3
+    title: Terminus NIC Enablement
+  - file: platform-root-of-trust-support.md
+    priority: P2
+    title: PRoT Support
+  - file: cpld-board-id-version-info.md
+    priority: P2
+    title: CPLD Board ID Version Info
+  - file: dimm-spd-data.md
+    priority: P2
+    title: DIMM SPD Data
+  - file: ti-vr-controller-fw-update-cycle-counter.md
+    priority: P2
+    title: TI VR FW Update Cycle Counter

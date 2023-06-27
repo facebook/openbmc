@@ -1,0 +1,552 @@
+BIC Support:
+  - file: bic-gpio-support.md
+    priority: P0
+    title: BIC GPIO Support
+  - file: bic-i3c-support.md
+    priority: P0
+    title: BIC I3C Support
+  - file: bic-info.md
+    priority: P1
+    title: BIC Info
+  - file: bic-ipmb-support.md
+    priority: P0
+    title: BIC IPMB Support
+  - file: bic-mctp-support.md
+    priority: P0
+    title: BIC MCTP Support
+  - file: bic-reset.md
+    priority: P0
+    title: BIC Reset
+  - file: bic-secure-boot.md
+    priority: P2
+    title: BIC Secure Boot
+  - file: bic-self-test.md
+    priority: P0
+    title: BIC Self-Test
+  - file: bic-slot-clear-cmos-support.md
+    priority: P0
+    title: BIC Slot Clear CMOS Support
+  - file: bic-slot-postcode-data.md
+    priority: P0
+    title: BIC Slot Post-Code Data
+  - file: bic-slot-sdr-data.md
+    priority: P1
+    title: BIC Slot SDR Data
+  - file: bic-slot-sensor-data.md
+    priority: P0
+    title: BIC Slot Sensor Data
+  - file: bic-status-check.md
+    priority: P1
+    title: BIC Status Check
+  - file: bic-usb-connection-status.md
+    priority: P2
+    title: BIC USB Connection Status
+BMC Hardware Support:
+  - file: aspeed-2620.md
+    priority: P0
+    title: Aspeed AST2620
+  - file: nuvoton-arbel.md
+    priority: P2
+    title: Nuvoton Arbel
+BMC Reset:
+  - file: bmc-reset-host-side.md
+    priority: P2
+    title: Reset via Host
+  - file: bmc-reset-recovery-redfish.md
+    priority: P2
+    title: Reset via Redfish
+  - file: bmc-reset-recovery-ssh.md
+    priority: P0
+    title: Reset via SSH
+Configuration:
+  - file: configuration-cmos-restore-oem-command.md
+    priority: P1
+    title: CMOS Restore - OEM Command
+  - file: configuration-cmos-restore-physical-reset.md
+    priority: P0
+    title: CMOS Restore - Physical Reset
+  - file: configuration-get-platform-info.md
+    priority: P2
+    title: Get Platform Info
+  - file: configuration-set-boot-order-sequence.md
+    priority: P0
+    title: Set Boot Order
+  - file: configuration-set-power-policy.md
+    priority: P1
+    title: Set Power Policy
+Design For Test:
+  - file: dft-asd-jumper-detection.md
+    priority: P0
+    title: ASD Jumper Detection
+  - file: dft-bmc-network-recovery.md
+    priority: P2
+    title: BMC Network Recovery
+  - file: dft-firmware-downgrade.md
+    priority: P3
+    title: Firmware Downgrade
+  - file: dft-firmware-version-reporting.md
+    priority: P2
+    title: Firmware Version Reporting
+  - file: dft-firmware-wdt-auto-recovery.md
+    priority: P2
+    title: Firmware WDT Auto Recovery
+  - file: dft-nic-reseat-handling.md
+    priority: P2
+    title: NIC Reseat Handling
+  - file: dft-power-on-error-handling.md
+    priority: P2
+    title: Power On Error Handling
+Diagnostics:
+  - file: diagnostics-crashdump-auto.md
+    priority: P2
+    title: Automatic Crashdump
+  - file: diagnostics-crashdump-manual.md
+    priority: P0
+    title: Manual Crashdump
+  - file: diagnostics-crashdump-prevent-power-off.md
+    priority: P2
+    title: Crashdump Power-Off Prevention
+  - file: diagnostics-memory-post-package-repair.md
+    priority: P3
+    title: Memory Post-Package Repair
+Event Logs:
+  - file: log-events-to-persistent-storage.md
+    priority: P1
+    title: Log Events to Persistent Storage
+FRU Information:
+  - file: fru-information.md
+    priority: P2
+    title: FRU Information
+  - file: fru-read-fru.md
+    priority: P1
+    title: Read FRU EEPROM
+  - file: fru-update-fru.md
+    priority: P1
+    title: Update FRU EEPROM
+Firmware Signature Checking:
+  - file: bic-binary-signature-check.md
+    priority: P2
+    title: BIC Binary Signature Check
+  - file: bios-signature-check.md
+    priority: P2
+    title: BIOS Signature Check
+  - file: expansion-card-binary-signature-check.md
+    priority: P2
+    title: Expansion Card Binary Signature Check
+Firmware Update:
+  - file: firmware-update-bic.md
+    priority: P0
+    title: BIC Firmware Update
+  - file: firmware-update-bic-recovery.md
+    priority: P0
+    title: BIC Firmware Update Recovery
+  - file: firmware-update-bios.md
+    priority: P0
+    title: BIOS Firmware Update
+  - file: firmware-update-cpld.md
+    priority: P0
+    title: CPLD Firmware Update
+  - file: firmware-update-expansion-bic.md
+    priority: P2
+    title: Expansion BIC Firmware Update
+  - file: firmware-update-expansion-bic-recovery.md
+    priority: P2
+    title: Expansion BIC Firmware Update Recovery
+  - file: firmware-update-flashy.md
+    priority: P3
+    title: Flashy Update
+  - file: firmware-update.md
+    priority: P1
+    title: Firmware Update via Redfish
+  - file: firmware-update-nic.md
+    priority: P1
+    title: NIC Firmware Update
+  - file: firmware-update-openbmc.md
+    priority: P0
+    title: BMC Firmware Update
+  - file: firmware-update-vr.md
+    priority: P0
+    title: VR Firmware Update
+  - file: wipe-workflows.md
+    priority: P4
+    title: BMC Wipe
+Firmware Versions:
+  - file: firmware-version-bic.md
+    priority: P0
+    title: BIC Firmware Version
+  - file: firmware-version-bios.md
+    priority: P0
+    title: BIOS Firmware Version
+  - file: firmware-version-cpld.md
+    priority: P0
+    title: CPLD Firmware Version
+  - file: firmware-version-expansion-card.md
+    priority: P2
+    title: Expansion Card Firmware Version
+  - file: firmware-version-nic.md
+    priority: P1
+    title: NIC Firmware Version
+  - file: firmware-version-openbmc.md
+    priority: P0
+    title: BMC Firmware Version
+  - file: firmware-versions.md
+    priority: P0
+    title: Firmware Versions
+  - file: firmware-version-vr.md
+    priority: P0
+    title: VR Firmware Versions
+Front Panel Control:
+  - file: fpc-console-selection-switch.md
+    priority: P2
+    title: FPC Selection Switch
+  - file: fpc-debug-card-console.md
+    priority: P2
+    title: Debug Card Console
+  - file: fpc-debug-card-reset-button.md
+    priority: P2
+    title: Debug Card Reset Button
+  - file: fpc-heartbeat-led.md
+    priority: P0
+    title: FPC Heartbeat LED
+  - file: fpc-identity-led.md
+    priority: P2
+    title: FPC Identify LED
+  - file: fpc-sled-cycle.md
+    priority: P0
+    title: FPC Sled Cycle
+Health Monitoring:
+  - file: health-monitoring-configuration.md
+    priority: P2
+    title: Health Monitoring Configuration
+  - file: health-monitoring-cpu-usage.md
+    priority: P2
+    title: BMC CPU Usage
+  - file: health-monitoring-disable-auto-reboots.md
+    priority: P1
+    title: Disable Auto Reboot
+  - file: health-monitoring-memory-usage.md
+    priority: P2
+    title: BMC Memory Usage
+  - file: health-monitoring-wdt.md
+    priority: P0
+    title: BMC WDT
+Hot Plug Services:
+  - file: hot-plug-service-fan-speed.md
+    priority: P1
+    title: Hot Plug Service Fan Speed
+  - file: hot-plug-service-sdr-caching.md
+    priority: P2
+    title: Hot Plug Service SDR Cache
+  - file: hot-plug-service-sled-insertion.md
+    priority: P2
+    title: Hot Plug Service Sled Insertion
+Infrastructure:
+  - file: adc-device-support.md
+    priority: P0
+    title: ADC Device Support
+  - file: cpld-gpio-expander-register-layout.md
+    priority: P2
+    title: CPLD GPIO Expander Register Layout
+  - file: flash-layout.md
+    priority: P0
+    title: Flash Layout
+  - file: gpio-device-support.md
+    priority: P0
+    title: GPIO Device Support
+  - file: gpio-driver-porting.md
+    priority: P0
+    title: GPIO Driver Porting
+  - file: i2c-device-support.md
+    priority: P0
+    title: I2C Device Support
+  - file: kernel.md
+    priority: P0
+    title: Kernel
+  - file: pwm-tach-device-support.md
+    priority: P0
+    title: PWM Tach Device Support
+  - file: qemu.md
+    priority: P1
+    title: QEMU
+  - file: spi-device-support.md
+    priority: P0
+    title: SPI Device Support
+  - file: u-boot-porting.md
+    priority: P0
+    title: U-Boot
+  - file: yocto.md
+    priority: P0
+    title: Yocto
+LCD Debug Card:
+  - file: lcd-debug-card-critical-log-frame.md
+    priority: P2
+    title: Critical Log Frame
+  - file: lcd-debug-card-critical-sensor-frame.md
+    priority: P2
+    title: Critical Sensor Frame
+  - file: lcd-debug-card-gpio.md
+    priority: P2
+    title: GPIO Frame
+  - file: lcd-debug-card-memory-loop-code.md
+    priority: P2
+    title: Memory Loop Frame
+  - file: lcd-debug-card-post.md
+    priority: P2
+    title: Post Code Frame
+  - file: lcd-debug-card-user-settings.md
+    priority: P2
+    title: User Settings Frame
+Miscellaneous:
+  - file: misc-dimm-location-matching.md
+    priority: P2
+    title: DIMM Location Matching
+  - file: misc-enclosure-util.md
+    priority: P2
+    title: enclosure-util
+  - file: misc-guid-util.md
+    priority: P1
+    title: guid-util
+  - file: misc-json-format.md
+    priority: P1
+    title: CLI JSON format
+  - file: misc-ods-scuba-integration.md
+    priority: P4
+    title: ODS/Scuba Integration
+  - file: misc-ods-sensor-names.md
+    priority: P4
+    title: ODS Sensor Names
+  - file: misc-openbmc-test-automation.md
+    priority: P2
+    title: openbmc-test-automationa
+  - file: misc-reset-default-factory-settings.md
+    priority: P0
+    title: Factory Reset Settings
+Network:
+  - file: nic-host-to-bmc-support.md
+    priority: P0
+    title: Host-BMC Networking
+  - file: nic-ipv4.md
+    priority: P1
+    title: IPv4
+  - file: nic-ipv6.md
+    priority: P0
+    title: IPv6
+  - file: nic-monitoring-and-upgrade.md
+    priority: P1
+    title: NIC Monitoring and Upgrade
+  - file: nic-multi-channel-support.md
+    priority: P2
+    title: NIC Multi-channel support
+  - file: nic-ncsi-aen-notifications.md
+    priority: P2
+    title: NC-SI AEN Notifications
+  - file: nic-network-link-status-detection.md
+    priority: P2
+    title: Network Link Status Detection
+  - file: nic-ocpv3-support.md
+    priority: P0
+    title: OCPv3 NIC Support
+PLDM:
+  - file: pldm-firmware-update.md
+    priority: P2
+    title: PLDM Firmware Update
+  - file: pldm-nic-sensor-info.md
+    priority: P2
+    title: NIC Sensor via PLDM
+Post-Code:
+  - file: post-code-history.md
+    priority: P1
+    title: Post Code History
+Power Control:
+  - file: expansion-card-power-cycle.md
+    priority: P1
+    title: Expansion Card Power Cycle
+  - file: expansion-card-power-off.md
+    priority: P1
+    title: Expansion Card Power Off
+  - file: expansion-card-power-on.md
+    priority: P1
+    title: Expansion Card Power On
+  - file: phosphor-state-manager-support.md
+    priority: P1
+    title: phosphor-state-manager
+  - file: power-failure-detection.md
+    priority: P2
+    title: Power Failure Detection
+  - file: power-status.md
+    priority: P0
+    title: Power Status
+  - file: sled-cycle.md
+    priority: P0
+    title: Sled Cycle
+  - file: slot-12v-cycle.md
+    priority: P0
+    title: Slot 12v Cycle
+  - file: slot-12v-off.md
+    priority: P0
+    title: Slot 12v Off
+  - file: slot-12v-on.md
+    priority: P0
+    title: Slot 12v On
+  - file: slot-cycle.md
+    priority: P0
+    title: Slot Cycle
+  - file: slot-graceful-shutdown.md
+    priority: P2
+    title: Slot Graceful Shutdown
+  - file: slot-power-off.md
+    priority: P0
+    title: Slot Power Off
+  - file: slot-power-on.md
+    priority: P0
+    title: Slot Power On
+  - file: slot-reset.md
+    priority: P0
+    title: Slot Reset
+Security:
+  - file: prot-support.md
+    priority: P1
+    title: PRoT Support
+  - file: security-attest-util.md
+    priority: P3
+    title: attest-util
+  - file: security-signed-firmware-update.md
+    priority: P2
+    title: Signed Firmware Update
+  - file: tpm-20-boot-measurement.md
+    priority: P2
+    title: TPM 2.0 Boot Measurement
+  - file: tpm-20-test.md
+    priority: P2
+    title: TPM 2.0 Test
+  - file: verified-boot-dual-flash.md
+    priority: P1
+    title: Verified Boot Dual Flash Support
+  - file: verified-boot-general.md
+    priority: P0
+    title: Verified Boot
+  - file: verified-boot-hw-enforcement.md
+    priority: P3
+    title: Verified Boot HW Enforcement
+  - file: verified-boot-image-signing.md
+    priority: P3
+    title: Verified Boot Image Signing
+  - file: verified-boot-image-verification.md
+    priority: P2
+    title: Verified Boot Image Verification
+  - file: verified-boot-recovery.md
+    priority: P2
+    title: Verified Boot Recovery
+  - file: verified-boot-sw-enforcement.md
+    priority: P2
+    title: Verified Boot HW Enforcement
+  - file: verified-boot-tpm-integration.md
+    priority: P2
+    title: Verified Boot TPM Integration
+Sensors:
+  - file: sensor-automatic-snapshot.md
+    priority: P3
+    title: Automatic Sensor Snapshot
+  - file: sensor-caching.md
+    priority: P2
+    title: Sensor Caching
+  - file: sensor-common-naming-spec.md
+    priority: P1
+    title: Common Sensor Naming
+  - file: sensor-display-current-status.md
+    priority: P2
+    title: Display Current Sensor Status
+  - file: sensor-display-thresholds.md
+    priority: P2
+    title: Display Sensor Thresholds
+  - file: sensor-history.md
+    priority: P3
+    title: Sensor History
+  - file: sensor-information.md
+    priority: P0
+    title: Sensor Information
+Serial-Over-Lan:
+  - file: bic-uart-access.md
+    priority: P0
+    title: BIC UART Access
+  - file: expansion-card-uart-access.md
+    priority: P1
+    title: Expansion Card UART Access
+  - file: host-sol-access.md
+    priority: P0
+    title: Host SOL Access
+  - file: m-term.md
+    priority: P0
+    title: mTerm
+  - file: sol-console-history.md
+    priority: P1
+    title: SOL Console History
+  - file: sol-host-logger.md
+    priority: P1
+    title: SOL Host Logger
+Thermal Management:
+  - file: airflow-sensor.md
+    priority: P0
+    title: Airflow Sensor
+  - file: conditional-sensor-calibration.md
+    priority: P3
+    title: Conditional Sensor Calibration
+  - file: cpu-throttle-support.md
+    priority: P2
+    title: CPU Throttle
+  - file: fan-control-automatic.md
+    priority: P1
+    title: Automatic Fan Control
+  - file: fan-control-manual.md
+    priority: P0
+    title: Manual Fan Control
+  - file: fsc-configuration-update.md
+    priority: P2
+    title: FSC Configuration Update
+  - file: fsc-persistent-configuration.md
+    priority: P2
+    title: FSC Persistent Configuration
+  - file: nic-otp-protection.md
+    priority: P1
+    title: NIC OTP Protection
+  - file: sensor-calibration.md
+    priority: P2
+    title: Sensor Calibration
+  - file: sled-otp-protection.md
+    priority: P1
+    title: Sled OTP Protection
+  - file: thermal-management.md
+    priority: P3
+    title: Thermal Management
+Time Sync:
+  - file: time-ntp-sync.md
+    priority: P2
+    title: NTP Sync
+  - file: time-rtc.md
+    priority: P1
+    title: RTC
+  - file: time-timezone.md
+    priority: P0
+    title: Timezone Configuration
+User Interface:
+  - file: generic-user-interface.md
+    priority: P0
+    title: Generic User Interface
+  - file: host2bmc-usb.md
+    priority: P2
+    title: host2bmc USB
+  - file: inband-ethernet.md
+    priority: P0
+    title: Inband Ethernet
+  - file: inband-kcs.md
+    priority: P1
+    title: Inband KCS
+  - file: oob-rest.md
+    priority: P2
+    title: REST API
+  - file: oob-ssh.md
+    priority: P0
+    title: SSH
+  - file: redfish.md
+    priority: P2
+    title: Redfish

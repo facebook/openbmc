@@ -55,9 +55,8 @@ def write_title(output: IOBase, machine: argparse.Namespace) -> None:
     print("Version: ", get_version(machine.name), file=output)
     print(file=output)
 
-    print("Owners:\n", file=output)
-    for o in machine.owner:
-        print(f"- {o}", file=output)
+    print("Contact:\n", file=output)
+    print("- OpenBMC Team <openbmc_compute@meta.com>", file=output)
     print(file=output)
     print(header, file=output)
 

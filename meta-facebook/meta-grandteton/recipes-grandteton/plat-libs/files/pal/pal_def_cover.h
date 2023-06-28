@@ -31,6 +31,8 @@
 #define FM_CPU0_SKTOCC           "FM_CPU0_SKTOCC_LVT3_PLD_N"
 #define FM_CPU1_SKTOCC           "FM_CPU1_SKTOCC_LVT3_PLD_N"
 #define FM_BIOS_POST_CMPLT       "FM_BIOS_POST_CMPLT_BMC_N"
+#define FM_OCP0_PRSNT            "FM_OCP_SFF_PWR_GOOD_R"
+#define FM_OCP1_PRSNT            "FM_OCP_V3_2_PWR_GOOD_R"
 
 //GPIO Power Control Cover
 #define FM_LAST_PWRGD            "PWRGD_CPUPWRGD_LVC2_R1"

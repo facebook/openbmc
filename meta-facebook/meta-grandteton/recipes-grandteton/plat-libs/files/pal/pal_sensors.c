@@ -320,11 +320,23 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *cnt = mb_sensor_cnt;
     }
   } else if (fru == FRU_NIC0) {
-    *sensor_list = (uint8_t *) nic0_sensor_list;
-    *cnt = nic0_sensor_cnt;
+    uint8_t status = 0;
+    if (pal_is_fru_prsnt(FRU_NIC0, &status) == 0 && (status == FRU_PRSNT)) {
+      *sensor_list = (uint8_t *) nic0_sensor_list;
+      *cnt = nic0_sensor_cnt;
+    } else {
+        *sensor_list = NULL;
+        *cnt = 0;       
+    }
   } else if (fru == FRU_NIC1) {
-    *sensor_list = (uint8_t *) nic1_sensor_list;
-    *cnt = nic1_sensor_cnt;
+    uint8_t status = 0;
+    if (pal_is_fru_prsnt(FRU_NIC1, &status) == 0 && (status == FRU_PRSNT)) {
+      *sensor_list = (uint8_t *) nic1_sensor_list;
+      *cnt = nic1_sensor_cnt;
+    } else {
+      *sensor_list = NULL;
+      *cnt = 0;       
+    }
   } else if (fru == FRU_HGX) {
     *sensor_list = (uint8_t *) hgx_sensor_list;
     *cnt = hgx_sensor_cnt;

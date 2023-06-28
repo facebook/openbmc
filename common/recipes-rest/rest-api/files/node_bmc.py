@@ -145,8 +145,8 @@ def getMTD(name):
     return None
 
 
-def getSPIVendorNew(spi_id):
-    mtd = getMTD("flash%d" % (spi_id))
+def getSPIVendorNew(spi_id, mtd_name):
+    mtd = getMTD("%s%d" % (mtd_name, spi_id))
     if mtd is None:
         return "Unknown"
     debugfs_path = "/sys/kernel/debug/mtd/" + mtd + "/partid"
@@ -162,9 +162,15 @@ def getSPIVendorNew(spi_id):
 
 
 async def getSPIVendor(spi_id):
+    # legacy way
     if os.path.isfile("/tmp/spi0.%d_vendor.dat" % (spi_id)):
         return await getSPIVendorLegacy(spi_id)
-    return getSPIVendorNew(spi_id)
+
+    ret = getSPIVendorNew(spi_id, "flash")
+    if (ret == "Unknown"):
+        ret = getSPIVendorNew(spi_id, "spi0.")
+
+    return ret
 
 
 @functools.lru_cache(maxsize=1)

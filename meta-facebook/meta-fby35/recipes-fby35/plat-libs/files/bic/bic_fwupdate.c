@@ -825,6 +825,10 @@ get_component_name(uint8_t comp) {
       return "4OU BIC_Recovery";
     case FW_VPDB_VR:
       return "VPDB VR";
+    case FW_1OU_RETIMER:
+      return "1OU Retimer";
+    case FW_3OU_RETIMER:
+      return "3OU Retimer";
     default:
       return "Unknown";
   }

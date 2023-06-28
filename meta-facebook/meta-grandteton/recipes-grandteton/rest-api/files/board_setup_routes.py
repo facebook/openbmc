@@ -85,7 +85,7 @@ def setup_board_routes(app: Application, write_enabled: bool):
                     HttpRoute(
                         path="/api/server/mb/bmc",
                         http_methods=[HttpMethod.GET, HttpMethod.POST],
-                        constructor=lambda: get_node_sled(),
+                        constructor=lambda: get_node_bmc(),
                     ),
                     HttpRoute(
                         path="/api/server/mb/sensors",

@@ -35,13 +35,37 @@ TIMER_COUNTER_SETTING="${MCBCPLD_SYSFS_DIR}/timer_counter_setting"
 TIMER_COUNTER_SETTING_UPDATE="${MCBCPLD_SYSFS_DIR}/timer_counter_setting_update"
 POWER_CYCLE_GO="${MCBCPLD_SYSFS_DIR}/power_cycle_go"
 
+BOARD_ID="${MCBCPLD_SYSFS_DIR}/board_id"
+VERSION_ID="${MCBCPLD_SYSFS_DIR}/version_id"
+
 wedge_board_type() {
-    echo 'montblanc'
+    echo 'MONTBLANC'
 }
 
+# read hardware revision from MCB CPLD register
 wedge_board_rev() {
-    # FIXME if needed.
-    return 1
+    board_id=$(head -n 1 < "$BOARD_ID" 2> /dev/null)
+    version_id=$(head -n 1 < "$VERSION_ID" 2> /dev/null)
+
+    case "$((board_id))" in
+        1)
+            echo "Board type: Minipack3 Switching System"
+            ;;
+        *)
+            echo "Board type: unknown value [$board_id]"
+            ;;
+    esac
+
+    case "$((version_id))" in
+        0)
+            echo "Revision: EVT-1"
+            ;;
+        *) 
+            echo "Revision: unknown value [$version_id]"
+            ;;
+    esac
+
+    return 0
 }
 
 userver_power_is_on() {

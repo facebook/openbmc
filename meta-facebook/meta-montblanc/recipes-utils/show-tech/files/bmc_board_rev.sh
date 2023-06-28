@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,18 +16,10 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-require recipes-core/images/fboss-lite-image.inc
+# shellcheck disable=SC1091
+# read the Hardware revision from MCB CPLD register
+. /usr/local/bin/openbmc-utils.sh
 
-IMAGE_INSTALL += " \
-    mdio-util \
-    ipmbd \
-    ipmb-util \
-    log-util-v2 \
-    console-autodiscovery \
-    kcsd \
-    flashrom \
-    jbi \
-    libcpldupdate-dll-ast-jtag \
-    show-tech \
-    "
+wedge_board_rev

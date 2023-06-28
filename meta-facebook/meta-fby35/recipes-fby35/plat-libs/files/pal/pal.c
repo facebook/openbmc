@@ -227,21 +227,22 @@ struct pal_key_cfg {
 
 MAPTOSTRING root_port_common_mapping[] = {
     // XCC
-    { 0xB3, 1, 0x5A, "Num 0", "SB" },   // root_port=0x5A, Boot Drive
-    { 0xB3, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
+    {0xB3, 1, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
+    {0xB3, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
     // MCC
-    { 0xBB, 7, 0x57, "Num 0", "SB" },   // root_port=0x5G, Boot Drive
+    {0xBB, 7, 0x57, "Num 0", "SB"}, // root_port=0x5G, Boot Drive
     // QS
-    { 0xBB, 1, 0x5A, "Num 0", "SB" },   // root_port=0x5A, Boot Drive
-    { 0xBB, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
-    { 0x00, 0, 0xFF, "ieh4", "ieh" },   //  ieh device
+    {0xBB, 1, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
+    {0xBB, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
+    {0x00, 0, 0xFF, "ieh4", "ieh"}, //  ieh device
     // Halfdome
-    { 0x00, 3, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC
-    { 0x01, 0, 0xFF, "Class 1", "NIC"}, //  Endpoint of Class 1 NIC
-    { 0x00, 5, 0xFF, "Num 0", "SB" },   //  Root port of Boot Drive
-    { 0x02, 0, 0xFF, "Num 0", "SB" },   //  Endpoint of Boot Drive
-    { 0xC0, 1, 0xFF, "CXL", "1OU" },   //  Root port of RBF CXL
-    { 0xFF, 0, 0xFF, "CXL", "1OU" },   //  Endpoint of RBF CXL
+    {0x00, 3, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC
+    {0x01, 0, 0xFF, "Class 1", "NIC"}, //  Endpoint of Class 1 NIC
+    {0x00, 5, 0xFF, "Num 0", "SB"}, //  Root port of Boot Drive
+    {0x02, 0, 0xFF, "Num 0", "SB"}, //  Endpoint of Boot Drive
+    {0xC0, 1, 0xFF, "CXL", "1OU"}, //  Root port of RBF CXL
+    {0xFF, 0, 0xFF, "CXL", "1OU"}, //  Endpoint of RBF CXL
+    {0x00, 1, 0x01, "DEV 2", "3OU"}, // root_port=0x01, 3OU DEV 2
 };
 
 MAPTOSTRING root_port_mapping[] = {

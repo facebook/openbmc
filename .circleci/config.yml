@@ -142,10 +142,10 @@ jobs:
                     if ! ./tools/circle-ci/check-build-required; then
                         circleci-agent step halt
                     fi
-            - run:
-                name: Download sstate cache.
-                command: |
-                    ./tools/circle-ci/download-sstate-cache
+            # - run:
+                # name: Download sstate cache.
+                # command: |
+                    # ./tools/circle-ci/download-sstate-cache
             - run:
                 name: Do build.
                 command: |

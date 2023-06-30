@@ -653,8 +653,6 @@ fby35_common_dev_id(char *str, uint8_t *dev) {
     *dev = DEV_ID1_3OU;
   } else if (!strcmp(str, "3U-dev2")) {
     *dev = DEV_ID2_3OU;
-  } else if (!strcmp(str, "3U-dev3")) {
-    *dev = DEV_ID3_3OU;
   } else if (!strcmp(str, "4U-dev0")) {
     *dev = DEV_ID0_4OU;
   } else if (!strcmp(str, "4U-dev1")) {

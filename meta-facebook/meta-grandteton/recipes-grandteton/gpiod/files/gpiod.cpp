@@ -294,12 +294,12 @@ cpu_skt_init(gpiopoll_pin_t *desc, gpio_value_t value) {
   snprintf(key, sizeof(key), "cpu%d_skt_status", cpu_id);
   if (kv_get(key, kvalue, NULL, KV_FPERSIST) == 0) {
     prev_value = (gpio_value_t)atoi(kvalue);
+    if(value != prev_value ) {
+      log_gpio_change(FRU_MB, desc, value, 0, NULL, NULL);
+    }
   }
   snprintf(kvalue, sizeof(kvalue), "%d", value);
   kv_set(key, kvalue, 0, KV_FPERSIST);
-  if(value != prev_value ) {
-    log_gpio_change(FRU_MB, desc, value, 0, NULL, NULL);
-  }
 }
 
 void

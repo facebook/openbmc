@@ -48,6 +48,7 @@ pwr_err_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t cmds[1] = {0x27};
+  char cri_sel[128] = {0};
 
   if (!sgpio_valid_check())
     return;
@@ -69,11 +70,16 @@ pwr_err_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
     close(fd);
   }
 
+  
+  strcat(cri_sel, cfg->shadow);
   if (curr) {
     syslog(LOG_CRIT, "FRU: %d ASSERT: %s - %s power status:%02X%02X%02X\n", FRU_MB, cfg->description, cfg->shadow, rbuf[0], rbuf[1], rbuf[2]);
+    strcat(cri_sel, " ASSERT");
   } else {
     syslog(LOG_CRIT, "FRU: %d DEASSERT: %s - %s\n", FRU_MB, cfg->description, cfg->shadow);
+    strcat(cri_sel, " DEASSERT");
   }
+  pal_add_cri_sel(cri_sel);
 }
 
 static void

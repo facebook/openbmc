@@ -746,24 +746,6 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
 
   while (fgets(line, sizeof(line), fp) != NULL) {
     if (!strncmp(line, "END", 3)) {
-      continue;
-    } else if (!strncmp(
-                   line, "CRC_CHECK_START", 15)) { // Parse CRC code from image
-      int crc_cnt = 0;
-      while (fgets(line, sizeof(line), fp) != NULL &&
-             crc_cnt < 2) { // CRC code is in the next two lines.
-        char* token = strtok(line, "\t");
-        int count = 0;
-        while (token != NULL) {
-          if (count == 5) { // CRC code is in sixth column.
-            config->crc_code[crc_cnt] = strtol(token, NULL, 16);
-            break;
-          }
-          token = strtok(NULL, "\t");
-          count++;
-        }
-        crc_cnt++;
-      }
       break;
     }
 
@@ -834,6 +816,21 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
       } else if  (!strncmp(line, "4-digi", 6)) {
         sscanf(line, "%*[^:]:%9s", buf);
         config->cfg_id =  strtol(buf, NULL, 16);
+      } else if (!strncmp(line, "CRC_CHECK_START", 15)) { // Parse CRC code from image
+        int crc_cnt = 0;
+        while (fgets(line, sizeof(line), fp) != NULL && crc_cnt < 2) { // CRC code is in the next two lines.
+          char* token = strtok(line, "\t");
+          int count = 0;
+          while (token != NULL) {
+            if (count == 5) { // CRC code is in sixth column.
+              config->crc_code[crc_cnt] = strtol(token, NULL, 16);
+              break;
+            }
+            token = strtok(NULL, "\t");
+            count++;
+          }
+          crc_cnt++;
+        }
       }
     }
   } else {

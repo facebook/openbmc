@@ -198,7 +198,7 @@ _sdr_get_sensor_units(sdr_full_t *sdr, uint8_t *op, uint8_t *modifier,
     sprintf(units, "%%");
   } else {
     if (base_idx <= MAX_SENSOR_BASE_UNIT) {
-      if (rate_idx < MAX_SENSOR_RATE_UNIT) {
+      if (rate_idx > 0 && rate_idx < MAX_SENSOR_RATE_UNIT) {
         sprintf(units, "%s %s", sensor_base_units[base_idx],
             sensor_rate_units[rate_idx]);
       } else {

@@ -5256,7 +5256,7 @@ pal_is_support_vr_delay_activate(void){
 }
 
 int
-__get_mrc_desc(uint16_t major, uint16_t minor, char *desc) {
+pal_get_mrc_desc(uint16_t major, uint16_t minor, char *desc) {
   size_t mrc_count = sizeof(mrc_warning_code) / sizeof(mrc_desc_t);
 
   if (desc == NULL) {
@@ -5272,65 +5272,6 @@ __get_mrc_desc(uint16_t major, uint16_t minor, char *desc) {
 
   snprintf(desc, 64, "UNKNOW_MAJOR_%02X_MINOR_%02X", major, minor);
   return 0;
-}
-
-int
-__amd_get_mrc_desc(uint16_t major, uint16_t minor, char *desc) {
-  if (desc == NULL) {
-    return -1;
-  }
-
-  if (minor == 0x4001) {
-    snprintf(desc, 64, "ABL_MEM_PMU_TRAIN_ERROR");
-  } else if (minor == 0x4003) {
-    snprintf(desc, 64, "ABL_MEM_AGESA_MEMORY_TEST_ERROR");
-  } else if (minor == 0x4020) {
-    snprintf(desc, 64, "ABL_MEM_ERROR_MIXED_ECC_AND_NON_ECC_DIMM_IN_SYSTEM");
-  } else if (minor == 0x4021) {
-    snprintf(desc, 64, "ABL_MEM_ERROR_MIXED_3DS_AND_NON_3DS _DIMM_IN_CHANNEL");
-  } else if (minor == 0x4022) {
-    snprintf(desc, 64, "ABL_MEM_ERROR_MIXED_X4_AND_X8_DIMM_IN_CHANNEL");
-  } else if (minor == 0x4028) {
-    snprintf(desc, 64, "ABL_MEM_ERROR_MIXED_DIFFERENT_ECC_SIZE_DIMM_IN_CHANNEL");
-  } else if (minor == 0x4029) {
-    snprintf(desc, 64, "ABL_MEM_WARNING_MEM_INSTALLED_ON_DISCONNECTED_CHANNEL");
-  } else if (minor == 0x402A) {
-    snprintf(desc, 64, "ABL_MEM_RRW_ERROR");
-  } else if (minor == 0x4030) {
-    snprintf(desc, 64, "ABL_MEM_ERROR_MBIST_RESULTS_ERROR");
-  } else if (minor == 0x4033) {
-    snprintf(desc, 64, "ABL_MEM_ERROR_LRDIMM_MIXMFG");
-  } else if (minor == 0x4065) {
-    snprintf(desc, 64, "ABL_CCD_BIST_FAILURE");
-  } else if (minor == 0x4067) {
-    snprintf(desc, 64, "ABL_MEM_MEMORY_HEALING_BIST_ERROR");
-  } else if (minor == 0x406A) {
-    snprintf(desc, 64, "ABL_MEM_ERROR_MODULE_POPULATION_ORDER");
-  } else if (minor == 0x406B) {
-    snprintf(desc, 64, "ABL_MEM_ERROR_PMIC_ERROR");
-  } else if (minor == 0x406C) {
-    snprintf(desc, 64, "ABL_MEM_CHANNEL_POPULATION_ORDER");
-  } else if (minor == 0x406D) {
-    snprintf(desc, 64, "ABL_MEM_SPD_VERIFY_CRC_ERROR");
-  } else if (minor == 0x406E) {
-    snprintf(desc, 64, "ABL_MEM_ERROR_PMIC_REAL_TIME_ERROR");
-  } else {
-    snprintf(desc, 64, "UNKNOW_MINOR_DDEE%04X", minor);
-  }
-  return 0;
-}
-
-int
-pal_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc) {
-#ifdef CONFIG_HALFDOME
-  uint8_t server_type;
-
-  server_type = fby35_common_get_slot_type(fru);
-  if (server_type == SERVER_TYPE_HD) {
-    return __amd_get_mrc_desc(major, minor, desc);
-  }
-#endif
-  return __get_mrc_desc(major, minor, desc);
 }
 
 bool

@@ -499,7 +499,6 @@ int plat_get_me_status(uint8_t fru, char *status)
 }
 
 #if defined CONFIG_HALFDOME
-
 int plat_dword_postcode_buf(uint8_t fru, char *status) {
   int ret = 0;
   uint32_t len;
@@ -533,6 +532,18 @@ int plat_dword_postcode_buf(uint8_t fru, char *status) {
 
 }
 #endif
+
+int plat_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc) {
+#ifdef CONFIG_HALFDOME
+  uint8_t server_type;
+
+  server_type = fby35_common_get_slot_type(fru);
+  if (server_type == SERVER_TYPE_HD) {
+    return plat_get_amd_mrc_desc(major, minor, desc);
+  }
+#endif
+  return pal_get_mrc_desc(major, minor, desc);
+}
 
 int plat_get_board_id(char *id)
 {

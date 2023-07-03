@@ -244,6 +244,7 @@ static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
         data_out = (data_out + 1) % PCC_FIFO_SIZE;
       }
       pal_check_psb_error(post_code >> 24, post_code);
+      pal_mrc_warning_detect(0, post_code);
       index = 0;
       post_code = 0;
       new_data = true;
@@ -1144,7 +1145,7 @@ pal_post_handle(uint8_t slot, uint8_t status)
 }
 
 int __attribute__((weak))
-pal_mrc_warning_detect(uint8_t slot, uint32_t status)
+pal_mrc_warning_detect(uint8_t slot, uint32_t postcode)
 {
   return PAL_EOK;
 }
@@ -3608,12 +3609,6 @@ pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
 bool __attribute__((weak))
 pal_is_support_vr_delay_activate(void){
   return false;
-}
-
-int __attribute__((weak))
-pal_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc)
-{
-  return PAL_EOK;
 }
 
 bool __attribute__((weak))

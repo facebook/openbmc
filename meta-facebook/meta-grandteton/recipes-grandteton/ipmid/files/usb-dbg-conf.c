@@ -585,6 +585,10 @@ int plat_dword_postcode_buf(uint8_t fru, char *status) {
 
   return 0;
 }
+
+int plat_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc) {
+  return plat_get_amd_mrc_desc(major, minor, desc);
+}
 #endif
 
 int plat_get_syscfg_text(uint8_t fru, char *syscfg)

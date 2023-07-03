@@ -210,6 +210,7 @@ int pal_check_slot_fru(uint8_t slot_id);
 int pal_clear_cmos(uint8_t slot_id);
 int pal_is_cable_connect_baseborad(uint8_t slot_id, uint16_t curr);
 bool pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num);
+int pal_get_mrc_desc(uint16_t major, uint16_t minor, char *desc);
 int pal_clear_mrc_warning(uint8_t slot);
 int pal_clear_vr_crc(uint8_t fru);
 int pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver);

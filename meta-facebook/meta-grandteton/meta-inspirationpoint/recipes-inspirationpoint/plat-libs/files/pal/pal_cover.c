@@ -228,6 +228,107 @@ pal_check_psb_error(uint8_t head, uint8_t last) {
   return 0;
 }
 
+int
+pal_mrc_warning_detect(uint8_t slot, uint32_t postcode) {
+  static uint8_t mrc_position = 0;
+  static uint8_t total_error = 0;
+  static char dimm_loop_codes[MAX_VALUE_LEN] = {0};
+  static const uint8_t max_error_count = sizeof(dimm_loop_codes) / (sizeof(uint16_t) * 6);
+  uint16_t *record_buf = (uint16_t *)dimm_loop_codes;
+  uint8_t count = 0;
+  bool need_start_over = false;
+  char value[MAX_VALUE_LEN];
+
+  pal_get_mrc_warning_count(slot, &count);
+  if (count > 0) {
+    return PAL_EOK;
+  }
+
+  // AMD 4 Bytes postcode DIMM looping rule
+  // 0. [DD EE 00 00]: fixed tag
+  // 1. [DD EE 00 TT]: TT is total error count
+  // 2. [DD EE 00 II]: II is error index
+  // 3. [DD EE 00 XX]: XX is dimm location
+  // 4. [DD EE 00 YY]: YY is major error code
+  // 5. [DD EE ZZ ZZ]: ZZ is minor error code (2 bytes)
+
+  if ((postcode & 0xFFFF0000) != 0xDDEE0000) {
+    need_start_over = true;
+  } else {
+    if ((mrc_position % 6) == 0) {
+      // DIMM loop fixed tag
+      if (postcode != 0xDDEE0000) {
+        need_start_over = true;
+      } else {
+        record_buf[mrc_position++] = postcode & 0xFFFF;
+      }
+    } else if ((mrc_position % 6) == 1) {
+      // total error count
+      if (total_error == 0) {
+        total_error = (postcode & 0xFF);
+        total_error = (total_error < max_error_count) ? total_error : max_error_count;
+      }
+      record_buf[mrc_position++] = total_error;
+    } else {
+      record_buf[mrc_position++] = postcode & 0xFFFF;
+    }
+  }
+
+  if (need_start_over) {
+    mrc_position = 0;
+    total_error = 0;
+  }
+
+  if (total_error > 0 && mrc_position >= (total_error * 6)) {
+    snprintf(value, sizeof(value), "%u", total_error);
+    kv_set("mrc_warning", value, 0, 0);
+    kv_set("dimm_loop_codes", dimm_loop_codes, mrc_position * sizeof(uint16_t), 0);
+    mrc_position = 0;
+    total_error = 0;
+  }
+
+  return PAL_EOK;
+}
+
+int
+pal_get_mrc_warning_count(uint8_t slot, uint8_t *count) {
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (kv_get("mrc_warning", value, NULL, 0)) {
+    *count = 0;
+    return PAL_EOK;
+  }
+  *count = (uint8_t)strtol(value, NULL, 10);
+
+  return PAL_EOK;
+}
+
+int
+pal_get_dimm_loop_pattern(uint8_t slot, uint8_t index, DIMM_PATTERN *dimm_loop_pattern) {
+  char dimm_loop_codes[MAX_VALUE_LEN] = {0};
+  uint16_t *record_buf = (uint16_t *)dimm_loop_codes;
+  size_t len;
+
+  if (!dimm_loop_pattern) {
+    return -1;
+  }
+
+  if (kv_get("dimm_loop_codes", dimm_loop_codes, &len, 0)) {
+    return -1;
+  }
+  if (index >= record_buf[1]) {  // total error count
+    return -1;
+  }
+
+  dimm_loop_pattern->start_code = record_buf[(index * 6)];
+  snprintf(dimm_loop_pattern->dimm_location, sizeof(dimm_loop_pattern->dimm_location),
+           "%02X", record_buf[(index * 6) + 3]);
+  dimm_loop_pattern->major_code = record_buf[(index * 6) + 4];
+  dimm_loop_pattern->minor_code = record_buf[(index * 6) + 5];
+
+  return 0;
+}
+
 int pal_udbg_get_frame_total_num() {
   return 5;
 }

@@ -56,8 +56,8 @@
 #endif
 
 #define FRAME_PAGE_BUF_SIZE 256
-
-#define MAX_UART_SEL_NAME_SIZE    16
+#define MAX_UART_SEL_NAME_SIZE 16
+#define MRC_DESC_SIZE 64
 
 struct frame {
   char title[32];
@@ -1017,10 +1017,82 @@ udbg_get_postcode (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, u
   return 0;
 }
 
+int __attribute__((weak))
+plat_get_amd_mrc_desc(uint16_t major, uint16_t minor, char *desc) {
+#if defined(CONFIG_POSTCODE_AMD)
+  if (desc == NULL) {
+    return -1;
+  }
+
+  switch (minor) {
+    case 0x4001:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_PMU_TRAIN_ERROR");
+      break;
+    case 0x4003:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_AGESA_MEMORY_TEST_ERROR");
+      break;
+    case 0x4020:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_ERROR_MIXED_ECC_AND_NON_ECC_DIMM_IN_SYSTEM");
+      break;
+    case 0x4021:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_ERROR_MIXED_3DS_AND_NON_3DS _DIMM_IN_CHANNEL");
+      break;
+    case 0x4022:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_ERROR_MIXED_X4_AND_X8_DIMM_IN_CHANNEL");
+      break;
+    case 0x4028:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_ERROR_MIXED_DIFFERENT_ECC_SIZE_DIMM_IN_CHANNEL");
+      break;
+    case 0x4029:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_WARNING_MEM_INSTALLED_ON_DISCONNECTED_CHANNEL");
+      break;
+    case 0x402A:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_RRW_ERROR");
+      break;
+    case 0x4030:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_ERROR_MBIST_RESULTS_ERROR");
+      break;
+    case 0x4033:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_ERROR_LRDIMM_MIXMFG");
+      break;
+    case 0x4065:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_CCD_BIST_FAILURE");
+      break;
+    case 0x4067:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_MEMORY_HEALING_BIST_ERROR");
+      break;
+    case 0x406A:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_ERROR_MODULE_POPULATION_ORDER");
+      break;
+    case 0x406B:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_ERROR_PMIC_ERROR");
+      break;
+    case 0x406C:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_CHANNEL_POPULATION_ORDER");
+      break;
+    case 0x406D:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_SPD_VERIFY_CRC_ERROR");
+      break;
+    case 0x406E:
+      snprintf(desc, MRC_DESC_SIZE, "ABL_MEM_ERROR_PMIC_REAL_TIME_ERROR");
+      break;
+    default:
+      snprintf(desc, MRC_DESC_SIZE, "UNKNOW_MINOR_DDEE%04X", minor);
+      break;
+  }
+#endif
+  return 0;
+}
+
+int __attribute__((weak))
+plat_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc) {
+  return -1;
+}
+
 static int
 udbg_get_memory_loop_pattern (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
   char dimm_loca[64] = "";
-  char mcr_desc[64] = "";
+  char mrc_desc[MRC_DESC_SIZE] = {0};
   uint8_t mrc_warning_count = 0;
   int ret = 0;
   uint8_t pos = plat_get_fru_sel();
@@ -1056,7 +1128,7 @@ udbg_get_memory_loop_pattern (uint8_t frame, uint8_t page, uint8_t *next, uint8_
         continue;
       }
 
-      ret = pal_get_mrc_desc(pos, dimm_loop_pattern.major_code, dimm_loop_pattern.minor_code, mcr_desc);
+      ret = plat_get_mrc_desc(pos, dimm_loop_pattern.major_code, dimm_loop_pattern.minor_code, mrc_desc);
       if (ret < 0) {
         syslog(LOG_ERR, "%s() Fail to get MRC description", __func__);
         continue;
@@ -1064,7 +1136,7 @@ udbg_get_memory_loop_pattern (uint8_t frame, uint8_t page, uint8_t *next, uint8_
 
       snprintf(dimm_loca, sizeof(dimm_loca), "DIMM %s", (dimm_loop_pattern.dimm_location));
       frame_mrc.append(&frame_mrc, dimm_loca, 0);
-      frame_mrc.append(&frame_mrc, mcr_desc, 1);
+      frame_mrc.append(&frame_mrc, mrc_desc, 1);
     }
   }
 

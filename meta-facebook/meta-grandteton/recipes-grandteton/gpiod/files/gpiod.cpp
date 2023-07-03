@@ -587,7 +587,9 @@ pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   g_server_power_status = curr;
   log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
   reset_timer(&g_power_on_sec);
-
+  if (curr == GPIO_VALUE_HIGH) {
+    kv_del("mrc_warning", 0);
+  }
 }
 
 //Uart Select on DEBUG Card Event Handler

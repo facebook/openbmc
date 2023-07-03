@@ -772,7 +772,16 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       snprintf(temp_log, sizeof(temp_log), "IIO_ERR CPU%d. Error ID(%02X)",dimm_info.socket, sel_error_id);
       pal_add_cri_sel(temp_log);
     } break;
-
+    case UNIFIED_RP_PIO_1st:
+    case UNIFIED_RP_PIO_2nd:
+    {
+      int offset = error_type - UNIFIED_RP_PIO_1st;
+      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: RP_PIOEvent(0x%02X),"
+                                        " RP_PIO Header Log%d: 0x%02X%02X%02X%02X,"
+                                        " RP_PIO Header Log%d: 0x%02X%02X%02X%02X",
+              general_info, 1+offset*2, sel[8],  sel[9],  sel[10], sel[11],
+                            2+offset*2, sel[12], sel[13], sel[14], sel[15]);
+    } break;
     case UNIFIED_POST_ERR:
     {
       uint8_t cert_event_idx = (sel[12] < ARRAY_SIZE(cert_event)) ? sel[12] : (ARRAY_SIZE(cert_event) - 1);
@@ -802,7 +811,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
             snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: POST(0x%02X), POST Failure Event: %s, ABL Error Code: 0x%04X",
               general_info, post_err[estr_idx], abl_err_code);
             break;
-          }  
+          }
         default:
           snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: POST(0x%02X), POST Failure Event: %s", general_info, post_err[estr_idx]);
           break;

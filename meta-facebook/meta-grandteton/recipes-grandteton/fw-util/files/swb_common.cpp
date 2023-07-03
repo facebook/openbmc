@@ -809,7 +809,7 @@ int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t sp
         return pldm_update(image, specified_comp);
       } else {
         cout << "Raw image detected." << endl;
-        return comp_update(image);
+        return comp_fupdate(image);
       }
     } else {
       if (isValidImage == 0) {

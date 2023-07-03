@@ -210,108 +210,112 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
 
 int
 pal_get_syscfg_text(char *text) {
-  int cnt=0;
-  char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
-  char *key_prefix = "sys_config/";
-  char *buf = NULL;
-  char str[16];
-
-  uint8_t cpu_num=MAX_CPU_CNT;
-  uint8_t cpu_index=0;
-  uint8_t cpu_core_num=0;
-  float cpu_speed=0;
-
-  uint8_t dimm_num=MAX_DIMM_NUM;
-  uint8_t dimm_index=0;
-  uint16_t dimm_speed=0;
-  uint32_t dimm_capacity=0;
-  size_t ret;
-  static char *dimm_label[32] = {
+  static const char *key_prefix = "sys_config/";
+  static const char *label_gt[32] = {
     "A0", "C0", "A1", "C1", "A2", "C2", "A3", "C3", "A4", "C4", "A5", "C5", "A6", "C6", "A7", "C7",
     "B0", "D0", "B1", "D1", "B2", "D2", "B3", "D3", "B4", "D4", "B5", "D5", "B6", "D6", "B7", "D7",
   };
+  static const char *label_gti[24] = {
+    "A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11",
+    "B0", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11",
+  };
+  const char **dimm_label = label_gt;
+  char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
+  char *token;
+  uint8_t index, pos;
+  uint8_t cpu_name_pos = 3;  // Intel(R) Xeon(R) Platinum "8480C"
+  uint8_t dimm_num = sizeof(label_gt)/sizeof(label_gt[0]);
+  uint8_t cpu_core;
+  uint16_t dimm_speed;
+  uint32_t dimm_capacity;
+  float cpu_speed;
+  int slen;
+  size_t ret;
 
-  if (text == NULL)
+  if (text == NULL) {
     return -1;
+  }
 
   // Clear string buffer
   text[0] = '\0';
 
   // CPU information
-  for (cpu_index = 0; cpu_index < cpu_num; cpu_index++) {
-    if (!is_cpu_socket_occupy(cpu_index))
+  for (index = 0; index < MAX_CPU_CNT; index++) {
+    if (!is_cpu_socket_occupy(index)) {
       continue;
-    sprintf(entry, "CPU%d:", cpu_index);
+    }
+    slen = snprintf(entry, sizeof(entry), "CPU%d:", index);
 
     // Processor#
-    snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_product_name", key_prefix, cpu_index);
-    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 ) {
-      cnt = 0;
-      buf = strtok(value, " ");
-      while( buf != NULL ) {
-        if(cnt == 3) { //Full Name
-        // strncpy(str, buf, sizeof(str));
-         snprintf(&entry[strlen(entry)], sizeof(str), "%s", buf);
-         break;
-        }
-        cnt++;
-        buf = strtok(NULL, " ");
+    snprintf(key, sizeof(key), "%sfru1_cpu%d_product_name", key_prefix, index);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0) {
+      if (strncmp(value, "AMD", strlen("AMD")) == 0) {
+        cpu_name_pos = 2;  // AMD EPYC "9654" 96-Core Processor
+        dimm_label = label_gti;
+        dimm_num = sizeof(label_gti)/sizeof(label_gti[0]);
+      }
+
+      token = strtok(value, " ");
+      for (pos = 0; token && pos < cpu_name_pos; pos++) {
+        token = strtok(NULL, " ");
+      }
+      if (token) {
+        slen += snprintf(&entry[slen], sizeof(entry) - slen, "%s", token);
       }
     }
 
     // Frequency & Core Number
-    snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_basic_info", key_prefix, cpu_index);
-    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 5) {
+    snprintf(key, sizeof(key), "%sfru1_cpu%d_basic_info", key_prefix, index);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 5) {
       cpu_speed = (float)(value[4] << 8 | value[3])/1000;
-      cpu_core_num = value[0];
-
-      sprintf(&entry[strlen(entry)], "/%.1fG/%dc", cpu_speed, cpu_core_num);
+      cpu_core = value[0];
+      slen += snprintf(&entry[slen], sizeof(entry) - slen, "/%.1fG/%dc", cpu_speed, cpu_core);
     }
 
-    sprintf(&entry[strlen(entry)], "\n");
+    snprintf(&entry[slen], sizeof(entry) - slen, "\n");
     strcat(text, entry);
   }
 
-
-  for (dimm_index=0; dimm_index<dimm_num; dimm_index++) {
-    sprintf(entry, "CPU%d_MEM%s:", dimm_index/(MAX_DIMM_NUM/2), dimm_label[dimm_index % MAX_DIMM_NUM]);
+  // DIMM information
+  for (index = 0; index < dimm_num; index++) {
+    slen = snprintf(entry, sizeof(entry), "CPU%d_MEM%s:", index/(dimm_num/2), dimm_label[index]);
 
     // Check Present
-    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_location", key_prefix, dimm_index);
-    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
+    snprintf(key, sizeof(key), "%sfru1_dimm%d_location", key_prefix, index);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
       // Skip if not present
       if (value[0] != 0x01)
         continue;
     }
 
     // Module Manufacturer ID
-    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_manufacturer_id", key_prefix, dimm_index);
-    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 2) {
+    snprintf(key, sizeof(key), "%sfru1_dimm%d_manufacturer_id", key_prefix, index);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 2) {
       switch (value[1]) {
         case 0xce:
-          sprintf(&entry[strlen(entry)], "Samsung");
+          slen += snprintf(&entry[slen], sizeof(entry) - slen, "Samsung");
           break;
         case 0xad:
-          sprintf(&entry[strlen(entry)], "Hynix");
+          slen += snprintf(&entry[slen], sizeof(entry) - slen, "Hynix");
           break;
         case 0x2c:
-          sprintf(&entry[strlen(entry)], "Micron");
+          slen += snprintf(&entry[slen], sizeof(entry) - slen, "Micron");
           break;
         default:
-          sprintf(&entry[strlen(entry)], "unknown");
+          slen += snprintf(&entry[slen], sizeof(entry) - slen, "unknown");
           break;
       }
     }
 
-    // Speed
-    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_speed",key_prefix, dimm_index);
-    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
-      dimm_speed =  value[1]<<8 | value[0];
+    // Speed & Capacity
+    snprintf(key, sizeof(key), "%sfru1_dimm%d_speed", key_prefix, index);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
+      dimm_speed = value[1]<<8 | value[0];
       dimm_capacity = (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024;
-      sprintf(&entry[strlen(entry)], "%dMhz/%uGB", dimm_speed, dimm_capacity);
+      slen += snprintf(&entry[slen], sizeof(entry) - slen, "/%uMhz/%uGB", dimm_speed, dimm_capacity);
     }
 
-    sprintf(&entry[strlen(entry)], "\n");
+    snprintf(&entry[slen], sizeof(entry) - slen, "\n");
     strcat(text, entry);
   }
 
@@ -341,4 +345,3 @@ pal_dump_key_value(void) {
     }
   }
 }
-

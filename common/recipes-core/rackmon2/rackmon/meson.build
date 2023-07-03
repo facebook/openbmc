@@ -107,6 +107,7 @@ if get_option('orv3') == true
     'orv3_psu.json',
     'orv3_bbu.json',
     'orv3_rpu.json',
+    'orv3_power_recv.json',
   ]
 endif
 

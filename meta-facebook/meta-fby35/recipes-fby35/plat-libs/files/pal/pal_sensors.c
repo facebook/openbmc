@@ -365,6 +365,7 @@ const uint8_t bic_gl_sensor_list[] = {
   BIC_GL_SENSOR_MB_VR_VCCINF_PWR_W,
   BIC_GL_SENSOR_MB_VR_VCCD0_PWR_W,
   BIC_GL_SENSOR_MB_VR_VCCD1_PWR_W,
+  BIC_GL_SENSOR_MB_SOC_CPU_PWR_W,
 };
 
 const uint8_t bic_1ou_vf_sensor_list[] = {

@@ -70,56 +70,56 @@ get_meb_hsc_sensor(uint8_t fru, uint8_t sensor_num, float *value)
 PAL_SENSOR_MAP meb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
   {"Inlet Temp", 0, get_meb_sensor, false, {65, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
-  {"Outlet Temp", 0, get_meb_sensor, false, {95, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
-  {"PU4 Temp", 0, get_meb_hsc_sensor, false, {145, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
-  {"P12V_AUX_VOL", 0, get_meb_hsc_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x04
-  {"P3V3_AUX_VOL", 0, get_meb_sensor, false, {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0},  VOLT}, // 0x05
-  {"P1V2_AUX_VOL", 0, get_meb_sensor, false, {1.284, 1.26, 1.36, 1.116, 1.14, 0.996, 0, 0},  VOLT}, // 0x06
-  {"P3V3_VOL", 0, get_meb_sensor, false, {3.531, 3.465, 3.73, 3.069, 3.135, 2.739, 0, 0},  VOLT}, // 0x07
-  {"P12V_AUX_CXL8_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x08
-  {"P12V_AUX_CXL7_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x09
-  {"P12V_AUX_CXL6_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0A
-  {"P12V_AUX_CXL5_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0B
-  {"P12V_AUX_SSD4_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0C
-  {"P12V_AUX_SSD3_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0D
-  {"P12V_AUX_SSD2_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0E
-  {"P12V_AUX_SSD1_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x0F
-  {"P12V_AUX_CXL3_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x10
-  {"P12V_AUX_CXL4_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x11
-  {"P12V_AUX_CXL1_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x12
-  {"P12V_AUX_CXL2_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x13
-  {"P12V_AUX_SW_4C_2_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x14
-  {"P12V_AUX_SW_4C_1_VOL", 0, get_meb_sensor, false, {12.96, 0, 0, 11.04, 0, 0, 0, 0},  VOLT}, // 0x15
+  {"Outlet Temp", 0, get_meb_sensor, false, {90, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
+  {"PU4 Temp", 0, get_meb_hsc_sensor, false, {125, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
+  {"P12V_AUX_VOL", 0, get_meb_hsc_sensor, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0},  VOLT}, // 0x04
+  {"P3V3_AUX_VOL", 0, get_meb_sensor, false, {3.531, 0, 0, 3.07, 0, 0, 0, 0},  VOLT}, // 0x05
+  {"P1V2_AUX_VOL", 0, get_meb_sensor, false, {1.284, 0, 0, 1.116, 0, 0, 0, 0},  VOLT}, // 0x06
+  {"P3V3_VOL", 0, get_meb_sensor, false, {3.531, 0, 0, 3.07, 0, 0, 0, 0},  VOLT}, // 0x07
+  {"P12V_AUX_CXL8_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x08
+  {"P12V_AUX_CXL7_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x09
+  {"P12V_AUX_CXL6_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x0A
+  {"P12V_AUX_CXL5_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x0B
+  {"P12V_AUX_SSD4_VOL", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0C
+  {"P12V_AUX_SSD3_VOL", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0D
+  {"P12V_AUX_SSD2_VOL", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0E
+  {"P12V_AUX_SSD1_VOL", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0F
+  {"P12V_AUX_CXL3_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x10
+  {"P12V_AUX_CXL4_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x11
+  {"P12V_AUX_CXL1_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x12
+  {"P12V_AUX_CXL2_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x13
+  {"P12V_AUX_SW_4C_2_VOL", 0, get_meb_sensor, false, {13.176, 0, 0, 10.736, 0, 0, 0, 0},  VOLT}, // 0x14
+  {"P12V_AUX_SW_4C_1_VOL", 0, get_meb_sensor, false, {13.176, 0, 0, 10.736, 0, 0, 0, 0},  VOLT}, // 0x15
   {"P12V_AUX_CUR", 0, get_meb_hsc_sensor, false, {73.1, 0, 95, 0, 0, 0, 0, 0},  CURR}, // 0x16
-  {"P12V_AUX_CXL8_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x17
-  {"P12V_AUX_CXL7_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x18
-  {"P12V_AUX_CXL6_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x19
-  {"P12V_AUX_CXL5_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x1A
-  {"P12V_AUX_SSD4_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x1B
-  {"P12V_AUX_SSD3_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x1C
-  {"P12V_AUX_SSD2_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x1D
-  {"P12V_AUX_SSD1_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x1E
-  {"P12V_AUX_CXL3_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x1F
-  {"P12V_AUX_CXL4_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x20
-  {"P12V_AUX_CXL1_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x21
-  {"P12V_AUX_CXL2_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x22
-  {"P12V_AUX_SW_4C_2_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x23
-  {"P12V_AUX_SW_4C_1_CUR", 0, get_meb_sensor, false, {6, 0, 7.5, 0, 0, 0, 0, 0},  CURR}, // 0x24
-  {"P12V_AUX_PWR", 0, get_meb_hsc_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x25
-  {"P12V_AUX_CXL8_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x26
-  {"P12V_AUX_CXL7_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x27
-  {"P12V_AUX_CXL6_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x28
-  {"P12V_AUX_CXL5_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x29
-  {"P12V_AUX_SSD4_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x2A
-  {"P12V_AUX_SSD3_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x2B
-  {"P12V_AUX_SSD2_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x2C
-  {"P12V_AUX_SSD1_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x2D
-  {"P12V_AUX_CXL3_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x2E
-  {"P12V_AUX_CXL4_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x2F
-  {"P12V_AUX_CXL1_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x30
-  {"P12V_AUX_CXL2_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x31
-  {"P12V_AUX_SW_4C_2_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x32
-  {"P12V_AUX_SW_4C_1_PWR", 0, get_meb_sensor, false, {75.396, 0, 100, 0, 0, 0, 0, 0},  POWER}, // 0x33
+  {"P12V_AUX_CXL8_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x17
+  {"P12V_AUX_CXL7_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x18
+  {"P12V_AUX_CXL6_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x19
+  {"P12V_AUX_CXL5_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1A
+  {"P12V_AUX_SSD4_CUR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1B
+  {"P12V_AUX_SSD3_CUR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1C
+  {"P12V_AUX_SSD2_CUR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1D
+  {"P12V_AUX_SSD1_CUR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1E
+  {"P12V_AUX_CXL3_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1F
+  {"P12V_AUX_CXL4_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x20
+  {"P12V_AUX_CXL1_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x21
+  {"P12V_AUX_CXL2_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x22
+  {"P12V_AUX_SW_4C_2_CUR", 0, get_meb_sensor, false, {6.6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x23
+  {"P12V_AUX_SW_4C_1_CUR", 0, get_meb_sensor, false, {6.6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x24
+  {"P12V_AUX_PWR", 0, get_meb_hsc_sensor, false, {918.575, 0, 1267, 0, 0, 0, 0, 0},  POWER}, // 0x25
+  {"P12V_AUX_CXL8_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x26
+  {"P12V_AUX_CXL7_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x27
+  {"P12V_AUX_CXL6_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x28
+  {"P12V_AUX_CXL5_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x29
+  {"P12V_AUX_SSD4_PWR", 0, get_meb_sensor, false, {25, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x2A
+  {"P12V_AUX_SSD3_PWR", 0, get_meb_sensor, false, {25, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x2B
+  {"P12V_AUX_SSD2_PWR", 0, get_meb_sensor, false, {25, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x2C
+  {"P12V_AUX_SSD1_PWR", 0, get_meb_sensor, false, {25, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x2D
+  {"P12V_AUX_CXL3_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x2E
+  {"P12V_AUX_CXL4_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x2F
+  {"P12V_AUX_CXL1_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x30
+  {"P12V_AUX_CXL2_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x31
+  {"P12V_AUX_SW_4C_2_PWR", 0, get_meb_sensor, false, {80, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x32
+  {"P12V_AUX_SW_4C_1_PWR", 0, get_meb_sensor, false, {80, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x33
   {"E1S_0_TEMP", 0, get_meb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x34
   {"E1S_1_TEMP", 0, get_meb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x35
   {"E1S_2_TEMP", 0, get_meb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x36
@@ -277,3 +277,4 @@ const uint8_t meb_e1s_sensor_list[] = {
 size_t meb_sensor_cnt = sizeof(meb_sensor_list)/sizeof(uint8_t);
 size_t meb_cxl_sensor_cnt = sizeof(meb_cxl_sensor_list)/sizeof(uint8_t);
 size_t meb_e1s_sensor_cnt = sizeof(meb_e1s_sensor_list)/sizeof(uint8_t);
+

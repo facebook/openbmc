@@ -221,6 +221,7 @@ int pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_read
 int pal_get_board_type(uint8_t slot_id, int *config_status, uint8_t *board_type);
 int pal_get_post_complete(uint8_t slot_id, uint8_t *bios_post_complete);
 int pal_update_ierr_status(uint8_t slot, uint8_t status);
+int pal_get_cpu_model(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

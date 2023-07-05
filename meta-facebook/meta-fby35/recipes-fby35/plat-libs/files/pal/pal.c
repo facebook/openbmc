@@ -83,6 +83,7 @@ const char *pal_vr_1ou_addr_list[] = {"b0h", "b4h", "c8h"};
 const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "slot4"};
 const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
 const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
+const char *pal_cpu_model_list[CPU_MODEL_MAXIMUM] = {"INTEL", "AMD"};
 
 static char sel_error_record[NUM_SERVER_FRU] = {0};
 
@@ -2579,6 +2580,58 @@ parse_bank_mapping_name(uint8_t bank_num, char *error_log) {
   return 0;
 }
 
+static int check_cpu_model_string(uint8_t* buffer, size_t len) {
+  char str[len];
+  int str_len = 0;
+
+  memset(str, 0, len * sizeof(char));
+
+  for (size_t i = 0; i < len; i++) {
+    if (!isalpha(buffer[i])) {
+      continue; // Skip this buffer if it is not a letter.
+    } else {
+      str[str_len] = toupper(buffer[i]); // Convert letters to uppercase.
+      str_len++;
+    }
+  }
+  str[str_len] = '\0';
+
+  for (int cpu_model = CPU_INTEL; cpu_model < CPU_MODEL_MAXIMUM; cpu_model++) {
+    if (strstr(str, pal_cpu_model_list[cpu_model]) != NULL) {
+      return cpu_model;
+    }
+  }
+
+  // If CPU model is not defined
+  syslog(LOG_WARNING, "%s() CPU model is not defined", __func__);
+  return CPU_UNKNOWN;
+}
+
+int pal_get_cpu_model(uint8_t fru) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 8;
+  uint16_t rlen = 0;
+
+  tbuf[0] = fru;
+  tbuf[1] = NETFN_OEM_Q_REQ << 2;
+  tbuf[2] = CMD_OEM_Q_GET_PROC_INFO;
+  tbuf[3] = 0x00; // IANA ID byte 1
+  tbuf[4] = 0xA0; // IANA ID byte 2
+  tbuf[5] = 0x15; // IANA ID byte 3
+  tbuf[6] = 0x0; // Processor index
+  tbuf[7] = 0x1; // Parameter selector
+
+  lib_ipmi_handle(tbuf, tlen, rbuf, &rlen); // Send IPMI command to host
+
+  if (rlen == 0) {
+    syslog(LOG_WARNING, "%s() lib_ipmi_handle returned zero bytes", __func__);
+    return CPU_UNKNOWN;
+  }
+
+  return check_cpu_model_string(rbuf, rlen);
+}
+
 static int
 pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
   uint8_t bank_num;
@@ -2634,7 +2687,32 @@ pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
   snprintf(temp_log, sizeof(temp_log), "Bank Number %d (%s), ", bank_num, bank_mapping_name);
   strcat(error_log, temp_log);
 
-  snprintf(temp_log, sizeof(temp_log), "CPU %d, Core %d", ((event_data[2] & 0xF0) >> 4), (event_data[2] & 0x0F));
+  switch (pal_get_cpu_model(fru)) {
+    case CPU_INTEL:
+      snprintf(
+          temp_log,
+          sizeof(temp_log),
+          "CPU %d, Core %d",
+          ((event_data[2] & 0xF0) >> 4),
+          (event_data[2] & 0x0F));
+      break;
+    case CPU_AMD:
+      snprintf(
+          temp_log,
+          sizeof(temp_log),
+          "CPU %d, CCD %d",
+          ((event_data[2] & 0xF0) >> 4),
+          (event_data[2] & 0x0F));
+      break;
+    default:
+      snprintf(
+          temp_log,
+          sizeof(temp_log),
+          "CPU %d, Unknown CPU type",
+          ((event_data[2] & 0xF0) >> 4));
+      break;
+  }
+
   strcat(error_log, temp_log);
 
   return 0;

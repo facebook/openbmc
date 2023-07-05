@@ -65,6 +65,10 @@ extern "C" {
 #define PCC_PAGE       (4)    // 4 pages
 #define PCC_SIZE       (64)   // 64 postcodes per page
 
+// The maximum number of CPU models.
+#define CPU_MODEL_MAXIMUM 2
+
+
 /* To hold the sensor info and calculated threshold values from the SDR */
 /* To hold the sensor info and calculated threshold values from the SDR */
 typedef struct {
@@ -389,6 +393,12 @@ enum {
   UPDATE_CPLD_RECOVERY  = 0x20,
   UPDATE_UPDATE_DYNAMIC = 0x40,
   UPDATE_AT_RESET       = 0x80,
+};
+
+enum CPU_MODEL {
+  CPU_INTEL = 0,
+  CPU_AMD = 1,
+  CPU_UNKNOWN = 255,
 };
 
 // Helper function needed by some of pal functions

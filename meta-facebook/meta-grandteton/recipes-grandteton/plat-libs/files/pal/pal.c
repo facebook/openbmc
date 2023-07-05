@@ -1115,6 +1115,10 @@ pal_set_psb_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 
 bool
 pal_is_pldm_fru_prsnt(uint8_t fru, uint8_t *status) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+
   if (!status) {
     syslog(LOG_WARNING, "%s() Status pointer is NULL.", __func__);
     return false;
@@ -1128,14 +1132,19 @@ pal_is_pldm_fru_prsnt(uint8_t fru, uint8_t *status) {
     return true;
   }
 
+  snprintf(key, sizeof(key), "fru%d_prsnt", fru);
+  if (kv_get(key, value, NULL, 0) == 0) {
+    *status = atoi(value);
+    return true;
+  }
+
   // FRU on JCN is dual type
   ret = pal_get_pldm_fru_status(fru, JCN_0_1, &pldm_fru_status);
 
-  if ((ret == 0) && (pldm_fru_status.fru_prsnt == FRU_PRSNT)) {
-    *status = FRU_PRSNT;
-    return true;
-  } else if ((ret == 0) && (pldm_fru_status.fru_prsnt == FRU_NOT_PRSNT)) {
-    *status = FRU_NOT_PRSNT;
+  if (ret == 0) {
+    *status = pldm_fru_status.fru_prsnt;
+    snprintf(value, sizeof(value), "%d", pldm_fru_status.fru_prsnt);
+    kv_set(key, value, 0, 0);
     return true;
   } else {
     return false;

@@ -49,5 +49,17 @@ max([
   pid_boot_drive(
     max([
       all:slot1_mb_ssd0_m2a_temp_c,
-      all:slot3_mb_ssd0_m2a_temp_c]))
+      all:slot3_mb_ssd0_m2a_temp_c])),
+  linear_ucr_trigger(
+    max([
+    all:slot1_mb_vr_cpu0_temp_c,
+    all:slot3_mb_vr_cpu0_temp_c,
+    all:slot1_mb_vr_cpu1_temp_c,
+    all:slot3_mb_vr_cpu1_temp_c,
+    all:slot1_mb_vr_soc_temp_c,
+    all:slot3_mb_vr_soc_temp_c,
+    all:slot1_mb_vr_pvddio_temp_c,
+    all:slot3_mb_vr_pvddio_temp_c,
+    all:slot1_mb_vr_pvdd11_temp_c,
+    all:slot3_mb_vr_pvdd11_temp_c]))
 ])

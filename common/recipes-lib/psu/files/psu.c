@@ -100,7 +100,7 @@ i2c_open(uint8_t bus, uint8_t addr) {
  * N is a 5 bit, two's complement integer.
  */
 static float
-linear_convert(uint8_t value[]) {
+linear_convert(const uint8_t value[]) {
   uint16_t data = (value[1] << 8) | value[0];
   int y = 0, n = 0;
   float x = 0;
@@ -283,7 +283,13 @@ delta_img_hdr_parse(const char *file_path) {
     printf("MCU: unknown number 0x%x\n", delta_hdr.uc);
     ret = -1;
   }
-  printf("Ver: %d.%d\n", delta_hdr.app_fw_major, delta_hdr.app_fw_minor);
+  
+  if (delta_hdr.uc == 0xff) {
+    printf("Pri Ver: %d.%d\n", delta_hdr.app_fw_major, delta_hdr.app_fw_minor);
+    printf("Sec Ver: %d.%d\n", delta_hdr.bl_fw_major, delta_hdr.bl_fw_minor);
+  } else {
+    printf("Ver: %d.%d\n", delta_hdr.app_fw_major, delta_hdr.app_fw_minor);
+  }
   close(fd_file);
 
   return ret;
@@ -389,14 +395,19 @@ delta_fw_transmit(uint8_t num, const char *path) {
       memcpy(&block[3], &fw_buf, 16);
       i2c_smbus_write_block_data(psu[num].fd, DATA_TO_RAM,
                                       19, block);
-      if (delta_hdr.uc == 0x10) {
-        msleep(25);
-      } else if (delta_hdr.uc == 0x20) {
-        msleep(5);
-      } else if (delta_hdr.uc == 0xff) {
-        msleep(5);
+      /* 0xF2 delay */
+      if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL_DC, 
+          strlen(LITEON_MODEL_DC)) && delta_hdr.uc == 0xff) {
+          msleep(70);
+      } else {
+        if (delta_hdr.uc == 0x10) {
+          msleep(25);
+        } else if (delta_hdr.uc == 0x20) {
+          msleep(5);
+        } else if (delta_hdr.uc == 0xff) {
+          msleep(5);
+        }
       }
-
       block[1]++;
       block[2] = 0;
       block_total++;
@@ -415,7 +426,13 @@ delta_fw_transmit(uint8_t num, const char *path) {
       block[2] = ((page_num_lo >> 8) & 0xff);
       i2c_smbus_write_block_data(psu[num].fd, DATA_TO_FLASH,
                                       3, block);
-      msleep(90);
+      /* 0xF3 delay */
+      if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL_DC, 
+          strlen(LITEON_MODEL_DC)) && delta_hdr.uc == 0xff) {
+            msleep(150);
+      } else {
+        msleep(90);
+      }
       if (page_num_lo == page_num_max) {
         printf("\n");
         goto exit;
@@ -466,15 +483,18 @@ update_delta_psu(uint8_t num, const char *file_path,
       ERR_PRINT("delta_img_hdr_parse()");
       return UPDATE_SKIP;
     }
-
+#ifdef DEBUG
+    printf("-- Debug mode --\n");
+#endif
     delta_unlock_upgrade(num);
-    msleep(20);
+    msleep(20); // 0xF0 delay
     delta_boot_flag(num, BOOT_MODE, WRITE);
-    msleep(2500);
+    msleep(2500); // 0xF1 delay
 #ifdef DEBUG
     ret = delta_boot_flag(num, BOOT_MODE, READ) & 0xf;
     if ((delta_hdr.uc == 0x10 && ret != 0x0c) ||
-        (delta_hdr.uc == 0x20 && ret != 0x0d)) {
+        (delta_hdr.uc == 0x20 && ret != 0x0d) ||
+        (delta_hdr.uc == 0xff && ret != 0x0f)){
       printf("-- Set Bootloader Mode Error --\n");
       return -1;
     }
@@ -484,16 +504,7 @@ update_delta_psu(uint8_t num, const char *file_path,
     }
 
     delta_crc_transmit(num);
-    msleep(1500);
-    delta_boot_flag(num, NORMAL_MODE, WRITE);
-
-    if (delta_hdr.uc == 0x10) {
-      msleep(4000);
-    } else if (delta_hdr.uc == 0x20) {
-      msleep(2000);
-    } else if (delta_hdr.uc == 0xff) {
-      msleep(22000);
-    }
+    msleep(1500); // 0xF4 delay
 #ifdef DEBUG
     ret = delta_boot_flag(num, BOOT_MODE, READ);
     if ((ret & 0x7) == 0x4) {
@@ -512,8 +523,25 @@ update_delta_psu(uint8_t num, const char *file_path,
         printf("-- Secondary CRC16 Application Checksum Wrong --\n");
         return -1;
       }
+    } else if ((ret & 0x7) == 0x7) {
+      if (ret & 0x80) {
+        printf("-- Pri and Sec FW Identifier Error --\n");
+        return -1;
+      } else if (ret & 0x40) {
+        printf("-- Pri and Sec CRC16 Application Checksum Wrong --\n");
+        return -1;
+      }
     }
 #endif
+    delta_boot_flag(num, NORMAL_MODE, WRITE);
+    /* 0xF1 delay */
+    if (delta_hdr.uc == 0x10) {
+      msleep(4000);
+    } else if (delta_hdr.uc == 0x20) {
+      msleep(2000);
+    } else if (delta_hdr.uc == 0xff) {
+      msleep(22000);
+    }
     printf("-- Upgrade Done --\n");
     return 0;
   } else {

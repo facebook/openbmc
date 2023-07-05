@@ -517,14 +517,14 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
-  {"RETIMER0_TEMP", 0, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD0
-  {"RETIMER1_TEMP", 1, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD1
-  {"RETIMER2_TEMP", 2, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD2
-  {"RETIMER3_TEMP", 3, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD3
-  {"RETIMER4_TEMP", 4, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD4
-  {"RETIMER5_TEMP", 5, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD5
-  {"RETIMER6_TEMP", 6, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD6
-  {"RETIMER7_TEMP", 7, read_retimer_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xD7
+  {"RETIMER0_TEMP", 0, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD0
+  {"RETIMER1_TEMP", 1, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD1
+  {"RETIMER2_TEMP", 2, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD2
+  {"RETIMER3_TEMP", 3, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD3
+  {"RETIMER4_TEMP", 4, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD4
+  {"RETIMER5_TEMP", 5, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD5
+  {"RETIMER6_TEMP", 6, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD6
+  {"RETIMER7_TEMP", 7, read_retimer_temp, false, {105, 0, 107, 5, 0, -7, 0, 0}, TEMP}, //0xD7
   {"P5V_AUX_ADC"        , ADC_CH8,  read_iic_adc_val, false, {5.26, 0, 0, 4.74, 0, 0, 0, 0}, VOLT}, //0xD8
   {"P1V8_AUX_ADC"       , ADC_CH9,  read_iic_adc_val, false, {1.90, 0, 0, 1.70, 0, 0, 0, 0}, VOLT}, //0xD9
   {"P1V2_AUX_ADC"       , ADC_CH10, read_iic_adc_val, false, {1.27, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xDA

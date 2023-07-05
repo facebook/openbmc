@@ -36,7 +36,7 @@ class RetimerComponent : public Component {
         sleep(1);
       }
 
-      if (ret == MAX_RETRY) {
+      if (retry == MAX_RETRY) {
         return FW_STATUS_FAILURE;
       }
 

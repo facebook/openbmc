@@ -121,7 +121,7 @@ jobs:
             machine:
                 type: string
         docker:
-            - image: crops/poky:ubuntu-22.04
+            - image: crops/poky:centos-7
               environment:
                   MACHINE: << parameters.machine >>
                   CACHE_DIR: /tmp/job/sstate-cache

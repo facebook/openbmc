@@ -19,6 +19,10 @@
 
 #shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
+. /usr/local/bin/reset_script_utils.sh
+
+force=$(check_force_arg "$@")
+warn_and_confirm "$force"
 
 if [ "$(wedge_board_type)" != "1" ]; then
     echo "$(basename "$0") only support on Wedge400C"

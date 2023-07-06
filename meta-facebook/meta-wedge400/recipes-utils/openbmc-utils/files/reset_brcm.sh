@@ -18,7 +18,12 @@
 # Boston, MA 02110-1301 USA
 #
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
+. /usr/local/bin/reset_script_utils.sh
+
+force=$(check_force_arg "$@")
+warn_and_confirm "$force"
 
 # There are two reset pins to ASIC. System reset and PCI reset.
 #
@@ -32,8 +37,8 @@
 # to control the PCI reset pin separately. However, we don't use it for now
 # as we depend on the CPLD for the correct reset sequence.
 
-echo 0 > $PWR_TH_RST_SYSFS
+echo 0 > "$PWR_TH_RST_SYSFS"
 sleep 1
-echo 1 > $PWR_TH_RST_SYSFS
+echo 1 > "$PWR_TH_RST_SYSFS"
 
 logger "Reset Tomahawk"

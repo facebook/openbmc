@@ -80,7 +80,30 @@ servers.extend([loop.create_server(handler, "*", port) for port in config["ports
 if config["ssl_certificate"] and os.path.isfile(config["ssl_certificate"]):
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     # Disable insecure < TLS1.2 ciphers
-    ssl_context.options |= (ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
+    ssl_context.options |= (
+        ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+    )
+    # Only allow list ciphers that use Diffie-Hellman key exchange algorithm
+    ciphers = [
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-ECDSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-AES128-SHA256",
+        "ECDHE-RSA-AES256-SHA384",
+        "ECDHE-RSA-AES128-SHA256",
+        "ECDHE-RSA-AES256-SHA384",
+        "DHE-RSA-AES128-GCM-SHA256",
+        "DHE-RSA-AES256-GCM-SHA384",
+        "DHE-RSA-AES128-SHA",
+        "DHE-RSA-AES256-SHA",
+        "DHE-RSA-AES128-SHA256",
+        "DHE-RSA-AES256-SHA256",
+        "ECDHE-ECDSA-CHACHA20-POLY1305",
+        "ECDHE-RSA-CHACHA20-POLY1305",
+    ]
+    ciphers_str = ":".join(ciphers)
+    ssl_context.set_ciphers(ciphers_str)
     if config["ssl_ca_certificate"]:
         # Set up mutual TLS authentication if config has ssl_ca_certificate
         ssl_context.load_verify_locations(config["ssl_ca_certificate"])

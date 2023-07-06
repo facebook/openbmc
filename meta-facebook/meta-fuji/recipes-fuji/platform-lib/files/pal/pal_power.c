@@ -174,7 +174,7 @@ server_power_off(bool gs_flag) {
     if (ret) {
       return -1;
     }
-    sleep(1);
+    sleep(DELAY_GRACEFUL_SHUTDOWN);
 
     ret = pal_set_com_pwr_btn_n("1");
     if (ret) {

@@ -19,6 +19,9 @@ TEMP_ABOOT_CONF="/tmp/aboot_conf.bin"
 
 DEFAULT_ABOOT_CONF="BOOT_METHOD1=IPV6_PXE,BOOT_METHOD2=LOCAL,BOOT_METHOD3=ARISTA"
 
+BIOS_SPIDEV="/dev/spidev2.0"
+BIOS_CHIP="MX25L12835F/MX25L12845E/MX25L12865E"
+
 cleanup() {
     disconnect_spi
     rm -f $TEMP_ABOOT_CONF $TEMP_BIOS_IMAGE
@@ -51,15 +54,15 @@ connect_spi() {
 # Arista added a 3rd source, so this function is needed in case we are dealing with the 3rd source
 do_retry(){
   if [ "$1" = "write" ]; then
-    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev=/dev/spidev2.0 -w "$2"; then
+    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev="$BIOS_SPIDEV" -w "$2"; then
       echo "flashrom without -c failed"
     fi
   elif [ "$1" = "erase" ]; then
-    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -E; then
+    if ! flashrom -p linux_spi:dev="$BIOS_SPIDEV" -E; then
        echo "flashrom without -c option failed as well"
     fi
   else # reading
-    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -r "$2"; then
+    if ! flashrom -p linux_spi:dev="$BIOS_SPIDEV" -r "$2"; then
       echo "flashrom without -c option failed"
     fi
   fi
@@ -115,7 +118,7 @@ do_erase() {
 
     # Do the erase
     echo "Erasing the flash"
-    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -E -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+    if ! flashrom -p linux_spi:dev=$BIOS_SPIDEV -E -c "$BIOS_CHIP"; then
       echo "flashrom failed. Retrying without -c"
       do_retry "erase" 
     fi
@@ -126,7 +129,7 @@ do_erase() {
 
 do_read() {
     echo "Reading flash content..."
-    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -r "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+    if ! flashrom -p linux_spi:dev="$BIOS_SPIDEV" -r "$1" -c "$BIOS_CHIP"; then
       echo "flashrom failed. Retrying without -c"
       do_retry "read" "$1"
     fi
@@ -150,7 +153,7 @@ backup_image(){
     # Create /mnt/data fixed name which will be used to recover later
     header_pdr_file="/mnt/data/header_pdr.data"
 
-    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -r "${tempfile}" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+    if ! flashrom -p linux_spi:dev="$BIOS_SPIDEV" -r "${tempfile}" -c "$BIOS_CHIP"; then
       echo "Flashrom failed. Retrying without -c"
       do_retry "read" "${tempfile}"
     fi
@@ -189,7 +192,7 @@ do_write() {
       backup_image
     fi
     echo " writing header and payload ... "
-    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev=/dev/spidev2.0 -w "$bios_image" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev="$BIOS_SPIDEV" -w "$bios_image" -c "$BIOS_CHIP"; then
       echo "flashrom failed. Retrying without -c"
       do_retry "write" "$bios_image"
     fi
@@ -217,14 +220,22 @@ do_recover() {
   fi
 
   #Recover pdr region which includes the idprom region
-  if ! flashrom --layout /etc/yamp_bios.layout --image header --image pdr -p linux_spi:dev=/dev/spidev2.0 -w "${file}" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+  if ! flashrom --layout /etc/yamp_bios.layout --image header --image pdr -p linux_spi:dev="$BIOS_SPIDEV" -w "${file}" -c "$BIOS_CHIP"; then
     echo "flashrom failed. Retrying without the -c"
     do_retry "write" "${file}"
   fi
   rm "${file}"
 }
 
+probe_chips() {
+  if flashrom -p linux_spi:dev="$BIOS_SPIDEV" | grep "N25Q128" > /dev/null 2>&1; then
+    BIOS_CHIP="N25Q128..3E"
+  fi
+}
+
 connect_spi
+
+probe_chips
 
 if [ "$1" == "erase" ]; then
     do_erase

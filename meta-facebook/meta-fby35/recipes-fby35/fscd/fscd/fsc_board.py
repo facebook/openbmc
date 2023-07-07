@@ -53,6 +53,17 @@ fru_map = {
     },
 }
 
+gl_dimm_location_name_map = {
+    "a": "_dimm0_location",
+    "b": "_dimm1_location",
+    "c": "_dimm2_location",
+    "d": "_dimm3_location",
+    "e": "_dimm4_location",
+    "f": "_dimm5_location",
+    "g": "_dimm6_location",
+    "h": "_dimm7_location",
+}
+
 hd_dimm_location_name_map = {
     "0": "_dimm0_location",
     "1": "_dimm1_location",
@@ -99,6 +110,8 @@ if "HD" in system_conf:
         ]
     GPIO_FM_BIOS_POST_CMPLT_BMC_N = 0
     dimm_location_name_map = hd_dimm_location_name_map
+elif "GL" in system_conf:
+    dimm_location_name_map = gl_dimm_location_name_map
 elif "VF" in system_conf:
     for i in [1, 2, 3, 4]:
         lfby35_hndl.fby35_common_get_1ou_m2_prsnt(int(i))
@@ -224,7 +237,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     return 0
 
                 if "dimm" in sname:
-                    return is_dimm_prsnt(board, sname[8 : sname.find("_t")])
+                    dimm_index = sname.index("_t")
+                    return is_dimm_prsnt(board, sname[dimm_index - 1])
 
                 if "vf_e1s" in sname:
                     return is_e1s_prsnt(board, sname[10 : sname.find("_t")])

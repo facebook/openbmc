@@ -276,7 +276,6 @@ static struct gpiopoll_config gta_gpios_plat_list[] = {
   // shadow, description, edge, handler, oneshot
   {IRQ_UV_DETECT_N,             "SGPIO188",  GPIO_EDGE_BOTH,    uv_detect_handler,          NULL},
   {IRQ_OC_DETECT_N,             "SGPIO178",  GPIO_EDGE_BOTH,    oc_detect_handler,          NULL},
-  {IRQ_HSC_FAULT_N,             "SGPIO36",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {IRQ_HSC_ALERT_N,             "SGPIO2",    GPIO_EDGE_BOTH,    sml1_pmbus_alert_handler,   NULL},
   {FM_CPU0_PROCHOT_N,           "SGPIO202",  GPIO_EDGE_BOTH,    cpu_prochot_handler,        NULL},
   {FM_CPU1_PROCHOT_N,           "SGPIO186",  GPIO_EDGE_BOTH,    cpu_prochot_handler,        NULL},
@@ -303,11 +302,26 @@ static struct gpiopoll_config gta_gpios_plat_list[] = {
   {FM_BIOS_POST_CMPLT,          "SGPIO146",  GPIO_EDGE_BOTH,    post_comp_event_handler,    post_comp_init_handler},
   {APML_CPU0_ALERT,             "SGPIO10",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
   {APML_CPU1_ALERT,             "SGPIO12",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
+  // Add new GPIO from here
+  // The reserved space will be used for optional GPIO pins in specific system config
+  {RESERVED_GPIO,            RESERVED_GPIO,  GPIO_EDGE_NONE,    NULL,                       NULL},
+};
+
+// This GPIO only monitored when HSC is not LTC4282
+static struct gpiopoll_config gta_gpios_hsc_list[] = {
+  {IRQ_HSC_FAULT_N,             "SGPIO36",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
 };
 
 int get_gpios_plat_list(struct gpiopoll_config** list) {
-  uint8_t cnt = pal_is_artemis() ? ARRAY_SIZE(gta_gpios_plat_list) : ARRAY_SIZE(gpios_plat_list);
+  uint8_t source_id;
+  uint8_t cnt = pal_is_artemis() ? ARRAY_SIZE(gta_gpios_plat_list)-1 : ARRAY_SIZE(gpios_plat_list);
   *list = pal_is_artemis() ? gta_gpios_plat_list : gpios_plat_list;
+
+  // LTC4282 doesn't have this GPIO
+  if (get_comp_source(FRU_MB, MB_HSC_SOURCE, &source_id) == 0 && source_id != SECOND_SOURCE) {
+    memcpy(gta_gpios_plat_list + cnt, gta_gpios_hsc_list, sizeof(gta_gpios_hsc_list));
+    cnt += ARRAY_SIZE(gta_gpios_hsc_list);
+  }
 
   return cnt;
 }

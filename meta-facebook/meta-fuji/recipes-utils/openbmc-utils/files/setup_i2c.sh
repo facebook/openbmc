@@ -21,6 +21,13 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
+# Sometimes, it has been observed that I2c devices, such as the PIM's UCD, 
+# have the potential to lock the bus. This will render the entire i2c bus inoperable.
+# To recover from such instances, reset the PIM i2c mux to restore the devices back to normal.
+i2cset -y -f 12 0x3e 0x15 0x00
+sleep 1
+i2cset -y -f 12 0x3e 0x15 0xff
+
 # Board Version
 board_ver=$(wedge_board_rev)
 

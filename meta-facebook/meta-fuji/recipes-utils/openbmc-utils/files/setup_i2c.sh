@@ -31,6 +31,29 @@ i2cset -y -f 12 0x3e 0x15 0xff
 # Board Version
 board_ver=$(wedge_board_rev)
 
+#
+#  Reset the OPERATION code for each UCD page.
+#  The UCD device address and page count are retrieved from kv, 
+#  which is updated during i2c enumeration.
+#
+i2c_ucd_reset_operation() {
+  for i2c_ucd_dev in "$@" ; do
+    address=$(/usr/bin/kv get "${i2c_ucd_dev}"_addr)
+    page_count=$(/usr/bin/kv get "${i2c_ucd_dev}"_page_count)
+    if [ -z "$address" ] || [ -z "$page_count" ] ;then
+      echo "UCD device info not found" >> /dev/kmsg
+    else 
+      for (( page=0; page<page_count; page++ )) ;do
+        #select the page (page code : 0 )
+        i2cset -y -f 5 "$address" 0 "$page"
+        #reset the operation to default(operation code: 1) 
+        i2cset -y -f 5 "$address" 1 0
+      done
+    fi
+  done
+}
+
+
 # # Bus 0
 i2c_device_add 0 0x1010 slave-mqueue #IPMB 0
 
@@ -66,15 +89,19 @@ i2c_device_add 3 0x4a lm75     #LM75B_3# Thermal sensor
 if i2c_detect_address 5 0x35; then
    i2c_device_add 5 0x35 ucd90160
    kv set smb_pwrseq_1_addr 0x35
+   kv set smb_pwrseq_1_page_count 16
 elif i2c_detect_address 5 0x66; then
    i2c_device_add 5 0x66 ucd90160
    kv set smb_pwrseq_1_addr 0x66
+   kv set smb_pwrseq_1_page_count 13
 elif i2c_detect_address 5 0x68; then
    i2c_device_add 5 0x68 ucd90160
    kv set smb_pwrseq_1_addr 0x68
+   kv set smb_pwrseq_1_page_count 13
 elif i2c_detect_address 5 0x43; then
    i2c_device_add 5 0x43 ucd90124
    kv set smb_pwrseq_1_addr 0x43
+   kv set smb_pwrseq_1_page_count 12
 elif i2c_detect_address 5 0x44; then
    i2c_device_add 5 0x44 adm1266
    kv set smb_pwrseq_1_addr 0x44
@@ -93,15 +120,19 @@ fi
 if i2c_detect_address 5 0x36; then
    i2c_device_add 5 0x36 ucd90160
    kv set smb_pwrseq_2_addr 0x36
+   kv set smb_pwrseq_2_page_count 16
 elif i2c_detect_address 5 0x67; then
    i2c_device_add 5 0x67 ucd90160
    kv set smb_pwrseq_2_addr 0x67
+   kv set smb_pwrseq_2_page_count 13
 elif i2c_detect_address 5 0x69; then
    i2c_device_add 5 0x69 ucd90160
    kv set smb_pwrseq_2_addr 0x69
+   kv set smb_pwrseq_2_page_count 13
 elif i2c_detect_address 5 0x46; then
    i2c_device_add 5 0x46 ucd90124
    kv set smb_pwrseq_2_addr 0x46
+   kv set smb_pwrseq_2_page_count 12
 elif i2c_detect_address 5 0x47; then
    i2c_device_add 5 0x47 adm1266
    kv set smb_pwrseq_2_addr 0x47
@@ -205,3 +236,9 @@ i2c_device_add 12 0x3e smb_syscpld     # SYSTEM CPLD
 # of this function.
 #
 i2c_check_driver_binding "fix-binding"
+
+#
+# The UCD device may occasionally read and change the value of the
+# OPERATION command improperly. So reset it to its default setting.
+#
+i2c_ucd_reset_operation "smb_pwrseq_1" "smb_pwrseq_2"

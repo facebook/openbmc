@@ -16,7 +16,7 @@ struct delayed_prochot_log {
   gpio_value_t curr;
 };
 
-#define DELAY_LOG_CPU_PROCHOT_MS 5
+#define DELAY_LOG_CPU_PROCHOT_MS 100
 
 bool server_power_check(uint8_t power_on_time);
 

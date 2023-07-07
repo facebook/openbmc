@@ -645,28 +645,21 @@ scm_mon_out:
 }
 
 /*
- * @brief  checking SCM and PIM presence
- * @note   will be use for sys_led controling
- * @param  brd_rev:
- * @retval 0 is all present , -1 is one or more absent
+ * @brief  checking FRU presence
+ * @param  fru_list, max_fru_count, presence_fru_list
+ * @retval 0 for all FRUs present according to respective DC or AC configuration, -1 for incorrect configuration
  */
-static int sys_present_check(int brd_rev) {
+static int fru_presence_check(uint8_t *fru_list, int max_fru_count,
+                              const bool *presence_fru_list) {
   int ret = 0;
-  uint8_t prsnt = 0;
-
   char fru_name[8];
-  uint8_t fru_list[] = { FRU_SCM  ,FRU_PIM1, FRU_PIM2,
-                         FRU_PIM3 ,FRU_PIM4, FRU_PIM5,
-                         FRU_PIM6 ,FRU_PIM7, FRU_PIM8 };
 
-  for (int fru = 0; fru < sizeof(fru_list) / sizeof(fru_list[0]); fru++) {
-    pal_get_fru_name(fru_list[fru], fru_name);
-    if (pal_is_fru_prsnt(fru_list[fru], &prsnt)) {
-      syslog(LOG_CRIT, "cannot get fru %s presence status", fru_name);
+  for (int fru = 0; fru < max_fru_count; fru++) {
+    if (presence_fru_list[fru_list[fru]] == true) {
       continue;
-    }
-    if (prsnt == 0) {
-      syslog(LOG_WARNING, "fru %s is not presence", fru_name);
+    } else {
+      pal_get_fru_name(fru_list[fru], fru_name);
+      syslog(LOG_WARNING, "fru %s is not present", fru_name);
       ret = -1;
     }
   }
@@ -674,20 +667,82 @@ static int sys_present_check(int brd_rev) {
 }
 
 /*
- * @brief  checking PSU_AC_OK,PSU_PWR_OK and PSU presence
- * @note   will be use for psu_led controling
+ * @brief  checking SCM and PIM presence
+ * @note   will be use for sys_led controling
  * @param  brd_rev:
- * @retval 0 is normal , -1 is fail
+ * @retval 0 for correct SCM and PIM configuration, -1 for incorrect configuration
  */
-static int psu_check(int brd_rev) {
+static int sys_present_check(int brd_rev) {
+  int ret = 0;
+  uint8_t prsnt = 0;
+  int fruCount = 0;
+
+  char fru_name[8];
+
+  // List of configurations
+  // Correct configuration include Full size configuration(PIM1-PIM8) and
+  // PSU48V with 4PIM(PIM1,PIM2,PIM7,PIM8) and 5PIM(PIM1,PIM2,PIM6,PIM7,PIM8)
+  uint8_t fru_list[] = {FRU_SCM,  FRU_PIM1, FRU_PIM2, FRU_PIM3, FRU_PIM4,
+                        FRU_PIM5, FRU_PIM6, FRU_PIM7, FRU_PIM8};
+  uint8_t fru_list_48v_4pim[] = {FRU_SCM, FRU_PIM1, FRU_PIM2, FRU_PIM7,
+                                 FRU_PIM8};
+  uint8_t fru_list_48v_5pim[] = {FRU_SCM,  FRU_PIM1, FRU_PIM2,
+                                 FRU_PIM6, FRU_PIM7, FRU_PIM8};
+  bool fru_presence_list[MAX_NUM_FRUS] = {};
+
+  for (int fru = 0; fru < sizeof(fru_list) / sizeof(fru_list[0]); fru++) {
+    if (pal_is_fru_prsnt(fru_list[fru], &prsnt)) {
+      pal_get_fru_name(fru_list[fru], fru_name);
+      syslog(LOG_INFO, "cannot get fru %s presence status", fru_name);
+      continue;
+    }
+    if (prsnt) {
+      fruCount++;
+      fru_presence_list[fru_list[fru]] = true;
+    }
+  }
+
+  if (is_psu48()) {
+    // For 48V PSU, 4 PIM configuration, FRU Count = SCM + 4 PIMs
+    if (fruCount == 5) {
+      ret = fru_presence_check(fru_list_48v_4pim,
+                               sizeof(fru_list_48v_4pim) /
+                                   sizeof(fru_list_48v_4pim[0]),
+                               fru_presence_list);
+    }
+    // For 48V PSU, 5 PIM configuration, FRU Count = SCM + 5 PIMs
+    else if (fruCount == 6) {
+      ret = fru_presence_check(fru_list_48v_5pim,
+                               sizeof(fru_list_48v_5pim) /
+                                   sizeof(fru_list_48v_5pim[0]),
+                               fru_presence_list);
+    }
+    // Other PIM configuration
+    else {
+      ret = -1;
+    }
+  }
+
+  // For AC PSU, full size PIM configuration
+  else {
+    ret = fru_presence_check(fru_list, sizeof(fru_list) / sizeof(fru_list[0]),
+                             fru_presence_list);
+  }
+  return ret;
+}
+
+/*
+ * @brief  checking PSU configuration w.r.t. DC or AC PSU type
+ * @param  first_psu, *sysfs, sizeof_sysfs
+ * @retval 0 is for correct configuration w.r.t. PSU type, -1 is for incorrect configuration
+ */
+static int psu_configuration_check(int first_psu, char *sysfs[],
+                                   int sizeof_sysfs) {
   uint8_t status = 0;
   int ret = 0;
   char path[LARGEST_DEVICE_NAME + 1];
-  char *sysfs[] = { "psu_L_pwr_ok",   "psu_R_pwr_ok",
-                    "psu1_ac_ok",     "psu2_ac_ok",
-                    "psu3_ac_ok",     "psu4_ac_ok" };
-  for (int psu = 1; psu <= 4; psu++) {
-    if(pal_is_fru_prsnt(FRU_PSU1+psu-1, &status)) {
+  for (int psu = first_psu; psu <= 4; psu++) {
+    if (pal_is_fru_prsnt(FRU_PSU1 + psu - 1, &status)) {
       syslog(LOG_CRIT, "cannot get FRU_PSU%d presence status ", psu);
       ret = -1;
       continue;
@@ -698,9 +753,9 @@ static int psu_check(int brd_rev) {
     }
   }
 
-  for (int i = 0; i < sizeof(sysfs) / sizeof(sysfs[0]); i++) {
+  for (int i = 0; i < sizeof_sysfs; i++) {
     snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, sysfs[i]);
-    if (device_read(path, (int*)&status)) {
+    if (device_read(path, (int *)&status)) {
       syslog(LOG_CRIT, "cannot access %s", sysfs[i]);
       ret = -1;
       continue;
@@ -710,7 +765,35 @@ static int psu_check(int brd_rev) {
       ret = -1;
     }
   }
+  return ret;
+}
 
+/*
+ * @brief  checking PSU_AC_OK,PSU_PWR_OK and PSU presence
+ * @note   will be use for psu_led controling
+ * @param  brd_rev:
+ * @retval 0 is for correct configuration , -1 is for incorrect configuration
+ */
+static int psu_check(int brd_rev) {
+  int ret = 0;
+  int first_psu; // DC configudarion has PSUs 3, 4 (first_psu = 3)
+                 // AC configuration has PSUs 1, 2, 3, 4 (first_psu = 1)
+
+  /*For DC PSU configurations*/
+  char *dc_sysfs[] = {"psu_R_pwr_ok", "psu3_ac_ok", "psu4_ac_ok"};
+  /*For AC PSU configurations*/
+  char *ac_sysfs[] = {"psu_L_pwr_ok", "psu_R_pwr_ok", "psu1_ac_ok",
+                      "psu2_ac_ok",   "psu3_ac_ok",   "psu4_ac_ok"};
+
+  if (is_psu48()) {
+    first_psu = 3;
+    ret = psu_configuration_check(first_psu, dc_sysfs,
+                                  sizeof(dc_sysfs) / sizeof(dc_sysfs[0]));
+  } else {
+    first_psu = 1;
+    ret = psu_configuration_check(first_psu, ac_sysfs,
+                                  sizeof(ac_sysfs) / sizeof(ac_sysfs[0]));
+  }
   return ret;
 }
 
@@ -899,26 +982,26 @@ simLED_monitor_handler(void *unused) {
         }
       }
 
-      //FAN LED
-      // BLUE   all presence and sensor normal
-      // AMBER  one or more absence or sensor out-of-range RPM
       if (!status_ug) { // skip sensor check when firmware is upgrading
+        //FAN LED
+        // BLUE   all presence and sensor normal
+        // AMBER  one or more absence or sensor out-of-range RPM
         if (fan_check(brd_rev) == 0) {
           leds[SLED_NAME_FAN] = SIM_LED_BLUE;
         } else {
           leds[SLED_NAME_FAN] = SIM_LED_AMBER;
         }
-      //PSU LED
-      // BLUE     all PSUs present and INPUT OK,PWR OK
-      // AMBER    one or more not present or INPUT OK or PWR OK de-asserted
+        //PSU LED
+        // BLUE     all PSUs present and INPUT OK,PWR OK
+        // AMBER    one or more not present or INPUT OK or PWR OK de-asserted
         if (psu_check(brd_rev) == 0) {
           leds[SLED_NAME_PSU] = SIM_LED_BLUE;
         } else {
           leds[SLED_NAME_PSU] = SIM_LED_AMBER;
         }
-      //SMB LED
-      // BLUE   sensor ok
-      // AMBER  fail
+        //SMB LED
+        // BLUE   sensor ok
+        // AMBER  fail
         if (smb_check(brd_rev) == 0) {
           leds[SLED_NAME_SMB] = SIM_LED_BLUE;
         } else {
@@ -1037,7 +1120,7 @@ uart_sel_btn_handler(void *unused) {
     if (ret || !btn) {
       goto uart_sel_btn_out;
     }
-    if (btn) {
+    else {
       syslog(LOG_INFO, "Uart button pressed\n");
       pal_switch_uart_mux();
       pal_clr_dbg_btn();
@@ -1070,7 +1153,7 @@ pwr_btn_handler(void *unused) {
         goto pwr_btn_out;
     }
 
-    if (btn) {
+    else {
       syslog(LOG_INFO, "Power button pressed\n");
 
       // Get the current power state (on or off)
@@ -1115,7 +1198,7 @@ rst_btn_handler(void *unused) {
       goto rst_btn_out;
     }
 
-    if (btn) {
+    else {
       syslog(LOG_INFO, "Rst button pressed\n");
       /* Reset userver */
       pal_set_server_power(FRU_SCM, SERVER_POWER_RESET);

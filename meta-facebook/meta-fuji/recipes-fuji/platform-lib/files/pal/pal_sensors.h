@@ -733,6 +733,7 @@ int bic_get_sdr_thresh_val(uint8_t fru, uint8_t snr_num,
 int bic_sdr_init(uint8_t fru, bool reinit);
 int pal_get_sensor_util_timeout(uint8_t fru);
 int set_dev_addr_to_file(uint8_t fru, uint8_t dev, uint8_t addr);
+bool is_psu48(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -468,14 +468,14 @@ index 000000000000..1a8e42d375ce
 +		dev_err(&pdev->dev, "failed to get ctrl register resource\n");
 +		return -EINVAL;
 +	}
-+	uspi->mem_ctrl_reg = res->start + USPI_CTRL_REG_SIZE * uspi->id;
++	uspi->mem_ctrl_reg = res->start;
 +
 +	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 +	if (res == NULL) {
 +		dev_err(&pdev->dev, "failed to get data buffer resource\n");
 +		return -EINVAL;
 +	}
-+	uspi->mem_mosi = res->start + USPI_DATA_BUF_SIZE * uspi->id;
++	uspi->mem_mosi = res->start;
 +	uspi->mem_miso = uspi->mem_mosi + USPI_MOSI_BUF_SIZE;
 +
 +	return 0;

@@ -55,7 +55,7 @@ new file mode 100644
 index 000000000000..6b4c881bbd12
 --- /dev/null
 +++ b/drivers/mfd/fboss-usmc.c
-@@ -0,0 +1,460 @@
+@@ -0,0 +1,483 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) 2020 Facebook Inc.
 +
@@ -77,6 +77,10 @@ index 000000000000..6b4c881bbd12
 +#define FB_USMC_TLV_READ_RES	0x8200
 +#define FB_USMC_TLV_READ_REQ	0x0200
 +#define FB_USMC_TLV_WRITE	0x0100
++
++#define USMC_SPI_IO_BUF_PER_RESOURCE 0x400
++#define USMC_SPI_IO_CTRL_REG_SIZE 0x80
++#define USMC_SPI_IO_BUF_START_ADDR 0x2000
 +
 +/*
 + * Note: "tlv->length" doesn't cover the 4 byte header (length + type):
@@ -397,28 +401,47 @@ index 000000000000..6b4c881bbd12
 +}
 +#endif /* MFD_FBOSS_USMC_UAPI */
 +
++#define USMC_SPI_RESOURCE_CTRL_REG_START(_id)                          \
++	((_id) * USMC_SPI_IO_CTRL_REG_SIZE)
++
++#define USMC_SPI_RESOURCE_IO_BUF_START(_id)                            \
++	(USMC_SPI_IO_BUF_START_ADDR                                         \
++	+ (_id) * USMC_SPI_IO_BUF_PER_RESOURCE)
++
++#define USMC_SPI_RESOURCE(_id)                                         \
++	{                                                                   \
++		.name = "usmc-spi." #_id ".CTRL_REG",                           \
++		.start = USMC_SPI_RESOURCE_CTRL_REG_START(_id),                 \
++		.end = USMC_SPI_RESOURCE_CTRL_REG_START(_id)                    \
++				+ USMC_SPI_IO_CTRL_REG_SIZE - 1,                        \
++		.flags = IORESOURCE_MEM,                                        \
++	},                                                                  \
++	{                                                                   \
++		.name = "usmc-spi." #_id ".IO_BUF",                             \
++		.start = USMC_SPI_RESOURCE_IO_BUF_START(_id),                   \
++		.end = USMC_SPI_RESOURCE_IO_BUF_START(_id)                      \
++				+ USMC_SPI_IO_BUF_PER_RESOURCE - 1,                     \
++		.flags = IORESOURCE_MEM,                                        \
++	}
++
 +static struct resource fboss_usmc_spi_resources[] = {
-+	{
-+		.name = "CTRL_REG",
-+		.start = 0,
-+		.end = 0x3FF,
-+		.flags = IORESOURCE_MEM,
-+	},
-+	{
-+		.name = "IO_BUF",
-+		.start = 0x2000,
-+		.end = 0x3FFFF,
-+		.flags = IORESOURCE_MEM,
-+	},
++	USMC_SPI_RESOURCE(0),
++	USMC_SPI_RESOURCE(1),
++	USMC_SPI_RESOURCE(2),
++	USMC_SPI_RESOURCE(3),
++	USMC_SPI_RESOURCE(4),
++	USMC_SPI_RESOURCE(5),
++	USMC_SPI_RESOURCE(6),
++	USMC_SPI_RESOURCE(7),
 +};
 +
-+#define USMC_SPI_CELL(_id)						\
-+	{								\
-+		.id = _id,						\
-+		.name = "usmc-spi",					\
-+		.of_compatible = "facebook,usmc-spi",			\
-+		.resources = fboss_usmc_spi_resources,			\
-+		.num_resources = ARRAY_SIZE(fboss_usmc_spi_resources),	\
++#define USMC_SPI_CELL(_id)                                   \
++	{                                                         \
++		.id = (_id),                                          \
++		.name = "usmc-spi",                                   \
++		.of_compatible = "facebook,usmc-spi",                 \
++		.resources = &fboss_usmc_spi_resources[(_id) * 2],    \
++		.num_resources = 2,                                   \
 +	}
 +
 +static const struct mfd_cell fboss_usmc_cells[] = {

@@ -20,10 +20,8 @@
 import unittest
 
 from common.base_eeprom_test import CommonEepromTest
-from utils.test_utils import qemu_check
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class CHASSISEepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for CHASSIS EEPROM
@@ -49,7 +47,6 @@ class CHASSISEepromTest(CommonEepromTest, unittest.TestCase):
         self.asset_tag = []
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class BMCEepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for BMC EEPROM
@@ -87,7 +84,6 @@ class BMCEepromTest(CommonEepromTest, unittest.TestCase):
         self.product_serial_number = []
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class SCMEepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for SCM EEPROM

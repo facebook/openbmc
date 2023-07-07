@@ -208,7 +208,7 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
   // De-assert HW reset
   rc = ariesSetHwReset(&ariesDevice, 0);
   CHECK_ERR_LOGGING(rc);
-  usleep(5000000);
+  usleep(15000000);
 
   rc = ariesInitDevice(&ariesDevice, addr);
   CHECK_ERR_RETURN(rc, i2cDriver.handle);

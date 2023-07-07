@@ -800,7 +800,7 @@ util_pmic_err(uint8_t fru_id, uint8_t dimm, bool /*json*/, uint8_t* options) {
         printf("DIMM %s PMIC Error: ", get_dimm_label(cpu, dimm_num));
         ret = pmic_list_err(fru_id, cpu, dimm_num, err_list, &err_cnt);
         if (ret < 0) {
-          printf("NO DIMM\n");
+          printf("No DIMM\n");
           continue;
         }
         if (err_cnt == 0) {

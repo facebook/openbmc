@@ -1,11 +1,11 @@
 {
-    "version": "inspirationpint-v6",
+    "version": "inspirationpint_v8",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
     "fan_recovery_time": 2,
     "sensor_filter_all": true,
-    "pwm_sensor_boost_value": 80,
+    "pwm_sensor_boost_value": 100,
     "standby_fan_fail": {
       "fan_pwm": 20
     },
@@ -220,12 +220,12 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [49, 25],
-          [63, 35],
-          [67, 40],
-          [72, 48],
-          [75, 55],
-          [82, 90]
+          [49, 45],
+          [63, 60],
+          [67, 75],
+          [72, 90],
+          [76, 95],
+          [82, 100]
         ]
       },
       "gpu_tray_gpu_pid": {
@@ -236,7 +236,7 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "setpoint": 79,
-        "kp": -3,
+        "kp": -5.5,
         "ki": -0.035,
         "kd": 0
       },
@@ -277,12 +277,12 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [62, 25],
-          [63, 35],
-          [78, 40],
-          [82, 48],
-          [85, 55],
-          [92, 90]
+          [62, 45],
+          [63, 60],
+          [78, 75],
+          [82, 90],
+          [86, 95],
+          [92, 100]
         ]
       },
       "gpu_tray_hbm_pid": {

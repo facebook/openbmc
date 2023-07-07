@@ -20,5 +20,5 @@ LOCAL_URI += " \
     file://platform.c \
     "
 
-DEPENDS += "libpldm-oem"
-LDFLAGS += "-lpldm -lpldm_oem"
+DEPENDS += "libpldm-oem libmisc-utils"
+LDFLAGS += "-lpldm -lpldm_oem -lmisc-utils"

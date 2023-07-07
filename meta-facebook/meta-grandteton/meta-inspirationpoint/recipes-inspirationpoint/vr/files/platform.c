@@ -157,9 +157,15 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   return ret;
 }
 
-static int mb_vr_polling_ctrl(bool enable) {
+static int
+plat_mp2856_fw_update(struct vr_info *info, void *args) {
+  int ret;
 
- return  kv_set("mb_polling_status", (enable) ? "1" : "0", 0, 0);
+  mb_vr_polling_ctrl(false);
+  ret = mp2856_fw_update(info, args);
+  mb_vr_polling_ctrl(true);
+
+  return ret;
 }
 
 static int
@@ -241,7 +247,7 @@ struct vr_ops mp2856_ops = {
   .get_fw_ver = get_mp2856_ver,
   .parse_file = mp2856_parse_file,
   .validate_file = NULL,
-  .fw_update = mp2856_fw_update,
+  .fw_update = plat_mp2856_fw_update,
   .fw_verify = NULL,
 };
 

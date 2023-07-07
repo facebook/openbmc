@@ -51,10 +51,6 @@ static int read_cpu_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_cpu_dimm_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_NM_pch_temp(uint8_t fru, uint8_t sensor_num, float *value);
-static int read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value);
-static int read_vr_temp(uint8_t fru, uint8_t sensor_num, float  *value);
-static int read_vr_iout(uint8_t fru, uint8_t sensor_num, float  *value);
-static int read_vr_pout(uint8_t fru, uint8_t sensor_num, float  *value);
 static int read_frb3(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_temp(uint8_t fru, uint8_t sensor_num, float *value);
@@ -999,67 +995,6 @@ read_dpm_vout(uint8_t fru, uint8_t sensor_num, float *value) {
 
   retry[dpm_id] = 0;
   return ret;
-}
-
-static int
-read_vr_temp(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret = 0;
-  uint8_t vr_id = sensor_map[fru].map[sensor_num].id;
-  static uint8_t retry[VR_NUM_CNT] = {0};
-  uint8_t cpu_id = vr_id/5;
-
-  if(!is_cpu_socket_occupy(cpu_id))
-    return READING_NA;
-
-  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
-  if (*value == 0) {
-    retry[vr_id]++;
-    return retry_err_handle(retry[vr_id], 5);
-  }
-
-  retry[vr_id] = 0;
-  return ret;
-}
-
-static int
-read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret = 0;
-  uint8_t vr_id = sensor_map[fru].map[sensor_num].id;
-  static uint8_t retry[VR_NUM_CNT] = {0};
-  uint8_t cpu_id = vr_id/5;
-
-  if(!is_cpu_socket_occupy(cpu_id))
-    return READING_NA;
-
-   ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
-  if (*value == 0) {
-    retry[vr_id]++;
-    return retry_err_handle(retry[vr_id], 5);
-  }
-
-  retry[vr_id] = 0;
-  return ret;
-}
-
-
-static int
-read_vr_iout(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t cpu_id = sensor_map[fru].map[sensor_num].id/5;
-
-  if(!is_cpu_socket_occupy(cpu_id))
-    return READING_NA;
-
-  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
-}
-
-static int
-read_vr_pout(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t cpu_id = sensor_map[fru].map[sensor_num].id/5;
-
-  if(!is_cpu_socket_occupy(cpu_id))
-    return READING_NA;
-
-  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 static void

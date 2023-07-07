@@ -957,3 +957,90 @@ pal_sensor_monitor_initial(void) {
 
   return 0;
 }
+
+int
+mb_vr_polling_ctrl(bool enable) {
+  static int lock_fd = -1;
+
+  if (enable) {
+    if (lock_fd >= 0) {
+      int fd = lock_fd;
+      lock_fd = -1;
+      single_instance_unlock(fd);
+    }
+  } else {
+    int fd = single_instance_lock_blocked("mb_vr_mon");
+    if (fd >= 0) {
+      lock_fd = fd;
+    }
+  }
+  return 0;
+}
+
+static int
+get_vr_reading(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret, lock = -1;
+  uint8_t cpu_id = sensor_map[fru].map[sensor_num].id/VR_SNR_PER_CPU;
+
+  if (cpu_id < MAX_CPU_CNT) {  // for CPU VRs
+    // check CPU present
+    if (!is_cpu_socket_occupy(cpu_id)) {
+      return READING_NA;
+    }
+
+    if ((lock = single_instance_lock("mb_vr_mon")) < 0) {
+      return READING_SKIP;
+    }
+  }
+
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  if (lock >= 0) {
+    single_instance_unlock(lock);
+  }
+
+  return ret;
+}
+
+int
+read_vr_temp(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret;
+  uint8_t vr_id = sensor_map[fru].map[sensor_num].id;
+  static uint8_t retry[VR_NUM_CNT] = {0};
+
+  if ((ret = get_vr_reading(fru, sensor_num, value)) == 0) {
+    if (*value == 0) {
+      retry[vr_id]++;
+      return retry_err_handle(retry[vr_id], 5);
+    }
+    retry[vr_id] = 0;
+  }
+
+  return ret;
+}
+
+int
+read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret;
+  uint8_t vr_id = sensor_map[fru].map[sensor_num].id;
+  static uint8_t retry[VR_NUM_CNT] = {0};
+
+  if ((ret = get_vr_reading(fru, sensor_num, value)) == 0) {
+    if (*value == 0) {
+      retry[vr_id]++;
+      return retry_err_handle(retry[vr_id], 5);
+    }
+    retry[vr_id] = 0;
+  }
+
+  return ret;
+}
+
+int
+read_vr_iout(uint8_t fru, uint8_t sensor_num, float *value) {
+  return get_vr_reading(fru, sensor_num, value);
+}
+
+int
+read_vr_pout(uint8_t fru, uint8_t sensor_num, float *value) {
+  return get_vr_reading(fru, sensor_num, value);
+}

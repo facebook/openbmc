@@ -13,6 +13,7 @@
 #include <linux/i2c-dev.h>
 #include <openbmc/obmc-i2c.h>
 #include "include/aries_common.h"
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,8 @@ extern "C" {
 #define NUM_RETIMERS 1
 #define NUM_LINKS_PER_RETIMER 1
 #define NUM_TOTAL_LINKS NUM_RETIMERS * NUM_LINKS_PER_RETIMER
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 int __attribute__((weak))
 get_dev_bus(const char *fru, int8_t retimerId)
@@ -141,12 +144,20 @@ int asteraI2CWriteReadBlockData(int handle, uint8_t cmdCode, uint8_t numBytes,
 
 int asteraI2CBlock(int handle)
 {
-  return 0; // Equivalent to ARIES_SUCCESS
+  if (pthread_mutex_lock(&lock) == 0) {
+    return 0;
+  }
+
+  return -1;
 }
 
 int asteraI2CUnblock(int handle)
 {
-  return 0; // Equivalent to ARIES_SUCCESS
+  if (pthread_mutex_unlock(&lock) == 0) {
+    return 0;
+  }
+
+  return -1;
 }
 
 AriesErrorType SetupAriesDevice (AriesDeviceType* ariesDevice,

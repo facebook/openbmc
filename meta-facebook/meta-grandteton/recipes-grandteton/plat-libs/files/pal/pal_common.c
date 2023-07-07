@@ -163,20 +163,6 @@ fru_presence(uint8_t fru_id, uint8_t *status) {
         return true;
       }
       return false;
-    case FRU_NIC0:
-      gpio_value = gpio_get_value_by_shadow(FM_OCP0_PRSNT);
-      if(gpio_value != GPIO_VALUE_INVALID) {
-        *status = gpio_value ? FRU_NOT_PRSNT: FRU_PRSNT;
-        return true;
-      }
-      return false;
-    case FRU_NIC1:
-      gpio_value = gpio_get_value_by_shadow(FM_OCP1_PRSNT);
-      if(gpio_value != GPIO_VALUE_INVALID) {
-        *status = gpio_value ? FRU_NOT_PRSNT: FRU_PRSNT;
-        return true;
-      }
-      return false;    
     case FRU_ACB:
     case FRU_MEB:
       if (!pal_is_artemis()) {
@@ -211,8 +197,7 @@ fru_presence(uint8_t fru_id, uint8_t *status) {
       kv_set(key, value, 0, 0);
       return true;
     default:
-      *status = FRU_PRSNT;
-      return true;
+      return fru_presence_ext(fru_id, status);
   }
 }
 

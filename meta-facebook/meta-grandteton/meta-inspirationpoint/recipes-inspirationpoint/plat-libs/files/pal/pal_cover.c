@@ -3,9 +3,10 @@
 #include <syslog.h>
 #include <esmi_cpuid_msr.h>
 #include <esmi_rmi.h>
-#include "pal.h"
+#include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.h>
+#include "pal.h"
 
 
 int
@@ -455,4 +456,23 @@ pal_get_cpu_id(uint8_t soc_num) {
   }
 
   return kv_set(key, cpuid, 0, KV_FPERSIST);
+}
+
+bool
+fru_presence_ext(uint8_t fru_id, uint8_t *status) {
+  gpio_value_t gpio_value;
+
+  switch (fru_id) {
+    case FRU_NIC0:
+      gpio_value = gpio_get_value_by_shadow(FM_OCP0_PRSNT);
+      *status = (gpio_value == GPIO_VALUE_LOW) ? FRU_PRSNT : FRU_NOT_PRSNT;
+      return true;
+    case FRU_NIC1:
+      gpio_value = gpio_get_value_by_shadow(FM_OCP1_PRSNT);
+      *status = (gpio_value == GPIO_VALUE_LOW) ? FRU_PRSNT : FRU_NOT_PRSNT;
+      return true;
+    default:
+      *status = FRU_PRSNT;
+      return true;
+  }
 }

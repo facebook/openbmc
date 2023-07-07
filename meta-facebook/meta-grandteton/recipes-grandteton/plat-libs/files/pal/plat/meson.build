@@ -48,4 +48,5 @@ pal_deps += [
     dependency('libobmc-sensors'),
     dependency('libpldm-oem'),
     dependency('libretimer'),
+    dependency('libobmc-i3c'),
     ]

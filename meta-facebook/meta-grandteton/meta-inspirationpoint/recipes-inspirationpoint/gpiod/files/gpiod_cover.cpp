@@ -119,6 +119,11 @@ static void
 post_comp_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   sgpio_event_handler(desc, last, curr);
   post_comp_init_handler(desc, curr);
+
+  if(curr == GPIO_VALUE_HIGH &&
+     gpio_get_value_by_shadow("FM_SPD_REMOTE_EN_R") == GPIO_VALUE_HIGH) {
+    gpio_set_value_by_shadow("FM_SPD_REMOTE_EN_R", GPIO_VALUE_LOW);
+  }
 }
 
 static void

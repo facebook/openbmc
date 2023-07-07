@@ -27,6 +27,7 @@
 #include <openbmc/aries_common.h>
 #include <openbmc/plat.h>
 #include <openbmc/dimm.h>
+#include <openbmc/i3c_dev.h>
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN    "BATTERY_DETECT"
@@ -46,6 +47,9 @@
 
 #define APML_SNR_START_INDEX  MB_SNR_DIMM_CPU0_A0_TEMP
 #define DELAY_APML_MUX  100  // 100 ms
+#define DIMM_TS0_SNR_DIR "/dev/bus/i3c/%d-e0000001%d"
+#define DIMM_TS1_SNR_DIR "/dev/bus/i3c/%d-e0000003%d"
+#define DIMM_PWR_SNR_DIR "/dev/bus/i3c/%d-e5010%d000"
 
 uint8_t DIMM_SLOT_CNT = 0;
 //static float InletCalibration = 0;
@@ -428,35 +432,35 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
 
-  {"CPU0_DIMM_A0_TEMP", DIMM_ID0, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x80
-  {"CPU0_DIMM_A1_TEMP", DIMM_ID1, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x81
-  {"CPU0_DIMM_A2_TEMP", DIMM_ID2, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x82
-  {"CPU0_DIMM_A3_TEMP", DIMM_ID3, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x83
-  {"CPU0_DIMM_A4_TEMP", DIMM_ID4, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x84
-  {"CPU0_DIMM_A5_TEMP", DIMM_ID5, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x85
-  {"CPU0_DIMM_A6_TEMP", DIMM_ID6, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x86
-  {"CPU0_DIMM_A7_TEMP", DIMM_ID7, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x87
-  {"CPU0_DIMM_A8_TEMP",  DIMM_ID8, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x88
-  {"CPU0_DIMM_A9_TEMP",  DIMM_ID9, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x89
-  {"CPU0_DIMM_A10_TEMP", DIMM_ID10, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x8A
-  {"CPU0_DIMM_A11_TEMP", DIMM_ID11, read_cpu0_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x8B
+  {"CPU0_DIMM_A0_TEMP", DIMM_ID0, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x80
+  {"CPU0_DIMM_A1_TEMP", DIMM_ID1, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x81
+  {"CPU0_DIMM_A2_TEMP", DIMM_ID2, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x82
+  {"CPU0_DIMM_A3_TEMP", DIMM_ID3, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x83
+  {"CPU0_DIMM_A4_TEMP", DIMM_ID4, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x84
+  {"CPU0_DIMM_A5_TEMP", DIMM_ID5, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x85
+  {"CPU0_DIMM_A6_TEMP", DIMM_ID6, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x86
+  {"CPU0_DIMM_A7_TEMP", DIMM_ID7, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x87
+  {"CPU0_DIMM_A8_TEMP",  DIMM_ID8, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x88
+  {"CPU0_DIMM_A9_TEMP",  DIMM_ID9, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x89
+  {"CPU0_DIMM_A10_TEMP", DIMM_ID10, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x8A
+  {"CPU0_DIMM_A11_TEMP", DIMM_ID11, read_cpu0_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x8B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8F
 
-  {"CPU1_DIMM_B0_TEMP", DIMM_ID0, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x90
-  {"CPU1_DIMM_B1_TEMP", DIMM_ID1, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x91
-  {"CPU1_DIMM_B2_TEMP", DIMM_ID2, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x92
-  {"CPU1_DIMM_B3_TEMP", DIMM_ID3, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x93
-  {"CPU1_DIMM_B4_TEMP", DIMM_ID4, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x94
-  {"CPU1_DIMM_B5_TEMP", DIMM_ID5, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x95
-  {"CPU1_DIMM_B6_TEMP", DIMM_ID6, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x96
-  {"CPU1_DIMM_B7_TEMP", DIMM_ID7, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x97
-  {"CPU1_DIMM_B8_TEMP",  DIMM_ID8, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x98
-  {"CPU1_DIMM_B9_TEMP",  DIMM_ID9, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x99
-  {"CPU1_DIMM_B10_TEMP", DIMM_ID10, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x9A
-  {"CPU1_DIMM_B11_TEMP", DIMM_ID11, read_cpu1_dimm_temp, false, {85.0, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x9B
+  {"CPU1_DIMM_B0_TEMP", DIMM_ID0, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x90
+  {"CPU1_DIMM_B1_TEMP", DIMM_ID1, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x91
+  {"CPU1_DIMM_B2_TEMP", DIMM_ID2, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x92
+  {"CPU1_DIMM_B3_TEMP", DIMM_ID3, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x93
+  {"CPU1_DIMM_B4_TEMP", DIMM_ID4, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x94
+  {"CPU1_DIMM_B5_TEMP", DIMM_ID5, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x95
+  {"CPU1_DIMM_B6_TEMP", DIMM_ID6, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x96
+  {"CPU1_DIMM_B7_TEMP", DIMM_ID7, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x97
+  {"CPU1_DIMM_B8_TEMP",  DIMM_ID8, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x98
+  {"CPU1_DIMM_B9_TEMP",  DIMM_ID9, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x99
+  {"CPU1_DIMM_B10_TEMP", DIMM_ID10, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x9A
+  {"CPU1_DIMM_B11_TEMP", DIMM_ID11, read_cpu1_dimm_temp, false, {85.0, 80.0, 0, 5, 0, 0, 0, 0}, TEMP}, //0x9B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9E
@@ -830,6 +834,47 @@ read_cpu_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
+static int
+read_i3c_dimm_temp(uint8_t cpu_id, uint8_t dimm_id, float *value) {
+  const char* snr_path[2] = {DIMM_TS0_SNR_DIR, DIMM_TS1_SNR_DIR};
+  int fd;
+  float ts[2] = {-256, -256};
+  char fp[32] = {0};
+  uint8_t txbuf[1] = {0x31};
+  uint8_t rxbuf[2] = {0};
+
+  for (int i = 0; i < 2; i++) {
+    if(dimm_id < CHANNEL_OF_DIMM_NUM) {
+      snprintf(fp, sizeof(fp), snr_path[i], cpu_id*2, dimm_id%CHANNEL_OF_DIMM_NUM);
+    }
+    else {
+      snprintf(fp, sizeof(fp), snr_path[i], cpu_id*2+1, dimm_id%CHANNEL_OF_DIMM_NUM);
+    }
+
+    fd = i3c_open(fp);
+    if (fd >= 0) {
+      if (i3c_rdwr_msg_xfer(fd, txbuf, 1, rxbuf, 2) == 0) {
+        if (GETBIT(rxbuf[1], 4)) { // negative
+          ts[i] = -0.25 * (((~((rxbuf[1] << 8) | rxbuf[0]) >> 2) + 1) & 0x3FF);
+        }
+        else {
+          ts[i] = 0.25 * ((((rxbuf[1] << 8) | rxbuf[0]) >> 2) & 0x3FF);
+        }
+      }
+      i3c_close(fd);
+    }
+  }
+
+  *value = (ts[0] > ts[1]) ? ts[0] : ts[1];
+
+  //TS sensor is +-256
+  if (*value == -256) {
+    return -1;
+  }
+
+  return 0;
+}
+
 static void decode_dimm_temp(uint16_t raw, float *temp)
 {
   if (raw <= 0x3FF)
@@ -863,13 +908,21 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret, lock = -1;
   char has_mux[MAX_VALUE_LEN] = {0};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
+  float unc = sensor_map[fru].map[sensor_num].snr_thresh.unc_thresh;
+  static float max_temp;
   static uint8_t retry[MAX_DIMM_NUM] = {0};
+  static bool asserted = false;
 
   if(!is_cpu_socket_occupy(CPU_ID0))
     return READING_NA;
 
   if(pal_bios_completed(fru) != true) {
     return READING_NA;
+  }
+  else {
+    if(gpio_get_value_by_shadow("FM_BIOS_SPD_MUX_R_N") == GPIO_VALUE_LOW) {
+      gpio_set_value_by_shadow("FM_SPD_REMOTE_EN_R", GPIO_VALUE_HIGH);
+    }
   }
 
   if (sensor_num == APML_SNR_START_INDEX) {
@@ -885,9 +938,38 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     }
   }
 
-  lock = apml_channel_lock(CPU_ID0);
-  ret = read_dimm_temp(fru, sensor_num, value, dimm_id, CPU_ID0);
-  apml_channel_unlock(lock);
+  if (gpio_get_value_by_shadow("FM_SPD_REMOTE_EN_R") == GPIO_VALUE_HIGH) {
+    if(dimm_id == DIMM_ID0) {
+      max_temp = 0;
+    }
+
+    ret = read_i3c_dimm_temp(CPU_ID0, dimm_id, value);
+    if (max_temp < *value) {
+      max_temp = *value;
+    }
+
+    if((dimm_id == DIMM_ID11) && asserted == false && (max_temp >= unc)) {
+      lock = apml_channel_lock(CPU_ID0);
+      if (write_dram_throttle (CPU_ID0, 50) == OOB_SUCCESS) {
+        asserted = true;
+      }
+      apml_channel_unlock(lock);
+    }
+
+    if((dimm_id == DIMM_ID11) && asserted == true && (max_temp <= unc-1)) {
+      lock = apml_channel_lock(CPU_ID0);
+      if (write_dram_throttle (CPU_ID0, 0) == OOB_SUCCESS) {
+        asserted = false;
+      }
+      apml_channel_unlock(lock);
+    }
+  }
+  else {
+    lock = apml_channel_lock(CPU_ID0);
+    ret = read_dimm_temp(fru, sensor_num, value, dimm_id, CPU_ID0);
+    apml_channel_unlock(lock);
+  }
+
   if ( ret != 0 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 3);
@@ -904,7 +986,10 @@ static int
 read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret, lock = -1;
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
+  float unc = sensor_map[fru].map[sensor_num].snr_thresh.unc_thresh;
+  static float max_temp;
   static uint8_t retry[MAX_DIMM_NUM] = {0};
+  static bool asserted = false;
 
   if(!is_cpu_socket_occupy(CPU_ID1))
     return READING_NA;
@@ -913,9 +998,38 @@ read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  lock = apml_channel_lock(CPU_ID1);
-  ret = read_dimm_temp(fru, sensor_num, value, dimm_id, CPU_ID1);
-  apml_channel_unlock(lock);
+  if (gpio_get_value_by_shadow("FM_SPD_REMOTE_EN_R") == GPIO_VALUE_HIGH) {
+    if(dimm_id == DIMM_ID0) {
+      max_temp = 0;
+    }
+
+    ret = read_i3c_dimm_temp(CPU_ID1, dimm_id, value);
+    if (max_temp < *value) {
+      max_temp = *value;
+    }
+
+    if((dimm_id == DIMM_ID11) && asserted == false && (max_temp >= unc)) {
+      lock = apml_channel_lock(CPU_ID1);
+      if(write_dram_throttle (CPU_ID1, 50) == OOB_SUCCESS) {
+        asserted = true;
+      }
+      apml_channel_unlock(lock);
+    }
+
+    if((dimm_id == DIMM_ID11) && asserted == true && (max_temp <= unc-1)) {
+      lock = apml_channel_lock(CPU_ID1);
+      if(write_dram_throttle (CPU_ID1, 0) == OOB_SUCCESS) {
+        asserted = false;
+      }
+      apml_channel_unlock(lock);
+    }
+  }
+  else {
+    lock = apml_channel_lock(CPU_ID1);
+    ret = read_dimm_temp(fru, sensor_num, value, dimm_id, CPU_ID1);
+    apml_channel_unlock(lock);
+  }
+
   if ( ret != 0 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 3);
@@ -927,6 +1041,31 @@ read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   retry[dimm_id] = 0;
   return 0;
 }
+
+static int
+read_i3c_dimm_power(uint8_t dimm_id, float *value) {
+  int fd, ret = 0;
+  char fp[32] = {0};
+
+  uint8_t txbuf[1] = {0x0C};
+  uint8_t rxbuf[1] = {0};
+
+  snprintf(fp, sizeof(fp), DIMM_PWR_SNR_DIR, dimm_id/CHANNEL_OF_DIMM_NUM, dimm_id%CHANNEL_OF_DIMM_NUM);
+  fd = i3c_open(fp);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s, fp =%s, open failed", __FUNCTION__, fp);
+    return -1;
+  }
+
+  ret = i3c_rdwr_msg_xfer(fd, txbuf, 1, rxbuf, 1);
+  i3c_close(fd);
+  if (ret == 0) {
+    *value = ((float)(rxbuf[0] * 125))/1000;
+  }
+
+   return 0;
+}
+
 
 static int
 read_dimm_power(uint8_t fru, uint8_t sensor_num, float *value,
@@ -957,6 +1096,10 @@ read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
+  if (gpio_get_value_by_shadow("FM_SPD_REMOTE_EN_R") == GPIO_VALUE_HIGH) {
+    return read_i3c_dimm_power(dimm_id, value);
+  }
+
   lock = apml_channel_lock(CPU_ID0);
   ret = read_dimm_power(fru, sensor_num, value, dimm_id, CPU_ID0);
   apml_channel_unlock(lock);
@@ -980,6 +1123,10 @@ read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
 
   if(pal_bios_completed(fru) != true) {
     return READING_NA;
+  }
+
+  if (gpio_get_value_by_shadow("FM_SPD_REMOTE_EN_R") == GPIO_VALUE_HIGH) {
+    return read_i3c_dimm_power(dimm_id + CHANNEL_OF_DIMM_NUM*2, value);
   }
 
   lock = apml_channel_lock(CPU_ID1);

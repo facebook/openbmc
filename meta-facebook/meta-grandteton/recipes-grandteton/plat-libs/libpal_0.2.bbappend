@@ -46,6 +46,7 @@ DEPENDS += " \
     libsensor-correction \
     libdimm \
     libretimer \
+    libobmc-i3c \
     apml \
     "
 

@@ -140,7 +140,7 @@ pal_power_policy_control(uint8_t slot, char *last_ps) {
         //wait AUTH_COMPLETE signal
         retry_cond(fby35_common_is_prot_auth_complete(slot), 120, 1000);
       }
-      pal_set_server_power(slot, SERVER_FORCE_POWER_ON);
+      retry_cond(pal_set_server_power(slot, SERVER_FORCE_POWER_ON) != POWER_STATUS_ERR, 10, 500);
       break;
     default:
       //do nothing

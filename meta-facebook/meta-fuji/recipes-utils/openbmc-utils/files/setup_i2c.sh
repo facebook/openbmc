@@ -27,6 +27,8 @@ source /usr/local/bin/openbmc-utils.sh
 i2cset -y -f 12 0x3e 0x15 0x00
 sleep 1
 i2cset -y -f 12 0x3e 0x15 0xff
+UCD_DEVICE_ID_REG=0xFD
+ADM1266_BLACKBOX_INFO=0xE6
 
 # Board Version
 board_ver=$(wedge_board_rev)
@@ -86,23 +88,23 @@ i2c_device_add 3 0x4a lm75     #LM75B_3# Thermal sensor
 # # #   UCD90160    0x68
 # # #   UCD90124A   0x43
 # # #   ADM1266     0x44
-if i2c_detect_address 5 0x35; then
+if i2c_detect_address 5 0x35 "$UCD_DEVICE_ID_REG"; then
    i2c_device_add 5 0x35 ucd90160
    kv set smb_pwrseq_1_addr 0x35
    kv set smb_pwrseq_1_page_count 16
-elif i2c_detect_address 5 0x66; then
+elif i2c_detect_address 5 0x66 "$UCD_DEVICE_ID_REG"; then
    i2c_device_add 5 0x66 ucd90160
    kv set smb_pwrseq_1_addr 0x66
    kv set smb_pwrseq_1_page_count 13
-elif i2c_detect_address 5 0x68; then
+elif i2c_detect_address 5 0x68 "$UCD_DEVICE_ID_REG"; then
    i2c_device_add 5 0x68 ucd90160
    kv set smb_pwrseq_1_addr 0x68
    kv set smb_pwrseq_1_page_count 13
-elif i2c_detect_address 5 0x43; then
+elif i2c_detect_address 5 0x43 "$UCD_DEVICE_ID_REG"; then
    i2c_device_add 5 0x43 ucd90124
    kv set smb_pwrseq_1_addr 0x43
    kv set smb_pwrseq_1_page_count 12
-elif i2c_detect_address 5 0x44; then
+elif i2c_detect_address 5 0x44 "$ADM1266_BLACKBOX_INFO"; then
    i2c_device_add 5 0x44 adm1266
    kv set smb_pwrseq_1_addr 0x44
 else
@@ -117,23 +119,23 @@ fi
 # # #   UCD90160    0x69
 # # #   UCD90124A   0x46
 # # #   ADM1266     0x47
-if i2c_detect_address 5 0x36; then
+if i2c_detect_address 5 0x36 "$UCD_DEVICE_ID_REG"; then
    i2c_device_add 5 0x36 ucd90160
    kv set smb_pwrseq_2_addr 0x36
    kv set smb_pwrseq_2_page_count 16
-elif i2c_detect_address 5 0x67; then
+elif i2c_detect_address 5 0x67 "$UCD_DEVICE_ID_REG"; then
    i2c_device_add 5 0x67 ucd90160
    kv set smb_pwrseq_2_addr 0x67
    kv set smb_pwrseq_2_page_count 13
-elif i2c_detect_address 5 0x69; then
+elif i2c_detect_address 5 0x69 "$UCD_DEVICE_ID_REG"; then
    i2c_device_add 5 0x69 ucd90160
    kv set smb_pwrseq_2_addr 0x69
    kv set smb_pwrseq_2_page_count 13
-elif i2c_detect_address 5 0x46; then
+elif i2c_detect_address 5 0x46 "$UCD_DEVICE_ID_REG"; then
    i2c_device_add 5 0x46 ucd90124
    kv set smb_pwrseq_2_addr 0x46
    kv set smb_pwrseq_2_page_count 12
-elif i2c_detect_address 5 0x47; then
+elif i2c_detect_address 5 0x47 "$ADM1266_BLACKBOX_INFO"; then
    i2c_device_add 5 0x47 adm1266
    kv set smb_pwrseq_2_addr 0x47
 else

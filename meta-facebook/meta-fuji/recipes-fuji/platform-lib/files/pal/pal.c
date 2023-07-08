@@ -1052,6 +1052,7 @@ pal_get_board_rev(int *rev) {
   int smbcpld_ver, iobfpga_ver;
   int hw_id;
   int ret = -1;
+  char str[MAX_VALUE_LEN] = {0};
 
   snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, "board_ver");
   ret = device_read(path, &smbcpld_ver);
@@ -1076,26 +1077,36 @@ pal_get_board_rev(int *rev) {
     case BOARD_HW_ID_PVT1_PVT2:  *rev = BOARD_FUJI_PVT1_PVT2;  break;
     case BOARD_HW_ID_MP0SKU1_MP1SKU7:
       /*  MP0SKU1 and MP1SKU7 have the same BOARD_HW_ID
-       *  need to indicate by SMB UCD90160 i2c address
+       *  need to indicate by SMB UCD90160A i2c address
        */
-      if ( i2c_detect_device(5, 0x35) == 0 ) {
-        *rev = BOARD_FUJI_MP0SKU1;
-      } else if ( i2c_detect_device(5, 0x66) == 0 ) {
-        *rev = BOARD_FUJI_MP1SKU7;
+      if (pal_get_key_value("smb_pwrseq_1_addr", str) == 0 ) {
+        if (strncmp(str,"0x35",sizeof("0x35")) == 0) {
+          *rev = BOARD_FUJI_MP0SKU1;
+        } else if (strncmp(str,"0x66",sizeof("0x66")) == 0) {
+          *rev = BOARD_FUJI_MP1SKU7;
+        } else {
+          *rev = BOARD_FUJI_UNDEFINED;
+        }
       } else {
         *rev = BOARD_FUJI_UNDEFINED;
+        return -1;
       }
       break;
     case BOARD_HW_ID_MP0SKU2_MP1SKU6:
       /*  MP0SKU2 and MP1SKU6 have the same BOARD_HW_ID
        *  need to indicate by SMB UCD90160 i2c address
        */
-      if ( i2c_detect_device(5, 0x35) == 0 ) {
-        *rev = BOARD_FUJI_MP0SKU2;
-      } else if ( i2c_detect_device(5, 0x68) == 0 ) {
-        *rev = BOARD_FUJI_MP1SKU6;
+      if (pal_get_key_value("smb_pwrseq_1_addr", str) == 0 ) {
+        if (strncmp(str,"0x35",sizeof("0x35")) == 0) {
+          *rev = BOARD_FUJI_MP0SKU1;
+        } else if (strncmp(str,"0x68",sizeof("0x68")) == 0) {
+          *rev = BOARD_FUJI_MP1SKU7;
+        } else {
+          *rev = BOARD_FUJI_UNDEFINED;
+        }
       } else {
         *rev = BOARD_FUJI_UNDEFINED;
+        return -1;
       }
       break;
     case BOARD_HW_ID_MP1SKU1:    *rev = BOARD_FUJI_MP1SKU1;    break;

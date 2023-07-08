@@ -84,16 +84,13 @@ LITEON_48V="0x44 0x44 0x2d 0x32 0x31 0x35 0x32 0x2d 0x32 0x4c"
 i2c_detect_address() {
    bus="$1"
    addr="$2"
-   if [ -n "$3" ]; then
-      retries="$3"
-   else
-      retries=5
-   fi
-
+   reg="$3"
+      
+   retries=5
    retry=0
 
    while [ "$retry" -lt "$retries" ]; do
-      if i2cget -y -f "$bus" "$addr" &> /dev/null; then
+      if eval i2cget -y -f "$bus" "$addr" "$reg" &> /dev/null; then
          return 0
       fi
       usleep 50000
@@ -131,9 +128,10 @@ wedge_board_rev() {
         $((0x0747)))
           # MP0-SKU1, MP1-SKU7 have same value,
           # need to indicate from UCD90160A address 
-          if i2c_detect_address 5 0x35; then
+          rev="$(kv get smb_pwrseq_1_addr)"
+          if [ "$rev" = "0x35" ]; then
             echo "BOARD_FUJI_MP0-SKU1"
-          elif i2c_detect_address 5 0x66; then
+          elif [ "$rev" = "0x66" ]; then
             echo "BOARD_FUJI_MP1-SKU7"
           else
             echo "BOARD_FUJI_UNDEFINED_${board_ver}"
@@ -142,9 +140,10 @@ wedge_board_rev() {
         $((0x2747)))  
           # MP0-SKU2, MP1-SKU6 have same value,
           # need to indicate from UCD90160 address
-          if i2c_detect_address 5 0x35; then
+          rev="$(kv get smb_pwrseq_1_addr)"
+          if [ "$rev" = "0x35" ]; then
             echo "BOARD_FUJI_MP0-SKU2"
-          elif i2c_detect_address 5 0x68; then
+          elif [ "$rev" = "0x68" ]; then
             echo "BOARD_FUJI_MP1-SKU6"
           else
             echo "BOARD_FUJI_UNDEFINED_${board_ver}"

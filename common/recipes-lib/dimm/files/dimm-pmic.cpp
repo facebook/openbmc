@@ -219,6 +219,12 @@ int
 pmic_clear_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm_num) {
   uint8_t data[1] = {0};
   int ret = 0;
+
+  // Set R35 to clear registers R04 ~ R07
+  data[0] = 0;
+  if (pmic_rdwr_with_retry(fru_id, cpu, dimm_num, 0x35, 1, 0, data) != 0) {
+    ret = -1;
+  }
   // Set R39 to clear registers R04 ~ R07
   data[0] = 0x74;
   if (pmic_rdwr_with_retry(fru_id, cpu, dimm_num, 0x39, 1, 0, data) != 0) {

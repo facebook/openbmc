@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
+#include <linux/limits.h>
 
 #include <openbmc/log.h>
 
@@ -280,7 +281,7 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   int parse_sup_eeprom = 0;
   char local_target[256];
   char field_value[YAMP_EEPROM_SIZE]; // Will never overflow
-  char fn[64];
+  char fn[PATH_MAX];
   char buf[YAMP_EEPROM_SIZE];
   char bus_name[32];
   char sup_eeprom_filename[YAMP_FILE_NAME_SIZE];
@@ -297,10 +298,10 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   yamp_str_toupper((char *)local_target);
 
   if (!strcmp(local_target, YAMP_EEPROM_CHS_OBJ)) {
-    sprintf(fn, "%s%s/eeprom", YAMP_EEPROM_PATH_BASE,
+    snprintf(fn, sizeof(fn), "%s%s/eeprom", YAMP_EEPROM_PATH_BASE,
                                YAMP_EEPROM_CHASSIS);
   } else if (!strcmp(local_target, YAMP_EEPROM_SCD_OBJ)) {
-    sprintf(fn, "%s%s/eeprom", YAMP_EEPROM_PATH_BASE,
+    snprintf(fn, sizeof(fn), "%s%s/eeprom", YAMP_EEPROM_PATH_BASE,
                                YAMP_EEPROM_SWITCH_CARD);
   } else if (!strcmp(local_target, YAMP_EEPROM_SUP_OBJ)) {
     rc = yamp_prepare_sup_eeprom_cache();
@@ -310,13 +311,13 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
       return -ENOSPC;
     }
     yamp_get_eeprom_filename(sup_eeprom_filename);
-    sprintf(fn, "%s", sup_eeprom_filename);
+    snprintf(fn, sizeof(fn), "%s", sup_eeprom_filename);
     // Note that SUP's EEPROM format is a bit different from others,
     // in that it doesn't start with eeprom header.
     // Instead, it starts from prefdl field.
     parse_sup_eeprom = 1;
   } else if (yamp_get_lc_bus_name((const char *)local_target, bus_name) == 0) {
-    sprintf(fn, "%s%s/eeprom", YAMP_EEPROM_PATH_BASE, bus_name);
+    snprintf(fn, sizeof(fn), "%s%s/eeprom", YAMP_EEPROM_PATH_BASE, bus_name);
   } else {
     return -EINVAL;
   }

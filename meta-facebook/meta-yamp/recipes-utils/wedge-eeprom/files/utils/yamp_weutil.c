@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <stdio.h>
 
+#include <openbmc/log.h>
+
 #include "yamp_eeprom.h"
 #include <string.h>
 #define BMC_MGMT_MACADDR "/sys/class/net/eth0/address"
@@ -30,8 +32,12 @@ void read_local_mac(char *buffer)
   FILE *fp;
   sprintf(buffer, "NA");
   fp = fopen(BMC_MGMT_MACADDR, "r");
-  if (fp)
-     fscanf(fp, "%s", buffer);
+  if (fp) {
+    if (fscanf(fp, "%s", buffer) != 1)
+      OBMC_ERROR(errno, "failed to read %s", BMC_MGMT_MACADDR);
+
+    fclose(fp);
+  }
   return;
 }
 

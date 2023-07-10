@@ -27,3 +27,7 @@ BB_DISKMON_DIRS ??= "\
     ${@yocto_halt_taskname(d)},${DL_DIR},100M,1K \
     ${@yocto_halt_taskname(d)},${SSTATE_DIR},100M,1K \
     ${@yocto_halt_taskname(d)},/tmp,10M,1K"
+
+# We have a lot of patches that don't have an Upstream-Status, so diable this
+# QA rather than modifying all the patch files.
+ERROR_QA:remove = "patch-status"

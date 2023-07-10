@@ -79,13 +79,13 @@ def get_version(machine: str) -> str:
 
 def parse_feature_list(
     outfile: IOBase,
-    feature_list: Dict[str, List[Dict[str, str]]],
+    feature_list: Dict[str, Dict[str, Dict[str, str]]],
     machine: argparse.Namespace,
 ) -> None:
     for section_name, section_features in feature_list.items():
         print(f"\n#### {section_name}\n", file=outfile)
 
-        for feature in section_features:
+        for title, feature in section_features.items():
             feature_name = (
                 feature["file"].replace(".md", "").replace("-", " ").strip()
             )

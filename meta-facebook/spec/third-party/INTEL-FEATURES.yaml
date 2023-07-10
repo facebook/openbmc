@@ -1,4 +1,4 @@
 Third Party:
-  - file: diagnostics-at-scale-debug.md
+  At Scale Debug:
     priority: P0
-    title: At Scale Debug
+    file: diagnostics-at-scale-debug.md

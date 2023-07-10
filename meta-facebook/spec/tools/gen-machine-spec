@@ -29,6 +29,8 @@ GREEN = "\033[92m"
 YELLOW = "\033[93m"
 NORMAL = "\033[0m"
 
+FeatureList = Dict[str, Dict[str, Dict[str, str]]]
+
 
 def find_file(name: str, machine: argparse.Namespace) -> Optional[str]:
     # Check in the machine directory
@@ -45,6 +47,22 @@ def find_file(name: str, machine: argparse.Namespace) -> Optional[str]:
         if os.path.isfile(third_party_file_name):
             return third_party_file_name
     return None
+
+
+def merge_dict(result: Dict[Any, Any], insert: Dict[Any, Any]) -> None:
+    for v in insert.keys():
+        if (
+            v in result
+            and isinstance(result[v], dict)
+            and isinstance(insert[v], dict)
+        ):
+            merge_dict(result[v], insert[v])
+        else:
+            result[v] = insert[v]
+
+
+def hyphenate(string: str) -> str:
+    return "".join([x if x.isalnum() else "-" for x in string.lower()])
 
 
 def write_title(output: IOBase, machine: argparse.Namespace) -> None:
@@ -77,50 +95,167 @@ def get_version(machine: str) -> str:
     return d
 
 
-def parse_feature_list(
-    outfile: IOBase,
-    feature_list: Dict[str, Dict[str, Dict[str, str]]],
-    machine: argparse.Namespace,
-) -> None:
-    for section_name, section_features in feature_list.items():
-        print(f"\n#### {section_name}\n", file=outfile)
+def read_feature_list(machine: argparse.Namespace) -> FeatureList:
+    features: FeatureList = dict()
 
-        for title, feature in section_features.items():
-            feature_name = (
-                feature["file"].replace(".md", "").replace("-", " ").strip()
-            )
-            print(
-                f"- [ ] {feature['priority']} **{feature_name}**", file=outfile
-            )
-
-
-def build_features(out_file: str, machine: argparse.Namespace) -> bool:
-    out_file = os.path.join(machine.file, out_file)
     for f in machine.feature_list:
         file_name = f.upper() + ".yaml"
-        print(
-            GREEN
-            + f"Finding feature file ... {file_name}   machine is {machine}\n"
-            + NORMAL
-        )
+        print(GREEN + f"Finding feature file: {file_name}\n" + NORMAL)
         file = find_file(file_name, machine)
         if not file:
-            print(RED + f"Feature file {file_name} was not found..." + NORMAL)
-            return False
+            print(RED + f"Feature file {file_name} was not found!" + NORMAL)
+            continue
         print(GREEN + f"Feature file {file_name} was found." + NORMAL)
+
         try:
-            with open(file, "r") as feature_file, open(out_file, "a") as out:
+            with open(file, "r") as feature_file:
                 feature_list = yaml.safe_load(feature_file)
-                parse_feature_list(out, feature_list, machine)
+                merge_dict(features, feature_list)
         except Exception as e:
             print(
                 RED
-                + f"Invalid JSON data found in feature file {file}"
+                + f"Invalid JSON data found in feature file {file}:\n{e}"
                 + NORMAL
             )
-            print(e)
-            return False
-    return True
+            continue
+
+    if "status" in machine:
+        for category, feature_list in machine.status.items():
+            for feature, status in feature_list.items():
+                features[category][feature]["status"] = status
+
+    return features
+
+
+def parse_feature_list(machine: argparse.Namespace) -> FeatureList:
+    file = find_file("FEATURES.md", machine)
+    if not file:
+        raise Exception("Unable to find FEATURES.md")
+
+    features: FeatureList = dict()
+
+    with open(file, "r") as feature_file:
+        for line in feature_file.readlines():
+            if line.startswith("####"):
+                title = line[4:].strip()
+                section = hyphenate(title)
+                if title not in features:
+                    features[title] = dict()
+
+            elif line.startswith("- ["):
+                line = line[3:].strip()
+                status = "done" if line.startswith("x") else None
+                line = line.split("] ")[1]
+                priority_subtitle = line.split(" ")
+                priority = priority_subtitle[0]
+                subtitle = " ".join(priority_subtitle[1:]).split("**")[1]
+                subsection = hyphenate(subtitle)
+
+                features[title][subtitle] = {
+                    "file": f"{subsection}.md",
+                    "priority": priority,
+                }
+                if status:
+                    features[title][subtitle]["status"] = status
+            elif line.startswith("  "):
+                if "short" not in features[title][subtitle]:
+                    features[title][subtitle]["short"] = line
+                else:
+                    features[title][subtitle]["short"] = (
+                        features[title][subtitle]["short"] + line
+                    )
+
+    return features
+
+
+def render_features(output: IOBase, machine: argparse.Namespace) -> None:
+    features = (
+        read_feature_list(machine)
+        if "feature_list" in machine
+        else parse_feature_list(machine)
+    )
+
+    header = []
+    content = []
+
+    header.append("## Features\n\n")
+    header.append("### Feature Overview\n\n")
+
+    for title in features.keys():
+        section = hyphenate(title)
+
+        header.append(f"#### [{title}](#s-{section})\n\n")
+        content.append(f"### {title} {{#s-{section}}}\n\n")
+
+        section_file = find_file(f"features/{section}.md", machine)
+        if section_file:
+            with open(section_file, "r") as sf:
+                content = content + sf.readlines() + ["\n"]
+        else:
+            print(
+                YELLOW
+                + f"Warning: did not find subsection {section}.md file"
+                + NORMAL
+            )
+
+        for subtitle, subtitle_data in features[title].items():
+            subsection = hyphenate(subtitle)
+
+            subtitle_result = subtitle_data["priority"] + " "
+            subtitle_anchor = f"(#s-{section}-{subsection})"
+
+            if (
+                "status" not in subtitle_data
+                or "done" == subtitle_data["status"]
+            ):
+                subtitle_file = find_file(
+                    f"features/{section}/{subtitle_data['file']}", machine
+                )
+                if subtitle_file:
+                    subtitle_result = (
+                        subtitle_result + f"**[{subtitle}]{subtitle_anchor}**"
+                    )
+                    content.append(
+                        f"#### {subtitle} {{#s-{section}-{subsection}}}\n\n"
+                    )
+
+                    with open(subtitle_file, "r") as sf:
+                        content = content + sf.readlines() + ["\n"]
+                else:
+                    subtitle_result = subtitle_result + f"**{subtitle}**"
+                    print(
+                        RED
+                        + "Warning: did not find section"
+                        f" {subtitle_data['file']} file"
+                        + NORMAL
+                    )
+
+                subtitle_result = (
+                    "- ["
+                    + (" " if "status" not in subtitle_data else "x")
+                    + "] "
+                    + subtitle_result
+                )
+            elif "unsupported" == subtitle_data["status"]:
+                subtitle_result = (
+                    f"- ~~[ ] {subtitle_result}**{subtitle}**~~"
+                    " **Unsupported**"
+                )
+            else:
+                raise Exception(
+                    f"Unknown status ({subtitle_data['status']}) for"
+                    f" {title}:{subtitle}"
+                )
+            header.append(subtitle_result + "\n")
+            if "short" in subtitle_data:
+                header.append(subtitle_data["short"])
+        header.append("\n")
+
+    for h in header:
+        output.write(h)
+    output.write("\n")
+    for c in content:
+        output.write(c)
 
 
 def write_section(
@@ -128,98 +263,23 @@ def write_section(
 ) -> None:
     contents = []
     print(GREEN + f"Writing section {section}\n" + NORMAL)
-    file_name = section.upper() + ".md"
-    file = find_file(file_name, machine)
-    if not file:
-        # If the FEATURES.md file is not found, build it from scratch.
-        # For all other files, raise an exception if they are missing.
-        if file_name == "FEATURES.md":
-            retCode = build_features(file_name, machine)
-            if retCode is False:
-                raise Exception(f"Unable to build {section} from scratch")
-            file = find_file(file_name, machine)
-            if not file:
-                raise Exception(f"Unable to find section file: {section}")
-            print(
-                GREEN + f"Feature file {file} successfully created." + NORMAL
-            )
-        else:
-            raise Exception(f"Unable to find section file: {section}")
-    try:
-        with open(file, "r") as section_file:
-            contents = section_file.readlines()
-    except:
-        raise Exception(f"Unable to find feature file {file}")
-    print(GREEN + "Feature file successfully loaded." + NORMAL)
 
-    if f"expand_{section}" in globals():
-        contents = globals()[f"expand_{section}"](contents, machine)
+    if f"render_{section}" in globals():
+        globals()[f"render_{section}"](output, machine)
+    else:
+        file_name = section.upper() + ".md"
+        file = find_file(file_name, machine)
+        if file:
+            with open(file, "r") as section_file:
+                contents = section_file.readlines()
+            print(GREEN + "Feature file successfully loaded." + NORMAL)
+        else:
+            raise Exception(f"Unable to find {file_name}.")
+
     for c in contents:
         output.write(c)
 
     print(file=output)
-
-
-def expand_features(
-    lines: List[str], machine: argparse.Namespace
-) -> List[str]:
-    subsection = None
-    fixed = []
-    tail = []
-
-    for line in lines:
-        if line.startswith("####"):
-            subtitle = line[4:].strip()
-            subsection = "".join(
-                [x if x.isalnum() else "-" for x in subtitle.lower()]
-            )
-
-            if subsection.lower() in ["priority-legend"]:
-                continue
-
-            line = f"#### [{line[4:].strip()}](#s-{subsection})\n"
-            tail.append(f"### {subtitle} {{#s-{subsection}}}\n\n")
-
-            subsection_file = find_file(f"features/{subsection}.md", machine)
-            if subsection_file:
-                with open(subsection_file, "r") as sf:
-                    tail = tail + sf.readlines() + ["\n"]
-            else:
-                print(
-                    YELLOW
-                    + f"Warning: did not find subsection {subsection}.md file"
-                    + NORMAL
-                )
-
-        elif line.startswith("- ["):
-            task = line.strip().split("**")[:-1]
-            taskname = "".join(
-                [x if x.isalnum() else "-" for x in task[1].lower()]
-            )
-            task_file = find_file(
-                f"features/{subsection}/{taskname}.md", machine
-            )
-            if task_file:
-                line = (
-                    f"{task[0]}**[{task[1]}](#s-{subsection}-{taskname})**\n"
-                )
-                tail.append(
-                    f"#### {task[1]} {{#s-{subsection}-{taskname}}}\n\n"
-                )
-
-                with open(task_file, "r") as tf:
-                    tail = tail + tf.readlines() + ["\n"]
-            else:
-                print(
-                    RED
-                    + "Warning: did not find"
-                    f" features/{subsection}/{taskname}.md"
-                    + NORMAL
-                )
-
-        fixed.append(line)
-
-    return fixed + ["\n"] + tail
 
 
 def create_docx(filename: str) -> None:

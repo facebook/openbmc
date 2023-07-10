@@ -9,3 +9,152 @@ feature_list:
   - default-meta-multihost-features
   - intel-features
   - platform-features
+status:
+  BIC Support:
+    BIC GPIO Support: done
+    BIC IPMB Support: done
+    BIC Info: done
+    BIC Reset: done
+    BIC Secure Boot: unsupported
+    BIC Self-Test: done
+    BIC Slot Clear CMOS Support: unsupported
+    BIC Slot Post-Code Data: done
+    BIC Slot SDR Data: done
+    BIC Status Check: done
+    BIC USB Connection Status: done
+  BMC Hardware Support:
+    Aspeed AST2620: done
+    Nuvoton Arbel: unsupported
+  BMC Reset:
+    Reset via SSH: done
+  Configuration:
+    CMOS Restore via Physical Reset: done
+    Get Platform Info: done
+    Set Boot Order: done
+    Set Power Policy: done
+  Design For Test:
+    Firmware Downgrade: done
+    Firmware Version Reporting: done
+    Firmware WDT Auto Recovery: done
+    NIC Reseat Handling: done
+    Power On Error Handling: done
+  Event Logs:
+    Log Events to Persistent Storage: done
+  Firmware Signature Checking:
+    BIC Binary Signature Check: done
+    Expansion Card Binary Signature Check: done
+  Firmware Update:
+    BIC Firmware Update: done
+    BIC Firmware Update Recovery: done
+    BIOS Firmware Update: done
+    BMC Firmware Update: done
+    CPLD Firmware Update: done
+    Expansion BIC Firmware Update: done
+    Expansion BIC Firmware Update Recovery: done
+    NIC Firmware Update: done
+    VR Firmware Update: done
+  Firmware Versions:
+    BIC Firmware Version: done
+    BIOS Firmware Version: done
+    CPLD Firmware Version: done
+    Expansion Card Firmware Version: done
+    Firmware Versions: done
+    NIC Firmware Version: done
+    VR Firmware Versions: done
+  Front Panel Control:
+    FPC Heartbeat LED: done
+    FPC Identify LED: done
+  FRU Information:
+    FRU Read: done
+    FRU Update: done
+  Health Monitoring:
+    BMC CPU Usage: done
+    BMC Memory Usage: done
+    BMC WDT: done
+    Health Monitoring Configuration: done
+  Hot Plug Services:
+    Hot Plug Service Fan Speed: done
+    Hot Plug Service SDR Cache: done
+    Hot Plug Service Sled Insertion: done
+  Infrastructure:
+    ADC Device Support: done
+    CPLD GPIO Expander Register Layout: done
+    Flash Layout: done
+    GPIO Device Support: done
+    GPIO Driver Porting: done
+    I2C Device Support: done
+    Kernel: done
+    PWM Tach Device Support: done
+    QEMU: unsupported
+    SPI Device Support: done
+    U-Boot: done
+    Yocto: done
+  LCD Debug Card:
+    Critical Log Frame: done
+    Critical Sensor Frame: done
+    GPIO Frame: done
+    Post Code Frame: done
+    User Settings Frame: done
+  Miscellaneous:
+    Factory Reset Settings: done
+    enclosure-util: unsupported
+    guid-util: done
+    openbmc-test-automation: unsupported
+  Network:
+    Host-BMC Networking: done
+    IPv4: done
+    IPv6: done
+    NIC Monitoring and Upgrade: done
+    OCPv3 NIC Support: done
+  Post-Code:
+    Post Code History: done
+  Power Control:
+    Expansion Card Power Cycle: unsupported
+    Expansion Card Power Off: unsupported
+    Expansion Card Power On: unsupported
+    Power Failure Detection: done
+    Power Status: done
+    Sled Cycle: done
+    Slot 12v Cycle: done
+    Slot 12v Off: done
+    Slot Graceful Shutdown: done
+    Slot Power Off: done
+    Slot Reset: done
+    phosphor-state-manager: unsupported
+  Security:
+    PRoT Support: unsupported
+    Signed Firmware Update: done
+  Sensors:
+    Common Sensor Naming: done
+    Display Current Sensor Status: done
+    Display Sensor Thresholds: done
+    Sensor Caching: done
+    Sensor History: done
+    Sensor Information: done
+  Serial-Over-Lan:
+    BIC UART Access: done
+    Expansion Card UART Access: done
+    Host SOL Access: done
+    SOL Console History: done
+    SOL Host Logger: unsupported
+    mTerm: done
+  Thermal Management:
+    Airflow Sensor: done
+    Automatic Fan Control: done
+    Manual Fan Control: done
+    NIC OTP Protection: done
+    Sled OTP Protection: done
+    Thermal Management: done
+  Time Sync:
+    NTP Sync: done
+    Timezone Configuration: done
+  User Interface:
+    Generic User Interface: done
+    Inband Ethernet: done
+    Inband KCS: done
+    SSH: done
+    host2bmc USB: unsupported
+  Greatlakes Specific Requirements:
+    CPLD Board ID Version Info: done
+    PRoT Support: unsupported
+    Sled Cable Presence Detect: done

@@ -1,4 +1,4 @@
-Third Party:
+Intel:
   At Scale Debug:
-    priority: P0
+    priority: P3
     file: diagnostics-at-scale-debug.md

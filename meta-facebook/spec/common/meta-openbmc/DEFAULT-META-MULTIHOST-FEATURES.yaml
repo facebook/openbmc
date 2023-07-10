@@ -59,10 +59,10 @@ BMC Reset:
     file: bmc-reset-recovery-ssh.md
     priority: P0
 Configuration:
-  CMOS Restore - OEM Command:
+  CMOS Restore via OEM Command:
     file: configuration-cmos-restore-oem-command.md
     priority: P1
-  CMOS Restore - Physical Reset:
+  CMOS Restore via Physical Reset:
     file: configuration-cmos-restore-physical-reset.md
     priority: P0
   Get Platform Info:
@@ -214,6 +214,13 @@ Front Panel Control:
   FPC Sled Cycle:
     file: fpc-sled-cycle.md
     priority: P0
+FRU Information:
+  FRU Read:
+    file: fru-read-fru.md
+    priority: P1
+  FRU Update:
+    file: fru-update-fru.md
+    priority: P1
 Health Monitoring:
   BMC CPU Usage:
     file: health-monitoring-cpu-usage.md
@@ -318,7 +325,7 @@ Miscellaneous:
   guid-util:
     file: misc-guid-util.md
     priority: P1
-  openbmc-test-automationa:
+  openbmc-test-automation:
     file: misc-openbmc-test-automation.md
     priority: P2
 Network:

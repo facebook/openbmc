@@ -16,6 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #include <ctype.h>
+#include <unistd.h>
 #include <sys/file.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -304,6 +305,19 @@ int main(int argc, char **argv) {
 
   int ret;
   char file[PATH_SIZE];
+  char *tty = strstr(stty, "/dev/");
+  tty += strlen("/dev/");
+  ret = snprintf(file, sizeof(file), "/var/lock/LCK..%s", tty);
+  if ((ret <0) || ret >= (int)sizeof(file)) {
+    perror("mTerm_server: dev name too long for tty lockfile");
+    return -1;
+  }
+
+  if (access(file, F_OK) == 0) {
+    perror("mTerm_server: dev serial is not available");
+    return -1;
+  }
+
   ret = snprintf(file, sizeof(file), "/var/lock/mTerm_%s", dev);
   if ((ret < 0) || (ret >= (int)sizeof(file))) {
     perror("mTerm_server: dev name too long for lockfile");

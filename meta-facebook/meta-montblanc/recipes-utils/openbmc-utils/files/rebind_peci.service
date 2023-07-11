@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,30 +14,16 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=veridate and rebind-peci driver 
+Wants=setup_i2c.service setup_gpio.service
+After=setup_i2c.service setup_gpio.service
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/rebind-peci.sh
 
-LOCAL_URI += "\
-    file://board-utils.sh \
-    file://setup_i2c.sh \
-    file://setup-gpio.sh\
-    file://spi_util.sh \
-    file://read_INA230.sh \
-    file://cpld_update.sh \
-    file://rebind-peci.sh \
-    file://rebind_peci.service \
-    "
-
-OPENBMC_UTILS_FILES += " \
-    spi_util.sh \
-    read_INA230.sh \
-    cpld_update.sh \
-    rebind-peci.sh \
-    "
-
-do_install:append() {
-    install -d ${D}${systemd_system_unitdir}
-    install -m 644 ${S}/rebind_peci.service ${D}${systemd_system_unitdir}
-}
-
-SYSTEMD_SERVICE:${PN} += "rebind_peci.service"
+[Install]
+WantedBy=multi-user.target

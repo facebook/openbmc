@@ -22,6 +22,7 @@
 . /usr/local/bin/i2c-utils.sh
 
 MCBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-0060)
+SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 1-0035)
 
 PWR_FORCE_OFF="${MCBCPLD_SYSFS_DIR}/pwr_force_off"
 PWR_COME_EN="${MCBCPLD_SYSFS_DIR}/pwr_come_en"

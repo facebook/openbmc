@@ -28,11 +28,11 @@
 #include <openbmc/plat.h>
 #include <openbmc/dimm.h>
 #include <openbmc/i3c_dev.h>
+#include <time.h>
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN    "BATTERY_DETECT"
 #define GPIO_APML_MUX2_SEL        "FM_APML_MUX2_SEL_R"
-#define FRB3_MAX_READ_RETRY       (10)
 #define HSC_12V_BUS               (2)
 
 #define IIO_DEV_DIR(device, bus, addr, index) \
@@ -50,6 +50,7 @@
 #define DIMM_TS0_SNR_DIR "/dev/bus/i3c/%d-e0000001%d"
 #define DIMM_TS1_SNR_DIR "/dev/bus/i3c/%d-e0000003%d"
 #define DIMM_PWR_SNR_DIR "/dev/bus/i3c/%d-e5010%d000"
+#define FRB3_TRIGGER_TIME 300 // 300 secs
 
 uint8_t DIMM_SLOT_CNT = 0;
 //static float InletCalibration = 0;
@@ -1293,7 +1294,6 @@ _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
 
 static int
 check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
-  static unsigned int retry = 0;
   static uint8_t frb3_fail = 0x10; // bit 4: FRB3 failure
   static time_t rst_time = 0;
   static uint8_t postcodes_last[256] = {0};
@@ -1303,17 +1303,28 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   size_t len = 0, cmp_len = sizeof(postcodes);
   char sensor_name[32] = {0};
   char error[32] = {0};
+  static struct timespec time_start;
+  struct timespec time_end;
+  long time_diff = 0;
+  static bool is_frb3_log = false;
+  static bool is_init     = false;
 
   if (fru_id != FRU_MB) {
     syslog(LOG_ERR, "Not Supported Operation for fru %d", fru_id);
     return READING_NA;
   }
 
+  if (!is_init) {
+    clock_gettime(CLOCK_MONOTONIC, &time_start);
+    is_init = true;
+  }
+
   if (stat("/tmp/rst_touch", &file_stat) == 0 && file_stat.st_mtime > rst_time) {
+    is_frb3_log = false;
+    clock_gettime(CLOCK_MONOTONIC, &time_start);
     rst_time = file_stat.st_mtime;
     // assume fail till we know it is not
     frb3_fail = 0x10; // bit 4: FRB3 failure
-    retry = 0;
     cmp_len = sizeof(postcodes);
     // cache current postcode buffer
     memset(postcodes_last, 0, sizeof(postcodes_last));
@@ -1339,15 +1350,16 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
       frb3_fail = 0;
   }
 
-  if (frb3_fail)
-    retry++;
-  else
-    retry = 0;
+  if (frb3_fail) {
+    clock_gettime(CLOCK_MONOTONIC, &time_end);
+    time_diff = time_end.tv_sec - time_start.tv_sec;
+  }
 
-  if (retry == FRB3_MAX_READ_RETRY) {
+  if (time_diff >= FRB3_TRIGGER_TIME && !is_frb3_log) {
     pal_get_sensor_name(fru_id, sensor_num, sensor_name);
     snprintf(error, sizeof(error), "FRB3 failure");
     _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, frb3_fail, error);
+    is_frb3_log = true;
 
     /* Workaround_for_Genoa_Erratum_#1477 */
     char rev_id[MAX_VALUE_LEN] = {0};

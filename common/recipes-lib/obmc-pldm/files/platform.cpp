@@ -98,7 +98,27 @@ int Handler::sensorEvent(const pldm_msg* request, size_t payloadLength,
         get_sensor_name(sensorId).c_str(),
         get_state_message(sensorOffset, eventState).c_str());
     }
+  } else if (eventClass == PLDM_NUMERIC_SENSOR_STATE) {
 
+    uint8_t eventState{};
+    uint8_t previousEventState{};
+    uint8_t sensorDataSize{};
+    uint32_t presentReading{};
+
+    rc = decode_numeric_sensor_data(eventClassData, eventClassDataSize,
+                                    &eventState, &previousEventState,
+                                    &sensorDataSize, &presentReading);
+
+    if (rc != PLDM_SUCCESS)
+      return PLDM_ERROR;
+
+    // handle PDR
+    if (get_sensor_name(sensorId) != "UnSupport") {
+      syslog(LOG_CRIT,
+        "Numberic Sensor: %s, eventState: 0x%X, sensorData: 0x%X",
+        get_sensor_name(sensorId).c_str(),
+        eventState, presentReading);
+    }
   } else
     return PLDM_ERROR_INVALID_DATA;
 

@@ -60,8 +60,9 @@ cpld_pldm_wr(uint8_t bus, uint8_t addr,
 int CpldComponent::_update(const char *path, uint8_t is_signed, i2c_attr_t attr ) {
   int ret = -1;
   string comp = this->component();
+  string fru  = this->fru();
 
-  syslog(LOG_CRIT, "Component %s%s upgrade initiated", comp.c_str(), is_signed? "": " force");
+  syslog(LOG_CRIT, "%s component %s%s upgrade initiated", fru.c_str(), comp.c_str(), is_signed? "": " force");
   if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
     cerr << "Cannot open i2c!" << endl;
     return ret;
@@ -74,7 +75,7 @@ int CpldComponent::_update(const char *path, uint8_t is_signed, i2c_attr_t attr 
     return ret;
   }
 
-  syslog(LOG_CRIT, "Component %s%s upgrade completed", comp.c_str(), is_signed? "": " force");
+  syslog(LOG_CRIT, "%s component %s%s upgrade completed", fru.c_str(), comp.c_str(), is_signed? "": " force");
   return ret;
 }
 

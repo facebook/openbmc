@@ -269,7 +269,7 @@ int fw_update_proc (const string& image, bool /*force*/,
 
   //Check Signed image
 
-  syslog(LOG_CRIT, "Component %s upgrade initiated\n", comp.c_str() );
+  syslog(LOG_CRIT, "%s component %s upgrade initiated\n", fru.c_str(), comp.c_str() );
 
   try {
 
@@ -296,7 +296,7 @@ int fw_update_proc (const string& image, bool /*force*/,
     cerr << err << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
-  syslog(LOG_CRIT, "Component %s upgrade completed\n", comp.c_str() );
+  syslog(LOG_CRIT, "%s component %s upgrade completed\n", fru.c_str(), comp.c_str() );
   return 0;
 }
 

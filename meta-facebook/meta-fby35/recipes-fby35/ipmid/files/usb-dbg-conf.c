@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
+#include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
 #include <openbmc/obmc-i2c.h>
@@ -561,7 +562,111 @@ int plat_get_board_id(char *id)
 
 int plat_get_syscfg_text(uint8_t fru, char *syscfg)
 {
-  return -1;
+  static const uint8_t cl_dimm_cache_id[6] = { 0, 4, 6, 8, 12, 14, };
+  static const uint8_t hd_dimm_cache_id[8] = { 0, 1, 2, 4, 6, 7, 8, 10};
+  static const uint8_t* dimm_cache_id = cl_dimm_cache_id;
+  static const char *cl_dimm_label[6] = { "A0", "A2", "A3", "A4", "A6", "A7"};
+  static const char *hd_dimm_label[8] = { "A0", "A1", "A2", "A4", "A6", "A7", "A8", "A10"};
+  const char **dimm_label = cl_dimm_label;
+  char *key_prefix = "sys_config/";
+  char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
+  char *token;
+  uint8_t cpu_name_pos = 3;  //Intel(R) Xeon(R) Gold "6450C"
+  uint8_t dimm_num = ARRAY_SIZE(cl_dimm_cache_id);
+  uint8_t index, pos;
+  uint8_t cpu_core;
+  uint16_t dimm_speed;
+  uint32_t dimm_capacity;
+  float cpu_speed;
+  int slen;
+  size_t ret;
+
+  if (fru == FRU_ALL)
+    return -1;
+
+  if (syscfg == NULL)
+    return -1;
+
+  // Clear string buffer
+  syscfg[0] = '\0';
+
+  // CPU information
+  slen = snprintf(entry, sizeof(entry), "CPU:");
+
+  // Processor#
+  snprintf(key, sizeof(key), "%sfru%d_cpu0_product_name", key_prefix, fru);
+  if (kv_get(key, value, &ret, KV_FPERSIST) == 0) {
+    if (strncmp(value, "AMD", strlen("AMD")) == 0) {
+      cpu_name_pos = 2;  // AMD EPYC "9D64" 88-Core Processor
+      dimm_cache_id = hd_dimm_cache_id;
+      dimm_label = hd_dimm_label;
+      dimm_num = ARRAY_SIZE(hd_dimm_cache_id);
+    }
+
+    token = strtok(value, " ");
+    for (pos = 0; token && pos < cpu_name_pos; pos++) {
+      token = strtok(NULL, " ");
+    }
+    if (token) {
+      slen += snprintf(&entry[slen], sizeof(entry) - slen, "%s", token);
+    }
+  }
+
+  // Frequency & Core Number
+  snprintf(key, sizeof(key), "%sfru%d_cpu0_basic_info", key_prefix, fru);
+  if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 5) {
+    cpu_speed = (float)(value[4] << 8 | value[3])/1000;
+    cpu_core = value[0];
+    slen += snprintf(&entry[slen], sizeof(entry) - slen, "/%.1fG/%dc", cpu_speed, cpu_core);
+  }
+
+  snprintf(&entry[slen], sizeof(entry) - slen, "\n");
+  strcat(syscfg, entry);
+
+ // DIMM information
+  for (index = 0; index < dimm_num; index++) {
+    slen = snprintf(entry, sizeof(entry), "MEM%s:", dimm_label[index]);
+
+    // Check Present
+    snprintf(key, sizeof(key), "%sfru%d_dimm%d_location", key_prefix, fru, dimm_cache_id[index]);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
+      // Skip if not present
+      if (value[0] != 0x01)
+        continue;
+    }
+
+    // Module Manufacturer ID
+    snprintf(key, sizeof(key), "%sfru%d_dimm%d_manufacturer_id", key_prefix, fru, dimm_cache_id[index]);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 2) {
+      switch (value[1]) {
+        case 0xce:
+          slen += snprintf(&entry[slen], sizeof(entry) - slen, "Samsung");
+          break;
+        case 0xad:
+          slen += snprintf(&entry[slen], sizeof(entry) - slen, "Hynix");
+          break;
+        case 0x2c:
+          slen += snprintf(&entry[slen], sizeof(entry) - slen, "Micron");
+          break;
+        default:
+          slen += snprintf(&entry[slen], sizeof(entry) - slen, "unknown");
+          break;
+      }
+    }
+
+    // Speed & Capacity
+    snprintf(key, sizeof(key), "%sfru%d_dimm%d_speed", key_prefix, fru, dimm_cache_id[index]);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
+      dimm_speed = value[1]<<8 | value[0];
+      dimm_capacity = (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024;
+      slen += snprintf(&entry[slen], sizeof(entry) - slen, "/%uMhz/%uGB", dimm_speed, dimm_capacity);
+    }
+
+    snprintf(&entry[slen], sizeof(entry) - slen, "\n");
+    strcat(syscfg, entry);
+  }
+
+  return 0;
 }
 
 int

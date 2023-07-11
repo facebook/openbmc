@@ -25,6 +25,7 @@ extern const uint8_t mb_discrete_sensor_list[];
 
 extern const uint8_t swb_sensor_list[];
 extern const uint8_t swb_discrete_sensor_list[];
+extern const uint8_t swb_optic_sensor_list[];
 
 extern const uint8_t hgx_sensor_list[];
 
@@ -58,6 +59,7 @@ extern size_t mb_discrete_sensor_cnt;
 
 extern size_t swb_sensor_cnt;
 extern size_t swb_discrete_sensor_cnt;
+extern size_t swb_optic_sensor_cnt;
 
 extern size_t hgx_sensor_cnt;
 
@@ -323,7 +325,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *cnt = nic0_sensor_cnt;
     } else {
         *sensor_list = NULL;
-        *cnt = 0;       
+        *cnt = 0;
     }
   } else if (fru == FRU_NIC1) {
     uint8_t status = 0;
@@ -332,7 +334,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *cnt = nic1_sensor_cnt;
     } else {
       *sensor_list = NULL;
-      *cnt = 0;       
+      *cnt = 0;
     }
   } else if (fru == FRU_HGX) {
     *sensor_list = (uint8_t *) hgx_sensor_list;
@@ -380,15 +382,24 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) scm_sensor_list;
     *cnt = scm_sensor_cnt;
   } else if (fru == FRU_SWB) {
+    memcpy(snr_swb_tmp, swb_sensor_list, swb_sensor_cnt);
+    *cnt = swb_sensor_cnt;
+
+    //Add swb module sensor
     if (!smodule) {
-      memcpy(snr_swb_tmp, swb_sensor_list, swb_sensor_cnt);
-      memcpy(&snr_swb_tmp[swb_sensor_cnt], shsc_sensor_list, shsc_sensor_cnt);
-      *sensor_list = snr_swb_tmp;
-      *cnt = swb_sensor_cnt + shsc_sensor_cnt;
-    } else {
-      *sensor_list = (uint8_t *) swb_sensor_list;
-      *cnt = swb_sensor_cnt;
+      memcpy(&snr_swb_tmp[*cnt], shsc_sensor_list, shsc_sensor_cnt);
+      *cnt += shsc_sensor_cnt;
     }
+
+    //Add swb optic sensor
+    get_comp_source(fru, SWB_NIC_SOURCE, &id);
+    if (id == SECOND_SOURCE) {
+      memcpy(&snr_swb_tmp[*cnt], swb_optic_sensor_list, swb_optic_sensor_cnt);
+      *cnt += swb_optic_sensor_cnt;
+    }
+
+    *sensor_list = (uint8_t *) snr_swb_tmp;
+
   } else if (fru == FRU_HSC) {
     if (module) {
       *sensor_list = (uint8_t *) hsc_sensor_list;

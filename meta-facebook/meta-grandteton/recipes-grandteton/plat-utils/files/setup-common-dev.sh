@@ -180,6 +180,34 @@ if [ "$bic_ready" -eq 0 ]; then
   else
     kv set swb_vr_source "$SWB_1ST_SOURCE" #RAA
   fi
+
+  #SWB NIC Configuration
+  cnt=3
+  while [ "$cnt" -ne 0 ]
+  do
+    str=$(pldmd-util -b 3 -e 0x0a raw 0x02 0x3A 0x00 0xD0 |grep "PLDM Data")
+    rev=$?
+    if [ "$rev" -eq 1 ]; then
+      kv set swb_nic_source "$SWB_1ST_SOURCE"
+      cnt=$(("$cnt"-1))
+    else
+      pldm_data=$(echo "$str" | awk -F'PLDM Data :' '{print $2}')
+      IFS=' ' read -ra  array <<< "$pldm_data"
+      cnt=0
+      for i in "${array[@]}"
+      do
+        array["$cnt"]=${i:2}
+        cnt=$(("$cnt"+1))
+      done
+      val=$((16#${array[3]}))
+      if [ "$val" -eq 1 ]; then
+        kv set swb_nic_source "$SWB_1ST_SOURCE"
+      else
+        kv set swb_nic_source "$SWB_2ND_SOURCE"
+      fi
+      break
+    fi
+  done
 fi
 
 VPDB_EVT2="2"

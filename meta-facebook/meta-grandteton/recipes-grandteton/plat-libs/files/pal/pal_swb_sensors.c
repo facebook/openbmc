@@ -246,14 +246,15 @@ PAL_SENSOR_MAP swb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
+  {"NIC_0_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC0
+  {"NIC_1_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC1
+  {"NIC_2_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC2
+  {"NIC_3_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC3
+  {"NIC_4_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC4
+  {"NIC_5_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC5
+  {"NIC_6_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC6
+  {"NIC_7_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC7
+
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
@@ -404,6 +405,18 @@ const uint8_t shsc_sensor_list[] = {
   SWB_SENSOR_POUT_PDB_HSC,
 };
 
+const uint8_t swb_optic_sensor_list[] = {
+  SWB_SENSOR_TEMP_NIC_OPTIC_0,
+  SWB_SENSOR_TEMP_NIC_OPTIC_1,
+  SWB_SENSOR_TEMP_NIC_OPTIC_2,
+  SWB_SENSOR_TEMP_NIC_OPTIC_3,
+  SWB_SENSOR_TEMP_NIC_OPTIC_4,
+  SWB_SENSOR_TEMP_NIC_OPTIC_5,
+  SWB_SENSOR_TEMP_NIC_OPTIC_6,
+  SWB_SENSOR_TEMP_NIC_OPTIC_7,
+};
+
+
 // List of SWB discrete sensors to be monitored
 const uint8_t swb_discrete_sensor_list[] = {
   SWB_SENSOR_CPLD_HEALTH,
@@ -412,3 +425,5 @@ const uint8_t swb_discrete_sensor_list[] = {
 size_t swb_sensor_cnt = sizeof(swb_sensor_list)/sizeof(uint8_t);
 size_t shsc_sensor_cnt = sizeof(shsc_sensor_list)/sizeof(uint8_t);
 size_t swb_discrete_sensor_cnt = sizeof(swb_discrete_sensor_list)/sizeof(uint8_t);
+size_t swb_optic_sensor_cnt = sizeof(swb_optic_sensor_list)/sizeof(uint8_t);
+

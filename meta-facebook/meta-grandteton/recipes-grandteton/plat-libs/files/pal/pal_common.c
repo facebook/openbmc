@@ -28,6 +28,7 @@ char *mb_source_data[] = {
 char *swb_source_data[] = {
   "swb_hsc_source",
   "swb_vr_source",
+  "swb_nic_source",
 };
 
 char *vpdb_source_data[] = {

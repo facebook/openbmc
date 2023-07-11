@@ -18,7 +18,7 @@ enum {
 enum {
   SWB_HSC_SOURCE,
   SWB_VR_SOURCE,
-  SWB_ADC_SOURCE,
+  SWB_NIC_SOURCE,
 };
 
 enum {

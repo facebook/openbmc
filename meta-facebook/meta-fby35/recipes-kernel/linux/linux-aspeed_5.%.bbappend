@@ -19,6 +19,9 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/plat_conf:"
 
 SRC_URI += "file://fby35.cfg \
     file://0002-fallback-to-use-OEM-command-to-get-MC-MAC.patch \
+    file://0003-iio-adc-aspeed-Get-the-number-of-enabled-channel.patch \
+    file://0004-iio-adc-aspeed-Support-deglitch-feature.patch \
+    file://0005-iio-adc-aspeed-Extend-the-delay-time-to-meet-ADC-hw-.patch \
     "
 
 KERNEL_MODULE_AUTOLOAD += " \

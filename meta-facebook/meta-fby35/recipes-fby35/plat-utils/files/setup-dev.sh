@@ -32,6 +32,8 @@ MEDUSA_48V_IO_EXP_ADDR="0x49"
 LTC2992_ADDR="6e"
 INA238_ADDR_PSU="44"
 INA238_ADDR_GND="41"
+MAXIM_SOLUTION="0"
+MPS_SOLUTION="1"
 
 function read_dev() {
   local bus=$1
@@ -160,6 +162,30 @@ function init_exp_dev() {
   done
 }
 
+function init_adc_upper_bound() {
+  #ADC0 ~ ADC7 upper bound value
+  local adc0_upper_bound=("269" "265" "257" "2E1" "259" "31C" "212" "1BA")
+  #ADC8 ~ ADC15 upper bound value
+  local adc1_upper_bound=("109" " " "2A9" "32B" "265" "257" "262" " ")
+  local efuse_type
+  efuse_type=$(gpio_get_value P12V_EFUSE_DETECT_N)
+  if [ "$efuse_type" -eq "$MPS_SOLUTION" ]; then
+    adc1_upper_bound[2]="21F"
+  fi
+  for i in {0..7}; do
+    if [[ "${adc0_upper_bound["$i"]}" != " " ]]; then
+      echo $((0x"${adc0_upper_bound["$i"]}")) > /sys/bus/iio/devices/iio\:device0/events/in_voltage"$i"_thresh_rising_value
+      echo 1 > /sys/bus/iio/devices/iio\:device0/events/in_voltage"$i"_thresh_rising_en
+    fi
+  done
+  for i in {0..7}; do
+    if [[ "${adc1_upper_bound["$i"]}" != " " ]]; then
+      echo $((0x"${adc1_upper_bound["$i"]}")) > /sys/bus/iio/devices/iio\:device1/events/in_voltage"$i"_thresh_rising_value
+      echo 1 > /sys/bus/iio/devices/iio\:device1/events/in_voltage"$i"_thresh_rising_en
+    fi
+  done
+}
+
 echo "Setup devs for fby35..."
 
 #create the device of mezz card
@@ -182,6 +208,7 @@ if read_dev $MEDUSA_HSC_BUS $MEDUSA_48V_IO_EXP_ADDR 0 >/dev/null; then
   init_48V_medusa
 fi
 
+init_adc_upper_bound
 init_exp_dev
 
 echo "Done."

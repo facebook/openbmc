@@ -1,0 +1,42 @@
+From b4c926c12d85092dda9102b1f2f6f59d39fd9c3e Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Fri, 2 Jun 2023 17:27:34 +0800
+Subject: [PATCH] iio: adc: aspeed: Get the number of enabled channel.
+
+Retrieve the register value to calculate the number of enabled channels,
+which can be utilized to evaluate the updated frequency of each ADC
+channel.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Change-Id: Icdd5ce8562e83c5fffc815c4fedf94b760e52bb1
+---
+ drivers/iio/adc/aspeed_adc.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
+index 0f065f0bb8e7..2049bd661c68 100644
+--- a/drivers/iio/adc/aspeed_adc.c
++++ b/drivers/iio/adc/aspeed_adc.c
+@@ -120,6 +120,7 @@ struct aspeed_adc_data {
+ 	int			cv;
+ 	bool			battery_sensing;
+ 	struct adc_gain		battery_mode_gain;
++	unsigned int		enabled_channels_num;
+ };
+ 
+ #define ASPEED_CHAN(_idx, _data_reg_addr) {			\
+@@ -631,7 +632,10 @@ static int aspeed_adc_probe(struct platform_device *pdev)
+ 	adc_engine_control_reg_val |= ASPEED_ADC_CTRL_CHANNEL;
+ 	writel(adc_engine_control_reg_val,
+ 	       data->base + ASPEED_REG_ENGINE_CONTROL);
+-
++	adc_engine_control_reg_val =
++		FIELD_GET(ASPEED_ADC_CTRL_CHANNEL,
++			  readl(data->base + ASPEED_REG_ENGINE_CONTROL));
++	data->enabled_channels_num = hweight_long(adc_engine_control_reg_val);
+ 	indio_dev->name = data->model_data->model_name;
+ 	indio_dev->info = &aspeed_adc_iio_info;
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+-- 
+2.25.1
+

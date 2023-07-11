@@ -1,0 +1,68 @@
+From 8bf1e8fd0cad6f78413c6d7b7913092d758fde00 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Tue, 13 Jun 2023 18:04:47 +0800
+Subject: [PATCH] iio: adc: aspeed: Extend the delay time to meet ADC hw
+ behavior.
+
+The patch is intended to extend the delay time when the last channel of
+the ADC is enabled. In our ADC, it takes 12 dummy sampling periods to
+switch the sampling channel from CH7 to CH0. Therefore, the patch checks
+the enable status of channel 7 in order to determine the appropriate delay
+period for obtaining the updated ADC values of each channel.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Change-Id: I759510c9bddb704a384df83b8109b8e36d696f11
+---
+ drivers/iio/adc/aspeed_adc.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
+index 6bdbc6b3158e..436cf8ad29c2 100644
+--- a/drivers/iio/adc/aspeed_adc.c
++++ b/drivers/iio/adc/aspeed_adc.c
+@@ -120,7 +120,7 @@ struct aspeed_adc_data {
+ 	int			cv;
+ 	bool			battery_sensing;
+ 	struct adc_gain		battery_mode_gain;
+-	unsigned int		enabled_channels_num;
++	unsigned int		required_eoc_num;
+ 	u16			*upper_bound;
+ 	u16			*lower_bound;
+ 	bool			*upper_en;
+@@ -308,18 +308,18 @@ static int aspeed_adc_get_voltage_raw(struct aspeed_adc_data *data, struct iio_c
+ 		chan->channel, data->upper_en[chan->channel],
+ 		data->upper_bound[chan->channel], data->lower_en[chan->channel],
+ 		data->lower_bound[chan->channel], data->sample_period_ns,
+-		data->enabled_channels_num);
++		data->required_eoc_num);
+ 	if (data->upper_en[chan->channel]) {
+ 		if (val >= data->upper_bound[chan->channel]) {
+ 			ndelay(data->sample_period_ns *
+-			       data->enabled_channels_num);
++			       data->required_eoc_num);
+ 			val = readw(data->base + chan->address);
+ 		}
+ 	}
+ 	if (data->lower_en[chan->channel]) {
+ 		if (val <= data->lower_bound[chan->channel]) {
+ 			ndelay(data->sample_period_ns *
+-			       data->enabled_channels_num);
++			       data->required_eoc_num);
+ 			val = readw(data->base + chan->address);
+ 		}
+ 	}
+@@ -806,7 +806,10 @@ static int aspeed_adc_probe(struct platform_device *pdev)
+ 	adc_engine_control_reg_val =
+ 		FIELD_GET(ASPEED_ADC_CTRL_CHANNEL,
+ 			  readl(data->base + ASPEED_REG_ENGINE_CONTROL));
+-	data->enabled_channels_num = hweight_long(adc_engine_control_reg_val);
++	data->required_eoc_num = hweight_long(adc_engine_control_reg_val);
++	if (adc_engine_control_reg_val &
++	    BIT(data->model_data->num_channels - 1))
++		data->required_eoc_num += 12;
+ 	indio_dev->name = data->model_data->model_name;
+ 	indio_dev->info = &aspeed_adc_iio_info;
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+-- 
+2.25.1
+

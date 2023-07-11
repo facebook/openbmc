@@ -280,9 +280,8 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   int dot_location = 0;
   int parse_sup_eeprom = 0;
   char local_target[256];
-  char field_value[YAMP_EEPROM_SIZE]; // Will never overflow
   char fn[PATH_MAX];
-  char buf[YAMP_EEPROM_SIZE];
+  char buf[YAMP_EEPROM_SIZE], field_value[YAMP_EEPROM_SIZE];
   char bus_name[32];
   char sup_eeprom_filename[YAMP_FILE_NAME_SIZE];
   bool mfgtime2 = false; // set to True if MFGTIME2 field is detected
@@ -382,7 +381,9 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
 
   rc = 0;
   /* Now go though EEPROM contents to fill out the fields */
-  while ((rc == 0) && (read_pointer < YAMP_EEPROM_SIZE)) {
+  while ((rc == 0) && (read_pointer < sizeof(buf))) {
+    int nleft = sizeof(buf) - read_pointer;
+
     rc = yamp_parse_hexadecimal(&read_pointer, &field_type, buf, 2);
     if (rc < 0)
       goto out;
@@ -395,10 +396,12 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
      */
     if (field_type == YAMP_EEPROM_FIELD_END)
       break;
+
     /* Otherwise, read the field */
     /* Clear field_value from previous reads */
     memset(field_value, 0, sizeof(field_value));
-    memcpy(field_value, &buf[read_pointer], field_len);
+    memcpy(field_value, &buf[read_pointer],
+           field_len < nleft ? field_len : nleft);
     read_pointer += field_len;
 
     /* Now, map the value into similar field in FB EEPROM */

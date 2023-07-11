@@ -921,9 +921,6 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
   else {
-    if(gpio_get_value_by_shadow("FM_BIOS_SPD_MUX_R_N") == GPIO_VALUE_LOW) {
-      gpio_set_value_by_shadow("FM_SPD_REMOTE_EN_R", GPIO_VALUE_HIGH);
-    }
   }
 
   if (sensor_num == APML_SNR_START_INDEX) {
@@ -939,7 +936,7 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     }
   }
 
-  if (gpio_get_value_by_shadow("FM_SPD_REMOTE_EN_R") == GPIO_VALUE_HIGH) {
+  if (gpio_get_value_by_shadow("FM_CPU0_SPD_HOST_CTRL_R_N") == GPIO_VALUE_LOW) {
     if(dimm_id == DIMM_ID0) {
       max_temp = 0;
     }
@@ -999,7 +996,7 @@ read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  if (gpio_get_value_by_shadow("FM_SPD_REMOTE_EN_R") == GPIO_VALUE_HIGH) {
+  if (gpio_get_value_by_shadow("FM_CPU0_SPD_HOST_CTRL_R_N") == GPIO_VALUE_LOW) {
     if(dimm_id == DIMM_ID0) {
       max_temp = 0;
     }
@@ -1097,7 +1094,7 @@ read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  if (gpio_get_value_by_shadow("FM_SPD_REMOTE_EN_R") == GPIO_VALUE_HIGH) {
+  if (gpio_get_value_by_shadow("FM_CPU0_SPD_HOST_CTRL_R_N") == GPIO_VALUE_LOW) {
     return read_i3c_dimm_power(dimm_id, value);
   }
 
@@ -1126,7 +1123,7 @@ read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  if (gpio_get_value_by_shadow("FM_SPD_REMOTE_EN_R") == GPIO_VALUE_HIGH) {
+  if (gpio_get_value_by_shadow("FM_CPU0_SPD_HOST_CTRL_R_N") == GPIO_VALUE_LOW) {
     return read_i3c_dimm_power(dimm_id + CHANNEL_OF_DIMM_NUM*2, value);
   }
 

@@ -1,8 +1,8 @@
 {
-    "name": "ORV3_POWER_TEATHER",
+    "name": "ORV3_POWER_TETHER",
     "address_range": [
-        16,
-        17
+        8,
+        9
     ],
     "probe_register": 8,
     "default_baudrate": 19200,

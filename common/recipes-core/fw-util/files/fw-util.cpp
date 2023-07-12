@@ -369,7 +369,7 @@ int main(int argc, char *argv[])
               cerr << "Action " << action << "aborted due to ongoing upgrade on FRU: " << c->fru() << endl;
             }
             single_instance_unlock(lfd);
-            return -1;
+            break;
           }
           if (action.rfind("--version", 0) == string::npos && fru != "all") {
             // update or dump

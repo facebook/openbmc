@@ -377,6 +377,8 @@ hpdb_hsc=$(gpio_get HPDB_SKU_ID_2)
 hrev=$(kv get hpdb_rev)
 
 if [ "$hpdb_hsc" -eq "$HPDB_HSC_MAIN" ] && [ "$hrev" -gt 1 ]; then
+  i2cset -f -y 39 0x40 0xD9 0x8b
+  i2cset -f -y 39 0x41 0xD9 0x8b
   i2c_device_add 39 0x40 ltc4286
   i2c_device_add 39 0x41 ltc4286
   kv set hpdb_hsc_source "$HPDB_1ST_SOURCE"

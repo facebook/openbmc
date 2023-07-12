@@ -2,6 +2,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <unistd.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
 #include "xdpe152xx.h"
@@ -447,6 +448,7 @@ program_xdpe152xx(uint8_t bus, uint8_t addr, struct xdpe152xx_config *config, bo
 
 int
 get_xdpe152xx_ver(struct vr_info *info, char *ver_str) {
+  int ret, lock = -1;
   char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
 
   if (info == NULL || ver_str == NULL) {
@@ -465,7 +467,15 @@ get_xdpe152xx_ver(struct vr_info *info, char *ver_str) {
       vr_xfer = &vr_rdwr;
     }
 
-    if (cache_xdpe152xx_crc(info->bus, info->addr, key, tmp_str, NULL)) {
+    if ((lock = single_instance_lock_blocked(key)) < 0) {
+      syslog(LOG_WARNING, "%s: Failed to get %s lock", __func__, key);
+    }
+    ret = cache_xdpe152xx_crc(info->bus, info->addr, key, tmp_str, NULL);
+    if (lock >= 0) {
+      single_instance_unlock(lock);
+    }
+
+    if (ret) {
       return VR_STATUS_FAILURE;
     }
   }

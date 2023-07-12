@@ -11,6 +11,7 @@ install_headers(
 cc = meson.get_compiler('c')
 libs = [
   dependency('libkv'),
+  dependency('libmisc-utils'),
   dependency('libobmc-i2c'),
   dependency('libobmc-pmbus'),
   dependency('obmc-pal'),

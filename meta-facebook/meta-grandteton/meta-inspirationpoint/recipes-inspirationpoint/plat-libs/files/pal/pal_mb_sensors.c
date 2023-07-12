@@ -1491,9 +1491,10 @@ int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value) {
   bool curr[MAX_PMIC_ERR_TYPE] = {false};
   bool tag=false;
   char name[64] = {0};
-  const char shadow[MAX_VALUE_LEN] = "FM_SPD_REMOTE_EN_R";
+  const char shadow[MAX_VALUE_LEN] = "FM_CPU0_SPD_HOST_CTRL_R_N";
 
-  if (gpio_get_value_by_shadow(shadow) != GPIO_VALUE_HIGH) {
+  if (!is_dimm_present(dimm_id) ||
+      gpio_get_value_by_shadow(shadow) != GPIO_VALUE_LOW) {
     return READING_NA;
   }
 
@@ -1518,13 +1519,16 @@ int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value) {
         if(curr[i] == true)
            syslog(LOG_CRIT, "ASSERT DIMM_LABEL=%s Error %s", 
 		get_dimm_label(cpu_id, dimm_num), name);
-        else
-	   syslog(LOG_CRIT, "DEASSERT DIMM_LABEL=%s Error %s", 
-	        get_dimm_label(cpu_id, dimm_num), name);
 
         flag[dimm_id][i] = curr[i];
       }
     }
+
+    ret = pmic_clear_err(fru, cpu_id, dimm_num);
+    if (ret < 0) {
+      syslog(LOG_CRIT, "Fail to clear DIMM %s PMIC error!\n", get_dimm_label(cpu_id, dimm_num));
+    }
   }
-  return ret;
+
+  return 0;
 }

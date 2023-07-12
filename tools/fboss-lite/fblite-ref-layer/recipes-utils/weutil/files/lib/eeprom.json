@@ -1,5 +1,5 @@
 {
-  "platform" : "montblanc" ,
+  "platform" : "@FBMODEL@" ,
   "eeprom devices" : [
   {
       "name" : "dummy_eeprom",

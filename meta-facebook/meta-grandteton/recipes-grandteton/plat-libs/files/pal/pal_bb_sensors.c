@@ -31,10 +31,25 @@ static int read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic0_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic1_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_bb_sensor(uint8_t fru, uint8_t sensor_num, float *value);
-
+static int read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value);
 FAN_CTRL_DEV fan_ctrl_map[] = {
   {FAN_CTRL_ID0, get_max31790_rpm, get_max31790_duty, set_max31790_duty},
   {FAN_CTRL_ID1, get_nct7363y_rpm, get_nct7363y_duty, set_nct7363y_duty},
+};
+
+#define VPDB_HSC0_ADDR              (0x20)
+#define HPDB_HSC1_ADDR              (0x38)
+#define HPDB_HSC2_ADDR              (0x26)
+#define EIN_ROLLOVER_CNT            (0x10000)
+#define EIN_SAMPLE_CNT              (0x1000000)
+#define EIN_ENERGY_CNT              (0x800000)
+#define ADM1272_REG_READ_EIN_EXT    (0xDC)
+
+
+PAL_I2C_BUS_INFO adm1272_info_list[] = {
+  {VPDB_HSC_ID0, I2C_BUS_38, VPDB_HSC0_ADDR},
+  {HPDB_HSC_ID1, I2C_BUS_39, HPDB_HSC1_ADDR},
+  {HPDB_HSC_ID2, I2C_BUS_39, HPDB_HSC2_ADDR},
 };
 
 const uint8_t nic0_sensor_list[] = {
@@ -343,7 +358,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"HSC0_VOUT_VOLT", VPDB_HSC_ID0, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0x8F
   {"HSC0_VIN_VOLT",  VPDB_HSC_ID0, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0x90
   {"HSC0_CURR",      VPDB_HSC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x91
-  {"HSC0_PWR",       VPDB_HSC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x92
+  {"HSC0_PWR",       VPDB_HSC_ID0, read_hsc_pin,   true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x92
   {"HSC0_TEMP",      VPDB_HSC_ID0, read_bb_sensor, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x93
   {"HSC0_PEAK_PIN",  VPDB_HSC_ID0, read_bb_sensor, true, {6160, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
 
@@ -379,12 +394,12 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"HSC1_VIN_VOLT", HPDB_HSC_ID1, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xB0
   {"HSC1_CURR",     HPDB_HSC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB1
-  {"HSC1_PWR",      HPDB_HSC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB2
+  {"HSC1_PWR",      HPDB_HSC_ID1, read_hsc_pin,   true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB2
   {"HSC1_TEMP",     HPDB_HSC_ID1, read_bb_sensor, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0xB3
   {"HSC1_PEAK_PIN", HPDB_HSC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB4
   {"HSC2_VIN_VOLT", HPDB_HSC_ID2, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xB5
   {"HSC2_CURR",     HPDB_HSC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB6
-  {"HSC2_PWR",      HPDB_HSC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
+  {"HSC2_PWR",      HPDB_HSC_ID2, read_hsc_pin,   true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
   {"HSC2_TEMP",     HPDB_HSC_ID2, read_bb_sensor, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0xB8
   {"HSC2_PEAK_PIN", HPDB_HSC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB9
 
@@ -540,6 +555,126 @@ inlet_temp_calibration(uint8_t fru, uint8_t sensor_num, float *value)
   } else {
     syslog(LOG_WARNING, "Failed to apply frontIO correction");
   }
+}
+
+static int
+read_hsc_reg(uint8_t bus, uint8_t addr, uint8_t reg, uint8_t *rbuf, uint8_t len) {
+  int dev, ret, retry = 2;
+  uint8_t wbuf[16] = {0};
+  char i2c_dev[32];
+
+  snprintf(i2c_dev, sizeof(i2c_dev), "/dev/i2c-%d", bus);
+  dev = open(i2c_dev, O_RDWR);
+  if (dev < 0) {
+    return -1;
+  }
+
+  while ((--retry) >= 0) {
+    wbuf[0] = reg;
+    ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, len);
+    if (!ret)
+      break;
+    if (retry)
+      msleep(10);
+  }
+  close(dev);
+  if (ret) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+read_adm1272_hsc_ein(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret;
+  uint8_t rbuf[16] = {0};
+  uint32_t energy, rollover, sample;
+  uint32_t sample_diff;
+  uint32_t energy_diff;
+  uint8_t id = sensor_map[fru].map[sensor_num].id;
+  uint8_t bus = adm1272_info_list[id].bus;
+  uint8_t addr= adm1272_info_list[id].slv_addr;
+  static uint32_t pre_energy[PDB_HSC_CNT] = {0};
+  static uint32_t pre_rollover[PDB_HSC_CNT] = {0};
+  static uint32_t pre_sample[PDB_HSC_CNT] = {0};
+  static uint32_t pre_ein[PDB_HSC_CNT] = {0};
+
+
+  // read READ_EIN_EXT
+  ret = read_hsc_reg(bus, addr, ADM1272_REG_READ_EIN_EXT, rbuf, 9);
+  if (ret ) {    // length = 8 bytes
+      return -1;
+  }
+
+  energy   = (uint32_t)((rbuf[3]<<16) | (rbuf[2]<<8) | rbuf[1]) ;
+  rollover = (uint32_t)((rbuf[5]<<8) | rbuf[4]);
+  sample   = (uint32_t)((rbuf[8]<<16) | (rbuf[7]<<8) | rbuf[6]);
+
+  if (!pre_ein[id]) {
+      pre_ein[id] = true;
+      return READING_SKIP;
+  }
+
+  if ((pre_rollover[id] > rollover) || ((pre_rollover[id] == rollover) && (pre_energy[id] > energy))) {
+      rollover += EIN_ROLLOVER_CNT;
+  }
+  if (pre_sample[id] > sample) {
+      sample += EIN_SAMPLE_CNT;
+  }
+
+  energy_diff = (rollover-pre_rollover[id])*EIN_ENERGY_CNT + energy - pre_energy[id];
+
+  sample_diff = sample - pre_sample[id];
+  if (sample_diff == 0) {
+      return -1;
+  }
+  *value = energy_diff/sample_diff;
+  //printf("energy_diff = %x, sample_diff = %x,energy_diff/sample_diff = %f\n\n",energy_diff,sample_diff, *value);
+
+  pre_energy[id] = energy;
+  pre_rollover[id] = rollover;
+  pre_sample[id] = sample;
+
+  return 0;
+}
+
+static int
+read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
+  uint8_t id;
+  static int retry[PDB_HSC_CNT];
+  int ret = -1;
+  uint8_t hsc_id=sensor_map[fru].map[sensor_num].id;
+
+  get_comp_source(fru, fru == FRU_VPDB ? VPDB_HSC_SOURCE : HPDB_HSC_SOURCE, &id);
+  if(id == SECOND_SOURCE) {
+    ret = read_adm1272_hsc_ein(fru, sensor_num, value);
+    if (!ret) {
+      *value = (*value/256/0.15)*56.94/1000;
+      get_comp_source(fru, fru == FRU_VPDB ? VPDB_RSENSE_SOURCE : HPDB_RSENSE_SOURCE, &id);
+      if (id == MAIN_SOURCE) {
+        if (hsc_id == VPDB_HSC_ID0)
+          *value = (*value * 0.97) - 17.04;
+        else if (hsc_id == HPDB_HSC_ID1)
+          *value = (*value * 0.96) + 4.15;
+        else if (hsc_id == HPDB_HSC_ID2)
+          *value = (*value * 0.96) - 0.26;
+        else
+          return -1;
+      }
+    }
+  } else {
+    ret = read_bb_sensor(fru, sensor_num, value);
+  }
+
+  if (ret) {
+    retry[id]++;
+    return retry_err_handle(retry[id], 2);
+  } else {
+    retry[id] = 0;
+  }
+
+  return ret;
 }
 
 static int

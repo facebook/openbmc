@@ -35,11 +35,13 @@ char *vpdb_source_data[] = {
   "vpdb_hsc_source",
   "vpdb_brick_source",
   "vpdb_adc_source",
+  "vpdb_rsense_source",
 };
 
 char *hpdb_source_data[] = {
   "hpdb_hsc_source",
   "hpdb_adc_source",
+  "hpdb_rsense_source",
 };
 
 char *fan_bp1_source_data[] = {

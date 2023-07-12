@@ -145,7 +145,9 @@ enum {
 //VPDB HSC INFO
 enum {
   VPDB_HSC_ID0,
-  VPDB_HSC_CNT,
+  HPDB_HSC_ID1,
+  HPDB_HSC_ID2,
+  PDB_HSC_CNT,
 };
 
 //VPDB ADC INFO
@@ -155,13 +157,6 @@ enum {
   VPDB_ADC_CNT,
 };
 
-
-//HPDB HSC INFO
-enum {
-  HPDB_HSC_ID1,
-  HPDB_HSC_ID2,
-  HPDB_HSC_CNT,
-};
 
 //HPDB ADC INFO
 enum {

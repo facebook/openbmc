@@ -246,14 +246,14 @@ PAL_SENSOR_MAP swb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBF
 
-  {"NIC_0_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC0
-  {"NIC_1_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC1
-  {"NIC_2_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC2
-  {"NIC_3_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC3
-  {"NIC_4_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC4
-  {"NIC_5_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC5
-  {"NIC_6_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC6
-  {"NIC_7_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC7
+  {"NIC0_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC0
+  {"NIC1_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC1
+  {"NIC2_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC2
+  {"NIC3_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC3
+  {"NIC4_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC4
+  {"NIC5_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC5
+  {"NIC6_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC6
+  {"NIC7_OPTIC_TEMP", 0, get_swb_sensor, false, {70, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xC7
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9

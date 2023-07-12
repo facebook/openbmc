@@ -204,6 +204,29 @@ if [ "$bic_ready" -eq 0 ]; then
         kv set swb_nic_source "$SWB_1ST_SOURCE"
       else
         kv set swb_nic_source "$SWB_2ND_SOURCE"
+        #Support Fan table config3
+        sed -i '/swb_tray_nic_linear(/i \
+  swb_tray_nic_optic_linear(\
+    max([\
+      all:swb_swb_nic0_optic_temp_c,\
+      all:swb_swb_nic1_optic_temp_c,\
+      all:swb_swb_nic2_optic_temp_c,\
+      all:swb_swb_nic3_optic_temp_c,\
+      all:swb_swb_nic4_optic_temp_c,\
+      all:swb_swb_nic5_optic_temp_c,\
+      all:swb_swb_nic6_optic_temp_c,\
+      all:swb_swb_nic7_optic_temp_c])) +\
+  swb_tray_nic_optic_pid(\
+    max([\
+      all:swb_swb_nic0_optic_temp_c,\
+      all:swb_swb_nic1_optic_temp_c,\
+      all:swb_swb_nic2_optic_temp_c,\
+      all:swb_swb_nic3_optic_temp_c,\
+      all:swb_swb_nic4_optic_temp_c,\
+      all:swb_swb_nic5_optic_temp_c,\
+      all:swb_swb_nic6_optic_temp_c,\
+      all:swb_swb_nic7_optic_temp_c])), \
+  ' /etc/fsc/zone.fsc
       fi
       break
     fi

@@ -956,14 +956,35 @@ pal_sensor_discrete_check(uint8_t fru,
 
 int
 pal_sensor_monitor_initial(void) {
+  int ret = 0;
+  uint8_t mb_sku = 0x00;
+  char path[MAX_PATH_LEN] = {0};
+
   if (pal_is_artemis()) {
     if (access(MEB_MP5990_BIND_DIR, F_OK) != 0) {
       if (i2c_add_device(MEB_MP5990_BUS, MEB_MP5990_ADDR, MEB_MP5990_DEVICE_NAME) < 0) {
         syslog(LOG_ERR, "[%s] Fail to load MEB HSC driver\n", __func__);
         return -1;
       }
-      sensors_reinit();
     }
+
+    ret = pal_get_board_sku_id(FRU_MB, &mb_sku);
+    if (ret != 0) {
+      return -1;
+    }
+
+    if ((mb_sku & 0x0F) == GTA_CONFIG_1) {
+      for (int addr = MB_INA230_ADDR_START; addr <= MB_INA230_ADDR_END; addr ++) {
+        snprintf(path, sizeof(path), MB_INA230_BIND_DIR, addr);
+        if (access(path, F_OK) == 0) {
+          if (i2c_delete_device(MB_INA230_BUS, addr) < 0) {
+            syslog(LOG_ERR, "[%s] Fail to unload MB INA230 driver\n", __func__);
+            return -1;
+          }
+        }
+      }
+    }
+    sensors_reinit();
   }
 
   return 0;

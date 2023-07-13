@@ -1,6 +1,11 @@
 #ifndef __PAL_MB_SENSORS_H__
 #define __PAL_MB_SENSORS_H__
 
+#define MB_INA230_BIND_DIR    "/sys/bus/i2c/drivers/ina2xx/34-00%02x"
+#define MB_INA230_BUS         34
+#define MB_INA230_ADDR_START  0x41
+#define MB_INA230_ADDR_END    0x45
+
 //Sensor Table
 enum {
 //MB_SENSOR

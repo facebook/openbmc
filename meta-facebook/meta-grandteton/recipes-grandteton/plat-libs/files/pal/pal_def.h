@@ -3,6 +3,7 @@
 #include <openbmc/misc-utils.h>
 #include "pal_def_cover.h"
 
+#define MAX_PATH_LEN           (128)
 #define MAX_TXBUF_SIZE         (255)
 #define MAX_RXBUF_SIZE         (255)
 
@@ -534,6 +535,8 @@ enum MEB_JCN_TYPE {
 };
 
 enum GTA_SKU_ID {
+  GTA_CONFIG_1 = 1,
+  GTA_CONFIG_8 = 8,
   GTA_CONFIG_9 = 9,
 };
 

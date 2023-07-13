@@ -23,22 +23,26 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 . /usr/local/bin/openbmc-utils.sh
 
 mb_sku=$(($(/usr/bin/kv get mb_sku) & 0x0F))
-# sku_id[3:0] | HSC     | ADC        | VR             | RT VR        |config
-# 0000        | MPS5990 | ADC128D818 | RAA229620      | ISL69260IRAZ |  0
-# 0100        | LTC4282 | MAXIM11617 | XDPE192C3B     | XDPE15284D   |  1
-# 0010        | TBD     | ADC128D818 | RAA229620      | TBD          |  2
-# 0110        | LTC4286 | MAXIM11617 | MP2857GQKT-001 | TBD          |  3
-# 0001        | MPS5990 | ADC128D818 | MP2857GQKT-001 | ISL69260IRAZ |  4
+# sku_id[3:0] | HSC     | ADC        | VR             | RT VR        | DPM        | config
+# 0000        | MPS5990 | ADC128D818 | RAA229620      | ISL69260IRAZ |            |  0
+# 0100        | LTC4282 | MAXIM11617 | XDPE192C3B     | XDPE15284D   |            |  1
+# 0010        | TBD     | ADC128D818 | RAA229620      | TBD          |            |  2
+# 0110        | LTC4286 | MAXIM11617 | MP2857GQKT-001 | TBD          |            |  3
+# 0001        | MPS5990 | ADC128D818 | MP2857GQKT-001 | ISL69260IRAZ |            |  4
 
 # Artemis
-# 1001        | LTC4282 | ADC128D818 | XDPE192C3B     |   9
+# 1000        | LTC4282 | ADC128D818 | RAA229620      | ISL69260IRAZ | ISL28022   |  8
+# 1001        | LTC4282 | ADC128D818 | XDPE192C3B     | XDPE15284D   | ISL28022   |  9
+# 1011        | LTC4282 | MAXIM11617 | RAA229620      | ISL69260IRAZ | INA230     |  11
 
 config0="0"
 config1="4"
 config4="1"
 
 # Artemis
+config8="8"
 config9="9"
+config11="11"
 
 #TBD
 #config2="2"
@@ -162,7 +166,8 @@ MB_DVT_BOARD_ID="1"
 MB_PVT_BOARD_ID="3"
 
 if [ "$mbrev" -ge "$MB_DVT_BOARD_ID" ]; then
-  if [ "$mb_sku" -ne "$config9" ]; then
+  if [ "$mb_sku" -ne "$config8" ] &&
+     [ "$mb_sku" -ne "$config9" ]; then
     i2c_device_add 34 0x41 ina230
     i2c_device_add 34 0x42 ina230
     i2c_device_add 34 0x43 ina230
@@ -193,11 +198,21 @@ elif [ "$mb_sku" -eq "$config4" ]; then
   probe_vr_mp2856
   probe_mb_retimer_vr_isl
 # Artemis config
+elif [ "$mb_sku" -eq "$config8" ]; then
+  probe_hsc_ltc
+  probe_adc_ti
+  probe_vr_raa
+  probe_mb_retimer_vr_isl
 elif [ "$mb_sku" -eq "$config9" ]; then
   probe_hsc_ltc
   probe_adc_ti
   probe_vr_xdpe
   probe_mb_retimer_vr_xdpe
+elif [ "$mb_sku" -eq "$config11" ]; then
+  probe_hsc_ltc
+  probe_adc_maxim
+  probe_vr_raa
+  probe_mb_retimer_vr_isl
 fi
 
 if ! i2cget -f -y 0 0x70 0 >/dev/null 2>&1; then

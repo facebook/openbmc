@@ -39,22 +39,14 @@ class Slot1SensorTest(SensorUtilTest, unittest.TestCase):
             with self.subTest(sensor=key):
                 self.assertIn(key, result.keys(), "Missing sensor {}".format(key))
 
-
-class Slot2SensorTest(Slot1SensorTest):
-    FRU_NAME = "slot2"
-
-
 class Slot3SensorTest(Slot1SensorTest):
     FRU_NAME = "slot3"
-
-
-class Slot4SensorTest(Slot1SensorTest):
-    FRU_NAME = "slot4"
-
 
 class NicSensorTest(Slot1SensorTest):
     FRU_NAME = "nic"
 
-
 class BmcSensorTest(Slot1SensorTest):
     FRU_NAME = "bmc"
+
+class AggregateSensorTest(Slot1SensorTest):
+    FRU_NAME = "aggregate"

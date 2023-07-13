@@ -73,6 +73,7 @@ static int read_e1s_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_e1s_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value);
 
 bool pal_bios_completed(uint8_t fru);
 
@@ -222,6 +223,14 @@ const uint8_t mb_discrete_sensor_list[] = {
 //  MB_SENSOR_POWER_FAIL,
 //  MB_SENSOR_MEMORY_LOOP_FAIL,
   MB_SNR_PROCESSOR_FAIL,
+  MB_SNR_RETIMER0_HEALTHY,
+  MB_SNR_RETIMER1_HEALTHY,
+  MB_SNR_RETIMER2_HEALTHY,
+  MB_SNR_RETIMER3_HEALTHY,
+  MB_SNR_RETIMER4_HEALTHY,
+  MB_SNR_RETIMER5_HEALTHY,
+  MB_SNR_RETIMER6_HEALTHY,
+  MB_SNR_RETIMER7_HEALTHY,
   MB_SNR_DIMM_CPU0_A0_STATE,
   MB_SNR_DIMM_CPU0_C0_STATE,
   MB_SNR_DIMM_CPU0_A1_STATE,
@@ -475,14 +484,14 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
+  {"RETIMER0_HEALTH", 0, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA8
+  {"RETIMER1_HEALTH", 1, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA9
+  {"RETIMER2_HEALTH", 2, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAA
+  {"RETIMER3_HEALTH", 3, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAB
+  {"RETIMER4_HEALTH", 4, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
+  {"RETIMER5_HEALTH", 5, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
+  {"RETIMER6_HEALTH", 6, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
+  {"RETIMER7_HEALTH", 7, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
 
   {"CPU0_DIMM_A0_STATE", DIMM_ID0, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB0
   {"CPU0_DIMM_A1_STATE", DIMM_ID1, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB1
@@ -1477,6 +1486,49 @@ int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
 err_exit:
   pal_unlock(fd_lock);
   return ret;
+}
+
+static
+int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
+  const char lock_path[MAX_VALUE_LEN] = "/tmp/pal_rt_lock";
+  const int HEARTBEAT = 1;
+  const int CODE_LOAD = 1 << 1;
+  char rev_id[32] = {0};
+  char fru_name[32] = {0};
+  int ret = 0, fd_lock = -1;
+  int retimer_id = sensor_map[fru].map[sensor_num].id;
+  uint8_t health = 0;
+  *value = 0;
+
+  if(pal_get_fru_name(fru, fru_name)) {
+    return READING_NA;
+  }
+
+  if (gpio_get_value_by_shadow("RST_PERST_CPUx_SWB_N") != GPIO_VALUE_HIGH) {
+    return READING_NA;
+  }
+
+  kv_get("mb_rev", rev_id, 0, 0);
+  if (!strcmp(rev_id, "2")) {
+    if (sensor_num != MB_SNR_RETIMER0_TEMP && sensor_num != MB_SNR_RETIMER4_TEMP) {
+      return READING_NA;
+    }
+  }
+
+  fd_lock = pal_lock(lock_path);
+  if (fd_lock < 0) {
+    return READING_SKIP;
+  }
+  ret = AriesGetHealth(fru_name, retimer_id, &health);
+  pal_unlock(fd_lock);
+
+  if ((ret == ARIES_SUCCESS) && (health == (HEARTBEAT | CODE_LOAD))) {
+    *value = 0;
+    return 0;
+  }
+
+  *value = 1;
+  return 0;
 }
 
 static

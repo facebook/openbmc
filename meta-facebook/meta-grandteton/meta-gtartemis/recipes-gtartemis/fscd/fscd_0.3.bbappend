@@ -19,4 +19,14 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 LOCAL_URI += " \
     file://setup-fan.sh \
+    file://fsc-config-gta-8-retimer.json \
+    file://zone-fsc-gta-8-retimer.fsc \
     "
+
+FSC_CONFIG += "fsc-config-gta-8-retimer.json \
+	          "
+
+FSC_ZONE_CONFIG +="zone-fsc-gta-8-retimer.fsc \
+	              "
+
+RDEPENDS:${PN} += "bash"

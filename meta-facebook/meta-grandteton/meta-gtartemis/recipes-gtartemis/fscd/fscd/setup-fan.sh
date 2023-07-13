@@ -18,4 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 
-/usr/local/bin/fan-util --set 70
+default_fsc_config="/etc/fsc-config.json"
+if [[ -f ${default_fsc_config} ]]; then
+  rm ${default_fsc_config}
+fi
+
+ln -s /etc/fsc-config-gta-8-retimer.json ${default_fsc_config}
+
+/etc/init.d/check-fan-cache.sh &

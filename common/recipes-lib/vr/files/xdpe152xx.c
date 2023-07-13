@@ -467,10 +467,27 @@ get_xdpe152xx_ver(struct vr_info *info, char *ver_str) {
       vr_xfer = &vr_rdwr;
     }
 
-    if ((lock = single_instance_lock_blocked(key)) < 0) {
-      syslog(LOG_WARNING, "%s: Failed to get %s lock", __func__, key);
+    const char *lock_name = (info->lock_name) ? info->lock_name : key;
+    if ((lock = single_instance_lock_blocked(lock_name)) < 0) {
+      syslog(LOG_WARNING, "%s: Failed to get %s lock", __func__, lock_name);
+    }
+
+    // stop sensor polling before unlocking registers
+    if (info->sensor_polling_ctrl) {
+      info->sensor_polling_ctrl(false);
+    }
+    if (info->ops && info->ops->unlock_reg) {
+      info->ops->unlock_reg(info);
     }
     ret = cache_xdpe152xx_crc(info->bus, info->addr, key, tmp_str, NULL);
+    if (info->ops && info->ops->lock_reg) {
+      info->ops->lock_reg(info);
+    }
+    // resume sensor polling
+    if (info->sensor_polling_ctrl) {
+      info->sensor_polling_ctrl(true);
+    }
+
     if (lock >= 0) {
       single_instance_unlock(lock);
     }

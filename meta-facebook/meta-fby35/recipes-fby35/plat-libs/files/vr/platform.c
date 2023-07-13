@@ -32,7 +32,7 @@ int hd_vr_addr_table[][3] = {
 static uint8_t slot_id = 0;
 static char fru_name[64] = {0};  // prefix of vr version cache (kv)
 static char fru_exp_name[64] = {0};  // prefix of expansion board vr version cache (kv)
-static bool need_unlock = false;
+static char lock_name[80] = {0};
 
 enum {
   VR_CL_VCCIN = 0,
@@ -47,16 +47,7 @@ enum {
   VR_RBF_A0V8,
   VR_RBF_VDDQAB,
   VR_RBF_VDDQCD,
-
-  VR_COMP_MAX, // should be latest
 };
-
-enum {
-  VR_MONITOR_DISABLE = 0,
-  VR_MONITOR_ENABLE = 1,
-} VR_MONITOR_CTRL;
-
-static bool is_reg_unlock[VR_COMP_MAX] = {0};
 
 static int
 _fby35_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
@@ -91,6 +82,24 @@ rbf_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
               uint8_t *rxbuf, uint8_t rxlen) {
   return _fby35_vr_rdwr(bus, addr, txbuf, txlen, rxbuf, rxlen, FEXP_BIC_INTF);
 };
+
+static int
+plat_xdpe152xx_fw_update(struct vr_info *info, void *args) {
+  int ret;
+
+  if (bic_set_vr_monitor_enable(slot_id, false, NONE_INTF) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+  msleep(10);
+  if (xdpe152xx_unlock_reg(info) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+  ret = xdpe152xx_fw_update(info, args);
+  xdpe152xx_lock_reg(info);
+  bic_set_vr_monitor_enable(slot_id, true, NONE_INTF);
+
+  return ret;
+}
 
 /*MP2856 must stop VR sensor polling while fw updating */
 int
@@ -134,7 +143,11 @@ int sb_vr_remaining_wr(uint8_t addr, uint16_t *remain, bool is_update) {
 
 int
 sb_vr_polling_ctrl(bool enable) {
-  return bic_set_vr_monitor_enable(slot_id, enable, NONE_INTF);
+  bic_set_vr_monitor_enable(slot_id, enable, NONE_INTF);
+  if (!enable) {
+    msleep(10);
+  }
+  return 0;
 }
 
 int
@@ -154,7 +167,7 @@ struct vr_ops ifx_ops = {
   .get_fw_ver = get_xdpe152xx_ver,
   .parse_file = xdpe152xx_parse_file,
   .validate_file = NULL,
-  .fw_update = xdpe152xx_fw_update,
+  .fw_update = plat_xdpe152xx_fw_update,
   .fw_verify = NULL,
   .unlock_reg = xdpe152xx_unlock_reg,
   .lock_reg = xdpe152xx_lock_reg,
@@ -327,9 +340,10 @@ void plat_vr_preinit(uint8_t slot, const char *name) {
   }
 }
 
-void fby35_vr_device_check(void){
+void fby35_vr_device_check(void) {
   uint8_t rbuf[16], rlen;
   int i;
+
   for (i = VR_CL_VCCIN; i <= VR_CL_VCCINFAON; i++) {
     rlen = sizeof(rbuf);
     if (bic_get_vr_device_id(slot_id, rbuf, &rlen, fby35_vr_list[i].bus,
@@ -340,7 +354,12 @@ void fby35_vr_device_check(void){
     switch (rlen) {
       case 2:
         fby35_vr_list[i].ops = &ifx_ops;
-        need_unlock = true;
+        fby35_vr_list[i].sensor_polling_ctrl = sb_vr_polling_ctrl;
+
+        // VRs on a MB share one lock as it doesn't support individually
+        // stop/resume VR monitoring
+        snprintf(lock_name, sizeof(lock_name), "%s_vr", fru_name);
+        fby35_vr_list[i].lock_name = lock_name;
         break;
       case 6:
         fby35_vr_list[i].ops = &ti_ops;
@@ -350,7 +369,6 @@ void fby35_vr_device_check(void){
         break;
     }
   }
-  msleep(1);
 }
 
 void halfdome_vr_device_check(void){
@@ -445,8 +463,6 @@ int plat_vr_init(void) {
   int vr_cnt = sizeof(fby35_vr_list)/sizeof(fby35_vr_list[0]);
   uint8_t type_1ou = TYPE_1OU_UNKNOWN;
   int server_type = SERVER_TYPE_NONE;
-  int ret = 0;
-  int i = 0;
 
   if (slot_id != FRU_BMC) {
     server_type = fby35_common_get_slot_type(slot_id);
@@ -476,36 +492,13 @@ int plat_vr_init(void) {
     fby35_vr_list[i].remaining_wr_op = sb_vr_remaining_wr;
   }
 
-  ret = vr_device_register(fby35_vr_list, vr_cnt);
-  if (need_unlock) {
-    bic_set_vr_sensor_monitor(slot_id, VR_MONITOR_DISABLE, NONE_INTF);
-    msleep(10);
-    for (i = VR_CL_VCCIN; i <= VR_CL_VCCINFAON; i++) {
-      if (!vr_unlock_reg(fby35_vr_list[i].dev_name)) {
-        is_reg_unlock[i] = true;
-      }
-    }
-  }
-
-  return ret;
+  return vr_device_register(fby35_vr_list, vr_cnt);
 }
 
 void plat_vr_exit(void) {
-  int i = 0;
-
   if (plat_configs) {
     free(plat_configs);
-  }
-  if (need_unlock) {
-    for (i = VR_CL_VCCIN; i <= VR_CL_VCCINFAON; i++) {
-      if (is_reg_unlock[i] == true) {
-        vr_lock_reg(fby35_vr_list[i].dev_name);
-        is_reg_unlock[i] = false;
-      }
-    }
-    bic_set_vr_sensor_monitor(slot_id, VR_MONITOR_ENABLE, NONE_INTF);
   }
 
   return;
 }
-

@@ -96,6 +96,7 @@ struct vr_info {
   bool force;
   struct vr_ops *ops;
   void *private_data;
+  char *lock_name;
   int (*xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
   int (*sensor_polling_ctrl)(bool);
   int (*remaining_wr_op)(uint8_t, uint16_t*, bool);

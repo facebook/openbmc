@@ -5,9 +5,6 @@ PROVIDES:remove = "inspirationpoint-image"
 PROVIDES += "gtartemis-image"
 
 # Include modules in rootfs
-IMAGE_INSTALL:remove = " \
-   retimer-util \
-   "
 
 IMAGE_INSTALL += " \
    usbutils \

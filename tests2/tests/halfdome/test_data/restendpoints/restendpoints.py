@@ -70,7 +70,6 @@ REST_END_POINTS = {
         "Product Part Number",
         "Product Version",
         "Product Serial",
-        "Product Custom Data 3",
     ],
     "/api/mezz/logs": ["Logs"],
     "/api/mezz/sensors": ["NIC_SENSOR_TEMP"],

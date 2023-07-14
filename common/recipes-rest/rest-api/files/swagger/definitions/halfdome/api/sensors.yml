@@ -1,0 +1,769 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sensors  
+  title: Swagger doc for /api/sensors  
+  version: 1.0.0
+paths: 
+  /api/sensors: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  MB_INLET_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_OUTLET_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  FIO_FRONT_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_SOC_CPU_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_DIMMA0_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_DIMMA1_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_DIMMA2_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_DIMMA4_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_DIMMA6_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_DIMMA7_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_DIMMA8_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_DIMMA10_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_SSD0_M2A_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_HSC_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_CPU0_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_SOC_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_CPU1_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_PVDDIO_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_PVDD11_TEMP_C: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_P12V_STBY_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_PVDD18_S5_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_P3V3_STBY_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_PVDD11_S3_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_P3V_BAT_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_PVDD33_S5_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_P5V_STBY_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_P12V_MEM_1_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_P12V_MEM_0_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_P1V2_STBY_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_P3V3_M2_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_ADC_P1V8_STBY_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_HSC_INPUT_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_CPU0_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_SOC_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_CPU1_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_PVDDIO_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_PVDD11_VOLT_V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  HSC_OUTPUT_CURR_A: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_CPU0_CURR_A: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_SOC_CURR_A: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_CPU1_CURR_A: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_PVDDIO_CURR_A: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_PVDD11_CURR_A: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_HSC_INPUT_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_CPU0_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_SOC_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_CPU1_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_PVDDIO_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_PVDD11_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_SOC_PACKAGE_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_DIMMA0_PMIC_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_DIMMA1_PMIC_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_DIMMA2_PMIC_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_DIMMA4_PMIC_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_DIMMA6_PMIC_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_DIMMA7_PMIC_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_DIMMA8_PMIC_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB_VR_DIMMA10_PMIC_PWR_W: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  NIC_TEMP_C: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_FAN0_TACH_RPM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_FAN1_TACH_RPM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_FAN2_TACH_RPM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_FAN3_TACH_RPM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_FAN4_TACH_RPM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_FAN5_TACH_RPM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_FAN6_TACH_RPM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_FAN7_TACH_RPM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_PWM0_TACH_PCT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_PWM1_TACH_PCT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_PWM2_TACH_PCT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_PWM3_TACH_PCT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_OUTLET_TEMP_C: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_INLET_TEMP_C: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_P5V_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_P12V_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_P3V3_STBY_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_P1V8_STBY_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_P1V2_STBY_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_P2V5_STBY_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_ADC_P1V0_STBY_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_ADC_P0V6_STBY_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_ADC_P3V3_RGM_STBY_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_ADC_P5V_USB_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_ADC_P3V3_NIC_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_HSC_TEMP_C: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_HSC_INPUT_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_HSC_INPUT_PWR_W: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_HSC_OUTPUT_CURR_A: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_HSC_PEAK_OUTPUT_CURR_A: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_HSC_PEAK_INPUT_PWR_W: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_MEDUSA_OUTPUT_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_MEDUSA_INPUT_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_MEDUSA_CURR_A: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_MEDUSA_PWR_W: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_MEDUSA_VDELTA_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_CPU_CL_VDELTA_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_CPU_PDB_VDELTA_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_PMON_CURRENT_LEAKAGE_CURR_A: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_ADC_FAN_OUTPUT_CURR_A: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_FAN_PWR_W: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_ADC_NIC_P12V_VOLT_V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_ADC_NIC_OUTPUT_CURR_A: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_NIC_PWR_W: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BB_SYSTEM_AIRFLOW_CFM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

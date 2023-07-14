@@ -1,0 +1,45 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/server1/config  
+  title: Swagger doc for /api/server1/config  
+  version: 1.0.0
+paths: 
+  /api/server1/config: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  pwr_server1_last_state: 
+                    type: string
+                  slot1_por_cfg: 
+                    type: string
+                  slot1_boot_order: 
+                    type: string
+                  slot1_cpu_ppin: 
+                    type: string
+                  slot1_sensor_health: 
+                    type: string
+                  slot1_sel_error: 
+                    type: string
+                  slot1_enable_pxe_sel: 
+                    type: string
+                  slot1_end_of_post: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

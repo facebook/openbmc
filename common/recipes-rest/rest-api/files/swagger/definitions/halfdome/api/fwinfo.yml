@@ -1,0 +1,81 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/fwinfo  
+  title: Swagger doc for /api/fwinfo  
+  version: 1.0.0
+paths: 
+  /api/fwinfo: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  fruid_info: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      bmc: 
+                        type: object
+                        additionalProperties: false
+                        properties: 
+                          vendor: 
+                            type: string
+                          model: 
+                            type: string
+                          serial_number: 
+                            type: string
+                          part_number: 
+                            type: string
+                      nicexp: 
+                        type: object
+                        additionalProperties: false
+                        properties: 
+                          vendor: 
+                            type: string
+                          model: 
+                            type: string
+                          serial_number: 
+                            type: string
+                          part_number: 
+                            type: string
+                      nic: 
+                        type: object
+                        additionalProperties: false
+                        properties: 
+                          vendor: 
+                            type: string
+                          model: 
+                            type: string
+                          serial_number: 
+                            type: string
+                          part_number: 
+                            type: string
+                  fw_info: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      bmc: 
+                        type: object
+                        additionalProperties: false
+                        properties: 
+                          bmc_ver: 
+                            type: string
+                          bmc_cpld_ver: 
+                            type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

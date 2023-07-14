@@ -84,12 +84,6 @@ typedef struct {
   uint8_t read_type;
 } ipmi_extend_sensor_reading_t;
 
-#define ME_NETFN_OEM       0x2E
-#define ME_CMD_SMBUS_READ  0x47
-#define ME_CMD_SMBUS_WRITE 0x48
-#define MAX_ME_SMBUS_WRITE_LEN 32
-#define MAX_ME_SMBUS_READ_LEN  32
-#define ME_SMBUS_WRITE_HEADER_LEN 14
 #define MAX_POST_CODE_PAGE 17
 #define MAX_POSTCODE_NUM  1024
 #define PSB_EEPROM_BUS 0x03
@@ -112,36 +106,6 @@ typedef struct {
 
 #define HD_TI_VR_REMAINING_WRITE_OFFSET(addr) (((addr) << 1 & 0xf) | 0x40)
 #define HD_MPS_VR_REMAINING_WRITE_OFFSET(addr) (((addr + 2) & 0xf) | 0x40)
-
-typedef struct {
-  uint8_t bus_id;
-  uint8_t addr;
-} smbus_info;
-
-typedef struct {
-  uint8_t net_fn;
-  uint8_t cmd;
-  uint8_t mfg_id[3];
-  uint8_t cpu_id;
-  uint8_t smbus_id;
-  uint8_t smbus_addr;
-  uint8_t addr_size;
-  uint8_t rlen;
-  uint8_t addr[4];
-} me_smb_read;
-
-typedef struct {
-  uint8_t net_fn;
-  uint8_t cmd;
-  uint8_t mfg_id[3];
-  uint8_t cpu_id;
-  uint8_t smbus_id;
-  uint8_t smbus_addr;
-  uint8_t addr_size;
-  uint8_t tlen;
-  uint8_t addr[4];
-  uint8_t data[MAX_ME_SMBUS_WRITE_LEN];
-} me_smb_write;
 
 #define MAX_READ_RETRY 5
 
@@ -189,8 +153,6 @@ int bic_notify_fan_mode(int mode);
 int bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config);
 int bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option);
 int bic_check_bb_fw_update_ongoing();
-int me_smbus_read(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t rlen, uint8_t *data);
-int me_smbus_write(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t tlen, uint8_t *data);
 void get_pmic_err_str(uint8_t err_type, char* str, uint8_t len);
 int bic_check_cable_status();
 int bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type);
@@ -208,7 +170,6 @@ int bic_get_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t *value, uint
 int bic_set_virtual_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value);
 int bic_op_read_e1s_reg(uint8_t dev_id, uint8_t addr, uint8_t offset, uint8_t rlen, uint8_t *rbuf, uint8_t intf);
 int bic_op_get_e1s_present(uint8_t dev_id, uint8_t intf, uint8_t* status);
-int bic_set_vr_sensor_monitor(uint8_t slot_id, uint8_t action, uint8_t intf);
 int bic_vf_get_e1s_present(uint8_t slot_id, uint8_t dev_id, uint8_t *status);
 
 #ifdef __cplusplus

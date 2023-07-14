@@ -100,8 +100,6 @@ enum {
   BB_BIC_SLOT1_PRSNT_PIN = 15,
 };
 
-const uint32_t INTEL_MFG_ID = 0x000157;
-
 uint8_t mapping_vf_e1s_prsnt[6] = {E1S_ENDPOINT1, E1S_ENDPOINT2, E1S_ENDPOINT3, E1S_ENDPOINT4};
 uint8_t mapping_op_e1s_prsnt[2][6] = {{E1S_ENDPOINT0, E1S_ENDPOINT1, E1S_ENDPOINT2},
                                   {E1S_ENDPOINT3, E1S_ENDPOINT4, E1S_ENDPOINT5, E1S_ENDPOINT6, E1S_ENDPOINT7}};
@@ -1037,71 +1035,6 @@ me_recovery(uint8_t slot_id, uint8_t command) {
   return 0;
 }
 
-int
-me_smbus_read(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t rlen, uint8_t *data){
-  int ret = 0, index = 0;
-  uint8_t len = 0;
-  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-  me_smb_read req = {0};
-
-  if (data == NULL) {
-    syslog(LOG_WARNING, "%s(): Invalid data input", __func__);
-  }
-  req.net_fn = ME_NETFN_OEM << 2;
-  req.cmd = ME_CMD_SMBUS_READ;
-  memcpy(req.mfg_id, &INTEL_MFG_ID, sizeof(req.mfg_id));
-  req.cpu_id = 0;
-  req.smbus_id = info.bus_id;
-  req.smbus_addr = info.addr;
-  req.addr_size = addr_size;
-
-  memcpy(req.addr, &addr, sizeof(req.addr));
-  req.rlen = (rlen > 0) ? (rlen - 1) : 0; // Number of bytes to read minus one.
-  ret = bic_me_xmit(slot_id, (uint8_t*)&req, sizeof(req), rbuf, &len);
-  if (rbuf[0] != CC_SUCCESS) {
-    syslog(LOG_WARNING, "%s(): FRU: %d, fail to do ME SMBus read, CC: 0x%x", __func__, slot_id, rbuf[0]);
-    return -1;
-  }
-  if ((ret < 0) || (len != rlen + 4)) {
-    syslog(LOG_WARNING, "%s(): FRU: %d, fail to do ME SMBus read, rlen = %d, len = %d", __func__, slot_id, rlen, len);
-    return -1;
-  }
-  index = sizeof(INTEL_MFG_ID);
-  memcpy(data, &rbuf[index], rlen);
-
-  return ret;
-}
-
-int
-me_smbus_write(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t tlen, uint8_t *data){
-  int ret = 0;
-  uint8_t len = 0;
-  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-  me_smb_write req = {0};
-
-  if (data == NULL) {
-    syslog(LOG_WARNING, "%s(): Invalid data input", __func__);
-  }
-  req.net_fn = ME_NETFN_OEM << 2;
-  req.cmd = ME_CMD_SMBUS_WRITE;
-  memcpy(req.mfg_id, &INTEL_MFG_ID, sizeof(req.mfg_id));
-  req.cpu_id = 0;
-  req.smbus_id = info.bus_id;
-  req.smbus_addr = info.addr;
-  req.addr_size = addr_size;
-  memcpy(req.addr, &addr, sizeof(req.addr));
-  req.tlen = (tlen > 0) ? (tlen - 1) : 0; // Number of bytes to read minus one.
-  memcpy(req.data, data, tlen);
-
-  ret = bic_me_xmit(slot_id, (uint8_t*)&req, ME_SMBUS_WRITE_HEADER_LEN + tlen, rbuf, &len);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): fail to do ME SMBus write", __func__);
-    return -1;
-  }
-
-  return ret;
-}
-
 void
 get_pmic_err_str(uint8_t err_type, char* str, uint8_t len) {
   const char *err_str[] = {
@@ -1802,19 +1735,6 @@ bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis, uint8_t intf) {
 
   tbuf[3] = dis;  // 1: disable sensor monitor; 0: enable sensor monitor
   return bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DISABLE_SEN_MON, tbuf, 4, rbuf, &rlen, intf);
-}
-
-int
-bic_set_vr_sensor_monitor(uint8_t slot_id, uint8_t action, uint8_t intf) {
-  uint8_t tbuf[8] = {0x00}; // IANA ID
-  uint8_t rbuf[8] = {0x00};
-  uint8_t rlen = sizeof(rbuf);
-
-  // Fill the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-
-  tbuf[3] = action;
-  return bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_STOP_VR_MONITOR, tbuf, 4, rbuf, &rlen, intf);
 }
 
 int

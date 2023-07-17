@@ -1,0 +1,26 @@
+From 08c2d7c3f7b8210fa84eb0ea2c4501c5bc0aa394 Mon Sep 17 00:00:00 2001
+From: peteryin <peter.yin@quantatw.com>
+Date: Mon, 17 Jul 2023 16:50:10 +0800
+Subject: [PATCH 2/2] fix fan enable attribute
+
+---
+ lib/sysfs.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/lib/sysfs.c b/lib/sysfs.c
+index e59a064..211a9fd 100644
+--- a/lib/sysfs.c
++++ b/lib/sysfs.c
+@@ -384,6 +384,9 @@ sensors_subfeature_type sensors_subfeature_get_type(const char *name, int *nr)
+ 		if ((count = sscanf(name, matches[i].name, nr, &c))) {
+ 			/* Needed for matching pwm[1-*] */
+ 			if (matches[i].submatches == pwm_matches) {
++				if (c == '_') {
++					*nr=*nr+128;
++				}
+ 				return SENSORS_SUBFEATURE_PWM_IO;
+ 			}
+ 			if (matches[i].submatches == iio_matches) {
+-- 
+2.25.1
+

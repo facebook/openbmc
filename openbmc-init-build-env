@@ -13,7 +13,13 @@ DISTRO_DEFAULT=lf-master
 declare -a PLAT_DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.
 
-# Please keep in alphabetical order
+#
+# NOTES:
+#  1. Please keep in alphabetical order.
+#  2. Please run "facebook/configerator_platforms_update.sh" and include
+#     all the auto-generated changes in the DIFF When platform distro is
+#     updated.
+#
 
 PLAT_DISTRO_OVERRIDES=(
 # DON'T modify the next line! It is used as the anchor string in new-fblite.py

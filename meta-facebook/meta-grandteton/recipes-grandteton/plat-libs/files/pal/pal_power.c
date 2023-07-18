@@ -14,6 +14,7 @@
 #include <libpldm/pldm.h>
 #include <libpldm/platform.h>
 #include <libpldm-oem/pldm.h>
+#include <openbmc/obmc-i2c.h>
 
 
 #define DELAY_POWER_ON 1
@@ -21,22 +22,35 @@
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_CYCLE 10
 
-enum MEB_CPLD_INFO {
-  MEB_POWER_REG = 0x2,
-  BASE_CARD_POWER_REG = 0x11,
-  MEB_CPLD_BUS = 0x12,
-  MEB_CPLD_ADDR = 0xA0,
-  MEB_CARD_POWER_ENABLE_BIT = 7,
-  MEB_POWER_ENABLE_BIT = 3,
+enum GTA_MB_CPLD_INFO {
+  MB_CPLD_ADDR = 0x46,
+  ACB_POWER_EN_REG = 0x2,
+  MEB_POWER_EN_REG = 0x0,
+  ACB_POWER_ENABLE_BIT = 4,
+  MEB_POWER_ENABLE_BIT = 1,
 };
 
-enum ACB_CPLD_INFO {
-  ACB_POWER_REG = 0x3,
+enum GTA_MEB_CPLD_INFO {
+  MEB_CPLD_BUS = 0x12,
+  MEB_CPLD_ADDR = 0xA0,
+  MEB_POWER_REG = 0x2,
+  BASE_CARD_POWER_REG = 0x11,
+  MEB_CARD_POWER_GOOD_BIT = 0,
+  MEB_CARD_POWER_ENABLE_BIT = 7,
+  MEB_POWER_GOOD_BIT = 0,
+
+};
+
+enum GTA_ACB_CPLD_INFO {
   ACB_CPLD_BUS = 0x5,
   ACB_CPLD_ADDR = 0xA0,
-  ACB_POWER_ENABLE_BIT = 5,
-  ACB_ACCLA_EN_REG = 0x12,
-  ACB_ACCLB_EN_REG = 0x13,
+  ACB_POWER_GOOD1_REG = 0x5,
+  ACB_POWER_GOOD2_REG = 0x6,
+  ACB_POWER_GOOD_BIT = 0,
+  ACB_ACCLA_POWER_EN_REG = 0x12,
+  ACB_ACCLB_POWER_EN_REG = 0x13,
+  ACB_ACCLA_POWER_GOOD_REG = 0x24,
+  ACB_ACCLB_POWER_GOOD_REG = 0x25,
 };
 
 enum BIT_OPERATION {
@@ -150,6 +164,46 @@ int bic_cpld_reg_bit_opeation(uint8_t bic_bus, uint8_t bic_eid, uint8_t cpld_bus
   return 0;
 }
 
+static int 
+get_acb_power_status(uint8_t *status) {
+  int ret = 0;
+  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t txlen = 4;
+  size_t  rxlen = 0;
+  bool acb_power_good1 = false;
+  bool acb_power_good2 = false;
+
+  txbuf[0] = ACB_CPLD_BUS;
+  txbuf[1] = ACB_CPLD_ADDR;
+  txbuf[2] = 1;
+  txbuf[3] = ACB_POWER_GOOD1_REG;
+
+  ret = oem_pldm_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID, NETFN_APP_REQ,
+          CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, true);
+  if (ret || rxlen != 1) {
+    syslog(LOG_WARNING, "%s read POWER_GOOD1 register failed, ret %d rxlen %u", __func__, ret, rxlen);
+    return -1;
+  }
+
+  acb_power_good1 = rxbuf[0] & (1 << ACB_POWER_GOOD_BIT);
+
+  txbuf[3] = ACB_POWER_GOOD2_REG;
+
+  ret = oem_pldm_ipmi_send_recv(ACB_BIC_BUS, ACB_BIC_EID, NETFN_APP_REQ,
+          CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, true);
+  if (ret || rxlen != 1) {
+    syslog(LOG_WARNING, "%s read POWER_GOOD2 register failed, ret %d rxlen %u", __func__, ret, rxlen);
+    return -1;
+  }
+
+  acb_power_good2 = rxbuf[0] & (1 << ACB_POWER_GOOD_BIT);
+
+  *status = (acb_power_good1 && acb_power_good2);
+
+  return 0;
+}
+
 int
 pal_get_fru_power(uint8_t fru, uint8_t *status) {
   int ret = 0;
@@ -157,7 +211,7 @@ pal_get_fru_power(uint8_t fru, uint8_t *status) {
   uint8_t rxbuf[MAX_RXBUF_SIZE] = {0};
   uint8_t txlen = 4;
   size_t  rxlen = 0;
-  uint8_t power_enable_bit = 0;
+  uint8_t power_good_bit = 0;
   uint8_t bic_bus = 0;
   uint8_t bic_eid = 0;
   txbuf[2] = 0x1; // read 1 byte
@@ -169,7 +223,7 @@ pal_get_fru_power(uint8_t fru, uint8_t *status) {
     txbuf[0] = MEB_CPLD_BUS;
     txbuf[1] = MEB_CPLD_ADDR;  
     txbuf[3] = MEB_POWER_REG;
-    power_enable_bit = (1 << MEB_POWER_ENABLE_BIT);
+    power_good_bit = (1 << MEB_POWER_GOOD_BIT);
     break;
   case FRU_MEB_JCN1:
   case FRU_MEB_JCN2:
@@ -190,16 +244,10 @@ pal_get_fru_power(uint8_t fru, uint8_t *status) {
     txbuf[0] = MEB_CPLD_BUS;
     txbuf[1] = MEB_CPLD_ADDR;
     txbuf[3] = BASE_CARD_POWER_REG + (fru - FRU_MEB_JCN1);
-    power_enable_bit = (1 << MEB_CARD_POWER_ENABLE_BIT);
+    power_good_bit = (1 << MEB_CARD_POWER_GOOD_BIT);
     break;
   case FRU_ACB:
-    bic_bus = ACB_BIC_BUS;
-    bic_eid = ACB_BIC_EID;
-    txbuf[0] = ACB_CPLD_BUS;
-    txbuf[1] = ACB_CPLD_ADDR;
-    txbuf[3] = ACB_POWER_REG;
-    power_enable_bit = 1 << (ACB_POWER_ENABLE_BIT);
-    break;
+    return get_acb_power_status(status);
   case FRU_ACB_ACCL1:
   case FRU_ACB_ACCL2:
   case FRU_ACB_ACCL3:
@@ -210,8 +258,8 @@ pal_get_fru_power(uint8_t fru, uint8_t *status) {
     bic_eid = ACB_BIC_EID;
     txbuf[0] = ACB_CPLD_BUS;
     txbuf[1] = ACB_CPLD_ADDR;
-    txbuf[3] = ACB_ACCLB_EN_REG;
-    power_enable_bit = (1 << (fru - FRU_ACB_ACCL1));
+    txbuf[3] = ACB_ACCLB_POWER_GOOD_REG;
+    power_good_bit = (1 << (fru - FRU_ACB_ACCL1));
     break;
   case FRU_ACB_ACCL7:
   case FRU_ACB_ACCL8:
@@ -223,8 +271,8 @@ pal_get_fru_power(uint8_t fru, uint8_t *status) {
     bic_eid = ACB_BIC_EID;
     txbuf[0] = ACB_CPLD_BUS;
     txbuf[1] = ACB_CPLD_ADDR;
-    txbuf[3] = ACB_ACCLA_EN_REG;
-    power_enable_bit = (1 << (fru - FRU_ACB_ACCL7));
+    txbuf[3] = ACB_ACCLA_POWER_GOOD_REG;
+    power_good_bit = (1 << (fru - FRU_ACB_ACCL7));
     break;
   default:
     return -1;
@@ -237,13 +285,77 @@ pal_get_fru_power(uint8_t fru, uint8_t *status) {
     return -1;
   }
 
-  if (rxbuf[0] & power_enable_bit) {
+  if (rxbuf[0] & power_good_bit) {
     *status = SERVER_POWER_ON;
   } else {
     *status = SERVER_POWER_OFF;
   }
 
   return 0;
+}
+
+static int
+set_acb_meb_power(uint8_t fru, uint8_t cmd) {
+  int ret = -1;
+  int i2cfd = 0;
+  uint8_t tbuf[2] = {0};
+  uint8_t tlen = 0;
+  uint8_t rbuf[1] = {0};
+  uint8_t reg = 0;
+  uint8_t enable_bit = 0;
+
+  switch(fru) {
+  case FRU_ACB:
+    reg = ACB_POWER_EN_REG;
+    enable_bit = ACB_POWER_ENABLE_BIT;
+    break;
+  case FRU_MEB:
+    reg = MEB_POWER_EN_REG;
+    enable_bit = MEB_POWER_ENABLE_BIT;
+    break;
+  default:
+    syslog(LOG_ERR, "%s(): Invalid FRU:%u", __func__, fru);
+    return -1;
+  }
+
+  i2cfd = i2c_cdev_slave_open(I2C_BUS_7, MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
+    return -1;
+  }
+
+  // read register;
+  tbuf[0] = reg;
+  tlen = 1;
+
+  if (i2c_rdwr_msg_transfer(i2cfd, MB_CPLD_ADDR, tbuf, tlen, rbuf, 1)) {
+    syslog(LOG_ERR, "i2c transfer fail\n");
+    goto exit;
+  }
+
+  switch(cmd) {
+  case SERVER_POWER_ON:
+    tbuf[1] = SETBIT(rbuf[0], enable_bit);
+    break;
+  case SERVER_POWER_OFF:
+    tbuf[1] = CLEARBIT(rbuf[0], enable_bit);
+    break;
+  default:
+    syslog(LOG_ERR, "%s(): Invalid operation:%u", __func__, cmd);
+    goto exit;
+  }
+
+  // write back
+  tlen = 2;
+  if (i2c_rdwr_msg_transfer(i2cfd, MB_CPLD_ADDR, tbuf, tlen, rbuf, 0)) {
+    syslog(LOG_ERR, "i2c transfer fail\n");
+    goto exit;
+  }
+  ret = 0;
+
+exit:
+  i2c_cdev_slave_close(i2cfd);
+  return ret;
 }
 
 int
@@ -255,22 +367,9 @@ pal_set_fru_power(uint8_t fru, uint8_t cmd) {
   size_t  rxlen = 0;
 
   switch (fru) {
+  case FRU_ACB:
   case FRU_MEB:
-    txbuf[0] = MEB_CPLD_BUS;
-    txbuf[1] = MEB_CPLD_ADDR;
-    txbuf[2] = 0;
-    txbuf[3] = MEB_POWER_REG;
-
-    switch (cmd) {
-    case SERVER_POWER_ON:
-      txbuf[4] |= (1 << MEB_POWER_ENABLE_BIT);
-      break;
-    case SERVER_POWER_OFF:
-      break;
-    default:
-      return -1;
-    }
-    break;
+    return set_acb_meb_power(fru, cmd);
   case FRU_MEB_JCN1:
   case FRU_MEB_JCN2:
   case FRU_MEB_JCN3:
@@ -300,20 +399,6 @@ pal_set_fru_power(uint8_t fru, uint8_t cmd) {
       return -1;
     }
     break;
-  case FRU_ACB:
-    switch (cmd) {
-    case SERVER_POWER_ON:
-      ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_POWER_REG, ACB_POWER_ENABLE_BIT, SET_BIT);
-      break;
-    case SERVER_POWER_OFF:
-      ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_POWER_REG, ACB_POWER_ENABLE_BIT, CLEAR_BIT);
-      break;
-    default:
-      return -1;
-    }
-    return ret;
   case FRU_ACB_ACCL1:
   case FRU_ACB_ACCL2:
   case FRU_ACB_ACCL3:
@@ -323,11 +408,11 @@ pal_set_fru_power(uint8_t fru, uint8_t cmd) {
     switch (cmd) {
     case SERVER_POWER_ON:
       ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_ACCLB_EN_REG, fru - FRU_ACB_ACCL1, SET_BIT);
+              ACB_CPLD_ADDR, ACB_ACCLB_POWER_EN_REG, fru - FRU_ACB_ACCL1, SET_BIT);
       break;
     case SERVER_POWER_OFF:
       ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_ACCLB_EN_REG, fru - FRU_ACB_ACCL1, CLEAR_BIT);
+              ACB_CPLD_ADDR, ACB_ACCLB_POWER_EN_REG, fru - FRU_ACB_ACCL1, CLEAR_BIT);
       break;
     default:
       return -1;
@@ -342,11 +427,11 @@ pal_set_fru_power(uint8_t fru, uint8_t cmd) {
     switch (cmd) {
     case SERVER_POWER_ON:
       ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_ACCLA_EN_REG, fru - FRU_ACB_ACCL7, SET_BIT);
+              ACB_CPLD_ADDR, ACB_ACCLA_POWER_EN_REG, fru - FRU_ACB_ACCL7, SET_BIT);
       break;
     case SERVER_POWER_OFF:
       ret = bic_cpld_reg_bit_opeation(ACB_BIC_BUS, ACB_BIC_EID, ACB_CPLD_BUS,
-              ACB_CPLD_ADDR, ACB_ACCLA_EN_REG, fru - FRU_ACB_ACCL7, CLEAR_BIT);
+              ACB_CPLD_ADDR, ACB_ACCLA_POWER_EN_REG, fru - FRU_ACB_ACCL7, CLEAR_BIT);
       break;
     default:
       return -1;

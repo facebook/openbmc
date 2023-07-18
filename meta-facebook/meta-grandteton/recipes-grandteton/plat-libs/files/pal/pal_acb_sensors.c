@@ -130,77 +130,77 @@ PAL_SENSOR_MAP acb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6F
   {"ACCL1_Freya_1_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x70
-  {"ACCL1_Freya_1_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x71
-  {"ACCL1_Freya_1_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x72
+  {"ACCL1_Freya_1_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x71
+  {"ACCL1_Freya_1_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x72
   {"ACCL1_Freya_2_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x73
-  {"ACCL1_Freya_2_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x74
-  {"ACCL1_Freya_2_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x75
+  {"ACCL1_Freya_2_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x74
+  {"ACCL1_Freya_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x75
   {"ACCL2_Freya_1_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x76
-  {"ACCL2_Freya_1_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x77
-  {"ACCL2_Freya_1_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x78
+  {"ACCL2_Freya_1_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x77
+  {"ACCL2_Freya_1_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x78
   {"ACCL2_Freya_2_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x79
-  {"ACCL2_Freya_2_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x7A
-  {"ACCL2_Freya_2_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x7B
+  {"ACCL2_Freya_2_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x7A
+  {"ACCL2_Freya_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x7B
   {"ACCL3_Freya_1_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x7C
-  {"ACCL3_Freya_1_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x7D
-  {"ACCL3_Freya_1_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x7E
+  {"ACCL3_Freya_1_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x7D
+  {"ACCL3_Freya_1_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x7E
   {"ACCL3_Freya_2_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x7F
-  {"ACCL3_Freya_2_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x80
-  {"ACCL3_Freya_2_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x81
+  {"ACCL3_Freya_2_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x80
+  {"ACCL3_Freya_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x81
   {"ACCL4_Freya_1_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x82
-  {"ACCL4_Freya_1_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x83
-  {"ACCL4_Freya_1_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x84
+  {"ACCL4_Freya_1_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x83
+  {"ACCL4_Freya_1_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x84
   {"ACCL4_Freya_2_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x85
-  {"ACCL4_Freya_2_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x86
-  {"ACCL4_Freya_2_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x87
+  {"ACCL4_Freya_2_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x86
+  {"ACCL4_Freya_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x87
   {"ACCL5_Freya_1_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x88
-  {"ACCL5_Freya_1_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x89
-  {"ACCL5_Freya_1_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x8A
+  {"ACCL5_Freya_1_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x89
+  {"ACCL5_Freya_1_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x8A
   {"ACCL5_Freya_2_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x8B
-  {"ACCL5_Freya_2_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x8C
-  {"ACCL5_Freya_2_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x8D
+  {"ACCL5_Freya_2_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x8C
+  {"ACCL5_Freya_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x8D
   {"ACCL6_Freya_1_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x8E
-  {"ACCL6_Freya_1_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x8F
-  {"ACCL6_Freya_1_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x90
+  {"ACCL6_Freya_1_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x8F
+  {"ACCL6_Freya_1_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x90
   {"ACCL6_Freya_2_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x91
-  {"ACCL6_Freya_2_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x92
-  {"ACCL6_Freya_2_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x93
+  {"ACCL6_Freya_2_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x92
+  {"ACCL6_Freya_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x93
   {"ACCL7_Freya_1_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x94
-  {"ACCL7_Freya_1_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x95
-  {"ACCL7_Freya_1_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x96
+  {"ACCL7_Freya_1_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x95
+  {"ACCL7_Freya_1_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x96
   {"ACCL7_Freya_2_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x97
-  {"ACCL7_Freya_2_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x98
-  {"ACCL7_Freya_2_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x99
+  {"ACCL7_Freya_2_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x98
+  {"ACCL7_Freya_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x99
   {"ACCL8_Freya_1_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x9A
-  {"ACCL8_Freya_1_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x9B
-  {"ACCL8_Freya_1_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x9C
+  {"ACCL8_Freya_1_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x9B
+  {"ACCL8_Freya_1_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x9C
   {"ACCL8_Freya_2_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0x9D
-  {"ACCL8_Freya_2_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x9E
-  {"ACCL8_Freya_2_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0x9F
+  {"ACCL8_Freya_2_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x9E
+  {"ACCL8_Freya_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0x9F
   {"ACCL9_Freya_1_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0xA0
-  {"ACCL9_Freya_1_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xA1
-  {"ACCL9_Freya_1_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xA2
+  {"ACCL9_Freya_1_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA1
+  {"ACCL9_Freya_1_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA2
   {"ACCL9_Freya_2_Temp",   0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0xA3
-  {"ACCL9_Freya_2_VOL_1",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xA4
-  {"ACCL9_Freya_2_VOL_2",  0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xA5
+  {"ACCL9_Freya_2_VOL_1",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA4
+  {"ACCL9_Freya_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA5
   {"ACCL10_Freya_1_Temp",  0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0xA6
-  {"ACCL10_Freya_1_VOL_1", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xA7
-  {"ACCL10_Freya_1_VOL_2", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xA8
+  {"ACCL10_Freya_1_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA7
+  {"ACCL10_Freya_1_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA8
   {"ACCL10_Freya_2_Temp",  0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0xA9
-  {"ACCL10_Freya_2_VOL_1", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xAA
-  {"ACCL10_Freya_2_VOL_2", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xAB
+  {"ACCL10_Freya_2_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAA
+  {"ACCL10_Freya_2_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAB
   {"ACCL11_Freya_1_Temp",  0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0xAC
-  {"ACCL11_Freya_1_VOL_1", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xAD
-  {"ACCL11_Freya_1_VOL_2", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xAE
+  {"ACCL11_Freya_1_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAD
+  {"ACCL11_Freya_1_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAE
   {"ACCL11_Freya_2_Temp",  0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0xAF
-  {"ACCL11_Freya_2_VOL_1", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xB0
-  {"ACCL11_Freya_2_VOL_2", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xB1
+  {"ACCL11_Freya_2_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB0
+  {"ACCL11_Freya_2_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB1
   {"ACCL12_Freya_1_Temp",  0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0xB2
-  {"ACCL12_Freya_1_VOL_1", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xB3
-  {"ACCL12_Freya_1_VOL_2", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xB4
+  {"ACCL12_Freya_1_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB3
+  {"ACCL12_Freya_1_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB4
   {"ACCL12_Freya_2_Temp",  0, get_acb_sensor, false, {98, 85, 102, 0, 0, 0, 0, 0}, TEMP},                     // 0xB5
-  {"ACCL12_Freya_2_VOL_1", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xB6
-  {"ACCL12_Freya_2_VOL_2", 0, get_acb_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, // 0xB7
+  {"ACCL12_Freya_2_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB6
+  {"ACCL12_Freya_2_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB7
 };
 
 const uint8_t acb_sensor_list[] = {

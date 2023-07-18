@@ -12,6 +12,4 @@ paths:
           description: ok
           schema: 
             type: object
-            additionalProperties: false
-            properties: 
-            
+            maxProperties: 0

@@ -546,6 +546,11 @@ read_pmbus(uint8_t id, float *value) {
 
     retry = SENSOR_RETRY_TIME;
     do {
+      if (pal_is_fw_update_ongoing(FRU_SERVER)) {
+        syslog(LOG_INFO, "snr_monitor: fru%d_fwupd detected, skip reading", FRU_SERVER);
+        close(fd);
+        return SENSOR_NA;
+      }
       ret = i2c_rdwr_msg_transfer(fd, addr, setpage_data, sizeof(setpage_data),
                                   NULL, 0);
       usleep(SENSOR_RETRY_INTERVAL_USEC);
@@ -970,6 +975,11 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   }
 
   snprintf(key, sizeof(key), "%s_sensor%d", fru_name, sensor_num);
+
+  if (pal_is_fw_update_ongoing(fru)) {
+    syslog(LOG_INFO, "snr_monitor: fru%d_fwupd detected, skip reading", fru);
+    return SENSOR_NA;
+  }
 
   switch(fru) {
   case FRU_SERVER:

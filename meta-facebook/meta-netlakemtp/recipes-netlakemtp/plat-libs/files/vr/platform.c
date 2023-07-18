@@ -5,9 +5,11 @@
 #include <syslog.h>
 #include <facebook/netlakemtp_common.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-pal.h>
 #include "xdpe152xx.h"
 #include "tda38640.h"
 #include "mp2856.h"
+
 
 enum {
   VR_1V05_STBY = 0,
@@ -48,6 +50,17 @@ netlakemtp_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
   }
 
   return ret;
+}
+
+static int
+bmc_vr_polling_waiting(bool enable) {
+  if (!enable) {
+    pal_set_fw_update_ongoing(FRU_SERVER, 30);
+    //wait 3 seconds to wait sensord stop switching the VR pages
+    sleep(3);
+  } else {
+    pal_set_fw_update_ongoing(FRU_SERVER, 0);
+  }
 }
 
 struct vr_ops ifx_ops = {
@@ -133,6 +146,7 @@ struct vr_info netlakemtp_vr_second_list[] = {
     .ops = &mps_ops,
     .private_data = "server",
     .xfer = &netlakemtp_vr_rdwr,
+    .sensor_polling_ctrl = bmc_vr_polling_waiting,
   },
   [VR_VNN_PCH] = {
     .bus = VR_BUS,
@@ -141,6 +155,7 @@ struct vr_info netlakemtp_vr_second_list[] = {
     .ops = &mps_ops,
     .private_data = "server",
     .xfer = &netlakemtp_vr_rdwr,
+    .sensor_polling_ctrl = bmc_vr_polling_waiting,
   },
   [VR_VCCIN_1V8_STBY] = {
     .bus = VR_BUS,
@@ -149,6 +164,7 @@ struct vr_info netlakemtp_vr_second_list[] = {
     .ops = &mps2993_ops,
     .private_data = "server",
     .xfer = &netlakemtp_vr_rdwr,
+    .sensor_polling_ctrl = bmc_vr_polling_waiting,
   },
   [VR_VCCANA_CPU] = {
     .bus = VR_BUS,
@@ -157,6 +173,7 @@ struct vr_info netlakemtp_vr_second_list[] = {
     .ops = &mps_ops,
     .private_data = "server",
     .xfer = &netlakemtp_vr_rdwr,
+    .sensor_polling_ctrl = bmc_vr_polling_waiting,
   },
   [VR_VDDQ] = {
     .bus = VR_BUS,
@@ -165,6 +182,7 @@ struct vr_info netlakemtp_vr_second_list[] = {
     .ops = &mps_ops,
     .private_data = "server",
     .xfer = &netlakemtp_vr_rdwr,
+    .sensor_polling_ctrl = bmc_vr_polling_waiting,
   },
 };
 

@@ -28,8 +28,9 @@ try:
 except Exception:
     pass
 
+
 class BoardRevision:
-    """ Board type """
+    """Board type"""
 
     BRD_TYPE_WEDGE400 = 0x00
     BRD_TYPE_WEDGE400C = 0x01
@@ -72,13 +73,13 @@ class BoardRevision:
         BOARD_WEDGE400C_EVT2: "Wedge400C-EVT2",
         BOARD_WEDGE400C_DVT: "Wedge400C-DVT",
         BOARD_WEDGE400C_DVT2: "Wedge400C-DVT2",
-        BOARD_WEDGE400C_MP_RESPIN : "Wedge400C-MP-Respin",
+        BOARD_WEDGE400C_MP_RESPIN: "Wedge400C-MP-Respin",
         BOARD_UNDEFINED: "Undefined",
     }
 
 
 def pal_get_board_type():
-    """ get board type """
+    """get board type"""
     brd_type = c_uint8()
     ret = lpal_hndl.pal_get_board_type(byref(brd_type))
     if ret:
@@ -88,7 +89,7 @@ def pal_get_board_type():
 
 
 def pal_get_board_type_rev():
-    """ get board type and revision """
+    """get board type and revision"""
     board_type_rev = c_uint8()
     ret = lpal_hndl.pal_get_board_type_rev(byref(board_type_rev))
     if ret:
@@ -98,7 +99,7 @@ def pal_get_board_type_rev():
 
 
 def pal_detect_power_supply_present(fru):
-    """get power module type """
+    """get power module type"""
     power_type_rev = c_uint8()
     lpal_hndl.pal_is_fru_prsnt(fru, byref(power_type_rev))
     if power_type_rev.value:
@@ -113,13 +114,15 @@ def pal_detect_come_bootup(timeout=300):
     @return 1: come bootup is not complete
     @return 0: come bootup is complete
     """
-    scm_ip_usb = 'fe80::ff:fe00:2%usb0'
-    cmd = "ping -c {} -W 1 {} | grep -m 1 \"64 bytes from fe80::ff:fe00:2: seq=\"".format(timeout, scm_ip_usb)
+    scm_ip_usb = "fe80::ff:fe00:2%usb0"
+    cmd = 'ping -c {} -W 1 {} | grep -m 1 "64 bytes from fe80::ff:fe00:2: seq="'.format(
+        timeout, scm_ip_usb
+    )
     ret = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     data, _ = ret.communicate()
-    if (data.decode("utf-8") == ''):
+    if data.decode("utf-8") == "":
         return 1
     else:
         return 0

@@ -62,7 +62,6 @@ class ScmSensorTest(SensorUtilTest, unittest.TestCase):
         else:
             SCM_SENSORS = SCM_SENSORS_ORIGINAL
 
-        
         result = self.get_parsed_result()
         if not result["present"]:
             self.skipTest("scm is not present")

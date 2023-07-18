@@ -48,7 +48,6 @@ IMAGE_INSTALL += " \
   bic-util \
   usb2jtag-util \
   asd \
-  asd-test \
   at \
   gpiod \
   lldp-util \

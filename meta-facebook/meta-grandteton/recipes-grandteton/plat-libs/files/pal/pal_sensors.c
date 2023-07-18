@@ -1069,7 +1069,16 @@ read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value) {
 
 int
 read_vr_iout(uint8_t fru, uint8_t sensor_num, float *value) {
-  return get_vr_reading(fru, sensor_num, value);
+  int ret = 0;
+
+  // According to VR vendors, if the current is read a negative value ( >= -5), it should be ragarded as 0
+  if ((ret = get_vr_reading(fru, sensor_num, value)) == 0) {
+    if (*value >= -5 && *value <= 0) {
+      *value = 0;
+    }
+  }
+
+  return ret;
 }
 
 int

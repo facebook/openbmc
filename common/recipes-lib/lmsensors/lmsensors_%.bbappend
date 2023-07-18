@@ -5,4 +5,5 @@ SRC_URI:append = "\
     file://support-auxiliary-bus-type.patch \
     file://0001-lmsensors-support-iio-device.patch \
     file://0002-fix-fan-enable-attribute.patch \
+    file://0003-modfiy-Sensors-precision-values.patch \
 "

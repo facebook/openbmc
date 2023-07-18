@@ -35,7 +35,7 @@ extern "C" {
 #define FRUID_SIZE      512
 #define CUSTOM_FRU_LIST 1
 #define FRU_DEVICE_LIST 1
-#define FAN_CTL_BUS     21
+#define FAN_CTL_BUS     9
 #define FAN_CTL_ADDR    0x42
 #define FAN_CTL_ADDR_STR "21"
 // Follow max31790 spec to set fan tach monitor
@@ -61,8 +61,8 @@ extern "C" {
 #define PATH_POWER_ON_RESET "/tmp/ast_power_on_reset"
 #define MAX31790_BIND_PATH "/sys/bus/i2c/drivers/max31790/bind"
 #define MAX31790_UNBIND_PATH "/sys/bus/i2c/drivers/max31790/unbind"
-#define MAX31790_STAT_PATH "/sys/bus/i2c/drivers/max31790/21-0021"
-#define MAX31790_BUS_ADDR "21-0021"
+#define MAX31790_STAT_PATH "/sys/bus/i2c/drivers/max31790/9-0021"
+#define MAX31790_BUS_ADDR "9-0021"
 #define MAX31790_PROBE_RETRY 5
 
 // Define SENSOR_NA to distinguish whether sensor reading fail or not

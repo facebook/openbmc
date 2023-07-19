@@ -192,7 +192,6 @@ workflows:
                             minipack,
                             northdome,
                             qemux86,
-                            sonorapass,
                             # wedge, Rocko
                             wedge100,
                             wedge400,

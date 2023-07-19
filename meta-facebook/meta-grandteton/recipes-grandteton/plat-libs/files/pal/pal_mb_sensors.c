@@ -31,11 +31,6 @@
 #define FRB3_MAX_READ_RETRY       (10)
 #define HSC_12V_BUS               (2)
 
-#define IIO_DEV_DIR(device, bus, addr, index) \
-  "/sys/bus/i2c/drivers/"#device"/"#bus"-00"#addr"/iio:device"#index"/%s"
-#define IIO_AIN_NAME       "in_voltage%d_raw"
-
-#define MAX11617_DIR     IIO_DEV_DIR(max1363, 20, 35, 2)
 static int read_bat_val(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_mb_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_cpu_temp(uint8_t fru, uint8_t sensor_num, float *value);
@@ -260,28 +255,6 @@ PAL_DIMM_PMIC_INFO dimm_pmic_list[] = {
   {DIMM_ID14, 0x9C, 1},
   {DIMM_ID15, 0x9E, 1},
 };
-
-char *adc128_devs[] = {
-  "adc128d818-i2c-20-1d",
-};
-
-char *max11617_devs[] = {
-  MAX11617_DIR,
-};
-
-PAL_ADC_CH_INFO max11617_ch_info[] = {
-  {ADC_CH0, 7870,  1210},
-  {ADC_CH1, 12000, 2500},
-  {ADC_CH2, 12000, 2500},
-  {ADC_CH3, 1800,  909},
-  {ADC_CH4, 511,   470},
-  {ADC_CH5, 511,   470},
-  {ADC_CH6, 511,   470},
-  {ADC_CH7, 120,   25},
-};
-
-char **adc_chips = adc128_devs;
-
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}
 PAL_SENSOR_MAP mb_sensor_map[] = {
@@ -550,60 +523,9 @@ bail:
   return ret;
 }
 
-static bool is_max11617_chip(void) {
-  uint8_t id;
-  static bool val=false;
-  static bool cached=false;
-
-  if (!cached) {
-    if (pal_get_platform_id(&id))
-      return false;
-
-    if (GETBIT(id, 1)) {
-       adc_chips = max11617_devs;
-       val = true;
-    }
-    cached = true;
-  }
-  return val;
-}
-
-static int sensors_read_maxim(const char *dev, int channel, float *data)
-{
-  int val = 0;
-  char ain_name[30] = {0};
-  char dev_dir[LARGEST_DEVICE_NAME] = {0};
-  float R1 = max11617_ch_info[channel].r1;
-  float R2 = max11617_ch_info[channel].r2;
-
-
-  snprintf(ain_name, sizeof(ain_name), IIO_AIN_NAME, channel);
-  snprintf(dev_dir, sizeof(dev_dir), dev, ain_name);
-
-  if(access(dev_dir, F_OK)) {
-    return ERR_SENSOR_NA;
-  }
-
-  if (read_device(dev_dir, &val) < 0) {
-    syslog(LOG_ERR, "%s: dev_dir: %s read fail", __func__, dev_dir);
-    return ERR_FAILURE;
-  }
-
-
-  *data = (float)val * 2048 / 4096 * (R1 + R2) / R2 /1000;
-  return 0;
-}
-
 int
 read_iic_adc_val(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret;
-  uint8_t ch_id = sensor_map[fru].map[sensor_num].id;
-
-  if(is_max11617_chip())
-    ret = sensors_read_maxim(adc_chips[ch_id/8], ch_id, value);
-  else
-    ret = sensors_read(adc_chips[ch_id/8], sensor_map[fru].map[sensor_num].snr_name, value);
-  return ret;
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 int

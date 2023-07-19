@@ -1,6 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://facebook-grandteton_defconfig.append \
+            file://fw_env.config.64k \
            "
 
 do_copyfile () {

@@ -23,4 +23,11 @@ connect_uart2_4() {
   printf "uart4" > /sys/devices/platform/ahb/ahb:apb/1e789000.lpc/1e789098.uart_routing/uart2
 }
 
+setup_artemis_uart() {
+  # input PSOC vendor id and product id to Generic Serial driver
+  printf "04b4 e17a" > /sys/bus/usb-serial/drivers/generic/new_id
+}
+
 connect_uart2_4
+setup_artemis_uart
+

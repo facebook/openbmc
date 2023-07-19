@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2023-present Facebook. All Rights Reserved.
 #
@@ -20,14 +20,22 @@
 readonly EXIT_ERROR=255
 
 show_usage() {
-    echo "Usage: usb-util bus-id cb accl[1...12] [ dev1 | dev2 ]"
-    echo "       usb-util [ bind | unbind ] cb accl[1...12] [ dev1 | dev2 ]"
+    echo "Usage: [Artemis Module]:"
+    echo "       usb-util bus-id cb port"
+    echo "       usb-util bus-id cb_accl[1..12]_[1..2] port"
+    echo "       usb-util [ bind | unbind ] cb port "
+    echo "       usb-util [ bind | unbind ] cb_accl[1..12]_[1..2] port"
+    echo "       [FAC & Freya Module]:"
+    echo "       usb-util bus-id cb fac_port"
+    echo "       usb-util [ bind | unbind ] cb fac_port "
+    echo "       usb-util bus-id cb_accl[1..12]_[1..2] fac_port"
+    echo "       usb-util [ bind | unbind ] cb_accl[1..12]_[1..2] fac_port"
 }
 
 check_file_exist() {
-    found=0
-    i=0
-    DIR=/sys/bus/usb/devices/"$busid"
+    local found=0
+    local i=0
+    local DIR=/sys/bus/usb/devices/"$busid"
     while [ "$i" -le "$retry" ]; do
         if [ -d "$DIR" ]; then
         # if usb path exist
@@ -40,125 +48,210 @@ check_file_exist() {
 
     if [ "$found" -eq 0 ]; then
         echo "bus id: $busid not found"
-        exit "$EXIT_ERROR";
     fi
 }
 
-get_acb_accl_bus_id() {
-    case "$dev" in
-        dev1)
-        case "$fru" in
-            accl1)
-            busid="1-1.1.1.1.1"
-        ;;
-            accl2)
-            busid="1-1.1.1.2.1"
-        ;;
-            accl3)
-            busid="1-1.1.1.3.1"
-        ;;
-            accl4)
-            busid="1-1.1.1.4.1.1"
-        ;;
-            accl5)
-            busid="1-1.1.1.4.2.1"
-        ;;
-            accl6)
-            busid="1-1.1.1.4.3.1"
-        ;;
-            accl7)
-            busid="1-1.1.2.1.1"
-        ;;
-            accl8)
-            busid="1-1.1.2.2.1"
-        ;;
-            accl9)
-            busid="1-1.1.2.3.1"
-        ;;
-            accl10)
-            busid="1-1.1.2.4.1.1"
-        ;;
-            accl11)
-            busid="1-1.1.2.4.2.1"
-        ;;
-            accl12)
-            busid="1-1.1.2.4.3.1"
-        ;;
-            *)
-            show_usage
-            exit "$EXIT_ERROR";
-        ;;
-        esac
+get_artemis_bus_id() {
+    case "$fru" in
+        cb_accl1_1)
+        busid="1-1.1.2.4.3.4"
     ;;
-        dev2)
-        case $fru in
-            accl1)
-            busid="1-1.1.1.1.2"
-        ;;
-            accl2)
-            busid="1-1.1.1.2.2"
-        ;;
-            accl3)
-            busid="1-1.1.1.3.2"
-        ;;
-            accl4)
-            busid="1-1.1.1.4.1.2"
-        ;;
-            accl5)
-            busid="1-1.1.1.4.2.2"
-        ;;
-            accl6)
-            busid="1-1.1.1.4.3.2"
-        ;;
-            accl7)
-            busid="1-1.1.2.1.2"
-        ;;
-            accl8)
-            busid="1-1.1.2.2.2"
-        ;;
-            accl9)
-            busid="1-1.1.2.3.2"
-        ;;
-            accl10)
-            busid="1-1.1.2.4.1.2"
-        ;;
-            accl11)
-            busid="1-1.1.2.4.2.2"
-        ;;
-            accl12)
-            busid="1-1.1.2.4.3.2"
-        ;;
-            *)
-            show_usage
-            exit "$EXIT_ERROR";
-        ;;
-        esac
+        cb_accl1_2)
+        busid="1-1.1.2.4.3.3"
+    ;;
+        cb_accl2_1)
+        busid="1-1.1.2.4.2.4"
+    ;;
+        cb_accl2_2)
+        busid="1-1.1.2.4.2.3"
+    ;;
+        cb_accl3_1)
+        busid="1-1.1.2.4.1.4"
+    ;;
+        cb_accl3_2)
+        busid="1-1.1.2.4.1.3"
+    ;;
+        cb_accl4_1)
+        busid="1-1.1.2.3.4"
+    ;;
+        cb_accl4_2)
+        busid="1-1.1.2.3.3"
+    ;;
+        cb_accl5_1)
+        busid="1-1.1.2.2.4"
+    ;;
+        cb_accl5_2)
+        busid="1-1.1.2.2.3"
+    ;;
+        cb_accl6_1)
+        busid="1-1.1.2.1.4"
+    ;;
+        cb_accl6_2)
+        busid="1-1.1.2.1.3"
+    ;;
+        cb_accl7_1)
+        busid="1-1.1.1.4.3.4"
+    ;;
+        cb_accl7_2)
+        busid="1-1.1.1.4.3.3"
+    ;;
+        cb_accl8_1)
+        busid="1-1.1.1.4.2.4"
+    ;;
+        cb_accl8_2)
+        busid="1-1.1.1.4.2.3"
+    ;;
+        cb_accl9_1)
+        busid="1-1.1.1.4.1.4"
+    ;;
+        cb_accl9_2)
+        busid="1-1.1.1.4.1.3"
+    ;;
+        cb_accl10_1)
+        busid="1-1.1.1.3.4"
+    ;;
+        cb_accl10_2)
+        busid="1-1.1.1.3.3"
+    ;;
+        cb_accl11_1)
+        busid="1-1.1.1.2.4"
+    ;;
+        cb_accl11_2)
+        busid="1-1.1.1.2.3"
+    ;;
+        cb_accl12_1)
+        busid="1-1.1.1.1.4"
+    ;;
+        cb_accl12_2)
+        busid="1-1.1.1.1.3"
     ;;
         *)
         show_usage
         exit "$EXIT_ERROR";
     ;;
     esac
+}
+
+get_freya_bus_id() {
+    case "$fru" in
+        cb_accl1_1)
+        busid="1-1.1.2.4.3.1"
+    ;;
+        cb_accl1_2)
+        busid="1-1.1.2.4.3.2"
+    ;;
+        cb_accl2_1)
+        busid="1-1.1.2.4.2.1"
+    ;;
+        cb_accl2_2)
+        busid="1-1.1.2.4.2.2"
+    ;;
+        cb_accl3_1)
+        busid="1-1.1.2.4.1.1"
+    ;;
+        cb_accl3_2)
+        busid="1-1.1.2.4.1.2"
+    ;;
+        cb_accl4_1)
+        busid="1-1.1.2.3.1"
+    ;;
+        cb_accl4_2)
+        busid="1-1.1.2.3.2"
+    ;;
+        cb_accl5_1)
+        busid="1-1.1.2.2.1"
+    ;;
+        cb_accl5_2)
+        busid="1-1.1.2.2.2"
+    ;;
+        cb_accl6_1)
+        busid="1-1.1.2.1.1"
+    ;;
+        cb_accl6_2)
+        busid="1-1.1.2.1.2"
+    ;;
+        cb_accl7_1)
+        busid="1-1.1.1.4.3.1"
+    ;;
+        cb_accl7_2)
+        busid="1-1.1.1.4.3.2"
+    ;;
+        cb_accl8_1)
+        busid="1-1.1.1.4.2.1"
+    ;;
+        cb_accl8_2)
+        busid="1-1.1.1.4.2.2"
+    ;;
+        cb_accl9_1)
+        busid="1-1.1.1.4.1.1"
+    ;;
+        cb_accl9_2)
+        busid="1-1.1.1.4.1.2"
+    ;;
+        cb_accl10_1)
+        busid="1-1.1.1.3.1"
+    ;;
+        cb_accl10_2)
+        busid="1-1.1.1.3.2"
+    ;;
+        cb_accl11_1)
+        busid="1-1.1.1.2.1"
+    ;;
+        cb_accl11_2)
+        busid="1-1.1.1.2.2"
+    ;;
+        cb_accl12_1)
+        busid="1-1.1.1.1.1"
+    ;;
+        cb_accl12_2)
+        busid="1-1.1.1.1.2"
+    ;;
+        *)
+        show_usage
+        exit "$EXIT_ERROR";
+    ;;
+    esac
+}
+
+get_bus_id() {
+    local i=0
+    local k=0
+    if [[ "$fru" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]]; then
+        if [[ "$dev" = "port" ]]; then
+            get_artemis_bus_id
+        elif [[ "$dev" = "fac_port" ]]; then
+            get_freya_bus_id
+        else
+            show_usage
+            exit "$EXIT_ERROR";
+        fi
+        echo "$fru $dev usb bus id is: $busid"
+    elif [[ "$fru" == "cb" ]]; then
+        for i in {1..12}
+        do
+            for k in {1..2}
+            do
+                fru=cb_accl"$i"_"$k"
+                if [[ "$dev" = "port" ]]; then
+                    get_artemis_bus_id
+                elif [[ "$dev" == "fac_port" ]]; then
+                    get_freya_bus_id
+                else
+                    show_usage
+                    exit "$EXIT_ERROR";
+                fi
+                echo "$fru $dev usb bus id is: $busid"
+            done
+        done
+    else
+        show_usage
+        exit "$EXIT_ERROR";       
+    fi
 }
 
 bind_usb() {
-    if [ -z "$fru" ] || [ -z "$dev" ]; then
-        show_usage
-        exit "$EXIT_ERROR";
-    fi
-
-    case $fru in
-        accl[1-9]|accl[1][0-2])
-        get_acb_accl_bus_id
-    ;;
-        *)
-        show_usage
-        exit "$EXIT_ERROR";
-    ;;
-    esac
-
     if [ "$cmd" = "unbind" ] ; then
-        echo "unbind: $busid"
+        echo "unbind $fru $dev: $busid"
         usbip unbind --busid "$busid"
     elif [ "$cmd" = "bind" ]; then
         check_file_exist
@@ -166,6 +259,7 @@ bind_usb() {
         modprobe usbip-host
         usbipd -D
         sleep 1
+        echo "bind $fru $dev: $busid"
         usbip bind --busid "$busid"
     else
         echo "CMD:$cmd not found"
@@ -174,38 +268,51 @@ bind_usb() {
     fi
 }
 
-get_bus_id() {
-    case "$fru" in
-        accl[1-9]|accl[1][0-2])
-        get_acb_accl_bus_id
-    ;;
-        *)
+init_usb() {
+    local i=0
+    local k=0
+    if [ -z "$fru" ] || [ -z "$dev" ]; then
         show_usage
         exit "$EXIT_ERROR";
-    ;;
-    esac
+    fi
 
-    echo "$fru $dev usb bus id is: $busid"
+    if [ "$fru" = "cb" ]; then
+        for i in {1..12}
+        do
+            for k in {1..2}
+            do
+                fru=cb_accl"$i"_"$k"
+                get_bus_id > /dev/null
+                bind_usb
+            done
+        done
+    elif [[ "$fru" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]]; then
+        get_bus_id
+        bind_usb
+    else
+        show_usage
+        exit "$EXIT_ERROR";        
+    fi
 }
 
 cmd=$1
-fru=$3
-dev=$4
+fru=$2
+dev=$3
 busid=
 retry=3
 
-if [ $# -ne 4 ]; then
+if [ $# -ne 3 ]; then
   show_usage
   exit "$EXIT_ERROR";
 fi
 
 case $cmd in
     bind)
-        bind_usb
+        init_usb
     ;;
 
     unbind)
-        bind_usb
+        init_usb
     ;;
 
     bus-id)

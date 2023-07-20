@@ -385,6 +385,12 @@ void halfdome_vr_device_check(void){
   for (int i = VR_HD_VDDCR_CPU0; i <= VR_HD_VDD11S3; i++) {
     fby35_vr_list[i].addr = hd_vr_addr_table[board_rev][i - VR_HD_VDDCR_CPU0] ;
     fby35_vr_list[i].ops = hd_vr_ops_list[board_rev];
+    // VRs on a MB share one lock as it doesn't support individually
+    // stop/resume VR monitoring
+    if (board_rev == HD_VR_MPS || board_rev == HD_VR_INFINEON) {
+      snprintf(lock_name, sizeof(lock_name), "%s_vr", fru_name);
+      fby35_vr_list[i].lock_name = lock_name;
+    }
   }
 }
 

@@ -17,18 +17,16 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import re
-import time
 import unittest
 
 from common.base_sensor_test import LmSensorsTest
-from utils.cit_logger import Logger
-from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
 # Note: Fancpld covered under fans_test ; LTC driver covered under psumuxmon
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class ComESensorTest(LmSensorsTest, unittest.TestCase):
     COM_E_DRIVER = [
         "CPU Vcore",
@@ -114,6 +112,7 @@ class ComESensorTest(LmSensorsTest, unittest.TestCase):
         )
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Tmp75SensorTest(LmSensorsTest, unittest.TestCase):
     TMP75_SENSORS = [
         "Outlet Middle Temp",

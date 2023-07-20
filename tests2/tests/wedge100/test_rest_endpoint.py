@@ -22,6 +22,7 @@ import os
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
+from utils.test_utils import qemu_check
 
 
 POWER_TYPE_CACHE = "/var/cache/detect_power_module_type.txt"
@@ -203,18 +204,21 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_psu_presence_attributes(self):
         self.endpoint_psu_presence = ["psu1", "psu2"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_pem_present(self):
         self.set_endpoint_pem_presence_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.PEM_PRESENT_ENDPOINT, self.endpoint_pem_presence
         )
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_psu_present(self):
         self.set_endpoint_psu_presence_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.PSU_PRESENT_ENDPOINT, self.endpoint_psu_presence
         )
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_fan(self):
         self.set_endpoint_firmware_info_fan_attributes()
         self.assertNotEqual(self.endpoint_firmware_info_fan_attrb, None)
@@ -222,6 +226,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         # If we get any JSON object I'm happy for the time being
         self.assertTrue(json.loads(info))
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_sys(self):
         self.set_endpoint_firmware_info_sys_attributes()
         self.assertNotEqual(self.endpoint_firmware_info_sys_attrb, None)
@@ -234,6 +239,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "36e0d729d079561511c18db645f3f7617fd7c14fcb9be9712"
         ]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_eeprom_firmware_info_sys(self):
         self.set_endpoint_firmware_info_eeprom_attributes()
         self.assertNotEqual(self.endpoint_firmware_info_eeprom_attrb, None)

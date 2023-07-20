@@ -7,7 +7,9 @@
 import unittest
 
 from common.base_tpm_test import BaseTpmTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class TestTpm(BaseTpmTest, unittest.TestCase):
     pass

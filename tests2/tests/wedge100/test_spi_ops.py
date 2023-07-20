@@ -22,6 +22,7 @@ import unittest
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
 class SpiOpsTest(unittest.TestCase):
@@ -50,6 +51,7 @@ class SpiOpsTest(unittest.TestCase):
         size = os.stat(self.tmp_bios).st_size
         self.assertTrue(size > 16000000, "bios file size is too small (%d)" % size)
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_spi_read_eeprom(self):
         """
         read oob switch eeprom by spi_util.sh

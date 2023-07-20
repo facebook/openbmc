@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_kv_test import BaseKvTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class KvTest(BaseKvTest, unittest.TestCase):
     def set_kv_keys(self):
         self.kv_keys = [

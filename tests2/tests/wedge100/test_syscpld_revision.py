@@ -18,13 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 import os
-import re
 import unittest
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class SysCpldRevisionTest(unittest.TestCase):
     def setUp(self):
         self.cpld_rev = "/usr/local/bin/cpld_rev.sh"

@@ -21,9 +21,10 @@ import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
 from tests.wedge100.power_supply import get_power_type
-from utils.test_utils import running_systemd
+from utils.test_utils import qemu_check, running_systemd
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [

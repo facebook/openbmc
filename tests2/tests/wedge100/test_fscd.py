@@ -23,7 +23,7 @@ import unittest
 from common.base_fscd_test import BaseFscdTest
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import tests_dir
+from utils.test_utils import qemu_check, tests_dir
 
 
 class FscdTest(BaseFscdTest, unittest.TestCase):
@@ -31,9 +31,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
     DEFAULT_TEMP = 23000
 
     def setUp(self, config=None, test_data_path=None):
-        self.TEST_DATA_PATH = "{}/wedge100/test_data/fscd".format(
-            tests_dir()
-        )
+        self.TEST_DATA_PATH = "{}/wedge100/test_data/fscd".format(tests_dir())
         super().setUp(config, test_data_path)
 
     def power_host_on(self):
@@ -126,6 +124,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
         return self.get_fan_pwm(pwm_val=PWM_VAL)
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FscdTestPwm(FscdTest):
     TEST_CONFIG_PATH = "{}/wedge100/test_data/fscd".format(tests_dir())
 

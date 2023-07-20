@@ -25,9 +25,10 @@ from tests.wedge100.power_supply import get_power_type
 from tests.wedge100.test_data.sysfs_nodes.sysfs_nodes import LTC4281_SYSFS_NODES
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import running_systemd
+from utils.test_utils import qemu_check, running_systemd
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class PsumuxmonTest(unittest.TestCase):
     def setUp(self):
         Logger.start(name=self._testMethodName)

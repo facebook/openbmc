@@ -22,8 +22,10 @@ import unittest
 
 from common.base_slaac_test import BaseSlaacTest
 from utils.cit_logger import Logger
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class InterfaceTest(BaseSlaacTest, unittest.TestCase):
     def test_eth0_v6_slaac_interface(self):
         """

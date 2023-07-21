@@ -194,9 +194,9 @@ int CxlVrComponent::get_version(json& j) {
 
   // Get CXL VR Version
   int ret = get_cxl_vr_version(bus, eid, target, ver);
-  if (ret != 0) {
+  if (ret != 0 || ver.empty()) {
     j["VERSION"] = "NA";
-    return FW_STATUS_FAILURE;
+    return FW_STATUS_SUCCESS;
   }
 
   string vendor_str;

@@ -150,7 +150,8 @@ typedef union {
      unsigned long link_partner_flow_control: 2;
      unsigned long serdes : 1;
      unsigned long oem_link_speed_valid : 1;
-     unsigned long rsv2 : 10;
+     unsigned long modulation_scheme : 2;
+     unsigned long ext_speed_duplex : 8;
   } bits;
   unsigned long all32;
 } Link_Status;

@@ -110,6 +110,11 @@ const char *link_speed_string[] = {
   "50Gbps",
   "100Gbps",
   "2.5Gbps",
+  "5Gbps",
+  "1Gbps (non BASE-T)",
+  "200Gbps",
+  "400Gbps",
+  "800Gbps",
   "reserved",
 };
 
@@ -612,6 +617,7 @@ void
 print_link_status(NCSI_NL_RSP_T *rcv_buf)
 {
   unsigned char *pbuf = rcv_buf->msg_payload;
+  int speed_duplex;
   Get_Link_Status_Response *plink =
     (Get_Link_Status_Response *)((NCSI_Response_Packet *)(pbuf))->Payload_Data;
   Link_Status linkstatus;
@@ -623,7 +629,9 @@ print_link_status(NCSI_NL_RSP_T *rcv_buf)
   else
     printf("Down\n");
 
-  printf("Speed and duplex: %s\n", link_speed_to_name(linkstatus.bits.speed_duplex));
+  speed_duplex = (linkstatus.bits.speed_duplex < 0xf) ?
+    linkstatus.bits.speed_duplex : linkstatus.bits.ext_speed_duplex;
+  printf("Speed and duplex: %s\n", link_speed_to_name(speed_duplex));
   printf("\n");
   return;
 }

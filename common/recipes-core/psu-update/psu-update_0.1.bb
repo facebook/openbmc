@@ -24,6 +24,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 RDEPENDS:${PN} = "python3-core bash rackmon"
 
 LOCAL_URI = " \
+    file://modbus_update_helper.py \
     file://psu-update-delta.py \
     file://psu-update-delta-orv3.py \
     file://psu-update-bel.py \

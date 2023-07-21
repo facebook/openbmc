@@ -128,7 +128,8 @@
 // JCN1,2,3,4,9,10,11,12 can plug CXL or E1.S
 // JCN5,6,7,8 plugs E1.S
 #define MAX_CXL_NUM 8
-#define MAX_DEV_NAME 8
+#define MAX_DEV_NAME 32
+#define MAX_FRU_NAME 32
 #define MAX_FRUID_NAME 64
 #define MAX_FRUID_PATH_LEN 64
 
@@ -542,6 +543,7 @@ enum GTA_SKU_ID {
 
 enum DEVICES_NUMBER {
   ACCL_DEV_NUM = 2,
+  MC_DEV_NUM = 4,
   CB_DEV_NUM = 24,
 };
 
@@ -588,10 +590,6 @@ enum DEVIC_NVME_READY {
 enum DEVICE_IDENTIFIER_SUPPORT {
   IDENTIFIER_SUPPORT = 0,
   IDENTIFIER_NOT_SUPPORT = 1,
-};
-
-enum DEVICE_FFI_ACCELERATOR {
-  FFI_0_ACCELERATOR = 1,
 };
 
 /* Artemis End */

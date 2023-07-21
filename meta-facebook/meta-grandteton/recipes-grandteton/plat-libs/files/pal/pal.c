@@ -1539,11 +1539,26 @@ pal_get_num_devs(uint8_t fru, uint8_t *num_devs) {
 int
 pal_get_dev_name(uint8_t fru, uint8_t dev, char *name) {
   switch (dev) {
+    case FRU_ALL:
+      strncpy(name, "all", MAX_DEV_NAME);
+      break;
     case DEV_ID1:
       strncpy(name, "dev1", MAX_DEV_NAME);
       break;
     case DEV_ID2:
       strncpy(name, "dev2", MAX_DEV_NAME);
+      break;
+    case FRU_MEB_JCN5:
+      strncpy(name, "ssd4", MAX_DEV_NAME);
+      break;
+    case FRU_MEB_JCN6:
+      strncpy(name, "ssd3", MAX_DEV_NAME);
+      break;
+    case FRU_MEB_JCN7:
+      strncpy(name, "ssd2", MAX_DEV_NAME);
+      break;
+    case FRU_MEB_JCN8:
+      strncpy(name, "ssd1", MAX_DEV_NAME);
       break;
     default:
       syslog(LOG_WARNING, "%s() FRU: %u wrong device id: %u", __func__,fru, dev);
@@ -1560,6 +1575,14 @@ pal_get_dev_id(char *dev_str, uint8_t *dev) {
     *dev = DEV_ID1;
   } else if (!strncmp(dev_str, "dev2", MAX_DEV_NAME)) {
     *dev = DEV_ID2;
+  } else if (!strncmp(dev_str, "ssd4", MAX_DEV_NAME)) {
+    *dev = FRU_MEB_JCN5;
+  } else if (!strncmp(dev_str, "ssd3", MAX_DEV_NAME)) {
+    *dev = FRU_MEB_JCN6;
+  } else if (!strncmp(dev_str, "ssd2", MAX_DEV_NAME)) {
+    *dev = FRU_MEB_JCN7;
+  } else if (!strncmp(dev_str, "ssd1", MAX_DEV_NAME)) {
+    *dev = FRU_MEB_JCN8;
   } else {
     syslog(LOG_WARNING, "%s() Wrong device name: %s", __func__, dev_str);
     return -1;

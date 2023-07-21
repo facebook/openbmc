@@ -9,4 +9,5 @@ PROVIDES += "gtartemis-image"
 IMAGE_INSTALL += " \
    usbutils \
    usbip \
+   enclosure-util \
    "

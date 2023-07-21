@@ -13,6 +13,8 @@
 #include <syslog.h>
 #include "swb_common.hpp"
 
+#define FFI_0_ACCELERATOR 1
+
 using namespace std;
 //MEB CXL VR Component
 class CxlVrComponent : public VrComponent {

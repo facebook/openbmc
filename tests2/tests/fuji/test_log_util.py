@@ -21,12 +21,15 @@ import unittest
 
 from common.base_log_util_test import BaseLogUtilTest
 from tests.fuji.helper.libpal import pal_get_fru_id
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "all"
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class SMBLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "smb"
 
@@ -86,5 +89,6 @@ class PSU4LogUtilTest(SMBLogUtilTest):
     FRU = "psu4"
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class SysLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     FRU = "sys"

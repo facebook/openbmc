@@ -26,6 +26,10 @@ i2c_device_add 6 0x53 24c64    # FCB_B EEPROM
 i2c_device_add 8 0x51 24c64    # BMC EEPROM
 
 # FPGA / CPLD
+# to access scmcpld need to enable I2C buffer by setting BMC_I2C2_EN to high
+gpiocli -s BMC_I2C2_EN set-value 1
+sleep 1
+i2c_device_add 1 0x35 scmcpld
 i2c_device_add 12 0x60 mcbcpld
 
 # CPU IPMI

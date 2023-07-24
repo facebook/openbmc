@@ -71,76 +71,14 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
     0x04, 0, 8,
   },
   {
-    "pwr_come_en",
-    "0: COMe power is off\n"
-    "1: COMe power is on\n",
+    "bios_post_cmplt_l", // be used for PECI checking ready to used
+    "COMe BIOS post code complete\n"
+    "0: Normal\n"
+    "1: Fail",
     I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x14, 0, 1,
-  },
-  {
-    "pwr_force_off",
-    "0: COMe power is off\n"
-    "1: COMe power is on\n",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x14, 1, 1,
-  },
-  {
-    "pwr_come_cycle_n",
-    "write 0 to trigger CPLD power cycling COMe\n"
-    "then this bit will auto set to 1 after Power cycle finish",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x14, 2, 1,
-  },
-  {
-    "uart_select",
-    "0x00: debug uart tp bmc uart2\n"
-    "      cpu uart to bmc uart5\n"
-    "0x01: debug uart to cpu uart\n"
-    "0x02: cpu uart to bmc uart5\n"
-    "0x03: bmc uart2 to bmc uart5\n"
-    "0x04: fpga uart to bmc uart5\n",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x33, 0, 8,
-  },
-  {
-    "scm_eeprom_wp",
-    write_protect_help_str,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0xb1, 0, 1,
-  },
-  {
-    "bmc_i2c_buf_en_l",
-    buf_enable_help_str,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0xb2, 0, 1,
-  },
-  {
-    "iob_i2c_buf_en_l",
-    buf_enable_help_str,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0xb2, 1, 1,
-  },
-  {
-    "come_io_buf_en_l",
-    buf_enable_help_str,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0xb2, 2, 1,
-  },
-  {
-    "scm_io_buf_en_l",
-    buf_enable_help_str,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0xb2, 3, 1,
-  },
+    NULL,
+    0x12, 6, 1,
+  }
 };
 
 static const struct i2c_device_id scmcpld_id[] = {

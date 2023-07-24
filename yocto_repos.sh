@@ -13,7 +13,7 @@ rocko_repos=(
 )
 rocko_poky_patch="0001-rocko-backport-support-for-override.patch 0002-Remove-checks-on-python.patch 0003-Add-support-to-build-on-centOS9.patch"
 lf_master_repos=(
-    lf-openbmc:e6c34c066
+    lf-openbmc:8b17fb007
 )
 lf_dunfell_repos=(
     lf-openbmc:c2858f16b

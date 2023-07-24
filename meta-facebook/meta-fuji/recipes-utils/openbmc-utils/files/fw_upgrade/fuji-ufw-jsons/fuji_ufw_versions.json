@@ -1,50 +1,50 @@
 {
     "bic" : {
         "filename"    : "bic.bin",
-        "version" : "v1.12",
-        "hash"    : "md5sum",
-        "hash_value" : "12bd0723e221bcee26dd1a32744a8156"
+        "version" : "v1.15",
+        "hash"    : "sha1sum",
+        "hash_value" : "712ebd470e353d452b6091f18c9c07172c00453d"
     },
     "bios" : {
         "filename"    : "bios.bin",
-        "version" : "XG1_3A12",
-        "hash"    : "md5sum",
-        "hash_value" : "088e5e6eb0dc5a80badf70eb6680422e"
+        "version" : "XG1_3B13",
+        "hash"    : "sha1sum",
+        "hash_value" : "f7632b22172c7fa5ecab6d451b54fe1aa51dd268"
     },
     "fcm" : {
         "filename"    : "fcm_cpld.vme",
         "version" : "0.3.2",
-        "hash"    : "md5sum",
-        "hash_value" : "ba39a7e618370a20db6c853f5d5b67d0"
+        "hash"    : "sha1sum",
+        "hash_value" : "77c796231f386d51dcdf3a3ec3f7619fbcca64c4"
     },
     "iob_fpga" : {
         "filename"    : "iob_fpga.bit",
         "version" : "0.54",
-        "hash"    : "md5sum",
-        "hash_value" : "be87195d3373e38cf9a1533dbc7f428a"
+        "hash"    : "sha1sum",
+        "hash_value" : "be56803c5c2676c48324f45d843b095431d10265"
     },
     "pdb" : {
         "filename"    : "pdb_cpld.vme",
         "version" : "0.5.1",
-        "hash"    : "md5sum",
-        "hash_value" : "8c7804d911520017b1c4ce76d1bba758"
+        "hash"    : "sha1sum",
+        "hash_value" : "49c4406507801a64df5aa8ac7598ab1883a43f1b"
     },
     "16q_fpga" : {
         "filename"    : "pim16q_fpga.bit",
         "version" : "0.38",
-        "hash"    : "md5sum",
-        "hash_value" : "3b25826960c5412634a53eb9ac07bcb4"
+        "hash"    : "sha1sum",
+        "hash_value" : "ae207a88a319b1d0b5cb93b677e344e2a440c696"
     },
     "scm" : {
         "filename"    : "scm_cpld.vme",
         "version" : "0.6.0",
-        "hash"    : "md5sum",
-        "hash_value" : "f64043c3d5e458b586878c6d2b1e2287"
+        "hash"    : "sha1sum",
+        "hash_value" : "a6f1ec109d6310a387de0ecb5e28ac3fc97e849c"
     },
     "smb" : {
         "filename"    : "smb_cpld.vme",
         "version" : "1.3.1",
-        "hash"    : "md5sum",
-        "hash_value" : "0e418c5d321152bd4a5071d16b85732c"
+        "hash"    : "sha1sum",
+        "hash_value" : "aea0d3c0a8779d6968c95187c115deadc7266d6d"
     }
 }

@@ -1,15 +1,15 @@
 {
     "bic" : {
         "filename"    : "bic.bin",
-        "version" : "v1.11",
+        "version" : "v1.15",
         "hash"    : "sha1sum",
-        "hash_value" : "c68590df17ee26a68d50e362a15062fe77444076"
+        "hash_value" : "712ebd470e353d452b6091f18c9c07172c00453d"
     },
     "bios" : {
         "filename"    : "bios.bin",
-        "version" : "XG1_3A12",
+        "version" : "XG1_3B13",
         "hash"    : "sha1sum",
-        "hash_value" : "a2487e3702d268e93d714ca16968837dfd9dc079"
+        "hash_value" : "f7632b22172c7fa5ecab6d451b54fe1aa51dd268"
     },
     "fcm" : {
         "filename"    : "fcm_cpld.jed",

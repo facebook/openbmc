@@ -53,7 +53,7 @@ if [ "$(gpio_get FM_BOARD_BMC_SKU_ID1)" -eq "$MB_ADC_MAIN" ]; then
   i2c_device_add 20 0x1d adc128d818
   kv set mb_adc_source "$MB_1ST_SOURCE"
 else
-  i2c_device_add 20 0x35 max11617
+  rebind_i2c_dev 20 35 max11617
   kv set mb_adc_source "$MB_2ND_SOURCE"
 fi
 

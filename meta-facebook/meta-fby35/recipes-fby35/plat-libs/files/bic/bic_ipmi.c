@@ -2061,7 +2061,7 @@ bic_get_vr_remaining_wr(uint8_t fru_id, uint8_t addr, uint16_t *remain) {
 
   tlen = 5;
 
-  ret = bic_data_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  ret = retry_cond(!bic_data_wrapper(fru_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen), 3, 50);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to send the command to get the remaining writes. ret=%d", __func__, ret);
   }

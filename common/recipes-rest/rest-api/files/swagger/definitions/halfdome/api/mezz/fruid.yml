@@ -40,6 +40,8 @@ paths:
                     type: string
                   Product Serial: 
                     type: string
+                  Product Custom Data 3: 
+                    type: string
               Actions: 
                 type: array
                 items: 

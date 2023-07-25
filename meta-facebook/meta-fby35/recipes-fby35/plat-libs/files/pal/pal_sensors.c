@@ -51,6 +51,9 @@
 #define PMBUS_GET_DATA_SIGN(x) ((x) & 0x04)
 #define PMBUS_GET_DATA_LINEAR11(x, y) ((((x) & 0x07) << 8) | (y))
 
+#define ISL28022_GET_DATA_SIGN(x) ((x) & 0x80)
+#define ISL28022_DATA_CONVERT(x, y) ((((x) &  0x7f) << 8) | (y))
+
 #define PMBUS_NEGATIVE_LINEAR11_DATA 0x04
 
 enum {
@@ -1328,7 +1331,8 @@ PAL_CHIP_INFO medusa_hsc_list[] = {
 };
 
 PAL_CHIP_INFO medusa_adc_list[] = {
-  [MEDUSA_ADC_LTC2992] = {"ltc2992", "ltc2992", MEDUSA_ADC_LTC2992_ADDR},
+  [MEDUSA_ADC_ISL28022_PSU] = {"isl28022", "isl28022", MEDUSA_ADC_ISL28022_PSU_ADDR},
+  [MEDUSA_ADC_ISL28022_GND] = {"isl28022", "isl28022", MEDUSA_ADC_ISL28022_GND_ADDR},
   [MEDUSA_ADC_INA238_PSU] = {"ina238", "ina238", MEDUSA_ADC_INA238_PSU_ADDR},
   [MEDUSA_ADC_INA238_GND] = {"ina238", "ina238", MEDUSA_ADC_INA238_GND_ADDR}
 };
@@ -2436,12 +2440,55 @@ read_cached_val(uint8_t snr_number, float *value) {
 }
 
 static int
+get_medusa_adc_reading(uint8_t adc_id, uint8_t cmd, float *value) {
+  const uint8_t medusa_bus = 11;
+  uint8_t addr = medusa_adc_list[adc_id].target_addr;
+  static int fd = -1;
+  uint8_t rbuf[8] = {0x0}, tbuf[8] = {0x0};
+  uint8_t rlen = 2;
+  uint8_t tlen = 0;
+  int ret = 0, rc = 0;
+
+  if (value == NULL) {
+    return READING_NA;
+  }
+
+  if ( fd < 0 ) {
+    fd = i2c_cdev_slave_open(medusa_bus, addr, I2C_SLAVE_FORCE_CLAIM);
+    if ( fd < 0 ) {
+      syslog(LOG_WARNING, "Failed to open bus %d", medusa_bus);
+      return READING_NA;
+    }
+  }
+
+  tbuf[tlen++] = cmd;
+
+  ret = retry_cond((rc = i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen)) > 0,
+                   MAX_RETRY, RETRY_INTERVAL_TIME_MS);
+  if ( ret < 0 ) {
+    close(fd);
+    fd = -1;
+    return READING_NA;
+  }
+
+  //If high byte's bit8 is 1 means the value is negative.
+  if (ISL28022_GET_DATA_SIGN(rbuf[1]) == 0x80) {
+    *value = (float)((~ISL28022_DATA_CONVERT(rbuf[1], rbuf[0]) & 0x7FFF) + 1);
+  } else {
+    *value = (float)ISL28022_DATA_CONVERT(rbuf[1], rbuf[0]);
+  }
+
+  *value *= pow(10, -6);
+
+  return ret;
+}
+
+static int
 read_medusa_adc_val(uint8_t snr_number, float *value) {
   char chip[32] = {0};
   static char medusa_adc_type[16] = {0};
   static bool is_cached = false;
   int ret = READING_NA;
-  int i = 0;
 
   if (value == NULL) {
     return READING_NA;
@@ -2455,24 +2502,24 @@ read_medusa_adc_val(uint8_t snr_number, float *value) {
     is_cached = true;
   }
 
-  for (i = 0; i < sizeof(medusa_adc_list)/sizeof(medusa_adc_list[0]); i++) {
-    if (strncmp(medusa_adc_type, medusa_adc_list[i].chip_name, sizeof(medusa_adc_type)) == 0) {
-      snprintf(chip, sizeof(chip), "%s-i2c-11-%x",
-        medusa_adc_list[i].driver, medusa_adc_list[i].target_addr);
-      break;
-    }
-  }
-
   switch(snr_number) {
     case BMC_SENSOR_MEDUSA_VSENSE_VDELTA_MAX:
-      ret = sensors_read(chip, "BB_MEDUSA_VSENSE_VDELTA_V", value);
+      if (strncmp(medusa_adc_type, medusa_adc_list[MEDUSA_ADC_INA238_PSU].chip_name, sizeof(medusa_adc_type)) == 0) {
+        snprintf(chip, sizeof(chip), "%s-i2c-11-%x",
+          medusa_adc_list[MEDUSA_ADC_INA238_PSU].driver, medusa_adc_list[MEDUSA_ADC_INA238_PSU].target_addr);
+        ret = sensors_read(chip, "BB_MEDUSA_VSENSE_VDELTA_V", value);
+      } else {
+        ret = get_medusa_adc_reading(MEDUSA_ADC_ISL28022_PSU, ISL28022_SHUNT_VOLTAGE, value);
+      }
       break;
     case BMC_SENSOR_MEDUSA_GND_SENSE_VDELTA_MAX:
       if (strncmp(medusa_adc_type, medusa_adc_list[MEDUSA_ADC_INA238_GND].chip_name, sizeof(medusa_adc_type)) == 0) {
         snprintf(chip, sizeof(chip), "%s-i2c-11-%x",
           medusa_adc_list[MEDUSA_ADC_INA238_GND].driver, medusa_adc_list[MEDUSA_ADC_INA238_GND].target_addr);
+        ret = sensors_read(chip, "BB_MEDUSA_GND_SENSE_VDELTA_V", value);
+      } else {
+        ret = get_medusa_adc_reading(MEDUSA_ADC_ISL28022_GND, ISL28022_SHUNT_VOLTAGE, value);
       }
-      ret = sensors_read(chip, "BB_MEDUSA_GND_SENSE_VDELTA_V", value);
       break;
   }
 

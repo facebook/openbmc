@@ -29,9 +29,10 @@ LTC4282_CONTROL_REG="0x00"
 LTC4282_ADJUST_REG="0x11"
 LTC4287_CONTROL_REG="0x47"
 MEDUSA_48V_IO_EXP_ADDR="0x49"
-LTC2992_ADDR="6e"
 INA238_ADDR_PSU="44"
 INA238_ADDR_GND="41"
+ISL28022_ADDR_PSU="47"
+ISL28022_ADDR_GND="43"
 MAXIM_SOLUTION="0"
 MPS_SOLUTION="1"
 
@@ -57,6 +58,8 @@ function init_48V_medusa() {
   local medusa_dev_addr=""
   local chip=""
 
+  echo "Init new 48V medusa..."
+
   for i in "${!medusa_adc_addr[@]}"; do
     if read_dev "$MEDUSA_HSC_BUS" 0x"${medusa_adc_addr["$i"]}" 0 >/dev/null; then
       medusa_dev_addr="$MEDUSA_HSC_BUS"-00"${medusa_adc_addr["$i"]}"
@@ -65,7 +68,7 @@ function init_48V_medusa() {
         i2c_device_add "$MEDUSA_HSC_BUS" 0x"${medusa_adc_addr["$i"]}" "${medusa_adc_devs["$i"]}"
       fi
     else
-      chip="ltc2992"
+      chip="ISL28022"
     fi
   done
 
@@ -203,9 +206,19 @@ else
   echo -n "Is board id correct(id=$bmc_location)?..."
 fi
 
-# Check if the Medusa IO expender exist
+# Check if the Medusa IO expender or ADC chip exist (To prevent missing init due to any of them is broken)
 if read_dev $MEDUSA_HSC_BUS $MEDUSA_48V_IO_EXP_ADDR 0 >/dev/null; then
   init_48V_medusa
+elif read_dev $MEDUSA_HSC_BUS 0x$INA238_ADDR_PSU 0 >/dev/null; then
+  init_48V_medusa
+elif read_dev $MEDUSA_HSC_BUS 0x$INA238_ADDR_GND 0 >/dev/null; then
+  init_48V_medusa
+elif read_dev $MEDUSA_HSC_BUS 0x$ISL2822_ADDR_PSU 0 >/dev/null; then
+  init_48V_medusa
+elif read_dev $MEDUSA_HSC_BUS 0x$ISL2822_ADDR_GND 0 >/dev/null; then
+  init_48V_medusa
+else
+  echo "Skip new 48V medusa init..."
 fi
 
 init_adc_upper_bound

@@ -941,6 +941,29 @@ bic_is_exp_prsnt(uint8_t slot_id) {
 }
 
 /*
+  0x6 0x4: Get Self-Test Results
+  Byte 1 - Completion Code
+  Byte 2
+    = 55h - No error. All Self-Tests Passed.
+    = 81h - Firmware entered Recovery bootloader mode
+  Byte 3 For byte 2 = 55h, 56h, FFh:
+    =00h
+    =02h - recovery mode entered by IPMI command "Force ME Recovery"
+*/
+
+int me_get_self_test_result(uint8_t slot_id, uint8_t* rbuf) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  tbuf[0] = NETFN_APP_REQ << 2;
+  tbuf[1] = CMD_APP_GET_SELFTEST_RESULTS;
+  tlen = 2;
+
+  return bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+}
+
+/*
     0x2E 0xDF: Force Intel ME Recovery
 Request
   Byte 1:3 = Intel Manufacturer ID - 000157h, LS byte first.
@@ -994,23 +1017,9 @@ me_recovery(uint8_t slot_id, uint8_t command) {
   retry = 0;
   memset(&tbuf, 0, 256);
   memset(&rbuf, 0, 256);
-  /*
-      0x6 0x4: Get Self-Test Results
-    Byte 1 - Completion Code
-    Byte 2
-      = 55h - No error. All Self-Tests Passed.
-      = 81h - Firmware entered Recovery bootloader mode
-    Byte 3 For byte 2 = 55h, 56h, FFh:
-      =00h
-      =02h - recovery mode entered by IPMI command "Force ME Recovery"
-  */
   //Using ME self-test result to check if the ME Recovery Command Success or not
   while (retry <= RETRY_3_TIME) {
-    tbuf[0] = 0x18;
-    tbuf[1] = 0x04;
-    tlen = 2;
-    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
-    if (ret) {
+    if (me_get_self_test_result(slot_id, rbuf) != 0) {
       retry++;
       sleep(1);
       continue;

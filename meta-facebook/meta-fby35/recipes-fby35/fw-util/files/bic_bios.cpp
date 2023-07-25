@@ -114,6 +114,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   bool pfr_update = false;
   uint8_t dev_i2c_bus = 0;
   uint8_t dev_i2c_addr = 0;
+
   if (pal_get_prot_address(slot_id, &dev_i2c_bus, &dev_i2c_addr) != 0) {
     cerr << "pal_get_prot_address failed, fru: " << slot_id << std::endl;
     return FW_STATUS_FAILURE;
@@ -172,8 +173,13 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     if (ret_pwroff == FORCED_OFF) {
       sleep(DELAY_ME_RESET);  // to wait for ME reset
     }
+
     cerr << "Putting ME into recovery mode..." << endl;
-    ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
+    if(retry_cond((me_recovery(slot_id, RECOVERY_MODE) == 0) , 10, 1000)) {
+      // Failed to access ME recovery mode, ret_recovery will be -1
+      syslog(LOG_WARNING, "Failed to access ME recovery mode");
+      ret_recovery = -1;
+    }
 
     // If you are doing force update, it will keep executing
     // whether it has successfully entered recovery mode
@@ -196,7 +202,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
   sleep(1);
 
-  if (server_type == SERVER_TYPE_CL) {
+  if (server_type == SERVER_TYPE_CL && ret_recovery == 0) {
     // Have to do ME reset, because we have put ME into recovery mode
     cerr << "Doing ME Reset..." << endl;
     ret_reset = me_reset(slot_id);
@@ -270,9 +276,9 @@ int BiosComponent::dump(string image) {
   if (server_type == SERVER_TYPE_CL) {
     sleep(DELAY_ME_RESET);
     cerr << "Putting ME into recovery mode..." << endl;
-    ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
-    if (ret_recovery < 0) {
+    if(retry_cond((me_recovery(slot_id, RECOVERY_MODE) == 0) , 10, 1000)) {
       cerr << "Failed to put ME into recovery mode." << endl;
+      return FW_STATUS_FAILURE;
     }
     sleep(1);
   }

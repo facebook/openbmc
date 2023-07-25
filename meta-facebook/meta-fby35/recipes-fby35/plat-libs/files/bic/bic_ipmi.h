@@ -125,6 +125,7 @@ int bic_get_vr_device_id(uint8_t slot_id, uint8_t *devid, uint8_t *id_len, uint8
 int bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
 int bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf);
 int bic_is_exp_prsnt(uint8_t slot_id);
+int me_get_self_test_result(uint8_t slot_id, uint8_t* rbuf);
 int me_recovery(uint8_t slot_id, uint8_t command);
 int me_reset(uint8_t slot_id);
 int bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux);

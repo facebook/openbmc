@@ -2,6 +2,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <unistd.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
 #include "mp2856.h"
@@ -973,7 +974,7 @@ cache_mp2985h_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
 
 int
 get_mp2856_ver(struct vr_info *info, char *ver_str) {
-  int ret;
+  int ret, lock = -1;
   char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
 
   if (info->private_data) {
@@ -993,6 +994,12 @@ get_mp2856_ver(struct vr_info *info, char *ver_str) {
       mps_remaining_wr = info->remaining_wr_op;
     }
 
+    const char *lock_name = (info->lock_name) ? info->lock_name : key;
+    if ((lock = single_instance_lock_blocked(lock_name)) < 0) {
+      syslog(LOG_WARNING, "%s: Failed to get %s lock", __func__, lock_name);
+      return VR_STATUS_FAILURE;
+    }
+
     //Stop sensor polling before read crc from register
     if (info->sensor_polling_ctrl) {
       info->sensor_polling_ctrl(false);
@@ -1004,6 +1011,8 @@ get_mp2856_ver(struct vr_info *info, char *ver_str) {
     if (info->sensor_polling_ctrl) {
       info->sensor_polling_ctrl(true);
     }
+
+    single_instance_unlock(lock);
 
     if (ret) {
       return VR_STATUS_FAILURE;

@@ -22,6 +22,7 @@ from unittest import TestCase
 
 try:
     import pal
+    import sdr
 except ModuleNotFoundError:
     # Suppress if module not found to support test case discovery without
     # BMC dependencies (will test if pal is importable at LibPalTest.setUp())
@@ -45,6 +46,7 @@ class LibPalTest(TestCase):
         # Ensure actual pal library is importable (as we suppressed with
         # ModuleNotFoundError earlier)
         import pal  # noqa: F401
+        import sdr  # noqa: F401
 
         # Validate if PLATFORM_NAME was set in subclasses
         self.assertRegex(
@@ -136,8 +138,10 @@ class LibPalTest(TestCase):
         fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]
 
         for fru_id in fru_ids:
+            if not pal.pal_is_fru_prsnt(fru_id):
+                continue
             for snr_num in pal.pal_get_fru_sensor_list(fru_id):
-                sensor_name = pal.pal_get_sensor_name(fru_id, snr_num)
+                sensor_name = sdr.sdr_get_sensor_name(fru_id, snr_num)
 
                 self.assertRegex(sensor_name, r"^[^ ]+$")
 

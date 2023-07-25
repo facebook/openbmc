@@ -183,7 +183,11 @@ server_power_12v_on(uint8_t fru) {
         break;
       }
 
-      sleep(1);
+      // for the case of CPLD failure, although it shows 12V-off, it's actually 12V-on
+      char cmd[64] = {0};
+      snprintf(cmd, sizeof(cmd), FRU_ID_CPLD_NEW_VER_KEY, fru);
+      kv_del(cmd, 0);
+      sleep(DELAY_12V_CYCLE);
     }
 
     tbuf[1] = AC_ON;

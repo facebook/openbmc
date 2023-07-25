@@ -130,8 +130,8 @@ class ClassConfig {
               break;
             }
             default:
-              syslog(
-                  LOG_WARNING, "%s() Cannot indentify the slot type", __func__);
+              syslog(LOG_WARNING, "%s() Cannot indentify the slot type", __func__);
+              static CpldComponent cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
               break;
           }
 
@@ -260,8 +260,8 @@ class ClassConfig {
               break;
             }
             default:
-              syslog(
-                  LOG_WARNING, "%s() Cannot indentify the slot type", __func__);
+              syslog(LOG_WARNING, "%s() Cannot indentify the slot type", __func__);
+              static CpldComponent cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
               break;
           }
 

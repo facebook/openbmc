@@ -50,6 +50,8 @@ image_info CpldComponent::check_image(const string& image, bool force) {
 
 void CpldComponent::cpld_check_device() {
   uint8_t hb_cpld_update_addr = 0x44;
+
+  fby35_common_set_fru_i2c_isolated(slot_id, 1);
   if (i2c_detect_device(attr.bus_id, CPLD_ADDRESS >> 1)) {
     //Fail to detect cpld function device, detect update device directly instead of check board sku id
     cerr << "CPLD malfunction, checking cpld update address..." << endl;

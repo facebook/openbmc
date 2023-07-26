@@ -44,7 +44,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-montblanc:lf-master
   meta-qemux86:lf-master
   meta-waimeacanyon:lf-master
-# langdale platforms (latest)
 # kirkstone platforms (pending upgrade)
   meta-fbdarwin:lf-kirkstone
 # dunfell platforms (pending upgrade)

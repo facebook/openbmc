@@ -24,6 +24,11 @@
       "attribute": {
         "type" : "power_status"
       }
+    },
+    "(.*)e1s_": {
+      "attribute": {
+        "type" : "power_status"
+      }
     }
   },
   "watchdog": false,

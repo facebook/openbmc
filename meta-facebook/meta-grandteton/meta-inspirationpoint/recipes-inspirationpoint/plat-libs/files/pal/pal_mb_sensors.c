@@ -1510,7 +1510,8 @@ int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
-  if (gpio_get_value_by_shadow("RST_PERST_CPUx_SWB_N") != GPIO_VALUE_HIGH) {
+  if (gpio_get_value_by_shadow("RST_PERST_CPUx_SWB_N") != GPIO_VALUE_HIGH ||
+      gpio_get_value_by_shadow("FM_RST_CPU1_RESETL_N") != GPIO_VALUE_HIGH) {
     return READING_NA;
   }
 
@@ -1528,12 +1529,12 @@ int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
   ret = AriesGetHealth(fru_name, retimer_id, &health);
   pal_unlock(fd_lock);
 
-  if ((ret == ARIES_SUCCESS) && (health == (HEARTBEAT | CODE_LOAD))) {
-    *value = 0;
-    return 0;
+  if ((ret != ARIES_SUCCESS) || (health != (HEARTBEAT | CODE_LOAD))) {
+    if (gpio_get_value_by_shadow("RST_PERST_CPUx_SWB_N") == GPIO_VALUE_HIGH &&
+        gpio_get_value_by_shadow("FM_RST_CPU1_RESETL_N") == GPIO_VALUE_HIGH)
+      *value = 1;
   }
 
-  *value = 1;
   return 0;
 }
 

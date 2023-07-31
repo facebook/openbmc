@@ -1,33 +1,14 @@
-From e61139d017cfc977c707aba8c15ce90a1545d953 Mon Sep 17 00:00:00 2001
+From aeeb06de3c4cf578b019e93e4edbb7ff398331c0 Mon Sep 17 00:00:00 2001
 From: peteryin <peter.yin@quantatw.com>
-Date: Tue, 18 Jul 2023 14:34:10 +0800
-Subject: [PATCH] modfiy Sensors precision values
+Date: Thu, 27 Jul 2023 10:03:21 +0800
+Subject: [PATCH 2/2] modfiy-Sensors-precision-values
 
 ---
- lib/sysfs.c          |  4 ++--
- prog/sensors/chips.c | 18 +++++++++---------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ prog/sensors/chips.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/lib/sysfs.c b/lib/sysfs.c
-index 211a9fd..14ef46e 100644
---- a/lib/sysfs.c
-+++ b/lib/sysfs.c
-@@ -148,11 +148,11 @@ int get_type_scaling(sensors_subfeature_type type)
- 	case SENSORS_SUBFEATURE_TEMP_INPUT:
- 	case SENSORS_SUBFEATURE_CURR_INPUT:
- 	case SENSORS_SUBFEATURE_HUMIDITY_INPUT:
-+	case SENSORS_SUBFEATURE_IIO_RAW:
-+	case SENSORS_SUBFEATURE_IIO_DIFF:
- 		return 1000;
- 	case SENSORS_SUBFEATURE_FAN_INPUT:
- 	case SENSORS_SUBFEATURE_PWM_IO:
--	case SENSORS_SUBFEATURE_IIO_RAW:
--	case SENSORS_SUBFEATURE_IIO_DIFF:
- 		return 1;
- 	case SENSORS_SUBFEATURE_POWER_AVERAGE:
- 	case SENSORS_SUBFEATURE_ENERGY_INPUT:
 diff --git a/prog/sensors/chips.c b/prog/sensors/chips.c
-index 2a7edb1..0e04bad 100644
+index f08351d..e447790 100644
 --- a/prog/sensors/chips.c
 +++ b/prog/sensors/chips.c
 @@ -400,7 +400,7 @@ static void print_chip_in(const sensors_chip_name *name,
@@ -75,19 +56,7 @@ index 2a7edb1..0e04bad 100644
  	} else
  		printf("     N/A");
  
-@@ -709,9 +709,9 @@ static void print_chip_iio(const sensors_chip_name *name,
- 	sfio = sensors_get_subfeature(name, feature,
- 				      SENSORS_SUBFEATURE_IIO_RAW);
- 	if (sfio && !get_input_value(name, sfio, &val))
--		printf("    %.0f mV", val);
-+		printf("%+6.3f V  ", val);
- 	else
--		printf("    N/A");
-+		printf("     N/A  ");
- 
- 	printf("\n");
- }
-@@ -831,7 +831,7 @@ static void print_chip_curr(const sensors_chip_name *name,
+@@ -803,7 +803,7 @@ static void print_chip_curr(const sensors_chip_name *name,
  	sf = sensors_get_subfeature(name, feature,
  				    SENSORS_SUBFEATURE_CURR_INPUT);
  	if (sf && get_input_value(name, sf, &val) == 0)
@@ -96,7 +65,7 @@ index 2a7edb1..0e04bad 100644
  	else
  		printf("     N/A  ");
  
-@@ -840,7 +840,7 @@ static void print_chip_curr(const sensors_chip_name *name,
+@@ -812,7 +812,7 @@ static void print_chip_curr(const sensors_chip_name *name,
  			      sensors, &sensor_count, alarms, &alarm_count);
  
  	print_limits(sensors, sensor_count, alarms, alarm_count, label_size,

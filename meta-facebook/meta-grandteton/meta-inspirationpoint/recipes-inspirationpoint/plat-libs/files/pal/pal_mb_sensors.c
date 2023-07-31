@@ -1455,8 +1455,7 @@ int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   kv_get("mb_rev", rev_id, 0, 0);
   if (!strcmp(rev_id, "2")) {                // 2 retimer SKU
     if (sensor_num != MB_SNR_RETIMER0_TEMP && sensor_num != MB_SNR_RETIMER4_TEMP) {
-      ret = READING_NA;
-      goto err_exit;
+      return READING_NA;
     }
   }
 
@@ -1466,22 +1465,18 @@ int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   }
 
   if (is_init[rt_id] == 0) {
-    sleep(1);
     ret = SetupAriesDevice(&ariesDevice[rt_id], &i2cDriver[rt_id], bus, addr);
     if (ret != ARIES_SUCCESS) {
+      ret = READING_NA;
       goto err_exit;
     }
 
     is_init[rt_id] = 1;
-
-    //skip the first time for PCIe train completed
-    ret = READING_SKIP;
-    goto err_exit;
   }
 
   ret = AriesGetTemp(&ariesDevice[rt_id], &i2cDriver[rt_id], bus, addr, &val);
 
-  if (ret < 0) {
+  if (ret != ARIES_SUCCESS) {
     retry[sensor_num - MB_SNR_RETIMER0_TEMP]++;
     ret = retry_err_handle(retry[sensor_num - MB_SNR_RETIMER0_TEMP], 5);
     goto err_exit;

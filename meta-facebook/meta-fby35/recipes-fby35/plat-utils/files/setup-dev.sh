@@ -213,9 +213,9 @@ elif read_dev $MEDUSA_HSC_BUS 0x$INA238_ADDR_PSU 0 >/dev/null; then
   init_48V_medusa
 elif read_dev $MEDUSA_HSC_BUS 0x$INA238_ADDR_GND 0 >/dev/null; then
   init_48V_medusa
-elif read_dev $MEDUSA_HSC_BUS 0x$ISL2822_ADDR_PSU 0 >/dev/null; then
+elif read_dev $MEDUSA_HSC_BUS 0x$ISL28022_ADDR_PSU 0 >/dev/null; then
   init_48V_medusa
-elif read_dev $MEDUSA_HSC_BUS 0x$ISL2822_ADDR_GND 0 >/dev/null; then
+elif read_dev $MEDUSA_HSC_BUS 0x$ISL28022_ADDR_GND 0 >/dev/null; then
   init_48V_medusa
 else
   echo "Skip new 48V medusa init..."

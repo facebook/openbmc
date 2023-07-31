@@ -2447,7 +2447,7 @@ get_medusa_adc_reading(uint8_t adc_id, uint8_t cmd, float *value) {
   uint8_t rbuf[8] = {0x0}, tbuf[8] = {0x0};
   uint8_t rlen = 2;
   uint8_t tlen = 0;
-  int ret = 0, rc = 0;
+  int ret = 0;
 
   if (value == NULL) {
     return READING_NA;
@@ -2463,7 +2463,7 @@ get_medusa_adc_reading(uint8_t adc_id, uint8_t cmd, float *value) {
 
   tbuf[tlen++] = cmd;
 
-  ret = retry_cond((rc = i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen)) > 0,
+  ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen),
                    MAX_RETRY, RETRY_INTERVAL_TIME_MS);
   if ( ret < 0 ) {
     close(fd);

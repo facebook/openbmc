@@ -100,14 +100,14 @@ namespace pldm_signed_info {
     0x00, // vendor id
   };
 
-  const std::unordered_map<std::string, uint8_t> swb_nic_t = {
-    {"SWB_NIC0", SWB_SENSOR_TEMP_NIC_0},
-    {"SWB_NIC1", SWB_SENSOR_TEMP_NIC_1},
-    {"SWB_NIC2", SWB_SENSOR_TEMP_NIC_2},
-    {"SWB_NIC3", SWB_SENSOR_TEMP_NIC_3},
-    {"SWB_NIC4", SWB_SENSOR_TEMP_NIC_4},
-    {"SWB_NIC5", SWB_SENSOR_TEMP_NIC_5},
-    {"SWB_NIC6", SWB_SENSOR_TEMP_NIC_6},
-    {"SWB_NIC7", SWB_SENSOR_TEMP_NIC_7}
+  const std::unordered_map<std::string, std::vector<uint8_t>> swb_nic_t = {
+    {"SWB_NIC0", {SWB_SENSOR_TEMP_NIC_0, SWB_SENSOR_TEMP_NIC_OPTIC_0}},
+    {"SWB_NIC1", {SWB_SENSOR_TEMP_NIC_1, SWB_SENSOR_TEMP_NIC_OPTIC_1}},
+    {"SWB_NIC2", {SWB_SENSOR_TEMP_NIC_2, SWB_SENSOR_TEMP_NIC_OPTIC_2}},
+    {"SWB_NIC3", {SWB_SENSOR_TEMP_NIC_3, SWB_SENSOR_TEMP_NIC_OPTIC_3}},
+    {"SWB_NIC4", {SWB_SENSOR_TEMP_NIC_4, SWB_SENSOR_TEMP_NIC_OPTIC_4}},
+    {"SWB_NIC5", {SWB_SENSOR_TEMP_NIC_5, SWB_SENSOR_TEMP_NIC_OPTIC_5}},
+    {"SWB_NIC6", {SWB_SENSOR_TEMP_NIC_6, SWB_SENSOR_TEMP_NIC_OPTIC_6}},
+    {"SWB_NIC7", {SWB_SENSOR_TEMP_NIC_7, SWB_SENSOR_TEMP_NIC_OPTIC_7}}
   };
 }

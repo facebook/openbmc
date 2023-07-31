@@ -1010,7 +1010,7 @@ int AcbPeswFwComponent::get_version(json &j) {
 }
 
 static int
-bic_sensor_polling_enabled(uint8_t sensor_num, bool enable)
+bic_sensor_polling_enabled(const vector<uint8_t>& sensor_nums, bool enable)
 {
   uint8_t tbuf[255] = {0};
   uint8_t rbuf[255] = {0};
@@ -1018,9 +1018,10 @@ bic_sensor_polling_enabled(uint8_t sensor_num, bool enable)
   size_t rlen = 0;
   int rc;
 
-  tbuf[tlen++] = 0x01;
+  tbuf[tlen++] = (uint8_t)sensor_nums.size();
   tbuf[tlen++] = (enable) ? 0x01 : 0x00;
-  tbuf[tlen++] = sensor_num;
+  for (auto& sensor_num:sensor_nums)
+    tbuf[tlen++] = sensor_num;
 
   rc = oem_pldm_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
                                NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_DELAY_ACTIVATE_SYSFW,

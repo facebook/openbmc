@@ -8,7 +8,8 @@ using std::string;
 
 #define MP5990_REG_CHECKSUM 0xF8
 #define IS_BOARD_REV_MPS(board_rev) (board_rev == SB_REV_EVT_MPS) || (board_rev == SB_REV_DVT_MPS) \
-              || (board_rev == SB_REV_PVT_MPS) || (board_rev == SB_REV_MP_MPS) ? true : false
+              || (board_rev == SB_REV_PVT_MPS) || (board_rev == SB_REV_MP_MPS) \
+              || (board_rev == SB_REV_MP_2_MPS) ? true : false
 
 class MP5990Component : public Component {
   uint8_t fru_id = 0;

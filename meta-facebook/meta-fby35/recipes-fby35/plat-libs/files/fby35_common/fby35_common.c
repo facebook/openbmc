@@ -1103,7 +1103,7 @@ fby35_is_zero_checksum_valid(uint8_t *buf, uint8_t len) {
 bool
 fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, uint8_t rev_id) {
   const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "DVT_1C", "PVT", "MP"};
-  const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP"};
+  const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP", "MP2", "MP2"};
   const char *rev_hd[] = {"POC", "EVT", "EVT", "EVT", "DVT", "DVT", "DVT", "DVT", "PVT"};
   const char *rev_op[] = {"EVT", "DVT", "PVT", "MP"};
   const char *rev_gl[] = {"POC", "EVT", "RSVD", "DVT", "RSVD", "PVT", "MP"};
@@ -1268,7 +1268,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
       fw_rev = FW_REV_DVT;
     else if (SB_REV_PVT <= rev_id && rev_id <= SB_REV_PVT_MPS)
       fw_rev = FW_REV_PVT;
-    else if (SB_REV_MP <= rev_id && rev_id <= SB_REV_MP_MPS)
+    else if (SB_REV_MP <= rev_id && rev_id <= SB_REV_MP_2_MPS)
       fw_rev = FW_REV_MP;
     else
       fw_rev = 0;
@@ -1354,7 +1354,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
       break;
     case FW_REV_PVT:
     case FW_REV_MP:
-      if (err_proof_stage != FW_REV_PVT) {
+      if (err_proof_stage < FW_REV_PVT) {
         printf("Please use firmware after PVT on %s system\nTo force the update, please use the --force option.\n",
                board_type[rev_id]);
         return false;

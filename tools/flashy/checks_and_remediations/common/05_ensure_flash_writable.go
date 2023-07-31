@@ -59,8 +59,19 @@ func ensureFlashWritable(stepParams step.StepParams) step.StepExitError {
 		return nil
 	}
 
+	// S356523 workaround:
+	// grandteton v2023.25.2 introduced an error whereby mtd0 was set as spi0.1
+	// this breaks checks and remediations as it thinks flash1 is read-only
+	// let's put in a workaround so we can upgrade all the affected hosts
+	cmd := []string{"grep", "mtd0:.*spi0.1 /proc/mtd"}
+	_, _, stdout, _ := utils.RunCommand(cmd, 30*time.Second)
+	if strings.Contains(stdout, "mtd0") {
+		log.Printf("Skipping ensure_flash_writable check for this device due to S356523")
+		return nil
+	}
+
 	// First up check that fw_printenv works okay and produces output.
-	cmd := []string{"fw_printenv", "bootargs"}
+	cmd = []string{"fw_printenv", "bootargs"}
 	_, err, stdout, stderr := utils.RunCommand(cmd, 30*time.Second)
 	if err != nil || !strings.Contains(stdout, "bootargs") {
 		log.Printf("fw_printenv doesn't work: %v, stderr: %v", err, stderr)

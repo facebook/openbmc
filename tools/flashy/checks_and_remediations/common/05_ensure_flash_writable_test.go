@@ -48,6 +48,7 @@ func TestEnsureFlashWritable(t *testing.T) {
 	cases := []struct {
 		name              string
 		vbootUtilExists   bool
+		s356523						string
 		failPrint         bool
 		failSet           bool
 		failCheck         bool
@@ -57,6 +58,7 @@ func TestEnsureFlashWritable(t *testing.T) {
 		{
 			name:              "non-vboot case",
 			vbootUtilExists:   false,
+			s356523:					 "",
 			failPrint:         false,
 			failSet:           false,
 			failCheck:         false,
@@ -66,6 +68,17 @@ func TestEnsureFlashWritable(t *testing.T) {
 		{
 			name:              "working case",
 			vbootUtilExists:   true,
+			s356523:					 "",
+			failPrint:         false,
+			failSet:           false,
+			failCheck:         false,
+			failClear:         false,
+			want:              nil,
+		},
+		{
+			name:              "s356523 case",
+			vbootUtilExists:   true,
+			s356523:					 "mtd0: 08000000 00010000 \"spi0.1\"",
 			failPrint:         false,
 			failSet:           false,
 			failCheck:         false,
@@ -75,6 +88,7 @@ func TestEnsureFlashWritable(t *testing.T) {
 		{
 			name:              "fw_printenv broken",
 			vbootUtilExists:   true,
+			s356523:					 "",
 			failPrint:         true,
 			failSet:           false,
 			failCheck:         false,
@@ -84,6 +98,7 @@ func TestEnsureFlashWritable(t *testing.T) {
 		{
 			name:              "set _flashy_test fails",
 			vbootUtilExists:   true,
+			s356523:					 "",
 			failPrint:         false,
 			failSet:           true,
 			failCheck:         false,
@@ -93,6 +108,7 @@ func TestEnsureFlashWritable(t *testing.T) {
 		{
 			name:              "check _flashy_test fails",
 			vbootUtilExists:   true,
+			s356523:					 "",
 			failPrint:         false,
 			failSet:           false,
 			failCheck:         true,
@@ -103,6 +119,7 @@ func TestEnsureFlashWritable(t *testing.T) {
 		{
 			name:              "clear _flashy_test fails",
 			vbootUtilExists:   true,
+			s356523:					 "",
 			failPrint:         false,
 			failSet:           false,
 			failCheck:         false,
@@ -141,7 +158,11 @@ func TestEnsureFlashWritable(t *testing.T) {
 						} else {
 							return 0, nil, "bootargs=foo", ""
 						}
-					} else {
+					} else if (cmdArr[0] == "grep") {
+						if (cmdArr[1] == "mtd0:.*spi0.1 /proc/mtd") {
+							return 0, nil, tc.s356523, ""
+						}
+					} else{
 						if (tc.failSet) {
 							return 0, errors.Errorf("err2"), "", "err2"
 						} else {

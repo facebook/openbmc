@@ -225,6 +225,44 @@ pal_check_psb_error(uint8_t head, uint8_t last) {
         break;
     }
   }
+  
+  //Check ABL section
+  if(head == 0xEA) {
+    switch (last) {
+      case 0x21:
+        syslog(LOG_CRIT, "ABL Error(EA00E321) Mixed 3DS and Non-3DS DIMM in a channel");
+        break;
+      case 0x22:
+        syslog(LOG_CRIT, "ABL Error(EA00E322) Mixed x4 and x8 DIMM in a channel");
+        break;
+      case 0x28:
+        syslog(LOG_CRIT, "ABL Error(EA00E328) CPU OPN Mismatch in case of Multi Socket population");
+        break;
+      case 0x2B:
+        syslog(LOG_CRIT, "ABL Error(EA00E32B) BIST Failure");
+        break;
+      case 0x2D:
+        syslog(LOG_CRIT, "ABL Error(EA00E32D) Mix DIMM with different ECC bit size in a channel");
+        break;
+      case 0x32:
+        syslog(LOG_CRIT, "ABL Error(EA00E332) Incompatible OPN");
+        break;
+      case 0x3E:
+        syslog(LOG_CRIT, "ABL Error(EA00E33E) Timeout at PMFW SwitchToMemoryTrainingState");
+        break;
+      case 0x45:
+        syslog(LOG_CRIT, "ABL Error(EA00E345) ABL Timeout to detect CPU OPN Mismatch in case of Multi Socket population");
+        break;
+      case 0xE7:
+        syslog(LOG_CRIT, "ABL Error(EA00E2E7) Mix RDIMM & LRDIMM in a channel");
+        break;
+      case 0xEF:
+        syslog(LOG_CRIT, "ABL Error(EA00E2EF) Unsupproted DIMM Config Error");
+        break;
+      default:
+        break;
+    }
+  }
 
   return 0;
 }

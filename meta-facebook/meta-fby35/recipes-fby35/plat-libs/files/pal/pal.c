@@ -2637,12 +2637,14 @@ pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
   uint8_t bank_num;
   uint8_t error_type = ((event_data[1] & 0x60) >> 5);
   char temp_log[512] = {0};
+  char severity_str[32] = {0};
   char bank_mapping_name[32] = {0};
 
   switch (event_data[0] & 0x0F)
   {
     case 0x0B: //Uncorrectable
     {
+      snprintf(severity_str, sizeof(severity_str), "%s", "Uncorrectable");
       switch (error_type) {
         case 0x00:
           strcat(error_log, "Uncorrected Recoverable Error, ");
@@ -2662,6 +2664,7 @@ pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
 
     case 0x0C: //Correctable
     {
+      snprintf(severity_str, sizeof(severity_str), "%s", "Correctable");
       switch (error_type) {
         case 0x00:
           strcat(error_log, "Correctable Error, ");
@@ -2678,11 +2681,15 @@ pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
 
     default:
     {
+      snprintf(severity_str, sizeof(severity_str), "%s", "Unknown");
       strcat(error_log, "Unknown Event Type, ");
       break;
     }
   }
   bank_num = event_data[1] & 0x1F;
+  snprintf(temp_log, sizeof(temp_log), "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", severity_str, bank_num, fru);
+  pal_add_cri_sel(temp_log);
+
   parse_bank_mapping_name(bank_num, bank_mapping_name);
   snprintf(temp_log, sizeof(temp_log), "Bank Number %d (%s), ", bank_num, bank_mapping_name);
   strcat(error_log, temp_log);

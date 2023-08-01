@@ -33,6 +33,16 @@ class BaseImageLayoutTest(unittest.TestCase):
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))
 
+    def find_fw_env_mtd(self):
+        with open("/etc/fw_env.config") as f:
+            data = f.read().splitlines()
+            for line in data:
+                line = line.strip()
+                if line.startswith("#") or line == "":
+                    continue
+                return line.split()[0].split("/")[-1]
+        return ""
+
     def find_meta_mtd(self, meta_name: str) -> str:
         """
         use CLI cat /proc/mtd to find mtd number
@@ -205,3 +215,8 @@ class BaseImageLayoutTest(unittest.TestCase):
         Test actual image layout on spi0.1 matches image meta data
         """
         self.do_test("spi0.1")
+
+    def test_uboot_tools_part(self):
+        env_mtd = self.find_meta_mtd("env")
+        fw_mtd = self.find_fw_env_mtd()
+        self.assertEqual(env_mtd, fw_mtd, "Ensuring we agree on env partition")

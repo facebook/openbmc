@@ -1198,21 +1198,21 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 
   //try to get the system type. The default config is CONFIG_A.
   if ( is_inited == false ) {
-    char sys_conf[16] = {0};
+    char sys_conf[MAX_VALUE_LEN] = {0};
+
     if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
-      return READING_NA;
+    } else {
+      if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
+      else if ( strcmp(sys_conf, "Type_DPV2") == 0 ) config = CONFIG_B;
+      else if ( strcmp(sys_conf, "Type_HD") == 0 ) config = CONFIG_B;
+      else if ( (strcmp(sys_conf, "Type_17") == 0) || (strcmp(sys_conf, "Type_8") == 0)) config = CONFIG_D;
+      else if ( strcmp(sys_conf, "Type_VF") == 0 ) config = CONFIG_C;
+      else if ( strcmp(sys_conf, "Type_GL") == 0 ) config = CONFIG_B;
+      else syslog(LOG_WARNING, "%s() Couldn't identify the system type: %s", __func__, sys_conf);
+
+      is_inited = true;
     }
-
-    if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
-    else if ( strcmp(sys_conf, "Type_DPV2") == 0 ) config = CONFIG_B;
-    else if ( strcmp(sys_conf, "Type_HD") == 0 ) config = CONFIG_B;
-    else if ( (strcmp(sys_conf, "Type_17") == 0) || (strcmp(sys_conf, "Type_8") == 0)) config = CONFIG_D;
-    else if ( strcmp(sys_conf, "Type_VF") == 0 ) config = CONFIG_C;
-    else if ( strcmp(sys_conf, "Type_GL") == 0 ) config = CONFIG_B;
-    else syslog(LOG_WARNING, "%s() Couldn't identify the system type: %s", __func__, sys_conf);
-
-    is_inited = true;
   }
 
   /*

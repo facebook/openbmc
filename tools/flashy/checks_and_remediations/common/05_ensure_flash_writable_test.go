@@ -36,11 +36,13 @@ func TestEnsureFlashWritable(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
+	readFileOrig := fileutils.ReadFile
 	fileExistsOrig := fileutils.FileExists
 	runCommandOrig := utils.RunCommand
 
 	defer func() {
 		log.SetOutput(os.Stderr)
+		fileutils.ReadFile = readFileOrig
 		fileutils.FileExists = fileExistsOrig
 		utils.RunCommand = runCommandOrig
 	}()
@@ -78,7 +80,8 @@ func TestEnsureFlashWritable(t *testing.T) {
 		{
 			name:              "s356523 case",
 			vbootUtilExists:   true,
-			s356523:					 "mtd0: 08000000 00010000 \"spi0.1\"",
+			s356523:					 `mtd0: 08000000 00010000 "spi0.1"
+			mtd1: 00040000 00010000 "romx"`,
 			failPrint:         false,
 			failSet:           false,
 			failCheck:         false,
@@ -136,6 +139,9 @@ func TestEnsureFlashWritable(t *testing.T) {
 			fileutils.FileExists = func(filename string) bool {
 				return tc.vbootUtilExists
 			}
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				return []byte(tc.s356523), nil
+			}
 			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				if (cmdArr[0] == "fw_printenv") {
 					if (cmdArr[1] == "bootargs") {
@@ -157,10 +163,6 @@ func TestEnsureFlashWritable(t *testing.T) {
 							return 0, errors.Errorf("err1"), "", "err1"
 						} else {
 							return 0, nil, "bootargs=foo", ""
-						}
-					} else if (cmdArr[0] == "grep") {
-						if (cmdArr[1] == "mtd0:.*spi0.1 /proc/mtd") {
-							return 0, nil, tc.s356523, ""
 						}
 					} else{
 						if (tc.failSet) {

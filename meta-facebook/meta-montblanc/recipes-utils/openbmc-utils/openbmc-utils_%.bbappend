@@ -24,20 +24,10 @@ LOCAL_URI += "\
     file://spi_util.sh \
     file://read_INA230.sh \
     file://cpld_update.sh \
-    file://rebind-peci.sh \
-    file://rebind_peci.service \
     "
 
 OPENBMC_UTILS_FILES += " \
     spi_util.sh \
     read_INA230.sh \
     cpld_update.sh \
-    rebind-peci.sh \
     "
-
-do_install:append() {
-    install -d ${D}${systemd_system_unitdir}
-    install -m 644 ${S}/rebind_peci.service ${D}${systemd_system_unitdir}
-}
-
-SYSTEMD_SERVICE:${PN} += "rebind_peci.service"

@@ -1,4 +1,4 @@
-From f8ef1507f391023ecd1eeedf1a88ab2b89ff92f9 Mon Sep 17 00:00:00 2001
+From 51866b4b5084a7664fc96f53a82f704587c7e379 Mon Sep 17 00:00:00 2001
 From: Bin Huang <binhuang@meta.com>
 Date: Wed, 10 May 2023 15:39:38 +0700
 Subject: [PATCH] ARM: dts: aspeed: Add Facebook montblanc BMC
@@ -10,16 +10,16 @@ BMC integrated for health monitoring purpose.
 
 Signed-off-by: Bin Huang <binhuang@meta.com>
 ---
- .../dts/aspeed-bmc-facebook-montblanc.dts     | 108 +++++++++++++++++++
- 1 file changed, 108 insertions(+)
+ .../dts/aspeed-bmc-facebook-montblanc.dts     | 95 +++++++++++++++++++
+ 1 file changed, 95 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
 
 diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
 new file mode 100644
-index 000000000000..1c93259714ea
+index 000000000000..6096478a5bbf
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed-bmc-facebook-montblanc.dts
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,95 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) Meta Platforms, Inc. and affiliates.
 +
@@ -34,20 +34,10 @@ index 000000000000..1c93259714ea
 +	chosen {
 +		stdout-path = &uart1;
 +	};
-+	
++
 +	spi_gpio: spi-gpio {
-+		num-chipselects = <3>;
-+		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>,
-+				<0>,	/* device reg=<1> does not exist */
-+				<&gpio0 ASPEED_GPIO(X, 2) GPIO_ACTIVE_HIGH>;
-+	
-+		eeprom@2 {
-+			compatible = "atmel,at93c46d";
-+			spi-max-frequency = <250000>;
-+			data-size = <16>;
-+			spi-cs-high;
-+			reg = <2>;
-+		};
++		num-chipselects = <1>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
 +	};
 +};
 +
@@ -83,10 +73,6 @@ index 000000000000..1c93259714ea
 +&spi1 {
 +	status = "okay";
 +
-+	/*
-+	* Customize reg resource size to 32MB (maximum flash size on the
-+	* bus) to avoid wasting vmalloc space.
-+	*/
 +	reg = < 0x1e630000 0xc4
 +			0x30000000 0x2000000 >;
 +
@@ -101,7 +87,7 @@ index 000000000000..1c93259714ea
 +			compatible = "fixed-partitions";
 +			#address-cells = <1>;
 +			#size-cells = <1>;
-+		
++
 +			flash1@0 {
 +				reg = <0x0 0x2000000>;
 +				label = "spi-flash";
@@ -116,17 +102,19 @@ index 000000000000..1c93259714ea
 +
 +&mdio1 {
 +	status = "okay";
++	ethphy0: ethernet-phy@0 {
++		compatible = "ethernet-phy-ieee802.3-c22";
++		reg = <0x00>;
++	};
 +};
 +
 +&mac3 {
 +	status = "okay";
 +	phy-mode = "rgmii";
++	phy-handle = <&ethphy0>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pinctrl_rgmii4_default>;
-+	fixed-link {
-+		speed = <1000>;
-+		full-duplex;
-+	};
 +};
---
-2.25.1
+-- 
+2.34.1
+

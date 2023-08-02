@@ -535,6 +535,11 @@ enum MEB_JCN_TYPE {
   UNKNOWN_CARD = 0xff,
 };
 
+enum ACB_CARD_TYPE {
+  FREYA_CARD,
+  ARTEMIS_CARD,
+};
+
 enum GTA_SKU_ID {
   GTA_CONFIG_1 = 1,
   GTA_CONFIG_8 = 8,

@@ -566,16 +566,6 @@ uint8_t mb_inf_vr_addr[] = {
 
 void
 load_artemis_comp_source(void) {
-  uint8_t source = 0;
-
-  get_comp_source(FRU_MB, MB_VR_SOURCE, &source);
-  // TODO: GET MB source
-  if (source == SECOND_SOURCE) {
-    for (int i = 0; i < MB_VR_CNT; i++) {
-      vr_list[i].ops =  &xdpe152xx_ops;
-      vr_list[i].addr = mb_inf_vr_addr[i];
-    }
-  }
   // TODO: GET ACB source
 }
 
@@ -692,22 +682,6 @@ int plat_vr_init(void) {
     // get artemis VR source
     load_artemis_comp_source();
   } else {
-    // get MB VR source
-    get_comp_source(FRU_MB, MB_VR_SOURCE, &id);
-    if (id == SECOND_SOURCE) {
-      for (i = 0; i < MB_VR_CNT; i++) {
-        vr_list[i].ops =  &xdpe152xx_ops;
-        vr_list[i].addr = mb_inf_vr_addr[i];
-      }
-    } else if (id == THIRD_SOURCE) {
-      for (i = 0; i < MB_VR_CNT; i++) {
-        vr_list[i].ops =  &mp2856_ops;
-        vr_list[i].addr = mb_inf_vr_addr[i];
-        vr_list[i].sensor_polling_ctrl = &mb_vr_polling_ctrl;
-        vr_list[i].remaining_wr_op = mb_vr_remaining_wr;
-      }
-    }
-
     // Add SWB VR
     if (fru_presence(FRU_SWB, &status) && (status == FRU_PRSNT)) {
       memcpy(vr_list + vr_cnt, swb_vr_list, SWB_VR_CNT*sizeof(struct vr_info));
@@ -723,6 +697,22 @@ int plat_vr_init(void) {
           vr_list[i+MB_VR_CNT].ops = &mp2856_ops;
         }
       }
+    }
+  }
+
+  // get MB VR source
+  get_comp_source(FRU_MB, MB_VR_SOURCE, &id);
+  if (id == SECOND_SOURCE) {
+    for (i = 0; i < MB_VR_CNT; i++) {
+      vr_list[i].ops =  &xdpe152xx_ops;
+      vr_list[i].addr = mb_inf_vr_addr[i];
+    }
+  } else if (id == THIRD_SOURCE) {
+    for (i = 0; i < MB_VR_CNT; i++) {
+      vr_list[i].ops =  &mp2856_ops;
+      vr_list[i].addr = mb_inf_vr_addr[i];
+      vr_list[i].sensor_polling_ctrl = &mb_vr_polling_ctrl;
+      vr_list[i].remaining_wr_op = mb_vr_remaining_wr;
     }
   }
 

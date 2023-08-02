@@ -539,6 +539,7 @@ enum GTA_SKU_ID {
   GTA_CONFIG_1 = 1,
   GTA_CONFIG_8 = 8,
   GTA_CONFIG_9 = 9,
+  GTA_CONFIG_12 = 12,
 };
 
 enum DEVICES_NUMBER {

@@ -1274,7 +1274,8 @@ read_dpm_vout(uint8_t fru, uint8_t sensor_num, float *value) {
     if (pal_is_artemis()) {
       if (  (mb_sku & 0x0F) == GTA_CONFIG_1
          || (mb_sku & 0x0F) == GTA_CONFIG_8
-         || (mb_sku & 0x0F) == GTA_CONFIG_9) {
+         || (mb_sku & 0x0F) == GTA_CONFIG_9
+         || (mb_sku & 0x0F) == GTA_CONFIG_12) {
         ret = read_isl28022(fru, sensor_num, value);
       } else {
         ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);

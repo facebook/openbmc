@@ -49,6 +49,14 @@
 #define PLATFORM_NAME "yosemite35"
 #endif
 
+#ifdef CONFIG_HALFDOME
+#define SERVER_TYPE_EXPECTED SERVER_TYPE_HD
+#elif CONFIG_GREATLAKES
+#define SERVER_TYPE_EXPECTED SERVER_TYPE_GL
+#else
+#define SERVER_TYPE_EXPECTED SERVER_TYPE_CL
+#endif
+
 #define LAST_KEY "last_key"
 
 #define OFFSET_SYS_GUID 0x17F0
@@ -5077,13 +5085,7 @@ int
 pal_check_slot_fru(uint8_t slot_id) {
   int slot_type = fby35_common_get_slot_type(slot_id);
 
-#ifdef CONFIG_HALFDOME
-  if ( slot_type != SERVER_TYPE_HD ) {
-#elif CONFIG_GREATLAKES
-  if ( slot_type != SERVER_TYPE_GL ) {
-#else
-  if ( slot_type != SERVER_TYPE_CL ) {
-#endif
+  if (slot_type != SERVER_TYPE_EXPECTED) {
     syslog(LOG_CRIT, "Slot%d plugged in a wrong FRU", slot_id);
   }
   return 0;

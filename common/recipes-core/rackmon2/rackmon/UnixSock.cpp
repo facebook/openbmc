@@ -92,7 +92,7 @@ void UnixSock::sendRaw(const char* buf, size_t len) {
   size_t sentSize = 0;
   while (sentSize < len) {
     int sz = ::send(sock_, buf, len - sentSize, 0);
-    if (sz < 0) {
+    if (sz <= 0) {
       if (++retries == maxRetries) {
         throw std::system_error(
             std::error_code(errno, std::generic_category()), "send");
@@ -111,7 +111,7 @@ void UnixSock::recvRaw(char* buf, size_t len) {
   size_t recvSize = 0;
   while (recvSize < len) {
     int sz = ::recv(sock_, buf, len - recvSize, 0);
-    if (sz < 0) {
+    if (sz <= 0) {
       retries++;
       if (retries == maxRetries) {
         throw std::system_error(

@@ -12,6 +12,8 @@
 
 using namespace std;
 
+#define MAX_CMD_LEN 120
+
 image_info BicFwComponent::check_image(const string& image, bool force) {
   int ret = 0;
   uint8_t board_id = 0, board_rev = 0;
@@ -104,6 +106,7 @@ bool BicFwComponent::is_recovery() {
 
 int BicFwComponent::update_internal(const string& image, bool force) {
   int ret = FW_STATUS_FAILURE;
+  char cmd[MAX_CMD_LEN] = {0};
 
   try {
     if (!is_recovery()) {
@@ -140,7 +143,15 @@ int BicFwComponent::update_internal(const string& image, bool force) {
 
   if (is_recovery()) {
     cout << "Performing 12V-cycle to complete the BIC recovery" << endl;
-    pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+    ret = pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+    if (ret < 0) {
+      printf("Failed to power cycle server\n");
+      return ret;
+    }
+    printf("get new SDR cache from BIC \n");
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached -s slot%d; /usr/bin/kv set slot%d_sdr_thresh_update 1", slot_id, slot_id);   //retrieve SDR data after BIC FW update
+    ret = system(cmd);
   }
 
   return ret;

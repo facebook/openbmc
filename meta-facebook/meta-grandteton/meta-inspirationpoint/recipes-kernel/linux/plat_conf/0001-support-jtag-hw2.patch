@@ -1,18 +1,18 @@
-From 9d2521887b78b5deb190765dd39db79ae752904c Mon Sep 17 00:00:00 2001
+From 13ddf58300e58ec3cca792ea928d79cbfd761b90 Mon Sep 17 00:00:00 2001
 From: peteryin <peter.yin@quantatw.com>
-Date: Wed, 14 Jun 2023 13:51:11 +0800
-Subject: [PATCH] support hw2 in jtag driver
+Date: Wed, 2 Aug 2023 11:24:05 +0800
+Subject: [PATCH] support-jtag-hw2.patch
 
 ---
- .../arch/arm/boot/dts/aspeed-g6.dtsi          |    2 +
- .../drivers/jtag/jtag-aspeed.c                | 2304 ++++++++---------
- .../linux-aspeed-5.10/drivers/jtag/jtag.c     |   62 +-
- .../linux-aspeed-5.10/include/linux/jtag.h    |   27 +-
- .../include/uapi/linux/jtag.h                 |  215 +-
- 5 files changed, 1304 insertions(+), 1306 deletions(-)
+ arch/arm/boot/dts/aspeed-g6.dtsi |    2 +
+ drivers/jtag/jtag-aspeed.c       | 2305 ++++++++++++++----------------
+ drivers/jtag/jtag.c              |   62 +-
+ include/linux/jtag.h             |   27 +-
+ include/uapi/linux/jtag.h        |  215 ++-
+ 5 files changed, 1305 insertions(+), 1306 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed-g6.dtsi
-index 8aa794b87a6d..ab21c7eac5d5 100644
+index 8aa794b87..ab21c7eac 100644
 --- a/arch/arm/boot/dts/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed-g6.dtsi
 @@ -439,6 +439,7 @@ jtag0: jtag@1e6e4000 {
@@ -32,7 +32,7 @@ index 8aa794b87a6d..ab21c7eac5d5 100644
  			};
  
 diff --git a/drivers/jtag/jtag-aspeed.c b/drivers/jtag/jtag-aspeed.c
-index 75d7b6cb8104..d9b99bab82e4 100644
+index 75d7b6cb8..7057c6c4d 100644
 --- a/drivers/jtag/jtag-aspeed.c
 +++ b/drivers/jtag/jtag-aspeed.c
 @@ -1,8 +1,7 @@
@@ -1254,7 +1254,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
 +#ifdef DEBUG_JTAG
 +	dev_dbg(aspeed_jtag->dev, "Set TAP state: status %s from %s to %s\n",
 +		end_status_str[aspeed_jtag->current_state],
-+		end_status_str[tapstate->from],
++		end_status_str[aspeed_jtag->status],
 +		end_status_str[tapstate->endstate]);
 +#endif
 +
@@ -1574,7 +1574,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  				return -EFAULT;
  			}
  		} else {
-@@ -936,422 +1014,308 @@ static int aspeed_jtag_xfer_hw(struct aspeed_jtag *aspeed_jtag,
+@@ -936,422 +1014,309 @@ static int aspeed_jtag_xfer_hw(struct aspeed_jtag *aspeed_jtag,
  				 * If this data is the end of the transmission
  				 * send remaining bits and go to endstate
  				 */
@@ -1767,10 +1767,11 @@ index 75d7b6cb8104..d9b99bab82e4 100644
 +		exit = JTAG_STATE_EXIT1DR;
 +	}
 +#ifdef DEBUG_JTAG
-+	printk("HW2 JTAG SHIFT %s, length %d status %s from %s to %s then %s pad 0x%x\n",
++	dev_dbg(aspeed_jtag->dev,
++		"HW2 JTAG SHIFT %s, length %d status %s from %s to %s then %s pad 0x%x\n",
 +		(xfer->type == JTAG_SIR_XFER) ? "IR" : "DR", xfer->length,
 +		end_status_str[aspeed_jtag->current_state],
-+		end_status_str[xfer->from],
++		end_status_str[aspeed_jtag->status],
 +		end_status_str[shift],
 +		end_status_str[xfer->endstate], xfer->padding);
  #endif
@@ -2240,7 +2241,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  	return 0;
  }
  
-@@ -1359,22 +1323,24 @@ static int aspeed_jtag_status_get(struct jtag *jtag, u32 *status)
+@@ -1359,22 +1324,24 @@ static int aspeed_jtag_status_get(struct jtag *jtag, u32 *status)
  {
  	struct aspeed_jtag *aspeed_jtag = jtag_priv(jtag);
  
@@ -2269,7 +2270,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  		aspeed_jtag->flag |= status & ASPEED_JTAG_ISR_INT_MASK;
  	}
  
-@@ -1382,8 +1348,32 @@ static irqreturn_t aspeed_jtag_interrupt(s32 this_irq, void *dev_id)
+@@ -1382,8 +1349,32 @@ static irqreturn_t aspeed_jtag_interrupt(s32 this_irq, void *dev_id)
  		wake_up_interruptible(&aspeed_jtag->jtag_wq);
  		ret = IRQ_HANDLED;
  	} else {
@@ -2304,7 +2305,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  		ret = IRQ_NONE;
  	}
  	return ret;
-@@ -1393,7 +1383,7 @@ static int aspeed_jtag_enable(struct jtag *jtag)
+@@ -1393,7 +1384,7 @@ static int aspeed_jtag_enable(struct jtag *jtag)
  {
  	struct aspeed_jtag *aspeed_jtag = jtag_priv(jtag);
  
@@ -2313,7 +2314,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  	return 0;
  }
  
-@@ -1401,339 +1391,81 @@ static int aspeed_jtag_disable(struct jtag *jtag)
+@@ -1401,339 +1392,81 @@ static int aspeed_jtag_disable(struct jtag *jtag)
  {
  	struct aspeed_jtag *aspeed_jtag = jtag_priv(jtag);
  
@@ -2690,7 +2691,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  	return 0;
  }
  
-@@ -1747,18 +1479,98 @@ static const struct jtag_ops aspeed_jtag_ops = {
+@@ -1747,18 +1480,98 @@ static const struct jtag_ops aspeed_jtag_ops = {
  	.bitbang = aspeed_jtag_bitbang,
  	.enable = aspeed_jtag_enable,
  	.disable = aspeed_jtag_disable,
@@ -2792,7 +2793,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  	if (!jtag)
  		return -ENOMEM;
  
-@@ -1766,6 +1578,8 @@ static int aspeed_jtag_probe(struct platform_device *pdev)
+@@ -1766,6 +1579,8 @@ static int aspeed_jtag_probe(struct platform_device *pdev)
  	aspeed_jtag = jtag_priv(jtag);
  	aspeed_jtag->dev = &pdev->dev;
  
@@ -2801,7 +2802,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  	/* Initialize device*/
  	err = aspeed_jtag_init(pdev, aspeed_jtag);
  	if (err)
-@@ -1776,12 +1590,6 @@ static int aspeed_jtag_probe(struct platform_device *pdev)
+@@ -1776,12 +1591,6 @@ static int aspeed_jtag_probe(struct platform_device *pdev)
  	if (err)
  		goto err_jtag_register;
  
@@ -2814,7 +2815,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  	return 0;
  
  err_jtag_register:
-@@ -1799,14 +1607,6 @@ static int aspeed_jtag_remove(struct platform_device *pdev)
+@@ -1799,14 +1608,6 @@ static int aspeed_jtag_remove(struct platform_device *pdev)
  	return 0;
  }
  
@@ -2830,7 +2831,7 @@ index 75d7b6cb8104..d9b99bab82e4 100644
  	.probe = aspeed_jtag_probe,
  	.remove = aspeed_jtag_remove,
 diff --git a/drivers/jtag/jtag.c b/drivers/jtag/jtag.c
-index 090f56d582a4..da22805f5a7c 100644
+index 090f56d58..da22805f5 100644
 --- a/drivers/jtag/jtag.c
 +++ b/drivers/jtag/jtag.c
 @@ -1,8 +1,7 @@
@@ -2962,7 +2963,7 @@ index 090f56d582a4..da22805f5a7c 100644
  		return -ENOMEM;
  
 diff --git a/include/linux/jtag.h b/include/linux/jtag.h
-index 6a6b53a549d8..9ef75fab111d 100644
+index 6a6b53a54..9ef75fab1 100644
 --- a/include/linux/jtag.h
 +++ b/include/linux/jtag.h
 @@ -1,16 +1,15 @@
@@ -3023,7 +3024,7 @@ index 6a6b53a549d8..9ef75fab111d 100644
 -#endif /* __JTAG_H */
 +#endif /* __LINUX_JTAG_H */
 diff --git a/include/uapi/linux/jtag.h b/include/uapi/linux/jtag.h
-index 3f9e1953f5a4..49d0c84b324f 100644
+index 3f9e1953f..49d0c84b3 100644
 --- a/include/uapi/linux/jtag.h
 +++ b/include/uapi/linux/jtag.h
 @@ -1,8 +1,7 @@

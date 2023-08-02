@@ -18,10 +18,17 @@
 # Boston, MA 02110-1301 USA
 #
 
+import re
 import subprocess
 from typing import Dict
 
 from rest_utils import DEFAULT_TIMEOUT_SEC
+
+RE_PRESENCE_UTIL_OUTPUT = re.compile(
+    # e.g. "psu1 : 1" -> name = "psu1", value = "1"
+    r"^(?P<name>[^\s]+) \s* : \s* (?P<value>\d+)$",
+    flags=re.MULTILINE | re.VERBOSE,
+)
 
 
 # Handler for sys/presence resource endpoint
@@ -65,12 +72,9 @@ def get_presence_info() -> Dict:
     return {"Information": result, "Actions": [], "Resources": devices}
 
 
-def _parse_presence_info_data(data) -> Dict:
-    result = {}
-    for sdata in data.splitlines():
-        dev = sdata.split(": ")[0]
-        presence_status = sdata.split(": ")[1]
-        result[dev] = presence_status
+def _parse_presence_info_data(data) -> Dict[str, str]:
+    matches = RE_PRESENCE_UTIL_OUTPUT.findall(data)
+    result = {name: value for (name, value) in matches}
     return result
 
 

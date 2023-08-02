@@ -20,8 +20,69 @@ paths:
                   type: object
                   additionalProperties: false
                   properties: 
-                    scm : 
+                    "scm":  
                       type: string
+                      pattern: "^[0-9]+$"
+                    "fan1": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan2": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan3": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan4": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan5": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan6": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan7": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan8": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "psu1": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "psu2": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "psu3": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "psu4": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "pim1": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "pim2": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "pim3": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "pim4": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "pim5": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "pim6": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "pim7": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "pim8": 
+                      type: string
+                      pattern: "^[0-9]+$"
               Actions: 
                 type: array
                 items: 
@@ -30,4 +91,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

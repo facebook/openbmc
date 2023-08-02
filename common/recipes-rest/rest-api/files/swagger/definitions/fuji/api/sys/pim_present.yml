@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api/sys/modbus  
-  title: Swagger doc for /api/sys/modbus  
+  description: Swagger doc for /api/sys/pim_present  
+  title: Swagger doc for /api/sys/pim_present  
   version: 1.0.0
 paths: 
-  /api/sys/modbus: 
+  /api/sys/pim_present: 
     get: 
       produces: [application/json]
       responses: 
@@ -18,7 +18,19 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Description: 
+                  pim2: 
+                    type: string
+                  pim3: 
+                    type: string
+                  pim4: 
+                    type: string
+                  pim5: 
+                    type: string
+                  pim6: 
+                    type: string
+                  pim7: 
+                    type: string
+                  pim8: 
                     type: string
               Actions: 
                 type: array
@@ -28,4 +40,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

@@ -18,22 +18,30 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  fan1 : 
+                  "fan1": 
                     type: string
-                  fan2 : 
+                    pattern: "^[0-9]+$"
+                  "fan2": 
                     type: string
-                  fan3 : 
+                    pattern: "^[0-9]+$"
+                  "fan3": 
                     type: string
-                  fan4 : 
+                    pattern: "^[0-9]+$"
+                  "fan4": 
                     type: string
-                  fan5 : 
+                    pattern: "^[0-9]+$"
+                  "fan5": 
                     type: string
-                  fan6 : 
+                    pattern: "^[0-9]+$"
+                  "fan6": 
                     type: string
-                  fan7 : 
+                    pattern: "^[0-9]+$"
+                  "fan7": 
                     type: string
-                  fan8 : 
+                    pattern: "^[0-9]+$"
+                  "fan8": 
                     type: string
+                    pattern: "^[0-9]+$"
               Actions: 
                 type: array
                 items: 
@@ -42,4 +50,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

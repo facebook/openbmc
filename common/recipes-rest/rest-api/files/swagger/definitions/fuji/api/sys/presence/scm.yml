@@ -18,8 +18,9 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  scm : 
+                  "scm": 
                     type: string
+                    pattern: "^[0-9]+$"
               Actions: 
                 type: array
                 items: 
@@ -28,4 +29,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

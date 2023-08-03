@@ -194,8 +194,15 @@ oe_mkimage() {
         dtbcount=1
         DFT_DTB_COUNTER=1
         for DTB in ${KERNEL_DEVICETREE}; do
-            if echo ${DTB} | grep -q '/dts/'; then
-                bbwarn "${DTB} contains the full path to the the dts file, but only the dtb name should be used."
+            # All the aspeed openbmc dts files are moved to "aspeed"
+            # directory under "arch/arm/boot/dts" since Linux v6.5, thus
+            # "aspeed/" needs to be prefixed to the "KERNEL_DEVICETREE"
+            # entries since Linux 6.5.
+            # In order to support both legacy kernel and Linux 6.5 (or
+            # higher versions), we extract the basename to ensure the
+            # dtb files are located properly.
+            if [[ "${DTB}" == *\/* ]]; then
+                bbnote "remove path prefix from ${DTB}"
                 DTB=`basename ${DTB} | sed 's,\.dts$,.dtb,g'`
             fi
             DTB_PATH="${DEPLOY_DIR_IMAGE}/${DTB}"

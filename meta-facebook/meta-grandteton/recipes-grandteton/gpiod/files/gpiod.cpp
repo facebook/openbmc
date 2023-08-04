@@ -581,6 +581,9 @@ pwr_good_init(gpiopoll_pin_t *desc, gpio_value_t value) {
 
 void
 pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  struct timespec ts;
+  char value[MAX_VALUE_LEN];
+
   if (!sgpio_valid_check())
     return;
 
@@ -588,6 +591,9 @@ pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
   reset_timer(&g_power_on_sec);
   if (curr == GPIO_VALUE_HIGH) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+    kv_set(KV_KEY_LAST_POWER_GOOD, value, 0, 0);
     kv_del("mrc_warning", 0);
   }
 }

@@ -159,6 +159,10 @@ enum {
   FAN_CTRL_ID1,
 };
 
+enum {
+  SKIP_POWER_ON_SENSOR_READING_TIME = 10, // second
+};
+
 typedef struct {
   uint8_t status;
   uint8_t integer_l;

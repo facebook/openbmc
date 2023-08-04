@@ -137,6 +137,8 @@
 
 #define GTA_FRUID_DEV_PATH "/tmp/fruid_%s_dev%d.bin"
 
+#define KV_KEY_LAST_POWER_GOOD "last_power_good_sec"
+
 typedef struct {
   uint8_t fru_prsnt;
   uint8_t fru_type;

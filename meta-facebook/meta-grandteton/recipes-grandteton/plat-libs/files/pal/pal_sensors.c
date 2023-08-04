@@ -488,6 +488,25 @@ get_map_retry(uint8_t fru)
     return bb_retry;
 }
 
+static bool
+skip_power_on_reading(uint8_t fru, uint8_t skip_sec) {
+  char last_power_good[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  // block sensor reading within skip_sec after host power on
+  if (fru == FRU_ACB || fru == FRU_MEB || (fru >= FRU_MEB_JCN1 && fru <= FRU_MEB_JCN14)) {
+    if(kv_get(KV_KEY_LAST_POWER_GOOD, last_power_good, NULL, 0) == 0) {
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      if (ts.tv_sec < (strtoul(last_power_good, NULL, 10) + skip_sec)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -511,7 +530,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = READING_NA;
       }
     } else {
-      ret = sensor_map[fru].map[sensor_num].read_sensor(fru, sensor_num, (float*) value);
+      if(skip_power_on_reading(fru, SKIP_POWER_ON_SENSOR_READING_TIME) 
+        && sensor_map[fru].map[sensor_num].stby_read == false) {
+        return READING_NA;
+      } else {
+        ret = sensor_map[fru].map[sensor_num].read_sensor(fru, sensor_num, (float*) value);
+      }
     }
 
     if ( ret == 0 ) {

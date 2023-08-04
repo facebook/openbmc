@@ -23,7 +23,6 @@
 #define DELAY_POWER_CYCLE 10
 
 enum GTA_MB_CPLD_INFO {
-  MB_CPLD_ADDR = 0x46,
   ACB_POWER_EN_REG = 0x2,
   MEB_POWER_EN_REG = 0x0,
   ACB_POWER_ENABLE_BIT = 4,
@@ -318,7 +317,7 @@ set_acb_meb_power(uint8_t fru, uint8_t cmd) {
     return -1;
   }
 
-  i2cfd = i2c_cdev_slave_open(I2C_BUS_7, MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (i2cfd < 0) {
     syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
     return -1;
@@ -328,7 +327,7 @@ set_acb_meb_power(uint8_t fru, uint8_t cmd) {
   tbuf[0] = reg;
   tlen = 1;
 
-  if (i2c_rdwr_msg_transfer(i2cfd, MB_CPLD_ADDR, tbuf, tlen, rbuf, 1)) {
+  if (i2c_rdwr_msg_transfer(i2cfd, GTA_MB_CPLD_ADDR, tbuf, tlen, rbuf, 1)) {
     syslog(LOG_ERR, "i2c transfer fail\n");
     goto exit;
   }
@@ -347,7 +346,7 @@ set_acb_meb_power(uint8_t fru, uint8_t cmd) {
 
   // write back
   tlen = 2;
-  if (i2c_rdwr_msg_transfer(i2cfd, MB_CPLD_ADDR, tbuf, tlen, rbuf, 0)) {
+  if (i2c_rdwr_msg_transfer(i2cfd, GTA_MB_CPLD_ADDR, tbuf, tlen, rbuf, 0)) {
     syslog(LOG_ERR, "i2c transfer fail\n");
     goto exit;
   }

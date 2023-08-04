@@ -61,4 +61,5 @@ int pal_lock(const char *lock_fp);
 int pal_unlock(int fd);
 int pal_get_board_rev_id(uint8_t fru, uint8_t *id);
 int pal_get_board_sku_id(uint8_t fru, uint8_t *id);
+bool gta_expansion_board_present(uint8_t fru_id, uint8_t *status);
 #endif

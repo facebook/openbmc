@@ -6,6 +6,8 @@
 #define MAX_PATH_LEN           (128)
 #define MAX_TXBUF_SIZE         (255)
 #define MAX_RXBUF_SIZE         (255)
+#define MAX_I2C_TXBUF_SIZE     (16)
+#define MAX_I2C_RXBUF_SIZE     (16)
 
 //GPIO EVENT Common
 #define FM_UARTSW_LSB_N          "FM_UARTSW_LSB_N"
@@ -596,6 +598,10 @@ enum DEVIC_NVME_READY {
 enum DEVICE_IDENTIFIER_SUPPORT {
   IDENTIFIER_SUPPORT = 0,
   IDENTIFIER_NOT_SUPPORT = 1,
+};
+
+enum GTA_MB_CPLD {
+  GTA_MB_CPLD_ADDR = 0x46,
 };
 
 /* Artemis End */

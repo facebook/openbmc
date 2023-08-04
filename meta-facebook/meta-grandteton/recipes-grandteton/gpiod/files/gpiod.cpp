@@ -810,6 +810,7 @@ void
   int i, status;
   int size = pal_is_artemis() ? ARRAY_SIZE(gta_iox_gpios) : ARRAY_SIZE(iox_gpios);
   int init_flag[size];
+  uint8_t gta_exp_prsnt_status = FRU_NOT_PRSNT;
   gpiopoll_ioex_config *iox_gpio_table = pal_is_artemis() ? gta_iox_gpios : iox_gpios;
 
   for (i = 0; i < size; ++i)
@@ -819,6 +820,13 @@ void
     if (pal_get_server_power(FRU_MB, (uint8_t*)&status) < 0)
       status = -1;
     ioex_table_polling_once(iox_gpio_table, init_flag, size, status);
+    if (pal_is_artemis()) {
+      for (uint8_t fru = FRU_ACB; fru <= FRU_MEB; fru++) {
+        if (!gta_expansion_board_present(fru, &gta_exp_prsnt_status)) {
+          syslog(LOG_WARNING,"%s() Get expansion board present failed, status: %u", __func__, gta_exp_prsnt_status);
+        }
+      }
+    }
     sleep(1);
   }
 

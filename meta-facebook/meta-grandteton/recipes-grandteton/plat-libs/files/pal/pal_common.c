@@ -15,6 +15,7 @@
 #include <openbmc/hal_fruid.h>
 #include "pal.h"
 #include <openbmc/kv.h>
+#include <openbmc/obmc-i2c.h>
 
 
 //#define DEBUG
@@ -139,15 +140,85 @@ read_device(const char *device, int *value) {
 }
 
 bool
-fru_presence(uint8_t fru_id, uint8_t *status) {
-  gpio_value_t gpio_value;
-  uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
-  uint8_t rxbuf[MAX_TXBUF_SIZE] = {0};
-  uint8_t txlen = 0;
-  size_t  rxlen = 0;
+gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
+  static uint8_t cb_last_status = 0xff;
+  static uint8_t mc_last_status = 0xff;
+  gpio_value_t gpio_prsnt_1;
+  gpio_value_t gpio_prsnt_2;
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
-  int ret = 0;
+  char fru_name[MAX_FRUID_NAME] = {0};
+  int i2cfd = 0, ret = -1;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
+  uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
+  enum GTA_MEB_PRSNT_OFFSET {
+    MEB_PRSNT_OFFSET = 0x05,
+  };
+  enum GTA_MEB_PRSNT_MASK {
+    MEB_PRSNT_MASK_1 = 0x10,
+    MEB_PRSNT_MASK_2 = 0x40,
+  };
+
+  switch (fru_id) {
+    case FRU_ACB:
+      gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_A);
+      gpio_prsnt_2 = gpio_get_value_by_shadow(CABLE_PRSNT_B);
+      if (gpio_prsnt_1 && gpio_prsnt_2) {
+        *status = FRU_NOT_PRSNT;
+      } else {
+        *status = FRU_PRSNT;
+      }
+      if (cb_last_status != *status) {
+        pal_get_fru_name(fru_id,fru_name);
+        syslog(LOG_CRIT, "%s %s",fru_name, *status ? "is Present":"is Absent");
+      }
+      cb_last_status = *status;
+      break;
+    case FRU_MEB:
+      i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+      if (i2cfd < 0) {
+        syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
+        return false;
+      }
+      tbuf[0] = MEB_PRSNT_OFFSET;
+      tlen = 1;
+      rlen = 2;
+      ret = i2c_rdwr_msg_transfer(i2cfd, GTA_MB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+      if (ret < 0) {
+        syslog(LOG_INFO, "%s() I2C transfer to MB CPLD failed, RET: %d", __func__, ret);
+        i2c_cdev_slave_close(i2cfd);
+        return false;
+      } else {
+        if ((rbuf[0] & MEB_PRSNT_MASK_1) == MEB_PRSNT_MASK_1 &&
+            (rbuf[1] & MEB_PRSNT_MASK_2) == MEB_PRSNT_MASK_2) {
+          *status = FRU_NOT_PRSNT;
+        } else {
+          *status = FRU_PRSNT;
+        }
+        if (mc_last_status != *status) {
+          pal_get_fru_name(fru_id,fru_name);
+          syslog(LOG_CRIT, "%s %s",fru_name, *status ? "is Present":"is Absent");
+        }
+        mc_last_status = *status;
+      }
+      i2c_cdev_slave_close(i2cfd);
+      break;
+    default:
+      syslog(LOG_WARNING, "%s() FRU: %u Not Support", __func__, fru_id);
+      return false;
+  }
+  snprintf(key, sizeof(key), "fru%d_prsnt", fru_id);
+  snprintf(value, sizeof(value), "%d", *status);
+  kv_set(key, value, 0, 0);
+  return true;
+}
+
+bool
+fru_presence(uint8_t fru_id, uint8_t *status) {
+  gpio_value_t gpio_value;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
 
   switch (fru_id) {
     case FRU_FIO:
@@ -172,33 +243,12 @@ fru_presence(uint8_t fru_id, uint8_t *status) {
         *status = FRU_NOT_PRSNT;
         return true;
       }
-      // TODO: Read MB CPLD register
-      // Currently, Use BIC self test for ACB/MEB present
-      bic_intf fru_bic_info = {0};
-
-      fru_bic_info.fru_id = fru_id;
-      pal_get_bic_intf(&fru_bic_info);
-
-      snprintf(key, sizeof(key), "fru%d_prsnt", fru_bic_info.fru_id);
+      snprintf(key, sizeof(key), "fru%d_prsnt", fru_id);
       if (kv_get(key, value, NULL, 0) == 0) {
         *status = atoi(value);
         return true;
       }
-
-      ret = oem_pldm_ipmi_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid,
-                                  NETFN_APP_REQ, CMD_APP_GET_SELFTEST_RESULTS,
-                                  txbuf, txlen,
-                                  rxbuf, &rxlen,
-                                  true);
-      if (ret == 0) {
-        *status = FRU_PRSNT;
-      } else {
-        *status = FRU_NOT_PRSNT;
-      }
-
-      snprintf(value, sizeof(value), "%d", *status);
-      kv_set(key, value, 0, 0);
-      return true;
+      return gta_expansion_board_present(fru_id, status);
     default:
       return fru_presence_ext(fru_id, status);
   }

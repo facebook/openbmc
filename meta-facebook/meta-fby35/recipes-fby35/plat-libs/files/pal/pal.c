@@ -236,48 +236,77 @@ struct pal_key_cfg {
 
 MAPTOSTRING root_port_common_mapping[] = {
     // XCC
-    {0xB3, 1, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
-    {0xB3, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
+    {0xB3, 1, 0xFF, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
+    {0xB3, 5, 0xFF, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
     // MCC
-    {0xBB, 7, 0x57, "Num 0", "SB"}, // root_port=0x5G, Boot Drive
+    {0xBB, 7, 0xFF, 0x57, "Num 0", "SB"}, // root_port=0x5G, Boot Drive
     // QS
-    {0xBB, 1, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
-    {0xBB, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
-    {0x00, 0, 0xFF, "ieh4", "ieh"}, //  ieh device
+    {0xBB, 1, 0xFF, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
+    {0xBB, 5, 0xFF, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
+    {0x00, 0, 0xFF, 0xFF, "ieh4", "ieh"}, //  ieh device
     // Halfdome
-    {0x00, 3, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC
-    {0x01, 0, 0xFF, "Class 1", "NIC"}, //  Endpoint of Class 1 NIC
-    {0x00, 5, 0xFF, "Num 0", "SB"}, //  Root port of Boot Drive
-    {0x02, 0, 0xFF, "Num 0", "SB"}, //  Endpoint of Boot Drive
-    {0xC0, 1, 0xFF, "CXL", "1OU"}, //  Root port of RBF CXL
-    {0xFF, 0, 0xFF, "CXL", "1OU"}, //  Endpoint of RBF CXL
-    {0x00, 1, 0x01, "DEV 2", "3OU"}, // root_port=0x01, 3OU DEV 2
+    {0x00, 3, 0x01, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC
+    {0x01, 0, 0x00, 0xFF, "Class 1", "NIC"}, //  Endpoint of Class 1 NIC
+    {0x00, 5, 0x01, 0xFF, "Num 0", "SB"}, //  Root port of Boot Drive
+    {0x02, 0, 0x00, 0xFF, "Num 0", "SB"}, //  Endpoint of Boot Drive
+    {0xC0, 1, 0x01, 0xFF, "DEV 0", "1OU"}, // Root port of 1OU DEV 0
+    {0xC1, 0, 0x00, 0xFF, "DEV 0", "1OU"}, // Endpoint of 1OU DEV 0
+    {0xC0, 1, 0x02, 0xFF, "DEV 1", "1OU"}, // Root port of 1OU DEV 1
+    {0xC2, 0, 0x00, 0xFF, "DEV 1", "1OU"}, // Endpoint of 1OU DEV 1
+    {0xC0, 1, 0x03, 0xFF, "DEV 2", "1OU"}, // Root port of 1OU DEV 2
+    {0xC3, 0, 0x00, 0xFF, "DEV 2", "1OU"}, // Endpoint of 1OU DEV 2
+    {0xC0, 1, 0x04, 0xFF, "DEV 0", "2OU"}, // Root port of 2OU DEV 0
+    {0xC4, 0, 0x00, 0xFF, "DEV 0", "2OU"}, // Endpoint of 2OU DEV 0
+    {0xC0, 1, 0x05, 0xFF, "DEV 1", "2OU"}, // Root port of 2OU DEV 1
+    {0xC5, 0, 0x00, 0xFF, "DEV 1", "2OU"}, // Endpoint of 2OU DEV 1
+    {0xC0, 1, 0x06, 0xFF, "DEV 2", "2OU"}, // Root port of  2OU DEV 2
+    {0xC6, 0, 0x00, 0xFF, "DEV 2", "2OU"}, // Endpoint of 2OU DEV 2
+    {0xC0, 1, 0x07, 0xFF, "DEV 3", "2OU"}, // Root port of 2OU DEV 3
+    {0xC7, 0, 0x00, 0xFF, "DEV 3", "2OU"}, // Endpoint of 2OU DEV 3
+    {0xC0, 2, 0x01, 0xFF, "DEV 4", "2OU"}, // Root port of 2OU DEV 4
+    {0xC8, 0, 0x00, 0xFF, "DEV 4", "2OU"}, // Endpoint of 2OU DEV 0
+    {0x00, 1, 0x01, 0xFF, "DEV 0", "3OU"}, // Root port of 3OU DEV 0
+    {0x03, 0, 0x00, 0xFF, "DEV 0", "3OU"}, // Endpoint of 3OU DEV 0
+    {0x00, 1, 0x02, 0xFF, "DEV 1", "3OU"}, // Root port of 3OU DEV 1
+    {0x04, 0, 0x00, 0xFF, "DEV 1", "3OU"}, // Endpoint of 3OU DEV 1
+    {0x00, 1, 0x03, 0xFF, "DEV 2", "3OU"}, // Root port of 3OU DEV 2
+    {0x05, 0, 0x00, 0xFF, "DEV 2", "3OU"}, // Endpoint of 3OU DEV 2
+    {0x00, 1, 0x04, 0xFF, "DEV 0", "4OU"}, // Root port of 4OU DEV 0
+    {0x06, 0, 0x00, 0xFF, "DEV 0", "4OU"}, // Endpoint of 4OU DEV 0
+    {0x00, 1, 0x05, 0xFF, "DEV 1", "4OU"}, // Root_port 4OU DEV 1
+    {0x07, 0, 0x00, 0xFF, "DEV 1", "4OU"}, // Endpoint of 4OU DEV 1
+    {0x00, 1, 0x06, 0xFF, "DEV 2", "4OU"}, // Root port of 4OU DEV 2
+    {0x08, 0, 0x00, 0xFF, "DEV 2", "4OU"}, // Endpoint of 4OU DEV 2
+    {0x00, 1, 0x07, 0xFF, "DEV 3", "4OU"}, // Root port of 4OU DEV 3
+    {0x09, 0, 0x00, 0xFF, "DEV 3", "4OU"}, // Endpoint of 4OU DEV 3
+    {0x00, 2, 0x01, 0xFF, "DEV 4", "4OU"}, // Root port of 4OU DEV 4
+    {0x0A, 0, 0x00, 0xFF, "DEV 4", "4OU"}, // Endpoint of 4OU DEV 4
 };
 
 MAPTOSTRING root_port_mapping[] = {
-    { 0xB2, 3, 0x3D, "Num 0", "1OU"}, //Port 0x4D
-    { 0xB2, 2, 0x3C, "Num 1", "1OU"}, //Port 0x4C
-    { 0xB2, 1, 0x3B, "Num 2", "1OU"}, //Port 0x4B
-    { 0xB2, 0, 0x3A, "Num 3", "1OU"}, //Port 0x4A
-    { 0x15, 0, 0x1A, "Num 0", "2OU"}, //Port 0x1A
-    { 0x15, 1, 0x1B, "Num 1", "2OU"}, //Port 0x1B
-    { 0x63, 1, 0x2B, "Num 2", "2OU"}, //Port 0x2B
-    { 0x63, 0, 0x2A, "Num 3", "2OU"}, //Port 0x2A
-    { 0x15, 2, 0x1C, "Num 4", "2OU"}, //Port 0x1C
-    { 0x15, 3, 0x1D, "Num 5", "2OU"}, //Port 0x1D
+    { 0xB2, 3, 0xFF, 0x3D, "Num 0", "1OU"}, //Port 0x4D
+    { 0xB2, 2, 0xFF, 0x3C, "Num 1", "1OU"}, //Port 0x4C
+    { 0xB2, 1, 0xFF, 0x3B, "Num 2", "1OU"}, //Port 0x4B
+    { 0xB2, 0, 0xFF, 0x3A, "Num 3", "1OU"}, //Port 0x4A
+    { 0x15, 0, 0xFF, 0x1A, "Num 0", "2OU"}, //Port 0x1A
+    { 0x15, 1, 0xFF, 0x1B, "Num 1", "2OU"}, //Port 0x1B
+    { 0x63, 1, 0xFF, 0x2B, "Num 2", "2OU"}, //Port 0x2B
+    { 0x63, 0, 0xFF, 0x2A, "Num 3", "2OU"}, //Port 0x2A
+    { 0x15, 2, 0xFF, 0x1C, "Num 4", "2OU"}, //Port 0x1C
+    { 0x15, 3, 0xFF, 0x1D, "Num 5", "2OU"}, //Port 0x1D
 };
 
 MAPTOSTRING root_port_mapping_e1s[] = {
     // XCC
-    { 0x7F, 1, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
-    { 0x7F, 3, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
-    { 0x7F, 5, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
-    { 0x7F, 7, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
+    { 0x7F, 1, 0xFF, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
+    { 0x7F, 3, 0xFF, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
+    { 0x7F, 5, 0xFF, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
+    { 0x7F, 7, 0xFF, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
     // MCC
-    { 0x84, 1, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
-    { 0x84, 3, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
-    { 0x84, 5, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
-    { 0x84, 7, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
+    { 0x84, 1, 0xFF, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
+    { 0x84, 3, 0xFF, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
+    { 0x84, 5, 0xFF, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
+    { 0x84, 7, 0xFF, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
 };
 
 PCIE_ERR_DECODE pcie_err_tab[] = {
@@ -2793,7 +2822,6 @@ static void
 pal_search_pcie_err(uint8_t err1_id, uint8_t err2_id, char *err1_desc, char *err2_desc) {
   int i;
   int size = (sizeof(pcie_err_tab)/sizeof(PCIE_ERR_DECODE));
-
   for ( i = 0; i < size; i++ ) {
     if ( err2_id == pcie_err_tab[i].err_id ) {
       snprintf(err2_desc, ERR_DESC_LEN, "(%s)", pcie_err_tab[i].err_descr);
@@ -2811,12 +2839,11 @@ pal_search_pcie_err(uint8_t err1_id, uint8_t err2_id, char *err1_desc, char *err
 }
 
 static bool
-pal_search_pcie_dev(MAPTOSTRING *tbl, int size, uint8_t bmc_location, uint8_t dev, uint8_t bus, char **sil, char **location) {
+pal_search_pcie_dev(MAPTOSTRING *tbl, int size, uint8_t bmc_location, uint8_t dev, uint8_t bus, uint8_t fun, char **sil, char **location) {
   int i = 0;
   for ( i = 0; i < size; i++ ) {
     // check bus and dev are match
-    if ( (bus == tbl[i].bus_value) && \
-         (dev == tbl[i].dev_value) ) {
+    if ( (bus == tbl[i].bus_value) && (dev == tbl[i].dev_value) && (fun == tbl[i].fun_value) ) {
       *location = tbl[i].location;
       // 1OU is not expected on class 2, skip
       if ( !strcmp(*location, "1OU") && bmc_location == NIC_BMC ) {
@@ -2834,6 +2861,7 @@ pal_get_pcie_err_string(uint8_t fru, uint8_t *pdata, char **sil, char **location
   uint8_t bmc_location = 0;
   uint8_t dev = pdata[0] >> 3;
   uint8_t bus = pdata[1];
+  uint8_t fun = pdata[0] & 0x7;
   uint8_t err1_id = pdata[5];
   uint8_t err2_id = pdata[4];
   uint8_t size = 0;
@@ -2843,10 +2871,10 @@ pal_get_pcie_err_string(uint8_t fru, uint8_t *pdata, char **sil, char **location
   pal_sel_root_port_mapping_tbl(fru, &bmc_location, &mapping_table, &size);
 
   // search for the device table first
-  if ( pal_search_pcie_dev(mapping_table, size, bmc_location, dev, bus, sil, location) == false ) {
+  if ( pal_search_pcie_dev(mapping_table, size, bmc_location, dev, bus, fun, sil, location) == false ) {
     // if dev is not found in the device table, search for the common table
     size = sizeof(root_port_common_mapping)/sizeof(MAPTOSTRING);
-    pal_search_pcie_dev(root_port_common_mapping, size, bmc_location, dev, bus, sil, location);
+    pal_search_pcie_dev(root_port_common_mapping, size, bmc_location, dev, bus, fun, sil, location);
   }
 
   // parse err

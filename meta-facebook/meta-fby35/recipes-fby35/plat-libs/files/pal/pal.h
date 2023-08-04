@@ -147,6 +147,7 @@ enum {
 typedef struct {
     uint8_t bus_value;
     uint8_t dev_value;
+    uint8_t fun_value;
     uint8_t root_port;
     char *silk_screen;
     char *location;

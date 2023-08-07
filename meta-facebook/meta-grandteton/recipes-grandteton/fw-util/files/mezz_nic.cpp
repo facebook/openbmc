@@ -1,40 +1,16 @@
 #include <string>
-#include <unistd.h>
 #include <syslog.h>
-#include <libpldm/base.h>
-#include <libpldm/firmware_update.h>
-#include <libpldm-oem/pldm.h>
+#include <libpldm-oem/pal_pldm.hpp>
 #include <libpldm-oem/fw_update.hpp>
 #include "mezz_nic.hpp"
-#include "signed_info.hpp"
 
 using namespace std;
 
 int PLDMNicComponent::get_version(json& j) {
 
-  uint8_t tbuf[255] = {0};
-  auto pldmbuf = (pldm_msg *)tbuf;
-  pldmbuf->hdr.request = 1;
-  pldmbuf->hdr.type    = PLDM_FWUP;
-  pldmbuf->hdr.command = PLDM_GET_FIRMWARE_PARAMETERS;
-
-  uint8_t *rbuf = nullptr;
-  size_t rlen = 0;
-  size_t tlen = PLDM_HEADER_SIZE;
+  string ver{};
   j["PRETTY_COMPONENT"] = "Mellanox " + _ver_key;
-
-  int rc = oem_pldm_send_recv(_bus_id, _eid, tbuf, tlen, &rbuf, &rlen);
-  if (rc == PLDM_SUCCESS) {
-    std::string ret{};
-    for (int i = 0; i < 10; ++i)
-      ret += (char)*(rbuf + i + 14);
-    j["VERSION"] = ret;
-  } else {
-    j["VERSION"] = "NA";
-  }
-
-  if(rbuf)
-    free(rbuf);
+  j["VERSION"] = pal_pldm_get_active_ver(_bus_id, _eid, ver) ? "NA": ver;
 
   return FW_STATUS_SUCCESS;
 }

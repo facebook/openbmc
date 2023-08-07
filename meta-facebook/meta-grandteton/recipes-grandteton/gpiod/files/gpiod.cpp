@@ -166,7 +166,7 @@ delay_get_firmware(void* arg) {
   pthread_detach(pthread_self());
   syslog(LOG_INFO, "Get swb firmware: start delay(%u).", *delay);
   sleep(*delay);
-  pal_pldm_get_firmware_parameter(SWB_BUS_ID, SWB_BIC_EID);
+  pal_update_swb_ver_cache(SWB_BUS_ID, SWB_BIC_EID);
   free(delay);
   delay = NULL;
   pthread_exit(NULL);
@@ -184,7 +184,7 @@ void bic_get_firmware (unsigned int _delay) {
 
   *delay = _delay;
   if (*delay == 0) {
-    pal_pldm_get_firmware_parameter(SWB_BUS_ID, SWB_BIC_EID);
+    pal_update_swb_ver_cache(SWB_BUS_ID, SWB_BIC_EID);
     free(delay);
     delay = NULL;
   } else {

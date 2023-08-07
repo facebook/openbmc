@@ -21,7 +21,34 @@ const std::vector<std::string> comp_str_t = {
   "cpld"
 };
 
-static void delete_version_cache()
+class pldm_firmware_parameter_handler
+{
+  private:
+    enum {
+      UPDATE_SWB_CACHE,
+      NON_UPDATE_SWB_CACHE
+    };
+    std::string _active_ver{};
+    void delete_swb_cache();
+    void swb_cache_handle(
+                          const pldm_get_firmware_parameters_resp&,
+                          const variable_field&,
+                          const variable_field&,
+                          const pldm_component_parameter_entry&,
+                          const variable_field&,
+                          const variable_field&
+                        );
+    int get_firmware_parameter(
+                        uint8_t bus, uint8_t eid, int state);
+
+  public:
+    pldm_firmware_parameter_handler() {}
+    int update_swb_cache(uint8_t bus, uint8_t eid);
+    int get_active_ver(uint8_t bus, uint8_t eid, std::string& active_ver);
+};
+
+void
+pldm_firmware_parameter_handler::delete_swb_cache()
 {
   for (auto&comp_name:comp_str_t) {
     try {
@@ -33,8 +60,8 @@ static void delete_version_cache()
   }
 }
 
-static void
-pldm_firmware_parameter_handle (
+void
+pldm_firmware_parameter_handler::swb_cache_handle (
        const pldm_get_firmware_parameters_resp& /*fwParams*/,
                           const variable_field& activeCompImageSetVerStr,
                           const variable_field& /*pendingCompImageSetVerStr*/,
@@ -59,7 +86,7 @@ pldm_firmware_parameter_handle (
 }
 
 int
-pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
+pldm_firmware_parameter_handler::get_firmware_parameter (uint8_t bus, uint8_t eid, int state)
 {
   vector<uint8_t> response{};
   vector<uint8_t> request {
@@ -86,16 +113,6 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
                 << unsigned(eid) << ", RC=" << ret << "\n";
       ret = -1;
 
-    // completion code != 0x00
-    // } else if (fwParams.completion_code) {
-    //   syslog(LOG_WARNING, "GetFirmwareParameters response failed with error, rc = %d.", ret);
-    //   std::cerr << "GetFirmwareParameters response failed with error "
-    //                 "completion code, EID="
-    //             << unsigned(eid)
-    //             << ", CC=" << unsigned(fwParams.completion_code) << "\n";
-    //   delete_version_cache();
-    //   ret = -1;
-
     // success
     } else {
       auto compParamPtr = compParamTable.ptr;
@@ -120,14 +137,19 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
         }
 
         // stored
-        pldm_firmware_parameter_handle (
-          fwParams,
-          activeCompImageSetVerStr,
-          pendingCompImageSetVerStr,
-          compEntry,
-          activeCompVerStr,
-          pendingCompVerStr
-        );
+        if (state == UPDATE_SWB_CACHE) {
+          swb_cache_handle (
+            fwParams,
+            activeCompImageSetVerStr,
+            pendingCompImageSetVerStr,
+            compEntry,
+            activeCompVerStr,
+            pendingCompVerStr
+          );
+        } else {
+          _active_ver = (activeCompImageSetVerStr.length == 0) ?
+                        "" : (const char*)activeCompImageSetVerStr.ptr;
+        }
 
         compParamPtr += sizeof(pldm_component_parameter_entry) +
                           activeCompVerStr.length + pendingCompVerStr.length;
@@ -136,7 +158,8 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
       }
     }
   } else if (ret == PLDM_ERROR_UNSUPPORTED_PLDM_CMD) {
-    delete_version_cache();
+    if (state == UPDATE_SWB_CACHE)
+      delete_swb_cache();
     ret = -1;
   } else {
     syslog(LOG_WARNING, "Function oem_pldm_send_recv() error, rc = %d.", ret);
@@ -147,7 +170,33 @@ pal_pldm_get_firmware_parameter (uint8_t bus, uint8_t eid)
 }
 
 int
+pldm_firmware_parameter_handler::update_swb_cache(uint8_t bus, uint8_t eid)
+{
+  return get_firmware_parameter(bus, eid, UPDATE_SWB_CACHE);
+}
+
+int
+pldm_firmware_parameter_handler::get_active_ver(
+                                uint8_t bus, uint8_t eid, std::string& active_ver)
+{
+  int ret = get_firmware_parameter(bus, eid, NON_UPDATE_SWB_CACHE);
+  active_ver = _active_ver;
+  return ret;
+}
+
+int pal_pldm_get_active_ver(uint8_t bus, uint8_t eid, std::string& active_ver)
+{
+  pldm_firmware_parameter_handler handler;
+  return handler.get_active_ver(bus, eid, active_ver);
+}
+
+int pal_update_swb_ver_cache(uint8_t bus, uint8_t eid) {
+  pldm_firmware_parameter_handler handler;
+  return handler.update_swb_cache(bus, eid);
+}
+
+int
 is_pldm_supported(uint8_t bus, uint8_t eid)
 {
-  return pal_pldm_get_firmware_parameter(bus, eid);
+  return pal_update_swb_ver_cache(bus, eid);
 }

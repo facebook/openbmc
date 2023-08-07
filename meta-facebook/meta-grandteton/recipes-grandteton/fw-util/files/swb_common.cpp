@@ -841,7 +841,7 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
     active_ver = kv::get(active_key, kv::region::temp);
     j["VERSION"] = active_ver;
   } catch (...) {
-    if (pal_pldm_get_firmware_parameter(bus, eid) < 0) {
+    if (pal_update_swb_ver_cache(bus, eid) < 0) {
       return comp_version(j);
     } else {
       active_ver = kv::get(active_key, kv::region::temp);

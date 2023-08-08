@@ -670,10 +670,6 @@ read_cpu_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   if(!is_dimm_present(dimm_id))
     return READING_NA;
 
-  if(pal_bios_completed(fru) != true) {
-    return READING_NA;
-  }
-
   ret = lib_get_cpu_dimm_temp(cpu_addr[cpu_id], ch_num, value);
   if ( ret != 0 || *value == 255 ) {
     retry[channel]++;
@@ -740,10 +736,6 @@ read_cpu_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
 
   if(!is_dimm_present(dimm_id))
     return READING_NA;
-
-  if(pal_bios_completed(fru) != true) {
-    return READING_NA;
-  }
 
   ret = read_dimm_power(fru, sensor_num, value, dimm_num, cpu_id, cached);
   if ( ret != 0 ) {

@@ -4,6 +4,8 @@
 //BUS number
 #define HSC_BUS_NUM              (6)
 
+#define MAX_DIMM_NUM              (24)
+#define PER_CPU_DIMM_NUMBER_MAX   (MAX_DIMM_NUM/MAX_CPU_CNT)
 
 //GPIO EVENT Cover
 #define IRQ_UV_DETECT_N          "UV_ALERT_N"

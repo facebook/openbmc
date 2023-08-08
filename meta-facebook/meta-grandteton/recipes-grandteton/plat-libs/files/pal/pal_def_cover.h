@@ -4,6 +4,10 @@
 //BUS number
 #define HSC_BUS_NUM              (2)
 
+#define MAX_DIMM_NUM              (32)
+#define MAX_DIMM_CHANNEL          (16)
+#define PER_CPU_DIMM_NUMBER_MAX   (MAX_DIMM_NUM/MAX_CPU_CNT)
+#define PER_CPU_DIMM_CHANNEL_MAX  (MAX_DIMM_CHANNEL/MAX_CPU_CNT)
 
 //GPIO EVENT Cover
 #define IRQ_UV_DETECT_N          "IRQ_UV_DETECT_N"
@@ -48,4 +52,5 @@
 #define FM_BMC_CPU_PWR_DEBUG_N   "FM_BMC_CPU_FBRK_OUT_N"
 
 #define PEX_FW_VER_UPDATE        "RST_PLTRST_PLD_N"
+
 #endif

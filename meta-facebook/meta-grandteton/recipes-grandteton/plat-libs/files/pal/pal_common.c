@@ -310,7 +310,7 @@ get_dimm_present_info(uint8_t fru, bool *dimm_sts_list) {
     sprintf(key, "sys_config/fru%d_dimm%d_location", fru, i);
     if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 4) {
       syslog(LOG_WARNING,"[%s]Cannot get dimm_slot%d present info", __func__, i);
-      return;
+      value[0] = 0xff;
     }
 
     if ( 0xff == value[0] ) {
@@ -327,7 +327,13 @@ is_dimm_present(uint8_t dimm_id) {
   static bool dimm_sts_list[MAX_DIMM_NUM] = {0};
   uint8_t fru = FRU_MB;
 
-  if (!pal_bios_completed(fru) ) {
+  if(!pal_bios_completed(fru)) {
+    if(is_check == true) {
+      for(int id=0; id<MAX_DIMM_NUM; id++) {
+        dimm_sts_list[id] = 0;
+      }
+      is_check = false;
+    }
     return false;
   }
 

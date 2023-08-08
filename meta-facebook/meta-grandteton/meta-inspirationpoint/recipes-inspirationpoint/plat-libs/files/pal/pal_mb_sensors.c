@@ -923,13 +923,12 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   static uint8_t retry[MAX_DIMM_NUM] = {0};
   static bool asserted = false;
 
-  if(!is_cpu_socket_occupy(CPU_ID0))
-    return READING_NA;
-
-  if(pal_bios_completed(fru) != true) {
+  if(!is_cpu_socket_occupy(CPU_ID0)) {
     return READING_NA;
   }
-  else {
+
+  if (!is_dimm_present(dimm_id)){
+    return READING_NA;
   }
 
   if (sensor_num == APML_SNR_START_INDEX) {
@@ -950,9 +949,10 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
       max_temp = 0;
     }
 
-    ret = read_i3c_dimm_temp(CPU_ID0, dimm_id, value);
-    if (max_temp < *value) {
-      max_temp = *value;
+    if ((ret = read_i3c_dimm_temp(CPU_ID0, dimm_id, value)) == 0) {
+      if (max_temp < *value) {
+        max_temp = *value;
+      }
     }
 
     if((dimm_id == DIMM_ID11) && asserted == false && (max_temp >= unc)) {
@@ -998,10 +998,11 @@ read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   static uint8_t retry[MAX_DIMM_NUM] = {0};
   static bool asserted = false;
 
-  if(!is_cpu_socket_occupy(CPU_ID1))
+  if(!is_cpu_socket_occupy(CPU_ID1)) {
     return READING_NA;
+  }
 
-  if(pal_bios_completed(fru) != true) {
+  if (!is_dimm_present(dimm_id + PER_CPU_DIMM_NUMBER_MAX)){
     return READING_NA;
   }
 
@@ -1010,9 +1011,10 @@ read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
       max_temp = 0;
     }
 
-    ret = read_i3c_dimm_temp(CPU_ID1, dimm_id, value);
-    if (max_temp < *value) {
-      max_temp = *value;
+    if ((ret = read_i3c_dimm_temp(CPU_ID1, dimm_id, value)) == 0) {
+      if (max_temp < *value) {
+        max_temp = *value;
+      }
     }
 
     if((dimm_id == DIMM_ID11) && asserted == false && (max_temp >= unc)) {
@@ -1053,7 +1055,6 @@ static int
 read_i3c_dimm_power(uint8_t dimm_id, float *value) {
   int fd, ret = 0;
   char fp[32] = {0};
-
   uint8_t txbuf[1] = {0x0C};
   uint8_t rxbuf[1] = {0};
 
@@ -1070,7 +1071,7 @@ read_i3c_dimm_power(uint8_t dimm_id, float *value) {
     *value = ((float)(rxbuf[0] * 125))/1000;
   }
 
-   return 0;
+   return ret;
 }
 
 
@@ -1096,10 +1097,11 @@ read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
   static uint8_t retry[MAX_DIMM_NUM] = {0};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
-  if(!is_cpu_socket_occupy(CPU_ID0))
+  if (!is_cpu_socket_occupy(CPU_ID0)){
     return READING_NA;
+  }
 
-  if(pal_bios_completed(fru) != true) {
+  if (!is_dimm_present(dimm_id)){
     return READING_NA;
   }
 
@@ -1125,10 +1127,11 @@ read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
   static uint8_t retry[MAX_DIMM_NUM] = {0};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
-  if(!is_cpu_socket_occupy(CPU_ID1))
+  if (!is_cpu_socket_occupy(CPU_ID1)) {
     return READING_NA;
+  }
 
-  if(pal_bios_completed(fru) != true) {
+  if (!is_dimm_present(dimm_id + PER_CPU_DIMM_NUMBER_MAX)){
     return READING_NA;
   }
 
@@ -1572,7 +1575,7 @@ int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value) {
       if(tag) {
         pmic_err_name(i, name);
         if(curr[i] == true)
-           syslog(LOG_CRIT, "ASSERT DIMM_LABEL=%s Error %s", 
+          syslog(LOG_CRIT, "ASSERT DIMM_LABEL=%s Error %s",
 		get_dimm_label(cpu_id, dimm_num), name);
 
         flag[dimm_id][i] = curr[i];

@@ -8,6 +8,30 @@ from contextlib import contextmanager
 from pyrmd import RackmonInterface as rmd
 
 
+def retry(times, exceptions=(Exception), delay=0.0, verbose=1):
+    def decorator(func):
+        def newfn(*args, **kwargs):
+            retries = 0
+            while retries < times:
+                try:
+                    if verbose >= 2:
+                        print("attempt %d of %d of %s" % (retries, times, str(func)))
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    if verbose >= 1:
+                        print(
+                            "Exception: %s thrown on attempt %d of %d of %s"
+                            % (str(e), retries, times, str(func))
+                        )
+                    retries += 1
+                    time.sleep(delay)
+            return func(*args, **kwargs)
+
+        return newfn
+
+    return decorator
+
+
 def bh(bs):
     """bytes to hex *str*"""
     return hexlify(bs).decode("ascii")

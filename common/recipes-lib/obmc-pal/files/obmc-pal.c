@@ -244,6 +244,7 @@ static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
         data_out = (data_out + 1) % PCC_FIFO_SIZE;
       }
       pal_check_psb_error(post_code >> 24, post_code);
+      pal_check_abl_error(post_code);
       pal_mrc_warning_detect(0, post_code);
       index = 0;
       post_code = 0;
@@ -516,6 +517,12 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
 
 int __attribute__((weak))
 pal_check_psb_error(uint8_t head, uint8_t last)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_check_abl_error(uint32_t postcode)
 {
   return PAL_EOK;
 }

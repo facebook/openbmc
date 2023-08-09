@@ -1,0 +1,48 @@
+CONFIG_SYS_PROMPT="Backpack-boot=> "
+CONFIG_SYS_CONFIG_NAME="fbbackpack"
+CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-backpack"
+
+# FBOSS common support
+CONFIG_DM_ETH=y
+CONFIG_FTGMAC100=y
+CONFIG_PHY=y
+CONFIG_PHYLIB=y
+CONFIG_PHY_GIGE=y
+CONFIG_PHY_BROADCOM=y
+CONFIG_PINCTRL=y
+CONFIG_DM_GPIO=y
+CONFIG_ASPEED_GPIO=y
+
+CONFIG_BAUDRATE=9600
+CONFIG_HUSH_PARSER=y
+CONFIG_CMD_NET=y
+CONFIG_CMD_MII=y
+CONFIG_ASPEED_ENABLE_DUAL_BOOT_WATCHDOG=y
+
+CONFIG_DEBUG_UART_BASE=0x1E783000
+
+# logging facilities
+#    0 - emergency
+#    1 - alert
+#    2 - critical
+#    3 - error
+#    4 - warning
+#    5 - note
+#    6 - info
+#    7 - debug
+#    8 - debug content
+#    9 - debug hardware I/O
+
+# CONFIG_LOG=y
+# CONFIG_SPL_LOG=y
+
+# by default when LOG facility enable
+# dev_xxx and log_xxx
+# (SPL)_LOGLEVEL control console print level, default 4 (warning)
+# (SPL)_LOG_MAX_LEVEL control compile time, default 5 (note)
+# LOG_DEFAULT_LEVEL default log level before run 'log level' set it explictly
+
+# CONFIG_LOGLEVEL=7
+# CONFIG_LOG_MAX_LEVEL=7
+# CONFIG_SPL_LOG_MAX_LEVEL=7
+# CONFIG_LOG_DEFAULT_LEVEL=7

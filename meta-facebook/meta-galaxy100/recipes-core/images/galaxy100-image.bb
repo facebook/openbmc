@@ -2,6 +2,7 @@
 
 inherit kernel_fitimage
 
+require recipes-core/images/fb-zstd-rootfs.inc
 require recipes-core/images/fb-openbmc-image.bb
 
 # Include modules in rootfs
@@ -24,7 +25,6 @@ IMAGE_INSTALL += " \
   openbmc-gpio \
   po-eeprom \
   kcsd \
-  stress  \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \

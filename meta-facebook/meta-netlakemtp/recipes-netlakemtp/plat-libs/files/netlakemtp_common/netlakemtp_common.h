@@ -93,8 +93,7 @@ extern "C" {
 #define NVME_A_BUS 22
 #define NVME_B_BUS 23
 #define NVME_C_BUS 24
-#define NVME_D_BUS 26
-#define NVME_E_BUS 27
+#define NVME_D_BUS 25
 #define NVME_ADDR 0xD4
 #define NVME_GET_STATUS_CMD 0x00
 #define NVME_GET_STATUS_LEN 8

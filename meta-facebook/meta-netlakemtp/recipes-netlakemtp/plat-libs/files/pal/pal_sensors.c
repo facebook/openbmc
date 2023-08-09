@@ -139,8 +139,6 @@ PAL_SENSOR_MAP bmc_sensor_map[] = {
   {"M.2_C_TEMP", NVME_C_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [BMC_M2_D_TEMP] =
   {"M.2_D_TEMP", NVME_D_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
-  [BMC_M2_E_TEMP] =
-  {"M.2_E_TEMP", NVME_E_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
 };
 
 PAL_SENSOR_MAP fio_sensor_map[] = {
@@ -231,7 +229,6 @@ const uint8_t bmc_sensor_list[] = {
   BMC_M2_B_TEMP,
   BMC_M2_C_TEMP,
   BMC_M2_D_TEMP,
-  BMC_M2_E_TEMP,
 };
 
 const uint8_t pdb_sensor_list[] = {
@@ -325,7 +322,6 @@ const uint8_t nvme_temp_list[] = {
   [NVME_B_TEMP] = NVME_B_BUS,
   [NVME_C_TEMP] = NVME_C_BUS,
   [NVME_D_TEMP] = NVME_D_BUS,
-  [NVME_E_TEMP] = NVME_E_BUS,
 };
 
 PAL_PMBUS_POWER_TABLE power_cal_list[] = {

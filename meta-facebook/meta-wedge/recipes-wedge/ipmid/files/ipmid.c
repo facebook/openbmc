@@ -1521,7 +1521,10 @@ main (int argc, char **argv)
   obmc_log_init("ipmid", LOG_INFO, 0);
   obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
   obmc_log_unset_std_stream();
-  daemon(1, 0);
+  if (daemon(1, 0)) {
+    syslog(LOG_ALERT, "ipmid: daemon() failed\n");
+    exit (1);
+  }
 
   plat_sel_init();
   plat_sensor_init();

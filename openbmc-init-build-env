@@ -51,6 +51,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-elbert:lf-dunfell
   meta-fbsp:lf-dunfell
   meta-minipack:lf-dunfell
+  meta-wedge:lf-dunfell
   meta-wedge100:lf-dunfell
   meta-wedge400:lf-dunfell
   meta-yamp:lf-dunfell
@@ -61,7 +62,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fby2-gpv2:rocko
   meta-galaxy100:rocko
   meta-lightning:rocko
-  meta-wedge:rocko
   meta-yosemite:rocko
 # Below Network OpenBMC platforms are not widely deployed (prototype
 # hardware, etc), but we will keep the entries until all the units are

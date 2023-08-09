@@ -77,7 +77,7 @@ populate_mgmt_sensors(void) {
   // Device ID string
   // Type - 0xC0: ASCII, Length - 0x09
   sensor.str_type_len = 0xC0 + 0x09;
-  strncpy(sensor.str, "Wedge-BMC", 0x09);
+  strncpy(sensor.str, "Wedge-BMC", sizeof(sensor.str));
 
   // Add this sensor to the global table
   if (g_sensor_mgmt.num >= SENSOR_MGMT_MAX) {
@@ -122,7 +122,7 @@ populate_disc_sensors(void) {
   // Device ID string
   // Type - 0xC0: ASCII, Length - 12
   sensor.str_type_len = 0xC0 + 9;
-  strncpy(sensor.str, "uS-Status", 9);
+  strncpy(sensor.str, "uS-Status", sizeof(sensor.str));
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
@@ -162,7 +162,7 @@ populate_disc_sensors(void) {
   // Device ID string
   // Type - 0xC0: ASCII, Length - 12
   sensor.str_type_len = 0xC0 + 10;
-  strncpy(sensor.str, "SEL-Status", 10);
+  strncpy(sensor.str, "SEL-Status", sizeof(sensor.str));
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
@@ -203,7 +203,7 @@ populate_disc_sensors(void) {
   // Device ID string
   // Type - 0xC0: ASCII, Length - 12
   sensor.str_type_len = 0xC0 + 3;
-  strncpy(sensor.str, "WDT", 3);
+  strncpy(sensor.str, "WDT", sizeof(sensor.str));
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
@@ -241,7 +241,7 @@ populate_disc_sensors(void) {
   // Device ID string
   // Type - 0xC0: ASCII, Length - 12
   sensor.str_type_len = 0xC0 + 13;
-  strncpy(sensor.str, "CH-Pwr-Status", 13);
+  strncpy(sensor.str, "CH-Pwr-Status", sizeof(sensor.str));
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
@@ -278,7 +278,7 @@ populate_disc_sensors(void) {
   // Device ID string
   // Type - 0xC0: ASCII, Length - 12
   sensor.str_type_len = 0xC0 + 12;
-  strncpy(sensor.str, "CPU_DIMM_HOT", 12);
+  strncpy(sensor.str, "CPU_DIMM_HOT", sizeof(sensor.str));
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {
@@ -319,7 +319,7 @@ populate_disc_sensors(void) {
   // Device ID string
   // Type - 0xC0: ASCII, Length - 10
   sensor.str_type_len = 0xC0 + 12;
-  strncpy(sensor.str, "NTP-Status", 10);
+  strncpy(sensor.str, "NTP-Status", sizeof(sensor.str));
 
   // Add this sensor to the global table
   if (g_sensor_disc.num >= SENSOR_DISC_MAX) {

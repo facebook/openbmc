@@ -132,7 +132,7 @@ sdr_add_mgmt_rec(sensor_mgmt_t *p_rec) {
   memcpy(rec.str, p_rec->str, SENSOR_STR_SIZE);
 
   // Copy this record to generic SDR record
-  memcpy(sdr.rec, &rec, SDR_LEN_MAX);
+  memcpy(sdr.rec, &rec, sizeof(rec));
 
   // Add this record to SDR repo
   if (plat_sdr_add_entry(&sdr, &rec_id)) {

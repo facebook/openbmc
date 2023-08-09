@@ -1,5 +1,6 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
+require recipes-core/images/fb-zstd-rootfs.inc
 inherit kernel_fitimage
 
 require recipes-core/images/fb-openbmc-image.bb

@@ -195,7 +195,10 @@ int main(int argc, char **argv) {
   obmc_log_init("sms-kcs", LOG_INFO, 0);
   obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
   obmc_log_unset_std_stream();
-  daemon(1, 0);
+  if (daemon(1, 0)) {
+    OBMC_ERROR(errno, "failed to daemonize");
+    exit(-1);
+  }
 
   /*
    * Wait till ipmid is ready.

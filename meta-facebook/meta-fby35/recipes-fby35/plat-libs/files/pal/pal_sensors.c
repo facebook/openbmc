@@ -2283,6 +2283,8 @@ read_pdb_cl_vdelta(uint8_t snr_number, float *value) {
     uint8_t slot_type = fby35_common_get_slot_type(i);
     if (slot_type == SERVER_TYPE_HD) {
       hsc_input_vol_num = BIC_HD_SENSOR_HSC_INPUT_VOL;
+    } else if (slot_type == SERVER_TYPE_GL) {
+      hsc_input_vol_num = BIC_GL_SENSOR_MB_HSC_INPUT_VOLT_V;
     }
     if (slot_type != SERVER_TYPE_NONE) {
       type_found = true;

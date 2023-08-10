@@ -148,6 +148,7 @@ struct gpiopoll_config gpios_common_list[] = {
   {FM_SMB_2_ALERT_GPU,   "SGPIO208",       GPIO_EDGE_BOTH,    sgpio_event_handler,  NULL},
   {FM_SMB_1_ALERT_GPU,   "SGPIO210",       GPIO_EDGE_BOTH,    sgpio_event_handler,  NULL},
   {BIOS_TPM_PRESENT_IN,  "GPIOO5",         GPIO_EDGE_BOTH,    tpm_sync_handler,     NULL},
+  {IRQ_BIOS_TPM_SPI_IN,  "GPIOQ0",         GPIO_EDGE_BOTH,    tpm_irq_sync_handler, NULL},
 };
 
 bool server_power_check(uint8_t power_on_time) {
@@ -525,6 +526,11 @@ void
 tpm_sync_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   gpio_set_value_by_shadow(BIOS_TPM_PRESENT_OUT, curr);
   log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
+}
+
+void
+tpm_irq_sync_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  gpio_set_value_by_shadow(IRQ_BIOS_TPM_SPI_OUT, curr);
 }
 
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON

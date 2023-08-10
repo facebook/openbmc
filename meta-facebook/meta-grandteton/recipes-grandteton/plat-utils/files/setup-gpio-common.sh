@@ -323,3 +323,6 @@ gpio_set BMC_MONITER 0
 
 sgpio_export FM_BIOS_TPM_PRSNT_OUT 57
 gpio_set FM_BIOS_TPM_PRSNT_OUT "$(gpio_get FM_BIOS_TPM_PRSNT_IN)"
+
+sgpio_export IRQ_BIOS_TPM_SPI_OUT 61
+gpio_set IRQ_BIOS_TPM_SPI_OUT "$(gpio_get IRQ_PCH_TPM_SPI_IN)"

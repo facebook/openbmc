@@ -16,6 +16,8 @@
 #define FM_CPU_CATERR_N          "H_CPU_CATERR_LVC2_R2_N"
 #define BIOS_TPM_PRESENT_IN      "FM_BIOS_TPM_PRSNT_IN"
 #define BIOS_TPM_PRESENT_OUT     "FM_BIOS_TPM_PRSNT_OUT"
+#define IRQ_BIOS_TPM_SPI_IN      "IRQ_PCH_TPM_SPI_IN"
+#define IRQ_BIOS_TPM_SPI_OUT     "IRQ_BIOS_TPM_SPI_OUT"
 
 //GPIO Power Control Common
 #define FP_RST_BTN_IN_N          "ID_RST_BTN_BMC_IN"

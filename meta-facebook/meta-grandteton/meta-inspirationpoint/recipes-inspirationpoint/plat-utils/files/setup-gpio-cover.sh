@@ -197,6 +197,3 @@ gpio_set IRQ_CPU_BMC_NMI_R_N 1
 sgpio_export IRQ_SMI_ACTIVE_N_R 113
 gpio_set IRQ_SMI_ACTIVE_N_R 1
 
-sgpio_export IRQ_TPM_SPI_R1_N 115
-gpio_set IRQ_TPM_SPI_R1_N 1
-

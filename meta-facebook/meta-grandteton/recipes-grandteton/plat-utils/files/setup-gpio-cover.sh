@@ -196,9 +196,6 @@ gpio_set FM_PFR_DSW_PWROK_N 1
 sgpio_export FM_PFR_OVR_RTC_R 55
 gpio_set FM_PFR_OVR_RTC_R 0
 
-sgpio_export IRQ_PCH_TPM_SPI_OUT 61
-gpio_set IRQ_PCH_TPM_SPI_OUT 1
-
 sgpio_export USB_OC0_REAR_R_OUT 63
 gpio_set USB_OC0_REAR_R_OUT 1
 

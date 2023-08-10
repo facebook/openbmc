@@ -251,7 +251,7 @@ dump_cpld_reg(void* arg) {
     uint8_t val = rbuf[i];
     for(int j=0; j<8; j++) {
       if((val & (1 <<j)) == (1 << j)) {
-        flag |= 1 << (i*8 + j);
+        flag |= ((unsigned long long)1 << (i*8 + j));
       }
     }
   }

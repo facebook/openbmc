@@ -1,0 +1,33 @@
+From 9cb50b5e8d8c6ae0e1697bc702b2106984123c15 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Fri, 19 May 2023 17:19:03 +0800
+Subject: [PATCH 1/1] fansensor: add compatible string for ast2600 tach
+
+Add `aspeed,ast2600-tach` as compatible string for ast2600 tach driver.
+
+This commit relies on the kernel patch below.
+link: https://lore.kernel.org/all/20221123061635.32025-6-billy_tsai@aspeedtech.com/
+
+Tested on Bletchley.
+
+Change-Id: Ia2fcf6cd8856edfb15871a3b68a8ffbc13b8025d
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ src/FanMain.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/FanMain.cpp b/src/FanMain.cpp
+index 9c8a738..cc8fcb4 100644
+--- a/src/FanMain.cpp
++++ b/src/FanMain.cpp
+@@ -66,6 +66,7 @@ std::optional<RedundancySensor> systemRedundancy;
+ static const std::map<std::string, FanTypes> compatibleFanTypes = {
+     {"aspeed,ast2400-pwm-tacho", FanTypes::aspeed},
+     {"aspeed,ast2500-pwm-tacho", FanTypes::aspeed},
++    {"aspeed,ast2600-tach", FanTypes::aspeed},
+     {"nuvoton,npcm750-pwm-fan", FanTypes::nuvoton},
+     {"hpe,gxp-fan-ctrl", FanTypes::hpe}
+     // add compatible string here for new fan type
+-- 
+2.31.1
+

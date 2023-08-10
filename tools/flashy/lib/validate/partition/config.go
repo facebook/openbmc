@@ -67,6 +67,20 @@ type PartitionConfigInfo struct {
 var ImageFormats = []ImageFormat{
 	{
 		// covers both vboot-meta and fit-meta
+		Name: "meta-big",
+		PartitionConfigs: []PartitionConfigInfo{
+			{
+				// pass in the whole image and let MetaImagePartition deal with
+				// finding the partitionConfigs and checksums
+				Name:   "fbmeta-image-big",
+				Offset: 0,
+				Size:   128 * 1024 * 1024,
+				Type:   FBMETA_IMAGE,
+			},
+		},
+	},
+	{
+		// covers both vboot-meta and fit-meta
 		Name: "meta",
 		PartitionConfigs: []PartitionConfigInfo{
 			{

@@ -39,7 +39,7 @@ do_install() {
     install -m 0755 weutil ${D}${bindir}/weutil
 }
 
-DEPENDS += "libweutil"
-RDEPENDS:${PN} = "libweutil"
+DEPENDS += "libwedge-eeprom"
+RDEPENDS:${PN} = "libwedge-eeprom"
 FILES:${PN} = "${bindir}"
 

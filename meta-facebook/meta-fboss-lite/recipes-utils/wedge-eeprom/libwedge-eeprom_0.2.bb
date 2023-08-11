@@ -38,19 +38,17 @@ S = "${WORKDIR}/lib"
 
 do_install() {
 	  install -d ${D}${libdir}
-    install -m 0644 libweutil.so ${D}${libdir}/libweutil.so
-    install -m 0644 libweutil.so.0 ${D}${libdir}/libweutil.so.0
+    install -m 0644 libwedge-eeprom.so ${D}${libdir}/libwedge-eeprom.so
+    install -m 0644 libwedge-eeprom.so.0 ${D}${libdir}/libwedge-eeprom.so.0
 
     install -d ${D}${includedir}/facebook
     install -m 0644 ${S}/WeutilInterface.h ${D}${includedir}/facebook/WeutilInterface.h
 
     install -d ${D}/${sysconfdir}/weutil
     install -m 0644 ${S}/eeprom.json ${D}/${sysconfdir}/weutil/eeprom.json
-    install -m 0644 ${S}/meta_eeprom_v4_sample.bin ${D}/${sysconfdir}/weutil/meta_eeprom_v4_sample.bin
 }
 
 FILES:${PN} = "${sysconfdir}/weutil/eeprom.json"
-FILES:${PN} += "${sysconfdir}/weutil/meta_eeprom_v4_sample.bin"
-FILES:${PN} += "${libdir}/libweutil.so ${libdir}/libweutil.so.0"
+FILES:${PN} += "${libdir}/libwedge-eeprom.so ${libdir}/libwedge-eeprom.so.0"
 FILES:${PN}-dev = "${includedir}/facebook/WeutilInterface.h "
 

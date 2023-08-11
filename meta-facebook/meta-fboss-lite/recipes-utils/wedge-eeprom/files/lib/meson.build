@@ -1,5 +1,5 @@
 # Copyright 2023-present Meta Platform. All Rights Reserved.
-project('libweutil', 'cpp',
+project('libwedge-eeprom', 'cpp',
     version: '0.1',
     license: 'GPL2',
     # Meson 0.40 only supports c++1z as an alias for c++17.
@@ -20,7 +20,7 @@ deps = [
   dependency('libobmc-i2c'),
   ]
 
-# source files for libweutil.
+# source files for libwedge-eeprom.
 libsrcs = files(
     'WeLibApi.cpp',
     'CrcLib.h',
@@ -34,7 +34,7 @@ libsrcs = files(
     )
 
 # weutil library
-weutil_lib = shared_library('weutil', libsrcs,
+weutil_lib = shared_library('wedge-eeprom', libsrcs,
     dependencies: deps,
     version: meson.project_version(),
     install: true)

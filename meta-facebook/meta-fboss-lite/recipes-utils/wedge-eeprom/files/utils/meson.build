@@ -14,7 +14,7 @@ project('weutil', 'cpp',
 cc = meson.get_compiler('cpp')
 
 dep_libs = [
-    cc.find_library('weutil'),
+    cc.find_library('wedge-eeprom'),
     ]
 
 # weutil executable.

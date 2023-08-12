@@ -26,7 +26,6 @@ PLAT_DISTRO_OVERRIDES=(
 # master rolling-release platforms
   meta-bletchley:lf-master
   meta-clearcreek:lf-master
-  meta-evb-npcm845:lf-master
   meta-fbal:lf-master
   meta-fbep:lf-master
   meta-fbttn2:lf-master

@@ -27,7 +27,6 @@ prog="$0"
 PWD1014A_SYSFS_DIR=$(i2c_device_sysfs_abspath 2-003a)
 PWR_SYSTEM_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_cyc_all_n"
 PWR_USRV_RST_SYSFS="${SYSCPLD_SYSFS_DIR}/usrv_rst_n"
-PWR_TH_RST_SYSFS="${SYSCPLD_SYSFS_DIR}/th_sys_rst_n"
 ALT_SYSRESET_SYSFS="${PWD1014A_SYSFS_DIR}/mod_hard_powercycle"
 
 usage() {
@@ -50,7 +49,7 @@ usage() {
 }
 
 is_main_power_on() {
-  status=$(cat $PWR_MAIN_SYSFS | head -1 )
+  status=$(cat "$PWR_MAIN_SYSFS" | head -1 )
   if [ "$status" == "0x1" ]; then
       return 0            # powered on
   else
@@ -82,12 +81,12 @@ do_status() {
 
 do_on_com_e() {
     logger -p user.crit "Powering on microserver..."
-    echo 1 > $PWR_USRV_SYSFS
+    echo 1 > "$PWR_USRV_SYSFS"
 }
 
 do_on_main_pwr() {
     logger -p user.crit "Turning on main power..."
-    echo 1 > $PWR_MAIN_SYSFS
+    echo 1 > "$PWR_MAIN_SYSFS"
 }
 
 do_on() {
@@ -101,7 +100,7 @@ do_on() {
                 ;;
             *)
                 usage
-                exit -1
+                exit 1
                 ;;
 
         esac
@@ -130,12 +129,12 @@ do_on() {
 
 do_off_com_e() {
     logger -p user.crit "Powering off microserver..."
-    echo 0 > $PWR_USRV_SYSFS
+    echo 0 > "$PWR_USRV_SYSFS"
 }
 
 do_off_main_pwr() {
     logger -p user.crit "Turning off main power..."
-    echo 0 > $PWR_MAIN_SYSFS
+    echo 0 > "$PWR_MAIN_SYSFS"
 }
 
 do_off() {
@@ -158,7 +157,7 @@ do_reset() {
                 ;;
             *)
                 usage
-                exit -1
+                exit 1
                 ;;
         esac
     done
@@ -167,33 +166,33 @@ do_reset() {
         logger -p user.crit "Power reset the whole system..."
         echo -n "Power reset the whole system ..."
         sleep 1
-        echo 0 > $PWR_SYSTEM_SYSFS
+        echo 0 > "$PWR_SYSTEM_SYSFS"
         # Echo 0 above should work already. However, after CPLD upgrade,
         # We need to re-generate the pulse to make this work
         usleep $pulse_us
-        echo 1 > $PWR_SYSTEM_SYSFS
+        echo 1 > "$PWR_SYSTEM_SYSFS"
         usleep $pulse_us
-        echo 0 > $PWR_SYSTEM_SYSFS
+        echo 0 > "$PWR_SYSTEM_SYSFS"
         usleep $pulse_us
-        echo 1 > $PWR_SYSTEM_SYSFS
+        echo 1 > "$PWR_SYSTEM_SYSFS"
         logger -p user.crit "Chassis power failed through CPLD. Will try pwr1014a in 5 sec..."
         sleep 5
-        echo 0 > $ALT_SYSRESET_SYSFS
+        echo 0 > "$ALT_SYSRESET_SYSFS"
         sleep 1
     else
         if ! wedge_is_us_on; then
             echo "Power resetting microserver that is powered off has no effect."
             echo "Use '$prog on' to power the microserver on"
-            return -1
+            return 1
         fi
         # reset TH first
         reset_brcm.sh
 
         logger -p user.crit "Power reset microserver..."
         echo -n "Power reset microserver ..."
-        echo 0 > $PWR_USRV_RST_SYSFS
+        echo 0 > "$PWR_USRV_RST_SYSFS"
         sleep 1
-        echo 1 > $PWR_USRV_RST_SYSFS
+        echo 1 > "$PWR_USRV_RST_SYSFS"
         logger "Successfully power reset micro-server"
     fi
     echo " Done"
@@ -202,7 +201,7 @@ do_reset() {
 
 if [ $# -lt 1 ]; then
     usage
-    exit -1
+    exit 1
 fi
 
 command="$1"
@@ -210,19 +209,19 @@ shift
 
 case "$command" in
     status)
-        do_status $@
+        do_status "$@"
         ;;
     on)
-        do_on $@
+        do_on "$@"
         ;;
     off)
-        do_off $@
+        do_off "$@"
         ;;
     reset)
-        do_reset $@
+        do_reset "$@"
         ;;
     *)
         usage
-        exit -1
+        exit 1
         ;;
 esac

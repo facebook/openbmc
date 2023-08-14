@@ -19,7 +19,7 @@
 #
 
 from aiohttp import web
-from common_utils import running_systemd, async_exec, dumps_bytestr
+from common_utils import async_exec, dumps_bytestr, running_systemd
 
 
 async def get_ntpq_stats():
@@ -72,20 +72,22 @@ async def fudge_timedatectl_stats():
     # Default bad statistics, pointing that there is no real
     # synchronization...
     ntpstats = {"stratum": 16, "delay": 5000, "jitter": 5000, "offset": 5000}
+    system_clock_synchronized: bool = False
+    ntp_active: bool = False
 
     for line in data.splitlines():
         # Handle differences in whitespaces...
-        if "NTP synchronized: yes" in line:
-            ntpstats = {
-                "delay": 50,
-                "jitter": 50,
-                "stratum": 2,
-                "offset": 50,
-            }
+        if "System clock synchronized: yes" in line:
+            system_clock_synchronized = True
+        if "NTP service: active" in line:
+            ntp_active = True
+        # If we've found both the lines we need, then return 200 with fudged stats
+        if system_clock_synchronized and ntp_active:
             return {
                 "data": {"Information": ntpstats, "Actions": [], "Resources": []},
                 "status": 200,
             }
+    # Otherwise return 404
     return {
         "data": {"Information": {"reason": data}, "Actions": [], "Resources": []},
         "status": 404,

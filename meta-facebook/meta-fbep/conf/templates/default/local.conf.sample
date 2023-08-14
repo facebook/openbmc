@@ -1,6 +1,7 @@
 #
 # Local configuration file for building the OpenBMC image.
 #
+OLDEST_KERNEL = "5.0"
 
 # Machine Selection
 MACHINE ??= "emeraldpools"

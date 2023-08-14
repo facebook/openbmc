@@ -5,6 +5,7 @@
 # Machine Selection
 # VBoot w/ TPM2.0
 MACHINE ??= "fby3"
+OLDEST_KERNEL = "5.0"
 
 # PFR
 # MACHINE ??= "fby3s"

@@ -42,6 +42,7 @@
 #define PEX_FW_VER_UPDATE        "RST_PERST_CPUx_SWB_N"
 #define APML_CPU0_ALERT          "APML_CPU0_ALERT_R_N"
 #define APML_CPU1_ALERT          "APML_CPU1_ALERT_R_N"
+#define PWR_FALUT_ALERT          "CPLD_PWR_FAULT_ALERT"
 #define RESERVED_GPIO            "NULL"
 
 //GPIO Power Control Cover

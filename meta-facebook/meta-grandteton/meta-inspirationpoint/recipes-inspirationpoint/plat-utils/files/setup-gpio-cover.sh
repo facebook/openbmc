@@ -99,6 +99,7 @@ sgpio_export PRSNT_HDT_N 162
 sgpio_export FM_CPU0_SLP_S3_N 164
 sgpio_export FM_CPU0_SLP_S5_N 166
 sgpio_export FM_CPU0_SPD_HOST_CTRL_R_N 168
+sgpio_export CPLD_PWR_FAULT_ALERT 170
 sgpio_export E1S_0_PRSNT_R_N 172
 sgpio_export P0_PWR_ERR 174
 sgpio_export P1_PWR_ERR 176

@@ -37,6 +37,7 @@
 
 #define AUTODUMP_BIN  "/usr/local/bin/autodump.sh"
 #define AUTODUMP_LOCK "/var/run/autodump.lock"
+#define BITS_PER_BYTE 8
 
 static void
 pwr_err_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
@@ -236,6 +237,100 @@ cpu_prochot_handler_wrapper(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_
   }
 }
 
+static void
+pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  int i2cfd = 0, ret = -1;
+  uint8_t tlen = 0, rlen = 0;
+  uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
+  uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
+  uint8_t temp_mb_rbuf = 0;
+  char fru_name[MAX_FRU_NAME] = {0};
+  const char *mc_pwr_fault[] = {"MC_P3V3_PG_DROP", "MC_P5V_AUX_PG_DROP", "MC_PWRGD_P1V2_AUX_DROP", "MC_PWRGD_P3V3_AUX_DROP"};
+  const char *cb_pwr_fault_A[] = {"CB_P3V3_2_PG", "CB_P3V3_1_PG", "CB_PWRGD_P5V_AUX", "CB_PWRGD_P1V2_AUX"};
+  const char *cb_pwr_fault_B[] = {"PWRGD_P0V8_2", "PWRGD_P0V8_1", "P1V25_2_PG", "P1V25_1_PG", "P1V8_PEX_PG_R1", "P3V3_2_PG_R2"};
+
+  i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
+    return;
+  }
+  tbuf[0] = PWR_FAULT_OFFSET;
+  tlen = 1;
+  rlen = 1;
+  ret = i2c_rdwr_msg_transfer(i2cfd, GTA_MB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+  temp_mb_rbuf = rbuf[0];
+  if (ret < 0 ) {
+    syslog(LOG_WARNING, "%s() I2C transfer to MB CPLD failed, RET: %d", __func__, ret);
+    i2c_cdev_slave_close(i2cfd);
+    return;
+  }
+
+  if ((temp_mb_rbuf & MC_PWR_FAULT_MASK) == MC_PWR_FAULT_MASK) {
+    // POWER FAULT on MC
+    i2cfd = i2c_cdev_slave_open(I2C_BUS_69, MC_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (i2cfd < 0) {
+      syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_69);
+      return;
+    }
+    tbuf[0] = MC_PWR_FAULT_OFFSET;
+    tlen = 1;
+    rlen = 1;
+    ret = i2c_rdwr_msg_transfer(i2cfd, MC_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() I2C transfer to MC CPLD failed, RET: %d", __func__, ret);
+      i2c_cdev_slave_close(i2cfd);
+      return;
+    }
+    pal_get_fru_name(FRU_MEB, fru_name);
+    for (int i = 0; i < BITS_PER_BYTE; i ++) {
+      if (GETBIT(rbuf[0], i)) {
+        syslog(LOG_CRIT, "%s: Power Fault Event: %s Assert\n", fru_name, mc_pwr_fault[i]);
+      }
+    }
+    i2c_cdev_slave_close(i2cfd);
+  }
+
+  if ((temp_mb_rbuf & CB_PWR_FAULT_MASK) == CB_PWR_FAULT_MASK) {
+    // POWER FAULT on CB
+    i2cfd = i2c_cdev_slave_open(I2C_BUS_11, CB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (i2cfd < 0) {
+      syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_11);
+      return;
+    }
+    tbuf[0] = CB_PWR_FAULT_A_OFFSET;
+    tlen = 1;
+    rlen = 1;
+    ret = i2c_rdwr_msg_transfer(i2cfd, CB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() I2C transfer to CB CPLD failed, RET: %d", __func__, ret);
+      i2c_cdev_slave_close(i2cfd);
+      return;
+    }
+    pal_get_fru_name(FRU_ACB, fru_name);
+    for (int i = 0; i < BITS_PER_BYTE; i ++) {
+      if (GETBIT(rbuf[0], i)) {
+        syslog(LOG_CRIT, "%s: Power Fault Event: %s Assert\n", fru_name, cb_pwr_fault_A[i]);
+      }
+    }
+
+    tbuf[0] = CB_PWR_FAULT_B_OFFSET;
+    tlen = 1;
+    rlen = 1;
+    ret = i2c_rdwr_msg_transfer(i2cfd, CB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() I2C transfer to CB CPLD failed, RET: %d", __func__, ret);
+      i2c_cdev_slave_close(i2cfd);
+      return;
+    }
+    for (int i = 0; i < BITS_PER_BYTE; i ++) {
+      if (GETBIT(rbuf[0], i)) {
+        syslog(LOG_CRIT, "%s: Power Fault Event: %s Assert\n", fru_name, cb_pwr_fault_B[i]);
+      }
+    }
+    i2c_cdev_slave_close(i2cfd);
+  }
+}
+
 // GPIO table to be monitored
 static struct gpiopoll_config gpios_plat_list[] = {
   // shadow, description, edge, handler, oneshot
@@ -304,6 +399,7 @@ static struct gpiopoll_config gta_gpios_plat_list[] = {
   {FM_BIOS_POST_CMPLT,          "SGPIO146",  GPIO_EDGE_BOTH,    post_comp_event_handler,    post_comp_init_handler},
   {APML_CPU0_ALERT,             "SGPIO10",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
   {APML_CPU1_ALERT,             "SGPIO12",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
+  {PWR_FALUT_ALERT,             "SGPIO170",  GPIO_EDGE_RISING,  pwr_fault_event_handler,    NULL},
   // Add new GPIO from here
   // The reserved space will be used for optional GPIO pins in specific system config
   {RESERVED_GPIO,            RESERVED_GPIO,  GPIO_EDGE_NONE,    NULL,                       NULL},

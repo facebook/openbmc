@@ -1436,8 +1436,7 @@ int read_frb3(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static
 int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret = 0, fd_lock = -1;
-  const char lock_path[MAX_VALUE_LEN] = "/tmp/pal_rt_lock";
+  int ret = 0, lock = -1;
   const char shadow[MAX_VALUE_LEN] = "RST_PERST_CPUx_SWB_N";
   char rev_id[MAX_VALUE_LEN] = {0};
   float val = 0;
@@ -1462,8 +1461,8 @@ int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     }
   }
 
-  fd_lock = pal_lock(lock_path);
-  if (fd_lock < 0) {
+  if ((lock = mb_retimer_lock()) < 0) {
+    syslog(LOG_WARNING, "%s: mb_retimer_lock failed", __func__);
     return READING_SKIP;
   }
 
@@ -1488,18 +1487,17 @@ int read_retimer_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   *value = val;
 
 err_exit:
-  pal_unlock(fd_lock);
+  mb_retimer_unlock(lock);
   return ret;
 }
 
 static
 int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
-  const char lock_path[MAX_VALUE_LEN] = "/tmp/pal_rt_lock";
   const int HEARTBEAT = 1;
   const int CODE_LOAD = 1 << 1;
   char rev_id[32] = {0};
   char fru_name[32] = {0};
-  int ret = 0, fd_lock = -1;
+  int ret = 0, lock = -1;
   int retimer_id = sensor_map[fru].map[sensor_num].id;
   uint8_t health = 0;
   *value = 0;
@@ -1520,12 +1518,12 @@ int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
     }
   }
 
-  fd_lock = pal_lock(lock_path);
-  if (fd_lock < 0) {
+  if ((lock = mb_retimer_lock()) < 0) {
+    syslog(LOG_WARNING, "%s: mb_retimer_lock failed", __func__);
     return READING_SKIP;
   }
   ret = AriesGetHealth(fru_name, retimer_id, &health);
-  pal_unlock(fd_lock);
+  mb_retimer_unlock(lock);
 
   if ((ret != ARIES_SUCCESS) || (health != (HEARTBEAT | CODE_LOAD))) {
     if (gpio_get_value_by_shadow("RST_PERST_CPUx_SWB_N") == GPIO_VALUE_HIGH &&

@@ -429,43 +429,14 @@ int read_cpld_health(uint8_t fru, uint8_t sensor_num, float *value) {
   return 0;
 }
 
-int pal_lock(const char *lock_fp)
-{
-  int fd;
-
-  fd = open(lock_fp, O_RDONLY | O_CREAT, 0666);
-  if (fd < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "%s: open lock_fp fail: %s, %d", __func__, lock_fp, fd );
-#endif
-    return -1;
-  }
-
-  if (pal_flock_retry(fd) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "%s: lock fail: %s, errno = %d", __func__, lock_fp, errno);
-#endif
-    close(fd);
-    return -1;
-  }
-
-  return fd;
+int mb_retimer_lock(void) {
+  return single_instance_lock_blocked("mb_retimer");
 }
 
-int pal_unlock(int fd)
-{
-  if (fd < 0) {
-    return -1;
+void mb_retimer_unlock(int lock) {
+  if (lock >= 0) {
+    single_instance_unlock(lock);
   }
-
-  if (pal_unflock_retry(fd) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "%s: unlock fail, errno = %d", __func__, errno);
-#endif
-  }
-
-  close(fd);
-  return 0;
 }
 
 int

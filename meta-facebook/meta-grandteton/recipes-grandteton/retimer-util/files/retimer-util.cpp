@@ -4,84 +4,55 @@
 #include <syslog.h>
 #include <iostream>
 
-#define RT_LOCK "/tmp/pal_rt_lock"
-#define MAX_RETRY 10
-
 #define HEARTBEAT 0x1
 #define CODE_LOAD 0x2
 
 static void do_margin(std::string fru, int id, std::string& type, std::string& file) {
-  int fd_lock = -1, retry = 0;
+  int lock = -1;
 
   if(fru == "hgx") {
     AriesMargin(fru.c_str(), id, type.c_str(), file.c_str());
     return;
   }
 
-  while (fd_lock < 0 && retry < MAX_RETRY) 
-  {
-    if (retry == MAX_RETRY) {
-      std::cout<< "Other process are using" << std::endl;
-      return;
-    } 
-    
-    fd_lock = pal_lock(RT_LOCK);
-    retry++;
-    sleep(1);
+  if ((lock = mb_retimer_lock()) < 0) {
+    std::cout<< "Cannot get retimer lock" << std::endl;
+    return;
   }
-
   AriesMargin(fru.c_str(), id, type.c_str(), file.c_str());
-
-  pal_unlock(fd_lock);
+  mb_retimer_unlock(lock);
 }
 
 static void do_print_link (std::string fru, int id) {
-  int fd_lock = -1, retry = 0;
+  int lock = -1;
 
   if(fru == "hgx") {
     AriesPrintState(fru.c_str(), id);
     return;
   }
 
-  while (fd_lock < 0 && retry < MAX_RETRY)
-  {
-    if (retry == MAX_RETRY) {
-      std::cout<< "Other process are using" << std::endl;
-      return;
-    }
-
-    fd_lock = pal_lock(RT_LOCK);
-    retry++;
-    sleep(1);
+  if ((lock = mb_retimer_lock()) < 0) {
+    std::cout<< "Cannot get retimer lock" << std::endl;
+    return;
   }
-
   AriesPrintState(fru.c_str(), id);
-
-  pal_unlock(fd_lock);
+  mb_retimer_unlock(lock);
 }
 
 static void do_print_health (std::string fru, int id) {
-  int fd_lock = -1, retry = 0;
+  int lock = -1;
   uint8_t health = 0;
 
   if(fru == "hgx") {
     AriesGetHealth(fru.c_str(), id, &health);
   }
   else {
-    while (fd_lock < 0 && retry < MAX_RETRY)
-    {
-      if (retry == MAX_RETRY) {
-        std::cout<< "Other process are using" << std::endl;
-        return;
-      }
-
-      fd_lock = pal_lock(RT_LOCK);
-      retry++;
-      sleep(1);
+    if ((lock = mb_retimer_lock()) < 0) {
+      std::cout<< "Cannot get retimer lock" << std::endl;
+      return;
     }
-
     AriesGetHealth(fru.c_str(), id, &health);
-    pal_unlock(fd_lock);
+    mb_retimer_unlock(lock);
   }
 
   std::cout<< "heartbeat: "

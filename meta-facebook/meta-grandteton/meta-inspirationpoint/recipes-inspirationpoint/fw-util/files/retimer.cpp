@@ -1,14 +1,12 @@
 #include "fw-util.h"
 #include <sstream>
+#include <syslog.h>
 #include <unistd.h>
 #include <openbmc/pal.h>
 #include <openbmc/aries_common.h>
 #include <openbmc/libgpio.h>
 #include "vr_fw.h"
 #include <openbmc/kv.h>
-
-#define MAX_RETRY 10
-#define RT_LOCK "/tmp/pal_rt_lock"
 
 const char * RST_PESET = "RST_PERST_CPUx_SWB_N";
 
@@ -24,24 +22,18 @@ class RetimerComponent : public Component {
       : Component(fru, comp), _bus(bus) {}
 
     int update(std::string image) {
-      int ret = -1, retry = 0, fd_lock;
+      int ret = -1, lock = -1;
+
       if(gpio_get_value_by_shadow(RST_PESET) != GPIO_VALUE_HIGH) {
          return FW_STATUS_FAILURE;
       }
 
-      fd_lock = pal_lock(RT_LOCK);
-      while (fd_lock < 0 && retry < MAX_RETRY) {
-        fd_lock = pal_lock(RT_LOCK);
-        retry++;
-        sleep(1);
-      }
-
-      if (retry == MAX_RETRY) {
+      if ((lock = mb_retimer_lock()) < 0) {
+        syslog(LOG_WARNING, "%s: mb_retimer_lock failed", __func__);
         return FW_STATUS_FAILURE;
       }
-
       ret = AriestFwUpdate(_bus, addr, image.c_str());
-      pal_unlock(fd_lock);
+      mb_retimer_unlock(lock);
 
       if (ret) {
         return FW_STATUS_FAILURE;
@@ -51,7 +43,7 @@ class RetimerComponent : public Component {
     }
 
     int get_version(json& j) {
-      int ret = -1, retry =0, fd_lock;
+      int ret = -1, lock = -1;
       uint16_t ver[3] = {0};
 
       if(gpio_get_value_by_shadow(RST_PESET) != GPIO_VALUE_HIGH) {
@@ -59,19 +51,12 @@ class RetimerComponent : public Component {
           return FW_STATUS_FAILURE;
       }
 
-      fd_lock = pal_lock(RT_LOCK);
-      while (fd_lock < 0 && retry < MAX_RETRY) {
-        fd_lock = pal_lock(RT_LOCK);
-        retry++;
-        sleep(1);
+      if ((lock = mb_retimer_lock()) < 0) {
+        syslog(LOG_WARNING, "%s: mb_retimer_lock failed", __func__);
+        return FW_STATUS_FAILURE;
       }
-
-      if (ret == MAX_RETRY) {
-          return FW_STATUS_FAILURE;
-      }
-
       ret = AriesGetFwVersion(_bus, addr, ver);
-      pal_unlock(fd_lock);
+      mb_retimer_unlock(lock);
 
       if (ret) {
         j["VERSION"] = "NA";

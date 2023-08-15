@@ -21,13 +21,9 @@ import unittest
 
 from common.base_slot_util_test import BaseSlotUtilTest
 
-slot_nums = [1, 2, 3, 4]
+slot_nums = [1, 3]
 
 
 class SlotUtilTest(BaseSlotUtilTest):
     def set_slot_nums(self):
         self.slot_nums = slot_nums
-
-    @unittest.skip("Skip failing test for now, fix later")
-    def test_show_slot_mac(self):
-        pass

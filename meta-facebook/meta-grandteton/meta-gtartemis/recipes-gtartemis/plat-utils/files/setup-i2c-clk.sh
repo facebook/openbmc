@@ -1,4 +1,6 @@
-# Copyright 2023-present Facebook. All Rights Reserved.
+#!/bin/bash
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,19 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+. /usr/local/fbpackages/utils/ast-functions
 
-LOCAL_URI += " \
-    file://sol-util \
-    file://usb-util \
-    file://setup-server-uart.sh \
-    file://setup-snr-mon.sh \
-    file://setup-i2c-clk.sh \
-    "
+GTA_MB_EVT_BORAD_ID="3"
+mbrev=$(kv get mb_rev)
 
-binfiles += " usb-util setup-i2c-clk.sh "
-
-do_install:append() {
-  install -m 755 setup-i2c-clk.sh ${D}${sysconfdir}/init.d/setup-i2c-clk.sh
-  update-rc.d -r ${D} setup-i2c-clk.sh start 90 5 .
-}
+if [ "$mbrev" -le "$GTA_MB_EVT_BORAD_ID" ]
+then
+	# set MEB BIC i2c clk frequency to 100K
+	val=$($DEVMEM 0x1e78a504)
+	val=$((val+2))
+	$DEVMEM 0x1e78a504 32 $val
+fi

@@ -239,9 +239,25 @@ AriesErrorType AriesGetFwVersion(int bus, int addr, uint16_t* ver)
 
   asteraLogSetLevel(2);
 
-  rc = SetupAriesDevice(&ariesDevice, &i2cDriver, bus, addr);
-  CHECK_SUCCESS(rc);
+  i2cDriver.handle = asteraI2COpenConnection(bus, addr);
+  if (i2cDriver.handle < 0) {
+    CHECK_SUCCESS(ARIES_I2C_OPEN_FAILURE);
+  }
 
+  i2cDriver.slaveAddr = addr;
+  i2cDriver.pecEnable = ARIES_I2C_PEC_DISABLE;
+  i2cDriver.i2cFormat = ARIES_I2C_FORMAT_ASTERA;
+  i2cDriver.lock = 0;
+  i2cDriver.lockInit = 1;
+
+  ariesDevice.i2cDriver = &i2cDriver;
+  ariesDevice.i2cBus = bus;
+  ariesDevice.partNumber = ARIES_PTX16;
+
+  rc = ariesFWStatusCheck(&ariesDevice);
+  CHECK_ERR_RETURN(rc, i2cDriver.handle);
+
+  asteraI2CCloseConnection(i2cDriver.handle);
   ver[0] = ariesDevice.fwVersion.major;
   ver[1] = ariesDevice.fwVersion.minor;
   ver[2] = ariesDevice.fwVersion.build;

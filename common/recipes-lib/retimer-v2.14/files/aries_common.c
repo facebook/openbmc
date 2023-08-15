@@ -209,24 +209,6 @@ AriesErrorType AriestFwUpdate(int bus, int addr, const char* fp)
   rc = ariesUpdateFirmware(&ariesDevice, fp, ARIES_FW_IMAGE_FORMAT_IHX);
   CHECK_ERR_LOGGING(rc);
 
-  // Reboot device to check if FW version was applied
-  // Assert HW reset
-  ASTERA_INFO("Performing Retimer HW reset ...");
-  rc = ariesSetHwReset(&ariesDevice, 1);
-  CHECK_ERR_LOGGING(rc);
-  // Wait 10 ms before de-asserting
-  usleep(10000);
-  // De-assert HW reset
-  rc = ariesSetHwReset(&ariesDevice, 0);
-  CHECK_ERR_LOGGING(rc);
-  usleep(15000000);
-
-  rc = ariesInitDevice(&ariesDevice, addr);
-  CHECK_ERR_RETURN(rc, i2cDriver.handle);
-
-  ASTERA_INFO("Updated FW Version is %d.%d.%d", ariesDevice.fwVersion.major,
-                ariesDevice.fwVersion.minor, ariesDevice.fwVersion.build);
-
   asteraI2CCloseConnection(i2cDriver.handle);
   return ARIES_SUCCESS;
 }

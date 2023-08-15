@@ -322,9 +322,9 @@ int M2DevComponent::get_version(json& j) {
 namespace pldm_signed_info
 {
 GTSwbBicFwComponent acb_bic("cb", "bic", ACB_BIC_BUS, ACB_BIC_EID, BIC_COMP,
-    signed_header_t(gt_swb_comps, BIC_COMP, ASPEED));
+    signed_header_t(gta_acb_bic_comps, BIC_COMP, ASPEED));
 GTSwbBicFwComponent meb_bic("mc", "bic", MEB_BIC_BUS, MEB_BIC_EID, BIC_COMP,
-    signed_header_t(gt_swb_comps, BIC_COMP, ASPEED));
+    signed_header_t(gta_meb_bic_comps, BIC_COMP, ASPEED));
 AcbPeswFwComponent acb_pesw0("cb", "pesw0", ACB_BIC_BUS, ACB_BIC_EID, PEX0_COMP);
 AcbPeswFwComponent acb_pesw1("cb", "pesw1", ACB_BIC_BUS, ACB_BIC_EID, PEX1_COMP);
 }

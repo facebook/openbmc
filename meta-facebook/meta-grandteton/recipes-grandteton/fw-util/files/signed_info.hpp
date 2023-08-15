@@ -8,6 +8,7 @@
 namespace signed_info {
 
   const std::string PLATFORM_NAME = "Grand Teton";
+  const std::string GTA_PLATFORM_NAME = "Artemis";
 
   // board id
   enum {
@@ -18,6 +19,13 @@ namespace signed_info {
     VPDB,
   };
 
+  // GTA board id
+  enum {
+    GTA_MB  = 0x00,
+    GTA_MEB,
+    GTA_ACB,
+  };
+
   // stage id
   enum {
     POC = 0x00,
@@ -25,6 +33,16 @@ namespace signed_info {
     DVT,
     PVT,
     MP,
+  };
+
+  // GTA stage id
+  enum {
+    GTA_POC = 0x00,
+    GTA_EVT1,
+    GTA_EVT2,
+    GTA_DVT,
+    GTA_PVT,
+    GTA_MP,
   };
 
   // component id
@@ -61,7 +79,9 @@ namespace pldm_signed_info {
   };
 
   const std::unordered_map<std::string, uint8_t> board_map = {
-    {"SwitchBoard", signed_info::SWB}
+    {"SwitchBoard", signed_info::SWB},
+    {"ColterBay", signed_info::GTA_ACB},
+    {"MooseCreek", signed_info::GTA_MEB}
   };
 
   const std::unordered_map<std::string, uint8_t> stage_map = {
@@ -69,7 +89,13 @@ namespace pldm_signed_info {
     {"EVT", signed_info::EVT},
     {"DVT", signed_info::DVT},
     {"PVT", signed_info::PVT},
-    {"MP",  signed_info::MP}
+    {"MP",  signed_info::MP},
+    {"GTA_POC", signed_info::GTA_POC},
+    {"GTA_EVT1", signed_info::GTA_EVT1},
+    {"GTA_EVT2", signed_info::GTA_EVT2},
+    {"GTA_DVT", signed_info::GTA_DVT},
+    {"GTA_PVT", signed_info::GTA_PVT},
+    {"GTA_MP",  signed_info::GTA_MP}
   };
 
   const std::unordered_map<std::string, uint8_t> vendor_map = {
@@ -96,6 +122,22 @@ namespace pldm_signed_info {
     signed_info::PLATFORM_NAME,
     signed_info::SWB,
     signed_info::PVT,
+    0x00, // component id
+    0x00, // vendor id
+  };
+
+  const signed_header_t gta_acb_bic_comps = {
+    signed_info::GTA_PLATFORM_NAME,
+    signed_info::GTA_ACB,
+    signed_info::GTA_DVT,
+    0x00, // component id
+    0x00, // vendor id
+  };
+
+  const signed_header_t gta_meb_bic_comps = {
+    signed_info::GTA_PLATFORM_NAME,
+    signed_info::GTA_MEB,
+    signed_info::GTA_DVT,
     0x00, // component id
     0x00, // vendor id
   };

@@ -91,48 +91,48 @@ case "$sku_type" in
    "0")
       if [ $ocp3nic -eq 1 ]; then
         echo "4 server, OCP3 NIC"
-        slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-4)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-        slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec-3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-        slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec-2)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-        slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//');
+        slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-4)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec-3)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec-2)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//');
       else
         echo "4 server, OCP2 NIC"
-        slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-        slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-        slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-        slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
       fi
    ;;
    "fffd")
       echo "Half Dome, OCP3 NIC"
-      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
    "fffe")
       echo "Yosemite V3.5, OCP3 NIC"
-      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
    "ffff")
       echo "Yosemite V3, OCP3 NIC"
-      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
    "1028")
       echo "2server + 2GPv2, OCP2 NIC"
-      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
    *)
       echo "unknown config - use default"
-      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
 esac
 

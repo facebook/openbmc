@@ -32,6 +32,7 @@ LOCAL_URI = " \
     file://psu-update-aei.py \
     file://orv3-device-update-mailbox.py \
     file://rpu-update-delta-plc.py \
+    file://rpu-update-delta-hex.py \
     file://srec.py \
     file://hexfile.py \
     "

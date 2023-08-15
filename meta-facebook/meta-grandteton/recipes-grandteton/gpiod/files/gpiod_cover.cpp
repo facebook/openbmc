@@ -43,6 +43,7 @@ static pthread_mutex_t caterr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void err_caterr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 void cpld_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
+void cpld_event_init(gpiopoll_pin_t *desc, gpio_value_t value);
 
 // GPIO table to be monitored
 struct gpiopoll_config gpios_plat_list[] = {
@@ -74,7 +75,7 @@ struct gpiopoll_config gpios_plat_list[] = {
   {FM_LAST_PWRGD,           "SGPIO116",       GPIO_EDGE_BOTH,    pwr_good_handler,           pwr_good_init},
   {FM_CPU0_SKTOCC,          "SGPIO112",       GPIO_EDGE_BOTH,    sgpio_event_handler,        cpu_skt_init},
   {FM_CPU1_SKTOCC,          "SGPIO114",       GPIO_EDGE_BOTH,    sgpio_event_handler,        cpu_skt_init},
-  {CPLD_POWER_FAIL_ALERT,   "SGPI240",        GPIO_EDGE_RISING,  cpld_event_handler,         NULL},
+  {CPLD_POWER_FAIL_ALERT,   "SGPI240",        GPIO_EDGE_RISING,  cpld_event_handler,         cpld_event_init},
   {HMC_READY,               "SGPIO64",        GPIO_EDGE_BOTH,    hmc_ready_handler,          hmc_ready_init},
 };
 
@@ -181,50 +182,50 @@ dump_cpld_reg(void* arg) {
   uint8_t bus = I2C_BUS_7;
   unsigned long long flag=0;
   const char *power_fail_log[] = {
-    "PSU_PWR_FAULT",
-    "BMC_PWR_FAULT",
-    "PCH_PWR_FAULT",
-    "PCH_PWR_FAULT_PVNN",
-    "PCH_PWR_FAULT_P1V05",
-    "MEM0_PWR_FAULT",
-    "MEM1_PWR_FAULT",
     "CPU_MEM_PWR_FAULT",
+    "MEM1_PWR_FAULT",
+    "MEM0_PWR_FAULT",
+    "PCH_PWR_FAULT_P1V05",
+    "PCH_PWR_FAULT_PVNN",
+    "PCH_PWR_FAULT",
+    "BMC_PWR_FAULT",
+    "PSU_PWR_FAULT",
 
-    "CPU0_MEM_PWR_FAULT",
-    "CPU0_PVPPHBMFAULT",
-    "CPU0_PVCCFAEHVFAULT",
-    "CPU0_PVCCFAFIVRFAULT",
-    "CPU0_PVCCINFAONFAULT",
-    "CPU0_PVNNMAINFAULT",
-    "CPU0_PVCCINFAULT",
     "CPU0_PVCCDHVFAULT",
+    "CPU0_PVCCINFAULT",
+    "CPU0_PVNNMAINFAULT",
+    "CPU0_PVCCINFAONFAULT",
+    "CPU0_PVCCFAFIVRFAULT",
+    "CPU0_PVCCFAEHVFAULT",
+    "CPU0_PVPPHBMFAULT",
+    "CPU0_MEM_PWR_FAULT",
 
-    "CPU1_MEM_PWR_FAULT",
-    "CPU1_PVPPHBM_FAULT",
-    "CPU1_PVCCFAEHV_FAULT",
-    "CPU1_PVCCFAFIVR_FAULT",
-    "CPU1_PVCCINFAON_FAULT",
-    "CPU1_PVNNMAIN_FAULT",
-    "CPU1_PVCCIN_FAULT",
     "CPU1_PVCCDHV_FAULT",
+    "CPU1_PVCCIN_FAULT",
+    "CPU1_PVNNMAIN_FAULT",
+    "CPU1_PVCCINFAON_FAULT",
+    "CPU1_PVCCFAFIVR_FAULT",
+    "CPU1_PVCCFAEHV_FAULT",
+    "CPU1_PVPPHBM_FAULT",
+    "CPU1_MEM_PWR_FAULT",
 
-    "A4/C4/A5/C5_FAULT",
-    "A2/C2/A3/C3_FAULT",
-    "A6/C6/A7/C7_FAULT",
-    "A0/C0/A1/C1_FAULT",
-    "B0/D0/B1/D1_FAULT",
-    "B2/D2/B3/D3_FAULT",
-    "B4/D4/B5/D5_FAULT",
     "B6/D6/B7/D7_FAULT",
+    "B4/D4/B5/D5_FAULT",
+    "B2/D2/B3/D3_FAULT",
+    "B0/D0/B1/D1_FAULT",
+    "A0/C0/A1/C1_FAULT",
+    "A6/C6/A7/C7_FAULT",
+    "A2/C2/A3/C3_FAULT",
+    "A4/C4/A5/C5_FAULT",
 
-    "HPDB_HSC_PWRGD_ISO_R_FAULT",
-    "GPU_FPGA_READY_ISO_R_FAULT",
-    "FM_GPU_PWRGD_ISO_R_FAULT",
-    "GPU_PWR_FAULT",
-    "SWB_HSC_PWRGD_ISO_R_FAULT",
-    "FM_SWB_PWRGD_ISO_R_FAULT",
-    "RESERVE",
     "SWB_PWR_FAULT",
+    "RESERVE",
+    "FM_SWB_PWRGD_ISO_R_FAULT",
+    "SWB_HSC_PWRGD_ISO_R_FAULT",
+    "GPU_PWR_FAULT",
+    "FM_GPU_PWRGD_ISO_R_FAULT",
+    "GPU_FPGA_READY_ISO_R_FAULT",
+    "HPDB_HSC_PWRGD_ISO_R_FAULT",
   };
 
 
@@ -274,6 +275,16 @@ void cpld_get_fail_reg (void) {
   if (pthread_create(&tid_dump_cpld_reg, NULL, dump_cpld_reg, 0)) {
     syslog(LOG_WARNING, "pthread_create for dump_cpld_reg");
   }
+}
+
+
+void
+cpld_event_init(gpiopoll_pin_t *desc, gpio_value_t value) {
+  if (!sgpio_valid_check())
+    return;
+
+  if(value == GPIO_VALUE_HIGH)
+    cpld_get_fail_reg();
 }
 
 void

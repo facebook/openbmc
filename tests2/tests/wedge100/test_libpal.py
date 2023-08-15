@@ -17,10 +17,15 @@
 # Boston, MA 02110-1301 USA
 #
 
+import unittest
+
 import common.base_libpal_test
+from utils.test_utils import qemu_check
 
 
 class LibPalTest(common.base_libpal_test.LibPalTest):
     PLATFORM_NAME = "wedge100"
 
-    pass  # just run common tests
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_pal_get_sensor_name(self):
+        super().test_pal_get_sensor_name()

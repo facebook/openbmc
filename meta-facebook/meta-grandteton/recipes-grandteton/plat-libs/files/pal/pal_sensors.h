@@ -17,6 +17,8 @@
 
 #define KEY_ACB_CARD_CONFIG "acb_card_config"
 
+#define SENSOR_NUM_BIC_ALERT 0x10
+
 typedef struct {
   float ucr_thresh;
   float unc_thresh;

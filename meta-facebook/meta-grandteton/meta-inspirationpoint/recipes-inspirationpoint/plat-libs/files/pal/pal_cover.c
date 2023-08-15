@@ -8,6 +8,7 @@
 #include <openbmc/kv.h>
 #include "pal.h"
 
+#define ERROR_LOG_MAX_LENGTH 128
 
 int
 parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
@@ -56,8 +57,112 @@ parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
 }
 
 int
+pal_parse_bic_sensor_alert_event(uint8_t fru, uint8_t *event_data, char *error_log)
+{
+  if (pal_is_artemis() != true) {
+    return -1;
+  }
+
+  enum EVENT_TYPE {
+    CB_P0V8_VR_ALERT = 0x01,
+    CB_POWER_BRICK_ALERT = 0x02,
+    CB_P1V25_MONITOR_ALERT = 0x03,
+    CB_P12V_ACCL1_MONITOR_ALERT = 0x04,
+    CB_P12V_ACCL2_MONITOR_ALERT,
+    CB_P12V_ACCL3_MONITOR_ALERT,
+    CB_P12V_ACCL4_MONITOR_ALERT,
+    CB_P12V_ACCL5_MONITOR_ALERT,
+    CB_P12V_ACCL6_MONITOR_ALERT,
+    CB_P12V_ACCL7_MONITOR_ALERT,
+    CB_P12V_ACCL8_MONITOR_ALERT,
+    CB_P12V_ACCL9_MONITOR_ALERT,
+    CB_P12V_ACCL10_MONITOR_ALERT,
+    CB_P12V_ACCL11_MONITOR_ALERT,
+    CB_P12V_ACCL12_MONITOR_ALERT,
+  };
+
+  enum SOURCE_TYPE {
+    MAIN_SOURCE,
+    SECOND_SOURCE,
+  };
+
+  uint8_t event_dir = event_data[2] & 0x80;
+  uint8_t *event_info = &event_data[3];
+  char event_name[64] = { 0 };
+
+  switch (event_info[0]) {
+    case CB_P0V8_VR_ALERT:
+      snprintf(event_name, sizeof(event_name), "P0V8 VR Alert");
+      break;
+    case CB_POWER_BRICK_ALERT:
+      snprintf(event_name, sizeof(event_name), "Power Brick Alert");
+
+      switch (event_info[1]) {
+      case MAIN_SOURCE:
+        strcat(event_name, " (Device: Q50SN120A1)");
+        break;
+      case SECOND_SOURCE:
+        strcat(event_name, " (Device: BMR351)");
+        break;
+      default:
+        strcat(event_name, " (Device: Unknown)");
+        break;
+      }
+      break;
+    case CB_P1V25_MONITOR_ALERT:
+      snprintf(event_name, sizeof(event_name), "P1V25 Monitor Alert");
+
+      switch (event_info[1]) {
+      case MAIN_SOURCE:
+        strcat(event_name, " (Device: SQ52205)");
+        break;
+      case SECOND_SOURCE:
+        strcat(event_name, " (Device: INA233)");
+        break;
+      default:
+        strcat(event_name, " (Device: Unknown)");
+        break;
+      }
+      break;
+    case CB_P12V_ACCL1_MONITOR_ALERT:
+    case CB_P12V_ACCL2_MONITOR_ALERT:
+    case CB_P12V_ACCL3_MONITOR_ALERT:
+    case CB_P12V_ACCL4_MONITOR_ALERT:
+    case CB_P12V_ACCL5_MONITOR_ALERT:
+    case CB_P12V_ACCL6_MONITOR_ALERT:
+    case CB_P12V_ACCL7_MONITOR_ALERT:
+    case CB_P12V_ACCL8_MONITOR_ALERT:
+    case CB_P12V_ACCL9_MONITOR_ALERT:
+    case CB_P12V_ACCL10_MONITOR_ALERT:
+    case CB_P12V_ACCL11_MONITOR_ALERT:
+    case CB_P12V_ACCL12_MONITOR_ALERT:
+      snprintf(event_name, sizeof(event_name), "P12V ACCL%d Monitor Alert", (event_info[0] - CB_P12V_ACCL1_MONITOR_ALERT + 1));
+
+      switch (event_info[1]) {
+      case MAIN_SOURCE:
+        strcat(event_name, " (Device: INA233)");
+        break;
+      case SECOND_SOURCE:
+        strcat(event_name, " (Device: SQ52205)");
+        break;
+      default:
+        strcat(event_name, " (Device: Unknown)");
+        break;
+      }
+      break;
+    default:
+      return -1;
+  }
+
+  snprintf(error_log, ERROR_LOG_MAX_LENGTH, "%s status(0x%02X%02X%02X) %s", event_name, event_info[0], event_info[1], event_info[2], 
+		  (((event_dir & 0x80) == 0) ? "Assertion" : "Deassertion"));
+  return 0;
+}
+
+int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
+  int ret = 0;
   uint8_t snr_num = sel[11];
   uint8_t *event_data = &sel[10];
   bool parsed = true;
@@ -67,6 +172,12 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
     case MACHINE_CHK_ERR:
       parse_mce_error_sel(fru, event_data, error_log);
       parsed = true;
+      break;
+    case SENSOR_NUM_BIC_ALERT:
+      ret = pal_parse_bic_sensor_alert_event(fru, event_data, error_log);
+      if (ret == 0) {
+        parsed = true;
+      }
       break;
     default:
       parsed = false;

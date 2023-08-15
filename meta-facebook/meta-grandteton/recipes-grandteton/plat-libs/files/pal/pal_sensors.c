@@ -731,6 +731,15 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
 static int
 gt_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
+  if (pal_is_artemis()) {
+    switch (sensor_num) {
+      case SENSOR_NUM_BIC_ALERT:
+        sprintf(name, "BIC SENSOR STATUS");
+        return 0;
+      default:
+        break;
+    }
+  }
 
   return -1;
 }

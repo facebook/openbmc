@@ -1287,8 +1287,8 @@ bic_get_op_board_rev(uint8_t slot_id, uint8_t *rev, uint8_t intf) {
   };
   uint8_t i = 0;
   uint8_t value = 0;
-  uint8_t gpio_expa_rev[3] = {GPIO_OPA_BOARD_REV_0, GPIO_OPA_BOARD_REV_1, GPIO_OPA_BOARD_REV_2};
-  uint8_t gpio_expb_rev[3] = {GPIO_OPB_BOARD_REV_0, GPIO_OPB_BOARD_REV_1, GPIO_OPB_BOARD_REV_2};
+  uint8_t gpio_expa_rev[3] = {GPIO_OPA_BOARD_REV_2, GPIO_OPA_BOARD_REV_1, GPIO_OPA_BOARD_REV_0};
+  uint8_t gpio_expb_rev[3] = {GPIO_OPB_BOARD_REV_2, GPIO_OPB_BOARD_REV_1, GPIO_OPB_BOARD_REV_0};
   uint8_t gpio_index = 0;
   if (rev == NULL) {
     return -1;

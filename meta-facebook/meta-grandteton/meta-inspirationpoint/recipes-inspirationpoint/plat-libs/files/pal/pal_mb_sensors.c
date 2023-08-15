@@ -596,15 +596,14 @@ bail:
 }
 
 static bool is_max11617_chip(void) {
-  uint8_t id;
   static bool val=false;
   static bool cached=false;
+  uint8_t source_id = 0;
 
   if (!cached) {
-    if (pal_get_platform_id(&id))
-      return false;
+    get_comp_source(FRU_MB, MB_HSC_SOURCE, &source_id);
 
-    if (GETBIT(id, 2)) {
+    if (source_id == SECOND_SOURCE) {
        adc_chips = max11617_devs;
        val = true;
     }

@@ -28,5 +28,4 @@ SENSORD_MONITORED_FRUS = "\
         mc \
         mc_cxl1 mc_cxl2 mc_cxl3 mc_cxl4 \
         mc_cxl5 mc_cxl6 mc_cxl7 mc_cxl8 \
-        hsc \
         "

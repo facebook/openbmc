@@ -17,6 +17,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+#MB_HSC_MODULE="1"  # ltc4282/ltc4286
+if kv get mb_hsc_module >/dev/null; then
+  sed -i "2{s/$/ hsc/}" /etc/sv/sensord/run
+fi
 
 kv set mb_polling_status      1
 kv set nic0_polling_status    1

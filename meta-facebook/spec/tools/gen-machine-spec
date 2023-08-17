@@ -159,6 +159,9 @@ def parse_feature_list(machine: argparse.Namespace) -> FeatureList:
                     features[title][subtitle]["status"] = status
             elif line.startswith("  "):
                 if "short" not in features[title][subtitle]:
+                    line = line.lstrip()
+                    if line.startswith("-"):
+                        line = line[2:]
                     features[title][subtitle]["short"] = line
                 else:
                     features[title][subtitle]["short"] = (
@@ -248,7 +251,7 @@ def render_features(output: IOBase, machine: argparse.Namespace) -> None:
                 )
             header.append(subtitle_result + "\n")
             if "short" in subtitle_data:
-                header.append(subtitle_data["short"])
+                header.append("  - " + subtitle_data["short"].strip() + "\n")
         header.append("\n")
 
     for h in header:

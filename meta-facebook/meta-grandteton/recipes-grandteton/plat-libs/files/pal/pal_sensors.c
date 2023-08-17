@@ -910,7 +910,7 @@ pal_sensor_discrete_check(uint8_t fru,
   char name[64];
 
   pal_get_sensor_name(fru, snr_num, name);
-  if (!GETBIT(n_val, 0)) {
+  if (GETBIT(n_val, 0)) {
     syslog(LOG_CRIT, "ASSERT: %s - FRU: %d", name, fru);
   } else {
     syslog(LOG_CRIT, "DEASSERT: %s - FRU: %d", name, fru);

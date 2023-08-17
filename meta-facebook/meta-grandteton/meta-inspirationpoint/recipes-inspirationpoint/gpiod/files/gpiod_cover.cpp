@@ -237,8 +237,8 @@ cpu_prochot_handler_wrapper(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_
   }
 }
 
-static void
-pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+static void*
+delay_pwr_fault_log(void *arg) {
   int i2cfd = 0, ret = -1;
   uint8_t tlen = 0, rlen = 0;
   uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
@@ -249,10 +249,15 @@ pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
   const char *cb_pwr_fault_A[] = {"CB_P3V3_2_PG", "CB_P3V3_1_PG", "CB_PWRGD_P5V_AUX", "CB_PWRGD_P1V2_AUX"};
   const char *cb_pwr_fault_B[] = {"PWRGD_P0V8_2", "PWRGD_P0V8_1", "P1V25_2_PG", "P1V25_1_PG", "P1V8_PEX_PG_R1", "P3V3_2_PG_R2"};
 
+  pthread_detach(pthread_self());
+  /* prevent false alarm when MB CPLD handling Power Fault
+  */
+  msleep(DELAY_LOG_POWER_FAULT_MS);
+
   i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (i2cfd < 0) {
     syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
-    return;
+    goto end;
   }
   tbuf[0] = PWR_FAULT_OFFSET;
   tlen = 1;
@@ -262,32 +267,36 @@ pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
   if (ret < 0 ) {
     syslog(LOG_WARNING, "%s() I2C transfer to MB CPLD failed, RET: %d", __func__, ret);
     i2c_cdev_slave_close(i2cfd);
-    return;
+    goto end;
   }
 
   if ((temp_mb_rbuf & MC_PWR_FAULT_MASK) == MC_PWR_FAULT_MASK) {
-    // POWER FAULT on MC
-    i2cfd = i2c_cdev_slave_open(I2C_BUS_69, MC_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
-    if (i2cfd < 0) {
-      syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_69);
-      return;
-    }
-    tbuf[0] = MC_PWR_FAULT_OFFSET;
-    tlen = 1;
-    rlen = 1;
-    ret = i2c_rdwr_msg_transfer(i2cfd, MC_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "%s() I2C transfer to MC CPLD failed, RET: %d", __func__, ret);
-      i2c_cdev_slave_close(i2cfd);
-      return;
-    }
     pal_get_fru_name(FRU_MEB, fru_name);
-    for (int i = 0; i < BITS_PER_BYTE; i ++) {
-      if (GETBIT(rbuf[0], i)) {
-        syslog(LOG_CRIT, "%s: Power Fault Event: %s Assert\n", fru_name, mc_pwr_fault[i]);
+    if ((temp_mb_rbuf & MC_PWR_TRAY_REMOVE_MASK) == MC_PWR_TRAY_REMOVE_MASK) {
+      syslog(LOG_CRIT, "%s: Power Fault Event is cauased by Tray removed\n", fru_name);
+    } else {
+      // POWER FAULT on MC
+      i2cfd = i2c_cdev_slave_open(I2C_BUS_69, MC_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+      if (i2cfd < 0) {
+        syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_69);
+        goto end;
       }
+      tbuf[0] = MC_PWR_FAULT_OFFSET;
+      tlen = 1;
+      rlen = 1;
+      ret = i2c_rdwr_msg_transfer(i2cfd, MC_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() I2C transfer to MC CPLD failed, RET: %d", __func__, ret);
+        i2c_cdev_slave_close(i2cfd);
+        goto end;
+      }
+      for (int i = 0; i < BITS_PER_BYTE; i ++) {
+        if (GETBIT(rbuf[0], i)) {
+          syslog(LOG_CRIT, "%s: Power Fault Event: %s Assert\n", fru_name, mc_pwr_fault[i]);
+        }
+      }
+      i2c_cdev_slave_close(i2cfd);
     }
-    i2c_cdev_slave_close(i2cfd);
   }
 
   if ((temp_mb_rbuf & CB_PWR_FAULT_MASK) == CB_PWR_FAULT_MASK) {
@@ -295,7 +304,7 @@ pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
     i2cfd = i2c_cdev_slave_open(I2C_BUS_11, CB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
     if (i2cfd < 0) {
       syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_11);
-      return;
+      goto end;
     }
     tbuf[0] = CB_PWR_FAULT_A_OFFSET;
     tlen = 1;
@@ -304,7 +313,7 @@ pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
     if (ret < 0) {
       syslog(LOG_WARNING, "%s() I2C transfer to CB CPLD failed, RET: %d", __func__, ret);
       i2c_cdev_slave_close(i2cfd);
-      return;
+      goto end;
     }
     pal_get_fru_name(FRU_ACB, fru_name);
     for (int i = 0; i < BITS_PER_BYTE; i ++) {
@@ -320,7 +329,7 @@ pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
     if (ret < 0) {
       syslog(LOG_WARNING, "%s() I2C transfer to CB CPLD failed, RET: %d", __func__, ret);
       i2c_cdev_slave_close(i2cfd);
-      return;
+      goto end;
     }
     for (int i = 0; i < BITS_PER_BYTE; i ++) {
       if (GETBIT(rbuf[0], i)) {
@@ -328,6 +337,17 @@ pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
       }
     }
     i2c_cdev_slave_close(i2cfd);
+  }
+end:
+  pthread_exit(NULL);
+}
+
+static void
+pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  pthread_t tid_delay_pwr_fault_log;
+
+  if (pthread_create(&tid_delay_pwr_fault_log, NULL, delay_pwr_fault_log, NULL) < 0) {
+    syslog(LOG_WARNING, "%s Create thread failed!\n", __func__);
   }
 }
 

@@ -17,6 +17,7 @@ struct delayed_prochot_log {
 };
 
 #define DELAY_LOG_CPU_PROCHOT_MS 100
+#define DELAY_LOG_POWER_FAULT_MS 100
 
 bool server_power_check(uint8_t power_on_time);
 

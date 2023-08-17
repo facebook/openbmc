@@ -618,6 +618,7 @@ enum GTA_MB_CPLD {
   PWR_FAULT_OFFSET = 0x0D,
   MC_PWR_FAULT_MASK = 0x01,
   CB_PWR_FAULT_MASK = 0x02,
+  MC_PWR_TRAY_REMOVE_MASK = 0x04,
 };
 
 /* Artemis End */

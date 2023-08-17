@@ -1,0 +1,37 @@
+Firmware Update:
+  BIOS Update:
+    file: bios-update.md
+    priority: P1
+    short: Update the BIOS.
+POST Codes:
+  POST Code History:
+    file: history.md
+    priority: P0
+    short: Capture POST codes and preserve history.
+  Loop Detection:
+    file: loop-detection.md
+    priority: P3
+    short: Identify POST code loops and log event.
+Configuration:
+  CMOS Reset:
+    file: cmos-reset.md
+    priority: P1
+    short: Reset the managed-host CMOS settings.
+  Boot Order:
+    file: boot-order.md
+    priority: P1
+    short: Display and set the current default boot order.
+Diagnostics:
+  Manual Crashdump:
+    file: manual-crashdump.md
+    priority: P1
+    short: Enable manual crashdump collection.
+  Automatic Crashdump:
+    file: automatic-crashdump.md
+    priority: P2
+    short: Enable automatic crashdump collection.
+Miscellaneous:
+  Host Uptime:
+    file: uptime.md
+    priority: P2
+    short: Host(s) to report uptime hourly to the BMC.

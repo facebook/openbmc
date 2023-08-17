@@ -1,0 +1,10 @@
+Power Control:
+  NIC Power Control:
+    file: nic-power-control.md
+    priority: P1
+    short: Power operations of managed NICs.
+Miscellaneous:
+  Server Name Identification:
+    file: server-name-id.md
+    priority: P2
+    short: Provide server DNS name to card location correlation.

@@ -1,0 +1,4 @@
+BMC Hardware Support:
+  Aspeed AST2620:
+    file: aspeed.md
+    priority: P0

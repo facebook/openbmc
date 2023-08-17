@@ -53,12 +53,10 @@
 - [x] P0 **cycle**
   - Power cycle the Host(s).
 - [x] P0 **reset**
-  - TODO: facebookexternal/openbmc.quanta#2616.
   - Reset the host(s).
 - [x] P0 **recovery mode**
   - Put the host(s) into recovery mode.
 - [x] P0 **chassis-cycle**
-  - TODO: facebookexternal/openbmc.quanta#2617.
   - Power cycle entire chassis.
 - [x] P2 **phosphor-state-manager**
   - Manage host(s) state using LF state management provided by
@@ -89,12 +87,18 @@
 - [ ] P4 **Sensor History - Automatic**
   - Automatically store a copy of sensor history when catastrophic events are
     detected.
+- [x] P3 **Sensor calibration**
+  - The sensor value needs to be adjusted/corrected based on the current PWM
+    value.
+- [x] P1 **Airflow Sensor**
+  - Calculate Airflow based on current configuration e.g. use BIOS OEM command
+    to get information on number of DIMMs populated etc.
 
 #### Thermal Management
 
 - [x] P0 **Fan control (Manual)**
   - Implement fan utility to set fan-speed.
-- [x] P1 **Fan Speed Control (Automatic)**
+- [x] P1 **Fan Control (Automatic)**
   - Implement FSC algorithm with user given JSON configuration file with various
     linear/pid profiles for sensors across platform.
 - [x] P3 **FSC configuration update**
@@ -103,15 +107,6 @@
 - [ ] P4 **Persistent FSC configuration**
   - Allow user to update the fan configuration to be persistent across BMC
     reboots.
-- [x] P3 **Sensor calibration**
-  - The sensor value needs to be adjusted/corrected based on the current PWM
-    value.
-- [ ] P3 **Conditional Sensor calibration**
-  - Allow for sensor calibration which can change based on runtime detected
-    configuration changes.
-- [x] P1 **Airflow Sensor**
-  - Calculate Airflow based on current configuration e.g. use BIOS OEM command
-    to get information on number of DIMMs populated etc.
 
 #### Firmware Versions
 

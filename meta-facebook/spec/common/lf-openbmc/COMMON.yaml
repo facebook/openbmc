@@ -1,0 +1,199 @@
+Infrastructure:
+  Yocto:
+    file: yocto.md
+    priority: P0
+    short: Enable machine in meta-layer.
+  U-Boot Porting:
+    file: u-boot-porting.md
+    priority: P0
+    short: Port platform specific U-Boot changes.
+  Kernel Porting:
+    file: kernel.md
+    priority: P0
+    short: Port platform specific Kernel changes.
+  Flash Layout:
+    file: flash-layout.md
+    priority: P0
+    short: Implement the required flash layout.
+  Device Tree:
+    file: device-tree.md
+    priority: P1
+    short: Create Linux device-tree for system.
+  QEMU:
+    file: qemu.md
+    priority: P1
+    short: Create QEMU machine config.
+? BMC Hardware Support
+User Interface:
+  Redfish:
+    file: redfish.md
+    priority: P1
+    short: Provide a Redfish interface for all remote-management APIs.
+  Redfish mTLS:
+    file: redfish-mtls.md
+    priority: P2
+    short: Enable mTLS authentication for Redfish.
+  SSH:
+    file: oob-ssh.md
+    priority: P0
+    short: Provide an auxiliary SSH interface for remote access.
+Network:
+  IPv4:
+    file: ipv4.md
+    priority: P2
+    short: Support IPv4 networks.
+  IPv6:
+    file: ipv6.md
+    priority: P0
+    short: Support IPv6 networks.
+  DHCPv6:
+    file: dhcpv6.md
+    priority: P0
+    short: Obtain IP address using DHCPv6 protocol.
+Power Control:
+  Sled Cycle:
+    file: sled-cycle.md
+    priority: P0
+    short: Power cycle the entire sled.
+  Power Fault Detection:
+    file: power-fault.md
+    priority: P2
+    short: Detect and log all power faults.
+FRU Information:
+  Entity Manager:
+    file: entity-manager.md
+    priority: P0
+    short: "`entity-manager` configuration for all system FRUs."
+  Redfish Inventory:
+    file: redfish-inventory.md
+    priority: P1
+    short: Redfish inventory for all system FRUs.
+  FRU Update:
+    file: fru-update.md
+    priority: P1
+    short: Raw FRU EEPROM write / programming.
+Sensor Information:
+  Sensor Read:
+    file: sensor-read.md
+    priority: P0
+    short: Read the current values and thresholds of all sensors.
+  Sensor History:
+    file: sensor-history.md
+    priority: P4
+    short: Historical mininum, maximum, and average over several time periods.
+  Sensor History - Automatic:
+    file: sensor-history---automatic.md
+    priority: P4
+  Sensor Calibration:
+    file: sensor-calibration.md
+    priority: P3
+    short: Adjust by sensors by calibration values due to physical differences.
+  Airflow Sensor:
+    file: airflow-sensor.md
+    priority: P1
+    short: Calculate airflow based on fan speeds and hardware presence.
+Thermal Management:
+  Manual Fan Control:
+    file: fan-control--manual-.md
+    priority: P0
+    short: Allow manual fan speed setting.
+  Automatic Fan Control:
+    file: fan-control--automatic-.md
+    priority: P1
+    short: Implement automatic fan control algorithm.
+Firmware Update:
+  BMC Update:
+    file: openbmc.md
+    priority: P1
+    short: Update the BMC.
+  Flashy:
+    file: flashy.md
+    priority: P2
+    short: Flashy support for BMC update.
+  CPLD:
+    file: cpld-update.md
+    priority: P2
+    short: Update the CPLDs.
+  VR:
+    file: vr-update.md
+    priority: P2
+    short: Update the VRs.
+Time Sync:
+  Local RTC:
+    file: rtc.md
+    priority: P1
+    short: Enable RTC device and synchronize on BMC reboot.
+  NTP Sync:
+    file: ntp-sync.md
+    priority: P1
+    short: Sync the BMC RTC with the NTP server(s).
+  Time Zone:
+    file: time-zone.md
+    priority: P1
+    short: Always show PST/PDT time.
+BMC Reset and Recovery:
+  SSH Remote Reset:
+    file: ssh-remote-reset.md
+    priority: P0
+    short: Reset the BMC using the `reboot` command.
+  Redfish Remote Reset:
+    file: redfish-remote-reset.md
+    priority: P1
+    short: Reset the BMC using Redfish APIs.
+Front Panel Control:
+  Front Panel Control:
+    file: fpc.md
+    priority: P1
+    short: "TODO: define FPC controls."
+Security:
+  Dual Flash Layout:
+    file: dual-flash-layout.md
+    priority: P1
+    short: Support a dual flash layout and failover.
+  Verified Boot:
+    file: verified-boot.md
+    priority: P3
+    short: "TODO: define verified boot for LF."
+OCP Debug Card:
+  Debug Card Console:
+    file: debug-card-console.md
+    priority: P1
+    short: Support debug console.
+  Critical Sensors Frame:
+    file: critical-sensors.md
+    priority: P2
+    short: Display sensors exceeding thresholds.
+  Critical Logs Frame:
+    file: criticial-logs.md
+    priority: P2
+    short: Display critical log events.
+  System Inventory Frame:
+    file: system-inventory.md
+    priority: P2
+    short: Display system inventory information.
+BMC Health Monitoring:
+  Watchdog Timer:
+    file: watchdog.md
+    priority: P2
+    short: Reboot BMC if userspace hangs (detected via hardware watchdog).
+  Health Monitoring Configuration:
+    file: health-monitoring.md
+    priority: P2
+    short: Enable configurable monitoring of the BMC health.
+  Health Metrics:
+    file: health-metrics.md
+    priority: P2
+    short: Export monitored health metrics over Redfish.
+Miscellaneous:
+  Common Sensor Names:
+    file: common-sensor-names.md
+    priority: P2
+    short: Use the common Meta sensor naming scheme for Redfish.
+  Factory Reset:
+    file: reset-default-factory-settings.md
+    priority: P2
+    short: Allow a reset of all saved settings.
+  openbmc-test-automation:
+    file: openbmc-test-automation.md
+    priority: P2
+    short: Enable testing with upstream openbmc-test-automation package.

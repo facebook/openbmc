@@ -1,8 +1,8 @@
 Each managed host shall be able to configure the power policy between:
 
-- Last Power State (default)
-- Always On
+- Always On (default)
 - Always Off
+- Last Power State
 
 On DBus this shall be implemented with the
 `xyz.openbmc_project.Control.Power.RestorePolicy` interface on a

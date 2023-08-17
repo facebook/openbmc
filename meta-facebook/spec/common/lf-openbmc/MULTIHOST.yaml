@@ -1,0 +1,33 @@
+Power Control:
+  Server Power Control:
+    file: server-power-control.md
+    priority: P0
+    short: Power on/off/reset of the managed server.
+  NIC Reseat:
+    file: nic-reseat.md
+    priority: P2
+Firmware Update:
+  BIC:
+    file: bic-update.md
+    priority: P1
+    short: Update the BICs.
+Time Sync:
+  Host RTC:
+    file: host-rtc-sync.md
+    priority: P1
+    short: Provide inband IPMI command for Host to get the time.
+Configuration:
+  Power Policy:
+    file: set-power-policy.md
+    priority: P2
+    short: Automatic power restore policy.
+BMC Reset and Recovery:
+  Inband IPMI Reset:
+    file: inband-ipmi-reset.md
+    priority: P2
+    short: Reset the BMC using inband IPMI commands.
+Diagnostics:
+  Power On Failure Detection:
+    file: power-on.md
+    priority: P2
+    short: Create a critical event record for any system power-on failures.

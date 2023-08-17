@@ -38,14 +38,11 @@ def find_file(name: str, machine: argparse.Namespace) -> Optional[str]:
     if os.path.isfile(base_file_name):
         return base_file_name
 
-    # Check in the common, third-party and features directories
+    # Check in the common directories
     for t in machine.tags:
         common_file_name = os.path.join("common", t, name)
         if os.path.isfile(common_file_name):
             return common_file_name
-        third_party_file_name = os.path.join("third-party", name)
-        if os.path.isfile(third_party_file_name):
-            return third_party_file_name
     return None
 
 

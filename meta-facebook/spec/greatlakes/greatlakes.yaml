@@ -1,6 +1,7 @@
 name: Greatlakes
 tags:
 - greatlakes
+- intel
 - meta-openbmc
 sections:
   - overview

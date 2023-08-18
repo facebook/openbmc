@@ -41,3 +41,7 @@ class LibPalTest(common.base_libpal_test.LibPalTest):
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_sensor_raw_read(self):
         super().test_sensor_raw_read()
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_pal_get_sensor_name(self):
+        super().test_sensor_raw_read()

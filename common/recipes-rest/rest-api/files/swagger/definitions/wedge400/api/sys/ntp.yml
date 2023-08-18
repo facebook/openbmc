@@ -38,6 +38,8 @@ paths:
                     type: number
                   jitter: 
                     type: number
+                  offset: 
+                    type: number
         404: 
           description: No system peers
           schema: 

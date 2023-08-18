@@ -21,7 +21,6 @@ IMAGE_INSTALL += " \
     mdio-util \
     ipmbd \
     ipmb-util \
-    console-autodiscovery \
     kcsd \
     flashrom \
     jbi \

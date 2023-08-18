@@ -16,14 +16,14 @@
 # Boston, MA 02110-1301 USA
 #
 [Unit]
-Description=Print magic key console auto discovery at boot
+Description=Print serfmon string at bootup
 Wants=setup_i2c.service setup_gpio.service
 After=setup_i2c.service setup_gpio.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/bin/console_autodiscovery.py
+ExecStart=/usr/local/bin/serfmon_show.py
 
 [Install]
 WantedBy=multi-user.target

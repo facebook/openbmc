@@ -1,77 +1,33 @@
 #!/usr/bin/env python3
 
-import argparse
-import json
-import os
-import os.path
 import struct
 import sys
 import time
 import traceback
-from binascii import hexlify
-from contextlib import ExitStack
 
 import hexfile
-from pyrmd import ModbusException, ModbusTimeout, ModbusCRCError
-from pyrmd import RackmonInterface as rmd
+from modbus_update_helper import (
+    auto_int,
+    bh,
+    get_parser,
+    print_perc,
+    retry,
+    suppress_monitoring,
+)
+from pyrmd import (
+    ModbusCRCError,
+    ModbusException,
+    ModbusTimeout,
+    RackmonInterface as rmd,
+)
 
 
-transcript_file = None
-
-
-def auto_int(x):
-    return int(x, 0)
-
-
-def bh(bs):
-    """bytes to hex *str*"""
-    return hexlify(bs).decode("ascii")
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--addr", type=auto_int, required=True, help="PSU Modbus Address")
+parser = get_parser()
 parser.add_argument("--key", type=auto_int, required=True, help="Sec key")
-parser.add_argument(
-    "--statusfile", default=None, help="Write status to JSON file during process"
-)
-parser.add_argument(
-    "--rmfwfile", action="store_true", help="Delete FW file after update completes"
-)
-parser.add_argument(
-    "--transcript",
-    action="store_true",
-    help="Write modbus commands and replies to modbus-transcript.log",
-)
-parser.add_argument("file", help="firmware file")
-
-status = {"pid": os.getpid(), "state": "started"}
-
-statuspath = None
-
-
-def write_status():
-    global status
-    if statuspath is None:
-        return
-    tmppath = statuspath + "~"
-    with open(tmppath, "w") as tfh:
-        tfh.write(json.dumps(status))
-    os.rename(tmppath, statuspath)
-
-
-def status_state(state):
-    global status
-    status["state"] = state
-    write_status()
 
 
 class BadMEIResponse(ModbusException):
     ...
-
-
-def tprint(s):
-    if transcript_file:
-        print(s, file=transcript_file)
 
 
 def mei_command(addr, func_code, mei_type=0x64, data=None, timeout=0):
@@ -192,7 +148,6 @@ def write_data(addr, data):
 
 
 def send_image(addr, fwimg):
-    global statuspath
     total_chunks = sum([len(s) for s in fwimg.segments]) / 8
     sent_chunks = 0
     for s in fwimg.segments:
@@ -206,17 +161,12 @@ def send_image(addr, fwimg):
                 chunk = chunk + (b"\xFF" * (8 - len(chunk)))
             sent_chunks += 1
             # dont fill the restapi log with junk
-            if statuspath is None:
-                print(
-                    "\r[%.2f%%] Sending chunk %d of %d..."
-                    % (sent_chunks * 100.0 / total_chunks, sent_chunks, total_chunks),
-                    end="",
-                )
-            sys.stdout.flush()
+            print_perc(
+                sent_chunks * 100.0 / total_chunks,
+                "Sending chunk %d of %d..." % (sent_chunks, total_chunks),
+            )
             write_data(addr, bytearray(chunk))
-            status["flash_progress_percent"] = sent_chunks * 100.0 / total_chunks
-            write_status()
-        print("")
+        print_perc(100.0, "Sending chunk %d of %d..." % (total_chunks, total_chunks))
 
 
 def reset_psu(addr):
@@ -234,7 +184,6 @@ def reset_psu(addr):
 
 def erase_flash(addr):
     print("Erasing flash... ")
-    sys.stdout.flush()
     response = mei_command(addr, 0x65, timeout=30000)
     expected = struct.pack(">BBBB", addr, 0x2B, 0x71, 0xA5) + (b"\xFF" * 7)
     if response != expected:
@@ -242,62 +191,38 @@ def erase_flash(addr):
         raise BadMEIResponse()
 
 
+@retry(5)
+def program_flash(addr, fwimg):
+    erase_flash(addr)
+    send_image(addr, fwimg)
+    verify_flash(addr)
+
+
 def update_psu(addr, filename, key):
-    status_state("pausing_monitoring")
-    rmd.pause()
-    status_state("parsing_fw_file")
+    print("Parsing Firmware...")
     fwimg = hexfile.load(filename)
-    status_state("pre_handshake_reset")
     # This brings us back to the top of the bootloader state machine if we were
     # in bootloader, and should do nothing otherwise
     reset_psu(addr)
     time.sleep(5.0)
-    status_state("bootloader_handshake")
     enter_bootloader(addr)
     start_programming(addr)
     challenge = get_challenge(addr)
     send_key(addr, delta_seccalckey(challenge, key))
-    for _ in range(5):
-        try:
-            status_state("erase_flash")
-            erase_flash(addr)
-            status_state("flashing")
-            send_image(addr, fwimg)
-            status_state("verifying")
-            verify_flash(addr)
-            break
-        except Exception:
-            print("Problems detected in programming. Retrying from erase")
-    status_state("resetting")
+    program_flash(addr, fwimg)
     reset_psu(addr)
-    status_state("done")
+    time.sleep(30.0)
 
 
 def main():
     args = parser.parse_args()
-    with ExitStack() as stack:
-        global statuspath
-        global transcript_file
-        statuspath = args.statusfile
-        if args.transcript:
-            transcript_file = stack.enter_context(open("modbus-transcript.log", "w"))
-        print("statusfile %s" % statuspath)
+    with suppress_monitoring():
         try:
             update_psu(args.addr, args.file, args.key)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             traceback.print_exc()
-            global status
-            status["exception"] = traceback.format_exc()
-            status_state("failed")
-            rmd.resume()
-            if args.rmfwfile:
-                os.remove(args.file)
             sys.exit(1)
-        rmd.resume()
-        if args.rmfwfile:
-            os.remove(args.file)
-        sys.exit(0)
 
 
 if __name__ == "__main__":

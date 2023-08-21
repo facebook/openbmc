@@ -361,13 +361,18 @@ int main(int argc, char *argv[])
             return -1;
           }
           if (c->is_update_ongoing()) {
-            if (action == "--version") {
-              cerr << "Block getting version due to ongoing upgrade on FRU: " << c->fru() << endl;
-            } else if (action == "--update") {
-              cerr << "Upgrade aborted due to ongoing upgrade on FRU: " << c->fru() << endl;
+            map<string, string> action_err_desc= {
+                {"--version", "Block getting version"},
+                {"--update", "Upgrade aborted"},
+                {"--force", "Force upgrade aborted"},
+            };
+            string err_str("");
+            if (action_err_desc.find(action) != action_err_desc.end()) {
+              err_str.assign(action_err_desc[action] );
             } else {
-              cerr << "Action " << action << "aborted due to ongoing upgrade on FRU: " << c->fru() << endl;
+              err_str.assign("Action " + action + " aborted");
             }
+            cerr << err_str << " due to ongoing upgrade on FRU: " << c->fru()  << endl;
             single_instance_unlock(lfd);
             break;
           }

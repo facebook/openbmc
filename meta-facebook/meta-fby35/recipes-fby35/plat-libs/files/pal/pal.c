@@ -3297,6 +3297,7 @@ static int
 pal_parse_pmic_err_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   static const char *cl_dimm_label[] = {"A0", "A2", "A3", "A4", "A6", "A7", "Unknown"};
   static const char *hd_dimm_label[] = {"A0", "A1", "A2", "A4", "A6", "A7", "A8", "A10", "Unknown"};
+  static const char *gl_dimm_label[] = {"A", "B", "C", "D", "E", "F", "G", "H", "Unknown"};
   const char **dimm_label = cl_dimm_label;
   uint8_t arr_size = ARRAY_SIZE(cl_dimm_label);
   uint8_t dimm_num = 0, err_type = 0;
@@ -3311,6 +3312,9 @@ pal_parse_pmic_err_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
     dimm_label = hd_dimm_label;
     arr_size = ARRAY_SIZE(hd_dimm_label);
+  } else if (fby35_common_get_slot_type(fru) == SERVER_TYPE_GL) {
+    dimm_label = gl_dimm_label;
+    arr_size = ARRAY_SIZE(gl_dimm_label);
   }
   dimm_num = (event_data[0] < arr_size) ? event_data[0] : (arr_size - 1);
   err_type = event_data[1];

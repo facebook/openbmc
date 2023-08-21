@@ -211,7 +211,7 @@ paths:
                         type: boolean
                   system_info: 
                     type: object
-                    additionalProperties: true
+                    additionalProperties: false
                     properties: 
                       agent_version: 
                         type: string
@@ -221,6 +221,8 @@ paths:
                         type: string
                       host_model: 
                         type: string
+                      image_version:
+                        type: string
               Actions: 
                 type: array
                 items: 
@@ -229,4 +231,4 @@ paths:
                 type: array
                 items: 
                   type: string
-            
+

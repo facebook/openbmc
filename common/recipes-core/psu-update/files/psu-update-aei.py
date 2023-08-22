@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
 
-import argparse
-import json
-import os
-import os.path
 import struct
 import sys
 import time
 import traceback
-from binascii import hexlify
-from contextlib import ExitStack
+
+from modbus_update_helper import get_parser, print_perc, suppress_monitoring
 
 from pyrmd import ModbusException, RackmonInterface as rmd
 
-
-transcript_file = None
 
 ISP_CTRL_CMD_ENTER = 0x1
 ISP_CTRL_CMD_EXIT = 0x0
@@ -24,33 +18,7 @@ BLOCK_WRITE_BLOCK_WRITTEN = 0x1
 BLOCK_WRITE_INVALID_RANGE = 0x2
 
 
-def auto_int(x):
-    return int(x, 0)
-
-
-def bh(bs):
-    """bytes to hex *str*"""
-    return hexlify(bs).decode("ascii")
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--addr", type=auto_int, required=True, help="Modbus Address")
-parser.add_argument(
-    "--statusfile", default=None, help="Write status to JSON file during process"
-)
-parser.add_argument(
-    "--rmfwfile", action="store_true", help="Delete FW file after update completes"
-)
-parser.add_argument(
-    "--transcript",
-    action="store_true",
-    help="Write modbus commands and replies to modbus-transcript.log",
-)
-parser.add_argument("file", help="firmware file")
-
-status = {"pid": os.getpid(), "state": "started"}
-
-statuspath = None
+parser = get_parser()
 
 
 class StatusRegister:
@@ -95,22 +63,6 @@ class StatusRegister:
             for bit, field in enumerate(self._fields_)
             if field != "RESERVED" and ((1 << bit) & self.val) != 0
         }
-
-
-def write_status():
-    global status
-    if statuspath is None:
-        return
-    tmppath = statuspath + "~"
-    with open(tmppath, "w") as tfh:
-        tfh.write(json.dumps(status))
-    os.rename(tmppath, statuspath)
-
-
-def status_state(state):
-    global status
-    status["state"] = state
-    write_status()
 
 
 class BadAEIResponse(ModbusException):
@@ -188,17 +140,12 @@ def transfer_image(addr, image):
     for i in range(0, len(image), block_size):
         isp_flash_block(addr, sent_blocks, image[i : i + block_size])
         sent_blocks += 1
-        if statuspath is None:
-            print(
-                "\r[%.2f%%] Sending block# %d of %d..."
-                % (sent_blocks * 100.0 / total_blocks, sent_blocks, total_blocks - 1),
-                end="",
-            )
-            sys.stdout.flush()
-    if statuspath is None:
-        last_block = total_blocks - 1
-        print("\r[100.00%%] Sending block %d of %d..." % (last_block, last_block))
-        sys.stdout.flush()
+        print_perc(
+            sent_blocks * 100.0 / total_blocks,
+            "Sending block# %d of %d..." % (sent_blocks, total_blocks - 1),
+        )
+    last_block = total_blocks - 1
+    print_perc(100.0, "Sending block %d of %d..." % (last_block, last_block))
 
 
 def wait_update_complete(addr):
@@ -235,56 +182,35 @@ def wait_update_complete(addr):
 
 
 def update_device(addr, filename):
-    status_state("pausing_monitoring")
-    rmd.pause()
-    status_state("parsing_fw_file")
+    print("Parsing Firmware")
     binimg = load_file(filename)
-    status_state("Enter ISP Mode")
+    print("Enter ISP Mode")
     isp_enter(addr)
     time.sleep(10.0)  # Wait for PSU to erase flash.
-    status_state("Transfer Image")
+    print("Transfer Image")
     transfer_image(addr, binimg)
-    status_state("Check Status")
+    print("Check Status")
     st = isp_get_status(addr)
     if not st["FULL_IMAGE_RECEIVED"]:
         print("PSU Did not receive the full image. Status:", str(st))
         raise BadAEIResponse()
-    status_state("Exit ISP Mode")
+    print("Exit ISP Mode")
     isp_exit(addr)
-    status_state("Wait update to complete. Sleeping for ~6min")
+    print("Wait update to complete. Sleeping for ~6min")
     wait_update_complete(addr)
-    status_state("done")
+    print("done")
 
 
 def main():
     args = parser.parse_args()
-    with ExitStack() as stack:
-        global statuspath
-        global transcript_file
-        statuspath = args.statusfile
-        if args.transcript:
-            transcript_file = stack.enter_context(open("modbus-transcript.log", "w"))
-        print("statusfile %s" % statuspath)
+    with suppress_monitoring():
         try:
             update_device(args.addr, args.file)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             traceback.print_exc()
-            global status
-            status["exception"] = traceback.format_exc()
-            status_state("failed")
-            print("Waiting for reset....")
-            rmd.resume()
-            if args.rmfwfile:
-                os.remove(args.file)
             sys.exit(1)
-        print("Resuming monitoring...")
-        rmd.resume()
-        time.sleep(10.0)
-        print("Upgrade success")
-        if args.rmfwfile:
-            os.remove(args.file)
-        sys.exit(0)
+    print("Upgrade success")
 
 
 if __name__ == "__main__":

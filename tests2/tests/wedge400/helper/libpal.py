@@ -18,8 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 
-from ctypes import CDLL, byref, c_uint8, pointer, c_char_p
 import subprocess
+from ctypes import byref, c_char_p, c_uint8, CDLL, pointer
 
 # When tests are discovered out of BMC there is no libpal
 # catch the import failure
@@ -54,6 +54,10 @@ class BoardRevision:
     POWER_MODULE_PSU1 = 0x05
     POWER_MODULE_PSU2 = 0x06
 
+    """ SCM type and revision """
+    SCM_VER_RSP = 0x03
+    SCM_VER_NON_RSP = 0x02
+
     board_type = {BRD_TYPE_WEDGE400: "Wedge400", BRD_TYPE_WEDGE400C: "Wedge400C"}
     power_type = {
         POWER_MODULE_PEM1: "pem1",
@@ -76,6 +80,8 @@ class BoardRevision:
         BOARD_WEDGE400C_MP_RESPIN: "Wedge400C-MP-Respin",
         BOARD_UNDEFINED: "Undefined",
     }
+
+    scm_type = {SCM_VER_RSP: "SCM_VER_RSP", SCM_VER_NON_RSP: "SCM_VER_NON_RSP"}
 
 
 def pal_get_board_type():
@@ -138,3 +144,14 @@ def pal_get_fru_id(fru_name: str) -> int:
         raise ValueError("Invalid FRU name: " + repr(fru_name))
 
     return c_fru_id.value
+
+
+def wedge400_get_scm_ver():
+    """get scm revision"""
+    scm_ver = c_uint8()
+    ret = lpal_hndl.wedge400_get_scm_ver(byref(scm_ver))
+
+    if ret != 0:
+        raise ValueError("Libpal: get scm revision error: " + str(ret))
+
+    return BoardRevision.scm_type.get(scm_ver.value, None)

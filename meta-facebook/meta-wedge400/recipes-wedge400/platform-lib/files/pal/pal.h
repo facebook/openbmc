@@ -99,6 +99,8 @@ extern "C" {
 #define SCM_OUTLET_TEMP_DEVICE I2C_DEV_DIR(17, 4d)HW_MON_DIR
 #define SCM_INLET_TEMP_DEVICE  I2C_DEV_DIR(17, 4c)HW_MON_DIR
 
+#define SCM_RESPIN 0x3
+#define SCM_NON_RESPIN 0x2
 // SMB Sensor Devices
 #define SMB_FCM_HSC_ADM1278_DIR       I2C_DRIVER_DIR(adm1275, 35, 10)
 #define SMB_FCM_HSC_LM25066_DIR       I2C_DRIVER_DIR(lm25066, 35, 44)
@@ -673,6 +675,7 @@ int pal_get_dbg_uart_btn(uint8_t *status);
 int pal_clr_dbg_uart_btn();
 int pal_switch_uart_mux();
 bool is_psu48(void);
+int wedge400_get_scm_ver(int *scm_ver);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -28,6 +28,7 @@ from tests.wedge400.helper.libpal import (
     pal_detect_power_supply_present,
     pal_get_board_type,
     pal_get_board_type_rev,
+    wedge400_get_scm_ver,
 )
 
 from tests.wedge400.test_data.sensors.sensors import (
@@ -133,10 +134,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         else:
             self.skipTest("Skip test on {} board".format(platform_type_rev))
 
-        if (
-            platform_type_rev == "Wedge400-MP-Respin"
-            or platform_type_rev == "Wedge400C-MP-Respin"
-        ):
+        scm_ver = wedge400_get_scm_ver()
+        if scm_ver == "SCM_VER_RSP":
             self.endpoint_sensors_attrb += SCM_SENSORS_RESPIN
         else:
             self.endpoint_sensors_attrb += SCM_SENSORS_ORIGINAL

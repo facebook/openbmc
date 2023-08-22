@@ -63,12 +63,6 @@ get_mux_bus_num() {
     echo $((start_bus_num + channel))
 }
 
-brd_type_rev=$(wedge_board_type_rev)
-echo "Board Type/Revision: $brd_type_rev"
-
-brd_type=$(wedge_board_type)
-brd_rev=$(wedge_board_rev)
-
 # # Bus 2
 i2c_device_add 2 0x3e scmcpld          # SCMCPLD
 
@@ -164,6 +158,11 @@ i2c_device_add "$(get_mux_bus_num 11-0076 6)" 0x52 24c64           # FAN tray
 i2c_device_add "$(get_mux_bus_num 11-0076 7)" 0x52 24c64           # FAN tray
 
 fixup_board_revisions() {
+    # tmp75 i2c-16 address 0x4c is established for SCM non-respin only
+    if ! wedge_is_scm_respin; then
+        i2c_device_add "$(get_mux_bus_num 2-0070 1)" 0x4c tmp75  # SCM temp sensor
+    fi
+
     if board_rev_is_respin; then
         # RACKMON EEPROM, added in Wedge400 MP Respin and Wedge400C Respin
         i2c_device_add 6 0x50 24c64            # RACKMON EEPROM
@@ -172,7 +171,6 @@ fixup_board_revisions() {
         # and Wedge400C Respin (type=1,rev=4).
         i2c_device_add 3 0x4c tmp421           # SMB temp. sensor
         i2c_device_add 3 0x4e tmp421           # SMB temp. sensor
-        i2c_device_add "$(get_mux_bus_num 2-0070 1)" 0x4c tmp75  # SCM temp sensor
 
         # TH3 EEPROM is removed from Wedge400 MP Respin (type=0,rev=6) and
         # Wedge400C Respin (type=1,rev=4).
@@ -232,6 +230,8 @@ fixup_board_revisions() {
         i2c_device_add 3 0x4a tmp75            # SMB temp. sensor
     fi
 
+    brd_type=$(wedge_board_type)
+    brd_rev=$(wedge_board_rev)
     # BCM54616 EEPROMs are removed physically from:
     #   - Wedge400 MP Respin(type=0,rev=6) and later
     #   - Wedge400-C DVT(type=1,rev=2) and later
@@ -251,6 +251,9 @@ fixup_board_revisions() {
         i2c_device_add "$(get_mux_bus_num 2-0070 6)" 0x56 24c64   # BSM EEPROM
     fi
 }
+
+brd_type_rev=$(wedge_board_type_rev)
+echo "Board Type/Revision: $brd_type_rev"
 
 fixup_board_revisions
 

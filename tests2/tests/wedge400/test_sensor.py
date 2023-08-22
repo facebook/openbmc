@@ -22,11 +22,16 @@ from abc import abstractmethod
 
 from common.base_sensor_test import SensorUtilTest
 from tests.wedge400.helper.libpal import (
-    pal_get_board_type_rev,
-    pal_detect_power_supply_present,
     BoardRevision,
+    pal_detect_power_supply_present,
+    pal_get_board_type_rev,
+    wedge400_get_scm_ver,
 )
 from tests.wedge400.test_data.sensors.sensors import (
+    FAN1_SENSORS,
+    FAN2_SENSORS,
+    FAN3_SENSORS,
+    FAN4_SENSORS,
     PEM1_SENSORS,
     PEM2_SENSORS,
     PSU1_SENSORS,
@@ -34,14 +39,10 @@ from tests.wedge400.test_data.sensors.sensors import (
     SCM_SENSORS_ORIGINAL,
     SCM_SENSORS_RESPIN,
     SMB_SENSORS_W400,
-    SMB_SENSORS_W400RESPIN,
     SMB_SENSORS_W400CEVT,
     SMB_SENSORS_W400CEVT2,
     SMB_SENSORS_W400CRESPIN,
-    FAN1_SENSORS,
-    FAN2_SENSORS,
-    FAN3_SENSORS,
-    FAN4_SENSORS,
+    SMB_SENSORS_W400RESPIN,
 )
 from utils.test_utils import qemu_check
 
@@ -53,11 +54,8 @@ class ScmSensorTest(SensorUtilTest, unittest.TestCase):
 
     def test_scm_sensor_keys(self):
         SCM_SENSORS = []
-        platform_type_rev = pal_get_board_type_rev()
-        if (
-            platform_type_rev == "Wedge400-MP-Respin"
-            or platform_type_rev == "Wedge400C-MP-Respin"
-        ):
+        scm_ver = wedge400_get_scm_ver()
+        if scm_ver == "SCM_VER_RSP":
             SCM_SENSORS = SCM_SENSORS_RESPIN
         else:
             SCM_SENSORS = SCM_SENSORS_ORIGINAL

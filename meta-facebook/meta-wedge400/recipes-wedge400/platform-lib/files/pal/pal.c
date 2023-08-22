@@ -1218,16 +1218,22 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
 int
 pal_get_sensor_util_timeout(uint8_t fru) {
-  uint8_t brd_type;
-  uint8_t brd_type_rev;
+  uint8_t brd_type = 0xff;
+  uint8_t brd_type_rev = 0xff;
   size_t cnt = 0;
-  pal_get_board_type(&brd_type);
-  pal_get_board_type_rev(&brd_type_rev);
+  int scm_ver = -1;
+  if(pal_get_board_type(&brd_type)){
+    return -1;
+  }
+  if(pal_get_board_type_rev(&brd_type_rev)){
+    return -1;
+  }
+  if(wedge400_get_scm_ver(&scm_ver)){
+    return -1;
+  }
   switch(fru) {
     case FRU_SCM:
-      if (( brd_type == BRD_TYPE_WEDGE400 && brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) ||
-          ( brd_type == BRD_TYPE_WEDGE400C && brd_type_rev >= BOARD_WEDGE400C_MP_RESPIN ))
-      {
+    if (scm_ver == SCM_RESPIN) {
         cnt = scm_mp_respin_all_sensor_cnt;
       } else {
         cnt = scm_evt_dvt_mp_all_sensor_cnt;
@@ -1288,15 +1294,21 @@ pal_get_sensor_util_timeout(uint8_t fru) {
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
-  uint8_t brd_type;
-  uint8_t brd_type_rev;
-  pal_get_board_type(&brd_type);
-  pal_get_board_type_rev(&brd_type_rev);
+  uint8_t brd_type = 0xff;
+  uint8_t brd_type_rev = 0xff;
+  int scm_ver = -1;
+  if(pal_get_board_type(&brd_type)){
+    return -1;
+  }
+  if(pal_get_board_type_rev(&brd_type_rev)){
+    return -1;
+  }
+  if(wedge400_get_scm_ver(&scm_ver)){
+    return -1;
+  }
   switch(fru) {
   case FRU_SCM:
-    if (( brd_type == BRD_TYPE_WEDGE400 && brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) ||
-        ( brd_type == BRD_TYPE_WEDGE400C && brd_type_rev >= BOARD_WEDGE400C_MP_RESPIN ))
-    {
+    if (scm_ver == SCM_RESPIN) {
       *sensor_list = (uint8_t *) scm_mp_respin_all_sensor_list;
       *cnt = scm_mp_respin_all_sensor_cnt;
     } else {
@@ -2878,17 +2890,12 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
   bool scm_sensor = false;
   int scm_sensor_cnt = 0;
   uint8_t *scm_sensor_list;
-  uint8_t brd_type;
-  uint8_t brd_type_rev;
-  if(pal_get_board_type(&brd_type)){
-    return -1;
-  }
-  if(pal_get_board_type_rev(&brd_type_rev)){
+  int scm_ver = -1;
+  if(wedge400_get_scm_ver(&scm_ver)){
     return -1;
   }
 
-  if ( brd_type == BRD_TYPE_WEDGE400 &&
-           brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+  if (scm_ver == SCM_RESPIN) {
     scm_sensor_cnt = scm_mp_respin_sensor_cnt;
     scm_sensor_list = (uint8_t *) scm_mp_respin_sensor_list;
   } else {
@@ -5579,15 +5586,19 @@ sensor_thresh_array_init(uint8_t fru) {
   static bool init_done[MAX_NUM_FRUS] = {false};
   int fru_offset;
   float fvalue;
-  uint8_t brd_type;
-  uint8_t brd_type_rev;
+  uint8_t brd_type = 0xff;
+  uint8_t brd_type_rev = 0xff;
+  int scm_ver = -1;
   int scm_sensor_cnt;
   int scm_all_sensor_cnt;
   uint8_t *scm_sensor_list;
   if(pal_get_board_type(&brd_type)){
-    return;
+    return; 
   }
   if(pal_get_board_type_rev(&brd_type_rev)){
+    return;
+  }
+  if(wedge400_get_scm_ver(&scm_ver)){
     return;
   }
   if (init_done[fru])
@@ -5601,9 +5612,7 @@ sensor_thresh_array_init(uint8_t fru) {
       scm_sensor_threshold[SCM_SENSOR_HSC_VOLT][LCR_THRESH] = 7.5;
       scm_sensor_threshold[SCM_SENSOR_HSC_CURR][UCR_THRESH] = 24.7;
       
-      if (( brd_type == BRD_TYPE_WEDGE400 && brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) ||
-          ( brd_type == BRD_TYPE_WEDGE400C && brd_type_rev >= BOARD_WEDGE400C_MP_RESPIN ))
-      {
+      if (scm_ver == SCM_RESPIN) {
         scm_sensor_cnt = scm_mp_respin_sensor_cnt;
         scm_all_sensor_cnt = scm_mp_respin_all_sensor_cnt;
         scm_sensor_list = (uint8_t *) scm_mp_respin_all_sensor_list;
@@ -6424,7 +6433,7 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
   if (pal_get_key_value(key, buff) == 0)
   {
     if (!memcmp(buff, "off", strlen("off")))
-      policy = 0;
+      policy = 0; 
     else if (!memcmp(buff, "lps", strlen("lps")))
       policy = 1;
     else if (!memcmp(buff, "on", strlen("on")))
@@ -7513,4 +7522,21 @@ bool is_psu48(void)
 
   kv_set(key, "0", 0, 0);
   return false;
+}
+
+int
+wedge400_get_scm_ver(int *scm_ver){
+  static int cache = -1;
+  char path[PATH_MAX + 1];
+  // keep the value as cache no need to get new value
+  if (cache != -1) {
+    *scm_ver = cache;
+    return 0;
+  }
+  snprintf(path, sizeof(path), SCM_SYSFS, "board_ver");
+  if (device_read(path, scm_ver)) {
+    return -1;
+  }
+  cache = *scm_ver;
+  return 0; 
 }

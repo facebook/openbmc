@@ -71,6 +71,11 @@ wedge_board_type_rev(){
     full_board_type=$(wedge_full_board_type)
     board_type=$(wedge_board_type)
     rev=$(wedge_board_rev)
+    if wedge_is_scm_respin; then
+        SCM_VER_STR=" (With SCM_RESPIN)"
+    else
+        SCM_VER_STR=""
+    fi
     if [ $((board_type)) -eq 0 ]; then
         if [ $(( full_board_type&2 )) -ne 0 ]; then
             case $rev in
@@ -87,16 +92,16 @@ wedge_board_type_rev(){
                     echo "WEDGE400_EVT/EVT3"
                     ;;
                 2)
-                    echo "WEDGE400_DVT"
+                    echo "WEDGE400_DVT${SCM_VER_STR}"
                     ;;
                 3)
-                    echo "WEDGE400_DVT2/PVT1/PV2"
+                    echo "WEDGE400_DVT2/PVT1/PV2${SCM_VER_STR}"
                     ;;
                 4)
                     echo "WEDGE400_PVT3"
                     ;;
                 5)
-                    echo "WEDGE400_MP"
+                    echo "WEDGE400_MP${SCM_VER_STR}"
                     ;;
                 *)
                     echo "WEDGE400 (Undefine $rev)"
@@ -122,10 +127,10 @@ wedge_board_type_rev(){
                     echo "WEDGE400-C_EVT2"
                     ;;
                 2)
-                    echo "WEDGE400-C_DVT"
+                    echo "WEDGE400-C_DVT${SCM_VER_STR}"
                     ;;
                 3)
-                    echo "WEDGE400-C_DVT2"
+                    echo "WEDGE400-C_DVT2${SCM_VER_STR}"
                     ;;
                 *)
                     echo "WEDGE400-C_(Undefine $rev)"
@@ -239,6 +244,15 @@ wedge400c_rev_is_respin() {
 
 board_rev_is_respin() {
     if wedge400_rev_is_respin || wedge400c_rev_is_respin; then
+        return 0
+    fi
+
+    return 1
+}
+
+wedge_is_scm_respin() {
+    SCM_VER=$(head -n 1 "$SCMCPLD_SYSFS_DIR/board_ver" 2> /dev/null)
+    if [ "$SCM_VER" = "0x3" ]; then
         return 0
     fi
 

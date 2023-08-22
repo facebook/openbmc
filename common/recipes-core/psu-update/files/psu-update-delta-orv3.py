@@ -12,41 +12,18 @@ from binascii import hexlify
 from contextlib import ExitStack
 
 import hexfile
-from pyrmd import ModbusException
-from pyrmd import RackmonInterface as rmd
+from modbus_update_helper import (
+    auto_int,
+    bh,
+    get_parser,
+    print_perc,
+    suppress_monitoring,
+)
+from pyrmd import ModbusException, RackmonInterface as rmd
 
 
-transcript_file = None
-
-
-def auto_int(x):
-    return int(x, 0)
-
-
-def bh(bs):
-    """bytes to hex *str*"""
-    return hexlify(bs).decode("ascii")
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--addr", type=auto_int, required=True, help="PSU Modbus Address")
+parser = get_parser()
 parser.add_argument("--key", type=auto_int, required=True, help="Sec key")
-parser.add_argument(
-    "--statusfile", default=None, help="Write status to JSON file during process"
-)
-parser.add_argument(
-    "--rmfwfile", action="store_true", help="Delete FW file after update completes"
-)
-parser.add_argument(
-    "--transcript",
-    action="store_true",
-    help="Write modbus commands and replies to modbus-transcript.log",
-)
-parser.add_argument("file", help="firmware file")
-
-status = {"pid": os.getpid(), "state": "started"}
-
-statuspath = None
 
 
 class StatusRegister:
@@ -105,22 +82,6 @@ class StatusRegister:
                 for idx, name in enumerate(self._fields_)
             ]
         )
-
-
-def write_status():
-    global status
-    if statuspath is None:
-        return
-    tmppath = statuspath + "~"
-    with open(tmppath, "w") as tfh:
-        tfh.write(json.dumps(status))
-    os.rename(tmppath, statuspath)
-
-
-def status_state(state):
-    global status
-    status["state"] = state
-    write_status()
 
 
 class BadMEIResponse(ModbusException):
@@ -222,7 +183,6 @@ def erase_flash(addr):
 
 
 def set_write_address(psu_addr, flash_addr):
-    # print("Set write address to " + hex(flash_addr))
     req = psu_addr + b"\x2B\x64\x34\x00\x00" + struct.pack(">L", flash_addr)
     exp_resp = psu_addr + b"\x2B\x71\x74\xFF\xFF\xFF\xFF\xFF\xFF"
     resp = rmd.raw(req, expected=12)
@@ -283,7 +243,6 @@ def activate(addr):
 
 
 def send_image(addr, fwimg):
-    global statuspath
     chunk_size = 128
     total_chunks = sum([len(s) for s in fwimg.segments]) / chunk_size
     sent_chunks = 0
@@ -301,65 +260,37 @@ def send_image(addr, fwimg):
                 chunk = chunk + (b"\xFF" * (chunk_size - len(chunk)))
             sent_chunks += 1
             # dont fill the restapi log with junk
-            if statuspath is None:
-                print(
-                    "\r[%.2f%%] Sending chunk %d of %d..."
-                    % (sent_chunks * 100.0 / total_chunks, sent_chunks, total_chunks),
-                    end="",
-                )
-            sys.stdout.flush()
+            print_perc(
+                sent_chunks * 100.0 / total_chunks,
+                "Sending chunk %d of %d..." % (sent_chunks, total_chunks),
+            )
             write_data(addr, bytearray(chunk))
-            status["flash_progress_percent"] = sent_chunks * 100.0 / total_chunks
-            write_status()
-        print("")
+    print_perc(100.0, "Sending chunk %d of %d..." % (total_chunks, total_chunks))
 
 
 def update_psu(addr, filename, key):
     addr_b = addr.to_bytes(1, "big")
-    status_state("pausing_monitoring")
-    rmd.pause()
-    status_state("parsing_fw_file")
+    print("Parsing Firmware")
     fwimg = hexfile.load(filename)
     key_handshake(addr_b, key)
-    status_state("erase_flash")
     erase_flash(addr_b)
-    status_state("flashing")
     send_image(addr_b, fwimg)
-    status_state("verifying")
     verify_flash(addr_b)
-    status_state("activating")
     activate(addr_b)
-    status_state("done")
 
 
 def main():
     args = parser.parse_args()
-    with ExitStack() as stack:
-        global statuspath
-        global transcript_file
-        statuspath = args.statusfile
-        if args.transcript:
-            transcript_file = stack.enter_context(open("modbus-transcript.log", "w"))
-        print("statusfile %s" % statuspath)
+    with suppress_monitoring():
         try:
             update_psu(args.addr, args.file, args.key)
         except Exception as e:
-            fstatus = get_status_reg(args.addr.to_bytes(1, "big"))
             print("Firmware update failed %s" % str(e))
             print("Status register dump:")
-            print(fstatus)
+            print(get_status_reg(args.addr.to_bytes(1, "big")))
             traceback.print_exc()
-            global status
-            status["exception"] = traceback.format_exc()
-            status_state("failed")
-            rmd.resume()
-            if args.rmfwfile:
-                os.remove(args.file)
             sys.exit(1)
-        rmd.resume()
-        if args.rmfwfile:
-            os.remove(args.file)
-        sys.exit(0)
+    print("Upgrade Success!")
 
 
 if __name__ == "__main__":

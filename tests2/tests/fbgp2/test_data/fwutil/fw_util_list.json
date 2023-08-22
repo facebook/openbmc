@@ -1,0 +1,112 @@
+{
+    "bmc": {
+        "bmc": {
+            "version header": "BMC Version"
+        },
+        "fscd": {
+            "version header": "Fan Speed Controller Version"
+        },
+        "rom": {
+            "version header": "ROM Version"
+        },
+        "tpm": {
+            "version header": "TPM Version"
+        }
+    },
+    "nic": {
+        "nic": {
+            "version header": [
+                "Broadcom NIC Version",
+                "Mellanox NIC Version"
+            ]
+        }
+    },
+    "ocpdbg": {
+        "mcu": {
+            "version header": "MCU Version"
+        },
+        "mcubl": {
+            "version header": "MCU Bootloader Version"
+        }
+    },
+    "slot1": {
+        "bic": {
+            "version header": "Bridge-IC Version"
+        },
+        "bicbl": {
+            "version header": "Bridge-IC Bootloader Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "CPLD Version"
+        },
+        "me": {
+            "version header": "ME Version"
+        },
+        "vr": {
+            "version header": "PVCCIO VR Version"
+        }
+    },
+    "slot2": {
+        "bic": {
+            "version header": "Bridge-IC Version"
+        },
+        "bicbl": {
+            "version header": "Bridge-IC Bootloader Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "CPLD Version"
+        },
+        "me": {
+            "version header": "ME Version"
+        },
+        "vr": {
+            "version header": "PVCCIO VR Version"
+        }
+    },
+    "slot3": {
+        "bic": {
+            "version header": "Bridge-IC Version"
+        },
+        "bicbl": {
+            "version header": "Bridge-IC Bootloader Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "CPLD Version"
+        },
+        "me": {
+            "version header": "ME Version"
+        },
+        "vr": {
+            "version header": "PVCCIO VR Version"
+        }
+    },
+    "slot4": {
+        "bic": {
+            "version header": "Bridge-IC Version"
+        },
+        "bicbl": {
+            "version header": "Bridge-IC Bootloader Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "CPLD Version"
+        },
+        "me": {
+            "version header": "ME Version"
+        },
+        "vr": {
+            "version header": "PVCCIO VR Version"
+        }
+    }
+}

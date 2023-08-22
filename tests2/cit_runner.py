@@ -222,6 +222,7 @@ def arg_parser():
             "montblanc",
             "halfdome",
             "bletchley",
+            "fbgp2",
             # Add new platform name here -- for anchor purpose, do not remove
         ],
     )

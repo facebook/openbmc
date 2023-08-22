@@ -13,6 +13,10 @@ tests.fby2.test_cfg_util.CfgUtilTest.test_cfg_util_set
 tests.fby2.test_cfg_util.CfgUtilTest.test_cfg_util_show
 tests.fby2.test_fw_util.FwUtilVersionTest.test_version_header
 tests.fby2.test_libpal.LibPalTest.test_pal_get_platform_name
+tests.fbgp2.test_cfg_util.CfgUtilTest.test_cfg_util_set
+tests.fbgp2.test_cfg_util.CfgUtilTest.test_cfg_util_show
+tests.fbgp2.test_fw_util.FwUtilVersionTest.test_version_header
+tests.fbgp2.test_libpal.LibPalTest.test_pal_get_platform_name
 tests.fuji.test_fw_env.TestFwEnv.test_fw_setenv
 tests.fuji.test_interface.InterfaceTest.test_usb0_v6_interface
 tests.fuji.test_process_running.ProcessRunningTest.test_installed_processes

@@ -10,6 +10,18 @@
     "parity": "NONE",
     "registers": [
         {
+            "begin": 7097,
+            "length": 4,
+            "format": "STRING",
+            "name": "RPU_PLC_FW_Revision"
+        },
+        {
+            "begin": 6596,
+            "length": 2,
+            "format": "STRING",
+            "name": "RPU_HEX_FW_Revision"
+        },
+        {
             "begin": 36864,
             "length": 1,
             "format": "FLOAT",

@@ -188,7 +188,7 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [3, "RPU_LED_Power_Status"],
+                [4, "RPU_LED_Power_Status"],
                 [3, "RPU_LED_Fault_Status"],
                 [2, "RPU_LED_Leakage_Status"],
                 [1, "RPU_LED_Reservoir_Blinking"],

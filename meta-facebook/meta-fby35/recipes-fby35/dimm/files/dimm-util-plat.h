@@ -24,6 +24,7 @@
 #define NUM_CPU_FBY35      1
 #define MAX_DIMM_NUM_FBY35 6
 #define MAX_DIMM_NUM_FBHD  8
+#define MAX_DIMM_NUM_FBGL  8
 
 #define NUM_FRU_FBY35      5
 #define FRU_ID_MIN_FBY35 1
@@ -47,5 +48,15 @@
 #define DIMM1_HD_PMIC_ADDR 0x94
 #define DIMM2_HD_PMIC_ADDR 0x92
 #define DIMM3_HD_PMIC_ADDR 0x96
+
+#define DIMMAE_GL_SPD_ADDR 0x50
+#define DIMMBF_GL_SPD_ADDR 0x52
+#define DIMMCG_GL_SPD_ADDR 0x54
+#define DIMMDH_GL_SPD_ADDR 0x56
+
+#define DIMMAE_GL_PMIC_ADDR 0x48
+#define DIMMBF_GL_PMIC_ADDR 0x4a
+#define DIMMCG_GL_PMIC_ADDR 0x4c
+#define DIMMDH_GL_PMIC_ADDR 0x4e
 
 #endif

@@ -78,6 +78,29 @@ static uint8_t hd_dimm_cache_id[NUM_CPU_FBY35][MAX_DIMM_PER_CPU] = {
   { 0, 1, 2, 4, 6, 7, 8, 10},
 };
 
+static uint8_t gl_spd_addr[MAX_DIMM_NUM_FBGL/2] = {
+  DIMMAE_GL_SPD_ADDR,
+  DIMMBF_GL_SPD_ADDR,
+  DIMMCG_GL_SPD_ADDR,
+  DIMMDH_GL_SPD_ADDR,
+};
+
+static uint8_t gl_pmic_addr[MAX_DIMM_NUM_FBGL/2] = {
+  DIMMAE_GL_PMIC_ADDR,
+  DIMMBF_GL_PMIC_ADDR,
+  DIMMCG_GL_PMIC_ADDR,
+  DIMMDH_GL_PMIC_ADDR,
+};
+
+// dimm location constant strings, matching silk screen
+static const char *gl_dimm_label[NUM_CPU_FBY35][MAX_DIMM_PER_CPU] = {
+  { "A", "B", "C", "D", "E", "F", "G", "H", },
+};
+
+static uint8_t gl_dimm_cache_id[NUM_CPU_FBY35][MAX_DIMM_PER_CPU] = {
+  { 0, 1, 2, 3, 4, 5, 6, 7},
+};
+
 static uint8_t *spd_addr = cl_spd_addr;
 static uint8_t *pmic_addr = cl_pmic_addr;
 static const char *(*dimm_label)[MAX_DIMM_PER_CPU] = cl_dimm_label;
@@ -93,11 +116,11 @@ static const char *fru_name_fby35[NUM_FRU_FBY35] = {
 
 static bool direct_xfer = false;
 static uint8_t bic_bus_base = BIC_I3C_BASE;
+static int type = 0;
 
 int
 plat_init(void) {
   uint8_t fru, prsnt;
-  int type = 0;
 
   for (fru = FRU_ID_MIN_FBY35; fru <= FRU_ID_MAX_FBY35; fru++) {
     if (fby35_common_is_fru_prsnt(fru, &prsnt)) {
@@ -124,6 +147,14 @@ plat_init(void) {
 
     num_dimms_per_cpu = MAX_DIMM_NUM_FBHD;
     bic_bus_base = HD_BIC_DIMM_I2C_BASE;
+    direct_xfer = true;
+  } else if (type == SERVER_TYPE_GL) {
+    spd_addr = gl_spd_addr;
+    pmic_addr = gl_pmic_addr;
+    dimm_label = gl_dimm_label;
+    dimm_cache_id = gl_dimm_cache_id;
+
+    num_dimms_per_cpu = MAX_DIMM_NUM_FBGL;
     direct_xfer = true;
   } else {
     num_dimms_per_cpu = MAX_DIMM_NUM_FBY35;
@@ -379,6 +410,9 @@ util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, u
   addr = spd_addr[dimm % (num_dimms_per_cpu/2)];
 
   if (direct_xfer) {
+    if (type == SERVER_TYPE_GL) {
+      return bic_read_dimm_i3c(slot_id, bus_id, dimm, 2, offset, len, rxbuf, DIMM_SPD_NVM);
+    }
     return bic_read_dimm_smbus(slot_id, bus_id, addr, 2, spd_offset, len, rxbuf);
   }
 
@@ -400,6 +434,10 @@ util_set_EE_page(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t /*page_
   }
 
   if (direct_xfer) {
+    if (type == SERVER_TYPE_GL) {
+      return 0;
+    }
+
     // SPR CPU supports 2 SPD buses
     if (dimm >= (num_dimms_per_cpu/2)) {
       bus_id = 1;
@@ -475,6 +513,9 @@ util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, u
   addr = pmic_addr[dimm % (num_dimms_per_cpu/2)];
 
   if (direct_xfer) {
+    if (type == SERVER_TYPE_GL) {
+      return bic_read_dimm_i3c(slot_id, bus_id, dimm, 1, pmic_offset, len, rxbuf, DIMM_PMIC);
+    }
     return bic_read_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, rxbuf);
   }
 
@@ -506,6 +547,9 @@ util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, 
   addr = pmic_addr[dimm % (num_dimms_per_cpu/2)];
 
   if (direct_xfer) {
+    if (type == SERVER_TYPE_GL) {
+      return bic_write_dimm_i3c(slot_id, bus_id, dimm, 1, pmic_offset, len, txbuf, DIMM_PMIC);
+    }
     return bic_write_dimm_smbus(slot_id, bus_id, addr, 1, pmic_offset, len, txbuf);
   }
 

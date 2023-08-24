@@ -1,5 +1,5 @@
 {
-    "version": "inspirationpint_v8",
+    "version": "inspirationpint_v9.2",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -215,11 +215,11 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [49, 45],
-          [63, 60],
-          [67, 75],
-          [72, 90],
-          [76, 95],
+          [49, 25],
+          [63, 35],
+          [67, 40],
+          [70, 55],
+          [73, 65],
           [82, 100]
         ]
       },
@@ -231,7 +231,7 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "setpoint": 79,
-        "kp": -5.5,
+        "kp": -8.5,
         "ki": -0.035,
         "kd": 0
       },
@@ -272,11 +272,11 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [62, 45],
-          [63, 60],
-          [78, 75],
-          [82, 90],
-          [86, 95],
+          [62, 25],
+          [63, 35],
+          [78, 40],
+          [82, 48],
+          [85, 55],
           [92, 100]
         ]
       },

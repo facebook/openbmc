@@ -26,6 +26,18 @@ from fsc_util import Logger
 
 lpal_hndl = CDLL("libpal.so.0")
 
+fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
+
+if lpal_hndl.pal_is_artemis():
+    get_fan_mode_scenario_list = ["sensor_hit_UCR"]
+pass
+
+def get_fan_mode(scenario="None"):
+
+    if "sensor_hit_UCR" in scenario:
+        pwm = 100
+        return fan_mode["boost_mode"], pwm
+    pass
 
 def board_fan_actions(fan, action="None"):
     """

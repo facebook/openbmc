@@ -17,6 +17,7 @@ IMAGE_INSTALL += " \
   wedge-eeprom \
   weutil-dhcp-id \
   ipmi-lite   \
+  mdio-util \
   "
 
 # Add vboot-utils

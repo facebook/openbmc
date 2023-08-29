@@ -64,6 +64,13 @@ probe_hsc_mp5990() {
   kv set mb_hsc_source "$MB_1ST_SOURCE"
 }
 
+#Disable FAULT_LOG_EN for LTC4282
+disable_fault_log_en() {
+  adc_ctrl=`i2cget -y -f 6 0x41 0x1d`
+  data=$(($adc_ctrl & 0xFB))
+  i2cset -y -f 6 0x41 0x1d $data
+}
+
 probe_hsc_ltc() {
   val=$(i2cget -f -y 21 0x42 0x02)
   data=$(("$val"))
@@ -77,6 +84,7 @@ probe_hsc_ltc() {
       kv set mb_hsc_source "$MB_3RD_SOURCE"
     else
       i2c_device_add 6 0x41 ltc4282
+      disable_fault_log_en
       kv set mb_hsc_source "$MB_2ND_SOURCE"
     fi
   else
@@ -86,6 +94,7 @@ probe_hsc_ltc() {
       kv set mb_hsc_source "$MB_3RD_SOURCE"
     else
       i2c_device_add 6 0x41 ltc4282
+      disable_fault_log_en
       kv set mb_hsc_source "$MB_2ND_SOURCE"
     fi
   fi

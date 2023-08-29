@@ -94,6 +94,12 @@ MB_HSC_THIRD="2"   # rs31380
 mbrev=$(kv get mb_rev)
 MB_DVT_BORAD_ID="3"
 
+#Disable FAULT_LOG_EN for LTC4282
+disable_fault_log_en() {
+  adc_ctrl=`i2cget -y -f 2 0x41 0x1d`
+  data=$(($adc_ctrl & 0xFB))
+  i2cset -y -f 2 0x41 0x1d $data
+}
 
 #kv set mb_hsc_module "0"
 if [ "$mb_hsc" -eq "$MB_HSC_THIRD" ]; then
@@ -114,6 +120,7 @@ elif [ "$mb_hsc" -eq "$MB_HSC_SECOND" ]; then
       kv set mb_hsc_source "$MB_3RD_SOURCE"
     else
       i2c_device_add 2 0x41 ltc4282
+      disable_fault_log_en
       kv set mb_hsc_source "$MB_2ND_SOURCE"
     fi
   else
@@ -123,6 +130,7 @@ elif [ "$mb_hsc" -eq "$MB_HSC_SECOND" ]; then
       kv set mb_hsc_source "$MB_3RD_SOURCE"
     else
       i2c_device_add 2 0x41 ltc4282
+      disable_fault_log_en
       kv set mb_hsc_source "$MB_2ND_SOURCE"
     fi
   fi

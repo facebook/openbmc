@@ -336,6 +336,7 @@ enum {
   FRU_MEB_JCN13,
   FRU_MEB_JCN14,
   FRU_CNT,
+  FRU_AGGREGATE = 0xff,
 };
 
 enum FRU_DEV_COUNT {

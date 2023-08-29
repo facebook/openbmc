@@ -165,6 +165,11 @@ enum {
   SKIP_POWER_ON_SENSOR_READING_TIME = 10, // second
 };
 
+// Aggregate sensors
+enum {
+  AGGREGATE_SENSOR_SYSTEM_AIRFLOW = 0x0,
+};
+
 typedef struct {
   uint8_t status;
   uint8_t integer_l;

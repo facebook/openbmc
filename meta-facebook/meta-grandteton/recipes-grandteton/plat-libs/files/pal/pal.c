@@ -285,6 +285,10 @@ pal_get_fru_name(uint8_t fru, char *name) {
     return -1;
   }
 
+  if (fru == FRU_AGGREGATE) {
+    return 0; //it's the virtual FRU.
+  }
+
   if (fru >= FRU_CNT) {
     syslog(LOG_WARNING, "%s(): Input fruid %d is invalid.", __func__, fru);
     return -1;
@@ -293,6 +297,26 @@ pal_get_fru_name(uint8_t fru, char *name) {
   strcpy(name, fru_dev_data[fru].name);
 
   return 0;
+}
+
+bool
+pal_is_aggregate_snr_valid(uint8_t snr_num) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  snprintf(key, sizeof(key), "fan_fail_boost");
+
+  switch(snr_num) {
+    case AGGREGATE_SENSOR_SYSTEM_AIRFLOW:
+      //Check if there are any fan fail
+      if (kv_get(key, value, NULL, 0) == 0) {
+        return false;
+      }
+      break;
+    default:
+      return true;
+  }
+
+  return true;
 }
 
 void

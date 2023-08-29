@@ -1,0 +1,159 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "SYSTEM_AIRFLOW_CFM",
+      "units": "CFM",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "rpm0": {
+            "fru": 11,
+            "sensor_id": 208
+          },
+          "rpm1": {
+            "fru": 11,
+            "sensor_id": 209
+          },
+          "rpm2": {
+            "fru": 11,
+            "sensor_id": 210
+          },
+          "rpm3": {
+            "fru": 11,
+            "sensor_id": 211
+          },
+          "rpm4": {
+            "fru": 11,
+            "sensor_id": 216
+          },
+          "rpm5": {
+            "fru": 11,
+            "sensor_id": 217
+          },
+          "rpm6": {
+            "fru": 11,
+            "sensor_id": 218
+          },
+          "rpm7": {
+            "fru": 11,
+            "sensor_id": 219
+          },
+          "rpm8": {
+            "fru": 11,
+            "sensor_id": 224
+          },
+          "rpm9": {
+            "fru": 11,
+            "sensor_id": 225
+          },
+          "rpm10": {
+            "fru": 11,
+            "sensor_id": 226
+          },
+          "rpm11": {
+            "fru": 11,
+            "sensor_id": 227
+          },
+          "rpm12": {
+            "fru": 11,
+            "sensor_id": 232
+          },
+          "rpm13": {
+            "fru": 11,
+            "sensor_id": 233
+          },
+          "rpm14": {
+            "fru": 11,
+            "sensor_id": 234
+          },
+          "rpm15": {
+            "fru": 11,
+            "sensor_id": 235
+          },
+          "rpm16": {
+            "fru": 12,
+            "sensor_id": 212
+          },
+          "rpm17": {
+            "fru": 12,
+            "sensor_id": 213
+          },
+          "rpm18": {
+            "fru": 12,
+            "sensor_id": 214
+          },
+          "rpm19": {
+            "fru": 12,
+            "sensor_id": 215
+          },
+          "rpm20": {
+            "fru": 12,
+            "sensor_id": 220
+          },
+          "rpm21": {
+            "fru": 12,
+            "sensor_id": 221
+          },
+          "rpm22": {
+            "fru": 12,
+            "sensor_id": 222
+          },
+          "rpm23": {
+            "fru": 12,
+            "sensor_id": 223
+          },
+          "rpm24": {
+            "fru": 12,
+            "sensor_id": 228
+          },
+          "rpm25": {
+            "fru": 12,
+            "sensor_id": 229
+          },
+          "rpm26": {
+            "fru": 12,
+            "sensor_id": 230
+          },
+          "rpm27": {
+            "fru": 12,
+            "sensor_id": 231
+          },
+          "rpm28": {
+            "fru": 12,
+            "sensor_id": 236
+          },
+          "rpm29": {
+            "fru": 12,
+            "sensor_id": 237
+          },
+          "rpm30": {
+            "fru": 12,
+            "sensor_id": 238
+          },
+          "rpm31": {
+            "fru": 12,
+            "sensor_id": 239
+          },
+          "sum_rpm": {
+            "expression": "( rpm0 + rpm1 + rpm2 + rpm3 + rpm4 + rpm5 + rpm6 + rpm7 + rpm8 + rpm9 + rpm10 + rpm11 + rpm12 + rpm13 + rpm14 + rpm15 + rpm16 + rpm17 + rpm18 + rpm19 + rpm20 + rpm21 + rpm22 + rpm23 + rpm24 + rpm25 + rpm26 + rpm27 + rpm28 + rpm29 + rpm30 + rpm31 )"
+          },
+          "avg_rpm": {
+            "expression": "( sum_rpm / 32 )"
+          }
+        },
+        "linear_expressions": {
+          "GTA": "( avg_rpm * 0.0765 ) - 14.197"
+        },
+        "condition": {
+          "key": "sled_system_conf",
+          "key_type": "persistent",
+          "default_expression": "GTA",
+          "value_map": {
+            "Artemis": "GTA"
+          }
+        }
+      }
+    }
+  ]
+}

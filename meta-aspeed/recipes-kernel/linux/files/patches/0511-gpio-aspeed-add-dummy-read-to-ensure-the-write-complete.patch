@@ -1,0 +1,29 @@
+From 647980e2c7b71ad646f0b4b0512fe46f268f51d6 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Mon, 5 Jun 2023 11:23:08 +0800
+Subject: [PATCH] gpio: aspeed: Add the dummy read to ensure the write
+ complete.
+
+erforming a dummy read ensures that the register write operation is fully
+completed, mitigating any potential bus delays that could otherwise impact
+the frequency of bitbang usage.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Change-Id: Ib3f1a6aee2516b532263ec0437b329916933806c
+---
+ drivers/gpio/gpio-aspeed.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/gpio/gpio-aspeed.c b/drivers/gpio/gpio-aspeed.c
+index 318a7d95a1a8b1..22a8dd311da248 100644
+--- a/drivers/gpio/gpio-aspeed.c
++++ b/drivers/gpio/gpio-aspeed.c
+@@ -404,6 +404,8 @@ static void __aspeed_gpio_set(struct gpio_chip *gc, unsigned int offset,
+ 	gpio->dcache[GPIO_BANK(offset)] = reg;
+ 
+ 	iowrite32(reg, addr);
++	// Dummy read
++	ioread32(addr);
+ }
+ 
+ static void aspeed_gpio_set(struct gpio_chip *gc, unsigned int offset,

@@ -121,6 +121,24 @@ static void do_attestation(const std::string& comp) {
   std::cout << hgx::getMeasurement(comp) << std::endl;
 }
 
+static void do_set_power_limit(std::string pwrLimit) {
+  for (int i = 1; i <= MAX_NUM_GPUs; i++) {
+    hgx::setPowerLimit(i, pwrLimit);
+    std::cout << "Power limit for GPU" << i << " was set to : "
+              << pwrLimit << "W" << std::endl;
+  }
+
+  std::cout << "All done. It takes a minute to take effect."
+            << std::endl;
+}
+
+static void do_get_power_limit() {
+  for (int i = 1; i <= MAX_NUM_GPUs; i++) {
+    std::cout << "GPU" << i << " power limit : " <<
+                 hgx::getPowerLimit(i) << "W" << std::endl;
+  }
+}
+
 int main(int argc, char* argv[]) {
   CLI::App app("HGX Helper Utility");
   app.failure_message(CLI::FailureMessage::help);
@@ -218,6 +236,14 @@ int main(int argc, char* argv[]) {
   measure->add_option("component", args, "Component for which we want the measurements")->required();
   measure->callback([&]() { do_attestation(args); });
   measurement->require_subcommand(1, 1);
+
+  std::string pwrLimit{};
+  auto setPwrLimit = app.add_subcommand("set-pwr-limit", "Set power limit from GPU");
+  setPwrLimit->add_option("PwrLimit", pwrLimit, "the value of the power limit.")->required();
+  setPwrLimit->callback([&]() { do_set_power_limit(pwrLimit); });
+
+  auto getPwrLimit = app.add_subcommand("get-pwr-limit", "Get power limit from GPU");
+  getPwrLimit->callback([&]() { do_get_power_limit(); });
 
   app.require_subcommand(/* min */ 1, /* max */ 1);
 

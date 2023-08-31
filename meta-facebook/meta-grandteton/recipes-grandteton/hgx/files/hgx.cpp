@@ -496,6 +496,33 @@ std::string getMeasurement(const std::string& comp) {
   return hgx.get(HMC_BASE_URL + loc);
 }
 
+std::string setPowerLimit(int gpuID, std::string pwrLimit) {
+  std::string url = HMC_URL +
+      "Systems/HGX_Baseboard_0/Processors/GPU_SXM_"
+       + std::to_string(gpuID) + "/EnvironmentMetrics";
+
+  json patchJson = json::object();
+  patchJson["PowerLimitWatts"]["SetPoint"] = std::stoi(pwrLimit);
+
+  return hgx.patch(url, patchJson.dump());
+}
+
+
+std::string getPowerLimit(int gpuID) {
+  std::string setPoint;
+  std::string url = HMC_URL +
+	   "Systems/HGX_Baseboard_0/Processors/GPU_SXM_"
+       + std::to_string(gpuID) + "/EnvironmentMetrics";
+
+  json jresp = json::parse(hgx.get(url));
+  if (jresp.contains("PowerLimitWatts") &&
+      jresp["PowerLimitWatts"].contains("SetPoint")) {
+    setPoint = jresp["PowerLimitWatts"]["SetPoint"].dump();
+  }
+
+  return setPoint;
+}
+
 } // namespace hgx.
 
 int get_hgx_sensor(const char* component, const char* snr_name, float* value) {

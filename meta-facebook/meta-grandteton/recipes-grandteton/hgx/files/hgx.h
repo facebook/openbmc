@@ -7,6 +7,8 @@ typedef enum HMCPhase {
   BMC_FW_DVT = 2,
 } HMCPhase;
 
+#define MAX_NUM_GPUs     (8)
+
 #ifdef __cplusplus
 #include <stdexcept>
 #include <string>
@@ -102,6 +104,12 @@ std::vector<std::string> integrityComponents();
 
 // Get component measurement
 std::string getMeasurement(const std::string& comp);
+
+// Set power limit
+std::string setPowerLimit(int gpuID, std::string pwrLimit);
+
+// Get power limit
+std::string getPowerLimit(int gpuID);
 
 // Request for the value of the sensor, but return all the JSON output
 std::string sensorRaw(const std::string& component, const std::string& name);

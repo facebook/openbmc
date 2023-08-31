@@ -1,5 +1,7 @@
 #!/bin/bash
 
+. /usr/local/fbpackages/utils/ast-functions
+
 PID=$$
 # File format autodump<fru>.pid (See pal_is_crashdump_ongoing()
 # function definition)
@@ -24,6 +26,15 @@ if [ -f $PID_FILE ]; then
   exit 1
 else
   echo $PID > $PID_FILE
+fi
+
+# check CPU power before dump
+sleep 3
+CPU_PWGD=$(gpio_get FM_PWRGD_CPU1_PWROK)
+
+if [ "$CPU_PWGD" -eq 0 ]; then
+  rm $PID_FILE
+  exit 0
 fi
 
 # Set crashdump timestamp

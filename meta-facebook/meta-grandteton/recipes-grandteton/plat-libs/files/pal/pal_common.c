@@ -298,7 +298,7 @@ pal_bios_completed(uint8_t fru)
   return false;
 }
 
-static void
+void
 get_dimm_present_info(uint8_t fru, bool *dimm_sts_list) {
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};

@@ -493,35 +493,35 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"RETIMER6_HEALTH", 6, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
   {"RETIMER7_HEALTH", 7, read_retimer_health, false, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
 
-  {"CPU0_DIMM_A0_STATE", DIMM_ID0, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB0
-  {"CPU0_DIMM_A1_STATE", DIMM_ID1, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB1
-  {"CPU0_DIMM_A2_STATE", DIMM_ID2, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB2
-  {"CPU0_DIMM_A3_STATE", DIMM_ID3, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB3
-  {"CPU0_DIMM_A4_STATE", DIMM_ID4, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB4
-  {"CPU0_DIMM_A5_STATE", DIMM_ID5, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB5
-  {"CPU0_DIMM_A6_STATE", DIMM_ID6, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB6
-  {"CPU0_DIMM_A7_STATE", DIMM_ID7, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB7
-  {"CPU0_DIMM_A8_STATE", DIMM_ID8, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB8
-  {"CPU0_DIMM_A9_STATE", DIMM_ID9, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB9
-  {"CPU0_DIMM_A10_STATE", DIMM_ID10, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBA
-  {"CPU0_DIMM_A11_STATE", DIMM_ID11, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBB
+  {"CPU0_DIMM_A0_STATE", DIMM_ID0, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB0
+  {"CPU0_DIMM_A1_STATE", DIMM_ID1, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB1
+  {"CPU0_DIMM_A2_STATE", DIMM_ID2, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB2
+  {"CPU0_DIMM_A3_STATE", DIMM_ID3, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB3
+  {"CPU0_DIMM_A4_STATE", DIMM_ID4, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB4
+  {"CPU0_DIMM_A5_STATE", DIMM_ID5, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB5
+  {"CPU0_DIMM_A6_STATE", DIMM_ID6, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB6
+  {"CPU0_DIMM_A7_STATE", DIMM_ID7, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB7
+  {"CPU0_DIMM_A8_STATE", DIMM_ID8, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB8
+  {"CPU0_DIMM_A9_STATE", DIMM_ID9, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xB9
+  {"CPU0_DIMM_A10_STATE", DIMM_ID10, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBA
+  {"CPU0_DIMM_A11_STATE", DIMM_ID11, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xBB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBF
 
-  {"CPU1_DIMM_B0_STATE", DIMM_ID16, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC0
-  {"CPU1_DIMM_B1_STATE", DIMM_ID17, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC1
-  {"CPU1_DIMM_B2_STATE", DIMM_ID18, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC2
-  {"CPU1_DIMM_B3_STATE", DIMM_ID19, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC3
-  {"CPU1_DIMM_B4_STATE", DIMM_ID20, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC4
-  {"CPU1_DIMM_B5_STATE", DIMM_ID21, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC5
-  {"CPU1_DIMM_B6_STATE", DIMM_ID22, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC6
-  {"CPU1_DIMM_B7_STATE", DIMM_ID23, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC7
-  {"CPU1_DIMM_B8_STATE", DIMM_ID24, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC8
-  {"CPU1_DIMM_B9_STATE", DIMM_ID25, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC9
-  {"CPU1_DIMM_B10_STATE", DIMM_ID26, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCA
-  {"CPU1_DIMM_B11_STATE", DIMM_ID27, read_cpu_dimm_state, false, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCB
+  {"CPU1_DIMM_B0_STATE", DIMM_ID12, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC0
+  {"CPU1_DIMM_B1_STATE", DIMM_ID13, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC1
+  {"CPU1_DIMM_B2_STATE", DIMM_ID14, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC2
+  {"CPU1_DIMM_B3_STATE", DIMM_ID15, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC3
+  {"CPU1_DIMM_B4_STATE", DIMM_ID16, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC4
+  {"CPU1_DIMM_B5_STATE", DIMM_ID17, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC5
+  {"CPU1_DIMM_B6_STATE", DIMM_ID18, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC6
+  {"CPU1_DIMM_B7_STATE", DIMM_ID19, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC7
+  {"CPU1_DIMM_B8_STATE", DIMM_ID20, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC8
+  {"CPU1_DIMM_B9_STATE", DIMM_ID21, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xC9
+  {"CPU1_DIMM_B10_STATE", DIMM_ID22, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCA
+  {"CPU1_DIMM_B11_STATE", DIMM_ID23, read_cpu_dimm_state, true, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xCB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
@@ -1555,52 +1555,55 @@ int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static
 int read_cpu_dimm_state(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t dimm_id = sensor_map[fru].map[sensor_num].id; // dimm_id 0-31
-  uint8_t dimm_num = dimm_id%PER_CPU_DIMM_NUMBER_MAX;   // per cpu dimm number 0-15
-  uint8_t cpu_id = dimm_id/PER_CPU_DIMM_NUMBER_MAX;     // cpu_id:CPU0/CPU1
-  uint8_t err_cnt = 0;
+  const char SPD_CTRL[MAX_VALUE_LEN] = "FM_CPU0_SPD_HOST_CTRL_R_N";
   const char *err_list[MAX_PMIC_ERR_TYPE] = {0};
+
   int ret, i, index=0;
-  static bool flag[MAX_DIMM_NUM][MAX_PMIC_ERR_TYPE]= {false};
+  static bool dimm_err_metric[MAX_DIMM_NUM][MAX_PMIC_ERR_TYPE]= {false};
+  static bool dimm_prsnt_list[MAX_DIMM_NUM] = {0};
+  uint8_t dimm_id = sensor_map[fru].map[sensor_num].id; // dimm_id 0-23
+  uint8_t dimm_num = dimm_id%PER_CPU_DIMM_NUMBER_MAX;   // per cpu dimm number 0-11
+  uint8_t cpu_id = dimm_id/PER_CPU_DIMM_NUMBER_MAX;     // cpu_id: 0-1
+  uint8_t err_cnt = 0;
   bool curr[MAX_PMIC_ERR_TYPE] = {false};
   bool tag=false;
   char name[64] = {0};
-  const char shadow[MAX_VALUE_LEN] = "FM_CPU0_SPD_HOST_CTRL_R_N";
 
-  if (!is_dimm_present(dimm_id) ||
-      gpio_get_value_by_shadow(shadow) != GPIO_VALUE_LOW) {
+  *value = 0;
+  if (dimm_id == DIMM_ID0) {
+    get_dimm_present_info(FRU_MB, dimm_prsnt_list);
+  }
+
+  if (dimm_prsnt_list[dimm_id] == false ||
+      gpio_get_value_by_shadow(SPD_CTRL) == GPIO_VALUE_HIGH) {
     return READING_NA;
   }
 
-  *value = 0;
-  ret = pmic_list_err(fru, cpu_id, dimm_num, err_list, &err_cnt);
-  if(!ret) {
+  pmic_list_err(fru, cpu_id, dimm_num, err_list, &err_cnt);
+  if(err_cnt > 0) {
     for (i = 0; i < err_cnt; i++) {
       index = pmic_err_index(err_list[i]);
       curr[index] = true;
-#ifdef DEBUG
-      syslog(LOG_CRIT, "%s cpu%d dimm%d err_num%d %s\n", __func__, cpu_id, dimm_id, index, err_list[i]);
-#endif
     }
-    for (i = 0; i < MAX_PMIC_ERR_TYPE; i++) {
-      tag = curr[i] ^ flag[dimm_id][i];
-#ifdef DEBUG
-      syslog(LOG_CRIT, "%s dimm%d curr=%d flag%d",
-                         __func__, dimm_id, curr[i], flag[dimm_id][i] );
-#endif
-      if(tag) {
-        pmic_err_name(i, name);
-        if(curr[i] == true)
-          syslog(LOG_CRIT, "ASSERT DIMM_LABEL=%s Error %s",
-		get_dimm_label(cpu_id, dimm_num), name);
 
-        flag[dimm_id][i] = curr[i];
+    // If multiple PMIC error occurs, the SEL will be logged
+    // multiple times.
+    for (i = 0; i < MAX_PMIC_ERR_TYPE; i++) {
+      tag = curr[i] ^ dimm_err_metric[dimm_id][i];
+      if(tag && curr[i] == true) {
+        pmic_err_name(i, name);
+        syslog(LOG_CRIT, "ASSERT: DIMM %s - PMIC Error: %s",
+               get_dimm_label(cpu_id, dimm_num), name);
+        dimm_err_metric[dimm_id][i] = curr[i];
       }
     }
 
+    // Since the SEL log has been logged, so we clear PMIC err.
     ret = pmic_clear_err(fru, cpu_id, dimm_num);
-    if (ret < 0) {
-      syslog(LOG_CRIT, "Fail to clear DIMM %s PMIC error!\n", get_dimm_label(cpu_id, dimm_num));
+    if (!ret) {
+      for (i = 0; i < MAX_PMIC_ERR_TYPE; i++) {
+        dimm_err_metric[dimm_id][i] = false;
+      }
     }
   }
 

@@ -14,6 +14,8 @@
 #include "swb_common.hpp"
 
 #define FFI_0_ACCELERATOR 1
+#define ACB_CPLD_ADDR 0x40
+#define MEB_CPLD_ADDR 0x40
 
 using namespace std;
 //MEB CXL VR Component
@@ -327,6 +329,10 @@ GTSwbBicFwComponent meb_bic("mc", "bic", MEB_BIC_BUS, MEB_BIC_EID, BIC_COMP,
     signed_header_t(gta_meb_bic_comps, BIC_COMP, ASPEED));
 AcbPeswFwComponent acb_pesw0("cb", "pesw0", ACB_BIC_BUS, ACB_BIC_EID, PEX0_COMP);
 AcbPeswFwComponent acb_pesw1("cb", "pesw1", ACB_BIC_BUS, ACB_BIC_EID, PEX1_COMP);
+GTSwbCpldComponent acb_cpld("cb", "cpld", LCMXO3_4300C, ACB_BIC_BUS, ACB_CPLD_ADDR, &cpld_pldm_wr,
+    ACB_BIC_EID, CPLD_COMP, signed_header_t(gta_acb_bic_comps, CPLD_COMP, LATTICE));
+GTSwbCpldComponent meb_cpld("mc", "cpld", LCMXO3_4300C, MEB_BIC_BUS, MEB_CPLD_ADDR, &cpld_pldm_wr,
+    MEB_BIC_EID, CPLD_COMP, signed_header_t(gta_meb_bic_comps, CPLD_COMP, LATTICE));
 }
 
 MebCxlFwComponent meb_cxl1("mc", "cxl1", MEB_BIC_BUS, MEB_BIC_EID, CXL1_COMP);

@@ -104,6 +104,7 @@ namespace pldm_signed_info {
     {"xdpe12284c",   INFINEON},
     {"mp2971",       MPS},
     {"LCMXO3-9400C", LATTICE},
+    {"LCMXO3-4300C", LATTICE},
     {"pex89000",     BROADCOM}
   };
 

@@ -10,12 +10,8 @@
 #include "cpld.hpp"
 
 #define SWB_CPLD_BUS_ID   (7)
-
 #define ACB_CPLD_BUS_ID   (4)
-#define ACB_CPLD_ADDR     (0x40)
-
 #define MEB_CPLD_BUS_ID   (12)
-#define MEB_CPLD_ADDR     (0x40)
 
 using namespace std;
 
@@ -138,8 +134,6 @@ class fw_cpld_config {
       if (pal_is_artemis()) {
         // TODO: Add Signed INFO
         static GTCpldComponent mb_cpld("mb", "cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
-        static GTCpldComponent acb_cpld("cb", "cpld", LCMXO3_9400C, ACB_BIC_BUS, ACB_CPLD_ADDR, &cpld_pldm_wr, cpld_info);
-        static GTCpldComponent meb_cpld("mc", "cpld", LCMXO3_9400C, MEB_BIC_BUS, MEB_CPLD_ADDR, &cpld_pldm_wr, cpld_info);
         cpld_info.board_id = signed_info::SCM;
         static GTCpldComponent scm_cpld("scm", "cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);
       } else {

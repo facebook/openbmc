@@ -47,11 +47,11 @@ class FwUpgradeTest(unittest.TestCase):
         ],  # priority=1, upgrade_cmd
         "bios": [
             5,
-            "/usr/bin/fw-util scm --update --bios {filename}",
+            "/usr/bin/fw-util scm --update bios {filename}",
         ],  # priority=5, upgrade_cmd
         "bic": [
             4,
-            "/usr/bin/fw-util scm --update --bic {filename}",
+            "/usr/bin/fw-util scm --update bic {filename}",
         ],  # priority=4, upgrade_cmd
         "scm": [
             6,

@@ -2,12 +2,12 @@
     "bic" : {
         "get_version" : "fw-util scm --version |grep Bri|grep -v Boot| cut -d ' ' -f 3",
         "priority" : 4,
-        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bic {filename}"
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update bic {filename}"
     },
     "bios" : {
         "get_version" : "fw-util scm --version |grep BIOS| cut -d ' ' -f 3",
         "priority" : 5,
-        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bios {filename}"
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update bios {filename}"
     },
     "fcm" : {
         "get_version" : "fw-util cpld --version | grep `echo '{entity}' | cut -d '-' -f 1` | grep `echo '{entity}' | cut -d'-' -f2` | cut -d ' ' -f 3",

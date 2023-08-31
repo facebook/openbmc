@@ -249,6 +249,7 @@ int fw_update_proc (const string& image, bool /*force*/,
 {
   struct stat st;
   uint8_t fruid = 0;
+  int ret = 0;
 
   pal_get_fru_id((char *)fru.c_str(), &fruid);
 
@@ -256,11 +257,13 @@ int fw_update_proc (const string& image, bool /*force*/,
   int fd_r = open(image.c_str(), O_RDONLY);
   if (fd_r < 0) {
     cerr << "Cannot open " << image << " for reading" << endl;
+    syslog(LOG_CRIT, "Cannot open %s for reading", image.c_str());
     return FW_STATUS_FAILURE;
   }
 
   if (stat(image.c_str(), &st) < 0) {
     cerr << "Cannot check " << image << " file information" << endl;
+    syslog(LOG_CRIT, "Cannot check %s file information", image.c_str());
     return FW_STATUS_FAILURE;
   }
 
@@ -273,7 +276,7 @@ int fw_update_proc (const string& image, bool /*force*/,
 
   try {
 
-    int ret = swb_fw_update(fruid, bus, eid, target, memblock, r_size, comp);
+    ret = swb_fw_update(fruid, bus, eid, target, memblock, r_size, comp);
     delete[] memblock;
     close(fd_r);
     if (ret != SWB_FW_UPDATE_SUCCESS) {
@@ -289,15 +292,21 @@ int fw_update_proc (const string& image, bool /*force*/,
           cerr << comp << ": unknow error (ret: " << ret << ")" << endl;
           break;
       }
-      return FW_STATUS_FAILURE;
+      ret = FW_STATUS_FAILURE;
+      goto error_exit;
     }
 
   } catch (string& err) {
     cerr << err << endl;
-    return FW_STATUS_NOT_SUPPORTED;
+    ret = FW_STATUS_NOT_SUPPORTED;
+    goto error_exit;
   }
   syslog(LOG_CRIT, "%s component %s upgrade completed\n", fru.c_str(), comp.c_str() );
   return 0;
+
+error_exit:
+  syslog(LOG_CRIT, "%s component %s: upgrade failed", fru.c_str(), comp.c_str());
+  return ret;
 }
 
 int SwbBicFwComponent::update(string image)

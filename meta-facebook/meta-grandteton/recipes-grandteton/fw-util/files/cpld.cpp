@@ -61,17 +61,21 @@ int CpldComponent::_update(const char *path, uint8_t is_signed, i2c_attr_t attr 
   syslog(LOG_CRIT, "%s component %s%s upgrade initiated", fru.c_str(), comp.c_str(), is_signed? "": " force");
   if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
     cerr << "Cannot open i2c!" << endl;
-    return ret;
+    goto error_exit;
   }
 
   ret = cpld_program((char *)path, NULL, false);
   cpld_intf_close();
   if (ret) {
     cerr << "Error Occur at updating CPLD FW!" << endl;
-    return ret;
+    goto error_exit;
   }
 
   syslog(LOG_CRIT, "%s component %s%s upgrade completed", fru.c_str(), comp.c_str(), is_signed? "": " force");
+  return ret;
+
+error_exit:
+  syslog(LOG_CRIT, "%s component %s%s upgrade failed", fru.c_str(), comp.c_str(), is_signed? "": " force");
   return ret;
 }
 

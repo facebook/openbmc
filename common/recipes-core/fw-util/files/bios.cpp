@@ -117,6 +117,7 @@ int BiosComponent::update(std::string image, bool force) {
   const int max_retry_power_ctl = 3;
   const int max_retry_me_recovery = 15;
   bool setLow = true;
+  string comp = this->component();
 
   if (pal_get_fru_id((char *)_fru.c_str(), &fruid)) {
     return -1;
@@ -174,6 +175,8 @@ int BiosComponent::update(std::string image, bool force) {
 
   if (ret == 0) {
     reboot(fruid);
+  } else {
+    syslog(LOG_CRIT, "%s component %s%s upgrade failed", _fru.c_str(), comp.c_str(), force? "": " force");
   }
   return ret;
 }

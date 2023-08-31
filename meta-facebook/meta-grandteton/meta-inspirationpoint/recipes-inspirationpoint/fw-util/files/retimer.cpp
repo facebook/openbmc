@@ -23,6 +23,8 @@ class RetimerComponent : public Component {
 
     int update(std::string image) {
       int ret = -1, lock = -1;
+      std::string comp = this->component();
+      std::string fru  = this->fru();
 
       if(gpio_get_value_by_shadow(RST_PESET) != GPIO_VALUE_HIGH) {
          return FW_STATUS_FAILURE;
@@ -36,6 +38,7 @@ class RetimerComponent : public Component {
       mb_retimer_unlock(lock);
 
       if (ret) {
+        syslog(LOG_CRIT, "%s component %s: upgrade failed", fru.c_str(), comp.c_str());
         return FW_STATUS_FAILURE;
       }
       std::cout << "To active the upgrade of Retimer, please perform 'power-util mb cycle'" << std::endl;

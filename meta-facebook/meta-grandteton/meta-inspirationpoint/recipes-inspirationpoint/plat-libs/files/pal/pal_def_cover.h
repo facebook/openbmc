@@ -2,10 +2,12 @@
 #define __HAL_PALDEF_COVER_H__
 
 //BUS number
-#define HSC_BUS_NUM              (6)
+#define HSC_BUS_NUM               (6)
 
 #define MAX_DIMM_NUM              (24)
 #define PER_CPU_DIMM_NUMBER_MAX   (MAX_DIMM_NUM/MAX_CPU_CNT)
+
+#define MAX_NUM_RETIMERS          (8)
 
 //GPIO EVENT Cover
 #define IRQ_UV_DETECT_N          "UV_ALERT_N"

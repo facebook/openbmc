@@ -1495,17 +1495,18 @@ static
 int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
   const int HEARTBEAT = 1;
   const int CODE_LOAD = 1 << 1;
+  static uint8_t retry[MAX_NUM_RETIMERS] = {0};
   char rev_id[32] = {0};
   char fru_name[32] = {0};
   int ret = 0, lock = -1;
   int retimer_id = sensor_map[fru].map[sensor_num].id;
   uint8_t health = 0;
-  *value = 0;
 
-  if(pal_get_fru_name(fru, fru_name)) {
+  if(pal_get_fru_name(fru, fru_name) || retimer_id >= MAX_NUM_RETIMERS) {
     return READING_NA;
   }
 
+  /*  Simply return if one of the signal is inactive. */
   if (gpio_get_value_by_shadow("RST_PERST_CPUx_SWB_N") != GPIO_VALUE_HIGH ||
       gpio_get_value_by_shadow("FM_RST_CPU1_RESETL_N") != GPIO_VALUE_HIGH) {
     return READING_NA;
@@ -1522,13 +1523,31 @@ int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
     syslog(LOG_WARNING, "%s: mb_retimer_lock failed", __func__);
     return READING_SKIP;
   }
+
   ret = AriesGetHealth(fru_name, retimer_id, &health);
   mb_retimer_unlock(lock);
 
-  if ((ret != ARIES_SUCCESS) || (health != (HEARTBEAT | CODE_LOAD))) {
-    if (gpio_get_value_by_shadow("RST_PERST_CPUx_SWB_N") == GPIO_VALUE_HIGH &&
-        gpio_get_value_by_shadow("FM_RST_CPU1_RESETL_N") == GPIO_VALUE_HIGH)
-      *value = 1;
+  if ((ret == ARIES_SUCCESS) &&
+      ((health & (HEARTBEAT|CODE_LOAD)) == (HEARTBEAT|CODE_LOAD))) {
+    *value = 0;
+  }
+  else {
+    // If the system is powered off during the retimer health reading,
+    // simply return if one of the signal is inactive.
+    if (gpio_get_value_by_shadow("RST_PERST_CPUx_SWB_N") != GPIO_VALUE_HIGH ||
+        gpio_get_value_by_shadow("FM_RST_CPU1_RESETL_N") != GPIO_VALUE_HIGH) {
+      return READING_NA;
+    }
+    // These retries only occurs for the time duration between gpiod and
+    // sensord (about 1 sec) when BMC boots up. So we don't need to reset
+    // the retry to 0.
+    retry[retimer_id]++;
+    if (retry_err_handle(retry[retimer_id], 5) == READING_SKIP) {
+      return READING_SKIP;
+    }
+    // If the maximum retry attempts are exceeded, it should be considered
+    // as the retimer being in an unhealthy state.
+    *value = 1;
   }
 
   return 0;

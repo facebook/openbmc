@@ -27,9 +27,9 @@ rebind_i2c_dev() {
 
   while [ ! -L "${SYSFS_I2C_DEVICES}/$dev/driver" ] && [ $RETRY -lt 10 ];
   do
-    sleep 1
     i2c_bind_driver "$dri" "$dev"
     ((RETRY++))
+    sleep 1
   done
 }
 

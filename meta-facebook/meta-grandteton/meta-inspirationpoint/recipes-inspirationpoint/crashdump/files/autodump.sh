@@ -10,7 +10,6 @@ DUMP_DIR='/var/lib/amd-ras'
 CURRENT_INDEX_FILE="$DUMP_DIR/fru1_current_index"
 INFODUMP_FILE="$DUMP_DIR/sensordump.log"
 DUMP_UTIL='/usr/bin/amd-ras'
-LOG_ARCHIVE='/mnt/data/autodump.tar.gz'
 
 SENSOR_HISTORY=180
 
@@ -70,6 +69,8 @@ echo "Auto Dump Started"
   echo -n "Dump End at "; date
 } >> $INFODUMP_FILE 2>&1
 
+CURT_DTIME=$(date +"%Y%m%d-%H%M%S")
+LOG_ARCHIVE="/mnt/data/fru1_ras-error${PREVIOUS_INDEX}_${CURT_DTIME}.tar.gz"
 $DUMP_UTIL --fru 1 --ncpu 2 --cid "${CPUID[@]}"
 
 [ -r $CURRENT_INDEX_FILE ] && CURRENT_INDEX=$(cat $CURRENT_INDEX_FILE) || CURRENT_INDEX=0

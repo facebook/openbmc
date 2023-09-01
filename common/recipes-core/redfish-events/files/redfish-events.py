@@ -15,17 +15,30 @@ from aiohttp import web
 
 
 class RedfishEventHandler(web.Application):
-    def __init__(self, sub_host: str, sub_port: int, target_host: str, fru_id: int):
+    def __init__(
+        self,
+        sub_host: str,
+        sub_port: int,
+        target_host: str,
+        fru_id: int,
+        fru_name: str,
+        timeout: int,
+    ):
         super().__init__()
         self.subscriber_url = f"http://{sub_host}:{sub_port}"
         self.target_url = f"http://{target_host}"
         self.target_fruid = fru_id
+        self.target_name = fru_name
         self.subscriber_host = sub_host
         self.subscriber_port = sub_port
         self.post_buffer = []
         self.task = None
         self.router.add_get("/{tail:.*}", self.get)
         self.router.add_post("/{tail:.*}", self.post)
+        self.lastState = False
+        self.lastActive = time.time()
+        self.reportedUnreachableSEL = False
+        self.maxInactivityTime = timeout
 
     def sel(self, log: str):
         syslog.syslog(syslog.LOG_CRIT, f"FRU: {self.target_fruid} " + log)
@@ -45,19 +58,56 @@ class RedfishEventHandler(web.Application):
             logging.info("Waiting for target...")
             time.sleep(5.0)
 
+    def handleUnreachable(self):
+        if self.lastState:
+            logging.info("%s Redfish Endpoint is not reachable" % (self.target_name))
+            syslog.syslog(
+                syslog.LOG_INFO,
+                "%s Redfish Endpoint is not reachable" % (self.target_name),
+            )
+        if (
+            not self.reportedUnreachableSEL
+            and (time.time() - self.lastActive) >= self.maxInactivityTime
+        ):
+            self.sel(
+                "%s Redfish Unreachable - ASSERT Timed out after %ds"
+                % (self.target_name, self.maxInactivityTime)
+            )
+            self.reportedUnreachableSEL = True
+
+    def handleReachable(self):
+        if not self.lastState:
+            logging.info(
+                "%s Redfish Endpoint is reachable. Resubscribing for events"
+                % (self.target_name)
+            )
+            syslog.syslog(
+                syslog.LOG_INFO,
+                "%s Redfish Endpoint is reachable. Resubscribing for events"
+                % (self.target_name),
+            )
+            self.resubscribe()
+        self.lastActive = time.time()
+        if self.reportedUnreachableSEL:
+            self.reportedUnreachableSEL = False
+            self.sel(
+                "%s Redfish Unreachable - DEASSERT Timed out after %ds"
+                % (self.target_name, self.maxInactivityTime)
+            )
+
+    def handleState(self, state):
+        if state:
+            self.handleReachable()
+        else:
+            self.handleUnreachable()
+        self.lastState = state
+
     async def monitorTarget(self):
         logging.info("Monitor thread running")
-        lastState = self.isTargetReady()
+        self.lastState = self.isTargetReady()
         time.sleep(2.0)
         while True:
-            newState = self.isTargetReady()
-            if newState != lastState:
-                if newState:
-                    logging.info("Target started. Resubscribing for events")
-                    self.resubscribe()
-                else:
-                    logging.info("Target is no longer available")
-            lastState = newState
+            self.handleState(self.isTargetReady())
             await asyncio.sleep(5.0)
 
     async def startup(self):
@@ -229,7 +279,9 @@ if __name__ == "__main__":
     port = config.getint("subscriber", "port", fallback=5555)
     target = config.get("target", "hostname")
     fruid = config.getint("target", "fruid")
+    timeout = config.getint("target", "max_unreachable_time")
+    fruname = config.get("target", "name")
     logPath = config.get("logging", "path", fallback="/var/log/redfish-events.log")
     initLoggers(logPath)
-    handler = RedfishEventHandler(host, port, target, fruid)
+    handler = RedfishEventHandler(host, port, target, fruid, fruname, timeout)
     handler.run()

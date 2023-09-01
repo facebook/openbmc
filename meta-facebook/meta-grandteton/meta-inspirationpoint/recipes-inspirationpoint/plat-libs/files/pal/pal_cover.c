@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <syslog.h>
+#include <pthread.h>
 #include <esmi_cpuid_msr.h>
 #include <esmi_rmi.h>
 #include <openbmc/libgpio.h>
@@ -626,5 +627,45 @@ fru_presence_ext(uint8_t fru_id, uint8_t *status) {
     default:
       *status = FRU_PRSNT;
       return true;
+  }
+}
+
+static void* hgx_pwr_limit_check (void* arg) {
+  int err_type;
+  static bool is_logged = false;
+  gpio_value_t hmc_ready, plat_rst;
+
+  pthread_detach(pthread_self());
+
+  while (1) {
+    hmc_ready = gpio_get_value_by_shadow(HMC_READY);
+    plat_rst  = gpio_get_value_by_shadow(RST_PLTRST_N);
+    if(hmc_ready == GPIO_VALUE_HIGH) {
+      // Monitor HGX GPU when power on
+      if (plat_rst == GPIO_VALUE_HIGH) {
+        err_type = system("sh /etc/init.d/setup-fan.sh hgx &");
+
+        if (err_type != 0 && is_logged != true) {
+          syslog(LOG_WARNING, "%s: err_type = %d", __FUNCTION__, err_type);
+          is_logged = true;
+        }
+        else {
+          is_logged = false;
+        }
+      }
+    }
+    else {
+      // Exit when HMC is not ready
+      pthread_exit(NULL);
+    }
+    sleep(60);
+  }
+}
+
+void hgx_pwr_limit_mon (void) {
+  pthread_t tid_pwr_limit_mon;
+
+ if (pthread_create(&tid_pwr_limit_mon, NULL, hgx_pwr_limit_check, NULL)) {
+    syslog(LOG_WARNING, "pthread was created fail for hgx_pwr_limit_mon");
   }
 }

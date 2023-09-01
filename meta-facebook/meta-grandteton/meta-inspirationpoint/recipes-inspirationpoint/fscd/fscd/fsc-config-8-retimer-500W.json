@@ -1,0 +1,681 @@
+{
+    "version": "inspirationpint_v6",
+    "pwm_transition_value": 70,
+    "pwm_boost_value": 100,
+    "sample_interval_ms": 3000,
+    "fan_recovery_time": 2,
+    "sensor_filter_all": true,
+    "pwm_sensor_boost_value": 100,
+    "standby_fan_fail": {
+      "fan_pwm": 20
+    },
+    "multi_fan_fail": {
+      "data": [
+        [2, 100]
+      ],
+      "host_action": ["shutdown", 4]
+    },
+    "boost": {
+      "fan_fail": true,
+      "sensor_fail": true
+    },
+    "sensor_valid_check": {
+      "(.*)cpu": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)e1s": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)pex": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)hgx_": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)retimer": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)vr": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      }
+    },
+    "watchdog": false,
+    "min_rpm": 965,
+    "profiles": {
+      "cpu_tray_scm_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [25, 25],
+          [30, 28],
+          [35, 30],
+          [40, 40],
+          [45, 90]
+        ]
+      },
+      "cpu_tray_cpu_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [55, 25],
+          [65, 30],
+          [70, 35],
+          [74, 45]
+        ]
+      },
+      "cpu_tray_cpu_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 76,
+        "kp": -3,
+        "ki": -0.035,
+        "kd": 0
+      },
+      "cpu_tray_dimm_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [55, 25],
+          [65, 35],
+          [70, 40],
+          [75, 45]
+        ]
+      },
+      "cpu_tray_dimm_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 78,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
+      },
+      "cpu_tray_nic_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [65, 25],
+          [70, 30],
+          [95, 90]
+        ]
+      },
+      "cpu_tray_nic_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 85,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
+      },
+      "swb_tray_E1S_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 4,
+        "data": [
+          [50, 25],
+          [55, 30]
+        ]
+      },
+      "swb_tray_E1S_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 2,
+        "setpoint": 60,
+        "kp": -3,
+        "ki": -0.035,
+        "kd": 0
+      },
+      "swb_tray_switch_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [71, 25],
+          [73, 30],
+          [80, 40]
+        ]
+      },
+      "swb_tray_switch_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 2,
+        "setpoint": 85,
+        "kp": -3,
+        "ki": -0.035,
+        "kd": 0
+      },
+      "gpu_tray_nvs_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
+        "data": [
+          [58, 25],
+          [90, 90]
+        ]
+      },
+      "gpu_tray_gpu_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
+        "data": [
+          [49, 25],
+          [63, 35],
+          [67, 40],
+          [72, 48],
+          [75, 55],
+          [82, 90]
+        ]
+      },
+      "gpu_tray_gpu_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 79,
+        "kp": -3,
+        "ki": -0.035,
+        "kd": 0
+      },
+      "gpu_tray_retimer_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
+        "data": [
+          [80, 25],
+          [84, 30],
+          [86, 33],
+          [88, 35],
+          [92, 45],
+          [97, 50],
+          [107, 90]
+        ]
+      },
+      "gpu_tray_retimer_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 2,
+        "setpoint": 102,
+        "kp": -3.5,
+        "ki": -0.035,
+        "kd": 0
+      },
+      "gpu_tray_hbm_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
+        "data": [
+          [62, 25],
+          [63, 35],
+          [78, 40],
+          [82, 48],
+          [85, 55],
+          [92, 90]
+        ]
+      },
+      "gpu_tray_hbm_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 2,
+        "negative_hysteresis": 2,
+        "setpoint": 88,
+        "kp": -3.5,
+        "ki": -0.035,
+        "kd": 0
+      },
+      "gpu_tray_hsc_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [48, 25],
+          [90, 90]
+        ]
+      },
+      "retimer_temp_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [70, 25],
+          [80, 30],
+          [95, 90]
+        ]
+      },
+      "retimer_temp_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 90,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
+      },
+      "cpu_tray_vr_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [80, 25],
+          [90, 30],
+          [115, 90]
+        ]
+      },
+      "cpu_tray_vr_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 100,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
+      },
+      "gpu_fpga_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
+        "data": [
+          [65, 25],
+          [80, 40],
+          [85, 45],
+          [95, 90]
+        ]
+      },
+      "gpu_fpga_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 2,
+        "setpoint": 90,
+        "kp": -3.5,
+        "ki": -0.035,
+        "kd": 0
+      }
+    },
+    "fans": {
+      "0": {
+        "label" : "Fan 0 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor208"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "1": {
+        "label" : "Fan 0 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor209"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "2": {
+        "label" : "Fan 1 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor210"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "3": {
+        "label" : "Fan 1 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor211"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "4": {
+        "label" : "Fan 2 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor212"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "5": {
+        "label" : "Fan 2 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor213"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "6": {
+        "label" : "Fan 3 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor214"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "7": {
+        "label" : "Fan 3 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor215"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "8": {
+        "label" : "Fan 4 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor216"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "9": {
+        "label" : "Fan 4 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor217"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "10": {
+        "label" : "Fan 5 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor218"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "11": {
+        "label" : "Fan 5 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor219"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "12": {
+        "label" : "Fan 6 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor220"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "13": {
+        "label" : "Fan 6 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor221"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "14": {
+        "label" : "Fan 7 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor222"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "15": {
+        "label" : "Fan 7 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor223"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "16": {
+        "label" : "Fan 8 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor224"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "17": {
+        "label" : "Fan 8 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor225"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "18": {
+        "label" : "Fan 9 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor226"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "19": {
+        "label" : "Fan 9 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor227"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "20": {
+        "label" : "Fan 10 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor228"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "21": {
+        "label" : "Fan 10 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor229"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "22": {
+        "label" : "Fan 11 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor230"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+       "23": {
+        "label" : "Fan 11 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor231"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "24": {
+        "label" : "Fan 12 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor232"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "25": {
+        "label" : "Fan 12 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor233"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "26": {
+        "label" : "Fan 13 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor234"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "27": {
+        "label" : "Fan 13 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp1_sensor235"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+
+      "28": {
+        "label" : "Fan 14 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor236"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "29": {
+        "label" : "Fan 14 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor237"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "30": {
+        "label" : "Fan 15 Inlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor238"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "31": {
+        "label" : "Fan 15 Outlet",
+        "read_source" : {
+          "kv" : "fan_bp2_sensor239"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      }
+    },
+    "zones": {
+      "zone": {
+        "pwm_output": [0],
+        "expr_file": "zone-8-retimer.fsc"
+      }
+    }
+}

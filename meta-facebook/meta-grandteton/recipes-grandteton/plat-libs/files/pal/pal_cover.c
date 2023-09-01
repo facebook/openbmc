@@ -72,3 +72,7 @@ fru_presence_ext(uint8_t fru_id, uint8_t *status) {
       return true;
   }
 }
+
+void hgx_pwr_limit_mon (void) {
+  return;
+}

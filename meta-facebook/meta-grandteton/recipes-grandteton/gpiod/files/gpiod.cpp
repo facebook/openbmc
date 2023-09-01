@@ -917,6 +917,7 @@ static void hmc_ready(bool startup) {
     while (1) {
       try {
         hgx::syncTime();
+        hgx_pwr_limit_mon();
         break;
       } catch (std::exception& e) {
         syslog(LOG_WARNING, "HGX: Failed to get to HMC: %s", e.what());

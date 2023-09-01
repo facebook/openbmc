@@ -30,17 +30,6 @@
 # shellcheck disable=SC1091
 . /usr/local/fbpackages/utils/ast-functions
 
+auto_fsc=$1
 
-default_fsc_config="/etc/fsc-config.json"
-if [[ -f ${default_fsc_config} ]]; then
-  rm ${default_fsc_config}
-fi
-
-rev_id=$(kv get mb_rev)
-if [[ "$rev_id" == "2" ]]; then
-  ln -s /etc/fsc-config-2-retimer.json ${default_fsc_config}
-else
-  ln -s /etc/fsc-config-8-retimer.json ${default_fsc_config}
-fi
-
-/etc/init.d/check-fan-cache.sh &
+/etc/init.d/check-fan-cache.sh $auto_fsc &

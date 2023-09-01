@@ -236,14 +236,14 @@ struct pal_key_cfg {
 
 MAPTOSTRING root_port_common_mapping[] = {
     // XCC
-    {0xB3, 1, 0xFF, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
-    {0xB3, 5, 0xFF, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
+    {0xB3, 1, 0x00, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
+    {0xB3, 5, 0x00, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
     // MCC
-    {0xBB, 7, 0xFF, 0x57, "Num 0", "SB"}, // root_port=0x5G, Boot Drive
+    {0xBB, 7, 0x00, 0x57, "Num 0", "SB"}, // root_port=0x5G, Boot Drive
     // QS
-    {0xBB, 1, 0xFF, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
-    {0xBB, 5, 0xFF, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
-    {0x00, 0, 0xFF, 0xFF, "ieh4", "ieh"}, //  ieh device
+    {0xBB, 1, 0x00, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
+    {0xBB, 5, 0x00, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
+    {0x00, 0, 0x00, 0xFF, "ieh4", "ieh"}, //  ieh device
     // Halfdome
     {0x00, 3, 0x01, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC
     {0x01, 0, 0x00, 0xFF, "Class 1", "NIC"}, //  Endpoint of Class 1 NIC
@@ -283,30 +283,17 @@ MAPTOSTRING root_port_common_mapping[] = {
     {0x0A, 0, 0x00, 0xFF, "DEV 4", "4OU"}, // Endpoint of 4OU DEV 4
 };
 
-MAPTOSTRING root_port_mapping[] = {
-    { 0xB2, 3, 0xFF, 0x3D, "Num 0", "1OU"}, //Port 0x4D
-    { 0xB2, 2, 0xFF, 0x3C, "Num 1", "1OU"}, //Port 0x4C
-    { 0xB2, 1, 0xFF, 0x3B, "Num 2", "1OU"}, //Port 0x4B
-    { 0xB2, 0, 0xFF, 0x3A, "Num 3", "1OU"}, //Port 0x4A
-    { 0x15, 0, 0xFF, 0x1A, "Num 0", "2OU"}, //Port 0x1A
-    { 0x15, 1, 0xFF, 0x1B, "Num 1", "2OU"}, //Port 0x1B
-    { 0x63, 1, 0xFF, 0x2B, "Num 2", "2OU"}, //Port 0x2B
-    { 0x63, 0, 0xFF, 0x2A, "Num 3", "2OU"}, //Port 0x2A
-    { 0x15, 2, 0xFF, 0x1C, "Num 4", "2OU"}, //Port 0x1C
-    { 0x15, 3, 0xFF, 0x1D, "Num 5", "2OU"}, //Port 0x1D
-};
-
 MAPTOSTRING root_port_mapping_e1s[] = {
     // XCC
-    { 0x7F, 1, 0xFF, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
-    { 0x7F, 3, 0xFF, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
-    { 0x7F, 5, 0xFF, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
-    { 0x7F, 7, 0xFF, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
+    { 0x7F, 1, 0x00, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
+    { 0x7F, 3, 0x00, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
+    { 0x7F, 5, 0x00, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
+    { 0x7F, 7, 0x00, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
     // MCC
-    { 0x84, 1, 0xFF, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
-    { 0x84, 3, 0xFF, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
-    { 0x84, 5, 0xFF, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
-    { 0x84, 7, 0xFF, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
+    { 0x84, 1, 0x00, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
+    { 0x84, 3, 0x00, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
+    { 0x84, 5, 0x00, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
+    { 0x84, 7, 0x00, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
 };
 
 PCIE_ERR_DECODE pcie_err_tab[] = {

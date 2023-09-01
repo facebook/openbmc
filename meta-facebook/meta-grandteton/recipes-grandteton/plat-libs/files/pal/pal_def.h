@@ -622,6 +622,19 @@ enum GTA_MB_CPLD {
   MC_PWR_TRAY_REMOVE_MASK = 0x04,
 };
 
+enum GTA_MB_REV_ID {
+  GTA_DVT_STAGE = 4,
+};
+
+enum GTA_EXMAX_CABLE {
+  GTA_EXMAX_CABLE_A = 1,
+  GTA_EXMAX_CABLE_B,
+  GTA_EXMAX_CABLE_C,
+  GTA_EXMAX_CABLE_D,
+  GTA_EXMAX_CABLE_E,
+  GTA_EXMAX_CABLE_F,
+};
+
 /* Artemis End */
 
 #endif

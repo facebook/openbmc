@@ -824,6 +824,8 @@ void
   int init_flag[size];
   uint8_t gta_exp_prsnt_status = FRU_NOT_PRSNT;
   gpiopoll_ioex_config *iox_gpio_table = pal_is_artemis() ? gta_iox_gpios : iox_gpios;
+  static bool is_exmax_prsnt_check = false;
+  uint8_t mb_rev = 0;
 
   for (i = 0; i < size; ++i)
     init_flag[i] = false;
@@ -837,6 +839,15 @@ void
         if (!gta_expansion_board_present(fru, &gta_exp_prsnt_status)) {
           syslog(LOG_WARNING,"%s() Get expansion board present failed, status: %u", __func__, gta_exp_prsnt_status);
         }
+      }
+      pal_get_board_rev_id(FRU_MB, &mb_rev);
+      if (!is_exmax_prsnt_check && mb_rev >= GTA_DVT_STAGE) {
+        for (int cable_id = GTA_EXMAX_CABLE_A; cable_id <= GTA_EXMAX_CABLE_F; cable_id ++) {
+          if (!gta_check_exmax_prsnt(cable_id)) {
+             syslog(LOG_WARNING,"%s() Get Cable:%u presence failed", __func__, cable_id);
+          }
+        }
+        is_exmax_prsnt_check = true;
       }
     }
     sleep(1);

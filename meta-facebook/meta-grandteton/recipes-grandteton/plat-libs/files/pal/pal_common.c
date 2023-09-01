@@ -140,6 +140,117 @@ read_device(const char *device, int *value) {
 }
 
 bool
+gta_check_exmax_prsnt(uint8_t cable_id) {
+  uint8_t temp_reg_val[6] = {0};
+  int i2cfd = 0, ret = -1;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
+  uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
+  gpio_value_t gpio_prsnt_A;
+  enum GTA_EXMAX_CABLE_PRESENT_OFFSET {
+    EXMAX_CABLE_PRESENT_OFFSET_1 = 0x00,
+    EXMAX_CABLE_PRESENT_OFFSET_2 = 0x04,
+    EXMAX_CABLE_PRESENT_OFFSET_3 = 0x05,
+    EXMAX_CABLE_PRESENT_OFFSET_4 = 0x06,
+    EXMAX_CABLE_PRESENT_OFFSET_5 = 0x07,
+    EXMAX_CABLE_PRESENT_OFFSET_6 = 0x50,
+  };
+  enum GTA_EXMAX_CABLE_PRESENT_MASK {
+    EXMAX_CABLE_PRESENT_MASK_A_1 = 0x01,
+    EXMAX_CABLE_PRESENT_MASK_A_2 = 0x01,
+    EXMAX_CABLE_PRESENT_MASK_B   = 0x02,
+    EXMAX_CABLE_PRESENT_MASK_C_1 = 0x04,
+    EXMAX_CABLE_PRESENT_MASK_C_2 = 0x40,
+    EXMAX_CABLE_PRESENT_MASK_D_1 = 0x01,
+    EXMAX_CABLE_PRESENT_MASK_D_2 = 0x80,
+    EXMAX_CABLE_PRESENT_MASK_E   = 0x02,
+    EXMAX_CABLE_PRESENT_MASK_F   = 0x10,
+  };
+
+  uint8_t cbl_prsnt_offset[] = {EXMAX_CABLE_PRESENT_OFFSET_1, EXMAX_CABLE_PRESENT_OFFSET_2, EXMAX_CABLE_PRESENT_OFFSET_3, \
+                                EXMAX_CABLE_PRESENT_OFFSET_4, EXMAX_CABLE_PRESENT_OFFSET_5, EXMAX_CABLE_PRESENT_OFFSET_6};
+
+  i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
+    return false;
+  }
+
+  for (int i = 0; i < ARRAY_SIZE(cbl_prsnt_offset); i ++) {
+    tbuf[0] = cbl_prsnt_offset[i];
+    tlen = 1;
+    rlen = 1;
+    ret = i2c_rdwr_msg_transfer(i2cfd, GTA_MB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+    if (ret < 0) {
+      syslog(LOG_INFO, "%s() I2C transfer to MB CPLD: 0x%02x failed, RET: %d", __func__,cbl_prsnt_offset[i] ,ret);
+      i2c_cdev_slave_close(i2cfd);
+      return false;
+    }
+    temp_reg_val[i] = rbuf[0];
+  }
+
+  switch(cable_id) {
+    case GTA_EXMAX_CABLE_A:
+      // Check MB CPLD and IO-EXP
+      gpio_prsnt_A = gpio_get_value_by_shadow(CABLE_PRSNT_A);
+      if ((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_A_1) == EXMAX_CABLE_PRESENT_MASK_A_1 &&
+          (temp_reg_val[5] & EXMAX_CABLE_PRESENT_MASK_A_2) == EXMAX_CABLE_PRESENT_MASK_A_2 &&
+          (gpio_prsnt_A)) {
+            syslog(LOG_CRIT, "Cable A is not Present");
+      } else {
+        syslog(LOG_CRIT, "Cable A is Present");
+      }
+      break;
+    case GTA_EXMAX_CABLE_B:
+      if ((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_B) == EXMAX_CABLE_PRESENT_MASK_B) {
+        syslog(LOG_CRIT, "Cable B is not Present");
+      } else {
+        syslog(LOG_CRIT, "Cable B is Present");
+      }
+      break;
+    case GTA_EXMAX_CABLE_C:
+      // Check MB CPLD
+      if ((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_C_1) == EXMAX_CABLE_PRESENT_MASK_C_1 &&
+          (temp_reg_val[3] & EXMAX_CABLE_PRESENT_MASK_C_2) == EXMAX_CABLE_PRESENT_MASK_C_2) {
+        syslog(LOG_CRIT, "Cable C is not Present");
+      } else {
+        syslog(LOG_CRIT, "Cable C is Present");
+      }
+      break;
+    case GTA_EXMAX_CABLE_D:
+      // Check MB CPLD
+      if ((temp_reg_val[0] & EXMAX_CABLE_PRESENT_MASK_D_2) == EXMAX_CABLE_PRESENT_MASK_D_2 &&
+          (temp_reg_val[4] & EXMAX_CABLE_PRESENT_MASK_D_1) == EXMAX_CABLE_PRESENT_MASK_D_1) {
+        syslog(LOG_CRIT, "Cable D is not Present");
+      } else {
+        syslog(LOG_CRIT, "Cable D is Present");
+      }
+      break;
+    case GTA_EXMAX_CABLE_E:
+      // Check MB CPLD
+      if ((temp_reg_val[5] & EXMAX_CABLE_PRESENT_MASK_E) == EXMAX_CABLE_PRESENT_MASK_E) {
+        syslog(LOG_CRIT, "Cable E is not Present");
+      } else {
+        syslog(LOG_CRIT, "Cable E is Present");
+      }
+      break;
+    case GTA_EXMAX_CABLE_F:
+      // Check MB CPLD
+      if ((temp_reg_val[2] & EXMAX_CABLE_PRESENT_MASK_F) == EXMAX_CABLE_PRESENT_MASK_F) {
+        syslog(LOG_CRIT, "Cable F is not Present");
+      } else {
+        syslog(LOG_CRIT, "Cable F is Present");
+      }
+      break;
+    default:
+      i2c_cdev_slave_close(i2cfd);
+      return false;
+  }
+  i2c_cdev_slave_close(i2cfd);
+  return true;
+}
+
+bool
 gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
   static uint8_t cb_last_status = 0xff;
   static uint8_t mc_last_status = 0xff;

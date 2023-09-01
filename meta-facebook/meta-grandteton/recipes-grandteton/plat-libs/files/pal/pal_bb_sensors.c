@@ -680,6 +680,7 @@ read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
 static int
 read_bb_sensor(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
+  uint8_t sku, isMax11617 = 0;
   static int retry[255];
 
   ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
@@ -696,6 +697,17 @@ read_bb_sensor(uint8_t fru, uint8_t sensor_num, float *value) {
 
   if(sensor_num == SCM_SNR_BMC_TEMP)
     inlet_temp_calibration(fru, sensor_num, value);
+
+  // vpdb adc type : VPDB_SKU_ID_4, hpdb adc type : HPDB_SKU_ID_2
+  // vpdb sig sku  : VPDB_SKU_ID_7, hpdb sig sku  : HPDB_SKU_ID_5
+  // If type = 1 , sig sku = 0 > max11617
+  isMax11617 |= ( fru == FRU_VPDB && !pal_get_board_sku_id(fru, &sku) && (sku&0x90) == 0x10 ) ? 1 : 0;
+  isMax11617 |= ( fru == FRU_HPDB && !pal_get_board_sku_id(fru, &sku) && (sku&0x24) == 0x04 ) ? 1 : 0;
+  if (isMax11617)
+    if (*value > 1023)
+      *value -= 2048;
+
+
   return ret;
 }
 

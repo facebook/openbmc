@@ -43,6 +43,14 @@ rebind_i2c_dev() {
     fi
   fi
 }
+
+max11617_attr_setting() {
+  for dir in /sys/bus/iio/devices/iio:device*/; do
+    if [ -f "$dir/polar_resistor" ]; then
+      echo 1 > $dir/polar_resistor
+    fi
+  done
+}
 #echo set SGPIO ready
 gpio_set FM_BMC_SGPIO_READY_N 1
 
@@ -235,6 +243,7 @@ fi
 
 VPDB_EVT2="2"
 VPDB_PVT="5"
+VPDB_PVT4="8"
 VPDB_DISCRETE_PVT="3"
 VPDB_1ST_SOURCE="0"
 VPDB_2ND_SOURCE="1"
@@ -254,25 +263,45 @@ gpio_export_ioexp 36-0022  VPDB_SKU_ID_0    13
 gpio_export_ioexp 36-0022  VPDB_SKU_ID_1    14
 gpio_export_ioexp 36-0022  VPDB_SKU_ID_2    15
 
-if read_dev 36 0x25 0 >/dev/null; then
-  gpio_export_ioexp 36-0025  VPDB_BOARD_ID_3_IO   0
-  gpio_export_ioexp 36-0025  VPDB_SKU_ID_3_IO     15
-  VPDB_BOARD_ID_3=$VPDB_BOARD_ID_3_IO
-  VPDB_SKU_ID_3=$VPDB_SKU_ID_3_IO
-else
-  VPDB_BOARD_ID_3=0
-  VPDB_SKU_ID_3=0
+kv set vpdb_rev "$((
+                  $(gpio_get VPDB_BOARD_ID_2) << 2 |
+                  $(gpio_get VPDB_BOARD_ID_1) << 1 |
+                  $(gpio_get VPDB_BOARD_ID_0)
+                ))"
+
+kv set vpdb_sku "$((
+                  $(gpio_get VPDB_SKU_ID_2) << 2 |
+                  $(gpio_get VPDB_SKU_ID_1) << 1 |
+                  $(gpio_get VPDB_SKU_ID_0)
+                ))"
+
+# After PVT4
+if read_dev 36 0x26 0 >/dev/null; then
+  i2c_device_add 36 0x26 pca9555
+  gpio_export_ioexp 36-0026  VPDB_BOARD_ID_3  0
+  gpio_export_ioexp 36-0026  VPDB_SKU_ID_7    11
+  gpio_export_ioexp 36-0026  VPDB_SKU_ID_6    12
+  gpio_export_ioexp 36-0026  VPDB_SKU_ID_5    13
+  gpio_export_ioexp 36-0026  VPDB_SKU_ID_4    14
+  gpio_export_ioexp 36-0026  VPDB_SKU_ID_3    15
+
+  kv set vpdb_rev "$((
+                  $(gpio_get VPDB_BOARD_ID_3) << 3 |
+                  $(gpio_get VPDB_BOARD_ID_2) << 2 |
+                  $(gpio_get VPDB_BOARD_ID_1) << 1 |
+                  $(gpio_get VPDB_BOARD_ID_0)
+                ))"
+  kv set vpdb_sku "$((
+                  $(gpio_get VPDB_SKU_ID_7) << 7 |
+                  $(gpio_get VPDB_SKU_ID_6) << 6 |
+                  $(gpio_get VPDB_SKU_ID_5) << 5 |
+                  $(gpio_get VPDB_SKU_ID_4) << 4 |
+                  $(gpio_get VPDB_SKU_ID_3) << 3 |
+                  $(gpio_get VPDB_SKU_ID_2) << 2 |
+                  $(gpio_get VPDB_SKU_ID_1) << 1 |
+                  $(gpio_get VPDB_SKU_ID_0)
+                ))"
 fi
-
-kv set vpdb_rev "$((VPDB_BOARD_ID_3 << 3 |
-                    $(gpio_get VPDB_BOARD_ID_2) << 2 |
-                    $(gpio_get VPDB_BOARD_ID_1) << 1 |
-                    $(gpio_get VPDB_BOARD_ID_0)))"
-
-kv set vpdb_sku "$((VPDB_SKU_ID_3 << 3 |
-                    $(gpio_get VPDB_SKU_ID_2) << 2 |
-                    $(gpio_get VPDB_SKU_ID_1) << 1 |
-                    $(gpio_get VPDB_SKU_ID_0)))"
 
 #VPDB ADM1272/LTC4286 CONFIG
 vpdb_hsc=$(gpio_get VPDB_SKU_ID_2)
@@ -308,13 +337,11 @@ if [ "$vsku" -eq "2" ] || [ "$vsku" -eq "5" ]; then
   fi
 else
   brick_driver="bmr491"
-  vpdb_brick=$(gpio_get VPDB_SKU_ID_1)
+  vpdb_brick="$(($(gpio_get VPDB_SKU_ID_1) << 1 | $(gpio_get VPDB_SKU_ID_0)))"
+  kv set vpdb_brick_source "$vpdb_brick"
 
   if [ "$vpdb_brick" -eq "$VPDB_1ST_SOURCE" ]; then
     brick_driver="pmbus"
-    kv set vpdb_brick_source "$VPDB_1ST_SOURCE"
-  else
-    kv set vpdb_brick_source "$VPDB_2ND_SOURCE"
   fi
 
   vpdb_rev=$(kv get vpdb_rev)
@@ -328,8 +355,52 @@ else
     i2c_device_add 38 0x6b $brick_driver
   fi
 
-  #vpdb ADC sensors
-  if [ "$vrev" -gt "$VPDB_PVT" ]; then
+  # vpdb ADC sensors
+  if [ "$vrev" -ge "$VPDB_PVT4" ]; then
+
+    # ADC Type
+    adc_type_dif="0"
+    adc_type_sgl="1"
+    adc_type="$(gpio_get VPDB_SKU_ID_4)"
+    adc_dif_sku="$(($(gpio_get VPDB_SKU_ID_6) << 1 | $(gpio_get VPDB_SKU_ID_5)))"
+    adc_sgl_sku="$(gpio_get VPDB_SKU_ID_7)"
+
+    # ADC 1 - only dif
+    if [ "$adc_dif_sku" -eq "$VPDB_1ST_SOURCE" ]; then
+      i2c_device_add 36 0x67 ltc2945
+      kv set vpdb_adc_source "$VPDB_1ST_SOURCE"
+    elif [ "$adc_dif_sku" -eq "$VPDB_2ND_SOURCE" ]; then
+      i2c_device_add 36 0x40 ina238
+      kv set vpdb_adc_source "$VPDB_2ND_SOURCE"
+    elif [ "$adc_dif_sku" -eq "$VPDB_3RD_SOURCE" ]; then
+      i2c_device_add 36 0x40 isl28022
+      kv set vpdb_adc_source "$VPDB_3RD_SOURCE"
+    fi
+
+    # ADC 2 - dif & sig
+    if [ "$adc_type" -eq "$adc_type_dif" ]; then
+      # probe adc dif
+      if [ "$adc_dif_sku" -eq "$VPDB_1ST_SOURCE" ]; then
+        i2c_device_add 36 0x68 ltc2945
+        kv set vpdb_adc_source "$VPDB_1ST_SOURCE"
+      elif [ "$adc_dif_sku" -eq "$VPDB_2ND_SOURCE" ]; then
+        i2c_device_add 36 0x41 ina238
+        kv set vpdb_adc_source "$VPDB_2ND_SOURCE"
+      elif [ "$adc_dif_sku" -eq "$VPDB_3RD_SOURCE" ]; then
+        i2c_device_add 36 0x41 isl28022
+        kv set vpdb_adc_source "$VPDB_3RD_SOURCE"
+      fi
+    else
+      # probe adc sig
+      if [ $adc_sgl_sku -eq 0 ]; then
+        i2c_device_add 36 0x35 max11617
+        max11617_attr_setting
+      else
+        i2c_device_add 36 0x48 ads1015
+      fi
+    fi
+
+  elif [ "$vrev" -gt "$VPDB_PVT" ]; then
     if [ "$(gpio_get VPDB_SKU_ID_0)" -eq $VPDB_1ST_SOURCE ]; then
       i2c_device_add 36 0x67 ltc2945
       i2c_device_add 36 0x68 ltc2945
@@ -347,10 +418,11 @@ i2c_device_add 36 0x52 24c64 #VPDB FRU
 
 
 #***HPDB Board Device Probe***
-HPDB_PVT=5
+HPDB_PVT="5"
+HPDB_PVT4="8"
 HPDB_1ST_SOURCE="0"
 HPDB_2ND_SOURCE="1"
-#HPDB_3RD_SOURCE="2"
+HPDB_3RD_SOURCE="2"
 HPDB_HSC_MAIN="0"
 #HPDB_HSC_SECOND="1"
 
@@ -370,34 +442,61 @@ i2c_device_add 37 0x25 pca9555
 gpio_export_ioexp 37-0025  FM_HS1_EN_BUSBAR_BUF  1
 gpio_export_ioexp 37-0025  FM_HS2_EN_BUSBAR_BUF  3
 
+kv set hpdb_rev "$((
+                  $(gpio_get HPDB_BOARD_ID_2) << 2 |
+                  $(gpio_get HPDB_BOARD_ID_1) << 1 |
+                  $(gpio_get HPDB_BOARD_ID_0)
+                ))"
+
+kv set hpdb_sku "$((
+                  $(gpio_get HPDB_SKU_ID_2) << 2 |
+                  $(gpio_get HPDB_SKU_ID_1) << 1 |
+                  $(gpio_get HPDB_SKU_ID_0)
+                ))"
+
+# After PVT4
 if read_dev 37 0x25 0 >/dev/null; then
-  gpio_export_ioexp 37-0025  HPDB_BOARD_ID_3_IO    15
-  HPDB_BOARD_ID_3=$HPDB_BOARD_ID_3_IO
-else
-  HPDB_BOARD_ID_3=0
-fi
 
+  gpio_export_ioexp 37-0025  HPDB_SKU_ID_5    12
+  gpio_export_ioexp 37-0025  HPDB_SKU_ID_4    13
+  gpio_export_ioexp 37-0025  HPDB_SKU_ID_3    14
+  gpio_export_ioexp 37-0025  HPDB_BOARD_ID_3  15
 
-hpdb_rc="$(($(gpio_get HPDB_BOARD_ID_2) << 2 |
-      $(gpio_get HPDB_BOARD_ID_1) << 1 |
-      $(gpio_get HPDB_BOARD_ID_0)))"
+  kv set hpdb_rev "$((
+                    $(gpio_get HPDB_BOARD_ID_3) << 3 |
+                    $(gpio_get HPDB_BOARD_ID_2) << 2 |
+                    $(gpio_get HPDB_BOARD_ID_1) << 1 |
+                    $(gpio_get HPDB_BOARD_ID_0)
+                  ))"
 
-
-if [ $hpdb_rc -ge 11 ] && [ $hpdb_rc -le 15 ]; then
-   HPDB_BOARD_ID_3=0
-fi
-
-kv set hpdb_rev "$((HPDB_BOARD_ID_3 << 3 | hpdb_rc))"
-
-
-
-kv set hpdb_sku "$(($(gpio_get HPDB_SKU_ID_2) << 2 |
+  kv set hpdb_sku "$((
+                    $(gpio_get HPDB_SKU_ID_5) << 5 |
+                    $(gpio_get HPDB_SKU_ID_4) << 4 |
+                    $(gpio_get HPDB_SKU_ID_3) << 3 |
+                    $(gpio_get HPDB_SKU_ID_2) << 2 |
                     $(gpio_get HPDB_SKU_ID_1) << 1 |
-                    $(gpio_get HPDB_SKU_ID_0)))"
+                    $(gpio_get HPDB_SKU_ID_0)
+                  ))"
+fi
+
 
 # HPDB ADM1272/LTC4286 CONFIG
-hpdb_hsc=$(gpio_get HPDB_SKU_ID_2)
 hrev=$(kv get hpdb_rev)
+hpdb_hsc=$(gpio_get HPDB_SKU_ID_0)
+
+# HPDB_BOARD_ID_3 was present in between stage DVT and stage PVT3
+# but the value was 1, so if revs in range 11 ~ 15 (DVT ~ PVT3) need to be reconfig.
+if [ $hrev -ge 11 ] && [ $hrev -le 15 ]; then
+  kv set hpdb_rev "$((
+                    $(gpio_get HPDB_BOARD_ID_2) << 2 |
+                    $(gpio_get HPDB_BOARD_ID_1) << 1 |
+                    $(gpio_get HPDB_BOARD_ID_0)
+                  ))"
+  hrev=$(kv get hpdb_rev)
+fi
+
+# Stage before PVT4
+[ $hrev -lt $HPDB_PVT4 ] && hpdb_hsc=$(gpio_get HPDB_SKU_ID_2)
 
 if [ "$hpdb_hsc" -eq "$HPDB_HSC_MAIN" ] && [ "$hrev" -gt 1 ]; then
   i2cset -f -y 39 0x40 0xD9 0x8b
@@ -413,7 +512,57 @@ else
   kv set hpdb_hsc_source "$HPDB_2ND_SOURCE"
 fi
 
-if [ "$hrev" -gt "$HPDB_PVT" ]; then
+if [ "$hrev" -ge "$HPDB_PVT4" ]; then
+
+  # ADC Type
+  adc_type_dif="0"
+  adc_type_sgl="1"
+  adc_type=$(gpio_get HPDB_SKU_ID_2)
+  adc_dif_sku="$(($(gpio_get HPDB_SKU_ID_4) << 1 | $(gpio_get HPDB_SKU_ID_3)))"
+  adc_sgl_sku=$(gpio_get HPDB_SKU_ID_5)
+
+  # ADC 1 - only dif
+  if [ "$adc_dif_sku" -eq "$HPDB_1ST_SOURCE" ]; then
+    i2c_device_add 37 0x69 ltc2945
+    i2c_device_add 37 0x6b ltc2945
+    kv set hpdb_adc_source "$HPDB_1ST_SOURCE"
+  elif [ "$adc_dif_sku" -eq "$HPDB_2ND_SOURCE" ]; then
+    i2c_device_add 37 0x42 ina238
+    i2c_device_add 37 0x44 ina238
+    kv set hpdb_adc_source "$HPDB_2ND_SOURCE"
+  elif [ "$adc_dif_sku" -eq "$HPDB_3RD_SOURCE" ]; then
+    i2c_device_add 37 0x42 isl28022
+    i2c_device_add 37 0x44 isl28022
+    kv set hpdb_adc_source "$HPDB_3RD_SOURCE"
+  fi
+
+  # ADC 2 - dif & sig
+  if [ "$adc_type" -eq "$adc_type_dif" ]; then
+    # probe adc dif
+    if [ "$adc_dif_sku" -eq "$HPDB_1ST_SOURCE" ]; then
+      i2c_device_add 37 0x6a ltc2945
+      i2c_device_add 37 0x6c ltc2945
+      kv set hpdb_adc_source "$HPDB_1ST_SOURCE"
+    elif [ "$adc_dif_sku" -eq "$HPDB_2ND_SOURCE" ]; then
+      i2c_device_add 37 0x43 ina238
+      i2c_device_add 37 0x45 ina238
+      kv set hpdb_adc_source "$HPDB_2ND_SOURCE"
+    elif [ "$adc_dif_sku" -eq "$HPDB_3RD_SOURCE" ]; then
+      i2c_device_add 37 0x43 isl28022
+      i2c_device_add 37 0x45 isl28022
+      kv set hpdb_adc_source "$HPDB_3RD_SOURCE"
+    fi
+  else
+    # probe adc sig
+    if [ $adc_sgl_sku -eq 0 ]; then
+      i2c_device_add 37 0x35 max11617
+      max11617_attr_setting
+    else
+      i2c_device_add 37 0x48 ads1015
+    fi
+  fi
+
+elif [ "$hrev" -gt "$HPDB_PVT" ]; then
   if [ "$(gpio_get HPDB_SKU_ID_1)" -eq "$HPDB_1ST_SOURCE" ]; then
     i2c_device_add 37 0x69 ltc2945
     i2c_device_add 37 0x6a ltc2945

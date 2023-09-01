@@ -24,6 +24,18 @@ def is_halfdome():
     except Exception:
         return False
 
+def slot_type():
+    try:
+        conf = kv.kv_get("sled_system_conf", kv.FPERSIST, True)
+        if conf.find(b"HD") != -1:
+            return "Halfdome"
+        elif conf.find(b"GL") != -1:
+            return "GreatLakes"
+        return None
+
+    except Exception:
+        return None
+
 
 """ Get Platform Info """
 
@@ -51,9 +63,11 @@ def plat_info(fru):
             return
 
         sys_type = json_data["Type"]
-        if is_halfdome():
-            sku = "HalfDome"
-            pcie_configuration = "2x HalfDomes"
+
+        slot_type_str = slot_type()
+        if slot_type_str != None:
+            sku = slot_type_str
+            pcie_configuration = "2x "+ slot_type_str
         elif "Class 2" in sys_type:
             pcie_configuration = "2x Crater Lakes"
         else:

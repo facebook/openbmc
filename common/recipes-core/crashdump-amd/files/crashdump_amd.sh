@@ -107,14 +107,23 @@ for i in "$@"; do
       echo "Error: Unsupported flag $i" >&2
       exit 1
       ;;
-    *) # preserve positional arguments
+    mb)
+      SLOT_NAME="mb"
+      CRASHDUMP_DECODED_FILE="/tmp/crashdump_slot1_mca"
+      shift
+      ;;
+    slot*) # preserve positional arguments
       SLOT_NAME="$i"
+      CRASHDUMP_DECODED_FILE="/tmp/crashdump_${SLOT_NAME}_mca"
       shift
       ;;
   esac
 done
 
 case $SLOT_NAME in
+    mb)
+      SLOT_NUM=1
+      ;;
     slot1)
       SLOT_NUM=1
       ;;
@@ -128,7 +137,7 @@ case $SLOT_NAME in
       SLOT_NUM=4
       ;;
     *)
-      echo "Usage: $(script_filename) {slot1|slot2|slot3|slot4}"
+      echo "Usage: $(script_filename) {mb|slot1|slot2|slot3|slot4}"
       exit 1
       ;;
 esac
@@ -145,7 +154,7 @@ PID_FILE="/var/run/autodump${SLOT_NUM}.pid"
 
 CURT_DTIME=$(date +"%Y%m%d-%H%M%S")
 CRASHDUMP_FILE="/tmp/crashdump_${SLOT_NAME}"
-CRASHDUMP_DECODED_FILE="/tmp/crashdump_${SLOT_NAME}_mca"
+
 CRASHDUMP_LOG_ARCHIVE="/mnt/data/crashdump_${SLOT_NAME}_${CURT_DTIME}.tar.gz"
 LOG_MSG_PREFIX=""
 

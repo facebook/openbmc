@@ -38,6 +38,7 @@ extern "C" {
 #define CMD_GET_MAIN_CPLD_VER   (0x01)
 #define MAIN_CPLD_SLV_ADDR      (0x80)
 #define MAIN_CPLD_BUS_NUM       (7)
+#define CRASHDUMP_AMD_MB
 
 extern const char pal_fru_list[];
 

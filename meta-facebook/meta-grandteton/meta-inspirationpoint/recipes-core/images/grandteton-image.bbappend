@@ -13,5 +13,6 @@ IMAGE_INSTALL:remove = " \
 
 IMAGE_INSTALL += " \
    apml \
-   psb-util \   
+   psb-util \
+   crashdump-amd \
    "

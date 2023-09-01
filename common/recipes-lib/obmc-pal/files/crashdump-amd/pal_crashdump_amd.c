@@ -137,7 +137,11 @@ static void* generate_dump(void* arg) {
   crashdump_data_t* data = (crashdump_data_t*)arg;
   char cmd[128] = {0};
 
+#ifdef CRASHDUMP_AMD_MB
+  snprintf(cmd, 128, "%s mb", CRASHDUMP_AMD_BIN);
+#else
   snprintf(cmd, 128, "%s slot%d", CRASHDUMP_AMD_BIN, (data->sid + 1));
+#endif
   log_system(cmd);
 
   if (amdcrd_set_state(data->sid, AMDCRD_CTRL_BMC_FREE) != AMDCRD_SET_STATE_SUCCESS) {

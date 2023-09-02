@@ -483,7 +483,6 @@ int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
   bool gs_flag = false;
-  int ret;
 
   if (pal_get_server_power(fru, &status) < 0) {
     return -1;
@@ -536,11 +535,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
    case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
-        ret = pal_set_rst_btn(fru, 0);
-        msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
-        ret |= pal_set_rst_btn(fru, 1);
-        if (ret)
-          return ret;
+        return pal_toggle_rst_btn(fru);
       } else if (status == SERVER_POWER_OFF)
         return -1;
       break;
@@ -637,30 +632,6 @@ pal_get_rst_btn(uint8_t *status) {
     *status = (value == GPIO_VALUE_HIGH ? 0 : 1);
   }
   gpio_close(desc);
-  return ret;
-}
-
-int
-pal_set_rst_btn(uint8_t slot, uint8_t status) {
-  int ret;
-  gpio_desc_t *gdesc = NULL;
-  gpio_value_t val;
-
-  if (slot != FRU_MB) {
-    return -1;
-  }
-
-  gdesc = gpio_open_by_shadow(FP_RST_BTN_OUT_N);
-  if (gdesc == NULL)
-    return -1;
-
-  val = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
-  ret = gpio_set_value(gdesc, val);
-  if (ret != 0)
-    goto error;
-
-error:
-  gpio_close(gdesc);
   return ret;
 }
 

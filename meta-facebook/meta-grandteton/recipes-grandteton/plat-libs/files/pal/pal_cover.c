@@ -73,6 +73,41 @@ fru_presence_ext(uint8_t fru_id, uint8_t *status) {
   }
 }
 
+int
+pal_set_rst_btn(uint8_t slot, uint8_t status) {
+  int ret;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  if (slot != FRU_MB) {
+    return -1;
+  }
+
+  gdesc = gpio_open_by_shadow(FP_RST_BTN_OUT_N);
+  if (gdesc == NULL)
+    return -1;
+
+  val = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
+  ret = gpio_set_value(gdesc, val);
+  if (ret != 0)
+    goto error;
+
+error:
+  gpio_close(gdesc);
+  return ret;
+}
+
+int
+pal_toggle_rst_btn(uint8_t slot) {
+  int ret;
+  ret = pal_set_rst_btn(FRU_MB, 0);
+  // some server miss to detect a quick pulse, so delay 100ms
+  // between low to high
+  msleep(100);
+  ret |= pal_set_rst_btn(FRU_MB, 1);
+  return ret;
+}
+
 void hgx_pwr_limit_mon (void) {
   return;
 }

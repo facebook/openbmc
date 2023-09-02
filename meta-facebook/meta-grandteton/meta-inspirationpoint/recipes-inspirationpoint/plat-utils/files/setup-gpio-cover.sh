@@ -117,6 +117,7 @@ sgpio_export FM_RST_CPU0_RESETL_N 198
 sgpio_export FM_RST_CPU1_RESETL_N 200
 sgpio_export FM_CPU0_PROCHOT_R_N 202
 
+sgpio_export KB_RESET_EN 210
 sgpio_export BMC_JTAG_SEL_R 228
 sgpio_export RST_PERST_CPUx_SWB_N 230
 sgpio_export P12V_HSC_TEMP_ALERT_R_N 232
@@ -165,8 +166,8 @@ gpio_set FM_BIOS_DEBUG_EN_N 1
 sgpio_export CLK_GEN2_BMC_RC_OE_R_N 47
 gpio_set CLK_GEN2_BMC_RC_OE_R_N 0
 
-sgpio_export USB_OC0_REAR_R_N 63
-gpio_set USB_OC0_REAR_R_N 1
+sgpio_export RST_KB_RESET_N 63
+gpio_set RST_KB_RESET_N 1
 
 sgpio_export GPU_FPGA_RST_N 65
 gpio_set GPU_FPGA_RST_N 1

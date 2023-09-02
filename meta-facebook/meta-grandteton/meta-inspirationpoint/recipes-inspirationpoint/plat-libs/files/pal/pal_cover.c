@@ -630,6 +630,48 @@ fru_presence_ext(uint8_t fru_id, uint8_t *status) {
   }
 }
 
+int
+pal_set_rst_btn(uint8_t slot, uint8_t val) {
+  int ret, delay;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t kb_enable;
+
+  if (slot != FRU_MB) {
+    return -1;
+  }
+
+  kb_enable = gpio_get_value_by_shadow(KB_RESET_EN);
+  if (kb_enable == GPIO_VALUE_INVALID) {
+    return -1;
+  }
+
+  if (kb_enable) {
+    // Block the KB reset command until post completed.
+    if (val == GPIO_VALUE_LOW && !pal_bios_completed(slot)) {
+      return -1;
+    }
+    gdesc = gpio_open_by_shadow(RST_KB_RESET_N);
+    delay = 20;
+  }
+  else {
+    gdesc = gpio_open_by_shadow(FP_RST_BTN_OUT_N);
+    delay = 100;
+  }
+
+  ret = gpio_set_value(gdesc, val);
+  msleep(delay);
+  gpio_close(gdesc);
+  return ret;
+}
+
+int
+pal_toggle_rst_btn(uint8_t slot) {
+  int ret;
+  ret = pal_set_rst_btn(FRU_MB, 0);
+  ret |= pal_set_rst_btn(FRU_MB, 1);
+  return ret;
+}
+
 static void* hgx_pwr_limit_check (void* arg) {
   int err_type;
   static bool is_logged = false;

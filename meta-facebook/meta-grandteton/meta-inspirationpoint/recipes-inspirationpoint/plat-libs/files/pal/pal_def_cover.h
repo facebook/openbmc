@@ -50,5 +50,7 @@
 //GPIO Power Control Cover
 #define FM_LAST_PWRGD            "FM_PWRGD_CPU1_PWROK"
 #define RST_PLTRST_N             "FM_RST_CPU1_RESETL_N"
+#define RST_KB_RESET_N           "RST_KB_RESET_N"
+#define KB_RESET_EN              "KB_RESET_EN"
 
 #endif

@@ -17,7 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
 #
-# Create "pwrcpld" and scm/chassis EEPROMs.
+# SMB/Chassis EEPROM (note: SCM EEPROM does not exist in Janga).
 #
-echo "FIXME: instantiate I2C client devices in setup_i2c.sh!!"
+i2c_device_add 3 0x56 24c64
+
+#
+# Create "pwrcpld"
+#
+i2c_device_add 12 0x3d pwrcpld

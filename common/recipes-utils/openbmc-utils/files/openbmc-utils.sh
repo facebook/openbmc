@@ -57,6 +57,16 @@ devmem_test_bit() {
     fi
 }
 
+#
+# Increment the given MAC address
+# $1 - MAC address in "##:##:##:##:##:##" format
+#
+mac_addr_inc() {
+    mac_hex=$(echo "$1" | tr -d ':')
+    new_mac=$((0x$mac_hex + 1))
+    printf "%012X" "$new_mac" | sed 's/../&:/g;s/:$//'
+}
+
 source "/usr/local/bin/shell-utils.sh"
 source "/usr/local/bin/i2c-utils.sh"
 source "/usr/local/bin/gpio-utils.sh"

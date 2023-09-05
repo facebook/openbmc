@@ -69,5 +69,22 @@ max([
       all:slot3_vf_e1s_ssd0_temp_c,
       all:slot3_vf_e1s_ssd1_temp_c,
       all:slot3_vf_e1s_ssd2_temp_c,
-      all:slot3_vf_e1s_ssd3_temp_c]))
+      all:slot3_vf_e1s_ssd3_temp_c])),
+  linear_ucr_trigger(
+    max([
+      all:slot1_mb_hsc_temp_c,
+      all:slot1_mb_vr_vccin_temp_c,
+      all:slot1_mb_vr_ehv_temp_c,
+      all:slot1_mb_vr_fivra_temp_c,
+      all:slot1_mb_vr_vccinf_temp_c,
+      all:slot1_mb_vr_vccd0_temp_c,
+      all:slot1_mb_vr_vccd1_temp_c,
+      all:slot3_mb_hsc_temp_c,
+      all:slot3_mb_vr_vccin_temp_c,
+      all:slot3_mb_vr_ehv_temp_c,
+      all:slot3_mb_vr_fivra_temp_c,
+      all:slot3_mb_vr_vccinf_temp_c,
+      all:slot3_mb_vr_vccd0_temp_c,
+      all:slot3_mb_vr_vccd1_temp_c,
+      all:bmc_bb_hsc_temp_c]))
 ])

@@ -72,8 +72,8 @@ async def fudge_timedatectl_stats():
     # Default bad statistics, pointing that there is no real
     # synchronization...
     ntpstats = {"stratum": 16, "delay": 5000, "jitter": 5000, "offset": 5000}
-    system_clock_synchronized: bool = False
-    ntp_active: bool = False
+    system_clock_synchronized = False
+    ntp_active = False
 
     for line in data.splitlines():
         # Handle differences in whitespaces...

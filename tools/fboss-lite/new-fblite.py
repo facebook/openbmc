@@ -287,9 +287,10 @@ if __name__ == "__main__":
                     os.rename(pathname, os.path.join(root, new_name))
 
         #
-        # update the openbmc-init-build-env file by adding the new yocto distro[] entry
+        # Let's take care of openbmc-init-build-env changes separately,
+        # because it needs some additional Meta-internal tools.
         #
-        add_new_yocto_version_entry(args.name)
+        # add_new_yocto_version_entry(args.name)
 
         #
         # Commit the patch in local tree.

@@ -178,6 +178,13 @@ max([
       all:hgx_hgx_gpu_sxm_7_dram_temp_c,
       all:hgx_hgx_gpu_sxm_8_dram_temp_c])),
 
+  gpu_tray_switch_linear(
+    max([
+      all:hgx_hgx_pcieswitch_0_temp_c])) +
+  gpu_tray_switch_pid(
+    max([
+      all:hgx_hgx_pcieswitch_0_temp_c])),
+
   gpu_tray_vr_linear(
     max([
       all:hgx_hgx_hsc_0_temp_c,

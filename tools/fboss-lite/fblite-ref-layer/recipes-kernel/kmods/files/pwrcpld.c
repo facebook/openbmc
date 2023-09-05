@@ -49,12 +49,11 @@ static int pwrcpld_probe(struct i2c_client *client,
 				       ARRAY_SIZE(pwrcpld_attrs));
 }
 
-static int pwrcpld_remove(struct i2c_client *client)
+static void pwrcpld_remove(struct i2c_client *client)
 {
 	i2c_dev_data_st *pdata = i2c_get_clientdata(client);
 
 	i2c_dev_sysfs_data_clean(client, pdata);
-	return 0;
 }
 
 static struct i2c_driver pwrcpld_driver = {

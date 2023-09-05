@@ -579,12 +579,41 @@ int set_me_entry_into_recovery(void) {
   return ret;
 }
 
+void pal_ac_off_meb() {
+  int i2cfd = 0;
+  int ret = 0;
+  uint8_t tlen = 0;
+  uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
+
+  i2cfd = i2c_cdev_slave_open(I2C_BUS_69, MC_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_69);
+    return;
+  }
+  tbuf[0] = MC_STBY_POWER_OFFSET;
+  tbuf[1] = 0x2f;
+  tlen = 2;
+  ret = i2c_rdwr_msg_transfer(i2cfd, MC_CPLD_ADDR, tbuf, tlen, NULL, 0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() I2C transfer to MC CPLD failed, ret = %d", __func__, ret);
+  }
+  
+  i2c_cdev_slave_close(i2cfd);
+
+  return;
+}
+
 //Systm AC Cycle
 int pal_sled_cycle(void) {
   uint8_t id;
 
   if(get_comp_source(FRU_VPDB, VPDB_HSC_SOURCE, &id ))
     return -1;
+
+  if (pal_is_artemis()) {
+    pal_ac_off_meb(); 
+    msleep(100);
+  }
 
   //Send Command to VPDB
   if (id == MAIN_SOURCE) {

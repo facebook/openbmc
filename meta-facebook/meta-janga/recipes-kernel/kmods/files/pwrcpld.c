@@ -9,23 +9,117 @@
 #include "i2c_dev_sysfs.h"
 
 /*
- * FIXME: fill the below structure to export sysfs entries to the user
- * space.
- * NOTE: ONLY export register fields that are required from user space.
+ * NOTE:
+ *   - ONLY export register fields that are required from user space.
+ *   - The sysfs file names are consistent with the CPLD specification.
  */
 static const i2c_dev_attr_st pwrcpld_attrs[] = {
 	/*
-	 * Example:
+	 * Board/firmware revision ID registers (read-only).
+	 */
+	{
+		"board_id",
+		NULL,
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x0,
+		0,
+		4,
+	},
+	{
+		"version_id",
+		NULL,
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x0,
+		4,
+		4,
+	},
 	{
 		"cpld_ver",
 		NULL,
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
-		0x01,
+		0x1,
+		0,
+		7,
+	},
+	{
+		"golden_flag",
+		"0: CPLD load external upgrade image\n"
+		"1: CPLD load internal golden image",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x1,
+		7,
+		1,
+	},
+	{
+		"cpld_minor_ver",
+		NULL,
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x2,
 		0,
 		8,
 	},
+	{
+		"cpld_sub_ver",
+		NULL,
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x3,
+		0,
+		8,
+	},
+
+	/*
+	 * SCM COME Power Control (register 0x14)
 	 */
+	{
+		"pwr_come_en",
+		"0: COMe power is off\n"
+		"1: COMe power is on\n",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x14,
+		0,
+		1,
+	},
+	{
+		"pwr_force_off",
+		"0: COMe power is off\n"
+		"1: COMe power is on\n",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x14,
+		1,
+		1,
+	},
+	{
+		"pwr_cyc_n",
+		"Write 0 to trigger CPLD power cycling COMe\n"
+		"The bit will auto set to 1 after power cycle finishes",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x14,
+		2,
+		1,
+	},
+
+	/*
+	 * Chassis power cycle (register 0x23)
+	 */
+	{
+		"power_cycle_go",
+		"0: No power cycle\n"
+		"1: Start the power cycle",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x23,
+		0,
+		1,
+	},
 };
 
 static const struct i2c_device_id pwrcpld_id[] = {

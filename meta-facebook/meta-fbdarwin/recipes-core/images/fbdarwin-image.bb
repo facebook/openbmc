@@ -6,4 +6,11 @@ IMAGE_INSTALL += " \
   serfmon-cache \
   show-tech \
   "
-IMAGE_INSTALL:remove = "ipmi-lite"
+
+#
+# IPMI is Not supported in fbdarwin.
+#
+IMAGE_INSTALL:remove = " \
+  ipmi-lite \
+  kcsd \
+  "

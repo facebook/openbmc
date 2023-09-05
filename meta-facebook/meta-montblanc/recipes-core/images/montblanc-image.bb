@@ -20,8 +20,6 @@ require recipes-core/images/fboss-lite-image.inc
 IMAGE_INSTALL += " \
     ipmbd \
     ipmb-util \
-    kcsd \
-    flashrom \
     jbi \
     libcpldupdate-dll-ast-jtag \
     show-tech \

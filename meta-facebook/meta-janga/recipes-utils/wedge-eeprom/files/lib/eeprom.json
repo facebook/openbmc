@@ -3,7 +3,7 @@
   "eeprom devices" : [
     {
       "name" : "chassis_eeprom",
-      "sysfs_path" : "/sys/bus/i2c/devices/i2c-13/13-0060/eeprom"
+      "sysfs_path" : "/sys/bus/i2c/devices/3-0056/eeprom"
     }
   ]
 }

@@ -4,7 +4,7 @@
     "if": {
       "properties": {
         "format": {
-          "const": "integer"
+          "const": "INTEGER"
         }
       },
       "required": ["format"]
@@ -12,8 +12,8 @@
     "then": {
     },
     "else": {
-      "not": {
-        "required": ["endian"]
+      "properties": {
+        "endian": false
       }
     }
   }

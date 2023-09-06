@@ -4,7 +4,7 @@
     "if": {
       "properties": {
         "format": {
-          "const": "flags"
+          "const": "FLAGS"
         }
       },
       "required": ["format"]
@@ -13,8 +13,8 @@
       "required": ["flags"]
     },
     "else": {
-      "not": {
-        "required": ["flags"]
+      "properties": {
+        "flags": false
       }
     }
   }

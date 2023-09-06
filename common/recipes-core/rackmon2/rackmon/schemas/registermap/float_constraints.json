@@ -4,7 +4,7 @@
     "if": {
       "properties": {
         "format": {
-          "const": "float"
+          "const": "FLOAT"
         }
       },
       "required": ["format"]
@@ -13,8 +13,10 @@
       "required": ["precision"]
     },
     "else": {
-      "not": {
-        "required": ["precision", "scale", "shift"]
+      "properties": {
+        "precision": false,
+        "scale": false,
+        "shift": false
       }
     }
   }

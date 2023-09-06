@@ -11,7 +11,7 @@ def validator(schema_path):
     with open(schema_path) as f:
         schema = json.load(f)
     resolver = jsonschema.RefResolver(base, schema)
-    validator = jsonschema.Draft4Validator(schema, resolver=resolver)
+    validator = jsonschema.Draft7Validator(schema, resolver=resolver)
     return validator
 
 

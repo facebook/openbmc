@@ -287,25 +287,20 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) hgx_sensor_list;
     *cnt = hgx_sensor_cnt;
   } else if (fru == FRU_VPDB) {
-    get_comp_source(fru, VPDB_BRICK_SOURCE, &id);
-    if (id == THIRD_SOURCE) {
-      memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
+    memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
+    // brick
+    if (!pal_get_board_rev_id(FRU_VPDB, &rev) && rev == VPDB_DISCRETE_REV_PVT &&
+        !get_comp_source(FRU_VPDB, VPDB_BRICK_SOURCE, &id) && id == DISCRETE_SOURCE) {
       memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_1brick_sensor_list, vpdb_1brick_sensor_cnt);
       *cnt = vpdb_sensor_cnt + vpdb_1brick_sensor_cnt;
-      // ADC sensor only support greater than PVT in discrete Sku
-      if(!pal_get_board_rev_id(FRU_VPDB, &rev) && rev > VPDB_DISCRETE_REV_PVT) {
-        memcpy(&snr_vpdb_tmp[*cnt], vpdb_adc_sensor_list, vpdb_adc_sensor_cnt);
-        *cnt += vpdb_adc_sensor_cnt;
-      }
     } else {
-      memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
       memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_3brick_sensor_list, vpdb_3brick_sensor_cnt);
       *cnt = vpdb_sensor_cnt + vpdb_3brick_sensor_cnt;
-      // ADC sensor only support greater than PVT in normal Sku
-      if(!pal_get_board_rev_id(FRU_VPDB, &rev) && rev >= PDB_REV_PVT2 ) {
-        memcpy(&snr_vpdb_tmp[*cnt], vpdb_adc_sensor_list, vpdb_adc_sensor_cnt);
-        *cnt += vpdb_adc_sensor_cnt;
-      }
+    }
+    // adc
+    if (!pal_get_board_rev_id(FRU_VPDB, &rev) && rev >= PDB_REV_PVT2 ) {
+      memcpy(&snr_vpdb_tmp[*cnt], vpdb_adc_sensor_list, vpdb_adc_sensor_cnt);
+      *cnt += vpdb_adc_sensor_cnt;
     }
     *sensor_list = snr_vpdb_tmp;
 
@@ -530,7 +525,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = READING_NA;
       }
     } else {
-      if(skip_power_on_reading(fru, SKIP_POWER_ON_SENSOR_READING_TIME) 
+      if(skip_power_on_reading(fru, SKIP_POWER_ON_SENSOR_READING_TIME)
         && sensor_map[fru].map[sensor_num].stby_read == false) {
         return READING_NA;
       } else {

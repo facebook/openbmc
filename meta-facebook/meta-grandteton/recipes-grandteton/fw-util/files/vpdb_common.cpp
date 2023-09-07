@@ -34,7 +34,7 @@ class vpdb_fw_config {
       uint8_t source_id = 0;
 
       get_comp_source(FRU_VPDB, VPDB_BRICK_SOURCE, &source_id);
-      if (source_id == THIRD_SOURCE) {
+      if (source_id == DISCRETE_SOURCE) {
         signed_header_t vr_info = {
           signed_info::PLATFORM_NAME,
           signed_info::VPDB,

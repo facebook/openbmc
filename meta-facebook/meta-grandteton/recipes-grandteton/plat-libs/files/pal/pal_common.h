@@ -7,6 +7,7 @@ enum {
   MAIN_SOURCE = 0,
   SECOND_SOURCE = 1,
   THIRD_SOURCE = 2,
+  DISCRETE_SOURCE = 3,
 };
 
 enum {

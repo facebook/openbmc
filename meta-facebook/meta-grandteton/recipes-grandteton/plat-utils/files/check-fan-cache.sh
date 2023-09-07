@@ -53,9 +53,12 @@ do
     fi
 done
 
-i2cget -f -y 8 0x48 0x01
-rev=$?
-if [ "$rev" -ne 0 ]; then
+
+#check M1 test board
+tb=$(kv get m1_test_board)
+
+if [ "$tb" -eq 0 ]; then
+  echo "Check Fan Present "
   val=$(i2cget -f -y 40 0x21 0x00)
   fan_present1=$(("$val"))
 

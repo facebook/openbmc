@@ -12,7 +12,7 @@ from modbus_update_helper import (
     retry,
     suppress_monitoring,
 )
-from pyrmd import ModbusTimeout, RackmonInterface as rmd
+from pyrmd import ModbusCRCError, ModbusTimeout, RackmonInterface as rmd
 
 # Status definitions
 NORMAL_OPERATION_MODE = 0x0000
@@ -26,6 +26,12 @@ FIRMWARE_UPGRADE_SUCCESS = 0x00AA
 vendor_params = {
     "panasonic": {"block_size": 96, "boot_mode": 0xAA55, "block_wait": False},
     "delta": {"block_size": 64, "boot_mode": 0xA5A5, "block_wait": True},
+    "delta_power_tether": {
+        "block_size": 16,
+        "boot_mode": 0xAA55,
+        "block_wait": True,
+        "hw_workarounds": ["WRITE_BLOCK_CRC_EXPECTED"],
+    },
 }
 
 parser = get_parser()
@@ -102,14 +108,25 @@ def verify_firmware_status(addr, expected_status):
 
 
 @retry(5, delay=1.0)
-def write_block(addr, data, block_size):
+def write_block(addr, data, block_size, workarounds):
     if len(data) < block_size:
         # TODO this is a workaround with a bad .bin file
         # which can have spurious extra bytes at the end
         # which we need to ignore.
         return
     assert len(data) == block_size
-    rmd.write(addr, 0x310, data, timeout=1000)
+    if "WRITE_BLOCK_CRC_EXPECTED" not in workarounds:
+        rmd.write(addr, 0x310, data, timeout=1000)
+        return
+    try:
+        rmd.write(addr, 0x310, data, timeout=1000)
+    except ModbusCRCError:
+        # Ignore CRC Error to support early boot-loaders
+        # which respond with incorrect CRC16 code.
+        # TODO remove when no longer required.
+        if "PRINTED" not in workarounds:
+            workarounds.append("PRINTED")
+            print("WARNING: CRCError suppressed")
 
 
 @retry(500, delay=0.01, verbose=0)
@@ -117,14 +134,16 @@ def wait_write_block(addr):
     verify_firmware_status(addr, FIRMWARE_PACKET_CORRECT)
 
 
-def transfer_image(addr, image, block_size_words, block_wait):
+def transfer_image(addr, image, block_size_words, block_wait, workarounds):
     num_words = len(image)
     sent_blocks = 0
     total_blocks = num_words // block_size_words
     if num_words % block_size_words != 0:
         total_blocks += 1
     for i in range(0, num_words, block_size_words):
-        write_block(addr, image[i : i + block_size_words], block_size_words)
+        write_block(
+            addr, image[i : i + block_size_words], block_size_words, workarounds
+        )
         if block_wait:
             wait_write_block(addr)
         else:
@@ -151,7 +170,11 @@ def update_device(addr, filename, vendor_param):
         print("Transferring image")
         time.sleep(5.0)
         transfer_image(
-            addr, binimg, vendor_param["block_size"] // 2, vendor_param["block_wait"]
+            addr,
+            binimg,
+            vendor_param["block_size"] // 2,
+            vendor_param["block_wait"],
+            vendor_param.get("hw_workarounds", []),
         )
         print("Request Verify Firmware")
         verify_firmware(addr)

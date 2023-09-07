@@ -270,38 +270,6 @@ PAL_I2C_BUS_INFO e1s_info_list[] = {
   {E1S_0, I2C_BUS_31, 0xD4},
 };
 
-char *adc128_devs[] = {
-  "adc128d818-i2c-20-1d",
-  "adc128d818-i2c-26-1d",
-};
-
-char *max11617_devs[] = {
-  MAX11617_DIR,
-  MAX11617_RT_DIR
-};
-
-PAL_ADC_CH_INFO max11617_ch_info[] = {
-  {ADC_CH0, 7870,  1210},
-  {ADC_CH1, 12000, 2500},
-  {ADC_CH2, 12000, 2500},
-  {ADC_CH3, 1800,  909},
-  {ADC_CH4, 511,   470},
-  {ADC_CH5, 511,   470},
-  {ADC_CH6, 511,   470},
-  {ADC_CH7, 120,   25},
-  {ADC_CH8, 18000,  9090},
-  {ADC_CH9,  5110,  18000},
-  {ADC_CH10, 5110,  18000},
-  {ADC_CH11, 5110,  18000},
-  {ADC_CH12, 5110,  18000},
-  {ADC_CH13, 5110,  4700},
-  {ADC_CH14, 5110,  18000},
-  {ADC_CH15, 5110,  18000},
-};
-
-char **adc_chips = adc128_devs;
-
-
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}
 PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
@@ -595,59 +563,9 @@ bail:
   return ret;
 }
 
-static bool is_max11617_chip(void) {
-  static bool val=false;
-  static bool cached=false;
-  uint8_t source_id = 0;
-
-  if (!cached) {
-    get_comp_source(FRU_MB, MB_HSC_SOURCE, &source_id);
-
-    if (source_id == SECOND_SOURCE) {
-       adc_chips = max11617_devs;
-       val = true;
-    }
-    cached = true;
-  }
-  return val;
-}
-
-static int sensors_read_maxim(const char *dev, int channel, float *data)
-{
-  int val = 0;
-  char ain_name[30] = {0};
-  char dev_dir[LARGEST_DEVICE_NAME] = {0};
-  float R1 = max11617_ch_info[channel].r1;
-  float R2 = max11617_ch_info[channel].r2;
-
-
-  snprintf(ain_name, sizeof(ain_name), IIO_AIN_NAME, channel%8);
-  snprintf(dev_dir, sizeof(dev_dir), dev, ain_name);
-
-  if(access(dev_dir, F_OK)) {
-    return ERR_SENSOR_NA;
-  }
-
-  if (read_device(dev_dir, &val) < 0) {
-    syslog(LOG_ERR, "%s: dev_dir: %s read fail", __func__, dev_dir);
-    return ERR_FAILURE;
-  }
-
-
-  *data = (float)val * 2048 / 4096 * (R1 + R2) / R2 /1000;
-  return 0;
-}
-
 int
 read_iic_adc_val(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret;
-  uint8_t ch_id = sensor_map[fru].map[sensor_num].id;
-
-  if(is_max11617_chip())
-    ret = sensors_read_maxim(adc_chips[ch_id/8], ch_id, value);
-  else
-    ret = sensors_read(adc_chips[ch_id/8], sensor_map[fru].map[sensor_num].snr_name, value);
-  return ret;
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 int

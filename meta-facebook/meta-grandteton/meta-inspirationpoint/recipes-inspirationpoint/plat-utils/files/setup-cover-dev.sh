@@ -58,6 +58,26 @@ MB_3RD_SOURCE="2"
 mbrev=$(kv get mb_rev)
 MB_DVT_BORAD_ID="2"
 
+read_i2c_dev() {
+  for _ in {1..3}; do
+    if /usr/sbin/i2cget -f -y "$1" "$2" "$3" 2>/dev/null; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+rebind_i2c_dev() {
+  dev="$1-00$2"
+  dri=$3
+
+  if [ ! -L "${SYSFS_I2C_DEVICES}/$dev/driver" ]; then
+    if i2c_bind_driver "$dri" "$dev" >/dev/null; then
+      echo "rebind $dev to driver $dri successfully"
+    fi
+  fi
+}
+
 #HSC
 probe_hsc_mp5990() {
   i2c_device_add 6 0x20 mp5990
@@ -108,18 +128,26 @@ probe_hsc_ltc() {
 
 #ADC
 probe_adc_ti() {
-  i2cset -f -y 20 0x1d 0x0b 0x02
-  i2c_device_add 20 0x1d adc128d818
-  i2cset -f -y 26 0x1d 0x0b 0x02
-  i2c_device_add 26 0x1d adc128d818
+  rebind_i2c_dev 20 0x1d adc128d818
+  rebind_i2c_dev 26 0x1d adc128d818
   kv set mb_adc_source "$MB_1ST_SOURCE"
 
 }
 
 probe_adc_maxim() {
-  i2c_device_add 20 0x35 max11617
-  i2c_device_add 26 0x35 max11617
+  rebind_i2c_dev 20 0x35 max11617
+  rebind_i2c_dev 26 0x35 max11617
   kv set mb_adc_source "$MB_2ND_SOURCE"
+}
+
+probe_mb_adc() {
+  if read_i2c_dev 20 0x1d 0 >/dev/null; then
+    probe_adc_ti
+  elif read_i2c_dev 20 0x35 0 >/dev/null; then
+    probe_adc_maxim
+  else
+    echo "Unknown MB ADC device"
+  fi
 }
 
 #VR
@@ -196,41 +224,36 @@ fi
 
 if [ "$mb_sku" -eq "$config0" ]; then
   probe_hsc_mp5990
-  probe_adc_ti
   probe_vr_raa
   probe_mb_retimer_vr_isl
 elif [ "$mb_sku" -eq "$config1" ]; then
   probe_hsc_ltc
-  probe_adc_maxim
   probe_vr_xdpe
   probe_mb_retimer_vr_xdpe
 elif [ "$mb_sku" -eq "$config4" ]; then
   probe_hsc_mp5990
-  probe_adc_ti
   probe_vr_mp2856
   probe_mb_retimer_vr_isl
 # Artemis config
 elif [ "$mb_sku" -eq "$config8" ]; then
   probe_hsc_ltc
-  probe_adc_ti
   probe_vr_raa
   probe_mb_retimer_vr_isl
 elif [ "$mb_sku" -eq "$config9" ]; then
   probe_hsc_ltc
-  probe_adc_ti
   probe_vr_xdpe
   probe_mb_retimer_vr_xdpe
 elif [ "$mb_sku" -eq "$config11" ]; then
   probe_hsc_ltc
-  probe_adc_maxim
   probe_vr_raa
   probe_mb_retimer_vr_isl
 elif [ "$mb_sku" -eq "$config12" ]; then
   probe_hsc_mp5990
-  probe_adc_ti
   probe_vr_xdpe
   probe_mb_retimer_vr_xdpe
 fi
+
+probe_mb_adc
 
 if ! i2cget -f -y 0 0x70 0 >/dev/null 2>&1; then
   kv set apml_mux 0

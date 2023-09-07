@@ -412,7 +412,7 @@ delta_fw_transmit(uint8_t num, const char *path) {
       block[2] = 0;
       block_total++;
       byte_index = byte_index + 16;
-      printf("-- (%d/%d) (%d%%/100%%) --\r",
+      printf("-- (%d/%u) (%d%%/100%%) --\r",
                   block_total, fw_block, (100 * block_total) / fw_block);
 #ifdef DEBUG
       if (delta_boot_flag(num, BOOT_MODE, READ) & 0x20) {

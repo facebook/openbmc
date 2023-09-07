@@ -22,20 +22,21 @@ WAIT_STATUS = 0x0018
 FIRMWARE_UPGRADE_FAILED = 0x0055
 FIRMWARE_UPGRADE_SUCCESS = 0x00AA
 
-parser = get_parser()
-parser.add_argument(
-    "--vendor",
-    type=str,
-    default="panasonic",
-    choices=["panasonic", "delta"],
-    help="Pick vendor for device",
-)
-parser.add_argument("--block-size", type=auto_int, default=96, help="Block Size")
 
 vendor_params = {
     "panasonic": {"block_size": 96, "boot_mode": 0xAA55, "block_wait": False},
     "delta": {"block_size": 64, "boot_mode": 0xA5A5, "block_wait": True},
 }
+
+parser = get_parser()
+parser.add_argument(
+    "--vendor",
+    type=str,
+    default="panasonic",
+    choices=list(vendor_params.keys()),
+    help="Pick vendor for device",
+)
+parser.add_argument("--block-size", type=auto_int, default=None, help="Block Size")
 
 
 def load_file(path):
@@ -54,12 +55,13 @@ def load_file(path):
 
 @retry(5, delay=0.5)
 def unlock_firmware(addr):
-    rmd.write(addr, 0x300, 0x55AA)
+    rmd.write(addr, 0x300, 0x55AA, timeout=1000)
 
 
 @retry(5, delay=0.5)
 def enter_boot_mode(addr, boot_mode):
-    rmd.write(addr, 0x301, 0xAA55)
+    print("Entering Boot Mode...")
+    rmd.write(addr, 0x301, 0xAA55, timeout=5000)
     # Allow some time for the device to erase and prepare boot mode
     time.sleep(15)
     verify_firmware_status(addr, ENTERED_BOOT_MODE)
@@ -67,8 +69,9 @@ def enter_boot_mode(addr, boot_mode):
 
 @retry(5, delay=1.0)
 def exit_boot_mode(addr):
+    print("Exiting Boot Mode...")
     try:
-        rmd.write(addr, 0x304, 0x55AA, 10000)
+        rmd.write(addr, 0x304, 0x55AA, timeout=10000)
     except ModbusTimeout:
         print("Exit boot mode timed out... Checking if we are in correct status")
         verify_firmware_status(addr, NORMAL_OPERATION_MODE)
@@ -85,11 +88,13 @@ def boot_mode(addr, boot_mode):
     finally:
         time.sleep(10.0)
         exit_boot_mode(addr)
+        time.sleep(10.0)
+        verify_firmware_status(addr, NORMAL_OPERATION_MODE)
 
 
 def verify_firmware_status(addr, expected_status):
     # ensure 0x302 register contains expected status
-    a = rmd.read(addr, 0x302)[0]
+    a = rmd.read(addr, 0x302, timeout=1000)[0]
     if a != expected_status:
         raise ValueError(
             "Bad firmware state: ", int(a), " expected: ", int(expected_status)
@@ -104,7 +109,7 @@ def write_block(addr, data, block_size):
         # which we need to ignore.
         return
     assert len(data) == block_size
-    rmd.write(addr, 0x310, data)
+    rmd.write(addr, 0x310, data, timeout=1000)
 
 
 @retry(500, delay=0.01, verbose=0)
@@ -137,20 +142,18 @@ def verify_firmware(addr):
     rmd.write(addr, 0x303, 0x55AA, 10000)
 
 
-def update_device(addr, filename, vendor):
-    global vendor_params
-    vendor_param = vendor_params[vendor]
-    print("parsing_fw_file")
+def update_device(addr, filename, vendor_param):
+    print("Parsing Firmware...")
     binimg = load_file(filename)
-    print("unlock firmware")
+    print("Unlock Engineering Mode")
     unlock_firmware(addr)
-    print("enter boot mode")
     with boot_mode(addr, vendor_param["boot_mode"]):
-        print("writing data")
+        print("Transferring image")
+        time.sleep(5.0)
         transfer_image(
             addr, binimg, vendor_param["block_size"] // 2, vendor_param["block_wait"]
         )
-        print("request verify firmware")
+        print("Request Verify Firmware")
         verify_firmware(addr)
         print("Waiting for verification to complete")
         time.sleep(10.0)
@@ -160,10 +163,15 @@ def update_device(addr, filename, vendor):
 
 
 def main():
+    global vendor_params
     args = parser.parse_args()
+    params = vendor_params[args.vendor]
+    if args.block_size is not None:
+        params["block_size"] = args.block_size
+    print("Upgrade Parameters: ", params)
     with suppress_monitoring():
         try:
-            update_device(args.addr, args.file, args.vendor)
+            update_device(args.addr, args.file, params)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             traceback.print_exc()

@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -25,10 +27,10 @@ ast_config_adc() {
     local r1=$2
     local r2=$3
     local v2=$4
-    echo "$r1" > ${ADC_PATH}/adc${channel}_r1
-    echo "$r2" > ${ADC_PATH}/adc${channel}_r2
-    echo "$v2" > ${ADC_PATH}/adc${channel}_v2
-    echo 1 > ${ADC_PATH}/adc${channel}_en
+    echo "$r1" > "${ADC_PATH}/adc${channel}_r1"
+    echo "$r2" > "${ADC_PATH}/adc${channel}_r2"
+    echo "$v2" > "${ADC_PATH}/adc${channel}_v2"
+    echo 1 > "${ADC_PATH}/adc${channel}_en"
 }
 
 aspeed_g6_chip_ver() {
@@ -49,3 +51,9 @@ aspeed_g6_chip_ver() {
         esac
 }
 
+aspeed_soc_chip_ver() {
+	soc_chip_ver=$(awk -F, 'NR==2 {print $NF}' /proc/device-tree/compatible)
+	if [ "$soc_chip_ver" = "ast2600" ]; then
+		echo "ATS2600-$(aspeed_g6_chip_ver)"
+	fi
+}

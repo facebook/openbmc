@@ -26,6 +26,7 @@ LOCAL_URI += "\
     file://wedge_power.sh \
     file://wedge_us_mac.sh \
     file://eth0_mac_fixup.sh \
+    file://showtech.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -37,6 +38,7 @@ OPENBMC_UTILS_FILES += " \
     wedge_power.sh \
     wedge_us_mac.sh \
     eth0_mac_fixup.sh \
+    showtech.sh \
     "
 
 PACKAGECONFIG += "disable-watchdog"

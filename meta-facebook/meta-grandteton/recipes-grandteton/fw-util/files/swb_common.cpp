@@ -781,9 +781,10 @@ int GTPldmComponent::is_pldm_info_valid()
 int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t specified_comp)
 {
   int isValidImage = oem_parse_pldm_package(image.c_str());
+  string fru_name = (pal_is_artemis() ? _fru : "swb");
 
   // Legacy way
-  if (is_pldm_supported(bus, eid) < 0) {
+  if (is_pldm_supported(fru_name, bus, eid) < 0) {
     if (force) {
       return comp_fupdate(image);
     } else {
@@ -838,23 +839,28 @@ int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t sp
 
 int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& comp, uint8_t target)
 {
-  string active_key = fmt::format("swb_{}_active_ver",  pldm_signed_info::comp_str_t.at(target));
+  string fru_name = (pal_is_artemis() ? fru : "swb");
+  string active_key = fmt::format("{}_{}_active_ver", fru_name, pldm_signed_info::comp_str_t.at(target));
   string active_ver;
 
-  // TODO: will remove ipmi get version while pldm get version is supported
   if (pal_is_artemis()) {
-    return comp_version(j);
-  }
-
-  try {
-    active_ver = kv::get(active_key, kv::region::temp);
-    j["VERSION"] = active_ver;
-  } catch (...) {
-    if (pal_update_swb_ver_cache(bus, eid) < 0) {
+    int ret = update_pldm_ver_cache(fru_name, bus, eid);
+    if (ret < 0) {
       return comp_version(j);
-    } else {
+    }
+    active_ver = kv::get(active_key, kv::region::temp);
+    j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
+  } else {
+    try {
       active_ver = kv::get(active_key, kv::region::temp);
-      j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
+      j["VERSION"] = active_ver;
+    } catch (...) {
+      if (update_pldm_ver_cache(fru_name, bus, eid) < 0) {
+        return comp_version(j);
+      } else {
+        active_ver = kv::get(active_key, kv::region::temp);
+        j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
+      }
     }
   }
 

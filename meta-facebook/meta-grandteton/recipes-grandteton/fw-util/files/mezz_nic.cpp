@@ -10,7 +10,7 @@ int PLDMNicComponent::get_version(json& j) {
 
   string ver{};
   j["PRETTY_COMPONENT"] = "Mellanox " + _ver_key;
-  j["VERSION"] = pal_pldm_get_active_ver(_bus_id, _eid, ver) ? "NA": ver;
+  j["VERSION"] = get_pldm_active_ver("", _bus_id, _eid, ver) ? "NA": ver;
 
   return FW_STATUS_SUCCESS;
 }

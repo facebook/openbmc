@@ -512,6 +512,7 @@ enum VR_VENDOR {
   VR_INFINEON,
   VR_VISHAY,
   VR_ONSEMI,
+  VR_MPS,
 };
 
 /* Artemis */

@@ -327,12 +327,16 @@ GTSwbBicFwComponent acb_bic("cb", "bic", ACB_BIC_BUS, ACB_BIC_EID, BIC_COMP,
     signed_header_t(gta_acb_bic_comps, BIC_COMP, ASPEED));
 GTSwbBicFwComponent meb_bic("mc", "bic", MEB_BIC_BUS, MEB_BIC_EID, BIC_COMP,
     signed_header_t(gta_meb_bic_comps, BIC_COMP, ASPEED));
-AcbPeswFwComponent acb_pesw0("cb", "pesw0", ACB_BIC_BUS, ACB_BIC_EID, PEX0_COMP);
-AcbPeswFwComponent acb_pesw1("cb", "pesw1", ACB_BIC_BUS, ACB_BIC_EID, PEX1_COMP);
 GTSwbCpldComponent acb_cpld("cb", "cpld", LCMXO3_4300C, ACB_BIC_BUS, ACB_CPLD_ADDR, &cpld_pldm_wr,
     ACB_BIC_EID, CPLD_COMP, signed_header_t(gta_acb_bic_comps, CPLD_COMP, LATTICE));
 GTSwbCpldComponent meb_cpld("mc", "cpld", LCMXO3_4300C, MEB_BIC_BUS, MEB_CPLD_ADDR, &cpld_pldm_wr,
     MEB_BIC_EID, CPLD_COMP, signed_header_t(gta_meb_bic_comps, CPLD_COMP, LATTICE));
+GTSwbVrComponent vr_pex0_vcc("cb", "pesw_vr", "VR_PESW_VCC", ACB_BIC_BUS, ACB_BIC_EID, VR0_COMP,
+    signed_header_t(gta_acb_bic_comps, VR0_COMP));
+GTSwbPexFwComponent acb_pesw0("cb", "pesw0", ACB_BIC_BUS, ACB_BIC_EID, PEX0_COMP,
+    signed_header_t(gta_acb_bic_comps, COMPONENT_VERIFY_SKIPPED, BROADCOM));
+GTSwbPexFwComponent acb_pesw1("cb", "pesw1", ACB_BIC_BUS, ACB_BIC_EID, PEX1_COMP,
+    signed_header_t(gta_acb_bic_comps, COMPONENT_VERIFY_SKIPPED, BROADCOM));
 }
 
 MebCxlFwComponent meb_cxl1("mc", "cxl1", MEB_BIC_BUS, MEB_BIC_EID, CXL1_COMP);
@@ -343,8 +347,6 @@ MebCxlFwComponent meb_cxl5("mc", "cxl5", MEB_BIC_BUS, MEB_BIC_EID, CXL5_COMP);
 MebCxlFwComponent meb_cxl6("mc", "cxl6", MEB_BIC_BUS, MEB_BIC_EID, CXL6_COMP);
 MebCxlFwComponent meb_cxl7("mc", "cxl7", MEB_BIC_BUS, MEB_BIC_EID, CXL7_COMP);
 MebCxlFwComponent meb_cxl8("mc", "cxl8", MEB_BIC_BUS, MEB_BIC_EID, CXL8_COMP);
-
-SwbVrComponent vr_pesw_vcc("cb", "pesw_vr", "VR_PESW_VCC");
 
 CxlVrComponent vr_jcn11_a0v8_9 ("mc_cxl1", "vr_p0v89a",         "MC CXL1 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL1_VR_P089A_COMP);
 CxlVrComponent vr_jcn11_vddq_ab("mc_cxl1", "vr_p0v8d_pvddq_ab", "MC CXL1 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL1_VR_P0V8D_PVDDQ_AB_COMP);

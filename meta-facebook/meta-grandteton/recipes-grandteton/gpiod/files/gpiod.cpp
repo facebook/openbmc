@@ -41,7 +41,6 @@
 #include <openbmc/hgx.h>
 #include "gpiod.h"
 
-
 #define TOUCH(path) \
 {\
   int fd = creat(path, 0644);\
@@ -167,7 +166,13 @@ delay_get_firmware(void* arg) {
   pthread_detach(pthread_self());
   syslog(LOG_INFO, "Get swb firmware: start delay(%u).", *delay);
   sleep(*delay);
-  pal_update_swb_ver_cache(SWB_BUS_ID, SWB_BIC_EID);
+
+  if (pal_is_artemis()) {
+    update_pldm_ver_cache("cb", ACB_BIC_BUS, ACB_BIC_EID);
+  } else {
+    update_pldm_ver_cache("", SWB_BUS_ID, SWB_BIC_EID);
+  }
+
   free(delay);
   delay = NULL;
   pthread_exit(NULL);
@@ -185,7 +190,12 @@ void bic_get_firmware (unsigned int _delay) {
 
   *delay = _delay;
   if (*delay == 0) {
-    pal_update_swb_ver_cache(SWB_BUS_ID, SWB_BIC_EID);
+    if (pal_is_artemis()) {
+      update_pldm_ver_cache("cb", ACB_BIC_BUS, ACB_BIC_EID);
+    } else {
+      update_pldm_ver_cache("", SWB_BUS_ID, SWB_BIC_EID);
+    }
+
     free(delay);
     delay = NULL;
   } else {

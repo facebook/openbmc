@@ -28,6 +28,7 @@ class pldm_firmware_parameter_handler
       UPDATE_SWB_CACHE,
       NON_UPDATE_SWB_CACHE
     };
+    std::string _fru_name{};
     std::string _active_ver{};
     void delete_swb_cache();
     void swb_cache_handle(
@@ -43,6 +44,7 @@ class pldm_firmware_parameter_handler
 
   public:
     pldm_firmware_parameter_handler() {}
+    pldm_firmware_parameter_handler(string fru_name): _fru_name(fru_name) {}
     int update_swb_cache(uint8_t bus, uint8_t eid);
     int get_active_ver(uint8_t bus, uint8_t eid, std::string& active_ver);
 };
@@ -52,7 +54,7 @@ pldm_firmware_parameter_handler::delete_swb_cache()
 {
   for (auto&comp_name:comp_str_t) {
     try {
-      auto key = fmt::format("swb_{}_active_ver", comp_name);
+      auto key = fmt::format("{}_{}_active_ver", _fru_name, comp_name);
       kv::del(key, kv::region::temp);
     } catch (kv::key_does_not_exist&) {
       syslog(LOG_WARNING, "delete version cache failed.");
@@ -68,11 +70,12 @@ pldm_firmware_parameter_handler::swb_cache_handle (
           const pldm_component_parameter_entry& compEntry,
                           const variable_field& activeCompVerStr,
                           const variable_field& /*pendingCompVerStr*/) {
+
   string bic_ver = (activeCompImageSetVerStr.length == 0)?"":(const char*)activeCompImageSetVerStr.ptr;
-  string bic_active_key  = "swb_bic_active_ver";
+  string bic_active_key  = fmt::format("{}_bic_active_ver", _fru_name);
   string comp_name = comp_str_t[compEntry.comp_identifier];
+  string comp_active_key = fmt::format("{}_{}_active_ver", _fru_name, comp_name);
   string comp_active_ver = (activeCompVerStr.length == 0)?"":(const char*)activeCompVerStr.ptr;
-  string comp_active_key = fmt::format("swb_{}_active_ver", comp_name);
 
   bic_ver.resize(activeCompImageSetVerStr.length);
   comp_active_ver.resize(activeCompVerStr.length);
@@ -184,19 +187,38 @@ pldm_firmware_parameter_handler::get_active_ver(
   return ret;
 }
 
-int pal_pldm_get_active_ver(uint8_t bus, uint8_t eid, std::string& active_ver)
+int get_pldm_active_ver(const std::string& fru, uint8_t bus, uint8_t eid, std::string& active_ver)
 {
-  pldm_firmware_parameter_handler handler;
-  return handler.get_active_ver(bus, eid, active_ver);
+  int ret = -1;
+  pldm_firmware_parameter_handler *handler = NULL;
+  if (fru.empty()) {
+    handler = new pldm_firmware_parameter_handler();
+  } else {
+    handler = new pldm_firmware_parameter_handler({fru});
+  }
+
+  ret = handler->get_active_ver(bus, eid, active_ver);
+  delete handler;
+  return ret;
 }
 
-int pal_update_swb_ver_cache(uint8_t bus, uint8_t eid) {
-  pldm_firmware_parameter_handler handler;
-  return handler.update_swb_cache(bus, eid);
+int update_pldm_ver_cache(const std::string& fru, uint8_t bus, uint8_t eid)
+{
+  int ret = -1;
+  pldm_firmware_parameter_handler *handler = NULL;
+  if (fru.empty()) {
+    handler = new pldm_firmware_parameter_handler();
+  } else {
+    handler = new pldm_firmware_parameter_handler({fru});
+  }
+
+  ret = handler->update_swb_cache(bus, eid);
+  delete handler;
+  return ret;
 }
 
 int
-is_pldm_supported(uint8_t bus, uint8_t eid)
+is_pldm_supported(const std::string& fru, uint8_t bus, uint8_t eid)
 {
-  return pal_update_swb_ver_cache(bus, eid);
+  return update_pldm_ver_cache(fru, bus, eid);
 }

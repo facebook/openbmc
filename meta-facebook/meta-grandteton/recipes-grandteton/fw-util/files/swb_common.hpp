@@ -68,12 +68,14 @@ class AcbPeswFwComponent : public SwbPexFwComponent {
 
 class GTPldmComponent : public PldmComponent {
   protected:
+    std::string _fru;
+    std::string _comp;
     string comp_verify_str{};
     int is_pldm_info_valid();
 
   public:
     GTPldmComponent(const signed_header_t& info, const string& fru, const std::string &comp,
-                  uint8_t bus, uint8_t eid): PldmComponent(info, fru, comp, bus, eid) {}
+                  uint8_t bus, uint8_t eid): PldmComponent(info, fru, comp, bus, eid), _fru(fru), _comp(comp) {}
     int try_pldm_update(const std::string& /*image*/, bool /*force*/, uint8_t specified_comp = 0xFF);
     int gt_get_version(json& /*j*/, const string& /*fru*/, const string& /*comp*/, uint8_t /*target*/);
     virtual int comp_version(json& /*j*/) { return -1; }

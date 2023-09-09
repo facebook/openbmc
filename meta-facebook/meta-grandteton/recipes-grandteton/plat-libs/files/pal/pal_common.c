@@ -271,6 +271,8 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
     MEB_PRSNT_MASK_2 = 0x40,
   };
 
+  snprintf(key, sizeof(key), "fru%d_prsnt", fru_id);
+
   switch (fru_id) {
     case FRU_ACB:
       gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_A);
@@ -280,7 +282,7 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
       } else {
         *status = FRU_PRSNT;
       }
-      if (cb_last_status != *status) {
+      if (cb_last_status != *status && kv_get(key, value, NULL, 0)) {
         pal_get_fru_name(fru_id,fru_name);
         syslog(LOG_CRIT, "%s %s",fru_name, *status ? "is Present":"is Absent");
       }
@@ -307,7 +309,7 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
         } else {
           *status = FRU_PRSNT;
         }
-        if (mc_last_status != *status) {
+        if (mc_last_status != *status && kv_get(key, value, NULL, 0)) {
           pal_get_fru_name(fru_id,fru_name);
           syslog(LOG_CRIT, "%s %s",fru_name, *status ? "is Present":"is Absent");
         }
@@ -319,7 +321,6 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
       syslog(LOG_WARNING, "%s() FRU: %u Not Support", __func__, fru_id);
       return false;
   }
-  snprintf(key, sizeof(key), "fru%d_prsnt", fru_id);
   snprintf(value, sizeof(value), "%d", *status);
   kv_set(key, value, 0, 0);
   return true;

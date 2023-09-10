@@ -32,36 +32,54 @@ hgx_pwr_limit_check () {
     curr_fan_table=$(grep -o '"version": *"[^"]*"' "$DEFAULT_FSC_CONFIG" | sed 's/"version": *"\(.*\)"/\1/')
   fi
 
-  pwr_limit=`/usr/local/bin/hgxmgr get-pwr-limit | awk '{print $NF}'`
-  count_500W=$(echo "$pwr_limit" | grep -o "500W" | wc -l)
-  count_650W=$(echo "$pwr_limit" | grep -o "650W" | wc -l)
+  recheck_500w=0
+  recheck_650w=0
+  for ((loop=0; loop<2; loop++)); do
+    pwr_limit=`/usr/local/bin/hgxmgr get-pwr-limit | awk '{print $NF}'`
+    count_500W=$(echo "$pwr_limit" | grep -o "500W" | wc -l)
+    count_650W=$(echo "$pwr_limit" | grep -o "650W" | wc -l)
 
-  # Return an error when fail to get GPU power limit
-  if [ -z "$pwr_limit" ]; then
-    exit $HGX_ERR_READ_FAIL
-  fi
-
-  # Only two configuration are supported: 500W and 650W.
-  # Return an error when the current setting is not supported.
-  if [ $count_500W -eq 0 ] && [ $count_650W -eq 0 ]; then
-    exit $HGX_ERR_UNSUPPORT
-  fi
-
-  if [ "$count_500W" -ge "$count_650W" ]; then
-    if [ "$curr_fan_table" == "$FAN_TABLE_VER_650W" ]; then
-      rm ${DEFAULT_FSC_CONFIG}
-      ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
-      logger -t "fscd" -p daemon.crit "Fan table is changing from 650W to 500W"
-      sv restart fscd
+    # Return an error when fail to get GPU power limit
+    if [ -z "$pwr_limit" ]; then
+      exit $HGX_ERR_READ_FAIL
     fi
-  elif [ "$count_500W" -lt "$count_650W" ]; then
-    if [ "$curr_fan_table" == "$FAN_TABLE_VER_500W" ]; then
-      rm ${DEFAULT_FSC_CONFIG}
-      ln -s /etc/fsc-config-8-retimer-650W.json ${DEFAULT_FSC_CONFIG}
-      logger -t "fscd" -p daemon.crit "Fan table is changing from 500W to 650W"
-      sv restart fscd
+
+    # Only two configuration are supported: 500W and 650W.
+    # Return an error when the current setting is not supported.
+    if [ $count_500W -eq 0 ] && [ $count_650W -eq 0 ]; then
+      exit $HGX_ERR_UNSUPPORT
     fi
-  fi
+
+    if [ "$count_500W" -ge "$count_650W" ] &&
+       [ "$curr_fan_table" == "$FAN_TABLE_VER_650W" ]; then
+      recheck_500w=$((recheck_500w+1))
+
+      if [ $recheck_500w -eq 2 ]; then
+        rm ${DEFAULT_FSC_CONFIG}
+        ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
+        logger -t "fscd" -p daemon.crit "Fan table is changing from 650W to 500W"
+        sv restart fscd
+        recheck_500w=0
+      fi
+    elif [ "$count_500W" -lt "$count_650W" ] &&
+         [ "$curr_fan_table" == "$FAN_TABLE_VER_500W" ]; then
+      recheck_650w=$((recheck_650w+1))
+
+      if [ $recheck_650w -eq 2 ]; then
+        rm ${DEFAULT_FSC_CONFIG}
+        ln -s /etc/fsc-config-8-retimer-650W.json ${DEFAULT_FSC_CONFIG}
+        logger -t "fscd" -p daemon.crit "Fan table is changing from 500W to 650W"
+        sv restart fscd
+        recheck_650w=0
+      fi
+    fi
+
+    if [ $recheck_500w -eq 1 ] || [ $recheck_650w -eq 1 ]; then
+      sleep 30
+    else
+      break
+    fi
+  done
 }
 
 is_fscd_running=`ps | grep fscd | grep -v grep | grep "runsv /etc/sv/fscd"`

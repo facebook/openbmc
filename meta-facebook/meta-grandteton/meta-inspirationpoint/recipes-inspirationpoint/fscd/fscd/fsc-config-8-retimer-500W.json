@@ -1,11 +1,11 @@
 {
     "version": "inspirationpint_v6",
-    "pwm_transition_value": 70,
+    "pwm_transition_value": 80,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
     "fan_recovery_time": 2,
     "sensor_filter_all": true,
-    "pwm_sensor_boost_value": 100,
+    "pwm_sensor_boost_value": 80,
     "standby_fan_fail": {
       "fan_pwm": 20
     },

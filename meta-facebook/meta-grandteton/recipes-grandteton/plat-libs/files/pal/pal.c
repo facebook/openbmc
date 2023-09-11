@@ -326,7 +326,7 @@ pal_update_ts_sled() {
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%ld", ts.tv_sec);
+  sprintf(tstr, "%lld", ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -437,7 +437,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
           ts.tv_sec += 20;
 
           sprintf(key, "ocpdbg_lcd");
-          sprintf(value, "%ld", ts.tv_sec);
+          sprintf(value, "%lld", ts.tv_sec);
           if (kv_set(key, value, 0, 0) < 0) {
             return -1;
           }
@@ -1250,7 +1250,7 @@ _pal_kv_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   snprintf(key, sizeof(key), "fru%d_fwupd", fruid);
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += tmout;
-  snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+  snprintf(value, sizeof(value), "%lld", ts.tv_sec);
   if (kv_set(key, value, 0, 0) < 0) {
     return -1;
   }
@@ -1529,7 +1529,7 @@ pal_handle_oem_1s_dev_power(uint8_t fru, uint8_t *req_data, uint8_t req_len, uin
     if (ret < 0) {
       syslog(LOG_WARNING, "%s: Failed to set device %u power, ret %d", __func__, req_data[0], ret);
       return CC_UNSPECIFIED_ERROR;
-    }   
+    }
   } else {
       return CC_UNSPECIFIED_ERROR;
   }
@@ -1659,7 +1659,7 @@ pal_is_dev_prsnt(uint8_t fru, uint8_t dev, uint8_t *status) {
     return -1;
   }
   if (dev_status.fru_prsnt == FRU_PRSNT) {
-    *status = FRU_PRSNT; 
+    *status = FRU_PRSNT;
   } else {
     *status = FRU_NOT_PRSNT;
   }

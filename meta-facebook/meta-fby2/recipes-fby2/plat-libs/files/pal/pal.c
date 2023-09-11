@@ -1842,7 +1842,7 @@ _set_slot_12v_en_time(uint8_t slot_id) {
   ts.tv_sec += 6;
 
   sprintf(key, "slot%u_12v_en", slot_id);
-  sprintf(value, "%ld", ts.tv_sec);
+  sprintf(value, "%lld", (uint64_t) ts.tv_sec);
   if (kv_set(key, value, 0, 0) < 0) {
     return -1;
   }
@@ -7493,7 +7493,7 @@ pal_update_ts_sled()
   }
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%ld", ts.tv_sec);
+  sprintf(tstr, "%lld", (uint64_t) ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -9406,7 +9406,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
       ts.tv_sec += 20;
 
       sprintf(key, "ocpdbg_lcd");
-      sprintf(value, "%ld", ts.tv_sec);
+      sprintf(value, "%lld", (uint64_t) ts.tv_sec);
       if (kv_set(key, value, 0, 0) < 0) {
         return -1;
       }

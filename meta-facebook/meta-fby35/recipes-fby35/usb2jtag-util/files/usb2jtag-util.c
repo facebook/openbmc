@@ -108,7 +108,7 @@ void scan_dev_byte_mode(struct ftdi_context *ftdi, uint8_t dev, uint16_t tck) {
   uint32_t out = 0;
   mpsse_jtag_read(ftdi, 32, (uint8_t *)&out, 1);
   gettimeofday(&end,NULL);
-  printf("ByteMode: Dev%d IDCODE: %08X, time: %lu.%lus\n", dev, out, end.tv_sec - start.tv_sec, end.tv_usec-start.tv_usec);
+  printf("ByteMode: Dev%d IDCODE: %08X, time: %llu.%llus\n", dev, out, end.tv_sec - start.tv_sec, end.tv_usec-start.tv_usec);
 }
 
 int

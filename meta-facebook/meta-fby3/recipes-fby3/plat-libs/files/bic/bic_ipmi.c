@@ -373,7 +373,7 @@ _set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += tmout;
-  sprintf(value, "%ld", ts.tv_sec);
+  sprintf(value, "%lld", ts.tv_sec);
 
   if (kv_set(key, value, 0, 0) < 0) {
      return -1;
@@ -1418,7 +1418,7 @@ ast_bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t addr, char *key, char 
       syslog(LOG_ERR, "%s: unsupported vendor %x\n", __func__, vr_ver->vendor);
       return BIC_STATUS_FAILURE;
     }
-    
+
     kv_set(key, ver_str, 0, 0);
     ret = BIC_STATUS_SUCCESS;
   }
@@ -1699,7 +1699,7 @@ bic_is_2u_top_bot_prsnt(uint8_t slot_id) {
   int val = 0;
 
   snprintf(key, sizeof(key), KV_SLOT_IS_2U_TOPBOT_PRESENT, slot_id);
-  
+
   if (kv_get(key, tmp_str, NULL, 0)) {
     int i2cfd = BIC_STATUS_FAILURE;
     int ret = BIC_STATUS_FAILURE;
@@ -1964,7 +1964,7 @@ remote_bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data, uint8_t
   index = (gpio / 8) + 3; //3 is the size of IANA ID
   pin = 1 << (gpio % 8);
   tbuf[index] = pin;
-  
+
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, intf);
   *data = rbuf[3];
   return ret;
@@ -2469,7 +2469,7 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, M2_DEV_INFO *m2_dev_in
     } else {
       m2_dev_info->nvme_ready = 0x1;
     }
-    
+
     if ( rlen == M2_DEV_FREYA_RLEN ) {
       m2_dev_info->is_freya = true;
     }
@@ -2748,7 +2748,7 @@ bic_get_mb_index(uint8_t *index) {
     if (rlen == sizeof(GET_MB_INDEX_RESP)) {
       *index = resp.index;
     } else {
-      syslog(LOG_WARNING, "%s(): wrong response length (%d), while getting MB index, expected = %d", 
+      syslog(LOG_WARNING, "%s(): wrong response length (%d), while getting MB index, expected = %d",
             __func__, rlen, sizeof(GET_MB_INDEX_RESP));
       return -1;
     }

@@ -10,7 +10,7 @@ inherit image_types
 # we may do our fit conversions.
 # TODO:
 # More up-stream-worthy method is to use the chaining of conversions.
-CONVERSION_CMD:u-boot = "oe_mkimage ${IMAGE_NAME}.rootfs.${type} none"
+CONVERSION_CMD:u-boot = "oe_mkimage ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type} none"
 
 require recipes-bsp/u-boot/verified-boot.inc
 

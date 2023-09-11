@@ -1131,7 +1131,7 @@ handle_nic_p12v_status_timestamp() {
   if ((nic_p12v_status == NIC_P12V_IS_DROPPED) && (nic_p12v_timestamp != 0)) {
     // Get current timestamp
     clock_gettime(CLOCK_REALTIME, &ts);
-    snprintf(tstr, sizeof(tstr), "%ld", ts.tv_sec);
+    snprintf(tstr, sizeof(tstr), "%lld", ts.tv_sec);
     current_time = atoi(tstr);
 
     if (abs(current_time - nic_p12v_timestamp) > 5) {
@@ -1158,7 +1158,7 @@ read_voltage_nic(uint8_t id, float *value) {
     return ERR_SENSOR_NA;
   }
 
-  if ((pal_is_fru_prsnt(FRU_NIC, &prsnt_status) < 0) || 
+  if ((pal_is_fru_prsnt(FRU_NIC, &prsnt_status) < 0) ||
       (prsnt_status == FRU_ABSENT)) {
     return ERR_SENSOR_NA;
   }
@@ -1180,7 +1180,7 @@ read_voltage_nic(uint8_t id, float *value) {
 static bool
 is_iocm_power_good(void) { // check IOCM power from main connector
   gpio_value_t val = 0;
-  
+
   val = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_3V3EFUSE_PGOOD));
 
   if (val == GPIO_VALUE_INVALID) {
@@ -1192,7 +1192,7 @@ is_iocm_power_good(void) { // check IOCM power from main connector
     return true;
   }
 
-  return false;  
+  return false;
 }
 
 static int
@@ -1443,7 +1443,7 @@ exp_read_sensor_thresh_wrapper(uint8_t fru, uint8_t *sensor_list, thresh_sensor_
 
   for(i = 0; i < sensor_cnt; i++) {
     snr_num = p_thres_data[i].sensor_num;
-    snr_thresh[snr_num].flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH) | 
+    snr_thresh[snr_num].flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH) |
       GETMASK(UNC_THRESH) | GETMASK(LCR_THRESH) | GETMASK(LNC_THRESH);
     pal_get_sensor_name(fru, snr_num, snr_thresh[snr_num].name);
     pal_get_sensor_units(fru, snr_num, snr_thresh[snr_num].units);
@@ -1676,7 +1676,7 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
     }
     return ret;
   }
-  
+
   tach_cnt = pal_get_tach_cnt();
 
   p_sensor_data = (EXPANDER_SENSOR_DATA *)(&rbuf[1]);
@@ -1698,9 +1698,9 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
       else if (strncmp(units, "RPM", sizeof(units)) == 0) {
         value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
         value *= 10;
-        
+
         if (tach_cnt == SINGLE_FAN_CNT) {
-          if ((p_sensor_data[i].sensor_num == FAN_0_REAR) || (p_sensor_data[i].sensor_num == FAN_1_REAR) 
+          if ((p_sensor_data[i].sensor_num == FAN_0_REAR) || (p_sensor_data[i].sensor_num == FAN_1_REAR)
            || (p_sensor_data[i].sensor_num == FAN_2_REAR) || (p_sensor_data[i].sensor_num == FAN_3_REAR)) {
              continue;
            }
@@ -1775,7 +1775,7 @@ expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
 
   // Get current timestamp
   clock_gettime(CLOCK_REALTIME, &ts);
-  snprintf(tstr, sizeof(tstr), "%ld", ts.tv_sec);
+  snprintf(tstr, sizeof(tstr), "%lld", ts.tv_sec);
   current_time = atoi(tstr);
 
   ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
@@ -1817,7 +1817,7 @@ expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
       // Update timestamp only after all sensors updated
       memset(tstr, 0, sizeof(tstr));
       clock_gettime(CLOCK_REALTIME, &ts);
-      snprintf(tstr, sizeof(tstr), "%ld", ts.tv_sec);
+      snprintf(tstr, sizeof(tstr), "%lld", ts.tv_sec);
 
       ret = pal_set_cached_value(key, tstr);
       if (ret < 0) {
@@ -2258,10 +2258,10 @@ check_server_dc_power(uint8_t sensor_num, uint8_t chassis_type) {
   }
 
   /* Skip isolation actions while:
-   *  1. Not running as sensord 
+   *  1. Not running as sensord
    *  2. No power change and hotplug happened
    */
-  if (!owning_iocm_snr_flag || 
+  if (!owning_iocm_snr_flag ||
       (status == pre_status && is_e1s_iocm_removed(sensor_num, chassis_type) == false)) {
     return (status == SERVER_POWER_ON) ? 0 : ERR_SENSOR_NA;
   }
@@ -2353,7 +2353,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       ret = ERR_SENSOR_NA;
     } else {
       ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
-      
+
       // Inlet sensor correction
       if (sensor_num == BS_INLET_TEMP) {
         apply_inlet_correction((float *)value, server_ict, server_ict_count);
@@ -2799,7 +2799,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
 
     // Set NIC P12V deassert timestamp
     clock_gettime(CLOCK_REALTIME, &ts);
-    snprintf(tstr, sizeof(tstr), "%ld", ts.tv_sec);
+    snprintf(tstr, sizeof(tstr), "%lld", ts.tv_sec);
     if (pal_set_cached_value(key, tstr) < 0) {
       syslog(LOG_WARNING, "%s() Failed to set NIC P12V LCR deassert timestamp", __func__);
     }

@@ -1184,7 +1184,7 @@ pal_update_ts_sled()
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%ld", ts.tv_sec);
+  sprintf(tstr, "%lld", ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -3475,7 +3475,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
       ts.tv_sec += 20;
 
       snprintf(key, sizeof(key), "ocpdbg_lcd");
-      snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+      snprintf(value, sizeof(value), "%lld", ts.tv_sec);
       kv_set(key, value, 0, 0);
     }
   }

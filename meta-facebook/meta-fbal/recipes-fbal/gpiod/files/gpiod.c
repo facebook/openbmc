@@ -856,7 +856,7 @@ static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
   TOUCH("/tmp/rst_touch");
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  sprintf(value, "%ld", ts.tv_sec);
+  sprintf(value, "%lld", ts.tv_sec);
 
   if( curr == GPIO_VALUE_HIGH )
     kv_set("snr_pwron_flag", value, 0, 0);
@@ -874,7 +874,7 @@ static void
 upi_init_handler(gpiopoll_pin_t *desc, gpio_value_t value) {
   int ret;
   uint8_t mode;
-  
+
   ret = pal_get_host_system_mode(&mode);
   if ( ret != 0 )
     syslog(LOG_WARNING, "%s get mode fail\n", __func__);
@@ -893,7 +893,7 @@ platform_reset_init(gpiopoll_pin_t *desc, gpio_value_t value) {
   char data[MAX_VALUE_LEN];
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  sprintf(data, "%ld", ts.tv_sec);
+  sprintf(data, "%lld", ts.tv_sec);
 
   if( value == GPIO_VALUE_HIGH )
     kv_set("snr_pwron_flag", data, 0, 0);

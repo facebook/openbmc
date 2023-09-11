@@ -964,7 +964,7 @@ bool check_pwron_time(int time) {
       return true;
     }
   } else {
-     sprintf(str, "%ld", ts.tv_sec);
+     sprintf(str, "%lld", ts.tv_sec);
      kv_set("snr_pwron_flag", str, 0, 0);
   }
 
@@ -1390,7 +1390,7 @@ error_exit:
     retry[cpu_id] = 0;
   }
   return ret;
-}  
+}
 
 static int
 read_cpu_temp(uint8_t cpu_id, float *value) {
@@ -2436,7 +2436,7 @@ int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
 
-  if (fru != FRU_MB && fru != FRU_NIC0 && fru != FRU_NIC1 && 
+  if (fru != FRU_MB && fru != FRU_NIC0 && fru != FRU_NIC1 &&
       fru != FRU_PDB && fru != FRU_TRAY1_MB) {
     syslog(LOG_WARNING, "Threshold type error value=%d\n", thresh);
     return -1;

@@ -1274,7 +1274,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
     if (ts.tv_sec >= (last_time + 5)) {
       last_time = ts.tv_sec;
       ts.tv_sec += 20;
-      sprintf(value, "%ld", ts.tv_sec);
+      sprintf(value, "%lld", ts.tv_sec);
       if (kv_set("ocpdbg_lcd", value, 0, 0) < 0) {
         return -1;
       }

@@ -1983,7 +1983,7 @@ _set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += tmout;
-  sprintf(value, "%ld", ts.tv_sec);
+  sprintf(value, "%lld", (uint64_t) ts.tv_sec);
 
   if (kv_set(key, value, 0, 0) < 0) {
      return -1;

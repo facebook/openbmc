@@ -81,7 +81,7 @@ void trigger_trst(struct ftdi_context *ftdi, uint8_t slot_id) {
     return;
   }
   printf("Trying to do rst\n");
-  mpsse_trigger_trst(ftdi);  
+  mpsse_trigger_trst(ftdi);
 }
 
 int
@@ -162,7 +162,7 @@ void scan_dev_byte_mode(struct ftdi_context *ftdi, uint8_t dev, uint16_t tck, ui
   uint32_t out = 0;
   mpsse_jtag_read(ftdi, 32, (uint8_t *)&out, 1);
   gettimeofday(&end,NULL);
-  printf("ByteMode: Dev%d IDCODE: %08X, time: %u.%us\n", dev, out, end.tv_sec - start.tv_sec, end.tv_usec-start.tv_usec);
+  printf("ByteMode: Dev%d IDCODE: %08X, time: %lld.%us\n", dev, out, end.tv_sec - start.tv_sec, end.tv_usec-start.tv_usec);
 }
 
 int
@@ -207,7 +207,7 @@ main(int argc, char **argv) {
         scan_dev_byte_mode(ftdi, dev, tck, slot_id);
       }
     }
-  } else if ( argc == 3 && (strncmp(argv[2], "--trst", 6) == 0) ) {   
+  } else if ( argc == 3 && (strncmp(argv[2], "--trst", 6) == 0) ) {
     trigger_trst(ftdi, slot_id);
   } else {
     print_usage_help();

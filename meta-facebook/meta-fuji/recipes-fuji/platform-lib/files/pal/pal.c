@@ -628,7 +628,7 @@ pal_set_pim_phy_type_to_file(uint8_t fru, uint8_t type) {
       break;
   }
 
-  syslog(LOG_INFO, "pal_set_pim_phy_type_to_file: PIM %d set phy type %s", 
+  syslog(LOG_INFO, "pal_set_pim_phy_type_to_file: PIM %d set phy type %s",
          fru - FRU_PIM1 + 1, type_name);
   return kv_set(key, type_name, 0, 0);
 }
@@ -1007,7 +1007,7 @@ char tstr[MAX_VALUE_LEN] = {0};
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%ld", ts.tv_sec);
+  sprintf(tstr, "%lld", ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -1472,7 +1472,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 void
 init_led(void)
 {
-  // TODO, currently there is no definition, but in the future, maybe need action. 
+  // TODO, currently there is no definition, but in the future, maybe need action.
   return;
 }
 
@@ -1502,7 +1502,7 @@ set_sled(int brd_rev, uint8_t color, uint8_t led_name)
     syslog(LOG_WARNING, "set_sled: error color %d or error name %d", color, led_name);
     return -1;
   }
-  
+
   sprintf(led_path,"/sys/class/leds/%s/multi_intensity", led_names[led_name]);
   device_write_buff(led_path, led_colors[color].color);
   sprintf(led_path,"/sys/class/leds/%s/brightness", led_names[led_name]);

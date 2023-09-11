@@ -1746,8 +1746,8 @@ timestamp_handler()
   char tstr[MAX_VALUE_LEN] = {0};
   char buf[128] = {0};
   uint8_t time_init = 0;
-  long time_sled_on;
-  long time_sled_off;
+  time_t time_sled_on;
+  time_t time_sled_off;
 
   // Read the last timestamp from KV storage
   pal_get_key_value("timestamp_sled", tstr);

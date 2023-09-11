@@ -554,7 +554,7 @@ int
 pal_is_bmc_por(void) {
   char por[MAX_VALUE_LEN] = {0};
   int rc;
- 
+
   rc = kv_get("ast_por", por, NULL, 0);
   if (rc < 0) {
     syslog(LOG_DEBUG, "%s(): kv_get for ast_por failed", __func__);
@@ -594,7 +594,7 @@ int pal_set_id_led(uint8_t status)
     tbuf[0] = 0x03;
 
     ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
-  
+
     if(ret < 0) {
       syslog(LOG_WARNING,"[%s] Cannot read i2c", __func__);
       retry_count++;
@@ -614,7 +614,7 @@ int pal_set_id_led(uint8_t status)
       tbuf[1] = rbuf[0] & 0xBF;
 
     ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 2, rbuf, 0);
-  
+
     if(ret < 0) {
       syslog(LOG_WARNING,"[%s] Cannot write i2c", __func__);
       retry_count++;
@@ -953,7 +953,7 @@ void pal_update_ts_sled()
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%ld", ts.tv_sec);
+  sprintf(tstr, "%lld", ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -1028,14 +1028,14 @@ int pal_set_ioexp_direction(uint8_t bus, char* dirction) {
     } else {
       tbuf[1] = 0xff;
     }
-    
+
     retry = MAX_READ_RETRY;
     while(retry > 0) {
       ret = i2c_rdwr_msg_transfer(fd, ioexp_addr, tbuf, 2, rbuf, 0);
       if (PAL_EOK == ret) {
         break;
       }
-    
+
       msleep(50);
       retry--;
     }
@@ -1215,7 +1215,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
       last_time = ts.tv_sec;
       ts.tv_sec += 20;
 
-      sprintf(value, "%ld", ts.tv_sec);
+      sprintf(value, "%lld", ts.tv_sec);
       if (kv_set("ocpdbg_lcd", value, 0, 0) < 0) {
         return -1;
       }

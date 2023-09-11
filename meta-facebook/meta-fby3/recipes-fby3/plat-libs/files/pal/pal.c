@@ -904,7 +904,7 @@ pal_update_ts_sled()
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%ld", ts.tv_sec);
+  sprintf(tstr, "%lld", ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -4747,9 +4747,9 @@ cpu_pwrgd_handler(uint8_t slot)
 
   snprintf(key, sizeof(key), KEY_CPU_PWRGD_TIMESTAMP, slot);
   if(kv_get(key, value, NULL, 0) == 0) {
-    time_cpu_pwrgd = strtol(value, NULL, 10); 
+    time_cpu_pwrgd = strtol(value, NULL, 10);
   }
-  snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+  snprintf(value, sizeof(value), "%lld", ts.tv_sec);
   if (kv_set(key, value, 0, 0) < 0) {
     syslog(LOG_WARNING, "%s() cache_set key = %s, value = %s failed.\n", __func__, key, value);
   }
@@ -5484,7 +5484,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
       ts.tv_sec += 20;
 
       sprintf(key, "ocpdbg_lcd");
-      sprintf(value, "%ld", ts.tv_sec);
+      sprintf(value, "%lld", ts.tv_sec);
       kv_set(key, value, 0, 0);
     }
   }

@@ -231,7 +231,7 @@ void ipmi_update_ts_sled(void) {
 
   if (!get_cfg_item_bool("update_timestamp_sled", &bv) && bv) {
     clock_gettime(CLOCK_REALTIME, &ts);
-    sprintf(tstr, "%ld", ts.tv_sec);
+    sprintf(tstr, "%lld", (uint64_t) ts.tv_sec);
     kv_set(key, tstr, 0, KV_FPERSIST);
   }
 }

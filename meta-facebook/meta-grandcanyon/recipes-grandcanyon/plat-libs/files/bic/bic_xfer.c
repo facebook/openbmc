@@ -102,7 +102,7 @@ is_bic_ready() {
     return STATUS_BIC_NOT_READY;
   } else {
     return STATUS_BIC_READY;
-  }  
+  }
 }
 
 int
@@ -262,7 +262,7 @@ _set_fw_update_ongoing(uint16_t tmout) {
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += tmout;
-  snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+  snprintf(value, sizeof(value), "%lld", ts.tv_sec);
 
   if (kv_set(key, value, 0, 0) < 0) {
      return -1;

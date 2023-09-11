@@ -608,7 +608,7 @@ pwr_good_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   reset_timer(&g_power_on_sec);
   if (curr == GPIO_VALUE_HIGH) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+    snprintf(value, sizeof(value), "%lld", ts.tv_sec);
     kv_set(KV_KEY_LAST_POWER_GOOD, value, 0, 0);
     kv_del("mrc_warning", 0);
   }
@@ -644,7 +644,7 @@ platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
   TOUCH("/tmp/rst_touch");
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+  snprintf(value, sizeof(value), "%lld", ts.tv_sec);
 
   if( curr == GPIO_VALUE_HIGH )
     kv_set("snr_pwron_flag", value, 0, 0);
@@ -662,7 +662,7 @@ platform_reset_init(gpiopoll_pin_t *desc, gpio_value_t value) {
   char data[MAX_VALUE_LEN];
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  snprintf(data, sizeof(data), "%ld", ts.tv_sec);
+  snprintf(data, sizeof(data), "%lld", ts.tv_sec);
 
   if( value == GPIO_VALUE_HIGH )
     kv_set("snr_pwron_flag", data, 0, 0);

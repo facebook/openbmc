@@ -2905,7 +2905,7 @@ void pal_update_ts_sled() {
   clock_gettime(CLOCK_REALTIME, &timestamp);
 
   snprintf(key, sizeof(key), "timestamp_sled");
-  snprintf(timestamp_str, sizeof(timestamp_str), "%ld", timestamp.tv_sec);
+  snprintf(timestamp_str, sizeof(timestamp_str), "%lld", timestamp.tv_sec);
 
   ret = pal_set_key_value(key, timestamp_str);
   if (ret < 0) {

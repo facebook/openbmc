@@ -704,7 +704,7 @@ bool check_pwron_time(int time) {
       return true;
     }
   } else {
-     sprintf(str, "%ld", ts.tv_sec);
+     sprintf(str, "%lld", ts.tv_sec);
      kv_set("snr_pwron_flag", str, 0, 0);
   }
 

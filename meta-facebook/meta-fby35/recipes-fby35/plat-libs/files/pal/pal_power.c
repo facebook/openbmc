@@ -297,7 +297,7 @@ set_nic_pwr_en_time(void) {
   struct timespec ts;
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  snprintf(value, sizeof(value), "%ld", ts.tv_sec + 10);
+  snprintf(value, sizeof(value), "%lld", ts.tv_sec + 10);
   if (kv_set("nic_pwr", value, 0, 0) < 0) {
     return -1;
   }

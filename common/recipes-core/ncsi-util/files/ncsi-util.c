@@ -336,7 +336,7 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
 #define MAX_WAIT_CYCLE 1000
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  snprintf(value, sizeof(value), "%ld", ts.tv_sec + 600);
+  snprintf(value, sizeof(value), "%lld", (uint64_t) ts.tv_sec + 600);
   kv_set("block_ncsi_xmit", value, 0, 0);
 
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));

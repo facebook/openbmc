@@ -1054,7 +1054,7 @@ handle_ncsi_if_reinit(int is_aen) {
   if (((ts.tv_sec - last_config_ts.tv_sec) >= NIC_STATUS_SAMPLING_DELAY/2) ||
       (last_config_ts.tv_sec == 0)) {
     // to skip tx during re-init
-    snprintf(value, sizeof(value), "%ld", ts.tv_sec + NCSI_WAIT_REINIT);
+    snprintf(value, sizeof(value), "%lld", (uint64_t) ts.tv_sec + NCSI_WAIT_REINIT);
     if (kv_set("block_ncsi_xmit", value, 0, 0)) {
       syslog(LOG_WARNING, "failed to set block_ncsi_xmit");
     }

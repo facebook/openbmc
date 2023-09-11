@@ -1,0 +1,34 @@
+# Meta OpenBMC Events for Grand Teton
+
+This document of platform specific event logs we can expect.
+
+Others refer grandteton EVENT.md
+
+# GPIO
+| **FRU** | **GPIO Name** | **Event** |
+|---|---|---|
+| MB | CPU Error\#0 | ASSERT: SGPIO144 \- FM\_CPU0\_SMERR\_N DEASSERT: SGPIO144 \- FM\_CPU0\_SMERR\_N |
+| MB | CPU Error\#1 | ASSERT: SGPIO142 \- FM\_CPU1\_SMERR\_N DEASSERT: SGPIO142 \- FM\_CPU1\_SMERR\_N |
+| MB | CPU Error\#2 | ASSERT: SGPIO140 \- FM\_CPU2\_SMERR\_N DEASSERT: SGPIO140 \- FM\_CPU2\_SMERR\_N |
+| MB | CPU\#0 ProcHOT | ASSERT: SGPIO202 \- FM\_CPU0\_PROCHOT\_R\_N DESSERT: SGPIO202 \- FM\_CPU0\_PROCHOT\_R\_N |
+| MB | CPU\#1 ProcHOT | ASSERT: SGPIO186 \- FM\_CPU1\_PROCHOT\_R\_N DESSERT: SGPIO186 \- FM\_CPU1\_PROCHOT\_R\_N |
+| MB | VR HOT for PVDD11 | ASSERT: SGPIO14 \- FM\_PVDD11\_S3\_P0\_OCP\_N DESSERT: SGPIO14 \- FM\_PVDD11\_S3\_P0\_OCP\_N |
+| MB | VR HOT for PVDD11 | ASSERT: SGPIO16 \- FM\_PVDD11\_S3\_P1\_OCP\_N DESSERT: SGPIO16 \- FM\_PVDD11\_S3\_P1\_OCP\_N |
+| MB | VR HOT for PVDDCR | ASSERT: SGPIO122 \- FM\_PVDDCR\_CPU0\_P0\_OCP\_N DESSERT: SGPIO122 \- FM\_PVDDCR\_CPU0\_P0\_OCP\_N |
+| MB | VR HOT for PVDDCR | ASSERT: SGPIO124 \- FM\_PVDDCR\_CPU0\_P1\_OCP\_N DESSERT: SGPIO124 \- FM\_PVDDCR\_CPU0\_P1\_OCP\_N |
+| MB | VR HOT for PVDDCR | ASSERT: SGPIO126 \- FM\_PVDDCR\_CPU1\_P0\_OCP\_N DESSERT: SGPIO126 \- FM\_PVDDCR\_CPU1\_P0\_OCP\_N |
+| MB | VR HOT for PVDDCR | ASSERT: SGPIO128 \- FM\_PVDDCR\_CPU1\_P1\_OCP\_N DESSERT: SGPIO128 \- FM\_PVDDCR\_CPU1\_P1\_OCP\_N |
+| MB | VR HOT for PVDD11 PMALERT | ASSERT: SGPIO182 \- PVDD11\_S3\_P0\_PMALERT DESSERT: SGPIO182 \-PVDD11\_S3\_P0\_PMALERT |
+| MB | VR HOT for PVDD11 PMALERT | ASSERT: SGPIO184 \- PVDD11\_S3\_P1\_PMALERT DESSERT: SGPIO184 \- PVDD11\_S3\_P1\_PMALERT |
+| MB | HSC Fault Signal | ASSERT: SGPIO36 \- IRQ\_HSC\_FAULT\_R1\_N DEASSERT: SGPIO36 \- IRQ\_HSC\_FAULT\_R1\_N |
+| MB | CPU\#0 socket Occupied State | ASSERT: SGPIO112 \- FM\_PRSNT\_CPU0\_R\_N DEASSERT: SGPIO112 \- FM\_PRSNT\_CPU0\_R\_N |
+| MB | CPU\#1 socket Occupied State | ASSERT: SGPIO114 \- FM\_PRSNT\_CPU1\_R\_N DEASSERT: SGPIO114 \- FM\_PRSNT\_CPU1\_R\_N |
+| MB | CPU\#0 Thermal Trip Event | ASSERT: SGPIO136 \- CPU0\_THERMTRIP\_R\_N DEASSERT: SGPIO136 \- CPU0\_THERMTRIP\_R\_N |
+| MB | CPU\#1 Thermal Trip Event  | ASSERT: SGPIO118 \- CPU1\_THERMTRIP\_R\_N DEASSERT: SGPIO118 \- CPU1\_THERMTRIP\_R\_N |
+| MB | System Throttle | ASSERT: SGPIO20 \- FM\_SYS\_THROTTLE\_R\_N DEASSERT: SGPIO20 \- FM\_SYS\_THROTTLE\_R\_N |
+| MB | Under Voltage Detect Signal | Record time delay 300ms, FRU: 1 HSC Under Voltage Warning: Assertion Record time delay 300ms, FRU: 1 HSC Under Voltage Warning: Deassertion |
+| MB | Over Current Detect Signal | Record time delay 300ms, FRU: 1 HSC Surge Current Warning: Assertion  Record time delay 300ms, FRU: 1 HSC Surge Current Warning: Deassertion DEASSERT: SGPIO178 \- OC\_ALERT\_N |
+| MB | PMBus Alert Signal | Record time delay 300ms, FRU: 1 HSC OC Warning: Assertion  Record time delay 300ms, FRU: 1 HSC OC Warning: Deassertion |
+| MB | System Power Good | DEASSERT: SGPIO240 \- FM\_PWRGD\_CPU1\_PWROK ASSERT: SGPIOR240 \- FM\_PWRGD\_CPU1\_PWROK |
+| MB | Platform Reset Event | DEASSERT: SGPIO200 \- FM\_RST\_CPU1\_RESETL\_N ASSERT: SGPIOR200 \- FM\_RST\_CPU1\_RESETL\_N |
+| MB | UV ADR Trigger | ASSERT: SGPIO26 \- FM\_UV\_ADR\_TRIGGER\_R\_N DEASSERT: SGPIO26 \- FM\_UV\_ADR\_TRIGGER\_R\_N |

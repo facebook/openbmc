@@ -75,6 +75,7 @@ source "/usr/local/bin/shell-utils.sh"
 source "/usr/local/bin/i2c-utils.sh"
 source "/usr/local/bin/gpio-utils.sh"
 source "/usr/local/bin/ast-utils.sh"
+source "/usr/local/bin/reset_script_utils.sh"
 
 if [ -f "/usr/local/bin/soc-utils.sh" ]; then
     source "/usr/local/bin/soc-utils.sh"

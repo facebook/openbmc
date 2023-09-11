@@ -58,6 +58,7 @@ LOCAL_URI = " \
     file://cpu_monitor.py \
     file://setup_i2c.service \
     file://setup_gpio.service \
+    file://reset_script_utils.sh \
     ${@bb.utils.contains('PACKAGECONFIG', 'disable-watchdog', \
                          'file://disable_watchdog.sh ' + \
                          'file://disable_watchdog.service', '', d)} \
@@ -83,6 +84,7 @@ OPENBMC_UTILS_FILES = " \
     emmc_auto_mount.sh \
     emmc_enhance_part.sh \
     flashrom-utils.sh \
+    reset_script_utils.sh \
     "
 
 OPENBMC_PYTHON_LIBS = " \

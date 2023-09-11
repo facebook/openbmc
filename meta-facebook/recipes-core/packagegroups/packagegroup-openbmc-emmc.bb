@@ -17,7 +17,9 @@ EMMC_BTRFS_REQUIRED_PACKAGES = "\
 "
 
 EMMC_REQUIRED_PACKAGES = "\
-  util-linux \
+  util-linux-blkdiscard \
+  util-linux-blkid \
+  util-linux-mount \
   mmc-utils \
   blktrace \
   mmc-raw \

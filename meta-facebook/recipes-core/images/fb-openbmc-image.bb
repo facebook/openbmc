@@ -40,16 +40,10 @@ PACKAGE_EXCLUDE += "\
 #
 # shared-mime-info:
 # We're not sending email, so unneeded.
-#
-# util-linux-renice:
-# TODO: FBOSS platforms are suddenly pulling a bunch of util-linux packages,
-# but we expect busybox-renice.  Un-RECOMMEND util-linux-renice until we
-# can figure out why all these are coming in.
 BAD_RECOMMENDATIONS += " \
     ca-certificates \
     udev-hwdb \
     shared-mime-info \
-    util-linux-renice \
     "
 
 # Many of the sysv init files we already have install into runlevel 5, so

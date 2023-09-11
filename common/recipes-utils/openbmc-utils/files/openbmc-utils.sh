@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -15,24 +17,26 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+# shellcheck disable=SC1091
+
 DEVMEM=/sbin/devmem
 
 devmem_set_bit() {
     local addr
     local val
     addr=$1
-    val=$($DEVMEM $addr)
+    val=$($DEVMEM "$addr")
     val=$((val | (0x1 << $2)))
-    $DEVMEM $addr 32 $val
+    $DEVMEM "$addr" 32 $val
 }
 
 devmem_clear_bit() {
     local addr
     local val
     addr=$1
-    val=$($DEVMEM $addr)
+    val=$($DEVMEM "$addr")
     val=$((val & ~(0x1 << $2)))
-    $DEVMEM $addr 32 $val
+    $DEVMEM "$addr" 32 $val
 }
 
 #
@@ -45,8 +49,8 @@ devmem_test_bit() {
     local bitpos=$2
     local val
 
-    val=$($DEVMEM $addr)
-    val=$(((val >> $bitpos) & 0x1))
+    val=$($DEVMEM "$addr")
+    val=$(((val >> "$bitpos") & 0x1))
 
     if [ $val -eq 1 ]; then
         # 0 for true

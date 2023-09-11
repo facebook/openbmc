@@ -49,6 +49,15 @@ extern "C" {
 #define MAX_SENSOR_NUMBER  0xFF
 #define MAX_THERSH_LEN     256
 
+// for fan-util
+#define ENABLE_STR "enable"
+#define DISABLE_STR "disable"
+#define STATUS_STR "status"
+#define START_FSCD_CMD "sv start fscd > /dev/null 2>&1"
+#define STOP_FSCD_CMD "sv force-stop fscd > /dev/null 2>&1"
+#define GET_FAN_MODE_CMD "fan-util --get | grep \"Fan Mode:\" | cut -d: -f2-"
+#define GET_FSCD_STATUS_CMD "sv status fscd 2>/dev/null | cut -d: -f1"
+
 // for fru device
 #define DEV_ALL         0x0
 #define DEV_NONE        0xff
@@ -325,6 +334,14 @@ enum {
   _1OU_EXP_PWR_OFF_FAIL,
   _2OU_EXP_PWR_ON_FAIL,
   _2OU_EXP_PWR_OFF_FAIL,
+};
+
+enum {
+  MANUAL_MODE  = 0x00,
+  AUTO_MODE    = 0x01,
+  GET_FAN_MODE = 0x02,
+  WAKEUP_MODE  = 0x03,
+  SLEEP_MODE   = 0x04,
 };
 
 // Enum for get the event sensor name in processing SEL

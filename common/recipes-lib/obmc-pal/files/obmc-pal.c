@@ -59,7 +59,7 @@ size_t pal_tach_cnt __attribute__((weak)) = 0;
 size_t pal_fan_opt_cnt __attribute__((weak)) = 0;
 char pal_pwm_list[] __attribute__((weak)) = "";
 char pal_tach_list[] __attribute__((weak)) = "";
-char pal_fan_opt_list[] __attribute__((weak)) = "";
+char pal_fan_opt_list[] __attribute__((weak)) = "enable, disable, status";
 
 // PAL functions
 int __attribute__((weak))
@@ -3233,7 +3233,65 @@ pal_get_fan_opt_cnt(void)
 int __attribute__((weak))
 pal_set_fan_ctrl(char *ctrl_opt)
 {
-  return -1;
+  FILE* fp = NULL;
+  uint8_t ctrl_mode = 0;
+  int ret = 0;
+  char cmd[MAX_KEY_LEN] = {0};
+  char buf[MAX_VALUE_LEN];
+
+  if (!strcmp(ctrl_opt, ENABLE_STR)) {
+    ctrl_mode = AUTO_MODE;
+    snprintf(cmd, sizeof(cmd), START_FSCD_CMD);
+  } else if (!strcmp(ctrl_opt, DISABLE_STR)) {
+    ctrl_mode = MANUAL_MODE;
+    snprintf(cmd, sizeof(cmd), STOP_FSCD_CMD);
+  } else if (!strcmp(ctrl_opt, STATUS_STR)) {
+    ctrl_mode = GET_FAN_MODE;
+  } else {
+    return -1;
+  }
+
+  if (ctrl_mode == GET_FAN_MODE) {
+    snprintf(cmd, sizeof(cmd), GET_FAN_MODE_CMD);
+    if((fp = popen(cmd, "r")) == NULL) {
+      printf("Auto Mode: Unknown\n");
+      return -1;
+    }
+
+    if(fgets(buf, sizeof(buf), fp) != NULL) {
+      printf("Auto Mode:%s",buf);
+    }
+    pclose(fp);
+  } else {  // AUTO_MODE or MANUAL_MODE
+    if(ctrl_mode == AUTO_MODE) {
+      if (system(cmd) != 0)
+        return -1;
+    } else if (ctrl_mode == MANUAL_MODE){
+      if (system(cmd) != 0) {
+        // Although sv force-stop sends kill (-9) signal after timeout,
+        // it still returns an error code.
+        // we will check status here to ensure that fscd has stopped completely.
+        syslog(LOG_WARNING, "%s() force-stop timeout", __func__);
+        snprintf(cmd, sizeof(cmd), GET_FSCD_STATUS_CMD);
+        if((fp = popen(cmd, "r")) == NULL) {
+          syslog(LOG_WARNING, "%s() popen failed, cmd: %s", __func__, cmd);
+          ret = -1;
+        } else if(fgets(buf, sizeof(buf), fp) == NULL) {
+          syslog(LOG_WARNING, "%s() read popen failed, cmd: %s", __func__, cmd);
+          ret = -1;
+        } else if(strncmp(buf, "down", 4) != 0) {
+          syslog(LOG_WARNING, "%s() failed to terminate fscd", __func__);
+          ret = -1;
+        }
+
+        if(fp != NULL){
+          pclose(fp);
+        }
+      }
+    }
+  }
+
+  return ret;
 }
 
 int __attribute__((weak))

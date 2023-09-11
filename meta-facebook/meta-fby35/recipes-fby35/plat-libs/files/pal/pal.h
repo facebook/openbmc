@@ -77,7 +77,6 @@ extern const char pal_guid_fru_list[];
 extern const char pal_server_list[];
 extern const char pal_dev_pwr_list[];
 extern const char pal_dev_pwr_option_list[];
-extern const char pal_fan_opt_list[];
 
 enum {
   LED_LOCATE_MODE = 0x0,
@@ -123,12 +122,6 @@ enum {
 enum {
   AC_OFF = 0x00,
   AC_ON  = 0x01,
-};
-
-enum {
-  MANUAL_MODE  = 0x00,
-  AUTO_MODE    = 0x01,
-  GET_FAN_MODE = 0x02,
 };
 
 #define MAX_NODES     (4)

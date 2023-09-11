@@ -114,7 +114,6 @@ int temp_cnt[MAX_NUM_FRUS + 1] = {0};
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1, 2, 3";
-const char pal_fan_opt_list[] = "enable, disable, status";
 
 static thresh_sensor_t m_snr_desc[MAX_SENSORD_FRU][MAX_SENSOR_NUM + 1] = {0};
 

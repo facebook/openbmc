@@ -111,7 +111,6 @@ int temp_cnt = 0;
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1, 2, 3";
-const char pal_fan_opt_list[] = "enable, disable, status";
 
 const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_FAN0_TACH,

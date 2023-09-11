@@ -91,7 +91,6 @@ extern const char pal_server_list[];
 extern const char pal_dev_fru_list[];
 extern const char pal_dev_pwr_list[];
 extern const char pal_dev_pwr_option_list[];
-extern const char pal_fan_opt_list[];
 extern const char pal_m2_dual_list[];
 
 enum CRASHDUMP_POWER_CONTROL {
@@ -143,14 +142,6 @@ enum {
 enum {
   AC_OFF = 0x00,
   AC_ON  = 0x01,
-};
-
-enum {
-  MANUAL_MODE  = 0x00,
-  AUTO_MODE    = 0x01,
-  GET_FAN_MODE = 0x02,
-  WAKEUP_MODE  = 0x03,
-  SLEEP_MODE   = 0x04,
 };
 
 #define MAX_NODES     (4)

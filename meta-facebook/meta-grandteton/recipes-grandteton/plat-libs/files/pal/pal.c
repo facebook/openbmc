@@ -60,7 +60,6 @@
 #define NUM_NIC_FRU     2
 #define NUM_BMC_FRU     1
 
-
 #define PSB_CONFIG_RAW "slot%d_psb_config_raw"
 
 const char pal_fru_list[] = \

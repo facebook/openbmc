@@ -339,40 +339,6 @@ GTSwbPexFwComponent acb_pesw1("cb", "pesw1", ACB_BIC_BUS, ACB_BIC_EID, PEX1_COMP
     signed_header_t(gta_acb_bic_comps, COMPONENT_VERIFY_SKIPPED, BROADCOM));
 }
 
-MebCxlFwComponent meb_cxl1("mc", "cxl1", MEB_BIC_BUS, MEB_BIC_EID, CXL1_COMP);
-MebCxlFwComponent meb_cxl2("mc", "cxl2", MEB_BIC_BUS, MEB_BIC_EID, CXL2_COMP);
-MebCxlFwComponent meb_cxl3("mc", "cxl3", MEB_BIC_BUS, MEB_BIC_EID, CXL3_COMP);
-MebCxlFwComponent meb_cxl4("mc", "cxl4", MEB_BIC_BUS, MEB_BIC_EID, CXL4_COMP);
-MebCxlFwComponent meb_cxl5("mc", "cxl5", MEB_BIC_BUS, MEB_BIC_EID, CXL5_COMP);
-MebCxlFwComponent meb_cxl6("mc", "cxl6", MEB_BIC_BUS, MEB_BIC_EID, CXL6_COMP);
-MebCxlFwComponent meb_cxl7("mc", "cxl7", MEB_BIC_BUS, MEB_BIC_EID, CXL7_COMP);
-MebCxlFwComponent meb_cxl8("mc", "cxl8", MEB_BIC_BUS, MEB_BIC_EID, CXL8_COMP);
-
-CxlVrComponent vr_jcn11_a0v8_9 ("mc_cxl1", "vr_p0v89a",         "MC CXL1 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL1_VR_P089A_COMP);
-CxlVrComponent vr_jcn11_vddq_ab("mc_cxl1", "vr_p0v8d_pvddq_ab", "MC CXL1 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL1_VR_P0V8D_PVDDQ_AB_COMP);
-CxlVrComponent vr_jcn11_vddq_cd("mc_cxl1", "vr_pvddq_cd",       "MC CXL1 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL1_VR_PVDDQ_CD_COMP);
-CxlVrComponent vr_jcn12_a0v8_9 ("mc_cxl2", "vr_p0v89a",         "MC CXL2 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL2_VR_P089A_COMP);
-CxlVrComponent vr_jcn12_vddq_ab("mc_cxl2", "vr_p0v8d_pvddq_ab", "MC CXL2 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL2_VR_P0V8D_PVDDQ_AB_COMP);
-CxlVrComponent vr_jcn12_vddq_cd("mc_cxl2", "vr_pvddq_cd",       "MC CXL2 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL2_VR_PVDDQ_CD_COMP);
-CxlVrComponent vr_jcn9_a0v8_9  ("mc_cxl3", "vr_p0v89a",         "MC CXL3 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL3_VR_P089A_COMP);
-CxlVrComponent vr_jcn9_vddq_ab ("mc_cxl3", "vr_p0v8d_pvddq_ab", "MC CXL3 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL3_VR_P0V8D_PVDDQ_AB_COMP);
-CxlVrComponent vr_jcn9_vddq_cd ("mc_cxl3", "vr_pvddq_cd",       "MC CXL3 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL3_VR_PVDDQ_CD_COMP);
-CxlVrComponent vr_jcn10_a0v8_9 ("mc_cxl4", "vr_p0v89a",         "MC CXL4 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL4_VR_P089A_COMP);
-CxlVrComponent vr_jcn10_vddq_ab("mc_cxl4", "vr_p0v8d_pvddq_ab", "MC CXL4 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL4_VR_P0V8D_PVDDQ_AB_COMP);
-CxlVrComponent vr_jcn10_vddq_cd("mc_cxl4", "vr_pvddq_cd",       "MC CXL4 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL4_VR_PVDDQ_CD_COMP);
-CxlVrComponent vr_jcn4_a0v8_9  ("mc_cxl5", "vr_p0v89a",         "MC CXL5 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL5_VR_P089A_COMP);
-CxlVrComponent vr_jcn4_vddq_ab ("mc_cxl5", "vr_p0v8d_pvddq_ab", "MC CXL5 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL5_VR_P0V8D_PVDDQ_AB_COMP);
-CxlVrComponent vr_jcn4_vddq_cd ("mc_cxl5", "vr_pvddq_cd",       "MC CXL5 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL5_VR_PVDDQ_CD_COMP);
-CxlVrComponent vr_jcn3_a0v8_9  ("mc_cxl6", "vr_p0v89a",         "MC CXL6 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL6_VR_P089A_COMP);
-CxlVrComponent vr_jcn3_vddq_ab ("mc_cxl6", "vr_p0v8d_pvddq_ab", "MC CXL6 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL6_VR_P0V8D_PVDDQ_AB_COMP);
-CxlVrComponent vr_jcn3_vddq_cd ("mc_cxl6", "vr_pvddq_cd",       "MC CXL6 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL6_VR_PVDDQ_CD_COMP);
-CxlVrComponent vr_jcn2_a0v8_9  ("mc_cxl7", "vr_p0v89a",         "MC CXL7 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL7_VR_P089A_COMP);
-CxlVrComponent vr_jcn2_vddq_ab ("mc_cxl7", "vr_p0v8d_pvddq_ab", "MC CXL7 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL7_VR_P0V8D_PVDDQ_AB_COMP);
-CxlVrComponent vr_jcn2_vddq_cd ("mc_cxl7", "vr_pvddq_cd",       "MC CXL7 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL7_VR_PVDDQ_CD_COMP);
-CxlVrComponent vr_jcn1_a0v8_9  ("mc_cxl8", "vr_p0v89a",         "MC CXL8 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL8_VR_P089A_COMP);
-CxlVrComponent vr_jcn1_vddq_ab ("mc_cxl8", "vr_p0v8d_pvddq_ab", "MC CXL8 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL8_VR_P0V8D_PVDDQ_AB_COMP);
-CxlVrComponent vr_jcn1_vddq_cd ("mc_cxl8", "vr_pvddq_cd",       "MC CXL8 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL8_VR_PVDDQ_CD_COMP);
-
 GtaBicFwRecoveryComponent cb_bic_recovery("cb", "bic_recovery", ACB_BIC_BUS, ACB_BIC_EID, BIC_COMP);
 GtaBicFwRecoveryComponent mc_bic_recovery("mc", "bic_recovery", MEB_BIC_BUS, MEB_BIC_EID, BIC_COMP);
 
@@ -400,3 +366,65 @@ M2DevComponent cb_accl11_dev1("cb_accl11", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_
 M2DevComponent cb_accl11_dev2("cb_accl11", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL11_DEV2_COMP);
 M2DevComponent cb_accl12_dev1("cb_accl12", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL12_DEV1_COMP);
 M2DevComponent cb_accl12_dev2("cb_accl12", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL12_DEV2_COMP);
+
+
+bool is_cxl_present() {
+  uint8_t i = 0;
+  uint8_t status = 0;
+  bool ret = false;
+
+  for (i = FRU_MEB_JCN1; i < FRU_MEB_JCN12; i++) {
+    if (i >= FRU_MEB_JCN5 && i <= FRU_MEB_JCN8) {
+      continue;
+    }
+    ret = pal_is_pldm_fru_prsnt(i, &status);
+    if (ret == true && status == FRU_PRSNT) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+class fw_cxl_config {
+  public:
+    fw_cxl_config(){
+      if (is_cxl_present()) {
+        static MebCxlFwComponent meb_cxl1("mc", "cxl1", MEB_BIC_BUS, MEB_BIC_EID, CXL1_COMP);
+        static MebCxlFwComponent meb_cxl2("mc", "cxl2", MEB_BIC_BUS, MEB_BIC_EID, CXL2_COMP);
+        static MebCxlFwComponent meb_cxl3("mc", "cxl3", MEB_BIC_BUS, MEB_BIC_EID, CXL3_COMP);
+        static MebCxlFwComponent meb_cxl4("mc", "cxl4", MEB_BIC_BUS, MEB_BIC_EID, CXL4_COMP);
+        static MebCxlFwComponent meb_cxl5("mc", "cxl5", MEB_BIC_BUS, MEB_BIC_EID, CXL5_COMP);
+        static MebCxlFwComponent meb_cxl6("mc", "cxl6", MEB_BIC_BUS, MEB_BIC_EID, CXL6_COMP);
+        static MebCxlFwComponent meb_cxl7("mc", "cxl7", MEB_BIC_BUS, MEB_BIC_EID, CXL7_COMP);
+        static MebCxlFwComponent meb_cxl8("mc", "cxl8", MEB_BIC_BUS, MEB_BIC_EID, CXL8_COMP);
+ 
+        static CxlVrComponent vr_jcn11_a0v8_9 ("mc_cxl1", "vr_p0v89a",         "MC CXL1 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL1_VR_P089A_COMP);
+        static CxlVrComponent vr_jcn11_vddq_ab("mc_cxl1", "vr_p0v8d_pvddq_ab", "MC CXL1 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL1_VR_P0V8D_PVDDQ_AB_COMP);
+        static CxlVrComponent vr_jcn11_vddq_cd("mc_cxl1", "vr_pvddq_cd",       "MC CXL1 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL1_VR_PVDDQ_CD_COMP);
+        static CxlVrComponent vr_jcn12_a0v8_9 ("mc_cxl2", "vr_p0v89a",         "MC CXL2 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL2_VR_P089A_COMP);
+        static CxlVrComponent vr_jcn12_vddq_ab("mc_cxl2", "vr_p0v8d_pvddq_ab", "MC CXL2 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL2_VR_P0V8D_PVDDQ_AB_COMP);
+        static CxlVrComponent vr_jcn12_vddq_cd("mc_cxl2", "vr_pvddq_cd",       "MC CXL2 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL2_VR_PVDDQ_CD_COMP);
+        static CxlVrComponent vr_jcn9_a0v8_9  ("mc_cxl3", "vr_p0v89a",         "MC CXL3 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL3_VR_P089A_COMP);
+        static CxlVrComponent vr_jcn9_vddq_ab ("mc_cxl3", "vr_p0v8d_pvddq_ab", "MC CXL3 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL3_VR_P0V8D_PVDDQ_AB_COMP);
+        static CxlVrComponent vr_jcn9_vddq_cd ("mc_cxl3", "vr_pvddq_cd",       "MC CXL3 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL3_VR_PVDDQ_CD_COMP);
+        static CxlVrComponent vr_jcn10_a0v8_9 ("mc_cxl4", "vr_p0v89a",         "MC CXL4 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL4_VR_P089A_COMP);
+        static CxlVrComponent vr_jcn10_vddq_ab("mc_cxl4", "vr_p0v8d_pvddq_ab", "MC CXL4 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL4_VR_P0V8D_PVDDQ_AB_COMP);
+        static CxlVrComponent vr_jcn10_vddq_cd("mc_cxl4", "vr_pvddq_cd",       "MC CXL4 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL4_VR_PVDDQ_CD_COMP);
+        static CxlVrComponent vr_jcn4_a0v8_9  ("mc_cxl5", "vr_p0v89a",         "MC CXL5 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL5_VR_P089A_COMP);
+        static CxlVrComponent vr_jcn4_vddq_ab ("mc_cxl5", "vr_p0v8d_pvddq_ab", "MC CXL5 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL5_VR_P0V8D_PVDDQ_AB_COMP);
+        static CxlVrComponent vr_jcn4_vddq_cd ("mc_cxl5", "vr_pvddq_cd",       "MC CXL5 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL5_VR_PVDDQ_CD_COMP);
+        static CxlVrComponent vr_jcn3_a0v8_9  ("mc_cxl6", "vr_p0v89a",         "MC CXL6 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL6_VR_P089A_COMP);
+        static CxlVrComponent vr_jcn3_vddq_ab ("mc_cxl6", "vr_p0v8d_pvddq_ab", "MC CXL6 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL6_VR_P0V8D_PVDDQ_AB_COMP);
+        static CxlVrComponent vr_jcn3_vddq_cd ("mc_cxl6", "vr_pvddq_cd",       "MC CXL6 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL6_VR_PVDDQ_CD_COMP);
+        static CxlVrComponent vr_jcn2_a0v8_9  ("mc_cxl7", "vr_p0v89a",         "MC CXL7 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL7_VR_P089A_COMP);
+        static CxlVrComponent vr_jcn2_vddq_ab ("mc_cxl7", "vr_p0v8d_pvddq_ab", "MC CXL7 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL7_VR_P0V8D_PVDDQ_AB_COMP);
+        static CxlVrComponent vr_jcn2_vddq_cd ("mc_cxl7", "vr_pvddq_cd",       "MC CXL7 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL7_VR_PVDDQ_CD_COMP);
+        static CxlVrComponent vr_jcn1_a0v8_9  ("mc_cxl8", "vr_p0v89a",         "MC CXL8 VR_P0V89A", MEB_BIC_BUS, MEB_BIC_EID, CXL8_VR_P089A_COMP);
+        static CxlVrComponent vr_jcn1_vddq_ab ("mc_cxl8", "vr_p0v8d_pvddq_ab", "MC CXL8 VR_P0V8D_PVDDQ_AB", MEB_BIC_BUS, MEB_BIC_EID, CXL8_VR_P0V8D_PVDDQ_AB_COMP);
+        static CxlVrComponent vr_jcn1_vddq_cd ("mc_cxl8", "vr_pvddq_cd",       "MC CXL8 VR_PVDDQ_CD", MEB_BIC_BUS, MEB_BIC_EID, CXL8_VR_PVDDQ_CD_COMP);
+      }
+    }
+};
+
+fw_cxl_config fw_cxl_config;

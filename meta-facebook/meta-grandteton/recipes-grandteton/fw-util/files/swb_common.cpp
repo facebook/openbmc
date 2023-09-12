@@ -848,8 +848,13 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
     if (ret < 0) {
       return comp_version(j);
     }
-    active_ver = kv::get(active_key, kv::region::temp);
-    j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
+
+    try {
+      active_ver = kv::get(active_key, kv::region::temp);
+      j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
+    } catch (...) {
+      return comp_version(j);
+    }
   } else {
     try {
       active_ver = kv::get(active_key, kv::region::temp);

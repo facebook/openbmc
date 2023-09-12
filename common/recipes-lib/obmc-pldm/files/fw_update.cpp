@@ -868,6 +868,7 @@ int oem_pldm_fw_update(uint8_t bus, uint8_t eid, const char* path, uint8_t speci
     );
     if (it == pkg_comps.end()) {
       cerr << "Failed to find corresponding component image." << endl;
+      ret = -1;
       goto exit;
     } else {
       auto comp = *it;

@@ -35,15 +35,16 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fuji:lf-master
   meta-grandcanyon:lf-master
   meta-grandteton:lf-master
-  meta-gtartemis:lf-master
-  meta-greatlakes:lf-master
   meta-greatlakes-lf:lf-master
+  meta-greatlakes:lf-master
+  meta-gtartemis:lf-master
   meta-halfdome:lf-master
   meta-inspirationpoint:lf-master
   meta-janga:lf-master
   meta-montblanc:lf-master
   meta-qemux86:lf-master
   meta-waimeacanyon:lf-master
+  meta-yosemite4:lf-master
 # kirkstone platforms (pending upgrade)
   meta-fbdarwin:lf-kirkstone
 # dunfell platforms (pending upgrade)

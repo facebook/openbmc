@@ -1,0 +1,2 @@
+Common targets are:
+    yosemite4-image

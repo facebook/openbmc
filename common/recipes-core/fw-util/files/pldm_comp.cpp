@@ -91,14 +91,14 @@ int PldmComponent::pldm_update(const string& image, uint8_t specified_comp) {
 
   int ret;
 
-  syslog(LOG_CRIT, "Component %s upgrade initiated", component.c_str());
+  syslog(LOG_CRIT, "FRU %s Component %s upgrade initiated", fru.c_str(), component.c_str());
 
   ret = oem_pldm_fw_update(bus, eid, (char *)image.c_str(), specified_comp);
 
   if (ret)
-    syslog(LOG_CRIT, "Component %s upgrade fail", component.c_str());
+    syslog(LOG_CRIT, "FRU %s Component %s upgrade fail", fru.c_str(), component.c_str());
   else
-    syslog(LOG_CRIT, "Component %s upgrade completed", component.c_str());
+    syslog(LOG_CRIT, "FRU %s Component %s upgrade completed", fru.c_str(), component.c_str());
 
   return ret;
 }

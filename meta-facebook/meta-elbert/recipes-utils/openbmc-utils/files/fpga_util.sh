@@ -57,7 +57,10 @@ disconnect_program_paths() {
            echo "Failed to recover CPU power state."
         }
         sleep 1
+        # Disable/enable SCM security to allow GPIO to be set
+        disable_power_security_mode 9 0x11 "UCD90320U"
         gpio_set_value $SCM_FPGA_LATCH_L 1
+        enable_power_security_mode 9 0x11 "UCD90320U"
     else
         echo 0 > "$JTAG_EN"
         echo 0 > "$PROGRAM_SEL"
@@ -73,7 +76,11 @@ disconnect_program_paths() {
 connect_scm_jtag() {
     # Store initial state of x86 power in order to restore after programming
     CACHED_SCM_PWR_ON_SYSFS="$(head -n 1 "$SCM_PWR_ON_SYSFS" 2> /dev/null)"
+
+    # Disable/enable SCM security to allow GPIO to be set
+    disable_power_security_mode 9 0x11 "UCD90320U"
     gpio_set_value $SCM_FPGA_LATCH_L 0
+    enable_power_security_mode 9 0x11 "UCD90320U"
 
     gpio_set_value $CPLD_JTAG_SEL_L 0
     gpio_set_value $JTAG_TRST_L 1
@@ -252,8 +259,6 @@ program_spi_image() {
         PIM_BASE)
            PARTITION="pim_base"
            SKIP_MB=0
-           # TODO: Restrict PIM_BASE later
-           # FPGA_TYPE=0
            FPGA_TYPE=-1
            ;;
         TH4_QSPI)

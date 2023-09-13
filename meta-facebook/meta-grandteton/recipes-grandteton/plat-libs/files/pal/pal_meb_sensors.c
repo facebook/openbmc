@@ -69,9 +69,9 @@ get_meb_hsc_sensor(uint8_t fru, uint8_t sensor_num, float *value)
 
 PAL_SENSOR_MAP meb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
-  {"Inlet Temp", 0, get_meb_sensor, false, {65, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
-  {"Outlet Temp", 0, get_meb_sensor, false, {90, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
-  {"PU4 Temp", 0, get_meb_hsc_sensor, false, {125, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
+  {"Inlet_Temp", 0, get_meb_sensor, false, {55, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
+  {"Outlet_Temp", 0, get_meb_sensor, false, {85, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
+  {"PU4_Temp", 0, get_meb_hsc_sensor, false, {125, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
   {"P12V_AUX_VOL", 0, get_meb_hsc_sensor, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0},  VOLT}, // 0x04
   {"P3V3_AUX_VOL", 0, get_meb_sensor, false, {3.531, 0, 0, 3.07, 0, 0, 0, 0},  VOLT}, // 0x05
   {"P1V2_AUX_VOL", 0, get_meb_sensor, false, {1.284, 0, 0, 1.116, 0, 0, 0, 0},  VOLT}, // 0x06
@@ -120,10 +120,10 @@ PAL_SENSOR_MAP meb_sensor_map[] = {
   {"P12V_AUX_CXL2_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x31
   {"P12V_AUX_SW_4C_2_PWR", 0, get_meb_sensor, false, {80, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x32
   {"P12V_AUX_SW_4C_1_PWR", 0, get_meb_sensor, false, {80, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x33
-  {"E1S_0_TEMP", 0, get_meb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x34
-  {"E1S_1_TEMP", 0, get_meb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x35
-  {"E1S_2_TEMP", 0, get_meb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x36
-  {"E1S_3_TEMP", 0, get_meb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x37
+  {"E1S_0_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x34
+  {"E1S_1_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x35
+  {"E1S_2_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x36
+  {"E1S_3_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x37
 };
 
 PAL_SENSOR_MAP meb_clx_sensor_map[] = {

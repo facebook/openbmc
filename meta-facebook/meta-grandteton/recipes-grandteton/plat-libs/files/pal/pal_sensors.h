@@ -168,6 +168,7 @@ enum {
 // Aggregate sensors
 enum {
   AGGREGATE_SENSOR_SYSTEM_AIRFLOW = 0x0,
+  AGGREGATE_SENSOR_SYSTEM_POWER = 0x1
 };
 
 typedef struct {

@@ -15,12 +15,12 @@ get_acb_sensor(uint8_t fru, uint8_t sensor_num, float *value)
 
 PAL_SENSOR_MAP acb_freya_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x00
-  {"OUTLET_1_TEMP", 0, get_acb_sensor, true,  {50, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x01
-  {"OUTLET_2_TEMP", 0, get_acb_sensor, true,  {55, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x02
-  {"HSC1_TEMP ",  0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
+  {"OUTLET_1_TEMP", 0, get_acb_sensor, true,  {85, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x01
+  {"OUTLET_2_TEMP", 0, get_acb_sensor, true,  {85, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x02
+  {"HSC1_TEMP",  0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
   {"HSC2_TEMP",   0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x04
-  {"PEX0_TEMP",   0, get_acb_sensor, false, {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x05
-  {"PEX1_TEMP",   0, get_acb_sensor, false, {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x06
+  {"PEX0_TEMP",   0, get_acb_sensor, false, {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x05
+  {"PEX1_TEMP",   0, get_acb_sensor, false, {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x06
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x07
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x08
   {"POWER_BRICK_1_TEMP", 0, get_acb_sensor, true, {115, 0, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x09
@@ -120,7 +120,7 @@ PAL_SENSOR_MAP acb_freya_sensor_map[] = {
   {"P1V25_2_VDD(P12V_2_M_AUX)", 0, get_acb_sensor, false, {2.48, 0, 2.92, 0, 0, 0, 0, 0}, CURR}, // 0x64
   {"P1V25_1_VDD(P12V_1_M_AUX)", 0, get_acb_sensor, false, {32.736, 0, 41.8436, 0, 0, 0, 0, 0}, POWER}, // 0x65
   {"P1V25_2_VDD(P12V_2_M_AUX)", 0, get_acb_sensor, false, {32.736, 0, 41.8436, 0, 0, 0, 0, 0}, POWER}, // 0x66
-  {"INLET_TEMP", 0, get_acb_sensor, false, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x67
+  {"INLET_TEMP", 0, get_acb_sensor, false, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x67
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x68
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x69
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6A
@@ -205,12 +205,12 @@ PAL_SENSOR_MAP acb_freya_sensor_map[] = {
 
 PAL_SENSOR_MAP acb_artemis_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x00
-  {"OUTLET_1_TEMP", 0, get_acb_sensor, true,  {50, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x01
-  {"OUTLET_2_TEMP", 0, get_acb_sensor, true,  {55, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x02
-  {"HSC1_TEMP ",  0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
+  {"OUTLET_1_TEMP", 0, get_acb_sensor, true,  {85, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x01
+  {"OUTLET_2_TEMP", 0, get_acb_sensor, true,  {85, 0, 150, 0, 0, 0, 0, 0}, TEMP}, // 0x02
+  {"HSC1_TEMP",  0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
   {"HSC2_TEMP",   0, get_acb_sensor, true,  {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x04
-  {"PEX0_TEMP",   0, get_acb_sensor, false, {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x05
-  {"PEX1_TEMP",   0, get_acb_sensor, false, {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x06
+  {"PEX0_TEMP",   0, get_acb_sensor, false, {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x05
+  {"PEX1_TEMP",   0, get_acb_sensor, false, {105, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x06
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x07
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x08
   {"POWER_BRICK_1_TEMP", 0, get_acb_sensor, true, {115, 0, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x09
@@ -310,7 +310,7 @@ PAL_SENSOR_MAP acb_artemis_sensor_map[] = {
   {"P1V25_2_VDD(P12V_2_M_AUX)", 0, get_acb_sensor, false, {2.48, 0, 2.92, 0, 0, 0, 0, 0}, CURR}, // 0x64
   {"P1V25_1_VDD(P12V_1_M_AUX)", 0, get_acb_sensor, false, {32.736, 0, 41.8436, 0, 0, 0, 0, 0}, POWER}, // 0x65
   {"P1V25_2_VDD(P12V_2_M_AUX)", 0, get_acb_sensor, false, {32.736, 0, 41.8436, 0, 0, 0, 0, 0}, POWER}, // 0x66
-  {"INLET_TEMP", 0, get_acb_sensor, false, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x67
+  {"INLET_TEMP", 0, get_acb_sensor, false, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x67
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x68
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x69
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6A

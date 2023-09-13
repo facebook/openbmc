@@ -154,6 +154,41 @@
           }
         }
       }
+    },
+    {
+      "name": "SYSTEM_POWER_W",
+      "units": "Watts",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "pwr0": {
+            "fru":       9,
+            "sensor_id": 146
+          },
+          "pwr1": {
+            "fru":       10,
+            "sensor_id": 178
+          },
+          "pwr2": {
+            "fru":       10,
+            "sensor_id": 183
+          },
+          "sum_rpm": {
+            "expression": "( pwr0 + pwr1 + pwr2 )"
+          }
+        },
+        "linear_expressions": {
+          "GTA": "sum_rpm"
+        },
+       "condition": {
+          "key": "sled_system_conf",
+          "key_type": "persistent",
+          "default_expression": "GTA",
+          "value_map": {
+            "Artemis": "GTA"
+          }
+        }
+      }
     }
   ]
 }

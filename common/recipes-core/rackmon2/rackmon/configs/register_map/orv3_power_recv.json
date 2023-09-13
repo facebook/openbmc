@@ -97,10 +97,11 @@
                 [11, "Fan_Alarm"],
                 [10, "Temp_Alarm"],
                 [9, "DCDC_Converter_Failure"],
+                [8, "Input_Current_Trace_Failure"],
                 [3, "Communication"],
                 [2, "Temperature"],
                 [1, "DCDC"],
-                [0, "Remote_Sense_Rx"]
+                [0, "Remote_Sense_RX"]
             ],
             "name": "General_Alarm_Status_Register"
         },
@@ -112,8 +113,8 @@
                 [10, "Input_Relay_Off"],
                 [5, "Remote_High"],
                 [4, "Remote_Low"],
-                [1, "IN_OVP"],
-                [0, "IN_UVP"]
+                [1, "In_OVP"],
+                [0, "In_UVP"]
             ],
             "name": "PSU_Input_Alarm_Status_Register"
         },
@@ -125,10 +126,10 @@
                 [10, "Oring_Fail"],
                 [9, "Secondary_DSP_Fail"],
                 [8, "DCDC_Fail"],
-                [3, "MAIN_SCKT"],
-                [2, "MAIN_OCP"],
-                [1, "MAIN_OVP"],
-                [0, "MAIN_UVP"]
+                [3, "Main_SCKT"],
+                [2, "Main_OCP"],
+                [1, "Main_OVP"],
+                [0, "Main_UVP"]
             ],
             "name": "DCDC_Alarm_Status_Register"
         },
@@ -142,7 +143,8 @@
                 [4, "DCDC_Temp_Alarm"],
                 [3, "Sync_Temp_Alarm"],
                 [2, "Oring_Temp_Alarm"],
-                [1, "Inlet_Temp_Alarm"]
+                [1, "Inlet_Temp_Alarm"],
+                [0, "Outlet_Temp_Alarm"]
             ],
             "name": "Temperature_Alarm_Status_Register"
         },
@@ -286,8 +288,9 @@
             "flags": [
                 [14, "Clear_PSU_Faults_And_Latch"],
                 [11, "Active_Current_Sharing_Enable"],
+                [8, "PLS_Enable"],
                 [1, "Remote_Off"],
-                [0, "Enable_Writing_PSU"]
+                [0, "Enable_Writing_On_PSU"]
             ],
             "name": "PSU_Setting_Register"
         },

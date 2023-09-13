@@ -196,7 +196,7 @@
       "ki": -0.02,
       "kd": 0
     },
-    "linear_ucr_trigger": {
+    "linear_non_fru_sensor": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },

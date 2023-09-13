@@ -42,7 +42,7 @@ max([
       all:slot1_4ou_e1s_ssd2_temp_c,
       all:slot1_4ou_e1s_ssd3_temp_c,
       all:slot1_4ou_e1s_ssd4_temp_c])),
-  linear_ucr_trigger(
+  linear_non_fru_sensor(
     max([
       all:slot1_mb_hsc_temp_c,
       all:slot1_mb_vr_cpu0_temp_c,

@@ -70,7 +70,7 @@ max([
       all:slot3_vf_e1s_ssd1_temp_c,
       all:slot3_vf_e1s_ssd2_temp_c,
       all:slot3_vf_e1s_ssd3_temp_c])),
-  linear_ucr_trigger(
+  linear_non_fru_sensor(
     max([
       all:slot1_mb_hsc_temp_c,
       all:slot1_mb_vr_vccin_temp_c,

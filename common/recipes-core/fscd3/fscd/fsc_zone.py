@@ -183,6 +183,7 @@ class Zone:
         pwm_output,
         expr,
         expr_meta,
+        profiles,
         transitional,
         counter,
         boost,
@@ -198,6 +199,7 @@ class Zone:
         self.expr = expr
         self.expr_meta = expr_meta
         self.expr_str = str(expr)
+        self.profiles = profiles
         self.transitional_assert_flag = False
         self.counter = counter
         self.boost = boost
@@ -213,11 +215,32 @@ class Zone:
         self.sensor_fail_ignore = sensor_fail_ignore
         self.sensor_assert_check = []
         self.pre_mode = -1
+        self.sensor_output_type = {}
+        self.non_fru_sensor_sel_flag = {}
 
         for full_name in self.expr_meta["ext_vars"]:
             sdata = full_name.split(":")
             board = sdata[0]
             sname = sdata[1]
+
+            indices = [index for index in range(len(self.expr_str)) if self.expr_str.startswith(sname, index)]
+            for pos in indices:
+                str_output_tpye = ""
+                while pos > 0:
+                    pos_type = -1
+                    str_output_tpye += self.expr_str[pos-1]
+                    actual_output_tpye = str_output_tpye[::-1]
+                    for prof in self.profiles:
+                        pos_type = actual_output_tpye.find(prof)
+                        if pos_type != -1:
+                            self.sensor_output_type[sname] = prof
+                            if prof == "linear_non_fru_sensor":
+                                self.non_fru_sensor_sel_flag[sname] = False
+                            break
+                    if pos_type != -1:
+                        break
+                    pos = pos -1
+
             if board == "all":  # filter all
                 board = sname.split("_")[0]
                 sname = "_".join(sname.split("_")[1:])
@@ -275,6 +298,7 @@ class Zone:
             sdata = v.split(":")
             board = sdata[0]
             sname = sdata[1]
+            output_type = self.sensor_output_type.get(sname)
             if self.sensor_valid_check is not None:
                 for check_name in self.sensor_valid_check:
                     if re.match(check_name, sname, re.IGNORECASE) != None:
@@ -329,7 +353,15 @@ class Zone:
                         sensor_fail_record_path = SENSOR_FAIL_RECORD_DIR + v
                         if not os.path.isdir(SENSOR_FAIL_RECORD_DIR):
                             os.mkdir(SENSOR_FAIL_RECORD_DIR)
-                        if (sensor.status in ["na"]) and (
+                        if (output_type == "linear_non_fru_sensor") and (sensor.status in ["na"]) and (self.sensor_valid_cur[sensor_index] != -1):
+                            if self.non_fru_sensor_sel_flag[sname] == False:
+                                self.non_fru_sensor_sel_flag[sname] = True
+                                Logger.crit("%s Fail" % sname)
+                        elif (output_type == "linear_non_fru_sensor") and (sensor.status not in ["na"]) and (self.sensor_valid_cur[sensor_index] != -1):
+                            if self.non_fru_sensor_sel_flag[sname] == True:
+                                self.non_fru_sensor_sel_flag[sname] = False
+                                Logger.crit("%s Recover" % sname)
+                        elif (sensor.status in ["na"]) and (
                             self.sensor_valid_cur[sensor_index] != -1
                         ):
                             self.sensor_assert_check[sensor_index].assert_check()

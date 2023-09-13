@@ -288,6 +288,7 @@ class Fscd(object):
                     data["pwm_output"],
                     expr,
                     inf,
+                    self.profiles,
                     self.transitional,
                     counter,
                     self.boost,

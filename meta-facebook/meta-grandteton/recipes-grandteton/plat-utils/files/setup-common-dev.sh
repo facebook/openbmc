@@ -333,7 +333,7 @@ if [ "$vrev" -eq "$VPDB_DISCRETE_PVT" ] &&
   # that specially point out its brick source
   brick_driver="raa228006"
   i2c_device_add 38 0x54 $brick_driver
-  kv set vpdb_brick_source "$VPDB_BRICK_DESCRETE_SOURCE"
+  kv set vpdb_brick_source "$VPDB_BRICK_DISCRETE_SOURCE"
 
 else
   vpdb_brick=$(gpio_get VPDB_SKU_ID_1)

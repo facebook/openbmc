@@ -84,7 +84,7 @@ class FrontIOTempAssertCheck(SensorAssertCheck):
 
 
 class Fan(object):
-    def __init__(self, fan_name, pTable):
+    def __init__(self, fan_name, pTable, fan_status):
         try:
             self.fan_num = int(fan_name)
             if "label" in pTable:
@@ -145,6 +145,7 @@ class Fan(object):
                         write_source=pTable["write_source"][write_type],
                         max_duty_register=max_duty_register,
                         write_type=write_type,
+                        status=fan_status,
                     )
                 else:
                     self.source = FscSensorSourceKv(

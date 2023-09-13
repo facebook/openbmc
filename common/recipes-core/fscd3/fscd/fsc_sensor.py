@@ -23,6 +23,7 @@ from kv import kv_get, kv_set
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
+import re
 
 
 class FscSensorBase(object):
@@ -54,6 +55,9 @@ class FscSensorBase(object):
             self.filter = kwargs["filter"]
         else:
             self.filter = None
+
+        if "status" in kwargs:
+            self.fan_status =  kwargs["status"]
 
         self.read_source_fail_counter = 0
         self.write_source_fail_counter = 0
@@ -96,17 +100,35 @@ class FscSensorBase(object):
         cmd = self.write_source % (int(value * self.max_duty_register / 100))
         Logger.debug("Setting value using cmd=%s" % cmd)
         response = ""
+
         try:
             response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             if response.find("Error") != -1:
-                raise Exception("Write failed with response=%s" % response)
+               raise Exception("Write failed with response=%s" % response)
+
+            val = response.rstrip('\n').split('\n')
+            for element in list(val):
+                fan_key = re.search(r'Zone\s+(\d+)', element)
+                fan_key = int(fan_key.group(1))
+                if fan_key in self.fan_status:
+                    if self.fan_status[fan_key] == 'fail':
+                        Logger.crit("DEASSERTED: Exception with cmd=%s response=%s" % (cmd, element))
+                self.fan_status[fan_key] = 'good'
         except Exception:
             val = response.rstrip('\n').split('\n')
-            for element in val:
-                if(element.find("Error") != -1):
-                    Logger.crit("Exception with cmd=%s response=%s" % (cmd, element))
-            raise
+            for element in list(val):
+                fan_key = re.search(r'Zone\s+(\d+)', element)
+                fan_key = int(fan_key.group(1))
 
+                if(element.find("Error") != -1):
+                    if fan_key in self.fan_status:
+                        if self.fan_status[fan_key] == 'good':
+                            Logger.crit("ASSERTED: Exception with cmd=%s response=%s" % (cmd, element))
+                    else:
+                        Logger.crit("ASSERTED: Exception with cmd=%s response=%s" % (cmd, element))
+
+                    self.fan_status[fan_key] = 'fail'
+            raise
 
 class FscSensorSourceSysfs(FscSensorBase):
     """

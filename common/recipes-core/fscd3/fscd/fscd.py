@@ -174,6 +174,7 @@ class Fscd(object):
         self.need_rearm = False
         self.multi_fan_fail = None
         self.standby_fan_fail = None
+        self.fan_status = {}
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -261,7 +262,7 @@ class Fscd(object):
     def build_fans(self):
         self.fans = {}
         for name, pdata in list(self.fsc_config["fans"].items()):
-            self.fans[name] = Fan(name, pdata)
+            self.fans[name] = Fan(name, pdata, self.fan_status)
 
     def build_zones(self):
         self.zones = []

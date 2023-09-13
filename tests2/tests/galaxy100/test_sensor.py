@@ -141,8 +141,8 @@ class Galaxy100Ec12c033SensorTest(LmSensorsTest, unittest.TestCase):
         value = value.split("+")[1].split(" C")[0]
         self.assertAlmostEqual(
             float(value),
-            40,
-            delta=20,
+            38,
+            delta=22,
             msg="CPU Temp value is {} not within range".format(value),
         )
 

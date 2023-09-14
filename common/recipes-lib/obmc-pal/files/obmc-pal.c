@@ -787,8 +787,8 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: RP_PIOEvent(0x%02X),"
                                         " RP_PIO Header Log%d: 0x%02X%02X%02X%02X,"
                                         " RP_PIO Header Log%d: 0x%02X%02X%02X%02X",
-              general_info, 1+offset*2, sel[8],  sel[9],  sel[10], sel[11],
-                            2+offset*2, sel[12], sel[13], sel[14], sel[15]);
+              general_info, 1+offset*2, sel[11], sel[10],  sel[9],  sel[8],
+                            2+offset*2, sel[15], sel[14], sel[13], sel[12]);
     } break;
     case UNIFIED_POST_ERR:
     {

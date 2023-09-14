@@ -19,6 +19,7 @@ import os
 import re
 from ctypes import c_char_p, CDLL
 from subprocess import check_output, PIPE, Popen
+from fsc_common_var import fan_mode
 
 import kv
 import libgpio
@@ -26,6 +27,12 @@ from fsc_util import Logger
 
 lpal_hndl = CDLL("libpal.so.0")
 
+get_fan_mode_scenario_list = { "sensor_hit_UCR" : 100, "sensor_fail": 80 }
+
+def get_fan_mode(scenario="None"):
+    if scenario in get_fan_mode_scenario_list:
+        return fan_mode["boost_mode"], get_fan_mode_scenario_list[scenario]
+    pass
 
 def board_fan_actions(fan, action="None"):
     """

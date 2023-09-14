@@ -78,7 +78,7 @@ chassis_power_cycle() {
 
 bmc_mac_addr() {
     bmc_mac=$(weutil -e chassis_eeprom | grep 'Local MAC:' | cut -d ' ' -f 3)
-    echo "bmc_mac"
+    echo "$bmc_mac"
 }
 
 #

@@ -1,5 +1,5 @@
 {
-    "version": "gtartemis-v0.1",
+    "version": "gtartemis-v1.0",
     "pwm_transition_value": 80,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -30,6 +30,36 @@
         "attribute": {
           "type" : "power_status"
         }
+      },
+      "(.*)vdd": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)cb_accl": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)vr": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)pdb": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)hsc": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "(.*)pu4": {
+        "attribute": {
+          "type" : "power_status"
+        }
       }
     },
     "watchdog": false,
@@ -43,7 +73,26 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [20, 70]
+          [20, 16],
+          [21, 17],
+          [22, 18],
+          [23, 18],
+          [24, 18],
+          [25, 19],
+          [26, 19],
+          [27, 20],
+          [28, 20],
+          [29, 20],
+          [30, 21],
+          [31, 21],
+          [32, 22],
+          [33, 23],
+          [34, 23],
+          [35, 24],
+          [36, 25],
+          [37, 30],
+          [38, 40],
+          [39, 60]
         ]
       },
       "cpu_tray_cpu_linear": {
@@ -54,7 +103,15 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [73, 70]
+          [65, 16],
+          [66, 30],
+          [67, 35],
+          [68, 41],
+          [69, 45],
+          [70, 49],
+          [71, 51],
+          [72, 53],
+          [73, 55]
         ]
       },
       "cpu_tray_cpu_pid": {
@@ -64,9 +121,9 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 0,
-        "kp": 0,
-        "ki": 0,
+        "setpoint": 76,
+        "kp": -2,
+        "ki": -0.015,
         "kd": 0
       },
       "cpu_tray_dimm_linear": {
@@ -77,7 +134,14 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [65, 70]
+          [65, 16],
+          [66, 40],
+          [67, 47],
+          [69, 52],
+          [71, 57],
+          [73, 60],
+          [75, 62]
+
         ]
       },
       "cpu_tray_dimm_pid": {
@@ -87,9 +151,9 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 0,
-        "kp": 0,
-        "ki": 0,
+        "setpoint": 78,
+        "kp": -3,
+        "ki": -0.01,
         "kd": 0
       },
       "cpu_tray_nic_linear": {
@@ -100,7 +164,12 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
         "data": [
-          [75, 70]
+          [80, 16],
+          [81, 20],
+          [82, 22],
+          [83, 24],
+          [84, 26],
+          [85, 28]
         ]
       },
       "cpu_tray_nic_pid": {
@@ -110,9 +179,9 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 0,
-        "kp": 0,
-        "ki": 0,
+        "setpoint": 88,
+        "kp": -3,
+        "ki": -0.035,
         "kd": 0
       },
       "mc_tray_E1S_linear": {
@@ -123,7 +192,11 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [61, 70]
+          [61, 16],
+          [62, 38],
+          [63, 44],
+          [64, 48],
+          [65, 50]
         ]
       },
       "mc_tray_E1S_pid": {
@@ -133,9 +206,36 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 0,
-        "kp": 0,
-        "ki": 0,
+        "setpoint": 68,
+        "kp": -2.4,
+        "ki":-0.015,
+        "kd": 0
+      },
+      "mb_tray_E1S_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [61, 16],
+          [62, 18],
+          [63, 20],
+          [64, 22],
+          [65, 24]
+        ]
+      },
+      "mb_tray_E1S_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 3,
+        "setpoint": 68,
+        "kp": -2.4,
+        "ki": -0.015,
         "kd": 0
       },
       "cb_tray_switch_linear": {
@@ -146,7 +246,14 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [76, 70]
+          [80, 16],
+          [81, 18],
+          [82, 20],
+          [83, 22],
+          [84, 24],
+          [85, 26],
+          [86, 28],
+          [87, 30]
         ]
       },
       "cb_tray_switch_pid": {
@@ -155,10 +262,10 @@
         },
         "type": "pid",
         "positive_hysteresis": 0,
-        "negative_hysteresis": 2,
-        "setpoint": 0,
-        "kp": 0,
-        "ki": 0,
+        "negative_hysteresis": 3,
+        "setpoint": 90,
+        "kp": -1.5,
+        "ki": -0.015,
         "kd": 0
       },
       "power_brick_linear": {
@@ -169,7 +276,13 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [76, 70]
+          [91, 16],
+          [92, 20],
+          [93, 22],
+          [94, 24],
+          [95, 26],
+          [96, 28],
+          [97, 30]
         ]
       },
       "power_brick_pid": {
@@ -178,10 +291,10 @@
         },
         "type": "pid",
         "positive_hysteresis": 0,
-        "negative_hysteresis": 2,
-        "setpoint": 0,
-        "kp": 0,
-        "ki": 0,
+        "negative_hysteresis": 3,
+        "setpoint": 100,
+        "kp": -3,
+        "ki": -0.035,
         "kd": 0
       },
       "retimer_temp_linear": {
@@ -192,7 +305,13 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [75, 70]
+          [87, 16],
+          [88, 18],
+          [89, 20],
+          [90, 22],
+          [91, 24],
+          [92, 26],
+          [93, 28]
         ]
       },
       "retimer_temp_pid": {
@@ -202,10 +321,49 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 0,
-        "kp": 0,
-        "ki": 0,
+        "setpoint": 96,
+        "kp": -3,
+        "ki": -0.035,
         "kd": 0
+      },
+      "accl_asic_temp_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [71, 16],
+          [72, 35],
+          [73, 40],
+          [74, 45],
+          [75, 48],
+          [76, 50]
+        ]
+      },
+      "accl_asic_temp_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 3,
+        "setpoint": 79,
+        "kp": -3,
+        "ki": -0.035,
+        "kd": 0
+      },
+      "linear_non_fru_sensor": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 0,
+        "data": [
+          [0, 0]
+        ]
       }
     },
     "fans": {

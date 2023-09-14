@@ -76,6 +76,13 @@ max([
       all:mc_mc_e1s_2_temp_c,
       all:mc_mc_e1s_3_temp_c])),
 
+  mb_tray_E1S_linear(
+    max([
+      all:mb_mb_e1s_temp_c])) +
+  mb_tray_E1S_pid(
+    max([
+      all:mb_mb_e1s_temp_c])),
+
   cb_tray_switch_linear(
     max([
       all:cb_cb_pex0_temp_c,
@@ -117,5 +124,82 @@ max([
       all:mb_mb_retimer4_temp_c,
       all:mb_mb_retimer5_temp_c,
       all:mb_mb_retimer6_temp_c,
-      all:mb_mb_retimer7_temp_c]))
+      all:mb_mb_retimer7_temp_c])),
+
+  accl_asic_temp_linear(
+    max([
+      all:cb_cb_accl1_asic_1_temp_c,
+      all:cb_cb_accl1_asic_2_temp_c,
+      all:cb_cb_accl2_asic_1_temp_c,
+      all:cb_cb_accl2_asic_2_temp_c,
+      all:cb_cb_accl3_asic_1_temp_c,
+      all:cb_cb_accl3_asic_2_temp_c,
+      all:cb_cb_accl4_asic_1_temp_c,
+      all:cb_cb_accl4_asic_2_temp_c,
+      all:cb_cb_accl5_asic_1_temp_c,
+      all:cb_cb_accl5_asic_2_temp_c,
+      all:cb_cb_accl6_asic_1_temp_c,
+      all:cb_cb_accl6_asic_2_temp_c,
+      all:cb_cb_accl7_asic_1_temp_c,
+      all:cb_cb_accl7_asic_2_temp_c,
+      all:cb_cb_accl8_asic_1_temp_c,
+      all:cb_cb_accl8_asic_2_temp_c,
+      all:cb_cb_accl9_asic_1_temp_c,
+      all:cb_cb_accl9_asic_2_temp_c,
+      all:cb_cb_accl10_asic_1_temp_c,
+      all:cb_cb_accl10_asic_2_temp_c,
+      all:cb_cb_accl11_asic_1_temp_c,
+      all:cb_cb_accl11_asic_2_temp_c,
+      all:cb_cb_accl12_asic_1_temp_c,
+      all:cb_cb_accl12_asic_2_temp_c])) +
+  accl_asic_temp_pid(
+    max([
+      all:cb_cb_accl1_asic_1_temp_c,
+      all:cb_cb_accl1_asic_2_temp_c,
+      all:cb_cb_accl2_asic_1_temp_c,
+      all:cb_cb_accl2_asic_2_temp_c,
+      all:cb_cb_accl3_asic_1_temp_c,
+      all:cb_cb_accl3_asic_2_temp_c,
+      all:cb_cb_accl4_asic_1_temp_c,
+      all:cb_cb_accl4_asic_2_temp_c,
+      all:cb_cb_accl5_asic_1_temp_c,
+      all:cb_cb_accl5_asic_2_temp_c,
+      all:cb_cb_accl6_asic_1_temp_c,
+      all:cb_cb_accl6_asic_2_temp_c,
+      all:cb_cb_accl7_asic_1_temp_c,
+      all:cb_cb_accl7_asic_2_temp_c,
+      all:cb_cb_accl8_asic_1_temp_c,
+      all:cb_cb_accl8_asic_2_temp_c,
+      all:cb_cb_accl9_asic_1_temp_c,
+      all:cb_cb_accl9_asic_2_temp_c,
+      all:cb_cb_accl10_asic_1_temp_c,
+      all:cb_cb_accl10_asic_2_temp_c,
+      all:cb_cb_accl11_asic_1_temp_c,
+      all:cb_cb_accl11_asic_2_temp_c,
+      all:cb_cb_accl12_asic_1_temp_c,
+      all:cb_cb_accl12_asic_2_temp_c])),
+
+  linear_non_fru_sensor(
+    max([
+      all:mb_mb_vr_cpu0_vcore0_temp_c,
+      all:mb_mb_vr_cpu0_soc_temp_c,
+      all:mb_mb_vr_cpu0_vcore1_temp_c,
+      all:mb_mb_vr_cpu0_pvddio_temp_c,
+      all:mb_mb_vr_cpu0_pvdd11_temp_c,
+      all:mb_mb_vr_cpu1_vcore0_temp_c,
+      all:mb_mb_vr_cpu1_soc_temp_c,
+      all:mb_mb_vr_cpu1_vcore1_temp_c,
+      all:mb_mb_vr_cpu1_pvddio_temp_c,
+      all:mb_mb_vr_cpu1_pvdd11_temp_c,
+      all:mb_mb_vr_rt_p0v9_vdd1_temp_c,
+      all:mb_mb_vr_rt_p0v9_vdd2_temp_c,
+      all:vpdb_vpdb_hsc0_temp_c,
+      all:hpdb_hpdb_hsc1_temp_c,
+      all:hpdb_hpdb_hsc2_temp_c,
+      all:mb_mb_hsc_temp_c,
+      all:cb_cb_hsc1_temp_c,
+      all:cb_cb_hsc2_temp_c,
+      all:cb_cb_p0v8_1_vdd_temp_c,
+      all:cb_cb_p0v8_2_vdd_temp_c,
+      all:mc_mc_pu4_temp_c]))
 ])

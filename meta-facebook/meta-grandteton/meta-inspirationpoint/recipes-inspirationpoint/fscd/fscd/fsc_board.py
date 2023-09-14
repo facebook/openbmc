@@ -28,6 +28,15 @@ lpal_hndl = CDLL("libpal.so.0")
 
 fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
 
+gta_fru_map = {
+    "mb":   {"fru": 1},
+    "hpdb": {"fru": 9},
+    "vpdb": {"fru": 10},
+    "hsc":  {"fru": 14},
+    "cb":   {"fru": 16},
+    "mc":   {"fru": 17},
+}
+
 if lpal_hndl.pal_is_artemis():
     get_fan_mode_scenario_list = ["sensor_hit_UCR"]
 pass
@@ -109,12 +118,23 @@ def is_dev_prsnt(filename):
 def sensor_valid_check(board, sname, check_name, attribute):
     cmd = ""
     data = ""
+    if str(board) == "all":
+        sdata = sname.split("_")
+        board = sdata[0]
+        sname = sname.replace(board + "_", "")
 
     try:
         if attribute["type"] == "power_status":
+            # TODO: Check nvme ready/present/specific access check for Dev
+            if (lpal_hndl.pal_is_artemis() == True):
+                if (lpal_hndl.pal_is_fw_update_ongoing(int(gta_fru_map[board]["fru"]))== True):
+                    return 0
             # check power status first
             pwr_sts = bmc_read_power()
             if pwr_sts == 1:
+                if (lpal_hndl.pal_is_artemis() == True):
+                    if lpal_hndl.pal_bios_completed(1) == False:
+                        return 0
                 # if re.match(r"(.*)dimm(.*)", sname) is not None:
                 #     snr_split = sname.split("_")
                 #     cpu_num = int(snr_split[4][3])

@@ -375,22 +375,22 @@ PAL_SENSOR_MAP acb_artemis_sensor_map[] = {
   {"ACCL9_ASIC_2_VOL_2",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA5
   {"ACCL10_ASIC_1_Temp",  0, get_acb_sensor, false, {102, 0, 0, 18, 0, 0, 0, 0}, TEMP},    // 0xA6
   {"ACCL10_ASIC_1_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA7
-  {"ACCL10_ASIC_1_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA8
+  {"ACCL10_ASIC_1_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xA8
   {"ACCL10_ASIC_2_Temp",  0, get_acb_sensor, false, {102, 0, 0, 18, 0, 0, 0, 0}, TEMP},    // 0xA9
   {"ACCL10_ASIC_2_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAA
-  {"ACCL10_ASIC_2_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAB
+  {"ACCL10_ASIC_2_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAB
   {"ACCL11_ASIC_1_Temp",  0, get_acb_sensor, false, {102, 0, 0, 18, 0, 0, 0, 0}, TEMP},    // 0xAC
   {"ACCL11_ASIC_1_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAD
-  {"ACCL11_ASIC_1_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAE
+  {"ACCL11_ASIC_1_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xAE
   {"ACCL11_ASIC_2_Temp",  0, get_acb_sensor, false, {102, 0, 0, 18, 0, 0, 0, 0}, TEMP},    // 0xAF
   {"ACCL11_ASIC_2_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB0
-  {"ACCL11_ASIC_2_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB1
+  {"ACCL11_ASIC_2_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB1
   {"ACCL12_ASIC_1_Temp",  0, get_acb_sensor, false, {102, 0, 0, 18, 0, 0, 0, 0}, TEMP},    // 0xB2
   {"ACCL12_ASIC_1_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB3
-  {"ACCL12_ASIC_1_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB4
+  {"ACCL12_ASIC_1_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB4
   {"ACCL12_ASIC_2_Temp",  0, get_acb_sensor, false, {102, 0, 0, 18, 0, 0, 0, 0}, TEMP},    // 0xB5
   {"ACCL12_ASIC_2_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB6
-  {"ACCL12_ASIC_2_VOL_1", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB7
+  {"ACCL12_ASIC_2_VOL_2", 0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB7
   {"ACCL1_ASIC_1_P12V_AUX_VOL",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB8
   {"ACCL1_ASIC_2_P12V_AUX_VOL",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xB9
   {"ACCL2_ASIC_1_P12V_AUX_VOL",  0, get_acb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, // 0xBA

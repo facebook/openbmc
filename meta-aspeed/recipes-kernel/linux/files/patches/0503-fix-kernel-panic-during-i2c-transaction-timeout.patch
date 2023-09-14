@@ -1,0 +1,44 @@
+From 2210fbf0c01e61b0e30e42c6a14dff925b61d108 Mon Sep 17 00:00:00 2001
+From: Tommy Huang <tommy_huang@aspeedtech.com>
+Date: Wed, 16 Aug 2023 05:52:24 +0000
+Subject: [PATCH] i2c: add controller reset when the timeout occurred
+
+Summary: Following patch to fix kernel panic during i2c timeout.
+Commit Message:
+1.Call i2c controller reset when the i2c transfer timeout occurred.
+The rest of interrupts and device should be reset avoid unperdicted
+controller behavior occurred.
+
+This path uploaded by aspeed and currently under review
+(https://patchwork.ozlabs.org/project/openbmc/patch/20230814111534.2771900-1-tommy_huang@aspeedtech.com/)
+
+Signed-off-by: Tommy Huang <tommy_huang@aspeedtech.com>
+---
+ drivers/i2c/busses/i2c-aspeed.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/busses/i2c-aspeed.c b/drivers/i2c/busses/i2c-aspeed.c
+index c64c381b6..cace15a68 100644
+--- a/drivers/i2c/busses/i2c-aspeed.c
++++ b/drivers/i2c/busses/i2c-aspeed.c
+@@ -699,12 +699,16 @@ static int aspeed_i2c_master_xfer(struct i2c_adapter *adap,
+ 	if (time_left == 0) {
+ 		/*
+ 		 * If timed out and bus is still busy in a multi master
+-		 * environment, attempt recovery at here.
++		 * environment, attempt recovery at here. Even the bus is
++		 * idle, we still need reset i2c controller avoid rest of
++		 * interrupts.
+ 		 */
+ 		if (bus->multi_master &&
+ 		    (readl(bus->base + ASPEED_I2C_CMD_REG) &
+ 		     ASPEED_I2CD_BUS_BUSY_STS))
+ 			aspeed_i2c_recover_bus(bus);
++		else
++			aspeed_i2c_reset(bus);
+ 
+ 		/*
+ 		 * If timed out and the state is still pending, drop the pending
+-- 
+2.25.1
+

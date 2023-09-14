@@ -1,0 +1,16 @@
+{
+    "_README_WHAT_IS_THIS_DIFF_": "This diff is temporary, and will be replaced once the \"convert-pull-request-to-internal-diff\" sandcastle job finishes. For more details, see https:\/\/fburl.com\/pr-import-on-sandcastle",
+    "@nocommit": "This temporary diff should not be landed.",
+    "repository": {
+        "fbid": 495086647335482,
+        "name": "facebookexternal\/openbmc.wiwynn"
+    },
+    "pull_request": {
+        "fbid": 784741223653833,
+        "number": 2784,
+        "name": "GTA: Upgrade to ASPEED i2c new mode driver",
+        "author": "Jerry-wiwynn",
+        "initiator": "facebook-github-bot"
+    },
+    "head_sha": "836a55c0f5f34c28848c75c00a475ac5b68a5fdb"
+}

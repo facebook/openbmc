@@ -1984,19 +1984,7 @@ sdr_init(uint8_t fru) {
  */
 static int
 convert_sensor_reading(sdr_full_t *sdr, uint8_t sensor_value, float *out_value) {
-  int x = 0;
-
-  if ((sdr->sensor_units1 & 0xC0) == 0x00) {  // unsigned
-    x = sensor_value;
-  } else if ((sdr->sensor_units1 & 0xC0) == 0x40) {  // 1's complements
-    x = (sensor_value & 0x80) ? (0-(~sensor_value)) : sensor_value;
-  } else if ((sdr->sensor_units1 & 0xC0) == 0x80) {  // 2's complements
-    x = (int8_t)sensor_value;
-  } else { // Does not return reading
-    return ERR_SENSOR_NA;
-  }
-
-  if (pal_convert_sensor_reading(sdr, x, out_value) < 0) {
+  if (pal_convert_sensor_reading(sdr, (int)sensor_value, out_value) < 0) {
     return ERR_SENSOR_NA;
   }
 

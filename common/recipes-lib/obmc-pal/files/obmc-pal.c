@@ -3478,6 +3478,21 @@ pal_convert_sensor_reading(sdr_full_t *sdr, int in_value, float *out_value) {
     return -1;
   }
 
+  switch (sdr->sensor_units1 & 0xC0) {
+    case 0x00:  // unsigned
+      break;
+    case 0x80:  // 2's complements
+      in_value = (int8_t)in_value;
+      break;
+    case 0x40:  // 1's complements
+      if (in_value & 0x80) {
+        in_value = -(uint8_t)(~in_value);
+      }
+      break;
+    default:
+      return -1;
+  }
+
   m_lsb = sdr->m_val;
   m_msb = sdr->m_tolerance >> 6;
   m = (m_msb << 8) | m_lsb;

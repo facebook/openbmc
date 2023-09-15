@@ -23,14 +23,13 @@
 HGX_ERR_READ_FAIL=1
 HGX_ERR_UNSUPPORT=2
 
-FAN_TABLE_VER_500W="inspirationpint_v6"
-FAN_TABLE_VER_650W="inspirationpint_v9.2"
+KV_CMD="/usr/bin/kv"
+FAN_TABLE_VER_500W="500"
+FAN_TABLE_VER_650W="650"
 DEFAULT_FSC_CONFIG="/etc/fsc-config.json"
 
 hgx_pwr_limit_check () {
-  if [[ -f ${DEFAULT_FSC_CONFIG} ]]; then
-    curr_fan_table=$(grep -o '"version": *"[^"]*"' "$DEFAULT_FSC_CONFIG" | sed 's/"version": *"\(.*\)"/\1/')
-  fi
+  curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
 
   recheck_500w=0
   recheck_650w=0
@@ -55,7 +54,8 @@ hgx_pwr_limit_check () {
       recheck_500w=$((recheck_500w+1))
 
       if [ $recheck_500w -eq 2 ]; then
-        rm ${DEFAULT_FSC_CONFIG}
+        $KV_CMD set "auto_fsc_config" 500 persistent
+        rm -f ${DEFAULT_FSC_CONFIG}
         ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
         logger -t "fscd" -p daemon.crit "Fan table is changing from 650W to 500W"
         sv restart fscd
@@ -66,7 +66,8 @@ hgx_pwr_limit_check () {
       recheck_650w=$((recheck_650w+1))
 
       if [ $recheck_650w -eq 2 ]; then
-        rm ${DEFAULT_FSC_CONFIG}
+        $KV_CMD set "auto_fsc_config" 650 persistent
+        rm -f ${DEFAULT_FSC_CONFIG}
         ln -s /etc/fsc-config-8-retimer-650W.json ${DEFAULT_FSC_CONFIG}
         logger -t "fscd" -p daemon.crit "Fan table is changing from 500W to 650W"
         sv restart fscd
@@ -95,7 +96,20 @@ check_mb_rev() {
   if [[ "$rev_id" == "2" ]]; then
     ln -s /etc/fsc-config-2-retimer.json ${DEFAULT_FSC_CONFIG}
   else
-    ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
+    curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
+
+    # The default fan table is configued as 500W
+    if [ -z "$curr_fan_table" ]; then
+      $KV_CMD set "auto_fsc_config" 500 persistent
+    else
+      rm -f ${DEFAULT_FSC_CONFIG}
+    fi
+
+    if [ "$curr_fan_table" == "$FAN_TABLE_VER_500W" ]; then
+      ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
+    elif [ "$curr_fan_table" == "$FAN_TABLE_VER_650W" ]; then
+      ln -s /etc/fsc-config-8-retimer-650W.json ${DEFAULT_FSC_CONFIG}
+    fi
   fi
 }
 

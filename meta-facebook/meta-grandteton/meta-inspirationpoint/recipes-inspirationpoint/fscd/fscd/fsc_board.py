@@ -19,12 +19,27 @@ import os
 import re
 from ctypes import c_char_p, CDLL
 from subprocess import check_output, PIPE, Popen
+from fsc_common_var import fan_mode
 
 import kv
 import libgpio
 from fsc_util import Logger
 
 lpal_hndl = CDLL("libpal.so.0")
+
+try:
+    if lpal_hndl.pal_is_artemis():
+        get_fan_mode_scenario_list = {"sensor_hit_UCR": 100}
+    else:
+        pwr_limit = kv.kv_get("auto_fsc_config", kv.FPERSIST, True).decode("utf-8")
+        if pwr_limit == "650":
+            get_fan_mode_scenario_list = {"sensor_hit_UCR": 100, "sensor_fail": 100}
+        else:
+            get_fan_mode_scenario_list = {"sensor_hit_UCR": 100, "sensor_fail": 80}
+except Exception:
+    # In case of exception, set the default value
+    get_fan_mode_scenario_list = {"sensor_hit_UCR": 100, "sensor_fail": 100}
+    Logger.warn("FSC can't get fan mode scenario list")
 
 fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
 
@@ -37,15 +52,9 @@ gta_fru_map = {
     "mc":   {"fru": 17},
 }
 
-if lpal_hndl.pal_is_artemis():
-    get_fan_mode_scenario_list = ["sensor_hit_UCR"]
-pass
-
 def get_fan_mode(scenario="None"):
-
-    if "sensor_hit_UCR" in scenario:
-        pwm = 100
-        return fan_mode["boost_mode"], pwm
+    if scenario in get_fan_mode_scenario_list:
+        return fan_mode["boost_mode"], get_fan_mode_scenario_list[scenario]
     pass
 
 def board_fan_actions(fan, action="None"):

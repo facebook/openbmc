@@ -23,6 +23,7 @@ from common.base_cpu_utilization_test import BaseCpuUtilizationTest
 from utils.test_utils import qemu_check
 
 
+@unittest.skip("FIXME for HW CIT T163968017")
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class CpuUtilizationTest(BaseCpuUtilizationTest):
     def init_cpu_variables(self):

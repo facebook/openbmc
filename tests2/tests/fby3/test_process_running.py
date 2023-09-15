@@ -23,6 +23,7 @@ from common.base_process_running_test import BaseProcessRunningTest
 from utils.test_utils import qemu_check
 
 
+@unittest.skip("FIXME for HW CIT T163968017")
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [

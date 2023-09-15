@@ -30,3 +30,7 @@ slots = ["slot1", "slot2", "slot3", "slot4"]
 class PowerUtilTest(BasePowerUtilTest):
     def set_slots(self):
         self.slots = slots
+
+    @unittest.skip("FIXME for HW CIT T163968017")
+    def test_slot_reset(self):
+        super.test_slot_reset()

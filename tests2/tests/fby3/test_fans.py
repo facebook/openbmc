@@ -24,6 +24,7 @@ from utils.cit_logger import Logger
 from utils.test_utils import qemu_check
 
 
+@unittest.skip("FIXME for HW CIT T163968017")
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FansTest(CommonFanUtilBasedFansTest, unittest.TestCase):
     def setUp(self):

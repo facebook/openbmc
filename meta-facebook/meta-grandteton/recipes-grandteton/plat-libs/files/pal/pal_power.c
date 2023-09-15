@@ -21,6 +21,13 @@
 #define DELAY_POWER_OFF 6
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_CYCLE 10
+#define VPDB_ADM1272_ADDR              (0x20)
+#define VPDB_LTC4287_ADDR              (0x88)
+#define AMD1272_CYCLE_OFFSET           (0xD9)
+#define LTC4287_CYCLE_OFFSET           (0xFD)
+#define LTC4287_CLEAR_REBOOT           (0x04)
+#define LTC4287_SET_REBOOT             (0x0C)
+
 
 enum GTA_MB_CPLD_INFO {
   ACB_POWER_EN_REG = 0x2,
@@ -603,6 +610,61 @@ void pal_ac_off_meb() {
   return;
 }
 
+int pal_adm1272_sled_cycle() {
+  int i2cfd = 0;
+  int ret = 0;
+  uint8_t tlen = 0;
+  uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
+
+  i2cfd = i2c_cdev_slave_open(I2C_BUS_38, VPDB_ADM1272_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_69);
+    return -1;
+  }
+  tbuf[0] = AMD1272_CYCLE_OFFSET;
+  tlen = 1;
+
+  ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VPDB_ADM1272_ADDR, tbuf, tlen, NULL, 0), 3, 100);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() I2C transfer to ADM1272 failed, ret = %d", __func__, ret);
+  }
+
+  i2c_cdev_slave_close(i2cfd);
+  return ret;
+}
+
+int pal_ltc4287_sled_cycle() {
+  int i2cfd = 0;
+  int ret = 0;
+  uint8_t tlen = 0;
+  uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
+
+  i2cfd = i2c_cdev_slave_open(I2C_BUS_38, VPDB_LTC4287_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_69);
+    return -1;
+  }
+  tbuf[0] = LTC4287_CYCLE_OFFSET;
+  tbuf[1] = LTC4287_CLEAR_REBOOT;
+  tlen = 2;
+  ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VPDB_LTC4287_ADDR, tbuf, tlen, NULL, 0), 3, 100);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() I2C transfer to LTC4287 clear reboot reg failed, ret = %d", __func__, ret);
+    goto exit;
+  }
+
+  tbuf[1] = LTC4287_SET_REBOOT;
+  ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VPDB_LTC4287_ADDR, tbuf, tlen, NULL, 0), 3, 100);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() I2C transfer to LTC4287 set reboot reg failed, ret = %d", __func__, ret);
+    goto exit;
+  }
+
+exit:
+  i2c_cdev_slave_close(i2cfd);
+  return ret;
+}
+
 //Systm AC Cycle
 int pal_sled_cycle(void) {
   uint8_t id;
@@ -617,13 +679,9 @@ int pal_sled_cycle(void) {
 
   //Send Command to VPDB
   if (id == MAIN_SOURCE) {
-    if(system("i2cset -f -y 38 0x44 0xfd 0x04 & > /dev/null"))
-      return -1;
-    if(system("i2cset -f -y 38 0x44 0xfd 0x0c & > /dev/null"))
-      return -1;
+    return pal_ltc4287_sled_cycle();
   } else {
-     if(system("i2cset -f -y 38 0x10 0xd9 c &> /dev/null"))
-      return -1;
+    return pal_adm1272_sled_cycle();
   }
   return 0;
 }

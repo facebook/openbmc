@@ -18,7 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 
+KV_CMD="/usr/bin/kv"
 default_fsc_config="/etc/fsc-config.json"
+
+$KV_CMD set "auto_fsc_config" "gtartemis" persistent
+
 if [[ -f ${default_fsc_config} ]]; then
   rm ${default_fsc_config}
 fi

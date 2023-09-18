@@ -26,6 +26,7 @@ HGX_ERR_UNSUPPORT=2
 KV_CMD="/usr/bin/kv"
 FAN_TABLE_VER_500W="500"
 FAN_TABLE_VER_650W="650"
+FAN_TABLE_VER_GTA="gtartemis"
 DEFAULT_FSC_CONFIG="/etc/fsc-config.json"
 
 hgx_pwr_limit_check () {
@@ -109,6 +110,8 @@ check_mb_rev() {
       ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
     elif [ "$curr_fan_table" == "$FAN_TABLE_VER_650W" ]; then
       ln -s /etc/fsc-config-8-retimer-650W.json ${DEFAULT_FSC_CONFIG}
+    elif [  "$curr_fan_table" == "$FAN_TABLE_VER_GTA" ]; then
+      ln -s /etc/fsc-config-gta-8-retimer.json ${DEFAULT_FSC_CONFIG}
     fi
   fi
 }

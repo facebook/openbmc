@@ -105,5 +105,23 @@ max([
     max([
     all:slot1_gp3_pesw_temp,
     all:slot3_gp3_pesw_temp])),
+  linear_non_fru_sensor(
+    max([
+    all:slot1_vccin_vr_temp,
+    all:slot1_vccsa_vr_temp,
+    all:slot1_vccio_vr_temp,
+    all:slot1_3v3_stby_vr_temp,
+    all:slot1_vddq_abc_vr_temp,
+    all:slot1_vddq_def_vr_temp,
+    all:slot1_gp3_pesw_vr_temp,
+    all:slot1_gp3_p1v8_vr_temp,
+    all:slot3_vccin_vr_temp,
+    all:slot3_vccsa_vr_temp,
+    all:slot3_vccio_vr_temp,
+    all:slot3_3v3_stby_vr_temp,
+    all:slot3_vddq_abc_vr_temp,
+    all:slot3_vddq_def_vr_temp,
+    all:slot3_gp3_pesw_vr_temp,
+    all:slot3_gp3_p1v8_vr_temp])),
   linear_nic(all:nic_nic_sensor_temp) + pid_nic(all:nic_nic_sensor_temp)
 ])

@@ -1,5 +1,5 @@
 {
-  "version": "fby3-gpv3-config-d-v2022.09.08",
+  "version": "fby3-gpv3-config-d-v2023.09.19",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
@@ -30,6 +30,11 @@
       }
     },
     "(.*)gp3": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)vr_": {
       "attribute": {
         "type" : "power_status"
       }
@@ -200,6 +205,17 @@
       "kp": -3,
       "ki": -0.01,
       "kd": 0
+    },
+    "linear_non_fru_sensor": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
     }
   },
   "fans": {

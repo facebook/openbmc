@@ -1,5 +1,5 @@
 {
-    "version": "inspirationpint_v9.2",
+    "version": "inspirationpint_v10",
     "pwm_transition_value": 100,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -302,6 +302,32 @@
           [48, 25],
           [90, 90]
         ]
+      },
+      "gpu_tray_switch_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 1,
+        "data": [
+          [65, 25],
+          [90, 45],
+          [95, 50],
+          [102, 90]
+        ]
+      },
+      "gpu_tray_switch_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 2,
+        "setpoint": 98,
+        "kp": -3.5,
+        "ki": -0.035,
+        "kd": 0
       },
       "retimer_temp_linear": {
         "read_source" : {

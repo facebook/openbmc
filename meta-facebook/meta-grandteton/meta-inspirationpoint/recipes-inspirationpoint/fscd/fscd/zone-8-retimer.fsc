@@ -204,6 +204,13 @@ max([
 
   gpu_fpga_linear(all:hgx_hgx_fpga_0_temp_c) + gpu_fpga_pid(all:hgx_hgx_fpga_0_temp_c),
 
+  gpu_tray_switch_linear(
+    max([
+      all:hgx_hgx_pcieswitch_0_temp_c])) +
+  gpu_tray_switch_pid(
+    max([
+      all:hgx_hgx_pcieswitch_0_temp_c])),
+
   cpu_tray_vr_linear(
     max([
       all:mb_mb_vr_cpu0_vcore0_temp_c,
@@ -227,5 +234,14 @@ max([
       all:mb_mb_vr_cpu1_soc_temp_c,
       all:mb_mb_vr_cpu1_vcore1_temp_c,
       all:mb_mb_vr_cpu1_pvddio_temp_c,
-      all:mb_mb_vr_cpu1_pvdd11_temp_c]))
+      all:mb_mb_vr_cpu1_pvdd11_temp_c])),
+
+  retimer_vr_linear(
+    max([
+      all:mb_mb_vr_rt_p0v9_vdd1_temp_c,
+      all:mb_mb_vr_rt_p0v9_vdd2_temp_c])) +
+  retimer_vr_pid(
+    max([
+      all:mb_mb_vr_rt_p0v9_vdd1_temp_c,
+      all:mb_mb_vr_rt_p0v9_vdd2_temp_c]))
 ])

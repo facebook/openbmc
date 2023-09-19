@@ -214,7 +214,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
             lpal_hndl.pal_get_server_power(
                 int(fru_map[board]["slot_num"]), byref(status)
             )
-            if status.value == 6:  # 12V-off
+            if status.value == 5:  # 12V-off
                 return 0
 
             # if it's cwc system and fw update is ongoing will not check sensor to avoid bic being busy
@@ -247,7 +247,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     return 0
 
             if status.value == 1:  # power on
-                if search(r"soc_cpu|soc_therm", sname) is not None:
+                if search(r"soc_cpu|soc_therm|e1s_dev|vr_temp", sname) is not None:
                     is_valid_check = True
                 elif search(r"spe_ssd", sname) is not None:
                     # get SSD present status

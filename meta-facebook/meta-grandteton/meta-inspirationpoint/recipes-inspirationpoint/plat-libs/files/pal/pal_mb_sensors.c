@@ -512,11 +512,11 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"PVDD18_S5_P0_ADC"   , ADC_CH14, read_iic_adc_val, false, {1.87, 0, 0, 1.73, 0, 0, 0, 0}, VOLT}, //0xDE
   {"PVDD18_S5_P1_ADC"   , ADC_CH15, read_iic_adc_val, false, {1.87, 0, 0, 1.73, 0, 0, 0, 0}, VOLT}, //0xDF
 
-  {"VR_RT_P0V9_VDD1_TEMP", VR_ID10, read_vr_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xE0
+  {"VR_RT_P0V9_VDD1_TEMP", VR_ID10, read_vr_temp, false, {105, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xE0
   {"VR_RT_P0V9_VDD1_VOUT", VR_ID10, read_vr_vout, false, {0.95, 0, 0, 0.85, 0, 0, 0}, VOLT}, //0xE1
   {"VR_RT_P0V9_VDD1_IOUT", VR_ID10, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xE2
   {"VR_RT_P0V9_VDD1_POUT", VR_ID10, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xE3
-  {"VR_RT_P0V9_VDD2_TEMP", VR_ID11, read_vr_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xE4
+  {"VR_RT_P0V9_VDD2_TEMP", VR_ID11, read_vr_temp, false, {105, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xE4
   {"VR_RT_P0V9_VDD2_VOUT", VR_ID11, read_vr_vout, false, {0.95, 0, 0, 0.85, 0, 0, 0}, VOLT}, //0xE5
   {"VR_RT_P0V9_VDD2_IOUT", VR_ID11, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xE6
   {"VR_RT_P0V9_VDD2_POUT", VR_ID11, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xE7

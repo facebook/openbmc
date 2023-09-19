@@ -287,8 +287,8 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
 
   {"CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {89.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x18
   {"CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {89.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x19
-  {"CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {-5.0, 0, 0, -84.0, 0, 0, 0, 0}, TEMP}, //0x1A
-  {"CPU1_THERM_MARGIN", CPU_ID1, read_cpu_thermal_margin, false, {-5.0, 0, 0, -84.0, 0, 0, 0, 0}, TEMP}, //0x1B
+  {"CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {-1.0, 0, 0, -84.0, 0, 0, 0, 0}, TEMP}, //0x1A
+  {"CPU1_THERM_MARGIN", CPU_ID1, read_cpu_thermal_margin, false, {-1.0, 0, 0, -84.0, 0, 0, 0, 0}, TEMP}, //0x1B
   {"CPU0_TJMAX", CPU_ID0, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x1C
   {"CPU1_TJMAX", CPU_ID1, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x1D
   {"CPU0_PKG_PWR", CPU_ID0, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x1E

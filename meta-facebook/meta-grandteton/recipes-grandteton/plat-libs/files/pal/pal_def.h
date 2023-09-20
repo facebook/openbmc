@@ -37,6 +37,9 @@
 #define FAN_BP1_PRSNT      "FAN_BP1_PRSNT_N"
 #define FAN_BP2_PRSNT      "FAN_BP2_PRSNT_N"
 
+// GPIO HPDB PRSNT
+#define HPDB_PRSNT         "HPDB_PRESENT"
+
 //GPIO FAN PRSNT
 #define  FAN0_PRSNT        "FAN0_PRESENT"
 #define  FAN1_PRSNT        "FAN1_PRESENT"

@@ -64,6 +64,15 @@ enum {
   PCIE_DEVICE_NCIPHER_HSM = 0x082c,
 };
 
+enum {
+  UCR = 0x01,
+  UNC,
+  UNR,
+  LCR,
+  LNC,
+  LNR,
+};
+
 struct pcie_info {
   uint8_t   interface;
   uint8_t   slot_num;
@@ -3270,7 +3279,7 @@ pal_set_sdr_init(uint8_t fru, bool set) {
 }
 
 static void
-host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo)
+host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo, uint8_t bmc_location)
 {
   sdr_full_t *sdr;
   int retry = 3;
@@ -3360,6 +3369,18 @@ host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo)
     sdr->lnr_thresh = 0;
     sdr->pos_hyst = 0;
     sdr->neg_hyst = 0;
+  }
+
+  if (bmc_location == NIC_BMC) {
+    if (type_2ou == E1S_BOARD) { // SPE
+      if (pal_sensor_thresh_modify(fru, BIC_SENSOR_CPU_THERM_MARGIN, UCR, -2) < 0) {
+        syslog(LOG_ERR, "Failed to update UCR of CPU margin");
+      }
+    }
+  } else { // class 1
+    if (pal_sensor_thresh_modify(fru, BIC_SENSOR_CPU_THERM_MARGIN, UCR, -3) < 0) {
+      syslog(LOG_ERR, "Failed to update UCR of CPU margin");
+    }
   }
 }
 
@@ -3471,7 +3492,7 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   // update SDR for host source sensor
   if (fru >= FRU_SLOT1 && fru <= FRU_SLOT4) {
-    host_sensors_sdr_init(fru, g_sinfo[fru-1]);
+    host_sensors_sdr_init(fru, g_sinfo[fru-1], bmc_location);
   }
 
 error_exit:

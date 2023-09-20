@@ -1,10 +1,11 @@
 {
-  "version": "FSC6.4",
+  "version": "FSC6.5",
   "pwm_transition_value": 60,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
   "sensor_filter_all": true,
+  "ramp_rate": 100,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
@@ -71,12 +72,13 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
       "data": [
-        [ -16, 10 ],
-        [ -15, 11 ],
-        [ -14, 12 ],
-        [ -13, 13 ],
-        [ -12, 14 ],
-        [ -11, 15 ]
+        [ -19, 10 ],
+        [ -18, 13 ],
+        [ -17, 14 ],
+        [ -16, 15 ],
+        [ -15, 16 ],
+        [ -14, 17 ],
+        [ -6, 50 ]
       ]
     },
     "pid_cpu_margin": {
@@ -84,7 +86,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": -8,
+      "setpoint": -11,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
       "kp": -1.35,
@@ -197,3 +199,4 @@
     }
   }
 }
+

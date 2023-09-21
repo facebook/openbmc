@@ -16,6 +16,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+#shellcheck disable=SC2034
+
 GPIODIR="/sys/class/gpio"
 GPIOEXPORT="$GPIODIR/export"
 SHADOW_GPIO=/tmp/gpionames
@@ -33,7 +35,7 @@ gpio_name2value() {
     remaining=$1
     base="${SHADOW_GPIO}/${remaining}"
     if [ -L "${base}" ]; then
-        val=$(readlink -f ${base} 2>/dev/null)
+        val=$(readlink -f "${base}" 2>/dev/null)
         if [ -n "${val}" ]; then
             val=${val##*gpio}
             if [ -n "${val}" ]; then
@@ -60,7 +62,7 @@ gpio_name2value() {
                 if [ $val -gt 0 ]; then
                     val=$((val-1))
                 fi
-                val=$((val * 8 + $remaining))
+                val=$((val * 8 + remaining))
                 break
                 ;;
         esac
@@ -71,16 +73,16 @@ gpio_name2value() {
 
 gpio_export() {
     local gpio
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
+    gpio=$(gpio_name2value "$1")
+    dir=$(gpio_dir "$gpio")
+    if [ ! -d "${dir}" ]; then
+        echo "$gpio" > $GPIOEXPORT
     fi
     if [ $# -gt 1 ]; then
         if [ ! -d  $SHADOW_GPIO ]; then
             mkdir -p $SHADOW_GPIO
         fi
-        ln -s $dir $SHADOW_GPIO/$2
+        ln -s "$dir" "$SHADOW_GPIO/$2"
     fi
 }
 
@@ -90,7 +92,7 @@ gpio_export_by_name() {
     local shadow=$3
 
     echo "exporting gpio (${chip}, ${name}), shadow=${shadow}"
-    $GPIOCLI_CMD --chip ${chip} --pin-name ${name} --shadow ${shadow} export
+    $GPIOCLI_CMD --chip "${chip}" --pin-name "${name}" --shadow "${shadow}" export
 }
 
 gpio_export_by_offset() {
@@ -99,29 +101,29 @@ gpio_export_by_offset() {
     local shadow=$3
 
     echo "exporting gpio (${chip}, ${offset}), shadow=${shadow}"
-    $GPIOCLI_CMD --chip ${chip} --pin-offset ${offset} --shadow ${shadow} export
+    $GPIOCLI_CMD --chip "${chip}" --pin-offset "${offset}" --shadow "${shadow}" export
 }
 
 gpio_unexport() {
     local shadow=$1
 
     echo "unexporting gpio ${shadow}"
-    $GPIOCLI_CMD --shadow ${shadow} unexport
+    $GPIOCLI_CMD --shadow "${shadow}" unexport
 }
 
 gpio_set() {
     local gpio
     local val
-    gpio=$(gpio_name2value $1)
+    gpio=$(gpio_name2value "$1")
     val=$2
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
+    dir=$(gpio_dir "$gpio")
+    if [ ! -d "${dir}" ]; then
+        echo "$gpio" > $GPIOEXPORT
     fi
-    if [ $val -eq 0 ]; then
-        echo low > ${dir}/direction
+    if [ $((val)) -eq 0 ]; then
+        echo low > "${dir}/direction"
     else
-        echo high > ${dir}/direction
+        echo high > "${dir}/direction"
     fi
 }
 
@@ -129,16 +131,16 @@ gpio_get() {
     local gpio
     local val
     local keepdirection
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
+    gpio=$(gpio_name2value "$1")
+    dir=$(gpio_dir "$gpio")
     keepdirection="$2"
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
+    if [ ! -d "${dir}" ]; then
+        echo "$gpio" > $GPIOEXPORT
     fi
     if [ "$keepdirection" != "keepdirection" ]; then
-        echo in > ${dir}/direction
+        echo in > "${dir}/direction"
     fi
-    cat ${dir}/value
+    cat "${dir}/value"
 }
 
 #
@@ -161,7 +163,8 @@ gpio_get_value() {
     local shadow="$1"
 
     val=$("${GPIOCLI_CMD}" --shadow "${shadow}" get-value)
-    if [ "$?" == "0" ]; then
+    ret=$?
+    if [ $((ret)) -eq 0 ]; then
         echo "${val}" | cut -d'=' -f2
     fi
 }
@@ -186,7 +189,8 @@ gpio_get_direction() {
     local shadow="$1"
 
     dir=$("${GPIOCLI_CMD}" --shadow "${shadow}" get-direction)
-    if [ "$?" == "0" ]; then
+    ret=$?
+    if [ $((ret)) -eq 0 ]; then
         echo "${dir}" | cut -d'=' -f2
     fi
 }
@@ -234,7 +238,7 @@ gpiochip_get_base() {
     local chip=${1}
     local chip_dir="${GPIODIR}/${chip}"
 
-    if [ -L ${chip_dir} ]; then
-       cat ${chip_dir}/base
+    if [ -L "${chip_dir}" ]; then
+       cat "${chip_dir}/base"
     fi
 }

@@ -2385,33 +2385,48 @@ pal_all_slot_power_ctrl(uint8_t opt, char *sel_desc) {
 
 static void
 pal_nic_otp_check(float *value, float unr, float ucr) {
-  static int retry = MAX_RETRY;
+  // In sensord, call pal_nic_otp_check() 3 times in one round
+  // so let retry = 3, if next round NIC temp is still >= unr, trigger the action.
+  // sensor_raw_read_helper(), retry from 3->2
+  // check_thresh_assert(UCR), retry from 2->1
+  // check_thresh_assert(UNR), retry from 1->0
+  #define MAX_NIC_OTP_RETRY 3
+
+  static int retry = MAX_NIC_OTP_RETRY;
   static bool is_otp_asserted = false;
   char sel_str[128] = {0};
-  if ( *value < ucr ) {
-    if ( is_otp_asserted == false ) return; //it will move on when is_otp_asserted is true
-    if ( retry != MAX_RETRY ) {
-      retry++;
-      return;
-    }
-
-    //recover the system
-    is_otp_asserted = false;
-    snprintf(sel_str, sizeof(sel_str), "NIC temp is under UCR. (val = %.2f)", *value);
-    pal_all_slot_power_ctrl(SERVER_12V_ON, sel_str);
-    return;
-  }
-
-  if ( retry != 0 ) {
-    retry--;
-    return;
-  }
 
   //need to turn off all slots since retry is reached
-  if ( is_otp_asserted == false && *value >= unr ) {
-    is_otp_asserted = true;
-    snprintf(sel_str, sizeof(sel_str), "NIC temp is over UNR. (val = %.2f)", *value);
-    pal_all_slot_power_ctrl(SERVER_12V_OFF, sel_str);
+  if ( is_otp_asserted == false ) {
+    if ( *value >= unr ) {
+      if ( retry ) {
+        sleep(1);
+        retry--;
+      } else {
+        is_otp_asserted = true;
+        retry = MAX_NIC_OTP_RETRY;
+        snprintf(sel_str, sizeof(sel_str), "NIC temp is over UNR. (val = %.2f)", *value);
+        pal_all_slot_power_ctrl(SERVER_12V_OFF, sel_str);
+      }
+    } else {
+      retry = MAX_NIC_OTP_RETRY;
+    }
+  } else {
+    // case, is_otp_asserted == true
+    if ( *value < ucr ) {
+      if ( retry ) {
+        sleep(1);
+        retry--;
+      } else {
+        //recover the system
+        is_otp_asserted = false;
+        retry = MAX_NIC_OTP_RETRY;
+        snprintf(sel_str, sizeof(sel_str), "NIC temp is under UCR. (val = %.2f)", *value);
+        pal_all_slot_power_ctrl(SERVER_12V_ON, sel_str);
+      }
+    } else {
+      retry = MAX_NIC_OTP_RETRY;
+    }
   }
 
   return;

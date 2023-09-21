@@ -237,32 +237,32 @@ get_thresh_json_obj(thresh_sensor_t *thresh) {
 
   if ((thresh->flag & 0x7E) && (thresh_obj = json_object())) {
     if (thresh->flag & GETMASK(UCR_THRESH)) {
-      snprintf(svalue, sizeof(svalue), "%.2f", thresh->ucr_thresh);
+      snprintf(svalue, sizeof(svalue), "%.3f", thresh->ucr_thresh);
       json_object_set_new(thresh_obj, "UCR", json_string(svalue));
     }
 
     if (thresh->flag & GETMASK(UNC_THRESH)) {
-      snprintf(svalue, sizeof(svalue), "%.2f", thresh->unc_thresh);
+      snprintf(svalue, sizeof(svalue), "%.3f", thresh->unc_thresh);
       json_object_set_new(thresh_obj, "UNC", json_string(svalue));
     }
 
     if (thresh->flag & GETMASK(UNR_THRESH)) {
-      snprintf(svalue, sizeof(svalue), "%.2f", thresh->unr_thresh);
+      snprintf(svalue, sizeof(svalue), "%.3f", thresh->unr_thresh);
       json_object_set_new(thresh_obj, "UNR", json_string(svalue));
     }
 
     if (thresh->flag & GETMASK(LCR_THRESH)) {
-      snprintf(svalue, sizeof(svalue), "%.2f", thresh->lcr_thresh);
+      snprintf(svalue, sizeof(svalue), "%.3f", thresh->lcr_thresh);
       json_object_set_new(thresh_obj, "LCR", json_string(svalue));
     }
 
     if (thresh->flag & GETMASK(LNC_THRESH)) {
-      snprintf(svalue, sizeof(svalue), "%.2f", thresh->lnc_thresh);
+      snprintf(svalue, sizeof(svalue), "%.3f", thresh->lnc_thresh);
       json_object_set_new(thresh_obj, "LNC", json_string(svalue));
     }
 
     if (thresh->flag & GETMASK(LNR_THRESH)) {
-      snprintf(svalue, sizeof(svalue), "%.2f", thresh->lnr_thresh);
+      snprintf(svalue, sizeof(svalue), "%.3f", thresh->lnr_thresh);
       json_object_set_new(thresh_obj, "LNR", json_string(svalue));
     }
   }
@@ -294,7 +294,7 @@ print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
     if (threshold && (thresh_obj = get_thresh_json_obj(thresh))) {
       json_object_set_new(sensor_obj, "thresholds", thresh_obj);
     }
-    snprintf(svalue, sizeof(svalue), "%.2f", fvalue);
+    snprintf(svalue, sizeof(svalue), "%.3f", fvalue);
     json_object_set_new(sensor_obj, "value", json_string(svalue));
 
     search = json_object_get(fru_sensor_obj, thresh->name);
@@ -337,33 +337,33 @@ print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
              numeric_state_to_name((int)fvalue, sensor_status,
              sizeof(sensor_status)/sizeof(sensor_status[0]),STATUS_NS));
   } else {
-    printf(" (0x%X) : %7.2f %-5s | (%s)",
+    printf(" (0x%X) : %7.3f %-5s | (%s)",
         snr_num, fvalue, thresh->units, status);
   }
   if (threshold) {
     printf(" | UCR: ");
     thresh->flag & GETMASK(UCR_THRESH) ?
-      printf("%.2f", thresh->ucr_thresh) : printf("NA");
+      printf("%.3f", thresh->ucr_thresh) : printf("NA");
 
     printf(" | UNC: ");
     thresh->flag & GETMASK(UNC_THRESH) ?
-      printf("%.2f", thresh->unc_thresh) : printf("NA");
+      printf("%.3f", thresh->unc_thresh) : printf("NA");
 
     printf(" | UNR: ");
     thresh->flag & GETMASK(UNR_THRESH) ?
-      printf("%.2f", thresh->unr_thresh) : printf("NA");
+      printf("%.3f", thresh->unr_thresh) : printf("NA");
 
     printf(" | LCR: ");
     thresh->flag & GETMASK(LCR_THRESH) ?
-      printf("%.2f", thresh->lcr_thresh) : printf("NA");
+      printf("%.3f", thresh->lcr_thresh) : printf("NA");
 
     printf(" | LNC: ");
     thresh->flag & GETMASK(LNC_THRESH) ?
-      printf("%.2f", thresh->lnc_thresh) : printf("NA");
+      printf("%.3f", thresh->lnc_thresh) : printf("NA");
 
     printf(" | LNR: ");
     thresh->flag & GETMASK(LNR_THRESH) ?
-      printf("%.2f", thresh->lnr_thresh) : printf("NA");
+      printf("%.3f", thresh->lnr_thresh) : printf("NA");
 
   }
 
@@ -595,7 +595,7 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
       continue;
     }
 
-    printf("%-18s (0x%X) min = %.2f, average = %.2f, max = %.2f\n", thresh.name, snr_num, min, average, max);
+    printf("%-18s (0x%X) min = %.3f, average = %.3f, max = %.3f\n", thresh.name, snr_num, min, average, max);
   }
 }
 

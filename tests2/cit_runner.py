@@ -223,6 +223,7 @@ def arg_parser():
             "halfdome",
             "bletchley",
             "fbgp2",
+            "janga",
             # Add new platform name here -- for anchor purpose, do not remove
         ],
     )

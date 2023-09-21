@@ -34,6 +34,9 @@ lbic_hndl = CDLL("libbic.so.0")
 one_fan_fail_tuple = (fan_mode["trans_mode"], 60)  # (mode, pwm)
 GPIO_FM_BIOS_POST_CMPLT_BMC_N = 1
 
+dimm_index_start = 8
+gl_dimm_index_start = 7
+
 fru_map = {
     "slot1": {
         "name": "fru1",
@@ -112,6 +115,7 @@ if "HD" in system_conf:
     dimm_location_name_map = hd_dimm_location_name_map
 elif "GL" in system_conf:
     dimm_location_name_map = gl_dimm_location_name_map
+    dimm_index_start = gl_dimm_index_start
 elif "VF" in system_conf:
     for i in [1, 2, 3, 4]:
         lfby35_hndl.fby35_common_get_1ou_m2_prsnt(int(i))
@@ -237,8 +241,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     return 0
 
                 if "dimm" in sname:
-                    dimm_index = sname.index("_t")
-                    return is_dimm_prsnt(board, sname[dimm_index - 1])
+                    dimm_index_end = sname.index("_t")
+                    return is_dimm_prsnt(board, sname[dimm_index_start : dimm_index_end])
 
                 if "vf_e1s" in sname:
                     return is_e1s_prsnt(board, sname[10 : sname.find("_t")])

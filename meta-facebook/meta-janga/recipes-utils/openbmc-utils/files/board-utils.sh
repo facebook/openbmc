@@ -17,11 +17,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-PWRCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-003d)
+PWRCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-0060)
+SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 1-0035)
 
-COME_POWER_EN="${PWRCPLD_SYSFS_DIR}/pwr_come_en"
-COME_POWER_OFF="${PWRCPLD_SYSFS_DIR}/pwr_force_off"
-COME_POWER_CYCLE_N="${PWRCPLD_SYSFS_DIR}/pwr_cyc_n"
+COME_POWER_OFF="${SCMCPLD_SYSFS_DIR}/pwr_force_off"
+COME_POWER_CYCLE_N="${SCMCPLD_SYSFS_DIR}/pwr_cyc_n"
 CHASSIS_POWER_CYCLE="${PWRCPLD_SYSFS_DIR}/power_cycle_go"
 
 wedge_board_type() {
@@ -34,10 +34,9 @@ wedge_board_rev() {
 }
 
 userver_power_is_on() {
-    en_sts=$(head -n 1 "$COME_POWER_EN" 2> /dev/null)
     off_sts=$(head -n 1 "$COME_POWER_OFF" 2> /dev/null)
 
-    if [ $((en_sts)) -eq $((0x1)) ] && [ $((off_sts)) -eq $((0x1)) ] ; then
+    if [ $((off_sts)) -eq $((0x1)) ] ; then
         return 0
     fi
 
@@ -46,7 +45,6 @@ userver_power_is_on() {
 
 userver_power_on() {
     echo 1 > "$COME_POWER_OFF"
-    echo 1 > "$COME_POWER_EN"
 }
 
 userver_power_off() {

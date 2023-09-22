@@ -28,4 +28,9 @@ i2c_device_add 3 0x56 24c64
 #
 # Create "pwrcpld"
 #
-i2c_device_add 12 0x3d pwrcpld
+i2c_device_add 12 0x60 pwrcpld
+
+#
+# SCM CPLD
+#
+i2c_device_add 1 0x35 scmcpld

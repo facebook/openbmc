@@ -16,8 +16,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-#shellcheck disable=SC2034
-
 GPIODIR="/sys/class/gpio"
 GPIOEXPORT="$GPIODIR/export"
 SHADOW_GPIO=/tmp/gpionames
@@ -240,5 +238,36 @@ gpiochip_get_base() {
 
     if [ -L "${chip_dir}" ]; then
        cat "${chip_dir}/base"
+    fi
+}
+
+#
+# Setting configuration 
+# $1 - gpio shadow name
+# $2 - gpiopin  example GPIOG5
+# $3 - gpio direction , [in, out]
+# $4 - gpio defual output value, in case output direction
+#
+# return 0         : pass
+#        otherwise : error
+#
+setup_gpio() {
+    NAME="$1"
+    PIN="$2"
+    DIR="$3"
+
+    gpio_export_by_name "${ASPEED_GPIO}" "$PIN" "$NAME"
+    if [ "$DIR" = "out" ]; then
+        gpio_set_direction "$NAME" out
+        if [ $# -ge 4 ]; then
+            VALUE="$4"
+            gpio_set_value "$NAME" "$VALUE"
+        else
+            echo "ERROR: setup-gpio $NAME output default value not defined" > /dev/kmsg
+        fi
+    elif [ "$DIR" = "in" ]; then
+        gpio_set_direction "$NAME" in
+    else
+        echo "ERROR: setup-gpio $NAME invalid direction [$DIR] not (in,out)" > /dev/kmsg
     fi
 }

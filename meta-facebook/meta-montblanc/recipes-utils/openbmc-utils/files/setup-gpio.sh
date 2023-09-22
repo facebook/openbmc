@@ -30,28 +30,6 @@
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
-# arg: NAME PIN DIR [DEFAULT VALUE]
-setup_gpio() {
-    NAME="$1"
-    PIN="$2"
-    DIR="$3"
-
-    gpio_export_by_name "${ASPEED_GPIO}" "$PIN" "$NAME"
-    if [ "$DIR" = "out" ]; then
-        gpio_set_direction "$NAME" out
-        if [ $# -ge 4 ]; then
-            VALUE="$4"
-            gpio_set_value "$NAME" "$VALUE"
-        else
-            echo "ERROR: setup-gpio $NAME output default value not defined" > /dev/kmsg
-        fi
-    elif [ "$DIR" = "in" ]; then
-        gpio_set_direction "$NAME" in
-    else
-        echo "ERROR: setup-gpio $NAME invalid direction [$DIR] not (in,out)" > /dev/kmsg
-    fi
-}
-
 # To debug jumper
 setup_gpio BMC_DEBUG_JUMPER1                GPIOG5 in
 setup_gpio BMC_DEBUG_JUMPER2                GPIOB1 in

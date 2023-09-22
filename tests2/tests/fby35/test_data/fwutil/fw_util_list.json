@@ -12,6 +12,9 @@
         "rom": {
             "version header": "ROM Version"
         },
+        "hsc": {
+            "version header": "MP5990 HSC Checksum"
+        },
         "tpm": {
             "version header": "TPM Version"
         }
@@ -36,26 +39,8 @@
         "1ou_bic": {
             "version header": "1OU Bridge-IC Version"
         },
-        "1ou_bicbl": {
-            "version header": "1OU Bridge-IC Bootloader Version"
-        },
-        "1ou_cpld": {
-            "version header": "1OU CPLD Version"
-        },
-        "2ou_bic": {
-            "version header": "2OU Bridge-IC Version"
-        },
-        "2ou_bicbl": {
-            "version header": "2OU Bridge-IC Bootloader Version"
-        },
-        "2ou_cpld": {
-            "version header": "2OU CPLD Version"
-        },
         "bic": {
             "version header": "SB Bridge-IC Version"
-        },
-        "bicbl": {
-            "version header": "SB Bridge-IC Bootloader Version"
         },
         "bios": {
             "version header": "BIOS Version"
@@ -66,34 +51,44 @@
         "me": {
             "version header": "ME Version"
         },
+        "hsc": {
+            "version header": "MP5990 HSC Checksum"
+        },
         "vr": {
-            "version header": "VCCIN_VSA Version"
+            "version header": [
+                "VCCIN/VCCFA_EHV_FIVRA Version",
+                "VCCIN/VCCFA_EHV_FIVRA Version after activation",
+                "VCCD Version",
+                "VCCD Version after activation",
+                "VCCINFAON/VCCFA_EHV Version",
+                "VCCINFAON/VCCFA_EHV Version after activation"
+            ]
+        },
+        "vr_vccd": {
+            "version header": [
+                "VCCD Version",
+                "VCCD Version after activation"
+            ]
+        },
+        "vr_vccin": {
+            "version header": [
+                "VCCIN/VCCFA_EHV_FIVRA Version",
+                "VCCIN/VCCFA_EHV_FIVRA Version after activation"
+            ]
+        },
+        "vr_vccinfaon": {
+            "version header": [
+                "VCCINFAON/VCCFA_EHV Version",
+                "VCCINFAON/VCCFA_EHV Version after activation"
+            ]
         }
     },
     "slot2": {
         "1ou_bic": {
             "version header": "1OU Bridge-IC Version"
         },
-        "1ou_bicbl": {
-            "version header": "1OU Bridge-IC Bootloader Version"
-        },
-        "1ou_cpld": {
-            "version header": "1OU CPLD Version"
-        },
-        "2ou_bic": {
-            "version header": "2OU Bridge-IC Version"
-        },
-        "2ou_bicbl": {
-            "version header": "2OU Bridge-IC Bootloader Version"
-        },
-        "2ou_cpld": {
-            "version header": "2OU CPLD Version"
-        },
         "bic": {
             "version header": "SB Bridge-IC Version"
-        },
-        "bicbl": {
-            "version header": "SB Bridge-IC Bootloader Version"
         },
         "bios": {
             "version header": "BIOS Version"
@@ -104,34 +99,44 @@
         "me": {
             "version header": "ME Version"
         },
+        "hsc": {
+            "version header": "MP5990 HSC Checksum"
+        },
         "vr": {
-            "version header": "VCCIN_VSA Version"
+            "version header": [
+                "VCCIN/VCCFA_EHV_FIVRA Version",
+                "VCCIN/VCCFA_EHV_FIVRA Version after activation",
+                "VCCD Version",
+                "VCCD Version after activation",
+                "VCCINFAON/VCCFA_EHV Version",
+                "VCCINFAON/VCCFA_EHV Version after activation"
+            ]
+        },
+        "vr_vccd": {
+            "version header": [
+                "VCCD Version",
+                "VCCD Version after activation"
+            ]
+        },
+        "vr_vccin": {
+            "version header": [
+                "VCCIN/VCCFA_EHV_FIVRA Version",
+                "VCCIN/VCCFA_EHV_FIVRA Version after activation"
+            ]
+        },
+        "vr_vccinfaon": {
+            "version header": [
+                "VCCINFAON/VCCFA_EHV Version",
+                "VCCINFAON/VCCFA_EHV Version after activation"
+            ]
         }
     },
     "slot3": {
         "1ou_bic": {
             "version header": "1OU Bridge-IC Version"
         },
-        "1ou_bicbl": {
-            "version header": "1OU Bridge-IC Bootloader Version"
-        },
-        "1ou_cpld": {
-            "version header": "1OU CPLD Version"
-        },
-        "2ou_bic": {
-            "version header": "2OU Bridge-IC Version"
-        },
-        "2ou_bicbl": {
-            "version header": "2OU Bridge-IC Bootloader Version"
-        },
-        "2ou_cpld": {
-            "version header": "2OU CPLD Version"
-        },
         "bic": {
             "version header": "SB Bridge-IC Version"
-        },
-        "bicbl": {
-            "version header": "SB Bridge-IC Bootloader Version"
         },
         "bios": {
             "version header": "BIOS Version"
@@ -142,34 +147,44 @@
         "me": {
             "version header": "ME Version"
         },
+        "hsc": {
+            "version header": "MP5990 HSC Checksum"
+        },
         "vr": {
-            "version header": "VCCIN_VSA Version"
+            "version header": [
+                "VCCIN/VCCFA_EHV_FIVRA Version",
+                "VCCIN/VCCFA_EHV_FIVRA Version after activation",
+                "VCCD Version",
+                "VCCD Version after activation",
+                "VCCINFAON/VCCFA_EHV Version",
+                "VCCINFAON/VCCFA_EHV Version after activation"
+            ]
+        },
+        "vr_vccd": {
+            "version header": [
+                "VCCD Version",
+                "VCCD Version after activation"
+            ]
+        },
+        "vr_vccin": {
+            "version header": [
+                "VCCIN/VCCFA_EHV_FIVRA Version",
+                "VCCIN/VCCFA_EHV_FIVRA Version after activation"
+            ]
+        },
+        "vr_vccinfaon": {
+            "version header": [
+                "VCCINFAON/VCCFA_EHV Version",
+                "VCCINFAON/VCCFA_EHV Version after activation"
+            ]
         }
     },
     "slot4": {
         "1ou_bic": {
             "version header": "1OU Bridge-IC Version"
         },
-        "1ou_bicbl": {
-            "version header": "1OU Bridge-IC Bootloader Version"
-        },
-        "1ou_cpld": {
-            "version header": "1OU CPLD Version"
-        },
-        "2ou_bic": {
-            "version header": "2OU Bridge-IC Version"
-        },
-        "2ou_bicbl": {
-            "version header": "2OU Bridge-IC Bootloader Version"
-        },
-        "2ou_cpld": {
-            "version header": "2OU CPLD Version"
-        },
         "bic": {
             "version header": "SB Bridge-IC Version"
-        },
-        "bicbl": {
-            "version header": "SB Bridge-IC Bootloader Version"
         },
         "bios": {
             "version header": "BIOS Version"
@@ -180,8 +195,36 @@
         "me": {
             "version header": "ME Version"
         },
+        "hsc": {
+            "version header": "MP5990 HSC Checksum"
+        },
         "vr": {
-            "version header": "VCCIN_VSA Version"
+            "version header": [
+                "VCCIN/VCCFA_EHV_FIVRA Version",
+                "VCCIN/VCCFA_EHV_FIVRA Version after activation",
+                "VCCD Version",
+                "VCCD Version after activation",
+                "VCCINFAON/VCCFA_EHV Version",
+                "VCCINFAON/VCCFA_EHV Version after activation"
+            ]
+        },
+        "vr_vccd": {
+            "version header": [
+                "VCCD Version",
+                "VCCD Version after activation"
+            ]
+        },
+        "vr_vccin": {
+            "version header": [
+                "VCCIN/VCCFA_EHV_FIVRA Version",
+                "VCCIN/VCCFA_EHV_FIVRA Version after activation"
+            ]
+        },
+        "vr_vccinfaon": {
+            "version header": [
+                "VCCINFAON/VCCFA_EHV Version",
+                "VCCINFAON/VCCFA_EHV Version after activation"
+            ]
         }
     }
 }

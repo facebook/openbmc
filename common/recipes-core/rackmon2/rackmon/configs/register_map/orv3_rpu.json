@@ -10,16 +10,70 @@
     "parity": "NONE",
     "registers": [
         {
-            "begin": 7097,
+            "begin": 6596,
+            "length": 8,
+            "format": "STRING",
+            "name": "RPU_FBPN"
+        },
+        {
+            "begin": 6604,
+            "length": 8,
+            "format": "STRING",
+            "name": "RPU_MFR_Model"
+        },
+        {
+            "begin": 6612,
+            "length": 4,
+            "format": "STRING",
+            "name": "RPU_MFR_Date"
+        },
+        {
+            "begin": 6616,
+            "length": 8,
+            "format": "STRING",
+            "name": "RPU_MFR_Serial"
+        },
+        {
+            "begin": 6624,
+            "length": 4,
+            "format": "STRING",
+            "name": "RPU_Workorder"
+        },
+        {
+            "begin": 6628,
+            "length": 4,
+            "format": "STRING",
+            "name": "RPU_HW_Revision"
+        },
+        {
+            "begin": 6632,
             "length": 4,
             "format": "STRING",
             "name": "RPU_PLC_FW_Revision"
         },
         {
-            "begin": 6596,
+            "begin": 6642,
+            "length": 4,
+            "format": "STRING",
+            "name": "RPU_HMI_FW_Revision"
+        },
+        {
+            "begin": 6646,
             "length": 2,
             "format": "STRING",
             "name": "RPU_HEX_FW_Revision"
+        },
+        {
+            "begin": 6636,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "Total_Up_Time"
+        },
+        {
+            "begin": 6639,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "Time_Since_Last_On"
         },
         {
             "begin": 36864,

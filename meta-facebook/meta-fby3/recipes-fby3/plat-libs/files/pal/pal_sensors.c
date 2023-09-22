@@ -64,15 +64,6 @@ enum {
   PCIE_DEVICE_NCIPHER_HSM = 0x082c,
 };
 
-enum {
-  UCR = 0x01,
-  UNC,
-  UNR,
-  LCR,
-  LNC,
-  LNR,
-};
-
 struct pcie_info {
   uint8_t   interface;
   uint8_t   slot_num;
@@ -3248,8 +3239,16 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
     sdr = (sdr_full_t *) buf;
     snr_num = sdr->sensor_num;
     sinfo[snr_num].valid = true;
-    // If it is a system of class 2, change m_val and UCR of HSC.
-    if (snr_num == BIC_SENSOR_HSC_OUTPUT_CUR) {
+    if (snr_num == BIC_SENSOR_CPU_THERM_MARGIN) {
+      if (bmc_location == NIC_BMC) {
+        if ((config_status & PRESENT_2OU) == PRESENT_2OU && (board_type == E1S_BOARD)) {
+          sdr->uc_thresh = 0xfe;  // -2
+        }
+      } else {
+        sdr->uc_thresh = 0xfd;    // -3
+      }
+    } else if (snr_num == BIC_SENSOR_HSC_OUTPUT_CUR) {
+      // If it is a system of class 2, change m_val and UCR of HSC.
       if (bmc_location == NIC_BMC) {
         sdr->uc_thresh = HSC_OUTPUT_CUR_UC_THRESHOLD;
         sdr->m_val = 0x04;
@@ -3294,7 +3293,7 @@ pal_set_sdr_init(uint8_t fru, bool set) {
 }
 
 static void
-host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo, uint8_t bmc_location)
+host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo)
 {
   sdr_full_t *sdr;
   int retry = 3;
@@ -3384,18 +3383,6 @@ host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo, uint8_t bmc_location)
     sdr->lnr_thresh = 0;
     sdr->pos_hyst = 0;
     sdr->neg_hyst = 0;
-  }
-
-  if (bmc_location == NIC_BMC) {
-    if (type_2ou == E1S_BOARD) { // SPE
-      if (pal_sensor_thresh_modify(fru, BIC_SENSOR_CPU_THERM_MARGIN, UCR, -2) < 0) {
-        syslog(LOG_ERR, "Failed to update UCR of CPU margin");
-      }
-    }
-  } else { // class 1
-    if (pal_sensor_thresh_modify(fru, BIC_SENSOR_CPU_THERM_MARGIN, UCR, -3) < 0) {
-      syslog(LOG_ERR, "Failed to update UCR of CPU margin");
-    }
   }
 }
 
@@ -3507,7 +3494,7 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   // update SDR for host source sensor
   if (fru >= FRU_SLOT1 && fru <= FRU_SLOT4) {
-    host_sensors_sdr_init(fru, g_sinfo[fru-1], bmc_location);
+    host_sensors_sdr_init(fru, g_sinfo[fru-1]);
   }
 
 error_exit:

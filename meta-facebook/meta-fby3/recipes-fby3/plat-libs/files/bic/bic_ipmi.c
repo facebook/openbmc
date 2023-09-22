@@ -1060,10 +1060,17 @@ bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
   int ret = 0;
   int retry = 0;
   char key[MAX_KEY_LEN] = {0};
-  char tmp_str[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
   int val = 0;
 
   snprintf(key, sizeof(key), KV_SLOT_GET_1OU_TYPE, slot_id);
+  if (kv_get(key, value, NULL, 0) == 0) {
+    ret = atoi(value);
+    if (ret >= 0 && ret <= 255) {
+     *type = (uint8_t)ret;
+      return 0;
+    }
+  }
 
   while (retry < 3) {
     ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_BOARD_ID, tbuf, 3, rbuf, &rlen, FEXP_BIC_INTF);
@@ -1079,8 +1086,8 @@ bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
     val = ret;
   }
 
-  snprintf(tmp_str, sizeof(tmp_str), "%d", val);
-  kv_set(key, tmp_str, 0, 0);
+  snprintf(value, sizeof(value), "%d", val);
+  kv_set(key, value, 0, 0);
   return ret;
 }
 

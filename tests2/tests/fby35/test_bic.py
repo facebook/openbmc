@@ -63,7 +63,7 @@ class BicTest(CommonBicTest, unittest.TestCase):
                 super().test_bic_post_code()
 
     def test_bic_sdr(self):
-        regex = r"((^Server Board:.*)|(^(.+:\s([0-9]+|((0x|0X)[0-9a-zA-Z]+)),)\s*))"
+        regex = r"((^Server Board:.*)|(^Front Expansion Board:.*)|(^(.+:\s([0-9]+|((0x|0X)[0-9a-zA-Z]+)),)\s*))"
         for slot in slots:
             with self.subTest(slot=slot):
                 if not check_fru_availability(slot):

@@ -77,7 +77,6 @@ extern "C" {
 // The maximum number of CPU models.
 #define CPU_MODEL_MAXIMUM 2
 
-
 /* To hold the sensor info and calculated threshold values from the SDR */
 /* To hold the sensor info and calculated threshold values from the SDR */
 typedef struct {
@@ -503,7 +502,7 @@ int pal_slotid_to_fruid(int slotid);
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value);
 int pal_alter_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value);
-bool pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_num);
+bool pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id);
 bool pal_is_host_snr_available(uint8_t fru, uint8_t sensor_id);
 int pal_correct_sensor_reading_from_cache(uint8_t fru, uint8_t sensor_id, float *value);
 int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);

@@ -276,7 +276,7 @@ sensor_cache_write(uint8_t fru, uint8_t sensor_num, bool available, float value)
   {
     case SET_SENSOR_TO_CACHE:
       if (available) {
-        sprintf(str, "%.2f", value);
+        sprintf(str, "%.3f", value);
         ret = 0;
       } else {
         strcpy(str, "NA");
@@ -1070,4 +1070,3 @@ int __attribute__((weak))
 pal_get_sensor_util_timeout(uint8_t fru) {
   return 4;
 }
-

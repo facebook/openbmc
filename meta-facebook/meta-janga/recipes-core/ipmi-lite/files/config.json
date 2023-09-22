@@ -29,7 +29,7 @@
         {
             "name" : "server_power_fs_path",
             "type" : "string",
-            "val" : "/sys/bus/i2c/devices/12-003d/pwr_force_off"
+            "val" : "/sys/bus/i2c/devices/1-0035/pwr_force_off"
         },
         {
             "name" : "poss_pcie_config",

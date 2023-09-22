@@ -46,10 +46,6 @@ extern const uint8_t fan_bp2_sensor_list[];
 
 extern const uint8_t scm_sensor_list[];
 
-extern const uint8_t hsc_sensor_list[];
-
-extern const uint8_t shsc_sensor_list[];
-
 extern const uint8_t acb_artemis_sensor_list[];
 extern const uint8_t acb_freya_sensor_list[];
 extern const uint8_t meb_sensor_list[];
@@ -80,10 +76,6 @@ extern size_t fan_bp1_sensor_cnt;
 extern size_t fan_bp2_sensor_cnt;
 
 extern size_t scm_sensor_cnt;
-
-extern size_t hsc_sensor_cnt;
-
-extern size_t shsc_sensor_cnt;
 
 extern size_t acb_freya_sensor_cnt;
 extern size_t acb_artemis_sensor_cnt;
@@ -248,23 +240,13 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   int ret=0;
   uint8_t id;
   uint8_t rev;
-  static uint8_t snr_mb_tmp[255]={0};
   static uint8_t snr_swb_tmp[255]={0};
   static uint8_t snr_vpdb_tmp[64]={0};
   static uint8_t snr_hpdb_tmp[64]={0};
-  bool module = is_mb_hsc_module();
-  bool smodule = is_swb_hsc_module();
 
   if (fru == FRU_MB) {
-    if (!module) {
-      memcpy(snr_mb_tmp, mb_sensor_list, mb_sensor_cnt);
-      memcpy(&snr_mb_tmp[mb_sensor_cnt], hsc_sensor_list, hsc_sensor_cnt);
-      *sensor_list = snr_mb_tmp;
-      *cnt = mb_sensor_cnt + hsc_sensor_cnt;
-    } else {
       *sensor_list = (uint8_t *) mb_sensor_list;
       *cnt = mb_sensor_cnt;
-    }
   } else if (fru == FRU_NIC0) {
     uint8_t status = 0;
     if (pal_is_fru_prsnt(FRU_NIC0, &status) == 0 && (status == FRU_PRSNT)) {
@@ -327,12 +309,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     memcpy(snr_swb_tmp, swb_sensor_list, swb_sensor_cnt);
     *cnt = swb_sensor_cnt;
 
-    //Add swb module sensor
-    if (!smodule) {
-      memcpy(&snr_swb_tmp[*cnt], shsc_sensor_list, shsc_sensor_cnt);
-      *cnt += shsc_sensor_cnt;
-    }
-
     //Add swb optic sensor
     get_comp_source(fru, SWB_NIC_SOURCE, &id);
     if (id == SECOND_SOURCE) {
@@ -341,17 +317,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     }
 
     *sensor_list = (uint8_t *) snr_swb_tmp;
-
-  } else if (fru == FRU_HSC) {
-    if (module) {
-      *sensor_list = (uint8_t *) hsc_sensor_list;
-      *cnt = hsc_sensor_cnt;
-    }
-  } else if (fru == FRU_SHSC) {
-    if (smodule) {
-      *sensor_list = (uint8_t *) shsc_sensor_list;
-      *cnt = shsc_sensor_cnt;
-    }
   } else if (fru == FRU_ACB) {
     if (pal_is_artemis()) {
       if (pal_get_acb_card_config() == FREYA_CARD) {
@@ -453,8 +418,6 @@ get_map_retry(uint8_t fru)
   static uint8_t mb_retry[256] = {0};
   static uint8_t swb_retry[256] = {0};
   static uint8_t bb_retry[256] = {0};
-  static uint8_t mb_hsc_retry[16] = {0};
-  static uint8_t swb_hsc_retry[16] = {0};
   static uint8_t acb_retry[MAX_SENSOR_NUMBER + 1] = {0};
   static uint8_t meb_retry[MAX_SENSOR_NUMBER + 1] = {0};
   static uint8_t meb_jcn_retry[FRU_MEB_JCN_CNT][MAX_SENSOR_NUMBER + 1] = {0};
@@ -469,10 +432,6 @@ get_map_retry(uint8_t fru)
     return swb_retry;
   else if (fru == FRU_MB)
     return mb_retry;
-  else if (fru == FRU_HSC)
-    return mb_hsc_retry;
-  else if (fru == FRU_SHSC)
-    return swb_hsc_retry;
   else if (fru == FRU_ACB)
     return acb_retry;
   else if (fru == FRU_MEB)

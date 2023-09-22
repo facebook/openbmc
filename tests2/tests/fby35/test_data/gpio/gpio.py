@@ -19,7 +19,7 @@
 #
 
 GPIOS = {
-    "AC_ON_OFF_BTN_SLOT1_N": {
+    "AC_ON_OFF_BTN_BMC_SLOT1_N_R": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
@@ -33,7 +33,7 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
-    "AC_ON_OFF_BTN_SLOT3_N": {
+    "AC_ON_OFF_BTN_BMC_SLOT3_N_R": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
@@ -47,13 +47,6 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
-    "ADAPTER_BUTTON_BMC_CO_N_R": {
-        "active_low": "0",
-        "direction": "in",
-        "edge": "none",
-        "uevent": "",
-        "value": "1",
-    },
     "BMC_READY_R": {
         "active_low": "0",
         "direction": "out",
@@ -61,28 +54,28 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
-    "BOARD_BMC_ID0_R": {
+    "BOARD_ID0": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
         "uevent": "",
         "value": "1",
     },
-    "BOARD_BMC_ID1_R": {
+    "BOARD_ID1": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
         "uevent": "",
         "value": "1",
     },
-    "BOARD_BMC_ID2_R": {
+    "BOARD_ID2": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
         "uevent": "",
         "value": "1",
     },
-    "BOARD_BMC_ID3_R": {
+    "BOARD_ID3": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
@@ -208,6 +201,13 @@ GPIOS = {
         "uevent": "",
         "value": "0",
     },
+    "FM_PWRBRK_SECONDARY_R": {
+        "active_low": "0",
+        "direction": "in",
+        "edge": "none",
+        "uevent": "",
+        "value": "0",
+    },
     "FM_RESBTN_SLOT1_BMC_N": {
         "active_low": "0",
         "direction": "in",
@@ -215,7 +215,7 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
-    "FM_RESBTN_SLOT2_BMC_N": {
+    "FM_RESBTN_SLOT2_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "both",
@@ -229,35 +229,56 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
-    "FM_RESBTN_SLOT4_BMC_N": {
+    "FM_RESBTN_SLOT4_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "both",
         "uevent": "",
         "value": "1",
     },
-    "HSC_FAULT_BMC_SLOT2_N_R": {
+    "FM_SPI_WP_DISABLE_STATUS_R_N": {
+        "active_low": "0",
+        "direction": "in",
+        "edge": "none",
+        "uevent": "",
+        "value": "0",
+    },
+    "HSC_BB_BMC_DETECT0": {
+        "active_low": "0",
+        "direction": "in",
+        "edge": "none",
+        "uevent": "",
+        "value": "0",
+    },
+    "HSC_BB_BMC_DETECT1": {
+        "active_low": "0",
+        "direction": "in",
+        "edge": "none",
+        "uevent": "",
+        "value": "1",
+    },
+    "HSC_FAULT_BMC_SLOT1_N_R": {
         "active_low": "0",
         "direction": "in",
         "edge": "both",
         "uevent": "",
         "value": "1",
     },
-    "HSC_FAULT_BMC_SLOT4_N_R": {
+    "HSC_FAULT_BMC_SLOT3_N_R": {
         "active_low": "0",
         "direction": "in",
         "edge": "both",
         "uevent": "",
         "value": "1",
     },
-    "HSC_FAULT_SLOT1_N": {
+    "HSC_FAULT_SLOT2_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "both",
         "uevent": "",
         "value": "1",
     },
-    "HSC_FAULT_SLOT3_N": {
+    "HSC_FAULT_SLOT4_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "both",
@@ -299,6 +320,13 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
+    "P5V_USB_PG_BMC": {
+        "active_low": "0",
+        "direction": "in",
+        "edge": "both",
+        "uevent": "",
+        "value": "1",
+    },
     "PRSNT_MB_BMC_SLOT1_BB_N": {
         "active_low": "0",
         "direction": "in",
@@ -306,7 +334,7 @@ GPIOS = {
         "uevent": "",
         "value": "0",
     },
-    "PRSNT_MB_BMC_SLOT2_BB_N": {
+    "PRSNT_MB_SLOT2_BB_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "both",
@@ -320,7 +348,7 @@ GPIOS = {
         "uevent": "",
         "value": "0",
     },
-    "PRSNT_MB_BMC_SLOT4_BB_N": {
+    "PRSNT_MB_SLOT4_BB_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "both",
@@ -334,7 +362,7 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
-    "PWROK_STBY_BMC_SLOT1": {
+    "PWROK_STBY_BMC_SLOT1_R": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
@@ -348,7 +376,7 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
-    "PWROK_STBY_BMC_SLOT3": {
+    "PWROK_STBY_BMC_SLOT3_R": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
@@ -460,28 +488,28 @@ GPIOS = {
         "uevent": "",
         "value": "0",
     },
-    "SMB_BMC_SLOT1_ALT_N": {
+    "SMB_BMC_SLOT1_ALT_R_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
         "uevent": "",
         "value": "1",
     },
-    "SMB_BMC_SLOT2_ALT_N": {
+    "SMB_BMC_SLOT2_ALT_R_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
         "uevent": "",
         "value": "1",
     },
-    "SMB_BMC_SLOT3_ALT_N": {
+    "SMB_BMC_SLOT3_ALT_R_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
         "uevent": "",
         "value": "1",
     },
-    "SMB_BMC_SLOT4_ALT_N": {
+    "SMB_BMC_SLOT4_ALT_R_N": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",
@@ -509,6 +537,20 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
+    "SMB_TEMP_ALERT_BMC_N_R": {
+        "active_low": "0",
+        "direction": "in",
+        "edge": "none",
+        "uevent": "",
+        "value": "1",
+    },
+    "SPI_LOCK_REQ_BMC_N": {
+        "active_low": "0",
+        "direction": "out",
+        "edge": "none",
+        "uevent": "",
+        "value": "1",
+    },
     "USB_BMC_EN_R": {
         "active_low": "0",
         "direction": "out",
@@ -516,11 +558,18 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
-    "USB_OC_N": {
+    "USB_MUX_CB_R": {
         "active_low": "0",
-        "direction": "in",
+        "direction": "out",
         "edge": "none",
         "uevent": "",
-        "value": "1",
+        "value": "0",
+    },
+    "USB_MUX_EN_BMC_N_R": {
+        "active_low": "0",
+        "direction": "out",
+        "edge": "none",
+        "uevent": "",
+        "value": "0",
     },
 }

@@ -2940,6 +2940,12 @@ pal_is_debug_card_prsnt(uint8_t *status, uint8_t read_flag) {
   int retry = 0;
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
+  static bool is_dbg_prsnt_cmd_supported = true;
+
+  // Older BIC does not support this cmd
+  if (is_dbg_prsnt_cmd_supported == false) {
+    return -1;
+  }
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -2976,6 +2982,9 @@ pal_is_debug_card_prsnt(uint8_t *status, uint8_t read_flag) {
     }
 
     if (ret != 0) {
+      if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE) {
+        is_dbg_prsnt_cmd_supported = false;
+      }
       return -1;
     }
     if(rbuf[3] == 0x0) {

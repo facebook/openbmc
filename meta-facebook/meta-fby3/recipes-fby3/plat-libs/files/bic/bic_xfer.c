@@ -142,6 +142,7 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
         syslog(LOG_WARNING, "%s() Netfn:%02X, Cmd: %02X\n", __func__, netfn << 2, cmd);
         switch(rsp_buf[6]) {
         case CC_NOT_SUPP_IN_CURR_STATE:
+        case CC_INVALID_CMD:
           ret = BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
           break;
         default:

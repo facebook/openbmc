@@ -46,13 +46,9 @@ class BicTest(CommonBicTest, unittest.TestCase):
                 self.bic_cmd = "/usr/bin/bic-util {}".format(slot)
                 super().test_bic_gpio()
 
+    @unittest.skip("test not available on platform")
     def test_bic_gpio_config(self):
-        for slot in slots:
-            with self.subTest(slot=slot):
-                if not check_fru_availability(slot):
-                    self.skipTest("skip test due to {} not available".format(slot))
-                self.bic_cmd = "/usr/bin/bic-util {}".format(slot)
-                super().test_bic_gpio_config()
+        pass
 
     @unittest.skip("test not available on platform")
     def test_bic_config(self):

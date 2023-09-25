@@ -34,7 +34,7 @@ extern const uint8_t nic0_sensor_list[];
 extern const uint8_t nic1_sensor_list[];
 
 extern const uint8_t vpdb_sensor_list[];
-extern const uint8_t vpdb_1brick_sensor_list[];
+extern const uint8_t vpdb_discrete_vr_sensor_list[];
 extern const uint8_t vpdb_3brick_sensor_list[];
 extern const uint8_t vpdb_adc_sensor_list[];
 
@@ -65,7 +65,7 @@ extern size_t nic0_sensor_cnt;
 extern size_t nic1_sensor_cnt;
 
 extern size_t vpdb_sensor_cnt;
-extern size_t vpdb_1brick_sensor_cnt;
+extern size_t vpdb_discrete_vr_sensor_cnt;
 extern size_t vpdb_3brick_sensor_cnt;
 extern size_t vpdb_adc_sensor_cnt;
 
@@ -271,10 +271,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   } else if (fru == FRU_VPDB) {
     memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
     // brick
-    if (!pal_get_board_rev_id(FRU_VPDB, &rev) && rev == VPDB_DISCRETE_REV_PVT &&
+    if (!pal_get_board_rev_id(FRU_VPDB, &rev) && rev >= VPDB_DISCRETE_REV_PVT &&
         !get_comp_source(FRU_VPDB, VPDB_BRICK_SOURCE, &id) && id == DISCRETE_SOURCE) {
-      memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_1brick_sensor_list, vpdb_1brick_sensor_cnt);
-      *cnt = vpdb_sensor_cnt + vpdb_1brick_sensor_cnt;
+      memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_discrete_vr_sensor_list, vpdb_discrete_vr_sensor_cnt);
+      *cnt = vpdb_sensor_cnt + vpdb_discrete_vr_sensor_cnt;
     } else {
       memcpy(&snr_vpdb_tmp[vpdb_sensor_cnt], vpdb_3brick_sensor_list, vpdb_3brick_sensor_cnt);
       *cnt = vpdb_sensor_cnt + vpdb_3brick_sensor_cnt;

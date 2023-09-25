@@ -93,10 +93,10 @@ const uint8_t vpdb_3brick_sensor_list[] = {
   PDBV_SNR_BRICK2_TEMP,
 };
 
-const uint8_t vpdb_1brick_sensor_list[] = {
-  PDBV_SNR_BRICK0_VOUT,
-  PDBV_SNR_BRICK0_IOUT,
-  PDBV_SNR_BRICK0_TEMP,
+const uint8_t vpdb_discrete_vr_sensor_list[] = {
+  PDBV_SNR_DISCRETE_VR_VOUT,
+  PDBV_SNR_DISCRETE_VR_IOUT,
+  PDBV_SNR_DISCRETE_VR_TEMP,
 };
 
 
@@ -383,9 +383,9 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAA
+  {"DISCRETE_VR_VOLT", DISCRETE_VR_ID0, read_bb_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xA8
+  {"DISCRETE_VR_CURR", DISCRETE_VR_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xA9
+  {"DISCRETE_VR_TEMP", DISCRETE_VR_ID0, read_bb_sensor, true, {115.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0xAA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
@@ -484,7 +484,7 @@ extern struct snr_map sensor_map[];
 size_t nic0_sensor_cnt = sizeof(nic0_sensor_list)/sizeof(uint8_t);
 size_t nic1_sensor_cnt = sizeof(nic1_sensor_list)/sizeof(uint8_t);
 size_t vpdb_sensor_cnt = sizeof(vpdb_sensor_list)/sizeof(uint8_t);
-size_t vpdb_1brick_sensor_cnt = sizeof(vpdb_1brick_sensor_list)/sizeof(uint8_t);
+size_t vpdb_discrete_vr_sensor_cnt = sizeof(vpdb_discrete_vr_sensor_list)/sizeof(uint8_t);
 size_t vpdb_3brick_sensor_cnt = sizeof(vpdb_3brick_sensor_list)/sizeof(uint8_t);
 size_t vpdb_adc_sensor_cnt = sizeof(vpdb_adc_sensor_list)/sizeof(uint8_t);
 size_t hpdb_sensor_cnt = sizeof(hpdb_sensor_list)/sizeof(uint8_t);

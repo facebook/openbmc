@@ -255,6 +255,8 @@ VPDB_DISCRETE_PVT="3"
 VPDB_1ST_SOURCE="0"
 VPDB_2ND_SOURCE="1"
 VPDB_3RD_SOURCE="2"
+VPDB_4TH_SOURCE="3"
+
 VPDB_BRICK_DISCRETE_SOURCE="3"
 VPDB_HSC_MAIN="0"
 #VPDB_HSC_SECOND="1"
@@ -327,6 +329,7 @@ else
 fi
 
 #VPDB BRICK
+# only for PVT DISCRETE Config
 if [ "$vrev" -eq "$VPDB_DISCRETE_PVT" ] &&
   ( [ "$vsku" -eq "2" ] || [ "$vsku" -eq "5" ] ); then
   # DISCRETE_PVT has unique sku ( 010 and 101 )
@@ -334,24 +337,29 @@ if [ "$vrev" -eq "$VPDB_DISCRETE_PVT" ] &&
   brick_driver="raa228006"
   i2c_device_add 38 0x54 $brick_driver
   kv set vpdb_brick_source "$VPDB_BRICK_DISCRETE_SOURCE"
-
 else
+# For PVT4 Config
   vpdb_brick=$(gpio_get VPDB_SKU_ID_1)
   [ "$vrev" -ge $VPDB_PVT4 ] &&
     vpdb_brick="$(($(gpio_get VPDB_SKU_ID_1) << 1 | $(gpio_get VPDB_SKU_ID_0)))"
   kv set vpdb_brick_source "$vpdb_brick"
 
-  brick_driver="bmr491"
-  [ "$vpdb_brick" -eq "$VPDB_1ST_SOURCE" ] && brick_driver="pmbus"
-
-  if [ "$vrev" -ge $VPDB_EVT2 ]; then
-    i2c_device_add 38 0x67 $brick_driver
-    i2c_device_add 38 0x68 $brick_driver
-    i2c_device_add 38 0x69 $brick_driver
+  if [ "$vpdb_brick" -eq "$VPDB_4TH_SOURCE" ]; then
+    brick_driver="raa228006"
+    i2c_device_add 38 0x54 $brick_driver
   else
-    i2c_device_add 38 0x69 $brick_driver
-    i2c_device_add 38 0x6a $brick_driver
-    i2c_device_add 38 0x6b $brick_driver
+    brick_driver="bmr491"
+    [ "$vpdb_brick" -eq "$VPDB_1ST_SOURCE" ] && brick_driver="pmbus"
+
+    if [ "$vrev" -ge $VPDB_EVT2 ]; then
+      i2c_device_add 38 0x67 $brick_driver
+      i2c_device_add 38 0x68 $brick_driver
+      i2c_device_add 38 0x69 $brick_driver
+    else
+      i2c_device_add 38 0x69 $brick_driver
+      i2c_device_add 38 0x6a $brick_driver
+      i2c_device_add 38 0x6b $brick_driver
+    fi
   fi
 fi
 

@@ -42,7 +42,7 @@ class vpdb_fw_config {
           signed_info::BRICK,
           signed_info::ALL_VENDOR
         };
-        static VpdbVrComponent vpdb_brick("vpdb", "brick", "VPDB_BRICK", vr_info);
+        static VpdbVrComponent vpdb_vr("vpdb", "vr", "VPDB_VR", vr_info);
       }
     }
 };

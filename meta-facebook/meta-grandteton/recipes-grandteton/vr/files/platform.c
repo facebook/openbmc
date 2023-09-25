@@ -27,11 +27,11 @@ enum {
   VR_MB_CPU1_VCCD    = 5,
   VR_SWB_PEX01_VCC   = 6,
   VR_SWB_PEX23_VCC   = 7,
-  VR_VPDB_BRICK      = 8,
+  VR_VPDB_DISCRETE   = 8,
 };
 
 enum {
-  ADDR_VPDB_VR_BRICK = 0xA8,
+  ADDR_VPDB_DISCRETE_VR = 0xA8,
 };
 
 enum {
@@ -217,10 +217,10 @@ struct vr_info vr_list[] = {
     .xfer = vr_pldm_wr,
     .sensor_polling_ctrl = NULL,
   },
-  [VR_VPDB_BRICK] = {
+  [VR_VPDB_DISCRETE] = {
     .bus = VPDB_VR_BUS_ID,
-    .addr = ADDR_VPDB_VR_BRICK,
-    .dev_name = "VPDB_BRICK",
+    .addr = ADDR_VPDB_DISCRETE_VR,
+    .dev_name = "VPDB_VR",
     .ops = &raa_gen2_3_ops,
     .private_data = "vpdb",
     .xfer = NULL,

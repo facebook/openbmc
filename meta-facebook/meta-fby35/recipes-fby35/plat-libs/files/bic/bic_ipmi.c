@@ -583,6 +583,9 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_CPLD:
     case FW_ME:
     case FW_SB_BIC:
+    case FW_VR_VCCIN:
+    case FW_VR_VCCD:
+    case FW_VR_VCCINFAON:
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
@@ -619,6 +622,9 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_CPLD:
     case FW_ME:
     case FW_SB_BIC:
+    case FW_VR_VCCIN:
+    case FW_VR_VCCD:
+    case FW_VR_VCCINFAON:
     case FW_1OU_BIC:
     case FW_1OU_CXL:
     case FW_2OU_BIC:

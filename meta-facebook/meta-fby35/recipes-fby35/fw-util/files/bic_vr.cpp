@@ -5,6 +5,7 @@
 #include <openbmc/vr.h>
 #include <facebook/fby35_common.h>
 #include <facebook/bic.h>
+#include <facebook/bic_ipmi.h>
 
 #include "bic_vr.h"
 
@@ -89,9 +90,12 @@ int VrComponent::fupdate(const string image) {
   return update_internal(image, true);
 }
 
-int VrComponent::get_ver_str(const string& name, string& s) {
+int VrComponent::get_ver_str(const uint8_t vr_comp, const string& name, string& s) {
   int ret = 0;
-  char ver[MAX_VER_STR_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  uint8_t vr_device_id = 0;
+  snprintf(key, sizeof(key), "slot%d_vr_device_id", slot_id);
 
   plat_vr_preinit(slot_id, fru().c_str());
   if (vr_probe() < 0) {
@@ -99,12 +103,46 @@ int VrComponent::get_ver_str(const string& name, string& s) {
     return -1;
   }
 
-  ret = vr_fw_version(-1, name.c_str(), ver);
-  vr_remove();
-  if (ret) {
+  if (kv_get(key, value, NULL, 0) == 0) {
+    vr_device_id = atoi(value);
+    if (vr_device_id == VR_INFINEON) {
+      uint8_t rbuf[32] = {0};
+      string vendor_str;
+      string ver_str;
+      string rw_str;
+
+      ret = bic_get_fw_ver(slot_id, vr_comp, rbuf);
+      if (!ret) {
+        stringstream buffer;
+        if (rbuf[5] == VR_INFINEON) {
+          vendor_str = "Infineon";
+        }
+        buffer << hex << setfill('0')
+                << setw(2) << + rbuf[0]
+                << setw(2) << + rbuf[1]
+                << setw(2) << + rbuf[2]
+                << setw(2) << + rbuf[3];
+        ver_str = buffer.str();
+        transform(ver_str.begin(), ver_str.end(), ver_str.begin(), ::toupper);
+        buffer.str("");
+        buffer.clear();
+        buffer << dec << setw(2) << + rbuf[4];
+        rw_str = buffer.str();
+        s = vendor_str + " " + ver_str + ", Remaining Write: " + rw_str;
+      }
+    } else {
+      char ver[MAX_VER_STR_LEN] = {0};
+      ret = vr_fw_version(-1, name.c_str(), ver);
+      vr_remove();
+      if (ret) {
+        return -1;
+      }
+      s = string(ver);
+    }
+  } else {
+    cout << "Fail to get the VR device ID!" << endl;
     return -1;
   }
-  s = string(ver);
 
   return 0;
 }
@@ -150,7 +188,7 @@ int VrComponent::print_version() {
     auto vr = iter->second.begin();  // <addr, name>
     try {
       server.ready();
-      if (get_ver_str(vr->second, ver) < 0) {
+      if (get_ver_str(iter->first, vr->second, ver) < 0) {
         throw "Error in getting the version of " + vr->second;
       }
       cout << vr->second << " Version: " << ver << endl;
@@ -184,7 +222,7 @@ int VrComponent::get_version(json& j) {
     auto vr = iter->second.begin();  // <addr, name>
     try {
       server.ready();
-      if (get_ver_str(vr->second, ver) < 0) {
+      if (get_ver_str(iter->first, vr->second, ver) < 0) {
         throw "Error in getting the version of " + vr->second;
       }
       //For IFX and RNS, the str is $vendor $ver, Remaining Writes: $times

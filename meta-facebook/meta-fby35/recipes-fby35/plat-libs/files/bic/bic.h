@@ -370,6 +370,12 @@ enum {
   DPV2_PCIE_UNKNOW = 0xff,
 };
 
+enum VR_VENDOR_DEVICE_ID {
+  VR_INFINEON = 2,
+  VR_RENESAS = 4,
+  VR_TI = 6,
+};
+
 enum {
   NO_EXPANSION_PRESENT = 0x0,
   PRESENT_1OU = 0x01,

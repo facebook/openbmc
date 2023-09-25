@@ -7,6 +7,7 @@
 #include <facebook/bic_ipmi.h>
 #include <facebook/bic_xfer.h>
 #include <facebook/fby35_common.h>
+#include <openbmc/kv.h>
 #include "raa_gen3.h"
 #include "xdpe12284c.h"
 #include "xdpe152xx.h"
@@ -342,17 +343,26 @@ void plat_vr_preinit(uint8_t slot, const char *name) {
 
 void fby35_vr_device_check(void) {
   uint8_t rbuf[16], rlen;
-  int i;
+  int i = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
 
   for (i = VR_CL_VCCIN; i <= VR_CL_VCCINFAON; i++) {
+    snprintf(key, sizeof(key), "slot%d_vr_device_id", slot_id);
     rlen = sizeof(rbuf);
-    if (bic_get_vr_device_id(slot_id, rbuf, &rlen, fby35_vr_list[i].bus,
-                             fby35_vr_list[i].addr, NONE_INTF) < 0) {
-      continue;
+    if (kv_get(key, value, NULL, 0) < 0) {
+      if (bic_get_vr_device_id(slot_id, rbuf, &rlen, fby35_vr_list[i].bus,
+                               fby35_vr_list[i].addr, NONE_INTF) < 0) {
+        continue;
+      }
+      snprintf(value, sizeof(value), "%d", rlen);
+      kv_set(key, value, 0, 0);
+    } else {
+      rlen = atoi(value);
     }
 
     switch (rlen) {
-      case 2:
+      case VR_INFINEON:
         fby35_vr_list[i].ops = &ifx_ops;
         fby35_vr_list[i].sensor_polling_ctrl = sb_vr_polling_ctrl;
 
@@ -361,7 +371,7 @@ void fby35_vr_device_check(void) {
         snprintf(lock_name, sizeof(lock_name), "%s_vr", fru_name);
         fby35_vr_list[i].lock_name = lock_name;
         break;
-      case 6:
+      case VR_TI:
         fby35_vr_list[i].ops = &ti_ops;
         break;
       default:

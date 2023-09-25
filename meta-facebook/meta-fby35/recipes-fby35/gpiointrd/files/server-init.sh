@@ -78,6 +78,7 @@ if [ "$(is_server_prsnt "$slot_num")" = "0" ]; then
   $KV_CMD del "slot${slot_num}_prot_ver"
   $KV_CMD del "slot${slot_num}_is_m2_exp_prsnt"
   $KV_CMD del "slot${slot_num}_get_1ou_type"
+  $KV_CMD del "slot${slot_num}_vr_device_id"
   $KV_CMD del "fru${slot_num}_2ou_board_type"
   $KV_CMD del "fru${slot_num}_sb_type"
   $KV_CMD del "fru${slot_num}_sb_rev_id"

@@ -15,7 +15,7 @@ class VrComponent : public Component {
   Server server;
   private:
     int update_internal(const string& image, bool force);
-    int get_ver_str(const string& name, string& s);
+    int get_ver_str(const uint8_t vr_comp, const string& name, string& s);
     std::map<uint8_t, map<uint8_t, string>>& get_vr_list();
   public:
     VrComponent(const string& fru, const string& comp, uint8_t comp_id)

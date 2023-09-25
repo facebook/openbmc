@@ -411,8 +411,8 @@ enum {
   FW_ME,
   FW_BIC_RCVY,
   FW_VR_VCCIN,         //5
-  FW_VR_VCCD,
   FW_VR_VCCINFAON,
+  FW_VR_VCCD,
   FW_VR_VDDCRCPU0,
   FW_VR_VDDCRCPU1,
   FW_VR_VDD11S3,       //10

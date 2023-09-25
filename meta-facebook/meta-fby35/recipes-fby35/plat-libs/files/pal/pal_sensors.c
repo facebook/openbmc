@@ -1605,12 +1605,9 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
         if (ret < 0) {
           syslog(LOG_ERR, "%s() Cannot get the PDB sensor list", __func__);
         }
-        snprintf(key, sizeof(key), "medusa_adc_chip");
-        if (kv_get(key, medusa_adc_type, NULL, 0) == 0) { // If the key exists, It's new type of 48V medusa
-          ret = pal_get_medusa_adc_sensor_list(medusa_adc_type, &current_bmc_cnt);
-          if (ret < 0) {
-            syslog(LOG_ERR, "%s() Cannot get the PDB sensor list", __func__);
-          }
+        ret = pal_get_medusa_adc_sensor_list(medusa_adc_type, &current_bmc_cnt);
+        if (ret < 0) {
+          syslog(LOG_ERR, "%s() Cannot get the 48V medusa ADC sensor list", __func__);
         }
       }
       *sensor_list = (uint8_t *) bmc_dynamic_sensor_list;
@@ -2478,13 +2475,14 @@ get_medusa_adc_reading(uint8_t adc_id, uint8_t cmd, float *value) {
   }
 
   //If high byte's bit8 is 1 means the value is negative.
-  if (ISL28022_GET_DATA_SIGN(rbuf[1]) == 0x80) {
-    *value = (float)((~ISL28022_DATA_CONVERT(rbuf[1], rbuf[0]) & 0x7FFF) + 1);
+  if (ISL28022_GET_DATA_SIGN(rbuf[0]) == 0x80) {
+    *value = (float)((~ISL28022_DATA_CONVERT(rbuf[0], rbuf[1]) & 0x7FFF) + 1);
+    *value *= -1;
   } else {
-    *value = (float)ISL28022_DATA_CONVERT(rbuf[1], rbuf[0]);
+    *value = (float)ISL28022_DATA_CONVERT(rbuf[0], rbuf[1]);
   }
 
-  *value *= pow(10, -6);
+  *value *= pow(10, -5);
 
   return ret;
 }
@@ -2494,6 +2492,7 @@ read_medusa_adc_val(uint8_t snr_number, float *value) {
   char chip[32] = {0};
   static char medusa_adc_type[16] = {0};
   static bool is_cached = false;
+  static bool is_adc_supported = false;
   int ret = READING_NA;
 
   if (value == NULL) {
@@ -2502,10 +2501,15 @@ read_medusa_adc_val(uint8_t snr_number, float *value) {
 
   if (!is_cached) {
     if (kv_get("medusa_adc_chip", medusa_adc_type, NULL, 0) < 0) {
-      syslog(LOG_WARNING, "%s() Failed to read medusa_adc_chip", __func__);
-      return ret;
+      is_adc_supported = false;
+    } else {
+      is_adc_supported = true;
     }
     is_cached = true;
+  }
+
+  if (is_adc_supported == false) {
+    return READING_NA;
   }
 
   switch(snr_number) {
@@ -3045,7 +3049,7 @@ pal_nic_otp_check(float *value, float unr, float ucr) {
 
     //recover the system
     is_otp_asserted = false;
-    snprintf(sel_str, sizeof(sel_str), "NIC temp is under UCR. (val = %.2f)", *value);
+    snprintf(sel_str, sizeof(sel_str), "NIC temp is under UCR. (val = %.3f)", *value);
     pal_all_slot_power_ctrl(SERVER_12V_ON, sel_str);
     return;
   }
@@ -3058,7 +3062,7 @@ pal_nic_otp_check(float *value, float unr, float ucr) {
   //need to turn off all slots since retry is reached
   if ( is_otp_asserted == false && *value >= unr ) {
     is_otp_asserted = true;
-    snprintf(sel_str, sizeof(sel_str), "NIC temp is over UNR. (val = %.2f)", *value);
+    snprintf(sel_str, sizeof(sel_str), "NIC temp is over UNR. (val = %.3f)", *value);
     pal_all_slot_power_ctrl(SERVER_12V_OFF, sel_str);
   }
 
@@ -3472,7 +3476,7 @@ skip_hsc_init:
       return ret;
     }
   } else {
-    sprintf(str, "%.2f",*((float*)value));
+    sprintf(str, "%.3f",*((float*)value));
   }
   if (kv_set(key, str, 0, 0) < 0) {
     syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);

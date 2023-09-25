@@ -1,5 +1,5 @@
 {
-  "version": "FSCV2.0",
+  "version": "FSCV2.1",
   "pwm_transition_value": 80,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
@@ -104,7 +104,9 @@
         [66, 11],
         [67, 12],
         [68, 13],
-        [69, 14]
+        [69, 14],
+        [70, 15],
+        [71, 16]
       ]
     },
     "pid_dimm": {
@@ -116,7 +118,7 @@
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -3,
-      "ki": -0.01,
+      "ki": -0.03,
       "kd": 0
     },
     "linear_nic": {
@@ -184,7 +186,7 @@
       },
       "type": "pid",
       "setpoint": 70,
-      "negative_hysteresis": 2,
+      "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -2.0,
       "ki": -0.01,

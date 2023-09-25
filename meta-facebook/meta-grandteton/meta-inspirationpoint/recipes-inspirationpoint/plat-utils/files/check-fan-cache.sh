@@ -97,8 +97,6 @@ check_mb_rev() {
   if [[ "$rev_id" == "2" ]]; then
     ln -s /etc/fsc-config-2-retimer.json ${DEFAULT_FSC_CONFIG}
   else
-    curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
-
     # The default fan table is configued as 500W
     if [ -z "$curr_fan_table" ]; then
       $KV_CMD set "auto_fsc_config" 500 persistent
@@ -106,6 +104,7 @@ check_mb_rev() {
       rm -f ${DEFAULT_FSC_CONFIG}
     fi
 
+    curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
     if [ "$curr_fan_table" == "$FAN_TABLE_VER_500W" ]; then
       ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
     elif [ "$curr_fan_table" == "$FAN_TABLE_VER_650W" ]; then

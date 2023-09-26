@@ -1,0 +1,31 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/server2/bios/boot-order/force_boot_bios_setup  
+  title: Swagger doc for /api/server2/bios/boot-order/force_boot_bios_setup  
+  version: 1.0.0
+paths: 
+  /api/server2/bios/boot-order/force_boot_bios_setup: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Force Boot to BIOS Setup Function: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

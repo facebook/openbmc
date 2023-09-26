@@ -3243,9 +3243,11 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
       if (bmc_location == NIC_BMC) {
         if ((config_status & PRESENT_2OU) == PRESENT_2OU && (board_type == E1S_BOARD)) {
           sdr->uc_thresh = 0xfe;  // -2
+          sdr->sensor_units1 = 0x80;
         }
       } else {
         sdr->uc_thresh = 0xfd;    // -3
+        sdr->sensor_units1 = 0x80;
       }
     } else if (snr_num == BIC_SENSOR_HSC_OUTPUT_CUR) {
       // If it is a system of class 2, change m_val and UCR of HSC.

@@ -376,8 +376,8 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
   {"P3V3_AUX_IN6_VOLT", ADC_CH6, read_iic_adc_val, true, {3.6, 0, 0, 3.1, 0, 0, 0, 0}, VOLT}, //0xA1
-  {"MEDUSA0_POSITIVE_VDROP",  VPDB_ADC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xA2
-  {"MEDUSA0_RETURN_VDROP",    VPDB_ADC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xA3
+  {"MEDUSA0_POSITIVE_VDROP",  VPDB_ADC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xA2
+  {"MEDUSA0_RETURN_VDROP",    VPDB_ADC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xA3
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
@@ -405,10 +405,10 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"HSC1_VOUT_VOLT", HPDB_HSC_ID1, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xBA
   {"HSC2_VOUT_VOLT", HPDB_HSC_ID2, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xBB
-  {"MEDUSA1_POSITIVE_VDROP", HPDB_ADC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBC
-  {"MEDUSA1_RETURN_VDROP",   HPDB_ADC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBD
-  {"MEDUSA2_POSITIVE_VDROP", HPDB_ADC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBE
-  {"MEDUSA2_RETURN_VDROP",   HPDB_ADC_ID3, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, mVOLT}, //0xBF
+  {"MEDUSA1_POSITIVE_VDROP", HPDB_ADC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBC
+  {"MEDUSA1_RETURN_VDROP",   HPDB_ADC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBD
+  {"MEDUSA2_POSITIVE_VDROP", HPDB_ADC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBE
+  {"MEDUSA2_RETURN_VDROP",   HPDB_ADC_ID3, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBF
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1

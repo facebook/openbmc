@@ -572,9 +572,6 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       case VOLT:
         sprintf(units_name, "_V");
         break;
-      case mVOLT:
-        sprintf(units_name, "_mV");
-        break;
       case CURR:
         sprintf(units_name, "_A");
         break;
@@ -658,9 +655,6 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         break;
       case VOLT:
         sprintf(units, "Volts");
-        break;
-      case mVOLT:
-        sprintf(units, "mVolts");
         break;
       case CURR:
         sprintf(units, "Amps");
@@ -766,9 +760,6 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   if (sensor_map[fru].map[snr_num].units == VOLT) {
       pal_get_sensor_name(fru, snr_num, sensor_name);
       sprintf(cmd, "%s %s %.2fVolts - Assert", sensor_name, thresh_name, val);
-  } else if (sensor_map[fru].map[snr_num].units == mVOLT) {
-      pal_get_sensor_name(fru, snr_num, sensor_name);
-      sprintf(cmd, "%s %s %.2fmVolts - Assert", sensor_name, thresh_name, val);
   } else if (sensor_map[fru].map[snr_num].units == FAN){
       fan_id = sensor_map[fru].map[snr_num].id;
       sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
@@ -832,9 +823,6 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   if (sensor_map[fru].map[snr_num].units == VOLT) {
       pal_get_sensor_name(fru, snr_num, sensor_name);
       sprintf(cmd, "%s %s %.2fVolts - Deassert", sensor_name, thresh_name, val);
-  } else if (sensor_map[fru].map[snr_num].units == mVOLT) {
-      pal_get_sensor_name(fru, snr_num, sensor_name);
-      sprintf(cmd, "%s %s %.2fmVolts - Deassert", sensor_name, thresh_name, val);
   } else if (sensor_map[fru].map[snr_num].units == FAN){
       fan_id = sensor_map[fru].map[snr_num].id;
       sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);

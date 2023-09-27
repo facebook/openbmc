@@ -354,6 +354,31 @@
         "ki": -0.0035,
         "kd": 0
       },
+      "retimer_vr_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [80, 25],
+          [90, 30],
+          [115, 90]
+        ]
+      },
+      "retimer_vr_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 100,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
+      },
       "cpu_tray_vr_linear": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"

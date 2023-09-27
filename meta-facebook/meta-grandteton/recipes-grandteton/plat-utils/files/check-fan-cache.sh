@@ -27,18 +27,15 @@ do_fscd_configure () {
   rm ${default_fsc_config}
   if [[ $hgx_ppn == "" ]]; then
     # If hgx not ready
-    echo probe 700w config
-    ln -s /etc/fsc-config-700w.json ${default_fsc_config}
+    ln -sf /etc/fsc-config-700w.json ${default_fsc_config}
     return 1
   elif [[ $hgx_ppn == "935-24287-A510-300" ]]; then
     # If hgx is 500w
-    echo probe 500w config
-    ln -s /etc/fsc-config-500w.json ${default_fsc_config}
+    ln -sf /etc/fsc-config-500w.json ${default_fsc_config}
     return 0
   else
     # If hgx is 700w
-    echo probe 700w config
-    ln -s /etc/fsc-config-700w.json ${default_fsc_config}
+    ln -sf /etc/fsc-config-700w.json ${default_fsc_config}
     return 0
   fi
 }

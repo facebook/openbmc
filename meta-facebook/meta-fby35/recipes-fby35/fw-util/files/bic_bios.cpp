@@ -209,6 +209,12 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     sleep(DELAY_ME_RESET);
   }
   if (SERVER_TYPE_HD != server_type || isBypass) {
+    if (server_type == SERVER_TYPE_GL) {
+      cerr << "12V-cycling the server for GL..." << endl;
+      pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+      return ret;
+    }
+
     cerr << "Power-cycling the server..." << endl;
 
     // 12V-cycle is necessary for concerning BIOS/ME crash case

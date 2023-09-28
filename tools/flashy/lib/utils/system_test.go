@@ -724,6 +724,54 @@ func TestIsLFOpenBMC(t *testing.T) {
 	}
 }
 
+func TestIsBMCLite(t *testing.T) {
+	// mock and defer restore ReadFile
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+	cases := []struct {
+		name             string
+		readFileContents string
+		readFileError    error
+		want             bool
+	}{
+		{
+			name: "Is BMC Lite",
+			readFileContents: `OpenBMC Release fbdarwin-v2022.27.1`,
+			readFileError: nil,
+			want:          true,
+		},
+		{
+			name:             "Not BMC Lite",
+			readFileContents: `foobar`,
+			readFileError:    nil,
+			want:             false,
+		},
+		{
+			name:             "/etc/issue file read error",
+			readFileContents: "",
+			readFileError:    errors.Errorf("file read error"),
+			want:             false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				if filename != "/etc/issue" {
+					t.Errorf("filename: want '%v' got '%v'",
+						"/etc/issue", filename)
+				}
+				return []byte(tc.readFileContents), tc.readFileError
+			}
+
+			got := IsBMCLite()
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
+	}
+}
 
 func TestCheckOtherFlasherRunning(t *testing.T) {
 	// mock and defer restore

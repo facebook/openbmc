@@ -365,6 +365,19 @@ var IsLFOpenBMC = func() (bool) {
 	return strings.Contains(string(osReleaseBuf), magic)
 }
 
+// IsBMCLite check whether the system is running BMC-lite
+// For S368275.   Make this beautiful later.
+var IsBMCLite = func() (bool) {
+	const magic = "fbdarwin"
+
+	issueBuf, err := fileutils.ReadFile(etcIssueFilePath)
+	if err != nil {
+		return false
+	}
+
+	return strings.Contains(string(issueBuf), magic)
+}
+
 // CheckOtherFlasherRunning return an error if any other flashers are running.
 // It takes in the baseNames of all flashy's steps (e.g. 00_truncate_logs)
 // to make sure no other instance of flashy is running.
@@ -519,11 +532,17 @@ func tryPetWatchdog() bool {
 //   are no concurrent instances of wdtcli, the watchdog timeout will be
 //   extended and the watchdog petted.
 var PetWatchdog = func() {
-    // LF-OpenBMC relies on systemd to pet the watchdog, so there is nothing
-    // to do here.
-    if IsLFOpenBMC() {
-        return
-    }
+	// LF-OpenBMC relies on systemd to pet the watchdog, so there is nothing
+	// to do here.
+	if IsLFOpenBMC() {
+		log.Printf("Watchdog not petted; LF OpenBMC")
+		return
+	}
+
+	if IsBMCLite() {
+		log.Printf("Watchdog not petted; BMC Lite")
+		return
+	}
 
 	for i := 0; i < 10; i++ {
 		if tryPetWatchdog() {

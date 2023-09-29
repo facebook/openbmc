@@ -16,3 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 require recipes-core/images/fboss-lite-image.inc
+
+IMAGE_INSTALL += " \
+    host-recovery \
+    "

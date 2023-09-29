@@ -9,23 +9,62 @@
 #include "i2c_dev_sysfs.h"
 
 /*
- * FIXME: fill the below structure to export sysfs entries to the user
- * space.
  * NOTE: ONLY export register fields that are required from user space.
  */
 static const i2c_dev_attr_st pwrcpld_attrs[] = {
 	/*
-	 * Example:
+	 * Board/firmware revision ID registers (read-only).
+	 */
 	{
-		"cpld_ver",
+		"board_id",
 		NULL,
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
-		0x01,
+		0x0,
+		0,
+		4,
+	},
+	{
+		"version_id",
+		NULL,
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x0,
+		4,
+		4,
+	},
+	{
+		"cpld_major_ver",
+		NULL,
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x1,
+		0,
+		7,
+	},
+	{
+		"cpld_minor_ver",
+		NULL,
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x2,
 		0,
 		8,
 	},
+
+	/*
+	 * Chassis power cycle (register 0x23)
 	 */
+	{
+		"power_cycle_go",
+		"0: No power cycle\n"
+		"1: Start the power cycle",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x23,
+		0,
+		1,
+	},
 };
 
 static const struct i2c_device_id pwrcpld_id[] = {
@@ -43,7 +82,6 @@ static int pwrcpld_probe(struct i2c_client *client,
 	if (pdata == NULL)
 		return -ENOMEM;
 
-	i2c_set_clientdata(client, pdata);
 
 	return i2c_dev_sysfs_data_init(client, pdata, pwrcpld_attrs,
 				       ARRAY_SIZE(pwrcpld_attrs));
@@ -57,7 +95,6 @@ static void pwrcpld_remove(struct i2c_client *client)
 }
 
 static struct i2c_driver pwrcpld_driver = {
-	.class    = I2C_CLASS_HWMON,
 	.driver = {
 		.name = "pwrcpld",
 	},

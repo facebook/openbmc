@@ -17,13 +17,45 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+#shellcheck disable=SC1091
+# Do not change this line to openbmc-utils.sh, or it will generate a source loop.
+. /usr/local/bin/i2c-utils.sh
+
+PWRCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-0060)
+
+CHASSIS_POWER_CYCLE="${PWRCPLD_SYSFS_DIR}/power_cycle_go"
+BOARD_ID="${PWRCPLD_SYSFS_DIR}/board_id"
+VERSION_ID="${PWRCPLD_SYSFS_DIR}/version_id"
+PWR_CPLD_MJR="${PWRCPLD_SYSFS_DIR}/cpld_major_ver"
+PWR_CPLD_MNR="${PWRCPLD_SYSFS_DIR}/cpld_minor_ver"
+
 wedge_board_type() {
     echo 'tahan'
 }
 
 wedge_board_rev() {
-    # FIXME if needed.
-    return 1
+    board_id=$(head -n 1 < "$BOARD_ID" 2> /dev/null)
+    version_id=$(head -n 1 < "$VERSION_ID" 2> /dev/null)
+
+    case "$((board_id))" in
+        1)
+            echo "Board type: Tahan Switching System"
+            ;;
+        *)
+            echo "Board type: unknown value [$board_id]"
+            ;;
+    esac
+
+    case "$((version_id))" in
+        0)
+            echo "Revision: EVT-1"
+            ;;
+        *) 
+            echo "Revision: unknown value [$version_id]"
+            ;;
+    esac
+
+    return 0
 }
 
 userver_power_is_on() {
@@ -47,7 +79,7 @@ userver_reset() {
 }
 
 chassis_power_cycle() {
-    echo "FIXME: feature not implemented!!"
+    echo 1 > "$CHASSIS_POWER_CYCLE"
     return 1
 }
 
@@ -59,4 +91,18 @@ bmc_mac_addr() {
 userver_mac_addr() {
     echo "FIXME: feature not implemented!!"
     return 1
+}
+
+# The function is used to display the cpld version. 
+wedge_cpld_rev(){
+    # PWR CPLD version
+    wedge_pwr_cpld_rev    
+}
+
+wedge_pwr_cpld_rev(){
+    # PWR CPLD version
+    pwr_cpld_major=$(head -n 1 < "$PWR_CPLD_MJR" 2> /dev/null)
+    pwr_cpld_minor=$(head -n 1 < "$PWR_CPLD_MNR" 2> /dev/null)
+
+    echo "PWR_CPLD Version:$((pwr_cpld_major)).$((pwr_cpld_minor))"
 }

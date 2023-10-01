@@ -1,0 +1,62 @@
+From 382d17e6e624deca3a512fc05ba2f13bc1365ad6 Mon Sep 17 00:00:00 2001
+From: Ernesto Corona <ernesto.corona@intel.com>
+Date: Mon, 13 Apr 2020 15:29:20 -0700
+Subject: [PATCH 129/132] drivers: jtag: Add JTAG core driver Maintainers
+
+JTAG class driver provide infrastructure to support hardware/software
+JTAG platform drivers. It provide user layer API interface for flashing
+and debugging external devices which equipped with JTAG interface
+using standard transactions.
+
+Signed-off-by: Oleksandr Shamray <oleksandrs@mellanox.com>
+Signed-off-by: Ernesto Corona <ernesto.corona@intel.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Jiri Pirko <jiri@mellanox.com>
+Cc: Vadim Pasternak <vadimp@mellanox.com>
+Cc: Mauro Carvalho Chehab <mchehab+samsung@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Nicolas Ferre <nicolas.ferre@microchip.com>
+Cc: Rob Herring <robh@kernel.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Lukas Bulwahn <lukas.bulwahn@gmail.com>
+Cc: Steven Filary <steven.a.filary@intel.com>
+Cc: Amithash Prasad <amithash@fb.com>
+Cc: Patrick Williams <patrickw3@fb.com>
+Cc: Rgrs <rgrs@protonmail.com>
+
+@fb-note-start
+This is v29 of the patch series and it's not merged to the maintainer's
+tree yet.
+Reviewed By: mikechoi
+Test Plan: booted up linux 5.15 on cmm and elbert successfully.
+@fb-note-end
+---
+ MAINTAINERS | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index f9cc9f25799f..d9ba580fd4ba 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -11195,6 +11195,17 @@ L:	linux-serial@vger.kernel.org
+ S:	Orphan
+ F:	drivers/tty/serial/jsm/
+ 
++JTAG SUBSYSTEM
++M:	Oleksandr Shamray <oleksandrs@mellanox.com>
++M:	Vadim Pasternak <vadimp@mellanox.com>
++M	Ernesto Corona <ernesto.corona@intel.com>
++S:	Maintained
++F:	include/linux/jtag.h
++F:	include/uapi/linux/jtag.h
++F:	drivers/jtag/
++F:	Documentation/devicetree/bindings/jtag/
++F:	Documentation/ABI/testing/jtag-dev
++
+ K10TEMP HARDWARE MONITORING DRIVER
+ M:	Clemens Ladisch <clemens@ladisch.de>
+ L:	linux-hwmon@vger.kernel.org
+-- 
+2.39.3
+

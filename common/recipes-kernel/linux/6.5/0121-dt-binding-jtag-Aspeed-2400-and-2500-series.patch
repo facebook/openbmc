@@ -1,0 +1,117 @@
+From 7c1c0c865c1b6fd43fe60b02dc77c40649b86a7d Mon Sep 17 00:00:00 2001
+From: Ernesto Corona <ernesto.corona@intel.com>
+Date: Mon, 13 Apr 2020 15:29:16 -0700
+Subject: [PATCH 121/132] dt-binding: jtag: Aspeed 2400 and 2500 series
+
+Aspeed AST2400 and AST2500 JTAG master controller driver.
+
+Signed-off-by: Oleksandr Shamray <oleksandrs@mellanox.com>
+Signed-off-by: Jiri Pirko <jiri@mellanox.com>
+Signed-off-by: Ernesto Corona <ernesto.corona@intel.com>
+Acked-by: Rob Herring <robh@kernel.org>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Mauro Carvalho Chehab <mchehab+samsung@kernel.org>
+Cc: Alexandre Belloni <alexandre.belloni@bootlin.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Eric Biggers <ebiggers@google.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Joel Stanley <joel@jms.id.au>
+Cc: Andrew Jeffery <andrew@aj.id.au>
+Cc: Steven Filary <steven.a.filary@intel.com>
+Cc: Vadim Pasternak <vadimp@mellanox.com>
+Cc: Amithash Prasad <amithash@fb.com>
+Cc: Patrick Williams <patrickw3@fb.com>
+Cc: Rgrs <rgrs@protonmail.com>
+
+@fb-note-start
+This is v29 of the patch series and it's not merged to the maintainer's
+tree yet.
+Reviewed By: mikechoi
+Test Plan: booted up linux 5.15 on cmm and elbert successfully.
+@fb-note-end
+---
+ .../devicetree/bindings/jtag/aspeed-jtag.yaml | 71 +++++++++++++++++++
+ 1 file changed, 71 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/jtag/aspeed-jtag.yaml
+
+diff --git a/Documentation/devicetree/bindings/jtag/aspeed-jtag.yaml b/Documentation/devicetree/bindings/jtag/aspeed-jtag.yaml
+new file mode 100644
+index 000000000000..3db49b70db45
+--- /dev/null
++++ b/Documentation/devicetree/bindings/jtag/aspeed-jtag.yaml
+@@ -0,0 +1,71 @@
++# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: https://urldefense.proofpoint.com/v2/url?u=http-3A__devicetree.org_schemas_jtag_aspeed-2Djtag.yaml-23&d=DwIBAg&c=5VD0RTtNlTh3ycd41b3MUw&r=iYElT7HC77pRZ3byVvW8ng&m=vGWCsGcOo2XBzrFEoF2nIS4gWviJ18aq1W4UxkRbmXA&s=5LDPQjHKBcLkVCSOxFNx3oLtdKgpW5T1u56Km9Lch5s&e=
++$schema: https://urldefense.proofpoint.com/v2/url?u=http-3A__devicetree.org_meta-2Dschemas_core.yaml-23&d=DwIBAg&c=5VD0RTtNlTh3ycd41b3MUw&r=iYElT7HC77pRZ3byVvW8ng&m=vGWCsGcOo2XBzrFEoF2nIS4gWviJ18aq1W4UxkRbmXA&s=r89VV7bcxrO-vDJsqHLKtJVbs-nZVmROiBZlM8YHtiQ&e=
++
++title: Aspeed JTAG driver for ast2400 and ast2500 SoC
++
++description:
++  Driver adds support of Aspeed 2500/2400 series SOC JTAG master controller.
++  Driver implements the following jtag ops
++    freq_get
++    freq_set
++    status_get
++    status_set
++    xfer
++    mode_set
++    bitbang
++    enable
++    disable
++
++  It has been tested on Mellanox system with BMC equipped with
++  Aspeed 2520 SoC for programming CPLD devices.
++
++  It has also been tested on Intel system using Aspeed 25xx SoC
++  for JTAG communication.
++
++maintainers:
++  - Oleksandr Shamray <oleksandrs@mellanox.com>
++  - Jiri Pirko <jiri@mellanox.com>
++  - Ernesto Corona<ernesto.corona@intel.com>
++
++properties:
++  compatible:
++    oneOf:
++      - items:
++          - enum:
++              - aspeed,ast2400-jtag
++              - aspeed,ast2500-jtag
++
++
++  reg:
++    items:
++      - description: JTAG Master controller register range
++
++  interrupts:
++    maxItems: 1
++
++  clocks:
++    maxItems: 1
++
++required:
++  - compatible
++  - reg
++  - interrupts
++  - clocks
++
++examples:
++  - |
++    #include <dt-bindings/clock/aspeed-clock.h>
++    #include <dt-bindings/interrupt-controller/irq.h>
++
++      jtag: jtag@1e6e4000 {
++          compatible = "aspeed,ast2500-jtag";
++          reg = <0x1e6e4000 0x1c>;
++          clocks = <&syscon ASPEED_CLK_APB>;
++          resets = <&syscon ASPEED_RESET_JTAG_MASTER>;
++          interrupts = <43>;
++      };
++
++...
+-- 
+2.39.3
+

@@ -44,7 +44,6 @@
 # TODO:
 #   2. auto-create Chassis and SCM EEPROM in device tree or setup_i2c.sh.
 #   3. auto-generate setup-gpio logic if needed.
-#   4. auto-generate "pwrcpld" driver based on its register map.
 #   5. auto-generate power control logic if item #4 is automated.
 #   6. auto-generate recovery path (depending on BMC-Lite System Reference
 #      design)
@@ -57,6 +56,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from new_fblite_utils.gen_cplds import gen_cplds
+
 #
 # Global files and directories.
 #
@@ -66,6 +67,8 @@ OBMC_META_FB = "meta-facebook"
 CIT_REF_CASES = "tools/fboss-lite/cit-ref-cases"
 CIT_RUNNER = "tests2/cit_runner.py"
 CIT_TEST_DIR = "tests2/tests"
+KMOD_DIR = "recipes-kernel/kmods/"
+UTIL_DIR = "recipes-utils/openbmc-utils/"
 
 #
 # Predefined keywords in reference layer, and need to be updated when
@@ -229,6 +232,16 @@ def commit_cit_changes(name):
         os.remove(cit_commit_file)
 
 
+def generate_cpld_drivers(data_file, machine_layer):
+    if not data_file:
+        return
+    try:
+        gen_cplds(args.data_file, os.path.join(machine_layer, KMOD_DIR))
+    except Exception as e:
+        print(f"Error generating cpld driver: {e}")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     """Create a new fboss-lite machine layer and/or new base CIT test suit"""
     parser = argparse.ArgumentParser()
@@ -251,12 +264,21 @@ if __name__ == "__main__":
         default="machine_layer",
     )
 
+    parser.add_argument(
+        "-d",
+        "--data-file",
+        type=str,
+        required=False,
+        help="path of the data file",
+    )
+
     args = parser.parse_args()
 
     #
     # Set up running environment
     #
     setup_exec_env()
+    machine_layer = os.path.join(OBMC_META_FB, "meta-%s" % args.name)
 
     if args.purpose == "machine_layer" or args.purpose == "all":
         #
@@ -291,6 +313,11 @@ if __name__ == "__main__":
         # because it needs some additional Meta-internal tools.
         #
         # add_new_yocto_version_entry(args.name)
+
+        #
+        # Generate cpld drivers
+        #
+        generate_cpld_drivers(args.data_file, machine_layer)
 
         #
         # Commit the patch in local tree.

@@ -115,3 +115,9 @@ tags
 
 # End of https://www.toptal.com/developers/gitignore/api/vscode
 bitbake-cookerdaemon.log
+
+# python venv
+tools/fboss-lite/pyvenv.cfg
+tools/fboss-lite/bin
+tools/fboss-lite/lib
+tools/fboss-lite/lib64

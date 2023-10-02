@@ -1,0 +1,18 @@
+{
+    "cplds": [
+        {
+            "name": "scmcpld",
+            "attrs": [
+                {
+                    "name": "cpld_ver",
+                    "read": true,
+                    "write": false,
+                    "register": 1,
+                    "offset": 0,
+                    "n_bits": 8,
+                    "help": ""
+                }
+            ]
+        }
+    ]
+}

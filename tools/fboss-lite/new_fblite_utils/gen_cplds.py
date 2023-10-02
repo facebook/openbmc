@@ -29,6 +29,8 @@ from new_fblite_utils.codegen_utils import (
     update_makefile,
 )
 
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 CPLD_TEMPLATE = "cpld.c.jinja2"
 
 """
@@ -91,7 +93,7 @@ def gen_cplds(data_file: str, kmod_dir: str):
 
 
 def gen_cpld(data: CpldSpec, output_dir: str):
-    content = render_template(CPLD_TEMPLATE, name=data.name, attributes=data.attrs)
+    content = render_template(CPLD_TEMPLATE, name=data.name, attributes=data.attributes)
     output = os.path.join(output_dir, data.name + ".c")
     with open(output, "w") as f:
         f.write(content)

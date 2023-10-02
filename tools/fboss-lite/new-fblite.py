@@ -43,7 +43,6 @@
 #
 # TODO:
 #   2. auto-create Chassis and SCM EEPROM in device tree or setup_i2c.sh.
-#   3. auto-generate setup-gpio logic if needed.
 #   5. auto-generate power control logic if item #4 is automated.
 #   6. auto-generate recovery path (depending on BMC-Lite System Reference
 #      design)
@@ -57,6 +56,8 @@ import sys
 from pathlib import Path
 
 from new_fblite_utils.gen_cplds import gen_cplds
+from new_fblite_utils.gen_gpio import gen_gpio
+from new_fblite_utils.gen_cplds import gen_cplds, gen_gpio
 
 #
 # Global files and directories.
@@ -242,6 +243,16 @@ def generate_cpld_drivers(data_file, machine_layer):
         sys.exit(1)
 
 
+def generate_setup_gpio(data_file, machine_layer):
+    if not data_file:
+        return
+    try:
+        gen_gpio(args.data_file, os.path.join(machine_layer, UTIL_DIR))
+    except Exception as e:
+        print(f"Error generating setup_gpio.sh: {e}")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     """Create a new fboss-lite machine layer and/or new base CIT test suit"""
     parser = argparse.ArgumentParser()
@@ -320,9 +331,19 @@ if __name__ == "__main__":
         generate_cpld_drivers(args.data_file, machine_layer)
 
         #
+        # Generate cpld drivers
+        #
+        generate_cpld_drivers(args.data_file, machine_layer)
+
+        #
+        # Generate setup-gpio.sh
+        #
+        generate_setup_gpio(args.data_file, machine_layer)
+
+        #
         # Commit the patch in local tree.
         #
-        commit_machine_layer(args.name, machine_layer)
+        #commit_machine_layer(args.name, machine_layer)
 
     if args.purpose == "cit" or args.purpose == "all":
         #

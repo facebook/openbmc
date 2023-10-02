@@ -43,6 +43,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-janga:lf-master
   meta-montblanc:lf-master
   meta-qemux86:lf-master
+  meta-tahan:lf-master
   meta-waimeacanyon:lf-master
   meta-yosemite4:lf-master
 # kirkstone platforms (pending upgrade)

@@ -178,6 +178,7 @@ void elbert_update_psu_led(struct system_status* status) {
   int psu_status_reg = 0;
   int psu_input_ok = 0;
   int psu_output_ok = 0;
+  int psu_count = 0;
   bool all_psu_ok = true;
   bool this_psu_ok = true;
 
@@ -189,7 +190,7 @@ void elbert_update_psu_led(struct system_status* status) {
     psu_present = (psu_present_reg >> (psu - 1)) & 0x1;
     psu_input_ok = (psu_status_reg >> (SMB_PSU_INPUT_BIT + (psu - 1))) & 0x1;
     psu_output_ok = (psu_status_reg >> (SMB_PSU_OUTPUT_BIT + (psu - 1))) & 0x1;
-    if ((psu_present != 1) || (psu_input_ok != 1) || (psu_output_ok != 1)) {
+    if ((psu_present == 1) && ((psu_input_ok != 1) || (psu_output_ok != 1))) {
       this_psu_ok = false;
       if (this_psu_ok != status->psu_ok[psu - 1]) {
         syslog(
@@ -202,11 +203,19 @@ void elbert_update_psu_led(struct system_status* status) {
       }
     }
 
-    if (!this_psu_ok) {
+    if (!this_psu_ok)
       all_psu_ok = false;
-    }
+    else if (psu_present == 1)
+      psu_count++;
+
     status->psu_ok[psu - 1] = this_psu_ok;
   }
+  
+  if (psu_count < 2){
+    all_psu_ok = false;
+    syslog(LOG_WARNING, "Less than 2 PSUs detected");
+  }
+
   if (all_psu_ok != status->all_psu_ok) {
     if (all_psu_ok) {
       elbert_set_sysled("psu", 1, 0, 0, 0, 0);
@@ -401,7 +410,7 @@ void elbert_update_sys_led(struct system_status* status) {
     if ((sys_ok != status->sys_ok) || (beacon_on != status->beacon_on) ||
         upgraded) {
       // Reset blink rate after beacon off.
-      if (beacon_on != status->beacon_on && !beacon_on) {
+      if (beacon_on != status->beacon_on) {
         elbert_set_blink_freq(DEFAULT_BLINK_FREQ_MSEC);
         syslog(LOG_INFO, "Beacon LED is OFF\n");
       }

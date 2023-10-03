@@ -57,6 +57,7 @@ from pathlib import Path
 
 from new_fblite_utils.gen_cplds import gen_cplds
 from new_fblite_utils.gen_gpio import gen_gpio
+from new_fblite_utils.gen_eeprom import gen_eeprom
 from new_fblite_utils.gen_cplds import gen_cplds, gen_gpio
 
 #
@@ -70,6 +71,7 @@ CIT_RUNNER = "tests2/cit_runner.py"
 CIT_TEST_DIR = "tests2/tests"
 KMOD_DIR = "recipes-kernel/kmods/"
 UTIL_DIR = "recipes-utils/openbmc-utils/"
+EEPROM_DIR = "recipes-utils/wedge-eeprom/files/lib"
 
 #
 # Predefined keywords in reference layer, and need to be updated when
@@ -233,11 +235,21 @@ def commit_cit_changes(name):
         os.remove(cit_commit_file)
 
 
+def generate_eeprom_json(platname, data_file, machine_layer):
+    if not data_file:
+        return
+    try:
+        gen_eeprom(platname, data_file, os.path.join(machine_layer, EEPROM_DIR))
+    except Exception as e:
+        print(f"Error generating eeprom.json: {e}")
+        sys.exit(1)
+
+
 def generate_cpld_drivers(data_file, machine_layer):
     if not data_file:
         return
     try:
-        gen_cplds(args.data_file, os.path.join(machine_layer, KMOD_DIR))
+        gen_cplds(data_file, os.path.join(machine_layer, KMOD_DIR))
     except Exception as e:
         print(f"Error generating cpld driver: {e}")
         sys.exit(1)
@@ -247,7 +259,7 @@ def generate_setup_gpio(data_file, machine_layer):
     if not data_file:
         return
     try:
-        gen_gpio(args.data_file, os.path.join(machine_layer, UTIL_DIR))
+        gen_gpio(data_file, os.path.join(machine_layer, UTIL_DIR))
     except Exception as e:
         print(f"Error generating setup_gpio.sh: {e}")
         sys.exit(1)
@@ -324,6 +336,11 @@ if __name__ == "__main__":
         # because it needs some additional Meta-internal tools.
         #
         # add_new_yocto_version_entry(args.name)
+
+        #
+        # Generate eeprom.json
+        #
+        generate_eeprom_json(args.name, args.data_file, machine_layer)
 
         #
         # Generate cpld drivers

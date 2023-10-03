@@ -56,9 +56,8 @@ import sys
 from pathlib import Path
 
 from new_fblite_utils.gen_cplds import gen_cplds
-from new_fblite_utils.gen_gpio import gen_gpio
 from new_fblite_utils.gen_eeprom import gen_eeprom
-from new_fblite_utils.gen_cplds import gen_cplds, gen_gpio
+from new_fblite_utils.gen_gpio import gen_gpio
 
 #
 # Global files and directories.
@@ -360,7 +359,7 @@ if __name__ == "__main__":
         #
         # Commit the patch in local tree.
         #
-        #commit_machine_layer(args.name, machine_layer)
+        commit_machine_layer(args.name, machine_layer)
 
     if args.purpose == "cit" or args.purpose == "all":
         #

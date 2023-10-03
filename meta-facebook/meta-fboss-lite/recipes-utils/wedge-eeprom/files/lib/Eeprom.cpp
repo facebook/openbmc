@@ -30,7 +30,7 @@ Eeprom::Eeprom(const std::string& eFile, const uint16_t off)
   bufSz_ = file.tellg();
   assert(bufSz_ - off > 0);
   // meta-eeprom data size
-  bufSz_ = bufSz_ - off;
+  bufSz_ = (bufSz_ - off < EEPROM_READ_SZ)? bufSz_ - off : EEPROM_READ_SZ;
   file.seekg(off, std::ios::beg);
 
   // read the data:

@@ -26,6 +26,8 @@
 
 #include "WeutilInterface.h"
 
+#define EEPROM_READ_SZ 2048
+
 namespace weutil {
 class Eeprom {
  public:

@@ -2,6 +2,7 @@
 #include <syslog.h>
 #include <libpldm-oem/pal_pldm.hpp>
 #include <libpldm-oem/fw_update.hpp>
+#include <openbmc/pal.h>
 #include "mezz_nic.hpp"
 
 using namespace std;
@@ -20,6 +21,8 @@ int PLDMNicComponent::update(string image) {
 
   syslog(LOG_CRIT, "Component %s upgrade initiated", _component.c_str());
 
+  //Since NIC PLDM update need to take more than 10 minutes, we extend the timeout.
+  pal_set_fw_update_ongoing(FRU_NIC1, 60 * 20);
   ret = oem_pldm_fw_update(_bus_id, _eid, (char *)image.c_str());
 
   if (ret)

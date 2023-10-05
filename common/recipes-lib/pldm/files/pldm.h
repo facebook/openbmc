@@ -60,7 +60,7 @@ void pldmCreateReqUpdateCmd       (pldm_fw_pkg_hdr_t *pFwPkgHdr,
                                    pldm_cmd_req *pPldmCdb,
                                    int pldm_bufsize);
 void pldmCreatePassComponentTblCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,
-                                   pldm_cmd_req *pPldmCdb);
+                                   uint8_t compCnt, pldm_cmd_req *pPldmCdb);
 void pldmCreateUpdateComponentCmd (pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,
                                    pldm_cmd_req *pPldmCdb);
 void pldmCreateActivateFirmwareCmd(pldm_cmd_req *pPldmCdb);

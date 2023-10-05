@@ -378,7 +378,7 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
 
   for (i=0; i<pkgHdr->componentImageCnt; ++i) {
     memset(&pldmReq, 0, sizeof(pldm_cmd_req));
-    pldmCreatePassComponentTblCmd(pkgHdr, i, &pldmReq);
+    pldmCreatePassComponentTblCmd(pkgHdr, i, pkgHdr->componentImageCnt, &pldmReq);
     printf("\n02 PldmPassComponentTableOp[%d]: payload_size=%d\n", i,
             pldmReq.payload_size);
     ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_PLDM_REQUEST, pldmReq.payload_size,

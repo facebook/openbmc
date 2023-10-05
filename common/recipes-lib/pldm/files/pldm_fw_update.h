@@ -252,7 +252,7 @@ typedef struct {
 #define TFLAG_START 0x01
 #define TFLAG_MID   0x02
 #define TFLAG_END   0x04
-#define TFLAG_STATRT_END 0x05
+#define TFLAG_START_END 0x05
 typedef struct {
   uint8_t  transferFlag;
   uint16_t _class;

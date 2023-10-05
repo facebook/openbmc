@@ -529,7 +529,7 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
 
   for (i = 0; i < pkgHdr->componentImageCnt; ++i) {
     memset(&pldmReq, 0, sizeof(pldm_cmd_req));
-    pldmCreatePassComponentTblCmd(pkgHdr, i, &pldmReq);
+    pldmCreatePassComponentTblCmd(pkgHdr, i, pkgHdr->componentImageCnt, &pldmReq);
     printf("\n02 PldmPassComponentTableOp[%d]: payload_size=%d\n", i,
             pldmReq.payload_size);
     pldmReq_to_mctpReq(&req, &pldmReq);

@@ -279,8 +279,10 @@ void pldmCreateReqUpdateCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, pldm_cmd_req *pPldmCdb
 //    1. a PLDM package pointed by pFwPkgHdr
 //    2. component index within PLDM package
 // Generate command cdb for PLDM  Pass Component Table command (Type 0x05, cmd 0x11)
-void pldmCreatePassComponentTblCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,
-                            pldm_cmd_req *pPldmCdb)
+void pldmCreatePassComponentTblCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr,
+                                   uint8_t compIdx,
+                                   uint8_t compCnt,
+                                   pldm_cmd_req *pPldmCdb)
 {
   PLDM_PassComponentTable_t *pCmdPayload =
       (PLDM_PassComponentTable_t *)&(pPldmCdb->payload);
@@ -290,7 +292,15 @@ void pldmCreatePassComponentTblCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx
 
   genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_PASS_COMPONENT_TABLE, &(pPldmCdb->common[0]));
 
-  pCmdPayload->transferFlag = TFLAG_STATRT_END;  // only support 1 pass for now
+  if (compCnt == 1) {
+    pCmdPayload->transferFlag = TFLAG_START_END;
+  } else if (compIdx == 0) {
+    pCmdPayload->transferFlag = TFLAG_START;
+  } else if (compIdx == (compCnt - 1)) {
+    pCmdPayload->transferFlag = TFLAG_END;
+  } else {
+    pCmdPayload->transferFlag = TFLAG_MID;
+  }
   pCmdPayload->_class = pCompImgInfo->_class;
   pCmdPayload->id = pCompImgInfo->id;
   pCmdPayload->classIndex = 0;  // TBD - needs to query for this from NIC

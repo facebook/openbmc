@@ -58,14 +58,14 @@ fru_map = {
 }
 
 gl_dimm_location_name_map = {
-    "a": "_dimm0_location",
-    "b": "_dimm1_location",
-    "c": "_dimm2_location",
-    "d": "_dimm3_location",
-    "e": "_dimm4_location",
-    "f": "_dimm5_location",
-    "g": "_dimm6_location",
-    "h": "_dimm7_location",
+    "0": "_dimm0_location",
+    "1": "_dimm1_location",
+    "2": "_dimm2_location",
+    "3": "_dimm3_location",
+    "4": "_dimm4_location",
+    "5": "_dimm5_location",
+    "6": "_dimm6_location",
+    "7": "_dimm7_location",
 }
 
 hd_dimm_location_name_map = {

@@ -69,42 +69,42 @@ get_meb_hsc_sensor(uint8_t fru, uint8_t sensor_num, float *value)
 
 PAL_SENSOR_MAP meb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
-  {"Inlet_Temp", 0, get_meb_sensor, false, {55, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
-  {"Outlet_Temp", 0, get_meb_sensor, false, {85, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
-  {"PU4_Temp", 0, get_meb_hsc_sensor, false, {125, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
-  {"P12V_AUX_VOL", 0, get_meb_hsc_sensor, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0},  VOLT}, // 0x04
-  {"P3V3_AUX_VOL", 0, get_meb_sensor, false, {3.531, 0, 0, 3.07, 0, 0, 0, 0},  VOLT}, // 0x05
-  {"P1V2_AUX_VOL", 0, get_meb_sensor, false, {1.284, 0, 0, 1.116, 0, 0, 0, 0},  VOLT}, // 0x06
-  {"P3V3_VOL", 0, get_meb_sensor, false, {3.531, 0, 0, 3.07, 0, 0, 0, 0},  VOLT}, // 0x07
-  {"P12V_AUX_CXL8_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x08
-  {"P12V_AUX_CXL7_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x09
-  {"P12V_AUX_CXL6_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x0A
-  {"P12V_AUX_CXL5_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x0B
-  {"P12V_AUX_SSD4_VOL", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0C
-  {"P12V_AUX_SSD3_VOL", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0D
-  {"P12V_AUX_SSD2_VOL", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0E
-  {"P12V_AUX_SSD1_VOL", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0F
-  {"P12V_AUX_CXL3_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x10
-  {"P12V_AUX_CXL4_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x11
-  {"P12V_AUX_CXL1_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x12
-  {"P12V_AUX_CXL2_VOL", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x13
-  {"P12V_AUX_SW_4C_2_VOL", 0, get_meb_sensor, false, {13.176, 0, 0, 10.736, 0, 0, 0, 0},  VOLT}, // 0x14
-  {"P12V_AUX_SW_4C_1_VOL", 0, get_meb_sensor, false, {13.176, 0, 0, 10.736, 0, 0, 0, 0},  VOLT}, // 0x15
-  {"P12V_AUX_CUR", 0, get_meb_hsc_sensor, false, {73.1, 0, 95, 0, 0, 0, 0, 0},  CURR}, // 0x16
-  {"P12V_AUX_CXL8_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x17
-  {"P12V_AUX_CXL7_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x18
-  {"P12V_AUX_CXL6_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x19
-  {"P12V_AUX_CXL5_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1A
-  {"P12V_AUX_SSD4_CUR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1B
-  {"P12V_AUX_SSD3_CUR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1C
-  {"P12V_AUX_SSD2_CUR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1D
-  {"P12V_AUX_SSD1_CUR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1E
-  {"P12V_AUX_CXL3_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1F
-  {"P12V_AUX_CXL4_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x20
-  {"P12V_AUX_CXL1_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x21
-  {"P12V_AUX_CXL2_CUR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x22
-  {"P12V_AUX_SW_4C_2_CUR", 0, get_meb_sensor, false, {6.6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x23
-  {"P12V_AUX_SW_4C_1_CUR", 0, get_meb_sensor, false, {6.6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x24
+  {"Inlet_TEMP", 0, get_meb_sensor, false, {55, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
+  {"Outlet_TEMP", 0, get_meb_sensor, false, {85, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
+  {"PU4_TEMP", 0, get_meb_hsc_sensor, false, {125, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
+  {"P12V_AUX_VOLT", 0, get_meb_hsc_sensor, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0},  VOLT}, // 0x04
+  {"P3V3_AUX_VOLT", 0, get_meb_sensor, false, {3.531, 0, 0, 3.07, 0, 0, 0, 0},  VOLT}, // 0x05
+  {"P1V2_AUX_VOLT", 0, get_meb_sensor, false, {1.284, 0, 0, 1.116, 0, 0, 0, 0},  VOLT}, // 0x06
+  {"P3V3_VOLT", 0, get_meb_sensor, false, {3.531, 0, 0, 3.07, 0, 0, 0, 0},  VOLT}, // 0x07
+  {"P12V_AUX_CXL8_VOLT", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x08
+  {"P12V_AUX_CXL7_VOLT", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x09
+  {"P12V_AUX_CXL6_VOLT", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x0A
+  {"P12V_AUX_CXL5_VOLT", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x0B
+  {"P12V_AUX_SSD4_VOLT", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0C
+  {"P12V_AUX_SSD3_VOLT", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0D
+  {"P12V_AUX_SSD2_VOLT", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0E
+  {"P12V_AUX_SSD1_VOLT", 0, get_meb_sensor, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0},  VOLT}, // 0x0F
+  {"P12V_AUX_CXL3_VOLT", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x10
+  {"P12V_AUX_CXL4_VOLT", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x11
+  {"P12V_AUX_CXL1_VOLT", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x12
+  {"P12V_AUX_CXL2_VOLT", 0, get_meb_sensor, false, {12.81, 0, 0, 11.59, 0, 0, 0, 0},  VOLT}, // 0x13
+  {"P12V_AUX_SW_4C_2_VOLT", 0, get_meb_sensor, false, {13.176, 0, 0, 10.736, 0, 0, 0, 0},  VOLT}, // 0x14
+  {"P12V_AUX_SW_4C_1_VOLT", 0, get_meb_sensor, false, {13.176, 0, 0, 10.736, 0, 0, 0, 0},  VOLT}, // 0x15
+  {"P12V_AUX_CURR", 0, get_meb_hsc_sensor, false, {73.1, 0, 95, 0, 0, 0, 0, 0},  CURR}, // 0x16
+  {"P12V_AUX_CXL8_CURR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x17
+  {"P12V_AUX_CXL7_CURR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x18
+  {"P12V_AUX_CXL6_CURR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x19
+  {"P12V_AUX_CXL5_CURR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1A
+  {"P12V_AUX_SSD4_CURR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1B
+  {"P12V_AUX_SSD3_CURR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1C
+  {"P12V_AUX_SSD2_CURR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1D
+  {"P12V_AUX_SSD1_CURR", 0, get_meb_sensor, false, {2.8, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1E
+  {"P12V_AUX_CXL3_CURR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x1F
+  {"P12V_AUX_CXL4_CURR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x20
+  {"P12V_AUX_CXL1_CURR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x21
+  {"P12V_AUX_CXL2_CURR", 0, get_meb_sensor, false, {6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x22
+  {"P12V_AUX_SW_4C_2_CURR", 0, get_meb_sensor, false, {6.6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x23
+  {"P12V_AUX_SW_4C_1_CURR", 0, get_meb_sensor, false, {6.6, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x24
   {"P12V_AUX_PWR", 0, get_meb_hsc_sensor, false, {918.575, 0, 1267, 0, 0, 0, 0, 0},  POWER}, // 0x25
   {"P12V_AUX_CXL8_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x26
   {"P12V_AUX_CXL7_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x27
@@ -128,30 +128,30 @@ PAL_SENSOR_MAP meb_sensor_map[] = {
 
 PAL_SENSOR_MAP meb_clx_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
-  {"CXL Inlet Temp", 0, get_meb_jcn_sensor, false, {50, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
-  {"CXL CTRL Temp", 0, get_meb_jcn_sensor, false, {90, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
-  {"P12V_STBY_4CP_VOL", 0, get_meb_jcn_sensor, true, {0, 13.125, 0, 0, 11.875, 0, 0, 0},  VOLT}, // 0x03
-  {"P3V3_STBY_4CP_VOL", 0, get_meb_jcn_sensor, true, {0, 3.465, 0, 0, 3.135, 0, 0, 0},  VOLT}, // 0x04
-  {"P5V_STBY_VOL", 0, get_meb_jcn_sensor, true, {5.625, 5.25, 6, 4.375, 4.75, 4, 0, 0},  VOLT}, // 0x05
-  {"P1V8_ASIC_VOL", 0, get_meb_jcn_sensor, false, {2.045, 0, 0, 0, 0, 0, 0, 0},  VOLT}, // 0x06
-  {"P12V_STBY_VOL", 0, get_meb_jcn_sensor, true, {0, 13.125, 0, 0, 11.875, 0, 0, 0},  VOLT}, // 0x07
-  {"P3V3_STBY_VOL", 0, get_meb_jcn_sensor, true, {0, 3.465, 0, 0, 3.135, 0, 0, 0},  VOLT}, // 0x08
-  {"PVPP_AB_VOL", 0, get_meb_jcn_sensor, false, {2.875, 2.75, 3, 2.1875, 2.375, 2, 0, 0},  VOLT}, // 0x09
-  {"PVTT_AB_VOL", 0, get_meb_jcn_sensor, false, {0, 0.632, 0, 0, 0.568, 0, 0, 0},  VOLT}, // 0x0A
-  {"PVPP_CD_VOL", 0, get_meb_jcn_sensor, false, {2.875, 2.75, 3, 2.1875, 2.375, 2, 0, 0},  VOLT}, // 0x0B
-  {"PVTT_CD_VOL", 0, get_meb_jcn_sensor, false, {0, 0.632, 0, 0, 0.568, 0, 0, 0},  VOLT}, // 0x0C
-  {"P0V8_ASICA_VOL", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  VOLT}, // 0x0D
-  {"P0V9_ASICA_VOL", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  VOLT}, // 0x0E
-  {"P0V8_ASICD_VOL", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  VOLT}, // 0x0F
-  {"PVDDQ_AB_VOL", 0, get_meb_jcn_sensor, false, {1.38, 1.26, 1.5, 1.02, 1.14, 0.9, 0, 0},  VOLT}, // 0x10
-  {"PVDDQ_CD_VOL", 0, get_meb_jcn_sensor, false, {1.38, 1.26, 1.5, 1.02, 1.14, 0.9, 0, 0},  VOLT}, // 0x11
-  {"P12V_STBY_4CP_CUR", 0, get_meb_jcn_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x12
-  {"P3V3_STBY_4CP_CUR", 0, get_meb_jcn_sensor, true, {0.33424, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x13
-  {"P0V8_ASICA_CUR", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x14
-  {"P0V9_ASICA_CUR", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x15
-  {"P0V8_ASICD_CUR", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x16
-  {"PVDDQ_AB_CUR", 0, get_meb_jcn_sensor, false, {11.05, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x17
-  {"PVDDQ_CD_CUR", 0, get_meb_jcn_sensor, false, {11.05, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x18
+  {"CXL Inlet TEMP", 0, get_meb_jcn_sensor, false, {50, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
+  {"CXL CTRL TEMP", 0, get_meb_jcn_sensor, false, {90, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
+  {"P12V_STBY_4CP_VOLT", 0, get_meb_jcn_sensor, true, {0, 13.125, 0, 0, 11.875, 0, 0, 0},  VOLT}, // 0x03
+  {"P3V3_STBY_4CP_VOLT", 0, get_meb_jcn_sensor, true, {0, 3.465, 0, 0, 3.135, 0, 0, 0},  VOLT}, // 0x04
+  {"P5V_STBY_VOLT", 0, get_meb_jcn_sensor, true, {5.625, 5.25, 6, 4.375, 4.75, 4, 0, 0},  VOLT}, // 0x05
+  {"P1V8_ASIC_VOLT", 0, get_meb_jcn_sensor, false, {2.045, 0, 0, 0, 0, 0, 0, 0},  VOLT}, // 0x06
+  {"P12V_STBY_VOLT", 0, get_meb_jcn_sensor, true, {0, 13.125, 0, 0, 11.875, 0, 0, 0},  VOLT}, // 0x07
+  {"P3V3_STBY_VOLT", 0, get_meb_jcn_sensor, true, {0, 3.465, 0, 0, 3.135, 0, 0, 0},  VOLT}, // 0x08
+  {"PVPP_AB_VOLT", 0, get_meb_jcn_sensor, false, {2.875, 2.75, 3, 2.1875, 2.375, 2, 0, 0},  VOLT}, // 0x09
+  {"PVTT_AB_VOLT", 0, get_meb_jcn_sensor, false, {0, 0.632, 0, 0, 0.568, 0, 0, 0},  VOLT}, // 0x0A
+  {"PVPP_CD_VOLT", 0, get_meb_jcn_sensor, false, {2.875, 2.75, 3, 2.1875, 2.375, 2, 0, 0},  VOLT}, // 0x0B
+  {"PVTT_CD_VOLT", 0, get_meb_jcn_sensor, false, {0, 0.632, 0, 0, 0.568, 0, 0, 0},  VOLT}, // 0x0C
+  {"P0V8_ASICA_VOLT", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  VOLT}, // 0x0D
+  {"P0V9_ASICA_VOLT", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  VOLT}, // 0x0E
+  {"P0V8_ASICD_VOLT", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  VOLT}, // 0x0F
+  {"PVDDQ_AB_VOLT", 0, get_meb_jcn_sensor, false, {1.38, 1.26, 1.5, 1.02, 1.14, 0.9, 0, 0},  VOLT}, // 0x10
+  {"PVDDQ_CD_VOLT", 0, get_meb_jcn_sensor, false, {1.38, 1.26, 1.5, 1.02, 1.14, 0.9, 0, 0},  VOLT}, // 0x11
+  {"P12V_STBY_4CP_CURR", 0, get_meb_jcn_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x12
+  {"P3V3_STBY_4CP_CURR", 0, get_meb_jcn_sensor, true, {0.33424, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x13
+  {"P0V8_ASICA_CURR", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x14
+  {"P0V9_ASICA_CURR", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x15
+  {"P0V8_ASICD_CURR", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x16
+  {"PVDDQ_AB_CURR", 0, get_meb_jcn_sensor, false, {11.05, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x17
+  {"PVDDQ_CD_CURR", 0, get_meb_jcn_sensor, false, {11.05, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x18
   {"P12V_STBY_4CP_PWR", 0, get_meb_jcn_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x19
   {"P3V3_STBY_4CP_PWR", 0, get_meb_jcn_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x1A
   {"P0V8_ASICA_PWR", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x1B

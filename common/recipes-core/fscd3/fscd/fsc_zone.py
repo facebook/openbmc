@@ -357,11 +357,11 @@ class Zone:
                         if (output_type == "linear_non_fru_sensor") and (sensor.status in ["na"]) and (self.sensor_valid_cur[sensor_index] != -1):
                             if self.non_fru_sensor_sel_flag[sname] == False:
                                 self.non_fru_sensor_sel_flag[sname] = True
-                                Logger.crit("%s Fail" % sname)
+                                Logger.warn("%s Fail" % sname)
                         elif (output_type == "linear_non_fru_sensor") and (sensor.status not in ["na"]) and (self.sensor_valid_cur[sensor_index] != -1):
                             if self.non_fru_sensor_sel_flag[sname] == True:
                                 self.non_fru_sensor_sel_flag[sname] = False
-                                Logger.crit("%s Recover" % sname)
+                                Logger.warn("%s Recover" % sname)
                         elif (sensor.status in ["na"]) and (
                             self.sensor_valid_cur[sensor_index] != -1
                         ):

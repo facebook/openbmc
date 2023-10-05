@@ -391,7 +391,9 @@ class Zone:
                                 else:
                                     outmin = max(outmin, self.boost)
                                     cause_boost_count += 1
-                            if not os.path.isfile(sensor_fail_record_path):
+                            if (not os.path.isfile(sensor_fail_record_path)) and (
+                                not fsc_board.sensor_fail_ignore_check(board, sname)
+                            ):
                                 sensor_fail_record = open(sensor_fail_record_path, "w")
                                 sensor_fail_record.close()
                             if outmin == self.boost:

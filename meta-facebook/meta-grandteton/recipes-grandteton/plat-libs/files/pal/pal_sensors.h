@@ -186,6 +186,7 @@ int read_vr_temp(uint8_t fru, uint8_t sensor_num, float *value);
 int read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value);
 int read_vr_iout(uint8_t fru, uint8_t sensor_num, float *value);
 int read_vr_pout(uint8_t fru, uint8_t sensor_num, float *value);
+uint8_t pal_get_acb_card_config(void);
 
 extern const char pal_server_list[];
 #endif

@@ -100,7 +100,6 @@ static void
   char fru_bin_path[32] = {0};
   int fru = (int)arg;
   uint8_t status = 0;
-  pthread_detach(pthread_self());
   bic_intf fru_bic_info = {0};
 
   fru_bic_info.fru_id = fru;
@@ -203,7 +202,11 @@ int plat_fruid_init(void) {
   char bin_path[32] = {0};
   unsigned int caps = 0;
   uint8_t dev_num = 0;
+  uint8_t config = 0;
 
+  if (pal_is_artemis()) {
+    config = pal_get_acb_card_config();
+  }
   for (int fru = 1; fru < FRU_CNT; fru ++) {
     // Get FRU data from PLDM
     if ( (pal_get_fru_path_type(fru) == FRU_PATH_PLDM) && !pal_get_fru_capability(fru, &caps)) {
@@ -212,11 +215,13 @@ int plat_fruid_init(void) {
           syslog(LOG_WARNING, "%s: Create pldm_fru_reader Failed, FRU: %d", __func__, fru);
         }
       }
-      if ((caps & FRU_CAPABILITY_HAS_DEVICE)) {
-        pal_get_num_devs(fru, &dev_num);
-        for (int dev = 1; dev <= dev_num; dev ++) {
-          if (pldm_dev_fru_reader(fru, dev) < 0) {
-            syslog(LOG_WARNING, "%s() Get FRU: %u DEV %u FRUID failed", __func__, fru, dev);
+      if (config != ARTEMIS_CARD) {
+        if ((caps & FRU_CAPABILITY_HAS_DEVICE)) {
+          pal_get_num_devs(fru, &dev_num);
+          for (int dev = 1; dev <= dev_num; dev ++) {
+            if (pldm_dev_fru_reader(fru, dev) < 0) {
+              syslog(LOG_WARNING, "%s() Get FRU: %u DEV %u FRUID failed", __func__, fru, dev);
+            }
           }
         }
       }
@@ -237,6 +242,16 @@ int plat_fruid_init(void) {
     if (copy_eeprom_to_bin(eeprom_path, bin_path)) {
       syslog(LOG_WARNING, "%s: Copy FRU%d EEPROM Failed", __func__, fru);
       continue;
+    }
+  }
+
+  for (int fru = 1; fru < FRU_CNT; fru ++) {
+    if ( (pal_get_fru_path_type(fru) == FRU_PATH_PLDM) && !pal_get_fru_capability(fru, &caps)) {
+      if ((caps & FRU_CAPABILITY_FRUID_READ)) {
+        if (pthread_join(tid_fru[fru], NULL)) {
+          syslog(LOG_WARNING, "%s pthread join Fru: %u failed", __func__, fru);
+        }
+      }
     }
   }
   return 0;

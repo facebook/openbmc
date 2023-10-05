@@ -323,6 +323,7 @@ enum {
 
 enum {
   MEM_PPR     = 0x0,
+  MEM_ADDDC   = 0x5,
   MEM_NO_DIMM = 0x7,
 };
 

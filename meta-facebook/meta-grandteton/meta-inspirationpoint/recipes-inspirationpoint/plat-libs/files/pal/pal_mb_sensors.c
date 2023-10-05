@@ -209,9 +209,6 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_VR_RT_P0V9_VDD2_VOUT,
   MB_SNR_VR_RT_P0V9_VDD2_IOUT,
   MB_SNR_VR_RT_P0V9_VDD2_POUT,
-};
-
-const uint8_t hsc_sensor_list[] = {
   MB_SNR_HSC_VIN,
   MB_SNR_HSC_IOUT,
   MB_SNR_HSC_PIN,
@@ -525,7 +522,6 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
 extern struct snr_map sensor_map[];
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
-size_t hsc_sensor_cnt = sizeof(hsc_sensor_list)/sizeof(uint8_t);
 size_t mb_discrete_sensor_cnt = sizeof(mb_discrete_sensor_list)/sizeof(uint8_t);
 
 int

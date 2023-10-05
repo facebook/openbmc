@@ -73,7 +73,7 @@ enum ARTEMIS_CXL_VR {
   JCN12_VR_CXL_A0V8_9,
   JCN12_VR_CXL_VDDQ_AB,
   JCN12_VR_CXL_VDDQ_CD,
-  VR_VPDB_BRICK,
+  VR_VPDB_DISCRETE,
   CXL_VR_CNT,
 };
 
@@ -116,7 +116,7 @@ enum {
 };
 
 enum {
-  ADDR_VPDB_VR_BRICK = 0xA8,
+  ADDR_VPDB_DISCRETE_VR = 0xA8,
 };
 
 #define MAX_VR_CNT (MB_VR_CNT + ACB_VR_CNT + SWB_VR_CNT + CXL_VR_CNT + MB_RT_VR_CNT)
@@ -559,10 +559,10 @@ struct vr_info cxl_vr_list[] = {
     .private_data = "mc_cxl2",
     .xfer = cxl_vr_pldm_wr,
   },
-  [VR_VPDB_BRICK] = {
+  [VR_VPDB_DISCRETE] = {
     .bus = VPDB_VR_BUS_ID,
-    .addr = ADDR_VPDB_VR_BRICK,
-    .dev_name = "VPDB_BRICK",
+    .addr = ADDR_VPDB_DISCRETE_VR,
+    .dev_name = "VPDB_VR",
     .ops = &raa_gen2_3_ops,
     .private_data = "vpdb",
     .xfer = NULL,

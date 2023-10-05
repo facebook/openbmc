@@ -45,6 +45,37 @@ static map<uint8_t, map<uint8_t, string>> rainbow_falls_vr_list = {
 bool VrComponent::vr_printed = false;
 bool VrComponent::rbf_vr_printed = false;
 
+static uint8_t severBoardType = SERVER_TYPE_CL;
+
+int get_ver_str_from_bic(uint8_t slot_id, const uint8_t vr_comp, string& s) {
+  int ret = 0;
+  uint8_t rbuf[32] = {0};
+  string vendor_str;
+  string ver_str;
+  string rw_str;
+
+  ret = bic_get_fw_ver(slot_id, vr_comp, rbuf);
+  if (!ret) {
+    stringstream buffer;
+    if (rbuf[5] == VR_INFINEON) {
+      vendor_str = "Infineon";
+    }
+    buffer << hex << setfill('0')
+            << setw(2) << + rbuf[0]
+            << setw(2) << + rbuf[1]
+            << setw(2) << + rbuf[2]
+            << setw(2) << + rbuf[3];
+    ver_str = buffer.str();
+    transform(ver_str.begin(), ver_str.end(), ver_str.begin(), ::toupper);
+    buffer.str("");
+    buffer.clear();
+    buffer << dec << setw(2) << + rbuf[4];
+    rw_str = buffer.str();
+    s = vendor_str + " " + ver_str + ", Remaining Write: " + rw_str;
+  }
+  return ret;
+}
+
 int VrComponent::update_internal(const string& image, bool force) {
   int ret = 0;
 
@@ -92,10 +123,7 @@ int VrComponent::fupdate(const string image) {
 
 int VrComponent::get_ver_str(const uint8_t vr_comp, const string& name, string& s) {
   int ret = 0;
-  char key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
   uint8_t vr_device_id = 0;
-  snprintf(key, sizeof(key), "slot%d_vr_device_id", slot_id);
 
   plat_vr_preinit(slot_id, fru().c_str());
   if (vr_probe() < 0) {
@@ -103,45 +131,26 @@ int VrComponent::get_ver_str(const uint8_t vr_comp, const string& name, string& 
     return -1;
   }
 
-  if (kv_get(key, value, NULL, 0) == 0) {
-    vr_device_id = atoi(value);
-    if (vr_device_id == VR_INFINEON) {
-      uint8_t rbuf[32] = {0};
-      string vendor_str;
-      string ver_str;
-      string rw_str;
+  if (severBoardType == SERVER_TYPE_CL) {
+    try {
+      auto key = fmt::format( "slot{}_vr_device_id", slot_id);
 
-      ret = bic_get_fw_ver(slot_id, vr_comp, rbuf);
-      if (!ret) {
-        stringstream buffer;
-        if (rbuf[5] == VR_INFINEON) {
-          vendor_str = "Infineon";
-        }
-        buffer << hex << setfill('0')
-                << setw(2) << + rbuf[0]
-                << setw(2) << + rbuf[1]
-                << setw(2) << + rbuf[2]
-                << setw(2) << + rbuf[3];
-        ver_str = buffer.str();
-        transform(ver_str.begin(), ver_str.end(), ver_str.begin(), ::toupper);
-        buffer.str("");
-        buffer.clear();
-        buffer << dec << setw(2) << + rbuf[4];
-        rw_str = buffer.str();
-        s = vendor_str + " " + ver_str + ", Remaining Write: " + rw_str;
+      vr_device_id = stoi(kv::get(key));
+      if (vr_device_id == VR_INFINEON) {
+        get_ver_str_from_bic(slot_id, vr_comp, s);
       }
-    } else {
-      char ver[MAX_VER_STR_LEN] = {0};
-      ret = vr_fw_version(-1, name.c_str(), ver);
-      vr_remove();
-      if (ret) {
-        return -1;
-      }
-      s = string(ver);
+    } catch (const std::exception& err) {
+      cerr << "Fail to get the VR device ID!" << endl;
+      return FW_STATUS_FAILURE;
     }
   } else {
-    cout << "Fail to get the VR device ID!" << endl;
-    return -1;
+    char ver[MAX_VER_STR_LEN] = {0};
+    ret = vr_fw_version(-1, name.c_str(), ver);
+    vr_remove();
+    if (ret) {
+      return FW_STATUS_FAILURE;
+    }
+    s = string(ver);
   }
 
   return 0;
@@ -275,8 +284,8 @@ map<uint8_t, map<uint8_t, string>>&  VrComponent::get_vr_list() {
   if( fw_comp == FW_1OU_VR || rainbow_falls_vr_list.count(fw_comp) > 0) {
       return rainbow_falls_vr_list;
   }
-
-  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+  severBoardType = fby35_common_get_slot_type(slot_id) ;
+  if (severBoardType == SERVER_TYPE_HD) {
     if (!halfdome_vr_table.contains(slot_id)) {
       //Generate vr list of a slot if not exist
       uint8_t board_rev = 0, vr_type = 0;
@@ -289,7 +298,7 @@ map<uint8_t, map<uint8_t, string>>&  VrComponent::get_vr_list() {
       }
     }
     return halfdome_vr_table[slot_id];
-  } else if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_GL) {
+  } else if (severBoardType== SERVER_TYPE_GL) {
     switch (fby35_common_get_sb_rev(slot_id)) {
     case FW_REV_EVT: {
       // Erase great_lake_vr_list's components

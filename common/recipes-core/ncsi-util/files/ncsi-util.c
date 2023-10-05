@@ -413,6 +413,7 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
   // FW data transfer
   int loopCount = 0;
   int idleCnt = 0;
+  int applyCnt = 0;
   int pldmCmd = 0;
   setPldmTimeout(CMD_UPDATE_COMPONENT, &waitTOsec);
   while (idleCnt < (waitTOsec * 1000 /SLEEP_TIME_MS) ) {
@@ -461,8 +462,16 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
       //print_ncsi_resp(nl_resp);
       free(nl_resp);
       nl_resp = NULL;
-      if ((pldmCmd == CMD_APPLY_COMPLETE) || (pldmCmdStatus == -1))
+      if (pldmCmdStatus == -1)
         break;
+      // Track the number of APPLYs and once all components are transfered,
+      // we can break and activate.
+      if (pldmCmd == CMD_APPLY_COMPLETE) {
+        applyCnt++;
+        if (applyCnt == pkgHdr->componentImageCnt) {
+          break;
+        }
+      }
       if (nl_conf == 0) // Linux 4.1
         msleep(10); // add dealy to reduce retry sending request to NIC
     } else {

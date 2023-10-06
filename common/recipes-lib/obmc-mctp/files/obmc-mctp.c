@@ -505,6 +505,7 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   int i = 0;
   int waitTOsec = 0;
   uint8_t pldmCmd = 0;
+  uint8_t applyCnt = 0;
 
   pkgHdr = pldm_parse_fw_pkg(path);
   if (!pkgHdr) {
@@ -578,7 +579,7 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
          (pldmCmd == CMD_APPLY_COMPLETE)) {
       setPldmTimeout(pldmCmd, &waitTOsec);
       mctpReq_to_pldmReq(&pldmReq, &obmc_req);
-      pldmCmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, &pldmRes, 0);
+      pldmCmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, &pldmRes, applyCnt);
       pldmRes_to_mctpRes(&rsp, &pldmRes);
 
       ret = mctp_smbus_send_data(mctp, dst_eid, tag,
@@ -586,8 +587,14 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
       if (ret < 0) {
         break;
       }
-      if ((pldmCmd == CMD_APPLY_COMPLETE) || (pldmCmdStatus == -1))
+      if (pldmCmdStatus == -1)
         break;
+      if (pldmCmd == CMD_APPLY_COMPLETE) {
+        applyCnt++;
+        if (applyCnt == pkgHdr->componentImageCnt) {
+          break;
+        }
+      }
     } else {
       printf("unknown PLDM cmd 0x%02X\n", pldmCmd);
       break;

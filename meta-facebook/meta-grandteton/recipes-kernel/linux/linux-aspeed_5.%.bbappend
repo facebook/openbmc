@@ -19,6 +19,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/plat_conf:"
 
 SRC_URI += "\
             file://grandteton.cfg \
+            file://0001-iio-adc-aspeed-Extend-the-delay-time-to-meet-ADC-hw-.patch \
 	"
 
 KERNEL_MODULE_AUTOLOAD += " \

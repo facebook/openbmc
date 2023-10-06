@@ -331,7 +331,7 @@ fi
 #VPDB BRICK
 # only for PVT DISCRETE Config
 if [ "$vrev" -eq "$VPDB_DISCRETE_PVT" ] &&
-  ( [ "$vsku" -eq "2" ] || [ "$vsku" -eq "5" ] ); then
+  { [ "$vsku" -eq "2" ] || [ "$vsku" -eq "5" ]; }; then
   # DISCRETE_PVT has unique sku ( 010 and 101 )
   # that specially point out its brick source
   brick_driver="raa228006"
@@ -367,7 +367,6 @@ fi
 if [ "$vrev" -ge "$VPDB_PVT4" ]; then
   # ADC Type
   adc_type_dif="0"
-  adc_type_sgl="1"
   adc_type="$(gpio_get VPDB_SKU_ID_4)"
   adc_dif_sku="$(($(gpio_get VPDB_SKU_ID_6) << 1 | $(gpio_get VPDB_SKU_ID_5)))"
   adc_sgl_sku="$(gpio_get VPDB_SKU_ID_7)"
@@ -399,9 +398,9 @@ if [ "$vrev" -ge "$VPDB_PVT4" ]; then
     fi
   else
     # probe adc sig
-    if [ $adc_sgl_sku -eq 0 ]; then
+    if [ "$adc_sgl_sku" -eq 0 ]; then
       i2c_device_add 36 0x35 max11617
-      echo 1 > /sys/bus/i2c/devices/36-0035/iio\:device*/polar_resistor
+      echo 1 > /sys/bus/i2c/devices/36-0035/iio:device*/polar_resistor
     else
       rebind_i2c_dev 36 48 ads1015
     fi
@@ -492,7 +491,7 @@ hpdb_hsc=$(gpio_get HPDB_SKU_ID_0)
 
 # HPDB_BOARD_ID_3 was present in between stage DVT and stage PVT3
 # but the value was 1, so if revs in range 11 ~ 15 (DVT ~ PVT3) need to be reconfig.
-if [ $hrev -ge 11 ] && [ $hrev -le 15 ]; then
+if [ "$hrev" -ge 11 ] && [ "$hrev" -le 15 ]; then
   kv set hpdb_rev "$((
                     $(gpio_get HPDB_BOARD_ID_2) << 2 |
                     $(gpio_get HPDB_BOARD_ID_1) << 1 |
@@ -502,7 +501,7 @@ if [ $hrev -ge 11 ] && [ $hrev -le 15 ]; then
 fi
 
 # Stage before PVT4
-[ $hrev -lt $HPDB_PVT4 ] && hpdb_hsc=$(gpio_get HPDB_SKU_ID_2)
+[ "$hrev" -lt "$HPDB_PVT4" ] && hpdb_hsc=$(gpio_get HPDB_SKU_ID_2)
 
 if [ "$hpdb_hsc" -eq "$HPDB_HSC_MAIN" ] && [ "$hrev" -gt 1 ]; then
   i2cset -f -y 39 0x40 0xD9 0x8b
@@ -522,7 +521,6 @@ if [ "$hrev" -ge "$HPDB_PVT4" ]; then
 
   # ADC Type
   adc_type_dif="0"
-  adc_type_sgl="1"
   adc_type=$(gpio_get HPDB_SKU_ID_2)
   adc_dif_sku="$(($(gpio_get HPDB_SKU_ID_4) << 1 | $(gpio_get HPDB_SKU_ID_3)))"
   adc_sgl_sku=$(gpio_get HPDB_SKU_ID_5)
@@ -560,9 +558,9 @@ if [ "$hrev" -ge "$HPDB_PVT4" ]; then
     fi
   else
     # probe adc sig
-    if [ $adc_sgl_sku -eq 0 ]; then
+    if [ "$adc_sgl_sku" -eq 0 ]; then
       rebind_i2c_dev 37 35 max11617
-      echo 1 > /sys/bus/i2c/devices/37-0035/iio\:device*/polar_resistor
+      echo 1 > /sys/bus/i2c/devices/37-0035/iio:device*/polar_resistor
     else
       rebind_i2c_dev 37 48 ads1015
     fi
@@ -934,4 +932,23 @@ if [ "$(is_bmc_por)" -eq 1 ]; then
   pldmd-util -b 3 -e 0x0a raw 0x02 0x39 0x62 0xFF 0x02 0x00 0x00 0x01 0x02 >/dev/null
   sleep 3
 fi
+
+#Enable ADC upper bound value
+#ADC0 ~ ADC7 upper bound value
+adc0_upper_bound=("25F" "264" "251" "245" "244" "13D" "204" "1D0")
+#ADC8 ~ ADC15 upper bound value
+adc1_upper_bound=("1BA" " " " " " " " " " " " " " ")
+
+for i in {0..7}; do
+  if [[ "${adc0_upper_bound["$i"]}" != " " ]]; then
+    echo $((0x"${adc0_upper_bound["$i"]}")) > /sys/bus/iio/devices/iio:device0/events/in_voltage"$i"_thresh_rising_value
+    echo 1 > /sys/bus/iio/devices/iio:device0/events/in_voltage"$i"_thresh_rising_en
+  fi
+done
+for i in {0..7}; do
+  if [[ "${adc1_upper_bound["$i"]}" != " " ]]; then
+    echo $((0x"${adc1_upper_bound["$i"]}")) > /sys/bus/iio/devices/iio:device1/events/in_voltage"$i"_thresh_rising_value
+    echo 1 > /sys/bus/iio/devices/iio:device1/events/in_voltage"$i"_thresh_rising_en
+  fi
+done
 

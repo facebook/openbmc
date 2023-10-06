@@ -790,13 +790,12 @@ error_exit:
 }
 
 static
-int handlePldmReqFwData(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pldmRes)
+int handlePldmReqFwData(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pldmRes, uint8_t compIdx)
 {
   PLDM_RequestFWData_t *pReqDataCmd = (PLDM_RequestFWData_t *)pCmd->payload;
-  // for now assumes  it's always component 0
   unsigned char *pComponent =
-       (unsigned char*)(pkgHdr->rawHdrBuf + pkgHdr->pCompImgInfo[0]->locationOffset);
-  uint32_t componentSize = pkgHdr->pCompImgInfo[0]->size;
+       (unsigned char*)(pkgHdr->rawHdrBuf + pkgHdr->pCompImgInfo[compIdx]->locationOffset);
+  uint32_t componentSize = pkgHdr->pCompImgInfo[compIdx]->size;
 
   // calculate how much FW data is left to transfer and if any padding is needed
   int compBytesLeft = componentSize - pReqDataCmd->offset;
@@ -888,7 +887,7 @@ int handlePldmFwApplyComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
   return ret;
 }
 
-int pldmFwUpdateCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pRes)
+int pldmFwUpdateCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pRes, uint8_t compIdx)
 {
   int cmd = pCmd->common[PLDM_CMD_OFFSET];
   int ret = 0;
@@ -896,7 +895,7 @@ int pldmFwUpdateCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_r
   // need to check cmd validity
   switch (cmd) {
     case CMD_REQUEST_FIRMWARE_DATA:
-      ret = handlePldmReqFwData(pkgHdr, pCmd, pRes);
+      ret = handlePldmReqFwData(pkgHdr, pCmd, pRes, compIdx);
       break;
     case CMD_TRANSFER_COMPLETE:
       printf("handle CMD_TRANSFER_COMPLETE\n");

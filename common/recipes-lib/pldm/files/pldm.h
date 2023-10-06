@@ -76,7 +76,7 @@ uint64_t pldmHandleGetPldmTypesResp(PLDM_GetPldmTypes_Response_t *pPldmResp);
 
 void setPldmTimeout(int pldmCmd, int *timeout_sec);
 int pldmFwUpdateCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd,
-                           pldm_response *pldmRes);
+                           pldm_response *pldmRes, uint8_t compIdx);
 int pldmRespHandler(pldm_response *pResp);
 int ncsiGetPldmCmd(NCSI_NL_RSP_T *nl_resp,  pldm_cmd_req *pCmd);
 int ncsiDecodePldmCompCode(NCSI_NL_RSP_T *nl_resp);

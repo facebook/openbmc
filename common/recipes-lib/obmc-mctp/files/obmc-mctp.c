@@ -578,7 +578,7 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
          (pldmCmd == CMD_APPLY_COMPLETE)) {
       setPldmTimeout(pldmCmd, &waitTOsec);
       mctpReq_to_pldmReq(&pldmReq, &obmc_req);
-      pldmCmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, &pldmRes);
+      pldmCmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, &pldmRes, 0);
       pldmRes_to_mctpRes(&rsp, &pldmRes);
 
       ret = mctp_smbus_send_data(mctp, dst_eid, tag,

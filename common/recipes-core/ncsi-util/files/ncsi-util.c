@@ -448,7 +448,7 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
       setPldmTimeout(pldmCmd, &waitTOsec);
       loopCount++;
       waitcycle = 0;
-      pldmCmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, pldmRes);
+      pldmCmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, pldmRes, applyCnt);
       ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_SEND_NC_PLDM_REPLY,
                                  pldmRes->resp_size, pldmRes->common);
       if (ret) {

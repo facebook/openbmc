@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.0:"
 
 SRC_URI += "file://1001-hwmon-pmbus-bel-pfe-enable-PMBUS_SKIP_STATUS_CHECK-f.patch \
             file://1005-i2c-aspeed-update-ast2400-timing-settings.patch \

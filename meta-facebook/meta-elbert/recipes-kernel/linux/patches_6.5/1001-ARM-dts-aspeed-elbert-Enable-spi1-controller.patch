@@ -1,0 +1,52 @@
+From fe97b9a2a6efb94616352ede54c107a8489e567f Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Mon, 9 May 2022 23:08:05 -0700
+Subject: [PATCH 2/3] ARM: dts: aspeed: elbert: Enable spi1 controller
+
+Summary: Enable spi1 controller in elbert dts.
+
+Test Plan:
+1) "bitbake elbert-image" succeeded.
+2) "spi_pim_ver.sh" prints correct PIM version in elbert.
+
+Reviewers: tfang, hya321, joancaneus, binhuang, goldenbug, #openbmc
+
+Reviewed By: goldenbug
+
+Differential Revision: https://phabricator.intern.facebook.com/D37292795
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts    | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
+index 8e1a1d1b282d..34c53928dfe0 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
+@@ -50,6 +50,24 @@ spi_gpio: spi-gpio {
+ 	};
+ };
+ 
++&spi1 {
++	status = "okay";
++	compatible = "aspeed,ast2600-spi-user";
++
++	/* GPIOV0 controls another mux beyond this Chip select on SCM2 */
++	spidev@0 {
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <5000000>;
++		reg = <0>;
++	};
++
++	spidev@1 {
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <5000000>;
++		reg = <1>;
++	};
++};
++
+ &lpc_ctrl {
+ 	status = "okay";
+ };
+-- 
+2.30.2
+

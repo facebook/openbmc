@@ -1,0 +1,52 @@
+From d52a553dac67f8763e7082225361b9d58468a44f Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Thu, 15 Jun 2023 15:45:01 -0700
+Subject: [PATCH 1/2] ARM: dts: aspeed: yamp: Enable spi2 controller
+
+Enable spi2 controller to access the X86 BIOS. Refer to "bios_util.sh"
+in meta-yamp layer for details.
+---
+ .../arm/boot/dts/aspeed/aspeed-bmc-facebook-yamp.dts | 20 +++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yamp.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yamp.dts
+index 5e6105874217..b26d7ad19e3f 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yamp.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yamp.dts
+@@ -17,6 +17,9 @@ aliases {
+ 		serial1 = &uart1;
+ 		serial2 = &uart2;
+ 		serial3 = &uart3;
++
++		spi0 = &fmc;
++		spi2 = &spi2;
+ 	};
+ 
+ 	chosen {
+@@ -25,6 +28,23 @@ chosen {
+ 	};
+ };
+ 
++&spi2 {
++	status = "okay";
++	compatible = "aspeed,ast2500-spi-user";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_spi2ck_default
++		     &pinctrl_spi2cs0_default
++		     &pinctrl_spi2cs1_default
++		     &pinctrl_spi2miso_default
++		     &pinctrl_spi2mosi_default>;
++
++	spidev@0 {
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <33000000>;
++		reg = <0>;
++	};
++};
++
+ &uart2 {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+-- 
+2.34.1
+

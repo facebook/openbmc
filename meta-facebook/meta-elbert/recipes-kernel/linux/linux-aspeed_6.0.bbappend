@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.0:"
 
 SRC_URI += "file://1001-ARM-dts-aspeed-elbert-Enable-spi1-controller.patch \
             file://1002-ARM-dts-aspeed-elbert-Enable-jtag1-controller.patch \

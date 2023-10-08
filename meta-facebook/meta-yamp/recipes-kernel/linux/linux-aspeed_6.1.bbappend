@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.1:"
 
 SRC_URI += "file://1001-net-ncsi-allow-to-customize-MC-s-MAC-address-offset-.patch \
             file://1002-ARM-dts-aspeed-yamp-Enable-spi2-controller.patch \

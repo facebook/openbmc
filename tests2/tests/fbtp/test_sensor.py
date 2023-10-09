@@ -24,7 +24,7 @@ from common.base_sensor_test import SensorUtilTest
 from tests.fbtp.test_data.sensors.sensors import SENSORS
 from utils.cit_logger import Logger
 from utils.shell_util import run_cmd
-from utils.test_utils import qemu_check
+from utils.test_utils import check_fru_availability, qemu_check
 
 
 class MBSensorTest(SensorUtilTest, unittest.TestCase):
@@ -50,6 +50,8 @@ class Riser2SensorTest(MBSensorTest):
     FRU_NAME = "riser_slot2"
 
     def test_sensor_keys(self):
+        if not check_fru_availability(self.FRU_NAME):
+            self.skipTest("skip test due to {} not available".format(self.FRU_NAME))
         # for fbtp, T6/8 won't have riser sensor, so we'll skip the test
         cmd = ["kv", "get", "mb_system_conf_desc", "persistent"]
         m = re.search("Type 6/8 compute", run_cmd(cmd))

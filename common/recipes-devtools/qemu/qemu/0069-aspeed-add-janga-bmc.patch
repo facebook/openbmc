@@ -1,0 +1,143 @@
+From 2b61f22a8a51b130d7099835b713e17037e01869 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Mon, 10 Jul 2023 16:47:00 +0700
+Subject: [PATCH] aspeed: add janga bmc
+
+Signed-off-by: Tao Ren <taoren@meta.com>
+---
+ hw/arm/aspeed.c        | 58 ++++++++++++++++++++++++++++++++++++++++++
+ hw/arm/aspeed_eeprom.c | 16 ++++++++++++
+ hw/arm/aspeed_eeprom.h |  3 +++
+ 3 files changed, 77 insertions(+)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index a0e3282d68..986ec6f058 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -177,6 +177,10 @@ struct AspeedMachineState {
+ #define MONTBLANC_BMC_HW_STRAP1    0x00000000
+ #define MONTBLANC_BMC_HW_STRAP2    0x00000000
+
++/* Janga hardware value */
++#define JANGA_BMC_HW_STRAP1    0x00000000
++#define JANGA_BMC_HW_STRAP2    0x00000000
++
+ /* Bletchley hardware value */
+ /* TODO: Leave same as EVB for now. */
+ #define BLETCHLEY_BMC_HW_STRAP1 AST2600_EVB_HW_STRAP1
+@@ -944,6 +948,30 @@ static void montblanc_bmc_i2c_init(AspeedMachineState *bmc)
+     create_pca9552(soc, 4, 0x27);
+ }
+
++static void janga_bmc_i2c_init(AspeedMachineState *bmc)
++{
++    AspeedSoCState *soc = &bmc->soc;
++    I2CBus *i2c[16] = {};
++
++    for (int i = 0; i < 16; i++) {
++        i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
++    }
++
++    at24c_eeprom_init(i2c[3], 0x56, janga_smb_fruid, 8192, true); /* SMB_2 EEPROM */
++
++    /* CPLD and FPGA */
++    aspeed_eeprom_init(i2c[1], 0x35, 256);  /* SMB_CPLD_1 aka SCM_CPLD */
++    aspeed_eeprom_init(i2c[4], 0x35, 256);  /* COMe CPLD TODO: need to update */
++    aspeed_eeprom_init(i2c[6], 0x35, 256); /* FCB#1 CPLD TODO: need to update*/
++    aspeed_eeprom_init(i2c[2], 0x35, 256); /* FCB#2 CPLD TODO: need to update*/
++    aspeed_eeprom_init(i2c[12], 0x60, 256); /* PWR_CPLD */
++    aspeed_eeprom_init(i2c[13], 0x35, 256); /* IOB FPGA */
++
++    /* COMe Sensor/EEPROM */
++    aspeed_eeprom_init(i2c[0], 0x56, 16384);          /* FRU EEPROM */
++    i2c_slave_create_simple(i2c[0], TYPE_LM75, 0x48); /* INLET Sensor */
++    i2c_slave_create_simple(i2c[0], TYPE_LM75, 0x4A); /* OUTLET Sensor */
++}
+
+ static void wedge100_i2c_init(AspeedMachineState *bmc)
+ {
+@@ -1453,6 +1481,32 @@ static void aspeed_machine_montblanc_class_init(ObjectClass *oc, void *data)
+         aspeed_soc_num_cpus(amc->soc_name);
+ };
+
++/* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
++#if HOST_LONG_BITS == 32
++#define JANGA_BMC_RAM_SIZE (1 * GiB)
++#else
++#define JANGA_BMC_RAM_SIZE (2 * GiB)
++#endif
++static void aspeed_machine_janga_class_init(ObjectClass *oc, void *data)
++{
++    MachineClass *mc = MACHINE_CLASS(oc);
++    AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);
++
++    mc->desc = "Facebook Janga BMC (Cortex-A7)";
++    amc->soc_name = "ast2600-a3";
++    amc->hw_strap1 = JANGA_BMC_HW_STRAP1;
++    amc->hw_strap2 = JANGA_BMC_HW_STRAP2;
++    amc->fmc_model = "mx66l1g45g";
++    amc->spi_model = "mx66l1g45g";
++    amc->num_cs = 2;
++    amc->macs_mask = ASPEED_MAC3_ON;
++    amc->i2c_init = janga_bmc_i2c_init;
++    amc->uart_default = ASPEED_DEV_UART1;
++    mc->default_ram_size = JANGA_BMC_RAM_SIZE;
++    mc->default_cpus = mc->min_cpus = mc->max_cpus =
++        aspeed_soc_num_cpus(amc->soc_name);
++};
++
+ /* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
+ #if HOST_LONG_BITS == 32
+ #define BLETCHLEY_BMC_RAM_SIZE (1 * GiB)
+@@ -1674,6 +1728,10 @@ static const TypeInfo aspeed_machine_types[] = {
+         .name          = MACHINE_TYPE_NAME("montblanc-bmc"),
+         .parent        = TYPE_ASPEED_MACHINE,
+         .class_init    = aspeed_machine_montblanc_class_init,
++    }, {
++        .name          = MACHINE_TYPE_NAME("janga-bmc"),
++        .parent        = TYPE_ASPEED_MACHINE,
++        .class_init    = aspeed_machine_janga_class_init,
+     }, {
+         .name          = MACHINE_TYPE_NAME("bletchley-bmc"),
+         .parent        = TYPE_ASPEED_MACHINE,
+diff --git a/hw/arm/aspeed_eeprom.c b/hw/arm/aspeed_eeprom.c
+index 0de929f436..227892d1f2 100644
+--- a/hw/arm/aspeed_eeprom.c
++++ b/hw/arm/aspeed_eeprom.c
+@@ -52,6 +52,22 @@ const uint8_t montblanc_bmc_fruid[8192] = {
+     0x54, 0x48, 0x13, 0x03, 0x42, 0x4d, 0x43, 0xfa, 0x02, 0xef, 0xba,
+ };
+
++const uint8_t janga_smb_fruid[] = {
++    0xFB, 0xFB, 0x04, 0xFF, 0x01, 0x05, 0x4A, 0x41, 0x4E, 0x47, 0x41, 0x02,
++    0x09, 0x32, 0x30, 0x2D, 0x31, 0x30, 0x30, 0x30, 0x31, 0x36, 0x03, 0x08,
++    0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x04, 0x0C, 0x31, 0x33,
++    0x32, 0x31, 0x30, 0x30, 0x30, 0x30, 0x35, 0x20, 0x20, 0x20, 0x05, 0x0C,
++    0x31, 0x33, 0x31, 0x31, 0x30, 0x30, 0x30, 0x30, 0x34, 0x20, 0x20, 0x20,
++    0x06, 0x0C, 0x52, 0x34, 0x30, 0x35, 0x34, 0x47, 0x30, 0x30, 0x30, 0x32,
++    0x30, 0x31, 0x08, 0x01, 0x01, 0x09, 0x01, 0x01, 0x0A, 0x01, 0x01, 0x0B,
++    0x08, 0x44, 0x55, 0x4D, 0x4D, 0x59, 0x20, 0x53,0x4E, 0x0C, 0x03, 0x43,
++    0x4C, 0x53, 0x0D, 0x08, 0x32, 0x30, 0x32, 0x33, 0x30, 0x38, 0x32, 0x38,
++    0x0F, 0x03, 0x43, 0x54, 0x48, 0x10, 0x06, 0x01, 0x12, 0xFF, 0x91, 0xDB,
++    0xB4, 0x11, 0x06, 0x03, 0x12, 0xFF, 0x91, 0xDB, 0xB4, 0x12, 0x02, 0x64,
++    0x00, 0x13, 0x03, 0x53, 0x4D, 0x42, 0xFA, 0x02, 0x0B, 0x74,
++};
++
+ const size_t montblanc_scm_fruid_len = sizeof(montblanc_scm_fruid);
+ const size_t montblanc_fcm_fruid_len = sizeof(montblanc_fcm_fruid);
+ const size_t montblanc_bmc_fruid_len = sizeof(montblanc_bmc_fruid);
++const size_t janga_smb_fruid_len = sizeof(janga_smb_fruid);
+diff --git a/hw/arm/aspeed_eeprom.h b/hw/arm/aspeed_eeprom.h
+index 223327d96b..0f0f0e9501 100644
+--- a/hw/arm/aspeed_eeprom.h
++++ b/hw/arm/aspeed_eeprom.h
+@@ -16,4 +16,7 @@ extern const size_t montblanc_scm_fruid_len;
+ extern const size_t montblanc_fcm_fruid_len;
+ extern const size_t montblanc_bmc_fruid_len;
+
++extern const uint8_t janga_smb_fruid[];
++extern const size_t janga_smb_fruid_len;
++
+ #endif
+--
+2.25.1

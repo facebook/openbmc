@@ -93,6 +93,7 @@ SRC_URI = " \
     file://0066-net-slirp-Add-mfr-id-and-oob-eth-addr-parameters.patch \
     file://0067-aspeed-add-montblanc-bmc.patch \
     file://0068-hw-eeprom-at24c-for-1-byte-address.patch \
+    file://0069-aspeed-add-janga-bmc.patch \
     "
 PV = "7.2.0+git${SRCPV}"
 

@@ -58,7 +58,7 @@ func TestCheckVersion(t *testing.T) {
 			version:   "garbage",
 			err:       nil,
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Unable to parse version info: No match for regex 'bletchley-v(?P<year>[0-9]+).(?P<month>[0-9]+)' for input 'garbage'"),
+				errors.Errorf("Unable to parse version info: No match for regex 'bletchley-v(?P<year>[0-9]+).(?P<week>[0-9]+)' for input 'garbage'"),
 			},
 		},
 		{

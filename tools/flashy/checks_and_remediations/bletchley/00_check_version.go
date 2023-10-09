@@ -38,7 +38,7 @@ func checkVersion(stepParams step.StepParams) step.StepExitError {
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 
-	const re = `bletchley-v(?P<year>[0-9]+).(?P<month>[0-9]+)`
+	const re = `bletchley-v(?P<year>[0-9]+).(?P<week>[0-9]+)`
 	versionMap, err := utils.GetRegexSubexpMap(re, version)
 	if err != nil {
 		errMsg := errors.Errorf("Unable to parse version info: %v", err)
@@ -51,13 +51,13 @@ func checkVersion(stepParams step.StepParams) step.StepExitError {
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 
-	month, err := strconv.Atoi(versionMap["month"])
+	week, err := strconv.Atoi(versionMap["week"])
 	if err != nil {
 		errMsg := errors.Errorf("Unable to parse version info: %v", err)
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 	
-	if year < 2023 || (year == 2023 && month < 07) {
+	if year < 2023 || (year == 2023 && week < 07) {
 		errMsg := errors.Errorf("Cannot upgrade this version: %v", version)
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}

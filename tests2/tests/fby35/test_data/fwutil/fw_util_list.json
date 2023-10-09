@@ -12,9 +12,6 @@
         "rom": {
             "version header": "ROM Version"
         },
-        "hsc": {
-            "version header": "MP5990 HSC Checksum"
-        },
         "tpm": {
             "version header": "TPM Version"
         }
@@ -50,9 +47,6 @@
         },
         "me": {
             "version header": "ME Version"
-        },
-        "hsc": {
-            "version header": "MP5990 HSC Checksum"
         },
         "vr": {
             "version header": [
@@ -99,9 +93,6 @@
         "me": {
             "version header": "ME Version"
         },
-        "hsc": {
-            "version header": "MP5990 HSC Checksum"
-        },
         "vr": {
             "version header": [
                 "VCCIN/VCCFA_EHV_FIVRA Version",
@@ -147,9 +138,6 @@
         "me": {
             "version header": "ME Version"
         },
-        "hsc": {
-            "version header": "MP5990 HSC Checksum"
-        },
         "vr": {
             "version header": [
                 "VCCIN/VCCFA_EHV_FIVRA Version",
@@ -194,9 +182,6 @@
         },
         "me": {
             "version header": "ME Version"
-        },
-        "hsc": {
-            "version header": "MP5990 HSC Checksum"
         },
         "vr": {
             "version header": [

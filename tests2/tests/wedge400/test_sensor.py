@@ -112,6 +112,7 @@ class ScmSensorTest(SensorUtilTest, unittest.TestCase):
                     )
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class SmbSensorTest(SensorUtilTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util smb"]

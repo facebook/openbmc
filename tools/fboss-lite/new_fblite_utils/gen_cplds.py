@@ -93,7 +93,7 @@ def gen_cplds(data_file: str, kmod_dir: str):
 
 
 def gen_cpld(data: CpldSpec, output_dir: str):
-    content = render_template(CPLD_TEMPLATE, name=data.name, attributes=data.attributes)
+    content = render_template(CPLD_TEMPLATE, name=data.name, attributes=data.attrs)
     output = os.path.join(output_dir, data.name + ".c")
     with open(output, "w") as f:
         f.write(content)

@@ -41,6 +41,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-halfdome:lf-master
   meta-inspirationpoint:lf-master
   meta-janga:lf-master
+  meta-morgan800cc:lf-master
   meta-montblanc:lf-master
   meta-qemux86:lf-master
   meta-tahan:lf-master

@@ -1,0 +1,2 @@
+Common targets are:
+    morgan800cc-image

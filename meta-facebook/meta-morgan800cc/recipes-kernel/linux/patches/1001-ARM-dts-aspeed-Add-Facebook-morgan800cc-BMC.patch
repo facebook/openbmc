@@ -1,0 +1,74 @@
+From f1fd024f6e9d02ec3d36226caf386e6be499135c Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Fri, 28 Oct 2022 11:50:15 -0700
+Subject: [PATCH] ARM: dts: aspeed: Add Facebook morgan800cc BMC
+
+Add initial version of device tree for Facebook morgan800cc (AST2600) BMC.
+
+morgan800cc is Facebook's next generation switch platform with an AST2600
+BMC integrated for health monitoring purpose.
+---
+ .../dts/aspeed-bmc-facebook-morgan800cc.dts     | 51 +++++++++++++++++++
+ 1 file changed, 51 insertions(+)
+ create mode 100644 arch/arm/boot/dts/aspeed-bmc-facebook-morgan800cc.dts
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-morgan800cc.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-morgan800cc.dts
+new file mode 100644
+index 000000000000..b9c2edc22fe7
+--- /dev/null
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-morgan800cc.dts
+@@ -0,0 +1,51 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) Meta Platforms, Inc. and affiliates.
++
++/dts-v1/;
++
++#include "ast2600-facebook-netbmc-common.dtsi"
++
++/ {
++	model = "Facebook morgan800cc BMC";
++	compatible = "facebook,morgan800cc-bmc", "aspeed,ast2600";
++
++	chosen {
++		stdout-path = &uart1;
++	};
++
++	spi_gpio: spi-gpio {
++		num-chipselects = <1>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
++	};
++};
++
++&mac3 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii4_default>;
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
++
++&lpc_ctrl {
++	status = "okay";
++	flash = <&spi1>;
++};
++
++&kcs1 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca0>;
++};
++
++&kcs2 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca8>;
++};
++
++&kcs3 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca2>;
++};
+-- 
+2.39.3
+

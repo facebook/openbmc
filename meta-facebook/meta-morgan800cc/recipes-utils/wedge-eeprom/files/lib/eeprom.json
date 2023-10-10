@@ -1,0 +1,9 @@
+{
+  "platform" : "janga" ,
+  "eeprom devices" : [
+    {
+      "name" : "chassis_eeprom",
+      "sysfs_path" : "/sys/bus/i2c/devices/3-0056/eeprom"
+    }
+  ]
+}

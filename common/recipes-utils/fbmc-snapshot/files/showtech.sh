@@ -49,9 +49,6 @@ aspeed_soc_chip_ver
 echo -e "\n##### BMC Board Revision #####"
 wedge_board_rev
 
-echo -e "\n##### BMC EEPROM INFO #####"
-weutil -a
-
 echo -e  "\n################################"
 echo "######## eMMC debug log ########"
 echo "################################"
@@ -61,3 +58,10 @@ else
 	/usr/local/bin/mmcraw show-summary /dev/mmcblk0
 	/usr/local/bin/mmcraw read-cid /dev/mmcblk0
 fi
+
+echo -e  "\n##### Executing plugins in /etc/showtech/rules/ #####"
+for showtech_file in /etc/showtech/rules/*
+do
+	echo -e "\n##### Running $showtech_file #####"
+	$showtech_file
+done

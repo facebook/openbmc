@@ -42,6 +42,7 @@ IMAGE_INSTALL += " \
   psu-util \
   mdio-util \
   usb-fpga-util \
+  fbmc-snapshot \
   "
 
 def tpm_tools_recipe(d):

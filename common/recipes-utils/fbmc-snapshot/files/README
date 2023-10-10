@@ -1,0 +1,229 @@
+*************************  fbmc-snapshot package  ************************
+
+CONTENTS:
+---------
+1.Objective
+2.Description
+3.How to include this package in platforms
+4.How to add more plugins to the showtech
+	4.1.How to add plugins in the fboss-lite layer
+	4.2.How to add platform specific plugins
+5.Sample output
+
+
+1. Objective:
+-------------
+The ultimate goal is to make a new package "fbmc-snapshot" in the common
+layer which can execute the common "showtech.sh" script along with the
+fboss-lite layer specific and platform specific showtech plugins.
+
+
+2. Description:
+---------------
+The "showtech.sh" is a script which will list the device info like hostname,
+uptime, BMC version, Aspeed chip version, BMC board revision, etc,.
+This package "fbmc-snapshot" is to make the existing showtech.sh script common
+for all platforms. The layer(fboss-lite) specific scripts and platform specific
+scripts can be added and installed in the device path /etc/showtech/rules/
+using bbappend file of this fbmc-snapshot package. And the common showtech.sh
+will execute all the scripts which are placed in /etc/showtech/rules/ as a part
+of show_tech.
+
+The plugins can be added with the naming conventions as follows,
+File name starts with
+1. 0-99 --> Common scripts.
+2. 100-200 --> Fboss-lite
+3. 900-999 --> Platform specific.
+
+So that we can use this show tech script to get all the info regarding the
+platform.
+
+
+3. How to include this package in platforms:
+--------------------------------------------
+As of now, this package is included in Fuji and Montblanc platform. To include
+this package in a platform, we need to add the pakage "fbmc-snapshot" in the
+"IMAGE_INSTALL" section of image.bb file as shown as below,
+Path : meta-facebook/meta-<platform>/recipes-core/images/<platform>-image.bb
+
+
+4. How to add more plugins to the showtech:
+-------------------------------------------
+We can extend this showtech by adding more platform specific and fboss-lite
+specific plugins with the proper naming conventions as mentioned in Description
+
+	4.1.How to add plugins in the fboss-lite layer:
+	-----------------------------------------------
+	1.Need to add the script in the following path,
+	  Path : meta-facebook/meta-fboss-lite/recipes-utils/fbmc-snapshot/files/
+	  (file name should start with the range from 100 to 200 - ex:100_weutil.sh)
+
+	2.Need to include the file name in the "LOCAL_URI" and "do_install:append()"
+	  sections in the bbappend file,
+	  Path: meta-facebook/meta-fboss-lite/recipes-utils/fbmc-snapshot/fbmc-snapshot_0.1.bbappend
+
+	4.2.How to add platform specific plugins:
+	-----------------------------------------
+	1.Need to add the script in the following path,
+      Path : meta-facebook/meta-<platform>/recipes-utils/fbmc-snapshot/files/
+      (file name should start with the range from 900 to 999 - ex:900_dump_gpio.sh)
+
+    2.Need to include the file name in the "LOCAL_URI" and "do_install:append()"
+      sections in the bbappend file,
+      Path: meta-facebook/meta-<platform>/recipes-utils/fbmc-snapshot/fbmc-snapshot_0.1.bbappend
+
+Once the above steps are done, the plugins should be installed in the device
+in this path "/etc/showtech/rules/" and the common showtech.sh will execute
+all the plugins in this path as a part of showtech.
+
+
+5. Sample output:
+-----------------
+In Montblanc,
+
+root@bmc-oob:/etc/showtech/rules# showtech.sh
+#################################
+##### SHOWTECH VERSION 0.10 #####
+#################################
+
+##### BMC SYSTEM TIME #####
+Fri Oct  6 00:26:12 PDT 2023
+
+##### BMC HOSTNAME #####
+bmc-oob.
+
+##### BMC UPTIME #####
+ 00:26:12 up 1 day,  2:05,  load average: 0.00, 0.00, 0.00
+
+##### BMC VERSION #####
+built : 20180309123456
+OpenBMC Release montblanc-7c5c02b2c8c-CLS_main-dirty
+
+##### Aspeed Chip Revision #####
+ATS2600-A3
+
+##### BMC Board Revision #####
+Board type: Minipack3 Switching System
+Revision: EVT-1
+
+################################
+######## eMMC debug log ########
+################################
+eMMC /dev/mmcblk0 Device Summary:
+- Vendor/Product: Western Digital DG4008
+- eMMC Revision: v5.1
+- Secure Feature: sanitize,secure-trim,auto-erase,secure-purge
+- Device Health (PRE_EOL): Normal
+- Estimated Life Time (Type A): 0%-10% life time used
+- Estimated Life Time (Type B): 0%-10% life time used
+- Bus Width: 1
+- H/W Reset Function: temporarily disabled (default)
+- Cache Control: ON
+
+eMMC /dev/mmcblk0 CID Register:
+- Manufacturer: Western Digital
+- Device Type (CBX): 0x1
+- OEM/Application ID: 00
+- Product Name: DG4008
+- Product Revision: 1.37
+- Product Serial Number: 0x515018
+- Manufacturing Date (month/year): 9/0
+
+
+##### Executing plugins in /etc/showtech/rules/ #####
+
+##### Running /etc/showtech/rules/100_weutil.sh #####
+
+##### BMC EEPROM INFO #####
+Wedge EEPROM bmc_eeprom
+Version: 4
+Product Name: MINIPACK3_BMC
+Product Part Number: 00000000
+System Assembly Part Number: 09001342
+Meta PCBA Part Number: 000000000000
+Meta PCB Part Number: 000000000000
+ODM/JDM PCBA Part Number: R3097G000207
+ODM/JDM PCBA Serial Number: BXXXXXXXXXXXXX
+Product Production State: 1
+Product Version: 0
+Product Sub-Version: 0
+Product Serial Number: M032220290003
+System Manufacturer: CLS
+System Manufacturing Date: 20230101
+PCB Manufacturer: WUS
+Assembled at: CTH
+EEPROM location on Fabric: BMC
+CRC16: 0x2ec5
+Wedge EEPROM chassis_eeprom
+Version: 4
+Product Name: MINIPACK3
+Product Part Number: 30000161
+System Assembly Part Number: 00000000
+Meta PCBA Part Number: 13200016301
+Meta PCB Part Number: 13100013001
+ODM/JDM PCBA Part Number: R3214G000901
+ODM/JDM PCBA Serial Number: B082220260029
+Product Production State: 1
+Product Version: 0
+Product Sub-Version: 0
+Product Serial Number: TLA SN
+System Manufacturer: CLS
+System Manufacturing Date: 20230426
+PCB Manufacturer: WUS
+Assembled at: CTH
+Local MAC: B4:DB:91:DE:DE:DE
+Extended MAC Base: B4:DB:91:DE:DE:DF
+Extended MAC Address Size: 138
+EEPROM location on Fabric: FCB
+CRC16: 0x751f
+Wedge EEPROM scm_eeprom
+Version: 4
+Product Name: MINIPACK3_SCM
+Product Part Number: 20002945
+System Assembly Part Number: 00000000
+Meta PCBA Part Number: 13200016401
+Meta PCB Part Number: 13100012701
+ODM/JDM PCBA Part Number: R3214G000301
+ODM/JDM PCBA Serial Number: B032220260009
+Product Production State: 1
+Product Version: 0
+Product Sub-Version: 0
+Product Serial Number: M032220290003
+System Manufacturer: CLS
+System Manufacturing Date: 20230426
+PCB Manufacturer: WUS
+Assembled at: CTH
+Local MAC: B4:DB:91:95:FD:88
+EEPROM location on Fabric: SCM
+CRC16: 0x72f6
+
+##### Running /etc/showtech/rules/900_dump_gpio.sh #####
+
+##### GPIO DUMP #####
+v | dir | GPIONAME
+1 | in  | BMC_CPU_RST
+1 | in  | BMC_DEBUG_JUMPER1
+1 | in  | BMC_DEBUG_JUMPER2
+0 | in  | BMC_DEBUG_JUMPER3
+0 | in  | BMC_GPIO126_USB2APWREN
+0 | out | BMC_I2C1_EN
+1 | out | BMC_I2C2_EN
+1 | out | BMC_PTH_PWR_BTN_L
+1 | out | BMC_PTH_RST_BTN_L
+1 | out | BMC_PWRGD_R
+1 | in  | COME_ISO_PWRGD_CPU_LVC3
+0 | in  | DEBUG_PRSNT
+0 | out | FM_BMC_READY_R_L
+1 | in  | FM_CPU_MSMI_CATERR_LVT3_BUF_N
+0 | out | IOB_FLASH_SEL
+1 | in  | ISO_FM_BMC_NMI_L
+0 | out | ISO_FM_BMC_ONCTL_L
+0 | in  | ISO_FPGA_CRC_ERROR
+1 | in  | ISO_SMB_FPGA_VPP_ALERT_L
+0 | out | MUX_JTAG_SEL_0
+0 | out | MUX_JTAG_SEL_1
+1 | in  | PWRGD_PCH_PWROK
+1 | in  | PWR_BTN_L
+1 | in  | RST_BTN_L
+0 | out | SPI_MUX_SEL
+root@bmc-oob:/etc/showtech/rules#

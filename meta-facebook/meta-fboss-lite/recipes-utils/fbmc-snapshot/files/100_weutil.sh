@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,14 +16,9 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-require recipes-core/images/fboss-lite-image.inc
+# shellcheck source=/dev/null
 
-IMAGE_INSTALL += " \
-    ipmbd \
-    ipmb-util \
-    jbi \
-    libcpldupdate-dll-ast-jtag \
-    show-tech \
-    fbmc-snapshot \
-    "
+echo -e "\n##### BMC EEPROM INFO #####"
+weutil -a

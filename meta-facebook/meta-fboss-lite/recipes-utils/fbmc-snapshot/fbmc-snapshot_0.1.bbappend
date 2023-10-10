@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,13 +15,18 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-require recipes-core/images/fboss-lite-image.inc
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-IMAGE_INSTALL += " \
-    ipmbd \
-    ipmb-util \
-    jbi \
-    libcpldupdate-dll-ast-jtag \
-    show-tech \
-    fbmc-snapshot \
+LOCAL_URI += "\
+    file://100_weutil.sh \
     "
+
+do_install:append() {
+    showtech_rules_dir="${D}/etc/showtech/rules/"
+    install -d ${showtech_rules_dir}
+
+    install -m 755 100_weutil.sh ${showtech_rules_dir}/100_weutil.sh
+}
+
+RDEPENDS:${PN} += "bash"
+FILES:${PN} += "/etc/showtech/rules/"

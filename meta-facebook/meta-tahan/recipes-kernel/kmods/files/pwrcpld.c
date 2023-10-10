@@ -34,7 +34,7 @@ static const i2c_dev_attr_st pwrcpld_attrs[] = {
 		4,
 	},
 	{
-		"cpld_major_ver",
+		"cpld_ver",
 		NULL,
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,

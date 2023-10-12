@@ -6434,6 +6434,36 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
   return 0;
 }
 
+#if defined(CONFIG_FBY2_ND)
+const char pmbus_status_word_fault_str [16][16] = {
+  "NONE OF ABOVE",      // bit 0
+  "CML",
+  "TEMP_F",
+  "VIN_UV_F",
+  "IOUT_OC_F",
+  "VOUT_OV_F",
+  "OFF",
+  "BUSY",
+  "UNKNOW",     // bit 8
+  "OTHER",
+  "FAN_F",
+  "PWRGD_N",
+  "MFR",
+  "INPUT_F",
+  "IOUT_F",
+  "VOUT_F"
+};
+
+const char nd_bic_vr_dev_name [4][16] = {
+  "CPU",
+  "SOC_DIMM_ABCD",
+  "SOC_DIMM_EFGH",
+  "SOC"
+};
+
+const uint8_t nv_bic_vr_dev_count = sizeof(nd_bic_vr_dev_name) / sizeof(nd_bic_vr_dev_name[0]);
+#endif
+
 int
 pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
@@ -6447,6 +6477,36 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
     snprintf(crisel, sizeof(crisel), "Slot %u PCIe err,FRU:%u", sel[14], fru);
     pal_add_cri_sel(crisel);
   }
+#if defined(CONFIG_FBY2_ND)
+  else if ((sel[2] == 0xF0)) {
+    const uint8_t snr_num = sel[3];
+
+    if(snr_num == BIC_ND_SENSOR_VR_ALERT) {
+      const uint16_t pmbus_st_word_chk_mask = 0xFFFF; // check all bits for now
+      const uint8_t vr_dev_num = sel[4];
+      const uint16_t st_word = *((uint16_t*) (sel + 5));
+      uint8_t fault_count = 0;
+
+      if (vr_dev_num < nv_bic_vr_dev_count) {
+        snprintf(error_log, 256, "%s VR Alert: ", nd_bic_vr_dev_name[vr_dev_num]);
+      } else {
+        snprintf(error_log, 256, "Unknow VR device Alert");
+        // no extra parsing of status_word for unknow vr device
+        return 0;
+      }
+
+      for (size_t i = 0; i < sizeof(uint16_t) * 8; i++) {
+        if ((st_word & (1 << i)) && (pmbus_st_word_chk_mask & (1 << i))) {
+          if (fault_count > 0) {
+            strncat(error_log, ", ", 255);
+          }
+          strncat(error_log, pmbus_status_word_fault_str[i], 255);
+          fault_count++;
+        }
+      }
+    }
+  }
+#endif
 
   return 0;
 }

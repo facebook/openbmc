@@ -134,6 +134,21 @@ class PowerSupply(object):
         self.i2cBus = bus
         self.chipAddr = chip
 
+    def modifyExtra(self, toAdd=[], toRemove=[]):
+        '''Adds or removes registers to registersExtra.
+        Additional registers in toAdd are inserted to registersExtra at the index
+        that will maintain the list order by the register addresses
+        '''
+        for r in toRemove:
+            assert r in self.registersExtra
+            self.registersExtra.remove(r)
+        for a in toAdd:
+            assert a not in self.registersExtra
+            for i in range(len(self.registersExtra)):
+                if self.registersExtra[i][1] > a[1]:
+                    self.registersExtra.insert(i, a)
+                    break
+
     def showTech(self, detail=False):
         registers = self.registers[:]
         if detail:
@@ -186,15 +201,29 @@ class Generic(PowerSupply):
         ("READ_TEMP3", 0x8F, 2, decodeHex),
         ("READ_FAN_SPEED_1", 0x90, 2, decodeHex),
         ("READ_POUT", 0x96, 2, decodeHex),
-        ("READ_PIN", 0x97, 2, decodeHex),
+        ("READ_PIN", 0x97, 2, decodeHex)
     ]
 
+class Liteon(Generic):
+    def __init__(self, bus, chip):
+        vendorRegistersExtra = [
+            ("READ_FAN_SPEED_2", 0x91, 2, decodeHex)
+        ]
+        registersRemove = [
+            ("STATUS_OTHER", 0x7F, 1, decodeHex),
+            ("PRIMARY_REVISION", 0xE0, 8, decodeAscii),
+            ("SECOND_REVISION", 0xE1, 8, decodeAscii)
+        ]
+        super(Generic, self).__init__(bus, chip)
+        super(Generic, self).modifyExtra(vendorRegistersExtra, registersRemove)
 
-PROFILES = {"generic": Generic}
+
+PROFILES = {"generic": Generic, "liteon": Liteon}
 mfrModelMap = {
       # MFR_NAME: MODEL_NAME
       'ECD15020056': 'PWR-2421-HV-RED',
       'PS-2242-3A': 'PWR-2411-AC-RED',
+      'PS-2242-9A': 'PWR-2421-HV-RED'
       }
 
 

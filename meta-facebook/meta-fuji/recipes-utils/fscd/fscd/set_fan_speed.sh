@@ -26,6 +26,58 @@ usage() {
 
 set -e
 
+# This util is called by fscd system service as a pre-condition
+# Therefore, if fscd thermal model is not configured, do that here
+if ! [ -f /etc/fsc-config.json ]; then
+  # This is the target file that the config will be written
+  default_fsc_config="/etc/fsc-config.json"
+  if [ -f /etc/netwhoami ]; then
+    # If we already have netwhoami, use that
+    echo "Checking netwhoami for detecting role."
+    role=$(/bin/grep "role=" /etc/netwhoami | /usr/bin/cut -d '=' -f2|/usr/bin/tr "[:upper:]" "[:lower:]")
+  fi
+  if [ "$role" == "" ]; then
+    # If role is still not found, check if cached hostname exists
+    if [ -f /mnt/data/hostname ]; then
+      echo "Using the cached hostname to infer the role."
+      role=$(/bin/grep -o '[a-z]\+' /mnt/data/hostname | /usr/bin/head -n 1)
+    fi
+  fi
+  if [ "$role" == "" ]; then
+    # Finally, infer the role from the current hostname
+    if [ -f /etc/hostname ]; then 
+      echo "Using the hostname to infer the role."
+      role=$(/bin/grep -o '[a-z]\+' /etc/hostname | /usr/bin/head -n 1)
+    fi
+  fi
+  case $role in
+    rtsw)
+      profile="/etc/fsc-config-rtsw.json"
+      ;;
+    rsw)
+      profile="/etc/fsc-config-non-rtsw.json"
+      ;;
+    fsw)
+      profile="/etc/fsc-config-non-rtsw.json"
+      ;;
+    ssw)
+      profile="/etc/fsc-config-non-rtsw.json"
+      ;;
+    fuji)
+      profile="/etc/fsc-config-non-rtsw.json"
+      ;;
+    fboss)
+      profile="/etc/fsc-config-non-rtsw.json"
+      ;;
+    *)
+      profile="/etc/fsc-config-rtsw.json"
+      ;;
+  esac
+  echo "Setting up the thermal profile for role: $role. Filename: $profile"
+  # shellcheck disable=SC2154
+  /bin/cp $profile $default_fsc_config
+fi
+
 if [ "$#" -ne 2 ] && [ "$#" -ne 1 ]; then
     usage
     exit 1

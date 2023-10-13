@@ -23,7 +23,8 @@ LOCAL_URI += " \
     file://get_fan_speed.sh \
     file://set_fan_speed.sh \
     file://fsc_board.py \
-    file://fsc-config.json \
+    file://fsc-config-rtsw.json \
+    file://fsc-config-non-rtsw.json \
     file://zone.fsc \
     file://setup-fan.sh \
     "
@@ -32,7 +33,8 @@ FSC_BIN_FILES += "get_fan_speed.sh \
                   set_fan_speed.sh "
 
 RDEPENDS:${PN} += "bash"
-FSC_CONFIG += "fsc-config.json"
+FSC_CONFIG += "fsc-config-rtsw.json"
+FSC_CONFIG += "fsc-config-non-rtsw.json"
 
 FSC_ZONE_CONFIG +="zone.fsc"
 

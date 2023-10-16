@@ -94,16 +94,12 @@ max([
 
   power_brick_linear(
     max([
-      all:vpdb_vpdb_brick0_temp_c,
-      all:vpdb_vpdb_brick1_temp_c,
-      all:vpdb_vpdb_brick2_temp_c,
+      all:vpdb_vpdb_discrete_vr_temp_c,
       all:cb_cb_power_brick_1_temp_c,
       all:cb_cb_power_brick_2_temp_c])) +
   power_brick_pid(
     max([
-      all:vpdb_vpdb_brick0_temp_c,
-      all:vpdb_vpdb_brick1_temp_c,
-      all:vpdb_vpdb_brick2_temp_c,
+      all:vpdb_vpdb_discrete_vr_temp_c,
       all:cb_cb_power_brick_1_temp_c,
       all:cb_cb_power_brick_2_temp_c])),
 

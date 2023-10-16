@@ -1,5 +1,5 @@
 {
-    "version": "gtartemis-v1.0",
+    "version": "gtartemis-v1.0-discrete-vpdb",
     "pwm_transition_value": 80,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -675,7 +675,7 @@
     "zones": {
       "zone": {
         "pwm_output": [0],
-        "expr_file": "zone-fsc-gta-8-retimer.fsc"
+        "expr_file": "zone-fsc-gta-8-retimer-dis-vpdb.fsc"
       }
     }
 }

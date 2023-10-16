@@ -99,7 +99,10 @@ check_mb_rev() {
   else
     # The default fan table is configued as 500W
     if [ -z "$curr_fan_table" ]; then
-      $KV_CMD set "auto_fsc_config" 500 persistent
+      curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
+      if [ "$curr_fan_table" != "$FAN_TABLE_VER_GTA" ]; then
+        $KV_CMD set "auto_fsc_config" 500 persistent
+      fi
     else
       rm -f ${DEFAULT_FSC_CONFIG}
     fi
@@ -110,7 +113,19 @@ check_mb_rev() {
     elif [ "$curr_fan_table" == "$FAN_TABLE_VER_650W" ]; then
       ln -s /etc/fsc-config-8-retimer-650W.json ${DEFAULT_FSC_CONFIG}
     elif [  "$curr_fan_table" == "$FAN_TABLE_VER_GTA" ]; then
-      ln -s /etc/fsc-config-gta-8-retimer.json ${DEFAULT_FSC_CONFIG}
+      rm -f ${DEFAULT_FSC_CONFIG}
+      vpdb_source=$(kv get vpdb_brick_source)
+      gta_cb_card_type=$(kv get acb_card_config)
+      # Discrete VPDB
+      if [[ "$vpdb_source" == "3" ]]; then
+        ln -s /etc/fsc-config-gta-8-retimer-dis-vpdb.json ${DEFAULT_FSC_CONFIG}
+      # Freya
+      elif [[ "$gta_cb_card_type" == "0" ]]; then
+        ln -s /etc/fsc-config-gta-8-retimer-freya.json ${DEFAULT_FSC_CONFIG}
+      # Default (Artemis Module)
+      else
+        ln -s /etc/fsc-config-gta-8-retimer.json ${DEFAULT_FSC_CONFIG}
+      fi
     fi
   fi
 }

@@ -21,12 +21,20 @@ LOCAL_URI += " \
     file://setup-fan.sh \
     file://fsc-config-gta-8-retimer.json \
     file://zone-fsc-gta-8-retimer.fsc \
+    file://fsc-config-gta-8-retimer-dis-vpdb.json \
+    file://zone-fsc-gta-8-retimer-dis-vpdb.fsc \
+    file://fsc-config-gta-8-retimer-freya.json \
+    file://zone-fsc-gta-8-retimer-freya.fsc \
     "
 
 FSC_CONFIG += "fsc-config-gta-8-retimer.json \
+               fsc-config-gta-8-retimer-dis-vpdb.json \
+               fsc-config-gta-8-retimer-freya.json \
 	          "
 
 FSC_ZONE_CONFIG +="zone-fsc-gta-8-retimer.fsc \
+                   zone-fsc-gta-8-retimer-dis-vpdb.fsc \
+                   zone-fsc-gta-8-retimer-freya.fsc \
 	              "
 
 RDEPENDS:${PN} += "bash"

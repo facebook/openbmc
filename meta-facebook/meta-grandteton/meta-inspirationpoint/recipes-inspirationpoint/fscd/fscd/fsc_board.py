@@ -20,6 +20,7 @@ import re
 from ctypes import c_char_p, CDLL
 from subprocess import check_output, PIPE, Popen
 from fsc_common_var import fan_mode
+from ctypes import byref, c_uint8
 
 import kv
 import libgpio
@@ -50,6 +51,48 @@ gta_fru_map = {
     "hsc":  {"fru": 14},
     "cb":   {"fru": 16},
     "mc":   {"fru": 17},
+}
+
+gta_dimm_map = {
+    "a0":   {"dimm_num": 0},
+    "a1":   {"dimm_num": 1},
+    "a2":   {"dimm_num": 2},
+    "a3":   {"dimm_num": 3},
+    "a4":   {"dimm_num": 4},
+    "a5":   {"dimm_num": 5},
+    "a6":   {"dimm_num": 6},
+    "a7":   {"dimm_num": 7},
+    "a8":   {"dimm_num": 8},
+    "a9":   {"dimm_num": 9},
+    "a10":  {"dimm_num": 10},
+    "a11":  {"dimm_num": 11},
+    "b0":   {"dimm_num": 12},
+    "b1":   {"dimm_num": 13},
+    "b2":   {"dimm_num": 14},
+    "b3":   {"dimm_num": 15},
+    "b4":   {"dimm_num": 16},
+    "b5":   {"dimm_num": 17},
+    "b6":   {"dimm_num": 18},
+    "b7":   {"dimm_num": 19},
+    "b8":   {"dimm_num": 20},
+    "b9":   {"dimm_num": 21},
+    "b10":  {"dimm_num": 22},
+    "b11":  {"dimm_num": 23},
+}
+
+gta_asic_fru_map = {
+    "accl1":  {"fru": 18},
+    "accl2":  {"fru": 19},
+    "accl3":  {"fru": 20},
+    "accl4":  {"fru": 21},
+    "accl5":  {"fru": 22},
+    "accl6":  {"fru": 23},
+    "accl7":  {"fru": 24},
+    "accl8":  {"fru": 25},
+    "accl9":  {"fru": 26},
+    "accl10": {"fru": 27},
+    "accl11": {"fru": 28},
+    "accl12": {"fru": 29},
 }
 
 def get_fan_mode(scenario="None"):
@@ -138,6 +181,20 @@ def sensor_valid_check(board, sname, check_name, attribute):
             if (lpal_hndl.pal_is_artemis() == True):
                 if (lpal_hndl.pal_is_fw_update_ongoing(int(gta_fru_map[board]["fru"]))== True):
                     return 0
+                if re.match(r"(.*)dimm(.*)", sname) is not None:
+                    snr_split = sname.split("_")
+                    if (lpal_hndl.is_dimm_present(int(gta_dimm_map[snr_split[2]]["dimm_num"])) == False):
+                        return 0
+                if re.match(r"(.*)accl(.*)", sname) is not None:
+                    accl_present = c_uint8(0)
+                    snr_split = sname.split("_")
+                    ret = lpal_hndl.pal_is_fru_prsnt(int(gta_asic_fru_map[snr_split[0]]["fru"]), byref(accl_present))
+                    if ret == 0:
+                        # Not Present
+                        if (accl_present.value == 0):
+                            return 0
+                    else:
+                        return 0
             # check power status first
             pwr_sts = bmc_read_power()
             if pwr_sts == 1:

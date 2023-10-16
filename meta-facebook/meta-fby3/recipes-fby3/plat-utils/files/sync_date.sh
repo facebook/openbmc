@@ -57,25 +57,14 @@ function do_sync {
 }
 
 function server_sync {
-  output="$(/usr/bin/kv get time_sync)"
-  if [ -n "${output}" ] ; then
-    if [ ${#output} == 11 ] ; then
-      echo Syncing up BMC time with server...
-      do_sync "$output"
-    else
-      echo Syncing up BMC time with IPMI command failed
-      logger -p user.info "Time sync with IPMI command failed"
-    fi
+  output=$(get_sel_time_from_server)
+  num=$?
+  if [ -n "$output" ]; then
+    echo Syncing up BMC time with server$num...
+    do_sync "$output"
   else
-    output=$(get_sel_time_from_server)
-    num=$?
-    if [ -n "$output" ]; then
-      echo Syncing up BMC time with server$num...
-      do_sync "$output"
-    else
-      echo Syncing up BMC time with server failed
-      logger -p user.info "Time sync with server failed"
-    fi
+    echo Syncing up BMC time with server failed
+    logger -p user.info "Time sync with server failed"
   fi
 }
 
@@ -92,18 +81,12 @@ function update_ntp_config_from_kv() {
 
 # Sync BMC's date with one of the four servers
 function sync_date {
-  local NTP_DELAY_COUNT
-
   update_ntp_config_from_kv
 
-  NTP_DELAY_COUNT=0
-  while [ $NTP_DELAY_COUNT -lt 30 ];
-  do
-    if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-      server_sync
-      break
-    fi
-  done
+  if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
+    server_sync
+  fi
+
 }
 
 sync_date

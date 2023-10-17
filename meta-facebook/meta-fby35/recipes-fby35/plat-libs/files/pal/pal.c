@@ -78,7 +78,7 @@ const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
-#ifdef CONFIG_HALFDOME
+#if defined (CONFIG_HALFDOME) || (CONFIG_GREATLAKES)
 const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 3U-dev0, " \
                             "3U-dev1, 3U-dev2, 4U-dev0, 4U-dev1, 4U-dev2, 4U-dev3, 4U-dev4";
 #else
@@ -5559,7 +5559,11 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
         sensor_base = &sensor_base_cl;
         break;
       case SERVER_TYPE_GL:
-        sensor_base = &sensor_base_gl;
+        if (card_type == TYPE_1OU_OLMSTEAD_POINT) {
+          sensor_base = &sensor_base_hd_op;
+        } else {
+          sensor_base = &sensor_base_gl;
+        }
         break;
       default:
         syslog(LOG_WARNING, "%s(): unknown board type", __func__);

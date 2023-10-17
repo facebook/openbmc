@@ -169,8 +169,17 @@ init_class1_fsc() {
   ### Greatlakes does not have formal fan table, run default fan table(fix 70% PWM)
     # Todo: After get the Greatlakes formal fan table, need to Check the server type
   if [[ $server_type -eq 4 ]]; then
-    config_type="GL"
-    target_fsc_config="/etc/FSC_CLASS1_GL_config.json"
+    board_type_1ou=$(get_1ou_board_type slot1)
+      case $board_type_1ou in
+      8)
+        config_type="8"
+        target_fsc_config="/etc/FSC_CLASS1_type8_GL_config.json"
+        ;;
+      *)
+        config_type="GL"
+        target_fsc_config="/etc/FSC_CLASS1_GL_config.json"
+        ;;
+      esac
   fi
 
   ln -s ${target_fsc_config} ${default_fsc_config_path}

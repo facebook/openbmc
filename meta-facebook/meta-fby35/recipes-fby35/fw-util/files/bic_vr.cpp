@@ -137,21 +137,22 @@ int VrComponent::get_ver_str(const uint8_t vr_comp, const string& name, string& 
 
       vr_device_id = stoi(kv::get(key));
       if (vr_device_id == VR_INFINEON) {
-        get_ver_str_from_bic(slot_id, vr_comp, s);
+        ret = get_ver_str_from_bic(slot_id, vr_comp, s);
+        return ret;
       }
     } catch (const std::exception& err) {
       cerr << "Fail to get the VR device ID!" << endl;
       return FW_STATUS_FAILURE;
     }
-  } else {
-    char ver[MAX_VER_STR_LEN] = {0};
-    ret = vr_fw_version(-1, name.c_str(), ver);
-    vr_remove();
-    if (ret) {
-      return FW_STATUS_FAILURE;
-    }
-    s = string(ver);
   }
+
+  char ver[MAX_VER_STR_LEN] = {0};
+  ret = vr_fw_version(-1, name.c_str(), ver);
+  vr_remove();
+  if (ret) {
+    return FW_STATUS_FAILURE;
+  }
+  s = string(ver);
 
   return 0;
 }

@@ -166,7 +166,7 @@ if [ -n "$COMP" ]; then
   fi
 
   # check COMP first
-  if [ "$COMP" == "sb" ] || [ "$COMP" == "bb" ] ||
+  if [ "$COMP" == "sb" ] || ( [ "$COMP" == "bb" ] && [ "$BOARD_ID" == "$BMC_ID_CLASS2" ] ) ||
      [[ "$COMP" == "1ou" && ! "$SLED_TYPE" =~ ^(Type_(1|17|8))$ ]]; then
     CPLD_ADDR=${SB_CPLD_ADDR}
   elif [ "$SLED_TYPE" == "Type_8" ]; then

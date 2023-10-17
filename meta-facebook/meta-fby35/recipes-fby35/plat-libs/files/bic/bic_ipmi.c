@@ -905,6 +905,7 @@ bic_is_exp_prsnt(uint8_t slot_id) {
   int retry = 0;
   char key[MAX_KEY_LEN] = {0};
   char tmp_str[MAX_VALUE_LEN] = {0};
+  uint8_t server_type = 0;
 
   snprintf(key, sizeof(key), KV_SLOT_IS_M2_EXP_PRESENT, slot_id);
   if (!kv_get(key, tmp_str, NULL, 0)) {
@@ -927,7 +928,8 @@ bic_is_exp_prsnt(uint8_t slot_id) {
   } else {
     val = ((rbuf[0] & 0xC) >> 2) ^ 0x3;  // (PRESENT_2OU | PRESENT_1OU)
   }
-  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+  server_type = fby35_common_get_slot_type(slot_id);
+  if ((server_type == SERVER_TYPE_GL) || (server_type == SERVER_TYPE_HD)) {
     uint8_t type_1ou = 0;
     if ((val & PRESENT_1OU) == PRESENT_1OU) {
       ret = bic_get_1ou_type(slot_id, &type_1ou);

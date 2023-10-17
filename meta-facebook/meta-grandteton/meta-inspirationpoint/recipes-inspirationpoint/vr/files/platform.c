@@ -735,7 +735,8 @@ int plat_vr_init(void) {
   kv_get("mb_rev", rev_id, 0, 0);
   kv_get("mb_sku", sku_id, 0, 0);
   if (strcmp(rev_id, "2")) {
-    if (!strcmp(sku_id, "20") || !strcmp(sku_id, "25") || !strcmp(sku_id, "28")) {
+    if (   !strcmp(sku_id, "20") || !strcmp(sku_id, "25") 
+        || !strcmp(sku_id, "28") || !strcmp(sku_id, "29")) {
       //3nd source
       mb_rt_vr_list[0].ops = &xdpe152xx_ops;
       mb_rt_vr_list[1].ops = &xdpe152xx_ops;

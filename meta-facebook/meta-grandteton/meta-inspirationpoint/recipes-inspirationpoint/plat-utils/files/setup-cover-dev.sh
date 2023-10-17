@@ -35,6 +35,7 @@ mb_sku=$(($(/usr/bin/kv get mb_sku) & 0x0F))
 # 1001        | LTC4282 | ADC128D818 | XDPE192C3B     | XDPE15284D   | ISL28022   |  9
 # 1011        | LTC4282 | MAXIM11617 | RAA229620      | ISL69260IRAZ | INA230     |  11
 # 1100        | MPS5990 | ADC128D818 | XDPE192C3B     | XDPE15284D   | ISL28022   |  12
+# 1101        | MPS5990 | ADC128D818 | MP2857GQKT-001 | XDPE15284D   | ISL28022   |  13
 
 config0="0"
 config1="4"
@@ -45,6 +46,7 @@ config8="8"
 config9="9"
 config11="11"
 config12="12"
+config13="13"
 
 #TBD
 #config2="2"
@@ -207,7 +209,8 @@ MB_PVT_BOARD_ID="3"
 if [ "$mbrev" -ge "$MB_DVT_BOARD_ID" ]; then
   if [ "$mb_sku" -ne "$config8" ] &&
      [ "$mb_sku" -ne "$config9" ] &&
-     [ "$mb_sku" -ne "$config12" ]; then
+     [ "$mb_sku" -ne "$config12" ] &&
+     [ "$mb_sku" -ne "$config13" ]; then
     i2c_device_add 34 0x41 ina230
     i2c_device_add 34 0x42 ina230
     i2c_device_add 34 0x43 ina230
@@ -250,6 +253,10 @@ elif [ "$mb_sku" -eq "$config11" ]; then
 elif [ "$mb_sku" -eq "$config12" ]; then
   probe_hsc_mp5990
   probe_vr_xdpe
+  probe_mb_retimer_vr_xdpe
+elif [ "$mb_sku" -eq "$config13" ]; then
+  probe_hsc_mp5990
+  probe_vr_mp2856
   probe_mb_retimer_vr_xdpe
 fi
 

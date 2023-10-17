@@ -252,13 +252,10 @@ gta_check_exmax_prsnt(uint8_t cable_id) {
 
 bool
 gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
-  static uint8_t cb_last_status = 0xff;
-  static uint8_t mc_last_status = 0xff;
   gpio_value_t gpio_prsnt_1;
   gpio_value_t gpio_prsnt_2;
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
-  char fru_name[MAX_FRUID_NAME] = {0};
   int i2cfd = 0, ret = -1;
   uint8_t tlen, rlen;
   uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
@@ -282,11 +279,6 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
       } else {
         *status = FRU_PRSNT;
       }
-      if (cb_last_status != *status && kv_get(key, value, NULL, 0)) {
-        pal_get_fru_name(fru_id,fru_name);
-        syslog(LOG_CRIT, "%s %s",fru_name, *status ? "is Present":"is Absent");
-      }
-      cb_last_status = *status;
       break;
     case FRU_MEB:
       i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -309,11 +301,6 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
         } else {
           *status = FRU_PRSNT;
         }
-        if (mc_last_status != *status && kv_get(key, value, NULL, 0)) {
-          pal_get_fru_name(fru_id,fru_name);
-          syslog(LOG_CRIT, "%s %s",fru_name, *status ? "is Present":"is Absent");
-        }
-        mc_last_status = *status;
       }
       i2c_cdev_slave_close(i2cfd);
       break;

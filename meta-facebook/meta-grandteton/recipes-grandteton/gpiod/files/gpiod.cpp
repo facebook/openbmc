@@ -836,7 +836,10 @@ void
   uint8_t gta_exp_prsnt_status = FRU_NOT_PRSNT;
   gpiopoll_ioex_config *iox_gpio_table = pal_is_artemis() ? gta_iox_gpios : iox_gpios;
   static bool is_exmax_prsnt_check = false;
+  static uint8_t last_cb_present = 0xff;
+  static uint8_t last_mc_present = 0xff;
   uint8_t mb_rev = 0;
+  char fru_name[MAX_FRUID_NAME] = {0};
 
   for (i = 0; i < size; ++i)
     init_flag[i] = false;
@@ -849,6 +852,18 @@ void
       for (uint8_t fru = FRU_ACB; fru <= FRU_MEB; fru++) {
         if (!gta_expansion_board_present(fru, &gta_exp_prsnt_status)) {
           syslog(LOG_WARNING,"%s() Get expansion board present failed, status: %u", __func__, gta_exp_prsnt_status);
+        }
+        pal_get_fru_name(fru,fru_name);
+        if (fru == FRU_ACB) {
+          if (last_cb_present != gta_exp_prsnt_status) {
+            syslog(LOG_CRIT, "%s %s",fru_name, gta_exp_prsnt_status ? "is Present":"is Absent");
+          }
+          last_cb_present = gta_exp_prsnt_status;
+        } else {
+          if (last_mc_present != gta_exp_prsnt_status) {
+            syslog(LOG_CRIT, "%s %s",fru_name, gta_exp_prsnt_status ? "is Present":"is Absent");
+          }
+          last_mc_present = gta_exp_prsnt_status;
         }
       }
       pal_get_board_rev_id(FRU_MB, &mb_rev);

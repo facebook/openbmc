@@ -2518,7 +2518,87 @@ pal_parse_end_of_post_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 }
 
 static int
-parse_bank_mapping_name(uint8_t bank_num, char *error_log) {
+parse_intel_bank_mapping_name(uint8_t bank_num, char *error_log) {
+
+  switch (bank_num) {
+    case 0:
+      strcpy(error_log, "IFU");
+      break;
+    case 1:
+      strcpy(error_log, "DCU");
+      break;
+    case 2:
+      strcpy(error_log, "DTLB");
+      break;
+    case 3:
+      strcpy(error_log, "MLC");
+      break;
+    case 4:
+      strcpy(error_log, "PCU");
+      break;
+    case 5:
+      strcpy(error_log, "KTI0");
+      break;
+    case 6:
+      strcpy(error_log, "UBOX/IOMCA");
+      break;
+    case 7:
+    case 8:
+      strcpy(error_log, "MDF");
+      break;
+    case 9:
+      strcpy(error_log, "CHA_A");
+      break;
+    case 10:
+      strcpy(error_log, "CHA_B");
+      break;
+    case 11:
+      strcpy(error_log, "CHA_C");
+      break;
+    case 12:
+      strcpy(error_log, "M2Mem(0-3)");
+      break;
+    case 13:
+      strcpy(error_log, "IMC 0, channel 0");
+      break;
+    case 14:
+      strcpy(error_log, "IMC 0, channel 1");
+      break;
+    case 15:
+      strcpy(error_log, "IMC 1, channel 0");
+      break;
+    case 16:
+      strcpy(error_log, "IMC 1, channel 1");
+      break;
+    case 17:
+      strcpy(error_log, "IMC 2, channel 0");
+      break;
+    case 18:
+      strcpy(error_log, "IMC 2, channel 1");
+      break;
+    case 19:
+      strcpy(error_log, "IMC 3, channel 0");
+      break;
+    case 20:
+      strcpy(error_log, "IMC 3, channel 1");
+      break;
+    case 29:
+      strcpy(error_log, "HBM-M2m");
+      break;
+    case 30:
+    case 31:
+      strcpy(error_log, "HBM");
+      break;
+    default:
+      strcpy(error_log, "UNKNOWN");
+      break;
+  }
+
+  return 0;
+}
+
+static int
+parse_amd_bank_mapping_name(uint8_t bank_num, char *error_log) {
 
   switch (bank_num) {
     case 0:
@@ -2664,33 +2744,40 @@ pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
   char temp_log[512] = {0};
   char severity_str[32] = {0};
   char bank_mapping_name[32] = {0};
+  int cpu_model = pal_get_cpu_model(fru);
 
   switch (event_data[0] & 0x0F)
   {
     case 0x0B: //Uncorrectable
     {
       snprintf(severity_str, sizeof(severity_str), "%s", "Uncorrectable");
-      switch (error_type) {
-        case 0x00:
-          strcat(error_log, "Uncorrected Recoverable Error, ");
-          break;
-        case 0x01:
-          strcat(error_log, "Uncorrected Thread Fatal Error, ");
-          break;
-        case 0x02:
-          strcat(error_log, "Uncorrected System Fatal Error, ");
-          break;
-        default:
-          strcat(error_log, "Unknown (Uncorrectable Type Event) ");
-          break;
+      if (cpu_model == CPU_INTEL) {
+        strcat(error_log, "Uncorrectable Error, ");
+      } else if (cpu_model == CPU_AMD) {
+        switch (error_type) {
+          case 0x00:
+            strcat(error_log, "Uncorrected Recoverable Error, ");
+            break;
+          case 0x01:
+            strcat(error_log, "Uncorrected Thread Fatal Error, ");
+            break;
+          case 0x02:
+            strcat(error_log, "Uncorrected System Fatal Error, ");
+            break;
+          default:
+            strcat(error_log, "Unknown (Uncorrectable Type Event) ");
+            break;
+        }
       }
       break;
     }
-
     case 0x0C: //Correctable
     {
       snprintf(severity_str, sizeof(severity_str), "%s", "Correctable");
-      switch (error_type) {
+      if (cpu_model == CPU_INTEL) {
+        strcat(error_log, "Correctable Error, ");
+      } else if (cpu_model == CPU_AMD) {
+        switch (error_type) {
         case 0x00:
           strcat(error_log, "Correctable Error, ");
           break;
@@ -2700,10 +2787,10 @@ pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
         default:
           strcat(error_log, "Unknown (Correctable Type Event), ");
           break;
+        }
       }
       break;
     }
-
     default:
     {
       snprintf(severity_str, sizeof(severity_str), "%s", "Unknown");
@@ -2712,14 +2799,25 @@ pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
     }
   }
   bank_num = event_data[1] & 0x1F;
-  snprintf(temp_log, sizeof(temp_log), "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", severity_str, bank_num, fru);
+  snprintf(temp_log, sizeof(temp_log), "MACHINE_CHK_ERR, %s bank Number %d, FRU:%u", severity_str, bank_num, fru);
   pal_add_cri_sel(temp_log);
 
-  parse_bank_mapping_name(bank_num, bank_mapping_name);
+  switch (cpu_model) {
+  case CPU_INTEL:
+    parse_intel_bank_mapping_name(bank_num, bank_mapping_name);
+    break;
+  case CPU_AMD:
+    parse_amd_bank_mapping_name(bank_num, bank_mapping_name);
+    break;
+  default:
+    strcpy(bank_mapping_name, "UNKNOWN");
+    break;
+  }
+
   snprintf(temp_log, sizeof(temp_log), "Bank Number %d (%s), ", bank_num, bank_mapping_name);
   strcat(error_log, temp_log);
 
-  switch (pal_get_cpu_model(fru)) {
+  switch (cpu_model) {
     case CPU_INTEL:
       snprintf(
           temp_log,

@@ -3664,6 +3664,11 @@ pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
 }
 
 int __attribute__((weak))
+pal_oem_get_power_reading(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
 pal_udbg_get_frame_total_num() {
   return 3;
 }

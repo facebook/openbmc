@@ -2170,6 +2170,17 @@ oem_q_sled_cycle_prepare_status (unsigned char *request, unsigned char req_len, 
   res->cc = CC_SUCCESS;
 }
 
+static void
+oem_get_power_reading(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  *res_len = 0;
+  res->cc = CC_UNSPECIFIED_ERROR;
+  res->cc = pal_oem_get_power_reading(req->payload_id, req->data, req_len, res->data, res_len);
+}
 
 static void
 oem_set_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
@@ -4064,6 +4075,11 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       if(length_check(SIZE_PCIE_PORT_CONFIG, req_len, response, res_len))
         break;
       oem_set_pcie_port_config(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_POWER_READING:
+      if(length_check(SIZE_GET_PWR_READING, req_len, response, res_len))
+        break;
+      oem_get_power_reading(request, req_len, response, res_len);
       break;
     case CMD_OEM_BBV_POWER_CYCLE:
       oem_bbv_power_cycle(request, req_len, response, res_len);

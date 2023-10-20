@@ -1000,3 +1000,29 @@ read_vr_pout(uint8_t fru, uint8_t sensor_num, float *value) {
 
   return ret;
 }
+
+int pal_oem_get_power_reading(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  char str[MAX_VALUE_LEN] = {0};
+  char *endptr;
+  uint8_t domain_type;
+  double val = 0;
+
+  domain_type = req_data[1] & 0x0F;
+
+  if (domain_type != 0) {
+    return CC_PARAM_OUT_OF_RANGE;
+  }
+
+  kv_get("mb_sensor13", str, NULL, 0);
+
+  val = strtod(str, &endptr);
+  if ((*endptr != '\0' && *endptr != '\n') || (val <= 0)) {
+    return CC_INVALID_DATA_FIELD;
+  }
+
+  *res_len = 3;
+  res_data[0] = domain_type;
+  res_data[1] = (int)val & 0xFF;
+  res_data[2] = (((int)val >> 8) & 0xFF);
+  return CC_SUCCESS;
+}

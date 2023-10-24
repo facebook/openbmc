@@ -136,7 +136,7 @@ class fw_cpld_config {
       };
 
       if (pal_is_artemis()) {
-        // TODO: Add Signed INFO
+        cpld_info.project_name = signed_info::GTA_PLATFORM_NAME;
         static GTCpldComponent mb_cpld("mb", "cpld", LCMXO3_9400C, 7, 0x40, nullptr, cpld_info);
         cpld_info.board_id = signed_info::SCM;
         static GTCpldComponent scm_cpld("scm", "cpld", LCMXO3_2100C, 15, 0x40, nullptr, cpld_info);

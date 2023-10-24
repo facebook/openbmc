@@ -1,12 +1,11 @@
 ﻿/**
- *	@brief		Declares the TPM_GetCapability command
- *	@details	The module receives the input parameters marshals these parameters
- *				to a byte array sends the command to the TPM and unmarshals the response
- *				back to the out parameters
- *	@file		TPM_GetCapability.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM_GetCapability command
+ *  @details    The module receives the input parameters marshals these parameters
+ *              to a byte array sends the command to the TPM and unmarshals the response
+ *              back to the out parameters
+ *  @file       TPM_GetCapability.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -23,32 +22,32 @@ extern "C" {
 #endif
 
 /**
- *	@brief		This function handles the TPM_GetCapability command
- *	@details	The function receives the input parameters marshals these parameters
- *				to a byte array sends the command to the TPM and unmarshals the response
- *				back to the out parameters
+ *  @brief      This function handles the TPM_GetCapability command
+ *  @details    The function receives the input parameters marshals these parameters
+ *              to a byte array sends the command to the TPM and unmarshals the response
+ *              back to the out parameters
  *
- *	@param		PcapArea			Requested Capability area
- *	@param		PunSubCapSize		Sub capability buffer size
- *	@param		PrgbSubCapBuffer	Sub capability buffer
- *	@param		PpunRespSize		In: Capacity of byte buffer
- *									Out: Written bytes to buffer
- *	@param		PrgbRespCap			Pointer to a capability structure casted as byte array
+ *  @param      PcapArea            Requested Capability area.
+ *  @param      PunSubCapSize       Sub capability buffer size.
+ *  @param      PrgbSubCapBuffer    Sub capability buffer.
+ *  @param      PpunRespSize        In: Capacity of byte buffer
+ *                                  Out: Written bytes to buffer
+ *  @param      PrgbRespCap         Pointer to a capability structure casted as byte array.
  *
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function. E.g. NULL pointer
- *	@retval		RC_E_BUFFER_TOO_SMALL	In case of the response buffer is too small
- *	@retval		RC_E_INTERNAL			In case of a not yet implemented capability request
- *	@retval		...						Error codes from called functions.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function. E.g. NULL pointer.
+ *  @retval     RC_E_BUFFER_TOO_SMALL   In case of the response buffer is too small.
+ *  @retval     RC_E_INTERNAL           In case of a not yet implemented capability request.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TSS_TPM_GetCapability(
-	_In_							TSS_TPM_CAPABILITY_AREA		PcapArea,
-	_In_							TSS_UINT32					PunSubCapSize,
-	_In_bytecount_(PunSubCapSize)	TSS_BYTE*					PrgbSubCapBuffer,
-	_Inout_							TSS_UINT32*					PpunRespSize,
-	_Out_bytecap_(*PpunRespSize)	TSS_BYTE*					PrgbRespCap);
+    _In_                            TSS_TPM_CAPABILITY_AREA     PcapArea,
+    _In_                            TSS_UINT32                  PunSubCapSize,
+    _In_bytecount_(PunSubCapSize)   TSS_BYTE*                   PrgbSubCapBuffer,
+    _Inout_                         TSS_UINT32*                 PpunRespSize,
+    _Out_bytecap_(*PpunRespSize)    TSS_BYTE*                   PrgbRespCap);
 
 #ifdef __cplusplus
 }

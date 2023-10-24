@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares methods to initialize the business logic of TPMFactoryUpd.
- *	@details	This module performs all application-specific preparation steps required to get the business logic of TPMFactoryUpd working.
- *	@file		CommandFlow_Init.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares methods to initialize the business logic of TPMFactoryUpd.
+ *  @details    This module performs all application-specific preparation steps required to get the business logic of TPMFactoryUpd working.
+ *  @file       CommandFlow_Init.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -21,12 +20,12 @@ extern "C" {
 #endif
 
 /**
- *	@brief		Initializes the business logic of TPMFactoryUpd.
- *	@details	This method seeds the random number generator.
+ *  @brief      Initializes the business logic of TPMFactoryUpd.
+ *  @details    This method seeds the random number generator.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_FAIL					An unexpected error occurred.
- *	@retval		...							Error codes from Crypt_SeedRandom().
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_FAIL                   An unexpected error occurred.
+ *  @retval     ...                         Error codes from Crypt_SeedRandom().
  */
 _Check_return_
 unsigned int

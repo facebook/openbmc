@@ -1,12 +1,11 @@
 ﻿/**
- *	@brief		Declares the TPM_GetTestResult command
- *	@details	The module receives the input parameters marshals these parameters
- *				to a byte array sends the command to the TPM and unmarshals the response
- *				back to the out parameters
- *	@file		TPM_GetTestResult.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM_GetTestResult command
+ *  @details    The module receives the input parameters marshals these parameters
+ *              to a byte array sends the command to the TPM and unmarshals the response
+ *              back to the out parameters
+ *  @file       TPM_GetTestResult.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -23,25 +22,25 @@ extern "C" {
 #endif
 
 /**
- *	@brief		This function handles the TPM_GetTestResult command
- *	@details	The function receives the input parameters marshals these parameters
- *				to a byte array sends the command to the TPM and unmarshals the response
- *				back to the out parameters
+ *  @brief      This function handles the TPM_GetTestResult command
+ *  @details    The function receives the input parameters marshals these parameters
+ *              to a byte array sends the command to the TPM and unmarshals the response
+ *              back to the out parameters
  *
- *	@param		PpunOutDataSize		In: Capacity of byte buffer
- *									Out: Written bytes to buffer
- *	@param		PrgbOutData			Pointer to a byte buffer
+ *  @param      PpunOutDataSize     In: Capacity of byte buffer
+ *                                  Out: Written bytes to buffer
+ *  @param      PrgbOutData         Pointer to a byte buffer.
  *
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function. E.g. NULL pointer
- *	@retval		RC_E_BUFFER_TOO_SMALL	In case of a too small output buffer
- *	@retval		...						Error codes from called functions.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function. E.g. NULL pointer.
+ *  @retval     RC_E_BUFFER_TOO_SMALL   In case of a too small output buffer.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TSS_TPM_GetTestResult(
-	_Inout_							TSS_UINT32*					PpunOutDataSize,
-	_Out_bytecap_(*PpunOutDataSize)	TSS_BYTE*					PrgbOutData);
+    _Inout_                         TSS_UINT32*                 PpunOutDataSize,
+    _Out_bytecap_(*PpunOutDataSize) TSS_BYTE*                   PrgbOutData);
 
 #ifdef __cplusplus
 }

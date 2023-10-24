@@ -1,12 +1,11 @@
 ﻿/**
- *	@brief		Declares the TPM_SetCapability command
- *	@details	The module receives the input parameters marshals these parameters
- *				to a byte array sends the command to the TPM and unmarshals the response
- *				back to the out parameters
- *	@file		TPM_SetCapability.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM_SetCapability command
+ *  @details    The module receives the input parameters marshals these parameters
+ *              to a byte array sends the command to the TPM and unmarshals the response
+ *              back to the out parameters
+ *  @file       TPM_SetCapability.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -23,29 +22,29 @@ extern "C" {
 #endif
 
 /**
- *	@brief		This function handles the TPM_SetCapability command
- *	@details	The function receives the input parameters marshals these parameters
- *				to a byte array sends the command to the TPM and unmarshals the response
- *				back to the out parameters
+ *  @brief      This function handles the TPM_SetCapability command
+ *  @details    The function receives the input parameters marshals these parameters
+ *              to a byte array sends the command to the TPM and unmarshals the response
+ *              back to the out parameters
  *
- *	@param		PcapArea				Partition of capabilities to be set
- *	@param		PunSubCapSize			Size of subCap parameter
- *	@param		PrgbSubCapBuffer		Further definition of information
- *	@param		PunSetValueSize			The size of the value to set
- *	@param		PrgbSetValueBuffer		The value to set
+ *  @param      PcapArea                Partition of capabilities to be set.
+ *  @param      PunSubCapSize           Size of subCap parameter.
+ *  @param      PrgbSubCapBuffer        Further definition of information.
+ *  @param      PunSetValueSize         The size of the value to set.
+ *  @param      PrgbSetValueBuffer      The value to set.
  *
- *	@retval		RC_SUCCESS			The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER	An invalid parameter was passed to the function.
- *	@retval		...					Error codes from called functions.
+ *  @retval     RC_SUCCESS          The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER  An invalid parameter was passed to the function.
+ *  @retval     ...                 Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TSS_TPM_SetCapability(
-	_In_							TSS_TPM_CAPABILITY_AREA		PcapArea,
-	_In_							TSS_UINT32					PunSubCapSize,
-	_In_bytecount_(PunSubCapSize)	TSS_BYTE*					PrgbSubCapBuffer,
-	_In_							TSS_UINT32					PunSetValueSize,
-	_In_bytecount_(PunSetValueSize)	TSS_BYTE*					PrgbSetValueBuffer);
+    _In_                            TSS_TPM_CAPABILITY_AREA     PcapArea,
+    _In_                            TSS_UINT32                  PunSubCapSize,
+    _In_bytecount_(PunSubCapSize)   TSS_BYTE*                   PrgbSubCapBuffer,
+    _In_                            TSS_UINT32                  PunSetValueSize,
+    _In_bytecount_(PunSetValueSize) TSS_BYTE*                   PrgbSetValueBuffer);
 
 #ifdef __cplusplus
 }

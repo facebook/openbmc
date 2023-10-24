@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares the command line parser
- *	@details	This module parses the command line and provides the command line properties
- *	@file		CommandLineParser.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the command line parser
+ *  @details    This module parses the command line and provides the command line properties
+ *  @file       CommandLineParser.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -20,65 +19,66 @@ extern "C" {
 #include "StdInclude.h"
 
 /**
- *	@brief		This function increments the command line option count
- *	@details
+ *  @brief      This function increments the command line option count
+ *  @details
  *
- *	@retval		RC_SUCCESS			The operation completed successfully.
- *	@retval		RC_E_FAIL			An unexpected error occurred using the property storage.
+ *  @retval     RC_SUCCESS          The operation completed successfully.
+ *  @retval     RC_E_FAIL           An unexpected error occurred using the property storage.
  */
 _Check_return_
 unsigned int
 CommandLineParser_IncrementOptionCount();
 
 /**
- *	@brief		Read command line parameter to a string
- *	@details	Checks, if parameter is available and read it to buffer
+ *  @brief      Read command line parameter to a string
+ *  @details    Checks, if parameter is available and read it to buffer
  *
- *	@param		PrgwszArgv				Command line parameters
- *	@param		PnTotalParams			Number of all parameters
- *	@param		PpunPosition			Current position in parsing
- *	@param		PwszValue				Output buffer for command line parameter
- *	@param		PpunValueSize			Buffer length
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_COMMANDLINE	In case a mandatory parameter is missing for RegisterTest option
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function.
- *	@retval		RC_E_FAIL				An unexpected error occurred.
- *	@retval		...						Error codes from called functions.
+ *  @param      PrgwszArgv              Command line parameters.
+ *  @param      PnTotalParams           Number of all parameters.
+ *  @param      PpunPosition            Current position in parsing.
+ *  @param      PwszValue               Output buffer for command line parameter.
+ *  @param      PpunValueSize           Buffer length.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_COMMANDLINE    In case a mandatory parameter is missing for RegisterTest option.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
+_Success_(return == 0)
 unsigned int
 CommandLineParser_ReadParameter(
-	_In_reads_z_(PnTotalParams)		const wchar_t* const	PrgwszArgv[],
-	_In_							int						PnTotalParams,
-	_Inout_							unsigned int*			PpunPosition,
-	_Out_z_cap_(*PpunValueSize)		wchar_t*				PwszValue,
-	_Inout_							unsigned int*			PpunValueSize);
+    _In_reads_z_(PnTotalParams)     const wchar_t* const    PrgwszArgv[],
+    _In_                            int                     PnTotalParams,
+    _Inout_                         unsigned int*           PpunPosition,
+    _Out_z_cap_(*PpunValueSize)     wchar_t*                PwszValue,
+    _Inout_                         unsigned int*           PpunValueSize);
 
 /**
- *	@brief		Checks if the given string is a command line parameter value (no option)
- *	@details	If the given string does not start with '--' or '-' it is a command line parameter value
+ *  @brief      Checks if the given string is a command line parameter value (no option)
+ *  @details    If the given string does not start with '--' or '-' it is a command line parameter value
  *
- *	@param		PwszCommand		The command line parameter to check (max length MAX_STRING_1024)
- *	@retval		TRUE			PwszCommand does not start with '--', '-' or '/'
- *	@retval		FALSE			Otherwise
+ *  @param      PwszCommand     The command line parameter to check (max length MAX_STRING_1024).
+ *  @retval     TRUE            PwszCommand does not start with '--', '-' or '/'.
+ *  @retval     FALSE           Otherwise.
  */
 _Check_return_
 BOOL
 CommandLineParser_IsValue(
-	_In_z_		const wchar_t*	PwszCommand);
+    _In_z_      const wchar_t* const    PwszCommand);
 
 /**
- *	@brief		Checks whether the parameter can be combined with any previously set
- *	@details
+ *  @brief      Checks whether the parameter can be combined with any previously set
+ *  @details
  *
- *	@param		PwszCommand				The command line parameter to check
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_COMMANDLINE	In case of a option is not combinable with an already parsed one
+ *  @param      PwszCommand             The command line parameter to check.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_COMMANDLINE    In case of a option is not combinable with an already parsed one.
  */
 _Check_return_
 unsigned int
 CommandLineParser_CheckCommandLineOptions(
-	_In_z_		const wchar_t*	PwszCommand);
+    _In_z_      const wchar_t*  PwszCommand);
 
 #ifdef __cplusplus
 }

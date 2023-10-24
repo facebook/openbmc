@@ -1,11 +1,10 @@
 ﻿/**
- *	@brief		Declares the TPM_FieldUpgrade command.
- *	@details	The module receives the input parameters, marshals these parameters
- *				to a byte array and sends the command to the TPM.
- *	@file		TPM_FieldUpgradeUpdate.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM_FieldUpgrade command.
+ *  @details    The module receives the input parameters, marshals these parameters
+ *              to a byte array and sends the command to the TPM.
+ *  @file       TPM_FieldUpgradeUpdate.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -27,21 +26,21 @@ extern "C" {
 #endif
 
 /**
- *	@brief		Calls TPM_Fieldupgrade.
- *	@details	Transmits the TPM1.2 command TPM_Fieldupgrade with the given data block.
+ *  @brief      Calls TPM_Fieldupgrade.
+ *  @details    Transmits the TPM1.2 command TPM_Fieldupgrade with the given data block.
  *
- *	@param		PpbFieldUpgradeBlock		Pointer on data block to be sent
- *	@param		PunFieldUpgradeBlockSize	Size of data block to be sent in bytes
+ *  @param      PpbFieldUpgradeBlock        Pointer on data block to be sent.
+ *  @param      PunFieldUpgradeBlockSize    Size of data block to be sent in bytes.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_FAIL					An unexpected error occurred.
- *	@retval		...							Error codes from Micro TSS functions
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_FAIL                   An unexpected error occurred.
+ *  @retval     ...                         Error codes from Micro TSS functions.
  */
 _Check_return_
 unsigned int
 TSS_TPM_FieldUpgradeUpdate(
-	_In_bytecount_(PunFieldUpgradeBlockSize)	const TSS_BYTE*	PpbFieldUpgradeBlock,
-	_In_										TSS_UINT16		PunFieldUpgradeBlockSize);
+    _In_bytecount_(PunFieldUpgradeBlockSize)    const TSS_BYTE* PpbFieldUpgradeBlock,
+    _In_                                        TSS_UINT16      PunFieldUpgradeBlockSize);
 
 #ifdef __cplusplus
 }

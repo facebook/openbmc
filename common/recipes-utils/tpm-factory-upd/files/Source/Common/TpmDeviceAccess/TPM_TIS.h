@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares the TIS related functions
- *	@details
- *	@file		TpmDeviceAccess/TPM_TIS.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TIS related functions
+ *  @details
+ *  @file       TpmDeviceAccess/TPM_TIS.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -33,15 +32,15 @@
 #define TIS_LOCALITY4OFFSET (TIS_BASE_ADDRESS + 0x4000)
 
 /// Locality 0
-#define TIS_LOCALITY_0				0x00
+#define TIS_LOCALITY_0              0x00
 /// Locality 1
-#define TIS_LOCALITY_1				0x01
+#define TIS_LOCALITY_1              0x01
 /// Locality 2
-#define TIS_LOCALITY_2				0x02
+#define TIS_LOCALITY_2              0x02
 /// Locality 3
-#define TIS_LOCALITY_3				0x03
+#define TIS_LOCALITY_3              0x03
 /// Locality 4
-#define TIS_LOCALITY_4				0x04
+#define TIS_LOCALITY_4              0x04
 
 // TPM Interface Registers
 /// Register offset for TPM Access register
@@ -92,349 +91,349 @@
 #define TIMEOUT_D 750
 
 /**
- *	@brief		Keep the locality active between TPM commands. If not set, the locality would be released after a TPM response
- *				and requested again before the next TPM command.
- *	@details
+ *  @brief      Keep the locality active between TPM commands. If not set, the locality would be released after a TPM response
+ *              and requested again before the next TPM command.
+ *  @details
  */
 void
 TIS_KeepLocalityActive();
 
 /**
- *	@brief		Read the value of a TIS register
- *	@details
+ *  @brief      Read the value of a TIS register
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PusRegOffset	Register offset
- *	@param		PbRegSize		Register size
- *	@param		PpValue			Pointer to the value
+ *  @param      PbLocality      Locality value.
+ *  @param      PusRegOffset    Register offset.
+ *  @param      PbRegSize       Register size.
+ *  @param      PpValue         Pointer to the value.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_LOCALITY_NOT_SUPPORTED	Given locality is not supported
- *	@retval		RC_E_BAD_PARAMETER			Invalid register size requested
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_LOCALITY_NOT_SUPPORTED Given locality is not supported.
+ *  @retval     RC_E_BAD_PARAMETER          Invalid register size requested.
  */
 _Check_return_
 UINT32
 TIS_ReadRegister(
-	_In_	BYTE	PbLocality,
-	_In_	UINT16	PusRegOffset,
-	_In_	BYTE	PbRegSize,
-	_Out_	void*	PpValue);
+    _In_    BYTE    PbLocality,
+    _In_    UINT16  PusRegOffset,
+    _In_    BYTE    PbRegSize,
+    _Out_   void*   PpValue);
 
 /**
- *	@brief		Write the value into a TIS register
- *	@details
+ *  @brief      Write the value into a TIS register
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PusRegOffset	Register offset
- *	@param		PbRegSize		Register size
- *	@param		PunValue		Value to write
+ *  @param      PbLocality      Locality value.
+ *  @param      PusRegOffset    Register offset.
+ *  @param      PbRegSize       Register size.
+ *  @param      PunValue        Value to write.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_LOCALITY_NOT_SUPPORTED	Given locality is not supported
- *	@retval		RC_E_BAD_PARAMETER			Invalid register size requested
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_LOCALITY_NOT_SUPPORTED Given locality is not supported.
+ *  @retval     RC_E_BAD_PARAMETER          Invalid register size requested.
  */
 _Check_return_
 UINT32
 TIS_WriteRegister(
-	_In_	BYTE	PbLocality,
-	_In_	UINT16	PusRegOffset,
-	_In_	BYTE	PbRegSize,
-	_In_	UINT32	PunValue);
+    _In_    BYTE    PbLocality,
+    _In_    UINT16  PusRegOffset,
+    _In_    BYTE    PbRegSize,
+    _In_    UINT32  PunValue);
 
 /**
- *	@brief		Read the value from the access register
- *	@details
+ *  @brief      Read the value from the access register
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PpbValue		Pointer to a byte value
+ *  @param      PbLocality      Locality value.
+ *  @param      PpbValue        Pointer to a byte value.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_COMPONENT_NOT_FOUND	Component not found
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_COMPONENT_NOT_FOUND    Component not found.
  */
 _Check_return_
 UINT32
 TIS_ReadAccessRegister(
-	_In_	BYTE	PbLocality,
-	_Out_	BYTE*	PpbValue);
+    _In_    BYTE    PbLocality,
+    _Out_   BYTE*   PpbValue);
 
 /**
- *	@brief		Read the value from the status register.
- *	@details
+ *  @brief      Read the value from the status register.
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PpbValue		Pointer to a byte value
+ *  @param      PbLocality      Locality value.
+ *  @param      PpbValue        Pointer to a byte value.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_LOCALITY_NOT_ACTIVE	The locality is not active.
- *	@retval		...							Error codes from TIS_ReadRegister function
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_LOCALITY_NOT_ACTIVE    The locality is not active.
+ *  @retval     ...                         Error codes from TIS_ReadRegister function.
  */
 _Check_return_
 UINT32
 TIS_ReadStsRegister(
-	_In_	BYTE	PbLocality,
-	_Out_	BYTE*	PpbValue);
+    _In_    BYTE    PbLocality,
+    _Out_   BYTE*   PpbValue);
 
 /**
- *	@brief		Writes the value into the status register
- *	@details
+ *  @brief      Writes the value into the status register
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PbValue			Byte value to write
+ *  @param      PbLocality      Locality value.
+ *  @param      PbValue         Byte value to write.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_LOCALITY_NOT_ACTIVE	The locality is not active.
- *	@retval		...							Error codes from TIS_WriteRegister function
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_LOCALITY_NOT_ACTIVE    The locality is not active.
+ *  @retval     ...                         Error codes from TIS_WriteRegister function.
  */
 _Check_return_
 UINT32
 TIS_WriteStsRegister(
-	_In_	BYTE	PbLocality,
-	_In_	BYTE	PbValue);
+    _In_    BYTE    PbLocality,
+    _In_    BYTE    PbValue);
 
 /**
- *	@brief		Returns the value of TPM.ACCESS.VALID
- *	@details
+ *  @brief      Returns the value of TPM.ACCESS.VALID
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PpbFlag			Pointer to a BOOL flag
+ *  @param      PbLocality      Locality value.
+ *  @param      PpbFlag         Pointer to a BOOL flag.
  *
- *	@retval		RC_SUCCESS		The operation completed successfully.
- *	@retval		...				Error codes from TIS_ReadAccessRegister function
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     ...             Error codes from TIS_ReadAccessRegister function.
  */
 _Check_return_
 UINT32
 TIS_IsAccessValid(
-	_In_	BYTE	PbLocality,
-	_Out_	BOOL	*PpbFlag);
+    _In_    BYTE    PbLocality,
+    _Out_   BOOL    *PpbFlag);
 
 /**
- *	@brief		Returns the value of TPM.ACCESS.ACTIVE.LOCALITY
- *	@details
+ *  @brief      Returns the value of TPM.ACCESS.ACTIVE.LOCALITY
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PpbFlag			Pointer to a BOOL flag
+ *  @param      PbLocality      Locality value.
+ *  @param      PpbFlag         Pointer to a BOOL flag.
  *
- *	@retval		RC_SUCCESS		The operation completed successfully.
- *	@retval		...				Error codes from TIS_ReadAccessRegister function
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     ...             Error codes from TIS_ReadAccessRegister function.
  */
 _Check_return_
 UINT32
 TIS_IsActiveLocality(
-	_In_	BYTE	PbLocality,
-	_Out_	BOOL	*PpbFlag);
+    _In_    BYTE    PbLocality,
+    _Out_   BOOL    *PpbFlag);
 
 /**
- *	@brief		Release the currently active locality
- *	@details
+ *  @brief      Release the currently active locality
+ *  @details
  *
- *	@param		PbLocality		Locality value
+ *  @param      PbLocality      Locality value.
  *
- *	@retval		RC_SUCCESS		The operation completed successfully.
- *	@retval		...				Error codes from TIS_WriteRegister function
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     ...             Error codes from TIS_WriteRegister function.
  */
 _Check_return_
 UINT32
 TIS_ReleaseActiveLocality(
-	_In_	BYTE	PbLocality);
+    _In_    BYTE    PbLocality);
 
 /**
- *	@brief		Requests ownership of the TPM
- *	@details
+ *  @brief      Requests ownership of the TPM
+ *  @details
  *
- *	@param		PbLocality		Locality value
+ *  @param      PbLocality      Locality value.
  *
- *	@retval		RC_SUCCESS		The operation completed successfully.
- *	@retval		...				Error codes from TIS_WriteRegister function
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     ...             Error codes from TIS_WriteRegister function.
  */
 _Check_return_
 UINT32
 TIS_RequestUse(
-	_In_	BYTE	PbLocality);
+    _In_    BYTE    PbLocality);
 
 /**
- *	@brief		Returns the value of TPM.STS.BURSTCOUNT
- *	@details
+ *  @brief      Returns the value of TPM.STS.BURSTCOUNT
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PpusBurstCount	Pointer to the Burst Count variable
+ *  @param      PbLocality      Locality value.
+ *  @param      PpusBurstCount  Pointer to the Burst Count variable.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_LOCALITY_NOT_ACTIVE	Not an active locality
- *	@retval		...							Error codes from:
- *												TIS_IsActiveLocality
- *												TIS_ReadRegister function
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_LOCALITY_NOT_ACTIVE    Not an active locality.
+ *  @retval     ...                         Error codes from:
+ *                                              TIS_IsActiveLocality
+ *                                              TIS_ReadRegister function
  */
 _Check_return_
 UINT32
 TIS_GetBurstCount(
-	_In_	BYTE	PbLocality,
-	_Out_	UINT16*	PpusBurstCount);
+    _In_    BYTE    PbLocality,
+    _Out_   UINT16* PpusBurstCount);
 
 /**
- *	@brief		Returns the value of TPM.STS.COMMAND.READY
- *	@details
+ *  @brief      Returns the value of TPM.STS.COMMAND.READY
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PpbFlag			Pointer to a BOOL flag
+ *  @param      PbLocality      Locality value.
+ *  @param      PpbFlag         Pointer to a BOOL flag.
  *
- *	@retval		RC_SUCCESS		The operation completed successfully.
- *	@retval		...				Error codes from TIS_ReadStsRegister function
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     ...             Error codes from TIS_ReadStsRegister function.
  */
 _Check_return_
 UINT32
 TIS_IsCommandReady(
-	_In_	BYTE	PbLocality,
-	_Out_	BOOL	*PpbFlag);
+    _In_    BYTE    PbLocality,
+    _Out_   BOOL    *PpbFlag);
 
 /**
- *	@brief		Aborts the currently running action by writing 1 to Command Ready
- *	@details
+ *  @brief      Aborts the currently running action by writing 1 to Command Ready
+ *  @details
  *
- *	@param		PbLocality		Locality value
+ *  @param      PbLocality      Locality value.
  *
- *	@retval		RC_SUCCESS		The operation completed successfully.
- *	@retval		...				Error codes from TIS_WriteStsRegister function
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     ...             Error codes from TIS_WriteStsRegister function.
  */
 _Check_return_
 UINT32
 TIS_Abort(
-	_In_	BYTE	PbLocality);
+    _In_    BYTE    PbLocality);
 
 /**
- *	@brief		Lets the TPM execute a command
- *	@details
+ *  @brief      Lets the TPM execute a command
+ *  @details
  *
- *	@param		PbLocality		Locality value
+ *  @param      PbLocality      Locality value.
  *
- *	@retval		RC_SUCCESS		The operation completed successfully.
- *	@retval		...				Error codes from TIS_WriteStsRegister function
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     ...             Error codes from TIS_WriteStsRegister function.
  */
 _Check_return_
 UINT32
 TIS_Go(
-	_In_	BYTE	PbLocality);
+    _In_    BYTE    PbLocality);
 
 /**
- *	@brief		Returns the value of TPM.STS.DATA.AVAIL
- *	@details
+ *  @brief      Returns the value of TPM.STS.DATA.AVAIL
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PpbFlag			Pointer to a BOOL flag
+ *  @param      PbLocality      Locality value.
+ *  @param      PpbFlag         Pointer to a BOOL flag.
  *
- *	@retval		RC_SUCCESS		The operation completed successfully.
- *	@retval		...				Error codes from TIS_ReadStsRegister function
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     ...             Error codes from TIS_ReadStsRegister function.
  */
 _Check_return_
 UINT32
 TIS_IsDataAvailable(
-	_In_	BYTE	PbLocality,
-	_Out_	BOOL	*PpbFlag);
+    _In_    BYTE    PbLocality,
+    _Out_   BOOL    *PpbFlag);
 
 /**
- *	@brief		Lets the TPM repeat the last response
- *	@details
+ *  @brief      Lets the TPM repeat the last response
+ *  @details
  *
- *	@param		PbLocality		Locality value
+ *  @param      PbLocality      Locality value.
  *
- *	@retval		RC_SUCCESS		The operation completed successfully.
- *	@retval		...				Error codes from TIS_ReadStsRegister function
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     ...             Error codes from TIS_ReadStsRegister function.
  */
 _Check_return_
 UINT32
 TIS_Retry(
-	_In_	BYTE	PbLocality);
+    _In_    BYTE    PbLocality);
 
 /**
- *	@brief		Send data block to the TPM
- *	@details	Send a data block to the TPM TIS data FIFO under consideration of the
- *				TIS communication protocol
+ *  @brief      Send data block to the TPM
+ *  @details    Send a data block to the TPM TIS data FIFO under consideration of the
+ *              TIS communication protocol
  *
- *	@param		PbLocality		Locality value
- *	@param		PrgbByteBuf		Bytes to send
- *	@param		PusLen			Length of bytes
+ *  @param      PbLocality      Locality value.
+ *  @param      PrgbByteBuf     Bytes to send.
+ *  @param      PusLen          Length of bytes.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER			An invalid parameter was passed to the function. PrgbByteBuf is NULL.
- *	@retval		RC_E_LOCALITY_NOT_ACTIVE	Locality not active
- *	@retval		RC_E_TPM_NO_DATA_AVAILABLE	TPM no data available
- *	@retval		RC_E_NOT_READY				Not ready
- *	@retval		RC_E_TPM_TRANSMIT_DATA		Error during transmit data
- *	@retval		...							Error codes from:
- *												TIS_RequestUse,
- *												TIS_IsActiveLocality,
- *												TIS_IsCommandReady,
- *												TIS_Abort,
- *												TIS_GetBurstCount,
- *												TIS_WriteRegister,
- *												TIS_ReadStsRegister function
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER          An invalid parameter was passed to the function. PrgbByteBuf is NULL.
+ *  @retval     RC_E_LOCALITY_NOT_ACTIVE    Locality not active.
+ *  @retval     RC_E_TPM_NO_DATA_AVAILABLE  TPM no data available.
+ *  @retval     RC_E_NOT_READY              Not ready.
+ *  @retval     RC_E_TPM_TRANSMIT_DATA      Error during transmit data.
+ *  @retval     ...                         Error codes from:
+ *                                              TIS_RequestUse,
+ *                                              TIS_IsActiveLocality,
+ *                                              TIS_IsCommandReady,
+ *                                              TIS_Abort,
+ *                                              TIS_GetBurstCount,
+ *                                              TIS_WriteRegister,
+ *                                              TIS_ReadStsRegister function
  */
 _Check_return_
 UINT32
 TIS_SendLPC(
-	_In_					BYTE		PbLocality,
-	_In_bytecount_(PusLen)	const BYTE*	PrgbByteBuf,
-	_In_					UINT16		PusLen);
+    _In_                    BYTE        PbLocality,
+    _In_bytecount_(PusLen)  const BYTE* PrgbByteBuf,
+    _In_                    UINT16      PusLen);
 
 /**
- *	@brief		Read a data block from the TPM TIS port
- *	@details
+ *  @brief      Read a data block from the TPM TIS port
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PrgbByteBuf		Pointer to buffer to store bytes
- *	@param		PpusLen			Pointer to the length
+ *  @param      PbLocality      Locality value.
+ *  @param      PrgbByteBuf     Pointer to buffer to store bytes.
+ *  @param      PpusLen         Pointer to the length.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER			An invalid parameter was passed to the function. PrgbByteBuf or PpusLen is NULL.
- *	@retval		RC_E_INSUFFICIENT_BUFFER	Insufficient buffer size
- *	@retval		RC_E_LOCALITY_NOT_ACTIVE	Locality not active
- *	@retval		RC_E_TPM_NO_DATA_AVAILABLE	TPM no data available
- *	@retval		RC_E_TPM_RECEIVE_DATA		Error TPM Receive data
- *	@retval		RC_E_NOT_READY				Not ready
- *	@retval		RC_E_TPM_TRANSMIT_DATA		Error during transmit data
- *	@retval		...							Error codes from:
- *												TIS_IsActiveLocality,
- *												TIS_ReadStsRegister,
- *												TIS_GetBurstCount,
- *												TIS_ReadRegister,
- *												TIS_ReadStsRegister,
- *												TIS_IsCommandReady,
- *												TIS_Abort,
- *												TIS_Retry function
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER          An invalid parameter was passed to the function. PrgbByteBuf or PpusLen is NULL.
+ *  @retval     RC_E_INSUFFICIENT_BUFFER    Insufficient buffer size.
+ *  @retval     RC_E_LOCALITY_NOT_ACTIVE    Locality not active.
+ *  @retval     RC_E_TPM_NO_DATA_AVAILABLE  TPM no data available.
+ *  @retval     RC_E_TPM_RECEIVE_DATA       Error TPM Receive data.
+ *  @retval     RC_E_NOT_READY              Not ready.
+ *  @retval     RC_E_TPM_TRANSMIT_DATA      Error during transmit data.
+ *  @retval     ...                         Error codes from:
+ *                                              TIS_IsActiveLocality,
+ *                                              TIS_ReadStsRegister,
+ *                                              TIS_GetBurstCount,
+ *                                              TIS_ReadRegister,
+ *                                              TIS_ReadStsRegister,
+ *                                              TIS_IsCommandReady,
+ *                                              TIS_Abort,
+ *                                              TIS_Retry function
  */
 _Check_return_
 UINT32
 TIS_ReadLPC(
-	_In_					BYTE	PbLocality,
-	_Out_bytecap_(*PpusLen)	BYTE*	PrgbByteBuf,
-	_Inout_					UINT16*	PpusLen);
+    _In_                    BYTE    PbLocality,
+    _Out_bytecap_(*PpusLen) BYTE*   PrgbByteBuf,
+    _Inout_                 UINT16* PpusLen);
 
 /**
- *	@brief		Sends the Transceive Buffer to the TPM and returns the response
- *	@details
+ *  @brief      Sends the Transceive Buffer to the TPM and returns the response
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@param		PrgbTxBuffer	Pointer to Transceive buffer
- *	@param		PusTxLen		Length of the Transceive buffer
- *	@param		PrgbRxBuffer	Pointer to a Receive buffer
- *	@param		PpusRxLen		Pointer to the length of the Receive buffer
- *	@param		PunMaxDuration	The maximum duration of the command in microseconds
+ *  @param      PbLocality      Locality value.
+ *  @param      PrgbTxBuffer    Pointer to Transceive buffer.
+ *  @param      PusTxLen        Length of the Transceive buffer.
+ *  @param      PrgbRxBuffer    Pointer to a Receive buffer.
+ *  @param      PpusRxLen       Pointer to the length of the Receive buffer.
+ *  @param      PunMaxDuration  The maximum duration of the command in microseconds.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_TPM_NO_DATA_AVAILABLE	TPM no data available
- *	@retval		...							Error codes from:
- *												TIS_SendLPC,
- *												TIS_IsDataAvailable,
- *												TIS_ReadLPC,
- *												TIS_ReleaseActiveLocality function
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_TPM_NO_DATA_AVAILABLE  TPM no data available.
+ *  @retval     ...                         Error codes from:
+ *                                              TIS_SendLPC,
+ *                                              TIS_IsDataAvailable,
+ *                                              TIS_ReadLPC,
+ *                                              TIS_ReleaseActiveLocality function
  */
 _Check_return_
 UINT32
 TIS_TransceiveLPC(
-	_In_						BYTE		PbLocality,
-	_In_bytecount_(PusTxLen)	const BYTE*	PrgbTxBuffer,
-	_In_						UINT16		PusTxLen,
-	_Out_bytecap_(*PpusRxLen)	BYTE*		PrgbRxBuffer,
-	_Inout_						UINT16*		PpusRxLen,
-	_In_						UINT32		PunMaxDuration);
+    _In_                        BYTE        PbLocality,
+    _In_bytecount_(PusTxLen)    const BYTE* PrgbTxBuffer,
+    _In_                        UINT16      PusTxLen,
+    _Out_bytecap_(*PpusRxLen)   BYTE*       PrgbRxBuffer,
+    _Inout_                     UINT16*     PpusRxLen,
+    _In_                        UINT32      PunMaxDuration);
 
 #endif //__TPM_TIS_H__

@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares application configuration methods
- *	@details	Module to handle the application's configuration
- *	@file		Config.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares application configuration methods
+ *  @details    Module to handle the application's configuration
+ *  @file       Config.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -22,64 +21,64 @@ extern "C" {
 #endif
 
 /**
- *	@brief		Parse the configuration file
- *	@details	This function reads the configuration file, parses the key value pairs and
- *				stores these pairs in the PropertyStorage.
+ *  @brief      Parse the configuration file
+ *  @details    This function reads the configuration file, parses the key value pairs and
+ *              stores these pairs in the PropertyStorage.
  *
- *	@param		PwszConfigFileName	Pointer to a wide character configuration file name
+ *  @param      PwszConfigFileName  Pointer to a wide character configuration file name.
  *
- *	@retval		RC_SUCCESS			The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER	An invalid parameter was passed to the function. E.g. NULL or empty file name
- *	@retval		RC_E_FAIL			An unexpected error occurred.
- *	@retval		...					Error codes from called functions.
+ *  @retval     RC_SUCCESS          The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER  An invalid parameter was passed to the function. E.g. NULL or empty file name.
+ *  @retval     RC_E_FAIL           An unexpected error occurred.
+ *  @retval     ...                 Error codes from called functions.
  */
 _Check_return_
 unsigned int
 Config_Parse(
-	_In_z_	const wchar_t*						PwszConfigFileName);
+    _In_z_  const wchar_t*                      PwszConfigFileName);
 
 /**
- *	@brief		Parse the configuration file
- *	@details	This function reads the configuration file, parses the key value pairs and
- *				stores these pairs in the PropertyStorage.
+ *  @brief      Parse the configuration file
+ *  @details    This function reads the configuration file, parses the key value pairs and
+ *              stores these pairs in the PropertyStorage.
  *
- *	@param		PwszConfigFileName		Pointer to a wide character configuration file name
- *	@param		PpfInitializeParsing	Function pointer to a Initialize parsing function
- *	@param		PpfFinalizeParsing		Function pointer to a Finalize parsing function
- *	@param		PpfParse				Function pointer to a Parsing function
+ *  @param      PwszConfigFileName      Pointer to a wide character configuration file name.
+ *  @param      PpfInitializeParsing    Function pointer to a Initialize parsing function.
+ *  @param      PpfFinalizeParsing      Function pointer to a Finalize parsing function.
+ *  @param      PpfParse                Function pointer to a Parsing function.
  *
- *	@retval		RC_SUCCESS			The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER	An invalid parameter was passed to the function. E.g. NULL or empty file name
- *	@retval		RC_E_FAIL			An unexpected error occurred.
- *	@retval		...					Error codes from called functions.
+ *  @retval     RC_SUCCESS          The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER  An invalid parameter was passed to the function. E.g. NULL or empty file name.
+ *  @retval     RC_E_FAIL           An unexpected error occurred.
+ *  @retval     ...                 Error codes from called functions.
  */
 _Check_return_
 unsigned int
 Config_ParseCustom(
-	_In_z_		const wchar_t*						PwszConfigFileName,
-	_In_opt_	IConfigSettings_InitializeParsing	PpfInitializeParsing,
-	_In_opt_	IConfigSettings_FinalizeParsing		PpfFinalizeParsing,
-	_In_opt_	IConfigSettings_Parse				PpfParse);
+    _In_z_      const wchar_t*                      PwszConfigFileName,
+    _In_opt_    IConfigSettings_InitializeParsing   PpfInitializeParsing,
+    _In_opt_    IConfigSettings_FinalizeParsing     PpfFinalizeParsing,
+    _In_opt_    IConfigSettings_Parse               PpfParse);
 
 /**
- *	@brief		Parse configuration file content for settings
- *	@details	This function parses given configuration file content for settings
+ *  @brief      Parse configuration file content for settings
+ *  @details    This function parses given configuration file content for settings
  *
- *	@param		PwszContent		Pointer to a wide character configuration file content
- *	@param		PunContentSize	Size of the content buffer in elements including the zero termination
- *	@param		PpfParse		Function pointer to a Parsing function
+ *  @param      PwszContent     Pointer to a wide character configuration file content.
+ *  @param      PunContentSize  Size of the content buffer in elements including the zero termination.
+ *  @param      PpfParse        Function pointer to a Parsing function.
  *
- *	@retval		RC_SUCCESS			The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER	An invalid parameter was passed to the function. E.g. NULL or empty content
- *	@retval		RC_E_FAIL			An unexpected error occurred.
- *	@retval		...					Error codes from called functions.
+ *  @retval     RC_SUCCESS          The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER  An invalid parameter was passed to the function. E.g. NULL or empty content.
+ *  @retval     RC_E_FAIL           An unexpected error occurred.
+ *  @retval     ...                 Error codes from called functions.
  */
 _Check_return_
 unsigned int
 Config_ParseContent(
-	_In_z_count_(PunContentSize)	const wchar_t*			PwszContent,
-	_In_							unsigned int			PunContentSize,
-	_In_opt_						IConfigSettings_Parse	PpfParse);
+    _In_z_count_(PunContentSize)    const wchar_t*          PwszContent,
+    _In_                            unsigned int            PunContentSize,
+    _In_opt_                        IConfigSettings_Parse   PpfParse);
 
 #ifdef __cplusplus
 }

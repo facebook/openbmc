@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares the command line parser interface
- *	@details	This interface declares some functions for a command line parser implementation
- *	@file		ICommandLineParser.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the command line parser interface
+ *  @details    This interface declares some functions for a command line parser implementation
+ *  @file       ICommandLineParser.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -20,47 +19,49 @@ extern "C" {
 #endif
 
 /**
- *	@brief		Initialize command line parsing
- *	@details
+ *  @brief      Initialize command line parsing
+ *  @details
  *
- *	@retval		RC_SUCCESS	The operation completed successfully.
- *	@retval		...			Error codes from called functions.
+ *  @retval     RC_SUCCESS  The operation completed successfully.
+ *  @retval     ...         Error codes from called functions.
  */
 _Check_return_
 unsigned int
 CommandLineParser_InitializeParsing();
 
 /**
- *	@brief		Parses the command line option
- *	@details	Parses the command line option identified by the common command line module code
+ *  @brief      Parses the command line option
+ *  @details    Parses the command line option identified by the common command line module code
  *
- *	@param		PwszCommandLineOption	Pointer to a wide character array containing the current option to work on
- *	@param		PpunCurrentArgIndex		Pointer to an index for the current position in the argument list
- *	@param		PnMaxArg				Maximum number of argument is the arguments list
- *	@param		PrgwszArgv				Pointer to an array of wide character arrays representing the command line
- *	@retval		RC_SUCCESS	The operation completed successfully.
- *	@retval		...			Error codes from called functions.
+ *  @param      PwszCommandLineOption   Pointer to a wide character array containing the current option to work on.
+ *  @param      PpunCurrentArgIndex     Pointer to an index for the current position in the argument list.
+ *  @param      PnMaxArg                Maximum number of argument is the arguments list.
+ *  @param      PrgwszArgv              Pointer to an array of wide character arrays representing the command line.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function.
+ *  @retval     RC_E_BAD_COMMANDLINE    In case of an invalid command line.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 CommandLineParser_Parse(
-	_In_z_					const wchar_t*			PwszCommandLineOption,
-	_Inout_					unsigned int*			PpunCurrentArgIndex,
-	_In_					int						PnMaxArg,
-	_In_reads_z_(PnMaxArg)	const wchar_t* const	PrgwszArgv[]);
+    _In_z_                  const wchar_t*          PwszCommandLineOption,
+    _Inout_                 unsigned int*           PpunCurrentArgIndex,
+    _In_                    int                     PnMaxArg,
+    _In_reads_z_(PnMaxArg)  const wchar_t* const    PrgwszArgv[]);
 
 /**
- *	@brief		Finalize command line parsing
- *	@details
+ *  @brief      Finalize command line parsing
+ *  @details
  *
- *	@param		PunReturnValue		Current return code which can be overwritten here.
- *	@retval		RC_SUCCESS	The operation completed successfully.
- *	@retval		...			Error codes from called functions.
+ *  @param      PunReturnValue      Current return code which can be overwritten here.
+ *  @retval     RC_SUCCESS  The operation completed successfully.
+ *  @retval     ...         Error codes from called functions.
  */
 _Check_return_
 unsigned int
 CommandLineParser_FinalizeParsing(
-	_In_					unsigned int	PunReturnValue);
+    _In_                    unsigned int    PunReturnValue);
 
 #ifdef __cplusplus
 }

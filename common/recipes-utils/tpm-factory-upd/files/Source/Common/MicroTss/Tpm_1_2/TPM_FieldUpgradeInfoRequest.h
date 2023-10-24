@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares the TPM_FieldUpgradeInfoRequest command.
- *	@details	The module receives the input parameters, marshals these parameters to a byte array and sends the command to the TPM.
- *	@file		TPM_FieldUpgradeInfoRequest.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM_FieldUpgradeInfoRequest command.
+ *  @details    The module receives the input parameters, marshals these parameters to a byte array and sends the command to the TPM.
+ *  @file       TPM_FieldUpgradeInfoRequest.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -22,18 +21,18 @@ extern "C" {
 #endif
 
 /**
- *	@brief		Calls TPM_FieldUpgradeInfoRequest.
- *	@details	Transmits the TPM1.2 command TPM_FieldUpgradeInfoRequest.
+ *  @brief      Calls TPM_FieldUpgradeInfoRequest.
+ *  @details    Transmits the TPM1.2 command TPM_FieldUpgradeInfoRequest.
  *
- *	@param		PpIfxFieldUpgradeInfo		Pointer to a IFXFIELDUPGRADEINFO structure
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_FAIL					An unexpected error occurred.
- *	@retval		...							Error codes from Micro TSS functions
+ *  @param      PpIfxFieldUpgradeInfo       Pointer to a IFXFIELDUPGRADEINFO structure.
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_FAIL                   An unexpected error occurred.
+ *  @retval     ...                         Error codes from Micro TSS functions.
  */
 _Check_return_
 unsigned int
 TSS_TPM_FieldUpgradeInfoRequest(
-	_Inout_ TSS_IFX_FIELDUPGRADEINFO* PpIfxFieldUpgradeInfo);
+    _Inout_ TSS_IFX_FIELDUPGRADEINFO* PpIfxFieldUpgradeInfo);
 
 #ifdef __cplusplus
 }

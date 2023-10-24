@@ -1,11 +1,10 @@
 ﻿/**
- *	@brief		Declares the TPM response message parser
- *	@details	This module provides function and constant declarations for parsing TPM1.2
- *				and TPM2.0 response codes and obtaining a corresponding error message.
- *	@file		TpmResponse.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM response message parser
+ *  @details    This module provides function and constant declarations for parsing TPM1.2
+ *              and TPM2.0 response codes and obtaining a corresponding error message.
+ *  @file       TpmResponse.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -51,7 +50,7 @@
 
 // ------------------------- TPM1.2-specific constants ------------------------
 /// TPM1.2 response code offset for a warning
-#define	TPM_NON_FATAL 0x800
+#define TSS_TPM_NON_FATAL 0x800
 
 // ------------------------- TPM2.0-specific constants ------------------------
 
@@ -71,143 +70,143 @@ extern "C" {
 #endif
 
 /**
- *	@brief		Parses a TPM2.0 Format-One response code
- *	@details	Parses a given TPM2.0 Format-One response code and returns a corresponding message.
+ *  @brief      Parses a TPM2.0 Format-One response code
+ *  @details    Parses a given TPM2.0 Format-One response code and returns a corresponding message.
  *
- *	@param		PunErrorCode			The TPM2.0 Format-One response code to be parsed
- *	@param		PwszResponseBuffer		In: A target buffer for the output message\n
- *										Out: A buffer containing the null-terminated message
- *	@param		PunResponseBufferSize	The size of the target buffer
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_FAIL				An unexpected error occurred.
- *	@retval		...						Error codes from called functions.
+ *  @param      PunErrorCode            The TPM2.0 Format-One response code to be parsed.
+ *  @param      PwszResponseBuffer      In: A target buffer for the output message\n
+ *                                      Out: A buffer containing the null-terminated message
+ *  @param      PunResponseBufferSize   The size of the target buffer.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TpmResponse_FormatOneGetMessage(
-	_In_									unsigned int	PunErrorCode,
-	_Inout_z_cap_(PunResponseBufferSize)	wchar_t*		PwszResponseBuffer,
-	_In_									unsigned int	PunResponseBufferSize);
+    _In_                                    unsigned int    PunErrorCode,
+    _Inout_z_cap_(PunResponseBufferSize)    wchar_t*        PwszResponseBuffer,
+    _In_                                    unsigned int    PunResponseBufferSize);
 
 /**
- *	@brief		Parses a TPM2.0 Format-Zero response code
- *	@details	Parses a given TPM2.0 Format-Zero response code and returns a corresponding message.
+ *  @brief      Parses a TPM2.0 Format-Zero response code
+ *  @details    Parses a given TPM2.0 Format-Zero response code and returns a corresponding message.
  *
- *	@param		PunErrorCode			The TPM2.0 Format-Zero response code to be parsed
- *	@param		PwszResponseBuffer		In: A target buffer for the output message\n
- *										Out: A buffer containing the null-terminated message
- *	@param		PunResponseBufferSize	The size of the target buffer
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function.
- *	@retval		RC_E_FAIL				An unexpected error occurred.
- *	@retval		...						Error codes from called functions.
+ *  @param      PunErrorCode            The TPM2.0 Format-Zero response code to be parsed.
+ *  @param      PwszResponseBuffer      In: A target buffer for the output message\n
+ *                                      Out: A buffer containing the null-terminated message
+ *  @param      PunResponseBufferSize   The size of the target buffer.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TpmResponse_FormatZeroGetMessage(
-	_In_									unsigned int	PunErrorCode,
-	_Inout_z_cap_(PunResponseBufferSize)	wchar_t*		PwszResponseBuffer,
-	_In_									unsigned int	PunResponseBufferSize);
+    _In_                                    unsigned int    PunErrorCode,
+    _Inout_z_cap_(PunResponseBufferSize)    wchar_t*        PwszResponseBuffer,
+    _In_                                    unsigned int    PunResponseBufferSize);
 
 /**
- *	@brief		Gets the message for a TPM2.0 Format-Zero error number
- *	@details	Gets the error message for a given TPM2.0 Format-Zero error number (unmasked with RC_VER1).
+ *  @brief      Gets the message for a TPM2.0 Format-Zero error number
+ *  @details    Gets the error message for a given TPM2.0 Format-Zero error number (unmasked with RC_VER1).
  *
- *	@param		PunErrorCode			The RC_VER1 (0x100) unmasked TPM2.0 Format-Zero error number.
- *	@param		PwszResponseBuffer		In: A target buffer for the output message\n
- *										Out: A buffer containing the null-terminated message
- *	@param		PunResponseBufferSize	The size of the target buffer
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function.
- *	@retval		RC_E_FAIL				An unexpected error occurred.
- *	@retval		...						Error codes from called functions.
+ *  @param      PunErrorCode            The RC_VER1 (0x100) unmasked TPM2.0 Format-Zero error number.
+ *  @param      PwszResponseBuffer      In: A target buffer for the output message\n
+ *                                      Out: A buffer containing the null-terminated message
+ *  @param      PunResponseBufferSize   The size of the target buffer.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TpmResponse_FormatZeroErrorGetMessage(
-	_In_									unsigned int	PunErrorCode,
-	_Inout_z_cap_(PunResponseBufferSize)	wchar_t*		PwszResponseBuffer,
-	_In_									unsigned int	PunResponseBufferSize);
+    _In_                                    unsigned int    PunErrorCode,
+    _Inout_z_cap_(PunResponseBufferSize)    wchar_t*        PwszResponseBuffer,
+    _In_                                    unsigned int    PunResponseBufferSize);
 
 /**
- *	@brief		Gets the message for a TPM2.0 Format-One error number
- *	@details	Gets the error message for a given TPM2.0 Format-One error number (unmasked with RC_FMT1).
+ *  @brief      Gets the message for a TPM2.0 Format-One error number
+ *  @details    Gets the error message for a given TPM2.0 Format-One error number (unmasked with RC_FMT1).
  *
- *	@param		PunErrorCode			The RC_FMT1 (0x080) unmasked TPM2.0 Format-One error number.
- *	@param		PwszResponseBuffer		In: A target buffer for the output message\n
- *										Out: A buffer containing the null-terminated message
- *	@param		PunResponseBufferSize	The size of the target buffer
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function.
- *	@retval		RC_E_FAIL				An unexpected error occurred.
- *	@retval		...						Error codes from called functions.
+ *  @param      PunErrorCode            The RC_FMT1 (0x080) unmasked TPM2.0 Format-One error number.
+ *  @param      PwszResponseBuffer      In: A target buffer for the output message\n
+ *                                      Out: A buffer containing the null-terminated message
+ *  @param      PunResponseBufferSize   The size of the target buffer.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TpmResponse_FormatOneErrorGetMessage(
-	_In_									unsigned int	PunErrorCode,
-	_Inout_z_cap_(PunResponseBufferSize)	wchar_t*		PwszResponseBuffer,
-	_In_									unsigned int	PunResponseBufferSize);
+    _In_                                    unsigned int    PunErrorCode,
+    _Inout_z_cap_(PunResponseBufferSize)    wchar_t*        PwszResponseBuffer,
+    _In_                                    unsigned int    PunResponseBufferSize);
 
 /**
- *	@brief		Gets the message for a TPM2.0 Format-One warning number
- *	@details	Gets the message for a given TPM2.0 Format-One warning number (unmasked with RC_FMT1).
+ *  @brief      Gets the message for a TPM2.0 Format-One warning number
+ *  @details    Gets the message for a given TPM2.0 Format-One warning number (unmasked with RC_FMT1).
  *
- *	@param		PunErrorCode			The RC_WARN (0x900) unmasked TPM2.0 Format-One warning number.
- *	@param		PwszResponseBuffer		In: A target buffer for the output message\n
- *										Out: A buffer containing the null-terminated message
- *	@param		PunResponseBufferSize	The size of the target buffer
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function.
- *	@retval		RC_E_FAIL				An unexpected error occurred.
- *	@retval		...						Error codes from called functions.
+ *  @param      PunErrorCode            The RC_WARN (0x900) unmasked TPM2.0 Format-One warning number.
+ *  @param      PwszResponseBuffer      In: A target buffer for the output message\n
+ *                                      Out: A buffer containing the null-terminated message
+ *  @param      PunResponseBufferSize   The size of the target buffer.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TpmResponse_FormatZeroWarningGetMessage(
-	_In_									unsigned int	PunErrorCode,
-	_Inout_z_cap_(PunResponseBufferSize)	wchar_t*		PwszResponseBuffer,
-	_In_									unsigned int	PunResponseBufferSize);
+    _In_                                    unsigned int    PunErrorCode,
+    _Inout_z_cap_(PunResponseBufferSize)    wchar_t*        PwszResponseBuffer,
+    _In_                                    unsigned int    PunResponseBufferSize);
 
 /**
- *	@brief		Parses a TPM1.2 response code
- *	@details	Parses a given TPM1.2 response code and returns a corresponding message.
+ *  @brief      Parses a TPM1.2 response code
+ *  @details    Parses a given TPM1.2 response code and returns a corresponding message.
  *
- *	@param		PunErrorCode			The TPM1.2 response code to be parsed
- *	@param		PwszResponseBuffer		In: A target buffer for the output message\n
- *										Out: A buffer containing the null-terminated message
- *	@param		PunResponseBufferSize	The size of the target buffer
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function.
- *	@retval		RC_E_FAIL				An unexpected error occurred.
- *	@retval		...						Error codes from called functions.
+ *  @param      PunErrorCode            The TPM1.2 response code to be parsed.
+ *  @param      PwszResponseBuffer      In: A target buffer for the output message\n
+ *                                      Out: A buffer containing the null-terminated message
+ *  @param      PunResponseBufferSize   The size of the target buffer.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TpmResponse_TPM12GetMessage(
-	_In_									unsigned int	PunErrorCode,
-	_Inout_z_cap_(PunResponseBufferSize)	wchar_t*		PwszResponseBuffer,
-	_In_									unsigned int	PunResponseBufferSize);
+    _In_                                    unsigned int    PunErrorCode,
+    _Inout_z_cap_(PunResponseBufferSize)    wchar_t*        PwszResponseBuffer,
+    _In_                                    unsigned int    PunResponseBufferSize);
 
 /**
- *	@brief		Topmost function for parsing a TPM2.0 response code
- *	@details	Parses a given TPM2.0 response code and returns a corresponding message.
+ *  @brief      Topmost function for parsing a TPM2.0 response code
+ *  @details    Parses a given TPM2.0 response code and returns a corresponding message.
  *
- *	@param		PunErrorCode			The TPM2.0 response code to be parsed
- *	@param		PwszResponseBuffer		In: A target buffer for the output message\n
- *										Out: A buffer containing the null-terminated message
- *	@param		PunResponseBufferSize	The size of the target buffer
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function.
- *	@retval		RC_E_FAIL				An unexpected error occurred.
- *	@retval		...						Error codes from called functions.
+ *  @param      PunErrorCode            The TPM2.0 response code to be parsed.
+ *  @param      PwszResponseBuffer      In: A target buffer for the output message\n
+ *                                      Out: A buffer containing the null-terminated message
+ *  @param      PunResponseBufferSize   The size of the target buffer.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TpmResponse_GetMessage(
-	_In_									unsigned int	PunErrorCode,
-	_Inout_z_cap_(PunResponseBufferSize)	wchar_t*		PwszResponseBuffer,
-	_In_									unsigned int	PunResponseBufferSize);
+    _In_                                    unsigned int    PunErrorCode,
+    _Inout_z_cap_(PunResponseBufferSize)    wchar_t*        PwszResponseBuffer,
+    _In_                                    unsigned int    PunResponseBufferSize);
 
 #ifdef __cplusplus
 }

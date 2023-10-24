@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares the Device memory access routines
- *	@details
- *	@file		DeviceAccess.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the Device memory access routines
+ *  @details
+ *  @file       DeviceAccess.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -16,73 +15,76 @@
 #include "StdInclude.h"
 
 /**
- *	@brief		Initialize the device access
- *	@details
+ *  @brief      Initialize the device access
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@retval		RC_SUCCESS		The operation completed successfully.
+ *  @param      PbLocality      Locality value.
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     RC_E_INTERNAL           The operation failed (only on Linux).
+ *  @retval     RC_E_TPM_ACCESS_DENIED  Read-write access to /dev/mem was denied (only on Linux).
  */
 _Check_return_
 unsigned int
 DeviceAccess_Initialize(
-	_In_	BYTE	PbLocality);
+    _In_    BYTE    PbLocality);
 
 /**
- *	@brief		UnInitialize the device access
- *	@details
+ *  @brief      UnInitialize the device access
+ *  @details
  *
- *	@param		PbLocality		Locality value
- *	@retval		RC_SUCCESS		The operation completed successfully.
+ *  @param      PbLocality      Locality value.
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     RC_E_INTERNAL   The operation failed (only on Linux).
  */
 _Check_return_
 unsigned int
 DeviceAccess_Uninitialize(
-	_In_	BYTE	PbLocality);
+    _In_    BYTE    PbLocality);
 
 /**
- *	@brief		Read a Byte from the specified memory address
- *	@details
+ *  @brief      Read a Byte from the specified memory address
+ *  @details
  *
- *	@param		PunMemoryAddress	Memory address
- *	@returns	Data value read from specified memory
+ *  @param      PunMemoryAddress    Memory address
+ *  @returns    Data value read from specified memory
  */
 _Check_return_
 BYTE
 DeviceAccess_ReadByte(
-	_In_	unsigned int PunMemoryAddress);
+    _In_    unsigned int PunMemoryAddress);
 
 /**
- *	@brief		Write a Byte to the specified memory address
- *	@details
+ *  @brief      Write a Byte to the specified memory address
+ *  @details
  *
- *	@param		PunMemoryAddress	Memory address
- *	@param		PbData				Byte to write
+ *  @param      PunMemoryAddress    Memory address.
+ *  @param      PbData              Byte to write.
  */
 void
 DeviceAccess_WriteByte(
-	_In_	unsigned int	PunMemoryAddress,
-	_In_	BYTE			PbData);
+    _In_    unsigned int    PunMemoryAddress,
+    _In_    BYTE            PbData);
 
 /**
- *	@brief		Read a Word from the specified memory address
- *	@details
+ *  @brief      Read a Word from the specified memory address
+ *  @details
  *
- *	@param		PunMemoryAddress	Memory address
- *	@returns	Data value read from specified memory
+ *  @param      PunMemoryAddress    Memory address
+ *  @returns    Data value read from specified memory
  */
 _Check_return_
 unsigned short
 DeviceAccess_ReadWord(
-	_In_	unsigned int	PunMemoryAddress);
+    _In_    unsigned int    PunMemoryAddress);
 
 /**
- *	@brief		Write a Word to the specified memory address
- *	@details
+ *  @brief      Write a Word to the specified memory address
+ *  @details
  *
- *	@param		PunMemoryAddress	Memory address
- *	@param		PusData				Data to be written
+ *  @param      PunMemoryAddress    Memory address.
+ *  @param      PusData             Data to be written.
  */
 void
 DeviceAccess_WriteWord(
-	_In_	unsigned int	PunMemoryAddress,
-	_In_	unsigned short	PusData);
+    _In_    unsigned int    PunMemoryAddress,
+    _In_    unsigned short  PusData);

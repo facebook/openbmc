@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares logging methods for the application
- *	@details	This module provides logging for the application.
- *	@file		Logging.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares logging methods for the application
+ *  @details    This module provides logging for the application.
+ *  @file       Logging.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -24,32 +23,32 @@ extern "C" {
 extern BOOL g_fLogHeader;
 
 /**
- *	Value definitions for logging
+ *  Value definitions for logging
  */
 
 /// Log level value definition for no logging
-#define LOGGING_DISABLED	0
+#define LOGGING_DISABLED    0
 
 /// Log level value definition for error logging
-#define LOGGING_LEVEL_1		1
+#define LOGGING_LEVEL_1     1
 
 /// Log level value definition for additionally copy of screen output
-#define LOGGING_LEVEL_2		2
+#define LOGGING_LEVEL_2     2
 
 /// Log level value definition for additionally byte streams
-#define LOGGING_LEVEL_3		3
+#define LOGGING_LEVEL_3     3
 
 /// Log level value definition for additionally debugging information
-#define LOGGING_LEVEL_4		4
+#define LOGGING_LEVEL_4     4
 
 /// String definition for tracing method entry in log
-#define LOGGING_METHOD_ENTRY_STRING			L"-> Method entry"
+#define LOGGING_METHOD_ENTRY_STRING         L"-> Method entry"
 
 /// String definition for tracing method exit in log
-#define LOGGING_METHOD_EXIT_STRING			L"<- Method exit"
+#define LOGGING_METHOD_EXIT_STRING          L"<- Method exit"
 
 /// String definition for tracing method exit incl. the return value in log
-#define LOGGING_METHOD_EXIT_STRING_RET_VAL	L"<- Method exit: 0x%.8X"
+#define LOGGING_METHOD_EXIT_STRING_RET_VAL  L"<- Method exit: 0x%.8X"
 
 /// The maximum HEX byte characters written per line in log file
 #define LOGGING_HEX_CHARS_PER_LINE 16
@@ -58,76 +57,124 @@ extern BOOL g_fLogHeader;
 #define DIV_KILOBYTE 1024
 
 /**
- *	Macro definitions for logging
+ *  Macro definitions for logging
  */
 
 /// Macro for writing a message into the log file
-#define LOGGING_WRITE(LOGLEVEL, LOGMESSAGE, ...)	Logging_WriteLog(__FILE__, __func__, LOGLEVEL, LOGMESSAGE, ##__VA_ARGS__);
+#define LOGGING_WRITE(LOGLEVEL, LOGMESSAGE, ...)    Logging_WriteLog(FILENAME, __func__, LOGLEVEL, LOGMESSAGE, __VA_ARGS__);
 
 /// Macro for writing a message into the log file only in case current log level is level 1 or higher
-#define LOGGING_WRITE_LEVEL1_FMT(LOGMESSAGE, ...)	Logging_WriteLog(__FILE__, __func__, LOGGING_LEVEL_1, LOGMESSAGE, ##__VA_ARGS__);
-#define LOGGING_WRITE_LEVEL1(LOGMESSAGE)			Logging_WriteLog(__FILE__, __func__, LOGGING_LEVEL_1, LOGMESSAGE, NULL);
+#define LOGGING_WRITE_LEVEL1_FMT(LOGMESSAGE, ...)   Logging_WriteLog(FILENAME, __func__, LOGGING_LEVEL_1, LOGMESSAGE, __VA_ARGS__);
+#define LOGGING_WRITE_LEVEL1(LOGMESSAGE)            Logging_WriteLog(FILENAME, __func__, LOGGING_LEVEL_1, LOGMESSAGE, NULL);
 
 /// Macro for writing a message into the log file only in case current log level is level 2 or higher
-#define LOGGING_WRITE_LEVEL2_FMT(LOGMESSAGE, ...)	Logging_WriteLog(__FILE__, __func__, LOGGING_LEVEL_2, LOGMESSAGE, ##__VA_ARGS__);
-#define LOGGING_WRITE_LEVEL2(LOGMESSAGE)			Logging_WriteLog(__FILE__, __func__, LOGGING_LEVEL_2, LOGMESSAGE, NULL);
+#define LOGGING_WRITE_LEVEL2_FMT(LOGMESSAGE, ...)   Logging_WriteLog(FILENAME, __func__, LOGGING_LEVEL_2, LOGMESSAGE, __VA_ARGS__);
+#define LOGGING_WRITE_LEVEL2(LOGMESSAGE)            Logging_WriteLog(FILENAME, __func__, LOGGING_LEVEL_2, LOGMESSAGE, NULL);
 
 /// Macro for writing a message into the log file only in case current log level is level 3 or higher
-#define LOGGING_WRITE_LEVEL3_FMT(LOGMESSAGE, ...)	Logging_WriteLog(__FILE__, __func__, LOGGING_LEVEL_3, LOGMESSAGE, ##__VA_ARGS__);
-#define LOGGING_WRITE_LEVEL3(LOGMESSAGE)			Logging_WriteLog(__FILE__, __func__, LOGGING_LEVEL_3, LOGMESSAGE, NULL);
+#define LOGGING_WRITE_LEVEL3_FMT(LOGMESSAGE, ...)   Logging_WriteLog(FILENAME, __func__, LOGGING_LEVEL_3, LOGMESSAGE, __VA_ARGS__);
+#define LOGGING_WRITE_LEVEL3(LOGMESSAGE)            Logging_WriteLog(FILENAME, __func__, LOGGING_LEVEL_3, LOGMESSAGE, NULL);
 
 /// Macro for writing a message into the log file only in case current log level is level 4 or higher
-#define LOGGING_WRITE_LEVEL4_FMT(LOGMESSAGE, ...)	Logging_WriteLog(__FILE__, __func__, LOGGING_LEVEL_4, LOGMESSAGE, ##__VA_ARGS__);
-#define LOGGING_WRITE_LEVEL4(LOGMESSAGE)			Logging_WriteLog(__FILE__, __func__, LOGGING_LEVEL_4, LOGMESSAGE, NULL);
+#define LOGGING_WRITE_LEVEL4_FMT(LOGMESSAGE, ...)   Logging_WriteLog(FILENAME, __func__, LOGGING_LEVEL_4, LOGMESSAGE, __VA_ARGS__);
+#define LOGGING_WRITE_LEVEL4(LOGMESSAGE)            Logging_WriteLog(FILENAME, __func__, LOGGING_LEVEL_4, LOGMESSAGE, NULL);
 
 /// Macro for writing a buffer's contents in hex bytes into the log file
-#define LOGGING_WRITEHEX(LOGLEVEL, BUFFER, SIZE)	Logging_WriteHex(__FILE__, __func__, LOGLEVEL, BUFFER, SIZE);
+#define LOGGING_WRITEHEX(LOGLEVEL, BUFFER, SIZE)    Logging_WriteHex(FILENAME, __func__, LOGLEVEL, BUFFER, SIZE);
 
 /// Macro for writing a buffer's contents in hex bytes into the log file only in case current log level is level 1 or higher
-#define LOGGING_WRITEHEX_LEVEL1(BUFFER, SIZE)		Logging_WriteHex(__FILE__, __func__, LOGGING_LEVEL_1, BUFFER, SIZE);
+#define LOGGING_WRITEHEX_LEVEL1(BUFFER, SIZE)       Logging_WriteHex(FILENAME, __func__, LOGGING_LEVEL_1, BUFFER, SIZE);
 
 /// Macro for writing a buffer's contents in hex bytes into the log file only in case current log level is level 3 or higher
-#define LOGGING_WRITEHEX_LEVEL3(BUFFER, SIZE)		Logging_WriteHex(__FILE__, __func__, LOGGING_LEVEL_3, BUFFER, SIZE);
+#define LOGGING_WRITEHEX_LEVEL3(BUFFER, SIZE)       Logging_WriteHex(FILENAME, __func__, LOGGING_LEVEL_3, BUFFER, SIZE);
+
+/// Structure for storing a cached log message
+typedef struct tdIfxLogEntry
+{
+    /// The log level
+    unsigned int    unLogLevel;
+    /// The log message
+    wchar_t*        pwszLogMessage;
+    /// Pointer to the next log entry (or NULL)
+    void*           pNextLogEntry;
+} IfxLogEntry;
 
 /**
- *	Method declarations for logging
+ *  Method declarations for logging
  */
 
+_Check_return_
+unsigned int
+Logging_BuildLoggingFilePath();
+
 /**
- *	@brief		Logging function
- *	@details	Writes the given text into the configured log
- *
- *	@param		PszCurrentModule		Pointer to a char array holding the module name (optional, can be NULL)
- *	@param		PszCurrentFunction		Pointer to a char array holding the function name (optional, can be NULL)
- *	@param		PunLoggingLevel			Logging level
- *	@param		PwszLoggingMessage		Format string used to format the message
- *	@param		...						Parameters needed to format the message
+ *  @brief      This function enables caching of log messages
+ *  @details    This function enables caching of log messages.
  */
 void
-Logging_WriteLog(
-	_In_z_	const char*		PszCurrentModule,
-	_In_z_	const char*		PszCurrentFunction,
-	_In_	unsigned int	PunLoggingLevel,
-	_In_z_	const wchar_t*	PwszLoggingMessage,
-	...);
+Logging_EnableCaching();
 
 /**
- *	@brief		Log hex dump function
- *	@details	Writes the given data as hex dump to the file
+ *  @brief      This function writes cached log entries
+ *  @details    This function writes cached log entries if caching is enabled and log entries exist
+ *              that fits to the log level. Caching is disabled.
  *
- *	@param		PszCurrentModule		Pointer to a char array holding the module name (optional, can be NULL)
- *	@param		PszCurrentFunction		Pointer to a char array holding the function name (optional, can be NULL)
- *	@param		PunLoggingLevel			Logging level
- *	@param		PrgbHexData				Format string used to format the message
- *	@param		PunSize					Size of hex data buffer
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     RC_E_FAIL       An unexpected error occurred. E.g. PropertyStorage not initialized correctly.
+ *  @retval     ...             Error codes from called functions.
+ */
+_Check_return_
+unsigned int
+Logging_WriteCachedEntries();
+
+void
+IFXAPI
+Logging_WriteLog(
+    _In_z_  const char*     PszCurrentModule,
+    _In_z_  const char*     PszCurrentFunction,
+    _In_    unsigned int    PunLoggingLevel,
+    _In_z_  const wchar_t*  PwszLoggingMessage,
+    ...);
+
+/**
+ *  @brief      Log hex dump function
+ *  @details    Writes the given data as hex dump to the file.
+ *
+ *  @param      PszCurrentModule        Pointer to a char array holding the module name (optional, can be NULL).
+ *  @param      PszCurrentFunction      Pointer to a char array holding the function name (optional, can be NULL).
+ *  @param      PunLoggingLevel         Logging level.
+ *  @param      PrgbHexData             Format string used to format the message.
+ *  @param      PunSize                 Size of hex data buffer.
  */
 void
 Logging_WriteHex(
-	_In_z_					const char*		PszCurrentModule,
-	_In_z_					const char*		PszCurrentFunction,
-	_In_					unsigned int	PunLoggingLevel,
-	_In_bytecount_(PunSize)	const BYTE*		PrgbHexData,
-	_In_					unsigned int	PunSize);
+    _In_z_                  const char*     PszCurrentModule,
+    _In_z_                  const char*     PszCurrentFunction,
+    _In_                    unsigned int    PunLoggingLevel,
+    _In_bytecount_(PunSize) const BYTE*     PrgbHexData,
+    _In_                    unsigned int    PunSize);
+
+/**
+ *  @brief      Check if log file is open for writing
+ *  @details    Checks if log file is open for writing.
+ *
+ *  @retval     TRUE                Log file is open.
+ *  @retval     FALSE               Log file is not open.
+ */
+_Check_return_
+BOOL
+Logging_IsFileOpen();
+
+/**
+ *  @brief      Finalize logging
+ *  @details    Finalizes the logging by closing the file.
+ *
+ *  @retval     RC_SUCCESS          The operation completed successfully or file handle was NULL.
+ *  @retval     RC_E_FAIL           An unexpected error occurred.
+ */
+_Check_return_
+unsigned int
+Logging_Finalize();
 
 #ifdef __cplusplus
 }

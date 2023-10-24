@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares the TPM_FieldUpgradeStart command.
- *	@details	The module receives the input parameters, marshals these parameters to a byte array and sends the command to the TPM.
- *	@file		TPM_FieldUpgradeStart.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM_FieldUpgradeStart command.
+ *  @details    The module receives the input parameters, marshals these parameters to a byte array and sends the command to the TPM.
+ *  @file       TPM_FieldUpgradeStart.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -30,28 +29,28 @@ extern "C" {
 #endif
 
 /**
- *	@brief		Calls TPM_FieldUpgradeStart.
- *	@details	Transmits the TPM1.2 command TPM_FieldUpgradeStart with the given policy parameter block.
+ *  @brief      Calls TPM_FieldUpgradeStart.
+ *  @details    Transmits the TPM1.2 command TPM_FieldUpgradeStart with the given policy parameter block.
  *
- *	@param		PpbPolicyParameterBlock			Pointer to policy parameter block to be sent
- *	@param		PunPolicyParameterBlockSize		Size of policy parameter block to be sent in bytes
- *	@param		PpbOwnerAuth					TPM Owner authorization data (optional, can be NULL).
- *	@param		PunAuthHandle					TPM Owner authorization handle (optional).
- *	@param		PpsLastNonceEven				Nonce needed for generating OIAP-authenticated TPM command (optional, can be NULL).
+ *  @param      PpbPolicyParameterBlock         Pointer to policy parameter block to be sent.
+ *  @param      PunPolicyParameterBlockSize     Size of policy parameter block to be sent in bytes.
+ *  @param      PpbOwnerAuth                    TPM Owner authorization data (optional, can be NULL).
+ *  @param      PunAuthHandle                   TPM Owner authorization handle (optional).
+ *  @param      PpsLastNonceEven                Nonce needed for generating OIAP-authenticated TPM command (optional, can be NULL).
  *
- *	@retval		RC_SUCCESS						The operation completed successfully.
- *	@retval		RC_E_FAIL						An unexpected error occurred.
- *	@retval		RC_E_BAD_PARAMETER				An invalid parameter was passed to the function. PpbOwnerAuth is not NULL and PpsLastNonceEven is NULL
- *	@retval		...								Error codes from Micro TSS functions
+ *  @retval     RC_SUCCESS                      The operation completed successfully.
+ *  @retval     RC_E_FAIL                       An unexpected error occurred.
+ *  @retval     RC_E_BAD_PARAMETER              An invalid parameter was passed to the function. PpbOwnerAuth is not NULL and PpsLastNonceEven is NULL.
+ *  @retval     ...                             Error codes from Micro TSS functions.
  */
 _Check_return_
 unsigned int
 TSS_TPM_FieldUpgradeStart(
-	_In_bytecount_(PunPolicyParameterBlockSize)	const TSS_BYTE*		PpbPolicyParameterBlock,
-	_In_										TSS_UINT16			PunPolicyParameterBlockSize,
-	_In_opt_bytecount_(TSS_SHA1_DIGEST_SIZE)	const TSS_BYTE*		PpbOwnerAuth,
-	_In_										TSS_TPM_AUTHHANDLE	PunAuthHandle,
-	_In_opt_									TSS_TPM_NONCE*		PpsLastNonceEven);
+    _In_bytecount_(PunPolicyParameterBlockSize) const TSS_BYTE*     PpbPolicyParameterBlock,
+    _In_                                        TSS_UINT16          PunPolicyParameterBlockSize,
+    _In_opt_bytecount_(TSS_SHA1_DIGEST_SIZE)    const TSS_BYTE*     PpbOwnerAuth,
+    _In_                                        TSS_TPM_AUTHHANDLE  PunAuthHandle,
+    _In_opt_                                    TSS_TPM_NONCE*      PpsLastNonceEven);
 
 #ifdef __cplusplus
 }

@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares the TPM I/O interface
- *	@details	This header defines the interface implemented by the underlying TPM access module
- *	@file		TpmIO.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM I/O interface
+ *  @details    This header defines the interface implemented by the underlying TPM access module
+ *  @file       TpmIO.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -30,105 +29,110 @@ unsigned int
 typedef
 unsigned int
 (*PFN_TPMIO_Transmit)(
-	const BYTE*		PrgbRequestBuffer,
-	unsigned int	PunRequestBufferSize,
-	BYTE*			PrgbResponseBuffer,
-	unsigned int*	PpunResponseBufferSize,
-	unsigned int	PunMaxDuration);
+    const BYTE*     PrgbRequestBuffer,
+    unsigned int    PunRequestBufferSize,
+    BYTE*           PrgbResponseBuffer,
+    unsigned int*   PpunResponseBufferSize,
+    unsigned int    PunMaxDuration);
 /// Function pointer to read a byte from a register of the TPM
 typedef
 unsigned int
 (*PFN_TPMIO_ReadRegister)(
-	unsigned int	PunRegisterAddress,
-	BYTE*			PpbRegisterValue);
+    unsigned int    PunRegisterAddress,
+    BYTE*           PpbRegisterValue);
 /// Function pointer to write a byte to a register of the TPM
 typedef
 unsigned int
 (*PFN_TPMIO_WriteRegister)(
-	unsigned int	PunRegisterAddress,
-	BYTE			PbRegisterValue);
+    unsigned int    PunRegisterAddress,
+    BYTE            PbRegisterValue);
 
 /**
- *	@brief		TPM connect function
- *	@details	This function handles the connect to the underlying TPM.
+ *  @brief      TPM connect function
+ *  @details    This function handles the connect to the underlying TPM.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_ALREADY_CONNECTED		If TPM I/O is already connected
- *	@retval		RC_E_COMPONENT_NOT_FOUND	No IFX TPM found
- *	@retval		...							Error codes from DeviceAccess_Initialize and TIS
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_ALREADY_CONNECTED      If TPM I/O is already connected.
+ *  @retval     RC_E_COMPONENT_NOT_FOUND    No IFX TPM found.
+ *  @retval     RC_E_INTERNAL               Unsupported device access or locality setting.
+ *  @retval     ...                         Error codes from DeviceAccess_Initialize and TIS.
  */
 _Check_return_
 unsigned int
 TPMIO_Connect();
 
 /**
- *	@brief		TPM disconnect function
- *	@details	This function handles the disconnect to the underlying TPM.
+ *  @brief      TPM disconnect function
+ *  @details    This function handles the disconnect to the underlying TPM.
  *
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_NOT_CONNECTED		If TPM I/O is not connected to the TPM
- *	@retval		...						Error codes from DeviceAccess_Uninitialize function
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_NOT_CONNECTED      If TPM I/O is not connected to the TPM.
+ *  @retval     RC_E_INTERNAL           Unsupported device access or locality setting.
+ *  @retval     ...                     Error codes from DeviceAccess_Uninitialize function.
  */
 _Check_return_
 unsigned int
 TPMIO_Disconnect();
 
 /**
- *	@brief		TPM transmit function
- *	@details	This function submits the TPM command to the underlying TPM.
+ *  @brief      TPM transmit function
+ *  @details    This function submits the TPM command to the underlying TPM.
  *
- *	@param		PrgbRequestBuffer		Pointer to a byte array containing the TPM command request bytes
- *	@param		PunRequestBufferSize	Size of command request in bytes
- *	@param		PrgbResponseBuffer		Pointer to a byte array receiving the TPM command response bytes
- *	@param		PpunResponseBufferSize	Input size of response buffer, output size of TPM command response in bytes
- *	@param		PunMaxDuration			The maximum duration of the command in microseconds (relevant for memory based access / TIS protocol only)
+ *  @param      PrgbRequestBuffer       Pointer to a byte array containing the TPM command request bytes.
+ *  @param      PunRequestBufferSize    Size of command request in bytes.
+ *  @param      PrgbResponseBuffer      Pointer to a byte array receiving the TPM command response bytes.
+ *  @param      PpunResponseBufferSize  Input size of response buffer, output size of TPM command response in bytes.
+ *  @param      PunMaxDuration          The maximum duration of the command in microseconds (relevant for memory based access / TIS protocol only).
  *
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function.
- *	@retval		RC_E_NOT_CONNECTED		If the TPM I/O is not connected to the TPM
- *	@retval		...						Error codes from TDDL_TransmitData function
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function.
+ *  @retval     RC_E_NOT_CONNECTED      If the TPM I/O is not connected to the TPM.
+ *  @retval     RC_E_INTERNAL           Unsupported device access or locality setting.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TPMIO_Transmit(
-	_In_bytecount_(PunRequestBufferSize)		const BYTE*		PrgbRequestBuffer,
-	_In_										unsigned int	PunRequestBufferSize,
-	_Out_bytecap_(*PpunResponseBufferSize)		BYTE*			PrgbResponseBuffer,
-	_Inout_										unsigned int*	PpunResponseBufferSize,
-	_In_										unsigned int	PunMaxDuration);
+    _In_bytecount_(PunRequestBufferSize)        const BYTE*     PrgbRequestBuffer,
+    _In_                                        unsigned int    PunRequestBufferSize,
+    _Out_bytecap_(*PpunResponseBufferSize)      BYTE*           PrgbResponseBuffer,
+    _Inout_                                     unsigned int*   PpunResponseBufferSize,
+    _In_                                        unsigned int    PunMaxDuration);
 
 /**
- *	@brief		Read a byte from a specific address (register)
- *	@details	This function reads a byte from the specified address
+ *  @brief      Read a byte from a specific address (register)
+ *  @details    This function reads a byte from the specified address
  *
- *	@param		PunRegisterAddress		Register address
- *	@param		PpbRegisterValue		Pointer to a byte to store the register value
+ *  @param      PunRegisterAddress          Register address.
+ *  @param      PpbRegisterValue            Pointer to a byte to store the register value.
  *
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function.
- *	@retval		...						Error codes from called functions
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER          An invalid parameter was passed to the function.
+ *  @retval     RC_E_INTERNAL               Unsupported device access or locality setting (only on Linux and UEFI).
+ *  @retval     ...                         Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TPMIO_ReadRegister(
-	_In_		unsigned int		PunRegisterAddress,
-	_Inout_		BYTE*				PpbRegisterValue);
+    _In_        unsigned int        PunRegisterAddress,
+    _Inout_     BYTE*               PpbRegisterValue);
 
 /**
- *	@brief		Write a byte to a specific address (register)
- *	@details	This function writes a byte to the specified address
+ *  @brief      Write a byte to a specific address (register)
+ *  @details    This function writes a byte to the specified address
  *
- *	@param		PunRegisterAddress		Register address
- *	@param		PbRegisterValue			Byte to write to the register address
+ *  @param      PunRegisterAddress          Register address.
+ *  @param      PbRegisterValue             Byte to write to the register address.
  *
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		...						Error codes from called functions
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_INTERNAL               Unsupported device access or locality setting (only on Linux and UEFI).
+ *  @retval     ...                         Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TPMIO_WriteRegister(
-	_In_		unsigned int		PunRegisterAddress,
-	_In_		BYTE				PbRegisterValue);
+    _In_        unsigned int        PunRegisterAddress,
+    _In_        BYTE                PbRegisterValue);
 
 #ifdef __cplusplus
 }

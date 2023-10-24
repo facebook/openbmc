@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares global definitions for the Linux platform
- *	@details
- *	@file		Globals_Linux.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares global definitions for the Linux platform
+ *  @details
+ *  @file       Globals_Linux.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -20,12 +19,14 @@
 /// @cond SHOW_SAL_DEFINITIONS
 // SAL annotations don't exist on Linux
 #define _Check_return_
+#define _Success_(x)
 
 #define _In_
 #define _In_opt_
 #define _In_bytecount_(x)
 #define _In_opt_bytecount_(x)
 #define _In_z_
+#define _In_opt_z_
 #define _In_z_count_(x)
 #define _In_opt_z_count_(x)
 #define _In_reads_z_(x)
@@ -43,10 +44,12 @@
 
 #define _Out_
 #define _Out_bytecap_(x)
+#define _Out_bytecapcount_(x)
 #define _Out_opt_bytecap_(x)
 #define _Out_opt_bytecapcount_(x)
 #define _Out_writes_bytes_all_(x)
 #define _Out_writes_bytes_to_opt_(x, y)
+#define _Outptr_result_buffer_(x)
 #define _Outptr_result_maybenull_
 #define _Outptr_result_maybenull_z_
 #define _Out_z_cap_(x)
@@ -64,3 +67,6 @@ typedef unsigned char UINT8;
 /// Maximum numerical value of a byte
 #define MAXBYTE 0xFF
 #endif
+
+/// Calling convention
+#define IFXAPI

@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares TPM implementation dependent defines
- *	@details
- *	@file		implementations.h
- *	@copyright	Copyright 2013 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares TPM implementation dependent defines
+ *  @details
+ *  @file       implementations.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2013 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -14,11 +13,11 @@
  */
 #pragma once
 
-#define		TSS_MAX_CAP_DATA			(TSS_MAX_CAP_BUFFER-sizeof(TSS_TPM_CAP)-sizeof(TSS_UINT32))
-#define		TSS_MAX_CAP_ALGS			(TSS_MAX_CAP_DATA/sizeof(TSS_TPMS_ALG_PROPERTY))
-#define		TSS_MAX_CAP_HANDLES			(TSS_MAX_CAP_DATA/sizeof(TSS_TPM_HANDLE))
-#define		TSS_MAX_CAP_CC				(TSS_MAX_CAP_DATA/sizeof(TSS_TPM_CC))
-#define		TSS_MAX_TPM_PROPERTIES		(TSS_MAX_CAP_DATA/sizeof(TSS_TPMS_TAGGED_PROPERTY))
-#define		TSS_MAX_PCR_PROPERTIES		(TSS_MAX_CAP_DATA/sizeof(TSS_TPMS_TAGGED_PCR_SELECT))
-#define		TSS_MAX_ECC_CURVES			(TSS_MAX_CAP_DATA/sizeof(TSS_TPM_ECC_CURVE))
-#define		TSS_HASH_COUNT				2
+#define     TSS_MAX_CAP_DATA            (TSS_MAX_CAP_BUFFER-sizeof(TSS_TPM_CAP)-sizeof(TSS_UINT32))
+#define     TSS_MAX_CAP_ALGS            (TSS_MAX_CAP_DATA/sizeof(TSS_TPMS_ALG_PROPERTY))
+#define     TSS_MAX_CAP_HANDLES         (TSS_MAX_CAP_DATA/sizeof(TSS_TPM_HANDLE))
+#define     TSS_MAX_CAP_CC              (TSS_MAX_CAP_DATA/sizeof(TSS_TPM_CC))
+#define     TSS_MAX_TPM_PROPERTIES      (TSS_MAX_CAP_DATA/sizeof(TSS_TPMS_TAGGED_PROPERTY))
+#define     TSS_MAX_PCR_PROPERTIES      (TSS_MAX_CAP_DATA/sizeof(TSS_TPMS_TAGGED_PCR_SELECT))
+#define     TSS_MAX_ECC_CURVES          (TSS_MAX_CAP_DATA/sizeof(TSS_TPM_ECC_CURVE))
+#define     TSS_HASH_COUNT              2

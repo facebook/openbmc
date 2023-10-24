@@ -1,11 +1,10 @@
 ﻿/**
- *	@brief		Declares the command flow to retrieve information about the TPM1.2 or TPM2.0.
- *	@details	This module collects TPM Firmware Update related information via specific TPM commands.
- *				Afterwards the TPM related information is returned to the calling module.
- *	@file		CommandFlow_TpmInfo.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the command flow to retrieve information about the TPM1.2 or TPM2.0.
+ *  @details    This module collects TPM Firmware Update related information via specific TPM commands.
+ *              Afterwards the TPM related information is returned to the calling module.
+ *  @file       CommandFlow_TpmInfo.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -23,21 +22,21 @@ extern "C" {
 #endif
 
 /**
- *	@brief		Processes a sequence of TPM info related commands.
- *	@details	This function collects TPM Firmware Update related information via specific TPM commands.
- *				Afterwards the TPM related information is returned to the calling module.
- *				The function utilizes the MicroTss library.
+ *  @brief      Processes a sequence of TPM info related commands.
+ *  @details    This function collects TPM Firmware Update related information via specific TPM commands.
+ *              Afterwards the TPM related information is returned to the calling module.
+ *              The function utilizes the MicroTss library.
  *
- *	@param		PpTpmInfo				Pointer to an initialized IfxInfo structure to be filled in
- *	@retval		RC_SUCCESS				The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER		An invalid parameter was passed to the function. PpTpmInfo was invalid.
- *	@retval		RC_E_FAIL				An unexpected error occurred.
- *	@retval		...						Error codes from called functions.
+ *  @param      PpTpmInfo               Pointer to an initialized IfxInfo structure to be filled in.
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function. PpTpmInfo was invalid.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     ...                     Error codes from called functions.
  */
 _Check_return_
 unsigned int
 CommandFlow_TpmInfo_Execute(
-	_Inout_ IfxInfo* PpTpmInfo);
+    _Inout_ IfxInfo* PpTpmInfo);
 
 #ifdef __cplusplus
 }

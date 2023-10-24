@@ -1,12 +1,11 @@
 ﻿/**
- *	@brief		Declares the TPM_OIAP command.
- *	@details	The module receives the input parameters, marshals these parameters
- *				to a byte array, sends the command to the TPM and unmarshals the response
- *				back to the out parameters.
- *	@file		TPM_OIAP.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM_OIAP command.
+ *  @details    The module receives the input parameters, marshals these parameters
+ *              to a byte array, sends the command to the TPM and unmarshals the response
+ *              back to the out parameters.
+ *  @file       TPM_OIAP.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -23,23 +22,23 @@ extern "C" {
 #endif
 
 /**
- *	@brief		This function handles the TPM_OIAP command.
- *	@details	The function receives the input parameters, marshals these parameters
- *				to a byte array, sends the command to the TPM and unmarshals the response
- *				back to the out parameters.
+ *  @brief      This function handles the TPM_OIAP command.
+ *  @details    The function receives the input parameters, marshals these parameters
+ *              to a byte array, sends the command to the TPM and unmarshals the response
+ *              back to the out parameters.
  *
- *	@param		PpunAuthHandle		TPM-created handle that points to the authorization session.
- *	@param		PpsNonceEven		TPM-generated nonce that is associated with the session.
+ *  @param      PpunAuthHandle      TPM-created handle that points to the authorization session.
+ *  @param      PpsNonceEven        TPM-generated nonce that is associated with the session.
  *
- *	@retval		RC_SUCCESS			The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER	An invalid parameter was passed to the function. E.g. NULL pointer
- *	@retval		...					Error codes from called functions.
+ *  @retval     RC_SUCCESS          The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER  An invalid parameter was passed to the function. E.g. NULL pointer.
+ *  @retval     ...                 Error codes from called functions.
  */
 _Check_return_
 unsigned int
 TSS_TPM_OIAP(
-	_Out_ TSS_TPM_AUTHHANDLE*	PpunAuthHandle,
-	_Out_ TSS_TPM_NONCE*		PpsNonceEven);
+    _Out_ TSS_TPM_AUTHHANDLE*   PpunAuthHandle,
+    _Out_ TSS_TPM_NONCE*        PpsNonceEven);
 
 #ifdef __cplusplus
 }

@@ -1,12 +1,11 @@
 ﻿/**
- *	@brief		Declares the TPM_FieldUpgradeComplete command (TPM1.2)
- *	@details	The module receives the input parameters marshals these parameters
- *				to a byte array sends the command to the TPM and unmarshals the response
- *				back to the out parameters
- *	@file		TPM_FieldUpgradeComplete.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the TPM_FieldUpgradeComplete command (TPM1.2)
+ *  @details    The module receives the input parameters marshals these parameters
+ *              to a byte array sends the command to the TPM and unmarshals the response
+ *              back to the out parameters
+ *  @file       TPM_FieldUpgradeComplete.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -24,21 +23,21 @@ extern "C" {
 #endif
 
 /**
- *	@brief		This function handles the TPM_FieldUpgradeComplete command (TPM1.2 vendor specific command)
- *	@details	The function receives the input parameters marshals these parameters
- *				to a byte array sends the command to the TPM and unmarshals the response
- *				back to the out parameters
+ *  @brief      This function handles the TPM_FieldUpgradeComplete command (TPM1.2 vendor specific command)
+ *  @details    The function receives the input parameters marshals these parameters
+ *              to a byte array sends the command to the TPM and unmarshals the response
+ *              back to the out parameters
  *
- *	@param		PusCompleteSize			Size of the byte complete data (should be zero)
- *	@param		PrgbComplete			Byte array with the complete data (should be empty)
- *	@param		PpusOutCompleteSize		Pointer to the complete size return value (should be zero)
+ *  @param      PusCompleteSize         Size of the byte complete data (should be zero).
+ *  @param      PrgbComplete            Byte array with the complete data (should be empty).
+ *  @param      PpusOutCompleteSize     Pointer to the complete size return value (should be zero).
  */
 _Check_return_
 unsigned int
 TSS_TPM_FieldUpgradeComplete(
-	_In_							uint16_t		PusCompleteSize,
-	_In_bytecount_(PusCompleteSize)	const uint8_t*	PrgbComplete,
-	_Out_							uint16_t*		PpusOutCompleteSize);
+    _In_                            uint16_t        PusCompleteSize,
+    _In_bytecount_(PusCompleteSize) const uint8_t*  PrgbComplete,
+    _Out_                           uint16_t*       PpusOutCompleteSize);
 
 #ifdef __cplusplus
 }

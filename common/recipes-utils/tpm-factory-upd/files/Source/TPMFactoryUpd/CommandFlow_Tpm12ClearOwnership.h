@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares the command flow to clear the TPM1.2 ownership.
- *	@details	This module removes the TPM owner that was temporarily created during an update from TPM1.2 to TPM1.2.
- *	@file		CommandFlow_Tpm12ClearOwnership.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the command flow to clear the TPM1.2 ownership.
+ *  @details    This module removes the TPM owner that was temporarily created during an update from TPM1.2 to TPM1.2.
+ *  @file       CommandFlow_Tpm12ClearOwnership.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -26,26 +25,27 @@ extern "C" {
 extern const TSS_TPM_AUTHDATA C_defaultOwnerAuthData;
 
 /**
- *	@brief		Processes a sequence of TPM commands to clear the TPM1.2 ownership.
- *	@details	This function removes the TPM owner that was temporarily created during an update from TPM1.2 to TPM1.2.
- *				The function utilizes the MicroTss library.
+ *  @brief      Processes a sequence of TPM commands to clear the TPM1.2 ownership.
+ *  @details    This function removes the TPM owner that was temporarily created during an update from TPM1.2 to TPM1.2.
+ *              The function utilizes the MicroTss library.
  *
- *	@param		PpTpmClearOwnership		Pointer to an initialized IfxTpm12ClearOwnership structure to be filled in
+ *  @param      PpTpmClearOwnership     Pointer to an initialized IfxTpm12ClearOwnership structure to be filled in.
+ *                                      Error details are returned by the unReturnCode member:\n
+ *                                      RC_E_NOT_SUPPORTED_FEATURE      In case of the TPM is a TPM2.0.\n
+ *                                      RC_E_TPM12_NO_OWNER             The TPM1.2 does not have an owner.\n
+ *                                      RC_E_NO_IFX_TPM                 The underlying TPM is not an Infineon TPM.\n
+ *                                      RC_E_UNSUPPORTED_CHIP           In case of the underlying TPM does not support that functionality.\n
+ *                                      RC_E_TPM12_INVALID_OWNERAUTH    In case of the expected owner authorization can not be verified.\n
+ *                                      RC_E_FAIL                       An unexpected error occurred.\n
+ *                                      ...                             Error codes from called functions.
  *
- *	@retval		RC_SUCCESS						The operation completed successfully.
- *	@retval		RC_E_BAD_PARAMETER				An invalid parameter was passed to the function. PpTpmClearOwnership was invalid.
- *	@retval		RC_E_NOT_SUPPORTED_FEATURE		In case of the TPM is a TPM2.0
- *	@retval		RC_E_TPM12_NO_OWNER				The TPM1.2 does not have an owner.
- *	@retval		RC_E_NO_IFX_TPM					The underlying TPM is not an Infineon TPM.
- *	@retval		RC_E_UNSUPPORTED_CHIP			In case of the underlying TPM does not support that functionality
- *	@retval		RC_E_TPM12_INVALID_OWNERAUTH	In case of the expected owner authorization can not be verified
- *	@retval		RC_E_FAIL						An unexpected error occurred.
- *	@retval		...								Error codes from called functions.
+ *  @retval     RC_SUCCESS                      The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER              An invalid parameter was passed to the function. PpTpmClearOwnership was invalid.
  */
 _Check_return_
 unsigned int
 CommandFlow_Tpm12ClearOwnership_Execute(
-	_Inout_ IfxTpm12ClearOwnership* PpTpmClearOwnership);
+    _Inout_ IfxTpm12ClearOwnership* PpTpmClearOwnership);
 
 #ifdef __cplusplus
 }

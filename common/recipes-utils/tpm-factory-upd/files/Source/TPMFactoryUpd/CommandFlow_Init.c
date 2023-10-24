@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Implements methods to initialize the business logic of TPMFactoryUpd.
- *	@details	This module performs all application-specific preparation steps required to get the business logic of TPMFactoryUpd working.
- *	@file		CommandFlow_Init.c
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Implements methods to initialize the business logic of TPMFactoryUpd.
+ *  @details    This module performs all application-specific preparation steps required to get the business logic of TPMFactoryUpd working.
+ *  @file       CommandFlow_Init.c
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -17,31 +16,31 @@
 #include "Crypt.h"
 
 /**
- *	@brief		Initializes the business logic of TPMFactoryUpd.
- *	@details	This method seeds the random number generator.
+ *  @brief      Initializes the business logic of TPMFactoryUpd.
+ *  @details    This method seeds the random number generator.
  *
- *	@retval		RC_SUCCESS					The operation completed successfully.
- *	@retval		RC_E_FAIL					An unexpected error occurred.
- *	@retval		...							Error codes from Crypt_SeedRandom().
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_FAIL                   An unexpected error occurred.
+ *  @retval     ...                         Error codes from Crypt_SeedRandom().
  */
 _Check_return_
 unsigned int
 CommandFlow_Init_Execute()
 {
-	unsigned int unReturnValue = RC_E_FAIL;
+    unsigned int unReturnValue = RC_E_FAIL;
 
-	LOGGING_WRITE_LEVEL4(LOGGING_METHOD_ENTRY_STRING);
+    LOGGING_WRITE_LEVEL4(LOGGING_METHOD_ENTRY_STRING);
 
-	do
-	{
-		// Seed the random number generator
-		unReturnValue = Crypt_SeedRandom(NULL, 0);
-		if (RC_SUCCESS != unReturnValue)
-			break;
-	}
-	WHILE_FALSE_END;
+    do
+    {
+        // Seed the random number generator
+        unReturnValue = Crypt_SeedRandom(NULL, 0);
+        if (RC_SUCCESS != unReturnValue)
+            break;
+    }
+    WHILE_FALSE_END;
 
-	LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, unReturnValue);
+    LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, unReturnValue);
 
-	return unReturnValue;
+    return unReturnValue;
 }

@@ -1,5 +1,5 @@
 ﻿#
-# Copyright 2015 - 2018 Infineon Technologies AG ( www.infineon.com )
+# Copyright 2015 - 2022 Infineon Technologies AG ( www.infineon.com )
 #
 # All rights reserved.
 #
@@ -37,23 +37,8 @@ CFLAGS+= \
 
 STRIPFLAGS+= --strip-unneeded $@  # Don't strip if you want to debug
 
-# Export compiler flags to sub-makefiles
-export CFLAGS
-export STRIPFLAGS
-export CC
-export AR
-
-LDFLAGS+=\
-	-lcryptifx -L../Common/Crypt \
-	-lplatform -L../Common/Platform \
-	-lmicrotss -L../Common/MicroTss \
-	-lfileio -L../Common/FileIO \
-	-ltpmdeviceaccess -L../Common/TpmDeviceAccess \
-	-lconsoleio -L../Common/ConsoleIO \
-
 ifneq ($(and $(CROSS_COMPILE),$(STAGING_DIR),$(TARGET_NAME)),)
 CROSS_INCLUDE_DIR=$(STAGING_DIR)/$(TARGET_NAME)/usr/include
-export CROSS_INCLUDE_DIR
 LDFLAGS+= -lcrypto -L$(STAGING_DIR)/$(TARGET_NAME)/usr/lib
 else
 LDFLAGS+= -lcrypto
@@ -64,6 +49,7 @@ OBJFILES=\
 	TPMFactoryUpd.o \
 	CommandFlow_Init.o \
 	CommandFlow_TpmInfo.o \
+	CommandFlow_SetMode.o \
 	CommandFlow_TpmUpdate.o \
 	CommandFlow_Tpm12ClearOwnership.o \
 	CommandLineParser.o \
@@ -80,12 +66,67 @@ OBJFILES=\
 	PropertyStorage.o \
 	Response.o \
 	TpmResponse.o \
-	Utility.o
+	UiUtility.o \
+	Utility.o \
+	Common.o \
+	ConsoleIO.o \
+	Crypt.o \
+	FileIO.o \
+	TPM_FieldUpgradeComplete.o \
+	TPM_FieldUpgradeInfoRequest.o \
+	TPM_FieldUpgradeInfoRequest2.o \
+	TPM_FieldUpgradeStart.o \
+	TPM_FieldUpgradeUpdate.o \
+	TPM_FlushSpecific.o \
+	TPM_GetCapability.o \
+	TPM_GetTestResult.o \
+	TPM_Marshal.o \
+	TPM_OIAP.o \
+	TPM_OSAP.o \
+	TPM_OwnerClear.o \
+	TPM_OwnerReadInternalPub.o \
+	TPM_ReadPubEK.o \
+	TPM_SetCapability.o \
+	TPM_Startup.o \
+	TPM_TakeOwnership.o \
+	TPM2_FieldUpgradeAbandonVendor.o \
+	TPM2_FieldUpgradeDataVendor.o \
+	TPM2_FieldUpgradeFinalizeVendor.o \
+	TPM2_FieldUpgradeManifestVendor.o \
+	TPM2_FieldUpgradeMarshal.o \
+	TPM2_FieldUpgradeStartVendor.o \
+	TPM2_FlushContext.o \
+	TPM2_GetCapability.o \
+	TPM2_GetTestResult.o \
+	TPM2_HierarchyChangeAuth.o \
+	TPM2_Marshal.o \
+	TPM2_PolicyCommandCode.o \
+	TPM2_PolicySecret.o \
+	TPM2_SetPrimaryPolicy.o \
+	TPM2_Shutdown.o \
+	TPM2_StartAuthSession.o \
+	TPM2_Startup.o \
+	TPM2_VendorMarshal.o \
+	TSC_PhysicalPresence.o \
+	Platform.o \
+	DeviceAccess.o \
+	DeviceAccessTpmDriver.o \
+	TPM_TIS.o \
+	TpmIO.o
 
 SRC_DIRS=\
 	. \
 	./Linux \
 	../Common \
+	../Common/ConsoleIO \
+	../Common/ConsoleIO/Linux \
+	../Common/Crypt/Linux \
+	../Common/FileIO/Linux \
+	../Common/MicroTss/Tpm_1_2 \
+	../Common/MicroTss/Tpm_2_0 \
+	../Common/Platform/Linux \
+	../Common/TpmDeviceAccess \
+	../Common/TpmDeviceAccess/Linux \
 
 INCLUDE_DIRS=\
 	. \
@@ -99,6 +140,8 @@ INCLUDE_DIRS=\
 	../Common/Platform \
 	../Common/TpmDeviceAccess \
 	../IFXTPMUpdate/Linux
+
+INCLUDE_DIRS+=$(CROSS_INCLUDE_DIR)
 
 INCLUDES=$(foreach d, $(INCLUDE_DIRS), -I$d)
 
@@ -122,25 +165,9 @@ $(OBJFILES): %.o: %.c
 	$(CC) -c $(CFLAGS) $(FPACK) $(INCLUDES) $< -o $@
 
 TPMFactoryUpd: $(OBJFILES)
-	# Call shared sub-makefiles to generate archives
-	$(MAKE) -C ../Common/Platform
-	$(MAKE) -C ../Common/ConsoleIO
-	$(MAKE) -C ../Common/MicroTss
-	$(MAKE) -C ../Common/FileIO
-	$(MAKE) -C ../Common/TpmDeviceAccess
-	$(MAKE) -C ../Common/Crypt
-	# And run the actual makefile job
 	$(CC) $^ -o $@ $(LDFLAGS)
 	$(STRIP) $(STRIPFLAGS)
 
 clean:
-	# Call shared sub-makefiles to cleanup archives
-	$(MAKE) -C ../Common/Platform clean
-	$(MAKE) -C ../Common/ConsoleIO clean
-	$(MAKE) -C ../Common/MicroTss clean
-	$(MAKE) -C ../Common/FileIO clean
-	$(MAKE) -C ../Common/TpmDeviceAccess clean
-	$(MAKE) -C ../Common/Crypt clean
-	# And clean everything for the actual makefile
 	rm -rfv *.o TPMFactoryUpd
 

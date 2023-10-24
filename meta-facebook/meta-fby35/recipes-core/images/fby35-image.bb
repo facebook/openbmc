@@ -66,4 +66,5 @@ IMAGE_INSTALL += " \
   tcpdump \
   mctpd \
   pldmd \
+  tpm-factory-upd \
   "

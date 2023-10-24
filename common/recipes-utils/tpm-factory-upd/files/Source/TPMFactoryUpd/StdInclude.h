@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Declares the standard includes
- *	@details	Standard include header file of project TPMFactoryUpd
- *	@file		TPMFactoryUpd/StdInclude.h
- *	@copyright	Copyright 2014 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Declares the standard includes
+ *  @details    Standard include header file of project TPMFactoryUpd
+ *  @file       TPMFactoryUpd/StdInclude.h
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -15,68 +14,95 @@
 #pragma once
 
 /// DEFAULT DRIVER PATH
-#define DEFAULT_DRIVER_PATH				L"IFXTPMUpdate.efi"
+#define DEFAULT_DRIVER_PATH             L"IFXTPMUpdate.efi"
 
 #ifdef UEFI
 // UEFI
 // Includes for common UEFI libs
 #include <Uefi.h>
+#include <Library/DebugLib.h>
 #include <Library/UefiLib.h>
 #include <Library/ShellCEntryLib.h>
-#include <Library/PrintLib.h>						// UnicodeVSPrint
-#include <Library/ShellLib.h>						// For file access
+#include <Library/PrintLib.h>                       // UnicodeVSPrint
+#include <Library/ShellLib.h>                       // For file access
 
 #include <Library/BaseMemoryLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiApplicationEntryPoint.h>
 #include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiRuntimeServicesTableLib.h>    // GetTime
 
 #include <Protocol/AdapterInformation.h>
 #include <Protocol/ComponentName.h>
 #include <Protocol/ComponentName2.h>
 #include <Protocol/FirmwareManagement.h>
 
+#define assert(p)
+
 #include "Globals_UEFI.h"
 #endif // UEFI
 
 #ifdef LINUX
 // Linux
-#include <stdio.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <string.h>
-#include <errno.h>
 #include <assert.h>
-#include <ctype.h>
-#include <wchar.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <locale.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/timeb.h>
+#include <termios.h>
+#include <time.h>
+#include <unistd.h>
+#include <wchar.h>
 
 #include "Globals_Linux.h"
 
 typedef struct _GUID
 {
-	unsigned long Data1;
-	unsigned short Data2;
-	unsigned short Data3;
-	unsigned char Data4[8];
+    unsigned long Data1;
+    unsigned short Data2;
+    unsigned short Data3;
+    unsigned char Data4[8];
 } GUID;
 #endif // LINUX
 
 #ifdef WINDOWS
 // Windows
+#include <basetsd.h>
+#include <guiddef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
 #include <ctype.h>
 #include <wchar.h>
 #include <limits.h>
+#include <Windows.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/timeb.h>
+#include <io.h>
+#include <conio.h>
+#include <bcrypt.h>
 
 #include "Globals.h"
+
+/// Calling convention
+#define IFXAPI
+
 #endif // WINDOWS
 
 #include "Logging.h"
@@ -86,6 +112,5 @@ typedef struct _GUID
 #include "PropertyDefines.h"
 #include "PropertyStorage.h"
 #include "FileIO.h"
-#include "Utility.h"
 
 extern wchar_t GwszToolName[MAX_PATH];

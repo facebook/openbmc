@@ -1,10 +1,9 @@
 ﻿/**
- *	@brief		Implements the TPMFactoryUpd main program
- *	@details
- *	@file		Linux\TPMFactoryUpd.c
- *	@copyright	Copyright 2016 - 2018 Infineon Technologies AG ( www.infineon.com )
+ *  @brief      Implements the TPMFactoryUpd main program
+ *  @details
+ *  @file       Linux\TPMFactoryUpd.c
  *
- *	@copyright	All rights reserved.
+ *  Copyright 2016 - 2022 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -21,74 +20,74 @@
 #include "Controller.h"
 
 /**
- *	@brief		Main program entry point
- *	@details
+ *  @brief      Main program entry point
+ *  @details
  *
- *	@param		PnArgc		Number of command line arguments
- *	@param		PrgszArgv	Pointer to the command line arguments
- *	@retval		0			TPMFactoryUpd completed successfully.
- *	@retval		1			TPMFactoryUpd failed.
+ *  @param      PnArgc      Number of command line arguments.
+ *  @param      PrgszArgv   Pointer to the command line arguments.
+ *  @retval     0           TPMFactoryUpd completed successfully.
+ *  @retval     1           TPMFactoryUpd failed.
  */
 int main(int PnArgc, char* PrgszArgv[])
 {
-	wchar_t** prgwszArgv = NULL;
-	unsigned int unReturnCode = -1;
-	int nCount = -1;
-	int nFreeCount = -1;
+    wchar_t** prgwszArgv = NULL;
+    unsigned int unReturnCode = -1;
+    int nCount = -1;
+    int nFreeCount = -1;
 
-	do
-	{
-		// Convert command line arguments from multibyte character strings to wide character
-		// strings.
-		prgwszArgv = (wchar_t**)malloc(PnArgc * sizeof(wchar_t*));
-		for (nCount = 0; nCount < PnArgc; nCount++)
-		{
-			size_t sizeRet = 0;
+    do
+    {
+        // Convert command line arguments from multibyte character strings to wide character
+        // strings.
+        prgwszArgv = (wchar_t**)malloc(PnArgc * sizeof(wchar_t*));
+        for (nCount = 0; nCount < PnArgc; nCount++)
+        {
+            size_t sizeRet = 0;
 
-			// First get the size of the wide character string.
-			size_t sizeArgv = mbstowcs(NULL, PrgszArgv[nCount], 0);
+            // First get the size of the wide character string.
+            size_t sizeArgv = mbstowcs(NULL, PrgszArgv[nCount], 0);
 
-			// Allocate wide character string and add additional byte to allow
-			// for \0 termination.
-			prgwszArgv[nCount] = (wchar_t*)calloc(sizeArgv + 1, sizeof(wchar_t));
-			if (NULL == prgwszArgv[nCount])
-			{
-				perror("Memory allocation failed");
-				unReturnCode = RC_E_FAIL;
-				break;
-			}
+            // Allocate wide character string and add additional byte to allow
+            // for \0 termination.
+            prgwszArgv[nCount] = (wchar_t*)calloc(sizeArgv + 1, sizeof(wchar_t));
+            if (NULL == prgwszArgv[nCount])
+            {
+                perror("Memory allocation failed");
+                unReturnCode = RC_E_FAIL;
+                break;
+            }
 
-			// Convert the multibyte character string to a wide character string
-			sizeRet = mbstowcs(prgwszArgv[nCount], PrgszArgv[nCount], sizeArgv + 1);
-			if ((size_t) - 1 == sizeRet)
-			{
-				perror("String conversion failed");
-				unReturnCode = RC_E_FAIL;
-				break;
-			}
-			unReturnCode = RC_SUCCESS;
-		}
+            // Convert the multibyte character string to a wide character string
+            sizeRet = mbstowcs(prgwszArgv[nCount], PrgszArgv[nCount], sizeArgv + 1);
+            if ((size_t) - 1 == sizeRet)
+            {
+                perror("String conversion failed");
+                unReturnCode = RC_E_FAIL;
+                break;
+            }
+            unReturnCode = RC_SUCCESS;
+        }
 
-		// Verify if conversion succeeded
-		if (RC_SUCCESS != unReturnCode)
-		{
-			break;
-		}
+        // Verify if conversion succeeded
+        if (RC_SUCCESS != unReturnCode)
+        {
+            break;
+        }
 
-		// Run TPMFactoryUpd
-		unReturnCode = Controller_Proceed(PnArgc, (const wchar_t* const*)prgwszArgv);
-	}
-	WHILE_FALSE_END;
+        // Run TPMFactoryUpd
+        unReturnCode = Controller_Proceed(PnArgc, (const wchar_t* const*)prgwszArgv);
+    }
+    WHILE_FALSE_END;
 
-	// Free up conversion memory
-	for (nFreeCount = 0; nFreeCount < nCount; nFreeCount++)
-	{
-		free(prgwszArgv[nFreeCount]);
-	}
-	free(prgwszArgv);
+    // Free up conversion memory
+    for (nFreeCount = 0; nFreeCount < nCount; nFreeCount++)
+    {
+        free(prgwszArgv[nFreeCount]);
+    }
+    free(prgwszArgv);
 
-	// Map "unsigned int" error code to 0/1:
-	//	0	=> 0
-	//	!0	=> 1
-	return unReturnCode == 0 ? 0 : 1;
+    // Map "unsigned int" error code to 0/1:
+    //  0   => 0
+    //  !0  => 1
+    return unReturnCode == 0 ? 0 : 1;
 }

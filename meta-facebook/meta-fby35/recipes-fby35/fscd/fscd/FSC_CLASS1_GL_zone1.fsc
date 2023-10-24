@@ -72,6 +72,8 @@ max([
       all:slot3_vf_e1s_ssd3_temp_c])),
   linear_non_fru_sensor(
     max([
+      all:slot1_mb_inlet_temp_c,
+      all:slot1_mb_outlet_temp_c,
       all:slot1_mb_hsc_temp_c,
       all:slot1_mb_vr_vccin_temp_c,
       all:slot1_mb_vr_ehv_temp_c,
@@ -79,6 +81,8 @@ max([
       all:slot1_mb_vr_vccinf_temp_c,
       all:slot1_mb_vr_vccd0_temp_c,
       all:slot1_mb_vr_vccd1_temp_c,
+      all:slot3_mb_inlet_temp_c,
+      all:slot3_mb_outlet_temp_c,
       all:slot3_mb_hsc_temp_c,
       all:slot3_mb_vr_vccin_temp_c,
       all:slot3_mb_vr_ehv_temp_c,
@@ -86,5 +90,7 @@ max([
       all:slot3_mb_vr_vccinf_temp_c,
       all:slot3_mb_vr_vccd0_temp_c,
       all:slot3_mb_vr_vccd1_temp_c,
+      all:bmc_bb_outlet_temp_c,
+      all:bmc_bb_inlet_temp_c,
       all:bmc_bb_hsc_temp_c]))
 ])

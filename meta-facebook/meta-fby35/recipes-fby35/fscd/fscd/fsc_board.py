@@ -25,7 +25,7 @@ import os
 from fsc_util import Logger
 
 fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
-get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR"]
+get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR", "sensor_fail_ignore_check"]
 
 lfby35_hndl = CDLL("libfby35_common.so.0")
 lpal_hndl = CDLL("libpal.so.0")
@@ -36,7 +36,6 @@ GPIO_FM_BIOS_POST_CMPLT_BMC_N = 1
 VPGIO_POST_CMPLT=0
 
 dimm_index_start = 8
-gl_dimm_index_start = 7
 
 fru_map = {
     "slot1": {
@@ -110,6 +109,7 @@ if "HD" in system_conf:
     get_fan_mode_scenario_list = [
             "one_fan_failure",
             "sensor_hit_UCR",
+            "sensor_fail_ignore_check",
             "sensor_fail",
         ]
     GPIO_FM_BIOS_POST_CMPLT_BMC_N = 0
@@ -118,10 +118,10 @@ elif "GL" in system_conf:
     get_fan_mode_scenario_list = [
             "one_fan_failure",
             "sensor_hit_UCR",
+            "sensor_fail_ignore_check",
             "sensor_fail",
         ]
     dimm_location_name_map = gl_dimm_location_name_map
-    dimm_index_start = gl_dimm_index_start
 elif "VF" in system_conf:
     for i in [1, 2, 3, 4]:
         lfby35_hndl.fby35_common_get_1ou_m2_prsnt(int(i))

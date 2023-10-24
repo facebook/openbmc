@@ -32,6 +32,11 @@ class Handler : public CmdHandler
           return this->platformEventMessage(request, payloadLength);
         });
 
+      handlers.emplace(PLDM_SET_STATE_EFFECTER_STATES,
+        [this](const pldm_msg* request, size_t payloadLength) {
+          return this->set_state_effecter_states(request, payloadLength);
+        });
+
       // Default handler for PLDM Events
       eventHandlers[PLDM_SENSOR_EVENT].emplace_back(
         [this](const pldm_msg* request, size_t payloadLength,
@@ -53,6 +58,14 @@ class Handler : public CmdHandler
      *  @return Response - PLDM Response message
      */
     Response platformEventMessage(const pldm_msg* request, size_t payloadLength);
+
+    /** @brief Handler for Set_state_effecter_states
+     *
+     *  @param[in] request - Request message
+     *  @param[in] payloadLength - Request payload length
+     *  @return Response - PLDM Response message
+     */
+    Response set_state_effecter_states(const pldm_msg* request, size_t payloadLength);
 
   protected:
     /** @brief Handler for event class Sensor event
@@ -90,6 +103,9 @@ class Handler : public CmdHandler
 
 std::string get_sensor_name(uint16_t);
 std::string get_state_message(uint8_t, uint8_t);
+std::string get_device_type(uint8_t);
+std::string get_board_info(uint8_t);
+std::string get_event_type(uint8_t);
 
 } // namespace platform
 } // namespace responder

@@ -58,6 +58,59 @@ std::string get_state_message(uint8_t offset, uint8_t state)
     return eventstate_map[offset][state];
 }
 
+std::string get_device_type(uint8_t type)
+{
+  static const std::map<uint8_t, const std::string> device_map = {
+    {0x01, "CB_P0V8_VR"},
+    {0x02, "CB_POWER_BRICK"},
+    {0x03, "CB_P1V25_MONITOR"},
+    {0x04, "CB_P12V_ACCL1_MONITOR"},
+    {0x05, "CB_P12V_ACCL2_MONITOR"},
+    {0x06, "CB_P12V_ACCL3_MONITOR"},
+    {0x07, "CB_P12V_ACCL4_MONITOR"},
+    {0x08, "CB_P12V_ACCL5_MONITOR"},
+    {0x09, "CB_P12V_ACCL6_MONITOR"},
+    {0x0A, "CB_P12V_ACCL7_MONITOR"},
+    {0x0B, "CB_P12V_ACCL8_MONITOR"},
+    {0x0C, "CB_P12V_ACCL9_MONITOR"},
+    {0x0D, "CB_P12V_ACCL10_MONITOR"},
+    {0x0E, "CB_P12V_ACCL11_MONITOR"},
+    {0x0F, "CB_P12V_ACCL12_MONITOR"},
+  };
+
+  if (device_map.find(type) != device_map.end())
+    return device_map.at(type);
+  else
+    return "UNKNOWN_TYPE";
+}
+
+std::string get_board_info(uint8_t id)
+{
+  static const std::map<uint8_t, const std::string> board_map = {
+    {0x00, "MAIN_SOURCE"},
+    {0x01, "SECOND_SOURCE"},
+  };
+
+  if (board_map.find(id) != board_map.end())
+    return board_map.at(id);
+  else
+    return "UNKNOWN_SOURCE";
+}
+
+std::string get_event_type(uint8_t type)
+{
+  static const std::map<uint8_t, const std::string> event_map = {
+    {0x00, "UNUSE"},
+    {0x01, "OVER_POWER"},
+  };
+
+  if (event_map.find(type) != event_map.end())
+    return event_map.at(type);
+  else
+    return "UNKNOWN_TYPE";
+}
+
+
 } // namespace platform
 } // namespace responder
 } // namespace pldm

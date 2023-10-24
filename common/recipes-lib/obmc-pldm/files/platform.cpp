@@ -4,6 +4,11 @@
 #include <stdexcept> // std::out_of_range
 #include <stdio.h>   // printf
 #include <syslog.h>
+#include <cstring>
+
+enum EFFECTER_ID {
+  EFFECTER_ID_NOTIFY_TO_ADDSEL = 0x0005,
+};
 
 namespace pldm
 {
@@ -54,6 +59,49 @@ Response Handler::platformEventMessage(const pldm_msg* request,
     return ccOnlyResponse(request, rc);
 
   return pldm_resp.get();
+}
+
+Response Handler::set_state_effecter_states(const pldm_msg* request,
+                                            size_t payloadLength)
+{
+  uint8_t effecter_id = (request->payload[1] << 8 | request->payload[0]);
+  uint8_t comp_effecter_count = request->payload[2];
+  set_effecter_state_field field[8]{};
+  memcpy(field, &request->payload[3], sizeof(set_effecter_state_field) * 8);
+
+  if (comp_effecter_count < 0x01 || comp_effecter_count > 0x08) {
+    return CmdHandler::ccOnlyResponse(request, PLDM_ERROR_INVALID_DATA);
+  }
+
+  switch (effecter_id) {
+    case EFFECTER_ID_NOTIFY_TO_ADDSEL:
+      {
+        if (comp_effecter_count != 0x03) {
+          return CmdHandler::ccOnlyResponse(request, PLDM_ERROR_INVALID_DATA);
+        }
+
+        bool is_alert_event = ((field[2].effecter_state & 0x80) ? true : false);
+        uint8_t device_type = field[0].effecter_state;
+        uint8_t board_info = field[1].effecter_state;
+        uint8_t event_type = field[2].effecter_state & 0x7F;
+        if (get_device_type(device_type) != "Unknown" && get_board_info(board_info) != "Unknown" &&
+			get_event_type(event_type) != "Unknown") {
+	  if (get_event_type(event_type) == "UNUSE") {
+	    syslog(LOG_CRIT, "Device type: %s (0x%x), board info: %s (0x%x) %s event", get_device_type(device_type).c_str(),
+			    device_type, get_board_info(board_info).c_str(), board_info, (is_alert_event ? "Assert" : "Deassert"));
+	  } else {
+            syslog(LOG_CRIT, "Device type: %s (0x%x), board info: %s (0x%x), event type: %s (0x%x) %s event",
+			    get_device_type(device_type).c_str(), device_type, get_board_info(board_info).c_str(),
+			    board_info, get_event_type(event_type).c_str(), event_type, (is_alert_event ? "Assert" : "Deassert"));
+	  }
+        }
+      }
+      break;
+    default:
+      return CmdHandler::ccOnlyResponse(request, PLDM_ERROR_INVALID_DATA);
+  }
+
+  return CmdHandler::ccOnlyResponse(request, PLDM_SUCCESS);
 }
 
 int Handler::sensorEvent(const pldm_msg* request, size_t payloadLength,

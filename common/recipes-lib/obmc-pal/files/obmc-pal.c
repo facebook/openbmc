@@ -677,7 +677,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "Bank VLS",
     "r-Bank VLS + re-buddy",
     "r-Bank VLS + Rank VLS",
-    "r-Bank VLS + re-buddy",
+    "r-Rank VLS + re-buddy",
   };
   char *upi_event[] = {
     "Successful LLR without Phy Reinit",

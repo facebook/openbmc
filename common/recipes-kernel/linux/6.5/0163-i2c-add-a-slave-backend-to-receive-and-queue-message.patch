@@ -1,8 +1,7 @@
-From 5ae1bf476878856c94009dc74e56050d63e574cd Mon Sep 17 00:00:00 2001
+From 7ac6aed84487662381f0d8ed50a1957a35c8ebf3 Mon Sep 17 00:00:00 2001
 From: Michael Garner <garnermic@fb.com>
 Date: Tue, 21 Jun 2022 15:13:30 -0700
-Subject: [PATCH 163/164] i2c: add a slave backend to receive and queue
- messages
+Subject: [PATCH] i2c: add a slave backend to receive and queue messages
 
 Summary:
 Ported form Kernel 5.6:
@@ -42,8 +41,8 @@ fbshipit-source-id: 0511104d8654148e6d0ebaa6e45d99b91d293313
  Documentation/i2c/slave-mqueue-backend.rst | 124 +++++++++++++
  drivers/i2c/Kconfig                        |  25 +++
  drivers/i2c/Makefile                       |   1 +
- drivers/i2c/i2c-slave-mqueue.c             | 201 +++++++++++++++++++++
- 4 files changed, 351 insertions(+)
+ drivers/i2c/i2c-slave-mqueue.c             | 200 +++++++++++++++++++++
+ 4 files changed, 350 insertions(+)
  create mode 100644 Documentation/i2c/slave-mqueue-backend.rst
  create mode 100644 drivers/i2c/i2c-slave-mqueue.c
 
@@ -227,10 +226,10 @@ index c1d493dc9bac..7af77add9f72 100644
  ccflags-$(CONFIG_I2C_DEBUG_CORE) := -DDEBUG
 diff --git a/drivers/i2c/i2c-slave-mqueue.c b/drivers/i2c/i2c-slave-mqueue.c
 new file mode 100644
-index 000000000000..d2fe9c146150
+index 000000000000..ab7840b5b015
 --- /dev/null
 +++ b/drivers/i2c/i2c-slave-mqueue.c
-@@ -0,0 +1,201 @@
+@@ -0,0 +1,200 @@
 +// SPDX-License-Identifier: GPL-2.0
 +// Copyright (c) 2017 - 2018, Intel Corporation.
 +
@@ -350,8 +349,7 @@ index 000000000000..d2fe9c146150
 +	return ret;
 +}
 +
-+static int i2c_slave_mqueue_probe(struct i2c_client *client,
-+				  const struct i2c_device_id *id)
++static int i2c_slave_mqueue_probe(struct i2c_client *client)
 +{
 +	struct device *dev = &client->dev;
 +	struct mq_queue *mq;
@@ -433,5 +431,5 @@ index 000000000000..d2fe9c146150
 +MODULE_AUTHOR("Haiyue Wang <haiyue.wang@linux.intel.com>");
 +MODULE_DESCRIPTION("I2C slave mode for receiving and queuing messages");
 -- 
-2.39.3
+2.41.0
 

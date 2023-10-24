@@ -53,6 +53,15 @@ SRC_URI:append = " \
 "
 
 #
+# PWM patches used by multiple OpenBMC platforms.
+#
+SRC_URI:append = " \
+    file://0165-dt-bindings-hwmon-fan-Add-fan-binding-to-schema.patch \
+    file://0166-dt-bindings-hwmon-Support-Aspeed-g6-PWM-TACH-Control.patch \
+    file://0167-hwmon-aspeed-g6-pwm-tacho-Support-for-ASPEED-g6-PWM-.patch \
+"
+
+#
 # eMMC patch used by FBOSS OpenBMC platforms.
 #
 SRC_URI:append = " \

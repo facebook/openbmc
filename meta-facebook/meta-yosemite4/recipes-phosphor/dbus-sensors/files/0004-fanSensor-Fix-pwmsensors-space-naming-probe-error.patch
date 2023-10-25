@@ -1,0 +1,58 @@
+From 1b0ba95d972e44ef01c37f0a6fef6905ab0135aa Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Thu, 28 Sep 2023 10:19:00 +0800
+Subject: [PATCH 4/4] fanSensor: Fix pwmsensors space-naming probe error
+
+The rule of sensors' name in dbus-sensor should ignore the discrepancy
+by changing all spaces to underscores. However, pwmName in pwmsensors
+doesn't undergo the process before construction.
+
+Add escapePathForDbus() to change " " to "_" and prevent fansensor
+from receiving an invalid argument error.
+
+Tested:
+Get fan pwm/tach by dbus introspect
+
+Change-Id: I0489b03ffd105218e7492cf732eecadee57b08cd
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ src/PwmSensor.cpp | 4 ++--
+ src/PwmSensor.hpp | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/PwmSensor.cpp b/src/PwmSensor.cpp
+index c3c14a3..796e51d 100644
+--- a/src/PwmSensor.cpp
++++ b/src/PwmSensor.cpp
+@@ -30,13 +30,13 @@ static constexpr double psuPwmMax = 100.0;
+ static constexpr double defaultPwm = 30.0;
+ static constexpr double targetIfaceMax = sysPwmMax;
+ 
+-PwmSensor::PwmSensor(const std::string& name, const std::string& sysPath,
++PwmSensor::PwmSensor(const std::string& pwmname, const std::string& sysPath,
+                      std::shared_ptr<sdbusplus::asio::connection>& conn,
+                      sdbusplus::asio::object_server& objectServer,
+                      const std::string& sensorConfiguration,
+                      const std::string& sensorType, bool isValueMutable) :
+     sysPath(sysPath),
+-    objectServer(objectServer), name(name)
++    objectServer(objectServer), name(sensor_paths::escapePathForDbus(pwmname))
+ {
+     // add interface under sensor and Control.FanPwm as Control is used
+     // in obmc project, also add sensor so it can be viewed as a sensor
+diff --git a/src/PwmSensor.hpp b/src/PwmSensor.hpp
+index f70079b..63970ca 100644
+--- a/src/PwmSensor.hpp
++++ b/src/PwmSensor.hpp
+@@ -10,7 +10,7 @@
+ class PwmSensor
+ {
+   public:
+-    PwmSensor(const std::string& name, const std::string& sysPath,
++    PwmSensor(const std::string& pwmname, const std::string& sysPath,
+               std::shared_ptr<sdbusplus::asio::connection>& conn,
+               sdbusplus::asio::object_server& objectServer,
+               const std::string& sensorConfiguration,
+-- 
+2.25.1
+

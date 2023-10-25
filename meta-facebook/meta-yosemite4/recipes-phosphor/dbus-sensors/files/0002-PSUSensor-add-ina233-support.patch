@@ -1,0 +1,31 @@
+From f7a8797107c3f7851951723754d3c65f358e7c25 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Fri, 22 Sep 2023 09:49:53 +0800
+Subject: [PATCH 2/4] PSUSensor: add ina233 support
+
+add device ina233 pmbus reading support
+
+Tested:
+Get ina233 reading from PSUSensor by dbus introspect
+
+Change-Id: I4715dac87cbab73038079f9200b3e1cc065b5ea4
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ src/PSUSensorMain.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
+index 4136ceb..03aa486 100644
+--- a/src/PSUSensorMain.cpp
++++ b/src/PSUSensorMain.cpp
+@@ -60,6 +60,7 @@ static const I2CDeviceTypeMap sensorTypes{
+     {"DPS800", I2CDeviceType{"dps800", true}},
+     {"INA219", I2CDeviceType{"ina219", true}},
+     {"INA230", I2CDeviceType{"ina230", true}},
++    {"INA233", I2CDeviceType{"ina233", true}},
+     {"IPSPS1", I2CDeviceType{"ipsps1", true}},
+     {"IR38060", I2CDeviceType{"ir38060", true}},
+     {"IR38164", I2CDeviceType{"ir38164", true}},
+-- 
+2.25.1
+

@@ -1,0 +1,836 @@
+From 597e8423d564055d125f2a4005a4c1b39af1643d Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Fri, 20 Oct 2023 11:19:01 -0500
+Subject: [PATCH 1/4] clang-format: copy latest and re-format
+
+clang-format-17 has some backwards incompatible changes that require
+additional settings for best compatibility and re-running the formatter.
+Copy the latest .clang-format from the docs repository and reformat the
+repository.
+
+Change-Id: I73acd9daf41b52bcc3f6af9a1c38c5f162ae76b2
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+---
+ .clang-format                  | 23 ++++++++++++++---------
+ src/ADCSensor.cpp              |  4 ++--
+ src/ADCSensorMain.cpp          |  2 +-
+ src/ChassisIntrusionSensor.cpp |  2 +-
+ src/ExitAirTempSensor.cpp      | 32 +++++++++++++++-----------------
+ src/ExternalSensorMain.cpp     |  2 +-
+ src/FanMain.cpp                |  4 ++--
+ src/HwmonTempMain.cpp          |  4 ++--
+ src/HwmonTempSensor.cpp        |  2 +-
+ src/IntrusionSensorMain.cpp    |  9 ++++-----
+ src/IpmbSDRSensor.cpp          |  6 +++---
+ src/IpmbSensor.cpp             |  8 ++++----
+ src/MCUTempSensor.cpp          |  2 +-
+ src/NVMeBasicContext.cpp       |  4 ++--
+ src/NVMeSensorMain.cpp         |  8 ++++----
+ src/PSUEvent.cpp               |  2 +-
+ src/PSUSensor.cpp              |  2 +-
+ src/PSUSensorMain.cpp          | 10 +++++-----
+ src/PwmSensor.cpp              |  4 ++--
+ src/TachSensor.cpp             |  2 +-
+ src/Thresholds.cpp             |  4 ++--
+ src/Utils.cpp                  | 25 ++++++++++++-------------
+ src/Utils.hpp                  |  8 ++++----
+ src/sensor.hpp                 | 26 +++++++++++++-------------
+ 24 files changed, 98 insertions(+), 97 deletions(-)
+
+diff --git a/.clang-format b/.clang-format
+index 4922cf6..d43e884 100644
+--- a/.clang-format
++++ b/.clang-format
+@@ -14,26 +14,30 @@ AllowAllParametersOfDeclarationOnNextLine: true
+ AllowShortBlocksOnASingleLine: Empty
+ AllowShortCaseLabelsOnASingleLine: false
+ AllowShortFunctionsOnASingleLine: Empty
+-AllowShortIfStatementsOnASingleLine: false
++AllowShortIfStatementsOnASingleLine: Never
++AllowShortLambdasOnASingleLine: true
+ AllowShortLoopsOnASingleLine: false
+ AlwaysBreakAfterReturnType: None
+ AlwaysBreakBeforeMultilineStrings: false
+ AlwaysBreakTemplateDeclarations: Yes
+ BinPackArguments: true
+ BinPackParameters: true
++BitFieldColonSpacing: None
+ BraceWrapping:
+   AfterCaseLabel:  true
+   AfterClass:      true
+   AfterControlStatement: true
+   AfterEnum:       true
++  AfterExternBlock: true
+   AfterFunction:   true
+   AfterNamespace:  true
+   AfterObjCDeclaration: true
+   AfterStruct:     true
+   AfterUnion:      true
+-  AfterExternBlock: true
+   BeforeCatch:     true
+   BeforeElse:      true
++  BeforeLambdaBody: false
++  BeforeWhile:     false
+   IndentBraces:    false
+   SplitEmptyFunction:   false
+   SplitEmptyRecord:     false
+@@ -48,17 +52,16 @@ BreakStringLiterals: false
+ ColumnLimit:     80
+ CommentPragmas:  '^ IWYU pragma:'
+ CompactNamespaces: false
+-ConstructorInitializerAllOnOneLineOrOnePerLine: false
+ ConstructorInitializerIndentWidth: 4
+ ContinuationIndentWidth: 4
+ Cpp11BracedListStyle: true
+-DeriveLineEnding: false
+ DerivePointerAlignment: false
+-PointerAlignment: Left
+ DisableFormat:   false
+-ExperimentalAutoDetectBinPacking: false
+ FixNamespaceComments: true
+-ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
++ForEachMacros:
++  - foreach
++  - Q_FOREACH
++  - BOOST_FOREACH
+ IncludeBlocks: Regroup
+ IncludeCategories:
+   - Regex:           '^[<"](gtest|gmock)'
+@@ -93,6 +96,7 @@ NamespaceIndentation: None
+ ObjCBlockIndentWidth: 2
+ ObjCSpaceAfterProperty: false
+ ObjCSpaceBeforeProtocolList: true
++PackConstructorInitializers: BinPack
+ PenaltyBreakAssignment: 25
+ PenaltyBreakBeforeFirstCallParameter: 19
+ PenaltyBreakComment: 300
+@@ -101,12 +105,13 @@ PenaltyBreakString: 1000
+ PenaltyExcessCharacter: 1000000
+ PenaltyReturnTypeOnItsOwnLine: 60
+ PenaltyIndentedWhitespace: 0
++PointerAlignment: Left
+ QualifierAlignment: Left
+ ReferenceAlignment: Left
+ ReflowComments:  true
+ RequiresClausePosition: OwnLine
+ RequiresExpressionIndentation: Keyword
+-SortIncludes:    true
++SortIncludes: CaseSensitive
+ SortUsingDeclarations: true
+ SpaceAfterCStyleCast: false
+ SpaceAfterTemplateKeyword: true
+@@ -118,7 +123,7 @@ SpaceBeforeParens: ControlStatements
+ SpaceBeforeRangeBasedForLoopColon: true
+ SpaceInEmptyParentheses: false
+ SpacesBeforeTrailingComments: 1
+-SpacesInAngles:  false
++SpacesInAngles: Never
+ SpacesInContainerLiterals: true
+ SpacesInCStyleCastParentheses: false
+ SpacesInParentheses: false
+diff --git a/src/ADCSensor.cpp b/src/ADCSensor.cpp
+index 3c95a41..cfa2147 100644
+--- a/src/ADCSensor.cpp
++++ b/src/ADCSensor.cpp
+@@ -130,7 +130,7 @@ void ADCSensor::setupRead(void)
+                         self->readBuf = buffer;
+                         self->handleResponse(ec);
+                     }
+-                    });
++                });
+             }
+         });
+     }
+@@ -146,7 +146,7 @@ void ADCSensor::setupRead(void)
+                 self->readBuf = buffer;
+                 self->handleResponse(ec);
+             }
+-            });
++        });
+     }
+ }
+ 
+diff --git a/src/ADCSensorMain.cpp b/src/ADCSensorMain.cpp
+index ccdca8f..b606a9b 100644
+--- a/src/ADCSensorMain.cpp
++++ b/src/ADCSensorMain.cpp
+@@ -294,7 +294,7 @@ void createSensors(
+                 *interfacePath, std::move(bridgeGpio));
+             sensor->setupRead();
+         }
+-        });
++    });
+ 
+     getter->getConfiguration(
+         std::vector<std::string>{sensorTypes.begin(), sensorTypes.end()});
+diff --git a/src/ChassisIntrusionSensor.cpp b/src/ChassisIntrusionSensor.cpp
+index a2b2776..ee49e6e 100644
+--- a/src/ChassisIntrusionSensor.cpp
++++ b/src/ChassisIntrusionSensor.cpp
+@@ -342,7 +342,7 @@ void ChassisIntrusionSensor::start()
+         "Status", mValue,
+         [&](const std::string& req, std::string& propertyValue) {
+         return setSensorValue(req, propertyValue);
+-        });
++    });
+     std::string rearmStr = mAutoRearm ? autoRearmStr : manualRearmStr;
+     mIface->register_property("Rearm", rearmStr);
+     mIface->initialize();
+diff --git a/src/ExitAirTempSensor.cpp b/src/ExitAirTempSensor.cpp
+index 0797bf0..f235c26 100644
+--- a/src/ExitAirTempSensor.cpp
++++ b/src/ExitAirTempSensor.cpp
+@@ -140,15 +140,15 @@ static void setMaxPWM(const std::shared_ptr<sdbusplus::asio::connection>& conn,
+                         std::cerr << "Error setting pid class\n";
+                         return;
+                     }
+-                    },
++                },
+                     owner, path, "org.freedesktop.DBus.Properties", "Set",
+                     pidConfigurationType, "OutLimitMax",
+                     std::variant<double>(value));
+-                },
++            },
+                 owner, path, "org.freedesktop.DBus.Properties", "Get",
+                 pidConfigurationType, "Class");
+         }
+-        },
++    },
+         mapper::busName, mapper::path, mapper::interface, mapper::subtree, "/",
+         0, std::array<std::string, 1>{pidConfigurationType});
+ }
+@@ -210,7 +210,7 @@ void CFMSensor::setupMatches()
+         {
+             self->updateReading();
+         }
+-        });
++    });
+ 
+     dbusConnection->async_method_call(
+         [weakRef](const boost::system::error_code ec,
+@@ -233,7 +233,7 @@ void CFMSensor::setupMatches()
+         self->pwmLimitIface->register_property("Limit", maxRpm);
+         self->pwmLimitIface->initialize();
+         setMaxPWM(self->dbusConnection, maxRpm);
+-        },
++    },
+         settingsDaemon, cfmSettingPath, "org.freedesktop.DBus.Properties",
+         "Get", cfmSettingIface, "Limit");
+ 
+@@ -313,7 +313,7 @@ void CFMSensor::addTachRanges(const std::string& serviceName,
+         double min = loadVariant<double>(data, "MinValue");
+         self->tachRanges[path] = std::make_pair(min, max);
+         self->updateReading();
+-        },
++    },
+         serviceName, path, "org.freedesktop.DBus.Properties", "GetAll",
+         "xyz.openbmc_project.Sensor.Value");
+ }
+@@ -404,10 +404,9 @@ bool CFMSensor::calculate(double& value)
+         auto findReading = std::find_if(
+             tachReadings.begin(), tachReadings.end(),
+             [&](const auto& item) { return item.first.ends_with(tachName); });
+-        auto findRange = std::find_if(tachRanges.begin(), tachRanges.end(),
+-                                      [&](const auto& item) {
+-            return item.first.ends_with(tachName);
+-        });
++        auto findRange = std::find_if(
++            tachRanges.begin(), tachRanges.end(),
++            [&](const auto& item) { return item.first.ends_with(tachName); });
+         if (findReading == tachReadings.end())
+         {
+             if constexpr (debug)
+@@ -571,7 +570,7 @@ void ExitAirTempSensor::setupMatches(void)
+             return;
+         }
+         self->inletTemp = std::visit(VariantToDoubleVisitor(), value);
+-        },
++    },
+         "xyz.openbmc_project.HwmonTempSensor",
+         std::string("/xyz/openbmc_project/sensors/") + inletTemperatureSensor,
+         properties::interface, properties::get, sensorValueInterface, "Value");
+@@ -622,12 +621,12 @@ void ExitAirTempSensor::setupMatches(void)
+                         std::cerr << cbPath << "Reading " << reading << "\n";
+                     }
+                     self->powerReadings[cbPath] = reading;
+-                    },
++                },
+                     matches[0].first, cbPath, properties::interface,
+                     properties::get, sensorValueInterface, "Value");
+             }
+         }
+-        },
++    },
+         mapper::busName, mapper::path, mapper::interface, mapper::subtree,
+         "/xyz/openbmc_project/sensors/power", 0,
+         std::array<const char*, 1>{sensorValueInterface});
+@@ -860,9 +859,8 @@ void createSensor(sdbusplus::asio::object_server& objectServer,
+         return;
+     }
+     auto getter = std::make_shared<GetSensorConfiguration>(
+-        dbusConnection,
+-        [&objectServer, &dbusConnection,
+-         &exitAirSensor](const ManagedObjectType& resp) {
++        dbusConnection, [&objectServer, &dbusConnection,
++                         &exitAirSensor](const ManagedObjectType& resp) {
+         cfmSensors.clear();
+         for (const auto& [path, interfaces] : resp)
+         {
+@@ -918,7 +916,7 @@ void createSensor(sdbusplus::asio::object_server& objectServer,
+             exitAirSensor->setupMatches();
+             exitAirSensor->updateReading();
+         }
+-        });
++    });
+     getter->getConfiguration(
+         std::vector<std::string>(monitorTypes.begin(), monitorTypes.end()));
+ }
+diff --git a/src/ExternalSensorMain.cpp b/src/ExternalSensorMain.cpp
+index 455df07..adaa8e3 100644
+--- a/src/ExternalSensorMain.cpp
++++ b/src/ExternalSensorMain.cpp
+@@ -325,7 +325,7 @@ void createSensors(
+                 std::cerr << "ExternalSensor " << sensorName << " created\n";
+             }
+         }
+-        });
++    });
+ 
+     getter->getConfiguration(std::vector<std::string>{sensorType});
+ }
+diff --git a/src/FanMain.cpp b/src/FanMain.cpp
+index 7cfb533..5aa2b0a 100644
+--- a/src/FanMain.cpp
++++ b/src/FanMain.cpp
+@@ -247,7 +247,7 @@ void createRedundancySensor(
+                 }
+             }
+         }
+-        },
++    },
+         "xyz.openbmc_project.EntityManager", "/xyz/openbmc_project/inventory",
+         "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
+ }
+@@ -555,7 +555,7 @@ void createSensors(
+         }
+ 
+         createRedundancySensor(tachSensors, dbusConnection, objectServer);
+-        });
++    });
+     getter->getConfiguration(
+         std::vector<std::string>{sensorTypes.begin(), sensorTypes.end()},
+         retries);
+diff --git a/src/HwmonTempMain.cpp b/src/HwmonTempMain.cpp
+index 7cc758c..abcce28 100644
+--- a/src/HwmonTempMain.cpp
++++ b/src/HwmonTempMain.cpp
+@@ -491,7 +491,7 @@ void createSensors(
+                 configMap.erase(findSensorCfg);
+             }
+         }
+-        });
++    });
+     std::vector<std::string> types(sensorTypes.size());
+     for (const auto& [type, dt] : sensorTypes)
+     {
+@@ -620,7 +620,7 @@ int main()
+             std::string(inventoryPath) + "/'",
+         [&sensors](sdbusplus::message_t& msg) {
+         interfaceRemoved(msg, sensors);
+-        });
++    });
+ 
+     matches.emplace_back(std::move(ifaceRemovedMatch));
+ 
+diff --git a/src/HwmonTempSensor.cpp b/src/HwmonTempSensor.cpp
+index bd442f8..c7449d5 100644
+--- a/src/HwmonTempSensor.cpp
++++ b/src/HwmonTempSensor.cpp
+@@ -136,7 +136,7 @@ void HwmonTempSensor::setupRead(void)
+         {
+             self->handleResponse(ec, bytesRead);
+         }
+-        });
++    });
+ }
+ 
+ void HwmonTempSensor::restartRead()
+diff --git a/src/IntrusionSensorMain.cpp b/src/IntrusionSensorMain.cpp
+index dda9b6f..4566b08 100644
+--- a/src/IntrusionSensorMain.cpp
++++ b/src/IntrusionSensorMain.cpp
+@@ -237,8 +237,7 @@ static void getNicNameInfo(
+     const std::shared_ptr<sdbusplus::asio::connection>& dbusConnection)
+ {
+     auto getter = std::make_shared<GetSensorConfiguration>(
+-        dbusConnection,
+-        [](const ManagedObjectType& sensorConfigurations) {
++        dbusConnection, [](const ManagedObjectType& sensorConfigurations) {
+         // Get NIC name and save to map
+         lanInfoMap.clear();
+         for (const auto& [path, cfgData] : sensorConfigurations)
+@@ -279,7 +278,7 @@ static void getNicNameInfo(
+         {
+             std::cerr << "can't find matched NIC name. \n";
+         }
+-        });
++    });
+ 
+     getter->getConfiguration(
+         std::vector<std::string>{nicTypes.begin(), nicTypes.end()});
+@@ -459,7 +458,7 @@ static bool initializeLanStatus(
+                           << (isLanConnected ? "true" : "false") << "\n";
+             }
+             lanStatusMap[ethNum] = isLanConnected;
+-            },
++        },
+             "org.freedesktop.network1",
+             "/org/freedesktop/network1/link/_" + pathSuffix,
+             "org.freedesktop.DBus.Properties", "Get",
+@@ -525,7 +524,7 @@ int main()
+                 return;
+             }
+             getNicNameInfo(systemBus);
+-            });
++        });
+     }
+ 
+     io.run();
+diff --git a/src/IpmbSDRSensor.cpp b/src/IpmbSDRSensor.cpp
+index d0ab884..72a2cdb 100644
+--- a/src/IpmbSDRSensor.cpp
++++ b/src/IpmbSDRSensor.cpp
+@@ -69,7 +69,7 @@ void IpmbSDRDevice::getSDRRepositoryInfo()
+                                data[recordCountLSB];
+ 
+         self->reserveSDRRepository(recordCount);
+-        },
++    },
+         ipmbService, ipmbDbusPath, ipmbInterface, ipmbMethod, commandAddress,
+         sdr::netfnStorageReq, lun, sdr::cmdStorageGetSdrInfo, sdrCommandData);
+ }
+@@ -107,7 +107,7 @@ void IpmbSDRDevice::reserveSDRRepository(uint16_t recordCount)
+         uint8_t resrvIDMSB = data[1];
+ 
+         self->getSDRSensorData(recordCount, resrvIDLSB, resrvIDMSB);
+-        },
++    },
+         ipmbService, ipmbDbusPath, ipmbInterface, ipmbMethod, commandAddress,
+         sdr::netfnStorageReq, lun, sdr::cmdStorageReserveSdr, sdrCommandData);
+ }
+@@ -150,7 +150,7 @@ void IpmbSDRDevice::getSDRSensorData(uint16_t recordCount, uint8_t resrvIDLSB,
+         }
+ 
+         self->handleSDRData(data, recordCount, resrvIDLSB, resrvIDMSB);
+-        },
++    },
+         ipmbService, ipmbDbusPath, ipmbInterface, ipmbMethod, commandAddress,
+         sdr::netfnStorageReq, lun, sdr::cmdStorageGetSdr, commandData);
+ }
+diff --git a/src/IpmbSensor.cpp b/src/IpmbSensor.cpp
+index 55224dd..3ee8283 100644
+--- a/src/IpmbSensor.cpp
++++ b/src/IpmbSensor.cpp
+@@ -155,7 +155,7 @@ void IpmbSensor::runInitCmd()
+         [weakRef{weak_from_this()}](const boost::system::error_code& ec,
+                                     const IpmbMethodType& response) {
+         initCmdCb(weakRef, ec, response);
+-        },
++    },
+         "xyz.openbmc_project.Ipmi.Channel.Ipmb",
+         "/xyz/openbmc_project/Ipmi/Channel/Ipmb", "org.openbmc.Ipmb",
+         "sendRequest", commandAddress, netfn, lun, *initCommand, initData);
+@@ -436,7 +436,7 @@ void IpmbSensor::sendIpmbRequest()
+             return;
+         }
+         self->ipmbRequestCompletionCb(ec, response);
+-        },
++    },
+         "xyz.openbmc_project.Ipmi.Channel.Ipmb",
+         "/xyz/openbmc_project/Ipmi/Channel/Ipmb", "org.openbmc.Ipmb",
+         "sendRequest", commandAddress, netfn, lun, command, commandData);
+@@ -597,7 +597,7 @@ void createSensors(
+                 sensor->init();
+             }
+         }
+-        },
++    },
+         entityManagerName, "/xyz/openbmc_project/inventory",
+         "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
+ }
+@@ -749,7 +749,7 @@ int main()
+             configInterfaceName(sdrInterface) + "'",
+         [&systemBus](sdbusplus::message_t& msg) {
+         sdrHandler(msg, systemBus);
+-        });
++    });
+ 
+     // Watch for entity-manager to remove configuration interfaces
+     // so the corresponding sensors can be removed.
+diff --git a/src/MCUTempSensor.cpp b/src/MCUTempSensor.cpp
+index e82c80f..8022e8c 100644
+--- a/src/MCUTempSensor.cpp
++++ b/src/MCUTempSensor.cpp
+@@ -252,7 +252,7 @@ void createSensors(
+                 sensor->init();
+             }
+         }
+-        },
++    },
+         entityManagerName, "/xyz/openbmc_project/inventory",
+         "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
+ }
+diff --git a/src/NVMeBasicContext.cpp b/src/NVMeBasicContext.cpp
+index de18b42..032e68a 100644
+--- a/src/NVMeBasicContext.cpp
++++ b/src/NVMeBasicContext.cpp
+@@ -273,7 +273,7 @@ void NVMeBasicContext::readAndProcessNVMeSensor()
+         {
+             std::cerr << "Got error writing basic query: " << ec << "\n";
+         }
+-        });
++    });
+ 
+     auto response = std::make_shared<boost::asio::streambuf>();
+     response->prepare(1);
+@@ -316,7 +316,7 @@ void NVMeBasicContext::readAndProcessNVMeSensor()
+ 
+         response->prepare(len);
+         return len;
+-        },
++    },
+         [weakSelf{weak_from_this()}, sensor, response](
+             const boost::system::error_code& ec, std::size_t length) mutable {
+         if (ec)
+diff --git a/src/NVMeSensorMain.cpp b/src/NVMeSensorMain.cpp
+index 237c37d..5287504 100644
+--- a/src/NVMeSensorMain.cpp
++++ b/src/NVMeSensorMain.cpp
+@@ -206,9 +206,9 @@ void createSensors(boost::asio::io_context& io,
+     auto getter = std::make_shared<GetSensorConfiguration>(
+         dbusConnection, [&io, &objectServer, &dbusConnection](
+                             const ManagedObjectType& sensorConfigurations) {
+-            handleSensorConfigurations(io, objectServer, dbusConnection,
+-                                       sensorConfigurations);
+-        });
++        handleSensorConfigurations(io, objectServer, dbusConnection,
++                                   sensorConfigurations);
++    });
+     getter->getConfiguration(std::vector<std::string>{NVMeSensor::sensorType});
+ }
+ 
+@@ -291,7 +291,7 @@ int main()
+             std::string(inventoryPath) + "/'",
+         [](sdbusplus::message_t& msg) {
+         interfaceRemoved(msg, nvmeDeviceMap);
+-        });
++    });
+ 
+     setupManufacturingModeMatch(*systemBus);
+     io.run();
+diff --git a/src/PSUEvent.cpp b/src/PSUEvent.cpp
+index a065158..c5ad0fe 100644
+--- a/src/PSUEvent.cpp
++++ b/src/PSUEvent.cpp
+@@ -214,7 +214,7 @@ void PSUSubEvent::setupRead(void)
+         {
+             self->handleResponse(ec, bytesTransferred);
+         }
+-        });
++    });
+ }
+ 
+ void PSUSubEvent::restartRead()
+diff --git a/src/PSUSensor.cpp b/src/PSUSensor.cpp
+index d1859c1..0c763c0 100644
+--- a/src/PSUSensor.cpp
++++ b/src/PSUSensor.cpp
+@@ -166,7 +166,7 @@ void PSUSensor::setupRead(void)
+         }
+ 
+         self->handleResponse(ec, bytesRead);
+-        });
++    });
+ }
+ 
+ void PSUSensor::restartRead(void)
+diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
+index 6ab8955..4136ceb 100644
+--- a/src/PSUSensorMain.cpp
++++ b/src/PSUSensorMain.cpp
+@@ -1054,9 +1054,9 @@ void createSensors(
+     auto getter = std::make_shared<GetSensorConfiguration>(
+         dbusConnection, [&io, &objectServer, &dbusConnection, sensorsChanged,
+                          activateOnly](const ManagedObjectType& sensorConfigs) {
+-            createSensorsCallback(io, objectServer, dbusConnection,
+-                                  sensorConfigs, sensorsChanged, activateOnly);
+-        });
++        createSensorsCallback(io, objectServer, dbusConnection, sensorConfigs,
++                              sensorsChanged, activateOnly);
++    });
+     std::vector<std::string> types(sensorTypes.size());
+     for (const auto& [type, dt] : sensorTypes)
+     {
+@@ -1231,8 +1231,8 @@ int main()
+ 
+     propertyInitialize();
+ 
+-    auto powerCallBack =
+-        [&io, &objectServer, &systemBus](PowerState type, bool state) {
++    auto powerCallBack = [&io, &objectServer, &systemBus](PowerState type,
++                                                          bool state) {
+         powerStateChanged(type, state, sensors, io, objectServer, systemBus);
+     };
+ 
+diff --git a/src/PwmSensor.cpp b/src/PwmSensor.cpp
+index ad54dfe..c3c14a3 100644
+--- a/src/PwmSensor.cpp
++++ b/src/PwmSensor.cpp
+@@ -91,7 +91,7 @@ PwmSensor::PwmSensor(const std::string& name, const std::string& sysPath,
+         controlInterface->signal_property("Target");
+ 
+         return 1;
+-        },
++    },
+         [this](double& curVal) {
+         double currScaled = (curVal / 100.0) * pwmMax;
+         auto currInt = static_cast<uint32_t>(std::round(currScaled));
+@@ -134,7 +134,7 @@ PwmSensor::PwmSensor(const std::string& name, const std::string& sysPath,
+         sensorInterface->signal_property("Value");
+ 
+         return 1;
+-        },
++    },
+         [this](uint64_t& curVal) {
+         auto getInt = getValue();
+         auto scaledValue = static_cast<double>(getInt) / pwmMax;
+diff --git a/src/TachSensor.cpp b/src/TachSensor.cpp
+index 41d625b..cd9a892 100644
+--- a/src/TachSensor.cpp
++++ b/src/TachSensor.cpp
+@@ -120,7 +120,7 @@ void TachSensor::setupRead()
+         {
+             self->handleResponse(ec, bytesRead);
+         }
+-        });
++    });
+ }
+ 
+ void TachSensor::restartRead(size_t pollTime)
+diff --git a/src/Thresholds.cpp b/src/Thresholds.cpp
+index d2811f3..6829041 100644
+--- a/src/Thresholds.cpp
++++ b/src/Thresholds.cpp
+@@ -188,10 +188,10 @@ void persistThreshold(const std::string& path, const std::string& baseInterface,
+                 {
+                     std::cerr << "Error setting threshold " << ec << "\n";
+                 }
+-                },
++            },
+                 entityManagerName, path, "org.freedesktop.DBus.Properties",
+                 "Set", thresholdInterface, "Value", value);
+-            },
++        },
+             entityManagerName, path, "org.freedesktop.DBus.Properties",
+             "GetAll", thresholdInterface);
+     }
+diff --git a/src/Utils.cpp b/src/Utils.cpp
+index c30ab76..94bf614 100644
+--- a/src/Utils.cpp
++++ b/src/Utils.cpp
+@@ -362,7 +362,7 @@ static void
+             return;
+         }
+         powerStatusOn = std::get<std::string>(state).ends_with(".Running");
+-        },
++    },
+         power::busname, power::path, properties::interface, properties::get,
+         power::interface, power::property);
+ }
+@@ -396,7 +396,7 @@ static void
+         biosHasPost = (value != "Inactive") &&
+                       (value != "xyz.openbmc_project.State.OperatingSystem."
+                                 "Status.OSStatus.Inactive");
+-        },
++    },
+         post::busname, post::path, properties::interface, properties::get,
+         post::interface, post::property);
+ }
+@@ -429,7 +429,7 @@ static void
+             return;
+         }
+         chassisStatusOn = std::get<std::string>(state).ends_with(chassis::sOn);
+-        },
++    },
+         chassis::busname, chassis::path, properties::interface, properties::get,
+         chassis::interface, chassis::property);
+ }
+@@ -486,7 +486,7 @@ void setupPowerMatchCallback(
+                 hostStatusCallback(PowerState::on, powerStatusOn);
+             });
+         }
+-        });
++    });
+ 
+     postMatch = std::make_unique<sdbusplus::bus::match_t>(
+         static_cast<sdbusplus::bus_t&>(*conn),
+@@ -507,7 +507,7 @@ void setupPowerMatchCallback(
+                                     "Status.OSStatus.Inactive");
+             hostStatusCallback(PowerState::biosPost, biosHasPost);
+         }
+-        });
++    });
+ 
+     chassisMatch = std::make_unique<sdbusplus::bus::match_t>(
+         static_cast<sdbusplus::bus_t&>(*conn),
+@@ -548,7 +548,7 @@ void setupPowerMatchCallback(
+                 hostStatusCallback(PowerState::chassisOn, chassisStatusOn);
+             });
+         }
+-        });
++    });
+     getPowerStatus(conn);
+     getPostStatus(conn);
+     getChassisStatus(conn);
+@@ -673,7 +673,7 @@ void createInventoryAssoc(
+         setInventoryAssociation(
+             association, parent,
+             findContainingChassis(parent, subtree).value_or(parent));
+-        },
++    },
+         mapper::busName, mapper::path, mapper::interface, "GetSubTree",
+         "/xyz/openbmc_project/inventory/system", 2, allInterfaces);
+ }
+@@ -749,9 +749,8 @@ void setupManufacturingModeMatch(sdbusplus::asio::connection& conn)
+         rules::interfacesAdded() +
+         rules::argNpath(0, "/xyz/openbmc_project/security/special_mode");
+     static std::unique_ptr<sdbusplus::bus::match_t> specialModeIntfMatch =
+-        std::make_unique<sdbusplus::bus::match_t>(conn,
+-                                                  filterSpecialModeIntfAdd,
+-                                                  [](sdbusplus::message_t& m) {
++        std::make_unique<sdbusplus::bus::match_t>(
++            conn, filterSpecialModeIntfAdd, [](sdbusplus::message_t& m) {
+         sdbusplus::message::object_path path;
+         using PropertyMap =
+             boost::container::flat_map<std::string, std::variant<std::string>>;
+@@ -772,7 +771,7 @@ void setupManufacturingModeMatch(sdbusplus::asio::connection& conn)
+         }
+         auto* manufacturingModeStatus = std::get_if<std::string>(&itr->second);
+         handleSpecialModeChange(*manufacturingModeStatus);
+-        });
++    });
+ 
+     const std::string filterSpecialModeChange =
+         rules::type::signal() + rules::member("PropertiesChanged") +
+@@ -793,7 +792,7 @@ void setupManufacturingModeMatch(sdbusplus::asio::connection& conn)
+         }
+         auto* manufacturingModeStatus = std::get_if<std::string>(&itr->second);
+         handleSpecialModeChange(*manufacturingModeStatus);
+-        });
++    });
+ 
+     conn.async_method_call(
+         [](const boost::system::error_code ec,
+@@ -807,7 +806,7 @@ void setupManufacturingModeMatch(sdbusplus::asio::connection& conn)
+         const auto* manufacturingModeStatus =
+             std::get_if<std::string>(&getManufactMode);
+         handleSpecialModeChange(*manufacturingModeStatus);
+-        },
++    },
+         "xyz.openbmc_project.SpecialMode",
+         "/xyz/openbmc_project/security/special_mode",
+         "org.freedesktop.DBus.Properties", "Get", specialModeInterface,
+diff --git a/src/Utils.hpp b/src/Utils.hpp
+index 9c8cdcc..f553cd6 100644
+--- a/src/Utils.hpp
++++ b/src/Utils.hpp
+@@ -235,7 +235,7 @@ inline void setLed(const std::shared_ptr<sdbusplus::asio::connection>& conn,
+         {
+             std::cerr << "Failed to set LED " << name << "\n";
+         }
+-        },
++    },
+         "xyz.openbmc_project.LED.GroupManager",
+         "/xyz/openbmc_project/led/groups/" + name, properties::interface,
+         properties::set, "xyz.openbmc_project.Led.Group", "Asserted",
+@@ -293,7 +293,7 @@ struct GetSensorConfiguration :
+             }
+ 
+             self->respData[path][interface] = std::move(data);
+-            },
++        },
+             owner, path, "org.freedesktop.DBus.Properties", "GetAll",
+             interface);
+     }
+@@ -353,14 +353,14 @@ struct GetSensorConfiguration :
+                     if (std::find_if(interfaces.begin(), interfaces.end(),
+                                      [interface](const std::string& possible) {
+                         return interface.starts_with(possible);
+-                        }) == interfaces.end())
++                    }) == interfaces.end())
+                     {
+                         continue;
+                     }
+                     self->getPath(path, interface, owner);
+                 }
+             }
+-            },
++        },
+             mapper::busName, mapper::path, mapper::interface, mapper::subtree,
+             "/", 0, interfaces);
+     }
+diff --git a/src/sensor.hpp b/src/sensor.hpp
+index 9f092c6..b12c01a 100644
+--- a/src/sensor.hpp
++++ b/src/sensor.hpp
+@@ -267,8 +267,8 @@ struct Sensor
+         sensorInterface->register_property("MinValue", minValue);
+         sensorInterface->register_property(
+             "Value", value, [this](const double& newValue, double& oldValue) {
+-                return setSensorValue(newValue, oldValue);
+-            });
++            return setSensorValue(newValue, oldValue);
++        });
+ 
+         fillMissingThresholds();
+ 
+@@ -317,7 +317,7 @@ struct Sensor
+                 // using updateValue(), which can check conditions like
+                 // poweron, etc., before raising any event.
+                 return 1;
+-                });
++            });
+             iface->register_property(alarm, false);
+         }
+         if (!sensorInterface->initialize())
+@@ -359,17 +359,17 @@ struct Sensor
+                     availableInterfaceName);
+             availableInterface->register_property(
+                 "Available", true, [this](const bool propIn, bool& old) {
+-                    if (propIn == old)
+-                    {
+-                        return 1;
+-                    }
+-                    old = propIn;
+-                    if (!propIn)
+-                    {
+-                        updateValue(std::numeric_limits<double>::quiet_NaN());
+-                    }
++                if (propIn == old)
++                {
+                     return 1;
+-                });
++                }
++                old = propIn;
++                if (!propIn)
++                {
++                    updateValue(std::numeric_limits<double>::quiet_NaN());
++                }
++                return 1;
++            });
+             availableInterface->initialize();
+         }
+         if (!operationalInterface)
+-- 
+2.25.1
+

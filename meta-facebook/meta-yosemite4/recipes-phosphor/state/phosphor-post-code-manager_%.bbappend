@@ -1,0 +1,1 @@
+EXTRA_OEMESON:append = " -Dmax-boot-cycle-count=5"

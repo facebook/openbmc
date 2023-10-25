@@ -1,0 +1,390 @@
+From e2c81ea0875d9f2b264e89e49231b822a7c2381e Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Mon, 23 Oct 2023 17:06:54 +0800
+Subject: [PATCH] Support OEM-META write file request for post code history
+
+Summary:
+  - Support write file req when BIC sends postcode to BMC.
+    Also, set up TID to slot mapping table at the beginning of
+    the oem mata handler to correspond to the post code
+    belonging to which slot.
+  - Extend the handler with TID parameter to know which request is sent from.
+
+Change-Id: I56d303a5bc2f059451ee207a1de591be0d9993ac
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ common/utils.hpp                      |   3 +-
+ libpldmresponder/meson.build          |   9 ++
+ meson.build                           |   4 +
+ meson.options                         |   8 ++
+ oem/meta/libpldmresponder/file_io.cpp | 142 ++++++++++++++++++++++++++
+ oem/meta/libpldmresponder/file_io.hpp |  50 +++++++++
+ pldmd/handler.hpp                     |  11 ++
+ pldmd/invoker.hpp                     |   7 +-
+ pldmd/pldmd.cpp                       |  10 +-
+ 9 files changed, 240 insertions(+), 4 deletions(-)
+ create mode 100644 oem/meta/libpldmresponder/file_io.cpp
+ create mode 100644 oem/meta/libpldmresponder/file_io.hpp
+
+diff --git a/common/utils.hpp b/common/utils.hpp
+index 73e10eb..96eba9d 100644
+--- a/common/utils.hpp
++++ b/common/utils.hpp
+@@ -178,7 +178,8 @@ struct DBusMapping
+ 
+ using PropertyValue =
+     std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
+-                 uint64_t, double, std::string, std::vector<std::string>>;
++                 uint64_t, double, std::string, std::vector<std::string>,
++                 std::vector<uint64_t>>;
+ using DbusProp = std::string;
+ using DbusChangedProps = std::map<DbusProp, PropertyValue>;
+ using DBusInterfaceAdded = std::vector<
+diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
+index 7de2cf2..593f0ed 100644
+--- a/libpldmresponder/meson.build
++++ b/libpldmresponder/meson.build
+@@ -54,6 +54,15 @@ if get_option('oem-ibm').enabled()
+   ]
+ endif
+ 
++if get_option('oem-meta').enabled()
++   responder_headers += [
++    '../oem/meta/',
++   ]
++  sources += [
++    '../oem/meta/libpldmresponder/file_io.cpp',
++  ]
++endif
++
+ libpldmresponder = library(
+   'pldmresponder',
+   sources,
+diff --git a/meson.build b/meson.build
+index 9c2297a..85d5a65 100644
+--- a/meson.build
++++ b/meson.build
+@@ -59,6 +59,10 @@ if get_option('oem-ibm').enabled()
+   add_project_arguments('-DOEM_IBM', language : 'c')
+   add_project_arguments('-DOEM_IBM', language : 'cpp')
+ endif
++if get_option('oem-meta').enabled()
++  add_project_arguments('-DOEM_META', language : 'c')
++  add_project_arguments('-DOEM_META', language : 'cpp')
++endif
+ conf_data.set('NUMBER_OF_REQUEST_RETRIES', get_option('number-of-request-retries'))
+ conf_data.set('INSTANCE_ID_EXPIRATION_INTERVAL',get_option('instance-id-expiration-interval'))
+ conf_data.set('RESPONSE_TIME_OUT',get_option('response-time-out'))
+diff --git a/meson.options b/meson.options
+index 7acc3a7..112a666 100644
+--- a/meson.options
++++ b/meson.options
+@@ -40,6 +40,14 @@ option(
+     description: 'transport via af-mctp or mctp-demux'
+ )
+ 
++# OEM Options
++option(
++    'oem-meta',
++    type: 'feature',
++    value: 'enabled',
++    description: 'Enable META OEM PLDM'
++)
++
+ # As per PLDM spec DSP0240 version 1.1.0, in Timing Specification for PLDM messages (Table 6),
+ # the instance ID for a given response will expire and become reusable if a response has not been
+ # received within a maximum of 6 seconds after a request is sent. By setting the dbus timeout
+diff --git a/oem/meta/libpldmresponder/file_io.cpp b/oem/meta/libpldmresponder/file_io.cpp
+new file mode 100644
+index 0000000..bca5ad6
+--- /dev/null
++++ b/oem/meta/libpldmresponder/file_io.cpp
+@@ -0,0 +1,142 @@
++#include "file_io.hpp"
++
++#include "xyz/openbmc_project/Common/error.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm
++{
++using namespace sdbusplus::xyz::openbmc_project::Common::Error;
++
++namespace responder
++{
++namespace oem_meta
++{
++
++static std::map<uint8_t, char> tidToSlopMap;
++
++int setupTidToSlotMappingTable()
++{
++    static constexpr auto searchpath = "/xyz/openbmc_project/";
++    int depth = 0;
++    std::vector<std::string> mctpInterface = {
++        "xyz.openbmc_project.Configuration.MctpDevice"};
++    pldm::utils::GetSubTreeResponse response;
++    try
++    {
++        response = pldm::utils::DBusHandler().getSubtree(searchpath, depth,
++                                                         mctpInterface);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error(
++            " getSubtree call failed with, ERROR={ERROR} PATH={PATH} INTERFACE={INTERFACE}",
++            "ERROR", e.what(), "PATH", searchpath, "INTERFACE",
++            mctpInterface[0]);
++        return PLDM_ERROR;
++    }
++
++    static constexpr auto endpointIdsProperty = "EndpointIds";
++
++    for (const auto& [objectPath, serviceMap] : response)
++    {
++        char slotNum = objectPath.back();
++
++        try
++        {
++            auto value = pldm::utils::DBusHandler()
++                             .getDbusProperty<std::vector<uint64_t>>(
++                                 objectPath.c_str(), endpointIdsProperty,
++                                 mctpInterface[0].c_str());
++
++            std::for_each(value.cbegin(), value.cend(), [&](auto& v) {
++                tidToSlopMap.insert({v, slotNum});
++            });
++        }
++        catch (const sdbusplus::exception_t& e)
++        {
++            error(
++                " Error getting Names property, ERROR={ERROR} PATH={PATH} INTERFACE={INTERFACE}",
++                "ERROR", e.what(), "PATH", searchpath, "INTERFACE",
++                mctpInterface[0]);
++            return PLDM_ERROR;
++        }
++    }
++    return PLDM_SUCCESS;
++}
++
++int postCodeHandler(char slot, std::vector<uint8_t>& postCodeList)
++{
++    static constexpr auto dbusService = "xyz.openbmc_project.State.Boot.Raw";
++    static const std::string dbusObj = "/xyz/openbmc_project/state/boot/raw";
++
++    std::string dbusObjStr = dbusObj + slot;
++
++    using postcode_t = std::tuple<uint64_t, std::vector<uint8_t>>;
++
++    uint64_t primaryPostCode = 0;
++
++    // Putting list of the bytes together to form a meaningful postcode
++    size_t index = 0;
++    std::for_each(postCodeList.begin(), postCodeList.end(),
++                  [&primaryPostCode, &index](uint8_t postcode) {
++        primaryPostCode |= std::uint64_t(postcode) << (8 * index);
++        index++;
++    });
++
++    try
++    {
++        auto& bus = pldm::utils::DBusHandler::getBus();
++        auto method = bus.new_method_call(dbusService, dbusObjStr.c_str(),
++                                          "org.freedesktop.DBus.Properties",
++                                          "Set");
++
++        method.append(
++            dbusService, "Value",
++            std::variant<postcode_t>(postcode_t(primaryPostCode, {})));
++
++        auto reply = bus.call(method);
++    }
++    catch (const std::exception& e)
++    {
++        error("Set Post code error. ERROR={ERROR}", "ERROR", e.what());
++        return PLDM_ERROR;
++    }
++
++    return PLDM_SUCCESS;
++}
++
++Response Handler::writeFileIO(const pldm_msg* request, size_t payloadLength)
++{
++    uint8_t fileIOType;
++    uint32_t length;
++    struct variable_field data;
++
++    auto rc = decode_write_file_io_req(request, payloadLength, &fileIOType,
++                                       &length, &data);
++
++    if (rc != PLDM_SUCCESS)
++    {
++        return ccOnlyResponse(request, rc);
++    }
++
++    if (fileIOType == POST_CODE)
++    {
++        std::vector<uint8_t> postCodeList(data.ptr, data.ptr + data.length);
++
++        rc = postCodeHandler(tidToSlopMap[this->getTID()], postCodeList);
++
++        if (rc != PLDM_SUCCESS)
++        {
++            return ccOnlyResponse(request, rc);
++        }
++    }
++
++    return ccOnlyResponse(request, rc);
++}
++} // namespace oem_meta
++
++} // namespace responder
++} // namespace pldm
+diff --git a/oem/meta/libpldmresponder/file_io.hpp b/oem/meta/libpldmresponder/file_io.hpp
+new file mode 100644
+index 0000000..0dd0dbd
+--- /dev/null
++++ b/oem/meta/libpldmresponder/file_io.hpp
+@@ -0,0 +1,50 @@
++#pragma once
++
++#include "common/utils.hpp"
++#include "pldmd/handler.hpp"
++#include "requester/handler.hpp"
++
++#include <libpldm/file_io.h>
++
++#include <phosphor-logging/lg2.hpp>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm
++{
++namespace responder
++{
++namespace oem_meta
++{
++
++int setupTidToSlotMappingTable();
++
++class Handler : public CmdHandler
++{
++  public:
++    Handler()
++    {
++        handlers.emplace(PLDM_WRITE_FILE,
++                         [this](const pldm_msg* request, size_t payloadLength) {
++            return this->writeFileIO(request, payloadLength);
++        });
++
++        if (setupTidToSlotMappingTable() != PLDM_SUCCESS)
++        {
++            error("Fail to setup tid to slot mapping table");
++        }
++    }
++
++    /** @brief Handler for writeFileIO command
++     *
++     *  @param[in] request - pointer to PLDM request payload
++     *  @param[in] payloadLength - length of the message
++     *
++     *  @return PLDM response message
++     */
++    Response writeFileIO(const pldm_msg* request, size_t payloadLength);
++};
++
++} // namespace oem_meta
++} // namespace responder
++} // namespace pldm
+diff --git a/pldmd/handler.hpp b/pldmd/handler.hpp
+index cfa95eb..c5ebd65 100644
+--- a/pldmd/handler.hpp
++++ b/pldmd/handler.hpp
+@@ -55,11 +55,22 @@ class CmdHandler
+         return response;
+     }
+ 
++    void setTID(uint8_t tid)
++    {
++        this->tid = tid;
++    }
++
++    uint8_t getTID()
++    {
++        return this->tid;
++    }
++
+   protected:
+     /** @brief map of PLDM command code to handler - to be populated by derived
+      *         classes.
+      */
+     std::map<Command, HandlerFunc> handlers;
++    uint8_t tid;
+ };
+ 
+ } // namespace responder
+diff --git a/pldmd/invoker.hpp b/pldmd/invoker.hpp
+index 9903e7f..094eaf1 100644
+--- a/pldmd/invoker.hpp
++++ b/pldmd/invoker.hpp
+@@ -30,15 +30,18 @@ class Invoker
+ 
+     /** @brief Invoke a PLDM command handler
+      *
++     *  @param[in] tid - PLDM request TID
+      *  @param[in] pldmType - PLDM type code
+      *  @param[in] pldmCommand - PLDM command code
+      *  @param[in] request - PLDM request message
+      *  @param[in] reqMsgLen - PLDM request message size
+      *  @return PLDM response message
+      */
+-    Response handle(Type pldmType, Command pldmCommand, const pldm_msg* request,
+-                    size_t reqMsgLen)
++
++    Response handle(uint8_t tid, Type pldmType, Command pldmCommand,
++                    const pldm_msg* request, size_t reqMsgLen)
+     {
++        handlers.at(pldmType)->setTID(tid);
+         return handlers.at(pldmType)->handle(pldmCommand, request, reqMsgLen);
+     }
+ 
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index 32f6810..56c5261 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -66,6 +66,10 @@ PHOSPHOR_LOG2_USING;
+ #include "libpldmresponder/oem_ibm_handler.hpp"
+ #endif
+ 
++#ifdef OEM_META
++#include "libpldmresponder/file_io.hpp"
++#endif
++
+ constexpr uint8_t MCTP_MSG_TYPE_PLDM = 1;
+ 
+ using namespace pldm;
+@@ -108,7 +112,7 @@ static std::optional<Response>
+         {
+             if (hdrFields.pldm_type != PLDM_FWUP)
+             {
+-                response = invoker.handle(hdrFields.pldm_type,
++                response = invoker.handle(tid, hdrFields.pldm_type,
+                                           hdrFields.command, request,
+                                           requestLen);
+             }
+@@ -261,6 +265,10 @@ int main(int argc, char** argv)
+     oemBiosHandler = std::make_unique<oem::ibm::bios::Handler>(&dbusHandler);
+ #endif
+ 
++#ifdef OEM_META
++    invoker.registerHandler(PLDM_OEM, std::make_unique<oem_meta::Handler>());
++#endif
++
+     auto biosHandler = std::make_unique<bios::Handler>(
+         pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
+         oemBiosHandler.get());
+-- 
+2.25.1
+

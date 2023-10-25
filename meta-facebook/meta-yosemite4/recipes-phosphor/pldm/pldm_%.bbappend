@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-EXTRA_OEMESON:append = " -Dtransport-implementation=af-mctp -Dmaximum-transfer-size=150"
+EXTRA_OEMESON:append = " -Dtransport-implementation=af-mctp -Dmaximum-transfer-size=150 -Doem-meta=enabled"
 
 SRC_URI += " \
     file://mctp-bridge.conf \
@@ -11,6 +11,7 @@ SRC_URI += " \
     file://0004-platform-mc-PDR-handling.patch \
     file://0005-platform-mc-Sensor-handling.patch \
     file://0006-platform-mc-Added-EventManager.patch \
+    file://0007-Support-OEM-META-write-file-request-for-post-code-hi.patch \
 "
 
 FILES:${PN}:append = " \

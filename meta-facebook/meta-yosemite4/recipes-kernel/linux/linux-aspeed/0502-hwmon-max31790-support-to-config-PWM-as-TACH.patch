@@ -1,0 +1,103 @@
+From e645489aeae5717bf746c6038ee33f3b86af52db Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Wed, 6 Sep 2023 16:19:16 +0800
+Subject: [PATCH 3/4] hwmon: max31790: support to config PWM as TACH
+
+The PWM outputs of max31790 could be used as tachometer inputs by
+setting the fan configuration register, but the driver doesn't support
+to config the PWM outputs as tachometer inputs currently.
+
+Add a function to get properties of the setting of max31790 to config
+PWM outputs as tachometer inputs before initializing max31790.
+For example: set `pwm-as-tach = <2 5>` in DTS for max31790 and
+the driver will config PWMOUT2 and PWMOUT5 as TACH8 and TACH11.
+
+This commit depends on the patch below:
+[1] https://lore.kernel.org/all/20231003031520.3091047-1-Delphine_CC_Chiu@wiwynn.com/
+[2] https://lore.kernel.org/all/20231003031520.3091047-2-Delphine_CC_Chiu@wiwynn.com/
+[3] https://lore.kernel.org/all/20231003031520.3091047-3-Delphine_CC_Chiu@wiwynn.com/
+
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ drivers/hwmon/max31790.c | 58 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+
+diff --git a/drivers/hwmon/max31790.c b/drivers/hwmon/max31790.c
+index 0cd44c1e998a..7826d94306c5 100644
+--- a/drivers/hwmon/max31790.c
++++ b/drivers/hwmon/max31790.c
+@@ -480,6 +480,60 @@ static const struct hwmon_chip_info max31790_chip_info = {
+ 	.info = max31790_info,
+ };
+ 
++static int max31790_config_pwm_as_tach(struct device *dev,
++				       struct i2c_client *client)
++{
++	struct device_node *np = dev->of_node;
++	int i, ret, size, channel;
++	u32 pwm_index[NR_CHANNEL] = { 0 };
++	u8 fan_config;
++
++	size = of_property_count_u32_elems(np, "pwm-as-tach");
++
++	if (size > 0 && size <= NR_CHANNEL) {
++		ret = of_property_read_u32_array(np, "pwm-as-tach", pwm_index,
++						 size);
++		if (ret) {
++			dev_err(dev,
++				"Property 'pwm-as-tach' cannot be read.\n");
++			return ret;
++		}
++
++		for (i = 0; i < size; i++) {
++			if (pwm_index[i] == 0 || pwm_index[i] > NR_CHANNEL) {
++				dev_err(dev, "Not support to config PWM %x.\n",
++					pwm_index[i]);
++				return -EOPNOTSUPP;
++			}
++
++			channel = pwm_index[i] - 1;
++			ret = i2c_smbus_read_byte_data(
++				client, MAX31790_REG_FAN_CONFIG(channel));
++			if (ret < 0) {
++				dev_err(dev,
++					"Read fan config for channel %d failed.\n",
++					channel);
++				return ret;
++			}
++			fan_config = ret;
++			fan_config |= (MAX31790_FAN_CFG_CTRL_MON |
++				       MAX31790_FAN_CFG_TACH_INPUT);
++
++			ret = i2c_smbus_write_byte_data(
++				client, MAX31790_REG_FAN_CONFIG(channel),
++				fan_config);
++			if (ret < 0) {
++				dev_err(dev,
++					"Write fan config for channel %d failed.\n",
++					channel);
++				return ret;
++			}
++		}
++	}
++
++	return 0;
++}
++
+ static int max31790_init_client(struct i2c_client *client,
+ 				struct max31790_data *data)
+ {
+@@ -521,6 +575,10 @@ static int max31790_probe(struct i2c_client *client)
+ 	data->client = client;
+ 	mutex_init(&data->update_lock);
+ 
++	err = max31790_config_pwm_as_tach(dev, client);
++	if (err)
++		dev_crit(dev, "Config PWM as TACH failed.\n");
++
+ 	/*
+ 	 * Initialize the max31790 chip
+ 	 */
+-- 
+2.25.1
+

@@ -1,0 +1,141 @@
+From 09aad67d89c5b7bc007d5c8fd2505696dba63dc1 Mon Sep 17 00:00:00 2001
+From: DelphineCCChiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Thu, 21 Sep 2023 18:35:19 +0800
+Subject: [PATCH 2/4] hwmon: (ina233) Add ina233 driver
+
+This commit depends on the patch below:
+[1] https://lore.kernel.org/all/20230920054739.1561080-1-Delphine_CC_Chiu@wiwynn.com/
+[2] https://lore.kernel.org/all/20230920054739.1561080-2-Delphine_CC_Chiu@wiwynn.com/
+[3] https://lore.kernel.org/all/20230920054739.1561080-3-Delphine_CC_Chiu@wiwynn.com/
+---
+ drivers/hwmon/pmbus/Kconfig  |  9 ++++
+ drivers/hwmon/pmbus/Makefile |  1 +
+ drivers/hwmon/pmbus/ina233.c | 89 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 99 insertions(+)
+ create mode 100644 drivers/hwmon/pmbus/ina233.c
+
+diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
+index 270b6336b76d..4e3776702d7f 100644
+--- a/drivers/hwmon/pmbus/Kconfig
++++ b/drivers/hwmon/pmbus/Kconfig
+@@ -502,4 +502,13 @@ config SENSORS_ZL6100
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called zl6100.
+ 
++config SENSORS_INA233
++        tristate "Texas Instruments INA233 and compatibles"
++        help
++          If you say yes here you get hardware monitoring support for Texas
++          Instruments INA233.
++
++          This driver can also be built as a module. If so, the module will
++          be called ina233.
++
+ endif # PMBUS
+diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
+index 84ee960a6c2d..51d54f444cec 100644
+--- a/drivers/hwmon/pmbus/Makefile
++++ b/drivers/hwmon/pmbus/Makefile
+@@ -51,3 +51,4 @@ obj-$(CONFIG_SENSORS_XDPE122)	+= xdpe12284.o
+ obj-$(CONFIG_SENSORS_XDPE152)	+= xdpe152c4.o
+ obj-$(CONFIG_SENSORS_ZL6100)	+= zl6100.o
+ obj-$(CONFIG_SENSORS_PIM4328)	+= pim4328.o
++obj-$(CONFIG_SENSORS_INA233) += ina233.o
+diff --git a/drivers/hwmon/pmbus/ina233.c b/drivers/hwmon/pmbus/ina233.c
+new file mode 100644
+index 000000000000..393b595344c5
+--- /dev/null
++++ b/drivers/hwmon/pmbus/ina233.c
+@@ -0,0 +1,89 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Hardware monitoring driver for Texas Instruments INA233
++ *
++ * Copyright (c) 2017 Google Inc
++ *
++ */
++
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include "pmbus.h"
++
++#define MFR_CALIBRATION	0xd4
++
++struct pmbus_driver_info ina233_info = {
++	.pages = 1,
++	.format[PSC_VOLTAGE_IN] = direct,
++	.format[PSC_VOLTAGE_OUT] = direct,
++	.format[PSC_CURRENT_IN] = direct,
++	.format[PSC_CURRENT_OUT] = direct,
++	.format[PSC_POWER] = direct,
++	.func[0] = PMBUS_HAVE_VIN | PMBUS_HAVE_STATUS_INPUT
++	    | PMBUS_HAVE_VOUT | PMBUS_HAVE_IOUT
++		| PMBUS_HAVE_STATUS_IOUT | PMBUS_HAVE_POUT,
++	.m[PSC_VOLTAGE_IN] = 8,
++	.m[PSC_VOLTAGE_OUT] = 8,
++	.R[PSC_VOLTAGE_IN] = 2,
++	.R[PSC_VOLTAGE_OUT] = 2,
++};
++
++static int ina233_probe(struct i2c_client *client)
++{
++	int ret;
++	u16 shunt;
++	u16 current_lsb;
++	of_property_read_u16(client->dev.of_node, "resistor-calibration", &shunt);
++
++	ret = i2c_smbus_write_word_data(client, MFR_CALIBRATION, shunt);
++	if (ret < 0) {
++		dev_err(&client->dev, "Failed to set calibration\n");
++		return ret;
++	}
++	ret = of_property_read_u16(client->dev.of_node, "current-lsb", &current_lsb);
++	if (ret < 0) {
++		dev_err(&client->dev, "Failed to set current_lsb\n");
++		return ret;
++	} else {
++		// Referenced by table of Telemetryand WarningConversionCoefficients in datasheet
++		ina233_info.m[PSC_CURRENT_IN] = 1000 / current_lsb;
++		ina233_info.m[PSC_CURRENT_OUT] = 1000 / current_lsb;
++		ina233_info.m[PSC_POWER] = 40 / current_lsb;
++	}
++
++	return pmbus_do_probe(client, &ina233_info);
++}
++
++static const struct i2c_device_id ina233_id[] = {
++	{"ina233", 0},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, ina233_id);
++
++static const struct of_device_id __maybe_unused ina233_of_match[] = {
++	{ .compatible = "ti,ina233" },
++	{}
++};
++
++MODULE_DEVICE_TABLE(of, ina233_of_match);
++
++static struct i2c_driver ina233_driver = {
++	.driver = {
++		   .name = "ina233",
++		   .of_match_table = of_match_ptr(ina233_of_match),
++		   },
++	.probe_new = ina233_probe,
++	.id_table = ina233_id,
++};
++
++module_i2c_driver(ina233_driver);
++
++MODULE_AUTHOR("Eli Huang <eli_huang@wiwynn.com>");
++MODULE_DESCRIPTION("PMBus driver for Texas Instruments INA233 and compatible chips");
++MODULE_LICENSE("GPL");
++MODULE_IMPORT_NS(PMBUS);
++
+-- 
+2.25.1
+

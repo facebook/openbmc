@@ -1,0 +1,100 @@
+From b2933bf064187183a13bdd5ad3c75a78f826386e Mon Sep 17 00:00:00 2001
+From: Eli_Huang <Eli_Huang@wiwynn.com>
+Date: Tue, 26 Sep 2023 10:20:13 +0800
+Subject: [PATCH 4/4] Add adm1281 driver
+
+---
+ Documentation/devicetree/bindings/hwmon/adi,adm1275.yaml | 2 ++
+ Documentation/hwmon/adm1275.rst                          | 8 ++++++++
+ drivers/hwmon/pmbus/adm1275.c                            | 8 ++++++--
+ 3 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/hwmon/adi,adm1275.yaml b/Documentation/devicetree/bindings/hwmon/adi,adm1275.yaml
+index ab87f51c5aef..77a358f9104b 100644
+--- a/Documentation/devicetree/bindings/hwmon/adi,adm1275.yaml
++++ b/Documentation/devicetree/bindings/hwmon/adi,adm1275.yaml
+@@ -27,6 +27,7 @@ properties:
+       - adi,adm1275
+       - adi,adm1276
+       - adi,adm1278
++      - adi,adm1281
+       - adi,adm1293
+       - adi,adm1294
+ 
+@@ -94,6 +95,7 @@ allOf:
+           contains:
+             enum:
+               - adi,adm1278
++              - adi,adm1281
+               - adi,adm1293
+               - adi,adm1294
+     then:
+diff --git a/Documentation/hwmon/adm1275.rst b/Documentation/hwmon/adm1275.rst
+index 804590eeabdc..d32703bd3712 100644
+--- a/Documentation/hwmon/adm1275.rst
++++ b/Documentation/hwmon/adm1275.rst
+@@ -43,6 +43,14 @@ Supported chips:
+ 
+     Datasheet: www.analog.com/static/imported-files/data_sheets/ADM1278.pdf
+ 
++  * Analog Devices ADM1281
++
++    Prefix: 'adm1281'
++
++    Addresses scanned: -
++
++    Datasheet: 
++
+   * Analog Devices ADM1293/ADM1294
+ 
+     Prefix: 'adm1293', 'adm1294'
+diff --git a/drivers/hwmon/pmbus/adm1275.c b/drivers/hwmon/pmbus/adm1275.c
+index e2c61d6fa521..979474ba6bd3 100644
+--- a/drivers/hwmon/pmbus/adm1275.c
++++ b/drivers/hwmon/pmbus/adm1275.c
+@@ -18,7 +18,7 @@
+ #include <linux/log2.h>
+ #include "pmbus.h"
+ 
+-enum chips { adm1075, adm1272, adm1275, adm1276, adm1278, adm1293, adm1294 };
++enum chips { adm1075, adm1272, adm1275, adm1276, adm1278, adm1281, adm1293, adm1294 };
+ 
+ #define ADM1275_MFR_STATUS_IOUT_WARN2	BIT(0)
+ #define ADM1293_MFR_STATUS_VAUX_UV_WARN	BIT(5)
+@@ -362,6 +362,7 @@ static int adm1275_read_word_data(struct i2c_client *client, int page,
+ 		ret = -ENODATA;
+ 		break;
+ 	}
++
+ 	return ret;
+ }
+ 
+@@ -482,6 +483,7 @@ static const struct i2c_device_id adm1275_id[] = {
+ 	{ "adm1275", adm1275 },
+ 	{ "adm1276", adm1276 },
+ 	{ "adm1278", adm1278 },
++	{ "adm1281", adm1281 },
+ 	{ "adm1293", adm1293 },
+ 	{ "adm1294", adm1294 },
+ 	{ }
+@@ -555,7 +557,8 @@ static int adm1275_probe(struct i2c_client *client)
+ 			   client->name, mid->name);
+ 
+ 	if (mid->driver_data == adm1272 || mid->driver_data == adm1278 ||
+-	    mid->driver_data == adm1293 || mid->driver_data == adm1294)
++	    mid->driver_data == adm1281 || mid->driver_data == adm1293 ||
++	    mid->driver_data == adm1294)
+ 		config_read_fn = i2c_smbus_read_word_data;
+ 	else
+ 		config_read_fn = i2c_smbus_read_byte_data;
+@@ -703,6 +706,7 @@ static int adm1275_probe(struct i2c_client *client)
+ 			  PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT;
+ 		break;
+ 	case adm1278:
++	case adm1281:
+ 		data->have_vout = true;
+ 		data->have_pin_max = true;
+ 		data->have_temp_max = true;
+-- 
+2.25.1
+

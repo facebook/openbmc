@@ -1,0 +1,1448 @@
+From 6885d0403169788f6bc8c15d93ae6b69d218eb3c Mon Sep 17 00:00:00 2001
+From: Eric <Eric_LC_Chen@wiwynn.com>
+Date: Tue, 24 Oct 2023 17:43:44 +0800
+Subject: [PATCH 1/4] add meta yv4 bmc dts setting
+
+This commit depends on the patch below:
+[1] https://lore.kernel.org/all/20230922064127.283625-1-Delphine_CC_Chiu@wiwynn.com/
+[2] https://lore.kernel.org/all/20230922064127.283625-2-Delphine_CC_Chiu@wiwynn.com/
+---
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 1131 +++++++++++++++--
+ 1 file changed, 1010 insertions(+), 121 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index a6777efc78b8..93230cccf77b 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -17,6 +17,25 @@ aliases {
+ 		serial6 = &uart7;
+ 		serial7 = &uart8;
+ 		serial8 = &uart9;
++
++		i2c16 = &imux16;
++		i2c17 = &imux17;
++		i2c18 = &imux18;
++		i2c19 = &imux19;
++		i2c20 = &imux20;
++		i2c21 = &imux21;
++		i2c22 = &imux22;
++		i2c23 = &imux23;
++		i2c24 = &imux24;
++		i2c25 = &imux25;
++		i2c26 = &imux26;
++		i2c27 = &imux27;
++		i2c28 = &imux28;
++		i2c29 = &imux29;
++		i2c30 = &imux30;
++		i2c31 = &imux31;
++		i2c32 = &imux32;
++		i2c33 = &imux33;
+ 	};
+ 
+ 	chosen {
+@@ -32,7 +51,26 @@ iio-hwmon {
+ 		compatible = "iio-hwmon";
+ 		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
+ 				<&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
+-				<&adc1 0>, <&adc1 1>;
++				<&adc1 0>, <&adc1 1>, <&adc1 7>;
++	};
++
++	spi_gpio: spi-gpio {
++		status = "okay";
++		compatible = "spi-gpio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		gpio-sck = <&gpio0 ASPEED_GPIO(X, 3) GPIO_ACTIVE_HIGH>;
++		gpio-mosi = <&gpio0 ASPEED_GPIO(X, 4) GPIO_ACTIVE_HIGH>;
++		gpio-miso = <&gpio0 ASPEED_GPIO(X, 5) GPIO_ACTIVE_HIGH>;
++		num-chipselects = <1>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
++
++		tpmdev@0 {
++			compatible = "tcg,tpm_tis-spi";
++			spi-max-frequency = <33000000>;
++			reg = <0>;
++		};
+ 	};
+ };
+ 
+@@ -83,34 +121,27 @@ &wdt1 {
+ 	aspeed,ext-pulse-duration = <256>;
+ };
+ 
++&wdt2 {
++        status = "okay";
++        pinctrl-names = "default";
++        pinctrl-0 = <&pinctrl_wdtrst2_default>;
++        aspeed,reset-type = "system";
++};
++
+ &mac2 {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_rmii3_default>;
+-	no-hw-checksum;
+ 	use-ncsi;
+ 	mlx,multi-host;
+-	ncsi-ctrl,start-redo-probe;
+-	ncsi-ctrl,no-channel-monitor;
+-	ncsi-package = <1>;
+-	ncsi-channel = <1>;
+-	ncsi-rexmit = <1>;
+-	ncsi-timeout = <2>;
+ };
+ 
+ &mac3 {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_rmii4_default>;
+-	no-hw-checksum;
+ 	use-ncsi;
+ 	mlx,multi-host;
+-	ncsi-ctrl,start-redo-probe;
+-	ncsi-ctrl,no-channel-monitor;
+-	ncsi-package = <1>;
+-	ncsi-channel = <1>;
+-	ncsi-rexmit = <1>;
+-	ncsi-timeout = <2>;
+ };
+ 
+ &fmc {
+@@ -119,15 +150,17 @@ flash@0 {
+ 		status = "okay";
+ 		m25p,fast-read;
+ 		label = "bmc";
+-		spi-rx-bus-width = <4>;
++		spi-tx-bus-width = <2>;
++		spi-rx-bus-width = <2>;
+ 		spi-max-frequency = <50000000>;
+-#include "openbmc-flash-layout-64.dtsi"
++#include "openbmc-flash-layout-128.dtsi"
+ 	};
+ 	flash@1 {
+ 		status = "okay";
+ 		m25p,fast-read;
+ 		label = "bmc2";
+-		spi-rx-bus-width = <4>;
++		spi-tx-bus-width = <2>;
++		spi-rx-bus-width = <2>;
+ 		spi-max-frequency = <50000000>;
+ 	};
+ };
+@@ -144,8 +177,37 @@ mctp@10 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "adi,adm1278";
++		compatible = "adi,adm1281";
+ 		reg = <0x40>;
++		shunt-resistor-micro-ohms = <500>;
++	};
++
++	gpio@20 {
++		compatible = "nxp,pca9506";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@21 {
++		compatible = "nxp,pca9506";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9506";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@23 {
++		compatible = "nxp,pca9506";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
+ 	};
+ };
+ 
+@@ -160,9 +222,38 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	power-sensor@40 {
+-		compatible = "adi,adm1278";
+-		reg = <0x40>;
++        power-sensor@40 {
++                compatible = "adi,adm1281";
++                reg = <0x40>;
++                shunt-resistor-micro-ohms = <500>;
++        };
++
++	gpio@20 {
++		compatible = "nxp,pca9506";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@21 {
++		compatible = "nxp,pca9506";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9506";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@23 {
++		compatible = "nxp,pca9506";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
+ 	};
+ };
+ 
+@@ -177,9 +268,38 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	power-sensor@40 {
+-		compatible = "adi,adm1278";
+-		reg = <0x40>;
++        power-sensor@40 {
++                compatible = "adi,adm1281";
++                reg = <0x40>;
++                shunt-resistor-micro-ohms = <500>;
++        };
++
++	gpio@20 {
++		compatible = "nxp,pca9506";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@21 {
++		compatible = "nxp,pca9506";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9506";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@23 {
++		compatible = "nxp,pca9506";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
+ 	};
+ };
+ 
+@@ -194,9 +314,38 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	power-sensor@40 {
+-		compatible = "adi,adm1278";
+-		reg = <0x40>;
++        power-sensor@40 {
++                compatible = "adi,adm1281";
++                reg = <0x40>;
++                shunt-resistor-micro-ohms = <500>;
++        };
++
++	gpio@20 {
++		compatible = "nxp,pca9506";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@21 {
++		compatible = "nxp,pca9506";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9506";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@23 {
++		compatible = "nxp,pca9506";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
+ 	};
+ };
+ 
+@@ -211,9 +360,38 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	power-sensor@40 {
+-		compatible = "adi,adm1278";
+-		reg = <0x40>;
++        power-sensor@40 {
++                compatible = "adi,adm1281";
++                reg = <0x40>;
++                shunt-resistor-micro-ohms = <500>;
++        };
++
++	gpio@20 {
++		compatible = "nxp,pca9506";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@21 {
++		compatible = "nxp,pca9506";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9506";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@23 {
++		compatible = "nxp,pca9506";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
+ 	};
+ };
+ 
+@@ -228,9 +406,38 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	power-sensor@40 {
+-		compatible = "adi,adm1278";
+-		reg = <0x40>;
++        power-sensor@40 {
++                compatible = "adi,adm1281";
++                reg = <0x40>;
++                shunt-resistor-micro-ohms = <500>;
++        };
++
++	gpio@20 {
++		compatible = "nxp,pca9506";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@21 {
++		compatible = "nxp,pca9506";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9506";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@23 {
++		compatible = "nxp,pca9506";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
+ 	};
+ };
+ 
+@@ -245,9 +452,38 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	power-sensor@40 {
+-		compatible = "adi,adm1278";
+-		reg = <0x40>;
++        power-sensor@40 {
++                compatible = "adi,adm1281";
++                reg = <0x40>;
++                shunt-resistor-micro-ohms = <500>;
++        };
++
++	gpio@20 {
++		compatible = "nxp,pca9506";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@21 {
++		compatible = "nxp,pca9506";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9506";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@23 {
++		compatible = "nxp,pca9506";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
+ 	};
+ };
+ 
+@@ -262,9 +498,38 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	power-sensor@40 {
+-		compatible = "adi,adm1278";
+-		reg = <0x40>;
++        power-sensor@40 {
++                compatible = "adi,adm1281";
++                reg = <0x40>;
++                shunt-resistor-micro-ohms = <500>;
++        };
++
++	gpio@20 {
++		compatible = "nxp,pca9506";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@21 {
++		compatible = "nxp,pca9506";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9506";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@23 {
++		compatible = "nxp,pca9506";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
+ 	};
+ };
+ 
+@@ -273,9 +538,109 @@ &i2c8 {
+ 	bus-frequency = <400000>;
+ 	i2c-mux@70 {
+ 		compatible = "nxp,pca9544";
+-		idle-state = <0>;
+ 		i2c-mux-idle-disconnect;
+ 		reg = <0x70>;
++
++		imux16: i2c@0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <0>;
++
++			gpio@49 {
++				compatible = "nxp,pca9537";
++				reg = <0x49>;
++			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
++
++			eeprom@51 {
++				compatible = "atmel,24c128";
++				reg = <0x51>;
++			};
++
++			eeprom@54 {
++				compatible = "atmel,24c128";
++				reg = <0x54>;
++			};
++		};
++
++		imux17: i2c@1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <1>;
++			gpio@49 {
++				compatible = "nxp,pca9537";
++				reg = <0x49>;
++			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
++
++			eeprom@51 {
++				compatible = "atmel,24c128";
++				reg = <0x51>;
++			};
++
++			eeprom@54 {
++				compatible = "atmel,24c128";
++				reg = <0x54>;
++			};
++		};
++
++		imux18: i2c@2 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <2>;
++			gpio@49 {
++				compatible = "nxp,pca9537";
++				reg = <0x49>;
++			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
++
++			eeprom@51 {
++				compatible = "atmel,24c128";
++				reg = <0x51>;
++			};
++
++			eeprom@54 {
++				compatible = "atmel,24c128";
++				reg = <0x54>;
++			};
++		};
++
++		imux19: i2c@3 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <3>;
++			gpio@49 {
++				compatible = "nxp,pca9537";
++				reg = <0x49>;
++			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
++
++			eeprom@51 {
++				compatible = "atmel,24c128";
++				reg = <0x51>;
++			};
++
++			eeprom@54 {
++				compatible = "atmel,24c128";
++				reg = <0x54>;
++			};
++		};
+ 	};
+ };
+ 
+@@ -284,58 +649,268 @@ &i2c9 {
+ 	bus-frequency = <400000>;
+ 	i2c-mux@71 {
+ 		compatible = "nxp,pca9544";
+-		idle-state = <0>;
+ 		i2c-mux-idle-disconnect;
+ 		reg = <0x71>;
++
++		imux20: i2c@0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <0>;
++			gpio@49 {
++				compatible = "nxp,pca9537";
++				reg = <0x49>;
++			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
++
++			eeprom@51 {
++				compatible = "atmel,24c128";
++				reg = <0x51>;
++			};
++
++			eeprom@54 {
++				compatible = "atmel,24c128";
++				reg = <0x54>;
++			};
++		};
++
++		imux21: i2c@1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <1>;
++			gpio@49 {
++				compatible = "nxp,pca9537";
++				reg = <0x49>;
++			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
++
++			eeprom@51 {
++				compatible = "atmel,24c128";
++				reg = <0x51>;
++			};
++
++			eeprom@54 {
++				compatible = "atmel,24c128";
++				reg = <0x54>;
++			};
++		};
++
++		imux22: i2c@2 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <2>;
++			gpio@49 {
++				compatible = "nxp,pca9537";
++				reg = <0x49>;
++			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
++
++			eeprom@51 {
++				compatible = "atmel,24c128";
++				reg = <0x51>;
++			};
++
++			eeprom@54 {
++				compatible = "atmel,24c128";
++				reg = <0x54>;
++			};
++		};
++
++		imux23: i2c@3 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <3>;
++
++			gpio@49 {
++				compatible = "nxp,pca9537";
++				reg = <0x49>;
++			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
++
++			eeprom@51 {
++				compatible = "atmel,24c128";
++				reg = <0x51>;
++			};
++
++			eeprom@54 {
++				compatible = "atmel,24c128";
++				reg = <0x54>;
++			};
++		};
+ 	};
+ };
+ 
+ &i2c10 {
+ 	status = "okay";
+ 	bus-frequency = <400000>;
++	i2c-mux@74 {
++		compatible = "nxp,pca9544";
++		i2c-mux-idle-disconnect;
++		reg = <0x74>;
++
++		imux28: i2c@0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <0>;
++                        gpio@20 {
++                                compatible = "nxp,pca9506";
++                                reg = <0x20>;
++                                gpio-controller;
++                                #gpio-cells = <2>;
++                        };
++
++                        gpio@21 {
++                                compatible = "nxp,pca9506";
++                                reg = <0x21>;
++                                gpio-controller;
++                                #gpio-cells = <2>;
++                        };
++
++                        gpio@22 {
++                                compatible = "nxp,pca9506";
++                                reg = <0x22>;
++                                gpio-controller;
++                                #gpio-cells = <2>;
++                        };
++
++                        gpio@23 {
++                                compatible = "nxp,pca9506";
++                                reg = <0x23>;
++                                gpio-controller;
++                                #gpio-cells = <2>;
++                        };
++
++                        gpio@24 {
++                                compatible = "nxp,pca9506";
++                                reg = <0x24>;
++                                gpio-controller;
++                                #gpio-cells = <2>;
++				gpio-line-names =
++				"","","","",
++				"NIC0_MAIN_PWR_EN","NIC1_MAIN_PWR_EN",
++				"NIC2_MAIN_PWR_EN","NIC3_MAIN_PWR_EN",
++				"","","","","","","","",
++				"","","","","","","","",
++				"","","","","","","","";
++                        };
++		};
++
++		imux29: i2c@1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <1>;
++		};
++	};
+ };
+ 
+ &i2c11 {
+ 	status = "okay";
+-	bus-frequency = <400000>;
+ 	power-sensor@10 {
+-		compatible = "adi, adm1272";
++		compatible = "adi,adm1272";
+ 		reg = <0x10>;
+ 	};
+ 
+ 	power-sensor@12 {
+-		compatible = "adi, adm1272";
++		compatible = "adi,adm1272";
+ 		reg = <0x12>;
+ 	};
+ 
+-	gpio@20 {
++	gpio_ext1: pca9555@20 {
+ 		compatible = "nxp,pca9555";
+-		reg = <0x20>;
++		pinctrl-names = "default";
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
++		reg = <0x20>;
++		interrupt-parent = <&gpio0>;
++		interrupts = <94 IRQ_TYPE_LEVEL_LOW>;
++		gpio-line-names =
++		"P48V_OCP_GPIO1","P48V_OCP_GPIO2",
++		"P48V_OCP_GPIO3","FAN_BOARD_0_REVISION_0_R",
++		"FAN_BOARD_0_REVISION_1_R","FAN_BOARD_1_REVISION_0_R",
++		"FAN_BOARD_1_REVISION_1_R","RST_MUX_R_N",
++		"RST_LED_CONTROL_FAN_BOARD_0_N","RST_LED_CONTROL_FAN_BOARD_1_N",
++		"RST_IOEXP_FAN_BOARD_0_N","RST_IOEXP_FAN_BOARD_1_N",
++		"PWRGD_LOAD_SWITCH_FAN_BOARD_0_R","PWRGD_LOAD_SWITCH_FAN_BOARD_1_R",
++		"","";
+ 	};
+ 
+-	gpio@21 {
+-		compatible = "nxp,pca9555";
+-		reg = <0x21>;
+-		gpio-controller;
+-		#gpio-cells = <2>;
++        gpio_ext2: pca9555@21 {
++                compatible = "nxp,pca9555";
++                pinctrl-names = "default";
++                gpio-controller;
++                #gpio-cells = <2>;
++                reg = <0x21>;
++                interrupt-parent = <&gpio0>;
++                interrupts = <94 IRQ_TYPE_LEVEL_LOW>;
++                gpio-line-names =
++                "DELTA_MODULE_TYPE","VSENSE_ERR_VDROP_R",
++                "EN_P48V_AUX_0","EN_P48V_AUX_1",
++                "MEDUSA_BOARD_REV_0","MEDUSA_BOARD_REV_1",
++                "MEDUSA_BOARD_REV_2","MEDUSA_BOARD_TYPE",
++                "HSC_OCP_SLOT_ODD_GPIO1","HSC_OCP_SLOT_ODD_GPIO2",
++                "HSC_OCP_SLOT_ODD_GPIO3","HSC_OCP_SLOT_EVEN_GPIO1",
++                "HSC_OCP_SLOT_EVEN_GPIO2","HSC_OCP_SLOT_EVEN_GPIO3",
++                "ADC_TYPE_0_R","ADC_TYPE_1_R";
+ 	};
+ 
+-	gpio@22 {
+-		compatible = "nxp,pca9555";
+-		reg = <0x22>;
+-		gpio-controller;
+-		#gpio-cells = <2>;
++        gpio_ext3: pca9555@22 {
++                compatible = "nxp,pca9555";
++                pinctrl-names = "default";
++                gpio-controller;
++                #gpio-cells = <2>;
++                reg = <0x22>;
++                interrupt-parent = <&gpio0>;
++                interrupts = <94 IRQ_TYPE_LEVEL_LOW>;
++                gpio-line-names =
++                "CARD_TYPE_SLOT1","CARD_TYPE_SLOT2",
++                "CARD_TYPE_SLOT3","CARD_TYPE_SLOT4",
++                "CARD_TYPE_SLOT5","CARD_TYPE_SLOT6",
++                "CARD_TYPE_SLOT7","CARD_TYPE_SLOT8",
++                "OC_P48V_HSC_0_N","FLT_P48V_HSC_0_N",
++                "PWRGD_P12V_AUX_1","OC_P48V_HSC_1_N",
++                "FLT_P48V_HSC_1_N","PWRGD_P12V_AUX_1",
++                "MEDUSA_ADC_EFUSE_TYPE_R","P12V_HSC_TYPE";
+ 	};
+ 
+-	gpio@23 {
+-		compatible = "nxp,pca9555";
+-		reg = <0x23>;
+-		gpio-controller;
+-		#gpio-cells = <2>;
++        gpio_ext4: pca9555@23 {
++                compatible = "nxp,pca9555";
++                pinctrl-names = "default";
++                gpio-controller;
++                #gpio-cells = <2>;
++                reg = <0x23>;
++                interrupt-parent = <&gpio0>;
++                interrupts = <94 IRQ_TYPE_LEVEL_LOW>;
++                gpio-line-names =
++                "HSC1_ALERT1_R_N","HSC2_ALERT1_R_N",
++		"HSC3_ALERT1_R_N","HSC4_ALERT1_R_N",
++                "HSC5_ALERT1_R_N","HSC6_ALERT1_R_N",
++                "HSC7_ALERT1_R_N","HSC8_ALERT1_R_N",
++                "HSC1_ALERT2_R_N","HSC2_ALERT2_R_N",
++                "HSC3_ALERT2_R_N","HSC4_ALERT2_R_N",
++                "HSC5_ALERT2_R_N","HSC6_ALERT2_R_N",
++                "HSC7_ALERT2_R_N","HSC8_ALERT2_R_N";
+ 	};
+ 
++        power-sensor@40 {
++                compatible = "mps,mp5023";
++                reg = <0x40>;
++        };
++
+ 	temperature-sensor@48 {
+ 		compatible = "ti,tmp75";
+ 		reg = <0x48>;
+@@ -346,20 +921,30 @@ temperature-sensor@49 {
+ 		reg = <0x49>;
+ 	};
+ 
+-	temperature-sensor@4a {
+-		compatible = "ti,tmp75";
+-		reg = <0x4a>;
+-	};
+-
+-	temperature-sensor@4b {
+-		compatible = "ti,tmp75";
+-		reg = <0x4b>;
+-	};
+-
+ 	eeprom@54 {
+ 		compatible = "atmel,24c256";
+ 		reg = <0x54>;
+ 	};
++
++        power-sensor@62 {
++                compatible = "pmbus";
++                reg = <0x62>;
++        };
++
++        power-sensor@63 {
++                compatible = "pmbus";
++                reg = <0x63>;
++        };
++
++        power-sensor@66 {
++                compatible = "pmbus";
++                reg = <0x66>;
++        };
++
++        power-sensor@68 {
++                compatible = "pmbus";
++                reg = <0x68>;
++        };
+ };
+ 
+ &i2c12 {
+@@ -376,6 +961,11 @@ eeprom@50 {
+ 		reg = <0x50>;
+ 	};
+ 
++	eeprom@54 {
++		compatible = "atmel,24c64";
++		reg = <0x54>;
++	};
++
+ 	rtc@6f {
+ 		compatible = "nuvoton,nct3018y";
+ 		reg = <0x6f>;
+@@ -385,6 +975,33 @@ rtc@6f {
+ &i2c13 {
+ 	status = "okay";
+ 	bus-frequency = <400000>;
++	gpio@20 {
++		compatible = "nxp,pca9506";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@21 {
++		compatible = "nxp,pca9506";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9506";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gpio@23 {
++		compatible = "nxp,pca9506";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
+ };
+ 
+ &i2c14 {
+@@ -393,44 +1010,55 @@ &i2c14 {
+ 	adc@1d {
+ 		compatible = "ti,adc128d818";
+ 		reg = <0x1d>;
+-		ti,mode = /bits/ 8 <2>;
++		ti,mode = /bits/ 8 <1>;
+ 	};
++ 
++        adc@36 {
+ 
+-	adc@35 {
+-		compatible = "ti,adc128d818";
+-		reg = <0x35>;
+-		ti,mode = /bits/ 8 <2>;
+-	};
++                compatible = "ti,adc128d818";
++                reg = <0x36>;
++                ti,mode = /bits/ 8 <1>;
++        };
+ 
+-	adc@37 {
+-		compatible = "ti,adc128d818";
+-		reg = <0x37>;
+-		ti,mode = /bits/ 8 <2>;
+-	};
++        adc@37 {
++                compatible = "ti,adc128d818";
++                reg = <0x37>;
++                ti,mode = /bits/ 8 <1>;
++        };
+ 
+ 	power-sensor@40 {
+-		compatible = "ti,ina230";
++		compatible = "ti,ina233";
+ 		reg = <0x40>;
++		resistor-calibration = /bits/ 16 <0x0a00>;
++		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@41 {
+-		compatible = "ti,ina230";
++		compatible = "ti,ina233";
+ 		reg = <0x41>;
++		resistor-calibration = /bits/ 16 <0x0a00>;
++		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@42 {
+-		compatible = "ti,ina230";
++		compatible = "ti,ina233";
+ 		reg = <0x42>;
++		resistor-calibration = /bits/ 16 <0x0a00>;
++		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@43 {
+-		compatible = "ti,ina230";
++		compatible = "ti,ina233";
+ 		reg = <0x43>;
++		resistor-calibration = /bits/ 16 <0x0a00>;
++		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@44 {
+-		compatible = "ti,ina230";
++		compatible = "ti,ina233";
+ 		reg = <0x44>;
++		resistor-calibration = /bits/ 16 <0x0a00>;
++		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	temperature-sensor@4e {
+@@ -448,16 +1076,14 @@ eeprom@51 {
+ 		reg = <0x51>;
+ 	};
+ 
+-	i2c-mux@71 {
+-		compatible = "nxp,pca9846";
++	i2c-mux@74 {
++		compatible = "nxp,pca9546";
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+-
+-		idle-state = <0>;
+ 		i2c-mux-idle-disconnect;
+-		reg = <0x71>;
++		reg = <0x74>;
+ 
+-		i2c@0 {
++		imux30: i2c@0 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0>;
+@@ -465,26 +1091,26 @@ i2c@0 {
+ 			adc@1f {
+ 				compatible = "ti,adc128d818";
+ 				reg = <0x1f>;
+-				ti,mode = /bits/ 8 <2>;
++				ti,mode = /bits/ 8 <1>;
+ 			};
+ 
+ 			pwm@20{
+-				compatible = "max31790";
++				compatible = "maxim,max31790";
++				pwm-as-tach = <4 5>;
+ 				reg = <0x20>;
+-				#address-cells = <1>;
+-				#size-cells = <0>;
+ 			};
+ 
+ 			gpio@22{
+ 				compatible = "ti,tca6424";
+ 				reg = <0x22>;
++				gpio-controller;
++				#gpio-cells = <2>;
+ 			};
+ 
+-			pwm@23{
+-				compatible = "max31790";
+-				reg = <0x23>;
+-				#address-cells = <1>;
+-				#size-cells = <0>;
++			pwm@2f{
++				compatible = "maxim,max31790";
++				pwm-as-tach = <4 5>;
++				reg = <0x2f>;
+ 			};
+ 
+ 			adc@33 {
+@@ -507,34 +1133,34 @@ gpio@61 {
+ 			};
+ 		};
+ 
+-		i2c@1 {
++		imux31: i2c@1 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+-			reg = <0>;
++			reg = <1>;
+ 
+ 			adc@1f {
+ 				compatible = "ti,adc128d818";
+ 				reg = <0x1f>;
+-				ti,mode = /bits/ 8 <2>;
++				ti,mode = /bits/ 8 <1>;
+ 			};
+ 
+ 			pwm@20{
+-				compatible = "max31790";
++				compatible = "maxim,max31790";
++				pwm-as-tach = <4 5>;
+ 				reg = <0x20>;
+-				#address-cells = <1>;
+-				#size-cells = <0>;
+ 			};
+ 
+ 			gpio@22{
+ 				compatible = "ti,tca6424";
+ 				reg = <0x22>;
++                                gpio-controller;
++                                #gpio-cells = <2>;
+ 			};
+ 
+-			pwm@23{
+-				compatible = "max31790";
+-				reg = <0x23>;
+-				#address-cells = <1>;
+-				#size-cells = <0>;
++			pwm@2f{
++				compatible = "maxim,max31790";
++				pwm-as-tach = <4 5>;
++				reg = <0x2f>;
+ 			};
+ 
+ 			adc@33 {
+@@ -562,12 +1188,10 @@ i2c-mux@73 {
+ 		compatible = "nxp,pca9544";
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+-
+-		idle-state = <0>;
+ 		i2c-mux-idle-disconnect;
+ 		reg = <0x73>;
+ 
+-		i2c@0 {
++		imux32: i2c@0 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0>;
+@@ -578,10 +1202,10 @@ adc@35 {
+ 			};
+ 		};
+ 
+-		i2c@1 {
++		imux33: i2c@1 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+-			reg = <0>;
++			reg = <1>;
+ 
+ 			adc@35 {
+ 				compatible = "maxim,max11617";
+@@ -604,9 +1228,47 @@ mctp@10 {
+ 
+ 	i2c-mux@72 {
+ 		compatible = "nxp,pca9544";
+-		idle-state = <0>;
+ 		i2c-mux-idle-disconnect;
+ 		reg = <0x72>;
++
++		imux24: i2c@0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <0>;
++        		temperature-sensor@1f {
++                		compatible = "ti,tmp421";
++                		reg = <0x1f>;
++        		};
++		};
++
++		imux25: i2c@1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <1>;
++                        temperature-sensor@1f {
++                                compatible = "ti,tmp421";
++                                reg = <0x1f>;
++                        };
++		};
++
++		imux26: i2c@2 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <2>;
++                        temperature-sensor@1f {
++                                compatible = "ti,tmp421";
++                                reg = <0x1f>;
++                        };
++		};
++		imux27: i2c@3 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <3>;
++                        temperature-sensor@1f {
++                                compatible = "ti,tmp421";
++                                reg = <0x1f>;
++                        };
++		};
+ 	};
+ };
+ 
+@@ -622,7 +1284,8 @@ &pinctrl_adc4_default &pinctrl_adc5_default
+ &adc1 {
+ 	ref_voltage = <2500>;
+ 	status = "okay";
+-	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default>;
++	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default
++            &pinctrl_adc15_default>;
+ };
+ 
+ 
+@@ -637,3 +1300,229 @@ &ehci1 {
+ &uhci {
+ 	status = "okay";
+ };
++
++&jtag1 {
++	status = "okay";
++};
++
++&sgpiom0 {
++        status = "okay";
++        ngpios = <128>;
++        bus-frequency = <48000>;
++};
++
++&gpio0 {
++        pinctrl-names = "default";
++        pinctrl-0 = <&pinctrl_gpiu2_default &pinctrl_gpiu3_default
++                     &pinctrl_gpiu4_default &pinctrl_gpiu5_default
++                     &pinctrl_gpiu6_default>;
++        gpio-line-names =
++        /*A0-A7*/       "","","","","","","","",
++        /*B0-B7*/       "FLT_HSC_SERVER_SLOT8_N","AC_ON_OFF_BTN_CPLD_SLOT5_N",
++                        "PWRGD_SLOT1_STBY","PWRGD_SLOT2_STBY",
++                        "PWRGD_SLOT3_STBY","PWRGD_SLOT4_STBY","","",
++        /*C0-C7*/       "PRSNT_NIC3_N","","","","FM_NIC0_WAKE_N",
++                        "FM_NIC1_WAKE_N","","RST_PCIE_SLOT2_N",
++        /*D0-D7*/       "","","","","","","","",
++        /*E0-E7*/       "PRSNT_NIC1_N","PRSNT_NIC2_N","","RST_PCIE_SLOT1_N",
++                        "","","","",
++        /*F0-F7*/       "FM_RESBTN_SLOT1_BMC_N","FM_RESBTN_SLOT2_BMC_N",
++                        "FM_RESBTN_SLOT3_BMC_N","FM_RESBTN_SLOT4_BMC_N",
++                        "PRSNT_SB_SLOT1_N","PRSNT_SB_SLOT2_N",
++                        "PRSNT_SB_SLOT3_N","PRSNT_SB_SLOT4_N",
++        /*G0-G7*/       "","","","","","","","",
++        /*H0-H7*/       "","","","","","","","",
++        /*I0-I7*/       "","","","","","ALT_MEDUSA_ADC_N",
++                        "ALT_SMB_BMC_CPLD2_N",
++                        "INT_SPIDER_ADC_R_N",
++        /*J0-J7*/       "","","","","","","","",
++        /*K0-K7*/       "","","","","","","","",
++        /*L0-L7*/       "","","","","","","ALT_MEDUSA_P12V_EFUSE_N","",
++        /*M0-M7*/       "EN_NIC0_POWER_BMC_R","EN_NIC1_POWER_BMC_R",
++                        "INT_MEDUSA_IOEXP_TEMP_N","FLT_P12V_NIC0_N",
++                        "INT_SMB_BMC_SLOT1_4_BMC_N",
++                        "AC_ON_OFF_BTN_CPLD_SLOT6_N","","",
++        /*N0-N7*/       "FLT_HSC_SERVER_SLOT1_N","FLT_HSC_SERVER_SLOT2_N",
++                        "FLT_HSC_SERVER_SLOT3_N","FLT_HSC_SERVER_SLOT4_N",
++                        "FM_BMC_READY_R2","FLT_P12V_STBY_BMC_N","","",
++        /*O0-O7*/       "AC_ON_OFF_BTN_CPLD_SLOT8_N","RST_SMB_NIC1_R_N",
++                        "RST_SMB_NIC2_R_N","RST_SMB_NIC3_R_N",
++                        "FLT_P3V3_NIC2_N","FLT_P3V3_NIC3_N",
++                        "","",
++        /*P0-P7*/       "ALT_SMB_BMC_CPLD1_N","'BTN_BMC_R2_N",
++                        "EN_P3V_BAT_SCALED_R","PWRGD_P5V_USB_BMC",
++                        "FM_BMC_RTCRST_R","RST_USB_HUB_R_N",
++                        "FLAG_P5V_USB_BMC_N","",
++        /*Q0-Q7*/       "AC_ON_OFF_BTN_CPLD_SLOT1_N","AC_ON_OFF_BTN_CPLD_SLOT2_N",
++                        "AC_ON_OFF_BTN_CPLD_SLOT3_N","AC_ON_OFF_BTN_CPLD_SLOT4_N",
++                        "PRSNT_SB_SLOT5_N","PRSNT_SB_SLOT6_N",
++                        "PRSNT_SB_SLOT7_N","PRSNT_SB_SLOT8_N",
++        /*R0-R7*/       "AC_ON_OFF_BTN_CPLD_SLOT7_N","INT_SMB_BMC_SLOT5_8_BMC_N",
++                        "FM_PWRBRK_NIC_BMC_R2","RST_PCIE_SLOT4_N",
++                        "RST_PCIE_SLOT5_N","RST_PCIE_SLOT6_N",
++                        "RST_PCIE_SLOT7_N","RST_PCIE_SLOT8_N",
++        /*S0-S7*/       "FM_NIC2_WAKE_N","FM_NIC3_WAKE_N",
++                        "EN_NIC3_POWER_BMC_R","SEL_BMC_JTAG_MUX_R",
++                        "","ALT_P12V_AUX_N","FAST_PROCHOT_N",
++                        "SPI_WP_DISABLE_STATUS_R_N",
++        /*T0-T7*/       "","","","","","","","",
++        /*U0-U7*/       "","","FLT_P3V3_NIC1_N","FLT_P12V_NIC1_N",
++                        "FLT_P12V_NIC2_N","FLT_P12V_NIC3_N",
++                        "FLT_P3V3_NIC0_N","",
++        /*V0-V7*/       "FM_RESBTN_SLOT5_BMC_N","FM_RESBTN_SLOT6_BMC_N",
++                        "FM_RESBTN_SLOT7_BMC_N","FM_RESBTN_SLOT8_BMC_N",
++                        "","","","",
++        /*W0-W7*/       "PRSNT_TPM_BMC_N","PRSNT_OCP_DEBUG_BMC_N","ALT_TEMP_BMC_N","ALT_RTC_BMC_N",
++                        "","","","",
++        /*X0-X7*/       "","LT_HSC_SERVER_SLOT6_N","FLT_HSC_SERVER_SLOT7_N","","","",
++                        "PWRGD_SLOT5_STBY","PWRGD_SLOT6_STBY",
++        /*Y0-Y7*/       "","","SPI_LOCK_REQ_BMC_N","PWRGD_SLOT7_STBY","","","EN_NIC2_POWER_BMC_R","",
++        /*Z0-Z7*/       "EN_P5V_USB_CPLD_R","'FLT_HSC_SERVER_SLOT5_N",
++                        "PWRGD_SLOT8_STBY","","","","","";
++
++        pin_gpio_b4 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(B, 4) GPIO_ACTIVE_HIGH>;
++                input;
++        };
++        pin_gpio_b5 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(B, 5) GPIO_ACTIVE_HIGH>;
++                input;
++        };
++        pin_gpio_f0 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(F, 0) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_f1 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(F, 1) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_f2 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(F, 2) GPIO_ACTIVE_LOW>;
++                input;
++		};
++        pin_gpio_f3 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(F, 3) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_f4 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(F, 4) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_f5 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(F, 5) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_f6 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(F, 6) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_f7 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(F, 7) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_l6 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(L, 6) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_l7 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(L, 7) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_s0 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(S, 0) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_s1 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(S, 1) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_v0 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(V, 0) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_v1 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(V, 1) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_v2 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(V, 2) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_v3 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(V, 3) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_w0 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(W, 0) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_w1 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(W, 1) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_w2 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(W, 2) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_w3 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(W, 3) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_w4 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(W, 4) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_w5 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(W, 5) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_w6 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(W, 6) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_w7 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(W, 7) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_z3 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(Z, 3) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_z4 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(Z, 4) GPIO_ACTIVE_LOW>;
++                input;
++        };
++        pin_gpio_z5 {
++                gpio-hog;
++                gpios = <ASPEED_GPIO(Z, 5) GPIO_ACTIVE_LOW>;
++                input;
++        };
++};
+-- 
+2.25.1
+

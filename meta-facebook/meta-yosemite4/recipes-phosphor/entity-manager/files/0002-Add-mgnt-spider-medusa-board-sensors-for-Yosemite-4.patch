@@ -1,0 +1,759 @@
+From 10e06e789f30b00543ec86c96d893996aea3fd0d Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Tue, 8 Aug 2023 17:42:59 +0800
+Subject: [PATCH] Add mgnt/spider/medusa board sensors for Yosemite 4
+
+- Configure the following type sensors:
+ - adm1272
+ - adm1281
+ - adc128d818
+ - aspeed adc
+ - ina233
+ - pmbus
+ - tmp75
+ - tmp421
+- Revise condition to probe json config for entity-manager
+
+Tested:
+- Read sensors from entity-manager through dbus
+
+Change-Id: I7d4d8e94aab5f1cbca281e32deab958b593a6930
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+
+%% original patch: 0002-Add-mgnt-spider-medusa-board-sensors-for-Yosemite-4.patch
+---
+ configurations/yosemite4.json             | 121 +++++++++
+ configurations/yosemite4_fanboard.json    |  32 +++
+ configurations/yosemite4_medusaboard.json | 285 ++++++++++++++++++++++
+ configurations/yosemite4_spiderboard.json | 151 ++++++++++++
+ meson.build                               |   4 +
+ schemas/customize_scalefactor.json        |  60 +++++
+ schemas/global.json                       |   3 +
+ 7 files changed, 656 insertions(+)
+ create mode 100644 configurations/yosemite4.json
+ create mode 100644 configurations/yosemite4_medusaboard.json
+ create mode 100644 configurations/yosemite4_spiderboard.json
+ create mode 100644 schemas/customize_scalefactor.json
+
+diff --git a/configurations/yosemite4.json b/configurations/yosemite4.json
+new file mode 100644
+index 0000000..91fd91d
+--- /dev/null
++++ b/configurations/yosemite4.json
+@@ -0,0 +1,121 @@
++{
++    "Exposes": [
++        {
++            "Index": 0,
++            "Name": "MGNT_P12V_VOLT_V",
++            "ScaleFactor": 0.1124,
++            "Type": "ADC"
++        },
++        {
++            "Index": 1,
++            "Name": "MGNT_P5V_VOLT_V",
++            "ScaleFactor": 0.2717,
++            "Type": "ADC"
++        },
++        {
++            "Index": 2,
++            "Name": "MGNT_P3V3_VOLT_V",
++            "ScaleFactor": 0.4107,
++            "Type": "ADC"
++        },
++        {
++            "Index": 3,
++            "Name": "MGNT_P2V5_VOLT_V",
++            "ScaleFactor": 0.542,
++            "Type": "ADC"
++        },
++        {
++            "Index": 4,
++            "Name": "MGNT_P1V8_VOLT_V",
++            "ScaleFactor": 1,
++            "Type": "ADC"
++        },
++        {
++            "Index": 5,
++            "Name": "MGNT_P3V3_RGM_VOLT_V",
++            "ScaleFactor": 0.4107,
++            "Type": "ADC"
++        },
++        {
++            "Index": 6,
++            "Name": "MGNT_P1V2_VOLT_V",
++            "ScaleFactor": 1,
++            "Type": "ADC"
++        },
++        {
++            "Index": 7,
++            "Name": "MGNT_P0V6_VOLT_V",
++            "ScaleFactor": 1,
++            "Type": "ADC"
++        },
++        {
++            "Index": 8,
++            "Name": "MGNT_P1V0_VOLT_V",
++            "ScaleFactor": 1,
++            "Type": "ADC"
++        },
++        {
++            "Index": 9,
++            "Name": "MGNT_P5V_USB_VOLT_V",
++            "ScaleFactor": 0.2717,
++            "Type": "ADC"
++        },
++        {
++            "Index": 10,
++            "Name": "MGNT_P3V_BAT_VOLT_V",
++            "ScaleFactor": 0.3333,
++            "Type": "ADC",
++            "PollRate": 3600,
++            "BridgeGpio": [
++                {
++                    "Name": "EN_P3V_BAT_SCALED_R",
++                    "Polarity": "H",
++                    "SetupTime": 1
++                }
++            ]
++        },
++        {
++            "Address": "0x48",
++            "Bus": 12,
++            "Name": "MGNT_TEMP_C",
++            "Type": "TMP75"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": 24,
++	    "Name": "NIC0_REMOTE_TEMP_C",
++	    "Name1": "NIC0_TEMP_C",
++            "Type": "TMP421"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": 25,
++	    "Name": "NIC1_REMOTE_TEMP_C",
++	    "Name1": "NIC1_TEMP_C",
++            "Type": "TMP421"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": 26,
++	    "Name": "NIC2_REMOTE_TEMP_C",
++	    "Name1": "NIC2_TEMP_C",
++            "Type": "TMP421"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": 27,
++	    "Name": "NIC3_REMOTE_TEMP_C",
++	    "Name1": "NIC3_TEMP_C",
++            "Type": "TMP421"
++        }
++    ],
++    "Name": "Yosemite 4 Management Board",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Management Board wBMC', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "Manufacturer": "$PRODUCT_MANUFACTURER",
++        "Model": "$PRODUCT_PRODUCT_NAME",
++        "PartNumber": "$PRODUCT_PART_NUMBER",
++        "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++    }
++}
+diff --git a/configurations/yosemite4_fanboard.json b/configurations/yosemite4_fanboard.json
+index 5d23967..98c36eb 100644
+--- a/configurations/yosemite4_fanboard.json
++++ b/configurations/yosemite4_fanboard.json
+@@ -437,6 +437,38 @@
+                 }
+             ],
+             "Type": "I2CFan"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": "$bus",
++            "Labels": [
++                "in0",
++                "in1",
++                "in2",
++                "in3",
++                "in4",
++                "in5",
++                "in6",
++                "in7"
++            ],
++            "Name": "FANBOARD_ADC",
++            "Type": "ADC128D818",
++            "in0_Name": "FANBOARD_ADC_48V_FAN0_CURR_A",
++            "in0_Scale": 300,
++            "in1_Name": "FANBOARD_ADC_48V_FAN1_CURR_A",
++            "in1_Scale": 300,
++            "in2_Name": "FANBOARD_ADC_48V_FAN2_CURR_A",
++            "in2_Scale": 300,
++            "in3_Name": "FANBOARD_ADC_48V_FAN3_CURR_A",
++            "in3_Scale": 300,
++            "in4_Name": "FANBOARD_ADC_48V_FAN4_CURR_A",
++            "in4_Scale": 300,
++            "in5_Name": "FANBOARD_ADC_48V_FAN5_CURR_A",
++            "in5_Scale": 300,
++            "in6_Name": "FANBOARD_ADC_48V_AUX_VOLT_V",
++            "in6_Scale": 31.9458,
++            "in7_Name": "FANBOARD_ADC_3V3_STBY_VOLT_V",
++            "in7_Scale": 500
+         }
+     ],
+     "Name": "Yosemite 4 FAN Board $bus % 30",
+diff --git a/configurations/yosemite4_medusaboard.json b/configurations/yosemite4_medusaboard.json
+new file mode 100644
+index 0000000..1c34879
+--- /dev/null
++++ b/configurations/yosemite4_medusaboard.json
+@@ -0,0 +1,285 @@
++{
++    "Exposes": [
++        {
++            "Address": "0x10",
++            "Bus": 11,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_48VHSC0",
++            "Type": "ADM1272",
++            "iout1_Name": "MEDUSA_48VHSC0_CURR_A",
++            "pin_Name": "MEDUSA_48VHSC0_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_48VHSC0_TEMP_C",
++            "vin_Name": "MEDUSA_48VHSC0_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_48VHSC0_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x12",
++            "Bus": 11,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_48VHSC1",
++            "Type": "ADM1272",
++            "iout1_Name": "MEDUSA_48VHSC1_CURR_A",
++            "pin_Name": "MEDUSA_48VHSC1_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_48VHSC1_TEMP_C",
++            "vin_Name": "MEDUSA_48VHSC1_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_48VHSC1_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 11,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1"
++            ],
++            "Name": "MEDUSA_12VEFFUSE",
++            "Type": "MP5023",
++            "iout1_Name": "MEDUSA_12VEFFUSE_CURR_A",
++            "temp1_Name": "MEDUSA_12VEFFUSE_TEMP_C",
++            "vin_Name": "MEDUSA_12VEFFUSE_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_12VEFFUSE_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x62",
++            "Bus": 11,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1"
++            ],
++            "Name": "MEDUSA_12VDELTA0",
++            "Type": "pmbus",
++            "iout1_Name": "MEDUSA_12VDELTA0_CURR_A",
++            "temp1_Name": "MEDUSA_12VDELTA0_TEMP_C",
++            "vin_Name": "MEDUSA_12VDELTA0_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_12VDELTA0_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x63",
++            "Bus": 11,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1"
++            ],
++            "Name": "MEDUSA_12VDELTA1",
++            "Type": "pmbus",
++            "iout1_Name": "MEDUSA_12VDELTA1_CURR_A",
++            "temp1_Name": "MEDUSA_12VDELTA1_TEMP_C",
++            "vin_Name": "MEDUSA_12VDELTA1_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_12VDELTA1_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x66",
++            "Bus": 11,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1"
++            ],
++            "Name": "MEDUSA_12VDELTA2",
++            "Type": "pmbus",
++            "iout1_Name": "MEDUSA_12VDELTA2_CURR_A",
++            "temp1_Name": "MEDUSA_12VDELTA2_TEMP_C",
++            "vin_Name": "MEDUSA_12VDELTA2_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_12VDELTA2_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x68",
++            "Bus": 11,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1"
++            ],
++            "Name": "MEDUSA_12VDELTA3",
++            "Type": "pmbus",
++            "iout1_Name": "MEDUSA_12VDELTA3_CURR_A",
++            "temp1_Name": "MEDUSA_12VDELTA3_TEMP_C",
++            "vin_Name": "MEDUSA_12VDELTA3_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_12VDELTA3_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 0,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_MB1_12VHSC",
++            "Type": "ADM1281",
++            "iout1_Name": "MEDUSA_MB1_12VHSC_CURR_A",
++            "pin_Name": "MEDUSA_MB1_12VHSC_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_MB1_12VHSC_TEMP_C",
++            "vin_Name": "MEDUSA_MB1_12VHSC_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_MB1_12VHSC_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 1,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_MB2_12VHSC",
++            "Type": "ADM1281",
++            "iout1_Name": "MEDUSA_MB2_12VHSC_CURR_A",
++            "pin_Name": "MEDUSA_MB2_12VHSC_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_MB2_12VHSC_TEMP_C",
++            "vin_Name": "MEDUSA_MB2_12VHSC_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_MB2_12VHSC_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 2,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_MB3_12VHSC",
++            "Type": "ADM1281",
++            "iout1_Name": "MEDUSA_MB3_12VHSC_CURR_A",
++            "pin_Name": "MEDUSA_MB3_12VHSC_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_MB3_12VHSC_TEMP_C",
++            "vin_Name": "MEDUSA_MB3_12VHSC_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_MB3_12VHSC_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 3,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_MB4_12VHSC",
++            "Type": "ADM1281",
++            "iout1_Name": "MEDUSA_MB4_12VHSC_CURR_A",
++            "pin_Name": "MEDUSA_MB4_12VHSC_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_MB4_12VHSC_TEMP_C",
++            "vin_Name": "MEDUSA_MB4_12VHSC_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_MB4_12VHSC_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 4,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_MB5_12VHSC",
++            "Type": "ADM1281",
++            "iout1_Name": "MEDUSA_MB5_12VHSC_CURR_A",
++            "pin_Name": "MEDUSA_MB5_12VHSC_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_MB5_12VHSC_TEMP_C",
++            "vin_Name": "MEDUSA_MB5_12VHSC_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_MB5_12VHSC_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 5,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_MB6_12VHSC",
++            "Type": "ADM1281",
++            "iout1_Name": "MEDUSA_MB6_12VHSC_CURR_A",
++            "pin_Name": "MEDUSA_MB6_12VHSC_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_MB6_12VHSC_TEMP_C",
++            "vin_Name": "MEDUSA_MB6_12VHSC_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_MB6_12VHSC_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 6,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_MB7_12VHSC",
++            "Type": "ADM1281",
++            "iout1_Name": "MEDUSA_MB7_12VHSC_CURR_A",
++            "pin_Name": "MEDUSA_MB7_12VHSC_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_MB7_12VHSC_TEMP_C",
++            "vin_Name": "MEDUSA_MB7_12VHSC_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_MB7_12VHSC_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 7,
++            "Labels": [
++                "temp1",
++                "vin",
++                "vout1",
++                "iout1",
++                "pin"
++            ],
++            "Name": "MEDUSA_MB8_12VHSC",
++            "Type": "ADM1281",
++            "iout1_Name": "MEDUSA_MB8_12VHSC_CURR_A",
++            "pin_Name": "MEDUSA_MB8_12VHSC_INPUT_PWR_W",
++            "temp1_Name": "MEDUSA_MB8_12VHSC_TEMP_C",
++            "vin_Name": "MEDUSA_MB8_12VHSC_INPUT_VOLT_V",
++            "vout1_Name": "MEDUSA_MB8_12VHSC_OUTPUT_VOLT_V"
++        },
++        {
++            "Address": "0x48",
++            "Bus": 11,
++            "Name": "MEDUSA_TEMP0_C",
++            "Type": "TMP75"
++        },
++        {
++            "Address": "0x49",
++            "Bus": 11,
++            "Name": "MEDUSA_TEMP1_C",
++            "Type": "TMP75"
++        }
++    ],
++    "Name": "Yosemite 4 Medusa Board",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Medusa Board', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "Manufacturer": "$PRODUCT_MANUFACTURER",
++        "Model": "$PRODUCT_PRODUCT_NAME",
++        "PartNumber": "$PRODUCT_PART_NUMBER",
++        "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++    }
++}
+diff --git a/configurations/yosemite4_spiderboard.json b/configurations/yosemite4_spiderboard.json
+new file mode 100644
+index 0000000..a7a430b
+--- /dev/null
++++ b/configurations/yosemite4_spiderboard.json
+@@ -0,0 +1,151 @@
++{
++    "Exposes": [
++        {
++            "Address": "0x1d",
++            "Bus": 14,
++            "Labels": [
++                "in0",
++                "in1",
++                "in2",
++                "in3"
++            ],
++            "Name": "SPIDER_ADC_1D",
++            "Type": "ADC128D818",
++            "in0_Name": "SPIDER_ADC_12V_NIC0_VOLT_V",
++            "in0_Scale": 112.3596,
++            "in1_Name": "SPIDER_ADC_3V3_NIC0_VOLT_V",
++            "in1_Scale": 410.6776,
++            "in2_Name": "SPIDER_ADC_12V_NIC1_VOLT_V",
++            "in2_Scale": 112.3596,
++            "in3_Name": "SPIDER_ADC_3V3_NIC1_VOLT_V",
++            "in3_Scale": 410.6776
++        },
++        {
++            "Address": "0x36",
++            "Bus": 14,
++            "Labels": [
++                "in0",
++                "in1"
++            ],
++            "Name": "SPIDER_ADC_36",
++            "Type": "ADC128D818",
++            "in0_Name": "SPIDER_ADC_12V_MEDUSA_AUX_VOLT_V",
++            "in0_Scale": 112.3596,
++            "in1_Name": "SPIDER_ADC_3V3_AUX_VOLT_V",
++            "in1_Scale": 410.6776
++        },
++        {
++            "Address": "0x37",
++            "Bus": 14,
++            "Labels": [
++                "in0",
++                "in1",
++                "in2",
++                "in3"
++            ],
++            "Name": "SPIDER_ADC_37",
++            "Type": "ADC128D818",
++            "in0_Name": "SPIDER_ADC_12V_NIC2_VOLT_V",
++            "in0_Scale": 112.3596,
++            "in1_Name": "SPIDER_ADC_3V3_NIC2_VOLT_V",
++            "in1_Scale": 410.6776,
++            "in2_Name": "SPIDER_ADC_12V_NIC3_VOLT_V",
++            "in2_Scale": 112.3596,
++            "in3_Name": "SPIDER_ADC_3V3_NIC3_VOLT_V",
++            "in3_Scale": 410.6776
++        },
++        {
++            "Address": "0x40",
++            "Bus": 14,
++            "Labels": [
++                "vout1",
++                "iout1",
++                "pout1"
++            ],
++            "Name": "SPIDER_INA233_12V_STBY",
++            "Type": "INA233",
++
++            "iout1_Name": "SPIDER_INA233_12V_STBY_CURR_A",
++            "pout1_Name": "SPIDER_INA233_12V_STBY_PWR_W",
++            "vout1_Name": "SPIDER_INA233_12V_STBY_VOLT_V"
++        },
++        {
++            "Address": "0x41",
++            "Bus": 14,
++            "Labels": [
++                "vout1",
++                "iout1",
++                "pout1"
++            ],
++            "Name": "SPIDER_INA233_12V_NIC0",
++            "Type": "INA233",
++
++            "iout1_Name": "SPIDER_INA233_12V_NIC0_CURR_A",
++            "pout1_Name": "SPIDER_INA233_12V_NIC0_PWR_W",
++            "vout1_Name": "SPIDER_INA233_12V_NIC0_VOLT_V"
++        },
++        {
++            "Address": "0x42",
++            "Bus": 14,
++            "Labels": [
++                "vout1",
++                "iout1",
++                "pout1"
++            ],
++            "Name": "SPIDER_INA233_12V_NIC1",
++            "Type": "INA233",
++            "iout1_Name": "SPIDER_INA233_12V_NIC1_CURR_A",
++            "pout1_Name": "SPIDER_INA233_12V_NIC1_PWR_W",
++            "vout1_Name": "SPIDER_INA233_12V_NIC1_VOLT_V"
++        },
++        {
++            "Address": "0x43",
++            "Bus": 14,
++            "Labels": [
++                "vout1",
++                "iout1",
++                "pout1"
++            ],
++            "Name": "SPIDER_INA233_12V_NIC2",
++            "Type": "INA233",
++            "iout1_Name": "SPIDER_INA233_12V_NIC2_CURR_A",
++            "pout1_Name": "SPIDER_INA233_12V_NIC2_PWR_W",
++            "vout1_Name": "SPIDER_INA233_12V_NIC2_VOLT_V"
++        },
++        {
++            "Address": "0x44",
++            "Bus": 14,
++            "Labels": [
++                "vout1",
++                "iout1",
++                "pout1"
++            ],
++            "Name": "SPIDER_INA233_12V_NIC3",
++            "Type": "INA233",
++            "iout1_Name": "SPIDER_INA233_12V_NIC3_CURR_A",
++            "pout1_Name": "SPIDER_INA233_12V_NIC3_PWR_W",
++            "vout1_Name": "SPIDER_INA233_12V_NIC3_VOLT_V"
++        },
++        {
++            "Address": "0x4e",
++            "Bus": 14,
++            "Name": "SPIDER_TEMP0_C",
++            "Type": "TMP75"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 14,
++            "Name": "SPIDER_TEMP1_C",
++            "Type": "TMP75"
++        }
++    ],
++    "Name": "Yosemite 4 Spider Board",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Spider Board', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "Manufacturer": "$PRODUCT_MANUFACTURER",
++        "Model": "$PRODUCT_PRODUCT_NAME",
++        "PartNumber": "$PRODUCT_PART_NUMBER",
++        "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++    }
++}
+diff --git a/meson.build b/meson.build
+index 151f3f2..3da035a 100644
+--- a/meson.build
++++ b/meson.build
+@@ -155,6 +155,9 @@ configs = [
+     'vegman_sx20_baseboard.json',
+     'wft_baseboard.json',
+     'yosemite4_fanboard.json',
++    'yosemite4.json',
++    'yosemite4_medusaboard.json',
++    'yosemite4_spiderboard.json',
+ ]
+ filepaths = []
+ foreach c : configs
+@@ -194,6 +197,7 @@ schemas = [
+     'stepwise.json',
+     'virtual_sensor.json',
+     'satellite_controller.json',
++    'customize_scalefactor.json',
+ ]
+ 
+ foreach s : schemas
+diff --git a/schemas/customize_scalefactor.json b/schemas/customize_scalefactor.json
+new file mode 100644
+index 0000000..ce47637
+--- /dev/null
++++ b/schemas/customize_scalefactor.json
+@@ -0,0 +1,60 @@
++{
++    "$schema": "http://json-schema.org/draft-07/schema#",
++    "definitions": {
++        "CustomizedScaleFactor": {
++            "title": "Customized scalefactor used for dbus-sensors",
++            "type": "object",
++            "properties": {
++                "in0_Name": {
++                    "type": "string"
++                },
++                "in1_Name": {
++                    "type": "string"
++                },
++                "in2_Name": {
++                    "type": "string"
++                },
++                "in3_Name": {
++                    "type": "string"
++                },
++                "in4_Name": {
++                    "type": "string"
++                },
++                "in5_Name": {
++                    "type": "string"
++                },
++                "in6_Name": {
++                    "type": "string"
++                },
++                "in7_Name": {
++                    "type": "string"
++                },
++                "in0_Scale": {
++                    "type": "number"
++                },
++                "in1_Scale": {
++                    "type": "number"
++                },
++                "in2_Scale": {
++                    "type": "number"
++                },
++                "in3_Scale": {
++                    "type": "number"
++                },
++                "in4_Scale": {
++                    "type": "number"
++                },
++                "in5_Scale": {
++                    "type": "number"
++                },
++                "in6_Scale": {
++                    "type": "number"
++                },
++                "in7_Scale": {
++                    "type": "number"
++                }
++            },
++            "required": ["in0_Name"]
++        }
++    }
++}
+diff --git a/schemas/global.json b/schemas/global.json
+index f939771..c2a319c 100644
+--- a/schemas/global.json
++++ b/schemas/global.json
+@@ -38,6 +38,9 @@
+                 {
+                     "$ref": "virtual_sensor.json#/definitions/VirtualSensor"
+                 },
++                {
++                    "$ref": "customize_scalefactor.json#/definitions/CustomizedScaleFactor"
++                },
+                 {
+                     "description": [
+                         "Ensure the parent oneOf schema does not validate ",
+-- 
+2.25.1

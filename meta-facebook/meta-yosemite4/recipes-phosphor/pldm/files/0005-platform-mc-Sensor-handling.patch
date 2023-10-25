@@ -1,0 +1,2074 @@
+From 8df8914a640dd190f1bd91c06fb45225d7804518 Mon Sep 17 00:00:00 2001
+From: Gilbert Chen <gilbert.chen@arm.com>
+Date: Wed, 23 Feb 2022 20:56:19 +0000
+Subject: [PATCH 5/6] platform-mc: Sensor handling
+
+Added sensor_manager and numeric_sensor class. The sensor_manager
+class manages the timing of sensor polling. The NumericSensor class
+handles sensor status and exports its status to D-Bus interfaces.
+
+tested: Verified on ast2600 EVB which is connected to a PLDM device
+over I2C. bmcweb can display the state of numeric sensor.
+
+Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
+Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
+---
+ meson.build                                |   4 +
+ meson.options                              |  12 +
+ platform-mc/examples/pldm_t2_config.json   |  12 +
+ platform-mc/manager.hpp                    |  15 +-
+ platform-mc/numeric_sensor.cpp             | 547 +++++++++++++++++++++
+ platform-mc/numeric_sensor.hpp             | 205 ++++++++
+ platform-mc/sensor_manager.cpp             | 351 +++++++++++++
+ platform-mc/sensor_manager.hpp             | 105 ++++
+ platform-mc/terminus.cpp                   |  98 +++-
+ platform-mc/terminus.hpp                   |  19 +-
+ platform-mc/terminus_manager.cpp           |  17 +
+ platform-mc/test/meson.build               |   4 +
+ platform-mc/test/mock_sensor_manager.hpp   |  24 +
+ platform-mc/test/numeric_sensor_test.cpp   | 274 +++++++++++
+ platform-mc/test/platform_manager_test.cpp |   3 +
+ platform-mc/test/sensor_manager_test.cpp   |  69 +++
+ pldmd/pldmd.cpp                            |   2 +-
+ 17 files changed, 1757 insertions(+), 4 deletions(-)
+ create mode 100644 platform-mc/examples/pldm_t2_config.json
+ create mode 100644 platform-mc/numeric_sensor.cpp
+ create mode 100644 platform-mc/numeric_sensor.hpp
+ create mode 100644 platform-mc/sensor_manager.cpp
+ create mode 100644 platform-mc/sensor_manager.hpp
+ create mode 100644 platform-mc/test/mock_sensor_manager.hpp
+ create mode 100644 platform-mc/test/numeric_sensor_test.cpp
+ create mode 100644 platform-mc/test/sensor_manager_test.cpp
+
+diff --git a/meson.build b/meson.build
+index 572b0fc..14a2e89 100644
+--- a/meson.build
++++ b/meson.build
+@@ -71,6 +71,8 @@ elif get_option('transport-implementation') == 'af-mctp'
+   conf_data.set('PLDM_TRANSPORT_WITH_AF_MCTP', 1)
+ endif
+ conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'static_eid_table.json'))
++conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
++conf_data.set_quoted('PLDM_T2_CONFIG_JSON', join_paths(package_datadir, 'pldm_t2_config.json'))
+ config = configure_file(output: 'config.h',
+   configuration: conf_data
+ )
+@@ -188,6 +190,8 @@ executable(
+   'platform-mc/terminus_manager.cpp',
+   'platform-mc/terminus.cpp',
+   'platform-mc/platform_manager.cpp',
++  'platform-mc/sensor_manager.cpp',
++  'platform-mc/numeric_sensor.cpp',
+   'requester/mctp_endpoint_discovery.cpp',
+   implicit_include_directories: false,
+   dependencies: deps,
+diff --git a/meson.options b/meson.options
+index b11c0fb..12c5ff5 100644
+--- a/meson.options
++++ b/meson.options
+@@ -172,3 +172,15 @@ option(
+     value: 8384512,
+     description: 'OEM-IBM: max DMA size'
+ )
++
++# Platform-mc configuration parameters
++
++## Sensor Polling Options
++option(
++    'sensor-polling-time',
++    type: 'integer',
++    min: 1,
++    max: 4294967295,
++    description: 'The interval time of sensor polling in milliseconds',
++    value: 249
++)
+diff --git a/platform-mc/examples/pldm_t2_config.json b/platform-mc/examples/pldm_t2_config.json
+new file mode 100644
+index 0000000..4300fd3
+--- /dev/null
++++ b/platform-mc/examples/pldm_t2_config.json
+@@ -0,0 +1,12 @@
++{
++    "PrioritySensorNameSpaces": [
++        "/xyz/openbmc_project/sensors/temperature/",
++        "/xyz/openbmc_project/sensors/power/",
++        "/xyz/openbmc_project/sensors/energy/"
++    ],
++    "AggregationSensorNameSpaces": [
++        "/xyz/openbmc_project/sensors/temperature/",
++        "/xyz/openbmc_project/sensors/power/",
++        "/xyz/openbmc_project/sensors/energy/"
++    ]
++}
+diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
+index f60d974..69464e3 100644
+--- a/platform-mc/manager.hpp
++++ b/platform-mc/manager.hpp
+@@ -7,6 +7,7 @@
+ #include "platform_manager.hpp"
+ #include "requester/handler.hpp"
+ #include "requester/mctp_endpoint_discovery.hpp"
++#include "sensor_manager.hpp"
+ #include "terminus_manager.hpp"
+ 
+ namespace pldm
+@@ -35,7 +36,8 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+                      requester::Handler<requester::Request>& handler,
+                      pldm::InstanceIdDb& instanceIdDb) :
+         terminusManager(event, handler, instanceIdDb, termini, this),
+-        platformManager(terminusManager, termini)
++        platformManager(terminusManager, termini),
++        sensorManager(event, terminusManager, termini)
+     {}
+ 
+     requester::Coroutine beforeDiscoverTerminus()
+@@ -59,12 +61,23 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+         terminusManager.removeMctpTerminus(mctpInfos);
+     }
+ 
++    void startSensorPolling(tid_t tid)
++    {
++        sensorManager.startPolling(tid);
++    }
++
++    void stopSensorPolling(tid_t tid)
++    {
++        sensorManager.stopPolling(tid);
++    }
++
+   private:
+     /** @brief List of discovered termini */
+     std::map<tid_t, std::shared_ptr<Terminus>> termini{};
+ 
+     TerminusManager terminusManager;
+     PlatformManager platformManager;
++    SensorManager sensorManager;
+ };
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
+new file mode 100644
+index 0000000..7966ff6
+--- /dev/null
++++ b/platform-mc/numeric_sensor.cpp
+@@ -0,0 +1,547 @@
++#include "numeric_sensor.hpp"
++
++#include "libpldm/platform.h"
++
++#include "common/utils.hpp"
++#include "requester/handler.hpp"
++
++#include <limits>
++#include <regex>
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++NumericSensor::NumericSensor(const tid_t tid, const bool sensorDisabled,
++                             std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr,
++                             std::string& sensorName,
++                             std::string& associationPath) :
++    tid(tid),
++    sensorId(pdr->sensor_id), sensorName(sensorName), isPriority(false)
++{
++    std::string path;
++    SensorUnit sensorUnit = SensorUnit::DegreesC;
++
++    switch (pdr->base_unit)
++    {
++        case PLDM_SENSOR_UNIT_DEGRESS_C:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/temperature/";
++            sensorUnit = SensorUnit::DegreesC;
++            break;
++        case PLDM_SENSOR_UNIT_VOLTS:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/voltage/";
++            sensorUnit = SensorUnit::Volts;
++            break;
++        case PLDM_SENSOR_UNIT_AMPS:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/current/";
++            sensorUnit = SensorUnit::Amperes;
++            break;
++        case PLDM_SENSOR_UNIT_RPM:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/fan_pwm/";
++            sensorUnit = SensorUnit::RPMS;
++            break;
++        case PLDM_SENSOR_UNIT_WATTS:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/power/";
++            sensorUnit = SensorUnit::Watts;
++            break;
++        case PLDM_SENSOR_UNIT_JOULES:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/energy/";
++            sensorUnit = SensorUnit::Joules;
++            break;
++        case PLDM_SENSOR_UNIT_PERCENTAGE:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/utilization/";
++            sensorUnit = SensorUnit::Percent;
++            break;
++        default:
++            throw std::runtime_error("baseUnit(" +
++                                     std::to_string(pdr->base_unit) +
++                                     ") is not of supported type");
++            break;
++    }
++
++    path = sensorNameSpace + sensorName;
++    path = std::regex_replace(path, std::regex("[^a-zA-Z0-9_/]+"), "_");
++
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    associationDefinitionsIntf =
++        std::make_unique<AssociationDefinitionsInft>(bus, path.c_str());
++    associationDefinitionsIntf->associations(
++        {{"chassis", "all_sensors", associationPath.c_str()}});
++
++    double maxValue = std::numeric_limits<double>::quiet_NaN();
++    double minValue = std::numeric_limits<double>::quiet_NaN();
++
++    switch (pdr->sensor_data_size)
++    {
++        case PLDM_SENSOR_DATA_SIZE_UINT8:
++            maxValue = pdr->max_readable.value_u8;
++            minValue = pdr->min_readable.value_u8;
++            hysteresis = pdr->hysteresis.value_u8;
++            break;
++        case PLDM_SENSOR_DATA_SIZE_SINT8:
++            maxValue = pdr->max_readable.value_s8;
++            minValue = pdr->min_readable.value_s8;
++            hysteresis = pdr->hysteresis.value_s8;
++            break;
++        case PLDM_SENSOR_DATA_SIZE_UINT16:
++            maxValue = pdr->max_readable.value_u16;
++            minValue = pdr->min_readable.value_u16;
++            hysteresis = pdr->hysteresis.value_u16;
++            break;
++        case PLDM_SENSOR_DATA_SIZE_SINT16:
++            maxValue = pdr->max_readable.value_s16;
++            minValue = pdr->min_readable.value_s16;
++            hysteresis = pdr->hysteresis.value_s16;
++            break;
++        case PLDM_SENSOR_DATA_SIZE_UINT32:
++            maxValue = pdr->max_readable.value_u32;
++            minValue = pdr->min_readable.value_u32;
++            hysteresis = pdr->hysteresis.value_u32;
++            break;
++        case PLDM_SENSOR_DATA_SIZE_SINT32:
++            maxValue = pdr->max_readable.value_s32;
++            minValue = pdr->min_readable.value_s32;
++            hysteresis = pdr->hysteresis.value_s32;
++            break;
++    }
++
++    bool hasCriticalThresholds = false;
++    double criticalHigh = std::numeric_limits<double>::quiet_NaN();
++    double criticalLow = std::numeric_limits<double>::quiet_NaN();
++    double warningHigh = std::numeric_limits<double>::quiet_NaN();
++    double warningLow = std::numeric_limits<double>::quiet_NaN();
++
++    switch (pdr->range_field_format)
++    {
++        case PLDM_RANGE_FIELD_FORMAT_UINT8:
++            warningHigh = pdr->warning_high.value_u8;
++            warningLow = pdr->warning_low.value_u8;
++            break;
++        case PLDM_RANGE_FIELD_FORMAT_SINT8:
++            warningHigh = pdr->warning_high.value_s8;
++            warningLow = pdr->warning_low.value_u8;
++            break;
++        case PLDM_RANGE_FIELD_FORMAT_UINT16:
++            warningHigh = pdr->warning_high.value_u16;
++            warningLow = pdr->warning_low.value_u16;
++            break;
++        case PLDM_RANGE_FIELD_FORMAT_SINT16:
++            warningHigh = pdr->warning_high.value_s16;
++            warningLow = pdr->warning_low.value_s16;
++            break;
++        case PLDM_RANGE_FIELD_FORMAT_UINT32:
++            warningHigh = pdr->warning_high.value_u32;
++            warningLow = pdr->warning_low.value_u32;
++            break;
++        case PLDM_RANGE_FIELD_FORMAT_SINT32:
++            warningHigh = pdr->warning_high.value_s32;
++            warningLow = pdr->warning_low.value_s32;
++            break;
++        case PLDM_RANGE_FIELD_FORMAT_REAL32:
++            warningHigh = pdr->warning_high.value_f32;
++            warningLow = pdr->warning_low.value_f32;
++            break;
++    }
++
++    if (pdr->range_field_support.bits.bit3)
++    {
++        hasCriticalThresholds = true;
++        switch (pdr->range_field_format)
++        {
++            case PLDM_RANGE_FIELD_FORMAT_UINT8:
++                criticalHigh = pdr->critical_high.value_u8;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_SINT8:
++                criticalHigh = pdr->critical_high.value_s8;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_UINT16:
++                criticalHigh = pdr->critical_high.value_u16;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_SINT16:
++                criticalHigh = pdr->critical_high.value_s16;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_UINT32:
++                criticalHigh = pdr->critical_high.value_u32;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_SINT32:
++                criticalHigh = pdr->critical_high.value_s32;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_REAL32:
++                criticalHigh = pdr->critical_high.value_f32;
++                break;
++        }
++    }
++
++    if (pdr->range_field_support.bits.bit4)
++    {
++        hasCriticalThresholds = true;
++        switch (pdr->range_field_format)
++        {
++            case PLDM_RANGE_FIELD_FORMAT_UINT8:
++                criticalLow = pdr->critical_low.value_u8;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_SINT8:
++                criticalLow = pdr->critical_low.value_s8;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_UINT16:
++                criticalLow = pdr->critical_low.value_u16;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_SINT16:
++                criticalLow = pdr->critical_low.value_s16;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_UINT32:
++                criticalLow = pdr->critical_low.value_u32;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_SINT32:
++                criticalLow = pdr->critical_low.value_s32;
++                break;
++            case PLDM_RANGE_FIELD_FORMAT_REAL32:
++                criticalLow = pdr->critical_low.value_f32;
++                break;
++        }
++    }
++
++    resolution = pdr->resolution;
++    offset = pdr->offset;
++    baseUnitModifier = pdr->unit_modifier;
++
++    timeStamp = 0;
++    updateTime = std::numeric_limits<uint64_t>::max();
++    if (!std::isnan(pdr->update_interval))
++    {
++        updateTime = pdr->update_interval * 1000000;
++    }
++
++    valueIntf = std::make_unique<ValueIntf>(bus, path.c_str());
++    valueIntf->maxValue(unitModifier(conversionFormula(maxValue)));
++    valueIntf->minValue(unitModifier(conversionFormula(minValue)));
++    hysteresis = unitModifier(conversionFormula(hysteresis));
++    valueIntf->unit(sensorUnit);
++
++    availabilityIntf = std::make_unique<AvailabilityIntf>(bus, path.c_str());
++    availabilityIntf->available(true);
++
++    operationalStatusIntf =
++        std::make_unique<OperationalStatusIntf>(bus, path.c_str());
++    operationalStatusIntf->functional(!sensorDisabled);
++
++    thresholdWarningIntf = std::make_unique<ThresholdWarningIntf>(bus,
++                                                                  path.c_str());
++    thresholdWarningIntf->warningHigh(unitModifier(warningHigh));
++    thresholdWarningIntf->warningLow(unitModifier(warningLow));
++
++    if (hasCriticalThresholds)
++    {
++        thresholdCriticalIntf =
++            std::make_unique<ThresholdCriticalIntf>(bus, path.c_str());
++        thresholdCriticalIntf->criticalHigh(unitModifier(criticalHigh));
++        thresholdCriticalIntf->criticalLow(unitModifier(criticalLow));
++    }
++}
++
++NumericSensor::NumericSensor(
++    const tid_t tid, const bool sensorDisabled,
++    std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr,
++    std::string& sensorName, std::string& associationPath) :
++    tid(tid),
++    sensorId(pdr->sensor_id), sensorName(sensorName), isPriority(false)
++{
++    std::string path;
++    SensorUnit sensorUnit = SensorUnit::DegreesC;
++
++    switch (pdr->base_unit)
++    {
++        case PLDM_SENSOR_UNIT_DEGRESS_C:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/temperature/";
++            sensorUnit = SensorUnit::DegreesC;
++            break;
++        case PLDM_SENSOR_UNIT_VOLTS:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/voltage/";
++            sensorUnit = SensorUnit::Volts;
++            break;
++        case PLDM_SENSOR_UNIT_AMPS:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/current/";
++            sensorUnit = SensorUnit::Amperes;
++            break;
++        case PLDM_SENSOR_UNIT_RPM:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/fan_pwm/";
++            sensorUnit = SensorUnit::RPMS;
++            break;
++        case PLDM_SENSOR_UNIT_WATTS:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/power/";
++            sensorUnit = SensorUnit::Watts;
++            break;
++        case PLDM_SENSOR_UNIT_JOULES:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/energy/";
++            sensorUnit = SensorUnit::Joules;
++            break;
++        case PLDM_SENSOR_UNIT_PERCENTAGE:
++            sensorNameSpace = "/xyz/openbmc_project/sensors/utilization/";
++            sensorUnit = SensorUnit::Percent;
++            break;
++        default:
++            throw std::runtime_error("baseUnit(" +
++                                     std::to_string(pdr->base_unit) +
++                                     ") is not of supported type");
++            break;
++    }
++
++    path = sensorNameSpace + sensorName;
++    path = std::regex_replace(path, std::regex("[^a-zA-Z0-9_/]+"), "_");
++
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    associationDefinitionsIntf =
++        std::make_unique<AssociationDefinitionsInft>(bus, path.c_str());
++    associationDefinitionsIntf->associations(
++        {{"chassis", "all_sensors", associationPath.c_str()}});
++
++    double maxValue = std::numeric_limits<double>::quiet_NaN();
++    double minValue = std::numeric_limits<double>::quiet_NaN();
++    bool hasWarningThresholds = false;
++    bool hasCriticalThresholds = false;
++    double criticalHigh = std::numeric_limits<double>::quiet_NaN();
++    double criticalLow = std::numeric_limits<double>::quiet_NaN();
++    double warningHigh = std::numeric_limits<double>::quiet_NaN();
++    double warningLow = std::numeric_limits<double>::quiet_NaN();
++
++    if (pdr->range_field_support.bits.bit0)
++    {
++        hasWarningThresholds = true;
++        warningHigh = pdr->warning_high;
++    }
++    if (pdr->range_field_support.bits.bit1)
++    {
++        hasWarningThresholds = true;
++        warningLow = pdr->warning_low;
++    }
++
++    if (pdr->range_field_support.bits.bit2)
++    {
++        hasCriticalThresholds = true;
++        criticalHigh = pdr->critical_high;
++    }
++
++    if (pdr->range_field_support.bits.bit3)
++    {
++        hasCriticalThresholds = true;
++        criticalLow = pdr->critical_low;
++    }
++
++    resolution = std::numeric_limits<double>::quiet_NaN();
++    offset = std::numeric_limits<double>::quiet_NaN();
++    baseUnitModifier = pdr->unit_modifier;
++
++    timeStamp = 0;
++    updateTime = std::numeric_limits<uint64_t>::max();
++    switch (pdr->occurrence_rate)
++    {
++        case PLDM_RATE_UNIT_NONE:
++            break;
++        case PLDM_RATE_UNIT_PER_MICRO_SECOND:
++            updateTime = 1;
++            break;
++        case PLDM_RATE_UNIT_PER_MILLI_SECOND:
++            updateTime = 1000;
++            break;
++        case PLDM_RATE_UNIT_PER_SECOND:
++            updateTime = 1000000;
++            break;
++        case PLDM_RATE_UNIT_PER_MINUTE:
++            updateTime = 60000000;
++            break;
++        case PLDM_RATE_UNIT_PER_HOUR:
++            updateTime = 3600000000;
++            break;
++        case PLDM_RATE_UNIT_PER_DAY:
++            updateTime = 86400000000;
++            break;
++        default:
++            std::cerr << "occurrence_rate("
++                      << std::to_string(pdr->occurrence_rate)
++                      << ") is not of supported type\n";
++            break;
++    }
++
++    valueIntf = std::make_unique<ValueIntf>(bus, path.c_str());
++    valueIntf->maxValue(unitModifier(conversionFormula(maxValue)));
++    valueIntf->minValue(unitModifier(conversionFormula(minValue)));
++    hysteresis = unitModifier(conversionFormula(hysteresis));
++    valueIntf->unit(sensorUnit);
++
++    availabilityIntf = std::make_unique<AvailabilityIntf>(bus, path.c_str());
++    availabilityIntf->available(true);
++
++    operationalStatusIntf =
++        std::make_unique<OperationalStatusIntf>(bus, path.c_str());
++    operationalStatusIntf->functional(!sensorDisabled);
++
++    if (hasWarningThresholds)
++    {
++        thresholdWarningIntf =
++            std::make_unique<ThresholdWarningIntf>(bus, path.c_str());
++        thresholdWarningIntf->warningHigh(unitModifier(warningHigh));
++        thresholdWarningIntf->warningLow(unitModifier(warningLow));
++    }
++
++    if (hasCriticalThresholds)
++    {
++        thresholdCriticalIntf =
++            std::make_unique<ThresholdCriticalIntf>(bus, path.c_str());
++        thresholdCriticalIntf->criticalHigh(unitModifier(criticalHigh));
++        thresholdCriticalIntf->criticalLow(unitModifier(criticalLow));
++    }
++}
++
++double NumericSensor::conversionFormula(double value)
++{
++    double convertedValue = value;
++    convertedValue *= std::isnan(resolution) ? 1 : resolution;
++    convertedValue += std::isnan(offset) ? 0 : offset;
++    return convertedValue;
++}
++
++double NumericSensor::unitModifier(double value)
++{
++    return std::isnan(value) ? value : value * std::pow(10, baseUnitModifier);
++}
++
++void NumericSensor::updateReading(bool available, bool functional, double value)
++{
++    availabilityIntf->available(available);
++    operationalStatusIntf->functional(functional);
++
++    if (functional && available)
++    {
++        valueIntf->value(unitModifier(conversionFormula(value)));
++        updateThresholds();
++    }
++    else
++    {
++        valueIntf->value(std::numeric_limits<double>::quiet_NaN());
++    }
++}
++
++void NumericSensor::handleErrGetSensorReading()
++{
++    operationalStatusIntf->functional(false);
++    valueIntf->value(std::numeric_limits<double>::quiet_NaN());
++}
++
++bool NumericSensor::checkThreshold(bool alarm, bool direction, double value,
++                                   double threshold, double hyst)
++{
++    if (direction)
++    {
++        if (value >= threshold)
++        {
++            return true;
++        }
++        else if (value < (threshold - hyst))
++        {
++            return false;
++        }
++    }
++    else
++    {
++        if (value <= threshold)
++        {
++            return true;
++        }
++        else if (value > (threshold + hyst))
++        {
++            return false;
++        }
++    }
++    return alarm;
++}
++
++void NumericSensor::updateThresholds()
++{
++    auto value = valueIntf->value();
++
++    if (thresholdWarningIntf &&
++        !std::isnan(thresholdWarningIntf->warningHigh()))
++    {
++        auto threshold = thresholdWarningIntf->warningHigh();
++        auto alarm = thresholdWarningIntf->warningAlarmHigh();
++        auto newAlarm = checkThreshold(alarm, true, value, threshold,
++                                       hysteresis);
++        if (alarm != newAlarm)
++        {
++            thresholdWarningIntf->warningAlarmHigh(newAlarm);
++            if (newAlarm)
++            {
++                thresholdWarningIntf->warningHighAlarmAsserted(value);
++            }
++            else
++            {
++                thresholdWarningIntf->warningHighAlarmDeasserted(value);
++            }
++        }
++    }
++
++    if (thresholdWarningIntf && !std::isnan(thresholdWarningIntf->warningLow()))
++    {
++        auto threshold = thresholdWarningIntf->warningLow();
++        auto alarm = thresholdWarningIntf->warningAlarmLow();
++        auto newAlarm = checkThreshold(alarm, false, value, threshold,
++                                       hysteresis);
++        if (alarm != newAlarm)
++        {
++            thresholdWarningIntf->warningAlarmLow(newAlarm);
++            if (newAlarm)
++            {
++                thresholdWarningIntf->warningLowAlarmAsserted(value);
++            }
++            else
++            {
++                thresholdWarningIntf->warningLowAlarmDeasserted(value);
++            }
++        }
++    }
++
++    if (thresholdCriticalIntf &&
++        !std::isnan(thresholdCriticalIntf->criticalHigh()))
++    {
++        auto threshold = thresholdCriticalIntf->criticalHigh();
++        auto alarm = thresholdCriticalIntf->criticalAlarmHigh();
++        auto newAlarm = checkThreshold(alarm, true, value, threshold,
++                                       hysteresis);
++        if (alarm != newAlarm)
++        {
++            thresholdCriticalIntf->criticalAlarmHigh(newAlarm);
++            if (newAlarm)
++            {
++                thresholdCriticalIntf->criticalHighAlarmAsserted(value);
++            }
++            else
++            {
++                thresholdCriticalIntf->criticalHighAlarmDeasserted(value);
++            }
++        }
++    }
++
++    if (thresholdCriticalIntf &&
++        !std::isnan(thresholdCriticalIntf->criticalLow()))
++    {
++        auto threshold = thresholdCriticalIntf->criticalLow();
++        auto alarm = thresholdCriticalIntf->criticalAlarmLow();
++        auto newAlarm = checkThreshold(alarm, false, value, threshold,
++                                       hysteresis);
++        if (alarm != newAlarm)
++        {
++            thresholdCriticalIntf->criticalAlarmLow(newAlarm);
++            if (newAlarm)
++            {
++                thresholdCriticalIntf->criticalLowAlarmAsserted(value);
++            }
++            else
++            {
++                thresholdCriticalIntf->criticalLowAlarmDeasserted(value);
++            }
++        }
++    }
++}
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/numeric_sensor.hpp b/platform-mc/numeric_sensor.hpp
+new file mode 100644
+index 0000000..06239a2
+--- /dev/null
++++ b/platform-mc/numeric_sensor.hpp
+@@ -0,0 +1,205 @@
++#pragma once
++
++#include "libpldm/platform.h"
++#include "libpldm/pldm.h"
++
++#include "common/types.hpp"
++
++#include <sdbusplus/server/object.hpp>
++#include <xyz/openbmc_project/Association/Definitions/server.hpp>
++#include <xyz/openbmc_project/Sensor/Threshold/Critical/server.hpp>
++#include <xyz/openbmc_project/Sensor/Threshold/Warning/server.hpp>
++#include <xyz/openbmc_project/Sensor/Value/server.hpp>
++#include <xyz/openbmc_project/State/Decorator/Availability/server.hpp>
++#include <xyz/openbmc_project/State/Decorator/OperationalStatus/server.hpp>
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++using namespace std::chrono;
++using namespace pldm::pdr;
++using SensorUnit = sdbusplus::xyz::openbmc_project::Sensor::server::Value::Unit;
++using ValueIntf = sdbusplus::server::object_t<
++    sdbusplus::xyz::openbmc_project::Sensor::server::Value>;
++using ThresholdWarningIntf = sdbusplus::server::object_t<
++    sdbusplus::xyz::openbmc_project::Sensor::Threshold::server::Warning>;
++using ThresholdCriticalIntf = sdbusplus::server::object_t<
++    sdbusplus::xyz::openbmc_project::Sensor::Threshold::server::Critical>;
++using OperationalStatusIntf =
++    sdbusplus::server::object_t<sdbusplus::xyz::openbmc_project::State::
++                                    Decorator::server::OperationalStatus>;
++using AvailabilityIntf = sdbusplus::server::object_t<
++    sdbusplus::xyz::openbmc_project::State::Decorator::server::Availability>;
++using AssociationDefinitionsInft = sdbusplus::server::object_t<
++    sdbusplus::xyz::openbmc_project::Association::server::Definitions>;
++
++/**
++ * @brief NumericSensor
++ *
++ * This class handles sensor reading updated by sensor manager and export
++ * status to D-Bus interface.
++ */
++class NumericSensor
++{
++  public:
++    NumericSensor(const tid_t tid, const bool sensorDisabled,
++                  std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr,
++                  std::string& sensorName, std::string& associationPath);
++
++    NumericSensor(const tid_t tid, const bool sensorDisabled,
++                  std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr,
++                  std::string& sensorName, std::string& associationPath);
++
++    ~NumericSensor(){};
++
++    /** @brief The function called by Sensor Manager to set sensor to
++     * error status.
++     */
++    void handleErrGetSensorReading();
++
++    /** @brief Updating the sensor status to D-Bus interface
++     */
++    void updateReading(bool available, bool functional, double value = 0);
++
++    /** @brief ConversionFormula is used to convert raw value to the unit
++     * specified in PDR
++     *
++     *  @param[in] value - raw value
++     *  @return double - converted value
++     */
++    double conversionFormula(double value);
++
++    /** @brief UnitModifier is used to apply the unit modifier specified in PDR
++     *
++     *  @param[in] value - raw value
++     *  @return double - converted value
++     */
++    double unitModifier(double value);
++
++    /** @brief Check if value is over threshold.
++     *
++     *  @param[in] alarm - previous alarm state
++     *  @param[in] direction - upper or lower threshold checking
++     *  @param[in] value - raw value
++     *  @param[in] threshold - threshold value
++     *  @param[in] hyst - hysteresis value
++     *  @return bool - new alarm state
++     */
++    bool checkThreshold(bool alarm, bool direction, double value,
++                        double threshold, double hyst);
++
++    /** @brief Updating the association to D-Bus interface
++     *  @param[in] inventoryPath - inventory path of the entity
++     */
++    inline void setInventoryPath(const std::string& inventoryPath)
++    {
++        if (associationDefinitionsIntf)
++        {
++            associationDefinitionsIntf->associations(
++                {{"chassis", "all_sensors", inventoryPath.c_str()}});
++        }
++    }
++
++    /** @brief Get Upper Critical threshold
++     *
++     *  @return double - Upper Critical threshold
++     */
++    double getThresholdUpperCritical()
++    {
++        if (thresholdCriticalIntf)
++        {
++            return thresholdCriticalIntf->criticalHigh();
++        }
++        else
++        {
++            return std::numeric_limits<double>::quiet_NaN();
++        }
++    };
++
++    /** @brief Get Lower Critical threshold
++     *
++     *  @return double - Lower Critical threshold
++     */
++    double getThresholdLowerCritical()
++    {
++        if (thresholdCriticalIntf)
++        {
++            return thresholdCriticalIntf->criticalLow();
++        }
++        else
++        {
++            return std::numeric_limits<double>::quiet_NaN();
++        }
++    };
++
++    /** @brief Get Upper Warning threshold
++     *
++     *  @return double - Upper Warning threshold
++     */
++    double getThresholdUpperWarning()
++    {
++        return thresholdWarningIntf->warningHigh();
++    };
++
++    /** @brief Get Lower Warning threshold
++     *
++     *  @return double - Lower Warning threshold
++     */
++    double getThresholdLowerWarning()
++    {
++        return thresholdWarningIntf->warningLow();
++    };
++
++    /** @brief Terminus ID which the sensor belongs to */
++    tid_t tid;
++
++    /** @brief Sensor ID */
++    uint16_t sensorId;
++
++    /** @brief  The time stamp since last getSensorReading command in usec */
++    uint64_t timeStamp;
++
++    /** @brief  The time of sensor update interval in usec */
++    uint64_t updateTime;
++
++    /** @brief  sensorName */
++    std::string sensorName;
++
++    /** @brief  sensorNameSpace */
++    std::string sensorNameSpace;
++
++    /** @brief indicate if sensor is polled in priority */
++    bool isPriority;
++
++  private:
++    /**
++     * @brief Check sensor reading if any threshold has been crossed and update
++     * Threshold interfaces accordingly
++     */
++    void updateThresholds();
++
++    std::unique_ptr<ValueIntf> valueIntf = nullptr;
++    std::unique_ptr<ThresholdWarningIntf> thresholdWarningIntf = nullptr;
++    std::unique_ptr<ThresholdCriticalIntf> thresholdCriticalIntf = nullptr;
++    std::unique_ptr<AvailabilityIntf> availabilityIntf = nullptr;
++    std::unique_ptr<OperationalStatusIntf> operationalStatusIntf = nullptr;
++    std::unique_ptr<AssociationDefinitionsInft> associationDefinitionsIntf =
++        nullptr;
++
++    /** @brief Amount of hysteresis associated with the sensor thresholds */
++    double hysteresis;
++
++    /** @brief The resolution of sensor in Units */
++    double resolution;
++
++    /** @brief A constant value that is added in as part of conversion process
++     * of converting a raw sensor reading to Units */
++    double offset;
++
++    /** @brief A power-of-10 multiplier for baseUnit */
++    int8_t baseUnitModifier;
++};
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
+new file mode 100644
+index 0000000..ef3e928
+--- /dev/null
++++ b/platform-mc/sensor_manager.cpp
+@@ -0,0 +1,351 @@
++#include "sensor_manager.hpp"
++
++#include "terminus_manager.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++using namespace std::chrono;
++
++SensorManager::SensorManager(
++    sdeventplus::Event& event, TerminusManager& terminusManager,
++    std::map<tid_t, std::shared_ptr<Terminus>>& termini, bool verbose,
++    const std::filesystem::path& configJson) :
++    event(event),
++    terminusManager(terminusManager), termini(termini),
++    pollingTime(SENSOR_POLLING_TIME), verbose(verbose)
++{
++    // default priority sensor name spaces
++    prioritySensorNameSpaces.emplace_back(
++        "/xyz/openbmc_project/sensors/temperature/");
++    prioritySensorNameSpaces.emplace_back(
++        "/xyz/openbmc_project/sensors/power/");
++    prioritySensorNameSpaces.emplace_back(
++        "/xyz/openbmc_project/sensors/energy/");
++
++    if (!std::filesystem::exists(configJson))
++    {
++        return;
++    }
++
++    std::ifstream jsonFile(configJson);
++    auto data = nlohmann::json::parse(jsonFile, nullptr, false);
++    if (data.is_discarded())
++    {
++        lg2::error("Parsing json file failed. FilePath={FILE_PATH}",
++                   "FILE_PATH", std::string(configJson));
++        return;
++    }
++
++    // load priority sensor name spaces
++    const std::vector<std::string> emptyStringArray{};
++    auto nameSpaces = data.value("PrioritySensorNameSpaces", emptyStringArray);
++    if (nameSpaces.size() > 0)
++    {
++        prioritySensorNameSpaces.clear();
++        for (const auto& nameSpace : nameSpaces)
++        {
++            prioritySensorNameSpaces.emplace_back(nameSpace);
++        }
++    }
++}
++
++bool SensorManager::isPriority(std::shared_ptr<NumericSensor> sensor)
++{
++    return (std::find(prioritySensorNameSpaces.begin(),
++                      prioritySensorNameSpaces.end(),
++                      sensor->sensorNameSpace) !=
++            prioritySensorNameSpaces.end());
++}
++void SensorManager::startPolling(tid_t tid)
++{
++    // initialize prioritySensors and roundRobinSensors list
++    for (const auto& [tId, terminus] : termini)
++    {
++        if (tid != tId)
++        {
++            continue;
++        }
++        // numeric sensor
++        for (auto& sensor : terminus->numericSensors)
++        {
++            if (isPriority(sensor))
++            {
++                sensor->isPriority = true;
++                prioritySensors[tid].emplace_back(sensor);
++            }
++            else
++            {
++                sensor->isPriority = false;
++                roundRobinSensors[tid].push(sensor);
++            }
++        }
++
++        if (sensorPollTimers.find(tid) == sensorPollTimers.end())
++        {
++            sensorPollTimers[tid] = std::make_unique<phosphor::Timer>(
++                event.get(),
++                std::bind_front(&SensorManager::doSensorPolling, this, tid));
++        }
++
++        if (!sensorPollTimers[tid]->isRunning())
++        {
++            sensorPollTimers[tid]->start(
++                duration_cast<std::chrono::milliseconds>(
++                    milliseconds(pollingTime)),
++                true);
++        }
++    }
++}
++
++void SensorManager::stopPolling(tid_t tid)
++{
++    if (prioritySensors.find(tid) != prioritySensors.end())
++    {
++        prioritySensors[tid].clear();
++    }
++    if (roundRobinSensors.find(tid) != roundRobinSensors.end())
++    {
++        while (!roundRobinSensors[tid].empty())
++        {
++            roundRobinSensors[tid].pop();
++        }
++    }
++
++    for (const auto& [tId, terminus] : termini)
++    {
++        if (tid != tId)
++        {
++            continue;
++        }
++
++        if (sensorPollTimers[tid])
++        {
++            sensorPollTimers[tid]->stop();
++        }
++    }
++}
++
++void SensorManager::doSensorPolling(tid_t tid)
++{
++    if (doSensorPollingTaskHandles[tid])
++    {
++        if (doSensorPollingTaskHandles[tid].done())
++        {
++            doSensorPollingTaskHandles[tid].destroy();
++            auto co = doSensorPollingTask(tid);
++            doSensorPollingTaskHandles[tid] = co.handle;
++            if (doSensorPollingTaskHandles[tid].done())
++            {
++                doSensorPollingTaskHandles[tid] = nullptr;
++            }
++        }
++    }
++    else
++    {
++        auto co = doSensorPollingTask(tid);
++        doSensorPollingTaskHandles[tid] = co.handle;
++        if (doSensorPollingTaskHandles[tid].done())
++        {
++            doSensorPollingTaskHandles[tid] = nullptr;
++        }
++    }
++}
++
++requester::Coroutine SensorManager::doSensorPollingTask(tid_t tid)
++{
++    uint64_t t0 = 0;
++    uint64_t t1 = 0;
++    uint64_t elapsed = 0;
++    uint64_t pollingTimeInUsec = pollingTime * 1000;
++
++    do
++    {
++        if (sensorPollTimers[tid] && !sensorPollTimers[tid]->isRunning())
++        {
++            co_return PLDM_ERROR;
++        }
++
++        sd_event_now(event.get(), CLOCK_MONOTONIC, &t0);
++        if (verbose)
++        {
++            lg2::info("TID:{TID} start sensor polling at {NOW}.", "TID", tid,
++                      "NOW", t0);
++        }
++
++        if (termini.find(tid) == termini.end())
++        {
++            co_return PLDM_SUCCESS;
++        }
++
++        // poll priority Sensors
++        for (auto& sensor : prioritySensors[tid])
++        {
++            if (sensor->updateTime == std::numeric_limits<uint64_t>::max())
++            {
++                continue;
++            }
++
++            sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
++            elapsed = t1 - sensor->timeStamp;
++            if (sensor->updateTime <= elapsed)
++            {
++                co_await getSensorReading(sensor);
++                if (sensorPollTimers[tid] &&
++                    !sensorPollTimers[tid]->isRunning())
++                {
++                    co_return PLDM_ERROR;
++                }
++                sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
++                sensor->timeStamp = t1;
++            }
++        }
++
++        // poll roundRobin Sensors
++        sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
++        auto toBeUpdated = roundRobinSensors[tid].size();
++        while (((t1 - t0) < pollingTimeInUsec) && (toBeUpdated > 0))
++        {
++            auto sensor = roundRobinSensors[tid].front();
++
++            sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
++            elapsed = t1 - sensor->timeStamp;
++            if (sensor->updateTime <= elapsed)
++            {
++                co_await getSensorReading(sensor);
++                if (sensorPollTimers[tid] &&
++                    !sensorPollTimers[tid]->isRunning())
++                {
++                    co_return PLDM_ERROR;
++                }
++                sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
++                sensor->timeStamp = t1;
++            }
++
++            toBeUpdated--;
++            roundRobinSensors[tid].pop();
++            roundRobinSensors[tid].push(std::move(sensor));
++            sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
++        }
++
++        if (verbose)
++        {
++            sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
++            lg2::info("end sensor polling at {END}. duration(us):{DELTA}",
++                      "END", t1, "DELTA", t1 - t0);
++        }
++
++        sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
++    } while ((t1 - t0) >= pollingTimeInUsec);
++
++    co_return PLDM_SUCCESS;
++}
++
++requester::Coroutine
++    SensorManager::getSensorReading(std::shared_ptr<NumericSensor> sensor)
++{
++    auto tid = sensor->tid;
++    auto sensorId = sensor->sensorId;
++    Request request(sizeof(pldm_msg_hdr) + PLDM_GET_SENSOR_READING_REQ_BYTES);
++    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++    auto rc = encode_get_sensor_reading_req(0, sensorId, false, requestMsg);
++    if (rc)
++    {
++        lg2::error("encode_get_sensor_reading_req failed, tid={TID}, rc={RC}.",
++                   "TID", tid, "RC", rc);
++        co_return rc;
++    }
++
++    const pldm_msg* responseMsg = NULL;
++    size_t responseLen = 0;
++    rc = co_await terminusManager.SendRecvPldmMsg(tid, request, &responseMsg,
++                                                  &responseLen);
++    if (rc)
++    {
++        co_return rc;
++    }
++
++    if (sensorPollTimers[tid] && !sensorPollTimers[tid]->isRunning())
++    {
++        co_return PLDM_ERROR;
++    }
++
++    uint8_t completionCode = PLDM_SUCCESS;
++    uint8_t sensorDataSize = PLDM_SENSOR_DATA_SIZE_SINT32;
++    uint8_t sensorOperationalState = 0;
++    uint8_t sensorEventMessageEnable = 0;
++    uint8_t presentState = 0;
++    uint8_t previousState = 0;
++    uint8_t eventState = 0;
++    union_sensor_data_size presentReading;
++    rc = decode_get_sensor_reading_resp(
++        responseMsg, responseLen, &completionCode, &sensorDataSize,
++        &sensorOperationalState, &sensorEventMessageEnable, &presentState,
++        &previousState, &eventState,
++        reinterpret_cast<uint8_t*>(&presentReading));
++    if (rc)
++    {
++        lg2::error(
++            "Failed to decode response of GetSensorReading, tid={TID}, rc={RC}.",
++            "TID", tid, "RC", rc);
++        sensor->handleErrGetSensorReading();
++        co_return rc;
++    }
++
++    if (completionCode != PLDM_SUCCESS)
++    {
++        lg2::error(
++            "Failed to decode response of GetSensorReading, tid={TID}, rc={RC}, cc={CC}.",
++            "TID", tid, "RC", rc, "CC", completionCode);
++        co_return completionCode;
++    }
++
++    double value = std::numeric_limits<double>::quiet_NaN();
++    switch (sensorOperationalState)
++    {
++        case PLDM_SENSOR_ENABLED:
++            break;
++        case PLDM_SENSOR_DISABLED:
++            sensor->updateReading(true, false, value);
++            co_return completionCode;
++        case PLDM_SENSOR_UNAVAILABLE:
++        default:
++            sensor->updateReading(false, false, value);
++            co_return completionCode;
++    }
++
++    switch (sensorDataSize)
++    {
++        case PLDM_SENSOR_DATA_SIZE_UINT8:
++            value = static_cast<double>(presentReading.value_u8);
++            break;
++        case PLDM_SENSOR_DATA_SIZE_SINT8:
++            value = static_cast<double>(presentReading.value_s8);
++            break;
++        case PLDM_SENSOR_DATA_SIZE_UINT16:
++            value = static_cast<double>(presentReading.value_u16);
++            break;
++        case PLDM_SENSOR_DATA_SIZE_SINT16:
++            value = static_cast<double>(presentReading.value_s16);
++            break;
++        case PLDM_SENSOR_DATA_SIZE_UINT32:
++            value = static_cast<double>(presentReading.value_u32);
++            break;
++        case PLDM_SENSOR_DATA_SIZE_SINT32:
++            value = static_cast<double>(presentReading.value_s32);
++            break;
++        default:
++            value = std::numeric_limits<double>::quiet_NaN();
++            break;
++    }
++
++    sensor->updateReading(true, true, value);
++    co_return completionCode;
++}
++
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
+new file mode 100644
+index 0000000..fbff40d
+--- /dev/null
++++ b/platform-mc/sensor_manager.hpp
+@@ -0,0 +1,105 @@
++#pragma once
++
++#include "libpldm/platform.h"
++#include "libpldm/pldm.h"
++
++#include "common/types.hpp"
++#include "requester/handler.hpp"
++#include "terminus.hpp"
++#include "terminus_manager.hpp"
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++/**
++ * @brief SensorManager
++ *
++ * This class manages the sensors found in terminus and provides
++ * function calls for other classes to start/stop sensor monitoring.
++ *
++ */
++class SensorManager
++{
++  public:
++    SensorManager() = delete;
++    SensorManager(const SensorManager&) = delete;
++    SensorManager(SensorManager&&) = delete;
++    SensorManager& operator=(const SensorManager&) = delete;
++    SensorManager& operator=(SensorManager&&) = delete;
++    virtual ~SensorManager() = default;
++
++    explicit SensorManager(
++        sdeventplus::Event& event, TerminusManager& terminusManager,
++        std::map<tid_t, std::shared_ptr<Terminus>>& termini,
++        bool verbose = false,
++        const std::filesystem::path& configJson = PLDM_T2_CONFIG_JSON);
++
++    /** @brief starting sensor polling task
++     */
++    void startPolling(tid_t tid);
++
++    /** @brief stopping sensor polling task
++     */
++    void stopPolling(tid_t tid);
++
++  protected:
++    /** @brief start a coroutine for polling all sensors.
++     */
++    virtual void doSensorPolling(tid_t tid);
++
++    /** @brief polling all sensors in each terminus
++     */
++    requester::Coroutine doSensorPollingTask(tid_t tid);
++
++    /** @brief Sending getSensorReading command for the sensor
++     *
++     *  @param[in] sensor - the sensor to be updated
++     */
++    requester::Coroutine
++        getSensorReading(std::shared_ptr<NumericSensor> sensor);
++
++    /** @brief check if numeric sensor is in priority name spaces
++     *
++     *  @param[in] sensor - the sensor to be checked
++     *
++     *  @return bool - true:is in priority
++     */
++    bool isPriority(std::shared_ptr<NumericSensor> sensor);
++    sdeventplus::Event& event;
++
++    /** @brief reference of terminusManager */
++    TerminusManager& terminusManager;
++
++    /** @brief List of discovered termini */
++    std::map<tid_t, std::shared_ptr<Terminus>>& termini;
++
++    /** @brief sensor polling interval in ms. */
++    uint32_t pollingTime;
++
++    /** @brief sensor polling timers */
++    std::map<tid_t, std::unique_ptr<phosphor::Timer>> sensorPollTimers;
++
++    /** @brief coroutine handle of doSensorPollingTasks */
++    std::map<tid_t, std::coroutine_handle<>> doSensorPollingTaskHandles;
++
++    /** @brief force stop polling sensors*/
++    bool forceStopPolling = false;
++
++    /** @brief verbose tracing flag */
++    bool verbose;
++
++    /** @brief priority SensorNameSpace list */
++    std::vector<std::string> prioritySensorNameSpaces;
++
++    /** @brief priority sensor list */
++    std::map<tid_t, std::vector<std::shared_ptr<NumericSensor>>>
++        prioritySensors;
++
++    /** @brief round robin sensor list */
++    std::map<tid_t, std::queue<std::shared_ptr<NumericSensor>>>
++        roundRobinSensors;
++};
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+index a83b0d7..0901f28 100644
+--- a/platform-mc/terminus.cpp
++++ b/platform-mc/terminus.cpp
+@@ -11,7 +11,12 @@ namespace platform_mc
+ 
+ Terminus::Terminus(tid_t tid, uint64_t supportedTypes) :
+     initalized(false), tid(tid), supportedTypes(supportedTypes)
+-{}
++{
++    inventoryPath = "/xyz/openbmc_project/inventory/Item/Board/PLDM_Device_" +
++                    std::to_string(tid);
++    inventoryItemBoardInft = std::make_unique<InventoryItemBoardIntf>(
++        utils::DBusHandler::getBus(), inventoryPath.c_str());
++}
+ 
+ bool Terminus::doesSupport(uint8_t type)
+ {
+@@ -64,6 +69,17 @@ bool Terminus::parsePDRs()
+             rc = false;
+         }
+     }
++
++    for (auto pdr : numericSensorPdrs)
++    {
++        addNumericSensor(pdr);
++    }
++
++    for (auto pdr : compactNumericSensorPdrs)
++    {
++        addCompactNumericSensor(pdr);
++    }
++
+     return rc;
+ }
+ 
+@@ -143,6 +159,47 @@ std::shared_ptr<pldm_numeric_sensor_value_pdr>
+     return parsedPdr;
+ }
+ 
++void Terminus::addNumericSensor(
++    const std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr)
++{
++    uint16_t sensorId = pdr->sensor_id;
++    std::string sensorName = "PLDM_Device_" + std::to_string(sensorId) + "_" +
++                             std::to_string(tid);
++
++    if (pdr->sensor_auxiliary_names_pdr)
++    {
++        auto sensorAuxiliaryNames = getSensorAuxiliaryNames(sensorId);
++        if (sensorAuxiliaryNames)
++        {
++            const auto& [sensorId, sensorCnt,
++                         sensorNames] = *sensorAuxiliaryNames;
++            if (sensorCnt == 1)
++            {
++                for (const auto& [languageTag, name] : sensorNames[0])
++                {
++                    if (languageTag == "en")
++                    {
++                        sensorName = name + "_" + std::to_string(sensorId) +
++                                     "_" + std::to_string(tid);
++                    }
++                }
++            }
++        }
++    }
++
++    try
++    {
++        auto sensor = std::make_shared<NumericSensor>(
++            tid, true, pdr, sensorName, inventoryPath);
++        numericSensors.emplace_back(sensor);
++    }
++    catch (const std::exception& e)
++    {
++        std::cerr << "Failed to create NumericSensor. ERROR=" << e.what()
++                  << "sensorName=" << sensorName << "\n";
++    }
++}
++
+ std::shared_ptr<SensorAuxiliaryNames>
+     Terminus::parseCompactNumericSensorNames(const std::vector<uint8_t>& sPdr)
+ {
+@@ -216,5 +273,44 @@ std::shared_ptr<pldm_compact_numeric_sensor_pdr>
+     return parsedPdr;
+ }
+ 
++void Terminus::addCompactNumericSensor(
++    const std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr)
++{
++    uint16_t sensorId = pdr->sensor_id;
++    std::string sensorName = "PLDM_Device_" + std::to_string(sensorId) + "_" +
++                             std::to_string(tid);
++
++    auto sensorAuxiliaryNames = getSensorAuxiliaryNames(sensorId);
++    if (sensorAuxiliaryNames)
++    {
++        const auto& [sensorId, sensorCnt, sensorNames] = *sensorAuxiliaryNames;
++        if (sensorCnt == 1)
++        {
++            for (const auto& [languageTag, name] : sensorNames[0])
++            {
++                if (languageTag == "en")
++                {
++                    {
++                        sensorName = name + "_" + std::to_string(sensorId) +
++                                     "_" + std::to_string(tid);
++                    }
++                }
++            }
++        }
++    }
++
++    try
++    {
++        auto sensor = std::make_shared<NumericSensor>(
++            tid, true, pdr, sensorName, inventoryPath);
++        numericSensors.emplace_back(sensor);
++    }
++    catch (const std::exception& e)
++    {
++        std::cerr << "Failed to create NumericSensor. ERROR=" << e.what()
++                  << "sensorName=" << sensorName << "\n";
++    }
++}
++
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
+index 0d4f58c..9e3d36e 100644
+--- a/platform-mc/terminus.hpp
++++ b/platform-mc/terminus.hpp
+@@ -3,7 +3,9 @@
+ #include "libpldm/platform.h"
+ 
+ #include "common/types.hpp"
++#include "numeric_sensor.hpp"
+ #include "requester/handler.hpp"
++#include "terminus.hpp"
+ 
+ #include <sdbusplus/server/object.hpp>
+ #include <sdeventplus/event.hpp>
+@@ -22,6 +24,8 @@ using SensorName = std::string;
+ using SensorAuxiliaryNames = std::tuple<
+     SensorId, SensorCnt,
+     std::vector<std::vector<std::pair<NameLanguageTag, SensorName>>>>;
++using InventoryItemBoardIntf = sdbusplus::server::object_t<
++    sdbusplus::xyz::openbmc_project::Inventory::Item::server::Board>;
+ 
+ /**
+  * @brief Terminus
+@@ -56,7 +60,10 @@ class Terminus
+     std::vector<std::vector<uint8_t>> pdrs{};
+ 
+     /** @brief A flag to indicate if terminus has been initialzed */
+-    bool initalized = false;
++    bool initalized;
++
++    /** @brief A list of numericSensors */
++    std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
+ 
+     /** @brief Get Sensor Auxiliary Names by sensorID
+      *
+@@ -66,12 +73,18 @@ class Terminus
+     std::shared_ptr<SensorAuxiliaryNames> getSensorAuxiliaryNames(SensorId id);
+ 
+   private:
++    void addNumericSensor(
++        const std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr);
++
+     std::shared_ptr<pldm_numeric_sensor_value_pdr>
+         parseNumericSensorPDR(const std::vector<uint8_t>& pdrData);
+ 
+     std::shared_ptr<SensorAuxiliaryNames>
+         parseSensorAuxiliaryNamesPDR(const std::vector<uint8_t>& pdrData);
+ 
++    void addCompactNumericSensor(
++        const std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr);
++
+     std::shared_ptr<pldm_compact_numeric_sensor_pdr>
+         parseCompactNumericSensorPDR(const std::vector<uint8_t>& pdrData);
+ 
+@@ -79,10 +92,14 @@ class Terminus
+         parseCompactNumericSensorNames(const std::vector<uint8_t>& pdrData);
+ 
+     tid_t tid;
++
+     std::bitset<64> supportedTypes;
+ 
+     std::vector<std::shared_ptr<SensorAuxiliaryNames>>
+         sensorAuxiliaryNamesTbl{};
++
++    std::unique_ptr<InventoryItemBoardIntf> inventoryItemBoardInft = nullptr;
++    std::string inventoryPath;
+ };
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
+index 4839f9f..81c851c 100644
+--- a/platform-mc/terminus_manager.cpp
++++ b/platform-mc/terminus_manager.cpp
+@@ -117,6 +117,7 @@ void TerminusManager::discoverMctpTerminus(const MctpInfos& mctpInfos)
+ 
+ requester::Coroutine TerminusManager::discoverMctpTerminusTask()
+ {
++    std::vector<tid_t> addedTids;
+     while (!queuedMctpInfos.empty())
+     {
+         if (manager)
+@@ -147,11 +148,23 @@ requester::Coroutine TerminusManager::discoverMctpTerminusTask()
+             {
+                 co_await initMctpTerminus(mctpInfo);
+             }
++
++            /* Get TID of initialized terminus */
++            auto tid = toTid(mctpInfo);
++            if (!tid)
++            {
++                co_return PLDM_ERROR;
++            }
++            addedTids.push_back(tid.value());
+         }
+ 
+         if (manager)
+         {
+             co_await manager->afterDiscoverTerminus();
++            for (auto& tid : addedTids)
++            {
++                manager->startSensorPolling(tid);
++            }
+         }
+ 
+         queuedMctpInfos.pop();
+@@ -175,6 +188,10 @@ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
+                 (std::get<3>(terminusMctpInfo.value()) ==
+                  std::get<3>(mctpInfo)))
+             {
++                if (manager)
++                {
++                    manager->stopSensorPolling(it->second->getTid());
++                }
+                 unmapTid(it->first);
+                 termini.erase(it);
+                 break;
+diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
+index 3403753..5e757c1 100644
+--- a/platform-mc/test/meson.build
++++ b/platform-mc/test/meson.build
+@@ -3,6 +3,8 @@ test_src = declare_dependency(
+             '../terminus_manager.cpp',
+             '../terminus.cpp',
+             '../platform_manager.cpp',
++            '../sensor_manager.cpp',
++            '../numeric_sensor.cpp',
+             '../../requester/mctp_endpoint_discovery.cpp'],
+             include_directories: ['../../requester', '../../pldmd'])
+ 
+@@ -10,6 +12,8 @@ tests = [
+   'terminus_manager_test',
+   'terminus_test',
+   'platform_manager_test',
++  'sensor_manager_test',
++  'numeric_sensor_test',
+ ]
+ 
+ foreach t : tests
+diff --git a/platform-mc/test/mock_sensor_manager.hpp b/platform-mc/test/mock_sensor_manager.hpp
+new file mode 100644
+index 0000000..5cb76f0
+--- /dev/null
++++ b/platform-mc/test/mock_sensor_manager.hpp
+@@ -0,0 +1,24 @@
++#pragma once
++
++#include "platform-mc/sensor_manager.hpp"
++
++#include <gmock/gmock.h>
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++class MockSensorManager : public SensorManager
++{
++  public:
++    MockSensorManager(sdeventplus::Event& event,
++                      TerminusManager& terminusManager,
++                      std::map<tid_t, std::shared_ptr<Terminus>>& termini) :
++        SensorManager(event, terminusManager, termini){};
++
++    MOCK_METHOD(void, doSensorPolling, (tid_t tid), (override));
++};
++
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/test/numeric_sensor_test.cpp b/platform-mc/test/numeric_sensor_test.cpp
+new file mode 100644
+index 0000000..23fe73f
+--- /dev/null
++++ b/platform-mc/test/numeric_sensor_test.cpp
+@@ -0,0 +1,274 @@
++
++#include "libpldm/entity.h"
++#include "libpldm/platform.h"
++
++#include "platform-mc/numeric_sensor.hpp"
++#include "platform-mc/terminus.hpp"
++
++#include <gtest/gtest.h>
++
++using namespace pldm::platform_mc;
++
++TEST(NumericSensor, conversionFormula)
++{
++    std::vector<uint8_t> pdr1{
++        0x1,
++        0x0,
++        0x0,
++        0x0,                     // record handle
++        0x1,                     // PDRHeaderVersion
++        PLDM_NUMERIC_SENSOR_PDR, // PDRType
++        0x0,
++        0x0,                     // recordChangeNumber
++        PLDM_PDR_NUMERIC_SENSOR_PDR_FIXED_LENGTH +
++            PLDM_PDR_NUMERIC_SENSOR_PDR_VARIED_SENSOR_DATA_SIZE_MIN_LENGTH +
++            PLDM_PDR_NUMERIC_SENSOR_PDR_VARIED_RANGE_FIELD_MIN_LENGTH,
++        0,                             // dataLength
++        0,
++        0,                             // PLDMTerminusHandle
++        0x1,
++        0x0,                           // sensorID=1
++        PLDM_ENTITY_POWER_SUPPLY,
++        0,                             // entityType=Power Supply(120)
++        1,
++        0,                             // entityInstanceNumber
++        0x1,
++        0x0,                           // containerID=1
++        PLDM_NO_INIT,                  // sensorInit
++        false,                         // sensorAuxiliaryNamesPDR
++        PLDM_SENSOR_UNIT_DEGRESS_C,    // baseUint(2)=degrees C
++        1,                             // unitModifier = 1
++        0,                             // rateUnit
++        0,                             // baseOEMUnitHandle
++        0,                             // auxUnit
++        0,                             // auxUnitModifier
++        0,                             // auxRateUnit
++        0,                             // rel
++        0,                             // auxOEMUnitHandle
++        true,                          // isLinear
++        PLDM_RANGE_FIELD_FORMAT_SINT8, // sensorDataSize
++        0,
++        0,
++        0xc0,
++        0x3f, // resolution=1.5
++        0,
++        0,
++        0x80,
++        0x3f, // offset=1.0
++        0,
++        0,    // accuracy
++        0,    // plusTolerance
++        0,    // minusTolerance
++        2,    // hysteresis
++        0,    // supportedThresholds
++        0,    // thresholdAndHysteresisVolatility
++        0,
++        0,
++        0x80,
++        0x3f, // stateTransistionInterval=1.0
++        0,
++        0,
++        0x80,
++        0x3f,                          // updateInverval=1.0
++        255,                           // maxReadable
++        0,                             // minReadable
++        PLDM_RANGE_FIELD_FORMAT_UINT8, // rangeFieldFormat
++        0,                             // rangeFieldsupport
++        0,                             // nominalValue
++        0,                             // normalMax
++        0,                             // normalMin
++        0,                             // warningHigh
++        0,                             // warningLow
++        0,                             // criticalHigh
++        0,                             // criticalLow
++        0,                             // fatalHigh
++        0                              // fatalLow
++    };
++
++    auto numericSensorPdr = std::make_shared<pldm_numeric_sensor_value_pdr>();
++    std::printf("pdr size=%ld\n", pdr1.size());
++    auto rc = decode_numeric_sensor_pdr_data(pdr1.data(), pdr1.size(),
++                                             numericSensorPdr.get());
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    std::string sensorName{"test1"};
++    std::string inventoryPath{
++        "/xyz/openbmc_project/inventroy/Item/Board/PLDM_device_1"};
++    NumericSensor sensor(0x01, true, numericSensorPdr, sensorName,
++                         inventoryPath);
++    double reading = 40.0;
++    double convertedValue = 0;
++    convertedValue = sensor.conversionFormula(reading);
++    convertedValue = sensor.unitModifier(convertedValue);
++
++    // (40*1.5 + 1.0 ) * 10^1 = 610
++    EXPECT_EQ(610, convertedValue);
++}
++
++TEST(NumericSensor, checkThreshold)
++{
++    std::vector<uint8_t> pdr1{
++        0x1,
++        0x0,
++        0x0,
++        0x0,                     // record handle
++        0x1,                     // PDRHeaderVersion
++        PLDM_NUMERIC_SENSOR_PDR, // PDRType
++        0x0,
++        0x0,                     // recordChangeNumber
++        PLDM_PDR_NUMERIC_SENSOR_PDR_FIXED_LENGTH +
++            PLDM_PDR_NUMERIC_SENSOR_PDR_VARIED_SENSOR_DATA_SIZE_MIN_LENGTH +
++            PLDM_PDR_NUMERIC_SENSOR_PDR_VARIED_RANGE_FIELD_MIN_LENGTH,
++        0,                             // dataLength
++        0,
++        0,                             // PLDMTerminusHandle
++        0x1,
++        0x0,                           // sensorID=1
++        PLDM_ENTITY_POWER_SUPPLY,
++        0,                             // entityType=Power Supply(120)
++        1,
++        0,                             // entityInstanceNumber
++        0x1,
++        0x0,                           // containerID=1
++        PLDM_NO_INIT,                  // sensorInit
++        false,                         // sensorAuxiliaryNamesPDR
++        PLDM_SENSOR_UNIT_DEGRESS_C,    // baseUint(2)=degrees C
++        1,                             // unitModifier = 1
++        0,                             // rateUnit
++        0,                             // baseOEMUnitHandle
++        0,                             // auxUnit
++        0,                             // auxUnitModifier
++        0,                             // auxRateUnit
++        0,                             // rel
++        0,                             // auxOEMUnitHandle
++        true,                          // isLinear
++        PLDM_RANGE_FIELD_FORMAT_SINT8, // sensorDataSize
++        0,
++        0,
++        0xc0,
++        0x3f, // resolution=1.5
++        0,
++        0,
++        0x80,
++        0x3f, // offset=1.0
++        0,
++        0,    // accuracy
++        0,    // plusTolerance
++        0,    // minusTolerance
++        2,    // hysteresis
++        0,    // supportedThresholds
++        0,    // thresholdAndHysteresisVolatility
++        0,
++        0,
++        0x80,
++        0x3f, // stateTransistionInterval=1.0
++        0,
++        0,
++        0x80,
++        0x3f,                          // updateInverval=1.0
++        255,                           // maxReadable
++        0,                             // minReadable
++        PLDM_RANGE_FIELD_FORMAT_UINT8, // rangeFieldFormat
++        0,                             // rangeFieldsupport
++        0,                             // nominalValue
++        0,                             // normalMax
++        0,                             // normalMin
++        0,                             // warningHigh
++        0,                             // warningLow
++        0,                             // criticalHigh
++        0,                             // criticalLow
++        0,                             // fatalHigh
++        0                              // fatalLow
++    };
++
++    auto numericSensorPdr = std::make_shared<pldm_numeric_sensor_value_pdr>();
++    auto rc = decode_numeric_sensor_pdr_data(pdr1.data(), pdr1.size(),
++                                             numericSensorPdr.get());
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    std::string sensorName{"test1"};
++    std::string inventoryPath{
++        "/xyz/openbmc_project/inventroy/Item/Board/PLDM_device_1"};
++    NumericSensor sensor(0x01, true, numericSensorPdr, sensorName,
++                         inventoryPath);
++
++    bool highAlarm = false;
++    bool lowAlarm = false;
++    double highThreshold = 40;
++    double lowThreshold = 30;
++    double hysteresis = 2;
++
++    // reading     35->40->45->38->35->30->25->32->35
++    // highAlarm    F->T ->T ->T ->F ->F ->F -> F-> F
++    // lowAlarm     F->F ->F ->F ->F ->T ->T -> T ->F
++    double reading = 35;
++    highAlarm = sensor.checkThreshold(highAlarm, true, reading, highThreshold,
++                                      hysteresis);
++    EXPECT_EQ(false, highAlarm);
++    lowAlarm = sensor.checkThreshold(lowAlarm, false, reading, lowThreshold,
++                                     hysteresis);
++    EXPECT_EQ(false, lowAlarm);
++
++    reading = 40;
++    highAlarm = sensor.checkThreshold(highAlarm, true, reading, highThreshold,
++                                      hysteresis);
++    EXPECT_EQ(true, highAlarm);
++    lowAlarm = sensor.checkThreshold(lowAlarm, false, reading, lowThreshold,
++                                     hysteresis);
++    EXPECT_EQ(false, lowAlarm);
++
++    reading = 45;
++    highAlarm = sensor.checkThreshold(highAlarm, true, reading, highThreshold,
++                                      hysteresis);
++    EXPECT_EQ(true, highAlarm);
++    lowAlarm = sensor.checkThreshold(lowAlarm, false, reading, lowThreshold,
++                                     hysteresis);
++    EXPECT_EQ(false, lowAlarm);
++
++    reading = 38;
++    highAlarm = sensor.checkThreshold(highAlarm, true, reading, highThreshold,
++                                      hysteresis);
++    EXPECT_EQ(true, highAlarm);
++    lowAlarm = sensor.checkThreshold(lowAlarm, false, reading, lowThreshold,
++                                     hysteresis);
++    EXPECT_EQ(false, lowAlarm);
++
++    reading = 35;
++    highAlarm = sensor.checkThreshold(highAlarm, true, reading, highThreshold,
++                                      hysteresis);
++    EXPECT_EQ(false, highAlarm);
++    lowAlarm = sensor.checkThreshold(lowAlarm, false, reading, lowThreshold,
++                                     hysteresis);
++    EXPECT_EQ(false, lowAlarm);
++
++    reading = 30;
++    highAlarm = sensor.checkThreshold(highAlarm, true, reading, highThreshold,
++                                      hysteresis);
++    EXPECT_EQ(false, highAlarm);
++    lowAlarm = sensor.checkThreshold(lowAlarm, false, reading, lowThreshold,
++                                     hysteresis);
++    EXPECT_EQ(true, lowAlarm);
++
++    reading = 25;
++    highAlarm = sensor.checkThreshold(highAlarm, true, reading, highThreshold,
++                                      hysteresis);
++    EXPECT_EQ(false, highAlarm);
++    lowAlarm = sensor.checkThreshold(lowAlarm, false, reading, lowThreshold,
++                                     hysteresis);
++    EXPECT_EQ(true, lowAlarm);
++
++    reading = 32;
++    highAlarm = sensor.checkThreshold(highAlarm, true, reading, highThreshold,
++                                      hysteresis);
++    EXPECT_EQ(false, highAlarm);
++    lowAlarm = sensor.checkThreshold(lowAlarm, false, reading, lowThreshold,
++                                     hysteresis);
++    EXPECT_EQ(true, lowAlarm);
++
++    reading = 35;
++    highAlarm = sensor.checkThreshold(highAlarm, true, reading, highThreshold,
++                                      hysteresis);
++    EXPECT_EQ(false, highAlarm);
++    lowAlarm = sensor.checkThreshold(lowAlarm, false, reading, lowThreshold,
++                                     hysteresis);
++    EXPECT_EQ(false, lowAlarm);
++}
+diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
+index 47aa1ab..bc4f708 100644
+--- a/platform-mc/test/platform_manager_test.cpp
++++ b/platform-mc/test/platform_manager_test.cpp
+@@ -139,6 +139,7 @@ TEST_F(PlatformManagerTest, initTerminusTest)
+     platformManager.initTerminus();
+     EXPECT_EQ(true, terminus->initalized);
+     EXPECT_EQ(1, terminus->pdrs.size());
++    EXPECT_EQ(1, terminus->numericSensors.size());
+ }
+ 
+ TEST_F(PlatformManagerTest, negativeInitTerminusTest1)
+@@ -152,6 +153,7 @@ TEST_F(PlatformManagerTest, negativeInitTerminusTest1)
+     platformManager.initTerminus();
+     EXPECT_EQ(true, terminus->initalized);
+     EXPECT_EQ(0, terminus->pdrs.size());
++    EXPECT_EQ(0, terminus->numericSensors.size());
+ }
+ 
+ TEST_F(PlatformManagerTest, negativeInitTerminusTest2)
+@@ -183,4 +185,5 @@ TEST_F(PlatformManagerTest, negativeInitTerminusTest2)
+     platformManager.initTerminus();
+     EXPECT_EQ(true, terminus->initalized);
+     EXPECT_EQ(0, terminus->pdrs.size());
++    EXPECT_EQ(0, terminus->numericSensors.size());
+ }
+diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
+new file mode 100644
+index 0000000..9923d23
+--- /dev/null
++++ b/platform-mc/test/sensor_manager_test.cpp
+@@ -0,0 +1,69 @@
++#include "common/instance_id.hpp"
++#include "common/types.hpp"
++#include "mock_sensor_manager.hpp"
++#include "platform-mc/terminus_manager.hpp"
++#include "test/test_instance_id.hpp"
++
++#include <sdeventplus/event.hpp>
++
++#include <gtest/gtest.h>
++
++using namespace std::chrono;
++
++using ::testing::_;
++using ::testing::Between;
++using ::testing::Return;
++
++class SensorManagerTest : public testing::Test
++{
++  protected:
++    SensorManagerTest() :
++        bus(pldm::utils::DBusHandler::getBus()),
++        event(sdeventplus::Event::get_default()), instanceIdDb(),
++        reqHandler(fd, event, instanceIdDb, 1000, false),
++        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
++        sensorManager(event, terminusManager, termini)
++    {}
++
++    void runEventLoopForSeconds(uint64_t sec)
++    {
++        uint64_t t0 = 0;
++        uint64_t t1 = 0;
++        uint64_t usec = sec * 1000000;
++        uint64_t elapsed = 0;
++        sd_event_now(event.get(), CLOCK_MONOTONIC, &t0);
++        do
++        {
++            if (!sd_event_run(event.get(), usec - elapsed))
++            {
++                break;
++            }
++            sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
++            elapsed = t1 - t0;
++        } while (elapsed < usec);
++    }
++
++    int fd = -1;
++    sdbusplus::bus::bus& bus;
++    sdeventplus::Event event;
++    TestInstanceIdDb instanceIdDb;
++    pldm::requester::Handler<pldm::requester::Request> reqHandler;
++    pldm::platform_mc::TerminusManager terminusManager;
++    pldm::platform_mc::MockSensorManager sensorManager;
++    std::map<pldm::tid_t, std::shared_ptr<pldm::platform_mc::Terminus>> termini;
++};
++
++TEST_F(SensorManagerTest, sensorPollingTest)
++{
++    uint64_t seconds = 10;
++    uint64_t expectedTimes = (seconds * 1000) / SENSOR_POLLING_TIME;
++
++    pldm::tid_t tid = 1;
++    termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(tid, 0);
++
++    EXPECT_CALL(sensorManager, doSensorPolling(tid))
++        .Times(Between(expectedTimes - 3, expectedTimes + 3))
++        .WillRepeatedly(Return());
++    sensorManager.startPolling(tid);
++    runEventLoopForSeconds(seconds);
++}
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index d544c87..a5b57bc 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -182,7 +182,7 @@ int main(int argc, char** argv)
+     auto event = Event::get_default();
+     auto& bus = pldm::utils::DBusHandler::getBus();
+     sdbusplus::server::manager_t objManager(bus,
+-                                            "/xyz/openbmc_project/software");
++                                            "/xyz/openbmc_project/sensors");
+ 
+     InstanceIdDb instanceIdDb;
+     dbus_api::Requester dbusImplReq(bus, "/xyz/openbmc_project/pldm",
+-- 
+2.25.1
+

@@ -1,0 +1,365 @@
+From 54bb912c69b71a3b34582b418e095d093440e977 Mon Sep 17 00:00:00 2001
+From: Gilbert Chen <gilbert.chen@arm.com>
+Date: Sun, 29 May 2022 18:44:19 +0100
+Subject: [PATCH 2/6] requester: Added coroutine support to send/recv PLDM
+ command
+
+Added Coroutine struct and SendRecvPldmMsg awaiter struct to send PLDM
+command and receive response in the same function instead of handling
+response by another callback function. The struct definitions is needed
+to use C++ co_await operator and able to write the code more readable
+and maintainable when the PLDM command needs the value based on previous
+PLDM command response.
+
+For example, to get all PDRs from terminus needs multiple getPDR
+commands. Except first getPDR commands, the following getPDR command
+request data(e.g. dataTransferHandle) needs the previous getPDR command
+response data(e.g. nextDataTransferHandle). By using C++ co_await, the
+code to get all PDRs can straightforward be implemented by a while loop.
+
+pseudo code example:
+do
+{
+    auto rc = co_await getPDR(dataTransferHndl, ...);
+
+    //update dataTransferHndl for next getPDR command
+    dataTransferHndl = nextDataTransferHndl;
+
+} while(...);
+
+Tested:
+1. Test the patch set series with the system with 2 mctp endpoints.
+2. pldmd successfully discovers the endpoints.
+3. The PLDM sensors are updated normally.
+
+Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
+Change-Id: I7b47d15ac15f6ae661ec94dca6a281844b939a44
+---
+ requester/handler.hpp           | 245 ++++++++++++++++++++++++++++++++
+ requester/test/handler_test.cpp |  50 +++++++
+ 2 files changed, 295 insertions(+)
+
+diff --git a/requester/handler.hpp b/requester/handler.hpp
+index 6987b16..381a87b 100644
+--- a/requester/handler.hpp
++++ b/requester/handler.hpp
+@@ -15,6 +15,7 @@
+ 
+ #include <cassert>
+ #include <chrono>
++#include <coroutine>
+ #include <functional>
+ #include <memory>
+ #include <tuple>
+@@ -285,6 +286,250 @@ class Handler
+     }
+ };
+ 
++/** @struct SendRecvPldmMsg
++ *
++ * An awaitable object needed by co_await operator to send/recv PLDM
++ * message.
++ * e.g.
++ * rc = co_await SendRecvPldmMsg<h>(h, eid, req, respMsg, respLen);
++ *
++ * @tparam RequesterHandler - Requester::handler class type
++ */
++template <class RequesterHandler>
++struct SendRecvPldmMsg
++{
++    /** @brief For recording the suspended coroutine where the co_await
++     * operator is. When PLDM response message is received, the resumeHandle()
++     * will be called to continue the next line of co_await operator
++     */
++    std::coroutine_handle<> resumeHandle;
++
++    /** @brief The RequesterHandler to send/recv PLDM message.
++     */
++    RequesterHandler& handler;
++
++    /** @brief The EID where PLDM message will be sent to.
++     */
++    uint8_t eid;
++
++    /** @brief The PLDM request message.
++     */
++    pldm::Request& request;
++
++    /** @brief The pointer of PLDM response message.
++     */
++    const pldm_msg** responseMsg;
++
++    /** @brief The length of PLDM response message.
++     */
++    size_t* responseLen;
++
++    /** @brief For keeping the return value of RequesterHandler.
++     */
++    uint8_t rc;
++
++    /** @brief Returning false to make await_suspend() to be called.
++     */
++    bool await_ready() noexcept
++    {
++        return false;
++    }
++
++    /** @brief Called by co_await operator before suspending coroutine. The
++     * method will send out PLDM request message, register handleResponse() as
++     * call back function for the event when PLDM response message received.
++     */
++    bool await_suspend(std::coroutine_handle<> handle) noexcept
++    {
++        if (responseMsg == nullptr || responseLen == nullptr)
++        {
++            rc = PLDM_ERROR_INVALID_DATA;
++            return false;
++        }
++
++        auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++        rc = handler.registerRequest(
++            eid, requestMsg->hdr.instance_id, requestMsg->hdr.type,
++            requestMsg->hdr.command, std::move(request),
++            std::move(std::bind_front(&SendRecvPldmMsg::HandleResponse, this)));
++        if (rc)
++        {
++            std::cerr << "registerRequest failed, rc="
++                      << static_cast<unsigned>(rc) << "\n";
++            return false;
++        }
++
++        resumeHandle = handle;
++        return true;
++    }
++
++    /** @brief Called by co_await operator to get return value when awaitable
++     * object completed.
++     */
++    uint8_t await_resume() const noexcept
++    {
++        return rc;
++    }
++
++    /** @brief Constructor of awaitable object to initialize necessary member
++     * variables.
++     */
++    SendRecvPldmMsg(RequesterHandler& handler, uint8_t eid,
++                    pldm::Request& request, const pldm_msg** responseMsg,
++                    size_t* responseLen) :
++        handler(handler),
++        eid(eid), request(request), responseMsg(responseMsg),
++        responseLen(responseLen), rc(PLDM_ERROR)
++    {}
++
++    /** @brief The function will be registered by RegisterHandler for handling
++     * PLDM response message. The copied responseMsg is for preventing that the
++     * response pointer in parameter becomes invalid when coroutine is
++     * resumed.
++     */
++    void HandleResponse(mctp_eid_t eid, const pldm_msg* response, size_t length)
++    {
++        if (response == nullptr || !length)
++        {
++            std::cerr << "No response received, EID=" << unsigned(eid) << "\n";
++            rc = PLDM_ERROR;
++        }
++        else
++        {
++            *responseMsg = response;
++            *responseLen = length;
++            rc = PLDM_SUCCESS;
++        }
++        resumeHandle();
++    }
++};
++
++/** @struct Coroutine
++ *
++ * A coroutine return_object supports nesting coroutine
++ */
++struct Coroutine
++{
++    /** @brief The nested struct named 'promise_type' which is needed for
++     * Coroutine struct to be a coroutine return_object.
++     */
++    struct promise_type
++    {
++        /** @brief For keeping the parent coroutine handle if any. For the case
++         * of nesting co_await coroutine, this handle will be used to resume to
++         * continue parent coroutine.
++         */
++        std::coroutine_handle<> parent_handle;
++
++        /** @brief For holding return value of coroutine
++         */
++        uint8_t data;
++
++        /** @brief Get the return object object
++         */
++        Coroutine get_return_object()
++        {
++            return {std::coroutine_handle<promise_type>::from_promise(*this)};
++        }
++
++        /** @brief The method is called before starting a coroutine. Returning
++         * std::suspend_never awaitable to execute coroutine body immediately.
++         */
++        std::suspend_never initial_suspend()
++        {
++            return {};
++        }
++
++        /** @brief The method is called after coroutine completed to return a
++         * customized awaitable object to resume to parent coroutine if any.
++         */
++        auto final_suspend() noexcept
++        {
++            struct awaiter
++            {
++                /** @brief Returning false to make await_suspend to be called.
++                 */
++                bool await_ready() const noexcept
++                {
++                    return false;
++                }
++
++                /** @brief Do nothing here for customized awaitable object.
++                 */
++                void await_resume() const noexcept {}
++
++                /** @brief Returning parent coroutine handle here to continue
++                 * parent coroutine.
++                 */
++                std::coroutine_handle<> await_suspend(
++                    std::coroutine_handle<promise_type> h) noexcept
++                {
++                    auto parent_handle = h.promise().parent_handle;
++                    if (parent_handle)
++                    {
++                        return parent_handle;
++                    }
++                    return std::noop_coroutine();
++                }
++            };
++
++            return awaiter{};
++        }
++
++        /** @brief The handler for an exception was thrown in
++         * coroutine body.
++         */
++        void unhandled_exception() {}
++
++        /** @brief Keeping the value returned by co_return operator
++         */
++        void return_value(uint8_t value) noexcept
++        {
++            data = std::move(value);
++        }
++    };
++
++    /** @brief Called by co_await to check if it needs to be
++     * suspended.
++     */
++    bool await_ready() const noexcept
++    {
++        return handle.done();
++    }
++
++    /** @brief Called by co_await operator to get return value when coroutine
++     * finished.
++     */
++    uint8_t await_resume() const noexcept
++    {
++        return std::move(handle.promise().data);
++    }
++
++    /** @brief Called when the coroutine itself is being suspended. The
++     * recording the parent coroutine handle is for await_suspend() in
++     * promise_type::final_suspend to refer.
++     */
++    bool await_suspend(std::coroutine_handle<> coroutine)
++    {
++        handle.promise().parent_handle = coroutine;
++        return true;
++    }
++
++    /** @brief Destructor of Coroutine */
++    ~Coroutine()
++    {
++        if (handle && handle.done())
++        {
++            handle.destroy();
++        }
++    }
++
++    /** @brief Assigned by promise_type::get_return_object to keep coroutine
++     * handle itself.
++     */
++    mutable std::coroutine_handle<promise_type> handle;
++};
++
+ } // namespace requester
+ 
+ } // namespace pldm
+diff --git a/requester/test/handler_test.cpp b/requester/test/handler_test.cpp
+index b656c1a..9184f21 100644
+--- a/requester/test/handler_test.cpp
++++ b/requester/test/handler_test.cpp
+@@ -150,3 +150,53 @@ TEST_F(HandlerTest, multipleRequestResponseScenario)
+     EXPECT_EQ(validResponse, true);
+     EXPECT_EQ(callbackCount, 2);
+ }
++
++Coroutine getTID(Handler<MockRequest>& handler, mctp_eid_t eid,
++                 uint8_t instanceId, uint8_t& tid)
++{
++    pldm::Request request(sizeof(pldm_msg_hdr));
++    const pldm_msg* responseMsg = NULL;
++    size_t responseLen = 0;
++    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++    auto rc = encode_get_tid_req(instanceId, requestMsg);
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    rc = co_await SendRecvPldmMsg<Handler<MockRequest>>(
++        handler, eid, request, &responseMsg, &responseLen);
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    uint8_t cc = 0;
++    rc = decode_get_tid_resp(responseMsg, responseLen, &cc, &tid);
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    co_return cc;
++}
++
++TEST_F(HandlerTest, requestResponseByCoroutine)
++{
++    Handler<MockRequest> reqHandler(fd, event, instanceIdDb, false, 90000,
++                                    seconds(1), 2, milliseconds(100));
++
++    uint8_t respTid = 0;
++    auto instanceId = instanceIdDb.next(eid);
++
++    // Execute a coroutine to send getTID command. The coroutine is suspended
++    // until reqHandler.handleResponse() is received.
++    auto co = getTID(reqHandler, eid, instanceId, respTid);
++
++    // Compose response message of getTID command
++    uint8_t tid = 1;
++    pldm::Response responseMsg(sizeof(pldm_msg_hdr) + PLDM_GET_TID_RESP_BYTES);
++    auto response = reinterpret_cast<pldm_msg*>(responseMsg.data());
++    encode_get_tid_resp(instanceId, PLDM_SUCCESS, tid, response);
++
++    EXPECT_NE(tid, respTid);
++
++    // Send response back to resume getTID coroutine to update respTid by
++    // calling  reqHandler.handleResponse() manually
++    reqHandler.handleResponse(eid, instanceId, PLDM_BASE, PLDM_GET_TID,
++                              response,
++                              responseMsg.size() - sizeof(pldm_msg_hdr));
++
++    EXPECT_EQ(tid, respTid);
++}
+-- 
+2.25.1
+

@@ -1,0 +1,724 @@
+From e2274664c6c5cf33eae846cdb56745242fdee65c Mon Sep 17 00:00:00 2001
+From: Gilbert Chen <gilbert.chen@arm.com>
+Date: Mon, 14 Feb 2022 12:12:25 +0000
+Subject: [PATCH 1/6] requester: Modified MctpDiscovery class
+
+Modified MctpDiscovery class to take list of managers instead of single
+fwManager. The change is for adding platform-mc manager.
+Added loadStaticEndpoints API for MCTP layer which doesn't implement
+/xyz/openbmc_project/MCTP/Endpoint.Interface
+
+The patch is part of implementation of design document below.
+https://gerrit.openbmc-project.xyz/c/openbmc/docs/+/47252
+
+Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
+Change-Id: I1e1673504583a87f2a9bc3adf76fb49c2dc30254
+---
+ common/types.hpp                              |   7 +
+ fw-update/manager.hpp                         |  25 +-
+ meson.build                                   |   1 +
+ pldmd/pldmd.cpp                               |   4 +-
+ requester/mctp_endpoint_discovery.cpp         | 254 +++++++++++++++---
+ requester/mctp_endpoint_discovery.hpp         | 110 +++++++-
+ .../test/mctp_endpoint_discovery_test.cpp     |  37 +++
+ requester/test/meson.build                    |   7 +
+ .../test/mock_mctp_discovery_handler_intf.hpp |  20 ++
+ requester/test/static_eid_table.json          |  14 +
+ 10 files changed, 430 insertions(+), 49 deletions(-)
+ create mode 100644 requester/test/mctp_endpoint_discovery_test.cpp
+ create mode 100644 requester/test/mock_mctp_discovery_handler_intf.hpp
+ create mode 100644 requester/test/static_eid_table.json
+
+diff --git a/common/types.hpp b/common/types.hpp
+index 6f06ecc..d9bbda7 100644
+--- a/common/types.hpp
++++ b/common/types.hpp
+@@ -16,10 +16,17 @@ namespace pldm
+ {
+ 
+ using eid = uint8_t;
++using UUID = std::string;
+ using Request = std::vector<uint8_t>;
+ using Response = std::vector<uint8_t>;
+ using Command = uint8_t;
+ 
++using MctpMedium = std::string;
++using NetworkId = uint8_t;
++using MctpInfo = std::tuple<eid, UUID, MctpMedium, NetworkId>;
++using MctpInfos = std::vector<MctpInfo>;
++using tid_t = uint8_t;
++
+ namespace dbus
+ {
+ 
+diff --git a/fw-update/manager.hpp b/fw-update/manager.hpp
+index 018a703..e750571 100644
+--- a/fw-update/manager.hpp
++++ b/fw-update/manager.hpp
+@@ -6,6 +6,7 @@
+ #include "device_updater.hpp"
+ #include "inventory_manager.hpp"
+ #include "requester/handler.hpp"
++#include "requester/mctp_endpoint_discovery.hpp"
+ #include "update_manager.hpp"
+ 
+ #include <unordered_map>
+@@ -22,7 +23,7 @@ namespace fw_update
+  * This class handles all the aspects of the PLDM FW update specification for
+  * the MCTP devices
+  */
+-class Manager
++class Manager : public pldm::MctpDiscoveryHandlerIntf
+ {
+   public:
+     Manager() = delete;
+@@ -47,15 +48,33 @@ class Manager
+     /** @brief Discover MCTP endpoints that support the PLDM firmware update
+      *         specification
+      *
+-     *  @param[in] eids - Array of MCTP endpoints
++     *  @param[in] mctpInfos - Array of MctpInfo
+      *
+      *  @return return PLDM_SUCCESS on success and PLDM_ERROR otherwise
+      */
+-    void handleMCTPEndpoints(const std::vector<mctp_eid_t>& eids)
++    void handleMctpEndpoints(const MctpInfos& mctpInfos)
+     {
++        std::vector<mctp_eid_t> eids;
++        for (auto& mctpInfo : mctpInfos)
++        {
++            eids.emplace_back(std::get<0>(mctpInfo));
++        }
++
+         inventoryMgr.discoverFDs(eids);
+     }
+ 
++    /** @brief Removed MCTP endpoints that support the PLDM firmware update
++     *         specification
++     *
++     *  @param[in] mctpInfos - Array of MctpInfo
++     *
++     *  @return return PLDM_SUCCESS on success and PLDM_ERROR otherwise
++     */
++    void handleRemovedMctpEndpoints([[maybe_unused]] const MctpInfos& mctpInfos)
++    {
++        return;
++    }
++
+     /** @brief Handle PLDM request for the commands in the FW update
+      *         specification
+      *
+diff --git a/meson.build b/meson.build
+index 310f987..78f8aa4 100644
+--- a/meson.build
++++ b/meson.build
+@@ -70,6 +70,7 @@ if get_option('transport-implementation') == 'mctp-demux'
+ elif get_option('transport-implementation') == 'af-mctp'
+   conf_data.set('PLDM_TRANSPORT_WITH_AF_MCTP', 1)
+ endif
++conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'static_eid_table.json'))
+ config = configure_file(output: 'config.h',
+   configuration: conf_data
+ )
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index 23499e4..35aa265 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -296,7 +296,9 @@ int main(int argc, char** argv)
+     std::unique_ptr<fw_update::Manager> fwManager =
+         std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
+     std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
+-        std::make_unique<MctpDiscovery>(bus, fwManager.get());
++        std::make_unique<MctpDiscovery>(
++            bus,
++            std::initializer_list<MctpDiscoveryHandlerIntf*>{fwManager.get()});
+     auto callback = [verbose, &invoker, &reqHandler, &fwManager, &pldmTransport,
+                      TID](IO& io, int fd, uint32_t revents) mutable {
+         if (!(revents & EPOLLIN))
+diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
+index 5f3451a..48c03f7 100644
+--- a/requester/mctp_endpoint_discovery.cpp
++++ b/requester/mctp_endpoint_discovery.cpp
+@@ -1,9 +1,17 @@
++#include "config.h"
++
+ #include "mctp_endpoint_discovery.hpp"
+ 
+ #include "common/types.hpp"
+ #include "common/utils.hpp"
+ 
++#include <libpldm/pldm.h>
++
++#include <nlohmann/json.hpp>
++
+ #include <algorithm>
++#include <fstream>
++#include <iostream>
+ #include <map>
+ #include <string>
+ #include <string_view>
+@@ -11,92 +19,264 @@
+ 
+ namespace pldm
+ {
+-MctpDiscovery::MctpDiscovery(sdbusplus::bus_t& bus,
+-                             fw_update::Manager* fwManager) :
++const std::string emptyUUID = "00000000-0000-0000-0000-000000000000";
++// Required strings for sending the msg to check on host
++constexpr auto MAPPER_BUSNAME = "xyz.openbmc_project.ObjectMapper";
++constexpr auto MAPPER_PATH = "/xyz/openbmc_project/object_mapper";
++constexpr auto MAPPER_INTERFACE = "xyz.openbmc_project.ObjectMapper";
++constexpr auto PROPERTY_INTERFACE = "org.freedesktop.DBus.Properties";
++
++constexpr auto MCTP_INTERFACE = "xyz.openbmc_project.MCTP.Endpoint";
++constexpr auto MCTP_OBJECT_PATH = "/xyz/openbmc_project/mctp";
++
++MctpDiscovery::MctpDiscovery(
++    sdbusplus::bus::bus& bus,
++    std::initializer_list<MctpDiscoveryHandlerIntf*> list,
++    const std::filesystem::path& staticEidTablePath) :
+     bus(bus),
+-    fwManager(fwManager),
+-    mctpEndpointSignal(bus,
+-                       sdbusplus::bus::match::rules::interfacesAdded(
+-                           "/xyz/openbmc_project/mctp"),
+-                       std::bind_front(&MctpDiscovery::dicoverEndpoints, this))
++    mctpEndpointAddedSignal(
++        bus, sdbusplus::bus::match::rules::interfacesAdded(MCTP_OBJECT_PATH),
++        std::bind_front(&MctpDiscovery::discoverEndpoints, this)),
++    mctpEndpointRemovedSignal(
++        bus, sdbusplus::bus::match::rules::interfacesRemoved(MCTP_OBJECT_PATH),
++        std::bind_front(&MctpDiscovery::removeEndpoints, this)),
++    handlers(list), staticEidTablePath(staticEidTablePath)
+ {
+-    dbus::ObjectValueTree objects;
++    getMctpInfos(exisingMctpInfos);
++    loadStaticEndpoints(exisingMctpInfos);
++    handleMctpEndpoints(exisingMctpInfos);
++}
++
++void MctpDiscovery::getMctpInfos(MctpInfos& mctpInfos)
++{
++    // Find all implementations of the MCTP Endpoint interface
++    auto mapper = bus.new_method_call(MAPPER_BUSNAME, MAPPER_PATH,
++                                      MAPPER_INTERFACE, "GetSubTree");
++
++    mapper.append(MCTP_OBJECT_PATH, 0,
++                  std::vector<std::string>({MCTP_INTERFACE}));
++
++    std::map<std::string, std::map<std::string, std::vector<std::string>>>
++        mapperResponse;
+ 
+     try
+     {
+-        auto method = bus.new_method_call(
+-            "xyz.openbmc_project.MCTP", "/xyz/openbmc_project/mctp",
+-            "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
+-        auto reply = bus.call(method, dbusTimeout);
+-        reply.read(objects);
++        auto mapperResponseMsg = bus.call(
++            mapper, std::chrono::duration_cast<std::chrono::microseconds>(
++                        std::chrono::seconds(DBUS_TIMEOUT))
++                        .count());
++        mapperResponseMsg.read(mapperResponse);
+     }
+-    catch (const std::exception& e)
++    catch (const sdbusplus::exception_t& e)
+     {
++        std::cerr << "Error in mapper GetSubTree call for MCTP Endpoint:"
++                  << e.what() << std::endl;
+         return;
+     }
+ 
+-    std::vector<mctp_eid_t> eids;
+-
+-    for (const auto& [objectPath, interfaces] : objects)
++    for (const auto& [path, services] : mapperResponse)
+     {
+-        for (const auto& [intfName, properties] : interfaces)
++        for (const auto& serviceIter : services)
+         {
+-            if (intfName == mctpEndpointIntfName)
++            const std::string& service = serviceIter.first;
++
++            try
+             {
+-                if (properties.contains("EID") &&
++                auto method = bus.new_method_call(service.c_str(), path.c_str(),
++                                                  PROPERTY_INTERFACE, "GetAll");
++                method.append(MCTP_INTERFACE);
++
++                auto response = bus.call(
++                    method,
++                    std::chrono::duration_cast<std::chrono::microseconds>(
++                        std::chrono::seconds(DBUS_TIMEOUT))
++                        .count());
++                using Property = std::string;
++                using PropertyMap = std::map<Property, dbus::Value>;
++                PropertyMap properties;
++                response.read(properties);
++
++                if (properties.contains("NetworkId") &&
++                    properties.contains("EID") &&
+                     properties.contains("SupportedMessageTypes"))
+                 {
+-                    auto eid = std::get<mctp_eid_t>(properties.at("EID"));
++                    auto networkId =
++                        std::get<uint32_t>(properties.at("NetworkId"));
++                    auto eid = std::get<uint8_t>(properties.at("EID"));
+                     auto types = std::get<std::vector<uint8_t>>(
+                         properties.at("SupportedMessageTypes"));
+                     if (std::find(types.begin(), types.end(), mctpTypePLDM) !=
+                         types.end())
+                     {
+-                        eids.emplace_back(eid);
++                        mctpInfos.emplace_back(
++                            MctpInfo(eid, emptyUUID, "", networkId));
+                     }
+                 }
+             }
++            catch (const sdbusplus::exception_t& e)
++            {
++                std::cerr << "Error reading MCTP Endpoint property, error: "
++                          << e.what() << " SERVICE: " << service
++                          << " PATH: " << path << std::endl;
++                return;
++            }
+         }
+     }
+-
+-    if (eids.size() && fwManager)
+-    {
+-        fwManager->handleMCTPEndpoints(eids);
+-    }
+ }
+ 
+-void MctpDiscovery::dicoverEndpoints(sdbusplus::message_t& msg)
++void MctpDiscovery::getAddedMctpInfos(sdbusplus::message_t& msg,
++                                      MctpInfos& mctpInfos)
+ {
+     constexpr std::string_view mctpEndpointIntfName{
+         "xyz.openbmc_project.MCTP.Endpoint"};
+     std::vector<mctp_eid_t> eids;
+-
+     sdbusplus::message::object_path objPath;
+-    std::map<std::string, std::map<std::string, dbus::Value>> interfaces;
+-    msg.read(objPath, interfaces);
++    using Property = std::string;
++    using PropertyMap = std::map<Property, dbus::Value>;
++    std::map<std::string, PropertyMap> interfaces;
++    try
++    {
++        msg.read(objPath, interfaces);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        std::cerr << "Error reading MCTP Endpoint addedInterace message, error:"
++                  << e.what() << std::endl;
++        return;
++    }
+ 
+     for (const auto& [intfName, properties] : interfaces)
+     {
+-        if (intfName == mctpEndpointIntfName)
++        if (intfName == MCTP_INTERFACE)
+         {
+-            if (properties.contains("EID") &&
++            if (properties.contains("NetworkId") &&
++                properties.contains("EID") &&
+                 properties.contains("SupportedMessageTypes"))
+             {
+-                auto eid = std::get<size_t>(properties.at("EID"));
++                auto networkId = std::get<uint32_t>(properties.at("NetworkId"));
++                auto eid = std::get<uint8_t>(properties.at("EID"));
+                 auto types = std::get<std::vector<uint8_t>>(
+                     properties.at("SupportedMessageTypes"));
+                 if (std::find(types.begin(), types.end(), mctpTypePLDM) !=
+                     types.end())
+                 {
+-                    eids.emplace_back(eid);
++                    mctpInfos.emplace_back(
++                        MctpInfo(eid, emptyUUID, "", networkId));
+                 }
+             }
+         }
+     }
++}
++
++void MctpDiscovery::addToExistingMctpInfos(MctpInfos& addedInfos)
++{
++    for (auto& mctpInfo : addedInfos)
++    {
++        if (std::find(exisingMctpInfos.begin(), exisingMctpInfos.end(),
++                      mctpInfo) == exisingMctpInfos.end())
++        {
++            exisingMctpInfos.emplace_back(mctpInfo);
++        }
++    }
++}
+ 
+-    if (eids.size() && fwManager)
++void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
++                                                MctpInfos& removedInfos)
++{
++    for (auto& mctpInfo : exisingMctpInfos)
++    {
++        if (std::find(mctpInfos.begin(), mctpInfos.end(), mctpInfo) ==
++            mctpInfos.end())
++        {
++            removedInfos.emplace_back(mctpInfo);
++        }
++    }
++    for (auto& mctpInfo : removedInfos)
+     {
+-        fwManager->handleMCTPEndpoints(eids);
++        exisingMctpInfos.erase(std::remove(exisingMctpInfos.begin(),
++                                           exisingMctpInfos.end(), mctpInfo),
++                               exisingMctpInfos.end());
++    }
++}
++
++void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
++{
++    MctpInfos addedInfos;
++    getAddedMctpInfos(msg, addedInfos);
++    addToExistingMctpInfos(addedInfos);
++    handleMctpEndpoints(addedInfos);
++}
++
++void MctpDiscovery::removeEndpoints([[maybe_unused]] sdbusplus::message_t& msg)
++{
++    MctpInfos mctpInfos;
++    MctpInfos removedInfos;
++    getMctpInfos(mctpInfos);
++    removeFromExistingMctpInfos(mctpInfos, removedInfos);
++    handleRemovedMctpEndpoints(removedInfos);
++}
++
++void MctpDiscovery::loadStaticEndpoints(MctpInfos& mctpInfos)
++{
++    if (!std::filesystem::exists(staticEidTablePath))
++    {
++        return;
++    }
++
++    std::ifstream jsonFile(staticEidTablePath);
++    auto data = nlohmann::json::parse(jsonFile, nullptr, false);
++    if (data.is_discarded())
++    {
++        std::cerr << "Parsing json file failed, FILE=" << staticEidTablePath
++                  << "\n";
++        return;
++    }
++
++    const std::vector<nlohmann::json> emptyJsonArray{};
++    auto endpoints = data.value("Endpoints", emptyJsonArray);
++    for (const auto& endpoint : endpoints)
++    {
++        const std::vector<uint8_t> emptyUnit8Array;
++        auto networkId = endpoint.value("NetworkId", 0xFF);
++        auto eid = endpoint.value("EID", 0xFF);
++        auto types = endpoint.value("SupportedMessageTypes", emptyUnit8Array);
++        if (std::find(types.begin(), types.end(), mctpTypePLDM) != types.end())
++        {
++            MctpInfo mctpInfo(eid, emptyUUID, "", networkId);
++            if (std::find(mctpInfos.begin(), mctpInfos.end(), mctpInfo) ==
++                mctpInfos.end())
++            {
++                mctpInfos.emplace_back(mctpInfo);
++            }
++            else
++            {
++                std::cerr
++                    << "Found EID(" << unsigned(eid)
++                    << ") in static eid table duplicating to MCTP D-Bus interface\n";
++            }
++        }
++    }
++}
++
++void MctpDiscovery::handleMctpEndpoints(const MctpInfos& mctpInfos)
++{
++    for (MctpDiscoveryHandlerIntf* handler : handlers)
++    {
++        if (handler)
++        {
++            handler->handleMctpEndpoints(mctpInfos);
++        }
++    }
++}
++
++void MctpDiscovery::handleRemovedMctpEndpoints(const MctpInfos& mctpInfos)
++{
++    for (MctpDiscoveryHandlerIntf* handler : handlers)
++    {
++        if (handler)
++        {
++            handler->handleRemovedMctpEndpoints(mctpInfos);
++        }
+     }
+ }
+ 
+diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
+index 7fbe069..99ba1d0 100644
+--- a/requester/mctp_endpoint_discovery.hpp
++++ b/requester/mctp_endpoint_discovery.hpp
+@@ -1,12 +1,31 @@
+ #pragma once
+ 
+-#include "fw-update/manager.hpp"
++#include "libpldm/pldm.h"
++
++#include "common/types.hpp"
+ 
+ #include <sdbusplus/bus/match.hpp>
+ 
++#include <filesystem>
++#include <initializer_list>
++#include <vector>
++
+ namespace pldm
+ {
+ 
++/** @class MctpDiscoveryHandlerIntf
++ *
++ * This abstract class defines the APIs for MctpDiscovery class has common
++ * interface to execute function from different Manager Classes
++ */
++class MctpDiscoveryHandlerIntf
++{
++  public:
++    virtual void handleMctpEndpoints(const MctpInfos& mctpInfos) = 0;
++    virtual void handleRemovedMctpEndpoints(const MctpInfos& mctpInfos) = 0;
++    virtual ~MctpDiscoveryHandlerIntf() {}
++};
++
+ class MctpDiscovery
+ {
+   public:
+@@ -21,26 +40,101 @@ class MctpDiscovery
+      *         MCTP enabled devices
+      *
+      *  @param[in] bus - reference to systemd bus
+-     *  @param[in] fwManager - pointer to the firmware manager
++     *  @param[in] list - initializer list to the MctpDiscoveryHandlerIntf
+      */
+-    explicit MctpDiscovery(sdbusplus::bus_t& bus,
+-                           fw_update::Manager* fwManager);
++    explicit MctpDiscovery(
++        sdbusplus::bus::bus& bus,
++        std::initializer_list<MctpDiscoveryHandlerIntf*> list,
++        const std::filesystem::path& staticEidTablePath =
++            STATIC_EID_TABLE_PATH);
+ 
+   private:
+     /** @brief reference to the systemd bus */
+     sdbusplus::bus_t& bus;
+ 
+-    fw_update::Manager* fwManager;
+-
+     /** @brief Used to watch for new MCTP endpoints */
+-    sdbusplus::bus::match_t mctpEndpointSignal;
++    sdbusplus::bus::match_t mctpEndpointAddedSignal;
++
++    /** @brief Used to watch for the removed MCTP endpoints */
++    sdbusplus::bus::match_t mctpEndpointRemovedSignal;
++
++    /** @brief List of handlers need to notify when new MCTP
++     * Endpoint is Added/Removed */
++    std::vector<MctpDiscoveryHandlerIntf*> handlers;
++
++    /** @brief Path of static EID table config file */
++    std::filesystem::path staticEidTablePath;
+ 
+-    void dicoverEndpoints(sdbusplus::message_t& msg);
++    /** @brief The existing MCTP endpoints */
++    MctpInfos exisingMctpInfos;
++
++    /** @brief Callback function when MCTP endpoints addedInterface
++     * D-Bus signal raised.
++     *
++     *  @param[in] msg - Data associated with subscribed signal
++     */
++    void discoverEndpoints(sdbusplus::message_t& msg);
++
++    /** @brief Callback function when MCTP endpoint removedInterface
++     * D-Bus signal raised.
++     *
++     *  @param[in] msg - Data associated with subscribed signal
++     */
++    void removeEndpoints(sdbusplus::message_t& msg);
++
++    /** @brief Helper function to invoke registered handlers for
++     *  the added MCTP endpoints
++     *
++     *  @param[in] mctpInfos - information of discovered MCTP endpoints
++     */
++    void handleMctpEndpoints(const MctpInfos& mctpInfos);
++
++    /** @brief Helper function to invoke registered handlers for
++     *  the removed MCTP endpoints
++     *
++     *  @param[in] mctpInfos - information of removed MCTP endpoints
++     */
++    void handleRemovedMctpEndpoints(const MctpInfos& mctpInfos);
++
++    /** @brief Loading the static MCTP endpoints to mctpInfos.
++     *
++     *  @param[in] mctpInfos - information of discovered MCTP endpoints
++     */
++    void loadStaticEndpoints(MctpInfos& mctpInfos);
++
++    /** @brief Get list of MctpInfos in MCTP control interface.
++     *
++     *  @param[in] mctpInfos - information of discovered MCTP endpoints
++     */
++    void getMctpInfos(MctpInfos& mctpInfos);
++
++    /** @brief Get list of new MctpInfos in addedInterace D-Bus signal message.
++     *
++     *  @param[in] msg - addedInterace D-Bus signal message
++     *  @param[in] mctpInfos - information of added MCTP endpoints
++     */
++    void getAddedMctpInfos(sdbusplus::message_t& msg, MctpInfos& mctpInfos);
++
++    /** @brief Add new MctpInfos to exisingMctpInfos.
++     *
++     *  @param[in] mctpInfos - information of new MCTP endpoints
++     */
++    void addToExistingMctpInfos(MctpInfos& mctpInfos);
++
++    /** @brief Erase the removed MCTP endpoint from exisingMctpInfos.
++     *
++     *  @param[in] mctpInfos - the remaining MCTP endpoints
++     *  @param[out] removedInfos - the removed MCTP endpoints
++     */
++    void removeFromExistingMctpInfos(MctpInfos& mctpInfos,
++                                     MctpInfos& removedInfos);
+ 
+     static constexpr uint8_t mctpTypePLDM = 1;
+ 
+     static constexpr std::string_view mctpEndpointIntfName{
+         "xyz.openbmc_project.MCTP.Endpoint"};
++    static constexpr std::string_view mctpEndpointObjectPath{
++        "/xyz/openbmc_project/mctp"};
+ };
+ 
+ } // namespace pldm
+diff --git a/requester/test/mctp_endpoint_discovery_test.cpp b/requester/test/mctp_endpoint_discovery_test.cpp
+new file mode 100644
+index 0000000..9f65171
+--- /dev/null
++++ b/requester/test/mctp_endpoint_discovery_test.cpp
+@@ -0,0 +1,37 @@
++#include "config.h"
++
++#include "common/utils.hpp"
++#include "requester/test/mock_mctp_discovery_handler_intf.hpp"
++
++#include <gmock/gmock.h>
++#include <gtest/gtest.h>
++
++using ::testing::_;
++
++TEST(MctpEndpointDiscoveryTest, SingleHandleMctpEndpoint)
++{
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    pldm::MockManager manager;
++
++    EXPECT_CALL(manager, handleMctpEndpoints(_)).Times(1);
++
++    auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
++        bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager},
++        "./static_eid_table.json");
++}
++
++TEST(MctpEndpointDiscoveryTest, MultipleHandleMctpEndpoints)
++{
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    pldm::MockManager manager1;
++    pldm::MockManager manager2;
++
++    EXPECT_CALL(manager1, handleMctpEndpoints(_)).Times(1);
++    EXPECT_CALL(manager2, handleMctpEndpoints(_)).Times(1);
++
++    auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
++        bus,
++        std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager1,
++                                                               &manager2},
++        "./static_eid_table.json");
++}
+diff --git a/requester/test/meson.build b/requester/test/meson.build
+index b7a929f..f80799d 100644
+--- a/requester/test/meson.build
++++ b/requester/test/meson.build
+@@ -1,6 +1,12 @@
++test_src = declare_dependency(
++          sources: [
++            '../mctp_endpoint_discovery.cpp',
++          ])
++
+ tests = [
+   'handler_test',
+   'request_test',
++  'mctp_endpoint_discovery_test',
+ ]
+ 
+ foreach t : tests
+@@ -18,6 +24,7 @@ foreach t : tests
+                          phosphor_logging_dep,
+                          sdbusplus,
+                          sdeventplus,
++                         test_src,
+                     ]),
+        workdir: meson.current_source_dir())
+ endforeach
+diff --git a/requester/test/mock_mctp_discovery_handler_intf.hpp b/requester/test/mock_mctp_discovery_handler_intf.hpp
+new file mode 100644
+index 0000000..8aada96
+--- /dev/null
++++ b/requester/test/mock_mctp_discovery_handler_intf.hpp
+@@ -0,0 +1,20 @@
++#pragma once
++
++#include "requester/mctp_endpoint_discovery.hpp"
++
++#include <gmock/gmock.h>
++#include <gtest/gtest.h>
++
++namespace pldm
++{
++
++class MockManager : public pldm::MctpDiscoveryHandlerIntf
++{
++  public:
++    MOCK_METHOD(void, handleMctpEndpoints, (const MctpInfos& mctpInfos),
++                (override));
++    MOCK_METHOD(void, handleRemovedMctpEndpoints, (const MctpInfos& mctpInfos),
++                (override));
++};
++
++} // namespace pldm
+diff --git a/requester/test/static_eid_table.json b/requester/test/static_eid_table.json
+new file mode 100644
+index 0000000..54146a1
+--- /dev/null
++++ b/requester/test/static_eid_table.json
+@@ -0,0 +1,14 @@
++{
++    "Endpoints": [
++        {
++            "NetworkId": 0,
++            "EID": 1,
++            "SupportedMessageTypes": [0]
++        },
++        {
++            "NetworkId": 0,
++            "EID": 2,
++            "SupportedMessageTypes": [0, 1]
++        }
++    ]
++}
+-- 
+2.25.1
+

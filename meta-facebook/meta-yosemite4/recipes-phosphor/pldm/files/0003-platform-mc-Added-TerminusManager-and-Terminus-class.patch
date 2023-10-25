@@ -1,0 +1,1533 @@
+From 0f97cd03f0cca5efa37a9fbe24db6e80f054b427 Mon Sep 17 00:00:00 2001
+From: Gilbert Chen <gilbert.chen@arm.com>
+Date: Tue, 22 Feb 2022 15:40:17 +0000
+Subject: [PATCH 3/6] platform-mc: Added TerminusManager and Terminus class
+
+Added requester::sendRecvPldmMsg awaiter type to be able to send and
+receive PLDM message by coroutine.
+Added TerminusManager to discover terminus from EID list updated by
+MCTPDiscovery class. The TerminusManager will initialize TID and
+fetch PDRs to instantiate terminus object for the EID which supports
+PLDM Type2. The TerminusManager doesn't handle the event receiver
+related initialization steps, and either doesn't support primary PDR
+repository to maintain terminus locator PDR information yet.
+
+Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
+Change-Id: Ifa5bdfff50648f1d7fba8710e160de662e8f9e06
+---
+ meson.build                                |   4 +
+ platform-mc/manager.hpp                    |  70 ++++
+ platform-mc/platform_manager.cpp           | 220 ++++++++++++
+ platform-mc/platform_manager.hpp           |  98 ++++++
+ platform-mc/terminus.cpp                   |  21 ++
+ platform-mc/terminus.hpp                   |  52 +++
+ platform-mc/terminus_manager.cpp           | 374 +++++++++++++++++++++
+ platform-mc/terminus_manager.hpp           | 166 +++++++++
+ platform-mc/test/meson.build               |  31 ++
+ platform-mc/test/mock_terminus_manager.hpp |  76 +++++
+ platform-mc/test/terminus_manager_test.cpp | 241 +++++++++++++
+ platform-mc/test/terminus_test.cpp         |  24 ++
+ pldmd/pldmd.cpp                            |   7 +-
+ 13 files changed, 1382 insertions(+), 2 deletions(-)
+ create mode 100644 platform-mc/manager.hpp
+ create mode 100644 platform-mc/platform_manager.cpp
+ create mode 100644 platform-mc/platform_manager.hpp
+ create mode 100644 platform-mc/terminus.cpp
+ create mode 100644 platform-mc/terminus.hpp
+ create mode 100644 platform-mc/terminus_manager.cpp
+ create mode 100644 platform-mc/terminus_manager.hpp
+ create mode 100644 platform-mc/test/meson.build
+ create mode 100644 platform-mc/test/mock_terminus_manager.hpp
+ create mode 100644 platform-mc/test/terminus_manager_test.cpp
+ create mode 100644 platform-mc/test/terminus_test.cpp
+
+diff --git a/meson.build b/meson.build
+index 78f8aa4..572b0fc 100644
+--- a/meson.build
++++ b/meson.build
+@@ -185,6 +185,9 @@ executable(
+   'fw-update/device_updater.cpp',
+   'fw-update/watch.cpp',
+   'fw-update/update_manager.cpp',
++  'platform-mc/terminus_manager.cpp',
++  'platform-mc/terminus.cpp',
++  'platform-mc/platform_manager.cpp',
+   'requester/mctp_endpoint_discovery.cpp',
+   implicit_include_directories: false,
+   dependencies: deps,
+@@ -223,5 +226,6 @@ if get_option('tests').enabled()
+   subdir('fw-update/test')
+   subdir('host-bmc/test')
+   subdir('requester/test')
++  subdir('platform-mc/test')
+   subdir('test')
+ endif
+diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
+new file mode 100644
+index 0000000..f60d974
+--- /dev/null
++++ b/platform-mc/manager.hpp
+@@ -0,0 +1,70 @@
++#pragma once
++
++#include "libpldm/pldm.h"
++
++#include "common/instance_id.hpp"
++#include "common/types.hpp"
++#include "platform_manager.hpp"
++#include "requester/handler.hpp"
++#include "requester/mctp_endpoint_discovery.hpp"
++#include "terminus_manager.hpp"
++
++namespace pldm
++{
++namespace platform_mc
++{
++using namespace pldm::pdr;
++
++/**
++ * @brief Manager
++ *
++ * This class handles all the aspect of the PLDM Platform Monitoring and Control
++ * specification for the MCTP devices
++ */
++class Manager : public pldm::MctpDiscoveryHandlerIntf
++{
++  public:
++    Manager() = delete;
++    Manager(const Manager&) = delete;
++    Manager(Manager&&) = delete;
++    Manager& operator=(const Manager&) = delete;
++    Manager& operator=(Manager&&) = delete;
++    ~Manager() = default;
++
++    explicit Manager(sdeventplus::Event& event,
++                     requester::Handler<requester::Request>& handler,
++                     pldm::InstanceIdDb& instanceIdDb) :
++        terminusManager(event, handler, instanceIdDb, termini, this),
++        platformManager(terminusManager, termini)
++    {}
++
++    requester::Coroutine beforeDiscoverTerminus()
++    {
++        co_return PLDM_SUCCESS;
++    }
++
++    requester::Coroutine afterDiscoverTerminus()
++    {
++        auto rc = co_await platformManager.initTerminus();
++        co_return rc;
++    }
++
++    void handleMctpEndpoints(const MctpInfos& mctpInfos)
++    {
++        terminusManager.discoverMctpTerminus(mctpInfos);
++    }
++
++    void handleRemovedMctpEndpoints(const MctpInfos& mctpInfos)
++    {
++        terminusManager.removeMctpTerminus(mctpInfos);
++    }
++
++  private:
++    /** @brief List of discovered termini */
++    std::map<tid_t, std::shared_ptr<Terminus>> termini{};
++
++    TerminusManager terminusManager;
++    PlatformManager platformManager;
++};
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
+new file mode 100644
+index 0000000..034fc22
+--- /dev/null
++++ b/platform-mc/platform_manager.cpp
+@@ -0,0 +1,220 @@
++#include "platform_manager.hpp"
++
++#include "terminus_manager.hpp"
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++requester::Coroutine PlatformManager::initTerminus()
++{
++    for (auto& [tid, terminus] : termini)
++    {
++        if (terminus->initalized)
++        {
++            continue;
++        }
++
++        if (terminus->doesSupport(PLDM_PLATFORM))
++        {
++            co_await getPDRs(terminus);
++        }
++        terminus->initalized = true;
++    }
++    co_return PLDM_SUCCESS;
++}
++
++requester::Coroutine
++    PlatformManager::getPDRs(std::shared_ptr<Terminus> terminus)
++{
++    tid_t tid = terminus->getTid();
++
++    uint8_t repositoryState = 0;
++    uint32_t recordCount = 0;
++    uint32_t repositorySize = 0;
++    uint32_t largestRecordSize = 0;
++    auto rc = co_await getPDRRepositoryInfo(tid, repositoryState, recordCount,
++                                            repositorySize, largestRecordSize);
++    if (rc)
++    {
++        repositoryState = PLDM_AVAILABLE;
++        recordCount = std::numeric_limits<uint32_t>::max();
++        largestRecordSize = std::numeric_limits<uint32_t>::max();
++    }
++    else
++    {
++        if (recordCount < std::numeric_limits<uint32_t>::max())
++        {
++            recordCount++;
++        }
++        if (largestRecordSize < std::numeric_limits<uint32_t>::max())
++        {
++            largestRecordSize++;
++        }
++    }
++
++    if (repositoryState != PLDM_AVAILABLE)
++    {
++        co_return PLDM_ERROR_NOT_READY;
++    }
++
++    uint32_t recordHndl = 0;
++    uint32_t nextRecordHndl = 0;
++    uint32_t nextDataTransferHndl = 0;
++    uint8_t transferFlag = 0;
++    uint16_t responseCnt = 0;
++    constexpr uint16_t recvBufSize = 1024;
++    std::vector<uint8_t> recvBuf(recvBufSize);
++    uint8_t transferCrc = 0;
++
++    terminus->pdrs.clear();
++    uint32_t receivedRecordCount = 0;
++
++    do
++    {
++        rc = co_await getPDR(tid, recordHndl, 0, PLDM_GET_FIRSTPART,
++                             recvBufSize, 0, nextRecordHndl,
++                             nextDataTransferHndl, transferFlag, responseCnt,
++                             recvBuf, transferCrc);
++
++        if (rc)
++        {
++            std::cerr << "getPDRs() failed to get fist part of record handle:"
++                      << static_cast<unsigned>(recordHndl)
++                      << ",tid=" << static_cast<unsigned>(tid)
++                      << ",rc=" << static_cast<unsigned>(rc) << "\n";
++            terminus->pdrs.clear();
++            co_return rc;
++        }
++
++        if (transferFlag == PLDM_START || transferFlag == PLDM_START_AND_END)
++        {
++            // single-part or first-part transfer
++            terminus->pdrs.emplace_back(std::vector<uint8_t>(
++                recvBuf.begin(), recvBuf.begin() + responseCnt));
++            recordHndl = nextRecordHndl;
++        }
++        else
++        {
++            // multipart transfer
++            uint32_t receivedRecordSize = 0;
++            auto pdrHdr = reinterpret_cast<pldm_pdr_hdr*>(recvBuf.data());
++            uint16_t recordChgNum = le16toh(pdrHdr->record_change_num);
++            std::vector<uint8_t> receivedPdr(recvBuf.begin(),
++                                             recvBuf.begin() + responseCnt);
++            do
++            {
++                rc = co_await getPDR(tid, recordHndl, nextDataTransferHndl,
++                                     PLDM_GET_NEXTPART, recvBufSize,
++                                     recordChgNum, nextRecordHndl,
++                                     nextDataTransferHndl, transferFlag,
++                                     responseCnt, recvBuf, transferCrc);
++                if (rc)
++                {
++                    std::cerr
++                        << "getPDRs() failed to get middle part of record handle:"
++                        << static_cast<unsigned>(recordHndl)
++                        << ",tid=" << static_cast<unsigned>(tid)
++                        << ",rc=" << static_cast<unsigned>(rc) << "\n";
++                    terminus->pdrs.clear();
++                    co_return rc;
++                }
++
++                receivedPdr.insert(receivedPdr.end(), recvBuf.begin(),
++                                   recvBuf.begin() + responseCnt);
++                receivedRecordSize += responseCnt;
++
++                if (transferFlag == PLDM_END)
++                {
++                    terminus->pdrs.emplace_back(receivedPdr);
++                    recordHndl = nextRecordHndl;
++                }
++            } while (nextDataTransferHndl != 0 &&
++                     receivedRecordSize < largestRecordSize);
++        }
++        receivedRecordCount++;
++    } while (nextRecordHndl != 0 && receivedRecordCount < recordCount);
++
++    co_return PLDM_SUCCESS;
++}
++
++requester::Coroutine PlatformManager::getPDR(
++    const tid_t tid, const uint32_t recordHndl, const uint32_t dataTransferHndl,
++    const uint8_t transferOpFlag, const uint16_t requestCnt,
++    const uint16_t recordChgNum, uint32_t& nextRecordHndl,
++    uint32_t& nextDataTransferHndl, uint8_t& transferFlag,
++    uint16_t& responseCnt, std::vector<uint8_t>& recordData,
++    uint8_t& transferCrc)
++{
++    Request request(sizeof(pldm_msg_hdr) + PLDM_GET_PDR_REQ_BYTES);
++    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++    auto rc = encode_get_pdr_req(0, recordHndl, dataTransferHndl,
++                                 transferOpFlag, requestCnt, recordChgNum,
++                                 requestMsg, PLDM_GET_PDR_REQ_BYTES);
++    if (rc)
++    {
++        co_return rc;
++    }
++
++    const pldm_msg* responseMsg = NULL;
++    size_t responseLen = 0;
++    rc = co_await terminusManager.SendRecvPldmMsg(tid, request, &responseMsg,
++                                                  &responseLen);
++    if (rc)
++    {
++        co_return rc;
++    }
++
++    uint8_t completionCode;
++    rc = decode_get_pdr_resp(responseMsg, responseLen, &completionCode,
++                             &nextRecordHndl, &nextDataTransferHndl,
++                             &transferFlag, &responseCnt, recordData.data(),
++                             recordData.size(), &transferCrc);
++    if (rc)
++    {
++        co_return rc;
++    }
++    co_return completionCode;
++}
++
++requester::Coroutine PlatformManager::getPDRRepositoryInfo(
++    const tid_t tid, uint8_t& repositoryState, uint32_t& recordCount,
++    uint32_t& repositorySize, uint32_t& largestRecordSize)
++{
++    Request request(sizeof(pldm_msg_hdr) + sizeof(uint8_t));
++    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++    auto rc = encode_pldm_header_only(PLDM_REQUEST, 0, PLDM_PLATFORM,
++                                      PLDM_GET_PDR_REPOSITORY_INFO, requestMsg);
++    if (rc)
++    {
++        co_return rc;
++    }
++
++    const pldm_msg* responseMsg = NULL;
++    size_t responseLen = 0;
++    rc = co_await terminusManager.SendRecvPldmMsg(tid, request, &responseMsg,
++                                                  &responseLen);
++    if (rc)
++    {
++        co_return rc;
++    }
++
++    uint8_t completionCode = 0;
++    uint8_t updateTime[PLDM_TIMESTAMP104_SIZE] = {0};
++    uint8_t oemUpdateTime[PLDM_TIMESTAMP104_SIZE] = {0};
++    uint8_t dataTransferHandleTimeout = 0;
++
++    rc = decode_get_pdr_repository_info_resp(
++        responseMsg, responseLen, &completionCode, &repositoryState, updateTime,
++        oemUpdateTime, &recordCount, &repositorySize, &largestRecordSize,
++        &dataTransferHandleTimeout);
++    if (rc)
++    {
++        co_return rc;
++    }
++    co_return completionCode;
++}
++
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/platform_manager.hpp b/platform-mc/platform_manager.hpp
+new file mode 100644
+index 0000000..ee8a498
+--- /dev/null
++++ b/platform-mc/platform_manager.hpp
+@@ -0,0 +1,98 @@
++#pragma once
++
++#include "libpldm/platform.h"
++#include "libpldm/pldm.h"
++
++#include "terminus.hpp"
++#include "terminus_manager.hpp"
++
++namespace pldm
++{
++
++namespace platform_mc
++{
++
++/**
++ * @brief PlatformManager
++ *
++ * PlatformManager class manages Terminus for fetching PDRs and initializing
++ * sensors.
++ */
++class PlatformManager
++{
++  public:
++    PlatformManager() = delete;
++    PlatformManager(const PlatformManager&) = delete;
++    PlatformManager(PlatformManager&&) = delete;
++    PlatformManager& operator=(const PlatformManager&) = delete;
++    PlatformManager& operator=(PlatformManager&&) = delete;
++    ~PlatformManager() = default;
++
++    explicit PlatformManager(
++        TerminusManager& terminusManager,
++        std::map<tid_t, std::shared_ptr<Terminus>>& termini) :
++        terminusManager(terminusManager),
++        termini(termini)
++    {}
++
++    /** @brief Initialize terminus which supports PLDM Type 2
++     *  @return coroutine return_value - PLDM completion code
++     */
++    requester::Coroutine initTerminus();
++
++  private:
++    /** @brief Fetch all PDRs from terminus.
++     *
++     *  @param[in] terminus - The terminus object to store fetched PDRs
++     *  @return coroutine return_value - PLDM completion code
++     */
++    requester::Coroutine getPDRs(std::shared_ptr<Terminus> terminus);
++
++    /** @brief Fetch PDR from terminus
++     *
++     *  @param[in] tid - Destination TID
++     *  @param[in] recordHndl - Record handle
++     *  @param[in] dataTransferHndl - Data transfer handle
++     *  @param[in] transferOpFlag - Transfer Operation Flag
++     *  @param[in] requstCnt - Request Count of data
++     *  @param[in] recordChgNum - Record change number
++     *  @param[out] nextRecordHndl - Next record handle
++     *  @param[out] nextDataTransferHndl - Next data transfer handle
++     *  @param[out] transferFlag - Transfer flag
++     *  @param[out] responseCnt - Response count of record data
++     *  @param[out] recordData - Returned record data
++     *  @param[out] transferCrc - CRC value when record data is last part of PDR
++     *  @return coroutine return_value - PLDM completion code
++     */
++    requester::Coroutine
++        getPDR(const tid_t tid, const uint32_t recordHndl,
++               const uint32_t dataTransferHndl, const uint8_t transferOpFlag,
++               const uint16_t requestCnt, const uint16_t recordChgNum,
++               uint32_t& nextRecordHndl, uint32_t& nextDataTransferHndl,
++               uint8_t& transferFlag, uint16_t& responseCnt,
++               std::vector<uint8_t>& recordData, uint8_t& transferCrc);
++
++    /** @brief get PDR repository information.
++     *
++     *  @param[in] tid - Destination TID
++     *  @param[out] repositoryState - the state of repository
++     *  @param[out] recordCount - number of records
++     *  @param[out] repositorySize - repository size
++     *  @param[out] largestRecordSize - largest record size
++     * *
++     *  @return coroutine return_value - PLDM completion code
++     */
++    requester::Coroutine getPDRRepositoryInfo(const tid_t tid,
++                                              uint8_t& repositoryState,
++                                              uint32_t& recordCount,
++                                              uint32_t& repositorySize,
++                                              uint32_t& largestRecordSize);
++
++    /** @brief reference of terminusManager */
++    TerminusManager& terminusManager;
++
++    /** @brief Managed termini list */
++    std::map<tid_t, std::shared_ptr<Terminus>>& termini;
++};
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+new file mode 100644
+index 0000000..1dec2ff
+--- /dev/null
++++ b/platform-mc/terminus.cpp
+@@ -0,0 +1,21 @@
++#include "terminus.hpp"
++
++#include "libpldm/platform.h"
++
++#include "terminus_manager.hpp"
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++Terminus::Terminus(tid_t tid, uint64_t supportedTypes) :
++    initalized(false), tid(tid), supportedTypes(supportedTypes)
++{}
++
++bool Terminus::doesSupport(uint8_t type)
++{
++    return supportedTypes.test(type);
++}
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
+new file mode 100644
+index 0000000..7b3aa53
+--- /dev/null
++++ b/platform-mc/terminus.hpp
+@@ -0,0 +1,52 @@
++#pragma once
++
++#include "libpldm/platform.h"
++
++#include "common/types.hpp"
++#include "requester/handler.hpp"
++
++#include <sdbusplus/server/object.hpp>
++#include <sdeventplus/event.hpp>
++#include <xyz/openbmc_project/Inventory/Item/Board/server.hpp>
++
++using namespace pldm::pdr;
++
++namespace pldm
++{
++namespace platform_mc
++{
++/**
++ * @brief Terminus
++ *
++ * Terminus class holds the TID, supported PLDM Type or PDRs which are needed by
++ * other manager class for sensor monitoring and control.
++ */
++class Terminus
++{
++  public:
++    Terminus(tid_t tid, uint64_t supportedPLDMTypes);
++
++    /** @brief Check if the terminus supports the PLDM type message
++     *
++     *  @param[in] type - PLDM Type
++     */
++    bool doesSupport(uint8_t type);
++
++    /** @brief The getter to return terminus's TID */
++    tid_t getTid()
++    {
++        return tid;
++    }
++
++    /** @brief A list of PDRs fetched from Terminus */
++    std::vector<std::vector<uint8_t>> pdrs{};
++
++    /** @brief A flag to indicate if terminus has been initialzed */
++    bool initalized = false;
++
++  private:
++    tid_t tid;
++    std::bitset<64> supportedTypes;
++};
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
+new file mode 100644
+index 0000000..4839f9f
+--- /dev/null
++++ b/platform-mc/terminus_manager.cpp
+@@ -0,0 +1,374 @@
++#include "terminus_manager.hpp"
++
++#include "manager.hpp"
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++std::optional<MctpInfo> TerminusManager::toMctpInfo(const tid_t& tid)
++{
++    if (transportLayerTable[tid] != SupportedTransportLayer::MCTP)
++    {
++        return std::nullopt;
++    }
++
++    auto it = mctpInfoTable.find(tid);
++    if (it == mctpInfoTable.end())
++    {
++        return std::nullopt;
++    }
++
++    return it->second;
++}
++
++std::optional<tid_t> TerminusManager::toTid(const MctpInfo& mctpInfo)
++{
++    auto mctpInfoTableIterator = std::find_if(
++        mctpInfoTable.begin(), mctpInfoTable.end(), [&mctpInfo](auto& v) {
++        return (std::get<0>(v.second) == std::get<0>(mctpInfo)) &&
++                (std::get<3>(v.second) == std::get<3>(mctpInfo));
++    });
++    if (mctpInfoTableIterator == mctpInfoTable.end())
++    {
++        return std::nullopt;
++    }
++    return mctpInfoTableIterator->first;
++}
++
++std::optional<tid_t> TerminusManager::mapTid(const MctpInfo& mctpInfo,
++                                             tid_t tid)
++{
++    if (tidPool[tid])
++    {
++        return std::nullopt;
++    }
++
++    tidPool[tid] = true;
++    transportLayerTable[tid] = SupportedTransportLayer::MCTP;
++    mctpInfoTable[tid] = mctpInfo;
++
++    return tid;
++}
++
++std::optional<tid_t> TerminusManager::mapTid(const MctpInfo& mctpInfo)
++{
++    if (std::get<0>(mctpInfo) == 0 || std::get<0>(mctpInfo) == 0xff)
++    {
++        return std::nullopt;
++    }
++
++    auto mctpInfoTableIterator = std::find_if(
++        mctpInfoTable.begin(), mctpInfoTable.end(), [&mctpInfo](auto& v) {
++        return (std::get<0>(v.second) == std::get<0>(mctpInfo)) &&
++                (std::get<3>(v.second) == std::get<3>(mctpInfo));
++    });
++    if (mctpInfoTableIterator != mctpInfoTable.end())
++    {
++        return mctpInfoTableIterator->first;
++    }
++
++    auto tidPoolIterator = std::find(tidPool.begin(), tidPool.end(), false);
++    if (tidPoolIterator == tidPool.end())
++    {
++        return std::nullopt;
++    }
++
++    tid_t tid = std::distance(tidPool.begin(), tidPoolIterator);
++    return mapTid(mctpInfo, tid);
++}
++
++bool TerminusManager::unmapTid(const tid_t& tid)
++{
++    if (tid == 0 || tid == PLDM_TID_RESERVED)
++    {
++        return false;
++    }
++    tidPool[tid] = false;
++
++    auto transportLayerTableIterator = transportLayerTable.find(tid);
++    transportLayerTable.erase(transportLayerTableIterator);
++
++    auto mctpInfoTableIterator = mctpInfoTable.find(tid);
++    mctpInfoTable.erase(mctpInfoTableIterator);
++    return true;
++}
++
++void TerminusManager::discoverMctpTerminus(const MctpInfos& mctpInfos)
++{
++    queuedMctpInfos.emplace(mctpInfos);
++    if (discoverMctpTerminusTaskHandle)
++    {
++        if (!discoverMctpTerminusTaskHandle.done())
++        {
++            return;
++        }
++        discoverMctpTerminusTaskHandle.destroy();
++    }
++
++    auto co = discoverMctpTerminusTask();
++    discoverMctpTerminusTaskHandle = co.handle;
++    if (discoverMctpTerminusTaskHandle.done())
++    {
++        discoverMctpTerminusTaskHandle = nullptr;
++    }
++}
++
++requester::Coroutine TerminusManager::discoverMctpTerminusTask()
++{
++    while (!queuedMctpInfos.empty())
++    {
++        if (manager)
++        {
++            co_await manager->beforeDiscoverTerminus();
++        }
++
++        const MctpInfos& mctpInfos = queuedMctpInfos.front();
++        for (auto& mctpInfo : mctpInfos)
++        {
++            bool alreadyAdded = false;
++            for (auto it = termini.begin(); it != termini.end();)
++            {
++                auto terminusMctpInfo = toMctpInfo(it->first);
++                /* Teminus already initialized and added to temini list */
++                if (terminusMctpInfo &&
++                    (std::get<0>(terminusMctpInfo.value()) ==
++                     std::get<0>(mctpInfo)) &&
++                    (std::get<3>(terminusMctpInfo.value()) ==
++                     std::get<3>(mctpInfo)))
++                {
++                    alreadyAdded = true;
++                    break;
++                }
++                it++;
++            }
++            if (!alreadyAdded)
++            {
++                co_await initMctpTerminus(mctpInfo);
++            }
++        }
++
++        if (manager)
++        {
++            co_await manager->afterDiscoverTerminus();
++        }
++
++        queuedMctpInfos.pop();
++    }
++
++    co_return PLDM_SUCCESS;
++}
++
++void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
++{
++    // remove terminus
++    for (auto& mctpInfo : mctpInfos)
++    {
++        for (auto it = termini.begin(); it != termini.end();)
++        {
++            auto terminusMctpInfo = toMctpInfo(it->first);
++            /* Match the EID and NetworkType */
++            if (terminusMctpInfo &&
++                (std::get<0>(terminusMctpInfo.value()) ==
++                 std::get<0>(mctpInfo)) &&
++                (std::get<3>(terminusMctpInfo.value()) ==
++                 std::get<3>(mctpInfo)))
++            {
++                unmapTid(it->first);
++                termini.erase(it);
++                break;
++            }
++            it++;
++        }
++    }
++}
++
++requester::Coroutine TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
++{
++    mctp_eid_t eid = std::get<0>(mctpInfo);
++    tid_t tid = 0;
++    auto rc = co_await getTidOverMctp(eid, &tid);
++    if (rc || tid == PLDM_TID_RESERVED)
++    {
++        co_return PLDM_ERROR;
++    }
++
++    // Assigning a tid. If it has been mapped, mapTid() returns the tid assigned
++    // before.
++    auto mappedTid = mapTid(mctpInfo);
++    if (!mappedTid)
++    {
++        co_return PLDM_ERROR;
++    }
++
++    tid = mappedTid.value();
++    rc = co_await setTidOverMctp(eid, tid);
++    if (rc != PLDM_SUCCESS && rc != PLDM_ERROR_UNSUPPORTED_PLDM_CMD)
++    {
++        unmapTid(tid);
++        co_return rc;
++    }
++
++    auto it = termini.find(tid);
++    if (it != termini.end())
++    {
++        // the terminus has been discovered before
++        co_return PLDM_SUCCESS;
++    }
++
++    uint64_t supportedTypes = 0;
++    rc = co_await getPLDMTypes(tid, supportedTypes);
++    if (rc)
++    {
++        std::cerr << "failed to get PLDM Types\n";
++        co_return PLDM_ERROR;
++    }
++
++    termini[tid] = std::make_shared<Terminus>(tid, supportedTypes);
++    co_return PLDM_SUCCESS;
++}
++
++requester::Coroutine
++    TerminusManager::SendRecvPldmMsgOverMctp(mctp_eid_t eid, Request& request,
++                                             const pldm_msg** responseMsg,
++                                             size_t* responseLen)
++{
++    auto rc = co_await requester::SendRecvPldmMsg<RequesterHandler>(
++        handler, eid, request, responseMsg, responseLen);
++    if (rc)
++    {
++        std::cerr << "sendRecvPldmMsgOverMctp failed. rc="
++                  << static_cast<unsigned>(rc) << "\n";
++    }
++    co_return rc;
++}
++
++requester::Coroutine TerminusManager::getTidOverMctp(mctp_eid_t eid, tid_t* tid)
++{
++    auto instanceId = instanceIdDb.next(eid);
++    Request request(sizeof(pldm_msg_hdr));
++    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++    auto rc = encode_get_tid_req(instanceId, requestMsg);
++    if (rc)
++    {
++        instanceIdDb.free(eid, instanceId);
++        std::cerr << "encode_get_tid_req failed. rc="
++                  << static_cast<unsigned>(rc) << "\n";
++        co_return rc;
++    }
++
++    const pldm_msg* responseMsg = NULL;
++    size_t responseLen = 0;
++    rc = co_await SendRecvPldmMsgOverMctp(eid, request, &responseMsg,
++                                          &responseLen);
++    if (rc)
++    {
++        co_return rc;
++    }
++
++    uint8_t completionCode = 0;
++    rc = decode_get_tid_resp(responseMsg, responseLen, &completionCode, tid);
++    if (rc)
++    {
++        std::cerr << "decode_get_tid_resp failed. rc="
++                  << static_cast<unsigned>(rc) << "\n";
++        co_return rc;
++    }
++
++    co_return completionCode;
++}
++
++requester::Coroutine TerminusManager::setTidOverMctp(mctp_eid_t eid, tid_t tid)
++{
++    auto instanceId = instanceIdDb.next(eid);
++    Request request(sizeof(pldm_msg_hdr) + sizeof(pldm_set_tid_req));
++    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++    auto rc = encode_set_tid_req(instanceId, tid, requestMsg);
++    if (rc)
++    {
++        instanceIdDb.free(eid, instanceId);
++        co_return rc;
++    }
++
++    const pldm_msg* responseMsg = NULL;
++    size_t responseLen = 0;
++    rc = co_await SendRecvPldmMsgOverMctp(eid, request, &responseMsg,
++                                          &responseLen);
++    if (rc)
++    {
++        co_return rc;
++    }
++
++    if (responseMsg == NULL || responseLen != PLDM_SET_TID_RESP_BYTES)
++    {
++        co_return PLDM_ERROR_INVALID_LENGTH;
++    }
++
++    co_return responseMsg->payload[0];
++}
++
++requester::Coroutine TerminusManager::getPLDMTypes(tid_t tid,
++                                                   uint64_t& supportedTypes)
++{
++    Request request(sizeof(pldm_msg_hdr));
++    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++    auto rc = encode_get_types_req(0, requestMsg);
++    if (rc)
++    {
++        std::cerr << "encode_get_types_req failed. rc="
++                  << static_cast<unsigned>(rc) << "\n";
++        co_return rc;
++    }
++
++    const pldm_msg* responseMsg = NULL;
++    size_t responseLen = 0;
++
++    rc = co_await SendRecvPldmMsg(tid, request, &responseMsg, &responseLen);
++    if (rc)
++    {
++        co_return rc;
++    }
++
++    uint8_t completionCode = 0;
++    bitfield8_t* types = reinterpret_cast<bitfield8_t*>(&supportedTypes);
++    rc = decode_get_types_resp(responseMsg, responseLen, &completionCode,
++                               types);
++    if (rc)
++    {
++        std::cerr << "decode_get_types_resp failed. rc="
++                  << static_cast<unsigned>(rc) << "\n";
++        co_return rc;
++    }
++    co_return completionCode;
++}
++
++requester::Coroutine
++    TerminusManager::SendRecvPldmMsg(tid_t tid, Request& request,
++                                     const pldm_msg** responseMsg,
++                                     size_t* responseLen)
++{
++    if (tidPool[tid] &&
++        transportLayerTable[tid] == SupportedTransportLayer::MCTP)
++    {
++        auto mctpInfo = toMctpInfo(tid);
++        if (!mctpInfo)
++        {
++            co_return PLDM_ERROR;
++        }
++
++        auto eid = std::get<0>(mctpInfo.value());
++        auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++        requestMsg->hdr.instance_id = instanceIdDb.next(eid);
++        auto rc = co_await SendRecvPldmMsgOverMctp(eid, request, responseMsg,
++                                                   responseLen);
++        co_return rc;
++    }
++    else
++    {
++        co_return PLDM_ERROR;
++    }
++}
++
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
+new file mode 100644
+index 0000000..7df8d15
+--- /dev/null
++++ b/platform-mc/terminus_manager.hpp
+@@ -0,0 +1,166 @@
++#pragma once
++
++#include "config.h"
++
++#include "libpldm/platform.h"
++#include "libpldm/pldm.h"
++
++#include "requester/handler.hpp"
++#include "requester/mctp_endpoint_discovery.hpp"
++#include "terminus.hpp"
++
++#include <queue>
++
++namespace pldm
++{
++
++enum SupportedTransportLayer
++{
++    MCTP
++};
++
++namespace platform_mc
++{
++constexpr size_t tidPoolSize = std::numeric_limits<tid_t>::max() + 1;
++using RequesterHandler = requester::Handler<requester::Request>;
++
++class Manager;
++/**
++ * @brief TerminusManager
++ *
++ * TerminusManager class to discover and initialize PLDM terminus.
++ */
++class TerminusManager
++{
++  public:
++    TerminusManager() = delete;
++    TerminusManager(const TerminusManager&) = delete;
++    TerminusManager(TerminusManager&&) = delete;
++    TerminusManager& operator=(const TerminusManager&) = delete;
++    TerminusManager& operator=(TerminusManager&&) = delete;
++    virtual ~TerminusManager() = default;
++
++    explicit TerminusManager(
++        sdeventplus::Event& event,
++        requester::Handler<requester::Request>& handler,
++        pldm::InstanceIdDb& instanceIdDb,
++        std::map<tid_t, std::shared_ptr<Terminus>>& termini, Manager* manager) :
++        event(event),
++        handler(handler), instanceIdDb(instanceIdDb), termini(termini),
++        tidPool(tidPoolSize, false), manager(manager)
++    {
++        // DSP0240 v1.1.0 table-8, special value: 0,0xFF = reserved
++        tidPool[0] = true;
++        tidPool[PLDM_TID_RESERVED] = true;
++    }
++
++    /** @brief start a coroutine to discover terminus
++     *
++     *  @param[in] mctpInfos - list of mctpInfo to be checked
++     */
++    void discoverMctpTerminus(const MctpInfos& mctpInfos);
++
++    /** @brief remove MCTP endpoints
++     *
++     *  @param[in] mctpInfos - information of removed MCTP endpoints
++     */
++    void removeMctpTerminus(const MctpInfos& mctpInfos);
++
++    /** @brief Send request PLDM message to tid. The function will
++     *         return when received the response message from terminus.
++     *
++     *  @param[in] tid - tid
++     *  @param[in] request - request PLDM message
++     *  @param[out] responseMsg - response PLDM message
++     *  @param[out] responseLen - length of response PLDM message
++     *  @return coroutine return_value - PLDM completion code
++     */
++    requester::Coroutine SendRecvPldmMsg(tid_t tid, Request& request,
++                                         const pldm_msg** responseMsg,
++                                         size_t* responseLen);
++
++    /** @brief Send request PLDM message to eid. The function will
++     *         return when received the response message from terminus.
++     *
++     *  @param[in] eid - eid
++     *  @param[in] request - request PLDM message
++     *  @param[out] responseMsg - response PLDM message
++     *  @param[out] responseLen - length of response PLDM message
++     *  @return coroutine return_value - PLDM completion code
++     */
++    virtual requester::Coroutine
++        SendRecvPldmMsgOverMctp(mctp_eid_t eid, Request& request,
++                                const pldm_msg** responseMsg,
++                                size_t* responseLen);
++
++    /** @brief member functions to map/unmap tid
++     */
++    std::optional<MctpInfo> toMctpInfo(const tid_t& tid);
++    std::optional<tid_t> toTid(const MctpInfo& mctpInfo);
++    std::optional<tid_t> mapTid(const MctpInfo& mctpInfo);
++    std::optional<tid_t> mapTid(const MctpInfo& mctpInfo, tid_t tid);
++    bool unmapTid(const tid_t& tid);
++
++  private:
++    /** @brief The coroutine task execute by discoverMctpTerminus()
++     *
++     *  @return coroutine return_value - PLDM completion code
++     */
++    requester::Coroutine discoverMctpTerminusTask();
++
++    /** @brief Initialize terminus and then instantiate terminus object to keeps
++     *         the data fetched from terminus
++     *
++     *  @param[in] mctpInfo - NetworkId, EID and UUID
++     */
++    requester::Coroutine initMctpTerminus(const MctpInfo& mctpInfo);
++
++    /** @brief Send getTID PLDM command to destination EID and then return the
++     *         value of tid in reference parameter.
++     *
++     *  @param[in] eid - Destination EID
++     *  @param[out] tid - TID returned from terminus
++     *  @return coroutine return_value - PLDM completion code
++     */
++    requester::Coroutine getTidOverMctp(mctp_eid_t eid, tid_t* tid);
++
++    /** @brief Send setTID command to destination EID.
++     *
++     *  @param[in] eid - Destination EID
++     *  @param[in] tid - Terminus ID
++     *  @return coroutine return_value - PLDM completion code
++     */
++    requester::Coroutine setTidOverMctp(mctp_eid_t eid, tid_t tid);
++
++    /** @brief Send getPLDMTypes command to destination TID and then return the
++     *         value of supportedTypes in reference parameter.
++     *
++     *  @param[in] tid - Destination TID
++     *  @param[out] supportedTypes - Supported Types returned from terminus
++     *  @return coroutine return_value - PLDM completion code
++     */
++    requester::Coroutine getPLDMTypes(tid_t tid, uint64_t& supportedTypes);
++
++    sdeventplus::Event& event;
++    RequesterHandler& handler;
++    pldm::InstanceIdDb& instanceIdDb;
++
++    /** @brief Managed termini list */
++    std::map<tid_t, std::shared_ptr<Terminus>>& termini;
++
++    /** @brief tables for maintaining assigned TID */
++    std::vector<bool> tidPool;
++    std::map<tid_t, SupportedTransportLayer> transportLayerTable;
++    std::map<tid_t, MctpInfo> mctpInfoTable;
++
++    /** @brief A queue of MctpInfos to be discovered **/
++    std::queue<MctpInfos> queuedMctpInfos{};
++
++    /** @brief coroutine handle of discoverTerminusTask */
++    std::coroutine_handle<> discoverMctpTerminusTaskHandle;
++
++    /** @brief A Manager interface for calling the hook functions **/
++    Manager* manager;
++};
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
+new file mode 100644
+index 0000000..73868ad
+--- /dev/null
++++ b/platform-mc/test/meson.build
+@@ -0,0 +1,31 @@
++test_src = declare_dependency(
++          sources: [
++            '../terminus_manager.cpp',
++            '../terminus.cpp',
++            '../platform_manager.cpp',
++            '../../requester/mctp_endpoint_discovery.cpp'],
++            include_directories: ['../../requester', '../../pldmd'])
++
++tests = [
++  'terminus_manager_test',
++  'terminus_test',
++]
++
++foreach t : tests
++  test(t, executable(t.underscorify(), t + '.cpp',
++                     implicit_include_directories: false,
++                     link_args: dynamic_linker,
++                     build_rpath: get_option('oe-sdk').enabled() ? rpath : '',
++                     dependencies: [
++                         gtest,
++                         gmock,
++                         libpldm_dep,
++                         libpldmutils,
++                         nlohmann_json,
++                         phosphor_dbus_interfaces,
++                         phosphor_logging_dep,
++                         sdbusplus,
++                         sdeventplus,
++                         test_src]),
++       workdir: meson.current_source_dir())
++endforeach
+diff --git a/platform-mc/test/mock_terminus_manager.hpp b/platform-mc/test/mock_terminus_manager.hpp
+new file mode 100644
+index 0000000..1f65eef
+--- /dev/null
++++ b/platform-mc/test/mock_terminus_manager.hpp
+@@ -0,0 +1,76 @@
++#pragma once
++
++#include "platform-mc/terminus_manager.hpp"
++
++#include <queue>
++
++#include <gmock/gmock.h>
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++class MockTerminusManager : public TerminusManager
++{
++  public:
++    MockTerminusManager(sdeventplus::Event& event,
++                        requester::Handler<requester::Request>& handler,
++                        pldm::InstanceIdDb& instanceIdDb,
++                        std::map<tid_t, std::shared_ptr<Terminus>>& termini,
++                        Manager* manager) :
++        TerminusManager(event, handler, instanceIdDb, termini, manager)
++    {}
++
++    requester::Coroutine SendRecvPldmMsgOverMctp(mctp_eid_t /*eid*/,
++                                                 Request& /*request*/,
++                                                 const pldm_msg** responseMsg,
++                                                 size_t* responseLen) override
++    {
++        if (responseMsgs.empty() || responseMsg == nullptr ||
++            responseLen == nullptr)
++        {
++            co_return PLDM_ERROR;
++        }
++
++        *responseMsg = responseMsgs.front();
++        *responseLen = responseLens.front() - sizeof(pldm_msg_hdr);
++
++        responseMsgs.pop();
++        responseLens.pop();
++        co_return PLDM_SUCCESS;
++    }
++
++    int enqueueResponse(pldm_msg* responseMsg, size_t responseLen)
++    {
++        if (responseMsg == nullptr)
++        {
++            return PLDM_ERROR_INVALID_DATA;
++        }
++
++        if (responseLen <= sizeof(pldm_msg_hdr))
++        {
++            return PLDM_ERROR_INVALID_LENGTH;
++        }
++
++        responseMsgs.push(responseMsg);
++        responseLens.push(responseLen);
++        return PLDM_SUCCESS;
++    }
++
++    int clearQueuedResponses()
++    {
++        while (!responseMsgs.empty())
++        {
++            responseMsgs.pop();
++            responseLens.pop();
++        }
++        return PLDM_SUCCESS;
++    }
++
++    std::queue<pldm_msg*> responseMsgs;
++    std::queue<size_t> responseLens;
++};
++
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
+new file mode 100644
+index 0000000..10b9afa
+--- /dev/null
++++ b/platform-mc/test/terminus_manager_test.cpp
+@@ -0,0 +1,241 @@
++#include "libpldm/base.h"
++
++#include "common/instance_id.hpp"
++#include "common/types.hpp"
++#include "mock_terminus_manager.hpp"
++#include "platform-mc/terminus_manager.hpp"
++#include "requester/handler.hpp"
++#include "requester/mctp_endpoint_discovery.hpp"
++#include "requester/request.hpp"
++#include "test/test_instance_id.hpp"
++
++#include <sdbusplus/timer.hpp>
++#include <sdeventplus/event.hpp>
++
++#include <gmock/gmock.h>
++#include <gtest/gtest.h>
++
++using namespace std::chrono;
++
++using ::testing::AtLeast;
++using ::testing::Between;
++using ::testing::Exactly;
++using ::testing::NiceMock;
++using ::testing::Return;
++
++class TerminusManagerTest : public testing::Test
++{
++  protected:
++    TerminusManagerTest() :
++        bus(pldm::utils::DBusHandler::getBus()),
++        event(sdeventplus::Event::get_default()), instanceIdDb(),
++        reqHandler(fd, event, instanceIdDb, false, 90000, seconds(1), 2,
++                   milliseconds(100)),
++        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
++        mockTerminusManager(event, reqHandler, instanceIdDb, termini, nullptr)
++    {}
++
++    int fd = -1;
++    sdbusplus::bus_t& bus;
++    sdeventplus::Event event;
++    TestInstanceIdDb instanceIdDb;
++    pldm::requester::Handler<pldm::requester::Request> reqHandler;
++    pldm::platform_mc::TerminusManager terminusManager;
++    pldm::platform_mc::MockTerminusManager mockTerminusManager;
++    std::map<pldm::tid_t, std::shared_ptr<pldm::platform_mc::Terminus>> termini;
++};
++
++TEST_F(TerminusManagerTest, mapTidTest)
++{
++    pldm::MctpInfo mctpInfo1(1, "", "", 0);
++
++    auto mappedTid1 = terminusManager.mapTid(mctpInfo1);
++    EXPECT_NE(mappedTid1, std::nullopt);
++
++    auto tid1 = terminusManager.toTid(mctpInfo1);
++    EXPECT_NE(tid1, std::nullopt);
++
++    auto mctpInfo2 = terminusManager.toMctpInfo(tid1.value());
++    EXPECT_EQ(mctpInfo1, mctpInfo2.value());
++
++    auto ret = terminusManager.unmapTid(tid1.value());
++    EXPECT_EQ(ret, true);
++
++    tid1 = terminusManager.toTid(mctpInfo1);
++    EXPECT_EQ(tid1, std::nullopt);
++}
++
++TEST_F(TerminusManagerTest, negativeMapTidTest)
++{
++    // map null EID(0) to TID
++    pldm::MctpInfo m0(0, "", "", 0);
++    auto mappedTid = terminusManager.mapTid(m0);
++    EXPECT_EQ(mappedTid, std::nullopt);
++
++    // map broadcast EID(0xff) to TID
++    pldm::MctpInfo m1(0xff, "", "", 0);
++    mappedTid = terminusManager.mapTid(m1);
++    EXPECT_EQ(mappedTid, std::nullopt);
++
++    // map EID to tid which has been assigned
++    pldm::MctpInfo m2(2, "", "", 1);
++    pldm::MctpInfo m3(3, "", "", 1);
++    auto mappedTid2 = terminusManager.mapTid(m2);
++    auto mappedTid3 = terminusManager.mapTid(m3, mappedTid2.value());
++    EXPECT_NE(mappedTid2, std::nullopt);
++    EXPECT_EQ(mappedTid3, std::nullopt);
++
++    // map two mctpInfo with same EID but different network Id
++    pldm::MctpInfo m4(12, "", "", 1);
++    pldm::MctpInfo m5(12, "", "", 2);
++    auto mappedTid4 = terminusManager.mapTid(m4);
++    auto mappedTid5 = terminusManager.mapTid(m5);
++    EXPECT_NE(mappedTid4.value(), mappedTid5.value());
++
++    // map same mctpInfo twice
++    pldm::MctpInfo m6(12, "", "", 3);
++    auto mappedTid6 = terminusManager.mapTid(m6);
++    auto mappedTid6_1 = terminusManager.mapTid(m6);
++    EXPECT_EQ(mappedTid6.value(), mappedTid6_1.value());
++
++    // look up an unmapped MctpInfo to TID
++    pldm::MctpInfo m7(1, "", "", 0);
++    auto mappedTid7 = terminusManager.toTid(m7);
++    EXPECT_EQ(mappedTid7, std::nullopt);
++
++    // look up reserved TID(0)
++    auto mappedEid = terminusManager.toMctpInfo(0);
++    EXPECT_EQ(mappedEid, std::nullopt);
++
++    // look up reserved TID(0xff)
++    mappedEid = terminusManager.toMctpInfo(0xff);
++    EXPECT_EQ(mappedEid, std::nullopt);
++
++    // look up an unmapped TID
++    terminusManager.unmapTid(1);
++    mappedEid = terminusManager.toMctpInfo(1);
++    EXPECT_EQ(mappedEid, std::nullopt);
++
++    // unmap reserved TID(0)
++    auto ret = terminusManager.unmapTid(0);
++    EXPECT_EQ(ret, false);
++
++    // unmap reserved TID(0)
++    ret = terminusManager.unmapTid(0xff);
++    EXPECT_EQ(ret, false);
++}
++
++TEST_F(TerminusManagerTest, discoverMctpTerminusTest)
++{
++    const size_t getTidRespLen = 2;
++    const size_t setTidRespLen = 1;
++    const size_t getPldmTypesRespLen = 9;
++
++    // 0.discover a mctp list
++    auto rc = mockTerminusManager.clearQueuedResponses();
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getTidRespLen> getTidResp0{
++        0x00, 0x02, 0x02, 0x00, 0x00};
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)getTidResp0.data(),
++                                             sizeof(getTidResp0));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + setTidRespLen> setTidResp0{
++        0x00, 0x02, 0x01, 0x00};
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)setTidResp0.data(),
++                                             sizeof(setTidResp0));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getPldmTypesRespLen>
++        getPldmTypesResp0{0x00, 0x02, 0x04, 0x00, 0x01, 0x00,
++                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++    rc = mockTerminusManager.enqueueResponse(
++        (pldm_msg*)getPldmTypesResp0.data(), sizeof(getPldmTypesResp0));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    pldm::MctpInfos mctpInfos{};
++    mctpInfos.emplace_back(pldm::MctpInfo(12, "", "", 1));
++    mockTerminusManager.discoverMctpTerminus(mctpInfos);
++    EXPECT_EQ(1, termini.size());
++
++    // 1.discover the same mctp list again
++    rc = mockTerminusManager.clearQueuedResponses();
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getTidRespLen> getTidResp1{
++        0x00, 0x02, 0x02, 0x00, 0x01};
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)getTidResp1.data(),
++                                             sizeof(getTidResp1));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)setTidResp0.data(),
++                                             sizeof(setTidResp0));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    rc = mockTerminusManager.enqueueResponse(
++        (pldm_msg*)getPldmTypesResp0.data(), sizeof(getPldmTypesResp0));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    mockTerminusManager.discoverMctpTerminus(mctpInfos);
++    EXPECT_EQ(1, termini.size());
++
++    // 2.discover an empty mctp list
++    rc = mockTerminusManager.clearQueuedResponses();
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    mockTerminusManager.removeMctpTerminus(mctpInfos);
++    EXPECT_EQ(0, termini.size());
++}
++
++TEST_F(TerminusManagerTest, negativeDiscoverMctpTerminusTest)
++{
++    const size_t getTidRespLen = 2;
++    const size_t setTidRespLen = 1;
++    const size_t getPldmTypesRespLen = 9;
++
++    // 0.terminus returns reserved tid
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getTidRespLen> getTidResp0{
++        0x00, 0x02, 0x02, 0x00, PLDM_TID_RESERVED};
++    auto rc = mockTerminusManager.enqueueResponse((pldm_msg*)getTidResp0.data(),
++                                                  sizeof(getTidResp0));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    pldm::MctpInfos mctpInfos{};
++    mctpInfos.emplace_back(pldm::MctpInfo(12, "", "", 1));
++    mockTerminusManager.discoverMctpTerminus(mctpInfos);
++    EXPECT_EQ(0, termini.size());
++
++    // 1.terminus return cc=pldm_error for set tid
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getTidRespLen> getTidResp1{
++        0x00, 0x02, 0x02, 0x00, 0x00};
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + setTidRespLen> setTidResp1{
++        0x00, 0x02, 0x01, PLDM_ERROR};
++
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)getTidResp1.data(),
++                                             sizeof(getTidResp1));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)setTidResp1.data(),
++                                             sizeof(setTidResp1));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    mockTerminusManager.removeMctpTerminus(mctpInfos);
++    EXPECT_EQ(0, termini.size());
++
++    // 2.terminus return cc=unsupported_pldm_cmd for set tid cmd and return
++    // cc=pldm_error for get pldm types cmd
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getTidRespLen> getTidResp2{
++        0x00, 0x02, 0x02, 0x00, 0x00};
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + setTidRespLen> setTidResp2{
++        0x00, 0x02, 0x01, PLDM_ERROR_UNSUPPORTED_PLDM_CMD};
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getPldmTypesRespLen>
++        getPldmTypesResp2{0x00, 0x02, 0x04, PLDM_ERROR, 0x01, 0x00,
++                          0x00, 0x00, 0x00, 0x00,       0x00, 0x00};
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)getTidResp2.data(),
++                                             sizeof(getTidResp2));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)setTidResp2.data(),
++                                             sizeof(setTidResp2));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    rc = mockTerminusManager.enqueueResponse(
++        (pldm_msg*)getPldmTypesResp2.data(), sizeof(getPldmTypesResp2));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    mockTerminusManager.removeMctpTerminus(mctpInfos);
++    EXPECT_EQ(0, termini.size());
++}
+diff --git a/platform-mc/test/terminus_test.cpp b/platform-mc/test/terminus_test.cpp
+new file mode 100644
+index 0000000..b2783c3
+--- /dev/null
++++ b/platform-mc/test/terminus_test.cpp
+@@ -0,0 +1,24 @@
++#include "platform-mc/terminus.hpp"
++
++#include <gtest/gtest.h>
++
++using namespace pldm::platform_mc;
++
++TEST(TerminusTest, supportedTypeTest)
++{
++    auto t1 = Terminus(1, 1 << PLDM_BASE);
++    auto t2 = Terminus(2, 1 << PLDM_BASE | 1 << PLDM_PLATFORM);
++
++    EXPECT_EQ(true, t1.doesSupport(PLDM_BASE));
++    EXPECT_EQ(false, t1.doesSupport(PLDM_PLATFORM));
++    EXPECT_EQ(true, t2.doesSupport(PLDM_BASE));
++    EXPECT_EQ(true, t2.doesSupport(PLDM_PLATFORM));
++}
++
++TEST(TerminusTest, getTidTest)
++{
++    const pldm::tid_t tid = 1;
++    auto t1 = Terminus(tid, 1 << PLDM_BASE);
++
++    EXPECT_EQ(tid, t1.getTid());
++}
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index 35aa265..d544c87 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -6,6 +6,7 @@
+ #include "dbus_impl_requester.hpp"
+ #include "fw-update/manager.hpp"
+ #include "invoker.hpp"
++#include "platform-mc/manager.hpp"
+ #include "requester/handler.hpp"
+ #include "requester/mctp_endpoint_discovery.hpp"
+ #include "requester/request.hpp"
+@@ -295,10 +296,12 @@ int main(int argc, char** argv)
+ 
+     std::unique_ptr<fw_update::Manager> fwManager =
+         std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
++    std::unique_ptr<platform_mc::Manager> platformManager =
++        std::make_unique<platform_mc::Manager>(event, reqHandler, instanceIdDb);
+     std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
+         std::make_unique<MctpDiscovery>(
+-            bus,
+-            std::initializer_list<MctpDiscoveryHandlerIntf*>{fwManager.get()});
++            bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
++                     fwManager.get(), platformManager.get()});
+     auto callback = [verbose, &invoker, &reqHandler, &fwManager, &pldmTransport,
+                      TID](IO& io, int fd, uint32_t revents) mutable {
+         if (!(revents & EPOLLIN))
+-- 
+2.25.1
+

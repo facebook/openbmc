@@ -1,0 +1,589 @@
+From fbef1ec1806f35f86499e229bde37dae31fcfdfd Mon Sep 17 00:00:00 2001
+From: Gilbert Chen <gilbert.chen@arm.com>
+Date: Tue, 24 May 2022 15:35:21 +0100
+Subject: [PATCH 4/6] platform-mc: PDR handling
+
+Added parse PDR member functions to terminus class for parsing Numeric
+sensor PDR and sensor auxiliary names PDR.
+Added sensor auxiliary names PDR and numeric sensor
+PDR struct in libpldm/platform.h
+
+Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
+Change-Id: I30a0cc594a3c08fc17f2dad861b5c5d41c80ebdd
+---
+ platform-mc/platform_manager.cpp           |   6 +-
+ platform-mc/terminus.cpp                   | 199 +++++++++++++++++++++
+ platform-mc/terminus.hpp                   |  36 ++++
+ platform-mc/test/meson.build               |   1 +
+ platform-mc/test/platform_manager_test.cpp | 186 +++++++++++++++++++
+ platform-mc/test/terminus_test.cpp         |  58 ++++++
+ 6 files changed, 485 insertions(+), 1 deletion(-)
+ create mode 100644 platform-mc/test/platform_manager_test.cpp
+
+diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
+index 034fc22..0fbfc66 100644
+--- a/platform-mc/platform_manager.cpp
++++ b/platform-mc/platform_manager.cpp
+@@ -18,7 +18,11 @@ requester::Coroutine PlatformManager::initTerminus()
+ 
+         if (terminus->doesSupport(PLDM_PLATFORM))
+         {
+-            co_await getPDRs(terminus);
++            auto rc = co_await getPDRs(terminus);
++            if (!rc)
++            {
++                terminus->parsePDRs();
++            }
+         }
+         terminus->initalized = true;
+     }
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+index 1dec2ff..a83b0d7 100644
+--- a/platform-mc/terminus.cpp
++++ b/platform-mc/terminus.cpp
+@@ -17,5 +17,204 @@ bool Terminus::doesSupport(uint8_t type)
+ {
+     return supportedTypes.test(type);
+ }
++
++bool Terminus::parsePDRs()
++{
++    bool rc = true;
++    std::vector<std::shared_ptr<pldm_numeric_sensor_value_pdr>>
++        numericSensorPdrs{};
++    std::vector<std::shared_ptr<pldm_compact_numeric_sensor_pdr>>
++        compactNumericSensorPdrs{};
++
++    for (auto& pdr : pdrs)
++    {
++        auto pdrHdr = reinterpret_cast<pldm_pdr_hdr*>(pdr.data());
++        if (pdrHdr->type == PLDM_SENSOR_AUXILIARY_NAMES_PDR)
++        {
++            auto sensorAuxiliaryNames = parseSensorAuxiliaryNamesPDR(pdr);
++            sensorAuxiliaryNamesTbl.emplace_back(
++                std::move(sensorAuxiliaryNames));
++        }
++        else if (pdrHdr->type == PLDM_NUMERIC_SENSOR_PDR)
++        {
++            auto parsedPdr = parseNumericSensorPDR(pdr);
++            if (parsedPdr != nullptr)
++            {
++                numericSensorPdrs.emplace_back(std::move(parsedPdr));
++            }
++        }
++        else if (pdrHdr->type == PLDM_COMPACT_NUMERIC_SENSOR_PDR)
++        {
++            auto parsedPdr = parseCompactNumericSensorPDR(pdr);
++            if (parsedPdr != nullptr)
++            {
++                compactNumericSensorPdrs.emplace_back(std::move(parsedPdr));
++                auto sensorAuxiliaryNames = parseCompactNumericSensorNames(pdr);
++                if (sensorAuxiliaryNames != nullptr)
++                {
++                    sensorAuxiliaryNamesTbl.emplace_back(
++                        std::move(sensorAuxiliaryNames));
++                }
++            }
++        }
++        else
++        {
++            std::cerr << "parsePDRs() Unsupported PDR, type="
++                      << static_cast<unsigned>(pdrHdr->type) << "\n";
++            rc = false;
++        }
++    }
++    return rc;
++}
++
++std::shared_ptr<SensorAuxiliaryNames>
++    Terminus::getSensorAuxiliaryNames(SensorId id)
++{
++    for (auto sensorAuxiliaryNames : sensorAuxiliaryNamesTbl)
++    {
++        const auto& [sensorId, sensorCnt, sensorNames] = *sensorAuxiliaryNames;
++        if (sensorId == id)
++        {
++            return sensorAuxiliaryNames;
++        }
++    }
++    return nullptr;
++}
++
++std::shared_ptr<SensorAuxiliaryNames>
++    Terminus::parseSensorAuxiliaryNamesPDR(const std::vector<uint8_t>& pdrData)
++{
++    constexpr uint8_t nullTerminator = 0;
++    auto pdr = reinterpret_cast<const struct pldm_sensor_auxiliary_names_pdr*>(
++        pdrData.data());
++    const uint8_t* ptr = pdr->names;
++    std::vector<std::vector<std::pair<NameLanguageTag, SensorName>>>
++        sensorAuxNames{};
++    char16_t alignedBuffer[PLDM_STR_UTF_16_MAX_LEN];
++    for (int i = 0; i < pdr->sensor_count; i++)
++    {
++        const uint8_t nameStringCount = static_cast<uint8_t>(*ptr);
++        ptr += sizeof(uint8_t);
++        std::vector<std::pair<NameLanguageTag, SensorName>> nameStrings{};
++        for (int j = 0; j < nameStringCount; j++)
++        {
++            std::string nameLanguageTag(reinterpret_cast<const char*>(ptr), 0,
++                                        PLDM_STR_UTF_8_MAX_LEN);
++            ptr += nameLanguageTag.size() + sizeof(nullTerminator);
++
++            int u16NameStringLen = 0;
++            for (int i = 0; ptr[i] != 0 || ptr[i + 1] != 0; i += 2)
++            {
++                u16NameStringLen++;
++            }
++            memset(alignedBuffer, 0,
++                   PLDM_STR_UTF_16_MAX_LEN * sizeof(uint16_t));
++            memcpy(alignedBuffer, ptr, u16NameStringLen * sizeof(uint16_t));
++            std::u16string u16NameString(alignedBuffer, 0,
++                                         PLDM_STR_UTF_16_MAX_LEN);
++            ptr += (u16NameString.size() + sizeof(nullTerminator)) *
++                   sizeof(uint16_t);
++            std::transform(u16NameString.cbegin(), u16NameString.cend(),
++                           u16NameString.begin(),
++                           [](uint16_t utf16) { return be16toh(utf16); });
++            std::string nameString =
++                std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,
++                                     char16_t>{}
++                    .to_bytes(u16NameString);
++            nameStrings.emplace_back(
++                std::make_pair(nameLanguageTag, nameString));
++        }
++        sensorAuxNames.emplace_back(nameStrings);
++    }
++    return std::make_shared<SensorAuxiliaryNames>(
++        pdr->sensor_id, pdr->sensor_count, sensorAuxNames);
++}
++
++std::shared_ptr<pldm_numeric_sensor_value_pdr>
++    Terminus::parseNumericSensorPDR(const std::vector<uint8_t>& pdr)
++{
++    const uint8_t* ptr = pdr.data();
++    auto parsedPdr = std::make_shared<pldm_numeric_sensor_value_pdr>();
++    auto rc = decode_numeric_sensor_pdr_data(ptr, pdr.size(), parsedPdr.get());
++    if (rc)
++    {
++        return nullptr;
++    }
++    return parsedPdr;
++}
++
++std::shared_ptr<SensorAuxiliaryNames>
++    Terminus::parseCompactNumericSensorNames(const std::vector<uint8_t>& sPdr)
++{
++    std::string nameString;
++    std::vector<std::vector<std::pair<NameLanguageTag, SensorName>>>
++        sensorAuxNames{};
++    std::vector<std::pair<NameLanguageTag, SensorName>> nameStrings{};
++    auto pdr =
++        reinterpret_cast<const pldm_compact_numeric_sensor_pdr*>(sPdr.data());
++
++    if (sPdr.size() <
++        (sizeof(pldm_compact_numeric_sensor_pdr) - sizeof(uint8_t)))
++    {
++        return nullptr;
++    }
++
++    if (pdr->sensor_name_length == 0)
++    {
++        return nullptr;
++    }
++
++    if (sPdr.size() < (sizeof(pldm_compact_numeric_sensor_pdr) -
++                       sizeof(uint8_t) + pdr->sensor_name_length))
++    {
++        return nullptr;
++    }
++
++    std::string sTemp(reinterpret_cast<const char*>(pdr->sensor_name),
++                      pdr->sensor_name_length);
++    size_t pos = 0;
++    while ((pos = sTemp.find(" ")) != std::string::npos)
++    {
++        sTemp.replace(pos, 1, "_");
++    }
++    nameString = sTemp;
++
++    nameString.erase(nameString.find('\0'));
++    nameStrings.emplace_back(std::make_pair("en", nameString));
++    sensorAuxNames.emplace_back(nameStrings);
++
++    return std::make_shared<SensorAuxiliaryNames>(pdr->sensor_id, 1,
++                                                  sensorAuxNames);
++}
++
++std::shared_ptr<pldm_compact_numeric_sensor_pdr>
++    Terminus::parseCompactNumericSensorPDR(const std::vector<uint8_t>& sPdr)
++{
++    std::string nameString;
++    std::vector<std::pair<NameLanguageTag, SensorName>> nameStrings{};
++    auto pdr =
++        reinterpret_cast<const pldm_compact_numeric_sensor_pdr*>(sPdr.data());
++    auto parsedPdr = std::make_shared<pldm_compact_numeric_sensor_pdr>();
++
++    parsedPdr->hdr = pdr->hdr;
++    parsedPdr->terminus_handle = pdr->terminus_handle;
++    parsedPdr->sensor_id = pdr->sensor_id;
++    parsedPdr->entity_type = pdr->entity_type;
++    parsedPdr->entity_instance = pdr->entity_instance;
++    parsedPdr->container_id = pdr->container_id;
++    parsedPdr->sensor_name_length = pdr->sensor_name_length;
++    parsedPdr->base_unit = pdr->base_unit;
++    parsedPdr->unit_modifier = pdr->unit_modifier;
++    parsedPdr->occurrence_rate = pdr->occurrence_rate;
++    parsedPdr->range_field_support = pdr->range_field_support;
++    parsedPdr->warning_high = pdr->warning_high;
++    parsedPdr->warning_low = pdr->warning_low;
++    parsedPdr->critical_high = pdr->critical_high;
++    parsedPdr->critical_low = pdr->critical_low;
++    parsedPdr->fatal_high = pdr->fatal_high;
++    parsedPdr->fatal_low = pdr->fatal_low;
++    return parsedPdr;
++}
++
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
+index 7b3aa53..0d4f58c 100644
+--- a/platform-mc/terminus.hpp
++++ b/platform-mc/terminus.hpp
+@@ -15,6 +15,14 @@ namespace pldm
+ {
+ namespace platform_mc
+ {
++using SensorId = uint16_t;
++using SensorCnt = uint8_t;
++using NameLanguageTag = std::string;
++using SensorName = std::string;
++using SensorAuxiliaryNames = std::tuple<
++    SensorId, SensorCnt,
++    std::vector<std::vector<std::pair<NameLanguageTag, SensorName>>>>;
++
+ /**
+  * @brief Terminus
+  *
+@@ -32,6 +40,12 @@ class Terminus
+      */
+     bool doesSupport(uint8_t type);
+ 
++    /** @brief Parse the PDRs stored in the member variable, pdrs.
++     *
++     *  @return False if any unsupported PDR is detected.
++     */
++    bool parsePDRs();
++
+     /** @brief The getter to return terminus's TID */
+     tid_t getTid()
+     {
+@@ -44,9 +58,31 @@ class Terminus
+     /** @brief A flag to indicate if terminus has been initialzed */
+     bool initalized = false;
+ 
++    /** @brief Get Sensor Auxiliary Names by sensorID
++     *
++     *  @param[in] id - sensor ID
++     *  @return sensor auxiliary names
++     */
++    std::shared_ptr<SensorAuxiliaryNames> getSensorAuxiliaryNames(SensorId id);
++
+   private:
++    std::shared_ptr<pldm_numeric_sensor_value_pdr>
++        parseNumericSensorPDR(const std::vector<uint8_t>& pdrData);
++
++    std::shared_ptr<SensorAuxiliaryNames>
++        parseSensorAuxiliaryNamesPDR(const std::vector<uint8_t>& pdrData);
++
++    std::shared_ptr<pldm_compact_numeric_sensor_pdr>
++        parseCompactNumericSensorPDR(const std::vector<uint8_t>& pdrData);
++
++    std::shared_ptr<SensorAuxiliaryNames>
++        parseCompactNumericSensorNames(const std::vector<uint8_t>& pdrData);
++
+     tid_t tid;
+     std::bitset<64> supportedTypes;
++
++    std::vector<std::shared_ptr<SensorAuxiliaryNames>>
++        sensorAuxiliaryNamesTbl{};
+ };
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
+index 73868ad..3403753 100644
+--- a/platform-mc/test/meson.build
++++ b/platform-mc/test/meson.build
+@@ -9,6 +9,7 @@ test_src = declare_dependency(
+ tests = [
+   'terminus_manager_test',
+   'terminus_test',
++  'platform_manager_test',
+ ]
+ 
+ foreach t : tests
+diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
+new file mode 100644
+index 0000000..47aa1ab
+--- /dev/null
++++ b/platform-mc/test/platform_manager_test.cpp
+@@ -0,0 +1,186 @@
++#include "common/instance_id.hpp"
++#include "mock_terminus_manager.hpp"
++#include "platform-mc/platform_manager.hpp"
++#include "test/test_instance_id.hpp"
++
++#include <sdeventplus/event.hpp>
++
++#include <gtest/gtest.h>
++
++using namespace pldm::platform_mc;
++using namespace std::chrono;
++
++class PlatformManagerTest : public testing::Test
++{
++  protected:
++    PlatformManagerTest() :
++        bus(pldm::utils::DBusHandler::getBus()),
++        event(sdeventplus::Event::get_default()), instanceIdDb(),
++        reqHandler(fd, event, instanceIdDb, false, 90000, seconds(1), 2,
++                   milliseconds(100)),
++        mockTerminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
++        platformManager(mockTerminusManager, termini)
++    {}
++
++    int fd = -1;
++    sdbusplus::bus_t& bus;
++    sdeventplus::Event event;
++    TestInstanceIdDb instanceIdDb;
++    pldm::requester::Handler<pldm::requester::Request> reqHandler;
++    MockTerminusManager mockTerminusManager;
++    PlatformManager platformManager;
++    std::map<pldm::tid_t, std::shared_ptr<Terminus>> termini;
++};
++
++TEST_F(PlatformManagerTest, initTerminusTest)
++{
++    // Add terminus
++    auto mappedTid = mockTerminusManager.mapTid(pldm::MctpInfo(1, "", "", 1));
++    auto tid = mappedTid.value();
++    termini[tid] =
++        std::make_shared<Terminus>(tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM);
++    auto terminus = termini[tid];
++
++    // queue getPDRRepositoryInfo response
++    const size_t getPDRRepositoryInfoLen =
++        PLDM_GET_PDR_REPOSITORY_INFO_RESP_BYTES;
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getPDRRepositoryInfoLen>
++        getPDRRepositoryInfoResp{
++            0x0, 0x02, 0x50, PLDM_SUCCESS,
++            0x0,                                     // repositoryState
++            0x0, 0x0,  0x0,  0x0,          0x0, 0x0, 0x0,
++            0x0, 0x0,  0x0,  0x0,          0x0, 0x0, // updateTime
++            0x0, 0x0,  0x0,  0x0,          0x0, 0x0, 0x0,
++            0x0, 0x0,  0x0,  0x0,          0x0, 0x0, // OEMUpdateTime
++            1,   0x0,  0x0,  0x0,                    // recordCount
++            0x0, 0x1,  0x0,  0x0,                    // repositorySize
++            59,  0x0,  0x0,  0x0,                    // largestRecordSize
++            0x0 // dataTransferHandleTimeout
++        };
++    auto rc = mockTerminusManager.enqueueResponse(
++        (pldm_msg*)getPDRRepositoryInfoResp.data(),
++        sizeof(getPDRRepositoryInfoResp));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    // queue getPDR responses
++    const size_t getPdrRespLen = 81;
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getPdrRespLen> getPdrResp{
++        0x0, 0x02, 0x51, PLDM_SUCCESS, 0x0, 0x0, 0x0, 0x0, // nextRecordHandle
++        0x0, 0x0, 0x0, 0x0, // nextDataTransferHandle
++        0x5,                // transferFlag
++        69, 0x0,            // responseCount
++        // numeric Sensor PDR
++        0x1, 0x0, 0x0,
++        0x0,                     // record handle
++        0x1,                     // PDRHeaderVersion
++        PLDM_NUMERIC_SENSOR_PDR, // PDRType
++        0x0,
++        0x0,                     // recordChangeNumber
++        PLDM_PDR_NUMERIC_SENSOR_PDR_FIXED_LENGTH +
++            PLDM_PDR_NUMERIC_SENSOR_PDR_VARIED_SENSOR_DATA_SIZE_MIN_LENGTH +
++            PLDM_PDR_NUMERIC_SENSOR_PDR_VARIED_RANGE_FIELD_MIN_LENGTH,
++        0,                             // dataLength
++        0,
++        0,                             // PLDMTerminusHandle
++        0x1,
++        0x0,                           // sensorID=1
++        120,
++        0,                             // entityType=Power Supply(120)
++        1,
++        0,                             // entityInstanceNumber
++        0x1,
++        0x0,                           // containerID=1
++        PLDM_NO_INIT,                  // sensorInit
++        false,                         // sensorAuxiliaryNamesPDR
++        PLDM_SENSOR_UNIT_DEGRESS_C,    // baseUint(2)=degrees C
++        1,                             // unitModifier = 1
++        0,                             // rateUnit
++        0,                             // baseOEMUnitHandle
++        0,                             // auxUnit
++        0,                             // auxUnitModifier
++        0,                             // auxRateUnit
++        0,                             // rel
++        0,                             // auxOEMUnitHandle
++        true,                          // isLinear
++        PLDM_SENSOR_DATA_SIZE_UINT8,   // sensorDataSize
++        0, 0, 0xc0,
++        0x3f,                          // resolution=1.5
++        0, 0, 0x80,
++        0x3f,                          // offset=1.0
++        0,
++        0,                             // accuracy
++        0,                             // plusTolerance
++        0,                             // minusTolerance
++        2,                             // hysteresis
++        0,                             // supportedThresholds
++        0,                             // thresholdAndHysteresisVolatility
++        0, 0, 0x80,
++        0x3f,                          // stateTransistionInterval=1.0
++        0, 0, 0x80,
++        0x3f,                          // updateInverval=1.0
++        255,                           // maxReadable
++        0,                             // minReadable
++        PLDM_RANGE_FIELD_FORMAT_UINT8, // rangeFieldFormat
++        0,                             // rangeFieldsupport
++        0,                             // nominalValue
++        0,                             // normalMax
++        0,                             // normalMin
++        0,                             // warningHigh
++        0,                             // warningLow
++        0,                             // criticalHigh
++        0,                             // criticalLow
++        0,                             // fatalHigh
++        0                              // fatalLow
++    };
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)getPdrResp.data(),
++                                             sizeof(getPdrResp));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    platformManager.initTerminus();
++    EXPECT_EQ(true, terminus->initalized);
++    EXPECT_EQ(1, terminus->pdrs.size());
++}
++
++TEST_F(PlatformManagerTest, negativeInitTerminusTest1)
++{
++    // terminus doesn't Type2 support
++    auto mappedTid = mockTerminusManager.mapTid(pldm::MctpInfo(1, "", "", 1));
++    auto tid = mappedTid.value();
++    termini[tid] = std::make_shared<Terminus>(tid, 1 << PLDM_BASE);
++    auto terminus = termini[tid];
++
++    platformManager.initTerminus();
++    EXPECT_EQ(true, terminus->initalized);
++    EXPECT_EQ(0, terminus->pdrs.size());
++}
++
++TEST_F(PlatformManagerTest, negativeInitTerminusTest2)
++{
++    // terminus responses error
++    auto mappedTid = mockTerminusManager.mapTid(pldm::MctpInfo(1, "", "", 1));
++    auto tid = mappedTid.value();
++    termini[tid] =
++        std::make_shared<Terminus>(tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM);
++    auto terminus = termini[tid];
++
++    // queue getPDRRepositoryInfo response cc=PLDM_ERROR
++    const size_t getPDRRepositoryInfoLen = 1;
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getPDRRepositoryInfoLen>
++        getPDRRepositoryInfoResp{0x0, 0x02, 0x50, PLDM_ERROR};
++    auto rc = mockTerminusManager.enqueueResponse(
++        (pldm_msg*)getPDRRepositoryInfoResp.data(),
++        sizeof(getPDRRepositoryInfoResp));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    // queue getPDR responses cc=PLDM_ERROR
++    const size_t getPdrRespLen = 1;
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getPdrRespLen> getPdrResp{
++        0x0, 0x02, 0x51, PLDM_ERROR};
++    rc = mockTerminusManager.enqueueResponse((pldm_msg*)getPdrResp.data(),
++                                             sizeof(getPdrResp));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    platformManager.initTerminus();
++    EXPECT_EQ(true, terminus->initalized);
++    EXPECT_EQ(0, terminus->pdrs.size());
++}
+diff --git a/platform-mc/test/terminus_test.cpp b/platform-mc/test/terminus_test.cpp
+index b2783c3..7f84042 100644
+--- a/platform-mc/test/terminus_test.cpp
++++ b/platform-mc/test/terminus_test.cpp
+@@ -1,3 +1,5 @@
++#include "libpldm/entity.h"
++
+ #include "platform-mc/terminus.hpp"
+ 
+ #include <gtest/gtest.h>
+@@ -22,3 +24,59 @@ TEST(TerminusTest, getTidTest)
+ 
+     EXPECT_EQ(tid, t1.getTid());
+ }
++
++TEST(TerminusTest, parseSensorAuxiliaryNamesPDRTest)
++{
++    auto t1 = Terminus(1, 1 << PLDM_BASE | 1 << PLDM_PLATFORM);
++    std::vector<uint8_t> pdr1{
++        0x0,
++        0x0,
++        0x0,
++        0x1,                             // record handle
++        0x1,                             // PDRHeaderVersion
++        PLDM_SENSOR_AUXILIARY_NAMES_PDR, // PDRType
++        0x0,
++        0x0,                             // recordChangeNumber
++        0x0,
++        21,                              // dataLength
++        0,
++        0x0,                             // PLDMTerminusHandle
++        0x1,
++        0x0,                             // sensorID
++        0x1,                             // sensorCount
++        0x1,                             // nameStringCount
++        'e',
++        'n',
++        0x0, // nameLanguageTag
++        0x0,
++        'T',
++        0x0,
++        'E',
++        0x0,
++        'M',
++        0x0,
++        'P',
++        0x0,
++        '1',
++        0x0,
++        0x0 // sensorName
++    };
++
++    t1.pdrs.emplace_back(pdr1);
++    auto rc = t1.parsePDRs();
++    EXPECT_EQ(true, rc);
++
++    auto sensorAuxNames = t1.getSensorAuxiliaryNames(0);
++    EXPECT_EQ(nullptr, sensorAuxNames);
++
++    sensorAuxNames = t1.getSensorAuxiliaryNames(1);
++    EXPECT_NE(nullptr, sensorAuxNames);
++
++    const auto& [sensorId, sensorCnt, names] = *sensorAuxNames;
++    EXPECT_EQ(1, sensorId);
++    EXPECT_EQ(1, sensorCnt);
++    EXPECT_EQ(1, names.size());
++    EXPECT_EQ(1, names[0].size());
++    EXPECT_EQ("en", names[0][0].first);
++    EXPECT_EQ("TEMP1", names[0][0].second);
++}
+-- 
+2.25.1
+

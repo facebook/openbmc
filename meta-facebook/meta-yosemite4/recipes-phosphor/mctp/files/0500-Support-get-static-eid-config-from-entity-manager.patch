@@ -1,0 +1,217 @@
+From 3904f1a7a1052f6892bb8e4159e05f8627bd4f23 Mon Sep 17 00:00:00 2001
+From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
+Date: Wed, 11 Oct 2023 14:31:47 +0800
+Subject: [PATCH] Support get static eid config from entity manager
+
+The service will set mctp link up and add local EID. It also parses
+entity manager for static EID config and publishs presented devices
+on dbus.
+
+Note: need to restart service after hot-plug event.
+---
+ src/mctpd.c | 151 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 148 insertions(+), 3 deletions(-)
+
+diff --git a/src/mctpd.c b/src/mctpd.c
+index 14d4a9a..37398b8 100644
+--- a/src/mctpd.c
++++ b/src/mctpd.c
+@@ -2596,8 +2596,11 @@ static int emit_endpoint_added(const peer *peer) {
+ 	rc = path_from_peer(peer, &path);
+ 	if (rc < 0)
+ 		return rc;
++
++
+ 	if (peer->ctx->verbose)
+ 		warnx("%s: %s", __func__, path);
++
+ 	rc = sd_bus_emit_object_added(peer->ctx->bus, dfree(path));
+ 	if (rc < 0)
+ 		warnx("%s: error emitting, %s", __func__, strerror(-rc));
+@@ -3142,7 +3145,7 @@ static int setup_nets(ctx *ctx)
+ 
+ static int setup_testing(ctx *ctx) {
+ 	int rc;
+-	dest_phys dest = {};
++	dest_phys dest = {0};
+ 	peer *peer;
+ 	size_t i, j;
+ 
+@@ -3282,15 +3285,156 @@ static int fill_uuid(ctx *ctx)
+ 	return rc;
+ }
+ 
+-static int setup_config(ctx *ctx)
++static int setup_static_eid(ctx *ctx)
+ {
+ 	int rc;
++	sd_bus_error error = SD_BUS_ERROR_NULL;
++	sd_bus_message *message = NULL;
++	char **s;
++
++	rc = sd_bus_call_method(ctx->bus,
++        "xyz.openbmc_project.ObjectMapper", "/xyz/openbmc_project/object_mapper",
++        "xyz.openbmc_project.ObjectMapper", "GetSubTreePaths",
++		&error, &message, "sias", "/xyz/openbmc_project/", 0, 1, "xyz.openbmc_project.Configuration.MctpDevice");
++	if (rc < 0) {
++		warnx("Failed to issue method call: %s\n", error.message);
++		goto out;
++	}
++
++	if (message == NULL) {
++		warnx("Empty configuration");
++		goto out;
++	}
++
++	sd_bus_message_read_strv(message, &s);
++	message = sd_bus_message_unref(message);
++
++	int i = 0;
++	size_t size = 0;
++	dest_phys desti = {0}, *dest = &desti;
++	peer *peer = NULL;
++	int net;
++	struct sockaddr_mctp_ext addr;
++	struct mctp_ctrl_cmd_get_eid req = {0};
++	struct mctp_ctrl_resp_get_eid *resp = NULL;
++	char *peer_path = NULL;
++
++	req.ctrl_hdr.rq_dgram_inst = RQDI_REQ;
++	req.ctrl_hdr.command_code = MCTP_CTRL_CMD_GET_ENDPOINT_ID;
++
++	while(s[i] != NULL) {
++		rc = sd_bus_get_property(ctx->bus,
++			"xyz.openbmc_project.EntityManager", s[i],
++			"xyz.openbmc_project.Configuration.MctpDevice", "Address",
++			&error, &message, "t");
++		if (rc < 0) {
++			warnx("Failed to get property: %s\n", error.message);
++			goto out;
++		}
++
++		const uint64_t data = 0;
++		sd_bus_message_read(message, "t", &data);
++
++		size = sizeof(uint8_t);
++		memset(dest->hwaddr, 0x0, MAX_ADDR_LEN);
++		memcpy(dest->hwaddr, &data, size);
++		dest->hwaddr_len = size;
++
++		message = sd_bus_message_unref(message);
++
++		const char *ifname = NULL;
++		rc = sd_bus_get_property(ctx->bus,
++			"xyz.openbmc_project.EntityManager", s[i],
++			"xyz.openbmc_project.Configuration.MctpDevice", "Bus",
++			&error, &message, "s");
++		if (rc < 0) {
++			warnx("Failed to get property: %s", error.message);
++			goto out;
++		}
++		sd_bus_message_read(message, "s", &ifname);
++
++		dest->ifindex = mctp_nl_ifindex_byname(ctx->nl, ifname);
++		if (dest->ifindex <= 0) {
++			warnx("Unknown ifname: %s", ifname);
++			i++;
++			continue;
++		}
++
++		rc = validate_dest_phys(ctx, dest);
++		if (rc < 0) {
++			warnx("Bad phys: 0x%02x", dest->hwaddr[0]);
++			i++;
++			continue;
++		}
++
++		net = mctp_nl_net_byindex(ctx->nl, dest->ifindex);
++		if (net < 1) {
++			warnx("No net for ifindex");
++			i++;
++			continue;
++		}
++
++		message = sd_bus_message_unref(message);
++
++		rc = sd_bus_get_property(ctx->bus,
++			"xyz.openbmc_project.EntityManager", s[i],
++			"xyz.openbmc_project.Configuration.MctpDevice", "EndpointIds",
++			&error, &message, "at");
++		if (rc < 0) {
++			warnx("Failed to get property: %s\n", error.message);
++			goto out;
++		}
++		uint64_t *eid = NULL;
++		sd_bus_message_read_array(message, 't', (const void**)&eid, &size);
++		size = size / 8;
++		for (size_t j = 0; j < size; j++) {
++			rc = add_peer(ctx, dest, (mctp_eid_t)eid[j], net, &peer);
++			if (rc < 0) {
++				warnx("Failed to add peer for EID %d", (mctp_eid_t)eid[j]);
++				continue;
++			}
++
++			add_peer_route(peer);
++
++			uint8_t* buf = NULL;
++			size_t buf_size = 0;
++			rc = endpoint_query_peer(peer, MCTP_CTRL_HDR_MSG_TYPE,
++			&req, sizeof(req), &buf, &buf_size, &addr);
++			if (rc < 0) {
++				warnx("Skip EID %d.", (mctp_eid_t)eid[j]);
++				remove_peer(peer);
++				free(buf);
++				continue;
++			}
++			free(buf);
++
++			rc = query_peer_properties(peer);
++
++			rc = publish_peer(peer, true);
++			if (rc < 0) {
++				warnx("Error publishing remote eid %d net %d", (mctp_eid_t)eid[j], net);
++				continue;
++			}
++		}
++		message = sd_bus_message_unref(message);
++		i++;
++	}
++
++out:
++	sd_bus_error_free(&error);
++	return 0;
++}
++
++static int setup_config(ctx *ctx)
++{
+ 	// TODO: this will go in a config file or arguments.
++	int rc;
+ 	ctx->mctp_timeout = 250000; // 250ms
+ 	ctx->bus_owner = true;
+ 	rc = fill_uuid(ctx);
+ 	if (rc < 0)
+ 		return rc;
++
+ 	return 0;
+ }
+ 
+@@ -3340,6 +3484,8 @@ int main(int argc, char **argv)
+ 	if (rc < 0 && !ctx->testing)
+ 		return 1;
+ 
++	rc = setup_static_eid(ctx);
++
+ 	// TODO add net argument?
+ 	rc = listen_control_msg(ctx, MCTP_NET_ANY);
+ 	if (rc < 0) {
+@@ -3358,7 +3504,6 @@ int main(int argc, char **argv)
+ 	if (rc < 0)
+ 		return 1;
+ 
+-
+ 	rc = sd_event_loop(ctx->event);
+ 	sd_event_unref(ctx->event);
+ 	if (rc < 0) {
+-- 
+2.25.1
+

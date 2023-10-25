@@ -1,0 +1,236 @@
+From 6805b975ccdc901ddad6d85ba8fbc023fbd2d522 Mon Sep 17 00:00:00 2001
+From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
+Date: Wed, 11 Oct 2023 17:54:36 +0800
+Subject: [PATCH] Add EID config for yv4
+
+---
+ configurations/yosemite4.json | 176 ++++++++++++++++++++++++++++++++++
+ schemas/legacy.json           |  18 ++++
+ 2 files changed, 194 insertions(+)
+
+diff --git a/configurations/yosemite4.json b/configurations/yosemite4.json
+index 33ddf79..f899ab7 100644
+--- a/configurations/yosemite4.json
++++ b/configurations/yosemite4.json
+@@ -107,6 +107,182 @@
+ 	    "Name": "NIC3_REMOTE_TEMP_C",
+ 	    "Name1": "NIC3_TEMP_C",
+             "Type": "TMP421"
++        },
++        {
++            "Address": "0x20",
++            "Bus": "mctpi2c0",
++            "EndpointIds": [
++                10,
++                11,
++                12,
++                13,
++                14,
++                15
++            ],
++            "EndpointNames": [
++                "Sentinel Dome",
++                "Floating Falls",
++                "Wailua Falls",
++                "Floating Falls CXL",
++                "Wailua Falls CXL1",
++                "Wailua Falls CXL2"
++            ],
++            "Name": "MCTP_BRIDGE_1",
++            "Type": "MctpDevice"
++        },
++        {
++            "Address": "0x20",
++            "Bus": "mctpi2c1",
++            "EndpointIds": [
++                20,
++                21,
++                22,
++                23,
++                24,
++                25
++            ],
++            "EndpointNames": [
++                "Sentinel Dome",
++                "Floating Falls",
++                "Wailua Falls",
++                "Floating Falls CXL",
++                "Wailua Falls CXL1",
++                "Wailua Falls CXL2"
++            ],
++            "Name": "MCTP_BRIDGE_2",
++            "Type": "MctpDevice"
++        },
++        {
++            "Address": "0x20",
++            "Bus": "mctpi2c2",
++            "EndpointIds": [
++                30,
++                31,
++                32,
++                33,
++                34,
++                35
++            ],
++            "EndpointNames": [
++                "Sentinel Dome",
++                "Floating Falls",
++                "Wailua Falls",
++                "Floating Falls CXL",
++                "Wailua Falls CXL1",
++                "Wailua Falls CXL2"
++            ],
++            "Name": "MCTP_BRIDGE_3",
++            "Type": "MctpDevice"
++        },
++        {
++            "Address": "0x20",
++            "Bus": "mctpi2c3",
++            "EndpointIds": [
++                40,
++                41,
++                42,
++                43,
++                44,
++                45
++            ],
++            "EndpointNames": [
++                "Sentinel Dome",
++                "Floating Falls",
++                "Wailua Falls",
++                "Floating Falls CXL",
++                "Wailua Falls CXL1",
++                "Wailua Falls CXL2"
++            ],
++            "Name": "MCTP_BRIDGE_4",
++            "Type": "MctpDevice"
++        },
++        {
++            "Address": "0x20",
++            "Bus": "mctpi2c4",
++            "EndpointIds": [
++                50,
++                51,
++                52,
++                53,
++                54,
++                55
++            ],
++            "EndpointNames": [
++                "Sentinel Dome",
++                "Floating Falls",
++                "Wailua Falls",
++                "Floating Falls CXL",
++                "Wailua Falls CXL1",
++                "Wailua Falls CXL2"
++            ],
++            "Name": "MCTP_BRIDGE_5",
++            "Type": "MctpDevice"
++        },
++        {
++            "Address": "0x20",
++            "Bus": "mctpi2c5",
++            "EndpointIds": [
++                60,
++                61,
++                62,
++                63,
++                64,
++                65
++            ],
++            "EndpointNames": [
++                "Sentinel Dome",
++                "Floating Falls",
++                "Wailua Falls",
++                "Floating Falls CXL",
++                "Wailua Falls CXL1",
++                "Wailua Falls CXL2"
++            ],
++            "Name": "MCTP_BRIDGE_6",
++            "Type": "MctpDevice"
++        },
++        {
++            "Address": "0x20",
++            "Bus": "mctpi2c6",
++            "EndpointIds": [
++                70,
++                71,
++                72,
++                73,
++                74,
++                75
++            ],
++            "EndpointNames": [
++                "Sentinel Dome",
++                "Floating Falls",
++                "Wailua Falls",
++                "Floating Falls CXL",
++                "Wailua Falls CXL1",
++                "Wailua Falls CXL2"
++            ],
++            "Name": "MCTP_BRIDGE_7",
++            "Type": "MctpDevice"
++        },
++        {
++            "Address": "0x20",
++            "Bus": "mctpi2c7",
++            "EndpointIds": [
++                80,
++                81,
++                82,
++                83,
++                84,
++                85
++            ],
++            "EndpointNames": [
++                "Sentinel Dome",
++                "Floating Falls",
++                "Wailua Falls",
++                "Floating Falls CXL",
++                "Wailua Falls CXL1",
++                "Wailua Falls CXL2"
++            ],
++            "Name": "MCTP_BRIDGE_8",
++            "Type": "MctpDevice"
+         }
+     ],
+     "Name": "Yosemite 4 Management Board",
+diff --git a/schemas/legacy.json b/schemas/legacy.json
+index 5a616d3..6205078 100644
+--- a/schemas/legacy.json
++++ b/schemas/legacy.json
+@@ -69,6 +69,12 @@
+                 "EntityInstance": {
+                     "$ref": "#/definitions/Types/EntityInstance"
+                 },
++                "EndpointIds": {
++                    "$ref": "#/definitions/Types/EndpointIds"
++                },
++                "EndpointNames": {
++                    "$ref": "#/definitions/Types/EndpointNames"
++                },
+                 "FaultIndex": {
+                     "$ref": "#/definitions/Types/FaultIndex"
+                 },
+@@ -569,6 +575,18 @@
+             "EntityInstance": {
+                 "type": "number"
+             },
++            "EndpointIds": {
++                "items": {
++                    "type": "number"
++                },
++                "type": "array"
++            },
++            "EndpointNames": {
++                "items": {
++                    "type": "string"
++                },
++                "type": "array"
++            },
+             "FaultIndex": {
+                 "type": "number"
+             },
+-- 
+2.25.1
+

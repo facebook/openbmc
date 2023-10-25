@@ -1,0 +1,10 @@
+[Unit]
+Description=MCTP local network configuration
+Before=mctpd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/mctp/mctp-config.sh
+
+[Install]
+WantedBy=multi-user.target

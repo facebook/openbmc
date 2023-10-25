@@ -1,0 +1,36 @@
+From 99733fa6ba2d4e49889dd9b6eedf8707c2082c42 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Thu, 28 Sep 2023 10:19:00 +0800
+Subject: [PATCH] fanSensor: fix bug for the pwmsensor probing error
+
+Replace pwmName string's " " to "_" to fix pwmsensor probing error
+with pwmName bringing space like "FANBOARD0 FAN0_PWM".
+
+Tested:
+Get fan pwm/tach by dbus introspect
+
+Change-Id: I0489b03ffd105218e7492cf732eecadee57b08cd
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ src/FanMain.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/FanMain.cpp b/src/FanMain.cpp
+index cc8fcb4..eacbbc1 100644
+--- a/src/FanMain.cpp
++++ b/src/FanMain.cpp
+@@ -555,8 +555,9 @@ void createSensors(
+                 (pwmSensors.count(pwmPath) == 0U))
+             {
+                 pwmSensors[pwmPath] = std::make_unique<PwmSensor>(
+-                    pwmName, pwmPath, dbusConnection, objectServer,
+-                    *interfacePath, "Fan", isValueMutable);
++                    boost::replace_all_copy(pwmName, " ", "_"), pwmPath,
++                    dbusConnection, objectServer, *interfacePath, "Fan",
++                    isValueMutable);
+             }
+         }
+
+-- 
+2.25.1
+

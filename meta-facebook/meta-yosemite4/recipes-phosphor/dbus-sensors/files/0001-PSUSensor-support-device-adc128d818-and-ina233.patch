@@ -1,0 +1,113 @@
+From c9657ef88afe491086cf1ed53e20e16de29fbcdf Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Wed, 20 Sep 2023 10:12:13 +0800
+Subject: [PATCH] PSUSensor: support device adc128d818 and ina233
+
+Support ina233 adc128d818 input voltage reading.
+To fix cases that scalefactor < 1,
+revise customized scalefactor from u_int to double.
+
+Tested:
+Get adc128d818 and ina233 reading from PSUSensor by dbus introspect
+
+Change-Id: If3692ab6b0c790072064a44001e9ef58cb50024c
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ src/PSUSensor.cpp     | 2 +-
+ src/PSUSensor.hpp     | 8 ++++----
+ src/PSUSensorMain.cpp | 6 ++++--
+ 3 files changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/src/PSUSensor.cpp b/src/PSUSensor.cpp
+index d1859c1..b3c3a27 100644
+--- a/src/PSUSensor.cpp
++++ b/src/PSUSensor.cpp
+@@ -42,7 +42,7 @@ PSUSensor::PSUSensor(const std::string& path, const std::string& objectType,
+                      std::vector<thresholds::Threshold>&& thresholdsIn,
+                      const std::string& sensorConfiguration,
+                      const PowerState& powerState,
+-                     const std::string& sensorUnits, unsigned int factor,
++                     const std::string& sensorUnits, double factor,
+                      double max, double min, double offset,
+                      const std::string& label, size_t tSize, double pollRate,
+                      const std::shared_ptr<I2CDevice>& i2cDevice) :
+diff --git a/src/PSUSensor.hpp b/src/PSUSensor.hpp
+index 69f365b..8172f7f 100644
+--- a/src/PSUSensor.hpp
++++ b/src/PSUSensor.hpp
+@@ -23,7 +23,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+               std::vector<thresholds::Threshold>&& thresholds,
+               const std::string& sensorConfiguration,
+               const PowerState& powerState, const std::string& sensorUnits,
+-              unsigned int factor, double max, double min, double offset,
++              double factor, double max, double min, double offset,
+               const std::string& label, size_t tSize, double pollRate,
+               const std::shared_ptr<I2CDevice>& i2cDevice);
+     ~PSUSensor() override;
+@@ -48,7 +48,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+     boost::asio::random_access_file inputDev;
+     boost::asio::steady_timer waitTimer;
+     std::string path;
+-    unsigned int sensorFactor;
++    double sensorFactor;
+     double sensorOffset;
+     thresholds::ThresholdTimer thresholdTimer;
+     void restartRead();
+@@ -67,7 +67,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+ class PSUProperty
+ {
+   public:
+-    PSUProperty(std::string name, double max, double min, unsigned int factor,
++    PSUProperty(std::string name, double max, double min, double factor,
+                 double offset) :
+         labelTypeName(std::move(name)),
+         maxReading(max), minReading(min), sensorScaleFactor(factor),
+@@ -78,6 +78,6 @@ class PSUProperty
+     std::string labelTypeName;
+     double maxReading;
+     double minReading;
+-    unsigned int sensorScaleFactor;
++    double sensorScaleFactor;
+     double sensorOffset;
+ };
+diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
+index 663567d..72a7570 100644
+--- a/src/PSUSensorMain.cpp
++++ b/src/PSUSensorMain.cpp
+@@ -43,6 +43,7 @@
+ static constexpr bool debug = false;
+ 
+ static const I2CDeviceTypeMap sensorTypes{
++    {"ADC128D818", I2CDeviceType{"adc128d818", true}},
+     {"ADM1266", I2CDeviceType{"adm1266", true}},
+     {"ADM1272", I2CDeviceType{"adm1272", true}},
+     {"ADM1275", I2CDeviceType{"adm1275", true}},
+@@ -59,6 +60,7 @@ static const I2CDeviceTypeMap sensorTypes{
+     {"DPS800", I2CDeviceType{"dps800", true}},
+     {"INA219", I2CDeviceType{"ina219", true}},
+     {"INA230", I2CDeviceType{"ina230", true}},
++    {"INA233", I2CDeviceType{"ina233", true}},
+     {"IPSPS1", I2CDeviceType{"ipsps1", true}},
+     {"IR38060", I2CDeviceType{"ir38060", true}},
+     {"IR38164", I2CDeviceType{"ir38164", true}},
+@@ -734,7 +736,7 @@ static void createSensorsCallback(
+                 try
+                 {
+                     psuProperty->sensorScaleFactor = std::visit(
+-                        VariantToUnsignedIntVisitor(), findCustomScale->second);
++                        VariantToDoubleVisitor(), findCustomScale->second);
+                 }
+                 catch (const std::invalid_argument&)
+                 {
+@@ -865,7 +867,7 @@ static void createSensorsCallback(
+             // Similarly, if sensor scaling factor is being customized,
+             // then the below power-of-10 constraint becomes unnecessary,
+             // as config should be able to specify an arbitrary divisor.
+-            unsigned int factor = psuProperty->sensorScaleFactor;
++            double factor = psuProperty->sensorScaleFactor;
+             if (!customizedScale)
+             {
+                 // Preserve existing usage of hardcoded labelMatch table below
+-- 
+2.25.1
+

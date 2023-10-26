@@ -78,6 +78,24 @@ extern "C"
 #define OPTION_CLEAR_ERR 0xFE
 #define OPTION_LIST_ERR 0xFF
 
+#define STR_SWA_OV     "SWAout_OV"
+#define STR_SWB_OV     "SWBout_OV"
+#define STR_SWC_OV     "SWCout_OV"
+#define STR_SWD_OV     "SWDout_OV"
+#define STR_BULK_OV    "VinB_OV"
+#define STR_MGMT_OV    "VinM_OV"
+#define STR_SWA_UV     "SWAout_UV"
+#define STR_SWB_UV     "SWBout_UV"
+#define STR_SWC_UV     "SWCout_UV"
+#define STR_SWD_UV     "SWDout_UV"
+#define STR_BULK_UV    "VinB_UV"
+#define STR_SWITCHOVER "Vin_switchover"
+#define STR_HIGH_TEMP  "high_temp"
+#define STR_PG_1V8     "Vout_1v8_PG"
+#define STR_HIGH_CURR  "high_current"
+#define STR_CURR_LIMIT "current_limit"
+#define STR_CRIT_TEMP  "critical_temp_shutdown"
+
 enum _dimm_prsnt {
   DIMM_EMPTY   = 0,
   DIMM_PRESENT = 1,

@@ -26,6 +26,7 @@ deps = [
     dependency('obmc-pal'),
     dependency('libpldm-oem'),
     dependency('libhgx'),
+    dependency('libdimm'),
 ]
 
 exe = executable('gpiod',

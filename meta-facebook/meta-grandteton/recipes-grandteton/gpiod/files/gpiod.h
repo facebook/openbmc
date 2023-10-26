@@ -102,4 +102,6 @@ void hmc_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cur
 void hmc_ready_init(gpiopoll_pin_t *desc, gpio_value_t value);
 void nv_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 
+void cpld_shut_down_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
+
 #endif

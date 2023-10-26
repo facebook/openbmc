@@ -42,6 +42,8 @@
 #define FM_LAST_PWRGD            "PWRGD_CPUPWRGD_LVC2_R1"
 #define RST_PLTRST_N             "RST_PLTRST_PLD_N"
 #define PWRGD_SYS_PWROK          "PWRGD_SYS_PWROK_R"
+#define CPLD_SHUT_DOWN_ALERT     "CPLD_SHUT_DOWN_ALERT"
+#define BMC_DIMM_SEL_DONE        "BMC_DIMM_SEL_DONE"
 
 //XDP Debug PIN
 #define IRQ_BMC_PRDY_N           "FM_DBP_BMC_PRDY_N"

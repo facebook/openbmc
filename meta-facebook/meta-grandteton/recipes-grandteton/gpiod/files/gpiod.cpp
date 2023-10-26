@@ -30,12 +30,15 @@
 #include <sys/file.h>
 #include <future>
 #include <pthread.h>
+#include <set>
+#include <cstring>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/misc-utils.h>
 #include <openbmc/pal.h>
 #include <openbmc/pal_def.h>
 #include <openbmc/pal_common.h>
+#include <openbmc/dimm.h>
 #include <libpldm-oem/pldm.h>
 #include <libpldm-oem/pal_pldm.hpp>
 #include <openbmc/hgx.h>
@@ -1028,6 +1031,87 @@ nv_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, NULL);
 }
 
+static void *
+do_dimm_fault_sel(void*){
+  const char *dimm_errors[MAX_PMIC_ERR_TYPE] = {0};
+  bool dimm_presents[MAX_DIMM_NUM] = {0};
+  uint8_t err_cnt = 0, i;
+  uint8_t cpu_id, dimm_id;
+  int ret;
+
+  struct charComparator {
+    bool operator()(const char* a, const char* b) const {
+      return std::strcmp(a, b) < 0;
+    }
+  };
+
+  // dimm fault that being targeted
+  std::set<const char*, charComparator> crit_dimm_list = {
+    STR_SWA_OV,
+    STR_SWC_OV,
+    STR_SWD_OV,
+    STR_BULK_OV,
+    STR_SWA_UV,
+    STR_SWC_UV,
+    STR_SWD_UV,
+    STR_BULK_UV,
+    STR_CRIT_TEMP
+  };
+
+  pthread_detach(pthread_self());
+
+  // get dimm present
+  get_dimm_present_info(FRU_MB, dimm_presents);
+
+  // loop though every dimm on MB
+  for (cpu_id = 0; cpu_id < MAX_CPU_CNT; ++cpu_id) {
+    for (dimm_id = 0; dimm_id < PER_CPU_DIMM_NUMBER_MAX; ++dimm_id) {
+
+      // check dimm present
+      if (dimm_presents[cpu_id*PER_CPU_DIMM_NUMBER_MAX + dimm_id] == false)
+        continue;
+
+      syslog(LOG_WARNING, "%s > reading cpu:%d, dimm:%d ...",
+                __func__, cpu_id, dimm_id);
+
+      // read error
+      ret = pmic_list_err(FRU_MB, cpu_id, dimm_id, dimm_errors, &err_cnt);
+      if (ret) {
+        syslog(LOG_WARNING, "%s > pmic_list_err() > reading cpu:%d, dimm:%d error failed",
+                __func__, cpu_id, dimm_id);
+        continue;
+      } else {
+        for (i = 0; i < err_cnt; ++i) {
+          if (crit_dimm_list.find(dimm_errors[i]) != crit_dimm_list.end()) {
+            syslog(LOG_CRIT, "ASSERT DIMM_LABEL=%s Error %s",
+		              get_dimm_label(cpu_id, dimm_id), dimm_errors[i]);
+          }
+        }
+      }
+
+      ret = pmic_clear_err(FRU_MB, cpu_id, dimm_id);
+      if (ret) {
+        syslog(LOG_WARNING, "%s > pmic_clear_err() > reading cpu:%d, dimm:%d error failed",
+                __func__, cpu_id, dimm_id);
+      }
+    }
+  }
+
+  gpio_set_value_by_shadow(BMC_DIMM_SEL_DONE, GPIO_VALUE_HIGH);
+  pthread_exit(NULL);
+}
+
+void
+cpld_shut_down_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  pthread_t tid_dimm_fault_sel;
+
+  if (curr == GPIO_VALUE_HIGH) {
+    if (pthread_create(&tid_dimm_fault_sel, NULL, do_dimm_fault_sel, NULL)) {
+      syslog(LOG_WARNING, "pthread_create for do_dimm_fault_sel");
+    }
+  }
+}
 
 int main(int argc, char **argv)
 {

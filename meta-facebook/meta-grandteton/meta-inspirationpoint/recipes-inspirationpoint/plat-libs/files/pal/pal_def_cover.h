@@ -53,4 +53,8 @@
 #define RST_KB_RESET_N           "RST_KB_RESET_N"
 #define KB_RESET_EN              "KB_RESET_EN"
 
+#define CPLD_SHUT_DOWN_ALERT     "CPLD_SHUT_DOWN_ALERT"
+
+#define BMC_DIMM_SEL_DONE        "BMC_DIMM_SEL_DONE"
+
 #endif

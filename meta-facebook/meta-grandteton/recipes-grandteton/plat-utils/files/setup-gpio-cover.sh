@@ -126,6 +126,7 @@ sgpio_export FM_PCH_BEEP_LED 204
 sgpio_export FM_HDD_LED_N 206
 
 sgpio_export CPLD_POWER_FAIL_ALERT 240
+sgpio_export CPLD_SHUT_DOWN_ALERT 242
 
 sgpio_export CPLD_SGPIO_READY_ID0 248
 sgpio_export CPLD_SGPIO_READY_ID1 250
@@ -211,3 +212,5 @@ gpio_set CLK_BUF1_GPU_FPGA_OE_R_N 0
 sgpio_export FM_BMC_CPU_FBRK_OUT_N 71
 gpio_set FM_BMC_CPU_FBRK_OUT_N 1
 
+sgpio_export BMC_DIMM_SEL_DONE 73
+gpio_set BMC_DIMM_SEL_DONE 0

@@ -8,4 +8,4 @@ LOCAL_URI += " \
         file://dimm-util-plat.h \
         "
 
-DEPENDS += "libnodemanager"
+DEPENDS += "libnodemanager libobmc-i3c fmt libgpio-ctrl libmisc-utils"

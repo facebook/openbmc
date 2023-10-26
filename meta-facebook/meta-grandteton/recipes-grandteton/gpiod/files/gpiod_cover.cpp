@@ -77,6 +77,7 @@ struct gpiopoll_config gpios_plat_list[] = {
   {FM_CPU1_SKTOCC,          "SGPIO114",       GPIO_EDGE_BOTH,    sgpio_event_handler,        cpu_skt_init},
   {CPLD_POWER_FAIL_ALERT,   "SGPI240",        GPIO_EDGE_RISING,  cpld_event_handler,         cpld_event_init},
   {HMC_READY,               "SGPIO64",        GPIO_EDGE_BOTH,    hmc_ready_handler,          hmc_ready_init},
+  {CPLD_SHUT_DOWN_ALERT,    "SGPIO242",       GPIO_EDGE_BOTH,    cpld_shut_down_handler,     NULL},
 };
 
 //IERR and MCERR Event Handler

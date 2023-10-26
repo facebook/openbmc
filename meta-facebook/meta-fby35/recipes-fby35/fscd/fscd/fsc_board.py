@@ -271,7 +271,7 @@ def get_fan_mode(scenario="None"):
         pwm = 100
         return fan_mode["boost_mode"], pwm
     elif "sensor_fail" in scenario:
-        pwm = 80
+        pwm = 100
         return fan_mode["boost_mode"], pwm
     pass
 

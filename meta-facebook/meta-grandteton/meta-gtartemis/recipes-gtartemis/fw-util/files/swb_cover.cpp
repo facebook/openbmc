@@ -331,7 +331,7 @@ GTSwbCpldComponent acb_cpld("cb", "cpld", LCMXO3_4300C, ACB_BIC_BUS, ACB_CPLD_AD
     ACB_BIC_EID, CPLD_COMP, signed_header_t(gta_acb_bic_comps, CPLD_COMP, LATTICE));
 GTSwbCpldComponent meb_cpld("mc", "cpld", LCMXO3_4300C, MEB_BIC_BUS, MEB_CPLD_ADDR, &cpld_pldm_wr,
     MEB_BIC_EID, CPLD_COMP, signed_header_t(gta_meb_bic_comps, CPLD_COMP, LATTICE));
-GTSwbVrComponent vr_pex0_vcc("cb", "pesw_vr", "VR_PESW_VCC", ACB_BIC_BUS, ACB_BIC_EID, VR0_COMP,
+GTAVrComponent vr_pex0_vcc("cb", "pesw_vr", "VR_PESW_VCC", ACB_BIC_BUS, ACB_BIC_EID, VR0_COMP,
     signed_header_t(gta_acb_bic_comps, VR0_COMP));
 GTSwbPexFwComponent acb_pesw0("cb", "pesw0", ACB_BIC_BUS, ACB_BIC_EID, PEX0_COMP,
     signed_header_t(gta_acb_bic_comps, COMPONENT_VERIFY_SKIPPED, BROADCOM));

@@ -120,7 +120,7 @@ class GTSwbVrComponent : public SwbVrComponent, public GTPldmComponent {
                     GTPldmComponent(info, fru, comp, bus, eid), target(target)
                     {
                       uint8_t source_id;
-                      if (get_comp_source(FRU_SWB, SWB_VR_SOURCE, &source_id) == 0) {
+		      if (get_comp_source(FRU_SWB, SWB_VR_SOURCE, &source_id) == 0) {
                         switch (source_id) {
                           case MAIN_SOURCE:
                             comp_info.vendor_id = pldm_signed_info::RENESAS;
@@ -167,6 +167,29 @@ class SwbPLDMNicComponent : public PLDMNicComponent {
                         const std::string& key, uint8_t eid, uint8_t bus):
       PLDMNicComponent(fru, comp, key, eid, bus) {}
     int update(string /*image*/) override;
+};
+
+//Artemis VR Component
+class GTAVrComponent : public GTSwbVrComponent {
+  public:
+    GTAVrComponent(const string& fru, const string& comp, const string &dev_name,
+      uint8_t bus, uint8_t eid, uint8_t target, const signed_header_t& info):
+      GTSwbVrComponent(fru, comp, dev_name, bus, eid, target, info)
+      {
+        uint8_t source_id;
+        if (fru == "cb") {
+          if (get_acb_vr_source(&source_id) == 0) {
+            switch (source_id) {
+              case MAIN_SOURCE:
+                comp_info.vendor_id = pldm_signed_info::INFINEON;
+                break;
+              case SECOND_SOURCE:
+                comp_info.vendor_id = pldm_signed_info::MPS;
+                break;
+            }
+          }
+        }
+      }
 };
 
 //Artemis Meb Cxl Component

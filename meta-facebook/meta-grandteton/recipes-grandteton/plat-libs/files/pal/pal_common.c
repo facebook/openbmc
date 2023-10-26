@@ -463,6 +463,34 @@ get_comp_source(uint8_t fru, uint8_t comp_id, uint8_t* source) {
   return 0;
 }
 
+int
+get_acb_vr_source(uint8_t* source) {
+  char *find = NULL;
+  char value[MAX_VALUE_LEN] = {0};
+  if (kv_get("cb_vr0_active_ver", value, 0, 0)) {
+    syslog(LOG_WARNING,"[%s] get acb vr active version fail", __func__);
+    return -1;
+  }
+
+  find = strchr(value, ' ');
+  if (find == NULL) {
+    syslog(LOG_WARNING,"[%s] invalid acb vr version", __func__);
+    return -1;
+  }
+
+  *find = '\0';
+  if (strcmp(value, "Infineon") == 0) {
+    *source = MAIN_SOURCE;
+    return 0;
+  } else if (strcmp(value, "MPS") == 0) {
+    *source = SECOND_SOURCE;
+    return 0;
+  } else {
+    syslog(LOG_WARNING,"[%s] unknown acb vr version", __func__);
+    return -1;
+  }
+}
+
 bool
 is_mb_hsc_module(void) {
   static bool cached = false;

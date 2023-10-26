@@ -1,0 +1,60 @@
+From 00be56ab06f8930809e2a0cf23de29bf8bb8176e Mon Sep 17 00:00:00 2001
+From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
+Date: Thu, 26 Oct 2023 09:51:51 +0800
+Subject: [PATCH] Modified the type of NetworkId to uint32_t
+
+Modified the type of NetworkId to uint32 to follow the definition of
+MCTP/Endpoint.interface in phosphor-dbus-interfaces.
+
+Test log:
+- Check the type of NetworkId is 'u'.
+
+root@bmc:~# busctl introspect xyz.openbmc_project.MCTP \
+            /xyz/openbmc_project/mctp/1/40
+NAME                                TYPE      SIGNATURE RESULT/VALUE FLAGS
+au.com.CodeConstruct.MCTP.Endpoint  interface -         -            -
+.Remove                             method    -         -            -
+.SetMTU                             method    u         -            -
+org.freedesktop.DBus.Introspectable interface -         -            -
+.Introspect                         method    -         s            -
+org.freedesktop.DBus.Peer           interface -         -            -
+.GetMachineId                       method    -         s            -
+.Ping                               method    -         -            -
+org.freedesktop.DBus.Properties     interface -         -            -
+.Get                                method    ss        v            -
+.GetAll                             method    s         a{sv}        -
+.Set                                method    ssv       -            -
+.PropertiesChanged                  signal    sa{sv}as  -            -
+xyz.openbmc_project.MCTP.Endpoint   interface -         -            -
+.EID                                property  y         40           const
+.NetworkId                          property  u         1            const
+.SupportedMessageTypes              property  ay        2 0 1        const
+---
+ src/mctpd.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/mctpd.c b/src/mctpd.c
+index b89b01b..88a8506 100644
+--- a/src/mctpd.c
++++ b/src/mctpd.c
+@@ -2328,7 +2328,7 @@ static int bus_endpoint_get_prop(sd_bus *bus,
+ 	int rc;
+ 
+ 	if (strcmp(property, "NetworkId") == 0) {
+-		rc = sd_bus_message_append(reply, "i", peer->net);
++		rc = sd_bus_message_append(reply, "u", peer->net);
+ 	} else if (strcmp(property, "EID") == 0) {
+ 		rc = sd_bus_message_append(reply, "y", peer->eid);
+ 	} else if (strcmp(property, "SupportedMessageTypes") == 0) {
+@@ -2348,7 +2348,7 @@ static int bus_endpoint_get_prop(sd_bus *bus,
+ static const sd_bus_vtable bus_endpoint_vtable[] = {
+ 	SD_BUS_VTABLE_START(0),
+ 	SD_BUS_PROPERTY("NetworkId",
+-			"i",
++			"u",
+ 			bus_endpoint_get_prop,
+ 			0,
+ 			SD_BUS_VTABLE_PROPERTY_CONST),
+-- 
+2.25.1
+

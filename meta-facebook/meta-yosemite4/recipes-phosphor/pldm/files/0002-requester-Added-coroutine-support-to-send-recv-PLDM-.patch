@@ -1,4 +1,4 @@
-From 54bb912c69b71a3b34582b418e095d093440e977 Mon Sep 17 00:00:00 2001
+From 34a3d9bd53c68d0d2ddd69699a919920fab88127 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Sun, 29 May 2022 18:44:19 +0100
 Subject: [PATCH 2/6] requester: Added coroutine support to send/recv PLDM
@@ -40,7 +40,7 @@ Change-Id: I7b47d15ac15f6ae661ec94dca6a281844b939a44
  2 files changed, 295 insertions(+)
 
 diff --git a/requester/handler.hpp b/requester/handler.hpp
-index 6987b16..381a87b 100644
+index 02c5d02..b358d82 100644
 --- a/requester/handler.hpp
 +++ b/requester/handler.hpp
 @@ -15,6 +15,7 @@
@@ -48,10 +48,10 @@ index 6987b16..381a87b 100644
  #include <cassert>
  #include <chrono>
 +#include <coroutine>
+ #include <deque>
  #include <functional>
  #include <memory>
- #include <tuple>
-@@ -285,6 +286,250 @@ class Handler
+@@ -367,6 +368,250 @@ class Handler
      }
  };
  
@@ -303,7 +303,7 @@ index 6987b16..381a87b 100644
  
  } // namespace pldm
 diff --git a/requester/test/handler_test.cpp b/requester/test/handler_test.cpp
-index b656c1a..9184f21 100644
+index 3b003a0..d095a47 100644
 --- a/requester/test/handler_test.cpp
 +++ b/requester/test/handler_test.cpp
 @@ -150,3 +150,53 @@ TEST_F(HandlerTest, multipleRequestResponseScenario)

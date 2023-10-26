@@ -1,4 +1,4 @@
-From e2274664c6c5cf33eae846cdb56745242fdee65c Mon Sep 17 00:00:00 2001
+From eec7eb65d940981f1f65b0cc2ab9e776670304cf Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Mon, 14 Feb 2022 12:12:25 +0000
 Subject: [PATCH 1/6] requester: Modified MctpDiscovery class

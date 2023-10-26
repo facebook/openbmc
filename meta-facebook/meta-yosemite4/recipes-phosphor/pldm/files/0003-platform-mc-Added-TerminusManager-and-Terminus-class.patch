@@ -1,4 +1,4 @@
-From 0f97cd03f0cca5efa37a9fbe24db6e80f054b427 Mon Sep 17 00:00:00 2001
+From 6f35d3c8d9e8f840b2d21e80f45770e0e6361628 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 22 Feb 2022 15:40:17 +0000
 Subject: [PATCH 3/6] platform-mc: Added TerminusManager and Terminus class
@@ -555,7 +555,7 @@ index 0000000..7b3aa53
 +} // namespace pldm
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
 new file mode 100644
-index 0000000..4839f9f
+index 0000000..980bc9b
 --- /dev/null
 +++ b/platform-mc/terminus_manager.cpp
 @@ -0,0 +1,374 @@
@@ -589,7 +589,7 @@ index 0000000..4839f9f
 +    auto mctpInfoTableIterator = std::find_if(
 +        mctpInfoTable.begin(), mctpInfoTable.end(), [&mctpInfo](auto& v) {
 +        return (std::get<0>(v.second) == std::get<0>(mctpInfo)) &&
-+                (std::get<3>(v.second) == std::get<3>(mctpInfo));
++               (std::get<3>(v.second) == std::get<3>(mctpInfo));
 +    });
 +    if (mctpInfoTableIterator == mctpInfoTable.end())
 +    {
@@ -623,7 +623,7 @@ index 0000000..4839f9f
 +    auto mctpInfoTableIterator = std::find_if(
 +        mctpInfoTable.begin(), mctpInfoTable.end(), [&mctpInfo](auto& v) {
 +        return (std::get<0>(v.second) == std::get<0>(mctpInfo)) &&
-+                (std::get<3>(v.second) == std::get<3>(mctpInfo));
++               (std::get<3>(v.second) == std::get<3>(mctpInfo));
 +    });
 +    if (mctpInfoTableIterator != mctpInfoTable.end())
 +    {

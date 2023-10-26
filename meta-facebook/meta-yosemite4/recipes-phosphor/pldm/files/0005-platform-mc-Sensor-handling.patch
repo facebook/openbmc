@@ -1,4 +1,4 @@
-From 8df8914a640dd190f1bd91c06fb45225d7804518 Mon Sep 17 00:00:00 2001
+From 1e53aa0e1134e360751dc7506931aa2385c065d9 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
 Subject: [PATCH 5/6] platform-mc: Sensor handling
@@ -1577,7 +1577,7 @@ index 0d4f58c..9e3d36e 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 4839f9f..81c851c 100644
+index 980bc9b..9b4679d 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -117,6 +117,7 @@ void TerminusManager::discoverMctpTerminus(const MctpInfos& mctpInfos)

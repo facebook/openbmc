@@ -1,4 +1,4 @@
-From 8ba5e0a8620349f6021468b4318c4b85dc2d8ea5 Mon Sep 17 00:00:00 2001
+From 2341f8bba80d6f2267ec9ddc2c1deebd8c1ec4c7 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 6/6] platform-mc: Added EventManager
@@ -1946,7 +1946,7 @@ index 10b9afa..c5f5e99 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index a5b57bc..32f6810 100644
+index a5b57bc..6e23e78 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -270,10 +270,37 @@ int main(int argc, char** argv)
@@ -1962,23 +1962,23 @@ index a5b57bc..32f6810 100644
 +         {[&platformManager](const pldm_msg* request, size_t payloadLength,
 +                             uint8_t formatVersion, uint8_t tid,
 +                             size_t eventDataOffset) {
-+             return platformManager->handleCperEvent(
-+                 request, payloadLength, formatVersion, tid, eventDataOffset);
-+         }}},
++        return platformManager->handleCperEvent(
++            request, payloadLength, formatVersion, tid, eventDataOffset);
++    }}},
 +        {PLDM_MESSAGE_POLL_EVENT,
 +         {[&platformManager](const pldm_msg* request, size_t payloadLength,
 +                             uint8_t formatVersion, uint8_t tid,
 +                             size_t eventDataOffset) {
-+             return platformManager->handlePldmMessagePollEvent(
-+                 request, payloadLength, formatVersion, tid, eventDataOffset);
-+         }}},
++        return platformManager->handlePldmMessagePollEvent(
++            request, payloadLength, formatVersion, tid, eventDataOffset);
++    }}},
 +        {PLDM_SENSOR_EVENT,
 +         {[&platformManager](const pldm_msg* request, size_t payloadLength,
 +                             uint8_t formatVersion, uint8_t tid,
 +                             size_t eventDataOffset) {
-+             return platformManager->handleSensorEvent(
-+                 request, payloadLength, formatVersion, tid, eventDataOffset);
-+         }}}};
++        return platformManager->handleSensorEvent(
++            request, payloadLength, formatVersion, tid, eventDataOffset);
++    }}}};
 +
      auto platformHandler = std::make_unique<platform::Handler>(
          &dbusHandler, PDR_JSONS_DIR, pdrRepo.get(), hostPDRHandler.get(),

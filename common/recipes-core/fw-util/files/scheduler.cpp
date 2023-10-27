@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <semaphore.h>
 #include <regex>
+#include <openbmc/pal.h>
 #include "scheduler.h"
 
 using namespace std;
@@ -135,6 +136,18 @@ bool Scheduler::get_running_task_frus(unordered_set<string>& ongoing_frus) const
   return true;
 }
 
+bool Scheduler::is_task_fru_ongoing(const string& fru) const
+{
+  uint8_t id;
+  if (pal_get_fru_id((char *)fru.c_str(), &id)) {
+    cerr << "Failed to acquire the fru:" << fru
+         << " status update status." << endl;
+    return false;
+  }
+
+  return pal_is_fw_update_ongoing(id);
+}
+
 int Scheduler::show_task() const {
 
   auto sem_holder = sem_acquire(SEM_PATH);
@@ -221,6 +234,15 @@ int Scheduler::add_task(const string& fru, const string& comp, const string& ima
         return -1;
       }
     }
+  }
+
+  /*
+   * /var/run/schedule.list might not fully indicate running task
+   * check again with /tmp/cache/fru%d_fwupd
+   */
+  if (is_task_fru_ongoing(fru)) {
+    cerr << string("Fru : " + fru + " firmware update ongoing.") << endl;
+    return -1;
   }
 
   //extract the substring with the prefix job

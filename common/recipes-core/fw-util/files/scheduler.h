@@ -10,6 +10,7 @@ class Scheduler {
     bool is_platform_supported() const;
     bool get_task_ids(std::unordered_set<std::string>& ids) const;
     bool get_running_task_frus(std::unordered_set<std::string>& ongoing_frus) const;
+    bool is_task_fru_ongoing(const std::string& fru) const;
   public:
     Scheduler() = default;
     int show_task() const;

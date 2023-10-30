@@ -18,7 +18,29 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += "\
+    file://bios-util.sh \
     file://board-utils.sh \
+    file://fpga-util.sh \
+    file://oob-mdio-util.sh \
+    file://meru_flash.layout \
+    file://meru_flash_32m.layout \
     file://setup-gpio.sh \
     file://setup_i2c.sh \
     "
+
+OPENBMC_UTILS_FILES += " \
+    bios_util.sh \
+    fpga_util.sh \
+    oob-mdio-util.sh \
+    "
+
+do_install_bios_layout() {
+    install -m 0644 ${S}/meru_flash.layout ${D}${sysconfdir}/meru_flash.layout
+    install -m 0644 ${S}/meru_flash_32m.layout ${D}${sysconfdir}/meru_flash_32m.layout
+}
+
+do_install:append() {
+    do_install_bios_layout
+}
+
+FILES:${PN} += "${sysconfdir}"

@@ -1,0 +1,31 @@
+{
+    "platform" : "meru",
+    "comment" : " We reserve the \"comment\" key string used as comment line.
+                  with the intention of making this JSON file to be self-explained
+                  and easily to be tailored to different platforms, we add the
+                  general guidline in this comment.
+                  for configure specific item's comment, add the comment under that
+                  configure item.
+
+                  general guideline:
+                  1. the \"name\" string size must be less than 32 bytes.
+                  2. the \"val\" string size must be less than 132 bytes.
+                  3. if some config item is unsupported, or unappliable on the platform,
+                     remove this configure item.
+                ",
+
+
+
+    "configure" : [
+        {
+            "name" : "eth_intf_name" ,
+            "type": "string",
+            "val" : "eth0.4088"
+        },
+        {
+          "name" : "max_slot_num" ,
+          "type": "number",
+          "val" : 1
+        }
+    ]
+}

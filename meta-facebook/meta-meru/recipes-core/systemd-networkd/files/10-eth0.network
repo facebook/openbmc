@@ -23,6 +23,9 @@ IPv6AcceptRA=yes
 DHCP=yes
 VLAN=eth0.4088
 
+[IPv6AcceptRA]
+UseMTU=no
+
 [DHCP]
 UseDomains=yes
 UseNTP=yes

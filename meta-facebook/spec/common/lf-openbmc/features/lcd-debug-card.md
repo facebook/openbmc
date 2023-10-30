@@ -1,19 +1,20 @@
 # OCP Debug Card
 
 **Frame list**
-- System Info
-- Critical SEL
-- IO Status
-- Critical Sensor
-- Dimm Loop
-- Post Code
+- Frame 1: Uart Selection
+- Frame 2: System Info
+- Frame 3: Critical SEL
+- Frame 4: Critical Sensor
+- Frame 5: Post Code
+- Frame 6: Dimm Loop
+- Frame 7: IO Status
 - User Setting
 	- Boot Order
 	- Power Policy
 
 Users can view various frames using the onboard detector switch (the black button on the left-hand side), which provides four directional functions: **up, down, left, right,** and one selection function: **Select.**
 
-Frames are displayed in the following order on the panel from left to right: Post Code->System Info->Critial Sel->Critial Sensor->DIMM Loop->IO Status->User Setting
+Frames are displayed in the following order on the panel from left to right: Frame 1: Uart Selection ->Frame 2: System Info->Frame 3: Critical SEL->Frame 4: Critical Sensor->Frame 5: Post Code->Frame 6: Dimm Loop->Frame 7: IO Status->User Setting
 
 ### 5-way button operation
 
@@ -26,10 +27,41 @@ Move up or down to switch pages and view more content within the current frame.
 **Select -**
 Press the middle of the button to select an item. This operation is used on the User Setting Frame to select the boot order or power policy.
 
-
 # Descritpion
 
-## System Info Frame
+### Frame 1: Uart Selection
+
+**Context:**
+
+In the original design, the first frame combines the description of post code and uart selection. Because of HD or YV4 systems use AMD platform which sends two or four bytes postcode at a time, the original design of post code is limited by 7-seg LED can handle one byte post code only.
+
+So, in this new design, we set the first frame for showing uart selection only and post code move to frame 5 to handle one to four post codes depending on the platform you use.
+
+**Design:**
+
+After the user presses the uart button, CPLD gets the current uart selection and lights up 7-seg LED as below table and then debug card sends ipmb command to get the uart selection description and shows it on the panel.
+
+| 7-seg LED| Uart selection decode from BMC | Message show on debug card |
+|--|--| --|
+| 00 |BMC  |00: BMC  |
+| 01 |slot1  |01: slot1  |
+| 02 |slot2  |02: slot2  |
+| 03 |slot3  |03: slot3  |
+| 04 |slot4  |04: slot4  |
+| 05 |slot5  |05: slot5  |
+| 06 |slot6  |06: slot6  |
+| 07 |slot7  |07: slot7  |
+| 08 |slot8  |08: slot8  |
+
+
+Here is the ipmb command:
+
+| Code | Command | Request, Response Data | Description |
+|--|--| --| --|
+| net = 0x3C, cmd = 0x03 | Get uart selection description  |Request: <br/> Byte [0:2] - IANA ID <br/> Byte 3 - uart selection index <br/> Byte 4 - uart selection phase <br/> 01h : phase 1  <br/> 02h : phase 2 <br/> Response: <br/> Byte 0- completion code <br/> Byte [1:3] - IANA ID <br/> Byte 4 - Current uart selection index <br/> Byte 5 - next uart selection index <br/> Byte 6 - uart selection phase <br/> Byte 7 - check if it is the last one post code <br/> 00h: this is not the last one of Post code <br/> 01h: The last one available Post code <br/> Byte 8 - length (n) <br/> Byte 9: (n+1) human readable string (ASCII format) | MCU gets uart selection description from BMC. The selection decode refers to each project define.
+
+
+## Frame 2: System Info
 This frame displays the system information, and pressing the UART button allows you to switch to the server board that you want to check.
 
 **Baseboard info:**
@@ -57,7 +89,12 @@ This frame displays the system information, and pressing the UART button allows 
 - BIC FW ver
 - CPLD FW ver
 
-## Critical Sensor Frame
+
+## Frame 3: Critical SEL
+
+Display all the critical SELs from BMC.
+
+## Frame 4: Critical Sensor
 
 The Critical Sensor Frame display all critical sensors along with their corresponding names and values. The message is presented in the following format:
 `${Sensor name}:${Sensor Value}${Unit}`
@@ -65,11 +102,35 @@ For example: `P0_TEMP:XXC`.
 
 If a sensor falls outside of its designated threshold, the debug card will begin blinking and the color will invert. The following message format will be displayed: `${Sensor Name}:${Sensor Value}${Unit}/${Threshold}`. For example: `P0_TEMP:XXC/UC`.
 
-## Critical SEL Frame
+## Frame 5: Post Code
+This frame can handle post code one to four bytes situations depending on the platform you use (Intel or AMD). When the host power on, the message format shows on the panel as `${post code}:${post code description}` in sequence.
 
-Display all the critical SELs from BMC.
+One byte post code example shows on panel:
 
-## IO Status Frame
+	06: CPU_EARLY_INIT
+	05: OEM_INIT_ENTRY
+	04: SECSB_INIT
+	02: MICROCODE
+
+Four bytes post code example shows on panel:
+
+	EA00E090: TP0x90
+	EA00EA00: ABL Begin
+	EA00E60C: ABL Functions execute
+	EA00E0B7: ABL 1 End
+
+Usage:
+1. Press the UART button for the host that you want to check.
+2. Power on the host.
+3. All post codes with their descriptions will be displayed on the panel.
+
+## Frame 6: Dimm Loop
+
+The DIMM Loop frame displays error descriptions when the BIOS detects DIMM errors.
+The message is presented in the following format:
+`DIMM ${dimm location} ${description}`. For example: `DIMM A0 WARN_MEMORY_BOOT_HEALTH_CHECK_MASK_FAIL`
+
+## Frame 7: IO Status
 
 IO Status Frame displays the status of input pin and power button shown in the table below on platform Crater Lake:
 
@@ -83,22 +144,6 @@ IO Status Frame displays the status of input pin and power button shown in the t
 | 0x15 |FM_CATERR_MSMI |P15:${value}<br />FM_CATERR_MSMI  |Input pin only|
 | 0x16 |FM_SLPS3  |P16:${value}<br />FM_SLPS3   |Input pin only|
 | 0x17 |FM_UART_SWITCH |P17:${value}<br />FM_UART_SWITCH  |Power button |
-
-
-
-## Post Code Frame
-The Post Code Frame displays the post codes and their descriptions after the host is powered on.
-
-Usage:
-1. Press the UART button for the host that you want to check.
-2. Power on the host.
-3. All post codes with their descriptions will be displayed on the panel.
-
-## Dimm Loop
-
-The DIMM Loop frame displays error descriptions when the BIOS detects DIMM errors.
-The message is presented in the following format:
-`DIMM ${dimm location} ${description}`. For example: `DIMM A0 WARN_MEMORY_BOOT_HEALTH_CHECK_MASK_FAIL`
 
 ## User Setting
 

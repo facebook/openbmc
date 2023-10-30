@@ -27,8 +27,11 @@ PV = "0.1"
 LOCAL_URI = " \
     file://Makefile \
     file://pwrcpld.c \
+    file://smbcpld.c \
     file://COPYING \
     "
 
 DEPENDS += "kernel-module-i2c-dev-sysfs"
 RDEPENDS:${PN} += "kernel-module-i2c-dev-sysfs"
+
+KERNEL_MODULE_AUTOLOAD += "smbcpld"

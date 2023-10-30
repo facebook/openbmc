@@ -8,24 +8,106 @@
 #include <linux/i2c.h>
 #include "i2c_dev_sysfs.h"
 
-/*
- * FIXME: fill the below structure to export sysfs entries to the user
- * space.
- * NOTE: ONLY export register fields that are required from user space.
- */
 static const i2c_dev_attr_st pwrcpld_attrs[] = {
-	/*
-	 * Example:
 	{
-		"cpld_ver",
+		"cpld_ver_minor",
 		NULL,
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
-		0x01,
+		0x0,
 		0,
 		8,
 	},
-	 */
+	{
+		"cpld_ver_major",
+		NULL,
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x1,
+		0,
+		8,
+	},
+	{
+		"power_cycle",
+		"0xDE: Initiate chassis power cycle",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x70,
+		0,
+		8,
+	},
+	{
+		"cpu_power_on",
+		"0x1: cpu power on\n"
+		"0x0: cpu power off",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x72,
+		6,
+		1,
+	},
+	{
+		"cpu_in_reset",
+		"0x1: cpu is in reset\n"
+		"0x0: cpu is not in reset",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x72,
+		5,
+		1,
+	},
+	{
+		"thermtrip_fault",
+		"0x1: CPU thermtrip fault\n"
+		"0x0: normal operation",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x72,
+		4,
+		1,
+	},
+	{
+		"cpu_power_disabled",
+		"0x1: CPU power is disabled\n"
+		"0x0: CPU power is enabled",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x72,
+		3,
+		1,
+	},
+	{
+		"cpu_cat_error",
+		"0x1: had a catastrophic error\n"
+		"0x0: CPU functioning normally",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x72,
+		2,
+		1,
+	},
+	{
+		"cpu_ready",
+		"0x1: CPU is ready\n"
+		"0x0: CPU is NOT ready",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x72,
+		1,
+		1,
+	},
+	{
+		"cpu_control",
+		"Write 1: take CPU out of reset"
+		"Write 0: put CPU into reset"
+		"0x1: CPU is NOT in reset\n"
+		"0x0: CPU is in reset",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x72,
+		0,
+		1,
+	},
 };
 
 static const struct i2c_device_id pwrcpld_id[] = {
@@ -68,6 +150,6 @@ static struct i2c_driver pwrcpld_driver = {
 
 module_i2c_driver(pwrcpld_driver);
 
-MODULE_AUTHOR("Tao Ren <taoren@meta.com>");
-MODULE_DESCRIPTION("FBOSS OpenBMC Power-CPLD Driver");
+MODULE_AUTHOR("Adam Calabrigo <adamc@arista.com>");
+MODULE_DESCRIPTION("FBOSS Meru OpenBMC Power-CPLD Driver");
 MODULE_LICENSE("GPL");

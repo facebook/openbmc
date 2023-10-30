@@ -564,21 +564,24 @@ int plat_get_syscfg_text(uint8_t fru, char *syscfg)
 {
   static const uint8_t cl_dimm_cache_id[6] = { 0, 4, 6, 8, 12, 14, };
   static const uint8_t hd_dimm_cache_id[8] = { 0, 1, 2, 4, 6, 7, 8, 10};
+  static const uint8_t gl_dimm_cache_id[8] = { 0, 1, 2, 3, 4, 5, 6, 7};
   static const uint8_t* dimm_cache_id = cl_dimm_cache_id;
   static const char *cl_dimm_label[6] = { "A0", "A2", "A3", "A4", "A6", "A7"};
   static const char *hd_dimm_label[8] = { "A0", "A1", "A2", "A4", "A6", "A7", "A8", "A10"};
+  static const char *gl_dimm_label[8] = { "A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7"};
   const char **dimm_label = cl_dimm_label;
   char *key_prefix = "sys_config/";
   char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
   char *token;
-  uint8_t cpu_name_pos = 3;  //Intel(R) Xeon(R) Gold "6450C"
-  uint8_t dimm_num = ARRAY_SIZE(cl_dimm_cache_id);
+  uint8_t cpu_name_pos = 0;
+  uint8_t dimm_num = 0;
   uint8_t index, pos;
   uint8_t cpu_core;
   uint16_t dimm_speed;
   uint32_t dimm_capacity;
   float cpu_speed;
   int slen;
+  int server_type = SERVER_TYPE_NONE;
   size_t ret;
 
   if (fru == FRU_ALL)
@@ -593,16 +596,30 @@ int plat_get_syscfg_text(uint8_t fru, char *syscfg)
   // CPU information
   slen = snprintf(entry, sizeof(entry), "CPU:");
 
+  server_type = fby35_common_get_slot_type(fru);
+  if (server_type == SERVER_TYPE_CL) {
+    cpu_name_pos = 3;  //Intel(R) Xeon(R) Gold "6450C"
+    dimm_cache_id = cl_dimm_cache_id;
+    dimm_label = cl_dimm_label;
+    dimm_num = ARRAY_SIZE(cl_dimm_cache_id);
+  } else if (server_type == SERVER_TYPE_HD) {
+    cpu_name_pos = 2;  // AMD EPYC "9D64" 88-Core Processor
+    dimm_cache_id = hd_dimm_cache_id;
+    dimm_label = hd_dimm_label;
+    dimm_num = ARRAY_SIZE(hd_dimm_cache_id);
+  } else if (server_type == SERVER_TYPE_GL) {
+    cpu_name_pos = 3;  // The CPU is RD sample now, so there is no model number
+    dimm_cache_id = gl_dimm_cache_id;
+    dimm_label = gl_dimm_label;
+    dimm_num = ARRAY_SIZE(gl_dimm_cache_id);
+  } else {
+    syslog(LOG_WARNING, "Unknown server type: %d", server_type);
+    return -1;
+  }
+
   // Processor#
   snprintf(key, sizeof(key), "%sfru%d_cpu0_product_name", key_prefix, fru);
   if (kv_get(key, value, &ret, KV_FPERSIST) == 0) {
-    if (strncmp(value, "AMD", strlen("AMD")) == 0) {
-      cpu_name_pos = 2;  // AMD EPYC "9D64" 88-Core Processor
-      dimm_cache_id = hd_dimm_cache_id;
-      dimm_label = hd_dimm_label;
-      dimm_num = ARRAY_SIZE(hd_dimm_cache_id);
-    }
-
     token = strtok(value, " ");
     for (pos = 0; token && pos < cpu_name_pos; pos++) {
       token = strtok(NULL, " ");

@@ -78,12 +78,17 @@ chassis_power_cycle() {
 }
 
 bmc_mac_addr() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    bmc_mac=$(weutil -e chassis_eeprom | grep 'Local MAC:' | cut -d ' ' -f 3)
+    echo "$bmc_mac"
 }
 
+#
+# SCM EEPROM doesn't exist in Tahan, and CPU MAC address is obtained by
+# adding 1 to the BMC MAC address.
+#
 userver_mac_addr() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    bmc_mac=$(bmc_mac_addr)
+    cpu_mac=$(mac_addr_inc "$bmc_mac")
+    echo "$cpu_mac"
 }
 

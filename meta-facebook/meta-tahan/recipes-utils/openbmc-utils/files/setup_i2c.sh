@@ -22,6 +22,11 @@
 . /usr/local/bin/openbmc-utils.sh
 
 #
-# Create PWRCPLD
+# SMB/Chassis EEPROM 
+#
+i2c_device_add 3 0x56 24c64
+
+#
+# Create PWR CPLD
 #
 i2c_device_add 12 0x60 pwrcpld

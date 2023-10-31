@@ -201,7 +201,13 @@ do_mount_ubifs() {
         echo "UBIFS ERROR flag is set, start recovery.."
         need_recovery=1
     elif [ -e "$ubi_vol" ]; then
-        if ubifs_mount "$ubi_vol" "$mnt_point"; then
+        device_size=$(ubinfo "$ubi_dev" | sed -n '/^Total amount of logical eraseblocks:/s/.*(\([0-9]*\) bytes.*/\1/p')
+        volume_size=$(ubinfo "$ubi_vol" | sed -n '/^Size:/s/.*(\([0-9]*\) bytes.*/\1/p')
+        if [ -n "$device_size" ] && [ -n "$volume_size" ] && [ $((volume_size+4194304)) -lt "$device_size" ]; then
+            # If UBI device is larger than volume (+4MB to account for overhead), recreate the volume
+            echo "$ubi_vol has size $volume_size, but device $ubi_dev has size $device_size. Recreating volume..."
+            need_recovery=1
+        elif ubifs_mount "$ubi_vol" "$mnt_point"; then
             echo "Check ubifs filesystem health on $ubi_vol.."
 
             if ! mnt_point_health_check "$mnt_point"; then

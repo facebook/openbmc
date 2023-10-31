@@ -128,9 +128,6 @@ struct gpiopoll_ioex_config gta_iox_gpios[] = {
   {FAN13_PRSNT,   "FAN13",       IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FAN14_PRSNT,   "FAN14",       IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FAN15_PRSNT,   "FAN15",       IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
-  {CABLE_PRSNT_G, "ACB_CABLE_G", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
-  {CABLE_PRSNT_B, "ACB CABLE_B", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
-  {CABLE_PRSNT_A, "MEB_CABLE_A", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {FM_HS1_EN_BUSBAR_BUF, "HPDB_HS1_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
   {FM_HS2_EN_BUSBAR_BUF, "HPDB_HS2_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
   {HPDB_PRSNT,    "HPDB_PRSNT",  IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
@@ -872,7 +869,7 @@ void
       pal_get_board_rev_id(FRU_MB, &mb_rev);
       if (!is_exmax_prsnt_check && mb_rev >= GTA_DVT_STAGE) {
         for (int cable_id = GTA_EXMAX_CABLE_A; cable_id <= GTA_EXMAX_CABLE_F; cable_id ++) {
-          if (!gta_check_exmax_prsnt(cable_id)) {
+          if (!gta_check_exmax_prsnt(cable_id, last_cb_present, last_mc_present)) {
              syslog(LOG_WARNING,"%s() Get Cable:%u presence failed", __func__, cable_id);
           }
         }

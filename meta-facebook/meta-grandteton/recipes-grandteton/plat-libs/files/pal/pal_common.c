@@ -140,13 +140,15 @@ read_device(const char *device, int *value) {
 }
 
 bool
-gta_check_exmax_prsnt(uint8_t cable_id) {
+gta_check_exmax_prsnt(uint8_t cable_id, uint8_t cb_present, uint8_t mc_present) {
   uint8_t temp_reg_val[6] = {0};
   int i2cfd = 0, ret = -1;
   uint8_t tlen, rlen;
   uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
   uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
   gpio_value_t gpio_prsnt_A;
+  static bool cable_b_prsnt_flag = false;
+
   enum GTA_EXMAX_CABLE_PRESENT_OFFSET {
     EXMAX_CABLE_PRESENT_OFFSET_1 = 0x00,
     EXMAX_CABLE_PRESENT_OFFSET_2 = 0x04,
@@ -193,25 +195,28 @@ gta_check_exmax_prsnt(uint8_t cable_id) {
     case GTA_EXMAX_CABLE_A:
       // Check MB CPLD and IO-EXP
       gpio_prsnt_A = gpio_get_value_by_shadow(CABLE_PRSNT_A);
-      if ((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_A_1) == EXMAX_CABLE_PRESENT_MASK_A_1 &&
-          (temp_reg_val[5] & EXMAX_CABLE_PRESENT_MASK_A_2) == EXMAX_CABLE_PRESENT_MASK_A_2 &&
-          (gpio_prsnt_A)) {
+      if ((((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_A_1) == EXMAX_CABLE_PRESENT_MASK_A_1 ||
+          (temp_reg_val[5] & EXMAX_CABLE_PRESENT_MASK_A_2) == EXMAX_CABLE_PRESENT_MASK_A_2) &&
+          (gpio_prsnt_A)) && (cb_present == FRU_PRSNT)) {
             syslog(LOG_CRIT, "Cable A is not Present");
       } else {
         syslog(LOG_CRIT, "Cable A is Present");
       }
       break;
     case GTA_EXMAX_CABLE_B:
-      if ((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_B) == EXMAX_CABLE_PRESENT_MASK_B) {
+      if ((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_B) == EXMAX_CABLE_PRESENT_MASK_B && (mc_present == FRU_PRSNT)) {
         syslog(LOG_CRIT, "Cable B is not Present");
+        cable_b_prsnt_flag = false;
       } else {
+        cable_b_prsnt_flag = true;
         syslog(LOG_CRIT, "Cable B is Present");
       }
       break;
     case GTA_EXMAX_CABLE_C:
       // Check MB CPLD
-      if ((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_C_1) == EXMAX_CABLE_PRESENT_MASK_C_1 &&
-          (temp_reg_val[3] & EXMAX_CABLE_PRESENT_MASK_C_2) == EXMAX_CABLE_PRESENT_MASK_C_2) {
+      if (((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_C_1) == EXMAX_CABLE_PRESENT_MASK_C_1 ||
+          (temp_reg_val[3] & EXMAX_CABLE_PRESENT_MASK_C_2) == EXMAX_CABLE_PRESENT_MASK_C_2) &&
+          (mc_present == FRU_PRSNT)) {
         syslog(LOG_CRIT, "Cable C is not Present");
       } else {
         syslog(LOG_CRIT, "Cable C is Present");
@@ -219,8 +224,9 @@ gta_check_exmax_prsnt(uint8_t cable_id) {
       break;
     case GTA_EXMAX_CABLE_D:
       // Check MB CPLD
-      if ((temp_reg_val[0] & EXMAX_CABLE_PRESENT_MASK_D_2) == EXMAX_CABLE_PRESENT_MASK_D_2 &&
-          (temp_reg_val[4] & EXMAX_CABLE_PRESENT_MASK_D_1) == EXMAX_CABLE_PRESENT_MASK_D_1) {
+      if (((temp_reg_val[0] & EXMAX_CABLE_PRESENT_MASK_D_2) == EXMAX_CABLE_PRESENT_MASK_D_2 ||
+          (temp_reg_val[4] & EXMAX_CABLE_PRESENT_MASK_D_1) == EXMAX_CABLE_PRESENT_MASK_D_1) &&
+          (cb_present == FRU_PRSNT)) {
         syslog(LOG_CRIT, "Cable D is not Present");
       } else {
         syslog(LOG_CRIT, "Cable D is Present");
@@ -228,7 +234,8 @@ gta_check_exmax_prsnt(uint8_t cable_id) {
       break;
     case GTA_EXMAX_CABLE_E:
       // Check MB CPLD
-      if ((temp_reg_val[5] & EXMAX_CABLE_PRESENT_MASK_E) == EXMAX_CABLE_PRESENT_MASK_E) {
+      if ((temp_reg_val[5] & EXMAX_CABLE_PRESENT_MASK_E) == EXMAX_CABLE_PRESENT_MASK_E && cable_b_prsnt_flag == true &&
+          (cb_present == FRU_PRSNT) && (mc_present == FRU_PRSNT)) {
         syslog(LOG_CRIT, "Cable E is not Present");
       } else {
         syslog(LOG_CRIT, "Cable E is Present");
@@ -236,7 +243,8 @@ gta_check_exmax_prsnt(uint8_t cable_id) {
       break;
     case GTA_EXMAX_CABLE_F:
       // Check MB CPLD
-      if ((temp_reg_val[2] & EXMAX_CABLE_PRESENT_MASK_F) == EXMAX_CABLE_PRESENT_MASK_F) {
+      if ((temp_reg_val[2] & EXMAX_CABLE_PRESENT_MASK_F) == EXMAX_CABLE_PRESENT_MASK_F && cable_b_prsnt_flag == true && 
+          (cb_present == FRU_PRSNT) && (mc_present == FRU_PRSNT)) {
         syslog(LOG_CRIT, "Cable F is not Present");
       } else {
         syslog(LOG_CRIT, "Cable F is Present");
@@ -254,19 +262,10 @@ bool
 gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
   gpio_value_t gpio_prsnt_1;
   gpio_value_t gpio_prsnt_2;
+  gpio_value_t gpio_prsnt_3;
+  gpio_value_t gpio_prsnt_4;
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
-  int i2cfd = 0, ret = -1;
-  uint8_t tlen, rlen;
-  uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
-  uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
-  enum GTA_MEB_PRSNT_OFFSET {
-    MEB_PRSNT_OFFSET = 0x05,
-  };
-  enum GTA_MEB_PRSNT_MASK {
-    MEB_PRSNT_MASK_1 = 0x10,
-    MEB_PRSNT_MASK_2 = 0x40,
-  };
 
   snprintf(key, sizeof(key), "fru%d_prsnt", fru_id);
 
@@ -274,35 +273,22 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
     case FRU_ACB:
       gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_A);
       gpio_prsnt_2 = gpio_get_value_by_shadow(CABLE_PRSNT_B);
-      if (gpio_prsnt_1 && gpio_prsnt_2) {
+      gpio_prsnt_3 = gpio_get_value_by_shadow(CABLE_PRSNT_H);
+      gpio_prsnt_4 = gpio_get_value_by_shadow(CABLE_PRSNT_G);
+      if (gpio_prsnt_1 && gpio_prsnt_2 && gpio_prsnt_3 && gpio_prsnt_4) {
         *status = FRU_NOT_PRSNT;
       } else {
         *status = FRU_PRSNT;
       }
       break;
     case FRU_MEB:
-      i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
-      if (i2cfd < 0) {
-        syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
-        return false;
-      }
-      tbuf[0] = MEB_PRSNT_OFFSET;
-      tlen = 1;
-      rlen = 2;
-      ret = i2c_rdwr_msg_transfer(i2cfd, GTA_MB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
-      if (ret < 0) {
-        syslog(LOG_INFO, "%s() I2C transfer to MB CPLD failed, RET: %d", __func__, ret);
-        i2c_cdev_slave_close(i2cfd);
-        return false;
+      gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_D);
+      gpio_prsnt_2 = gpio_get_value_by_shadow(CABLE_PRSNT_F);
+      if (gpio_prsnt_1 && gpio_prsnt_2) {
+        *status = FRU_NOT_PRSNT;
       } else {
-        if ((rbuf[0] & MEB_PRSNT_MASK_1) == MEB_PRSNT_MASK_1 &&
-            (rbuf[1] & MEB_PRSNT_MASK_2) == MEB_PRSNT_MASK_2) {
-          *status = FRU_NOT_PRSNT;
-        } else {
-          *status = FRU_PRSNT;
-        }
+        *status = FRU_PRSNT;
       }
-      i2c_cdev_slave_close(i2cfd);
       break;
     default:
       syslog(LOG_WARNING, "%s() FRU: %u Not Support", __func__, fru_id);

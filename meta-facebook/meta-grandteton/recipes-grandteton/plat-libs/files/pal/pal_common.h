@@ -64,6 +64,6 @@ void mb_retimer_unlock(int lock);
 int pal_get_board_rev_id(uint8_t fru, uint8_t *id);
 int pal_get_board_sku_id(uint8_t fru, uint8_t *id);
 bool gta_expansion_board_present(uint8_t fru_id, uint8_t *status);
-bool gta_check_exmax_prsnt(uint8_t cable_id);
+bool gta_check_exmax_prsnt(uint8_t cable_id, uint8_t cb_present, uint8_t mc_present);
 void get_dimm_present_info(uint8_t fru, bool *dimm_sts_list);
 #endif

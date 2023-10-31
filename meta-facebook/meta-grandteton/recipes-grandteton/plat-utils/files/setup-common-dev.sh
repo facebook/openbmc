@@ -252,6 +252,7 @@ VPDB_EVT2="2"
 VPDB_PVT="5"
 VPDB_PVT4="8"
 VPDB_DISCRETE_PVT="3"
+VPDB_DISCRETE_MP="6"
 VPDB_1ST_SOURCE="0"
 VPDB_2ND_SOURCE="1"
 VPDB_3RD_SOURCE="2"
@@ -330,7 +331,7 @@ fi
 
 #VPDB BRICK
 # only for PVT DISCRETE Config
-if [ "$vrev" -eq "$VPDB_DISCRETE_PVT" ] &&
+if [ "$vrev" -ge "$VPDB_DISCRETE_PVT" ] && [ "$vrev" -le "$VPDB_DISCRETE_MP" ] &&
   { [ "$vsku" -eq "2" ] || [ "$vsku" -eq "5" ]; }; then
   # DISCRETE_PVT has unique sku ( 010 and 101 )
   # that specially point out its brick source
@@ -362,6 +363,8 @@ else
     fi
   fi
 fi
+
+vpdb_brick_source=$(kv get vpdb_brick_source)
 
 #VPDB ADC
 if [ "$vrev" -ge "$VPDB_PVT4" ]; then
@@ -406,7 +409,8 @@ if [ "$vrev" -ge "$VPDB_PVT4" ]; then
     fi
   fi
 
-elif [ "$vrev" -gt "$VPDB_PVT" ]; then
+elif [ "$vrev" -gt "$VPDB_PVT" ] && 
+     [ "$vpdb_brick_source" -ne "$VPDB_BRICK_DISCRETE_SOURCE" ]; then
   if [ "$(gpio_get VPDB_SKU_ID_0)" -eq $VPDB_1ST_SOURCE ]; then
     i2c_device_add 36 0x67 ltc2945
     i2c_device_add 36 0x68 ltc2945

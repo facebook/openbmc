@@ -281,8 +281,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     }
     // adc
     if (!pal_get_board_rev_id(FRU_VPDB, &rev) && rev >= PDB_REV_PVT2 ) {
-      memcpy(&snr_vpdb_tmp[*cnt], vpdb_adc_sensor_list, vpdb_adc_sensor_cnt);
-      *cnt += vpdb_adc_sensor_cnt;
+      if (rev != VPDB_DISCRETE_REV_MP || id != DISCRETE_SOURCE) {
+        memcpy(&snr_vpdb_tmp[*cnt], vpdb_adc_sensor_list, vpdb_adc_sensor_cnt);
+        *cnt += vpdb_adc_sensor_cnt;
+      }
     }
     *sensor_list = snr_vpdb_tmp;
 

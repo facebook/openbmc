@@ -364,7 +364,7 @@ enum {
   PDB_REV_DVT2           = 4,
   PDB_REV_PVT            = 5,
   PDB_REV_PVT2           = 6,
-
+  VPDB_DISCRETE_REV_MP   = 6,
 };
 // Sensors Under Side Plane
 enum {

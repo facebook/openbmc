@@ -71,6 +71,12 @@
 #define NUM_CABLES 4
 #define NUM_MANAGEMENT_PINS 2
 
+#define MRC_PATTERN_LENGTH 5
+#define MRC_START_CODE 0
+#define MRC_DIMM_LOCATION 2
+#define MRC_MAJOR_CODE 3
+#define MRC_MINOR_CODE 4
+
 const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
 const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
 const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc nic";
@@ -3791,37 +3797,42 @@ pal_post_display(uint8_t uart_select, uint8_t postcode) {
 int
 __mrc_warning_detect(uint8_t slot, uint8_t postcode) {
   static uint8_t mrc_position = 0;
-  static uint8_t post_match_count = 0;
   static bool pattern_in_rule = false;
+  static uint8_t error_index = 0;
+  static uint8_t total_error = 0;
   int ret = 0;
   char key[MAX_KEY_LEN] = "";
   char value[MAX_VALUE_LEN] = {0};
   snprintf(key, sizeof(key), "slot%d_mrc_warning", slot);
 
-  if (mrc_position == 4) {
+  if ((mrc_position % MRC_PATTERN_LENGTH) == 0) {
+    if (pattern_in_rule == true) {
+      error_index++;
+    }
     mrc_position = 0;
     pattern_in_rule = false;
   }
 
-// DIMM loop pattern format = 00 -> DIMM location -> major code -> minor code ...... repeat
+// DIMM loop pattern format = 00 -> error index -> DIMM location -> major code -> minor code ...... repeat
   if(((mrc_position == 0) && (postcode == 0)) || pattern_in_rule) { //MRC warning code always start with 00
     pattern_in_rule = true;
-    if (memory_record_code[slot][mrc_position] == postcode) { //If the pattern is repeat, match_count++
-      memory_record_code[slot][mrc_position++] = postcode;
-      post_match_count++;
-    } else {
-      memory_record_code[slot][mrc_position] = postcode; //Else match count and position reset to zero
-      post_match_count = 0;
-      mrc_position = 0;
-      pattern_in_rule = false;
+    if (((mrc_position % MRC_PATTERN_LENGTH) == 1) &&
+        (postcode < error_index)) {
+      total_error = error_index;
+      error_index = 0;
     }
+    memory_record_code[slot]
+                      [mrc_position + (error_index * MRC_PATTERN_LENGTH)] =
+                          postcode;
+    mrc_position++;
   } else {
+    error_index = 0;
     mrc_position = 0;
-    post_match_count = 0;
   }
 
-  if (post_match_count > MRC_CODE_MATCH) { //Repeat 4 times means the post code is in the loop.
-    snprintf(value, sizeof(value), "%d", KEY_SET);
+
+  if (total_error != 0) { //Post code loop repeated
+    snprintf(value, sizeof(value), "%d", total_error);
     ret = kv_set(key, value, 0, 0);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, key);
@@ -3966,10 +3977,18 @@ pal_get_dimm_loop_pattern(uint8_t slot, uint8_t index, DIMM_PATTERN *dimm_loop_p
     return 0;
   }
 #endif
-  dimm_loop_pattern->start_code = memory_record_code[slot][(index * 4) + 0];
-  snprintf(dimm_loop_pattern->dimm_location, sizeof(dimm_loop_pattern->dimm_location), "A%d", memory_record_code[slot][(index * 4) + 1]);
-  dimm_loop_pattern->major_code = memory_record_code[slot][(index * 4) + 2];
-  dimm_loop_pattern->minor_code = memory_record_code[slot][(index * 4) + 3];
+  dimm_loop_pattern->start_code =
+      memory_record_code[slot][(index * MRC_PATTERN_LENGTH) + MRC_START_CODE];
+  snprintf(
+      dimm_loop_pattern->dimm_location,
+      sizeof(dimm_loop_pattern->dimm_location),
+      "%02X",
+      memory_record_code[slot]
+                        [(index * MRC_PATTERN_LENGTH) + MRC_DIMM_LOCATION]);
+  dimm_loop_pattern->major_code =
+      memory_record_code[slot][(index * MRC_PATTERN_LENGTH) + MRC_MAJOR_CODE];
+  dimm_loop_pattern->minor_code =
+      memory_record_code[slot][(index * MRC_PATTERN_LENGTH) + MRC_MINOR_CODE];
 
   return 0;
 }

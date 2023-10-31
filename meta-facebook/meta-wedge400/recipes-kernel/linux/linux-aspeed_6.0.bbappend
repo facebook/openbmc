@@ -37,4 +37,5 @@ SRC_URI += "file://1001-ARM-dts-aspeed-wedge400-enable-jtag-controller.patch \
             file://1011-powr1220-updating-the-max_channel-to-14.patch \
             file://1022-hwmon-pmbus-pxe1610-support-pxe1211-chip.patch \
             file://1023-hwmon-pmbus-add-ir35215-driver.patch \
+            file://1024-enlarge-data0-partition-8MB-to-64MB.patch \
            "

@@ -542,6 +542,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
    case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
+        kv_set("sync_flood_reset", "0", 0, KV_FPERSIST);
         return pal_toggle_rst_btn(fru);
       } else if (status == SERVER_POWER_OFF)
         return -1;

@@ -62,6 +62,9 @@
 
 #define PSB_CONFIG_RAW "slot%d_psb_config_raw"
 
+#define TRIGGER_BY_SYNC_FLOOD_RESET 0xE4
+#define TRIGGER_BY_MB_RESET 0xE5
+
 const char pal_fru_list[] = \
 "all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, " \
 // Artemis fru list
@@ -1588,6 +1591,28 @@ pal_get_dev_name(uint8_t fru, uint8_t dev, char *name) {
       return -1;
   }
   return 0;
+}
+
+int
+pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  char value[MAX_VALUE_LEN] = {0};
+  unsigned char sync_flood_reset = 0;
+
+  if(kv_get("sync_flood_reset", value, NULL, KV_FPERSIST) != 0) {
+    res_data[0] = TRIGGER_BY_MB_RESET;
+  } else {
+    sync_flood_reset = (unsigned char)strtoul(value, NULL, 0);
+
+    if(sync_flood_reset)
+      res_data[0] = TRIGGER_BY_SYNC_FLOOD_RESET;
+    else
+      res_data[0] = TRIGGER_BY_MB_RESET;
+  }
+  *res_len = 0x01;
+
+  kv_set("sync_flood_reset", "0", 0, KV_FPERSIST);
+
+  return CC_SUCCESS;
 }
 
 int

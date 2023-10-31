@@ -25,7 +25,7 @@ import os
 from fsc_util import Logger
 
 fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
-get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR", "sensor_fail_ignore_check"]
+get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR", "sensor_fail_ignore_check", "sensor_not_ready"]
 
 lfby35_hndl = CDLL("libfby35_common.so.0")
 lpal_hndl = CDLL("libpal.so.0")
@@ -254,7 +254,6 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     return is_e1s_prsnt(board, sname[10 : sname.find("_t")])
 
                 return 1
-
         return 0
     except SystemExit:
         Logger.debug("SystemExit from sensor read")
@@ -273,6 +272,9 @@ def get_fan_mode(scenario="None"):
     elif "sensor_fail" in scenario:
         pwm = 100
         return fan_mode["boost_mode"], pwm
+    elif "sensor_not_ready" in scenario:
+        pwm = 70
+        return fan_mode["trans_mode"], pwm
     pass
 
 
@@ -297,3 +299,17 @@ def sensor_fail_ignore_check(board, sname):
             if pin_val.value == 0:  # post complete
                 return False
         return True
+
+
+def sensor_transitional_check(sname, board):
+    (board, sname) = sname.split("_", 1)
+    if ("slot" in board):
+        status = c_uint8(0)
+        ret = lpal_hndl.pal_get_server_power(
+            int(fru_map[board]["slot_num"]), byref(status)
+        )
+        if status.value == 1:  # power on
+            ready = is_host_ready(host_ready_map[board])
+            if ready != 1:
+                return True
+    return False

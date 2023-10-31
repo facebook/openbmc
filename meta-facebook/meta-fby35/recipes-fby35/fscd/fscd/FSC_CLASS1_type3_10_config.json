@@ -6,6 +6,7 @@
   "sample_interval_ms": 3000,
   "sensor_fail_ignore": true,
   "sensor_filter_all": true,
+  "ramp_rate": 100,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true

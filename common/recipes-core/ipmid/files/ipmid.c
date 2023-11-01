@@ -3501,15 +3501,23 @@ oem_get_sensor_real_reading(unsigned char *request, unsigned char req_len, unsig
   uint8_t fru, snr_num;
   uint8_t ret = 0;
   float val = 0;
+  bool cached = false;
 
-  if (req_len != 5) {
+  if (req_len != 5 && req_len != 6) {
     res->cc = CC_INVALID_LENGTH;
     *res_len = 0;
     return;
   }
+  if (req_len == 6 && req->data[2] != 0x00) {
+    cached = true;
+  }
   fru = req->data[0];
   snr_num = req->data[1];
-  ret = pal_sensor_read_raw(fru, snr_num, &val);
+  if (cached) {
+    ret = sensor_cache_read(fru, snr_num, &val);
+  } else {
+    ret = pal_sensor_read_raw(fru, snr_num, &val);
+  }
 
   if (ret == 0) {
     res->cc = CC_SUCCESS;

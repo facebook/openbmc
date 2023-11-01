@@ -856,12 +856,12 @@ void
         pal_get_fru_name(fru,fru_name);
         if (fru == FRU_ACB) {
           if (last_cb_present != gta_exp_prsnt_status) {
-            syslog(LOG_CRIT, "%s %s",fru_name, gta_exp_prsnt_status ? "is Present":"is Absent");
+            syslog(LOG_CRIT, "%s %s",fru_name, gta_exp_prsnt_status ? "is Present":"is not Present");
           }
           last_cb_present = gta_exp_prsnt_status;
         } else {
           if (last_mc_present != gta_exp_prsnt_status) {
-            syslog(LOG_CRIT, "%s %s",fru_name, gta_exp_prsnt_status ? "is Present":"is Absent");
+            syslog(LOG_CRIT, "%s %s",fru_name, gta_exp_prsnt_status ? "is Present":"is not Present");
           }
           last_mc_present = gta_exp_prsnt_status;
         }

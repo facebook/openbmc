@@ -95,7 +95,7 @@ class SyslogRestartTest(TestCase):
         # Count all processes with syslog cmdline
         for cmdline_file in glob.glob("/proc/[0-9]*/cmdline"):
             # /proc/$pid/cmdline might not exist anymore, but that's OK
-            with suppress(FileNotFoundError):
+            with suppress(FileNotFoundError, ProcessLookupError):
                 with open(cmdline_file) as f:
                     cmdline = f.read()
 

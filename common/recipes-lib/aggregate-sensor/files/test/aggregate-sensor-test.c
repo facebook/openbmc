@@ -60,6 +60,7 @@ DEFINE_TEST(test_lexp)
 {
   char got_name[64] = {0};
   int ret;
+  uint32_t interval = 0;
   float val;
 
   init_sensors("./test_lexp.json", 1);
@@ -67,6 +68,8 @@ DEFINE_TEST(test_lexp)
   ASSERT_EQ_STR(got_name, "test1", "Matching sensor name");
   ASSERT(aggregate_sensor_units(0, got_name) == 0, "Read sensor units");
   ASSERT_EQ_STR(got_name, "TEST1", "Matching sensor units");
+  ASSERT(aggregate_sensor_poll_interval(0, &interval) == 0, "Read sensor poll interval");
+  ASSERT_EQ(interval, 2, "Default monitoring interval");
 
   int mocked_read1(uint8_t fru, uint8_t snr, float *value) {
     ASSERT((fru == 1 && snr == 1) || (fru == 2 && snr == 2), "Expected FRU/SNRID");
@@ -118,6 +121,8 @@ DEFINE_TEST(test_cond_lexp)
   float val;
   int ret;
   char got_name[64];
+  uint32_t interval = 0;
+  thresh_sensor_t thresh;
 
   init_sensors("./test_clexp.json", 2);
   ASSERT(aggregate_sensor_name(0, got_name) == 0, "sensor1 name read success");
@@ -128,6 +133,14 @@ DEFINE_TEST(test_cond_lexp)
   ASSERT_EQ_STR(got_name, "test_p", "Sensor2 name correct");
   ASSERT(aggregate_sensor_units(1, got_name) == 0, "Sensor2 units read success");
   ASSERT_EQ_STR(got_name, "TEST", "Sensor2 units correct");
+  ASSERT(aggregate_sensor_poll_interval(0, &interval) == 0, "Sensor 1 poll interval");
+  ASSERT_EQ(interval, 1, "Sensor1 valid poll interval");
+  ASSERT(aggregate_sensor_poll_interval(1, &interval) == 0, "Sensor 2 poll interval");
+  ASSERT_EQ(interval, 2, "Sensor2 default poll interval");
+  ASSERT(aggregate_sensor_threshold(0, &thresh) == 0, "Sensor 1 threshold");
+  ASSERT_EQ(thresh.poll_interval, 1, "Thresh poll interval");
+  ASSERT(aggregate_sensor_threshold(1, &thresh) == 0, "Sensor 2 threshold");
+  ASSERT_EQ(thresh.poll_interval, 2, "Thresh poll interval");
 
   MOCK_RETURN(sensor_cache_read, 0);
   MOCK_RETURN(kv_get, -1);

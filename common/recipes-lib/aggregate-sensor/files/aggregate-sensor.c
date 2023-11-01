@@ -157,6 +157,16 @@ aggregate_sensor_units(size_t index, char *units)
 }
 
 int
+aggregate_sensor_poll_interval(size_t index, uint32_t *poll_interval)
+{
+  if (index >= g_sensors_count) {
+    return -1;
+  }
+  *poll_interval = g_sensors[index].sensor.poll_interval;
+  return 0;
+}
+
+int
 aggregate_sensor_init(const char *conf_file_path)
 {
   if (!conf_file_path) {

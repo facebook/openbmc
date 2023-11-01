@@ -4,6 +4,7 @@
     {
       "name": "test_np",
       "units": "TEST",
+      "poll_interval": 1,
       "composition": {
         "type": "conditional_linear_expression",
         "sources": {

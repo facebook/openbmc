@@ -34,6 +34,7 @@ int aggregate_sensor_read(size_t index, float *value);
 int aggregate_sensor_threshold(size_t index, thresh_sensor_t *thresh);
 int aggregate_sensor_name(size_t index, char *name);
 int aggregate_sensor_units(size_t index, char *units);
+int aggregate_sensor_poll_interval(size_t index, uint32_t *poll_interval);
 
 /* Called once per process. Safe to call multiple times */
 int aggregate_sensor_init(const char *conf_file);

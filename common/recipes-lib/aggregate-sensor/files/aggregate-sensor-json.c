@@ -472,6 +472,8 @@ static int load_sensor_conf(aggregate_sensor_t *snr, json_t *obj)
     DEBUG("Loading of thresholds failed!\n");
     return -1;
   }
+  tmp = json_object_get(obj, "poll_interval");
+  snr->sensor.poll_interval = tmp ? json_integer_value(tmp) : 2;
 
   return load_composition(snr, json_object_get(obj, "composition"));
 }

@@ -1,21 +1,20 @@
-From d511759307bbe3723da481e80608289cfb7fc0ff Mon Sep 17 00:00:00 2001
+From edd0a5bc27b6397fc1c1b990bd7f116d063e9f9d Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
-Date: Thu, 10 Feb 2022 15:20:41 +0800
-Subject: [PATCH 500/501] ARM: dts: aspeed: bletchley: enable PWM and TACH
- support
+Date: Thu, 31 Aug 2023 16:55:58 +0800
+Subject: [PATCH 1/1] ARM: dts: aspeed: bletchley: enable PWM and TACH support
 
-Enable pwm and tach support, add pwm-fan for fan controlling
+Enable pwm and tach support, add pwm-fan for fan controlling.
 
 This commit depends on the patch below:
-[1] https://lore.kernel.org/all/20211130055933.32708-1-billy_tsai@aspeedtech.com/
+[1] https://lore.kernel.org/all/20230918064111.2221594-1-billy_tsai@aspeedtech.com/
 
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 ---
- .../aspeed/aspeed-bmc-facebook-bletchley.dts  | 87 +++++++++++++++++++
- 1 file changed, 87 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-bletchley.dts  | 73 +++++++++++++++++++
+ 1 file changed, 73 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
-index e899de681f47..832eff30d193 100644
+index 72ad59e3e8a57..a69ecfa17cb54 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
 @@ -280,6 +280,26 @@ vbus_sled6: vbus_sled6 {
@@ -25,97 +24,83 @@ index e899de681f47..832eff30d193 100644
 +
 +	pwm-fan0 {
 +		compatible = "pwm-fan";
-+		pwms = <&pwm 0 40000 0>;        /* Target freq:25 kHz */
++		pwms = <&pwm_tach 0 40000 0>;	/* Target freq:25 kHz */
 +	};
 +
 +	pwm-fan1 {
 +		compatible = "pwm-fan";
-+		pwms = <&pwm 1 40000 0>;        /* Target freq:25 kHz */
++		pwms = <&pwm_tach 1 40000 0>;	/* Target freq:25 kHz */
 +	};
 +
 +	pwm-fan2 {
 +		compatible = "pwm-fan";
-+		pwms = <&pwm 2 40000 0>;        /* Target freq:25 kHz */
++		pwms = <&pwm_tach 2 40000 0>;	/* Target freq:25 kHz */
 +	};
 +
 +	pwm-fan3 {
 +		compatible = "pwm-fan";
-+		pwms = <&pwm 3 40000 0>;        /* Target freq:25 kHz */
++		pwms = <&pwm_tach 3 40000 0>;	/* Target freq:25 kHz */
 +	};
  };
  
  &mac2 {
-@@ -1075,3 +1095,70 @@ &wdt1 {
+@@ -1075,3 +1095,56 @@ &wdt1 {
  	aspeed,ext-active-high;
  	aspeed,ext-pulse-duration = <256>;
  };
 +
-+&pwm {
-+	status = "okay";
++&pwm_tach {
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pinctrl_pwm0_default &pinctrl_pwm1_default
 +		&pinctrl_pwm2_default &pinctrl_pwm3_default
 +		&pinctrl_pwm8g0_default &pinctrl_pwm9g0_default
 +		&pinctrl_pwm10g0_default &pinctrl_pwm11g0_default
-+		&pinctrl_pwm12g0_default &pinctrl_pwm13g0_default>;
-+};
-+
-+&tach {
-+	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_tach0_default &pinctrl_tach1_default
++		&pinctrl_pwm12g0_default &pinctrl_pwm13g0_default
++		&pinctrl_tach0_default &pinctrl_tach1_default
 +		&pinctrl_tach2_default &pinctrl_tach3_default
 +		&pinctrl_tach4_default &pinctrl_tach5_default
 +		&pinctrl_tach6_default &pinctrl_tach7_default>;
 +
 +	tach0-I@0 {
-+		reg = <0x00>;
-+		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <700>;
++		tach-ch = <0x00>;
++		min-rpm = <700>;
 +	};
 +
 +	tach0-O@1 {
-+		reg = <0x01>;
-+		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <700>;
++		tach-ch = <0x01>;
++		min-rpm = <700>;
 +	};
 +
 +	tach1-I@2 {
-+		reg = <0x02>;
-+		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <700>;
++		tach-ch = <0x02>;
++		min-rpm = <700>;
 +	};
 +
 +	tach1-O@3 {
-+		reg = <0x03>;
-+		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <700>;
++		tach-ch = <0x03>;
++		min-rpm = <700>;
 +	};
 +
 +	tach2-I@4 {
-+		reg = <0x04>;
-+		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <700>;
++		tach-ch = <0x04>;
++		min-rpm = <700>;
 +	};
 +
 +	tach2-O@5 {
-+		reg = <0x05>;
-+		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <700>;
++		tach-ch = <0x05>;
++		min-rpm = <700>;
 +	};
 +
 +	tach3-I@6 {
-+		reg = <0x06>;
-+		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <700>;
++		tach-ch = <0x06>;
++		min-rpm = <700>;
 +	};
 +
 +	tach3-O@7 {
-+		reg = <0x07>;
-+		aspeed,pulse-pr = <2>;
-+		aspeed,min-rpm = <700>;
++		tach-ch = <0x07>;
++		min-rpm = <700>;
 +	};
 +};
 -- 
-2.41.0
+2.31.1
 

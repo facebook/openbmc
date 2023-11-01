@@ -3270,6 +3270,20 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
       sdr->lc_thresh = 0xB0;
     }
 
+    if (bmc_location != NIC_BMC) {
+      switch (snr_num) {
+        case BIC_SENSOR_VCCIO_VR_CUR:
+        case BIC_SENSOR_P3V3_STBY_VR_CUR:
+	case BIC_SENSOR_HSC_OUTPUT_CUR:
+	case BIC_SENSOR_PVDDQ_ABC_VR_CUR:
+	case BIC_SENSOR_PVDDQ_DEF_VR_CUR:
+	case BIC_SENSOR_VCCIN_VR_CUR:
+	case BIC_SENSOR_VCCSA_VR_CUR:
+          sdr->sensor_units1 = 0x00;
+	  break;
+      }
+    }
+
     memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
     //syslog(LOG_WARNING, "%s() copy num: 0x%x:%s success", __func__, snr_num, sdr->str);
   }

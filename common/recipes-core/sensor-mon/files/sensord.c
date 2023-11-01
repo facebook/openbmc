@@ -80,6 +80,19 @@ static void sensor_fail_assert_clear(uint8_t *fail_cnt UNUSED, uint8_t fru UNUSE
 #endif
 }
 
+/* Helper to manage the stored elapsed time since last "monitor" for each
+ * sensor and return true if the elapsed time has expired. false if we still
+ * need to a sleep a little longer. */
+static bool sensor_poll_timer_expired(uint32_t *remaining, uint32_t elapsed, uint32_t interval)
+{
+  if (*remaining > elapsed) {
+    *remaining -= elapsed;
+    return false;
+  }
+  *remaining = interval;
+  return true;
+}
+
 /*
  * Returns the pointer to the struct holding all sensor info and
  * calculated threshold values for the fru#
@@ -597,12 +610,10 @@ snr_monitor(void *arg) {
       snr_num = sensor_list[i];
       curr_val = 0;
       if (snr[snr_num].flag) {
-        // granular the sensor via assigning the poll_interval
-        if (snr_poll_interval[snr_num] > MIN_POLL_INTERVAL) {
-          snr_poll_interval[snr_num] -= MIN_POLL_INTERVAL;
+        if (!sensor_poll_timer_expired(&snr_poll_interval[snr_num],
+              MIN_POLL_INTERVAL, snr[snr_num].poll_interval)) {
           continue;
         }
-        snr_poll_interval[snr_num] = snr[snr_num].poll_interval;
         if (!(ret = sensor_raw_read_helper(fruNb, snr_num, &curr_val))) {
           sensor_fail_assert_clear(&snr_read_fail[snr_num], fru, snr_num, snr[snr_num].name);
           check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);
@@ -720,6 +731,7 @@ aggregate_snr_monitor(void *unused UNUSED)
   uint8_t snr_num;
   thresh_sensor_t *snr;
   uint8_t snr_read_fail[MAX_SENSOR_NUM + 1] = {0};
+  uint32_t snr_poll_interval[MAX_SENSOR_NUM + 1] = {0};
 
   if(aggregate_sensor_init(NULL)) {
     syslog(LOG_WARNING, "Initializing aggregate sensors failed!");
@@ -744,6 +756,10 @@ aggregate_snr_monitor(void *unused UNUSED)
       snr_num = (uint8_t)i;
       curr_val = 0;
       if (snr[snr_num].flag) {
+        if (!sensor_poll_timer_expired(&snr_poll_interval[snr_num],
+              MIN_POLL_INTERVAL, snr[snr_num].poll_interval)) {
+          continue;
+        }
         if (!(ret = sensor_raw_read_helper(fru, snr_num, &curr_val))) {
           sensor_fail_assert_clear(&snr_read_fail[snr_num], fru, snr_num, snr[snr_num].name);
           check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);

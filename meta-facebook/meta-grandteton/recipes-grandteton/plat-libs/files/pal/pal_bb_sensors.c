@@ -653,14 +653,31 @@ read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
       *value = (*value/256/0.15)*56.94/1000;
       get_comp_source(fru, fru == FRU_VPDB ? VPDB_RSENSE_SOURCE : HPDB_RSENSE_SOURCE, &id);
       if (id == MAIN_SOURCE) {
-        if (hsc_id == VPDB_HSC_ID0)
-          *value = (*value * 0.97) - 17.04;
-        else if (hsc_id == HPDB_HSC_ID1)
-          *value = (*value * 0.96) + 4.15;
-        else if (hsc_id == HPDB_HSC_ID2)
-          *value = (*value * 0.96) - 0.26;
-        else
-          return -1;
+        switch (hsc_id) {
+          case VPDB_HSC_ID0:
+            if (pal_is_artemis()) {
+              *value = *value * 0.955 + 20;
+            } else {
+              *value = (*value * 0.97) - 17.04;
+            }
+            break;
+          case HPDB_HSC_ID1:
+            if (pal_is_artemis()) {
+              *value = *value * 0.96;
+            } else {
+              *value = (*value * 0.96) + 4.15;
+            }
+            break;
+          case HPDB_HSC_ID2:
+            if (pal_is_artemis()) {
+              *value = *value * 0.96;
+            } else {
+              *value = (*value * 0.96) - 0.26;
+            }
+            break;
+          default:
+            return -1;
+        }
       }
     }
   } else {

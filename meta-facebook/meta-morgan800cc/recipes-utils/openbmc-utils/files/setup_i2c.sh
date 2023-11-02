@@ -17,7 +17,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-#
-# Create "pwrcpld" and scm/chassis EEPROMs.
-#
-echo "FIXME: instantiate I2C client devices in setup_i2c.sh!!"
+#shellcheck disable=SC1091
+source /usr/local/bin/openbmc-utils.sh
+
+# Bus 7
+i2c_device_add 7 0x50 24c64 # Chassis EEPROM
+# Bus 4
+i2c_device_add 4 0x50 24c64 # SCM EEPROM

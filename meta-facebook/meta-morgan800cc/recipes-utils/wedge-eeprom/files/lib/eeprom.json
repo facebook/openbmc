@@ -1,9 +1,13 @@
 {
-  "platform" : "janga" ,
+  "platform" : "morgan800cc" ,
   "eeprom devices" : [
     {
       "name" : "chassis_eeprom",
-      "sysfs_path" : "/sys/bus/i2c/devices/3-0056/eeprom"
+      "sysfs_path" : "/sys/bus/i2c/devices/i2c-7/7-0050/eeprom"
+    },
+    {
+      "name" : "scm_eeprom",
+      "sysfs_path" : "/sys/bus/i2c/devices/i2c-4/4-0050/eeprom"
     }
   ]
 }

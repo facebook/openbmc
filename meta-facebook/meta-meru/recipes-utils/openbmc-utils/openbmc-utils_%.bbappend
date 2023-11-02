@@ -19,26 +19,31 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += "\
     file://aconf_util.sh \
-    file://bios-util.sh \
+    file://bios_util.sh \
     file://bmc_aboot.conf \
+    file://bmc_board_rev.sh \
     file://board-utils.sh \
     file://cpu_aboot.conf \
-    file://fpga-util.sh \
-    file://oob-mdio-util.sh \
+    file://fpga_util.sh \
+    file://fpga_ver.sh \
     file://meru_flash.layout \
     file://meru_flash_32m.layout \
-    file://setup_i2c.sh \
+    file://oob-mdio-util.sh \
     file://setup-gpio.sh \
     file://setup_board.sh \
+    file://setup_i2c.sh \
+    file://switchToCpu.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
     aconf_util.sh \
     bios_util.sh \
+    bmc_board_rev.sh \
     fpga_util.sh \
+    fpga_ver.sh \
     oob-mdio-util.sh \
+    switchToCpu.sh \
     "
-
 do_install_bios_layout() {
     install -m 0644 ${S}/bmc_aboot.conf ${D}${sysconfdir}/bmc_aboot.conf
     install -m 0644 ${S}/cpu_aboot.conf ${D}${sysconfdir}/cpu_aboot.conf

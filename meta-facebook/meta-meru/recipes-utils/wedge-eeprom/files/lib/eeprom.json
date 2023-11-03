@@ -1,1 +1,17 @@
-{}
+{
+  "platform" : "meru" ,
+  "eeprom devices" : [
+  {
+      "name" : "chassis_eeprom",
+      "sysfs_path" : "/sys/bus/i2c/drivers/at24/9-0052/eeprom"
+  },
+  {
+      "name" : "bmc",
+      "sysfs_path" : "/sys/bus/i2c/drivers/at24/0-0050/eeprom"
+  },
+  {
+      "name" : "scm",
+      "sysfs_path" : "/sys/bus/i2c/drivers/at24/9-0050/eeprom"
+  }
+  ]
+}

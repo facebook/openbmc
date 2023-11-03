@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright 2023-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,15 +16,29 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-require recipes-core/images/fboss-lite-image.inc
+# This utility prints the meta information for specified boot flash
+# mtd partition
+START_OFFSET_KB=960
+LEN_KB=64
 
-IMAGE_INSTALL += " \
-  fio \
-  flashrom \
-  ipmitool \
-  jam \
-  kcsd \
-  show-tech \
-  libcpldupdate-dll-ioctl \
-  "
+usage() {
+    echo "Usage $0 [flash0|flash1]"
+}
+
+case "$1" in
+    flash0)
+        mtd="$(grep flash0 /proc/mtd | awk '{print $1}' | tr -d ':')"
+        ;;
+    flash1)
+        mtd="$(grep flash1 /proc/mtd | awk '{print $1}' | tr -d ':')"
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
+
+dd if=/dev/"$mtd" of=/tmp/."$1"_meta bs=1K skip="$START_OFFSET_KB" count="$LEN_KB"
+strings /tmp/."$1"_meta

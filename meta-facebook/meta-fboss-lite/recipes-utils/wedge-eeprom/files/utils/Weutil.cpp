@@ -24,6 +24,8 @@
 
 #include "../lib/WeutilInterface.h"
 
+#define USE_NEW_EEPROM_LIB true
+
 using ojson = nlohmann::ordered_json;
 
 static void usage() {
@@ -39,19 +41,34 @@ static void usage() {
 
 static void printEepromData(const std::string& eDeviceName, bool jFlag) {
   std::cout << "Wedge EEPROM " + eDeviceName << "\n";
-  std::map<fieldId, std::pair<std::string, std::string>> devTbl =
-      eepromParse(eDeviceName);
 
-  if (jFlag) {
-    ojson j;
-    for (auto& item : devTbl) {
-      j[item.second.first] = item.second.second;
-    }
-    std::cout << std::setw(4) << j << '\n';
+  if (USE_NEW_EEPROM_LIB) {
+      std::vector<std::pair<std::string, std::string>> parsedData = eepromParseNew(eDeviceName);
+      if (jFlag) {
+        ojson j;
+        for (auto item : parsedData) {
+          j[item.first] = item.second;
+        }
+        std::cout << std::setw(4) << j << '\n';
+      } else {
+        for (auto item : parsedData) {
+          std::cout << item.first << ": " << item.second << '\n';
+        }
+      }
   } else {
-    for (auto& item : devTbl) {
-      std::cout << item.second.first << ": " << item.second.second << '\n';
-    }
+      std::map<fieldId, std::pair<std::string, std::string>> devTbl =
+          eepromParse(eDeviceName);
+      if (jFlag) {
+        ojson j;
+        for (auto& item : devTbl) {
+          j[item.second.first] = item.second.second;
+        }
+        std::cout << std::setw(4) << j << '\n';
+      } else {
+        for (auto& item : devTbl) {
+          std::cout << item.second.first << ": " << item.second.second << '\n';
+        }
+      }
   }
   return;
 }

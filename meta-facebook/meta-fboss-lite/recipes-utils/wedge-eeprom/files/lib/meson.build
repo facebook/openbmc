@@ -31,6 +31,8 @@ libsrcs = files(
     'WeutilInterface.h',
     'FbossEeprom.h',
     'FbossEeprom.cpp',
+    'FbossEepromParser.h',
+    'FbossEepromParser.cpp',
     )
 
 # weutil library

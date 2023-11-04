@@ -51,4 +51,6 @@ std::map<std::string, std::string> listEepromDevices();
 std::optional<std::string> eepromNameToPath(const std::string& devName);
 std::map<fieldId, std::pair<std::string, std::string>> eepromParse(
     const std::string& eepromDeviceName);
+std::vector<std::pair<std::string, std::string>> eepromParseNew(
+    const std::string& eepromDeviceName);
 std::string eepromFormat(std::string& eName);

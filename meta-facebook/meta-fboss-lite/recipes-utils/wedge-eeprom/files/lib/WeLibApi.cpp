@@ -24,9 +24,20 @@
 #include "Eeprom.h"
 #include "FbossEeprom.h"
 #include "WeutilInterface.h"
+#include "FbossEepromParser.h"
 
 using namespace weutil;
 static std::unique_ptr<WeCfg> cfg = std::make_unique<WeCfg>();
+
+std::vector<std::pair<std::string, std::string>> eepromParseNew(
+    const std::string& eepromDeviceName) {
+  uint16_t off = 0;
+  facebook::fboss::platform::FbossEepromParser newParser;
+  std::string ePath = cfg->eepromNameToPath(eepromDeviceName).value_or("");
+  std::string eepromFmt = cfg->eFormat(ePath);
+  off = (ARISTA_PREFDL == eepromFmt) ? ARISTA_EEPROM_OFFSET : 0;
+  return newParser.getEeprom(ePath, off);
+}
 
 std::map<fieldId, std::pair<std::string, std::string>> eepromParse(
     const std::string& eepromDeviceName) {

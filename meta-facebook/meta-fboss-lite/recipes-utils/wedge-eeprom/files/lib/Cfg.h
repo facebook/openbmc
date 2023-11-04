@@ -23,7 +23,9 @@
 #include <vector>
 
 #define CFG_FILE "/etc/weutil/eeprom.json"
+#define META_EEPROM_V3 "META-FBOSS EEPROM Version 3"
 #define META_EEPROM_V4 "META-FBOSS EEPROM Version 4"
+#define META_EEPROM_V5 "META-FBOSS EEPROM Version 5"
 #define ARISTA_PREFDL "Arista Rackhawk Prefdl"
 #define ARISTA_EEPROM_OFFSET 15 * 1024
 

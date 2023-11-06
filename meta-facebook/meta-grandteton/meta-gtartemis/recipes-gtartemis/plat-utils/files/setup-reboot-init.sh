@@ -1,4 +1,6 @@
-# Copyright 2023-present Facebook. All Rights Reserved.
+#!/bin/bash
+#
+# Copyright 2022-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,25 +16,15 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+. /usr/local/fbpackages/utils/ast-functions
 
-LOCAL_URI += " \
-    file://sol-util \
-    file://usb-util \
-    file://setup-server-uart.sh \
-    file://setup-snr-mon.sh \
-    file://setup-i2c-clk.sh \
-    file://setup-usb-hub.sh \
-    file://setup-reboot-init.sh \
-    "
-
-binfiles += " usb-util setup-i2c-clk.sh setup-usb-hub.sh"
-
-do_install:append() {
-  install -m 755 setup-usb-hub.sh ${D}${sysconfdir}/init.d/setup-usb-hub.sh
-  update-rc.d -r ${D} setup-usb-hub.sh start 65 5 .
-
-  install -m 755 setup-i2c-clk.sh ${D}${sysconfdir}/init.d/setup-i2c-clk.sh
-  update-rc.d -r ${D} setup-i2c-clk.sh start 90 5 .
+disable_usb_hub() {
+    # set cb bic gpio 24 low, disable usb hub
+    pldmd-util -b 3 -e 0x0a raw 0x02 0x39 0x18 0xFF 0x02 0x00 0x00 0x01 0x01 >/dev/null
 }
+
+disable_usb_hub
+
+gpio_set FM_BMC_SGPIO_READY_N 0

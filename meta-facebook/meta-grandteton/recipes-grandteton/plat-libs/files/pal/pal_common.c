@@ -266,6 +266,18 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
   gpio_value_t gpio_prsnt_4;
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
+  uint8_t mb_rev = 0;
+  int i2cfd = 0, ret = -1;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
+  uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
+  enum GTA_MEB_NOT_PRSNT_OFFSET {
+    MEB_NOT_PRSNT_OFFSET = 0x05,
+  };
+  enum GTA_MEB_NOT_PRSNT_MASK {
+    MEB_NOT_PRSNT_MASK_1 = 0x10,
+    MEB_NOT_PRSNT_MASK_2 = 0x40,
+  };
 
   snprintf(key, sizeof(key), "fru%d_prsnt", fru_id);
 
@@ -282,12 +294,39 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
       }
       break;
     case FRU_MEB:
-      gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_D);
-      gpio_prsnt_2 = gpio_get_value_by_shadow(CABLE_PRSNT_F);
-      if (gpio_prsnt_1 && gpio_prsnt_2) {
-        *status = FRU_NOT_PRSNT;
+      pal_get_board_rev_id(FRU_MB, &mb_rev);
+      if (mb_rev >= GTA_DVT_STAGE) {
+        gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_D);
+        gpio_prsnt_2 = gpio_get_value_by_shadow(CABLE_PRSNT_F);
+        if (gpio_prsnt_1 && gpio_prsnt_2) {
+          *status = FRU_NOT_PRSNT;
+        } else {
+          *status = FRU_PRSNT;
+        }
+        // EVT2 mc present read from cpld
       } else {
-        *status = FRU_PRSNT;
+        i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+        if (i2cfd < 0) {
+          syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
+          return false;
+        }
+        tbuf[0] = MEB_NOT_PRSNT_OFFSET;
+        tlen = 1;
+        rlen = 2;
+        ret = i2c_rdwr_msg_transfer(i2cfd, GTA_MB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+        if (ret < 0) {
+          syslog(LOG_INFO, "%s() I2C transfer to MB CPLD failed, RET: %d", __func__, ret);
+          i2c_cdev_slave_close(i2cfd);
+          return false;
+        } else {
+          if ((rbuf[0] & MEB_NOT_PRSNT_MASK_1) == MEB_NOT_PRSNT_MASK_1 &&
+              (rbuf[1] & MEB_NOT_PRSNT_MASK_2) == MEB_NOT_PRSNT_MASK_2) {
+            *status = FRU_NOT_PRSNT;
+          } else {
+            *status = FRU_PRSNT;
+          }
+        }
+        i2c_cdev_slave_close(i2cfd);
       }
       break;
     default:

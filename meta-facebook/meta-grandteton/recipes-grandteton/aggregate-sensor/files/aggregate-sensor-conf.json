@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "SYSTEM_POWER_W",
+      "units": "Watts",
+      "poll_interval": 1,
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "pwr0": {
+            "fru":       9,
+            "sensor_id": 146
+          },
+          "pwr1": {
+            "fru":       10,
+            "sensor_id": 178
+          },
+          "pwr2": {
+            "fru":       10,
+            "sensor_id": 183
+          }
+        },
+       "linear_expression": "( pwr0 + pwr1 + pwr2 )"
+      }
+    }
+  ]
+}

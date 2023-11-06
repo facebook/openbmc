@@ -171,7 +171,7 @@ delay_get_firmware(void* arg) {
   if (pal_is_artemis()) {
     update_pldm_ver_cache("cb", ACB_BIC_BUS, ACB_BIC_EID);
   } else {
-    update_pldm_ver_cache("", SWB_BUS_ID, SWB_BIC_EID);
+    update_pldm_ver_cache("swb", SWB_BUS_ID, SWB_BIC_EID);
   }
 
   free(delay);
@@ -194,7 +194,7 @@ void bic_get_firmware (unsigned int _delay) {
     if (pal_is_artemis()) {
       update_pldm_ver_cache("cb", ACB_BIC_BUS, ACB_BIC_EID);
     } else {
-      update_pldm_ver_cache("", SWB_BUS_ID, SWB_BIC_EID);
+      update_pldm_ver_cache("swb", SWB_BUS_ID, SWB_BIC_EID);
     }
 
     free(delay);

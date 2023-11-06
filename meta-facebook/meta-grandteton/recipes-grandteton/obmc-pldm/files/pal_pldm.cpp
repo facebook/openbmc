@@ -187,34 +187,16 @@ pldm_firmware_parameter_handler::get_active_ver(
   return ret;
 }
 
-int get_pldm_active_ver(const std::string& fru, uint8_t bus, uint8_t eid, std::string& active_ver)
+int get_pldm_active_ver(uint8_t bus, uint8_t eid, std::string& active_ver)
 {
-  int ret = -1;
-  pldm_firmware_parameter_handler *handler = NULL;
-  if (fru.empty()) {
-    handler = new pldm_firmware_parameter_handler();
-  } else {
-    handler = new pldm_firmware_parameter_handler({fru});
-  }
-
-  ret = handler->get_active_ver(bus, eid, active_ver);
-  delete handler;
-  return ret;
+  pldm_firmware_parameter_handler handler;
+  return handler.get_active_ver(bus, eid, active_ver);
 }
 
 int update_pldm_ver_cache(const std::string& fru, uint8_t bus, uint8_t eid)
 {
-  int ret = -1;
-  pldm_firmware_parameter_handler *handler = NULL;
-  if (fru.empty()) {
-    handler = new pldm_firmware_parameter_handler();
-  } else {
-    handler = new pldm_firmware_parameter_handler({fru});
-  }
-
-  ret = handler->update_swb_cache(bus, eid);
-  delete handler;
-  return ret;
+  pldm_firmware_parameter_handler handler(fru);
+  return handler.update_swb_cache(bus, eid);
 }
 
 int

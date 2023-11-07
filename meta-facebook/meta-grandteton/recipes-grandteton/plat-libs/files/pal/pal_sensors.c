@@ -236,6 +236,38 @@ static void reload_sensor_table(uint8_t fru) {
 }
 
 int
+pal_get_sensor_poll_interval(uint8_t fru, uint8_t num, uint32_t *value) {
+  switch (fru) {
+    case FRU_VPDB:
+      switch (num) {
+        case PDBV_SNR_HSC0_PIN:
+          *value = 1;
+          break;
+        default:
+          *value = 2;
+          break;
+      }
+      break;
+    case FRU_HPDB:
+      switch (num) {
+        case PDBH_SNR_HSC1_PIN:
+        /* fallthrough */
+        case PDBH_SNR_HSC2_PIN:
+          *value = 1;
+          break;
+        default:
+          *value = 2;
+          break;
+      }
+      break;
+    default:
+      *value = 2;
+      break;
+  }
+  return 0;
+}
+
+int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   int ret=0;
   uint8_t id;

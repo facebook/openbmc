@@ -37,7 +37,8 @@
 #include <openbmc/aggregate-sensor.h>
 #include <openbmc/kv.h>
 
-#define MIN_POLL_INTERVAL 2
+#define SENSOR_HEALTH_POLL_INTERVAL 2
+#define DEFAULT_POLL_INTERVAL 2
 #define STOP_PERIOD 10
 #define MAX_SENSOR_CHECK_RETRY 3
 #define MAX_ASSERT_CHECK_RETRY 1
@@ -91,6 +92,17 @@ static bool sensor_poll_timer_expired(uint32_t *remaining, uint32_t elapsed, uin
   }
   *remaining = interval;
   return true;
+}
+
+static uint32_t sensor_fru_min_poll_interval(thresh_sensor_t *snr, uint8_t *sensor_list, size_t cnt) {
+  uint32_t poll_interval = DEFAULT_POLL_INTERVAL;
+  for (size_t i = 0; i < cnt; i++) {
+    size_t snr_num = sensor_list ? sensor_list[i] : i;
+    if (snr[snr_num].poll_interval < poll_interval) {
+      poll_interval = snr[snr_num].poll_interval;
+    }
+  }
+  return poll_interval;
 }
 
 /*
@@ -513,6 +525,7 @@ snr_monitor(void *arg) {
   uint8_t snr_read_fail[MAX_SENSOR_NUM + 1] = {0};
   uint8_t fruNb = fru;
   uint8_t slot = fru;
+  uint32_t poll_interval;
 
   ret = pal_get_fru_sensor_list(fruNb, &sensor_list, &sensor_cnt);
   if (ret < 0) {
@@ -553,6 +566,9 @@ snr_monitor(void *arg) {
     snr_num = discrete_list[i];
     pal_get_sensor_name(fruNb, snr_num, snr[snr_num].name);
   }
+
+  poll_interval = sensor_fru_min_poll_interval(snr, sensor_list, sensor_cnt);
+  syslog(LOG_INFO, "Using polling interval %u for FRU: %u", poll_interval, fru);
 
   // set flag to notice BMC sensord snr_monitor  is ready
   kv_set("flag_sensord_monitor", "1", 0, 0);
@@ -611,7 +627,7 @@ snr_monitor(void *arg) {
       curr_val = 0;
       if (snr[snr_num].flag) {
         if (!sensor_poll_timer_expired(&snr_poll_interval[snr_num],
-              MIN_POLL_INTERVAL, snr[snr_num].poll_interval)) {
+              poll_interval, snr[snr_num].poll_interval)) {
           continue;
         }
         if (!(ret = sensor_raw_read_helper(fruNb, snr_num, &curr_val))) {
@@ -652,7 +668,7 @@ snr_monitor(void *arg) {
     }
 #endif
 
-    sleep(MIN_POLL_INTERVAL);
+    sleep(poll_interval);
   } /* while loop*/
 } /* function definition */
 
@@ -717,7 +733,7 @@ snr_health_monitor() {
       pal_set_sensor_health(fru, value);
 
     } /* for loop for frus */
-    sleep(MIN_POLL_INTERVAL);
+    sleep(SENSOR_HEALTH_POLL_INTERVAL);
   } /* while loop */
 }
 
@@ -732,6 +748,7 @@ aggregate_snr_monitor(void *unused UNUSED)
   thresh_sensor_t *snr;
   uint8_t snr_read_fail[MAX_SENSOR_NUM + 1] = {0};
   uint32_t snr_poll_interval[MAX_SENSOR_NUM + 1] = {0};
+  uint32_t poll_interval;
 
   if(aggregate_sensor_init(NULL)) {
     syslog(LOG_WARNING, "Initializing aggregate sensors failed!");
@@ -750,6 +767,8 @@ aggregate_snr_monitor(void *unused UNUSED)
     syslog(LOG_WARNING, "agg_snr_monitor: get_struct_thresh_sensor failed");
     pthread_exit(NULL);
   }
+  poll_interval = sensor_fru_min_poll_interval(snr, NULL, cnt);
+  syslog(LOG_INFO, "Using polling interval %u for FRU: aggregate", poll_interval);
 
   while(1) {
     for (i = 0; i < cnt; i++) {
@@ -757,7 +776,7 @@ aggregate_snr_monitor(void *unused UNUSED)
       curr_val = 0;
       if (snr[snr_num].flag) {
         if (!sensor_poll_timer_expired(&snr_poll_interval[snr_num],
-              MIN_POLL_INTERVAL, snr[snr_num].poll_interval)) {
+              poll_interval, snr[snr_num].poll_interval)) {
           continue;
         }
         if (!(ret = sensor_raw_read_helper(fru, snr_num, &curr_val))) {
@@ -780,7 +799,7 @@ aggregate_snr_monitor(void *unused UNUSED)
         } /* pal_sensor_read return check */
       } /* flag check */
     } /* loop for all sensors */
-    sleep(MIN_POLL_INTERVAL);
+    sleep(poll_interval);
   }
   pthread_exit(NULL);
   return NULL;

@@ -63,6 +63,15 @@ SRC_URI:append = " \
 "
 
 #
+# NCSI patches used by multiple OpenBMC platforms.
+#
+SRC_URI:append = " \
+    file://0169-net-ncsi-Simplify-Kconfig-dts-control-flow.patch \
+    file://0170-net-ncsi-Fix-netlink-major-minor-version-numbers.patch \
+    file://0171-net-ncsi-Add-NC-SI-1.2-Get-MC-MAC-Address-command.patch \
+"
+
+#
 # eMMC patch used by FBOSS OpenBMC platforms.
 #
 SRC_URI:append = " \

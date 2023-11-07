@@ -1,0 +1,145 @@
+From b646dcd6368465fd5b4330199ca69457c6cf1d0b Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Tue, 20 Dec 2022 21:22:44 -0800
+Subject: [PATCH 169/171] net/ncsi: Simplify Kconfig/dts control flow
+
+Background:
+
+1. CONFIG_NCSI_OEM_CMD_KEEP_PHY
+
+If this is enabled, we send an extra OEM Intel command in the probe
+sequence immediately after discovering a channel (e.g. after "Clear
+Initial State").
+
+2. CONFIG_NCSI_OEM_CMD_GET_MAC
+
+If this is enabled, we send one of 3 OEM "Get MAC Address" commands from
+Broadcom, Mellanox (Nvidida), and Intel in the *configuration* sequence
+for a channel.
+
+3. mellanox,multi-host (or mlx,multi-host)
+
+Introduced by this patch:
+
+https://lore.kernel.org/all/20200108234341.2590674-1-vijaykhemka@fb.com/
+
+Which was actually originally from cosmo.chou@quantatw.com:
+
+https://github.com/facebook/openbmc-linux/commit/9f132a10ec48db84613519258cd8a317fb9c8f1b
+
+Cosmo claimed that the Nvidia ConnectX-4 and ConnectX-6 NIC's don't
+respond to Get Version ID, et. al in the probe sequence unless you send
+the Set MC Affinity command first.
+
+Problem Statement:
+
+We've been using a combination of #ifdef code blocks and IS_ENABLED()
+conditions to conditionally send these OEM commands.
+
+It makes adding any new code around these commands hard to understand.
+
+Solution:
+
+In this patch, I just want to remove the conditionally compiled blocks
+of code, and always use IS_ENABLED(...) to do dynamic control flow.
+
+I don't think the small amount of code this adds to non-users of the OEM
+Kconfigs is a big deal.
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+---
+ net/ncsi/ncsi-manage.c | 20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
+
+diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
+index d9da942ad53d..f3d7fe86fea1 100644
+--- a/net/ncsi/ncsi-manage.c
++++ b/net/ncsi/ncsi-manage.c
+@@ -689,8 +689,6 @@ static int set_one_vid(struct ncsi_dev_priv *ndp, struct ncsi_channel *nc,
+ 	return 0;
+ }
+ 
+-#if IS_ENABLED(CONFIG_NCSI_OEM_CMD_KEEP_PHY)
+-
+ static int ncsi_oem_keep_phy_intel(struct ncsi_cmd_arg *nca)
+ {
+ 	unsigned char data[NCSI_OEM_INTEL_CMD_KEEP_PHY_LEN];
+@@ -716,10 +714,6 @@ static int ncsi_oem_keep_phy_intel(struct ncsi_cmd_arg *nca)
+ 	return ret;
+ }
+ 
+-#endif
+-
+-#if IS_ENABLED(CONFIG_NCSI_OEM_CMD_GET_MAC)
+-
+ /* NCSI OEM Command APIs */
+ static int ncsi_oem_gma_handler_bcm(struct ncsi_cmd_arg *nca)
+ {
+@@ -856,8 +850,6 @@ static int ncsi_gma_handler(struct ncsi_cmd_arg *nca, unsigned int mf_id)
+ 	return nch->handler(nca);
+ }
+ 
+-#endif /* CONFIG_NCSI_OEM_CMD_GET_MAC */
+-
+ /* Determine if a given channel from the channel_queue should be used for Tx */
+ static bool ncsi_channel_is_tx(struct ncsi_dev_priv *ndp,
+ 			       struct ncsi_channel *nc)
+@@ -1039,20 +1031,18 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+ 			goto error;
+ 		}
+ 
+-		nd->state = ncsi_dev_state_config_oem_gma;
++		nd->state = IS_ENABLED(CONFIG_NCSI_OEM_CMD_GET_MAC)
++			  ? ncsi_dev_state_config_oem_gma
++			  : ncsi_dev_state_config_clear_vids;
+ 		break;
+ 	case ncsi_dev_state_config_oem_gma:
+ 		nd->state = ncsi_dev_state_config_clear_vids;
+-		ret = -1;
+ 
+-#if IS_ENABLED(CONFIG_NCSI_OEM_CMD_GET_MAC)
+ 		nca.type = NCSI_PKT_CMD_OEM;
+ 		nca.package = np->id;
+ 		nca.channel = nc->id;
+ 		ndp->pending_req_num = 1;
+ 		ret = ncsi_gma_handler(&nca, nc->version.mf_id);
+-#endif /* CONFIG_NCSI_OEM_CMD_GET_MAC */
+-
+ 		if (ret < 0)
+ 			schedule_work(&ndp->work);
+ 
+@@ -1404,7 +1394,6 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 
+ 		schedule_work(&ndp->work);
+ 		break;
+-#if IS_ENABLED(CONFIG_NCSI_OEM_CMD_GET_MAC)
+ 	case ncsi_dev_state_probe_mlx_gma:
+ 		ndp->pending_req_num = 1;
+ 
+@@ -1429,7 +1418,6 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 
+ 		nd->state = ncsi_dev_state_probe_cis;
+ 		break;
+-#endif /* CONFIG_NCSI_OEM_CMD_GET_MAC */
+ 	case ncsi_dev_state_probe_cis:
+ 		ndp->pending_req_num = NCSI_RESERVED_CHANNEL;
+ 
+@@ -1447,7 +1435,6 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 		if (IS_ENABLED(CONFIG_NCSI_OEM_CMD_KEEP_PHY))
+ 			nd->state = ncsi_dev_state_probe_keep_phy;
+ 		break;
+-#if IS_ENABLED(CONFIG_NCSI_OEM_CMD_KEEP_PHY)
+ 	case ncsi_dev_state_probe_keep_phy:
+ 		ndp->pending_req_num = 1;
+ 
+@@ -1460,7 +1447,6 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 
+ 		nd->state = ncsi_dev_state_probe_gvi;
+ 		break;
+-#endif /* CONFIG_NCSI_OEM_CMD_KEEP_PHY */
+ 	case ncsi_dev_state_probe_gvi:
+ 	case ncsi_dev_state_probe_gc:
+ 	case ncsi_dev_state_probe_gls:
+-- 
+2.41.0
+

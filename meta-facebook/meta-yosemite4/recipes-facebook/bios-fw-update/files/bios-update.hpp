@@ -1,7 +1,5 @@
-#ifndef __BIOS_FWUPDATE_H__
-#define __BIOS_FWUPDATE_H__
+#pragma once
 
-#include <iostream>
 #include <sdbusplus/bus.hpp>
 
 constexpr size_t IANA_ID_SIZE = 3;
@@ -17,11 +15,10 @@ class BIOSupdater
 {
   public:
     explicit BIOSupdater(sdbusplus::bus_t& bus, const std::string& imagePath,
-                         const uint8_t& slotId) :
+                         uint8_t slotId) :
         bus(bus),
         imagePath(imagePath), slotId(slotId)
-    {
-    }
+    {}
 
     /** @brief Update bios according to the USB file path.
      *
@@ -37,7 +34,5 @@ class BIOSupdater
     const std::string& imagePath;
 
     /** The slot Id for update*/
-    const uint8_t& slotId;
+    const uint8_t slotId;
 };
-
-#endif /* __BIC_FWUPDATE_H__ */

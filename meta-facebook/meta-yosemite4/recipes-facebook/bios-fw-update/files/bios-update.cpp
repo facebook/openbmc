@@ -6,9 +6,10 @@
 #include <unistd.h>
 
 #include <CLI/CLI.hpp>
-#include <boost/asio.hpp>
-#include <sdbusplus/asio/connection.hpp>
 #include <sdbusplus/bus.hpp>
+
+#include <variant>
+#include <vector>
 
 constexpr auto HOST_STATE_SERVICE = "xyz.openbmc_project.State.Host";
 constexpr auto HOST_STATE_OBJECT = "/xyz/openbmc_project/state/host";
@@ -28,23 +29,23 @@ uint8_t getSlotAddress(uint8_t slotId)
     return ((slotId - 1) << 2);
 }
 
-void cmd_begin_with_IANA(std::vector<uint8_t> &cmd)
+void cmd_begin_with_IANA(std::vector<uint8_t>& cmd)
 {
     uint8_t iana[IANA_ID_SIZE];
-    memcpy(iana, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+    memcpy(iana, (uint8_t*)&IANA_ID, IANA_ID_SIZE);
     cmd.insert(cmd.begin(), iana, iana + IANA_ID_SIZE);
 }
 
-bool set_host_state(sdbusplus::bus_t &bus, const POWER &ctrl, uint8_t slotId)
+bool set_host_state(sdbusplus::bus_t& bus, POWER ctrl, uint8_t slotId)
 {
-    std::string service =
-        std::string{HOST_STATE_SERVICE} + std::to_string(slotId);
-    std::string object =
-        std::string{HOST_STATE_OBJECT} + std::to_string(slotId);
+    std::string service = std::string{HOST_STATE_SERVICE} +
+                          std::to_string(slotId);
+    std::string object = std::string{HOST_STATE_OBJECT} +
+                         std::to_string(slotId);
 
-    auto hostStateCall =
-        bus.new_method_call(service.c_str(), object.c_str(),
-                            "org.freedesktop.DBus.Properties", "Set");
+    auto hostStateCall = bus.new_method_call(service.c_str(), object.c_str(),
+                                             "org.freedesktop.DBus.Properties",
+                                             "Set");
 
     PropertyValue value = (ctrl == POWER::ON)
                               ? "xyz.openbmc_project.State.Host.Transition.On"
@@ -56,7 +57,7 @@ bool set_host_state(sdbusplus::bus_t &bus, const POWER &ctrl, uint8_t slotId)
     {
         bus.call_noreply(hostStateCall);
     }
-    catch (sdbusplus::exception_t &e)
+    catch (sdbusplus::exception_t& e)
     {
         std::cerr << "Failed to set property: " << e.what() << "\n";
         return false;
@@ -66,7 +67,7 @@ bool set_host_state(sdbusplus::bus_t &bus, const POWER &ctrl, uint8_t slotId)
     return true;
 }
 
-bool power_ctrl(sdbusplus::bus_t &bus, const POWER &ctrl, uint8_t slotId)
+bool power_ctrl(sdbusplus::bus_t& bus, POWER ctrl, uint8_t slotId)
 {
     set_host_state(bus, ctrl, slotId);
 
@@ -93,9 +94,8 @@ bool BIOSupdater::run()
     return (ret < 0) ? false : true;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    namespace fs = std::filesystem;
     auto bus = sdbusplus::bus::new_default();
     std::string imagePath{};
     uint8_t slotId;

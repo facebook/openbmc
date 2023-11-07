@@ -1,13 +1,10 @@
-#ifndef __BIC_BIOS_FWUPDATE_H__
-#define __BIC_BIOS_FWUPDATE_H__
+#pragma once
 
 #include "bios-update.hpp"
 
 #include <libusb-1.0/libusb.h>
 
-#include <string>
-
-typedef struct
+struct usb_dev
 {
     struct libusb_device** devs;
     struct libusb_device* dev;
@@ -19,9 +16,9 @@ typedef struct
     int ci;
     uint8_t epaddr;
     uint8_t path[8];
-} usb_dev;
+};
 
-typedef struct
+struct bic_usb_packet
 {
     uint8_t netfn;
     uint8_t cmd;
@@ -30,17 +27,15 @@ typedef struct
     uint32_t offset;
     uint16_t length;
     // uint8_t data[];
-} __attribute__((packed)) bic_usb_packet;
+} __attribute__((packed));
 #define USB_PKT_HDR_SIZE (sizeof(bic_usb_packet))
 
-typedef struct
+struct bic_usb_res_packet
 {
     uint8_t netfn;
     uint8_t cmd;
     uint8_t cc;
-} __attribute__((packed)) bic_usb_res_packet;
+} __attribute__((packed));
 #define USB_PKT_RES_HDR_SIZE (sizeof(bic_usb_res_packet))
 
-int update_bic_usb_bios(uint8_t slot_id, std::string const& imageFilePath);
-
-#endif /* __BIC_BIOS_FWUPDATE_H__ */
+int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath);

@@ -21,47 +21,46 @@
 #include <ctype.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
+#include <thread>
 
-constexpr size_t USB_PKT_SIZE = 0x200;
-constexpr size_t USB_DAT_SIZE = (USB_PKT_SIZE - USB_PKT_HDR_SIZE);
-constexpr size_t BIOS_UPDATE_BLK_SIZE = (64 * 1024);
-constexpr size_t BIOS_VERIFY_PKT_SIZE = (32 * 1024);
+static constexpr size_t USB_PKT_SIZE = 0x200;
+static constexpr size_t USB_DAT_SIZE = (USB_PKT_SIZE - USB_PKT_HDR_SIZE);
+static constexpr size_t BIOS_UPDATE_BLK_SIZE = (64 * 1024);
+static constexpr size_t BIOS_VERIFY_PKT_SIZE = (32 * 1024);
 
-constexpr size_t UPDATE_BIOS = 0;
-constexpr int MAX_CHECK_DEVICE_TIME = 8;
-constexpr int NUM_ATTEMPTS = 5;
-constexpr uint16_t SB_USB_VENDOR_ID = 0x1D6B;
-constexpr uint16_t SB_USB_PRODUCT_ID = 0x0104;
+static constexpr size_t UPDATE_BIOS = 0;
+static constexpr int MAX_CHECK_DEVICE_TIME = 8;
+static constexpr int NUM_ATTEMPTS = 5;
+static constexpr uint16_t SB_USB_VENDOR_ID = 0x1D6B;
+static constexpr uint16_t SB_USB_PRODUCT_ID = 0x0104;
 
-enum
-{
-    // BIC to BMC
-    USB_INPUT_PORT = 0x3,
-    USB_OUTPUT_PORT = 0x82,
-};
+static constexpr uint8_t USB_INPUT_PORT = 0x3;
+static constexpr uint8_t USB_OUTPUT_PORT = 0x82;
 
-
-
-int send_bic_usb_packet(usb_dev *udev, bic_usb_packet *pkt)
+int send_bic_usb_packet(usb_dev* udev, bic_usb_packet* pkt)
 {
     const int transferlen = pkt->length + USB_PKT_HDR_SIZE;
     int transferred = 0;
 
     for (size_t i = 0; i < MAX_RETRY_TIME; i++)
     {
-        int ret =
-            libusb_bulk_transfer(udev->handle, udev->epaddr, (uint8_t *)pkt,
-                                 transferlen, &transferred, 3000);
+        int ret = libusb_bulk_transfer(udev->handle, udev->epaddr,
+                                       (uint8_t*)pkt, transferlen, &transferred,
+                                       3000);
         if (((ret != 0) || (transferlen != transferred)))
         {
             std::cerr << "Error in transferring data! err =" << ret
                       << "and transferred = " << transferred
                       << ", expected data length" << transferlen << "\n";
             std::cerr << "Retry since " << libusb_error_name(ret) << "\n";
-            sleep(0.1);
+
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(100ms);
         }
         else
         {
@@ -72,23 +71,24 @@ int send_bic_usb_packet(usb_dev *udev, bic_usb_packet *pkt)
     return -1;
 }
 
-int receive_bic_usb_packet(usb_dev *udev, bic_usb_packet *pkt)
+int receive_bic_usb_packet(usb_dev* udev, bic_usb_packet* pkt)
 {
     const int receivelen = USB_PKT_RES_HDR_SIZE + IANA_ID_SIZE;
     int received = 0;
     int total_received = 0;
-    bic_usb_res_packet *res_hdr = (bic_usb_res_packet *)pkt;
+    bic_usb_res_packet* res_hdr = (bic_usb_res_packet*)pkt;
 
     for (size_t i = 0; i < MAX_RETRY_TIME; i++)
     {
-        int ret =
-            libusb_bulk_transfer(udev->handle, udev->epaddr, (uint8_t *)pkt,
-                                 receivelen, &received, 0);
+        int ret = libusb_bulk_transfer(udev->handle, udev->epaddr,
+                                       (uint8_t*)pkt, receivelen, &received, 0);
         if (ret != 0)
         {
             std::cerr << "Error in receiving data! err = " << ret << "("
                       << libusb_error_name(ret) << ")\n";
-            sleep(0.1);
+
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(100ms);
         }
         else
         {
@@ -108,8 +108,8 @@ int receive_bic_usb_packet(usb_dev *udev, bic_usb_packet *pkt)
     return -1;
 }
 
-int bic_init_usb_dev([[maybe_unused]] uint8_t slot_id, usb_dev *udev,
-                     const uint16_t product_id, const uint16_t vendor_id)
+int bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id,
+                     const uint16_t vendor_id)
 {
     int ret = 0;
     int index = 0;
@@ -156,7 +156,7 @@ int bic_init_usb_dev([[maybe_unused]] uint8_t slot_id, usb_dev *udev,
             {
                 ret = libusb_get_string_descriptor_ascii(
                     udev->handle, udev->desc.iManufacturer,
-                    (unsigned char *)udev->manufacturer,
+                    (unsigned char*)udev->manufacturer,
                     sizeof(udev->manufacturer));
                 if (ret < 0)
                 {
@@ -180,17 +180,24 @@ int bic_init_usb_dev([[maybe_unused]] uint8_t slot_id, usb_dev *udev,
                  slot 1,3,5,7 pass one hub
                  slot 2,4,6,8 pass two hubs
                 */
-                if (ret == 3 && (udev->path[1] * 2 - 1) == slot_id) {
-                  std::cout << "slot" << (unsigned) slot_id << " found!\n";
-                } else if (ret == 4 && udev->path[1] == 1 /*is HUB2*/ && (udev->path[2] * 2) == slot_id) {
-                  std::cout << "slot" << (unsigned) slot_id << " pass two hubs found!\n";
-                } else {
-                  continue;
+                if (ret == 3 && (udev->path[1] * 2 - 1) == slot_id)
+                {
+                    std::cout << "slot" << (unsigned)slot_id << " found!\n";
+                }
+                else if (ret == 4 && udev->path[1] == 1 /*is HUB2*/ &&
+                         (udev->path[2] * 2) == slot_id)
+                {
+                    std::cout << "slot" << (unsigned)slot_id
+                              << " pass two hubs found!\n";
+                }
+                else
+                {
+                    continue;
                 }
 
                 ret = libusb_get_string_descriptor_ascii(
                     udev->handle, udev->desc.iProduct,
-                    (unsigned char *)udev->product, sizeof(udev->product));
+                    (unsigned char*)udev->product, sizeof(udev->product));
                 if (ret < 0)
                 {
                     std::cerr << "BIOS update : Error get Product string "
@@ -269,7 +276,7 @@ error_exit:
     return -1;
 }
 
-int bic_close_usb_dev(usb_dev *udev)
+int bic_close_usb_dev(usb_dev* udev)
 {
     if (libusb_release_interface(udev->handle, udev->ci) < 0)
     {
@@ -284,10 +291,10 @@ int bic_close_usb_dev(usb_dev *udev)
     return 0;
 }
 
-int bic_update_fw_usb(std::string imagePath, usb_dev *udev)
+int bic_update_fw_usb(std::string imagePath, usb_dev* udev)
 {
     int rc = 0;
-    uint8_t *buf = nullptr;
+    uint8_t* buf = nullptr;
     size_t write_offset = 0;
     size_t file_buf_num_bytes = 0;
     int num_blocks_written = 0;
@@ -305,7 +312,7 @@ int bic_update_fw_usb(std::string imagePath, usb_dev *udev)
     file.seekg(0, std::ios::beg);
     buf = new uint8_t[BIOS_UPDATE_BLK_SIZE + USB_PKT_HDR_SIZE];
 
-    uint8_t *file_buf = buf + USB_PKT_HDR_SIZE;
+    uint8_t* file_buf = buf + USB_PKT_HDR_SIZE;
     while (attempts > 0)
     {
         size_t file_buf_pos = 0;
@@ -317,7 +324,7 @@ int bic_update_fw_usb(std::string imagePath, usb_dev *udev)
         // Read a block of data from file.
         if (attempts == NUM_ATTEMPTS)
         {
-            file.read((char *)file_buf, BIOS_UPDATE_BLK_SIZE);
+            file.read((char*)file_buf, BIOS_UPDATE_BLK_SIZE);
             file_buf_num_bytes = file.gcount();
             if (file_buf_num_bytes == 0)
             {
@@ -341,12 +348,12 @@ int bic_update_fw_usb(std::string imagePath, usb_dev *udev)
             if (count > USB_DAT_SIZE)
                 count = USB_DAT_SIZE;
 
-            bic_usb_packet *pkt = reinterpret_cast<bic_usb_packet *>(
+            bic_usb_packet* pkt = reinterpret_cast<bic_usb_packet*>(
                 file_buf + file_buf_pos - sizeof(bic_usb_packet));
 
             pkt->netfn = NETFN_OEM_1S_REQ << 2;
             pkt->cmd = CMD_OEM_1S_UPDATE_FW;
-            memcpy(pkt->iana, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+            memcpy(pkt->iana, (uint8_t*)&IANA_ID, IANA_ID_SIZE);
             pkt->target = UPDATE_BIOS;
             pkt->offset = write_offset + file_buf_pos;
             pkt->length = count;
@@ -397,12 +404,12 @@ int bic_update_fw_usb(std::string imagePath, usb_dev *udev)
     return 0;
 }
 
-int update_bic_usb_bios(uint8_t slot_id, [[maybe_unused]] std::string const &imageFilePath)
+int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath)
 {
     struct timeval start, end;
     int ret = -1;
     usb_dev bic_udev;
-    usb_dev *udev = &bic_udev;
+    usb_dev* udev = &bic_udev;
 
     udev->ci = 1;
     udev->epaddr = USB_INPUT_PORT;

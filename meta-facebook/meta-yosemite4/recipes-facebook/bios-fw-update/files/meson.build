@@ -13,9 +13,9 @@ project(
 cc = meson.get_compiler('cpp')
 
 dep_libs = [
-    dependency('boost'),
-    dependency('sdbusplus'),
-    cc.find_library('usb-1.0'),
+  dependency('boost'),
+  dependency('sdbusplus'),
+  dependency('libusb-1.0'),
 ]
 
 src = [
@@ -23,4 +23,9 @@ src = [
   'bios-usb-update.cpp',
 ]
 
-executable('bios-fw-update', src, dependencies : dep_libs)
+executable(
+  'bios-fw-update',
+  src,
+  dependencies: dep_libs,
+  install: true,
+)

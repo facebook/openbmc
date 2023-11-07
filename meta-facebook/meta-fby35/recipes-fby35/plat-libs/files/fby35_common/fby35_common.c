@@ -684,7 +684,7 @@ fby35_common_dev_id(char *str, uint8_t *dev) {
     return -1;
   }
   // block the none-exist device in different config
-  if (slot_type == SERVER_TYPE_HD) {
+  if ((slot_type == SERVER_TYPE_HD) || (slot_type == SERVER_TYPE_GL)) {
     // VF only
     if (*dev == DEV_ID3_1OU) {
       return -1;

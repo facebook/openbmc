@@ -112,6 +112,8 @@ xdpe152xx_mfr_fw(uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t
     return -1;
   }
 
+  msleep(20);
+
   if (resp) {
     tbuf[0] = IFX_MFR_FW_CMD_DATA;
     if (vr_xfer(bus, addr, tbuf, 1, rbuf, 6) < 0) {

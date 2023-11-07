@@ -29,6 +29,16 @@
       "attribute": {
         "type" : "power_status"
       }
+    },
+    "(.*)retimer_": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)bic_temp_": {
+      "attribute": {
+        "type" : "power_status"
+      }
     }
   },
   "watchdog": false,

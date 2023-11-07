@@ -1,9 +1,9 @@
 #include "cpld-lattice.hpp"
 
-#include <array>
+#include <fstream>
 #include <map>
-#include <chrono>
 #include <thread>
+#include <vector>
 
 static uint8_t reverse_bit(uint8_t b)
 {
@@ -251,12 +251,13 @@ int CpldLatticeManager::readDeviceId()
                   << unsigned(v) << " ";
     }
 
-    auto chipWantToUpdate = chipToDeviceIdMappingTable.find(chip); 
+    auto chipWantToUpdate = chipToDeviceIdMappingTable.find(chip);
 
-    if (chipWantToUpdate!= chipToDeviceIdMappingTable.end() && 
-        chipWantToUpdate->second == readData) {
-
-        if (chip.rfind("LCMXO3D", 0) == 0) {
+    if (chipWantToUpdate != chipToDeviceIdMappingTable.end() &&
+        chipWantToUpdate->second == readData)
+    {
+        if (chip.rfind("LCMXO3D", 0) == 0)
+        {
             isLCMXO3D = true;
         }
 
@@ -412,7 +413,7 @@ int CpldLatticeManager::writeProgramPage()
         std::vector<uint8_t> data = cmd;
 
         data.insert(data.end(), fwInfo.cfgData.begin() + i,
-             fwInfo.cfgData.begin() + i + len);
+                    fwInfo.cfgData.begin() + i + len);
 
         if (i2cWriteReadCmd(data, 0, read) < 0)
         {
@@ -508,7 +509,8 @@ bool CpldLatticeManager::waitBusyAndVerify()
         return false;
     }
 
-    if (((statusReg >> busyOrReadyBit) & 1) == isReady && ((statusReg >> failOrOKBit) & 1) == isOK)
+    if (((statusReg >> busyOrReadyBit) & 1) == isReady &&
+        ((statusReg >> failOrOKBit) & 1) == isOK)
     {
         if (debugMode)
         {
@@ -661,7 +663,7 @@ int CpldLatticeManager::getVersion()
     }
 
     std::cout << "CPLD version: 0x";
-    for (auto v: readData)
+    for (auto v : readData)
     {
         std::cout << std::hex << std::setfill('0') << std::setw(2)
                   << unsigned(v);

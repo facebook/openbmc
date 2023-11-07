@@ -1,15 +1,9 @@
 #pragma once
 
 #include <fcntl.h>
-#include <linux/i2c-dev.h>
-#include <linux/i2c.h>
-#include <stdint.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
 
+#include <cstdint>
 #include <cstring>
-#include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -25,7 +19,6 @@ class CpldManager
         addr(addr), imagePath(path), chip(chip), interface(interface),
         debugMode(debugMode)
     {
-        i2c_fd = -1;
         if (interface == "i2c") // open I2C device
         {
             std::string filename = "/dev/i2c-" + std::to_string(bus);
@@ -60,8 +53,8 @@ class CpldManager
         return -1;
     }
 
-    int i2cWriteReadCmd(const std::vector<uint8_t>& cmdData,
-                        size_t rx_len, std::vector<uint8_t>& readData);
+    int i2cWriteReadCmd(const std::vector<uint8_t>& cmdData, size_t rx_len,
+                        std::vector<uint8_t>& readData);
     uint8_t bus;
     uint8_t addr;
     std::string imagePath;
@@ -71,5 +64,5 @@ class CpldManager
     bool debugMode = false;
 
   private:
-    int i2c_fd;
+    int i2c_fd = -1;
 };

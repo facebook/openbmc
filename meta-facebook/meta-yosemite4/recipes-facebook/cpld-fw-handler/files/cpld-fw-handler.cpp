@@ -1,9 +1,15 @@
 
 #include "cpld-fw-handler.hpp"
 
+#include <linux/i2c-dev.h>
+#include <linux/i2c.h>
+#include <sys/ioctl.h>
+
+#include <iomanip>
+#include <iostream>
+
 int CpldManager::i2cWriteReadCmd(const std::vector<uint8_t>& cmdData,
-                                 size_t rx_len,
-                                 std::vector<uint8_t>& readData)
+                                 size_t rx_len, std::vector<uint8_t>& readData)
 {
     if (debugMode)
     {

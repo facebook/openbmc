@@ -1,6 +1,7 @@
 #pragma once
-#include <chrono>
 #include "cpld-fw-handler.hpp"
+
+#include <chrono>
 
 constexpr uint8_t busyWaitmaxRetry = 30;
 constexpr uint8_t busyFlagBit = 0x80;
@@ -35,30 +36,32 @@ enum cpldI2cCmd
     CMD_READ_BUSY_FLAG = 0xF0,
 };
 
-typedef struct
+struct cpldI2cInfo
 {
-  unsigned long int QF;
-  unsigned int *UFM;
-  unsigned int Version;
-  unsigned int CheckSum;
-  std::vector<uint8_t> cfgData;
-  std::vector<uint8_t> ufmData;
-} cpldI2cInfo;
+    unsigned long int QF;
+    unsigned int* UFM;
+    unsigned int Version;
+    unsigned int CheckSum;
+    std::vector<uint8_t> cfgData;
+    std::vector<uint8_t> ufmData;
+};
 
 class CpldLatticeManager : public CpldManager
 {
-public:
+  public:
     std::vector<uint8_t> fwData;
     cpldI2cInfo fwInfo{};
-    CpldLatticeManager(const uint8_t bus, const uint8_t addr, const std::string &path,
-                       const std::string &chip, const std::string &interface, const bool debugMode) :
-                       CpldManager(bus, addr, path, chip, interface, debugMode) {}
+    CpldLatticeManager(const uint8_t bus, const uint8_t addr,
+                       const std::string& path, const std::string& chip,
+                       const std::string& interface, const bool debugMode) :
+        CpldManager(bus, addr, path, chip, interface, debugMode)
+    {}
     int fwUpdate() override;
     int getVersion() override;
     int XO2XO3Family_update();
 
-private:
-    int indexof(const char *str, const char *ptn);
+  private:
+    int indexof(const char* str, const char* ptn);
     int jedFileParser();
     int readDeviceId();
     int enableProgramMode();
@@ -68,8 +71,7 @@ private:
     int programDone();
     int disableusyAndVerify();
     int disableConfigInterface();
-    int readBusyFlag(uint8_t &busyFlag);
-    int readStatusReg(uint8_t &statusReg);
+    int readBusyFlag(uint8_t& busyFlag);
+    int readStatusReg(uint8_t& statusReg);
     bool waitBusyAndVerify();
-
 };

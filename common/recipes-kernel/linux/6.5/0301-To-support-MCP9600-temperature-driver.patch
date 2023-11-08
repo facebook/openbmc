@@ -1,0 +1,272 @@
+From 3b0866b77faa7b1a1a0601e1d00e03ffcaab7c69 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Thu, 2 Nov 2023 14:52:04 +0800
+Subject: [PATCH 301/301] To support MCP9600 temperature driver
+
+LF-Kernel link:
+link:https://lore.kernel.org/all/20231025233153.5454-1-andrew.hepp@ahepp.dev/
+link:https://lore.kernel.org/all/20231025233153.5454-2-andrew.hepp@ahepp.dev/
+---
+ .../iio/temperature/microchip,mcp9600.yaml    |  70 +++++++++
+ drivers/iio/temperature/Kconfig               |  10 ++
+ drivers/iio/temperature/Makefile              |   1 +
+ drivers/iio/temperature/mcp9600.c             | 139 ++++++++++++++++++
+ 4 files changed, 220 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iio/temperature/microchip,mcp9600.yaml
+ create mode 100644 drivers/iio/temperature/mcp9600.c
+
+diff --git a/Documentation/devicetree/bindings/iio/temperature/microchip,mcp9600.yaml b/Documentation/devicetree/bindings/iio/temperature/microchip,mcp9600.yaml
+new file mode 100644
+index 000000000000..d2cafa38a544
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iio/temperature/microchip,mcp9600.yaml
+@@ -0,0 +1,70 @@
++# SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/iio/temperature/microchip,mcp9600.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: Microchip MCP9600 thermocouple EMF converter
++
++maintainers:
++  - Andrew Hepp <andrew.hepp@ahepp.dev>
++
++description:
++  https://ww1.microchip.com/downloads/en/DeviceDoc/MCP960X-Data-Sheet-20005426.pdf
++
++properties:
++  compatible:
++    const: microchip,mcp9600
++
++  reg:
++    maxItems: 1
++
++  interrupts:
++    minItems: 1
++    maxItems: 6
++
++  interrupt-names:
++    minItems: 1
++    maxItems: 6
++    items:
++      enum:
++        - open-circuit
++        - short-circuit
++        - alert1
++        - alert2
++        - alert3
++        - alert4
++
++  thermocouple-type:
++    $ref: /schemas/types.yaml#/definitions/uint32
++    description:
++      Type of thermocouple (THERMOCOUPLE_TYPE_K if omitted).
++      Use defines in dt-bindings/iio/temperature/thermocouple.h.
++      Supported types are B, E, J, K, N, R, S, T.
++
++  vdd-supply: true
++
++required:
++  - compatible
++  - reg
++
++additionalProperties: false
++
++examples:
++  - |
++    #include <dt-bindings/iio/temperature/thermocouple.h>
++    #include <dt-bindings/interrupt-controller/irq.h>
++    i2c {
++        #address-cells = <1>;
++        #size-cells = <0>;
++
++        temperature-sensor@60 {
++            compatible = "microchip,mcp9600";
++            reg = <0x60>;
++            interrupt-parent = <&gpio>;
++            interrupts = <25 IRQ_TYPE_EDGE_RISING>;
++            interrupt-names = "open-circuit";
++            thermocouple-type = <THERMOCOUPLE_TYPE_K>;
++            vdd-supply = <&vdd>;
++        };
++    };
+diff --git a/drivers/iio/temperature/Kconfig b/drivers/iio/temperature/Kconfig
+index ed384f33e0c7..ea2ce364b2e9 100644
+--- a/drivers/iio/temperature/Kconfig
++++ b/drivers/iio/temperature/Kconfig
+@@ -158,4 +158,14 @@ config MAX31865
+ 	  This driver can also be build as a module. If so, the module
+ 	  will be called max31865.
+ 
++config MCP9600
++	tristate "MCP9600 thermocouple EMF converter"
++	depends on I2C
++	help
++	  If you say yes here you get support for MCP9600
++	  thermocouple EMF converter connected via I2C.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called mcp9600.
++
+ endmenu
+diff --git a/drivers/iio/temperature/Makefile b/drivers/iio/temperature/Makefile
+index dfec8c6d3019..9330d4a39598 100644
+--- a/drivers/iio/temperature/Makefile
++++ b/drivers/iio/temperature/Makefile
+@@ -10,6 +10,7 @@ obj-$(CONFIG_MAXIM_THERMOCOUPLE) += maxim_thermocouple.o
+ obj-$(CONFIG_MAX30208) += max30208.o
+ obj-$(CONFIG_MAX31856) += max31856.o
+ obj-$(CONFIG_MAX31865) += max31865.o
++obj-$(CONFIG_MCP9600) += mcp9600.o
+ obj-$(CONFIG_MLX90614) += mlx90614.o
+ obj-$(CONFIG_MLX90632) += mlx90632.o
+ obj-$(CONFIG_TMP006) += tmp006.o
+diff --git a/drivers/iio/temperature/mcp9600.c b/drivers/iio/temperature/mcp9600.c
+new file mode 100644
+index 000000000000..46845804292b
+--- /dev/null
++++ b/drivers/iio/temperature/mcp9600.c
+@@ -0,0 +1,139 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * mcp9600.c - Support for Microchip MCP9600 thermocouple EMF converter
++ *
++ * Copyright (c) 2022 Andrew Hepp
++ * Author: <andrew.hepp@ahepp.dev>
++ */
++
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/mod_devicetable.h>
++#include <linux/module.h>
++
++#include <linux/iio/iio.h>
++
++/* MCP9600 registers */
++#define MCP9600_HOT_JUNCTION 0x0
++#define MCP9600_COLD_JUNCTION 0x2
++#define MCP9600_DEVICE_ID 0x20
++
++/* MCP9600 device id value */
++#define MCP9600_DEVICE_ID_MCP9600 0x40
++
++static const struct iio_chan_spec mcp9600_channels[] = {
++	{
++		.type = IIO_TEMP,
++		.address = MCP9600_HOT_JUNCTION,
++		.info_mask_separate =
++			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
++	},
++	{
++		.type = IIO_TEMP,
++		.address = MCP9600_COLD_JUNCTION,
++		.channel2 = IIO_MOD_TEMP_AMBIENT,
++		.modified = 1,
++		.info_mask_separate =
++			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
++	},
++};
++
++struct mcp9600_data {
++	struct i2c_client *client;
++};
++
++static int mcp9600_read(struct mcp9600_data *data,
++			struct iio_chan_spec const *chan, int *val)
++{
++	int ret;
++
++	ret = i2c_smbus_read_word_swapped(data->client, chan->address);
++
++	if (ret < 0)
++		return ret;
++	*val = ret;
++
++	return 0;
++}
++
++static int mcp9600_read_raw(struct iio_dev *indio_dev,
++			    struct iio_chan_spec const *chan, int *val,
++			    int *val2, long mask)
++{
++	struct mcp9600_data *data = iio_priv(indio_dev);
++	int ret;
++
++	switch (mask) {
++	case IIO_CHAN_INFO_RAW:
++		ret = mcp9600_read(data, chan, val);
++		if (ret)
++			return ret;
++		return IIO_VAL_INT;
++	case IIO_CHAN_INFO_SCALE:
++		*val = 62;
++		*val2 = 500000;
++		return IIO_VAL_INT_PLUS_MICRO;
++	default:
++		return -EINVAL;
++	}
++}
++
++static const struct iio_info mcp9600_info = {
++	.read_raw = mcp9600_read_raw,
++};
++
++static int mcp9600_probe(struct i2c_client *client)
++{
++	struct iio_dev *indio_dev;
++	struct mcp9600_data *data;
++	int ret;
++
++	ret = i2c_smbus_read_byte_data(client, MCP9600_DEVICE_ID);
++	if (ret < 0)
++		return dev_err_probe(&client->dev, ret, "Failed to read device ID\n");
++	if (ret != MCP9600_DEVICE_ID_MCP9600)
++		dev_warn(&client->dev, "Expected ID %x, got %x\n",
++				MCP9600_DEVICE_ID_MCP9600, ret);
++
++	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
++	if (!indio_dev)
++		return -ENOMEM;
++
++	data = iio_priv(indio_dev);
++	data->client = client;
++
++	indio_dev->info = &mcp9600_info;
++	indio_dev->name = "mcp9600";
++	indio_dev->modes = INDIO_DIRECT_MODE;
++	indio_dev->channels = mcp9600_channels;
++	indio_dev->num_channels = ARRAY_SIZE(mcp9600_channels);
++
++	return devm_iio_device_register(&client->dev, indio_dev);
++}
++
++static const struct i2c_device_id mcp9600_id[] = {
++	{ "mcp9600" },
++	{}
++};
++MODULE_DEVICE_TABLE(i2c, mcp9600_id);
++
++static const struct of_device_id mcp9600_of_match[] = {
++	{ .compatible = "microchip,mcp9600" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, mcp9600_of_match);
++
++static struct i2c_driver mcp9600_driver = {
++	.driver = {
++		.name = "mcp9600",
++		.of_match_table = mcp9600_of_match,
++	},
++	.probe = mcp9600_probe,
++	.id_table = mcp9600_id
++};
++module_i2c_driver(mcp9600_driver);
++
++MODULE_AUTHOR("Andrew Hepp <andrew.hepp@ahepp.dev>");
++MODULE_DESCRIPTION("Microchip MCP9600 thermocouple EMF converter driver");
++MODULE_LICENSE("GPL");
+-- 
+2.25.1
+

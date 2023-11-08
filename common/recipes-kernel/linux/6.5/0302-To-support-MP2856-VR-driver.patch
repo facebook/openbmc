@@ -1,0 +1,522 @@
+From a47af19c7c4fad8e844dff94698bc8f53ac0d946 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Wed, 8 Nov 2023 09:27:35 +0800
+Subject: [PATCH 302/302] To-support-MP2856-VR-driver
+
+LF-Kernel link:
+link:https://lore.kernel.org/all/20231108024222.2026546-2-peter.yin@quantatw.com/
+link:https://lore.kernel.org/all/20231108024222.2026546-3-peter.yin@quantatw.com/
+
+---
+ .../devicetree/bindings/trivial-devices.yaml  |   4 +
+ Documentation/hwmon/index.rst                 |   1 +
+ Documentation/hwmon/mp2856.rst                | 101 ++++++
+ drivers/hwmon/pmbus/Kconfig                   |   9 +
+ drivers/hwmon/pmbus/Makefile                  |   1 +
+ drivers/hwmon/pmbus/mp2856.c                  | 327 ++++++++++++++++++
+ 6 files changed, 443 insertions(+)
+ create mode 100644 Documentation/hwmon/mp2856.rst
+ create mode 100644 drivers/hwmon/pmbus/mp2856.c
+
+diff --git a/Documentation/devicetree/bindings/trivial-devices.yaml b/Documentation/devicetree/bindings/trivial-devices.yaml
+index 7680c8a9b4ad..8dca0864709b 100644
+--- a/Documentation/devicetree/bindings/trivial-devices.yaml
++++ b/Documentation/devicetree/bindings/trivial-devices.yaml
+@@ -119,6 +119,10 @@ properties:
+           - fsl,mpl3115
+             # MPR121: Proximity Capacitive Touch Sensor Controller
+           - fsl,mpr121
++            # Monolithic Power Systems Inc. multi-phase controller mp2856
++          - mps,mp2856
++            # Monolithic Power Systems Inc. multi-phase controller mp2857
++          - mps,mp2857
+             # Monolithic Power Systems Inc. multi-phase controller mp2888
+           - mps,mp2888
+             # Monolithic Power Systems Inc. multi-phase controller mp2975
+diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
+index 042e1cf9501b..44183a3382f6 100644
+--- a/Documentation/hwmon/index.rst
++++ b/Documentation/hwmon/index.rst
+@@ -154,6 +154,7 @@ Hardware Monitoring Kernel Drivers
+    mcp3021
+    menf21bmc
+    mlxreg-fan
++   mp2856
+    mp2888
+    mp2975
+    mp5023
+diff --git a/Documentation/hwmon/mp2856.rst b/Documentation/hwmon/mp2856.rst
+new file mode 100644
+index 000000000000..6bd8392f6994
+--- /dev/null
++++ b/Documentation/hwmon/mp2856.rst
+@@ -0,0 +1,101 @@
++.. SPDX-License-Identifier: GPL-2.0
++
++Kernel driver mp2856
++====================
++
++Supported chips:
++
++  * MPS MP2856
++
++    Prefix: 'mp2856'
++
++  * MPS MP2857
++
++    Prefix: 'mp2857'
++
++Author:
++
++	Peter Yin <peter.yin@quantatw.com>
++
++Description
++-----------
++
++This driver implements support for Monolithic Power Systems, Inc. (MPS)
++vendor dual-loop, digital, multi-phase controller MP2856/MP2857
++
++This device:
++
++- Supports up to two power rail.
++- Supports two pages 0 and 1 for and also pages 2 for configuration.
++- Can configured VOUT readout in direct or VID format and allows
++  setting of different formats on rails 1 and 2. For VID the following
++  protocols are available: AMD SVI3 mode with 5-mV/LSB.
++
++Device supports:
++
++- SVID interface.
++- AVSBus interface.
++
++Device complaint with:
++
++- PMBus rev 1.3 interface.
++
++Device supports direct format for reading output current, output voltage,
++input and output power and temperature.
++Device supports linear format for reading input voltage and input power.
++Device supports VID and direct formats for reading output voltage.
++The below VID modes are supported: AMD SVI3.
++
++The driver provides the next attributes for the current:
++The driver exports the following attributes via the 'sysfs' files, where
++
++- indexes 1  for "iin";
++- indexes 2, 3 for "iout";
++
++**curr[1-3]_alarm**
++
++**curr[1-3]_input**
++
++**curr[1-3]_label**
++
++The driver provides the next attributes for the voltage:
++The driver exports the following attributes via the 'sysfs' files, where
++
++- indexes 1 for "vin";
++- indexes 2, 3 for "vout";
++
++**in[1-3]_crit**
++
++**in[1-3]_crit_alarm**
++
++**in[1-3]_input**
++
++**in[1-3]_label**
++
++**in[1-3]_lcrit**
++
++**in[1-3]_lcrit_alarm**
++
++The driver provides the next attributes for the power:
++The driver exports the following attributes via the 'sysfs' files, where
++
++- indexes 1 for "pin";
++- indexes 2, 3 for "pout";
++
++**power[1-3]_alarm**
++
++**power[1-3]_input**
++
++**power[1-3]_label**
++
++The driver provides the next attributes for the temperature:
++
++**temp[1-2]_crit**
++
++**temp[1-2]_crit_alarm**
++
++**temp[1-2]_input**
++
++**temp[1-2]_max**
++
++**temp[1-2]_max_alarm**
+diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
+index 270b6336b76d..40ad02b459de 100644
+--- a/drivers/hwmon/pmbus/Kconfig
++++ b/drivers/hwmon/pmbus/Kconfig
+@@ -299,6 +299,15 @@ config SENSORS_MAX8688
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called max8688.
+ 
++config SENSORS_MP2856
++	tristate "MPS MP2856"
++	help
++	  If you say yes here you get hardware monitoring support for MPS
++	  MP2856 MP2857 Dual Loop Digital Multi-Phase Controller.
++
++	  This driver can also be built as a module. If so, the module will
++	  be called mp2856.
++
+ config SENSORS_MP2888
+ 	tristate "MPS MP2888"
+ 	help
+diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
+index 84ee960a6c2d..0f35047b451f 100644
+--- a/drivers/hwmon/pmbus/Makefile
++++ b/drivers/hwmon/pmbus/Makefile
+@@ -32,6 +32,7 @@ obj-$(CONFIG_SENSORS_MAX20751)	+= max20751.o
+ obj-$(CONFIG_SENSORS_MAX31785)	+= max31785.o
+ obj-$(CONFIG_SENSORS_MAX34440)	+= max34440.o
+ obj-$(CONFIG_SENSORS_MAX8688)	+= max8688.o
++obj-$(CONFIG_SENSORS_MP2856)	+= mp2856.o
+ obj-$(CONFIG_SENSORS_MP2888)	+= mp2888.o
+ obj-$(CONFIG_SENSORS_MP2975)	+= mp2975.o
+ obj-$(CONFIG_SENSORS_MP5023)	+= mp5023.o
+diff --git a/drivers/hwmon/pmbus/mp2856.c b/drivers/hwmon/pmbus/mp2856.c
+new file mode 100644
+index 000000000000..b72a46cb6e9b
+--- /dev/null
++++ b/drivers/hwmon/pmbus/mp2856.c
+@@ -0,0 +1,327 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * Hardware monitoring driver for MPS2856/2857
++ * Monolithic Power Systems VR Controllers
++ *
++ * Copyright (C) 2023 Quanta Computer lnc.
++ */
++
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/pmbus.h>
++#include "pmbus.h"
++
++/* Vendor specific registers. */
++#define MP2856_MFR_SLOPE_TRIM3		0x1d
++#define MP2856_MFR_VR_MULTI_CONFIG_R1	0x0d
++#define MP2856_MFR_VR_MULTI_CONFIG_R2	0x1d
++#define MP2856_MUL1_CUR_SCALE_R1	0x0b
++#define MP2856_MUL1_CUR_SCALE_R2	0x1b
++#define MP2856_MFR_DC_LOOP_CTRL		0x59
++#define MP2856_MFR_VR_CONFIG1		0x68
++#define MP2856_MFR_READ_IOUT_PK		0x90
++#define MP2856_MFR_READ_POUT_PK		0x91
++#define MP2856_MFR_PROTECT_SET		0xc5
++#define MP2856_MFR_RESO_SET		0x5e
++#define MP2856_MFR_OVP_TH_SET		0xe5
++#define MP2856_MFR_UVP_SET		0xe6
++
++#define MP2856_VID_EN			BIT(11)
++#define MP2856_DRMOS_KCS		GENMASK(15, 12)
++#define MP2856_VID_SCALE		5
++#define MP2856_VIN_UV_LIMIT_UNIT	8
++#define MP2856_PWR_EXPONENT_BIT		GENMASK(10, 6)
++
++#define MP2856_MAX_PHASE_RAIL1		12
++#define MP2856_MAX_PHASE_RAIL2		6
++#define MP2856_PAGE_NUM			2
++
++#define MP2856_RAIL2_FUNC	(PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT | \
++				 PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT | \
++				 PMBUS_HAVE_POUT | PMBUS_HAVE_TEMP)
++
++#define MP2856_RAIL2_MAX_PHASE		4
++
++struct mp2856_data {
++	struct pmbus_driver_info info;
++	int vout_format[MP2856_PAGE_NUM];
++};
++
++#define to_mp2856_data(x)  container_of(x, struct mp2856_data, info)
++
++static int
++mp2856_read_word_helper(struct i2c_client *client, int page, int phase, u8 reg,
++			u16 mask)
++{
++	int ret = pmbus_read_word_data(client, page, phase, reg);
++
++	return (ret > 0) ? ret & mask : ret;
++}
++
++static int
++mp2856_vid2linear(int val)
++{
++	return 500 + (val - 1) * 10;
++}
++
++static int mp2856_read_word_data(struct i2c_client *client, int page,
++				 int phase, int reg)
++{
++	const struct pmbus_driver_info *info = pmbus_get_driver_info(client);
++	struct mp2856_data *data = to_mp2856_data(info);
++	int ret;
++
++	switch (reg) {
++	case PMBUS_READ_VOUT:
++		ret = mp2856_read_word_helper(client, page, phase, reg,
++					      GENMASK(11, 0));
++		if (ret < 0)
++			return ret;
++
++		/*
++		 * READ_VOUT can be provided in VID or linear format. This
++		 * provided in a linear format. In case format is VID - convert
++		 * to linear.
++		 */
++		if (data->vout_format[page] == vid)
++			ret = mp2856_vid2linear(ret);
++		break;
++	default:
++		return -ENODATA;
++	}
++
++	return ret;
++}
++
++static int mp2856_identify_multiphase_rail2(struct i2c_client *client)
++{
++	int ret;
++
++	/*
++	 * Identify multiphase for rail 2 - could be from 0 to 1.
++	 * In case phase number is zero – only page zero is supported
++	 */
++	ret = i2c_smbus_write_byte_data(client, PMBUS_PAGE, 2);
++	if (ret < 0)
++		return ret;
++
++	/* Identify multiphase for rail 2 - could be from 0 to 1. */
++	ret = i2c_smbus_read_word_data(client, MP2856_MFR_VR_MULTI_CONFIG_R2);
++	if (ret < 0)
++		return ret;
++
++	ret &= GENMASK(2, 0);
++	return (ret >= MP2856_RAIL2_MAX_PHASE) ? MP2856_RAIL2_MAX_PHASE : ret;
++}
++
++static int
++mp2856_identify_vid(struct i2c_client *client, struct mp2856_data *data,
++		    struct pmbus_driver_info *info, u32 reg, int page,
++		    u32 imvp_bit)
++{
++	int ret;
++
++	/* Identify VID mode and step selection. */
++	ret = i2c_smbus_read_word_data(client, reg);
++	if (ret < 0)
++		return ret;
++
++	if (ret & imvp_bit) {
++		info->vrm_version[page] = vr13;
++	} else {
++		//workaround for chip power scale issue
++		ret = i2c_smbus_write_byte_data(client, PMBUS_PAGE, 2);
++		if (ret < 0)
++			return ret;
++
++		ret = i2c_smbus_read_word_data(client,
++					       MP2856_MUL1_CUR_SCALE_R1);
++		if (ret < 0)
++			return ret;
++
++		ret &= ~MP2856_PWR_EXPONENT_BIT;
++		ret = i2c_smbus_write_word_data(client,
++						MP2856_MUL1_CUR_SCALE_R1, ret);
++		if (ret < 0)
++			return ret;
++
++		ret = i2c_smbus_read_word_data(client,
++					       MP2856_MUL1_CUR_SCALE_R2);
++		if (ret < 0)
++			return ret;
++
++		ret &= ~MP2856_PWR_EXPONENT_BIT;
++		ret = i2c_smbus_write_word_data(client,
++						MP2856_MUL1_CUR_SCALE_R2, ret);
++		if (ret < 0)
++			return ret;
++	}
++	return 0;
++}
++
++static int
++mp2856_identify_rails_vid(struct i2c_client *client, struct mp2856_data *data,
++			  struct pmbus_driver_info *info)
++{
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, PMBUS_PAGE, 2);
++	if (ret < 0)
++		return ret;
++
++	/* Identify VID mode for rail 1. */
++	ret = mp2856_identify_vid(client, data, info,
++				  MP2856_MFR_RESO_SET, 0,
++				  MP2856_VID_EN);
++	if (ret < 0)
++		return ret;
++
++	/* Identify VID mode for rail 2, if connected. */
++	if (info->phases[1])
++		ret = mp2856_identify_vid(client, data, info,
++					  MP2856_MFR_RESO_SET, 1,
++					  MP2856_VID_EN);
++	return ret;
++}
++
++static int
++mp2856_identify_vout_format(struct i2c_client *client,
++			    struct mp2856_data *data, int page)
++{
++	int ret;
++	int val;
++
++	ret = i2c_smbus_read_word_data(client, MP2856_MFR_RESO_SET);
++	if (ret < 0)
++		return ret;
++
++	val = (ret & GENMASK(11, 11)) >> 11;
++	switch (val) {
++	case 0:
++		data->vout_format[page] = vid;
++		break;
++	default:
++		data->vout_format[page] = linear;
++		break;
++	}
++	return 0;
++}
++
++static int
++mp2856_vout_per_rail_config_get(struct i2c_client *client,
++				struct mp2856_data *data,
++				struct pmbus_driver_info *info)
++{
++	int i, ret;
++
++	for (i = 0; i < data->info.pages; i++) {
++		ret = i2c_smbus_write_byte_data(client, PMBUS_PAGE, i);
++		if (ret < 0)
++			return ret;
++
++		/*
++		 * Get VOUT format for READ_VOUT command : VID or direct.
++		 * Pages on same device can be configured with different
++		 * formats.
++		 */
++		ret = mp2856_identify_vout_format(client, data, i);
++		if (ret < 0)
++			return ret;
++	}
++
++	return 0;
++}
++
++static struct pmbus_driver_info mp2856_info = {
++	.pages = 1,
++	.format[PSC_VOLTAGE_IN] = linear,
++	.format[PSC_VOLTAGE_OUT] = linear,
++	.format[PSC_TEMPERATURE] = linear,
++	.format[PSC_CURRENT_IN] = linear,
++	.format[PSC_CURRENT_OUT] = linear,
++	.format[PSC_POWER] = linear,
++	.func[0] = PMBUS_HAVE_VIN | PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT |
++		PMBUS_HAVE_IIN | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT |
++		PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP | PMBUS_HAVE_POUT |
++		PMBUS_HAVE_PIN | PMBUS_HAVE_STATUS_INPUT,
++	.read_word_data = mp2856_read_word_data,
++};
++
++static int mp2856_probe(struct i2c_client *client)
++{
++	struct pmbus_driver_info *info;
++	struct mp2856_data *data;
++	int ret;
++
++	/*
++	 * MP2856/MP2857 devices may not stay in page 0 during device
++	 * probe which leads to probe failure (read status word failed).
++	 * So let's set the device to page 0 at the beginning.
++	 */
++	i2c_smbus_write_byte_data(client, PMBUS_PAGE, 0);
++
++	data = devm_kzalloc(&client->dev, sizeof(struct mp2856_data),
++			    GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	memcpy(&data->info, &mp2856_info, sizeof(*info));
++	info = &data->info;
++
++	/* Identify multiphase configuration for rail 2. */
++	ret = mp2856_identify_multiphase_rail2(client);
++	if (ret < 0)
++		return ret;
++
++	if (ret) {
++		/* Two rails are connected. */
++		data->info.pages = MP2856_PAGE_NUM;
++		data->info.phases[1] = ret;
++		data->info.func[1] = MP2856_RAIL2_FUNC;
++	}
++
++	ret = mp2856_identify_rails_vid(client, data, info);
++	if (ret < 0)
++		return ret;
++
++	/* Obtain offsets, maximum and format for vout. */
++	ret = mp2856_vout_per_rail_config_get(client, data, info);
++	if (ret)
++		return ret;
++
++	return pmbus_do_probe(client, info);
++}
++
++static const struct i2c_device_id mp2856_id[] = {
++	{"mp2856", 0},
++	{"mp2857", 0},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, mp2856_id);
++
++static const struct of_device_id __maybe_unused mp2856_of_match[] = {
++	{.compatible = "mps,mp2856"},
++	{.compatible = "mps,mp2857"},
++	{}
++};
++MODULE_DEVICE_TABLE(of, mp2856_of_match);
++
++static struct i2c_driver mp2856_driver = {
++	.driver = {
++		.name = "mp2856",
++		.of_match_table = mp2856_of_match,
++	},
++	.probe = mp2856_probe,
++	.id_table = mp2856_id,
++};
++
++module_i2c_driver(mp2856_driver);
++
++MODULE_AUTHOR("Peter Yin <peter.yin@quantatw.com>");
++MODULE_DESCRIPTION("PMBus driver for MPS MP2856/MP2857 device");
++MODULE_LICENSE("GPL");
++MODULE_IMPORT_NS(PMBUS);
+-- 
+2.25.1
+

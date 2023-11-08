@@ -1,0 +1,302 @@
+From aed8216b9058a45b6f2f4927d291833900c598a5 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Thu, 2 Nov 2023 13:59:54 +0800
+Subject: [PATCH 300/301] To support MP5990 HSC controller driver
+
+LF-Kernel link:
+link:https://lore.kernel.org/all/20231103080128.1204218-2-peteryin.openbmc@gmail.com/
+link:https://lore.kernel.org/all/20231103080128.1204218-3-peteryin.openbmc@gmail.com/
+---
+ .../devicetree/bindings/hwmon/mps,mp5990.yaml | 43 +++++++++
+ Documentation/hwmon/index.rst                 |  1 +
+ Documentation/hwmon/mp5990.rst                | 84 +++++++++++++++++
+ drivers/hwmon/pmbus/Kconfig                   |  9 ++
+ drivers/hwmon/pmbus/Makefile                  |  1 +
+ drivers/hwmon/pmbus/mp5990.c                  | 90 +++++++++++++++++++
+ 6 files changed, 228 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/hwmon/mps,mp5990.yaml
+ create mode 100644 Documentation/hwmon/mp5990.rst
+ create mode 100644 drivers/hwmon/pmbus/mp5990.c
+
+diff --git a/Documentation/devicetree/bindings/hwmon/mps,mp5990.yaml b/Documentation/devicetree/bindings/hwmon/mps,mp5990.yaml
+new file mode 100644
+index 000000000000..7533d69f1922
+--- /dev/null
++++ b/Documentation/devicetree/bindings/hwmon/mps,mp5990.yaml
+@@ -0,0 +1,43 @@
++# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/hwmon/mps,mp5990.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: Analog Devices MP5990 HSC Controller
++
++maintainers:
++  - Peter Yin <peteryin.openbmc@gmail.com>
++
++description: |
++  Analog Devices MP5990 HSC Controller
++
++  Datasheets:
++  https://www.monolithicpower.com/en/mp5990.html
++
++properties:
++  compatible:
++    enum:
++      - mps,mp5990
++
++  reg:
++    description: I2C address of slave device.
++    maxItems: 1
++
++required:
++  - compatible
++  - reg
++
++additionalProperties: false
++
++examples:
++  - |
++    i2c {
++        #address-cells = <1>;
++        #size-cells = <0>;
++
++        power-sensor@20 {
++            reg = <0x20>;
++            compatible = "mps,mp5990";
++        };
++    };
+diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
+index 88dadea85cfc..641aa5d97add 100644
+--- a/Documentation/hwmon/index.rst
++++ b/Documentation/hwmon/index.rst
+@@ -158,6 +158,7 @@ Hardware Monitoring Kernel Drivers
+    mp2888
+    mp2975
+    mp5023
++   mp5990
+    nct6683
+    nct6775
+    nct7802
+diff --git a/Documentation/hwmon/mp5990.rst b/Documentation/hwmon/mp5990.rst
+new file mode 100644
+index 000000000000..8fc4e388ff7b
+--- /dev/null
++++ b/Documentation/hwmon/mp5990.rst
+@@ -0,0 +1,84 @@
++.. SPDX-License-Identifier: GPL-2.0
++
++Kernel driver mp5990
++====================
++
++Supported chips:
++
++  * MPS MP5990
++
++    Prefix: 'mp5990'
++
++  * Datasheet
++
++    Publicly available at the MPS website : https://www.monolithicpower.com/en/mp5990.html
++
++Author:
++
++	Peter Yin <peteryin.openbmc@gmail.com>
++
++Description
++-----------
++
++This driver implements support for Monolithic Power Systems, Inc. (MPS)
++MP5990 Hot-Swap Controller.
++
++Device complaint with:
++
++- PMBus rev 1.3 interface.
++
++Device supports direct format for reading input voltage, output voltage,
++output current, input power and temperature.
++
++The driver exports the following attributes via the 'sysfs' files
++for input voltage:
++
++**in1_input**
++
++**in1_label**
++
++**in1_max**
++
++**in1_max_alarm**
++
++**in1_min**
++
++**in1_min_alarm**
++
++The driver provides the following attributes for output voltage:
++
++**in2_input**
++
++**in2_label**
++
++**in2_alarm**
++
++The driver provides the following attributes for output current:
++
++**curr1_input**
++
++**curr1_label**
++
++**curr1_alarm**
++
++**curr1_max**
++
++The driver provides the following attributes for input power:
++
++**power1_input**
++
++**power1_label**
++
++**power1_alarm**
++
++The driver provides the following attributes for temperature:
++
++**temp1_input**
++
++**temp1_max**
++
++**temp1_max_alarm**
++
++**temp1_crit**
++
++**temp1_crit_alarm**
+diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
+index b4e93bd5835e..17c98fca5bb6 100644
+--- a/drivers/hwmon/pmbus/Kconfig
++++ b/drivers/hwmon/pmbus/Kconfig
+@@ -333,6 +333,15 @@ config SENSORS_MP5023
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called mp5023.
+ 
++config SENSORS_MP5990
++	tristate "MPS MP5990"
++	help
++	  If you say yes here you get hardware monitoring support for MPS
++	  MP5990.
++
++	  This driver can also be built as a module. If so, the module will
++	  be called mp5990.
++
+ config SENSORS_MPQ7932_REGULATOR
+ 	bool "Regulator support for MPQ7932"
+ 	depends on SENSORS_MPQ7932 && REGULATOR
+diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
+index 84ee960a6c2d..212d9ca0acc9 100644
+--- a/drivers/hwmon/pmbus/Makefile
++++ b/drivers/hwmon/pmbus/Makefile
+@@ -35,6 +35,7 @@ obj-$(CONFIG_SENSORS_MAX8688)	+= max8688.o
+ obj-$(CONFIG_SENSORS_MP2888)	+= mp2888.o
+ obj-$(CONFIG_SENSORS_MP2975)	+= mp2975.o
+ obj-$(CONFIG_SENSORS_MP5023)	+= mp5023.o
++obj-$(CONFIG_SENSORS_MP5990)	+= mp5990.o
+ obj-$(CONFIG_SENSORS_MPQ7932)	+= mpq7932.o
+ obj-$(CONFIG_SENSORS_PLI1209BC)	+= pli1209bc.o
+ obj-$(CONFIG_SENSORS_PM6764TR)	+= pm6764tr.o
+diff --git a/drivers/hwmon/pmbus/mp5990.c b/drivers/hwmon/pmbus/mp5990.c
+new file mode 100644
+index 000000000000..c3b31af9f750
+--- /dev/null
++++ b/drivers/hwmon/pmbus/mp5990.c
+@@ -0,0 +1,90 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * Driver for MPS MP5990 Hot-Swap Controller
++ */
++
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/of_device.h>
++#include <linux/pmbus.h>
++#include "pmbus.h"
++
++static int mp5990_read_byte_data(struct i2c_client *client, int page, int reg)
++{
++	switch (reg) {
++	case PMBUS_VOUT_MODE:
++		/*
++		  Enforce VOUT direct format, C4h reg BIT9
++		  default val is not match vout format
++		 */
++		return PB_VOUT_MODE_DIRECT;
++	default:
++		return -ENODATA;
++	}
++}
++
++static struct pmbus_driver_info mp5990_info = {
++	.pages = 1,
++	.format[PSC_VOLTAGE_IN] = direct,
++	.format[PSC_VOLTAGE_OUT] = direct,
++	.format[PSC_CURRENT_OUT] = direct,
++	.format[PSC_POWER] = direct,
++	.format[PSC_TEMPERATURE] = direct,
++	.m[PSC_VOLTAGE_IN] = 32,
++	.b[PSC_VOLTAGE_IN] = 0,
++	.R[PSC_VOLTAGE_IN] = 0,
++	.m[PSC_VOLTAGE_OUT] = 32,
++	.b[PSC_VOLTAGE_OUT] = 0,
++	.R[PSC_VOLTAGE_OUT] = 0,
++	.m[PSC_CURRENT_OUT] = 16,
++	.b[PSC_CURRENT_OUT] = 0,
++	.R[PSC_CURRENT_OUT] = 0,
++	.m[PSC_POWER] = 1,
++	.b[PSC_POWER] = 0,
++	.R[PSC_POWER] = 0,
++	.m[PSC_TEMPERATURE] = 1,
++	.b[PSC_TEMPERATURE] = 0,
++	.R[PSC_TEMPERATURE] = 0,
++	.func[0] =
++		PMBUS_HAVE_VIN | PMBUS_HAVE_VOUT | PMBUS_HAVE_PIN |
++		PMBUS_HAVE_TEMP | PMBUS_HAVE_IOUT |
++		PMBUS_HAVE_STATUS_INPUT | PMBUS_HAVE_STATUS_TEMP,
++	.read_byte_data = mp5990_read_byte_data,
++};
++
++static int mp5990_probe(struct i2c_client *client)
++{
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, PMBUS_VOUT_MODE,
++					PB_VOUT_MODE_DIRECT);
++	if (ret < 0)
++		return ret;
++	return pmbus_do_probe(client, &mp5990_info);
++}
++
++static const struct of_device_id mp5990_of_match[] = {
++	{ .compatible = "mps,mp5990" },
++	{}
++};
++
++static const struct i2c_device_id mp5990_id[] = {
++	{"mp5990", 0},
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, mp5990_id);
++
++static struct i2c_driver mp5990_driver = {
++	.driver = {
++		   .name = "mp5990",
++		   .of_match_table = of_match_ptr(mp5990_of_match),
++	},
++	.probe = mp5990_probe,
++	.id_table = mp5990_id,
++};
++module_i2c_driver(mp5990_driver);
++
++MODULE_AUTHOR("Peter Yin <peter.yin@quantatw.com>");
++MODULE_DESCRIPTION("PMBus driver for MP5990 HSC");
++MODULE_LICENSE("GPL");
++MODULE_IMPORT_NS(PMBUS);
+-- 
+2.25.1
+

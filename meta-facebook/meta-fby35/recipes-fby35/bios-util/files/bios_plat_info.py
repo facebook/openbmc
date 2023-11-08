@@ -29,7 +29,7 @@ def slot_type():
         conf = kv.kv_get("sled_system_conf", kv.FPERSIST, True)
         if conf.find(b"HD") != -1:
             return "Halfdome"
-        elif conf.find(b"GL") != -1:
+        elif (conf.find(b"GL") != -1) or (conf.find(b"8") != -1):
             return "GreatLakes"
         return None
 

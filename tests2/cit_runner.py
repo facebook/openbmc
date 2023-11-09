@@ -224,6 +224,7 @@ def arg_parser():
             "bletchley",
             "fbgp2",
             "janga",
+            "tahan",
             # Add new platform name here -- for anchor purpose, do not remove
         ],
     )

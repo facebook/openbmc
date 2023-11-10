@@ -4,7 +4,11 @@ import os
 import sys
 import unittest
 
+from utils.platforms import PLATFORMS
+
 from utils.test_utils import tests_dir
+
+ADDITIONAL_CIT_NAMES = ["churchillmono", "janga", "wedge400c"]
 
 
 class RunTest:
@@ -194,39 +198,7 @@ def arg_parser():
         "--platform",
         "-p",
         help="Run all tests in platform by platform name",
-        choices=[
-            "wedge",
-            "wedge100",
-            "wedge400",
-            "wedge400c",
-            "cloudripper",
-            "galaxy100",
-            "cmm",
-            "minipack",
-            "fbtp",
-            "fby2",
-            "northdome",
-            "fuji",
-            "yosemite",
-            "lightning",
-            "fbttn",
-            "yamp",
-            "elbert",
-            "fbdarwin",
-            "fby3",
-            "grandcanyon",
-            "fby35",
-            "churchillmono",
-            "sandia",
-            "grandteton",
-            "montblanc",
-            "halfdome",
-            "bletchley",
-            "fbgp2",
-            "janga",
-            "tahan",
-            # Add new platform name here -- for anchor purpose, do not remove
-        ],
+        choices=PLATFORMS + ADDITIONAL_CIT_NAMES,
     )
     parser.add_argument(
         "--run-test",

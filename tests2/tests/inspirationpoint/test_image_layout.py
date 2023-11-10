@@ -47,6 +47,13 @@ class ImageLayoutTest(BaseImageLayoutTest):
     }
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_spi_0_mtd(self):
+        """
+        Test actual image layout on spi0.0 matches image meta data
+        """
+        super().test_spi_0_mtd()
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_spi_1_mtd(self):
         """
         Test actual image layout on spi0.1 matches image meta data

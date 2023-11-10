@@ -4,5 +4,6 @@ SRC_URI += " \
     file://0501-hwmon-ina233-Add-ina233-driver.patch \
     file://0502-hwmon-max31790-support-to-config-PWM-as-TACH.patch \
     file://0503-Add-adm1281-driver.patch \
+    file://0504-hwmon-max31790-add-fanN_enable-for-all-fans.patch \
 "
 

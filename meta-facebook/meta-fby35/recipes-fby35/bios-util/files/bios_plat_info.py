@@ -29,8 +29,10 @@ def slot_type():
         conf = kv.kv_get("sled_system_conf", kv.FPERSIST, True)
         if conf.find(b"HD") != -1:
             return "Halfdome"
-        elif (conf.find(b"GL") != -1) or (conf.find(b"8") != -1):
-            return "GreatLakes"
+        elif conf.find(b"GL") != -1:
+            return "2x GreatLakes"
+        elif conf.find(b"8") != -1:
+            return "1x GreatLakes"
         return None
 
     except Exception:
@@ -66,8 +68,15 @@ def plat_info(fru):
 
         slot_type_str = slot_type()
         if slot_type_str != None:
-            sku = slot_type_str
-            pcie_configuration = "2x "+ slot_type_str
+            if slot_type_str == "Halfdome":
+                sku = "Halfdome"
+                pcie_configuration = "2x "+ slot_type_str
+            else:
+                sku = "GreatLakes"
+                if slot_type_str.find("2x") != -1:
+                    pcie_configuration = "2x "+ sku
+                elif slot_type_str.find("1x") != -1:
+                    pcie_configuration = "1x "+ sku
         elif "Class 2" in sys_type:
             pcie_configuration = "2x Crater Lakes"
         else:

@@ -1230,6 +1230,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-yosemite4-determinator",
+            "args": {
+                "name": "openbmc-cit-yosemite4-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-yosemite4-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform yosemite4"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-yosemite4/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-fw-cit-default-determinator",
             "args": {
                 "name": "openbmc-fw-cit-default-determinator",

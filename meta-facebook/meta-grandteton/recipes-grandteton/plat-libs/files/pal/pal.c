@@ -771,11 +771,14 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
 
 int
 pal_get_sensor_util_timeout(uint8_t fru) {
-
-  if ( fru == FRU_MB ) {
-    return 10;
-  } else {
-    return 4;
+  switch (fru) {
+    case FRU_MB:
+      return 10;
+    case FRU_ACB:
+    case FRU_MEB:
+      return 15;
+    default:
+      return 4;
   }
 }
 

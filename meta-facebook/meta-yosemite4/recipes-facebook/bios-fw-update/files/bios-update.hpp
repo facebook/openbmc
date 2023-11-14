@@ -15,9 +15,9 @@ class BIOSupdater
 {
   public:
     explicit BIOSupdater(sdbusplus::bus_t& bus, const std::string& imagePath,
-                         uint8_t slotId) :
+                         const uint8_t slotId, const std::string& cpuType) :
         bus(bus),
-        imagePath(imagePath), slotId(slotId)
+        imagePath(imagePath), slotId(slotId), cpuType(cpuType)
     {}
 
     /** @brief Update bios according to the USB file path.
@@ -35,4 +35,7 @@ class BIOSupdater
 
     /** The slot Id for update*/
     const uint8_t slotId;
+
+    /** BERGAMO or TURNIN cpu will use different offset to update */
+    const std::string& cpuType;
 };

@@ -291,7 +291,8 @@ int bic_close_usb_dev(usb_dev* udev)
     return 0;
 }
 
-int bic_update_fw_usb(std::string imagePath, usb_dev* udev)
+int bic_update_fw_usb(const std::string& imagePath, usb_dev* udev,
+                      const std::string& cpuType)
 {
     int rc = 0;
     uint8_t* buf = nullptr;
@@ -299,6 +300,11 @@ int bic_update_fw_usb(std::string imagePath, usb_dev* udev)
     size_t file_buf_num_bytes = 0;
     int num_blocks_written = 0;
     int attempts = NUM_ATTEMPTS;
+
+    if (cpuType == "TURIN")
+    {
+        write_offset = 0x3000000;
+    }
 
     std::fstream file(imagePath,
                       std::ios::in | std::ios::binary | std::ios::ate);
@@ -404,7 +410,8 @@ int bic_update_fw_usb(std::string imagePath, usb_dev* udev)
     return 0;
 }
 
-int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath)
+int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath,
+                        const std::string& cpuType)
 {
     struct timeval start, end;
     int ret = -1;
@@ -424,7 +431,7 @@ int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath)
     gettimeofday(&start, nullptr);
 
     // sending file
-    ret = bic_update_fw_usb(imageFilePath, udev);
+    ret = bic_update_fw_usb(imageFilePath, udev, cpuType);
 
     if (ret < 0)
         goto error_exit;

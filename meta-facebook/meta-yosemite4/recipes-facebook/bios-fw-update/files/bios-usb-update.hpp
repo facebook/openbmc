@@ -38,4 +38,5 @@ struct bic_usb_res_packet
 } __attribute__((packed));
 #define USB_PKT_RES_HDR_SIZE (sizeof(bic_usb_res_packet))
 
-int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath);
+int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath,
+                        const std::string& cpuType);

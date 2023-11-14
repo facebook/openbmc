@@ -26,4 +26,7 @@ if [ "$mbrev" -le "$GTA_MB_EVT_BORAD_ID" ]
 then
 	# set MEB BIC i2c clk frequency to 100K
 	$DEVMEM 0x1e78a504 32 0x00CDF003
+else
+	# set MEB BIC i2c clk frequency to 400K and enlarge the SDA hold time
+	$DEVMEM 0x1e78a504 32 0x0867E602
 fi

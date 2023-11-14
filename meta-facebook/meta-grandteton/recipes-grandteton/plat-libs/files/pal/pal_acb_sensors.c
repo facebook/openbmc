@@ -27,8 +27,8 @@ PAL_SENSOR_MAP acb_freya_sensor_map[] = {
   {"POWER_BRICK_2_TEMP", 0, get_acb_sensor, true, {115, 0, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x0A
   {"P51V_AUX_L_VOLT", 0, get_acb_sensor, true, {52, 0, 0, 46, 0, 0, 0, 0}, VOLT}, // 0x0B
   {"P51V_AUX_R_VOLT", 0, get_acb_sensor, true, {52, 0, 0, 46, 0, 0, 0, 0}, VOLT}, // 0x0C
-  {"P12V_AUX_1_VOLT", 0, get_acb_sensor, true, {13.2, 0, 0, 11.8, 0, 0, 0, 0}, VOLT}, // 0x0D
-  {"P12V_AUX_2_VOLT", 0, get_acb_sensor, true, {13.2, 0, 0, 11.8, 0, 0, 0, 0}, VOLT}, // 0x0E
+  {"P12V_AUX_1_VOLT", 0, get_acb_sensor, true, {13.2, 0, 0, 11.6, 0, 0, 0, 0}, VOLT}, // 0x0D
+  {"P12V_AUX_2_VOLT", 0, get_acb_sensor, true, {13.2, 0, 0, 11.6, 0, 0, 0, 0}, VOLT}, // 0x0E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x0F
   {"P5V_AUX_VOLT",  0, get_acb_sensor, true,  {5.25,  0, 0,  4.75, 0, 0, 0, 0}, VOLT}, // 0x10
   {"P3V3_AUX_VOLT", 0, get_acb_sensor, true,  {3.531, 0, 0,  3.07, 0, 0, 0, 0}, VOLT}, // 0x11
@@ -217,8 +217,8 @@ PAL_SENSOR_MAP acb_artemis_sensor_map[] = {
   {"POWER_BRICK_2_TEMP", 0, get_acb_sensor, true, {115, 0, 0, 0, 0, 0, 0, 0}, TEMP}, // 0x0A
   {"P51V_AUX_L_VOLT", 0, get_acb_sensor, true, {52, 0, 0, 46, 0, 0, 0, 0}, VOLT}, // 0x0B
   {"P51V_AUX_R_VOLT", 0, get_acb_sensor, true, {52, 0, 0, 46, 0, 0, 0, 0}, VOLT}, // 0x0C
-  {"P12V_AUX_1_VOLT", 0, get_acb_sensor, true, {13.2, 0, 0, 11.8, 0, 0, 0, 0}, VOLT}, // 0x0D
-  {"P12V_AUX_2_VOLT", 0, get_acb_sensor, true, {13.2, 0, 0, 11.8, 0, 0, 0, 0}, VOLT}, // 0x0E
+  {"P12V_AUX_1_VOLT", 0, get_acb_sensor, true, {13.2, 0, 0, 11.6, 0, 0, 0, 0}, VOLT}, // 0x0D
+  {"P12V_AUX_2_VOLT", 0, get_acb_sensor, true, {13.2, 0, 0, 11.6, 0, 0, 0, 0}, VOLT}, // 0x0E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x0F
   {"P5V_AUX_VOLT",  0, get_acb_sensor, true,  {5.25,  0, 0,  4.75, 0, 0, 0, 0}, VOLT}, // 0x10
   {"P3V3_AUX_VOLT", 0, get_acb_sensor, true,  {3.531, 0, 0,  3.07, 0, 0, 0, 0}, VOLT}, // 0x11

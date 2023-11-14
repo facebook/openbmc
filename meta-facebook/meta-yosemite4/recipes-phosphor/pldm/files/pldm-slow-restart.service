@@ -1,0 +1,11 @@
+[Unit]
+Description=PLDM slow restart service - this is a backup solution
+Requires=xyz.openbmc_project.EntityManager.service
+After=xyz.openbmc_project.EntityManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/pldm/pldm-restart.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -399,6 +399,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-fbitb-determinator",
+            "args": {
+                "name": "openbmc-cit-fbitb-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-fbitb-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform fbitb"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fbitb/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-fbtp-determinator",
             "args": {
                 "name": "openbmc-cit-fbtp-determinator",

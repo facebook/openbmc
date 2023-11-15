@@ -151,6 +151,7 @@ int bic_inform_sled_cycle(void);
 int bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf);
 int bic_set_vr_monitor_enable(uint8_t slot_id, bool enable, uint8_t intf);
 int bic_notify_fan_mode(int mode);
+int bic_get_pcie_retimer_type(uint8_t slot_id, uint8_t intf, uint8_t *retimer_type);
 int bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config);
 int bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option);
 int bic_check_bb_fw_update_ongoing();

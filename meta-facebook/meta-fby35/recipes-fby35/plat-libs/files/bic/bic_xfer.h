@@ -62,6 +62,7 @@ enum {
   BIC_CMD_OEM_NOTIFY_DC_OFF     = 0xD1,
   BIC_CMD_OEM_READ_WRITE_SSD    = 0x36,
   BIC_CMD_OEM_STOP_VR_MONITOR   = 0x14,
+  BIC_CMD_OEM_GET_RETIMER_TYPE  = 0x79,
 };
 
 typedef enum {

@@ -59,10 +59,7 @@ int RetimerFwComponent::fupdate(const string image) {
 
 int RetimerFwComponent::get_vendor_id(VendorID* vendor_id) {
   uint8_t intf = 0;
-  uint8_t bus = 0;
-  uint8_t tbuf[64] = {0};
-  uint8_t rbuf[16] = {0};
-  uint8_t tlen = 0, rlen = 0;
+  uint8_t retimer_type = 0;
 
   if (!vendor_id) {
     return -1;
@@ -72,40 +69,13 @@ int RetimerFwComponent::get_vendor_id(VendorID* vendor_id) {
   } else {
     intf = EXP3_BIC_INTF;
   }
-  if (bic_disable_sensor_monitor(slot_id, 0, intf) < 0) { //disable
-    cerr << "Failed to disable sensor monitor" << endl;
-    return -1;
-  }
-  bus = (retimer_bus << 1) | 1;
 
-  tbuf[0] = bus;
-  tbuf[1] = retimer_addr;
-  tbuf[2] = 0;
-  tbuf[3] = 0x02; //COMMAND CODE = 0x02 END=0, START=1, FUNC=3'b000, PEC=0
-  tbuf[4] = 0x02; //byte count
-  tbuf[5] = 0x04; //vendor id lower offset
-  tbuf[6] = 0x00; //vendor id upper offset
-  tlen = 7;
-  if (bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen,
-    rbuf, &rlen, intf) < 0) {
-    cerr << "Failed to set RETIMER vendor ID offset" << endl;
-  }
-
-  tbuf[2] = vendor_id_size;
-  tbuf[3] = 0x01; //COMMAND CODE = 0x01 END=1, START=0, FUNC=3'b000, PEC=0
-  tlen = 4;
-  if (bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen,
-    rbuf, &rlen, intf) < 0) {
-    cerr << "Failed to read RETIMER vendor id" << endl;
-  }
-  if (equal(rbuf, rbuf + vendor_id_size, astera_vendor_id)) {
-    *vendor_id = VendorID::ASTERA_LABS;
-  } else if (equal(rbuf, rbuf + vendor_id_size, montage_vendor_id)) {
-    *vendor_id = VendorID::MONTAGE;
-  } else {
+  if (bic_get_pcie_retimer_type(slot_id, intf, &retimer_type) != BIC_STATUS_SUCCESS) {
     *vendor_id = VendorID::UNKNOWN_VENDOR;
+  } else {
+    *vendor_id = static_cast<VendorID>(retimer_type);
   }
-  bic_disable_sensor_monitor(slot_id, 1, intf); //enable
+
   return 0;
 }
 

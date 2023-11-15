@@ -1768,6 +1768,28 @@ bic_set_vr_monitor_enable(uint8_t slot_id, bool enable, uint8_t intf) {
 }
 
 int
+bic_get_pcie_retimer_type(uint8_t slot_id, uint8_t intf, uint8_t *retimer_type) {
+  int ret;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 1;
+  uint8_t tlen = IANA_ID_SIZE;
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_RETIMER_TYPE, tbuf, tlen, rbuf, &rlen, intf);
+
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to send the command to get the retimer type. ret=%d", __func__, ret);
+    return ret;
+  }
+
+  *retimer_type = rbuf[IANA_ID_SIZE];
+
+  return ret;
+}
+
+int
 bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt) {
   uint8_t tbuf[256];
   uint8_t tlen = 3, rlen = 0;

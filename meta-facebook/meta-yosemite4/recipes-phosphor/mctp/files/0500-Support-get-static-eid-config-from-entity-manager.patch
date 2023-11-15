@@ -1,43 +1,39 @@
-From 3904f1a7a1052f6892bb8e4159e05f8627bd4f23 Mon Sep 17 00:00:00 2001
+From b24373a1f0f5160155be618ccfbafd2cd827c47b Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Wed, 11 Oct 2023 14:31:47 +0800
 Subject: [PATCH] Support get static eid config from entity manager
 
-The service will set mctp link up and add local EID. It also parses
-entity manager for static EID config and publishs presented devices
-on dbus.
+The mctpd will try to find the configuration interface
+"xyz.openbmc_project.Configuration.MCTPEndpoint" and parse the data.
+Then it will send get EID command to target device. If we the get
+the response, we publish the EID on the D-Bus.
 
-Note: need to restart service after hot-plug event.
+Test log:
+- reboot and check MCTP D-Bus path
+root@bmc:~# reboot
+
+root@bmc:~# busctl tree xyz.openbmc_project.MCTP
+`- /xyz
+  `- /xyz/openbmc_project
+    `- /xyz/openbmc_project/mctp
+      `- /xyz/openbmc_project/mctp/1
+        |- /xyz/openbmc_project/mctp/1/60
+        `- /xyz/openbmc_project/mctp/1/8
+root@bmc:~# pldmtool base GetTID -m 60
+{
+    "Response": 134
+}
+
+upstream link: https://github.com/CodeConstruct/mctp/pull/17
 ---
- src/mctpd.c | 151 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 148 insertions(+), 3 deletions(-)
+ src/mctpd.c | 148 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 146 insertions(+), 2 deletions(-)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index 14d4a9a..37398b8 100644
+index b89b01b..31094b8 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
-@@ -2596,8 +2596,11 @@ static int emit_endpoint_added(const peer *peer) {
- 	rc = path_from_peer(peer, &path);
- 	if (rc < 0)
- 		return rc;
-+
-+
- 	if (peer->ctx->verbose)
- 		warnx("%s: %s", __func__, path);
-+
- 	rc = sd_bus_emit_object_added(peer->ctx->bus, dfree(path));
- 	if (rc < 0)
- 		warnx("%s: error emitting, %s", __func__, strerror(-rc));
-@@ -3142,7 +3145,7 @@ static int setup_nets(ctx *ctx)
- 
- static int setup_testing(ctx *ctx) {
- 	int rc;
--	dest_phys dest = {};
-+	dest_phys dest = {0};
- 	peer *peer;
- 	size_t i, j;
- 
-@@ -3282,15 +3285,156 @@ static int fill_uuid(ctx *ctx)
+@@ -3134,15 +3134,158 @@ static int fill_uuid(ctx *ctx)
  	return rc;
  }
  
@@ -52,7 +48,7 @@ index 14d4a9a..37398b8 100644
 +	rc = sd_bus_call_method(ctx->bus,
 +        "xyz.openbmc_project.ObjectMapper", "/xyz/openbmc_project/object_mapper",
 +        "xyz.openbmc_project.ObjectMapper", "GetSubTreePaths",
-+		&error, &message, "sias", "/xyz/openbmc_project/", 0, 1, "xyz.openbmc_project.Configuration.MctpDevice");
++		&error, &message, "sias", "/xyz/openbmc_project/", 0, 1, "xyz.openbmc_project.Configuration.MCTPEndpoint");
 +	if (rc < 0) {
 +		warnx("Failed to issue method call: %s\n", error.message);
 +		goto out;
@@ -82,7 +78,7 @@ index 14d4a9a..37398b8 100644
 +	while(s[i] != NULL) {
 +		rc = sd_bus_get_property(ctx->bus,
 +			"xyz.openbmc_project.EntityManager", s[i],
-+			"xyz.openbmc_project.Configuration.MctpDevice", "Address",
++			"xyz.openbmc_project.Configuration.MCTPEndpoint", "Address",
 +			&error, &message, "t");
 +		if (rc < 0) {
 +			warnx("Failed to get property: %s\n", error.message);
@@ -102,7 +98,7 @@ index 14d4a9a..37398b8 100644
 +		const char *ifname = NULL;
 +		rc = sd_bus_get_property(ctx->bus,
 +			"xyz.openbmc_project.EntityManager", s[i],
-+			"xyz.openbmc_project.Configuration.MctpDevice", "Bus",
++			"xyz.openbmc_project.Configuration.MCTPEndpoint", "Bus",
 +			&error, &message, "s");
 +		if (rc < 0) {
 +			warnx("Failed to get property: %s", error.message);
@@ -135,44 +131,46 @@ index 14d4a9a..37398b8 100644
 +
 +		rc = sd_bus_get_property(ctx->bus,
 +			"xyz.openbmc_project.EntityManager", s[i],
-+			"xyz.openbmc_project.Configuration.MctpDevice", "EndpointIds",
-+			&error, &message, "at");
++			"xyz.openbmc_project.Configuration.MCTPEndpoint", "EndpointId",
++			&error, &message, "t");
 +		if (rc < 0) {
 +			warnx("Failed to get property: %s\n", error.message);
 +			goto out;
 +		}
-+		uint64_t *eid = NULL;
-+		sd_bus_message_read_array(message, 't', (const void**)&eid, &size);
-+		size = size / 8;
-+		for (size_t j = 0; j < size; j++) {
-+			rc = add_peer(ctx, dest, (mctp_eid_t)eid[j], net, &peer);
-+			if (rc < 0) {
-+				warnx("Failed to add peer for EID %d", (mctp_eid_t)eid[j]);
-+				continue;
-+			}
++		uint64_t eid = 0;
++		sd_bus_message_read(message, "t", &eid);
 +
-+			add_peer_route(peer);
-+
-+			uint8_t* buf = NULL;
-+			size_t buf_size = 0;
-+			rc = endpoint_query_peer(peer, MCTP_CTRL_HDR_MSG_TYPE,
-+			&req, sizeof(req), &buf, &buf_size, &addr);
-+			if (rc < 0) {
-+				warnx("Skip EID %d.", (mctp_eid_t)eid[j]);
-+				remove_peer(peer);
-+				free(buf);
-+				continue;
-+			}
-+			free(buf);
-+
-+			rc = query_peer_properties(peer);
-+
-+			rc = publish_peer(peer, true);
-+			if (rc < 0) {
-+				warnx("Error publishing remote eid %d net %d", (mctp_eid_t)eid[j], net);
-+				continue;
-+			}
++		rc = add_peer(ctx, dest, (mctp_eid_t)eid, net, &peer);
++		if (rc < 0) {
++			warnx("Failed to add peer for EID %d", (mctp_eid_t)eid);
++			i++;
++			continue;
 +		}
++
++		add_peer_route(peer);
++
++		uint8_t* buf = NULL;
++		size_t buf_size = 0;
++		rc = endpoint_query_peer(peer, MCTP_CTRL_HDR_MSG_TYPE,
++		&req, sizeof(req), &buf, &buf_size, &addr);
++		if (rc < 0) {
++			warnx("Response timeout for EID %d.", (mctp_eid_t)eid);
++			remove_peer(peer);
++			free(buf);
++			i++;
++			continue;
++		}
++		free(buf);
++
++		rc = query_peer_properties(peer);
++
++		rc = publish_peer(peer, true);
++		if (rc < 0) {
++			warnx("Error publishing remote eid %d net %d", (mctp_eid_t)eid, net);
++			i++;
++			continue;
++		}
++
 +		message = sd_bus_message_unref(message);
 +		i++;
 +	}
@@ -195,7 +193,7 @@ index 14d4a9a..37398b8 100644
  	return 0;
  }
  
-@@ -3340,6 +3484,8 @@ int main(int argc, char **argv)
+@@ -3192,6 +3335,8 @@ int main(int argc, char **argv)
  	if (rc < 0 && !ctx->testing)
  		return 1;
  
@@ -204,7 +202,7 @@ index 14d4a9a..37398b8 100644
  	// TODO add net argument?
  	rc = listen_control_msg(ctx, MCTP_NET_ANY);
  	if (rc < 0) {
-@@ -3358,7 +3504,6 @@ int main(int argc, char **argv)
+@@ -3210,7 +3355,6 @@ int main(int argc, char **argv)
  	if (rc < 0)
  		return 1;
  

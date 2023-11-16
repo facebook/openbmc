@@ -1,7 +1,7 @@
-From 6f35d3c8d9e8f840b2d21e80f45770e0e6361628 Mon Sep 17 00:00:00 2001
+From 17bd935fbd6fe1a090e43719a5aaedcddc925cd9 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 22 Feb 2022 15:40:17 +0000
-Subject: [PATCH 3/6] platform-mc: Added TerminusManager and Terminus class
+Subject: [PATCH 3/6] platform-mc: Added Terminus/TerminusManager class
 
 Added requester::sendRecvPldmMsg awaiter type to be able to send and
 receive PLDM message by coroutine.
@@ -13,22 +13,23 @@ related initialization steps, and either doesn't support primary PDR
 repository to maintain terminus locator PDR information yet.
 
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
+Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Change-Id: Ifa5bdfff50648f1d7fba8710e160de662e8f9e06
 ---
  meson.build                                |   4 +
  platform-mc/manager.hpp                    |  70 ++++
- platform-mc/platform_manager.cpp           | 220 ++++++++++++
- platform-mc/platform_manager.hpp           |  98 ++++++
+ platform-mc/platform_manager.cpp           | 220 +++++++++++
+ platform-mc/platform_manager.hpp           |  98 +++++
  platform-mc/terminus.cpp                   |  21 ++
  platform-mc/terminus.hpp                   |  52 +++
- platform-mc/terminus_manager.cpp           | 374 +++++++++++++++++++++
- platform-mc/terminus_manager.hpp           | 166 +++++++++
+ platform-mc/terminus_manager.cpp           | 420 +++++++++++++++++++++
+ platform-mc/terminus_manager.hpp           | 173 +++++++++
  platform-mc/test/meson.build               |  31 ++
- platform-mc/test/mock_terminus_manager.hpp |  76 +++++
- platform-mc/test/terminus_manager_test.cpp | 241 +++++++++++++
+ platform-mc/test/mock_terminus_manager.hpp |  76 ++++
+ platform-mc/test/terminus_manager_test.cpp | 241 ++++++++++++
  platform-mc/test/terminus_test.cpp         |  24 ++
  pldmd/pldmd.cpp                            |   7 +-
- 13 files changed, 1382 insertions(+), 2 deletions(-)
+ 13 files changed, 1435 insertions(+), 2 deletions(-)
  create mode 100644 platform-mc/manager.hpp
  create mode 100644 platform-mc/platform_manager.cpp
  create mode 100644 platform-mc/platform_manager.hpp
@@ -555,10 +556,10 @@ index 0000000..7b3aa53
 +} // namespace pldm
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
 new file mode 100644
-index 0000000..980bc9b
+index 0000000..70293c8
 --- /dev/null
 +++ b/platform-mc/terminus_manager.cpp
-@@ -0,0 +1,374 @@
+@@ -0,0 +1,420 @@
 +#include "terminus_manager.hpp"
 +
 +#include "manager.hpp"
@@ -676,6 +677,32 @@ index 0000000..980bc9b
 +    }
 +}
 +
++std::map<tid_t, std::shared_ptr<Terminus>>::iterator
++    TerminusManager::findTeminusPtr(const MctpInfo& mctpInfo)
++{
++    bool found = false;
++    auto it = termini.begin();
++    for (; it != termini.end();)
++    {
++        auto terminusMctpInfo = toMctpInfo(it->first);
++        /* Teminus already initialized and added to temini list */
++        if (terminusMctpInfo &&
++            (std::get<0>(terminusMctpInfo.value()) == std::get<0>(mctpInfo)) &&
++            (std::get<3>(terminusMctpInfo.value()) == std::get<3>(mctpInfo)))
++        {
++            found = true;
++            break;
++        }
++        it++;
++    }
++    if (found)
++    {
++        return it;
++    }
++
++    return termini.end();
++}
++
 +requester::Coroutine TerminusManager::discoverMctpTerminusTask()
 +{
 +    while (!queuedMctpInfos.empty())
@@ -688,23 +715,8 @@ index 0000000..980bc9b
 +        const MctpInfos& mctpInfos = queuedMctpInfos.front();
 +        for (auto& mctpInfo : mctpInfos)
 +        {
-+            bool alreadyAdded = false;
-+            for (auto it = termini.begin(); it != termini.end();)
-+            {
-+                auto terminusMctpInfo = toMctpInfo(it->first);
-+                /* Teminus already initialized and added to temini list */
-+                if (terminusMctpInfo &&
-+                    (std::get<0>(terminusMctpInfo.value()) ==
-+                     std::get<0>(mctpInfo)) &&
-+                    (std::get<3>(terminusMctpInfo.value()) ==
-+                     std::get<3>(mctpInfo)))
-+                {
-+                    alreadyAdded = true;
-+                    break;
-+                }
-+                it++;
-+            }
-+            if (!alreadyAdded)
++            auto it = findTeminusPtr(mctpInfo);
++            if (it == termini.end())
 +            {
 +                co_await initMctpTerminus(mctpInfo);
 +            }
@@ -726,22 +738,14 @@ index 0000000..980bc9b
 +    // remove terminus
 +    for (auto& mctpInfo : mctpInfos)
 +    {
-+        for (auto it = termini.begin(); it != termini.end();)
++        auto it = findTeminusPtr(mctpInfo);
++        if (it == termini.end())
 +        {
-+            auto terminusMctpInfo = toMctpInfo(it->first);
-+            /* Match the EID and NetworkType */
-+            if (terminusMctpInfo &&
-+                (std::get<0>(terminusMctpInfo.value()) ==
-+                 std::get<0>(mctpInfo)) &&
-+                (std::get<3>(terminusMctpInfo.value()) ==
-+                 std::get<3>(mctpInfo)))
-+            {
-+                unmapTid(it->first);
-+                termini.erase(it);
-+                break;
-+            }
-+            it++;
++            continue;
 +        }
++
++        unmapTid(it->first);
++        termini.erase(it);
 +    }
 +}
 +
@@ -749,35 +753,78 @@ index 0000000..980bc9b
 +{
 +    mctp_eid_t eid = std::get<0>(mctpInfo);
 +    tid_t tid = 0;
++    bool isMapped = false;
 +    auto rc = co_await getTidOverMctp(eid, &tid);
 +    if (rc || tid == PLDM_TID_RESERVED)
 +    {
 +        co_return PLDM_ERROR;
 +    }
 +
-+    // Assigning a tid. If it has been mapped, mapTid() returns the tid assigned
-+    // before.
-+    auto mappedTid = mapTid(mctpInfo);
-+    if (!mappedTid)
++    /* Terminus already has TID */
++    if (tid != 0x00)
 +    {
-+        co_return PLDM_ERROR;
++        auto it = termini.find(tid);
++        /* TID is used by one discovered terminus */
++        if (it != termini.end())
++        {
++            auto terminusMctpInfo = toMctpInfo(it->first);
++            /* The discovered terminus has the same MCTP Info */
++            if (terminusMctpInfo &&
++                (std::get<0>(terminusMctpInfo.value()) ==
++                 std::get<0>(mctpInfo)) &&
++                (std::get<3>(terminusMctpInfo.value()) ==
++                 std::get<3>(mctpInfo)))
++            {
++                co_return PLDM_SUCCESS;
++            }
++            else
++            {
++                /* ToDo:
++                 * Maybe the terminus supports multiple medium interfaces
++                 * Or the TID is used by other terminus.
++                 * Check the UUID to confirm.
++                 */
++                isMapped = false;
++            }
++        }
++        /* Use the terminus TID for mapping */
++        else
++        {
++            auto mappedTid = mapTid(mctpInfo, tid);
++            if (!mappedTid)
++            {
++                co_return PLDM_ERROR;
++            }
++            isMapped = true;
++        }
 +    }
 +
-+    tid = mappedTid.value();
-+    rc = co_await setTidOverMctp(eid, tid);
-+    if (rc != PLDM_SUCCESS && rc != PLDM_ERROR_UNSUPPORTED_PLDM_CMD)
++    if (!isMapped)
 +    {
-+        unmapTid(tid);
-+        co_return rc;
-+    }
++        // Assigning a tid. If it has been mapped, mapTid()
++        // returns the tid assigned before.
++        auto mappedTid = mapTid(mctpInfo);
++        if (!mappedTid)
++        {
++            co_return PLDM_ERROR;
++        }
 +
-+    auto it = termini.find(tid);
-+    if (it != termini.end())
-+    {
-+        // the terminus has been discovered before
-+        co_return PLDM_SUCCESS;
-+    }
++        tid = mappedTid.value();
++        rc = co_await setTidOverMctp(eid, tid);
++        if (rc != PLDM_SUCCESS && rc != PLDM_ERROR_UNSUPPORTED_PLDM_CMD)
++        {
++            unmapTid(tid);
++            co_return rc;
++        }
 +
++        auto it = termini.find(tid);
++        if (it != termini.end())
++        {
++            // the terminus has been discovered before
++            co_return PLDM_SUCCESS;
++        }
++    }
++    /* Discovery the mapped terminus */
 +    uint64_t supportedTypes = 0;
 +    rc = co_await getPLDMTypes(tid, supportedTypes);
 +    if (rc)
@@ -935,10 +982,10 @@ index 0000000..980bc9b
 +} // namespace pldm
 diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
 new file mode 100644
-index 0000000..7df8d15
+index 0000000..9722c5d
 --- /dev/null
 +++ b/platform-mc/terminus_manager.hpp
-@@ -0,0 +1,166 @@
+@@ -0,0 +1,173 @@
 +#pragma once
 +
 +#include "config.h"
@@ -1064,6 +1111,13 @@ index 0000000..7df8d15
 +     *  @return coroutine return_value - PLDM completion code
 +     */
 +    requester::Coroutine getTidOverMctp(mctp_eid_t eid, tid_t* tid);
++
++    /** @brief Find the terminus object pointer in termini list.
++     *
++     *  @param[in] mctpInfos - information of removed MCTP endpoints
++     */
++    std::map<tid_t, std::shared_ptr<Terminus>>::iterator
++        findTeminusPtr(const MctpInfo& mctpInfo);
 +
 +    /** @brief Send setTID command to destination EID.
 +     *
@@ -1226,7 +1280,7 @@ index 0000000..1f65eef
 +} // namespace pldm
 diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
 new file mode 100644
-index 0000000..10b9afa
+index 0000000..b77a197
 --- /dev/null
 +++ b/platform-mc/test/terminus_manager_test.cpp
 @@ -0,0 +1,241 @@
@@ -1261,13 +1315,13 @@ index 0000000..10b9afa
 +    TerminusManagerTest() :
 +        bus(pldm::utils::DBusHandler::getBus()),
 +        event(sdeventplus::Event::get_default()), instanceIdDb(),
-+        reqHandler(fd, event, instanceIdDb, false, 90000, seconds(1), 2,
++        reqHandler(pldmTransport, event, instanceIdDb, false, seconds(1), 2,
 +                   milliseconds(100)),
 +        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
 +        mockTerminusManager(event, reqHandler, instanceIdDb, termini, nullptr)
 +    {}
 +
-+    int fd = -1;
++    PldmTransport* pldmTransport = nullptr;
 +    sdbusplus::bus_t& bus;
 +    sdeventplus::Event event;
 +    TestInstanceIdDb instanceIdDb;

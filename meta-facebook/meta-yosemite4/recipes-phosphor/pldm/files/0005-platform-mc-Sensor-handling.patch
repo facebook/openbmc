@@ -1,4 +1,4 @@
-From 1e53aa0e1134e360751dc7506931aa2385c065d9 Mon Sep 17 00:00:00 2001
+From 95c7bb3f0bd3676f86dcfe7f4ef04c16bb4a4686 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
 Subject: [PATCH 5/6] platform-mc: Sensor handling
@@ -11,6 +11,7 @@ tested: Verified on ast2600 EVB which is connected to a PLDM device
 over I2C. bmcweb can display the state of numeric sensor.
 
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
+Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
 ---
  meson.build                                |   4 +
@@ -23,14 +24,14 @@ Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
  platform-mc/sensor_manager.hpp             | 105 ++++
  platform-mc/terminus.cpp                   |  98 +++-
  platform-mc/terminus.hpp                   |  19 +-
- platform-mc/terminus_manager.cpp           |  17 +
+ platform-mc/terminus_manager.cpp           |  18 +
  platform-mc/test/meson.build               |   4 +
  platform-mc/test/mock_sensor_manager.hpp   |  24 +
  platform-mc/test/numeric_sensor_test.cpp   | 274 +++++++++++
  platform-mc/test/platform_manager_test.cpp |   3 +
  platform-mc/test/sensor_manager_test.cpp   |  69 +++
  pldmd/pldmd.cpp                            |   2 +-
- 17 files changed, 1757 insertions(+), 4 deletions(-)
+ 17 files changed, 1758 insertions(+), 4 deletions(-)
  create mode 100644 platform-mc/examples/pldm_t2_config.json
  create mode 100644 platform-mc/numeric_sensor.cpp
  create mode 100644 platform-mc/numeric_sensor.hpp
@@ -1577,10 +1578,10 @@ index 0d4f58c..9e3d36e 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 980bc9b..9b4679d 100644
+index 70293c8..90d73d6 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -117,6 +117,7 @@ void TerminusManager::discoverMctpTerminus(const MctpInfos& mctpInfos)
+@@ -143,6 +143,7 @@ std::map<tid_t, std::shared_ptr<Terminus>>::iterator
  
  requester::Coroutine TerminusManager::discoverMctpTerminusTask()
  {
@@ -1588,7 +1589,7 @@ index 980bc9b..9b4679d 100644
      while (!queuedMctpInfos.empty())
      {
          if (manager)
-@@ -147,11 +148,23 @@ requester::Coroutine TerminusManager::discoverMctpTerminusTask()
+@@ -158,11 +159,23 @@ requester::Coroutine TerminusManager::discoverMctpTerminusTask()
              {
                  co_await initMctpTerminus(mctpInfo);
              }
@@ -1612,17 +1613,18 @@ index 980bc9b..9b4679d 100644
          }
  
          queuedMctpInfos.pop();
-@@ -175,6 +188,10 @@ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
-                 (std::get<3>(terminusMctpInfo.value()) ==
-                  std::get<3>(mctpInfo)))
-             {
-+                if (manager)
-+                {
-+                    manager->stopSensorPolling(it->second->getTid());
-+                }
-                 unmapTid(it->first);
-                 termini.erase(it);
-                 break;
+@@ -182,6 +195,11 @@ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
+             continue;
+         }
+ 
++        if (manager)
++        {
++            manager->stopSensorPolling(it->second->getTid());
++        }
++
+         unmapTid(it->first);
+         termini.erase(it);
+     }
 diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
 index 3403753..5e757c1 100644
 --- a/platform-mc/test/meson.build
@@ -1956,7 +1958,7 @@ index 0000000..23fe73f
 +    EXPECT_EQ(false, lowAlarm);
 +}
 diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
-index 47aa1ab..bc4f708 100644
+index de0b4c6..6dbfa0c 100644
 --- a/platform-mc/test/platform_manager_test.cpp
 +++ b/platform-mc/test/platform_manager_test.cpp
 @@ -139,6 +139,7 @@ TEST_F(PlatformManagerTest, initTerminusTest)
@@ -1983,7 +1985,7 @@ index 47aa1ab..bc4f708 100644
  }
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
 new file mode 100644
-index 0000000..9923d23
+index 0000000..56e1d36
 --- /dev/null
 +++ b/platform-mc/test/sensor_manager_test.cpp
 @@ -0,0 +1,69 @@
@@ -2009,7 +2011,7 @@ index 0000000..9923d23
 +    SensorManagerTest() :
 +        bus(pldm::utils::DBusHandler::getBus()),
 +        event(sdeventplus::Event::get_default()), instanceIdDb(),
-+        reqHandler(fd, event, instanceIdDb, 1000, false),
++        reqHandler(pldmTransport, event, instanceIdDb, false),
 +        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
 +        sensorManager(event, terminusManager, termini)
 +    {}
@@ -2032,7 +2034,7 @@ index 0000000..9923d23
 +        } while (elapsed < usec);
 +    }
 +
-+    int fd = -1;
++    PldmTransport* pldmTransport = nullptr;
 +    sdbusplus::bus::bus& bus;
 +    sdeventplus::Event event;
 +    TestInstanceIdDb instanceIdDb;

@@ -1,4 +1,4 @@
-From 2341f8bba80d6f2267ec9ddc2c1deebd8c1ec4c7 Mon Sep 17 00:00:00 2001
+From d5de56ee447a6116d3bcddc841f3500ef34dbc23 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 6/6] platform-mc: Added EventManager
@@ -10,6 +10,7 @@ supports to receive event asynchronously and polls all event
 synchronously if terminus sends pldmMessagePollEvent.
 
 Change-Id: I1b337ccae454067841ffbbd8754631216a995542
+Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
 ---
  libpldmresponder/platform.cpp              |   9 +-
@@ -1326,7 +1327,7 @@ index 9e3d36e..0aa3c92 100644
      std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
  
 diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
-index 7df8d15..0e2ca6b 100644
+index 9722c5d..15d643b 100644
 --- a/platform-mc/terminus_manager.hpp
 +++ b/platform-mc/terminus_manager.hpp
 @@ -44,10 +44,11 @@ class TerminusManager
@@ -1359,7 +1360,7 @@ index 7df8d15..0e2ca6b 100644
    private:
      /** @brief The coroutine task execute by discoverMctpTerminus()
       *
-@@ -148,6 +158,9 @@ class TerminusManager
+@@ -155,6 +165,9 @@ class TerminusManager
      /** @brief Managed termini list */
      std::map<tid_t, std::shared_ptr<Terminus>>& termini;
  
@@ -1371,7 +1372,7 @@ index 7df8d15..0e2ca6b 100644
      std::map<tid_t, SupportedTransportLayer> transportLayerTable;
 diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
 new file mode 100644
-index 0000000..511aea8
+index 0000000..a3bc204
 --- /dev/null
 +++ b/platform-mc/test/event_manager_test.cpp
 @@ -0,0 +1,418 @@
@@ -1400,14 +1401,14 @@ index 0000000..511aea8
 +    EventManagerTest() :
 +        bus(pldm::utils::DBusHandler::getBus()),
 +        event(sdeventplus::Event::get_default()), instanceIdDb(),
-+        reqHandler(fd, event, instanceIdDb, false, 90000, seconds(1), 2,
++        reqHandler(pldmTransport, event, instanceIdDb, false, seconds(1), 2,
 +                   milliseconds(100)),
 +        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
 +        eventManager(terminusManager, termini),
 +        platformManager(terminusManager, termini)
 +    {}
 +
-+    int fd = -1;
++    PldmTransport* pldmTransport = nullptr;
 +    sdbusplus::bus::bus& bus;
 +    sdeventplus::Event event;
 +    TestInstanceIdDb instanceIdDb;
@@ -1879,7 +1880,7 @@ index 1f65eef..917f724 100644
  
      requester::Coroutine SendRecvPldmMsgOverMctp(mctp_eid_t /*eid*/,
 diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
-index bc4f708..93105a0 100644
+index 6dbfa0c..eed03a2 100644
 --- a/platform-mc/test/platform_manager_test.cpp
 +++ b/platform-mc/test/platform_manager_test.cpp
 @@ -41,6 +41,25 @@ TEST_F(PlatformManagerTest, initTerminusTest)
@@ -1918,13 +1919,13 @@ index bc4f708..93105a0 100644
          sizeof(getPDRRepositoryInfoResp));
      EXPECT_EQ(rc, PLDM_SUCCESS);
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
-index 9923d23..5ac2332 100644
+index 56e1d36..2dc606b 100644
 --- a/platform-mc/test/sensor_manager_test.cpp
 +++ b/platform-mc/test/sensor_manager_test.cpp
 @@ -21,8 +21,8 @@ class SensorManagerTest : public testing::Test
          bus(pldm::utils::DBusHandler::getBus()),
          event(sdeventplus::Event::get_default()), instanceIdDb(),
-         reqHandler(fd, event, instanceIdDb, 1000, false),
+         reqHandler(pldmTransport, event, instanceIdDb, false),
 -        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
 -        sensorManager(event, terminusManager, termini)
 +        terminusManager(event, reqHandler, instanceIdDb, termini, 0x0, nullptr),
@@ -1933,12 +1934,12 @@ index 9923d23..5ac2332 100644
  
      void runEventLoopForSeconds(uint64_t sec)
 diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
-index 10b9afa..c5f5e99 100644
+index b77a197..2fb3f1e 100644
 --- a/platform-mc/test/terminus_manager_test.cpp
 +++ b/platform-mc/test/terminus_manager_test.cpp
 @@ -31,7 +31,7 @@ class TerminusManagerTest : public testing::Test
          event(sdeventplus::Event::get_default()), instanceIdDb(),
-         reqHandler(fd, event, instanceIdDb, false, 90000, seconds(1), 2,
+         reqHandler(pldmTransport, event, instanceIdDb, false, seconds(1), 2,
                     milliseconds(100)),
 -        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
 +        terminusManager(event, reqHandler, instanceIdDb, termini, 0x0, nullptr),

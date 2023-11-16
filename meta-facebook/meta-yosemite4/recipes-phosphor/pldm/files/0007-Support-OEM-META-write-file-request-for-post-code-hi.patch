@@ -1,4 +1,4 @@
-From e2c81ea0875d9f2b264e89e49231b822a7c2381e Mon Sep 17 00:00:00 2001
+From eedaf23a6724cef4904391208db4206ea8533ac7 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH] Support OEM-META write file request for post code history
@@ -13,38 +13,27 @@ Summary:
 Change-Id: I56d303a5bc2f059451ee207a1de591be0d9993ac
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- common/utils.hpp                      |   3 +-
- libpldmresponder/meson.build          |   9 ++
- meson.build                           |   4 +
- meson.options                         |   8 ++
- oem/meta/libpldmresponder/file_io.cpp | 142 ++++++++++++++++++++++++++
- oem/meta/libpldmresponder/file_io.hpp |  50 +++++++++
- pldmd/handler.hpp                     |  11 ++
- pldmd/invoker.hpp                     |   7 +-
- pldmd/pldmd.cpp                       |  10 +-
- 9 files changed, 240 insertions(+), 4 deletions(-)
+ libpldmresponder/meson.build                  |  10 ++
+ meson.build                                   |   4 +
+ meson.options                                 |   8 ++
+ oem/meta/libpldmresponder/file_io.cpp         | 104 ++++++++++++++++++
+ oem/meta/libpldmresponder/file_io.hpp         |  59 ++++++++++
+ .../file_io_type_post_code.cpp                |  63 +++++++++++
+ .../file_io_type_post_code.hpp                |  18 +++
+ pldmd/handler.hpp                             |  11 ++
+ pldmd/invoker.hpp                             |   7 +-
+ pldmd/pldmd.cpp                               |  10 +-
+ 10 files changed, 291 insertions(+), 3 deletions(-)
  create mode 100644 oem/meta/libpldmresponder/file_io.cpp
  create mode 100644 oem/meta/libpldmresponder/file_io.hpp
+ create mode 100644 oem/meta/libpldmresponder/file_io_type_post_code.cpp
+ create mode 100644 oem/meta/libpldmresponder/file_io_type_post_code.hpp
 
-diff --git a/common/utils.hpp b/common/utils.hpp
-index 73e10eb..96eba9d 100644
---- a/common/utils.hpp
-+++ b/common/utils.hpp
-@@ -178,7 +178,8 @@ struct DBusMapping
- 
- using PropertyValue =
-     std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
--                 uint64_t, double, std::string, std::vector<std::string>>;
-+                 uint64_t, double, std::string, std::vector<std::string>,
-+                 std::vector<uint64_t>>;
- using DbusProp = std::string;
- using DbusChangedProps = std::map<DbusProp, PropertyValue>;
- using DBusInterfaceAdded = std::vector<
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 7de2cf2..593f0ed 100644
+index 7de2cf29bb..517c29df89 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -54,6 +54,15 @@ if get_option('oem-ibm').enabled()
+@@ -54,6 +54,16 @@ if get_option('oem-ibm').enabled()
    ]
  endif
  
@@ -54,6 +43,7 @@ index 7de2cf2..593f0ed 100644
 +   ]
 +  sources += [
 +    '../oem/meta/libpldmresponder/file_io.cpp',
++    '../oem/meta/libpldmresponder/file_io_type_post_code.cpp',
 +  ]
 +endif
 +
@@ -61,7 +51,7 @@ index 7de2cf2..593f0ed 100644
    'pldmresponder',
    sources,
 diff --git a/meson.build b/meson.build
-index 9c2297a..85d5a65 100644
+index 310f98717b..239e2445b0 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -59,6 +59,10 @@ if get_option('oem-ibm').enabled()
@@ -76,7 +66,7 @@ index 9c2297a..85d5a65 100644
  conf_data.set('INSTANCE_ID_EXPIRATION_INTERVAL',get_option('instance-id-expiration-interval'))
  conf_data.set('RESPONSE_TIME_OUT',get_option('response-time-out'))
 diff --git a/meson.options b/meson.options
-index 7acc3a7..112a666 100644
+index b11c0fb037..00a591626b 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -40,6 +40,14 @@ option(
@@ -88,7 +78,7 @@ index 7acc3a7..112a666 100644
 +    'oem-meta',
 +    type: 'feature',
 +    value: 'enabled',
-+    description: 'Enable META OEM PLDM'
++    description: 'Enable Meta OEM PLDM'
 +)
 +
  # As per PLDM spec DSP0240 version 1.1.0, in Timing Specification for PLDM messages (Table 6),
@@ -96,35 +86,37 @@ index 7acc3a7..112a666 100644
  # received within a maximum of 6 seconds after a request is sent. By setting the dbus timeout
 diff --git a/oem/meta/libpldmresponder/file_io.cpp b/oem/meta/libpldmresponder/file_io.cpp
 new file mode 100644
-index 0000000..bca5ad6
+index 0000000000..78f897853d
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/file_io.cpp
-@@ -0,0 +1,142 @@
+@@ -0,0 +1,104 @@
 +#include "file_io.hpp"
 +
++#include "file_io_type_post_code.hpp"
 +#include "xyz/openbmc_project/Common/error.hpp"
 +
-+#include <phosphor-logging/lg2.hpp>
++#include <libpldm/oem/meta/file_io.h>
 +
-+PHOSPHOR_LOG2_USING;
++#include <filesystem>
 +
 +namespace pldm
 +{
-+using namespace sdbusplus::xyz::openbmc_project::Common::Error;
-+
 +namespace responder
 +{
++
 +namespace oem_meta
 +{
 +
-+static std::map<uint8_t, char> tidToSlopMap;
++using namespace sdbusplus::xyz::openbmc_project::Common::Error;
++
++static constexpr auto mctpEndpointInterface =
++    "xyz.openbmc_project.Configuration.MCTPEndpoint";
 +
 +int setupTidToSlotMappingTable()
 +{
 +    static constexpr auto searchpath = "/xyz/openbmc_project/";
 +    int depth = 0;
-+    std::vector<std::string> mctpInterface = {
-+        "xyz.openbmc_project.Configuration.MctpDevice"};
++    std::vector<std::string> mctpInterface = {mctpEndpointInterface};
 +    pldm::utils::GetSubTreeResponse response;
 +    try
 +    {
@@ -134,53 +126,175 @@ index 0000000..bca5ad6
 +    catch (const sdbusplus::exception_t& e)
 +    {
 +        error(
-+            " getSubtree call failed with, ERROR={ERROR} PATH={PATH} INTERFACE={INTERFACE}",
-+            "ERROR", e.what(), "PATH", searchpath, "INTERFACE",
-+            mctpInterface[0]);
++            "getSubtree call failed with, ERROR={ERROR} PATH={PATH} INTERFACE={INTERFACE}",
++            "ERROR", e, "PATH", searchpath, "INTERFACE", mctpEndpointInterface);
 +        return PLDM_ERROR;
 +    }
 +
-+    static constexpr auto endpointIdsProperty = "EndpointIds";
++    static constexpr auto endpointIdsProperty = "EndpointId";
 +
 +    for (const auto& [objectPath, serviceMap] : response)
 +    {
-+        char slotNum = objectPath.back();
++        // Split the objectPath to get the correspond slot.
++        // e.g Yosemite_4_Wailua_Falls_Slot3/BIC;
++        int slotNum = std::filesystem::path(objectPath.c_str())
++                          .parent_path()
++                          .string()
++                          .back() -
++                      '0';
 +
 +        try
 +        {
-+            auto value = pldm::utils::DBusHandler()
-+                             .getDbusProperty<std::vector<uint64_t>>(
-+                                 objectPath.c_str(), endpointIdsProperty,
-+                                 mctpInterface[0].c_str());
++            auto value = pldm::utils::DBusHandler().getDbusProperty<uint64_t>(
++                objectPath.c_str(), endpointIdsProperty, mctpEndpointInterface);
 +
-+            std::for_each(value.cbegin(), value.cend(), [&](auto& v) {
-+                tidToSlopMap.insert({v, slotNum});
-+            });
++            tidToSlotMap.insert({value, slotNum});
 +        }
 +        catch (const sdbusplus::exception_t& e)
 +        {
 +            error(
-+                " Error getting Names property, ERROR={ERROR} PATH={PATH} INTERFACE={INTERFACE}",
-+                "ERROR", e.what(), "PATH", searchpath, "INTERFACE",
-+                mctpInterface[0]);
++                "Error getting Names property, ERROR={ERROR} PATH={PATH} INTERFACE={INTERFACE}",
++                "ERROR", e, "PATH", searchpath, "INTERFACE",
++                mctpEndpointInterface);
 +            return PLDM_ERROR;
 +        }
 +    }
++
 +    return PLDM_SUCCESS;
 +}
 +
-+int postCodeHandler(char slot, std::vector<uint8_t>& postCodeList)
++Response Handler::writeFileIO(const pldm_msg* request, size_t payloadLength)
++{
++    uint8_t fileIOType;
++    uint32_t length;
++
++    std::array<uint8_t, decodeDataMaxLength> retDataField{};
++
++    auto rc = decode_oem_meta_file_io_req(request, payloadLength, &fileIOType,
++                                          &length, retDataField.data());
++
++    if (rc != PLDM_SUCCESS)
++    {
++        return ccOnlyResponse(request, rc);
++    }
++
++    switch (fileIOType)
++    {
++        case POST_CODE:
++            rc = postCodeHandler(tidToSlotMap[this->getTID()], retDataField,
++                                 length);
++            break;
++        default:
++            rc = PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
++    }
++
++    return ccOnlyResponse(request, rc);
++}
++} // namespace oem_meta
++
++} // namespace responder
++} // namespace pldm
+diff --git a/oem/meta/libpldmresponder/file_io.hpp b/oem/meta/libpldmresponder/file_io.hpp
+new file mode 100644
+index 0000000000..a70b36794f
+--- /dev/null
++++ b/oem/meta/libpldmresponder/file_io.hpp
+@@ -0,0 +1,59 @@
++#pragma once
++
++#include "common/utils.hpp"
++#include "pldmd/handler.hpp"
++
++#include <libpldm/oem/meta/file_io.h>
++
++#include <phosphor-logging/lg2.hpp>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm
++{
++namespace responder
++{
++namespace oem_meta
++{
++
++static std::map<uint8_t, int> tidToSlotMap;
++
++constexpr auto decodeDataMaxLength = 32;
++
++enum pldm_oem_meta_file_io_type : uint8_t
++{
++    POST_CODE = 0x00,
++};
++
++int setupTidToSlotMappingTable();
++
++class Handler : public CmdHandler
++{
++  public:
++    Handler()
++    {
++        handlers.emplace(OEM_META_PLDM_WRITE_FILE,
++                         [this](const pldm_msg* request, size_t payloadLength) {
++            return this->writeFileIO(request, payloadLength);
++        });
++
++        if (setupTidToSlotMappingTable() != PLDM_SUCCESS)
++        {
++            error("Fail to setup tid to slot mapping table");
++        }
++    }
++
++  private:
++    /** @brief Handler for writeFileIO command
++     *
++     *  @param[in] request - pointer to PLDM request payload
++     *  @param[in] payloadLength - length of the message
++     *
++     *  @return PLDM response message
++     */
++    Response writeFileIO(const pldm_msg* request, size_t payloadLength);
++};
++
++} // namespace oem_meta
++} // namespace responder
++} // namespace pldm
+diff --git a/oem/meta/libpldmresponder/file_io_type_post_code.cpp b/oem/meta/libpldmresponder/file_io_type_post_code.cpp
+new file mode 100644
+index 0000000000..0342f4807a
+--- /dev/null
++++ b/oem/meta/libpldmresponder/file_io_type_post_code.cpp
+@@ -0,0 +1,63 @@
++#include "file_io_type_post_code.hpp"
++
++// #include <filesystem>
++
++namespace pldm
++{
++namespace responder
++{
++
++namespace oem_meta
++{
++
++using postcode_t = std::tuple<uint64_t, std::vector<uint8_t>>;
++
++int postCodeHandler(
++    int slot, const std::array<uint8_t, decodeDataMaxLength>& retDataField,
++    uint32_t length)
 +{
 +    static constexpr auto dbusService = "xyz.openbmc_project.State.Boot.Raw";
-+    static const std::string dbusObj = "/xyz/openbmc_project/state/boot/raw";
++    static constexpr auto dbusObj = "/xyz/openbmc_project/state/boot/raw";
 +
-+    std::string dbusObjStr = dbusObj + slot;
-+
-+    using postcode_t = std::tuple<uint64_t, std::vector<uint8_t>>;
++    std::string dbusObjStr = dbusObj + std::to_string(slot);
 +
 +    uint64_t primaryPostCode = 0;
 +
++    std::vector<uint8_t> postCodeList(retDataField.begin(),
++                                      retDataField.begin() + length);
++
 +    // Putting list of the bytes together to form a meaningful postcode
++    // AMD platform send four bytes as a post code unit
 +    size_t index = 0;
 +    std::for_each(postCodeList.begin(), postCodeList.end(),
 +                  [&primaryPostCode, &index](uint8_t postcode) {
@@ -203,62 +317,26 @@ index 0000000..bca5ad6
 +    }
 +    catch (const std::exception& e)
 +    {
-+        error("Set Post code error. ERROR={ERROR}", "ERROR", e.what());
++        error("Set Post code error. ERROR={ERROR}", "ERROR", e);
 +        return PLDM_ERROR;
 +    }
 +
 +    return PLDM_SUCCESS;
 +}
 +
-+Response Handler::writeFileIO(const pldm_msg* request, size_t payloadLength)
-+{
-+    uint8_t fileIOType;
-+    uint32_t length;
-+    struct variable_field data;
-+
-+    auto rc = decode_write_file_io_req(request, payloadLength, &fileIOType,
-+                                       &length, &data);
-+
-+    if (rc != PLDM_SUCCESS)
-+    {
-+        return ccOnlyResponse(request, rc);
-+    }
-+
-+    if (fileIOType == POST_CODE)
-+    {
-+        std::vector<uint8_t> postCodeList(data.ptr, data.ptr + data.length);
-+
-+        rc = postCodeHandler(tidToSlopMap[this->getTID()], postCodeList);
-+
-+        if (rc != PLDM_SUCCESS)
-+        {
-+            return ccOnlyResponse(request, rc);
-+        }
-+    }
-+
-+    return ccOnlyResponse(request, rc);
-+}
 +} // namespace oem_meta
 +
 +} // namespace responder
 +} // namespace pldm
-diff --git a/oem/meta/libpldmresponder/file_io.hpp b/oem/meta/libpldmresponder/file_io.hpp
+diff --git a/oem/meta/libpldmresponder/file_io_type_post_code.hpp b/oem/meta/libpldmresponder/file_io_type_post_code.hpp
 new file mode 100644
-index 0000000..0dd0dbd
+index 0000000000..2058fe5a76
 --- /dev/null
-+++ b/oem/meta/libpldmresponder/file_io.hpp
-@@ -0,0 +1,50 @@
++++ b/oem/meta/libpldmresponder/file_io_type_post_code.hpp
+@@ -0,0 +1,18 @@
 +#pragma once
 +
-+#include "common/utils.hpp"
-+#include "pldmd/handler.hpp"
-+#include "requester/handler.hpp"
-+
-+#include <libpldm/file_io.h>
-+
-+#include <phosphor-logging/lg2.hpp>
-+
-+PHOSPHOR_LOG2_USING;
++#include "file_io.hpp"
 +
 +namespace pldm
 +{
@@ -267,39 +345,15 @@ index 0000000..0dd0dbd
 +namespace oem_meta
 +{
 +
-+int setupTidToSlotMappingTable();
-+
-+class Handler : public CmdHandler
-+{
-+  public:
-+    Handler()
-+    {
-+        handlers.emplace(PLDM_WRITE_FILE,
-+                         [this](const pldm_msg* request, size_t payloadLength) {
-+            return this->writeFileIO(request, payloadLength);
-+        });
-+
-+        if (setupTidToSlotMappingTable() != PLDM_SUCCESS)
-+        {
-+            error("Fail to setup tid to slot mapping table");
-+        }
-+    }
-+
-+    /** @brief Handler for writeFileIO command
-+     *
-+     *  @param[in] request - pointer to PLDM request payload
-+     *  @param[in] payloadLength - length of the message
-+     *
-+     *  @return PLDM response message
-+     */
-+    Response writeFileIO(const pldm_msg* request, size_t payloadLength);
-+};
++int postCodeHandler(
++    int slot, const std::array<uint8_t, decodeDataMaxLength>& retDataField,
++    uint32_t length);
 +
 +} // namespace oem_meta
 +} // namespace responder
 +} // namespace pldm
 diff --git a/pldmd/handler.hpp b/pldmd/handler.hpp
-index cfa95eb..c5ebd65 100644
+index cfa95ebba2..0cd14bad88 100644
 --- a/pldmd/handler.hpp
 +++ b/pldmd/handler.hpp
 @@ -55,11 +55,22 @@ class CmdHandler
@@ -321,12 +375,12 @@ index cfa95eb..c5ebd65 100644
       *         classes.
       */
      std::map<Command, HandlerFunc> handlers;
-+    uint8_t tid;
++    uint8_t tid = 0;
  };
  
  } // namespace responder
 diff --git a/pldmd/invoker.hpp b/pldmd/invoker.hpp
-index 9903e7f..094eaf1 100644
+index 9903e7fc23..094eaf11e5 100644
 --- a/pldmd/invoker.hpp
 +++ b/pldmd/invoker.hpp
 @@ -30,15 +30,18 @@ class Invoker
@@ -351,10 +405,10 @@ index 9903e7f..094eaf1 100644
      }
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 32f6810..56c5261 100644
+index 23499e473b..b78db97ee5 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -66,6 +66,10 @@ PHOSPHOR_LOG2_USING;
+@@ -65,6 +65,10 @@ PHOSPHOR_LOG2_USING;
  #include "libpldmresponder/oem_ibm_handler.hpp"
  #endif
  
@@ -365,7 +419,7 @@ index 32f6810..56c5261 100644
  constexpr uint8_t MCTP_MSG_TYPE_PLDM = 1;
  
  using namespace pldm;
-@@ -108,7 +112,7 @@ static std::optional<Response>
+@@ -107,7 +111,7 @@ static std::optional<Response>
          {
              if (hdrFields.pldm_type != PLDM_FWUP)
              {
@@ -374,7 +428,7 @@ index 32f6810..56c5261 100644
                                            hdrFields.command, request,
                                            requestLen);
              }
-@@ -261,6 +265,10 @@ int main(int argc, char** argv)
+@@ -260,6 +264,10 @@ int main(int argc, char** argv)
      oemBiosHandler = std::make_unique<oem::ibm::bios::Handler>(&dbusHandler);
  #endif
  
@@ -386,5 +440,5 @@ index 32f6810..56c5261 100644
          pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
          oemBiosHandler.get());
 -- 
-2.25.1
+2.39.3
 

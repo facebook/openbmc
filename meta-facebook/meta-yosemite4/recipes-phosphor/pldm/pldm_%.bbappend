@@ -5,8 +5,8 @@ EXTRA_OEMESON:append = " -Dtransport-implementation=af-mctp -Dmaximum-transfer-s
 SRC_URI += " \
     file://host_eid \
     file://0001-requester-Modified-MctpDiscovery-class.patch \
-    file://0002-requester-Added-coroutine-support-to-send-recv-PLDM-.patch \
-    file://0003-platform-mc-Added-TerminusManager-and-Terminus-class.patch \
+    file://0002-requester-Added-coroutine-APIs.patch \
+    file://0003-platform-mc-Added-Terminus-TerminusManager-class.patch \
     file://0004-platform-mc-PDR-handling.patch \
     file://0005-platform-mc-Sensor-handling.patch \
     file://0006-platform-mc-Added-EventManager.patch \

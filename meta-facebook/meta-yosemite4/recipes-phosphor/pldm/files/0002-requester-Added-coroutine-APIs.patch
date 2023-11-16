@@ -1,8 +1,7 @@
-From 34a3d9bd53c68d0d2ddd69699a919920fab88127 Mon Sep 17 00:00:00 2001
+From a043d460a299363f3d36b71438abe655058d2fba Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Sun, 29 May 2022 18:44:19 +0100
-Subject: [PATCH 2/6] requester: Added coroutine support to send/recv PLDM
- command
+Subject: [PATCH 2/6] requester: Added coroutine APIs
 
 Added Coroutine struct and SendRecvPldmMsg awaiter struct to send PLDM
 command and receive response in the same function instead of handling
@@ -26,11 +25,6 @@ do
     dataTransferHndl = nextDataTransferHndl;
 
 } while(...);
-
-Tested:
-1. Test the patch set series with the system with 2 mctp endpoints.
-2. pldmd successfully discovers the endpoints.
-3. The PLDM sensors are updated normally.
 
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
 Change-Id: I7b47d15ac15f6ae661ec94dca6a281844b939a44
@@ -303,7 +297,7 @@ index 02c5d02..b358d82 100644
  
  } // namespace pldm
 diff --git a/requester/test/handler_test.cpp b/requester/test/handler_test.cpp
-index 3b003a0..d095a47 100644
+index 3b003a0..a61fd49 100644
 --- a/requester/test/handler_test.cpp
 +++ b/requester/test/handler_test.cpp
 @@ -150,3 +150,53 @@ TEST_F(HandlerTest, multipleRequestResponseScenario)
@@ -334,7 +328,7 @@ index 3b003a0..d095a47 100644
 +
 +TEST_F(HandlerTest, requestResponseByCoroutine)
 +{
-+    Handler<MockRequest> reqHandler(fd, event, instanceIdDb, false, 90000,
++    Handler<MockRequest> reqHandler(pldmTransport, event, instanceIdDb, false,
 +                                    seconds(1), 2, milliseconds(100));
 +
 +    uint8_t respTid = 0;

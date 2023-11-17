@@ -21,8 +21,7 @@ IMAGE_INSTALL += " \
   fio \
   flashrom \
   ipmitool \
-  jam \
   kcsd \
-  show-tech \
   libcpldupdate-dll-ioctl \
+  show-tech \
   "

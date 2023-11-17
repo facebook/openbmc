@@ -1,8 +1,9 @@
 project('sensor-mon',
-    'c',
+    'cpp',
     version: '0.1',
     license: 'GPL2',
     default_options: [
+        'cpp_std=c++1z',
         'warning_level=3',
         'werror=true',
     ],
@@ -10,7 +11,7 @@ project('sensor-mon',
 )
 
 sources = [
-    'sensord.c',
+    'sensord.cpp',
 ]
 
 deps = [

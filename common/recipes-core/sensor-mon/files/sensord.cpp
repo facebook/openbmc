@@ -44,8 +44,8 @@
 #define MAX_ASSERT_CHECK_RETRY 1
 #define MAX_SENSORD_FRU MAX_NUM_FRUS
 
-static thresh_sensor_t g_snr[MAX_SENSORD_FRU][MAX_SENSOR_NUM + 1] = {0};
-static thresh_sensor_t g_aggregate_snr[MAX_SENSOR_NUM + 1] = {0};
+static thresh_sensor_t g_snr[MAX_SENSORD_FRU][MAX_SENSOR_NUM + 1]{};
+static thresh_sensor_t g_aggregate_snr[MAX_SENSOR_NUM + 1]{};
 static bool hotswap_support = false;
 
 static void
@@ -674,7 +674,7 @@ snr_monitor(void *arg) {
 
 
 static void *
-snr_health_monitor() {
+snr_health_monitor(void *) {
 
   int fru;
   thresh_sensor_t *snr;

@@ -20,13 +20,13 @@ DESCRIPTION = "Daemon for monitoring the sensors"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPL-2.0-or-later"
-LIC_FILES_CHKSUM = "file://sensord.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
+LIC_FILES_CHKSUM = "file://sensord.cpp;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
 
 inherit systemd
 
 LOCAL_URI = " \
     file://meson.build \
-    file://sensord.c \
+    file://sensord.cpp \
     file://sensord.service \
     file://setup-sensord.sh \
     file://run-sensord.sh \

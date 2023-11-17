@@ -46,8 +46,9 @@ std::string get_sensor_name(uint16_t id)
 std::string get_state_message(uint8_t offset, uint8_t state)
 {
   static const std::vector <std::vector<std::string>> eventstate_map = {
-    {"unknown", "present", "not present"}, // sensorOffset = 0: presentence
-    {"unknown", "normal",  "alert"},       // sensorOffset = 1: status
+    {"unknown", "present", "not present"},                  // sensorOffset = 0: presentence
+    {"unknown", "normal",  "alert"},                        // sensorOffset = 1: status
+    {"not power on yet", "power good",  "power good fail"}, // sensorOffset = 2: power status
   };
 
   if (offset >= eventstate_map.size())
@@ -77,6 +78,8 @@ std::string get_device_type(uint8_t type)
     {0x0E, "CB_P12V_ACCL10_MONITOR"},
     {0x0F, "CB_P12V_ACCL11_MONITOR"},
     {0x10, "CB_P12V_ACCL12_MONITOR"},
+    {0x11, "CB_PESW_0"},
+    {0x12, "CB_PESW_1"},
   };
 
   if (device_map.find(type) != device_map.end())
@@ -107,6 +110,28 @@ std::string get_event_type(uint8_t type)
     {0x03, "OVER_CURRENT"},
     {0x04, "UNDER_VOLTAGE"},
     {0x05, "OVER_TEMPERATURE"},
+    // Switch CCR system error
+    {0x06, "SYSTEM_ERROR"},
+    {0x07, "PEX_FATAL_ERROR"},
+    {0x08, "POR_BISR_TIMEOUT"},
+    {0x09, "FLASH_SIGNATURE_FAIL"},
+    {0x0A, "WATCHDOG_0_TIMEOUT_CPU_CORE_RESET"},
+    {0x0B, "WATCHDOG_0_TIMEOUT_SYSTEM_RESET"},
+    {0x0C, "WATCHDOG_1_TIMEOUT_CPU_CORE_RESET"},
+    {0x0D, "WATCHDOG_1_TIMEOUT_SYSTEM_RESET"},
+    {0x0E, "LOCAL_CPU_PARITY_ERROR"},
+    {0x0F, "SECURE_BOOT_FAIL"},
+    {0x10, "SBR_LOAD_FAIL"},
+    {0x11, "STATION_0_FATAL_ERROR"},
+    {0x12, "STATION_1_FATAL_ERROR"},
+    {0x13, "STATION_2_FATAL_ERROR"},
+    {0x14, "STATION_3_FATAL_ERROR"},
+    {0x15, "STATION_4_FATAL_ERROR"},
+    {0x16, "STATION_5_FATAL_ERROR"},
+    {0x17, "STATION_6_FATAL_ERROR"},
+    {0x18, "STATION_7_FATAL_ERROR"},
+    {0x19, "STATION_8_FATAL_ERROR"},
+    {0x1A, "PSB_STATION_FATAL_ERROR"},
   };
 
   if (event_map.find(type) != event_map.end())

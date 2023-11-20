@@ -21,6 +21,7 @@ PLATFORMS = [
     "halfdome",
     "inspirationpoint",
     "lightning",
+    "meru",
     "minipack",
     "montblanc",
     "northdome",

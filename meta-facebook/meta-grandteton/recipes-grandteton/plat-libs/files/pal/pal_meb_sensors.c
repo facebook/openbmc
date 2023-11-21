@@ -69,8 +69,8 @@ get_meb_hsc_sensor(uint8_t fru, uint8_t sensor_num, float *value)
 
 PAL_SENSOR_MAP meb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
-  {"Inlet_TEMP", 0, get_meb_sensor, false, {55, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
-  {"Outlet_TEMP", 0, get_meb_sensor, false, {85, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
+  {"INLET_TEMP", 0, get_meb_sensor, false, {55, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
+  {"OUTLET_TEMP", 0, get_meb_sensor, false, {85, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
   {"PU4_TEMP", 0, get_meb_hsc_sensor, false, {125, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x03
   {"P12V_AUX_VOLT", 0, get_meb_hsc_sensor, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0},  VOLT}, // 0x04
   {"P3V3_AUX_VOLT", 0, get_meb_sensor, false, {3.531, 0, 0, 3.07, 0, 0, 0, 0},  VOLT}, // 0x05
@@ -128,8 +128,8 @@ PAL_SENSOR_MAP meb_sensor_map[] = {
 
 PAL_SENSOR_MAP meb_clx_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
-  {"CXL Inlet TEMP", 0, get_meb_jcn_sensor, false, {50, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
-  {"CXL CTRL TEMP", 0, get_meb_jcn_sensor, false, {90, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
+  {"CXL_INLET_TEMP", 0, get_meb_jcn_sensor, false, {50, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
+  {"CXL_CTRL_TEMP", 0, get_meb_jcn_sensor, false, {90, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
   {"P12V_STBY_4CP_VOLT", 0, get_meb_jcn_sensor, true, {0, 13.125, 0, 0, 11.875, 0, 0, 0},  VOLT}, // 0x03
   {"P3V3_STBY_4CP_VOLT", 0, get_meb_jcn_sensor, true, {0, 3.465, 0, 0, 3.135, 0, 0, 0},  VOLT}, // 0x04
   {"P5V_STBY_VOLT", 0, get_meb_jcn_sensor, true, {5.625, 5.25, 6, 4.375, 4.75, 4, 0, 0},  VOLT}, // 0x05

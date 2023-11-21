@@ -2,7 +2,7 @@
   "version": "1.0",
   "sensors": [
     {
-      "name": "SYSTEM_POWER_W",
+      "name": "SYSTEM_POWER_PWR_W",
       "units": "Watts",
       "poll_interval": 1,
       "composition": {

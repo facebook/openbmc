@@ -8,8 +8,9 @@
 #include <openbmc/obmc-pal.h>
 #include "pal_def.h"
 #include "pal_common.h"
+#include "pal.h"
 
-#define LAST_KEY "last_key"
+#define LAST_ID 255
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
@@ -18,6 +19,15 @@ enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
 };
+
+typedef struct key_cfg {
+  uint8_t id;
+  char *name;
+  char *def_val;
+  int (*function)(int, void*);
+  bool enable;
+  uint32_t region;
+} KEY_CFG;
 
 typedef enum {
   SV_LAST_PWR_ST = 0,
@@ -41,18 +51,10 @@ typedef enum {
   SV_BOOT_ORDER,
   CPU0_PPIN,
   CPU1_PPIN,
-  NTP_SERVER,
-  LAST_ID = 255
+  NTP_SERVER
 } key_cfg_id;
 
-struct pal_key_cfg {
-  key_cfg_id id;
-  char *name;
-  char *def_val;
-  int (*function)(int, void*);
-  bool enable;
-  uint32_t region;
-} key_cfg[] = {
+KEY_CFG key_cfg[] = {
   /* name, default value, function */
   {SV_LAST_PWR_ST,      "pwr_server_last_state", "on",           key_func_lps,        true,  KV_FPERSIST},
   {SV_SYSFW_VER,        "fru1_sysfw_ver",        "0",            NULL,                true,  KV_FPERSIST},
@@ -77,17 +79,70 @@ struct pal_key_cfg {
   {CPU1_PPIN,           "cpu1_ppin",             "",             NULL,                true,  KV_FPERSIST},
   {NTP_SERVER,          "ntp_server",            "",             NULL,                true,  KV_FPERSIST},
   /* Add more Keys here */
-  {LAST_ID, LAST_KEY, LAST_KEY, NULL, true} /* This is the last key of the list */
+  {LAST_ID, NULL, NULL, NULL, true} /* This is the last key of the list */
+};
+
+typedef enum {
+  GTA_SV_LAST_PWR_ST = 0,
+  GTA_SV_SYSFW_VER,
+  GTA_SLED_IDENTIFY,
+  GTA_SLED_TIMESTAMP,
+  GTA_SV_POR_CFG,
+  GTA_SV_SNR_HEALTH,
+  GTA_CB_SNR_HEALTH,
+  GTA_MC_SNR_HEALTH,
+  GTA_NIC0_SNR_HEALTH,
+  GTA_NIC1_SNR_HEALTH,
+  GTA_VPDB_SNR_HEALTH,
+  GTA_HPDB_SNR_HEALTH,
+  GTA_FAN_BP1_SNR_HEALTH,
+  GTA_FAN_BP2_SNR_HEALTH,
+  GTA_SCM_SNR_HEALTH,
+  GTA_HSC_SNR_HEALTH,
+  GTA_SV_SEL_ERR,
+  GTA_SV_BOOT_ORDER,
+  GTA_CPU0_PPIN,
+  GTA_CPU1_PPIN,
+  GTA_NTP_SERVER
+} gta_key_cfg_id;
+
+KEY_CFG gta_key_cfg[] = {
+  /* name, default value, function */
+  {GTA_SV_LAST_PWR_ST,      "pwr_server_last_state", "on",           key_func_lps,        true,  KV_FPERSIST},
+  {GTA_SV_SYSFW_VER,        "fru1_sysfw_ver",        "0",            NULL,                true,  KV_FPERSIST},
+  {GTA_SLED_IDENTIFY,       "identify_sled",         "off",          NULL,                true,  KV_FPERSIST},
+  {GTA_SLED_TIMESTAMP,      "timestamp_sled",        "0",            NULL,                true,  KV_FPERSIST},
+  {GTA_SV_POR_CFG,          "server_por_cfg",        "on",           key_func_por_policy, true,  KV_FPERSIST},
+  {GTA_SV_SNR_HEALTH,       "server_sensor_health",  "1",            NULL,                true,  0},
+  {GTA_CB_SNR_HEALTH,       "cb_sensor_health",      "1",            NULL,                true,  0},
+  {GTA_MC_SNR_HEALTH,       "mc_sensor_health",      "1",            NULL,                true,  0},
+  {GTA_NIC0_SNR_HEALTH,     "nic0_sensor_health",    "1",            NULL,                true,  0},
+  {GTA_NIC1_SNR_HEALTH,     "nic1_sensor_health",    "1",            NULL,                true,  0},
+  {GTA_VPDB_SNR_HEALTH,     "vpdb_sensor_health",    "1",            NULL,                true,  0},
+  {GTA_HPDB_SNR_HEALTH,     "hpdb_sensor_health",    "1",            NULL,                true,  0},
+  {GTA_FAN_BP1_SNR_HEALTH,  "fan_bp1_sensor_health", "1",            NULL,                true,  0},
+  {GTA_FAN_BP2_SNR_HEALTH,  "fan_bp2_sensor_health", "1",            NULL,                true,  0},
+  {GTA_SCM_SNR_HEALTH,      "scm_sensor_health",     "1",            NULL,                true,  0},
+  {GTA_HSC_SNR_HEALTH,      "hsc_sensor_health",     "1",            NULL,                false, 0},
+  {GTA_SV_SEL_ERR,          "server_sel_error",      "1",            NULL,                true,  KV_FPERSIST},
+  {GTA_SV_BOOT_ORDER,       "server_boot_order",     "0100090203ff", NULL,                true,  KV_FPERSIST},
+  {GTA_CPU0_PPIN,           "cpu0_ppin",             "",             NULL,                true,  KV_FPERSIST},
+  {GTA_CPU1_PPIN,           "cpu1_ppin",             "",             NULL,                true,  KV_FPERSIST},
+  {GTA_NTP_SERVER,          "ntp_server",            "",             NULL,                true,  KV_FPERSIST},
+  /* Add more Keys here */
+  {LAST_ID, NULL, NULL, NULL, true} /* This is the last key of the list */
 };
 
 static int
-pal_key_index(char *key) {
-  int i;
+pal_key_index(char *key, KEY_CFG *key_table) {
+  int i = 0;
 
-  for (i = 0; key_cfg[i].id != LAST_ID; i++) {
-    // If Key is valid, return success
-    if (!strcmp(key, key_cfg[i].name))
+  while(key_table[i].name != NULL) {
+    if (!strncmp(key, key_table[i].name, strlen(key_table[i].name))) {
+     
       return i;
+    }
+    i++;
   }
 
 #ifdef DEBUG
@@ -100,27 +155,31 @@ int
 pal_get_key_value(char *key, char *value) {
   int index;
 
+  KEY_CFG *key_table = pal_is_artemis() ? gta_key_cfg : key_cfg;
+
   // Check is key is defined and valid
-  if ((index = pal_key_index(key)) < 0)
+  if ((index = pal_key_index(key, key_table)) < 0)
     return -1;
 
-  return kv_get(key, value, NULL, key_cfg[index].region);
+  return kv_get(key, value, NULL, key_table[index].region);
 }
 
 int
 pal_set_key_value(char *key, char *value) {
   int index, ret;
+  KEY_CFG *key_table = pal_is_artemis() ? gta_key_cfg : key_cfg;
+
   // Check is key is defined and valid
-  if ((index = pal_key_index(key)) < 0)
+  if ((index = pal_key_index(key, key_table)) < 0)
     return -1;
 
-  if (key_cfg[index].function) {
-    ret = key_cfg[index].function(KEY_BEFORE_SET, value);
+  if (key_table[index].function) {
+    ret = key_table[index].function(KEY_BEFORE_SET, value);
     if (ret < 0)
       return ret;
   }
 
-  return kv_set(key, value, 0, key_cfg[index].region);
+  return kv_set(key, value, 0, key_table[index].region);
 }
 
 static int
@@ -151,16 +210,18 @@ key_func_lps(int event, void *arg) {
 
 int
 pal_set_def_key_value(void) {
-  int i;
+  int i = 0;
   char key[MAX_KEY_LEN] = {0};
+  KEY_CFG *key_table = pal_is_artemis() ? gta_key_cfg : key_cfg;
 
-  for (i = 0; key_cfg[i].id != LAST_ID; i++) {
-    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | key_cfg[i].region)) {
+  while(key_table[i].name != NULL) {
+    if (kv_set(key_table[i].name, key_table[i].def_val, 0, KV_FCREATE | key_table[i].region)) {
       syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
     }
-    if (key_cfg[i].function) {
-      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
+    if (key_table[i].function) {
+      key_table[i].function(KEY_AFTER_INI, key_table[i].name);
     }
+    i++;
   }
 
   /* Actions to be taken on Power On Reset */
@@ -324,24 +385,28 @@ pal_get_syscfg_text(char *text) {
 
 void
 pal_dump_key_value(void) {
-  int i;
+  int i = 0;
   char value[MAX_VALUE_LEN];
+  KEY_CFG *key_table = pal_is_artemis() ? gta_key_cfg : key_cfg;
 
-  if(is_mb_hsc_module())
-    key_cfg[HSC_SNR_HEALTH].enable = true;
+  if (!pal_is_artemis()) {
+    if(is_mb_hsc_module())
+      key_table[HSC_SNR_HEALTH].enable = true;
 
-  if(is_swb_hsc_module())
-    key_cfg[SHSC_SNR_HEALTH].enable = true;
+    if(is_swb_hsc_module())
+      key_table[SHSC_SNR_HEALTH].enable = true;
+  }
 
-  for (i = 0; key_cfg[i].id != LAST_ID; i++) {
-    if (key_cfg[i].enable) {
-      printf("%s:", key_cfg[i].name);
+  while(key_table[i].name != NULL) {
+    if (key_table[i].enable) {
+      printf("%s:", key_table[i].name);
       memset(value, 0, sizeof(value));
-      if (kv_get(key_cfg[i].name, value, NULL, key_cfg[i].region) < 0) {
+      if (kv_get(key_table[i].name, value, NULL, key_table[i].region) < 0) {
         printf("\n");
       } else {
         printf("%s\n", value);
       }
     }
+    i++;
   }
 }

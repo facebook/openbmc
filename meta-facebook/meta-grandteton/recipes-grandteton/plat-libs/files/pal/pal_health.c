@@ -5,6 +5,7 @@
 #include <openbmc/kv.h>
 #include "pal_cfg.h"
 #include "pal_def.h"
+#include "pal.h"
 
 static int
 pal_get_sensor_health_key(uint8_t fru, char *key) {
@@ -14,10 +15,18 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
       sprintf(key, "server_sensor_health");
       break;
     case FRU_SWB:
-      sprintf(key, "swb_sensor_health");
+      if (!pal_is_artemis()) {
+        sprintf(key, "swb_sensor_health");
+      } else {
+        return -1;
+      }
       break;
     case FRU_HGX:
-      sprintf(key, "hgx_sensor_health");
+      if (!pal_is_artemis()) {
+        sprintf(key, "hgx_sensor_health");
+      } else {
+        return -1;
+      }
       break;
     case FRU_NIC0:
       sprintf(key, "nic0_sensor_health");
@@ -44,8 +53,26 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
       sprintf(key, "hsc_sensor_health");
     break;
     case FRU_SHSC:
-      sprintf(key, "swb_hsc_sensor_health");
+      if (!pal_is_artemis()) {
+        sprintf(key, "swb_hsc_sensor_health");
+      } else {
+        return -1;
+      }
     break;
+    case FRU_ACB:
+      if (pal_is_artemis()) {
+        sprintf(key, "cb_sensor_health");
+      } else {
+        return -1;
+      }
+      break;
+    case FRU_MEB:
+      if (pal_is_artemis()) {
+        sprintf(key, "mc_sensor_health");
+      } else {
+        return -1;
+      }
+      break;
     default:
       return -1;
   }

@@ -94,12 +94,13 @@ static bool sensor_poll_timer_expired(uint32_t *remaining, uint32_t elapsed, uin
   return true;
 }
 
-static uint32_t sensor_fru_min_poll_interval(thresh_sensor_t *snr, uint8_t *sensor_list, size_t cnt) {
+static uint32_t sensor_fru_min_poll_interval(thresh_sensor_t *snr_info_list, uint8_t *sensor_list, size_t cnt) {
   uint32_t poll_interval = DEFAULT_POLL_INTERVAL;
   for (size_t i = 0; i < cnt; i++) {
     size_t snr_num = sensor_list ? sensor_list[i] : i;
-    if (snr[snr_num].poll_interval < poll_interval) {
-      poll_interval = snr[snr_num].poll_interval;
+    const auto& snr = snr_info_list[snr_num];
+    if (snr.poll_interval > 0 && snr.poll_interval < poll_interval) {
+      poll_interval = snr.poll_interval;
     }
   }
   return poll_interval;

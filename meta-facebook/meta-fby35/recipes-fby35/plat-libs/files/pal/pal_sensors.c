@@ -1331,7 +1331,9 @@ PAL_HSC_INFO hsc_info_list[] = {
 PAL_CHIP_INFO medusa_hsc_list[] = {
   {"ltc4282", "ltc4282", MEDUSA_HSC_LTC4282_ADDR},
   {"adm1272", "adm1272", MEDUSA_HSC_ADM1272_ADDR},
-  {"ltc4287", "ltc4287", MEDUSA_HSC_LTC4287_ADDR}
+  {"ltc4287", "ltc4287", MEDUSA_HSC_LTC4287_ADDR},
+  {"new_adm1272", "adm1272", NEW_MEDUSA_HSC_ADM1272_ADDR},
+  {"new_ltc4287", "ltc4287", NEW_MEDUSA_HSC_LTC4287_ADDR}
 };
 
 PAL_CHIP_INFO medusa_adc_list[] = {

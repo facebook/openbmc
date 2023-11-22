@@ -23,6 +23,8 @@
 
 MEDUSA_HSC_BUS="11"
 LTC4282_ADDR="0x44"
+NEW_ADM1272_ADDR="0x1c"
+NEW_LTC487_ADDR="0x46"
 ADM1272_ADDR="0x1f"
 LTC4287_ADDR="0x11"
 LTC4282_CONTROL_REG="0x00"
@@ -86,20 +88,37 @@ function init_class1_dev() {
 
   local medusa_addr=""
   local chip=""
+  local driver=""
   local load_driver=false
 
   # Get register from different address to determine HSC chip
 
-  if read_dev $MEDUSA_HSC_BUS $LTC4287_ADDR 0x1 >/dev/null; then
+  if read_dev $MEDUSA_HSC_BUS $NEW_LTC487_ADDR 0x1 >/dev/null; then
+    if curr_val=$(read_dev $MEDUSA_HSC_BUS $NEW_LTC487_ADDR $LTC4287_CONTROL_REG); then
+      set_oc_auto_retry=$((curr_val | (0x7 << 3)))
+      /usr/sbin/i2cset -y $MEDUSA_HSC_BUS $NEW_LTC487_ADDR $LTC4287_CONTROL_REG "$set_oc_auto_retry"
+    fi
+    chip="new_ltc4287"
+    driver="ltc4287"
+    medusa_addr=$NEW_LTC487_ADDR
+    load_driver=true
+  elif read_dev $MEDUSA_HSC_BUS $NEW_ADM1272_ADDR 0x1 >/dev/null; then
+    chip="new_adm1272"
+    driver="adm1272"
+    medusa_addr=$NEW_ADM1272_ADDR
+    load_driver=true
+  elif read_dev $MEDUSA_HSC_BUS $LTC4287_ADDR 0x1 >/dev/null; then
     if curr_val=$(read_dev $MEDUSA_HSC_BUS $LTC4287_ADDR $LTC4287_CONTROL_REG); then
       set_oc_auto_retry=$((curr_val | (0x7 << 3)))
       /usr/sbin/i2cset -y $MEDUSA_HSC_BUS $LTC4287_ADDR $LTC4287_CONTROL_REG "$set_oc_auto_retry"
     fi
     chip="ltc4287"
+    driver="ltc4287"
     medusa_addr=$LTC4287_ADDR
     load_driver=true
   elif read_dev $MEDUSA_HSC_BUS $ADM1272_ADDR 0x1 >/dev/null; then
     chip="adm1272"
+    driver="adm1272"
     medusa_addr=$ADM1272_ADDR
     load_driver=true
   elif read_dev $MEDUSA_HSC_BUS $LTC4282_ADDR 0 >/dev/null; then
@@ -108,6 +127,7 @@ function init_class1_dev() {
       /usr/sbin/i2cset -y $MEDUSA_HSC_BUS $LTC4282_ADDR $LTC4282_CONTROL_REG "$set_oc_auto_retry"
     fi
     chip="ltc4282"
+    driver="ltc4282"
     medusa_addr=$LTC4282_ADDR
     load_driver=true
   else
@@ -115,8 +135,8 @@ function init_class1_dev() {
   fi
 
   if [ "$load_driver" = true ]; then
-    i2c_device_add $MEDUSA_HSC_BUS $medusa_addr $chip
-    if [ "$chip" == "ltc4282" ]; then
+    i2c_device_add $MEDUSA_HSC_BUS $medusa_addr $driver
+    if [ "$driver" == "ltc4282" ]; then
       if curr_val=$(read_dev $MEDUSA_HSC_BUS $LTC4282_ADDR $LTC4282_ADJUST_REG); then
         set_12bit_mode=$((curr_val & ~0x1))
         /usr/sbin/i2cset -f -y $MEDUSA_HSC_BUS $LTC4282_ADDR $LTC4282_ADJUST_REG "$set_12bit_mode"
@@ -206,19 +226,22 @@ else
   echo -n "Is board id correct(id=$bmc_location)?..."
 fi
 
-# Check if the Medusa IO expender or ADC chip exist (To prevent missing init due to any of them is broken)
-if read_dev $MEDUSA_HSC_BUS $MEDUSA_48V_IO_EXP_ADDR 0 >/dev/null; then
-  init_48V_medusa
-elif read_dev $MEDUSA_HSC_BUS 0x$INA238_ADDR_PSU 0 >/dev/null; then
-  init_48V_medusa
-elif read_dev $MEDUSA_HSC_BUS 0x$INA238_ADDR_GND 0 >/dev/null; then
-  init_48V_medusa
-elif read_dev $MEDUSA_HSC_BUS 0x$ISL28022_ADDR_PSU 0 >/dev/null; then
-  init_48V_medusa
-elif read_dev $MEDUSA_HSC_BUS 0x$ISL28022_ADDR_GND 0 >/dev/null; then
-  init_48V_medusa
+medusa_hsc="$($KV_CMD get medusa_hsc_conf persistent)"
+
+if [[ "$medusa_hsc" =~ .*"new".* ]]; then
+  if read_dev $MEDUSA_HSC_BUS 0x$INA238_ADDR_PSU 0 >/dev/null; then
+    init_48V_medusa
+  elif read_dev $MEDUSA_HSC_BUS 0x$INA238_ADDR_GND 0 >/dev/null; then
+    init_48V_medusa
+  elif read_dev $MEDUSA_HSC_BUS 0x$ISL28022_ADDR_PSU 0 >/dev/null; then
+    init_48V_medusa
+  elif read_dev $MEDUSA_HSC_BUS 0x$ISL28022_ADDR_GND 0 >/dev/null; then
+    init_48V_medusa
+  else
+    logger -t "medusa_hsc" -p daemon.crit "ASSERT: Medusa Board ADC monitor IC malfunction."
+  fi
 else
-  echo "Skip new 48V medusa init..."
+    echo "Skip new 48V medusa init..."
 fi
 
 init_adc_upper_bound

@@ -76,6 +76,9 @@ struct gpiopoll_ioex_config {
 struct delayed_log {
   useconds_t usec;
   char msg[1024];
+  char shadow[32];
+  bool debounce;
+  gpio_value_t last;
 };
 
 struct gpiopoll_ioex_config iox_gpios[] = {
@@ -212,11 +215,18 @@ void bic_get_firmware (unsigned int _delay) {
 static void*
 delay_log(void *arg) {
   struct delayed_log* log = (struct delayed_log*)arg;
+  gpio_value_t value;
 
   pthread_detach(pthread_self());
   if (log) {
     usleep(log->usec);
-    syslog(LOG_CRIT, "Record time delay %dms, %s",log->usec/1000, log->msg);
+    if(log->debounce) {
+      value = gpio_get_value_by_shadow(log->shadow);
+      if(value == log->last)
+        syslog(LOG_CRIT, "Record time delay %dms, %s",log->usec/1000, log->msg);
+    } else {
+      syslog(LOG_CRIT, "Record time delay %dms, %s",log->usec/1000, log->msg);
+    }
     free(log);
   }
 
@@ -779,13 +789,27 @@ static
 void iox_log_gpio_change(uint8_t fru,
                      char* desc,
                      useconds_t log_delay,
-                     const char* str) {
+                     const char* str,
+                     bool debounce,
+                     gpio_value_t last) {
 
   struct delayed_log *log = (struct delayed_log *)malloc(sizeof(struct delayed_log));
   pthread_t tid_delay_log;
+  int size = pal_is_artemis() ? ARRAY_SIZE(gta_iox_gpios) : ARRAY_SIZE(iox_gpios);
+  gpiopoll_ioex_config *iox_gpio_table = pal_is_artemis() ? gta_iox_gpios : iox_gpios;
 
   memset(log->msg, 0, sizeof(log->msg));
   snprintf(log->msg, sizeof(log->msg), "FRU: %d , %s %s", fru, str, desc);
+  log->debounce = debounce;
+  log->last = last;
+
+  if(debounce) {
+    for (int i = 0; i < size; ++i) {
+      if(strcmp(iox_gpio_table[i].desc, desc) == 0) {
+        snprintf(log->shadow, sizeof(log->shadow), "%s", iox_gpio_table[i].shadow);
+      }
+    }
+  }
 
   if (log_delay == 0) {
     syslog(LOG_CRIT, "%s", log->msg);
@@ -803,28 +827,28 @@ void
 present_init (char* desc, gpio_value_t value) {
   if (value == GPIO_VALUE_HIGH) {
     const char* str = "not present";
-    iox_log_gpio_change(FRU_MB, desc, 0, str);
+    iox_log_gpio_change(FRU_MB, desc, 0, str, false, value);
   }
 }
 
 void
 present_handle (char* desc, gpio_value_t value) {
   const char* str = value? "not present": "present";
-  iox_log_gpio_change(FRU_MB, desc, 0, str);
+  iox_log_gpio_change(FRU_MB, desc, 0, str, false, value);
 }
 
 void
 enable_init (char* desc, gpio_value_t value) {
   if (value == GPIO_VALUE_LOW) {
     const char* str = "disable";
-    iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str);
+    iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str, false, value);
   }
 }
 
 void
 enable_handle (char* desc, gpio_value_t value) {
   const char* str = value? "enable": "disable";
-  iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str);
+  iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str, false, value);
 }
 
 void
@@ -833,7 +857,7 @@ hpdb_cable_handle (char* desc, gpio_value_t value) {
 
   auto val = gpio_get_value_by_shadow("GPU_BASE_HMC_READY_ISO_R");
   if (val == GPIO_VALUE_HIGH) {
-    iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str);
+    iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str, true, value);
   }
 }
 

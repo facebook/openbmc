@@ -40,7 +40,7 @@
 | SLEDX_HSC_Output_Current |         | V    | NA  | NA  | NA  | NA  | NA  | NA  |
 | SLEDX_HSC_Input_Power    |         | V    | NA  | NA  | NA  | NA  | NA  | NA  |
 | SLEDX_THERM_LOCAL        |         | C    | NA  | 54  | 53  | 1   | 0   | NA  |
-| nvmeX                    |         | C    | NA  | 68  | 67  | 1   | 0   | NA  |
+| nvmeX                    |         | C    | NA  | 70  | 69  | 1   | 0   | NA  |
 
 ### Front Panel Board
 

@@ -105,6 +105,7 @@ static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
 static uint8_t bic_dynamic_skip_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
 static uint8_t rev_id = UNKNOWN_REV;
 static uint8_t bmc_dynamic_sensor_list[MAX_SENSOR_NUM + 1] = {0};
+static size_t bmc_dynamic_sensor_cnt = 0;
 
 int pwr_off_flag[MAX_NODES] = {0};
 int temp_cnt = 0;
@@ -1575,13 +1576,13 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   uint8_t bmc_location = 0, type = TYPE_1OU_UNKNOWN;
   uint8_t board_type = 0;
   uint8_t current_cnt = 0;
-  size_t current_bmc_cnt = 0;
   char key[MAX_KEY_LEN] = {0};
   char hsc_type[MAX_VALUE_LEN] = {0};
   char medusa_adc_type[MAX_VALUE_LEN] = {0};
   bool is_48v_medusa = false;
   int server_type = SERVER_TYPE_NONE;
   bool is_op_config = false;
+  static bool bmc_dynamic_init = 0;
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -1594,8 +1595,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *sensor_list = (uint8_t *) nicexp_sensor_list;
       *cnt = nicexp_sensor_cnt;
     } else {
+      if (bmc_dynamic_init)
+        goto done;
       memcpy(bmc_dynamic_sensor_list, bmc_sensor_list, bmc_sensor_cnt);
-      current_bmc_cnt = bmc_sensor_cnt;
+      bmc_dynamic_sensor_cnt = bmc_sensor_cnt;
       snprintf(key, sizeof(key), "medusa_hsc_conf");
       if (kv_get(key, hsc_type, NULL, KV_FPERSIST) < 0) {
         syslog(LOG_WARNING, "%s() Cannot get the key medusa_hsc_conf", __func__);
@@ -1603,17 +1606,19 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
         is_48v_medusa = strncmp(hsc_type, "ltc4282", sizeof(hsc_type)) ? true : false;
       }
       if (is_48v_medusa) { // if is 48V medusa, need to add PDB sensor list
-        ret = pal_get_pdb_sensor_list(&current_bmc_cnt);
+        ret = pal_get_pdb_sensor_list(&bmc_dynamic_sensor_cnt);
         if (ret < 0) {
           syslog(LOG_ERR, "%s() Cannot get the PDB sensor list", __func__);
         }
-        ret = pal_get_medusa_adc_sensor_list(medusa_adc_type, &current_bmc_cnt);
+        ret = pal_get_medusa_adc_sensor_list(medusa_adc_type, &bmc_dynamic_sensor_cnt);
         if (ret < 0) {
           syslog(LOG_ERR, "%s() Cannot get the 48V medusa ADC sensor list", __func__);
         }
       }
+      bmc_dynamic_init = 1;
+done:
       *sensor_list = (uint8_t *) bmc_dynamic_sensor_list;
-      *cnt = current_bmc_cnt;
+      *cnt = bmc_dynamic_sensor_cnt;
     }
 
     break;

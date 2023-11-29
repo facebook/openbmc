@@ -2758,7 +2758,7 @@ pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
     {
       snprintf(severity_str, sizeof(severity_str), "%s", "Uncorrectable");
       if (cpu_model == CPU_INTEL) {
-        strcat(error_log, "Uncorrectable Error, ");
+        strcat(error_log, "Machine Check Uncorrectable, ");
       } else if (cpu_model == CPU_AMD) {
         switch (error_type) {
           case 0x00:
@@ -2781,7 +2781,7 @@ pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
     {
       snprintf(severity_str, sizeof(severity_str), "%s", "Correctable");
       if (cpu_model == CPU_INTEL) {
-        strcat(error_log, "Correctable Error, ");
+        strcat(error_log, "Machine Check Correctable, ");
       } else if (cpu_model == CPU_AMD) {
         switch (error_type) {
         case 0x00:

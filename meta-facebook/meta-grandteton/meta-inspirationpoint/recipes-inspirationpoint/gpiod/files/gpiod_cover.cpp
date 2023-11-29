@@ -246,8 +246,8 @@ delay_pwr_fault_log(void *arg) {
   uint8_t temp_mb_rbuf = 0;
   char fru_name[MAX_FRU_NAME] = {0};
   const char *mc_pwr_fault[] = {"MC_P3V3_PG_DROP", "MC_P5V_AUX_PG_DROP", "MC_PWRGD_P1V2_AUX_DROP", "MC_PWRGD_P3V3_AUX_DROP"};
-  const char *cb_pwr_fault_A[] = {"CB_P3V3_2_PG", "CB_P3V3_1_PG", "CB_PWRGD_P5V_AUX", "CB_PWRGD_P1V2_AUX"};
-  const char *cb_pwr_fault_B[] = {"PWRGD_P0V8_2", "PWRGD_P0V8_1", "P1V25_2_PG", "P1V25_1_PG", "P1V8_PEX_PG_R1", "P3V3_2_PG_R2"};
+  const char *cb_pwr_fault_A[] = {"P3V3_2_PG", "P3V3_1_PG", "PWRGD_P5V_AUX", "PWRGD_P1V2_AUX"};
+  const char *cb_pwr_fault_B[] = {"PWRGD_P0V8_2", "PWRGD_P0V8_1", "P1V25_2_PG", "P1V25_1_PG", "PWRGD_P1V8_2_VDD", "PWRGD_P1V8_1_VDD", "P1V8_PEX_PG"};
 
   pthread_detach(pthread_self());
   /* prevent false alarm when MB CPLD handling Power Fault

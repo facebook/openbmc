@@ -85,4 +85,5 @@ SRC_URI:append = " \
     file://0301-To-support-MCP9600-temperature-driver.patch \
     file://0302-To-support-MP2856-VR-driver.patch\
     file://0303-To-support-LTC4286-LTC4287-driver.patch \
+    file://0304-To-support-amd-apml-driver.patch \
 "

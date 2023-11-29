@@ -106,7 +106,8 @@ namespace pldm_signed_info {
     {"LCMXO3-9400C", LATTICE},
     {"LCMXO3-4300C", LATTICE},
     {"pex89000",     BROADCOM},
-    {"xdpe15284",    INFINEON}
+    {"xdpe15284",    INFINEON},
+    {"mp2985",       MPS},
   };
 
   const std::unordered_map<uint8_t, std::string> comp_str_t = {

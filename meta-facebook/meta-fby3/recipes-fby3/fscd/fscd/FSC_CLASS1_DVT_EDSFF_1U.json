@@ -1,36 +1,21 @@
 {
-  "version": "fby3-e1s-1ou-v2023.09.18",
+  "version": "fby3-e1s-1ou-v2023.11.22",
   "pwm_transition_value": 70,
-  "pwm_boost_value": 60,
+  "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
   "sensor_filter_all": true,
   "ramp_rate": 100,
   "boost": {
     "fan_fail": true,
-    "sensor_fail": false
+    "sensor_fail": true
   },
   "fan_dead_boost": {
     "threshold": 2,
     "action": "host_shutdown"
   },
   "sensor_valid_check": {
-    "(.*)front_": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-    "(.*)soc_": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-    "(.*)e1s_": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-    "(.*)vr_": {
+    "^(?!BMC|NIC)": {
       "attribute": {
         "type" : "power_status"
       }

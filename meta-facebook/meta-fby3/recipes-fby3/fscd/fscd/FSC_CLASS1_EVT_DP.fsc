@@ -12,5 +12,23 @@ max([
       all:slot1_soc_dimme_temp,
       all:slot1_soc_dimmf_temp])),
   linear_nic(all:nic_nic_sensor_temp),
+  linear_non_fru_sensor(
+    max([
+      all:bmc_bmc_outlet_temp,
+      all:bmc_bmc_inlet_temp,
+      all:bmc_bmc_sensor_hsc_temp,
+      all:slot1_mb_inlet_temp,
+      all:slot1_mb_outlet_temp,
+      all:slot1_pch_temp,
+      all:slot1_soc_cpu_temp,
+      all:slot1_ssd0_temp,
+      all:slot1_hsc_temp,
+      all:slot1_vccin_vr_temp,
+      all:slot1_vccsa_vr_temp,
+      all:slot1_vccio_vr_temp,
+      all:slot1_3v3_stby_vr_temp,
+      all:slot1_vddq_abc_vr_temp,
+      all:slot1_vddq_def_vr_temp,
+      all:slot1_dp_nc_hsm_temp])),
   linear_marvell_hsm(all:slot1_dp_marvell_hsm_t) + pid_marvell_hsm(all:slot1_dp_marvell_hsm_t)
 ])

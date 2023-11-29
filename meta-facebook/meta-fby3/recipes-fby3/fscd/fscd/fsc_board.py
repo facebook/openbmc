@@ -38,6 +38,12 @@ try:
     sled_system_conf = kv_get("sled_system_conf", FPERSIST)
     Logger.warn("sled_system_conf: %s" % (sled_system_conf))
 
+    if (search(r"EDSFF_1U", sled_system_conf) is not None):
+        Logger.info("create 1ou E1S present cache file")
+        lfby3_hndl = CDLL("libfby3_common.so")
+        for i in [1, 2, 3, 4]:
+            lfby3_hndl.fby3_common_get_1ou_m2_prsnt(int(i))
+
     # Add sensor fail scenario for DP case
     if (search(r"Type_DP", sled_system_conf) is not None) or (
         search(r"Type_DPF", sled_system_conf) is not None
@@ -196,6 +202,16 @@ def is_dev_prsnt(filename):
 
     return False
 
+def is_e1s_prsnt(board, num):
+    try:
+        filename = fru_map[board]["name"] + "_1ou_m2_prsnt"
+        val = kv.kv_get(filename, 0, True)
+        if (val[0] & (1 << int(num))) == 0:
+            return 1
+        return 0
+
+    except Exception:
+        return 0
 
 def sensor_valid_check(board, sname, check_name, attribute):
     if str(board) == "all":
@@ -226,17 +242,19 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
                 return 0
 
-            if (search(r"front_io_temp", sname) is not None) and (
-                status.value == 0 or status.value == 1
+            # 12V-on stby sensor
+            if (
+                (search(r"mb_inlet_temp|mb_outlet_temp|front_io_temp|hsc_temp|3v3_stby_vr_temp \
+                          |e1s_outlet_temp|gp3_outlet_temp|gp3_3v3stby", sname) is not None)
             ):
-                return 1
+                if status.value == 0 or status.value == 1:
+                    return 1
+                else:
+                    return 0
 
             # If sensor fail, dp will boost without checking host ready
             if (
-                (search(r"Type_DP", sled_system_conf) is None)
-                or (search(r"Type_DPB", sled_system_conf) is not None)
-                or (search(r"Type_DPF", sled_system_conf) is None)
-
+                (search(r"Type_(?=DP$|DPF$)", sled_system_conf) is None)
             ):
                 try:
                     flag_status = kv_get(host_ready_map[board])
@@ -247,8 +265,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     return 0
 
             if status.value == 1:  # power on
-                if search(r"soc_cpu|soc_therm|e1s_dev|vr_temp", sname) is not None:
+                if search(r"pch_temp|soc_cpu|soc_therm|e1s_hsc|vr_temp|dp_nc_hsm_temp", sname) is not None:
                     is_valid_check = True
+                elif search(r"e1s_dev", sname) is not None:
+                    return is_e1s_prsnt(board, sname[7:8])
                 elif search(r"spe_ssd", sname) is not None:
                     # get SSD present status
                     cmd = "/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x15 0xe0 0x34 0x9c 0x9c 0x0 0x0 0x3"
@@ -355,6 +375,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
                             return 0
                     else:
                         return 0
+                elif search(r"gp3", sname) is not None:
+                    # gp3_pesw_vr_temp
+                    # gp3_p1v8_vr_temp
+                    is_valid_check = True
                 elif search(r"(.*)pesw_temp", sname) is not None:
                     exp_board_prsnt = c_uint8(0)
                     pesw_power = c_uint8(0)
@@ -423,10 +447,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 )
                 if status.value == 1:  # power on
                     if (
-                        (search(r"Type_DP", sled_system_conf) is None)
-                        or (search(r"Type_DPB", sled_system_conf) is not None)
-                        or (search(r"Type_DPF", sled_system_conf) is None)
-
+                        (search(r"Type_(?=DP$|DPF$)", sled_system_conf) is None)
                     ):
                         try:
                             flag_status = kv_get(host_ready_map[board])

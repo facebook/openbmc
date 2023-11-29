@@ -52,6 +52,7 @@ extern "C" {
 #define BB_CPLD_BUS 12
 #define NIC_CPLD_BUS 9
 #define CPLD_ADDRESS 0x1E
+#define SB_CPLD_REG_M2_PRSNT          0x05
 #define BB_CPLD_BOARD_REV_ID_REGISTER 0x08
 #define SB_CPLD_BOARD_REV_ID_REGISTER 0x07
 
@@ -381,6 +382,7 @@ typedef struct {
 } FW_IMG_INFO;
 
 int fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);
+int fby3_common_get_1ou_m2_prsnt(uint8_t fru);
 int fby3_common_is_bic_ready(uint8_t fru, uint8_t *val);
 int fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val);
 int fby3_common_get_bmc_location(uint8_t *id);

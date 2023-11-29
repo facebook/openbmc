@@ -616,6 +616,47 @@ fby3_common_get_sb_board_rev(uint8_t slot_id, uint8_t *rev) {
 }
 
 int
+fby3_common_get_1ou_m2_prsnt(uint8_t fru) {
+  int ret = 0, i2cfd = 0;
+  int retry = 3;
+  char key[MAX_KEY_LEN];
+  uint8_t bus = 0;
+  uint8_t tbuf[1] = {SB_CPLD_REG_M2_PRSNT};
+  uint8_t rbuf[1] = {0};
+
+  bus = (uint8_t)(fru + 3);
+  i2cfd = i2c_cdev_slave_open(bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open bus %u: %s", __func__, bus, strerror(errno));
+    return -1;
+  }
+
+  do {
+    if (!i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 1, rbuf, 1)) {
+      break;
+    }
+    if (--retry) {
+      usleep(100*1000);
+    }
+  } while (retry > 0);
+
+  close(i2cfd);
+  if (retry <= 0) {
+    syslog(LOG_WARNING, "%s() Failed to read CPLD, offset=SB_CPLD_REG_M2_PRSNT", __func__);
+    return -1;
+  }
+
+  rbuf[0] >>= 1;
+  ret = rbuf[0];
+  snprintf(key, sizeof(key), "fru%u_1ou_m2_prsnt", fru);
+  if (kv_set(key, (char *)rbuf, 1, 0)) {
+    syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, rbuf[0]);
+  }
+
+  return ret;
+}
+
+int
 fby3_common_get_bb_board_rev(uint8_t *rev) {
   int i2cfd;
   int retry = 3;

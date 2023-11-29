@@ -351,6 +351,13 @@ pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
   }
 }
 
+static void
+pwr_falut_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
+  if (curr) {
+    pwr_fault_event_handler(desc, curr, curr);
+  }
+}
+
 // GPIO table to be monitored
 static struct gpiopoll_config gpios_plat_list[] = {
   // shadow, description, edge, handler, oneshot
@@ -419,7 +426,7 @@ static struct gpiopoll_config gta_gpios_plat_list[] = {
   {FM_BIOS_POST_CMPLT,          "SGPIO146",  GPIO_EDGE_BOTH,    post_comp_event_handler,    post_comp_init_handler},
   {APML_CPU0_ALERT,             "SGPIO10",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
   {APML_CPU1_ALERT,             "SGPIO12",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
-  {PWR_FALUT_ALERT,             "SGPIO170",  GPIO_EDGE_RISING,  pwr_fault_event_handler,    NULL},
+  {PWR_FALUT_ALERT,             "SGPIO170",  GPIO_EDGE_RISING,  pwr_fault_event_handler,    pwr_falut_init_handler},
   // Add new GPIO from here
   // The reserved space will be used for optional GPIO pins in specific system config
   {RESERVED_GPIO,            RESERVED_GPIO,  GPIO_EDGE_NONE,    NULL,                       NULL},

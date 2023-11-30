@@ -23,6 +23,15 @@ PWRCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/pwrcpld/12-0043"
 SCM_PWR_ON_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_control"
 SCM_PWR_IN_RESET_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_in_reset"
 
+# SMB CPLD endpoints
+SMBCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/smbcpld/9-0023"
+J3_ASIC_PCIE_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/j3_pcie_reset"
+J3_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/j3_system_reset"
+R3_ASIC_0_ASIC_PCIE_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/ramon3_0_pcie_reset"
+R3_ASIC_0_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/ramon3_0_system_reset"
+R3_ASIC_1_ASIC_PCIE_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/ramon3_1_pcie_reset"
+R3_ASIC_1_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/ramon3_1_system_reset"
+
 LAYOUT_FILE="/etc/meru_flash.layout"
 
 retry_command() {
@@ -69,6 +78,43 @@ wedge_board_type() {
     echo 'meru'
 }
 
+wedge_product_name() {
+    output=$(weutil -e smb 2>&1) || { echo "$output"; return 1; }
+    echo "$output" | awk -F': ' '/Product Name:/ {print $2}'
+}
+
+wedge_power_asic() {
+    if [[ "$1" != "0" && "$1" != "1" ]]; then
+        echo "Invalid arg: Please provide 0 for power on or 1 for power off."
+        return 1
+    fi
+
+    local power_state="$1"
+
+    if ! product=$(wedge_product_name); then
+        echo "Error: Failed to detect product name using weutil."
+        echo "$product"
+        return 1
+    fi
+
+    case "$product" in
+        MERU800BIA)
+            echo "$power_state" > "$J3_ASIC_PCIE_RESET_SYSFS"
+            echo "$power_state" > "$J3_ASIC_SYS_RESET_SYSFS"
+            ;;
+        MERU800BFA)
+            echo "$power_state" > "$R3_ASIC_0_ASIC_PCIE_RESET_SYSFS"
+            echo "$power_state" > "$R3_ASIC_0_ASIC_SYS_RESET_SYSFS"
+            echo "$power_state" > "$R3_ASIC_1_ASIC_PCIE_RESET_SYSFS"
+            echo "$power_state" > "$R3_ASIC_1_ASIC_SYS_RESET_SYSFS"
+            ;;
+        *)
+            echo "Error: Unexpected product name detected."
+            return 1
+            ;;
+    esac
+}
+
 wedge_board_rev() {
     # MERUTODO: this assumes P1 currently
     return 1
@@ -88,11 +134,13 @@ userver_power_on() {
     i2cset -f -y 14 0x28 0x2e 0x3f
     sleep 0.5
     echo 1 > "$SCM_PWR_ON_SYSFS"
+    wedge_power_asic 0
     return 0
 }
 
 userver_power_off() {
     echo 0 > "$SCM_PWR_ON_SYSFS"
+    wedge_power_asic 1
     # Some delay is needed for "wedge_power reset" reset to take effect
     sleep 10
     return 0
@@ -116,7 +164,7 @@ chassis_power_cycle() {
 }
 
 bmc_mac_addr() {
-    # get the MAC from Elbert SCM EEPROM
+    # get the MAC from Meru SCM EEPROM
     mac_base=$(weutil -e scm | grep '^Extended MAC Base' | cut -d' ' -f4)
     mac_base_hex=$(echo "$mac_base" |  tr '[:lower:]' '[:upper:]' | tr -d ':')
     mac_dec=$(printf '%d\n' 0x"$mac_base_hex")

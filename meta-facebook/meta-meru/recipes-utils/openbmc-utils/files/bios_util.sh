@@ -42,7 +42,7 @@ connect_spi() {
     # Take CPU into reset via power and reset control
     i2cset -f -y 14 0x28 0x2e 0x00
     echo 0 > /sys/bus/i2c/drivers/pwrcpld/12-0043/cpu_control
-    sleep 0.5
+    sleep 10
     gpio_set_value ABOOT_GRAB 1
     gpio_set_value SW_CPLD_JTAG_SEL 0
     gpio_set_value SW_JTAG_SEL 0

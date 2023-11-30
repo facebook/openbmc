@@ -47,7 +47,11 @@ class Tests:
             "common",
             "minipack",
         ],  # So elbert can import minipack tests and run them only one time
-        "fbdarwin:": [
+        "fbdarwin": [
+            "common",
+            "minipack",
+        ],  # So fbdarwin can import minipack tests and run them only one time
+        "meru": [
             "common",
             "minipack",
         ],  # So fbdarwin can import minipack tests and run them only one time

@@ -33,8 +33,6 @@ LOCAL_URI =+ " \
     file://image_parts.json \
     file://nic.cpp \
     file://nic.h \
-    file://pfr_bmc.cpp \
-    file://pfr_bmc.h \
     file://scheduler.cpp \
     file://scheduler.h \
     file://server.cpp \

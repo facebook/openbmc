@@ -10,7 +10,7 @@
 #include <syslog.h>
 #include <openbmc/pal.h>
 #include <openbmc/kv.h>
-#include "pfr_bmc.h"
+#include "bmc.h"
 
 using namespace std;
 
@@ -279,10 +279,7 @@ class SystemConfig {
       // Verified boot supported and in dual-flash mode.
     } else {
       // We just have the one flash. Allow upgrading flash0.
-      if (pal_is_pfr_active() == PFR_ACTIVE) {
-        static PfrBmcComponent bmc("bmc", "bmc", "stg-bmc");
-        static PfrBmcComponent bmc_rc("bmc", "bmc_rc", "stg-bmc", "rc");
-      } else if (vboot != VBOOT_NO_SUPPORT) {
+      if (vboot != VBOOT_NO_SUPPORT) {
         // the vboot status "VBOOT_HW_ENFORCE" cannot be used for judgement here.
         // Therefore, create an unlocked flash component.
         static BmcComponent rom("bmc", "rom", "flash0", "u-bootro");

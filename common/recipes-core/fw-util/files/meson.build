@@ -26,7 +26,6 @@ srcs = [
     'check_image.cpp',
     'extlib.cpp',
     'nic.cpp',
-    'pfr_bmc.cpp',
     'scheduler.cpp',
     'server.cpp',
     'spiflash.cpp',

@@ -25,7 +25,6 @@ PLATFORMS = [
     "minipack",
     "montblanc",
     "northdome",
-    "wedge",
     "wedge100",
     "wedge400",
     "yamp",

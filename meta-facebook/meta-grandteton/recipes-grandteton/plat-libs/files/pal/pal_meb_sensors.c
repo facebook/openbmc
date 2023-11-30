@@ -120,10 +120,10 @@ PAL_SENSOR_MAP meb_sensor_map[] = {
   {"P12V_AUX_CXL2_PWR", 0, get_meb_sensor, false, {72, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x31
   {"P12V_AUX_SW_4C_2_PWR", 0, get_meb_sensor, false, {80, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x32
   {"P12V_AUX_SW_4C_1_PWR", 0, get_meb_sensor, false, {80, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x33
-  {"E1S_0_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x34
-  {"E1S_1_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x35
-  {"E1S_2_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x36
-  {"E1S_3_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x37
+  {"SSD1_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x34
+  {"SSD2_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x35
+  {"SSD3_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x36
+  {"SSD4_TEMP", 0, get_meb_sensor, false, {75, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x37
 };
 
 PAL_SENSOR_MAP meb_clx_sensor_map[] = {
@@ -168,8 +168,8 @@ PAL_SENSOR_MAP meb_clx_sensor_map[] = {
 
 PAL_SENSOR_MAP meb_e1s_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
-  {"E1S_0_TEMP", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
-  {"E1S_1_TEMP", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
+  {"SSD1_TEMP", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x01
+  {"SSD2_TEMP", 0, get_meb_jcn_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x02
 };
 
 const uint8_t meb_sensor_list[] = {

@@ -65,16 +65,16 @@ max([
 
   mc_tray_E1S_linear(
     max([
-      all:mc_mc_e1s_0_temp_c,
-      all:mc_mc_e1s_1_temp_c,
-      all:mc_mc_e1s_2_temp_c,
-      all:mc_mc_e1s_3_temp_c])) +
+      all:mc_mc_ssd1_temp_c,
+      all:mc_mc_ssd2_temp_c,
+      all:mc_mc_ssd3_temp_c,
+      all:mc_mc_ssd4_temp_c])) +
   mc_tray_E1S_pid(
     max([
-      all:mc_mc_e1s_0_temp_c,
-      all:mc_mc_e1s_1_temp_c,
-      all:mc_mc_e1s_2_temp_c,
-      all:mc_mc_e1s_3_temp_c])),
+      all:mc_mc_ssd1_temp_c,
+      all:mc_mc_ssd2_temp_c,
+      all:mc_mc_ssd3_temp_c,
+      all:mc_mc_ssd4_temp_c])),
 
   mb_tray_E1S_linear(
     max([

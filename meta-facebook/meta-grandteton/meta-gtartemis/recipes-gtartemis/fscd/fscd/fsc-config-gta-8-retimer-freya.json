@@ -75,7 +75,12 @@
         "attribute": {
           "type" : "power_status"
         }
-      }  
+      },
+      "(.*)ssd": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      }
     },
     "watchdog": false,
     "min_rpm": 965,

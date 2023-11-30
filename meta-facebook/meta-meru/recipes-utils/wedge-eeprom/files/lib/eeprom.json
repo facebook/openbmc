@@ -12,6 +12,10 @@
   {
       "name" : "scm",
       "sysfs_path" : "/sys/bus/i2c/drivers/at24/9-0050/eeprom"
+  },
+  {
+      "name" : "smb",
+      "sysfs_path" : "/sys/bus/i2c/drivers/at24/9-0052/eeprom"
   }
   ]
 }

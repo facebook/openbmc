@@ -28,6 +28,7 @@ trap handle_signal INT TERM QUIT
 
 # mdio prints in the format "PAGE_HEX/OFFSET_HEX VALUE_HEX == VALUE_BIN\n"
 MDIO_READ_PATTERN="^.* (0x[a-fA-F0-9]+).*$"
+OOB_MDIO_UTIL=/usr/local/bin/oob-mdio-util.sh
 
 # Global variable to stack tabs for formatting
 tab=""
@@ -48,7 +49,7 @@ usage() {
     echo ""
     echo "oob-status.sh link_status 0 IMP"
     echo "Link Status:"
-    echo "	Port 0: Link Down"
+    echo "	Port 0: Link Up"
     echo "	Port IMP: Link Up"
 
 }
@@ -90,7 +91,7 @@ do_read_lnksts() {
     local page offset result ports port val
     page=0x1
     offset=0x0
-    result=$(oob-mdio-util.sh read16 "$page" "$offset" \
+    result=$("$OOB_MDIO_UTIL" read16 "$page" "$offset" \
         | sed -E "s/$MDIO_READ_PATTERN/\1/")
     ports="$*"
 
@@ -100,13 +101,20 @@ do_read_lnksts() {
     for port in $ports; do
         port=${port^^}
         val=$(port_to_val "$port")
-        val=$(( (result >> val) & 0x1 ))
+        if [ -n "$result" ]; then
+            val=$(( (result >> val) & 0x1 ))
+        else
+            val="unknown"
+        fi
         case "$val" in
             0)
                 printf "%sPort: %s Link Down\n" "$tab" "$port"
                 ;;
             1)
                 printf "%sPort: %s Link Up\n" "$tab" "$port"
+                ;;
+            *)
+                printf "%sPort: %s Link %s\n" "$tab" "$port" "$val"
                 ;;
         esac
     done
@@ -117,7 +125,7 @@ do_read_spdsts() {
     local page offset result ports port val
     page=0x1
     offset=0x4
-    result=$(oob-mdio-util.sh read32 "$page" "$offset" \
+    result=$("$OOB_MDIO_UTIL" read32 "$page" "$offset" \
         | sed -E "s/$MDIO_READ_PATTERN/\1/")
     ports="$*"
 
@@ -127,7 +135,11 @@ do_read_spdsts() {
     for port in $ports; do
         port=${port^^}
         val=$(port_to_val "$port")
-        val=$(( (result >> (val * 2)) & 0x3 ))
+        if [ -n "$result" ]; then
+            val=$(( (result >> (val * 2)) & 0x3 ))
+        else
+            val="unknown"
+        fi
         case "$val" in
             0)
                 printf "%sPort: %s 10 Mb/s\n" "$tab" "$port"
@@ -137,6 +149,9 @@ do_read_spdsts() {
                 ;;
             2)
                 printf "%sPort: %s 1000 Mb/s\n" "$tab" "$port"
+                ;;
+            *)
+                printf "%sPort: %s %s\n" "$tab" "$port" "$val"
                 ;;
         esac
     done

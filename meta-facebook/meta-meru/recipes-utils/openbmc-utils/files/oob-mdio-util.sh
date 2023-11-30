@@ -164,6 +164,11 @@ reg_read() {
 
     data=$(reg_page_data "$page" 1)
     mdio_write $oob_page_reg "$data"
+    page_reg_val=$(mdio_read $oob_page_reg)
+    if [ "$page_reg_val" -ne "$data" ]; then
+        echo "Error: page register could not be written" >&2
+        exit 1
+    fi
 
     data=$(reg_addr_data "$addr" 0x2)
     mdio_write $oob_addr_reg "$data"
@@ -198,6 +203,11 @@ reg_write() {
 
     data=$(reg_page_data "$page" 1)
     mdio_write $oob_page_reg "$data"
+    page_reg_val=$(mdio_read $oob_page_reg)
+    if [ "$page_reg_val" -ne "$data" ]; then
+        echo "Error: page register could not be written" >&2
+        exit 1
+    fi
 
     # Write data registers
     num_data_regs=$(( ( data_size + 1 ) / 2 ))

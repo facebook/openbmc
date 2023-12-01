@@ -272,6 +272,7 @@ delay_pwr_fault_log(void *arg) {
 
   if ((temp_mb_rbuf & MC_PWR_FAULT_MASK) == MC_PWR_FAULT_MASK) {
     pal_get_fru_name(FRU_MEB, fru_name);
+    syslog(LOG_CRIT, "%s: Power Fault\n", fru_name);
     if ((temp_mb_rbuf & MC_PWR_TRAY_REMOVE_MASK) == MC_PWR_TRAY_REMOVE_MASK) {
       syslog(LOG_CRIT, "%s: Power Fault Event is cauased by Tray removed\n", fru_name);
     } else {
@@ -301,6 +302,8 @@ delay_pwr_fault_log(void *arg) {
 
   if ((temp_mb_rbuf & CB_PWR_FAULT_MASK) == CB_PWR_FAULT_MASK) {
     // POWER FAULT on CB
+    pal_get_fru_name(FRU_ACB, fru_name);
+    syslog(LOG_CRIT, "%s: Power Fault\n", fru_name);
     i2cfd = i2c_cdev_slave_open(I2C_BUS_11, CB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
     if (i2cfd < 0) {
       syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_11);
@@ -315,7 +318,6 @@ delay_pwr_fault_log(void *arg) {
       i2c_cdev_slave_close(i2cfd);
       goto end;
     }
-    pal_get_fru_name(FRU_ACB, fru_name);
     for (int i = 0; i < BITS_PER_BYTE; i ++) {
       if (GETBIT(rbuf[0], i)) {
         syslog(LOG_CRIT, "%s: Power Fault Event: %s Assert\n", fru_name, cb_pwr_fault_A[i]);

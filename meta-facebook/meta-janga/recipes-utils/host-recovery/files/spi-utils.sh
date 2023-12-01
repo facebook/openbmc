@@ -162,7 +162,7 @@ config_spi1_pin_and_path(){
             # COME CPLD: BIOS_FLASH_CS0
             #                    to ( ) BMC_SPI1_CS1 0x7
             #                       (X) BMC_SPI1_CS0 0x5
-            #                       ( ) SPI_PCH_CS0 0x4
+            #                       ( ) SPI_PCH_CS0 0x4 (default)
             #                       ( ) SPI_PCH_CS1 0x6
             gpiocli -s BMC_I2C1_EN set-value 1
             i2cset -f -y 0 0x1f 0xa 0x5
@@ -174,6 +174,15 @@ config_spi1_pin_and_path(){
 }
 
 cleanup_spi(){
+    # COME CPLD: BIOS_FLASH_CS0
+    #                    to ( ) BMC_SPI1_CS1 0x7
+    #                       ( ) BMC_SPI1_CS0 0x5
+    #                       (X) SPI_PCH_CS0 0x4 (default)
+    #                       ( ) SPI_PCH_CS1 0x6
+    gpiocli -s BMC_I2C1_EN set-value 1
+    i2cset -f -y 0 0x1f 0xa 0x4
+    gpiocli -s BMC_I2C1_EN set-value 0
+
     # select muxing FLASH to normal mode
     # BMC GPIO: IOB_FLASH 
     #                    to (X) IOB_FPGA    0

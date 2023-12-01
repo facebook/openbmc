@@ -1,11 +1,16 @@
 {
-    "version": "gtartemis-v1.0-discrete-vpdb",
-    "pwm_transition_value": 80,
+    "version": "gtartemis-v1.3-discrete-vpdb",
+    "pwm_transition_value": 65,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
     "fan_recovery_time": 2,
     "sensor_filter_all": true,
     "pwm_sensor_boost_value": 100,
+    "multi_fan_fail": {
+      "data": [
+        [2, 100]
+      ]
+    },
     "boost": {
       "fan_fail": true,
       "sensor_fail": true
@@ -93,23 +98,23 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [20, 16],
-          [21, 17],
-          [22, 18],
-          [23, 18],
-          [24, 18],
-          [25, 19],
-          [26, 19],
-          [27, 20],
-          [28, 20],
-          [29, 20],
-          [30, 21],
-          [31, 21],
-          [32, 22],
-          [33, 23],
-          [34, 23],
-          [35, 24],
-          [36, 25],
+          [20, 17],
+          [21, 18],
+          [22, 19],
+          [23, 19],
+          [24, 19],
+          [25, 20],
+          [26, 20],
+          [27, 21],
+          [28, 21],
+          [29, 22],
+          [30, 22],
+          [31, 23],
+          [32, 23],
+          [33, 24],
+          [34, 24],
+          [35, 25],
+          [36, 26],
           [37, 30],
           [38, 40],
           [39, 60]
@@ -123,15 +128,15 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [65, 16],
-          [66, 30],
-          [67, 35],
-          [68, 41],
-          [69, 45],
-          [70, 49],
-          [71, 51],
-          [72, 53],
-          [73, 55]
+          [70, 17],
+          [71, 23],
+          [72, 27],
+          [73, 30],
+          [74, 32],
+          [75, 33],
+          [76, 34],
+          [77, 35],
+          [78, 36]
         ]
       },
       "cpu_tray_cpu_pid": {
@@ -141,9 +146,9 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 76,
-        "kp": -2,
-        "ki": -0.015,
+        "setpoint": 81,
+        "kp": -3.4,
+        "ki": -0.02,
         "kd": 0
       },
       "cpu_tray_dimm_linear": {
@@ -152,16 +157,17 @@
         },
         "type": "linear",
         "positive_hysteresis": 0,
-        "negative_hysteresis": 2,
+        "negative_hysteresis": 3,
         "data": [
-          [65, 16],
-          [66, 40],
-          [67, 47],
-          [69, 52],
-          [71, 57],
-          [73, 60],
-          [75, 62]
-
+          [67, 17],
+          [68, 24],
+          [69, 26],
+          [70, 28],
+          [71, 30],
+          [72, 32],
+          [73, 34],
+          [74, 36],
+          [75, 37]
         ]
       },
       "cpu_tray_dimm_pid": {
@@ -184,7 +190,7 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
         "data": [
-          [80, 16],
+          [80, 17],
           [81, 20],
           [82, 22],
           [83, 24],
@@ -212,11 +218,11 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [61, 16],
-          [62, 38],
-          [63, 44],
-          [64, 48],
-          [65, 50]
+          [61, 17],
+          [62, 19],
+          [63, 21],
+          [64, 23],
+          [65, 25]
         ]
       },
       "mc_tray_E1S_pid": {
@@ -239,11 +245,11 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [61, 16],
-          [62, 18],
-          [63, 20],
-          [64, 22],
-          [65, 24]
+          [61, 17],
+          [62, 20],
+          [63, 22],
+          [64, 24],
+          [65, 26]
         ]
       },
       "mb_tray_E1S_pid": {
@@ -266,14 +272,11 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [80, 16],
-          [81, 18],
-          [82, 20],
-          [83, 22],
-          [84, 24],
-          [85, 26],
-          [86, 28],
-          [87, 30]
+          [78, 17],
+          [79, 20],
+          [80, 22],
+          [81, 24],
+          [82, 26]
         ]
       },
       "cb_tray_switch_pid": {
@@ -283,8 +286,8 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 90,
-        "kp": -1.5,
+        "setpoint": 85,
+        "kp": -1.8,
         "ki": -0.015,
         "kd": 0
       },
@@ -296,13 +299,13 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [91, 16],
-          [92, 20],
-          [93, 22],
-          [94, 24],
-          [95, 26],
-          [96, 28],
-          [97, 30]
+          [91, 17],
+          [92, 18],
+          [93, 20],
+          [94, 22],
+          [95, 24],
+          [96, 26],
+          [97, 28]
         ]
       },
       "power_brick_pid": {
@@ -354,12 +357,13 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [71, 16],
-          [72, 35],
-          [73, 40],
-          [74, 45],
-          [75, 48],
-          [76, 50]
+          [70, 17],
+          [71, 27],
+          [72, 29],
+          [73, 31],
+          [74, 32],
+          [75, 33],
+          [76, 34]
         ]
       },
       "accl_asic_temp_pid": {
@@ -370,7 +374,7 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
         "setpoint": 79,
-        "kp": -3,
+        "kp": -3.8,
         "ki": -0.035,
         "kd": 0
       },

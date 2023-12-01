@@ -92,20 +92,25 @@ max([
       all:cb_cb_pex0_temp_c,
       all:cb_cb_pex1_temp_c])),
 
-  power_brick_linear(
+  cb_brick_linear(
     max([
-      all:vpdb_vpdb_brick0_temp_c,
-      all:vpdb_vpdb_brick1_temp_c,
-      all:vpdb_vpdb_brick2_temp_c,
       all:cb_cb_power_brick_1_temp_c,
       all:cb_cb_power_brick_2_temp_c])) +
-  power_brick_pid(
+  cb_brick_pid(
+    max([
+      all:cb_cb_power_brick_1_temp_c,
+      all:cb_cb_power_brick_2_temp_c])),
+  
+  vpdb_brick_linear(
     max([
       all:vpdb_vpdb_brick0_temp_c,
       all:vpdb_vpdb_brick1_temp_c,
-      all:vpdb_vpdb_brick2_temp_c,
-      all:cb_cb_power_brick_1_temp_c,
-      all:cb_cb_power_brick_2_temp_c])),
+      all:vpdb_vpdb_brick2_temp_c])) +
+  vpdb_brick_pid(
+    max([
+      all:vpdb_vpdb_brick0_temp_c,
+      all:vpdb_vpdb_brick1_temp_c,
+      all:vpdb_vpdb_brick2_temp_c])),
 
   retimer_temp_linear(
     max([

@@ -30,7 +30,7 @@ lpal_hndl = CDLL("libpal.so.0")
 
 try:
     if lpal_hndl.pal_is_artemis():
-        get_fan_mode_scenario_list = {"sensor_hit_UCR": 100}
+        get_fan_mode_scenario_list = {"one_fan_failure": 65, "sensor_hit_UCR": 80, "sensor_fail": 80}
     else:
         pwr_limit = kv.kv_get("auto_fsc_config", kv.FPERSIST, True).decode("utf-8")
         if pwr_limit == "650":
@@ -96,6 +96,9 @@ gta_asic_fru_map = {
 }
 
 def get_fan_mode(scenario="None"):
+    if lpal_hndl.pal_is_artemis():
+        if str(scenario) == "one_fan_failure":
+            return fan_mode["trans_mode"], get_fan_mode_scenario_list[scenario]
     if scenario in get_fan_mode_scenario_list:
         return fan_mode["boost_mode"], get_fan_mode_scenario_list[scenario]
     pass

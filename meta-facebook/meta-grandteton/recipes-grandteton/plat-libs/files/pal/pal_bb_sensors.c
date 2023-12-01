@@ -31,6 +31,7 @@ static int read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic0_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic1_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_bb_sensor(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_vdrop_sensor(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value);
 FAN_CTRL_DEV fan_ctrl_map[] = {
   {FAN_CTRL_ID0, get_max31790_rpm, get_max31790_duty, set_max31790_duty},
@@ -377,7 +378,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
   {"P3V3_AUX_IN6_VOLT", ADC_CH6, read_iic_adc_val, true, {3.6, 0, 0, 3.1, 0, 0, 0, 0}, VOLT}, //0xA1
   {"MEDUSA0_POSITIVE_VDROP",  VPDB_ADC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xA2
-  {"MEDUSA0_RETURN_VDROP",    VPDB_ADC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xA3
+  {"MEDUSA0_RETURN_VDROP",    VPDB_ADC_ID1, read_vdrop_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xA3
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
@@ -406,9 +407,9 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"HSC1_VOUT_VOLT", HPDB_HSC_ID1, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xBA
   {"HSC2_VOUT_VOLT", HPDB_HSC_ID2, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xBB
   {"MEDUSA1_POSITIVE_VDROP", HPDB_ADC_ID0, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBC
-  {"MEDUSA1_RETURN_VDROP",   HPDB_ADC_ID1, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBD
+  {"MEDUSA1_RETURN_VDROP",   HPDB_ADC_ID1, read_vdrop_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBD
   {"MEDUSA2_POSITIVE_VDROP", HPDB_ADC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBE
-  {"MEDUSA2_RETURN_VDROP",   HPDB_ADC_ID3, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBF
+  {"MEDUSA2_RETURN_VDROP",   HPDB_ADC_ID3, read_vdrop_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBF
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
@@ -697,7 +698,6 @@ read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
 static int
 read_bb_sensor(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
-  uint8_t sku, isMax11617 = 0;
   static int retry[255];
 
   ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
@@ -715,15 +715,38 @@ read_bb_sensor(uint8_t fru, uint8_t sensor_num, float *value) {
   if(sensor_num == SCM_SNR_BMC_TEMP)
     inlet_temp_calibration(fru, sensor_num, value);
 
+  return ret;
+}
+
+static int
+read_vdrop_sensor(uint8_t fru, uint8_t sensor_num, float *value)
+{
+  int i, ret, count = 0;
+  uint8_t sku, isMax11617 = 0;
+  float sum = 0;
+
   // vpdb adc type : VPDB_SKU_ID_4, hpdb adc type : HPDB_SKU_ID_2
   // vpdb sig sku  : VPDB_SKU_ID_7, hpdb sig sku  : HPDB_SKU_ID_5
   // If type = 1 , sig sku = 0 > max11617
   isMax11617 |= ( fru == FRU_VPDB && !pal_get_board_sku_id(fru, &sku) && (sku&0x90) == 0x10 ) ? 1 : 0;
   isMax11617 |= ( fru == FRU_HPDB && !pal_get_board_sku_id(fru, &sku) && (sku&0x24) == 0x04 ) ? 1 : 0;
-  if (isMax11617)
-    if (*value > 1023)
-      *value -= 2048;
-
+  if (isMax11617) {
+    for (i = 0; i < 20; ++i) {
+      ret = read_bb_sensor(fru, sensor_num, value);
+      if (ret == 0) {
+        if (*value > 1023)
+          *value -= 2048;
+        sum += *value;
+        ++count;
+      }
+    }
+    if (count > 0) {
+      ret = 0;
+      *value = sum / count;
+    }
+  } else {
+    ret = read_bb_sensor(fru, sensor_num, value);
+  }
 
   return ret;
 }

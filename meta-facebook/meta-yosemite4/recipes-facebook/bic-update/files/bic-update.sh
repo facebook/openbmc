@@ -63,6 +63,26 @@ recovery_bic_by_uart() {
 	echo "Recovery BIC is finished."
 }
 
+wait_for_update_complete() {
+	counter=0
+	while true
+	do
+		sleep 1
+		echo -ne "Waiting for updating... ${counter} sec"\\r
+		progress=$(busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.ActivationProgress Progress | cut -d " " -f 2)
+		if [ "${progress}" == 100 ]; then
+			echo -ne \\n"Update done."\\n
+			break
+		fi
+		counter=$((counter+1))
+		# Over two minutes is considered timeout
+		if [ "${counter}" == 120 ]; then
+			echo -ne \\n"Time out. Fail"\\n
+			break
+		fi
+	done
+}
+
 update_bic() {
 
 	cp "$1" /tmp/images
@@ -76,12 +96,10 @@ update_bic() {
 
 	if [ "$software_id" != "" ]; then
 		busctl set-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.Activation RequestedActivation s "xyz.openbmc_project.Software.Activation.RequestedActivations.Active"
+		wait_for_update_complete
 	else
 		echo "Fail: Miss software id."
 	fi
-
-	echo "Waiting for updating..."
-	sleep 20
 }
 
 # Function to prompt for continuation and check user input

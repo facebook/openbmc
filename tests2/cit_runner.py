@@ -8,7 +8,7 @@ from utils.platforms import PLATFORMS
 
 from utils.test_utils import tests_dir
 
-ADDITIONAL_CIT_NAMES = ["churchillmono", "janga", "wedge400c"]
+ADDITIONAL_CIT_NAMES = ["churchillmono", "janga", "tahan", "wedge400c"]
 
 
 class RunTest:

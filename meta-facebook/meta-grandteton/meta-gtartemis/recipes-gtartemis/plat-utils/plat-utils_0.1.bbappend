@@ -34,5 +34,5 @@ do_install:append() {
   update-rc.d -r ${D} setup-usb-hub.sh start 65 5 .
 
   install -m 755 setup-i2c-clk.sh ${D}${sysconfdir}/init.d/setup-i2c-clk.sh
-  update-rc.d -r ${D} setup-i2c-clk.sh start 90 5 .
+  update-rc.d -r ${D} setup-i2c-clk.sh start 50 5 .
 }

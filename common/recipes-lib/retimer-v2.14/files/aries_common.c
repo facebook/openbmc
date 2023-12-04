@@ -102,7 +102,7 @@ int asteraI2COpenConnection(int i2cBus, int slaveAddress)
     }
   }
 
-  asteraI2CSetSlaveAddress(file, slaveAddress, 0);
+  asteraI2CSetSlaveAddress(file, slaveAddress, 1);
   return file;
 }
 

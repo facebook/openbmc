@@ -51,7 +51,9 @@ extern "C" {
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
-#define SCM_SYSFS        I2C_DEV_DIR(2, 3e)"%s"
+#define SCM_SYSFS_DIR I2C_DEV_DIR(2, 3e)
+#define SCM_SYSFS SCM_SYSFS_DIR"%s"
+#define SCM_SYSFS_ATTRIBUTE(attr) SCM_SYSFS_DIR attr
 #define SMB_SYSFS        I2C_DEV_DIR(12, 3e)"%s"
 #define PWR_SYSFS        I2C_DEV_DIR(31, 3e)"%s"
 #define FCM_SYSFS        I2C_DEV_DIR(32, 3e)"%s"

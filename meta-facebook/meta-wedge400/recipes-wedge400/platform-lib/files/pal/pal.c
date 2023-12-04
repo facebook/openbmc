@@ -7527,16 +7527,13 @@ bool is_psu48(void)
 int
 wedge400_get_scm_ver(int *scm_ver){
   static int cache = -1;
-  char path[PATH_MAX + 1];
-  // keep the value as cache no need to get new value
-  if (cache != -1) {
-    *scm_ver = cache;
-    return 0;
+
+  // Only update the scm_ver value if it isn't cached.
+  if (cache == -1) {
+    if (device_read(SCM_SYSFS_ATTRIBUTE("board_ver"), &cache)) {
+      return -1;
+    }
   }
-  snprintf(path, sizeof(path), SCM_SYSFS, "board_ver");
-  if (device_read(path, scm_ver)) {
-    return -1;
-  }
-  cache = *scm_ver;
+  *scm_ver = cache;
   return 0; 
 }

@@ -368,14 +368,19 @@ var IsLFOpenBMC = func() (bool) {
 // IsBMCLite check whether the system is running BMC-lite
 // For S368275.   Make this beautiful later.
 var IsBMCLite = func() (bool) {
-	const magic = "fbdarwin"
+	magics := []string{"fbdarwin", "meru"}
 
 	issueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {
 		return false
 	}
 
-	return strings.Contains(string(issueBuf), magic)
+	for _, magic := range magics {
+		if strings.Contains(string(issueBuf), magic) {
+			return true;
+		}
+	}
+	return false
 }
 
 // CheckOtherFlasherRunning return an error if any other flashers are running.

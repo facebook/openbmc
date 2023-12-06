@@ -21,3 +21,6 @@ LOCAL_URI += "\
     file://board-utils.sh \
     file://setup_i2c.sh \
     "
+
+#Not needed for morgan800cc
+SYSTEMD_SERVICE:${PN}:remove = "mount_data1.service"

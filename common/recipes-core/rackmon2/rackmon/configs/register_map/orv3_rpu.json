@@ -64,6 +64,36 @@
             "name": "RPU_HEX_FW_Revision"
         },
         {
+            "begin": 6648,
+            "length": 4,
+            "format": "STRING",
+            "name": "RPU_Noahs_Arc_Configuration"
+        },
+        {
+            "begin": 6652,
+            "length": 4,
+            "format": "STRING",
+            "name": "RPU_Reservoir_And_Pumping_Unit_FBPN"
+        },
+        {
+            "begin": 6656,
+            "length": 4,
+            "format": "STRING",
+            "name": "Heat_Exchanger_Control_Box_FBPN"
+        },
+        {
+            "begin": 6660,
+            "length": 4,
+            "format": "STRING",
+            "name": "Heat_Exchanger_Fans_FBPN"
+        },
+        {
+            "begin": 6664,
+            "length": 4,
+            "format": "STRING",
+            "name": "Heat_Exchanger_Fan_Control_Box_FBPN"
+        },
+        {
             "begin": 6636,
             "length": 2,
             "format": "INTEGER",
@@ -251,6 +281,18 @@
             "name": "RPU_LED_Status"
         },
         {
+            "begin": 36888,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump_Status"
+        },
+        {
+            "begin": 36889,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Internal_Fan_Status"
+        },
+        {
             "begin": 36912,
             "length": 2,
             "format": "INTEGER",
@@ -407,6 +449,12 @@
             "name": "HEX_Bladder_Level_Status"
         },
         {
+            "begin": 37140,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_External_Y_Filter_Pressure"
+        },
+        {
             "begin": 37376,
             "length": 1,
             "format": "FLAGS",
@@ -431,6 +479,10 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
+                [9, "Deassert_RPU_Ready"],
+                [8, "Emergency_Button_Triggered"],
+                [7, "Coolant_Loop_Blocked"],
+                [6, "Pump"],
                 [5, "HEX_Water_Inlet_Temp_Status"],
                 [4, "RPU_Outlet_Pressure_Status"],
                 [3, "RPU_Air_Inlet_Temp_Status"],

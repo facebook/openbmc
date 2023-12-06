@@ -24,6 +24,7 @@ pal_sources += [
     'pal_swb_sensors.c',
     'pal_bb_sensors.c',
     'pal_hgx_sensors.c',
+    'pal_ubb_sensors.c',
     'pal_cover.c',
     'pal_meb_sensors.c',
     'pal_acb_sensors.c'

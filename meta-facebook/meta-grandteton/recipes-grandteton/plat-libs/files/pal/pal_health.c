@@ -73,6 +73,13 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
         return -1;
       }
       break;
+    case FRU_UBB:
+      if (!pal_is_artemis()) {
+        sprintf(key, "ubb_sensor_health");
+      } else {
+        return -1;
+      }
+      break;
     default:
       return -1;
   }

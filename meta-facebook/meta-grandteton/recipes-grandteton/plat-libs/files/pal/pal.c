@@ -69,7 +69,7 @@ const char pal_fru_list[] = \
 "all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, " \
 // Artemis fru list
 "cb, mc, cb_accl1, cb_accl2, cb_accl3, cb_accl4, cb_accl5, cb_accl6, cb_accl7, cb_accl8, " \
-"cb_accl9, cb_accl10, cb_accl11, cb_accl12";
+"cb_accl9, cb_accl10, cb_accl11, cb_accl12 ubb";
 
 const char pal_server_list[] = "mb";
 
@@ -82,6 +82,8 @@ const char pal_server_list[] = "mb";
 #define SWB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
 #define HGX_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
+
+#define UBB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
 #define NIC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | \
                         FRU_CAPABILITY_NETWORK_CARD
@@ -195,6 +197,8 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_MEB_JCN12,  "mc_cxl2",   "MC CXL2",          MEB_BIC_BUS,   MEB_BIC_ADDR,   MEB_CXL_CAPABILITY, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN13,  "mc_jcn13",  "MC JCN13",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN14,  "mc_jcn14",  "MC JCN14",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
+  //UBB
+  {FRU_UBB, "ubb", "UBB Board", 9, 0x54, UBB_CAPABILITY, FRU_PATH_NONE, fru_presence, PLDM_FRU_NOT_SUPPORT}
 };
 
 uint8_t
@@ -218,6 +222,76 @@ pal_is_artemis() { // TODO: Use MB CPLD Offest to check the platform
 #else
   return false;
 #endif
+}
+
+int
+pal_set_gpu_fru_id (uint8_t fru) {
+
+  if (gpio_get_value_by_shadow("GPU_PRSNT_N_ISO_R") == GPIO_VALUE_HIGH) {
+    return -1;
+  }
+
+  if (fru == FRU_HGX) {
+    kv_set("gpu_config", "hgx", 0, KV_FPERSIST);
+  }
+  else if (fru == FRU_UBB) {
+    kv_set("gpu_config", "ubb", 0, KV_FPERSIST);
+  }
+  else {
+    return -1;
+  }
+
+  return fru;
+}
+
+int
+pal_get_gpu_fru_id () {
+  int ret = -1;
+  char value[MAX_KEY_LEN] = {0};
+
+  if (gpio_get_value_by_shadow("GPU_PRSNT_N_ISO_R") == GPIO_VALUE_HIGH) {
+    return -1;
+  }
+
+  ret = kv_get("gpu_config", value, NULL, KV_FPERSIST);
+  if (ret) {
+    int fd = 0;
+    uint8_t tlen, rlen;
+    uint8_t tbuf[16] = {0};
+    uint8_t rbuf[16] = {0};
+    uint8_t hgx_eeprom_addr = 0xA6;
+
+    fd = i2c_cdev_slave_open(I2C_BUS_9, hgx_eeprom_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+	if (fd < 0) {
+	  syslog(LOG_WARNING, "%s() Failed to open %d", __func__, I2C_BUS_9);
+      return ret;
+    }
+
+    tbuf[0] = 0x00;
+    tlen = 1;
+    rlen = 1;
+
+    ret = i2c_rdwr_msg_transfer(fd, hgx_eeprom_addr, tbuf, tlen, rbuf, rlen);
+    i2c_cdev_slave_close(fd);
+
+    if (!ret) {
+      return pal_set_gpu_fru_id(FRU_HGX);
+    }
+    else {
+      return pal_set_gpu_fru_id(FRU_UBB);
+    }
+  }
+  else {
+    if (strcmp(value, "hgx") == 0) {
+      return FRU_HGX;
+    }
+    else if (strcmp(value, "ubb") == 0) {
+      return FRU_UBB;
+    }
+    else {
+      return -1;
+    }
+  }
 }
 
 int
@@ -798,6 +872,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
       case FRU_SWB:
       case FRU_HGX:
       case FRU_OCPDBG:
+      case FRU_UBB:
       case FRU_SHSC:
         *caps = 0; // Not in Artemis
         break;
@@ -843,6 +918,22 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
       case FRU_MEB_JCN13:
       case FRU_MEB_JCN14:
         *caps = 0;
+        break;
+      case FRU_HGX:
+        if (pal_get_gpu_fru_id() == FRU_UBB) {
+          *caps = 0;
+        }
+        else {
+          *caps = HGX_CAPABILITY;
+        }
+        break;
+      case FRU_UBB:
+        if (pal_get_gpu_fru_id() == FRU_HGX) {
+          *caps = 0;
+        }
+        else {
+          *caps = UBB_CAPABILITY;
+        }
         break;
       case FRU_SHSC:
         if (is_swb_hsc_module()) {

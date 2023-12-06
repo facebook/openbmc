@@ -13,6 +13,7 @@
 
 extern PAL_SENSOR_MAP mb_sensor_map[];
 extern PAL_SENSOR_MAP hgx_sensor_map[];
+extern PAL_SENSOR_MAP ubb_sensor_map[];
 extern PAL_SENSOR_MAP swb_sensor_map[];
 extern PAL_SENSOR_MAP bb_sensor_map[];
 extern PAL_SENSOR_MAP acb_artemis_sensor_map[];
@@ -29,6 +30,7 @@ extern const uint8_t swb_discrete_sensor_list[];
 extern const uint8_t swb_optic_sensor_list[];
 
 extern const uint8_t hgx_sensor_list[];
+extern const uint8_t ubb_sensor_list[];
 
 extern const uint8_t nic0_sensor_list[];
 extern const uint8_t nic1_sensor_list[];
@@ -60,6 +62,7 @@ extern size_t swb_discrete_sensor_cnt;
 extern size_t swb_optic_sensor_cnt;
 
 extern size_t hgx_sensor_cnt;
+extern size_t ubb_sensor_cnt;
 
 extern size_t nic0_sensor_cnt;
 extern size_t nic1_sensor_cnt;
@@ -127,7 +130,8 @@ struct snr_map sensor_map[] = {
   { FRU_MEB_JCN11,  meb_clx_sensor_map, true },
   { FRU_MEB_JCN12,  meb_clx_sensor_map, true },
   { FRU_MEB_JCN13,  meb_e1s_sensor_map, true },
-  { FRU_MEB_JCN14,  meb_e1s_sensor_map, true }
+  { FRU_MEB_JCN14,  meb_e1s_sensor_map, true },
+  { FRU_UBB,  ubb_sensor_map, true },
 };
 
 int
@@ -260,6 +264,9 @@ pal_get_sensor_poll_interval(uint8_t fru, uint8_t num, uint32_t *value) {
           break;
       }
       break;
+    case FRU_UBB:
+      *value = 5;
+      break;
     default:
       *value = 2;
       break;
@@ -378,6 +385,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     if (pal_is_artemis()) {
       *sensor_list = (uint8_t *) meb_cxl_sensor_list;
       *cnt = meb_cxl_sensor_cnt;
+    } else {
+      *sensor_list = NULL;
+      *cnt = 0;
+    }
+  } else if (fru == FRU_UBB) {
+    if (pal_get_gpu_fru_id() == FRU_UBB) {
+     *sensor_list = (uint8_t *) ubb_sensor_list;
+      *cnt = ubb_sensor_cnt;
     } else {
       *sensor_list = NULL;
       *cnt = 0;

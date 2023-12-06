@@ -135,6 +135,62 @@ class HGXMgr {
 
 static HGXMgr hgx;
 
+class UBBMgr : public HGXMgr {
+public:
+  void getMetricReports() {
+    const std::vector<std::string> UBB_URL_TABLE = {
+      "PlatformSensorsMetrics_0",
+      "OAM_ProcessorMetrics_0",
+      "OAM_MemoryMetrics_0",
+    };
+
+    std::string url;
+    std::string resp;
+    std::string snr_val;
+    unsigned int pos_start, pos_end;
+    for (const std::string& suburl : UBB_URL_TABLE) {
+      url = HMC_URL + "TelemetryService/MetricReports/" + suburl;
+      resp = HGXMgr::get(url);
+      json jresp = json::parse(resp);
+      json &tempArray = jresp["MetricValues"];
+      for(auto &x : tempArray)
+      {
+        auto jname = x.find("MetricProperty");
+        std::string snr_path = jname.value();
+        if (snr_path.find("#") != std::string::npos) {
+          continue;
+        }
+        else if(snr_path.find("Reading") != std::string::npos) {
+          pos_end = snr_path.find_last_of("/\\");
+          pos_start = snr_path.find_last_of("/\\", pos_end - 1);
+          snr_path = snr_path.substr(pos_start + 1, pos_end - pos_start -1);
+        }
+        else {
+          pos_start = snr_path.find_last_of("/\\");
+          snr_path = snr_path.substr(pos_start + 1);
+        }
+
+        auto jvalue = x.find("MetricValue");
+        if (jvalue.value().is_null()) {
+          continue;
+        }
+        else {
+          snr_val = jvalue.value();
+        }
+
+        pos_start = snr_val.find_first_not_of("0123456789");
+        if (pos_start != 0) {
+          kv::set(snr_path, snr_val);
+        }
+        else {
+          kv::set(snr_path, "");
+        }
+      }
+    }
+  }
+};
+
+
 std::string redfishGet(const std::string& subpath) {
   if (subpath.starts_with("/redfish/v1")) {
     return hgx.get(HMC_BASE_URL + subpath);
@@ -566,11 +622,20 @@ int get_hgx_ver(const char* component, char *version) {
   return 0;
 }
 
-int hgx_get_metric_reports() {
+int hgx_get_metric_reports(char *gpu_config) {
   try {
-    hgx::getMetricReports();
-  } catch (std::exception& e) {
+    if (!strcmp(gpu_config, "hgx")) {
+      hgx::getMetricReports();
+    }
+    else if (!strcmp(gpu_config, "ubb")) {
+      hgx::UBBMgr ubbMgr;
+      ubbMgr.getMetricReports();
+    }
+    else {
       return -1;
+    }
+  } catch (std::exception& e) {
+    return -1;
   }
   return 0;
 }

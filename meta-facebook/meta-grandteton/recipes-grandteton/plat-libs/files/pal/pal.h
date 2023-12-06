@@ -76,6 +76,7 @@ bool pal_check_apml_ras_status(uint8_t soc_num, uint8_t *ras_sts);
 int pal_get_cpu_id(uint8_t soc_num);
 bool fru_presence_ext(uint8_t fru_id, uint8_t *status);
 void hgx_pwr_limit_mon (void);
+int pal_get_gpu_fru_id();
 
 #ifdef __cplusplus
 } // extern "C"

@@ -39,6 +39,7 @@ enum {
   TEMP_GB_HSC10,
   TEMP_GB_INLET0,
   TEMP_GB_INLET1,
+  TEMP_IBC = 0x1F,
 
   TEMP_GB_PCB0 = 0x20,
   TEMP_GB_PCB1,
@@ -127,6 +128,7 @@ enum {
   TEMP_GB_NVS1,
   TEMP_GB_NVS2,
   TEMP_GB_NVS3,
+
   HGX_SNR_CNT = 0x7f,
 };
 

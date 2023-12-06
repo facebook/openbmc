@@ -119,7 +119,7 @@ std::string sensorRaw(const std::string& component, const std::string& name);
 extern "C" {
 #endif
 
-int hgx_get_metric_reports(void);
+int hgx_get_metric_reports(char* gpu_config);
 int get_hgx_sensor(const char* component, const char* snr_name, float* value);
 int get_hgx_ver(const char* component, char *version);
 HMCPhase get_hgx_phase();

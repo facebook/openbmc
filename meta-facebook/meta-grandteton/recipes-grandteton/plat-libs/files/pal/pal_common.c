@@ -78,7 +78,7 @@ struct source_info comp_source_data[] = {
   {FRU_FIO,   NULL},
   {FRU_HSC,   NULL},
   {FRU_SHSC,  NULL},
-
+  {FRU_UBB,   NULL},
 };
 
 
@@ -355,6 +355,11 @@ fru_presence(uint8_t fru_id, uint8_t *status) {
       }
       return false;
     case FRU_HGX:
+    case FRU_UBB:
+      if (pal_get_gpu_fru_id() != fru_id) {
+        *status = FRU_NOT_PRSNT;
+        return true;
+      }
       gpio_value = gpio_get_value_by_shadow(HMC_PRESENCE);
       if(gpio_value != GPIO_VALUE_INVALID) {
         *status = gpio_value ? FRU_NOT_PRSNT: FRU_PRSNT;

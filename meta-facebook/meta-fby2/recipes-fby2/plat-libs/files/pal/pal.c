@@ -6438,20 +6438,20 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 const char pmbus_status_word_fault_str [16][16] = {
   "NONE OF ABOVE",      // bit 0
   "CML",
-  "TEMP_F",
-  "VIN_UV_F",
-  "IOUT_OC_F",
-  "VOUT_OV_F",
+  "TEMP_FAULT",
+  "VIN_UV_FAULT",
+  "IOUT_OC_FAULT",
+  "VOUT_OV_FAULT",
   "OFF",
   "BUSY",
-  "UNKNOW",     // bit 8
+  "UNKNOWN",     // bit 8
   "OTHER",
-  "FAN_F",
+  "FAN_FAULT",
   "PWRGD_N",
   "MFR",
-  "INPUT_F",
-  "IOUT_F",
-  "VOUT_F"
+  "INPUT_FAULT",
+  "IOUT_FAULT",
+  "VOUT_FAULT"
 };
 
 const char nd_bic_vr_dev_name [4][16] = {
@@ -6490,8 +6490,8 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
       if (vr_dev_num < nv_bic_vr_dev_count) {
         snprintf(error_log, 256, "%s VR Alert: ", nd_bic_vr_dev_name[vr_dev_num]);
       } else {
-        snprintf(error_log, 256, "Unknow VR device Alert");
-        // no extra parsing of status_word for unknow vr device
+        snprintf(error_log, 256, "Unknown VR device Alert");
+        // no extra parsing of status_word for unknown vr device
         return 0;
       }
 

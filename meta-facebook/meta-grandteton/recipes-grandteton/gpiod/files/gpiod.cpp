@@ -925,10 +925,8 @@ int get_gpios_common_list(struct gpiopoll_config** list) {
 }
 
 
-static int
-set_pldm_event_receiver()
-{
-  // pldmd-util -b 3 -e 0x0a raw 0x02 0x04 0x00 0x00 0x08 0x00 0x00
+static void*
+delay_pldm_event_receiver(void *arg) {
   uint8_t tbuf[MAX_TXBUF_SIZE] = {0};
   uint8_t* rbuf = (uint8_t *) NULL;
   uint8_t tlen = 0;
@@ -946,13 +944,65 @@ set_pldm_event_receiver()
   tbuf[tlen++] = 0x00; // heartbeatTimer
   tbuf[tlen++] = 0x00; // heartbeatTimer
 
-  rc = oem_pldm_send_recv(SWB_BUS_ID, SWB_BIC_EID, tbuf, tlen, &rbuf, &rlen);
+  pthread_detach(pthread_self());
+
+  rc = oem_pldm_send_recv(MEB_BIC_BUS, MEB_BIC_EID, tbuf, tlen, &rbuf, &rlen);
   if (rc == PLDM_SUCCESS) {
     syslog(LOG_INFO, "Set PLDM event receiver success.");
   }
 
   if (rbuf) {
     free(rbuf);
+  }
+
+  // wait 10 secs for divide logs from cb/mc
+  sleep(DELAY_CB_SET_PLDM_RECEIVER);
+
+  rc = oem_pldm_send_recv(ACB_BIC_BUS, ACB_BIC_EID, tbuf, tlen, &rbuf, &rlen);
+  if (rc == PLDM_SUCCESS) {
+    syslog(LOG_INFO, "Set PLDM event receiver success.");
+  }
+
+  if (rbuf) {
+    free(rbuf);
+  }
+  pthread_exit(NULL);
+}
+
+static int
+set_pldm_event_receiver()
+{
+  // pldmd-util -b 3 -e 0x0a raw 0x02 0x04 0x00 0x00 0x08 0x00 0x00
+  uint8_t tbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t* rbuf = (uint8_t *) NULL;
+  uint8_t tlen = 0;
+  size_t  rlen = 0;
+  int rc;
+  pthread_t tid_gta_delay_pldm_event_receiver;
+
+  struct pldm_msg* pldmbuf = (struct pldm_msg *)tbuf;
+  pldmbuf->hdr.request = 1;
+  pldmbuf->hdr.type    = PLDM_PLATFORM;
+  pldmbuf->hdr.command = PLDM_SET_EVENT_RECEIVER;
+  tlen = PLDM_HEADER_SIZE;
+  tbuf[tlen++] = 0x00; // eventMessageGlobalEnable, 0x00: Disable
+  tbuf[tlen++] = 0x00; // transportProtocolType,    0x00: MCTP
+  tbuf[tlen++] = 0x08; // eventReceiverAddressInfo  0x08: EID
+  tbuf[tlen++] = 0x00; // heartbeatTimer
+  tbuf[tlen++] = 0x00; // heartbeatTimer
+
+  if (pal_is_artemis()) {
+    if ((rc = pthread_create(&tid_gta_delay_pldm_event_receiver, NULL, delay_pldm_event_receiver, NULL)) < 0) {
+      syslog(LOG_WARNING, "%s Create thread failed!\n", __func__);
+    }
+  } else {
+    rc = oem_pldm_send_recv(SWB_BUS_ID, SWB_BIC_EID, tbuf, tlen, &rbuf, &rlen);
+    if (rc == PLDM_SUCCESS) {
+      syslog(LOG_INFO, "Set PLDM event receiver success.");
+    }
+    if (rbuf) {
+      free(rbuf);
+    }
   }
 
   return rc;

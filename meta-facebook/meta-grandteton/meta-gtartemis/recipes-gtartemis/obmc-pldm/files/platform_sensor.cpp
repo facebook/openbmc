@@ -35,6 +35,10 @@ std::string get_sensor_name(uint16_t id)
     {0x17, "CB_SENSOR_ACCL_POWER_CABLE_11"},
     {0x18, "CB_SENSOR_ACCL_POWER_CABLE_12"},
     {0x19, "CB_SENSOR_FIO"},
+    {0x80, "MC_SENSOR_SSD_1"},
+    {0x81, "MC_SENSOR_SSD_2"},
+    {0x82, "MC_SENSOR_SSD_3"},
+    {0x83, "MC_SENSOR_SSD_4"},
   };
 
   if (sensor_map.find(id) !=sensor_map.end())

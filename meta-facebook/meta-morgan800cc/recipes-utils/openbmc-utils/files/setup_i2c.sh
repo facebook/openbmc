@@ -20,7 +20,7 @@
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
-# Bus 7
-i2c_device_add 7 0x50 24c64 # Chassis EEPROM
-# Bus 4
-i2c_device_add 4 0x50 24c64 # SCM EEPROM
+# Bus 6
+i2c_device_add 6 0x50 24c64 # Chassis EEPROM
+# Bus 3
+i2c_device_add 3 0x50 24c64 # SCM EEPROM

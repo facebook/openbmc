@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-MCB_FPGA_I2C_BUS_NUM=13 # i2c-13 for Main Control Board FPGA
+MCB_FPGA_I2C_BUS_NUM=12 # i2c-12 for Main Control Board FPGA
 
 # Divide the register address value on FPGA spec by 4 to get the actual address
 I2C_BOARD_VERSION_REGISTER_ADDR=0x8

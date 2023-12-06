@@ -2454,6 +2454,12 @@ paths:
                     properties: 
                       value: 
                         type: string
+                  SYSTEM_POWER_W:
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
               Actions: 
                 type: array
                 items: 

@@ -83,8 +83,8 @@ PAL_SENSOR_MAP acb_freya_sensor_map[] = {
   //
   {"P51V_AUX_L_PWR", 0, get_acb_sensor, false, {1820, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x41
   {"P51V_AUX_R_PWR", 0, get_acb_sensor, false, {1820, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x42
-  {"P12V_AUX_1_PWR", 0, get_acb_sensor, false, {1600, 0, 0, 0, 0, 0, 0}, POWER}, // 0x43
-  {"P12V_AUX_2_PWR", 0, get_acb_sensor, false, {1600, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x44
+  {"P12V_AUX_1_PWR", 0, get_acb_sensor, false, {1920, 0, 0, 0, 0, 0, 0}, POWER}, // 0x43
+  {"P12V_AUX_2_PWR", 0, get_acb_sensor, false, {1920, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x44
   {"P12V_ACCL1_PWR", 0, get_acb_sensor, false, {275.24, 0, 344.04, 0, 0, 0, 0, 0}, POWER}, // 0x45
   {"P12V_ACCL2_PWR", 0, get_acb_sensor, false, {275.24, 0, 344.04, 0, 0, 0, 0, 0}, POWER}, // 0x46
   {"P12V_ACCL3_PWR", 0, get_acb_sensor, false, {275.24, 0, 344.04, 0, 0, 0, 0, 0}, POWER}, // 0x47
@@ -273,8 +273,8 @@ PAL_SENSOR_MAP acb_artemis_sensor_map[] = {
   //
   {"P51V_AUX_L_PWR", 0, get_acb_sensor, false, {1820, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x41
   {"P51V_AUX_R_PWR", 0, get_acb_sensor, false, {1820, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x42
-  {"P12V_AUX_1_PWR", 0, get_acb_sensor, false, {1600, 0, 0, 0, 0, 0, 0}, POWER}, // 0x43
-  {"P12V_AUX_2_PWR", 0, get_acb_sensor, false, {1600, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x44
+  {"P12V_AUX_1_PWR", 0, get_acb_sensor, false, {1920, 0, 0, 0, 0, 0, 0}, POWER}, // 0x43
+  {"P12V_AUX_2_PWR", 0, get_acb_sensor, false, {1920, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x44
   {"P12V_ACCL1_PWR", 0, get_acb_sensor, false, {275.24, 0, 344.04, 0, 0, 0, 0, 0}, POWER}, // 0x45
   {"P12V_ACCL2_PWR", 0, get_acb_sensor, false, {275.24, 0, 344.04, 0, 0, 0, 0, 0}, POWER}, // 0x46
   {"P12V_ACCL3_PWR", 0, get_acb_sensor, false, {275.24, 0, 344.04, 0, 0, 0, 0, 0}, POWER}, // 0x47

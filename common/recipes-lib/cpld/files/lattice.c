@@ -236,11 +236,17 @@ LCMXO2Family_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size)
   unsigned int CFStart = 0;
   unsigned int UFMStart = 0;
   const char TAG_UFM[] = "NOTE TAG DATA";
+  const char TAG_EBR_START[] = "NOTE EBR_INIT DATA";
+  const char TAG_FIRST_FUSE_ADDR[] = "L";
   int ret = 0;
 
   while( NULL != fgets(tmp_buf, ReadLineSize, jed_fd) )
   {
     if ( startWith(tmp_buf, TAG_CF_START/*"L000"*/) )
+    {
+      CFStart = 1;
+    }
+    else if ( startWith(tmp_buf, TAG_EBR_START) )
     {
       CFStart = 1;
     }
@@ -251,7 +257,10 @@ LCMXO2Family_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size)
 
     if ( CFStart )
     {
-      if ( !startWith(tmp_buf, TAG_CF_START/*"L000"*/) && strlen(tmp_buf) != 1 )
+      if ( !startWith(tmp_buf, TAG_CF_START/*"L000"*/) &&
+           !startWith(tmp_buf, TAG_EBR_START) &&
+           !startWith(tmp_buf, TAG_FIRST_FUSE_ADDR) &&
+           strlen(tmp_buf) != 1 )
       {
         if ( startWith(tmp_buf,"0") || startWith(tmp_buf,"1") )
         {
@@ -298,6 +307,8 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
   const char TAG_ROW[] = "NOTE FEATURE";
   const char TAG_CHECKSUM[] = "C";
   const char TAG_USERCODE[] = "NOTE User Electronic";
+  const char TAG_EBR_START[] = "NOTE EBR_INIT DATA";
+  const char TAG_FIRST_FUSE_ADDR[] = "L";
   /**TAG Information**/
 
   int ReadLineSize = LATTICE_COL_SIZE + 2;//the len of 128 only contain data size, '\n' need to be considered, too.
@@ -351,6 +362,13 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
 #endif
       CFStart = 1;
     }
+    else if ( startWith(tmp_buf, TAG_EBR_START) )
+    {
+#ifdef CPLD_DEBUG
+      printf("[CFStart]\n");
+#endif
+      CFStart = 1;
+    }
     else if ( startWith(tmp_buf, TAG_UFM/*"NOTE TAG DATA"*/) )
     {
 #ifdef CPLD_DEBUG
@@ -385,7 +403,10 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
 #ifdef VERBOSE_DEBUG
       printf("[%s][%zu][%c]", __func__, strlen(tmp_buf), tmp_buf[0]);
 #endif
-      if ( !startWith(tmp_buf, TAG_CF_START/*"L000"*/) && strlen(tmp_buf) != 1 )
+      if ( !startWith(tmp_buf, TAG_CF_START/*"L000"*/) &&
+           !startWith(tmp_buf, TAG_EBR_START) &&
+           !startWith(tmp_buf, TAG_FIRST_FUSE_ADDR) &&
+           strlen(tmp_buf) != 1 )
       {
         if ( startWith(tmp_buf,"0") || startWith(tmp_buf,"1") )
         {

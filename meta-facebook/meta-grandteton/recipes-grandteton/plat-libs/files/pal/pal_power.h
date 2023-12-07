@@ -1,6 +1,7 @@
 #ifndef __PAL_POWER_H__
 #define __PAL_POWER_H__
 #include <stdint.h>
+#include "pal_def.h"
 
 enum DEV_POWER_ACTION {
   GET_DEV_POWER = 0x0,

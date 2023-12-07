@@ -170,7 +170,7 @@ int bic_cpld_reg_bit_opeation(uint8_t bic_bus, uint8_t bic_eid, uint8_t cpld_bus
   return 0;
 }
 
-static int 
+static int
 get_acb_power_status(uint8_t *status) {
   int ret = 0;
   uint8_t txbuf[MAX_TXBUF_SIZE] = {0};
@@ -227,7 +227,7 @@ pal_get_fru_power(uint8_t fru, uint8_t *status) {
     bic_bus = MEB_BIC_BUS;
     bic_eid = MEB_BIC_EID;
     txbuf[0] = MEB_CPLD_BUS;
-    txbuf[1] = MEB_CPLD_ADDR;  
+    txbuf[1] = MEB_CPLD_ADDR;
     txbuf[3] = MEB_POWER_REG;
     power_good_bit = (1 << MEB_POWER_GOOD_BIT);
     break;
@@ -605,7 +605,7 @@ void pal_ac_off_meb() {
   if (ret < 0) {
     syslog(LOG_ERR, "%s() I2C transfer to MC CPLD failed, ret = %d", __func__, ret);
   }
-  
+
   i2c_cdev_slave_close(i2cfd);
 
   return;
@@ -674,7 +674,7 @@ int pal_sled_cycle(void) {
     return -1;
 
   if (pal_is_artemis()) {
-    pal_ac_off_meb(); 
+    pal_ac_off_meb();
     msleep(100);
   }
 
@@ -769,7 +769,7 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
   return cc;
 }
 
-uint8_t 
+uint8_t
 pal_set_slot_power_policy(uint8_t *pwr_policy, uint8_t *res_data)
 {
   int cc = CC_SUCCESS;
@@ -944,4 +944,38 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
    *data++ = 0x40;   // Misc. Chassis Status
    *data++ = 0x00;   // Front Panel Button Disable
    *res_len = data - res_data;
+}
+
+static bool
+is_not_ongoing(uint8_t fru)
+{
+  char fruname[32];
+  if (pal_get_fru_name(fru, fruname)) {
+    sprintf(fruname, "fru%d", fru);
+  }
+  if (pal_is_fw_update_ongoing(fru)) {
+    printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+  if (pal_is_crashdump_ongoing(fru)) {
+    printf("Crashdump for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+  if (pal_is_cplddump_ongoing(fru)) {
+    printf("CPLD dump for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+  return true;
+}
+
+bool
+pal_can_change_power(uint8_t fru)
+{
+  bool ret = is_not_ongoing(fru);
+
+  // MB needs to check HGX too
+  if (ret && fru == FRU_MB)
+    ret = is_not_ongoing(FRU_HGX);
+
+  return ret;
 }

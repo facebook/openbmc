@@ -138,53 +138,46 @@ static HGXMgr hgx;
 class UBBMgr : public HGXMgr {
 public:
   void getMetricReports() {
-    const std::vector<std::string> UBB_URL_TABLE = {
-      "PlatformSensorsMetrics_0",
-      "OAM_ProcessorMetrics_0",
-      "OAM_MemoryMetrics_0",
-    };
-
     std::string url;
     std::string resp;
     std::string snr_val;
     unsigned int pos_start, pos_end;
-    for (const std::string& suburl : UBB_URL_TABLE) {
-      url = HMC_URL + "TelemetryService/MetricReports/" + suburl;
-      resp = HGXMgr::get(url);
-      json jresp = json::parse(resp);
-      json &tempArray = jresp["MetricValues"];
-      for(auto &x : tempArray)
-      {
-        auto jname = x.find("MetricProperty");
-        std::string snr_path = jname.value();
-        if (snr_path.find("#") != std::string::npos) {
-          continue;
-        }
-        else if(snr_path.find("Reading") != std::string::npos) {
-          pos_end = snr_path.find_last_of("/\\");
-          pos_start = snr_path.find_last_of("/\\", pos_end - 1);
-          snr_path = snr_path.substr(pos_start + 1, pos_end - pos_start -1);
-        }
-        else {
-          pos_start = snr_path.find_last_of("/\\");
-          snr_path = snr_path.substr(pos_start + 1);
-        }
+    url = HMC_URL + "TelemetryService/MetricReports/All";
+    resp = HGXMgr::get(url);
+    json jresp = json::parse(resp);
+    json &tempArray = jresp["MetricValues"];
+    for(auto &x : tempArray)
+    {
+      auto jname = x.find("MetricProperty");
+      std::string snr_path = jname.value();
+      if (snr_path.find("TEMP") == std::string::npos &&
+          snr_path.find("POWER") == std::string::npos) {
+        continue;
+      }
+      else if(snr_path.find("Reading") != std::string::npos) {
+        pos_end = snr_path.find_last_of("/\\");
+        pos_start = snr_path.find_last_of("/\\", pos_end - 1);
+        snr_path = snr_path.substr(pos_start + 1, pos_end - pos_start -1);
+      }
+      else {
+        pos_start = snr_path.find_last_of("/\\");
+        snr_path = snr_path.substr(pos_start + 1);
+      }
 
-        auto jvalue = x.find("MetricValue");
-        if (jvalue.value().is_null()) {
-          continue;
-        }
-        else {
-          snr_val = jvalue.value();
-        }
+      auto jvalue = x.find("MetricValue");
+      if (jvalue.value().is_null()) {
+        continue;
+      }
+      else {
+        snr_val = jvalue.value();
+      }
 
-        pos_start = snr_val.find_first_not_of("0123456789");
-        if (pos_start != 0) {
-          kv::set(snr_path, snr_val);
-        }
-        else {
-          kv::set(snr_path, "");
-        }
+      pos_start = snr_val.find_first_not_of("0123456789");
+      if (pos_start != 0) {
+        kv::set(snr_path, snr_val);
+      }
+      else {
+        kv::set(snr_path, "");
       }
     }
   }
@@ -622,12 +615,12 @@ int get_hgx_ver(const char* component, char *version) {
   return 0;
 }
 
-int hgx_get_metric_reports(char *gpu_config) {
+int hgx_get_metric_reports(int gpu_config) {
   try {
-    if (!strcmp(gpu_config, "hgx")) {
+    if (gpu_config == GPU_CONFIG_HGX) {
       hgx::getMetricReports();
     }
-    else if (!strcmp(gpu_config, "ubb")) {
+    else if (gpu_config == GPU_CONFIG_UBB) {
       hgx::UBBMgr ubbMgr;
       ubbMgr.getMetricReports();
     }

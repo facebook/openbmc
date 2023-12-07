@@ -264,9 +264,6 @@ pal_get_sensor_poll_interval(uint8_t fru, uint8_t num, uint32_t *value) {
           break;
       }
       break;
-    case FRU_UBB:
-      *value = 5;
-      break;
     default:
       *value = 2;
       break;

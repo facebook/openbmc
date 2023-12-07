@@ -7,6 +7,12 @@ typedef enum HMCPhase {
   BMC_FW_DVT = 2,
 } HMCPhase;
 
+enum GPU_CONFIG {
+  GPU_CONFIG_HGX,
+  GPU_CONFIG_UBB,
+  GPU_CONFIG_UNKNOWN
+};
+
 #define MAX_NUM_GPUs     (8)
 
 #ifdef __cplusplus
@@ -119,7 +125,7 @@ std::string sensorRaw(const std::string& component, const std::string& name);
 extern "C" {
 #endif
 
-int hgx_get_metric_reports(char* gpu_config);
+int hgx_get_metric_reports(int gpu_config);
 int get_hgx_sensor(const char* component, const char* snr_name, float* value);
 int get_hgx_ver(const char* component, char *version);
 HMCPhase get_hgx_phase();

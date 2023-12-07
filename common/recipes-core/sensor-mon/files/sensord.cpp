@@ -812,7 +812,7 @@ run_sensord(int argc, char **argv) {
 
   int ret, arg;
   uint8_t fru;
-  int fru_flag = 0;
+  bool fru_flag[MAX_SENSORD_FRU+1] = {0};
   pthread_t thread_snr[MAX_SENSORD_FRU];
   pthread_t sensor_health;
   pthread_t agg_sensor_mon;
@@ -824,15 +824,16 @@ run_sensord(int argc, char **argv) {
     if (ret < 0) {
       return ret;
     }
+    fru_flag[fru] = 1;
 
-    fru_flag = SETBIT(fru_flag, fru);
     arg++;
   }
 
   ret = pal_sensor_monitor_initial();
+
   for (fru = 1; fru <= MAX_SENSORD_FRU; fru++) {
 
-    if (GETBIT(fru_flag, fru)) {
+    if (fru_flag[fru]) {
 
       if (init_fru_snr_thresh(fru) < 0)
         continue;
@@ -874,8 +875,7 @@ run_sensord(int argc, char **argv) {
   pthread_join(sensor_health, NULL);
 
   for (fru = 1; fru <= MAX_SENSORD_FRU; fru++) {
-
-    if (GETBIT(fru_flag, fru))
+    if (fru_flag[fru])
       pthread_join(thread_snr[fru-1], NULL);
   }
   return 0;

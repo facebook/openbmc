@@ -848,7 +848,7 @@ enable_init (char* desc, gpio_value_t value) {
 void
 enable_handle (char* desc, gpio_value_t value) {
   const char* str = value? "enable": "disable";
-  iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str, false, value);
+  iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str, true, value);
 }
 
 void

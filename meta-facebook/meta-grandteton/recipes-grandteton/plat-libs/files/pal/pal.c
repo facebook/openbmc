@@ -65,6 +65,10 @@
 #define TRIGGER_BY_SYNC_FLOOD_RESET 0xE4
 #define TRIGGER_BY_MB_RESET 0xE5
 
+#define CONFIG_HGX 0x01
+#define CONFIG_UBB 0x02
+#define CONFIG_UNKNOWN 0XFF
+
 const char pal_fru_list[] = \
 "all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, " \
 // Artemis fru list
@@ -1629,6 +1633,26 @@ pal_handle_oem_1s_dev_power(uint8_t fru, uint8_t *req_data, uint8_t req_len, uin
   } else {
       return CC_UNSPECIFIED_ERROR;
   }
+
+  return CC_SUCCESS;
+}
+
+int
+pal_get_dev_card_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  char value[MAX_VALUE_LEN] = {0};
+
+  if(kv_get("gpu_config", value, NULL, KV_FPERSIST) == 0) {
+    if (strcmp( value, "hgx") == 0) {
+      res_data[0] = CONFIG_HGX;
+    } else if(strcmp( value, "ubb") == 0) {
+      res_data[0] = CONFIG_UBB;
+    } else {
+      res_data[0] = CONFIG_UNKNOWN;
+    }
+  } else {
+    res_data[0] = CONFIG_UNKNOWN;
+  }
+  *res_len = 0x01;
 
   return CC_SUCCESS;
 }

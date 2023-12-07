@@ -168,8 +168,8 @@ void RackmonUNIXSocketService::handleJSONCommand(
     print_msg(e);
   }
 
-  std::string resp_s = resp.dump();
   try {
+    std::string resp_s = resp.dump(-1, ' ', false, json::error_handler_t::replace);
     cli->send(resp_s.c_str(), resp_s.length());
   } catch (std::exception& e) {
     logError << "Unable to send response: " << e.what() << std::endl;

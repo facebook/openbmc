@@ -1,0 +1,987 @@
+From dcded869ff176344090af160a3719f665c23f9b3 Mon Sep 17 00:00:00 2001
+From: "Jason M. Bills" <jason.m.bills@linux.intel.com>
+Date: Thu, 25 Feb 2021 15:06:38 -0800
+Subject: [PATCH] Add PECI Telemetry command
+
+This adds support for the PECI Telemetry command:
+   - IOCTLs added to the PECI driver header
+   - APIs added to libpeci
+   - Command added to peci_cmds for testing
+
+Tested:
+Ran the Telemetry commands using peci_cmds.
+
+Change-Id: Idf8ec9c78f8204afc3f21cac7410c2f3127ae967
+Signed-off-by: Jason M. Bills <jason.m.bills@linux.intel.com>
+
+%% original patch: 0002-Add-PECI-Telemetry-command.patch
+Upstream-Status: Pending
+---
+ linux/peci-ioctl.h |  93 +++++++++++
+ peci.c             | 336 ++++++++++++++++++++++++++++++++++++++
+ peci.h             |  61 +++++++
+ peci_cmds.c        | 399 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 889 insertions(+)
+
+diff --git a/linux/peci-ioctl.h b/linux/peci-ioctl.h
+index 59ff376..f8629c6 100644
+--- a/linux/peci-ioctl.h
++++ b/linux/peci-ioctl.h
+@@ -77,6 +77,11 @@ enum peci_cmd {
+ 	PECI_CMD_WR_END_PT_CFG,
+ 	PECI_CMD_CRASHDUMP_DISC,
+ 	PECI_CMD_CRASHDUMP_GET_FRAME,
++	PECI_CMD_TELEMETRY_DISC,
++	PECI_CMD_TELEMETRY_GET_TELEM_SAMPLE,
++	PECI_CMD_TELEMETRY_CONFIG_WATCHER_RD,
++	PECI_CMD_TELEMETRY_CONFIG_WATCHER_WR,
++	PECI_CMD_TELEMETRY_GET_CRASHLOG_SAMPLE,
+ 	PECI_CMD_MAX
+ };
+ 
+@@ -640,6 +645,74 @@ struct peci_crashdump_get_frame_msg {
+ 	__u8	padding2[3];
+ } __attribute__((__packed__));
+ 
++struct peci_telemetry_disc_msg {
++#define PECI_TELEMETRY_DISC_WRITE_LEN		9
++#define PECI_TELEMETRY_DISC_READ_LEN_BASE	1
++#define PECI_TELEMETRY_DISC_VERSION		0
++#define PECI_TELEMETRY_DISC_OPCODE		1
++#define PECI_TELEMETRY_CMD			0x81
++
++	__u8	addr;
++	__u8	subopcode;
++	__u8	cc;
++	__u8	param0;
++	__u16	param1;
++	__u8	param2;
++	__u8	rx_len;
++	__u8	data[10];
++	__u8	domain_id;
++	__u8	padding;
++} __attribute__((__packed__));
++
++struct peci_telemetry_get_telem_sample_msg {
++#define PECI_TELEMETRY_GET_TELEM_SAMPLE_WRITE_LEN	8
++#define PECI_TELEMETRY_GET_TELEM_SAMPLE_READ_LEN	9
++#define PECI_TELEMETRY_GET_TELEM_SAMPLE_VERSION	0
++#define PECI_TELEMETRY_GET_TELEM_SAMPLE_OPCODE	2
++
++	__u8	addr;
++	__u8	cc;
++	__u16	index;
++	__u16	sample;
++	__u8	data[8];
++	__u8	domain_id;
++	__u8	padding;
++} __attribute__((__packed__));
++
++struct peci_telemetry_config_watcher_msg {
++#define PECI_TELEMETRY_CONFIG_WATCHER_RD_WRITE_LEN	9
++#define PECI_TELEMETRY_CONFIG_WATCHER_RD_READ_LEN	9
++#define PECI_TELEMETRY_CONFIG_WATCHER_WR_WRITE_LEN	17
++#define PECI_TELEMETRY_CONFIG_WATCHER_WR_READ_LEN	1
++#define PECI_TELEMETRY_CONFIG_WATCHER_VERSION		0
++#define PECI_TELEMETRY_CONFIG_WATCHER_OPCODE		3
++#define PECI_TELEMETRY_CONFIG_WATCHER_RD_PARAM		0
++#define PECI_TELEMETRY_CONFIG_WATCHER_WR_PARAM		1
++
++	__u8	addr;
++	__u8	cc;
++	__u16	watcher;
++	__u16	offset;
++	__u8	data[8];
++	__u8	domain_id;
++	__u8	padding;
++} __attribute__((__packed__));
++
++struct peci_telemetry_get_crashlog_sample_msg {
++#define PECI_TELEMETRY_GET_CRASHLOG_SAMPLE_WRITE_LEN	8
++#define PECI_TELEMETRY_GET_CRASHLOG_SAMPLE_READ_LEN	9
++#define PECI_TELEMETRY_GET_CRASHLOG_SAMPLE_VERSION	0
++#define PECI_TELEMETRY_GET_CRASHLOG_SAMPLE_OPCODE	12
++
++	__u8	addr;
++	__u8	cc;
++	__u16	index;
++	__u16	sample;
++	__u8	data[8];
++	__u8	domain_id;
++	__u8	padding;
++} __attribute__((__packed__));
++
+ #define PECI_IOC_BASE	0xb8
+ 
+ #define PECI_IOC_XFER \
+@@ -699,4 +772,24 @@ struct peci_crashdump_get_frame_msg {
+ 	_IOWR(PECI_IOC_BASE, PECI_CMD_CRASHDUMP_GET_FRAME, \
+ 	      struct peci_crashdump_get_frame_msg)
+ 
++#define PECI_IOC_TELEMETRY_DISC \
++	_IOWR(PECI_IOC_BASE, PECI_CMD_TELEMETRY_DISC, \
++	      struct peci_telemetry_disc_msg)
++
++#define PECI_IOC_TELEMETRY_GET_TELEM_SAMPLE \
++	_IOWR(PECI_IOC_BASE, PECI_CMD_TELEMETRY_GET_TELEM_SAMPLE, \
++	      struct peci_telemetry_get_telem_sample_msg)
++
++#define PECI_IOC_TELEMETRY_CONFIG_WATCHER_RD \
++	_IOWR(PECI_IOC_BASE, PECI_CMD_TELEMETRY_CONFIG_WATCHER_RD, \
++	      struct peci_telemetry_config_watcher_msg)
++
++#define PECI_IOC_TELEMETRY_CONFIG_WATCHER_WR \
++	_IOWR(PECI_IOC_BASE, PECI_CMD_TELEMETRY_CONFIG_WATCHER_WR, \
++	      struct peci_telemetry_config_watcher_msg)
++
++#define PECI_IOC_TELEMETRY_GET_CRASHLOG_SAMPLE \
++	_IOWR(PECI_IOC_BASE, PECI_CMD_TELEMETRY_GET_CRASHLOG_SAMPLE, \
++	      struct peci_telemetry_get_crashlog_sample_msg)
++
+ #endif /* __PECI_IOCTL_H */
+diff --git a/peci.c b/peci.c
+index 6a0b93c..4004acf 100644
+--- a/peci.c
++++ b/peci.c
+@@ -1751,6 +1751,342 @@ EPECIStatus peci_CrashDump_GetFrame_dom(uint8_t target, uint8_t domainId,
+     return ret;
+ }
+ 
++/*-------------------------------------------------------------------------
++ * This function provides telemetry discovery data over PECI
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_Discovery(uint8_t target, uint8_t subopcode,
++                                     uint8_t param0, uint16_t param1,
++                                     uint8_t param2, uint8_t u8ReadLen,
++                                     uint8_t* pData, uint8_t* cc)
++{
++    //  Default to domain ID 0
++    return peci_Telemetry_Discovery_dom(target, 0, subopcode, param0, param1,
++                                        param2, u8ReadLen, pData, cc);
++}
++
++/*-------------------------------------------------------------------------
++ * This function provides telemetry discovery data over PECI in the specified
++ * domain
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_Discovery_dom(uint8_t target, uint8_t domainId,
++                                         uint8_t subopcode, uint8_t param0,
++                                         uint16_t param1, uint8_t param2,
++                                         uint8_t u8ReadLen, uint8_t* pData,
++                                         uint8_t* cc)
++{
++    int peci_fd = -1;
++    struct peci_telemetry_disc_msg cmd = {0};
++    EPECIStatus ret = PECI_CC_SUCCESS;
++
++    if (pData == NULL || cc == NULL)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The target address must be in the valid range
++    if (target < MIN_CLIENT_ADDR || target > MAX_CLIENT_ADDR)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The PECI buffer must be large enough to hold the requested data
++    if (sizeof(cmd.data) < u8ReadLen)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    if (peci_Open(&peci_fd) != PECI_CC_SUCCESS)
++    {
++        return PECI_CC_DRIVER_ERR;
++    }
++
++    cmd.addr = target;
++    cmd.subopcode = subopcode;
++    cmd.param0 = param0;
++    cmd.param1 = param1;
++    cmd.param2 = param2;
++    cmd.rx_len = u8ReadLen;
++    cmd.domain_id = domainId;
++
++    ret = HW_peci_issue_cmd(PECI_IOC_TELEMETRY_DISC, (char*)&cmd, peci_fd);
++    *cc = cmd.cc;
++    if (ret == PECI_CC_SUCCESS)
++    {
++        memcpy(pData, cmd.data, u8ReadLen);
++    }
++    else
++    {
++        ret = PECI_CC_DRIVER_ERR;
++    }
++
++    peci_Close(peci_fd);
++    return ret;
++}
++
++/*-------------------------------------------------------------------------
++ * This function provides telemetry sample data over PECI
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_GetTelemSample(uint8_t target, uint16_t index,
++                                          uint16_t sample, uint8_t u8ReadLen,
++                                          uint8_t* pData, uint8_t* cc)
++{
++    //  Default to domain ID 0
++    return peci_Telemetry_GetTelemSample_dom(target, 0, index, sample,
++                                             u8ReadLen, pData, cc);
++}
++
++/*-------------------------------------------------------------------------
++ * This function provides telemetry sample data over PECI in the specified
++ * domain
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_GetTelemSample_dom(uint8_t target, uint8_t domainId,
++                                              uint16_t index, uint16_t sample,
++                                              uint8_t u8ReadLen, uint8_t* pData,
++                                              uint8_t* cc)
++{
++    int peci_fd = -1;
++    struct peci_telemetry_get_telem_sample_msg cmd = {0};
++    EPECIStatus ret = PECI_CC_SUCCESS;
++
++    if (pData == NULL || cc == NULL)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The target address must be in the valid range
++    if (target < MIN_CLIENT_ADDR || target > MAX_CLIENT_ADDR)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The PECI buffer must be large enough to hold the requested data
++    if (sizeof(cmd.data) < u8ReadLen)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    if (peci_Open(&peci_fd) != PECI_CC_SUCCESS)
++    {
++        return PECI_CC_DRIVER_ERR;
++    }
++
++    cmd.addr = target;
++    cmd.index = index;
++    cmd.sample = sample;
++    cmd.domain_id = domainId;
++
++    ret = HW_peci_issue_cmd(PECI_IOC_TELEMETRY_GET_TELEM_SAMPLE, (char*)&cmd,
++                            peci_fd);
++    *cc = cmd.cc;
++    if (ret == PECI_CC_SUCCESS)
++    {
++        memcpy(pData, cmd.data, u8ReadLen);
++    }
++    else
++    {
++        ret = PECI_CC_DRIVER_ERR;
++    }
++
++    peci_Close(peci_fd);
++    return ret;
++}
++
++/*-------------------------------------------------------------------------
++ * This function provides config watcher read over PECI
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_ConfigWatcherRd(uint8_t target, uint16_t watcher,
++                                           uint16_t offset, uint8_t u8ReadLen,
++                                           uint8_t* pData, uint8_t* cc)
++{
++    //  Default to domain ID 0
++    return peci_Telemetry_ConfigWatcherRd_dom(target, 0, watcher, offset,
++                                              u8ReadLen, pData, cc);
++}
++
++/*-------------------------------------------------------------------------
++ * This function provides config watcher read over PECI in the specified domain
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_ConfigWatcherRd_dom(uint8_t target, uint8_t domainId,
++                                               uint16_t watcher,
++                                               uint16_t offset,
++                                               uint8_t u8ReadLen,
++                                               uint8_t* pData, uint8_t* cc)
++{
++    int peci_fd;
++    struct peci_telemetry_config_watcher_msg cmd = {0};
++    EPECIStatus ret;
++
++    if (pData == NULL || cc == NULL)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The target address must be in the valid range
++    if (target < MIN_CLIENT_ADDR || target > MAX_CLIENT_ADDR)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The PECI buffer must be large enough to hold the requested data
++    if (sizeof(cmd.data) < u8ReadLen)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    if (peci_Open(&peci_fd) != PECI_CC_SUCCESS)
++    {
++        return PECI_CC_DRIVER_ERR;
++    }
++
++    cmd.addr = target;
++    cmd.watcher = watcher;
++    cmd.offset = offset;
++    cmd.domain_id = domainId;
++
++    ret = HW_peci_issue_cmd(PECI_IOC_TELEMETRY_CONFIG_WATCHER_RD, (char*)&cmd,
++                            peci_fd);
++    *cc = cmd.cc;
++    if (ret == PECI_CC_SUCCESS)
++    {
++        memcpy(pData, cmd.data, u8ReadLen);
++    }
++    else
++    {
++        ret = PECI_CC_DRIVER_ERR;
++    }
++
++    peci_Close(peci_fd);
++    return ret;
++}
++
++/*-------------------------------------------------------------------------
++ * This function provides config watcher write over PECI
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_ConfigWatcherWr(uint8_t target, uint16_t watcher,
++                                           uint16_t offset, uint8_t u8DataLen,
++                                           uint8_t* pData, uint8_t* cc)
++{
++    //  Default to domain ID 0
++    return peci_Telemetry_ConfigWatcherWr_dom(target, 0, watcher, offset,
++                                              u8DataLen, pData, cc);
++}
++
++/*-------------------------------------------------------------------------
++ * This function provides config watcher write over PECI in the specified domain
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_ConfigWatcherWr_dom(uint8_t target, uint8_t domainId,
++                                               uint16_t watcher,
++                                               uint16_t offset,
++                                               uint8_t u8DataLen,
++                                               uint8_t* pData, uint8_t* cc)
++{
++    int peci_fd;
++    struct peci_telemetry_config_watcher_msg cmd = {0};
++    EPECIStatus ret;
++
++    if (pData == NULL || cc == NULL)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The target address must be in the valid range
++    if (target < MIN_CLIENT_ADDR || target > MAX_CLIENT_ADDR)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The PECI buffer must be large enough to hold the requested data
++    if (sizeof(cmd.data) < u8DataLen)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    if (peci_Open(&peci_fd) != PECI_CC_SUCCESS)
++    {
++        return PECI_CC_DRIVER_ERR;
++    }
++
++    cmd.addr = target;
++    cmd.watcher = watcher;
++    cmd.offset = offset;
++    memcpy(cmd.data, pData, u8DataLen);
++    cmd.domain_id = domainId;
++
++    ret = HW_peci_issue_cmd(PECI_IOC_TELEMETRY_CONFIG_WATCHER_WR, (char*)&cmd,
++                            peci_fd);
++    *cc = cmd.cc;
++
++    peci_Close(peci_fd);
++    return ret;
++}
++
++/*-------------------------------------------------------------------------
++ * This function provides telemetry crashlog sample data over PECI
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_GetCrashlogSample(uint8_t target, uint16_t index,
++                                             uint16_t sample, uint8_t u8ReadLen,
++                                             uint8_t* pData, uint8_t* cc)
++{
++    //  Default to domain ID 0
++    return peci_Telemetry_GetCrashlogSample_dom(target, 0, index, sample,
++                                                u8ReadLen, pData, cc);
++}
++
++/*-------------------------------------------------------------------------
++ * This function provides telemetry crashlog sample data over PECI in the
++ * specified domain
++ *------------------------------------------------------------------------*/
++EPECIStatus peci_Telemetry_GetCrashlogSample_dom(
++    uint8_t target, uint8_t domainId, uint16_t index, uint16_t sample,
++    uint8_t u8ReadLen, uint8_t* pData, uint8_t* cc)
++{
++    int peci_fd = -1;
++    struct peci_telemetry_get_crashlog_sample_msg cmd = {0};
++    EPECIStatus ret = PECI_CC_SUCCESS;
++
++    if (pData == NULL || cc == NULL)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The target address must be in the valid range
++    if (target < MIN_CLIENT_ADDR || target > MAX_CLIENT_ADDR)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    // The PECI buffer must be large enough to hold the requested data
++    if (sizeof(cmd.data) < u8ReadLen)
++    {
++        return PECI_CC_INVALID_REQ;
++    }
++
++    if (peci_Open(&peci_fd) != PECI_CC_SUCCESS)
++    {
++        return PECI_CC_DRIVER_ERR;
++    }
++
++    cmd.addr = target;
++    cmd.index = index;
++    cmd.sample = sample;
++    cmd.domain_id = domainId;
++
++    ret = HW_peci_issue_cmd(PECI_IOC_TELEMETRY_GET_CRASHLOG_SAMPLE, (char*)&cmd,
++                            peci_fd);
++    *cc = cmd.cc;
++    if (ret == PECI_CC_SUCCESS)
++    {
++        memcpy(pData, cmd.data, u8ReadLen);
++    }
++    else
++    {
++        ret = PECI_CC_DRIVER_ERR;
++    }
++
++    peci_Close(peci_fd);
++    return ret;
++}
++
+ /*-------------------------------------------------------------------------
+  *  This function provides raw PECI command access
+  *------------------------------------------------------------------------*/
+diff --git a/peci.h b/peci.h
+index 4cd2e8d..f1983d0 100644
+--- a/peci.h
++++ b/peci.h
+@@ -425,6 +425,67 @@ extern "C"
+                                             uint16_t param2, uint8_t u8ReadLen,
+                                             uint8_t* pData, uint8_t* cc);
+ 
++    // Provides access to the Telemetry Discovery API
++    EPECIStatus peci_Telemetry_Discovery(uint8_t target, uint8_t subopcode,
++                                         uint8_t param0, uint16_t param1,
++                                         uint8_t param2, uint8_t u8ReadLen,
++                                         uint8_t* pData, uint8_t* cc);
++
++    // Provides access to the Telemetry Discovery API in the specified domain
++    EPECIStatus peci_Telemetry_Discovery_dom(uint8_t target, uint8_t domainId,
++                                             uint8_t subopcode, uint8_t param0,
++                                             uint16_t param1, uint8_t param2,
++                                             uint8_t u8ReadLen, uint8_t* pData,
++                                             uint8_t* cc);
++
++    // Provides access to the Telemetry GetTelemSample API
++    EPECIStatus peci_Telemetry_GetTelemSample(uint8_t target, uint16_t index,
++                                              uint16_t sample,
++                                              uint8_t u8ReadLen, uint8_t* pData,
++                                              uint8_t* cc);
++
++    // Provides access to the Telemetry GetTelemSample API in the specified
++    // domain
++    EPECIStatus peci_Telemetry_GetTelemSample_dom(
++        uint8_t target, uint8_t domainId, uint16_t index, uint16_t sample,
++        uint8_t u8ReadLen, uint8_t* pData, uint8_t* cc);
++
++    // Provides access to the Telemetry ConfigWatcher Read API
++    EPECIStatus peci_Telemetry_ConfigWatcherRd(uint8_t target, uint16_t watcher,
++                                               uint16_t offset,
++                                               uint8_t u8ReadLen,
++                                               uint8_t* pData, uint8_t* cc);
++
++    // Provides access to the Telemetry ConfigWatcher Read API in the specified
++    // domain
++    EPECIStatus peci_Telemetry_ConfigWatcherRd_dom(
++        uint8_t target, uint8_t domainId, uint16_t watcher, uint16_t offset,
++        uint8_t u8ReadLen, uint8_t* pData, uint8_t* cc);
++
++    // Provides access to the Telemetry ConfigWatcher Write API
++    EPECIStatus peci_Telemetry_ConfigWatcherWr(uint8_t target, uint16_t watcher,
++                                               uint16_t offset,
++                                               uint8_t u8DataLen,
++                                               uint8_t* pData, uint8_t* cc);
++
++    // Provides access to the Telemetry ConfigWatcher Write API in the specified
++    // domain
++    EPECIStatus peci_Telemetry_ConfigWatcherWr_dom(
++        uint8_t target, uint8_t domainId, uint16_t watcher, uint16_t offset,
++        uint8_t u8DataLen, uint8_t* pData, uint8_t* cc);
++
++    // Provides access to the Telemetry GetCrashlogSample API
++    EPECIStatus peci_Telemetry_GetCrashlogSample(uint8_t target, uint16_t index,
++                                                 uint16_t sample,
++                                                 uint8_t u8ReadLen,
++                                                 uint8_t* pData, uint8_t* cc);
++
++    // Provides access to the Telemetry GetCrashlogSample API in the specified
++    // domain
++    EPECIStatus peci_Telemetry_GetCrashlogSample_dom(
++        uint8_t target, uint8_t domainId, uint16_t index, uint16_t sample,
++        uint8_t u8ReadLen, uint8_t* pData, uint8_t* cc);
++
+     // Provides raw PECI command access
+     EPECIStatus peci_raw(uint8_t target, uint8_t u8ReadLen,
+                          const uint8_t* pRawCmd, const uint32_t cmdSize,
+diff --git a/peci_cmds.c b/peci_cmds.c
+index 623a9a4..75e075b 100644
+--- a/peci_cmds.c
++++ b/peci_cmds.c
+@@ -98,6 +98,7 @@ void Usage(char* progname)
+            "Endpoint MMIO Read <AType Bar Seg Bus Dev Func Reg>");
+     printf("\t%-28s%s\n", "WrEndpointConfigMMIO",
+            "Endpoint MMIO Write <AType Bar Seg Bus Dev Func Reg Data>");
++    printf("\t%-28s%s\n", "Telemetry", "Telemetry <opcode [parameters]>");
+     printf("\t%-28s%s\n", "raw", "Raw PECI command in bytes");
+     printf("\n");
+ }
+@@ -141,6 +142,18 @@ int main(int argc, char* argv[])
+     uint8_t u8MsrThread = 0;
+     uint16_t u16MsrAddr = 0;
+     uint64_t u64MsrVal = 0;
++    uint8_t u8Opcode = 0;
++    uint8_t u8SubOpcode = 0;
++    uint8_t u8Param0 = 0;
++    uint16_t u16Param1 = 0;
++    uint8_t u8Param2 = 0;
++    uint8_t pData[16] = {0};
++    uint16_t u16Index = 0;
++    uint16_t u16Sample = 0;
++    uint8_t u8RW = 0;
++    uint16_t u16Watcher = 0;
++    uint16_t u16Offset = 0;
++    uint64_t u64Data = 0;
+     short temperature;
+     uint64_t dib;
+     int index = 0;
+@@ -1063,6 +1076,392 @@ int main(int argc, char* argv[])
+             printLoopSummary(ccCounts);
+         }
+     }
++    else if (strcmp(cmd, "telemetry") == 0)
++    {
++        // Get the Opcode
++        if (argc == optind)
++        {
++            // Exit if no Opcode provided
++            goto ErrorExit;
++        }
++        u8Opcode = (uint8_t)strtoul(argv[optind++], NULL, 0);
++        index = argc;
++        switch (u8Opcode)
++        {
++            case 1:
++            {
++                switch (argc - optind)
++                {
++                    case 4:
++                        u8Param2 = (uint8_t)strtoul(argv[--index], NULL, 0);
++                        u16Param1 = (uint16_t)strtoul(argv[--index], NULL, 0);
++                        u8Param0 = (uint8_t)strtoul(argv[--index], NULL, 0);
++                        u8SubOpcode = (uint8_t)strtoul(argv[--index], NULL, 0);
++                        break;
++
++                    default:
++                        printf("ERROR: Unsupported arguments for Telemetry "
++                               "Discovery\n");
++                        printf("Telemetry 0x01 <subopcode param0 param1 "
++                               "param2>\n");
++                        return 1;
++                }
++                if (verbose)
++                {
++                    printf("Telemetry Discovery Opcode:0x%02x SubOpcode:0x%02x "
++                           "Param0:0x%02x Param1:0x%04x Param2:0x%02x\n",
++                           u8Opcode, u8SubOpcode, u8Param0, u16Param1,
++                           u8Param2);
++                }
++                // Set the return size based on the command
++                switch (u8SubOpcode)
++                {
++                    case 0:
++                        u8Size = 1;
++                        break;
++                    case 1:
++                        u8Size = 2;
++                        break;
++                    case 2:
++                        switch (u8Param0)
++                        {
++                            case 1:
++                                u8Size = 8;
++                                break;
++                            case 2:
++                                u8Size = 10;
++                                break;
++                            case 3:
++                                u8Size = 4;
++                                break;
++                            case 4:
++                                u8Size = 8;
++                                break;
++                        }
++                        break;
++                    case 3:
++                        u8Size = 8;
++                        break;
++                    case 4:
++                        u8Size = 1;
++                        break;
++                    case 5:
++                        u8Size = 8;
++                        break;
++                }
++                while (loops--)
++                {
++                    cc = 0; // reset the cc for each loop
++                    clock_gettime(CLOCK_REALTIME, &begin);
++                    ret = peci_Telemetry_Discovery_dom(
++                        address, domainId, u8SubOpcode, u8Param0, u16Param1,
++                        u8Param2, u8Size, pData, &cc);
++                    timeSpent = getTimeDifference(begin);
++                    if (verbose && measureTime)
++                    {
++                        printf("\nTime taken in iteration %d = %lf s\n",
++                               (loopCount - loops), timeSpent);
++                    }
++                    totalTimeSpent += timeSpent;
++                    ccCounts[cc]++;
++
++                    if (verbose || loops == 0)
++                    {
++                        if (0 != ret)
++                        {
++                            printf("ERROR %d: command failed\n", ret);
++                            printf("   cc:0x%02x\n", cc);
++                        }
++                        else
++                        {
++                            printf("   cc:0x%02x", cc);
++                            for (size_t i = 0; i < u8Size; i++)
++                            {
++                                printf(" 0x%02x", pData[i]);
++                            }
++                            printf("\n");
++                        }
++                    }
++                }
++                if (looped)
++                {
++                    printLoopSummary(ccCounts);
++                }
++                break;
++            }
++            case 2:
++            {
++                switch (argc - optind)
++                {
++                    case 2:
++                        u16Sample = (uint16_t)strtoul(argv[--index], NULL, 0);
++                        u16Index = (uint16_t)strtoul(argv[--index], NULL, 0);
++                        break;
++
++                    default:
++                        printf("ERROR: Unsupported arguments for Telemetry Get "
++                               "Telem Sample\n");
++                        printf("Telemetry 0x02 <index sample>\n");
++                        return 1;
++                }
++                if (verbose)
++                {
++                    printf("Telemetry Get Telem Sample Opcode:0x%02x "
++                           "Index:0x%04x Sample:0x%04x\n",
++                           u8Opcode, u16Index, u16Sample);
++                }
++                // Set the return size based on the command
++                u8Size = 8;
++                while (loops--)
++                {
++                    cc = 0; // reset the cc for each loop
++                    clock_gettime(CLOCK_REALTIME, &begin);
++                    ret = peci_Telemetry_GetTelemSample_dom(address, domainId,
++                                                            u16Index, u16Sample,
++                                                            u8Size, pData, &cc);
++                    timeSpent = getTimeDifference(begin);
++                    if (verbose && measureTime)
++                    {
++                        printf("\nTime taken in iteration %d = %lf s\n",
++                               (loopCount - loops), timeSpent);
++                    }
++                    totalTimeSpent += timeSpent;
++                    ccCounts[cc]++;
++
++                    if (verbose || loops == 0)
++                    {
++                        if (0 != ret)
++                        {
++                            printf("ERROR %d: command failed\n", ret);
++                            printf("   cc:0x%02x\n", cc);
++                        }
++                        else
++                        {
++                            printf("   cc:0x%02x", cc);
++                            for (size_t i = 0; i < u8Size; i++)
++                            {
++                                printf(" 0x%02x", pData[i]);
++                            }
++                            printf("\n");
++                        }
++                    }
++                }
++                if (looped)
++                {
++                    printLoopSummary(ccCounts);
++                }
++                break;
++            }
++            case 3:
++            {
++                // Get the read/write parameter
++                if (argc == optind)
++                {
++                    // Exit if no read/write parameter provided
++                    printf("ERROR: Missing read/write argument for Telemetry "
++                           "Config Watcher\n");
++                    printf("Telemetry 0x03 <read/write watcher offset>\n");
++                    return 1;
++                }
++                u8RW = (uint8_t)strtoul(argv[optind++], NULL, 0);
++                switch (u8RW)
++                {
++                    case 0:
++                        switch (argc - optind)
++                        {
++                            case 2:
++                                u16Offset = (uint16_t)strtoul(argv[--index],
++                                                              NULL, 0);
++                                u16Watcher = (uint16_t)strtoul(argv[--index],
++                                                               NULL, 0);
++                                break;
++
++                            default:
++                                printf("ERROR: Unsupported arguments for "
++                                       "Telemetry Config Watcher read\n");
++                                printf(
++                                    "Telemetry 0x03 <read watcher offset>\n");
++                                return 1;
++                        }
++                        if (verbose)
++                        {
++                            printf("Telemetry Config Watcher Opcode:0x%02x "
++                                   "Read/Write:0x%02x Watcher:0x%04x "
++                                   "Offset:0x%04x\n",
++                                   u8Opcode, u8RW, u16Watcher, u16Offset);
++                        }
++                        // Set the return size based on the command
++                        u8Size = 8;
++                        while (loops--)
++                        {
++                            cc = 0; // reset the cc for each loop
++                            clock_gettime(CLOCK_REALTIME, &begin);
++                            ret = peci_Telemetry_ConfigWatcherRd_dom(
++                                address, domainId, u16Watcher, u16Offset,
++                                u8Size, (uint8_t*)&u64Data, &cc);
++                            timeSpent = getTimeDifference(begin);
++                            if (verbose && measureTime)
++                            {
++                                printf("\nTime taken in iteration %d = %lf s\n",
++                                       (loopCount - loops), timeSpent);
++                            }
++                            totalTimeSpent += timeSpent;
++                            ccCounts[cc]++;
++
++                            if (verbose || loops == 0)
++                            {
++                                if (0 != ret)
++                                {
++                                    printf("ERROR %d: command failed\n", ret);
++                                    printf("   cc:0x%02x\n", cc);
++                                }
++                                else
++                                {
++                                    printf("   cc:0x%02x 0x%08" PRIx64 "\n", cc,
++                                           u64Data);
++                                }
++                            }
++                        }
++                        if (looped)
++                        {
++                            printLoopSummary(ccCounts);
++                        }
++                        break;
++                    case 1:
++                        switch (argc - optind)
++                        {
++                            case 3:
++                                u64Data = (uint64_t)strtoull(argv[--index],
++                                                             NULL, 0);
++                                u16Offset = (uint16_t)strtoul(argv[--index],
++                                                              NULL, 0);
++                                u16Watcher = (uint16_t)strtoul(argv[--index],
++                                                               NULL, 0);
++                                break;
++
++                            default:
++                                printf("ERROR: Unsupported arguments for "
++                                       "Telemetry Config Watcher write\n");
++                                printf("Telemetry 0x03 <write watcher offset "
++                                       "data>\n");
++                                return 1;
++                        }
++                        if (verbose)
++                        {
++                            printf("Telemetry Config Watcher Opcode:0x%02x "
++                                   "Read/Write:0x%02x Watcher:0x%04x "
++                                   "Offset:0x%04x Data:0x%llx\n",
++                                   u8Opcode, u8RW, u16Watcher, u16Offset,
++                                   (unsigned long long)u64Data);
++                        }
++                        while (loops--)
++                        {
++                            cc = 0; // reset the cc for each loop
++                            clock_gettime(CLOCK_REALTIME, &begin);
++                            ret = peci_Telemetry_ConfigWatcherWr_dom(
++                                address, domainId, u16Watcher, u16Offset,
++                                sizeof(u64Data), (uint8_t*)&u64Data, &cc);
++                            timeSpent = getTimeDifference(begin);
++                            if (verbose && measureTime)
++                            {
++                                printf("\nTime taken in iteration %d = %lf s\n",
++                                       (loopCount - loops), timeSpent);
++                            }
++                            totalTimeSpent += timeSpent;
++                            ccCounts[cc]++;
++
++                            if (verbose || loops == 0)
++                            {
++                                if (0 != ret)
++                                {
++                                    printf("ERROR %d: command failed\n", ret);
++                                }
++                                printf("   cc:0x%02x\n", cc);
++                            }
++                        }
++                        if (looped)
++                        {
++                            printLoopSummary(ccCounts);
++                        }
++                        break;
++                    default:
++                        printf("ERROR: Unsupported read/write argument for "
++                               "Telemetry Config Watcher\n");
++                        printf("Telemetry 0x03 <read/write watcher offset>\n");
++                        return 1;
++                }
++                break;
++            }
++            case 12:
++            {
++                switch (argc - optind)
++                {
++                    case 2:
++                        u16Sample = (uint16_t)strtoul(argv[--index], NULL, 0);
++                        u16Index = (uint16_t)strtoul(argv[--index], NULL, 0);
++                        break;
++
++                    default:
++                        printf("ERROR: Unsupported arguments for Telemetry Get "
++                               "Crashlog Sample\n");
++                        printf("Telemetry 0x0C <index sample>\n");
++                        return 1;
++                }
++                if (verbose)
++                {
++                    printf("Telemetry Get Crashlog Sample Opcode:0x%02x "
++                           "Index:0x%04x Sample:0x%04x\n",
++                           u8Opcode, u16Index, u16Sample);
++                }
++                // Set the return size based on the command
++                u8Size = 8;
++                while (loops--)
++                {
++                    cc = 0; // reset the cc for each loop
++                    clock_gettime(CLOCK_REALTIME, &begin);
++                    ret = peci_Telemetry_GetCrashlogSample_dom(
++                        address, domainId, u16Index, u16Sample, u8Size, pData,
++                        &cc);
++                    timeSpent = getTimeDifference(begin);
++                    if (verbose && measureTime)
++                    {
++                        printf("\nTime taken in iteration %d = %lf s\n",
++                               (loopCount - loops), timeSpent);
++                    }
++                    totalTimeSpent += timeSpent;
++                    ccCounts[cc]++;
++
++                    if (verbose || loops == 0)
++                    {
++                        if (0 != ret)
++                        {
++                            printf("ERROR %d: command failed\n", ret);
++                            printf("   cc:0x%02x\n", cc);
++                        }
++                        else
++                        {
++                            printf("   cc:0x%02x", cc);
++                            for (size_t i = 0; i < u8Size; i++)
++                            {
++                                printf(" 0x%02x", pData[i]);
++                            }
++                            printf("\n");
++                        }
++                    }
++                }
++                if (looped)
++                {
++                    printLoopSummary(ccCounts);
++                }
++                break;
++            }
++            default:
++                printf("Telemetry Opcode 0x%x not supported. Please use the "
++                       "raw command.\n",
++                       u8Opcode);
++                return 1;
++        }
++    }
+     else if (strcmp(cmd, "raw") == 0)
+     {
+         if ((argc - optind) < 3)
+-- 
+2.25.1
+

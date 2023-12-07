@@ -67,10 +67,14 @@ class HGXSystemConfig {
       if (pal_is_artemis()) {
         return;
       }
-      static HGXComponent autocomp("hgx", "auto");
-      static HGXComponent patchcomp("hgx", "patch", "");
 
-      if (gpio_get_value_by_shadow(GPU_PRESENT) == 0) {
+      if (gpio_get_value_by_shadow(GPU_PRESENT) == GPIO_VALUE_HIGH) {
+        return;
+      }
+
+      if (pal_get_gpu_fru_id() == FRU_HGX) {
+        static HGXComponent autocomp("hgx", "auto");
+        static HGXComponent patchcomp("hgx", "patch", "");
         phase = hgx::getHMCPhase();
         if (phase == HMCPhase::HMC_FW_EVT) {
           static HGXComponent hmc("hgx", "hmc", "HMC_Firmware");
@@ -185,6 +189,18 @@ class HGXSystemConfig {
           static HGXComponent envsw3("hgx", "erot-nvswitch3", "HGX_FW_ERoT_NVSwitch_3");
           static HGXComponent epax("hgx", "erot-pax", "HGX_FW_ERoT_PCIeSwitch_0");
         }
+      }
+      else if (pal_get_gpu_fru_id() == FRU_UBB) {
+        static HGXComponent autocomp("ubb", "auto");
+        static HGXComponent bundle("ubb", "bundle", "bundle_active");
+        static HGXComponent hmc("ubb", "erot", "rot_active");
+        static HGXComponent gpu("ubb", "gpu", "amc_active");
+        static HGXComponent fpga_amc("ubb", "fpga-amc", "amc_fpga_active");
+        static HGXComponent fpga_ubb("ubb", "fpga-ubb", "ubb_fpga_active");
+        static HGXComponent ifwi("ubb", "ifwi", "ifwi_active");
+        static HGXComponent retimer("ubb", "retimer", "retimer_active");
+        static HGXComponent rmi("ubb", "rmi", "rmi_active");
+        return;
       }
     }
 };

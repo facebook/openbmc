@@ -1,0 +1,32 @@
+From aeb819e5e1527595751cb6da0a972d9aa871a70b Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Thu, 31 Aug 2023 16:49:57 +0800
+Subject: [PATCH 1/1] aspeed-g6.dtsi update for PWM and TACH driver
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-g6.dtsi | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+index 3b072e36d50dc..aa2a01500a239 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
++++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+@@ -332,6 +332,14 @@ apb {
+ 			#size-cells = <1>;
+ 			ranges;
+ 
++			pwm_tach: pwm-tach-controller@1e610000 {
++				compatible = "aspeed,ast2600-pwm-tach";
++				reg = <0x1e610000 0x100>;
++				clocks = <&syscon ASPEED_CLK_AHB>;
++				resets = <&syscon ASPEED_RESET_PWM>;
++				#pwm-cells = <3>;
++			};
++
+ 			hace: crypto@1e6d0000 {
+ 				compatible = "aspeed,ast2600-hace";
+ 				reg = <0x1e6d0000 0x200>;
+-- 
+2.31.1
+

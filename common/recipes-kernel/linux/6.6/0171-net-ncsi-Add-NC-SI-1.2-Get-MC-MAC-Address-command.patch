@@ -1,0 +1,167 @@
+From fee75e24e5898d1493ce84644ba60d4714f5c92b Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Tue, 20 Dec 2022 21:22:46 -0800
+Subject: [PATCH 171/171] net/ncsi: Add NC-SI 1.2 Get MC MAC Address command
+
+This change adds support for the NC-SI 1.2 Get MC MAC Address command,
+specified here:
+
+https://www.dmtf.org/sites/default/files/standards/documents/DSP0222_1.2.0.pdf
+
+It serves the exact same function as the existing OEM Get MAC Address
+commands, so if a channel reports that it supports NC-SI 1.2, we prefer
+to use the standard command rather than the OEM command.
+
+Verified with an invalid MAC address and 2 valid ones:
+
+[   55.137072] ftgmac100 1e690000.ftgmac eth0: NCSI: Received 3 provisioned MAC addresses
+[   55.137614] ftgmac100 1e690000.ftgmac eth0: NCSI: MAC address 0: 00:00:00:00:00:00
+[   55.138026] ftgmac100 1e690000.ftgmac eth0: NCSI: MAC address 1: fa:ce:b0:0c:20:22
+[   55.138528] ftgmac100 1e690000.ftgmac eth0: NCSI: MAC address 2: fa:ce:b0:0c:20:23
+[   55.139241] ftgmac100 1e690000.ftgmac eth0: NCSI: Unable to assign 00:00:00:00:00:00 to device
+[   55.140098] ftgmac100 1e690000.ftgmac eth0: NCSI: Set MAC address to fa:ce:b0:0c:20:22
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+---
+ net/ncsi/ncsi-cmd.c    |  3 ++-
+ net/ncsi/ncsi-manage.c |  9 +++++++--
+ net/ncsi/ncsi-pkt.h    | 10 ++++++++++
+ net/ncsi/ncsi-rsp.c    | 42 +++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 60 insertions(+), 4 deletions(-)
+
+diff --git a/net/ncsi/ncsi-cmd.c b/net/ncsi/ncsi-cmd.c
+index fd2236ee9a79..b3ff37a181d7 100644
+--- a/net/ncsi/ncsi-cmd.c
++++ b/net/ncsi/ncsi-cmd.c
+@@ -270,7 +270,8 @@ static struct ncsi_cmd_handler {
+ 	{ NCSI_PKT_CMD_GPS,    0, ncsi_cmd_handler_default },
+ 	{ NCSI_PKT_CMD_OEM,   -1, ncsi_cmd_handler_oem     },
+ 	{ NCSI_PKT_CMD_PLDM,   0, NULL                     },
+-	{ NCSI_PKT_CMD_GPUUID, 0, ncsi_cmd_handler_default }
++	{ NCSI_PKT_CMD_GPUUID, 0, ncsi_cmd_handler_default },
++	{ NCSI_PKT_CMD_GMCMA,  0, ncsi_cmd_handler_default }
+ };
+ 
+ static struct ncsi_request *ncsi_alloc_command(struct ncsi_cmd_arg *nca)
+diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
+index f3d7fe86fea1..745c788f1d1d 100644
+--- a/net/ncsi/ncsi-manage.c
++++ b/net/ncsi/ncsi-manage.c
+@@ -1038,11 +1038,16 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+ 	case ncsi_dev_state_config_oem_gma:
+ 		nd->state = ncsi_dev_state_config_clear_vids;
+ 
+-		nca.type = NCSI_PKT_CMD_OEM;
+ 		nca.package = np->id;
+ 		nca.channel = nc->id;
+ 		ndp->pending_req_num = 1;
+-		ret = ncsi_gma_handler(&nca, nc->version.mf_id);
++		if (nc->version.major >= 1 && nc->version.minor >= 2) {
++			nca.type = NCSI_PKT_CMD_GMCMA;
++			ret = ncsi_xmit_cmd(&nca);
++		} else {
++			nca.type = NCSI_PKT_CMD_OEM;
++			ret = ncsi_gma_handler(&nca, nc->version.mf_id);
++		}
+ 		if (ret < 0)
+ 			schedule_work(&ndp->work);
+ 
+diff --git a/net/ncsi/ncsi-pkt.h b/net/ncsi/ncsi-pkt.h
+index c9d1da34dc4d..f2f3b5c1b941 100644
+--- a/net/ncsi/ncsi-pkt.h
++++ b/net/ncsi/ncsi-pkt.h
+@@ -338,6 +338,14 @@ struct ncsi_rsp_gpuuid_pkt {
+ 	__be32                  checksum;
+ };
+ 
++/* Get MC MAC Address */
++struct ncsi_rsp_gmcma_pkt {
++	struct ncsi_rsp_pkt_hdr rsp;
++	unsigned char           address_count;
++	unsigned char           reserved[3];
++	unsigned char           addresses[][ETH_ALEN];
++};
++
+ /* AEN: Link State Change */
+ struct ncsi_aen_lsc_pkt {
+ 	struct ncsi_aen_pkt_hdr aen;        /* AEN header      */
+@@ -398,6 +406,7 @@ struct ncsi_aen_hncdsc_pkt {
+ #define NCSI_PKT_CMD_GPUUID	0x52 /* Get package UUID                 */
+ #define NCSI_PKT_CMD_QPNPR	0x56 /* Query Pending NC PLDM request */
+ #define NCSI_PKT_CMD_SNPR	0x57 /* Send NC PLDM Reply  */
++#define NCSI_PKT_CMD_GMCMA	0x58 /* Get MC MAC Address */
+ 
+ 
+ /* NCSI packet responses */
+@@ -433,6 +442,7 @@ struct ncsi_aen_hncdsc_pkt {
+ #define NCSI_PKT_RSP_GPUUID	(NCSI_PKT_CMD_GPUUID + 0x80)
+ #define NCSI_PKT_RSP_QPNPR	(NCSI_PKT_CMD_QPNPR   + 0x80)
+ #define NCSI_PKT_RSP_SNPR	(NCSI_PKT_CMD_SNPR   + 0x80)
++#define NCSI_PKT_RSP_GMCMA	(NCSI_PKT_CMD_GMCMA  + 0x80)
+ 
+ /* NCSI response code/reason */
+ #define NCSI_PKT_RSP_C_COMPLETED	0x0000 /* Command Completed        */
+diff --git a/net/ncsi/ncsi-rsp.c b/net/ncsi/ncsi-rsp.c
+index 480e80e3c283..3e5e5cf7b5c9 100644
+--- a/net/ncsi/ncsi-rsp.c
++++ b/net/ncsi/ncsi-rsp.c
+@@ -1091,6 +1091,45 @@ static int ncsi_rsp_handler_netlink(struct ncsi_request *nr)
+ 	return ret;
+ }
+ 
++static int ncsi_rsp_handler_gmcma(struct ncsi_request *nr)
++{
++	struct ncsi_dev_priv *ndp = nr->ndp;
++	struct net_device *ndev = ndp->ndev.dev;
++	struct ncsi_rsp_gmcma_pkt *rsp;
++	struct sockaddr saddr;
++	int ret = -1;
++	int i;
++
++	rsp = (struct ncsi_rsp_gmcma_pkt *)skb_network_header(nr->rsp);
++	saddr.sa_family = ndev->type;
++	ndev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
++
++	netdev_info(ndev, "NCSI: Received %d provisioned MAC addresses\n",
++		    rsp->address_count);
++	for (i = 0; i < rsp->address_count; i++) {
++		netdev_info(ndev, "NCSI: MAC address %d: "
++			    "%02x:%02x:%02x:%02x:%02x:%02x\n", i,
++			    rsp->addresses[i][0], rsp->addresses[i][1],
++			    rsp->addresses[i][2], rsp->addresses[i][3],
++			    rsp->addresses[i][4], rsp->addresses[i][5]);
++	}
++
++	for (i = 0; i < rsp->address_count; i++) {
++		memcpy(saddr.sa_data, &rsp->addresses[i], ETH_ALEN);
++		ret = ndev->netdev_ops->ndo_set_mac_address(ndev, &saddr);
++		if (ret < 0) {
++			netdev_warn(ndev, "NCSI: Unable to assign %pM to "
++				    "device\n", saddr.sa_data);
++			continue;
++		}
++		netdev_warn(ndev, "NCSI: Set MAC address to %pM\n", saddr.sa_data);
++		break;
++	}
++
++	ndp->gma_flag = ret == 0;
++	return ret;
++}
++
+ static struct ncsi_rsp_handler {
+ 	unsigned char	type;
+ 	int             payload;
+@@ -1127,7 +1166,8 @@ static struct ncsi_rsp_handler {
+ 	{ NCSI_PKT_RSP_PLDM,   -1, ncsi_rsp_handler_pldm    },
+ 	{ NCSI_PKT_RSP_GPUUID, 20, ncsi_rsp_handler_gpuuid  },
+ 	{ NCSI_PKT_RSP_QPNPR,  -1, ncsi_rsp_handler_pldm    },
+-	{ NCSI_PKT_RSP_SNPR,   -1, ncsi_rsp_handler_pldm    }
++	{ NCSI_PKT_RSP_SNPR,   -1, ncsi_rsp_handler_pldm    },
++	{ NCSI_PKT_RSP_GMCMA,  -1, ncsi_rsp_handler_gmcma   },
+ };
+ 
+ int ncsi_rcv_rsp(struct sk_buff *skb, struct net_device *dev,
+-- 
+2.41.0
+

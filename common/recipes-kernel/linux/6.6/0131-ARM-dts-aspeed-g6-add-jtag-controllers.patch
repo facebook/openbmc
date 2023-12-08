@@ -1,0 +1,62 @@
+From ef4d8f57227841437689e9924c563198e0e64e22 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Thu, 8 Apr 2021 15:26:15 -0700
+Subject: [PATCH 131/132] ARM: dts: aspeed-g6: add jtag controllers
+
+Summary:
+
+Add jtag controller in aspeed-g6.dtsi.
+
+Pull Request resolved: https://github.com/facebookexternal/openbmc.celestica/pull/1035
+GitHub Author: wxiaohua1217 <wxiaohua@celestica.com>
+
+Test Plan:
+BMC boot up without error logs.
+
+Reviewers: goldenbug, #openbmc
+
+Reviewed By: goldenbug
+
+Differential Revision: https://phabricator.intern.facebook.com/D27663040
+
+Tags: accept2ship
+
+Signature: 27663040:1617989954:ef64ea4d7a805b0eb4967b7167589aa8afc5562c
+---
+ arch/arm/boot/dts/aspeed/aspeed-g6.dtsi | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+index c4d1faade8be..6a5a058f128b 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
++++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+@@ -398,6 +398,26 @@ gfx: display@1e6e6000 {
+ 				interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+ 			};
+ 
++			jtag0: jtag@1e6e4000 {
++				compatible = "aspeed,ast2600-jtag";
++				reg = <0x1e6e4000 0x40 0x1e6e2040 0x8 0x1e6e2418 0x4>;
++				clocks = <&syscon ASPEED_CLK_APB1>;
++				resets = <&syscon ASPEED_RESET_JTAG_MASTER>;
++				interrupts = <27>;
++				status = "disabled";
++			};
++
++			jtag1: jtag@1e6e4100 {
++				compatible = "aspeed,ast2600-jtag";
++				reg = <0x1e6e4100 0x40 0x1e6e2050 0x8 0x1e6e2418 0x4>;
++				clocks = <&syscon ASPEED_CLK_AHB>;
++				resets = <&syscon ASPEED_RESET_JTAG_MASTER2>;
++				interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_jtagm_default>;
++				status = "disabled";
++			};
++
+ 			xdma: xdma@1e6e7000 {
+ 				compatible = "aspeed,ast2600-xdma";
+ 				reg = <0x1e6e7000 0x100>;
+-- 
+2.39.3
+

@@ -1,0 +1,301 @@
+From 65b003a8bfab4eccc23a311feee76338597d4146 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Thu, 8 Apr 2021 15:23:48 -0700
+Subject: [PATCH 500/501] hwmon: Add net_brcm driver
+
+Summary:
+
+Add net_brcm hwmon driver to support sensor management in net_brcm
+switching ASIC.
+
+Pull Request resolved: https://github.com/facebookexternal/openbmc.celestica/pull/1020
+GitHub Author: wxiaohua1217 <wxiaohua@celestica.com>
+
+Test Plan:
+
+Reviewers: goldenbug, #openbmc
+
+Reviewed By: goldenbug
+
+Differential Revision: https://phabricator.intern.facebook.com/D27585349
+
+Tags: accept2ship
+
+Signature: 27585349:1617733366:5443ecb847967f7725c2d8d6416b357b37ac4f28
+---
+ drivers/hwmon/Kconfig    |  10 ++
+ drivers/hwmon/Makefile   |   1 +
+ drivers/hwmon/net_brcm.c | 228 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 239 insertions(+)
+ create mode 100644 drivers/hwmon/net_brcm.c
+
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 307477b8a371..91517f3d62d4 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -1597,6 +1597,16 @@ config SENSORS_NCT7904
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called nct7904.
+ 
++config SENSORS_NET_BRCM
++	tristate "SWITCH NET_BRCM"
++	depends on I2C
++	help
++	  If you say yes here you get support for the NET_BRCM switch
++	  hardware monitoring chip, including manual fan speed control.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called net_brcm.
++
+ config SENSORS_NPCM7XX
+ 	tristate "Nuvoton NPCM750 and compatible PWM and Fan controllers"
+ 	imply THERMAL
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 3f4b0fda0998..6617f250ed41 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -166,6 +166,7 @@ obj-$(CONFIG_SENSORS_NCT6775)	+= nct6775.o
+ obj-$(CONFIG_SENSORS_NCT6775_I2C) += nct6775-i2c.o
+ obj-$(CONFIG_SENSORS_NCT7802)	+= nct7802.o
+ obj-$(CONFIG_SENSORS_NCT7904)	+= nct7904.o
++obj-$(CONFIG_SENSORS_NET_BRCM)	+= net_brcm.o
+ obj-$(CONFIG_SENSORS_NPCM7XX)	+= npcm750-pwm-fan.o
+ obj-$(CONFIG_SENSORS_NSA320)	+= nsa320-hwmon.o
+ obj-$(CONFIG_SENSORS_NTC_THERMISTOR)	+= ntc_thermistor.o
+diff --git a/drivers/hwmon/net_brcm.c b/drivers/hwmon/net_brcm.c
+new file mode 100644
+index 000000000000..638a4ab7d7cf
+--- /dev/null
++++ b/drivers/hwmon/net_brcm.c
+@@ -0,0 +1,228 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * net_brcm.c - The i2c driver for net_brcm
++ *
++ * Copyright 2020-present Facebook. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/errno.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/delay.h>
++
++#define BUILD_U64(_high, _low) (((u_int64_t)(_high) << 32) | (_low))
++
++#define NET_NCSI_MSG_LEN                    4
++#define NET_OPCODE                          11
++#define NET_DST_BLOCK                       8
++#define NET_ACC_TYPE                        28
++#define NET_DLEN                            4
++#define NET_MISC                            0
++#define NET_BRCM_BASE                       0x0201d000
++#define NET_BRCM_OFFSET                     0x800
++#define NET_BRCM_I2C_SLAVE_IOCTL            0x703
++#define CMIC_COMMON_POOL_SCHAN_CH9_CTRL     0x03210900
++#define CMIC_COMMON_POOL_SCHAN_CH9_MESSAGE  0x0321090c
++#define CMIC_COMMON_START_COMMOND           0x00000001
++
++struct net_brcm_data {
++	struct i2c_client *client;
++	struct mutex update_lock; /* mutex protect updates */
++};
++
++static void net_brcm_i2c_write(const struct i2c_client *client, u_int32_t msb,
++		u_int32_t lsb, u_int32_t len)
++{
++	u_int32_t index = 0;
++	u_int32_t bit_shift = 0;
++	u_int64_t tmp_val = 0;
++	char send_buf[NET_NCSI_MSG_LEN * 2];
++
++	tmp_val = BUILD_U64(msb, lsb);
++
++	for (index = 0; index < len; index++) {
++		bit_shift = (len - 1 - index) * 8;
++		send_buf[index] = (tmp_val &
++				(((u_int64_t)0xff) << bit_shift)) >> bit_shift;
++	}
++
++	/* Unfortunately, must skip error checking since final byte will NACK */
++	i2c_master_send(client, send_buf, len);
++}
++
++static int net_brcm_i2c_read(struct net_brcm_data *data,
++		unsigned int reg, unsigned int *value)
++{
++	struct i2c_client *client = data->client;
++	char read_buf[NET_NCSI_MSG_LEN];
++	u_int32_t index = 0;
++	u_int32_t bit_shift = 0;
++
++	mutex_lock(&data->update_lock);
++
++	net_brcm_i2c_write(client, CMIC_COMMON_POOL_SCHAN_CH9_MESSAGE,
++			((NET_OPCODE << 26) | (NET_DST_BLOCK << 19) |
++			 (NET_ACC_TYPE << 14) | (NET_DLEN << 8) | NET_MISC),
++			NET_NCSI_MSG_LEN * 2);
++
++	net_brcm_i2c_write(client, CMIC_COMMON_POOL_SCHAN_CH9_CTRL + 0x10,
++			reg,
++			NET_NCSI_MSG_LEN * 2);
++
++	net_brcm_i2c_write(client, CMIC_COMMON_POOL_SCHAN_CH9_CTRL,
++			CMIC_COMMON_START_COMMOND,
++			NET_NCSI_MSG_LEN * 2);
++
++	net_brcm_i2c_write(client, 0,
++			CMIC_COMMON_POOL_SCHAN_CH9_CTRL + 0x10,
++			NET_NCSI_MSG_LEN);
++
++	if (i2c_master_recv(client, read_buf, NET_NCSI_MSG_LEN)
++			!= NET_NCSI_MSG_LEN) {
++		goto err_exit;
++	}
++
++	mutex_unlock(&data->update_lock);
++
++	*value = 0;
++	for (index = 0; index < NET_NCSI_MSG_LEN; index++) {
++		// Convert read buffer to 32-bits value
++		bit_shift = (NET_NCSI_MSG_LEN - 1 - index) * 8;
++		*value |= (read_buf[index] << bit_shift);
++	}
++
++	return 0;
++
++err_exit:
++	mutex_unlock(&data->update_lock);
++	return -1;
++}
++
++/* sysfs callback function */
++static ssize_t net_brcm_temp_show(struct device *dev,
++		struct device_attribute *dev_attr, char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(dev_attr);
++	struct net_brcm_data *data = dev_get_drvdata(dev);
++	u_int32_t value = -1;
++
++	int file_index = attr->index;
++	int reg = NET_BRCM_BASE + file_index * NET_BRCM_OFFSET;
++
++	if (net_brcm_i2c_read(data, reg, &value))
++		goto err_exit;
++
++	/*
++	 * return the temperature
++	 * Temp = -0.23751 * value + 356.01
++	 * To keep the accuracy, it is expanded 100000 times
++	 */
++	return sprintf(buf, "%d\n", -23751 * value + 35601000);
++
++err_exit:
++	return -1;
++}
++
++static SENSOR_DEVICE_ATTR(temp1_input, 0444, net_brcm_temp_show, NULL, 1);
++static SENSOR_DEVICE_ATTR(temp2_input, 0444, net_brcm_temp_show, NULL, 2);
++static SENSOR_DEVICE_ATTR(temp3_input, 0444, net_brcm_temp_show, NULL, 3);
++static SENSOR_DEVICE_ATTR(temp4_input, 0444, net_brcm_temp_show, NULL, 4);
++static SENSOR_DEVICE_ATTR(temp5_input, 0444, net_brcm_temp_show, NULL, 5);
++static SENSOR_DEVICE_ATTR(temp6_input, 0444, net_brcm_temp_show, NULL, 6);
++static SENSOR_DEVICE_ATTR(temp7_input, 0444, net_brcm_temp_show, NULL, 7);
++static SENSOR_DEVICE_ATTR(temp8_input, 0444, net_brcm_temp_show, NULL, 8);
++static SENSOR_DEVICE_ATTR(temp9_input, 0444, net_brcm_temp_show, NULL, 9);
++static SENSOR_DEVICE_ATTR(temp10_input, 0444, net_brcm_temp_show, NULL, 10);
++static SENSOR_DEVICE_ATTR(temp11_input, 0444, net_brcm_temp_show, NULL, 11);
++static SENSOR_DEVICE_ATTR(temp12_input, 0444, net_brcm_temp_show, NULL, 12);
++static SENSOR_DEVICE_ATTR(temp13_input, 0444, net_brcm_temp_show, NULL, 13);
++static SENSOR_DEVICE_ATTR(temp14_input, 0444, net_brcm_temp_show, NULL, 14);
++static SENSOR_DEVICE_ATTR(temp15_input, 0444, net_brcm_temp_show, NULL, 15);
++static SENSOR_DEVICE_ATTR(temp16_input, 0444, net_brcm_temp_show, NULL, 16);
++
++static struct attribute *net_brcm_attrs[] = {
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_temp2_input.dev_attr.attr,
++	&sensor_dev_attr_temp3_input.dev_attr.attr,
++	&sensor_dev_attr_temp4_input.dev_attr.attr,
++	&sensor_dev_attr_temp5_input.dev_attr.attr,
++	&sensor_dev_attr_temp6_input.dev_attr.attr,
++	&sensor_dev_attr_temp7_input.dev_attr.attr,
++	&sensor_dev_attr_temp8_input.dev_attr.attr,
++	&sensor_dev_attr_temp9_input.dev_attr.attr,
++	&sensor_dev_attr_temp10_input.dev_attr.attr,
++	&sensor_dev_attr_temp11_input.dev_attr.attr,
++	&sensor_dev_attr_temp12_input.dev_attr.attr,
++	&sensor_dev_attr_temp13_input.dev_attr.attr,
++	&sensor_dev_attr_temp14_input.dev_attr.attr,
++	&sensor_dev_attr_temp15_input.dev_attr.attr,
++	&sensor_dev_attr_temp16_input.dev_attr.attr,
++	NULL,
++};
++ATTRIBUTE_GROUPS(net_brcm);
++
++static void net_brcm_remove(struct i2c_client *client)
++{
++	struct net_brcm_data *data = i2c_get_clientdata(client);
++
++	mutex_destroy(&data->update_lock);
++}
++
++static int net_brcm_probe(struct i2c_client *client)
++{
++	struct net_brcm_data *data;
++	struct device *dev = &client->dev;
++	struct device *hwmon_dev;
++
++	data = devm_kzalloc(dev, sizeof(struct net_brcm_data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	i2c_set_clientdata(client, data);
++	data->client = client;
++	mutex_init(&data->update_lock);
++
++	hwmon_dev = devm_hwmon_device_register_with_groups(dev, client->name,
++			data, net_brcm_groups);
++	if (IS_ERR(hwmon_dev)) {
++		mutex_destroy(&data->update_lock);
++		return PTR_ERR(hwmon_dev);
++	}
++
++	return 0;
++}
++
++/* net_brcm id */
++static const struct i2c_device_id net_brcm_id[] = {
++	{"net_brcm", 0},
++	{ },
++};
++MODULE_DEVICE_TABLE(i2c, net_brcm_id);
++
++static struct i2c_driver net_brcm_driver = {
++	.driver = {
++		.name = "net_brcm",
++	},
++	.probe = net_brcm_probe,
++	.remove = net_brcm_remove,
++	.id_table = net_brcm_id,
++};
++
++module_i2c_driver(net_brcm_driver);
++
++MODULE_AUTHOR("Facebook/Celestica");
++MODULE_DESCRIPTION("NET_BRCM Driver");
++MODULE_LICENSE("GPL");
+-- 
+2.39.3
+

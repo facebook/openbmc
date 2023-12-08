@@ -1,0 +1,59 @@
+From dad10af84068e248bf4aab267707b5ab40f70f96 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Tue, 14 Jul 2020 22:59:49 -0700
+Subject: [PATCH 124/132] jtag: support driver specific ioctl commands
+
+Summary:
+The patch adds "ioctl" callback to jtag_ops for supporting driver
+specific ioctl commands.
+
+Test Plan: booted up linux 5.15 on cmm and elbert successfully.
+
+Reviewers: patrickw3, amithash, benwei, joancaneus, zhdaniel, mikechoi, #openbmc
+
+Reviewed By: zhdaniel
+
+Differential Revision: https://phabricator.intern.facebook.com/D22554562
+
+Signature: 22554562:1594850292:671a79caf605ed77e9935a0188e8b3872cc257ca
+---
+ drivers/jtag/jtag.c  | 2 ++
+ include/linux/jtag.h | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/drivers/jtag/jtag.c b/drivers/jtag/jtag.c
+index 47503a102f64..090f56d582a4 100644
+--- a/drivers/jtag/jtag.c
++++ b/drivers/jtag/jtag.c
+@@ -155,6 +155,8 @@ static long jtag_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		break;
+ 
+ 	default:
++		if (jtag->ops->ioctl)
++			return jtag->ops->ioctl(jtag, cmd, arg);
+ 		return -EINVAL;
+ 	}
+ 	return err;
+diff --git a/include/linux/jtag.h b/include/linux/jtag.h
+index 4153c905e550..6a6b53a549d8 100644
+--- a/include/linux/jtag.h
++++ b/include/linux/jtag.h
+@@ -22,6 +22,7 @@ struct jtag;
+  * @status_set: set JTAG TAPC state function. Mandatory, Filled by dev driver
+  * @xfer: send JTAG xfer function. Mandatory func. Filled by dev driver
+  * @mode_set: set specific work mode for JTAG. Filled by dev driver
++ * @ioctl: handle driver specific ioctl requests. Filled by dev driver
+  */
+ struct jtag_ops {
+ 	int (*freq_get)(struct jtag *jtag, u32 *freq);
+@@ -33,6 +34,7 @@ struct jtag_ops {
+ 	int (*bitbang)(struct jtag *jtag, struct tck_bitbang *tck_bitbang);
+ 	int (*enable)(struct jtag *jtag);
+ 	int (*disable)(struct jtag *jtag);
++	int (*ioctl)(struct jtag *jtag, unsigned int cmd, unsigned long arg);
+ };
+ 
+ void *jtag_priv(struct jtag *jtag);
+-- 
+2.39.3
+

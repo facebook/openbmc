@@ -95,7 +95,7 @@ fi
 check_mb_rev() {
   gpu_prsnt=$(cat /tmp/gpionames/GPU_PRSNT_N_ISO_R/value)
   if [ "$gpu_prsnt" -eq 0 ]; then
-    for retry in {1..60};
+    for retry in {1..60}; do
       gpu_config=$(kv get gpu_config persistent)
       if [ "$gpu_config" == "hgx" ]; then
         break

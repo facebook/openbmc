@@ -115,7 +115,7 @@ do_on() {
     fi
 
     # reset TH
-    reset_brcm.sh
+    reset_brcm.sh -f
 
     # power on sequence
     if ! is_main_power_on; then
@@ -186,7 +186,7 @@ do_reset() {
             return 1
         fi
         # reset TH first
-        reset_brcm.sh
+        reset_brcm.sh -f
 
         logger -p user.crit "Power reset microserver..."
         echo -n "Power reset microserver ..."

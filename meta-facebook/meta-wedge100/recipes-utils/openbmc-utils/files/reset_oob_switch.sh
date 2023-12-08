@@ -32,13 +32,11 @@
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
-SYSCPLD_OOB_RST="${SYSCPLD_SYSFS_DIR}/oob_bcm5387_rst_n"
+WARNING_MSG="This command disrupts uServer and OpenBMC OOB connection!"
+force=$(check_force_arg "$@")
+warn_and_confirm "$force" "$WARNING_MSG"
 
-echo "This command disrupts uServer and OpenBMC OOB connection!"
-read -r -t 8 -p "Do you want to continue? [y/n] " user_input
-if [ "$user_input" != "y" ] && [ "$user_input" != "Y" ] ; then
-    exit 0
-fi
+SYSCPLD_OOB_RST="${SYSCPLD_SYSFS_DIR}/oob_bcm5387_rst_n"
 
 if [ ! -L "${SHADOW_GPIO}/SWITCH_EEPROM1_WRT" ]; then
     gpio_export_by_name "$ASPEED_GPIO" GPIOE2 SWITCH_EEPROM1_WRT

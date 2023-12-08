@@ -18,7 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
+
+force=$(check_force_arg "$@")
+warn_and_confirm "$force"
 
 PWR_TH_RST_SYSFS="${SYSCPLD_SYSFS_DIR}/th_sys_rst_n"
 

@@ -192,14 +192,14 @@ class HGXSystemConfig {
       }
       else if (pal_get_gpu_fru_id() == FRU_UBB) {
         static HGXComponent autocomp("ubb", "auto");
-        static HGXComponent bundle("ubb", "bundle", "bundle_active");
-        static HGXComponent hmc("ubb", "erot", "rot_active");
-        static HGXComponent gpu("ubb", "gpu", "amc_active");
-        static HGXComponent fpga_amc("ubb", "fpga-amc", "amc_fpga_active");
-        static HGXComponent fpga_ubb("ubb", "fpga-ubb", "ubb_fpga_active");
-        static HGXComponent ifwi("ubb", "ifwi", "ifwi_active");
-        static HGXComponent retimer("ubb", "retimer", "retimer_active");
-        static HGXComponent rmi("ubb", "rmi", "rmi_active");
+        static HGXComponent bundle("ubb", "BUNDLE", "bundle_active");
+        static HGXComponent hmc("ubb", "EROT", "rot_active");
+        static HGXComponent gpu("ubb", "SMC", "amc_active");
+        static HGXComponent fpga_amc("ubb", "SMC FPGA", "amc_fpga_active");
+        static HGXComponent fpga_ubb("ubb", "UBB FPGA", "ubb_fpga_active");
+        static HGXComponent ifwi("ubb", "IFWI", "ifwi_active");
+        static HGXComponent retimer("ubb", "RETIMERS", "retimer_active");
+        static HGXComponent rmi("ubb", "RM", "rmi_active");
         return;
       }
     }

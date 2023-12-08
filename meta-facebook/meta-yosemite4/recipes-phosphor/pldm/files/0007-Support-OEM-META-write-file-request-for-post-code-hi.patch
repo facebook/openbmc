@@ -1,4 +1,4 @@
-From eedaf23a6724cef4904391208db4206ea8533ac7 Mon Sep 17 00:00:00 2001
+From dbc574cf1a050fb72dfbe7b8bbf04444895a0051 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH] Support OEM-META write file request for post code history
@@ -16,24 +16,26 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  libpldmresponder/meson.build                  |  10 ++
  meson.build                                   |   4 +
  meson.options                                 |   8 ++
- oem/meta/libpldmresponder/file_io.cpp         | 104 ++++++++++++++++++
- oem/meta/libpldmresponder/file_io.hpp         |  59 ++++++++++
- .../file_io_type_post_code.cpp                |  63 +++++++++++
- .../file_io_type_post_code.hpp                |  18 +++
+ oem/meta/libpldmresponder/file_io.cpp         | 126 ++++++++++++++++++
+ oem/meta/libpldmresponder/file_io.hpp         |  62 +++++++++
+ oem/meta/libpldmresponder/file_io_by_type.hpp |  28 ++++
+ .../file_io_type_post_code.cpp                |  59 ++++++++
+ .../file_io_type_post_code.hpp                |  42 ++++++
  pldmd/handler.hpp                             |  11 ++
  pldmd/invoker.hpp                             |   7 +-
- pldmd/pldmd.cpp                               |  10 +-
- 10 files changed, 291 insertions(+), 3 deletions(-)
+ pldmd/pldmd.cpp                               |  11 +-
+ 11 files changed, 365 insertions(+), 3 deletions(-)
  create mode 100644 oem/meta/libpldmresponder/file_io.cpp
  create mode 100644 oem/meta/libpldmresponder/file_io.hpp
+ create mode 100644 oem/meta/libpldmresponder/file_io_by_type.hpp
  create mode 100644 oem/meta/libpldmresponder/file_io_type_post_code.cpp
  create mode 100644 oem/meta/libpldmresponder/file_io_type_post_code.hpp
 
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 7de2cf29bb..517c29df89 100644
+index f949db9..9558433 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -54,6 +54,16 @@ if get_option('oem-ibm').enabled()
+@@ -54,6 +54,16 @@ if get_option('oem-ibm').allowed()
    ]
  endif
  
@@ -51,10 +53,10 @@ index 7de2cf29bb..517c29df89 100644
    'pldmresponder',
    sources,
 diff --git a/meson.build b/meson.build
-index 310f98717b..239e2445b0 100644
+index 2e4d8fd..c62ce37 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -59,6 +59,10 @@ if get_option('oem-ibm').enabled()
+@@ -59,6 +59,10 @@ if get_option('oem-ibm').allowed()
    add_project_arguments('-DOEM_IBM', language : 'c')
    add_project_arguments('-DOEM_IBM', language : 'cpp')
  endif
@@ -66,10 +68,10 @@ index 310f98717b..239e2445b0 100644
  conf_data.set('INSTANCE_ID_EXPIRATION_INTERVAL',get_option('instance-id-expiration-interval'))
  conf_data.set('RESPONSE_TIME_OUT',get_option('response-time-out'))
 diff --git a/meson.options b/meson.options
-index b11c0fb037..00a591626b 100644
+index 9e2339f..34f69e8 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -40,6 +40,14 @@ option(
+@@ -41,6 +41,14 @@ option(
      description: 'transport via af-mctp or mctp-demux'
  )
  
@@ -86,10 +88,10 @@ index b11c0fb037..00a591626b 100644
  # received within a maximum of 6 seconds after a request is sent. By setting the dbus timeout
 diff --git a/oem/meta/libpldmresponder/file_io.cpp b/oem/meta/libpldmresponder/file_io.cpp
 new file mode 100644
-index 0000000000..78f897853d
+index 0000000..04186bc
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/file_io.cpp
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,126 @@
 +#include "file_io.hpp"
 +
 +#include "file_io_type_post_code.hpp"
@@ -98,7 +100,6 @@ index 0000000000..78f897853d
 +#include <libpldm/oem/meta/file_io.h>
 +
 +#include <filesystem>
-+
 +namespace pldm
 +{
 +namespace responder
@@ -163,6 +164,25 @@ index 0000000000..78f897853d
 +    return PLDM_SUCCESS;
 +}
 +
++std::unique_ptr<FileHandler> Handler::getHandlerByType(uint8_t fileIOType)
++{
++    switch (fileIOType)
++    {
++        case POST_CODE:
++        {
++            return std::make_unique<PostCodeHandler>(this->getTID(),
++                                                     tidToSlotMap);
++        }
++        default:
++        {
++            error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
++                  "FILEIOTYPE", fileIOType);
++            break;
++        }
++    }
++    return nullptr;
++}
++
 +Response Handler::writeFileIO(const pldm_msg* request, size_t payloadLength)
 +{
 +    uint8_t fileIOType;
@@ -178,15 +198,19 @@ index 0000000000..78f897853d
 +        return ccOnlyResponse(request, rc);
 +    }
 +
-+    switch (fileIOType)
++    std::unique_ptr<FileHandler> handler{};
++    handler = getHandlerByType(fileIOType);
++
++    if (handler == nullptr)
 +    {
-+        case POST_CODE:
-+            rc = postCodeHandler(tidToSlotMap[this->getTID()], retDataField,
-+                                 length);
-+            break;
-+        default:
-+            rc = PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
++        return ccOnlyResponse(request, PLDM_ERROR_UNSUPPORTED_PLDM_CMD);
 +    }
++
++    // Set requstData to vector for each handler easy to use.
++    std::vector<uint8_t> data(std::begin(retDataField),
++                              std::begin(retDataField) + length);
++
++    rc = handler->write(data);
 +
 +    return ccOnlyResponse(request, rc);
 +}
@@ -196,13 +220,14 @@ index 0000000000..78f897853d
 +} // namespace pldm
 diff --git a/oem/meta/libpldmresponder/file_io.hpp b/oem/meta/libpldmresponder/file_io.hpp
 new file mode 100644
-index 0000000000..a70b36794f
+index 0000000..9d1da9f
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/file_io.hpp
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,62 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
++#include "file_io_by_type.hpp"
 +#include "pldmd/handler.hpp"
 +
 +#include <libpldm/oem/meta/file_io.h>
@@ -234,7 +259,7 @@ index 0000000000..a70b36794f
 +  public:
 +    Handler()
 +    {
-+        handlers.emplace(OEM_META_PLDM_WRITE_FILE,
++        handlers.emplace(PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
 +                         [this](const pldm_msg* request, size_t payloadLength) {
 +            return this->writeFileIO(request, payloadLength);
 +        });
@@ -254,44 +279,76 @@ index 0000000000..a70b36794f
 +     *  @return PLDM response message
 +     */
 +    Response writeFileIO(const pldm_msg* request, size_t payloadLength);
++
++    std::unique_ptr<FileHandler> getHandlerByType(uint8_t fileIOType);
 +};
 +
 +} // namespace oem_meta
 +} // namespace responder
 +} // namespace pldm
-diff --git a/oem/meta/libpldmresponder/file_io_type_post_code.cpp b/oem/meta/libpldmresponder/file_io_type_post_code.cpp
+diff --git a/oem/meta/libpldmresponder/file_io_by_type.hpp b/oem/meta/libpldmresponder/file_io_by_type.hpp
 new file mode 100644
-index 0000000000..0342f4807a
+index 0000000..2c27d42
 --- /dev/null
-+++ b/oem/meta/libpldmresponder/file_io_type_post_code.cpp
-@@ -0,0 +1,63 @@
-+#include "file_io_type_post_code.hpp"
-+
-+// #include <filesystem>
++++ b/oem/meta/libpldmresponder/file_io_by_type.hpp
+@@ -0,0 +1,28 @@
++#pragma once
++#include <cstdint>
++#include <vector>
 +
 +namespace pldm
 +{
 +namespace responder
 +{
-+
 +namespace oem_meta
 +{
 +
++/**
++ *  @class FileHandler
++ *
++ *  Base class to handle read/write of all oem file types
++ */
++class FileHandler
++{
++  public:
++    virtual int write(const std::vector<uint8_t>& data) = 0;
++    virtual int read(const std::vector<uint8_t>& data) = 0;
++    virtual ~FileHandler() {}
++};
++
++} // namespace oem_meta
++
++} // namespace responder
++} // namespace pldm
+diff --git a/oem/meta/libpldmresponder/file_io_type_post_code.cpp b/oem/meta/libpldmresponder/file_io_type_post_code.cpp
+new file mode 100644
+index 0000000..04c92ba
+--- /dev/null
++++ b/oem/meta/libpldmresponder/file_io_type_post_code.cpp
+@@ -0,0 +1,59 @@
++#include "file_io_type_post_code.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++PHOSPHOR_LOG2_USING;
++namespace pldm
++{
++namespace responder
++{
++namespace oem_meta
++{
 +using postcode_t = std::tuple<uint64_t, std::vector<uint8_t>>;
 +
-+int postCodeHandler(
-+    int slot, const std::array<uint8_t, decodeDataMaxLength>& retDataField,
-+    uint32_t length)
++int PostCodeHandler::write(const std::vector<uint8_t>& postCodeList)
 +{
 +    static constexpr auto dbusService = "xyz.openbmc_project.State.Boot.Raw";
 +    static constexpr auto dbusObj = "/xyz/openbmc_project/state/boot/raw";
 +
++    int slot = tidToSlotMap.at(tid);
++
 +    std::string dbusObjStr = dbusObj + std::to_string(slot);
 +
 +    uint64_t primaryPostCode = 0;
-+
-+    std::vector<uint8_t> postCodeList(retDataField.begin(),
-+                                      retDataField.begin() + length);
 +
 +    // Putting list of the bytes together to form a meaningful postcode
 +    // AMD platform send four bytes as a post code unit
@@ -330,13 +387,14 @@ index 0000000000..0342f4807a
 +} // namespace pldm
 diff --git a/oem/meta/libpldmresponder/file_io_type_post_code.hpp b/oem/meta/libpldmresponder/file_io_type_post_code.hpp
 new file mode 100644
-index 0000000000..2058fe5a76
+index 0000000..4458db9
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/file_io_type_post_code.hpp
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,42 @@
 +#pragma once
 +
-+#include "file_io.hpp"
++#include "common/utils.hpp"
++#include "file_io_by_type.hpp"
 +
 +namespace pldm
 +{
@@ -344,16 +402,39 @@ index 0000000000..2058fe5a76
 +{
 +namespace oem_meta
 +{
++/** @class PostCodeHandler
++ *
++ *  @brief Inherits and implements FileHandler. This class is used
++ *  to store incoming postcode
++ */
++class PostCodeHandler : public FileHandler
++{
++  public:
++    PostCodeHandler(uint8_t tid, const std::map<uint8_t, int>& tidToSlotMap) :
++        tid(tid), tidToSlotMap(tidToSlotMap)
++    {}
 +
-+int postCodeHandler(
-+    int slot, const std::array<uint8_t, decodeDataMaxLength>& retDataField,
-+    uint32_t length);
++    /** @brief Method to store postcode list
++     *  @param[in] data - post code
++     *  @return  PLDM status code
++     */
++    int write(const std::vector<uint8_t>& data);
++
++    int read([[maybe_unused]] const std::vector<uint8_t>& data)
++    {
++        return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
++    }
++
++  private:
++    uint8_t tid = 0;
++    const std::map<uint8_t, int> tidToSlotMap;
++};
 +
 +} // namespace oem_meta
 +} // namespace responder
 +} // namespace pldm
 diff --git a/pldmd/handler.hpp b/pldmd/handler.hpp
-index cfa95ebba2..0cd14bad88 100644
+index cfa95eb..0cd14ba 100644
 --- a/pldmd/handler.hpp
 +++ b/pldmd/handler.hpp
 @@ -55,11 +55,22 @@ class CmdHandler
@@ -380,7 +461,7 @@ index cfa95ebba2..0cd14bad88 100644
  
  } // namespace responder
 diff --git a/pldmd/invoker.hpp b/pldmd/invoker.hpp
-index 9903e7fc23..094eaf11e5 100644
+index 9903e7f..094eaf1 100644
 --- a/pldmd/invoker.hpp
 +++ b/pldmd/invoker.hpp
 @@ -30,15 +30,18 @@ class Invoker
@@ -405,7 +486,7 @@ index 9903e7fc23..094eaf11e5 100644
      }
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 23499e473b..b78db97ee5 100644
+index a85157f..e302f99 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -65,6 +65,10 @@ PHOSPHOR_LOG2_USING;
@@ -428,10 +509,11 @@ index 23499e473b..b78db97ee5 100644
                                            hdrFields.command, request,
                                            requestLen);
              }
-@@ -260,6 +264,10 @@ int main(int argc, char** argv)
-     oemBiosHandler = std::make_unique<oem::ibm::bios::Handler>(&dbusHandler);
- #endif
- 
+@@ -259,6 +263,11 @@ int main(int argc, char** argv)
+         dbusToPLDMEventHandler = std::make_unique<DbusToPLDMEvent>(
+             pldmTransport.getEventSource(), hostEID, instanceIdDb, &reqHandler);
+     }
++
 +#ifdef OEM_META
 +    invoker.registerHandler(PLDM_OEM, std::make_unique<oem_meta::Handler>());
 +#endif
@@ -440,5 +522,5 @@ index 23499e473b..b78db97ee5 100644
          pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
          oemBiosHandler.get());
 -- 
-2.39.3
+2.25.1
 

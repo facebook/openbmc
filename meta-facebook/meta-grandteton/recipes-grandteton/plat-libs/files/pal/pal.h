@@ -39,6 +39,7 @@ extern "C" {
 #define MAIN_CPLD_SLV_ADDR      (0x80)
 #define MAIN_CPLD_BUS_NUM       (7)
 #define CRASHDUMP_AMD_MB
+#define FRB3_TRIGGER_TIME 300
 
 extern const char pal_fru_list[];
 
@@ -77,6 +78,7 @@ int pal_get_cpu_id(uint8_t soc_num);
 bool fru_presence_ext(uint8_t fru_id, uint8_t *status);
 void hgx_pwr_limit_mon (void);
 int pal_get_gpu_fru_id();
+void pal_check_power_rail(int is_pwr_on);
 
 #ifdef __cplusplus
 } // extern "C"

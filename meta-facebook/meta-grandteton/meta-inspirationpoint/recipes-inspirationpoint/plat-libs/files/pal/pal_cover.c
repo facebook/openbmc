@@ -669,6 +669,7 @@ pal_toggle_rst_btn(uint8_t slot) {
   int ret;
   ret = pal_set_rst_btn(FRU_MB, 0);
   ret |= pal_set_rst_btn(FRU_MB, 1);
+  pal_check_power_rail(1);
   return ret;
 }
 
@@ -710,4 +711,182 @@ void hgx_pwr_limit_mon (void) {
  if (pthread_create(&tid_pwr_limit_mon, NULL, hgx_pwr_limit_check, NULL)) {
     syslog(LOG_WARNING, "pthread was created fail for hgx_pwr_limit_mon");
   }
+}
+
+int pal_read_cpld_reg(int fru, uint8_t offset, uint8_t bit, uint8_t *value) {
+  int ret = -1, fd;
+  uint8_t bus, addr, tlen, rlen;
+  uint8_t tbuf[1] = {0};
+
+  if(fru == FRU_MB){
+    bus  = MB_CPLD_BUS;
+    addr = MB_CPLD_ADDR;
+  }
+  else if (fru == FRU_SWB) {
+    bus  = SWB_CPLD_BUS;
+    addr = SWB_CPLD_ADDR;
+  }
+  else {
+    return -1;
+  }
+
+  tbuf[0] = offset;
+  tlen = 1;
+  rlen = 1;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, bus);
+    return -1;
+  }
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, value, rlen);
+  i2c_cdev_slave_close(fd);
+  if (ret) {
+	syslog(LOG_ERR, "%s(): fail to get FRU: %d CPLD reg", __func__, fru);
+    return -1;
+  }
+
+  if (bit >=0 && bit <= 7) {
+    *value = GETBIT(*value, bit);
+  }
+
+  return ret;
+}
+
+static void*
+gti_pwr_fault_event(void* arg) {
+  int is_pwr_on = (int)arg;
+  char obuf[32] = {0}, ibuf[32] = {0};
+  int id, iteration = 0, delay = 30, max_retry = 0;
+
+  pthread_detach(pthread_self());
+
+  max_retry = is_pwr_on ? (FRB3_TRIGGER_TIME + delay)/delay : 0;
+
+  if(kv_get("pwr_rail_check", obuf, 0, KV_FPERSIST)) {
+    id = 0;
+    snprintf(obuf, sizeof(obuf), "%d", id);
+  }
+  else {
+    id = atoi(obuf);
+    if(id < 128) {
+      id++;
+    }
+    else {
+      id = 0;
+    }
+  }
+
+  snprintf(ibuf, sizeof(ibuf), "%d", id);
+  kv_set("pwr_rail_check", ibuf, 0, KV_FPERSIST);
+
+  do {
+    iteration++;
+    kv_get("pwr_rail_check", obuf, 0, KV_FPERSIST);
+    if(strcmp(obuf, ibuf)) {
+      goto end;
+    }
+
+    if(is_pwr_on) {
+      if(pal_bios_completed(FRU_MB)) {
+        goto end;
+      }
+      else {
+        sleep(delay);
+      }
+    }
+  } while (iteration <= max_retry);
+
+  struct power_rail {
+    uint8_t offset;
+    uint8_t bit;
+    uint8_t asserted_value;
+    const char *event_log;
+  } power_rail;
+
+  struct power_rail mb_power_rail_table[] = {
+   {0x28, 7, 0, "FM_CPU0_SLP_S5_N"},
+   {0x28, 4, 0, "FM_CPU0_SLP_S3_N"},
+   {0x2B, 4, 0, "P12V_OCP_V3_1_PWRGD"},
+   {0x2B, 0, 0, "P12V_OCP_V3_2_PWRGD"},
+   {0x2A, 0, 0, "P12V_E1S_1_PWRGD"},
+   {0x27, 6, 0, "PWRGD_P5V_AUX_R3"},
+   {0x27, 5, 0, "PWRGD_P3V3_STBY_R"},
+   {0x28, 6, 0, "FM_PWRGD_PVDD11_S3_P0"},
+   {0x28, 5, 0, "FM_PWRGD_PVDD11_S3_P1"},
+   {0x28, 3, 0, "FM_PWRGD_PVDDIO_P0"},
+   {0x28, 2, 0, "PWRGD_PVDDCR_SOC_P0"},
+   {0x28, 1, 0, "PWRGD_PVDDCR_CPU0_P0"},
+   {0x28, 0, 0, "FM_PWRGD_PVDDCR_CPU1_P0"},
+   {0x29, 7, 0, "FM_PWRGD_PVDDIO_P1"},
+   {0x29, 6, 0, "PWRGD_PVDDvalueCR_SOC_P1"},
+   {0x29, 5, 0, "FM_PWRGD_PVDDCR_CPU0_P1"},
+   {0x29, 4, 0, "FM_PWRGD_PVDDCR_CPU1_P1"},
+   {0x29, 3, 0, "CPU_PWR_PG_DLY_DONE_CHECK"},
+   {0x29, 2, 0, "FM_PWRGD_CPU1_PWROK"},
+   {0x29, 0, 0, "FM_RST_CPU1_RESETL_N"},
+
+   {0x2D, 1, 0, "PWRGD_P0V9_RETIMER_CPU0_R2"},
+   {0x2D, 0, 0, "PWRGD_P0V9_RETIMER_CPU1_R2"},
+   {0x2D, 3, 0, "FM_PWRGD_P1V8_RETIMER_CPU0"},
+   {0x2D, 2, 0, "FM_PWRGD_P1V8_RETIMER_CPU1"},
+   {0x2E, 5, 0, "RST_PERST_CPU0_SWB_N"},
+   {0x2E, 4, 0, "RST_PERST_CPU1_SWB_N"},
+
+   {0x01, 6, 0, "FM_GPU_HSC_EN_R"},
+   {0x01, 5, 0, "HPDB_HSC_PWRGD_ISO_R"},
+   {0x00, 6, 0, "SWB_HSC_EN_R"},
+   {0x00, 5, 0, "SWB_HSC_PWRGD_ISO_R"},
+   {0x01, 3, 0, "GPU_BASE_STBY_EN_R"},
+   {0x01, 1, 0, "GPU_FPGA_READY_ISO_R"},
+
+   {0x01, 0, 0, "FM_GPU_PWR_EN"},
+   {0x02, 7, 0, "FM_GPU_PWRGD_ISO_R"},
+   {0x00, 4, 0, "FM_SWB_PWR_EN"},
+   {0x00, 3, 0, "FM_SWB_PWRGD_ISO_R"},
+  };
+
+  struct power_rail swb_power_rail_table[] = {
+    {0x00, 4, 0, "MB_PWR_EN"},
+    {0x04, 6, 0, "MB_SWB_PWRGD"},
+  };
+
+  int mb_pwr_rail_cnt = sizeof(mb_power_rail_table)/sizeof(power_rail);
+  int swb_pwr_rail_cnt = sizeof(swb_power_rail_table)/sizeof(power_rail);
+
+  int ret = -1;
+  uint8_t value = 0;
+
+  for(int i=0; i < mb_pwr_rail_cnt; i++) {
+    ret = pal_read_cpld_reg(FRU_MB, mb_power_rail_table[i].offset,
+                            mb_power_rail_table[i].bit, &value);
+    if(!ret && value == mb_power_rail_table[i].asserted_value) {
+      syslog(LOG_CRIT, "Power Fail Event: %s Assert", mb_power_rail_table[i].event_log);
+    }
+  }
+
+  for(int i = 0; i < swb_pwr_rail_cnt; i++) {
+    ret = pal_read_cpld_reg(FRU_SWB, swb_power_rail_table[i].offset,
+                            swb_power_rail_table[i].bit, &value);
+    if(!ret && value == swb_power_rail_table[i].asserted_value) {
+      syslog(LOG_CRIT, "Power Fail Event: %s Assert", swb_power_rail_table[i].event_log);
+    }
+  }
+
+end:
+  pthread_exit(NULL);
+}
+
+void pal_check_power_rail(int is_pwr_on) {
+  if(pal_is_artemis()) {
+    return;
+  }
+
+  pthread_t tid_pwr_fault;
+  if (pthread_create(&tid_pwr_fault, NULL, gti_pwr_fault_event, (void *)is_pwr_on) < 0) {
+    syslog(LOG_WARNING, "%s Create thread failed!\n", __func__);
+  }
+
+  return;
 }

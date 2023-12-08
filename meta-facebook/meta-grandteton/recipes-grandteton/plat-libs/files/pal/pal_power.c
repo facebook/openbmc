@@ -115,6 +115,7 @@ server_power_off(bool gs_flag) {
 // Power On the server
 static int
 server_power_on(void) {
+  pal_check_power_rail(1);
   return power_btn_out_pulse(DELAY_POWER_ON);
 }
 

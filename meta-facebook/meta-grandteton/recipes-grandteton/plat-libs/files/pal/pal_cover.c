@@ -30,6 +30,11 @@ pal_clear_psb_cache(void) {
   return 0;
 }
 
+void
+pal_check_power_rail(int) {
+  return;
+}
+
 int
 pal_check_psb_error(uint8_t head, uint8_t last) {
   return 0;

@@ -113,6 +113,7 @@ post_comp_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
   if (curr == GPIO_VALUE_LOW) {
     pal_get_cpu_id(0);
     pal_get_cpu_id(1);
+    pal_check_power_rail(0);
   }
 }
 
@@ -379,8 +380,15 @@ static void
 pwr_fault_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   pthread_t tid_delay_pwr_fault_log;
 
-  if (pthread_create(&tid_delay_pwr_fault_log, NULL, delay_pwr_fault_log, NULL) < 0) {
-    syslog(LOG_WARNING, "%s Create thread failed!\n", __func__);
+  if(pal_is_artemis()) {
+    if(pthread_create(&tid_delay_pwr_fault_log, NULL, delay_pwr_fault_log, NULL) < 0) {
+      syslog(LOG_WARNING, "%s Create thread failed!\n", __func__);
+    }
+  }
+  else {
+    if(pal_bios_completed(FRU_MB)) {
+      pal_check_power_rail(0);
+    }
   }
 }
 
@@ -423,6 +431,7 @@ static struct gpiopoll_config gpios_plat_list[] = {
   {APML_CPU0_ALERT,             "SGPIO10",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
   {APML_CPU1_ALERT,             "SGPIO12",   GPIO_EDGE_FALLING, apml_alert_event_handler,   apml_alert_init_handler},
   {HMC_READY,                   "SGPIO64",   GPIO_EDGE_BOTH,    hmc_ready_handler,          hmc_ready_init},
+  {PWR_FALUT_ALERT,             "SGPIO170",  GPIO_EDGE_RISING,  pwr_fault_event_handler, NULL},
   // Add new GPIO from here
   // The reserved space will be used for optional GPIO pins in specific system config
   {RESERVED_GPIO,            RESERVED_GPIO,  GPIO_EDGE_NONE,    NULL,                       NULL},

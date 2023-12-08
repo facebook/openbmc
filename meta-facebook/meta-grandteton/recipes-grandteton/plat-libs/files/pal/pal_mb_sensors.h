@@ -5,6 +5,7 @@
 #define MB_INA230_BUS         34
 #define MB_INA230_ADDR_START  0x41
 #define MB_INA230_ADDR_END    0x45
+#define FRB3_TRIGGER_TIME 300 // 300 secs
 
 //Sensor Table
 enum {

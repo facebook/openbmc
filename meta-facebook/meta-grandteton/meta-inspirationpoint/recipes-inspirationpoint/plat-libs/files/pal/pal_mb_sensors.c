@@ -50,7 +50,6 @@
 #define DIMM_TS0_SNR_DIR "/dev/bus/i3c/%d-e0000001%d"
 #define DIMM_TS1_SNR_DIR "/dev/bus/i3c/%d-e0000003%d"
 #define DIMM_PWR_SNR_DIR "/dev/bus/i3c/%d-e5010%d000"
-#define FRB3_TRIGGER_TIME 300 // 300 secs
 
 uint8_t DIMM_SLOT_CNT = 0;
 //static float InletCalibration = 0;
@@ -1290,6 +1289,8 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
     snprintf(error, sizeof(error), "FRB3 failure");
     _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, frb3_fail, error);
     is_frb3_log = true;
+
+    pal_check_power_rail(0);
 
     /* Workaround_for_Genoa_Erratum_#1477 */
     char rev_id[MAX_VALUE_LEN] = {0};

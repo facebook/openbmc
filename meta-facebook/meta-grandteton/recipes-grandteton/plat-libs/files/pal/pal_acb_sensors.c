@@ -114,8 +114,8 @@ PAL_SENSOR_MAP acb_freya_sensor_map[] = {
   {"P51V_STBY_R_CURR", 0, get_acb_sensor, true,  {35, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x5E
   {"P0V8_1_VDD_TEMP", 0, get_acb_sensor, true,  {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x5F
   {"P0V8_2_VDD_TEMP", 0, get_acb_sensor, true,  {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x60
-  {"P1V25_1_12VIN_VOLT", 0, get_acb_sensor, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0}, VOLT}, // 0x61
-  {"P1V25_2_12VIN_VOLT", 0, get_acb_sensor, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0}, VOLT}, // 0x62
+  {"P1V25_1_12VIN_VOLT", 0, get_acb_sensor, false, {13.2, 0, 0, 11.6, 0, 0, 0, 0}, VOLT}, // 0x61
+  {"P1V25_2_12VIN_VOLT", 0, get_acb_sensor, false, {13.2, 0, 0, 11.6, 0, 0, 0, 0}, VOLT}, // 0x62
   {"P1V25_1_12VIN_CURR", 0, get_acb_sensor, false, {2.48, 0, 2.92, 0, 0, 0, 0, 0}, CURR}, // 0x63
   {"P1V25_2_12VIN_CURR", 0, get_acb_sensor, false, {2.48, 0, 2.92, 0, 0, 0, 0, 0}, CURR}, // 0x64
   {"P1V25_1_12VIN_PWR", 0, get_acb_sensor, false, {32.736, 0, 41.8436, 0, 0, 0, 0, 0}, POWER}, // 0x65
@@ -304,8 +304,8 @@ PAL_SENSOR_MAP acb_artemis_sensor_map[] = {
   {"P51V_STBY_R_CURR", 0, get_acb_sensor, true,  {35, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x5E
   {"P0V8_1_VDD_TEMP", 0, get_acb_sensor, true,  {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x5F
   {"P0V8_2_VDD_TEMP", 0, get_acb_sensor, true,  {100, 0, 0, 0, 0, 0, 0, 0},  TEMP}, // 0x60
-  {"P1V25_1_12VIN_VOLT", 0, get_acb_sensor, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0}, VOLT}, // 0x61
-  {"P1V25_2_12VIN_VOLT", 0, get_acb_sensor, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0}, VOLT}, // 0x62
+  {"P1V25_1_12VIN_VOLT", 0, get_acb_sensor, false, {13.2, 0, 0, 11.6, 0, 0, 0, 0}, VOLT}, // 0x61
+  {"P1V25_2_12VIN_VOLT", 0, get_acb_sensor, false, {13.2, 0, 0, 11.6, 0, 0, 0, 0}, VOLT}, // 0x62
   {"P1V25_1_12VIN_CURR", 0, get_acb_sensor, false, {2.48, 0, 2.92, 0, 0, 0, 0, 0}, CURR}, // 0x63
   {"P1V25_2_12VIN_CURR", 0, get_acb_sensor, false, {2.48, 0, 2.92, 0, 0, 0, 0, 0}, CURR}, // 0x64
   {"P1V25_1_12VIN_PWR", 0, get_acb_sensor, false, {32.736, 0, 41.8436, 0, 0, 0, 0, 0}, POWER}, // 0x65

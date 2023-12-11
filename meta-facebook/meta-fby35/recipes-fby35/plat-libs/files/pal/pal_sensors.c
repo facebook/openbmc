@@ -3824,7 +3824,7 @@ pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num) {
 
 static int
 _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
-          const uint8_t config_status, const uint8_t board_type) {
+          const uint8_t config_status, const uint8_t board_type, uint8_t fru) {
   int fd;
   int ret = 0;
   uint8_t buf[sizeof(sdr_full_t)] = {0};
@@ -3832,6 +3832,8 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
   uint8_t snr_num = 0;
   sdr_full_t *sdr;
   int retry = MAX_RETRY;
+  static uint8_t slot_type = 0;
+  static bool is_slot_type_init = false;
 
   while ( access(path, F_OK) == -1 && retry > 0 ) {
     syslog(LOG_WARNING, "%s() Failed to access %s, wait a second.\n", __func__, path);
@@ -3851,6 +3853,12 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
     goto error_exit;
   }
 
+  if (is_slot_type_init == false) {
+    slot_type = fby35_common_get_slot_type(fru);
+    if (slot_type >= 0) {
+      is_slot_type_init = true;
+    }
+  }
   while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
     if (bytes_rd != sizeof(sdr_full_t)) {
       syslog(LOG_WARNING, "%s() read returns %d bytes\n", __func__, bytes_rd);
@@ -3861,6 +3869,37 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
     snr_num = sdr->sensor_num;
     sinfo[snr_num].valid = true;
 
+    if (slot_type == SERVER_TYPE_CL) {
+      switch (snr_num) {
+        case BIC_SENSOR_INLET_TEMP:
+        case BIC_SENSOR_OUTLET_TEMP:
+        case BIC_SENSOR_FIO_TEMP:
+        case BIC_SENSOR_M2A_TEMP:
+        case BIC_SENSOR_VCCIN_VR_TEMP:
+        case BIC_SENSOR_FIVRA_VR_TEMP:
+        case BIC_SENSOR_EHV_VR_TEMP:
+        case BIC_SENSOR_VCCD_VR_TEMP:
+        case BIC_SENSOR_FAON_VR_TEMP:
+        case BIC_SENSOR_VCCIN_VR_CUR:
+        case BIC_SENSOR_FIVRA_VR_CUR:
+        case BIC_SENSOR_EHV_VR_CUR:
+        case BIC_SENSOR_VCCD_VR_CUR:
+        case BIC_SENSOR_FAON_VR_CUR:
+        case BIC_SENSOR_VCCIN_VR_POUT:
+        case BIC_SENSOR_FIVRA_VR_POUT:
+        case BIC_SENSOR_EHV_VR_POUT:
+        case BIC_SENSOR_VCCD_VR_POUT:
+        case BIC_SENSOR_FAON_VR_POUT:
+        case BIC_SENSOR_HSC_TEMP:
+        case BIC_DPV2_SENSOR_DPV2_2_12V_VIN:
+        case BIC_DPV2_SENSOR_DPV2_2_12V_VOUT:
+        case BIC_DPV2_SENSOR_DPV2_2_12V_IOUT:
+        case BIC_DPV2_SENSOR_DPV2_2_EFUSE_TEMP:
+        case BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR:
+          sdr->sensor_units1 = 0x00;
+        break;
+      }
+    }
     memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
     //syslog(LOG_WARNING, "%s() copy num: 0x%x:%s success", __func__, snr_num, sdr->str);
   }
@@ -3940,7 +3979,7 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   }
 
   while ( retry-- > 0 ) {
-    ret = _sdr_init(path, sinfo, bmc_location, config_status, board_type);
+    ret = _sdr_init(path, sinfo, bmc_location, config_status, board_type, fru);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to run _sdr_init, retry..%d\n", __func__, retry);
       sleep(1);

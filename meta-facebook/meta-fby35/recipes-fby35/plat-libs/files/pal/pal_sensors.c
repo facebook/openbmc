@@ -3456,12 +3456,21 @@ skip_hsc_init:
         }
       }
 
-      //if we can't get the config status of the blade, return READING_NA.
-      if ( pal_is_fw_update_ongoing(fru) == false && \
-           config_status[fru-1] != CONFIG_UNKNOWN ) {
-        if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
-        else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1]);
-      } else ret = READING_NA;
+      // if fru pal_is_fw_update_ongoing is true, keep the last reading cache.
+      // if we can't get the config status of the blade, return READING_NA.
+      if (pal_is_fw_update_ongoing(fru)) {
+        syslog(LOG_INFO, "skipping sensor(0x%02X) cache update due to fru:%u is being updated", sensor_num, fru);
+        ret = READING_SKIP;
+      } else if (config_status[fru-1] == CONFIG_UNKNOWN) {
+        syslog(LOG_INFO, "sensor(0x%02X) cache update to NA due to fru:%u config_status is CONFIG_UNKNOWN", sensor_num, fru);
+        ret = READING_NA;
+      } else {
+        if (pal_sdr_init(fru) == ERR_NOT_READY) {
+          syslog(LOG_INFO, "sensor(0x%02X) cache update to NA due to fru:%u pal_sdr_init is ERR_NOT_READY", sensor_num, fru);
+          ret = READING_NA;
+        } else
+          ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1]);
+      }
       break;
     case FRU_BMC:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);

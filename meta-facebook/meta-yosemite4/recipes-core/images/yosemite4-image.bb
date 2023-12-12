@@ -4,3 +4,4 @@ require common/images/fb-openbmc-image.inc
 IMAGE_INSTALL:append = " bios-fw-update"
 IMAGE_INSTALL:append = " cpld-fw-handler"
 IMAGE_INSTALL:append = " bic-update"
+IMAGE_INSTALL:append = " cxl-fw-update"

@@ -87,8 +87,7 @@ static const struct i2c_device_id scmcpld_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, scmcpld_id);
 
-static int scmcpld_probe(struct i2c_client *client,
-			 const struct i2c_device_id *id)
+static int scmcpld_probe(struct i2c_client *client)
 {
 	i2c_dev_data_st *pdata;
 
@@ -102,12 +101,11 @@ static int scmcpld_probe(struct i2c_client *client,
 				       ARRAY_SIZE(scmcpld_attrs));
 }
 
-static int scmcpld_remove(struct i2c_client *client)
+static void scmcpld_remove(struct i2c_client *client)
 {
 	i2c_dev_data_st *pdata = i2c_get_clientdata(client);
 
 	i2c_dev_sysfs_data_clean(client, pdata);
-	return 0;
 }
 
 static struct i2c_driver scmcpld_driver = {

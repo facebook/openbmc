@@ -111,6 +111,7 @@ if "HD" in system_conf:
             "sensor_hit_UCR",
             "sensor_fail_ignore_check",
             "sensor_fail",
+            "sensor_not_ready",
         ]
     GPIO_FM_BIOS_POST_CMPLT_BMC_N = 0
     dimm_location_name_map = hd_dimm_location_name_map

@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 
 MCB_FPGA_I2C_BUS_NUM=12 # i2c-12 for Main Control Board FPGA
+MCB_FPGA_I2C_BUS_OFFSET=0x72 # Address offset in the bus for Main Control Board FPGA
 
 # Divide the register address value on FPGA spec by 4 to get the actual address
 I2C_BOARD_VERSION_REGISTER_ADDR=0x8
@@ -32,7 +33,6 @@ I2C_BOARD_VER_BIT_MASK=0xf               # bit 0~3 (brd_ver)
 
 I2C_CPU_DP_PWR_OFF_VALUE=0x0     # 0b00000000, set 0 on bit cpu_datapath_pwr
 I2C_CPU_DP_PWR_ON_VALUE=0x1      # 0b00000001, set 1 on bit cpu_datapath_pwr
-I2C_CPU_DP_PWR_CYCLE_VALUE=0x2   # 0b00000010, set 1 on bit cpu_datapath_pwr
 I2C_CHASSIS_PWR_CYCLE_VALUE=0x4  # 0b00000100, set 1 on bit chassis_pwr_cycle
 
 SEQ_TIMEOUT=15 # in seconds
@@ -47,7 +47,7 @@ LOCK_FILE="/var/lock/lockfile_for_board_util"
 exec {LOCK_FD}>"$LOCK_FILE"
 
 write_i2c_register() {
-    i2cset -f -y "$MCB_FPGA_I2C_BUS_NUM" "$@"
+    i2cset -f -y "$MCB_FPGA_I2C_BUS_NUM" "$MCB_FPGA_I2C_BUS_OFFSET" "$@"
 }
 
 write_i2c_pwr_ctrl_register() {
@@ -55,7 +55,7 @@ write_i2c_pwr_ctrl_register() {
 }
 
 read_i2c_register() {
-    i2cget -f -y "$MCB_FPGA_I2C_BUS_NUM" "$@"
+    i2cget -f -y "$MCB_FPGA_I2C_BUS_NUM" "$MCB_FPGA_I2C_BUS_OFFSET" "$@"
 }
 
 # Function to acquire the file lock
@@ -222,8 +222,10 @@ userver_reset() {
 
     handle_error_and_cleanup_if_busy "${FUNCNAME[0]}"
 
-    # Power cycle CPU and Datapath
-    write_i2c_pwr_ctrl_register "$I2C_CPU_DP_PWR_CYCLE_VALUE"
+    # Power cycle CPU and Datapath by toggling the bit
+    write_i2c_pwr_ctrl_register "$I2C_CPU_DP_PWR_OFF_VALUE"
+    sleep 1
+    write_i2c_pwr_ctrl_register "$I2C_CPU_DP_PWR_ON_VALUE"
 
     handle_error_and_cleanup_if_timeout "${FUNCNAME[0]}"
 

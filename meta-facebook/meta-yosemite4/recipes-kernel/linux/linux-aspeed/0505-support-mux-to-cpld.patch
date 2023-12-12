@@ -1,0 +1,104 @@
+From 21f5dd11362398d2ff1719faf873a871ee00bfaa Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Mon, 11 Dec 2023 10:22:47 +0800
+Subject: [PATCH 1/2] ARM: dts: aspeed: yosemite4: support mux to cpld
+
+Mux pca9544 to cpld was added on EVT HW schematic design,
+so add dts setting for devices behind mux pca9544 to cpld
+
+This commit depends on the patch below:
+[1] https://lore.kernel.org/all/20231211054730.208588-14-Delphine_CC_Chiu@wiwynn.com/
+
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 64 ++++++++++++++-----
+ 1 file changed, 49 insertions(+), 15 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index 6cfbba121fba..4ea0df54546d 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -36,6 +36,10 @@ aliases {
+ 		i2c31 = &imux31;
+ 		i2c32 = &imux32;
+ 		i2c33 = &imux33;
++		i2c34 = &imux34;
++		i2c35 = &imux35;
++		i2c36 = &imux36;
++		i2c37 = &imux37;
+ 	};
+ 
+ 	chosen {
+@@ -951,24 +955,54 @@ &i2c12 {
+ 	status = "okay";
+ 	bus-frequency = <400000>;
+ 
+-	temperature-sensor@48 {
+-		compatible = "ti,tmp75";
+-		reg = <0x48>;
+-	};
++	i2c-mux@70 {
++		compatible = "nxp,pca9544";
++		i2c-mux-idle-disconnect;
++		reg = <0x70>;
+ 
+-	eeprom@50 {
+-		compatible = "atmel,24c128";
+-		reg = <0x50>;
+-	};
++		imux34: i2c@0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <0>;
+ 
+-	eeprom@54 {
+-		compatible = "atmel,24c64";
+-		reg = <0x54>;
+-	};
++			temperature-sensor@48 {
++				compatible = "ti,tmp75";
++				reg = <0x48>;
++			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
+ 
+-	rtc@6f {
+-		compatible = "nuvoton,nct3018y";
+-		reg = <0x6f>;
++			eeprom@54 {
++				compatible = "atmel,24c64";
++				reg = <0x54>;
++			};
++
++			rtc@6f {
++				compatible = "nuvoton,nct3018y";
++				reg = <0x6f>;
++			};
++		};
++
++		imux35: i2c@1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <1>;
++		};
++
++		imux36: i2c@2 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <2>;
++		};
++
++		imux37: i2c@3 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <3>;
++		};
+ 	};
+ };
+ 
+-- 
+2.25.1
+

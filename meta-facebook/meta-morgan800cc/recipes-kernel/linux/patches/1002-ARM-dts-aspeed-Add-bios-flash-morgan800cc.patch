@@ -1,0 +1,47 @@
+From 035a020cc2f92b52456966cd863deb079c8bdf77 Mon Sep 17 00:00:00 2001
+From: Guhan Balasubramanian <gubalasu@cisco.com>
+Date: Thu, 30 Nov 2023 14:26:29 -0800
+Subject: [PATCH] Add dts aspeed Add bios partition in facebook morgan80cc BMC
+
+---
+ .../dts/aspeed-bmc-facebook-morgan800cc.dts   | 25 +++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-morgan800cc.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-morgan800cc.dts
+index e9cddef2505d..f4085a34ad17 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-morgan800cc.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-morgan800cc.dts
+@@ -19,6 +19,31 @@ spi_gpio: spi-gpio {
+ 	};
+ };
+ 
++&spi1 {
++      reg = < 0x1e630000 0xc4
++              0x30000000 0x4000000 >;
++
++      flash@0 {
++                status = "okay";
++                m25p,fast-read;
++                compatible = "jedec,spi-nor";
++                label = "spi1.0";
++                spi-rx-bus-width = <1>;
++                spi-max-frequency = <10000000>;
++
++                partitions {
++                        compatible = "fixed-partitions";
++                        #address-cells = <1>;
++                        #size-cells = <1>;
++
++                        bios@0 {
++                               reg = <0x0 0x4000000>;
++                               label = "bios";
++                        };
++                };
++        };
++};
++
+ &mac3 {
+ 	status = "okay";
+ 	phy-mode = "rgmii";
+-- 
+2.25.1

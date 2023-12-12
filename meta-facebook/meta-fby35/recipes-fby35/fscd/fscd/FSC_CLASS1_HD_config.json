@@ -1,8 +1,8 @@
 {
-  "version": "halfdome-v2023.06.16",
+  "version": "halfdome-v2023.12.12",
   "pwm_transition_value": 80,
   "pwm_boost_value": 80,
-  "non_fanfail_limited_boost_value": 80,
+  "pwm_sensor_boost_value": 100,
   "sample_interval_ms": 3000,
   "sensor_fail_ignore": true,
   "sensor_filter_all": true,

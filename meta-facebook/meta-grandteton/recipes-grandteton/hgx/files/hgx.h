@@ -7,11 +7,11 @@ typedef enum HMCPhase {
   BMC_FW_DVT = 2,
 } HMCPhase;
 
-enum GPU_CONFIG {
+typedef enum GPUConfig {
   GPU_CONFIG_HGX,
   GPU_CONFIG_UBB,
   GPU_CONFIG_UNKNOWN
-};
+} GPUConfig;
 
 #define MAX_NUM_GPUs     (8)
 
@@ -30,6 +30,10 @@ struct HTTPException : std::runtime_error {
   HTTPException(int code)
       : std::runtime_error("HTTP Error: " + std::to_string(code)),
         errorCode(code) {}
+};
+
+struct GPUNotReady : std::runtime_error {
+  GPUNotReady() : std::runtime_error("GPU Is not ready") {}
 };
 
 struct TaskStatus {
@@ -73,6 +77,9 @@ int update(const std::string& comp, const std::string& path);
 
 // Get HGX's phase
 HMCPhase getHMCPhase(void);
+
+// Get Configuration
+GPUConfig getConfig(void);
 
 // Get HGX's sensors from Telemetry Service
 // status.
@@ -125,10 +132,11 @@ std::string sensorRaw(const std::string& component, const std::string& name);
 extern "C" {
 #endif
 
-int hgx_get_metric_reports(int gpu_config);
+int hgx_get_metric_reports();
 int get_hgx_sensor(const char* component, const char* snr_name, float* value);
 int get_hgx_ver(const char* component, char *version);
 HMCPhase get_hgx_phase();
+GPUConfig get_gpu_config();
 
 #ifdef __cplusplus
 }

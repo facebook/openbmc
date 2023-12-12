@@ -45,7 +45,7 @@
 #include <libpldm-oem/pldm.h>
 #include "pal_common.h"
 #include <pthread.h>
-
+#include <openbmc/hgx.h>
 
 #ifndef PLATFORM_NAME
 #define PLATFORM_NAME "grandteton"
@@ -229,73 +229,14 @@ pal_is_artemis() { // TODO: Use MB CPLD Offest to check the platform
 }
 
 int
-pal_set_gpu_fru_id (uint8_t fru) {
-
-  if (gpio_get_value_by_shadow("GPU_PRSNT_N_ISO_R") == GPIO_VALUE_HIGH) {
-    return -1;
-  }
-
-  if (fru == FRU_HGX) {
-    kv_set("gpu_config", "hgx", 0, KV_FPERSIST);
-  }
-  else if (fru == FRU_UBB) {
-    kv_set("gpu_config", "ubb", 0, KV_FPERSIST);
-  }
-  else {
-    return -1;
-  }
-
-  return fru;
-}
-
-int
 pal_get_gpu_fru_id () {
-  int ret = -1;
-  char value[MAX_KEY_LEN] = {0};
-
-  if (gpio_get_value_by_shadow("GPU_PRSNT_N_ISO_R") == GPIO_VALUE_HIGH) {
-    return -1;
-  }
-
-  ret = kv_get("gpu_config", value, NULL, KV_FPERSIST);
-  if (ret) {
-    int fd = 0;
-    uint8_t tlen, rlen;
-    uint8_t tbuf[16] = {0};
-    uint8_t rbuf[16] = {0};
-    uint8_t hgx_eeprom_addr = 0xA6;
-
-    fd = i2c_cdev_slave_open(I2C_BUS_9, hgx_eeprom_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-	if (fd < 0) {
-	  syslog(LOG_WARNING, "%s() Failed to open %d", __func__, I2C_BUS_9);
-      return ret;
-    }
-
-    tbuf[0] = 0x00;
-    tlen = 1;
-    rlen = 1;
-
-    ret = i2c_rdwr_msg_transfer(fd, hgx_eeprom_addr, tbuf, tlen, rbuf, rlen);
-    i2c_cdev_slave_close(fd);
-
-    if (!ret) {
-      return pal_set_gpu_fru_id(FRU_HGX);
-    }
-    else {
-      return pal_set_gpu_fru_id(FRU_UBB);
-    }
-  }
-  else {
-    if (strcmp(value, "hgx") == 0) {
-      return FRU_HGX;
-    }
-    else if (strcmp(value, "ubb") == 0) {
-      return FRU_UBB;
-    }
-    else {
-      return -1;
-    }
-  }
+   GPUConfig cfg = get_gpu_config();
+   if (cfg == GPU_CONFIG_HGX) {
+     return FRU_HGX;
+   } else if (cfg == GPU_CONFIG_UBB) {
+     return FRU_UBB;
+   }
+   return -1;
 }
 
 int

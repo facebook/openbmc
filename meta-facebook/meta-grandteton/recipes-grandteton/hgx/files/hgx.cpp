@@ -1,6 +1,8 @@
 #include <hgx.h>
 #include <nlohmann/json.hpp>
 #include <openbmc/kv.hpp>
+#include <openbmc/libgpio.hpp>
+#include <openbmc/i2c_cdev.h>
 #include <string.h>
 #include <syslog.h>
 #include <chrono>
@@ -135,54 +137,58 @@ class HGXMgr {
 
 static HGXMgr hgx;
 
-class UBBMgr : public HGXMgr {
-public:
-  void getMetricReports() {
-    std::string url;
-    std::string resp;
-    std::string snr_val;
-    unsigned int pos_start, pos_end;
-    url = HMC_URL + "TelemetryService/MetricReports/All";
-    resp = HGXMgr::get(url);
-    json jresp = json::parse(resp);
-    json &tempArray = jresp["MetricValues"];
-    for(auto &x : tempArray)
-    {
-      auto jname = x.find("MetricProperty");
-      std::string snr_path = jname.value();
-      if (snr_path.find("TEMP") == std::string::npos &&
-          snr_path.find("POWER") == std::string::npos) {
-        continue;
-      }
-      else if(snr_path.find("Reading") != std::string::npos) {
-        pos_end = snr_path.find_last_of("/\\");
-        pos_start = snr_path.find_last_of("/\\", pos_end - 1);
-        snr_path = snr_path.substr(pos_start + 1, pos_end - pos_start -1);
-      }
-      else {
-        pos_start = snr_path.find_last_of("/\\");
-        snr_path = snr_path.substr(pos_start + 1);
-      }
+GPUConfig getConfig() {
+  int ret = -1;
+  GPIO gpio("GPU_PRSNT_N_ISO_R");
+  const std::string config_key{"gpu_config"};
 
-      auto jvalue = x.find("MetricValue");
-      if (jvalue.value().is_null()) {
-        continue;
-      }
-      else {
-        snr_val = jvalue.value();
-      }
-
-      pos_start = snr_val.find_first_not_of("0123456789");
-      if (pos_start != 0) {
-        kv::set(snr_path, snr_val);
-      }
-      else {
-        kv::set(snr_path, "");
-      }
-    }
+  gpio.open();
+  if (gpio.get_value() == GPIO_VALUE_HIGH) {
+    throw GPUNotReady();
   }
-};
+  gpio.close();
 
+  try {
+    auto val = kv::get(config_key, kv::region::persist);
+    if (val == "hgx") {
+      return GPU_CONFIG_HGX;
+    } else if (val == "ubb") {
+      return GPU_CONFIG_UBB;
+    } else {
+      return GPU_CONFIG_UNKNOWN;
+    }
+  } catch (kv::key_does_not_exist& e) {
+    const int hgx_eeprom_bus = 0x9;
+    int fd = 0;
+    uint8_t tlen, rlen;
+    uint8_t tbuf[16] = {0};
+    uint8_t rbuf[16] = {0};
+    const uint8_t hgx_eeprom_addr = 0xA6;
+
+    fd = i2c_cdev_slave_open(hgx_eeprom_bus, hgx_eeprom_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "%s() Failed to open 9", __func__);
+      throw std::runtime_error("I2C Bus open failure");
+    }
+
+    tbuf[0] = 0x00;
+    tlen = 1;
+    rlen = 1;
+
+    ret = i2c_rdwr_msg_transfer(fd, hgx_eeprom_addr, tbuf, tlen, rbuf, rlen);
+    i2c_cdev_slave_close(fd);
+    GPUConfig cfg;
+    if (ret == 0) {
+      cfg = GPU_CONFIG_HGX;
+      kv::set(config_key, "hgx", kv::region::persist);
+    } else {
+      cfg = GPU_CONFIG_UBB;
+      kv::set(config_key, "ubb", kv::region::persist);
+    }
+    return cfg;
+  }
+  return GPU_CONFIG_UNKNOWN;
+}
 
 std::string redfishGet(const std::string& subpath) {
   if (subpath.starts_with("/redfish/v1")) {
@@ -309,11 +315,29 @@ TaskStatus getTaskStatus(const std::string& id) {
   return status;
 }
 
+bool containStr(const std::string& str, const std::initializer_list<std::string>& substrings) {
+  for (const auto& substr : substrings) {
+    if (str.find(substr) != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void getMetricReports() {
-  std::string url = HGX_TELEMETRY_SERVICE_DVT;
+  std::string url;
+  std::string snr_path;
   std::string snr_val;
   std::string resp;
-  unsigned int pos;
+  unsigned int pos_start, pos_end;
+
+  if (get_gpu_config() == GPU_CONFIG_HGX) {
+    url = HGX_TELEMETRY_SERVICE_DVT;
+  } else if (get_gpu_config() == GPU_CONFIG_UBB) {
+    url = HMC_URL + "TelemetryService/MetricReports/All";
+  } else {
+    return;
+  }
 
   resp = hgx.get(url);
   json jresp = json::parse(resp);
@@ -321,22 +345,49 @@ void getMetricReports() {
   for(auto &x : tempArray)
   {
     auto jname = x.find("MetricProperty");
-    std::string snr_path = jname.value();
-    pos = snr_path.find_last_of("/\\");
-    snr_path = snr_path.substr(pos+1);
+    snr_path = jname.value();
+    std::string upperStr;
 
-    if (x.contains("Oem") && x["Oem"].contains("Nvidia") &&
-        x["Oem"]["Nvidia"].contains("MetricValueStale")) {
-      if (x["Oem"]["Nvidia"]["MetricValueStale"].dump() == "true") {
-        kv::set(snr_path, "NA");
-        continue;
+    if (snr_path.find("#") != std::string::npos) {
+      continue;
+    }
+    else if (snr_path.find("Reading") != std::string::npos) {
+      pos_end = snr_path.find_last_of("/\\");
+      pos_start = snr_path.find_last_of("/\\", pos_end - 1);
+      snr_path = snr_path.substr(pos_start + 1, pos_end - pos_start -1);
+    }
+    else {
+      pos_start = snr_path.find_last_of("/\\");
+      snr_path = snr_path.substr(pos_start + 1);
+    }
+
+    upperStr.resize(snr_path.size());
+    std::transform(snr_path.begin(), snr_path.end(), upperStr.begin(), ::toupper);
+
+    if (!containStr(upperStr, {"TEMP", "POWER", "ENERGY"})) {
+      continue;
+    }
+
+    if (get_gpu_config() == GPU_CONFIG_HGX) {
+      if (x.contains("Oem") && x["Oem"].contains("Nvidia") &&
+          x["Oem"]["Nvidia"].contains("MetricValueStale")) {
+        if (x["Oem"]["Nvidia"]["MetricValueStale"].dump() == "true") {
+          kv::set(snr_path, "NA");
+          continue;
+        }
       }
     }
 
     auto jvalue = x.find("MetricValue");
-    snr_val = jvalue.value();
-    pos = snr_val.find_first_not_of("0123456789");
-    if (pos != 0) {
+    if (jvalue.value().is_null()) {
+      continue;
+    }
+    else {
+      snr_val = jvalue.value();
+    }
+
+    pos_start = snr_val.find_first_not_of("0123456789");
+    if (pos_start != 0) {
       kv::set(snr_path, snr_val);
     }
     else {
@@ -615,18 +666,9 @@ int get_hgx_ver(const char* component, char *version) {
   return 0;
 }
 
-int hgx_get_metric_reports(int gpu_config) {
+int hgx_get_metric_reports() {
   try {
-    if (gpu_config == GPU_CONFIG_HGX) {
       hgx::getMetricReports();
-    }
-    else if (gpu_config == GPU_CONFIG_UBB) {
-      hgx::UBBMgr ubbMgr;
-      ubbMgr.getMetricReports();
-    }
-    else {
-      return -1;
-    }
   } catch (std::exception& e) {
     return -1;
   }
@@ -641,4 +683,14 @@ HMCPhase get_hgx_phase() {
     phase = HMCPhase::HMC_FW_UNKNOWN;
   }
   return phase;
+}
+
+GPUConfig get_gpu_config() {
+  GPUConfig config;
+  try {
+    config = hgx::getConfig();
+  } catch (std::exception&) {
+    config = GPU_CONFIG_UNKNOWN;
+  }
+  return config;
 }

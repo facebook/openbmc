@@ -16,5 +16,5 @@ LOCAL_URI = " \
     file://time_utils.hpp \
     "
 
-DEPENDS += "restclient-cpp nlohmann-json libkv"
+DEPENDS += "restclient-cpp nlohmann-json libkv libgpio-ctrl libobmc-i2c"
 RDEPENDS:${PN} += "restclient-cpp"

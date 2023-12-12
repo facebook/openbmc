@@ -15,6 +15,8 @@ cc = meson.get_compiler('cpp')
 libs = [
   cc.find_library('restclient-cpp'),
   dependency('libkv'),
+  dependency('libgpio-ctrl'),
+  dependency('libobmc-i2c'),
 ]
 
 srcs = [

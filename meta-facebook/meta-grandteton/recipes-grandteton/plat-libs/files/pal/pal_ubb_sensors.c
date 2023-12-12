@@ -152,7 +152,7 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   static uint8_t snr_retry = 0;
 
   if(sensor_num == HGX_SNR_PWR_GB_HSC10) {
-    ret = hgx_get_metric_reports(GPU_CONFIG_UBB);
+    ret = hgx_get_metric_reports();
     if (ret) {
       snr_retry++;
       ret = retry_err_handle(snr_retry, 5);

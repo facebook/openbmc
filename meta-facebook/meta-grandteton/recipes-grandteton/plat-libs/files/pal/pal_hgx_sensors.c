@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <syslog.h>
 #include "pal.h"
-#include "pal_hgx_sensors.h"
 #include <openbmc/hgx.h>
 #include <openbmc/kv.h>
 
@@ -215,7 +214,7 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
       default:
         return READING_NA;
     }
-    ret = hgx_get_metric_reports(GPU_CONFIG_HGX);
+    ret = hgx_get_metric_reports();
     if (ret) {
       snr_retry++;
       ret = retry_err_handle(snr_retry, 5);

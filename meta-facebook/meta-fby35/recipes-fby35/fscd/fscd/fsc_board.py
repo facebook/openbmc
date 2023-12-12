@@ -231,6 +231,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     == True
                 ):
                     return 0
+                file = "slot%d_sdr_thresh_update" % int(fru_map[board]["slot_num"])
+                if os.path.exists("/tmp/cache_store/" + file):
+                    if ( kv.kv_get(file) == "1" ):
+                        return 0
             status = c_uint8(0)
             ret = lpal_hndl.pal_get_server_power(
                 int(fru_map[board]["slot_num"]), byref(status)

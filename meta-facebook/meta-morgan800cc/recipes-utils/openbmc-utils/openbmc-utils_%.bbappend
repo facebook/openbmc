@@ -20,7 +20,15 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += "\
     file://board-utils.sh \
     file://setup_i2c.sh \
+    file://setup-gpio.sh \
+    file://bios-util.sh \
     "
+
+do_install:append() {
+    install -d ${D}/usr/local/bin
+    install -m 755 ${S}/bios-util.sh ${D}/usr/local/bin
+}
 
 #Not needed for morgan800cc
 SYSTEMD_SERVICE:${PN}:remove = "mount_data1.service"
+

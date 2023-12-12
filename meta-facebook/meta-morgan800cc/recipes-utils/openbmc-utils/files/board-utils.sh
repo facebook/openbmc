@@ -246,9 +246,9 @@ chassis_power_cycle() {
 }
 
 bmc_mac_addr() {
-    weutil -e chassis_eeprom | grep 'Local MAC:' | cut -d ' ' -f 3
+    weutil -e chassis_eeprom | grep 'BMC MAC Base:' | cut -d ' ' -f 4
 }
 
 userver_mac_addr() {
-    weutil -e scm_eeprom | grep 'Local MAC:' | cut -d ' ' -f 3
+    weutil -e scm_eeprom | grep 'X86 CPU MAC Base:' | cut -d ' ' -f 5
 }

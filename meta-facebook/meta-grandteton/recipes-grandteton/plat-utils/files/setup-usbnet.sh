@@ -32,6 +32,7 @@ probe_eeprom_driver () {
   MAX_RETRY=$2
   for (( i=1; i<=$MAX_RETRY; i++ )); do
     if [ ! -L "/sys/bus/i2c/drivers/at24/9-00$1" ]; then
+      i2c_device_delete 9 0x54 2>/dev/null
       i2c_device_add 9 $addr16 24c64 2>/dev/null
     else
       return

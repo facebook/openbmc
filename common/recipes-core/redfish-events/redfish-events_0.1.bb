@@ -31,6 +31,10 @@ LOCAL_URI = " \
     file://setup.py \
     "
 
+CONFIGS ?= "redfish-events.cfg"
+DEFAULT_CONFIG ?= "redfish-events.cfg"
+TARGET_CONFIG = "redfish-events.cfg"
+
 inherit setuptools3
 inherit systemd
 DEPENDS += "update-rc.d-native"
@@ -55,13 +59,19 @@ do_install:append() {
     bin="${D}/usr/bin"
     install -d $bin
     install -d ${D}${sysconfdir}
-    install -m 644 ${S}/redfish-events.cfg ${D}${sysconfdir}/redfish-events.cfg
+    for cfg in ${CONFIGS}; do
+      install -m 644 ${S}/${cfg} ${D}${sysconfdir}/${cfg}
+    done
     install -m 755 ${S}/redfish-events.py ${bin}/redfish-events.py
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
         install_systemd
     else
         install_sysv
+    fi
+    if [ "${DEFAULT_CONFIG}" != "${TARGET_CONFIG}" ]; then
+      cd ${D}${sysconfdir}
+      ln -snf ${DEFAULT_CONFIG} ${D}${sysconfdir}/${TARGET_CONFIG}
     fi
 }
 

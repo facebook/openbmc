@@ -84,6 +84,15 @@ pwr_err_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr
 }
 
 static void
+device_prsnt_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+
+  if (curr) {
+    syslog(LOG_CRIT, "FRU: %d %s LOST- %s\n", FRU_MB, cfg->description, cfg->shadow);
+  }
+}
+
+static void
 device_prsnt_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
 
@@ -420,8 +429,8 @@ static struct gpiopoll_config gpios_plat_list[] = {
   {FM_CPU1_PWR_FAIL,            "SGPIO176",  GPIO_EDGE_BOTH,    pwr_err_event_handler,      NULL},
   {FM_UV_ADR_TRIGGER,           "SGPIO26",   GPIO_EDGE_BOTH,    sgpio_event_handler,        NULL},
   {RST_PERST_N,                 "SGPIO230",  GPIO_EDGE_RISING,  rst_perst_event_handler,    rst_perst_init_handler},
-  {FM_CPU0_PRSNT,               "CPU0",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
-  {FM_CPU1_PRSNT,               "CPU1",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
+  {FM_CPU0_PRSNT,               "CPU0",      GPIO_EDGE_RISING,  device_prsnt_event_handler, device_prsnt_init_handler},
+  {FM_CPU1_PRSNT,               "CPU1",      GPIO_EDGE_RISING,  device_prsnt_event_handler, device_prsnt_init_handler},
   {FM_OCP0_PRSNT,               "NIC0",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
   {FM_OCP1_PRSNT,               "NIC1",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},
   {FM_E1S0_PRSNT,               "E1.S",      GPIO_EDGE_BOTH,    device_prsnt_event_handler, NULL},

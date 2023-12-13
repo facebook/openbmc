@@ -165,13 +165,26 @@ class RedfishEventHandler(web.Application):
         msg = event.get("Message", "Unknown")
         mid = event.get("MessageId", "Unknown")
         margs = " ".join(f'"{arg}"' for arg in event.get("MessageArgs", []))
+        data = event.get("AdditionalDataURI", None)
+        data_size = event.get("AddionalDataSizeBytes", 0)
         log = "CreateTime: " + tsp
         log += " Severity: " + msev
         log += " Message: " + msg
         log += " MessageId: " + mid
         log += " MessageArgs: " + margs
-        # TODO Probably we might want to do this only for certain msev
+        if data is not None:
+            url = self.target_url + data
+            data = request.urlopen(request.Request(url)).read()
+            data_path = "/mnt/data/" + mid + str(time.time()) + ".dat"
+            if len(data) != data_size:
+                logging.warning(
+                    f"{data_path} is {len(data)} bytes and not expected {data_size}"
+                )
+            with open(data_path, "wb") as f:
+                f.write(data)
+            log += " AdditionalData: " + data_path
         logging.info(log)
+        # TODO Probably we might want to do this only for certain msev
         self.sel(log)
 
     def handleMetricReport(self, metrics: Dict[str, Any], name: str):

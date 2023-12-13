@@ -1029,19 +1029,21 @@ bic_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
   log_gpio_change(FRU_MB, desc, curr, 0, NULL, NULL);
 }
 
-static void hmc_ready(bool startup) {
+static void hmc_ready(int fruID, std::string gpuConfig, std::string gpuBMC) {
   using namespace std::literals;
   static std::future<void> worker;
-  auto hmc_provision = [startup] {
+  auto hmc_provision = [fruID, gpuConfig, gpuBMC]{
     using namespace std::literals;
-    syslog(LOG_INFO, "HGX: Syncing time to HMC");
+    syslog(LOG_INFO, "%s: Syncing time to %s", gpuConfig.c_str(), gpuBMC.c_str());
     while (1) {
       try {
         hgx::syncTime();
-        hgx_pwr_limit_mon();
+        if(fruID == FRU_HGX) {
+          hgx_pwr_limit_mon();
+        }
         break;
       } catch (std::exception& e) {
-        syslog(LOG_WARNING, "HGX: Failed to get to HMC: %s", e.what());
+        syslog(LOG_WARNING, "%s: Failed to get to %s: %s", gpuConfig.c_str(), gpuBMC.c_str(), e.what());
         std::this_thread::sleep_for(1s);
       }
     }
@@ -1053,15 +1055,15 @@ static void hmc_ready(bool startup) {
   if (!worker.valid() || worker.wait_for(0s) == std::future_status::ready) {
     worker = std::async(std::launch::async, hmc_provision);
   } else {
-    syslog(LOG_WARNING, "HGX: Previous provision thread is still running");
+    syslog(LOG_WARNING, "%s: Previous provision thread is still running", gpuConfig.c_str());
   }
 }
 
 static void
-hmc_ready_mon() {
+hmc_ready_mon(int gpuFruID, std::string gpuConfig, std::string gpuBMC) {
   using namespace std::literals;
   static std::future<void> worker;
-  auto hmc_ready_mon_thr = [] {
+  auto hmc_ready_mon_thr = [gpuFruID, gpuBMC] {
     constexpr auto timeout = 6min;
     constexpr auto poll_time = 5s;
     for (int i = 0; i < timeout / poll_time; i++) {
@@ -1071,33 +1073,33 @@ hmc_ready_mon() {
         return;
       }
     }
-    syslog(LOG_CRIT, "FRU: %d HMC_READY - ASSERT Timed out", FRU_HGX);
+    syslog(LOG_CRIT, "FRU: %d %s_READY - ASSERT Timed out", gpuFruID, gpuBMC.c_str());
   };
   if (!worker.valid() || worker.wait_for(0s) == std::future_status::ready) {
     worker = std::async(std::launch::async, hmc_ready_mon_thr);
   } else {
-    syslog(LOG_WARNING, "HGX: Previous HMC Ready waiter thread is still running");
-  }
-}
-
-void
-hmc_ready_init(gpiopoll_pin_t *desc, gpio_value_t value)
-{
-  if (value == GPIO_VALUE_HIGH) {
-    hmc_ready(true);
-  } else {
-    hmc_ready_mon();
+    syslog(LOG_WARNING, "%s: Previous %s Ready waiter thread is still running",
+           gpuConfig.c_str(), gpuBMC.c_str());
   }
 }
 
 void
 hmc_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  int gpuFruID = pal_get_gpu_fru_id();
+  auto [gpuConfig, gpuBmc] = hgx::getGpuCompName(get_gpu_config());
+
   if (curr == GPIO_VALUE_HIGH) {
-    hmc_ready(false);
+    hmc_ready(gpuFruID, gpuConfig, gpuBmc);
   } else {
-    hmc_ready_mon();
+    hmc_ready_mon(gpuFruID, gpuConfig, gpuBmc);
   }
+}
+
+void
+hmc_ready_init(gpiopoll_pin_t *desc, gpio_value_t value)
+{
+  hmc_ready_handler(desc, value, value);
 }
 
 void

@@ -112,6 +112,9 @@ void syncTime();
 // Set HGX FW version in KV store
 int setFWVersion();
 
+// Get GPU and BMC name
+std::tuple<std::string, std::string> getGpuCompName(int gpuFruID);
+
 // Get components supporting measurements
 std::vector<std::string> integrityComponents();
 

@@ -551,7 +551,16 @@ void clearEventLog() {
 }
 
 void syncTime() {
-  std::string url = HMC_URL + "Managers/HGX_BMC_0";
+  std::string url;
+
+  if (get_gpu_config() == GPU_CONFIG_HGX) {
+    url = HMC_URL + "Managers/HGX_BMC_0";
+  } else if (get_gpu_config() == GPU_CONFIG_UBB) {
+    url = HMC_URL + "Managers/AMC";
+  } else {
+    return;
+  }
+
   json data = json::object({{"DateTime", hgx::time::now()}});
   hgx.patch(url, data.dump());
 }
@@ -642,6 +651,19 @@ std::string getPowerLimit(int gpuID) {
     }
   }
   return std::to_string(pwrLimitDec);
+}
+
+std::tuple<std::string, std::string> getGpuCompName(int gpu_config) {
+  switch (gpu_config) {
+    case GPU_CONFIG_HGX:
+      return { "HGX", "HMC" };
+      break;
+    case GPU_CONFIG_UBB:
+      return { "UBB" , "SMC" };
+      break;
+    default:
+      return { "Unknown GPU", "" };
+  }
 }
 
 } // namespace hgx.

@@ -14,26 +14,14 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=mTerm server monitoring
+After=setup_board.service openbmc_gpio_setup.service setup_i2c.service
+Wants=setup_board.service
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+[Service]
+ExecStart=/usr/local/bin/setup-dev-uart.sh cb_accl10_1 uart1 start
 
-LOCAL_URI += " \
-    file://sol-util \
-    file://usb-util \
-    file://setup-server-uart.sh \
-    file://setup-snr-mon.sh \
-    file://setup-i2c-clk.sh \
-    file://setup-usb-hub.sh \
-    file://setup-reboot-init.sh \
-    file://setup-dev-uart.sh \
-    "
-
-binfiles += " setup-dev-uart.sh usb-util setup-i2c-clk.sh setup-usb-hub.sh"
-
-do_install:append() {
-  install -m 755 setup-usb-hub.sh ${D}${sysconfdir}/init.d/setup-usb-hub.sh
-  update-rc.d -r ${D} setup-usb-hub.sh start 65 5 .
-
-  install -m 755 setup-i2c-clk.sh ${D}${sysconfdir}/init.d/setup-i2c-clk.sh
-  update-rc.d -r ${D} setup-i2c-clk.sh start 50 5 .
-}
+[Install]
+WantedBy=multi-user.target

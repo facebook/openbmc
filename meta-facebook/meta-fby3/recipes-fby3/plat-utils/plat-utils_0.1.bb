@@ -33,6 +33,7 @@ LOCAL_URI = " \
     file://check_eth0_ipv4.sh \
     file://usb-util.sh \
     file://recovery-bic-util \
+    file://check_nic_status.sh \
     "
 
 pkgdir = "utils"
@@ -71,6 +72,10 @@ do_install() {
   # install setup-gpio.sh
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+
+  # install check_nic_status.sh
+  install -m 755 check_nic_status.sh ${D}${sysconfdir}/init.d/check_nic_status.sh
+  update-rc.d -r ${D} check_nic_status.sh start 69 5 .
 
   # install power-on.sh
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh

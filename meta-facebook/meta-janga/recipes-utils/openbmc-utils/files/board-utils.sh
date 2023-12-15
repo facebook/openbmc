@@ -20,6 +20,9 @@
 PWRCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-0060)
 SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 1-0035)
 
+BOARD_ID="${PWRCPLD_SYSFS_DIR}/board_id"
+VERSION_ID="${PWRCPLD_SYSFS_DIR}/version_id"
+
 COME_POWER_OFF="${SCMCPLD_SYSFS_DIR}/pwr_force_off"
 COME_POWER_CYCLE_N="${SCMCPLD_SYSFS_DIR}/pwr_cyc_n"
 CHASSIS_POWER_CYCLE="${PWRCPLD_SYSFS_DIR}/power_cycle_go"
@@ -29,8 +32,31 @@ wedge_board_type() {
 }
 
 wedge_board_rev() {
-    # FIXME if needed.
-    return 1
+    board_id=$(head -n 1 < "$BOARD_ID" 2> /dev/null)
+    version_id=$(head -n 1 < "$VERSION_ID" 2> /dev/null)
+
+    case "$((board_id))" in
+        4)
+            echo "Board type: Janga Switching System"
+            ;;
+        *)
+            echo "Board type: unknown value [$board_id]"
+            ;;
+    esac
+
+    case "$((version_id))" in
+        0)
+            echo "Revision: EVT-1"
+            ;;
+        1)
+            echo "Revision: EVT-2"
+            ;;
+        *)
+            echo "Revision: unknown value [$version_id]"
+            ;;
+    esac
+
+    return 0
 }
 
 userver_power_is_on() {

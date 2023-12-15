@@ -16,7 +16,7 @@ static const i2c_dev_attr_st pwrcpld_attrs[] = {
 	 * Board/firmware revision ID registers (read-only).
 	 */
 	{
-		"board_id",
+		"version_id",
 		NULL,
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
@@ -25,7 +25,7 @@ static const i2c_dev_attr_st pwrcpld_attrs[] = {
 		4,
 	},
 	{
-		"version_id",
+		"board_id",
 		NULL,
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,

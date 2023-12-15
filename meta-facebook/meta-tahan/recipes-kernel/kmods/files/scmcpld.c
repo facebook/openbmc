@@ -16,9 +16,10 @@
  */
 static const i2c_dev_attr_st scmcpld_attrs[] = {
 	{
-		"board_id",
-		"Meta Networking System Board Type:\n"
-		" 0x1: NW TH5 Blade System",
+		"version_id",
+		"NW TH5 Blade SCM Board revision:\n"
+		" 0x0: EVT-1\n"
+		" 0x1: EVT-2",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x00,
@@ -26,9 +27,9 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		4,
 	},
 	{
-		"version_id",
-		"NW TH5 Blade SCM Board revision:\n"
-		" 0x0: EVT-1",
+		"board_id",
+		"Meta Networking System Board Type:\n"
+		" 0xc: NW TH5 Blade System",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x00,

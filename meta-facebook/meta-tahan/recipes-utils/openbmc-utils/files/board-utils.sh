@@ -40,7 +40,7 @@ wedge_board_rev() {
     version_id=$(head -n 1 < "$VERSION_ID" 2> /dev/null)
 
     case "$((board_id))" in
-        1)
+        12)
             echo "Board type: Tahan Switching System"
             ;;
         *)
@@ -51,6 +51,9 @@ wedge_board_rev() {
     case "$((version_id))" in
         0)
             echo "Revision: EVT-1"
+            ;;
+        1)
+            echo "Revision: EVT-2"
             ;;
         *) 
             echo "Revision: unknown value [$version_id]"

@@ -301,7 +301,10 @@ map<uint8_t, map<uint8_t, string>>&  VrComponent::get_vr_list() {
     return halfdome_vr_table[slot_id];
   } else if (severBoardType== SERVER_TYPE_GL) {
     switch (fby35_common_get_sb_rev(slot_id)) {
-    case FW_REV_EVT: {
+    case GL_REV_EVT:
+    case GL_REV_DVT:
+    case GL_REV_PVT:
+    case GL_REV_MP: {
       // Erase great_lake_vr_list's components
       map<uint8_t, map<uint8_t, string>>::iterator iter;
       iter = great_lake_vr_list.find(FW_VR_VCCD_HV);

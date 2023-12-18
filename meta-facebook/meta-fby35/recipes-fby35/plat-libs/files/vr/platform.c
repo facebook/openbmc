@@ -431,7 +431,10 @@ void greatlakes_vr_device_check(void) {
 
   for (i = VR_GL_VCCIN; i <= VR_GL_VCCINF; i++) {
     switch (fby35_common_get_sb_rev(slot_id)) {
-    case FW_REV_EVT:
+    case GL_REV_EVT:
+    case GL_REV_DVT:
+    case GL_REV_PVT:
+    case GL_REV_MP:
       switch (fby35_vr_list[i].addr) {
       case GL_VCCIN_ADDR:
         fby35_vr_list[i].addr = GL_EVT_VCCIN_ADDR;

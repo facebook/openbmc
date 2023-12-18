@@ -44,7 +44,10 @@ struct ubb_snr_info {
   {"RETIMER_5_TEMP"},                       //0x29
   {"RETIMER_6_TEMP"},                       //0x2A
   {"RETIMER_7_TEMP"},                       //0x2B
-  {"NULL"}, {"NULL"}, {"NULL"}, {"NULL"},
+  {"NULL"},
+  {"RETIMER_MAX_TEMP"},                     //0x2D
+  {"RETIMER_MAX_VR_TEMP"},                  //0x2E
+  {"NULL"},
 
   //GPU0 - GPU1
   {"NULL"},
@@ -108,7 +111,7 @@ struct ubb_snr_info {
   {"NULL"},
   {"NULL"},
   {"GPU_6_MEMORY_TEMP"},                   //0x66
-  {"NULL"},
+  {"GPU_WARMEST_DIE_TEMP"},                //0x67
   {"NULL"}, 
   {"GPU_7_POWER"},                         //0x69
   {"NULL"},
@@ -116,19 +119,7 @@ struct ubb_snr_info {
   {"NULL"},
   {"NULL"},
   {"GPU_7_MEMORY_TEMP"},                   //0x6E
-  {"NULL"},
-
-  //GPU0
-  {"NULL"}, {"NULL"}, {"NULL"}, {"NULL"},
-  {"NULL"}, {"NULL"}, {"NULL"}, {"NULL"},
-  {"NULL"}, 
-  {"GPU_0_POWER"},                         //0x79
-  {"NULL"},
-  {"GPU_0_DIE_TEMP" },                     //0x7B
-  {"NULL"},
-  {"NULL"},
-  {"GPU_0_MEMORY_TEMP"},                   //0x7E
-  {"NULL"},
+  {"GPU_WARMEST_MEMORY_TEMP"},             //0x6F
 };
 
 static int
@@ -213,10 +204,10 @@ PAL_SENSOR_MAP ubb_sensor_map[] = {
   {"PCIeRetimer_5_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x29
   {"PCIeRetimer_6_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x2A
   {"PCIeRetimer_7_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x2B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2F
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                   //0x2C
+  {"PCIeRetimer_MAX_TEMP", 0, read_snr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},          //0x2D
+  {"PCIeRetimer_MAX_VR_TEMP", 0, read_snr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},       //0x2E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                   //0x2F
 
   {"GPU_1_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x30
   {"GPU_1_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31
@@ -276,7 +267,7 @@ PAL_SENSOR_MAP ubb_sensor_map[] = {
   {"GPU_7_TEMP_1", 0,       NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x64
   {"GPU_7_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x65
   {"GPU_7_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x66
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                              //0x67
+  {"GPU_WARMEST_DIE_TEMP", 0, read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x67
   {"GPU_8_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x68
   {"GPU_8_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x69
   {"GPU_8_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x6A
@@ -284,7 +275,7 @@ PAL_SENSOR_MAP ubb_sensor_map[] = {
   {"GPU_8_TEMP_1" , 0,      NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6C
   {"GPU_8_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x6D
   {"GPU_8_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                              //0x6F
+  {"GPU_WARMEST_MEM_TEMP", 0, read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x6F
 };
 
 const uint8_t ubb_sensor_list[] = {
@@ -315,6 +306,8 @@ const uint8_t ubb_sensor_list[] = {
   TEMP_GB_PCIERETIMER5,
   TEMP_GB_PCIERETIMER6,
   TEMP_GB_PCIERETIMER7,
+  GPU_RETIMER_MAX_TEMP,
+  GPU_RETIMER_MAX_VR_TEMP,
   TEMP_IBC,
 
   GPU1_PWR,
@@ -348,6 +341,9 @@ const uint8_t ubb_sensor_list[] = {
   GPU8_PWR,
   GPU8_TEMP_0,
   GPU8_DRAM_TEMP,
+
+  GPU_WARMEST_DIE_TEMP,
+  GPU_WARMEST_MEMORY_TEMP,
 };
 
 size_t ubb_sensor_cnt = sizeof(ubb_sensor_list)/sizeof(uint8_t);

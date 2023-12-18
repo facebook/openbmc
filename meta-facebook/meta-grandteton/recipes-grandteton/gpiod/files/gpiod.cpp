@@ -752,7 +752,7 @@ ioex_table_polling_once(struct gpiopoll_ioex_config *ioex_gpios,
     }
 
     curr = gpio_get_value_by_shadow(ioex_gpios[i].shadow);
-    if(curr == ioex_gpios[i].last) {
+    if (curr < 0 || curr == ioex_gpios[i].last) {
       continue;
     }
 

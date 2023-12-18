@@ -24,7 +24,7 @@
 #define SENSOR_CONF nullptr
 #endif
 SensorList sensors(SENSOR_CONF);
-
+std::map<std::string, std::string> sensorError{};
 
 static int sensors_read_locked(const char *chip, const char *label, float *value)
 {
@@ -38,14 +38,14 @@ static int sensors_read_locked(const char *chip, const char *label, float *value
     auto& pChip = chip == nullptr ? sensors.find_chip_by_label(label) : sensors.at(chip);
     *value = pChip->at(label)->read();
     ret = 0;
-  } catch (std::out_of_range &e) {
-    syslog(LOG_ERR, "Read(%s:%s): Out of range exception: %s\n", chip, label, e.what());
-  } catch (std::system_error &e) {
-    syslog(LOG_ERR, "Read(%s:%s): System error: %s - %s\n", chip, label, e.code().message().c_str(), e.what());
-  } catch (...) {
-    syslog(LOG_CRIT, "Read(%s:%s) Unknown error", chip, label);
+    sensorError.erase(label);
+  } catch (std::exception& e) {
+    auto it = sensorError.find(label);
+    if (it == sensorError.end() || it->second != e.what()) {
+      sensorError[label] = e.what();
+      syslog(LOG_ERR, "Read(%s): Error: %s\n", label, e.what());
+    }
   }
-
   return ret;
 }
 

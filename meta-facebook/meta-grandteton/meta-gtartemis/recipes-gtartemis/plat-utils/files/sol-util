@@ -1212,7 +1212,7 @@ if [ -n "$COMP" ]; then
   fi
 
   if [[ "$SLOT" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]]; then
-    if [[ "$COMP" = "uart1" ]]; then
+    if [[ "$COMP" = "uart0" ]]; then
       exec /usr/local/bin/mTerm_client ""$SLOT"_"$COMP""
       exit 0
     elif [[ "$COMP" =~ ^(uart[0-3])$ ]]; then

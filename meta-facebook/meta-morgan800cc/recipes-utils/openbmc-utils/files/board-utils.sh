@@ -41,6 +41,29 @@ SEQ_TIMEOUT=15 # in seconds
 EBUSY_ERR=16       # Device or resource busy
 ETIME_ERR=62       # Timer expired
 
+lock_file_path_configure() {
+    local lock_dir="/run/lock"
+    local link_path="/var/lock"
+
+    if [ ! -d "$lock_dir" ]; then
+        if ! output=$(mkdir -p "$lock_dir"); then
+            echo "Error: failed to create $lock_dir:"
+            echo "$output"
+            exit 1
+        fi
+    fi
+    if [ ! -L "$link_path" ]; then
+        if ! output=$(ln -s "$lock_dir" "$link_path"); then
+            echo "Error: failed to create symlink $link_path:"
+            echo "$output"
+            exit 1
+        fi
+    fi
+}
+
+# the script may be triggered when "/var/lock" is not populated
+lock_file_path_configure
+
 LOCK_FILE="/var/lock/lockfile_for_board_util"
 
 # Allocate file descriptor dynamically

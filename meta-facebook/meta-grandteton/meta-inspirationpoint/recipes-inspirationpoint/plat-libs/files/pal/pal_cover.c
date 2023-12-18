@@ -631,12 +631,12 @@ fru_presence_ext(uint8_t fru_id, uint8_t *status) {
 }
 
 int
-pal_set_rst_btn(uint8_t slot, uint8_t val) {
+pal_set_rst_btn(uint8_t fru, uint8_t val) {
   int ret, delay;
   gpio_desc_t *gdesc = NULL;
   gpio_value_t kb_enable;
 
-  if (slot != FRU_MB) {
+  if (fru != FRU_MB) {
     return -1;
   }
 
@@ -647,7 +647,7 @@ pal_set_rst_btn(uint8_t slot, uint8_t val) {
 
   if (kb_enable) {
     // Block the KB reset command until post completed.
-    if (val == GPIO_VALUE_LOW && !pal_bios_completed(slot)) {
+    if (val == GPIO_VALUE_LOW && !pal_bios_completed(fru)) {
       return -1;
     }
     gdesc = gpio_open_by_shadow(RST_KB_RESET_N);
@@ -665,10 +665,23 @@ pal_set_rst_btn(uint8_t slot, uint8_t val) {
 }
 
 int
-pal_toggle_rst_btn(uint8_t slot) {
+pal_toggle_rst_btn(uint8_t fru) {
   int ret;
-  ret = pal_set_rst_btn(FRU_MB, 0);
-  ret |= pal_set_rst_btn(FRU_MB, 1);
+  uint8_t restart_cause;
+
+  pal_get_restart_cause(fru, &restart_cause);
+  if (restart_cause == RESTART_CAUSE_WATCHDOG_EXPIRATION) {
+    gpio_desc_t *gdesc = NULL;
+    gdesc = gpio_open_by_shadow(FP_RST_BTN_OUT_N);
+    ret = gpio_set_value(gdesc, 0);
+    msleep(100);
+    ret |= gpio_set_value(gdesc, 1);
+    gpio_close(gdesc);
+  }
+  else {
+    ret = pal_set_rst_btn(fru, 0);
+    ret |= pal_set_rst_btn(fru, 1);
+  }
   pal_check_power_rail(1);
   return ret;
 }

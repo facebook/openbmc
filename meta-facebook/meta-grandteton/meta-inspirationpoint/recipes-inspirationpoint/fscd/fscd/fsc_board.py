@@ -32,11 +32,17 @@ try:
     if lpal_hndl.pal_is_artemis():
         get_fan_mode_scenario_list = {"one_fan_failure": 65, "sensor_hit_UCR": 80, "sensor_fail": 80}
     else:
-        pwr_limit = kv.kv_get("auto_fsc_config", kv.FPERSIST, True).decode("utf-8")
-        if pwr_limit == "650":
+        gpu_config = kv.kv_get("gpu_config", kv.FPERSIST, True).decode("utf-8")
+        if  gpu_config == "ubb":
             get_fan_mode_scenario_list = {"sensor_hit_UCR": 100, "sensor_fail": 100}
+        elif gpu_config == "hgx":
+            pwr_limit = kv.kv_get("auto_fsc_config", kv.FPERSIST, True).decode("utf-8")
+            if pwr_limit == "650":
+                get_fan_mode_scenario_list = {"sensor_hit_UCR": 100, "sensor_fail": 100}
+            else:
+                get_fan_mode_scenario_list = {"sensor_hit_UCR": 100, "sensor_fail": 80}
         else:
-            get_fan_mode_scenario_list = {"sensor_hit_UCR": 100, "sensor_fail": 80}
+            get_fan_mode_scenario_list = {"sensor_hit_UCR": 100, "sensor_fail": 100}
 except Exception:
     # In case of exception, set the default value
     get_fan_mode_scenario_list = {"sensor_hit_UCR": 100, "sensor_fail": 100}

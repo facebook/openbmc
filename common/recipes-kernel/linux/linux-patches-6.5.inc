@@ -10,6 +10,13 @@ SRC_URI:append = " \
 "
 
 #
+# Aspeed OTP patch used by multiple OpenBMC platforms for AST2600 ABR feature.
+#
+SRC_URI:append = " \
+    file://0102-drivers-misc-Add-Aspeed-OTP-control-register.patch \
+"
+
+#
 # JTAG patches.
 # Used by multiple OpenBMC platforms for firmware upgrade.
 #

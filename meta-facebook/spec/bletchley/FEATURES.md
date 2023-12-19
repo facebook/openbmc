@@ -145,7 +145,7 @@ Support reading firmware versions of attached components including self.
 
 - [x] P1 **Set Power Policy**
   - Change the policy to one of the following state: Last Power State, Always
-    ON, and Always OFF with default as 'Last Power State'.
+    ON, and Always OFF with default as 'Always ON'.
 
 #### BMC Reset/Recovery
 

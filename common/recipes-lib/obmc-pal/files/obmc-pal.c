@@ -893,7 +893,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 
     case UNIFIED_PPR_EVENT:
       event_type = sel[8] & 0x0F;
-      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: PPR Events(0x%02X), %s. Dimm Info: (%02X%02X%02X%02X%02X%02X%02X).",
+      snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: PPR Events(0x%02X), %s. DIMM Info: (%02X%02X%02X%02X%02X%02X%02X).",
               general_info, ppr_event[event_type], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);
       break;
 

@@ -89,8 +89,8 @@ sgpio_export FM_CPU0_SMERR_N 142
 sgpio_export FM_CPU1_SMERR_N 144
 sgpio_export FM_BIOS_POST_CMPLT_BUF_R_N 146
 sgpio_export SWB_HSC_PWRGD_ISO_R 148
-sgpio_export FM_SMB_1_ALERT_GPU_ISO_R_N 150
-sgpio_export FM_SMB_2_ALERT_GPU_ISO_R_N 152
+sgpio_export FM_SMB_1_ALERT_GPU_ISO_N 150
+sgpio_export FM_SMB_2_ALERT_GPU_ISO_N 152
 sgpio_export PVDDCR_CPU0_P0_PMALERT 154
 sgpio_export PVDDCR_CPU0_P1_PMALERT 156
 sgpio_export PVDDCR_CPU1_P0_SMB_ALERT 158

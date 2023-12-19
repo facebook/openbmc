@@ -124,6 +124,8 @@ sgpio_export RST_PLTRST_PLD_N 200
 sgpio_export H_CPU0_PROCHOT_LVC1_N 202
 sgpio_export FM_PCH_BEEP_LED 204
 sgpio_export FM_HDD_LED_N 206
+sgpio_export FM_SMB_2_ALERT_GPU_ISO_N 208
+sgpio_export FM_SMB_1_ALERT_GPU_ISO_N 210
 
 sgpio_export CPLD_POWER_FAIL_ALERT 240
 sgpio_export CPLD_SHUT_DOWN_ALERT 242

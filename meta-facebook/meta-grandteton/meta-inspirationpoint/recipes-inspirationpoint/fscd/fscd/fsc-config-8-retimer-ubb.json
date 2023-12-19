@@ -1,5 +1,5 @@
 {
-    "version": "inspirationpint_MI300X_v1",
+    "version": "inspirationpint_MI300X_v2",
     "pwm_transition_value": 100,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -203,13 +203,12 @@
         "negative_hysteresis": 1,
         "data": [
           [49, 25],
-          [63, 35],
+          [65, 35],
           [67, 40],
-          [70, 55],
-          [73, 65],
-          [76, 70],
-          [81, 75],
-          [85, 80],
+          [70, 45],
+          [75, 55],
+          [81, 68],
+          [84, 75],
           [95, 100]
         ]
       },
@@ -221,7 +220,7 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "setpoint": 93,
-        "kp": -8.5,
+        "kp": -3.5,
         "ki": -0.035,
         "kd": 0
       },
@@ -236,9 +235,12 @@
           [80, 25],
           [84, 30],
           [86, 33],
-          [88, 35],
-          [92, 45],
-          [97, 50],
+          [87, 40],
+          [90, 45],
+          [93, 50],
+          [96, 70],
+          [98, 75],
+          [100, 83],
           [105, 100]
         ]
       },
@@ -247,10 +249,10 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 1,
+        "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "setpoint": 102,
-        "kp": -3.5,
+        "kp": -5.5,
         "ki": -0.035,
         "kd": 0
       },
@@ -262,11 +264,11 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [62, 25],
-          [63, 35],
-          [78, 40],
-          [82, 48],
-          [85, 55],
+          [63, 25],
+          [70, 35],
+          [75, 50],
+          [82, 60],
+          [85, 80],
           [99, 100]
         ]
       },

@@ -99,24 +99,24 @@ max([
 
   gpu_tray_gpu_linear(
     max([
-      all:ubb_ubb_gpu_sxm_1_temp_0_c,
-      all:ubb_ubb_gpu_sxm_2_temp_0_c,
-      all:ubb_ubb_gpu_sxm_3_temp_0_c,
-      all:ubb_ubb_gpu_sxm_4_temp_0_c,
-      all:ubb_ubb_gpu_sxm_5_temp_0_c,
-      all:ubb_ubb_gpu_sxm_6_temp_0_c,
-      all:ubb_ubb_gpu_sxm_7_temp_0_c,
-      all:ubb_ubb_gpu_sxm_8_temp_0_c])) +
+      all:ubb_ubb_gpu_1_temp_0_c,
+      all:ubb_ubb_gpu_2_temp_0_c,
+      all:ubb_ubb_gpu_3_temp_0_c,
+      all:ubb_ubb_gpu_4_temp_0_c,
+      all:ubb_ubb_gpu_5_temp_0_c,
+      all:ubb_ubb_gpu_6_temp_0_c,
+      all:ubb_ubb_gpu_7_temp_0_c,
+      all:ubb_ubb_gpu_8_temp_0_c])) +
   gpu_tray_gpu_pid(
     max([
-      all:ubb_ubb_gpu_sxm_1_temp_0_c,
-      all:ubb_ubb_gpu_sxm_2_temp_0_c,
-      all:ubb_ubb_gpu_sxm_3_temp_0_c,
-      all:ubb_ubb_gpu_sxm_4_temp_0_c,
-      all:ubb_ubb_gpu_sxm_5_temp_0_c,
-      all:ubb_ubb_gpu_sxm_6_temp_0_c,
-      all:ubb_ubb_gpu_sxm_7_temp_0_c,
-      all:ubb_ubb_gpu_sxm_8_temp_0_c])),
+      all:ubb_ubb_gpu_1_temp_0_c,
+      all:ubb_ubb_gpu_2_temp_0_c,
+      all:ubb_ubb_gpu_3_temp_0_c,
+      all:ubb_ubb_gpu_4_temp_0_c,
+      all:ubb_ubb_gpu_5_temp_0_c,
+      all:ubb_ubb_gpu_6_temp_0_c,
+      all:ubb_ubb_gpu_7_temp_0_c,
+      all:ubb_ubb_gpu_8_temp_0_c])),
 
   gpu_tray_retimer_linear(
     max([
@@ -141,24 +141,24 @@ max([
 
   gpu_tray_hbm_linear(
     max([
-      all:ubb_ubb_gpu_sxm_1_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_2_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_3_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_4_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_5_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_6_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_7_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_8_dram_temp_c])) +
+      all:ubb_ubb_gpu_1_dram_temp_c,
+      all:ubb_ubb_gpu_2_dram_temp_c,
+      all:ubb_ubb_gpu_3_dram_temp_c,
+      all:ubb_ubb_gpu_4_dram_temp_c,
+      all:ubb_ubb_gpu_5_dram_temp_c,
+      all:ubb_ubb_gpu_6_dram_temp_c,
+      all:ubb_ubb_gpu_7_dram_temp_c,
+      all:ubb_ubb_gpu_8_dram_temp_c])) +
   gpu_tray_hbm_pid(
     max([
-      all:ubb_ubb_gpu_sxm_1_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_2_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_3_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_4_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_5_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_6_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_7_dram_temp_c,
-      all:ubb_ubb_gpu_sxm_8_dram_temp_c])),
+      all:ubb_ubb_gpu_1_dram_temp_c,
+      all:ubb_ubb_gpu_2_dram_temp_c,
+      all:ubb_ubb_gpu_3_dram_temp_c,
+      all:ubb_ubb_gpu_4_dram_temp_c,
+      all:ubb_ubb_gpu_5_dram_temp_c,
+      all:ubb_ubb_gpu_6_dram_temp_c,
+      all:ubb_ubb_gpu_7_dram_temp_c,
+      all:ubb_ubb_gpu_8_dram_temp_c])),
 
   gpu_tray_hsc_linear(
     max([

@@ -17,6 +17,7 @@ parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
   uint8_t bank_num;
   uint8_t error_type = ((ed[1] & 0x60) >> 5);
   char temp_log[512] = {0};
+  char cri_sel[512] = {0};
 
   strcpy(error_log, "");
   if ((ed[0] & 0x0F) == 0x0B) { //Uncorrectable
@@ -48,11 +49,15 @@ parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
     }
   }
   bank_num = ed[1] & 0x1F;
+  strcat(cri_sel, "MACHINE_CHK_ERR, ");
+  
   snprintf(temp_log, sizeof(temp_log), "Bank Number %d, ", bank_num);
   strcat(error_log, temp_log);
 
   snprintf(temp_log, sizeof(temp_log), "CPU %d, Core %d", ((ed[2] & 0xE0) >> 5), (ed[2] & 0x1F));
   strcat(error_log, temp_log);
+  strcat(cri_sel, error_log);
+  pal_add_cri_sel(cri_sel);
 
   return 0;
 }

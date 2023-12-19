@@ -126,7 +126,7 @@ class BaseFwUpgradeTest(object):
 
     USERVER_HOSTNAME = "DEFAULT"
     BMC_HOSTNAME = "DEFAULT"
-    STOP_FSCD = "sv stop fscd"
+    STOP_FSCD = "sv force-stop fscd"
     START_FSCD = "sv start fscd"
     STOP_WDT = "wdtcli stop"
     MAX_LINE_LEN = 83

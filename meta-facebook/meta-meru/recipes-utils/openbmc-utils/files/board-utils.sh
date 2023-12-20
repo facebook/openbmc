@@ -165,7 +165,7 @@ chassis_power_cycle() {
 
 bmc_mac_addr() {
     # get the MAC from Meru SCM EEPROM
-    mac_base=$(weutil -e scm | grep '^Extended MAC Base' | cut -d' ' -f4)
+    mac_base=$(userver_mac_addr)
     mac_base_hex=$(echo "$mac_base" |  tr '[:lower:]' '[:upper:]' | tr -d ':')
     mac_dec=$(printf '%d\n' 0x"$mac_base_hex")
     # Add 2 to SCM MAC base for BMC MAC
@@ -177,7 +177,8 @@ bmc_mac_addr() {
 }
 
 userver_mac_addr() {
-    weutil -e scm | grep '^Extended MAC Base' | cut -d' ' -f 4
+    # support v4 or v5 eeprom version
+    weutil -e scm | grep -E '(Extended|CPU) MAC B' | awk -F': ' '{print $2}'
 }
 
 FWUPGRADE_PIDFILE="/var/run/firmware_upgrade.pid"

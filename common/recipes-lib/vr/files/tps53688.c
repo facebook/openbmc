@@ -40,6 +40,7 @@ load_tps_remaining_wr(uint8_t addr, uint16_t *remain, char *checksum, uint16_t *
 
   if (tps_remaining_wr(addr, remain, GET_VR_CRC) < 0) {
     snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X, Remaining Writes: Unknown", *crc);
+    return VR_STATUS_SKIP;
   } else {
     if (*remain == UNINITIALIZED_REMAIN_WR) {
       *remain = MAX_TI_VR_REMAIN_WR;
@@ -96,13 +97,19 @@ cache_tps_crc(uint8_t bus, uint8_t addr, char *key, char *checksum, uint16_t *cr
     return -1;
   }
 
-  if ((tps_remaining_wr != NULL) && load_tps_remaining_wr(addr, &remain, checksum, crc, GET_VR_CRC) != 0) {
-    snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X", *crc);
-  }
-
   if (!checksum) {
     checksum = tmp_str;
   }
+
+  if ((tps_remaining_wr != NULL)) {
+    if (load_tps_remaining_wr(addr, &remain, checksum, crc, GET_VR_CRC) != 0) {
+      //if load remaining wr fail,do not cache to kv, that next read action can retry to reload it
+      return 0;
+    }
+  } else {
+    snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X", *crc);
+  }
+
   kv_set(key, checksum, 0, 0);
 
   return 0;

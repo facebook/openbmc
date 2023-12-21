@@ -68,7 +68,7 @@ std::string get_device_type(uint8_t type)
   static const std::map<uint8_t, const std::string> device_map = {
     {0x01, "CB_P0V8_VDD_1"},
     {0x02, "CB_P0V8_VDD_2"},
-    {0x03, "CB_POWER_BRICK"},
+    {0x03, "CB_POWER_BRICK_0"},
     {0x04, "CB_P1V25_MONITOR"},
     {0x05, "CB_P12V_ACCL1_MONITOR"},
     {0x06, "CB_P12V_ACCL2_MONITOR"},
@@ -84,6 +84,7 @@ std::string get_device_type(uint8_t type)
     {0x10, "CB_P12V_ACCL12_MONITOR"},
     {0x11, "CB_PESW_0"},
     {0x12, "CB_PESW_1"},
+    {0x13, "CB_POWER_BRICK_1"},
   };
 
   if (device_map.find(type) != device_map.end())
@@ -136,6 +137,16 @@ std::string get_event_type(uint8_t type)
     {0x18, "STATION_7_FATAL_ERROR"},
     {0x19, "STATION_8_FATAL_ERROR"},
     {0x1A, "PSB_STATION_FATAL_ERROR"},
+    // Power brick status fault
+    {0x1B, "OUTPUT_VOLTAGE_WARNING_FAULT"},
+    {0x1C, "OUTPUT_CURRENT_WARNING_FAULT"},
+    {0x1D, "INPUT_VOLTAGE_FAULT"},
+    {0x1E, "POWER_GOOD_FAULT"},
+    {0x1F, "POWER_OFF_FAULT"},
+    {0x20, "TEMPERATURE_WARNING_FAULT"},
+    {0x21, "CML_FAULT"},
+    {0x22, "MFR_SPECIFIC_FAULT"},
+    {0x23, "NO_LISTED_FAULT"},
   };
 
   if (event_map.find(type) != event_map.end())

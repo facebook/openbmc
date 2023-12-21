@@ -50,9 +50,10 @@ std::string get_sensor_name(uint16_t id)
 std::string get_state_message(uint8_t offset, uint8_t state)
 {
   static const std::vector <std::vector<std::string>> eventstate_map = {
-    {"unknown", "present", "not present"},                  // sensorOffset = 0: presentence
-    {"unknown", "normal",  "alert"},                        // sensorOffset = 1: status
-    {"not power on yet", "power good",  "power good fail"}, // sensorOffset = 2: power status
+    {"unknown", "present", "not present"},                                    // sensorOffset = 0: presentence
+    {"unknown", "normal",  "alert"},                                          // sensorOffset = 1: status
+    {"no power good", "power good fail", "power good fail (3V3 power fault)",
+     "power good fail (12V power fault)", "power good fail (3V3 aux fault)"}, // sensorOffset = 2: power status
   };
 
   if (offset >= eventstate_map.size())

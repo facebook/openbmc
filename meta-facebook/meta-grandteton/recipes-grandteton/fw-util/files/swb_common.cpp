@@ -1241,6 +1241,11 @@ int GtaBicFwRecoveryComponent::update(string image) {
   int ret = 0;
   uint8_t fruid = 0;
 
+  if (is_server_off() == false) {
+    cerr << "Please power off MB first and then perform bic recovery" << endl;
+    ret = -1;
+    goto exit;
+  }
   pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
   cout << "Do " << this->alias_fru() << " " << this->alias_component() << " init..." << endl;
   ret = gta_bic_recovery_pre(image, fruid, false);
@@ -1263,6 +1268,9 @@ int GtaBicFwRecoveryComponent::fupdate(string image) {
   int ret = 0;
   uint8_t fruid = 0;
 
+  if (is_server_off() == false) {
+    cerr << "Please power off MB first and then perform bic recovery" << endl;
+  }
   pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
   cout << "Do " << this->alias_fru() << " " << this->alias_component() << " init..." << endl;
   ret = gta_bic_recovery_pre(image, fruid, true);

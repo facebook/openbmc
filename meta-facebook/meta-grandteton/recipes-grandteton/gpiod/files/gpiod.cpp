@@ -250,7 +250,7 @@ void log_gpio_change(uint8_t fru,
     return;
   }
 
-  memset(log->msg, 0, sizeof(log->msg));
+  memset(log, 0, sizeof(struct delayed_log));
 
   if (usrdef_str != NULL) {
     // User provides the entire log message to print.

@@ -51,8 +51,6 @@ void present_handle (char* desc, gpio_value_t value);
 
 void enable_init (char* desc, gpio_value_t value);
 void enable_handle (char* desc, gpio_value_t value);
-void hpdb_cable_handle (char* desc, gpio_value_t value);
-
 
 void tpm_sync_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 void tpm_irq_sync_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);

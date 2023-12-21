@@ -108,8 +108,8 @@ struct gpiopoll_ioex_config iox_gpios[] = {
   {CABLE_PRSNT_A, "GPU_CABLE_A", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {CABLE_PRSNT_D, "GPU_CABLE_D", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {CABLE_PRSNT_E, "GPU_CABLE_E", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
-  {FM_HS1_EN_BUSBAR_BUF, "HPDB_HS1_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, hpdb_cable_handle},
-  {FM_HS2_EN_BUSBAR_BUF, "HPDB_HS2_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, hpdb_cable_handle},
+  {FM_HS1_EN_BUSBAR_BUF, "HPDB_HS1_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
+  {FM_HS2_EN_BUSBAR_BUF, "HPDB_HS2_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
 };
 
 struct gpiopoll_ioex_config gta_iox_gpios[] = {
@@ -849,16 +849,6 @@ void
 enable_handle (char* desc, gpio_value_t value) {
   const char* str = value? "enable": "disable";
   iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str, true, value);
-}
-
-void
-hpdb_cable_handle (char* desc, gpio_value_t value) {
-  const char* str = value? "enable": "disable";
-
-  auto val = gpio_get_value_by_shadow("GPU_BASE_HMC_READY_ISO_R");
-  if (val == GPIO_VALUE_HIGH) {
-    iox_log_gpio_change(FRU_MB, desc, DEFER_LOG_TIME, str, true, value);
-  }
 }
 
 void

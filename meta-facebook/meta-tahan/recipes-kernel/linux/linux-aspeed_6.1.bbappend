@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.1:"
 
 SRC_URI += "file://1001-ARM-dts-aspeed-Add-Facebook-tahan-BMC.patch \
            "

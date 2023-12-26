@@ -1,0 +1,128 @@
+From 1f14671e9b834a64fb5751e908c21b6f4883d132 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Fri, 22 Dec 2023 16:30:26 +0000
+Subject: [PATCH] janga dts
+
+---
+ arch/arm/boot/dts/aspeed/Makefile             |  1 +
+ .../dts/aspeed/aspeed-bmc-facebook-janga.dts  | 96 +++++++++++++++++++
+ 2 files changed, 97 insertions(+)
+ create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-janga.dts
+
+diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
+index fb9cc95f1b60..9b508b14aec3 100644
+--- a/arch/arm/boot/dts/aspeed/Makefile
++++ b/arch/arm/boot/dts/aspeed/Makefile
+@@ -22,6 +22,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+ 	aspeed-bmc-facebook-fuji.dtb \
+ 	aspeed-bmc-facebook-galaxy100.dtb \
+ 	aspeed-bmc-facebook-greatlakes.dtb \
++	aspeed-bmc-facebook-janga.dtb \
+ 	aspeed-bmc-facebook-minerva-cmc.dtb \
+ 	aspeed-bmc-facebook-minipack.dtb \
+ 	aspeed-bmc-facebook-tiogapass.dtb \
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-janga.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-janga.dts
+new file mode 100644
+index 000000000000..330e41fef5d6
+--- /dev/null
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-janga.dts
+@@ -0,0 +1,96 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) Meta Platforms, Inc. and affiliates.
++
++/dts-v1/;
++
++#include "ast2600-facebook-netbmc-common.dtsi"
++
++/ {
++	model = "Facebook janga BMC";
++	compatible = "facebook,janga-bmc", "aspeed,ast2600";
++
++	chosen {
++		stdout-path = &uart1;
++	};
++
++	spi_gpio: spi {
++		num-chipselects = <1>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
++	};
++};
++
++&peci0 {
++	status = "okay";
++
++	peci-client@30 {
++		compatible = "intel,peci-client";
++		reg = <0x30>;
++	};
++};
++
++&mdio1 {
++	status = "okay";
++};
++
++&mac3 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii4_default>;
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
++
++&lpc_ctrl {
++	status = "okay";
++	flash = <&spi1>;
++};
++
++&kcs1 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca0>;
++};
++
++&kcs2 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca8>;
++};
++
++&kcs3 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca2>;
++};
++
++/* JTAG1 will be use for COMe FPGA upgrading */
++&jtag1 {
++	status = "okay";
++};
++
++/* SPI1 will be use for BIOS, IOB_FPGA flash upgrading */
++&spi1 {
++	status = "okay";
++
++	reg = < 0x1e630000 0xc4
++			0x30000000 0x2000000 >;
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		label = "spi1.0";
++		spi-rx-bus-width = <1>;
++		spi-max-frequency = <5000000>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			flash1@0 {
++				reg = <0x0 0x2000000>;
++				label = "spi-flash";
++			};
++		};
++	};
++};
+-- 
+2.25.1
+

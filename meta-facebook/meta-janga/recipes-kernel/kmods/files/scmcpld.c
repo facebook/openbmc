@@ -7,6 +7,7 @@
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include "i2c_dev_sysfs.h"
+#include <linux/version.h>
 
 #define COME_PWR_CTRL_REG 		 0x14
 #define COME_PWR_CTRL_REG_DEFVAL 0x7
@@ -104,8 +105,12 @@ static const struct i2c_device_id scmcpld_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, scmcpld_id);
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 5, 0)
+static int scmcpld_probe(struct i2c_client *client)
+#else
 static int scmcpld_probe(struct i2c_client *client,
 			 const struct i2c_device_id *id)
+#endif
 {
 	int ret = 0;
 	i2c_dev_data_st *pdata;

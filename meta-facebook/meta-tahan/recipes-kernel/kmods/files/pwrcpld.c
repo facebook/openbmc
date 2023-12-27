@@ -6,6 +6,7 @@
 #include <linux/kernel.h>	/* for ARRAY_SIZE */
 #include <linux/module.h>
 #include <linux/i2c.h>
+#include <linux/version.h>
 #include "i2c_dev_sysfs.h"
 
 /*
@@ -73,8 +74,12 @@ static const struct i2c_device_id pwrcpld_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, pwrcpld_id);
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 5, 0)
+static int pwrcpld_probe(struct i2c_client *client)
+#else 
 static int pwrcpld_probe(struct i2c_client *client,
 			 const struct i2c_device_id *id)
+#endif
 {
 	i2c_dev_data_st *pdata;
 

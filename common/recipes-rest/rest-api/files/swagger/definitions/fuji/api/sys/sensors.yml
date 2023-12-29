@@ -1,4 +1,4 @@
-swagger: "2.0"
+swagger: '2.0'
 info:
   description: Swagger doc for /api/sys/sensors
   title: Swagger doc for /api/sys/sensors
@@ -6,7 +6,8 @@ info:
 paths:
   /api/sys/sensors:
     get:
-      produces: [application/json]
+      produces:
+      - application/json
       responses:
         200:
           description: ok
@@ -18,11 +19,469 @@ paths:
                 type: array
                 items:
                   type: object
-                  additionalProperties: true
+                  additionalProperties: false
                   properties:
+                    name:
+                      type: string
                     Adapter:
                       type: string
-                    name:
+                    present:
+                      type: boolean
+                    SCM_OUTLET_U7_TEMP:
+                      type: string
+                    SCM_INLET_U8_TEMP:
+                      type: string
+                    SCM_INPUT_VOLTAGE:
+                      type: string
+                    SCM_SENSOR_POWER_VOLTAGE:
+                      type: string
+                    SCM_CURRENT:
+                      type: string
+                    SCM_POWER:
+                      type: string
+                    BMC_LM75_U9_TEMP:
+                      type: string
+                    MB_OUTLET_TEMP:
+                      type: string
+                    MB_INLET_TEMP:
+                      type: string
+                    PCH_TEMP:
+                      type: string
+                    VCCIN_VR_TEMP:
+                      type: string
+                    1V05MIX_VR_TEMP:
+                      type: string
+                    SOC_TEMP:
+                      type: string
+                    SOC_THERM_MARGIN_TEMP:
+                      type: string
+                    VDDR_VR_TEMP:
+                      type: string
+                    SOC_DIMMA0_TEMP:
+                      type: string
+                    SOC_DIMMB0_TEMP:
+                      type: string
+                    SOC_PACKAGE_POWER:
+                      type: string
+                    VCCIN_VR_OUT_POWER:
+                      type: string
+                    VDDR_VR_OUT_POWER:
+                      type: string
+                    SOC_TJMAX_TEMP:
+                      type: string
+                    P3V3_MB_VOLT:
+                      type: string
+                    P12V_MB_VOLT:
+                      type: string
+                    P1V05_PCH_VOLT:
+                      type: string
+                    P3V3_STBY_MB_VOLT:
+                      type: string
+                    P5V_STBY_MB_VOLT:
+                      type: string
+                    PV_BAT_VOLT:
+                      type: string
+                    PVDDR_VOLT:
+                      type: string
+                    P1V05_MIX_VOLT:
+                      type: string
+                    1V05MIX_VR_CURR:
+                      type: string
+                    VDDR_VR_CURR:
+                      type: string
+                    VCCIN_VR_CURR:
+                      type: string
+                    VCCIN_VR_VOLT:
+                      type: string
+                    VDDR_VR_VOLT:
+                      type: string
+                    1V05MIX_VR_VOLT:
+                      type: string
+                    1V05MIX_VR_OUT_POWER:
+                      type: string
+                    INA230_POWER:
+                      type: string
+                    INA230_VOLT:
+                      type: string
+                    SMB_XP3R3V_BMC:
+                      type: string
+                    SMB_XP2R5V_BMC:
+                      type: string
+                    SMB_XP1R8V_BMC:
+                      type: string
+                    SMB_XP1R2V_BMC:
+                      type: string
+                    SMB_XP1R0V_FPGA:
+                      type: string
+                    SMB_XP3R3V_USB:
+                      type: string
+                    SMB_XP5R0V:
+                      type: string
+                    SMB_XP3R3V_EARLY:
+                      type: string
+                    SMB_LM57_VTEMP:
+                      type: string
+                    SMB_XP1R8:
+                      type: string
+                    SMB_XP1R2:
+                      type: string
+                    SMB_VDDC_SW:
+                      type: string
+                    SMB_XP3R3V:
+                      type: string
+                    SMB_XP1R8V_AVDD:
+                      type: string
+                    SMB_XP1R2V_TVDD:
+                      type: string
+                    SMB_XP0R75V_1_PVDD:
+                      type: string
+                    SMB_XP0R75V_2_PVDD:
+                      type: string
+                    SMB_XP0R75V_3_PVDD:
+                      type: string
+                    SMB_VDD_PCIE:
+                      type: string
+                    SMB_XP0R84V_DCSU:
+                      type: string
+                    SMB_XP0R84V_CSU:
+                      type: string
+                    SMB_XP1R8V_CSU:
+                      type: string
+                    SMB_XP3R3V_TCXO:
+                      type: string
+                    SMB_OUTPUT_VOLTAGE_XP0R75V_1:
+                      type: string
+                    SMB_OUTPUT_CURRENT_XP0R75V_1:
+                      type: string
+                    SMB_INPUT_VOLTAGE_1:
+                      type: string
+                    SMB_OUTPUT_VOLTAGE_XP1R2V:
+                      type: string
+                    SMB_OUTPUT_CURRENT_XP1R2V:
+                      type: string
+                    SMB_OUTPUT_VOLTAGE_XP0R75V_2:
+                      type: string
+                    SMB_OUTPUT_CURRENT_XP0R75V_2:
+                      type: string
+                    SMB_INPUT_VOLTAGE_2:
+                      type: string
+                    SIM_LM75_U1_TEMP:
+                      type: string
+                    SMB_LM75B_U51_1_TEMP:
+                      type: string
+                    SMB_LM75B_U57_TEMP:
+                      type: string
+                    SMB_LM75B_U39_TEMP:
+                      type: string
+                    SMB_VDDC_SW_TEMP:
+                      type: string
+                    SMB_XP12R0V_VDDC_SW_IN:
+                      type: string
+                    SMB_VDDC_SW_IN_SENS:
+                      type: string
+                    SMB_VDDC_SW_POWER_IN:
+                      type: string
+                    SMB_VDDC_SW_POWER_OUT:
+                      type: string
+                    SMB_VDDC_SW_CURR_IN:
+                      type: string
+                    SMB_VDDC_SW_CURR_OUT:
+                      type: string
+                    PDB_L_TMP75_U2_TEMP:
+                      type: string
+                    PDB_L_TMP75_U3_TEMP:
+                      type: string
+                    PDB_R_TMP75_U2_TEMP:
+                      type: string
+                    PDB_R_TMP75_U3_TEMP:
+                      type: string
+                    FCB_FCM1_TMP75_U1_TEMP:
+                      type: string
+                    FCB_FCM1_TMP75_U2_TEMP:
+                      type: string
+                    FCB_FCM2_TMP75_U1_TEMP:
+                      type: string
+                    FCB_FCM2_TMP75_U2_TEMP:
+                      type: string
+                    FCM-T_CHIP_INPUT_VOLTAGE:
+                      type: string
+                    FCM-T_POWER_CURRENT:
+                      type: string
+                    FCM-T_POWER_VOLTAGE:
+                      type: string
+                    FCM-B_CHIP_INPUT_VOLTAGE:
+                      type: string
+                    FCM-B_POWER_CURRENT:
+                      type: string
+                    FCM-B_POWER_VOLTAGE:
+                      type: string
+                    FAN1_FRONT_SPEED:
+                      type: string
+                    FAN1_REAR_SPEED:
+                      type: string
+                    FAN2_FRONT_SPEED:
+                      type: string
+                    FAN2_REAR_SPEED:
+                      type: string
+                    FAN3_FRONT_SPEED:
+                      type: string
+                    FAN3_REAR_SPEED:
+                      type: string
+                    FAN4_FRONT_SPEED:
+                      type: string
+                    FAN4_REAR_SPEED:
+                      type: string
+                    FAN5_FRONT_SPEED:
+                      type: string
+                    FAN5_REAR_SPEED:
+                      type: string
+                    FAN6_FRONT_SPEED:
+                      type: string
+                    FAN6_REAR_SPEED:
+                      type: string
+                    FAN7_FRONT_SPEED:
+                      type: string
+                    FAN7_REAR_SPEED:
+                      type: string
+                    FAN8_FRONT_SPEED:
+                      type: string
+                    FAN8_REAR_SPEED:
+                      type: string
+                    SMB_SENSOR_TH4_HIGH:
+                      type: string
+                    PSU1_IN_VOLT:
+                      type: string
+                    PSU1_12V_VOLT:
+                      type: string
+                    PSU1_STBY_VOLT:
+                      type: string
+                    PSU1_IN_CURR:
+                      type: string
+                    PSU1_12V_CURR:
+                      type: string
+                    PSU1_STBY_CURR:
+                      type: string
+                    PSU1_IN_POWER:
+                      type: string
+                    PSU1_12V_POWER:
+                      type: string
+                    PSU1_STBY_POWER:
+                      type: string
+                    PSU1_FAN_SPEED:
+                      type: string
+                    PSU1_TEMP1:
+                      type: string
+                    PSU1_TEMP2:
+                      type: string
+                    PSU1_TEMP3:
+                      type: string
+                    PSU2_IN_VOLT:
+                      type: string
+                    PSU2_12V_VOLT:
+                      type: string
+                    PSU2_STBY_VOLT:
+                      type: string
+                    PSU2_IN_CURR:
+                      type: string
+                    PSU2_12V_CURR:
+                      type: string
+                    PSU2_STBY_CURR:
+                      type: string
+                    PSU2_IN_POWER:
+                      type: string
+                    PSU2_12V_POWER:
+                      type: string
+                    PSU2_STBY_POWER:
+                      type: string
+                    PSU2_FAN_SPEED:
+                      type: string
+                    PSU2_TEMP1:
+                      type: string
+                    PSU2_TEMP2:
+                      type: string
+                    PSU2_TEMP3:
+                      type: string
+                    PSU3_IN_VOLT:
+                      type: string
+                    PSU3_12V_VOLT:
+                      type: string
+                    PSU3_STBY_VOLT:
+                      type: string
+                    PSU3_IN_CURR:
+                      type: string
+                    PSU3_12V_CURR:
+                      type: string
+                    PSU3_STBY_CURR:
+                      type: string
+                    PSU3_IN_POWER:
+                      type: string
+                    PSU3_12V_POWER:
+                      type: string
+                    PSU3_STBY_POWER:
+                      type: string
+                    PSU3_FAN_SPEED:
+                      type: string
+                    PSU3_TEMP1:
+                      type: string
+                    PSU3_TEMP2:
+                      type: string
+                    PSU3_TEMP3:
+                      type: string
+                    PSU4_IN_VOLT:
+                      type: string
+                    PSU4_12V_VOLT:
+                      type: string
+                    PSU4_STBY_VOLT:
+                      type: string
+                    PSU4_IN_CURR:
+                      type: string
+                    PSU4_12V_CURR:
+                      type: string
+                    PSU4_STBY_CURR:
+                      type: string
+                    PSU4_IN_POWER:
+                      type: string
+                    PSU4_12V_POWER:
+                      type: string
+                    PSU4_STBY_POWER:
+                      type: string
+                    PSU4_FAN_SPEED:
+                      type: string
+                    PSU4_TEMP1:
+                      type: string
+                    PSU4_TEMP2:
+                      type: string
+                    PSU4_TEMP3:
+                      type: string
+                    PIM1_LM75_U37_TEMP_BASE:
+                      type: string
+                    PIM1_LM75_U26_TEMP:
+                      type: string
+                    PIM1_LM75_U37_TEMP_MEZZ:
+                      type: string
+                    PIM1_QSFP_TEMP:
+                      type: string
+                    PIM1_INPUT_VOLTAGE:
+                      type: string
+                    PIM1_POWER_VOLTAGE:
+                      type: string
+                    PIM1_CURRENT:
+                      type: string
+                    PIM1_POWER:
+                      type: string
+                    PIM2_LM75_U37_TEMP_BASE:
+                      type: string
+                    PIM2_LM75_U26_TEMP:
+                      type: string
+                    PIM2_LM75_U37_TEMP_MEZZ:
+                      type: string
+                    PIM2_QSFP_TEMP:
+                      type: string
+                    PIM2_INPUT_VOLTAGE:
+                      type: string
+                    PIM2_POWER_VOLTAGE:
+                      type: string
+                    PIM2_CURRENT:
+                      type: string
+                    PIM2_POWER:
+                      type: string
+                    PIM3_LM75_U37_TEMP_BASE:
+                      type: string
+                    PIM3_LM75_U26_TEMP:
+                      type: string
+                    PIM3_LM75_U37_TEMP_MEZZ:
+                      type: string
+                    PIM3_QSFP_TEMP:
+                      type: string
+                    PIM3_INPUT_VOLTAGE:
+                      type: string
+                    PIM3_POWER_VOLTAGE:
+                      type: string
+                    PIM3_CURRENT:
+                      type: string
+                    PIM3_POWER:
+                      type: string
+                    PIM4_LM75_U37_TEMP_BASE:
+                      type: string
+                    PIM4_LM75_U26_TEMP:
+                      type: string
+                    PIM4_LM75_U37_TEMP_MEZZ:
+                      type: string
+                    PIM4_QSFP_TEMP:
+                      type: string
+                    PIM4_INPUT_VOLTAGE:
+                      type: string
+                    PIM4_POWER_VOLTAGE:
+                      type: string
+                    PIM4_CURRENT:
+                      type: string
+                    PIM4_POWER:
+                      type: string
+                    PIM5_LM75_U37_TEMP_BASE:
+                      type: string
+                    PIM5_LM75_U26_TEMP:
+                      type: string
+                    PIM5_LM75_U37_TEMP_MEZZ:
+                      type: string
+                    PIM5_QSFP_TEMP:
+                      type: string
+                    PIM5_INPUT_VOLTAGE:
+                      type: string
+                    PIM5_POWER_VOLTAGE:
+                      type: string
+                    PIM5_CURRENT:
+                      type: string
+                    PIM5_POWER:
+                      type: string
+                    PIM6_LM75_U37_TEMP_BASE:
+                      type: string
+                    PIM6_LM75_U26_TEMP:
+                      type: string
+                    PIM6_LM75_U37_TEMP_MEZZ:
+                      type: string
+                    PIM6_QSFP_TEMP:
+                      type: string
+                    PIM6_INPUT_VOLTAGE:
+                      type: string
+                    PIM6_POWER_VOLTAGE:
+                      type: string
+                    PIM6_CURRENT:
+                      type: string
+                    PIM6_POWER:
+                      type: string
+                    PIM7_LM75_U37_TEMP_BASE:
+                      type: string
+                    PIM7_LM75_U26_TEMP:
+                      type: string
+                    PIM7_LM75_U37_TEMP_MEZZ:
+                      type: string
+                    PIM7_QSFP_TEMP:
+                      type: string
+                    PIM7_INPUT_VOLTAGE:
+                      type: string
+                    PIM7_POWER_VOLTAGE:
+                      type: string
+                    PIM7_CURRENT:
+                      type: string
+                    PIM7_POWER:
+                      type: string
+                    PIM8_LM75_U37_TEMP_BASE:
+                      type: string
+                    PIM8_LM75_U26_TEMP:
+                      type: string
+                    PIM8_LM75_U37_TEMP_MEZZ:
+                      type: string
+                    PIM8_QSFP_TEMP:
+                      type: string
+                    PIM8_INPUT_VOLTAGE:
+                      type: string
+                    PIM8_POWER_VOLTAGE:
+                      type: string
+                    PIM8_CURRENT:
+                      type: string
+                    PIM8_POWER:
+                      type: string
+                    SYSTEM_AIRFLOW:
                       type: string
               Actions:
                 type: array

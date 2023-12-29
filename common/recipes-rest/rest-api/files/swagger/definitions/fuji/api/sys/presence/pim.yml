@@ -1,53 +1,53 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/presence/pim  
-  title: Swagger doc for /api/sys/presence/pim  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/presence/pim
+  title: Swagger doc for /api/sys/presence/pim
   version: 1.0.0
-paths: 
-  /api/sys/presence/pim: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/presence/pim:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  "pim1": 
+                properties:
+                  pim1:
                     type: string
-                    pattern: "^[0-9]+$"
-                  "pim2": 
+                    pattern: ^[0-9]+$
+                  pim2:
                     type: string
-                    pattern: "^[0-9]+$"
-                  "pim3": 
+                    pattern: ^[0-9]+$
+                  pim3:
                     type: string
-                    pattern: "^[0-9]+$"
-                  "pim4": 
+                    pattern: ^[0-9]+$
+                  pim4:
                     type: string
-                    pattern: "^[0-9]+$"
-                  "pim5": 
+                    pattern: ^[0-9]+$
+                  pim5:
                     type: string
-                    pattern: "^[0-9]+$"
-                  "pim6": 
+                    pattern: ^[0-9]+$
+                  pim6:
                     type: string
-                    pattern: "^[0-9]+$"
-                  "pim7": 
+                    pattern: ^[0-9]+$
+                  pim7:
                     type: string
-                    pattern: "^[0-9]+$"
-                  "pim8": 
+                    pattern: ^[0-9]+$
+                  pim8:
                     type: string
-                    pattern: "^[0-9]+$"
-              Actions: 
+                    pattern: ^[0-9]+$
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-

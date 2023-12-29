@@ -1,51 +1,51 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/sensors/pim6  
-  title: Swagger doc for /api/sys/sensors/pim6  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/sensors/pim6
+  title: Swagger doc for /api/sys/sensors/pim6
   version: 1.0.0
-paths: 
-  /api/sys/sensors/pim6: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/sensors/pim6:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  name: 
+                properties:
+                  name:
                     type: string
-                  Adapter: 
+                  Adapter:
                     type: string
-                  present: 
+                  present:
                     type: boolean
-                  PIM6_LM75_U37_TEMP_BASE: 
+                  PIM6_LM75_U37_TEMP_BASE:
                     type: string
-                  PIM6_LM75_U26_TEMP: 
+                  PIM6_LM75_U26_TEMP:
                     type: string
-                  PIM6_LM75_U37_TEMP_MEZZ: 
+                  PIM6_LM75_U37_TEMP_MEZZ:
                     type: string
-                  PIM6_QSFP_TEMP: 
+                  PIM6_QSFP_TEMP:
                     type: string
-                  PIM6_INPUT_VOLTAGE: 
+                  PIM6_INPUT_VOLTAGE:
                     type: string
-                  PIM6_POWER_VOLTAGE: 
+                  PIM6_POWER_VOLTAGE:
                     type: string
-                  PIM6_CURRENT: 
+                  PIM6_CURRENT:
                     type: string
-                  PIM6_POWER: 
+                  PIM6_POWER:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

@@ -1,31 +1,32 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/presence/scm  
-  title: Swagger doc for /api/sys/presence/scm  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/presence/scm
+  title: Swagger doc for /api/sys/presence/scm
   version: 1.0.0
-paths: 
-  /api/sys/presence/scm: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/presence/scm:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  "scm": 
+                properties:
+                  scm:
                     type: string
-                    pattern: "^[0-9]+$"
-              Actions: 
+                    pattern: ^[0-9]+$
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string

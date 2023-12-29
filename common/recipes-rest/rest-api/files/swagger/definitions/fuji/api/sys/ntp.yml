@@ -1,4 +1,4 @@
-swagger: "2.0"
+swagger: '2.0'
 info:
   description: Swagger doc for /api/sys/ntp
   title: Swagger doc for /api/sys/ntp
@@ -6,7 +6,8 @@ info:
 paths:
   /api/sys/ntp:
     get:
-      produces: [application/json]
+      produces:
+      - application/json
       responses:
         200:
           description: ok
@@ -14,32 +15,26 @@ paths:
             type: object
             additionalProperties: false
             properties:
-              Resources:
-                type: array
-                items:
-                  type: string
-              Actions:
-                type: array
-                items:
-                  type: string
               Information:
                 type: object
                 additionalProperties: false
                 properties:
-                  delay:
-                    type: number
-                  when:
-                    type: number
-                  reach:
-                    type: number
                   stratum:
-                    type: number
-                  poll:
-                    type: number
+                    type: integer
+                  delay:
+                    type: integer
                   jitter:
-                    type: number
+                    type: integer
                   offset:
-                    type: number
+                    type: integer
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string
         404:
           description: No system peers
           schema:

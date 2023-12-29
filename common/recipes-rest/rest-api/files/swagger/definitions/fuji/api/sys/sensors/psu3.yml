@@ -1,61 +1,61 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/sensors/psu3  
-  title: Swagger doc for /api/sys/sensors/psu3  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/sensors/psu3
+  title: Swagger doc for /api/sys/sensors/psu3
   version: 1.0.0
-paths: 
-  /api/sys/sensors/psu3: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/sensors/psu3:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  name: 
+                properties:
+                  name:
                     type: string
-                  Adapter: 
+                  Adapter:
                     type: string
-                  present: 
+                  present:
                     type: boolean
-                  PSU3_IN_VOLT: 
+                  PSU3_IN_VOLT:
                     type: string
-                  PSU3_12V_VOLT: 
+                  PSU3_12V_VOLT:
                     type: string
-                  PSU3_STBY_VOLT: 
+                  PSU3_STBY_VOLT:
                     type: string
-                  PSU3_IN_CURR: 
+                  PSU3_IN_CURR:
                     type: string
-                  PSU3_12V_CURR: 
+                  PSU3_12V_CURR:
                     type: string
-                  PSU3_STBY_CURR: 
+                  PSU3_STBY_CURR:
                     type: string
-                  PSU3_IN_POWER: 
+                  PSU3_IN_POWER:
                     type: string
-                  PSU3_12V_POWER: 
+                  PSU3_12V_POWER:
                     type: string
-                  PSU3_STBY_POWER: 
+                  PSU3_STBY_POWER:
                     type: string
-                  PSU3_FAN_SPEED: 
+                  PSU3_FAN_SPEED:
                     type: string
-                  PSU3_TEMP1: 
+                  PSU3_TEMP1:
                     type: string
-                  PSU3_TEMP2: 
+                  PSU3_TEMP2:
                     type: string
-                  PSU3_TEMP3: 
+                  PSU3_TEMP3:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

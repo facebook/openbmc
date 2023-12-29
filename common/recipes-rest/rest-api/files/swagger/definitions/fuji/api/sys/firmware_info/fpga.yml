@@ -1,47 +1,47 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/firmware_info/fpga  
-  title: Swagger doc for /api/sys/firmware_info/fpga  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/firmware_info/fpga
+  title: Swagger doc for /api/sys/firmware_info/fpga
   version: 1.0.0
-paths: 
-  /api/sys/firmware_info/fpga: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/firmware_info/fpga:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  IOB FPGA: 
+                properties:
+                  IOB FPGA:
                     type: string
-                  PIM1 DOMFPGA: 
+                  PIM1 DOMFPGA:
                     type: string
-                  PIM2 DOMFPGA: 
+                  PIM2 DOMFPGA:
                     type: string
-                  PIM3 DOMFPGA: 
+                  PIM3 DOMFPGA:
                     type: string
-                  PIM4 DOMFPGA: 
+                  PIM4 DOMFPGA:
                     type: string
-                  PIM5 DOMFPGA: 
+                  PIM5 DOMFPGA:
                     type: string
-                  PIM6 DOMFPGA: 
+                  PIM6 DOMFPGA:
                     type: string
-                  PIM7 DOMFPGA: 
+                  PIM7 DOMFPGA:
                     type: string
-                  PIM8 DOMFPGA: 
+                  PIM8 DOMFPGA:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

@@ -1,45 +1,45 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/firmware_info/scm  
-  title: Swagger doc for /api/sys/firmware_info/scm  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/firmware_info/scm
+  title: Swagger doc for /api/sys/firmware_info/scm
   version: 1.0.0
-paths: 
-  /api/sys/firmware_info/scm: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/firmware_info/scm:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Bridge-IC Version: 
+                properties:
+                  Bridge-IC Version:
                     type: string
-                  Bridge-IC Bootloader Version: 
+                  Bridge-IC Bootloader Version:
                     type: string
-                  BIOS Version: 
+                  BIOS Version:
                     type: string
-                  CPLD Version: 
+                  CPLD Version:
                     type: string
-                  ME Version: 
+                  ME Version:
                     type: string
-                  PVCCIN VR Version: 
+                  PVCCIN VR Version:
                     type: string
-                  DDRAB VR Version: 
+                  DDRAB VR Version:
                     type: string
-                  P1V05 VR Version: 
+                  P1V05 VR Version:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

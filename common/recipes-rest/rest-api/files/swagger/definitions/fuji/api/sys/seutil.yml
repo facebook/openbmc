@@ -1,73 +1,73 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/seutil  
-  title: Swagger doc for /api/sys/seutil  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/seutil
+  title: Swagger doc for /api/sys/seutil
   version: 1.0.0
-paths: 
-  /api/sys/seutil: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/seutil:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Version: 
+                properties:
+                  Version:
                     type: string
-                  Product Name: 
+                  Product Name:
                     type: string
-                  Product Part Number: 
+                  Product Part Number:
                     type: string
-                  System Assembly Part Number: 
+                  System Assembly Part Number:
                     type: string
-                  Facebook PCBA Part Number: 
+                  Facebook PCBA Part Number:
                     type: string
-                  Facebook PCB Part Number: 
+                  Facebook PCB Part Number:
                     type: string
-                  ODM PCBA Part Number: 
+                  ODM PCBA Part Number:
                     type: string
-                  ODM PCBA Serial Number: 
+                  ODM PCBA Serial Number:
                     type: string
-                  Product Production State: 
+                  Product Production State:
                     type: string
-                  Product Version: 
+                  Product Version:
                     type: string
-                  Product Sub-Version: 
+                  Product Sub-Version:
                     type: string
-                  Product Serial Number: 
+                  Product Serial Number:
                     type: string
-                  Product Asset Tag: 
+                  Product Asset Tag:
                     type: string
-                  System Manufacturer: 
+                  System Manufacturer:
                     type: string
-                  System Manufacturing Date: 
+                  System Manufacturing Date:
                     type: string
-                  PCB Manufacturer: 
+                  PCB Manufacturer:
                     type: string
-                  Assembled At: 
+                  Assembled At:
                     type: string
-                  Local MAC: 
+                  Local MAC:
                     type: string
-                  Extended MAC Base: 
+                  Extended MAC Base:
                     type: string
-                  Extended MAC Address Size: 
+                  Extended MAC Address Size:
                     type: string
-                  Location on Fabric: 
+                  Location on Fabric:
                     type: string
-                  CRC8: 
+                  CRC8:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

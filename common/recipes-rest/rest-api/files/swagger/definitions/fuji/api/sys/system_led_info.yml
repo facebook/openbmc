@@ -1,37 +1,37 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/system_led_info  
-  title: Swagger doc for /api/sys/system_led_info  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/system_led_info
+  title: Swagger doc for /api/sys/system_led_info
   version: 1.0.0
-paths: 
-  /api/sys/system_led_info: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/system_led_info:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  sys: 
+                properties:
+                  sys:
                     type: string
-                  fan: 
+                  fan:
                     type: string
-                  psu: 
+                  psu:
                     type: string
-                  smb: 
+                  smb:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

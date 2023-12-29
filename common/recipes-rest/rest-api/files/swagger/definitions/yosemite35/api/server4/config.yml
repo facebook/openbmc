@@ -1,45 +1,45 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/server4/config  
-  title: Swagger doc for /api/server4/config  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/server4/config
+  title: Swagger doc for /api/server4/config
   version: 1.0.0
-paths: 
-  /api/server4/config: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/server4/config:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  pwr_server4_last_state: 
+                properties:
+                  pwr_server4_last_state:
                     type: string
-                  slot4_por_cfg: 
+                  slot4_por_cfg:
                     type: string
-                  slot4_boot_order: 
+                  slot4_boot_order:
                     type: string
-                  slot4_cpu_ppin: 
+                  slot4_cpu_ppin:
                     type: string
-                  slot4_sensor_health: 
+                  slot4_sensor_health:
                     type: string
-                  slot4_sel_error: 
+                  slot4_sel_error:
                     type: string
-                  slot4_enable_pxe_sel: 
+                  slot4_enable_pxe_sel:
                     type: string
-                  slot4_end_of_post: 
+                  slot4_end_of_post:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

@@ -1,33 +1,33 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api  
-  title: Swagger doc for /api  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api
+  title: Swagger doc for /api
   version: 1.0.0
-paths: 
-  /api: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Description: 
+                properties:
+                  Description:
                     type: string
-                  version: 
+                  version:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

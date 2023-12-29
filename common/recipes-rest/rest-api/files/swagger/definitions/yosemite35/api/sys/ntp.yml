@@ -1,50 +1,83 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/ntp  
-  title: Swagger doc for /api/sys/ntp  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/ntp
+  title: Swagger doc for /api/sys/ntp
   version: 1.0.0
-paths: 
-  /api/sys/ntp: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/ntp:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  stratum: 
+                properties:
+                  stratum:
                     type: number
-                    format: int32
-                  when: 
+                  when:
                     type: number
-                    format: int32
-                  poll: 
+                  poll:
                     type: number
-                    format: int32
-                  reach: 
+                  reach:
                     type: number
-                    format: int32
-                  delay: 
+                  delay:
                     type: number
-                    format: int32
-                  offset: 
+                  offset:
                     type: number
-                    format: int32
-                  jitter: 
+                  jitter:
                     type: number
-                    format: int32
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            
+        404:
+          description: No system peers
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Resources:
+                type: array
+                items:
+                  type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  reason:
+                    type: string
+        500:
+          description: Internal Server error
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Resources:
+                type: array
+                items:
+                  type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  reason:
+                    type: string

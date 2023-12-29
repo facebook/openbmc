@@ -1,45 +1,45 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/spb/logs  
-  title: Swagger doc for /api/spb/logs  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/spb/logs
+  title: Swagger doc for /api/spb/logs
   version: 1.0.0
-paths: 
-  /api/spb/logs: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/spb/logs:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Logs: 
+                properties:
+                  Logs:
                     type: array
-                    items: 
+                    items:
                       type: object
                       additionalProperties: false
                       properties:
-                        APP_NAME:
-                          type: string
                         FRU#:
-                          type: string
-                        FRU_NAME:
                           type: string
                         MESSAGE:
                           type: string
+                        APP_NAME:
+                          type: string
                         TIME_STAMP:
                           type: string
-              Actions: 
+                        FRU_NAME:
+                          type: string
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

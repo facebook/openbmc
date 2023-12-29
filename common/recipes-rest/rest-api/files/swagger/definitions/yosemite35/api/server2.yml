@@ -1,34 +1,33 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/server2  
-  title: Swagger doc for /api/server2  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/server2
+  title: Swagger doc for /api/server2
   version: 1.0.0
-paths: 
-  /api/server2: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/server2:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Power status: 
+                properties:
+                  Power status:
                     type: string
-                  BIC_ok: 
-                    type: number
-                    format: int32
-              Actions: 
+                  BIC_ok:
+                    type: integer
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

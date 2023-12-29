@@ -1,31 +1,31 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/server3/bios/boot-order/clear_cmos  
-  title: Swagger doc for /api/server3/bios/boot-order/clear_cmos  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/server3/bios/boot-order/clear_cmos
+  title: Swagger doc for /api/server3/bios/boot-order/clear_cmos
   version: 1.0.0
-paths: 
-  /api/server3/bios/boot-order/clear_cmos: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/server3/bios/boot-order/clear_cmos:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Clear CMOS Function: 
+                properties:
+                  Clear CMOS Function:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

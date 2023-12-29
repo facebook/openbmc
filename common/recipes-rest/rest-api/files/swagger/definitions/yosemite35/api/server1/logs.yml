@@ -1,45 +1,45 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/server1/logs  
-  title: Swagger doc for /api/server1/logs  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/server1/logs
+  title: Swagger doc for /api/server1/logs
   version: 1.0.0
-paths: 
-  /api/server1/logs: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/server1/logs:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Logs: 
+                properties:
+                  Logs:
                     type: array
-                    items: 
+                    items:
                       type: object
                       additionalProperties: false
-                      properties: 
-                        APP_NAME: 
+                      properties:
+                        FRU#:
                           type: string
-                        FRU#: 
+                        MESSAGE:
                           type: string
-                        FRU_NAME: 
+                        APP_NAME:
                           type: string
-                        MESSAGE: 
+                        TIME_STAMP:
                           type: string
-                        TIME_STAMP: 
+                        FRU_NAME:
                           type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

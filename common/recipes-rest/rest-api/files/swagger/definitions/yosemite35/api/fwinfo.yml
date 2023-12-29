@@ -1,81 +1,81 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/fwinfo  
-  title: Swagger doc for /api/fwinfo  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/fwinfo
+  title: Swagger doc for /api/fwinfo
   version: 1.0.0
-paths: 
-  /api/fwinfo: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/fwinfo:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  fruid_info: 
+                properties:
+                  fruid_info:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      nicexp: 
+                    properties:
+                      bmc:
                         type: object
                         additionalProperties: false
-                        properties: 
-                          vendor: 
+                        properties:
+                          vendor:
                             type: string
-                          model: 
+                          model:
                             type: string
-                          serial_number: 
+                          serial_number:
                             type: string
-                          part_number: 
+                          part_number:
                             type: string
-                      bmc: 
+                      nicexp:
                         type: object
                         additionalProperties: false
-                        properties: 
-                          vendor: 
+                        properties:
+                          vendor:
                             type: string
-                          model: 
+                          model:
                             type: string
-                          serial_number: 
+                          serial_number:
                             type: string
-                          part_number: 
+                          part_number:
                             type: string
-                      nic: 
+                      nic:
                         type: object
                         additionalProperties: false
-                        properties: 
-                          vendor: 
+                        properties:
+                          vendor:
                             type: string
-                          model: 
+                          model:
                             type: string
-                          serial_number: 
+                          serial_number:
                             type: string
-                          part_number: 
+                          part_number:
                             type: string
-                  fw_info: 
+                  fw_info:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      bmc: 
+                    properties:
+                      bmc:
                         type: object
                         additionalProperties: false
-                        properties: 
-                          bmc_ver: 
+                        properties:
+                          bmc_ver:
                             type: string
-                          bmc_cpld_ver: 
+                          bmc_cpld_ver:
                             type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

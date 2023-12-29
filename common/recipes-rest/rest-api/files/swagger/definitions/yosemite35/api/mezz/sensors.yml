@@ -1,35 +1,35 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/mezz/sensors  
-  title: Swagger doc for /api/mezz/sensors  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/mezz/sensors
+  title: Swagger doc for /api/mezz/sensors
   version: 1.0.0
-paths: 
-  /api/mezz/sensors: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/mezz/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  NIC_TEMP_C: 
+                properties:
+                  NIC_TEMP_C:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      value: 
+                    properties:
+                      value:
                         type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

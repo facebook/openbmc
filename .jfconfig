@@ -799,6 +799,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-janga-determinator",
+            "args": {
+                "name": "openbmc-cit-janga-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-janga-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform janga"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-janga/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-lightning-determinator",
             "args": {
                 "name": "openbmc-cit-lightning-determinator",

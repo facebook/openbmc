@@ -20,6 +20,7 @@ PLATFORMS = [
     "gtartemis",
     "halfdome",
     "inspirationpoint",
+    "janga",
     "lightning",
     "meru",
     "minipack",

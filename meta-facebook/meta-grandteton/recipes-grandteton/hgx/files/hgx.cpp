@@ -157,7 +157,7 @@ GPUConfig getConfig() {
     } else {
       return GPU_CONFIG_UNKNOWN;
     }
-  } catch (kv::key_does_not_exist& e) {
+  } catch (std::filesystem::filesystem_error& e) {
     const int hgx_eeprom_bus = 0x9;
     int fd = 0;
     uint8_t tlen, rlen;

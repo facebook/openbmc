@@ -10,6 +10,12 @@
 
 using namespace std;
 
+enum {
+  SWB_FW_GET_SUCCESS                =  0,
+  SWB_FW_GET_FAILED                 = -1,
+  SWB_FW_BIC_ERROR                  = -2,
+};
+
 const std::vector<std::string> comp_str_t = {
   "vr0",
   "vr1",
@@ -31,7 +37,7 @@ class pldm_firmware_parameter_handler
     std::string _fru_name{};
     std::string _active_ver{};
     void delete_swb_cache();
-    void swb_cache_handle(
+    int swb_cache_handle(
                           const pldm_get_firmware_parameters_resp&,
                           const variable_field&,
                           const variable_field&,
@@ -62,7 +68,7 @@ pldm_firmware_parameter_handler::delete_swb_cache()
   }
 }
 
-void
+int
 pldm_firmware_parameter_handler::swb_cache_handle (
        const pldm_get_firmware_parameters_resp& /*fwParams*/,
                           const variable_field& activeCompImageSetVerStr,
@@ -82,10 +88,15 @@ pldm_firmware_parameter_handler::swb_cache_handle (
 
   // when BIC cannot access its component, it would return ERROR:%d string.
   auto found = comp_active_ver.find("ERROR:");
-  comp_active_ver = (found == std::string::npos) ? comp_active_ver:"NA";
+  int ret = 0;
+  if (found == std::string::npos) {
+    kv::set(bic_active_key, bic_ver, kv::region::temp);
+    kv::set(comp_active_key, comp_active_ver, kv::region::temp);
+  } else {
+    ret = SWB_FW_BIC_ERROR; 
+  }
 
-  kv::set(bic_active_key, bic_ver, kv::region::temp);
-  kv::set(comp_active_key, comp_active_ver, kv::region::temp);
+  return ret;
 }
 
 int
@@ -141,7 +152,7 @@ pldm_firmware_parameter_handler::get_firmware_parameter (uint8_t bus, uint8_t ei
 
         // stored
         if (state == UPDATE_SWB_CACHE) {
-          swb_cache_handle (
+          ret = swb_cache_handle (
             fwParams,
             activeCompImageSetVerStr,
             pendingCompImageSetVerStr,
@@ -149,6 +160,10 @@ pldm_firmware_parameter_handler::get_firmware_parameter (uint8_t bus, uint8_t ei
             activeCompVerStr,
             pendingCompVerStr
           );
+
+          if (ret == SWB_FW_BIC_ERROR) {
+            continue;
+          }
         } else {
           _active_ver = (activeCompImageSetVerStr.length == 0) ?
                         "" : (const char*)activeCompImageSetVerStr.ptr;

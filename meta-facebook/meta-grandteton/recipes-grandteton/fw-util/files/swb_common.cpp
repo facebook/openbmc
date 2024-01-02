@@ -48,6 +48,11 @@ enum {
   SWB_FW_UPDATE_NOT_SUPP_IN_CURR_STATE = -2,
 };
 
+enum {
+  SWB_FW_GET_SUCCESS                =  0,
+  SWB_FW_GET_FAILED                 = -1,
+  SWB_FW_BIC_ERROR                  = -2,
+};
 
 struct image_info {
   struct stat stat;
@@ -860,8 +865,12 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
       active_ver = kv::get(active_key, kv::region::temp);
       j["VERSION"] = active_ver;
     } catch (...) {
-      if (update_pldm_ver_cache(fru_name, bus, eid) < 0) {
-        return comp_version(j);
+      int ret = update_pldm_ver_cache(fru_name, bus, eid);
+      if (ret < 0) {
+        if(ret == SWB_FW_GET_FAILED)
+          return comp_version(j);
+        else if(ret == SWB_FW_BIC_ERROR)
+          j["VERSION"] = "NA";
       } else {
         active_ver = kv::get(active_key, kv::region::temp);
         j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;

@@ -368,7 +368,7 @@ var IsLFOpenBMC = func() (bool) {
 // IsBMCLite check whether the system is running BMC-lite
 // For S368275.   Make this beautiful later.
 var IsBMCLite = func() (bool) {
-	magics := []string{"fbdarwin", "meru"}
+	magics := []string{"fbdarwin", "meru", "janga", "montblanc"}
 
 	issueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {

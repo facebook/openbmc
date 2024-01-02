@@ -1,1 +1,0 @@
-web: python emulator.py

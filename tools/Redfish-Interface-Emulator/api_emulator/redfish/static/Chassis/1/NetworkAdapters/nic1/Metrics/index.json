@@ -1,4 +1,0 @@
-{
-    "@odata.id": "/redfish/v1/Chassis/1/NetworkAdapters/nic1/Metrics",
-    "State": "Not implemented yet"
-}

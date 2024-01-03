@@ -281,7 +281,7 @@ gta_cb_power_fault_handle(uint8_t* temp_mb_resp) {
   uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
   uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
   const uint8_t cb_offset[4] = {CB_PWR_FAULT_A_OFFSET, CB_PWR_FAULT_B_OFFSET, CB_PWR_FAULT_TIMEOUT_A_OFFSET, CB_PWR_FAULT_TIMEOUT_B_OFFSET};
-  const char *cb_pwrgd_fault[8] = {"", "", "HPDB_HSC_PWRGD_FAULT", "CB_PWRGD_FAULT", "CB_HSC_PWRGD_FAULT", "", "", ""};
+  const char *cb_pwrgd_fault[8] = {"CB Normal PG Fault", "CB STBY PG fault", "CB HPDB PG fault", "", "", "", "", ""};
   const char *cb_pwr_fault[2][8] = {{"P3V3_2_PG", "P3V3_1_PG", "PWRGD_P5V_AUX", "PWRGD_P1V2_AUX", "", "", "", ""},
                                     {"PWRGD_P0V8_2", "PWRGD_P0V8_1", "P1V25_2_PG", "P1V25_1_PG", "PWRGD_P1V8_2_VDD", "PWRGD_P1V8_1_VDD", "P1V8_PEX_PG", ""},
                                    };
@@ -293,11 +293,12 @@ gta_cb_power_fault_handle(uint8_t* temp_mb_resp) {
     syslog(LOG_CRIT, "FRU: %u Power Fault\n", FRU_ACB);
     if ((temp_mb_resp[0] & CB_PWR_TRAY_REMOVE_MASK) == CB_PWR_TRAY_REMOVE_MASK) {
       syslog(LOG_CRIT, "FRU: %u Power Fault Event is caused by Tray removed\n", FRU_ACB);
+      return;
     } else {
       i2cfd = i2c_cdev_slave_open(I2C_BUS_11, CB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
       if (i2cfd < 0) {
         syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_11);
-        return;
+        goto end;
       }
 
       for (uint8_t i = 0; i < ARRAY_SIZE(cb_offset); i ++) {
@@ -308,7 +309,7 @@ gta_cb_power_fault_handle(uint8_t* temp_mb_resp) {
         if (ret < 0) {
           syslog(LOG_WARNING, "%s() I2C transfer to CB CPLD failed, RET: %d", __func__, ret);
           i2c_cdev_slave_close(i2cfd);
-          return;
+          goto end;
         }
 
         switch (cb_offset[i]) {
@@ -340,16 +341,18 @@ gta_cb_power_fault_handle(uint8_t* temp_mb_resp) {
           }
         }
       }
-
-      for (uint8_t i = 2; i < BITS_PER_BYTE; i ++) {
-        if (GETBIT(temp_mb_resp[1], i) && !cb_pwr_fault_flag ) {
-          syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (Power Good Drop Before 3v3 Vol)\n", FRU_ACB, cb_pwrgd_fault[i]);
-        }
-        if (GETBIT(temp_mb_resp[2], i) && !cb_pwr_fault_flag ) {
-          syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (No Power Good Before 3v3 Vol)\n", FRU_ACB, cb_pwrgd_fault[i]);
-        }
-      }
       i2c_cdev_slave_close(i2cfd);
+    }
+  }
+end:
+  if ((temp_mb_resp[0] & CB_PWR_FAULT_MASK) == CB_PWR_FAULT_MASK && !cb_pwr_fault_flag) {
+    for (uint8_t i = 0; i < 3; i ++) {
+      if (GETBIT(temp_mb_resp[1], i)) {
+        syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (Power Good Drop Before 3v3 Vol)\n", FRU_ACB, cb_pwrgd_fault[i]);
+      }
+      if (GETBIT(temp_mb_resp[2], i)) {
+        syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (No Power Good Before 3v3 Vol)\n", FRU_ACB, cb_pwrgd_fault[i]);
+      }
     }
   }
   return;
@@ -363,7 +366,7 @@ gta_mc_power_fault_handle(uint8_t* temp_mb_resp) {
   uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
   bool mc_pwr_fault_flag = false;
   uint8_t mc_offset[2] = {MC_PWR_FAULT_OFFSET, MC_PWR_FAULT_TIMEOUT_OFFSET};
-  const char *mc_pwrgd_fault[8] = {"GPU_PWRGD_FAULT", "FRGA_READY_FAULT", "", "", "", "", "", ""};
+  const char *mc_pwrgd_fault[8] = {"", "", "", "MC Normal PG fault", "MC HSC PG fault", "", "", ""};
   const char *mc_pwr_fault[8] = {"MC_P3V3_PG_DROP", "MC_P5V_AUX_PG_DROP", "MC_PWRGD_P1V2_AUX_DROP", "MC_PWRGD_P3V3_AUX_DROP", "", "", "", ""};
   const char *pwr_fault_status_str[2] = {"Power Good Drop", "No Power Good"};
 
@@ -372,11 +375,12 @@ gta_mc_power_fault_handle(uint8_t* temp_mb_resp) {
     syslog(LOG_CRIT, "FRU: %u Power Fault\n", FRU_MEB);
     if ((temp_mb_resp[0] & MC_PWR_TRAY_REMOVE_MASK) == MC_PWR_TRAY_REMOVE_MASK) {
       syslog(LOG_CRIT, "FRU: %u Power Fault Event is caused by Tray removed\n", FRU_MEB);
+      return;
     } else {
       i2cfd = i2c_cdev_slave_open(I2C_BUS_69, MC_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
       if (i2cfd < 0) {
         syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_11);
-        return;
+        goto end;
       }
       for (uint8_t i = 0; i < ARRAY_SIZE(mc_offset); i ++) {
         tbuf[0] = mc_offset[i];
@@ -386,7 +390,7 @@ gta_mc_power_fault_handle(uint8_t* temp_mb_resp) {
         if (ret < 0) {
           syslog(LOG_WARNING, "%s() I2C transfer to MC CPLD failed, RET: %d", __func__, ret);
           i2c_cdev_slave_close(i2cfd);
-          return;
+          goto end;
         }
         for (uint8_t j = 0; j < BITS_PER_BYTE; j ++) {
           if (GETBIT(rbuf[0], j)) {
@@ -395,15 +399,18 @@ gta_mc_power_fault_handle(uint8_t* temp_mb_resp) {
           }
         }
       }
-      for (uint8_t i = 0; i < 3; i ++) {
-        if (GETBIT(temp_mb_resp[1], i) && !mc_pwr_fault_flag ) {
-          syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (Power Good Drop Before 3v3 Vol)\n", FRU_MEB, mc_pwrgd_fault[i]);
-        }
-        if (GETBIT(temp_mb_resp[2], i) && !mc_pwr_fault_flag ) {
-          syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (No Power Good Before 3v3 Vol)\n", FRU_MEB, mc_pwrgd_fault[i]);
-        }
-      }
       i2c_cdev_slave_close(i2cfd);
+    }
+  }
+end:
+  if ((temp_mb_resp[0] & MC_PWR_FAULT_MASK) == MC_PWR_FAULT_MASK && !mc_pwr_fault_flag) {
+    for (uint8_t i = 3; i < 5; i ++) {
+      if (GETBIT(temp_mb_resp[1], i)) {
+        syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (Power Good Drop Before 3v3 Vol)\n", FRU_MEB, mc_pwrgd_fault[i]);
+      }
+      if (GETBIT(temp_mb_resp[2], i)) {
+        syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (No Power Good Before 3v3 Vol)\n", FRU_MEB, mc_pwrgd_fault[i]);
+      }
     }
   }
   return;

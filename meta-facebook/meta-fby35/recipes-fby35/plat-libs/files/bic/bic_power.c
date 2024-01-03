@@ -93,26 +93,6 @@ bic_server_power_off_with_param(uint8_t slot_id, uint8_t gs_flag) {
   int ret;
   uint8_t i;
   int delay = 0;
-  uint8_t type_1ou = 0;
-  uint8_t exp_intf[4] = {FEXP_BIC_INTF, REXP_BIC_INTF, EXP3_BIC_INTF, EXP4_BIC_INTF};
-  uint8_t tbuf[3] = {0};
-  uint8_t rbuf[1] = {0};
-  uint8_t tlen = 3;
-  uint8_t rlen = 0;
-
-  if (slot_id == FRU_SLOT1) {
-    ret = bic_get_1ou_type(FRU_SLOT1, &type_1ou);
-    if ((ret == 0) && (type_1ou == TYPE_1OU_OLMSTEAD_POINT)) {
-      ret = bic_is_exp_prsnt(FRU_SLOT1);
-      memcpy(tbuf, (uint8_t *)&IANA_ID, tlen);
-      for (i = 0; i < sizeof(exp_intf); i++) {
-        if (GETBIT(ret, i) == 1) {
-          bic_data_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_NOTIFY_DC_OFF, tbuf, tlen, rbuf, &rlen, exp_intf[i]);
-        }
-      }
-      msleep(200);
-    }
-  }
 
   for (i = 0; i < sts_cnt; i++) {
     ret = bic_server_power_control(slot_id, pwr_seq[i]);

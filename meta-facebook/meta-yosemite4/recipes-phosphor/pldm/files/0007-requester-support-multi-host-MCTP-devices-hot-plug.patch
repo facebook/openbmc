@@ -1,0 +1,611 @@
+From bb3c049d560b2b8c115c03200d06c2daabf6fb52 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Mon, 18 Dec 2023 18:40:23 +0800
+Subject: [PATCH 7/9] requester: support multi-host MCTP devices hot plug
+
+Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
+they only shows their EID, Network Id, and SupportedMessageTypes, which
+cannot fulfill some requirements, e.g., get the device's name or check
+the host slot number which contains the MCTP endpoint in multi-host
+system.
+
+In openbmc, the additional information are exposed by Entity Manager,
+so that we add ConfigurationDiscoveryHandler, search for Entity
+Manager's configuration when a new MCTP endpoint has been register by
+mctpd.
+
+Objects who want to obtain the configuration can include the
+ConfigurationDiscoveryHandler as their attribute, get the configuration
+when needed.
+
+TESTED:
+A series of unit test case to simulate the response of dbus call,
+confirm that the configurations are succesfully stored.
+
+Change-Id: I59b8bf434576cbdea651848a8da11e5b870e2dfa
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ common/test/mocked_utils.hpp                  |   4 +
+ common/utils.cpp                              |  17 ++
+ common/utils.hpp                              |   7 +
+ meson.build                                   |   1 +
+ pldmd/pldmd.cpp                               |   7 +-
+ requester/configuration_discovery_handler.cpp | 165 ++++++++++++++++++
+ requester/configuration_discovery_handler.hpp | 133 ++++++++++++++
+ .../configuration_discovery_handler_test.cpp  | 114 ++++++++++++
+ requester/test/meson.build                    |   3 +
+ 9 files changed, 450 insertions(+), 1 deletion(-)
+ create mode 100644 requester/configuration_discovery_handler.cpp
+ create mode 100644 requester/configuration_discovery_handler.hpp
+ create mode 100644 requester/test/configuration_discovery_handler_test.cpp
+
+diff --git a/common/test/mocked_utils.hpp b/common/test/mocked_utils.hpp
+index 71bc6e7..baaeecb 100644
+--- a/common/test/mocked_utils.hpp
++++ b/common/test/mocked_utils.hpp
+@@ -39,4 +39,8 @@ class MockdBusHandler : public pldm::utils::DBusHandler
+     MOCK_METHOD(pldm::utils::GetSubTreeResponse, getSubtree,
+                 (const std::string&, int, const std::vector<std::string>&),
+                 (const override));
++
++    MOCK_METHOD(pldm::utils::PropertyMap, getAll,
++                (const std::string&, const std::string&, const std::string&),
++                (const override));
+ };
+diff --git a/common/utils.cpp b/common/utils.cpp
+index 8afa1f4..446f7e9 100644
+--- a/common/utils.cpp
++++ b/common/utils.cpp
+@@ -558,6 +558,23 @@ PropertyValue DBusHandler::getDbusPropertyVariant(
+     return value;
+ }
+ 
++PropertyMap DBusHandler::getAll(const std::string& service,
++                                const std::string& objPath,
++                                const std::string& dbusInterface) const
++{
++    auto& bus = DBusHandler::getBus();
++    auto method = bus.new_method_call(service.c_str(), objPath.c_str(),
++                                      "org.freedesktop.DBus.Properties",
++                                      "GetAll");
++    method.append(dbusInterface);
++
++    auto response = bus.call(method);
++    PropertyMap result{};
++    response.read(result);
++
++    return result;
++}
++
+ PropertyValue jsonEntryToDbusVal(std::string_view type,
+                                  const nlohmann::json& value)
+ {
+diff --git a/common/utils.hpp b/common/utils.hpp
+index cdc539b..dda1b10 100644
+--- a/common/utils.hpp
++++ b/common/utils.hpp
+@@ -213,6 +213,10 @@ class DBusHandlerInterface
+     virtual PropertyValue
+         getDbusPropertyVariant(const char* objPath, const char* dbusProp,
+                                const char* dbusInterface) const = 0;
++
++    virtual PropertyMap getAll(const std::string& service,
++                               const std::string& objPath,
++                               const std::string& dbusInterface) const = 0;
+ };
+ 
+ /**
+@@ -277,6 +281,9 @@ class DBusHandler : public DBusHandlerInterface
+         getDbusPropertyVariant(const char* objPath, const char* dbusProp,
+                                const char* dbusInterface) const override;
+ 
++    PropertyMap getAll(const std::string& service, const std::string& objPath,
++                       const std::string& dbusInterface) const override;
++
+     /** @brief The template function to get property from the requested dbus
+      *         path
+      *
+diff --git a/meson.build b/meson.build
+index 6d27668..5e1d362 100644
+--- a/meson.build
++++ b/meson.build
+@@ -191,6 +191,7 @@ executable(
+   'platform-mc/numeric_sensor.cpp',
+   'platform-mc/event_manager.cpp',
+   'requester/mctp_endpoint_discovery.cpp',
++  'requester/configuration_discovery_handler.cpp',
+   implicit_include_directories: false,
+   dependencies: deps,
+   install: true,
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index 6cb129b..9296460 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -7,6 +7,7 @@
+ #include "fw-update/manager.hpp"
+ #include "invoker.hpp"
+ #include "platform-mc/manager.hpp"
++#include "requester/configuration_discovery_handler.hpp"
+ #include "requester/handler.hpp"
+ #include "requester/mctp_endpoint_discovery.hpp"
+ #include "requester/request.hpp"
+@@ -226,6 +227,9 @@ int main(int argc, char** argv)
+         hostEffecterParser;
+     std::unique_ptr<DbusToPLDMEvent> dbusToPLDMEventHandler;
+     DBusHandler dbusHandler;
++    auto configurationDiscovery =
++        std::make_unique<pldm::ConfigurationDiscoveryHandler>(&dbusHandler);
++
+     std::unique_ptr<oem_platform::Handler> oemPlatformHandler{};
+     std::unique_ptr<oem_bios::Handler> oemBiosHandler{};
+ 
+@@ -325,7 +329,8 @@ int main(int argc, char** argv)
+     std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
+         std::make_unique<MctpDiscovery>(
+             bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
+-                     fwManager.get(), platformManager.get()});
++                     fwManager.get(), configurationDiscovery.get()});
++
+     auto callback = [verbose, &invoker, &reqHandler, &fwManager, &pldmTransport,
+                      TID](IO& io, int fd, uint32_t revents) mutable {
+         if (!(revents & EPOLLIN))
+diff --git a/requester/configuration_discovery_handler.cpp b/requester/configuration_discovery_handler.cpp
+new file mode 100644
+index 0000000..4e43d2c
+--- /dev/null
++++ b/requester/configuration_discovery_handler.cpp
+@@ -0,0 +1,165 @@
++#include "configuration_discovery_handler.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <algorithm>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm
++{
++
++void ConfigurationDiscoveryHandler::handleMctpEndpoints(
++    const MctpInfos& newMctpInfos)
++{
++    for (const auto& newMctpInfo : newMctpInfos)
++    {
++        searchConfigurationFor(newMctpInfo);
++    }
++}
++
++void ConfigurationDiscoveryHandler::handleRemovedMctpEndpoints(
++    const MctpInfos& removedMctpInfos)
++{
++    for (const auto& removedMctpInfo : removedMctpInfos)
++    {
++        removeConfigByEid(std::get<0>(removedMctpInfo));
++    }
++}
++
++std::map<std::string, MctpEndpoint>&
++    ConfigurationDiscoveryHandler::getConfigurations()
++{
++    return configurations;
++}
++
++void ConfigurationDiscoveryHandler::searchConfigurationFor(MctpInfo mctpInfo)
++{
++    constexpr auto inventoryPath = "/xyz/openbmc_project/inventory/";
++    constexpr auto depthWithDownstreamDevices = std::ranges::count(
++        "/inventory/system/{BOARD_OR_CHASSIS}/{DEVICE}/{DOWNSTREAM_DEVICE}",
++        '/');
++
++    const std::vector<std::string> mctpEndpoint = {
++        "xyz.openbmc_project.Configuration.MCTPEndpoint"};
++
++    try
++    {
++        auto response = dBusIntf->getSubtree(
++            inventoryPath, depthWithDownstreamDevices, mctpEndpoint);
++
++        for (const auto& [objectPath, serviceMap] : response)
++        {
++            appendConfigIfEidMatch(std::get<0>(mctpInfo), objectPath,
++                                   serviceMap);
++        }
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("{FUNC}: Failed to getSubtree with MCTPEndpoint, error={ERROR}",
++              "FUNC", std::string(__func__), "ERROR", e.what());
++        return;
++    }
++    catch (const std::exception& e)
++    {
++        error("{FUNC}: Unpredicted error occured, error={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++        return;
++    }
++}
++
++void ConfigurationDiscoveryHandler::appendConfigIfEidMatch(
++    uint8_t targetEid, const std::string& configPath,
++    const pldm::utils::MapperServiceMap& serviceMap)
++{
++    if (!configurations.contains(configPath))
++    {
++        const auto& serviceName = serviceMap.at(0).first;
++
++        /** mctpEndpointInterface should be
++         * "xyz.openbmc_project.Configuration.MCTPEndpoint".
++         */
++        const auto& mctpEndpointInterface = serviceMap.at(0).second.at(0);
++        try
++        {
++            auto response = dBusIntf->getAll(serviceName, configPath,
++                                             mctpEndpointInterface);
++            appendIfEidMatch(targetEid, configPath,
++                             parseMctpEndpointFromResponse(response));
++        }
++        catch (const sdbusplus::exception_t& e)
++        {
++            error(
++                "{FUNC}: Failed to getAll of interface={INTERFACE} in path={PATH}, error={ERROR}",
++                "FUNC", std::string(__func__), "INTERFACE",
++                mctpEndpointInterface, "PATH", configPath, "ERROR", e.what());
++            return;
++        }
++        catch (const NoSuchPropertiesException& e)
++        {
++            error("{FUNC}: Insufficient properties in {PATH}, error={ERROR}",
++                  "FUNC", std::string(__func__), "PATH", configPath, "ERROR",
++                  e.what());
++            return;
++        }
++        catch (const std::exception& e)
++        {
++            error("{FUNC}: Unpredicted error occured, error={ERROR}", "FUNC",
++                  std::string(__func__), "ERROR", e.what());
++            return;
++        }
++    }
++}
++
++MctpEndpoint ConfigurationDiscoveryHandler::parseMctpEndpointFromResponse(
++    const pldm::utils::PropertyMap& response)
++{
++    if (response.contains("Address") && response.contains("Bus") &&
++        response.contains("EndpointId") && response.contains("Name"))
++    {
++        auto address = std::get<uint64_t>(response.at("Address"));
++        auto eid = std::get<uint64_t>(response.at("EndpointId"));
++        auto bus = std::get<uint64_t>(response.at("Bus"));
++        auto componentName = std::get<std::string>(response.at("Name"));
++
++        return MctpEndpoint{address, eid, bus, componentName};
++    }
++    else
++    {
++        std::vector<std::string> missingProperties{};
++        if (response.contains("Address"))
++            missingProperties.emplace_back("Address");
++        if (response.contains("Bus"))
++            missingProperties.emplace_back("Bus");
++        if (response.contains("EndpointId"))
++            missingProperties.emplace_back("EndpointId");
++        if (response.contains("Name"))
++            missingProperties.emplace_back("Name");
++
++        throw NoSuchPropertiesException(missingProperties);
++    }
++}
++
++void ConfigurationDiscoveryHandler::appendIfEidMatch(
++    uint8_t targetEid, const std::string& configPath,
++    const MctpEndpoint& endpoint)
++{
++    if (endpoint.EndpointId == targetEid)
++    {
++        configurations.emplace(configPath, endpoint);
++    }
++}
++
++void ConfigurationDiscoveryHandler::removeConfigByEid(uint8_t eid)
++{
++    for (const auto& [configDbusPath, mctpEndpoint] : configurations)
++    {
++        if (mctpEndpoint.EndpointId == eid)
++        {
++            configurations.erase(configDbusPath);
++            return;
++        }
++    }
++}
++
++} // namespace pldm
+diff --git a/requester/configuration_discovery_handler.hpp b/requester/configuration_discovery_handler.hpp
+new file mode 100644
+index 0000000..59bc384
+--- /dev/null
++++ b/requester/configuration_discovery_handler.hpp
+@@ -0,0 +1,133 @@
++#pragma once
++
++#include "common/utils.hpp"
++#include "mctp_endpoint_discovery.hpp"
++
++#include <stdexcept>
++
++namespace pldm
++{
++
++struct MctpEndpoint
++{
++    uint64_t address;
++    uint64_t EndpointId;
++    uint64_t bus;
++    std::string name;
++};
++
++class ConfigurationDiscoveryHandler : public MctpDiscoveryHandlerIntf
++{
++  public:
++    ConfigurationDiscoveryHandler() = delete;
++    ConfigurationDiscoveryHandler(const ConfigurationDiscoveryHandler&) =
++        delete;
++    ConfigurationDiscoveryHandler(ConfigurationDiscoveryHandler&&) = delete;
++    ConfigurationDiscoveryHandler&
++        operator=(const ConfigurationDiscoveryHandler&) = delete;
++    ConfigurationDiscoveryHandler&
++        operator=(ConfigurationDiscoveryHandler&&) = delete;
++    ~ConfigurationDiscoveryHandler() = default;
++
++    explicit ConfigurationDiscoveryHandler(
++        const pldm::utils::DBusHandler* dBusIntf) :
++        dBusIntf(dBusIntf)
++    {}
++
++    /** @brief Discover configuration associated with the new MCTP endpoints.
++     *
++     *  @param[in] newMctpInfos - information of discovered MCTP endpoint
++     */
++    void handleMctpEndpoints(const MctpInfos& newMctpInfos);
++
++    /** @brief Remove configuration associated with the removed MCTP endpoints.
++     *
++     *  @param[in] removedMctpInfos - the removed MCTP endpoints
++     */
++    void handleRemovedMctpEndpoints(const MctpInfos& removedMctpInfos);
++
++    /** @brief Get existing configurations.
++     *
++     *  @return The configurations.
++     */
++    std::map<std::string, MctpEndpoint>& getConfigurations();
++
++  private:
++    /** @brief Search for associated configuration for the MctpInfo.
++     *
++     *  @param[in] mctpInfo - information of discovered MCTP endpoint
++     */
++    void searchConfigurationFor(MctpInfo mctpInfo);
++
++    /** @brief Append to configurations if Endpoint Id is matched.
++     *
++     *  @param[in] targetEid - discovered MCTP endpoint Id
++     *  @param[in] configPath - the Dbus path of a configuration
++     *  @param[in] serviceMap - the map contains the service's information who
++     * expose the configuration
++     */
++    void
++        appendConfigIfEidMatch(uint8_t targetEid, const std::string& configPath,
++                               const pldm::utils::MapperServiceMap& serviceMap);
++
++    /** @brief Parse MctpEndpoint from the response of GetAll method.
++     *
++     *  @param[in] response - Response data of GetAll method
++     *
++     *  @return Parsed MctpEndpoint object.
++     */
++    MctpEndpoint
++        parseMctpEndpointFromResponse(const pldm::utils::PropertyMap& response);
++
++    /** @brief Append to configuration if the MctpEndpoint's EID matches
++     * targetEid.
++     *
++     *  @param[in] targetEid - The target EID
++     *  @param[in] configPath - Discovered configuration's Dbus path
++     *  @param[in] endpoint - The configuration's MctpEndpoint information.
++     */
++    void appendIfEidMatch(uint8_t targetEid, const std::string& configPath,
++                          const MctpEndpoint& endpoint);
++
++    /** @brief Remove configuration associated with the removed MCTP endpoint.
++     *
++     *  @param[in] eid - endpoint Id of the removed MCTP Endpoint
++     */
++    void removeConfigByEid(uint8_t eid);
++
++    /** @brief The configuration contains Dbus path and the MCTP endpoint
++     * information.
++     */
++    std::map<std::string /*configDbusPath*/, MctpEndpoint> configurations;
++
++    /** @brief D-Bus Interface object*/
++    const pldm::utils::DBusHandler* dBusIntf;
++};
++
++class NoSuchPropertiesException : public std::exception
++{
++  public:
++    NoSuchPropertiesException() = delete;
++    ~NoSuchPropertiesException() = default;
++
++    explicit NoSuchPropertiesException(
++        const std::vector<std::string> properties)
++    {
++        std::string missingProperties{};
++        for (const auto& property : properties)
++        {
++            missingProperties += std::string(property) + " ";
++        }
++        message = "Interface has no properties: " + missingProperties;
++    }
++
++    const char* what() const noexcept override
++    {
++        return message.c_str();
++    }
++
++  private:
++    std::string message;
++};
++
++} // namespace pldm
+diff --git a/requester/test/configuration_discovery_handler_test.cpp b/requester/test/configuration_discovery_handler_test.cpp
+new file mode 100644
+index 0000000..2d23879
+--- /dev/null
++++ b/requester/test/configuration_discovery_handler_test.cpp
+@@ -0,0 +1,114 @@
++#include "config.h"
++
++#include "common/test/mocked_utils.hpp"
++#include "common/types.hpp"
++#include "common/utils.hpp"
++#include "requester/configuration_discovery_handler.hpp"
++
++#include <gmock/gmock.h>
++#include <gtest/gtest.h>
++
++using ::testing::_;
++
++TEST(ConfigurationDiscoveryHandlerTest, succesfullyDiscoverConfig)
++{
++    constexpr uint8_t EID = 10;
++    constexpr auto mockedDbusPath =
++        "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
++    constexpr auto mockedService = "xyz.openbmc_project.EntityManager";
++    constexpr auto mockedInterface =
++        "xyz.openbmc_project.Configuration.MCTPEndpoint";
++    MockdBusHandler mockedUtils;
++    auto handler =
++        std::make_unique<pldm::ConfigurationDiscoveryHandler>(&mockedUtils);
++
++    pldm::utils::GetSubTreeResponse mockedGetSubtreeResponse{std::make_pair(
++        mockedDbusPath,
++        pldm::utils::MapperServiceMap{std::make_pair(
++            mockedService, pldm::utils::Interfaces{mockedInterface})})};
++
++    EXPECT_CALL(mockedUtils, getSubtree(_, _, _))
++        .Times(1)
++        .WillOnce(testing::Return(mockedGetSubtreeResponse));
++
++    pldm::utils::PropertyMap mockGetAllResponse{
++        {"Address", uint64_t(0x1)},
++        {"Bus", uint64_t(0)},
++        {"EndpointId", uint64_t(EID)},
++        {"Name", std::string("MockedDevice")}};
++
++    EXPECT_CALL(mockedUtils,
++                getAll(mockedService, mockedDbusPath, mockedInterface))
++        .Times(1)
++        .WillOnce(testing::Return(mockGetAllResponse));
++
++    pldm::MctpInfos mctpInfos;
++    mctpInfos.emplace_back(pldm::MctpInfo(EID, "emptyUUID", "", 1));
++
++    // Act
++    handler->handleMctpEndpoints(mctpInfos);
++
++    ASSERT_EQ(1, handler->getConfigurations().size());
++}
++
++TEST(ConfigurationDiscoveryHandlerTest, BlockedByNoSuchElement)
++{
++    constexpr uint8_t EID = 10;
++    constexpr auto mockedDbusPath =
++        "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
++    constexpr auto mockedService = "xyz.openbmc_project.EntityManager";
++    constexpr auto mockedInterface =
++        "xyz.openbmc_project.Configuration.MCTPEndpoint";
++    MockdBusHandler mockedUtils;
++    auto handler =
++        std::make_unique<pldm::ConfigurationDiscoveryHandler>(&mockedUtils);
++
++    pldm::utils::GetSubTreeResponse mockedGetSubtreeResponse{std::make_pair(
++        mockedDbusPath,
++        pldm::utils::MapperServiceMap{std::make_pair(
++            mockedService, pldm::utils::Interfaces{mockedInterface})})};
++
++    EXPECT_CALL(mockedUtils, getSubtree(_, _, _))
++        .Times(1)
++        .WillOnce(testing::Return(mockedGetSubtreeResponse));
++
++    pldm::utils::PropertyMap mockGetAllResponse{
++        {"Address", uint64_t(0x1)},
++        {"Bus", uint64_t(0)},
++        /* No EndpointId */
++        {"Name", std::string("MockedDevice")}};
++
++    EXPECT_CALL(mockedUtils,
++                getAll(mockedService, mockedDbusPath, mockedInterface))
++        .Times(1)
++        .WillOnce(testing::Return(mockGetAllResponse));
++
++    pldm::MctpInfos mctpInfos;
++    mctpInfos.emplace_back(pldm::MctpInfo(EID, "emptyUUID", "", 1));
++
++    // Act
++    EXPECT_NO_THROW(handler->handleMctpEndpoints(mctpInfos));
++
++    ASSERT_EQ(0, handler->getConfigurations().size());
++}
++
++TEST(ConfigurationDiscoveryHandlerTest, succesfullyRemoveConfig)
++{
++    constexpr uint8_t EID = 10;
++
++    MockdBusHandler mockedUtils;
++    auto handler =
++        std::make_unique<pldm::ConfigurationDiscoveryHandler>(&mockedUtils);
++
++    pldm::MctpEndpoint mockedMctpEndpoint = {uint64_t(0x1), uint64_t(EID),
++                                             uint64_t(0), "MockedDevice"};
++    handler->getConfigurations().emplace(
++        "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice",
++        mockedMctpEndpoint);
++
++    pldm::MctpInfos mctpInfos;
++    mctpInfos.emplace_back(pldm::MctpInfo(EID, "emptyUUID", "", 1));
++    handler->handleRemovedMctpEndpoints(mctpInfos);
++
++    ASSERT_EQ(0, handler->getConfigurations().size());
++}
+diff --git a/requester/test/meson.build b/requester/test/meson.build
+index 80c27c1..6e89e1d 100644
+--- a/requester/test/meson.build
++++ b/requester/test/meson.build
+@@ -1,12 +1,14 @@
+ test_src = declare_dependency(
+           sources: [
+             '../mctp_endpoint_discovery.cpp',
++            '../configuration_discovery_handler.cpp'
+           ])
+ 
+ tests = [
+   'handler_test',
+   'request_test',
+   'mctp_endpoint_discovery_test',
++  'configuration_discovery_handler_test',
+ ]
+ 
+ foreach t : tests
+@@ -20,6 +22,7 @@ foreach t : tests
+                          gmock,
+                          libpldm_dep,
+                          nlohmann_json_dep,
++                         libpldmutils,
+                          phosphor_dbus_interfaces,
+                          phosphor_logging_dep,
+                          sdbusplus,
+-- 
+2.41.0
+

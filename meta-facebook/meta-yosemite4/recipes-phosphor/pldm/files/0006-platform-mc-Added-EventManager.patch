@@ -1,7 +1,7 @@
-From d5de56ee447a6116d3bcddc841f3500ef34dbc23 Mon Sep 17 00:00:00 2001
+From f1d6830fee98fc183902255289bbf480486278e2 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
-Subject: [PATCH 6/6] platform-mc: Added EventManager
+Subject: [PATCH 6/9] platform-mc: Added EventManager
 
 Added eventManager to handle sensor event class(00h),
 pldmMessagePollEvent class(05h)  and OEM CPER event class(FAh)
@@ -19,8 +19,8 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  platform-mc/event_manager.cpp              | 660 +++++++++++++++++++++
  platform-mc/event_manager.hpp              | 130 ++++
  platform-mc/manager.hpp                    |  56 +-
- platform-mc/platform_manager.cpp           | 145 ++++-
- platform-mc/platform_manager.hpp           |  41 +-
+ platform-mc/platform_manager.cpp           | 182 +++++-
+ platform-mc/platform_manager.hpp           |  46 +-
  platform-mc/sensor_manager.cpp             |  14 +-
  platform-mc/sensor_manager.hpp             |   5 +-
  platform-mc/terminus.cpp                   |   6 +-
@@ -35,14 +35,14 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  platform-mc/test/sensor_manager_test.cpp   |   4 +-
  platform-mc/test/terminus_manager_test.cpp |   2 +-
  pldmd/pldmd.cpp                            |  31 +-
- 22 files changed, 1598 insertions(+), 23 deletions(-)
+ 22 files changed, 1640 insertions(+), 23 deletions(-)
  create mode 100644 platform-mc/event_manager.cpp
  create mode 100644 platform-mc/event_manager.hpp
  create mode 100644 platform-mc/test/event_manager_test.cpp
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 5f71252..275bc24 100644
+index 67264c8..6c39016 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
 @@ -342,15 +342,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
@@ -69,7 +69,7 @@ index 5f71252..275bc24 100644
          catch (const std::out_of_range& e)
          {
 diff --git a/meson.build b/meson.build
-index 14a2e89..9c2297a 100644
+index 3e5988b..6d27668 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -73,6 +73,7 @@ endif
@@ -80,7 +80,7 @@ index 14a2e89..9c2297a 100644
  config = configure_file(output: 'config.h',
    configuration: conf_data
  )
-@@ -192,6 +193,7 @@ executable(
+@@ -188,6 +189,7 @@ executable(
    'platform-mc/platform_manager.cpp',
    'platform-mc/sensor_manager.cpp',
    'platform-mc/numeric_sensor.cpp',
@@ -89,10 +89,10 @@ index 14a2e89..9c2297a 100644
    implicit_include_directories: false,
    dependencies: deps,
 diff --git a/meson.options b/meson.options
-index 12c5ff5..7acc3a7 100644
+index 3f24007..b5e1064 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -184,3 +184,12 @@ option(
+@@ -185,3 +185,12 @@ option(
      description: 'The interval time of sensor polling in milliseconds',
      value: 249
  )
@@ -997,7 +997,7 @@ index 69464e3..8f8d27a 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index 0fbfc66..06fb506 100644
+index f4298e0..26883be 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
 @@ -9,6 +9,10 @@ namespace platform_mc
@@ -1011,7 +1011,7 @@ index 0fbfc66..06fb506 100644
      for (auto& [tid, terminus] : termini)
      {
          if (terminus->initalized)
-@@ -18,11 +22,46 @@ requester::Coroutine PlatformManager::initTerminus()
+@@ -18,11 +22,82 @@ requester::Coroutine PlatformManager::initTerminus()
  
          if (terminus->doesSupport(PLDM_PLATFORM))
          {
@@ -1036,6 +1036,7 @@ index 0fbfc66..06fb506 100644
 +                numberEventClassReturned, eventClass);
 +            if (rc)
 +            {
++                synchronyConfiguration = 0;
 +                terminus->synchronyConfigurationSupported.byte = 0;
 +            }
 +
@@ -1045,11 +1046,46 @@ index 0fbfc66..06fb506 100644
                  terminus->parsePDRs();
              }
 +
++            pldm_event_message_global_enable eventMessageGlobalEnable =
++                PLDM_EVENT_MESSAGE_GLOBAL_DISABLE;
++            uint16_t heartbeatTimer = 0;
++            /* Use PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE when
++             * for eventMessageGlobalEnable when the terminus supports that type
++             */
 +            if (terminus->synchronyConfigurationSupported.byte &
-+                (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC))
++                (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE))
++            {
++                heartbeatTimer = 0x78;
++                eventMessageGlobalEnable =
++                    PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE;
++            }
++            /* Use PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC when
++             * for eventMessageGlobalEnable when the terminus does not support
++             * PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE
++             * and supports PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC type
++             */
++            else if (terminus->synchronyConfigurationSupported.byte &
++                     (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC))
++            {
++                eventMessageGlobalEnable =
++                    PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC;
++            }
++            /* Only use PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_POLLING
++             * for eventMessageGlobalEnable when the terminus only supports
++             * this type
++             */
++            else if (terminus->synchronyConfigurationSupported.byte &
++                     (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_POLLING))
++            {
++                eventMessageGlobalEnable =
++                    PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_POLLING;
++            }
++
++            if (eventMessageGlobalEnable != PLDM_EVENT_MESSAGE_GLOBAL_DISABLE)
 +            {
 +                rc = co_await setEventReceiver(
-+                    tid, PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC);
++                    tid, eventMessageGlobalEnable,
++                    PLDM_TRANSPORT_PROTOCOL_TYPE_MCTP, heartbeatTimer);
 +                if (rc)
 +                {
 +                    std::cerr << "setEventReceiver failed, rc="
@@ -1059,7 +1095,7 @@ index 0fbfc66..06fb506 100644
          }
          terminus->initalized = true;
      }
-@@ -220,5 +259,109 @@ requester::Coroutine PlatformManager::getPDRRepositoryInfo(
+@@ -220,5 +295,110 @@ requester::Coroutine PlatformManager::getPDRRepositoryInfo(
      co_return completionCode;
  }
  
@@ -1096,13 +1132,14 @@ index 0fbfc66..06fb506 100644
 +}
 +
 +requester::Coroutine PlatformManager::setEventReceiver(
-+    tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable)
++    tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable,
++    pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer)
 +{
 +    Request request(sizeof(pldm_msg_hdr) + PLDM_SET_EVENT_RECEIVER_REQ_BYTES);
 +    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
-+    auto rc = encode_set_event_receiver_req(0, eventMessageGlobalEnable, 0x0,
-+                                            terminusManager.getLocalEid(), 0x0,
-+                                            requestMsg);
++    auto rc = encode_set_event_receiver_req(
++        0, eventMessageGlobalEnable, protocalType,
++        terminusManager.getLocalEid(), heartbeatTimer, requestMsg);
 +    if (rc)
 +    {
 +        co_return rc;
@@ -1170,10 +1207,10 @@ index 0fbfc66..06fb506 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/platform_manager.hpp b/platform-mc/platform_manager.hpp
-index ee8a498..9db1af0 100644
+index ee8a498..11c178a 100644
 --- a/platform-mc/platform_manager.hpp
 +++ b/platform-mc/platform_manager.hpp
-@@ -88,7 +88,46 @@ class PlatformManager
+@@ -88,7 +88,51 @@ class PlatformManager
                                                uint32_t& repositorySize,
                                                uint32_t& largestRecordSize);
  
@@ -1185,10 +1222,15 @@ index ee8a498..9db1af0 100644
 +     * generation from the terminus
 +     *  @param[in] eventReceiverEid - The EID of eventReceiver that terminus
 +     * should send event message to
++     *  @param[in] protocalType - Provided in the request to help the responder
++     * verify that the content of the eventReceiverAddressInfo field
++     *  @param[in] heartbeatTimer - Amount of time in seconds after each
++     * elapsing of which the terminus shall emit a heartbeat event.
 +     *  @return coroutine return_value - PLDM completion code
 +     */
 +    requester::Coroutine setEventReceiver(
-+        tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable);
++        tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable,
++        pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer);
 +
 +    /** @brief  send eventMessageBufferSize
 +     *  @param[in] tid - Destination TID
@@ -1795,7 +1837,7 @@ index 0000000..a3bc204
 +    eventManager.pollForPlatformEventTask(tid);
 +}
 diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
-index 5e757c1..0366482 100644
+index ae23397..abf990d 100644
 --- a/platform-mc/test/meson.build
 +++ b/platform-mc/test/meson.build
 @@ -5,6 +5,7 @@ test_src = declare_dependency(
@@ -1947,10 +1989,10 @@ index b77a197..2fb3f1e 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index a5b57bc..6e23e78 100644
+index a8ba89a..6cb129b 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -270,10 +270,37 @@ int main(int argc, char** argv)
+@@ -269,10 +269,37 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -1989,7 +2031,7 @@ index a5b57bc..6e23e78 100644
  #ifdef OEM_IBM
      pldm::responder::oem_ibm_platform::Handler* oemIbmPlatformHandler =
          dynamic_cast<pldm::responder::oem_ibm_platform::Handler*>(
-@@ -296,8 +323,6 @@ int main(int argc, char** argv)
+@@ -295,8 +322,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
@@ -1999,5 +2041,5 @@ index a5b57bc..6e23e78 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.25.1
+2.41.0
 

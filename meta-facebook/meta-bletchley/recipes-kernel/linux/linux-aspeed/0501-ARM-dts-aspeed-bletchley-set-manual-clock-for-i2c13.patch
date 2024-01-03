@@ -1,4 +1,4 @@
-From 9af2f06e6404d776c11a0e24841bafb86eda451d Mon Sep 17 00:00:00 2001
+From 809d0a876ea899e397f9758a1d092cbfa5cd607a Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 30 May 2022 13:45:10 +0800
 Subject: [PATCH 501/501] ARM: dts: aspeed: bletchley: set manual clock for
@@ -10,7 +10,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
-index 832eff30d193..f6d2452d41f4 100644
+index f8564644cc70..a69ecfa17cb5 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
 @@ -960,7 +960,7 @@ fan_leds: pca9552@67 {

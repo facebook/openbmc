@@ -10,7 +10,9 @@ SRC_URI += " \
     file://0004-platform-mc-PDR-handling.patch \
     file://0005-platform-mc-Sensor-handling.patch \
     file://0006-platform-mc-Added-EventManager.patch \
-    file://0007-Support-OEM-META-write-file-request-for-post-code-hi.patch \
+    file://0007-requester-support-multi-host-MCTP-devices-hot-plug.patch \
+    file://0008-Support-OEM-META-write-file-request-for-post-code-hi.patch \
+    file://0009-platform-mc-fix-up-tid_t-to-pldm_tid_t-conversions.patch \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
 "

@@ -1,7 +1,7 @@
-From 95c7bb3f0bd3676f86dcfe7f4ef04c16bb4a4686 Mon Sep 17 00:00:00 2001
+From 9cd7e36c546f6a3abacf0effb76edecd94156968 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
-Subject: [PATCH 5/6] platform-mc: Sensor handling
+Subject: [PATCH 5/9] platform-mc: Sensor handling
 
 Added sensor_manager and numeric_sensor class. The sensor_manager
 class manages the timing of sensor polling. The NumericSensor class
@@ -42,7 +42,7 @@ Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
  create mode 100644 platform-mc/test/sensor_manager_test.cpp
 
 diff --git a/meson.build b/meson.build
-index 572b0fc..14a2e89 100644
+index 4045e72..3e5988b 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -71,6 +71,8 @@ elif get_option('transport-implementation') == 'af-mctp'
@@ -54,7 +54,7 @@ index 572b0fc..14a2e89 100644
  config = configure_file(output: 'config.h',
    configuration: conf_data
  )
-@@ -188,6 +190,8 @@ executable(
+@@ -184,6 +186,8 @@ executable(
    'platform-mc/terminus_manager.cpp',
    'platform-mc/terminus.cpp',
    'platform-mc/platform_manager.cpp',
@@ -64,10 +64,10 @@ index 572b0fc..14a2e89 100644
    implicit_include_directories: false,
    dependencies: deps,
 diff --git a/meson.options b/meson.options
-index b11c0fb..12c5ff5 100644
+index 9e2339f..3f24007 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -172,3 +172,15 @@ option(
+@@ -173,3 +173,15 @@ option(
      value: 8384512,
      description: 'OEM-IBM: max DMA size'
  )
@@ -1626,7 +1626,7 @@ index 70293c8..90d73d6 100644
          termini.erase(it);
      }
 diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
-index 3403753..5e757c1 100644
+index bd6e880..ae23397 100644
 --- a/platform-mc/test/meson.build
 +++ b/platform-mc/test/meson.build
 @@ -3,6 +3,8 @@ test_src = declare_dependency(
@@ -2059,7 +2059,7 @@ index 0000000..56e1d36
 +    runEventLoopForSeconds(seconds);
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index d544c87..a5b57bc 100644
+index 531f439..a8ba89a 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -182,7 +182,7 @@ int main(int argc, char** argv)
@@ -2072,5 +2072,5 @@ index d544c87..a5b57bc 100644
      InstanceIdDb instanceIdDb;
      dbus_api::Requester dbusImplReq(bus, "/xyz/openbmc_project/pldm",
 -- 
-2.25.1
+2.41.0
 

@@ -1,7 +1,7 @@
-From 3d438bef4390c4d2f3deef8421ba3c5c9b2852da Mon Sep 17 00:00:00 2001
+From ca47781ad5ac3b9cc4dae0026bc70faa796beee1 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 24 May 2022 15:35:21 +0100
-Subject: [PATCH 4/6] platform-mc: PDR handling
+Subject: [PATCH 4/9] platform-mc: PDR handling
 
 Added parse PDR member functions to terminus class for parsing Numeric
 sensor PDR and sensor auxiliary names PDR.
@@ -22,7 +22,7 @@ Change-Id: I30a0cc594a3c08fc17f2dad861b5c5d41c80ebdd
  create mode 100644 platform-mc/test/platform_manager_test.cpp
 
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index 034fc22..0fbfc66 100644
+index 7e77732..f4298e0 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
 @@ -18,7 +18,11 @@ requester::Coroutine PlatformManager::initTerminus()
@@ -312,7 +312,7 @@ index 7b3aa53..0d4f58c 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
-index 73868ad..3403753 100644
+index 357df26..bd6e880 100644
 --- a/platform-mc/test/meson.build
 +++ b/platform-mc/test/meson.build
 @@ -9,6 +9,7 @@ test_src = declare_dependency(
@@ -586,5 +586,5 @@ index b2783c3..7f84042 100644
 +    EXPECT_EQ("TEMP1", names[0][0].second);
 +}
 -- 
-2.25.1
+2.41.0
 

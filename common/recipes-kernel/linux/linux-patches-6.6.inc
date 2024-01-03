@@ -84,3 +84,12 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0200-mmc-sdhci-of-aspeed-add-skip_probe-module-parameter.patch \
 "
+#
+# Device drvier for OpenBMC platforms.
+#
+SRC_URI:append = " \
+    file://0300-To-support-MCP9600-temperature-driver.patch \
+    file://0301-To-support-MP2856-VR-driver.patch \
+    file://0302-To-support-LTC4286-LTC4287-driver.patch \
+    file://0303-Kernel6v5-Support-apml-driver.patch \
+"

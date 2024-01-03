@@ -1,0 +1,548 @@
+From 633ae41a13ab7dab6c3c63e29a7953c852d22ade Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Mon, 23 Oct 2023 17:06:54 +0800
+Subject: [PATCH 8/9] Support OEM-META write file request for post code history
+
+Support write file req when multiple hosts send postcode to BMC
+and store its post code history.
+
+Change-Id: I56d303a5bc2f059451ee207a1de591be0d9993ac
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ common/utils.cpp                              |  14 ++
+ common/utils.hpp                              |  20 +++
+ libpldmresponder/meson.build                  |  11 ++
+ meson.build                                   |   3 +
+ meson.options                                 |   8 ++
+ .../libpldmresponder/oem_meta_file_io.cpp     |  63 +++++++++
+ .../libpldmresponder/oem_meta_file_io.hpp     |  48 +++++++
+ .../oem_meta_file_io_by_type.hpp              |  30 ++++
+ .../oem_meta_file_io_type_post_code.cpp       | 131 ++++++++++++++++++
+ .../oem_meta_file_io_type_post_code.hpp       |  53 +++++++
+ pldmd/pldmd.cpp                               |  11 ++
+ 11 files changed, 392 insertions(+)
+ create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.cpp
+ create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.hpp
+ create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
+ create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp
+ create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
+
+diff --git a/common/utils.cpp b/common/utils.cpp
+index 446f7e9..ac705a7 100644
+--- a/common/utils.cpp
++++ b/common/utils.cpp
+@@ -445,6 +445,20 @@ GetSubTreeResponse
+     return response;
+ }
+ 
++GetAncestorsResponse
++    DBusHandler::getAncestors(const std::string& searchPath,
++                              const std::vector<std::string>& ifaceList) const
++{
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    auto method = bus.new_method_call(mapperBusName, mapperPath,
++                                      mapperInterface, "GetAncestors");
++    method.append(searchPath, ifaceList);
++    auto reply = bus.call(method, dbusTimeout);
++    GetAncestorsResponse response;
++    reply.read(response);
++    return response;
++}
++
+ void reportError(const char* errorMsg)
+ {
+     static constexpr auto logObjPath = "/xyz/openbmc_project/logging";
+diff --git a/common/utils.hpp b/common/utils.hpp
+index dda1b10..1d5fc69 100644
+--- a/common/utils.hpp
++++ b/common/utils.hpp
+@@ -190,6 +190,8 @@ using ServiceName = std::string;
+ using Interfaces = std::vector<std::string>;
+ using MapperServiceMap = std::vector<std::pair<ServiceName, Interfaces>>;
+ using GetSubTreeResponse = std::vector<std::pair<ObjectPath, MapperServiceMap>>;
++using GetAncestorsResponse =
++    std::vector<std::pair<ObjectPath, MapperServiceMap>>;
+ using PropertyMap = std::map<std::string, PropertyValue>;
+ using InterfaceMap = std::map<std::string, PropertyMap>;
+ 
+@@ -207,6 +209,10 @@ class DBusHandlerInterface
+         getSubtree(const std::string& path, int depth,
+                    const std::vector<std::string>& ifaceList) const = 0;
+ 
++    virtual GetAncestorsResponse
++        getAncestors(const std::string& path,
++                     const std::vector<std::string>& ifaceList) const = 0;
++
+     virtual void setDbusProperty(const DBusMapping& dBusMap,
+                                  const PropertyValue& value) const = 0;
+ 
+@@ -266,6 +272,20 @@ class DBusHandler : public DBusHandlerInterface
+     GetSubTreeResponse
+         getSubtree(const std::string& path, int depth,
+                    const std::vector<std::string>& ifaceList) const override;
++    /**
++     *  @brief Get the Ancestors response from the mapper
++     *
++     *  @param[in] path - DBUS object path
++     *  @param[in] ifaceList - list of the interface that are being
++     *                         queried from the mapper
++     *
++     *  @return GetAncestorsResponse - the mapper GetAncestors response
++     *
++     *  @throw sdbusplus::exception_t when it fails
++     */
++    GetAncestorsResponse
++        getAncestors(const std::string& path,
++                     const std::vector<std::string>& ifaceList) const override;
+ 
+     /** @brief Get property(type: variant) from the requested dbus
+      *
+diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
+index 687fa82..3f71b1f 100644
+--- a/libpldmresponder/meson.build
++++ b/libpldmresponder/meson.build
+@@ -27,6 +27,7 @@ sources = [
+   '../host-bmc/dbus_to_host_effecters.cpp',
+   '../host-bmc/host_condition.cpp',
+   '../host-bmc/custom_dbus.cpp',
++  '../requester/configuration_discovery_handler.cpp',
+   'event_parser.cpp'
+ ]
+ 
+@@ -54,6 +55,16 @@ if get_option('oem-ibm').allowed()
+   ]
+ endif
+ 
++if get_option('oem-meta').allowed()
++   responder_headers += [
++    '../oem/meta/',
++   ]
++  sources += [
++    '../oem/meta/libpldmresponder/oem_meta_file_io.cpp',
++    '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
++  ]
++endif
++
+ libpldmresponder = library(
+   'pldmresponder',
+   sources,
+diff --git a/meson.build b/meson.build
+index 5e1d362..58d5349 100644
+--- a/meson.build
++++ b/meson.build
+@@ -59,6 +59,9 @@ if get_option('oem-ibm').allowed()
+   add_project_arguments('-DOEM_IBM', language : 'c')
+   add_project_arguments('-DOEM_IBM', language : 'cpp')
+ endif
++if get_option('oem-meta').allowed()
++  add_project_arguments('-DOEM_META', language : ['c','cpp'])
++endif
+ conf_data.set('NUMBER_OF_REQUEST_RETRIES', get_option('number-of-request-retries'))
+ conf_data.set('INSTANCE_ID_EXPIRATION_INTERVAL',get_option('instance-id-expiration-interval'))
+ conf_data.set('RESPONSE_TIME_OUT',get_option('response-time-out'))
+diff --git a/meson.options b/meson.options
+index b5e1064..74773c4 100644
+--- a/meson.options
++++ b/meson.options
+@@ -165,6 +165,14 @@ option(
+     description: 'Enable IBM OEM PLDM'
+ )
+ 
++# OEM Meta Options
++option(
++    'oem-meta',
++    type: 'feature',
++    value: 'enabled',
++    description: 'Enable Meta OEM PLDM'
++)
++
+ option(
+     'oem-ibm-dma-maxsize',
+     type: 'integer',
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
+new file mode 100644
+index 0000000..fbbc353
+--- /dev/null
++++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
+@@ -0,0 +1,63 @@
++#include "oem_meta_file_io.hpp"
++
++#include "oem_meta_file_io_type_post_code.hpp"
++#include "xyz/openbmc_project/Common/error.hpp"
++
++#include <libpldm/oem/meta/file_io.h>
++
++#include <filesystem>
++namespace pldm::responder::oem_meta
++{
++
++using namespace sdbusplus::xyz::openbmc_project::Common::Error;
++
++static constexpr auto mctpEndpointInterface =
++    "xyz.openbmc_project.Configuration.MCTPEndpoint";
++
++std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(uint8_t messageTid,
++                                                             uint8_t fileIOType)
++{
++    switch (fileIOType)
++    {
++        case POST_CODE:
++            return std::make_unique<PostCodeHandler>(
++                messageTid, configurationDescovery->getConfigurations());
++        default:
++            error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
++                  "FILEIOTYPE", fileIOType);
++            break;
++    }
++    return nullptr;
++}
++
++Response FileIOHandler::writeFileIO(pldm_tid_t tid, const pldm_msg* request,
++                                    size_t payloadLength)
++{
++    uint8_t fileIOType;
++    uint32_t length;
++
++    std::array<uint8_t, decodeDataMaxLength> retDataField{};
++
++    auto rc = decode_oem_meta_file_io_req(request, payloadLength, &fileIOType,
++                                          &length, retDataField.data());
++
++    if (rc != PLDM_SUCCESS)
++    {
++        return ccOnlyResponse(request, rc);
++    }
++
++    auto handler = getHandlerByType(tid, fileIOType);
++
++    if (!handler)
++    {
++        return ccOnlyResponse(request, PLDM_ERROR_UNSUPPORTED_PLDM_CMD);
++    }
++
++    auto data = std::span(std::begin(retDataField), length);
++
++    rc = handler->write(data);
++
++    return ccOnlyResponse(request, rc);
++}
++
++} // namespace pldm::responder::oem_meta
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
+new file mode 100644
+index 0000000..19ec632
+--- /dev/null
++++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
+@@ -0,0 +1,48 @@
++#pragma once
++
++#include "common/utils.hpp"
++#include "oem_meta_file_io_by_type.hpp"
++#include "pldmd/handler.hpp"
++#include "requester/configuration_discovery_handler.hpp"
++
++#include <libpldm/oem/meta/file_io.h>
++
++#include <phosphor-logging/lg2.hpp>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm::responder::oem_meta
++{
++
++class FileIOHandler : public CmdHandler
++{
++  public:
++    FileIOHandler(pldm::ConfigurationDiscoveryHandler* configurationDescovery) :
++        configurationDescovery(configurationDescovery)
++    {
++        handlers.emplace(PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
++                         [this](pldm_tid_t tid, const pldm_msg* request,
++                                size_t payloadLength) {
++            return this->writeFileIO(tid, request, payloadLength);
++        });
++    }
++
++  private:
++    /** @brief Handler for writeFileIO command
++     *
++     *  @param[in] tid - the device tid
++     *  @param[in] request - pointer to PLDM request payload
++     *  @param[in] payloadLength - length of the message
++     *
++     *  @return PLDM response message
++     */
++    Response writeFileIO(pldm_tid_t tid, const pldm_msg* request,
++                         size_t payloadLength);
++
++    std::unique_ptr<FileHandler> getHandlerByType(pldm_tid_t tid,
++                                                  uint8_t fileIOType);
++
++    pldm::ConfigurationDiscoveryHandler* configurationDescovery;
++};
++
++} // namespace pldm::responder::oem_meta
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
+new file mode 100644
+index 0000000..739b9cd
+--- /dev/null
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
+@@ -0,0 +1,30 @@
++#pragma once
++#include <cstdint>
++#include <vector>
++
++namespace pldm::responder::oem_meta
++{
++/**
++ *  @class FileHandler
++ *
++ *  Base class to handle read/write of all OEM file types
++ */
++
++using message = std::span<uint8_t>;
++using configDbusPath = std::string;
++constexpr auto decodeDataMaxLength = 32;
++
++enum pldm_oem_meta_file_io_type : uint8_t
++{
++    POST_CODE = 0x00,
++};
++
++class FileHandler
++{
++  public:
++    virtual int write(const message& data) = 0;
++    virtual int read(const message& data) = 0;
++    virtual ~FileHandler() {}
++};
++
++} // namespace pldm::responder::oem_meta
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp
+new file mode 100644
+index 0000000..8ef5c0e
+--- /dev/null
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp
+@@ -0,0 +1,131 @@
++#include "oem_meta_file_io_type_post_code.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <utility>
++
++PHOSPHOR_LOG2_USING;
++namespace pldm::responder::oem_meta
++{
++
++using postcode_t = std::tuple<uint64_t, std::vector<uint8_t>>;
++
++void PostCodeHandler::parseObjectPathToGetSlot(uint64_t& slotNum)
++{
++    static constexpr auto slotInterface =
++        "xyz.openbmc_project.Inventory.Decorator.Slot";
++    static constexpr auto slotNumberProperty = "SlotNumber";
++
++    std::vector<std::string> slotInterfaceList = {slotInterface};
++    pldm::utils::GetAncestorsResponse response;
++    bool found = false;
++
++    for (const auto& [configDbusPath, mctpEndpoint] : configurations)
++    {
++        if (mctpEndpoint.EndpointId == tid)
++        {
++            try
++            {
++                response = pldm::utils::DBusHandler().getAncestors(
++                    configDbusPath.c_str(), slotInterfaceList);
++            }
++            catch (const sdbusplus::exception_t& e)
++            {
++                error(
++                    "GetAncestors call failed with, ERROR={ERROR} PATH={PATH} INTERFACE={INTERFACE}",
++                    "ERROR", e, "PATH", configDbusPath.c_str(), "INTERFACE",
++                    slotInterface);
++            }
++
++            // It should be only one of the slot property existed.
++            if (response.size() != 1)
++            {
++                error("Get invalide number of slot property, SIZE={SIZE}",
++                      "SIZE", response.size());
++                return;
++            }
++
++            try
++            {
++                slotNum = pldm::utils::DBusHandler().getDbusProperty<uint64_t>(
++                    std::get<0>(response.front()).c_str(), slotNumberProperty,
++                    slotInterface);
++                found = true;
++            }
++            catch (const sdbusplus::exception_t& e)
++            {
++                error(
++                    "Error getting Names property, ERROR={ERROR} PATH={PATH} INTERFACE={INTERFACE}",
++                    "ERROR", e, "PATH", std::get<0>(response.front()).c_str(),
++                    "INTERFACE", slotInterface);
++            }
++        }
++    }
++
++    if (!found)
++    {
++        throw std::invalid_argument("Configuration of TID not found.");
++    }
++}
++
++int PostCodeHandler::write(const message& postCodeList)
++{
++    static constexpr auto dbusService = "xyz.openbmc_project.State.Boot.Raw";
++    static constexpr auto dbusObj = "/xyz/openbmc_project/state/boot/raw";
++    uint64_t slot;
++
++    try
++    {
++        parseObjectPathToGetSlot(slot);
++    }
++    catch (const std::exception& e)
++    {
++        error("Fail to get the corresponding slot. TID={TID}, ERROR={ERROR}",
++              "TID", tid, "ERROR", e);
++        return PLDM_ERROR;
++    }
++
++    std::string dbusObjStr = dbusObj + std::to_string(slot);
++
++    uint64_t primaryPostCode = 0;
++
++    // Putting list of the bytes together to form a meaningful postcode
++    // AMD platform send four bytes as a post code unit
++    if (std::cmp_greater(
++            std::distance(std::begin(postCodeList), std::end(postCodeList)),
++            sizeof(primaryPostCode)))
++    {
++        error("Get invalid post code length");
++        return PLDM_ERROR;
++    }
++
++    size_t index = 0;
++    std::for_each(postCodeList.begin(), postCodeList.end(),
++                  [&primaryPostCode, &index](auto postcode) {
++        primaryPostCode |= std::uint64_t(postcode) << (8 * index);
++        index++;
++    });
++
++    try
++    {
++        auto& bus = pldm::utils::DBusHandler::getBus();
++        auto method = bus.new_method_call(dbusService, dbusObjStr.c_str(),
++                                          "org.freedesktop.DBus.Properties",
++                                          "Set");
++
++        method.append(
++            dbusService, "Value",
++            std::variant<postcode_t>(postcode_t(primaryPostCode, {})));
++
++        bus.call(method);
++    }
++    catch (const std::exception& e)
++    {
++        error("Set Post code error. ERROR={ERROR}", "ERROR", e);
++        return PLDM_ERROR;
++    }
++
++    return PLDM_SUCCESS;
++}
++
++} // namespace pldm::responder::oem_meta
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
+new file mode 100644
+index 0000000..780f0ef
+--- /dev/null
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
+@@ -0,0 +1,53 @@
++#pragma once
++
++#include "common/utils.hpp"
++#include "oem_meta_file_io_by_type.hpp"
++#include "requester/configuration_discovery_handler.hpp"
++
++namespace pldm::responder::oem_meta
++{
++/** @class PostCodeHandler
++ *
++ *  @brief Inherits and implements FileHandler. This class is used
++ *  to store incoming postcode
++ */
++class PostCodeHandler : public FileHandler
++{
++  public:
++    PostCodeHandler(pldm_tid_t tid,
++                    const std::map<std::string, MctpEndpoint>& configurations) :
++        tid(tid),
++        configurations(configurations)
++    {}
++
++    ~PostCodeHandler() = default;
++
++    /** @brief Method to store postcode list
++     *  @param[in] data - post code
++     *  @return  PLDM status code
++     */
++    int write(const message& data);
++
++    /** @brief Method to read postcode list
++     *  @param[in] data - post code
++     *  @return  PLDM status code
++     */
++    int read(const message&)
++    {
++        return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
++    }
++
++  private:
++    /** @brief Parse object path to get correspond slot number
++     *  @param[in] slot - slot number
++     */
++    void parseObjectPathToGetSlot(uint64_t& slot);
++
++    /** @brief The terminus ID of the message source*/
++    pldm_tid_t tid = 0;
++
++    /** @brief Get existing configurations with MctpEndpoint*/
++    const std::map<configDbusPath, MctpEndpoint>& configurations;
++};
++
++} // namespace pldm::responder::oem_meta
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index 9296460..03a7570 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -67,6 +67,10 @@ PHOSPHOR_LOG2_USING;
+ #include "libpldmresponder/oem_ibm_handler.hpp"
+ #endif
+ 
++#ifdef OEM_META
++#include "libpldmresponder/oem_meta_file_io.hpp"
++#endif
++
+ constexpr uint8_t MCTP_MSG_TYPE_PLDM = 1;
+ 
+ using namespace pldm;
+@@ -264,6 +268,13 @@ int main(int argc, char** argv)
+         dbusToPLDMEventHandler = std::make_unique<DbusToPLDMEvent>(
+             pldmTransport.getEventSource(), hostEID, instanceIdDb, &reqHandler);
+     }
++
++#ifdef OEM_META
++    invoker.registerHandler(
++        PLDM_OEM, std::make_unique<pldm::responder::oem_meta::FileIOHandler>(
++                      configurationDiscovery.get()));
++#endif
++
+     auto biosHandler = std::make_unique<bios::Handler>(
+         pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
+         oemBiosHandler.get());
+-- 
+2.41.0
+

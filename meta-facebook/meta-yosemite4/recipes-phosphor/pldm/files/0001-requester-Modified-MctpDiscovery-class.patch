@@ -1,7 +1,7 @@
-From 9d4be95847af736a28026e7c85eeabcf066a0a52 Mon Sep 17 00:00:00 2001
+From 9fe3b0fa5fbdce5fe15c5acd679a40701257fbf0 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Mon, 14 Feb 2022 12:12:25 +0000
-Subject: [PATCH 1/7] requester: Modified MctpDiscovery class
+Subject: [PATCH 1/9] requester: Modified MctpDiscovery class
 
 Modified MctpDiscovery class to take list of managers instead of single
 fwManager. The change is for adding platform-mc manager.
@@ -14,10 +14,8 @@ https://gerrit.openbmc-project.xyz/c/openbmc/docs/+/47252
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Change-Id: I1e1673504583a87f2a9bc3adf76fb49c2dc30254
-
-%% original patch: 0001-requester-Modified-MctpDiscovery-class.patch
 ---
- common/types.hpp                              |   7 +
+ common/types.hpp                              |   6 +
  fw-update/manager.hpp                         |  25 +-
  meson.build                                   |   1 +
  pldmd/pldmd.cpp                               |   4 +-
@@ -27,16 +25,16 @@ Change-Id: I1e1673504583a87f2a9bc3adf76fb49c2dc30254
  requester/test/meson.build                    |   7 +
  .../test/mock_mctp_discovery_handler_intf.hpp |  20 ++
  requester/test/static_eid_table.json          |  14 +
- 10 files changed, 426 insertions(+), 47 deletions(-)
+ 10 files changed, 425 insertions(+), 47 deletions(-)
  create mode 100644 requester/test/mctp_endpoint_discovery_test.cpp
  create mode 100644 requester/test/mock_mctp_discovery_handler_intf.hpp
  create mode 100644 requester/test/static_eid_table.json
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 6f06ecc..2c5dcdb 100644
+index 6f06ecc..138c48e 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
-@@ -16,10 +16,17 @@ namespace pldm
+@@ -16,10 +16,16 @@ namespace pldm
  {
  
  using eid = uint8_t;
@@ -49,13 +47,12 @@ index 6f06ecc..2c5dcdb 100644
 +using NetworkId = uint32_t;
 +using MctpInfo = std::tuple<eid, UUID, MctpMedium, NetworkId>;
 +using MctpInfos = std::vector<MctpInfo>;
-+using tid_t = uint8_t;
 +
  namespace dbus
  {
  
 diff --git a/fw-update/manager.hpp b/fw-update/manager.hpp
-index 018a703..e750571 100644
+index 018a703..06440b5 100644
 --- a/fw-update/manager.hpp
 +++ b/fw-update/manager.hpp
 @@ -6,6 +6,7 @@
@@ -103,7 +100,7 @@ index 018a703..e750571 100644
 +     *
 +     *  @return return PLDM_SUCCESS on success and PLDM_ERROR otherwise
 +     */
-+    void handleRemovedMctpEndpoints([[maybe_unused]] const MctpInfos& mctpInfos)
++    void handleRemovedMctpEndpoints(const MctpInfos&)
 +    {
 +        return;
 +    }
@@ -112,7 +109,7 @@ index 018a703..e750571 100644
       *         specification
       *
 diff --git a/meson.build b/meson.build
-index 310f987..78f8aa4 100644
+index 3430735..b5476cf 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -70,6 +70,7 @@ if get_option('transport-implementation') == 'mctp-demux'
@@ -124,10 +121,10 @@ index 310f987..78f8aa4 100644
    configuration: conf_data
  )
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 23499e4..35aa265 100644
+index c1ba345..75330a6 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -296,7 +296,9 @@ int main(int argc, char** argv)
+@@ -295,7 +295,9 @@ int main(int argc, char** argv)
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
@@ -139,7 +136,7 @@ index 23499e4..35aa265 100644
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (!(revents & EPOLLIN))
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index c766a70..5fd2404 100644
+index c766a70..1004e50 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -1,9 +1,15 @@
@@ -217,8 +214,8 @@ index c766a70..5fd2404 100644
 -            "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
 -        auto reply = bus.call(method, dbusTimeout);
 -        reply.read(objects);
-+        auto mapperResponseMsg = bus.call(mapper, dbusTimeout);
-+        mapperResponseMsg.read(mapperResponse);
++        auto reply = bus.call(mapper, dbusTimeout);
++        reply.read(mapperResponse);
      }
 -    catch (const std::exception& e)
 +    catch (const sdbusplus::exception_t& e)
@@ -648,7 +645,7 @@ index 0000000..9f65171
 +        "./static_eid_table.json");
 +}
 diff --git a/requester/test/meson.build b/requester/test/meson.build
-index b7a929f..f80799d 100644
+index 328bacf..80c27c1 100644
 --- a/requester/test/meson.build
 +++ b/requester/test/meson.build
 @@ -1,6 +1,12 @@
@@ -719,5 +716,5 @@ index 0000000..54146a1
 +    ]
 +}
 -- 
-2.25.1
+2.41.0
 

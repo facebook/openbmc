@@ -5,7 +5,7 @@ SRC_URI += " \
     file://0502-hwmon-max31790-support-to-config-PWM-as-TACH.patch \
     file://0503-Add-adm1281-driver.patch \
     file://0504-hwmon-max31790-add-fanN_enable-for-all-fans.patch \
-    file://0505-support-mux-to-cpld.patch \
-    file://0506-revise-gpio-name.patch \
+    file://0505-ARM-dts-aspeed-yosemite4-support-mux-to-cpld.patch \
+    file://0506-ARM-dts-aspeed-yosemite4-Revise-gpio-name.patch \
 "
 

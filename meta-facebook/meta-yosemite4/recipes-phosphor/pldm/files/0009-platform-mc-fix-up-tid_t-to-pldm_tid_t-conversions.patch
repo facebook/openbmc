@@ -1,0 +1,866 @@
+From 1c1bc3b03969f074dc8407c6dd4f624126f4b9b4 Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Wed, 3 Jan 2024 11:26:32 -0600
+Subject: [PATCH 9/9] platform-mc: fix up tid_t to pldm_tid_t conversions
+
+An earlier patch in this sequence had defined a typedef `tid_t`
+at one point in its history and some later patches rely on it.
+
+Fixing those all up in a separate patch that won't be sent upstream.
+I'm expecting the original author(s) will figure this out on their own
+before the code gets submitted.
+
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+Change-Id: I527d77fcd18cb69aa1e2ae0c5cef5929d25f6ede
+---
+ platform-mc/event_manager.cpp              |  8 +++---
+ platform-mc/event_manager.hpp              | 19 +++++++-------
+ platform-mc/manager.hpp                    |  8 +++---
+ platform-mc/numeric_sensor.cpp             |  4 +--
+ platform-mc/numeric_sensor.hpp             |  6 ++---
+ platform-mc/platform_manager.cpp           | 26 ++++++++++---------
+ platform-mc/platform_manager.hpp           | 15 ++++++-----
+ platform-mc/sensor_manager.cpp             | 10 ++++----
+ platform-mc/sensor_manager.hpp             | 22 ++++++++--------
+ platform-mc/terminus.cpp                   |  2 +-
+ platform-mc/terminus.hpp                   |  6 ++---
+ platform-mc/terminus_manager.cpp           | 30 ++++++++++++----------
+ platform-mc/terminus_manager.hpp           | 30 +++++++++++-----------
+ platform-mc/test/event_manager_test.cpp    |  4 +--
+ platform-mc/test/mock_sensor_manager.hpp   |  2 +-
+ platform-mc/test/mock_terminus_manager.hpp | 11 ++++----
+ platform-mc/test/platform_manager_test.cpp |  2 +-
+ platform-mc/test/sensor_manager_test.cpp   |  4 +--
+ platform-mc/test/terminus_manager_test.cpp |  2 +-
+ platform-mc/test/terminus_test.cpp         |  2 +-
+ 20 files changed, 110 insertions(+), 103 deletions(-)
+
+diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
+index dcc39ca..75400a5 100644
+--- a/platform-mc/event_manager.cpp
++++ b/platform-mc/event_manager.cpp
+@@ -79,7 +79,7 @@ int decode_pldm_cper_event_data(const uint8_t* event_data,
+     return PLDM_SUCCESS;
+ }
+ 
+-int EventManager::handlePlatformEvent(tid_t tid, uint8_t eventClass,
++int EventManager::handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
+                                       const uint8_t* eventData,
+                                       size_t eventDataSize)
+ {
+@@ -135,7 +135,7 @@ int EventManager::handlePlatformEvent(tid_t tid, uint8_t eventClass,
+     return PLDM_ERROR;
+ }
+ 
+-requester::Coroutine EventManager::pollForPlatformEventTask(tid_t tid)
++requester::Coroutine EventManager::pollForPlatformEventTask(pldm_tid_t tid)
+ {
+     uint8_t rc = 0;
+     uint8_t transferOperationFlag = PLDM_GET_FIRSTPART;
+@@ -241,7 +241,7 @@ requester::Coroutine EventManager::pollForPlatformEventTask(tid_t tid)
+ }
+ 
+ requester::Coroutine EventManager::pollForPlatformEventMessage(
+-    tid_t tid, uint8_t transferOperationFlag, uint32_t dataTransferHandle,
++    pldm_tid_t tid, uint8_t transferOperationFlag, uint32_t dataTransferHandle,
+     uint16_t eventIdToAcknowledge, uint8_t& completionCode, uint8_t& eventTid,
+     uint16_t& eventId, uint32_t& nextDataTransferHandle, uint8_t& transferFlag,
+     uint8_t& eventClass, uint32_t& eventDataSize, uint8_t*& eventData,
+@@ -458,7 +458,7 @@ int EventManager::createSensorThresholdLogEntry(const std::string& messageId,
+     return PLDM_SUCCESS;
+ }
+ 
+-int EventManager::processNumericSensorEvent(tid_t tid, uint16_t sensorId,
++int EventManager::processNumericSensorEvent(pldm_tid_t tid, uint16_t sensorId,
+                                             const uint8_t* sensorData,
+                                             size_t sensorDataLength)
+ {
+diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
+index 170a55b..303a9ec 100644
+--- a/platform-mc/event_manager.hpp
++++ b/platform-mc/event_manager.hpp
+@@ -67,7 +67,7 @@ class EventManager
+      *  @return PLDM completion code
+      *
+      */
+-    int handlePlatformEvent(tid_t tid, uint8_t eventClass,
++    int handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
+                             const uint8_t* eventData, size_t eventDataSize);
+ 
+     std::string getSensorThresholdMessageId(uint8_t previousEventState,
+@@ -77,7 +77,7 @@ class EventManager
+      *
+      *  @param[in] dstTid - the destination TID
+      */
+-    requester::Coroutine pollForPlatformEventTask(tid_t tid);
++    requester::Coroutine pollForPlatformEventTask(pldm_tid_t tid);
+ 
+   protected:
+     /** @brief Send pollForPlatformEventMessage and return response
+@@ -99,11 +99,12 @@ class EventManager
+      *
+      */
+     requester::Coroutine pollForPlatformEventMessage(
+-        tid_t tid, uint8_t transferOperationFlag, uint32_t dataTransferHandle,
+-        uint16_t eventIdToAcknowledge, uint8_t& completionCode,
+-        uint8_t& eventTid, uint16_t& eventId, uint32_t& nextDataTransferHandle,
+-        uint8_t& transferFlag, uint8_t& eventClass, uint32_t& eventDataSize,
+-        uint8_t*& eventData, uint32_t& eventDataIntegrityChecksum);
++        pldm_tid_t tid, uint8_t transferOperationFlag,
++        uint32_t dataTransferHandle, uint16_t eventIdToAcknowledge,
++        uint8_t& completionCode, uint8_t& eventTid, uint16_t& eventId,
++        uint32_t& nextDataTransferHandle, uint8_t& transferFlag,
++        uint8_t& eventClass, uint32_t& eventDataSize, uint8_t*& eventData,
++        uint32_t& eventDataIntegrityChecksum);
+ 
+     virtual int processCperEvent(const uint8_t* eventData,
+                                  size_t eventDataSize);
+@@ -111,7 +112,7 @@ class EventManager
+     int createCperDumpEntry(const std::string& dataType,
+                             const std::string& dataPath);
+ 
+-    int processNumericSensorEvent(tid_t tid, uint16_t sensorId,
++    int processNumericSensorEvent(pldm_tid_t tid, uint16_t sensorId,
+                                   const uint8_t* sensorData,
+                                   size_t sensorDataLength);
+ 
+@@ -124,7 +125,7 @@ class EventManager
+     TerminusManager& terminusManager;
+ 
+     /** @brief List of discovered termini */
+-    std::map<tid_t, std::shared_ptr<Terminus>>& termini;
++    std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini;
+ };
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
+index 8f8d27a..baaeb5c 100644
+--- a/platform-mc/manager.hpp
++++ b/platform-mc/manager.hpp
+@@ -63,12 +63,12 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+         terminusManager.removeMctpTerminus(mctpInfos);
+     }
+ 
+-    void startSensorPolling(tid_t tid)
++    void startSensorPolling(pldm_tid_t tid)
+     {
+         sensorManager.startPolling(tid);
+     }
+ 
+-    void stopSensorPolling(tid_t tid)
++    void stopSensorPolling(pldm_tid_t tid)
+     {
+         sensorManager.stopPolling(tid);
+     }
+@@ -110,7 +110,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+         return PLDM_SUCCESS;
+     }
+ 
+-    requester::Coroutine pollForPlatformEvent(tid_t tid)
++    requester::Coroutine pollForPlatformEvent(pldm_tid_t tid)
+     {
+         auto it = termini.find(tid);
+         if (it != termini.end())
+@@ -124,7 +124,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+ 
+   private:
+     /** @brief List of discovered termini */
+-    std::map<tid_t, std::shared_ptr<Terminus>> termini{};
++    std::map<pldm_tid_t, std::shared_ptr<Terminus>> termini{};
+ 
+     TerminusManager terminusManager;
+     PlatformManager platformManager;
+diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
+index 7966ff6..0104c51 100644
+--- a/platform-mc/numeric_sensor.cpp
++++ b/platform-mc/numeric_sensor.cpp
+@@ -13,7 +13,7 @@ namespace pldm
+ namespace platform_mc
+ {
+ 
+-NumericSensor::NumericSensor(const tid_t tid, const bool sensorDisabled,
++NumericSensor::NumericSensor(const pldm_tid_t tid, const bool sensorDisabled,
+                              std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr,
+                              std::string& sensorName,
+                              std::string& associationPath) :
+@@ -241,7 +241,7 @@ NumericSensor::NumericSensor(const tid_t tid, const bool sensorDisabled,
+ }
+ 
+ NumericSensor::NumericSensor(
+-    const tid_t tid, const bool sensorDisabled,
++    const pldm_tid_t tid, const bool sensorDisabled,
+     std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr,
+     std::string& sensorName, std::string& associationPath) :
+     tid(tid),
+diff --git a/platform-mc/numeric_sensor.hpp b/platform-mc/numeric_sensor.hpp
+index 06239a2..91f3718 100644
+--- a/platform-mc/numeric_sensor.hpp
++++ b/platform-mc/numeric_sensor.hpp
+@@ -44,11 +44,11 @@ using AssociationDefinitionsInft = sdbusplus::server::object_t<
+ class NumericSensor
+ {
+   public:
+-    NumericSensor(const tid_t tid, const bool sensorDisabled,
++    NumericSensor(const pldm_tid_t tid, const bool sensorDisabled,
+                   std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr,
+                   std::string& sensorName, std::string& associationPath);
+ 
+-    NumericSensor(const tid_t tid, const bool sensorDisabled,
++    NumericSensor(const pldm_tid_t tid, const bool sensorDisabled,
+                   std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr,
+                   std::string& sensorName, std::string& associationPath);
+ 
+@@ -153,7 +153,7 @@ class NumericSensor
+     };
+ 
+     /** @brief Terminus ID which the sensor belongs to */
+-    tid_t tid;
++    pldm_tid_t tid;
+ 
+     /** @brief Sensor ID */
+     uint16_t sensorId;
+diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
+index 26883be..6216a03 100644
+--- a/platform-mc/platform_manager.cpp
++++ b/platform-mc/platform_manager.cpp
+@@ -107,7 +107,7 @@ requester::Coroutine PlatformManager::initTerminus()
+ requester::Coroutine
+     PlatformManager::getPDRs(std::shared_ptr<Terminus> terminus)
+ {
+-    tid_t tid = terminus->getTid();
++    pldm_tid_t tid = terminus->getTid();
+ 
+     uint8_t repositoryState = 0;
+     uint32_t recordCount = 0;
+@@ -219,12 +219,12 @@ requester::Coroutine
+ }
+ 
+ requester::Coroutine PlatformManager::getPDR(
+-    const tid_t tid, const uint32_t recordHndl, const uint32_t dataTransferHndl,
+-    const uint8_t transferOpFlag, const uint16_t requestCnt,
+-    const uint16_t recordChgNum, uint32_t& nextRecordHndl,
+-    uint32_t& nextDataTransferHndl, uint8_t& transferFlag,
+-    uint16_t& responseCnt, std::vector<uint8_t>& recordData,
+-    uint8_t& transferCrc)
++    const pldm_tid_t tid, const uint32_t recordHndl,
++    const uint32_t dataTransferHndl, const uint8_t transferOpFlag,
++    const uint16_t requestCnt, const uint16_t recordChgNum,
++    uint32_t& nextRecordHndl, uint32_t& nextDataTransferHndl,
++    uint8_t& transferFlag, uint16_t& responseCnt,
++    std::vector<uint8_t>& recordData, uint8_t& transferCrc)
+ {
+     Request request(sizeof(pldm_msg_hdr) + PLDM_GET_PDR_REQ_BYTES);
+     auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
+@@ -258,7 +258,7 @@ requester::Coroutine PlatformManager::getPDR(
+ }
+ 
+ requester::Coroutine PlatformManager::getPDRRepositoryInfo(
+-    const tid_t tid, uint8_t& repositoryState, uint32_t& recordCount,
++    const pldm_tid_t tid, uint8_t& repositoryState, uint32_t& recordCount,
+     uint32_t& repositorySize, uint32_t& largestRecordSize)
+ {
+     Request request(sizeof(pldm_msg_hdr) + sizeof(uint8_t));
+@@ -295,8 +295,10 @@ requester::Coroutine PlatformManager::getPDRRepositoryInfo(
+     co_return completionCode;
+ }
+ 
+-requester::Coroutine PlatformManager::eventMessageBufferSize(
+-    tid_t tid, uint16_t receiverMaxBufferSize, uint16_t& terminusBufferSize)
++requester::Coroutine
++    PlatformManager::eventMessageBufferSize(pldm_tid_t tid,
++                                            uint16_t receiverMaxBufferSize,
++                                            uint16_t& terminusBufferSize)
+ {
+     Request request(sizeof(pldm_msg_hdr) +
+                     PLDM_EVENT_MESSAGE_BUFFER_SIZE_REQ_BYTES);
+@@ -328,7 +330,7 @@ requester::Coroutine PlatformManager::eventMessageBufferSize(
+ }
+ 
+ requester::Coroutine PlatformManager::setEventReceiver(
+-    tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable,
++    pldm_tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable,
+     pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer)
+ {
+     Request request(sizeof(pldm_msg_hdr) + PLDM_SET_EVENT_RECEIVER_REQ_BYTES);
+@@ -361,7 +363,7 @@ requester::Coroutine PlatformManager::setEventReceiver(
+ }
+ 
+ requester::Coroutine PlatformManager::eventMessageSupported(
+-    tid_t tid, uint8_t formatVersion, uint8_t& synchronyConfiguration,
++    pldm_tid_t tid, uint8_t formatVersion, uint8_t& synchronyConfiguration,
+     bitfield8_t& synchronyConfigurationSupported,
+     uint8_t& numberEventClassReturned, std::vector<uint8_t>& eventClass)
+ {
+diff --git a/platform-mc/platform_manager.hpp b/platform-mc/platform_manager.hpp
+index 11c178a..3e0e8a3 100644
+--- a/platform-mc/platform_manager.hpp
++++ b/platform-mc/platform_manager.hpp
+@@ -30,7 +30,7 @@ class PlatformManager
+ 
+     explicit PlatformManager(
+         TerminusManager& terminusManager,
+-        std::map<tid_t, std::shared_ptr<Terminus>>& termini) :
++        std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini) :
+         terminusManager(terminusManager),
+         termini(termini)
+     {}
+@@ -65,7 +65,7 @@ class PlatformManager
+      *  @return coroutine return_value - PLDM completion code
+      */
+     requester::Coroutine
+-        getPDR(const tid_t tid, const uint32_t recordHndl,
++        getPDR(const pldm_tid_t tid, const uint32_t recordHndl,
+                const uint32_t dataTransferHndl, const uint8_t transferOpFlag,
+                const uint16_t requestCnt, const uint16_t recordChgNum,
+                uint32_t& nextRecordHndl, uint32_t& nextDataTransferHndl,
+@@ -82,7 +82,7 @@ class PlatformManager
+      * *
+      *  @return coroutine return_value - PLDM completion code
+      */
+-    requester::Coroutine getPDRRepositoryInfo(const tid_t tid,
++    requester::Coroutine getPDRRepositoryInfo(const pldm_tid_t tid,
+                                               uint8_t& repositoryState,
+                                               uint32_t& recordCount,
+                                               uint32_t& repositorySize,
+@@ -102,7 +102,8 @@ class PlatformManager
+      *  @return coroutine return_value - PLDM completion code
+      */
+     requester::Coroutine setEventReceiver(
+-        tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable,
++        pldm_tid_t tid,
++        pldm_event_message_global_enable eventMessageGlobalEnable,
+         pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer);
+ 
+     /** @brief  send eventMessageBufferSize
+@@ -111,7 +112,7 @@ class PlatformManager
+      *  @param[out] terminusBufferSize
+      *  @return coroutine return_value - PLDM completion code
+      */
+-    requester::Coroutine eventMessageBufferSize(tid_t tid,
++    requester::Coroutine eventMessageBufferSize(pldm_tid_t tid,
+                                                 uint16_t receiverMaxBufferSize,
+                                                 uint16_t& terminusBufferSize);
+ 
+@@ -128,7 +129,7 @@ class PlatformManager
+      *  @return coroutine return_value - PLDM completion code
+      */
+     requester::Coroutine eventMessageSupported(
+-        tid_t tid, uint8_t formatVersion, uint8_t& synchronyConfiguration,
++        pldm_tid_t tid, uint8_t formatVersion, uint8_t& synchronyConfiguration,
+         bitfield8_t& synchronyConfigurationSupported,
+         uint8_t& numerEventClassReturned, std::vector<uint8_t>& eventClass);
+ 
+@@ -136,7 +137,7 @@ class PlatformManager
+     TerminusManager& terminusManager;
+ 
+     /** @brief Managed termini list */
+-    std::map<tid_t, std::shared_ptr<Terminus>>& termini;
++    std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini;
+ };
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
+index 949ba1c..98b20cf 100644
+--- a/platform-mc/sensor_manager.cpp
++++ b/platform-mc/sensor_manager.cpp
+@@ -14,7 +14,7 @@ using namespace std::chrono;
+ 
+ SensorManager::SensorManager(
+     sdeventplus::Event& event, TerminusManager& terminusManager,
+-    std::map<tid_t, std::shared_ptr<Terminus>>& termini, Manager* manager,
++    std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini, Manager* manager,
+     bool verbose, const std::filesystem::path& configJson) :
+     event(event),
+     terminusManager(terminusManager), termini(termini),
+@@ -62,7 +62,7 @@ bool SensorManager::isPriority(std::shared_ptr<NumericSensor> sensor)
+                       sensor->sensorNameSpace) !=
+             prioritySensorNameSpaces.end());
+ }
+-void SensorManager::startPolling(tid_t tid)
++void SensorManager::startPolling(pldm_tid_t tid)
+ {
+     // initialize prioritySensors and roundRobinSensors list
+     for (const auto& [tId, terminus] : termini)
+@@ -103,7 +103,7 @@ void SensorManager::startPolling(tid_t tid)
+     }
+ }
+ 
+-void SensorManager::stopPolling(tid_t tid)
++void SensorManager::stopPolling(pldm_tid_t tid)
+ {
+     if (prioritySensors.find(tid) != prioritySensors.end())
+     {
+@@ -131,7 +131,7 @@ void SensorManager::stopPolling(tid_t tid)
+     }
+ }
+ 
+-void SensorManager::doSensorPolling(tid_t tid)
++void SensorManager::doSensorPolling(pldm_tid_t tid)
+ {
+     if (doSensorPollingTaskHandles[tid])
+     {
+@@ -157,7 +157,7 @@ void SensorManager::doSensorPolling(tid_t tid)
+     }
+ }
+ 
+-requester::Coroutine SensorManager::doSensorPollingTask(tid_t tid)
++requester::Coroutine SensorManager::doSensorPollingTask(pldm_tid_t tid)
+ {
+     uint64_t t0 = 0;
+     uint64_t t1 = 0;
+diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
+index 94dc4f2..7191f57 100644
+--- a/platform-mc/sensor_manager.hpp
++++ b/platform-mc/sensor_manager.hpp
+@@ -32,26 +32,26 @@ class SensorManager
+ 
+     explicit SensorManager(
+         sdeventplus::Event& event, TerminusManager& terminusManager,
+-        std::map<tid_t, std::shared_ptr<Terminus>>& termini, Manager* manager,
+-        bool verbose = false,
++        std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini,
++        Manager* manager, bool verbose = false,
+         const std::filesystem::path& configJson = PLDM_T2_CONFIG_JSON);
+ 
+     /** @brief starting sensor polling task
+      */
+-    void startPolling(tid_t tid);
++    void startPolling(pldm_tid_t tid);
+ 
+     /** @brief stopping sensor polling task
+      */
+-    void stopPolling(tid_t tid);
++    void stopPolling(pldm_tid_t tid);
+ 
+   protected:
+     /** @brief start a coroutine for polling all sensors.
+      */
+-    virtual void doSensorPolling(tid_t tid);
++    virtual void doSensorPolling(pldm_tid_t tid);
+ 
+     /** @brief polling all sensors in each terminus
+      */
+-    requester::Coroutine doSensorPollingTask(tid_t tid);
++    requester::Coroutine doSensorPollingTask(pldm_tid_t tid);
+ 
+     /** @brief Sending getSensorReading command for the sensor
+      *
+@@ -73,16 +73,16 @@ class SensorManager
+     TerminusManager& terminusManager;
+ 
+     /** @brief List of discovered termini */
+-    std::map<tid_t, std::shared_ptr<Terminus>>& termini;
++    std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini;
+ 
+     /** @brief sensor polling interval in ms. */
+     uint32_t pollingTime;
+ 
+     /** @brief sensor polling timers */
+-    std::map<tid_t, std::unique_ptr<phosphor::Timer>> sensorPollTimers;
++    std::map<pldm_tid_t, std::unique_ptr<phosphor::Timer>> sensorPollTimers;
+ 
+     /** @brief coroutine handle of doSensorPollingTasks */
+-    std::map<tid_t, std::coroutine_handle<>> doSensorPollingTaskHandles;
++    std::map<pldm_tid_t, std::coroutine_handle<>> doSensorPollingTaskHandles;
+ 
+     /** @brief force stop polling sensors*/
+     bool forceStopPolling = false;
+@@ -94,11 +94,11 @@ class SensorManager
+     std::vector<std::string> prioritySensorNameSpaces;
+ 
+     /** @brief priority sensor list */
+-    std::map<tid_t, std::vector<std::shared_ptr<NumericSensor>>>
++    std::map<pldm_tid_t, std::vector<std::shared_ptr<NumericSensor>>>
+         prioritySensors;
+ 
+     /** @brief round robin sensor list */
+-    std::map<tid_t, std::queue<std::shared_ptr<NumericSensor>>>
++    std::map<pldm_tid_t, std::queue<std::shared_ptr<NumericSensor>>>
+         roundRobinSensors;
+ 
+     /** @brief pointer to Manager */
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+index fd54e3b..81f18a6 100644
+--- a/platform-mc/terminus.cpp
++++ b/platform-mc/terminus.cpp
+@@ -11,7 +11,7 @@ namespace platform_mc
+ /* default the max message buffer size BMC supported to 4K bytes */
+ #define MAX_MESSAGE_BUFFER_SIZE 4096
+ 
+-Terminus::Terminus(tid_t tid, uint64_t supportedTypes) :
++Terminus::Terminus(pldm_tid_t tid, uint64_t supportedTypes) :
+     initalized(false), maxBufferSize(MAX_MESSAGE_BUFFER_SIZE),
+     synchronyConfigurationSupported(0), pollEvent(false), tid(tid),
+     supportedTypes(supportedTypes)
+diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
+index 0aa3c92..30d2b25 100644
+--- a/platform-mc/terminus.hpp
++++ b/platform-mc/terminus.hpp
+@@ -36,7 +36,7 @@ using InventoryItemBoardIntf = sdbusplus::server::object_t<
+ class Terminus
+ {
+   public:
+-    Terminus(tid_t tid, uint64_t supportedPLDMTypes);
++    Terminus(pldm_tid_t tid, uint64_t supportedPLDMTypes);
+ 
+     /** @brief Check if the terminus supports the PLDM type message
+      *
+@@ -51,7 +51,7 @@ class Terminus
+     bool parsePDRs();
+ 
+     /** @brief The getter to return terminus's TID */
+-    tid_t getTid()
++    pldm_tid_t getTid()
+     {
+         return tid;
+     }
+@@ -103,7 +103,7 @@ class Terminus
+     std::shared_ptr<SensorAuxiliaryNames>
+         parseCompactNumericSensorNames(const std::vector<uint8_t>& pdrData);
+ 
+-    tid_t tid;
++    pldm_tid_t tid;
+ 
+     std::bitset<64> supportedTypes;
+ 
+diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
+index 90d73d6..d87d93c 100644
+--- a/platform-mc/terminus_manager.cpp
++++ b/platform-mc/terminus_manager.cpp
+@@ -7,7 +7,7 @@ namespace pldm
+ namespace platform_mc
+ {
+ 
+-std::optional<MctpInfo> TerminusManager::toMctpInfo(const tid_t& tid)
++std::optional<MctpInfo> TerminusManager::toMctpInfo(const pldm_tid_t& tid)
+ {
+     if (transportLayerTable[tid] != SupportedTransportLayer::MCTP)
+     {
+@@ -23,7 +23,7 @@ std::optional<MctpInfo> TerminusManager::toMctpInfo(const tid_t& tid)
+     return it->second;
+ }
+ 
+-std::optional<tid_t> TerminusManager::toTid(const MctpInfo& mctpInfo)
++std::optional<pldm_tid_t> TerminusManager::toTid(const MctpInfo& mctpInfo)
+ {
+     auto mctpInfoTableIterator = std::find_if(
+         mctpInfoTable.begin(), mctpInfoTable.end(), [&mctpInfo](auto& v) {
+@@ -37,8 +37,8 @@ std::optional<tid_t> TerminusManager::toTid(const MctpInfo& mctpInfo)
+     return mctpInfoTableIterator->first;
+ }
+ 
+-std::optional<tid_t> TerminusManager::mapTid(const MctpInfo& mctpInfo,
+-                                             tid_t tid)
++std::optional<pldm_tid_t> TerminusManager::mapTid(const MctpInfo& mctpInfo,
++                                                  pldm_tid_t tid)
+ {
+     if (tidPool[tid])
+     {
+@@ -52,7 +52,7 @@ std::optional<tid_t> TerminusManager::mapTid(const MctpInfo& mctpInfo,
+     return tid;
+ }
+ 
+-std::optional<tid_t> TerminusManager::mapTid(const MctpInfo& mctpInfo)
++std::optional<pldm_tid_t> TerminusManager::mapTid(const MctpInfo& mctpInfo)
+ {
+     if (std::get<0>(mctpInfo) == 0 || std::get<0>(mctpInfo) == 0xff)
+     {
+@@ -75,11 +75,11 @@ std::optional<tid_t> TerminusManager::mapTid(const MctpInfo& mctpInfo)
+         return std::nullopt;
+     }
+ 
+-    tid_t tid = std::distance(tidPool.begin(), tidPoolIterator);
++    pldm_tid_t tid = std::distance(tidPool.begin(), tidPoolIterator);
+     return mapTid(mctpInfo, tid);
+ }
+ 
+-bool TerminusManager::unmapTid(const tid_t& tid)
++bool TerminusManager::unmapTid(const pldm_tid_t& tid)
+ {
+     if (tid == 0 || tid == PLDM_TID_RESERVED)
+     {
+@@ -115,7 +115,7 @@ void TerminusManager::discoverMctpTerminus(const MctpInfos& mctpInfos)
+     }
+ }
+ 
+-std::map<tid_t, std::shared_ptr<Terminus>>::iterator
++std::map<pldm_tid_t, std::shared_ptr<Terminus>>::iterator
+     TerminusManager::findTeminusPtr(const MctpInfo& mctpInfo)
+ {
+     bool found = false;
+@@ -143,7 +143,7 @@ std::map<tid_t, std::shared_ptr<Terminus>>::iterator
+ 
+ requester::Coroutine TerminusManager::discoverMctpTerminusTask()
+ {
+-    std::vector<tid_t> addedTids;
++    std::vector<pldm_tid_t> addedTids;
+     while (!queuedMctpInfos.empty())
+     {
+         if (manager)
+@@ -208,7 +208,7 @@ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
+ requester::Coroutine TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
+ {
+     mctp_eid_t eid = std::get<0>(mctpInfo);
+-    tid_t tid = 0;
++    pldm_tid_t tid = 0;
+     bool isMapped = false;
+     auto rc = co_await getTidOverMctp(eid, &tid);
+     if (rc || tid == PLDM_TID_RESERVED)
+@@ -308,7 +308,8 @@ requester::Coroutine
+     co_return rc;
+ }
+ 
+-requester::Coroutine TerminusManager::getTidOverMctp(mctp_eid_t eid, tid_t* tid)
++requester::Coroutine TerminusManager::getTidOverMctp(mctp_eid_t eid,
++                                                     pldm_tid_t* tid)
+ {
+     auto instanceId = instanceIdDb.next(eid);
+     Request request(sizeof(pldm_msg_hdr));
+@@ -343,7 +344,8 @@ requester::Coroutine TerminusManager::getTidOverMctp(mctp_eid_t eid, tid_t* tid)
+     co_return completionCode;
+ }
+ 
+-requester::Coroutine TerminusManager::setTidOverMctp(mctp_eid_t eid, tid_t tid)
++requester::Coroutine TerminusManager::setTidOverMctp(mctp_eid_t eid,
++                                                     pldm_tid_t tid)
+ {
+     auto instanceId = instanceIdDb.next(eid);
+     Request request(sizeof(pldm_msg_hdr) + sizeof(pldm_set_tid_req));
+@@ -372,7 +374,7 @@ requester::Coroutine TerminusManager::setTidOverMctp(mctp_eid_t eid, tid_t tid)
+     co_return responseMsg->payload[0];
+ }
+ 
+-requester::Coroutine TerminusManager::getPLDMTypes(tid_t tid,
++requester::Coroutine TerminusManager::getPLDMTypes(pldm_tid_t tid,
+                                                    uint64_t& supportedTypes)
+ {
+     Request request(sizeof(pldm_msg_hdr));
+@@ -408,7 +410,7 @@ requester::Coroutine TerminusManager::getPLDMTypes(tid_t tid,
+ }
+ 
+ requester::Coroutine
+-    TerminusManager::SendRecvPldmMsg(tid_t tid, Request& request,
++    TerminusManager::SendRecvPldmMsg(pldm_tid_t tid, Request& request,
+                                      const pldm_msg** responseMsg,
+                                      size_t* responseLen)
+ {
+diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
+index 15d643b..f881d70 100644
+--- a/platform-mc/terminus_manager.hpp
++++ b/platform-mc/terminus_manager.hpp
+@@ -21,7 +21,7 @@ enum SupportedTransportLayer
+ 
+ namespace platform_mc
+ {
+-constexpr size_t tidPoolSize = std::numeric_limits<tid_t>::max() + 1;
++constexpr size_t tidPoolSize = std::numeric_limits<pldm_tid_t>::max() + 1;
+ using RequesterHandler = requester::Handler<requester::Request>;
+ 
+ class Manager;
+@@ -44,7 +44,7 @@ class TerminusManager
+         sdeventplus::Event& event,
+         requester::Handler<requester::Request>& handler,
+         pldm::InstanceIdDb& instanceIdDb,
+-        std::map<tid_t, std::shared_ptr<Terminus>>& termini,
++        std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini,
+         mctp_eid_t localEid, Manager* manager) :
+         event(event),
+         handler(handler), instanceIdDb(instanceIdDb), termini(termini),
+@@ -76,7 +76,7 @@ class TerminusManager
+      *  @param[out] responseLen - length of response PLDM message
+      *  @return coroutine return_value - PLDM completion code
+      */
+-    requester::Coroutine SendRecvPldmMsg(tid_t tid, Request& request,
++    requester::Coroutine SendRecvPldmMsg(pldm_tid_t tid, Request& request,
+                                          const pldm_msg** responseMsg,
+                                          size_t* responseLen);
+ 
+@@ -96,11 +96,11 @@ class TerminusManager
+ 
+     /** @brief member functions to map/unmap tid
+      */
+-    std::optional<MctpInfo> toMctpInfo(const tid_t& tid);
+-    std::optional<tid_t> toTid(const MctpInfo& mctpInfo);
+-    std::optional<tid_t> mapTid(const MctpInfo& mctpInfo);
+-    std::optional<tid_t> mapTid(const MctpInfo& mctpInfo, tid_t tid);
+-    bool unmapTid(const tid_t& tid);
++    std::optional<MctpInfo> toMctpInfo(const pldm_tid_t& tid);
++    std::optional<pldm_tid_t> toTid(const MctpInfo& mctpInfo);
++    std::optional<pldm_tid_t> mapTid(const MctpInfo& mctpInfo);
++    std::optional<pldm_tid_t> mapTid(const MctpInfo& mctpInfo, pldm_tid_t tid);
++    bool unmapTid(const pldm_tid_t& tid);
+ 
+     /** @brief getter of local EID
+      *
+@@ -132,13 +132,13 @@ class TerminusManager
+      *  @param[out] tid - TID returned from terminus
+      *  @return coroutine return_value - PLDM completion code
+      */
+-    requester::Coroutine getTidOverMctp(mctp_eid_t eid, tid_t* tid);
++    requester::Coroutine getTidOverMctp(mctp_eid_t eid, pldm_tid_t* tid);
+ 
+     /** @brief Find the terminus object pointer in termini list.
+      *
+      *  @param[in] mctpInfos - information of removed MCTP endpoints
+      */
+-    std::map<tid_t, std::shared_ptr<Terminus>>::iterator
++    std::map<pldm_tid_t, std::shared_ptr<Terminus>>::iterator
+         findTeminusPtr(const MctpInfo& mctpInfo);
+ 
+     /** @brief Send setTID command to destination EID.
+@@ -147,7 +147,7 @@ class TerminusManager
+      *  @param[in] tid - Terminus ID
+      *  @return coroutine return_value - PLDM completion code
+      */
+-    requester::Coroutine setTidOverMctp(mctp_eid_t eid, tid_t tid);
++    requester::Coroutine setTidOverMctp(mctp_eid_t eid, pldm_tid_t tid);
+ 
+     /** @brief Send getPLDMTypes command to destination TID and then return the
+      *         value of supportedTypes in reference parameter.
+@@ -156,22 +156,22 @@ class TerminusManager
+      *  @param[out] supportedTypes - Supported Types returned from terminus
+      *  @return coroutine return_value - PLDM completion code
+      */
+-    requester::Coroutine getPLDMTypes(tid_t tid, uint64_t& supportedTypes);
++    requester::Coroutine getPLDMTypes(pldm_tid_t tid, uint64_t& supportedTypes);
+ 
+     sdeventplus::Event& event;
+     RequesterHandler& handler;
+     pldm::InstanceIdDb& instanceIdDb;
+ 
+     /** @brief Managed termini list */
+-    std::map<tid_t, std::shared_ptr<Terminus>>& termini;
++    std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini;
+ 
+     /** @brief local EID */
+     mctp_eid_t localEid;
+ 
+     /** @brief tables for maintaining assigned TID */
+     std::vector<bool> tidPool;
+-    std::map<tid_t, SupportedTransportLayer> transportLayerTable;
+-    std::map<tid_t, MctpInfo> mctpInfoTable;
++    std::map<pldm_tid_t, SupportedTransportLayer> transportLayerTable;
++    std::map<pldm_tid_t, MctpInfo> mctpInfoTable;
+ 
+     /** @brief A queue of MctpInfos to be discovered **/
+     std::queue<MctpInfos> queuedMctpInfos{};
+diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
+index a3bc204..abc00a4 100644
+--- a/platform-mc/test/event_manager_test.cpp
++++ b/platform-mc/test/event_manager_test.cpp
+@@ -38,14 +38,14 @@ class EventManagerTest : public testing::Test
+     MockTerminusManager terminusManager;
+     MockEventManager eventManager;
+     PlatformManager platformManager;
+-    std::map<pldm::tid_t, std::shared_ptr<Terminus>> termini{};
++    std::map<pldm_tid_t, std::shared_ptr<Terminus>> termini{};
+ };
+ 
+ TEST_F(EventManagerTest, processNumericSensorEventTest)
+ {
+ #define SENSOR_READING 50
+ #define WARNING_HIGH 45
+-    pldm::tid_t tid = 1;
++    pldm_tid_t tid = 1;
+     termini[tid] =
+         std::make_shared<Terminus>(tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM);
+     std::vector<uint8_t> pdr1{
+diff --git a/platform-mc/test/mock_sensor_manager.hpp b/platform-mc/test/mock_sensor_manager.hpp
+index db3b1eb..4ec6300 100644
+--- a/platform-mc/test/mock_sensor_manager.hpp
++++ b/platform-mc/test/mock_sensor_manager.hpp
+@@ -18,7 +18,7 @@ class MockSensorManager : public SensorManager
+                       Manager* manager) :
+         SensorManager(event, terminusManager, termini, manager){};
+ 
+-    MOCK_METHOD(void, doSensorPolling, (tid_t tid), (override));
++    MOCK_METHOD(void, doSensorPolling, (pldm_tid_t tid), (override));
+ };
+ 
+ } // namespace platform_mc
+diff --git a/platform-mc/test/mock_terminus_manager.hpp b/platform-mc/test/mock_terminus_manager.hpp
+index 917f724..2a8f350 100644
+--- a/platform-mc/test/mock_terminus_manager.hpp
++++ b/platform-mc/test/mock_terminus_manager.hpp
+@@ -14,11 +14,12 @@ namespace platform_mc
+ class MockTerminusManager : public TerminusManager
+ {
+   public:
+-    MockTerminusManager(sdeventplus::Event& event,
+-                        requester::Handler<requester::Request>& handler,
+-                        pldm::InstanceIdDb& instanceIdDb,
+-                        std::map<tid_t, std::shared_ptr<Terminus>>& termini,
+-                        Manager* manager) :
++    MockTerminusManager(
++        sdeventplus::Event& event,
++        requester::Handler<requester::Request>& handler,
++        pldm::InstanceIdDb& instanceIdDb,
++        std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini,
++        Manager* manager) :
+         TerminusManager(event, handler, instanceIdDb, termini, LOCAL_EID,
+                         manager)
+     {}
+diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
+index eed03a2..81903e6 100644
+--- a/platform-mc/test/platform_manager_test.cpp
++++ b/platform-mc/test/platform_manager_test.cpp
+@@ -29,7 +29,7 @@ class PlatformManagerTest : public testing::Test
+     pldm::requester::Handler<pldm::requester::Request> reqHandler;
+     MockTerminusManager mockTerminusManager;
+     PlatformManager platformManager;
+-    std::map<pldm::tid_t, std::shared_ptr<Terminus>> termini;
++    std::map<pldm_tid_t, std::shared_ptr<Terminus>> termini;
+ };
+ 
+ TEST_F(PlatformManagerTest, initTerminusTest)
+diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
+index 2dc606b..60e2e22 100644
+--- a/platform-mc/test/sensor_manager_test.cpp
++++ b/platform-mc/test/sensor_manager_test.cpp
+@@ -50,7 +50,7 @@ class SensorManagerTest : public testing::Test
+     pldm::requester::Handler<pldm::requester::Request> reqHandler;
+     pldm::platform_mc::TerminusManager terminusManager;
+     pldm::platform_mc::MockSensorManager sensorManager;
+-    std::map<pldm::tid_t, std::shared_ptr<pldm::platform_mc::Terminus>> termini;
++    std::map<pldm_tid_t, std::shared_ptr<pldm::platform_mc::Terminus>> termini;
+ };
+ 
+ TEST_F(SensorManagerTest, sensorPollingTest)
+@@ -58,7 +58,7 @@ TEST_F(SensorManagerTest, sensorPollingTest)
+     uint64_t seconds = 10;
+     uint64_t expectedTimes = (seconds * 1000) / SENSOR_POLLING_TIME;
+ 
+-    pldm::tid_t tid = 1;
++    pldm_tid_t tid = 1;
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(tid, 0);
+ 
+     EXPECT_CALL(sensorManager, doSensorPolling(tid))
+diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
+index 2fb3f1e..bb3584f 100644
+--- a/platform-mc/test/terminus_manager_test.cpp
++++ b/platform-mc/test/terminus_manager_test.cpp
+@@ -42,7 +42,7 @@ class TerminusManagerTest : public testing::Test
+     pldm::requester::Handler<pldm::requester::Request> reqHandler;
+     pldm::platform_mc::TerminusManager terminusManager;
+     pldm::platform_mc::MockTerminusManager mockTerminusManager;
+-    std::map<pldm::tid_t, std::shared_ptr<pldm::platform_mc::Terminus>> termini;
++    std::map<pldm_tid_t, std::shared_ptr<pldm::platform_mc::Terminus>> termini;
+ };
+ 
+ TEST_F(TerminusManagerTest, mapTidTest)
+diff --git a/platform-mc/test/terminus_test.cpp b/platform-mc/test/terminus_test.cpp
+index 7f84042..311e35f 100644
+--- a/platform-mc/test/terminus_test.cpp
++++ b/platform-mc/test/terminus_test.cpp
+@@ -19,7 +19,7 @@ TEST(TerminusTest, supportedTypeTest)
+ 
+ TEST(TerminusTest, getTidTest)
+ {
+-    const pldm::tid_t tid = 1;
++    const pldm_tid_t tid = 1;
+     auto t1 = Terminus(tid, 1 << PLDM_BASE);
+ 
+     EXPECT_EQ(tid, t1.getTid());
+-- 
+2.41.0
+

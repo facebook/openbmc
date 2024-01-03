@@ -115,7 +115,8 @@ if "HD" in system_conf:
         ]
     GPIO_FM_BIOS_POST_CMPLT_BMC_N = 0
     dimm_location_name_map = hd_dimm_location_name_map
-elif "GL" in system_conf:
+elif "Type_8" in system_conf:
+    one_fan_fail_tuple = (fan_mode["trans_mode"], 80)
     get_fan_mode_scenario_list = [
             "one_fan_failure",
             "sensor_hit_UCR",
@@ -290,7 +291,7 @@ def sensor_fail_ignore_check(board, sname):
         (board, sname) = sname.split("_", 1)
         slot_id = fru_map[board]["slot_num"]
         pin_val = c_uint8(0)
-        if "GL" in system_conf:
+        if "Type_8" in system_conf:
             pin_dir = c_uint8(0)
             lbic_hndl.bic_get_virtual_gpio(
                 slot_id, VPGIO_POST_CMPLT, byref(pin_val), byref(pin_dir)

@@ -34,7 +34,7 @@ usage() {
   echo ""
   echo "       sol-util mc [cxl1 | cxl2 ... cxl8] (baudrate)"
   echo "       sol-util [ mb | cb | mc ] --history"
-  echo "       sol-util [ cb_accl[1..12]_[1..2] uart1 --history ]"
+  echo "       sol-util [ cb_accl[1..12]_[1..2] uart0 --history ]"
   echo "       e.g. sol-util cb_accl1_1 uart0"
   echo "       e.g. sol-util cb_accl1_1 fac_uart0"
   echo "       e.g. sol-util mc cxl1"
@@ -1174,7 +1174,7 @@ if [ "$1" = "mb" ] || [ "$1" = "cb" ] || [ "$1" = "mc" ] || [[ "$1" =~ ^(cb_accl
   # For Artemis Module
   elif [[ "$SLOT" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]] && [[ "$2" =~ ^(uart[0-3])$ ]]; then
     COMP=$2
-    if [ $# -eq 3 ] && [ "$COMP" == "uart1" ] && [ "$3" == "--history" ]; then
+    if [ $# -eq 3 ] && [ "$COMP" == "uart0" ] && [ "$3" == "--history" ]; then
       cat "$ATM_LOGFILE" 2>/dev/null
       exit 0;
     fi

@@ -1417,6 +1417,14 @@ int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = 0, lock = -1;
   int retimer_id = sensor_map[fru].map[sensor_num].id;
   uint8_t health = 0;
+  uint8_t retry_times = 5;
+
+  // This is workaround for Re-timer issue in Artemis.
+  // We extend the timeout of the reading skip.
+  // This should be take off after we fix the issue.
+  if (pal_is_artemis()) {
+    retry_times = 35;
+  }
 
   if(pal_get_fru_name(fru, fru_name) || retimer_id >= MAX_NUM_RETIMERS) {
     return READING_NA;
@@ -1458,7 +1466,7 @@ int read_retimer_health(uint8_t fru, uint8_t sensor_num, float *value) {
     // sensord (about 1 sec) when BMC boots up. So we don't need to reset
     // the retry to 0.
     retry[retimer_id]++;
-    if (retry_err_handle(retry[retimer_id], 5) == READING_SKIP) {
+    if (retry_err_handle(retry[retimer_id], retry_times) == READING_SKIP) {
       return READING_SKIP;
     }
     // If the maximum retry attempts are exceeded, it should be considered

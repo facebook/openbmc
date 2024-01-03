@@ -37,6 +37,7 @@
 #define MAX_SERIAL_NUM 20
 #define SPE_SSD_NUM 6
 #define MAX_PART_NUM 40
+#define ARTEMIS_MODULE_POWER_RAIL_VOL_UNIT 0.001 // 1mv
 
 static void
 print_usage_help(void) {
@@ -159,9 +160,9 @@ drive_status(ssd_data *ssd) {
         printf("%s: %s\n", asic_core_vol1_decoding.key, asic_core_vol1_decoding.value);
         nvme_monitor_area_decode("ASIC Core2 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol2, ASIC_CORE_VOL_UNIT, &asic_core_vol2_decoding);
         printf("%s: %s\n", asic_core_vol2_decoding.key, asic_core_vol2_decoding.value);
-        nvme_monitor_area_decode("Module Power Rail1 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol1, POWER_RAIL_VOL_UNIT, &power_rail_vol1_decoding);
+        nvme_monitor_area_decode("Module Power Rail1 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol1, ARTEMIS_MODULE_POWER_RAIL_VOL_UNIT, &power_rail_vol1_decoding);
         printf("%s: %s\n", power_rail_vol1_decoding.key, power_rail_vol1_decoding.value);
-        nvme_monitor_area_decode("Module Power Rail2 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol2, POWER_RAIL_VOL_UNIT, &power_rail_vol2_decoding);
+        nvme_monitor_area_decode("Module Power Rail2 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol2, ARTEMIS_MODULE_POWER_RAIL_VOL_UNIT, &power_rail_vol2_decoding);
         printf("%s: %s\n", power_rail_vol2_decoding.key, power_rail_vol2_decoding.value);
       }
 

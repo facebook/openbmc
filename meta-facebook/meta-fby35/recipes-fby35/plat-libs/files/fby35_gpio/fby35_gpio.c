@@ -175,8 +175,9 @@ const char *gl_gpio_pin_name[] = {
   "HSC_SET_EN_R",
   "RST_USB_HUB_N_R",
   "A_P3V_BAT_SCALED_EN_R",
-  "FM_SLPS4_PLD_N",
-  "FM_CPU0_CD_INIT_ERROR",           //10
+  "DAM_BIC_R_EN",
+  "FM_SLPS4_PLD_N",                  //10
+  "FM_CPU0_CD_INIT_ERROR",
   "FM_HSC_TIMER",
   "IRQ_SMB_IO_LVC3_STBY_ALRT_N",
   "IRQ_PVCCD_CPU0_VRHOT_LVC3_N",
@@ -185,8 +186,8 @@ const char *gl_gpio_pin_name[] = {
   "FM_CPU_SKTOCC_LVT3_PLD_N",
   "H_CPU_MEMHOT_OUT_LVC3_N",
   "RST_PLTRST_SYNC_LVC3_N",
-  "PWRBTN_N",
-  "RST_BMC_R_N",                     //20
+  "PWRBTN_N",                        //20
+  "RST_BMC_R_N",
   "H_BMC_PRDY_BUF_N",
   "BMC_READY",
   "BIC_READY",
@@ -195,8 +196,8 @@ const char *gl_gpio_pin_name[] = {
   "FM_FORCE_ADR_N_R",
   "PWRGD_CPU_LVC3",
   "IRQ_HSC_ALERT2_N",
-  "SMB_SENSOR_LVC3_ALERT_N",
-  "FM_CATERR_LVT3_N",                //30
+  "SMB_SENSOR_LVC3_ALERT_N",         //30
+  "FM_CATERR_LVT3_N",
   "SYS_PWRBTN_LVC3_N",
   "RST_PLTRST_BUF_N",
   "IRQ_SML1_PMBUS_ALERT_N",
@@ -205,8 +206,8 @@ const char *gl_gpio_pin_name[] = {
   "FM_FAST_PROCHOT_EN_R_N",
   "FBRK_R_N",
   "FM_PEHPCPU_INT",
-  "FAST_PROCHOT_N",
-  "BMC_JTAG_SEL_R",                  //40
+  "FAST_PROCHOT_N",                  //40
+  "BMC_JTAG_SEL_R",
   "H_CPU_ERR0_LVC3_R_N",
   "H_CPU_ERR1_LVC3_R_N",
   "H_CPU_ERR2_LVC3_R_N",
@@ -215,8 +216,8 @@ const char *gl_gpio_pin_name[] = {
   "FM_CPU_BIC_PROCHOT_LVT3_N",
   "AUTH_COMPLETE",
   "BOARD_ID2",
-  "IRQ_PVCCIN_CPU0_VRHOT_N",
-  "IRQ_PVCCINF_CPU0_VRHOT_N",        //50
+  "IRQ_PVCCIN_CPU0_VRHOT_N",         //50
+  "IRQ_PVCCINF_CPU0_VRHOT_N",
   "BOARD_ID0",
   "BOARD_ID1",
   "BOARD_ID3",

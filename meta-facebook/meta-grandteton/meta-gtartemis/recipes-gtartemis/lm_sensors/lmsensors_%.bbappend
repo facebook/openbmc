@@ -20,4 +20,5 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://common.conf \
             file://hpdb-adm1272-1.conf \
             file://vpdb-adm1272-1.conf \
+            file://cover.conf \
            "

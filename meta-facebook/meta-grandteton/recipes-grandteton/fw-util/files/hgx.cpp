@@ -17,9 +17,11 @@ class HGXComponent : public Component {
       const std::string& hgxcomp = "")
       : Component(fru, comp), _hgxcomp(hgxcomp) {}
   int update(std::string image) {
+    int ret = FW_STATUS_FAILURE;
     try {
       if (component() == "patch") {
         hgx::patch_bf_update();
+        ret = FW_STATUS_SUCCESS;
       } else {
         if (_hgxcomp == "") {
           syslog(LOG_CRIT, "HGX FW upgrade initiated, image: %s", image.c_str());
@@ -33,8 +35,10 @@ class HGXComponent : public Component {
           sleep(3);
           if (hgx::getHMCPhase() != BMC_FW_DVT) {
             hgx::factoryReset();
-            return 0;
           }
+          ret = FW_STATUS_SUCCESS;
+        } else {
+          syslog(LOG_CRIT, "HGX upgrade failed");
         }
       }
     } catch (std::exception& e) {
@@ -42,7 +46,7 @@ class HGXComponent : public Component {
       syslog(LOG_CRIT, "HGX upgrade failed: %s", e.what());
     }
 
-    return 0;
+    return ret;
   }
 
   int get_version(json& j) {

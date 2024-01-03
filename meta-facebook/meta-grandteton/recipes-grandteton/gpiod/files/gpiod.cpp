@@ -863,7 +863,6 @@ void
   static uint8_t last_cb_present = 0xff;
   static uint8_t last_mc_present = 0xff;
   uint8_t mb_rev = 0;
-  char fru_name[MAX_FRUID_NAME] = {0};
 
   for (i = 0; i < size; ++i)
     init_flag[i] = false;
@@ -877,15 +876,14 @@ void
         if (!gta_expansion_board_present(fru, &gta_exp_prsnt_status)) {
           syslog(LOG_WARNING,"%s() Get expansion board present failed, status: %u", __func__, gta_exp_prsnt_status);
         }
-        pal_get_fru_name(fru,fru_name);
         if (fru == FRU_ACB) {
-          if (last_cb_present != gta_exp_prsnt_status) {
-            syslog(LOG_CRIT, "%s %s",fru_name, gta_exp_prsnt_status ? "is Present":"is not Present");
+          if (last_cb_present != gta_exp_prsnt_status && !gta_exp_prsnt_status) {
+            syslog(LOG_CRIT, "FRU: %u is not Present", fru);
           }
           last_cb_present = gta_exp_prsnt_status;
         } else {
-          if (last_mc_present != gta_exp_prsnt_status) {
-            syslog(LOG_CRIT, "%s %s",fru_name, gta_exp_prsnt_status ? "is Present":"is not Present");
+          if (last_mc_present != gta_exp_prsnt_status && !gta_exp_prsnt_status) {
+            syslog(LOG_CRIT, "FRU: %u is not Present", fru);
           }
           last_mc_present = gta_exp_prsnt_status;
         }

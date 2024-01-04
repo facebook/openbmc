@@ -1,0 +1,100 @@
+From e259c25212b2d51ab809cd1d603ad5c288aa00e2 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Thu, 28 Dec 2023 11:05:54 +0800
+Subject: [PATCH] Add property SlotNumber for multi-host system
+
+Add property `SlotNumber` to Hosts' configuration in Yosemite4 to obtain
+Host's slot number by getting the property instead of parsing the string
+of Dbus path.
+
+schemas: add `SlotNumber` with type `string` and `number`.
+
+Tested: verify that the properties have been generated.
+
+Change-Id: I0f1412fcb74790d6da9b48f8dbf739d35f34c2c7
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ configurations/yosemite4_floatingfalls.json |  3 +++
+ configurations/yosemite4_sentineldome.json  |  3 +++
+ configurations/yosemite4_wailuafalls.json   |  3 +++
+ schemas/global.json                         |  3 +++
+ schemas/openbmc-dbus.json                   | 10 ++++++++++
+ 5 files changed, 22 insertions(+)
+
+diff --git a/configurations/yosemite4_floatingfalls.json b/configurations/yosemite4_floatingfalls.json
+index e0075c4..bc17bb0 100644
+--- a/configurations/yosemite4_floatingfalls.json
++++ b/configurations/yosemite4_floatingfalls.json
+@@ -23,5 +23,8 @@
+         "Model": "$PRODUCT_PRODUCT_NAME",
+         "PartNumber": "$PRODUCT_PART_NUMBER",
+         "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Slot": {
++        "SlotNumber": "$bus % 15"
+     }
+ }
+diff --git a/configurations/yosemite4_sentineldome.json b/configurations/yosemite4_sentineldome.json
+index cdfe8bd..383a284 100644
+--- a/configurations/yosemite4_sentineldome.json
++++ b/configurations/yosemite4_sentineldome.json
+@@ -16,5 +16,8 @@
+         "Model": "$PRODUCT_PRODUCT_NAME",
+         "PartNumber": "$PRODUCT_PART_NUMBER",
+         "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Slot": {
++        "SlotNumber": "$bus % 15"
+     }
+ }
+diff --git a/configurations/yosemite4_wailuafalls.json b/configurations/yosemite4_wailuafalls.json
+index 97dfae1..b86c336 100644
+--- a/configurations/yosemite4_wailuafalls.json
++++ b/configurations/yosemite4_wailuafalls.json
+@@ -30,5 +30,8 @@
+         "Model": "$PRODUCT_PRODUCT_NAME",
+         "PartNumber": "$PRODUCT_PART_NUMBER",
+         "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Slot": {
++        "SlotNumber": "$bus % 15"
+     }
+ }
+diff --git a/schemas/global.json b/schemas/global.json
+index 3cbf519..11cd8bf 100644
+--- a/schemas/global.json
++++ b/schemas/global.json
+@@ -147,6 +147,9 @@
+                 "xyz.openbmc_project.Inventory.Decorator.Replaceable": {
+                     "$ref": "openbmc-dbus.json#/definitions/xyz/openbmc_project/Inventory/Decorator/Replaceable"
+                 },
++                "xyz.openbmc_project.Inventory.Decorator.Slot": {
++                    "$ref": "openbmc-dbus.json#/definitions/xyz/openbmc_project/Inventory/Decorator/Slot"
++                },
+                 "xyz.openbmc_project.Inventory.Item.Board.Motherboard": {
+                     "$ref": "openbmc-dbus.json#/definitions/xyz/openbmc_project/Inventory/Item/Board/Motherboard"
+                 },
+diff --git a/schemas/openbmc-dbus.json b/schemas/openbmc-dbus.json
+index 10c9ea9..36f4baf 100644
+--- a/schemas/openbmc-dbus.json
++++ b/schemas/openbmc-dbus.json
+@@ -65,6 +65,16 @@
+                             },
+                             "required": ["FieldReplaceable", "HotPluggable"],
+                             "type": "object"
++                        },
++                        "Slot": {
++                            "additionalProperties": false,
++                            "properties": {
++                                "SlotNumber": {
++                                    "type": ["string", "number"]
++                                }
++                            },
++                            "required": ["SlotNumber"],
++                            "type": "object"
+                         }
+                     },
+                     "Item": {
+-- 
+2.25.1
+

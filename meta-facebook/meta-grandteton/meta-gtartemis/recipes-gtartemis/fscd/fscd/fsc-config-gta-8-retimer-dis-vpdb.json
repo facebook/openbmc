@@ -1,5 +1,5 @@
 {
-    "version": "gtartemis-v1.3-discrete-vpdb",
+    "version": "gtartemis-v1.4-discrete-vpdb",
     "pwm_transition_value": 65,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -160,14 +160,14 @@
         "negative_hysteresis": 3,
         "data": [
           [67, 17],
-          [68, 24],
-          [69, 26],
-          [70, 28],
-          [71, 30],
-          [72, 32],
-          [73, 34],
-          [74, 36],
-          [75, 37]
+          [68, 20],
+          [69, 21],
+          [70, 22],
+          [71, 23],
+          [72, 24],
+          [73, 25],
+          [74, 26],
+          [75, 27]
         ]
       },
       "cpu_tray_dimm_pid": {
@@ -259,7 +259,7 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 68,
+        "setpoint": 65,
         "kp": -2.4,
         "ki": -0.015,
         "kd": 0

@@ -166,7 +166,7 @@
           }
         },
         "linear_expressions": {
-          "GTA": "( avg_rpm * 0.0765 ) - 14.197"
+          "GTA": "( avg_rpm * 0.085 ) - 11.878"
         },
         "condition": {
           "key": "sled_system_conf",

@@ -93,19 +93,22 @@ if [ -n "$is_fscd_running" ] && [ "$auto_fsc" == "hgx" ]; then
 fi
 
 check_mb_rev() {
-  gpu_prsnt=$(cat /tmp/gpionames/GPU_PRSNT_N_ISO_R/value)
-  if [ "$gpu_prsnt" -eq 0 ]; then
-    for retry in {1..60}; do
-      gpu_config=$(kv get gpu_config persistent)
-      if [ "$gpu_config" == "hgx" ]; then
-        break
-      elif [ "$gpu_config" == "ubb" ]; then
-        ln -s /etc/fsc-config-8-retimer-ubb.json ${DEFAULT_FSC_CONFIG}
-        return
-      else
-        sleep 5
-      fi
-    done
+  temp_config=`$KV_CMD get "auto_fsc_config" persistent`
+  if [ $temp_config != "$FAN_TABLE_VER_GTA" ]; then
+    gpu_prsnt=$(cat /tmp/gpionames/GPU_PRSNT_N_ISO_R/value)
+    if [ "$gpu_prsnt" -eq 0 ]; then
+      for retry in {1..60}; do
+        gpu_config=$(kv get gpu_config persistent)
+        if [ "$gpu_config" == "hgx" ]; then
+          break
+        elif [ "$gpu_config" == "ubb" ]; then
+          ln -s /etc/fsc-config-8-retimer-ubb.json ${DEFAULT_FSC_CONFIG}
+          return
+        else
+          sleep 5
+        fi
+      done
+    fi
   fi
 
   rev_id=$(kv get mb_rev)

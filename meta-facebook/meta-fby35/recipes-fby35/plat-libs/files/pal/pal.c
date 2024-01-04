@@ -249,7 +249,12 @@ MAPTOSTRING root_port_common_mapping[] = {
     // QS
     {0xBB, 1, 0x00, 0x5A, "Num 0", "SB"}, // root_port=0x5A, Boot Drive
     {0xBB, 5, 0x00, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
-    {0x00, 0, 0x00, 0xFF, "ieh4", "ieh"}, //  ieh device
+    {0x00, 0, 0x04, 0xFF, "ieh4", "ieh"}, //  ieh device
+    {0x05, 0, 0x04, 0xFF, "ieh4", "ieh"}, //  ieh device
+    {0x0A, 0, 0x04, 0xFF, "ieh4", "ieh"}, //  ieh device
+    {0x47, 0, 0x04, 0xFF, "ieh4", "ieh"}, //  ieh device
+    {0x83, 0, 0x04, 0xFF, "ieh4", "ieh"}, //  ieh device
+    {0xBF, 0, 0x04, 0xFF, "ieh4", "ieh"}, //  ieh device
     // Halfdome
     {0x00, 3, 0x01, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC
     {0x00, 3, 0x02, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC

@@ -69,11 +69,15 @@
 #define CONFIG_UBB 0x02
 #define CONFIG_UNKNOWN 0XFF
 
-const char pal_fru_list[] = \
-"all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, " \
-// Artemis fru list
+#ifdef CONFIG_ARTEMIS
+  const char pal_fru_list[] = \
+"all, mb, nic0, nic1, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, " \
 "cb, mc, cb_accl1, cb_accl2, cb_accl3, cb_accl4, cb_accl5, cb_accl6, cb_accl7, cb_accl8, " \
-"cb_accl9, cb_accl10, cb_accl11, cb_accl12 ubb";
+"cb_accl9, cb_accl10, cb_accl11, cb_accl12";
+#else
+  const char pal_fru_list[] = \
+"all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, ubb";
+#endif
 
 const char pal_server_list[] = "mb";
 

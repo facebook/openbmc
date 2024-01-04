@@ -256,6 +256,7 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
   uint8_t mb_rev = 0;
   int i2cfd = 0, ret = -1;
   uint8_t tlen, rlen;
+  uint8_t retry = 3;
   uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
   uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
   enum GTA_MEB_NOT_PRSNT_OFFSET {
@@ -270,10 +271,21 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
 
   switch (fru_id) {
     case FRU_ACB:
-      gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_A);
-      gpio_prsnt_2 = gpio_get_value_by_shadow(CABLE_PRSNT_B);
-      gpio_prsnt_3 = gpio_get_value_by_shadow(CABLE_PRSNT_H);
-      gpio_prsnt_4 = gpio_get_value_by_shadow(CABLE_PRSNT_G);
+      while (retry > 0) {
+        gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_A);
+        gpio_prsnt_2 = gpio_get_value_by_shadow(CABLE_PRSNT_B);
+        gpio_prsnt_3 = gpio_get_value_by_shadow(CABLE_PRSNT_H);
+        gpio_prsnt_4 = gpio_get_value_by_shadow(CABLE_PRSNT_G);
+        if (gpio_prsnt_1 == GPIO_VALUE_INVALID || gpio_prsnt_2 == GPIO_VALUE_INVALID
+            || gpio_prsnt_3 == GPIO_VALUE_INVALID || gpio_prsnt_4 == GPIO_VALUE_INVALID) {
+          syslog(LOG_WARNING, "%s() CB PRSNT GPIO get failed Retry:%u, CABLE_PRSNT_A:%d, \
+                CABLE_PRSNT_B:%d,  CABLE_PRSNT_H:%d,  CABLE_PRSNT_G:%d", __func__, retry, gpio_prsnt_1, gpio_prsnt_2, gpio_prsnt_3, gpio_prsnt_4);
+          msleep(10);
+          retry --;
+        } else {
+          break;
+        }
+      }
       if (gpio_prsnt_1 && gpio_prsnt_2 && gpio_prsnt_3 && gpio_prsnt_4) {
         *status = FRU_NOT_PRSNT;
       } else {
@@ -283,8 +295,17 @@ gta_expansion_board_present(uint8_t fru_id, uint8_t *status) {
     case FRU_MEB:
       pal_get_board_rev_id(FRU_MB, &mb_rev);
       if (mb_rev >= GTA_DVT_STAGE) {
-        gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_D);
-        gpio_prsnt_2 = gpio_get_value_by_shadow(CABLE_PRSNT_F);
+        while(retry > 0) {
+          gpio_prsnt_1 = gpio_get_value_by_shadow(CABLE_PRSNT_D);
+          gpio_prsnt_2 = gpio_get_value_by_shadow(CABLE_PRSNT_F);
+          if (gpio_prsnt_1 == GPIO_VALUE_INVALID || gpio_prsnt_2 == GPIO_VALUE_INVALID) {
+            syslog(LOG_WARNING, "%s() MC PRSNT GPIO get failed Retry:%u, CABLE_PRSNT_D:%d, CABLE_PRSNT_F: %d", __func__, retry, gpio_prsnt_1, gpio_prsnt_2);
+            msleep(10);
+            retry --;
+          } else {
+            break;
+          }
+        }
         if (gpio_prsnt_1 && gpio_prsnt_2) {
           *status = FRU_NOT_PRSNT;
         } else {

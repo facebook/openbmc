@@ -1,4 +1,12 @@
 #include "platform.hpp"
+#include <syslog.h>
+#include <openbmc/kv.hpp>
+
+#define CB_ASIC_SENSOR_START_ID 0x1A
+#define CB_ASIC_SENSOR_END_ID 0x31
+#define CB_ASIC_NVME_STATUS_OFFSET 0x03
+#define CB_ASIC_NVME_NOT_READY_STATE 0x01
+#define CB_ASIC_NVME_READY_STATE 0x02
 
 namespace pldm
 {
@@ -35,6 +43,30 @@ std::string get_sensor_name(uint16_t id)
     {0x17, "CB_SENSOR_ACCL_POWER_CABLE_11"},
     {0x18, "CB_SENSOR_ACCL_POWER_CABLE_12"},
     {0x19, "CB_SENSOR_FIO"},
+    {0x1A, "CB_ACCL_1_DEV_1"},
+    {0x1B, "CB_ACCL_1_DEV_2"},
+    {0x1C, "CB_ACCL_2_DEV_1"},
+    {0x1D, "CB_ACCL_2_DEV_2"},
+    {0x1E, "CB_ACCL_3_DEV_1"},
+    {0x1F, "CB_ACCL_3_DEV_2"},
+    {0x20, "CB_ACCL_4_DEV_1"},
+    {0x21, "CB_ACCL_4_DEV_2"},
+    {0x22, "CB_ACCL_5_DEV_1"},
+    {0x23, "CB_ACCL_5_DEV_2"},
+    {0x24, "CB_ACCL_6_DEV_1"},
+    {0x25, "CB_ACCL_6_DEV_2"},
+    {0x26, "CB_ACCL_7_DEV_1"},
+    {0x27, "CB_ACCL_7_DEV_2"},
+    {0x28, "CB_ACCL_8_DEV_1"},
+    {0x29, "CB_ACCL_8_DEV_2"},
+    {0x2A, "CB_ACCL_9_DEV_1"},
+    {0x2B, "CB_ACCL_9_DEV_2"},
+    {0x2C, "CB_ACCL_10_DEV_1"},
+    {0x2D, "CB_ACCL_10_DEV_2"},
+    {0x2E, "CB_ACCL_11_DEV_1"},
+    {0x2F, "CB_ACCL_11_DEV_2"},
+    {0x30, "CB_ACCL_12_DEV_1"},
+    {0x31, "CB_ACCL_12_DEV_2"},
     {0x80, "MC_SENSOR_SSD_1"},
     {0x81, "MC_SENSOR_SSD_2"},
     {0x82, "MC_SENSOR_SSD_3"},
@@ -54,6 +86,7 @@ std::string get_state_message(uint8_t offset, uint8_t state)
     {"unknown", "normal",  "alert"},                                          // sensorOffset = 1: status
     {"no power good", "power good fail", "power good fail (3V3 power fault)",
      "power good fail (12V power fault)", "power good fail (3V3 aux fault)"}, // sensorOffset = 2: power status
+    {"unknown", "nvme not ready", "nvme ready"},                              // sensorOffset = 3: nvme status
   };
 
   if (offset >= eventstate_map.size())
@@ -156,6 +189,42 @@ std::string get_event_type(uint8_t type)
     return "UNKNOWN_TYPE";
 }
 
+void set_sensor_state_work(uint16_t id, uint8_t offset, uint8_t state)
+{
+  if (id >= CB_ASIC_SENSOR_START_ID && id <= CB_ASIC_SENSOR_END_ID) {
+    if (offset == CB_ASIC_NVME_STATUS_OFFSET) {
+      uint8_t index = id - CB_ASIC_SENSOR_START_ID;
+      char key[MAX_KEY_LEN] = {0};
+      sprintf(key, "is_asic%d_ready", index);
+
+      switch (state) {
+        case CB_ASIC_NVME_NOT_READY_STATE:
+	  if (kv_set(key, "0", 0, 0) != 0) {
+	    syslog(LOG_WARNING, "Set ASIC nvme status fail, index: 0x%x, state: not ready", index);
+	  }
+          break;
+        case CB_ASIC_NVME_READY_STATE:
+	  if (kv_set(key, "1", 0, 0) != 0) {
+            syslog(LOG_WARNING, "Set ASIC nvme status fail, index: 0x%x, state: ready", index);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+}
+
+bool is_record_event(uint16_t id, uint8_t offset, uint8_t state)
+{
+  if (id >= CB_ASIC_SENSOR_START_ID && id <= CB_ASIC_SENSOR_END_ID) {
+    if (offset == CB_ASIC_NVME_STATUS_OFFSET) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 } // namespace platform
 } // namespace responder

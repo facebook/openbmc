@@ -6,11 +6,175 @@
 #include "pal.h"
 #include <openbmc/obmc-i2c.h>
 #include "syslog.h"
+#include <openbmc/kv.h>
 
 static int
 get_acb_sensor(uint8_t fru, uint8_t sensor_num, float *value) 
 {
   return get_pldm_sensor(ACB_BIC_BUS, ACB_BIC_EID, sensor_num, value);
+}
+
+static int
+get_accl_sensor(uint8_t fru, uint8_t sensor_num, float *value)
+{
+  uint8_t comp_id = 0;
+  uint8_t asic_index = 0;
+
+  switch (sensor_num) {
+    case ACCL1_ASIC_1_TEMP:
+    case ACCL1_ASIC_1_0V8_VOLT:
+    case ACCL1_ASIC_1_1V05_VOLT:
+    case ACCL1_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL1_DEV1_COMP;
+      break;
+    case ACCL1_ASIC_2_TEMP:
+    case ACCL1_ASIC_2_0V8_VOLT:
+    case ACCL1_ASIC_2_1V05_VOLT:
+    case ACCL1_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL1_DEV2_COMP;
+      break;
+    case ACCL2_ASIC_1_TEMP:
+    case ACCL2_ASIC_1_0V8_VOLT:
+    case ACCL2_ASIC_1_1V05_VOLT:
+    case ACCL2_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL2_DEV1_COMP;
+      break;
+    case ACCL2_ASIC_2_TEMP:
+    case ACCL2_ASIC_2_0V8_VOLT:
+    case ACCL2_ASIC_2_1V05_VOLT:
+    case ACCL2_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL2_DEV2_COMP;
+      break;
+    case ACCL3_ASIC_1_TEMP:
+    case ACCL3_ASIC_1_0V8_VOLT:
+    case ACCL3_ASIC_1_1V05_VOLT:
+    case ACCL3_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL3_DEV1_COMP;
+      break;
+    case ACCL3_ASIC_2_TEMP:
+    case ACCL3_ASIC_2_0V8_VOLT:
+    case ACCL3_ASIC_2_1V05_VOLT:
+    case ACCL3_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL3_DEV2_COMP;
+      break;
+    case ACCL4_ASIC_1_TEMP:
+    case ACCL4_ASIC_1_0V8_VOLT:
+    case ACCL4_ASIC_1_1V05_VOLT:
+    case ACCL4_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL4_DEV1_COMP;
+      break;
+    case ACCL4_ASIC_2_TEMP:
+    case ACCL4_ASIC_2_0V8_VOLT:
+    case ACCL4_ASIC_2_1V05_VOLT:
+    case ACCL4_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL4_DEV2_COMP;
+      break;
+    case ACCL5_ASIC_1_TEMP:
+    case ACCL5_ASIC_1_0V8_VOLT:
+    case ACCL5_ASIC_1_1V05_VOLT:
+    case ACCL5_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL5_DEV1_COMP;
+      break;
+    case ACCL5_ASIC_2_TEMP:
+    case ACCL5_ASIC_2_0V8_VOLT:
+    case ACCL5_ASIC_2_1V05_VOLT:
+    case ACCL5_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL5_DEV2_COMP;
+      break;
+    case ACCL6_ASIC_1_TEMP:
+    case ACCL6_ASIC_1_0V8_VOLT:
+    case ACCL6_ASIC_1_1V05_VOLT:
+    case ACCL6_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL6_DEV1_COMP;
+      break;
+    case ACCL6_ASIC_2_TEMP:
+    case ACCL6_ASIC_2_0V8_VOLT:
+    case ACCL6_ASIC_2_1V05_VOLT:
+    case ACCL6_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL6_DEV2_COMP;
+      break;
+    case ACCL7_ASIC_1_TEMP:
+    case ACCL7_ASIC_1_0V8_VOLT:
+    case ACCL7_ASIC_1_1V05_VOLT:
+    case ACCL7_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL7_DEV1_COMP;
+      break;
+    case ACCL7_ASIC_2_TEMP:
+    case ACCL7_ASIC_2_0V8_VOLT:
+    case ACCL7_ASIC_2_1V05_VOLT:
+    case ACCL7_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL7_DEV2_COMP;
+      break;
+    case ACCL8_ASIC_1_TEMP:
+    case ACCL8_ASIC_1_0V8_VOLT:
+    case ACCL8_ASIC_1_1V05_VOLT:
+    case ACCL8_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL8_DEV1_COMP;
+      break;
+    case ACCL8_ASIC_2_TEMP:
+    case ACCL8_ASIC_2_0V8_VOLT:
+    case ACCL8_ASIC_2_1V05_VOLT:
+    case ACCL8_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL8_DEV2_COMP;
+      break;
+    case ACCL9_ASIC_1_TEMP:
+    case ACCL9_ASIC_1_0V8_VOLT:
+    case ACCL9_ASIC_1_1V05_VOLT:
+    case ACCL9_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL9_DEV1_COMP;
+      break;
+    case ACCL9_ASIC_2_TEMP:
+    case ACCL9_ASIC_2_0V8_VOLT:
+    case ACCL9_ASIC_2_1V05_VOLT:
+    case ACCL9_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL9_DEV2_COMP;
+      break;
+    case ACCL10_ASIC_1_TEMP:
+    case ACCL10_ASIC_1_0V8_VOLT:
+    case ACCL10_ASIC_1_1V05_VOLT:
+    case ACCL10_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL10_DEV1_COMP;
+      break;
+    case ACCL10_ASIC_2_TEMP:
+    case ACCL10_ASIC_2_0V8_VOLT:
+    case ACCL10_ASIC_2_1V05_VOLT:
+    case ACCL10_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL11_DEV2_COMP;
+      break;
+    case ACCL11_ASIC_1_TEMP:
+    case ACCL11_ASIC_1_0V8_VOLT:
+    case ACCL11_ASIC_1_1V05_VOLT:
+    case ACCL11_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL11_DEV1_COMP;
+      break;
+    case ACCL11_ASIC_2_TEMP:
+    case ACCL11_ASIC_2_0V8_VOLT:
+    case ACCL11_ASIC_2_1V05_VOLT:
+    case ACCL11_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL11_DEV2_COMP;
+      break;
+    case ACCL12_ASIC_1_TEMP:
+    case ACCL12_ASIC_1_0V8_VOLT:
+    case ACCL12_ASIC_1_1V05_VOLT:
+    case ACCL12_ASIC_1_12V_AUX_VOLT:
+      comp_id = CB_ACCL12_DEV1_COMP;
+      break;
+    case ACCL12_ASIC_2_TEMP:
+    case ACCL12_ASIC_2_0V8_VOLT:
+    case ACCL12_ASIC_2_1V05_VOLT:
+    case ACCL12_ASIC_2_12V_AUX_VOLT:
+      comp_id = CB_ACCL12_DEV2_COMP;
+      break;
+    default:
+      return -1;
+  }
+
+  asic_index = comp_id - CB_ACCL1_DEV1_COMP;
+  if (pal_is_asic_nvme_ready(asic_index) != true) {
+    return -1;
+  }
+
+  return get_acb_sensor(fru, sensor_num, value);
 }
 
 PAL_SENSOR_MAP acb_freya_sensor_map[] = {
@@ -319,102 +483,102 @@ PAL_SENSOR_MAP acb_artemis_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x6F
-  {"ACCL1_ASIC_1_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x70
-  {"ACCL1_ASIC_1_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x71
-  {"ACCL1_ASIC_1_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x72
-  {"ACCL1_ASIC_2_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x73
-  {"ACCL1_ASIC_2_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x74
-  {"ACCL1_ASIC_2_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x75
-  {"ACCL2_ASIC_1_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x76
-  {"ACCL2_ASIC_1_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x77
-  {"ACCL2_ASIC_1_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x78
-  {"ACCL2_ASIC_2_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x79
-  {"ACCL2_ASIC_2_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x7A
-  {"ACCL2_ASIC_2_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x7B
-  {"ACCL3_ASIC_1_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x7C
-  {"ACCL3_ASIC_1_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x7D
-  {"ACCL3_ASIC_1_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x7E
-  {"ACCL3_ASIC_2_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x7F
-  {"ACCL3_ASIC_2_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x80
-  {"ACCL3_ASIC_2_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x81
-  {"ACCL4_ASIC_1_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x82
-  {"ACCL4_ASIC_1_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x83
-  {"ACCL4_ASIC_1_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x84
-  {"ACCL4_ASIC_2_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x85
-  {"ACCL4_ASIC_2_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x86
-  {"ACCL4_ASIC_2_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x87
-  {"ACCL5_ASIC_1_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x88
-  {"ACCL5_ASIC_1_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x89
-  {"ACCL5_ASIC_1_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x8A
-  {"ACCL5_ASIC_2_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x8B
-  {"ACCL5_ASIC_2_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x8C
-  {"ACCL5_ASIC_2_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x8D
-  {"ACCL6_ASIC_1_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x8E
-  {"ACCL6_ASIC_1_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x8F
-  {"ACCL6_ASIC_1_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x90
-  {"ACCL6_ASIC_2_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x91
-  {"ACCL6_ASIC_2_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x92
-  {"ACCL6_ASIC_2_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x93
-  {"ACCL7_ASIC_1_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x94
-  {"ACCL7_ASIC_1_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x95
-  {"ACCL7_ASIC_1_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x96
-  {"ACCL7_ASIC_2_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x97
-  {"ACCL7_ASIC_2_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x98
-  {"ACCL7_ASIC_2_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x99
-  {"ACCL8_ASIC_1_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x9A
-  {"ACCL8_ASIC_1_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x9B
-  {"ACCL8_ASIC_1_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x9C
-  {"ACCL8_ASIC_2_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x9D
-  {"ACCL8_ASIC_2_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x9E
-  {"ACCL8_ASIC_2_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x9F
-  {"ACCL9_ASIC_1_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xA0
-  {"ACCL9_ASIC_1_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xA1
-  {"ACCL9_ASIC_1_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xA2
-  {"ACCL9_ASIC_2_TEMP",   0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xA3
-  {"ACCL9_ASIC_2_0V8_VOLT",  0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xA4
-  {"ACCL9_ASIC_2_1V05_VOLT",  0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xA5
-  {"ACCL10_ASIC_1_TEMP",  0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xA6
-  {"ACCL10_ASIC_1_0V8_VOLT", 0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xA7
-  {"ACCL10_ASIC_1_1V05_VOLT", 0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xA8
-  {"ACCL10_ASIC_2_TEMP",  0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xA9
-  {"ACCL10_ASIC_2_0V8_VOLT", 0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xAA
-  {"ACCL10_ASIC_2_1V05_VOLT", 0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xAB
-  {"ACCL11_ASIC_1_TEMP",  0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xAC
-  {"ACCL11_ASIC_1_0V8_VOLT", 0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xAD
-  {"ACCL11_ASIC_1_1V05_VOLT", 0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xAE
-  {"ACCL11_ASIC_2_TEMP",  0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xAF
-  {"ACCL11_ASIC_2_0V8_VOLT", 0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xB0
-  {"ACCL11_ASIC_2_1V05_VOLT", 0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xB1
-  {"ACCL12_ASIC_1_TEMP",  0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xB2
-  {"ACCL12_ASIC_1_0V8_VOLT", 0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xB3
-  {"ACCL12_ASIC_1_1V05_VOLT", 0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xB4
-  {"ACCL12_ASIC_2_TEMP",  0, get_acb_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xB5
-  {"ACCL12_ASIC_2_0V8_VOLT", 0, get_acb_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xB6
-  {"ACCL12_ASIC_2_1V05_VOLT", 0, get_acb_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xB7
-  {"ACCL1_ASIC_1_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xB8
-  {"ACCL1_ASIC_2_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xB9
-  {"ACCL2_ASIC_1_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBA
-  {"ACCL2_ASIC_2_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBB
-  {"ACCL3_ASIC_1_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBC
-  {"ACCL3_ASIC_2_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBD
-  {"ACCL4_ASIC_1_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBE
-  {"ACCL4_ASIC_2_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBF
-  {"ACCL5_ASIC_1_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC0
-  {"ACCL5_ASIC_2_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC1
-  {"ACCL6_ASIC_1_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC2
-  {"ACCL6_ASIC_2_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC3
-  {"ACCL7_ASIC_1_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC4
-  {"ACCL7_ASIC_2_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC5
-  {"ACCL8_ASIC_1_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC6
-  {"ACCL8_ASIC_2_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC7
-  {"ACCL9_ASIC_1_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC8
-  {"ACCL9_ASIC_2_12V_AUX_VOLT",  0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC9
-  {"ACCL10_ASIC_1_12V_AUX_VOLT", 0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCA
-  {"ACCL10_ASIC_2_12V_AUX_VOLT", 0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCB
-  {"ACCL11_ASIC_1_12V_AUX_VOLT", 0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCC
-  {"ACCL11_ASIC_2_12V_AUX_VOLT", 0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCD
-  {"ACCL12_ASIC_1_12V_AUX_VOLT", 0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCE
-  {"ACCL12_ASIC_2_12V_AUX_VOLT", 0, get_acb_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCF
+  {"ACCL1_ASIC_1_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x70
+  {"ACCL1_ASIC_1_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x71
+  {"ACCL1_ASIC_1_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x72
+  {"ACCL1_ASIC_2_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x73
+  {"ACCL1_ASIC_2_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x74
+  {"ACCL1_ASIC_2_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x75
+  {"ACCL2_ASIC_1_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x76
+  {"ACCL2_ASIC_1_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x77
+  {"ACCL2_ASIC_1_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x78
+  {"ACCL2_ASIC_2_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x79
+  {"ACCL2_ASIC_2_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x7A
+  {"ACCL2_ASIC_2_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x7B
+  {"ACCL3_ASIC_1_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x7C
+  {"ACCL3_ASIC_1_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x7D
+  {"ACCL3_ASIC_1_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x7E
+  {"ACCL3_ASIC_2_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x7F
+  {"ACCL3_ASIC_2_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x80
+  {"ACCL3_ASIC_2_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x81
+  {"ACCL4_ASIC_1_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x82
+  {"ACCL4_ASIC_1_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x83
+  {"ACCL4_ASIC_1_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x84
+  {"ACCL4_ASIC_2_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x85
+  {"ACCL4_ASIC_2_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x86
+  {"ACCL4_ASIC_2_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x87
+  {"ACCL5_ASIC_1_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x88
+  {"ACCL5_ASIC_1_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x89
+  {"ACCL5_ASIC_1_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x8A
+  {"ACCL5_ASIC_2_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x8B
+  {"ACCL5_ASIC_2_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x8C
+  {"ACCL5_ASIC_2_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x8D
+  {"ACCL6_ASIC_1_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x8E
+  {"ACCL6_ASIC_1_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x8F
+  {"ACCL6_ASIC_1_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x90
+  {"ACCL6_ASIC_2_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x91
+  {"ACCL6_ASIC_2_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x92
+  {"ACCL6_ASIC_2_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x93
+  {"ACCL7_ASIC_1_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x94
+  {"ACCL7_ASIC_1_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x95
+  {"ACCL7_ASIC_1_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x96
+  {"ACCL7_ASIC_2_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x97
+  {"ACCL7_ASIC_2_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x98
+  {"ACCL7_ASIC_2_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x99
+  {"ACCL8_ASIC_1_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x9A
+  {"ACCL8_ASIC_1_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x9B
+  {"ACCL8_ASIC_1_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x9C
+  {"ACCL8_ASIC_2_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0x9D
+  {"ACCL8_ASIC_2_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0x9E
+  {"ACCL8_ASIC_2_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0x9F
+  {"ACCL9_ASIC_1_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xA0
+  {"ACCL9_ASIC_1_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xA1
+  {"ACCL9_ASIC_1_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xA2
+  {"ACCL9_ASIC_2_TEMP",   0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xA3
+  {"ACCL9_ASIC_2_0V8_VOLT",  0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xA4
+  {"ACCL9_ASIC_2_1V05_VOLT",  0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xA5
+  {"ACCL10_ASIC_1_TEMP",  0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xA6
+  {"ACCL10_ASIC_1_0V8_VOLT", 0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xA7
+  {"ACCL10_ASIC_1_1V05_VOLT", 0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xA8
+  {"ACCL10_ASIC_2_TEMP",  0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xA9
+  {"ACCL10_ASIC_2_0V8_VOLT", 0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xAA
+  {"ACCL10_ASIC_2_1V05_VOLT", 0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xAB
+  {"ACCL11_ASIC_1_TEMP",  0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xAC
+  {"ACCL11_ASIC_1_0V8_VOLT", 0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xAD
+  {"ACCL11_ASIC_1_1V05_VOLT", 0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xAE
+  {"ACCL11_ASIC_2_TEMP",  0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xAF
+  {"ACCL11_ASIC_2_0V8_VOLT", 0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xB0
+  {"ACCL11_ASIC_2_1V05_VOLT", 0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xB1
+  {"ACCL12_ASIC_1_TEMP",  0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xB2
+  {"ACCL12_ASIC_1_0V8_VOLT", 0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xB3
+  {"ACCL12_ASIC_1_1V05_VOLT", 0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xB4
+  {"ACCL12_ASIC_2_TEMP",  0, get_accl_sensor, false, {90, 0, 0, 10, 0, 0, 0, 0}, TEMP},    // 0xB5
+  {"ACCL12_ASIC_2_0V8_VOLT", 0, get_accl_sensor, false, {0.93, 0.9, 0, 0.76, 0.81, 0, 0, 0}, VOLT}, // 0xB6
+  {"ACCL12_ASIC_2_1V05_VOLT", 0, get_accl_sensor, false, {1.12, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, // 0xB7
+  {"ACCL1_ASIC_1_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xB8
+  {"ACCL1_ASIC_2_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xB9
+  {"ACCL2_ASIC_1_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBA
+  {"ACCL2_ASIC_2_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBB
+  {"ACCL3_ASIC_1_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBC
+  {"ACCL3_ASIC_2_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBD
+  {"ACCL4_ASIC_1_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBE
+  {"ACCL4_ASIC_2_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xBF
+  {"ACCL5_ASIC_1_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC0
+  {"ACCL5_ASIC_2_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC1
+  {"ACCL6_ASIC_1_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC2
+  {"ACCL6_ASIC_2_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC3
+  {"ACCL7_ASIC_1_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC4
+  {"ACCL7_ASIC_2_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC5
+  {"ACCL8_ASIC_1_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC6
+  {"ACCL8_ASIC_2_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC7
+  {"ACCL9_ASIC_1_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC8
+  {"ACCL9_ASIC_2_12V_AUX_VOLT",  0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xC9
+  {"ACCL10_ASIC_1_12V_AUX_VOLT", 0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCA
+  {"ACCL10_ASIC_2_12V_AUX_VOLT", 0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCB
+  {"ACCL11_ASIC_1_12V_AUX_VOLT", 0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCC
+  {"ACCL11_ASIC_2_12V_AUX_VOLT", 0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCD
+  {"ACCL12_ASIC_1_12V_AUX_VOLT", 0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCE
+  {"ACCL12_ASIC_2_12V_AUX_VOLT", 0, get_accl_sensor, false, {12.6, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, // 0xCF
 };
 
 

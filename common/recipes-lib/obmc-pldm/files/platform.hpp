@@ -106,6 +106,8 @@ std::string get_state_message(uint8_t, uint8_t);
 std::string get_device_type(uint8_t);
 std::string get_board_info(uint8_t);
 std::string get_event_type(uint8_t);
+void set_sensor_state_work(uint16_t, uint8_t, uint8_t);
+bool is_record_event(uint16_t, uint8_t, uint8_t);
 
 } // namespace platform
 } // namespace responder

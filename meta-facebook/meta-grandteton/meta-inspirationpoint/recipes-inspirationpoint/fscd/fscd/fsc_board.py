@@ -101,6 +101,21 @@ gta_asic_fru_map = {
     "accl12": {"fru": 29},
 }
 
+gta_asic_start_index_map = {
+    "accl1":  {"asic_card_start_index": 0},
+    "accl2":  {"asic_card_start_index": 2},
+    "accl3":  {"asic_card_start_index": 4},
+    "accl4":  {"asic_card_start_index": 6},
+    "accl5":  {"asic_card_start_index": 8},
+    "accl6":  {"asic_card_start_index": 10},
+    "accl7":  {"asic_card_start_index": 12},
+    "accl8":  {"asic_card_start_index": 14},
+    "accl9":  {"asic_card_start_index": 16},
+    "accl10": {"asic_card_start_index": 18},
+    "accl11": {"asic_card_start_index": 20},
+    "accl12": {"asic_card_start_index": 22},
+}
+
 def get_fan_mode(scenario="None"):
     if lpal_hndl.pal_is_artemis():
         if str(scenario) == "one_fan_failure":
@@ -203,6 +218,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         if (accl_present.value == 0):
                             return 0
                     else:
+                        return 0
+                    asic_index = int(gta_asic_start_index_map[snr_split[0]]["asic_card_start_index"]) + int(snr_split[2]) - 1
+                    if lpal_hndl.pal_is_asic_nvme_ready(int(asic_index)) is not True:
                         return 0
             # check power status first
             pwr_sts = bmc_read_power()

@@ -1752,3 +1752,25 @@ pal_is_dev_prsnt(uint8_t fru, uint8_t dev, uint8_t *status) {
   }
   return 0;
 }
+
+bool
+pal_is_asic_nvme_ready(uint8_t asic_index) {
+  if (!pal_is_artemis()) {
+    return false;
+  }
+
+  char key[MAX_KEY_LEN] = {0};
+  char status[MAX_VALUE_LEN] = {0};
+
+  if (asic_index >= CB_ASIC_COUNT) {
+    syslog(LOG_WARNING, "%s() invalid asic index: 0x%x", __func__, asic_index);
+    return false;
+  }
+
+  sprintf(key, "is_asic%d_ready", asic_index);
+  if ((kv_get(key, status, NULL, 0) != 0) || (strcmp(status, "0") == 0)) {
+    return false;
+  }
+
+  return true;
+}

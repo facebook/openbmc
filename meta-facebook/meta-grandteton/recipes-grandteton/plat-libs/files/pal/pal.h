@@ -41,6 +41,7 @@ extern "C" {
 #define MAIN_CPLD_BUS_NUM       (7)
 #define CRASHDUMP_AMD_MB
 #define FRB3_TRIGGER_TIME 300
+#define CB_ASIC_COUNT 24
 
 extern const char pal_fru_list[];
 
@@ -80,6 +81,7 @@ bool fru_presence_ext(uint8_t fru_id, uint8_t *status);
 void hgx_pwr_limit_mon (void);
 int pal_get_gpu_fru_id();
 void pal_check_power_rail(int is_pwr_on);
+bool pal_is_asic_nvme_ready(uint8_t asic_index);
 
 #ifdef __cplusplus
 } // extern "C"

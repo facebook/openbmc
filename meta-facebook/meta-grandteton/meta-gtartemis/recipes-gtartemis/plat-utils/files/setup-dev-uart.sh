@@ -97,7 +97,6 @@ start_dev_connect() {
   USB=$(/usr/bin/readlink /dev/serial/by-path/$PATH)
   USB=${USB:6}
   if [[ -z "$USB" ]]; then
-    /bin/sleep 30 # wait for usb init
     exit "$EXIT_ERROR";
   else
     exec /usr/local/bin/mTerm_server ""$1"_"$2"" "/dev/$USB"
@@ -105,6 +104,7 @@ start_dev_connect() {
 }
 
 if [ "$3" == "start" ]; then
+  /bin/sleep 30 # wait for usb init
   start_dev_connect "$1" "$2"
 else
   exit "$EXIT_ERROR";

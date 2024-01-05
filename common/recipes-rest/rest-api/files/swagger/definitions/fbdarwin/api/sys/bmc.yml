@@ -1,0 +1,119 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/bmc
+  title: Swagger doc for /api/sys/bmc
+  version: 1.0.0
+paths:
+  /api/sys/bmc:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  Description:
+                    type: string
+                  MAC Addr:
+                    type: string
+                  Reset Reason:
+                    type: string
+                  Uptime:
+                    type: string
+                  uptime:
+                    type: string
+                  Memory Usage:
+                    type: string
+                  memory:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      MemTotal:
+                        type: integer
+                      MemFree:
+                        type: integer
+                      MemAvailable:
+                        type: integer
+                      Buffers:
+                        type: integer
+                      Cached:
+                        type: integer
+                      Shmem:
+                        type: integer
+                  CPU Usage:
+                    type: string
+                  OpenBMC Version:
+                    type: string
+                  u-boot version:
+                    type: string
+                  kernel version:
+                    type: string
+                  TPM TCG version:
+                    type: string
+                  TPM FW version:
+                    type: string
+                  SPI0 Vendor:
+                    type: string
+                  SPI1 Vendor:
+                    type: string
+                  At-Scale-Debug Running:
+                    type: boolean
+                  Secondary Boot Triggered:
+                    type: boolean
+                  vboot:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      status:
+                        type: string
+                      status_text:
+                        type: string
+                  load-1:
+                    type: string
+                  load-5:
+                    type: string
+                  load-15:
+                    type: string
+                  open-fds:
+                    type: string
+                  MTD Parts:
+                    type: array
+                    items:
+                      type: string
+                  mmc-info:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      /dev/mmcblk0:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          CID_MID:
+                            type: integer
+                          CID_PNM:
+                            type: string
+                          CID_PRV_MAJOR:
+                            type: integer
+                          CID_PRV_MINOR:
+                            type: integer
+                          EXT_CSD_PRE_EOL_INFO:
+                            type: integer
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A:
+                            type: integer
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B:
+                            type: integer
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

@@ -726,6 +726,12 @@ paths:
                     properties: 
                       value: 
                         type: string
+                  SWB_NIC0_OPTIC_TEMP_C: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
                   SWB_NIC1_TEMP_C: 
                     type: object
                     additionalProperties: false
@@ -745,6 +751,12 @@ paths:
                       value: 
                         type: string
                   SWB_NIC1_PWR_W: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SWB_NIC1_OPTIC_TEMP_C: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -774,6 +786,12 @@ paths:
                     properties: 
                       value: 
                         type: string
+                  SWB_NIC2_OPTIC_TEMP_C: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
                   SWB_NIC3_TEMP_C: 
                     type: object
                     additionalProperties: false
@@ -793,6 +811,12 @@ paths:
                       value: 
                         type: string
                   SWB_NIC3_PWR_W: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SWB_NIC3_OPTIC_TEMP_C: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -822,6 +846,12 @@ paths:
                     properties: 
                       value: 
                         type: string
+                  SWB_NIC4_OPTIC_TEMP_C: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
                   SWB_NIC5_TEMP_C: 
                     type: object
                     additionalProperties: false
@@ -841,6 +871,12 @@ paths:
                       value: 
                         type: string
                   SWB_NIC5_PWR_W: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SWB_NIC5_OPTIC_TEMP_C: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -870,6 +906,12 @@ paths:
                     properties: 
                       value: 
                         type: string
+                  SWB_NIC6_OPTIC_TEMP_C: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
                   SWB_NIC7_TEMP_C: 
                     type: object
                     additionalProperties: false
@@ -889,6 +931,12 @@ paths:
                       value: 
                         type: string
                   SWB_NIC7_PWR_W: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SWB_NIC7_OPTIC_TEMP_C: 
                     type: object
                     additionalProperties: false
                     properties: 

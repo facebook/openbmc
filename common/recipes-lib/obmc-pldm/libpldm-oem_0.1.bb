@@ -27,7 +27,5 @@ LOCAL_URI = " \
     "
 
 DEPENDS += "libpldm libipmi"
-RDEPENDS:${PN} += "libpldm  libipmi"
-LDFLAGS += "-lpldm -lipmi"
 
 inherit meson pkgconfig

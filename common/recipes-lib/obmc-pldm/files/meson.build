@@ -13,7 +13,8 @@ hdrs = [
 ]
 
 libs = [
-  dependency('libpldm')
+  dependency('libpldm'),
+  dependency('libipmi')
 ]
 
 srcs = [

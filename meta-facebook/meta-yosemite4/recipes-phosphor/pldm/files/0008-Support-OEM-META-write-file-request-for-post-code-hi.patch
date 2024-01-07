@@ -1,4 +1,4 @@
-From 633ae41a13ab7dab6c3c63e29a7953c852d22ade Mon Sep 17 00:00:00 2001
+From 4d13727c7f93e524bc41afc30ee6c25af49ca3a3 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 8/9] Support OEM-META write file request for post code history
@@ -127,12 +127,12 @@ index 687fa82..3f71b1f 100644
    'pldmresponder',
    sources,
 diff --git a/meson.build b/meson.build
-index 5e1d362..58d5349 100644
+index 9328b08..c46b719 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -59,6 +59,9 @@ if get_option('oem-ibm').allowed()
-   add_project_arguments('-DOEM_IBM', language : 'c')
-   add_project_arguments('-DOEM_IBM', language : 'cpp')
+@@ -58,6 +58,9 @@ if get_option('oem-ibm').allowed()
+   conf_data.set('DMA_MAXSIZE', get_option('oem-ibm-dma-maxsize'))
+   add_project_arguments('-DOEM_IBM', language : ['c', 'cpp'])
  endif
 +if get_option('oem-meta').allowed()
 +  add_project_arguments('-DOEM_META', language : ['c','cpp'])
@@ -515,7 +515,7 @@ index 0000000..780f0ef
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 9296460..03a7570 100644
+index e59f8dc..e163e83 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -67,6 +67,10 @@ PHOSPHOR_LOG2_USING;
@@ -544,5 +544,5 @@ index 9296460..03a7570 100644
          pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
          oemBiosHandler.get());
 -- 
-2.41.0
+2.25.1
 

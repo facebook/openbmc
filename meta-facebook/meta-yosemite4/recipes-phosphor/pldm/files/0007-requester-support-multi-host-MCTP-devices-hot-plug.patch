@@ -1,4 +1,4 @@
-From bb3c049d560b2b8c115c03200d06c2daabf6fb52 Mon Sep 17 00:00:00 2001
+From 548220e19a4aca0f03fc05f1250c01c4f0d326d0 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 7/9] requester: support multi-host MCTP devices hot plug
@@ -106,10 +106,10 @@ index cdc539b..dda1b10 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index 6d27668..5e1d362 100644
+index 8b52af8..9328b08 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -191,6 +191,7 @@ executable(
+@@ -190,6 +190,7 @@ executable(
    'platform-mc/numeric_sensor.cpp',
    'platform-mc/event_manager.cpp',
    'requester/mctp_endpoint_discovery.cpp',
@@ -118,7 +118,7 @@ index 6d27668..5e1d362 100644
    dependencies: deps,
    install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 6cb129b..9296460 100644
+index f3bbe37..e59f8dc 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -139,13 +139,13 @@ index 6cb129b..9296460 100644
      std::unique_ptr<oem_platform::Handler> oemPlatformHandler{};
      std::unique_ptr<oem_bios::Handler> oemBiosHandler{};
  
-@@ -325,7 +329,8 @@ int main(int argc, char** argv)
+@@ -323,7 +327,8 @@ int main(int argc, char** argv)
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -                     fwManager.get(), platformManager.get()});
-+                     fwManager.get(), configurationDiscovery.get()});
-+
++                     fwManager.get(), platformManager.get(),
++                     configurationDiscovery.get()});
      auto callback = [verbose, &invoker, &reqHandler, &fwManager, &pldmTransport,
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (!(revents & EPOLLIN))
@@ -607,5 +607,5 @@ index 80c27c1..6e89e1d 100644
                           phosphor_logging_dep,
                           sdbusplus,
 -- 
-2.41.0
+2.25.1
 

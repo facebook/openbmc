@@ -1,4 +1,4 @@
-From f1d6830fee98fc183902255289bbf480486278e2 Mon Sep 17 00:00:00 2001
+From e3eda5ea90fbc73b3214a14241b9a7baa825bb0d Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 6/9] platform-mc: Added EventManager
@@ -42,10 +42,10 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 67264c8..6c39016 100644
+index 57315a4..aa0b3b7 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
-@@ -342,15 +342,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
+@@ -345,15 +345,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
          try
          {
              const auto& handlers = eventHandlers.at(eventClass);
@@ -69,10 +69,10 @@ index 67264c8..6c39016 100644
          catch (const std::out_of_range& e)
          {
 diff --git a/meson.build b/meson.build
-index 3e5988b..6d27668 100644
+index 7a47722..8b52af8 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -73,6 +73,7 @@ endif
+@@ -72,6 +72,7 @@ endif
  conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'static_eid_table.json'))
  conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
  conf_data.set_quoted('PLDM_T2_CONFIG_JSON', join_paths(package_datadir, 'pldm_t2_config.json'))
@@ -80,7 +80,7 @@ index 3e5988b..6d27668 100644
  config = configure_file(output: 'config.h',
    configuration: conf_data
  )
-@@ -188,6 +189,7 @@ executable(
+@@ -187,6 +188,7 @@ executable(
    'platform-mc/platform_manager.cpp',
    'platform-mc/sensor_manager.cpp',
    'platform-mc/numeric_sensor.cpp',
@@ -1989,7 +1989,7 @@ index b77a197..2fb3f1e 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index a8ba89a..6cb129b 100644
+index 8c6b63f..f3bbe37 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -269,10 +269,37 @@ int main(int argc, char** argv)
@@ -2024,14 +2024,14 @@ index a8ba89a..6cb129b 100644
 +    }}}};
 +
      auto platformHandler = std::make_unique<platform::Handler>(
-         &dbusHandler, PDR_JSONS_DIR, pdrRepo.get(), hostPDRHandler.get(),
-         dbusToPLDMEventHandler.get(), fruHandler.get(),
--        oemPlatformHandler.get(), event, true);
-+        oemPlatformHandler.get(), event, true, addOnEventHandlers);
+         &dbusHandler, hostEID, &instanceIdDb, PDR_JSONS_DIR, pdrRepo.get(),
+         hostPDRHandler.get(), dbusToPLDMEventHandler.get(), fruHandler.get(),
+-        oemPlatformHandler.get(), &reqHandler, event, true);
++        oemPlatformHandler.get(), &reqHandler, event, true, addOnEventHandlers);
  #ifdef OEM_IBM
      pldm::responder::oem_ibm_platform::Handler* oemIbmPlatformHandler =
          dynamic_cast<pldm::responder::oem_ibm_platform::Handler*>(
-@@ -295,8 +322,6 @@ int main(int argc, char** argv)
+@@ -293,8 +320,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
@@ -2041,5 +2041,5 @@ index a8ba89a..6cb129b 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.41.0
+2.25.1
 

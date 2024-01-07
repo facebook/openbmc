@@ -1,4 +1,4 @@
-From 9cd7e36c546f6a3abacf0effb76edecd94156968 Mon Sep 17 00:00:00 2001
+From cda015b1796b54fed420cea82fe0786c576b9a94 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
 Subject: [PATCH 5/9] platform-mc: Sensor handling
@@ -42,10 +42,10 @@ Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
  create mode 100644 platform-mc/test/sensor_manager_test.cpp
 
 diff --git a/meson.build b/meson.build
-index 4045e72..3e5988b 100644
+index 6680bd2..7a47722 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -71,6 +71,8 @@ elif get_option('transport-implementation') == 'af-mctp'
+@@ -70,6 +70,8 @@ elif get_option('transport-implementation') == 'af-mctp'
    conf_data.set('PLDM_TRANSPORT_WITH_AF_MCTP', 1)
  endif
  conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'static_eid_table.json'))
@@ -54,7 +54,7 @@ index 4045e72..3e5988b 100644
  config = configure_file(output: 'config.h',
    configuration: conf_data
  )
-@@ -184,6 +186,8 @@ executable(
+@@ -183,6 +185,8 @@ executable(
    'platform-mc/terminus_manager.cpp',
    'platform-mc/terminus.cpp',
    'platform-mc/platform_manager.cpp',
@@ -2059,7 +2059,7 @@ index 0000000..56e1d36
 +    runEventLoopForSeconds(seconds);
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 531f439..a8ba89a 100644
+index 8c07316..8c6b63f 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -182,7 +182,7 @@ int main(int argc, char** argv)
@@ -2072,5 +2072,5 @@ index 531f439..a8ba89a 100644
      InstanceIdDb instanceIdDb;
      dbus_api::Requester dbusImplReq(bus, "/xyz/openbmc_project/pldm",
 -- 
-2.41.0
+2.25.1
 

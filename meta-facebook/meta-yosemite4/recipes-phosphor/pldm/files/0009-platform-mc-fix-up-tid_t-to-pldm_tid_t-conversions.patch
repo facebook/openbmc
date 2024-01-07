@@ -1,4 +1,4 @@
-From 1c1bc3b03969f074dc8407c6dd4f624126f4b9b4 Mon Sep 17 00:00:00 2001
+From ea90ef25eb11328067e8f86e460cbeef077f36c8 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 3 Jan 2024 11:26:32 -0600
 Subject: [PATCH 9/9] platform-mc: fix up tid_t to pldm_tid_t conversions
@@ -862,5 +862,5 @@ index 7f84042..311e35f 100644
  
      EXPECT_EQ(tid, t1.getTid());
 -- 
-2.41.0
+2.25.1
 

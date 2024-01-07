@@ -1,4 +1,4 @@
-From bec663ad8aa64d1155d3d043da2ea9723a781e31 Mon Sep 17 00:00:00 2001
+From 97958600acc2eaa5bd5f82bfd2edbe9032c79f5f Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 22 Feb 2022 15:40:17 +0000
 Subject: [PATCH 3/9] platform-mc: Added Terminus/TerminusManager class
@@ -43,10 +43,10 @@ Change-Id: Ifa5bdfff50648f1d7fba8710e160de662e8f9e06
  create mode 100644 platform-mc/test/terminus_test.cpp
 
 diff --git a/meson.build b/meson.build
-index b5476cf..4045e72 100644
+index 04d6acf..6680bd2 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -181,6 +181,9 @@ executable(
+@@ -180,6 +180,9 @@ executable(
    'fw-update/device_updater.cpp',
    'fw-update/watch.cpp',
    'fw-update/update_manager.cpp',
@@ -56,7 +56,7 @@ index b5476cf..4045e72 100644
    'requester/mctp_endpoint_discovery.cpp',
    implicit_include_directories: false,
    dependencies: deps,
-@@ -219,5 +222,6 @@ if get_option('tests').allowed()
+@@ -218,5 +221,6 @@ if get_option('tests').allowed()
    subdir('fw-update/test')
    subdir('host-bmc/test')
    subdir('requester/test')
@@ -1556,7 +1556,7 @@ index 0000000..b2783c3
 +    EXPECT_EQ(tid, t1.getTid());
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 75330a6..531f439 100644
+index 70b2f88..8c07316 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -6,6 +6,7 @@
@@ -1567,7 +1567,7 @@ index 75330a6..531f439 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -294,10 +295,12 @@ int main(int argc, char** argv)
+@@ -292,10 +293,12 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
@@ -1583,5 +1583,5 @@ index 75330a6..531f439 100644
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (!(revents & EPOLLIN))
 -- 
-2.41.0
+2.25.1
 

@@ -21,8 +21,8 @@
 
 int yamp_write_sysfs(char *str, unsigned int val)
 {
-    char buf[YAMP_BUFFER_SZ];
-    snprintf(buf, YAMP_BUFFER_SZ, "echo %d > %s\n", val, str);
+    char buf[YAMP_BUFFER_SZ * 2];
+    snprintf(buf, sizeof(buf), "echo %u > %s\n", val, str);
     return system(buf);
 }
 
@@ -66,14 +66,14 @@ int yamp_read_sysfs(char *str, int *val)
 int yamp_write_cpld_reg(char *prefix, char *reg, int val)
 {
     char buf[YAMP_BUFFER_SZ];
-    snprintf(buf, YAMP_BUFFER_SZ, "%s%s", prefix, reg);
+    snprintf(buf, sizeof(buf), "%s%s", prefix, reg);
     return yamp_write_sysfs(buf, val);
 }
 
 int yamp_read_cpld_reg(char *prefix, char *reg, int *val)
 {
     char buf[YAMP_BUFFER_SZ];
-    snprintf(buf, YAMP_BUFFER_SZ, "%s%s", prefix, reg);
+    snprintf(buf, sizeof(buf), "%s%s", prefix, reg);
     return yamp_read_sysfs(buf, val);
 }
 
@@ -89,7 +89,7 @@ void yamp_set_sysled(char *name, int green, int red, int blink)
 {
     char led_name[YAMP_BUFFER_SZ];
 
-    snprintf(led_name, YAMP_BUFFER_SZ, "%s%s_led", SUP_PREFIX, name);
+    snprintf(led_name, sizeof(led_name), "%s%s_led", SUP_PREFIX, name);
     yamp_write_cpld_reg(led_name, COLOR_GREEN, green);
     yamp_write_cpld_reg(led_name, COLOR_RED, red);
     yamp_write_cpld_reg(led_name, COLOR_BLINK, blink);
@@ -106,7 +106,7 @@ bool yamp_update_fan_led(bool prev_fan_state, bool *prev_fan_ok)
     int read_val = 0, rc = 0;
     for (fan = 1; fan <= 5; fan++) {
         this_fan_ok = true;
-        snprintf(buf, YAMP_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SCD_FAN_PRESENT);
+        snprintf(buf, sizeof(buf), "%sfan%d%s", FAN_PREFIX, fan, SCD_FAN_PRESENT);
         // Check if FAN present
         rc = yamp_read_sysfs(buf, &read_val);
         if (rc != 0) {
@@ -118,7 +118,7 @@ bool yamp_update_fan_led(bool prev_fan_state, bool *prev_fan_ok)
                 syslog(LOG_WARNING, "Fan %d is not present", fan);
             } else {
                 // If fan is present, check rpm is over a minimum threshold
-                snprintf(buf, YAMP_BUFFER_SZ, "%sfan%d%s",
+                snprintf(buf, sizeof(buf), "%sfan%d%s",
                          FAN_PREFIX, fan, FAN_RPM);
                 rc = yamp_read_sysfs(buf, &read_val);
                 if ((rc != 0) || (read_val < YAMP_FAN_RPM_MIN)) {
@@ -134,9 +134,9 @@ bool yamp_update_fan_led(bool prev_fan_state, bool *prev_fan_ok)
 
         if ((this_fan_ok != prev_fan_ok[fan])) {
           // If current fan is not good, do the best effort to set fan led to red
-          snprintf(buf, YAMP_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SCD_LED_GREEN);
+          snprintf(buf, sizeof(buf), "%sfan%d%s", FAN_PREFIX, fan, SCD_LED_GREEN);
           yamp_write_sysfs(buf, this_fan_ok ? 1 : 0);
-          snprintf(buf, YAMP_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SCD_LED_RED);
+          snprintf(buf, sizeof(buf), "%sfan%d%s", FAN_PREFIX, fan, SCD_LED_RED);
           yamp_write_sysfs(buf, this_fan_ok ? 0 : 1);
         }
         prev_fan_ok[fan] = this_fan_ok;
@@ -257,7 +257,7 @@ bool yamp_update_sys_led(bool prev_sys_ok, bool psu_ok, bool fan_ok)
     } else {
       // If PSU and FAN are present, check if all LCs are present too
       for (lc = 1; lc <= YAMP_MAX_LC; lc++) {
-          snprintf(buf, YAMP_BUFFER_SZ, "%s%s%d%s",
+          snprintf(buf, sizeof(buf), "%s%s%d%s",
               SCD_PREFIX, YAMP_LC, lc, YAMP_LC_PRSNT);
           rc = yamp_read_sysfs(buf, &read_val);
           if ((rc != 0) || (read_val == 0)) {
@@ -293,9 +293,9 @@ void yamp_init_all_led() {
   yamp_set_sysled("system", 1, 0, 0);
   yamp_write_cpld_reg(SUP_PREFIX, BEACON_LED, 0);
   for (fan = 1; fan <= 5 ; fan++) {
-      snprintf(buf, YAMP_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SCD_LED_GREEN);
+      snprintf(buf, sizeof(buf), "%sfan%d%s", FAN_PREFIX, fan, SCD_LED_GREEN);
       yamp_write_sysfs(buf, 1);
-      snprintf(buf, YAMP_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SCD_LED_RED);
+      snprintf(buf, sizeof(buf), "%sfan%d%s", FAN_PREFIX, fan, SCD_LED_RED);
       yamp_write_sysfs(buf, 0);
   }
 }

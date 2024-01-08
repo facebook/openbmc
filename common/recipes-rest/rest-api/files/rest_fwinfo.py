@@ -41,7 +41,10 @@ async def get_fwinfo_response():
             fruid_util_info[board] = fruid_tmp_info._asdict()
         fw_util_info = {}
         for board in fw_map:
-            fw_util_info[board] = await _get_fwutil_info_for_target(board)
+            try:
+                fw_util_info[board] = await _get_fwutil_info_for_target(board)
+            except ValueError:
+                fw_util_info[board] = {}
         response_body = {"fruid_info": fruid_util_info, "fw_info": fw_util_info}
         FWINFO_RESPONSE_CACHE = response_body
     else:

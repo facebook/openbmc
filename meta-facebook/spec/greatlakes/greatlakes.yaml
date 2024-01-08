@@ -21,12 +21,14 @@ status:
     BIC Slot Clear CMOS Support: unsupported
     BIC Slot Post-Code Data: done
     BIC Slot SDR Data: done
+    BIC Slot Sensor Data: done
     BIC Status Check: done
     BIC USB Connection Status: done
   BMC Hardware Support:
     Aspeed AST2620: done
     Nuvoton Arbel: unsupported
   BMC Reset:
+    Reset host side: done
     Reset via SSH: done
   Configuration:
     CMOS Restore via Physical Reset: done
@@ -44,6 +46,7 @@ status:
   Firmware Signature Checking:
     BIC Binary Signature Check: done
     Expansion Card Binary Signature Check: done
+    BIOS Signature Check: done
   Firmware Update:
     BIC Firmware Update: done
     BIC Firmware Update Recovery: done
@@ -54,6 +57,7 @@ status:
     Expansion BIC Firmware Update Recovery: done
     NIC Firmware Update: done
     VR Firmware Update: done
+    Firmware Update: done
   Firmware Versions:
     BIC Firmware Version: done
     BIOS Firmware Version: done
@@ -62,12 +66,16 @@ status:
     Firmware Versions: done
     NIC Firmware Version: done
     VR Firmware Versions: done
+    BMC Firmware Version: done
   Front Panel Control:
     FPC Heartbeat LED: done
     FPC Identify LED: done
+    FPC Console Selection Switch: done
+    FPC Debug Card Console: done
   FRU Information:
     FRU Read: done
     FRU Update: done
+    FRU Information: done
   Health Monitoring:
     BMC CPU Usage: done
     BMC Memory Usage: done
@@ -96,6 +104,7 @@ status:
     GPIO Frame: done
     Post Code Frame: done
     User Settings Frame: done
+    Memory Loop Code: done
   Miscellaneous:
     Factory Reset Settings: done
     enclosure-util: unsupported
@@ -116,9 +125,11 @@ status:
     Power Failure Detection: done
     Power Status: done
     Sled Cycle: done
+    Slot Cycle: done
     Slot 12v Cycle: done
     Slot 12v Off: done
     Slot Graceful Shutdown: done
+    Slot Power On: done
     Slot Power Off: done
     Slot Reset: done
     phosphor-state-manager: unsupported
@@ -155,7 +166,13 @@ status:
     Inband KCS: done
     SSH: done
     host2bmc USB: unsupported
+  Intel:
+    Scale Debug: done
   Greatlakes Specific Requirements:
     CPLD Board ID Version Info: done
     PRoT Support: unsupported
     Sled Cable Presence Detect: done
+    DDR5 PMIC Power Measurement: done
+    DDR5 PMIC Error Injection: done
+    DIMM SPD Data: done
+    MPS VR Controller FW Update Cycle Counter: done

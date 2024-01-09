@@ -205,6 +205,8 @@ gta_check_exmax_prsnt(uint8_t cable_id, uint8_t cb_present, uint8_t mc_present) 
       if ((temp_reg_val[1] & EXMAX_CABLE_PRESENT_MASK_B) == EXMAX_CABLE_PRESENT_MASK_B && (mc_present == FRU_PRSNT)) {
         syslog(LOG_CRIT, "Cable B is not Present");
         cable_b_prsnt_flag = false;
+      } else {
+        cable_b_prsnt_flag = true;
       }
       break;
     case GTA_EXMAX_CABLE_C:

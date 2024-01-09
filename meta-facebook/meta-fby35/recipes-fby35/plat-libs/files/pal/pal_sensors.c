@@ -3250,6 +3250,14 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
         break;
 
       case SERVER_TYPE_GL:
+        switch (sensor_num) {
+          case BIC_SENSOR_FIO_TEMP:
+            apply_frontIO_correction(fru, sensor_num, value, bmc_location);
+            break;
+
+          default:
+            break;
+        }
         break;
 
       default:

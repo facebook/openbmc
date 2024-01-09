@@ -78,7 +78,7 @@ trap 'rm -rf /tmp/smbcpld_update' INT TERM QUIT EXIT
 
 echo 1 > /tmp/smbcpld_update
 
-if ! wedge_prepare_cpld_update; then
+if ! wedge_prepare_firmware_update; then
     echo "Aborting CPLD upgrade"
     echo "The FSCD may be closed incompletely,"
     echo "Please check the watchdog timeout, to prevent system reboot."

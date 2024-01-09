@@ -50,8 +50,8 @@
  * returns non-zero on file operation errors
  */
 int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
-  int eeprom;
-  int bin;
+  int eeprom = -1;
+  int bin = -1;
   uint64_t tmp[FRUID_SIZE];
   ssize_t bytes_rd, bytes_wr;
 
@@ -62,36 +62,42 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
     if (eeprom == -1) {
       syslog(LOG_ERR, "%s: unable to open the %s file: %s",
           __func__, eeprom_file, strerror(errno));
-      return errno;
+      goto exit;
     }
 
     bin = open(bin_file, O_WRONLY | O_CREAT, 0644);
     if (bin == -1) {
       syslog(LOG_ERR, "%s: unable to create %s file: %s",
          __func__, bin_file, strerror(errno));
-      return errno;
+      goto exit;
     }
 
     bytes_rd = read(eeprom, tmp, FRUID_SIZE);
-    if (bytes_rd > FRUID_SIZE) {
-      syslog(LOG_ERR, "%s: read %s file failed: %s",
-          __func__, eeprom_file, strerror(errno));
-      syslog(LOG_ERR, "%s: Need to less than or equal to %d bytes", __func__, FRUID_SIZE);
-      return errno;
+    if (bytes_rd < 0) {
+      syslog(LOG_ERR, "%s: read %s file failed: %s", __func__, eeprom_file, strerror(errno));
+      goto exit;
+    } else if (bytes_rd < FRUID_SIZE) {
+      syslog(LOG_ERR, "%s: FRU size:%d byte, is not equal to define FRU size:%d bytes", __func__, bytes_rd, FRUID_SIZE);
+      errno = -1;
+      goto exit;
     }
 
     bytes_wr = write(bin, tmp, bytes_rd);
     if (bytes_wr != bytes_rd) {
       syslog(LOG_ERR, "%s: write to %s file failed: %s",
           __func__, bin_file, strerror(errno));
-      return errno;
+      goto exit;
     }
-
-    close(bin);
-    close(eeprom);
+exit:
+    if (bin >= 0) {
+      close(bin);
+    }
+    if (eeprom >= 0) {
+      close(eeprom);
+    }
   }
 
-  return 0;
+  return errno;
 }
 
 static void
@@ -99,7 +105,7 @@ static void
   uint8_t retry = MAX_FRU_READ_RETRY;
   char fru_bin_path[32] = {0};
   int fru = (int)arg;
-  uint8_t status = 0;
+  uint8_t status = FRU_PRSNT;
   bic_intf fru_bic_info = {0};
 
   fru_bic_info.fru_id = fru;
@@ -110,11 +116,16 @@ static void
     fru_bic_info.fru_id = pal_get_pldm_fru_id(fru);
   }
 
-  if (!pal_is_fru_prsnt(fru, &status)) {
-    if (status == FRU_NOT_PRSNT) {
-      syslog(LOG_WARNING, "%s: FRU:%d Not Present", __func__, fru);
-      pthread_exit(NULL);
+  while (retry > 0) {
+    if (!pal_is_fru_prsnt(fru, &status) && status == FRU_PRSNT) {
+      break;
     }
+    retry--;
+    sleep(1);
+  }
+  if (retry == 0) {
+    syslog(LOG_WARNING, "%s: Get FRU:%d Present Failed", __func__, fru);
+    goto end;
   }
 
   if (pal_get_fruid_path(fru, fru_bin_path)) {
@@ -122,6 +133,7 @@ static void
   }
 
   sleep(2);
+  retry = MAX_FRU_READ_RETRY;
   while(retry > 0) {
     if (hal_read_pldm_fruid(fru_bic_info, fru_bin_path, FRUID_SIZE) == 0) {
       break;
@@ -133,6 +145,8 @@ static void
   if (retry == 0) {
     syslog(LOG_WARNING, "%s: Read FRU:%d Failed", __func__, fru);
   }
+
+end:
   pthread_exit(NULL);
 }
 
@@ -203,6 +217,7 @@ int plat_fruid_init(void) {
   unsigned int caps = 0;
   uint8_t dev_num = 0;
   uint8_t config = 0;
+  uint8_t retry = MAX_FRU_READ_RETRY;
 
   if (pal_is_artemis()) {
     config = pal_get_acb_card_config();
@@ -238,11 +253,19 @@ int plat_fruid_init(void) {
       syslog(LOG_WARNING, "%s: Get Fruid%d EEPROM Path Failed", __func__, fru);
       continue;
     }
-
-    if (copy_eeprom_to_bin(eeprom_path, bin_path)) {
-      syslog(LOG_WARNING, "%s: Copy FRU%d EEPROM Failed", __func__, fru);
-      continue;
+    retry = MAX_FRU_READ_RETRY;
+    while (retry > 0) {
+      if (copy_eeprom_to_bin(eeprom_path, bin_path) == 0) {
+        break;
+      }
+      syslog(LOG_WARNING, "%s: Copy FRU%d EEPROM Failed, Retry:%d", __func__, fru, retry);
+      retry --;
+      sleep(1);
     }
+    if (retry == 0) {
+      syslog(LOG_WARNING, "%s: Read FRU:%d Failed", __func__, fru);
+    }
+    msleep(100);
   }
 
   for (int fru = 1; fru < FRU_CNT; fru ++) {

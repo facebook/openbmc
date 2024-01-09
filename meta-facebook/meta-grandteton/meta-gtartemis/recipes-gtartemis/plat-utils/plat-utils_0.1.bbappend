@@ -23,17 +23,12 @@ LOCAL_URI += " \
     file://setup-server-uart.sh \
     file://setup-snr-mon.sh \
     file://setup-i2c-clk.sh \
-    file://setup-usb-hub.sh \
-    file://setup-reboot-init.sh \
     file://setup-dev-uart.sh \
     "
 
-binfiles += " setup-dev-uart.sh usb-util setup-i2c-clk.sh setup-usb-hub.sh"
+binfiles += " setup-dev-uart.sh usb-util setup-i2c-clk.sh "
 
 do_install:append() {
-  install -m 755 setup-usb-hub.sh ${D}${sysconfdir}/init.d/setup-usb-hub.sh
-  update-rc.d -r ${D} setup-usb-hub.sh start 65 5 .
-
   install -m 755 setup-i2c-clk.sh ${D}${sysconfdir}/init.d/setup-i2c-clk.sh
   update-rc.d -r ${D} setup-i2c-clk.sh start 50 5 .
 }

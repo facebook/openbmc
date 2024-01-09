@@ -94,7 +94,7 @@ static uint8_t gl_pmic_addr[MAX_DIMM_NUM_FBGL/2] = {
 
 // dimm location constant strings, matching silk screen
 static const char *gl_dimm_label[NUM_CPU_FBY35][MAX_DIMM_PER_CPU] = {
-  { "A", "B", "C", "D", "E", "F", "G", "H", },
+  { "A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", },
 };
 
 static uint8_t gl_dimm_cache_id[NUM_CPU_FBY35][MAX_DIMM_PER_CPU] = {

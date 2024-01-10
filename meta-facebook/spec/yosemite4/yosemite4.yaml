@@ -16,3 +16,36 @@ feature_list:
   - multihost-nic
   - aspeed
   - yosemite4
+status:
+  Infrastructure:
+    Yocto: done
+    U-Boot Porting: done
+  BMC Hardware Support:
+    Aspeed AST2620: done
+  User Interface:
+    SSH: done
+  Network:
+    IPv4: done
+    IPv6: done
+    DHCPv6: done
+  Power Control:
+    Sled Cycle: done
+    Server Power Control: done
+  FRU Information:
+    Entity Manager: done
+  Sensor Information:
+    Airflow Sensor: done
+  Thermal Management:
+    Manual Fan Control: done
+  Time Sync:
+    Local RTC: done
+    NTP Sync: done
+    Time Zone: done
+    Host RTC: done
+  BMC Reset and Recovery:
+    SSH Remote Reset: done
+  POST Codes:
+    POST Code History: done
+
+
+

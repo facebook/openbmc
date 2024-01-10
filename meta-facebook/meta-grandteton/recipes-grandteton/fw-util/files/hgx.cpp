@@ -24,26 +24,26 @@ class HGXComponent : public Component {
         ret = FW_STATUS_SUCCESS;
       } else {
         if (_hgxcomp == "") {
-          syslog(LOG_CRIT, "HGX FW upgrade initiated, image: %s", image.c_str());
+          syslog(LOG_CRIT, "%s FW upgrade initiated, image: %s", (char*)_fru.c_str(), image.c_str());
         }
         else {
-          syslog(LOG_CRIT, "HGX Component %s upgrade initiated", component().c_str());
+          syslog(LOG_CRIT, "%s Component %s upgrade initiated", (char*)_fru.c_str(), component().c_str());
         }
 
         if (hgx::update(_hgxcomp, image) == 0) {
-          syslog(LOG_CRIT, "HGX upgrade completed");
+          syslog(LOG_CRIT, "%s upgrade completed", (char*)_fru.c_str());
           sleep(3);
           if (hgx::getHMCPhase() != BMC_FW_DVT) {
             hgx::factoryReset();
           }
           ret = FW_STATUS_SUCCESS;
         } else {
-          syslog(LOG_CRIT, "HGX upgrade failed");
+          syslog(LOG_CRIT, "%s upgrade failed", (char*)_fru.c_str());
         }
       }
     } catch (std::exception& e) {
       std::cerr << e.what() << std::endl;
-      syslog(LOG_CRIT, "HGX upgrade failed: %s", e.what());
+      syslog(LOG_CRIT, "%s upgrade failed: %s", (char*)_fru.c_str(), e.what());
     }
 
     return ret;

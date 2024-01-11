@@ -40,8 +40,6 @@ static void usage() {
 }
 
 static void printEepromData(const std::string& eDeviceName, bool jFlag) {
-  std::cout << "Wedge EEPROM " + eDeviceName << "\n";
-
   if (USE_NEW_EEPROM_LIB) {
       std::vector<std::pair<std::string, std::string>> parsedData = eepromParseNew(eDeviceName);
       if (jFlag) {
@@ -151,7 +149,9 @@ int main(int argc, char* argv[]) {
   if (allFlag) {
     std::map<std::string, std::string> res = listEepromDevices();
     for (auto listEnt : res) {
+      std::cout << "EEPROM: " + listEnt.first << std::endl;
       printEepromData(listEnt.first, jsonFlag);
+      std::cout << std::endl;
     }
     exit(0);
   }

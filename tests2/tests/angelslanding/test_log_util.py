@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_log_util_test import BaseLogUtilTest
+from utils.test_utils import qemu_check
 
 
 class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):
@@ -29,25 +30,17 @@ class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):
     def test_log_clear(self):
         pass
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_log_format(self):
+        super().test_log_format()
+
 
 class MbLogUtilTest(AllLogUtilTest):
-    FRU = "mb"
+    FRU = "tray0_mb"
 
 
 class NicLogUtilTest(AllLogUtilTest):
-    FRU = "nic"
-
-
-class Riserslot2LogUtilTest(AllLogUtilTest):
-    FRU = "riser_slot2"
-
-
-class Riserslot3LogUtilTest(AllLogUtilTest):
-    FRU = "riser_slot3"
-
-
-class Riserslot4LogUtilTest(AllLogUtilTest):
-    FRU = "riser_slot4"
+    FRU = "tray0_nic0"
 
 
 class SysLogUtilTest(BaseLogUtilTest, unittest.TestCase):

@@ -1,17 +1,16 @@
-From 6c395147da338eec4a38007f5a84ed8650906f9a Mon Sep 17 00:00:00 2001
+From e6a8c4d5a97b8a207613d544260bc79fd60c71d0 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 24 Oct 2023 17:43:44 +0800
-Subject: [PATCH 500/506] add meta yv4 bmc dts setting
+Subject: [PATCH] add meta yv4 bmc dts setting
 
 This commit depends on the patch below:
-[1] https://lore.kernel.org/all/20230922064127.283625-1-Delphine_CC_Chiu@wiwynn.com/
-[2] https://lore.kernel.org/all/20230922064127.283625-2-Delphine_CC_Chiu@wiwynn.com/
+[1] https://lore.kernel.org/lkml/20240109072053.3980855-1-Delphine_CC_Chiu@wiwynn.com/
 ---
  .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 1083 +++++++++++++++--
  1 file changed, 1011 insertions(+), 72 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 64075cc41d92..6cfbba121fba 100644
+index 64075cc41d92..d62ac14ed08e 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -17,6 +17,25 @@ aliases {
@@ -731,7 +730,7 @@ index 64075cc41d92..6cfbba121fba 100644
  		#gpio-cells = <2>;
 +		reg = <0x20>;
 +		interrupt-parent = <&gpio0>;
-+		interrupts = <94 IRQ_TYPE_LEVEL_LOW>;
++		interrupts = <98 IRQ_TYPE_LEVEL_LOW>;
 +		gpio-line-names =
 +		"P48V_OCP_GPIO1","P48V_OCP_GPIO2",
 +		"P48V_OCP_GPIO3","FAN_BOARD_0_REVISION_0_R",
@@ -752,7 +751,7 @@ index 64075cc41d92..6cfbba121fba 100644
  		#gpio-cells = <2>;
 +		reg = <0x21>;
 +		interrupt-parent = <&gpio0>;
-+		interrupts = <94 IRQ_TYPE_LEVEL_LOW>;
++		interrupts = <98 IRQ_TYPE_LEVEL_LOW>;
 +		gpio-line-names =
 +		"DELTA_MODULE_TYPE","VSENSE_ERR_VDROP_R",
 +		"EN_P48V_AUX_0","EN_P48V_AUX_1",
@@ -773,7 +772,7 @@ index 64075cc41d92..6cfbba121fba 100644
  		#gpio-cells = <2>;
 +		reg = <0x22>;
 +		interrupt-parent = <&gpio0>;
-+		interrupts = <94 IRQ_TYPE_LEVEL_LOW>;
++		interrupts = <98 IRQ_TYPE_LEVEL_LOW>;
 +		gpio-line-names =
 +		"CARD_TYPE_SLOT1","CARD_TYPE_SLOT2",
 +		"CARD_TYPE_SLOT3","CARD_TYPE_SLOT4",
@@ -794,7 +793,7 @@ index 64075cc41d92..6cfbba121fba 100644
  		#gpio-cells = <2>;
 +		reg = <0x23>;
 +		interrupt-parent = <&gpio0>;
-+		interrupts = <94 IRQ_TYPE_LEVEL_LOW>;
++		interrupts = <98 IRQ_TYPE_LEVEL_LOW>;
 +		gpio-line-names =
 +		"HSC1_ALERT1_R_N","HSC2_ALERT1_R_N",
 +		"HSC3_ALERT1_R_N","HSC4_ALERT1_R_N",
@@ -1420,5 +1419,5 @@ index 64075cc41d92..6cfbba121fba 100644
 +	};
 +};
 -- 
-2.41.0
+2.25.1
 

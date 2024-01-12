@@ -33,8 +33,10 @@ class HGXComponent : public Component {
         if (hgx::update(_hgxcomp, image) == 0) {
           syslog(LOG_CRIT, "%s upgrade completed", (char*)_fru.c_str());
           sleep(3);
-          if (hgx::getHMCPhase() != BMC_FW_DVT) {
-            hgx::factoryReset();
+          if (pal_get_gpu_fru_id() == FRU_HGX) {
+            if (hgx::getHMCPhase() != BMC_FW_DVT) {
+              hgx::factoryReset();
+            }
           }
           ret = FW_STATUS_SUCCESS;
         } else {

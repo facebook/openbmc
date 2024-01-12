@@ -104,6 +104,8 @@ EXTRA_OECONF:append = " --disable-guest-agent"
 EXTRA_OECONF:remove = "--meson=meson"
 EXTRA_OECONF:remove = "--disable-libdw"
 EXTRA_OECONF:remove = "--disable-download"
+EXTRA_OECONF:remove = "--disable-docs"
+EXTRA_OECONF:remove = "--disable-pipewire"
 
 do_install:append() {
     # The following is also installed by qemu-native

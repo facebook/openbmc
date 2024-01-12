@@ -461,7 +461,7 @@ read_battery_val(uint8_t id, float *value) {
     goto fail;
   }
 
-  msleep(20);
+  msleep(60);
   ret = read_adc_val(id, value);
   if (gpio_set_value(gpio_bat_sense_en, GPIO_VALUE_LOW)) {
     syslog(LOG_WARNING, "%s() Fail to recover gpio for reading sensor_id:%x", __func__, id);

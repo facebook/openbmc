@@ -27,7 +27,7 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
             "sshd",
-            "dhclient -6 -d -D LL -pf /var/run/dhclient6.br0.pid br0",
+            "dhclient -6 -d -D LL --address-prefix-len 64 -pf /var/run/dhclient6.eth0.pid br0",
             "mTerm_server",
             "sensord",
             "healthd",

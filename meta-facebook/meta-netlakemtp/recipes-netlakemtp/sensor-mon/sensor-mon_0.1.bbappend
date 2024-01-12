@@ -16,8 +16,5 @@
 # Boston, MA 02110-1301 USA
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://0001-Revise-min-poll-interval-for-sensord.patch \
-           "
-
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 CFLAGS_prepend = " "

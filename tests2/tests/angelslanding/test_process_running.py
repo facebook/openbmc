@@ -27,7 +27,6 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
             "sshd",
-            "dhclient -6 -d -D LL --address-prefix-len 64 -pf /var/run/dhclient6.eth0.pid br0",
             "mTerm_server",
             "sensord",
             "healthd",
@@ -41,4 +40,7 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "/usr/local/bin/kcsd 1",
         ]
         if not qemu_check():
-            self.expected_process.extend(["fscd"])
+            self.expected_process.extend([
+                "fscd",
+                "dhclient -6 -d -D LL --address-prefix-len 64 -pf /var/run/dhclient6.eth0.pid br0",
+            ])

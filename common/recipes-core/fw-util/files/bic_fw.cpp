@@ -1,6 +1,6 @@
 #include "fw-util.h"
-#include <cstdio>
-#include <cstring>
+#include <sstream>
+#include <iomanip>
 #include "server.h"
 #include <openbmc/pal.h>
 #include "bic_fw.h"
@@ -31,19 +31,22 @@ int BicFwComponent::fupdate(string image) {
   return ret;
 }
 
-int BicFwComponent::print_version() {
+int BicFwComponent::get_version(json& j) {
   uint8_t ver[32];
+  j["PRETTY_COMPONENT"] = "Bridge-IC";
   try {
     server.ready();
     // Print Bridge-IC Version
     if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
-      printf("Bridge-IC Version: NA\n");
-    }
-    else {
-      printf("Bridge-IC Version: v%x.%02x\n", ver[0], ver[1]);
+      j["VERSION"] = "NA";
+    } else {
+      stringstream ss;
+      ss << "v" << std::hex << +ver[0] << '.';
+      ss << std::hex << std::setfill('0') << std::setw(2) << +ver[1];
+      j["VERSION"] = ss.str();
     }
   } catch(string err) {
-    printf("Bridge-IC Version: NA (%s)\n", err.c_str());
+    j["VERSION"] = "NA (" + err + ")";
   }
   return 0;
 }
@@ -59,9 +62,10 @@ int BicFwBlComponent::update(string image) {
   return ret;
 }
 
-int BicFwBlComponent::print_version() {
+int BicFwBlComponent::get_version(json& j) {
   uint8_t ver[32];
   uint8_t comp;
+  j["PRETTY_COMPONENT"] = "Bridge-IC Bootloader";
   try {
     server.ready();
 #ifdef CONFIG_FBY2_ND
@@ -88,13 +92,15 @@ int BicFwBlComponent::print_version() {
 
     // Print Bridge-IC Bootloader Version
     if (bic_get_fw_ver(slot_id, comp, ver)) {
-      printf("Bridge-IC Bootloader Version: NA\n");
-    }
-    else {
-      printf("Bridge-IC Bootloader Version: v%x.%02x\n", ver[0], ver[1]);
+      j["VERSION"] = "NA";
+    } else {
+      stringstream ss;
+      ss << 'v' << std::hex << +ver[0] << '.';
+      ss << std::hex << std::setfill('0') << std::setw(2) << +ver[1];
+      j["VERSION"] = ss.str();
     }
   } catch(string err) {
-    printf("Bridge-IC Bootloader Version: NA (%s)\n", err.c_str());
+    j["VERSION"] = "NA (" + err + ")";
   }
   return 0;
 }

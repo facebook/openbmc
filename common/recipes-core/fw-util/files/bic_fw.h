@@ -9,9 +9,9 @@ class BicFwComponent : public Component {
   public:
     BicFwComponent(std::string fru, std::string comp, uint8_t _slot_id)
       : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {}
-    int update(std::string image);
-    int fupdate(std::string image);
-    int print_version();
+    int update(std::string image) override;
+    int fupdate(std::string image) override;
+    int get_version(json& j) override;
 };
 
 class BicFwBlComponent : public Component {
@@ -20,8 +20,8 @@ class BicFwBlComponent : public Component {
   public:
     BicFwBlComponent(std::string fru, std::string comp, uint8_t _slot_id)
       : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {}
-    int update(std::string image);
-    int print_version();
+    int update(std::string image) override;
+    int get_version(json& j) override;
 };
 
 #endif

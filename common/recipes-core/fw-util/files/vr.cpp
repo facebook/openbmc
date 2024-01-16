@@ -1,6 +1,4 @@
 #include "fw-util.h"
-#include <cstdio>
-#include <cstring>
 #include "server.h"
 #include <openbmc/pal.h>
 #include <syslog.h>
@@ -11,49 +9,40 @@ using namespace std;
 
 class VrComponent : public Component {
   uint8_t slot_id = 0;
+  uint8_t vr_id = 0;
+  string vr_name{};
   Server server;
   public:
-  VrComponent(string fru, string comp, uint8_t _slot_id)
-    : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {}
+  VrComponent(string fru, string comp, uint8_t _slot_id, uint8_t _vr_id, const std::string& _vr_name)
+    : Component(fru, comp), slot_id(_slot_id), vr_id(_vr_id), vr_name(_vr_name), server(_slot_id, fru) {}
 
-  int print_version() {
+  int get_version(json& j) override {
+    if (vr_name == "") {
+      return FW_STATUS_NOT_SUPPORTED;
+    }
+    j["PRETTY_COMPONENT"] = vr_name;
     uint8_t ver[32] = {0};
 
     try {
       server.ready();
 
       /* Print PVCCIN VR Version */
-      if (bic_get_fw_ver(slot_id, FW_PVCCIN_VR, ver)) {
-        printf("PVCCIN VR Version: NA\n");
+      if (bic_get_fw_ver(slot_id, vr_id, ver)) {
+        j["VERSION"] = "NA";
       } else {
-        printf("PVCCIN VR Version: 0x%02x%02x, 0x%02x%02x\n",
-               ver[0], ver[1], ver[2], ver[3]);
-      }
-
-      /* Print DDRAB VR Version */
-      if (bic_get_fw_ver(slot_id, FW_DDRAB_VR, ver)){
-        printf("DDRAB VR Version: NA\n");
-      } else {
-        printf("DDRAB VR Version: 0x%02x%02x, 0x%02x%02x\n",
-               ver[0], ver[1], ver[2], ver[3]);
-      }
-
-      /* Print P1V05 VR Version */
-      if (bic_get_fw_ver(slot_id, FW_P1V05_VR, ver)){
-        printf("P1V05 VR Version: NA\n");
-      } else {
-        printf("P1V05 VR Version: 0x%02x%02x, 0x%02x%02x\n",
-               ver[0], ver[1], ver[2], ver[3]);
+        stringstream ss;
+        ss << std::hex << std::setfill('0') << std::setw(2)
+          << "0x" << +ver[0] << +ver[1]
+          << ", 0x" << +ver[2] << +ver[3];
+        j["VERSION"] = ss.str();
       }
     } catch (string err) {
-        printf("PVCCIN VR Version: NA (%s)\n", err.c_str());
-        printf("DDRAB VR Version: NA (%s)\n", err.c_str());
-        printf("P1V05 VR Version: NA (%s)\n", err.c_str());
+      j["VERSION"] = "NA (" + err + ")";
     }
     return 0;
   }
 
-  int update(string image) {
+  int update(string image) override {
     int ret;
 
     try {
@@ -66,5 +55,8 @@ class VrComponent : public Component {
   }
 };
 
-VrComponent vr("scm", "vr", 0);
+VrComponent vr("scm", "vr", 0, 0, "");
+VrComponent vr_pvccin("scm", "vr_pvccin", 0, FW_PVCCIN_VR, "PVCCIN VR");
+VrComponent vr_ddrab("scm", "vr_ddrab", 0, FW_DDRAB_VR, "DDRAB VR");
+VrComponent vr_p1v05("scm", "vr_p1v05", 0, FW_P1V05_VR, "P1V05 VR");
 #endif

@@ -1,63 +1,63 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/sensors/pim9  
-  title: Swagger doc for /api/sys/sensors/pim9  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/sensors/pim9
+  title: Swagger doc for /api/sys/sensors/pim9
   version: 1.0.0
-paths: 
-  /api/sys/sensors/pim9: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/sensors/pim9:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  name: 
+                properties:
+                  name:
                     type: string
-                  Adapter: 
+                  Adapter:
                     type: string
-                  present: 
+                  present:
                     type: boolean
-                  PIM9_POS_3V3_U_VOUT: 
+                  PIM9_POS_3V3_U_VOUT:
                     type: string
-                  PIM9_POS_3V3_U_TEMP: 
+                  PIM9_POS_3V3_U_TEMP:
                     type: string
-                  PIM9_POS_3V3_U_CURR: 
+                  PIM9_POS_3V3_U_CURR:
                     type: string
-                  PIM9_POS_3V3_L_VOUT: 
+                  PIM9_POS_3V3_L_VOUT:
                     type: string
-                  PIM9_POS_3V3_L_TEMP: 
+                  PIM9_POS_3V3_L_TEMP:
                     type: string
-                  PIM9_POS_3V3_L_CURR: 
+                  PIM9_POS_3V3_L_CURR:
                     type: string
-                  PIM9_LM73_TEMP: 
+                  PIM9_LM73_TEMP:
                     type: string
-                  PIM9_POS_12V: 
+                  PIM9_POS_12V:
                     type: string
-                  PIM9_POS_3V3_E: 
+                  PIM9_POS_3V3_E:
                     type: string
-                  PIM9_POS_1V2_E: 
+                  PIM9_POS_1V2_E:
                     type: string
-                  PIM9_POS_3V3_U: 
+                  PIM9_POS_3V3_U:
                     type: string
-                  PIM9_POS_3V3_L: 
+                  PIM9_POS_3V3_L:
                     type: string
-                  PIM9_POS_3V8_LEDS: 
+                  PIM9_POS_3V8_LEDS:
                     type: string
-                  PIM9_DPM_TEMP: 
+                  PIM9_DPM_TEMP:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

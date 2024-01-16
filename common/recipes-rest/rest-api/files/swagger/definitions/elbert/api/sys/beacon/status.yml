@@ -1,37 +1,37 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/beacon/status  
-  title: Swagger doc for /api/sys/beacon/status  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/beacon/status
+  title: Swagger doc for /api/sys/beacon/status
   version: 1.0.0
-paths: 
-  /api/sys/beacon/status: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/beacon/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  locator: 
+                properties:
+                  locator:
                     type: string
-                  netstate: 
+                  netstate:
                     type: string
-                  drained: 
+                  drained:
                     type: string
-                  audit: 
+                  audit:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

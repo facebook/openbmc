@@ -1,131 +1,119 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/bmc  
-  title: Swagger doc for /api/sys/bmc  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/bmc
+  title: Swagger doc for /api/sys/bmc
   version: 1.0.0
-paths: 
-  /api/sys/bmc: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/bmc:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Description: 
+                properties:
+                  Description:
                     type: string
-                  MAC Addr: 
+                  MAC Addr:
                     type: string
-                  Reset Reason: 
+                  Reset Reason:
                     type: string
-                  Uptime: 
+                  Uptime:
                     type: string
-                  uptime: 
+                  uptime:
                     type: string
-                  Memory Usage: 
+                  Memory Usage:
                     type: string
-                  memory: 
+                  memory:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      MemTotal: 
-                        type: number
-                        format: int32
-                      MemFree: 
-                        type: number
-                        format: int32
-                      MemAvailable: 
-                        type: number
-                        format: int32
-                      Buffers: 
-                        type: number
-                        format: int32
-                      Cached: 
-                        type: number
-                        format: int32
-                      Shmem: 
-                        type: number
-                        format: int32
-                  CPU Usage: 
+                    properties:
+                      MemTotal:
+                        type: integer
+                      MemFree:
+                        type: integer
+                      MemAvailable:
+                        type: integer
+                      Buffers:
+                        type: integer
+                      Cached:
+                        type: integer
+                      Shmem:
+                        type: integer
+                  CPU Usage:
                     type: string
-                  OpenBMC Version: 
+                  OpenBMC Version:
                     type: string
-                  u-boot version: 
+                  u-boot version:
                     type: string
-                  kernel version: 
+                  kernel version:
                     type: string
-                  TPM TCG version: 
+                  TPM TCG version:
                     type: string
-                  TPM FW version: 
+                  TPM FW version:
                     type: string
-                  SPI0 Vendor: 
+                  SPI0 Vendor:
                     type: string
-                  SPI1 Vendor: 
+                  SPI1 Vendor:
                     type: string
-                  At-Scale-Debug Running: 
+                  At-Scale-Debug Running:
                     type: boolean
-                  Secondary Boot Triggered: 
+                  Secondary Boot Triggered:
                     type: boolean
-                  vboot: 
+                  vboot:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      status: 
+                    properties:
+                      status:
                         type: string
-                      status_text: 
+                      status_text:
                         type: string
-                  load-1: 
+                  load-1:
                     type: string
-                  load-5: 
+                  load-5:
                     type: string
-                  load-15: 
+                  load-15:
                     type: string
-                  open-fds: 
+                  open-fds:
                     type: string
-                  MTD Parts: 
+                  MTD Parts:
                     type: array
-                    items: 
+                    items:
                       type: string
-                  mmc-info: 
+                  mmc-info:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      /dev/mmcblk0: 
+                    properties:
+                      /dev/mmcblk0:
                         type: object
                         additionalProperties: false
-                        properties: 
-                          CID_MID: 
-                            type: number
-                            format: int32
-                          CID_PNM: 
+                        properties:
+                          CID_MID:
+                            type: integer
+                          CID_PNM:
                             type: string
-                          CID_PRV_MAJOR: 
-                            type: number
-                            format: int32
-                          CID_PRV_MINOR: 
-                            type: number
-                            format: int32
-                          EXT_CSD_PRE_EOL_INFO: 
-                            type: number
-                            format: int32
-                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A: 
-                            type: number
-                            format: int32
-                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B: 
-                            type: number
-                            format: int32
-              Actions: 
+                          CID_PRV_MAJOR:
+                            type: integer
+                          CID_PRV_MINOR:
+                            type: integer
+                          EXT_CSD_PRE_EOL_INFO:
+                            type: integer
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A:
+                            type: integer
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B:
+                            type: integer
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

@@ -1,0 +1,65 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/firmware_info/all
+  title: Swagger doc for /api/sys/firmware_info/all
+  version: 1.0.0
+paths:
+  /api/sys/firmware_info/all:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              SCM:
+                type: string
+              FAN:
+                type: string
+              SMB:
+                type: string
+              SMB_CPLD:
+                type: string
+              PIM 2:
+                type: string
+              PIM 3:
+                type: string
+              PIM 4:
+                type: string
+              PIM 5:
+                type: string
+              PIM 6:
+                type: string
+              PIM 7:
+                type: string
+              PIM 8:
+                type: string
+              PIM 9:
+                type: string
+              SCM DPM:
+                type: string
+              SMB DPM:
+                type: string
+              PIM2 DPM:
+                type: string
+              PIM3 DPM:
+                type: string
+              PIM4 DPM:
+                type: string
+              PIM5 DPM:
+                type: string
+              PIM6 DPM:
+                type: string
+              PIM7 DPM:
+                type: string
+              PIM8 DPM:
+                type: string
+              PIM9 DPM:
+                type: string
+              SMB ISL68226:
+                type: string
+              SMB RAA228228:
+                type: string

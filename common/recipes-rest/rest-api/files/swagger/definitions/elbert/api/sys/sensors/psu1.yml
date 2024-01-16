@@ -1,55 +1,55 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/sensors/psu1  
-  title: Swagger doc for /api/sys/sensors/psu1  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/sensors/psu1
+  title: Swagger doc for /api/sys/sensors/psu1
   version: 1.0.0
-paths: 
-  /api/sys/sensors/psu1: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/sensors/psu1:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  name: 
+                properties:
+                  name:
                     type: string
-                  Adapter: 
+                  Adapter:
                     type: string
-                  present: 
+                  present:
                     type: boolean
-                  PSU1_VIN: 
+                  PSU1_VIN:
                     type: string
-                  PSU1_VOUT: 
+                  PSU1_VOUT:
                     type: string
-                  PSU1_FAN: 
+                  PSU1_FAN:
                     type: string
-                  PSU1_TEMP1: 
+                  PSU1_TEMP1:
                     type: string
-                  PSU1_TEMP2: 
+                  PSU1_TEMP2:
                     type: string
-                  PSU1_TEMP3: 
+                  PSU1_TEMP3:
                     type: string
-                  PSU1_PIN: 
+                  PSU1_PIN:
                     type: string
-                  PSU1_POUT: 
+                  PSU1_POUT:
                     type: string
-                  PSU1_IIN: 
+                  PSU1_IIN:
                     type: string
-                  PSU1_IOUT: 
+                  PSU1_IOUT:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

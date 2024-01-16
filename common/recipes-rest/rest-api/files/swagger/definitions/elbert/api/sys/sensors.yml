@@ -1,53 +1,463 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/sensors  
-  title: Swagger doc for /api/sys/sensors  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sys/sensors
+  title: Swagger doc for /api/sys/sensors
   version: 1.0.0
-paths: 
-  /api/sys/sensors: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/sys/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: array
-                items: 
+                items:
                   type: object
                   additionalProperties: false
-                  properties: 
-                    name: 
+                  properties:
+                    name:
                       type: string
-                    Adapter: 
+                    Adapter:
                       type: string
-                    present: 
+                    present:
                       type: boolean
-                    SCM_ECB_VIN: 
+                    SCM_ECB_VIN:
                       type: string
-                    SCM_ECB_VOUT: 
+                    SCM_ECB_VOUT:
                       type: string
-                    SCM_ECB_CURR: 
+                    SCM_ECB_CURR:
                       type: string
-                    SCM_ECB_POWER: 
+                    SCM_ECB_POWER:
                       type: string
-                    SCM_ECB_TEMP: 
+                    SCM_ECB_TEMP:
                       type: string
-                    SCM_BOARD_TEMP: 
+                    SCM_BOARD_TEMP:
                       type: string
-                    SCM_INLET_TEMP: 
+                    SCM_INLET_TEMP:
                       type: string
-                    SCM_BMC_TEMP: 
+                    SCM_BMC_TEMP:
                       type: string
-              Actions: 
+                    SMB_POS_0V75_CORE:
+                      type: string
+                    SMB_POS_0V75_ANLG:
+                      type: string
+                    SMB_POS_1V2:
+                      type: string
+                    SMB_POS_1V2_ANLG_L:
+                      type: string
+                    SMB_POS_1V2_ANLG_R:
+                      type: string
+                    SMB_POS_1V8:
+                      type: string
+                    SMB_POS_1V8_ANLG:
+                      type: string
+                    SMB_POS_3V3:
+                      type: string
+                    SMB_POS_3V3_DPM:
+                      type: string
+                    SMB_POS_5V0:
+                      type: string
+                    SMB_POS_12V_B:
+                      type: string
+                    SMB_POS_12V_A:
+                      type: string
+                    SMB_POS_1V2B_E:
+                      type: string
+                    SMB_POS_2V5B_E:
+                      type: string
+                    SMB_POS_3V3B_E:
+                      type: string
+                    TH4_VRD1_VIN:
+                      type: string
+                    TH4_VRD1_VOUT_LOOP0:
+                      type: string
+                    TH4_VRD1_TEMP_LOOP0:
+                      type: string
+                    TH4_VRD1_PIN:
+                      type: string
+                    TH4_VRD1_POUT_LOOP0:
+                      type: string
+                    TH4_VRD1_IIN:
+                      type: string
+                    TH4_VRD1_IOUT_LOOP0:
+                      type: string
+                    TH4_VRD2_VIN:
+                      type: string
+                    TH4_VRD2_VOUT_LOOP0:
+                      type: string
+                    TH4_VRD2_VOUT_LOOP1:
+                      type: string
+                    TH4_VRD2_VOUT_LOOP2:
+                      type: string
+                    TH4_VRD2_TEMP_LOOP0:
+                      type: string
+                    TH4_VRD2_TEMP_LOOP1:
+                      type: string
+                    TH4_VRD2_TEMP_LOOP2:
+                      type: string
+                    TH4_VRD2_TEMP_INTERNAL:
+                      type: string
+                    TH4_VRD2_PIN_LOOP0:
+                      type: string
+                    TH4_VRD2_PIN_LOOP1:
+                      type: string
+                    TH4_VRD2_PIN_LOOP2:
+                      type: string
+                    TH4_VRD2_POUT_LOOP0:
+                      type: string
+                    TH4_VRD2_POUT_LOOP1:
+                      type: string
+                    TH4_VRD2_POUT_LOOP2:
+                      type: string
+                    TH4_VRD2_IIN_LOOP0:
+                      type: string
+                    TH4_VRD2_IIN_LOOP1:
+                      type: string
+                    TH4_VRD2_IIN_LOOP2:
+                      type: string
+                    TH4_VRD2_IOUT_LOOP0:
+                      type: string
+                    TH4_VRD2_IOUT_LOOP1:
+                      type: string
+                    TH4_VRD2_IOUT_LOOP2:
+                      type: string
+                    SMB_T:
+                      type: string
+                    TH4_DIE_TEMP_0:
+                      type: string
+                    TH4_DIE_TEMP_1:
+                      type: string
+                    SMB_R:
+                      type: string
+                    SMB_U:
+                      type: string
+                    SMB_L:
+                      type: string
+                    BLACKHAWK_CORE_0-5_TEMP:
+                      type: string
+                    BLACKHAWK_CORE_6-12_TEMP:
+                      type: string
+                    BLACKHAWK_CORE_13-18_TEMP:
+                      type: string
+                    BLACKHAWK_CORE_19-25_TEMP:
+                      type: string
+                    BLACKHAWK_CORE_26-31_TEMP:
+                      type: string
+                    BLACKHAWK_CORE_32-37_TEMP:
+                      type: string
+                    BLACKHAWK_CORE_38-44_TEMP:
+                      type: string
+                    BLACKHAWK_CORE_45-50_TEMP:
+                      type: string
+                    BLACKHAWK_CORE_51-57_TEMP:
+                      type: string
+                    BLACKHAWK_CORE_58-63_TEMP:
+                      type: string
+                    CORE_0_TEMP:
+                      type: string
+                    CORE_1_TEMP:
+                      type: string
+                    CORE_2_TEMP:
+                      type: string
+                    CORE_3_TEMP:
+                      type: string
+                    PIM_QSFP200:
+                      type: string
+                    PIM_QSFP400:
+                      type: string
+                    PIM_F104:
+                      type: string
+                    PSU1_VIN:
+                      type: string
+                    PSU1_VOUT:
+                      type: string
+                    PSU1_FAN:
+                      type: string
+                    PSU1_TEMP1:
+                      type: string
+                    PSU1_TEMP2:
+                      type: string
+                    PSU1_TEMP3:
+                      type: string
+                    PSU1_PIN:
+                      type: string
+                    PSU1_POUT:
+                      type: string
+                    PSU1_IIN:
+                      type: string
+                    PSU1_IOUT:
+                      type: string
+                    PSU4_VIN:
+                      type: string
+                    PSU4_VOUT:
+                      type: string
+                    PSU4_FAN:
+                      type: string
+                    PSU4_TEMP1:
+                      type: string
+                    PSU4_TEMP2:
+                      type: string
+                    PSU4_TEMP3:
+                      type: string
+                    PSU4_PIN:
+                      type: string
+                    PSU4_POUT:
+                      type: string
+                    PSU4_IIN:
+                      type: string
+                    PSU4_IOUT:
+                      type: string
+                    PIM2_POS_3V3_U_VOUT:
+                      type: string
+                    PIM2_POS_3V3_U_TEMP:
+                      type: string
+                    PIM2_POS_3V3_U_CURR:
+                      type: string
+                    PIM2_POS_3V3_L_VOUT:
+                      type: string
+                    PIM2_POS_3V3_L_TEMP:
+                      type: string
+                    PIM2_POS_3V3_L_CURR:
+                      type: string
+                    PIM2_LM73_TEMP:
+                      type: string
+                    PIM2_POS_12V:
+                      type: string
+                    PIM2_POS_3V3_E:
+                      type: string
+                    PIM2_POS_1V2_E:
+                      type: string
+                    PIM2_POS_3V3_U:
+                      type: string
+                    PIM2_POS_3V3_L:
+                      type: string
+                    PIM2_POS_3V8_LEDS:
+                      type: string
+                    PIM2_DPM_TEMP:
+                      type: string
+                    PIM3_POS_3V3_U_VOUT:
+                      type: string
+                    PIM3_POS_3V3_U_TEMP:
+                      type: string
+                    PIM3_POS_3V3_U_CURR:
+                      type: string
+                    PIM3_POS_3V3_L_VOUT:
+                      type: string
+                    PIM3_POS_3V3_L_TEMP:
+                      type: string
+                    PIM3_POS_3V3_L_CURR:
+                      type: string
+                    PIM3_LM73_TEMP:
+                      type: string
+                    PIM3_POS_12V:
+                      type: string
+                    PIM3_POS_3V3_E:
+                      type: string
+                    PIM3_POS_1V2_E:
+                      type: string
+                    PIM3_POS_3V3_U:
+                      type: string
+                    PIM3_POS_3V3_L:
+                      type: string
+                    PIM3_POS_3V8_LEDS:
+                      type: string
+                    PIM3_DPM_TEMP:
+                      type: string
+                    PIM4_POS_3V3_U_VOUT:
+                      type: string
+                    PIM4_POS_3V3_U_TEMP:
+                      type: string
+                    PIM4_POS_3V3_U_CURR:
+                      type: string
+                    PIM4_POS_3V3_L_VOUT:
+                      type: string
+                    PIM4_POS_3V3_L_TEMP:
+                      type: string
+                    PIM4_POS_3V3_L_CURR:
+                      type: string
+                    PIM4_LM73_TEMP:
+                      type: string
+                    PIM4_POS_12V:
+                      type: string
+                    PIM4_POS_3V3_E:
+                      type: string
+                    PIM4_POS_1V2_E:
+                      type: string
+                    PIM4_POS_3V3_U:
+                      type: string
+                    PIM4_POS_3V3_L:
+                      type: string
+                    PIM4_POS_3V8_LEDS:
+                      type: string
+                    PIM4_DPM_TEMP:
+                      type: string
+                    PIM5_POS_3V3_U_VOUT:
+                      type: string
+                    PIM5_POS_3V3_U_TEMP:
+                      type: string
+                    PIM5_POS_3V3_U_CURR:
+                      type: string
+                    PIM5_POS_3V3_L_VOUT:
+                      type: string
+                    PIM5_POS_3V3_L_TEMP:
+                      type: string
+                    PIM5_POS_3V3_L_CURR:
+                      type: string
+                    PIM5_LM73_TEMP:
+                      type: string
+                    PIM5_POS_12V:
+                      type: string
+                    PIM5_POS_3V3_E:
+                      type: string
+                    PIM5_POS_1V2_E:
+                      type: string
+                    PIM5_POS_3V3_U:
+                      type: string
+                    PIM5_POS_3V3_L:
+                      type: string
+                    PIM5_POS_3V8_LEDS:
+                      type: string
+                    PIM5_DPM_TEMP:
+                      type: string
+                    PIM6_POS_3V3_U_VOUT:
+                      type: string
+                    PIM6_POS_3V3_U_TEMP:
+                      type: string
+                    PIM6_POS_3V3_U_CURR:
+                      type: string
+                    PIM6_POS_3V3_L_VOUT:
+                      type: string
+                    PIM6_POS_3V3_L_TEMP:
+                      type: string
+                    PIM6_POS_3V3_L_CURR:
+                      type: string
+                    PIM6_LM73_TEMP:
+                      type: string
+                    PIM6_POS_12V:
+                      type: string
+                    PIM6_POS_3V3_E:
+                      type: string
+                    PIM6_POS_1V2_E:
+                      type: string
+                    PIM6_POS_3V3_U:
+                      type: string
+                    PIM6_POS_3V3_L:
+                      type: string
+                    PIM6_POS_3V8_LEDS:
+                      type: string
+                    PIM6_DPM_TEMP:
+                      type: string
+                    PIM7_POS_3V3_U_VOUT:
+                      type: string
+                    PIM7_POS_3V3_U_TEMP:
+                      type: string
+                    PIM7_POS_3V3_U_CURR:
+                      type: string
+                    PIM7_POS_3V3_L_VOUT:
+                      type: string
+                    PIM7_POS_3V3_L_TEMP:
+                      type: string
+                    PIM7_POS_3V3_L_CURR:
+                      type: string
+                    PIM7_LM73_TEMP:
+                      type: string
+                    PIM7_POS_12V:
+                      type: string
+                    PIM7_POS_3V3_E:
+                      type: string
+                    PIM7_POS_1V2_E:
+                      type: string
+                    PIM7_POS_3V3_U:
+                      type: string
+                    PIM7_POS_3V3_L:
+                      type: string
+                    PIM7_POS_3V8_LEDS:
+                      type: string
+                    PIM7_DPM_TEMP:
+                      type: string
+                    PIM8_POS_3V3_U_VOUT:
+                      type: string
+                    PIM8_POS_3V3_U_TEMP:
+                      type: string
+                    PIM8_POS_3V3_U_CURR:
+                      type: string
+                    PIM8_POS_3V3_L_VOUT:
+                      type: string
+                    PIM8_POS_3V3_L_TEMP:
+                      type: string
+                    PIM8_POS_3V3_L_CURR:
+                      type: string
+                    PIM8_LM73_TEMP:
+                      type: string
+                    PIM8_POS_12V:
+                      type: string
+                    PIM8_POS_3V3_E:
+                      type: string
+                    PIM8_POS_1V2_E:
+                      type: string
+                    PIM8_POS_3V3_U:
+                      type: string
+                    PIM8_POS_3V3_L:
+                      type: string
+                    PIM8_POS_3V8_LEDS:
+                      type: string
+                    PIM8_DPM_TEMP:
+                      type: string
+                    PIM9_POS_3V3_U_VOUT:
+                      type: string
+                    PIM9_POS_3V3_U_TEMP:
+                      type: string
+                    PIM9_POS_3V3_U_CURR:
+                      type: string
+                    PIM9_POS_3V3_L_VOUT:
+                      type: string
+                    PIM9_POS_3V3_L_TEMP:
+                      type: string
+                    PIM9_POS_3V3_L_CURR:
+                      type: string
+                    PIM9_LM73_TEMP:
+                      type: string
+                    PIM9_POS_12V:
+                      type: string
+                    PIM9_POS_3V3_E:
+                      type: string
+                    PIM9_POS_1V2_E:
+                      type: string
+                    PIM9_POS_3V3_U:
+                      type: string
+                    PIM9_POS_3V3_L:
+                      type: string
+                    PIM9_POS_3V8_LEDS:
+                      type: string
+                    PIM9_DPM_TEMP:
+                      type: string
+                    FAN1:
+                      type: string
+                    FAN2:
+                      type: string
+                    FAN3:
+                      type: string
+                    FAN4:
+                      type: string
+                    FAN5:
+                      type: string
+                    FAN_CARD_BOARD_TEMP:
+                      type: string
+                    FAN_CARD_OUTLET_TEMP:
+                      type: string
+                    SYSTEM_AIRFLOW:
+                      type: string
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

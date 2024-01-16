@@ -6,13 +6,13 @@ class ExtlibComponent : public Component {
   void *lib;
   std::string info;
   int (*update_fn)(const char *, const char *);
-  int (*print_version_fn)(const char *);
+  int (*get_version_fn)(const char *, char *, size_t n);
   public:
     ExtlibComponent(std::string fru, std::string component, 
         std::string libpath, std::string update_func, std::string vers_func,
         std::string info);
-    int update(std::string image);
-    int print_version();
+    int update(std::string image) override;
+    int get_version(json&) override;
 };
 
 #endif

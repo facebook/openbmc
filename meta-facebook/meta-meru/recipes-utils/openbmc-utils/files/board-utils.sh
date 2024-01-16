@@ -22,6 +22,7 @@
 PWRCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/pwrcpld/12-0043"
 SCM_PWR_ON_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_control"
 SCM_PWR_IN_RESET_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_in_reset"
+SMB_EEPROM_SYSFS="/sys/bus/i2c/drivers/at24/9-0052/eeprom"
 
 # SMB CPLD endpoints
 SMBCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/smbcpld/9-0023"
@@ -86,6 +87,11 @@ wedge_product_name() {
 wedge_power_asic() {
     if [[ "$1" != "0" && "$1" != "1" ]]; then
         echo "Invalid arg: Please provide 0 for power on or 1 for power off."
+        return 1
+    fi
+
+    if [ ! -e "$SMB_EEPROM_SYSFS" ]; then
+        echo "Warn: SMB eeprom not detected; skipping asic power operation."
         return 1
     fi
 

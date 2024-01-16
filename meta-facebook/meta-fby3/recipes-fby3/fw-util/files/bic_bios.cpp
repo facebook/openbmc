@@ -1,7 +1,5 @@
 #include "bic_bios.h"
 #include <sstream>
-#include <cstdio>
-#include <cstring>
 #include <syslog.h>
 #include <unistd.h>
 #include <openbmc/pal.h>
@@ -141,24 +139,9 @@ int BiosComponent::get_ver_str(string& s) {
   return FW_STATUS_SUCCESS;
 }
 
-int BiosComponent::print_version() {
-  string ver("");
-  try {
-    server.ready();
-    if ( get_ver_str(ver) < 0 ) {
-      throw std::runtime_error("Error in getting the version of BIOS");
-    }
-    cout << "BIOS Version: " << ver << endl;
-  } catch(string& err) {
-    printf("BIOS Version: NA (%s)\n", err.c_str());
-  }
-
-  return FW_STATUS_SUCCESS;
-}
-
-
 int BiosComponent::get_version(json& j) {
   string ver("");
+  j["PRETTY_COMPONENT"] = "BIOS";
   try {
     server.ready();
     if ( get_ver_str(ver) < 0 ) {
@@ -166,8 +149,12 @@ int BiosComponent::get_version(json& j) {
     }
     j["VERSION"] = ver;
   } catch(string& err) {
-    if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
-    else j["VERSION"] = "error_returned";
+    j["PRETTY_VERSION"] = "NA (" + err + ")";
+    if ( err.find("empty") != string::npos ) {
+      j["VERSION"] = "not_present";
+    } else {
+      j["VERSION"] = "error_returned";
+    }
   }
   return FW_STATUS_SUCCESS;
 }

@@ -1,6 +1,5 @@
 #include "fw-util.h"
-#include <cstdio>
-#include <cstring>
+#include <string>
 #include <unistd.h>
 #include "bic_bios.h"
 #include <openbmc/pal.h>
@@ -51,24 +50,21 @@ int BiosComponent::fupdate(string) {
   return FW_STATUS_NOT_SUPPORTED;
 }
 
-int BiosComponent::print_version() {
+int BiosComponent::get_version(json& j) {
   uint8_t ver[64] = {0};
-  int i;
 
+  j["PRETTY_COMPONENT"] = "BIOS";
   try {
     server.ready();
     if (pal_get_sysfw_ver(slot_id, ver)) {
-      cout << "BIOS Version: NA" << endl;
+      j["VERSION"] = "NA";
     } else {
       // BIOS version response contains the length at offset 2 followed by ascii string
-      printf("BIOS Version: ");
-      for (i = 3; i < 3+ver[2]; i++) {
-        printf("%c", ver[i]);
-      }
-      printf("\n");
+      string sver((const char *)(ver + 3), size_t(ver[2]));
+      j["VERSION"] = sver;
     }
   } catch (string err) {
-    printf("BIOS Version: NA (%s)\n", err.c_str());
+    j["VERSION"] = "NA (" + err + ")";
   }
   return 0;
 }

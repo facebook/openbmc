@@ -29,7 +29,7 @@ class BiosExtComponent : public BiosComponent {
     int update(int fd, bool force) override;
     int fupdate(string image) override;
     int dump(string image) override;
-    int print_version() override;
+    int get_version(json& j) override;
 };
 
 int BiosExtComponent::update_internal(const std::string &image, int fd, bool force) {
@@ -131,11 +131,11 @@ int BiosExtComponent::dump(string image) {
   return ret;
 }
 
-int BiosExtComponent::print_version() {
+int BiosExtComponent::get_version(json& j) {
   if (fby2_get_slot_type(slot_id) == SLOT_TYPE_SERVER) {
-    BiosComponent::print_version();
+    return BiosComponent::get_version(j);
   }
-  return 0;
+  return FW_STATUS_NOT_SUPPORTED;
 }
 
 // Register the BIOS components

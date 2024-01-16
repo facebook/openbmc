@@ -27,11 +27,11 @@ cleanup() {
 disconnect_program_paths() {
     gpio_set_value BMC_LITE_L 0
     gpio_set_value JTAG_TRST_L 0
-    echo 1 > "$SCM_PWR_ON_SYSFS"
+    userver_power_on
 }
 
 connect_scm_jtag() {
-    echo 0 > "$SCM_PWR_ON_SYSFS"
+    userver_power_off
     gpio_set_value BMC_LITE_L 1
     gpio_set_value SW_JTAG_SEL 0
     gpio_set_value JTAG_TRST_L 1

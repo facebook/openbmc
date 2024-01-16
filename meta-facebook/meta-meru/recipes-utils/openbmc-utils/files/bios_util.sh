@@ -38,11 +38,8 @@ disconnect_program_paths() {
 }
 
 connect_spi() {
-    devmem_clear_bit 0x1e6e2438 8
-    # Take CPU into reset via power and reset control
-    i2cset -f -y 14 0x28 0x2e 0x00
-    echo 0 > /sys/bus/i2c/drivers/pwrcpld/12-0043/cpu_control
-    sleep 10
+    devmem_clear_bit 0x1e6e2438 8 # SPI1CS1 Function disable
+    userver_power_off
     gpio_set_value ABOOT_GRAB 1
     gpio_set_value SW_CPLD_JTAG_SEL 0
     gpio_set_value SW_JTAG_SEL 0

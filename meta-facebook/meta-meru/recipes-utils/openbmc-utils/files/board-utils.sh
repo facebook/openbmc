@@ -20,9 +20,8 @@
 
 # shellcheck disable=SC2034
 PWRCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/pwrcpld/12-0043"
-SCM_PWR_ON_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_control"
 SCM_PWR_IN_RESET_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_in_reset"
-SMB_EEPROM_SYSFS="/sys/bus/i2c/drivers/at24/9-0052/eeprom"
+SCM_CPU_READY_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_ready"
 
 # SMB CPLD endpoints
 SMBCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/smbcpld/9-0023"
@@ -127,8 +126,8 @@ wedge_board_rev() {
 }
 
 userver_power_is_on() {
-    isWedgeInReset="$(head -n 1 "$SCM_PWR_IN_RESET_SYSFS" 2> /dev/null)"
-    if [ "$isWedgeInReset" = "0x0" ]; then
+    isCpuReady="$(head -n 1 "$SCM_CPU_READY_SYSFS" 2> /dev/null)"
+    if [ "$isCpuReady" = "0x1" ]; then
         return 0 # uServer is on
     else
         return 1
@@ -136,16 +135,17 @@ userver_power_is_on() {
 }
 
 userver_power_on() {
-    # Take CPU power out by SLG gpio
-    i2cset -f -y 14 0x28 0x2e 0x3f
+    # Power on using the SLG gpio
+    i2cset -f -y 14 0x28 0x2e 0x1
     sleep 0.5
-    echo 1 > "$SCM_PWR_ON_SYSFS"
     wedge_power_asic 0
     return 0
 }
 
 userver_power_off() {
-    echo 0 > "$SCM_PWR_ON_SYSFS"
+    # Power off using the SLG gpio
+    i2cset -f -y 14 0x28 0x2e 0x0
+    sleep 0.5
     wedge_power_asic 1
     # Some delay is needed for "wedge_power reset" reset to take effect
     sleep 10

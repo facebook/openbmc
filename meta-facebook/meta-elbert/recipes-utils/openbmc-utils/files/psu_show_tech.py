@@ -155,7 +155,8 @@ class PowerSupply(object):
             registers.extend(self.registersExtra)
         for name, addr, readLen, decodeFunc in registers:
             try:
-                data = readBlock(self.i2cBus, self.chipAddr, addr, readLen, name=name)
+                data = readBlock(self.i2cBus, self.chipAddr,
+                                 addr, readLen, name=name)
                 value = decodeFunc(data)
             except Exception:
                 value = "Error"
@@ -204,6 +205,7 @@ class Generic(PowerSupply):
         ("READ_PIN", 0x97, 2, decodeHex)
     ]
 
+
 class Liteon(Generic):
     def __init__(self, bus, chip):
         vendorRegistersExtra = [
@@ -218,24 +220,41 @@ class Liteon(Generic):
         super(Generic, self).modifyExtra(vendorRegistersExtra, registersRemove)
 
 
-PROFILES = {"generic": Generic, "liteon": Liteon}
+class Arista(Generic):
+    def __init__(self, bus, chip):
+        vendorRegistersExtra = [
+            ("VENDOR_MFR_ID", 0xc9, None, decodeAscii),
+            ("VENDOR_MFR_MODEL", 0xca, None, decodeAscii),
+            ("VENDOR_MFR_REVISION", 0xcb, None, decodeAscii)
+        ]
+
+        super(Generic, self).__init__(bus, chip)
+        super(Generic, self).modifyExtra(vendorRegistersExtra)
+
+
+PROFILES = {"generic": Generic, "liteon": Liteon, "arista":Arista}
 mfrModelMap = {
-      # MFR_NAME: MODEL_NAME
-      'ECD15020056': 'PWR-2421-HV-RED',
-      'PS-2242-3A': 'PWR-2411-AC-RED',
-      'PS-2242-9A': 'PWR-2421-HV-RED'
-      }
+    # MFR_NAME: MODEL_NAME
+    'ECD15020056': 'PWR-2421-HV-RED',
+    'PS-2242-3A': 'PWR-2411-AC-RED',
+    'PS-2242-9A': 'PWR-2421-HV-RED',
+    'PWR-00591': 'PWR-2421-DC-RED'
+}
 
 
 def parseArgs():
-    parser = argparse.ArgumentParser(description="Get power supply info from i2c bus")
+    parser = argparse.ArgumentParser(
+        description="Get power supply info from i2c bus")
     parser.add_argument("i2cBus", type=int, help="i2c bus, e.g., 5")
     parser.add_argument("chipAddr", help="chip address (hex), e.g. 0x58")
     group1 = parser.add_mutually_exclusive_group(required=True)
     group1.add_argument("-c", "--chipModel", help="chip model, e.g., generic")
-    group1.add_argument("-r", "--regAddr", help="register address (hex), e.g., 0x10")
-    parser.add_argument("-l", "--byteLength", default=1, type=int, help="bytes to read")
-    parser.add_argument("-d", "--detail", action="store_true", help="show detail")
+    group1.add_argument("-r", "--regAddr",
+                        help="register address (hex), e.g., 0x10")
+    parser.add_argument("-l", "--byteLength", default=1,
+                        type=int, help="bytes to read")
+    parser.add_argument(
+        "-d", "--detail", action="store_true", help="show detail")
     return parser.parse_args()
 
 

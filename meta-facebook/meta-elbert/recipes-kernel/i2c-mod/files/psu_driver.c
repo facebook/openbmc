@@ -47,6 +47,7 @@
 typedef enum {
   DELTA_2400,
   LITEON_2400,
+  PWR_00591,
   UNKNOWN
 } model_name;
 
@@ -140,6 +141,8 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
     model = DELTA_2400;
   } else if (!strncmp(block, "PS-2242-3A", 10) || !strncmp(block, "PS-2242-9A", 10)) {
     model = LITEON_2400;
+  } else if (!strncmp(block, "PWR-00591", 9)){
+    model = PWR_00591;
   } else {
     model = UNKNOWN;
   }
@@ -161,6 +164,7 @@ static ssize_t psu_vin_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
+    case PWR_00591:
       result = linear_convert(LINEAR_11, result, 0);
       break;
     default:
@@ -184,6 +188,7 @@ static ssize_t psu_iin_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
+    case PWR_00591:
       result = linear_convert(LINEAR_11, result, 0);
       break;
     default:
@@ -207,6 +212,7 @@ static ssize_t psu_vout_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
+    case PWR_00591:
       result = linear_convert(LINEAR_16, result, VOUT_MODE);
       break;
     default:
@@ -230,6 +236,7 @@ static ssize_t psu_iout_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
+    case PWR_00591:
       result = linear_convert(LINEAR_11, result, 0);
       break;
     default:
@@ -253,6 +260,7 @@ static ssize_t psu_temp_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
+    case PWR_00591:
       result = linear_convert(LINEAR_11, result, 0);
       break;
     default:
@@ -276,6 +284,7 @@ static ssize_t psu_fan_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
+    case PWR_00591:
       result = linear_convert(LINEAR_11, result, 0) / 1000;
       break;
     default:
@@ -299,6 +308,7 @@ static ssize_t psu_power_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
+    case PWR_00591:
       result = linear_convert(LINEAR_11, result, 0);
       break;
     default:

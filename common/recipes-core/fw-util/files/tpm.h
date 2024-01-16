@@ -7,7 +7,7 @@ class TpmComponent : public Component {
   public:
     TpmComponent(std::string fru, std::string comp)
       : Component(fru, comp) {}
-    int print_version();
+    int get_version(json& j) override;
 };
 
 #endif

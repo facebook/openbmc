@@ -13,11 +13,10 @@ using namespace std;
 #define TPM_FW_VER_MATCH_STR "Firmware version: "
 
 int
-get_tpm_ver(char *ver) {
+get_tpm_ver(std::string& ver_str) {
   FILE *fp = NULL;
   char str[MAX_LINE_LENGTH] = {0};
   char *match = NULL;
-  std::string ver_str;
   const std::string ver_key = "tpm_version_tmp";
 
   // Check is TPM is present/supported by the platform
@@ -56,20 +55,20 @@ get_tpm_ver(char *ver) {
     // Set cache so next time we do not access the device.
     kv::set(ver_key, ver_str);
   }
-  strncpy(ver, ver_str.c_str(), MAX_LINE_LENGTH - 1);
+  ver_str.erase(std::remove(ver_str.begin(), ver_str.end(), '\n'), ver_str.end());
   return 0;
 }
 
-int TpmComponent::print_version()
+int TpmComponent::get_version(json& j)
 {
-  char ver[MAX_LINE_LENGTH] = {0};
-
+  std::string ver;
+  j["PRETTY_COMPONENT"] = "TPM";
   if (get_tpm_ver(ver) == FW_STATUS_SUCCESS) {
-    printf("TPM Version: %s", ver);
+    j["VERSION"] = ver;
   } else if (get_tpm_ver(ver) == FW_STATUS_NOT_SUPPORTED) {
-    printf("TPM Version: TPM Not Supported\n");
+    j["VERSION"] = "TPM Not Supported";
   } else {
-    printf("TPM Version: NA\n");
+    j["VERSION"] = "NA";
   }
   return 0;
 }

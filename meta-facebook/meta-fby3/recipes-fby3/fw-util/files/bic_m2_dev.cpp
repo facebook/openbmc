@@ -1,8 +1,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <cstdio>
-#include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
 #include <algorithm>
@@ -74,7 +72,7 @@ void M2DevComponent::save_info(uint8_t idx, int ret, M2_DEV_INFO *m2_dev_info) {
   statusTable[idx].is_freya = m2_dev_info->is_freya;
 }
 
-int M2DevComponent::print_version()
+int M2DevComponent::get_version(json& j)
 {
   string ver("");
   string board_name = name;
@@ -82,6 +80,7 @@ int M2DevComponent::print_version()
   uint8_t idx = (fw_comp - FW_2OU_M2_DEV0);
   uint8_t intf = REXP_BIC_INTF;
   M2_DEV_INFO m2_dev_info = {};
+  int ret = 0;
   //static uint8_t cnt = 0;
 
   if ( fw_comp >= FW_TOP_M2_DEV0 && fw_comp <= FW_TOP_M2_DEV11 ) {
@@ -93,6 +92,7 @@ int M2DevComponent::print_version()
   }
 
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
+  j["PRETTY_COMPONENT"] = board_name + " DEV" + std::to_string(+idx);
   try {
 
     server.ready();
@@ -100,20 +100,20 @@ int M2DevComponent::print_version()
     scan_all_devices(intf, &m2_dev_info);
 
     if (isDual[slot_id] == true) {
-      print_dual(idx, m2_dev_info);
+      ret = get_dual(j, idx, m2_dev_info);
     } else {
-      print_single(idx);
+      ret = get_single(j, idx);
     }
   } catch(string& err) {
-    printf("%s DEV%d Version: NA (%s)\n", board_name.c_str(), idx, err.c_str());
+    j["VERSION"] = "NA (" + err + ")";
   }
   if ( idx+1 == MAX_DEVICE_NUM ) {
     isScaned[slot_id] = false;
   }
-  return FW_STATUS_SUCCESS;
+  return ret;
 }
 
-void M2DevComponent::print_dual(uint8_t idx, M2_DEV_INFO /*m2_dev_info*/) {
+int M2DevComponent::get_dual(json& j, uint8_t idx, M2_DEV_INFO /*m2_dev_info*/) {
   int first_dev, second_dev, main_dev;
   string board_name = name;
 
@@ -127,7 +127,7 @@ void M2DevComponent::print_dual(uint8_t idx, M2_DEV_INFO /*m2_dev_info*/) {
     first_dev = idx - 1;
     second_dev = idx;
     if (statusTable[first_dev].isPrinted == true) {
-      return;
+      return FW_STATUS_NOT_SUPPORTED;
     }
   }
   if (dev_main_slot == Dev_Main_Slot::ON_EVEN) {
@@ -136,45 +136,51 @@ void M2DevComponent::print_dual(uint8_t idx, M2_DEV_INFO /*m2_dev_info*/) {
   else {
     main_dev = second_dev;
   }
-
-  printf("%s DEV%d/%d Version: ", board_name.c_str(), first_dev, second_dev);
+  j["PRETTY_COMPONENT"] = board_name + " DEV" + std::to_string(+first_dev) + "/" + std::to_string(+second_dev);
   if (statusTable[main_dev].ret) {
-    printf("NA\n");
+    j["VERSION"] = "NA";
   } else if (!statusTable[main_dev].status) {
-    printf("NA(Not Present)\n");
+    j["VERSION"] = "NA(Not Present)";
   } else if (!statusTable[main_dev].nvme_ready) {
-    printf("NA(NVMe Not Ready)\n");
+    j["VERSION"] = "NA(NVMe Not Ready)";
   } else if (statusTable[main_dev].ffi != FFI_0_ACCELERATOR) {
-    printf("NA(Not Accelerator)\n");
+    j["VERSION"] = "NA(Not Accelerator)";
   } else {
     // Freya version format meaning: major, minor, PSOC major, PSOC minor, QSPI
     if ( statusTable[main_dev].is_freya ) {
-      printf("v%d.%d.%d.%d.%d\n", statusTable[main_dev].major_ver, statusTable[main_dev].minor_ver, \
-                                    statusTable[main_dev].additional_ver, statusTable[main_dev].sec_major_ver, \
-                                      statusTable[main_dev].sec_minor_ver);
+      j["VERSION"] = "v" + std::to_string(+statusTable[main_dev].major_ver)
+                    + "." + std::to_string(+statusTable[main_dev].minor_ver)
+                    + "." + std::to_string(+statusTable[main_dev].additional_ver)
+                    + "." + std::to_string(+statusTable[main_dev].sec_major_ver)
+                    + "." + std::to_string(+statusTable[main_dev].sec_minor_ver);
     } else {
-      printf("v%d.%d\n", statusTable[main_dev].major_ver, statusTable[main_dev].minor_ver);
+      j["VERSION"] = "v" + std::to_string(+statusTable[main_dev].major_ver)
+                      + "." + std::to_string(+statusTable[main_dev].minor_ver);
     }
   }
+  return FW_STATUS_SUCCESS;
 }
 
-void M2DevComponent::print_single(uint8_t idx) {
+int M2DevComponent::get_single(json& j, uint8_t idx) {
   string board_name = name;
 
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
 
-  printf("%s DEV%d Version: ", board_name.c_str(), idx);
+  j["PRETTY_COMPONENT"] = board_name + "DEV" + std::to_string(+idx);
   if (statusTable[idx].ret) {
-    printf("NA\n");
+    j["VERSION"] = "NA";
   } else if (!statusTable[idx].status) {
-    printf("NA(Not Present)\n");
+    j["VERSION"] = "NA(Not Present)";
   } else if (!statusTable[idx].nvme_ready) {
-    printf("NA(NVMe Not Ready)\n");
+    j["VERSION"] = "NA(NVMe Not Ready)";
   } else if (statusTable[idx].ffi != FFI_0_ACCELERATOR) {
-    printf("NA(Not Accelerator)\n");
+    j["VERSION"] = "NA(Not Accelerator)";
   } else {
-    printf("v%d.%d.%d\n", statusTable[idx].major_ver, statusTable[idx].minor_ver, statusTable[idx].additional_ver);
+    j["VERSION"] = "v" + std::to_string(+statusTable[idx].major_ver)
+                    + "." + std::to_string(+statusTable[idx].minor_ver)
+                    + "." + std::to_string(+statusTable[idx].additional_ver);
   }
+  return FW_STATUS_SUCCESS;
 }
 
 int M2DevComponent::update_internal(string image, bool /*force*/) {
@@ -243,7 +249,7 @@ int M2DevComponent::update_internal(string image, bool /*force*/) {
     }
   } catch (string& err) {
     ret = FW_STATUS_FAILURE;
-    printf("Failed reason: %s\n", err.c_str());
+    cout << "Failed reason: " << err << std::endl;
   }
 
   return ret;

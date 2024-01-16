@@ -74,7 +74,7 @@ int CpldExtComponent::get_version(json& j) {
     if (bic_get_fw_ver(slot_id, fw_comp, ver) < 0) {
       throw "Error in getting the version of " + name;
     }
-    ss << std::hex << setfill('0')
+    ss << std::hex << std::uppercase << setfill('0')
        << setw(2) << +ver[0]
        << setw(2) << +ver[1]
        << setw(2) << +ver[2]

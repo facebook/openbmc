@@ -229,50 +229,34 @@ int BmcCpldComponent::get_ver_str(string& s) {
   return ret;
 }
 
-int BmcCpldComponent::print_version()
-{
-  string ver("");
-  string fru_name = fru();
-  size_t slot_found = fru_name.find("slot");
-  try {
-    // Print CPLD Version
-    if (slot_found != string::npos) {
-      uint8_t slot_id = fru_name.at(4) - '0';
-      Server server(slot_id, fru_name);
-      fru_name = "SB";
-      server.ready();
-    } else {
-     transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
-    }
-    if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of " + fru_name;
-    }
-    cout << fru_name << " CPLD Version: " << ver << endl;
-  } catch(string& err) {
-    printf("%s CPLD Version: NA (%s)\n", fru_name.c_str(), err.c_str());
-  }
-  return 0;
-}
-
 int BmcCpldComponent::get_version(json& j) {
   string ver("");
   string fru_name = fru();
-  size_t slot_found = fru_name.find("slot");
+  bool is_server = false;
+  if (fru_name.find("slot") != string::npos) {
+    is_server = true;
+    j["PRETTY_COMPONENT"] = "SB CPLD";
+  } else {
+    transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
+    j["PRETTY_COMPONENT"] = fru_name + " CPLD";
+  }
   try {
-    if (slot_found != string::npos) {
+    if (is_server) {
       uint8_t slot_id = fru_name.at(4) - '0';
       Server server(slot_id, fru_name);
-      fru_name = "SB";
       server.ready();
     }
-
     if ( get_ver_str(ver) < 0 ) {
       throw "Error in getting the version of " + fru_name;
     }
     j["VERSION"] = ver;
   } catch(string& err) {
-    if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
-    else j["VERSION"] = "error_returned";
+    j["PRETTY_VERSION"] = "NA (" + err + ")";
+    if ( err.find("empty") != string::npos ) {
+      j["VERSION"] = "not_present";
+    } else {
+      j["VERSION"] = "error_returned";
+    }
   }
   return FW_STATUS_SUCCESS;
 }

@@ -56,7 +56,7 @@ int VrExtComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
   return ret;
 }
 
-int VrExtComponent::print_version()
+int VrExtComponent::get_version(json& j)
 {
   map<uint8_t, string> list = {{FW_2OU_3V3_VR1, "VR P3V3_STBY1"},
                                {FW_2OU_3V3_VR2, "VR P3V3_STBY2"},
@@ -104,9 +104,10 @@ int VrExtComponent::print_version()
       list[fw_comp]="VR P0V9 P1V2";
     }
   }
+  j["PRETTY_COMPONENT"] = board_name + " " + list[fw_comp];
 
   if ( VR_STATUS::VR_ERR == vr_status ) {
-    printf("%s %s Version: NA (%s)\n", board_name.c_str(), list[fw_comp].c_str(), err_str.c_str());
+    j["VERSION"] = "NA (" + err_str + ")";
     return FW_STATUS_SUCCESS;
   }
 
@@ -115,9 +116,9 @@ int VrExtComponent::print_version()
     if ( get_ver_str(ver, fw_comp) < 0 ) {
       throw "Error in getting the version of " + board_name;
     }
-    cout << board_name << " " << list[fw_comp] << " Version: " << ver << endl;
+    j["VERSION"] = ver;
   } catch(string& err) {
-    printf("%s %s Version: NA (%s)\n", board_name.c_str(), list[fw_comp].c_str(), err.c_str());
+    j["VERSION"] = "NA (" + err + ")";
   }
 
   return FW_STATUS_SUCCESS;

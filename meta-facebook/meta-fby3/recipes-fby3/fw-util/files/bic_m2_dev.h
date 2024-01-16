@@ -44,8 +44,8 @@ class M2DevComponent : public Component {
 
   void scan_all_devices(uint8_t intf, M2_DEV_INFO *m2_dev_info);
   void save_info(uint8_t idx, int ret, M2_DEV_INFO *m2_dev_info);
-  void print_single(uint8_t idx);
-  void print_dual(uint8_t idx, M2_DEV_INFO m2_dev_info);
+  int get_single(json& j, uint8_t idx);
+  int get_dual(json& j, uint8_t idx, M2_DEV_INFO m2_dev_info);
 
 
   private:
@@ -54,9 +54,9 @@ class M2DevComponent : public Component {
     M2DevComponent(string fru, string comp, uint8_t _slot_id, string _name, uint8_t _fw_comp)
       : Component(fru, comp), slot_id(_slot_id), fw_comp(_fw_comp), name(_name), server(_slot_id, fru), expansion(_slot_id, fru, _name, _fw_comp) {}
     int update_internal(string image, bool force);
-    int fupdate(string image);
-    int update(string image);
-    int print_version();
+    int fupdate(string image) override;
+    int update(string image) override;
+    int get_version(json& j) override;
 };
 
 #endif

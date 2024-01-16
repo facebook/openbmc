@@ -1,6 +1,6 @@
 #include "fw-util.h"
-#include <cstdio>
-#include <cstring>
+#include <sstream>
+#include <iomanip>
 #include "bic_me.h"
 #include <openbmc/pal.h>
 #ifdef BIC_SUPPORT
@@ -8,26 +8,36 @@
 
 using namespace std;
 
-int MeComponent::print_version() {
+int MeComponent::get_version(json& j) {
   uint8_t ver[32] = {0};
-  char target_name[16] = {0};
+  char ctarget_name[16] = {0};
 
-  pal_get_me_name(slot_id, target_name);
+  pal_get_me_name(slot_id, ctarget_name);
+  string target_name(ctarget_name);
+  j["PRETTY_COMPONENT"] = target_name;
   try {
     server.ready();
     if (bic_get_fw_ver(slot_id, FW_ME, ver)) {
-      printf("%s Version: NA\n", target_name);
+      j["VERSION"] = "NA";
     }
     else {
-      if (!strcmp(target_name, "ME"))
-        printf("%s Version: %x.%x.%x.%x%x\n", target_name, ver[0], ver[1], ver[2], ver[3], ver[4]);
-      else if (!strcmp(target_name, "IMC"))
-        printf("%s Version: IMC.DF.%x.%x.%x-%x%x%x%x%x\n", target_name, ver[0], ver[1], ver[2], ver[3], ver[4], ver[5], ver[6], ver[7]);
-      else if (!strcmp(target_name, "M3"))
-        printf("%s Version: %x.%02x\n", target_name, ver[0], ver[1]);
+      stringstream ss;
+      if (target_name == "ME") {
+        ss << std::hex << +ver[0] << '.' << +ver[1] << '.' << +ver[2] << '.'
+          << +ver[3] << +ver[4];
+        j["VERSION"] = ss.str();
+      } else if (target_name == "IMC") {
+        ss << "IMC.DF." << std::hex << +ver[0] << '.' << +ver[1] << '.'
+          << +ver[2] << '-' << +ver[3] << +ver[4] << +ver[5] << +ver[6] << +ver[7];
+        j["VERSION"] = ss.str();
+      } else if (target_name == "M3") {
+        ss << std::hex << +ver[0] << '.';
+        ss << std::hex << std::setfill('0') << std::setw(2) << +ver[1];
+        j["VERSION"] = ss.str();
+      }
     }
   } catch(string err) {
-    printf("%s Version: NA (%s)\n",target_name, err.c_str());
+    j["VERSION"] = "NA (" + err + ")";
   }
   return 0;
 }

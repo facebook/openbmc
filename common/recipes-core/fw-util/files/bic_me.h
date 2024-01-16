@@ -10,7 +10,7 @@ class MeComponent : public Component {
   public:
     MeComponent(std::string fru, std::string comp, uint8_t _slot_id)
       : Component(fru, comp), slot_id(_slot_id), server(_slot_id, fru) {}
-    int print_version();
+    int get_version(json& j) override;
 };
 
 #endif

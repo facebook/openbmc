@@ -21,33 +21,32 @@ class MeExtComponent : public MeComponent {
         }
       }
     }
-    int print_version();
+    int get_version(json& j) override;
 };
 
-int MeExtComponent::print_version() {
+int MeExtComponent::get_version(json& j) {
+  int ret = FW_STATUS_NOT_SUPPORTED;
   if (fby2_get_slot_type(slot_id) == SLOT_TYPE_SERVER) {
-#ifdef CONFIG_FBY2_ND  
-    int ret;
+#ifdef CONFIG_FBY2_ND
     uint8_t server_type = 0xFF;
     ret = fby2_get_server_type(slot_id, &server_type);
     if (ret)
-      return 0;
+      ret = FW_STATUS_FAILURE;
 
     switch (server_type) {
       case SERVER_TYPE_ND:
         break;
       case SERVER_TYPE_TL:
-        MeComponent::print_version();
+        ret = MeComponent::get_version(j);
         break;
       default:
         break;
     }
 #else
-  MeComponent::print_version();
+  ret = MeComponent::get_version(j);
 #endif
-    
   }
-  return 0;
+  return ret;
 }
 
 // Register the ME components

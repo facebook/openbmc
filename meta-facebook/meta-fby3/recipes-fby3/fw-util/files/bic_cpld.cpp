@@ -5,5 +5,5 @@
 
 using namespace std;
 
-int CpldComponent::print_version() { return FW_STATUS_NOT_SUPPORTED; }
+int CpldComponent::get_version(json&) { return FW_STATUS_NOT_SUPPORTED; }
 int CpldComponent::update(string) { return FW_STATUS_NOT_SUPPORTED; }

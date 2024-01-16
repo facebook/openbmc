@@ -13,14 +13,12 @@ class CpldExtComponent : public CpldComponent {
   Server server;
   ExpansionBoard expansion;
   private:
-    int get_ver_str(string& s);
     int update_internal(string& image, bool force);
   public:
     CpldExtComponent(string fru, string comp, uint8_t _slot_id, string _name, uint8_t _fw_comp)
       : CpldComponent(fru, comp, _slot_id), slot_id(_slot_id), fw_comp(_fw_comp), name(_name), server(_slot_id, fru), expansion(_slot_id, fru, _name, _fw_comp) {}
-    int update(string image);
-    int fupdate(string image);
-    int print_version();
+    int update(string image) override;
+    int fupdate(string image) override;
     int get_version(json& j) override;
 };
 

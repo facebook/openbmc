@@ -69,10 +69,30 @@ class boardApp_Handler:
             rest_pim_present.get_pim_present(), dumps=dumps_bytestr
         )
 
+    # Handler for /api/sys/mb/pim$
+    async def rest_pim_endpoint_info_hdl(self, request):
+        path = request.rel_url.path
+        details = {
+            "Information": {"Description": "Plug-in Module"},
+            "Actions": [],
+            "Resources": get_endpoints(path),
+        }
+        return web.json_response(details, dumps=dumps_bytestr)
+
     # Handler for sys/smb_info resource endpoint (version)
     async def rest_smbinfo_hdl(self, request):
         return web.json_response(rest_smbinfo.get_smbinfo())
 
+    # Handler for sys/firmware_info
+    async def rest_firmware_info_hdl(self, request):
+        details = {
+            "Information": {"Description": "Firmware versions"},
+            "Actions": [],
+            "Resources": ["all"],
+        }
+        return web.json_response(details, dumps=dumps_bytestr)
+
+    # Handler for sys/firmware_info/all
     async def rest_firmware_info_all_hdl(self, request):
         fws = await rest_fw_ver.get_all_fw_ver()
         return web.json_response(fws, dumps=dumps_bytestr)
@@ -148,19 +168,27 @@ class boardApp_Handler:
 
     # Handler for sys/beacon/locator resource endpoint
     async def rest_beacon_locator_hdl(self, request):
-        return web.json_response(rest_beacon.beacon_on(mode="locator"), dumps=dumps_bytestr)
+        return web.json_response(
+            rest_beacon.beacon_on(mode="locator"), dumps=dumps_bytestr
+        )
 
     # Handler for sys/beacon/netstate resource endpoint
     async def rest_beacon_netstate_hdl(self, request):
-        return web.json_response(rest_beacon.beacon_on(mode="netstate"), dumps=dumps_bytestr)
+        return web.json_response(
+            rest_beacon.beacon_on(mode="netstate"), dumps=dumps_bytestr
+        )
 
     # Handler for sys/beacon/drained resource endpoint
     async def rest_beacon_drained_hdl(self, request):
-        return web.json_response(rest_beacon.beacon_on(mode="drained"), dumps=dumps_bytestr)
+        return web.json_response(
+            rest_beacon.beacon_on(mode="drained"), dumps=dumps_bytestr
+        )
 
     # Handler for sys/beacon/audit resource endpoint
     async def rest_beacon_audit_hdl(self, request):
-        return web.json_response(rest_beacon.beacon_on(mode="audit"), dumps=dumps_bytestr)
+        return web.json_response(
+            rest_beacon.beacon_on(mode="audit"), dumps=dumps_bytestr
+        )
 
     # Handler for sys/beacon/off resource endpoint
     async def rest_beacon_off_hdl(self, request):
@@ -172,4 +200,6 @@ class boardApp_Handler:
 
     # Handler for sys/bmc_board_rev endpoint
     async def rest_bmc_board_rev_hdl(self, request):
-        return web.json_response(rest_bmc_board_rev.get_bmc_board_rev(), dumps=dumps_bytestr)
+        return web.json_response(
+            rest_bmc_board_rev.get_bmc_board_rev(), dumps=dumps_bytestr
+        )

@@ -290,6 +290,13 @@ typedef struct
   uint8_t ext_status;
 } ipmi_sensor_reading_t;
 
+typedef struct __attribute__((packed)) {
+  uint8_t remote_val_jumper_status:1; // 0 - Remote validation jumper is not set, 1 - Remote validation jumper is set
+  uint8_t reserved1:7;
+  uint8_t dam_pin_status:1;           // 0 - DAM pin is not set, 1 - DAM pin is set
+  uint8_t reserved2:7;
+} ipmi_get_remote_jumper_status_res_t;
+
 // Network Function Codes (IPMI/Section 5.1)
 enum
 {
@@ -480,6 +487,8 @@ enum
 enum
 {
   CMD_OEM_STOR_ADD_STRING_SEL = 0x30,
+  CMD_OEM_STOR_SET_DAM_PIN_CONTROL = 0x31,
+  CMD_OEM_STOR_GET_REMOTE_JUMPER_STATUS = 0x32,
   CMD_OEM_SETUP_EXP_UART_BRIDGING = 0x40,
   CMD_OEM_TEARDOWN_EXP_UART_BRIDGING = 0x41,
   CMD_OEM_SET_IOC_FW_RECOVERY = 0x42,
@@ -711,6 +720,18 @@ enum RESTART_CAUSE {
 enum USB_CDC_CTRL_STATUS {
   DISABLE_USB_CDC = 0x0,
   ENABLE_USB_CDC = 0x1,
+};
+
+// CPU Delayed Authentication Mode
+enum {
+  BIOS_DAM_PIN_DISABLE = 0x0,
+  BIOS_DAM_PIN_ENABLE  = 0x1,
+};
+
+// Jumper to block CPU Delayed Authentication Mode
+enum {
+  BIOS_REMOTE_VAL_JUMPER_DISABLE = 0x0,
+  BIOS_REMOTE_VAL_JUMPER_ENABLE  = 0x1,
 };
 
 void lib_ipmi_handle(unsigned char *request, unsigned char req_len,

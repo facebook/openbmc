@@ -5891,3 +5891,98 @@ pal_add_apml_crashdump_record(uint8_t fru, uint8_t ras_status, uint8_t num_of_pr
 
   return 0;
 }
+
+// For OEM Storage Command "CMD_OEM_STOR_SET_DAM_PIN_CONTROL" 0x31
+int
+pal_set_dam_pin_status(uint8_t slot, uint8_t dam_pin_status) {
+  int ret, slot_type;
+  uint8_t status;
+  uint8_t dam_pin_gpio = 0;
+
+  slot_type = fby35_common_get_slot_type(slot);
+  switch (slot_type) {
+    case SERVER_TYPE_GL:
+      dam_pin_gpio = GL_DAM_BIC_R_EN;
+      break;
+    case SERVER_TYPE_CL:
+    case SERVER_TYPE_HD:
+    default:
+      syslog(LOG_WARNING, "%s() Not support to set DAM pin at current server type.\n", __func__);
+      return -1;
+  }
+
+  if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+    syslog(LOG_WARNING, "%s() slot: %x is out of range.\n", __func__, slot);
+    return -1;
+  }
+
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() failed to get present status of slot %d\n", __func__, slot);
+    return -1;
+  }
+  if (status == 0) {
+    syslog(LOG_WARNING, "%s() slot %d is not present.\n", __func__, slot);
+    return -1;
+  }
+
+  if (dam_pin_status != BIOS_DAM_PIN_DISABLE &&
+      dam_pin_status != BIOS_DAM_PIN_ENABLE) {
+    syslog(LOG_ERR, "%s() DAM pin status: %x for slot %d is wrong\n", __func__, dam_pin_status, slot);
+    return -1;
+  } else {
+    // Set DAM pin
+    if (bic_set_gpio(slot, dam_pin_gpio, dam_pin_status) < 0) {
+      syslog(LOG_WARNING, "%s() failed to set DAM pin status of slot %d\n", __func__, slot);
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
+// For OEM Storage Command "CMD_OEM_STOR_GET_REMOTE_JUMPER_STATUS" 0x32
+int
+pal_get_dam_pin_status(uint8_t slot, uint8_t* dam_pin_status) {
+  int ret, slot_type;
+  uint8_t status;
+  uint8_t dam_pin_gpio = 0;
+  bic_gpio_t gpio = {0};
+
+  slot_type = fby35_common_get_slot_type(slot);
+  switch (slot_type) {
+    case SERVER_TYPE_GL:
+      dam_pin_gpio = GL_DAM_BIC_R_EN;
+      break;
+    case SERVER_TYPE_CL:
+    case SERVER_TYPE_HD:
+    default:
+      syslog(LOG_WARNING, "%s() Not support to set DAM pin at current server type.\n", __func__);
+      return -1;
+  }
+
+  if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+    syslog(LOG_WARNING, "%s() slot: %x is out of range.\n", __func__, slot);
+    return -1;
+  }
+
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() failed to get present status of slot %d\n", __func__, slot);
+    return -1;
+  }
+  if (status == 0) {
+    syslog(LOG_WARNING, "%s() slot %d is not present.\n", __func__, slot);
+    return -1;
+  }
+
+  // Get DAM pin from BIC GPIO
+  ret = bic_get_gpio(slot, &gpio, NONE_INTF);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() bic_get_gpio returns %d\n", __func__, ret);
+    return -1;
+  }
+  *dam_pin_status = BIT_VALUE(gpio, dam_pin_gpio);
+
+  return 0;
+}

@@ -3778,3 +3778,13 @@ pal_bitcount(unsigned int val) {
   }
   return bitcount;
 }
+
+int __attribute__((weak))
+pal_set_dam_pin_status(uint8_t slot, uint8_t dam_pin_status) {
+  return -1;
+}
+
+int __attribute__((weak))
+pal_get_dam_pin_status(uint8_t slot, uint8_t* dam_pin_status) {
+  return -1;
+}

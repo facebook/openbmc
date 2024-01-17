@@ -695,6 +695,8 @@ int pal_check_psb_error(uint8_t head, uint8_t last);
 int pal_check_abl_error(uint32_t postcode);
 void *pal_set_fan_speed_thread(void *data);
 int pal_bitcount(unsigned int val);
+int pal_set_dam_pin_status(uint8_t slot, uint8_t dam_pin_status);
+int pal_get_dam_pin_status(uint8_t slot, uint8_t* dam_pin_status);
 
 #ifdef __cplusplus
 }

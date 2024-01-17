@@ -3720,6 +3720,53 @@ oem_control_usb_cdc (unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_stor_set_dam_pin_control (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  *res_len = 0;
+
+  if (length_check(1, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  if (pal_set_dam_pin_status(req->payload_id, req->data[0]) < 0) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+  } else {
+    res->cc = CC_SUCCESS;
+  }
+}
+
+static void
+oem_stor_get_remote_jumper_status (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  uint8_t dam_pin_status = BIOS_DAM_PIN_DISABLE;
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  ipmi_get_remote_jumper_status_res_t resp = {0};
+  *res_len = 0;
+
+  if (length_check(0, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  if (pal_get_dam_pin_status(req->payload_id, &dam_pin_status) < 0) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    return;
+  }
+
+  // Always respond remote validation jumper is enable.
+  resp.remote_val_jumper_status = BIOS_REMOTE_VAL_JUMPER_ENABLE;
+  resp.dam_pin_status = dam_pin_status;
+  memcpy(res->data, &resp, sizeof(resp));
+  *res_len = sizeof(resp);
+
+  res->cc = CC_SUCCESS;
+}
+
+static void
 oem_set_ioc_fw_recovery (unsigned char *request, unsigned char req_len,
                    unsigned char *response, unsigned char *res_len)
 {
@@ -4164,6 +4211,12 @@ ipmi_handle_oem_storage (unsigned char *request, unsigned char req_len,
   {
     case CMD_OEM_STOR_ADD_STRING_SEL:
       oem_stor_add_string_sel (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_STOR_SET_DAM_PIN_CONTROL:
+      oem_stor_set_dam_pin_control (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_STOR_GET_REMOTE_JUMPER_STATUS:
+      oem_stor_get_remote_jumper_status (request, req_len, response, res_len);
       break;
     case CMD_OEM_SET_IOC_FW_RECOVERY:
       oem_set_ioc_fw_recovery (request, req_len, response, res_len);

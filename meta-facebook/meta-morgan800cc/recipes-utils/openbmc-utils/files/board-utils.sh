@@ -247,7 +247,13 @@ userver_reset() {
 
     # Power cycle CPU and Datapath by toggling the bit
     write_i2c_pwr_ctrl_register "$I2C_CPU_DP_PWR_OFF_VALUE"
-    sleep 1
+
+    # Adding delay between off and on to avoid inconsistency of FPGA
+    # behavior in x86. The delay time is currently recommended by hardware
+    # team and will be lowered or removed once the delay is incorporated
+    # into sequence_in_progress/status bit.
+    sleep 10
+
     write_i2c_pwr_ctrl_register "$I2C_CPU_DP_PWR_ON_VALUE"
 
     handle_error_and_cleanup_if_timeout "${FUNCNAME[0]}"

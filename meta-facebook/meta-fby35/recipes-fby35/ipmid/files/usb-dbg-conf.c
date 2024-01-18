@@ -608,7 +608,7 @@ int plat_get_syscfg_text(uint8_t fru, char *syscfg)
     dimm_label = hd_dimm_label;
     dimm_num = ARRAY_SIZE(hd_dimm_cache_id);
   } else if (server_type == SERVER_TYPE_GL) {
-    cpu_name_pos = 3;  // The CPU is RD sample now, so there is no model number
+    cpu_name_pos = 2;  // QS2 CPU: Intel(R) Xeon(R) "6761E-C"
     dimm_cache_id = gl_dimm_cache_id;
     dimm_label = gl_dimm_label;
     dimm_num = ARRAY_SIZE(gl_dimm_cache_id);

@@ -55,7 +55,7 @@ jobs:
           cp tools/flashy/scripts/run_flashy*.sh tools/flashy/release/scripts
       - name: Get short SHA
         id: slug
-        run: echo "::set-output name=sha7::$(echo ${GITHUB_SHA} | cut -c1-7)"
+        run: echo "sha7=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1

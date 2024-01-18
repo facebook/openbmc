@@ -380,6 +380,9 @@ pal_check_abl_error(uint32_t postcode) {
     case 0xEA00E2EF:
       syslog(LOG_CRIT, "ABL Error(EA00E2EF) Unsupproted DIMM Config Error");
       break;
+    case 0xEA00E310:
+      syslog(LOG_CRIT, "ABL Error(EA00E310) No DIMM on any channel in system");
+      break;
     default:
       break;
   }

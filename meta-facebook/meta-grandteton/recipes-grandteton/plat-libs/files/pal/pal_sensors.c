@@ -17,7 +17,6 @@ extern PAL_SENSOR_MAP ubb_sensor_map[];
 extern PAL_SENSOR_MAP swb_sensor_map[];
 extern PAL_SENSOR_MAP bb_sensor_map[];
 extern PAL_SENSOR_MAP acb_artemis_sensor_map[];
-extern PAL_SENSOR_MAP acb_freya_sensor_map[];
 extern PAL_SENSOR_MAP meb_sensor_map[];
 extern PAL_SENSOR_MAP meb_clx_sensor_map[];
 extern PAL_SENSOR_MAP meb_e1s_sensor_map[];
@@ -49,7 +48,6 @@ extern const uint8_t fan_bp2_sensor_list[];
 extern const uint8_t scm_sensor_list[];
 
 extern const uint8_t acb_artemis_sensor_list[];
-extern const uint8_t acb_freya_sensor_list[];
 extern const uint8_t meb_sensor_list[];
 extern const uint8_t meb_cxl_sensor_list[];
 extern const uint8_t meb_e1s_sensor_list[];
@@ -80,7 +78,6 @@ extern size_t fan_bp2_sensor_cnt;
 
 extern size_t scm_sensor_cnt;
 
-extern size_t acb_freya_sensor_cnt;
 extern size_t acb_artemis_sensor_cnt;
 extern size_t meb_sensor_cnt;
 extern size_t meb_cxl_sensor_cnt;
@@ -178,65 +175,6 @@ exit:
 
   return rc;
 
-}
-
-static int pal_get_acb_card_config_from_bic() {
-  fru_status status = {0};
-  int ret = 0;
-  int fru = 0;
-
-  for (fru = FRU_ACB_ACCL1; fru <= FRU_ACB_ACCL12; fru++) {
-    ret = pal_get_pldm_fru_status(fru, JCN_0_1, &status);
-    if (ret == 0 && status.fru_prsnt == FRU_PRSNT && status.fru_type != UNKNOWN_CARD ) {
-      return (int)(status.fru_type);
-    }
-  }
-
-  return -1;
-}
-
-uint8_t pal_get_acb_card_config() {
-  char type_str[MAX_VALUE_LEN] = {0};
-  uint8_t card_type = 0;
-
-  memset(type_str, 0, MAX_VALUE_LEN);
-
-  if (kv_get(KEY_ACB_CARD_CONFIG, type_str, NULL, 0) != 0) {
-    // not cached before, get from BIC
-    if ((card_type = pal_get_acb_card_config_from_bic()) < 0) {
-      return UNKNOWN_CARD ;
-    }
-
-    snprintf(type_str, sizeof(type_str), "%d", card_type);
-    kv_set(KEY_ACB_CARD_CONFIG, type_str, 0, 0);
-  }
-
-  // get from cache
-  return atoi(type_str);
-}
-
-static void reload_sensor_table(uint8_t fru) {
-  uint8_t config = 0;
-
-  if (fru == FRU_ACB) {
-    config = pal_get_acb_card_config();
-
-    switch (config) {
-      case ARTEMIS_CARD:
-        // using default sensor table
-        break;
-      case FREYA_CARD:
-        sensor_map[fru].map = acb_freya_sensor_map;
-        break;
-      default:
-#ifdef DEBUG
-        syslog(LOG_ERR, "[%s] Fail to get acb fru%u, config = %u\n", __func__, fru, config);
-#endif
-        break;
-    }
-  }
-
-  return;
 }
 
 int
@@ -357,13 +295,8 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) snr_swb_tmp;
   } else if (fru == FRU_ACB) {
     if (pal_is_artemis()) {
-      if (pal_get_acb_card_config() == FREYA_CARD) {
-        *sensor_list = (uint8_t *) acb_freya_sensor_list;
-        *cnt = acb_freya_sensor_cnt;
-      } else {
-        *sensor_list = (uint8_t *) acb_artemis_sensor_list;
-        *cnt = acb_artemis_sensor_cnt;
-      }
+      *sensor_list = (uint8_t *) acb_artemis_sensor_list;
+      *cnt = acb_artemis_sensor_cnt;
     } else {
       *sensor_list = NULL;
       *cnt = 0;
@@ -516,8 +449,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   bool server_off;
   uint8_t *retry = get_map_retry(fru);
 
-  reload_sensor_table(fru);
-
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
 
@@ -599,7 +530,6 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   char units_name[8] = {0};
   uint8_t scale = 0;
 
-  reload_sensor_table(fru);
   scale = sensor_map[fru].map[sensor_num].units;
 
   if (check_polling_status(fru)) {
@@ -645,8 +575,6 @@ int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
 
-  reload_sensor_table(fru);
-
   if (check_polling_status(fru)) {
     switch(thresh) {
       case UCR_THRESH:
@@ -688,7 +616,6 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
   uint8_t scale = 0;
 
-  reload_sensor_table(fru);
   scale = sensor_map[fru].map[sensor_num].units;
 
   if (sensor_map[fru].polling) {

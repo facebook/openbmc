@@ -8,5 +8,7 @@ SRC_URI += " \
     file://0505-ARM-dts-aspeed-yosemite4-support-mux-to-cpld.patch \
     file://0506-ARM-dts-aspeed-yosemite4-Revise-gpio-name.patch \
     file://0507-remove-pincontrol-to-GPIO-U5.patch \
+    file://0508-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
+    file://0509-Meta-yv4-dts-add-mac-config-property.patch \
 "
 

@@ -1,0 +1,110 @@
+From 6f75581763802922da13ef62968d9aebdbbb1285 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Tue, 2 Jan 2024 17:50:00 +0800
+Subject: [PATCH] NCSI: Add propety : no-channel-monitor and start-redo-probe
+
+Add property start-redo-probe to , because Mellanox cx7 nic card
+cannot't get mac address after nic card re-plug.
+Setup start-redo-probe property so that nic card can get MAC address again.
+Also setup no-channel-monitor property so that the log won't keep
+popping up when nic card re-plug.
+
+This commit depends on the patch below:
+[1] https://lore.kernel.org/all/20240118052220.1906721-1-Delphine_CC_Chiu@wiwynn.com/
+
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ net/ncsi/internal.h    |  6 ++++++
+ net/ncsi/ncsi-manage.c | 25 +++++++++++++++++++++++--
+ 2 files changed, 29 insertions(+), 2 deletions(-)
+
+diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
+index 374412ed780b..a07c41411338 100644
+--- a/net/ncsi/internal.h
++++ b/net/ncsi/internal.h
+@@ -202,6 +202,11 @@ struct ncsi_channel_stats {
+ 	u32 pt_rx_os_err;	/* Rx oversize errors         */
+ };
+ 
++enum {
++	NCSI_CTRL_FLAG_NO_CHANNEL_MONITOR	= 0x0001,
++	NCSI_CTRL_FLAG_START_REDO_PROBE		= 0x0002,
++};
++
+ struct ncsi_dev_priv;
+ struct ncsi_package;
+ 
+@@ -343,6 +348,7 @@ struct ncsi_dev_priv {
+ 	bool                multi_package;   /* Enable multiple packages   */
+ 	bool                mlx_multi_host;  /* Enable multi host Mellanox */
+ 	u32                 package_whitelist; /* Packages to configure    */
++	unsigned int        ctrl_flags;      /* NCSI control flags */
+ };
+ 
+ struct ncsi_cmd_arg {
+diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
+index 745c788f1d1d..2d8e3fb95124 100644
+--- a/net/ncsi/ncsi-manage.c
++++ b/net/ncsi/ncsi-manage.c
+@@ -1206,7 +1206,8 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+ 		ndp->hot_channel = hot_nc;
+ 		spin_unlock_irqrestore(&ndp->lock, flags);
+ 
+-		ncsi_start_channel_monitor(nc);
++		if (!(ndp->ctrl_flags & NCSI_CTRL_FLAG_NO_CHANNEL_MONITOR))
++			ncsi_start_channel_monitor(nc);
+ 		ncsi_process_next_channel(ndp);
+ 		break;
+ 	default:
+@@ -1770,6 +1771,7 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+ 	INIT_LIST_HEAD(&ndp->vlan_vids);
+ 	INIT_WORK(&ndp->work, ncsi_dev_work);
+ 	ndp->package_whitelist = UINT_MAX;
++	ndp->ctrl_flags = 0;
+ 
+ 	/* Initialize private NCSI device */
+ 	spin_lock_init(&ndp->lock);
+@@ -1795,8 +1797,14 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+ 	if (pdev) {
+ 		np = pdev->dev.of_node;
+ 		if (np && (of_property_read_bool(np, "mellanox,multi-host") ||
+-			   of_property_read_bool(np, "mlx,multi-host")))
++			of_property_read_bool(np, "mlx,multi-host")))
+ 			ndp->mlx_multi_host = true;
++
++		if (np && of_get_property(np, "ncsi-ctrl,no-channel-monitor", NULL))
++			ndp->ctrl_flags |= NCSI_CTRL_FLAG_NO_CHANNEL_MONITOR;
++
++		if (np && of_get_property(np, "ncsi-ctrl,start-redo-probe", NULL))
++			ndp->ctrl_flags |= NCSI_CTRL_FLAG_START_REDO_PROBE;
+ 	}
+ 
+ 	return nd;
+@@ -1806,11 +1814,24 @@ EXPORT_SYMBOL_GPL(ncsi_register_dev);
+ int ncsi_start_dev(struct ncsi_dev *nd)
+ {
+ 	struct ncsi_dev_priv *ndp = TO_NCSI_DEV_PRIV(nd);
++	struct ncsi_package *np, *tmp;
++	unsigned long flags;
+ 
+ 	if (nd->state != ncsi_dev_state_registered &&
+ 	    nd->state != ncsi_dev_state_functional)
+ 		return -ENOTTY;
+ 
++	if (ndp->ctrl_flags & NCSI_CTRL_FLAG_START_REDO_PROBE) {
++		nd->state = ncsi_dev_state_probe;
++		spin_lock_irqsave(&ndp->lock, flags);
++		ndp->flags &= ~NCSI_DEV_PROBED;
++		ndp->gma_flag = 0;
++		spin_unlock_irqrestore(&ndp->lock, flags);
++
++		list_for_each_entry_safe(np, tmp, &ndp->packages, node)
++			ncsi_remove_package(np);
++	}
++
+ 	if (!(ndp->flags & NCSI_DEV_PROBED)) {
+ 		ndp->package_probe_id = 0;
+ 		nd->state = ncsi_dev_state_probe;
+-- 
+2.25.1
+

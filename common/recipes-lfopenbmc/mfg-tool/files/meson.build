@@ -20,6 +20,7 @@ sdbusplus_dep = dependency('sdbusplus')
 executable(
   'mfg-tool',
   'mfg-tool.cpp',
+  'cmd/bmc-arch.cpp',
   'cmd/hello.cpp',
   'utils/json.cpp',
   'utils/register.cpp',

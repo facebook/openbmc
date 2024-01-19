@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CLI/CLI.hpp>
+#include <sdbusplus/async.hpp>
 
 #include <functional>
 #include <memory>
@@ -14,6 +15,9 @@ using command_t = std::unique_ptr<T>;
 #define MFGTOOL_REGISTER(type, ...)                                            \
     static auto command_registration_##type =                                  \
         mfgtool::details::register_command<type>(__VA_ARGS__)
+
+template <typename T>
+void init_callback(CLI::App*, T&);
 
 namespace details
 {
@@ -37,7 +41,39 @@ auto register_command(Args... args) -> command_t<T>
     return c;
 }
 
+template <typename T>
+concept has_run = requires(T& t) { t.run(); };
+
+template <typename T>
+concept has_async_run =
+    requires(T& t, sdbusplus::async::context& ctx) { ctx.spawn(t.run(ctx)); };
+
 } // namespace details
+
+template <typename T>
+void init_callback(CLI::App*, T&)
+{
+    static_assert(false, "T has neither static or async run function.");
+}
+
+template <typename T>
+void init_callback(CLI::App* cmd, T& t)
+    requires details::has_run<T>
+{
+    cmd->callback([&]() { t.run(); });
+}
+
+template <typename T>
+void init_callback(CLI::App* cmd, T& t)
+    requires details::has_async_run<T>
+{
+    cmd->callback([&]() {
+        sdbusplus::async::context ctx;
+        ctx.spawn(t.run(ctx) | sdbusplus::async::execution::then(
+                                   [&]() { ctx.request_stop(); }));
+        ctx.run();
+    });
+}
 
 void init_commands(CLI::App&);
 

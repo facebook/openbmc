@@ -12,7 +12,7 @@ struct command
     void init(CLI::App& app)
     {
         auto cmd = app.add_subcommand("hello", "Hello World");
-        cmd->callback([this]() { this->run(); });
+        init_callback(cmd, *this);
     }
 
     void run()

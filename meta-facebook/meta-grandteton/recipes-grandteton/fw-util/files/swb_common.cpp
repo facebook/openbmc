@@ -850,33 +850,19 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
   string active_key = fmt::format("{}_{}_active_ver", fru_name, pldm_signed_info::comp_str_t.at(target));
   string active_ver;
 
-  if (pal_is_artemis()) {
+  try {
+    active_ver = kv::get(active_key, kv::region::temp);
+    j["VERSION"] = active_ver;
+  } catch (...) {
     int ret = update_pldm_ver_cache(fru_name, bus, eid);
     if (ret < 0) {
-      return comp_version(j);
-    }
-
-    try {
+      if(ret == SWB_FW_GET_FAILED)
+        return comp_version(j);
+      else if(ret == SWB_FW_BIC_ERROR)
+        j["VERSION"] = "NA";
+    } else {
       active_ver = kv::get(active_key, kv::region::temp);
       j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
-    } catch (...) {
-      return comp_version(j);
-    }
-  } else {
-    try {
-      active_ver = kv::get(active_key, kv::region::temp);
-      j["VERSION"] = active_ver;
-    } catch (...) {
-      int ret = update_pldm_ver_cache(fru_name, bus, eid);
-      if (ret < 0) {
-        if(ret == SWB_FW_GET_FAILED)
-          return comp_version(j);
-        else if(ret == SWB_FW_BIC_ERROR)
-          j["VERSION"] = "NA";
-      } else {
-        active_ver = kv::get(active_key, kv::region::temp);
-        j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
-      }
     }
   }
 

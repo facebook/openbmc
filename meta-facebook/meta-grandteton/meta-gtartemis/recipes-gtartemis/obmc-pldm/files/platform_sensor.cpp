@@ -85,7 +85,11 @@ std::string get_state_message(uint8_t offset, uint8_t state)
     {"unknown", "present", "not present"},                                    // sensorOffset = 0: presentence
     {"unknown", "normal",  "alert"},                                          // sensorOffset = 1: status
     {"no power good", "power good fail", "power good fail (3V3 power fault)",
-     "power good fail (12V power fault)", "power good fail (3V3 aux fault)"}, // sensorOffset = 2: power status
+     "power good fail (12V power fault)", "power good fail (3V3 aux fault)",
+     "power good fault", "no power good (3V3 power fault)",
+     "no power good (12V power fault)", "no power good (3V3 aux fault)", 
+     "power good fail (12V aux power fault)",
+     "no power good (12V aux power fault)"},                                  // sensorOffset = 2: power status
     {"unknown", "nvme not ready", "nvme ready"},                              // sensorOffset = 3: nvme status
   };
 

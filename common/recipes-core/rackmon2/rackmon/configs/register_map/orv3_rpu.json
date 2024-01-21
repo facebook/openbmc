@@ -1,8 +1,7 @@
 {
     "name": "ORV3_RPU",
     "address_range": [
-      12,
-      12
+      [12, 12]
     ],
     "probe_register": 36864,
     "default_baudrate": 19200,

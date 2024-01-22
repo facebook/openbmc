@@ -76,7 +76,7 @@ wait_for_update_complete() {
 		fi
 		counter=$((counter+1))
 		# Over two minutes is considered timeout
-		if [ "${counter}" == 120 ]; then
+		if [ "${counter}" == 300 ]; then
 			echo -ne \\n"Time out. Fail"\\n
 			break
 		fi
@@ -164,6 +164,9 @@ if [ "$is_rcvy" == true ]; then
   systemctl restart mctpd
   systemctl start pldmd
 fi
+
+# Wating for mctp and pldm to restart
+sleep 10
 
 busctl tree xyz.openbmc_project.MCTP
 echo "Start to Update BIC"

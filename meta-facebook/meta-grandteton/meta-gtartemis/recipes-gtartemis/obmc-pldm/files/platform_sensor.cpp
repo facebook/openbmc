@@ -199,16 +199,19 @@ void set_sensor_state_work(uint16_t id, uint8_t offset, uint8_t state)
     if (offset == CB_ASIC_NVME_STATUS_OFFSET) {
       uint8_t index = id - CB_ASIC_SENSOR_START_ID;
       char key[MAX_KEY_LEN] = {0};
+      char version_key[MAX_KEY_LEN] = {0};
       sprintf(key, "is_asic%d_ready", index);
+      sprintf(version_key, "asic%d_ver", index);
 
       switch (state) {
         case CB_ASIC_NVME_NOT_READY_STATE:
-	  if (kv_set(key, "0", 0, 0) != 0) {
-	    syslog(LOG_WARNING, "Set ASIC nvme status fail, index: 0x%x, state: not ready", index);
-	  }
+          if (kv_set(key, "0", 0, 0) != 0) {
+            syslog(LOG_WARNING, "Set ASIC nvme status fail, index: 0x%x, state: not ready", index);
+          }
+          kv_del(version_key, 0);
           break;
         case CB_ASIC_NVME_READY_STATE:
-	  if (kv_set(key, "1", 0, 0) != 0) {
+          if (kv_set(key, "1", 0, 0) != 0) {
             syslog(LOG_WARNING, "Set ASIC nvme status fail, index: 0x%x, state: ready", index);
           }
           break;

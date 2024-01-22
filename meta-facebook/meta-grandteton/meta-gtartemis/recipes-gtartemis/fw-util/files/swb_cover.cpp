@@ -270,13 +270,19 @@ int M2DevComponent::get_version(json& j) {
   uint8_t fruid = 0;
   uint8_t devid = 0;
   uint8_t status = 0;
-
   stringstream comp_str;
+  string key = "asic" + to_string(target - DEV_BASE_COMP) + "_ver";
+  char value[MAX_VALUE_LEN] = {0};
 
   comp_str << this->alias_fru() << ' ' << this->alias_component();
   string rw_str = comp_str.str();
   transform(rw_str.begin(),rw_str.end(), rw_str.begin(),::toupper);
   j["PRETTY_COMPONENT"] = rw_str;
+
+  if (kv_get(key.c_str(), value, NULL, 0) == 0) {
+    j["VERSION"] = string(value);
+    return FW_STATUS_SUCCESS;
+  }
 
   ret = pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
   if (ret != 0) {
@@ -308,15 +314,18 @@ int M2DevComponent::get_version(json& j) {
   } else if (version[4] != FFI_0_ACCELERATOR) {
     j["VERSION"] = "NA (DEVICE NOT ACCELERATOR)";
   } else {
-    stringstream ver_str;
-    ver_str << std::setfill('0')
+    stringstream ver_stream;
+    string ver_str;
+    ver_stream << std::setfill('0')
       << 'v'
       << +version[5] << '.'  // major version
       << +version[6] << '.'  // minor version
       << +version[7] << '.'  // addition version
       << +version[8] << '.'  // sec major version
       << +version[9];        // sec minor version
-    j["VERSION"] = ver_str.str();
+    ver_str = ver_stream.str();
+    j["VERSION"] = ver_str;
+    kv_set(key.c_str(), ver_str.c_str(), 0, 0);
   }
   return FW_STATUS_SUCCESS;
 }

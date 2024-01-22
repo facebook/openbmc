@@ -798,6 +798,8 @@ pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_MB:
       return 10;
     case FRU_ACB:
+      //increase the timeout for asic stress
+      return 20;
     case FRU_MEB:
       return 15;
     default:

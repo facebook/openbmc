@@ -3323,7 +3323,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 }
 
 int
-pal_bic_self_test(void) {
+pal_bic_self_test(uint8_t fru) {
   uint8_t result[SIZE_SELF_TEST_RESULT] = {0};
   return bic_get_self_test_result(result);
 }

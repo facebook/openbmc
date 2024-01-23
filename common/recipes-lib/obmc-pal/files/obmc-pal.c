@@ -3533,7 +3533,7 @@ pal_convert_sensor_reading(sdr_full_t *sdr, int in_value, float *out_value) {
 }
 
 int __attribute__((weak))
-pal_bic_self_test(void) {
+pal_bic_self_test(uint8_t fru) {
   return PAL_ENOTSUP;
 }
 

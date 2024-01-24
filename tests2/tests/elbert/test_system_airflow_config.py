@@ -43,14 +43,16 @@ class SystemAirflowConfigTest(unittest.TestCase):
         pim16q_count = 0
         pim8ddm_count = 0
         for pim in range(2, 10):
-            cmd = "/usr/bin/kv get pim{}_type".format(pim)
-            pim_type = run_shell_cmd(cmd)
-            if pim_type.strip() == "16q2":
-                pim16q_count += 1
-            elif pim_type.strip() == "16q":
-                pim16q_count += 1
-            elif pim_type.strip() == "8ddm":
-                pim8ddm_count += 1
+            cmd = "head -n 1 /sys/bus/i2c/devices/4-0023/pim{}_present"
+            if "0x1" in run_shell_cmd(cmd.format(pim)):
+                cmd = "/usr/bin/kv get pim{}_type".format(pim)
+                pim_type = run_shell_cmd(cmd)
+                if pim_type.strip() == "16q2":
+                    pim16q_count += 1
+                elif pim_type.strip() == "16q":
+                    pim16q_count += 1
+                elif pim_type.strip() == "8ddm":
+                    pim8ddm_count += 1
         return pim16q_count, pim8ddm_count
 
     def get_psu_count(self):

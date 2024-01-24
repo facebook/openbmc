@@ -34,8 +34,8 @@ class GpioTest(BaseGpioTest, unittest.TestCase):
         # Add PIM2-9 GPIOs for available pims
         for pim in range(2, 9 + 1):
             cmd = "head -n 1 /sys/bus/i2c/devices/4-0023/pim{}_present"
-            pim_type = run_shell_cmd("/usr/bin/kv get pim{}_type".format(pim))
             if "0x1" in run_shell_cmd(cmd.format(pim)):
+                pim_type = run_shell_cmd("/usr/bin/kv get pim{}_type".format(pim))
                 # Create GPIOS for inserted PIMs only
                 if pim_type.strip() != "16q2":
                     # PIM16Q2 has no pim gpios

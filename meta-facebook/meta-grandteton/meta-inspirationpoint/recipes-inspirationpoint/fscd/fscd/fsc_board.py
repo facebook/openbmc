@@ -220,7 +220,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     else:
                         return 0
                     asic_index = int(gta_asic_start_index_map[snr_split[0]]["asic_card_start_index"]) + int(snr_split[2]) - 1
-                    if lpal_hndl.pal_is_asic_nvme_ready(int(asic_index)) is not True:
+                    if (lpal_hndl.pal_is_asic_nvme_ready(int(asic_index)) == False):
                         return 0
             # check power status first
             pwr_sts = bmc_read_power()

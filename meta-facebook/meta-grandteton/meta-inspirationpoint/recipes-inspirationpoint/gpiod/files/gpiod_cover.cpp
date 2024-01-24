@@ -420,6 +420,9 @@ end:
 static void*
 delay_pwr_fault_log(void *arg) {
   uint8_t temp_mb_resp[3] = {0};
+  uint8_t cb_prsnt = 0;
+  uint8_t mc_prsnt = 0;
+  int ret = 0;
 
   pthread_detach(pthread_self());
   /* prevent false alarm when MB CPLD handling Power Fault
@@ -429,10 +432,24 @@ delay_pwr_fault_log(void *arg) {
   if (gta_mb_power_fault_handle(temp_mb_resp) < 0) {
     syslog(LOG_WARNING, "%s() MB CPLD I2C connection failed", __func__);
   } else {
-    gta_cb_power_fault_handle(temp_mb_resp);
-    gta_mc_power_fault_handle(temp_mb_resp);
+    ret = pal_is_fru_prsnt(FRU_ACB, &cb_prsnt);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Get FRU:%u Present Failed", __func__, FRU_ACB);
+      goto end;
+    }
+    ret = pal_is_fru_prsnt(FRU_MEB, &mc_prsnt);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Get FRU:%u Present Failed", __func__, FRU_MEB);
+      goto end;
+    }
+    if (cb_prsnt == FRU_PRSNT) {
+      gta_cb_power_fault_handle(temp_mb_resp);
+    }
+    if (cb_prsnt == FRU_PRSNT && mc_prsnt == FRU_PRSNT) {
+      gta_mc_power_fault_handle(temp_mb_resp);
+    }
   }
-  
+end:
   pthread_exit(NULL);
 }
 

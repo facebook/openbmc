@@ -82,6 +82,7 @@ void hgx_pwr_limit_mon (void);
 int pal_get_gpu_fru_id();
 void pal_check_power_rail(int is_pwr_on);
 bool pal_is_asic_nvme_ready(uint8_t asic_index);
+int pal_read_cpld_reg(int fru, uint8_t offset, uint8_t bit, uint8_t *value);
 
 #ifdef __cplusplus
 } // extern "C"

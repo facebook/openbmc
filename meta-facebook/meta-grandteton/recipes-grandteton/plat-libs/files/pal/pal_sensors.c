@@ -371,6 +371,37 @@ int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max) {
   return 0;
 }
 
+int sensor_skip_handle(uint8_t fru, uint8_t snr_num) {
+  int ret = 0;
+  uint8_t value = 0;
+
+  if (pal_is_artemis()) {
+    switch (fru) {
+      case FRU_HPDB:
+        switch (snr_num) {
+          case PDBH_SNR_HSC1_VOUT:
+          case PDBH_SNR_HSC1_IOUT:
+          case PDBH_SNR_HSC1_PIN:
+          case PDBH_SNR_HSC2_VOUT:
+          case PDBH_SNR_HSC2_IOUT:
+          case PDBH_SNR_HSC2_PIN:
+            ret = pal_read_cpld_reg(FRU_MB, HSC_EN_R_OFFSET, GPU_HSC_EN_R_BIT, &value);
+            if (ret == 0 && value == GPU_HSC_EN_ASSERTED_VALUE) {
+            // Since CB is removed, these HSC HPDB snrs should be ignore threshold
+              return READING_NA;
+            }
+            break;
+          default:
+            break;
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  return 0;
+}
+
 int check_polling_status(uint8_t fru){
   char key[MAX_KEY_LEN] = {0};
   char val[MAX_VALUE_LEN] = {0};
@@ -456,6 +487,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   if (check_polling_status(fru)) {
     if (server_off) {
       if (sensor_map[fru].map[sensor_num].stby_read == true) {
+        ret = sensor_skip_handle(fru, sensor_num);
+        if (ret == READING_NA) {
+          return ret;
+        }
         ret = sensor_map[fru].map[sensor_num].read_sensor(fru, sensor_num, (float*) value);
       } else {
         ret = READING_NA;
@@ -465,6 +500,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         && sensor_map[fru].map[sensor_num].stby_read == false) {
         return READING_NA;
       } else {
+        ret = sensor_skip_handle(fru, sensor_num);
+        if (ret == READING_NA) {
+          return ret;
+        }
         ret = sensor_map[fru].map[sensor_num].read_sensor(fru, sensor_num, (float*) value);
       }
     }

@@ -153,6 +153,13 @@ typedef struct {
 #define GPION_COMMON_SOURCE_OFFSET   (0xE0)
 #define AST_GPIO_BASE                (0x1e780000)
 
+/*  GTI  */
+#define MB_CPLD_BUS               (I2C_BUS_7)
+#define MB_CPLD_ADDR              (0x46)
+
+#define SWB_CPLD_BUS              (I2C_BUS_32)
+#define SWB_CPLD_ADDR             (0x26)
+
 enum {
   DIMM_ID0 = 0,
   DIMM_ID1,
@@ -628,9 +635,18 @@ enum GTA_MB_CPLD {
 };
 
 enum GTA_MB_CPLD_OFFSET {
+  HSC_EN_R_OFFSET = 0x01,
   EXP_BOARD_PWR_FAULT_OFFSET = 0x0D,
   EXP_BOARD_PWR_GOOD_DROP_OFFSET = 0x10,
   EXP_BOARD_NO_PWR_GOOD_OFFSET = 0x14,
+};
+
+enum GTA_MB_CPLD_BIT {
+  GPU_HSC_EN_R_BIT = 6,
+};
+
+enum GTA_MB_CPLD_ASSERTED_VALUE {
+  GPU_HSC_EN_ASSERTED_VALUE = 0,
 };
 
 enum GTA_MB_CPLD_CB_POWER_FAULT_BIT {

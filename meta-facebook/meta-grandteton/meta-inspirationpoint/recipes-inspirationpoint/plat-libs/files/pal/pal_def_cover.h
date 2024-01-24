@@ -9,12 +9,6 @@
 
 #define MAX_NUM_RETIMERS          (8)
 
-#define MB_CPLD_BUS               (I2C_BUS_7)
-#define MB_CPLD_ADDR              (0x46)
-
-#define SWB_CPLD_BUS              (I2C_BUS_32)
-#define SWB_CPLD_ADDR             (0x26)
-
 //GPIO EVENT Cover
 #define IRQ_UV_DETECT_N          "UV_ALERT_N"
 #define IRQ_OC_DETECT_N          "OC_ALERT_N"

@@ -1823,3 +1823,44 @@ pal_bic_hw_reset(void) {
   // Not Support
   return PAL_ENOTSUP;
 }
+
+int pal_read_cpld_reg(int fru, uint8_t offset, uint8_t bit, uint8_t *value) {
+  int ret = -1, fd;
+  uint8_t bus, addr, tlen, rlen;
+  uint8_t tbuf[1] = {0};
+
+  if(fru == FRU_MB){
+    bus  = MB_CPLD_BUS;
+    addr = MB_CPLD_ADDR;
+  }
+  else if (fru == FRU_SWB) {
+    bus  = SWB_CPLD_BUS;
+    addr = SWB_CPLD_ADDR;
+  }
+  else {
+    return -1;
+  }
+
+  tbuf[0] = offset;
+  tlen = 1;
+  rlen = 1;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, bus);
+    return -1;
+  }
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, value, rlen);
+  i2c_cdev_slave_close(fd);
+  if (ret) {
+	syslog(LOG_ERR, "%s(): fail to get FRU: %d CPLD reg", __func__, fru);
+    return -1;
+  }
+
+  if (bit >=0 && bit <= 7) {
+    *value = GETBIT(*value, bit);
+  }
+
+  return ret;
+}

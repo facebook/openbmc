@@ -1,11 +1,10 @@
+#include "utils/dbus.hpp"
 #include "utils/json.hpp"
 #include "utils/mapper.hpp"
 #include "utils/register.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>
-#include <xyz/openbmc_project/State/Chassis/client.hpp>
-#include <xyz/openbmc_project/State/Host/client.hpp>
 
 namespace mfgtool::cmds::power_state
 {
@@ -21,18 +20,16 @@ struct command
 
     auto run(sdbusplus::async::context& ctx) -> sdbusplus::async::task<>
     {
-        using Chassis =
-            sdbusplus::client::xyz::openbmc_project::state::Chassis<>;
-        using Host = sdbusplus::client::xyz::openbmc_project::state::Host<>;
+        using namespace dbuspath;
         using utils::mapper::subtree_services;
 
         debug("Finding chasses.");
-        auto chasses = co_await subtree_services(
-            ctx, Chassis::namespace_path::value, Chassis::interface);
+        auto chasses = co_await subtree_services(ctx, chassis::ns_path,
+                                                 chassis::Proxy::interface);
 
         debug("Finding hosts.");
-        auto hosts = co_await subtree_services(ctx, Host::namespace_path::value,
-                                               Host::interface);
+        auto hosts = co_await subtree_services(ctx, host::ns_path,
+                                               host::Proxy::interface);
 
         auto result = R"({})"_json;
 
@@ -54,11 +51,7 @@ struct command
                 };
             }
 
-            static auto pathPrefix =
-                std::string(Chassis::namespace_path::value)
-                    .append("/")
-                    .append(Chassis::namespace_path::chassis);
-
+            static auto pathPrefix = chassis::path_prefix();
             if (chassis.str.size() <= pathPrefix.size())
             {
                 error("Unexpected chassis path found: {PATH}", "PATH", chassis);
@@ -66,8 +59,9 @@ struct command
             }
 
             debug("Getting power state for {PATH}.", "PATH", chassis);
-            auto proxy = Chassis(ctx).service(services[0]).path(chassis.str);
-            auto state = (Chassis::PowerState::Off ==
+            auto proxy =
+                chassis::Proxy(ctx).service(services[0]).path(chassis.str);
+            auto state = (chassis::Proxy::PowerState::Off ==
                           co_await proxy.current_power_state())
                              ? "off"
                              : "on";
@@ -95,10 +89,7 @@ struct command
                 };
             }
 
-            static auto pathPrefix = std::string(Host::namespace_path::value)
-                                         .append("/")
-                                         .append(Host::namespace_path::host);
-
+            static auto pathPrefix = host::path_prefix();
             if (host.str.size() <= pathPrefix.size())
             {
                 error("Unexpected chassis path found: {PATH}", "PATH", host);
@@ -106,11 +97,11 @@ struct command
             }
 
             debug("Getting power state for {PATH}.", "PATH", host);
-            auto proxy = Host(ctx).service(services[0]).path(host.str);
-            auto state =
-                (Host::HostState::Off == co_await proxy.current_host_state())
-                    ? "off"
-                    : "on";
+            auto proxy = host::Proxy(ctx).service(services[0]).path(host.str);
+            auto state = (host::Proxy::HostState::Off ==
+                          co_await proxy.current_host_state())
+                             ? "off"
+                             : "on";
 
             info("State for {PATH}: {STATE}", "PATH", host, "STATE", state);
             auto id = host.str.substr(pathPrefix.size());

@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,20 @@ auto subtree(sdbusplus::async::context& ctx, const auto& subpath,
 
     return mapper.get_sub_tree(subpath, depth, {interface});
 }
+
+auto object_service(sdbusplus::async::context& ctx, const auto& path,
+                    const auto& interface)
+{
+    using ObjectMapper =
+        sdbusplus::client::xyz::openbmc_project::ObjectMapper<>;
+
+    auto mapper = ObjectMapper(ctx)
+                      .service(ObjectMapper::default_service)
+                      .path(ObjectMapper::instance_path);
+
+    return mapper.get_object(path, {interface});
+}
+
 } // namespace details
 
 /** Get a list of services hosting a dbus interface by calling mapper.
@@ -73,6 +88,31 @@ auto subtree_services(sdbusplus::async::context& ctx, const auto& subpath,
     catch (...)
     {
         std::terminate();
+    }
+}
+
+/** Find the service hosting an object.
+ *
+ *  @param[in] ctx - The dbus async context to execute against.
+ *  @param[in] path - The expected object path.
+ *  @param[in] interface - The interface to find.
+ *
+ *  @return An optional string of the service or nullopt.
+ */
+auto object_service(sdbusplus::async::context& ctx, const auto& path,
+                    const auto& interface)
+    -> sdbusplus::async::task<std::optional<std::string>>
+{
+    // Mapper look up will return an exception of ResourceNotFound if the path
+    // doesn't exist.  Catch the exception and turn it into a nullopt.
+    try
+    {
+        auto result = co_await details::object_service(ctx, path, interface);
+        co_return result.begin()->first;
+    }
+    catch (...)
+    {
+        co_return std::nullopt;
     }
 }
 

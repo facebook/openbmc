@@ -22,6 +22,7 @@ executable(
   'mfg-tool.cpp',
   'cmd/bmc-arch.cpp',
   'cmd/hello.cpp',
+  'cmd/log-clear.cpp',
   'cmd/power-control.cpp',
   'cmd/power-state.cpp',
   'utils/json.cpp',

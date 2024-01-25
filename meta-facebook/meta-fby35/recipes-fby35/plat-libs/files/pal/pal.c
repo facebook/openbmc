@@ -2042,7 +2042,23 @@ pal_set_sys_guid(uint8_t fru, char *str) {
 
 int
 pal_get_dev_guid(uint8_t fru, char *guid) {
-  return pal_get_guid(OFFSET_DEV_GUID, guid);
+  int ret;
+  uint8_t status;
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      ret = pal_is_fru_prsnt(fru, &status);
+      if ( ret < 0 || status == 0 ) {
+        return -1;
+      }
+    case FRU_BMC:
+      return pal_get_guid(OFFSET_DEV_GUID, guid);
+      break;
+    default:
+      return -1;
+  }
 }
 
 int

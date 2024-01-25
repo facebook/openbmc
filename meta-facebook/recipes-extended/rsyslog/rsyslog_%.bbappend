@@ -1,4 +1,4 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend:openbmc-fb := "${THISDIR}/files:"
 
 SRC_URI:append:openbmc-fb = "\
     file://rsyslog.conf \

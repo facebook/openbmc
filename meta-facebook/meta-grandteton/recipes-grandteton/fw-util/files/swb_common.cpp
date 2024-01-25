@@ -896,12 +896,22 @@ void gta_restart_module_mterm_service(const string& comp, const string& fru) {
   return;
 }
 
+static
+void bic_update_post_actions(const string& fru) {
+  if (fru == "mc") {
+    sleep(5); // wait BIC boot up
+    update_pldm_ver_cache("mc", MEB_BIC_BUS, MEB_BIC_EID);
+  }
+  return;
+}
+
 int GTSwbBicFwComponent::update(string image)
 {
   int ret = 0;
 
   ret = try_pldm_update(image, false);
   gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
+  bic_update_post_actions(this->alias_fru());
   return ret;
 }
 
@@ -911,6 +921,7 @@ int GTSwbBicFwComponent::fupdate(string image)
 
   ret = try_pldm_update(image, true);
   gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
+  bic_update_post_actions(this->alias_fru());
   return ret;
 }
 
@@ -1242,6 +1253,8 @@ mc_bic_recovery_post() {
     syslog(LOG_WARNING, "[%s] Set MC MUX to MC CPLD failed", __func__);
     return -1;
   }
+  sleep(5); // wait BIC boot up
+  update_pldm_ver_cache("mc", MEB_BIC_BUS, MEB_BIC_EID);
   return 0;
 }
 

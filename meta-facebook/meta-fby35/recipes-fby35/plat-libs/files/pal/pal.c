@@ -155,6 +155,7 @@ static int key_func_por_cfg(int event, void *arg);
 static int key_func_end_of_post(int event, void *arg);
 
 static uint8_t memory_record_code[4][256] = {0};
+static int bic_ou_status = 0; // 1OU_FAILURE = -4 / 2OU_FAILURE = -5 / 3OU_FAILURE = -6 / 4OU_FAILURE = -7 /
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -5713,25 +5714,34 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
   if (sensor_num < sensor_base->base_1ou || (((board_type[fru-1] & DPV2_X16_BOARD) == DPV2_X16_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) &&
       (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR))) { //server board
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, NONE_INTF);
+    bic_ou_status = ret;
   } else if ( (sensor_num >= sensor_base->base_1ou && sensor_num < sensor_base->base_2ou) && (bmc_location != NIC_BMC) && //1OU
-       ((config_status & PRESENT_1OU) == PRESENT_1OU) ) { // 1OU
+       ((config_status & PRESENT_1OU) == PRESENT_1OU) && (bic_ou_status != BIC_STATUS_1OU_FAILURE)) { // 1OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, FEXP_BIC_INTF);
+    bic_ou_status = ret;
   } else if ( (sensor_num >= sensor_base->base_2ou && sensor_num < sensor_base->base_3ou) &&
-              ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //2OU
+              ((config_status & PRESENT_2OU) == PRESENT_2OU) && (bic_ou_status != BIC_STATUS_2OU_FAILURE)) { //2OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, REXP_BIC_INTF);
+    bic_ou_status = ret;
   } else if ( (sensor_num >= sensor_base->base_3ou && sensor_num < sensor_base->base_4ou) &&
-              ((config_status & PRESENT_3OU) == PRESENT_3OU) ) { //3OU
+              ((config_status & PRESENT_3OU) == PRESENT_3OU) && (bic_ou_status != BIC_STATUS_3OU_FAILURE)) { //3OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, EXP3_BIC_INTF);
+    bic_ou_status = ret;
   } else if ( (sensor_num >= sensor_base->base_4ou ) &&
-              ((config_status & PRESENT_4OU) == PRESENT_4OU) ) { //4OU
+              ((config_status & PRESENT_4OU) == PRESENT_4OU) && (bic_ou_status != BIC_STATUS_4OU_FAILURE)) { //4OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, EXP4_BIC_INTF);
+    bic_ou_status = ret;
   } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xF1) && (bmc_location == NIC_BMC)) { //BB
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, BB_BIC_INTF);
   } else {
     return READING_NA;
   }
 
-  if ( ret == BIC_STATUS_FAILURE ) {
+  if ( (ret == BIC_STATUS_FAILURE) || 
+       (ret == BIC_STATUS_1OU_FAILURE) || 
+       (ret == BIC_STATUS_2OU_FAILURE) || 
+       (ret == BIC_STATUS_3OU_FAILURE) || 
+       (ret == BIC_STATUS_4OU_FAILURE) ) {
     syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
   }
 

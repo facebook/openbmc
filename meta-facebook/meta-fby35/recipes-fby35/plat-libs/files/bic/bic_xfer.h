@@ -69,7 +69,11 @@ typedef enum {
   BIC_STATUS_SUCCESS                =  0,
   BIC_STATUS_FAILURE                = -1,
   BIC_STATUS_NOT_SUPP_IN_CURR_STATE = -2,
-  BIC_STATUS_NOT_READY      = -3,
+  BIC_STATUS_NOT_READY              = -3,
+  BIC_STATUS_1OU_FAILURE            = -4, //can't get BIC 10U vale
+  BIC_STATUS_2OU_FAILURE            = -5, //can't get BIC 20U vale
+  BIC_STATUS_3OU_FAILURE            = -6, //can't get BIC 30U vale
+  BIC_STATUS_4OU_FAILURE            = -7, //can't get BIC 40U vale
 } BIC_STATUS;
 
 enum {

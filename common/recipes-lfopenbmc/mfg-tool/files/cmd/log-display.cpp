@@ -35,23 +35,21 @@ struct command
         auto result = R"({})"_json;
 
         info("Finding log entries.");
-        auto objects = co_await utils::mapper::subtree_services(
-            ctx, log_entry::ns_path, log_entry::interface);
+        co_await utils::mapper::subtree_for_each(
+            ctx, log_entry::ns_path, log_entry::interface,
 
-        for (auto& [path, services] : objects)
-        {
-            if (!std::ranges::contains(services, log_entry::service))
+            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
+            if (service != log_entry::service)
             {
                 warning("Entry ({PATH}) not hosted by logging service.", "PATH",
                         path);
-                continue;
+                co_return;
             }
 
             auto entry = log_entry::Proxy(ctx)
                              .service(log_entry::service)
                              .path(path.str);
 
-            info("Getting properties for {PATH}", "PATH", path);
             if (auto resolved = co_await entry.resolved();
                 !resolved || !arg_unresolved_only)
             {
@@ -81,7 +79,7 @@ struct command
             {
                 info("Resolved and filtered out.");
             }
-        }
+        });
 
         json::display(result);
         co_return;

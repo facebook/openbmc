@@ -21,92 +21,55 @@ struct command
     auto run(sdbusplus::async::context& ctx) -> sdbusplus::async::task<>
     {
         using namespace dbuspath;
-        using utils::mapper::subtree_services;
-
-        debug("Finding chasses.");
-        auto chasses = co_await subtree_services(ctx, chassis::ns_path,
-                                                 chassis::Proxy::interface);
-
-        debug("Finding hosts.");
-        auto hosts = co_await subtree_services(ctx, host::ns_path,
-                                               host::Proxy::interface);
+        using utils::mapper::subtree_for_each;
 
         auto result = R"({})"_json;
 
-        debug("Iterating over chasses.");
-        for (auto& [chassis, services] : chasses)
-        {
-            if (services.size() == 0)
-            {
-                error("No services found for {PATH}.", "PATH", chassis);
-                continue;
-            }
-            if (services.size() > 1)
-            {
-                warning("Multiple services ({COUNT}) provide {PATH}.", "PATH",
-                        chassis, "COUNT", services.size());
-                for (auto& s : services)
-                {
-                    warning("Service available at {SERVICE}.", "SERVICE", s);
-                };
-            }
+        debug("Finding chasses.");
+        co_await subtree_for_each(
+            ctx, chassis::ns_path, chassis::interface,
 
+            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
             static auto pathPrefix = chassis::path_prefix();
-            if (chassis.str.size() <= pathPrefix.size())
+            if (path.str.size() <= pathPrefix.size())
             {
-                error("Unexpected chassis path found: {PATH}", "PATH", chassis);
-                continue;
+                error("Unexpected chassis path found: {PATH}", "PATH", path);
+                co_return;
             }
 
-            debug("Getting power state for {PATH}.", "PATH", chassis);
-            auto proxy =
-                chassis::Proxy(ctx).service(services[0]).path(chassis.str);
+            auto proxy = chassis::Proxy(ctx).service(service).path(path.str);
             auto state = (chassis::Proxy::PowerState::Off ==
                           co_await proxy.current_power_state())
                              ? "off"
                              : "on";
 
-            info("State for {PATH}: {STATE}", "PATH", chassis, "STATE", state);
-            auto id = chassis.str.substr(pathPrefix.size());
+            info("State for {PATH}: {STATE}", "PATH", path, "STATE", state);
+            auto id = path.str.substr(pathPrefix.size());
             result[id]["standby"] = state;
-        }
+        });
 
-        debug("Iterating over hosts.");
-        for (auto& [host, services] : hosts)
-        {
-            if (services.size() == 0)
-            {
-                error("No services found for {PATH}.", "PATH", host);
-                continue;
-            }
-            if (services.size() > 1)
-            {
-                warning("Multiple services ({COUNT}) provide {PATH}.", "PATH",
-                        host, "COUNT", services.size());
-                for (auto& s : services)
-                {
-                    warning("Service available at {SERVICE}.", "SERVICE", s);
-                };
-            }
+        debug("Finding hosts.");
+        co_await subtree_for_each(
+            ctx, host::ns_path, host::interface,
 
+            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
             static auto pathPrefix = host::path_prefix();
-            if (host.str.size() <= pathPrefix.size())
+            if (path.str.size() <= pathPrefix.size())
             {
-                error("Unexpected chassis path found: {PATH}", "PATH", host);
-                continue;
+                error("Unexpected host path found: {PATH}", "PATH", path);
+                co_return;
             }
 
-            debug("Getting power state for {PATH}.", "PATH", host);
-            auto proxy = host::Proxy(ctx).service(services[0]).path(host.str);
+            auto proxy = host::Proxy(ctx).service(service).path(path.str);
             auto state = (host::Proxy::HostState::Off ==
                           co_await proxy.current_host_state())
                              ? "off"
                              : "on";
 
-            info("State for {PATH}: {STATE}", "PATH", host, "STATE", state);
-            auto id = host.str.substr(pathPrefix.size());
+            info("State for {PATH}: {STATE}", "PATH", path, "STATE", state);
+            auto id = path.str.substr(pathPrefix.size());
             result[id]["runtime"] = state;
-        }
+        });
 
         json::display(result);
 

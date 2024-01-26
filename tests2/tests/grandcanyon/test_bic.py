@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_bic_test import CommonBicTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class BicTest(CommonBicTest, unittest.TestCase):
     def set_bic_cmd(self):
         self.bic_cmd = "/usr/bin/bic-util server"

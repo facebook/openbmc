@@ -18,11 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 import re
+import unittest
 
 from common.base_enclosure_util_test import BaseEnclosureUtilTest
 from utils.shell_util import run_cmd
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class EnclosureUtilTest(BaseEnclosureUtilTest):
     def testHddStatus(self):
         """

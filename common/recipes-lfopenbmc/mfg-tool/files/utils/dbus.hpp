@@ -63,7 +63,7 @@ static constexpr auto interface = Proxy::interface;
 inline auto path(size_t id)
 {
     return std::string(ns_path) + "/" +
-           std::string(Proxy::namespace_path::entry) + std::to_string(id);
+           std::string(Proxy::namespace_path::entry) + "/" + std::to_string(id);
 }
 } // namespace log_entry
 

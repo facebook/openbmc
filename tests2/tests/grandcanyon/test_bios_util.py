@@ -24,7 +24,7 @@ from common.base_bios_util_test import BaseBiosUtilTest
 FRU_LIST = ["server"]
 
 
-@unittest.skip("currently unsupported on north dome")
+@unittest.skip("currently unsupported on grandcanyon")
 class BiosUtilTest(BaseBiosUtilTest):
     def set_fru_list(self):
         self.fru_list = FRU_LIST

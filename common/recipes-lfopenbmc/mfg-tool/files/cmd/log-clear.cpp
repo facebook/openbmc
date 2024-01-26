@@ -22,11 +22,21 @@ struct command
         namespace delete_all = dbuspath::delete_all;
         namespace log_entry = dbuspath::log_entry;
 
-        info("Calling DeleteAll on Logging service");
-        co_await delete_all::Proxy(ctx)
-            .service(log_entry::service)
-            .path(log_entry::ns_path)
-            .delete_all();
+        try
+        {
+            info("Calling DeleteAll on Logging service");
+            co_await delete_all::Proxy(ctx)
+                .service(log_entry::service)
+                .path(log_entry::ns_path)
+                .delete_all();
+
+            json::display("success");
+        }
+        catch (const std::exception& e)
+        {
+            error("Caught {ERROR}", "ERROR", e);
+            json::display("failed");
+        }
     }
 };
 MFGTOOL_REGISTER(command);

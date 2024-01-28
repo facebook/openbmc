@@ -121,8 +121,8 @@ wedge_power_asic() {
 }
 
 wedge_board_rev() {
-    # MERUTODO: this assumes P1 currently
-    return 1
+    board_rev=$(weutil -e scm|grep "Product Version"|awk '{print $3}')
+    echo "${board_rev}"
 }
 
 userver_power_is_on() {
@@ -198,6 +198,15 @@ check_fwupgrade_running()
     fi
     pid=$$
     echo $pid 1>&200
+}
+
+check_p1_scm()
+{
+    board_rev=$(wedge_board_rev)
+    if [ "${board_rev}" != "1" ]; then
+        echo "Programming only supported on P1 SCM"
+        exit 1
+    fi
 }
 
 bind_spi_nor_driver() {

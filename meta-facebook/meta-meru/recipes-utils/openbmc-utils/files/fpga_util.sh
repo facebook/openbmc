@@ -8,6 +8,9 @@
 # Check if another fw upgrade is ongoing
 check_fwupgrade_running
 
+# Block upgrade on non-P1 HW currently
+check_p1_scm
+
 trap cleanup INT TERM QUIT EXIT
 
 usage() {

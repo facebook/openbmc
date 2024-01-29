@@ -124,7 +124,7 @@ pal_lpc_snoop_read_legacy(uint8_t *buf, size_t max_len, size_t *len)
   }
   for (i=0; i < max_len; i++) {
     // %hhx: unsigned char*
-    if (fscanf(fp, "%hhx%*s", &postcode) == 1) {
+    if (fscanf(fp, "%hhx", &postcode) == 1) {
       buf[i] = postcode;
     } else {
       break;

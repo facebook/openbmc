@@ -45,7 +45,7 @@ sensor_unit_dict = {
     LIB_SENSOR_POWER: "Watts",
     LIB_SENSOR_IN: "Amps",
     LIB_SENSOR_CURR: "Volts",
-    LIB_SENSOR_PWM: "%"
+    LIB_SENSOR_PWM: "%",
 }
 SAD_SENSOR = -99999  # default reading for values not found.
 
@@ -332,8 +332,7 @@ def get_single_sled_frus() -> t.List[str]:
 
 def is_libpal_supported() -> bool:
     """platforms that don't support libpal for sensor related data"""
-    UNSUPPORTED_PLATFORM_BUILDNAMES = ["yamp", "wedge", "wedge100"]
-    return pal.pal_get_platform_name() not in UNSUPPORTED_PLATFORM_BUILDNAMES
+    return bool(pal.pal_fru_name_map())
 
 
 def _get_accelerator_list() -> t.List[str]:

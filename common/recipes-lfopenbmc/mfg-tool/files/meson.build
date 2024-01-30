@@ -27,6 +27,7 @@ executable(
   'cmd/log-resolve.cpp',
   'cmd/power-control.cpp',
   'cmd/power-state.cpp',
+  'cmd/sensor-display.cpp',
   'utils/json.cpp',
   'utils/register.cpp',
   dependencies: [

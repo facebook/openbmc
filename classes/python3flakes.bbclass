@@ -1,7 +1,7 @@
 inherit python3native
 def flakes_add_if_avail(d):
   distro = d.getVar('DISTRO_CODENAME', True)
-  if distro in [ 'rocko' ]:
+  if distro in [ 'rocko', 'dunfell', 'kirkstone' ]:
     return ""
   else:
     return "python3-flake8"

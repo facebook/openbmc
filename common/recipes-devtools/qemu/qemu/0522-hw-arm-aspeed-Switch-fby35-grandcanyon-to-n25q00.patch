@@ -1,0 +1,38 @@
+From 87176163ad9ca78a585a3cbadafe1b49d48801f0 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Tue, 14 Jun 2022 11:33:56 -0700
+Subject: [PATCH 522/532] hw/arm/aspeed: Switch fby35, grandcanyon to n25q00
+
+This flash model is 128MB and includes the new BP and TB bits that Iris
+added. The additional testing verifies the vboot status output.
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/arm/aspeed.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index fb41099a06..ca72eb084d 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -1582,7 +1582,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
+ 
+     mc->desc       = "Facebook fby35 BMC (Cortex-A7)";
+     mc->reset      = fby35_reset;
+-    amc->fmc_model = "mx66l1g45g";
++    amc->fmc_model = "n25q00";
+     amc->num_cs    = 2;
+     amc->macs_mask = ASPEED_MAC3_ON;
+     amc->i2c_init  = fby35_i2c_init;
+@@ -1878,7 +1878,7 @@ static const struct FBMachineData fb_machines[] = {
+         .soc_name    = "ast2600-a3",
+         .hw_strap1   = AST2600_EVB_HW_STRAP1,
+         .hw_strap2   = AST2600_EVB_HW_STRAP2,
+-        .flash_model = "mx66l1g45g",
++        .flash_model = "n25q00",
+         .macs_mask   = ASPEED_MAC3_ON,
+         .stdout_path = ASPEED_DEV_UART5,
+         .ram_size    = FUJI_BMC_RAM_SIZE,
+-- 
+2.43.0
+

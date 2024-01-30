@@ -1,0 +1,29 @@
+From b5450b08175ae49ac90c68d65d2a0e9b5c05891d Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <pdel@fb.com>
+Date: Thu, 18 Aug 2022 16:10:19 -0700
+Subject: [PATCH 529/532] aspeed: Add greatlakes-bmc
+
+Signed-off-by: Peter Delevoryas <pdel@fb.com>
+---
+ hw/arm/aspeed.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index 8a7bb7fb65..6e6615d56a 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -1992,6 +1992,11 @@ static const struct FBMachineData fb_machines[] = {
+         .stdout_path = ASPEED_DEV_UART5,
+         .ram_size    = FUJI_BMC_RAM_SIZE,
+     },
++    {
++        .parent      = MACHINE_TYPE_NAME("fby35-bmc"),
++        .name        = "greatlakes-bmc",
++        .desc        = "Facebook Great Lakes BMC (Cortex-A7)",
++    },
+     {
+         .parent      = MACHINE_TYPE_NAME("ast1030-evb"),
+         .name        = "oby35-cl",
+-- 
+2.43.0
+

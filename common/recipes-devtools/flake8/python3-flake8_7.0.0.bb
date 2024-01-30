@@ -7,12 +7,12 @@ PYPI_PACKAGE = "flake8"
 
 inherit pypi setuptools3
 
-SRC_URI[sha256sum] = "806e034dda44114815e23c16ef92f95c91e4c71100ff52813adf7132a6ad870d"
+SRC_URI[sha256sum] = "33f96621059e65eec474169085dc92bf26e7b2d47366b70be2f67ab80dc25132"
 
 BBCLASSEXTEND = "native nativesdk"
 
 RDEPENDS:${PN} += " \
-    ${PYTHON_PN}-pip-pyflakes \
-    ${PYTHON_PN}-pip-pycodestyle \
-    ${PYTHON_PN}-pip-mccabe \
+    ${PYTHON_PN}-pyflakes \
+    ${PYTHON_PN}-pycodestyle \
+    ${PYTHON_PN}-mccabe \
 "

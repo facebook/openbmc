@@ -20,7 +20,7 @@
 
 import asyncio
 import collections
-from typing import Dict, Tuple
+from typing import Dict, Tuple  # noqa: F401
 
 
 class AsyncRateLimiter:

@@ -3,7 +3,7 @@ import json
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union  # noqa: F401
 
 from aiohttp import web
 from common_webapp import WebApp

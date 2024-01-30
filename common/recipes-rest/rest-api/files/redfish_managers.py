@@ -3,7 +3,7 @@ import ipaddress
 import os
 import socket
 import struct
-from typing import List, Optional, Union
+from typing import List, Optional, Union  # noqa: F401
 from uuid import getnode as get_mac
 
 import rest_pal_legacy

@@ -1,77 +1,119 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/e1s_iocm/sensors  
-  title: Swagger doc for /api/e1s_iocm/sensors  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/e1s_iocm/sensors
+  title: Swagger doc for /api/e1s_iocm/sensors
   version: 1.0.0
-paths: 
-  /api/e1s_iocm/sensors: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/e1s_iocm/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  E1S_A0_CUR: 
+                properties:
+                  IOCM_P3V3_STBY:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      value: 
+                    properties:
+                      value:
                         type: string
-                  E1S_A1_CUR: 
+                  IOCM_P1V8:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      value: 
+                    properties:
+                      value:
                         type: string
-                  E1S_A0_TEMP: 
+                  IOCM_P1V5:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      value: 
+                    properties:
+                      value:
                         type: string
-                  E1S_A1_TEMP: 
+                  IOCM_P0V865:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      value: 
+                    properties:
+                      value:
                         type: string
-                  E1S_A0_P12V: 
+                  IOCM_CUR:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      value: 
+                    properties:
+                      value:
                         type: string
-                  E1S_A1_P12V: 
+                  IOCM_TEMP:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      value: 
+                    properties:
+                      value:
                         type: string
-                  E1S_A0_P3V3: 
+                  IOCM_IOC_TEMP:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      value: 
+                    properties:
+                      value:
                         type: string
-                  E1S_A1_P3V3: 
+                  E1S_B0_CUR:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      value: 
+                    properties:
+                      value:
                         type: string
-              Actions: 
+                  E1S_B1_CUR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  E1S_B0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  E1S_B1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  E1S_B0_P12V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  E1S_B1_P12V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  E1S_B0_P3V3:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  E1S_B1_P3V3:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

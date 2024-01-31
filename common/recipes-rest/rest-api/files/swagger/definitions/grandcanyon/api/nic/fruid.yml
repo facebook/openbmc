@@ -1,53 +1,53 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/nic/fruid  
-  title: Swagger doc for /api/nic/fruid  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/nic/fruid
+  title: Swagger doc for /api/nic/fruid
   version: 1.0.0
-paths: 
-  /api/nic/fruid: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/nic/fruid:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Board Mfg Date: 
+                properties:
+                  Board Mfg Date:
                     type: string
-                  Board Mfg: 
+                  Board Mfg:
                     type: string
-                  Board Product: 
+                  Board Product:
                     type: string
-                  Board Serial: 
+                  Board Serial:
                     type: string
-                  Board Part Number: 
+                  Board Part Number:
                     type: string
-                  Board FRU ID: 
+                  Board FRU ID:
                     type: string
-                  Product Manufacturer: 
+                  Product Manufacturer:
                     type: string
-                  Product Name: 
+                  Product Name:
                     type: string
-                  Product Part Number: 
+                  Product Part Number:
                     type: string
-                  Product Version: 
+                  Product Version:
                     type: string
-                  Product Serial: 
+                  Product Serial:
                     type: string
-                  Product Custom Data 3: 
+                  Product Custom Data 3:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

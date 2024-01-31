@@ -1,10 +1,10 @@
 swagger: '2.0'
 info:
-  description: Swagger doc for /api/scc/fruid
-  title: Swagger doc for /api/scc/fruid
+  description: Swagger doc for /api/e1s_iocm/fruid
+  title: Swagger doc for /api/e1s_iocm/fruid
   version: 1.0.0
 paths:
-  /api/scc/fruid:
+  /api/e1s_iocm/fruid:
     get:
       produces:
       - application/json
@@ -19,12 +19,6 @@ paths:
                 type: object
                 additionalProperties: false
                 properties:
-                  Chassis Type:
-                    type: string
-                  Chassis Part Number:
-                    type: string
-                  Chassis Serial Number:
-                    type: string
                   Board Mfg Date:
                     type: string
                   Board Mfg:
@@ -34,6 +28,8 @@ paths:
                   Board Serial:
                     type: string
                   Board Part Number:
+                    type: string
+                  Board FRU ID:
                     type: string
                   Board Custom Data 1:
                     type: string
@@ -51,11 +47,11 @@ paths:
                     type: string
                   Product Asset Tag:
                     type: string
+                  Product FRU ID:
+                    type: string
                   Product Custom Data 1:
                     type: string
                   Product Custom Data 2:
-                    type: string
-                  Product Custom Data 3:
                     type: string
               Actions:
                 type: array

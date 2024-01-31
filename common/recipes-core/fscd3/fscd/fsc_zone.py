@@ -557,7 +557,7 @@ class Zone:
 
         if not exprout:
             exprout = 0
-        if exprout < outmin:
+        if (exprout < outmin) or (mode == fan_mode["boost_mode"]):
             exprout = outmin
         else:
             if (no_sane_flag != 1) and (display_progressive_flag != 1):

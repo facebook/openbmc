@@ -82,4 +82,13 @@ ssize_t i2c_dev_show_ascii(struct device *dev,
                            struct device_attribute *attr,
                            char *buf);
 
+/*
+ * "devres" version of i2c_dev_sysfs_data_init(): i2c_dev_sysfs_data_clean()
+ * will be automatically called when the driver is detached from device.
+ */
+int devm_i2c_dev_sysfs_init(struct i2c_client *client,
+                            i2c_dev_data_st *data,
+                            const i2c_dev_attr_st *dev_attrs,
+                            int n_attrs);
+
 #endif

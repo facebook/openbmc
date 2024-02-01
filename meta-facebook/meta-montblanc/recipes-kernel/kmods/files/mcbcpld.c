@@ -270,15 +270,8 @@ static int mcbcpld_probe(struct i2c_client *client)
 
 	i2c_set_clientdata(client, pdata);
 
-	return i2c_dev_sysfs_data_init(client, pdata, mcbcpld_attrs,
+	return devm_i2c_dev_sysfs_init(client, pdata, mcbcpld_attrs,
 				       ARRAY_SIZE(mcbcpld_attrs));
-}
-
-static void mcbcpld_remove(struct i2c_client *client)
-{
-	i2c_dev_data_st *pdata = i2c_get_clientdata(client);
-
-	i2c_dev_sysfs_data_clean(client, pdata);
 }
 
 static struct i2c_driver mcbcpld_driver = {
@@ -287,7 +280,6 @@ static struct i2c_driver mcbcpld_driver = {
 		.name = "mcbcpld",
 	},
 	.probe    = mcbcpld_probe,
-	.remove   = mcbcpld_remove,
 	.id_table = mcbcpld_id,
 };
 

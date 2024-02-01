@@ -282,9 +282,9 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
             if m is not None:
                 self.assertIn(m.group(1), self.names, "Unknown fan name")
                 if fan_id is not None:
-                    self.assertEquals(fan_id, self.names[m.group(1)], "Bad fan index")
+                    self.assertEqual(fan_id, self.names[m.group(1)], "Bad fan index")
                 else:
-                    self.assertEquals(num, self.names[m.group(1)], "Bad fan index")
+                    self.assertEqual(num, self.names[m.group(1)], "Bad fan index")
                 ret.append(int(m.group(3)))
                 num += 1
         return ret

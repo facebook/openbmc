@@ -1,4 +1,4 @@
-From 41ee7ae2ebe73a8728a32f2f52df1e426832cdee Mon Sep 17 00:00:00 2001
+From 801db18de3173a4a2e25a9a3e5ff7cec26a9c92d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 27 Apr 2022 16:23:48 -0700
 Subject: [PATCH 503/532] hw/misc: Add i2c-netdev device
@@ -60,17 +60,17 @@ Usage:
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
- hw/misc/i2c-netdev.c | 216 +++++++++++++++++++++++++++++++++++++++++++
+ hw/misc/i2c-netdev.c | 217 +++++++++++++++++++++++++++++++++++++++++++
  hw/misc/meson.build  |   1 +
- 2 files changed, 217 insertions(+)
+ 2 files changed, 218 insertions(+)
  create mode 100644 hw/misc/i2c-netdev.c
 
 diff --git a/hw/misc/i2c-netdev.c b/hw/misc/i2c-netdev.c
 new file mode 100644
-index 0000000000..f7c481d72e
+index 0000000000..83faa942b1
 --- /dev/null
 +++ b/hw/misc/i2c-netdev.c
-@@ -0,0 +1,216 @@
+@@ -0,0 +1,217 @@
 +#include "qemu/osdep.h"
 +#include "qemu/main-loop.h"
 +#include "qapi/error.h"
@@ -246,7 +246,8 @@ index 0000000000..f7c481d72e
 +{
 +    I2CNetdev *s = I2C_NETDEV(dev);
 +    s->bus = I2C_BUS(qdev_get_parent_bus(dev));
-+    s->nic = qemu_new_nic(&net_client_info, &s->nic_conf, TYPE_I2C_NETDEV, dev->id, s);
++    s->nic = qemu_new_nic(&net_client_info, &s->nic_conf, TYPE_I2C_NETDEV,
++                          dev->id, &dev->mem_reentrancy_guard, s);
 +    s->bh = qemu_bh_new(i2c_netdev_bh, s);
 +    s->bh_bus_master = ASYNC_NONE;
 +    s->bh_transmit = ASYNC_NONE;
@@ -288,13 +289,13 @@ index 0000000000..f7c481d72e
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 892f8b91c5..4c2578514c 100644
+index 36c20d5637..c3bbde1803 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -133,6 +133,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+@@ -142,6 +142,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
  system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
  
- system_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-echo.c'))
+ system_ss.add(when: 'CONFIG_I2C_ECHO', if_true: files('i2c-echo.c'))
 +system_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-netdev.c'))
  
  specific_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))

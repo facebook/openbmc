@@ -1,4 +1,4 @@
-From 1e3e8039338c4013bb1094dd2208af322c294346 Mon Sep 17 00:00:00 2001
+From 1d5c00f5d1f00fb52407ef226c82ae07bb44f00f Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 10 Jul 2023 16:47:00 +0700
 Subject: [PATCH 532/532] aspeed: add janga bmc
@@ -11,10 +11,10 @@ Signed-off-by: Tao Ren <taoren@meta.com>
  3 files changed, 79 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 72ad1d2ab0..27adf2693d 100644
+index b8f79bc9fd..7593b5d197 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -187,6 +187,10 @@ struct AspeedMachineState {
+@@ -195,6 +195,10 @@ struct AspeedMachineState {
  #define MONTBLANC_BMC_HW_STRAP1    0x00000000
  #define MONTBLANC_BMC_HW_STRAP2    0x00000000
  
@@ -25,13 +25,13 @@ index 72ad1d2ab0..27adf2693d 100644
  /* Bletchley hardware value */
  /* TODO: Leave same as EVB for now. */
  #define BLETCHLEY_BMC_HW_STRAP1 AST2600_EVB_HW_STRAP1
-@@ -957,6 +961,30 @@ static void montblanc_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -966,6 +970,30 @@ static void montblanc_bmc_i2c_init(AspeedMachineState *bmc)
      create_pca9552(soc, 4, 0x27);
  }
  
 +static void janga_bmc_i2c_init(AspeedMachineState *bmc)
 +{
-+    AspeedSoCState *soc = &bmc->soc;
++    AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
 +    I2CBus *i2c[16] = {};
 +
 +    for (int i = 0; i < 16; i++) {
@@ -56,7 +56,7 @@ index 72ad1d2ab0..27adf2693d 100644
  
  static void wedge100_i2c_init(AspeedMachineState *bmc)
  {
-@@ -1555,6 +1583,32 @@ static void aspeed_machine_montblanc_class_init(ObjectClass *oc, void *data)
+@@ -1560,6 +1588,32 @@ static void aspeed_machine_montblanc_class_init(ObjectClass *oc, void *data)
          aspeed_soc_num_cpus(amc->soc_name);
  };
  
@@ -89,7 +89,7 @@ index 72ad1d2ab0..27adf2693d 100644
  /* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
  #if HOST_LONG_BITS == 32
  #define BLETCHLEY_BMC_RAM_SIZE (1 * GiB)
-@@ -1788,6 +1842,10 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -1805,6 +1859,10 @@ static const TypeInfo aspeed_machine_types[] = {
          .name          = MACHINE_TYPE_NAME("montblanc-bmc"),
          .parent        = TYPE_ASPEED_MACHINE,
          .class_init    = aspeed_machine_montblanc_class_init,

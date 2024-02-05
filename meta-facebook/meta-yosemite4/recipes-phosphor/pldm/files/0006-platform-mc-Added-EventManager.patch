@@ -1,4 +1,4 @@
-From e3eda5ea90fbc73b3214a14241b9a7baa825bb0d Mon Sep 17 00:00:00 2001
+From 15ff1dc1a36b20e6a93346b73d5c33f7dd1d42a0 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 6/9] platform-mc: Added EventManager
@@ -42,7 +42,7 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 57315a4..aa0b3b7 100644
+index 7587a16..0e11c5b 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
 @@ -345,15 +345,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
@@ -69,7 +69,7 @@ index 57315a4..aa0b3b7 100644
          catch (const std::out_of_range& e)
          {
 diff --git a/meson.build b/meson.build
-index 7a47722..8b52af8 100644
+index d51c5f7..0221ad3 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -72,6 +72,7 @@ endif
@@ -1264,7 +1264,7 @@ index ee8a498..11c178a 100644
  
      /** @brief Managed termini list */
 diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
-index ef3e928..949ba1c 100644
+index 73f5702..21c3a3c 100644
 --- a/platform-mc/sensor_manager.cpp
 +++ b/platform-mc/sensor_manager.cpp
 @@ -1,5 +1,6 @@
@@ -1304,7 +1304,7 @@ index ef3e928..949ba1c 100644
          for (auto& sensor : prioritySensors[tid])
          {
 diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
-index fbff40d..94dc4f2 100644
+index ef9a79e..6bd3ac5 100644
 --- a/platform-mc/sensor_manager.hpp
 +++ b/platform-mc/sensor_manager.hpp
 @@ -32,7 +32,7 @@ class SensorManager
@@ -1989,7 +1989,7 @@ index b77a197..2fb3f1e 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 8c6b63f..f3bbe37 100644
+index 2bd1a42..b9859bb 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -269,10 +269,37 @@ int main(int argc, char** argv)
@@ -2041,5 +2041,5 @@ index 8c6b63f..f3bbe37 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.25.1
+2.43.0
 

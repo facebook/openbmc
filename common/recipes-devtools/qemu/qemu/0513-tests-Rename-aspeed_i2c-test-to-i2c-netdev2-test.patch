@@ -1,4 +1,4 @@
-From 2e737fd2eae7d471746047fb27a7c44f79968fea Mon Sep 17 00:00:00 2001
+From 806b8823c888c2c8e5da98f649cd9d903fce09fb Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 02:13:04 -0700
 Subject: [PATCH 513/532] tests: Rename aspeed_i2c-test to i2c-netdev2-test
@@ -28,7 +28,7 @@ index aaf8c85427..59e874e4d4 100644
   * Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
   *
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 906e99a46e..1993f1f1ba 100644
+index 14068d8f39..9bdd01f794 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
 @@ -194,7 +194,7 @@ qtests_aspeed = \

@@ -1,4 +1,4 @@
-From 548220e19a4aca0f03fc05f1250c01c4f0d326d0 Mon Sep 17 00:00:00 2001
+From 12a4ae5d482e1587bd019fd7a63cf1f072804f1e Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 7/9] requester: support multi-host MCTP devices hot plug
@@ -106,7 +106,7 @@ index cdc539b..dda1b10 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index 8b52af8..9328b08 100644
+index 0221ad3..69a8f82 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -190,6 +190,7 @@ executable(
@@ -118,7 +118,7 @@ index 8b52af8..9328b08 100644
    dependencies: deps,
    install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index f3bbe37..e59f8dc 100644
+index b9859bb..ed0bccd 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -144,8 +144,8 @@ index f3bbe37..e59f8dc 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -                     fwManager.get(), platformManager.get()});
-+                     fwManager.get(), platformManager.get(),
-+                     configurationDiscovery.get()});
++                     fwManager.get(), configurationDiscovery.get()});
++
      auto callback = [verbose, &invoker, &reqHandler, &fwManager, &pldmTransport,
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (!(revents & EPOLLIN))
@@ -607,5 +607,5 @@ index 80c27c1..6e89e1d 100644
                           phosphor_logging_dep,
                           sdbusplus,
 -- 
-2.25.1
+2.43.0
 

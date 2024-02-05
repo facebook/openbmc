@@ -1,4 +1,4 @@
-From 708b371e96c0c372ec3b7002045036f4634a0ad6 Mon Sep 17 00:00:00 2001
+From b6cef4fbf160755fa5fbc27edcc6fa3f68009bd7 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 17 Jun 2022 12:21:22 -0700
 Subject: [PATCH 501/532] aspeed: Zero extend flash files to 128MB
@@ -39,17 +39,16 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 263626abea..4712c0dd0e 100644
+index cc59176563..744441b5cc 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -299,13 +299,26 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
+@@ -307,12 +307,25 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
      }
  
      for (i = 0; i < count; ++i) {
 +        AspeedSMCFlash *flash = &s->flashes[i];
          DriveInfo *dinfo = drive_get(IF_MTD, 0, unit0 + i);
 +        BlockBackend *blk;
-         qemu_irq cs_line;
          DeviceState *dev;
 +        uint64_t flash_size, blk_size, perm, shared_perm;
  
@@ -68,8 +67,8 @@ index 263626abea..4712c0dd0e 100644
 +            }
 +            qdev_prop_set_drive(dev, "drive", blk);
          }
+         qdev_prop_set_uint8(dev, "cs", i);
          qdev_realize_and_unref(dev, BUS(s->spi), &error_fatal);
- 
 -- 
 2.43.0
 

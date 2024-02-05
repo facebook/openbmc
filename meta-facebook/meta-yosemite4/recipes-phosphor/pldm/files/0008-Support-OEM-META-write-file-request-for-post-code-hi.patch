@@ -1,4 +1,4 @@
-From 4d13727c7f93e524bc41afc30ee6c25af49ca3a3 Mon Sep 17 00:00:00 2001
+From 88a86a87af61774f1e9677c1506a8dcf773ef473 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 8/9] Support OEM-META write file request for post code history
@@ -127,7 +127,7 @@ index 687fa82..3f71b1f 100644
    'pldmresponder',
    sources,
 diff --git a/meson.build b/meson.build
-index 9328b08..c46b719 100644
+index 69a8f82..0654ac2 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -58,6 +58,9 @@ if get_option('oem-ibm').allowed()
@@ -515,7 +515,7 @@ index 0000000..780f0ef
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index e59f8dc..e163e83 100644
+index ed0bccd..497f00a 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -67,6 +67,10 @@ PHOSPHOR_LOG2_USING;
@@ -544,5 +544,5 @@ index e59f8dc..e163e83 100644
          pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
          oemBiosHandler.get());
 -- 
-2.25.1
+2.43.0
 

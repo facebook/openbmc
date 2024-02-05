@@ -1,4 +1,4 @@
-From 97958600acc2eaa5bd5f82bfd2edbe9032c79f5f Mon Sep 17 00:00:00 2001
+From f0961d2ac1cac3c2a0f8f8952329891896ecd98d Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 22 Feb 2022 15:40:17 +0000
 Subject: [PATCH 3/9] platform-mc: Added Terminus/TerminusManager class
@@ -43,7 +43,7 @@ Change-Id: Ifa5bdfff50648f1d7fba8710e160de662e8f9e06
  create mode 100644 platform-mc/test/terminus_test.cpp
 
 diff --git a/meson.build b/meson.build
-index 04d6acf..6680bd2 100644
+index 07069e5..c61c16c 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -180,6 +180,9 @@ executable(
@@ -1556,7 +1556,7 @@ index 0000000..b2783c3
 +    EXPECT_EQ(tid, t1.getTid());
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 70b2f88..8c07316 100644
+index 784d0c5..fd8f105 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -6,6 +6,7 @@
@@ -1583,5 +1583,5 @@ index 70b2f88..8c07316 100644
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (!(revents & EPOLLIN))
 -- 
-2.25.1
+2.43.0
 

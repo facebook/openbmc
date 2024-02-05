@@ -1,4 +1,4 @@
-From ea90ef25eb11328067e8f86e460cbeef077f36c8 Mon Sep 17 00:00:00 2001
+From 280eeb9257632ca0d123abd936798646c7cb80c6 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 3 Jan 2024 11:26:32 -0600
 Subject: [PATCH 9/9] platform-mc: fix up tid_t to pldm_tid_t conversions
@@ -360,7 +360,7 @@ index 11c178a..3e0e8a3 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
-index 949ba1c..98b20cf 100644
+index 21c3a3c..4ea734d 100644
 --- a/platform-mc/sensor_manager.cpp
 +++ b/platform-mc/sensor_manager.cpp
 @@ -14,7 +14,7 @@ using namespace std::chrono;
@@ -409,7 +409,7 @@ index 949ba1c..98b20cf 100644
      uint64_t t0 = 0;
      uint64_t t1 = 0;
 diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
-index 94dc4f2..7191f57 100644
+index 6bd3ac5..98400ff 100644
 --- a/platform-mc/sensor_manager.hpp
 +++ b/platform-mc/sensor_manager.hpp
 @@ -32,26 +32,26 @@ class SensorManager
@@ -456,8 +456,8 @@ index 94dc4f2..7191f57 100644
      uint32_t pollingTime;
  
      /** @brief sensor polling timers */
--    std::map<tid_t, std::unique_ptr<phosphor::Timer>> sensorPollTimers;
-+    std::map<pldm_tid_t, std::unique_ptr<phosphor::Timer>> sensorPollTimers;
+-    std::map<tid_t, std::unique_ptr<sdbusplus::Timer>> sensorPollTimers;
++    std::map<pldm_tid_t, std::unique_ptr<sdbusplus::Timer>> sensorPollTimers;
  
      /** @brief coroutine handle of doSensorPollingTasks */
 -    std::map<tid_t, std::coroutine_handle<>> doSensorPollingTaskHandles;
@@ -862,5 +862,5 @@ index 7f84042..311e35f 100644
  
      EXPECT_EQ(tid, t1.getTid());
 -- 
-2.25.1
+2.43.0
 

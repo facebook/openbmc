@@ -1,24 +1,24 @@
-From 9f0c345d185c5f34b6fd9bb11f4f50dfe3609454 Mon Sep 17 00:00:00 2001
+From 9ec960ee45184713710248e4c6e9936e1e0cac44 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 7 Jun 2022 07:31:54 -0700
 Subject: [PATCH 504/532] hw/misc: Add byte-by-byte i2c network device
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
- hw/misc/i2c-netdev2.c         | 259 ++++++++++++++++++++++++++++++++++
+ hw/misc/i2c-netdev2.c         | 260 ++++++++++++++++++++++++++++++++++
  hw/misc/meson.build           |   2 +-
  tests/qtest/aspeed_i2c-test.c | 243 +++++++++++++++++++++++++++++++
  tests/qtest/meson.build       |   3 +-
- 4 files changed, 505 insertions(+), 2 deletions(-)
+ 4 files changed, 506 insertions(+), 2 deletions(-)
  create mode 100644 hw/misc/i2c-netdev2.c
  create mode 100644 tests/qtest/aspeed_i2c-test.c
 
 diff --git a/hw/misc/i2c-netdev2.c b/hw/misc/i2c-netdev2.c
 new file mode 100644
-index 0000000000..52e3b8968f
+index 0000000000..e60846081e
 --- /dev/null
 +++ b/hw/misc/i2c-netdev2.c
-@@ -0,0 +1,259 @@
+@@ -0,0 +1,260 @@
 +#include "qemu/osdep.h"
 +#include "qemu/main-loop.h"
 +#include "qapi/error.h"
@@ -100,7 +100,7 @@ index 0000000000..52e3b8968f
 +    printf("prev rx_buf: ");
 +    print_bytes(s->rx_buf, sizeof(s->rx_buf));
 +    printf("\n");
-+    
++
 +    assert(len <= sizeof(s->rx_buf));
 +    memcpy(s->rx_buf, buf, len);
 +    s->rx_len = len;
@@ -178,7 +178,8 @@ index 0000000000..52e3b8968f
 +    I2CNetdev2 *s = I2C_NETDEV2(dev);
 +
 +    s->bus = I2C_BUS(qdev_get_parent_bus(dev));
-+    s->nic = qemu_new_nic(&net_client_info, &s->nic_conf, TYPE_I2C_NETDEV2, dev->id, s);
++    s->nic = qemu_new_nic(&net_client_info, &s->nic_conf, TYPE_I2C_NETDEV2,
++                          dev->id, &dev->mem_reentrancy_guard, s);
 +    s->bh = qemu_bh_new(i2c_netdev2_slave_mode_rx, s);
 +    s->rx_len = 0;
 +}
@@ -279,13 +280,13 @@ index 0000000000..52e3b8968f
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 4c2578514c..5a32ca0b80 100644
+index c3bbde1803..901e5a11f0 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -133,7 +133,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+@@ -142,7 +142,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
  system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
  
- system_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-echo.c'))
+ system_ss.add(when: 'CONFIG_I2C_ECHO', if_true: files('i2c-echo.c'))
 -system_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-netdev.c'))
 +system_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-netdev.c', 'i2c-netdev2.c'))
  
@@ -541,7 +542,7 @@ index 0000000000..aaf8c85427
 +    return ret;
 +}
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index b071d400b3..906e99a46e 100644
+index 47dabf91d0..14068d8f39 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
 @@ -193,7 +193,8 @@ qtests_npcm7xx = \

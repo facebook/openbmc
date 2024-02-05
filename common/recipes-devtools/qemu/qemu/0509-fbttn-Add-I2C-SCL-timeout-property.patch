@@ -1,4 +1,4 @@
-From 95a337f6e9075a9cd6ba0d1a35829b5e80ac67bf Mon Sep 17 00:00:00 2001
+From c21900268026c459ecfc9eeca6fe6c358c04003d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 16 Aug 2022 00:32:54 -0700
 Subject: [PATCH 509/532] fbttn: Add I2C SCL timeout property
@@ -17,29 +17,30 @@ within the IRQ handler), then a crash or deadlock is possible.
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
- hw/arm/aspeed.c             |  6 ++++++
+ hw/arm/aspeed.c             |  7 ++++++
  hw/i2c/aspeed_i2c.c         | 43 +++++++++++++++++++++++++++++++++++++
  hw/i2c/trace-events         |  1 +
  include/hw/i2c/aspeed_i2c.h |  1 +
- 4 files changed, 51 insertions(+)
+ 4 files changed, 52 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 57815ea5b4..08a60a35fc 100644
+index 0d6b1bb929..826bc834d8 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -1024,6 +1024,11 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
+@@ -1033,6 +1033,12 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
       */
  }
  
 +static void fbttn_i2c_init(AspeedMachineState *bmc)
 +{
-+    i2c_slave_create_simple(aspeed_i2c_get_bus(&bmc->soc.i2c, 12), "tmp421", 0x1f);
++    AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
++    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 12), "tmp421", 0x1f);
 +}
 +
  static void qcom_dc_scm_bmc_i2c_init(AspeedMachineState *bmc)
  {
-     AspeedSoCState *soc = &bmc->soc;
-@@ -1909,6 +1914,7 @@ static const struct FBMachineData fb_machines[] = {
+     AspeedSoCState *soc = bmc->soc;
+@@ -1910,6 +1916,7 @@ static const struct FBMachineData fb_machines[] = {
          .macs_mask   = ASPEED_MAC0_ON,
          .stdout_path = ASPEED_DEV_UART5,
          .ram_size    = 1 * GiB,
@@ -48,7 +49,7 @@ index 57815ea5b4..08a60a35fc 100644
      {
          .name        = "fbtp-bmc",
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 44905d7899..e4b394ddd2 100644
+index 1037c22b2f..112c5ae86e 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -26,6 +26,7 @@
@@ -68,7 +69,7 @@ index 44905d7899..e4b394ddd2 100644
          break;
      case A_I2CD_DMA_ADDR:
          if (!aic->has_dma) {
-@@ -458,11 +461,28 @@ static void aspeed_i2c_bus_handle_cmd(AspeedI2CBus *bus, uint64_t value)
+@@ -461,11 +464,28 @@ static void aspeed_i2c_bus_handle_cmd(AspeedI2CBus *bus, uint64_t value)
          aspeed_i2c_bus_cmd_dump(bus);
      }
  
@@ -97,7 +98,7 @@ index 44905d7899..e4b394ddd2 100644
          aspeed_i2c_set_state(bus, state);
  
          addr = aspeed_i2c_get_addr(bus);
-@@ -1238,6 +1258,24 @@ static Property aspeed_i2c_bus_properties[] = {
+@@ -1241,6 +1261,24 @@ static Property aspeed_i2c_bus_properties[] = {
      DEFINE_PROP_END_OF_LIST(),
  };
  
@@ -122,7 +123,7 @@ index 44905d7899..e4b394ddd2 100644
  static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
  {
      DeviceClass *dc = DEVICE_CLASS(klass);
-@@ -1246,6 +1284,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
+@@ -1249,6 +1287,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
      dc->realize = aspeed_i2c_bus_realize;
      dc->reset = aspeed_i2c_bus_reset;
      device_class_set_props(dc, aspeed_i2c_bus_properties);
@@ -135,10 +136,10 @@ index 44905d7899..e4b394ddd2 100644
  
  static const TypeInfo aspeed_i2c_bus_info = {
 diff --git a/hw/i2c/trace-events b/hw/i2c/trace-events
-index d7b1e25858..c2f946b044 100644
+index 6900e06eda..ec0a6aa736 100644
 --- a/hw/i2c/trace-events
 +++ b/hw/i2c/trace-events
-@@ -28,6 +28,7 @@ aspeed_i2c_bus_read(uint32_t busid, uint64_t offset, unsigned size, uint64_t val
+@@ -34,6 +34,7 @@ aspeed_i2c_bus_read(uint32_t busid, uint64_t offset, unsigned size, uint64_t val
  aspeed_i2c_bus_write(uint32_t busid, uint64_t offset, unsigned size, uint64_t value) "bus[%d]: To 0x%" PRIx64 " of size %u: 0x%" PRIx64
  aspeed_i2c_bus_send(const char *mode, int i, int count, uint8_t byte) "%s send %d/%d 0x%02x"
  aspeed_i2c_bus_recv(const char *mode, int i, int count, uint8_t byte) "%s recv %d/%d 0x%02x"
@@ -147,10 +148,10 @@ index d7b1e25858..c2f946b044 100644
  # npcm7xx_smbus.c
  
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index 2e1e15aaf0..ee4cf597c0 100644
+index a064479e59..d468b84971 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
-@@ -242,6 +242,7 @@ struct AspeedI2CBus {
+@@ -243,6 +243,7 @@ struct AspeedI2CBus {
      I2CBus *bus;
      uint8_t id;
      qemu_irq irq;

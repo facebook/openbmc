@@ -1,4 +1,4 @@
-From 2fbe0cc8419e2601fe8868aaca3130fb13ffb933 Mon Sep 17 00:00:00 2001
+From e57bb6d8e59d9b193e0937d52b38637821207880 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH 507/532] hw/i2c/pca954x: Add method to get channels
@@ -36,10 +36,10 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  3 files changed, 32 insertions(+), 20 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 4712c0dd0e..cbb08c7211 100644
+index 744441b5cc..2de2bd76c2 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -842,15 +842,6 @@ static void rainier_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -851,15 +851,6 @@ static void rainier_bmc_i2c_init(AspeedMachineState *bmc)
      create_pca9552(soc, 15, 0x60);
  }
  
@@ -55,7 +55,7 @@ index 4712c0dd0e..cbb08c7211 100644
  #define TYPE_LM75 TYPE_TMP105
  #define TYPE_TMP75 TYPE_TMP105
  #define TYPE_TMP422 "tmp422"
-@@ -863,20 +854,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -872,20 +863,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
      for (int i = 0; i < 16; i++) {
          i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
      }

@@ -1,4 +1,4 @@
-From bdd61a28ce5be49540cf21023f81524123960b40 Mon Sep 17 00:00:00 2001
+From 192be5d3404836d41233a6f5e946f456e820f50c Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@meta.com>
 Date: Sun, 18 Dec 2022 14:41:31 -0800
 Subject: [PATCH 527/532] hw/arm/aspeed: Don't initialize fby35-bmc GPIO's
@@ -11,32 +11,35 @@ better to just not initialize these GPIO's.
 
 Signed-off-by: Peter Delevoryas <pdel@meta.com>
 ---
- hw/arm/aspeed.c | 9 ---------
- 1 file changed, 9 deletions(-)
+ hw/arm/aspeed.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 86c51d38d9..49a3c6e8d6 100644
+index f8d5831086..def0acfb5c 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -1518,21 +1518,12 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
+@@ -1518,6 +1518,7 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
          aspeed_soc_num_cpus(amc->soc_name);
  }
  
--static void fby35_reset(MachineState *state, ShutdownCause reason)
--{
--    AspeedMachineState *bmc = ASPEED_MACHINE(state);
--
--    qemu_devices_reset(reason);
--    fby35_bmc_reset_gpios(&bmc->soc);
--}
--
++#if 0
+ static void fby35_reset(MachineState *state, ShutdownCause reason)
+ {
+     AspeedMachineState *bmc = ASPEED_MACHINE(state);
+@@ -1525,6 +1526,7 @@ static void fby35_reset(MachineState *state, ShutdownCause reason)
+     qemu_devices_reset(reason);
+     fby35_bmc_reset_gpios(bmc->soc);
+ }
++#endif
+ 
  static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
  {
-     MachineClass *mc = MACHINE_CLASS(oc);
+@@ -1532,7 +1534,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
      AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);
  
      mc->desc       = "Facebook fby35 BMC (Cortex-A7)";
 -    mc->reset      = fby35_reset;
++    //mc->reset      = fby35_reset;
      amc->fmc_model = "n25q00";
      amc->num_cs    = 2;
      amc->macs_mask = ASPEED_MAC3_ON;

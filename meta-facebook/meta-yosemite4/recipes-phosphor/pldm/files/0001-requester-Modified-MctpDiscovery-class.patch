@@ -1,4 +1,4 @@
-From 735b201df86ceebeb72f4d3be26dec7455287c32 Mon Sep 17 00:00:00 2001
+From dde9d74c0186c302aba5a3232edf5381acd2b5bc Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Mon, 14 Feb 2022 12:12:25 +0000
 Subject: [PATCH 1/9] requester: Modified MctpDiscovery class
@@ -19,13 +19,13 @@ Change-Id: I1e1673504583a87f2a9bc3adf76fb49c2dc30254
  fw-update/manager.hpp                         |  25 +-
  meson.build                                   |   1 +
  pldmd/pldmd.cpp                               |   4 +-
- requester/mctp_endpoint_discovery.cpp         | 248 +++++++++++++++---
+ requester/mctp_endpoint_discovery.cpp         | 249 +++++++++++++++---
  requester/mctp_endpoint_discovery.hpp         | 110 +++++++-
  .../test/mctp_endpoint_discovery_test.cpp     |  37 +++
  requester/test/meson.build                    |   7 +
  .../test/mock_mctp_discovery_handler_intf.hpp |  20 ++
  requester/test/static_eid_table.json          |  14 +
- 10 files changed, 425 insertions(+), 47 deletions(-)
+ 10 files changed, 425 insertions(+), 48 deletions(-)
  create mode 100644 requester/test/mctp_endpoint_discovery_test.cpp
  create mode 100644 requester/test/mock_mctp_discovery_handler_intf.hpp
  create mode 100644 requester/test/static_eid_table.json
@@ -109,7 +109,7 @@ index 018a703..06440b5 100644
       *         specification
       *
 diff --git a/meson.build b/meson.build
-index 0576048..04d6acf 100644
+index 1336ba8..07069e5 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -69,6 +69,7 @@ if get_option('transport-implementation') == 'mctp-demux'
@@ -121,7 +121,7 @@ index 0576048..04d6acf 100644
    configuration: conf_data
  )
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index fa68f17..70b2f88 100644
+index 8005518..784d0c5 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -293,7 +293,9 @@ int main(int argc, char** argv)
@@ -136,10 +136,10 @@ index fa68f17..70b2f88 100644
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (!(revents & EPOLLIN))
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index c766a70..1004e50 100644
+index 1a8a6a9..65ada30 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -1,9 +1,15 @@
+@@ -1,9 +1,16 @@
 +#include "config.h"
 +
  #include "mctp_endpoint_discovery.hpp"
@@ -148,6 +148,7 @@ index c766a70..1004e50 100644
  #include "common/utils.hpp"
  
 +#include <nlohmann/json.hpp>
++#include <phosphor-logging/lg2.hpp>
 +
  #include <algorithm>
 +#include <fstream>
@@ -155,7 +156,7 @@ index c766a70..1004e50 100644
  #include <map>
  #include <string>
  #include <string_view>
-@@ -11,92 +17,264 @@
+@@ -11,93 +18,263 @@
  
  namespace pldm
  {
@@ -220,8 +221,8 @@ index c766a70..1004e50 100644
 -    catch (const std::exception& e)
 +    catch (const sdbusplus::exception_t& e)
      {
-+        std::cerr << "Error in mapper GetSubTree call for MCTP Endpoint:"
-+                  << e.what() << std::endl;
+-        error("Failed to call the D-Bus Method: {ERROR}", "ERROR", e);
++        lg2::error("Failed to call the D-Bus Method: {ERROR}", "ERROR", e);
          return;
      }
  
@@ -716,5 +717,5 @@ index 0000000..54146a1
 +    ]
 +}
 -- 
-2.25.1
+2.43.0
 

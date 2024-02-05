@@ -1,4 +1,4 @@
-From 1893d6584a64905d147b176e4f493cb9a00536df Mon Sep 17 00:00:00 2001
+From 6f3078b2923f27cb7347d53f777921ad6ca82e01 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 07:10:35 -0700
 Subject: [PATCH 514/532] hw/i2c/aspeed: Fix interrupt status flag names
@@ -13,7 +13,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index a24add0e73..8bd228a169 100644
+index bf70e3c03b..f3e294b796 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -49,13 +49,13 @@ static inline void aspeed_i2c_bus_raise_interrupt(AspeedI2CBus *bus)

@@ -1,4 +1,4 @@
-From 69e25207e7a19f13b9d73e1700093352874361fc Mon Sep 17 00:00:00 2001
+From 3bfd1c11c663fda9764b0f941c4f2ca801e24122 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 17:51:06 -0700
 Subject: [PATCH 525/532] fby35: Add motherboard fru EEPROM to BIC
@@ -9,7 +9,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  1 file changed, 3 insertions(+)
 
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index eaeda01689..f3c766c3f7 100644
+index 6acf5088be..dd8cbd1c61 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -65,6 +65,9 @@ static void fby35_cl_bic_i2c_init(AspeedSoCState *s)

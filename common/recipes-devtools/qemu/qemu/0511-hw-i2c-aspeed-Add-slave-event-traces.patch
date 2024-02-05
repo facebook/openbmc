@@ -1,4 +1,4 @@
-From 9c77ff7b5776b397533dca6ae91ac263d7202f5a Mon Sep 17 00:00:00 2001
+From d9eba13040279ef71f4e727fa87a042348522b10 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 01:53:43 -0700
 Subject: [PATCH 511/532] hw/i2c/aspeed: Add slave event traces
@@ -10,10 +10,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  2 files changed, 15 insertions(+)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 156664b075..5a08c2ad18 100644
+index d04e1bf6f4..899aedcc9a 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1098,9 +1098,18 @@ static const TypeInfo aspeed_i2c_info = {
+@@ -1101,9 +1101,18 @@ static const TypeInfo aspeed_i2c_info = {
      .abstract   = true,
  };
  
@@ -32,7 +32,7 @@ index 156664b075..5a08c2ad18 100644
      switch (event) {
      case I2C_START_SEND_ASYNC:
          if (!SHARED_ARRAY_FIELD_EX32(bus->regs, R_I2CS_CMD, RX_DMA_EN)) {
-@@ -1145,6 +1154,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1148,6 +1157,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
          return aspeed_i2c_bus_new_slave_event(bus, event);
      }
  
@@ -41,7 +41,7 @@ index 156664b075..5a08c2ad18 100644
      switch (event) {
      case I2C_START_SEND_ASYNC:
          /* Bit[0] == 0 indicates "send". */
-@@ -1165,6 +1176,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1168,6 +1179,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
          break;
  
      default:
@@ -51,10 +51,10 @@ index 156664b075..5a08c2ad18 100644
      }
  
 diff --git a/hw/i2c/trace-events b/hw/i2c/trace-events
-index 8f0ca3f1a7..08ac0d4635 100644
+index e9f3d1af07..5a1651352c 100644
 --- a/hw/i2c/trace-events
 +++ b/hw/i2c/trace-events
-@@ -28,6 +28,8 @@ aspeed_i2c_bus_read(uint32_t busid, uint64_t offset, unsigned size, uint64_t val
+@@ -34,6 +34,8 @@ aspeed_i2c_bus_read(uint32_t busid, uint64_t offset, unsigned size, uint64_t val
  aspeed_i2c_bus_write(uint32_t busid, uint64_t offset, unsigned size, uint64_t value) "bus[%d]: To 0x%" PRIx64 " of size %u: 0x%" PRIx64
  aspeed_i2c_bus_send(uint32_t busid, const char *mode, int i, int count, uint8_t byte) "bus[%d]: %s send %d/%d 0x%02x"
  aspeed_i2c_bus_recv(uint32_t busid, const char *mode, int i, int count, uint8_t byte) "bus[%d]: %s recv %d/%d 0x%02x"

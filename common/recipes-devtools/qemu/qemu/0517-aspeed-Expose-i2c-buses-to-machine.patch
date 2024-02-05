@@ -1,4 +1,4 @@
-From c7c5fab309cd864b1adc30dacce8167a8a1f56b6 Mon Sep 17 00:00:00 2001
+From 69c330c175451dd3ef9669ba5469f127e92d1eca Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH 517/532] aspeed: Expose i2c buses to machine
@@ -9,17 +9,17 @@ Content-Transfer-Encoding: 8bit
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 Signed-off-by: Cédric Le Goater <clg@kaod.org>
 ---
- hw/arm/aspeed_soc.c         | 14 ++++++++++++++
- hw/arm/fby35.c              | 15 +++++++++++++--
+ hw/arm/aspeed_soc_common.c  | 14 ++++++++++++++
+ hw/arm/fby35.c              | 13 +++++++++++++
  hw/i2c/aspeed_i2c.c         |  8 +++++++-
  include/hw/arm/aspeed_soc.h |  2 ++
- 4 files changed, 36 insertions(+), 3 deletions(-)
+ 4 files changed, 36 insertions(+), 1 deletion(-)
 
-diff --git a/hw/arm/aspeed_soc.c b/hw/arm/aspeed_soc.c
-index bf22258de9..fa7dfdc1d2 100644
---- a/hw/arm/aspeed_soc.c
-+++ b/hw/arm/aspeed_soc.c
-@@ -665,6 +665,20 @@ bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp)
+diff --git a/hw/arm/aspeed_soc_common.c b/hw/arm/aspeed_soc_common.c
+index 828f61093b..99aa4bd733 100644
+--- a/hw/arm/aspeed_soc_common.c
++++ b/hw/arm/aspeed_soc_common.c
+@@ -97,6 +97,20 @@ bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp)
      return true;
  }
  
@@ -41,7 +41,7 @@ index bf22258de9..fa7dfdc1d2 100644
  {
      memory_region_add_subregion(s->memory, addr,
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index f2ff6c1abf..740644fb72 100644
+index c9964bd283..490f5d6e23 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -14,6 +14,9 @@
@@ -54,16 +54,7 @@ index f2ff6c1abf..740644fb72 100644
  
  #define TYPE_FBY35 MACHINE_TYPE_NAME("fby35")
  OBJECT_DECLARE_SIMPLE_TYPE(Fby35State, FBY35);
-@@ -117,8 +120,6 @@ static void fby35_bic_init(Fby35State *s)
-     s->bic_sysclk = clock_new(OBJECT(s), "SYSCLK");
-     clock_set_hz(s->bic_sysclk, 200000000ULL);
- 
--    object_initialize_child(OBJECT(s), "bic", &s->bic, "ast1030-a1");
--
-     memory_region_init(&s->bic_memory, OBJECT(&s->bic), "bic-memory",
-                        UINT64_MAX);
- 
-@@ -136,8 +137,18 @@ static void fby35_bic_init(Fby35State *s)
+@@ -141,8 +144,18 @@ static void fby35_bic_init(Fby35State *s)
  static void fby35_init(MachineState *machine)
  {
      Fby35State *s = FBY35(machine);
@@ -75,18 +66,18 @@ index f2ff6c1abf..740644fb72 100644
      fby35_bmc_init(s);
 +
 +    for (int i = 0; i < ARRAY_SIZE(slot_i2c); i++) {
-+        slot_i2c[i] = aspeed_soc_i2c_bus(&s->bmc, i);
++        slot_i2c[i] = aspeed_soc_i2c_bus(ASPEED_SOC(&s->bmc), i);
 +    }
-+    aspeed_soc_i2c_set_bus(&s->bic, 6, slot_i2c[0]);
++    aspeed_soc_i2c_set_bus(ASPEED_SOC(&s->bic), 6, slot_i2c[0]);
 +
      fby35_bic_init(s);
  }
  
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 8bd228a169..f54affb9d9 100644
+index f3e294b796..48f50ea441 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1255,7 +1255,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
+@@ -1258,7 +1258,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
  
      sysbus_init_irq(SYS_BUS_DEVICE(dev), &s->irq);
  
@@ -100,7 +91,7 @@ index 8bd228a169..f54affb9d9 100644
      s->slave = i2c_slave_create_simple(s->bus, TYPE_ASPEED_I2C_BUS_SLAVE,
                                         0xff);
      ASPEED_I2C_BUS_SLAVE(s->slave)->bus = s;
-@@ -1269,6 +1274,7 @@ static Property aspeed_i2c_bus_properties[] = {
+@@ -1272,6 +1277,7 @@ static Property aspeed_i2c_bus_properties[] = {
      DEFINE_PROP_UINT8("bus-id", AspeedI2CBus, id, 0),
      DEFINE_PROP_LINK("controller", AspeedI2CBus, controller, TYPE_ASPEED_I2C,
                       AspeedI2CState *),
@@ -109,10 +100,10 @@ index 8bd228a169..f54affb9d9 100644
  };
  
 diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
-index 8adff70072..9f0e1b5909 100644
+index cb832bc1ee..6c0f352c73 100644
 --- a/include/hw/arm/aspeed_soc.h
 +++ b/include/hw/arm/aspeed_soc.h
-@@ -199,6 +199,8 @@ qemu_irq aspeed_soc_get_irq(AspeedSoCState *s, int dev);
+@@ -222,6 +222,8 @@ qemu_irq aspeed_soc_get_irq(AspeedSoCState *s, int dev);
  bool aspeed_soc_uart_realize(AspeedSoCState *s, Error **errp);
  void aspeed_soc_uart_set_chr(AspeedSoCState *s, int dev, Chardev *chr);
  bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp);

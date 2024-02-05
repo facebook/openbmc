@@ -1,4 +1,4 @@
-From 4116d84110bc5dc56de60d810bf9203ae9be87b4 Mon Sep 17 00:00:00 2001
+From b7b078b9aa41065591979881da3c869240a82aba Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 16:57:35 -0700
 Subject: [PATCH 521/532] hw/misc/aspeed: Add fby35 server board bridge IC
@@ -405,10 +405,10 @@ index 0000000000..245fd2df5a
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 39fed402b3..5f3e95b0bc 100644
+index 89f6b13407..8043376f1e 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -127,6 +127,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -136,6 +136,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_xdma.c',
    'aspeed_peci.c',
    'fby35_sb_cpld.c',
@@ -417,10 +417,10 @@ index 39fed402b3..5f3e95b0bc 100644
  
  system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index e5194798ce..19519cef7e 100644
+index 65f68aedbf..a7610f8394 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -302,6 +302,10 @@ lasi_chip_write(uint64_t addr, uint32_t val) "addr 0x%"PRIx64" val 0x%08x"
+@@ -335,6 +335,10 @@ iosb_write(int reg, uint64_t value, unsigned int size) "reg=0x%x value=0x%"PRIx6
  fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
  fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
  

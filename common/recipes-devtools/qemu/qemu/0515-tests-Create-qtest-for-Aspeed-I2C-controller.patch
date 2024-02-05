@@ -1,4 +1,4 @@
-From 9f86d96f1419603794c3d83bdbea158796bc264c Mon Sep 17 00:00:00 2001
+From e5c119cdf202281086a38a3675e906b83c012592 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 07:12:09 -0700
 Subject: [PATCH 515/532] tests: Create qtest for Aspeed I2C controller
@@ -159,7 +159,7 @@ index 0000000000..1db23222f0
 +    return g_test_run();
 +}
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 1993f1f1ba..3fa7ec209a 100644
+index 9bdd01f794..bec819ab42 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
 @@ -194,6 +194,7 @@ qtests_aspeed = \

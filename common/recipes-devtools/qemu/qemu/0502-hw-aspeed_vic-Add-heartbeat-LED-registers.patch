@@ -1,4 +1,4 @@
-From baf80dbc6d184526b250c5a6f6a27b0508b7f2a2 Mon Sep 17 00:00:00 2001
+From 1c9d9b8214792b86097567e9444549145bd54434 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 23 Nov 2021 09:22:10 -0800
 Subject: [PATCH 502/532] hw: aspeed_vic: Add heartbeat LED registers

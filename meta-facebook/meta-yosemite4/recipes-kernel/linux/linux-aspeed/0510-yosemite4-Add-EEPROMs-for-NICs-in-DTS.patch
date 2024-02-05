@@ -1,0 +1,66 @@
+From 43943be47c2c26e6a9d9acd78acadec35b397ef9 Mon Sep 17 00:00:00 2001
+From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
+Date: Tue, 30 Jan 2024 15:13:10 +0800
+Subject: [PATCH] yosemite4: Add EEPROMs for NICs in DTS
+
+Add EEPROM driver for NICs in order to read FRU info.
+https://lore.kernel.org/lkml/20240131084134.328307-1-Delphine_CC_Chiu@wiwynn.com/
+---
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 20 +++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index 2797864357ad..2b2ed5686e0d 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -1317,6 +1317,11 @@ emc1403@3c {
+ 				compatible = "smsc,emc1403";
+ 				reg = <0x3c>;
+ 			};
++
++			eeprom@50 {
++				compatible = "atmel,24c64";
++				reg = <0x50>;
++			};
+ 		};
+ 
+ 		imux25: i2c@1 {
+@@ -1333,6 +1338,11 @@ emc1403@3c {
+ 				compatible = "smsc,emc1403";
+ 				reg = <0x3c>;
+ 			};
++
++			eeprom@50 {
++				compatible = "atmel,24c64";
++				reg = <0x50>;
++			};
+ 		};
+ 
+ 		imux26: i2c@2 {
+@@ -1349,6 +1359,11 @@ emc1403@3c {
+ 				compatible = "smsc,emc1403";
+ 				reg = <0x3c>;
+ 			};
++
++			eeprom@50 {
++				compatible = "atmel,24c64";
++				reg = <0x50>;
++			};
+ 		};
+ 
+ 		imux27: i2c@3 {
+@@ -1365,6 +1380,11 @@ emc1403@3c {
+ 				compatible = "smsc,emc1403";
+ 				reg = <0x3c>;
+ 			};
++
++			eeprom@50 {
++				compatible = "atmel,24c64";
++				reg = <0x50>;
++			};
+ 		};
+ 	};
+ };
+-- 
+2.25.1
+

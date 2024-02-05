@@ -22,6 +22,7 @@
 PWRCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/pwrcpld/12-0043"
 SCM_PWR_IN_RESET_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_in_reset"
 SCM_CPU_READY_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_ready"
+SMB_EEPROM_SYSFS="/sys/bus/i2c/drivers/at24/9-0052/eeprom"
 
 # SMB CPLD endpoints
 SMBCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/smbcpld/9-0023"

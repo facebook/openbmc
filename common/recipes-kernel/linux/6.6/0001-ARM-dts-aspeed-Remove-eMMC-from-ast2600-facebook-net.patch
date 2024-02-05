@@ -1,0 +1,43 @@
+From 422edaf9526f353c5a3364c3997607a52ca895bc Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Fri, 2 Feb 2024 16:55:06 -0800
+Subject: [PATCH 1/5] ARM: dts: aspeed: Remove eMMC from
+ ast2600-facebook-netbmc-common.dtsi
+
+Summary:
+
+Remove eMMC device entries from ast2600-facebook-netbmc-common.dtsi
+because eMMC will be removed from future Meta/Facebook AST2600 network
+OpenBMC platforms.
+
+Test Plan:
+---
+ .../dts/aspeed/ast2600-facebook-netbmc-common.dtsi   | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/ast2600-facebook-netbmc-common.dtsi b/arch/arm/boot/dts/aspeed/ast2600-facebook-netbmc-common.dtsi
+index 31590d3186a2..804a6c8a6292 100644
+--- a/arch/arm/boot/dts/aspeed/ast2600-facebook-netbmc-common.dtsi
++++ b/arch/arm/boot/dts/aspeed/ast2600-facebook-netbmc-common.dtsi
+@@ -152,18 +152,6 @@ &vhub {
+ 	status = "okay";
+ };
+ 
+-&emmc_controller {
+-	status = "okay";
+-};
+-
+-&emmc {
+-	status = "okay";
+-
+-	non-removable;
+-	max-frequency = <25000000>;
+-	bus-width = <4>;
+-};
+-
+ &rtc {
+ 	status = "okay";
+ };
+-- 
+2.39.3
+

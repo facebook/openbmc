@@ -1,6 +1,17 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/6.6:"
 
 #
+# Patches to be upstreamed soon.
+#
+SRC_URI:append = " \
+    file://0001-ARM-dts-aspeed-Remove-eMMC-from-ast2600-facebook-net.patch \
+    file://0002-ARM-dts-aspeed-elbert-Enable-eMMC-device.patch \
+    file://0003-ARM-dts-aspeed-fuji-Enable-eMMC-device.patch \
+    file://0004-ARM-dts-aspeed-remove-cloudripper-dts.patch \
+    file://0005-ARM-dts-aspeed-Add-Facebook-fblite-r1-BMC.patch \
+"
+
+#
 # JFFS2 patches to workaround kernel panic.
 # Highly recommended for all the OpenBMC platforms running JFFS2.
 #

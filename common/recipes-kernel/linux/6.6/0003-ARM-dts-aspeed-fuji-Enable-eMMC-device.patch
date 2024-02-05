@@ -1,0 +1,43 @@
+From c271bfdc9482e6d2f2020b3f95910c804f952b65 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Fri, 2 Feb 2024 16:58:06 -0800
+Subject: [PATCH 3/5] ARM: dts: aspeed: fuji: Enable eMMC device
+
+Summary:
+
+Test Plan:
+
+Reviewers:
+
+Subscribers:
+
+Tasks:
+
+Tags:
+---
+ .../arm/boot/dts/aspeed/aspeed-bmc-facebook-fuji.dts | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fuji.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fuji.dts
+index f23c26a3441d..8602ede3ec7e 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fuji.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fuji.dts
+@@ -1249,3 +1249,15 @@ &mac3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_rgmii4_default>;
+ };
++
++&emmc_controller {
++	status = "okay";
++};
++
++&emmc {
++	status = "okay";
++
++	non-removable;
++	max-frequency = <25000000>;
++	bus-width = <4>;
++};
+-- 
+2.39.3
+

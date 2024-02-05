@@ -7,7 +7,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-DEPENDS:append = "libpal libkv libsdr libobmc-i2c update-rc.d-native"
+DEPENDS:append = "libpal libkv libgpio-ctrl libsdr libobmc-i2c update-rc.d-native"
 
 LOCAL_URI = " \
     file://Makefile \
@@ -40,5 +40,5 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES:${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
-RDEPENDS:${PN} += "bash libpal libkv libsdr libobmc-i2c libmisc-utils"
+RDEPENDS:${PN} += "bash libpal libkv libgpio-ctrl libsdr libobmc-i2c libmisc-utils"
 LDFLAGS += "-lmisc-utils"

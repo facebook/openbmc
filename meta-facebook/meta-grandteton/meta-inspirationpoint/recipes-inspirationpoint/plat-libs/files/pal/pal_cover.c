@@ -679,12 +679,11 @@ pal_toggle_rst_btn(uint8_t fru) {
 
   pal_get_restart_cause(fru, &restart_cause);
   if (restart_cause == RESTART_CAUSE_WATCHDOG_EXPIRATION) {
-    gpio_desc_t *gdesc = NULL;
-    gdesc = gpio_open_by_shadow(FP_RST_BTN_OUT_N);
-    ret = gpio_set_value(gdesc, 0);
-    msleep(100);
-    ret |= gpio_set_value(gdesc, 1);
-    gpio_close(gdesc);
+    syslog(LOG_CRIT, "SLED_CYCLE starting due to FRB2...");
+    pal_update_ts_sled();
+    sync();
+    sleep(2);
+    ret = pal_sled_cycle();
   }
   else {
     ret = pal_set_rst_btn(fru, 0);

@@ -26,7 +26,7 @@ import subprocess
 import time
 
 
-VERSION = "0.11"
+VERSION = "1.0"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
@@ -114,7 +114,6 @@ def fan_debuginfo(verbose=False):
     print("################################")
     print("######## FAN DEBUG INFO ########")
     print("################################\n")
-    print(runCmd("cat /sys/bus/i2c/devices/6-0060/fan_card_overtemp", echo=True))
     for _ in range(1, 6):
         fanPrefix = "/sys/bus/i2c/devices/6-0060/fan{}".format(_)
         log = "##### FAN {} DEBUG INFO #####\n".format(_)
@@ -265,8 +264,8 @@ def oobEepromDump(verboseLevel=1):
     )
 
 
-def showtech(verboseLevel=0):
-    verbose = bool(verboseLevel)
+def showtech(quietLevel=0):
+    verbose = not bool(quietLevel)
     print("################################")
     print("##### SHOWTECH VERSION {} #####".format(VERSION))
     print("################################\n")
@@ -345,7 +344,7 @@ def showtech(verboseLevel=0):
         i2cDetectDump()
         gpioDump()
         logDump()
-        oobEepromDump(verboseLevel=verboseLevel)
+        oobEepromDump(verboseLevel=verbose)
 
 
 def parseArgs():
@@ -353,12 +352,20 @@ def parseArgs():
         description="Get showtech information. Version {}".format(VERSION)
     )
     parser.add_argument(
+        "-q",
+        "--quiet",
+        action="count",
+        help="show limited debug logs.",
+        dest="quietLevel",
+        default=0,
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="count",
-        help="show verbose detailed debug logs.",
+        help="show verbose detailed debug logs (default).",
         dest="verboseLevel",
-        default=0,
+        default=1,
     )
     return parser.parse_args()
 
@@ -366,7 +373,7 @@ def parseArgs():
 def main():
     args = parseArgs()
 
-    showtech(verboseLevel=args.verboseLevel)
+    showtech(quietLevel=args.quietLevel)
 
 
 if __name__ == "__main__":

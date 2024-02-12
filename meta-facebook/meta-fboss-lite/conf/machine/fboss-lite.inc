@@ -21,8 +21,6 @@ PREFERRED_VERSION_u-boot-fw-utils-cross = "v2019.04%"
 PREFERRED_VERSION_wedge-eeprom = "0.2"
 PREFERRED_VERSION_libwedge-eeprom = "0.2"
 
-MACHINE_FEATURES += "emmc emmc-ext4"
-
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS += "kernel-module-i2c-dev-sysfs"
 
 EXTRA_IMAGE_FEATURES:append = " image-meta"

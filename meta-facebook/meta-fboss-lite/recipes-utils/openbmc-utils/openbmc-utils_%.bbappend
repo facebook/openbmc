@@ -83,10 +83,13 @@ do_work_systemd() {
     install -d ${D}/usr/local/bin
     install -d ${D}${systemd_system_unitdir}
 
-    for svc in mount_data1.service setup_board.service \
-               setup_gpio.service setup_i2c.service; do
+    for svc in setup_board.service setup_gpio.service setup_i2c.service; do
         install -m 0644 ${svc} ${D}${systemd_system_unitdir}
     done
+
+    if ! echo ${MACHINE_FEATURES} | awk "/emmc/ {exit 1}"; then
+        install -m 0644 mount_data1.service ${D}${systemd_system_unitdir}
+    fi
 }
 
 do_install:append() {
@@ -99,10 +102,13 @@ do_install:append() {
 
 FILES:${PN} += "${sysconfdir}"
 
-SYSTEMD_SERVICE:${PN} += "mount_data1.service"
 SYSTEMD_SERVICE:${PN} += "setup_board.service"
 SYSTEMD_SERVICE:${PN} += "setup_gpio.service"
 SYSTEMD_SERVICE:${PN} += "setup_i2c.service"
+SYSTEMD_SERVICE:${PN} += "\
+    ${@bb.utils.contains('MACHINE_FEATURES', 'emmc', 'mount_data1.service', '', d)} \
+"
+
 
 # Not needed for fboss-lite openbmc systems.
 SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service"

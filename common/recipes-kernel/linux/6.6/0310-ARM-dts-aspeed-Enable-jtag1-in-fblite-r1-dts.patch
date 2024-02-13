@@ -1,0 +1,33 @@
+From 6f44cf1b8ec57f660f173e7db388ec2feff8705b Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Mon, 12 Feb 2024 14:09:50 -0800
+Subject: [PATCH] ARM: dts: aspeed: Enable jtag1 in fblite-r1 dts
+
+Summary:
+
+Enable jtag1 in fblite-r1 device tree for firmware upgrade.
+
+Test Plan:
+
+1) "bitbake janga-image" succeeded.
+2) "bitbake tahan-image" succeeded.
+3) verified jtag is enabled after booting up janga and tahan.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 497518671c55..88698bfdd2ea 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -88,3 +88,7 @@ flash1@0 {
+ 		};
+ 	};
+ };
++
++&jtag1 {
++	status = "okay";
++};
+-- 
+2.39.3
+

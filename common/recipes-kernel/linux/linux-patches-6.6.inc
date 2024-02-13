@@ -103,3 +103,11 @@ SRC_URI:append = " \
     file://0302-To-support-LTC4286-LTC4287-driver.patch \
     file://0303-Kernel6v5-Support-apml-driver.patch \
 "
+
+#
+# Enable JTAG in "fblite-r1" dts (patch #0005) to support the recovery
+# path (programming CPLD) in OpenBMC.
+#
+SRC_URI:append = " \
+    file://0310-ARM-dts-aspeed-Enable-jtag1-in-fblite-r1-dts.patch \
+"

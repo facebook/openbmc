@@ -964,39 +964,6 @@
             ]
         },
         {
-            "alias": "openbmc-cit-morgan800cc-determinator",
-            "args": {
-                "name": "openbmc-cit-morgan800cc-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-morgan800cc-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform morgan800cc"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "some_file_matches_some_regexp",
-                    "value": [
-                        "^meta-facebook/meta-morgan800cc/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
             "alias": "openbmc-cit-northdome-determinator",
             "args": {
                 "name": "openbmc-cit-northdome-determinator",
@@ -1023,39 +990,6 @@
                         "^proprietary/amd/yaap/.*",
                         "^meta-facebook/meta-fby2/meta-fby2-nd/.*",
                         "^meta-facebook/meta-fby2/recipes-.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-tahan-determinator",
-            "args": {
-                "name": "openbmc-cit-tahan-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-tahan-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform tahan"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "some_file_matches_some_regexp",
-                    "value": [
-                        "^meta-facebook/meta-tahan/.*"
                     ]
                 }
             ],

@@ -1,4 +1,5 @@
 #include <xyz/openbmc_project/Collection/DeleteAll/client.hpp>
+#include <xyz/openbmc_project/Control/FanPwm/client.hpp>
 #include <xyz/openbmc_project/Control/Mode/client.hpp>
 #include <xyz/openbmc_project/Inventory/Decorator/Asset/client.hpp>
 #include <xyz/openbmc_project/Inventory/Item/client.hpp>
@@ -122,6 +123,12 @@ static constexpr auto interface = Proxy::interface;
 
 namespace control
 {
+
+namespace fan_pwm
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::control::FanPwm<>;
+static constexpr auto interface = Proxy::interface;
+} // namespace fan_pwm
 
 namespace mode
 {

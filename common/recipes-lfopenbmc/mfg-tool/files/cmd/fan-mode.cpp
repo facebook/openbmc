@@ -31,6 +31,7 @@ struct command
 
         auto result = R"({})"_json;
 
+        debug("Finding Control.Mode objects.");
         co_await utils::mapper::subtree_for_each(
             ctx, "/", control::mode::interface,
 

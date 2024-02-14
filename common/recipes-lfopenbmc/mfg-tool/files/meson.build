@@ -21,6 +21,7 @@ executable(
   'mfg-tool',
   'mfg-tool.cpp',
   'cmd/bmc-arch.cpp',
+  'cmd/fan-mode.cpp',
   'cmd/hello.cpp',
   'cmd/inventory.cpp',
   'cmd/log-clear.cpp',

@@ -1,4 +1,5 @@
 #include <xyz/openbmc_project/Collection/DeleteAll/client.hpp>
+#include <xyz/openbmc_project/Control/Mode/client.hpp>
 #include <xyz/openbmc_project/Inventory/Decorator/Asset/client.hpp>
 #include <xyz/openbmc_project/Inventory/Item/client.hpp>
 #include <xyz/openbmc_project/Logging/Entry/client.hpp>
@@ -118,5 +119,15 @@ using Proxy =
 static constexpr auto interface = Proxy::interface;
 } // namespace asset
 } // namespace inventory
+
+namespace control
+{
+
+namespace mode
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::control::Mode<>;
+static constexpr auto interface = Proxy::interface;
+} // namespace mode
+} // namespace control
 
 } // namespace mfgtool::dbuspath

@@ -2,6 +2,7 @@
 #include "utils/json.hpp"
 #include "utils/mapper.hpp"
 #include "utils/register.hpp"
+#include "utils/string.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>
@@ -26,6 +27,7 @@ struct command
     auto run(sdbusplus::async::context& ctx) -> sdbusplus::async::task<>
     {
         namespace sensor = dbuspath::sensor;
+        using utils::string::last_element;
 
         auto result = R"({})"_json;
 
@@ -35,7 +37,7 @@ struct command
 
             [&](const auto& path,
                 const auto& service) -> sdbusplus::async::task<> {
-            auto& entry_json = result[last_element(path.str, '/')];
+            auto& entry_json = result[last_element(path)];
             auto proxy = sensor::Proxy(ctx).service(service).path(path.str);
 
             auto value = co_await proxy.value();
@@ -61,7 +63,7 @@ struct command
 
             [&](const auto& path,
                 const auto& service) -> sdbusplus::async::task<> {
-            auto& sensor_json = result[last_element(path.str, '/')];
+            auto& sensor_json = result[last_element(path)];
             auto& entry_json = sensor_json["hard-shutdown"];
             auto proxy =
                 sensor::hard_shutdown::Proxy(ctx).service(service).path(
@@ -85,7 +87,7 @@ struct command
 
             [&](const auto& path,
                 const auto& service) -> sdbusplus::async::task<> {
-            auto& sensor_json = result[last_element(path.str, '/')];
+            auto& sensor_json = result[last_element(path)];
             auto& entry_json = sensor_json["critical"];
             auto proxy =
                 sensor::critical::Proxy(ctx).service(service).path(path.str);
@@ -108,7 +110,7 @@ struct command
 
             [&](const auto& path,
                 const auto& service) -> sdbusplus::async::task<> {
-            auto& sensor_json = result[last_element(path.str, '/')];
+            auto& sensor_json = result[last_element(path)];
             auto& entry_json = sensor_json["warning"];
             auto proxy =
                 sensor::warning::Proxy(ctx).service(service).path(path.str);
@@ -128,11 +130,6 @@ struct command
         json::display(result);
 
         co_return;
-    }
-
-    static auto last_element(const auto& s, char c)
-    {
-        return s.substr(s.find_last_of(c) + 1);
     }
 
     template <template <typename> typename comparison>

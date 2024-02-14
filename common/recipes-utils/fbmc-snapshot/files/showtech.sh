@@ -43,6 +43,9 @@ echo "built : $built"
 bmc_version=$(cat /etc/issue)
 echo "$bmc_version"
 
+echo -e "\n##### All Firmware Versions #####"
+fw-util all --version
+
 echo -e "\n##### Aspeed Chip Revision #####"
 aspeed_soc_chip_ver
 

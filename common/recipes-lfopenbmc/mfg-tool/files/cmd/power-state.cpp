@@ -6,9 +6,13 @@
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>
 
+#include <string>
+#include <unordered_map>
+
 namespace mfgtool::cmds::power_state
 {
 PHOSPHOR_LOG2_USING;
+using namespace dbuspath;
 
 struct command
 {
@@ -20,7 +24,6 @@ struct command
 
     auto run(sdbusplus::async::context& ctx) -> sdbusplus::async::task<>
     {
-        using namespace dbuspath;
         using utils::mapper::subtree_for_each;
 
         auto result = R"({})"_json;
@@ -38,10 +41,7 @@ struct command
             }
 
             auto proxy = chassis::Proxy(ctx).service(service).path(path.str);
-            auto state = (chassis::Proxy::PowerState::Off ==
-                          co_await proxy.current_power_state())
-                             ? "off"
-                             : "on";
+            auto state = mapChassisState(co_await proxy.current_power_state());
 
             info("State for {PATH}: {STATE}", "PATH", path, "STATE", state);
             auto id = path.str.substr(pathPrefix.size());
@@ -61,10 +61,7 @@ struct command
             }
 
             auto proxy = host::Proxy(ctx).service(service).path(path.str);
-            auto state = (host::Proxy::HostState::Off ==
-                          co_await proxy.current_host_state())
-                             ? "off"
-                             : "on";
+            auto state = mapHostState(co_await proxy.current_host_state());
 
             info("State for {PATH}: {STATE}", "PATH", path, "STATE", state);
             auto id = path.str.substr(pathPrefix.size());
@@ -74,6 +71,44 @@ struct command
         json::display(result);
 
         co_return;
+    }
+
+    static auto mapChassisState(chassis::Proxy::PowerState state) -> std::string
+    {
+        using PowerState = chassis::Proxy::PowerState;
+
+        static const auto values = std::unordered_map<PowerState, std::string>{
+            {PowerState::Off, "off"},
+            {PowerState::TransitioningToOff, "transition-off"},
+            {PowerState::On, "on"},
+            {PowerState::TransitioningToOn, "transition-on"},
+        };
+
+        if (!values.contains(state))
+        {
+            return "unknown";
+        }
+
+        return values.at(state);
+    }
+
+    static auto mapHostState(host::Proxy::HostState state) -> std::string
+    {
+        using HostState = host::Proxy::HostState;
+
+        static const auto values = std::unordered_map<HostState, std::string>{
+            {HostState::Off, "off"},
+            {HostState::TransitioningToOff, "transition-off"},
+            {HostState::Running, "on"},
+            {HostState::TransitioningToRunning, "transition-on"},
+        };
+
+        if (!values.contains(state))
+        {
+            return "unknown";
+        }
+
+        return values.at(state);
     }
 };
 MFGTOOL_REGISTER(command);

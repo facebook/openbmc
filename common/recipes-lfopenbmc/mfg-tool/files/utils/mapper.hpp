@@ -23,7 +23,7 @@ namespace details
 // but I was running into ICEs in GCC-13.  Breaking it up into smaller pieces
 // seems to get away from the ICE.
 
-inline auto subtree_to_services(auto mapperResults) -> services_t
+inline auto subtree_to_services(const auto& mapperResults) -> services_t
 {
     services_t services{};
 
@@ -107,13 +107,13 @@ auto subtree_for_each(sdbusplus::async::context& ctx, const auto& subpath,
     auto objects = co_await subtree_services(ctx, subpath, interface, depth);
 
     debug("Iterating over entries.");
-    for (auto& [path, services] : objects)
+    for (const auto& [path, services] : objects)
     {
         if (services.size() > 1)
         {
             warning("Multiple services ({COUNT}) provide {PATH}.", "PATH", path,
                     "COUNT", services.size());
-            for (auto& s : services)
+            for (const auto& s : services)
             {
                 warning("Service available at {SERVICE}.", "SERVICE", s);
             }
@@ -151,11 +151,11 @@ auto subtree_for_each_interface(sdbusplus::async::context& ctx,
     auto objects = co_await details::subtree(ctx, subpath, interface, depth);
 
     debug("iterating over entries.");
-    for (auto& [path, services] : objects)
+    for (const auto& [path, services] : objects)
     {
-        for (auto& [service, interfaces] : services)
+        for (const auto& [service, interfaces] : services)
         {
-            for (auto& iface : interfaces)
+            for (const auto& iface : interfaces)
             {
                 info("Examining {INTERFACE} at {PATH} by {SERVICE}",
                      "INTERFACE", interface, "PATH", path, "SERVICE", service);

@@ -29,10 +29,10 @@ struct command
         auto result = R"({})"_json;
 
         debug("Finding chasses.");
-        co_await subtree_for_each(
-            ctx, chassis::ns_path, chassis::interface,
+        co_await subtree_for_each(ctx, chassis::ns_path, chassis::interface,
 
-            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
+                                  [&](const auto& path, const auto& service)
+                                      -> sdbusplus::async::task<> {
             static auto pathPrefix = chassis::path_prefix();
             if (path.str.size() <= pathPrefix.size())
             {
@@ -49,10 +49,10 @@ struct command
         });
 
         debug("Finding hosts.");
-        co_await subtree_for_each(
-            ctx, host::ns_path, host::interface,
+        co_await subtree_for_each(ctx, host::ns_path, host::interface,
 
-            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
+                                  [&](const auto& path, const auto& service)
+                                      -> sdbusplus::async::task<> {
             static auto pathPrefix = host::path_prefix();
             if (path.str.size() <= pathPrefix.size())
             {

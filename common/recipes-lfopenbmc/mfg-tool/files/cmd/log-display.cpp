@@ -38,7 +38,8 @@ struct command
         co_await utils::mapper::subtree_for_each(
             ctx, log_entry::ns_path, log_entry::interface,
 
-            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
+            [&](const auto& path,
+                const auto& service) -> sdbusplus::async::task<> {
             if (service != log_entry::service)
             {
                 warning("Entry ({PATH}) not hosted by logging service.", "PATH",

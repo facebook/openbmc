@@ -91,14 +91,14 @@ struct command
                 {"acpi", scope::acpi}};
     }
 
-    static auto keys(auto&& m) -> std::vector<std::string>
+    static auto keys(const auto&& m) -> std::vector<std::string>
     {
         // This should have been implemented as views::keys(action_map) |
         // ranges::to<std::vector> but ranges::to isn't ready until GCC14.
 
         std::vector<std::string> r{};
         std::ranges::for_each(std::views::keys(m),
-                              [&](auto& v) { r.push_back(v); });
+                              [&](const auto& v) { r.push_back(v); });
 
         return r;
     }

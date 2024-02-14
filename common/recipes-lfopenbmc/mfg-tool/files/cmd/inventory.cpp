@@ -44,7 +44,7 @@ struct command
             }
 
             debug("Getting properties.");
-            for (auto& [property, value] :
+            for (const auto& [property, value] :
                  co_await sdbusplus::async::proxy()
                      .service(service)
                      .path(path)
@@ -58,7 +58,7 @@ struct command
                     continue;
                 }
                 std::visit(
-                    [&](auto&& v) {
+                    [&](const auto& v) {
                     result[strip_path(path)][strip_intf(interface)][property] =
                         v;
                 },
@@ -69,13 +69,13 @@ struct command
         json::display(result);
     }
 
-    auto strip_path(auto p)
+    auto strip_path(const auto& p)
     {
         namespace item = dbuspath::inventory::item;
         return p.substr(std::string(item::ns_path).length() + 1);
     }
 
-    auto strip_intf(auto i)
+    auto strip_intf(const auto& i)
     {
         return i.substr(std::string(InventoryIfacePrefix).length() + 1);
     }

@@ -32,7 +32,8 @@ struct command
         co_await utils::mapper::subtree_for_each(
             ctx, sensor::ns_path, sensor::interface,
 
-            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
+            [&](const auto& path,
+                const auto& service) -> sdbusplus::async::task<> {
             auto& entry_json = result[last_element(path.str, '/')];
             auto proxy = sensor::Proxy(ctx).service(service).path(path.str);
 
@@ -54,7 +55,8 @@ struct command
         co_await utils::mapper::subtree_for_each(
             ctx, sensor::ns_path, sensor::warning::interface,
 
-            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
+            [&](const auto& path,
+                const auto& service) -> sdbusplus::async::task<> {
             auto& entry_json = result[last_element(path.str, '/')]["warning"];
             auto proxy =
                 sensor::warning::Proxy(ctx).service(service).path(path.str);
@@ -73,7 +75,8 @@ struct command
         co_await utils::mapper::subtree_for_each(
             ctx, sensor::ns_path, sensor::critical::interface,
 
-            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
+            [&](const auto& path,
+                const auto& service) -> sdbusplus::async::task<> {
             auto& entry_json = result[last_element(path.str, '/')]["critical"];
             auto proxy =
                 sensor::critical::Proxy(ctx).service(service).path(path.str);
@@ -92,7 +95,8 @@ struct command
         co_await utils::mapper::subtree_for_each(
             ctx, sensor::ns_path, sensor::hard_shutdown::interface,
 
-            [&](auto& path, auto& service) -> sdbusplus::async::task<> {
+            [&](const auto& path,
+                const auto& service) -> sdbusplus::async::task<> {
             auto& entry_json =
                 result[last_element(path.str, '/')]["hard_shutdown"];
             auto proxy =

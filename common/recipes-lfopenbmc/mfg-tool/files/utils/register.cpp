@@ -25,6 +25,6 @@ void register_command(init_callback_t cb)
 
 void init_commands(CLI::App& app)
 {
-    std::ranges::for_each(details::commands(), [&app](auto cb) { cb(app); });
+    std::ranges::for_each(details::commands(), [&app](auto& cb) { cb(app); });
 }
 } // namespace mfgtool

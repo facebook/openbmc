@@ -5,8 +5,6 @@
 
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>
-#include <xyz/openbmc_project/State/Chassis/client.hpp>
-#include <xyz/openbmc_project/State/Host/client.hpp>
 
 #include <map>
 #include <ranges>
@@ -16,7 +14,6 @@ namespace mfgtool::cmds::power_control
 {
 
 PHOSPHOR_LOG2_USING;
-using Host = sdbusplus::client::xyz::openbmc_project::state::Host<>;
 namespace mapper = mfgtool::utils::mapper;
 
 enum class action

@@ -13,6 +13,7 @@ sources = [
     'brcm-ncsi-util.c',
     'ncsi-util.c',
     'nvidia-ncsi-util.c',
+    'meta-ncsi-util.c',
 ]
 
 deps = [

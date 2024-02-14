@@ -15,6 +15,7 @@ headers = [
     'aen.h',
     'ncsi-brcm.h',
     'ncsi-nvidia.h',
+    'ncsi-meta.h',
     'ncsi.h',
 ]
 
@@ -22,6 +23,7 @@ sources = [
     'aen.c',
     'ncsi-brcm.c',
     'ncsi-nvidia.c',
+    'ncsi-meta.c',
     'ncsi.c',
 ]
 

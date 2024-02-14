@@ -22,6 +22,7 @@ executable(
   'mfg-tool.cpp',
   'cmd/bmc-arch.cpp',
   'cmd/hello.cpp',
+  'cmd/inventory.cpp',
   'cmd/log-clear.cpp',
   'cmd/log-display.cpp',
   'cmd/log-resolve.cpp',

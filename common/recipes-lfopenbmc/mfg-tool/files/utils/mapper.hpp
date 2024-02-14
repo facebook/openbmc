@@ -125,6 +125,46 @@ auto subtree_for_each(sdbusplus::async::context& ctx, const auto& subpath,
     }
 }
 
+/** Iterate over the objects in a subtree.
+ *
+ *  Calls mapper to obtain the services hosting all of the objects in a subtree,
+ *  with the interfaces at each subpath. Iterate over the objects and call the
+ *  supplied co-routine for each one with the path, interface, and service.
+ *
+ *  @param[in] ctx - The dbus async context to execute against.
+ *  @param[in] subpath - The subpath filter to find objects under.
+ *  @param[in] interface - The interface to find.
+ *  @param[in] coroutine - The co-routine to call for each instance.
+ *  @param[in] depth - The subpath depth to search.
+ *
+ *  @return A map of paths to services.
+ *
+ */
+auto subtree_for_each_interface(sdbusplus::async::context& ctx,
+                                const auto& subpath, const auto& interface,
+                                const auto& coroutine, size_t depth = 0)
+    -> sdbusplus::async::task<>
+{
+    PHOSPHOR_LOG2_USING;
+
+    debug("Looking up objects under {PATH}.", "PATH", subpath);
+    auto objects = co_await details::subtree(ctx, subpath, interface, depth);
+
+    debug("iterating over entries.");
+    for (auto& [path, services] : objects)
+    {
+        for (auto& [service, interfaces] : services)
+        {
+            for (auto& iface : interfaces)
+            {
+                info("Examining {INTERFACE} at {PATH} by {SERVICE}",
+                     "INTERFACE", interface, "PATH", path, "SERVICE", service);
+                co_await coroutine(path, service, iface);
+            }
+        }
+    }
+}
+
 /** Find the service hosting an object.
  *
  *  @param[in] ctx - The dbus async context to execute against.

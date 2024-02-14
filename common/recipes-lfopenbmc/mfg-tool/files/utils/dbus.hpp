@@ -1,4 +1,6 @@
 #include <xyz/openbmc_project/Collection/DeleteAll/client.hpp>
+#include <xyz/openbmc_project/Inventory/Decorator/Asset/client.hpp>
+#include <xyz/openbmc_project/Inventory/Item/client.hpp>
 #include <xyz/openbmc_project/Logging/Entry/client.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/Critical/client.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/HardShutdown/client.hpp>
@@ -99,5 +101,22 @@ static constexpr auto interface = Proxy::interface;
 } // namespace hard_shutdown
 
 } // namespace sensor
+
+namespace inventory
+{
+namespace item
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::inventory::Item<>;
+static constexpr auto ns_path = Proxy::namespace_path;
+static constexpr auto interface = Proxy::interface;
+} // namespace item
+
+namespace asset
+{
+using Proxy =
+    sdbusplus::client::xyz::openbmc_project::inventory::decorator::Asset<>;
+static constexpr auto interface = Proxy::interface;
+} // namespace asset
+} // namespace inventory
 
 } // namespace mfgtool::dbuspath

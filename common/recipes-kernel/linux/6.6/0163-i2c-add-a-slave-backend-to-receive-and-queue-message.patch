@@ -1,7 +1,8 @@
-From 7ac6aed84487662381f0d8ed50a1957a35c8ebf3 Mon Sep 17 00:00:00 2001
+From 8d20834f1f446b9cb8ff17b9e1bcaaadd5ed1879 Mon Sep 17 00:00:00 2001
 From: Michael Garner <garnermic@fb.com>
 Date: Tue, 21 Jun 2022 15:13:30 -0700
-Subject: [PATCH] i2c: add a slave backend to receive and queue messages
+Subject: [PATCH 163/170] i2c: add a slave backend to receive and queue
+ messages
 
 Summary:
 Ported form Kernel 5.6:
@@ -177,10 +178,10 @@ index 000000000000..2d0d06d8df9d
 +  [10204.220734634] : 20 18 c8 2c 80 01 53
 +  [10204.468461664] : 20 18 c8 2c 80 01 53
 diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
-index 438905e2a1d0..9db0ce4d9a81 100644
+index 9388823bb0bb..ee3bc323083e 100644
 --- a/drivers/i2c/Kconfig
 +++ b/drivers/i2c/Kconfig
-@@ -125,6 +125,31 @@ config I2C_SLAVE_EEPROM
+@@ -134,6 +134,31 @@ config I2C_SLAVE_EEPROM
  	  This backend makes Linux behave like an I2C EEPROM. Please read
  	  Documentation/i2c/slave-eeprom-backend.rst for further details.
  
@@ -213,10 +214,10 @@ index 438905e2a1d0..9db0ce4d9a81 100644
  	tristate "I2C eeprom testunit driver"
  	help
 diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
-index c1d493dc9bac..7af77add9f72 100644
+index 3f71ce4711e3..c79adbe5e8e9 100644
 --- a/drivers/i2c/Makefile
 +++ b/drivers/i2c/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_I2C_MUX)		+= i2c-mux.o
+@@ -17,6 +17,7 @@ obj-$(CONFIG_I2C_ATR)		+= i2c-atr.o
  obj-y				+= algos/ busses/ muxes/
  obj-$(CONFIG_I2C_STUB)		+= i2c-stub.o
  obj-$(CONFIG_I2C_SLAVE_EEPROM)	+= i2c-slave-eeprom.o
@@ -431,5 +432,5 @@ index 000000000000..ab7840b5b015
 +MODULE_AUTHOR("Haiyue Wang <haiyue.wang@linux.intel.com>");
 +MODULE_DESCRIPTION("I2C slave mode for receiving and queuing messages");
 -- 
-2.41.0
+2.43.0
 

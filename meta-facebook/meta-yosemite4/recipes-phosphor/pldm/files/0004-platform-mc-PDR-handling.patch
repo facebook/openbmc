@@ -1,4 +1,4 @@
-From e4f88fd0a08716264d2255de8b280f916dbcc837 Mon Sep 17 00:00:00 2001
+From 88aefba8a91338a1dbc9ea13cdceadf8fb4298d9 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 24 May 2022 15:35:21 +0100
 Subject: [PATCH 4/9] platform-mc: PDR handling

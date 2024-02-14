@@ -1,7 +1,7 @@
-From e91a032085c7b216c6058c694f70a8a79eb6d138 Mon Sep 17 00:00:00 2001
+From 7180ff73185183d6b6a00a977b9d04795c0cdcac Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Wed, 21 Apr 2021 16:20:34 -0700
-Subject: [PATCH 162/164] i2c: aspeed: update ast2400 timing settings
+Subject: [PATCH 162/170] i2c: aspeed: update ast2400 timing settings
 
 Summary:
 We have seen consistent I2C transaction failures in wedge100 i2c-3/4/9
@@ -29,10 +29,10 @@ Signature: 27956130:1619198529:34b97935d0812969dd1bb7a680046d1df9a6d262
  1 file changed, 15 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/i2c/busses/i2c-aspeed.c b/drivers/i2c/busses/i2c-aspeed.c
-index 3c3bc53e3381..1e6a72e4f40c 100644
+index c8596cb5a66e..9e91d5fbd5f6 100644
 --- a/drivers/i2c/busses/i2c-aspeed.c
 +++ b/drivers/i2c/busses/i2c-aspeed.c
-@@ -899,11 +899,25 @@ static u32 aspeed_i2c_get_clk_reg_val(struct device *dev,
+@@ -919,11 +919,25 @@ static u32 aspeed_i2c_get_clk_reg_val(struct device *dev,
  
  static u32 aspeed_i2c_24xx_get_clk_reg_val(struct device *dev, u32 divisor, u32 duty_cycle)
  {
@@ -60,5 +60,5 @@ index 3c3bc53e3381..1e6a72e4f40c 100644
  
  static u32 aspeed_i2c_25xx_get_clk_reg_val(struct device *dev, u32 divisor, u32 duty_cycle)
 -- 
-2.39.3
+2.43.0
 

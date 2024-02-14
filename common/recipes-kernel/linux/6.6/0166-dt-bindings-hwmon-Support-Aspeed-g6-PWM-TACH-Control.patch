@@ -1,7 +1,7 @@
-From dd6573f4cd9406bc2cb6c9749ee7f64e9fed990d Mon Sep 17 00:00:00 2001
+From 40762b1bc85d2c473772ef537b874c87765c7a66 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Mon, 18 Sep 2023 14:41:10 +0800
-Subject: [PATCH 166/167] dt-bindings: hwmon: Support Aspeed g6 PWM TACH
+Subject: [PATCH 166/170] dt-bindings: hwmon: Support Aspeed g6 PWM TACH
  Control
 
 Document the compatible for aspeed,ast2600-pwm-tach device, which can
@@ -89,5 +89,5 @@ index 000000000000..5a679f4ad2fa
 +      };
 +    };
 -- 
-2.41.0
+2.43.0
 

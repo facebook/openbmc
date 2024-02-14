@@ -1,7 +1,7 @@
-From b79072a654b42c1b357cf2bccc78548bcf7cfc5f Mon Sep 17 00:00:00 2001
+From eb3b12891ebd081343018b5c86568c0842cd4e45 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 22 Aug 2019 17:07:24 -0700
-Subject: [PATCH 100/101] jffs2: kill garbage collect thread when filesystem is
+Subject: [PATCH 100/102] jffs2: kill garbage collect thread when filesystem is
  corrupted
 
 Summary:
@@ -57,5 +57,5 @@ index 5c6602f3c189..b92edbf6ede2 100644
  	case INO_STATE_READING:
  		/* Someone's currently trying to read it. We must wait for
 -- 
-2.39.3
+2.43.0
 

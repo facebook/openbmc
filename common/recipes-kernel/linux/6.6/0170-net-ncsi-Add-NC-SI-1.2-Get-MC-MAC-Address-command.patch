@@ -1,7 +1,7 @@
-From fee75e24e5898d1493ce84644ba60d4714f5c92b Mon Sep 17 00:00:00 2001
+From 54f8ee34753ca695ad04474e874269baeefae4ef Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 20 Dec 2022 21:22:46 -0800
-Subject: [PATCH 171/171] net/ncsi: Add NC-SI 1.2 Get MC MAC Address command
+Subject: [PATCH 170/170] net/ncsi: Add NC-SI 1.2 Get MC MAC Address command
 
 This change adds support for the NC-SI 1.2 Get MC MAC Address command,
 specified here:
@@ -163,5 +163,5 @@ index 480e80e3c283..3e5e5cf7b5c9 100644
  
  int ncsi_rcv_rsp(struct sk_buff *skb, struct net_device *dev,
 -- 
-2.41.0
+2.43.0
 

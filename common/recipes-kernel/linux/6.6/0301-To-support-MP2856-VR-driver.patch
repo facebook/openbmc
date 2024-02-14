@@ -1,4 +1,4 @@
-From 15b91b16d378d68eda6e4c4e5489f335b57be6e3 Mon Sep 17 00:00:00 2001
+From 468f691fc6cd2fbabcd15a1236f639a1dfcc96e4 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Wed, 8 Nov 2023 09:27:35 +0800
 Subject: [PATCH 301/303] To-support-MP2856-VR-driver
@@ -517,5 +517,5 @@ index 000000000000..b72a46cb6e9b
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS(PMBUS);
 -- 
-2.41.0
+2.43.0
 

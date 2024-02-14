@@ -1,4 +1,4 @@
-From c271bfdc9482e6d2f2020b3f95910c804f952b65 Mon Sep 17 00:00:00 2001
+From 6c50b36cc5400dfe283ec400d6197c30e689878a Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Fri, 2 Feb 2024 16:58:06 -0800
 Subject: [PATCH 3/5] ARM: dts: aspeed: fuji: Enable eMMC device
@@ -39,5 +39,5 @@ index f23c26a3441d..8602ede3ec7e 100644
 +	bus-width = <4>;
 +};
 -- 
-2.39.3
+2.43.0
 

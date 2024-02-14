@@ -1,4 +1,4 @@
-From 15ff1dc1a36b20e6a93346b73d5c33f7dd1d42a0 Mon Sep 17 00:00:00 2001
+From ecbe18191f9388e91aa504e15fe33a4d577e34fe Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 6/9] platform-mc: Added EventManager

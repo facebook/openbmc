@@ -1,4 +1,4 @@
-From baaedd22d43747258bf5a0c0b3deffbfd2ff8903 Mon Sep 17 00:00:00 2001
+From 667a37fea390e438ace088cb40d806071ff0f5a2 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Fri, 2 Feb 2024 16:57:17 -0800
 Subject: [PATCH 2/5] ARM: dts: aspeed: elbert: Enable eMMC device
@@ -31,5 +31,5 @@ index 74f3c67e0eff..ff1009ea1c49 100644
 +	bus-width = <4>;
 +};
 -- 
-2.39.3
+2.43.0
 

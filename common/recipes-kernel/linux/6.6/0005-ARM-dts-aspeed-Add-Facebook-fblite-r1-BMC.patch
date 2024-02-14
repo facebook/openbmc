@@ -1,4 +1,4 @@
-From 267b7e914eecea9feceed2175e64233b063f9ecd Mon Sep 17 00:00:00 2001
+From 1b159f19f4adffa8e92051d1b0028cc68a102f0c Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 5 Feb 2024 15:28:46 -0800
 Subject: [PATCH 5/5] ARM: dts: aspeed: Add Facebook fblite-r1 BMC
@@ -123,5 +123,5 @@ index 000000000000..497518671c55
 +	};
 +};
 -- 
-2.39.3
+2.43.0
 

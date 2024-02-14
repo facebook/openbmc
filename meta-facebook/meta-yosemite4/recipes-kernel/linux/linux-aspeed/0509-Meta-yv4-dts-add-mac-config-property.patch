@@ -1,7 +1,7 @@
-From ed50c70677d233eb142288b697ae9a51d3423467 Mon Sep 17 00:00:00 2001
+From 3ea853377671d0b11dadf129e974fd32b07db229 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 3 Jan 2024 13:49:42 +0800
-Subject: [PATCH] Meta yv4 dts : add mac config property
+Subject: [PATCH 509/510] Meta yv4 dts : add mac config property
 
 To fix Mellanox cx7 cannot get IP after NIC re-plug.
 
@@ -12,7 +12,7 @@ This commit depends on the patch below:
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 2797864357ad..9bccdafbac7f 100644
+index 3f07e736eae4..6933e40291a5 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -137,6 +137,8 @@ &mac2 {
@@ -34,5 +34,5 @@ index 2797864357ad..9bccdafbac7f 100644
  
  &fmc {
 -- 
-2.25.1
+2.43.0
 

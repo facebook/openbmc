@@ -1,7 +1,7 @@
-From b646dcd6368465fd5b4330199ca69457c6cf1d0b Mon Sep 17 00:00:00 2001
+From 5d25154f9a2a97f3a3b4ab8ab0955cbedc67bc5d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 20 Dec 2022 21:22:44 -0800
-Subject: [PATCH 169/171] net/ncsi: Simplify Kconfig/dts control flow
+Subject: [PATCH 169/170] net/ncsi: Simplify Kconfig/dts control flow
 
 Background:
 
@@ -141,5 +141,5 @@ index d9da942ad53d..f3d7fe86fea1 100644
  	case ncsi_dev_state_probe_gc:
  	case ncsi_dev_state_probe_gls:
 -- 
-2.41.0
+2.43.0
 

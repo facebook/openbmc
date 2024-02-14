@@ -1,4 +1,4 @@
-From 280eeb9257632ca0d123abd936798646c7cb80c6 Mon Sep 17 00:00:00 2001
+From 1d401d1175a3e8afcd263089c62b1159ea82e2a1 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 3 Jan 2024 11:26:32 -0600
 Subject: [PATCH 9/9] platform-mc: fix up tid_t to pldm_tid_t conversions

@@ -1,4 +1,4 @@
-From e02c3ffdc5b203642c0e5a63ca0888adf1cfa5c3 Mon Sep 17 00:00:00 2001
+From 7941d14f1ed5345693e322bb51ab118680ba39f5 Mon Sep 17 00:00:00 2001
 From: "karthik.gengan" <gengankarthik@gmail.com>
 Date: Fri, 4 Nov 2022 06:31:37 +0000
 Subject: [PATCH 501/501] hwmon: (pmbus) Add xdpe132g5c driver
@@ -17,10 +17,10 @@ This patch is needed by wedge400 and fuji.
  create mode 100644 drivers/hwmon/pmbus/xdpe132g5c.c
 
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index 270b6336b76d..afa849304176 100644
+index 294808f5240a..617d45295bb3 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
-@@ -491,6 +491,15 @@ config SENSORS_XDPE122_REGULATOR
+@@ -526,6 +526,15 @@ config SENSORS_XDPE122_REGULATOR
  	help
  	  Uses the xdpe12284 or compatible as regulator.
  
@@ -37,10 +37,10 @@ index 270b6336b76d..afa849304176 100644
  	tristate "Intersil ZL6100 and compatibles"
  	help
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index 84ee960a6c2d..6f099bc88da3 100644
+index cf8a76744545..f626db4e99e9 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
-@@ -49,5 +49,6 @@ obj-$(CONFIG_SENSORS_UCD9000)	+= ucd9000.o
+@@ -52,5 +52,6 @@ obj-$(CONFIG_SENSORS_UCD9000)	+= ucd9000.o
  obj-$(CONFIG_SENSORS_UCD9200)	+= ucd9200.o
  obj-$(CONFIG_SENSORS_XDPE122)	+= xdpe12284.o
  obj-$(CONFIG_SENSORS_XDPE152)	+= xdpe152c4.o
@@ -256,5 +256,5 @@ index 000000000000..d39bb63565da
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS(PMBUS);
 -- 
-2.39.3
+2.43.0
 

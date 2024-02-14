@@ -1,4 +1,4 @@
-From 59adddb3b7321b1ca8a3fd22af5baabbd41e41b3 Mon Sep 17 00:00:00 2001
+From b2dc270f163ef5a03fdc7298151036a18ea78275 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
 Subject: [PATCH 5/9] platform-mc: Sensor handling

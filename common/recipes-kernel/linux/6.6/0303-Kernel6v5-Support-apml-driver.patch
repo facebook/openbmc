@@ -1,4 +1,4 @@
-From 6d3d8333e412f2bc3393c55eea95b7cfeb342454 Mon Sep 17 00:00:00 2001
+From b1e1973b111e70051dfa91f1a4c32d64105ab60b Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 24 Nov 2023 15:54:07 +0800
 Subject: [PATCH 303/303] Kernel6v5: Support apml driver
@@ -2754,5 +2754,5 @@ index 000000000000..041610925fad
 +
 +#endif /*_AMD_APML_H_*/
 -- 
-2.41.0
+2.43.0
 

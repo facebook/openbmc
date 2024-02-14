@@ -1,7 +1,7 @@
-From 89ffe8d94dd9c47c7d9e85dd3681f0c4682b5e6f Mon Sep 17 00:00:00 2001
+From a128c14111740b8c70b2ef1284ba6a734ed13e51 Mon Sep 17 00:00:00 2001
 From: DelphineCCChiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 21 Sep 2023 18:35:19 +0800
-Subject: [PATCH 501/506] hwmon: (ina233) Add ina233 driver
+Subject: [PATCH 501/510] hwmon: (ina233) Add ina233 driver
 
 This commit depends on the patch below:
 [1] https://lore.kernel.org/all/20230920054739.1561080-1-Delphine_CC_Chiu@wiwynn.com/
@@ -15,10 +15,10 @@ This commit depends on the patch below:
  create mode 100644 drivers/hwmon/pmbus/ina233.c
 
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index 294808f5240a..02809fe6331c 100644
+index 617d45295bb3..89075b4a5aea 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
-@@ -537,4 +537,13 @@ config SENSORS_ZL6100
+@@ -546,4 +546,13 @@ config SENSORS_ZL6100
  	  This driver can also be built as a module. If so, the module will
  	  be called zl6100.
  
@@ -33,11 +33,11 @@ index 294808f5240a..02809fe6331c 100644
 +
  endif # PMBUS
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index cf8a76744545..7aa0d4548a15 100644
+index f626db4e99e9..f4f7e3b399ae 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
-@@ -54,3 +54,4 @@ obj-$(CONFIG_SENSORS_XDPE122)	+= xdpe12284.o
- obj-$(CONFIG_SENSORS_XDPE152)	+= xdpe152c4.o
+@@ -55,3 +55,4 @@ obj-$(CONFIG_SENSORS_XDPE152)	+= xdpe152c4.o
+ obj-$(CONFIG_SENSORS_XDPE132)   += xdpe132g5c.o
  obj-$(CONFIG_SENSORS_ZL6100)	+= zl6100.o
  obj-$(CONFIG_SENSORS_PIM4328)	+= pim4328.o
 +obj-$(CONFIG_SENSORS_INA233) += ina233.o
@@ -137,5 +137,5 @@ index 000000000000..d5c7d7408ac3
 +MODULE_IMPORT_NS(PMBUS);
 +
 -- 
-2.41.0
+2.43.0
 

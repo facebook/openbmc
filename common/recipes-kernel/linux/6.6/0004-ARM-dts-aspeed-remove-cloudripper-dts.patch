@@ -1,4 +1,4 @@
-From eb2d5f47a9739534f80dc457e239bc8b41ed8a33 Mon Sep 17 00:00:00 2001
+From 37017972a16f86ab8a869beca978a5ba85fd047f Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Sun, 4 Feb 2024 14:11:21 -0800
 Subject: [PATCH 4/5] ARM: dts: aspeed: remove cloudripper dts
@@ -577,5 +577,5 @@ index d49328fa487a..000000000000
 -	};
 -};
 -- 
-2.39.3
+2.43.0
 

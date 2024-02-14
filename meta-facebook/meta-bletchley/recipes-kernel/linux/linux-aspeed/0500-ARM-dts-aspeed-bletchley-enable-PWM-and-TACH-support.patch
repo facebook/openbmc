@@ -1,4 +1,4 @@
-From 0b37032450f5254d0ba11e92347c37449b35dabe Mon Sep 17 00:00:00 2001
+From 5fbe38b2bb67aaec3adda2120794bc98b7a97552 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 31 Aug 2023 16:55:58 +0800
 Subject: [PATCH 500/501] ARM: dts: aspeed: bletchley: enable PWM and TACH
@@ -103,5 +103,5 @@ index e899de681f47..f8564644cc70 100644
 +	};
 +};
 -- 
-2.41.0
+2.43.0
 

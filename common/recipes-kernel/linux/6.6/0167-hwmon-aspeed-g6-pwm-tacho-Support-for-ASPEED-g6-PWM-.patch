@@ -1,7 +1,7 @@
-From 2f679cc81b9fa4cc8f753fccd6d881c4cd322650 Mon Sep 17 00:00:00 2001
+From 95041efccd9ba975dcf25eca7e2372e241d83eaf Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Mon, 18 Sep 2023 14:41:11 +0800
-Subject: [PATCH 167/167] hwmon: (aspeed-g6-pwm-tacho): Support for ASPEED g6
+Subject: [PATCH 167/170] hwmon: (aspeed-g6-pwm-tacho): Support for ASPEED g6
  PWM/Fan tach
 
 The driver support two functions: PWM and Tachometer. The PWM feature can
@@ -56,7 +56,7 @@ index 000000000000..17398fe397fe
 +                        affected by fan signal glitch.
 +=============== ======= ======================================================
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index 042e1cf9501b..75b869ff6c53 100644
+index 641aa5d97add..fac861e2a8ab 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
 @@ -44,6 +44,7 @@ Hardware Monitoring Kernel Drivers
@@ -68,7 +68,7 @@ index 042e1cf9501b..75b869ff6c53 100644
     asus_ec_sensors
     asus_wmi_sensors
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 307477b8a371..75fbea7e81e2 100644
+index ec38c8892158..67f8f2e6633c 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -412,6 +412,17 @@ config SENSORS_ASPEED
@@ -90,7 +90,7 @@ index 307477b8a371..75fbea7e81e2 100644
  	tristate "Attansic ATXP1 VID controller"
  	depends on I2C
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 3f4b0fda0998..51de5c1d5f1e 100644
+index 4ac9452b5430..6415bf756c10 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
 @@ -55,6 +55,7 @@ obj-$(CONFIG_SENSORS_ARM_SCPI)	+= scpi-hwmon.o
@@ -647,5 +647,5 @@ index 000000000000..504574e8940c
 +MODULE_DESCRIPTION("Aspeed ast2600 PWM and Fan Tach device driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.41.0
+2.43.0
 

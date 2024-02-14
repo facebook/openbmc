@@ -1,7 +1,7 @@
-From 33f96a211e6b5a96aa0125c043ee20de438feaae Mon Sep 17 00:00:00 2001
+From b880e2c3457d08e3183d9ea436ccf311dd06dcb7 Mon Sep 17 00:00:00 2001
 From: Eli_Huang <Eli_Huang@wiwynn.com>
 Date: Tue, 26 Sep 2023 10:20:13 +0800
-Subject: [PATCH 503/506] Add adm1281 driver
+Subject: [PATCH 503/510] Add adm1281 driver
 
 ---
  Documentation/devicetree/bindings/hwmon/adi,adm1275.yaml | 2 ++
@@ -96,5 +96,5 @@ index e2c61d6fa521..979474ba6bd3 100644
  		data->have_pin_max = true;
  		data->have_temp_max = true;
 -- 
-2.41.0
+2.43.0
 

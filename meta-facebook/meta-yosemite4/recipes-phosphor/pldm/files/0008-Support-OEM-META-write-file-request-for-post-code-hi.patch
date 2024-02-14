@@ -1,4 +1,4 @@
-From 88a86a87af61774f1e9677c1506a8dcf773ef473 Mon Sep 17 00:00:00 2001
+From 823ecda66f473ceb8736d1c11fc744837d23aa1a Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 8/9] Support OEM-META write file request for post code history
@@ -9,7 +9,7 @@ and store its post code history.
 Change-Id: I56d303a5bc2f059451ee207a1de591be0d9993ac
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- common/utils.cpp                              |  14 ++
+ common/utils.cpp                              |  15 ++
  common/utils.hpp                              |  20 +++
  libpldmresponder/meson.build                  |  11 ++
  meson.build                                   |   3 +
@@ -20,7 +20,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  .../oem_meta_file_io_type_post_code.cpp       | 131 ++++++++++++++++++
  .../oem_meta_file_io_type_post_code.hpp       |  53 +++++++
  pldmd/pldmd.cpp                               |  11 ++
- 11 files changed, 392 insertions(+)
+ 11 files changed, 393 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.hpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
@@ -28,10 +28,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 446f7e9..ac705a7 100644
+index 57bac51..b7d6d4d 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -445,6 +445,20 @@ GetSubTreeResponse
+@@ -448,6 +448,21 @@ GetSubTreeResponse
      return response;
  }
  
@@ -40,8 +40,9 @@ index 446f7e9..ac705a7 100644
 +                              const std::vector<std::string>& ifaceList) const
 +{
 +    auto& bus = pldm::utils::DBusHandler::getBus();
-+    auto method = bus.new_method_call(mapperBusName, mapperPath,
-+                                      mapperInterface, "GetAncestors");
++    auto method = bus.new_method_call(ObjectMapper::default_service,
++                                      ObjectMapper::instance_path,
++                                      ObjectMapper::interface, "GetAncestors");
 +    method.append(searchPath, ifaceList);
 +    auto reply = bus.call(method, dbusTimeout);
 +    GetAncestorsResponse response;
@@ -51,7 +52,7 @@ index 446f7e9..ac705a7 100644
 +
  void reportError(const char* errorMsg)
  {
-     static constexpr auto logObjPath = "/xyz/openbmc_project/logging";
+     auto& bus = pldm::utils::DBusHandler::getBus();
 diff --git a/common/utils.hpp b/common/utils.hpp
 index dda1b10..1d5fc69 100644
 --- a/common/utils.hpp

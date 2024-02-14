@@ -1,4 +1,4 @@
-From 4331b7ff7410f7ab2c09472745fb3f346e89baa1 Mon Sep 17 00:00:00 2001
+From 5e857138b3a6441f8fa96c9bd3cdf53125071a79 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Sun, 29 May 2022 18:44:19 +0100
 Subject: [PATCH 2/9] requester: Added coroutine APIs

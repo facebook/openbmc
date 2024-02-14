@@ -1,7 +1,7 @@
-From ec0e607515b8adcab537858f4835c5218d1ffcff Mon Sep 17 00:00:00 2001
+From 1d6a2114c4937089c1e07fadaf60ab01169d325e Mon Sep 17 00:00:00 2001
 From: Naresh Solanki <naresh.solanki@9elements.com>
 Date: Mon, 18 Sep 2023 14:41:09 +0800
-Subject: [PATCH 165/167] dt-bindings: hwmon: fan: Add fan binding to schema
+Subject: [PATCH 165/170] dt-bindings: hwmon: fan: Add fan binding to schema
 
 Add common fan properties bindings to a schema.
 
@@ -108,5 +108,5 @@ index 000000000000..2bd2f57fc9d9
 +
 +...
 -- 
-2.41.0
+2.43.0
 

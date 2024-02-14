@@ -1,7 +1,7 @@
-From cf180d076a6a923636ee38da24548b1f8d123640 Mon Sep 17 00:00:00 2001
+From eb0a33020b186ed6326ca95ac7a2b7d85edc8294 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 24 Oct 2023 17:43:44 +0800
-Subject: [PATCH] add meta yv4 bmc dts setting
+Subject: [PATCH 500/510] add meta yv4 bmc dts setting
 
 This commit depends on the patch below:
 [1] https://lore.kernel.org/lkml/20240109072053.3980855-1-Delphine_CC_Chiu@wiwynn.com/
@@ -1419,5 +1419,5 @@ index 64075cc41d92..340be5b9081a 100644
 +	};
 +};
 -- 
-2.25.1
+2.43.0
 

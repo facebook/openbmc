@@ -79,17 +79,8 @@ auto subtree_services(sdbusplus::async::context& ctx, const auto& subpath,
                       const auto& interface, size_t depth = 0)
     -> sdbusplus::async::task<services_t>
 {
-    // Mapper look ups are possible to fail, so catch the exception and
-    // terminate so we can at least see what the exception was.
-    try
-    {
-        co_return details::subtree_to_services(
-            co_await details::subtree(ctx, subpath, interface, depth));
-    }
-    catch (...)
-    {
-        std::terminate();
-    }
+    co_return details::subtree_to_services(
+        co_await details::subtree(ctx, subpath, interface, depth));
 }
 
 /** Iterate over the objects in a subtree.

@@ -22,7 +22,6 @@
 EXPECTED_PROCS = [
     "systemd-networkd.service",
     "mTerm_server",
-    "emmcd",
     "restapi.service",
     "ipmid",
     "kcsd",

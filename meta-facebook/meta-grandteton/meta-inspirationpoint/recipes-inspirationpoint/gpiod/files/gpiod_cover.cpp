@@ -248,7 +248,7 @@ cpu_prochot_handler_wrapper(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_
 }
 
 int
-gta_mb_power_fault_handle(uint8_t* temp_mb_resp) {
+gta_power_fault_handle(uint8_t* temp_mb_resp) {
   int i2cfd = 0, ret = -1;
   uint8_t tlen = 0, rlen = 0;
   uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
@@ -271,6 +271,95 @@ gta_mb_power_fault_handle(uint8_t* temp_mb_resp) {
   }
   i2c_cdev_slave_close(i2cfd);
   return ret;
+}
+
+void
+gta_mb_power_fault_handle(uint8_t* temp_mb_resp) {
+  int i2cfd = 0, ret = -1;
+  uint8_t tlen = 0, rlen = 0;
+  uint8_t pwr_fault_str_location = 0, pwr_fault_status = 0;
+  uint8_t tbuf[MAX_I2C_TXBUF_SIZE] = {0};
+  uint8_t rbuf[MAX_I2C_RXBUF_SIZE] = {0};
+  const uint8_t mb_stby_fault_offset[2] = {MB_STBY_PWR_FAULT_OFFSET, MB_STBY_PWR_FAULT_TIMEOUE_OFFSET};
+  const uint8_t mb_normal_fault_offset[4] = {MB_NORMAL_PWR_FAULT_A_OFFSET, MB_NORMAL_PWR_FAULT_B_OFFSET, MB_NORMAL_PWR_FAULT_TIMEOUT_A_OFFSET, MB_NORMAL_PWR_FAULT_TIMEOUT_B_OFFSET};
+  const char *pwr_fault_status_str[2] = {"Power Good Drop", "No Power Good"};
+  const char *mb_stby_fault[8] = {"PVDD18_S5_P1", "PVDD18_S5_P0", "PVDD33_S5", "P1V2_PG", "P1V8_PG", "", "", ""};
+  const char *mb_normal_fault[2][8] = {{"PVDD11_S3_P1", "PVDD11_S3_P0", "P1V8_RETIMER_CPU1", "P1V8_RETIMER_CPU0", "P0V9_RETIMER_CPU1", "P0V9_RETIMER_CPU0", "", ""},
+                                       {"PVDDCR_CPU1_P1", "PVDDCR_CPU1_P0", "PVDDCR_CPU0_P1", "PVDDCR_CPU0_P0", "PVDDCR_SOC_P1", "PVDDCR_SOC_P0", "PVDDIO_P1", "PVDDIO_P0"},
+                                      };  
+  if ((temp_mb_resp[0] & MB_NORMAL_PWR_FAULT_MASK) == MB_NORMAL_PWR_FAULT_MASK) {
+    i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (i2cfd < 0) {
+      syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
+      return;
+    }
+    for (uint8_t i = 0; i < ARRAY_SIZE(mb_normal_fault_offset); i ++) {
+      tbuf[0] = mb_normal_fault_offset[i];
+      tlen = 1;
+      rlen = 1;
+      ret = i2c_rdwr_msg_transfer(i2cfd, GTA_MB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() I2C transfer to MB CPLD failed, RET: %d", __func__, ret);
+        i2c_cdev_slave_close(i2cfd);
+        return;
+      }
+
+      switch (mb_normal_fault_offset[i]) {
+        case MB_NORMAL_PWR_FAULT_A_OFFSET:
+          pwr_fault_status = POWER_GOOD_DROP;
+          pwr_fault_str_location = MB_PWR_FAULT_A_LOCATION;
+          break;
+        case MB_NORMAL_PWR_FAULT_B_OFFSET:
+          pwr_fault_status = POWER_GOOD_DROP;
+          pwr_fault_str_location = MB_PWR_FAULT_B_LOCATION;
+          break;
+        case MB_NORMAL_PWR_FAULT_TIMEOUT_A_OFFSET:
+          pwr_fault_status = NO_POWER_GOOD;
+          pwr_fault_str_location = MB_PWR_FAULT_A_LOCATION;
+          break;
+        case MB_NORMAL_PWR_FAULT_TIMEOUT_B_OFFSET:
+          pwr_fault_status = NO_POWER_GOOD;
+          pwr_fault_str_location = MB_PWR_FAULT_B_LOCATION;
+          break;
+        default:
+          syslog(LOG_WARNING, "%s() FRU: %u Invalid Power Fault Offset: 0x%2x\n", __func__, FRU_MB, mb_normal_fault_offset[i]);
+          i2c_cdev_slave_close(i2cfd);
+          return;
+      }
+      for (uint8_t j = 0; j < BITS_PER_BYTE; j ++) {
+        if (GETBIT(rbuf[0], j)) {
+          syslog(LOG_CRIT, "FRU: %u Normal Power Fault\n", FRU_MB);
+          syslog(LOG_CRIT, "FRU: %u Normal Power Fault Event: %s Assert (%s)\n", FRU_MB, mb_normal_fault[pwr_fault_str_location][j], pwr_fault_status_str[pwr_fault_status]);
+        }
+      }
+    }
+    i2c_cdev_slave_close(i2cfd);
+  } else if ((temp_mb_resp[0] & MB_STBY_PWR_FAULT_MASK) == MB_STBY_PWR_FAULT_MASK) {
+    i2cfd = i2c_cdev_slave_open(I2C_BUS_7, GTA_MB_CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (i2cfd < 0) {
+      syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BUS_7);
+      return;
+    }
+    for (uint8_t i = 0; i < ARRAY_SIZE(mb_stby_fault_offset); i ++) {
+      tbuf[0] = mb_stby_fault_offset[i];
+      tlen = 1;
+      rlen = 1;
+      ret = i2c_rdwr_msg_transfer(i2cfd, GTA_MB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() I2C transfer to CB CPLD failed, RET: %d", __func__, ret);
+        i2c_cdev_slave_close(i2cfd);
+        return;
+      }
+      for (uint8_t j = 0; j < BITS_PER_BYTE; j ++) {
+        if (GETBIT(rbuf[0], j)) {
+          syslog(LOG_CRIT, "FRU: %u STBY Power Fault\n", FRU_MB);
+          syslog(LOG_CRIT, "FRU: %u STBY Power Fault Event: %s Assert (%s)\n", FRU_MB, mb_stby_fault[j], pwr_fault_status_str[i]);
+        }
+      }
+    }
+    i2c_cdev_slave_close(i2cfd);
+  }
+  return;
 }
 
 void
@@ -429,7 +518,7 @@ delay_pwr_fault_log(void *arg) {
   */
   msleep(DELAY_LOG_POWER_FAULT_MS);
 
-  if (gta_mb_power_fault_handle(temp_mb_resp) < 0) {
+  if (gta_power_fault_handle(temp_mb_resp) < 0) {
     syslog(LOG_WARNING, "%s() MB CPLD I2C connection failed", __func__);
   } else {
     ret = pal_is_fru_prsnt(FRU_ACB, &cb_prsnt);
@@ -442,6 +531,7 @@ delay_pwr_fault_log(void *arg) {
       syslog(LOG_WARNING, "%s() Get FRU:%u Present Failed", __func__, FRU_MEB);
       goto end;
     }
+    gta_mb_power_fault_handle(temp_mb_resp);
     if (cb_prsnt == FRU_PRSNT) {
       gta_cb_power_fault_handle(temp_mb_resp);
     }

@@ -193,6 +193,10 @@ int ipmi_set_boot_order(
 
   for (i = offset = 0; i < SIZE_BOOT_ORDER && offset < sizeof(str); i++) {
     if (i > 0) { // byte[0] is boot mode, byte[1:5] are boot order
+      // 0xff is used for empty value, should end when found this value
+      if ( boot[i] == 0xff )
+        break;
+
       for (j = i + 1; j < SIZE_BOOT_ORDER; j++) {
         if (boot[i] == boot[j])
           return CC_INVALID_PARAM;

@@ -1398,7 +1398,7 @@ pal_update_ts_sled()
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%ld", ts.tv_sec);
+  sprintf(tstr, "%ld", (long)ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -2522,7 +2522,7 @@ static int
 read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
   char full_name[LARGEST_DEVICE_NAME * 2];
   char dir_name[LARGEST_DEVICE_NAME + 1];
-  char device_name[11];
+  char device_name[16];
   int tmp;
 
   /* Get current working directory */
@@ -2530,7 +2530,7 @@ read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
     return -1;
   }
 
-  snprintf(device_name, 11, "fan%d_input", fan);
+  snprintf(device_name, sizeof(device_name), "fan%d_input", fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, device_name);
   if (device_read(full_name, &tmp)) {
     return -1;
@@ -2545,7 +2545,7 @@ static int
 read_fan_rpm(const char *device, uint8_t fan, int *value) {
   char full_name[LARGEST_DEVICE_NAME * 2];
   char dir_name[LARGEST_DEVICE_NAME + 1];
-  char device_name[11];
+  char device_name[16];
   int tmp;
 
   /* Get current working directory */
@@ -2553,7 +2553,7 @@ read_fan_rpm(const char *device, uint8_t fan, int *value) {
     return -1;
   }
 
-  snprintf(device_name, 11, "fan%d_input", fan);
+  snprintf(device_name, sizeof(device_name), "fan%d_input", fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, device_name);
   if (device_read(full_name, &tmp)) {
     return -1;
@@ -6651,7 +6651,8 @@ set_sled(int brd_rev, uint8_t color, int led_name)
   static uint8_t prev_state[4] = { 0x0 };
   int dev, ret;
   uint8_t io0_reg = 0x02, io1_reg = 0x03;
-  int32_t val_io0, val_io1;
+  int32_t val_io0 = 0;
+  int32_t val_io1 = 0;
   uint8_t clr_val;
   int led_id = -1;
   uint8_t brd_type;
@@ -7237,7 +7238,7 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 int
 pal_set_dev_guid(uint8_t slot, char *guid) {
 
-  pal_populate_guid(g_dev_guid, guid);
+  pal_populate_guid((char *)g_dev_guid, guid);
 
   return pal_set_guid(OFFSET_DEV_GUID, (char *)g_dev_guid);
 }
@@ -7323,7 +7324,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
       ts.tv_sec += 30;
 
       snprintf(key, sizeof(key), "ocpdbg_lcd");
-      snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+      snprintf(value, sizeof(value), "%ld", (long)ts.tv_sec);
       if (kv_set(key, value, 0, 0) < 0) {
         return -1;
       }

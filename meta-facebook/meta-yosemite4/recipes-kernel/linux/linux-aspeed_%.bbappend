@@ -11,5 +11,6 @@ SRC_URI += " \
     file://0508-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
     file://0509-Meta-yv4-dts-add-mac-config-property.patch \
     file://0510-yosemite4-Add-EEPROMs-for-NICs-in-DTS.patch \
+    file://0511-Add-ina233-and-ina238-devicetree-config.patch \
 "
 

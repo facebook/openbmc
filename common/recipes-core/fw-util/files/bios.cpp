@@ -233,7 +233,7 @@ int BiosComponent::get_version(json& j) {
     string sver((char *)ver + 3);
     j["VERSION"] = sver.substr(0, end - 3);
   } else {
-    j["VERISON"] = "NA";
+    j["VERSION"] = "NA";
   }
 
   return 0;

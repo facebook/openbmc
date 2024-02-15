@@ -219,7 +219,6 @@ def is_e1s_prsnt(board, num):
     except Exception:
         return 0
 
-
 def sensor_valid_check(board, sname, check_name, attribute):
     try:
         if attribute["type"] == "power_status":
@@ -258,6 +257,12 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
                 if "vf_e1s" in sname:
                     return is_e1s_prsnt(board, sname[10 : sname.find("_t")])
+
+                if "ou_e1s" in sname: #for OP2 E1.S present check
+                    slot_id = 1
+                    ou_num = int(sname[0])   # witch ou
+                    e1s_num = int(sname[11]) # witch ssd
+                    return lbic_hndl.bic_is_e1s_prsnt(slot_id, ou_num, e1s_num)
 
                 return 1
         return 0

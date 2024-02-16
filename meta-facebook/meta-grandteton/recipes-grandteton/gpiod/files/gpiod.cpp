@@ -104,10 +104,10 @@ struct gpiopoll_ioex_config iox_gpios[] = {
   {CABLE_PRSNT_B, "SWB CABLE_B", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {CABLE_PRSNT_C, "SWB_CABLE_C", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
   {CABLE_PRSNT_F, "SWB_CABLE_F", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
-  {CABLE_PRSNT_H, "GPU_CABLE_H", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
-  {CABLE_PRSNT_A, "GPU_CABLE_A", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
-  {CABLE_PRSNT_D, "GPU_CABLE_D", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
-  {CABLE_PRSNT_E, "GPU_CABLE_E", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, present_init, present_handle},
+  {CABLE_PRSNT_H, "GPU_CABLE_H", IOEX_GPIO_STANDBY, GPIO_EDGE_RISING, GPIO_VALUE_INVALID, gpu_present_init, gpu_present_handle},
+  {CABLE_PRSNT_A, "GPU_CABLE_A", IOEX_GPIO_STANDBY, GPIO_EDGE_RISING, GPIO_VALUE_INVALID, gpu_present_init, gpu_present_handle},
+  {CABLE_PRSNT_D, "GPU_CABLE_D", IOEX_GPIO_STANDBY, GPIO_EDGE_RISING, GPIO_VALUE_INVALID, gpu_present_init, gpu_present_handle},
+  {CABLE_PRSNT_E, "GPU_CABLE_E", IOEX_GPIO_STANDBY, GPIO_EDGE_RISING, GPIO_VALUE_INVALID, gpu_present_init, gpu_present_handle},
   {FM_HS1_EN_BUSBAR_BUF, "HPDB_HS1_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
   {FM_HS2_EN_BUSBAR_BUF, "HPDB_HS2_BUSBAR_EN", IOEX_GPIO_STANDBY, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, enable_init, enable_handle},
 };
@@ -145,6 +145,7 @@ struct gpiopoll_config gpios_common_list[] = {
   {FM_POST_CARD_PRES_N,  "GPIOZ6",         GPIO_EDGE_BOTH,    usb_dbg_card_handler, NULL},
   {FP_AC_PWR_BMC_BTN,    "GPIO18A0",       GPIO_EDGE_BOTH,    gpio_event_handler,   NULL},
   {BIC_READY,            "SGPIO32",        GPIO_EDGE_BOTH,    bic_ready_handler,    bic_ready_init},
+  {GPU_FPGA_READY,       "SGPIO8",         GPIO_EDGE_FALLING, sgpio_event_handler,  NULL},
   {GPU_FPGA_THERM_OVERT, "SGPIO40",        GPIO_EDGE_FALLING, nv_event_handler,     NULL},
   {GPU_FPGA_DEVIC_OVERT, "SGPIO42",        GPIO_EDGE_FALLING, nv_event_handler,     NULL},
   {PEX_FW_VER_UPDATE,    "PEX_VER_UPDATE", GPIO_EDGE_RISING,  pex_fw_ver_handle,    NULL},
@@ -835,6 +836,30 @@ void
 present_handle (char* desc, gpio_value_t value) {
   const char* str = value? "not present": "present";
   iox_log_gpio_change(FRU_MB, desc, 0, str, false, value);
+}
+
+void
+gpu_present_init (char* desc, gpio_value_t value) {
+  const char* str = "not present";
+  GPUConfig gpu_config = get_gpu_config();
+
+  if (value == GPIO_VALUE_HIGH) {
+    if ((gpu_config == GPU_CONFIG_UBB && gpio_get_value_by_shadow(GPU_FPGA_READY)) ||
+         gpu_config == GPU_CONFIG_HGX) {
+      iox_log_gpio_change(FRU_MB, desc, 0, str, false, value);
+    }
+  }
+}
+
+void
+gpu_present_handle (char* desc, gpio_value_t value)  {
+  const char* str = value? "not present": "present";
+  GPUConfig gpu_config = get_gpu_config();
+
+  if ((gpu_config == GPU_CONFIG_UBB && gpio_get_value_by_shadow(GPU_FPGA_READY)) ||
+      gpu_config == GPU_CONFIG_HGX) {
+    iox_log_gpio_change(FRU_MB, desc, 0, str, false, value);
+  }
 }
 
 void

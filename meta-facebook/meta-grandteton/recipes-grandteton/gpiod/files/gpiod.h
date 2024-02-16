@@ -102,6 +102,8 @@ void bic_ready_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t cu
 void hmc_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 void hmc_ready_init(gpiopoll_pin_t *desc, gpio_value_t value);
 void nv_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
+void gpu_present_init (char* desc, gpio_value_t value);
+void gpu_present_handle (char* desc, gpio_value_t value);
 
 void cpld_shut_down_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr);
 

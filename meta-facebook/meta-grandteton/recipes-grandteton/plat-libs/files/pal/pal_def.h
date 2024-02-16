@@ -31,6 +31,7 @@
 //GPIO HGX
 #define HMC_PRESENCE             "GPU_HMC_PRSNT_ISO_R_N"
 #define HMC_READY                "GPU_BASE_HMC_READY_ISO_R"
+#define GPU_FPGA_READY           "GPU_FPGA_READY_ISO_R"
 #define GPU_FPGA_RST_N           "GPU_FPGA_RST_N"
 
 // GPIO FAN_BP PRSNT

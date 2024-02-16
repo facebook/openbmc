@@ -1,4 +1,4 @@
-From ebbae39b98a76fcafc148baec07983329f917edb Mon Sep 17 00:00:00 2001
+From d6099b0d5d7f3bc4f04e35a06c074bc7438eac39 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 22 Feb 2022 15:40:17 +0000
 Subject: [PATCH 3/9] platform-mc: Added Terminus/TerminusManager class
@@ -15,6 +15,8 @@ repository to maintain terminus locator PDR information yet.
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Change-Id: Ifa5bdfff50648f1d7fba8710e160de662e8f9e06
+
+%% original patch: 0003-platform-mc-Added-Terminus-TerminusManager-class.patch
 ---
  meson.build                                |   4 +
  platform-mc/manager.hpp                    |  70 ++++
@@ -1556,7 +1558,7 @@ index 0000000..b2783c3
 +    EXPECT_EQ(tid, t1.getTid());
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 784d0c5..fd8f105 100644
+index 8e6d393..1873a5e 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -6,6 +6,7 @@
@@ -1567,7 +1569,7 @@ index 784d0c5..fd8f105 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -292,10 +293,12 @@ int main(int argc, char** argv)
+@@ -291,10 +292,12 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);

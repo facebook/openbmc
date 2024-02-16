@@ -1,4 +1,4 @@
-From 88aefba8a91338a1dbc9ea13cdceadf8fb4298d9 Mon Sep 17 00:00:00 2001
+From 8957418e8bd3da3ab69ddc4370d23c7655170cac Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 24 May 2022 15:35:21 +0100
 Subject: [PATCH 4/9] platform-mc: PDR handling
@@ -11,6 +11,8 @@ PDR struct in libpldm/platform.h
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Change-Id: I30a0cc594a3c08fc17f2dad861b5c5d41c80ebdd
+
+%% original patch: 0004-platform-mc-PDR-handling.patch
 ---
  platform-mc/platform_manager.cpp           |   6 +-
  platform-mc/terminus.cpp                   | 199 +++++++++++++++++++++

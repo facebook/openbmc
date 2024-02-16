@@ -1,4 +1,4 @@
-From 5e857138b3a6441f8fa96c9bd3cdf53125071a79 Mon Sep 17 00:00:00 2001
+From 342825fa70a71433621d2d0b40a82b146442e4d7 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Sun, 29 May 2022 18:44:19 +0100
 Subject: [PATCH 2/9] requester: Added coroutine APIs
@@ -28,6 +28,8 @@ do
 
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
 Change-Id: I7b47d15ac15f6ae661ec94dca6a281844b939a44
+
+%% original patch: 0002-requester-Added-coroutine-APIs.patch
 ---
  requester/handler.hpp           | 245 ++++++++++++++++++++++++++++++++
  requester/test/handler_test.cpp |  50 +++++++

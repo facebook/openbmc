@@ -1,4 +1,4 @@
-From b2dc270f163ef5a03fdc7298151036a18ea78275 Mon Sep 17 00:00:00 2001
+From 38c4c7cde28a3576a468634015db113ec44394f9 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
 Subject: [PATCH 5/9] platform-mc: Sensor handling
@@ -13,6 +13,8 @@ over I2C. bmcweb can display the state of numeric sensor.
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
+
+%% original patch: 0005-platform-mc-Sensor-handling.patch
 ---
  meson.build                                |   4 +
  meson.options                              |  12 +
@@ -2059,10 +2061,10 @@ index 0000000..56e1d36
 +    runEventLoopForSeconds(seconds);
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index fd8f105..2bd1a42 100644
+index 1873a5e..35d356d 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -182,7 +182,7 @@ int main(int argc, char** argv)
+@@ -181,7 +181,7 @@ int main(int argc, char** argv)
      auto event = Event::get_default();
      auto& bus = pldm::utils::DBusHandler::getBus();
      sdbusplus::server::manager_t objManager(bus,

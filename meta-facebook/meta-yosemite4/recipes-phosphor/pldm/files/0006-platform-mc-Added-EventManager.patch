@@ -1,4 +1,4 @@
-From ecbe18191f9388e91aa504e15fe33a4d577e34fe Mon Sep 17 00:00:00 2001
+From 939cc72b9ef8e76221c14c038967aea11a3f9c02 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 6/9] platform-mc: Added EventManager
@@ -12,6 +12,8 @@ synchronously if terminus sends pldmMessagePollEvent.
 Change-Id: I1b337ccae454067841ffbbd8754631216a995542
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
+
+%% original patch: 0006-platform-mc-Added-EventManager.patch
 ---
  libpldmresponder/platform.cpp              |   9 +-
  meson.build                                |   2 +
@@ -42,10 +44,10 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 7587a16..0e11c5b 100644
+index 70ac4bc..027eb9b 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
-@@ -345,15 +345,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
+@@ -368,15 +368,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
          try
          {
              const auto& handlers = eventHandlers.at(eventClass);
@@ -1989,10 +1991,10 @@ index b77a197..2fb3f1e 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 2bd1a42..b9859bb 100644
+index 35d356d..b99de6f 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -269,10 +269,37 @@ int main(int argc, char** argv)
+@@ -267,11 +267,38 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -2026,12 +2028,13 @@ index 2bd1a42..b9859bb 100644
      auto platformHandler = std::make_unique<platform::Handler>(
          &dbusHandler, hostEID, &instanceIdDb, PDR_JSONS_DIR, pdrRepo.get(),
          hostPDRHandler.get(), dbusToPLDMEventHandler.get(), fruHandler.get(),
--        oemPlatformHandler.get(), &reqHandler, event, true);
-+        oemPlatformHandler.get(), &reqHandler, event, true, addOnEventHandlers);
+         oemPlatformHandler.get(), platformConfigHandler.get(), &reqHandler,
+-        event, true);
++        event, true, addOnEventHandlers);
  #ifdef OEM_IBM
      pldm::responder::oem_ibm_platform::Handler* oemIbmPlatformHandler =
          dynamic_cast<pldm::responder::oem_ibm_platform::Handler*>(
-@@ -293,8 +320,6 @@ int main(int argc, char** argv)
+@@ -292,8 +319,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);

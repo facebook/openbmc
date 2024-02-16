@@ -8,13 +8,13 @@ Subject: [PATCH 531/532] aspeed add montblanc bmc reference from fuji
 
 Signed-off-by: Sittisak Sinprem <ssinprem@celestica.com>
 ---
- hw/arm/aspeed.c        | 73 +++++++++++++++++++++++++++++++++++++++++-
- hw/arm/aspeed_eeprom.c | 49 ++++++++++++++++++++++++++++
- hw/arm/aspeed_eeprom.h |  7 ++++
- 3 files changed, 128 insertions(+), 1 deletion(-)
+ hw/arm/aspeed.c        | 63 ++++++++++++++++++++++++++++++++++++++++++
+ hw/arm/aspeed_eeprom.c | 49 ++++++++++++++++++++++++++++++++
+ hw/arm/aspeed_eeprom.h |  7 +++++
+ 3 files changed, 119 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 6d8901f9d6..b8f79bc9fd 100644
+index 6d8901f9d6..95fc35fd4c 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -191,6 +191,10 @@ struct AspeedMachineState {
@@ -34,7 +34,7 @@ index 6d8901f9d6..b8f79bc9fd 100644
  
 +static void montblanc_bmc_i2c_init(AspeedMachineState *bmc)
 +{
-+    AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
++    AspeedSoCState *soc = bmc->soc;
 +    I2CBus *i2c[16] = {};
 +
 +    for (int i = 0; i < 16; i++) {
@@ -68,22 +68,17 @@ index 6d8901f9d6..b8f79bc9fd 100644
  static void wedge100_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
-@@ -1497,8 +1534,38 @@ static void aspeed_machine_fuji_class_init(ObjectClass *oc, void *data)
+@@ -1497,6 +1534,28 @@ static void aspeed_machine_fuji_class_init(ObjectClass *oc, void *data)
          aspeed_soc_num_cpus(amc->soc_name);
  };
  
--#define BLETCHLEY_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
-+/* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
-+#if HOST_LONG_BITS == 32
-+#define MONTBLANC_BMC_RAM_SIZE (1 * GiB)
-+#else
-+#define MONTBLANC_BMC_RAM_SIZE (2 * GiB)
-+#endif
++#define MONTBLANC_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++
 +static void aspeed_machine_montblanc_class_init(ObjectClass *oc, void *data)
 +{
 +    MachineClass *mc = MACHINE_CLASS(oc);
 +    AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);
- 
++
 +    mc->desc = "Facebook Montblanc BMC (Cortex-A7)";
 +    amc->soc_name = "ast2600-a3";
 +    amc->hw_strap1 = MONTBLANC_BMC_HW_STRAP1;
@@ -99,16 +94,10 @@ index 6d8901f9d6..b8f79bc9fd 100644
 +        aspeed_soc_num_cpus(amc->soc_name);
 +};
 +
-+/* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
-+#if HOST_LONG_BITS == 32
-+#define BLETCHLEY_BMC_RAM_SIZE (1 * GiB)
-+#else
-+#define BLETCHLEY_BMC_RAM_SIZE (2 * GiB)
-+#endif
+ #define BLETCHLEY_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ 
  static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
- {
-     MachineClass *mc = MACHINE_CLASS(oc);
-@@ -1734,6 +1801,10 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -1734,6 +1793,10 @@ static const TypeInfo aspeed_machine_types[] = {
          .name          = MACHINE_TYPE_NAME("fuji-bmc"),
          .parent        = TYPE_ASPEED_MACHINE,
          .class_init    = aspeed_machine_fuji_class_init,
@@ -200,5 +189,5 @@ index bbf9e54365..b8fbdd0734 100644
 +
  #endif
 -- 
-2.43.0
+2.25.1
 

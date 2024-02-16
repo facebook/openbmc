@@ -5,13 +5,13 @@ Subject: [PATCH 532/532] aspeed: add janga bmc
 
 Signed-off-by: Tao Ren <taoren@meta.com>
 ---
- hw/arm/aspeed.c        | 58 ++++++++++++++++++++++++++++++++++++++++++
- hw/arm/aspeed_eeprom.c | 18 +++++++++++++
+ hw/arm/aspeed.c        | 54 ++++++++++++++++++++++++++++++++++++++++++
+ hw/arm/aspeed_eeprom.c | 18 ++++++++++++++
  hw/arm/aspeed_eeprom.h |  3 +++
- 3 files changed, 79 insertions(+)
+ 3 files changed, 75 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index b8f79bc9fd..7593b5d197 100644
+index 95fc35fd4c..d7cb391997 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -195,6 +195,10 @@ struct AspeedMachineState {
@@ -31,7 +31,7 @@ index b8f79bc9fd..7593b5d197 100644
  
 +static void janga_bmc_i2c_init(AspeedMachineState *bmc)
 +{
-+    AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
++    AspeedSoCState *soc = bmc->soc;
 +    I2CBus *i2c[16] = {};
 +
 +    for (int i = 0; i < 16; i++) {
@@ -56,16 +56,12 @@ index b8f79bc9fd..7593b5d197 100644
  
  static void wedge100_i2c_init(AspeedMachineState *bmc)
  {
-@@ -1560,6 +1588,32 @@ static void aspeed_machine_montblanc_class_init(ObjectClass *oc, void *data)
+@@ -1556,6 +1584,28 @@ static void aspeed_machine_montblanc_class_init(ObjectClass *oc, void *data)
          aspeed_soc_num_cpus(amc->soc_name);
  };
  
-+/* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
-+#if HOST_LONG_BITS == 32
-+#define JANGA_BMC_RAM_SIZE (1 * GiB)
-+#else
-+#define JANGA_BMC_RAM_SIZE (2 * GiB)
-+#endif
++#define JANGA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++
 +static void aspeed_machine_janga_class_init(ObjectClass *oc, void *data)
 +{
 +    MachineClass *mc = MACHINE_CLASS(oc);
@@ -86,10 +82,10 @@ index b8f79bc9fd..7593b5d197 100644
 +        aspeed_soc_num_cpus(amc->soc_name);
 +};
 +
- /* On 32-bit hosts, lower RAM to 1G because of the 2047 MB limit */
- #if HOST_LONG_BITS == 32
- #define BLETCHLEY_BMC_RAM_SIZE (1 * GiB)
-@@ -1805,6 +1859,10 @@ static const TypeInfo aspeed_machine_types[] = {
+ #define BLETCHLEY_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ 
+ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
+@@ -1797,6 +1847,10 @@ static const TypeInfo aspeed_machine_types[] = {
          .name          = MACHINE_TYPE_NAME("montblanc-bmc"),
          .parent        = TYPE_ASPEED_MACHINE,
          .class_init    = aspeed_machine_montblanc_class_init,
@@ -146,5 +142,5 @@ index b8fbdd0734..6ac1557b32 100644
 +
  #endif
 -- 
-2.43.0
+2.25.1
 

@@ -1225,48 +1225,6 @@ paths:
                     properties:
                       value:
                         type: string
-                  IOCM_P3V3_STBY:
-                    type: object
-                    additionalProperties: false
-                    properties:
-                      value:
-                        type: string
-                  IOCM_P1V8:
-                    type: object
-                    additionalProperties: false
-                    properties:
-                      value:
-                        type: string
-                  IOCM_P1V5:
-                    type: object
-                    additionalProperties: false
-                    properties:
-                      value:
-                        type: string
-                  IOCM_P0V865:
-                    type: object
-                    additionalProperties: false
-                    properties:
-                      value:
-                        type: string
-                  IOCM_CUR:
-                    type: object
-                    additionalProperties: false
-                    properties:
-                      value:
-                        type: string
-                  IOCM_TEMP:
-                    type: object
-                    additionalProperties: false
-                    properties:
-                      value:
-                        type: string
-                  IOCM_IOC_TEMP:
-                    type: object
-                    additionalProperties: false
-                    properties:
-                      value:
-                        type: string
                   E1S_B0_CUR:
                     type: object
                     additionalProperties: false
@@ -1310,6 +1268,48 @@ paths:
                       value:
                         type: string
                   E1S_B1_P3V3:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  IOCM_P3V3_STBY:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  IOCM_P1V8:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  IOCM_P1V5:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  IOCM_P0V865:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  IOCM_CUR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  IOCM_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  IOCM_IOC_TEMP:
                     type: object
                     additionalProperties: false
                     properties:

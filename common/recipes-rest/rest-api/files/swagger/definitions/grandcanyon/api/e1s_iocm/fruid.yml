@@ -53,6 +53,8 @@ paths:
                     type: string
                   Product Custom Data 2:
                     type: string
+                  Product Custom Data 3:
+                    type: string
               Actions:
                 type: array
                 items:
@@ -61,3 +63,7 @@ paths:
                 type: array
                 items:
                   type: string
+        404:
+          description: Not Found
+          schema:
+            type: string

@@ -885,6 +885,7 @@ void
   uint8_t gta_exp_prsnt_status = FRU_NOT_PRSNT;
   gpiopoll_ioex_config *iox_gpio_table = pal_is_artemis() ? gta_iox_gpios : iox_gpios;
   static bool is_exmax_prsnt_check = false;
+  static bool is_fru_prsnt_check = false;
   static uint8_t last_cb_present = 0xff;
   static uint8_t last_mc_present = 0xff;
   uint8_t mb_rev = 0;
@@ -904,15 +905,20 @@ void
         if (fru == FRU_ACB) {
           if (last_cb_present != gta_exp_prsnt_status && !gta_exp_prsnt_status) {
             syslog(LOG_CRIT, "FRU: %u is not Present", fru);
+          } else if (last_cb_present != gta_exp_prsnt_status && gta_exp_prsnt_status && is_fru_prsnt_check) {
+            syslog(LOG_CRIT, "FRU: %u is Present", fru);
           }
           last_cb_present = gta_exp_prsnt_status;
         } else {
           if (last_mc_present != gta_exp_prsnt_status && !gta_exp_prsnt_status) {
             syslog(LOG_CRIT, "FRU: %u is not Present", fru);
-          }
+          } else if (last_mc_present != gta_exp_prsnt_status && is_fru_prsnt_check) {
+            syslog(LOG_CRIT, "FRU: %u is Present", fru);
+          } 
           last_mc_present = gta_exp_prsnt_status;
         }
       }
+      is_fru_prsnt_check = true;
       pal_get_board_rev_id(FRU_MB, &mb_rev);
       if (!is_exmax_prsnt_check && mb_rev >= GTA_DVT_STAGE) {
         for (int cable_id = GTA_EXMAX_CABLE_A; cable_id <= GTA_EXMAX_CABLE_F; cable_id ++) {

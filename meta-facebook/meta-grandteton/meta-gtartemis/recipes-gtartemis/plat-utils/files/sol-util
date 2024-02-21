@@ -35,6 +35,8 @@ usage() {
   echo "       e.g. sol-util cb_accl1_1 uart0"
   echo "       e.g. sol-util cb_accl1_1 fac_uart0"
   echo "       e.g. sol-util mc cxl1"
+  echo ""
+  echo "       sol-util cb_accl uart0 --history [ enable | disable | status ]"
   exit 1
 }
 
@@ -651,12 +653,46 @@ get_mc_usb_dev() {
   echo "-s ${baudrate} ${prefix}${usb_path}"
 }
 
+accl_mterm_service_control() {
+  local status=$1
+  for i in {1..12}
+  do
+    for j in {1..2}
+    do
+      if [ "$1" == "enable" ] && [ "$dev_service_status" == "disable" ] ; then
+        sv start "mTerm"$i"_"$j""
+      elif [ "$1" == "disable" ] && [ "$dev_service_status" == "enable" ]; then
+        sv stop "mTerm"$i"_"$j""
+      else
+        echo "Please Check the Status of ACCL Uart0 mTerm Service"
+        exit "$EXIT_ERROR";
+      fi
+    done
+  done
+  kv set dev_mterm_service_status "$1"
+  echo "Artemis Module mTerm Service (Uart0 History) is "$1"d"
+}
+
 SLOT=
 COMP=
+dev_service_status=$(kv get dev_mterm_service_status)
 
-if [[ $# -gt 3  ||  $# -lt 1 ]]; then
+if [[ $# -gt 4  ||  $# -lt 1 ]]; then
   usage
   exit "$EXIT_ERROR";
+fi
+
+# Set Artemis Module mTerm Service on or off (History)
+if [ $# -eq 4 ] && [ "$3" == "--history" ]; then
+  if [ "$1" == "cb_accl" ] && [ "$2" == "uart0" ] && [ "$4" == "enable" ] || [ "$4" == "disable" ]; then
+    accl_mterm_service_control "$4"
+  elif  [ "$1" == "cb_accl" ] && [ "$2" == "uart0" ] && [ "$4" == "status" ]; then
+    echo "Artemis Module mTerm Service (Uart0 History) is "$dev_service_status"d"
+  else
+    usage
+    exit "$EXIT_ERROR";
+  fi
+  exit 0
 fi
 
 if [ "$1" = "mb" ] || [ "$1" = "cb" ] || [ "$1" = "mc" ] || [[ "$1" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]]; then
@@ -702,7 +738,7 @@ if [ -n "$COMP" ]; then
   fi
 
   if [[ "$SLOT" =~ ^(cb_accl([1-9]|1[0-2])_(1|2))$ ]]; then
-    if [[ "$COMP" = "uart0" ]]; then
+    if [ "$COMP" = "uart0" ] && [ "$dev_service_status" = "enable" ]; then
       exec /usr/local/bin/mTerm_client ""$SLOT"_"$COMP""
       exit 0
     elif [[ "$COMP" =~ ^(uart[0-3])$ ]]; then

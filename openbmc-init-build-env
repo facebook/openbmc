@@ -39,6 +39,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-greatlakes:lf-master
   meta-gtartemis:lf-master
   meta-halfdome:lf-master
+  meta-harma:lf-master
   meta-inspirationpoint:lf-master
   meta-janga:lf-master
   meta-meru:lf-master

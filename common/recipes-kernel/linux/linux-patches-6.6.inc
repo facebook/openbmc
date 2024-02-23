@@ -102,6 +102,7 @@ SRC_URI:append = " \
     file://0301-To-support-MP2856-VR-driver.patch \
     file://0302-To-support-LTC4286-LTC4287-driver.patch \
     file://0303-Kernel6v5-Support-apml-driver.patch \
+    file://0304-hwmon-Add-driver-for-Astera-Labs-PT5161L-retimer.patch \
 "
 
 #

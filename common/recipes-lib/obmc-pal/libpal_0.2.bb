@@ -44,7 +44,7 @@ DEPENDS += " \
     obmc-pal \
     "
 
-EXTRA_OEMESON:append = "-Dmachine=\"${MACHINE}\""
+EXTRA_OEMESON:append = " -Dmachine=\"${MACHINE}\""
 
 
 inherit python3-dir

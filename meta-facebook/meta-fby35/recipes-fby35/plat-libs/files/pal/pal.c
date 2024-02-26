@@ -150,6 +150,8 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define KEY_FAN_MODE_EVENT "fan_mode_event"
 #define KEY_IERR_STATUS "ierr_status"
 
+#define KEY_NOT_EXIST "not_exist"
+
 static int key_func_pwr_last_state(int event, void *arg);
 static int key_func_por_cfg(int event, void *arg);
 static int key_func_end_of_post(int event, void *arg);
@@ -839,6 +841,23 @@ SENSOR_BASE_NUM sensor_base_hd = {0x50, 0x80, 0xA0, 0xD0};
 SENSOR_BASE_NUM sensor_base_hd_op = {0x40, 0x70, 0xA0, 0xD0};
 SENSOR_BASE_NUM sensor_base_gl = {0x50, 0x80, 0xA0, 0xD0};
 
+struct pal_key_restore_data{
+  char *key;
+  char value[MAX_VALUE_LEN];
+  uint8_t flag;
+} gl_kv_store_list[] = {
+  {"sys_config/fru1_dimm0_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm1_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm2_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm3_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm4_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm5_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm6_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm7_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"fru1_sysfw_ver", KEY_NOT_EXIST, KV_FPERSIST},
+  {"fru1_delay_activate_sysfw_ver", KEY_NOT_EXIST, KV_FPERSIST},
+};
+
 static int
 pal_key_index(char *key) {
 
@@ -939,6 +958,39 @@ pal_set_key_value(char *key, char *value) {
   }
 
   return kv_set(key, value, 0, key_cfg[index].region);
+}
+
+int
+pal_store_key_value() {
+  int i = 0;
+  char value[MAX_VALUE_LEN] = {0};
+  int slot_type = fby35_common_get_slot_type(FRU_SLOT1);
+
+  if (slot_type == SERVER_TYPE_GL) {
+    for (i = 0; i<ARRAY_SIZE(gl_kv_store_list); i++) {
+      if (kv_get(gl_kv_store_list[i].key, (char *)value, NULL, gl_kv_store_list[i].flag) >= 0) {
+        memcpy(gl_kv_store_list[i].value, value, MAX_VALUE_LEN);
+      }
+    }
+  }
+
+  return 0;
+}
+
+int
+pal_restore_key_value() {
+  int i = 0;
+  int slot_type = fby35_common_get_slot_type(FRU_SLOT1);
+
+  if (slot_type == SERVER_TYPE_GL) {
+    for (i = 0; i < ARRAY_SIZE(gl_kv_store_list); i++) {
+      if (strcmp(gl_kv_store_list[i].value, KEY_NOT_EXIST) != 0) {
+        kv_set(gl_kv_store_list[i].key, gl_kv_store_list[i].value, MAX_VALUE_LEN, KV_FPERSIST);
+      }
+    }
+  }
+
+  return 0;
 }
 
 void

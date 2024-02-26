@@ -21,8 +21,6 @@
 
 #define PexImageCount 4
 #define GTAPeswImageCount 2
-#define GTAFacCount 12
-#define GTAArtemisCount 2 //  Each FAC
 
 struct PexImage {
   uint32_t offset;
@@ -876,27 +874,6 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
 }
 
 static
-void gta_restart_module_mterm_service(const string& comp, const string& fru) {
-  char cmd[128] = {0};
-
-  if (!pal_is_artemis()) {
-    return;
-  }
-
-  if (fru == "cb" && comp == "bic") {
-    for (int i = 1; i <= GTAFacCount; i ++) {
-      for (int j = 1; j <= GTAArtemisCount; j ++) {
-        snprintf(cmd, sizeof(cmd), "/usr/bin/sv restart mTerm%d_%d >> /dev/null",i ,j);
-        if (system(cmd) != 0) {
-          syslog(LOG_WARNING, "[%s] Restart mTerm%d_%d failed\n", __func__ ,i ,j);
-        }
-      }
-    }
-  }
-  return;
-}
-
-static
 void bic_update_post_actions(const string& fru) {
   if (fru == "mc") {
     sleep(5); // wait BIC boot up
@@ -910,7 +887,6 @@ int GTSwbBicFwComponent::update(string image)
   int ret = 0;
 
   ret = try_pldm_update(image, false);
-  gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
   bic_update_post_actions(this->alias_fru());
   return ret;
 }
@@ -920,7 +896,6 @@ int GTSwbBicFwComponent::fupdate(string image)
   int ret = 0;
 
   ret = try_pldm_update(image, true);
-  gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
   bic_update_post_actions(this->alias_fru());
   return ret;
 }
@@ -1300,7 +1275,6 @@ int GtaBicFwRecoveryComponent::update(string image) {
   }
 exit:
   gta_bic_recovery_post(fruid, false);
-  gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
   return ret;
 }
 
@@ -1326,7 +1300,6 @@ int GtaBicFwRecoveryComponent::fupdate(string image) {
   }
 exit:
   gta_bic_recovery_post(fruid, true);
-  gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
   return ret;
 }
 

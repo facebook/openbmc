@@ -520,6 +520,8 @@ int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, vo
 int pal_cfg_key_check(char *key);
 int pal_get_key_value(char *key, char *value);
 int pal_set_key_value(char *key, char *value);
+int pal_store_key_value();
+int pal_restore_key_value();
 int pal_set_def_key_value(void);
 void pal_dump_key_value(void);
 int pal_get_last_pwr_state(uint8_t fru, char *state);

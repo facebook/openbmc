@@ -120,12 +120,19 @@ main(int argc, char **argv) {
         return -1;
       }
 
+      // Prevent important information from being cleared
+      // leading to the loss of some functionalities.
+      // Store the kv and restore after clear.
+      pal_store_key_value();
+
       printf("Reset BMC data to default factory settings and BMC will be reset...\n");
       if(system("rm /mnt/data/* -rf > /dev/null 2>&1") != 0) {
         printf("Cleaning persistent storage failed!\n");
         return 1;
       }
       sync();
+
+      pal_restore_key_value();
 
       // Set the flag to identify the reboot is caused by cfg-util
       mem_fd = open("/dev/mem", O_RDWR | O_SYNC);

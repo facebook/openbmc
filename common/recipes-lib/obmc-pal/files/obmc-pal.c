@@ -1355,6 +1355,18 @@ pal_set_key_value(char *key, char *value)
 }
 
 int __attribute__((weak))
+pal_store_key_value()
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_restore_key_value()
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_set_def_key_value(void)
 {
   return PAL_EOK;

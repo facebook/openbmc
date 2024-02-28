@@ -101,16 +101,36 @@ chassis_power_cycle() {
 }
 
 bmc_mac_addr() {
-    bmc_mac=$(weutil -e chassis_eeprom | grep 'Local MAC:' | cut -d ' ' -f 3)
-    echo "$bmc_mac"
+    # Fetch mac addr supporting v4 and v5 format.
+    bmc_mac=$(weutil | sed -nE 's/((Local MAC)|(BMC MAC Base)): (.*)/\4/p')
+    if [ ! "$bmc_mac" ]; then
+        echo "BMC MAC Address Not Found !"
+    else
+        echo "$bmc_mac"
+    fi
 }
 
-#
-# SCM EEPROM doesn't exist in Janga, and CPU MAC address is obtained by
-# adding 1 to the BMC MAC address.
-#
 userver_mac_addr() {
-    bmc_mac=$(bmc_mac_addr)
-    cpu_mac=$(mac_addr_inc "$bmc_mac")
-    echo "$cpu_mac"
+    mac_addr_string=$(weutil | grep -E "(X86 CPU MAC Base)|(Local MAC)")
+    [[ "$mac_addr_string" =~ (((X86 CPU MAC Base)|(Local MAC)):[[:space:]]*(.*)) ]];
+    mac_addr_type="${BASH_REMATCH[2]}"
+    mac_addr_value="${BASH_REMATCH[5]}"
+    case "$mac_addr_type" in
+        # Fetch cpu mac addr based on EEPROM v5.
+        "X86 CPU MAC Base")
+            echo "$mac_addr_value"
+            ;;
+        "Local MAC")
+            #
+            # Fetch cpu mac addr based on EEPROM v4 and older.
+            # SCM EEPROM doesn't exist in Janga, and CPU MAC address is obtained by
+            # adding 1 to the BMC MAC address.
+            #
+            cpu_mac=$(mac_addr_inc "$mac_addr_value")
+            echo "$cpu_mac"
+            ;;
+        *)
+            echo "CPU MAC Address Not Found !"
+            ;;
+    esac
 }

@@ -133,7 +133,8 @@ chassis_power_cycle() {
 }
 
 bmc_mac_addr() {
-    weutil_output=$(weutil -e chassis_eeprom | grep 'Local MAC:' | cut -d ' ' -f 3)
+    # Fetch mac addr supporting v4 and v5 format.
+    weutil_output=$(weutil -e chassis_eeprom | sed -nE 's/((Local MAC)|(BMC MAC Base)): (.*)/\4/p')
 
     if [ -n "$weutil_output" ]; then
         # Mac address: xx:xx:xx:xx:xx:xx
@@ -146,7 +147,8 @@ bmc_mac_addr() {
 }
 
 userver_mac_addr() {
-    weutil_output=$(weutil -e scm_eeprom | grep 'Local MAC:' | cut -d ' ' -f 3)
+    # Fetch mac addr supporting v4 and v5 format.
+    weutil_output=$(weutil -e scm_eeprom | sed -nE 's/((Local MAC)|(X86 CPU MAC Base)): (.*)/\4/p')
 
     if [ -n "$weutil_output" ]; then
         # Mac address: xx:xx:xx:xx:xx:xx

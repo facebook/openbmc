@@ -25,6 +25,8 @@
 # SMB/Chassis EEPROM 
 #
 i2c_device_add 3 0x56 24c64
+# BMC EEPROM
+i2c_device_add 8 0x51 24c64    
 
 # Create SCM CPLD
 #

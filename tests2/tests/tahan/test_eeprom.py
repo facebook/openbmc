@@ -48,3 +48,39 @@ class ChassisEepromTest(CommonEepromTest, unittest.TestCase):
     # not asset tag field for FBOSS EEPROMv4 format
     def test_asset_tag(self):
         pass
+
+
+class BMCEepromTest(CommonEepromTest, unittest.TestCase):
+    """
+    Test for BMC EEPROM
+    """
+
+    def set_eeprom_cmd(self):
+        self.eeprom_cmd = ["weutil -e bmc_eeprom"]
+
+    def set_product_name(self):
+        self.product_name = ["MINERVA_BMC"]
+
+    def set_location_on_fabric(self):
+        self.location_on_fabric = ["BMC"]
+
+    # overide for FBOSS EEPROMv4 format, display different
+    def set_eeprom_location(self):
+        self.test_eeprom_location = "EEPROM location on Fabric"
+
+    # overide for FBOSS EEPROMv4 format, display different
+    def set_odm_pcba_number(self):
+        self.odm_pcba_part_number = "ODM/JDM PCBA Part Number"
+        self.odm_pcba_serial_number = "ODM/JDM PCBA Serial Number"
+
+    # not asset tag field for FBOSS EEPROMv4 format
+    def test_asset_tag(self):
+        pass
+
+    # no mac field for BMC EEPROM
+    def test_extended_mac_base(self):
+        pass
+
+    # no mac field for BMC EEPROM
+    def test_local_mac(self):
+        pass

@@ -570,6 +570,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "P1V05 VR Version",
         ]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_scm(self):
         self.set_endpoint_firmware_info_scm_attributes()
         self.verify_endpoint_attributes(
@@ -608,6 +609,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "P1V05 VR Version",
         ]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_all(self):
         self.set_endpoint_firmware_info_all_attributes()
         self.verify_endpoint_attributes(

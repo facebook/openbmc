@@ -1,9 +1,11 @@
 #include <xyz/openbmc_project/Collection/DeleteAll/client.hpp>
+#include <xyz/openbmc_project/Common/Threshold/client.hpp>
 #include <xyz/openbmc_project/Control/FanPwm/client.hpp>
 #include <xyz/openbmc_project/Control/Mode/client.hpp>
 #include <xyz/openbmc_project/Inventory/Decorator/Asset/client.hpp>
 #include <xyz/openbmc_project/Inventory/Item/client.hpp>
 #include <xyz/openbmc_project/Logging/Entry/client.hpp>
+#include <xyz/openbmc_project/Metric/Value/client.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/Critical/client.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/HardShutdown/client.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/Warning/client.hpp>
@@ -74,6 +76,19 @@ inline auto path(size_t id)
            std::string(Proxy::namespace_path::entry) + "/" + std::to_string(id);
 }
 } // namespace log_entry
+
+namespace metric
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::metric::Value<>;
+static constexpr auto ns_path = Proxy::namespace_path::value;
+static constexpr auto interface = Proxy::interface;
+} // namespace metric
+
+namespace threshold
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::common::Threshold<>;
+static constexpr auto interface = Proxy::interface;
+} // namespace threshold
 
 namespace sensor
 {

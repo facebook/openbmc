@@ -59,4 +59,34 @@ fixup_phy_onlyevt() {
     echo -e "\nsetting PHY CHIP 88E1512 mode."
 }
 
+# set LPC signal strngth to weakest
+setup_LPC_signal_strength()
+{
+    SCU454=$(scu_addr 454)
+    SCU458=$(scu_addr 458)
+
+    # SCU454 : Multi-function Pin Control #15
+    # 31:30 - LAD3/ESPID3 Driving Strength
+    # 29:28 - LAD2/ESPID2 Driving Strength
+    # 27:26 - LAD1/ESPID1 Driving Strength
+    # 25:24 - LAD0/ESPID0 Driving Strength
+    #          3: strongest    0: weakest
+    # set strength value to 0
+    value=$(devmem "$SCU454")
+    value=$(( value & 0x00FFFFFF ))
+    devmem "$SCU454" 32 $value
+    
+    # SCU458 : Multi-function Pin Control #16
+    # 19:18 - LPCRSTN/ESPIRSTN Driving Strength
+    # 17:16 - LACDIRQ/ESPIALERT Driving Strength
+    # 15:14 - LPCFRAMEN/ESPICSN Driving Strength
+    # 13:12 - LPCCLK/ESPICLK Driving Strength
+    #          3: strongest    0: weakest
+    # set strength value to 0
+    value=$(devmem "$SCU458")
+    value=$(( value & 0xFFF00FFF ))
+    devmem "$SCU458" 32 $value
+}
+
 fixup_phy_onlyevt
+setup_LPC_signal_strength

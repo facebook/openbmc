@@ -10,8 +10,8 @@ This is the Facebook FBOSS BMC-Lite Rev1 OpenBMC.
 Test Plan:
 ---
  arch/arm/boot/dts/aspeed/Makefile             |  1 +
- .../aspeed/aspeed-bmc-facebook-fblite-r1.dts  | 90 +++++++++++++++++++
- 2 files changed, 91 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-fblite-r1.dts  | 94 +++++++++++++++++++
+ 2 files changed, 95 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
@@ -28,10 +28,10 @@ index 99980bdb2f16..87c97ab9426e 100644
  	aspeed-bmc-facebook-greatlakes.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
 new file mode 100644
-index 000000000000..497518671c55
+index 000000000000..4264bd3c7a6b
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,94 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) Meta Platforms, Inc. and affiliates.
 +
@@ -51,6 +51,10 @@ index 000000000000..497518671c55
 +		num-chipselects = <1>;
 +		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
 +	};
++};
++
++&i2c11 {
++	status = "okay";
 +};
 +
 +&lpc_ctrl {
@@ -123,5 +127,5 @@ index 000000000000..497518671c55
 +	};
 +};
 -- 
-2.43.0
+2.25.1
 

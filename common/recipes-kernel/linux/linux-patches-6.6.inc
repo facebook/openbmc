@@ -94,6 +94,14 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0200-mmc-sdhci-of-aspeed-add-skip_probe-module-parameter.patch \
 "
+
+#
+# Aspeed Soc drivers used by multiple OpenBMC platforms.
+#
+SRC_URI:append = " \
+    file://0201-soc-aspeed-Add-Post-Code-Control.patch \
+"
+
 #
 # Device drvier for OpenBMC platforms.
 #

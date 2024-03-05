@@ -86,7 +86,7 @@ else
   _distro="${DISTRO_OVERRIDE}"
 fi
 
-if [ -n "$BASH_SOURCE" ]; then
+if [ -n "${BASH_SOURCE[0]}" ]; then
     THIS_SCRIPT=$BASH_SOURCE
 elif [ -n "$ZSH_NAME" ]; then
     THIS_SCRIPT=$0
@@ -126,7 +126,7 @@ if [ -z "$TEMPLATECONF" ]; then
             machine=$(basename "$md" | sed 's/\.conf//')
             meta=$(dirname "$(dirname "$md")")
             meta=$(echo "$meta" | sed 's/\.\///')
-            if [ "x$machine" = "x$platform" ]; then
+            if [ "$machine" = "$platform" ]; then
                 TEMPLATECONF="$(pwd)/$meta/templates/default"
                 platform=$(basename "$(dirname "$meta")")
                 export MACHINE="${machine/-lf/}"
@@ -145,7 +145,7 @@ fi
 # If user is not overriding the distro, then see
 # if there are platform overrides.
 if [ -z "$DISTRO_OVERRIDE" ]; then
-    for override in ${PLAT_DISTRO_OVERRIDES[*]}; do
+    for override in "${PLAT_DISTRO_OVERRIDES[@]}"; do
         override_plat=${override%%:*}
         override_distro=${override##*:}
         if [ -z "${platform/${override_plat}/}" ]; then

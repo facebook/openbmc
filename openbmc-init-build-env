@@ -42,6 +42,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-harma:lf-master
   meta-inspirationpoint:lf-master
   meta-janga:lf-master
+  meta-javaisland:lf-master
   meta-meru:lf-master
   meta-minerva:lf-master
   meta-morgan800cc:lf-master

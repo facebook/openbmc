@@ -52,7 +52,8 @@ bool Scheduler::is_number(const string& task_id) const {
 string Scheduler::exec_and_print(const string& cmd) const {
 
   //use unique_ptr<T, del> so it can be automatically closed when we leave the scope.
-  unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+  auto pipe_close = [](auto fd) { (void)pclose(fd); };
+  unique_ptr<FILE, decltype(pipe_close)> pipe(popen(cmd.c_str(), "r"), pipe_close);
 
   if ( pipe == nullptr ) {
     throw std::runtime_error("Failed to run popen function!");

@@ -20,17 +20,28 @@
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
+#
+# Create mcbcpld as early as possible so the driver can be attached to
+# the device when power-on.service is triggered.
+#
+modprobe mcbcpld
+i2c_device_add 12 0x60 mcbcpld
+
 # FRU EEPROM
 i2c_device_add 3 0x56 24c64    # SCM FRU EEPROM#2
 i2c_device_add 6 0x53 24c64    # FCB_B EEPROM
 i2c_device_add 8 0x51 24c64    # BMC EEPROM
 
-# FPGA / CPLD
-# to access scmcpld need to enable I2C buffer by setting BMC_I2C2_EN to high
+#
+# scmcpld is not reachable until the isolation buffer is enabled.
+# FIXME:
+#   - do we really need the scmcpld driver in openbmc side??
+#   - we need to move gpio operations to setup_gpio, or fix the dependency
+#     between setup_i2c and setup_gpio service.
+#
 gpiocli -s BMC_I2C2_EN set-value 1
 sleep 1
 i2c_device_add 1 0x35 scmcpld
-i2c_device_add 12 0x60 mcbcpld
 
 # CPU IPMI
 ulimit -q 1024000

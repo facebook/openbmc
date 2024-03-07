@@ -50,7 +50,7 @@ class SyslogRestartTest(TestCase):
         self._ensure_rsyslog_working()
 
     def _get_pid(self):
-        result = subprocess.run(["pidof", "rsyslogd"], stdout=subprocess.PIPE)
+        result = subprocess.run(["pidof", "-s", "rsyslogd"], stdout=subprocess.PIPE)
         pid = result.stdout.strip()
         if len(pid) == 0:
             raise SyslogRestartTestError(

@@ -58,23 +58,6 @@ retry_command() {
     return 0
 }
 
-do_sync() {
-   # Try to flush all data to MMC and remount the drive read-only. Sync again
-   # because the remount is asynchronous.
-   partition="/dev/mmcblk0"
-   mountpoint="/mnt/data1"
-
-   sync
-   # rsyslogd logs to eMMC, so we must stop it prior to remouting.
-   systemctl stop syslog.socket rsyslog.service
-   sleep .05
-   if [ -e $mountpoint ]; then
-      retry_command 5 mount -o remount,ro $partition $mountpoint
-      sleep 1
-   fi
-   sync
-}
-
 wedge_board_type() {
     echo 'meru'
 }
@@ -161,7 +144,6 @@ userver_reset() {
 }
 
 chassis_power_cycle() {
-    do_sync
     sleep 1
     i2cset -y -f 12 0x43 0x70 0xDE
     sleep 8

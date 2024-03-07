@@ -24,7 +24,7 @@ import argparse
 import subprocess
 
 
-VERSION = "1.0"
+VERSION = "1.1"
 
 
 def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
@@ -69,15 +69,6 @@ def dumpWeutil(target="BMC", verbose=False):
             target, runCmd(cmd, echo=verbose, verbose=verbose)
         )
     )
-
-
-def dumpEmmc():
-    print("################################")
-    print("######## eMMC debug log ########")
-    print("################################\n")
-    cmdBase = "/usr/local/bin/mmcraw {} /dev/mmcblk0"
-    print(runCmd(cmdBase.format("show-summary"), echo=True, verbose=True))
-    print(runCmd(cmdBase.format("read-cid"), echo=True, verbose=True))
 
 
 def dumpBootInfo():
@@ -173,7 +164,6 @@ def showtech(quietLevel=0):
         dumpWeutil("bmc", verbose=verbose)
         dumpWeutil("scm", verbose=verbose)
         dumpWeutil("smb", verbose=verbose)
-        dumpEmmc()
         dumpBootInfo()
         dumpOobStatus()
         i2cDetectDump()

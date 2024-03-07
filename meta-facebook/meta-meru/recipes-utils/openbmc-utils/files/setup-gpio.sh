@@ -49,7 +49,6 @@ setup_gpio_meru_evt() {
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOV1 CPU_RST_L
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOY0 WDT1_RST
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOY2 SCM_TEMP_ALERT
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOY3 BMC_EMMC_RST
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ2 BMC_LITE_L
 }
 
@@ -73,13 +72,10 @@ gpio_set_direction SW_SPI_SEL out
 gpio_set_direction CPU_RST_L in
 gpio_set_direction WDT1_RST out
 gpio_set_direction SCM_TEMP_ALERT in
-gpio_set_direction BMC_EMMC_RST out
 gpio_set_direction BMC_LITE_L out
 
 # Once we set "out", output values will be random unless we set them
 # Set Default GPIO values
-# Set BMC_EMMC_RST High to prevent EMMC disable
-gpio_set BMC_EMMC_RST 1
 
 gpio_set_value ABOOT_GRAB 0
 gpio_set_value BMC_ALIVE 1

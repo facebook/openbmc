@@ -33,13 +33,6 @@ GPIOS = {
         "uevent": "",
         "value": "1",
     },
-    "BMC_EMMC_RST": {
-        "active_low": "0",
-        "direction": "out",
-        "edge": "none",
-        "uevent": "",
-        "value": "1",
-    },
     "BMC_LITE_L": {
         "active_low": "0",
         "direction": "out",

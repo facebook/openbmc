@@ -71,6 +71,16 @@ mac_addr_inc() {
     printf "%012X" "$new_mac" | sed 's/../&:/g;s/:$//'
 }
 
+#
+# Lookup mtd device based on name/label.
+# $1 - mtd partition name/label.
+#
+mtd_lookup_by_name() {
+    mtd=$(awk -v name="$1" '$4~name {print $1}' /proc/mtd |
+          cut -d ':' -f 1)
+    echo "$mtd"
+}
+
 source "/usr/local/bin/shell-utils.sh"
 source "/usr/local/bin/i2c-utils.sh"
 source "/usr/local/bin/gpio-utils.sh"

@@ -42,4 +42,5 @@ IMAGE_INSTALL += " \
   mac-util \
   usbutils \
   usb-console \
+  wedge-eeprom \
   "

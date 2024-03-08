@@ -1,0 +1,62 @@
+From 6e15f71291c5b1ab7bbed0d97ab5e865888fbfbe Mon Sep 17 00:00:00 2001
+From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
+Date: Tue, 5 Mar 2024 15:15:49 +0800
+Subject: [PATCH] Adjust resistor-calibration for matching hardware design
+
+This patch is for hardware testing. According to the datasheet and
+upstream review comment, resistor-calibration should be calculated,
+and we should set external shunt on DTS instead. We will revise the
+ina233 driver by the upstream review comment and contribute the code
+once we finish.
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts  | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index 45248c31db22..a8b724049e83 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -1079,35 +1079,35 @@ adc@37 {
+ 	power-sensor@40 {
+ 		compatible = "ti,ina233";
+ 		reg = <0x40>;
+-		resistor-calibration = /bits/ 16 <0x0a00>;
++		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@41 {
+ 		compatible = "ti,ina233";
+ 		reg = <0x41>;
+-		resistor-calibration = /bits/ 16 <0x0a00>;
++		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@42 {
+ 		compatible = "ti,ina233";
+ 		reg = <0x42>;
+-		resistor-calibration = /bits/ 16 <0x0a00>;
++		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@43 {
+ 		compatible = "ti,ina233";
+ 		reg = <0x43>;
+-		resistor-calibration = /bits/ 16 <0x0a00>;
++		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@44 {
+ 		compatible = "ti,ina233";
+ 		reg = <0x44>;
+-		resistor-calibration = /bits/ 16 <0x0a00>;
++		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+-- 
+2.25.1
+

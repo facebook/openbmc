@@ -12,5 +12,5 @@ SRC_URI += " \
     file://0509-Meta-yv4-dts-add-mac-config-property.patch \
     file://0510-yosemite4-Add-EEPROMs-for-NICs-in-DTS.patch \
     file://0511-Add-ina233-and-ina238-devicetree-config.patch \
+    file://0512-Adjust-resistor-calibration-for-matching-hardware-de.patch \
 "
-

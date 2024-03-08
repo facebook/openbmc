@@ -211,3 +211,13 @@ class GtaBicFwRecoveryComponent : public Component {
   int update(string image) override;
   int fupdate(string image) override;
 };
+
+class GTAASICComponent : public PldmComponent, public Component {
+  public:
+    GTAASICComponent (const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t component_identifier, 
+        int wait_apply_time)
+	: PldmComponent(fru, comp, bus, eid, component_identifier, wait_apply_time), Component(fru, comp) {}
+    int get_version(json& /*json*/);
+    int update(std::string image); // firmware update
+    int fupdate(std::string image); // force firmware update
+};

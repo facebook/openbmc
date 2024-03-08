@@ -314,6 +314,25 @@ error_exit:
   return ret;
 }
 
+int get_dev_ver(uint8_t bus, uint8_t eid, uint8_t target, vector<uint8_t> &data) {
+  uint8_t tbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t tlen=0;
+  size_t rlen = 0;
+  int rc;
+
+  tbuf[tlen++] = target;
+
+  rc = oem_pldm_ipmi_send_recv(bus, eid,
+                               NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER,
+                               tbuf, tlen,
+                               rbuf, &rlen, true);
+  if (rc == 0) {
+    data = vector<uint8_t>(rbuf, rbuf + rlen);
+  }
+  return rc;
+}
+
 int SwbBicFwComponent::update(string image)
 {
   return fw_update_proc(image, false, bus, eid, target, this->alias_component(), this->alias_fru());
@@ -821,7 +840,7 @@ int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t sp
     if (force) {
       if (isValidImage == 0) {
         cout << "PLDM image detected." << endl;
-        return pldm_update(image, specified_comp);
+        return pldm_update(image, false, specified_comp);
       } else {
         cout << "Raw image detected." << endl;
         return comp_fupdate(image);
@@ -829,7 +848,7 @@ int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t sp
     } else {
       if (isValidImage == 0) {
         if (is_pldm_info_valid() == 0) {
-          return pldm_update(image, specified_comp);
+          return pldm_update(image, false, specified_comp);
         } else {
           cerr << "Non-valid package info." << endl;
           return -1;
@@ -1301,6 +1320,96 @@ int GtaBicFwRecoveryComponent::fupdate(string image) {
 exit:
   gta_bic_recovery_post(fruid, true);
   return ret;
+}
+
+int GTAASICComponent::update(std::string image) {
+  return pldm_update(image, true, component_identifier);
+}
+
+int GTAASICComponent::fupdate(std::string image) {
+  return pldm_update(image, true, component_identifier);
+}
+
+bool print_version_flag[FRU_ACB_ACCL_CNT * 2] = {
+  false, false, false, false, false, false, false, false, false, false, false, false,
+  false, false, false, false, false, false, false, false, false, false, false, false
+};
+
+int GTAASICComponent::get_version(json& j) {
+  vector<uint8_t> version = {};
+  int ret = 0;
+  uint8_t fruid = 0;
+  uint8_t devid = 0;
+  uint8_t compid = component_identifier - DEV_BASE_COMP;
+  uint8_t status = 0;
+  uint8_t device_status_fail = 1;
+
+  if (compid >= (FRU_ACB_ACCL_CNT * 2)) {
+    return FW_STATUS_FAILURE;
+  }
+
+  if (print_version_flag[compid] != false) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
+  stringstream comp_str;
+  string key = "asic" + to_string(compid) + "_ver";
+  char value[MAX_VALUE_LEN] = {0};
+
+  ret = pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
+  if (ret != 0) {
+    return FW_STATUS_FAILURE;
+  }
+
+  comp_str << this->alias_fru() << ' ' << this->alias_component().substr(0, 4);
+  string rw_str = comp_str.str();
+  transform(rw_str.begin(),rw_str.end(), rw_str.begin(),::toupper);
+  j["PRETTY_COMPONENT"] = rw_str;
+
+  if (kv_get(key.c_str(), value, NULL, 0) == 0) {
+    j["VERSION"] = string(value);
+    print_version_flag[compid] = true;
+    return FW_STATUS_SUCCESS;
+  }
+
+  devid = ((compid % 2) ? DEV_ID2 : DEV_ID1);
+  ret = pal_is_dev_prsnt(fruid, devid, &status);
+  if (ret != 0) {
+    return FW_STATUS_FAILURE;
+  }
+
+  if (ret == 0 && status == FRU_NOT_PRSNT) {
+    j["VERSION"] = "NA (DEVICE NOT PRESENT)";
+    print_version_flag[compid] = true;
+    return FW_STATUS_SUCCESS;
+  }
+
+  ret = get_dev_ver(bus, eid, component_identifier, version);
+  if (ret != 0 || version.empty()) {
+    j["VERSION"] = "NA";
+  } else if (version[2] == device_status_fail) {
+    j["VERSION"] = "NA (NVME NOT READY)";
+  } else if (version[3] == device_status_fail) {
+    j["VERSION"] = "NA (DEVICE IDENTIFIER NOT SUPPORT)";
+  } else if (version[4] != device_status_fail) {
+    j["VERSION"] = "NA (DEVICE NOT ACCELERATOR)";
+  } else {
+    stringstream ver_stream;
+    string ver_str;
+    ver_stream << std::setfill('0')
+      << 'v'
+      << +version[5] << '.'  // major version
+      << +version[6] << '.'  // minor version
+      << +version[7] << '.'  // addition version
+      << +version[8] << '.'  // sec major version
+      << +version[9];        // sec minor version
+    ver_str = ver_stream.str();
+    j["VERSION"] = ver_str;
+    kv_set(key.c_str(), ver_str.c_str(), 0, 0);
+  }
+
+  print_version_flag[compid] = true;
+  return FW_STATUS_SUCCESS;
 }
 
 namespace pldm_signed_info

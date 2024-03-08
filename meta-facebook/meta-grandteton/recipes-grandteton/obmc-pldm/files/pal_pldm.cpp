@@ -79,6 +79,10 @@ pldm_firmware_parameter_handler::swb_cache_handle (
 
   string bic_ver = (activeCompImageSetVerStr.length == 0)?"":(const char*)activeCompImageSetVerStr.ptr;
   string bic_active_key  = fmt::format("{}_bic_active_ver", _fru_name);
+
+  if (compEntry.comp_identifier >= comp_str_t.size()) {
+    return SWB_FW_BIC_ERROR;
+  }
   string comp_name = comp_str_t[compEntry.comp_identifier];
   string comp_active_key = fmt::format("{}_{}_active_ver", _fru_name, comp_name);
   string comp_active_ver = (activeCompVerStr.length == 0)?"":(const char*)activeCompVerStr.ptr;

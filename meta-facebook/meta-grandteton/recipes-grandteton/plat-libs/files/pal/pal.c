@@ -1331,6 +1331,13 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
           return -1;
         }
       }
+
+      if (fruid != FRU_ACB) {
+	// ACCL fru need to block MB power controlling
+        if ( _pal_kv_set_fw_update_ongoing(FRU_MB, tmout) < 0 ) {
+          return -1;
+	}
+      }
       break;
     case FRU_MEB:
     case FRU_MEB_JCN1:

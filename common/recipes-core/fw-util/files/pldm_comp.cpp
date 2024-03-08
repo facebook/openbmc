@@ -87,13 +87,14 @@ int PldmComponent::del_raw_image() const
   return remove(raw_image.c_str());
 }
 
-int PldmComponent::pldm_update(const string& image, uint8_t specified_comp) {
+int PldmComponent::pldm_update(const string& image, bool is_standard_descriptor, uint8_t specified_comp) {
 
   int ret;
 
   syslog(LOG_CRIT, "FRU %s Component %s upgrade initiated", fru.c_str(), component.c_str());
 
-  ret = oem_pldm_fw_update(bus, eid, (char *)image.c_str(), specified_comp);
+  ret = oem_pldm_fw_update(bus, eid, (char *)image.c_str(), is_standard_descriptor,
+    component, wait_apply_time, specified_comp);
 
   if (ret)
     syslog(LOG_CRIT, "FRU %s Component %s upgrade fail", fru.c_str(), component.c_str());

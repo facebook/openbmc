@@ -17,6 +17,10 @@
 #define ACB_CPLD_ADDR 0x40
 #define MEB_CPLD_ADDR 0x40
 
+#define WAITING_ASIC_QSPI_APPLY_TIME_S 10
+#define WAITING_ASIC_PSOC_APPLY_TIME_S 65
+#define WAITING_APPLY_TIME_DEFAULT_S 0
+
 using namespace std;
 //MEB CXL VR Component
 class CxlVrComponent : public VrComponent {
@@ -46,15 +50,6 @@ struct fruid_map fru_map[] = {
   {FRU_MEB_JCN10, "mc_cxl4"},
   {FRU_MEB_JCN11, "mc_cxl1"},
   {FRU_MEB_JCN12, "mc_cxl2"},
-};
-
-class M2DevComponent : public Component {
-  protected:
-    uint8_t bus, eid, target;
-  public:
-    M2DevComponent(string fru, string comp, uint8_t bus, uint8_t eid, uint8_t target)
-      :  Component(fru, comp), bus(bus), eid(eid), target(target) {}
-    int get_version(json& j) override;
 };
 
 static int
@@ -245,91 +240,6 @@ int CxlVrComponent::get_version(json& j) {
   return FW_STATUS_SUCCESS;
 }
 
-int get_dev_ver(uint8_t bus, uint8_t eid, uint8_t target, vector<uint8_t> &data) {
-  uint8_t tbuf[MAX_TXBUF_SIZE] = {0};
-  uint8_t rbuf[MAX_RXBUF_SIZE] = {0};
-  uint8_t tlen=0;
-  size_t rlen = 0;
-  int rc;
-
-  tbuf[tlen++] = target;
-
-  rc = oem_pldm_ipmi_send_recv(bus, eid,
-                               NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER,
-                               tbuf, tlen,
-                               rbuf, &rlen, true);
-  if (rc == 0) {
-    data = vector<uint8_t>(rbuf, rbuf + rlen);
-  }
-  return rc;
-}
-
-int M2DevComponent::get_version(json& j) {
-  vector<uint8_t> version = {};
-  int ret = 0;
-  uint8_t fruid = 0;
-  uint8_t devid = 0;
-  uint8_t status = 0;
-  stringstream comp_str;
-  string key = "asic" + to_string(target - DEV_BASE_COMP) + "_ver";
-  char value[MAX_VALUE_LEN] = {0};
-
-  comp_str << this->alias_fru() << ' ' << this->alias_component();
-  string rw_str = comp_str.str();
-  transform(rw_str.begin(),rw_str.end(), rw_str.begin(),::toupper);
-  j["PRETTY_COMPONENT"] = rw_str;
-
-  if (kv_get(key.c_str(), value, NULL, 0) == 0) {
-    j["VERSION"] = string(value);
-    return FW_STATUS_SUCCESS;
-  }
-
-  ret = pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
-  if (ret != 0) {
-    return FW_STATUS_FAILURE;
-  }
-
-  ret = pal_get_dev_id((char *)this->alias_component().c_str(), &devid);
-  if (ret != 0) {
-    return FW_STATUS_FAILURE;
-  }
-
-  ret = pal_is_dev_prsnt(fruid, devid, &status);
-  if (ret != 0) {
-    return FW_STATUS_FAILURE;
-  }
-
-  if (ret == 0 && status == FRU_NOT_PRSNT) {
-    j["VERSION"] = "NA (DEVICE NOT PRESENT)";
-    return FW_STATUS_SUCCESS;
-  }
-
-  ret = get_dev_ver(bus, eid, target, version);
-  if (ret != 0 || version.empty()) {
-    j["VERSION"] = "NA";
-  } else if (version[2] == NVME_NOT_READY) {
-    j["VERSION"] = "NA (NVME NOT READY)";
-  } else if (version[3] == IDENTIFIER_NOT_SUPPORT) {
-    j["VERSION"] = "NA (DEVICE IDENTIFIER NOT SUPPORT)";
-  } else if (version[4] != FFI_0_ACCELERATOR) {
-    j["VERSION"] = "NA (DEVICE NOT ACCELERATOR)";
-  } else {
-    stringstream ver_stream;
-    string ver_str;
-    ver_stream << std::setfill('0')
-      << 'v'
-      << +version[5] << '.'  // major version
-      << +version[6] << '.'  // minor version
-      << +version[7] << '.'  // addition version
-      << +version[8] << '.'  // sec major version
-      << +version[9];        // sec minor version
-    ver_str = ver_stream.str();
-    j["VERSION"] = ver_str;
-    kv_set(key.c_str(), ver_str.c_str(), 0, 0);
-  }
-  return FW_STATUS_SUCCESS;
-}
-
 namespace pldm_signed_info
 {
 GTSwbBicFwComponent acb_bic("cb", "bic", ACB_BIC_BUS, ACB_BIC_EID, BIC_COMP,
@@ -351,31 +261,54 @@ GTSwbPexFwComponent acb_pesw1("cb", "pesw1", ACB_BIC_BUS, ACB_BIC_EID, PEX1_COMP
 GtaBicFwRecoveryComponent cb_bic_recovery("cb", "bic_recovery", ACB_BIC_BUS, ACB_BIC_EID, BIC_COMP);
 GtaBicFwRecoveryComponent mc_bic_recovery("mc", "bic_recovery", MEB_BIC_BUS, MEB_BIC_EID, BIC_COMP);
 
-M2DevComponent cb_accl1_dev1("cb_accl1", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL1_DEV1_COMP);
-M2DevComponent cb_accl1_dev2("cb_accl1", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL1_DEV2_COMP);
-M2DevComponent cb_accl2_dev1("cb_accl2", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL2_DEV1_COMP);
-M2DevComponent cb_accl2_dev2("cb_accl2", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL2_DEV2_COMP);
-M2DevComponent cb_accl3_dev1("cb_accl3", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL3_DEV1_COMP);
-M2DevComponent cb_accl3_dev2("cb_accl3", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL3_DEV2_COMP);
-M2DevComponent cb_accl4_dev1("cb_accl4", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL4_DEV1_COMP);
-M2DevComponent cb_accl4_dev2("cb_accl4", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL4_DEV2_COMP);
-M2DevComponent cb_accl5_dev1("cb_accl5", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL5_DEV1_COMP);
-M2DevComponent cb_accl5_dev2("cb_accl5", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL5_DEV2_COMP);
-M2DevComponent cb_accl6_dev1("cb_accl6", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL6_DEV1_COMP);
-M2DevComponent cb_accl6_dev2("cb_accl6", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL6_DEV2_COMP);
-M2DevComponent cb_accl7_dev1("cb_accl7", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL7_DEV1_COMP);
-M2DevComponent cb_accl7_dev2("cb_accl7", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL7_DEV2_COMP);
-M2DevComponent cb_accl8_dev1("cb_accl8", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL8_DEV1_COMP);
-M2DevComponent cb_accl8_dev2("cb_accl8", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL8_DEV2_COMP);
-M2DevComponent cb_accl9_dev1("cb_accl9", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL9_DEV1_COMP);
-M2DevComponent cb_accl9_dev2("cb_accl9", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL9_DEV2_COMP);
-M2DevComponent cb_accl10_dev1("cb_accl10", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL10_DEV1_COMP);
-M2DevComponent cb_accl10_dev2("cb_accl10", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL10_DEV2_COMP);
-M2DevComponent cb_accl11_dev1("cb_accl11", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL11_DEV1_COMP);
-M2DevComponent cb_accl11_dev2("cb_accl11", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL11_DEV2_COMP);
-M2DevComponent cb_accl12_dev1("cb_accl12", "dev1", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL12_DEV1_COMP);
-M2DevComponent cb_accl12_dev2("cb_accl12", "dev2", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL12_DEV2_COMP);
-
+GTAASICComponent cb_accl1_dev1_psoc("cb_accl1", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL1_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl1_dev1_qspi("cb_accl1", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL1_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl1_dev2_psoc("cb_accl1", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL1_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl1_dev2_qspi("cb_accl1", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL1_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl2_dev1_psoc("cb_accl2", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL2_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl2_dev1_qspi("cb_accl2", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL2_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl2_dev2_psoc("cb_accl2", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL2_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl2_dev2_qspi("cb_accl2", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL2_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl3_dev1_psoc("cb_accl3", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL3_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl3_dev1_qspi("cb_accl3", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL3_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl3_dev2_psoc("cb_accl3", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL3_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl3_dev2_qspi("cb_accl3", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL3_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl4_dev1_psoc("cb_accl4", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL4_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl4_dev1_qspi("cb_accl4", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL4_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl4_dev2_psoc("cb_accl4", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL4_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl4_dev2_qspi("cb_accl4", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL4_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl5_dev1_psoc("cb_accl5", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL5_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl5_dev1_qspi("cb_accl5", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL5_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl5_dev2_psoc("cb_accl5", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL5_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl5_dev2_qspi("cb_accl5", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL5_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl6_dev1_psoc("cb_accl6", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL6_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl6_dev1_qspi("cb_accl6", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL6_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl6_dev2_psoc("cb_accl6", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL6_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl6_dev2_qspi("cb_accl6", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL6_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl7_dev1_psoc("cb_accl7", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL7_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl7_dev1_qspi("cb_accl7", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL7_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl7_dev2_psoc("cb_accl7", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL7_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl7_dev2_qspi("cb_accl7", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL7_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl8_dev1_psoc("cb_accl8", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL8_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl8_dev1_qspi("cb_accl8", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL8_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl8_dev2_psoc("cb_accl8", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL8_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl8_dev2_qspi("cb_accl8", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL8_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl9_dev1_psoc("cb_accl9", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL9_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl9_dev1_qspi("cb_accl9", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL9_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl9_dev2_psoc("cb_accl9", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL9_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl9_dev2_qspi("cb_accl9", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL9_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl10_dev1_psoc("cb_accl10", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL10_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl10_dev1_qspi("cb_accl10", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL10_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl10_dev2_psoc("cb_accl10", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL10_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl10_dev2_qspi("cb_accl10", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL10_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl11_dev1_psoc("cb_accl11", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL11_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl11_dev1_qspi("cb_accl11", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL11_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl11_dev2_psoc("cb_accl11", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL11_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl11_dev2_qspi("cb_accl11", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL11_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl12_dev1_psoc("cb_accl12", "dev1_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL12_DEV1_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl12_dev1_qspi("cb_accl12", "dev1_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL12_DEV1_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
+GTAASICComponent cb_accl12_dev2_psoc("cb_accl12", "dev2_psoc", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL12_DEV2_COMP, WAITING_ASIC_PSOC_APPLY_TIME_S);
+GTAASICComponent cb_accl12_dev2_qspi("cb_accl12", "dev2_qspi", ACB_BIC_BUS, ACB_BIC_EID, CB_ACCL12_DEV2_COMP, WAITING_ASIC_QSPI_APPLY_TIME_S);
 
 bool is_cxl_present() {
   uint8_t i = 0;

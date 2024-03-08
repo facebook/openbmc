@@ -6,7 +6,10 @@ BIC_BOOT_STRAP_SPI_VAL="0x00"
 BIC_BOOT_STRAP_REG="0x0C"
 
 show_usage() {
-  echo "Usage: bic-updater.sh [sd|ff|wf] (--rcvy <slot_id> <uart image>) <pldm image>"
+  echo "Usage: bic-updater.sh [sd|ff|wf] (--rcvy <slot_id> <uart image>) (<slot_id>) <pldm image>"
+  echo "       update all BICs  : bic-updater.sh [sd|ff|wf] <pldm image>"
+  echo "       update one BIC   : bic-updater.sh [sd|ff|wf] <slot_id> <pldm image>"
+  echo "       recovery one BIC : bic-updater.sh [sd|ff|wf] --rcvy <slot_id> <uart image> <pldm image>"
   echo ""
 }
 
@@ -102,9 +105,74 @@ update_bic() {
 	fi
 }
 
+update_all_slots() {
+	local is_recovery=$1
+	local user_specific_slot_id=$2
+
+	if [ "$is_recovery" == false ] && [ -z "$user_specific_slot_id" ]; then
+		# 0 = true
+		return 0
+	else
+		return 1
+	fi
+}
+
+update_single_slot() {
+	local slot_id=$1
+	local user_specific_slot_id=$2
+	local is_recovery=$3
+
+	if [ "$is_recovery" == false ] && [ "$slot_id" == "$user_specific_slot_id" ]; then
+		# 0 = true
+		return 0
+	else
+		return 1
+	fi
+}
+
+conduct_normal_update_and_updated_slot() {
+	local slot_id=$1
+	local user_specific_slot_id=$2
+	local is_recovery=$3
+
+	if update_single_slot "$slot_id" "$user_specific_slot_id" "$is_recovery" ; then
+		# 0 = true
+		return 0
+	elif update_all_slots "$is_recovery" "$user_specific_slot_id"; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+conduct_recovery_and_not_recovered_slot() {
+	local slot_id=$1
+	local user_specific_slot_id=$2
+	local is_recovery=$3
+
+	if [ "$is_recovery" == true ] && [ "$slot_id" != "$user_specific_slot_id" ]; then
+		# 0 = true
+		return 0
+	else
+		return 1
+	fi
+}
+
+is_sd_bic() {
+	local slot_id=$1
+	local mctp_exp_id=$2
+
+	if [[ "$slot_id" -ge 1 && "$slot_id" -le 8 && "$mctp_exp_id" == "0" ]]; then
+		# 0 = true
+		return 0
+	else
+		return 1
+	fi
+}
+
 # Function to prompt for continuation and check user input
 prompt_confirmation() {
-  echo "WARNING! This tool will automatically update all BICs."
+  echo "WARNING! This will automatically update all BICs."
   read -r -p "Continue? [y/N] " continue
   if [ "$continue" != "y" ]; then
     echo "Aborting on user request."
@@ -134,12 +202,16 @@ if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
   uart_image=$4
   [ ! -f "$uart_image" ] && error_and_exit "UART"
   pldm_image=$5
+elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
+  slot_id=$2
+  pldm_image=$3
+  pldm-package-re-wrapper bic -s "$slot_id" -f "$pldm_image"
+  pldm_image="${pldm_image}_re_wrapped"
+else
+  prompt_confirmation
 fi
 
 [ ! -f "$pldm_image" ] && error_and_exit "PLDM"
-
-# Comfirmation with user
-prompt_confirmation
 
 # Execute recovery operations if in recovery mode, based on the value of bic_name
 if [ "$is_rcvy" == true ]; then
@@ -189,9 +261,13 @@ if [ "$bic_name" == "wf" ] || [ "$bic_name" == "ff" ]; then
 	do
 		mctp_slot_id=$((EID/10));
 		mctp_exp_id=$((EID%10));
-		if [ "$mctp_slot_id" != "$slot_id" ] && [ "$mctp_slot_id" != "0" ] && [ "$mctp_exp_id" == "0" ]; then
-			echo "Slot $mctp_slot_id: Restart BIC"
-			pldmtool raw -m "$mctp_slot_id"0 -d 0x80 0x02 0x39 0x1 0x1 0x1 0x1 0x1
+
+		if is_sd_bic "$mctp_slot_id" "$mctp_exp_id"; then
+			if conduct_recovery_and_not_recovered_slot "$mctp_slot_id" "$slot_id" "$is_rcvy" ||
+			conduct_normal_update_and_updated_slot "$mctp_slot_id" "$slot_id" "$is_rcvy"; then
+				echo "Slot $mctp_slot_id: Restart BIC"
+				pldmtool raw -m "$mctp_slot_id"0 -d 0x80 0x02 0x39 0x1 0x1 0x1 0x1 0x1
+			fi
 		fi
 	done
 

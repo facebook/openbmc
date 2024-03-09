@@ -34,7 +34,7 @@ struct command
         using utils::string::last_element;
         using utils::string::replace_substring;
 
-        auto result = R"({})"_json;
+        auto result = json::empty_map();
 
         debug("Finding Control.FanPwm objects.");
         co_await subtree_for_each(ctx, "/", control::fan_pwm::interface,

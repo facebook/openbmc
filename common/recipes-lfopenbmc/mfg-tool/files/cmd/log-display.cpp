@@ -32,7 +32,7 @@ struct command
     {
         namespace log_entry = dbuspath::log_entry;
 
-        auto result = R"({})"_json;
+        auto result = json::empty_map();
 
         info("Finding log entries.");
         co_await utils::mapper::subtree_for_each(

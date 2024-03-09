@@ -26,7 +26,7 @@ struct command
     {
         using utils::mapper::subtree_for_each;
 
-        auto result = R"({})"_json;
+        auto result = json::empty_map();
 
         debug("Finding chasses.");
         co_await subtree_for_each(ctx, chassis::ns_path, chassis::interface,

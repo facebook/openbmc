@@ -29,7 +29,7 @@ struct command
         namespace control = dbuspath::control;
         using utils::string::last_element;
 
-        auto result = R"({})"_json;
+        auto result = json::empty_map();
 
         debug("Finding Control.Mode objects.");
         co_await utils::mapper::subtree_for_each(

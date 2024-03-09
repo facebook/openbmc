@@ -31,7 +31,7 @@ struct command
 
     auto run(sdbusplus::async::context& ctx) -> sdbusplus::async::task<>
     {
-        auto result = R"({})"_json;
+        auto result = json::empty_map();
 
         info("Finding sensor entries.");
         co_await utils::mapper::subtree_for_each(

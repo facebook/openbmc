@@ -28,7 +28,7 @@ struct command
         namespace asset = dbuspath::inventory::asset;
         using utils::mapper::subtree_for_each_interface;
 
-        auto result = R"({})"_json;
+        auto result = json::empty_map();
 
         co_await subtree_for_each_interface(
             ctx, item::ns_path, asset::interface,
@@ -42,6 +42,12 @@ struct command
             {
                 co_return;
             }
+
+            // Insert the interface into the JSON so it shows up even if it
+            // doesn't have any properties.
+            auto& iface_result =
+                result[strip_path(path)][strip_intf(interface)];
+            iface_result = json::empty_map();
 
             debug("Getting properties.");
             for (const auto& [property, value] :
@@ -57,12 +63,8 @@ struct command
                 {
                     continue;
                 }
-                std::visit(
-                    [&](const auto& v) {
-                    result[strip_path(path)][strip_intf(interface)][property] =
-                        v;
-                },
-                    value);
+                std::visit([&](const auto& v) { iface_result[property] = v; },
+                           value);
             }
         });
 

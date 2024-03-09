@@ -10,6 +10,7 @@
 #include <xyz/openbmc_project/Sensor/Threshold/HardShutdown/client.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/Warning/client.hpp>
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
+#include <xyz/openbmc_project/State/BMC/client.hpp>
 #include <xyz/openbmc_project/State/Chassis/client.hpp>
 #include <xyz/openbmc_project/State/Host/client.hpp>
 
@@ -57,6 +58,19 @@ inline auto path_prefix()
 }
 
 } // namespace host
+
+namespace bmc
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::state::BMC<>;
+static constexpr auto ns_path = Proxy::namespace_path::value;
+static const auto interface = Proxy::interface;
+
+inline auto path()
+{
+    return std::string(ns_path) + "/" + std::string(Proxy::namespace_path::bmc);
+}
+
+} // namespace bmc
 
 namespace delete_all
 {

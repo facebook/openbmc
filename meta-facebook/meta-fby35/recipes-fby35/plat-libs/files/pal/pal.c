@@ -2293,6 +2293,7 @@ pal_is_slot_server(uint8_t fru)
         case SERVER_TYPE_CL:
         case SERVER_TYPE_HD:
         case SERVER_TYPE_GL:
+        case SERVER_TYPE_JI:
           return 1;
         default:
           return 0;

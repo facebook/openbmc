@@ -28,6 +28,9 @@ image_info CpldComponent::check_image(const string& image, bool force) {
       case SERVER_TYPE_GL:
         board_id = BOARD_ID_GL;
         break;
+      case SERVER_TYPE_JI:
+        board_id = BOARD_ID_JI;
+        break;
       default:
         board_id = BOARD_ID_SB;
     }

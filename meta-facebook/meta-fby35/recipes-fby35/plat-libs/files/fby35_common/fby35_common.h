@@ -305,6 +305,7 @@ enum {
   SERVER_TYPE_CL = 0x0,
   SERVER_TYPE_HD = 0x2,
   SERVER_TYPE_GL = 0x4,
+  SERVER_TYPE_JI = 0x5,
   SERVER_TYPE_NONE = 0xFF,
 };
 
@@ -403,6 +404,7 @@ enum board_id {
   BOARD_ID_VF = 7,
   BOARD_ID_GL = 8,
   BOARD_ID_NF = 9,
+  BOARD_ID_JI = 10,
 };
 
 enum {

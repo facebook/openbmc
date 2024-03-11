@@ -37,6 +37,9 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
         case SERVER_TYPE_CL:
           board_id = BOARD_ID_SB;
           break;
+        case SERVER_TYPE_JI:
+          board_id = BOARD_ID_JI;
+          break;
         default:
           syslog(LOG_WARNING, "Failed to identify Board ID.");
       }

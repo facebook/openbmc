@@ -24,7 +24,7 @@ import argparse
 import subprocess
 
 
-VERSION = "1.1"
+VERSION = "1.2"
 
 
 def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
@@ -103,6 +103,11 @@ def logDump():
     print(
         "#### LINUX MESSAGES LOG ####\n{}\n\n".format(
             runCmd("cat /var/log/messages", echo=True)
+        )
+    )
+    print(
+        "#### LOGFILE ####\n{}\n\n".format(
+            runCmd("cat /mnt/data/logfile", echo=True)
         )
     )
     print("################################")

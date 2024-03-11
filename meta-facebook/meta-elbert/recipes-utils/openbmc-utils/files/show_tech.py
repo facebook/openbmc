@@ -26,7 +26,7 @@ import subprocess
 import time
 
 
-VERSION = "1.0"
+VERSION = "1.1"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
@@ -201,6 +201,11 @@ def logDump():
     print(
         "#### LINUX MESSAGES LOG ####\n{}\n\n".format(
             runCmd("cat /var/log/messages", echo=True)
+        )
+    )
+    print(
+        "#### LOGFILE ####\n{}\n\n".format(
+            runCmd("cat /mnt/data/logfile", echo=True)
         )
     )
     print("################################")

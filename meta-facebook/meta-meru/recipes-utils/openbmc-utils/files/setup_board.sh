@@ -17,10 +17,24 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-serial_num=$(weutil -e scm | grep '^Product Serial Number:' | awk '{print $4}')
+SMB_EEPROM_SYSFS="/sys/bus/i2c/drivers/at24/9-0052/eeprom"
+NETWORK_CONF_FILE="/etc/systemd/network/10-eth0.network"
 
-if [[ "$serial_num" =~ JAS231406(4[5-9]|5[0-9]|6[0-4]) ]]; then
-    echo "Using 32M SPI flash layout"
-    cp /etc/meru_flash.layout /etc/meru_flash_64m.layout
-    cp /etc/meru_flash_32m.layout /etc/meru_flash.layout
+if [ ! -e "$SMB_EEPROM_SYSFS" ]; then
+    echo "No SMB eeprom found"
+    exit 0
 fi
+
+product=$(weutil -e smb 2>&1 | awk -F': ' '/Product Name:/ {print $2}')
+
+if [ "${product^^}" != "MERU800BFA" ]; then
+    # No need to configure vlan 4092 for other products.
+    exit 0
+fi
+
+echo "Configuring VLAN 4092"
+vlan4088cfg="VLAN=eth0.4088"
+vlan4092cfg="VLAN=eth0.4092"
+sed -i "s/$vlan4088cfg/$vlan4088cfg\n$vlan4092cfg/" "$NETWORK_CONF_FILE"
+cp /etc/meru-21-eth0.4092.network /etc/systemd/network/21-eth0.4092.network
+cp /etc/meru-21-eth0.4092.netdev /etc/systemd/network/21-eth0.4092.netdev

@@ -8,9 +8,6 @@
 # Check if another fw upgrade is ongoing
 check_fwupgrade_running
 
-# Block upgrade on non-P1 HW currently
-check_p1_scm
-
 trap cleanup INT TERM QUIT EXIT
 
 usage() {
@@ -30,11 +27,9 @@ cleanup() {
 disconnect_program_paths() {
     gpio_set_value BMC_LITE_L 0
     gpio_set_value JTAG_TRST_L 0
-    userver_power_on
 }
 
 connect_scm_jtag() {
-    userver_power_off
     gpio_set_value BMC_LITE_L 1
     gpio_set_value SW_JTAG_SEL 0
     gpio_set_value JTAG_TRST_L 1

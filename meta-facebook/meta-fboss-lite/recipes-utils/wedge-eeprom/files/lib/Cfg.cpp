@@ -21,11 +21,14 @@ WeCfg::WeCfg() {
   json jCfg = json::parse(f);
   json jdev = jCfg["eeprom devices"];
   //  json pltName = jCfg["platform"];
+  std::string name;
 
   for (json::iterator it = jdev.begin(); it != jdev.end(); ++it) {
     assert(it->find("name") != it->end());
     assert(it->find("sysfs_path") != it->end());
-    weCfgTbl_[(*it)["name"]] = (*it)["sysfs_path"];
+    name = (*it)["name"];
+    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    weCfgTbl_[name] = (*it)["sysfs_path"];
   }
 }
 
@@ -67,10 +70,12 @@ std::string WeCfg::eFormat(const std::string& ePath) {
 }
 
 std::optional<std::string> WeCfg::eepromNameToPath(const std::string& name) {
-  auto it = weCfgTbl_.find(name);
+  auto lc_name = name;
+  std::transform(lc_name.begin(), lc_name.end(), lc_name.begin(), ::tolower);
+  auto it = weCfgTbl_.find(lc_name);
   if (it == weCfgTbl_.end()) {
     return {};
   }
-  return weCfgTbl_[name];
+  return weCfgTbl_[lc_name];
 }
 } // namespace weutil

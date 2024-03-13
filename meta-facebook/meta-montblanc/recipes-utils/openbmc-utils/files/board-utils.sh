@@ -70,6 +70,12 @@ wedge_board_rev() {
 }
 
 userver_power_is_on() {
+    if [ ! -e "$PWR_FORCE_OFF" ] || [ ! -e "$PWR_COME_EN" ]; then
+        echo "Error: $PWR_FORCE_OFF does not exist! Is mcbcpld ready??"
+        echo "Assuming uServer is off!"
+        return 1
+    fi
+
     val1=$(head -n 1 < "$PWR_FORCE_OFF" 2> /dev/null)
     val2=$(head -n 1 < "$PWR_COME_EN" 2> /dev/null)
 
@@ -81,20 +87,30 @@ userver_power_is_on() {
 }
 
 userver_power_on() {
-    echo 1 > "$PWR_FORCE_OFF"
-    echo 1 > "$PWR_COME_EN"
+    if ! sysfs_write "$PWR_FORCE_OFF" 1; then
+        return 1
+    fi
+    if ! sysfs_write "$PWR_COME_EN" 1; then
+        return 1
+    fi
+
     return 0
 }
 
 userver_power_off() {
-    echo 0 > "$PWR_FORCE_OFF"
+    if ! sysfs_write "$PWR_FORCE_OFF" 0; then
+        return 1
+    fi
+
     return 0
 }
 
 userver_reset() {
     # write 0 to trigger CPLD power cycling COMe
     # then this bit will auto set to 1 after Power cycle finish
-    echo 0 > "$PWR_COME_CYCLE_N"
+    if ! sysfs_write "$PWR_COME_CYCLE_N" 0; then
+        return 1
+    fi
     
     timeout=10 #timeout 10 second
     while [ $((timeout)) -ge 0 ]; do
@@ -118,16 +134,19 @@ chassis_power_cycle() {
     # eg. TIMER_BASE set as 100MS
     #     TIMER_COUNTER_SETTING set as 50
     #     timer is 50 x 100ms = 5 sec.
+    #
+    # Fall through on failures.
+    #
+    sysfs_write "$TIMER_BASE_10S" 0
+    sysfs_write "$TIMER_BASE_1S" 0
+    sysfs_write "$TIMER_BASE_100MS" 1
+    sysfs_write "$TIMER_BASE_10MS" 0
+    sysfs_write "$TIMER_COUNTER_SETTING" 50
+    sysfs_write "$TIMER_COUNTER_SETTING_UPDATE" 1
 
-    echo 0 > "$TIMER_BASE_10S"
-    echo 0 > "$TIMER_BASE_1S"
-    echo 1 > "$TIMER_BASE_100MS"
-    echo 0 > "$TIMER_BASE_10MS"
-
-    echo 50 > "$TIMER_COUNTER_SETTING"
-
-    echo 1 > "$TIMER_COUNTER_SETTING_UPDATE"
-    echo 1 > "$POWER_CYCLE_GO"
+    if ! sysfs_write "$POWER_CYCLE_GO" 1; then
+        return 1
+    fi
 
     return 0
 }

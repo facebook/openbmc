@@ -15,4 +15,6 @@ SRC_URI += " \
     file://0512-Adjust-resistor-calibration-for-matching-hardware-de.patch \
     file://0513-ARM-dts-aspeed-yosemite4-Revise-i2c-duty-cycle.patch \
     file://0514-ARM-dts-aspeed-yosemite4-Enable-ipmb-device-for-OCP-.patch \
+    file://0515-pinctrl-pinctrl-aspeed-g6-correct-the-offset-of-SCU6.patch \
+    file://0516-ARM-dts-aspeed-yosemite4-disable-GPIO-internal-Pull-.patch \
 "

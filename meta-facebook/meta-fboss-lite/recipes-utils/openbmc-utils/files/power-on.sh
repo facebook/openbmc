@@ -31,10 +31,32 @@ source /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+do_power_on() {
+    retry=0
+    max_retry=5
+
+    while [ "$retry" -lt "$max_retry" ]; do
+        logger -p user.crit "Power on uServer (from power-on.sh).."
+
+        echo "Power on uServer.."
+        if userver_power_on; then
+            sleep 1
+            if userver_power_is_on; then
+                echo "uServer is powered on successfully."
+                return 0
+            fi
+        fi
+
+        retry=$((retry+1))
+        echo "Error: failed to power on uServer! Retry ($retry / $max_retry).."
+        sleep 1
+    done
+}
+
 echo "Checking x86 (userver) power status... "
 if userver_power_is_on; then
     echo "userver is already powered. Skipped."
     exit 0
 fi
 
-wedge_power.sh on -f
+do_power_on

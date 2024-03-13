@@ -13,15 +13,22 @@ SRC_URI += " \
     file://0007-requester-support-multi-host-MCTP-devices-hot-plug.patch \
     file://0008-Support-OEM-META-write-file-request-for-post-code-hi.patch \
     file://0009-platform-mc-fix-up-tid_t-to-pldm_tid_t-conversions.patch \
+    file://0010-Workaround-for-pldmd-memory-leak.patch \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
+    file://pldm-monitor-memory.sh\
+    file://pldm-monitor-memory.service \
 "
 
 FILES:${PN}:append = " \
     ${systemd_system_unitdir}/pldm-restart.sh \
+    ${systemd_system_unitdir}/pldm-monitor-memory.sh \
 "
 
-SYSTEMD_SERVICE:${PN} += "pldm-slow-restart.service"
+SYSTEMD_SERVICE:${PN} += " \
+    pldm-slow-restart.service \
+    pldm-monitor-memory.service \
+    "
 SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 
 do_install:append() {
@@ -29,5 +36,7 @@ do_install:append() {
     install -m 0444 ${WORKDIR}/host_eid ${D}/usr/share/pldm
     install -m 0755 ${WORKDIR}/pldm-restart.sh ${D}${datadir}/pldm/
     install -m 0644 ${WORKDIR}/pldm-slow-restart.service ${D}${systemd_system_unitdir}
+    install -m 0755 ${WORKDIR}/pldm-monitor-memory.sh ${D}${datadir}/pldm/
+    install -m 0644 ${WORKDIR}/pldm-monitor-memory.service ${D}${systemd_system_unitdir}
 }
 

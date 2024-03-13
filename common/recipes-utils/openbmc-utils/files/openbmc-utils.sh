@@ -81,6 +81,26 @@ mtd_lookup_by_name() {
     echo "$mtd"
 }
 
+#
+# Write a value to the given sysfs file.
+# $1 - sysfs pathname
+# $2 - input value
+#
+sysfs_write() {
+    pathname="$1"
+    value="$2"
+
+    if [ ! -e "$pathname" ]; then
+        echo "Error: $pathname does not exist!"
+        return 1
+    fi
+
+    if ! echo "$value" > "$pathname"; then
+        echo "Error: failed to write $value to $pathname!"
+        return 1
+    fi
+}
+
 source "/usr/local/bin/shell-utils.sh"
 source "/usr/local/bin/i2c-utils.sh"
 source "/usr/local/bin/gpio-utils.sh"

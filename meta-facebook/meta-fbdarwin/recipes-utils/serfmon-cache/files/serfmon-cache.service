@@ -17,6 +17,7 @@
 #
 [Unit]
 Description=Cache and print serfmon and macmon
+Before=configure-eth0.service
 After=mount_data1.service
 Wants=mount_data1.service
 

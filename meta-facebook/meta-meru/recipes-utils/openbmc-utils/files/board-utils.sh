@@ -109,6 +109,16 @@ wedge_board_rev() {
     echo "${board_rev}"
 }
 
+wedge_is_scm_p1()
+{
+    board_rev=$(wedge_board_rev)
+    if [ "${board_rev}" == "1" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
 userver_power_is_on() {
     isCpuReady="$(head -n 1 "$SCM_CPU_READY_SYSFS" 2> /dev/null)"
     if [ "$isCpuReady" = "0x1" ]; then
@@ -181,15 +191,6 @@ check_fwupgrade_running()
     fi
     pid=$$
     echo $pid 1>&200
-}
-
-check_p1_scm()
-{
-    board_rev=$(wedge_board_rev)
-    if [ "${board_rev}" != "1" ]; then
-        echo "Programming only supported on P1 SCM"
-        exit 1
-    fi
 }
 
 bind_spi_nor_driver() {

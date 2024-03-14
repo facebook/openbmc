@@ -36,6 +36,22 @@ connect_scm_jtag() {
 }
 
 do_scm() {
+    # verify the fpga file
+    revision=$(( $(awk '$0 ~ /NOTE.{1,30}A_REVISION/ {print $3}' "$2" |
+                   sed 's/[";]//g') ))
+
+    if [ "$revision" -lt 3 ]; then
+        if ! wedge_is_scm_p1; then
+            echo "P1 FPGA FILE not compatible with P4 Hardware!"
+            exit 1
+        fi
+    else
+        if wedge_is_scm_p1; then
+            echo "P4 FPGA FILE not compatible with P1 Hardware!"
+            exit 1
+        fi
+    fi
+
     connect_scm_jtag
     jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \
       --ioctl IOCBITBANG

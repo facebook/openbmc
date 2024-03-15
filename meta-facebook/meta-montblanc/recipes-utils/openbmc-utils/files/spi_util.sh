@@ -52,6 +52,12 @@ cleanup_spi() {
     #               to (X) NetLake CPU 0
     #                  ( ) BMC_SPI1    1
     gpiocli -s SPI_MUX_SEL set-value 0
+    # COME CPLD: BIOS_FLASH_CS0
+    #               to ( ) BMC_SPI1_CS1 0x7
+    #                  ( ) BMC_SPI1_CS0 0x5
+    #                  (X) SPI_PCH_CS0 0x4
+    #                  ( ) SPI_PCH_CS1 0x6
+    i2cset -f -y "$COMECPLD_I2C_BUS" "$COMECPLD_I2C_ADDR" 0xa 0x4
 
     rm -rf /tmp/.spi_util*
     rm -f "$PID_FILE"

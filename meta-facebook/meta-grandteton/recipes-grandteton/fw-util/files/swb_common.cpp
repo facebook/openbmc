@@ -807,56 +807,25 @@ int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t sp
   int isValidImage = oem_parse_pldm_package(image.c_str());
   string fru_name = (pal_is_artemis() ? _fru : "swb");
 
-  // Legacy way
-  if (is_pldm_supported(fru_name, bus, eid) < 0) {
-    if (force) {
-      return comp_fupdate(image);
+  if (force) {
+    if (isValidImage == 0) {
+      cout << "PLDM image detected." << endl;
+      return pldm_update(image, false, specified_comp);
     } else {
-      // PLDM image
-      if (isValidImage == 0) {
-        // Try to discard PLDM header
-        // Pex not support.
-        if (component.find("pex") != std::string::npos) {
-          cerr << "Pex not support PLDM image transfer" << endl;
-          return -1;
-        } else {
-          string raw_image{};
-          if (get_raw_image(image, raw_image) == FORMAT_ERR::SUCCESS) {
-            int ret = comp_fupdate(raw_image);
-            del_raw_image();
-            return ret;
-          } else {
-            cerr << "Can not do PLDM image transfer" << endl;
-            return -1;
-          }
-        }
-      // Raw image
-      } else {
-        return comp_update(image);
-      }
+      cout << "Raw image detected." << endl;
+      return comp_fupdate(image);
     }
-  // PLDM way
   } else {
-    if (force) {
-      if (isValidImage == 0) {
-        cout << "PLDM image detected." << endl;
+    if (isValidImage == 0) {
+      if (is_pldm_info_valid() == 0) {
         return pldm_update(image, false, specified_comp);
       } else {
-        cout << "Raw image detected." << endl;
-        return comp_fupdate(image);
-      }
-    } else {
-      if (isValidImage == 0) {
-        if (is_pldm_info_valid() == 0) {
-          return pldm_update(image, false, specified_comp);
-        } else {
-          cerr << "Non-valid package info." << endl;
-          return -1;
-        }
-      } else {
-        cerr << "Non-valid image header." << endl;
+        cerr << "Non-valid package info." << endl;
         return -1;
       }
+    } else {
+      cerr << "Non-valid image header." << endl;
+      return -1;
     }
   }
 }

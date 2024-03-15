@@ -22,18 +22,22 @@
 . /usr/local/bin/openbmc-utils.sh
 
 #
-# SMB/Chassis EEPROM 
+# Create SCM CPLD as early as possible so the driver can be attached to
+# the device when power-on.service is triggered.
 #
+modprobe scmcpld
+i2c_device_add 1 0x35 scmcpld
+
+#
+# Create "pwrcpld"
+#
+modprobe pwrcpld
+i2c_device_add 12 0x60 pwrcpld
+
+#
+# SMB/Chassis EEPROM
+#
+modprobe at24
 i2c_device_add 3 0x56 24c64
 # BMC EEPROM
-i2c_device_add 8 0x51 24c64    
-
-# Create SCM CPLD
-#
-i2c_device_add 1 0x35 scmcpld
-#
-
-#
-# Create PWR CPLD
-#
-i2c_device_add 12 0x60 pwrcpld
+i2c_device_add 8 0x51 24c64

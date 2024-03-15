@@ -122,3 +122,7 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0310-ARM-dts-aspeed-Enable-jtag1-in-fblite-r1-dts.patch \
 "
+
+SRC_URI:append = " \
+    file://0503-Revert-usb-gadget-f_ecm-Add-suspend-resume-and-remot.patch \
+"

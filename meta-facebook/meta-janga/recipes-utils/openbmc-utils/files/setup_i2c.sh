@@ -21,18 +21,22 @@
 . /usr/local/bin/openbmc-utils.sh
 
 #
-# SMB/Chassis EEPROM (note: SCM EEPROM does not exist in Janga).
+# Create SCM CPLD as early as possible so the driver can be attached to
+# the device when power-on.service is triggered.
 #
-i2c_device_add 3 0x56 24c64
-# BMC EEPROM
-i2c_device_add 8 0x51 24c64 
+modprobe scmcpld
+i2c_device_add 1 0x35 scmcpld
 
 #
 # Create "pwrcpld"
 #
+modprobe pwrcpld
 i2c_device_add 12 0x60 pwrcpld
 
 #
-# SCM CPLD
+# SMB/Chassis EEPROM (note: SCM EEPROM does not exist in Janga).
 #
-i2c_device_add 1 0x35 scmcpld
+modprobe at24
+i2c_device_add 3 0x56 24c64
+# BMC EEPROM
+i2c_device_add 8 0x51 24c64

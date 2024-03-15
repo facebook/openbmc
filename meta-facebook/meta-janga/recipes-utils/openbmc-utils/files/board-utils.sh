@@ -93,6 +93,7 @@ userver_reset() {
     done
 
     echo "failed to reset userver!"
+    logger -p user.crit "failed to reset userver!"
     return 1
 }
 
@@ -103,8 +104,10 @@ chassis_power_cycle() {
 bmc_mac_addr() {
     # Fetch mac addr supporting v4 and v5 format.
     bmc_mac=$(weutil | sed -nE 's/((Local MAC)|(BMC MAC Base)): (.*)/\4/p')
-    if [ ! "$bmc_mac" ]; then
-        echo "BMC MAC Address Not Found !"
+    if [ -z "$bmc_mac" ]; then
+        echo "BMC MAC Address Not Found !" 1>&2
+        logger -p user.crit "BMC MAC Address Not Found !"
+        return 1
     else
         echo "$bmc_mac"
     fi
@@ -130,7 +133,9 @@ userver_mac_addr() {
             echo "$cpu_mac"
             ;;
         *)
-            echo "CPU MAC Address Not Found !"
+            echo "CPU MAC Address Not Found !" 1>&2
+            logger -p user.crit "CPU MAC Address Not Found !"
+            return 1
             ;;
     esac
 }

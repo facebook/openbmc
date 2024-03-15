@@ -380,6 +380,50 @@ const uint8_t bic_gl_sensor_list[] = {
   BIC_GL_SENSOR_MB_TOTAL_DIMM_PWR_W,
 };
 
+const uint8_t bic_ji_sensor_list[] = {
+  BIC_JI_SENSOR_MB_INLET_TEMP_C,
+  BIC_JI_SENSOR_MB_OUTLET_TEMP_C,
+  BIC_JI_SENSOR_FIO_FRONT_TEMP_C,
+  BIC_JI_SENSOR_MB_SOC_CPU_TEMP_C,
+  BIC_JI_SENSOR_MB_FPGA_TEMP_C,
+  BIC_JI_SENSOR_MB_E1S_SSD_TEMP_C,
+  BIC_JI_SENSOR_MB_HSC_TEMP_C,
+  BIC_JI_SENSOR_MB_CPUDVDD_TEMP_C,
+  BIC_JI_SENSOR_MB_CPUVDD_TEMP_C,
+  BIC_JI_SENSOR_MB_SOCVDD_TEMP_C,
+  BIC_JI_SENSOR_MB_HSC_INPUT_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_P12V_STBY_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_VDD_1V8_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_P3V3_STBY_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_SOCVDD_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_P3V_BAT_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_CPUVDD_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_FPGA_VCC_AO_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_1V2_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_VDD_M2_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_P1V2_STBY_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_FBVDDQ_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_FBVDDP2_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_FBVDD1_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_P5V_STBY_VOLT_V,
+  BIC_JI_SENSOR_MB_ADC_CPU_DVDD_VOLT_V,
+  BIC_JI_SENSOR_MB_E1S_SSD_VOLT_V,
+  BIC_JI_SENSOR_MB_CPUDVDD_VOLT_V,
+  BIC_JI_SENSOR_MB_CPUVDD_VOLT_V,
+  BIC_JI_SENSOR_MB_SOCVDD_VOLT_V,
+  BIC_JI_SENSOR_MB_HSC_OUTPUT_CURR_A,
+  BIC_JI_SENSOR_MB_E1S_SSD_CURR_A,
+  BIC_JI_SENSOR_MB_CPUDVDD_CURR_A,
+  BIC_JI_SENSOR_MB_CPUVDD_CURR_A,
+  BIC_JI_SENSOR_MB_SOCVDD_CURR_A,
+  BIC_JI_SENSOR_MB_CPU_PWR_W,
+  BIC_JI_SENSOR_MB_HSC_INPUT_PWR_W,
+  BIC_JI_SENSOR_MB_E1S_SSD_PWR_W,
+  BIC_JI_SENSOR_MB_CPUDVDD_PWR_W,
+  BIC_JI_SENSOR_MB_CPUVDD_PWR_W,
+  BIC_JI_SENSOR_MB_SOCVDD_PWR_W,
+};
+
 const uint8_t bic_1ou_vf_sensor_list[] = {
   BIC_1OU_VF_SENSOR_NUM_T_MB_OUTLET_TEMP_T,
   BIC_1OU_VF_SENSOR_NUM_V_12_AUX,
@@ -1369,6 +1413,7 @@ size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 size_t bic_hd_sensor_cnt = sizeof(bic_hd_sensor_list)/sizeof(uint8_t);
 size_t bic_gl_sensor_cnt = sizeof(bic_gl_sensor_list)/sizeof(uint8_t);
+size_t bic_ji_sensor_cnt = sizeof(bic_ji_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_vf_sensor_cnt = sizeof(bic_1ou_vf_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_rf_sensor_cnt = sizeof(bic_1ou_rf_sensor_list)/sizeof(uint8_t);
@@ -1651,6 +1696,9 @@ done:
     } else if (server_type == SERVER_TYPE_GL) {
       memcpy(bic_dynamic_sensor_list[fru-1], bic_gl_sensor_list, bic_gl_sensor_cnt);
       current_cnt = bic_gl_sensor_cnt;
+    } else if (server_type == SERVER_TYPE_JI) {
+      memcpy(bic_dynamic_sensor_list[fru-1], bic_ji_sensor_list, bic_ji_sensor_cnt);
+      current_cnt = bic_ji_sensor_cnt;
     } else {
       memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
       current_cnt = bic_sensor_cnt;

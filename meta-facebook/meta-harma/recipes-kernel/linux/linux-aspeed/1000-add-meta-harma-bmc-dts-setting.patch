@@ -1,65 +1,38 @@
-From a5e1706a7a20f84d5245436966cd86e8cdaccfc7 Mon Sep 17 00:00:00 2001
+From 3c16c7d461faf9fe106992ada134ec002981ede5 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
-Date: Fri, 12 Jan 2024 13:25:03 +0800
-Subject: [PATCH 1000/1000] add-meta-harma-bmc-dts-setting
+Date: Wed, 13 Mar 2024 09:21:49 +0800
+Subject: [PATCH 1/1] meta-facebook: harma: add harm dts:
 
+We can't change the kernel path, and the Harma DTS is not ready.
+So, we modify aspeed-ast2600-evb.dts to match the Harma DTS.
 ---
-Kenrel org URL:https://lore.kernel.org/all/20240227014719.3037588-1-peteryin.openbmc@gmail.com/
----
- .../bindings/arm/aspeed/aspeed.yaml           |   1 +
- arch/arm/boot/dts/aspeed/Makefile             |   1 +
- .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 654 ++++++++++++++++++
- arch/arm/boot/dts/aspeed/aspeed-g6.dtsi       |   7 +
- 4 files changed, 663 insertions(+)
- create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+ .../boot/dts/aspeed/aspeed-ast2600-evb.dts    | 690 +++++++++++++-----
+ 1 file changed, 497 insertions(+), 193 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
-index 85e2c00a2384..922cd25b4ee1 100644
---- a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
-+++ b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
-@@ -82,6 +82,7 @@ properties:
-               - facebook,elbert-bmc
-               - facebook,fuji-bmc
-               - facebook,greatlakes-bmc
-++             - facebook,harma-bmc
-               - facebook,minerva-cmc
-               - facebook,yosemite4-bmc
-               - ibm,everest-bmc
-diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index fb9cc95f1b60..6ecc21d04a62 100644
---- a/arch/arm/boot/dts/aspeed/Makefile
-+++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -22,6 +22,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
- 	aspeed-bmc-facebook-fuji.dtb \
- 	aspeed-bmc-facebook-galaxy100.dtb \
- 	aspeed-bmc-facebook-greatlakes.dtb \
-+	aspeed-bmc-facebook-harma.dtb \
- 	aspeed-bmc-facebook-minerva-cmc.dtb \
- 	aspeed-bmc-facebook-minipack.dtb \
- 	aspeed-bmc-facebook-tiogapass.dtb \
-diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-new file mode 100644
-index 000000000000..669ba8f78a46
---- /dev/null
-+++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -0,0 +1,654 @@
-+// SPDX-License-Identifier: GPL-2.0-or-later
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-ast2600-evb.dts b/arch/arm/boot/dts/aspeed/aspeed-ast2600-evb.dts
+index de83c0eb1d6e..b6e7d9344fc1 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-ast2600-evb.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-ast2600-evb.dts
+@@ -1,21 +1,39 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+-// Copyright 2019 IBM Corp.
 +// Copyright 2023 Facebook Inc.
-+
-+/dts-v1/;
-+#include "aspeed-g6.dtsi"
-+#include <dt-bindings/gpio/aspeed-gpio.h>
+ 
+ /dts-v1/;
+-
+ #include "aspeed-g6.dtsi"
+ #include <dt-bindings/gpio/aspeed-gpio.h>
 +#include <dt-bindings/i2c/i2c.h>
-+
-+/ {
-+	model = "Facebook Harma";
-+	compatible = "facebook,harma-bmc", "aspeed,ast2600";
-+
-+	aliases {
+ 
+ / {
+ 	model = "AST2600 EVB";
+ 	compatible = "aspeed,ast2600-evb", "aspeed,ast2600";
+ 
+ 	aliases {
 +		serial0 = &uart1;
 +		serial1 = &uart2;
 +		serial2 = &uart4;
-+		serial4 = &uart5;
+ 		serial4 = &uart5;
 +
 +		i2c20 = &imux20;
 +		i2c21 = &imux21;
@@ -75,33 +48,77 @@ index 000000000000..669ba8f78a46
 +		i2c31 = &imux31;
 +
 +		spi1 = &spi_gpio;
-+	};
-+
-+	chosen {
+ 	};
+ 
+ 	chosen {
+-		bootargs = "console=ttyS4,115200n8";
 +		stdout-path = &uart5;
-+	};
-+
-+	memory@80000000 {
-+		device_type = "memory";
-+		reg = <0x80000000 0x80000000>;
-+	};
-+
+ 	};
+ 
+ 	memory@80000000 {
+@@ -23,153 +41,103 @@ memory@80000000 {
+ 		reg = <0x80000000 0x80000000>;
+ 	};
+ 
+-	reserved-memory {
+-		#address-cells = <1>;
+-		#size-cells = <1>;
+-		ranges;
+-
+-		video_engine_memory: video {
+-			size = <0x04000000>;
+-			alignment = <0x01000000>;
+-			compatible = "shared-dma-pool";
+-			reusable;
+-		};
+-
+-		gfx_memory: framebuffer {
+-			size = <0x01000000>;
+-			alignment = <0x01000000>;
+-			compatible = "shared-dma-pool";
+-			reusable;
+-		};
 +	iio-hwmon {
 +		compatible = "iio-hwmon";
 +		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
 +			      <&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
 +			      <&adc1 2>;
-+	};
-+
+ 	};
+ 
+-	vcc_sdhci0: regulator-vcc-sdhci0 {
+-		compatible = "regulator-fixed";
+-		regulator-name = "SDHCI0 Vcc";
+-		regulator-min-microvolt = <3300000>;
+-		regulator-max-microvolt = <3300000>;
+-		gpios = <&gpio0 ASPEED_GPIO(V, 0) GPIO_ACTIVE_HIGH>;
+-		enable-active-high;
+-	};
 +	leds {
 +		compatible = "gpio-leds";
-+
+ 
+-	vccq_sdhci0: regulator-vccq-sdhci0 {
+-		compatible = "regulator-gpio";
+-		regulator-name = "SDHCI0 VccQ";
+-		regulator-min-microvolt = <1800000>;
+-		regulator-max-microvolt = <3300000>;
+-		gpios = <&gpio0 ASPEED_GPIO(V, 1) GPIO_ACTIVE_HIGH>;
+-		gpios-states = <1>;
+-		states = <3300000 1>,
+-			 <1800000 0>;
+-	};
 +		led-0 {
 +			label = "bmc_heartbeat_amber";
 +			gpios = <&gpio0 ASPEED_GPIO(P, 7) GPIO_ACTIVE_LOW>;
 +			linux,default-trigger = "heartbeat";
 +		};
-+
+ 
+-	vcc_sdhci1: regulator-vcc-sdhci1 {
+-		compatible = "regulator-fixed";
+-		regulator-name = "SDHCI1 Vcc";
+-		regulator-min-microvolt = <3300000>;
+-		regulator-max-microvolt = <3300000>;
+-		gpios = <&gpio0 ASPEED_GPIO(V, 2) GPIO_ACTIVE_HIGH>;
+-		enable-active-high;
 +		led-1 {
 +			label = "fp_id_amber";
 +			default-state = "off";
@@ -113,8 +130,17 @@ index 000000000000..669ba8f78a46
 +			default-state = "off";
 +			gpios = <&gpio0 124 GPIO_ACTIVE_HIGH>;
 +		};
-+	};
-+
+ 	};
+ 
+-	vccq_sdhci1: regulator-vccq-sdhci1 {
+-		compatible = "regulator-gpio";
+-		regulator-name = "SDHCI1 VccQ";
+-		regulator-min-microvolt = <1800000>;
+-		regulator-max-microvolt = <3300000>;
+-		gpios = <&gpio0 ASPEED_GPIO(V, 3) GPIO_ACTIVE_HIGH>;
+-		gpios-states = <1>;
+-		states = <3300000 1>,
+-			 <1800000 0>;
 +	spi_gpio: spi-gpio {
 +		status = "okay";
 +		compatible = "spi-gpio";
@@ -132,71 +158,133 @@ index 000000000000..669ba8f78a46
 +			spi-max-frequency = <33000000>;
 +			reg = <0>;
 +		};
-+	};
-+};
-+
+ 	};
+ };
+ 
+-&mdio0 {
 +// HOST BIOS Debug
 +&uart1 {
-+	status = "okay";
-+};
-+
+ 	status = "okay";
+-
+-	ethphy0: ethernet-phy@0 {
+-		compatible = "ethernet-phy-ieee802.3-c22";
+-		reg = <0>;
+-	};
+ };
+ 
+-&mdio1 {
 +// SOL Host Console
 +&uart2 {
-+	status = "okay";
+ 	status = "okay";
+-
+-	ethphy1: ethernet-phy@0 {
+-		compatible = "ethernet-phy-ieee802.3-c22";
+-		reg = <0>;
+-	};
 +	pinctrl-0 = <>;
-+};
-+
+ };
+ 
+-&mdio2 {
 +// SOL BMC Console
 +&uart4 {
-+	status = "okay";
+ 	status = "okay";
+-
+-	ethphy2: ethernet-phy@0 {
+-		compatible = "ethernet-phy-ieee802.3-c22";
+-		reg = <0>;
+-	};
 +	pinctrl-0 = <>;
-+};
-+
+ };
+ 
+-&mdio3 {
 +// BMC Debug Console
 +&uart5 {
-+	status = "okay";
-+};
-+
+ 	status = "okay";
+-
+-	ethphy3: ethernet-phy@0 {
+-		compatible = "ethernet-phy-ieee802.3-c22";
+-		reg = <0>;
+-	};
+ };
+ 
+-&mac0 {
 +// MTIA
 +&uart6 {
-+	status = "okay";
-+};
-+
+ 	status = "okay";
+-
+-	phy-mode = "rgmii-rxid";
+-	phy-handle = <&ethphy0>;
+-
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_rgmii1_default>;
+ };
+ 
+-
+-&mac1 {
 +&uart_routing {
-+	status = "okay";
-+};
-+
+ 	status = "okay";
+-
+-	phy-mode = "rgmii-rxid";
+-	phy-handle = <&ethphy1>;
+-
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_rgmii2_default>;
+ };
+ 
+-&mac2 {
 +&wdt1 {
-+	status = "okay";
-+	pinctrl-names = "default";
+ 	status = "okay";
+-
+-	phy-mode = "rgmii";
+-	phy-handle = <&ethphy2>;
+-
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_rgmii3_default>;
 +	pinctrl-0 = <&pinctrl_wdtrst1_default>;
 +	aspeed,reset-type = "soc";
 +	aspeed,external-signal;
 +	aspeed,ext-push-pull;
 +	aspeed,ext-active-high;
 +	aspeed,ext-pulse-duration = <256>;
-+};
-+
-+&mac3 {
-+	status = "okay";
-+	pinctrl-names = "default";
+ };
+ 
+ &mac3 {
+ 	status = "okay";
+-
+-	phy-mode = "rgmii";
+-	phy-handle = <&ethphy3>;
+-
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_rgmii4_default>;
+-};
+-
+-&emmc_controller {
+-	status = "okay";
+-};
+-
+-&emmc {
+-	non-removable;
+-	bus-width = <4>;
+-	max-frequency = <100000000>;
+-	clk-phase-mmc-hs200 = <9>, <225>;
 +	pinctrl-0 = <&pinctrl_rmii4_default>;
 +	use-ncsi;
 +	mlx,multi-host;
-+};
+ };
+ 
+ &rtc {
+@@ -178,53 +146,152 @@ &rtc {
+ 
+ &fmc {
+ 	status = "okay";
 +
-+&rtc {
-+	status = "okay";
-+};
-+
-+&fmc {
-+	status = "okay";
-+
-+	flash@0 {
-+		status = "okay";
-+		m25p,fast-read;
-+		label = "bmc";
-+		spi-max-frequency = <50000000>;
+ 	flash@0 {
+ 		status = "okay";
+ 		m25p,fast-read;
+ 		label = "bmc";
+-		spi-rx-bus-width = <4>;
+ 		spi-max-frequency = <50000000>;
+-#include "openbmc-flash-layout-64.dtsi"
 +#include "openbmc-flash-layout-128.dtsi"
 +	};
 +
@@ -205,25 +293,32 @@ index 000000000000..669ba8f78a46
 +		m25p,fast-read;
 +		label = "alt-bmc";
 +		spi-max-frequency = <50000000>;
-+	};
-+};
-+
+ 	};
+ };
+ 
+-&spi1 {
 +// BIOS Flash
 +&spi2 {
-+	status = "okay";
-+	pinctrl-names = "default";
+ 	status = "okay";
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_spi1_default>;
 +	pinctrl-0 = <&pinctrl_spi2_default>;
-+
-+	flash@0 {
-+		status = "okay";
-+		m25p,fast-read;
-+		label = "pnor";
+ 
+ 	flash@0 {
+ 		status = "okay";
+ 		m25p,fast-read;
+ 		label = "pnor";
+-		spi-rx-bus-width = <4>;
+-		spi-max-frequency = <100000000>;
 +		spi-max-frequency = <12000000>;
 +		spi-tx-bus-width = <2>;
 +		spi-rx-bus-width = <2>;
-+	};
-+};
-+
+ 	};
+ };
+ 
+-&uart5 {
+-	// Workaround for A0
+-	compatible = "snps,dw-apb-uart";
 +&lpc_pcc {
 +	rec-mode = <0x1>;
 +	port-addr = <0x80>;
@@ -242,10 +337,10 @@ index 000000000000..669ba8f78a46
 +&kcs3 {
 +	status = "okay";
 +	aspeed,lpc-io-reg = <0xca2>;
-+};
-+
-+&i2c0 {
-+	status = "okay";
+ };
+ 
+ &i2c0 {
+ 	status = "okay";
 +
 +	pwm@5e{
 +		compatible = "max31790";
@@ -253,10 +348,10 @@ index 000000000000..669ba8f78a46
 +		#address-cells = <1>;
 +		#size-cells = <0>;
 +	};
-+};
-+
-+&i2c1 {
-+	status = "okay";
+ };
+ 
+ &i2c1 {
+ 	status = "okay";
 +
 +	temperature-sensor@4b {
 +		compatible = "ti,tmp75";
@@ -268,10 +363,10 @@ index 000000000000..669ba8f78a46
 +		compatible = "atmel,24c64";
 +		reg = <0x50>;
 +	};
-+};
-+
-+&i2c2 {
-+	status = "okay";
+ };
+ 
+ &i2c2 {
+ 	status = "okay";
 +
 +	pwm@5e{
 +		compatible = "max31790";
@@ -279,10 +374,10 @@ index 000000000000..669ba8f78a46
 +		#address-cells = <1>;
 +		#size-cells = <0>;
 +	};
-+};
-+
-+&i2c3 {
-+	status = "okay";
+ };
+ 
+ &i2c3 {
+ 	status = "okay";
 +
 +	i2c-mux@70 {
 +		compatible = "nxp,pca9543";
@@ -311,10 +406,10 @@ index 000000000000..669ba8f78a46
 +			};
 +		};
 +	};
-+};
-+
-+&i2c4 {
-+	status = "okay";
+ };
+ 
+ &i2c4 {
+ 	status = "okay";
 +	// PDB FRU
 +	eeprom@52 {
 +		compatible = "atmel,24c64";
@@ -337,14 +432,13 @@ index 000000000000..669ba8f78a46
 +		adi,vrange-low-enable;
 +		shunt-resistor-micro-ohms = <500>;
 +	};
-+};
-+
-+&i2c5 {
-+	status = "okay";
-+};
-+
-+&i2c6 {
-+	status = "okay";
+ };
+ 
+ &i2c5 {
+@@ -233,118 +300,355 @@ &i2c5 {
+ 
+ &i2c6 {
+ 	status = "okay";
 +
 +	i2c-mux@70 {
 +		compatible = "nxp,pca9543";
@@ -363,29 +457,41 @@ index 000000000000..669ba8f78a46
 +			reg = <1>;
 +		};
 +	};
-+};
-+
-+&i2c7 {
-+	status = "okay";
+ };
+ 
+ &i2c7 {
+ 	status = "okay";
+-
+-	temp@2e {
+-		compatible = "adi,adt7490";
+-		reg = <0x2e>;
 +	sbrmi@3C {
 +		compatible = "amd,sbrmi";
 +		reg = <0x3C>;
 +		dimm-count = <8>;
 +		dimm-ids = <0x00 0x01 0x02 0x03 0x10 0x11 0x12 0x13>;
-+	};
+ 	};
+-
+-	eeprom@50 {
+-		compatible = "atmel,24c08";
+-		reg = <0x50>;
+-		pagesize = <16>;
 +	sbtsi@4C {
 +		compatible = "amd,sbtsi";
 +		reg = <0x4C>;
-+	};
-+};
-+
-+&i2c8 {
-+	status = "okay";
+ 	};
+ };
+ 
+ &i2c8 {
+ 	status = "okay";
 +};
 +
 +&i2c9 {
 +	status = "okay";
-+
+ 
+-	lm75@4d {
+-		compatible = "national,lm75";
+-		reg = <0x4d>;
 +	gpio@30 {
 +		compatible = "nxp,pca9555";
 +		reg = <0x30>;
@@ -436,30 +542,37 @@ index 000000000000..669ba8f78a46
 +	eeprom@52 {
 +		compatible = "atmel,24c64";
 +		reg = <0x52>;
-+	};
-+};
-+
+ 	};
+ };
+ 
+-&i2c9 {
 +&i2c11 {
-+	status = "okay";
-+};
-+
-+&i2c12 {
-+	status = "okay";
+ 	status = "okay";
+ };
+ 
+ &i2c12 {
+ 	status = "okay";
 +	retimer@24 {
 +		compatible = "asteralabs,pt5161l";
 +		reg = <0x24>;
 +	};
-+};
-+
-+&i2c13 {
-+	status = "okay";
-+
+ };
+ 
+ &i2c13 {
+ 	status = "okay";
+-};
+ 
+-&i2c14 {
+-	status = "okay";
+-};
 +	i2c-mux@70 {
 +		compatible = "nxp,pca9545";
 +		reg = <0x70>;
 +		#address-cells = <1>;
 +		#size-cells = <0>;
-+
+ 
+-&i2c15 {
+-	status = "okay";
 +		imux28: i2c@0 {
 +			#address-cells = <1>;
 +			#size-cells = <0>;
@@ -486,56 +599,105 @@ index 000000000000..669ba8f78a46
 +			reg = <3>;
 +		};
 +	};
-+};
-+
+ };
+ 
+-&fsim0 {
 +// To Debug card
 +&i2c14 {
-+	status = "okay";
+ 	status = "okay";
+-};
 +	multi-master;
-+
+ 
+-&ehci1 {
+-	status = "okay";
 +	ipmb@10 {
 +		compatible = "ipmb-dev";
 +		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 +		i2c-protocol;
 +	};
-+};
-+
+ };
+ 
+-&uhci {
 +&i2c15 {
-+	status = "okay";
-+
+ 	status = "okay";
+-};
+ 
+-&sdc {
+-	status = "okay";
+-};
 +	// SCM FRU
 +	eeprom@50 {
 +		compatible = "atmel,24c64";
 +		reg = <0x50>;
 +	};
-+
+ 
+-/*
+- * The signal voltage of sdhci0 and sdhci1 on AST2600-A2 EVB is able to be
+- * toggled by GPIO pins.
+- * In the reference design, GPIOV0 of AST2600-A2 EVB is connected to the
+- * power load switch that provides 3.3v to sdhci0 vdd, GPIOV1 is connected to
+- * a 1.8v and a 3.3v power load switch that provides signal voltage to
+- * sdhci0 bus.
+- * If GPIOV0 is active high, sdhci0 is enabled, otherwise, sdhci0 is disabled.
+- * If GPIOV1 is active high, 3.3v power load switch is enabled, sdhci0 signal
+- * voltage is 3.3v, otherwise, 1.8v power load switch will be enabled,
+- * sdhci0 signal voltage becomes 1.8v.
+- * AST2600-A2 EVB also supports toggling signal voltage for sdhci1.
+- * The design is the same as sdhci0, it uses GPIOV2 as power-gpio and GPIOV3
+- * as power-switch-gpio.
+- */
+-&sdhci0 {
+-	status = "okay";
+-	bus-width = <4>;
+-	max-frequency = <100000000>;
+-	sdhci-drive-type = /bits/ 8 <3>;
+-	sdhci-caps-mask = <0x7 0x0>;
+-	sdhci,wp-inverted;
+-	vmmc-supply = <&vcc_sdhci0>;
+-	vqmmc-supply = <&vccq_sdhci0>;
+-	clk-phase-sd-hs = <7>, <200>;
 +	// BSM FRU
 +	eeprom@56 {
 +		compatible = "atmel,24c64";
 +		reg = <0x56>;
 +	};
-+};
-+
+ };
+ 
+-&sdhci1 {
 +&adc0 {
 +	aspeed,int-vref-microvolt = <2500000>;
-+	status = "okay";
+ 	status = "okay";
+-	bus-width = <4>;
+-	max-frequency = <100000000>;
+-	sdhci-drive-type = /bits/ 8 <3>;
+-	sdhci-caps-mask = <0x7 0x0>;
+-	sdhci,wp-inverted;
+-	vmmc-supply = <&vcc_sdhci1>;
+-	vqmmc-supply = <&vccq_sdhci1>;
+-	clk-phase-sd-hs = <7>, <200>;
 +	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
 +		&pinctrl_adc2_default &pinctrl_adc3_default
 +		&pinctrl_adc4_default &pinctrl_adc5_default
 +		&pinctrl_adc6_default &pinctrl_adc7_default>;
-+};
-+
+ };
+ 
+-&vhub {
 +&adc1 {
 +	aspeed,int-vref-microvolt = <2500000>;
-+	status = "okay";
-+	pinctrl-names = "default";
+ 	status = "okay";
+ 	pinctrl-names = "default";
 +	pinctrl-0 = <&pinctrl_adc10_default>;
-+};
-+
+ };
+ 
+-&video {
 +&ehci0 {
-+	status = "okay";
-+};
-+
+ 	status = "okay";
+-	memory-region = <&video_engine_memory>;
+ };
+ 
+-&gfx {
+-	status = "okay";
+-	memory-region = <&gfx_memory>;
 +&gpio0 {
 +	pinctrl-names = "default";
 +	gpio-line-names =
@@ -618,11 +780,11 @@ index 000000000000..669ba8f78a46
 +	/*D4-D7 line 56-63*/
 +	"","reset-control-cpu0-p1-mux",
 +	"","reset-control-e1s-mux",
-+	"power-host-good","reset-control-mb-mux",
++	"host0-ready","reset-control-mb-mux",
 +	"power-cpu-good","reset-control-smb-e1s-0",
 +	/*E0-E3 line 64-71*/
 +	"","reset-control-smb-e1s-1",
-+	"host-ready-n","reset-control-srst",
++	"post-end-n","reset-control-srst",
 +	"presence-e1s-0","reset-control-usb-hub",
 +	"","reset-control",
 +	/*E4-E7 line 72-79*/
@@ -696,25 +858,7 @@ index 000000000000..669ba8f78a46
 +	"","","","","","","","",
 +	/*P4-P7 line 248-255*/
 +	"","","","","","","","";
-+};
-diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index c4d1faade8be..53406d301a23 100644
---- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-+++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-@@ -645,6 +645,13 @@ lpc_snoop: lpc-snoop@80 {
- 					status = "disabled";
- 				};
- 
-+				lpc_pcc: lpc-pcc@0 {
-+					compatible = "aspeed,ast2600-lpc-pcc";
-+					reg = <0x0 0x140>;
-+					interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>;
-+					status = "disabled";
-+				};
-+
- 				lhc: lhc@a0 {
- 					compatible = "aspeed,ast2600-lhc";
- 					reg = <0xa0 0x24 0xc8 0x8>;
+ };
 -- 
 2.25.1
 

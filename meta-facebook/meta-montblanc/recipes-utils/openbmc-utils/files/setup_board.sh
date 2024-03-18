@@ -39,7 +39,7 @@ fixup_phy_onlyevt() {
     value=$(mdio-util -m $MDIO_CH -p $PHY_ADDR -r 0x15 | cut -d' ' -f7-)
     value=$(( value & 0xffcf ))
     value=$(printf 0x%04x "$value")
-    mdio-util -m $MDIO_CH -p $PHY_ADDR -w 0x15 -d $value
+    mdio-util -m $MDIO_CH -p $PHY_ADDR -w 0x15 -d "$value"
 
     # set mode RGMII to 1000Base-X
     # page 0x12 regiser 0x14
@@ -51,7 +51,7 @@ fixup_phy_onlyevt() {
     value=$(( value & 0x7ff8 ))
     value=$(( value | 0x8002 ))
     value=$(printf 0x%04x "$value")
-    mdio-util -m $MDIO_CH -p $PHY_ADDR -w 0x14 -d $value
+    mdio-util -m $MDIO_CH -p $PHY_ADDR -w 0x14 -d "$value"
 
     # set page back to 0
     mdio-util -m $MDIO_CH -p $PHY_ADDR -w $PAGE_REG -d 0x0
@@ -88,5 +88,36 @@ setup_LPC_signal_strength()
     devmem "$SCU458" 32 $value
 }
 
+# set RGMII Delay
+setup_rgmii_delay()
+{
+    SCU350=$(scu_addr 350)
+    # SCU350 MAC34 Interface Clock Delay Setting
+    #   31     R/W     RGMII 125MHz clock source selection
+    #                   0: PAD RGMIICK
+    #                   1: Internal PLL
+    #   30     R/W     RMII4 50MHz RCLK output enable
+    #                   0: Disable
+    #                   1: Enable
+    #   29     R/W     RMII3 50MHz RCLK output enable
+    #                   0: Disable
+    #                   1: Enable
+    #   28:26  ---     Reserved
+    #   25     R/W     MAC#4 RMII transmit data at clock falling edge
+    #   24     R/W     MAC#3 RMII transmit data at clock falling edge
+    #   23:18  R/W     MAC#4 RMII RCLK/RGMII RXCLK (1G) clock input delay
+    #   17:12  R/W     MAC#3 RMII RCLK/RGMII RXCLK (1G) clock input delay
+    #   11:6   R/W     MAC#4 RGMII TXCLK (1G) clock output delay
+    #   5:0    R/W     MAC#3 RGMII TXCLK (1G) clock output delay
+
+    value=$(devmem "$SCU350")
+    # set MAC4 TX4 clock delay to 8
+    value=$((value & 0xFFFFF03F ))
+    value=$((value | (8 << 6) ))
+
+    devmem "$SCU350" 32 $value
+}
+
 fixup_phy_onlyevt
 setup_LPC_signal_strength
+setup_rgmii_delay

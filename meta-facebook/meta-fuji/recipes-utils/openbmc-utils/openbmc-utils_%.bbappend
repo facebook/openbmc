@@ -51,6 +51,7 @@ LOCAL_URI += " \
     file://eth0_mac_fixup.sh \
     file://mount_data1.service \
     file://setup_gpio.service \
+    file://i2c_sensor_fixup.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -77,6 +78,7 @@ OPENBMC_UTILS_FILES += " \
     switch_pim_mux_to_fpga.sh \
     reinit_all_pim.sh \
     wedge_us_mac.sh \
+    i2c_sensor_fixup.sh \
     "
 DEPENDS:append = " update-rc.d-native"
 inherit systemd

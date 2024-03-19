@@ -785,13 +785,10 @@ gti_pwr_fault_event(void* arg) {
   } power_rail;
 
   struct power_rail mb_power_rail_table[] = {
-   {0x28, 7, 0, "FM_CPU0_SLP_S5_N"},
-   {0x28, 4, 0, "FM_CPU0_SLP_S3_N"},
-   {0x2B, 4, 0, "P12V_OCP_V3_1_PWRGD"},
-   {0x2B, 0, 0, "P12V_OCP_V3_2_PWRGD"},
-   {0x2A, 0, 0, "P12V_E1S_1_PWRGD"},
    {0x27, 6, 0, "PWRGD_P5V_AUX_R3"},
    {0x27, 5, 0, "PWRGD_P3V3_STBY_R"},
+   {0x28, 7, 0, "FM_CPU0_SLP_S5_N"},
+   {0x28, 4, 0, "FM_CPU0_SLP_S3_N"},
    {0x28, 6, 0, "FM_PWRGD_PVDD11_S3_P0"},
    {0x28, 5, 0, "FM_PWRGD_PVDD11_S3_P1"},
    {0x28, 3, 0, "FM_PWRGD_PVDDIO_P0"},
@@ -805,7 +802,9 @@ gti_pwr_fault_event(void* arg) {
    {0x29, 3, 0, "CPU_PWR_PG_DLY_DONE_CHECK"},
    {0x29, 2, 0, "FM_PWRGD_CPU1_PWROK"},
    {0x29, 0, 0, "FM_RST_CPU1_RESETL_N"},
-
+   {0x2A, 0, 0, "P12V_E1S_1_PWRGD"},
+   {0x2B, 4, 0, "P12V_OCP_V3_1_PWRGD"},
+   {0x2B, 0, 0, "P12V_OCP_V3_2_PWRGD"},
    {0x2D, 1, 0, "PWRGD_P0V9_RETIMER_CPU0_R2"},
    {0x2D, 0, 0, "PWRGD_P0V9_RETIMER_CPU1_R2"},
    {0x2D, 3, 0, "FM_PWRGD_P1V8_RETIMER_CPU0"},
@@ -813,17 +812,17 @@ gti_pwr_fault_event(void* arg) {
    {0x2E, 5, 0, "RST_PERST_CPU0_SWB_N"},
    {0x2E, 4, 0, "RST_PERST_CPU1_SWB_N"},
 
-   {0x01, 6, 0, "FM_GPU_HSC_EN_R"},
-   {0x01, 5, 0, "HPDB_HSC_PWRGD_ISO_R"},
    {0x00, 6, 0, "SWB_HSC_EN_R"},
    {0x00, 5, 0, "SWB_HSC_PWRGD_ISO_R"},
-   {0x01, 3, 0, "GPU_BASE_STBY_EN_R"},
-   {0x01, 1, 0, "GPU_FPGA_READY_ISO_R"},
-
-   {0x01, 0, 0, "FM_GPU_PWR_EN"},
-   {0x02, 7, 0, "FM_GPU_PWRGD_ISO_R"},
    {0x00, 4, 0, "FM_SWB_PWR_EN"},
    {0x00, 3, 0, "FM_SWB_PWRGD_ISO_R"},
+   {0x01, 6, 0, "FM_GPU_HSC_EN_R"},
+   {0x01, 5, 0, "HPDB_HSC_PWRGD_ISO_R"},
+   {0x01, 3, 0, "GPU_BASE_STBY_EN_R"},
+   {0x01, 1, 0, "GPU_FPGA_READY_ISO_R"},
+   {0x01, 0, 0, "FM_GPU_PWR_EN"},
+
+   {0x02, 7, 0, "FM_GPU_PWRGD_ISO_R"},
   };
 
   struct power_rail swb_power_rail_table[] = {
@@ -836,11 +835,20 @@ gti_pwr_fault_event(void* arg) {
 
   int ret = -1;
   uint8_t value = 0;
+  uint8_t last_offset = 0xff;
 
   for(int i=0; i < mb_pwr_rail_cnt; i++) {
-    ret = pal_read_cpld_reg(FRU_MB, mb_power_rail_table[i].offset,
-                            mb_power_rail_table[i].bit, &value);
-    if(!ret && value == mb_power_rail_table[i].asserted_value) {
+    if (last_offset != mb_power_rail_table[i].offset) {
+      ret = pal_read_cpld_reg(FRU_MB, mb_power_rail_table[i].offset,
+                              0xff, &value);
+      last_offset = mb_power_rail_table[i].offset;
+      if (ret) {
+        syslog(LOG_CRIT, "%s, CPLD offset: %x read failed", __FUNCTION__, last_offset);
+        continue;
+      }
+    }
+
+    if(GETBIT(value, mb_power_rail_table[i].bit) == mb_power_rail_table[i].asserted_value) {
       syslog(LOG_CRIT, "Power Fail Event: %s Assert", mb_power_rail_table[i].event_log);
     }
   }

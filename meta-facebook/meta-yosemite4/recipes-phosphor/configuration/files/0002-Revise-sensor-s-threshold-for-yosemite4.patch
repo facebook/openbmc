@@ -1,0 +1,88 @@
+From 1157995876c1d0098d138640e915debb570b9d7f Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Fri, 15 Mar 2024 10:23:18 +0800
+Subject: [PATCH] Revise sensor's threshold for yosemite4
+
+Revise the following yosemite 4 sensor's threshold:
+- SPIDER_TEMP0_C
+- SPIDER_TEMP1_C
+- MEDUSA_12VDELTA0_OUTPUT_VOLT_V
+- MEDUSA_12VDELTA1_OUTPUT_VOLT_V
+- MEDUSA_12VDELTA2_OUTPUT_VOLT_V
+- MEDUSA_12VDELTA3_OUTPUT_VOLT_V
+
+Tested:
+- reading sensor thresholds by mfg-tool sensor-display
+
+Change-Id: Ic46d5940c616270b61ca9dc207285f822c73853b
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ configurations/yosemite4_medusaboard.json | 8 ++++----
+ configurations/yosemite4_spiderboard.json | 4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/configurations/yosemite4_medusaboard.json b/configurations/yosemite4_medusaboard.json
+index dc20ea0..645a822 100644
+--- a/configurations/yosemite4_medusaboard.json
++++ b/configurations/yosemite4_medusaboard.json
+@@ -1845,7 +1845,7 @@
+                     "Label": "vout1",
+                     "Name": "lower non recoverable",
+                     "Severity": 4,
+-                    "Value": 11.52
++                    "Value": 10.091
+                 },
+                 {
+                     "Direction": "greater than",
+@@ -1975,7 +1975,7 @@
+                     "Label": "vout1",
+                     "Name": "lower non recoverable",
+                     "Severity": 4,
+-                    "Value": 11.52
++                    "Value": 10.091
+                 },
+                 {
+                     "Direction": "greater than",
+@@ -2105,7 +2105,7 @@
+                     "Label": "vout1",
+                     "Name": "lower non recoverable",
+                     "Severity": 4,
+-                    "Value": 11.52
++                    "Value": 10.091
+                 },
+                 {
+                     "Direction": "greater than",
+@@ -2235,7 +2235,7 @@
+                     "Label": "vout1",
+                     "Name": "lower non recoverable",
+                     "Severity": 4,
+-                    "Value": 11.52
++                    "Value": 10.091
+                 },
+                 {
+                     "Direction": "greater than",
+diff --git a/configurations/yosemite4_spiderboard.json b/configurations/yosemite4_spiderboard.json
+index 81e1182..bfa9db2 100644
+--- a/configurations/yosemite4_spiderboard.json
++++ b/configurations/yosemite4_spiderboard.json
+@@ -988,7 +988,7 @@
+                 {
+                     "Direction": "greater than",
+                     "Name": "upper critical",
+-                    "Severity": 4,
++                    "Severity": 1,
+                     "Value": 125
+                 }
+             ],
+@@ -1002,7 +1002,7 @@
+                 {
+                     "Direction": "greater than",
+                     "Name": "upper critical",
+-                    "Severity": 4,
++                    "Severity": 1,
+                     "Value": 125
+                 }
+             ],
+-- 
+2.25.1
+

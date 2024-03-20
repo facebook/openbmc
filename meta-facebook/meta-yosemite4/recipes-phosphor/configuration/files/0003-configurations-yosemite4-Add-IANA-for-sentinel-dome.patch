@@ -1,0 +1,59 @@
+From 6f1bb1bae489bb84bdad0cbaa861451d0a55396c Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Thu, 7 Mar 2024 10:41:16 +0800
+Subject: [PATCH] configurations: yosemite4: Add IANA for sentinel dome
+
+Configuring IANA for devices indicates which OEM sets we should be
+using on which hardware.
+
+schemas: Add IANA with type of string.
+
+Use case for PLDM OEM command:
+https://gerrit.openbmc.org/c/openbmc/pldm/+/69246
+
+Change-Id: Ifcd410f6548c5f28d399c2ef64a2aadd57554e41
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ configurations/yosemite4_sentineldome.json | 1 +
+ schemas/legacy.json                        | 6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/configurations/yosemite4_sentineldome.json b/configurations/yosemite4_sentineldome.json
+index 383a284..328df2d 100644
+--- a/configurations/yosemite4_sentineldome.json
++++ b/configurations/yosemite4_sentineldome.json
+@@ -4,6 +4,7 @@
+             "Address": "0x20",
+             "Bus": "$bus % 16",
+             "EndpointId": "$bus % 15 * 10",
++            "IANA": "0015A000",
+             "Name": "BIC",
+             "Type": "MCTPEndpoint"
+         }
+diff --git a/schemas/legacy.json b/schemas/legacy.json
+index 1752c3b..9f98a9e 100644
+--- a/schemas/legacy.json
++++ b/schemas/legacy.json
+@@ -84,6 +84,9 @@
+                 "GpioPolarity": {
+                     "$ref": "#/definitions/Types/GpioPolarity"
+                 },
++                "IANA": {
++                    "$ref": "#/definitions/Types/IANA"
++                },
+                 "Index": {
+                     "$ref": "#/definitions/Types/Index"
+                 },
+@@ -755,6 +758,9 @@
+             "GpioPolarity": {
+                 "enum": ["Low"]
+             },
++            "IANA": {
++                "type": "string"
++            },
+             "Index": {
+                 "type": "number"
+             },
+-- 
+2.25.1
+

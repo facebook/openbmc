@@ -1,7 +1,7 @@
-From f314406d454b983b58a37327b9ad9dea1c9c2aa1 Mon Sep 17 00:00:00 2001
+From 2620c4e1097c9316e6248983b6a9d0e6276e86a0 Mon Sep 17 00:00:00 2001
 From: SeanChuangWiwynn <Sean_Chuang@wiwynn.com>
 Date: Tue, 12 Mar 2024 16:06:58 +0800
-Subject: [PATCH] Workaround for pldmd memory leak
+Subject: [PATCH 11/11] Workaround for pldmd memory leak
 
 Set memory limit for pldmd, if memeory is over the threshold,
 systemd would restart the service.

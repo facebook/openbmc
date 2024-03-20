@@ -1,7 +1,7 @@
-From d6099b0d5d7f3bc4f04e35a06c074bc7438eac39 Mon Sep 17 00:00:00 2001
+From 7c3ef92ec015e6fb407040b878d68628918d22c1 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 22 Feb 2022 15:40:17 +0000
-Subject: [PATCH 3/9] platform-mc: Added Terminus/TerminusManager class
+Subject: [PATCH 03/11] platform-mc: Added Terminus/TerminusManager class
 
 Added requester::sendRecvPldmMsg awaiter type to be able to send and
 receive PLDM message by coroutine.
@@ -1558,7 +1558,7 @@ index 0000000..b2783c3
 +    EXPECT_EQ(tid, t1.getTid());
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 8e6d393..1873a5e 100644
+index ae269e6..5a14169 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -6,6 +6,7 @@
@@ -1569,7 +1569,7 @@ index 8e6d393..1873a5e 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -291,10 +292,12 @@ int main(int argc, char** argv)
+@@ -301,10 +302,12 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
@@ -1585,5 +1585,5 @@ index 8e6d393..1873a5e 100644
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (!(revents & EPOLLIN))
 -- 
-2.43.0
+2.25.1
 

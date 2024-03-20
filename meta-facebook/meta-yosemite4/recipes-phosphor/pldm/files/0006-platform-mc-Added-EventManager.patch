@@ -1,7 +1,7 @@
-From 939cc72b9ef8e76221c14c038967aea11a3f9c02 Mon Sep 17 00:00:00 2001
+From 1e3f077c7870bf8cb2d089334451a4f7abda9907 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
-Subject: [PATCH 6/9] platform-mc: Added EventManager
+Subject: [PATCH 06/11] platform-mc: Added EventManager
 
 Added eventManager to handle sensor event class(00h),
 pldmMessagePollEvent class(05h)  and OEM CPER event class(FAh)
@@ -44,7 +44,7 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 70ac4bc..027eb9b 100644
+index 0e5455c..fce004a 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
 @@ -368,15 +368,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
@@ -1991,10 +1991,10 @@ index b77a197..2fb3f1e 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 35d356d..b99de6f 100644
+index 401ca01..78289c7 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -267,11 +267,38 @@ int main(int argc, char** argv)
+@@ -272,11 +272,38 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -2034,7 +2034,7 @@ index 35d356d..b99de6f 100644
  #ifdef OEM_IBM
      pldm::responder::oem_ibm_platform::Handler* oemIbmPlatformHandler =
          dynamic_cast<pldm::responder::oem_ibm_platform::Handler*>(
-@@ -292,8 +319,6 @@ int main(int argc, char** argv)
+@@ -302,8 +329,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
@@ -2044,5 +2044,5 @@ index 35d356d..b99de6f 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.43.0
+2.25.1
 

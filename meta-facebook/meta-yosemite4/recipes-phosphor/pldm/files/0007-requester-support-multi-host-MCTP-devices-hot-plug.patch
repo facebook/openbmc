@@ -1,7 +1,7 @@
-From bcc095280147684a5e06c61093b8d9b974354864 Mon Sep 17 00:00:00 2001
+From c43ef8b5012f6637939dc2f0b54a6697491d9018 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 7/9] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 07/11] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -24,19 +24,17 @@ confirm that the configurations are successfully stored.
 
 Change-Id: I59b8bf434576cbdea651848a8da11e5b870e2dfa
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
-
-%% original patch: 0007-requester-support-multi-host-MCTP-devices-hot-plug.patch
 ---
  common/test/mocked_utils.hpp                  |   4 +
  common/utils.cpp                              |  32 ++++
  common/utils.hpp                              |  25 +++
  meson.build                                   |   1 +
  pldmd/pldmd.cpp                               |   8 +-
- requester/configuration_discovery_handler.cpp | 165 ++++++++++++++++++
- requester/configuration_discovery_handler.hpp | 133 ++++++++++++++
- .../configuration_discovery_handler_test.cpp  | 114 ++++++++++++
+ requester/configuration_discovery_handler.cpp | 170 ++++++++++++++++++
+ requester/configuration_discovery_handler.hpp | 134 ++++++++++++++
+ .../configuration_discovery_handler_test.cpp  | 115 ++++++++++++
  requester/test/meson.build                    |   4 +
- 9 files changed, 485 insertions(+), 1 deletion(-)
+ 9 files changed, 492 insertions(+), 1 deletion(-)
  create mode 100644 requester/configuration_discovery_handler.cpp
  create mode 100644 requester/configuration_discovery_handler.hpp
  create mode 100644 requester/test/configuration_discovery_handler_test.cpp
@@ -55,7 +53,7 @@ index 71bc6e7..baaeecb 100644
 +                (const override));
  };
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 2ef0d32..b574329 100644
+index 076cd5c..7b5d92c 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
 @@ -559,6 +559,38 @@ PropertyValue DBusHandler::getDbusPropertyVariant(
@@ -98,7 +96,7 @@ index 2ef0d32..b574329 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index cdc539b..2181b8f 100644
+index 5f24322..4e69006 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
 @@ -213,6 +213,14 @@ class DBusHandlerInterface
@@ -153,7 +151,7 @@ index 0221ad3..69a8f82 100644
    dependencies: deps,
    install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index b99de6f..e636669 100644
+index 78289c7..9da29a9 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -174,7 +172,7 @@ index b99de6f..e636669 100644
      std::unique_ptr<oem_platform::Handler> oemPlatformHandler{};
      std::unique_ptr<platform_config::Handler> platformConfigHandler{};
      platformConfigHandler = std::make_unique<platform_config::Handler>();
-@@ -322,7 +326,9 @@ int main(int argc, char** argv)
+@@ -332,7 +336,9 @@ int main(int argc, char** argv)
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
@@ -187,10 +185,10 @@ index b99de6f..e636669 100644
          if (!(revents & EPOLLIN))
 diff --git a/requester/configuration_discovery_handler.cpp b/requester/configuration_discovery_handler.cpp
 new file mode 100644
-index 0000000..4e43d2c
+index 0000000..ac297e1
 --- /dev/null
 +++ b/requester/configuration_discovery_handler.cpp
-@@ -0,0 +1,165 @@
+@@ -0,0 +1,170 @@
 +#include "configuration_discovery_handler.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -314,8 +312,13 @@ index 0000000..4e43d2c
 +        auto eid = std::get<uint64_t>(response.at("EndpointId"));
 +        auto bus = std::get<uint64_t>(response.at("Bus"));
 +        auto componentName = std::get<std::string>(response.at("Name"));
++        if (response.contains("IANA"))
++        {
++            auto iana = std::get<std::string>(response.at("IANA"));
++            return MctpEndpoint{address, eid, bus, componentName, iana};
++        }
 +
-+        return MctpEndpoint{address, eid, bus, componentName};
++        return MctpEndpoint{address, eid, bus, componentName, std::nullopt};
 +    }
 +    else
 +    {
@@ -358,10 +361,10 @@ index 0000000..4e43d2c
 +} // namespace pldm
 diff --git a/requester/configuration_discovery_handler.hpp b/requester/configuration_discovery_handler.hpp
 new file mode 100644
-index 0000000..59bc384
+index 0000000..58d64dc
 --- /dev/null
 +++ b/requester/configuration_discovery_handler.hpp
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,134 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -378,6 +381,7 @@ index 0000000..59bc384
 +    uint64_t EndpointId;
 +    uint64_t bus;
 +    std::string name;
++    std::optional<std::string> iana;
 +};
 +
 +class ConfigurationDiscoveryHandler : public MctpDiscoveryHandlerIntf
@@ -497,10 +501,10 @@ index 0000000..59bc384
 +} // namespace pldm
 diff --git a/requester/test/configuration_discovery_handler_test.cpp b/requester/test/configuration_discovery_handler_test.cpp
 new file mode 100644
-index 0000000..2d23879
+index 0000000..a8230a8
 --- /dev/null
 +++ b/requester/test/configuration_discovery_handler_test.cpp
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,115 @@
 +#include "config.h"
 +
 +#include "common/test/mocked_utils.hpp"
@@ -604,7 +608,8 @@ index 0000000..2d23879
 +        std::make_unique<pldm::ConfigurationDiscoveryHandler>(&mockedUtils);
 +
 +    pldm::MctpEndpoint mockedMctpEndpoint = {uint64_t(0x1), uint64_t(EID),
-+                                             uint64_t(0), "MockedDevice"};
++                                             uint64_t(0), "MockedDevice",
++                                             std::nullopt};
 +    handler->getConfigurations().emplace(
 +        "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice",
 +        mockedMctpEndpoint);
@@ -644,5 +649,5 @@ index 80c27c1..acc112e 100644
                           phosphor_logging_dep,
                           sdbusplus,
 -- 
-2.43.0
+2.25.1
 

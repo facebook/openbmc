@@ -1,7 +1,7 @@
-From 38c4c7cde28a3576a468634015db113ec44394f9 Mon Sep 17 00:00:00 2001
+From 9294ae294ebd6a56db6d32e86ff5555ad1aec854 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
-Subject: [PATCH 5/9] platform-mc: Sensor handling
+Subject: [PATCH 05/11] platform-mc: Sensor handling
 
 Added sensor_manager and numeric_sensor class. The sensor_manager
 class manages the timing of sensor polling. The NumericSensor class
@@ -2061,7 +2061,7 @@ index 0000000..56e1d36
 +    runEventLoopForSeconds(seconds);
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 1873a5e..35d356d 100644
+index 5a14169..401ca01 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -181,7 +181,7 @@ int main(int argc, char** argv)
@@ -2074,5 +2074,5 @@ index 1873a5e..35d356d 100644
      InstanceIdDb instanceIdDb;
      dbus_api::Requester dbusImplReq(bus, "/xyz/openbmc_project/pldm",
 -- 
-2.43.0
+2.25.1
 

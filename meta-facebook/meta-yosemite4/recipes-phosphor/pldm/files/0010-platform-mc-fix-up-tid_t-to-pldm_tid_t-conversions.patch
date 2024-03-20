@@ -1,7 +1,7 @@
-From 213462e927a5ad986f136d5a1b470b83c4b1b27d Mon Sep 17 00:00:00 2001
+From 80a1acfe52be3552c7555725373a45bd09a4d28c Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 3 Jan 2024 11:26:32 -0600
-Subject: [PATCH 9/9] platform-mc: fix up tid_t to pldm_tid_t conversions
+Subject: [PATCH 10/11] platform-mc: fix up tid_t to pldm_tid_t conversions
 
 An earlier patch in this sequence had defined a typedef `tid_t`
 at one point in its history and some later patches rely on it.
@@ -18,9 +18,11 @@ Change-Id: I527d77fcd18cb69aa1e2ae0c5cef5929d25f6ede
 Change-Id: I65cc965651617995b32078d3f3985f66e6f4590e
 ---
  common/types.hpp                           |  1 -
+ oem/meta/platform-mc/event_oem_meta.cpp    |  4 +--
+ oem/meta/platform-mc/event_oem_meta.hpp    |  2 +-
  platform-mc/event_manager.cpp              |  8 +++---
  platform-mc/event_manager.hpp              | 19 +++++++-------
- platform-mc/manager.hpp                    |  8 +++---
+ platform-mc/manager.hpp                    |  6 ++---
  platform-mc/numeric_sensor.cpp             |  4 +--
  platform-mc/numeric_sensor.hpp             |  6 ++---
  platform-mc/platform_manager.cpp           | 26 ++++++++++---------
@@ -38,10 +40,10 @@ Change-Id: I65cc965651617995b32078d3f3985f66e6f4590e
  platform-mc/test/sensor_manager_test.cpp   |  4 +--
  platform-mc/test/terminus_manager_test.cpp |  2 +-
  platform-mc/test/terminus_test.cpp         |  2 +-
- 21 files changed, 110 insertions(+), 104 deletions(-)
+ 23 files changed, 112 insertions(+), 106 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 2c5dcdb..138c48e 100644
+index 443566f..90c94c6 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -25,7 +25,6 @@ using MctpMedium = std::string;
@@ -52,20 +54,55 @@ index 2c5dcdb..138c48e 100644
  
  namespace dbus
  {
-diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index dcc39ca..75400a5 100644
---- a/platform-mc/event_manager.cpp
-+++ b/platform-mc/event_manager.cpp
-@@ -79,7 +79,7 @@ int decode_pldm_cper_event_data(const uint8_t* event_data,
-     return PLDM_SUCCESS;
+diff --git a/oem/meta/platform-mc/event_oem_meta.cpp b/oem/meta/platform-mc/event_oem_meta.cpp
+index ca467aa..660ab94 100644
+--- a/oem/meta/platform-mc/event_oem_meta.cpp
++++ b/oem/meta/platform-mc/event_oem_meta.cpp
+@@ -80,7 +80,7 @@ static inline auto to_hex_string(uint8_t value)
  }
  
--int EventManager::handlePlatformEvent(tid_t tid, uint8_t eventClass,
-+int EventManager::handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
-                                       const uint8_t* eventData,
-                                       size_t eventDataSize)
+ std::string getSlotNumberString(
+-    tid_t tid, const std::map<std::string, MctpEndpoint>& configurations)
++    pldm_tid_t tid, const std::map<std::string, MctpEndpoint>& configurations)
  {
-@@ -135,7 +135,7 @@ int EventManager::handlePlatformEvent(tid_t tid, uint8_t eventClass,
+     std::string slotNumber = "Unknown";
+     for (const auto& [configDbusPath, mctpEndpoint] : configurations)
+@@ -128,7 +128,7 @@ std::string getSlotNumberString(
+ }
+ 
+ int processOemMetaEvent(
+-    tid_t tid, const uint8_t* eventData, [[maybe_unused]] size_t eventDataSize,
++    pldm_tid_t tid, const uint8_t* eventData, [[maybe_unused]] size_t eventDataSize,
+     const std::map<std::string, MctpEndpoint>& configurations)
+ {
+     enum class UnifiedError : uint8_t
+diff --git a/oem/meta/platform-mc/event_oem_meta.hpp b/oem/meta/platform-mc/event_oem_meta.hpp
+index ae6a09f..55822a8 100644
+--- a/oem/meta/platform-mc/event_oem_meta.hpp
++++ b/oem/meta/platform-mc/event_oem_meta.hpp
+@@ -13,7 +13,7 @@ namespace oem_meta
+ {
+ 
+ int processOemMetaEvent(
+-    tid_t tid, const uint8_t* eventData, size_t eventDataSize,
++    pldm_tid_t tid, const uint8_t* eventData, size_t eventDataSize,
+     const std::map<std::string, MctpEndpoint>& configurations);
+ 
+ } // namespace oem_meta
+diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
+index 67c280d..ceca9a5 100644
+--- a/platform-mc/event_manager.cpp
++++ b/platform-mc/event_manager.cpp
+@@ -84,7 +84,7 @@ int decode_pldm_cper_event_data(const uint8_t* event_data,
+ }
+ 
+ bool EventManager::checkMetaIana(
+-    tid_t tid, const std::map<std::string, MctpEndpoint>& configurations)
++    pldm_tid_t tid, const std::map<std::string, MctpEndpoint>& configurations)
+ {
+     for (const auto& [configDbusPath, mctpEndpoint] : configurations)
+     {
+@@ -167,7 +167,7 @@ int EventManager::handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
      return PLDM_ERROR;
  }
  
@@ -74,7 +111,7 @@ index dcc39ca..75400a5 100644
  {
      uint8_t rc = 0;
      uint8_t transferOperationFlag = PLDM_GET_FIRSTPART;
-@@ -241,7 +241,7 @@ requester::Coroutine EventManager::pollForPlatformEventTask(tid_t tid)
+@@ -273,7 +273,7 @@ requester::Coroutine EventManager::pollForPlatformEventTask(tid_t tid)
  }
  
  requester::Coroutine EventManager::pollForPlatformEventMessage(
@@ -83,7 +120,7 @@ index dcc39ca..75400a5 100644
      uint16_t eventIdToAcknowledge, uint8_t& completionCode, uint8_t& eventTid,
      uint16_t& eventId, uint32_t& nextDataTransferHandle, uint8_t& transferFlag,
      uint8_t& eventClass, uint32_t& eventDataSize, uint8_t*& eventData,
-@@ -458,7 +458,7 @@ int EventManager::createSensorThresholdLogEntry(const std::string& messageId,
+@@ -490,7 +490,7 @@ int EventManager::createSensorThresholdLogEntry(const std::string& messageId,
      return PLDM_SUCCESS;
  }
  
@@ -93,10 +130,10 @@ index dcc39ca..75400a5 100644
                                              size_t sensorDataLength)
  {
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index 170a55b..303a9ec 100644
+index 0862a01..95b35ac 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
-@@ -67,7 +67,7 @@ class EventManager
+@@ -70,7 +70,7 @@ class EventManager
       *  @return PLDM completion code
       *
       */
@@ -105,7 +142,7 @@ index 170a55b..303a9ec 100644
                              const uint8_t* eventData, size_t eventDataSize);
  
      std::string getSensorThresholdMessageId(uint8_t previousEventState,
-@@ -77,7 +77,7 @@ class EventManager
+@@ -80,7 +80,7 @@ class EventManager
       *
       *  @param[in] dstTid - the destination TID
       */
@@ -114,7 +151,7 @@ index 170a55b..303a9ec 100644
  
    protected:
      /** @brief Send pollForPlatformEventMessage and return response
-@@ -99,11 +99,12 @@ class EventManager
+@@ -102,22 +102,23 @@ class EventManager
       *
       */
      requester::Coroutine pollForPlatformEventMessage(
@@ -132,7 +169,11 @@ index 170a55b..303a9ec 100644
  
      virtual int processCperEvent(const uint8_t* eventData,
                                   size_t eventDataSize);
-@@ -111,7 +112,7 @@ class EventManager
+ 
+     bool checkMetaIana(
+-        tid_t tid, const std::map<std::string, MctpEndpoint>& configurations);
++        pldm_tid_t tid, const std::map<std::string, MctpEndpoint>& configurations);
+ 
      int createCperDumpEntry(const std::string& dataType,
                              const std::string& dataPath);
  
@@ -141,20 +182,11 @@ index 170a55b..303a9ec 100644
                                    const uint8_t* sensorData,
                                    size_t sensorDataLength);
  
-@@ -124,7 +125,7 @@ class EventManager
-     TerminusManager& terminusManager;
- 
-     /** @brief List of discovered termini */
--    std::map<tid_t, std::shared_ptr<Terminus>>& termini;
-+    std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini;
- };
- } // namespace platform_mc
- } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 8f8d27a..baaeb5c 100644
+index bd8df91..a9ad507 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
-@@ -63,12 +63,12 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -69,12 +69,12 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          terminusManager.removeMctpTerminus(mctpInfos);
      }
  
@@ -169,16 +201,7 @@ index 8f8d27a..baaeb5c 100644
      {
          sensorManager.stopPolling(tid);
      }
-@@ -110,7 +110,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
-         return PLDM_SUCCESS;
-     }
- 
--    requester::Coroutine pollForPlatformEvent(tid_t tid)
-+    requester::Coroutine pollForPlatformEvent(pldm_tid_t tid)
-     {
-         auto it = termini.find(tid);
-         if (it != termini.end())
-@@ -124,7 +124,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -142,7 +142,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
  
    private:
      /** @brief List of discovered termini */
@@ -879,5 +902,5 @@ index 7f84042..311e35f 100644
  
      EXPECT_EQ(tid, t1.getTid());
 -- 
-2.43.0
+2.25.1
 

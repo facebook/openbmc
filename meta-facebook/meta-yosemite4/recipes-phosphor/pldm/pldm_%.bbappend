@@ -12,8 +12,9 @@ SRC_URI += " \
     file://0006-platform-mc-Added-EventManager.patch \
     file://0007-requester-support-multi-host-MCTP-devices-hot-plug.patch \
     file://0008-Support-OEM-META-write-file-request-for-post-code-hi.patch \
-    file://0009-platform-mc-fix-up-tid_t-to-pldm_tid_t-conversions.patch \
-    file://0010-Workaround-for-pldmd-memory-leak.patch \
+    file://0009-platform-mc-Add-OEM-Meta-event-handler.patch \
+    file://0010-platform-mc-fix-up-tid_t-to-pldm_tid_t-conversions.patch \
+    file://0011-Workaround-for-pldmd-memory-leak.patch \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
     file://pldm-monitor-memory.sh\

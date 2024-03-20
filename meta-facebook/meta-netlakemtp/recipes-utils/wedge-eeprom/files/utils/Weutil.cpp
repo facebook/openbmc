@@ -33,15 +33,15 @@ static void usage() {
   std::cout
       << "weutil [-h | --help] [-a | --all] [-j | --json] [-f | --format] [-l | --list] [-e <dev-name> | --eeprom <dev-name>]\n";
   std::cout
-      << "       [-w <file> | --write <file>] [-m <Type> <Value> | --modify <Type> <Value>]\n";
-  std::cout << "   -h | --help : show usage \n";
-  std::cout << "   -a | --all : print all eeprom devices data \n";
-  std::cout << "   -j | --json : print eeprom data in JSON format \n";
-  std::cout << "   -e | --eeprom : eeprom device name \n";
-  std::cout << "   -f | --format : eeprom format \n";
-  std::cout << "   -l | --list : list all eeprom device names \n";
-  std::cout << "   -w | --write : write file data to eeprom \n";
-  std::cout << "   -m | --modify : modify type value to eeprom,rules are at the bottom \n";
+      << "       [-w <file> | --write <file>] [-m <Type> <Value> | --modify <Type> <Value>] [-d <file> | --dump <file>]\n";
+  std::cout << "   -h | --help : show usage. \n";
+  std::cout << "   -a | --all : print all eeprom devices data. \n";
+  std::cout << "   -j | --json : print eeprom data in JSON format. \n";
+  std::cout << "   -e | --eeprom : eeprom device name. \n";
+  std::cout << "   -f | --format : eeprom format. \n";
+  std::cout << "   -l | --list : list all eeprom device names. \n";
+  std::cout << "   -w | --write : write file data to eeprom. \n";
+  std::cout << "   -m | --modify : modify type value to eeprom,rules are at the bottom. \n";
   std::cout << "        [Type]  |                     [Name]                   |    [Length]\n";
   std::cout << "       -------------------------------------------------------------------------\n";
   std::cout << "          1     |  Product Name                                |   Variable\n";
@@ -65,8 +65,10 @@ static void usage() {
   std::cout << "          19    |  Switch ASIC (MAC Base + MAC Address Size)   |      8\n";
   std::cout << "          20    |  META Reserved (MAC Base + MAC Address Size) |      8\n";
   std::cout << "       -------------------------------------------------------------------------\n";
-  std::cout << "          Notice: Type 17~20 need to add - before enter MAC Address Size\n";
+  std::cout << "          Notice: Type 17~20 need to add - before enter MAC Address Size. \n";
   std::cout << "          ex. weutil -m 17 11:22:33:44:55:66-258\n";
+  std::cout << "   -d | --dump : dump eeprom as a file.\n";
+  std::cout << "        ex. weutil -d aaa.bin or weutil -d /home/aaa.bin\n";
 }
 
 static void printEepromData(const std::string& eDeviceName, bool jFlag) {
@@ -154,6 +156,24 @@ static void writeEepromData(const std::string& eDeviceName, const std::string& e
     }
 }
 
+static void dumpEepromData(const std::string& eepromDevicePath, const std::string& dumpFileName){
+  std::streamsize eepromSize;
+  std::vector<uint8_t> eepromData = readFileContents(eepromDevicePath, eepromSize);
+  // read eeprom file
+  if (eepromData.empty()) {
+    std::cerr << "ERROR: Unable to read data from: " << eepromDevicePath << std::endl;
+    return;
+  }
+
+  // write dump file using writeFileContents function
+  int result = writeFileContents(dumpFileName, eepromData);
+  if (result) {
+    std::cout << "EEPROM data dumped successfully to " << dumpFileName << std::endl;
+  } else {
+    std::cerr << "ERROR: Failed to write data to file: " << dumpFileName << std::endl;
+  }
+}
+
 static void modifyEepromData(const std::string& eDeviceName,
                              const std::string& eDevicePath,
                              const std::string& modifyType,
@@ -165,24 +185,30 @@ static void modifyEepromData(const std::string& eDeviceName,
 
   // check modify type/length/value
   switch (modifyTypeID) {
-    case typeId_v5::ID_SYS_ASSEM_PART_NUM:
+    case typeId_v5::ID_SYS_ASSEM_PART_NUM: // System Assembly Part Number
       if (modifyValue.length() > SYS_LEN) {
         std::cout << "ERROR: Type " << modifyTypeID << " input value is out of range !" << '\n';
         return;
       } else {
+        if (modifyValue.length() < SYS_LEN) {
+          modifyValue.append(SYS_LEN - modifyValue.length(), ' ');
+        }
         modifyValueLength = SYS_LEN;
       }
       break;
-    case typeId_v5::ID_SYS_MANUFACTURING_DATE:
+    case typeId_v5::ID_SYS_MANUFACTURING_DATE: // System Manufacturing Date
       if (modifyValue.length() > SYS_MANUFACTURING_DATE_LEN) {
         std::cout << "ERROR: Type " << modifyTypeID << " input value is out of range !" << '\n';
         return;
       } else {
+        if (modifyValue.length() < SYS_MANUFACTURING_DATE_LEN) {
+          modifyValue.append(SYS_MANUFACTURING_DATE_LEN - modifyValue.length(), ' ');
+        }
         modifyValueLength = SYS_MANUFACTURING_DATE_LEN;
       }
       break;
-    case typeId_v5::ID_PCBA_PART_NUM:
-    case typeId_v5::ID_PCB_PART_NUM:
+    case typeId_v5::ID_PCBA_PART_NUM: // Meta PCBA Part Number
+    case typeId_v5::ID_PCB_PART_NUM:  // Meta PCB Part Number
       if (modifyValue.length() > PCB_PCBA_PART_LEN) {
         std::cout << "ERROR: Type " << modifyTypeID << " input value is out of range !" << '\n';
         return;
@@ -193,9 +219,9 @@ static void modifyEepromData(const std::string& eDeviceName,
         modifyValueLength = PCB_PCBA_PART_LEN;
       }
       break;
-    case typeId_v5::ID_PRODUCT_PRODUCTION_STATE:
-    case typeId_v5::ID_PRODUCT_VER:
-    case typeId_v5::ID_PRODUCT_SUB_VER:{
+    case typeId_v5::ID_PRODUCT_PRODUCTION_STATE: // Product Production State
+    case typeId_v5::ID_PRODUCT_VER:              // Product Version
+    case typeId_v5::ID_PRODUCT_SUB_VER:{         // Product Sub Version
         int modifyValueInt = std::stoi(modifyValue);
         if (modifyValueInt < 0 || modifyValueInt > 255) {
           std::cout << "ERROR: Type " << modifyTypeID << " is out of range !" << '\n';
@@ -206,10 +232,10 @@ static void modifyEepromData(const std::string& eDeviceName,
         }
       }
       break;
-    case typeId_v5::ID_X86_CPU_MAC:
-    case typeId_v5::ID_BMC_MAC:
-    case typeId_v5::ID_SWITCH_ASIC_MAC:
-    case typeId_v5::ID_RSVD_MAC:{
+    case typeId_v5::ID_X86_CPU_MAC:     // X86 CPU MAC Addresses
+    case typeId_v5::ID_BMC_MAC:         // BMC MAC Addresses
+    case typeId_v5::ID_SWITCH_ASIC_MAC: // Switch ASIC MAC Addresses
+    case typeId_v5::ID_RSVD_MAC:{       // Meta Reserved MAC Addresses
         // check MAC value format
         int colonCount = 0; // detect ":"
         int dashCount = 0;  // detect "-"
@@ -246,8 +272,8 @@ static void modifyEepromData(const std::string& eDeviceName,
             modifyValueMac.push_back(static_cast<uint8_t>((macBase >> 8) & 0xFF)); // HighByte
             modifyValueMac.push_back(static_cast<uint8_t>(macBase & 0xFF));        // LowByte
           }
-          modifyValueLength = MAC_LEN;
         }
+        modifyValueLength = MAC_LEN;
       }
         break;
     default:
@@ -391,6 +417,7 @@ int main(int argc, char* argv[]) {
   int allFlag = 0;
   int writeFlag = 0;
   int modifyFlag = 0;
+  int dumpFlag = 0;
   int c;
   int modifyTypeInt = 0; //modify value change int
   std::string eepromDeviceName{DEFAULT_EEPROM_NAME};
@@ -398,6 +425,7 @@ int main(int argc, char* argv[]) {
   std::string eepromDevicePath;
   std::string modifyType;
   std::string modifyValue;
+  std::string dumpFileName;
 
   static struct option long_options[] = {
       {"list", no_argument, NULL, 'l'},
@@ -408,10 +436,11 @@ int main(int argc, char* argv[]) {
       {"eeprom", required_argument, NULL, 'e'},
       {"write", required_argument, NULL, 'w'},
       {"modify", required_argument, NULL, 'm'},
+      {"dump", required_argument, NULL, 'd'},
       {0, 0, 0, 0}};
 
   doPrint = (argc == 1) ? 1 : 0;
-  while ((c = getopt_long(argc, argv, "ahjlf:e:w:m:", long_options, &opt_index)) !=
+  while ((c = getopt_long(argc, argv, "ahjlf:e:w:m:d:", long_options, &opt_index)) !=
          -1) {
     switch (c) {
       case 'e':
@@ -440,27 +469,31 @@ int main(int argc, char* argv[]) {
         writeFlag = 1;
         break;
       case 'm': {
-          if (optind < argc && argv[optind] != NULL && argv[optind][0] != '-') {
-            try {
-              modifyTypeInt = std::stoi(optarg);
-            } catch (const std::invalid_argument& e) {
-              std::cerr << "ERROR: Type is Invalid argument: " << optarg << std::endl;
-              exit(1);
-            } catch (const std::out_of_range& e) {
-              std::cerr << "ERROR: Type is Argument out of range: " << optarg << std::endl;
-              exit(1);
-            }
-            modifyType = optarg;
-            modifyValue = argv[optind];
-            optind++;
-            modifyFlag = 1;
-          }
-          else {
-            std::cerr << "ERROR: -m option requires two arguments.\n";
+        if (optind < argc && argv[optind] != NULL && argv[optind][0] != '-') {
+          try {
+            modifyTypeInt = std::stoi(optarg);
+          } catch (const std::invalid_argument& e) {
+            std::cerr << "ERROR: Type is Invalid argument: " << optarg << std::endl;
+            exit(1);
+          } catch (const std::out_of_range& e) {
+            std::cerr << "ERROR: Type is Argument out of range: " << optarg << std::endl;
             exit(1);
           }
-          break;
+          modifyType = optarg;
+          modifyValue = argv[optind];
+          optind++;
+          modifyFlag = 1;
+        } else {
+          std::cerr << "ERROR: -m option requires two arguments.\n";
+          exit(1);
         }
+        break;
+      }
+      case 'd': {
+        dumpFileName = optarg;
+        dumpFlag = 1;
+        break;
+      }
       case ':': // missing option argument.
         std::cout << argv[0] << "option -" << optopt
                   << " requires an argument\n";
@@ -516,6 +549,7 @@ int main(int argc, char* argv[]) {
         for (auto& eeprom : res) {
           if (eeprom.first == eepromDeviceName) {
             eepromDevicePath = eeprom.second;
+            break;
           }
         }
         writeEepromData(eepromDeviceName, eepromDevicePath, writeFileName);
@@ -534,6 +568,7 @@ int main(int argc, char* argv[]) {
       for (auto& eeprom : res) {
         if (eeprom.first == eepromDeviceName) {
           eepromDevicePath = eeprom.second;
+          break;
         }
       }
       modifyEepromData(eepromDeviceName, eepromDevicePath, modifyType, modifyValue);
@@ -543,4 +578,22 @@ int main(int argc, char* argv[]) {
     }
     exit(0);
   }
+
+  if (dumpFlag) {
+    if (!dumpFileName.empty()) {
+      std::map<std::string, std::string> res = listEepromDevices();
+      for (auto& eeprom : res) {
+        if (eeprom.first == eepromDeviceName) {
+          eepromDevicePath = eeprom.second;
+          break;
+        }
+      }
+      dumpEepromData(eepromDevicePath, dumpFileName);
+    } else {
+      std::cerr << "ERROR: Missing file name for the dump operation.\n";
+      exit(1);
+    }
+    exit(0);
+  }
+
 }

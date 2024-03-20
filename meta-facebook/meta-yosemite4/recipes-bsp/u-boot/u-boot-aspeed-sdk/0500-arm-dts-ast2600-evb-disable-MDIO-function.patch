@@ -1,0 +1,64 @@
+From 277c23a83f55e5fbff29827a352ef662193762ec Mon Sep 17 00:00:00 2001
+From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
+Date: Wed, 20 Mar 2024 10:15:06 +0800
+Subject: [PATCH] arm: dts: ast2600-evb: disable MDIO function
+
+Description:
+Disable MDIO function since the MDIO function pins would be config as
+I2C and GPIO.
+---
+ arch/arm/dts/ast2600-evb.dts | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/dts/ast2600-evb.dts b/arch/arm/dts/ast2600-evb.dts
+index 6db1efdda5..4afd943706 100644
+--- a/arch/arm/dts/ast2600-evb.dts
++++ b/arch/arm/dts/ast2600-evb.dts
+@@ -60,7 +60,7 @@
+ };
+ 
+ &mdio {
+-	status = "okay";
++	status = "disabled";
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <	&pinctrl_mdio1_default &pinctrl_mdio2_default
+ 			&pinctrl_mdio3_default &pinctrl_mdio4_default>;
+@@ -84,7 +84,7 @@
+ };
+ 
+ &mac0 {
+-	status = "okay";
++	status = "disabled";
+ 	phy-mode = "rgmii-rxid";
+ 	phy-handle = <&ethphy0>;
+ 	pinctrl-names = "default";
+@@ -92,7 +92,7 @@
+ };
+ 
+ &mac1 {
+-	status = "okay";
++	status = "disabled";
+ 	phy-mode = "rgmii-rxid";
+ 	phy-handle = <&ethphy1>;
+ 	pinctrl-names = "default";
+@@ -100,7 +100,7 @@
+ };
+ 
+ &mac2 {
+-	status = "okay";
++	status = "disabled";
+ 	phy-mode = "rgmii";
+ 	phy-handle = <&ethphy2>;
+ 	pinctrl-names = "default";
+@@ -108,7 +108,7 @@
+ };
+ 
+ &mac3 {
+-	status = "okay";
++	status = "disabled";
+ 	phy-mode = "rgmii";
+ 	phy-handle = <&ethphy3>;
+ 	pinctrl-names = "default";
+-- 
+2.25.1
+

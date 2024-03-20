@@ -20,7 +20,7 @@ check_power_on() {
 
 	power_status=$(gpioget "$(basename /sys/bus/i2c/devices/"$i2c_bus"-0023/*gpiochip*)" 16)
 	if [ "$power_status" != "1" ]; then
-		echo "Checki Power : Off"
+		echo "Check Power : Off"
 		echo "Power on before FF/WF BIC update"
 		exit 255
 	fi
@@ -35,19 +35,33 @@ recovery_bic_by_uart() {
 	local uart_image=$4
 	local uart_num=$((slot < 5 ? slot - 1 :slot))
 	local i2c_bus=$((slot-1))
+	local ret=255
 
 	echo "UART is ttyS$uart_num"
 	echo "i2c bus is $i2c_bus"
 
 	# Switch UART to corresponding BIC
 	i2ctransfer -f -y "$i2c_bus" w2@"$SB_CPLD_ADDR" "$SB_UART_MUX_SWITCH_REG" "$cpld_uart_routing"
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
 
 	# Set BIC boot from UART
 	echo "Setting BIC boot from UART"
 	i2ctransfer -f -y "$i2c_bus" w2@"$SB_CPLD_ADDR" "$BIC_BOOT_STRAP_REG" "$boot_strap_reg"
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
 
 	# set UART to 115200
 	/bin/stty -F "/dev/ttyS$uart_num" 115200
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
+
 	sleep 3
 
 	echo "Doing the recovery update..."
@@ -59,11 +73,20 @@ recovery_bic_by_uart() {
 
 	# set UART back to 57600
 	/bin/stty -F "/dev/ttyS$uart_num" 57600
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
 
 	# Set BIC boot from spi
 	i2ctransfer -f -y "$i2c_bus" w2@"$SB_CPLD_ADDR" "$BIC_BOOT_STRAP_REG" "$BIC_BOOT_STRAP_SPI_VAL"
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
 
 	echo "Recovery BIC is finished."
+	return 0
 }
 
 wait_for_update_complete() {
@@ -75,13 +98,13 @@ wait_for_update_complete() {
 		progress=$(busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.ActivationProgress Progress | cut -d " " -f 2)
 		if [ "${progress}" == 100 ]; then
 			echo -ne \\n"Update done."\\n
-			break
+			return 0
 		fi
 		counter=$((counter+1))
 		# Over two minutes is considered timeout
 		if [ "${counter}" == 300 ]; then
 			echo -ne \\n"Time out. Fail"\\n
-			break
+			return 255
 		fi
 	done
 }
@@ -100,8 +123,10 @@ update_bic() {
 	if [ "$software_id" != "" ]; then
 		busctl set-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.Activation RequestedActivation s "xyz.openbmc_project.Software.Activation.RequestedActivations.Active"
 		wait_for_update_complete
+		return $?
 	else
 		echo "Fail: Miss software id."
+		return 255
 	fi
 }
 
@@ -221,15 +246,22 @@ if [ "$is_rcvy" == true ]; then
   case $bic_name in
     sd)
       recovery_bic_by_uart "$slot_id" "0x04" "0x01" "$uart_image"
+      ret=$?
       ;;
     ff|wf)
       check_power_on "$slot_id"
       cpld_uart_routing=$( [ "$bic_name" == "ff" ] && echo "0x05" || echo "0x01" )
       boot_strap_reg=$( [ "$bic_name" == "ff" ] && echo "0x04" || echo "0x02" )
       recovery_bic_by_uart "$slot_id" "$cpld_uart_routing" "$boot_strap_reg" "$uart_image"
+      ret=$?
       pldmtool raw -m "${slot_id}0" -d 0x80 0x02 0x39 0x1 0x1 0x1 0x1 0x1
       ;;
   esac
+
+  if [ "$ret" -ne 0 ]; then
+	echo "Failed to Recovery BIC: Exit code $ret"
+	exit $ret
+  fi
 
   sleep 3
   echo "Restart MCTP/PLDM daemon"
@@ -244,6 +276,11 @@ busctl tree xyz.openbmc_project.MCTP
 echo "Start to Update BIC"
 
 update_bic "$pldm_image"
+ret=$?
+if [ "$ret" -ne 0 ]; then
+	echo "Failed to Update BIC: Exit code $ret"
+	exit $ret
+fi
 
 sleep 3
 

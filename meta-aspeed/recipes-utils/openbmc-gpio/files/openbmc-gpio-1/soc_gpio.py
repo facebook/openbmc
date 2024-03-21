@@ -23,7 +23,7 @@ _soc_reg_map = {}
 
 
 class SCUReg(phymemory.PhyMemory):
-    SCU_REG_MAX = 0x1A4
+    SCU_REG_MAX = 0x6E8
     SCU_ADDR_BASE = 0x1E6E2000
 
     def __init__(self, reg):

@@ -21,4 +21,5 @@ SRC_URI += " \
     file://openbmc-gpio-1/soc_gpio.py \
     file://openbmc-gpio-1/ast2400_gpio_table.py \
     file://openbmc-gpio-1/ast2500_gpio_table.py \
+    file://openbmc-gpio-1/ast2600_gpio_table.py \
     "

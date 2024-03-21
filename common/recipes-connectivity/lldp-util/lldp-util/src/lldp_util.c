@@ -475,10 +475,17 @@ int lldp_process_packet(const uint8_t* buf,
     buf += 6;
     uint16_t ethertype = lldp_read_u16(&buf);
 
-    if (ethertype == ETHERTYPE_VLAN) {
-      uint16_t vlan __attribute__((unused)) = lldp_read_u16(&buf);
-      ethertype = lldp_read_u16(&buf);
-    }
+    /*
+     * For now, don't decode or print VLAN tagged packets.  Doing this
+     * properly is tricky (e.g. recursion) and we don't have a use case
+     * internally for it at Meta.  When we do, it might be more useful
+     * to move to a 3rd party tool that does this better.
+     *
+     * if (ethertype == ETHERTYPE_VLAN) {
+     * uint16_t vlan __attribute__((unused)) = lldp_read_u16(&buf);
+     * ethertype = lldp_read_u16(&buf);
+     * }
+     */
 
     if (ethertype == ETHERTYPE_LLDP) {
       lldp_neighbor_t neighbor;

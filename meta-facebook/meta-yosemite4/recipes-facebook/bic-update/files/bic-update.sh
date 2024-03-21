@@ -1,5 +1,10 @@
 #!/bin/bash
 
+lockfile="/tmp/bic-update.lock"
+
+exec 200>"$lockfile"
+flock -n 200 || { echo "BIC update is already running"; exit 1; }
+
 SB_CPLD_ADDR="0x22"
 SB_UART_MUX_SWITCH_REG="0x08"
 BIC_BOOT_STRAP_SPI_VAL="0x00"
@@ -9,7 +14,7 @@ show_usage() {
   echo "Usage: bic-updater.sh [sd|ff|wf] (--rcvy <slot_id> <uart image>) (<slot_id>) <pldm image>"
   echo "       update all BICs  : bic-updater.sh [sd|ff|wf] <pldm image>"
   echo "       update one BIC   : bic-updater.sh [sd|ff|wf] <slot_id> <pldm image>"
-  echo "       recovery one BIC : bic-updater.sh [sd|ff|wf] --rcvy <slot_id> <uart image> <pldm image>"
+  echo "       recovery one BIC and then update all BICs : : bic-updater.sh [sd|ff|wf] --rcvy <slot_id> <uart image> <pldm image>"
   echo ""
 }
 
@@ -109,6 +114,19 @@ wait_for_update_complete() {
 	done
 }
 
+
+delete_software_id() {
+	if [ "$software_id" != "" ]; then
+	    echo "Delete software id. software id = $software_id"
+		busctl call xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Object.Delete Delete
+		ret=$?
+		if [ "$ret" -ne 0 ]; then
+		echo "Failed to delete software id: Exit code $ret"
+		exit $ret
+		fi
+	fi
+}
+
 update_bic() {
 
 	cp "$1" /tmp/images
@@ -121,6 +139,13 @@ update_bic() {
 	sleep 1
 
 	if [ "$software_id" != "" ]; then
+
+		if ! busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.ActivationProgress Progress >/dev/null; then
+			echo "The image does not match with any devices. Please check it."
+			delete_software_id
+			exit 255
+		fi
+
 		busctl set-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.Activation RequestedActivation s "xyz.openbmc_project.Software.Activation.RequestedActivations.Active"
 		wait_for_update_complete
 		return $?
@@ -195,6 +220,23 @@ is_sd_bic() {
 	fi
 }
 
+
+is_other_bic_updating() {
+  echo "Check if other BICs are updating"
+
+  pldm_output=$(busctl tree xyz.openbmc_project.PLDM)
+  if echo "$pldm_output" | grep -qE "/xyz/openbmc_project/software/[0-9]+"; then
+    echo "$pldm_output" | grep -E "/xyz/openbmc_project/software/[0-9]+"
+	previous_software_id=$(busctl tree xyz.openbmc_project.PLDM |grep /xyz/openbmc_project/software/ | cut -d "/" -f 5)
+    busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$previous_software_id" xyz.openbmc_project.Software.ActivationProgress Progress > /dev/null
+	ret=$?
+	if [ "$ret" -eq 0 ]; then
+		echo "It can only be updated one BIC at a time. Please wait until the software update is completed."
+		exit 255
+	fi
+  fi
+}
+
 # Function to prompt for continuation and check user input
 prompt_confirmation() {
   echo "WARNING! This will automatically update all BICs."
@@ -240,6 +282,9 @@ fi
 
 # Execute recovery operations if in recovery mode, based on the value of bic_name
 if [ "$is_rcvy" == true ]; then
+
+  is_other_bic_updating
+
   # Workaround: Avoid pldm daemon blocked
   systemctl stop pldmd
   echo "Start to Recovery slot $slot_id $bic_name BIC"
@@ -260,7 +305,7 @@ if [ "$is_rcvy" == true ]; then
 
   if [ "$ret" -ne 0 ]; then
 	echo "Failed to Recovery BIC: Exit code $ret"
-	exit $ret
+	exit "$ret"
   fi
 
   sleep 3
@@ -272,13 +317,21 @@ fi
 # Wating for mctp and pldm to restart
 sleep 10
 
+if ! systemctl is-active --quiet pldmd; then
+    echo "STOP. PLDM service is not running. Please check pldmd status."
+    exit 255
+fi
+
 busctl tree xyz.openbmc_project.MCTP
 echo "Start to Update BIC"
+
+is_other_bic_updating
 
 update_bic "$pldm_image"
 ret=$?
 if [ "$ret" -ne 0 ]; then
 	echo "Failed to Update BIC: Exit code $ret"
+	delete_software_id
 	exit $ret
 fi
 
@@ -311,6 +364,9 @@ if [ "$bic_name" == "wf" ] || [ "$bic_name" == "ff" ]; then
 	sleep 3
 fi
 
-systemctl restart pldmd
+delete_software_id
 
 echo "Done"
+
+#unlock
+flock -u 200

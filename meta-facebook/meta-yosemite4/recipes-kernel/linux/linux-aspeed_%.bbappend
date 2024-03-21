@@ -17,4 +17,5 @@ SRC_URI += " \
     file://0514-ARM-dts-aspeed-yosemite4-Enable-ipmb-device-for-OCP-.patch \
     file://0515-pinctrl-pinctrl-aspeed-g6-correct-the-offset-of-SCU6.patch \
     file://0516-ARM-dts-aspeed-yosemite4-disable-GPIO-internal-Pull-.patch \
+    file://0517-yosemite4-Change-IOE-i2c-address.patch \
 "

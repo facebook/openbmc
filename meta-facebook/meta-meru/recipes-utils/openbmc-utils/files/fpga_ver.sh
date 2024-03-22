@@ -36,6 +36,17 @@ else
     echo "SCM_FPGA: $((val_major)).$((val_minor))"
 fi
 
+echo "------SMB-FPGA------"
+
+if [ ! -d "$SMBCPLD_SYSFS_DIR" ]; then
+    echo "SMB_FPGA: FPGA_DRIVER_NOT_DETECTED"
+    exitCode=1
+else
+    val_major=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/"$maj_ver")
+    val_minor=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/"$min_ver")
+    echo "SMB_FPGA: $((val_major)).$((val_minor))"
+fi
+
 if [ "$exitCode" -ne 0 ]; then
     echo "One or more fpga versions was not detected... exiting"
     exit 1

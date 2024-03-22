@@ -840,6 +840,7 @@ SENSOR_BASE_NUM sensor_base_cl = {0x50, 0x80, 0xA0, 0xD0};
 SENSOR_BASE_NUM sensor_base_hd = {0x50, 0x80, 0xA0, 0xD0};
 SENSOR_BASE_NUM sensor_base_hd_op = {0x40, 0x70, 0xA0, 0xD0};
 SENSOR_BASE_NUM sensor_base_gl = {0x50, 0x80, 0xA0, 0xD0};
+SENSOR_BASE_NUM sensor_base_ji = {0x50, 0x80, 0xA0, 0xD0};
 
 struct pal_key_restore_data{
   char *key;
@@ -5756,6 +5757,9 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
         } else {
           sensor_base = &sensor_base_gl;
         }
+        break;
+      case SERVER_TYPE_JI:
+        sensor_base = &sensor_base_ji;
         break;
       default:
         syslog(LOG_WARNING, "%s(): unknown board type", __func__);

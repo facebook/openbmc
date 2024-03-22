@@ -3319,6 +3319,10 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
         }
         break;
 
+      case SERVER_TYPE_JI:
+        // TODO: If necessary, apply sensor value correction to Java Island.
+        break;
+
       default:
         syslog(LOG_WARNING, "%s()  fru%x, unknown slot type 0x%x", __func__, fru, slot_type);
         break;

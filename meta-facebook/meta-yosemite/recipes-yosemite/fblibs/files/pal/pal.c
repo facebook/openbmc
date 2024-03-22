@@ -1035,10 +1035,10 @@ pal_sled_cycle(void) {
   syslog(LOG_CRIT, "SLED_CYCLE successful");
   pal_update_ts_sled();
   // Remove the adm1275 module as the HSC device is busy
-  system("rmmod adm1275");
+  (void)!system("rmmod adm1275");
 
   // Send command to HSC power cycle
-  system("i2cset -y 10 0x40 0xd9 c");
+  (void)!system("i2cset -y 10 0x40 0xd9 c");
 
   return 0;
 }

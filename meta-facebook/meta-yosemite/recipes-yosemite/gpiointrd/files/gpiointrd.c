@@ -151,7 +151,7 @@ static void default_gpio_check(void) {
     if (read_device(vpath, &value) == 0) {
       if (value != def_bic_ready[fru].def_val) {
         last_bic_ready[fru] = value;
-        syslog(LOG_CRIT, def_bic_ready[fru].log);
+        syslog(LOG_CRIT, "%s", def_bic_ready[fru].log);
       }
     }
   }

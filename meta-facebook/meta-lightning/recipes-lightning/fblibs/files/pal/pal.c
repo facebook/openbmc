@@ -439,8 +439,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     }
 
     /* To avoid the flag file is not removed by enclosure-util */
-    fscanf(fp, "%d ", &tmp);
-    if (tmp < 1) {
+    ret = fscanf(fp, "%d ", &tmp);
+    if (ret != 1 || tmp < 1) {
       fclose(fp);
       remove(SKIP_READ_SSD_TEMP);
       return -1;
@@ -909,8 +909,8 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
 int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
-  char path[64] = {0};
-  char device_name[64] = {0};
+  char path[LARGEST_DEVICE_NAME] = {0};
+  char device_name[LARGEST_DEVICE_NAME] = {0};
   int val = 0;
   int pwm_enable = 0;
 
@@ -1195,7 +1195,12 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   }
 
   lseek(fd, (sizeof(uint8_t) * MAX_SENSOR_NUM) - 1, SEEK_SET);
-  write(fd, "", 1);
+  ret = write(fd, "", 1);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to write: %d", __func__, ret);
+    close(fd);
+    return;
+  }
 
   sensorStatus = (uint8_t*) mmap(NULL, (sizeof(uint8_t) * MAX_SENSOR_NUM),
                               PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -1262,7 +1267,12 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   }
 
   lseek(fd, (sizeof(uint8_t) * MAX_SENSOR_NUM) - 1, SEEK_SET);
-  write(fd, "", 1);
+  ret = write(fd, "", 1);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to write: %d", __func__, ret);
+    close(fd);
+    return;
+  }
 
   sensorStatus = (uint8_t*) mmap(NULL, (sizeof(uint8_t) * MAX_SENSOR_NUM),
                               PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);

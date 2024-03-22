@@ -417,7 +417,7 @@ main(int argc, char **argv) {
 
   errno = 0;
 
-  logfd = open(LOGFILE, O_CREAT | O_WRONLY);
+  logfd = open(LOGFILE, O_CREAT | O_WRONLY, 0755);
   if (logfd < 0) {
     syslog(LOG_WARNING, "Opening a tmp file failed. errno: %d", errno);
     return -1;

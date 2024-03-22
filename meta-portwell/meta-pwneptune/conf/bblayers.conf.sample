@@ -17,6 +17,3 @@ BBLAYERS ?= " \
   ##OEROOT##/../../../meta-portwell/meta-pwneptune \
   ##OEROOT##/../../../meta-portwell/meta-python3 \
   "
-BBLAYERS_NON_REMOVABLE ?= " \
-  ##OEROOT##/meta \
-  "

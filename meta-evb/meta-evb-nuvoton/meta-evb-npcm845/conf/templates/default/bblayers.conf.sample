@@ -23,6 +23,3 @@ BBLAYERS ?= " \
   ##OEROOT##/../../meta-evb/meta-evb-nuvoton/meta-evb-npcm845 \
   ##OEROOT##/meta-nuvoton \
   "
-BBLAYERS_NON_REMOVABLE ?= " \
-  ##OEROOT##/meta \
-  "

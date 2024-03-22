@@ -19,6 +19,3 @@ BBLAYERS ?= " \
   ##OEROOT##/../../../meta-facebook/meta-backports \
   ##OEROOT##/../../../meta-facebook/meta-fbttn \
   "
-BBLAYERS_NON_REMOVABLE ?= " \
-  ##OEROOT##/meta \
-  "

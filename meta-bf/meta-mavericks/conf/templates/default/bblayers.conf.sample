@@ -20,6 +20,3 @@ BBLAYERS ?= " \
   ##OEROOT##/../../../meta-bf/meta-mavericks \
   ##OEROOT##/../../../meta-facebook/meta-python3 \
   "
-BBLAYERS_NON_REMOVABLE ?= " \
-  ##OEROOT##/meta \
-  "

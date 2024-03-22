@@ -7,4 +7,4 @@ OLDEST_KERNEL = "5.10"
 MACHINE ??= "churchillmono"
 
 # OpenBMC distro settings - Keeping as openbmc-fb to avoid incompatibilities
-DISTRO ?= "openbmc-fb-2"
+DISTRO ?= "openbmc-fb-kirkstone"

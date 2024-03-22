@@ -4,11 +4,11 @@
 
 # Machine Selection
 MACHINE ??= "fby2"
-# select uncomment the following line to use pliot uboot upgrade 
+# select uncomment the following line to use pliot uboot upgrade
 # MACHINE = "fby2-ubu"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb"
+DISTRO ?= "openbmc-fb-rocko"
 
 # The following will enable a build capable of verified-boot.
 # Images and the resultant flash are always built as a FIT (firmware image).

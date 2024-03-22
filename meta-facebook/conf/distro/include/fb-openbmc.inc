@@ -1,7 +1,6 @@
 # Facebook OpenBMC distro
 
 # Use the base poky distro, but override various parameters.
-require conf/distro/poky.conf
 require conf/distro/include/fb-base.inc
 DISTROOVERRIDES .= ":openbmc-fb"
 
@@ -48,3 +47,13 @@ CONF_VERSION ?= "1"
 HOSTTOOLS += "realpath"
 
 PREFERRED_VERSION_asd ?= "0.1"
+
+TCLIBCAPPEND = ""
+QEMU_TARGETS ?= "arm aarch64 i386 riscv32 riscv64 ppc64le x86_64"
+INIT_MANAGER ?= "sysvinit"
+
+require conf/distro/include/yocto-uninative.inc
+INHERIT += "uninative"
+
+require conf/distro/include/no-static-libs.inc
+require conf/distro/include/security_flags.inc

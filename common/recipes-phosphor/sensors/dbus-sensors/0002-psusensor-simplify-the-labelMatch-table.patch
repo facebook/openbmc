@@ -1,7 +1,7 @@
-From eecc4edc6152d8f3ac91af8f46ce7ff7cf229a18 Mon Sep 17 00:00:00 2001
+From 7b530978790958d19158915d2288408c213d4c2f Mon Sep 17 00:00:00 2001
 From: cchoux <cosmo.chou@quantatw.com>
 Date: Wed, 25 Oct 2023 23:26:27 +0800
-Subject: [PATCH] psusensor: simplify the labelMatch table
+Subject: [PATCH 2/2] psusensor: simplify the labelMatch table
 
 It might be more efficient to simplify the labelMatch table by not
 listing all labels. PSUProperty of the same type are mostly the same,
@@ -19,12 +19,14 @@ with the names, "Pwm_PSUNAME_Fan_1", "Pwm_PSUNAME_Fan_2" ...
 Change-Id: I789cdd5c5d0c5c92cca45700bd2095c166bdc564
 Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
 ---
+ src/PSUSensorMain.cpp | 216 ++++++++++++------------------------------
+ 1 file changed, 60 insertions(+), 156 deletions(-)
 
 diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
-index d6bc84c..b8ecd71 100644
+index 89ae913..1cb5c02 100644
 --- a/src/PSUSensorMain.cpp
 +++ b/src/PSUSensorMain.cpp
-@@ -132,9 +132,7 @@ static boost::container::flat_map<std::string, std::unique_ptr<PwmSensor>>
+@@ -133,9 +133,7 @@ static boost::container::flat_map<std::string, std::unique_ptr<PwmSensor>>
      pwmSensors;
  static boost::container::flat_map<std::string, std::string> sensorTable;
  static boost::container::flat_map<std::string, PSUProperty> labelMatch;
@@ -34,7 +36,7 @@ index d6bc84c..b8ecd71 100644
  static EventPathList limitEventMatch;
  
  static std::vector<PSUProperty> psuProperties;
-@@ -171,34 +169,21 @@ void checkEvent(const std::string& directory, const EventPathList& eventMatch,
+@@ -172,34 +170,21 @@ void checkEvent(const std::string& directory, const EventPathList& eventMatch,
  // Check Group Events which contains more than one targets in each combine
  // events.
  void checkGroupEvent(const std::string& directory,
@@ -79,7 +81,7 @@ index d6bc84c..b8ecd71 100644
  }
  
  // Function checkEventLimits will check all the psu related xxx_input attributes
-@@ -248,40 +233,38 @@ static void
+@@ -249,40 +234,38 @@ static void
                     sdbusplus::asio::object_server& objectServer,
                     const std::string& psuName)
  {
@@ -146,7 +148,7 @@ index d6bc84c..b8ecd71 100644
  }
  
  static void createSensorsCallback(
-@@ -491,8 +474,7 @@ static void createSensorsCallback(
+@@ -492,8 +475,7 @@ static void createSensorsCallback(
              sensorsChanged->erase(it);
          }
          checkEvent(directory.string(), eventMatch, eventPathList);
@@ -156,7 +158,7 @@ index d6bc84c..b8ecd71 100644
  
          PowerState readState = getPowerState(*baseConfig);
  
-@@ -652,13 +634,13 @@ static void createSensorsCallback(
+@@ -653,13 +635,13 @@ static void createSensorsCallback(
                  }
              }
  
@@ -172,7 +174,7 @@ index d6bc84c..b8ecd71 100644
                  }
                  continue;
              }
-@@ -788,6 +770,7 @@ static void createSensorsCallback(
+@@ -789,6 +771,7 @@ static void createSensorsCallback(
              // then prefix/suffix composition becomes not necessary,
              // and in fact not wanted, because it gets in the way.
              std::string psuNameFromIndex;
@@ -180,7 +182,7 @@ index d6bc84c..b8ecd71 100644
              if (!customizedName)
              {
                  /* Find out sensor name index for this label */
-@@ -795,7 +778,8 @@ static void createSensorsCallback(
+@@ -796,7 +779,8 @@ static void createSensorsCallback(
                  size_t nameIndex{0};
                  if (std::regex_search(labelHead, matches, rgx))
                  {
@@ -190,7 +192,7 @@ index d6bc84c..b8ecd71 100644
  
                      // Decrement to preserve alignment, because hwmon
                      // human-readable filenames and labels use 1-based
-@@ -907,6 +891,13 @@ static void createSensorsCallback(
+@@ -908,6 +892,13 @@ static void createSensorsCallback(
                  // preserving default behavior by using psuNameFromIndex.
                  sensorName = psuNameFromIndex + " " +
                               psuProperty->labelTypeName;
@@ -204,7 +206,7 @@ index d6bc84c..b8ecd71 100644
              }
  
              if constexpr (debug)
-@@ -1063,103 +1054,22 @@ void propertyInitialize(void)
+@@ -1064,103 +1055,22 @@ void propertyInitialize(void)
  
      labelMatch = {
          {"pin", PSUProperty("Input Power", 3000, 0, 6, 0)},
@@ -319,7 +321,7 @@ index d6bc84c..b8ecd71 100644
  
      limitEventMatch = {{"PredictiveFailure", {"max_alarm", "min_alarm"}},
                         {"Failure", {"crit_alarm", "lcrit_alarm"}}};
-@@ -1169,12 +1079,6 @@ void propertyInitialize(void)
+@@ -1170,12 +1080,6 @@ void propertyInitialize(void)
                    {"ACLost", {"in1_beep"}},
                    {"ConfigureError", {"in1_fault"}}};
  
@@ -333,5 +335,5 @@ index d6bc84c..b8ecd71 100644
          {DevTypes::HWMON, {1, R"(\w\d+_input$)", "([A-Za-z]+)[0-9]*_"}},
          {DevTypes::IIO,
 -- 
-2.34.1
+2.43.0
 

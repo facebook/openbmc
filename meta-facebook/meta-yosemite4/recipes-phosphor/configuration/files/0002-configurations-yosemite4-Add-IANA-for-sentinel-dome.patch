@@ -1,7 +1,7 @@
-From 6f1bb1bae489bb84bdad0cbaa861451d0a55396c Mon Sep 17 00:00:00 2001
+From 07bb49afc40b6775eb1c20841d8194a776699434 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 7 Mar 2024 10:41:16 +0800
-Subject: [PATCH] configurations: yosemite4: Add IANA for sentinel dome
+Subject: [PATCH 2/2] configurations: yosemite4: Add IANA for sentinel dome
 
 Configuring IANA for devices indicates which OEM sets we should be
 using on which hardware.
@@ -55,5 +55,5 @@ index 1752c3b..9f98a9e 100644
                  "type": "number"
              },
 -- 
-2.25.1
+2.43.0
 

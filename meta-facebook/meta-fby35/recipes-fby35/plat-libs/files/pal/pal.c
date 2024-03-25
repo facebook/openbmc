@@ -5716,7 +5716,6 @@ int
 pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t bmc_location, const uint8_t config_status) {
   static uint8_t board_type[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
   int ret = 0;
-  uint8_t server_type = 0;
   uint8_t card_type = TYPE_1OU_UNKNOWN;
   static SENSOR_BASE_NUM *sensor_base = NULL;
 
@@ -5738,9 +5737,8 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
     }
   }
 
-  server_type = fby35_common_get_slot_type(fru);
   if (sensor_base == NULL) {
-    switch (server_type) {
+    switch (fby35_common_get_slot_type(fru)) {
       case SERVER_TYPE_HD:
         if (card_type == TYPE_1OU_OLMSTEAD_POINT) {
           sensor_base = &sensor_base_hd_op;
@@ -5772,7 +5770,7 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
       (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR))) { //server board
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, NONE_INTF);
     bic_ou_status = ret;
-  } else if ( (sensor_num >= sensor_base->base_1ou && sensor_num < sensor_base->base_2ou) && (bmc_location != NIC_BMC) && //1OU
+  } else if ( (sensor_num < sensor_base->base_2ou) && (bmc_location != NIC_BMC) && //1OU
        ((config_status & PRESENT_1OU) == PRESENT_1OU) && (bic_ou_status != BIC_STATUS_1OU_FAILURE)) { // 1OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, FEXP_BIC_INTF);
     bic_ou_status = ret;

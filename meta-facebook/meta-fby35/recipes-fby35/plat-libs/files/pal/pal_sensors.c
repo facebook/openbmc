@@ -3934,10 +3934,12 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
   }
 
   if (is_slot_type_init == false) {
-    slot_type = fby35_common_get_slot_type(fru);
-    if (slot_type >= 0) {
+    ret = fby35_common_get_slot_type(fru);
+    if (ret >= 0) {
+      slot_type = ret;
       is_slot_type_init = true;
-    }
+    } else
+      goto error_exit;
   }
   while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
     if (bytes_rd != sizeof(sdr_full_t)) {

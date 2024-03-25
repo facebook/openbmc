@@ -28,13 +28,19 @@ async def post_qsfp_thermal_data(request: aiohttp.web.Request) -> aiohttp.web.Re
         )
 
     iface_temperatures = [
-        int(payload["transceiverThermalData"][iface]["temperature"])
+        payload["transceiverThermalData"][iface]["temperature"]
         for iface in payload["transceiverThermalData"]
     ]
+    if not iface_temperatures:
+        return aiohttp.web.json_response(
+            {"status": "FAIL", "message": "empty thermal data"}
+        )
 
     # Format expected by fscd
     sensor_dict = {
         "timestamp": payload["timestamp"],
+        "dataCenter": payload["switchDeploymentInfo"]["dataCenter"],
+        "hostnameScheme": payload["switchDeploymentInfo"]["hostnameScheme"],
         "data": {
             "optics_temp_p95": {
                 "value": calc_percentile(iface_temperatures, 95),
@@ -97,14 +103,16 @@ def _schema_match(payload, schema) -> bool:
 
 # HACK: Temporary schema until we use something more robust
 PAYLOAD_SCHEMA = {
-    "version": str,
+    "syncDataStructVersion": str,
     "timestamp": int,
-    "dataCenter": str,
-    "hostnameScheme": str,
+    "switchDeploymentInfo": {
+        "dataCenter": str,
+        "hostnameScheme": str,
+    },
     "transceiverThermalData": {
         "": {
             "moduleMediaInterface": str,
-            "temperature": str,
+            "temperature": int,
         },
     },
 }

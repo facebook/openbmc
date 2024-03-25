@@ -54,6 +54,18 @@ func TestCheckVersion(t *testing.T) {
 			want:      nil,
 		},
 		{
+			name:      "bitbaked",
+			version:   "bletchley-123abc",
+			err:       nil,
+			want:      nil,
+		},
+		{
+			name:      "dirty",
+			version:   "bletchley-123abc-dirty",
+			err:       nil,
+			want:      nil,
+		},
+		{
 			name:      "garbage",
 			version:   "garbage",
 			err:       nil,

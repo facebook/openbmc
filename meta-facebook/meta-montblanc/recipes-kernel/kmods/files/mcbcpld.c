@@ -194,6 +194,14 @@ static const i2c_dev_attr_st mcbcpld_attrs[] = {
     0x14, 2, 1,
   },
   {
+    "pwr_come_cycle_dev_n",
+    "write 0 to trigger CPLD power cycling the COMe + I210 + SSD\n"
+    "then this bit will auto set to 1 after Power cycle finish",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x14, 3, 1,
+  },
+  {
     "timer_base_10ms",
     "default: 0",
     I2C_DEV_ATTR_SHOW_DEFAULT,

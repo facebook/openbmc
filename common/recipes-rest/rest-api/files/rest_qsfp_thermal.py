@@ -1,10 +1,13 @@
+import heapq
 import json
+import math
 import os
 import tempfile
+from typing import Sequence
 
 import aiohttp.web
 
-DESTINATION_FILE_PATH = "/tmp/qsfp_thermal_data.json"
+DESTINATION_FILE_PATH = "/var/run/qsfp_thermal_data.json"
 
 
 async def post_qsfp_thermal_data(request: aiohttp.web.Request) -> aiohttp.web.Response:
@@ -24,10 +27,26 @@ async def post_qsfp_thermal_data(request: aiohttp.web.Request) -> aiohttp.web.Re
             status=400,
         )
 
+    iface_temperatures = [
+        int(payload["transceiverThermalData"][iface]["temperature"])
+        for iface in payload["transceiverThermalData"]
+    ]
+
+    # Format expected by fscd
+    sensor_dict = {
+        "timestamp": payload["timestamp"],
+        "data": {
+            "optics_temp_p95": {
+                "value": calc_percentile(iface_temperatures, 95),
+            },
+        },
+    }
     # Create temporary file before moving to destination to make an atomic update
     # (i.e. remove the possibility of a partial file being read)
-    with tempfile.NamedTemporaryFile("w", delete=False) as f:
-        json.dump(payload, f)
+    with tempfile.NamedTemporaryFile(
+        "w", delete=False, dir=os.path.dirname(DESTINATION_FILE_PATH)
+    ) as f:
+        json.dump(sensor_dict, f, indent=4)
 
     os.rename(f.name, DESTINATION_FILE_PATH)
 
@@ -35,6 +54,17 @@ async def post_qsfp_thermal_data(request: aiohttp.web.Request) -> aiohttp.web.Re
 
 
 # Utils
+
+
+def calc_percentile(values: Sequence[float], percentile: int):
+    """
+    Calculates the percentile (e.g. P95) of values. `percentile` is an integer between
+    0 and 100. The function is optimized for percentiles close to 100, although correct
+    for all values.
+    """
+    return heapq.nlargest(math.ceil((1 - percentile / 100) * len(values)), values)[-1]
+
+
 def _validate_payload(payload, schema, path="") -> None:
     if not _schema_match(payload, schema):
         raise ValueError(

@@ -1,7 +1,7 @@
-From 0638b7ba7dbcbbaafd6e930da6843a01c20a2a2f Mon Sep 17 00:00:00 2001
+From 8d9a1ad54dfbca69da0e6689c32e83320f328b21 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
-Date: Mon, 19 Feb 2024 09:08:57 -0800
-Subject: [PATCH] mutual-tls: Add support for svc and host identity types
+Date: Mon, 25 Mar 2024 10:51:36 -0700
+Subject: [PATCH] mutual-tls-meta: Support "svc" and "host" entity types
 
 Summary:
 
@@ -14,11 +14,27 @@ Subscribers:
 Tasks:
 
 Tags:
-Change-Id: I710c878314e2aff0124bb7fc5938eb39e72191e3
+Change-Id: I5101776dbf5fafe8700ad6e3de0e60a0432962cc
 ---
- http/mutual_tls_meta.hpp | 64 ++++++++++++++++++++++++++++++++--------
- 1 file changed, 52 insertions(+), 12 deletions(-)
+ http/mutual_tls.hpp           |  3 +-
+ http/mutual_tls_meta.hpp      | 64 ++++++++++++++++++++++++++++-------
+ test/http/mutual_tls_meta.cpp | 35 ++++++++++++++++---
+ 3 files changed, 83 insertions(+), 19 deletions(-)
 
+diff --git a/http/mutual_tls.hpp b/http/mutual_tls.hpp
+index 1620054e..39b9b82d 100644
+--- a/http/mutual_tls.hpp
++++ b/http/mutual_tls.hpp
+@@ -93,8 +93,7 @@ inline std::shared_ptr<persistent_data::UserSession>
+     // Meta Inc. CommonName parsing
+     if (bmcwebMTLSCommonNameParsingMeta)
+     {
+-        std::optional<std::string_view> sslUserMeta =
+-            mtlsMetaParseSslUser(sslUser);
++        std::optional<std::string> sslUserMeta = mtlsMetaParseSslUser(sslUser);
+         if (!sslUserMeta)
+         {
+             return nullptr;
 diff --git a/http/mutual_tls_meta.hpp b/http/mutual_tls_meta.hpp
 index 5e55db8e..3381dd48 100644
 --- a/http/mutual_tls_meta.hpp
@@ -26,7 +42,7 @@ index 5e55db8e..3381dd48 100644
 @@ -7,17 +7,17 @@
  #include <string>
  #include <string_view>
-
+ 
 -inline std::optional<std::string_view>
 -    mtlsMetaParseSslUser(std::string_view sslUser)
 +inline std::optional<std::string> mtlsMetaParseSslUser(std::string_view sslUser)
@@ -45,11 +61,11 @@ index 5e55db8e..3381dd48 100644
 +    // "svc:an_internal_service_name" -> "svc_an_internal_service_name"
 +    // "host:/hostname.facebook.com" -> "host_hostname" (note the stripped
 +    // hostname suffix)
-
+ 
      // Parse entityType
      size_t colonIndex = sslUser.find(':');
 @@ -30,16 +30,17 @@ inline std::optional<std::string_view>
-
+ 
      std::string_view entityType = sslUser.substr(0, colonIndex);
      sslUser.remove_prefix(colonIndex + 1);
 -    if (entityType != "user")
@@ -61,7 +77,7 @@ index 5e55db8e..3381dd48 100644
              entityType, sslUser);
          return std::nullopt;
      }
-
+ 
 -    // Parse entity
 +    // Parse entity and hostname
      size_t slashIndex = sslUser.find('/');
@@ -113,7 +129,7 @@ index 5e55db8e..3381dd48 100644
 +    {
 +        entity = hostname;
      }
-
+ 
 -    if (entity.empty())
 +    if (entityType.empty() || entity.empty())
      {
@@ -121,9 +137,67 @@ index 5e55db8e..3381dd48 100644
                           sslUser);
          return std::nullopt;
      }
-
+ 
 -    return entity;
 +    return std::format("{}_{}", entityType, entity);
  }
---
-2.39.3
+diff --git a/test/http/mutual_tls_meta.cpp b/test/http/mutual_tls_meta.cpp
+index 5f32cb54..4cedf766 100644
+--- a/test/http/mutual_tls_meta.cpp
++++ b/test/http/mutual_tls_meta.cpp
+@@ -10,14 +10,35 @@ namespace
+ TEST(MetaParseSslUser, userTest)
+ {
+     std::string sslUser = "user:kawajiri/hostname.facebook.com";
+-    EXPECT_EQ(mtlsMetaParseSslUser(sslUser), "kawajiri");
++    EXPECT_EQ(mtlsMetaParseSslUser(sslUser), "user_kawajiri");
+ }
+ 
+-TEST(MetaParseSslUser, userNohostnameTest)
++TEST(MetaParseSslUser, svcTest)
+ {
+-    // hostname is optional
+-    std::string sslUser = "user:kawajiri";
+-    EXPECT_EQ(mtlsMetaParseSslUser(sslUser), "kawajiri");
++    std::string sslUser = "svc:an_internal.service";
++    EXPECT_EQ(mtlsMetaParseSslUser(sslUser), "svc_an_internal.service");
++}
++
++TEST(MetaParseSslUser, hostTest)
++{
++    std::string sslUser = "host:/ab12345.cd0.facebook.com";
++
++    EXPECT_EQ(mtlsMetaParseSslUser(sslUser), "host_ab12345.cd0");
++}
++
++TEST(MetaParseSslUser, hostTestSuffixes)
++{
++    std::vector<std::string> sslUsers = {
++        "host:/hostname.facebook.com",
++        "host:/hostname.tfbnw.net",
++        "host:/hostname.thefacebook.com",
++    };
++
++    for (const std::string& sslUser : sslUsers)
++    {
++        // Must strip suffix
++        EXPECT_EQ(mtlsMetaParseSslUser(sslUser), "host_hostname");
++    }
+ }
+ 
+ TEST(MetaParseSslUser, invalidUsers)
+@@ -31,7 +52,11 @@ TEST(MetaParseSslUser, invalidUsers)
+         "user:/",
+         "user:/hostname.facebook.com",
+         "user:/hostname.facebook.c om",
++        "user:a/hostname.facebook.c om",
++        "user:a//hostname.facebook.com",
++        "user:username/hostname.notfacebook.com",
+         "user: space/hostname.facebook.com",
++        "user:space/hostname.facebook.com ",
+         "svc:",
+         "svc:/",
+         "svc:/hostname.facebook.com",
+-- 
+2.43.0
+

@@ -1120,6 +1120,7 @@ mc_bic_recovery_pre() {
 
 int
 gta_bic_recovery_pre(string image, uint8_t fruid, bool /*force*/) {
+  kv_set("bic_recovery_update", "1", 0, 0);
   if (fruid == FRU_ACB) {
     if (cb_bic_recovery_pre() < 0) {
       return -1;
@@ -1223,20 +1224,27 @@ mc_bic_recovery_post() {
 
 int
 gta_bic_recovery_post(uint8_t fruid, bool /*force*/) {
+  int ret = 0;
+
   if (fruid == FRU_ACB) {
-    if (cb_bic_recovery_post() < 0) {
-      return -1;
+    ret = cb_bic_recovery_post();
+    if (ret < 0) {
+      goto error_exit;
     }
   } else if (fruid == FRU_MEB) {
-    if (mc_bic_recovery_post() < 0) {
-      return -1;
+    ret = mc_bic_recovery_post();
+    if (ret < 0) {
+      goto error_exit;
     }
   } else {
+    ret = -1;
     syslog(LOG_WARNING, "%s() Unknown FRU: %u", __func__, fruid);
-    return -1;
+    goto error_exit;
   }
 
-  return 0;
+error_exit:
+  kv_set("bic_recovery_update", "0", 0, 0);
+  return ret;
 }
 
 int GtaBicFwRecoveryComponent::update(string image) {

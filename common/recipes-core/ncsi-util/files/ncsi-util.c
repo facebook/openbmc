@@ -43,6 +43,7 @@
 #include "ncsi-util.h"
 #include "brcm-ncsi-util.h"
 #include "nvidia-ncsi-util.h"
+#include "meta-ncsi-util.h"
 #include <openbmc/nl-wrapper.h>
 
 #ifndef max
@@ -793,6 +794,10 @@ static ncsi_util_vendor_t vendors[NCSI_UTIL_VENDOR_MAX] = {
     .name       = "nvidia",
     .handler    = nvidia_ncsi_util_handler,
   },
+  [NCSI_UTIL_VENDOR_META] = {
+    .name       = "meta",
+    .handler    = meta_ncsi_util_handler,
+  },
 };
 
 // Find vendor by name
@@ -874,5 +879,3 @@ err_exit:
   default_ncsi_util_usage();
   return -1;
 }
-
-

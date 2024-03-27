@@ -359,6 +359,30 @@ int i2c_dev_sysfs_data_init(struct i2c_client *client,
 }
 EXPORT_SYMBOL_GPL(i2c_dev_sysfs_data_init);
 
+static void i2c_dev_sysfs_clean_cb(void *args)
+{
+  struct i2c_client *client = args;
+  i2c_dev_data_st *data = i2c_get_clientdata(client);
+
+  i2c_dev_sysfs_data_clean(client, data);
+}
+
+int devm_i2c_dev_sysfs_init(struct i2c_client *client,
+                            i2c_dev_data_st *data,
+                            const i2c_dev_attr_st *dev_attrs,
+                            int n_attrs)
+{
+  int err;
+
+  err = i2c_dev_sysfs_data_init(client, data, dev_attrs, n_attrs);
+  if (err)
+    return err;
+
+  return devm_add_action_or_reset(&client->dev, i2c_dev_sysfs_clean_cb,
+                                  client);
+}
+EXPORT_SYMBOL_GPL(devm_i2c_dev_sysfs_init);
+
 
 MODULE_AUTHOR("Tian Fang <tfang@fb.com>");
 MODULE_DESCRIPTION("i2c device sysfs attribute library");

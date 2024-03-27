@@ -70,7 +70,7 @@ typedef struct {
 
 static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
 
-char *fru_prsnt_log_string[2 * MAX_NUM_FRUS] = {
+char *fru_prsnt_log_string[2 * MAX_NUM_FRUS + 1] = {
   // slot1, iom, dpb, scc, nic
  "", "ASSERT: Mono Lake missing", "", "", "ASSERT: SCC missing", "ASSERT: NIC is plugged out",
  "DEASSERT: Mono Lake missing", "", "", "DEASSERT: SCC missing", "DEASSERT: NIC is plugged out",
@@ -404,7 +404,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
       is_fru_present = check_fru_present_assert(chassis_type, FRU_SLOT1, SERVER_IS_PRESENT, SERVER_IS_ABSENT);
       if (is_fru_present == SERVER_IS_ABSENT) {
         if (is_fru_prsnt[FRU_SLOT1 - 1] == false) {
-          syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SLOT1]);
+          syslog(LOG_CRIT, "%s", fru_prsnt_log_string[FRU_SLOT1]);
           is_fru_prsnt[FRU_SLOT1 - 1] = true;
         }
         // Turn off ML HSC 12V and IOM 3V3 when Mono Lake was hot plugged
@@ -423,8 +423,8 @@ gpio_monitor_poll(uint8_t fru_flag) {
       is_fru_present = check_fru_present_deassert(chassis_type, FRU_SLOT1, SERVER_IS_PRESENT, SERVER_IS_ABSENT);
       if (is_fru_present == SERVER_IS_PRESENT) {
         if (is_fru_prsnt[FRU_SLOT1 - 1] == true) {
-          
-            syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SLOT1]);
+
+            syslog(LOG_CRIT, "%s", fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SLOT1]);
             is_fru_prsnt[FRU_SLOT1 - 1] = false;
 
             read_device(vpath_comp_pwr_en, &val);
@@ -444,7 +444,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
       is_fru_present = check_fru_present_assert(chassis_type, FRU_SCC, SCC_IS_PRESENT, SCC_IS_ABSENT);
       if (is_fru_present == SCC_IS_ABSENT) {
         if (is_fru_prsnt[FRU_SCC - 1] == false) {
-          syslog(LOG_CRIT, fru_prsnt_log_string[FRU_SCC]);
+          syslog(LOG_CRIT, "%s", fru_prsnt_log_string[FRU_SCC]);
           is_fru_prsnt[FRU_SCC - 1] = true;
         }
 
@@ -476,7 +476,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
         is_scc_hotplugged[0] = is_scc_hotplugged[1];
         is_scc_hotplugged[1] = 0;
         if (is_fru_prsnt[FRU_SCC - 1] == true) {
-          syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SCC]);
+          syslog(LOG_CRIT, "%s", fru_prsnt_log_string[MAX_NUM_FRUS + FRU_SCC]);
           is_fru_prsnt[FRU_SCC - 1] = false;
 
           read_device(vpath_comp_pwr_en, &val);
@@ -497,7 +497,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
       is_fru_present = check_fru_present_assert(chassis_type, FRU_NIC, NIC_IS_PRESENT, NIC_IS_ABSENT);
       if (is_fru_present == NIC_IS_ABSENT) {
         if (is_fru_prsnt[FRU_NIC - 1] == false) {
-          syslog(LOG_CRIT, fru_prsnt_log_string[FRU_NIC]);
+          syslog(LOG_CRIT, "%s", fru_prsnt_log_string[FRU_NIC]);
           is_fru_prsnt[FRU_NIC - 1] = true;
         }
         pal_err_code_enable(0xE8);
@@ -508,7 +508,7 @@ gpio_monitor_poll(uint8_t fru_flag) {
       is_fru_present = check_fru_present_deassert(chassis_type, FRU_NIC, NIC_IS_PRESENT, NIC_IS_ABSENT);
       if (is_fru_present == NIC_IS_PRESENT) {
         if (is_fru_prsnt[FRU_NIC - 1] == true) {
-          syslog(LOG_CRIT, fru_prsnt_log_string[MAX_NUM_FRUS + FRU_NIC]);
+          syslog(LOG_CRIT, "%s", fru_prsnt_log_string[MAX_NUM_FRUS + FRU_NIC]);
           is_fru_prsnt[FRU_NIC - 1] = false;
         }
         pal_err_code_disable(0xE8);
@@ -563,12 +563,12 @@ gpio_monitor_poll(uint8_t fru_flag) {
 
           char value[MAX_VALUE_LEN];
           //Run check_M2_nvme.sh only when any of the M2_NVMe key is not existing
-          if (kv_get("M2_1_NVMe", value, NULL, 0) || 
+          if (kv_get("M2_1_NVMe", value, NULL, 0) ||
               kv_get("M2_2_NVMe", value, NULL, 0)) {
             //Check M.2 NVMe surrpot, for fsc M2 sensor valid check
-            system("nohup /etc/check_M2_nvme.sh &");
+            (void)!system("nohup /etc/check_M2_nvme.sh &");
           }
-          
+
           // Inform BIOS that BMC is ready
           bic_set_gpio(FRU_SLOT1, GPIO_BMC_READY_N, 0);
         } else {

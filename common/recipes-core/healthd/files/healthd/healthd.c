@@ -162,7 +162,7 @@ enum ASSERT_BIT {
 
 enum BIC_ERROR {
   BIC_HB_ERR = 0,
-  BIC_IPMB_ERR,
+  BIC_IPMB_PLDM_ERR,
   BIC_READY_ERR,
   BIC_ERR_TYPE_CNT,
 };
@@ -229,7 +229,8 @@ static bool bmc_timestamp_enabled = false;
 
 /* BIC health monitor */
 static bool bic_health_enabled = false;
-static uint8_t bic_fru = 0;
+static size_t bic_num_fru = 0;
+static uint8_t bic_fru[MAX_NUM_FRUS] = {0};
 static int bic_monitor_interval = BIC_HEALTH_INTERVAL;
 
 /* healthd log rearm monitor */
@@ -614,6 +615,7 @@ static void initialize_bmc_timestamp_config(json_t *obj) {
 
 static void initialize_bic_health_config(json_t *obj) {
   json_t *tmp = NULL;
+  size_t i;
 
   if (obj == NULL) {
     return;
@@ -625,10 +627,21 @@ static void initialize_bic_health_config(json_t *obj) {
   bic_health_enabled = json_is_true(tmp);
 
   tmp = json_object_get(obj, "fru");
-  if (!tmp || !json_is_number(tmp)) {
-    return;
+  if (!tmp || !json_is_array(tmp)) {
+    goto error;
   }
-  bic_fru = json_integer_value(tmp);
+  bic_num_fru = json_array_size(tmp);
+  if (!bic_num_fru) {
+    /* Nothing to monitor */
+    goto error;
+  }
+  for (i = 0; i < bic_num_fru; i++) {
+    json_t *ind = json_array_get(tmp, i);
+    if (!ind || !json_is_number(ind)) {
+      goto error;
+    }
+    bic_fru[i] = json_integer_value(ind);
+  }
 
   tmp = json_object_get(obj, "monitor_interval");
   if (tmp && json_is_number(tmp)) {
@@ -637,6 +650,9 @@ static void initialize_bic_health_config(json_t *obj) {
       bic_monitor_interval = BIC_HEALTH_INTERVAL;
     }
   }
+  return;
+error:
+  bic_health_enabled = false;
 }
 
 static void initialize_ubifs_health_config(json_t *obj) {
@@ -1802,48 +1818,53 @@ timestamp_handler()
 }
 
 static void *
-bic_health_monitor() {
+bic_health_monitor(void* bic_fru_id) {
   int err_cnt = 0;
   int i = 0;
   uint8_t status = 0;
   uint8_t err_type[BIC_RESET_ERR_CNT] = {0};
   uint8_t type = 0;
   const char* err_str[BIC_ERR_TYPE_CNT] = {
-    "heartbeat", "IPMB", "BIC ready"
+    "heartbeat", "IPMB/PLDM", "BIC ready"
   };
   char err_log[MAX_LOG_SIZE] = "\0";
+  char bic_health_key[MAX_KEY_LEN] = "\0";
   bool is_already_reset = false;
+  bool is_log = false;
+
+  uint8_t fru = *((uint8_t *) bic_fru_id);
 
   // set flag to notice BMC healthd bic_health_monitor is ready
-  kv_set("flag_healthd_bic_health", "1", 0, 0);
+  snprintf(bic_health_key, sizeof(bic_health_key), "flag_healthd_bic_fru%u_health", fru);
+  kv_set(bic_health_key, "1", 0, 0);
 
   while (1) {
-    if ((pal_get_server_12v_power(bic_fru, &status) < 0) || (status == SERVER_12V_OFF)) {
+    if ((pal_get_server_12v_power(fru, &status) < 0) || (status == SERVER_12V_OFF)) {
       goto next_run;
     }
 
     // Check if bic is updating
-    if (pal_is_fw_update_ongoing(bic_fru) == true) {
+    if (pal_is_fw_update_ongoing(fru) == true) {
       err_cnt = 0;
       sleep(bic_monitor_interval);
       continue;
     }
 
     // Read BIC ready pin to check BIC boots up completely
-    if ((pal_is_bic_ready(bic_fru, &status) < 0) || (status == false)) {
+    if ((pal_is_bic_ready(fru, &status) == PAL_EOK) && (status == false)) {
       err_type[err_cnt++] = BIC_READY_ERR;
       goto next_run;
     }
 
     // Check whether BIC heartbeat works
-    if (pal_is_bic_heartbeat_ok(bic_fru) == false) {
+    if (pal_is_bic_heartbeat_ok(fru) == false) {
       err_type[err_cnt++] = BIC_HB_ERR;
       goto next_run;
     }
 
-    // Send a IPMB command to check IPMB service works normal
-    if (pal_bic_self_test() < 0) {
-      err_type[err_cnt++] = BIC_IPMB_ERR;
+    // Send a IPMB/PLDM command to check IPMB/PLDM service works normal
+    if (pal_bic_self_test(fru) < 0) {
+      err_type[err_cnt++] = BIC_IPMB_PLDM_ERR;
       goto next_run;
     }
     // if all check pass, clear error counter and reset flag
@@ -1852,24 +1873,31 @@ bic_health_monitor() {
 
     // The ME commands are transmit via BIC on Grand Canyon, so check ME health when BIC health is good.
     if ((nm_monitor_enabled == true) && (nm_transmission_via_bic == true)) {
-      nm_selftest(bic_fru);
+      nm_selftest(fru);
     }
 next_run:
-    if ((err_cnt >= BIC_RESET_ERR_CNT) && (is_already_reset == false)) {
+    if ((err_cnt >= BIC_RESET_ERR_CNT) && (is_already_reset == false) && (is_log == false)) {
       // if error counter over 3, reset BIC by hardware
-      if (pal_bic_hw_reset() == 0) {
-        memset(err_log, 0, sizeof(err_log));
-        for (i = 0; i < BIC_RESET_ERR_CNT; i++) {
-          type = err_type[i];
-          strcat(err_log, err_str[type]);
-          if (i != BIC_RESET_ERR_CNT - 1) { // last one
-            strcat(err_log, ", ");
-          }
+      memset(err_log, 0, sizeof(err_log));
+      strcat(err_log, "ERR Order: ");
+      for (i = 0; i < BIC_RESET_ERR_CNT; i++) {
+        type = err_type[i];
+        strcat(err_log, err_str[type]);
+        if (i != BIC_RESET_ERR_CNT - 1) { // last one
+          strcat(err_log, ", ");
         }
-        syslog(LOG_CRIT, "FRU %d BIC reset by BIC health monitor due to health check failed in following order: %s",
-                bic_fru, err_log);
+      }
+      // Support BIC HW RESET
+      if (pal_bic_hw_reset() == PAL_EOK) {
+        syslog(LOG_CRIT, "ASSERT: FRU: %u BIC_HEALTH, BIC HW RESET, %s", fru, err_log);
         err_cnt = 0;
         is_already_reset = true;
+        // Not Support BIC HW RESET, Print SEL
+      } else if (pal_bic_hw_reset() == PAL_ENOTSUP) {
+        syslog(LOG_CRIT, "ASSERT: FRU: %u BIC_HEALTH, %s", fru, err_log);
+        is_log = true;
+      } else {
+        syslog(LOG_CRIT, "ASSERT: FRU: %u BIC_HEALTH, BIC HW RESET Failed, %s", fru, err_log);
       }
     }
     sleep(bic_monitor_interval);
@@ -1991,7 +2019,7 @@ int main() {
   pthread_t tid_bmc_health_monitor;
   pthread_t tid_nm_monitor;
   pthread_t tid_timestamp_handler;
-  pthread_t tid_bic_health_monitor;
+  pthread_t tid_bic_health_monitor[MAX_NUM_FRUS];
   pthread_t tid_log_rearm_check;
   pthread_t tid_ubifs_health_monitor;
 
@@ -2080,9 +2108,11 @@ int main() {
   }
 
   if (bic_health_enabled) {
-    if (pthread_create(&tid_bic_health_monitor, NULL, bic_health_monitor, NULL)) {
-      syslog(LOG_WARNING, "pthread_create for bic health monitor error\n");
-      exit(1);
+    for (size_t i = 0; i < bic_num_fru; i ++) {
+      if (pthread_create(&tid_bic_health_monitor[i], NULL, bic_health_monitor, &bic_fru[i])) {
+        syslog(LOG_WARNING, "pthread_create for bic health monitor error\n");
+        exit(1);
+      }
     }
   }
   if (pthread_create(&tid_log_rearm_check, NULL, log_rearm_check, NULL)) {
@@ -2130,7 +2160,9 @@ int main() {
   }
 
   if (bic_health_enabled) {
-    pthread_join(tid_bic_health_monitor, NULL);
+    for (size_t i = 0; i < bic_num_fru; i ++) {
+      pthread_join(tid_bic_health_monitor[i], NULL);
+    }
   }
 
   if (log_rearm_enabled){

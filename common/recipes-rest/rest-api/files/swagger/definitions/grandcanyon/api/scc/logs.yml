@@ -1,4 +1,4 @@
-swagger: "2.0"
+swagger: '2.0'
 info:
   description: Swagger doc for /api/scc/logs
   title: Swagger doc for /api/scc/logs
@@ -6,7 +6,8 @@ info:
 paths:
   /api/scc/logs:
     get:
-      produces: [application/json]
+      produces:
+      - application/json
       responses:
         200:
           description: ok
@@ -24,15 +25,15 @@ paths:
                       type: object
                       additionalProperties: false
                       properties:
-                        APP_NAME:
-                          type: string
                         FRU#:
-                          type: string
-                        FRU_NAME:
                           type: string
                         MESSAGE:
                           type: string
+                        APP_NAME:
+                          type: string
                         TIME_STAMP:
+                          type: string
+                        FRU_NAME:
                           type: string
               Actions:
                 type: array

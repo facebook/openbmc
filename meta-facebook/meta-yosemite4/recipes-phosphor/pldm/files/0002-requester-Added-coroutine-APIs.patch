@@ -1,7 +1,7 @@
-From 2b143789b4abd5a37461ff32f1654717cbb31680 Mon Sep 17 00:00:00 2001
+From 43e0f040e0486fa66cbd728e3eff0a8f41a30506 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Sun, 29 May 2022 18:44:19 +0100
-Subject: [PATCH 2/9] requester: Added coroutine APIs
+Subject: [PATCH 02/11] requester: Added coroutine APIs
 
 Added Coroutine struct and SendRecvPldmMsg awaiter struct to send PLDM
 command and receive response in the same function instead of handling
@@ -28,6 +28,8 @@ do
 
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
 Change-Id: I7b47d15ac15f6ae661ec94dca6a281844b939a44
+
+%% original patch: 0002-requester-Added-coroutine-APIs.patch
 ---
  requester/handler.hpp           | 245 ++++++++++++++++++++++++++++++++
  requester/test/handler_test.cpp |  50 +++++++

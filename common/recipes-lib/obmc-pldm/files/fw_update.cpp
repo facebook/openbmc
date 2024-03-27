@@ -22,9 +22,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <algorithm>
+#include <cstring>
 #include "pldm.h"
 #include "oem_pldm.hpp"
 #include "fw_update.hpp"
+#include <map>
+#include <time.h>
 
 #define MAX_TRANSFER_SIZE 1024
 
@@ -104,6 +107,7 @@ const int maxTransferSize = 1024;
 pldm_package_header_information pkg_header{};
 vector<firmware_device_id_record_t> pkg_devices{};
 vector<component_image_info_t> pkg_comps{};
+vector<vector<struct device_id_record_descriptor>> query_device_descriptors;
 
 static string
 variable_field_to_str(const variable_field& field)
@@ -113,6 +117,247 @@ variable_field_to_str(const variable_field& field)
     ret = string((const char*)field.ptr);
     ret.resize(field.length);
   }
+  return ret;
+}
+
+int get_stage_id(string stage)
+{
+  static const std::map<string, const uint8_t> stage_map = {
+    {"POC", 0x00},
+    {"EVT1", 0x01},
+    {"EVT2", 0x02},
+    {"DVT", 0x03},
+    {"PVT", 0x04},
+    {"MP", 0x05},
+  };
+
+  if (stage_map.find(stage) != stage_map.end())
+    return stage_map.at(stage);
+  else
+    return -1;
+}
+
+void parse_vendor_define_type_data(string& input_data, string& type, string& output_data)
+{
+  if (input_data.size() == 0 || ((input_data.size() - input_data.at(1) - 2) < 0)) {
+    syslog(LOG_WARNING, "Parse vendor defined type/data fail, input data length: 0x%x\n", input_data.size());
+    return;
+  }
+
+  // Example: input_data is 0x01 0x05 0x53 0x74 0x61 0x67 0x65 0x50 0x56 0x54
+  // Title string: 0x53 0x74 0x61 0x67 0x65 (Stage)
+  // Data string: 0x50 0x56 0x54 (PVT)
+  type = input_data.c_str() + 2; // Title string start offset (0x53 0x74 0x61 0x67 0x65 0x50 0x56 0x54)
+  output_data = input_data.c_str() + 2 + input_data.at(1); // Data string start offset (0x50 0x56 0x54)
+  type.resize(input_data.at(1)); // Title string length (0x53 0x74 0x61 0x67 0x65)
+  output_data.resize(input_data.size() - input_data.at(1) - 2); // Data string length (0x50 0x56 0x54)
+}
+
+static int
+pldm_check_descriptors_is_match(const vector<device_id_record_descriptor>& image_data)
+{
+  uint8_t index = 0;
+  uint8_t count = 0;
+  uint8_t checked = 0;
+
+  for (index = 0; index < query_device_descriptors.size(); ++index) {
+    vector<device_id_record_descriptor> dev_descriptor = query_device_descriptors.at(index);
+    if (dev_descriptor.size() >= image_data.size()) {
+      for (count = 0; count < dev_descriptor.size(); ++count) {
+	device_id_record_descriptor image_descriptors = image_data.at(count);
+	device_id_record_descriptor query_descriptors = dev_descriptor.at(count);
+        if (image_descriptors.type == query_descriptors.type) {
+          if (image_descriptors.type == PLDM_FWUP_VENDOR_DEFINED) {
+            // Make downward compatibility for Stage
+	    string compare_type;
+	    string compare_data;
+	    string dev_type;
+	    string dev_data;
+
+	    parse_vendor_define_type_data(image_descriptors.data, compare_type, compare_data);
+	    parse_vendor_define_type_data(query_descriptors.data, dev_type, dev_data);
+	    if (compare_type == "Stage" && dev_type == "Stage") {
+              if (get_stage_id(compare_data) <= get_stage_id(dev_data)) {
+		checked += 1;
+
+		if (checked == image_data.size()) {
+                  return 0;
+		}
+		continue;
+	      }
+	    }
+	  }
+
+	  if (image_descriptors.data == query_descriptors.data) {
+            checked += 1;
+
+	    if (checked == image_data.size()) {
+              return 0;
+	    }
+	  }
+	}
+      }
+    }
+
+    checked = 0;
+  }
+
+  return -1;
+}
+
+static int
+pldm_query_device_identifiers(uint8_t bus, uint8_t eid)
+{
+  uint8_t index = 0;
+  vector<uint8_t> response{};
+  vector<uint8_t> request(sizeof(pldm_msg_hdr));
+
+  query_device_descriptors.clear();
+
+  int ret = encode_query_device_identifiers_req (
+    0x00, // instance id
+    PLDM_QUERY_DEVICE_IDENTIFIERS_REQ_BYTES,
+    (pldm_msg*)request.data()
+  );
+
+  if (ret != PLDM_SUCCESS) {
+    cerr << "Failed to encode query device identifier request."
+         << " ret = " << ret
+         << endl;
+    return -1;
+  }
+
+  ret = oem_pldm_send_recv(bus, eid, request, response);
+  if (ret != PLDM_SUCCESS) {
+    cerr << "Failed to receive device identifier"
+	 << " ret = " << ret
+	 << endl;
+    return -1;
+  }
+
+  struct pldm_msg *msg = (pldm_msg*)response.data();
+  struct pldm_query_device_identifiers_resp *resp = (pldm_query_device_identifiers_resp *)msg->payload;
+
+  uint32_t device_identifiers_len = resp->device_identifiers_len;
+  uint8_t descriptor_count = resp->descriptor_count;
+  uint8_t *descriptor_data = (uint8_t *)(msg->payload + sizeof(struct pldm_query_device_identifiers_resp));
+  vector<device_id_record_descriptor> device_descriptor{};
+
+  for (index = 0; index < descriptor_count; ++index) {
+    device_id_record_descriptor descriptor{};
+    variable_field descriptorData{};
+
+    ret = decode_descriptor_type_length_value(descriptor_data, device_identifiers_len, &descriptor.type, &descriptorData);
+    if (ret != 0) {
+      syslog(LOG_WARNING, "%s fill descriptor fail\n", __func__);
+      return ret;
+    }
+
+    descriptor.data = variable_field_to_str(descriptorData);
+    device_descriptor.emplace_back(descriptor);
+
+    auto nextDescriptorOffset = sizeof(pldm_descriptor_tlv().descriptor_type) +
+      sizeof(pldm_descriptor_tlv().descriptor_length) + descriptorData.length;
+    descriptor_data += nextDescriptorOffset;
+    device_identifiers_len -= nextDescriptorOffset;
+  }
+
+  query_device_descriptors.emplace_back(device_descriptor);
+
+  return 0;
+}
+
+static int
+encode_pldm_query_downstream_device_descriptors_req(vector<uint8_t>& request, query_downstream_device_identifier_req req)
+{
+  int ret = encode_pldm_header_only(PLDM_REQUEST, 0x00, PLDM_FWUP,
+    PLDM_CMD_QUERY_DOWNSTREAM_DEVICE_IDENTIFIERS, (pldm_msg*)request.data());
+  if (ret != 0) {
+    cerr << "Failed to encode pldm header for query downstream device identifier request."
+      << " ret = " << ret
+      << endl;
+    return ret;
+  }
+
+  memcpy(request.data() + sizeof(pldm_msg_hdr), &req, sizeof(query_downstream_device_identifier_req));
+  return 0;
+}
+
+static int
+pldm_query_downstream_device_descriptors(uint8_t bus, uint8_t eid)
+{
+  int ret = 0;
+  uint8_t index = 0;
+  uint16_t device_count = 0;
+  vector<uint8_t> response{};
+  vector<uint8_t> request(sizeof(pldm_msg_hdr) + sizeof(query_downstream_device_identifier_req));
+  vector<device_id_record_descriptor> device_descriptor{};
+  query_downstream_device_identifier_req req = {
+    0x00,
+    TRANSFER_OPERATION_FLAG::GET_FIRST_PART
+  };
+
+  query_downstream_device_identifier_resp *resp = NULL;
+  while (1) {
+    ret = encode_pldm_query_downstream_device_descriptors_req(request, req);
+    if (ret != 0) {
+      syslog(LOG_WARNING, "Failed to encode query downstream device identifier request");
+      return ret;
+    }
+
+    ret = oem_pldm_send_recv(bus, eid, request, response);
+    if (ret == PLDM_SUCCESS) {
+      struct pldm_msg *msg = (pldm_msg*)response.data();
+      resp = (query_downstream_device_identifier_resp *)msg->payload;
+      device_count = resp->downstreamdevicenum;
+      uint32_t length = resp->downstreamdevicelength;
+      uint16_t hdr_length = sizeof(resp->complete_code) + sizeof(resp->nextdatatransferhandle) + sizeof(resp->transferflag);
+      if (response.size() < (hdr_length + length)) {
+	syslog(LOG_WARNING, "Query downstream device descriptors length is invalid, expected: 0x%x, actual: 0x%x",
+	  (hdr_length + length), response.size());
+	return -1;
+      }
+      
+      device_descriptor.clear();
+      uint8_t *descriptor_data = ((uint8_t *)msg->payload + sizeof(query_downstream_device_identifier_resp));
+      for (index = 0; index < device_count; ++index) {
+	device_id_record_descriptor descriptor{};
+	variable_field descriptorData{};
+
+	ret = decode_descriptor_type_length_value(descriptor_data, length, &descriptor.type, &descriptorData);
+	if (ret != 0) {
+          syslog(LOG_WARNING, "%s fill descriptor fail\n", __func__);
+	  return ret;
+	}
+
+	descriptor.data = variable_field_to_str(descriptorData);
+	device_descriptor.emplace_back(descriptor);
+
+	auto nextDescriptorOffset = sizeof(pldm_descriptor_tlv().descriptor_type) +
+          sizeof(pldm_descriptor_tlv().descriptor_length) + descriptorData.length;
+	descriptor_data += nextDescriptorOffset;
+	length -= nextDescriptorOffset;
+      }
+      
+      query_device_descriptors.emplace_back(device_descriptor);
+
+      if (resp->transferflag == End || resp->transferflag == StartAndEnd) {
+	break;
+      }
+    } else {
+      syslog(LOG_WARNING, "Query downstream device identifier request send/receive fail");
+      return -1;
+    }
+
+    response.clear();
+
+    // Get next downstream device descriptors
+    req.datatransferhandle = resp->nextdatatransferhandle;
+    req.transferoperationflag = TRANSFER_OPERATION_FLAG::GET_NEXT_PART;
+
+    usleep(PLDM_QUERY_DOWNSTREAM_DEVICE_IDENTIFIERS_WAIT_TIME_US);
+  }
+
   return ret;
 }
 
@@ -731,6 +976,7 @@ pldm_apply_complete_handle(int sockfd, uint8_t eid, vector<uint8_t>& request, ui
     cerr << "Component apply failed, result="
          << int(applyResult)
          << endl;
+    return -1;
   }
   // SUCCESS
   else {
@@ -751,14 +997,38 @@ pldm_apply_complete_handle(int sockfd, uint8_t eid, vector<uint8_t>& request, ui
 }
 
 static int
-pldm_do_download(int sockfd, uint8_t eid, size_t index, uint8_t& curr_stat, int file)
+pldm_do_download(int sockfd, uint8_t eid, size_t index, uint8_t& curr_stat, int file, int wait_apply_time = 0)
 {
   int ret = 0;
   vector<uint8_t> request{};
-  if (oem_pldm_recv(sockfd, eid, request) != PLDM_SUCCESS) {
-    curr_stat = FW_DEVICE_STATUS::IDLE;
-    cerr << "Recv failed in download phase." << endl;
-    return -1;
+
+  if (curr_stat == FW_DEVICE_STATUS::APPLY) {
+    if (wait_apply_time != 0) {
+      cout << dec << "Wait for loading firmware, no more than " << wait_apply_time << "s..." << endl;
+    }
+    struct timespec start_time;
+    struct timespec current_time;
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+
+    while (current_time.tv_sec <= (start_time.tv_sec + wait_apply_time)) {
+      if (oem_pldm_recv(sockfd, eid, request) == PLDM_SUCCESS) {
+	break;
+      }
+
+      clock_gettime(CLOCK_MONOTONIC, &current_time);
+    }
+
+    if (current_time.tv_sec > (start_time.tv_sec + wait_apply_time)) {
+      cerr << "Wait request timeout" << endl;
+      return -1;
+    }
+  } else {
+    if (oem_pldm_recv(sockfd, eid, request) != PLDM_SUCCESS) {
+      curr_stat = FW_DEVICE_STATUS::IDLE;
+      cerr << "Recv failed in download phase." << endl;
+      return -1;
+    }
   }
 
   auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
@@ -819,15 +1089,31 @@ pldm_activate_firmware(int sockfd, uint8_t eid)
   return oem_pldm_send_recv_w_fd(sockfd, eid, request, response);
 }
 
-int oem_pldm_fw_update(uint8_t bus, uint8_t eid, const char* path, uint8_t specified_comp)
+int oem_pldm_fw_update(uint8_t bus, uint8_t eid, const char* path, bool is_standard_descriptor, 
+    string component, int wait_apply_time, uint8_t specified_comp)
 {
   int ret, sockfd, file;
+  int index = 0;
   uint8_t status = 0;
 
   sockfd = oem_pldm_init_fwupdate_fd(bus);
   if (sockfd < 0) {
     cerr << "Failed to connect pldm daemon." << endl;
     return -1;
+  }
+
+  if (is_standard_descriptor) {
+    ret = pldm_query_device_identifiers(bus, eid);
+    if (ret != 0) {
+      cerr << "Failed to get device identifier." << endl;
+      return -1;
+    }
+
+    ret = pldm_query_downstream_device_descriptors(bus, eid);
+    if (ret != 0) {
+      cerr << "Failed to get downstream device identifier." << endl;
+      return -1;
+    }
   }
 
   ret = oem_parse_pldm_package(path);
@@ -858,23 +1144,60 @@ int oem_pldm_fw_update(uint8_t bus, uint8_t eid, const char* path, uint8_t speci
     }
   }
 
-  // It means that only one comp image UA wanna use
-  // when specified_comp not equals to 0xFF. (For GT pex update)
-  if (specified_comp != 0xFF) {
-    auto it = find_if(pkg_comps.begin(), pkg_comps.end(),
-      [specified_comp](const component_image_info_t& comp){
-        return (comp.compImageInfo.comp_identifier == specified_comp);
+  if (is_standard_descriptor) {
+    // Find the component need to update
+    for (index = 0; index < (int)pkg_devices.size(); ++index) {
+      ret = pldm_check_descriptors_is_match(pkg_devices.at(index).recordDescriptors);
+      if (ret != 0) {
+        continue;
+      } else {
+        auto comp = pkg_comps.at(index);
+        size_t compare_comp_index = comp.compVersion.find(" ");
+        string compare_comp = comp.compVersion;
+        if (compare_comp_index != string::npos) {
+          compare_comp = comp.compVersion.substr(0, compare_comp_index);
+          if (component.find(compare_comp) != string::npos) {
+            // Find the section user want to update
+            if (specified_comp != 0xFF) {
+              comp.compImageInfo.comp_identifier = specified_comp;
+            }
+            pkg_comps.clear();
+            pkg_comps.emplace_back(comp);
+
+            auto device = pkg_devices.at(index);
+            pkg_devices.clear();
+            pkg_devices.emplace_back(device);
+
+            break;
+          }
+        }
+        continue;
       }
-    );
-    if (it == pkg_comps.end()) {
+    }
+
+    if ((ret != 0) || (pkg_devices.size() != 1)) {
       cerr << "Failed to find corresponding component image." << endl;
       ret = -1;
       goto exit;
-    } else {
-      auto comp = *it;
-      pkg_comps.clear();
-      pkg_comps.emplace_back(comp);
-
+    }
+  } else {
+    // It means that only one comp image UA wanna use
+    // when specified_comp not equals to 0xFF. (For GT pex update)
+    if (specified_comp != 0xFF) {
+      auto it = find_if(pkg_comps.begin(), pkg_comps.end(),
+        [specified_comp](const component_image_info_t& comp){
+	  return (comp.compImageInfo.comp_identifier == specified_comp);
+        }
+      );
+      if (it == pkg_comps.end()) {
+	cerr << "Failed to find corresponding component image." << endl;
+	ret = -1;
+	goto exit;
+      } else {
+	auto comp = *it;
+	pkg_comps.clear();
+	pkg_comps.emplace_back(comp);
+      }
     }
   }
 
@@ -888,8 +1211,8 @@ int oem_pldm_fw_update(uint8_t bus, uint8_t eid, const char* path, uint8_t speci
   status = FW_DEVICE_STATUS::LEARN_COMPONENTS;
 
   // send PassComponentTable (Next State: READY XFER)
-  for (size_t i = 0; i < pkg_comps.size(); ++i) {
-    ret = pldm_pass_comp_table(sockfd, eid, i);
+  for (index = 0; index < (int)pkg_comps.size(); ++index) {
+    ret = pldm_pass_comp_table(sockfd, eid, index);
     if (ret < 0) {
       cerr << "Failed to send PassComponentTable." << endl;
       goto exit;
@@ -899,8 +1222,8 @@ int oem_pldm_fw_update(uint8_t bus, uint8_t eid, const char* path, uint8_t speci
   status = FW_DEVICE_STATUS::READY_XFER;
 
   // send UpdateComponent (Next State: DOWNLOAD)
-  for (size_t i = 0; i < pkg_comps.size(); ++i) {
-    ret = pldm_update_comp(sockfd, eid, i);
+  for (index = 0; index < (int)pkg_comps.size(); ++index) {
+    ret = pldm_update_comp(sockfd, eid, index);
     if (ret < 0) {
       cerr << "Failed to send UpdateComponent." << endl;
       goto exit;
@@ -908,7 +1231,7 @@ int oem_pldm_fw_update(uint8_t bus, uint8_t eid, const char* path, uint8_t speci
       cout << "UpdateComponent Success." << endl;
       status = FW_DEVICE_STATUS::DOWNLOAD;
       while (true) {
-        ret = pldm_do_download(sockfd, eid, i, status, file);
+        ret = pldm_do_download(sockfd, eid, index, status, file, wait_apply_time);
         if (ret < 0) {
           cerr << "Failed at download state ." << endl;
           goto exit;

@@ -1,0 +1,26 @@
+name: Javaisland
+tags:
+- javaisland
+- nvidia
+- meta-openbmc
+- compute
+sections:
+  - overview
+  - features
+feature_list:
+  - default-meta-multihost-features
+  - platform-features
+status:
+  BIC Support:
+    BIC Secure Boot: unsupported
+    BIC Slot Clear CMOS Support: unsupported
+  BMC Hardware Support:
+    Nuvoton Arbel: unsupported
+  Security:
+    PRoT Support: unsupported
+  Serial-Over-Lan:
+    SOL Host Logger: unsupported
+  User Interface:
+    host2bmc USB: unsupported
+  Javaisland Specific Requirements:
+    PRoT Support: unsupported

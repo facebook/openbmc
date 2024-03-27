@@ -1127,10 +1127,10 @@ int
 pal_sled_cycle(void) {
   pal_update_ts_sled();
   // Remove the adm1275 module as the HSC device is busy
-  system("rmmod adm1275");
+  (void)!system("rmmod adm1275");
 
   // Send command to HSC power cycle
-  system("i2cset -y 0 0x10 0xd9 c");
+  (void)!system("i2cset -y 0 0x10 0xd9 c");
 
   return 0;
 }
@@ -1930,7 +1930,7 @@ pal_is_bmc_por(void) {
 
   fp = fopen(AST_POR_FLAG, "r");
   if (fp != NULL) {
-    fscanf(fp, "%d", &por);
+    (void)!fscanf(fp, "%d", &por);
     fclose(fp);
   }
 
@@ -3600,11 +3600,11 @@ pal_get_error_code(uint8_t data[MAX_ERROR_CODES], uint8_t* error_count) {
     memset(error, 0, 32); //When BMC Error Code file Open Fail, fill all data to 0
   }
   else {
-    lockf(fileno(fp),F_LOCK,0L);
+    (void)!lockf(fileno(fp),F_LOCK,0L);
     while (fscanf(fp, "%hhX", error+count) != EOF && count!=32) {
       count++;
     }
-    lockf(fileno(fp),F_ULOCK,0L);
+    (void)!lockf(fileno(fp),F_ULOCK,0L);
     fclose(fp);
   }
 
@@ -3639,7 +3639,7 @@ pal_add_cri_sel(char *str)
 {
   char cmd[128];
   snprintf(cmd, 128, "logger -p local0.err \"%s\"",str);
-  system(cmd);
+  (void)!system(cmd);
 }
 
 void
@@ -3680,13 +3680,13 @@ pal_set_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t list_le
 #endif
     return err;
   }
-  lockf(fileno(fp),F_LOCK,0L);
+  (void)!lockf(fileno(fp),F_LOCK,0L);
 
   for(i = 0; i < list_length; i++) {
     fprintf(fp, "%02X ", *(boot_list+i));
   }
   fprintf(fp, "\n");
-  lockf(fileno(fp),F_ULOCK,0L);
+  (void)!lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
   return 0;
 }
@@ -3704,13 +3704,13 @@ pal_get_bios_current_boot_list(uint8_t slot, uint8_t *boot_list, uint8_t *list_l
 #endif
     return err;
   }
-  lockf(fileno(fp),F_LOCK,0L);
+  (void)!lockf(fileno(fp),F_LOCK,0L);
 
   while (fscanf(fp, "%hhX", boot_list+count) != EOF) {
       count++;
   }
   *list_length = count;
-  lockf(fileno(fp),F_ULOCK,0L);
+  (void)!lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
   return 0;
 }
@@ -3727,12 +3727,12 @@ pal_set_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
 #endif
     return err;
   }
-  lockf(fileno(fp),F_LOCK,0L);
+  (void)!lockf(fileno(fp),F_LOCK,0L);
 
   fprintf(fp, "%02X ", *fixed_boot_device);
   fprintf(fp, "\n");
 
-  lockf(fileno(fp),F_ULOCK,0L);
+  (void)!lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
   return 0;
 }
@@ -3765,12 +3765,12 @@ pal_set_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
 #endif
     return err;
   }
-  lockf(fileno(fp),F_LOCK,0L);
+  (void)!lockf(fileno(fp),F_LOCK,0L);
 
   fprintf(fp, "%02X ", *default_setting);
   fprintf(fp, "\n");
 
-  lockf(fileno(fp),F_ULOCK,0L);
+  (void)!lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
 
   //Hack a thread wait a certain time then clear the setting, when userA didn't reboot the System, and userB doesn't know about the setting.
@@ -3797,11 +3797,11 @@ pal_get_bios_restores_default_setting(uint8_t slot, uint8_t *default_setting) {
 #endif
     return err;
   }
-  lockf(fileno(fp),F_LOCK,0L);
+  (void)!lockf(fileno(fp),F_LOCK,0L);
 
-  fscanf(fp, "%hhX", default_setting);
+  (void)!fscanf(fp, "%hhX", default_setting);
 
-  lockf(fileno(fp),F_ULOCK,0L);
+  (void)!lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
   return 0;
 }
@@ -3819,14 +3819,14 @@ pal_set_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
 #endif
     return err;
   }
-  lockf(fileno(fp),F_LOCK,0L);
+  (void)!lockf(fileno(fp),F_LOCK,0L);
 
   for(i = 0; i < 4; i++) {
     fprintf(fp, "%02X ", *(last_boot_time+i));
   }
   fprintf(fp, "\n");
 
-  lockf(fileno(fp),F_ULOCK,0L);
+  (void)!lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
   return 0;
 }
@@ -3844,13 +3844,13 @@ pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time) {
 #endif
     return err;
   }
-  lockf(fileno(fp),F_LOCK,0L);
+  (void)!lockf(fileno(fp),F_LOCK,0L);
 
   for(i = 0; i < 4; i++) {
-    fscanf(fp, "%hhX", last_boot_time+i);
+    (void)!fscanf(fp, "%hhX", last_boot_time+i);
   }
 
-  lockf(fileno(fp),F_ULOCK,0L);
+  (void)!lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
   return 0;
 }
@@ -3867,11 +3867,11 @@ pal_get_bios_fixed_boot_device(uint8_t slot, uint8_t *fixed_boot_device) {
 #endif
     return err;
   }
-  lockf(fileno(fp),F_LOCK,0L);
+  (void)!lockf(fileno(fp),F_LOCK,0L);
 
-  fscanf(fp, "%hhX", fixed_boot_device);
+  (void)!fscanf(fp, "%hhX", fixed_boot_device);
 
-  lockf(fileno(fp),F_ULOCK,0L);
+  (void)!lockf(fileno(fp),F_ULOCK,0L);
   fclose(fp);
   return 0;
 }
@@ -3883,10 +3883,10 @@ void
 pal_save_boot_option(unsigned char* buff)
 {
   int fp = 0;
-  fp = open("/tmp/boot.in", O_WRONLY|O_CREAT);
+  fp = open("/tmp/boot.in", O_WRONLY|O_CREAT, 0755);
   if(fp > 0 )
   {
-	write(fp,buff,256);
+	(void)!write(fp,buff,256);
     close(fp);
   }
 }
@@ -3898,7 +3898,7 @@ pal_load_boot_option(unsigned char* buff)
   fp = open("/tmp/boot.in", O_RDONLY);
   if(fp > 0 )
   {
-    read(fp,buff,256);
+    (void)!read(fp,buff,256);
     close(fp);
     return 0;
   }
@@ -4110,7 +4110,7 @@ int
 pal_open_fw_update_flag(void) {
     int fd;
     //if fd = 0 means open successfully.
-    fd = open(FW_UPDATE_FLAG, O_CREAT);
+    fd = open(FW_UPDATE_FLAG, O_CREAT, 0755);
     if (!fd) {
       close(fd);
     }

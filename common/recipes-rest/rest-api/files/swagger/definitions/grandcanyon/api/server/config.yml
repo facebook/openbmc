@@ -1,43 +1,43 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/server/config  
-  title: Swagger doc for /api/server/config  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/server/config
+  title: Swagger doc for /api/server/config
   version: 1.0.0
-paths: 
-  /api/server/config: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/server/config:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  system_identify_server: 
+                properties:
+                  system_identify_server:
                     type: string
-                  server_boot_order: 
+                  server_boot_order:
                     type: string
-                  server_por_cfg: 
+                  server_por_cfg:
                     type: string
-                  sysfw_ver_server: 
+                  sysfw_ver_server:
                     type: string
-                  ntp_server: 
+                  ntp_server:
                     type: string
-                  server_sel_error: 
+                  server_sel_error:
                     type: string
-                  server_sensor_health: 
+                  server_sensor_health:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

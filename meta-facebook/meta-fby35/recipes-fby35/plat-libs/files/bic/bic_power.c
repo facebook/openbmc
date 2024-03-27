@@ -213,6 +213,9 @@ bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status)
     case SERVER_TYPE_GL:
       gpio_num = GL_PWRGD_CPU_LVC3;
       break;
+    case SERVER_TYPE_JI:
+      gpio_num = JI_RUN_POWER_PG;
+      break;
     default:
       gpio_num = PWRGD_SYS_PWROK;
       break;

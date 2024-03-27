@@ -212,6 +212,16 @@ userver_power_is_on() {
     return $?
 }
 
+wait_for_status_on() {
+    for((count=0; count < 10; count++)); do
+        if ! userver_power_is_on_helper; then
+            sleep 0.1
+        else
+            break
+        fi
+    done
+}
+
 userver_power_on() {
     acquire_lock "${FUNCNAME[0]}"
 
@@ -221,6 +231,12 @@ userver_power_on() {
     write_i2c_pwr_ctrl_register "$I2C_CPU_DP_PWR_ON_VALUE"
 
     handle_error_and_cleanup_if_timeout "${FUNCNAME[0]}"
+
+    # Note: In MCB FPGA (< 0.4), there is a small delay (< 1s)
+    # for the status bit to update after the seq_inprog has been asserted.
+    # To avoid this corner case, we introduce a FPGA agnostic check to ensure
+    # status is on before console is returned to the user.
+    wait_for_status_on
 
     release_lock
     return 0
@@ -248,15 +264,27 @@ userver_reset() {
     # Power cycle CPU and Datapath by toggling the bit
     write_i2c_pwr_ctrl_register "$I2C_CPU_DP_PWR_OFF_VALUE"
 
-    # Adding delay between off and on to avoid inconsistency of FPGA
-    # behavior in x86. The delay time is currently recommended by hardware
-    # team and will be lowered or removed once the delay is incorporated
-    # into sequence_in_progress/status bit.
-    sleep 10
+    # Note: Setting upper bound power off timeout to 10 seconds
+    # to be backward compatible to early MCB FPGA releases. Else the
+    # sequencing is expected to complete within the value configured in
+    # the by MCB FPGA.
+    for((count=0; count < 10; count++)); do
+        if is_sequencing; then
+            sleep 1
+        else
+            break
+        fi
+    done
 
     write_i2c_pwr_ctrl_register "$I2C_CPU_DP_PWR_ON_VALUE"
 
     handle_error_and_cleanup_if_timeout "${FUNCNAME[0]}"
+
+    # Note: In MCB FPGA (< 0.4), there is a small delay (< 1s)
+    # for the status bit to update after the seq_inprog has been asserted.
+    # To avoid this corner case, we introduce a FPGA agnostic check to ensure
+    # status is on before console is returned to the user.
+    wait_for_status_on
 
     release_lock
     return 0

@@ -20,6 +20,8 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
+#shellcheck disable=SC1091
+source /usr/local/bin/i2c_sensor_fixup.sh
 
 # Sometimes, it has been observed that I2c devices, such as the PIM's UCD, 
 # have the potential to lock the bus. This will render the entire i2c bus inoperable.
@@ -32,29 +34,6 @@ ADM1266_BLACKBOX_INFO=0xE6
 
 # Board Version
 board_ver=$(wedge_board_rev)
-
-#
-#  Reset the OPERATION code for each UCD page.
-#  The UCD device address and page count are retrieved from kv, 
-#  which is updated during i2c enumeration.
-#
-i2c_ucd_reset_operation() {
-  for i2c_ucd_dev in "$@" ; do
-    address=$(/usr/bin/kv get "${i2c_ucd_dev}"_addr)
-    page_count=$(/usr/bin/kv get "${i2c_ucd_dev}"_page_count)
-    if [ -z "$address" ] || [ -z "$page_count" ] ;then
-      echo "UCD device info not found" >> /dev/kmsg
-    else 
-      for (( page=0; page<page_count; page++ )) ;do
-        #select the page (page code : 0 )
-        i2cset -y -f 5 "$address" 0 "$page"
-        #reset the operation to default(operation code: 1) 
-        i2cset -y -f 5 "$address" 1 0
-      done
-    fi
-  done
-}
-
 
 # # Bus 0
 i2c_device_add 0 0x1010 slave-mqueue #IPMB 0
@@ -239,8 +218,7 @@ i2c_device_add 12 0x3e smb_syscpld     # SYSTEM CPLD
 #
 i2c_check_driver_binding "fix-binding"
 
-#
-# The UCD device may occasionally read and change the value of the
-# OPERATION command improperly. So reset it to its default setting.
-#
-i2c_ucd_reset_operation "smb_pwrseq_1" "smb_pwrseq_2"
+# The UCD/MP device occasionally failed to enumerate all the pages or
+# incorrectly reads the VOUT_MODE register, This is due to i2c clock stretch.
+# Hence during bootup validating the corresponding hwmon attribute and re-bind the driver.
+hwmon_fix_driver_binding "smb_pwrseq_1" "smb_pwrseq_2" "smb_mp2978_1" "smb_mp2978_2"

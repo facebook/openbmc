@@ -20,6 +20,8 @@
 package remediations_bletchley
 
 import (
+	"log"
+	"strings"
 	"strconv"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
@@ -41,8 +43,13 @@ func checkVersion(stepParams step.StepParams) step.StepExitError {
 	const re = `bletchley-v(?P<year>[0-9]+).(?P<week>[0-9]+)`
 	versionMap, err := utils.GetRegexSubexpMap(re, version)
 	if err != nil {
-		errMsg := errors.Errorf("Unable to parse version info: %v", err)
-		return step.ExitUnsafeToReboot{Err: errMsg}
+		if strings.HasPrefix(version, "bletchley-") {
+			log.Printf("Upgrading from dirty version. Skipping year check")
+			return nil
+		} else {
+			errMsg := errors.Errorf("Unable to parse version info: %v", err)
+			return step.ExitUnsafeToReboot{Err: errMsg}
+		}
 	}
 
 	year, err := strconv.Atoi(versionMap["year"])

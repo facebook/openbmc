@@ -1,0 +1,9 @@
+{
+  "platform" : "netlakemtp" ,
+  "eeprom devices" : [
+    {
+      "name" : "netlake-eeprom",
+      "sysfs_path" : "/sys/devices/platform/ahb/ahb:apb/ahb:apb:bus@1e78a000/1e78a280.i2c-bus/i2c-4/4-0056/eeprom"
+    }
+  ]
+}

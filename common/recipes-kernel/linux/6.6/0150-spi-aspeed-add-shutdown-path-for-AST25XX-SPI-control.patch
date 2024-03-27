@@ -1,4 +1,4 @@
-From 0dd214b2a2a31a8b3f6ed6ce056f6621eb49a28c Mon Sep 17 00:00:00 2001
+From 15ddd8e19c08df25eb4a5129dbc22c2a2ed3b71c Mon Sep 17 00:00:00 2001
 From: dhineskumareswaran <dhineskumar.eswaran@celestica.com>
 Date: Mon, 5 Dec 2022 12:17:20 +0000
 Subject: [PATCH 150/151] spi: aspeed: add shutdown path for AST25XX SPI
@@ -22,7 +22,7 @@ In reset path, restoring all FMC related register back to default state.
  1 file changed, 26 insertions(+)
 
 diff --git a/drivers/spi/spi-aspeed-smc.c b/drivers/spi/spi-aspeed-smc.c
-index e75b0d51f06a..56d83689b32a 100644
+index 21b0fa646c7d..6d9d119bf1a2 100644
 --- a/drivers/spi/spi-aspeed-smc.c
 +++ b/drivers/spi/spi-aspeed-smc.c
 @@ -46,6 +46,8 @@
@@ -101,5 +101,5 @@ index e75b0d51f06a..56d83689b32a 100644
  		.name		= DEVICE_NAME,
  		.of_match_table = aspeed_spi_matches,
 -- 
-2.39.3
+2.43.0
 

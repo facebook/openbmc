@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from shutil import which
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence  # noqa: F401
 
 import common_utils
 import pal

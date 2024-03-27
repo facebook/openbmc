@@ -124,7 +124,7 @@ pal_lpc_snoop_read_legacy(uint8_t *buf, size_t max_len, size_t *len)
   }
   for (i=0; i < max_len; i++) {
     // %hhx: unsigned char*
-    if (fscanf(fp, "%hhx%*s", &postcode) == 1) {
+    if (fscanf(fp, "%hhx", &postcode) == 1) {
       buf[i] = postcode;
     } else {
       break;
@@ -1350,6 +1350,18 @@ pal_get_key_value(char *key, char *value)
 
 int __attribute__((weak))
 pal_set_key_value(char *key, char *value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_store_key_value()
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_restore_key_value()
 {
   return PAL_EOK;
 }
@@ -3533,7 +3545,7 @@ pal_convert_sensor_reading(sdr_full_t *sdr, int in_value, float *out_value) {
 }
 
 int __attribute__((weak))
-pal_bic_self_test(void) {
+pal_bic_self_test(uint8_t fru) {
   return PAL_ENOTSUP;
 }
 

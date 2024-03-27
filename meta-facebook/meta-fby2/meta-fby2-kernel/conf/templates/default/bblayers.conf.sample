@@ -7,7 +7,6 @@ BBFILES ?= ""
 
 BBLAYERS ?= " \
   ##OEROOT##/meta \
-  ##OEROOT##/meta-poky \
   ##OEROOT##/meta-yocto-bsp \
   ##OEROOT##/../meta-security/meta-tpm \
   ##OEROOT##/../meta-openembedded/meta-oe \
@@ -20,8 +19,4 @@ BBLAYERS ?= " \
   ##OEROOT##/../../../meta-facebook/meta-fby2/meta-fby2-kernel \
   ##OEROOT##/../../../meta-facebook/meta-python3 \
   ##OEROOT##/../../../meta-facebook/meta-backports \
-  "
-BBLAYERS_NON_REMOVABLE ?= " \
-  ##OEROOT##/meta \
-  ##OEROOT##/meta-poky \
   "

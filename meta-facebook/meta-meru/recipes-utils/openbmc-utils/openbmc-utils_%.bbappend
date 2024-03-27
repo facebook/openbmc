@@ -27,12 +27,13 @@ LOCAL_URI += "\
     file://fpga_util.sh \
     file://fpga_ver.sh \
     file://meru_flash.layout \
-    file://meru_flash_32m.layout \
     file://oob-mdio-util.sh \
     file://setup-gpio.sh \
     file://setup_board.sh \
     file://setup_i2c.sh \
     file://switchToCpu.sh \
+    file://meru-21-eth0.4092.netdev \
+    file://meru-21-eth0.4092.network \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -48,11 +49,16 @@ do_install_bios_layout() {
     install -m 0644 ${S}/bmc_aboot.conf ${D}${sysconfdir}/bmc_aboot.conf
     install -m 0644 ${S}/cpu_aboot.conf ${D}${sysconfdir}/cpu_aboot.conf
     install -m 0644 ${S}/meru_flash.layout ${D}${sysconfdir}/meru_flash.layout
-    install -m 0644 ${S}/meru_flash_32m.layout ${D}${sysconfdir}/meru_flash_32m.layout
+}
+
+do_install_vlan4092() {
+    install -m 0644 ${S}/meru-21-eth0.4092.netdev ${D}${sysconfdir}
+    install -m 0644 ${S}/meru-21-eth0.4092.network ${D}${sysconfdir}
 }
 
 do_install:append() {
     do_install_bios_layout
+    do_install_vlan4092
 }
 
 FILES:${PN} += "${sysconfdir}"

@@ -8,7 +8,7 @@ from utils.platforms import PLATFORMS
 
 from utils.test_utils import tests_dir
 
-ADDITIONAL_CIT_NAMES = ["churchillmono", "janga", "tahan", "wedge400c"]
+ADDITIONAL_CIT_NAMES = ["churchillmono", "janga", "morgan800cc", "tahan", "wedge400c"]
 
 
 class RunTest:
@@ -54,7 +54,7 @@ class Tests:
         "meru": [
             "common",
             "minipack",
-        ],  # So fbdarwin can import minipack tests and run them only one time
+        ],  # So meru can import minipack tests and run them only one time
     }
 
     def __init__(self, platform, start_dir, pattern, denylist):

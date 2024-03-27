@@ -520,6 +520,8 @@ int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, vo
 int pal_cfg_key_check(char *key);
 int pal_get_key_value(char *key, char *value);
 int pal_set_key_value(char *key, char *value);
+int pal_store_key_value();
+int pal_restore_key_value();
 int pal_set_def_key_value(void);
 void pal_dump_key_value(void);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
@@ -665,7 +667,7 @@ int pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, u
 int pal_setup_exp_uart_bridging(void);
 int pal_teardown_exp_uart_bridging(void);
 int pal_convert_sensor_reading(sdr_full_t *sdr, int in_value, float *out_value);
-int pal_bic_self_test(void);
+int pal_bic_self_test(uint8_t fru);
 int pal_is_bic_ready(uint8_t fru, uint8_t *status);
 bool pal_is_bic_heartbeat_ok(uint8_t fru);
 int pal_bic_hw_reset(void);

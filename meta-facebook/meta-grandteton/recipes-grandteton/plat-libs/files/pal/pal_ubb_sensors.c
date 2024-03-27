@@ -209,72 +209,72 @@ PAL_SENSOR_MAP ubb_sensor_map[] = {
   {"PCIeRetimer_MAX_VR_TEMP", 0, read_snr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},       //0x2E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                   //0x2F
 
-  {"GPU_1_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x30
-  {"GPU_1_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31
-  {"GPU_1_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x32
-  {"GPU_1_TEMP_0", 0,   read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x33
-  {"GPU_1_TEMP_1", 0,       NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x34
-  {"GPU_1_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x35
-  {"GPU_1_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x36
+  {"OAM_0_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x30
+  {"OAM_0_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31
+  {"OAM_0_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x32
+  {"OAM_0_TEMP_0", 0,   read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x33
+  {"OAM_0_TEMP_1", 0,       NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x34
+  {"OAM_0_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x35
+  {"OAM_0_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x36
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                              //0x37
-  {"GPU_2_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x38
-  {"GPU_2_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x39
-  {"GPU_2_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x3A
-  {"GPU_2_TEMP_0" , 0,  read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x3B
-  {"GPU_2_TEMP_1" , 0,      NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x3C
-  {"GPU_2_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x3D
-  {"GPU_2_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x3E
+  {"OAM_1_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x38
+  {"OAM_1_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x39
+  {"OAM_1_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x3A
+  {"OAM_1_TEMP_0" , 0,  read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x3B
+  {"OAM_1_TEMP_1" , 0,      NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x3C
+  {"OAM_1_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x3D
+  {"OAM_1_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x3E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                              //0x3F
 
-  {"GPU_3_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x40
-  {"GPU_3_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x41
-  {"GPU_3_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x42
-  {"GPU_3_TEMP_0", 0,   read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x43
-  {"GPU_3_TEMP_1", 0,       NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x44
-  {"GPU_3_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x45
-  {"GPU_3_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x46
+  {"OAM_2_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x40
+  {"OAM_2_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x41
+  {"OAM_2_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x42
+  {"OAM_2_TEMP_0", 0,   read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x43
+  {"OAM_2_TEMP_1", 0,       NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x44
+  {"OAM_2_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x45
+  {"OAM_2_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x46
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                              //0x47
-  {"GPU_4_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x48
-  {"GPU_4_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x49
-  {"GPU_4_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x4A
-  {"GPU_4_TEMP_0" , 0,  read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x4B
-  {"GPU_4_TEMP_1" , 0,      NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x4C
-  {"GPU_4_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x4D
-  {"GPU_4_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x4E
+  {"OAM_3_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x48
+  {"OAM_3_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x49
+  {"OAM_3_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x4A
+  {"OAM_3_TEMP_0" , 0,  read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x4B
+  {"OAM_3_TEMP_1" , 0,      NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x4C
+  {"OAM_3_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x4D
+  {"OAM_3_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x4E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                              //0x4F
 
-  {"GPU_5_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x50
-  {"GPU_5_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x51
-  {"GPU_5_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x52
-  {"GPU_5_TEMP_0", 0,   read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x53
-  {"GPU_5_TEMP_1", 0,       NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x54
-  {"GPU_5_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x55
-  {"GPU_5_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x56
+  {"OAM_4_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x50
+  {"OAM_4_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x51
+  {"OAM_4_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x52
+  {"OAM_4_TEMP_0", 0,   read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x53
+  {"OAM_4_TEMP_1", 0,       NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x54
+  {"OAM_4_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x55
+  {"OAM_4_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x56
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                              //0x57
-  {"GPU_6_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x58
-  {"GPU_6_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x59
-  {"GPU_6_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x5A
-  {"GPU_6_TEMP_0" , 0,  read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x5B
-  {"GPU_6_TEMP_1" , 0,      NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x5C
-  {"GPU_6_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x5D
-  {"GPU_6_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x5E
+  {"OAM_5_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x58
+  {"OAM_5_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x59
+  {"OAM_5_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x5A
+  {"OAM_5_TEMP_0" , 0,  read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x5B
+  {"OAM_5_TEMP_1" , 0,      NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x5C
+  {"OAM_5_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x5D
+  {"OAM_5_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                              //0x5F
 
-  {"GPU_7_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x60
-  {"GPU_7_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x61
-  {"GPU_7_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x62
-  {"GPU_7_TEMP_0", 0,   read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x63
-  {"GPU_7_TEMP_1", 0,       NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x64
-  {"GPU_7_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x65
-  {"GPU_7_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x66
+  {"OAM_6_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x60
+  {"OAM_6_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x61
+  {"OAM_6_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x62
+  {"OAM_6_TEMP_0", 0,   read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x63
+  {"OAM_6_TEMP_1", 0,       NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x64
+  {"OAM_6_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x65
+  {"OAM_6_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x66
   {"GPU_WARMEST_DIE_TEMP", 0, read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x67
-  {"GPU_8_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x68
-  {"GPU_8_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x69
-  {"GPU_8_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x6A
-  {"GPU_8_TEMP_0" , 0,  read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6B
-  {"GPU_8_TEMP_1" , 0,      NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6C
-  {"GPU_8_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x6D
-  {"GPU_8_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6E
+  {"OAM_7_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x68
+  {"OAM_7_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x69
+  {"OAM_7_VOL"  , 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},       //0x6A
+  {"OAM_7_TEMP_0" , 0,  read_snr, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6B
+  {"OAM_7_TEMP_1" , 0,      NULL, false, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6C
+  {"OAM_7_DRAM_PWR" , 0,    NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},      //0x6D
+  {"OAM_7_DRAM_TEMP", 0,read_snr, false, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x6E
   {"GPU_WARMEST_MEM_TEMP", 0, read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x6F
 };
 

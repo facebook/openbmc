@@ -45,6 +45,7 @@
 // NIC manufacturer IANAs
 #define BCM_IANA                                         0x0000113D
 #define MLX_IANA                                         0x00008119
+#define META_IANA                                        0x00001D9B
 
 
 

@@ -46,6 +46,7 @@
 #include "pal_common.h"
 #include <pthread.h>
 #include <openbmc/hgx.h>
+#include <libpldm-oem/pldm.h>
 
 #ifndef PLATFORM_NAME
 #define PLATFORM_NAME "grandteton"
@@ -798,6 +799,8 @@ pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_MB:
       return 10;
     case FRU_ACB:
+      //increase the timeout for asic stress
+      return 20;
     case FRU_MEB:
       return 15;
     default:
@@ -1328,6 +1331,13 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
           return -1;
         }
       }
+
+      if (fruid != FRU_ACB) {
+	// ACCL fru need to block MB power controlling
+        if ( _pal_kv_set_fw_update_ongoing(FRU_MB, tmout) < 0 ) {
+          return -1;
+	}
+      }
       break;
     case FRU_MEB:
     case FRU_MEB_JCN1:
@@ -1773,4 +1783,91 @@ pal_is_asic_nvme_ready(uint8_t asic_index) {
   }
 
   return true;
+}
+
+int
+pal_get_server_12v_power(uint8_t fru_id, uint8_t *status) {
+  *status = SERVER_12V_ON;
+  return PAL_EOK;
+}
+
+int
+pal_bic_self_test(uint8_t fru) {
+  bic_intf fru_bic_info = {0};
+  uint8_t tbuf[255] = {0};
+  uint8_t* rbuf = (uint8_t *) NULL;
+  uint8_t tlen = 0;
+  size_t  rlen = 0;
+  uint8_t status = FRU_PRSNT;
+  int rc = 0;
+ 
+  if (pal_is_artemis()) {
+    if (pal_is_fru_prsnt(fru, &status) == 0 && status == FRU_NOT_PRSNT) {
+      // NOT PRESENT block PLDM transaction
+      syslog(LOG_WARNING, "%s() FRU: %u Block PLDM Transaction due to not Present", __func__, fru);
+      return PAL_EOK;
+    }
+    fru_bic_info.fru_id = fru;
+    pal_get_bic_intf(&fru_bic_info);
+
+    tbuf[tlen++] = 0x80;
+    tbuf[tlen++] = 0x05; // PLDM_FWUP
+    tbuf[tlen++] = 0x02; // PLDM_GET_FW_PARAMETERS
+    tlen = PLDM_HEADER_SIZE;
+
+    rc = oem_pldm_send_recv(fru_bic_info.bus_id, fru_bic_info.bic_eid, tbuf, tlen, &rbuf, &rlen);
+    if (rc == PLDM_SUCCESS) {
+      return PAL_EOK;
+    } else {
+      return PAL_ENOTSUP;
+    }
+  }
+  return PAL_ENOTSUP;
+}
+
+int
+pal_bic_hw_reset(void) {
+  // Not Support
+  return PAL_ENOTSUP;
+}
+
+int pal_read_cpld_reg(int fru, uint8_t offset, uint8_t bit, uint8_t *value) {
+  int ret = -1, fd;
+  uint8_t bus, addr, tlen, rlen;
+  uint8_t tbuf[1] = {0};
+
+  if(fru == FRU_MB){
+    bus  = MB_CPLD_BUS;
+    addr = MB_CPLD_ADDR;
+  }
+  else if (fru == FRU_SWB) {
+    bus  = SWB_CPLD_BUS;
+    addr = SWB_CPLD_ADDR;
+  }
+  else {
+    return -1;
+  }
+
+  tbuf[0] = offset;
+  tlen = 1;
+  rlen = 1;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, bus);
+    return -1;
+  }
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, value, rlen);
+  i2c_cdev_slave_close(fd);
+  if (ret) {
+	syslog(LOG_ERR, "%s(): fail to get FRU: %d CPLD reg", __func__, fru);
+    return -1;
+  }
+
+  if (bit >=0 && bit <= 7) {
+    *value = GETBIT(*value, bit);
+  }
+
+  return ret;
 }

@@ -15,11 +15,11 @@ fi
 set -x
 i2cset -f -y 8 "$DEV_ADDR" 0xf4 0x0
 sleep 0.1
-i2cset -f -y 8 "$DEV_ADDR" 0xf0 0x20
+i2cset -f -y 8 "$DEV_ADDR" 0xf0 0x40
 sleep 0.1
 i2cset -f -y 8 "$DEV_ADDR" 0xf1 0x1
 sleep 0.1
-i2cset -f -y 8 "$DEV_ADDR" 0xf2 0x20
+i2cset -f -y 8 "$DEV_ADDR" 0xf2 0x40
 sleep 0.1
 i2cset -f -y 8 "$DEV_ADDR" 0xf3 0x1
 sleep 0.1

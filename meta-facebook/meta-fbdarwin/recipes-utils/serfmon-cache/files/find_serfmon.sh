@@ -48,9 +48,11 @@ create_dummy_chassis_eeprom() {
     # Extract SN from Serfmon Format \!serfmon\:.*\:.*\:.*$
     chassis_serial="$(awk -F":" '{print $3}' "$SERFMON_CACHE")"
 
+    TMP="${CHASSIS_EEPROM_CACHE}.tmp"
+
     # Create Fake EEPROM file for weutil in expected format
     printf "\x00\x00\x00\x03\x00\x00\x00\x00\x30\x30\x30\x32%s%s\x31\x31\x31"\
-        "$dummy_pca" "$chassis_serial" > "$CHASSIS_EEPROM_CACHE"
+        "$dummy_pca" "$chassis_serial" > "$TMP"
 
     # How many bytes to pad EEPROM file
     pad_bytes=211
@@ -60,16 +62,18 @@ create_dummy_chassis_eeprom() {
        chassis_mac="$(awk -F":" '{print $3}' "$MACMON_CACHE")"
 
        # Add MAC TLV. MAC is 12 (0x43 = C) bytes in length
-       printf "\x30\x35\x30\x30\x30\x43%s" "$chassis_mac" >> "$CHASSIS_EEPROM_CACHE"
+       printf "\x30\x35\x30\x30\x30\x43%s" "$chassis_mac" >> "$TMP"
        pad_bytes=$((pad_bytes - 18))
     fi
 
     # Add an end TLV.
-    printf "\x30\x30\x30\x30\x30\x30" >> "$CHASSIS_EEPROM_CACHE"
+    printf "\x30\x30\x30\x30\x30\x30" >> "$TMP"
 
     # Pad file with all 0xFFs to size
     dd if=/dev/zero bs=1 count=$pad_bytes \
-       2>/dev/null | tr "\000" "\377" >> "$CHASSIS_EEPROM_CACHE"
+       2>/dev/null | tr "\000" "\377" >> "$TMP"
+
+    mv $TMP $CHASSIS_EEPROM_CACHE
 }
 
 maybe_update_cache() {

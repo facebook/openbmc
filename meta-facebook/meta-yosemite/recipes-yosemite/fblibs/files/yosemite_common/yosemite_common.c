@@ -128,17 +128,17 @@ generate_dump(void *arg) {
   // HEADER LINE for the dump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s time > %s%s", CRASHDUMP_BIN, CRASHDUMP_FILE, fruname);
-  system(cmd);
+  (void)!system(cmd);
 
   // COREID dump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s coreid >> %s%s", CRASHDUMP_BIN, fruname, CRASHDUMP_FILE, fruname);
-  system(cmd);
+  (void)!system(cmd);
 
   // MSR dump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s msr >> %s%s", CRASHDUMP_BIN, fruname, CRASHDUMP_FILE, fruname);
-  system(cmd);
+  (void)!system(cmd);
 
   syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
 
@@ -173,9 +173,9 @@ yosemite_common_crashdump(uint8_t fru) {
     } else {
       pthread_join(t_dump[fru-1].pt, NULL);
       sprintf(cmd, "ps | grep '{dump.sh}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      (void)!system(cmd);
       sprintf(cmd, "ps | grep 'me-util' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      (void)!system(cmd);
 #ifdef DEBUG
       syslog(LOG_INFO, "yosemite_common_crashdump: Previous crashdump thread is cancelled");
 #endif

@@ -1135,6 +1135,7 @@ static int
 check_and_read_sensor_value(uint8_t fru, uint8_t snr_num, const char *device,
                             const char *attr, int *value) {
   char dir_name[LARGEST_DEVICE_NAME + 1];
+  int retry = 0, max_retry = 3, ret = 0;
 
   if (strstr(device, "hwmon*") != NULL) {
     /* Get current working directory */
@@ -1148,11 +1149,11 @@ check_and_read_sensor_value(uint8_t fru, uint8_t snr_num, const char *device,
              "%s/%s", device, attr);
   }
 
-  if (device_read(snr_path[fru][snr_num].name, value)) {
-    return -1;
-  }
+  do {
+    ret = device_read(snr_path[fru][snr_num].name, value);
+  } while ((ret != 0) && (retry++ < max_retry));
 
-  return 0;
+  return (ret == 0) ? 0 : -1;
 }
 
 static int

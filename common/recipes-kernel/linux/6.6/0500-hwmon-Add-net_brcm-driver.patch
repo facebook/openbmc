@@ -1,4 +1,4 @@
-From 65b003a8bfab4eccc23a311feee76338597d4146 Mon Sep 17 00:00:00 2001
+From cc9bb556b267b1437a92b721781353f1cd791f0f Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 8 Apr 2021 15:23:48 -0700
 Subject: [PATCH 500/501] hwmon: Add net_brcm driver
@@ -30,10 +30,10 @@ Signature: 27585349:1617733366:5443ecb847967f7725c2d8d6416b357b37ac4f28
  create mode 100644 drivers/hwmon/net_brcm.c
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 307477b8a371..91517f3d62d4 100644
+index cdde5a2a4d90..15f3d1d3bc9c 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -1597,6 +1597,16 @@ config SENSORS_NCT7904
+@@ -1618,6 +1618,16 @@ config SENSORS_NCT7904
  	  This driver can also be built as a module. If so, the module
  	  will be called nct7904.
  
@@ -51,10 +51,10 @@ index 307477b8a371..91517f3d62d4 100644
  	tristate "Nuvoton NPCM750 and compatible PWM and Fan controllers"
  	imply THERMAL
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 3f4b0fda0998..6617f250ed41 100644
+index 774eba4960d6..344c84fa6c84 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
-@@ -166,6 +166,7 @@ obj-$(CONFIG_SENSORS_NCT6775)	+= nct6775.o
+@@ -168,6 +168,7 @@ obj-$(CONFIG_SENSORS_NCT6775)	+= nct6775.o
  obj-$(CONFIG_SENSORS_NCT6775_I2C) += nct6775-i2c.o
  obj-$(CONFIG_SENSORS_NCT7802)	+= nct7802.o
  obj-$(CONFIG_SENSORS_NCT7904)	+= nct7904.o
@@ -297,5 +297,5 @@ index 000000000000..638a4ab7d7cf
 +MODULE_DESCRIPTION("NET_BRCM Driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.39.3
+2.43.0
 

@@ -1,7 +1,7 @@
-From cad1d70b18851c04e6fc90a6810a19feeba971f1 Mon Sep 17 00:00:00 2001
+From 3abdcdb3e2a7723eaf6960cabc9c31e9cd5db8c2 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 6 Sep 2023 16:19:16 +0800
-Subject: [PATCH 502/506] hwmon: max31790: support to config PWM as TACH
+Subject: [PATCH 502/510] hwmon: max31790: support to config PWM as TACH
 
 The PWM outputs of max31790 could be used as tachometer inputs by
 setting the fan configuration register, but the driver doesn't support
@@ -123,5 +123,5 @@ index 0cd44c1e998a..378ff32c7c1e 100644
  	 * Initialize the max31790 chip
  	 */
 -- 
-2.41.0
+2.43.0
 

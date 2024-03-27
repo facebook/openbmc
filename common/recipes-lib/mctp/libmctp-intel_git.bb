@@ -14,6 +14,7 @@ SRC_URI = "git://github.com/Intel-BMC/libmctp.git;protocol=https;branch=master \
            file://0004-test-astlpc-fix-compile-warning.patch \
            file://0005-Replace-pollfd-to-use-local-struct.patch \
            file://0006-Add-MCTP_BTU-size-to-match-the-bic-setting.patch \
+           file://0007-fix-BTU-error.patch \
           "
 SRCREV = "21dc38e911a27af2e914f834b2e2b775f7dad520"
 SRC_URI[md5sum] = "1c7db87fb8fa946b03d91fff08b0825a"

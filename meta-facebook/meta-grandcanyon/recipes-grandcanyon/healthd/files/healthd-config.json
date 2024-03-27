@@ -90,7 +90,7 @@
   },
   "bic_health": {
     "enabled": true,
-    "fru": 1,
+    "fru": [1],
     "monitor_interval": 60
   },
   "nm_monitor": {

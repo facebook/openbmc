@@ -1,0 +1,11 @@
+[Unit]
+Description=Monitor system memory - this is a backup solution
+After=pldm-slow-restart.service
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/share/pldm/pldm-monitor-memory.sh
+
+[Install]
+WantedBy=multi-user.target

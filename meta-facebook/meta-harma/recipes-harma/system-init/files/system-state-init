@@ -1,0 +1,3 @@
+#!/bin/bash
+
+fw-util mb --version

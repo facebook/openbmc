@@ -1,0 +1,51 @@
+From e8e3bf36355f79a4a5c95acbc029514332861abc Mon Sep 17 00:00:00 2001
+From: Ken Chen <j220584470k@gmail.com>
+Date: Fri, 2 Feb 2024 13:50:53 +0800
+Subject: [PATCH] fix BTU error.
+
+---
+ core.c    | 4 ++--
+ libmctp.h | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/core.c b/core.c
+index 6532e35..632ef2c 100644
+--- a/core.c
++++ b/core.c
+@@ -149,9 +149,9 @@ void *mctp_pktbuf_data(struct mctp_pktbuf *pkt)
+ 			sizeof(struct mctp_hdr));
+ }
+ 
+-uint8_t mctp_pktbuf_size(struct mctp_pktbuf *pkt)
++size_t mctp_pktbuf_size(struct mctp_pktbuf *pkt)
+ {
+-	return (uint8_t)(pkt->end - pkt->start);
++	return pkt->end - pkt->start;
+ }
+ 
+ /*
+diff --git a/libmctp.h b/libmctp.h
+index 3571b2d..7558532 100644
+--- a/libmctp.h
++++ b/libmctp.h
+@@ -51,7 +51,7 @@ struct mctp_hdr {
+ 
+ /* Baseline Transmission Unit and packet size */
+ #define MCTP_BTU 64
+-#define MCTP_I3C_BTU 256
++#define MCTP_I3C_BTU 252
+ #define MCTP_PACKET_SIZE(unit) ((unit) + sizeof(struct mctp_hdr))
+ 
+ #define TX_DISABLED_ERR (-1024)
+@@ -72,7 +72,7 @@ struct mctp_pktbuf *mctp_pktbuf_alloc(struct mctp_binding *hw, size_t len);
+ void mctp_pktbuf_free(struct mctp_pktbuf *pkt);
+ struct mctp_hdr *mctp_pktbuf_hdr(struct mctp_pktbuf *pkt);
+ void *mctp_pktbuf_data(struct mctp_pktbuf *pkt);
+-uint8_t mctp_pktbuf_size(struct mctp_pktbuf *pkt);
++size_t mctp_pktbuf_size(struct mctp_pktbuf *pkt);
+ uint8_t mctp_pktbuf_end_index(struct mctp_pktbuf *pkt);
+ void *mctp_pktbuf_alloc_start(struct mctp_pktbuf *pkt, size_t size);
+ void *mctp_pktbuf_alloc_end(struct mctp_pktbuf *pkt, size_t size);
+-- 
+2.25.1
+

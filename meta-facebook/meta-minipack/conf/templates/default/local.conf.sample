@@ -6,4 +6,4 @@
 MACHINE ??= "minipack"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb"
+DISTRO ?= "openbmc-fb-dunfell"

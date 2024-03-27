@@ -269,7 +269,7 @@ static int psu_check(int brd_rev) {
   };
   for (fru = FRU_PEM1; fru <= FRU_PSU2; fru++) {
     if (pal_is_fru_prsnt(fru, &prsnts[fru - FRU_PEM1])) {
-      OBMC_ERROR(ENODEV, "%s: fru %d can't get presence status", __func__, i);
+      OBMC_ERROR(ENODEV, "%s: fru %u can't get presence status", __func__, fru);
       return -1;
     }
   }

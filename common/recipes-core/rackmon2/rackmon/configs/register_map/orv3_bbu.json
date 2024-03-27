@@ -1,8 +1,7 @@
 {
     "name": "ORV3_BBU",
     "address_range": [
-        64,
-        127
+        [64, 127]
     ],
     "probe_register": 8,
     "default_baudrate": 19200,

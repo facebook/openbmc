@@ -97,15 +97,8 @@ static int scmcpld_probe(struct i2c_client *client)
 
 	i2c_set_clientdata(client, pdata);
 
-	return i2c_dev_sysfs_data_init(client, pdata, scmcpld_attrs,
+	return devm_i2c_dev_sysfs_init(client, pdata, scmcpld_attrs,
 				       ARRAY_SIZE(scmcpld_attrs));
-}
-
-static void scmcpld_remove(struct i2c_client *client)
-{
-	i2c_dev_data_st *pdata = i2c_get_clientdata(client);
-
-	i2c_dev_sysfs_data_clean(client, pdata);
 }
 
 static struct i2c_driver scmcpld_driver = {
@@ -114,7 +107,6 @@ static struct i2c_driver scmcpld_driver = {
 		.name = "scmcpld",
 	},
 	.probe    = scmcpld_probe,
-	.remove   = scmcpld_remove,
 	.id_table = scmcpld_id,
 };
 

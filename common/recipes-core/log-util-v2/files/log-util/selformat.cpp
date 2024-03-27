@@ -237,7 +237,8 @@ std::ostream& operator<<(std::ostream& os, const SELFormat& s) {
 std::string get_output(const std::string& cmd) {
   char buffer[128];
   std::string output;
-  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+  auto pipe_close = [](auto fd) { (void)pclose(fd); };
+  std::unique_ptr<FILE, decltype(pipe_close)> pipe(popen(cmd.c_str(), "r"), pipe_close);
   if (!pipe) {
     std::cerr << "Failed to open a pipe" << std::endl;
     return "Error";

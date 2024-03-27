@@ -28,5 +28,3 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-# ELBERTTODO 442075 board_setup.sh
-echo "ELBERT BOARD SETUP NOT IMPLEMENTED YET"

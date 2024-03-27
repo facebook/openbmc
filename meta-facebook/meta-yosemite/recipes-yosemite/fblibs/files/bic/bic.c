@@ -663,7 +663,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
 
   // Kill ipmb daemon for this slot
   sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
-  system(cmd);
+  (void)!system(cmd);
   printf("stop ipmbd for slot %x..\n", slot_id);
 
   // The I2C high speed clock (1M) could cause to read BIC data abnormally.
@@ -671,16 +671,16 @@ _update_bic_main(uint8_t slot_id, char *path) {
   switch(slot_id)
   {
      case 1:
-       system("devmem 0x1e78a104 w 0x77776305");
+       (void)!system("devmem 0x1e78a104 w 0x77776305");
        break;
      case 2:
-       system("devmem 0x1e78a084 w 0x77776305");
+       (void)!system("devmem 0x1e78a084 w 0x77776305");
        break;
      case 3:
-       system("devmem 0x1e78a304 w 0x77776305");
+       (void)!system("devmem 0x1e78a304 w 0x77776305");
        break;
      case 4:
-       system("devmem 0x1e78a184 w 0x77776305");
+       (void)!system("devmem 0x1e78a184 w 0x77776305");
        break;
      default:
        syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
@@ -694,7 +694,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
     // Restart ipmb daemon with "-u|--enable-bic-update" for bic update
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);
-    system(cmd);
+    (void)!system(cmd);
     printf("start ipmbd -u for this slot %x..\n",slot_id);
 
     sleep(2);
@@ -705,7 +705,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
     // Kill ipmb daemon "--enable-bic-update" for this slot
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "ps -w | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
-    system(cmd);
+    (void)!system(cmd);
     printf("stop ipmbd for slot %x..\n", slot_id);
   }
 
@@ -928,16 +928,16 @@ update_done:
   switch(slot_id)
   {
      case 1:
-       system("devmem 0x1e78a104 w 0x77744302");
+       (void)!system("devmem 0x1e78a104 w 0x77744302");
        break;
      case 2:
-       system("devmem 0x1e78a084 w 0x77744302");
+       (void)!system("devmem 0x1e78a084 w 0x77744302");
        break;
      case 3:
-       system("devmem 0x1e78a304 w 0x77744302");
+       (void)!system("devmem 0x1e78a304 w 0x77744302");
        break;
      case 4:
-       system("devmem 0x1e78a184 w 0x77744302");
+       (void)!system("devmem 0x1e78a184 w 0x77744302");
        break;
      default:
        syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
@@ -948,7 +948,7 @@ update_done:
   sleep(1);
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
-  system(cmd);
+  (void)!system(cmd);
 
 error_exit:
   syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting\n");
@@ -1360,7 +1360,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size)
     }
 
     // Ignore the first byte as it indicates length of response
-    write(fd, &rbuf[1], rlen-1);
+    (void)!write(fd, &rbuf[1], rlen-1);
 
     // Update offset
     offset += (rlen-1);

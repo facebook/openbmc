@@ -7,7 +7,6 @@ BBFILES ?= ""
 
 BBLAYERS ?= " \
   ##OEROOT##/meta \
-  ##OEROOT##/meta-poky \
   ##OEROOT##/meta-yocto-bsp \
   ##OEROOT##/../meta-openembedded/meta-oe \
   ##OEROOT##/../meta-openembedded/meta-networking \
@@ -17,8 +16,4 @@ BBLAYERS ?= " \
   ##OEROOT##/../../../meta-portwell \
   ##OEROOT##/../../../meta-portwell/meta-pwneptune \
   ##OEROOT##/../../../meta-portwell/meta-python3 \
-  "
-BBLAYERS_NON_REMOVABLE ?= " \
-  ##OEROOT##/meta \
-  ##OEROOT##/meta-poky \
   "

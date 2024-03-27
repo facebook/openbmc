@@ -31,3 +31,7 @@ BB_DISKMON_DIRS ??= "\
 # We have a lot of patches that don't have an Upstream-Status, so diable this
 # QA rather than modifying all the patch files.
 ERROR_QA:remove = "patch-status"
+
+# Pick up defaults for sstate hashing from poky.conf
+BB_SIGNATURE_HANDLER ?= "OEEquivHash"
+BB_HASHSERVE ??= "auto"

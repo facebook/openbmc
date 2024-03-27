@@ -16,6 +16,6 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-130
-from typing import List
+from typing import List  # noqa: F401
 
 board_routes = []  # type: List[str]

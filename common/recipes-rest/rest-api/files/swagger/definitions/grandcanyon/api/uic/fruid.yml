@@ -1,67 +1,65 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/uic/fruid  
-  title: Swagger doc for /api/uic/fruid  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/uic/fruid
+  title: Swagger doc for /api/uic/fruid
   version: 1.0.0
-paths: 
-  /api/uic/fruid: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/uic/fruid:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
-                additionalProperties: true
-                properties: 
-                  Chassis Type: 
+                additionalProperties: false
+                properties:
+                  Board Mfg Date:
                     type: string
-                  Chassis Part Number: 
+                  Board Mfg:
                     type: string
-                  Chassis Serial Number: 
+                  Board Product:
                     type: string
-                  Board Mfg Date: 
+                  Board Serial:
                     type: string
-                  Board Mfg: 
+                  Board Part Number:
                     type: string
-                  Board Product: 
+                  Board FRU ID:
                     type: string
-                  Board Serial: 
+                  Board Custom Data 1:
                     type: string
-                  Board Part Number: 
+                  Board Custom Data 2:
                     type: string
-                  Board FRU ID: 
+                  Product Manufacturer:
                     type: string
-                  Board Custom Data 1: 
+                  Product Name:
                     type: string
-                  Board Custom Data 2: 
+                  Product Part Number:
                     type: string
-                  Product Manufacturer: 
+                  Product Version:
                     type: string
-                  Product Name: 
+                  Product Serial:
                     type: string
-                  Product Part Number: 
+                  Product Asset Tag:
                     type: string
-                  Product Version: 
+                  Product FRU ID:
                     type: string
-                  Product Serial: 
+                  Product Custom Data 1:
                     type: string
-                  Product Asset Tag: 
+                  Product Custom Data 2:
                     type: string
-                  Product FRU ID: 
+                  Product Custom Data 3:
                     type: string
-                  Product Custom Data 1: 
-                    type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

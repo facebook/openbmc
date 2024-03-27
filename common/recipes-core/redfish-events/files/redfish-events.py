@@ -25,7 +25,7 @@ class RedfishEventHandler(web.Application):
         timeout: int,
     ):
         super().__init__()
-        self.subscriber_url = f"http://{sub_host}:{sub_port}"
+        self.subscriber_url = f"http://{sub_host}:{sub_port}/"
         self.target_url = f"http://{target_host}"
         self.target_fruid = fru_id
         self.target_name = fru_name

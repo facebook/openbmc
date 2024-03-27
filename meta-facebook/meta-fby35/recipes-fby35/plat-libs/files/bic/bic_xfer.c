@@ -36,6 +36,8 @@
 #include <libpldm-oem/pldm.h>
 #include "bic_xfer.h"
 
+#define CC_RETURN_ZERO 0x00 //if IPMI return Zero byte
+
 const uint32_t IANA_ID = 0x00A015;
 const uint32_t VF_IANA_ID = 0x009C9C;
 
@@ -113,6 +115,25 @@ bic_data_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
         syslog(LOG_WARNING, "%s() The 2nd BIC cannot be reached. CC: 0x%02X, intf: 0x%x, ret = %d\n", __func__, rsp_buf[6], intf, ret);
         syslog(LOG_WARNING, "%s() Netfn:%02X, Cmd: %02X\n", __func__, netfn << 2, cmd);
         switch(rsp_buf[6]) {
+        //intf-> 1OU:0x05 / 1OU:0x05 / 2OU:0x15 / 3OU:0x25 / 4OU:0x30
+        case CC_RETURN_ZERO:
+          switch(intf){
+            case FEXP_BIC_INTF://1OU
+              ret = BIC_STATUS_1OU_FAILURE;
+              break;
+            case REXP_BIC_INTF://2OU
+              ret = BIC_STATUS_2OU_FAILURE;
+              break;
+            case EXP3_BIC_INTF://3OU
+              ret = BIC_STATUS_3OU_FAILURE;
+              break;
+            case EXP4_BIC_INTF://4OU
+              ret = BIC_STATUS_4OU_FAILURE;
+              break;
+            default:
+              break;
+          }
+          break;
         case CC_NOT_SUPP_IN_CURR_STATE:
           ret = BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
           break;

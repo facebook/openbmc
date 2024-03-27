@@ -16,6 +16,8 @@ LOCAL_URI = " \
     file://ncsi-brcm.h \
     file://ncsi-nvidia.c \
     file://ncsi-nvidia.h \
+    file://ncsi-meta.c \
+    file://ncsi-meta.h \
     "
 
 inherit meson pkgconfig

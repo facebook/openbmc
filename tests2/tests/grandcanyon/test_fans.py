@@ -22,6 +22,7 @@ import unittest
 
 from common.base_fans_test import CommonFanUtilBasedFansTest
 from utils.cit_logger import Logger
+from utils.test_utils import qemu_check
 
 
 UNKNOWN_FAN_CNT = 0
@@ -29,6 +30,7 @@ SINGLE_FAN_CNT = 4
 DUAL_FAN_CNT = 8
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FansTest(CommonFanUtilBasedFansTest, unittest.TestCase):
     def pal_get_tach_cnt(self) -> int:
         libpal = ctypes.CDLL("libpal.so.0")

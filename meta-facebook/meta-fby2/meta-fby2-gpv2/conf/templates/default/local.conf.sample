@@ -6,7 +6,7 @@
 MACHINE ??= "fbgp2"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb"
+DISTRO ?= "openbmc-fb-rocko"
 
 # The following will enable a build capable of verified-boot.
 # Images and the resultant flash are always built as a FIT (firmware image).

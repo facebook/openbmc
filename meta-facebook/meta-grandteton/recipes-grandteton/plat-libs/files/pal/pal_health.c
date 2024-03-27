@@ -92,9 +92,20 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 
   char key[MAX_KEY_LEN] = {0};
   char cvalue[MAX_VALUE_LEN] = {0};
+  uint8_t status = FRU_NOT_PRSNT;
 
   if (pal_get_sensor_health_key(fru, key))
     return -1;
+  
+  // Since Artemis Module
+  if (pal_is_artemis() && fru == FRU_ACB) {
+    for (int i = FRU_ACB_ACCL1; i <= FRU_ACB_ACCL12; i ++) {
+      if (pal_is_fru_prsnt(i, &status) == 0 && status == FRU_NOT_PRSNT) {
+        value = FRU_STATUS_BAD;
+        break;
+      }
+    }
+  }
 
   sprintf(cvalue, (value > 0) ? "1": "0");
 

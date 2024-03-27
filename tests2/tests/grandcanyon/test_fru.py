@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_fru_test import CommonFruTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FruBMCTest(CommonFruTest, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "bmc"]

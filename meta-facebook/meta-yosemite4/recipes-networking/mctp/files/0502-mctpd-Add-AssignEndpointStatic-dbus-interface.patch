@@ -1,0 +1,653 @@
+From 5470f3bcc3d25e990d0473f65169deeffff3a591 Mon Sep 17 00:00:00 2001
+From: Jeremy Kerr <jk@codeconstruct.com.au>
+Date: Thu, 11 Jan 2024 15:50:19 +0800
+Subject: [PATCH] mctpd: Add AssignEndpointStatic dbus interface
+
+Add a new dbus call to create a new peer with a predefined EID, provided
+by the caller. This allows other infrastructure to define static EID
+alocations, have mctpd set up the appropriate routes, neighbours and
+dbus objects, and have the static EID removed from mctpd's EID pool.
+
+Signed-off-by: Jeremy Kerr <jk@codeconstruct.com.au>
+---
+ CHANGELOG.md        |  27 ++++
+ docs/mctpd.md       |  14 ++
+ src/mctpd.c         | 142 +++++++++++++++--
+ tests/test_mctpd.py | 370 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 537 insertions(+), 16 deletions(-)
+ create mode 100644 CHANGELOG.md
+ create mode 100644 tests/test_mctpd.py
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+new file mode 100644
+index 0000000..432e1cf
+--- /dev/null
++++ b/CHANGELOG.md
+@@ -0,0 +1,27 @@
++# Changelog
++
++All notable changes to this project will be documented in this file.
++
++The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
++
++## Unreleased
++
++### Added
++
++1. mctpd: Add support for endpoint recovery
++2. mctpd: Allow recovery of devices reporting a nil UUID for development
++3. mctpd: Allow configuring .Connectivity as writable for development
++4. mctpd: Add AssignEndpointStatic for static EID allocations
++
++### Changed
++
++1. dbus interface: the NetworkID field is now a `u` rather than an `i`, to
++   match OpenBMC's MCTP endpoint specification
++
++### Fixed
++
++1. mctpd: EID assignments now work in the case where a new endpoint has a
++   pre-configured EID that would conflict with other (already enumerated)
++   endpoints. The new endpoint will get a non-conflicting address assigned.
++
++## [1.1] - 2023-04-13
+diff --git a/docs/mctpd.md b/docs/mctpd.md
+index 6333917..0ff827b 100644
+--- a/docs/mctpd.md
++++ b/docs/mctpd.md
+@@ -45,6 +45,20 @@ busctl call xyz.openbmc_project.MCTP /xyz/openbmc_project/mctp \
+ Similar to SetupEndpoint, but will always assign an EID rather than querying for existing ones.
+ Will return `new = false` when an endpoint is already known to `mctpd`.
+ 
++### `.AssignEndpointStatic`
++
++Similar to AssignEndpoint, but takes an additional EID argument:
++
++```
++AssignEndpointStatic <interface name> <hwaddr> <static-EID>
++```
++
++to assign `<static-EID>` to the endpoint with hardware address `hwaddr`.
++
++This call will fail if the endpoint already has an EID, and that EID is
++different from `static-EID`, or if `static-EID` is already assigned to another
++endpoint.
++
+ ### `.LearnEndpoint`
+ 
+ Like SetupEndpoint but will not assign EIDs, will only query endpoints for a current EID.
+diff --git a/src/mctpd.c b/src/mctpd.c
+index 49537d5..d68865b 100644
+--- a/src/mctpd.c
++++ b/src/mctpd.c
+@@ -1343,7 +1343,7 @@ static int peer_set_mtu(ctx *ctx, peer *peer, uint32_t mtu) {
+ }
+ 
+ static int endpoint_assign_eid(ctx *ctx, sd_bus_error *berr, const dest_phys *dest,
+-	peer **ret_peer)
++	peer **ret_peer, mctp_eid_t static_eid)
+ {
+ 	mctp_eid_t e, new_eid;
+ 	net_det *n = NULL;
+@@ -1363,20 +1363,28 @@ static int endpoint_assign_eid(ctx *ctx, sd_bus_error *berr, const dest_phys *de
+ 		return -EPROTO;
+ 	}
+ 
+-	/* Find an unused EID */
+-	for (e = eid_alloc_min; e <= eid_alloc_max; e++) {
+-		if (n->peeridx[e] == -1) {
+-			rc = add_peer(ctx, dest, e, net, NULL, &peer);
+-			if (rc < 0)
+-				return rc;
+-			break;
++	if (static_eid) {
++		rc = add_peer(ctx, dest, static_eid, net, NULL, &peer);
++		if (rc < 0)
++			return rc;
++
++		new_eid = static_eid;
++	} else {
++		/* Find an unused EID */
++		for (e = eid_alloc_min; e <= eid_alloc_max; e++) {
++			if (n->peeridx[e] == -1) {
++				rc = add_peer(ctx, dest, e, net, NULL, &peer);
++				if (rc < 0)
++					return rc;
++				break;
++			}
++		}
++		if (e > eid_alloc_max) {
++			warnx("Ran out of EIDs for net %d, allocating %s", net, dest_phys_tostr(dest));
++			sd_bus_error_setf(berr, SD_BUS_ERROR_FAILED,
++				"Ran out of EIDs");
++			return -EADDRNOTAVAIL;
+ 		}
+-	}
+-	if (e > eid_alloc_max) {
+-		warnx("Ran out of EIDs for net %d, allocating %s", net, dest_phys_tostr(dest));
+-		sd_bus_error_setf(berr, SD_BUS_ERROR_FAILED,
+-			"Ran out of EIDs");
+-		return -EADDRNOTAVAIL;
+ 	}
+ 
+ 	rc = endpoint_send_set_endpoint_id(peer, &new_eid);
+@@ -1907,7 +1915,7 @@ static int method_setup_endpoint(sd_bus_message *call, void *data, sd_bus_error
+ 	}
+ 
+ 	/* Set Endpoint ID */
+-	rc = endpoint_assign_eid(ctx, berr, dest, &peer);
++	rc = endpoint_assign_eid(ctx, berr, dest, &peer, 0);
+ 	if (rc < 0)
+ 		goto err;
+ 
+@@ -1964,7 +1972,7 @@ static int method_assign_endpoint(sd_bus_message *call, void *data, sd_bus_error
+ 			peer->eid, peer->net, peer_path, 0);
+ 	}
+ 
+-	rc = endpoint_assign_eid(ctx, berr, dest, &peer);
++	rc = endpoint_assign_eid(ctx, berr, dest, &peer, 0);
+ 	if (rc < 0)
+ 		goto err;
+ 
+@@ -1980,6 +1988,84 @@ err:
+ 	return rc;
+ }
+ 
++static int method_assign_endpoint_static(sd_bus_message *call, void *data,
++					 sd_bus_error *berr)
++{
++	dest_phys desti, *dest = &desti;
++	const char *ifname = NULL;
++	char *peer_path = NULL;
++	peer *peer = NULL;
++	ctx *ctx = data;
++	uint8_t eid;
++	int rc;
++
++	rc = sd_bus_message_read(call, "s", &ifname);
++	if (rc < 0)
++		goto err;
++
++	rc = message_read_hwaddr(call, dest);
++	if (rc < 0)
++		goto err;
++
++	rc = sd_bus_message_read(call, "y", &eid);
++	if (rc < 0)
++		goto err;
++
++	dest->ifindex = mctp_nl_ifindex_byname(ctx->nl, ifname);
++	if (dest->ifindex <= 0)
++		return sd_bus_error_setf(berr, SD_BUS_ERROR_INVALID_ARGS,
++			"Unknown MCTP ifname '%s'", ifname);
++
++	rc = validate_dest_phys(ctx, dest);
++	if (rc < 0)
++		return sd_bus_error_setf(berr, SD_BUS_ERROR_INVALID_ARGS,
++			"Bad physaddr");
++
++	peer = find_peer_by_phys(ctx, dest);
++	if (peer) {
++		if (peer->eid != eid) {
++			return sd_bus_error_setf(berr, SD_BUS_ERROR_INVALID_ARGS,
++				"Already assigned a different EID");
++		}
++
++		// Return existing record.
++		rc = path_from_peer(peer, &peer_path);
++		if (rc < 0)
++			goto err;
++		dfree(peer_path);
++
++		return sd_bus_reply_method_return(call, "yisb",
++			peer->eid, peer->net, peer_path, 0);
++	} else {
++		int netid;
++
++		// is the requested EID already in use? if so, reject
++		netid = mctp_nl_net_byindex(ctx->nl, dest->ifindex);
++		peer = find_peer_by_addr(ctx, eid, netid);
++		if (peer) {
++			return sd_bus_error_setf(berr, SD_BUS_ERROR_INVALID_ARGS,
++				"Address in use");
++		}
++	}
++
++	rc = endpoint_assign_eid(ctx, berr, dest, &peer, eid);
++	if (rc < 0) {
++		goto err;
++	}
++
++	rc = path_from_peer(peer, &peer_path);
++	if (rc < 0) {
++		goto err;
++	}
++	dfree(peer_path);
++
++	return sd_bus_reply_method_return(call, "yisb",
++		peer->eid, peer->net, peer_path, 1);
++err:
++	set_berr(ctx, rc, berr);
++	return rc;
++}
++
+ static int method_learn_endpoint(sd_bus_message *call, void *data, sd_bus_error *berr)
+ {
+ 	int rc;
+@@ -2363,6 +2449,17 @@ out:
+ 	return rc;
+ }
+ 
++/* FIXME: I2C-specific */
++/* DSP0237 v1.2.0 Table 9 */
++#define MCTP_I2C_TSYM_TRECLAIM_MIN_US 5000000
++#define MCTP_I2C_TSYM_MN1_MIN 2
++#define MCTP_I2C_TSYM_MT1_MAX_US 100000
++#define MCTP_I2C_TSYM_MT3_MAX_US 100000
++#define MCTP_I2C_TSYM_MT4_MIN_US 5000000
++#define MCTP_I2C_TSYM_MT2_MIN_US \
++	(MCTP_I2C_TSYM_MT1_MAX_US + 2 * MCTP_I2C_TSYM_MT3_MAX_US)
++#define MCTP_I2C_TSYM_MT2_MAX_MS MCTP_I2C_TSYM_MT4_MIN_US
++
+ static int method_endpoint_set_mtu(sd_bus_message *call, void *data,
+ 	sd_bus_error *berr)
+ {
+@@ -2469,6 +2566,19 @@ static const sd_bus_vtable bus_mctpd_vtable[] = {
+ 		method_assign_endpoint,
+ 		0),
+ 
++	SD_BUS_METHOD_WITH_NAMES("AssignEndpointStatic",
++		"sayy",
++		SD_BUS_PARAM(ifname)
++		SD_BUS_PARAM(physaddr)
++		SD_BUS_PARAM(eid),
++		"yisb",
++		SD_BUS_PARAM(eid)
++		SD_BUS_PARAM(net)
++		SD_BUS_PARAM(path)
++		SD_BUS_PARAM(new),
++		method_assign_endpoint_static,
++		0),
++
+ 	SD_BUS_METHOD_WITH_NAMES("LearnEndpoint",
+ 		"say",
+ 		SD_BUS_PARAM(ifname)
+diff --git a/tests/test_mctpd.py b/tests/test_mctpd.py
+new file mode 100644
+index 0000000..052e0a4
+--- /dev/null
++++ b/tests/test_mctpd.py
+@@ -0,0 +1,370 @@
++import pytest
++import trio
++import uuid
++import asyncdbus
++
++from mctp_test_utils import mctpd_mctp_obj, mctpd_mctp_endpoint_obj
++from conftest import Endpoint
++
++# DBus constant symbol suffixes:
++#
++# - C: Connection
++# - P: Path
++# - I: Interface
++MCTPD_C = 'xyz.openbmc_project.MCTP'
++MCTPD_MCTP_P = '/xyz/openbmc_project/mctp'
++MCTPD_MCTP_I = 'au.com.CodeConstruct.MCTP'
++MCTPD_ENDPOINT_I = 'au.com.CodeConstruct.MCTP.Endpoint'
++DBUS_OBJECT_MANAGER_I = 'org.freedesktop.DBus.ObjectManager'
++DBUS_PROPERTIES_I = 'org.freedesktop.DBus.Properties'
++
++MCTPD_TRECLAIM = 5
++
++""" Test the SetupEndpoint dbus call
++
++Using the default system & network ojects, call SetupEndpoint on our mock
++endpoint. We expect the dbus call to return the endpoint details, and
++the new kernel neighbour and route entries.
++
++We have a few things provided by the test infrastructure:
++
++ - dbus is the dbus connection, call the mctpd_mctp_obj helper to
++   get the MCTP dbus object
++
++ - mctpd is our wrapper for the mctpd process and mock MCTP environment. This
++   has two properties that represent external state:
++
++   mctp.system: the local system info - containing MCTP interfaces
++     (mctp.system.interfaces), addresses (.addresses), neighbours (.neighbours)
++     and routes (.routes). These may be updated by the running mctpd process
++     during tests, over the simlated netlink socket.
++
++   mctp.network: the set of remote MCTP endpoints connected to the system. Each
++     endpoint has a physical address (.lladdr) and an EID (.eid), and a tiny
++     MCTP control protocol implementation, which the mctpd process will
++     interact with over simulated AF_MCTP sockets.
++
++By default, we get some minimal defaults for .system and .network:
++
++ - The system has one interface ('mctp0'), assigned local EID 8. This is
++   similar to a MCTP-over-i2c interface, in that physical addresses are
++   a single byte.
++
++ - The network has one endpoint (lladdr 0x1d) connected to mctp0, with no EID
++   assigned. It also has a random UUID, and advertises support for MCTP
++   Control Protocol and PLDM (but note that it doesn't actually implement
++   any PLDM!).
++
++But these are only defaults; .system and .network can be altered as required
++for each test.
++"""
++async def test_setup_endpoint(dbus, mctpd):
++    # shortcuts to the default system/network configuration
++    iface = mctpd.system.interfaces[0]
++    ep = mctpd.network.endpoints[0]
++
++    # our proxy dbus object for mctpd
++    mctp = await mctpd_mctp_obj(dbus)
++
++    # call SetupEndpoint. This will raise an exception on any dbus error.
++    (eid, net, path, new) = await mctp.call_setup_endpoint(iface.name, ep.lladdr)
++
++    # ep.eid will be updated (through the Set Endpoint ID message); this
++    # should match the returned EID
++    assert eid == ep.eid
++
++    # we should have a neighbour for the new endpoint
++    assert len(mctpd.system.neighbours) == 1
++    neigh = mctpd.system.neighbours[0]
++    assert neigh.lladdr == ep.lladdr
++    assert neigh.eid == ep.eid
++
++    # we should have a route for the new endpoint too
++    assert len(mctpd.system.routes) == 2
++
++""" Test that we correctly handle address conflicts on EID assignment.
++
++We have the following scenario:
++
++ 1. A configured peer at physaddr 1, EID A, allocated by mctpd
++ 2. A non-configured peer at physaddr 2, somehow carrying a default EID also A
++ 3. Attempt to enumerate physaddr 2
++
++At (3), we should reconfigure the EID to B.
++"""
++async def test_setup_endpoint_conflict(dbus, mctpd):
++    mctp = await mctpd_mctp_obj(dbus)
++
++    iface = mctpd.system.interfaces[0]
++    ep1 = mctpd.network.endpoints[0]
++    (eid1, _, _, _) = await mctp.call_setup_endpoint(iface.name, ep1.lladdr)
++
++    # endpoint configured with eid1 already
++    ep2 = Endpoint(iface, bytes([0x1e]), eid=eid1)
++    mctpd.network.add_endpoint(ep2)
++
++    (eid2, _, _, _) = await mctp.call_setup_endpoint(iface.name, ep2.lladdr)
++    assert eid1 != eid2
++
++""" Test neighbour removal """
++async def test_remove_endpoint(dbus, mctpd):
++    mctp = await mctpd_mctp_obj(dbus)
++
++    iface = mctpd.system.interfaces[0]
++    ep1 = mctpd.network.endpoints[0]
++    (_, _, path, _) = await mctp.call_setup_endpoint(iface.name, ep1.lladdr)
++
++    assert(len(mctpd.system.neighbours) == 1)
++
++    ep = await mctpd_mctp_endpoint_obj(dbus, path)
++
++    await ep.call_remove()
++    assert(len(mctpd.system.neighbours) == 0)
++
++async def test_recover_endpoint_present(dbus, mctpd):
++    iface = mctpd.system.interfaces[0]
++    dev = mctpd.network.endpoints[0]
++    mctp = await mctpd_mctp_obj(dbus)
++    (eid, net, path, new) = await mctp.call_setup_endpoint(iface.name, dev.lladdr)
++
++    ep = await dbus.get_proxy_object(MCTPD_C, path)
++    ep_props = await ep.get_interface(DBUS_PROPERTIES_I)
++
++    recovered = trio.Semaphore(initial_value = 0)
++    def ep_connectivity_changed(iface, changed, invalidated):
++        if iface == MCTPD_ENDPOINT_I and 'Connectivity' in changed:
++            if 'Available' == changed['Connectivity'].value:
++                recovered.release()
++
++    await ep_props.on_properties_changed(ep_connectivity_changed)
++
++    ep_ep = await ep.get_interface(MCTPD_ENDPOINT_I)
++    await ep_ep.call_recover()
++
++    with trio.move_on_after(2 * MCTPD_TRECLAIM) as expected:
++        await recovered.acquire()
++
++    # Cancellation implies failure to acquire recovered, which implies failure
++    # to transition 'Connectivity' to 'Available', which is a test failure.
++    assert not expected.cancelled_caught
++
++async def test_recover_endpoint_removed(dbus, mctpd):
++    iface = mctpd.system.interfaces[0]
++    dev = mctpd.network.endpoints[0]
++    mctp = await dbus.get_proxy_object(MCTPD_C, MCTPD_MCTP_P)
++    mctp_mctp = await mctp.get_interface(MCTPD_MCTP_I)
++    (eid, net, path, new) = await mctp_mctp.call_setup_endpoint(iface.name, dev.lladdr)
++
++    ep = await dbus.get_proxy_object(MCTPD_C, path)
++    ep_props = await ep.get_interface(DBUS_PROPERTIES_I)
++
++    degraded = trio.Semaphore(initial_value = 0)
++    def ep_connectivity_changed(iface, changed, invalidated):
++        if iface == MCTPD_ENDPOINT_I and 'Connectivity' in changed:
++            if 'Degraded' == changed['Connectivity'].value:
++                degraded.release()
++
++    await ep_props.on_properties_changed(ep_connectivity_changed)
++
++    mctp_objmgr = await mctp.get_interface(DBUS_OBJECT_MANAGER_I)
++
++    removed = trio.Semaphore(initial_value = 0)
++    def ep_removed(ep_path, interfaces):
++        if ep_path == path and MCTPD_ENDPOINT_I in interfaces:
++            removed.release()
++
++    await mctp_objmgr.on_interfaces_removed(ep_removed)
++
++    del mctpd.network.endpoints[0]
++    ep_ep = await ep.get_interface(MCTPD_ENDPOINT_I)
++    await ep_ep.call_recover()
++
++    with trio.move_on_after(2 * MCTPD_TRECLAIM) as expected:
++        await removed.acquire()
++        await degraded.acquire()
++
++    assert not expected.cancelled_caught
++
++async def test_recover_endpoint_reset(dbus, mctpd):
++    iface = mctpd.system.interfaces[0]
++    dev = mctpd.network.endpoints[0]
++    mctp = await dbus.get_proxy_object(MCTPD_C, MCTPD_MCTP_P)
++    mctp_mctp = await mctp.get_interface(MCTPD_MCTP_I)
++    (eid, net, path, new) = await mctp_mctp.call_setup_endpoint(iface.name, dev.lladdr)
++
++    ep = await dbus.get_proxy_object(MCTPD_C, path)
++    ep_props = await ep.get_interface(DBUS_PROPERTIES_I)
++
++    recovered = trio.Semaphore(initial_value = 0)
++    def ep_connectivity_changed(iface, changed, invalidated):
++        if iface == MCTPD_ENDPOINT_I and 'Connectivity' in changed:
++            if 'Available' == changed['Connectivity'].value:
++                recovered.release()
++
++    await ep_props.on_properties_changed(ep_connectivity_changed)
++
++    # Disable the endpoint device
++    del mctpd.network.endpoints[0]
++
++    ep_ep = await ep.get_interface(MCTPD_ENDPOINT_I)
++    await ep_ep.call_recover()
++
++    # Force the first poll to fail
++    await trio.sleep(1)
++
++    # Reset the endpoint device and re-enable it
++    dev.reset()
++    mctpd.network.add_endpoint(dev)
++
++    with trio.move_on_after(2 * MCTPD_TRECLAIM) as expected:
++        await recovered.acquire()
++
++    assert not expected.cancelled_caught
++
++async def test_recover_endpoint_exchange(dbus, mctpd):
++    iface = mctpd.system.interfaces[0]
++    dev = mctpd.network.endpoints[0]
++    mctp = await dbus.get_proxy_object(MCTPD_C, MCTPD_MCTP_P)
++    mctp_mctp = await mctp.get_interface(MCTPD_MCTP_I)
++    (eid, net, path, new) = await mctp_mctp.call_setup_endpoint(iface.name, dev.lladdr)
++
++    ep = await dbus.get_proxy_object(MCTPD_C, path)
++    ep_props = await ep.get_interface(DBUS_PROPERTIES_I)
++
++    degraded = trio.Semaphore(initial_value = 0)
++    def ep_connectivity_changed(iface, changed, invalidated):
++        if iface == MCTPD_ENDPOINT_I and 'Connectivity' in changed:
++            if 'Degraded' == changed['Connectivity'].value:
++                degraded.release()
++
++    await ep_props.on_properties_changed(ep_connectivity_changed)
++
++    mctp_objmgr = await mctp.get_interface(DBUS_OBJECT_MANAGER_I)
++
++    removed = trio.Semaphore(initial_value = 0)
++    def ep_removed(ep_path, interfaces):
++        if ep_path == path and MCTPD_ENDPOINT_I in interfaces:
++            removed.release()
++
++    await mctp_objmgr.on_interfaces_removed(ep_removed)
++
++    added = trio.Semaphore(initial_value = 0)
++    def ep_added(ep_path, content):
++        if MCTPD_ENDPOINT_I in content:
++            added.release()
++
++    await mctp_objmgr.on_interfaces_added(ep_added)
++
++    # Remove the current device
++    del mctpd.network.endpoints[0]
++
++    ep_ep = await ep.get_interface(MCTPD_ENDPOINT_I)
++    await ep_ep.call_recover()
++
++    # Force the first poll to fail
++    await trio.sleep(1)
++
++    # Add a new the endpoint device at the same physical address (different UUID)
++    mctpd.network.add_endpoint(Endpoint(dev.iface, dev.lladdr, types = dev.types))
++
++    with trio.move_on_after(2 * MCTPD_TRECLAIM) as expected:
++        await added.acquire()
++        await removed.acquire()
++        await degraded.acquire()
++
++    assert not expected.cancelled_caught
++
++""" Test that we get the correct EID allocated (and the usual route/neigh setup)
++on an AssignEndpointStatic call """
++async def test_assign_endpoint_static(dbus, mctpd):
++    iface = mctpd.system.interfaces[0]
++    dev = mctpd.network.endpoints[0]
++    mctp = await mctpd_mctp_obj(dbus)
++    static_eid = 12
++
++    (eid, _, _, new) = await mctp.call_assign_endpoint_static(
++        iface.name,
++        dev.lladdr,
++        static_eid
++    )
++
++    assert eid == static_eid
++    assert new
++
++    assert len(mctpd.system.neighbours) == 1
++    neigh = mctpd.system.neighbours[0]
++    assert neigh.lladdr == dev.lladdr
++    assert neigh.eid == static_eid
++    assert len(mctpd.system.routes) == 2
++
++""" Test that we can repeat an AssignEndpointStatic call with the same static
++EID"""
++async def test_assign_endpoint_static_allocated(dbus, mctpd):
++    iface = mctpd.system.interfaces[0]
++    mctp = await mctpd_mctp_obj(dbus)
++    dev = mctpd.network.endpoints[0]
++    static_eid = 12
++
++    (eid, _, _, new) = await mctp.call_assign_endpoint_static(
++        iface.name,
++        dev.lladdr,
++        static_eid,
++    )
++
++    assert eid == static_eid
++    assert new
++
++    # repeat, same EID
++    (eid, _, _, new) = await mctp.call_assign_endpoint_static(
++        iface.name,
++        dev.lladdr,
++        static_eid,
++    )
++
++    assert eid == static_eid
++    assert not new
++
++""" Test that we cannot assign a conflicting static EID """
++async def test_assign_endpoint_static_conflict(dbus, mctpd):
++    iface = mctpd.system.interfaces[0]
++    mctp = await mctpd_mctp_obj(dbus)
++    dev1 = mctpd.network.endpoints[0]
++
++    dev2 = Endpoint(iface, bytes([0x1e]))
++    mctpd.network.add_endpoint(dev2)
++
++    # dynamic EID assigment for dev1
++    (eid, _, _, new) = await mctp.call_assign_endpoint(
++        iface.name,
++        dev1.lladdr,
++    )
++
++    assert new
++
++    # try to assign dev2 with the dev1's existing EID
++    with pytest.raises(asyncdbus.errors.DBusError) as ex:
++        await mctp.call_assign_endpoint_static(iface.name, dev2.lladdr, eid)
++
++    assert str(ex.value) == "Address in use"
++
++""" Test that we cannot re-assign a static EID to an endpoint that already has
++a different EID allocated"""
++async def test_assign_endpoint_static_varies(dbus, mctpd):
++    iface = mctpd.system.interfaces[0]
++    dev = mctpd.network.endpoints[0]
++    mctp = await mctpd_mctp_obj(dbus)
++    static_eid = 12
++
++    (eid, _, _, new) = await mctp.call_assign_endpoint_static(
++        iface.name,
++        dev.lladdr,
++        static_eid
++    )
++
++    assert eid == static_eid
++    assert new
++
++    with pytest.raises(asyncdbus.errors.DBusError) as ex:
++        await mctp.call_assign_endpoint_static(iface.name, dev.lladdr, 13)
++
++    assert str(ex.value) == "Already assigned a different EID"
+-- 
+2.25.1
+

@@ -190,6 +190,32 @@
         "ki": -0.015,
         "kd": 0
       },
+      "swb_tray_nic_optic_linear": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "data": [
+          [55, 25],
+          [58, 45],
+          [60, 55],
+          [68, 90]
+        ]
+      },
+      "swb_tray_nic_optic_pid": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,
+        "negative_hysteresis": 2,
+        "setpoint": 65,
+        "kp": -3,
+        "ki": -0.035,
+        "kd": 0
+      },
       "swb_tray_E1S_linear": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"

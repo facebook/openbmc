@@ -1,4 +1,4 @@
-From 0d6ad077c786a21e9d7fc70e492c29c8c93b866b Mon Sep 17 00:00:00 2001
+From 051bd1f650d3ad74584fc807658327bb043afc95 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 9 May 2022 22:55:21 -0700
 Subject: [PATCH 151/151] spi: add user-mode aspeed spi driver
@@ -29,7 +29,7 @@ Differential Revision: https://phabricator.intern.facebook.com/D37292798
  create mode 100644 drivers/spi/spi-aspeed-user.c
 
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 8962b2557615..9abdb02cd65d 100644
+index 3ce0fd5df8e9..68b7c6af4295 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
 @@ -119,6 +119,13 @@ config SPI_ASPEED_SMC
@@ -47,7 +47,7 @@ index 8962b2557615..9abdb02cd65d 100644
  	tristate "Atmel SPI Controller"
  	depends on ARCH_AT91 || COMPILE_TEST
 diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 080c2c1b3ec1..395889acff50 100644
+index 6af54842b9fa..0406f40df794 100644
 --- a/drivers/spi/Makefile
 +++ b/drivers/spi/Makefile
 @@ -21,6 +21,7 @@ obj-$(CONFIG_SPI_AMLOGIC_SPIFC_A1)	+= spi-amlogic-spifc-a1.o
@@ -702,5 +702,5 @@ index 000000000000..519e965585cc
 +MODULE_DESCRIPTION("ASPEED SPI Host Driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.39.3
+2.43.0
 

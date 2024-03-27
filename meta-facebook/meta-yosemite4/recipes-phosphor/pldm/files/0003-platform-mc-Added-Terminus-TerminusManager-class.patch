@@ -1,7 +1,7 @@
-From 97958600acc2eaa5bd5f82bfd2edbe9032c79f5f Mon Sep 17 00:00:00 2001
+From 7c3ef92ec015e6fb407040b878d68628918d22c1 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 22 Feb 2022 15:40:17 +0000
-Subject: [PATCH 3/9] platform-mc: Added Terminus/TerminusManager class
+Subject: [PATCH 03/11] platform-mc: Added Terminus/TerminusManager class
 
 Added requester::sendRecvPldmMsg awaiter type to be able to send and
 receive PLDM message by coroutine.
@@ -15,6 +15,8 @@ repository to maintain terminus locator PDR information yet.
 Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Change-Id: Ifa5bdfff50648f1d7fba8710e160de662e8f9e06
+
+%% original patch: 0003-platform-mc-Added-Terminus-TerminusManager-class.patch
 ---
  meson.build                                |   4 +
  platform-mc/manager.hpp                    |  70 ++++
@@ -43,7 +45,7 @@ Change-Id: Ifa5bdfff50648f1d7fba8710e160de662e8f9e06
  create mode 100644 platform-mc/test/terminus_test.cpp
 
 diff --git a/meson.build b/meson.build
-index 04d6acf..6680bd2 100644
+index 07069e5..c61c16c 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -180,6 +180,9 @@ executable(
@@ -1556,7 +1558,7 @@ index 0000000..b2783c3
 +    EXPECT_EQ(tid, t1.getTid());
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 70b2f88..8c07316 100644
+index ae269e6..5a14169 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -6,6 +6,7 @@
@@ -1567,7 +1569,7 @@ index 70b2f88..8c07316 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -292,10 +293,12 @@ int main(int argc, char** argv)
+@@ -301,10 +302,12 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);

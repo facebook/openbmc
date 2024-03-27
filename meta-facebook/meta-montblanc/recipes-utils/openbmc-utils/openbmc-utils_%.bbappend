@@ -24,6 +24,7 @@ LOCAL_URI += "\
     file://spi_util.sh \
     file://read_INA230.sh \
     file://cpld_update.sh \
+    file://setup_board.sh \
     "
 
 OPENBMC_UTILS_FILES += " \

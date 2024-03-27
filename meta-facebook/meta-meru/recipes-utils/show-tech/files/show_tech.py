@@ -24,7 +24,7 @@ import argparse
 import subprocess
 
 
-VERSION = "0.1"
+VERSION = "1.2"
 
 
 def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
@@ -71,15 +71,6 @@ def dumpWeutil(target="BMC", verbose=False):
     )
 
 
-def dumpEmmc():
-    print("################################")
-    print("######## eMMC debug log ########")
-    print("################################\n")
-    cmdBase = "/usr/local/bin/mmcraw {} /dev/mmcblk0"
-    print(runCmd(cmdBase.format("show-summary"), echo=True, verbose=True))
-    print(runCmd(cmdBase.format("read-cid"), echo=True, verbose=True))
-
-
 def dumpBootInfo():
     print("################################")
     print("######## BMC BOOT INFO  ########")
@@ -110,13 +101,13 @@ def logDump():
     print("################################\n")
     print("#### DMESG LOG ####\n{}\n\n".format(runCmd("dmesg", echo=True)))
     print(
-        "#### BOOT CONSOLE LOG ####\n{}\n\n".format(
-            runCmd("cat /var/log/boot", echo=True)
+        "#### LINUX MESSAGES LOG ####\n{}\n\n".format(
+            runCmd("cat /var/log/messages", echo=True)
         )
     )
     print(
-        "#### LINUX MESSAGES LOG ####\n{}\n\n".format(
-            runCmd("cat /var/log/messages", echo=True)
+        "#### LOGFILE ####\n{}\n\n".format(
+            runCmd("cat /mnt/data/logfile", echo=True)
         )
     )
     print("################################")
@@ -154,8 +145,8 @@ def gpioDump():
     )
 
 
-def showtech(verboseLevel=0):
-    verbose = bool(verboseLevel)
+def showtech(quietLevel=0):
+    verbose = not bool(quietLevel)
     print("################################")
     print("##### SHOWTECH VERSION {} #####".format(VERSION))
     print("################################\n")
@@ -178,7 +169,6 @@ def showtech(verboseLevel=0):
         dumpWeutil("bmc", verbose=verbose)
         dumpWeutil("scm", verbose=verbose)
         dumpWeutil("smb", verbose=verbose)
-        dumpEmmc()
         dumpBootInfo()
         dumpOobStatus()
         i2cDetectDump()
@@ -191,12 +181,20 @@ def parseArgs():
         description="Get showtech information. Version {}".format(VERSION)
     )
     parser.add_argument(
+        "-q",
+        "--quiet",
+        action="count",
+        help="show limited debug logs.",
+        dest="quietLevel",
+        default=0,
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="count",
-        help="show verbose detailed debug logs.",
+        help="show verbose detailed debug logs (default).",
         dest="verboseLevel",
-        default=0,
+        default=1,
     )
     return parser.parse_args()
 
@@ -204,7 +202,7 @@ def parseArgs():
 def main():
     args = parseArgs()
 
-    showtech(verboseLevel=args.verboseLevel)
+    showtech(quietLevel=args.quietLevel)
 
 
 if __name__ == "__main__":

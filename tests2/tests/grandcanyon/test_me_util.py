@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_me_util_test import CommonMETest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class METest(CommonMETest, unittest.TestCase):
     def set_me_cmd(self):
         self.me_cmd = "/usr/bin/me-util server"

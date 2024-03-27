@@ -1,0 +1,153 @@
+From 04075a44d060e987078e521190dc393add828964 Mon Sep 17 00:00:00 2001
+From: Eric <Eric_LC_Chen@wiwynn.com>
+Date: Tue, 12 Mar 2024 18:34:24 +0800
+Subject: [PATCH 1/2] yosemite4: Support CX7 NIC card temperature sensor
+
+Summary:
+Description
+Add project cx7_ocp.json to override the common one,
+which was named by i2c bus number.
+
+Motivation
+Correct sensor name for temperature of CX7 NIC card
+
+Test plan:
+Get NIC temperature sensor reading by mfg-tool
+
+Test log:
+root@bmc:~# mfg-tool sensor-display
+...
+    "NIC2_TEMP_C": {
+        "critical": {
+            "high": 105.0
+        },
+        "hard-shutdown": {
+            "high": 120.0
+        },
+        "max": 127.0,
+        "min": -128.0,
+        "status": "ok",
+        "unit": "DegreesC",
+        "value": 61.0
+    },
+...
+---
+ configurations/cx7_ocp.json | 91 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 85 insertions(+), 6 deletions(-)
+
+diff --git a/configurations/cx7_ocp.json b/configurations/cx7_ocp.json
+index 0968760..01e91be 100644
+--- a/configurations/cx7_ocp.json
++++ b/configurations/cx7_ocp.json
+@@ -8,19 +8,97 @@
+         },
+         {
+             "Address": "0x1f",
+-            "Bus": "$bus",
++            "Bus": "24",
++            "Labels": [
++                "temp2"
++            ],
++            "Name": "NIC0_REMOTE_TEMP_C",
++            "Name1": "NIC0_TEMP_C",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 120
++                },
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 105
++                }
++            ],
++	    "Type": "TMP421"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": "25",
++            "Labels": [
++                "temp2"
++            ],
++            "Name": "NIC1_REMOTE_TEMP_C",
++            "Name1": "NIC1_TEMP_C",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 120
++                },
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 105
++                }
++            ],
++            "Type": "TMP421"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": "26",
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC Temp $bus",
+-            "Name1": "NIC Temp $bus",
++            "Name": "NIC2_REMOTE_TEMP_C",
++            "Name1": "NIC2_TEMP_C",
+             "Thresholds": [
+                 {
+-                    "Direction": "less than",
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 120
++                },
++                {
++                    "Direction": "greater than",
+                     "Index": 2,
+-                    "Name": "lower critical",
++                    "Name": "upper critical",
+                     "Severity": 1,
+-                    "Value": 5
++                    "Value": 105
++                }
++            ],
++            "Type": "TMP421"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": "27",
++            "Labels": [
++                "temp2"
++            ],
++            "Name": "NIC3_REMOTE_TEMP_C",
++            "Name1": "NIC3_TEMP_C",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 120
+                 },
+                 {
+                     "Direction": "greater than",
+@@ -43,3 +121,4 @@
+         "SerialNumber": "$BOARD_SERIAL_NUMBER"
+     }
+ }
++
+-- 
+2.43.0
+

@@ -1,0 +1,37 @@
+From 52447ede2e12edd8d58a682dd31ff443035577c4 Mon Sep 17 00:00:00 2001
+From: Eric <Eric_LC_Chen@wiwynn.com>
+Date: Tue, 5 Mar 2024 10:57:35 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite4: Revise i2c duty cycle
+
+To meet 400kHz-i2c clock low time spec (> 1.3 us)
+Revise duty cycle SMB11 and SMB16 to 40:60.
+
+https://lore.kernel.org/all/20240312061556.496605-23-Delphine_CC_Chiu@wiwynn.com/
+
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index 45248c31db22..a1b7169e1e63 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -765,6 +765,7 @@ eeprom@54 {
+ &i2c10 {
+ 	status = "okay";
+ 	bus-frequency = <400000>;
++        i2c-clk-high-min-percent = <40>;
+ 	i2c-mux@74 {
+ 		compatible = "nxp,pca9544";
+ 		i2c-mux-idle-disconnect;
+@@ -1310,6 +1311,7 @@ &i2c15 {
+ 	mctp-controller;
+ 	multi-master;
+ 	bus-frequency = <400000>;
++        i2c-clk-high-min-percent = <40>;
+ 
+ 	mctp@10 {
+ 		compatible = "mctp-i2c-controller";
+-- 
+2.25.1
+

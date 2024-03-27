@@ -46,7 +46,8 @@ def aiohttp_dep(d):
     distro = d.getVar('DISTRO_CODENAME', True)
     if distro in [ 'rocko', 'dunfell' ]:
         return "aiohttp"
-    return "python3-aiohttp"
+    # XXX work around missing python3-attr dependency
+    return "python3-aiohttp python3-attr"
 
 DEPENDS:append = " update-rc.d-native"
 RDEPENDS:${PN} += " \
@@ -85,6 +86,7 @@ LOCAL_URI = " \
     file://rest_ntpstatus.py \
     file://rest_utils.py \
     file://rest_fscd_sensor_data.py \
+    file://rest_qsfp_thermal.py \
     file://rest_fwinfo.py \
     file://rest_debug.py \
     file://jsonschema_lite.py \

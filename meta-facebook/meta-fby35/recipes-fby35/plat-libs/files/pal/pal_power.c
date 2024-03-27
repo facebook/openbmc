@@ -510,10 +510,12 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_POWER_OFF:
+      pal_set_key_value(post_complete, STR_VALUE_1);  // reset post complete value
       return (status == SERVER_POWER_OFF)?POWER_STATUS_ALREADY_OK:server_power_off(fru);
       break;
 
     case SERVER_POWER_CYCLE:
+      pal_set_key_value(post_complete, STR_VALUE_1);  // reset post complete value
       if (status == SERVER_POWER_ON) {
         // assuming that user has force power on the fru, so fan_fail is not checked here
         return bic_server_power_cycle(fru);
@@ -538,10 +540,12 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_GRACEFUL_SHUTDOWN:
+      pal_set_key_value(post_complete, STR_VALUE_1);  // reset post complete value
       return (status == SERVER_POWER_OFF)?POWER_STATUS_ALREADY_OK:bic_server_graceful_power_off(fru);
       break;
 
     case SERVER_POWER_RESET:
+      pal_set_key_value(post_complete, STR_VALUE_1);  // reset post complete value
       return (status == SERVER_POWER_OFF)?POWER_STATUS_ERR:bic_server_power_reset(fru);
       break;
 

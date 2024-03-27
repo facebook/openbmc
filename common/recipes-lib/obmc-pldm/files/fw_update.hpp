@@ -19,6 +19,15 @@
 #include <vector>
 #include <libpldm/firmware_update.h>
 
+#define PLDM_CMD_QUERY_DOWNSTREAM_DEVICE_IDENTIFIERS 0x04
+#define PLDM_QUERY_DOWNSTREAM_DEVICE_IDENTIFIERS_WAIT_TIME_US 100000
+
+enum class TRANSFER_OPERATION_FLAG : uint8_t
+{
+  GET_NEXT_PART,
+  GET_FIRST_PART,
+};
+
 struct device_id_record_descriptor {
   uint16_t type;
   std::string data;
@@ -37,8 +46,24 @@ struct component_image_info_t {
   std::string compVersion;
 };
 
+struct query_downstream_device_identifier_req {
+  uint32_t datatransferhandle;
+  TRANSFER_OPERATION_FLAG transferoperationflag;
+};
+
+struct query_downstream_device_identifier_resp {
+  uint8_t complete_code;
+  uint32_t nextdatatransferhandle;
+  uint8_t transferflag;
+  uint32_t downstreamdevicelength;
+  uint16_t downstreamdevicenum;
+  uint16_t downstreamdeviceidx;
+  uint8_t downstreamdevicedescriptorcount;
+} __attribute__((packed));
+
 int oem_parse_pldm_package (const char *path);
-int oem_pldm_fw_update (uint8_t bus, uint8_t eid, const char *path, uint8_t specified_comp = 0xFF);
+int oem_pldm_fw_update (uint8_t bus, uint8_t eid, const char *path, bool is_standard_descriptor, 
+    std::string component, int wait_apply_time = 0, uint8_t specified_comp = 0xFF);
 
 const std::vector<firmware_device_id_record_t>& oem_get_pkg_device_record();
 const std::vector<component_image_info_t>& oem_get_pkg_comp_img_info();

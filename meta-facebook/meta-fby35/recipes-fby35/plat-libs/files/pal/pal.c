@@ -53,6 +53,8 @@
 #define SERVER_TYPE_EXPECTED SERVER_TYPE_HD
 #elif CONFIG_GREATLAKES
 #define SERVER_TYPE_EXPECTED SERVER_TYPE_GL
+#elif CONFIG_JAVAISLAND
+#define SERVER_TYPE_EXPECTED SERVER_TYPE_JI
 #else
 #define SERVER_TYPE_EXPECTED SERVER_TYPE_CL
 #endif
@@ -150,11 +152,14 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define KEY_FAN_MODE_EVENT "fan_mode_event"
 #define KEY_IERR_STATUS "ierr_status"
 
+#define KEY_NOT_EXIST "not_exist"
+
 static int key_func_pwr_last_state(int event, void *arg);
 static int key_func_por_cfg(int event, void *arg);
 static int key_func_end_of_post(int event, void *arg);
 
 static uint8_t memory_record_code[4][256] = {0};
+static int bic_ou_status = 0; // 1OU_FAILURE = -4 / 2OU_FAILURE = -5 / 3OU_FAILURE = -6 / 4OU_FAILURE = -7 /
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -837,6 +842,24 @@ SENSOR_BASE_NUM sensor_base_cl = {0x50, 0x80, 0xA0, 0xD0};
 SENSOR_BASE_NUM sensor_base_hd = {0x50, 0x80, 0xA0, 0xD0};
 SENSOR_BASE_NUM sensor_base_hd_op = {0x40, 0x70, 0xA0, 0xD0};
 SENSOR_BASE_NUM sensor_base_gl = {0x50, 0x80, 0xA0, 0xD0};
+SENSOR_BASE_NUM sensor_base_ji = {0x50, 0x80, 0xA0, 0xD0};
+
+struct pal_key_restore_data{
+  char *key;
+  char value[MAX_VALUE_LEN];
+  uint8_t flag;
+} gl_kv_store_list[] = {
+  {"sys_config/fru1_dimm0_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm1_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm2_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm3_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm4_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm5_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm6_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"sys_config/fru1_dimm7_location", KEY_NOT_EXIST, KV_FPERSIST},
+  {"fru1_sysfw_ver", KEY_NOT_EXIST, KV_FPERSIST},
+  {"fru1_delay_activate_sysfw_ver", KEY_NOT_EXIST, KV_FPERSIST},
+};
 
 static int
 pal_key_index(char *key) {
@@ -938,6 +961,39 @@ pal_set_key_value(char *key, char *value) {
   }
 
   return kv_set(key, value, 0, key_cfg[index].region);
+}
+
+int
+pal_store_key_value() {
+  int i = 0;
+  char value[MAX_VALUE_LEN] = {0};
+  int slot_type = fby35_common_get_slot_type(FRU_SLOT1);
+
+  if (slot_type == SERVER_TYPE_GL) {
+    for (i = 0; i<ARRAY_SIZE(gl_kv_store_list); i++) {
+      if (kv_get(gl_kv_store_list[i].key, (char *)value, NULL, gl_kv_store_list[i].flag) >= 0) {
+        memcpy(gl_kv_store_list[i].value, value, MAX_VALUE_LEN);
+      }
+    }
+  }
+
+  return 0;
+}
+
+int
+pal_restore_key_value() {
+  int i = 0;
+  int slot_type = fby35_common_get_slot_type(FRU_SLOT1);
+
+  if (slot_type == SERVER_TYPE_GL) {
+    for (i = 0; i < ARRAY_SIZE(gl_kv_store_list); i++) {
+      if (strcmp(gl_kv_store_list[i].value, KEY_NOT_EXIST) != 0) {
+        kv_set(gl_kv_store_list[i].key, gl_kv_store_list[i].value, MAX_VALUE_LEN, KV_FPERSIST);
+      }
+    }
+  }
+
+  return 0;
 }
 
 void
@@ -2042,7 +2098,23 @@ pal_set_sys_guid(uint8_t fru, char *str) {
 
 int
 pal_get_dev_guid(uint8_t fru, char *guid) {
-  return pal_get_guid(OFFSET_DEV_GUID, guid);
+  int ret;
+  uint8_t status;
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      ret = pal_is_fru_prsnt(fru, &status);
+      if ( ret < 0 || status == 0 ) {
+        return -1;
+      }
+    case FRU_BMC:
+      return pal_get_guid(OFFSET_DEV_GUID, guid);
+      break;
+    default:
+      return -1;
+  }
 }
 
 int
@@ -2224,6 +2296,7 @@ pal_is_slot_server(uint8_t fru)
         case SERVER_TYPE_CL:
         case SERVER_TYPE_HD:
         case SERVER_TYPE_GL:
+        case SERVER_TYPE_JI:
           return 1;
         default:
           return 0;
@@ -5034,6 +5107,9 @@ pal_check_slot_cpu_present(uint8_t slot_id) {
     case SERVER_TYPE_GL:
       cpu_prsnt_pin = GL_FM_CPU_SKTOCC_LVT3_PLD_N;
       break;
+    case SERVER_TYPE_JI:
+      //confirm with EE, there is no CPU presence gpio in Java island platform.
+      return 0;
     default:
       //CPU Present pin default for Crater Lake
       cpu_prsnt_pin = FM_CPU_SKTOCC_LVT3_PLD_N;
@@ -5645,7 +5721,6 @@ int
 pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t bmc_location, const uint8_t config_status) {
   static uint8_t board_type[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
   int ret = 0;
-  uint8_t server_type = 0;
   uint8_t card_type = TYPE_1OU_UNKNOWN;
   static SENSOR_BASE_NUM *sensor_base = NULL;
 
@@ -5667,9 +5742,8 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
     }
   }
 
-  server_type = fby35_common_get_slot_type(fru);
   if (sensor_base == NULL) {
-    switch (server_type) {
+    switch (fby35_common_get_slot_type(fru)) {
       case SERVER_TYPE_HD:
         if (card_type == TYPE_1OU_OLMSTEAD_POINT) {
           sensor_base = &sensor_base_hd_op;
@@ -5687,6 +5761,9 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
           sensor_base = &sensor_base_gl;
         }
         break;
+      case SERVER_TYPE_JI:
+        sensor_base = &sensor_base_ji;
+        break;
       default:
         syslog(LOG_WARNING, "%s(): unknown board type", __func__);
         return READING_NA;
@@ -5697,25 +5774,34 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
   if (sensor_num < sensor_base->base_1ou || (((board_type[fru-1] & DPV2_X16_BOARD) == DPV2_X16_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) &&
       (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR))) { //server board
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, NONE_INTF);
-  } else if ( (sensor_num >= sensor_base->base_1ou && sensor_num < sensor_base->base_2ou) && (bmc_location != NIC_BMC) && //1OU
-       ((config_status & PRESENT_1OU) == PRESENT_1OU) ) { // 1OU
+    bic_ou_status = ret;
+  } else if ( (sensor_num < sensor_base->base_2ou) && (bmc_location != NIC_BMC) && //1OU
+       ((config_status & PRESENT_1OU) == PRESENT_1OU) && (bic_ou_status != BIC_STATUS_1OU_FAILURE)) { // 1OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, FEXP_BIC_INTF);
+    bic_ou_status = ret;
   } else if ( (sensor_num >= sensor_base->base_2ou && sensor_num < sensor_base->base_3ou) &&
-              ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //2OU
+              ((config_status & PRESENT_2OU) == PRESENT_2OU) && (bic_ou_status != BIC_STATUS_2OU_FAILURE)) { //2OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, REXP_BIC_INTF);
+    bic_ou_status = ret;
   } else if ( (sensor_num >= sensor_base->base_3ou && sensor_num < sensor_base->base_4ou) &&
-              ((config_status & PRESENT_3OU) == PRESENT_3OU) ) { //3OU
+              ((config_status & PRESENT_3OU) == PRESENT_3OU) && (bic_ou_status != BIC_STATUS_3OU_FAILURE)) { //3OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, EXP3_BIC_INTF);
+    bic_ou_status = ret;
   } else if ( (sensor_num >= sensor_base->base_4ou ) &&
-              ((config_status & PRESENT_4OU) == PRESENT_4OU) ) { //4OU
+              ((config_status & PRESENT_4OU) == PRESENT_4OU) && (bic_ou_status != BIC_STATUS_4OU_FAILURE)) { //4OU
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, EXP4_BIC_INTF);
+    bic_ou_status = ret;
   } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xF1) && (bmc_location == NIC_BMC)) { //BB
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, BB_BIC_INTF);
   } else {
     return READING_NA;
   }
 
-  if ( ret == BIC_STATUS_FAILURE ) {
+  if ( (ret == BIC_STATUS_FAILURE) || 
+       (ret == BIC_STATUS_1OU_FAILURE) || 
+       (ret == BIC_STATUS_2OU_FAILURE) || 
+       (ret == BIC_STATUS_3OU_FAILURE) || 
+       (ret == BIC_STATUS_4OU_FAILURE) ) {
     syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
   }
 

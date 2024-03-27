@@ -1,0 +1,125 @@
+From 45c59e5eb87637d63e10a25b0b04a2b77fa2b786 Mon Sep 17 00:00:00 2001
+From: Sara Lin <sara_sy_lin@wiwynn.com>
+Date: Wed, 20 Mar 2024 19:13:34 +0800
+Subject: [PATCH] yosemite4: Change IOE i2c address
+
+Description
+1. Change CPLD IOE i2c address to avoid i2c address conflict.
+2. LF-link: https://lore.kernel.org/all/20240321021236.1823693-8-Delphine_CC_Chiu@wiwynn.com/
+
+Motivation
+1. Current CPLD IOE is same as SB BIC, this may cause
+unexpected transmission issues.
+
+Test plan
+1. Check i2c address.
+
+Log
+1. Check i2c address of IOE and SB BIC.
+---
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 32 +++++++++----------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index 9fdd0d60bef4..c887a6c3ee2e 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -183,9 +183,9 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	gpio@20 {
++	gpio@24 {
+ 		compatible = "nxp,pca9506";
+-		reg = <0x20>;
++		reg = <0x24>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 	};
+@@ -229,9 +229,9 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	gpio@20 {
++	gpio@24 {
+ 		compatible = "nxp,pca9506";
+-		reg = <0x20>;
++		reg = <0x24>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 	};
+@@ -275,9 +275,9 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	gpio@20 {
++	gpio@24 {
+ 		compatible = "nxp,pca9506";
+-		reg = <0x20>;
++		reg = <0x24>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 	};
+@@ -321,9 +321,9 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	gpio@20 {
++	gpio@24 {
+ 		compatible = "nxp,pca9506";
+-		reg = <0x20>;
++		reg = <0x24>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 	};
+@@ -367,9 +367,9 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	gpio@20 {
++	gpio@24 {
+ 		compatible = "nxp,pca9506";
+-		reg = <0x20>;
++		reg = <0x24>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 	};
+@@ -413,9 +413,9 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	gpio@20 {
++	gpio@24 {
+ 		compatible = "nxp,pca9506";
+-		reg = <0x20>;
++		reg = <0x24>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 	};
+@@ -459,9 +459,9 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	gpio@20 {
++	gpio@24 {
+ 		compatible = "nxp,pca9506";
+-		reg = <0x20>;
++		reg = <0x24>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 	};
+@@ -505,9 +505,9 @@ mctp@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
+ 
+-	gpio@20 {
++	gpio@24 {
+ 		compatible = "nxp,pca9506";
+-		reg = <0x20>;
++		reg = <0x24>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 	};
+-- 
+2.25.1
+

@@ -66,7 +66,7 @@ _fruid_check(const char *bin) {
   }
 
   /* Read the binary file */
-  fread(fruid_data, sizeof(uint8_t), fruid_len, fruid_fp);
+  (void)!fread(fruid_data, sizeof(uint8_t), fruid_len, fruid_fp);
   fclose(fruid_fp);
 
   /* Check Common Header */
@@ -177,7 +177,7 @@ sdr_cache_init(uint8_t slot_id) {
 
     sdr_full_t *sdr = (sdr_full_t *) res->data;
 
-    write(fd, sdr, sizeof(sdr_full_t));
+    (void)!write(fd, sdr, sizeof(sdr_full_t));
 
     req.rec_id = res->next_rec_id;
     if (req.rec_id == LAST_RECORD_ID) {

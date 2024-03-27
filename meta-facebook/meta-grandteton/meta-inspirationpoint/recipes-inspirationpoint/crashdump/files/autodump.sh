@@ -73,6 +73,11 @@ CURT_DTIME=$(date +"%Y%m%d-%H%M%S")
 LOG_ARCHIVE="/mnt/data/fru1_ras-error${PREVIOUS_INDEX}_${CURT_DTIME}.tar.gz"
 $DUMP_UTIL --fru 1 --ncpu 2 --cid "${CPUID[@]}"
 
+if [ ! -f "$DUMP_FILE" ]; then
+  logger -t "ipmid" -p daemon.crit "Auto dump was terminated w/o generating a cper file"
+  exit 1
+fi
+
 [ -r $CURRENT_INDEX_FILE ] && CURRENT_INDEX=$(cat $CURRENT_INDEX_FILE) || CURRENT_INDEX=0
 if [ "$PREVIOUS_INDEX" == "$CURRENT_INDEX" ]; then
   DUMP_FILE=

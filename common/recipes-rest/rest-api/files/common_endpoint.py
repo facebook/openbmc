@@ -26,6 +26,7 @@ import rest_gpios
 import rest_modbus
 import rest_modbus_cmd
 import rest_psu_update
+import rest_qsfp_thermal
 import rest_sensors
 import rest_server
 from aiohttp import web
@@ -177,6 +178,10 @@ class commonApp_Handler:
     @staticmethod
     async def rest_fscd_sensor_data_post(request: web.Request) -> web.Response:
         return await rest_fscd_sensor_data.post_fscd_sensor_data(request)
+
+    @staticmethod
+    async def rest_qsfp_thermal_post(request: web.Request) -> web.Response:
+        return await rest_qsfp_thermal.post_qsfp_thermal_data(request)
 
     @staticmethod
     async def rest_modbus_get(request: web.Request) -> web.Response:

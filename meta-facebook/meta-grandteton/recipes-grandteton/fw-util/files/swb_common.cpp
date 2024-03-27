@@ -21,8 +21,6 @@
 
 #define PexImageCount 4
 #define GTAPeswImageCount 2
-#define GTAFacCount 12
-#define GTAArtemisCount 2 //  Each FAC
 
 struct PexImage {
   uint32_t offset;
@@ -314,6 +312,25 @@ int fw_update_proc (const string& image, bool /*force*/,
 error_exit:
   syslog(LOG_CRIT, "%s component %s: upgrade failed", fru.c_str(), comp.c_str());
   return ret;
+}
+
+int get_dev_ver(uint8_t bus, uint8_t eid, uint8_t target, vector<uint8_t> &data) {
+  uint8_t tbuf[MAX_TXBUF_SIZE] = {0};
+  uint8_t rbuf[MAX_RXBUF_SIZE] = {0};
+  uint8_t tlen=0;
+  size_t rlen = 0;
+  int rc;
+
+  tbuf[tlen++] = target;
+
+  rc = oem_pldm_ipmi_send_recv(bus, eid,
+                               NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER,
+                               tbuf, tlen,
+                               rbuf, &rlen, true);
+  if (rc == 0) {
+    data = vector<uint8_t>(rbuf, rbuf + rlen);
+  }
+  return rc;
 }
 
 int SwbBicFwComponent::update(string image)
@@ -790,56 +807,25 @@ int GTPldmComponent::try_pldm_update(const string& image, bool force, uint8_t sp
   int isValidImage = oem_parse_pldm_package(image.c_str());
   string fru_name = (pal_is_artemis() ? _fru : "swb");
 
-  // Legacy way
-  if (is_pldm_supported(fru_name, bus, eid) < 0) {
-    if (force) {
+  if (force) {
+    if (isValidImage == 0) {
+      cout << "PLDM image detected." << endl;
+      return pldm_update(image, false, specified_comp);
+    } else {
+      cout << "Raw image detected." << endl;
       return comp_fupdate(image);
-    } else {
-      // PLDM image
-      if (isValidImage == 0) {
-        // Try to discard PLDM header
-        // Pex not support.
-        if (component.find("pex") != std::string::npos) {
-          cerr << "Pex not support PLDM image transfer" << endl;
-          return -1;
-        } else {
-          string raw_image{};
-          if (get_raw_image(image, raw_image) == FORMAT_ERR::SUCCESS) {
-            int ret = comp_fupdate(raw_image);
-            del_raw_image();
-            return ret;
-          } else {
-            cerr << "Can not do PLDM image transfer" << endl;
-            return -1;
-          }
-        }
-      // Raw image
-      } else {
-        return comp_update(image);
-      }
     }
-  // PLDM way
   } else {
-    if (force) {
-      if (isValidImage == 0) {
-        cout << "PLDM image detected." << endl;
-        return pldm_update(image, specified_comp);
+    if (isValidImage == 0) {
+      if (is_pldm_info_valid() == 0) {
+        return pldm_update(image, false, specified_comp);
       } else {
-        cout << "Raw image detected." << endl;
-        return comp_fupdate(image);
-      }
-    } else {
-      if (isValidImage == 0) {
-        if (is_pldm_info_valid() == 0) {
-          return pldm_update(image, specified_comp);
-        } else {
-          cerr << "Non-valid package info." << endl;
-          return -1;
-        }
-      } else {
-        cerr << "Non-valid image header." << endl;
+        cerr << "Non-valid package info." << endl;
         return -1;
       }
+    } else {
+      cerr << "Non-valid image header." << endl;
+      return -1;
     }
   }
 }
@@ -850,33 +836,19 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
   string active_key = fmt::format("{}_{}_active_ver", fru_name, pldm_signed_info::comp_str_t.at(target));
   string active_ver;
 
-  if (pal_is_artemis()) {
+  try {
+    active_ver = kv::get(active_key, kv::region::temp);
+    j["VERSION"] = active_ver;
+  } catch (...) {
     int ret = update_pldm_ver_cache(fru_name, bus, eid);
     if (ret < 0) {
-      return comp_version(j);
-    }
-
-    try {
+      if(ret == SWB_FW_GET_FAILED)
+        return comp_version(j);
+      else if(ret == SWB_FW_BIC_ERROR)
+        j["VERSION"] = "NA";
+    } else {
       active_ver = kv::get(active_key, kv::region::temp);
       j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
-    } catch (...) {
-      return comp_version(j);
-    }
-  } else {
-    try {
-      active_ver = kv::get(active_key, kv::region::temp);
-      j["VERSION"] = active_ver;
-    } catch (...) {
-      int ret = update_pldm_ver_cache(fru_name, bus, eid);
-      if (ret < 0) {
-        if(ret == SWB_FW_GET_FAILED)
-          return comp_version(j);
-        else if(ret == SWB_FW_BIC_ERROR)
-          j["VERSION"] = "NA";
-      } else {
-        active_ver = kv::get(active_key, kv::region::temp);
-        j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
-      }
     }
   }
 
@@ -890,22 +862,10 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
 }
 
 static
-void gta_restart_module_mterm_service(const string& comp, const string& fru) {
-  char cmd[128] = {0};
-
-  if (!pal_is_artemis()) {
-    return;
-  }
-
-  if (fru == "cb" && comp == "bic") {
-    for (int i = 1; i <= GTAFacCount; i ++) {
-      for (int j = 1; j <= GTAArtemisCount; j ++) {
-        snprintf(cmd, sizeof(cmd), "/usr/bin/sv restart mTerm%d_%d >> /dev/null",i ,j);
-        if (system(cmd) != 0) {
-          syslog(LOG_WARNING, "[%s] Restart mTerm%d_%d failed\n", __func__ ,i ,j);
-        }
-      }
-    }
+void bic_update_post_actions(const string& fru) {
+  if (fru == "mc") {
+    sleep(5); // wait BIC boot up
+    update_pldm_ver_cache("mc", MEB_BIC_BUS, MEB_BIC_EID);
   }
   return;
 }
@@ -915,7 +875,7 @@ int GTSwbBicFwComponent::update(string image)
   int ret = 0;
 
   ret = try_pldm_update(image, false);
-  gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
+  bic_update_post_actions(this->alias_fru());
   return ret;
 }
 
@@ -924,7 +884,7 @@ int GTSwbBicFwComponent::fupdate(string image)
   int ret = 0;
 
   ret = try_pldm_update(image, true);
-  gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
+  bic_update_post_actions(this->alias_fru());
   return ret;
 }
 
@@ -1160,6 +1120,7 @@ mc_bic_recovery_pre() {
 
 int
 gta_bic_recovery_pre(string image, uint8_t fruid, bool /*force*/) {
+  kv_set("bic_recovery_update", "1", 0, 0);
   if (fruid == FRU_ACB) {
     if (cb_bic_recovery_pre() < 0) {
       return -1;
@@ -1256,25 +1217,34 @@ mc_bic_recovery_post() {
     syslog(LOG_WARNING, "[%s] Set MC MUX to MC CPLD failed", __func__);
     return -1;
   }
+  sleep(5); // wait BIC boot up
+  update_pldm_ver_cache("mc", MEB_BIC_BUS, MEB_BIC_EID);
   return 0;
 }
 
 int
 gta_bic_recovery_post(uint8_t fruid, bool /*force*/) {
+  int ret = 0;
+
   if (fruid == FRU_ACB) {
-    if (cb_bic_recovery_post() < 0) {
-      return -1;
+    ret = cb_bic_recovery_post();
+    if (ret < 0) {
+      goto error_exit;
     }
   } else if (fruid == FRU_MEB) {
-    if (mc_bic_recovery_post() < 0) {
-      return -1;
+    ret = mc_bic_recovery_post();
+    if (ret < 0) {
+      goto error_exit;
     }
   } else {
+    ret = -1;
     syslog(LOG_WARNING, "%s() Unknown FRU: %u", __func__, fruid);
-    return -1;
+    goto error_exit;
   }
 
-  return 0;
+error_exit:
+  kv_set("bic_recovery_update", "0", 0, 0);
+  return ret;
 }
 
 int GtaBicFwRecoveryComponent::update(string image) {
@@ -1301,7 +1271,6 @@ int GtaBicFwRecoveryComponent::update(string image) {
   }
 exit:
   gta_bic_recovery_post(fruid, false);
-  gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
   return ret;
 }
 
@@ -1327,8 +1296,97 @@ int GtaBicFwRecoveryComponent::fupdate(string image) {
   }
 exit:
   gta_bic_recovery_post(fruid, true);
-  gta_restart_module_mterm_service(this->alias_component(), this->alias_fru());
   return ret;
+}
+
+int GTAASICComponent::update(std::string image) {
+  return pldm_update(image, true, component_identifier);
+}
+
+int GTAASICComponent::fupdate(std::string image) {
+  return pldm_update(image, true, component_identifier);
+}
+
+bool print_version_flag[FRU_ACB_ACCL_CNT * 2] = {
+  false, false, false, false, false, false, false, false, false, false, false, false,
+  false, false, false, false, false, false, false, false, false, false, false, false
+};
+
+int GTAASICComponent::get_version(json& j) {
+  vector<uint8_t> version = {};
+  int ret = 0;
+  uint8_t fruid = 0;
+  uint8_t devid = 0;
+  uint8_t compid = component_identifier - DEV_BASE_COMP;
+  uint8_t status = 0;
+  uint8_t device_status_fail = 1;
+
+  if (compid >= (FRU_ACB_ACCL_CNT * 2)) {
+    return FW_STATUS_FAILURE;
+  }
+
+  if (print_version_flag[compid] != false) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
+  stringstream comp_str;
+  string key = "asic" + to_string(compid) + "_ver";
+  char value[MAX_VALUE_LEN] = {0};
+
+  ret = pal_get_fru_id((char *)this->alias_fru().c_str(), &fruid);
+  if (ret != 0) {
+    return FW_STATUS_FAILURE;
+  }
+
+  comp_str << this->alias_fru() << ' ' << this->alias_component().substr(0, 4);
+  string rw_str = comp_str.str();
+  transform(rw_str.begin(),rw_str.end(), rw_str.begin(),::toupper);
+  j["PRETTY_COMPONENT"] = rw_str;
+
+  if (kv_get(key.c_str(), value, NULL, 0) == 0) {
+    j["VERSION"] = string(value);
+    print_version_flag[compid] = true;
+    return FW_STATUS_SUCCESS;
+  }
+
+  devid = ((compid % 2) ? DEV_ID2 : DEV_ID1);
+  ret = pal_is_dev_prsnt(fruid, devid, &status);
+  if (ret != 0) {
+    return FW_STATUS_FAILURE;
+  }
+
+  if (ret == 0 && status == FRU_NOT_PRSNT) {
+    j["VERSION"] = "NA (DEVICE NOT PRESENT)";
+    print_version_flag[compid] = true;
+    return FW_STATUS_SUCCESS;
+  }
+
+  ret = get_dev_ver(bus, eid, component_identifier, version);
+  if (ret != 0 || version.empty()) {
+    j["VERSION"] = "NA";
+  } else if (version[2] == device_status_fail) {
+    j["VERSION"] = "NA (NVME NOT READY)";
+  } else if (version[3] == device_status_fail) {
+    j["VERSION"] = "NA (DEVICE IDENTIFIER NOT SUPPORT)";
+  } else if (version[4] != device_status_fail) {
+    j["VERSION"] = "NA (DEVICE NOT ACCELERATOR)";
+  } else {
+    stringstream ver_stream;
+    string ver_str;
+    ver_stream << std::setfill('0')
+      << 'v'
+      << +version[5] << '.'  // major version
+      << +version[6] << '.'  // minor version
+      << +version[7] << '.'  // addition version
+      << +version[8] << '.'  // sec major version
+      << +version[9];        // sec minor version
+    ver_str = ver_stream.str();
+    j["VERSION"] = ver_str;
+    kv_set(key.c_str(), ver_str.c_str(), 0, 0);
+  }
+
+  print_version_flag[compid] = true;
+  return FW_STATUS_SUCCESS;
 }
 
 namespace pldm_signed_info

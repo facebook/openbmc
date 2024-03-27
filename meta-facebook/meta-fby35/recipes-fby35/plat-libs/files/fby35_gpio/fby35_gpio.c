@@ -391,6 +391,89 @@ const char *rf_gpio_pin_name[] = {
   "CLK_100M_OSC_EN",
 };
 
+//Java Island BIC GPIO
+const char *ji_gpio_pin_name[] = {
+  "FPGA_READY",                     //0
+  "FAN_FULL_SPEED_FPGA_L",
+  "PWR_BRAKE_L",
+  "INA230_E1S_ALERT_L",
+  "FPGA_WATCH_DOG_TIMER0_L",
+  "FPGA_WATCH_DOG_TIMER1_L",
+  "HSC_OCP_GPIO1",
+  "FPGA_WATCH_DOG_TIMER2_L",
+  "RST_USB_HUB_R_L",
+  "P3V_BAT_SCALED_EN_R",
+  "WP_HW_EXT_CTRL_L",               //10
+  "BIC_EROT_LVSFT_EN",
+  "RTC_CLR_L",
+  "I2C_SSIF_ALERT_L",
+  "FPGA_CPU_BOOT_DONE",
+  "FM_HSC_TIMER",
+  "IRQ_I2C_IO_LVC_STBY_ALRT_L",
+  "BIC_TMP_LVSFT_EN",
+  "BIC_I2C_0_FPGA_ALERT_L",
+  "BIC_I2C_1_FPGA_ALERT_L",
+  "JTAG_TRST_CPU_BMC_L",            //20
+  "RST_I2C_E1S_L",
+  "FM_PWRDIS_E1S",
+  "PWRBTN_L",
+  "RST_BMC_L",
+  "BMC_READY",
+  "BIC_READY",
+  "PWR_BRAKE_CPU1_L",
+  "RUN_POWER_PG",
+  "SPI_BMC_FPGA_INT_L",
+  "IRQ_HSC_ALERT1_L",               //30
+  "I2C_SENSOR_LVC_ALERT_L",
+  "INA_CRIT_ALERT1_L",
+  "RUN_POWER_EN",
+  "SPI_HOST_TPM_RST_L",
+  "HSC_TYPE_0",
+  "THERM_WARN_CPU1_L_3V3",
+  "RUN_POWER_FAULT_L",
+  "SENSOR_AIR0_THERM_L",
+  "SENSOR_AIR1_THERM_L",
+  "FM_FAST_PROCHOT_EN",             //40
+  "THERM_BB_OVERT_L",
+  "THERM_BB_WARN_L",
+  "BIC_CPU_JTAG_MUX_SEL",
+  "FM_VR_FW_PROGRAM_L",
+  "FAST_PROCHOT_L",
+  "CPU_EROT_FATAL_ERROR_L",
+  "BIC_REMOTEJTAG_EN",
+  "THERM_OVERT_CPU1_L_3V3",
+  "HSC_OCP_GPIO2",
+  "HSC_OCP_GPIO3",                  //50
+  "SENSOR_AIR0_ALERT_L",
+  "SENSOR_AIR1_ALERT_L",
+  "BIC_CPLD_VRD_MUX_SEL",
+  "CPU_BIC_PROCHOT_L",
+  "CPLD_JTAG_MUX_SEL",
+  "JTAG_FPGA_MUX_SEL",
+  "BOARD_ID0",
+  "BOARD_ID1",
+  "BOARD_ID2",
+  "BOARD_ID3",                      //60
+  "BOARD_ID4",
+  "BOARD_ID5",
+  "P12V_STBY_SCALED",
+  "VDD_1V8_SENSOR",
+  "P3V3_STBY_SCALED",
+  "SOCVDD_SENSOR",
+  "P3V_BAT_SCALED",
+  "CPUVDD_SENSOR",
+  "FPGA_VCC_AO_SENSOR",
+  "1V2_SENSOR",                     //70
+  "CARD_TYPE_EXP",
+  "VDD_3V3_M2_SCALED",
+  "P1V2_STBY_SCALED",
+  "FBVDDQ_SENSOR",
+  "FBVDDP2_SENSOR",
+  "FBVDD1_SENSOR",
+  "P5V_STBY_SCALED",
+  "CPU_DVDD_SENSOR",
+};
+
 /* GPIO Expander gpio table */
 gpio_cfg gpio_expander_gpio_table[] = {
   /* shadow_name, pin_name, direction, value */
@@ -509,6 +592,7 @@ gpio_cfg bmc_gpio_table[] = {
 const uint8_t cl_gpio_pin_size = sizeof(cl_gpio_pin_name)/sizeof(cl_gpio_pin_name[0]);
 const uint8_t hd_gpio_pin_size = sizeof(hd_gpio_pin_name)/sizeof(hd_gpio_pin_name[0]);
 const uint8_t gl_gpio_pin_size = sizeof(gl_gpio_pin_name)/sizeof(gl_gpio_pin_name[0]);
+const uint8_t ji_gpio_pin_size = sizeof(ji_gpio_pin_name)/sizeof(ji_gpio_pin_name[0]);
 
 //Great Lakes BIC virtual gpio
 const uint8_t gl_virtual_gpio_pin_size = sizeof(gl_virtual_gpio_pin_name)/sizeof(gl_virtual_gpio_pin_name[0]);
@@ -537,6 +621,9 @@ y35_get_gpio_list_size(uint8_t fru, bool is_virtual_gpio, uint8_t intf) {
           } else {
             gpio_list_size = gl_gpio_pin_size;
           }
+          break;
+        case SERVER_TYPE_JI:
+          gpio_list_size = ji_gpio_pin_size;
           break;
         default:
           gpio_list_size = cl_gpio_pin_size;
@@ -595,6 +682,10 @@ y35_get_gpio_name(uint8_t fru, uint8_t gpio, char *name, bool is_virtual_gpio, u
             gpio_pin_size = gl_gpio_pin_size;
             gpio_pin_name = gl_gpio_pin_name;
           }
+          break;
+        case SERVER_TYPE_JI:
+          gpio_pin_size = ji_gpio_pin_size;
+          gpio_pin_name = ji_gpio_pin_name;
           break;
         default:
           gpio_pin_size = cl_gpio_pin_size;

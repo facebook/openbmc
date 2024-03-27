@@ -1,1 +1,1 @@
-RDEPENDS:${PN}-ptest:remove = "perl"
+RDEPENDS:${PN}-ptest:remove = "perl perl-modules"

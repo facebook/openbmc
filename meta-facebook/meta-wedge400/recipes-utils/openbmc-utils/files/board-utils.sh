@@ -264,28 +264,18 @@ wedge_power_on_board() {
     return 0
 }
 
-wedge_prepare_cpld_update() {
+wedge_prepare_firmware_update() {
     echo "Stop fscd service."
-    sv stop fscd
 
-    # from stress test found sometime sv stop fscd has timeout
-    # and wdtcli can't stop watchdog, that do BMC reboot while CPLD updating.
+    # Stress testing, it was found that "sv stop fscd" at times experiences a timeout,
+    # rendering wdtcli incapable of stopping watchdog.
+    # This leads to BMC reboots while updating firmware on devices, including CPLD, BIOS, and BIC.
+    sv force-stop fscd
+    
     # Add fuser to check /dev/watchdog ready to used after fscd release it.
-    watchdog_ok=0
-    MAX_RETRY=5
-    for ((retry=1; retry <= MAX_RETRY; retry++))
-    do
-        /usr/bin/fuser /dev/watchdog &> /dev/null
-        # return code is 1 when no one hold /dev/watchdog
-        if [ $? -eq 1 ]; then
-            echo "/dev/watchdog available"
-            watchdog_ok=1
-            break
-        fi
-        echo "waiting for /dev/watchdog, retry $retry/$MAX_RETRY"
-        sleep 2
-    done;
-    if [ $watchdog_ok -ne 1 ]; then
+    /usr/bin/fuser /dev/watchdog &> /dev/null
+    ret=$?
+    if [ $ret -eq 0 ]; then
         echo "Watchdog could not be stopped. Retry later"
         return 1;
     fi
@@ -295,7 +285,7 @@ wedge_prepare_cpld_update() {
 
     echo "Set fan speed 40%."
     set_fan_speed.sh 40
-
+    
     return 0
 }
 

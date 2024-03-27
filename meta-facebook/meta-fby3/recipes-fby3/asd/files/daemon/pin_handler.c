@@ -399,7 +399,8 @@ on_prdy_event(Target_Control_Handle* state, ASD_EVENT* event)
         return ST_ERR;
     }
 
-    if (g_gpios_triggered[JTAG_PRDY_EVENT].triggered == false) {
+    if ((g_gpios_triggered[JTAG_PRDY_EVENT].triggered == false) || 
+        (state && !state->event_cfg.report_PRDY)) {
         *event = ASD_EVENT_NONE;
         return result;
     }
@@ -591,15 +592,15 @@ STATUS pin_hndlr_provide_GPIOs_list(Target_Control_Handle* state, target_fdarr_t
     short events = 0;
 
     get_pin_events(state->gpios[BMC_PRDY_N], &events);
-    if ( state->event_cfg.report_PRDY && state->gpios[BMC_PRDY_N].fd != -1 )
+    if (state->gpios[BMC_PRDY_N].fd != -1 )
     {
         (*fds)[index].fd = state->gpios[BMC_PRDY_N].fd;
         (*fds)[index].events = events;
         index++;
     }
     ASD_log(ASD_LogLevel_Info, stream, option,
-            "report_PRDY: %d, fd:%d, events: %d, index:%d\n",
-            state->event_cfg.report_PRDY, state->gpios[BMC_PRDY_N].fd, events, index);
+            "PRDY: fd:%d, events: %d, index:%d\n",
+            state->gpios[BMC_PRDY_N].fd, events, index);
 
     get_pin_events(state->gpios[BMC_PLTRST_B], &events);
     if (state->gpios[BMC_PLTRST_B].fd != -1)

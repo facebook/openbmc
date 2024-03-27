@@ -5,3 +5,6 @@ require common/images/fb-openbmc-common.inc
 
 # Include the package group that enables tests2 support.
 IMAGE_INSTALL += "packagegroup-openbmc-tests2"
+
+# Add the mfgtool.
+IMAGE_INSTALL += "mfg-tool"

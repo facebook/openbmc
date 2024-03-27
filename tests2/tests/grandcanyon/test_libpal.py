@@ -19,6 +19,7 @@
 import unittest
 
 import common.base_libpal_test
+from utils.test_utils import qemu_check
 
 try:
     import pal
@@ -28,8 +29,9 @@ except ModuleNotFoundError:
     pass
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class LibPalTest(common.base_libpal_test.LibPalTest):
-    PLATFORM_NAME = "northdome"
+    PLATFORM_NAME = "grandcanyon"
 
     @unittest.skip("disable due to T92189295")
     def test_sensor_raw_read(self):

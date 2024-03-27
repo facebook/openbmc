@@ -22,6 +22,7 @@
 PWRCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/pwrcpld/12-0043"
 SCM_PWR_IN_RESET_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_in_reset"
 SCM_CPU_READY_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_ready"
+SMB_EEPROM_SYSFS="/sys/bus/i2c/drivers/at24/9-0052/eeprom"
 
 # SMB CPLD endpoints
 SMBCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/smbcpld/9-0023"
@@ -55,23 +56,6 @@ retry_command() {
         fi
     done
     return 0
-}
-
-do_sync() {
-   # Try to flush all data to MMC and remount the drive read-only. Sync again
-   # because the remount is asynchronous.
-   partition="/dev/mmcblk0"
-   mountpoint="/mnt/data1"
-
-   sync
-   # rsyslogd logs to eMMC, so we must stop it prior to remouting.
-   systemctl stop syslog.socket rsyslog.service
-   sleep .05
-   if [ -e $mountpoint ]; then
-      retry_command 5 mount -o remount,ro $partition $mountpoint
-      sleep 1
-   fi
-   sync
 }
 
 wedge_board_type() {
@@ -121,7 +105,17 @@ wedge_power_asic() {
 }
 
 wedge_board_rev() {
-    # MERUTODO: this assumes P1 currently
+    board_rev=$(weutil -e scm|grep "Product Version"|awk '{print $3}')
+    echo "${board_rev}"
+}
+
+wedge_is_scm_p1()
+{
+    board_rev=$(wedge_board_rev)
+    if [ "${board_rev}" == "1" ]; then
+        return 0
+    fi
+
     return 1
 }
 
@@ -160,7 +154,6 @@ userver_reset() {
 }
 
 chassis_power_cycle() {
-    do_sync
     sleep 1
     i2cset -y -f 12 0x43 0x70 0xDE
     sleep 8

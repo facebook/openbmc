@@ -22,6 +22,7 @@ import hashlib
 import json
 import sys
 import traceback
+from datetime import timezone
 
 VBOOT_CHECK_VERSION = "6"
 # Define the exit code
@@ -91,8 +92,8 @@ def get_date(fdt):
     # returns a tuple of parsed date, timestamp
     timestamp = fdt.resolve_path("/timestamp")[0]
     return (
-        datetime.datetime.utcfromtimestamp(
-            timestamp,
+        datetime.datetime.fromtimestamp(
+            timestamp, timezone.utc
         ).strftime("%a %b %d %H:%M:%S UTC %Y")
         + " (0x%x)" % (timestamp)
     ), timestamp

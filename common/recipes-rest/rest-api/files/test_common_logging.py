@@ -118,7 +118,12 @@ class TestLoggerConfigurator(unittest.TestCase):
                 "testmessage", extra={"time": now}
             )  # force in time for the logged entry
             self.assertEqual(
-                {"message": "testmessage", "time": now.isoformat(), "level": "INFO"},
+                {
+                    "message": "testmessage",
+                    "time": now.isoformat(),
+                    "level": "INFO",
+                    "taskName": None,
+                },
                 json.loads(fake_out.getvalue()),
             )
 
@@ -145,6 +150,7 @@ class TestLoggerConfigurator(unittest.TestCase):
                     "anumber": 42,
                     "level": "INFO",
                     "time": now.isoformat(),
+                    "taskName": None,
                 },
                 json.loads(fake_out.getvalue()),
             )

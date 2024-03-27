@@ -1,7 +1,7 @@
-From 9bcd542f390a43e815422c6242280d249351b00c Mon Sep 17 00:00:00 2001
+From 221a029f348ece02c5b7700a1e3be0aa6fb0733c Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 11 Dec 2023 10:22:47 +0800
-Subject: [PATCH 505/506] ARM: dts: aspeed: yosemite4: support mux to cpld
+Subject: [PATCH 505/510] ARM: dts: aspeed: yosemite4: support mux to cpld
 
 Mux pca9544 to cpld was added on EVT HW schematic design,
 so add dts setting for devices behind mux pca9544 to cpld
@@ -15,7 +15,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 49 insertions(+), 15 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 6cfbba121fba..4ea0df54546d 100644
+index 340be5b9081a..61d7efdc625e 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -36,6 +36,10 @@ aliases {
@@ -100,5 +100,5 @@ index 6cfbba121fba..4ea0df54546d 100644
  };
  
 -- 
-2.41.0
+2.43.0
 

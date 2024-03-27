@@ -71,7 +71,7 @@ class OobStatusTest(unittest.TestCase):
         for arg in args.split(" "):
             self.assertTrue(
                 "Port: {} {}".format(arg, self.status_dict[cmd][arg]) in output,
-                "Port {} not found in output".format(arg),
+                "Port {} not found in output\n{}".format(arg, output),
             )
 
     def oobStatusTester(self, cmd):

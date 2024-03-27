@@ -1,6 +1,6 @@
 import asyncio
 import unittest
-from typing import Any, List
+from typing import Any, List  # noqa: F401
 
 import aiohttp.web
 

@@ -1,3 +1,3 @@
 #!/bin/sh
-sleep 15
+sleep 30
 systemctl restart pldmd

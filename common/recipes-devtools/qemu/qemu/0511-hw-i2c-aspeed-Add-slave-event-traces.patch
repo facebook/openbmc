@@ -1,0 +1,68 @@
+From d9eba13040279ef71f4e727fa87a042348522b10 Mon Sep 17 00:00:00 2001
+From: Peter Delevoryas <peter@pjd.dev>
+Date: Wed, 24 Aug 2022 01:53:43 -0700
+Subject: [PATCH 511/532] hw/i2c/aspeed: Add slave event traces
+
+Signed-off-by: Peter Delevoryas <peter@pjd.dev>
+---
+ hw/i2c/aspeed_i2c.c | 13 +++++++++++++
+ hw/i2c/trace-events |  2 ++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
+index d04e1bf6f4..899aedcc9a 100644
+--- a/hw/i2c/aspeed_i2c.c
++++ b/hw/i2c/aspeed_i2c.c
+@@ -1101,9 +1101,18 @@ static const TypeInfo aspeed_i2c_info = {
+     .abstract   = true,
+ };
+ 
++static const char *I2C_EVENT[] = {
++    [I2C_START_SEND] = "I2C_START_SEND",
++    [I2C_START_SEND_ASYNC] = "I2C_START_SEND_ASYNC",
++    [I2C_START_RECV] = "I2C_START_RECV",
++    [I2C_FINISH] = "I2C_FINISH",
++};
++
+ static int aspeed_i2c_bus_new_slave_event(AspeedI2CBus *bus,
+                                           enum i2c_event event)
+ {
++    trace_aspeed_i2c_bus_new_slave_event(bus->id, I2C_EVENT[event]);
++
+     switch (event) {
+     case I2C_START_SEND_ASYNC:
+         if (!SHARED_ARRAY_FIELD_EX32(bus->regs, R_I2CS_CMD, RX_DMA_EN)) {
+@@ -1148,6 +1157,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+         return aspeed_i2c_bus_new_slave_event(bus, event);
+     }
+ 
++    trace_aspeed_i2c_bus_slave_event(bus->id, I2C_EVENT[event]);
++
+     switch (event) {
+     case I2C_START_SEND_ASYNC:
+         /* Bit[0] == 0 indicates "send". */
+@@ -1168,6 +1179,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+         break;
+ 
+     default:
++        qemu_log_mask(LOG_UNIMP, "%s: i2c event %d unimplemented\n",
++                      __func__, event);
+         return -1;
+     }
+ 
+diff --git a/hw/i2c/trace-events b/hw/i2c/trace-events
+index e9f3d1af07..5a1651352c 100644
+--- a/hw/i2c/trace-events
++++ b/hw/i2c/trace-events
+@@ -34,6 +34,8 @@ aspeed_i2c_bus_read(uint32_t busid, uint64_t offset, unsigned size, uint64_t val
+ aspeed_i2c_bus_write(uint32_t busid, uint64_t offset, unsigned size, uint64_t value) "bus[%d]: To 0x%" PRIx64 " of size %u: 0x%" PRIx64
+ aspeed_i2c_bus_send(uint32_t busid, const char *mode, int i, int count, uint8_t byte) "bus[%d]: %s send %d/%d 0x%02x"
+ aspeed_i2c_bus_recv(uint32_t busid, const char *mode, int i, int count, uint8_t byte) "bus[%d]: %s recv %d/%d 0x%02x"
++aspeed_i2c_bus_slave_event(uint32_t busid, const char *event) "bus[%d]: %s"
++aspeed_i2c_bus_new_slave_event(uint32_t busid, const char *event) "bus[%d]: %s"
+ aspeed_i2c_scl_timeout(uint32_t busid) "bus[%d]: raising SCL timeout"
+ 
+ # npcm7xx_smbus.c
+-- 
+2.43.0
+

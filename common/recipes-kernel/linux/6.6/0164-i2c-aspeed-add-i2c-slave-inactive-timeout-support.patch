@@ -1,7 +1,7 @@
-From bf9abe5b05fca31738276cbe3e533d3087bce41e Mon Sep 17 00:00:00 2001
+From 1cc242cc5c10f95a90306bd6ecdd7730e92024d7 Mon Sep 17 00:00:00 2001
 From: Jae Hyun Yoo <jae.hyun.yoo@linux.intel.com>
 Date: Tue, 13 Sep 2022 08:56:54 -0700
-Subject: [PATCH 164/164] i2c: aspeed: add i2c slave inactive timeout support
+Subject: [PATCH 164/170] i2c: aspeed: add i2c slave inactive timeout support
 
 Summary:
 backport below patches to kernel 5.15 to support i2c slave inactive timeout.
@@ -18,11 +18,11 @@ Pulled By: garnermic
 
 fbshipit-source-id: 019a949fcc6c09d93141e781ca5c2bbe0f8bf580
 ---
- drivers/i2c/busses/i2c-aspeed.c | 92 ++++++++++++++++++++++++++++++---
- 1 file changed, 86 insertions(+), 6 deletions(-)
+ drivers/i2c/busses/i2c-aspeed.c | 91 ++++++++++++++++++++++++++++++---
+ 1 file changed, 85 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-aspeed.c b/drivers/i2c/busses/i2c-aspeed.c
-index 1e6a72e4f40c..658370440504 100644
+index 9e91d5fbd5f6..51e0297384ac 100644
 --- a/drivers/i2c/busses/i2c-aspeed.c
 +++ b/drivers/i2c/busses/i2c-aspeed.c
 @@ -7,6 +7,7 @@
@@ -110,22 +110,21 @@ index 1e6a72e4f40c..658370440504 100644
  static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
  {
  	u32 command, irq_handled = 0;
-@@ -254,6 +282,14 @@ static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
- 	if (!slave)
- 		return 0;
+@@ -271,6 +299,13 @@ static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
+ 		bus->slave_state = ASPEED_I2C_SLAVE_STOP;
+ 	}
  
 +	if (aspeed_i2c_check_slave_error(irq_status)) {
 +		dev_dbg(bus->dev, "received slave error interrupt: 0x%08x\n",
 +			irq_status);
 +		irq_handled |= (irq_status & ASPEED_I2CD_INTR_SLAVE_ERRORS);
 +		bus->slave_state = ASPEED_I2C_SLAVE_INACTIVE;
-+		return irq_handled;
 +	}
 +
- 	command = readl(bus->base + ASPEED_I2C_CMD_REG);
- 
- 	/* Slave was requested, restart state machine. */
-@@ -397,7 +433,7 @@ static void aspeed_i2c_next_msg_or_stop(struct aspeed_i2c_bus *bus)
+ 	/* Propagate any stop conditions to the slave implementation. */
+ 	if (bus->slave_state == ASPEED_I2C_SLAVE_STOP) {
+ 		i2c_slave_event(slave, I2C_SLAVE_STOP, &value);
+@@ -413,7 +448,7 @@ static void aspeed_i2c_next_msg_or_stop(struct aspeed_i2c_bus *bus)
  	}
  }
  
@@ -134,7 +133,7 @@ index 1e6a72e4f40c..658370440504 100644
  {
  	if (irq_status & ASPEED_I2CD_INTR_ARBIT_LOSS)
  		return -EAGAIN;
-@@ -428,9 +464,9 @@ static u32 aspeed_i2c_master_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
+@@ -444,9 +479,9 @@ static u32 aspeed_i2c_master_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
  	 * should clear the command queue effectively taking us back to the
  	 * INACTIVE state.
  	 */
@@ -146,7 +145,7 @@ index 1e6a72e4f40c..658370440504 100644
  			irq_status);
  		irq_handled |= (irq_status & ASPEED_I2CD_INTR_MASTER_ERRORS);
  		if (bus->master_state != ASPEED_I2C_MASTER_INACTIVE) {
-@@ -932,6 +968,7 @@ static u32 aspeed_i2c_25xx_get_clk_reg_val(struct device *dev, u32 divisor, u32
+@@ -952,6 +987,7 @@ static u32 aspeed_i2c_25xx_get_clk_reg_val(struct device *dev, u32 divisor, u32
  /* precondition: bus.lock has been acquired. */
  static int aspeed_i2c_init_clk(struct aspeed_i2c_bus *bus)
  {
@@ -154,7 +153,7 @@ index 1e6a72e4f40c..658370440504 100644
  	u32 divisor, clk_reg_val;
  
  	divisor = DIV_ROUND_UP(bus->parent_clk_frequency, bus->bus_frequency);
-@@ -940,8 +977,46 @@ static int aspeed_i2c_init_clk(struct aspeed_i2c_bus *bus)
+@@ -960,8 +996,46 @@ static int aspeed_i2c_init_clk(struct aspeed_i2c_bus *bus)
  			ASPEED_I2CD_TIME_THDSTA_MASK |
  			ASPEED_I2CD_TIME_TACST_MASK);
  	clk_reg_val |= bus->get_clk_reg_val(bus->dev, divisor, bus->duty_cycle);
@@ -202,7 +201,7 @@ index 1e6a72e4f40c..658370440504 100644
  
  	return 0;
  }
-@@ -956,6 +1031,11 @@ static int aspeed_i2c_init(struct aspeed_i2c_bus *bus,
+@@ -976,6 +1050,11 @@ static int aspeed_i2c_init(struct aspeed_i2c_bus *bus,
  	/* Disable everything. */
  	writel(0, bus->base + ASPEED_I2C_FUN_CTRL_REG);
  
@@ -215,5 +214,5 @@ index 1e6a72e4f40c..658370440504 100644
  	if (ret < 0)
  		return ret;
 -- 
-2.39.3
+2.43.0
 

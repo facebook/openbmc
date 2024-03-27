@@ -194,6 +194,14 @@ static const i2c_dev_attr_st mcbcpld_attrs[] = {
     0x14, 2, 1,
   },
   {
+    "pwr_come_cycle_dev_n",
+    "write 0 to trigger CPLD power cycling the COMe + I210 + SSD\n"
+    "then this bit will auto set to 1 after Power cycle finish",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x14, 3, 1,
+  },
+  {
     "timer_base_10ms",
     "default: 0",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -270,15 +278,8 @@ static int mcbcpld_probe(struct i2c_client *client)
 
 	i2c_set_clientdata(client, pdata);
 
-	return i2c_dev_sysfs_data_init(client, pdata, mcbcpld_attrs,
+	return devm_i2c_dev_sysfs_init(client, pdata, mcbcpld_attrs,
 				       ARRAY_SIZE(mcbcpld_attrs));
-}
-
-static void mcbcpld_remove(struct i2c_client *client)
-{
-	i2c_dev_data_st *pdata = i2c_get_clientdata(client);
-
-	i2c_dev_sysfs_data_clean(client, pdata);
 }
 
 static struct i2c_driver mcbcpld_driver = {
@@ -287,7 +288,6 @@ static struct i2c_driver mcbcpld_driver = {
 		.name = "mcbcpld",
 	},
 	.probe    = mcbcpld_probe,
-	.remove   = mcbcpld_remove,
 	.id_table = mcbcpld_id,
 };
 

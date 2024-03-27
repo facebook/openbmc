@@ -56,6 +56,17 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		8,
 	},
 	{
+		"pwr_come_en",
+		"use to power on the COMe (default: 0)\n"
+		" 0: power off COMe\n"
+		" 1: power on COMe",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x14,
+		0,
+		1,
+	},
+	{
 		"pwr_force_off",
 		"use to make COMe power off when set to 0\n"
 		" 0: COMe power is off\n"

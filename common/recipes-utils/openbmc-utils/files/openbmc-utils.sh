@@ -71,6 +71,36 @@ mac_addr_inc() {
     printf "%012X" "$new_mac" | sed 's/../&:/g;s/:$//'
 }
 
+#
+# Lookup mtd device based on name/label.
+# $1 - mtd partition name/label.
+#
+mtd_lookup_by_name() {
+    mtd=$(awk -v name="$1" '$4~name {print $1}' /proc/mtd |
+          cut -d ':' -f 1)
+    echo "$mtd"
+}
+
+#
+# Write a value to the given sysfs file.
+# $1 - sysfs pathname
+# $2 - input value
+#
+sysfs_write() {
+    pathname="$1"
+    value="$2"
+
+    if [ ! -e "$pathname" ]; then
+        echo "Error: $pathname does not exist!"
+        return 1
+    fi
+
+    if ! echo "$value" > "$pathname"; then
+        echo "Error: failed to write $value to $pathname!"
+        return 1
+    fi
+}
+
 source "/usr/local/bin/shell-utils.sh"
 source "/usr/local/bin/i2c-utils.sh"
 source "/usr/local/bin/gpio-utils.sh"

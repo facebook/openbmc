@@ -1,31 +1,31 @@
-swagger: "2.0"
-info: 
-  description: Swagger doc for /api/uic/identify  
-  title: Swagger doc for /api/uic/identify  
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/uic/identify
+  title: Swagger doc for /api/uic/identify
   version: 1.0.0
-paths: 
-  /api/uic/identify: 
-    get: 
-      produces: [application/json]
-      responses: 
-        200: 
+paths:
+  /api/uic/identify:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Status of identify LED: 
+                properties:
+                  Status of identify LED:
                     type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

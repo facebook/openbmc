@@ -137,9 +137,6 @@ check_mb_rev() {
       # Discrete VPDB
       if [[ "$vpdb_source" == "3" ]]; then
         ln -s /etc/fsc-config-gta-8-retimer-dis-vpdb.json ${DEFAULT_FSC_CONFIG}
-      # Freya
-      elif [[ "$gta_cb_card_type" == "0" ]]; then
-        ln -s /etc/fsc-config-gta-8-retimer-freya.json ${DEFAULT_FSC_CONFIG}
       # Default (Artemis Module)
       else
         ln -s /etc/fsc-config-gta-8-retimer.json ${DEFAULT_FSC_CONFIG}

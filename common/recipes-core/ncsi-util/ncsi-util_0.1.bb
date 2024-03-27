@@ -14,6 +14,8 @@ LOCAL_URI = " \
     file://brcm-ncsi-util.h \
     file://nvidia-ncsi-util.c \
     file://nvidia-ncsi-util.h \
+    file://meta-ncsi-util.c \
+    file://meta-ncsi-util.h \
     "
 
 inherit meson pkgconfig
@@ -22,4 +24,3 @@ inherit legacy-packages
 pkgdir = "ncsi-util"
 
 DEPENDS += "libpal libncsi obmc-libpldm libnl-wrapper libkv zlib"
-

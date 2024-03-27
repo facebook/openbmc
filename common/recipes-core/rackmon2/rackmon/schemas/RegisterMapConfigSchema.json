@@ -13,12 +13,17 @@
     },
     "address_range": {
       "type": "array",
-      "minItems": 2,
-      "maxItems": 2,
+      "minItems": 1,
+      "maxItems": 256,
       "items": {
-        "type": "integer",
-        "minimum": 0,
-        "maximum": 255
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        }
       }
     },
     "probe_register": {

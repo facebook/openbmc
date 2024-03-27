@@ -381,7 +381,7 @@ pal_check_abl_error(uint32_t postcode) {
       syslog(LOG_CRIT, "ABL Error(EA00E2EF) Unsupproted DIMM Config Error");
       break;
     case 0xEA00E310:
-      syslog(LOG_CRIT, "ABL Error(EA00E310) No DIMM on any channel in system");
+      syslog(LOG_CRIT, "ABL Error(EA00E310) DIMM Failure Event: No DIMM in System");
       break;
     default:
       break;
@@ -679,12 +679,11 @@ pal_toggle_rst_btn(uint8_t fru) {
 
   pal_get_restart_cause(fru, &restart_cause);
   if (restart_cause == RESTART_CAUSE_WATCHDOG_EXPIRATION) {
-    gpio_desc_t *gdesc = NULL;
-    gdesc = gpio_open_by_shadow(FP_RST_BTN_OUT_N);
-    ret = gpio_set_value(gdesc, 0);
-    msleep(100);
-    ret |= gpio_set_value(gdesc, 1);
-    gpio_close(gdesc);
+    syslog(LOG_CRIT, "SLED_CYCLE starting due to FRB2...");
+    pal_update_ts_sled();
+    sync();
+    sleep(2);
+    ret = pal_sled_cycle();
   }
   else {
     ret = pal_set_rst_btn(fru, 0);
@@ -732,47 +731,6 @@ void hgx_pwr_limit_mon (void) {
  if (pthread_create(&tid_pwr_limit_mon, NULL, hgx_pwr_limit_check, NULL)) {
     syslog(LOG_WARNING, "pthread was created fail for hgx_pwr_limit_mon");
   }
-}
-
-int pal_read_cpld_reg(int fru, uint8_t offset, uint8_t bit, uint8_t *value) {
-  int ret = -1, fd;
-  uint8_t bus, addr, tlen, rlen;
-  uint8_t tbuf[1] = {0};
-
-  if(fru == FRU_MB){
-    bus  = MB_CPLD_BUS;
-    addr = MB_CPLD_ADDR;
-  }
-  else if (fru == FRU_SWB) {
-    bus  = SWB_CPLD_BUS;
-    addr = SWB_CPLD_ADDR;
-  }
-  else {
-    return -1;
-  }
-
-  tbuf[0] = offset;
-  tlen = 1;
-  rlen = 1;
-
-  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if (fd < 0) {
-    syslog(LOG_ERR, "%s(): fail to open device: I2C BUS: %d", __func__, bus);
-    return -1;
-  }
-
-  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, value, rlen);
-  i2c_cdev_slave_close(fd);
-  if (ret) {
-	syslog(LOG_ERR, "%s(): fail to get FRU: %d CPLD reg", __func__, fru);
-    return -1;
-  }
-
-  if (bit >=0 && bit <= 7) {
-    *value = GETBIT(*value, bit);
-  }
-
-  return ret;
 }
 
 static void*
@@ -827,13 +785,10 @@ gti_pwr_fault_event(void* arg) {
   } power_rail;
 
   struct power_rail mb_power_rail_table[] = {
-   {0x28, 7, 0, "FM_CPU0_SLP_S5_N"},
-   {0x28, 4, 0, "FM_CPU0_SLP_S3_N"},
-   {0x2B, 4, 0, "P12V_OCP_V3_1_PWRGD"},
-   {0x2B, 0, 0, "P12V_OCP_V3_2_PWRGD"},
-   {0x2A, 0, 0, "P12V_E1S_1_PWRGD"},
    {0x27, 6, 0, "PWRGD_P5V_AUX_R3"},
    {0x27, 5, 0, "PWRGD_P3V3_STBY_R"},
+   {0x28, 7, 0, "FM_CPU0_SLP_S5_N"},
+   {0x28, 4, 0, "FM_CPU0_SLP_S3_N"},
    {0x28, 6, 0, "FM_PWRGD_PVDD11_S3_P0"},
    {0x28, 5, 0, "FM_PWRGD_PVDD11_S3_P1"},
    {0x28, 3, 0, "FM_PWRGD_PVDDIO_P0"},
@@ -847,7 +802,9 @@ gti_pwr_fault_event(void* arg) {
    {0x29, 3, 0, "CPU_PWR_PG_DLY_DONE_CHECK"},
    {0x29, 2, 0, "FM_PWRGD_CPU1_PWROK"},
    {0x29, 0, 0, "FM_RST_CPU1_RESETL_N"},
-
+   {0x2A, 0, 0, "P12V_E1S_1_PWRGD"},
+   {0x2B, 4, 0, "P12V_OCP_V3_1_PWRGD"},
+   {0x2B, 0, 0, "P12V_OCP_V3_2_PWRGD"},
    {0x2D, 1, 0, "PWRGD_P0V9_RETIMER_CPU0_R2"},
    {0x2D, 0, 0, "PWRGD_P0V9_RETIMER_CPU1_R2"},
    {0x2D, 3, 0, "FM_PWRGD_P1V8_RETIMER_CPU0"},
@@ -855,17 +812,17 @@ gti_pwr_fault_event(void* arg) {
    {0x2E, 5, 0, "RST_PERST_CPU0_SWB_N"},
    {0x2E, 4, 0, "RST_PERST_CPU1_SWB_N"},
 
-   {0x01, 6, 0, "FM_GPU_HSC_EN_R"},
-   {0x01, 5, 0, "HPDB_HSC_PWRGD_ISO_R"},
    {0x00, 6, 0, "SWB_HSC_EN_R"},
    {0x00, 5, 0, "SWB_HSC_PWRGD_ISO_R"},
-   {0x01, 3, 0, "GPU_BASE_STBY_EN_R"},
-   {0x01, 1, 0, "GPU_FPGA_READY_ISO_R"},
-
-   {0x01, 0, 0, "FM_GPU_PWR_EN"},
-   {0x02, 7, 0, "FM_GPU_PWRGD_ISO_R"},
    {0x00, 4, 0, "FM_SWB_PWR_EN"},
    {0x00, 3, 0, "FM_SWB_PWRGD_ISO_R"},
+   {0x01, 6, 0, "FM_GPU_HSC_EN_R"},
+   {0x01, 5, 0, "HPDB_HSC_PWRGD_ISO_R"},
+   {0x01, 3, 0, "GPU_BASE_STBY_EN_R"},
+   {0x01, 1, 0, "GPU_FPGA_READY_ISO_R"},
+   {0x01, 0, 0, "FM_GPU_PWR_EN"},
+
+   {0x02, 7, 0, "FM_GPU_PWRGD_ISO_R"},
   };
 
   struct power_rail swb_power_rail_table[] = {
@@ -878,11 +835,20 @@ gti_pwr_fault_event(void* arg) {
 
   int ret = -1;
   uint8_t value = 0;
+  uint8_t last_offset = 0xff;
 
   for(int i=0; i < mb_pwr_rail_cnt; i++) {
-    ret = pal_read_cpld_reg(FRU_MB, mb_power_rail_table[i].offset,
-                            mb_power_rail_table[i].bit, &value);
-    if(!ret && value == mb_power_rail_table[i].asserted_value) {
+    if (last_offset != mb_power_rail_table[i].offset) {
+      ret = pal_read_cpld_reg(FRU_MB, mb_power_rail_table[i].offset,
+                              0xff, &value);
+      last_offset = mb_power_rail_table[i].offset;
+      if (ret) {
+        syslog(LOG_CRIT, "%s, CPLD offset: %x read failed", __FUNCTION__, last_offset);
+        continue;
+      }
+    }
+
+    if(GETBIT(value, mb_power_rail_table[i].bit) == mb_power_rail_table[i].asserted_value) {
       syslog(LOG_CRIT, "Power Fail Event: %s Assert", mb_power_rail_table[i].event_log);
     }
   }

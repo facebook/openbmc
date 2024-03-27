@@ -1,7 +1,7 @@
-From 94c6883838f9a9bf8a765ec9ed28f6c3602e84fd Mon Sep 17 00:00:00 2001
+From 1ee82ba8938ea8fb47c9dd3bda0df72fd106392f Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 11 Dec 2023 10:29:27 +0800
-Subject: [PATCH 506/506] ARM: dts: aspeed: yosemite4: Revise gpio name
+Subject: [PATCH 506/510] ARM: dts: aspeed: yosemite4: Revise gpio name
 
 Revise gpio name for EVT schematic changes
 
@@ -14,7 +14,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 4ea0df54546d..46684c40a244 100644
+index 61d7efdc625e..9e707ac85a37 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -1418,7 +1418,7 @@ &pinctrl_gpiu4_default &pinctrl_gpiu5_default
@@ -59,5 +59,5 @@ index 4ea0df54546d..46684c40a244 100644
  			"FM_RESBTN_SLOT7_BMC_N","FM_RESBTN_SLOT8_BMC_N",
  			"","","","",
 -- 
-2.41.0
+2.43.0
 

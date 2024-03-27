@@ -44,19 +44,19 @@ def _validate_payload(payload, schema, path="") -> None:
             )
         )
 
-    if type(schema) == dict:
+    if isinstance(schema, dict):
         for key, value in payload.items():
             _validate_payload(payload=value, schema=schema[key], path=path + "." + key)
 
 
 def _schema_match(payload, schema) -> bool:
-    if type(payload) == type(schema) == dict:
+    if isinstance(payload, dict) and isinstance(schema, dict):
         return schema.keys() == payload.keys()
 
-    elif type(schema) == type:
-        return type(payload) == schema
+    elif isinstance(schema, type):
+        return isinstance(payload, schema)
 
-    elif type(schema) == str:
+    elif isinstance(schema, str):
         return payload == schema
 
     return False

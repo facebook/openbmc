@@ -486,6 +486,23 @@ error:
   return ret;
 }
 
+bool
+pal_block_server_power() {
+  char value[MAX_VALUE_LEN] = {0};
+  static bool is_log_print = false;
+  // is bic recovery update ongoing
+  if (kv_get("bic_recovery_update", value, NULL, 0) == 0 && !strcmp(value, "1")) {
+    if (!is_log_print) {
+      printf("BLOCK SETTING SERVER POWER: BIC RECOVERY UPDATE ONGOING\n");
+      syslog(LOG_WARNING, "%s() BLOCK SETTING SERVER POWER: BIC RECOVERY UPDATE ONGOING", __func__);
+      is_log_print = true;
+    }
+    return true;
+  }
+  is_log_print = false;
+  return false;
+}
+
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
@@ -494,6 +511,12 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
   if (pal_get_server_power(fru, &status) < 0) {
     return -1;
+  }
+
+  if (pal_is_artemis()) {
+    if (pal_block_server_power()) {
+      return -1;
+    }
   }
 
   if (fru != FRU_MB) {

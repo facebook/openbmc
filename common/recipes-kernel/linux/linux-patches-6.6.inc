@@ -1,6 +1,17 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/6.6:"
 
 #
+# Patches to be upstreamed soon.
+#
+SRC_URI:append = " \
+    file://0001-ARM-dts-aspeed-Remove-eMMC-from-ast2600-facebook-net.patch \
+    file://0002-ARM-dts-aspeed-elbert-Enable-eMMC-device.patch \
+    file://0003-ARM-dts-aspeed-fuji-Enable-eMMC-device.patch \
+    file://0004-ARM-dts-aspeed-remove-cloudripper-dts.patch \
+    file://0005-ARM-dts-aspeed-Add-Facebook-fblite-r1-BMC.patch \
+"
+
+#
 # JFFS2 patches to workaround kernel panic.
 # Highly recommended for all the OpenBMC platforms running JFFS2.
 #
@@ -74,8 +85,9 @@ SRC_URI:append = " \
 #
 SRC_URI:append = " \
     file://0169-net-ncsi-Simplify-Kconfig-dts-control-flow.patch \
-    file://0170-net-ncsi-Fix-netlink-major-minor-version-numbers.patch \
-    file://0171-net-ncsi-Add-NC-SI-1.2-Get-MC-MAC-Address-command.patch \
+    file://0170-net-ncsi-Add-NC-SI-1.2-Get-MC-MAC-Address-command.patch \
+    file://0171-aspeed-g6.dtsi-add-pcc-config.patch \
+    file://0172-drivers-watchdog-ast2600-support-bootstatus.patch \
 "
 
 #
@@ -84,6 +96,14 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0200-mmc-sdhci-of-aspeed-add-skip_probe-module-parameter.patch \
 "
+
+#
+# Aspeed Soc drivers used by multiple OpenBMC platforms.
+#
+SRC_URI:append = " \
+    file://0201-soc-aspeed-Add-Post-Code-Control.patch \
+"
+
 #
 # Device drvier for OpenBMC platforms.
 #
@@ -92,4 +112,17 @@ SRC_URI:append = " \
     file://0301-To-support-MP2856-VR-driver.patch \
     file://0302-To-support-LTC4286-LTC4287-driver.patch \
     file://0303-Kernel6v5-Support-apml-driver.patch \
+    file://0304-hwmon-Add-driver-for-Astera-Labs-PT5161L-retimer.patch \
+"
+
+#
+# Enable JTAG in "fblite-r1" dts (patch #0005) to support the recovery
+# path (programming CPLD) in OpenBMC.
+#
+SRC_URI:append = " \
+    file://0310-ARM-dts-aspeed-Enable-jtag1-in-fblite-r1-dts.patch \
+"
+
+SRC_URI:append = " \
+    file://0503-Revert-usb-gadget-f_ecm-Add-suspend-resume-and-remot.patch \
 "

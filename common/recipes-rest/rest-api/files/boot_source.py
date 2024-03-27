@@ -23,7 +23,7 @@ import mmap
 from collections import namedtuple
 from ctypes import CDLL
 from enum import IntEnum
-from typing import Dict, List
+from typing import Dict, List  # noqa: F401
 
 
 misc_lib_hndl = CDLL("libmisc-utils.so.0")

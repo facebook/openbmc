@@ -22,6 +22,7 @@ PLATFORMS = [
     "harma",
     "inspirationpoint",
     "janga",
+    "javaisland",
     "lightning",
     "meru",
     "minerva",

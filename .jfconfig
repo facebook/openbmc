@@ -865,6 +865,40 @@
             ]
         },
         {
+            "alias": "openbmc-cit-javaisland-determinator",
+            "args": {
+                "name": "openbmc-cit-javaisland-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-javaisland-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform javaisland"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fby35/meta-javaisland/.*",
+                        "^meta-facebook/meta-fby35/recipes-.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-lightning-determinator",
             "args": {
                 "name": "openbmc-cit-lightning-determinator",

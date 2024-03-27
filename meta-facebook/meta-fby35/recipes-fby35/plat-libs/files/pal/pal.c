@@ -53,6 +53,8 @@
 #define SERVER_TYPE_EXPECTED SERVER_TYPE_HD
 #elif CONFIG_GREATLAKES
 #define SERVER_TYPE_EXPECTED SERVER_TYPE_GL
+#elif CONFIG_JAVAISLAND
+#define SERVER_TYPE_EXPECTED SERVER_TYPE_JI
 #else
 #define SERVER_TYPE_EXPECTED SERVER_TYPE_CL
 #endif
@@ -5105,6 +5107,9 @@ pal_check_slot_cpu_present(uint8_t slot_id) {
     case SERVER_TYPE_GL:
       cpu_prsnt_pin = GL_FM_CPU_SKTOCC_LVT3_PLD_N;
       break;
+    case SERVER_TYPE_JI:
+      //confirm with EE, there is no CPU presence gpio in Java island platform.
+      return 0;
     default:
       //CPU Present pin default for Crater Lake
       cpu_prsnt_pin = FM_CPU_SKTOCC_LVT3_PLD_N;

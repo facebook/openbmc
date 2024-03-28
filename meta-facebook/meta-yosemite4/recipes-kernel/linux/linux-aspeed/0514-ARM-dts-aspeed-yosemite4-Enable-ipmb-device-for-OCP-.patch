@@ -1,4 +1,4 @@
-From 7ef356e12bd3e58695877111e3420c090170effb Mon Sep 17 00:00:00 2001
+From 7aeac378225f3ead07b9422d116e05006530c8f7 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Tue, 12 Mar 2024 16:24:52 +0800
 Subject: [PATCH] ARM: dts: aspeed: yosemite4: Enable ipmb device for OCP debug
@@ -8,20 +8,23 @@ Add OCP debug card devicetree config
 
 This commit depends on the patch below:
 [1] https://lore.kernel.org/lkml/20240312053320.380997-1-Delphine_CC_Chiu@wiwynn.com/
+[2] https://lore.kernel.org/lkml/20240326071713.2786206-1-Delphine_CC_Chiu@wiwynn.com/
 
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- .../boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts    | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ .../boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index a8b724049e83..c736e342a427 100644
+index 25d88c076451..5a3dce82f197 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1026,6 +1026,15 @@ imux37: i2c@3 {
+@@ -1026,7 +1026,16 @@ imux37: i2c@3 {
+ 
  &i2c13 {
  	status = "okay";
- 	bus-frequency = <400000>;
+-	bus-frequency = <400000>;
++	bus-frequency = <100000>;
 +	multi-master;
 +
 +	ipmb@10 {

@@ -18,4 +18,5 @@ SRC_URI += " \
     file://0515-pinctrl-pinctrl-aspeed-g6-correct-the-offset-of-SCU6.patch \
     file://0516-ARM-dts-aspeed-yosemite4-disable-GPIO-internal-Pull-.patch \
     file://0517-yosemite4-Change-IOE-i2c-address.patch \
+    file://0518-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
 "

@@ -249,6 +249,13 @@ reload_sled_fsc() {
 }
 
 start_fscd() {
+  server_type=$(get_server_type 1)
+
+  if [[ $server_type -eq 5 ]]; then
+    echo "Java island FSCD is not ready."
+    exit
+  fi
+
   if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
     init_class1_fsc
   elif [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then

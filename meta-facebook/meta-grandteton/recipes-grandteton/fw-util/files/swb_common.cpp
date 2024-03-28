@@ -1300,6 +1300,23 @@ exit:
 }
 
 int GTAASICComponent::update(std::string image) {
+  uint8_t asic_index = component_identifier - CB_ACCL1_DEV1_COMP;
+  bool is_nvme_ready = pal_is_asic_nvme_ready(asic_index);
+
+  if (this->alias_component().substr(5, 4) == "psoc" || this->alias_component().substr(5, 4) == "qspi") {
+    if (is_nvme_ready != true) {
+      cerr << "Because nvme not ready, boot1 needs to be loaded first" << endl;
+      return -1;
+    }
+  } else {
+    if (is_nvme_ready != false) {
+      cerr << "Not support to update boot1 when nvme ready" << endl;
+      return -1;
+    } else {
+      cout << "Note: Host can't be used to load boot1 during the update process." << endl;
+    }
+  }
+  
   return pldm_update(image, true, component_identifier);
 }
 

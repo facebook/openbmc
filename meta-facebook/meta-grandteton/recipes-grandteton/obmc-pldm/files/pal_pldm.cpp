@@ -24,7 +24,8 @@ const std::vector<std::string> comp_str_t = {
   "pex1",
   "pex2",
   "pex3",
-  "cpld"
+  "cpld",
+  "asic"
 };
 
 class pldm_firmware_parameter_handler

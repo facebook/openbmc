@@ -3,6 +3,8 @@
 #include "fw-util.h"
 #include "server.h"
 #include "expansion.h"
+#include "signed_info.hpp"
+#include "pldm_comp.hpp"
 
 using std::string;
 
@@ -37,6 +39,20 @@ class BicFwComponent : public Component {
     int print_version();
     int get_version(json& j) override;
     bool is_recovery();
+};
+
+class PldmBicFwComponent : public PldmComponent, public BicFwComponent {
+  protected:
+    int is_pldm_info_valid();
+  public:
+    PldmBicFwComponent(const string& fru, const string& comp, const string& brd, uint8_t comp_id,
+                     uint8_t bus, uint8_t eid, const signed_header_t& info):
+                     PldmComponent(info, fru, comp, bus, eid),
+                     BicFwComponent(fru, comp, brd, comp_id) {}
+
+    int try_pldm_update(const std::string& /*image*/, bool /*force*/, uint8_t specified_comp = 0xFF);
+    int update(string /*image*/) override;
+    int fupdate(string /*image*/) override;
 };
 
 #endif

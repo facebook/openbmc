@@ -9,6 +9,8 @@ srcs += [
     'mp5990.cpp',
     'nic_ext.cpp',
     'platform.cpp',
+    'pldm_comp.cpp',
+    'signed_decoder.cpp',
     'usbdbg.cpp',
     'vpdb_vr.cpp',
 ]
@@ -17,6 +19,7 @@ deps += [
     dependency('fmt'),
     dependency('libbic'),
     dependency('libfby35-common'),
+    dependency('libpldm-oem'),
     dependency('libfpga'),
     dependency('libmcu'),
     dependency('libncsi'),

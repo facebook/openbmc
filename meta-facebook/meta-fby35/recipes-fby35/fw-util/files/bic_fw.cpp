@@ -9,6 +9,8 @@
 #include <facebook/bic.h>
 #include <facebook/bic_ipmi.h>
 #include "bic_fw.h"
+#include <libpldm-oem/pldm.h>
+#include <libpldm-oem/fw_update.hpp>
 
 using namespace std;
 
@@ -237,4 +239,86 @@ int BicFwComponent::get_version(json& j) {
     }
   }
   return FW_STATUS_SUCCESS;
+}
+
+int PldmBicFwComponent::is_pldm_info_valid()
+{
+  signed_header_t img_info{};
+  auto dev_records = oem_get_pkg_device_record();
+  auto comp_infos = oem_get_pkg_comp_img_info();
+
+  // right now, device record should be only one
+  for(auto&descriper:dev_records[0].recordDescriptors) {
+    if (descriper.type == PLDM_FWUP_VENDOR_DEFINED) {
+      string type = descriper.data.c_str()+2;
+      string data = descriper.data.c_str()+2+descriper.data.at(1);
+      type.resize(descriper.data.at(1));
+      data.resize(descriper.data.size()-descriper.data.at(1)-2);
+      if (type == "Platform") {
+        img_info.project_name = data;
+        cout << "PLDM fw package info, Platform: " << data << endl;
+      } else if (type == "BoardID") {
+        auto& map = pldm_signed_info::board_map;
+        img_info.board_id = (map.find(data)!=map.end()) ? map.at(data):0xFF;
+        cout << "PLDM fw package info, board_id: " << data << "(" << (int)img_info.board_id << ")" << endl;
+      } else if (type == "Stage") {
+        auto& map = pldm_signed_info::stage_map;
+        img_info.stage_id = (map.find(data)!=map.end()) ? map.at(data):0xFF;
+        cout << "PLDM fw package info, Stage: " << data << "(" << (int)img_info.stage_id << ")" << endl;
+      }
+    }
+  }
+
+  if (comp_info.component_id != COMPONENT_VERIFY_SKIPPED) {
+    for(auto&comp:comp_infos) {
+      if (comp_info.component_id == comp.compImageInfo.comp_identifier) {
+        string vendor;
+        stringstream input_stringstream(comp.compVersion);
+        img_info.component_id = comp.compImageInfo.comp_identifier;
+        cout << "PLDM fw package info, component_id: " << (int)img_info.component_id << endl;
+        if (getline(input_stringstream, vendor, ' ')) {
+          auto& map = pldm_signed_info::vendor_map;
+          img_info.vendor_id = (map.find(vendor)!=map.end()) ? map.at(vendor):0xFF;
+          cout << "PLDM fw package info, vendor: " << vendor << "(" << (int)img_info.vendor_id << ")" << endl;
+        }
+      }
+    }
+  }
+
+  return check_header_info(img_info);
+}
+
+int PldmBicFwComponent::try_pldm_update(const string& image, bool force, uint8_t specified_comp)
+{
+  int isValidImage = oem_parse_pldm_package(image.c_str());
+
+  if (isValidImage == 0) {
+    cout << "PLDM image detected." << endl;
+  } else {
+    cout << "PLDM header is invalid." << endl;
+    return -1;
+  }
+
+  if (force) {
+    return pldm_update(image, false, specified_comp);
+  } else {
+    if (is_pldm_info_valid() == 0) {
+      cout << "PLDM Package info check passed." << endl;
+      return pldm_update(image, false, specified_comp);
+    } else {
+      cout << "PLDM Package info is invalid." << endl;
+      return -1;
+    }
+  }
+
+}
+
+int PldmBicFwComponent::update(string image)
+{
+  return try_pldm_update(image, false);
+}
+
+int PldmBicFwComponent::fupdate(string image)
+{
+  return try_pldm_update(image, true);
 }

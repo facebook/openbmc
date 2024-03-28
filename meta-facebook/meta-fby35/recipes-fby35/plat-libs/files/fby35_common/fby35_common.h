@@ -144,6 +144,12 @@ extern const char *slot_usage;
 
 #define IANA_ID_SIZE 3
 
+#define SLOT1_PLDM_BUS_ID 0
+#define SLOT2_PLDM_BUS_ID 1
+#define SLOT3_PLDM_BUS_ID 2
+#define SLOT4_PLDM_BUS_ID 3
+#define MB_BIC_EID 0x0A
+
 // BB cpld reg
 #define SLED_STATUS_REG 0x0D
 #define FRUID_0 0
@@ -599,7 +605,7 @@ typedef struct {
   uint8_t version[FW_VER_SIZE];
   uint8_t err_proof[ERR_PROOF_SIZE];
   uint8_t md5_sum_second[MD5_SIZE];
-} FW_IMG_INFO;
+} FW_IMG_INFO_FBY35;
 
 int fby35_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);
 int fby35_common_is_bic_ready(uint8_t fru, uint8_t *val);

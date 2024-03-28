@@ -1117,7 +1117,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
   int fd;
   off_t info_offs;
   struct stat file_info;
-  FW_IMG_INFO img_info;
+  FW_IMG_INFO_FBY35 img_info;
 
   if (img_path == NULL) {
     return false;

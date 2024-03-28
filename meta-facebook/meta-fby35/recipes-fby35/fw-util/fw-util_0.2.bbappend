@@ -42,6 +42,7 @@ LOCAL_URI += " \
         file://usbdbg.h \
         file://vpdb_vr.cpp \
         file://vpdb_vr.h \
+        file://signed_info.hpp \
         "
 
 CXXFLAGS += "-DBIC_SUPPORT"

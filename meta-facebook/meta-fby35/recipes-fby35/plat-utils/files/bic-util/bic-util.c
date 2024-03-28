@@ -35,6 +35,10 @@
 #include <sys/time.h>
 #include <time.h>
 
+#define SBMR_POSTCODE_SIZE 9
+#define SBMR_MAX_PAGE_POSTCODE_NUM 26
+#define SBMR_MAX_POSTCODE_PAGE_SIZE SBMR_POSTCODE_SIZE * SBMR_MAX_PAGE_POSTCODE_NUM
+
 enum {
   UTIL_GET_GPIO = 0x0,
   UTIL_SET_GPIO,
@@ -634,6 +638,60 @@ util_print_dword_postcode_buf(uint8_t slot_id) {
 }
 
 static int
+util_get_sbmr_postcode(uint8_t slot_id) {
+  int ret = 0;
+  size_t postcode_len = 0;
+  uint8_t* postcode_buf = calloc(SBMR_MAX_POSTCODE_PAGE_SIZE * MAX_POST_CODE_PAGE, 
+                                 sizeof(uint8_t));
+  if (postcode_buf == NULL) {
+    syslog(LOG_ERR, "%s() Error, failed to allocate postcode buffer", __func__);
+    return -1;
+  }
+  
+  for (uint8_t page = 0; page < MAX_POST_CODE_PAGE; ++page) {
+    uint8_t len = 0;
+    uint8_t buf[SBMR_MAX_POSTCODE_PAGE_SIZE] = {0x0};
+    
+    ret = bic_request_post_buffer_page_data(slot_id, page, buf, &len);
+    if (ret) {
+      printf("%s() Failed to get the POST code of slot%u, page%u\n", 
+             __func__, slot_id, page);
+      goto exit;
+    }
+
+    if (len % SBMR_POSTCODE_SIZE) {
+      printf("%s() Failed to get the POST code of slot%u, page%u, "
+            "the size of the page must be divisible by %d\n", 
+             __func__, slot_id, page, SBMR_POSTCODE_SIZE);
+      ret = -1;
+      goto exit;
+    }
+
+    memcpy(postcode_buf + postcode_len, buf, len);
+    postcode_len += len;
+
+    if (len < SBMR_MAX_POSTCODE_PAGE_SIZE) {
+      break;
+    }
+  }
+  
+  printf("%s: returns %zu SBMR post codes\n", 
+         __func__, postcode_len / SBMR_POSTCODE_SIZE);
+
+  for (size_t i = 0; i < postcode_len; i += SBMR_POSTCODE_SIZE) {
+    printf("[");
+    for (size_t j = 0; j < SBMR_POSTCODE_SIZE; ++j) {
+      printf("%02X", postcode_buf[i + j]);
+    }
+    printf("]\n");
+  }
+
+exit:
+  free(postcode_buf);
+  return ret;
+}
+
+static int
 util_bic_clear_cmos(uint8_t slot_id) {
   return pal_clear_cmos(slot_id);
 }
@@ -730,6 +788,7 @@ main(int argc, char **argv) {
   int ret = 0, i = 0;
   int opt_idx = 2;  // option: argv[opt_idx]
   uint8_t slot_id = 0;
+  uint8_t server_type = 0;
   uint8_t is_fru_present = 0;
   uint8_t gpio_num = 0;
   uint8_t gpio_val = 0;
@@ -827,8 +886,11 @@ main(int argc, char **argv) {
         if (argc != (opt_idx+1) || intf != NONE_INTF) {
           goto err_exit;
         }
-        if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+        server_type = fby35_common_get_slot_type(slot_id);
+        if (server_type == SERVER_TYPE_HD) {
           return util_print_dword_postcode_buf(slot_id);
+        } else if (server_type == SERVER_TYPE_JI) {
+          return util_get_sbmr_postcode(slot_id);
         }
         return util_get_postcode(slot_id);
       case UTIL_GET_SDR:

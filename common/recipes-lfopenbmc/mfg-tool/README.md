@@ -32,6 +32,7 @@ mfg-tool supports the following subcommands:
 - `fan-speed`: Displays and adjust the fan speeds of the BMC system.
 - `fan-mode`: Displays and manipulating the fan mode of the BMC system.
 - `bmc-arch`: Shows the architecture of the BMC system.
+- `bmc-state`: Displays the BMC's readiness state.
 
 ## 1. sensor-display
 
@@ -1800,3 +1801,45 @@ The output will resemble the following:
 "arm"
 ```
 
+
+
+## 11. bmc-state
+
+The `bmc-state` subcommand retrieves and displays the BMC's readiness state.  
+It ensures that the BMC is fully booted and prepared to execute commands.
+
+### Usage
+
+To use the `bmc-state` subcommand, execute the following command:
+
+```bash
+$ mfg-tool bmc-state
+```
+
+### Output
+
+The output will resemble the following: 
+
+If the BMC is fully operational and ready for commands
+
+```bash
+{
+    "state": "ready"
+}
+```
+
+If the BMC is in the process of booting up
+
+```bash
+{
+    "state": "starting"
+}
+```
+
+If the BMC is in a quiescent state
+
+```bash
+{
+    "state": "quiesced"
+}
+```

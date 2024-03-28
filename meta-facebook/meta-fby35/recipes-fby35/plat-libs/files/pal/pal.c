@@ -3467,7 +3467,7 @@ static int
 pal_parse_pmic_err_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   static const char *cl_dimm_label[] = {"A0", "A2", "A3", "A4", "A6", "A7", "Unknown"};
   static const char *hd_dimm_label[] = {"A0", "A1", "A2", "A4", "A6", "A7", "A8", "A10", "Unknown"};
-  static const char *gl_dimm_label[] = {"A", "B", "C", "D", "E", "F", "G", "H", "Unknown"};
+  static const char *gl_dimm_label[] = {"A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "Unknown"};
   const char **dimm_label = cl_dimm_label;
   uint8_t arr_size = ARRAY_SIZE(cl_dimm_label);
   uint8_t dimm_num = 0, err_type = 0;

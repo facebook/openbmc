@@ -35,6 +35,8 @@ R3_ASIC_1_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/ramon3_1_system_reset"
 
 LAYOUT_FILE="/etc/meru_flash.layout"
 
+WEUTIL_CMD='weutil -e'
+
 retry_command() {
     # Retry command up to $1 attempts
     local retries=$1
@@ -63,7 +65,7 @@ wedge_board_type() {
 }
 
 wedge_product_name() {
-    output=$(weutil -e smb 2>&1) || { echo "$output"; return 1; }
+    output=$($WEUTIL_CMD smb 2>&1) || { echo "$output"; return 1; }
     echo "$output" | awk -F': ' '/Product Name:/ {print $2}'
 }
 
@@ -105,7 +107,7 @@ wedge_power_asic() {
 }
 
 wedge_board_rev() {
-    board_rev=$(weutil -e scm|grep "Product Version"|awk '{print $3}')
+    board_rev=$($WEUTIL_CMD scm|grep "Product Version"|awk '{print $3}')
     echo "${board_rev}"
 }
 
@@ -177,7 +179,7 @@ bmc_mac_addr() {
 
 userver_mac_addr() {
     # support v4 or v5 eeprom version
-    weutil -e scm | grep -E '(Extended|CPU) MAC B' | awk -F': ' '{print $2}'
+    $WEUTIL_CMD scm | grep -E '(Extended|CPU) MAC B' | awk -F': ' '{print $2}'
 }
 
 FWUPGRADE_PIDFILE="/var/run/firmware_upgrade.pid"

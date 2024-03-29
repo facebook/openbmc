@@ -54,8 +54,8 @@ get_product_version() {
     local version
     local sub_version
 
-    version=$(weutil -e scm|grep "Product Version"|awk '{print $3}')
-    sub_version=$(weutil -e scm|grep "Product Sub-Version"|awk '{print $3}')
+    version=$($WEUTIL_CMD scm|grep "Product Version"|awk '{print $3}')
+    sub_version=$($WEUTIL_CMD scm|grep "Product Sub-Version"|awk '{print $3}')
     echo "${version}.${sub_version}"
 }
 

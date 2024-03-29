@@ -17,7 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SMB_EEPROM_SYSFS="/sys/bus/i2c/drivers/at24/9-0052/eeprom"
+. /usr/local/bin/openbmc-utils.sh
+
 NETWORK_CONF_FILE="/etc/systemd/network/10-eth0.network"
 
 if [ ! -e "$SMB_EEPROM_SYSFS" ]; then
@@ -25,7 +26,7 @@ if [ ! -e "$SMB_EEPROM_SYSFS" ]; then
     exit 0
 fi
 
-product=$(weutil -e smb 2>&1 | awk -F': ' '/Product Name:/ {print $2}')
+product=$($WEUTIL_CMD smb 2>&1 | awk -F': ' '/Product Name:/ {print $2}')
 
 if [ "${product^^}" != "MERU800BFA" ]; then
     # No need to configure vlan 4092 for other products.

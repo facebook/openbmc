@@ -12,7 +12,7 @@
 #include <arpa/inet.h>
 #include <linux/filter.h>
 #include <linux/if_ether.h>
-#include <netpacket/packet.h>
+#include <linux/if_packet.h>
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <assert.h>
@@ -32,7 +32,6 @@
 #define MIN_FRAME_LENGTH 60
 #define MAX_FRAME_LENGTH 9000
 
-#define ETHERTYPE_VLAN 0x8100
 #define ETHERTYPE_LLDP 0x88CC
 
 #define LLDP_CHASSIS_CDP 0xff
@@ -57,7 +56,9 @@ static const unsigned char MAC_LLDP_NEAREST_BRIDGE[] =
 static const unsigned char MAC_CDP[] =
   { 0x01, 0x00, 0x0c, 0xcc, 0xcc, 0xcc };
 
-static bool verbose = false;
+static bool opt_debug = false;
+static bool opt_vlan = false;
+static bool opt_untagged = false;
 
 void errmsg(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 void debugmsg(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
@@ -71,7 +72,7 @@ void errmsg(const char* fmt, ...) {
 }
 
 void debugmsg(const char* fmt, ...) {
-  if (!verbose) {
+  if (!opt_debug) {
     return;
   }
 
@@ -105,6 +106,7 @@ typedef struct {
   uint32_t system_name_length;
   uint8_t chassis_id_type;
   uint8_t port_id_type;
+  uint16_t vlan;
 } lldp_neighbor_t;
 
 
@@ -113,6 +115,7 @@ typedef struct {
 typedef struct {
   uint8_t *cdp_buf;
   size_t  length;
+  uint16_t vlan;
 } cdp_frame_t;
 
 typedef struct {
@@ -128,11 +131,13 @@ volatile sig_atomic_t g_interrupt;   // set in exit handler
 void lldp_neighbor_init(lldp_neighbor_t* neighbor,
                         const char* protocol,
                         const char* interface,
-                        const uint8_t* src_mac) {
+                        const uint8_t* src_mac,
+                        uint16_t vlan) {
   memset(neighbor, 0, sizeof(*neighbor));
   neighbor->protocol = protocol;
   neighbor->local_interface = interface;
   neighbor->src_mac = src_mac;
+  neighbor->vlan = vlan;
 }
 
 int lldp_open(const char* interface) {
@@ -174,6 +179,11 @@ int lldp_open(const char* interface) {
     memcpy(mr.mr_address, MAC_CDP, ETH_ALEN);
     rc = setsockopt(fd, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr));
     CHECK_ERROR(rc, "failed to add CDP packet membership for %s", interface);
+
+    // Ask linux to also send us VLAN tag information
+    int one = 1;
+    rc = setsockopt(fd, SOL_PACKET, PACKET_AUXDATA, &one, sizeof(one));
+    CHECK_ERROR(rc, "failed to enable auxdata for %s", interface);
 
     // Set a filter to ignore non-multicast packets, so we don't get a flood
     // of meaningless packets that we don't care about.
@@ -305,6 +315,9 @@ void lldp_print_neighbor(lldp_neighbor_t* neighbor) {
     lldp_print_net_addr(neighbor->port_id, neighbor->port_id_length);
   } else {
     lldp_print_value(neighbor->port_id, neighbor->port_id_length);
+  }
+  if (opt_vlan) {
+    printf(" vlan=%u", (unsigned)neighbor->vlan);
   }
   putchar('\n');
 }
@@ -452,6 +465,7 @@ int lldp_parse_cdp(lldp_neighbor_t* neighbor,
 int lldp_process_packet(const uint8_t* buf,
                         size_t length,
                         const char* interface,
+                        uint16_t vlan,
                         bool process_cdp,
                         bool* processed) {
   int returnCode = -EINVAL;
@@ -475,21 +489,9 @@ int lldp_process_packet(const uint8_t* buf,
     buf += 6;
     uint16_t ethertype = lldp_read_u16(&buf);
 
-    /*
-     * For now, don't decode or print VLAN tagged packets.  Doing this
-     * properly is tricky (e.g. recursion) and we don't have a use case
-     * internally for it at Meta.  When we do, it might be more useful
-     * to move to a 3rd party tool that does this better.
-     *
-     * if (ethertype == ETHERTYPE_VLAN) {
-     * uint16_t vlan __attribute__((unused)) = lldp_read_u16(&buf);
-     * ethertype = lldp_read_u16(&buf);
-     * }
-     */
-
     if (ethertype == ETHERTYPE_LLDP) {
       lldp_neighbor_t neighbor;
-      lldp_neighbor_init(&neighbor, "LLDP", interface, src_mac);
+      lldp_neighbor_init(&neighbor, "LLDP", interface, src_mac, vlan);
       returnCode = lldp_parse_lldp(&neighbor, buf, end);
       if (returnCode != 0) {
         goto error;
@@ -500,7 +502,7 @@ int lldp_process_packet(const uint8_t* buf,
     } else if ((memcmp(dest_mac, MAC_CDP, 6) == 0) && (ethertype < 0x600)) {
       if (process_cdp) {
         lldp_neighbor_t neighbor;
-        lldp_neighbor_init(&neighbor, "CDP", interface, src_mac);
+        lldp_neighbor_init(&neighbor, "CDP", interface, src_mac, vlan);
         returnCode = lldp_parse_cdp(&neighbor, buf, end);
         if (returnCode != 0) {
           goto error;
@@ -514,6 +516,7 @@ int lldp_process_packet(const uint8_t* buf,
         memcpy(cdp_sav_data.frame[cdp_sav_data.num_sav_cdp].cdp_buf, buf_start,
                length);
         cdp_sav_data.frame[cdp_sav_data.num_sav_cdp].length = length;
+        cdp_sav_data.frame[cdp_sav_data.num_sav_cdp].vlan = vlan;
         cdp_sav_data.num_sav_cdp++;
       }
     } else {
@@ -535,13 +538,24 @@ cleanup:
 int lldp_receive(int fd, const char* interface, bool cdp, bool* processed) {
   int returnCode = -EINVAL;
   *processed = false;
-  {
+  for (;;) {
     uint8_t buf[MAX_FRAME_LENGTH];
-
-    struct sockaddr_ll src_addr;
-    socklen_t addr_len;
-    ssize_t len = recvfrom(fd, buf, MAX_FRAME_LENGTH, 0,
-                           (struct sockaddr*)&src_addr, &addr_len);
+    struct iovec iov = {
+      .iov_base = buf,
+      .iov_len = sizeof(buf),
+    };
+    struct tpacket_auxdata *tp;
+    union {
+      struct cmsghdr cmsg;
+      char buf[CMSG_SPACE(sizeof(*tp))] __attribute__((unused));
+    } cmsg_buf;
+    struct msghdr msg = {
+      .msg_iov = &iov,
+      .msg_iovlen = 1,
+      .msg_control = &cmsg_buf,
+      .msg_controllen = sizeof(cmsg_buf),
+    };
+    ssize_t len = recvmsg(fd, &msg, MSG_TRUNC);
     if (len == -1) {
       if (errno != EINTR) {
         errmsg("error reading packet from %s", interface);
@@ -549,8 +563,26 @@ int lldp_receive(int fd, const char* interface, bool cdp, bool* processed) {
       returnCode = -errno;
       goto error;
     }
-
-    returnCode = lldp_process_packet(buf, len, interface, cdp, processed);
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+    if (cmsg == NULL ||
+      cmsg->cmsg_len < CMSG_LEN(sizeof(*tp)) ||
+      cmsg->cmsg_level != SOL_PACKET ||
+      cmsg->cmsg_type != PACKET_AUXDATA) {
+      debugmsg("cmsg=%p, invalid", (void *)cmsg);
+      continue;
+    }
+    tp = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
+    uint16_t vlan = tp->tp_vlan_tci;
+    // Filter out VLAN tagged packets, in case the interface is trunking
+    if (opt_untagged && vlan != 0) {
+        debugmsg("discarding packet for vlan %u", (unsigned)vlan);
+        continue;
+    }
+    if (iov.iov_len < (size_t)len) {
+        len = iov.iov_len;
+        debugmsg("truncate packet from %zd to %zu", len, iov.iov_len);
+    }
+    returnCode = lldp_process_packet(buf, len, interface, vlan, cdp, processed);
     goto cleanup;
   }
 
@@ -565,7 +597,7 @@ void exit_handler(int signum __attribute__((unused))) {
 }
 
 void usage_short(FILE* out) {
-  fprintf(out, "lldp-util [-h] [-c] [-i <interface>] "
+  fprintf(out, "lldp-util [-cdhuv] [-i <interface>] "
           "[-n <count>] [-t <timeout>]\n");
 }
 
@@ -575,11 +607,14 @@ void usage_full(FILE* out) {
           "\n"
           "  -c              Report CDP packets as they arrive in addition "
           "to LLDP\n"
+          "  -d              Print debug messages\n"
           "  -h              Show this help message and exit\n"
           "  -i <interface>  Specify the interface to listen on\n"
           "  -n <count>      Exit after receiving <count> LLDP packets\n"
           "  -t <timeout>    Exit after <timeout> seconds\n"
           "                  Negative or 0 means no timeout\n"
+          "  -u              VLANs: decode untagged packets only\n"
+          "  -v              VLANs: print tags\n"
           "\n"
           "If neither -n nor -t are specified, lldp-util uses a 65 second\n"
           "timeout by default\n"
@@ -595,13 +630,16 @@ int main(int argc, char* argv[]) {
   bool inline_cdp = false;
 
   while (true) {
-    int opt = getopt(argc, argv, "chi:n:t:");
+    int opt = getopt(argc, argv, "cdhi:n:t:uv");
     if (opt == -1) {
       break;
     }
     switch (opt) {
       case 'c':
         inline_cdp = true;
+        break;
+      case 'd':
+        opt_debug = true;
         break;
       case 'h':
         usage_full(stdout);
@@ -629,6 +667,12 @@ int main(int argc, char* argv[]) {
         has_timeout = true;
         break;
       }
+      case 'u':
+        opt_untagged = true;
+        break;
+      case 'v':
+        opt_vlan = true;
+        break;
       default:
         usage_short(stderr);
         return 1;
@@ -700,7 +744,9 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < cdp_sav_data.num_sav_cdp; i++) {
       lldp_process_packet(cdp_sav_data.frame[i].cdp_buf,
                           cdp_sav_data.frame[i].length,
-                          interface, true, &processed);
+                          interface, true,
+                          cdp_sav_data.frame[i].vlan,
+                          &processed);
     }
   }
 

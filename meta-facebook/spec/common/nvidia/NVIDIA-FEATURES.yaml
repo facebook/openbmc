@@ -1,0 +1,13 @@
+Nvidia:
+  CPU Sensors and Statistics:
+    priority: P2
+    file: cpu-sensors-and-statistics.md
+  CPU CPER events:
+    priority: P2
+    file: cpu-cper-events.md
+  CPU CPER event decoder:
+    priority: P2
+    file: cpu-cper-event-decoder.md
+  CPU crash dump:
+    priority: P3
+    file: cpu-crashdump.md

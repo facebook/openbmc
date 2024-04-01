@@ -10,6 +10,7 @@ sections:
 feature_list:
   - default-meta-multihost-features
   - platform-features
+  - nvidia-features
 status:
   BIC Support:
     BIC Secure Boot: unsupported

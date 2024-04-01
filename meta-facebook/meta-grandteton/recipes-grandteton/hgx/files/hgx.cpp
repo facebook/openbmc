@@ -214,25 +214,41 @@ std::string redfishPatch(const std::string& subpath, std::string&& args) {
 int setFWVersion() {
   const auto exp = "UpdateService/FirmwareInventory?$expand=*($levels=1)";
 
-  if (getHMCPhase() < HMCPhase::BMC_FW_DVT) {
+  if (getConfig() == GPU_CONFIG_HGX && getHMCPhase() < HMCPhase::BMC_FW_DVT) {
     return -1;
   }
 
   json resp = json::parse(redfishGet(exp));
-  for(const auto& comp : resp["Members"])
-  {
+  for(const auto& comp : resp["Members"]) {
     if (!comp.contains("Id") || !comp.contains("Version")) {
       return -1;
     }
 
     auto& fp = comp["Id"];
     auto& ver = comp["Version"];
+    if (ver.dump() == "\"\"") {
+      return -1;
+    }
 
-    if (fp.dump().find("HGX_") != std::string::npos && ver.dump() != "\"\"") {
-      kv::set(fp, ver);
+    if (getConfig() == GPU_CONFIG_HGX) {
+      if (fp.dump().find("HGX_") != std::string::npos) {
+        kv::set(fp, ver);
+      }
+    }
+    else if (getConfig() == GPU_CONFIG_UBB) {
+      if (comp.contains("VersionScheme") &&
+          comp["VersionScheme"] == "OEM" &&
+          comp.contains("Oem") &&
+          comp["Oem"].contains("VersionID") &&
+          comp["Oem"]["VersionID"].contains("ComponentDetails")) {
+        auto& verDetails = comp["Oem"]["VersionID"]["ComponentDetails"];
+        kv::set(fp, verDetails);
+      }
+      else {
+        kv::set(fp, ver);
+      }
     }
   }
-
   return 0;
 }
 
@@ -244,17 +260,24 @@ std::string version(const std::string& comp, bool returnJson) {
     return respStr;
   }
 
-  if (getHMCPhase() >= HMCPhase::BMC_FW_DVT) {
-    try {
-      auto ver = kv::get(comp);
-      return ver;
-    } catch (std::filesystem::filesystem_error& e) {
-      hgx::setFWVersion();
-    }
+  try {
+    auto ver = kv::get(comp);
+    return ver;
+  } catch (std::filesystem::filesystem_error& e) {
+    hgx::setFWVersion();
   }
 
-  json resp = json::parse(hgx.get(url));
-  return resp["Version"];
+  try {
+    json resp = json::parse(hgx.get(url));
+    if (getConfig() == GPU_CONFIG_UBB) {
+      if (resp.contains("VersionScheme") && resp["VersionScheme"] == "OEM") {
+        return resp["Oem"]["VersionID"]["ComponentDetails"];
+      }
+    }
+    return resp["Version"];
+  } catch(const std::exception& e) {
+    return "NA";
+  }
 }
 
 std::string updateNonBlocking(const std::string& comp, const std::string& path, bool returnJson) {

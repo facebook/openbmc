@@ -283,9 +283,10 @@ static int binding_asti3c_init (struct mctp *mctp, struct binding *binding,
   }
   std::cout << "i3c device path: " << mqueue_dev << "\n";
 
-  mctp_register_bus_dynamic_eid(mctp, &((data->asti3c)->binding));
-
-  mctp_binding_set_tx_enabled(&((data->asti3c)->binding), true);
+  int rc = mctp_register_bus(mctp, &((data->asti3c)->binding), eid);
+  if (rc == 0) {
+		mctp_binding_set_tx_enabled(&((data->asti3c)->binding), true);
+	}
 
   binding->data = data;
   return 0;

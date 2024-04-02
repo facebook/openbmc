@@ -98,6 +98,16 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		1,
 	},
 	{
+		"e1_ssd_present",
+		" 0x00: absent\n"
+		" 0x01: present\n",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x27,
+		0,
+		1,
+	},
+	{
 		"spi_select",
 		" 0x00: BMC SPI to IOB FPGA FLASH\n"
 		" 0x01: BMC SPI to COMe\n"

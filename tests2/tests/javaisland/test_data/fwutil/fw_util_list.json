@@ -1,0 +1,77 @@
+{
+    "bmc": {
+        "bmc": {
+            "version header": "BMC Version"
+        },
+        "cpld": {
+            "version header": "BMC CPLD Version"
+        },
+        "fscd": {
+            "version header": "Fan Speed Controller Version"
+        },
+        "rom": {
+            "version header": "ROM Version"
+        },
+        "tpm": {
+            "version header": "TPM Version"
+        }
+    },
+    "nic": {
+        "nic": {
+            "version header": [
+                "Broadcom NIC Version",
+                "Mellanox NIC Version"
+            ]
+        }
+    },
+    "ocpdbg": {
+        "mcu": {
+            "version header": "MCU Version"
+        },
+        "mcubl": {
+            "version header": "MCU Bootloader Version"
+        }
+    },
+    "slot1": {
+        "1ou_bic": {
+            "version header": "1OU Bridge-IC Version"
+        },
+        "bic": {
+            "version header": "SB Bridge-IC Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "SB CPLD Version"
+        },
+        "vr": {
+            "version header": [
+                "VDDCR_CPU0/VDDCR_SOC Version",
+                "VDDCR_CPU1/VDDIO Version",
+                "VDD11_S3 Version"
+            ]
+        }
+    },
+    "slot3": {
+        "1ou_bic": {
+            "version header": "1OU Bridge-IC Version"
+        },
+        "bic": {
+            "version header": "SB Bridge-IC Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "SB CPLD Version"
+        },
+        "vr": {
+            "version header": [
+                "VDDCR_CPU0/VDDCR_SOC Version",
+                "VDDCR_CPU1/VDDIO Version",
+                "VDD11_S3 Version"
+            ]
+        }
+    }
+}

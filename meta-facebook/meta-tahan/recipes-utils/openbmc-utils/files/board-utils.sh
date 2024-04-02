@@ -27,6 +27,7 @@ SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 1-0035)
 BOARD_ID="${PWRCPLD_SYSFS_DIR}/board_id"
 VERSION_ID="${PWRCPLD_SYSFS_DIR}/version_id"
 
+COME_POWER_EN="${SCMCPLD_SYSFS_DIR}/pwr_come_en"
 COME_POWER_OFF="${SCMCPLD_SYSFS_DIR}/pwr_force_off"
 COME_POWER_CYCLE_N="${SCMCPLD_SYSFS_DIR}/pwr_cyc_n"
 CHASSIS_POWER_CYCLE="${PWRCPLD_SYSFS_DIR}/power_cycle_go"
@@ -64,9 +65,17 @@ wedge_board_rev() {
 }
 
 userver_power_is_on() {
-    userver_pwr_status_n=$(head -n 1 "$COME_POWER_OFF" 2> /dev/null)
+    if [ ! -e "$COME_POWER_OFF" ] || [ ! -e "$COME_POWER_EN" ]; then
+        echo "Error: $COME_POWER_OFF does not exist! Is scbcpld ready??"
+        echo "Assuming uServer is off!"
+        return 1
+    fi
 
-    if [ $((userver_pwr_status_n)) -eq $((0x1)) ] ; then
+    off_sts=$(head -n 1 "$COME_POWER_OFF" 2> /dev/null)
+    pwr_en=$(head -n 1 "$COME_POWER_EN" 2> /dev/null)
+
+    if [ $((off_sts)) -eq $((0x1)) ] && 
+       [ $((pwr_en)) -eq $((0x1)) ] ; then
         return 0
     fi
 
@@ -75,14 +84,19 @@ userver_power_is_on() {
 
 userver_power_on() {
     echo 1 > "$COME_POWER_OFF"
+    echo 1 > "$COME_POWER_EN"
 }
 
 userver_power_off() {
-    echo 0 > "$COME_POWER_OFF"
+    if ! sysfs_write "$COME_POWER_OFF" 0; then
+        return 1
+    fi
 }
 
 userver_reset() {
-    echo 0 > "$COME_POWER_CYCLE_N"
+    if ! sysfs_write "$COME_POWER_CYCLE_N" 0; then
+        return 1
+    fi
 
     # $COME_POWER_CYCLE_N will be auto-set to 1 when power cycle completes.
     timeout=10 # 10 seconds
@@ -102,7 +116,11 @@ userver_reset() {
 }
 
 chassis_power_cycle() {
-    echo 1 > "$CHASSIS_POWER_CYCLE"
+    if ! sysfs_write "$CHASSIS_POWER_CYCLE" 1; then
+        return 1
+    fi
+
+    return 0
 }
 
 bmc_mac_addr() {

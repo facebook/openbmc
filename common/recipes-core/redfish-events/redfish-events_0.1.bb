@@ -38,7 +38,7 @@ TARGET_CONFIG = "redfish-events.cfg"
 inherit setuptools3
 inherit systemd
 DEPENDS += "update-rc.d-native"
-RDEPENDS:${PN} += "python3-syslog python3-ply python3-aiohttp"
+RDEPENDS:${PN} += "python3-syslog python3-ply python3-aiohttp python3-attrs"
 
 install_sysv() {
     install -d ${D}${sysconfdir}/sv

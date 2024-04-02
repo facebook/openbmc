@@ -47,7 +47,7 @@ def aiohttp_dep(d):
     if distro in [ 'rocko', 'dunfell' ]:
         return "aiohttp"
     # XXX work around missing python3-attr dependency
-    return "python3-aiohttp python3-attr"
+    return "python3-aiohttp python3-attrs"
 
 DEPENDS:append = " update-rc.d-native"
 RDEPENDS:${PN} += " \

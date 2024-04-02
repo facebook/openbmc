@@ -167,17 +167,17 @@ create_dev_lists(const char *fru_name, uint8_t fru)
   uint8_t num_devs, dev;
   unsigned int caps;
   if (pal_get_num_devs(fru, &num_devs)) {
-    printf("%s: Cannot get number of devs\n", fru_name);
+    fprintf(stderr, "%s: Cannot get number of devs\n", fru_name);
     return;
   }
   for (dev = 1; dev <= num_devs; dev++) {
     char name[128];
     if (pal_get_dev_name(fru, dev, name)) {
-      printf("%s: Cannot get name for device: %u\n", fru_name, dev);
+      fprintf(stderr, "%s: Cannot get name for device: %u\n", fru_name, dev);
       continue;
     }
     if (pal_get_dev_capability(fru, dev, &caps)) {
-      printf("%s:%s cannot get device capability\n", fru_name, name);
+      fprintf(stderr, "%s:%s cannot get device capability\n", fru_name, name);
       continue;
     }
     if ((caps & FRU_CAPABILITY_FRUID_READ) &&
@@ -199,11 +199,11 @@ create_fru_lists(void)
   for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
     char name[64] = {0};
     if (pal_get_fru_name(fru, name)) {
-      printf("Cannot get FRU Name for %d\n", fru);
+      fprintf(stderr, "Cannot get FRU Name for %d\n", fru);
       continue;
     }
     if (pal_get_fru_capability(fru, &caps)) {
-      printf("%s: Cannot get FRU capability!\n", name);
+      fprintf(stderr, "%s: Cannot get FRU capability!\n", name);
       continue;
     }
     if ((caps & FRU_CAPABILITY_HAS_DEVICE)) {
@@ -576,7 +576,7 @@ int check_dump_arg(int argc, char * argv[]) {
     return -1;
   }
   if (!is_in_list(pal_fru_list_print_t, argv[1])) {
-    printf("Cannot dump FRUID for %s\n", argv[1]);
+    fprintf(stderr, "Cannot dump FRUID for %s\n", argv[1]);
     return -1;
   }
   if (argc == 5) {
@@ -584,7 +584,7 @@ int check_dump_arg(int argc, char * argv[]) {
       return -1;
     }
     if (!is_in_list(pal_dev_list_rw_t, argv[2])) {
-      printf("Cannot dump FRUID for %s %s\n", argv[1], argv[2]);
+      fprintf(stderr, "Cannot dump FRUID for %s %s\n", argv[1], argv[2]);
       return -1;
     }
   }
@@ -602,7 +602,7 @@ int check_write_arg(int argc, char * argv[])
     return -1;
   }
   if (!is_in_list(pal_fru_list_print_t, argv[1])) {
-    printf("Cannot write FRUID for %s\n", argv[1]);
+    fprintf(stderr, "Cannot write FRUID for %s\n", argv[1]);
     return -1;
   }
   if (argc == 5) {
@@ -610,7 +610,7 @@ int check_write_arg(int argc, char * argv[])
       return -1;
     }
     if (!is_in_list(pal_dev_list_rw_t, argv[2])) {
-      printf("Cannot write FRUID for %s %s\n", argv[1], argv[2]);
+      fprintf(stderr, "Cannot write FRUID for %s %s\n", argv[1], argv[2]);
       return -1;
     }
   }
@@ -628,7 +628,7 @@ int check_modify_arg(int argc, char * argv[])
     return -1;
   }
   if (!is_in_list(pal_fru_list_print_t, argv[1])) {
-    printf("Cannot modify FRUID for %s\n", argv[1]);
+    fprintf(stderr, "Cannot modify FRUID for %s\n", argv[1]);
     return -1;
   }
   if (argc == 6) {
@@ -640,7 +640,7 @@ int check_modify_arg(int argc, char * argv[])
       return -1;
     }
     if (!is_in_list(pal_dev_list_rw_t, argv[2])) {
-      printf("Cannot modify FRUID for %s %s\n", argv[1], argv[2]);
+      fprintf(stderr, "Cannot modify FRUID for %s %s\n", argv[1], argv[2]);
       return -1;
     }
   }
@@ -660,7 +660,7 @@ int check_print_arg(int argc, char * argv[])
     return -1;
   }
   if (!is_in_list(pal_fru_list_print_t, argv[optind])) {
-    printf("Cannot read FRUID for %s\n", argv[optind]);
+    fprintf(stderr, "Cannot read FRUID for %s\n", argv[optind]);
     return -1;
   }
   if (argv[optind+1] != NULL) {
@@ -668,7 +668,7 @@ int check_print_arg(int argc, char * argv[])
       return -1;
     }
     if (!is_in_list(pal_dev_list_print_t, argv[optind+1])) {
-      printf("Cannot print FRUID for %s %s\n", argv[optind], argv[optind+1]);
+      fprintf(stderr, "Cannot print FRUID for %s %s\n", argv[optind], argv[optind+1]);
       return -1;
     }
   }
@@ -761,7 +761,7 @@ int print_fru(int fru, char * device, bool allow_absent, unsigned char print_for
         if (print_format == JSON_FORMAT) {
           json_array_append_new(fru_array, fru_object);
         } else {
-          printf("%s is unavailable!\n\n", name);
+          fprintf(stderr, "%s is unavailable!\n\n", name);
         }
       } else {
         ret = get_fruid_info(fru, path, name, print_format,fru_array);
@@ -854,24 +854,24 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
 
   ret = pal_get_fruid_name(fru, name);
   if (ret < 0) {
-    printf("pal_get_fruid_name failed for fru: %d\n", fru);
+    fprintf(stderr, "pal_get_fruid_name failed for fru: %d\n", fru);
     return ret;
   }
 
   ret = pal_is_fru_prsnt(fru, &status);
   if (ret < 0) {
-    printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
+    fprintf(stderr, "pal_is_fru_prsnt failed for fru: %d\n", fru);
     return ret;
   }
 
   if (status == 0) {
-    printf("%s is not present!\n\n", name);
+    fprintf(stderr, "%s is not present!\n\n", name);
     return ret;
   }
 
   ret = pal_is_fru_ready(fru, &status);
   if ((ret < 0) || (status == 0)) {
-    printf("%s is unavailable!\n\n", name);
+    fprintf(stderr, "%s is unavailable!\n\n", name);
     return ret;
   }
 
@@ -933,28 +933,28 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
       // Verify the checksum of the new binary
       ret = fruid_parse(file_path, &fruid);
       if(ret != 0) {
-        printf("New FRU data checksum is invalid\n");
+        fprintf(stderr, "New FRU data checksum is invalid\n");
         syslog(LOG_CRIT, "New FRU data checksum is invalid");
         return -1;
       }
 
       fd_tmpbin = open(path, O_WRONLY | O_CREAT, 0666);
       if (fd_tmpbin == -1) {
-        printf("Unable to open the %s file: %s\n", path, strerror(errno));
+        fprintf(stderr, "Unable to open the %s file: %s\n", path, strerror(errno));
         syslog(LOG_ERR, "Unable to open the %s file: %s", path, strerror(errno));
         return errno;
       }
 
       fd_newbin = open(file_path, O_RDONLY);
       if (fd_newbin == -1) {
-        printf("Unable to open the %s file: %s\n", file_path, strerror(errno));
+        fprintf(stderr, "Unable to open the %s file: %s\n", file_path, strerror(errno));
         syslog(LOG_ERR, "Unable to open the %s file: %s", file_path, strerror(errno));
         return errno;
       }
 
       fp = fopen(file_path, "rb");
       if ( NULL == fp ) {
-        printf("Unable to get the %s fp %s\n", file_path, strerror(errno));
+        fprintf(stderr, "Unable to get the %s fp %s\n", file_path, strerror(errno));
         syslog(LOG_ERR, "Unable to get the %s fp %s", file_path, strerror(errno));
         return errno;
       }
@@ -986,7 +986,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
         }
 
         if (ret < 0) {
-          printf("FRU:%d Write failed!\n", fru);
+          fprintf(stderr, "FRU:%d Write failed!\n", fru);
           syslog(LOG_WARNING, "[%s] Please check the fruid: %d dev_id: %d file_path: %s", __func__, fru, dev_id, file_path);
           close(fd_newbin);
           close(fd_tmpbin);
@@ -994,7 +994,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
         }
       } else {
         if (access(eeprom_path, F_OK) == -1) {
-          printf("Fail to access eeprom file file : %s for fru %d\n", eeprom_path, fru);
+          fprintf(stderr, "Fail to access eeprom file file : %s for fru %d\n", eeprom_path, fru);
           syslog(LOG_ERR, "cannot access the eeprom file : %s for fru %d",
               eeprom_path, fru);
           close(fd_newbin);
@@ -1003,14 +1003,14 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
         }
         sprintf(command, "dd if=%s of=%s bs=%d count=1", file_path, eeprom_path, fru_size);
         if (system(command) != 0) {
-          printf("Copy of %s to %s failed!\n", file_path, eeprom_path);
+          fprintf(stderr, "Copy of %s to %s failed!\n", file_path, eeprom_path);
           syslog(LOG_ERR, "Copy of %s to %s failed!\n", file_path, eeprom_path);
           return -1;
         }
 
         ret = pal_compare_fru_data(eeprom_path, file_path, fru_size);
         if (ret < 0) {
-          printf("Compare %s with %s failed!\n", file_path, eeprom_path);
+          fprintf(stderr, "Compare %s with %s failed!\n", file_path, eeprom_path);
           syslog(LOG_ERR, "[%s] FRU:%d Write Fail", __func__, fru);
           close(fd_newbin);
           close(fd_tmpbin);
@@ -1020,7 +1020,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
 
       ret = copy_file(fd_tmpbin, fd_newbin, fru_size);
       if (ret < 0) {
-        printf("Write to %s file failed: %s\n", path, strerror(errno));
+        fprintf(stderr, "Write to %s file failed: %s\n", path, strerror(errno));
         syslog(LOG_ERR, "copy: write to %s file failed: %s", path, strerror(errno));
       }
 
@@ -1031,8 +1031,8 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
     case FLAG_MODIFY:
       file_path = argv[argc-1];
       if (optind != 4) { //fail to get field "--XXX"
-        printf("Parameter \"%s\" is invalid!\n",  argv[argc-3]);
-        printf("Fail to modify %s FRU\n", name);
+        fprintf(stderr, "Parameter \"%s\" is invalid!\n",  argv[argc-3]);
+        fprintf(stderr, "Fail to modify %s FRU\n", name);
         return -1;
       }
       if(access(file_path, F_OK) == -1) {  //copy current FRU bin file to specified bin file
@@ -1064,7 +1064,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
 
       ret = fruid_modify(path, file_path, argv[optind-2], argv[optind-1]);
       if(ret < 0){
-        printf("Fail to modify %s FRU\n", name);
+        fprintf(stderr, "Fail to modify %s FRU\n", name);
         return ret;
       }
       ret = get_fruid_info(fru, file_path, name, DEFAULT_FORMAT,NULL);

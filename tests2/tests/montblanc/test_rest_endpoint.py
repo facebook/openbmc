@@ -21,7 +21,6 @@ import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
 
-from tests.montblanc.test_data.sensors.sensor import SENSORS_PECI
 from utils.test_utils import qemu_check
 
 
@@ -34,10 +33,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     # "/api/sys"
     def set_endpoint_sys_attributes(self):
         self.endpoint_sys_attrb = [
-            "server",
             "bmc",
             "mb",
-            "gpios",
         ]
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
@@ -47,14 +44,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.verify_endpoint_attributes(
             FbossRestEndpointTest.SYS_ENDPOINT, self.endpoint_sys_attrb
         )
-
-    # "/api/sys/sensors"
-    def set_endpoint_sensors_attributes(self):
-        self.endpoint_sensors_attrb = SENSORS_PECI
-
-    # "/api/sys/server"
-    def set_endpoint_server_attributes(self):
-        self.endpoint_server_attrb = ["BIC_ok", "status"]
 
     # "/api/sys/mb/fruid"
     def set_endpoint_fruid_attributes(self):
@@ -70,4 +59,14 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     @unittest.skip("not available")
     # "/api/sys/firmware_info/all"
     def test_endpoint_api_sys_firmware_info_all(self):
+        pass
+
+    @unittest.skip("not available")
+    # "/api/sys/sensors"
+    def set_endpoint_sensors_attributes(self):
+        pass
+    
+    @unittest.skip("not available")
+    # "/api/sys/server"
+    def set_endpoint_server_attributes(self):
         pass

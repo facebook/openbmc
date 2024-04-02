@@ -27,6 +27,7 @@ SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 1-0035)
 PWR_FORCE_OFF="${MCBCPLD_SYSFS_DIR}/pwr_force_off"
 PWR_COME_EN="${MCBCPLD_SYSFS_DIR}/pwr_come_en"
 PWR_COME_CYCLE_N="${MCBCPLD_SYSFS_DIR}/pwr_come_cycle_n"
+PWR_COME_CYCLE_DEV_N="${MCBCPLD_SYSFS_DIR}/pwr_come_cycle_dev_n"
 
 TIMER_BASE_10S="${MCBCPLD_SYSFS_DIR}/timer_base_10s"
 TIMER_BASE_1S="${MCBCPLD_SYSFS_DIR}/timer_base_1s"
@@ -106,6 +107,7 @@ userver_power_off() {
 }
 
 userver_reset() {
+    #
     # write 0 to trigger CPLD power cycling COMe
     # then this bit will auto set to 1 after Power cycle finish
     if ! sysfs_write "$PWR_COME_CYCLE_N" 0; then
@@ -113,18 +115,40 @@ userver_reset() {
     fi
     
     timeout=10 #timeout 10 second
-    while [ $((timeout)) -ge 0 ]; do
-        val=$(head -n 1 < "$PWR_COME_CYCLE_N" 2> /dev/null)
-        if [ $((val)) -eq 1 ]; then
-            # reset successful
-            return 0   
-        fi
+    until [[ $(head -n 1 < "$PWR_COME_CYCLE_N" 2>/dev/null) -eq 1 ]] \
+        || [ $((timeout)) -lt 0 ]; do
         sleep 1
         timeout=$((timeout-1))
     done
-    # reset fail
-    echo " userver reset failed."
-    return 1
+
+    if [[ $(head -n 1 < "$PWR_COME_CYCLE_N" 2>/dev/null) -eq 0 ]]; then
+        echo "Reset timed out" >&2
+        return 1
+    fi
+}
+
+userver_dev_reset(){
+    #
+    # write 0 to trigger CPLD power cycling COMe + I210 + SSD
+    # then this bit will auto set to 1 after Power cycle finish
+    #
+    if ! sysfs_write "$PWR_COME_CYCLE_DEV_N" 0; then
+        return 1
+    fi
+
+    timeout=10 #timeout 10 second
+    until [[ $(head -n 1 < "$PWR_COME_CYCLE_DEV_N" 2>/dev/null) -eq 1 ]] \
+        || [ $((timeout)) -lt 0 ]; do
+        sleep 1
+        timeout=$((timeout-1))
+    done
+
+    if [[ $(head -n 1 < "$PWR_COME_CYCLE_DEV_N" 2>/dev/null) -eq 0 ]]; then
+        echo "Reset timed out" >&2
+        return 1
+    fi
+
+    return 0
 }
 
 chassis_power_cycle() {

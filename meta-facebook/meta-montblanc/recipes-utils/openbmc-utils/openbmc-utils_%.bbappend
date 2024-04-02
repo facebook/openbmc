@@ -25,6 +25,7 @@ LOCAL_URI += "\
     file://read_INA230.sh \
     file://cpld_update.sh \
     file://setup_board.sh \
+    file://wedge_power_reset_c.patch \
     "
 
 OPENBMC_UTILS_FILES += " \

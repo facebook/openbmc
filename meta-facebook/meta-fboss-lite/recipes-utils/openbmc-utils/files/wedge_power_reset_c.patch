@@ -1,0 +1,62 @@
+From 7465057dde9e99c99a46c4cafec6e0f4370913bd Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Wed, 7 Feb 2024 13:55:45 +0700
+Subject: [PATCH] add -c option, for power cycle COMe + SSD + I210
+
+---
+ wedge_power.sh        | 20 ++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/wedge_power.sh b/wedge_power.sh
+index ab9f129d9d5..e1d865c2436 100755
+--- a/wedge_power.sh
++++ b/wedge_power.sh
+@@ -41,6 +41,7 @@ usage() {
+     echo "  reset: Power reset x86 (userver) ungracefully"
+     echo "    options:"
+     echo "      -s: Power cycle the whole chassis ungracefully"
++    echo "      -c: Power cycle COMe include SSD and I210 module"
+     echo
+     echo
+ }
+@@ -107,12 +108,16 @@ do_off() {
+ do_reset() {
+     local opt
+     local system=0
++    local come_ssd_i210=0
+ 
+-    while getopts "st:" opt; do
++    while getopts "sct:" opt; do
+         case $opt in
+             s)
+                 system=1
+                 ;;
++            c)
++                come_ssd_i210=1
++                ;;
+             *)
+                 usage
+                 exit 1
+@@ -135,10 +140,15 @@ do_reset() {
+         exit 1
+     else
+         if userver_power_is_on; then
+-            logger -p user.crit "Power reset x86 (userver) ..."
+-            echo -n "Power reset x86 (userver) ..."
+-
+-            userver_reset
++            if [ $come_ssd_i210 -eq 1 ]; then
++                logger -p user.crit "Power reset x86 (userver + I210 + SSD) ..."
++                echo -n "Power reset x86 (userver + I210 + SSD) ..."
++                userver_dev_reset
++            else
++                logger -p user.crit "Power reset x86 (userver) ..."
++                echo -n "Power reset x86 (userver) ..."
++                userver_reset
++            fi
+             echo " Done"
+         else
+             echo "x86 (userver) is off. Power on x86 now.."
+-- 
+2.25.1
+

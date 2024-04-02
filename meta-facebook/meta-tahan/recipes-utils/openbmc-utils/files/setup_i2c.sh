@@ -39,5 +39,3 @@ i2c_device_add 12 0x60 pwrcpld
 #
 modprobe at24
 i2c_device_add 3 0x56 24c64
-# BMC EEPROM
-i2c_device_add 8 0x51 24c64

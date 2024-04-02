@@ -46,3 +46,12 @@ class InterfaceTest(CommonInterfaceTest, unittest.TestCase):
         self.set_ifname("usb0")
         Logger.log_testname(self._testMethodName)
         self.assertEqual(self.ping_v6(), 0, "Ping test for usb0 v6 failed")
+
+    def test_usb0_v6_x86_interface(self):
+        """
+        Tests usb0 v6 interface ping to x86 side
+        """
+        self.set_ifname("usb0")
+        ip = "fe80::ff:fe00:2"
+        cmd = "ping6 -c 1 -q -w 1 " + ip + "%" + self.ifname
+        self.assertEqual(self.run_ping(cmd), 0, "Ping test for x86 failed")

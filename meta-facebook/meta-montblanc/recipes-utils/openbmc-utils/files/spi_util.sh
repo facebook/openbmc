@@ -164,7 +164,7 @@ flash_mtd_write() {
     echo "Copy $file to $tmpfile.."
     cp "$file" "$tmpfile"
 
-    extend_image_file "$mtd_idx" "$tmpfile"
+    expand_image_file "$mtd_idx" "$tmpfile"
 
     echo "Write $tmpfile to /dev/mtd$mtd_idx.."
     flashrom -p linux_mtd:dev="$mtd_idx" -w "$tmpfile"

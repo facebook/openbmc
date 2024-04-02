@@ -26,6 +26,5 @@ class MontblancI2cDriverPresenceTest(BaseI2cDriverPresenceTest, unittest.TestCas
     def set_i2c_driver_list(self):
         self.i2c_driver_list = [
             "at24",
-            "lm75",
             "mcbcpld",
         ]

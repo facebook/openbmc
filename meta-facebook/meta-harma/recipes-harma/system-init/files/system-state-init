@@ -1,3 +1,23 @@
 #!/bin/bash
 
+read_i2c_dev() {
+  for _ in {1..3}; do
+    if /usr/sbin/i2cget -f -y "$1" "$2" "$3" 2>/dev/null; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+probe_mb_vr() {
+  if read_i2c_dev 28 0x4b 0x20 >/dev/null; then
+    kv set mb_vr_source 0
+  elif read_i2c_dev 28 0x68 0x20 >/dev/null; then
+    kv set mb_vr_source 1
+  else
+    kv set mb_vr_source 2
+  fi
+}
+
+probe_mb_vr
 fw-util mb --version

@@ -173,7 +173,6 @@ int get_vr_comp_source(uint8_t* id) {
   }
 
   *id = (uint8_t)atoi(value);
-  printf("id=%d\n", *id);
   return 0;
 }
 

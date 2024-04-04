@@ -23,6 +23,7 @@ class RetimerFwComponent : public Component {
     int get_ver_str(string& s);
     int update_internal(const std::string& image, bool force);
     int get_vendor_id(VendorID* vendor_id);
+    bool update_validation(const std::string& image);
   public:
     RetimerFwComponent(const string& fru, const string& comp, const string& brd, uint8_t comp_id)
       : Component(fru, comp), slot_id(fru.at(4) - '0'), fw_comp(comp_id), board(brd),

@@ -23,6 +23,7 @@ const uint8_t montage_vendor_id[vendor_id_size] = {0x06, 0x04, 0x00, 0x40, 0x20,
 
 int RetimerFwComponent::update_internal(const std::string& image, bool force) {
   int ret = 0;
+  bool validated = 0;
 
   try {
     cout << "Checking if the server is ready..." << endl;
@@ -38,15 +39,20 @@ int RetimerFwComponent::update_internal(const std::string& image, bool force) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
-  if (ret != 0) {
-    cerr << "Retimer update failed. ret = " << ret << endl;
-  }
-  sleep(1); // wait for BIC to complete update process
+  validated = update_validation(image);
+  if (validated) {
+    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
+    if (ret != 0) {
+      cerr << "Retimer update failed. ret = " << ret << endl;
+    }
+    sleep(1); // wait for BIC to complete update process
 
-  cout << "Power-cycling the server..." << endl;
-  pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
-  return ret;
+    cout << "Power-cycling the server..." << endl;
+    pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+    return ret;
+  } else {
+    return FW_STATUS_FAILURE;
+  }
 }
 
 int RetimerFwComponent::update(const string image) {
@@ -153,4 +159,60 @@ int RetimerFwComponent::get_version(json& j) {
     }
   }
   return FW_STATUS_SUCCESS;
+}
+
+bool RetimerFwComponent::update_validation(const std::string& image){
+  // Read image data
+  std::ifstream file(image, std::ios::binary | std::ios::in);
+  if (!file) {
+    cerr << "Cannot read Image: " << image << endl;
+    cerr << "Retimer Firmware Validation failed" << endl;
+    return 0;
+  }
+  file.seekg(0, std::ios::end);
+  std::streampos fileSize = file.tellg();
+  file.seekg(0, std::ios::beg);
+  std::vector<char> buffer(fileSize);
+  file.read(buffer.data(), fileSize);
+  file.close();
+
+  bool image_Montage = 0;
+  bool image_Astera = 0;
+  bool vendor_id_Montage = 0;
+  bool vendor_id_Astera = 0;
+
+  // Check image id
+  if ((buffer[0] == 0xE1) && (buffer[1] == 0x10) && (buffer[2] == 0x4C)) {
+    cout << "Retimer ImageID  : [Montage]" << endl;
+    image_Montage = 1;
+  } else if ((buffer[0] == 0xA5) && (buffer[1] == 0x5A) && (buffer[2] == 0xA5) && (buffer[3] == 0x5A)) {
+    cout << "Retimer ImageID  : [Astera Labs]" << endl;
+    image_Astera = 1;
+  } else {
+    cout << "Retimer ImageID  : [Unknow]" << endl;
+    return 0;
+  }
+
+  // Check vendor id
+  VendorID vendor_id = VendorID::UNKNOWN_VENDOR;
+  get_vendor_id(&vendor_id);
+  if (vendor_id == VendorID::MONTAGE) {
+    cout << "Retimer VendorID : [Montage]" << endl;
+    vendor_id_Montage = 1;
+  } else if (vendor_id == VendorID::ASTERA_LABS) {
+    cout << "Retimer VendorID : [Astera Labs]" << endl;
+    vendor_id_Astera = 1;
+  } else {
+    cout << "Retimer VendorID : [Unknow]" << endl;
+    return 0;
+  }
+
+  // Check image id is same witch vendor id
+  if (((image_Montage) && (vendor_id_Montage)) || ((image_Astera) && (vendor_id_Astera))) {
+    cout << "Retimer Firmware Validation succeeded" << endl;
+    return 1;
+  } else {
+    cerr << "Retimer Firmware Validation failed" << endl;
+    return 0;
+  }
 }

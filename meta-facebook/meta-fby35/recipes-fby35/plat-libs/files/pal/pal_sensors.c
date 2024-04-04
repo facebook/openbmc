@@ -388,9 +388,9 @@ const uint8_t bic_ji_sensor_list[] = {
   BIC_JI_SENSOR_MB_FPGA_TEMP_C,
   BIC_JI_SENSOR_MB_E1S_SSD_TEMP_C,
   BIC_JI_SENSOR_MB_HSC_TEMP_C,
-  BIC_JI_SENSOR_MB_CPUDVDD_TEMP_C,
-  BIC_JI_SENSOR_MB_CPUVDD_TEMP_C,
-  BIC_JI_SENSOR_MB_SOCVDD_TEMP_C,
+  // BIC_JI_SENSOR_MB_CPUDVDD_TEMP_C,
+  // BIC_JI_SENSOR_MB_CPUVDD_TEMP_C,
+  // BIC_JI_SENSOR_MB_SOCVDD_TEMP_C,
   BIC_JI_SENSOR_MB_HSC_INPUT_VOLT_V,
   BIC_JI_SENSOR_MB_ADC_P12V_STBY_VOLT_V,
   BIC_JI_SENSOR_MB_ADC_VDD_1V8_VOLT_V,
@@ -408,20 +408,20 @@ const uint8_t bic_ji_sensor_list[] = {
   BIC_JI_SENSOR_MB_ADC_P5V_STBY_VOLT_V,
   BIC_JI_SENSOR_MB_ADC_CPU_DVDD_VOLT_V,
   BIC_JI_SENSOR_MB_E1S_SSD_VOLT_V,
-  BIC_JI_SENSOR_MB_CPUDVDD_VOLT_V,
-  BIC_JI_SENSOR_MB_CPUVDD_VOLT_V,
-  BIC_JI_SENSOR_MB_SOCVDD_VOLT_V,
+  // BIC_JI_SENSOR_MB_CPUDVDD_VOLT_V,
+  // BIC_JI_SENSOR_MB_CPUVDD_VOLT_V,
+  // BIC_JI_SENSOR_MB_SOCVDD_VOLT_V,
   BIC_JI_SENSOR_MB_HSC_OUTPUT_CURR_A,
   BIC_JI_SENSOR_MB_E1S_SSD_CURR_A,
-  BIC_JI_SENSOR_MB_CPUDVDD_CURR_A,
-  BIC_JI_SENSOR_MB_CPUVDD_CURR_A,
-  BIC_JI_SENSOR_MB_SOCVDD_CURR_A,
+  // BIC_JI_SENSOR_MB_CPUDVDD_CURR_A,
+  // BIC_JI_SENSOR_MB_CPUVDD_CURR_A,
+  // BIC_JI_SENSOR_MB_SOCVDD_CURR_A,
   BIC_JI_SENSOR_MB_CPU_PWR_W,
   BIC_JI_SENSOR_MB_HSC_INPUT_PWR_W,
   BIC_JI_SENSOR_MB_E1S_SSD_PWR_W,
-  BIC_JI_SENSOR_MB_CPUDVDD_PWR_W,
-  BIC_JI_SENSOR_MB_CPUVDD_PWR_W,
-  BIC_JI_SENSOR_MB_SOCVDD_PWR_W,
+  // BIC_JI_SENSOR_MB_CPUDVDD_PWR_W,
+  // BIC_JI_SENSOR_MB_CPUVDD_PWR_W,
+  // BIC_JI_SENSOR_MB_SOCVDD_PWR_W,
 };
 
 const uint8_t bic_1ou_vf_sensor_list[] = {
@@ -2352,6 +2352,8 @@ read_pdb_cl_vdelta(uint8_t snr_number, float *value) {
       hsc_input_vol_num = BIC_HD_SENSOR_HSC_INPUT_VOL;
     } else if (slot_type == SERVER_TYPE_GL) {
       hsc_input_vol_num = BIC_GL_SENSOR_MB_HSC_INPUT_VOLT_V;
+    } else if (slot_type == SERVER_TYPE_JI) {
+      hsc_input_vol_num = BIC_JI_SENSOR_MB_HSC_INPUT_VOLT_V;
     }
     if (slot_type != SERVER_TYPE_NONE) {
       type_found = true;
@@ -2385,15 +2387,24 @@ read_curr_leakage(uint8_t snr_number, float *value) {
   char hsc_type[MAX_VALUE_LEN] = {0};
   bool is_48v_medusa = false;
 
-  if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_HD || fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_HD) {
-    hsc_output_cur_num = BIC_HD_SENSOR_HSC_OUTPUT_CUR;
-  } else if (
-      fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_GL ||
-      fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_GL) {
-    hsc_output_pwr_num = BIC_GL_SENSOR_MB_HSC_INPUT_PWR_W;
-    hsc_output_cur_num = BIC_GL_SENSOR_MB_HSC_OUTPUT_CURR_A;
-  } else { // slots are CL or empty
-    ;
+  for (uint8_t i = FRU_SLOT1; i <= FRU_SLOT4; i++) {
+    int slot_type = fby35_common_get_slot_type(i);
+    switch (slot_type) {
+      case SERVER_TYPE_HD:
+        hsc_output_cur_num = BIC_HD_SENSOR_HSC_OUTPUT_CUR;
+        break;
+      case SERVER_TYPE_GL:
+        hsc_output_pwr_num = BIC_GL_SENSOR_MB_HSC_INPUT_PWR_W;
+        hsc_output_cur_num = BIC_GL_SENSOR_MB_HSC_OUTPUT_CURR_A;
+        break;
+      case SERVER_TYPE_JI:
+        hsc_output_pwr_num = BIC_JI_SENSOR_MB_HSC_INPUT_PWR_W;
+        hsc_output_cur_num = BIC_JI_SENSOR_MB_HSC_OUTPUT_CURR_A;
+        break;
+      default:
+        break;
+    }
+    if (slot_type != SERVER_TYPE_NONE) break;
   }
 
   snprintf(key, sizeof(key), "medusa_hsc_conf");

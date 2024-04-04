@@ -19,4 +19,5 @@ SRC_URI += " \
     file://0516-ARM-dts-aspeed-yosemite4-disable-GPIO-internal-Pull-.patch \
     file://0517-yosemite4-Change-IOE-i2c-address.patch \
     file://0518-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
+    file://0519-Revise-duty-cycle-for-SMB9-and-SMB10.patch \
 "

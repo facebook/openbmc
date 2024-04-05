@@ -45,6 +45,8 @@
 
 #ifdef CONFIG_HALFDOME
 #define PLATFORM_NAME "halfdome"
+#elif CONFIG_JAVAISLAND
+#define PLATFORM_NAME "javaisland"
 #else
 #define PLATFORM_NAME "yosemite35"
 #endif

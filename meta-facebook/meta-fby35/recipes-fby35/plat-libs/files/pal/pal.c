@@ -45,6 +45,8 @@
 
 #ifdef CONFIG_HALFDOME
 #define PLATFORM_NAME "halfdome"
+#elif CONFIG_GREATLAKES
+#define PLATFORM_NAME "greatlakes"
 #elif CONFIG_JAVAISLAND
 #define PLATFORM_NAME "javaisland"
 #else

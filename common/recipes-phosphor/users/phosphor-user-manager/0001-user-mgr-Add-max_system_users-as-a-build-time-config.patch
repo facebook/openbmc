@@ -1,0 +1,82 @@
+From 6a7c937267d52f31252a157154b90e53c22e9cd4 Mon Sep 17 00:00:00 2001
+From: Marco Kawajiri <kawajiri@meta.com>
+Date: Wed, 27 Mar 2024 09:54:11 -0700
+Subject: [PATCH] user-mgr: Add max_system_users as a build-time config
+
+Added build-time option to configure max number of system users.
+Defaults to 30 (same as previous hard-coded limit)
+
+Tested:
+State of system already exceeding max number of system users,
+before:
+```
+$ journalctl -f
+... phosphor-user-manager[10369]: Non-ipmi User limit reached
+... phosphor-user-manager[10369]: No resource available.
+
+$ curl $bmc/redfish/v1/AccountService/Accounts | jq -Sc .Members[] \
+| wc -l
+16
+```
+
+After:
+```
+$ curl $bmc/redfish/v1/AccountService/Accounts | jq -Sc .Members[] \
+| wc -l
+19
+```
+
+Change-Id: I8201d58c4f5051a35f43776e25fa90d7eef1856b
+Signed-off-by: Marco Kawajiri <kawajiri@meta.com>
+---
+ meson.build   | 2 ++
+ meson.options | 1 +
+ user_mgr.hpp  | 4 +++-
+ 3 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index fd59f32..7015a5d 100644
+--- a/meson.build
++++ b/meson.build
+@@ -21,6 +21,8 @@ conf_data.set_quoted('USER_MANAGER_BUSNAME', 'xyz.openbmc_project.User.Manager',
+ conf_data.set_quoted('DEFAULT_CRYPT_ALGO', '1',
+                       description : 'The default crypt algorithm if one not found in shadow.')
+ 
++conf_data.set('MAX_SYSTEM_USERS', get_option('max_system_users'), description: 'Maximum allowed number of system users')
++
+ conf_data.set('CLASS_VERSION', 1,
+                       description : 'Class version to register with Cereal.')
+ 
+diff --git a/meson.options b/meson.options
+index b68ef14..3380218 100644
+--- a/meson.options
++++ b/meson.options
+@@ -1,2 +1,3 @@
+ option('tests', type: 'feature', description: 'Build tests', value: 'enabled')
+ option('root_user_mgmt', type: 'feature', description: 'Enable management of the root user', value: 'enabled')
++option('max_system_users', type: 'integer', value: 30, description: 'Maximum allowed number of system users')
+diff --git a/user_mgr.hpp b/user_mgr.hpp
+index 6addc49..b84024c 100644
+--- a/user_mgr.hpp
++++ b/user_mgr.hpp
+@@ -14,6 +14,8 @@
+ // limitations under the License.
+ */
+ #pragma once
++#include "config.h"
++
+ #include "users.hpp"
+ 
+ #include <boost/process/child.hpp>
+@@ -39,7 +41,7 @@ namespace user
+ {
+ 
+ inline constexpr size_t ipmiMaxUsers = 15;
+-inline constexpr size_t maxSystemUsers = 30;
++inline constexpr size_t maxSystemUsers = MAX_SYSTEM_USERS;
+ inline constexpr uint8_t minPasswdLength = 8;
+ inline constexpr size_t maxSystemGroupNameLength = 32;
+ inline constexpr size_t maxSystemGroupCount = 64;
+-- 
+2.43.0
+

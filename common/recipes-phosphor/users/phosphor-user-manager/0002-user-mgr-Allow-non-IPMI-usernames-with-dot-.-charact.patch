@@ -1,0 +1,108 @@
+From cfc9738f691ed43ae4e68aaed686eadfad40f64c Mon Sep 17 00:00:00 2001
+From: Marco Kawajiri <kawajiri@meta.com>
+Date: Fri, 5 Apr 2024 07:54:27 -0700
+Subject: [PATCH] user-mgr: Allow non-IPMI usernames with dot '.' character
+
+Meta Inc's user certificates [1] can contain '.' as a valid character.
+Added logic to maintain the current regex for IPMI users and another one
+to allow '.' on non-IPMI users
+
+Tested:
+Add non-IPMI user with dot with POST /redfish/v1/AccountService/Accounts
+
+Before:
+```
+... phosphor-user-manager[1152]: Invalid username 'user.with.dot'
+... phosphor-user-manager[1152]: Invalid argument was given.
+```
+After:
+```
+Apr 05 11:20:24 macbmc2r0048p0086-oob.04.cco2.facebook.com
+phosphor-user-manager[19192]: User 'user.with.dot' created successfully
+```
+
+Try adding user with dot character and "IPMI" in `AccountTypes`, ensure
+it gets rejected:
+```
+... phosphor-user-manager[19192]: Invalid username 'ipmi.with.dot'
+... phosphor-user-manager[19192]: Invalid argument was given.
+```
+
+[1] docs/designs/oem/meta/meta-inc-mtls-on-bmcweb.md
+
+Change-Id: I124bed51e6e7652d648c3d20319e99ef48dde46e
+Signed-off-by: Marco Kawajiri <kawajiri@meta.com>
+---
+ test/user_mgr_test.cpp | 11 +++++++++++
+ user_mgr.cpp           | 13 +++++++++----
+ 2 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/test/user_mgr_test.cpp b/test/user_mgr_test.cpp
+index 94120ff..9de8612 100644
+--- a/test/user_mgr_test.cpp
++++ b/test/user_mgr_test.cpp
+@@ -565,12 +565,23 @@ TEST_F(UserMgrInTest,
+ {
+     std::string startWithNumber = "0ABC";
+     std::string startWithDisallowedCharacter = "[test";
++    std::string userWithDotCharacter = "user_with.dot";
+     EXPECT_THROW(
+         throwForUserNameConstraints(startWithNumber, {"ipmi"}),
+         sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument);
+     EXPECT_THROW(
+         throwForUserNameConstraints(startWithDisallowedCharacter, {"ipmi"}),
+         sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument);
++    EXPECT_THROW(
++        throwForUserNameConstraints(userWithDotCharacter, {"ipmi"}),
++        sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument);
++}
++
++TEST_F(UserMgrInTest, AllowNonIpmiUserWithDotCharacter)
++{
++    // Should allow non-IPMI users with dot character in username
++    std::string userWithDotCharacter = "user_with.dot_character";
++    throwForUserNameConstraints(userWithDotCharacter, {});
+ }
+ 
+ TEST_F(UserMgrInTest, UserAddNotRootFailedWithInternalFailure)
+diff --git a/user_mgr.cpp b/user_mgr.cpp
+index 08cc772..0cf9441 100644
+--- a/user_mgr.cpp
++++ b/user_mgr.cpp
+@@ -124,6 +124,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
+     "openbmc_orfp_", // OpenBMC Redfish OEM Privileges
+ };
+ 
++// Valid user name regexes for regular and users in the ipmi group
++static const auto validUserNameRegex = std::regex("^[a-zA-Z_][a-zA-Z_0-9.]*$");
++static const auto validUserNameIpmiRegex =
++    std::regex("^[a-zA-Z_][a-zA-Z_0-9]*$");
++
+ void checkAndThrowsForGroupChangeAllowed(const std::string& groupName)
+ {
+     bool allowed = false;
+@@ -229,8 +234,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
+ void UserMgr::throwForUserNameConstraints(
+     const std::string& userName, const std::vector<std::string>& groupNames)
+ {
+-    if (std::find(groupNames.begin(), groupNames.end(), "ipmi") !=
+-        groupNames.end())
++    bool isIpmiUser = std::ranges::contains(groupNames, "ipmi");
++    if (isIpmiUser)
+     {
+         if (userName.length() > ipmiMaxUserNameLen)
+         {
+@@ -252,8 +257,8 @@ void UserMgr::throwForUserNameConstraints(
+         elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
+                               Argument::ARGUMENT_VALUE("Invalid length"));
+     }
+-    if (!std::regex_match(userName.c_str(),
+-                          std::regex("[a-zA-Z_][a-zA-Z_0-9]*")))
++    if ((!isIpmiUser && !std::regex_match(userName, validUserNameRegex)) ||
++        (isIpmiUser && !std::regex_match(userName, validUserNameIpmiRegex)))
+     {
+         lg2::error("Invalid username '{USERNAME}'", "USERNAME", userName);
+         elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
+-- 
+2.43.0
+

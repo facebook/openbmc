@@ -119,5 +119,6 @@ setup_rgmii_delay()
 }
 
 fixup_phy_onlyevt
-setup_LPC_signal_strength
+# set LPC signal strength pin to 0 (weakest)
+setup_LPC_signal_strength 0
 setup_rgmii_delay

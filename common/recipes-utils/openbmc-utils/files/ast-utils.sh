@@ -50,3 +50,53 @@ is_bmc_por() {
   store_clear_por
   /bin/cat /tmp/ast_por
 }
+
+# set LPC signal strength to weakest-strongest
+# support only for AST G6
+setup_LPC_signal_strength()
+{
+    soc_model=$(cat /etc/soc_model 2>/dev/null)
+    if [ "$soc_model" != "SOC_MODEL_ASPEED_G6" ]; then
+        echo "Error: This function is only compatible with AST G6 models." 1>&2
+        return 1
+    fi
+
+    strength=$1
+    if [[ $strength -lt 0 || $strength -gt 3 ]]; then
+        echo "Invalid strength value. Valid range: 0-3 (weakest-strongest)" 1>&2
+        return 1
+    fi
+    SCU=0x1E6E2000
+    SCU454=$((SCU + 0x454))
+    SCU458=$((SCU + 0x458))
+
+    # SCU454 : Multi-function Pin Control #15
+    # 31:30 - LAD3/ESPID3 Driving Strength
+    # 29:28 - LAD2/ESPID2 Driving Strength
+    # 27:26 - LAD1/ESPID1 Driving Strength
+    # 25:24 - LAD0/ESPID0 Driving Strength
+    #          3: strongest    0: weakest
+    # set strength value to 0
+    value=$(devmem "$SCU454")
+    value=$(( value & 0x00FFFFFF ))
+    value=$(( value | (strength << 30) ))
+    value=$(( value | (strength << 28) ))
+    value=$(( value | (strength << 26) ))
+    value=$(( value | (strength << 24) ))
+    devmem "$SCU454" 32 "$value"
+    
+    # SCU458 : Multi-function Pin Control #16
+    # 19:18 - LPCRSTN/ESPIRSTN Driving Strength
+    # 17:16 - LACDIRQ/ESPIALERT Driving Strength
+    # 15:14 - LPCFRAMEN/ESPICSN Driving Strength
+    # 13:12 - LPCCLK/ESPICLK Driving Strength
+    #          3: strongest    0: weakest
+    # set strength value to 0
+    value=$(devmem "$SCU458")
+    value=$(( value & 0xFFF00FFF ))
+    value=$(( value | (strength << 18) ))
+    value=$(( value | (strength << 16) ))
+    value=$(( value | (strength << 14) ))
+    value=$(( value | (strength << 12) ))
+    devmem "$SCU458" 32 "$value"
+}

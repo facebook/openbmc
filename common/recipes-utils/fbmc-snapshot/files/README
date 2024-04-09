@@ -31,7 +31,7 @@ of show_tech.
 
 The plugins can be added with the naming conventions as follows,
 File name starts with
-1. 0-99 --> Common scripts.
+1. 000-099 --> Common scripts.
 2. 100-200 --> Fboss-lite
 3. 900-999 --> Platform specific.
 

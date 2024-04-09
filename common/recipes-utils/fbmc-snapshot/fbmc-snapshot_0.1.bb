@@ -24,14 +24,24 @@ LIC_FILES_CHKSUM = "file://showtech.sh;beginline=5;endline=18;md5=0b1ee7d6f844d4
 
 LOCAL_URI = " \
     file://showtech.sh \
+    file://000_collect_log_messages.sh \
+    "
+
+SHOWTECH_RULES_FILES = " \
+    000_collect_log_messages.sh \
     "
 
 do_install() {
     localbindir="${D}/usr/local/bin"
+    showtech_rules_dir="${D}/etc/showtech/rules/"
     install -d ${localbindir}
+    install -d ${showtech_rules_dir}
 
     install -m 755 showtech.sh ${localbindir}/showtech.sh
+    for f in ${SHOWTECH_RULES_FILES}; do
+        install -m 755 $f ${showtech_rules_dir}/${f}
+    done
 }
 
 RDEPENDS:${PN} += "bash"
-FILES:${PN} = "/usr/local/bin/showtech.sh"
+FILES:${PN} = "/usr/local/bin/showtech.sh /etc/showtech/rules/"

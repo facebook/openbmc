@@ -564,7 +564,7 @@ int CpldLatticeManager::readStatusReg(uint8_t& statusReg)
         12 Busy Ready
         13 Fail OK
          */
-        statusReg = readData.at(1);
+        statusReg = readData.at(2);
     }
     return 0;
 }

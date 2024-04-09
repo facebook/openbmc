@@ -36,7 +36,7 @@
 #define NULL_TYPE 0xFF
 #define HEADER 0xFB
 #define FORMAT_VERSION 0x05
-#define CRC_INIT 0xFFFF
+#define CRC_INIT 0x1D0F //CRC-CCITT-AUG initial value
 #define CHECK_HIGHEST_BIT 0x8000
 #define TRUNCATED_POLYNOMIA 0x1021
 

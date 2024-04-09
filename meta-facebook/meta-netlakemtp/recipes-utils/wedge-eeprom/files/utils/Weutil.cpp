@@ -33,7 +33,7 @@ static void usage() {
   std::cout
       << "weutil [-h | --help] [-a | --all] [-j | --json] [-f | --format] [-l | --list] [-e <dev-name> | --eeprom <dev-name>]\n";
   std::cout
-      << "       [-w <file> | --write <file>] [-m <Type> <Value> | --modify <Type> <Value>] [-d <file> | --dump <file>]\n";
+      << "       [-w <file> | --write <file>] [-m <Type> <Value> | --modify <Type> <Value>] [-d <file> | --dump <file>] [-v | --version]\n";
   std::cout << "   -h | --help : show usage. \n";
   std::cout << "   -a | --all : print all eeprom devices data. \n";
   std::cout << "   -j | --json : print eeprom data in JSON format. \n";
@@ -69,6 +69,7 @@ static void usage() {
   std::cout << "          ex. weutil -m 17 11:22:33:44:55:66-258\n";
   std::cout << "   -d | --dump : dump eeprom as a file.\n";
   std::cout << "        ex. weutil -d aaa.bin or weutil -d /home/aaa.bin\n";
+  std::cout << "   -v | --version : show the weutil version.\n";
 }
 
 static void printEepromData(const std::string& eDeviceName, bool jFlag) {
@@ -369,7 +370,7 @@ static void modifyEepromData(const std::string& eDeviceName,
 
     if (CRCendIndex) {
       std::vector<uint8_t> modifyCRCdata(new_eeprom_data.begin(), new_eeprom_data.begin() + CRCendIndex + 1); // get calculate CRC data
-      // calculate CRC16(CCITT-FALSE) Checksum and set to new eeprom data
+      // calculate CRC16(CCITT-AUG) Checksum and set to new eeprom data
       uint16_t newCRC = CRC_INIT;
       for (auto byte : modifyCRCdata) { // XOR current CRC with byte shifted left
         newCRC ^= static_cast<uint16_t>(byte) << 8;
@@ -426,6 +427,7 @@ int main(int argc, char* argv[]) {
   std::string modifyType;
   std::string modifyValue;
   std::string dumpFileName;
+  const std::string weutil_version = "1.1";
 
   static struct option long_options[] = {
       {"list", no_argument, NULL, 'l'},
@@ -433,6 +435,7 @@ int main(int argc, char* argv[]) {
       {"help", no_argument, NULL, 'h'},
       {"all", no_argument, NULL, 'a'},
       {"json", no_argument, NULL, 'j'},
+      {"version", no_argument, NULL, 'v'},
       {"eeprom", required_argument, NULL, 'e'},
       {"write", required_argument, NULL, 'w'},
       {"modify", required_argument, NULL, 'm'},
@@ -440,7 +443,7 @@ int main(int argc, char* argv[]) {
       {0, 0, 0, 0}};
 
   doPrint = (argc == 1) ? 1 : 0;
-  while ((c = getopt_long(argc, argv, "ahjlf:e:w:m:d:", long_options, &opt_index)) !=
+  while ((c = getopt_long(argc, argv, "vahjlf:e:w:m:d:", long_options, &opt_index)) !=
          -1) {
     switch (c) {
       case 'e':
@@ -463,6 +466,9 @@ int main(int argc, char* argv[]) {
       case 'j':
         jsonFlag = 1;
         doPrint = 1;
+        break;
+      case 'v':
+        std::cout << "weutil version is " << weutil_version << std::endl;
         break;
       case 'w':
         writeFileName = optarg;

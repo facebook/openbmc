@@ -1,9 +1,6 @@
-import heapq
 import json
-import math
 import os
 import tempfile
-from typing import Sequence
 
 import aiohttp.web
 
@@ -42,8 +39,8 @@ async def post_qsfp_thermal_data(request: aiohttp.web.Request) -> aiohttp.web.Re
         "dataCenter": payload["switchDeploymentInfo"]["dataCenter"],
         "hostnameScheme": payload["switchDeploymentInfo"]["hostnameScheme"],
         "data": {
-            "optics_temp_p95": {
-                "value": calc_percentile(iface_temperatures, 95),
+            "optics_temp": {
+                "value": max(iface_temperatures),
             },
         },
     }
@@ -60,15 +57,6 @@ async def post_qsfp_thermal_data(request: aiohttp.web.Request) -> aiohttp.web.Re
 
 
 # Utils
-
-
-def calc_percentile(values: Sequence[float], percentile: int):
-    """
-    Calculates the percentile (e.g. P95) of values. `percentile` is an integer between
-    0 and 100. The function is optimized for percentiles close to 100, although correct
-    for all values.
-    """
-    return heapq.nlargest(math.ceil((1 - percentile / 100) * len(values)), values)[-1]
 
 
 def _validate_payload(payload, schema, path="") -> None:

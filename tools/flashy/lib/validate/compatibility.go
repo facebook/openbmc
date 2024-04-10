@@ -60,7 +60,7 @@ var CheckImageBuildNameCompatibility = func(imageFilePath string) error {
 	}
 	log.Printf("OpenBMC Version from /etc/issue: '%v'", etcIssueVer)
 
-	imageFileVer, err := getOpenBMCVersionFromImageFile(imageFilePath)
+	imageFileVer, err := GetOpenBMCVersionFromImageFile(imageFilePath)
 	if err != nil {
 		return err
 	}
@@ -109,11 +109,11 @@ var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
 	return verMap[rBuildname], nil
 }
 
-// getOpenBMCVersionFromImageFile gets OpenBMC version from the image file.
+// GetOpenBMCVersionFromImageFile gets OpenBMC version from the image file.
 // examples: fbtp-v2020.09.1, wedge100-v2020.07.1
 // WARNING: This relies on the U-Boot version string on the image
 // there is no guarantee that this will succeed
-var getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
+var GetOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
 	// mmap the first 1MB of the image file
 	imageFileBuf, err := fileutils.MmapFileRange(
 		imageFilePath, 0, 1024*1024, syscall.PROT_READ, syscall.MAP_SHARED,

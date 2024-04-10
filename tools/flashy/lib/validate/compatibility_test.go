@@ -41,11 +41,11 @@ func TestCompatibleVersionMapping(t *testing.T) {
 
 func TestCheckImageBuildNameCompatibility(t *testing.T) {
 	getOpenBMCVersionFromIssueFileOrig := utils.GetOpenBMCVersionFromIssueFile
-	getOpenBMCVersionFromImageFileOrig := getOpenBMCVersionFromImageFile
+	getOpenBMCVersionFromImageFileOrig := GetOpenBMCVersionFromImageFile
 	compatibleVersionMappingOrig := compatibleVersionMapping
 	defer func() {
 		utils.GetOpenBMCVersionFromIssueFile = getOpenBMCVersionFromIssueFileOrig
-		getOpenBMCVersionFromImageFile = getOpenBMCVersionFromImageFileOrig
+		GetOpenBMCVersionFromImageFile = getOpenBMCVersionFromImageFileOrig
 		compatibleVersionMapping = compatibleVersionMappingOrig
 	}()
 
@@ -112,7 +112,7 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 			utils.GetOpenBMCVersionFromIssueFile = func() (string, error) {
 				return tc.etcIssueVer, nil
 			}
-			getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
+			GetOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
 				if exampleImageFilePath != imageFilePath {
 					t.Errorf("imageFilePath: want '%v' got '%v'", exampleImageFilePath, imageFilePath)
 				}
@@ -241,7 +241,7 @@ func TestGetOpenBMCVersionFromImageFile(t *testing.T) {
 				}
 				return tc.fileBuf, tc.mmapErr
 			}
-			got, err := getOpenBMCVersionFromImageFile("x")
+			got, err := GetOpenBMCVersionFromImageFile("x")
 			if tc.want != got {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}

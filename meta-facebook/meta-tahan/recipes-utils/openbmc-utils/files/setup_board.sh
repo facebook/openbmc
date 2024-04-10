@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,11 +16,10 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
 
-LOCAL_URI += "\
-    file://board-utils.sh \
-    file://setup_i2c.sh \
-    file://setup_board.sh \
-    "
+# set LPC signal strength pin to 0 (weakest)
+setup_LPC_signal_strength 0

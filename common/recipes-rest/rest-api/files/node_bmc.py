@@ -167,7 +167,7 @@ async def getSPIVendor(spi_id):
         return await getSPIVendorLegacy(spi_id)
 
     ret = getSPIVendorNew(spi_id, "flash")
-    if (ret == "Unknown"):
+    if ret == "Unknown":
         ret = getSPIVendorNew(spi_id, "spi0.")
 
     return ret
@@ -381,6 +381,15 @@ class bmcNode(node):
             irq_pct=CPU_PCT.irq,
             sirq_pct=CPU_PCT.softirq,
         )
+        cpu = {
+            "usr": CPU_PCT.user,
+            "sys": CPU_PCT.system,
+            "nic": CPU_PCT.nice,
+            "idle": CPU_PCT.idle,
+            "io": CPU_PCT.iowait,
+            "irq": CPU_PCT.irq,
+            "sirq": CPU_PCT.softirq,
+        }
         memory_info = self.getMemInfo()
 
         # Mem: 175404K used, 260324K free, 21436K shrd, 0K buff, 112420K cached
@@ -442,6 +451,7 @@ class bmcNode(node):
             "Memory Usage": mem_usage,
             "memory": memory_info,
             "CPU Usage": cpu_usage,
+            "cpu": cpu,
             "OpenBMC Version": obc_version,
             "u-boot version": uboot_version,
             "kernel version": kernel_release + " " + kernel_version,

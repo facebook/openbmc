@@ -88,6 +88,31 @@ paths:
                     type: string
                   CPU Usage:
                     type: string
+                  cpu:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      usr:
+                        type: number
+                        format: float
+                      sys:
+                        type: number
+                        format: float
+                      nic:
+                        type: number
+                        format: float
+                      idle:
+                        type: number
+                        format: float
+                      io:
+                        type: number
+                        format: float
+                      irq:
+                        type: number
+                        format: float
+                      sirq:
+                        type: number
+                        format: float
                   load-1:
                     type: string
                   open-fds:

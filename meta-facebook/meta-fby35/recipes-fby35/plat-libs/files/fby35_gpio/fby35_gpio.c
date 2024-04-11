@@ -393,19 +393,17 @@ const char *rf_gpio_pin_name[] = {
 
 //Java Island BIC GPIO
 const char *ji_gpio_pin_name[] = {
-  "FPGA_READY",                     //0
-  "FAN_FULL_SPEED_FPGA_L",
-  "PWR_BRAKE_L",
-  "INA230_E1S_ALERT_L",
+  "INA230_E1S_ALERT_L",             //0
+  "I2C_2_CPU_ALERT_R_L",
   "FPGA_WATCH_DOG_TIMER0_L",
   "FPGA_WATCH_DOG_TIMER1_L",
   "HSC_OCP_GPIO1",
   "FPGA_WATCH_DOG_TIMER2_L",
   "RST_USB_HUB_R_L",
   "P3V_BAT_SCALED_EN_R",
-  "WP_HW_EXT_CTRL_L",               //10
+  "WP_HW_EXT_CTRL_L",
   "BIC_EROT_LVSFT_EN",
-  "RTC_CLR_L",
+  "RTC_CLR_L",                      //10
   "I2C_SSIF_ALERT_L",
   "FPGA_CPU_BOOT_DONE",
   "FM_HSC_TIMER",
@@ -413,18 +411,19 @@ const char *ji_gpio_pin_name[] = {
   "BIC_TMP_LVSFT_EN",
   "BIC_I2C_0_FPGA_ALERT_L",
   "BIC_I2C_1_FPGA_ALERT_L",
-  "JTAG_TRST_CPU_BMC_L",            //20
+  "JTAG_TRST_CPU_BMC_L",
   "RST_I2C_E1S_L",
-  "FM_PWRDIS_E1S",
+  "FM_PWRDIS_E1S",                  //20
   "PWRBTN_L",
   "RST_BMC_L",
   "BMC_READY",
   "BIC_READY",
   "PWR_BRAKE_CPU1_L",
   "RUN_POWER_PG",
+  "BIC_RETIMER_MUX_SEL",
   "SPI_BMC_FPGA_INT_L",
-  "IRQ_HSC_ALERT1_L",               //30
-  "I2C_SENSOR_LVC_ALERT_L",
+  "IRQ_HSC_ALERT1_L",
+  "I2C_SENSOR_LVC_ALERT_L",         //30
   "INA_CRIT_ALERT1_L",
   "RUN_POWER_EN",
   "SPI_HOST_TPM_RST_L",
@@ -433,8 +432,8 @@ const char *ji_gpio_pin_name[] = {
   "RUN_POWER_FAULT_L",
   "SENSOR_AIR0_THERM_L",
   "SENSOR_AIR1_THERM_L",
-  "FM_FAST_PROCHOT_EN",             //40
-  "THERM_BB_OVERT_L",
+  "FM_FAST_PROCHOT_EN",
+  "THERM_BB_OVERT_L",               //40
   "THERM_BB_WARN_L",
   "BIC_CPU_JTAG_MUX_SEL",
   "FM_VR_FW_PROGRAM_L",
@@ -443,8 +442,8 @@ const char *ji_gpio_pin_name[] = {
   "BIC_REMOTEJTAG_EN",
   "THERM_OVERT_CPU1_L_3V3",
   "HSC_OCP_GPIO2",
-  "HSC_OCP_GPIO3",                  //50
-  "SENSOR_AIR0_ALERT_L",
+  "HSC_OCP_GPIO3",
+  "SENSOR_AIR0_ALERT_L",            //50
   "SENSOR_AIR1_ALERT_L",
   "BIC_CPLD_VRD_MUX_SEL",
   "CPU_BIC_PROCHOT_L",
@@ -453,8 +452,8 @@ const char *ji_gpio_pin_name[] = {
   "BOARD_ID0",
   "BOARD_ID1",
   "BOARD_ID2",
-  "BOARD_ID3",                      //60
-  "BOARD_ID4",
+  "BOARD_ID3",
+  "BOARD_ID4",                      //60
   "BOARD_ID5",
   "P12V_STBY_SCALED",
   "VDD_1V8_SENSOR",
@@ -463,8 +462,8 @@ const char *ji_gpio_pin_name[] = {
   "P3V_BAT_SCALED",
   "CPUVDD_SENSOR",
   "FPGA_VCC_AO_SENSOR",
-  "1V2_SENSOR",                     //70
-  "CARD_TYPE_EXP",
+  "1V2_SENSOR",
+  "CARD_TYPE_EXP",                  //70
   "VDD_3V3_M2_SCALED",
   "P1V2_STBY_SCALED",
   "FBVDDQ_SENSOR",

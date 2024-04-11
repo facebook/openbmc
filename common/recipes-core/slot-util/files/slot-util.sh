@@ -41,6 +41,9 @@ sku_type=0
 
 if grep -q "yosemite" /etc/issue; then
     sku_type=0
+elif grep -q "javaisland" /etc/issue; then
+    sku_type=fffc
+    ocp3nic=1
 elif grep -q "halfdome" /etc/issue; then
     sku_type=fffd
     ocp3nic=1
@@ -102,6 +105,13 @@ case "$sku_type" in
         slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
         slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
       fi
+   ;;
+    "fffc")
+      echo "Java Island, OCP3 NIC"
+      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
    "fffd")
       echo "Half Dome, OCP3 NIC"

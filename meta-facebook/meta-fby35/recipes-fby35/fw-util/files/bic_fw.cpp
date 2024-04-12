@@ -12,6 +12,14 @@
 #include <libpldm-oem/pldm.h>
 #include <libpldm-oem/fw_update.hpp>
 
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
+
 using namespace std;
 
 #define MAX_CMD_LEN 120
@@ -291,6 +299,10 @@ int PldmBicFwComponent::is_pldm_info_valid()
 int PldmBicFwComponent::try_pldm_update(const string& image, bool force, uint8_t specified_comp)
 {
   int isValidImage = oem_parse_pldm_package(image.c_str());
+  int ret = -1;
+  uint8_t self_test_result[2] = {0};
+  char cmd[MAX_CMD_LEN] = {0};
+  uint8_t slot_id = get_slot_id();
 
   if (isValidImage == 0) {
     cout << "PLDM image detected." << endl;
@@ -300,17 +312,39 @@ int PldmBicFwComponent::try_pldm_update(const string& image, bool force, uint8_t
   }
 
   if (force) {
-    return pldm_update(image, false, specified_comp);
+    ret = pldm_update(image, false, specified_comp);
   } else {
     if (is_pldm_info_valid() == 0) {
       cout << "PLDM Package info check passed." << endl;
-      return pldm_update(image, false, specified_comp);
+      ret = pldm_update(image, false, specified_comp);
     } else {
       cout << "PLDM Package info is invalid." << endl;
       return -1;
     }
   }
 
+  if (ret == 0) {
+    sleep(5);
+    // Check BIC self-test results to prevent bic-cached from getting stuck forever
+    for (int i = 0; i < 10; i++) {
+      ret = bic_get_self_test_result(slot_id, (uint8_t *)&self_test_result, NONE_INTF);
+      if (ret == 0) {
+        syslog(LOG_INFO, "bic_get_self_test_result of slot%u: %X %X", slot_id, self_test_result[0], self_test_result[1]);
+        break;
+      }
+      sleep(1);
+    }
+    if (ret != 0) {
+      syslog(LOG_INFO, "bic_get_self_test_result of slot%u failed after retry", slot_id);
+      return ret;
+    }
+
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached -s slot%d; /usr/bin/kv set slot%d_sdr_thresh_update 1", slot_id, slot_id);   //retrieve SDR data after BIC FW update
+    log_system(cmd);
+  }
+
+  return ret;
 }
 
 int PldmBicFwComponent::update(string image)

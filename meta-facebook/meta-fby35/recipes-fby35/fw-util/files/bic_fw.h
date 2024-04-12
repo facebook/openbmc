@@ -39,6 +39,7 @@ class BicFwComponent : public Component {
     int print_version();
     int get_version(json& j) override;
     bool is_recovery();
+    int get_slot_id() { return slot_id; };
 };
 
 class PldmBicFwComponent : public PldmComponent, public BicFwComponent {

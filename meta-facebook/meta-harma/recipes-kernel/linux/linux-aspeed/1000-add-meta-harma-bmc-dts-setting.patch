@@ -1,14 +1,15 @@
-From f0b3fb82e042e1218861ca104064a0172be24a50 Mon Sep 17 00:00:00 2001
+From 2c92e986cc8f388c9b24f8056e96e914d0befab9 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
-Date: Mon, 1 Apr 2024 13:15:31 +0800
-Subject: [PATCH 1/1] update harma dts
+Date: Tue, 19 Mar 2024 16:03:42 +0800
+Subject: [PATCH 1/1] meta-facebook: harma: add harm dts
 
+lorelink:https://lore.kernel.org/all/20240412091600.2534693-1-peteryin.openbmc@gmail.com/
 ---
- .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 48 ++++++++++++++++---
- 1 file changed, 41 insertions(+), 7 deletions(-)
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 76 +++++++++++++++----
+ 1 file changed, 62 insertions(+), 14 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index bbbab8023cd6..eaae2de1bdae 100644
+index b2834399f3d1..e0c1997bba11 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 @@ -179,6 +179,16 @@ flash@0 {
@@ -122,7 +123,45 @@ index bbbab8023cd6..eaae2de1bdae 100644
  };
  
  &i2c13 {
-@@ -540,10 +574,10 @@ &sgpiom0 {
+@@ -463,7 +497,8 @@ &gpio0 {
+ 	/*A0-A7*/	"","","","","","","","",
+ 	/*B0-B7*/	"","","","",
+ 			"bmc-spi-mux-select-0","led-identify","","",
+-	/*C0-C7*/	"","","","","","","","",
++	/*C0-C7*/	"reset-cause-platrst","","","","",
++			"cpu0-err-alert","","",
+ 	/*D0-D7*/	"","","sol-uart-select","","","","","",
+ 	/*E0-E7*/	"","","","","","","","",
+ 	/*F0-F7*/	"","","","","","","","",
+@@ -472,7 +507,8 @@ &gpio0 {
+ 	/*I0-I7*/	"","","","","","","","",
+ 	/*J0-J7*/	"","","","","","","","",
+ 	/*K0-K7*/	"","","","","","","","",
+-	/*L0-L7*/	"","","","","","","","",
++	/*L0-L7*/	"","","","",
++			"leakage-detect-alert","","","",
+ 	/*M0-M7*/	"","","","","","","","",
+ 	/*N0-N7*/	"led-postcode-0","led-postcode-1",
+ 			"led-postcode-2","led-postcode-3",
+@@ -491,7 +527,16 @@ &gpio0 {
+ 	/*W0-W7*/	"","","","","","","","",
+ 	/*X0-X7*/	"","","","","","","","",
+ 	/*Y0-Y7*/	"","","","","","","","",
+-	/*Z0-Z7*/	"","","","","","","","";
++	/*Z0-Z7*/	"","","","","","","presence-post-card","";
++};
++
++&gpio1 {
++	gpio-line-names =
++	/*18A0-18A7*/ "ac-power-button","","","","","","","",
++	/*18B0-18B7*/ "","","","","","","","",
++	/*18C0-18C7*/ "","","","","","","","",
++	/*18D0-18D7*/ "","","","","","","","",
++	/*18E0-18E3*/ "","","","","","","","";
+ };
+ 
+ &sgpiom0 {
+@@ -540,10 +585,10 @@ &sgpiom0 {
  	"","reset-control-cpu0-p1-mux",
  	"","reset-control-e1s-mux",
  	"power-host-good","reset-control-mb-mux",
@@ -135,6 +174,27 @@ index bbbab8023cd6..eaae2de1bdae 100644
  	"presence-e1s-0","reset-control-usb-hub",
  	"","reset-control",
  	/*E4-E7 line 72-79*/
+@@ -594,13 +639,16 @@ &sgpiom0 {
+ 	"SLOT_ID_BCB_2","",
+ 	"SLOT_ID_BCB_3","",
+ 	/*K0-K3 line 160-167*/
+-	"","","","","","","","",
++	"","","","","","","P0_I3C_APML_ALERT_L","",
+ 	/*K4-K7 line 168-175*/
+-	"","","","","","","","",
++	"","","","","","","irq-uv-detect-alert","",
+ 	/*L0-L3 line 176-183*/
+-	"","","","","","","","",
++	"irq-hsc-alert","",
++	"cpu0-prochot-alert","",
++	"cpu0-thermtrip-alert","",
++	"reset-cause-pcie","",
+ 	/*L4-L7 line 184-191*/
+-	"","","","","","","","",
++	"pvdd11-ocp-alert","","","","","","","",
+ 	/*M0-M3 line 192-199*/
+ 	"","","","","","","","",
+ 	/*M4-M7 line 200-207*/
 -- 
 2.25.1
 

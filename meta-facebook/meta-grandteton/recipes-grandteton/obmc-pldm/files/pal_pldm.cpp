@@ -98,14 +98,7 @@ pldm_firmware_parameter_handler::swb_cache_handle (
     kv::set(bic_active_key, bic_ver, kv::region::temp);
     kv::set(comp_active_key, comp_active_ver, kv::region::temp);
   } else {
-    // BIC will return error code 8 when its component is power off
-    found = comp_active_ver.find("8");
-    if (found == std::string::npos) {
       ret = SWB_FW_BIC_ERROR;
-    } else {
-      kv::set(bic_active_key, bic_ver, kv::region::temp);
-      kv::set(comp_active_key, "NA", kv::region::temp);
-    }
   }
 
   return ret;
@@ -122,6 +115,7 @@ pldm_firmware_parameter_handler::get_firmware_parameter (uint8_t bus, uint8_t ei
   };
 
   int ret = oem_pldm_send_recv(bus, eid, request, response);
+  static int bic_error_flag = 0; 
 
   if (ret == PLDM_SUCCESS) {
     pldm_get_firmware_parameters_resp fwParams{};
@@ -178,6 +172,10 @@ pldm_firmware_parameter_handler::get_firmware_parameter (uint8_t bus, uint8_t ei
                         "" : (const char*)activeCompImageSetVerStr.ptr;
         }
 
+        if (ret == SWB_FW_BIC_ERROR) {
+            bic_error_flag = 1;
+        }
+
         compParamPtr += sizeof(pldm_component_parameter_entry) +
                           activeCompVerStr.length + pendingCompVerStr.length;
         compParamTableLen -= sizeof(pldm_component_parameter_entry) +
@@ -191,6 +189,10 @@ pldm_firmware_parameter_handler::get_firmware_parameter (uint8_t bus, uint8_t ei
   } else {
     syslog(LOG_WARNING, "Function oem_pldm_send_recv() error, rc = %d.", ret);
     ret = -1;
+  }
+
+  if(bic_error_flag) {
+    return SWB_FW_BIC_ERROR;
   }
 
   return ret;

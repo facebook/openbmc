@@ -1,20 +1,26 @@
 #!/bin/bash
 
-lockfile="/tmp/bic-update.lock"
+lockfile="/tmp/pldm-fw-upate.lock"
 
 exec 200>"$lockfile"
-flock -n 200 || { echo "BIC update is already running"; exit 1; }
+flock -n 200 || { echo "PLDM firmware update is already running"; exit 1; }
 
 SB_CPLD_ADDR="0x22"
 SB_UART_MUX_SWITCH_REG="0x08"
 BIC_BOOT_STRAP_SPI_VAL="0x00"
 BIC_BOOT_STRAP_REG="0x0C"
 
+SD_EEPROM_ADDR="0x54"
+REMAINING_WRTIE_OFFSET=("0x09" "0x00")
+
+RAA229620_RW_TIMES=28
+MP2857_TPS536C5_RW_TIMES=1000
+
 show_usage() {
-  echo "Usage: bic-updater.sh [sd|ff|wf] (--rcvy <slot_id> <uart image>) (<slot_id>) <pldm image>"
-  echo "       update all BICs  : bic-updater.sh [sd|ff|wf] <pldm image>"
-  echo "       update one BIC   : bic-updater.sh [sd|ff|wf] <slot_id> <pldm image>"
-  echo "       recovery one BIC and then update all BICs : : bic-updater.sh [sd|ff|wf] --rcvy <slot_id> <uart image> <pldm image>"
+  echo "Usage: pldm-fw-update.sh [sd|ff|wf|sd_vr] (--rcvy <slot_id> <uart image>) (<slot_id>) <pldm image>"
+  echo "       update all PLDM component  : pldm-fw-update.sh [sd|ff|wf] <pldm image>"
+  echo "       update one PLDM component   : pldm-fw-update.sh [sd|ff|wf|sd_vr] <slot_id> <pldm image>"
+  echo "       recovery one BIC and then update all BICs : : pldm-fw-update.sh [sd|ff|wf] --rcvy <slot_id> <uart image> <pldm image>"
   echo ""
 }
 
@@ -131,12 +137,12 @@ update_bic() {
 
 	cp "$1" /tmp/images
 
-	sleep 1
+	sleep 10
 
 	software_id=$(busctl tree xyz.openbmc_project.PLDM |grep /xyz/openbmc_project/software/ | cut -d "/" -f 5)
 	echo "software_id = $software_id"
 
-	sleep 1
+	sleep 60
 
 	if [ "$software_id" != "" ]; then
 
@@ -145,7 +151,7 @@ update_bic() {
 			delete_software_id
 			exit 255
 		fi
-
+		sleep 10
 		busctl set-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.Activation RequestedActivation s "xyz.openbmc_project.Software.Activation.RequestedActivations.Active"
 		wait_for_update_complete
 		return $?
@@ -254,6 +260,77 @@ error_and_exit() {
   exit 255
 }
 
+Initialize_vr_remaining_write() {
+	local slot_id=$1
+	local eeprom_addr=$2
+	local pldm_image=$3
+	local hex_dump
+
+	# Dump the header and remove "\n", " " of the pldm image
+	hex_dump=$(hexdump -c "$pldm_image" | head -n 15 | cut -c 9- | tr -d '\n[:space:]')
+
+	case "$hex_dump" in
+		*"raa229620"*)
+			remaining_write_times=$RAA229620_RW_TIMES
+			;;
+		*"mp2857"*|*"tps536c5"*)
+			remaining_write_times=$MP2857_TPS536C5_RW_TIMES
+			;;
+		*)
+			echo "Failed to initialize remaining write because of unknown VR device"
+			exit 255
+			;;
+	esac
+
+	set_vr_remaining_write_to_eeprom "$slot_id" "$eeprom_addr" "$remaining_write_times"
+}
+
+check_vr_remaining_write() {
+	local i2c_bus=$(($1+15))
+	local slot_id=$1
+	local eeprom_addr=$2
+	local pldm_image=$3
+	local result
+
+	i2ctransfer -f -y $i2c_bus w2@"$eeprom_addr" "${REMAINING_WRTIE_OFFSET[@]}"
+	
+	result=$(i2ctransfer -f -y  $i2c_bus r2@"$eeprom_addr")
+
+    if [ "$result" == "0xff 0xff" ]; then
+		Initialize_vr_remaining_write "$slot_id" "$eeprom_addr" "$pldm_image"
+		return 0
+	else
+		# Split the remaining write times into two parts
+		IFS=' ' read -ra result_array <<< "$result"
+		# Remove the prefix "0x" and merge the two parts
+		result="0x${result_array[0]#0x}${result_array[1]#0x}"
+		# Transfer the merged hex to decimal
+		remaining_write_times=$(printf "%d" "$result")
+
+		if [ "$remaining_write_times" -eq 0 ]; then
+			echo "VR device can't be updated because the remaining write times is 0"
+			exit 255
+		fi
+	fi
+}
+
+set_vr_remaining_write_to_eeprom() {
+	local i2c_bus=$(($1+15))
+	local eeprom_addr=$2
+	local rw_times=$3
+	local hex
+
+	hex=$(printf "%04x" "$rw_times")
+	# Split the hex into two parts
+	local hex1=${hex:0:2}
+	local hex2=${hex:2}
+	# Add the prefix "0x" to each part
+	local byte1="0x$hex1"
+	local byte2="0x$hex2"
+	# Write the remaining write times back to EEPROM
+	i2ctransfer -f -y $i2c_bus w4@"$eeprom_addr" "${REMAINING_WRTIE_OFFSET[@]}" "$byte1" "$byte2"
+}
+
 # Check for minimum required arguments
 [ $# -lt 2 ] && error_and_exit "PLDM"
 
@@ -264,6 +341,12 @@ pldm_image=$2
 
 # Determine recovery mode and check for required image files based on argument count
 if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
+
+  if [ "$bic_name" == "sd_vr" ]; then
+	echo "VR device can't be updated in recovery mode"
+	exit 255
+  fi
+
   is_rcvy=true
   slot_id=$3
   uart_image=$4
@@ -314,6 +397,18 @@ if [ "$is_rcvy" == true ]; then
   systemctl start pldmd
 fi
 
+# TODO: WF/FF need to implement the remaining write times check
+if [ "$bic_name" == "sd_vr" ]; then
+
+	if [ "$slot_id" == "" ]; then
+		echo "Failed to update SD VR because <slot_id> is empty"
+		exit 255
+	fi
+
+	check_vr_remaining_write "$slot_id" "$SD_EEPROM_ADDR" "$pldm_image"
+	echo "remaining write before updating: $remaining_write_times"
+fi
+
 # Wating for mctp and pldm to restart
 sleep 10
 
@@ -362,6 +457,12 @@ if [ "$bic_name" == "wf" ] || [ "$bic_name" == "ff" ]; then
 	done
 
 	sleep 3
+fi
+
+if [ "$bic_name" == "sd_vr" ]; then
+	remaining_write_times=$((remaining_write_times-1))
+	set_vr_remaining_write_to_eeprom "$slot_id" "$SD_EEPROM_ADDR" "$remaining_write_times"
+	echo "remaining write after updating: $remaining_write_times"
 fi
 
 delete_software_id

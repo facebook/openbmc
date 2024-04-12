@@ -5949,6 +5949,8 @@ pal_get_post_complete(uint8_t slot_id, uint8_t *bios_post_complete) {
 
       *bios_post_complete = atoi(value);
       break;
+    case SERVER_TYPE_JI:
+      // there is no corresponding GPIO on the JavaIsland platform Currently
     default:
       break;
   }

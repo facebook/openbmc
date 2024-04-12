@@ -37,6 +37,7 @@
 
 #define MAX_NUM_SLOTS       4
 #define DELAY_GPIOD_READ    1000000
+#define GPIO_NOT_SUPPORT    0xFF
 
 
 /* To hold the gpio info and status */
@@ -218,6 +219,7 @@ static void
 populate_gpio_pins(uint8_t fru) {
 
   int i, ret;
+  int slot_type = SERVER_TYPE_NONE;
   gpio_pin_t *gpios;
 
   gpios = get_struct_gpio_pin(fru);
@@ -227,8 +229,16 @@ populate_gpio_pins(uint8_t fru) {
   }
 
   // Only monitor RST_PLTRST_BUF_N & FM_BMC_DEBUG_ENABLE_N
-  gpios[gpio_offset.rst_pltrst].flag = 1; // Platform reset pin
-  gpios[gpio_offset.bmc_debug_enable].flag = 1; // Debug enable pin
+  slot_type = fby35_common_get_slot_type(fru);
+  if (slot_type == SERVER_TYPE_JI) {
+    // there is no corresponding GPIO on the JavaIsland platform Currently
+    gpios[gpio_offset.rst_pltrst].flag = 0;
+    gpios[gpio_offset.bmc_debug_enable].flag = 0;
+  } else {
+    gpios[gpio_offset.rst_pltrst].flag = 1; // Platform reset pin
+    gpios[gpio_offset.bmc_debug_enable].flag = 1; // Debug enable pin
+  }
+
   for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GET_BIT(gpio_ass_val, i);
@@ -285,6 +295,11 @@ init_gpio_offset_map() {
         bic_pch_pwr_fault = gl_bic_pwr_fault;
         bic_pch_pwr_fault_size = ARRAY_SIZE(gl_bic_pwr_fault);
 
+      } else if (slot_type == SERVER_TYPE_JI) {
+        gpio_offset.bmc_ready = JI_BMC_READY;
+        gpio_offset.pwrgd_cpu = JI_RUN_POWER_PG;
+        gpio_offset.rst_pltrst = GPIO_NOT_SUPPORT;
+        gpio_offset.bmc_debug_enable = GPIO_NOT_SUPPORT;
       } else {
         // Crater Lake as default setting
         gpio_offset.bmc_ready = BMC_READY;
@@ -479,7 +494,7 @@ gpio_monitor_poll(void *ptr) {
             syslog(LOG_CRIT, "FRU: %d, FM_BMC_DEBUG_ENABLE_N is ASSERT: %d", fru, gpios[i].status);
           }
         } else {
-          if (i ==  gpio_offset.rst_pltrst) {
+          if (i == gpio_offset.rst_pltrst) {
             rst_timer(fru);
           } else if (i == gpio_offset.bmc_debug_enable) {
             printf("FM_BMC_DEBUG_ENABLE_N is DEASSERT !\n");

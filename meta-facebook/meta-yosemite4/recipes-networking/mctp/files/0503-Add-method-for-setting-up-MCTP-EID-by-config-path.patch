@@ -1,0 +1,199 @@
+From 493b47a79dadef19123372b1cc362c2dc34395fc Mon Sep 17 00:00:00 2001
+From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
+Date: Thu, 11 Apr 2024 08:27:09 +0800
+Subject: [PATCH] Add method for setting up MCTP EID by config path
+
+The code have been update to
+https://github.com/CodeConstruct/mctp/pull/17
+---
+ src/mctpd.c | 162 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 162 insertions(+)
+
+diff --git a/src/mctpd.c b/src/mctpd.c
+index 3a68421..911e55e 100644
+--- a/src/mctpd.c
++++ b/src/mctpd.c
+@@ -2129,6 +2129,156 @@ out:
+ 	return rc;
+ }
+ 
++static int method_setup_endpoint_by_config_path(sd_bus_message *call, void *data, sd_bus_error *berr)
++{
++	int rc = 0;
++	int net;
++	ctx *ctx = data;
++	const char *object_path = NULL;
++	char ifname[MAX_STRING_SIZE];
++	char parent_path[MAX_STRING_SIZE];
++	char *peer_path;
++	dest_phys desti = {0}, *dest = &desti;
++	peer *peer = NULL;
++	struct sockaddr_mctp_ext addr;
++	struct mctp_ctrl_cmd_get_eid req = {0};
++	req.ctrl_hdr.rq_dgram_inst = RQDI_REQ;
++	req.ctrl_hdr.command_code = MCTP_CTRL_CMD_GET_ENDPOINT_ID;
++	sd_bus_error error = SD_BUS_ERROR_NULL;
++	sd_bus_message *message = NULL;
++
++	rc = sd_bus_message_read(call, "s", &object_path);
++	if (rc < 0)
++		goto err;
++
++	rc = sd_bus_get_property(ctx->bus,
++		OPENBMC_ENTITY_MANAGER, object_path,
++		OPENBMC_MCTP_CONFIG_IFACE, "EndpointId",
++		&error, &message, "t");
++	if (rc < 0) {
++		warnx("Failed to get endpoint ID from %s. Error:%s", object_path,
++			error.message);
++		goto err;
++	}
++	uint64_t temp = 0;
++	sd_bus_message_read(message, "t", &temp);
++	mctp_eid_t eid = (mctp_eid_t)temp;
++
++	peer = find_peer_by_addr(ctx, eid, net);
++	if (peer) {
++		warnx("Endpoint ID %d already added", eid);
++		goto err;
++	}
++
++	message = sd_bus_message_unref(message);
++
++	rc = sd_bus_get_property(ctx->bus,
++		OPENBMC_ENTITY_MANAGER, object_path,
++		OPENBMC_MCTP_CONFIG_IFACE, "Address",
++		&error, &message, "t");
++	if (rc < 0) {
++		warnx("Failed to get address from %s. Error:%s", object_path,
++			error.message);
++		goto err;
++	}
++
++	sd_bus_message_read(message, "t", &data);
++
++	size_t size = sizeof(uint8_t);
++	memcpy(dest->hwaddr, &data, size);
++	dest->hwaddr_len = size;
++
++	message = sd_bus_message_unref(message);
++
++	rc = sd_bus_get_property(ctx->bus,
++		OPENBMC_ENTITY_MANAGER, object_path,
++		OPENBMC_MCTP_CONFIG_IFACE, "Bus",
++		&error, &message, "t");
++	if (rc < 0) {
++		warnx("Failed to get bus from %s. Error:%s", object_path,
++			error.message);
++		goto err;
++	}
++	uint64_t bus = 0;
++	sd_bus_message_read(message, "t", &bus);
++	// TODO: handle different interface name
++	sprintf(ifname, "mctpi2c%ld", bus);
++
++	dest->ifindex = mctp_nl_ifindex_byname(ctx->nl, ifname);
++	if (dest->ifindex <= 0) {
++		warnx("Unknown ifname: %s", ifname);
++		goto err;
++	}
++
++	rc = validate_dest_phys(ctx, dest);
++	if (rc < 0) {
++		warnx("Bad phys: 0x%02x", dest->hwaddr[0]);
++		goto err;
++	}
++
++	net = mctp_nl_net_byindex(ctx->nl, dest->ifindex);
++	if (net < 1) {
++		warnx("No net for ifindex");
++		goto err;
++	}
++
++	message = sd_bus_message_unref(message);
++
++	// The s[i] is like ../chassis/device so we need to get its parent path
++	// for the chassis path.
++	if (strlen(object_path) >= MAX_STRING_SIZE) {
++		warnx("Object path too large >= %d", MAX_STRING_SIZE);
++		goto err;
++	}
++	strcpy(parent_path, object_path);
++	char *ret = strrchr(parent_path, '/');
++	if (ret)
++		*ret = '\0';
++
++	rc = add_peer(ctx, dest, eid, net, parent_path, &peer);
++	if (rc < 0) {
++		warnx("Failed to add peer for EID %d", eid);
++		goto err;
++	}
++
++	add_peer_route(peer);
++
++	uint8_t* buf = NULL;
++	size_t buf_size = 0;
++	rc = endpoint_query_peer(peer, MCTP_CTRL_HDR_MSG_TYPE,
++		&req, sizeof(req), &buf, &buf_size, &addr);
++	if (rc < 0) {
++		warnx("Response timeout for EID %d.", eid);
++		remove_peer(peer);
++		free(buf);
++		goto err;
++	}
++	free(buf);
++
++	rc = query_peer_properties(peer);
++
++	rc = publish_peer(peer, true);
++	if (rc < 0) {
++		warnx("Error publishing remote eid %d net %d", eid, net);
++		goto err;
++	}
++
++	message = sd_bus_message_unref(message);
++
++	rc = path_from_peer(peer, &peer_path);
++	if (rc < 0)
++		goto err;
++	dfree(peer_path);
++
++	return sd_bus_reply_method_return(call, "yisb",
++		peer->eid, peer->net, peer_path, 1);
++err:
++	message = sd_bus_message_unref(message);
++	sd_bus_error_free(&error);
++	set_berr(ctx, rc, berr);
++	return rc;
++}
++
+ // Query various properties of a peer.
+ // To be called when a new peer is discovered/assigned, once an EID is known
+ // and routable.
+@@ -2595,11 +2745,23 @@ static const sd_bus_vtable bus_mctpd_vtable[] = {
+ 		SD_BUS_PARAM(found),
+ 		method_learn_endpoint,
+ 		0),
++
+ 	SD_BUS_METHOD_WITH_ARGS("SetupEndpointByConfig",
+ 		SD_BUS_NO_ARGS,
+ 		SD_BUS_NO_RESULT,
+ 		method_setup_endpoint_by_config,
+ 		0),
++
++	SD_BUS_METHOD_WITH_NAMES("SetupEndpointByConfigPath",
++		"s",
++		SD_BUS_PARAM(object_path),
++		"yisb",
++		SD_BUS_PARAM(eid)
++		SD_BUS_PARAM(net)
++		SD_BUS_PARAM(path)
++		SD_BUS_PARAM(found),
++		method_setup_endpoint_by_config_path,
++		0),
+ 	SD_BUS_VTABLE_END,
+ 
+ };
+-- 
+2.25.1
+

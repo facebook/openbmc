@@ -302,6 +302,45 @@ MAPTOSTRING root_port_common_mapping[] = {
     {0x09, 0, 0x00, 0xFF, "DEV 3", "4OU"}, // Endpoint of 4OU DEV 3
     {0x00, 2, 0x01, 0xFF, "DEV 4", "4OU"}, // Root port of 4OU DEV 4
     {0x0A, 0, 0x00, 0xFF, "DEV 4", "4OU"}, // Endpoint of 4OU DEV 4
+    // Greatlakes
+    {0xbf, 2, 0x00, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC
+    {0xc0, 0, 0x00, 0xFF, "Class 1", "NIC"}, //  Endpoint of Class 1 NIC
+    {0x0a, 6, 0x00, 0xFF, "Num 0", "SB"}, //  Root port of Boot Drive
+    {0x0b, 0, 0x00, 0xFF, "Num 0", "SB"}, //  Endpoint of Boot Drive
+    {0x0a, 8, 0x00, 0xFF, "USB", "SKT4"}, //  Root port of USB controller
+    {0x0c, 0, 0x00, 0xFF, "USB", "SKT4"}, //  Endpoint of USB controller
+    {0x83, 9, 0x00, 0xFF, "DEV 0", "1OU"}, // Root port of 1OU DEV 0
+    {0x84, 0, 0x00, 0xFF, "DEV 0", "1OU"}, // Endpoint of 1OU DEV 0
+    {0x83, 8, 0x00, 0xFF, "DEV 1", "1OU"}, // Root port of 1OU DEV 1
+    {0x85, 0, 0x00, 0xFF, "DEV 1", "1OU"}, // Endpoint of 1OU DEV 1
+    {0x83, 7, 0x00, 0xFF, "DEV 2", "1OU"}, // Root port of 1OU DEV 2
+    {0x86, 0, 0x00, 0xFF, "DEV 2", "1OU"}, // Endpoint of 1OU DEV 2
+    {0x83, 2, 0x00, 0xFF, "DEV 0", "2OU"}, // Root port of 2OU DEV 0
+    {0x87, 0, 0x00, 0xFF, "DEV 0", "2OU"}, // Endpoint of 2OU DEV 0
+    {0x83, 3, 0x00, 0xFF, "DEV 1", "2OU"}, // Root port of 2OU DEV 1
+    {0x88, 0, 0x00, 0xFF, "DEV 1", "2OU"}, // Endpoint of 2OU DEV 1
+    {0x83, 4, 0x00, 0xFF, "DEV 2", "2OU"}, // Root port of  2OU DEV 2
+    {0x89, 0, 0x00, 0xFF, "DEV 2", "2OU"}, // Endpoint of 2OU DEV 2
+    {0x83, 5, 0x00, 0xFF, "DEV 3", "2OU"}, // Root port of 2OU DEV 3
+    {0x8a, 0, 0x00, 0xFF, "DEV 3", "2OU"}, // Endpoint of 2OU DEV 3
+    {0x83, 6, 0x00, 0xFF, "DEV 4", "2OU"}, // Root port of 2OU DEV 4
+    {0x8b, 0, 0x00, 0xFF, "DEV 4", "2OU"}, // Endpoint of 2OU DEV 4
+    {0x47, 2, 0x00, 0xFF, "DEV 0", "3OU"}, // Root port of 3OU DEV 0
+    {0x48, 0, 0x00, 0xFF, "DEV 0", "3OU"}, // Endpoint of 3OU DEV 0
+    {0x47, 3, 0x00, 0xFF, "DEV 1", "3OU"}, // Root port of 3OU DEV 1
+    {0x49, 0, 0x00, 0xFF, "DEV 1", "3OU"}, // Endpoint of 3OU DEV 1
+    {0x47, 4, 0x00, 0xFF, "DEV 2", "3OU"}, // Root port of 3OU DEV 2
+    {0x4a, 0, 0x00, 0xFF, "DEV 2", "3OU"}, // Endpoint of 3OU DEV 2
+    {0x47, 9, 0x00, 0xFF, "DEV 0", "4OU"}, // Root port of 4OU DEV 0
+    {0x4b, 0, 0x00, 0xFF, "DEV 0", "4OU"}, // Endpoint of 4OU DEV 0
+    {0x47, 8, 0x00, 0xFF, "DEV 1", "4OU"}, // Root_port 4OU DEV 1
+    {0x4c, 0, 0x00, 0xFF, "DEV 1", "4OU"}, // Endpoint of 4OU DEV 1
+    {0x47, 7, 0x00, 0xFF, "DEV 2", "4OU"}, // Root port of 4OU DEV 2
+    {0x4d, 0, 0x00, 0xFF, "DEV 2", "4OU"}, // Endpoint of 4OU DEV 2
+    {0x47, 6, 0x00, 0xFF, "DEV 3", "4OU"}, // Root port of 4OU DEV 3
+    {0x4e, 0, 0x00, 0xFF, "DEV 3", "4OU"}, // Endpoint of 4OU DEV 3
+    {0x47, 5, 0x00, 0xFF, "DEV 4", "4OU"}, // Root port of 4OU DEV 4
+    {0x4f, 0, 0x00, 0xFF, "DEV 4", "4OU"}, // Endpoint of 4OU DEV 4
 };
 
 MAPTOSTRING root_port_mapping_e1s[] = {

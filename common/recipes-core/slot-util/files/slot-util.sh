@@ -41,6 +41,9 @@ sku_type=0
 
 if grep -q "yosemite" /etc/issue; then
     sku_type=0
+elif grep -q "greatlakes" /etc/issue; then
+    sku_type=fffb
+    ocp3nic=1
 elif grep -q "javaisland" /etc/issue; then
     sku_type=fffc
     ocp3nic=1
@@ -106,6 +109,10 @@ case "$sku_type" in
         slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
       fi
    ;;
+   "fffb")
+      echo "Great Lakes, OCP3 NIC"
+      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+    ;;
    "fffd")
       echo "Half Dome, OCP3 NIC"
       slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | cut -c1-12 | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')

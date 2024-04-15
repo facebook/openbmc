@@ -1,0 +1,26 @@
+From 6337e506c2e335de92e5ddb724b933dedf538c48 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Wed, 3 Apr 2024 15:13:25 +0800
+Subject: [PATCH] Also allow power policy when watchdog flag is raised.
+
+---
+ discover_system_state.cpp | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/discover_system_state.cpp b/discover_system_state.cpp
+index 0a20bb3..c4b89ee 100644
+--- a/discover_system_state.cpp
++++ b/discover_system_state.cpp
+@@ -97,8 +97,7 @@ int main(int argc, char** argv)
+     else if (bmcRebootCause == BMC::RebootCause::Watchdog)
+     {
+         info(
+-            "BMC was reset due to cold reset, no power restore policy will be run");
+-        return 0;
++            "The LastbootCause is a watchdog. Power policy execution is currently allowed");
+     }
+ 
+     /* The logic here is to first check the one-time PowerRestorePolicy setting.
+-- 
+2.25.1
+

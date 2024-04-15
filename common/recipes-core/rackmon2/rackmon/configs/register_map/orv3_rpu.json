@@ -454,10 +454,26 @@
             "name": "HEX_External_Y_Filter_Pressure"
         },
         {
+            "begin": 37141,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Static_Pressure"
+        },
+        {
+            "begin": 37142,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Vertical_Bladder"
+        },
+        {
             "begin": 37376,
             "length": 1,
             "format": "FLAGS",
             "flags": [
+                [15, "Bladder_Level_Sensor_Status"],
+                [14, "Static_Pressure_Status"],
+                [13, "RPU_Low_Water_Level_Gauge_Status"],
+                [12, "RPU_Middle_Water_Level_Gauge_Status"],
                 [11, "RPU_HSC_Status"],
                 [10, "RPU_Air_Inlet_Thermometer_Status"],
                 [9, "HX_Water_Inlet_Thermometer_Status"],
@@ -478,6 +494,7 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
+                [10, "Y_Filter_Status"],
                 [9, "Deassert_RPU_Ready"],
                 [8, "Emergency_Button_Triggered"],
                 [7, "Coolant_Loop_Blocked"],

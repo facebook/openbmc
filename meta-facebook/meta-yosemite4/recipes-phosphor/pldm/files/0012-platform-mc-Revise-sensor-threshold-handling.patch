@@ -1,7 +1,7 @@
-From 26ba57c08d338ee8b92a6a265df3d09913bd01a1 Mon Sep 17 00:00:00 2001
+From bbd77fcb56d32983453f750f0e8cd994d6ebe5d6 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Tue, 26 Mar 2024 13:46:19 +0800
-Subject: [PATCH] platform-mc: Revise sensor threshold handling
+Subject: [PATCH 12/12] platform-mc: Revise sensor threshold handling
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -45,10 +45,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 95 insertions(+), 54 deletions(-)
 
 diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
-index 7966ff6..84fa716 100644
+index 0104c51..d402b87 100644
 --- a/platform-mc/numeric_sensor.cpp
 +++ b/platform-mc/numeric_sensor.cpp
-@@ -105,48 +105,76 @@ NumericSensor::NumericSensor(const tid_t tid, const bool sensorDisabled,
+@@ -105,48 +105,76 @@ NumericSensor::NumericSensor(const pldm_tid_t tid, const bool sensorDisabled,
              hysteresis = pdr->hysteresis.value_s32;
              break;
      }
@@ -158,7 +158,7 @@ index 7966ff6..84fa716 100644
          switch (pdr->range_field_format)
          {
              case PLDM_RANGE_FIELD_FORMAT_UINT8:
-@@ -173,9 +201,9 @@ NumericSensor::NumericSensor(const tid_t tid, const bool sensorDisabled,
+@@ -173,9 +201,9 @@ NumericSensor::NumericSensor(const pldm_tid_t tid, const bool sensorDisabled,
          }
      }
  
@@ -170,7 +170,7 @@ index 7966ff6..84fa716 100644
          switch (pdr->range_field_format)
          {
              case PLDM_RANGE_FIELD_FORMAT_UINT8:
-@@ -226,17 +254,24 @@ NumericSensor::NumericSensor(const tid_t tid, const bool sensorDisabled,
+@@ -226,17 +254,24 @@ NumericSensor::NumericSensor(const pldm_tid_t tid, const bool sensorDisabled,
          std::make_unique<OperationalStatusIntf>(bus, path.c_str());
      operationalStatusIntf->functional(!sensorDisabled);
  

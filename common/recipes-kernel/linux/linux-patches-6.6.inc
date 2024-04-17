@@ -7,8 +7,7 @@ SRC_URI:append = " \
     file://0001-ARM-dts-aspeed-Remove-eMMC-from-ast2600-facebook-net.patch \
     file://0002-ARM-dts-aspeed-elbert-Enable-eMMC-device.patch \
     file://0003-ARM-dts-aspeed-fuji-Enable-eMMC-device.patch \
-    file://0004-ARM-dts-aspeed-remove-cloudripper-dts.patch \
-    file://0005-ARM-dts-aspeed-Add-Facebook-fblite-r1-BMC.patch \
+    file://0004-ARM-dts-aspeed-Add-Facebook-fblite-r1-BMC.patch \
 "
 
 #
@@ -74,10 +73,7 @@ SRC_URI:append = " \
 # PWM patches used by multiple OpenBMC platforms.
 #
 SRC_URI:append = " \
-    file://0165-dt-bindings-hwmon-fan-Add-fan-binding-to-schema.patch \
-    file://0166-dt-bindings-hwmon-Support-Aspeed-g6-PWM-TACH-Control.patch \
-    file://0167-hwmon-aspeed-g6-pwm-tacho-Support-for-ASPEED-g6-PWM-.patch \
-    file://0168-aspeed-g6.dtsi-update-for-PWM-and-TACH-driver.patch \
+    file://0165-aspeed-g6.dtsi-update-for-PWM-and-TACH-driver.patch \
 "
 
 #
@@ -86,7 +82,7 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0169-net-ncsi-Simplify-Kconfig-dts-control-flow.patch \
     file://0170-net-ncsi-Add-NC-SI-1.2-Get-MC-MAC-Address-command.patch \
-    file://0171-aspeed-g6.dtsi-add-pcc-config.patch \
+    file://0171-meta-facebook-common-add-pcc-config.patch \
     file://0172-drivers-watchdog-ast2600-support-bootstatus.patch \
 "
 
@@ -124,5 +120,5 @@ SRC_URI:append = " \
 "
 
 SRC_URI:append = " \
-    file://0503-Revert-usb-gadget-f_ecm-Add-suspend-resume-and-remot.patch \
+    file://0502-Revert-linux-kernel-patch-usb-gadget-f_ecm-Add-suspe.patch \
 "

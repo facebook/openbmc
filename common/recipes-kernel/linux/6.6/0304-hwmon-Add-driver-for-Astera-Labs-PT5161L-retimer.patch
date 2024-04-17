@@ -1,7 +1,7 @@
-From 5c2ba0b2e08f5c62d87831f0d7299a1e49cd6067 Mon Sep 17 00:00:00 2001
+From 74a0069f3f93559b85df80cd298e8609d731b2af Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Tue, 5 Dec 2023 15:14:31 +0800
-Subject: [PATCH v6 1/1] hwmon: Add driver for Astera Labs PT5161L retimer
+Subject: [PATCH 304/304] hwmon: Add driver for Astera Labs PT5161L retimer
 
 This driver implements support for temperature monitoring of Astera Labs
 PT5161L series PCIe retimer chips.
@@ -23,12 +23,12 @@ Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
  create mode 100644 drivers/hwmon/pt5161l.c
 
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index c7ed1f73ac06..9f5f215fcb2d 100644
+index a637730ce8ed..c71ff59f736f 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
-@@ -185,6 +185,7 @@ Hardware Monitoring Kernel Drivers
+@@ -183,6 +183,7 @@ Hardware Monitoring Kernel Drivers
+    peci-dimmtemp
     pmbus
-    powerz
     powr1220
 +   pt5161l
     pxe1610
@@ -83,10 +83,10 @@ index 000000000000..1b97336991ea
 +heartbeat_status Heartbeat status
 +================ ===============================
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 960512bec428..a656b98971ca 100644
+index 433471fbd994..566cc4dda7a8 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -17679,6 +17679,13 @@ F:	fs/pstore/
+@@ -17329,6 +17329,13 @@ F:	fs/pstore/
  F:	include/linux/pstore*
  K:	\b(pstore|ramoops)
  
@@ -101,10 +101,10 @@ index 960512bec428..a656b98971ca 100644
  M:	Richard Cochran <richardcochran@gmail.com>
  L:	netdev@vger.kernel.org
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index a608264da87d..c8d86a695f66 100644
+index cdde5a2a4d90..0163149c98fd 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -1714,6 +1714,16 @@ source "drivers/hwmon/peci/Kconfig"
+@@ -1693,6 +1693,16 @@ source "drivers/hwmon/peci/Kconfig"
  
  source "drivers/hwmon/pmbus/Kconfig"
  
@@ -122,12 +122,12 @@ index a608264da87d..c8d86a695f66 100644
  	tristate "PWM fan"
  	depends on (PWM && OF) || COMPILE_TEST
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 47be39af5c03..0554d3ccb09a 100644
+index 774eba4960d6..caed8a52afae 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
-@@ -180,6 +180,7 @@ obj-$(CONFIG_SENSORS_PC87427)	+= pc87427.o
+@@ -178,6 +178,7 @@ obj-$(CONFIG_SENSORS_PC87360)	+= pc87360.o
+ obj-$(CONFIG_SENSORS_PC87427)	+= pc87427.o
  obj-$(CONFIG_SENSORS_PCF8591)	+= pcf8591.o
- obj-$(CONFIG_SENSORS_POWERZ)	+= powerz.o
  obj-$(CONFIG_SENSORS_POWR1220)  += powr1220.o
 +obj-$(CONFIG_SENSORS_PT5161L)	+= pt5161l.o
  obj-$(CONFIG_SENSORS_PWM_FAN)	+= pwm-fan.o
@@ -807,5 +807,5 @@ index 000000000000..60361e39c474
 +MODULE_DESCRIPTION("Hwmon driver for Astera Labs Aries PCIe retimer");
 +MODULE_LICENSE("GPL");
 -- 
-2.34.1
+2.43.0
 

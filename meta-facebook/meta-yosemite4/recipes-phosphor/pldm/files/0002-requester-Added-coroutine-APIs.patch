@@ -1,7 +1,7 @@
-From 43e0f040e0486fa66cbd728e3eff0a8f41a30506 Mon Sep 17 00:00:00 2001
+From b8fc1222833aa6e9fdcfd6cc9de2eda9f095bbea Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Sun, 29 May 2022 18:44:19 +0100
-Subject: [PATCH 02/11] requester: Added coroutine APIs
+Subject: [PATCH 02/12] requester: Added coroutine APIs
 
 Added Coroutine struct and SendRecvPldmMsg awaiter struct to send PLDM
 command and receive response in the same function instead of handling

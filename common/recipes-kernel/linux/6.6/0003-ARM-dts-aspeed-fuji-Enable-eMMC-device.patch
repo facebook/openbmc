@@ -1,7 +1,7 @@
-From 6c50b36cc5400dfe283ec400d6197c30e689878a Mon Sep 17 00:00:00 2001
+From 8012c4678d5ea07085a751417649c0845d5d3102 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Fri, 2 Feb 2024 16:58:06 -0800
-Subject: [PATCH 3/5] ARM: dts: aspeed: fuji: Enable eMMC device
+Subject: [PATCH 3/4] ARM: dts: aspeed: fuji: Enable eMMC device
 
 Summary:
 

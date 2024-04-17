@@ -1,7 +1,8 @@
-From fa8927742092c836d5baec115e3247098e8b33b5 Mon Sep 17 00:00:00 2001
+From b4a39bcc5808c3c56a841e161cdc069f3e6e44e6 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 18 Oct 2022 11:38:44 -0700
-Subject: [PATCH] mmc: sdhci-of-aspeed: add "skip_probe" module parameter
+Subject: [PATCH 200/201] mmc: sdhci-of-aspeed: add "skip_probe" module
+ parameter
 
 Add "skip_probe" module parameter to allow users to skip mmc device
 probe at boot up time.

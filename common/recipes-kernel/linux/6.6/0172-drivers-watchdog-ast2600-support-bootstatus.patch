@@ -1,7 +1,7 @@
-From f8546e41b8cdacae089600fd9be94dfa53f217d5 Mon Sep 17 00:00:00 2001
+From 506aa0a0d10b5a2179f142312bb640af71402c8c Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Thu, 14 Mar 2024 10:30:26 +0800
-Subject: [PATCH v1] drivers: watchdog: ast2600 support bootstatus
+Subject: [PATCH 172/172] drivers: watchdog: ast2600 support bootstatus
 
 Add WDIOF_EXTERN1 bootstatus in ast2600
 
@@ -43,5 +43,5 @@ index b4773a6aaf8c..8adadd394be6 100644
  		if (of_device_is_compatible(np, "aspeed,ast2400-wdt") ||
  		    of_device_is_compatible(np, "aspeed,ast2500-wdt"))
 -- 
-2.25.1
+2.43.0
 

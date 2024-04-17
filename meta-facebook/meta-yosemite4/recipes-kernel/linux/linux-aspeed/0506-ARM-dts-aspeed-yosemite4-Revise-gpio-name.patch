@@ -1,7 +1,7 @@
-From 1ee82ba8938ea8fb47c9dd3bda0df72fd106392f Mon Sep 17 00:00:00 2001
+From 3464aae80b1e1189e0a4ed0a033ed4ae01606e63 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 11 Dec 2023 10:29:27 +0800
-Subject: [PATCH 506/510] ARM: dts: aspeed: yosemite4: Revise gpio name
+Subject: [PATCH 506/518] ARM: dts: aspeed: yosemite4: Revise gpio name
 
 Revise gpio name for EVT schematic changes
 
@@ -14,10 +14,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 61d7efdc625e..9e707ac85a37 100644
+index a6c8c7b64b1a..c43bc9f2bef1 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1418,7 +1418,7 @@ &pinctrl_gpiu4_default &pinctrl_gpiu5_default
+@@ -1424,7 +1424,7 @@ &pinctrl_gpiu4_default &pinctrl_gpiu5_default
  	/*B0-B7*/       "FLT_HSC_SERVER_SLOT8_N","AC_ON_OFF_BTN_CPLD_SLOT5_N",
  			"PWRGD_SLOT1_STBY","PWRGD_SLOT2_STBY",
  			"PWRGD_SLOT3_STBY","PWRGD_SLOT4_STBY","","",
@@ -26,7 +26,7 @@ index 61d7efdc625e..9e707ac85a37 100644
  			"FM_NIC1_WAKE_N","","RST_PCIE_SLOT2_N",
  	/*D0-D7*/       "","","","","","","","",
  	/*E0-E7*/       "PRSNT_NIC1_N","PRSNT_NIC2_N","","RST_PCIE_SLOT1_N",
-@@ -1436,16 +1436,15 @@ &pinctrl_gpiu4_default &pinctrl_gpiu5_default
+@@ -1442,16 +1442,15 @@ &pinctrl_gpiu4_default &pinctrl_gpiu5_default
  	/*K0-K7*/       "","","","","","","","",
  	/*L0-L7*/       "","","","","","","ALT_MEDUSA_P12V_EFUSE_N","",
  	/*M0-M7*/       "EN_NIC0_POWER_BMC_R","EN_NIC1_POWER_BMC_R",
@@ -46,7 +46,7 @@ index 61d7efdc625e..9e707ac85a37 100644
  	/*P0-P7*/       "ALT_SMB_BMC_CPLD1_N","'BTN_BMC_R2_N",
  			"EN_P3V_BAT_SCALED_R","PWRGD_P5V_USB_BMC",
  			"FM_BMC_RTCRST_R","RST_USB_HUB_R_N",
-@@ -1463,9 +1462,8 @@ &pinctrl_gpiu4_default &pinctrl_gpiu5_default
+@@ -1469,9 +1468,8 @@ &pinctrl_gpiu4_default &pinctrl_gpiu5_default
  			"","ALT_P12V_AUX_N","FAST_PROCHOT_N",
  			"SPI_WP_DISABLE_STATUS_R_N",
  	/*T0-T7*/       "","","","","","","","",

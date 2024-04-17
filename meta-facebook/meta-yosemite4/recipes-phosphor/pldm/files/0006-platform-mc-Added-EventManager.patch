@@ -1,7 +1,7 @@
-From 1e3f077c7870bf8cb2d089334451a4f7abda9907 Mon Sep 17 00:00:00 2001
+From 7e00a5183c78eba3b26c80db13a13b5f6e900f7f Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
-Subject: [PATCH 06/11] platform-mc: Added EventManager
+Subject: [PATCH 06/12] platform-mc: Added EventManager
 
 Added eventManager to handle sensor event class(00h),
 pldmMessagePollEvent class(05h)  and OEM CPER event class(FAh)
@@ -44,7 +44,7 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 0e5455c..fce004a 100644
+index 6c77159..02a53fe 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
 @@ -368,15 +368,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
@@ -71,18 +71,18 @@ index 0e5455c..fce004a 100644
          catch (const std::out_of_range& e)
          {
 diff --git a/meson.build b/meson.build
-index d51c5f7..0221ad3 100644
+index 2720d8b..1dfeb00 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -72,6 +72,7 @@ endif
+@@ -75,6 +75,7 @@ endif
  conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'static_eid_table.json'))
  conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
  conf_data.set_quoted('PLDM_T2_CONFIG_JSON', join_paths(package_datadir, 'pldm_t2_config.json'))
 +conf_data.set('LOCAL_EID', get_option('local-eid'))
- config = configure_file(output: 'config.h',
+ configure_file(output: 'config.h',
    configuration: conf_data
  )
-@@ -187,6 +188,7 @@ executable(
+@@ -190,6 +191,7 @@ executable(
    'platform-mc/platform_manager.cpp',
    'platform-mc/sensor_manager.cpp',
    'platform-mc/numeric_sensor.cpp',
@@ -91,10 +91,10 @@ index d51c5f7..0221ad3 100644
    implicit_include_directories: false,
    dependencies: deps,
 diff --git a/meson.options b/meson.options
-index 3f24007..b5e1064 100644
+index 2a33823..00c6927 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -185,3 +185,12 @@ option(
+@@ -193,3 +193,12 @@ option(
      description: 'The interval time of sensor polling in milliseconds',
      value: 249
  )
@@ -1991,10 +1991,10 @@ index b77a197..2fb3f1e 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 401ca01..78289c7 100644
+index 8d2bd98..1390310 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -272,11 +272,38 @@ int main(int argc, char** argv)
+@@ -278,11 +278,38 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -2034,7 +2034,7 @@ index 401ca01..78289c7 100644
  #ifdef OEM_IBM
      pldm::responder::oem_ibm_platform::Handler* oemIbmPlatformHandler =
          dynamic_cast<pldm::responder::oem_ibm_platform::Handler*>(
-@@ -302,8 +329,6 @@ int main(int argc, char** argv)
+@@ -308,8 +335,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);

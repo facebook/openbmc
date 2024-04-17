@@ -1,4 +1,4 @@
-From 37625d6dd5f8b566a5cd74f308bf6bd8244c6037 Mon Sep 17 00:00:00 2001
+From 5abdd01dcbfdb7e4dfb4ce3114296e221fb10889 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 11 May 2020 13:51:25 -0700
 Subject: [PATCH 132/132] ARM: dts: aspeed-g5: add jtag controller
@@ -23,7 +23,7 @@ Differential Revision: https://phabricator.intern.facebook.com/D37292797
  1 file changed, 9 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
-index 04f98d1dbb97..f4d6332d3bbd 100644
+index e6f3cf3c721e..adaa6a888a9c 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
 @@ -270,6 +270,15 @@ hace: crypto@1e6e3000 {

@@ -1,4 +1,4 @@
-From 44c6e3d95fb18de4a83937e1b6982de0125968eb Mon Sep 17 00:00:00 2001
+From 9c38a81cde791282453b0c36b88c1b573620577d Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 23:25:29 -0700
 Subject: [PATCH 125/132] jtag: aspeed: support JTAG_RUN_CYCLE ioctl command

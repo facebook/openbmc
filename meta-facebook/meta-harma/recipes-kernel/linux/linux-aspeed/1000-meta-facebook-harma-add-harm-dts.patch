@@ -1,7 +1,7 @@
-From 2c92e986cc8f388c9b24f8056e96e914d0befab9 Mon Sep 17 00:00:00 2001
+From 4a1356ede56b148a61f6108f2c47c986ed882e18 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Tue, 19 Mar 2024 16:03:42 +0800
-Subject: [PATCH 1/1] meta-facebook: harma: add harm dts
+Subject: [PATCH] meta-facebook: harma: add harm dts
 
 lorelink:https://lore.kernel.org/all/20240412091600.2534693-1-peteryin.openbmc@gmail.com/
 ---
@@ -196,5 +196,5 @@ index b2834399f3d1..e0c1997bba11 100644
  	"","","","","","","","",
  	/*M4-M7 line 200-207*/
 -- 
-2.25.1
+2.43.0
 

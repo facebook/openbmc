@@ -1,4 +1,4 @@
-From 5fbe38b2bb67aaec3adda2120794bc98b7a97552 Mon Sep 17 00:00:00 2001
+From 3a618133de31fd8546b55826d7f6099ca54efa65 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 31 Aug 2023 16:55:58 +0800
 Subject: [PATCH 500/501] ARM: dts: aspeed: bletchley: enable PWM and TACH
@@ -15,7 +15,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 73 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
-index e899de681f47..f8564644cc70 100644
+index 5be0e8fd2633..7ba734ab6a9a 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
 @@ -280,6 +280,26 @@ vbus_sled6: vbus_sled6 {

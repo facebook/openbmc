@@ -1,7 +1,8 @@
-From c0031257d36506ee057fcea167dfad66d8aa2869 Mon Sep 17 00:00:00 2001
+From 5151c3b81d589bb444815cec5ebf76c868ea185a Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Tue, 5 Mar 2024 09:30:21 +0800
-Subject: [PATCH] pinctrl: pinctrl-aspeed-g6: correct the offset of SCU630
+Subject: [PATCH 514/518] pinctrl: pinctrl-aspeed-g6: correct the offset of
+ SCU630
 
 Description:
 Correct the offset of "Disable GPIO Internal Pull-Down #4" register that
@@ -79,5 +80,5 @@ index 80838dc54b3a..7938741136a2 100644
  	/* GPIOX7 */
  	ASPEED_PULL_DOWN_PINCONF(AB10, SCU634, 31),
 -- 
-2.25.1
+2.43.0
 

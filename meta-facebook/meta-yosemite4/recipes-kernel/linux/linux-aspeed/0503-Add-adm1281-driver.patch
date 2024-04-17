@@ -1,7 +1,7 @@
-From b880e2c3457d08e3183d9ea436ccf311dd06dcb7 Mon Sep 17 00:00:00 2001
+From 126d0fca6cc242944e38a502f87597dd46752c90 Mon Sep 17 00:00:00 2001
 From: Eli_Huang <Eli_Huang@wiwynn.com>
 Date: Tue, 26 Sep 2023 10:20:13 +0800
-Subject: [PATCH 503/510] Add adm1281 driver
+Subject: [PATCH 503/518] Add adm1281 driver
 
 ---
  Documentation/devicetree/bindings/hwmon/adi,adm1275.yaml | 2 ++

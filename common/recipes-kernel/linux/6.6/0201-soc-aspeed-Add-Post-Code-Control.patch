@@ -1,7 +1,7 @@
-From 10f8bab0576886b5b2a0b56d6b9b9ba58c636f1f Mon Sep 17 00:00:00 2001
+From 0e72ae75e591450f80e9b52db9cbb7ce5c7a23d8 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Thu, 7 Dec 2023 13:04:19 +0800
-Subject: [PATCH 1/2] soc: aspeed: Add Post Code Control
+Subject: [PATCH 201/201] soc: aspeed: Add Post Code Control
 
 Add Aspeed Post Code Capture (PCC) module support.
 PCC can be used to snoop the debug code sent by the
@@ -9,7 +9,6 @@ host through LPC I/O ports.
 
 This driver is reference from below link
 Link: https://github.com/AspeedTech-BMC/linux/blob/aspeed-master-v5.15/drivers/soc/aspeed/aspeed-lpc-pcc.c
-
 ---
  drivers/soc/aspeed/Kconfig          |   8 +
  drivers/soc/aspeed/Makefile         |   2 +
@@ -18,13 +17,13 @@ Link: https://github.com/AspeedTech-BMC/linux/blob/aspeed-master-v5.15/drivers/s
  create mode 100644 drivers/soc/aspeed/aspeed-lpc-pcc.c
 
 diff --git a/drivers/soc/aspeed/Kconfig b/drivers/soc/aspeed/Kconfig
-index aaf4596ae4f94..6bdb6fc696bb9 100644
+index bdea4b0a687b..654a141c9119 100644
 --- a/drivers/soc/aspeed/Kconfig
 +++ b/drivers/soc/aspeed/Kconfig
 @@ -24,6 +24,14 @@ config ASPEED_LPC_SNOOP
  	  allows the BMC to listen on and save the data written by
  	  the host to an arbitrary LPC I/O port.
-
+ 
 +config ASPEED_LPC_PCC
 +	tristate "Aspeed Post Code Capture support"
 +	depends on ARCH_ASPEED && REGMAP && MFD_SYSCON
@@ -37,18 +36,18 @@ index aaf4596ae4f94..6bdb6fc696bb9 100644
  	tristate "ASPEED uart routing control"
  	select REGMAP
 diff --git a/drivers/soc/aspeed/Makefile b/drivers/soc/aspeed/Makefile
-index 5f61bb4cc36cf..803d5a21216ef 100644
+index 224127a1dd55..a41a5fc60b5b 100644
 --- a/drivers/soc/aspeed/Makefile
 +++ b/drivers/soc/aspeed/Makefile
-@@ -6,3 +6,5 @@ obj-$(CONFIG_ASPEED_P2A_CTRL)		+= aspeed-p2a-ctrl.o
- obj-$(CONFIG_ASPEED_SOCINFO)		+= aspeed-socinfo.o
+@@ -7,3 +7,5 @@ obj-$(CONFIG_ASPEED_SOCINFO)		+= aspeed-socinfo.o
  obj-$(CONFIG_ASPEED_SBC)		+= aspeed-sbc.o
  obj-$(CONFIG_ASPEED_XDMA)		+= aspeed-xdma.o
+ obj-$(CONFIG_ASPEED_OTP)		+= aspeed-otp.o
 +obj-$(CONFIG_ASPEED_LPC_PCC)		+= aspeed-lpc-pcc.o
 +
 diff --git a/drivers/soc/aspeed/aspeed-lpc-pcc.c b/drivers/soc/aspeed/aspeed-lpc-pcc.c
 new file mode 100644
-index 0000000000000..e5ba0047499f9
+index 000000000000..e5ba0047499f
 --- /dev/null
 +++ b/drivers/soc/aspeed/aspeed-lpc-pcc.c
 @@ -0,0 +1,469 @@
@@ -522,4 +521,5 @@ index 0000000000000..e5ba0047499f9
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("Driver for Aspeed Post Code Capture");
 -- 
-2.25.1
+2.43.0
+

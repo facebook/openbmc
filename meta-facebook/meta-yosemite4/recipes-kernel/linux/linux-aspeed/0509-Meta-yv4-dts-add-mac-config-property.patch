@@ -1,7 +1,7 @@
-From 3ea853377671d0b11dadf129e974fd32b07db229 Mon Sep 17 00:00:00 2001
+From ed711e26b693cb44f05e45e1d1c05e0326ad4a9c Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 3 Jan 2024 13:49:42 +0800
-Subject: [PATCH 509/510] Meta yv4 dts : add mac config property
+Subject: [PATCH 509/518] Meta yv4 dts : add mac config property
 
 To fix Mellanox cx7 cannot get IP after NIC re-plug.
 
@@ -12,13 +12,13 @@ This commit depends on the patch below:
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 3f07e736eae4..6933e40291a5 100644
+index 41043c73e58b..1412e5a2808a 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -137,6 +137,8 @@ &mac2 {
  	pinctrl-0 = <&pinctrl_rmii3_default>;
  	use-ncsi;
- 	mlx,multi-host;
+ 	mellanox,multi-host;
 +	ncsi-ctrl,start-redo-probe;
 +	ncsi-ctrl,no-channel-monitor;
  };
@@ -27,7 +27,7 @@ index 3f07e736eae4..6933e40291a5 100644
 @@ -145,6 +147,8 @@ &mac3 {
  	pinctrl-0 = <&pinctrl_rmii4_default>;
  	use-ncsi;
- 	mlx,multi-host;
+ 	mellanox,multi-host;
 +	ncsi-ctrl,start-redo-probe;
 +	ncsi-ctrl,no-channel-monitor;
  };

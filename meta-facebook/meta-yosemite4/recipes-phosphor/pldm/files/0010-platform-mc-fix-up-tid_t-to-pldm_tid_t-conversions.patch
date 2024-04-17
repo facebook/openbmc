@@ -1,7 +1,7 @@
-From 80a1acfe52be3552c7555725373a45bd09a4d28c Mon Sep 17 00:00:00 2001
+From 98c985b5738b14db4b36599b540d9f460d4beb4d Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 3 Jan 2024 11:26:32 -0600
-Subject: [PATCH 10/11] platform-mc: fix up tid_t to pldm_tid_t conversions
+Subject: [PATCH 10/12] platform-mc: fix up tid_t to pldm_tid_t conversions
 
 An earlier patch in this sequence had defined a typedef `tid_t`
 at one point in its history and some later patches rely on it.

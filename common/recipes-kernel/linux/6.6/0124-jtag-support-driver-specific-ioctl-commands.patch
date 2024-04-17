@@ -1,4 +1,4 @@
-From 18575605eeeb0706a621a5bbaa4bb37479002dd0 Mon Sep 17 00:00:00 2001
+From 2d43d9d97e545502d72a3de4ed1b418b6ffdb6ae Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 22:59:49 -0700
 Subject: [PATCH 124/132] jtag: support driver specific ioctl commands

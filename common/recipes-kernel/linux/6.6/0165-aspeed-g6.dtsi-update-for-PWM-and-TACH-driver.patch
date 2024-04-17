@@ -1,7 +1,7 @@
-From 2ab4d3e557c23ed3cec1fd3020afdb9ad7f03b7b Mon Sep 17 00:00:00 2001
+From 379ff1dd558126d9fd6b8ea39016623f9110b117 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 31 Aug 2023 16:49:57 +0800
-Subject: [PATCH 168/170] aspeed-g6.dtsi update for PWM and TACH driver
+Subject: [PATCH] aspeed-g6.dtsi update for PWM and TACH driver
 
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 8 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index 01c0a7936132..7eee849bbeb7 100644
+index 87268a6aa2d8..28b5395c8459 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 @@ -332,6 +332,14 @@ apb {

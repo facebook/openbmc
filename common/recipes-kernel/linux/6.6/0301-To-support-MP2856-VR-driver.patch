@@ -1,7 +1,7 @@
-From 468f691fc6cd2fbabcd15a1236f639a1dfcc96e4 Mon Sep 17 00:00:00 2001
+From 42fbebe86b788ccaa19aa88a4b78c49aed134d65 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Wed, 8 Nov 2023 09:27:35 +0800
-Subject: [PATCH 301/303] To-support-MP2856-VR-driver
+Subject: [PATCH 301/304] To-support-MP2856-VR-driver
 
 LF-Kernel link:
 link:https://lore.kernel.org/all/20231108024222.2026546-2-peter.yin@quantatw.com/

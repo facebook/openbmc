@@ -1,16 +1,16 @@
-From eb0a33020b186ed6326ca95ac7a2b7d85edc8294 Mon Sep 17 00:00:00 2001
+From 2c748a4c2fc1a3ec6a095d123285d6d750e6400f Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 24 Oct 2023 17:43:44 +0800
-Subject: [PATCH 500/510] add meta yv4 bmc dts setting
+Subject: [PATCH 500/518] add meta yv4 bmc dts setting
 
 This commit depends on the patch below:
 [1] https://lore.kernel.org/lkml/20240109072053.3980855-1-Delphine_CC_Chiu@wiwynn.com/
 ---
- .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 1083 +++++++++++++++--
- 1 file changed, 1011 insertions(+), 72 deletions(-)
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 1084 +++++++++++++++--
+ 1 file changed, 1012 insertions(+), 72 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 64075cc41d92..340be5b9081a 100644
+index 98477792aa00..0119a296c484 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -17,6 +17,25 @@ aliases {
@@ -862,41 +862,42 @@ index 64075cc41d92..340be5b9081a 100644
  	rtc@6f {
  		compatible = "nuvoton,nct3018y";
  		reg = <0x6f>;
-@@ -370,6 +975,33 @@ rtc@6f {
- &i2c13 {
- 	status = "okay";
- 	bus-frequency = <400000>;
-+	gpio@20 {
-+		compatible = "nxp,pca9506";
-+		reg = <0x20>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
+@@ -377,6 +982,34 @@ ipmb@10 {
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 		i2c-protocol;
+ 	};
 +
-+	gpio@21 {
-+		compatible = "nxp,pca9506";
-+		reg = <0x21>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
++        gpio@20 {
++                compatible = "nxp,pca9506";
++                reg = <0x20>;
++                gpio-controller;
++                #gpio-cells = <2>;
++        };
 +
-+	gpio@22 {
-+		compatible = "nxp,pca9506";
-+		reg = <0x22>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
++        gpio@21 {
++                compatible = "nxp,pca9506";
++                reg = <0x21>;
++                gpio-controller;
++                #gpio-cells = <2>;
++        };
 +
-+	gpio@23 {
-+		compatible = "nxp,pca9506";
-+		reg = <0x23>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
++        gpio@22 {
++                compatible = "nxp,pca9506";
++                reg = <0x22>;
++                gpio-controller;
++                #gpio-cells = <2>;
++        };
++
++        gpio@23 {
++                compatible = "nxp,pca9506";
++                reg = <0x23>;
++                gpio-controller;
++                #gpio-cells = <2>;
++        };
  };
  
  &i2c14 {
-@@ -378,44 +1010,54 @@ &i2c14 {
+@@ -385,44 +1018,54 @@ &i2c14 {
  	adc@1d {
  		compatible = "ti,adc128d818";
  		reg = <0x1d>;
@@ -961,7 +962,7 @@ index 64075cc41d92..340be5b9081a 100644
  	};
  
  	temperature-sensor@4e {
-@@ -433,16 +1075,14 @@ eeprom@51 {
+@@ -440,16 +1083,14 @@ eeprom@51 {
  		reg = <0x51>;
  	};
  
@@ -982,7 +983,7 @@ index 64075cc41d92..340be5b9081a 100644
  			#address-cells = <1>;
  			#size-cells = <0>;
  			reg = <0>;
-@@ -450,26 +1090,46 @@ i2c@0 {
+@@ -457,26 +1098,46 @@ i2c@0 {
  			adc@1f {
  				compatible = "ti,adc128d818";
  				reg = <0x1f>;
@@ -1035,7 +1036,7 @@ index 64075cc41d92..340be5b9081a 100644
  			};
  
  			adc@33 {
-@@ -492,34 +1152,54 @@ gpio@61 {
+@@ -499,34 +1160,54 @@ gpio@61 {
  			};
  		};
  
@@ -1098,7 +1099,7 @@ index 64075cc41d92..340be5b9081a 100644
  			};
  
  			adc@33 {
-@@ -547,12 +1227,10 @@ i2c-mux@73 {
+@@ -554,12 +1235,10 @@ i2c-mux@73 {
  		compatible = "nxp,pca9544";
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -1112,7 +1113,7 @@ index 64075cc41d92..340be5b9081a 100644
  			#address-cells = <1>;
  			#size-cells = <0>;
  			reg = <0>;
-@@ -563,10 +1241,10 @@ adc@35 {
+@@ -570,10 +1249,10 @@ adc@35 {
  			};
  		};
  
@@ -1125,7 +1126,7 @@ index 64075cc41d92..340be5b9081a 100644
  
  			adc@35 {
  				compatible = "maxim,max11617";
-@@ -589,12 +1267,75 @@ mctp@10 {
+@@ -596,12 +1275,75 @@ mctp@10 {
  
  	i2c-mux@72 {
  		compatible = "nxp,pca9544";
@@ -1201,11 +1202,11 @@ index 64075cc41d92..340be5b9081a 100644
  
 +
  &adc0 {
- 	ref_voltage = <2500>;
  	status = "okay";
-@@ -607,10 +1348,10 @@ &pinctrl_adc4_default &pinctrl_adc5_default
+ 	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
+@@ -612,10 +1354,10 @@ &pinctrl_adc4_default &pinctrl_adc5_default
+ 
  &adc1 {
- 	ref_voltage = <2500>;
  	status = "okay";
 -	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default>;
 +	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default
@@ -1216,7 +1217,7 @@ index 64075cc41d92..340be5b9081a 100644
  &ehci0 {
  	status = "okay";
  };
-@@ -622,3 +1363,201 @@ &ehci1 {
+@@ -627,3 +1369,201 @@ &ehci1 {
  &uhci {
  	status = "okay";
  };

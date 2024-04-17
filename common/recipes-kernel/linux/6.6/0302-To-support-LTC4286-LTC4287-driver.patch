@@ -1,7 +1,7 @@
-From 8651cc9a082fac261346cace2170fdfaca18d400 Mon Sep 17 00:00:00 2001
+From 76c8149bce4bd1f3b3dc148a4cb3a17edf4e686d Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@Wiwynn.com>
 Date: Mon, 24 Jul 2023 11:58:51 +0800
-Subject: [PATCH 302/303] To support LTC4286 LTC4287 driver
+Subject: [PATCH 302/304] To support LTC4286 LTC4287 driver
 
 LF-Kernel link:
 link:https://lore.kernel.org/all/20231116023027.24855-2-Delphine_CC_Chiu@Wiwynn.com/
@@ -189,7 +189,7 @@ index 000000000000..2cd149676d86
 +temp1_alarm		Chip temperature alarm.
 +======================= =======================================================
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 2955ed8af791..d5c141cb1b10 100644
+index d9cdb7ed74db..433471fbd994 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -12497,6 +12497,16 @@ S:	Maintained

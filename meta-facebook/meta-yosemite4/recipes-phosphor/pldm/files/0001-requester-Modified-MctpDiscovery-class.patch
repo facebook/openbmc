@@ -1,7 +1,7 @@
-From 424010b18998dc487f7f2175821c806abb6102e0 Mon Sep 17 00:00:00 2001
+From 9e017abd96503cf12cc53f55ddc8584789070f48 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Mon, 14 Feb 2022 12:12:25 +0000
-Subject: [PATCH 01/11] requester: Modified MctpDiscovery class
+Subject: [PATCH 01/12] requester: Modified MctpDiscovery class
 
 Modified MctpDiscovery class to take list of managers instead of single
 fwManager. The change is for adding platform-mc manager.
@@ -21,13 +21,13 @@ Change-Id: I1e1673504583a87f2a9bc3adf76fb49c2dc30254
  fw-update/manager.hpp                         |  25 +-
  meson.build                                   |   1 +
  pldmd/pldmd.cpp                               |   4 +-
- requester/mctp_endpoint_discovery.cpp         | 249 +++++++++++++++---
+ requester/mctp_endpoint_discovery.cpp         | 246 +++++++++++++++---
  requester/mctp_endpoint_discovery.hpp         | 110 +++++++-
  .../test/mctp_endpoint_discovery_test.cpp     |  37 +++
  requester/test/meson.build                    |   7 +
  .../test/mock_mctp_discovery_handler_intf.hpp |  20 ++
  requester/test/static_eid_table.json          |  14 +
- 10 files changed, 426 insertions(+), 48 deletions(-)
+ 10 files changed, 426 insertions(+), 45 deletions(-)
  create mode 100644 requester/test/mctp_endpoint_discovery_test.cpp
  create mode 100644 requester/test/mock_mctp_discovery_handler_intf.hpp
  create mode 100644 requester/test/static_eid_table.json
@@ -112,22 +112,22 @@ index 018a703..e750571 100644
       *         specification
       *
 diff --git a/meson.build b/meson.build
-index 1336ba8..07069e5 100644
+index b0ca947..7dad0a8 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -69,6 +69,7 @@ if get_option('transport-implementation') == 'mctp-demux'
- elif get_option('transport-implementation') == 'af-mctp'
+@@ -72,6 +72,7 @@ elif get_option('transport-implementation') == 'af-mctp'
    conf_data.set('PLDM_TRANSPORT_WITH_AF_MCTP', 1)
  endif
+ 
 +conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'static_eid_table.json'))
- config = configure_file(output: 'config.h',
+ configure_file(output: 'config.h',
    configuration: conf_data
  )
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 7b932fa..ae269e6 100644
+index 1dd5de8..0adba8c 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -302,7 +302,9 @@ int main(int argc, char** argv)
+@@ -308,7 +308,9 @@ int main(int argc, char** argv)
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
@@ -139,7 +139,7 @@ index 7b932fa..ae269e6 100644
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (!(revents & EPOLLIN))
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 1a8a6a9..1004e50 100644
+index a962228..1004e50 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -1,9 +1,15 @@
@@ -158,7 +158,7 @@ index 1a8a6a9..1004e50 100644
  #include <map>
  #include <string>
  #include <string_view>
-@@ -11,93 +17,264 @@
+@@ -11,90 +17,264 @@
  
  namespace pldm
  {
@@ -199,7 +199,7 @@ index 1a8a6a9..1004e50 100644
 +
 +void MctpDiscovery::getMctpInfos(MctpInfos& mctpInfos)
  {
--    dbus::ObjectValueTree objects;
+-    pldm::utils::ObjectValueTree objects;
 +    // Find all implementations of the MCTP Endpoint interface
 +    auto mapper = bus.new_method_call(MAPPER_BUSNAME, MAPPER_PATH,
 +                                      MAPPER_INTERFACE, "GetSubTree");
@@ -212,11 +212,8 @@ index 1a8a6a9..1004e50 100644
  
      try
      {
--        auto method = bus.new_method_call(
--            "xyz.openbmc_project.MCTP", "/xyz/openbmc_project/mctp",
--            "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
--        auto reply = bus.call(method, dbusTimeout);
--        reply.read(objects);
+-        objects = pldm::utils::DBusHandler::getManagedObj(MCTPService,
+-                                                          MCTPPath);
 +        auto reply = bus.call(mapper, dbusTimeout);
 +        reply.read(mapperResponse);
      }
@@ -460,10 +457,10 @@ index 1a8a6a9..1004e50 100644
  }
  
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index 7fbe069..99ba1d0 100644
+index de3a6bd..5e065c7 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -1,12 +1,31 @@
+@@ -1,15 +1,34 @@
  #pragma once
  
 -#include "fw-update/manager.hpp"
@@ -479,6 +476,9 @@ index 7fbe069..99ba1d0 100644
 +
  namespace pldm
  {
+ 
+ constexpr auto MCTPService = "xyz.openbmc_project.MCTP";
+ constexpr auto MCTPPath = "/xyz/openbmc_project/mctp";
  
 +/** @class MctpDiscoveryHandlerIntf
 + *
@@ -496,7 +496,7 @@ index 7fbe069..99ba1d0 100644
  class MctpDiscovery
  {
    public:
-@@ -21,26 +40,101 @@ class MctpDiscovery
+@@ -24,26 +43,101 @@ class MctpDiscovery
       *         MCTP enabled devices
       *
       *  @param[in] bus - reference to systemd bus

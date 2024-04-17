@@ -1,16 +1,15 @@
-From 4081a6b8adf3d661144aa7abd644580d4290116c Mon Sep 17 00:00:00 2001
+From c6f888173671d39544014e107e0a495c806eae32 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 12 Feb 2024 11:31:14 +0700
-Subject: Revert linux kernel patch usb: gadget: f_ecm: Add suspend/resume and remote wakeup support
-(https://github.com/torvalds/linux/commit/0a1af6dfa0772ffedaef422127f1338fa0ddfed3).
+Subject: [PATCH 502/502] Revert linux kernel patch usb: gadget: f_ecm: Add
+ suspend/resume and remote wakeup support
 
 The above patch added suspend/resume support to USB gadgets.
-After this patch was added ping fails between COMe and USB0 fails over the USB ethernet interface 
+After this patch was added ping fails between COMe and USB0 fails over the USB ethernet interface
 if the COMe is boots up after BMC.
 
-Till a proper root-cause is found, 
+Till a proper root-cause is found,
 as temporary patch the above patch is reverted.
-
 ---
  drivers/usb/gadget/function/f_ecm.c   | 22 ----------
  drivers/usb/gadget/function/u_ether.c | 63 ---------------------------
@@ -175,4 +174,5 @@ index 34be220cef77..d8df29b31fd7 100644
  struct net_device *gether_connect(struct gether *);
  void gether_disconnect(struct gether *);
 -- 
-2.25.1
+2.43.0
+

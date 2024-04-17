@@ -1,7 +1,7 @@
-From 5971607107e666cebb2b3b4da9a4918e90744b99 Mon Sep 17 00:00:00 2001
+From 3f347cf775cace1780e64d4e47083db36bb2d2cf Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 20 Dec 2023 16:16:06 +0800
-Subject: [PATCH 507/510] remove pincontrol on GPIO U5
+Subject: [PATCH 507/518] remove pincontrol on GPIO U5
 
 Remove pincontrol on GPIO U5 to avoid kernel occupation, let programs at
 application layer can monitor the pin.
@@ -13,10 +13,10 @@ This commit depends on the patch below:
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 9e707ac85a37..3f07e736eae4 100644
+index c43bc9f2bef1..41043c73e58b 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1411,8 +1411,7 @@ &sgpiom0 {
+@@ -1417,8 +1417,7 @@ &sgpiom0 {
  &gpio0 {
  	pinctrl-names = "default";
  	pinctrl-0 = <&pinctrl_gpiu2_default &pinctrl_gpiu3_default

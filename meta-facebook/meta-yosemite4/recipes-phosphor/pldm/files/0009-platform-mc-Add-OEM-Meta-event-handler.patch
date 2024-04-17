@@ -1,7 +1,7 @@
-From 74dce7f204abba780daba4827e8a599277b8bb77 Mon Sep 17 00:00:00 2001
+From 4a3e2b4acfeb59807317e912208f78fa3b893945 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 7 Feb 2024 13:52:07 +0800
-Subject: [PATCH 09/11] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 09/12] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -67,10 +67,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
 diff --git a/meson.build b/meson.build
-index 0654ac2..01912e4 100644
+index 4b32444..4bd619c 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -194,6 +194,7 @@ executable(
+@@ -197,6 +197,7 @@ executable(
    'platform-mc/event_manager.cpp',
    'requester/mctp_endpoint_discovery.cpp',
    'requester/configuration_discovery_handler.cpp',
@@ -937,10 +937,10 @@ index abf990d..ff36161 100644
  
  tests = [
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 9c55fef..52be834 100644
+index 18f3688..c31d2e5 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -289,7 +289,8 @@ int main(int argc, char** argv)
+@@ -295,7 +295,8 @@ int main(int argc, char** argv)
      // Platform handler.
  
      std::unique_ptr<platform_mc::Manager> platformManager =
@@ -950,7 +950,7 @@ index 9c55fef..52be834 100644
  
      pldm::responder::platform::EventMap addOnEventHandlers{
          {PLDM_OEM_EVENT_CLASS_0xFA,
-@@ -312,6 +313,13 @@ int main(int argc, char** argv)
+@@ -318,6 +319,13 @@ int main(int argc, char** argv)
                               size_t eventDataOffset) {
          return platformManager->handleSensorEvent(
              request, payloadLength, formatVersion, tid, eventDataOffset);

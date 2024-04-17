@@ -1,7 +1,7 @@
-From c43ef8b5012f6637939dc2f0b54a6697491d9018 Mon Sep 17 00:00:00 2001
+From 6c79332d5439f1a43c52464537df0eef7151d4d0 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 07/11] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 07/12] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -40,10 +40,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 requester/test/configuration_discovery_handler_test.cpp
 
 diff --git a/common/test/mocked_utils.hpp b/common/test/mocked_utils.hpp
-index 71bc6e7..baaeecb 100644
+index e42677c..744adb8 100644
 --- a/common/test/mocked_utils.hpp
 +++ b/common/test/mocked_utils.hpp
-@@ -39,4 +39,8 @@ class MockdBusHandler : public pldm::utils::DBusHandler
+@@ -68,4 +68,8 @@ class MockdBusHandler : public pldm::utils::DBusHandler
      MOCK_METHOD(pldm::utils::GetSubTreeResponse, getSubtree,
                  (const std::string&, int, const std::vector<std::string>&),
                  (const override));
@@ -53,11 +53,11 @@ index 71bc6e7..baaeecb 100644
 +                (const override));
  };
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 076cd5c..7b5d92c 100644
+index 3a19e8b..265478f 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -559,6 +559,38 @@ PropertyValue DBusHandler::getDbusPropertyVariant(
-     return bus.call(method, dbusTimeout).unpack<PropertyValue>();
+@@ -569,6 +569,38 @@ ObjectValueTree DBusHandler::getManagedObj(const char* service,
+     return bus.call(method).unpack<ObjectValueTree>();
  }
  
 +PropertyMap
@@ -96,10 +96,10 @@ index 076cd5c..7b5d92c 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 5f24322..4e69006 100644
+index c2bdb0d..6cb449c 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -213,6 +213,14 @@ class DBusHandlerInterface
+@@ -220,6 +220,14 @@ class DBusHandlerInterface
      virtual PropertyValue
          getDbusPropertyVariant(const char* objPath, const char* dbusProp,
                                 const char* dbusInterface) const = 0;
@@ -114,7 +114,7 @@ index 5f24322..4e69006 100644
  };
  
  /**
-@@ -277,6 +285,23 @@ class DBusHandler : public DBusHandlerInterface
+@@ -284,6 +292,23 @@ class DBusHandler : public DBusHandlerInterface
          getDbusPropertyVariant(const char* objPath, const char* dbusProp,
                                 const char* dbusInterface) const override;
  
@@ -139,10 +139,10 @@ index 5f24322..4e69006 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index 0221ad3..69a8f82 100644
+index 1dfeb00..112c022 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -190,6 +190,7 @@ executable(
+@@ -193,6 +193,7 @@ executable(
    'platform-mc/numeric_sensor.cpp',
    'platform-mc/event_manager.cpp',
    'requester/mctp_endpoint_discovery.cpp',
@@ -151,7 +151,7 @@ index 0221ad3..69a8f82 100644
    dependencies: deps,
    install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 78289c7..9da29a9 100644
+index 1390310..3887f7b 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -162,7 +162,7 @@ index 78289c7..9da29a9 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -225,6 +226,9 @@ int main(int argc, char** argv)
+@@ -231,6 +232,9 @@ int main(int argc, char** argv)
          hostEffecterParser;
      std::unique_ptr<DbusToPLDMEvent> dbusToPLDMEventHandler;
      DBusHandler dbusHandler;
@@ -172,7 +172,7 @@ index 78289c7..9da29a9 100644
      std::unique_ptr<oem_platform::Handler> oemPlatformHandler{};
      std::unique_ptr<platform_config::Handler> platformConfigHandler{};
      platformConfigHandler = std::make_unique<platform_config::Handler>();
-@@ -332,7 +336,9 @@ int main(int argc, char** argv)
+@@ -338,7 +342,9 @@ int main(int argc, char** argv)
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{

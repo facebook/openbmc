@@ -1,7 +1,7 @@
-From 868d6daf03c70a8907d1f9d2fa1580893a5564a7 Mon Sep 17 00:00:00 2001
+From bb72a1f1bcc11aa7dccf14bdc6af9ca652e65518 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Tue, 30 Jan 2024 15:13:10 +0800
-Subject: [PATCH 510/510] yosemite4: Add EEPROMs for NICs in DTS
+Subject: [PATCH 510/518] yosemite4: Add EEPROMs for NICs in DTS
 
 Add EEPROM driver for NICs in order to read FRU info.
 https://lore.kernel.org/lkml/20240131084134.328307-1-Delphine_CC_Chiu@wiwynn.com/
@@ -10,10 +10,10 @@ https://lore.kernel.org/lkml/20240131084134.328307-1-Delphine_CC_Chiu@wiwynn.com
  1 file changed, 20 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 6933e40291a5..9a734888869a 100644
+index 1412e5a2808a..22b8ca11b42f 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1321,6 +1321,11 @@ emc1403@3c {
+@@ -1329,6 +1329,11 @@ emc1403@3c {
  				compatible = "smsc,emc1403";
  				reg = <0x3c>;
  			};
@@ -25,7 +25,7 @@ index 6933e40291a5..9a734888869a 100644
  		};
  
  		imux25: i2c@1 {
-@@ -1337,6 +1342,11 @@ emc1403@3c {
+@@ -1345,6 +1350,11 @@ emc1403@3c {
  				compatible = "smsc,emc1403";
  				reg = <0x3c>;
  			};
@@ -37,7 +37,7 @@ index 6933e40291a5..9a734888869a 100644
  		};
  
  		imux26: i2c@2 {
-@@ -1353,6 +1363,11 @@ emc1403@3c {
+@@ -1361,6 +1371,11 @@ emc1403@3c {
  				compatible = "smsc,emc1403";
  				reg = <0x3c>;
  			};
@@ -49,7 +49,7 @@ index 6933e40291a5..9a734888869a 100644
  		};
  
  		imux27: i2c@3 {
-@@ -1369,6 +1384,11 @@ emc1403@3c {
+@@ -1377,6 +1392,11 @@ emc1403@3c {
  				compatible = "smsc,emc1403";
  				reg = <0x3c>;
  			};

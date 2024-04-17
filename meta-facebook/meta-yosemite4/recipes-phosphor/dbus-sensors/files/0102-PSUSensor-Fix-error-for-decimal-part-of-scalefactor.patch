@@ -1,4 +1,4 @@
-From c959bfa90098755dbbfc349d642fcd2d0b3ebeb9 Mon Sep 17 00:00:00 2001
+From 08a194a63e4944d6be072c45ec417a240ec5ef26 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:43:49 +0800
 Subject: [PATCH 102/102] PSUSensor: Fix error for decimal part of scalefactor
@@ -41,10 +41,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  3 files changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/src/PSUSensor.cpp b/src/PSUSensor.cpp
-index 0c763c0..c0a6ce0 100644
+index db632b6..a2ac607 100644
 --- a/src/PSUSensor.cpp
 +++ b/src/PSUSensor.cpp
-@@ -42,9 +42,9 @@ PSUSensor::PSUSensor(const std::string& path, const std::string& objectType,
+@@ -51,9 +51,9 @@ PSUSensor::PSUSensor(const std::string& path, const std::string& objectType,
                       std::vector<thresholds::Threshold>&& thresholdsIn,
                       const std::string& sensorConfiguration,
                       const PowerState& powerState,
@@ -58,7 +58,7 @@ index 0c763c0..c0a6ce0 100644
      Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
             objectType, false, false, max, min, conn, powerState),
 diff --git a/src/PSUSensor.hpp b/src/PSUSensor.hpp
-index 69f365b..8172f7f 100644
+index f9b738f..08d23ce 100644
 --- a/src/PSUSensor.hpp
 +++ b/src/PSUSensor.hpp
 @@ -23,7 +23,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
@@ -97,27 +97,27 @@ index 69f365b..8172f7f 100644
      double sensorOffset;
  };
 diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
-index 573aa96..16109c1 100644
+index 04ba6ce..355a320 100644
 --- a/src/PSUSensorMain.cpp
 +++ b/src/PSUSensorMain.cpp
-@@ -726,7 +726,7 @@ static void createSensorsCallback(
+@@ -708,7 +708,7 @@ static void createSensorsCallback(
                  try
                  {
-                     psuProperty->sensorScaleFactor = std::visit(
+                     psuProperty.sensorScaleFactor = std::visit(
 -                        VariantToUnsignedIntVisitor(), findCustomScale->second);
 +                        VariantToDoubleVisitor(), findCustomScale->second);
                  }
                  catch (const std::invalid_argument&)
                  {
-@@ -857,7 +857,7 @@ static void createSensorsCallback(
+@@ -841,7 +841,7 @@ static void createSensorsCallback(
              // Similarly, if sensor scaling factor is being customized,
              // then the below power-of-10 constraint becomes unnecessary,
              // as config should be able to specify an arbitrary divisor.
--            unsigned int factor = psuProperty->sensorScaleFactor;
-+            double factor = psuProperty->sensorScaleFactor;
+-            unsigned int factor = psuProperty.sensorScaleFactor;
++            double factor = psuProperty.sensorScaleFactor;
              if (!customizedScale)
              {
                  // Preserve existing usage of hardcoded labelMatch table below
 -- 
-2.41.0
+2.43.0
 

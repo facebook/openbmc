@@ -1,7 +1,7 @@
-From cc9bb556b267b1437a92b721781353f1cd791f0f Mon Sep 17 00:00:00 2001
+From eba18290fcee79baadb51c992fe240863ac0f934 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 8 Apr 2021 15:23:48 -0700
-Subject: [PATCH 500/501] hwmon: Add net_brcm driver
+Subject: [PATCH 500/502] hwmon: Add net_brcm driver
 
 Summary:
 
@@ -30,7 +30,7 @@ Signature: 27585349:1617733366:5443ecb847967f7725c2d8d6416b357b37ac4f28
  create mode 100644 drivers/hwmon/net_brcm.c
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index cdde5a2a4d90..15f3d1d3bc9c 100644
+index 0163149c98fd..4d6eb9f556a6 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -1618,6 +1618,16 @@ config SENSORS_NCT7904
@@ -51,7 +51,7 @@ index cdde5a2a4d90..15f3d1d3bc9c 100644
  	tristate "Nuvoton NPCM750 and compatible PWM and Fan controllers"
  	imply THERMAL
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 774eba4960d6..344c84fa6c84 100644
+index caed8a52afae..f69012ad95e4 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
 @@ -168,6 +168,7 @@ obj-$(CONFIG_SENSORS_NCT6775)	+= nct6775.o

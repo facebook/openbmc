@@ -1,7 +1,7 @@
-From 5aa9c9adcf8f181e5ebc93156319910e8a100b27 Mon Sep 17 00:00:00 2001
+From a0952a64d8752d440131203e4f497eaba7bc69bf Mon Sep 17 00:00:00 2001
 From: EricYang-wiwynn <Eric_Yang@wiwynn.com>
 Date: Mon, 1 Apr 2024 15:05:58 +0800
-Subject: [PATCH] Revise duty cycle for SMB9 and SMB10
+Subject: [PATCH 518/518] Revise duty cycle for SMB9 and SMB10
 
 ARM: dts: aspeed: yosemite4:
 Revise duty cycle for SMB9 and SMB10 to 40:60
@@ -13,7 +13,7 @@ https://lore.kernel.org/all/20240401090509.2338027-1-Delphine_CC_Chiu@Wiwynn.com
  1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 5b59830cb..4883b6270 100644
+index 41adfc583ef6..085b9cffab36 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -543,6 +543,7 @@ power-sensor@40 {
@@ -33,5 +33,5 @@ index 5b59830cb..4883b6270 100644
  		compatible = "nxp,pca9544";
  		i2c-mux-idle-disconnect;
 -- 
-2.25.1
+2.43.0
 

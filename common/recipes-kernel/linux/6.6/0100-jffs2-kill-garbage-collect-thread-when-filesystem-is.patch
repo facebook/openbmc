@@ -1,7 +1,7 @@
-From eb3b12891ebd081343018b5c86568c0842cd4e45 Mon Sep 17 00:00:00 2001
+From c430f07f026ccdba0434e14459fac77c6109711e Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 22 Aug 2019 17:07:24 -0700
-Subject: [PATCH 100/102] jffs2: kill garbage collect thread when filesystem is
+Subject: [PATCH 100/101] jffs2: kill garbage collect thread when filesystem is
  corrupted
 
 Summary:

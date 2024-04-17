@@ -1,7 +1,7 @@
-From 9294ae294ebd6a56db6d32e86ff5555ad1aec854 Mon Sep 17 00:00:00 2001
+From 01bae3fe0535de154fe449b41053a9f75abc9ed8 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
-Subject: [PATCH 05/11] platform-mc: Sensor handling
+Subject: [PATCH 05/12] platform-mc: Sensor handling
 
 Added sensor_manager and numeric_sensor class. The sensor_manager
 class manages the timing of sensor polling. The NumericSensor class
@@ -44,19 +44,19 @@ Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
  create mode 100644 platform-mc/test/sensor_manager_test.cpp
 
 diff --git a/meson.build b/meson.build
-index c61c16c..d51c5f7 100644
+index e929342..2720d8b 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -70,6 +70,8 @@ elif get_option('transport-implementation') == 'af-mctp'
-   conf_data.set('PLDM_TRANSPORT_WITH_AF_MCTP', 1)
+@@ -73,6 +73,8 @@ elif get_option('transport-implementation') == 'af-mctp'
  endif
+ 
  conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'static_eid_table.json'))
 +conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
 +conf_data.set_quoted('PLDM_T2_CONFIG_JSON', join_paths(package_datadir, 'pldm_t2_config.json'))
- config = configure_file(output: 'config.h',
+ configure_file(output: 'config.h',
    configuration: conf_data
  )
-@@ -183,6 +185,8 @@ executable(
+@@ -186,6 +188,8 @@ executable(
    'platform-mc/terminus_manager.cpp',
    'platform-mc/terminus.cpp',
    'platform-mc/platform_manager.cpp',
@@ -66,10 +66,10 @@ index c61c16c..d51c5f7 100644
    implicit_include_directories: false,
    dependencies: deps,
 diff --git a/meson.options b/meson.options
-index 9e2339f..3f24007 100644
+index 8449821..2a33823 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -173,3 +173,15 @@ option(
+@@ -181,3 +181,15 @@ option(
      value: 8384512,
      description: 'OEM-IBM: max DMA size'
  )
@@ -2061,10 +2061,10 @@ index 0000000..56e1d36
 +    runEventLoopForSeconds(seconds);
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 5a14169..401ca01 100644
+index d06ed6a..8d2bd98 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -181,7 +181,7 @@ int main(int argc, char** argv)
+@@ -187,7 +187,7 @@ int main(int argc, char** argv)
      auto event = Event::get_default();
      auto& bus = pldm::utils::DBusHandler::getBus();
      sdbusplus::server::manager_t objManager(bus,

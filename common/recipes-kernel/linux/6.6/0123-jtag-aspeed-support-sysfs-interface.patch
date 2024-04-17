@@ -1,4 +1,4 @@
-From 1d9a5bfd6287d43fd006846817c4a02417474403 Mon Sep 17 00:00:00 2001
+From fa44076cf283b00039a5a374c4768b047b5b61f9 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 22:18:35 -0700
 Subject: [PATCH 123/132] jtag: aspeed: support sysfs interface

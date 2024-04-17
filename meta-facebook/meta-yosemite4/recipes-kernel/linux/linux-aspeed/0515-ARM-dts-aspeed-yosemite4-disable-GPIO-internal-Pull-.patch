@@ -1,7 +1,8 @@
-From 757798b2585876c3cedeebf097956b0f70010ae9 Mon Sep 17 00:00:00 2001
+From 072fbb32fb67e62d13b325b01a33edcc65cffa57 Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Mon, 4 Mar 2024 17:48:40 +0800
-Subject: [PATCH] ARM: dts: aspeed: yosemite4: disable GPIO internal Pull-Down
+Subject: [PATCH 515/518] ARM: dts: aspeed: yosemite4: disable GPIO internal
+ Pull-Down
 
 Disable GPIO internal Pull-Down for hardware validation.
 ---
@@ -9,10 +10,10 @@ Disable GPIO internal Pull-Down for hardware validation.
  1 file changed, 44 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 45248c31db22..90d1c792ce2d 100644
+index d48918fce046..fa668aa13c82 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1445,10 +1445,53 @@ &sgpiom0 {
+@@ -1453,10 +1453,53 @@ &sgpiom0 {
  	bus-frequency = <48000>;
  };
  
@@ -68,5 +69,5 @@ index 45248c31db22..90d1c792ce2d 100644
  	/*A0-A7*/       "","","","","","","","",
  	/*B0-B7*/       "FLT_HSC_SERVER_SLOT8_N","AC_ON_OFF_BTN_CPLD_SLOT5_N",
 -- 
-2.25.1
+2.43.0
 

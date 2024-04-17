@@ -1,7 +1,7 @@
-From 1b159f19f4adffa8e92051d1b0028cc68a102f0c Mon Sep 17 00:00:00 2001
+From 1dc3ee87498376c9560440db624ae43d329d0c07 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 5 Feb 2024 15:28:46 -0800
-Subject: [PATCH 5/5] ARM: dts: aspeed: Add Facebook fblite-r1 BMC
+Subject: [PATCH 4/4] ARM: dts: aspeed: Add Facebook fblite-r1 BMC
 
 Summary:
 
@@ -15,10 +15,10 @@ Test Plan:
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 99980bdb2f16..87c97ab9426e 100644
+index e51c6d203725..8f7a954a0297 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -18,6 +18,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+@@ -19,6 +19,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
  	aspeed-bmc-facebook-bletchley.dtb \
  	aspeed-bmc-facebook-cmm.dtb \
  	aspeed-bmc-facebook-elbert.dtb \
@@ -127,5 +127,5 @@ index 000000000000..4264bd3c7a6b
 +	};
 +};
 -- 
-2.25.1
+2.43.0
 

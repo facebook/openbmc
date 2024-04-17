@@ -1,7 +1,7 @@
-From 667a37fea390e438ace088cb40d806071ff0f5a2 Mon Sep 17 00:00:00 2001
+From e432cf112e90e43b9f8abe130a0495c60eeeccf9 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Fri, 2 Feb 2024 16:57:17 -0800
-Subject: [PATCH 2/5] ARM: dts: aspeed: elbert: Enable eMMC device
+Subject: [PATCH 2/4] ARM: dts: aspeed: elbert: Enable eMMC device
 
 Summary:
 

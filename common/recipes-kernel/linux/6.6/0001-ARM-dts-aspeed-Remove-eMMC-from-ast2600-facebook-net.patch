@@ -1,7 +1,7 @@
-From d34a1a64d55eddea50c5e29d42d158921277f695 Mon Sep 17 00:00:00 2001
+From 6519e528ed2442273836f82fd35211def60d0b3f Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Fri, 2 Feb 2024 16:55:06 -0800
-Subject: [PATCH 1/5] ARM: dts: aspeed: Remove eMMC from
+Subject: [PATCH 1/4] ARM: dts: aspeed: Remove eMMC from
  ast2600-facebook-netbmc-common.dtsi
 
 Summary:
@@ -16,7 +16,7 @@ Test Plan:
  1 file changed, 12 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/ast2600-facebook-netbmc-common.dtsi b/arch/arm/boot/dts/aspeed/ast2600-facebook-netbmc-common.dtsi
-index 31590d3186a2..804a6c8a6292 100644
+index 00e5887c926f..83c9789d45b1 100644
 --- a/arch/arm/boot/dts/aspeed/ast2600-facebook-netbmc-common.dtsi
 +++ b/arch/arm/boot/dts/aspeed/ast2600-facebook-netbmc-common.dtsi
 @@ -152,18 +152,6 @@ &vhub {

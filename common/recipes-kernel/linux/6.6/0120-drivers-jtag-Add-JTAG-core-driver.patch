@@ -1,4 +1,4 @@
-From 1aad2b3ab7fc90d2e4d697b54ed5b4adbff930a1 Mon Sep 17 00:00:00 2001
+From cd5e338bb089d9824274684834241aba80cee1e7 Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:15 -0700
 Subject: [PATCH 120/132] drivers: jtag: Add JTAG core driver

@@ -1,0 +1,367 @@
+From b1abd5bc8389f880689f65b3060a9e4b91e96093 Mon Sep 17 00:00:00 2001
+From: Chris Wang <Chris_Wang@wiwynn.com>
+Date: Wed, 10 Apr 2024 21:04:02 +0800
+Subject: [PATCH] Support OEM-META command for host BIOS version
+
+Summary:
+  - Add handler for write-file command "BIOS_VERSION", which is sent
+when host's postcode complete triggered, and update the bios version
+to settingsd.
+
+Change-Id: I5eaf6123816cfb4e1b3f6b77ba4ea91d77ee61c2
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ libpldmresponder/meson.build                  |   1 +
+ .../libpldmresponder/oem_meta_file_io.cpp     |   7 +-
+ .../libpldmresponder/oem_meta_file_io.hpp     |  14 +-
+ .../oem_meta_file_io_by_type.hpp              |   1 +
+ .../oem_meta_file_io_type_bios_version.cpp    | 151 ++++++++++++++++++
+ .../oem_meta_file_io_type_bios_version.hpp    |  84 ++++++++++
+ pldmd/pldmd.cpp                               |   2 +-
+ 7 files changed, 255 insertions(+), 5 deletions(-)
+ create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp
+ create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
+
+diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
+index 3f71b1f..da290ca 100644
+--- a/libpldmresponder/meson.build
++++ b/libpldmresponder/meson.build
+@@ -62,6 +62,7 @@ if get_option('oem-meta').allowed()
+   sources += [
+     '../oem/meta/libpldmresponder/oem_meta_file_io.cpp',
+     '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
++    '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
+   ]
+ endif
+ 
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
+index fbbc353..db75683 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
+@@ -1,5 +1,6 @@
+ #include "oem_meta_file_io.hpp"
+ 
++#include "oem_meta_file_io_type_bios_version.hpp"
+ #include "oem_meta_file_io_type_post_code.hpp"
+ #include "xyz/openbmc_project/Common/error.hpp"
+ 
+@@ -21,7 +22,11 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(uint8_t messageTid,
+     {
+         case POST_CODE:
+             return std::make_unique<PostCodeHandler>(
+-                messageTid, configurationDescovery->getConfigurations());
++                messageTid, configurationDiscovery->getConfigurations());
++        case BIOS_VERSION:
++            return std::make_unique<BIOSVersionHandler>(
++                messageTid, configurationDiscovery->getConfigurations(),
++                dBusIntf);
+         default:
+             error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
+                   "FILEIOTYPE", fileIOType);
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
+index 19ec632..f529e30 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io.hpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
+@@ -17,8 +17,10 @@ namespace pldm::responder::oem_meta
+ class FileIOHandler : public CmdHandler
+ {
+   public:
+-    FileIOHandler(pldm::ConfigurationDiscoveryHandler* configurationDescovery) :
+-        configurationDescovery(configurationDescovery)
++    FileIOHandler(pldm::utils::DBusHandler* dBusIntf,
++                  pldm::ConfigurationDiscoveryHandler* configurationDiscovery) :
++        dBusIntf(dBusIntf),
++        configurationDiscovery(configurationDiscovery)
+     {
+         handlers.emplace(PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
+                          [this](pldm_tid_t tid, const pldm_msg* request,
+@@ -42,7 +44,13 @@ class FileIOHandler : public CmdHandler
+     std::unique_ptr<FileHandler> getHandlerByType(pldm_tid_t tid,
+                                                   uint8_t fileIOType);
+ 
+-    pldm::ConfigurationDiscoveryHandler* configurationDescovery;
++    /** @brief D-Bus Interface object*/
++    const pldm::utils::DBusHandler* dBusIntf;
++
++    /** @brief Configuration Discovery Object which stores
++     * EntityManager's config
++     */
++    pldm::ConfigurationDiscoveryHandler* configurationDiscovery;
+ };
+ 
+ } // namespace pldm::responder::oem_meta
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
+index 739b9cd..091408f 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
+@@ -17,6 +17,7 @@ constexpr auto decodeDataMaxLength = 32;
+ enum pldm_oem_meta_file_io_type : uint8_t
+ {
+     POST_CODE = 0x00,
++    BIOS_VERSION = 0x01,
+ };
+ 
+ class FileHandler
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp
+new file mode 100644
+index 0000000..c38dcec
+--- /dev/null
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp
+@@ -0,0 +1,151 @@
++#include "oem_meta_file_io_type_bios_version.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <sstream>
++#include <string>
++
++PHOSPHOR_LOG2_USING;
++namespace pldm::responder::oem_meta
++{
++
++constexpr auto slotInterface = "xyz.openbmc_project.Inventory.Decorator.Slot";
++constexpr auto slotNumberProperty = "SlotNumber";
++const std::vector<std::string> slotInterfaces = {slotInterface};
++
++int BIOSVersionHandler::write(const message& data)
++{
++    int completionCode = checkDataIntegrity(data);
++    if (completionCode != PLDM_SUCCESS)
++    {
++        error("{FUNC}: Invalid incoming data for setting BIOS version, CC={CC}",
++              "FUNC", std::string(__func__), "CC", completionCode);
++        return completionCode;
++    }
++
++    pldm::utils::DBusMapping dbusMapping{
++        std::string("/xyz/openbmc_project/software/host") + getSlotNumber() +
++            "/bios_version",
++        "xyz.openbmc_project.Software.Version", "Version", "string"};
++
++    try
++    {
++        dBusIntf->setDbusProperty(dbusMapping, convertToBIOSVersionStr(data));
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("{FUNC}: Failed to execute Dbus call, ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++    }
++    catch (const std::exception& e)
++    {
++        error("{FUNC}: Failed to set BIOS version. ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++        return PLDM_ERROR;
++    }
++
++    return PLDM_SUCCESS;
++}
++
++std::string BIOSVersionHandler::getSlotNumber()
++{
++    std::string result{};
++
++    try
++    {
++        auto slotNumber = pldm::utils::DBusHandler().getDbusProperty<uint64_t>(
++            getDbusPathOfBoardContainingTheEndpoint(tid).c_str(),
++            slotNumberProperty, slotInterface);
++
++        result = std::to_string(slotNumber);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("{FUNC}: Failed to execute Dbus call, ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++    }
++    catch (const std::runtime_error& e)
++    {
++        error("{FUNC}: Runtime error occurred, ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++    }
++    catch (const std::exception& e)
++    {
++        error("{FUNC}: Unexpected exception occurred, ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++    }
++
++    return result;
++}
++
++const std::string
++    BIOSVersionHandler::getDbusPathOfBoardContainingTheEndpoint(uint8_t tid)
++{
++    std::string result{};
++
++    try
++    {
++        const auto& configDbusPath = getConfigurationPathByTid(tid);
++        const auto response = dBusIntf->getAncestors(configDbusPath.c_str(),
++                                                     slotInterfaces);
++        if (response.size() != 1)
++        {
++            error(
++                "{FUNC}: Only Board layer should have Decorator.Slot interface, got {SIZE} Dbus Object(s) have interface Decorator.Slot}",
++                "FUNC", std::string(__func__), "SIZE", response.size());
++            throw std::runtime_error("Invalid Response of GetAncestors");
++        }
++
++        result = std::get<0>(response.front());
++    }
++    catch (const std::runtime_error& e)
++    {
++        throw e; // Bypass it.
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("{FUNC}: Failed to call GetAncestors, ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++        throw std::runtime_error(
++            "Failed to get board path containing the endpoint");
++    }
++
++    return result;
++}
++
++const std::string& BIOSVersionHandler::getConfigurationPathByTid(uint8_t tid)
++{
++    for (const auto& [configDbusPath, mctpEndpoint] : configurations)
++    {
++        if (mctpEndpoint.EndpointId == tid)
++        {
++            return configDbusPath;
++        }
++    }
++
++    error("{FUNC}: Failed to get Configuration for TID{TID}", "FUNC",
++          std::string(__func__), "TID", tid);
++    throw std::runtime_error("Failed to get Configuration");
++}
++
++int BIOSVersionHandler::checkDataIntegrity(const message& data)
++{
++    if (data.empty())
++    {
++        return PLDM_ERROR_INVALID_DATA;
++    }
++    else
++    {
++        return PLDM_SUCCESS;
++    }
++}
++
++pldm::utils::PropertyValue
++    BIOSVersionHandler::convertToBIOSVersionStr(const message& data)
++{
++    std::string biosVersion(data.begin(), data.end());
++
++    return pldm::utils::PropertyValue{biosVersion};
++}
++
++} // namespace pldm::responder::oem_meta
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
+new file mode 100644
+index 0000000..4baa9a4
+--- /dev/null
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
+@@ -0,0 +1,84 @@
++#pragma once
++
++#include "common/utils.hpp"
++#include "oem_meta_file_io_by_type.hpp"
++#include "requester/configuration_discovery_handler.hpp"
++
++namespace pldm::responder::oem_meta
++{
++
++/** @class PowerStatusHandler
++ *
++ *  @brief Inherits and implements FileHandler. This class is used
++ *  to set BMC's Host BIOS version based on the incoming request.
++ */
++class BIOSVersionHandler : public FileHandler
++{
++  public:
++    BIOSVersionHandler() = delete;
++    BIOSVersionHandler(const BIOSVersionHandler&) = delete;
++    BIOSVersionHandler(BIOSVersionHandler&&) = delete;
++    BIOSVersionHandler& operator=(const BIOSVersionHandler&) = delete;
++    BIOSVersionHandler& operator=(BIOSVersionHandler&&) = delete;
++    ~BIOSVersionHandler() = default;
++
++    explicit BIOSVersionHandler(
++        uint8_t tid, std::map<std::string, MctpEndpoint>& configurations,
++        const pldm::utils::DBusHandler* dBusIntf) :
++        tid(tid),
++        configurations(configurations), dBusIntf(dBusIntf)
++    {}
++
++    /** @brief Method to set Host's BIOS version.
++     *  @param[in] data - BIOS version raw data.
++     *  @return  PLDM completion code.
++     */
++    int write(const message& data) override;
++
++    int read(const message&) override
++    {
++        return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
++    }
++
++  private:
++    /** @brief Method to convert raw data to BIOS string Dbus value.
++     *  @param[in] data - Incoming data.
++     *  @return - BIOS version Dbus value
++     */
++    pldm::utils::PropertyValue convertToBIOSVersionStr(const message& data);
++
++    /** @brief Method to check raw data integrity.
++     *  @param[in] data - List of Incoming raw data.
++     *  @return - PLDM completion code.
++     */
++    int checkDataIntegrity(const message& data);
++
++    /** @brief Method to get the slot number who sent the request.
++     *  @return - Corresponding slot number.
++     */
++    std::string getSlotNumber();
++
++    /** @brief Method to get the Dbus Path of the board containing the Endpoint.
++     *  @param[in] tid - The target endpoint's TID.
++     *  @return - The board's Dbus path.
++     */
++    const std::string getDbusPathOfBoardContainingTheEndpoint(uint8_t tid);
++
++    /** @brief Method to get the Dbus path of the configuration searched by
++     * ConfigurationDiscoveryHandler.
++     *  @param[in] tid - The target endpoint's TID.
++     *  @return - The configuration's Dbus path.
++     */
++    const std::string& getConfigurationPathByTid(uint8_t tid);
++
++    /** @brief The requester's TID */
++    uint8_t tid = 0;
++
++    /** @brief Configurations searched by ConfigurationDiscoveryHandler */
++    std::map<std::string /*configDbusPath*/, MctpEndpoint>& configurations;
++
++    /** @brief D-Bus Interface object*/
++    const pldm::utils::DBusHandler* dBusIntf;
++};
++
++} // namespace pldm::responder::oem_meta
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index aef0a74..f1e0cb4 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -271,7 +271,7 @@ int main(int argc, char** argv)
+ #ifdef OEM_META
+     invoker.registerHandler(
+         PLDM_OEM, std::make_unique<pldm::responder::oem_meta::FileIOHandler>(
+-                      configurationDiscovery.get()));
++                      &dbusHandler, configurationDiscovery.get()));
+ #endif
+ 
+     auto biosHandler = std::make_unique<bios::Handler>(
+-- 
+2.25.1
+

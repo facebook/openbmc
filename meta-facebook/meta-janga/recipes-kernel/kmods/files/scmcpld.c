@@ -9,9 +9,6 @@
 #include "i2c_dev_sysfs.h"
 #include <linux/version.h>
 
-#define COME_PWR_CTRL_REG 		 0x14
-#define COME_PWR_CTRL_REG_DEFVAL 0x7
-
 /*
  * NOTE: ONLY export register fields that are required from user space.
  */
@@ -123,20 +120,10 @@ static int scmcpld_probe(struct i2c_client *client,
 			 const struct i2c_device_id *id)
 #endif
 {
-	int ret = 0;
 	i2c_dev_data_st *pdata;
 	pdata = devm_kmalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
 	if (pdata == NULL)
 		return -ENOMEM;
-
-	/* Set pwr_come_en to 1 simpler to used, use only pwr_force_off to power ctrl */  
-	ret = i2c_smbus_write_byte_data(client,
-									COME_PWR_CTRL_REG,
-									COME_PWR_CTRL_REG_DEFVAL);
-	if (ret < 0) {
-		dev_err(&client->dev, "Error writing in COMe PWR register\n");
-		return ret;
-	}
 
 	return i2c_dev_sysfs_data_init(client, pdata, scmcpld_attrs,
 				       ARRAY_SIZE(scmcpld_attrs));

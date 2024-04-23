@@ -1,7 +1,7 @@
-From a0952a64d8752d440131203e4f497eaba7bc69bf Mon Sep 17 00:00:00 2001
+From 8eaddd6bbcff88878d6c2a59f360aa78268d8c0a Mon Sep 17 00:00:00 2001
 From: EricYang-wiwynn <Eric_Yang@wiwynn.com>
 Date: Mon, 1 Apr 2024 15:05:58 +0800
-Subject: [PATCH 518/518] Revise duty cycle for SMB9 and SMB10
+Subject: [PATCH 517/518] Revise duty cycle for SMB9 and SMB10
 
 ARM: dts: aspeed: yosemite4:
 Revise duty cycle for SMB9 and SMB10 to 40:60

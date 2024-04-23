@@ -14,10 +14,9 @@ SRC_URI += " \
     file://0511-Add-ina233-and-ina238-devicetree-config-for-EVT-sche.patch \
     file://0512-Adjust-resistor-calibration-for-matching-hardware-de.patch \
     file://0513-ARM-dts-aspeed-yosemite4-Revise-i2c-duty-cycle.patch \
-    file://0514-pinctrl-pinctrl-aspeed-g6-correct-the-offset-of-SCU6.patch \
-    file://0515-ARM-dts-aspeed-yosemite4-disable-GPIO-internal-Pull-.patch \
-    file://0516-yosemite4-Change-IOE-i2c-address.patch \
-    file://0517-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
-    file://0518-Revise-duty-cycle-for-SMB9-and-SMB10.patch \
-    file://0519-hwmon-max31790-revise-the-scale-to-write-pwm.patch \
+    file://0514-ARM-dts-aspeed-yosemite4-disable-GPIO-internal-Pull-.patch \
+    file://0515-yosemite4-Change-IOE-i2c-address.patch \
+    file://0516-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
+    file://0517-Revise-duty-cycle-for-SMB9-and-SMB10.patch \
+    file://0518-hwmon-max31790-revise-the-scale-to-write-pwm.patch \
 "

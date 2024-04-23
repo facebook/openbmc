@@ -1,4 +1,4 @@
-From 2c748a4c2fc1a3ec6a095d123285d6d750e6400f Mon Sep 17 00:00:00 2001
+From df793e17a3e2aa3964281611202c63bf181540b9 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 24 Oct 2023 17:43:44 +0800
 Subject: [PATCH 500/518] add meta yv4 bmc dts setting

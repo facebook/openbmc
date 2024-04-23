@@ -1,4 +1,4 @@
-From 3f347cf775cace1780e64d4e47083db36bb2d2cf Mon Sep 17 00:00:00 2001
+From e14414a2bdb4e67a3b5aaed90e1535b1fa31e3fe Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 20 Dec 2023 16:16:06 +0800
 Subject: [PATCH 507/518] remove pincontrol on GPIO U5

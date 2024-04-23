@@ -1,7 +1,7 @@
-From 428ef87509225e435e929c5bbe129a3ae956f724 Mon Sep 17 00:00:00 2001
+From ccc42adcafcd01c8743160fd928c7580cbdfd37a Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Wed, 20 Mar 2024 11:45:42 +0800
-Subject: [PATCH 517/518] hwmon: Driver for Nuvoton NCT7363Y
+Subject: [PATCH 516/518] hwmon: Driver for Nuvoton NCT7363Y
 
 NCT7363Y is an I2C based hardware monitoring chip from Nuvoton.
 
@@ -89,10 +89,10 @@ index 000000000000..17139cb99010
 +        };
 +   };
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index c71ff59f736f..b96c3f2b35d5 100644
+index fac861e2a8ab..de91d2358faf 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
-@@ -164,6 +164,7 @@ Hardware Monitoring Kernel Drivers
+@@ -162,6 +162,7 @@ Hardware Monitoring Kernel Drivers
     mp5990
     nct6683
     nct6775
@@ -140,10 +140,10 @@ index 000000000000..89699c95aa4b
 +pwmX			get or set PWM fan control value.
 +======================= =======================================================
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 566cc4dda7a8..4025c8eb5cb3 100644
+index d79ec49fb538..8cbdbd0741cb 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -14753,6 +14753,14 @@ S:	Maintained
+@@ -14732,6 +14732,14 @@ S:	Maintained
  F:	Documentation/devicetree/bindings/hwmon/nuvoton,nct6775.yaml
  F:	drivers/hwmon/nct6775-i2c.c
  
@@ -159,7 +159,7 @@ index 566cc4dda7a8..4025c8eb5cb3 100644
  M:	Jakub Kicinski <kuba@kernel.org>
  S:	Maintained
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 4d6eb9f556a6..0fdc77e92c99 100644
+index 67f8f2e6633c..77d4dfbbff72 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -1595,6 +1595,17 @@ config SENSORS_NCT6775_I2C
@@ -181,7 +181,7 @@ index 4d6eb9f556a6..0fdc77e92c99 100644
  	tristate "Nuvoton NCT7802Y"
  	depends on I2C
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index f69012ad95e4..2fd6308f0096 100644
+index 6415bf756c10..b7590eea6ea5 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
 @@ -166,6 +166,7 @@ obj-$(CONFIG_SENSORS_NCT6775_CORE) += nct6775-core.o
@@ -191,7 +191,7 @@ index f69012ad95e4..2fd6308f0096 100644
 +obj-$(CONFIG_SENSORS_NCT7363)	+= nct7363.o
  obj-$(CONFIG_SENSORS_NCT7802)	+= nct7802.o
  obj-$(CONFIG_SENSORS_NCT7904)	+= nct7904.o
- obj-$(CONFIG_SENSORS_NET_BRCM)	+= net_brcm.o
+ obj-$(CONFIG_SENSORS_NPCM7XX)	+= npcm750-pwm-fan.o
 diff --git a/drivers/hwmon/nct7363.c b/drivers/hwmon/nct7363.c
 new file mode 100644
 index 000000000000..c79d3ca4f111

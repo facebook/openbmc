@@ -1,7 +1,7 @@
-From 65ff7dd70d4f4ebd713d7934c878e9310b8a5b0c Mon Sep 17 00:00:00 2001
+From 0c57029385c8f504549cb3449414fdce21899986 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 11 Apr 2024 11:40:14 +0800
-Subject: [PATCH v2] hwmon: max31790: revise the scale to write pwm
+Subject: [PATCH 518/518] hwmon: max31790: revise the scale to write pwm
 
 Since the value for PWMOUT Target Duty Cycle register is a 9 bit
 left-justified value that ranges from 0 to 511 and is contained in 2
@@ -25,7 +25,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/hwmon/max31790.c b/drivers/hwmon/max31790.c
-index 3dc95196b229..7aa1aa63bf1b 100644
+index fa31e108c7ce..ee304dc1c782 100644
 --- a/drivers/hwmon/max31790.c
 +++ b/drivers/hwmon/max31790.c
 @@ -49,6 +49,9 @@
@@ -38,7 +38,7 @@ index 3dc95196b229..7aa1aa63bf1b 100644
  /*
   * Client data (each client gets its own)
   */
-@@ -343,10 +346,13 @@ static int max31790_write_pwm(struct device *dev, u32 attr, int channel,
+@@ -348,10 +351,13 @@ static int max31790_write_pwm(struct device *dev, u32 attr, int channel,
  			err = -EINVAL;
  			break;
  		}
@@ -54,5 +54,5 @@ index 3dc95196b229..7aa1aa63bf1b 100644
  	case hwmon_pwm_enable:
  		fan_config = data->fan_config[channel];
 -- 
-2.25.1
+2.43.0
 

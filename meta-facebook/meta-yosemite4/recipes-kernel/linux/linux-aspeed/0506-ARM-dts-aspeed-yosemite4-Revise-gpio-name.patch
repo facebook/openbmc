@@ -1,4 +1,4 @@
-From 3464aae80b1e1189e0a4ed0a033ed4ae01606e63 Mon Sep 17 00:00:00 2001
+From af1efcba421f2739034612d89fdf0348d5254169 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 11 Dec 2023 10:29:27 +0800
 Subject: [PATCH 506/518] ARM: dts: aspeed: yosemite4: Revise gpio name

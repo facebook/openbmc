@@ -1,7 +1,7 @@
-From 7ec4f770d8ab48950f07bc79b6bee2fe92beb060 Mon Sep 17 00:00:00 2001
+From a022d52dcdcb2a1bf293b955218a15dffe9892bd Mon Sep 17 00:00:00 2001
 From: Sara Lin <sara_sy_lin@wiwynn.com>
 Date: Wed, 20 Mar 2024 19:13:34 +0800
-Subject: [PATCH 516/518] yosemite4: Change IOE i2c address
+Subject: [PATCH 515/518] yosemite4: Change IOE i2c address
 
 Description
 1. Change CPLD IOE i2c address to avoid i2c address conflict.

@@ -1,4 +1,4 @@
-From 3831c84bd2f67199df7b5d9480fc4f7a19f381fa Mon Sep 17 00:00:00 2001
+From 904190c2eca45671b107974911da6c987a95c33b Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 11 Dec 2023 10:22:47 +0800
 Subject: [PATCH 505/518] ARM: dts: aspeed: yosemite4: support mux to cpld

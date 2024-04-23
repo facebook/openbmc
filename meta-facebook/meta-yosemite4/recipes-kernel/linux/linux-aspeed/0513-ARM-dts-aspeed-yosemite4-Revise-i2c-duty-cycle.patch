@@ -1,4 +1,4 @@
-From 29a801cf61f9b42c382cf4cbbd806de0c547c2c4 Mon Sep 17 00:00:00 2001
+From dd5ad4123c836adeb1811e80ae450452efeb9787 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 5 Mar 2024 10:57:35 +0800
 Subject: [PATCH 513/518] ARM: dts: aspeed: yosemite4: Revise i2c duty cycle

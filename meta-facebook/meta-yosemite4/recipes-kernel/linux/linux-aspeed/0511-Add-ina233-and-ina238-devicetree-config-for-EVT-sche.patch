@@ -1,4 +1,4 @@
-From 9db074c4bcfa9e9fcffc9ee11d81dd092d9eeace Mon Sep 17 00:00:00 2001
+From fc79ba6c926bf251df2cec7848100f7fca1b5888 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Mon, 29 Jan 2024 16:59:19 +0800
 Subject: [PATCH 511/518] Add ina233 and ina238 devicetree config for EVT

@@ -1,7 +1,7 @@
-From 072fbb32fb67e62d13b325b01a33edcc65cffa57 Mon Sep 17 00:00:00 2001
+From 701bd3d6b1cf5804cfad32f205751e57486f680c Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Mon, 4 Mar 2024 17:48:40 +0800
-Subject: [PATCH 515/518] ARM: dts: aspeed: yosemite4: disable GPIO internal
+Subject: [PATCH 514/518] ARM: dts: aspeed: yosemite4: disable GPIO internal
  Pull-Down
 
 Disable GPIO internal Pull-Down for hardware validation.

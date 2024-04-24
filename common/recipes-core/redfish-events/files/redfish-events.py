@@ -8,6 +8,7 @@ import logging.config
 import sys
 import syslog
 import time
+import os
 from typing import Any, Dict, List
 from urllib import request
 
@@ -167,6 +168,8 @@ class RedfishEventHandler(web.Application):
         margs = " ".join(f'"{arg}"' for arg in event.get("MessageArgs", []))
         data = event.get("AdditionalDataURI", None)
         data_size = event.get("AddionalDataSizeBytes", 0)
+        data_type = event.get("DiagnosticDataType", "Unknown")
+        event_id = event.get("EventId", "")
         log = "CreateTime: " + tsp
         log += " Severity: " + msev
         log += " Message: " + msg
@@ -175,7 +178,13 @@ class RedfishEventHandler(web.Application):
         if data is not None:
             url = self.target_url + data
             data = request.urlopen(request.Request(url)).read()
-            data_path = "/mnt/data/" + mid + str(time.time()) + ".dat"
+            if data_type == "CPER":
+               cper_path = "/mnt/data/cper/"
+               if not os.path.exists(cper_path):
+                   os.makedirs(cper_path)
+               data_path = cper_path + event_id + "_" + tsp + ".cper"
+            else:
+                data_path = "/mnt/data/" + mid + str(time.time()) + ".dat"
             if len(data) != data_size:
                 logging.warning(
                     f"{data_path} is {len(data)} bytes and not expected {data_size}"

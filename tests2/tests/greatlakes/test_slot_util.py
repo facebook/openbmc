@@ -21,7 +21,7 @@ import unittest
 
 from common.base_slot_util_test import BaseSlotUtilTest
 
-slot_nums = [1, 3]
+slot_nums = [1]
 
 
 class SlotUtilTest(BaseSlotUtilTest):

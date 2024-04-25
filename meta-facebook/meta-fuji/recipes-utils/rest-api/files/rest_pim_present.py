@@ -18,50 +18,34 @@
 # Boston, MA 02110-1301 USA
 #
 
-import re
 import subprocess
 
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
-MAX_PIM_NUM = 8
-BASE = 1
-pim_number_re = re.compile("\s*PIM (\S.*):")
-fpga_type_re = re.compile("\s*(\S.*) DOMFPGA: (\S.*)")
 
+def load_pim_state():
+    all_pims = {"pim" + str(i): "Removed" for i in range(1, 9)}
 
-def prepare_piminfo():
-    pim_type = {str(i): "NA" for i in range(1, 9)}
-    pim_fpga_ver = {str(i): "NA" for i in range(1, 9)}
-    current_pim = 0
     try:
         stdout = subprocess.check_output(
-            ["/usr/local/bin/fpga_ver.sh", "-u"], timeout=DEFAULT_TIMEOUT_SEC
+            ["/usr/local/bin/presence_util.sh"], timeout=DEFAULT_TIMEOUT_SEC
         )
-        for text_line in stdout.decode().splitlines():
-            # Check if this line shows PIM slot number
-            m = pim_number_re.match(text_line, 0)
-            if m:
-                current_pim = m.group(1)
-            m = fpga_type_re.match(text_line, 0)
-            if m:
-                pim_type[current_pim] = m.group(1)
-                pim_fpga_ver[current_pim] = m.group(2)
+        for line in stdout.decode().splitlines():
+            if line.startswith("pim"):
+                key, value = line.split(":")
+
+                pim_id = key.strip()
+                pim_state = int(value.strip())
+                if pim_state == 1:
+                    all_pims[pim_id] = "Present"
     except Exception:
         pass
 
-    return pim_type, pim_fpga_ver
+    return all_pims
 
 
-# Use DOM FPGA Version to detect pim presence
 def get_pim_present():
-    state = {}
-    pim_type, pim_fpga_ver = prepare_piminfo()
-    for i in range(1, MAX_PIM_NUM + 1):
-        pim_slot = "pim{:d}".format(i + BASE - 1)
-        if pim_type[str(i)] == "NA" or pim_fpga_ver[str(i)] == "NA":
-            state[pim_slot] = "Removed"
-        else:
-            state[pim_slot] = "Present"
+    state = load_pim_state()
 
     result = {"Information": state, "Actions": [], "Resources": []}
     return result

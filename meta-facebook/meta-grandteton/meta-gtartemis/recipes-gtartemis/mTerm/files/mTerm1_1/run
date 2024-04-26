@@ -18,4 +18,4 @@
 # Boston, MA 02110-1301 USA
 #
 
-exec /usr/local/bin/setup-dev-uart.sh cb_accl1_1 uart0 start
+exec /usr/local/bin/setup-dev-uart.sh cb_accl1_1 uart1 start

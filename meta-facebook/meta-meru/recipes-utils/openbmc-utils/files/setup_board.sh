@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
 NETWORK_CONF_FILE="/etc/systemd/network/10-eth0.network"

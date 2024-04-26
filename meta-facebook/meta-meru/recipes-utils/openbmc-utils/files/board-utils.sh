@@ -177,6 +177,7 @@ bmc_mac_addr() {
     echo "$mac"
 }
 
+# shellcheck disable=SC2120
 userver_mac_addr() {
     # support v4 or v5 eeprom version
     $WEUTIL_CMD scm | grep -E '(Extended|CPU) MAC B' | awk -F': ' '{print $2}'

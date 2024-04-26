@@ -131,6 +131,8 @@ userver_power_is_on() {
 }
 
 userver_power_on() {
+    sync
+    sleep 0.5
     # Power on using the SLG gpio
     i2cset -f -y 14 0x28 0x2e 0x1
     sleep 0.5

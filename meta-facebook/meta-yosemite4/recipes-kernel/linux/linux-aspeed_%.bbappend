@@ -19,4 +19,5 @@ SRC_URI += " \
     file://0516-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
     file://0517-Revise-duty-cycle-for-SMB9-and-SMB10.patch \
     file://0518-hwmon-max31790-revise-the-scale-to-write-pwm.patch \
+    file://0519-Add-nct7363-in-yosemite4-dts.patch \
 "

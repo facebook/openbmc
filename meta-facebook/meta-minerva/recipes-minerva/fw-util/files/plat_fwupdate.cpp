@@ -78,7 +78,6 @@ int CpldComponent::get_version(json& j) {
 }
 
 //CPLD Component
-CpldComponent cmm_cpld("cmm", "cpld", LCMXO3LF_4300C, 1, 0x44, nullptr);
 CpldComponent scm_cpld("scm", "cpld", LCMXO3_2100C, 15, 0x40, nullptr);
 CpldComponent fcb_top1_cpld("fcb", "top1_cpld", LCMXO3_9400C, 16, 0x70, nullptr);
 CpldComponent fcb_top0_cpld("fcb", "top0_cpld", LCMXO3_9400C, 17, 0x70, nullptr);

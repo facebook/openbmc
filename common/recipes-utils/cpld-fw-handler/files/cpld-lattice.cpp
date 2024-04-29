@@ -438,6 +438,34 @@ int CpldLatticeManager::writeProgramPage()
     return 0;
 }
 
+int CpldLatticeManager::programUserCode()
+{
+    /*
+    CMD_PROGRAM_USER_CODE = 0xC2,
+
+    Program user code.
+    */
+    std::vector<uint8_t> cmd = {CMD_PROGRAM_USER_CODE, 0x0, 0x0, 0x0};
+    std::vector<uint8_t> read;
+    for (int i = 3; i >= 0; i--)
+    {
+        cmd.push_back((fwInfo.Version >> (i * 8)) & 0xFF);
+    }
+
+    if (i2cWriteReadCmd(cmd, 0, read) < 0)
+    {
+        return -1;
+    }
+
+    if (!waitBusyAndVerify())
+    {
+        std::cerr << "Wait busy and verify fail" << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
 int CpldLatticeManager::programDone()
 {
     // CMD_PROGRAM_DONE = 0x5E
@@ -626,6 +654,13 @@ int CpldLatticeManager::XO2XO3Family_update()
         return -1;
     }
     std::cout << "Write Program Page Done." << std::endl;
+
+    std::cout << "Program user code." << std::endl;
+    if (programUserCode() < 0)
+    {
+        std::cerr << "Program user code failed." << std::endl;
+        return -1;
+    }
 
     if (programDone() < 0)
     {

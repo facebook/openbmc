@@ -348,17 +348,33 @@ bool containStr(const std::string& str, const std::initializer_list<std::string>
 }
 
 void getMetricReports() {
-  std::string url;
+  std::string url, urlUBB;
   std::string snr_path;
   std::string snr_val;
+  std::string snr_valid = "gpu_snr_valid";
   std::string resp;
   unsigned int pos_start, pos_end;
 
   if (get_gpu_config() == GPU_CONFIG_HGX) {
     url = HGX_TELEMETRY_SERVICE_DVT;
-  } else if (get_gpu_config() == GPU_CONFIG_UBB) {
+  }
+  else if (get_gpu_config() == GPU_CONFIG_UBB) {
     url = HMC_URL + "TelemetryService/MetricReports/All";
-  } else {
+    urlUBB = HMC_URL + "Chassis/UBB";
+    json jUBB = json::parse(hgx.get(urlUBB));
+    if (jUBB.contains("Status") && jUBB["Status"].contains("State")) {
+      if(jUBB["Status"]["State"].dump() == "\"Enabled\"") {
+        kv::set(snr_valid, "valid");
+      }
+      else {
+       kv::set(snr_valid, jUBB["Status"]["State"].dump());
+      }
+    }
+    else {
+      kv::set(snr_valid, "valid");
+    }
+  }
+  else {
     return;
   }
 

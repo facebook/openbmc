@@ -122,13 +122,20 @@ struct ubb_snr_info {
   {"GPU_WARMEST_MEMORY_TEMP"},             //0x6F
 };
 
+PAL_SENSOR_MAP ubb_sensor_map[];
+
 static int
 read_kv_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = READING_NA;
   char data[32] = {0};
 
+  if (!ubb_sensor_map[sensor_num].stby_read &&
+      (kv_get("gpu_snr_valid", data, NULL, 0) || strcmp(data, "valid"))) {
+    return READING_NA;
+  }
+
   ret = kv_get(UBB_SNR_INFO[sensor_num].snr_name, data, NULL, 0);
- 
+
   if (ret || !strcmp(data, "NA")) {
     return READING_NA;
   }
@@ -171,7 +178,7 @@ PAL_SENSOR_MAP ubb_sensor_map[] = {
   {"HSC_9_Power" , 0 , NULL, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},     //0x0A
   {"Standby_HSC_Power",  0 ,read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},//0x0B
   {"Total_HSC_Power" ,   0, read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},//0x0C
-  {"Total_GPU_Power"   , 0, read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},//0x0D
+  {"Total_GPU_Power"   , 0, read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},//0x0D
   {"Altitude_Pressure0", 0, NULL, true, {0, 0, 0, 0, 0, 0, 0, 0}, PRESS},    //0x0E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                           //0x0F
 
@@ -196,18 +203,18 @@ PAL_SENSOR_MAP ubb_sensor_map[] = {
   {"PCB_1_TEMP" , 0 , read_snr, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x21
   {"PCB_2_TEMP" , 0 , read_snr, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x22
   {"PCB_3_TEMP" , 0 , read_snr, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x23
-  {"PCIeRetimer_0_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x24
-  {"PCIeRetimer_1_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x25
-  {"PCIeRetimer_2_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x26
-  {"PCIeRetimer_3_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x27
-  {"PCIeRetimer_4_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x28
-  {"PCIeRetimer_5_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x29
-  {"PCIeRetimer_6_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x2A
-  {"PCIeRetimer_7_TEMP" , 0 , read_snr, true, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x2B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                   //0x2C
-  {"PCIeRetimer_MAX_TEMP", 0, read_snr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},          //0x2D
-  {"PCIeRetimer_MAX_VR_TEMP", 0, read_snr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},       //0x2E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                   //0x2F
+  {"PCIeRetimer_0_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x24
+  {"PCIeRetimer_1_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x25
+  {"PCIeRetimer_2_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x26
+  {"PCIeRetimer_3_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x27
+  {"PCIeRetimer_4_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x28
+  {"PCIeRetimer_5_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x29
+  {"PCIeRetimer_6_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x2A
+  {"PCIeRetimer_7_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x2B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                    //0x2C
+  {"PCIeRetimer_MAX_TEMP", 0, read_snr,   false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},     //0x2D
+  {"PCIeRetimer_MAX_VR_TEMP", 0, read_snr, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},    //0x2E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                                    //0x2F
 
   {"OAM_0_ENRGY", 0,        NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, ENRGY},      //0x30
   {"OAM_0_PWR"  , 0,    read_snr, false, {1020.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31

@@ -37,5 +37,6 @@ class BIOSupdater
     const uint8_t slotId;
 
     /** BERGAMO or TURNIN cpu will use different offset to update */
+    /** Will update both offset if it is not set */
     const std::string& cpuType;
 };

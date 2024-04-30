@@ -26,6 +26,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <thread>
 
 static constexpr size_t USB_PKT_SIZE = 0x200;
@@ -41,6 +42,9 @@ static constexpr uint16_t SB_USB_PRODUCT_ID = 0x0104;
 
 static constexpr uint8_t USB_INPUT_PORT = 0x3;
 static constexpr uint8_t USB_OUTPUT_PORT = 0x82;
+
+std::map<std::string, size_t> cpuTypeToOffset = {{"BERGAMO", 0x0},
+                                                 {"TURIN", 0x3000000}};
 
 int send_bic_usb_packet(usb_dev* udev, bic_usb_packet* pkt)
 {
@@ -292,19 +296,13 @@ int bic_close_usb_dev(usb_dev* udev)
 }
 
 int bic_update_fw_usb(const std::string& imagePath, usb_dev* udev,
-                      const std::string& cpuType)
+                      size_t write_offset)
 {
     int rc = 0;
     uint8_t* buf = nullptr;
-    size_t write_offset = 0;
     size_t file_buf_num_bytes = 0;
     int num_blocks_written = 0;
     int attempts = NUM_ATTEMPTS;
-
-    if (cpuType == "TURIN")
-    {
-        write_offset = 0x3000000;
-    }
 
     std::fstream file(imagePath,
                       std::ios::in | std::ios::binary | std::ios::ate);
@@ -431,10 +429,15 @@ int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath,
     gettimeofday(&start, nullptr);
 
     // sending file
-    ret = bic_update_fw_usb(imageFilePath, udev, cpuType);
-
-    if (ret < 0)
-        goto error_exit;
+    for (const auto& c : cpuTypeToOffset)
+    {
+        if (cpuType == c.first || cpuType == "ALL")
+        {
+            ret = bic_update_fw_usb(imageFilePath, udev, c.second);
+            if (ret < 0)
+                goto error_exit;
+        }
+    }
 
     gettimeofday(&end, nullptr);
     std::cerr << "Elapsed time: " << (int)(end.tv_sec - start.tv_sec)

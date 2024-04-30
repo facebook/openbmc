@@ -4,6 +4,7 @@
 #include "libpldm/states.h"
 #include "handler.hpp"
 #include <stdint.h>
+#include <optional>
 #include <string>
 #include <map>
 
@@ -17,10 +18,12 @@ namespace platform
 // using EffecterId = uint16_t;
 using EventType = uint8_t;
 using EventHandler = std::function<int(
-    const pldm_msg* request, size_t payloadLength, uint8_t formatVersion,
-    uint8_t tid, size_t eventDataOffset)>;
+    uint8_t payloadId, const pldm_msg* request, size_t payloadLength, 
+    uint8_t formatVersion, uint8_t tid, size_t eventDataOffset)>;
 using EventHandlers = std::vector<EventHandler>;
 using EventMap = std::map<EventType, EventHandlers>;
+
+std::optional<EventMap> get_add_on_platform_event_handlers();
 
 class Handler : public CmdHandler
 {
@@ -39,16 +42,27 @@ class Handler : public CmdHandler
 
       // Default handler for PLDM Events
       eventHandlers[PLDM_SENSOR_EVENT].emplace_back(
-        [this](const pldm_msg* request, size_t payloadLength,
+        [this](uint8_t payloadId, const pldm_msg* request, size_t payloadLength,
               uint8_t formatVersion, uint8_t tid, size_t eventDataOffset) {
-          return this->sensorEvent(request, payloadLength, formatVersion, tid, eventDataOffset);
+          return this->sensorEvent(payloadId, request, payloadLength, 
+                                   formatVersion, tid, eventDataOffset);
         });
       eventHandlers[PLDM_PDR_REPOSITORY_CHG_EVENT].emplace_back(
-        [this](const pldm_msg* request, size_t payloadLength,
+        [this](uint8_t payloadId, const pldm_msg* request, size_t payloadLength,
               uint8_t formatVersion, uint8_t tid, size_t eventDataOffset) {
-          return this->pldmPDRRepositoryChgEvent(request, payloadLength,
+          return this->pldmPDRRepositoryChgEvent(payloadId, request, payloadLength,
                                                 formatVersion, tid, eventDataOffset);
         });
+
+      // Additional OEM event handlers for PLDM platform commands, override the 
+      // standard event handlers
+      auto addOnHandlersMap = get_add_on_platform_event_handlers();
+      if (addOnHandlersMap) {
+        auto addOnHandlers = addOnHandlersMap.value();
+        for (auto it = addOnHandlers.begin(); it != addOnHandlers.end(); ++it) {
+          eventHandlers[it->first] = it->second;
+        }
+      }
     }
 
     /** @brief Handler for PlatformEventMessage
@@ -78,7 +92,7 @@ class Handler : public CmdHandler
      *                               message
      *  @return PLDM completion code
      */
-    int sensorEvent(const pldm_msg* request, size_t payloadLength,
+    int sensorEvent(uint8_t payloadId, const pldm_msg* request, size_t payloadLength,
                     uint8_t formatVersion, uint8_t tid, size_t eventDataOffset);
 
     /** @brief Handler for pldmPDRRepositoryChgEvent
@@ -91,9 +105,9 @@ class Handler : public CmdHandler
      *                               message
      *  @return PLDM completion code
      */
-    int pldmPDRRepositoryChgEvent(const pldm_msg* request, size_t payloadLength,
-                                  uint8_t formatVersion, uint8_t tid,
-                                  size_t eventDataOffset);
+    int pldmPDRRepositoryChgEvent(uint8_t payloadId, const pldm_msg* request, 
+                                  size_t payloadLength, uint8_t formatVersion, 
+                                  uint8_t tid, size_t eventDataOffset);
 
     /** @brief map of PLDM event type to EventHandlers
      *

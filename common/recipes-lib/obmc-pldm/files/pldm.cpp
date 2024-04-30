@@ -97,6 +97,28 @@ socketfail:
   return -1;
 }
 
+static pldm_requester_rc_t mctp_send (mctp_eid_t eid, int mctp_fd,
+			                                const uint8_t *pldm_req_msg, 
+                                      size_t req_msg_len) {
+  uint8_t hdr[2] = {eid, MCTP_MSG_TYPE_PLDM};
+
+	struct iovec iov[2];
+	iov[0].iov_base = hdr;
+	iov[0].iov_len = sizeof(hdr);
+	iov[1].iov_base = (uint8_t *)pldm_req_msg;
+	iov[1].iov_len = req_msg_len;
+
+	struct msghdr msg = {0};
+	msg.msg_iov = iov;
+	msg.msg_iovlen = sizeof(iov) / sizeof(iov[0]);
+
+	ssize_t rc = sendmsg(mctp_fd, &msg, 0);
+	if (rc == -1) {
+		return PLDM_REQUESTER_SEND_FAIL;
+	}
+	return PLDM_REQUESTER_SUCCESS;
+}
+
 static pldm_requester_rc_t mctp_recv (mctp_eid_t eid, int mctp_fd,
                                     uint8_t **pldm_resp_msg,
                                     size_t *resp_msg_len) {
@@ -149,7 +171,7 @@ int oem_pldm_send (int eid, int pldmd_fd,
 {
   int ret;
   for (int retry = 0; retry < 2; retry++) {
-    ret = pldm_send(eid, pldmd_fd, pldm_req_msg, req_msg_len);
+    ret = (int)mctp_send(eid, pldmd_fd, pldm_req_msg, req_msg_len);
     if (ret == 0 || errno != EAGAIN)
       return ret;
   }

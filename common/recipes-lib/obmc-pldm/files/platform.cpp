@@ -17,6 +17,12 @@ namespace responder
 namespace platform
 {
 
+std::optional<EventMap> __attribute__((weak)) 
+get_add_on_platform_event_handlers()
+{
+  return std::nullopt;
+}
+
 Response Handler::platformEventMessage(const pldm_msg* request,
                                        size_t payloadLength)
 {
@@ -41,7 +47,7 @@ Response Handler::platformEventMessage(const pldm_msg* request,
     try {
       const auto& handlers = eventHandlers.at(eventClass);
       for (const auto& handler : handlers) {
-        rc = handler(request, payloadLength, formatVersion, tid, offset);
+        rc = handler(payload_id, request, payloadLength, formatVersion, tid, offset);
         if (rc != PLDM_SUCCESS)
           return CmdHandler::ccOnlyResponse(request, rc);
       }
@@ -104,9 +110,9 @@ Response Handler::set_state_effecter_states(const pldm_msg* request,
   return CmdHandler::ccOnlyResponse(request, PLDM_SUCCESS);
 }
 
-int Handler::sensorEvent(const pldm_msg* request, size_t payloadLength,
-                         uint8_t /*formatVersion*/, uint8_t tid,
-                         size_t eventDataOffset)
+int Handler::sensorEvent(uint8_t /*payloadId*/, const pldm_msg* request, 
+                         size_t payloadLength, uint8_t /*formatVersion*/, 
+                         uint8_t tid, size_t eventDataOffset)
 {
   uint16_t sensorId{};
   uint8_t eventClass{};
@@ -176,7 +182,8 @@ int Handler::sensorEvent(const pldm_msg* request, size_t payloadLength,
   return PLDM_SUCCESS;
 }
 
-int Handler::pldmPDRRepositoryChgEvent(const pldm_msg* request,
+int Handler::pldmPDRRepositoryChgEvent(uint8_t /*payloadId*/, 
+                                       const pldm_msg* request,
                                        size_t payloadLength,
                                        uint8_t /*formatVersion*/,
                                        uint8_t /*tid*/, size_t eventDataOffset)

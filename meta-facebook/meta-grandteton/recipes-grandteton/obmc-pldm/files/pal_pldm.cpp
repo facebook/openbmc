@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 #include <openbmc/kv.hpp>
 #include <libpldm/firmware_update.h>
+#include <libpldm/utils.h>
 
 using namespace std;
 

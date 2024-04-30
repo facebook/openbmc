@@ -18,6 +18,7 @@
 #pragma once
 #include <vector>
 #include <libpldm/firmware_update.h>
+#include <libpldm/utils.h>
 
 #define PLDM_CMD_QUERY_DOWNSTREAM_DEVICE_IDENTIFIERS 0x04
 #define PLDM_QUERY_DOWNSTREAM_DEVICE_IDENTIFIERS_WAIT_TIME_US 100000

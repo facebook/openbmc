@@ -56,7 +56,7 @@
 // PLDM supported command type bitfields
 typedef enum pldm_types {
   PLDM_MSG_CTRL    =  0,
-  PLDM_SMBIOS      =  1,
+  PLDM_SMBIOS_TYPE =  1,
   PLDM_MONITORING  =  2,
   PLDM_BIOS_CTRL   =  3,
   PLDM_FRUDATA     =  4,

@@ -83,8 +83,13 @@ userver_power_is_on() {
 }
 
 userver_power_on() {
-    echo 1 > "$COME_POWER_OFF"
-    echo 1 > "$COME_POWER_EN"
+    if ! sysfs_write "$COME_POWER_OFF" 1; then
+        return 1
+    fi
+    if ! sysfs_write "$COME_POWER_EN" 1; then
+        return 1
+    fi
+    return 0
 }
 
 userver_power_off() {

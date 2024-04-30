@@ -85,6 +85,9 @@ bool BIOSupdater::run()
         return false;
     }
 
+    // wait usb hub processing the usb disconnection event
+    sleep(3);
+
     ret = update_bic_usb_bios(slotId, imagePath, cpuType);
 
     if (!power_ctrl(bus, POWER::ON, slotId))

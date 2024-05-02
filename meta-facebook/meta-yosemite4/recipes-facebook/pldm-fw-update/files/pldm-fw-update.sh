@@ -417,6 +417,11 @@ if ! systemctl is-active --quiet pldmd; then
     exit 255
 fi
 
+if [ "$is_rcvy" == true ]; then
+	pldm-package-re-wrapper bic -s "$slot_id" -f "$pldm_image"
+	pldm_image="${pldm_image}_re_wrapped"
+fi
+
 busctl tree xyz.openbmc_project.MCTP
 echo "Start to Update BIC"
 

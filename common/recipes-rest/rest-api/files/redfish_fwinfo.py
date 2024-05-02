@@ -1,5 +1,6 @@
 import os
 import typing as t
+import urllib
 from collections import defaultdict
 
 import common_utils
@@ -69,7 +70,8 @@ async def _get_fw_inventory_members(expand_level: int) -> t.List[t.Dict[str, t.A
             members.append(
                 {
                     "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/{}".format(
-                        fw_name
+                        # Ensure that invalid URL characters in FW names are handled
+                        urllib.parse.quote(fw_name, safe="")
                     )
                 }
             )

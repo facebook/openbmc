@@ -845,7 +845,7 @@ end_with (char* str, uint8_t str_len, char* pattern, uint8_t pattern_len) {
 }
 
 static int
-update_bic_retimer(uint8_t slot_id, char* path, uint8_t intf) {
+update_bic_retimer(uint8_t slot_id, uint8_t comp, char* path, uint8_t intf) {
 #define RETIMER_UPDATE_PACKET_SIZE 64
   size_t file_size = 0;
   int fd = -1;
@@ -856,7 +856,7 @@ update_bic_retimer(uint8_t slot_id, char* path, uint8_t intf) {
   uint32_t offset = 0;
   volatile uint16_t read_count = 0;
   uint8_t buf[256] = {0};
-  uint8_t target = UPDATE_RETIMER;
+  uint8_t target = 0;
   ssize_t count = 0;
   bool is_latest_packet = false;
   int retry = 3;
@@ -870,6 +870,11 @@ update_bic_retimer(uint8_t slot_id, char* path, uint8_t intf) {
   if ( fd < 0 ) {
     syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d\n", __func__, path, fd);
     goto error_exit;
+  }
+  if ((comp == FW_3OU_RETIMER) || (comp == FW_1OU_RETIMER)) {
+    target = UPDATE_RETIMER;
+  } else {
+    target = RECOVER_RETIMER;
   }
   // Find the latest non-zero byte as the end of image
   for (image_size = file_size; image_size > 0; image_size--) {
@@ -992,6 +997,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_1OU_BIC:
     case FW_1OU_BIC_RCVY:
     case FW_1OU_RETIMER:
+    case FW_1OU_RETIMER_RCVY:
       intf = FEXP_BIC_INTF;
       break;
     case FW_2OU_BIC:
@@ -1014,6 +1020,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_3OU_BIC:
     case FW_3OU_BIC_RCVY:
     case FW_3OU_RETIMER:
+    case FW_3OU_RETIMER_RCVY:
       intf = EXP3_BIC_INTF;
       break;
     case FW_4OU_BIC:
@@ -1104,7 +1111,9 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       break;
     case FW_1OU_RETIMER:
     case FW_3OU_RETIMER:
-      ret = update_bic_retimer(slot_id, path, intf);
+    case FW_1OU_RETIMER_RCVY:
+    case FW_3OU_RETIMER_RCVY:
+      ret = update_bic_retimer(slot_id, comp, path, intf);
       break;
     default:
       syslog(LOG_WARNING, "%s(): component %x not supported", __func__, comp);

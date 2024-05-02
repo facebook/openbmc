@@ -21,9 +21,18 @@ static constexpr uint8_t vendor_id_size = 7;
 const uint8_t astera_vendor_id[vendor_id_size] = {0x06, 0x04, 0x00, 0x01, 0x00, 0xFA, 0x1D};
 const uint8_t montage_vendor_id[vendor_id_size] = {0x06, 0x04, 0x00, 0x40, 0x20, 0x00, 0xD8};
 
+bool RetimerFwComponent::is_recovery() {
+  switch(fw_comp) {
+    case FW_1OU_RETIMER_RCVY:
+    case FW_3OU_RETIMER_RCVY:
+      return true;
+  }
+  return false;
+}
+
 int RetimerFwComponent::update_internal(const std::string& image, bool force) {
   int ret = 0;
-  bool validated = 0;
+  bool validated = false;
 
   try {
     cout << "Checking if the server is ready..." << endl;
@@ -39,7 +48,12 @@ int RetimerFwComponent::update_internal(const std::string& image, bool force) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  validated = update_validation(image);
+  if (!is_recovery() && !force) {
+    validated = update_validation(image);
+  } else {
+    validated = true;
+  }
+
   if (validated) {
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
     if (ret != 0) {
@@ -125,6 +139,10 @@ int RetimerFwComponent::print_version() {
   string ver("");
   string board_name = board;
 
+  if (is_recovery()) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
   try {
     server.ready();
@@ -143,6 +161,10 @@ int RetimerFwComponent::print_version() {
 int RetimerFwComponent::get_version(json& j) {
   string ver("");
   string board_name = board;
+
+  if (is_recovery()) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
 
   try {
     server.ready();

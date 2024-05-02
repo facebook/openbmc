@@ -35,6 +35,7 @@ enum UPDATE_FW_TYPE{
   UPDATE_CXL,
   UPDATE_BIOS_SPIB,
   UPDATE_RETIMER,
+  RECOVER_RETIMER,
 };
 
 // Update from file.

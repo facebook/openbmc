@@ -4,10 +4,119 @@
 #include <chrono>
 #include <syslog.h>
 #include <openbmc/libgpio.h>
+#include <sys/stat.h>
 
 using namespace std;
 
-int MTDComponent::update(std::string image)
+int MTDComponent::getFlashSize(const std::string& mtdIndex)
+{
+  char command[256];  // Buffer for storing the command to be executed
+  char buffer[1024];  // Buffer for storing the output from the command
+  FILE* pipe;         // File pointer to manage the pipe
+  int flashSize = -1; // Variable to store the flash size, initialized to -1
+
+  // Clear command and buffer before use
+  memset(command, 0, sizeof(command));
+  memset(buffer, 0, sizeof(buffer));
+
+  // Construct the command that fetches flash chip information
+  snprintf(command, sizeof(command), "flashrom -p linux_mtd:dev=%s | grep -i 'flash chip' | awk '{for (i=1; i<=NF; i++) if ($i ~ /kB/) print $(i-1)}'", mtdIndex.c_str());
+
+  // Execute the command using popen, which opens a process by creating a pipe, running a shell, and reading the output
+  pipe = popen(command, "r");
+  if (!pipe) {
+    std::cerr << "Failed to use flashrom get flash memory message!" << std::endl;
+    return -1;
+  }
+
+  // Read the output and parse the numbers, removing the brackets
+  if (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+    // Move the pointer to the start of the number in the buffer
+    char* numStart = buffer;
+    char* bufferEnd = buffer + sizeof(buffer) - 1;  // Pointer to the end of the buffer
+    while (numStart < bufferEnd && *numStart && !isdigit(*numStart)) {
+      numStart++;  // Skip to the first digit
+    }
+    flashSize = atoi(numStart); // Convert the string to an integer
+  } else {
+    std::cerr << "Failed to read flash memory size by using flashrom!" << std::endl;
+  }
+
+  pclose(pipe);
+
+  // If a valid flash size was found, convert it from kB to bytes and return
+  return flashSize > 0 ? flashSize * 1024 : -1;
+}
+
+int MTDComponent::update_by_flashrom(const std::string& image)
+{
+  std::string dev, cmd, comp = this->component(); // Retrieve the current component name
+  struct stat st;  // Used to obtain information about the file
+  int ret, flashSize, paddingSize;
+
+  // Get the device name associated with the MTD device
+  if (!sys().get_mtd_name(_mtd_name, dev)) {
+    std::cerr << "Failed to get the MTD device!" << std::endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  // Extract the numeric part of the MTD device identifier
+  std::string dev_number = dev.substr(dev.find("mtd") + 3);
+  if (dev_number.empty()) {
+    std::cerr << "Failed to get the MTD device number!" << std::endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  // Get the flash size of the device
+  flashSize = getFlashSize(dev_number);
+  if (flashSize <= 0) {
+    std::cerr << "Failed to get the flash memory size!" << std::endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  // Temporary file to store the new firmware image
+  std::string tempFile = "/tmp/temp_image.bin";
+  std::ifstream src(image, std::ios::binary);
+  std::ofstream dst(tempFile, std::ios::binary | std::ios::trunc);
+
+  // Check if both source and destination files are open
+  if (!src.is_open() || !dst.is_open()) {
+    std::cerr << "Failed to open file!" << std::endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  // Copy the contents from source to destination
+  dst << src.rdbuf();
+  // src and dst are automatically closed when going out of scope
+
+  // Check Image data status
+  if (stat(tempFile.c_str(), &st) != 0) {
+    std::cerr << "Failed to get Image data status!" << std::endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  // Check if padding is needed to match the flash size
+  if ((paddingSize = flashSize - st.st_size) > 0) {
+    std::ofstream padFile(tempFile, std::ios::binary | std::ios::app);
+    if (!padFile) {
+      std::cerr << "Failed to open Image!" << std::endl;
+      return FW_STATUS_FAILURE;
+    }
+    std::vector<char> padding(paddingSize, '\xFF'); // Allocate a buffer filled with 0xFF to match the expected padding size
+    padFile.write(padding.data(), padding.size());  // Write the padding data to the end of the file
+    padFile.close();
+  }
+
+  // Construct the command to write the new firmware to the device
+  cmd = "flashrom -p linux_mtd:dev=" + dev_number + " -w " + tempFile;
+  ret = sys().runcmd(cmd);
+  if (ret == 0) {
+    return FW_STATUS_SUCCESS;
+  }
+  return FW_STATUS_FAILURE;
+}
+
+int MTDComponent::update_by_flashcp(const std::string& image)
 {
   string dev;
   string cmd;
@@ -27,6 +136,18 @@ int MTDComponent::update(std::string image)
     return FW_STATUS_SUCCESS;
   }
   return FW_STATUS_FAILURE;
+}
+
+int MTDComponent::update(std::string image)
+{
+  // flash_method default is "flashcp"
+  if (flash_method == "flashrom") {
+    std::cout << "Update by using flasrom" << std::endl;
+    return update_by_flashrom(image);
+  } else {
+    std::cout << "Update by using flashcp" << std::endl;
+    return update_by_flashcp(image);
+  }
 }
 
 int MTDComponent::dump(std::string image)

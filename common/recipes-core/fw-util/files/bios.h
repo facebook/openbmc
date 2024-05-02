@@ -14,6 +14,9 @@ class BiosComponent : public GPIOSwitchedSPIMTDComponent {
     BiosComponent(const std::string& fru, const std::string& comp, const std::string& mtd, const std::string& devpath, const std::string& dev,
       const std::string& shadow, bool level, const std::string& verp) :
       GPIOSwitchedSPIMTDComponent(fru, comp, mtd, dev, shadow, level), _ver_prefix(verp) { spipath = devpath; }
+    BiosComponent(const std::string& fru, const std::string& comp, const std::string& mtd, const std::string& devpath, const std::string& dev,
+      const std::string& shadow, bool level, const std::string& verp , const std::string& method) :
+      GPIOSwitchedSPIMTDComponent(fru, comp, mtd, dev, shadow, level), _ver_prefix(verp) { spipath = devpath; flash_method = method; }
     BiosComponent(const std::string& fru, const std::string& comp, const std::string& mtd, const std::string& dev, const std::string& shadow, bool level, const std::string& verp) :
       GPIOSwitchedSPIMTDComponent(fru, comp, mtd, dev, shadow, level), _ver_prefix(verp) {}
     BiosComponent(const std::string& fru, const std::string& comp, const std::string& mtd, const std::string& verp) :

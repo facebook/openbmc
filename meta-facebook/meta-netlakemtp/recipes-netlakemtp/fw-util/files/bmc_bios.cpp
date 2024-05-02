@@ -19,8 +19,8 @@ class BmcBiosComponent : public BiosComponent {
   public:
     BmcBiosComponent(const std::string &fru, const std::string &comp, const std::string &mtd,
                      const std::string &devpath, const std::string &dev, const std::string &shadow,
-                     bool level, const std::string &verp) :
-      BiosComponent(fru, comp, mtd, devpath, dev, shadow, level, verp) {}
+                     bool level, const std::string &verp , const std::string &method) :
+      BiosComponent(fru, comp, mtd, devpath, dev, shadow, level, verp , method) {}
     int update(std::string image) override;
     int fupdate(std::string image) override;
     int unbindDevice();
@@ -183,5 +183,4 @@ void BmcBiosComponent::spiMuxSelCPLD(uint8_t spiOwner) {
   return;
 }
 
-BmcBiosComponent bios("server", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc", "1e630000.spi", "SPI_MUX_SEL_R", true, "" /*TODO: Check image signature*/);
-
+BmcBiosComponent bios("server", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc", "1e630000.spi", "SPI_MUX_SEL_R", true, "" /*TODO: Check image signature*/, "flashrom");

@@ -8,12 +8,16 @@
 class MTDComponent : public Component {
   protected:
     std::string _mtd_name;
-
+    std::string flash_method = "flashcp";
   public:
     MTDComponent(const std::string& fru, const std::string& comp, const std::string& mtd) :
       Component(fru, comp), _mtd_name(mtd) {}
     int update(std::string image) override;
     int dump(std::string image) override;
+  private:
+    int getFlashSize(const std::string& mtdIndex);
+    int update_by_flashcp(const std::string& image);
+    int update_by_flashrom(const std::string& image);
 };
 
 // Upgrade SPI Flash whose partitions need to be temporarily mounted as MTD

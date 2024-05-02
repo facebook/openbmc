@@ -418,7 +418,7 @@ const char *ji_gpio_pin_name[] = {
   "RST_BMC_L",
   "BMC_READY",
   "BIC_READY",
-  "PWR_BRAKE_CPU1_L",
+  "PWR_BRAKE_CPU1",
   "RUN_POWER_PG",
   "BIC_RETIMER_MUX_SEL",
   "SPI_BMC_FPGA_INT_L",
@@ -455,22 +455,6 @@ const char *ji_gpio_pin_name[] = {
   "BOARD_ID3",
   "BOARD_ID4",                      //60
   "BOARD_ID5",
-  "P12V_STBY_SCALED",
-  "VDD_1V8_SENSOR",
-  "P3V3_STBY_SCALED",
-  "SOCVDD_SENSOR",
-  "P3V_BAT_SCALED",
-  "CPUVDD_SENSOR",
-  "FPGA_VCC_AO_SENSOR",
-  "1V2_SENSOR",
-  "CARD_TYPE_EXP",                  //70
-  "VDD_3V3_M2_SCALED",
-  "P1V2_STBY_SCALED",
-  "FBVDDQ_SENSOR",
-  "FBVDDP2_SENSOR",
-  "FBVDD1_SENSOR",
-  "P5V_STBY_SCALED",
-  "CPU_DVDD_SENSOR",
 };
 
 /* GPIO Expander gpio table */

@@ -440,6 +440,10 @@ end:
         syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (Power Good Drop Before 3v3 Vol)\n", i == HPDB_PG_FAULT ? FRU_HPDB:FRU_ACB, cb_pwrgd_fault[i]);
       }
       if (GETBIT(temp_mb_resp[2], i)) {
+        // To block HPDB PG fault caused by EXMAX cable dropped
+        if (gpio_get_value_by_shadow("FM_HS1_EN_BUSBAR_BUF") == GPIO_VALUE_LOW || gpio_get_value_by_shadow("FM_HS2_EN_BUSBAR_BUF") == GPIO_VALUE_LOW) {
+          return;
+        }
         syslog(LOG_CRIT, "FRU: %u Power Fault\n", i == HPDB_PG_FAULT ? FRU_HPDB:FRU_ACB);
         syslog(LOG_CRIT, "FRU: %u Power Fault Event: %s Assert (No Power Good Before 3v3 Vol)\n",  i == HPDB_PG_FAULT ? FRU_HPDB:FRU_ACB, cb_pwrgd_fault[i]);
       }

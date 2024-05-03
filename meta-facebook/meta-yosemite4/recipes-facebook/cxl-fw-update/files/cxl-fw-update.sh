@@ -19,14 +19,14 @@ wait_for_update_complete() {
     counter=0
     while true
     do
-        sleep 1
+        sleep 5
         echo -ne "Waiting for updating... ${counter} sec"\\r
         progress=$(busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.ActivationProgress Progress | cut -d " " -f 2)
         if [ "${progress}" == 100 ]; then
             echo -ne \\n"Update done."\\n
             break
         fi
-        counter=$((counter+1))
+        counter=$((counter+5))
         # Over two minutes is considered timeout
         if [ "${counter}" == 600 ]; then
             echo -ne \\n"Time out. Fail"\\n

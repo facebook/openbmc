@@ -17,6 +17,7 @@ SRC_URI += " \
     file://0011-Workaround-for-pldmd-memory-leak.patch \
     file://0012-platform-mc-Revise-sensor-threshold-handling.patch \
     file://0013-Support-OEM-META-command-for-host-BIOS-version.patch \
+    file://0014-platform-mc-Monitor-all-sensors-once-upon-the-first-.patch \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
     file://pldm-monitor-memory.sh\

@@ -137,12 +137,11 @@ update_bic() {
 
 	cp "$1" /tmp/images
 
-	sleep 10
+	software_id=$(compute-software-id "$1")
 
-	software_id=$(busctl tree xyz.openbmc_project.PLDM |grep /xyz/openbmc_project/software/ | cut -d "/" -f 5)
 	echo "software_id = $software_id"
 
-	sleep 60
+	sleep 30
 
 	if [ "$software_id" != "" ]; then
 

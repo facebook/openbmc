@@ -13,7 +13,7 @@
 #include "bic_cxl.h"
 #include "bic_retimer.h"
 #include "usbdbg.h"
-#include "mp5990.h"
+#include "hsc.h"
 #include "bic_prot.hpp"
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.hpp>
@@ -60,7 +60,7 @@ class ClassConfig {
 
         if (fby35_common_get_bb_hsc_type(&hsc_type) == 0) {
           if (hsc_type == HSC_MP5990) {
-            static MP5990Component hsc_bb("bmc", "hsc", FRU_BMC, 11, 0x40);
+            static HscComponent hsc_bb("bmc", "hsc", "MP5990", FRU_BMC, 11, 0x40);
           }
         }
 
@@ -91,8 +91,8 @@ class ClassConfig {
                   "slot1", "vr_vccinfaon", FW_VR_VCCINFAON);
               static VrComponent vr_fw1("slot1", "vr", FW_VR);
               if (isSbMpsHsc(FRU_SLOT1)) {
-                static MP5990Component hsc_fw1(
-                    "slot1", "hsc", FRU_SLOT1, 1, 0x16);
+                static HscComponent hsc_fw1(
+                    "slot1", "hsc", "MP5990", FRU_SLOT1, 1, 0x16);
               }
               break;
             }
@@ -115,8 +115,8 @@ class ClassConfig {
                     "slot1", "bios_spib", FRU_SLOT1, FW_BIOS_SPIB, true);
               }
               if (isSbMpsHsc(FRU_SLOT1)) {
-                static MP5990Component hsc_fw1(
-                    "slot1", "hsc", FRU_SLOT1, 4, 0x40);
+                static HscComponent hsc_fw1(
+                    "slot1", "hsc", "MP5990", FRU_SLOT1, 4, 0x40);
               }
               break;
             }
@@ -131,8 +131,8 @@ class ClassConfig {
                   "slot1", "vr_vccinf", FW_VR_VCCINF);
               static VrComponent vr_fw1("slot1", "vr", FW_VR);
               if (isSbMpsHsc(FRU_SLOT1)) {
-                static MP5990Component hsc_fw1(
-                    "slot1", "hsc", FRU_SLOT1, 1, 0x16);
+                static HscComponent hsc_fw1(
+                    "slot1", "hsc", "MP5990", FRU_SLOT1, 1, 0x16);
               }
               break;
             }
@@ -141,6 +141,11 @@ class ClassConfig {
                                                  ji_bic_comps);
               static CpldComponent cpld_fw1(
                   "slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
+              if (fby35_common_get_sb_rev(FRU_SLOT1) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type
+                static HscComponent hsc_fw1("slot1", "hsc", "RS31380", FRU_SLOT1, 1, 0xA0);
+              } else {
+                static HscComponent hsc_fw1("slot1", "hsc", "MP5990", FRU_SLOT1, 1, 0xA0);
+              }
               break;
             }
             default:
@@ -197,12 +202,17 @@ class ClassConfig {
             case SERVER_TYPE_JI: {
               static PldmBicFwComponent bic_fw2("slot2", "bic", "sb", FW_SB_BIC, SLOT2_PLDM_BUS_ID, MB_BIC_EID,
                                                  ji_bic_comps);
+              if (fby35_common_get_sb_rev(FRU_SLOT2) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type
+                static HscComponent hsc_fw1("slot2", "hsc", "RS31380", FRU_SLOT2, 1, 0xA0);
+              } else {
+                static HscComponent hsc_fw1("slot2", "hsc", "MP5990", FRU_SLOT2, 1, 0xA0);
+              }
               break;
             }
             default:
               static BicFwComponent    bic_fw2("slot2", "bic", "sb", FW_SB_BIC);
               if(isSbMpsHsc(FRU_SLOT2)) {
-                static MP5990Component hsc_fw2("slot2", "hsc", FRU_SLOT2, 1, 0x16);
+                static HscComponent hsc_fw2("slot2", "hsc", "MP5990", FRU_SLOT2, 1, 0x16);
               }
               //slot2 me/vr
               static MeComponent     me_fw2("slot2", "me", FRU_SLOT2);
@@ -237,8 +247,8 @@ class ClassConfig {
                   "slot3", "vr_vccinfaon", FW_VR_VCCINFAON);
               static VrComponent vr_fw3("slot3", "vr", FW_VR);
               if (isSbMpsHsc(FRU_SLOT3)) {
-                static MP5990Component hsc_fw3(
-                    "slot3", "hsc", FRU_SLOT3, 1, 0x16);
+                static HscComponent hsc_fw3(
+                    "slot3", "hsc", "MP5990", FRU_SLOT3, 1, 0x16);
               }
               break;
             }
@@ -261,8 +271,8 @@ class ClassConfig {
                     "slot3", "bios_spib", FRU_SLOT3, FW_BIOS_SPIB, true);
               }
               if (isSbMpsHsc(FRU_SLOT3)) {
-                static MP5990Component hsc_fw3(
-                    "slot3", "hsc", FRU_SLOT3, 4, 0x40);
+                static HscComponent hsc_fw3(
+                    "slot3", "hsc", "MP5990", FRU_SLOT3, 4, 0x40);
               }
               break;
             }
@@ -277,8 +287,8 @@ class ClassConfig {
                   "slot3", "vr_vccinf", FW_VR_VCCINF);
               static VrComponent vr_fw3("slot3", "vr", FW_VR);
               if (isSbMpsHsc(FRU_SLOT3)) {
-                static MP5990Component hsc_fw3(
-                    "slot3", "hsc", FRU_SLOT3, 1, 0x16);
+                static HscComponent hsc_fw3(
+                    "slot3", "hsc", "MP5990", FRU_SLOT3, 1, 0x16);
               }
               break;
             }
@@ -287,6 +297,11 @@ class ClassConfig {
                                                  ji_bic_comps);
               static CpldComponent cpld_fw3(
                   "slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
+              if (fby35_common_get_sb_rev(FRU_SLOT3) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type
+                static HscComponent hsc_fw1("slot3", "hsc", "RS31380", FRU_SLOT3, 1, 0xA0);
+              } else {
+                static HscComponent hsc_fw1("slot3", "hsc", "MP5990", FRU_SLOT3, 1, 0xA0);
+              }
               break;
             }
             default:
@@ -327,11 +342,16 @@ class ClassConfig {
             case SERVER_TYPE_JI: {
               static PldmBicFwComponent bic_fw4("slot4", "bic", "sb", FW_SB_BIC, SLOT4_PLDM_BUS_ID, MB_BIC_EID,
                                                  ji_bic_comps);
+              if (fby35_common_get_sb_rev(FRU_SLOT4) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type
+                static HscComponent hsc_fw1("slot4", "hsc", "RS31380", FRU_SLOT1, 1, 0xA0);
+              } else {
+                static HscComponent hsc_fw1("slot4", "hsc", "MP5990", FRU_SLOT1, 1, 0xA0);
+              }
               break;
             }
             default:
               if(isSbMpsHsc(FRU_SLOT4)) {
-                static MP5990Component hsc_fw4("slot4", "hsc", FRU_SLOT4, 1, 0x16);
+                static HscComponent hsc_fw4("slot4", "hsc", "MP5990", FRU_SLOT4, 1, 0x16);
               }
               static BicFwComponent  bic_fw4("slot4", "bic", "sb", FW_SB_BIC);
               static MeComponent     me_fw4("slot4", "me", FRU_SLOT4);

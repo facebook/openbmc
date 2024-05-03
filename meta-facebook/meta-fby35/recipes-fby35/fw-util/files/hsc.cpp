@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <syslog.h>
 #include <unistd.h>
-#include "mp5990.h"
+#include "hsc.h"
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
@@ -12,14 +12,14 @@
 
 using namespace std;
 
-int MP5990Component::get_ver_str(string& s) {
+int HscComponent::get_ver_str(string& s) {
   uint16_t checksum = 0;
   uint8_t tbuf[1] = {0}, rbuf[2] = {0};
   int ret = 0;
   int i2cfd = -1;
   int i = 0;
 
-  tbuf[0] = MP5990_REG_CHECKSUM;
+  tbuf[0] = REG_CHECKSUM;
   switch (fru_id) {
     case FRU_BMC:
       i2cfd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
@@ -61,7 +61,7 @@ int MP5990Component::get_ver_str(string& s) {
   return FW_STATUS_SUCCESS;
 }
 
-int MP5990Component::print_version() {
+int HscComponent::print_version() {
   string ver("");
   try {
     if (pal_is_slot_server(fru_id) == true){
@@ -70,15 +70,15 @@ int MP5990Component::print_version() {
     if ( get_ver_str(ver) < 0 ) {
       throw string("Error in getting the version of HSC");
     }
-    cout << "MP5990 HSC Checksum: " << ver << endl;
+    cout << model << " HSC Checksum: " << ver << endl;
   } catch(string& err) {
-    printf("MP5990 HSC Checksum: NA (%s)\n", err.c_str());
+    printf("%s HSC Checksum: NA (%s)\n", model.c_str(),err.c_str());
   }
 
   return FW_STATUS_SUCCESS;
 }
 
-int MP5990Component::get_version(json& j) {
+int HscComponent::get_version(json& j) {
   string ver("");
   try {
     if (pal_is_slot_server(fru_id) == true){

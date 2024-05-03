@@ -33,8 +33,8 @@ LOCAL_URI += " \
         file://expansion.h \
         file://mcu_fw.cpp \
         file://mcu_fw.h \
-        file://mp5990.cpp \
-        file://mp5990.h \
+        file://hsc.cpp \
+        file://hsc.h \
         file://nic_ext.cpp \
         file://nic_ext.h \
         file://platform.cpp \

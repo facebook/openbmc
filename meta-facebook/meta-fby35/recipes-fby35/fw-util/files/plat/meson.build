@@ -6,7 +6,7 @@ srcs += [
     'bmc_cpld.cpp',
     'expansion.cpp',
     'mcu_fw.cpp',
-    'mp5990.cpp',
+    'hsc.cpp',
     'nic_ext.cpp',
     'platform.cpp',
     'pldm_comp.cpp',

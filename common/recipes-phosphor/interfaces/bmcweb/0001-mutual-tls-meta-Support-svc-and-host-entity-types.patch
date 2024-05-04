@@ -1,4 +1,4 @@
-From 8d9a1ad54dfbca69da0e6689c32e83320f328b21 Mon Sep 17 00:00:00 2001
+From abeb9d2fcb1fbcf580b939e3ead0559d1e886470 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Mon, 25 Mar 2024 10:51:36 -0700
 Subject: [PATCH] mutual-tls-meta: Support "svc" and "host" entity types
@@ -22,12 +22,12 @@ Change-Id: I5101776dbf5fafe8700ad6e3de0e60a0432962cc
  3 files changed, 83 insertions(+), 19 deletions(-)
 
 diff --git a/http/mutual_tls.hpp b/http/mutual_tls.hpp
-index 1620054e..39b9b82d 100644
+index 5392549b..2618c842 100644
 --- a/http/mutual_tls.hpp
 +++ b/http/mutual_tls.hpp
-@@ -93,8 +93,7 @@ inline std::shared_ptr<persistent_data::UserSession>
+@@ -96,8 +96,7 @@ inline std::shared_ptr<persistent_data::UserSession>
      // Meta Inc. CommonName parsing
-     if (bmcwebMTLSCommonNameParsingMeta)
+     if constexpr (BMCWEB_MUTUAL_TLS_COMMON_NAME_PARSING == "meta")
      {
 -        std::optional<std::string_view> sslUserMeta =
 -            mtlsMetaParseSslUser(sslUser);
@@ -142,10 +142,10 @@ index 5e55db8e..3381dd48 100644
 +    return std::format("{}_{}", entityType, entity);
  }
 diff --git a/test/http/mutual_tls_meta.cpp b/test/http/mutual_tls_meta.cpp
-index 5f32cb54..4cedf766 100644
+index 0e280c10..dc214d8c 100644
 --- a/test/http/mutual_tls_meta.cpp
 +++ b/test/http/mutual_tls_meta.cpp
-@@ -10,14 +10,35 @@ namespace
+@@ -14,14 +14,35 @@ namespace
  TEST(MetaParseSslUser, userTest)
  {
      std::string sslUser = "user:kawajiri/hostname.facebook.com";
@@ -186,7 +186,7 @@ index 5f32cb54..4cedf766 100644
  }
  
  TEST(MetaParseSslUser, invalidUsers)
-@@ -31,7 +52,11 @@ TEST(MetaParseSslUser, invalidUsers)
+@@ -35,7 +56,11 @@ TEST(MetaParseSslUser, invalidUsers)
          "user:/",
          "user:/hostname.facebook.com",
          "user:/hostname.facebook.c om",

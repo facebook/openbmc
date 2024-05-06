@@ -211,14 +211,14 @@ i2c_device_add 28 0x50 24c02    #BMC54616S EEPROM
 # # Bus 12
 i2c_device_add 12 0x3e smb_syscpld     # SYSTEM CPLD
 
+# The UCD/MP device occasionally failed to enumerate all the pages or
+# incorrectly reads the VOUT_MODE register, This is due to i2c clock stretch.
+# Hence during bootup validating the corresponding hwmon attribute and re-bind the driver.
+hwmon_fix_driver_binding "smb_pwrseq_1" "smb_pwrseq_2" "smb_mp2978_1" "smb_mp2978_2"
+
 #
 # Check if I2C devices are bound to drivers. A summary message (total #
 # of devices and # of devices without drivers) will be dumped at the end
 # of this function.
 #
-i2c_check_driver_binding "fix-binding"
-
-# The UCD/MP device occasionally failed to enumerate all the pages or
-# incorrectly reads the VOUT_MODE register, This is due to i2c clock stretch.
-# Hence during bootup validating the corresponding hwmon attribute and re-bind the driver.
-hwmon_fix_driver_binding "smb_pwrseq_1" "smb_pwrseq_2" "smb_mp2978_1" "smb_mp2978_2"
+i2c_check_driver_binding

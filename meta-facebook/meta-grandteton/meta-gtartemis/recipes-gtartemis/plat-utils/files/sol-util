@@ -31,12 +31,12 @@ usage() {
   echo ""
   echo "       sol-util mc [cxl1 | cxl2 ... cxl8] (baudrate)"
   echo "       sol-util [ mb | cb | mc ] --history"
-  echo "       sol-util [ cb_accl[1..12]_[1..2] uart0 --history ]"
+  echo "       sol-util [ cb_accl[1..12]_[1..2] uart1 --history ]"
   echo "       e.g. sol-util cb_accl1_1 uart0"
   echo "       e.g. sol-util cb_accl1_1 fac_uart0"
   echo "       e.g. sol-util mc cxl1"
   echo ""
-  echo "       sol-util cb_accl uart0 --history [ enable | disable | status ]"
+  echo "       sol-util cb_accl uart1 --history [ enable | disable | status ]"
   exit 1
 }
 

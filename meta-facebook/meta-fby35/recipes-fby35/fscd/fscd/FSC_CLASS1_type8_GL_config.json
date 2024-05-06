@@ -1,5 +1,5 @@
 {
-  "version": "Olympic_GL_FSC-V2023.09.22",
+  "version": "Olympic_GL_FSC-V2024.04.24",
   "pwm_transition_value": 80,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
@@ -52,27 +52,22 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 1,
       "data": [
-        [ 20, 70 ],
-        [ 21, 70 ],
-        [ 22, 70 ],
-        [ 23, 70 ],
-        [ 24, 70 ],
-        [ 25, 70 ],
-        [ 26, 70 ],
-        [ 27, 70 ],
-        [ 28, 70 ],
-        [ 29, 70 ],
-        [ 30, 70 ],
-        [ 31, 70 ],
-        [ 32, 70 ],
-        [ 33, 70 ],
-        [ 34, 70 ],
-        [ 35, 70 ],
-        [ 36, 70 ],
-        [ 37, 70 ],
-        [ 38, 70 ],
-        [ 39, 70 ],
-        [ 40, 70 ]
+	[ 20, 10 ],
+	[ 21, 10 ],
+	[ 22, 11 ],
+	[ 23, 12 ],
+	[ 24, 13 ],
+	[ 25, 14 ],
+        [ 26, 15 ],
+        [ 27, 16 ],
+        [ 28, 17 ],
+        [ 29, 18 ],
+        [ 30, 19 ],
+        [ 31, 19 ],
+        [ 32, 20 ],
+        [ 33, 20 ],
+        [ 34, 21 ],
+        [ 35, 21 ]
       ]
     },
     "linear_cpu_temp": {
@@ -83,14 +78,13 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
       "data": [
-        [ 58, 70 ],
-        [ 59, 70 ],
-        [ 60, 70 ],
-        [ 61, 70 ],
-        [ 62, 70 ],
-        [ 63, 70 ],
-        [ 64, 70 ],
-        [ 65, 70 ]
+	[ 59, 10 ],
+	[ 60, 11 ],
+	[ 61, 12 ],
+	[ 62, 13 ],
+        [ 63, 14 ],
+        [ 64, 15 ],
+        [ 65, 16 ]
       ]
     },
     "pid_cpu_temp": {
@@ -98,10 +92,10 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 70,
+      "setpoint": 75,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
-      "kp": -4.5,
+      "kp": -5.5,
       "ki": -0.035,
       "kd": 0
     },
@@ -113,12 +107,12 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [65, 70],
-        [66, 70],
-        [67, 70],
-        [68, 70],
-        [69, 70],
-        [70, 70]
+        [65, 10],
+        [66, 11],
+        [67, 12],
+        [68, 13],
+        [69, 14],
+        [70, 15]
       ]
     },
     "pid_dimm": {
@@ -127,10 +121,10 @@
       },
       "type": "pid",
       "setpoint": 75,
-      "negative_hysteresis": 3,
-      "positive_hysteresis": 1,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
       "kp": -3,
-      "ki": -0.03,
+      "ki": -0.035,
       "kd": 0
     },
     "linear_nic": {
@@ -139,19 +133,14 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 3,
+      "negative_hysteresis": 2,
       "data": [
-        [80, 70],
-        [81, 70],
-        [82, 70],
-        [83, 70],
-        [84, 70],
-        [85, 70],
-        [86, 70],
-        [87, 70],
-        [88, 70],
-        [89, 70],
-        [90, 70]
+	[80, 10],
+	[81, 11],
+	[82, 12],
+	[83, 13],
+        [84, 14],
+        [85, 15]
       ]
     },
     "pid_nic": {
@@ -159,7 +148,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 95,
+      "setpoint": 90,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -3,
@@ -172,14 +161,14 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 3,
+      "negative_hysteresis": 2,
       "data": [
-        [60, 70],
-        [61, 70],
-        [62, 70],
-        [63, 70],
-        [64, 70],
-        [65, 70]
+        [60, 10],
+        [61, 11],
+        [62, 12],
+        [63, 13],
+        [64, 14],
+        [65, 15]
       ]
     },
     "pid_boot_drive": {
@@ -187,10 +176,10 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 70,
+      "setpoint": 68,
       "negative_hysteresis": 2,
-      "positive_hysteresis": 1,
-      "kp": -2,
+      "positive_hysteresis": 0,
+      "kp": -1.5,
       "ki": -0.02,
       "kd": 0
     },
@@ -200,11 +189,17 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 2,
+      "negative_hysteresis": 3,
       "data": [
-        [58, 70],
-        [60, 70],
-        [62, 70]
+	[57, 10],
+	[58, 11],
+	[59, 12],
+	[60, 13],
+	[61, 14],
+        [62, 15],
+	[63, 16],
+	[64, 17],
+	[65, 18]	
       ]
     },
     "pid_e1s_temp": {
@@ -214,8 +209,8 @@
       "type": "pid",
       "setpoint": 70,
       "negative_hysteresis": 2,
-      "positive_hysteresis": 1,
-      "kp": -1.5,
+      "positive_hysteresis": 0,
+      "kp": -4.5,
       "ki": -0.02,
       "kd": 0
     },

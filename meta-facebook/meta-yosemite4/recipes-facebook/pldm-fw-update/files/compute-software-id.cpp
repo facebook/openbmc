@@ -2,12 +2,12 @@
 #include <functional>
 #include <iostream>
 #include <string>
+#include <cstdint>
 
+#define VERSION_LENGTH_OFFSET 0x23
 #define VERSION_START_OFFSET 0x24
-#define VERSION_END_OFFSET 0x35
 
-size_t calculateHash(const std::string& image, size_t startOffset,
-                     size_t endOffset);
+size_t calculateHash(const std::string& image);
 
 int main(int argc, char* argv[])
 {
@@ -18,15 +18,13 @@ int main(int argc, char* argv[])
     }
 
     std::string image = argv[1];
-    size_t hashValue = calculateHash(image, VERSION_START_OFFSET,
-                                     VERSION_END_OFFSET);
+    size_t hashValue = calculateHash(image);
     std::cout << hashValue << std::endl;
 
     return 0;
 }
 
-size_t calculateHash(const std::string& image, size_t startOffset,
-                     size_t endOffset)
+size_t calculateHash(const std::string& image)
 {
     std::ifstream file(image, std::ios::binary);
     if (!file.is_open())
@@ -35,17 +33,29 @@ size_t calculateHash(const std::string& image, size_t startOffset,
         return 0;
     }
 
-    file.seekg(startOffset);
+    file.seekg(VERSION_LENGTH_OFFSET);
     if (!file)
     {
-        std::cerr << "Failed to seek to offset " << std::hex << startOffset
-                  << std::endl;
+        std::cerr << "Failed to seek to offset " << std::hex << VERSION_LENGTH_OFFSET << std::endl;
         return 0;
     }
 
+    uint8_t versionLength;
+    file.read(reinterpret_cast<char*>(&versionLength), sizeof(versionLength));
+
+    size_t endOffset = VERSION_START_OFFSET + versionLength;
+
+    file.seekg(VERSION_START_OFFSET);
+    if (!file)
+    {
+        std::cerr << "Failed to seek to offset " << std::hex << VERSION_START_OFFSET << std::endl;
+        return 0;
+    }
+
+    // Read data from start offset to end offset
     std::string data;
-    data.resize(endOffset - startOffset);
-    file.read(&data[0], endOffset - startOffset);
+    data.resize(endOffset - VERSION_START_OFFSET);
+    file.read(&data[0], endOffset - VERSION_START_OFFSET);
 
     std::hash<std::string> hasher;
     return hasher(data);

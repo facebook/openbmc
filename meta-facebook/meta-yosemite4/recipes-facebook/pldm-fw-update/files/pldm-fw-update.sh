@@ -11,10 +11,18 @@ BIC_BOOT_STRAP_SPI_VAL="0x00"
 BIC_BOOT_STRAP_REG="0x0C"
 
 SD_EEPROM_ADDR="0x54"
-REMAINING_WRTIE_OFFSET=("0x09" "0x00")
+S3_REMAINING_WRTIE_OFFSET=("0x09" "0x00")
+CPU0_REMAINING_WRTIE_OFFSET=("0x09" "0x02")
+CPU1_REMAINING_WRTIE_OFFSET=("0x09" "0x04")
 
 RAA229620_RW_TIMES=28
 MP2857_TPS536C5_RW_TIMES=1000
+
+VR_TYPE=""
+VR_OFFSET=""
+VR_HIGHBYTE_OFFSET=""
+VR_LOWBYTE_OFFSET=""
+remaining_write_times=""
 
 show_usage() {
   echo "Usage: pldm-fw-update.sh [sd|ff|wf|sd_vr] (--rcvy <slot_id> <uart image>) (<slot_id>) <pldm image>"
@@ -259,58 +267,72 @@ error_and_exit() {
   exit 255
 }
 
+get_offset_for_vr_type() {
+    local vr_type=$1
+    local S3_VR_ID="02"
+    local CPU0_VR_ID="03"
+    local CPU1_VR_ID="01"
+
+    case "$vr_type" in
+        *"$S3_VR_ID")
+            echo "${S3_REMAINING_WRTIE_OFFSET[@]}"
+            ;;
+        *"$CPU0_VR_ID")
+            echo "${CPU0_REMAINING_WRTIE_OFFSET[@]}"
+            ;;
+        *"$CPU1_VR_ID")
+            echo "${CPU1_REMAINING_WRTIE_OFFSET[@]}"
+            ;;
+        *)
+            echo "Failed to initialize remaining write because of unknown VR type"
+            exit 255
+            ;;
+    esac
+}
+
 Initialize_vr_remaining_write() {
-	local slot_id=$1
-	local eeprom_addr=$2
-	local pldm_image=$3
-	local hex_dump
+    local slot_id=$1
+    local eeprom_addr=$2
+    local pldm_image=$3
+    local hex_dump
 
-	# Dump the header and remove "\n", " " of the pldm image
-	hex_dump=$(hexdump -c "$pldm_image" | head -n 15 | cut -c 9- | tr -d '\n[:space:]')
+    hex_dump=$(hexdump -c "$pldm_image" | head -n 15 | cut -c 9- | tr -d '\n[:space:]')
 
-	case "$hex_dump" in
-		*"raa229620"*)
-			remaining_write_times=$RAA229620_RW_TIMES
-			;;
-		*"mp2857"*|*"tps536c5"*)
-			remaining_write_times=$MP2857_TPS536C5_RW_TIMES
-			;;
-		*)
-			echo "Failed to initialize remaining write because of unknown VR device"
-			exit 255
-			;;
-	esac
+    case "$hex_dump" in
+        *"raa229620"*)
+            remaining_write_times=$RAA229620_RW_TIMES
+            ;;
+        *"mp2857"*|*"tps536c5"*|*"mp2856"*)
+            remaining_write_times=$MP2857_TPS536C5_RW_TIMES
+            ;;
+        *)
+            echo "Failed to initialize remaining write because of unknown VR device"
+            exit 255
+            ;;
+    esac
 
-	set_vr_remaining_write_to_eeprom "$slot_id" "$eeprom_addr" "$remaining_write_times"
+    set_vr_remaining_write_to_eeprom "$slot_id" "$eeprom_addr" "$remaining_write_times"
 }
 
 check_vr_remaining_write() {
-	local i2c_bus=$(($1+15))
-	local slot_id=$1
-	local eeprom_addr=$2
-	local pldm_image=$3
-	local result
+    local i2c_bus=$(($1+15))
+    local slot_id=$1
+    local eeprom_addr=$2
+    local pldm_image=$3
+    local result
 
-	i2ctransfer -f -y $i2c_bus w2@"$eeprom_addr" "${REMAINING_WRTIE_OFFSET[@]}"
-	
-	result=$(i2ctransfer -f -y  $i2c_bus r2@"$eeprom_addr")
+    i2ctransfer -f -y $i2c_bus w2@"$eeprom_addr" "$VR_HIGHBYTE_OFFSET" "$VR_LOWBYTE_OFFSET"
 
-    if [ "$result" == "0xff 0xff" ]; then
-		Initialize_vr_remaining_write "$slot_id" "$eeprom_addr" "$pldm_image"
-		return 0
-	else
-		# Split the remaining write times into two parts
-		IFS=' ' read -ra result_array <<< "$result"
-		# Remove the prefix "0x" and merge the two parts
-		result="0x${result_array[0]#0x}${result_array[1]#0x}"
-		# Transfer the merged hex to decimal
-		remaining_write_times=$(printf "%d" "$result")
+    result=$(i2ctransfer -f -y  $i2c_bus r2@"$eeprom_addr")
 
-		if [ "$remaining_write_times" -eq 0 ]; then
-			echo "VR device can't be updated because the remaining write times is 0"
-			exit 255
-		fi
-	fi
+    IFS=' ' read -ra result_array <<< "$result"
+    result="0x${result_array[0]#0x}${result_array[1]#0x}"
+    remaining_write_times=$(printf "%d" "$result")
+
+    if [ "$remaining_write_times" -eq 0 ]; then
+        echo "VR device can't be updated because the remaining write times is 0"
+        exit 255
+    fi
 }
 
 set_vr_remaining_write_to_eeprom() {
@@ -327,7 +349,7 @@ set_vr_remaining_write_to_eeprom() {
 	local byte1="0x$hex1"
 	local byte2="0x$hex2"
 	# Write the remaining write times back to EEPROM
-	i2ctransfer -f -y $i2c_bus w4@"$eeprom_addr" "${REMAINING_WRTIE_OFFSET[@]}" "$byte1" "$byte2"
+	i2ctransfer -f -y $i2c_bus w4@"$eeprom_addr" "$VR_HIGHBYTE_OFFSET" "$VR_LOWBYTE_OFFSET" "$byte1" "$byte2"
 }
 
 # Check for minimum required arguments
@@ -354,6 +376,12 @@ if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
 elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
   slot_id=$2
   pldm_image=$3
+  if [ "$bic_name" == "sd_vr" ]; then
+		VR_TYPE=$(hexdump -n 1 -s 0x6D -e '1/1 "%02x"' "$pldm_image")
+		VR_OFFSET=($(get_offset_for_vr_type "$VR_TYPE"))
+		VR_HIGHBYTE_OFFSET="${VR_OFFSET[0]}"
+		VR_LOWBYTE_OFFSET="${VR_OFFSET[1]}"
+  fi
   pldm-package-re-wrapper bic -s "$slot_id" -f "$pldm_image"
   pldm_image="${pldm_image}_re_wrapped"
 else
@@ -464,6 +492,12 @@ if [ "$bic_name" == "wf" ] || [ "$bic_name" == "ff" ]; then
 fi
 
 if [ "$bic_name" == "sd_vr" ]; then
+	i2c_bus=$(($slot_id+15))
+	i2ctransfer -f -y $i2c_bus w2@"$SD_EEPROM_ADDR" "$VR_HIGHBYTE_OFFSET" "$VR_LOWBYTE_OFFSET"
+	result=$(i2ctransfer -f -y  $i2c_bus r2@"$SD_EEPROM_ADDR")
+	if [ "$result" == "0xff 0xff" ]; then
+		Initialize_vr_remaining_write "$slot_id" "$SD_EEPROM_ADDR" "$pldm_image"
+	fi
 	remaining_write_times=$((remaining_write_times-1))
 	set_vr_remaining_write_to_eeprom "$slot_id" "$SD_EEPROM_ADDR" "$remaining_write_times"
 	echo "remaining write after updating: $remaining_write_times"

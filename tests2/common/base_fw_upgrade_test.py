@@ -22,6 +22,7 @@ import argparse
 import collections
 import copy
 import os
+import subprocess
 import sys
 import time
 from abc import abstractmethod
@@ -114,9 +115,9 @@ class BaseFwUpgradeTest(object):
         "bic succeeded",
     ]
     NUM_LAST_FAILED_EXPECTED_KEY = 4  # zero-based number 0...N
-    DEFAULT_BMC_RECONNECT_TIMEOUT = 300  # BMC Booting timeout
+    DEFAULT_BMC_RECONNECT_TIMEOUT = 400  # BMC Booting timeout
     DEFAULT_SCM_BOOT_TIME = 30  # SCM startup time
-    DEFAULT_COMMAND_EXEC_DELAY = 1  # Delay for UUT command handler
+    DEFAULT_COMMAND_EXEC_DELAY = 4  # Delay for UUT command handler
     DEFAULT_COMMAND_PROMTP_TIME_OUT = 10  # Waiting promtp timeout
 
     try:
@@ -255,19 +256,57 @@ class BaseFwUpgradeTest(object):
         if self.bmc_ssh_session.session.isalive():
             test_cmd = 'echo "CIT TESTING" > /dev/kmsg'
             ret = self.send_command_to_UUT(test_cmd)
+        else:
+            self.print_line(
+                "DBG: Connection is not alive, so Pinging host {} ...".format(
+                    self.bmc_hostname
+                )
+            )
+            ping_output = self.local_ping_output("{}".format(self.bmc_hostname))
+            self.print_line("DBG: Ping output: {}".format(ping_output))
         return ret
+
+    def local_ping_output(self, host):
+        """
+        Run a ping command locally and return the output
+        """
+        ping_cmd = f"ping6 -c 1 {host}"
+        try:
+            result = subprocess.run(
+                ping_cmd, shell=True, capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                return result.stdout
+            else:
+                return result.stderr
+        except Exception as e:
+            self.print_line(f"Error running local ping command: {str(e)}")
+            return ""
 
     def reconnect_to_remote_host(self, timeout=30, logging=False):
         """
-        reconnect to remote DUT until the timeout is expired
+        Reconnect to remote DUT until the timeout is expired
         """
+        max_attempts = 20  # Set the maximum number of attempts
         if logging:
             self.print_line(
                 "Reconnecting to DUT ", "left", ".", endline=" ", has_append=True
             )
         Logger.info("Reconnecting to DUT ...")
-        if not self.wait_until(lambda: self.connect_to_remote_host(), timeout):
-            print("Failed")
+        for _attempt in range(max_attempts):
+            if self.wait_until(lambda: self.connect_to_remote_host(), timeout):
+                break
+            time.sleep(60)  # Wait for 1 minute between each attempt
+        # After max_attempts, if the connection is still not established, return False
+        if _attempt == max_attempts - 1:
+            self.print_line("Failed to connect after {} attempts".format(_attempt))
+            self.print_line(
+                "DBG: Pinging host {} after reconnection...".format(self.bmc_hostname)
+            )
+            ping_output = self.local_ping_output("{}".format(self.bmc_hostname))
+            self.print_line(
+                "DBG: Ping output after reconnection: {}".format(ping_output)
+            )
             return False
         time.sleep(self.scm_boot_time)  # waiting for SCM to get ready
         if logging:
@@ -293,8 +332,14 @@ class BaseFwUpgradeTest(object):
 
     def receive_command_output_from_UUT(self, only_last=False):
         cmd_result = self.bmc_ssh_session.session.before.decode("utf-8")
+        print("DBG cmd_result: {}".format(cmd_result))
         if only_last:
-            return cmd_result.split("\r\n").pop(-2)
+            lines = cmd_result.split("\r\n")
+            print("DBG lines: {}".format(lines))
+            if lines:
+                return lines[1]
+            else:
+                return ""
         else:
             return cmd_result
 
@@ -381,6 +426,7 @@ class BaseFwUpgradeTest(object):
 
             self.send_command_to_UUT(test_cmd)
             binary_hash = self.receive_command_output_from_UUT(only_last=True)
+
             # verify hash string from UUT
             matchingHash = binary_hash == self.json[fw_entity][UFW_HASH_VALUE]
             self.assertTrue(
@@ -797,7 +843,11 @@ class BaseFwUpgradeTest(object):
             if not self.reconnect_to_remote_host(
                 self.bmc_reconnect_timeout, logging=G_VERBOSE
             ):
-                self.fail("Cannot establish the connection to UUT!")
+                self.fail(
+                    "Connection to UUT failed with timeout of {} seconds!".format(
+                        self.bmc_reconnect_timeout
+                    )
+                )
 
         self.extract_subentity()
 

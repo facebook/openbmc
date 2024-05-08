@@ -9,6 +9,78 @@
     "parity": "NONE",
     "registers": [
         {
+            "begin": 6561,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_ITRack_chassis0_leakage"
+        },
+        {
+            "begin": 6562,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_ITRack_chassis1_leakage"
+        },
+        {
+            "begin": 6563,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_ITRack_chassis2_leakage"
+        },
+        {
+            "begin": 6564,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_ITRack_chassis3_leakage"
+        },
+        {
+            "begin": 6565,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_RPU_Internal_Leakage_Abnormal"
+        },
+        {
+            "begin": 6566,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_RPU_External_Leakage_Abnormal"
+        },
+        {
+            "begin": 6567,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_RPU_Opt_External_Leakage1_Abnormal"
+        },
+        {
+            "begin": 6568,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_RPU_Opt_External_Leakage2_Abnormal"
+        },
+        {
+            "begin": 6569,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_HEX_Rack_Pan_Leakage"
+        },
+        {
+            "begin": 6570,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_HEX_Rack_Floor_Leakage"
+        },
+        {
+            "begin": 6571,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_HEX_Rack_Pan_Leakage_Relay"
+        },
+        {
+            "begin": 6572,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Sticky_HEX_Rack_Floor_Leakage_Relay"
+        },
+        {
             "begin": 6596,
             "length": 8,
             "format": "STRING",
@@ -66,7 +138,7 @@
             "begin": 6648,
             "length": 4,
             "format": "STRING",
-            "name": "RPU_Noahs_Arc_Configuration"
+            "name": "RPU_Noahs_Ark_Configuration"
         },
         {
             "begin": 6652,
@@ -463,7 +535,16 @@
             "begin": 37142,
             "length": 1,
             "format": "INTEGER",
-            "name": "HEX_Vertical_Bladder"
+            "name": "HEX_Vertical_Bladder_Level"
+        },
+        {
+            "begin": 37375,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [0, "Y_Filter_Sensor_Status"]
+            ],
+            "name": "AALC_Sensor_Alarm"
         },
         {
             "begin": 37376,
@@ -471,7 +552,7 @@
             "format": "FLAGS",
             "flags": [
                 [15, "Bladder_Level_Sensor_Status"],
-                [14, "Static_Pressure_Status"],
+                [14, "HEX_Static_Pressure_Sensor_Status"],
                 [13, "RPU_Low_Water_Level_Gauge_Status"],
                 [12, "RPU_Middle_Water_Level_Gauge_Status"],
                 [11, "RPU_HSC_Status"],
@@ -498,7 +579,7 @@
                 [9, "Deassert_RPU_Ready"],
                 [8, "Emergency_Button_Triggered"],
                 [7, "Coolant_Loop_Blocked"],
-                [6, "Pump"],
+                [6, "Pump_Status_Abnormal"],
                 [5, "HEX_Water_Inlet_Temp_Status"],
                 [4, "RPU_Outlet_Pressure_Status"],
                 [3, "RPU_Air_Inlet_Temp_Status"],
@@ -513,6 +594,8 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
+                [13, "HEX_Rack_Floor_Leakage_Error"],
+                [12, "HEX_Rack_Pan_Leakage_Error"],
                 [11, "HEX_Rack_Floor_Leakage_Relay"],
                 [10, "HEX_Rack_Pan_Leakage_Relay"],
                 [9, "HEX_Rack_Floor_Leakage"],
@@ -521,10 +604,10 @@
                 [6, "RPU_Opt_External_Leakage1_Abnormal"],
                 [5, "RPU_External_Leakage_Abnormal"],
                 [4, "RPU_Internal_Leakage_Abnormal"],
-                [3, "FB_chassis3_leakage"],
-                [2, "FB_chassis2_leakage"],
-                [1, "FB_chassis1_leakage"],
-                [0, "FB_chassis0_leakage"]
+                [3, "ITRack_chassis3_leakage"],
+                [2, "ITRack_chassis2_leakage"],
+                [1, "ITRack_chassis1_leakage"],
+                [0, "ITRack_chassis0_leakage"]
             ],
             "name": "Leakage"
         },

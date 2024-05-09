@@ -4,9 +4,21 @@
 #include <linux/i2c-dev.h>
 #include <linux/i2c.h>
 #include <sys/ioctl.h>
-
+#include <thread>
+#include <chrono>
 #include <iomanip>
 #include <iostream>
+
+template<typename Func>
+int retryCond(Func func, int numRetries, int msec) {
+    for (int retries = 0; retries < numRetries; retries++) {
+        if (func()) {
+            return 0;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(msec));
+    }
+    return -1;
+}
 
 int CpldManager::i2cWriteReadCmd(const std::vector<uint8_t>& cmdData,
                                  size_t rx_len, std::vector<uint8_t>& readData)
@@ -39,10 +51,11 @@ int CpldManager::i2cWriteReadCmd(const std::vector<uint8_t>& cmdData,
         iomsg.nmsgs++;
     }
     iomsg.msgs = i2cmsg;
-    if (ioctl(i2c_fd, I2C_RDWR, &iomsg) < 0)
+
+    if (retryCond([&]() { return ioctl(i2c_fd, I2C_RDWR, &iomsg); }, 3, 10) < 0)
     {
         std::cerr << "Fail to r/w I2C device: " << unsigned(bus)
-                  << ", Addr: " << unsigned(addr) << "\n";
+                  << ", Addr: " << unsigned(addr) << "errno = " << std::strerror(errno) << "\n";
         return -1;
     }
     return 0;

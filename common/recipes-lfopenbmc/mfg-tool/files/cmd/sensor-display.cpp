@@ -40,23 +40,34 @@ struct command
             [&](const auto& path,
                 const auto& service) -> sdbusplus::async::task<> {
             auto& entry_json = result[last_element(path)];
-            auto proxy = sensor::Proxy(ctx).service(service).path(path.str);
-
-            auto value = co_await proxy.value();
-            entry_json["value"] = value;
-            entry_json["status"] = std::isfinite(value) ? "ok" : "unavailable";
-
-            if (auto v = co_await proxy.max_value(); std::isfinite(v))
+            try
             {
-                entry_json["max"] = v;
-            }
-            if (auto v = co_await proxy.min_value(); std::isfinite(v))
+                auto proxy = sensor::Proxy(ctx).service(service).path(path.str);
+
+                auto value = co_await proxy.value();
+                entry_json["value"] = value;
+                entry_json["status"] = std::isfinite(value) ? "ok"
+                                                            : "unavailable";
+
+                if (auto v = co_await proxy.max_value(); std::isfinite(v))
+                {
+                    entry_json["max"] = v;
+                }
+                if (auto v = co_await proxy.min_value(); std::isfinite(v))
+                {
+                    entry_json["min"] = v;
+                }
+                entry_json["unit"] =
+                    last_element(sdbusplus::message::convert_to_string(
+                                     co_await proxy.unit()),
+                                 '.');
+	    }
+            catch (const sdbusplus::exception::SdBusError& e)
             {
-                entry_json["min"] = v;
+                warning("Failed to get sensor value: {PATH}, error: {ERROR}",
+                        "PATH", path.str, "ERROR", e.what());
+                entry_json["status"] = "dbus error";
             }
-            entry_json["unit"] = last_element(
-                sdbusplus::message::convert_to_string(co_await proxy.unit()),
-                '.');
         });
 
         info("Finding HardShutdown thresholds");
@@ -67,19 +78,31 @@ struct command
                 const auto& service) -> sdbusplus::async::task<> {
             auto& sensor_json = result[last_element(path)];
             auto& entry_json = sensor_json["hard-shutdown"];
-            auto proxy =
-                sensor::hard_shutdown::Proxy(ctx).service(service).path(
-                    path.str);
+            try
+            {
+                auto proxy =
+                    sensor::hard_shutdown::Proxy(ctx).service(service).path(
+                        path.str);
 
-            if (auto v = co_await proxy.hard_shutdown_high(); std::isfinite(v))
-            {
-                entry_json["high"] = v;
-                update_status<std::greater>(sensor_json, v, "critical");
+                if (auto v = co_await proxy.hard_shutdown_high();
+                    std::isfinite(v))
+                {
+                    entry_json["high"] = v;
+                    update_status<std::greater>(sensor_json, v, "critical");
+                }
+                if (auto v = co_await proxy.hard_shutdown_low();
+                    std::isfinite(v))
+                {
+                    entry_json["low"] = v;
+                    update_status<std::less>(sensor_json, v, "critical");
+                }
             }
-            if (auto v = co_await proxy.hard_shutdown_low(); std::isfinite(v))
+            catch (const sdbusplus::exception::SdBusError& e)
             {
-                entry_json["low"] = v;
-                update_status<std::less>(sensor_json, v, "critical");
+                warning(
+                    "Failed to get hard-shutdown thresholds: {PATH}, error: {ERROR}",
+                    "PATH", path.str, "ERROR", e.what());
+                sensor_json["status"] = "dbus error";
             }
         });
 
@@ -91,18 +114,28 @@ struct command
                 const auto& service) -> sdbusplus::async::task<> {
             auto& sensor_json = result[last_element(path)];
             auto& entry_json = sensor_json["critical"];
-            auto proxy =
-                sensor::critical::Proxy(ctx).service(service).path(path.str);
+            try 
+            {
+                auto proxy = sensor::critical::Proxy(ctx).service(service).path(
+                    path.str);
 
-            if (auto v = co_await proxy.critical_high(); std::isfinite(v))
-            {
-                entry_json["high"] = v;
-                update_status<std::greater>(sensor_json, v, "critical");
+                if (auto v = co_await proxy.critical_high(); std::isfinite(v))
+                {
+                    entry_json["high"] = v;
+                    update_status<std::greater>(sensor_json, v, "critical");
+                }
+                if (auto v = co_await proxy.critical_low(); std::isfinite(v))
+                {
+                    entry_json["low"] = v;
+                    update_status<std::less>(sensor_json, v, "critical");
+                }
             }
-            if (auto v = co_await proxy.critical_low(); std::isfinite(v))
+            catch (const sdbusplus::exception::SdBusError& e)
             {
-                entry_json["low"] = v;
-                update_status<std::less>(sensor_json, v, "critical");
+                warning(
+                    "Failed to get critical thresholds: {PATH}, error: {ERROR}",
+                    "PATH", path.str, "ERROR", e.what());
+                sensor_json["status"] = "dbus error";
             }
         });
 
@@ -114,18 +147,28 @@ struct command
                 const auto& service) -> sdbusplus::async::task<> {
             auto& sensor_json = result[last_element(path)];
             auto& entry_json = sensor_json["warning"];
-            auto proxy =
-                sensor::warning::Proxy(ctx).service(service).path(path.str);
+            try
+            {
+                auto proxy =
+                    sensor::warning::Proxy(ctx).service(service).path(path.str);
 
-            if (auto v = co_await proxy.warning_high(); std::isfinite(v))
-            {
-                entry_json["high"] = v;
-                update_status<std::greater>(sensor_json, v, "warning");
+                if (auto v = co_await proxy.warning_high(); std::isfinite(v))
+                {
+                    entry_json["high"] = v;
+                    update_status<std::greater>(sensor_json, v, "warning");
+                }
+                if (auto v = co_await proxy.warning_low(); std::isfinite(v))
+                {
+                    entry_json["low"] = v;
+                    update_status<std::less>(sensor_json, v, "warning");
+                }
             }
-            if (auto v = co_await proxy.warning_low(); std::isfinite(v))
+            catch (const sdbusplus::exception::SdBusError& e)
             {
-                entry_json["low"] = v;
-                update_status<std::less>(sensor_json, v, "warning");
+                warning(
+                    "Failed to get warning thresholds: {PATH}, error: {ERROR}",
+                    "PATH", path.str, "ERROR", e.what());
+                sensor_json["status"] = "dbus error";
             }
         });
 
@@ -138,29 +181,40 @@ struct command
             using namespace std::string_literals;
 
             auto& sensor_json = result[last_element(path)];
-            auto proxy = threshold::Proxy(ctx).service(service).path(path.str);
-
-            auto values = co_await proxy.value();
-            auto asserted = co_await proxy.asserted();
-
-            for (const auto& [type, type_str] : thresholds)
+            try
             {
-                for (const auto& [bound, bound_str] : bounds)
+                auto proxy =
+                    threshold::Proxy(ctx).service(service).path(path.str);
+
+                auto values = co_await proxy.value();
+                auto asserted = co_await proxy.asserted();
+
+                for (const auto& [type, type_str] : thresholds)
                 {
-                    if (values.contains(type) &&
-                        values.at(type).contains(bound))
+                    for (const auto& [bound, bound_str] : bounds)
                     {
-                        if (auto v = values.at(type).at(bound);
-                            std::isfinite(v))
+                        if (values.contains(type) &&
+                            values.at(type).contains(bound))
                         {
-                            sensor_json[type_str][bound_str] = v;
-                            if (asserted.contains({type, bound}))
+                            if (auto v = values.at(type).at(bound);
+                                std::isfinite(v))
                             {
-                                update_status(sensor_json, bound_str);
+                                sensor_json[type_str][bound_str] = v;
+                                if (asserted.contains({type, bound}))
+                                {
+                                    update_status(sensor_json, bound_str);
+                                }
                             }
                         }
                     }
                 }
+            }
+            catch (const sdbusplus::exception::SdBusError& e)
+            {
+                warning(
+                    "Failed to get sensor threshold entries: {PATH}, error: {ERROR}",
+                    "PATH", path.str, "ERROR", e.what());
+                sensor_json["status"] = "dbus error";
             }
         });
 
@@ -174,22 +228,33 @@ struct command
 
             auto& entry_json =
                 result[replace_substring(path, metric::ns_path + "/"s, "")];
-            auto proxy = metric::Proxy(ctx).service(service).path(path.str);
+            try
+            {
+                auto proxy = metric::Proxy(ctx).service(service).path(path.str);
 
-            auto value = co_await proxy.value();
-            entry_json["value"] = value;
-            entry_json["status"] = std::isfinite(value) ? "ok" : "unavailable";
-            if (auto v = co_await proxy.max_value(); std::isfinite(v))
-            {
-                entry_json["max"] = v;
+                auto value = co_await proxy.value();
+                entry_json["value"] = value;
+                entry_json["status"] = std::isfinite(value) ? "ok"
+                                                            : "unavailable";
+                if (auto v = co_await proxy.max_value(); std::isfinite(v))
+                {
+                    entry_json["max"] = v;
+                }
+                if (auto v = co_await proxy.min_value(); std::isfinite(v))
+                {
+                    entry_json["min"] = v;
+                }
+                entry_json["unit"] =
+                    last_element(sdbusplus::message::convert_to_string(
+                                     co_await proxy.unit()),
+                                 '.');
             }
-            if (auto v = co_await proxy.min_value(); std::isfinite(v))
+            catch (const sdbusplus::exception::SdBusError& e)
             {
-                entry_json["min"] = v;
+                warning("Failed to get metric entries: {PATH}, error: {ERROR}",
+                        "PATH", path.str, "ERROR", e.what());
+                entry_json["status"] = "dbus error";
             }
-            entry_json["unit"] = last_element(
-                sdbusplus::message::convert_to_string(co_await proxy.unit()),
-                '.');
         });
 
         info("Finding metric threshold entries.");
@@ -202,29 +267,40 @@ struct command
 
             auto& sensor_json =
                 result[replace_substring(path, metric::ns_path + "/"s, "")];
-            auto proxy = threshold::Proxy(ctx).service(service).path(path.str);
-
-            auto values = co_await proxy.value();
-            auto asserted = co_await proxy.asserted();
-
-            for (const auto& [type, type_str] : thresholds)
+            try
             {
-                for (const auto& [bound, bound_str] : bounds)
+                auto proxy =
+                    threshold::Proxy(ctx).service(service).path(path.str);
+
+                auto values = co_await proxy.value();
+                auto asserted = co_await proxy.asserted();
+
+                for (const auto& [type, type_str] : thresholds)
                 {
-                    if (values.contains(type) &&
-                        values.at(type).contains(bound))
+                    for (const auto& [bound, bound_str] : bounds)
                     {
-                        if (auto v = values.at(type).at(bound);
-                            std::isfinite(v))
+                        if (values.contains(type) &&
+                            values.at(type).contains(bound))
                         {
-                            sensor_json[type_str][bound_str] = v;
-                            if (asserted.contains({type, bound}))
+                            if (auto v = values.at(type).at(bound);
+                                std::isfinite(v))
                             {
-                                update_status(sensor_json, bound_str);
+                                sensor_json[type_str][bound_str] = v;
+                                if (asserted.contains({type, bound}))
+                                {
+                                    update_status(sensor_json, bound_str);
+                                }
                             }
                         }
                     }
                 }
+            }
+            catch (const sdbusplus::exception::SdBusError& e)
+            {
+                warning(
+                    "Failed to get metric threshold entries: {PATH}, error: {ERROR}",
+                    "PATH", path.str, "ERROR", e.what());
+                sensor_json["status"] = "dbus error";
             }
         });
 

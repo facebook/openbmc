@@ -1,18 +1,26 @@
-From 4a1356ede56b148a61f6108f2c47c986ed882e18 Mon Sep 17 00:00:00 2001
+From 3b7690eae02de546de0c6f69c215a351f1632a6a Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Tue, 19 Mar 2024 16:03:42 +0800
 Subject: [PATCH] meta-facebook: harma: add harm dts
 
 lorelink:https://lore.kernel.org/all/20240412091600.2534693-1-peteryin.openbmc@gmail.com/
 ---
- .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 76 +++++++++++++++----
- 1 file changed, 62 insertions(+), 14 deletions(-)
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 132 +++++++++++++++---
+ 1 file changed, 111 insertions(+), 21 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index b2834399f3d1..e0c1997bba11 100644
+index b2834399f3d1..ed4cd0dd8649 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -179,6 +179,16 @@ flash@0 {
+@@ -138,6 +138,7 @@ &mac3 {
+ 	pinctrl-0 = <&pinctrl_rmii4_default>;
+ 	use-ncsi;
+ 	mellanox,multi-host;
++	ncsi-ctrl,no-channel-monitor;
+ };
+ 
+ &rtc {
+@@ -179,6 +180,16 @@ flash@0 {
  	};
  };
  
@@ -29,7 +37,7 @@ index b2834399f3d1..e0c1997bba11 100644
  &kcs2 {
  	status = "okay";
  	aspeed,lpc-io-reg = <0xca8>;
-@@ -192,7 +202,7 @@ &kcs3 {
+@@ -192,7 +203,7 @@ &kcs3 {
  &i2c0 {
  	status = "okay";
  
@@ -38,7 +46,7 @@ index b2834399f3d1..e0c1997bba11 100644
  		compatible = "max31790";
  		reg = <0x5e>;
  		#address-cells = <1>;
-@@ -203,7 +213,7 @@ max31790@5e{
+@@ -203,7 +214,7 @@ max31790@5e{
  &i2c1 {
  	status = "okay";
  
@@ -47,7 +55,7 @@ index b2834399f3d1..e0c1997bba11 100644
  		compatible = "ti,tmp75";
  		reg = <0x4b>;
  	};
-@@ -218,7 +228,7 @@ eeprom@50 {
+@@ -218,7 +229,7 @@ eeprom@50 {
  &i2c2 {
  	status = "okay";
  
@@ -56,7 +64,7 @@ index b2834399f3d1..e0c1997bba11 100644
  		compatible = "max31790";
  		reg = <0x5e>;
  		#address-cells = <1>;
-@@ -250,6 +260,10 @@ imux21: i2c@1 {
+@@ -250,6 +261,10 @@ imux21: i2c@1 {
  			#address-cells = <1>;
  			#size-cells = <0>;
  			reg = <1>;
@@ -67,7 +75,7 @@ index b2834399f3d1..e0c1997bba11 100644
  		};
  	};
  };
-@@ -262,12 +276,12 @@ eeprom@52 {
+@@ -262,21 +277,25 @@ eeprom@52 {
  		reg = <0x52>;
  	};
  
@@ -82,7 +90,25 @@ index b2834399f3d1..e0c1997bba11 100644
  		compatible = "ti,tmp75";
  		reg = <0x49>;
  	};
-@@ -308,6 +322,16 @@ imux23: i2c@1 {
+ 
+-	power-monitor@22 {
+-		compatible = "lltc,ltc4286";
+-		reg = <0x22>;
+-		adi,vrange-low-enable;
+-		shunt-resistor-micro-ohms = <500>;
++	power-monitor@44 {
++		compatible = "lltc,ltc4287";
++		reg = <0x44>;
++		shunt-resistor-micro-ohms = <250>;
++	};
++
++	power-monitor@40 {
++		compatible = "infineon,xdp710";
++		reg = <0x40>;
+ 	};
+ };
+ 
+@@ -308,6 +327,16 @@ imux23: i2c@1 {
  
  &i2c7 {
  	status = "okay";
@@ -99,7 +125,7 @@ index b2834399f3d1..e0c1997bba11 100644
  };
  
  &i2c8 {
-@@ -328,6 +352,12 @@ gpio@31 {
+@@ -328,6 +357,12 @@ gpio@31 {
  		reg = <0x31>;
  		gpio-controller;
  		#gpio-cells = <2>;
@@ -112,7 +138,7 @@ index b2834399f3d1..e0c1997bba11 100644
  	};
  
  	i2c-mux@71 {
-@@ -370,6 +400,10 @@ &i2c11 {
+@@ -370,6 +405,10 @@ &i2c11 {
  
  &i2c12 {
  	status = "okay";
@@ -123,7 +149,50 @@ index b2834399f3d1..e0c1997bba11 100644
  };
  
  &i2c13 {
-@@ -463,7 +497,8 @@ &gpio0 {
+@@ -385,6 +424,42 @@ imux28: i2c@0 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0>;
++			power-monitor@61 {
++				compatible = "isil,isl69260";
++				reg = <0x61>;
++			};
++			power-monitor@62 {
++				compatible = "isil,isl69260";
++				reg = <0x62>;
++			};
++			power-monitor@63 {
++				compatible = "isil,isl69260";
++				reg = <0x61>;
++			};
++			power-monitor@64 {
++				compatible = "infineon,xdpe152c4";
++				reg = <0x64>;
++			};
++			power-monitor@66 {
++				compatible = "infineon,xdpe152c4";
++				reg = <0x66>;
++			};
++			power-monitor@68 {
++				compatible = "infineon,xdpe152c4";
++				reg = <0x68>;
++			};
++			power-monitor@4B {
++				compatible = "mps,mp2856";
++				reg = <0x4B>;
++			};
++			power-monitor@4E {
++				compatible = "mps,mp2857";
++				reg = <0x4E>;
++			};
++			power-monitor@4F {
++				compatible = "mps,mp2857";
++				reg = <0x4F>;
++			};
+ 		};
+ 		imux29: i2c@1 {
+ 			#address-cells = <1>;
+@@ -463,7 +538,8 @@ &gpio0 {
  	/*A0-A7*/	"","","","","","","","",
  	/*B0-B7*/	"","","","",
  			"bmc-spi-mux-select-0","led-identify","","",
@@ -133,7 +202,7 @@ index b2834399f3d1..e0c1997bba11 100644
  	/*D0-D7*/	"","","sol-uart-select","","","","","",
  	/*E0-E7*/	"","","","","","","","",
  	/*F0-F7*/	"","","","","","","","",
-@@ -472,7 +507,8 @@ &gpio0 {
+@@ -472,7 +548,8 @@ &gpio0 {
  	/*I0-I7*/	"","","","","","","","",
  	/*J0-J7*/	"","","","","","","","",
  	/*K0-K7*/	"","","","","","","","",
@@ -143,7 +212,20 @@ index b2834399f3d1..e0c1997bba11 100644
  	/*M0-M7*/	"","","","","","","","",
  	/*N0-N7*/	"led-postcode-0","led-postcode-1",
  			"led-postcode-2","led-postcode-3",
-@@ -491,7 +527,16 @@ &gpio0 {
+@@ -481,17 +558,27 @@ &gpio0 {
+ 	/*O0-O7*/	"","","","","","","","",
+ 	/*P0-P7*/	"power-button","power-host-control",
+ 			"reset-button","","led-power","","","",
+-	/*Q0-Q7*/	"","","","","","","","",
++	/*Q0-Q7*/	"","","","","","power-chassis-control","","",
+ 	/*R0-R7*/	"","","","","","","","",
+ 	/*S0-S7*/	"","","","","","","","",
+ 	/*T0-T7*/	"","","","","","","","",
+ 	/*U0-U7*/	"","","","","","","led-identify-gate","",
+ 	/*V0-V7*/	"","","","",
+-			"rtc-battery-voltage-read-enable","","","",
++			"rtc-battery-voltage-read-enable","",
++			"power-chassis-good","",
  	/*W0-W7*/	"","","","","","","","",
  	/*X0-X7*/	"","","","","","","","",
  	/*Y0-Y7*/	"","","","","","","","",
@@ -161,7 +243,7 @@ index b2834399f3d1..e0c1997bba11 100644
  };
  
  &sgpiom0 {
-@@ -540,10 +585,10 @@ &sgpiom0 {
+@@ -540,10 +627,10 @@ &sgpiom0 {
  	"","reset-control-cpu0-p1-mux",
  	"","reset-control-e1s-mux",
  	"power-host-good","reset-control-mb-mux",
@@ -174,7 +256,7 @@ index b2834399f3d1..e0c1997bba11 100644
  	"presence-e1s-0","reset-control-usb-hub",
  	"","reset-control",
  	/*E4-E7 line 72-79*/
-@@ -594,13 +639,16 @@ &sgpiom0 {
+@@ -594,13 +681,16 @@ &sgpiom0 {
  	"SLOT_ID_BCB_2","",
  	"SLOT_ID_BCB_3","",
  	/*K0-K3 line 160-167*/
@@ -196,5 +278,5 @@ index b2834399f3d1..e0c1997bba11 100644
  	"","","","","","","","",
  	/*M4-M7 line 200-207*/
 -- 
-2.43.0
+2.25.1
 

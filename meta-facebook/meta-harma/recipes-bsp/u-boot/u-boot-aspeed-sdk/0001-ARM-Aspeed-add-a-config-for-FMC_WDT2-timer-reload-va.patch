@@ -1,0 +1,83 @@
+From 9ab541f89dcefc7f3d70d08e1eb185a6baa5e08c Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Thu, 8 Dec 2022 15:56:55 +0800
+Subject: [PATCH 1/1] ARM: Aspeed: add a config for FMC_WDT2 timer reload value
+
+Add a config for FMC_WDT2 timer reload, and set timer reload value if
+FMC_WDT2 is enabled.
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+---
+ arch/arm/include/asm/arch-aspeed/platform.h |  2 ++
+ arch/arm/mach-aspeed/ast2600/Kconfig        | 10 ++++++++++
+ arch/arm/mach-aspeed/ast2600/scu_info.c     | 13 +++++++++++++
+ 3 files changed, 25 insertions(+)
+
+diff --git a/arch/arm/include/asm/arch-aspeed/platform.h b/arch/arm/include/asm/arch-aspeed/platform.h
+index ca270d4be1..4c2b0866fb 100644
+--- a/arch/arm/include/asm/arch-aspeed/platform.h
++++ b/arch/arm/include/asm/arch-aspeed/platform.h
+@@ -44,6 +44,8 @@
+ #define ASPEED_FMC_CS0_BASE	0x20000000
+ #elif defined(CONFIG_ASPEED_AST2600)
+ #define ASPEED_FMC_WDT2		0x1e620064
++#define ASPEED_FMC_WDT2_RELOAD	0x1e620068
++#define ASPEED_FMC_WDT2_RESTART	0x1e62006C
+ #define ASPEED_SPI1_BOOT_CTRL	0x1e630064
+ #define ASPEED_MULTI_CTRL10	0x1e6e2438
+ #define ASPEED_HW_STRAP1	0x1e6e2500
+diff --git a/arch/arm/mach-aspeed/ast2600/Kconfig b/arch/arm/mach-aspeed/ast2600/Kconfig
+index f5852afa77..4c141672a1 100644
+--- a/arch/arm/mach-aspeed/ast2600/Kconfig
++++ b/arch/arm/mach-aspeed/ast2600/Kconfig
+@@ -53,6 +53,16 @@ config TARGET_QUALCOMM_DC_SCM_V1
+ 
+ endchoice
+ 
++config ASPEED_FMC_WDT2_TIMER_RELOAD
++	int "Aspeed FMC_WDT2 timer reload value"
++	depends on ASPEED_AST2600
++	range 0 8191
++	default 0
++	help
++	  Aspeed FMC_WDT2 timer reload value, the time unit is 0.1 second.
++	  if this value is 0, left original FMC_WDT2 timer reload register without
++	  change (Default 22 seconds), if it is > 0 then set timer with the value.
++
+ source "board/aspeed/evb_ast2600/Kconfig"
+ source "board/aspeed/fpga_ast2600/Kconfig"
+ source "board/aspeed/slt_ast2600/Kconfig"
+diff --git a/arch/arm/mach-aspeed/ast2600/scu_info.c b/arch/arm/mach-aspeed/ast2600/scu_info.c
+index a2277eec58..c18bc3923a 100644
+--- a/arch/arm/mach-aspeed/ast2600/scu_info.c
++++ b/arch/arm/mach-aspeed/ast2600/scu_info.c
+@@ -30,6 +30,9 @@ static struct soc_id soc_map_table[] = {
+ 	SOC_ID("AST2625-A3", 0x0503040305030403),
+ };
+ 
++static u32 aspeed_fmc_wdt2_reload =
++	CONFIG_ASPEED_FMC_WDT2_TIMER_RELOAD & 0x1FFF;
++
+ void aspeed_print_soc_id(void)
+ {
+ 	int i;
+@@ -302,6 +305,16 @@ void aspeed_print_2nd_wdt_mode(void)
+ 
+ 			printf("\n");
+ 		}
++
++		if (aspeed_fmc_wdt2_reload &&
++		    (readl(ASPEED_FMC_WDT2) & BIT(0))) {
++			writel(aspeed_fmc_wdt2_reload, ASPEED_FMC_WDT2_RELOAD);
++			writel(0x4755, ASPEED_FMC_WDT2_RESTART);
++			printf("Set FMC_WDT2 timer reload value to 0x%04X\n",
++			       aspeed_fmc_wdt2_reload);
++		} else {
++			printf("Keep FMC_WDT2 timer reload value as init\n");
++		}
+ 	}
+ }
+ 
+-- 
+2.31.1
+

@@ -166,6 +166,9 @@ gpio_set FM_BIOS_DEBUG_EN_N 1
 sgpio_export CLK_GEN2_BMC_RC_OE_R_N 47
 gpio_set CLK_GEN2_BMC_RC_OE_R_N 0
 
+sgpio_export FM_PFR_OVR_RTC_R 55
+gpio_set FM_PFR_OVR_RTC_R 0
+
 sgpio_export RST_KB_RESET_N 63
 gpio_set RST_KB_RESET_N 1
 

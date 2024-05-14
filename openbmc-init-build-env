@@ -27,6 +27,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-bletchley:lf-master
   meta-clearcreek:lf-master
   meta-fbal:lf-master
+  meta-fbdarwin:lf-master
   meta-fbep:lf-master
   meta-fbttn2:lf-master
   meta-fby2-nd:lf-master
@@ -51,8 +52,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-tahan:lf-master
   meta-waimeacanyon:lf-master
   meta-yosemite4:lf-master
-# kirkstone platforms (pending upgrade)
-  meta-fbdarwin:lf-kirkstone
 # dunfell platforms (pending upgrade)
   meta-cmm:lf-dunfell
   meta-elbert:lf-dunfell

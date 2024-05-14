@@ -6,4 +6,4 @@
 MACHINE ??= "fbdarwin"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb-kirkstone"
+DISTRO ?= "openbmc-fb-master"

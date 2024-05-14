@@ -40,7 +40,7 @@ check_power_on() {
 	power_status=$(gpioget "$(basename /sys/bus/i2c/devices/"$i2c_bus"-0023/*gpiochip*)" 16)
 	if [ "$power_status" != "1" ]; then
 		echo "Check Power : Off"
-		echo "Power on before FF/WF BIC update"
+		echo "Power on before FF/WF PLDM component update"
 		exit 255
 	fi
 
@@ -235,7 +235,7 @@ is_sd_bic() {
 
 
 is_other_bic_updating() {
-  echo "Check if other BICs are updating"
+  echo "Check if other PLDM components are updating"
 
   pldm_output=$(busctl tree xyz.openbmc_project.PLDM)
   if echo "$pldm_output" | grep -qE "/xyz/openbmc_project/software/[0-9]+"; then
@@ -244,7 +244,7 @@ is_other_bic_updating() {
     busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$previous_software_id" xyz.openbmc_project.Software.ActivationProgress Progress > /dev/null
 	ret=$?
 	if [ "$ret" -eq 0 ]; then
-		echo "It can only be updated one BIC at a time. Please wait until the software update is completed."
+		echo "It can only be updated one PLDM component at a time. Please wait until the software update is completed."
 		exit 255
 	fi
   fi
@@ -252,7 +252,7 @@ is_other_bic_updating() {
 
 # Function to prompt for continuation and check user input
 prompt_confirmation() {
-  echo "WARNING! This will automatically update all BICs."
+  echo "WARNING! This will automatically update all PLDM components."
   read -r -p "Continue? [y/N] " continue
   if [ "$continue" != "y" ]; then
     echo "Aborting on user request."
@@ -450,14 +450,14 @@ if [ "$is_rcvy" == true ]; then
 fi
 
 busctl tree xyz.openbmc_project.MCTP
-echo "Start to Update BIC"
+echo "Start to Update PLDM component"
 
 is_other_bic_updating
 
 update_bic "$pldm_image"
 ret=$?
 if [ "$ret" -ne 0 ]; then
-	echo "Failed to Update BIC: Exit code $ret"
+	echo "Failed to Update PLDM component: Exit code $ret"
 	delete_software_id
 	exit $ret
 fi

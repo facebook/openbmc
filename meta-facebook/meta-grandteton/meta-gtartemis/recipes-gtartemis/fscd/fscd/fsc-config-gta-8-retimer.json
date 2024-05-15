@@ -5,6 +5,7 @@
     "sample_interval_ms": 3000,
     "fan_recovery_time": 2,
     "sensor_filter_all": true,
+    "ramp_rate": 100,
     "pwm_sensor_boost_value": 100,
     "multi_fan_fail": {
       "data": [

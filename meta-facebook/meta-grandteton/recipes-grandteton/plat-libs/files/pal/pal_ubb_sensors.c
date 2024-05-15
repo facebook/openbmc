@@ -5,6 +5,7 @@
 #include "pal_hgx_sensors.h"
 #include <openbmc/hgx.h>
 #include <openbmc/kv.h>
+#include <openbmc/libgpio.h>
 
 struct ubb_snr_info {
   char *snr_name;
@@ -126,18 +127,18 @@ PAL_SENSOR_MAP ubb_sensor_map[];
 
 static int
 read_kv_snr(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret = READING_NA;
+  int ret = -1;
   char data[32] = {0};
 
   if (!ubb_sensor_map[sensor_num].stby_read &&
       (kv_get("gpu_snr_valid", data, NULL, 0) || strcmp(data, "valid"))) {
-    return READING_NA;
+    return -1;
   }
 
   ret = kv_get(UBB_SNR_INFO[sensor_num].snr_name, data, NULL, 0);
 
   if (ret || !strcmp(data, "NA")) {
-    return READING_NA;
+    return -1;
   }
 
   *value = atof(data);
@@ -146,8 +147,12 @@ read_kv_snr(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret = READING_NA;
+  int ret = -1;
   static uint8_t snr_retry = 0;
+
+  if (!gpio_get_value_by_shadow("GPU_FPGA_READY_ISO_R"))  {
+    return ret;
+  }
 
   if(sensor_num == HGX_SNR_PWR_GB_HSC10) {
     ret = hgx_get_metric_reports();

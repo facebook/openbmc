@@ -844,8 +844,15 @@ int GTPldmComponent::gt_get_version(json& j, const string& fru, const string& co
     if (ret < 0) {
       if(ret == SWB_FW_GET_FAILED)
         return comp_version(j);
-      else if(ret == SWB_FW_BIC_ERROR)
-        j["VERSION"] = "NA";
+      else if(ret == SWB_FW_BIC_ERROR) {
+        //The BIC firmware version is updated, but some components were not updated because the system is powered off.
+        if (comp.compare("bic") == 0) {
+          active_ver = kv::get(active_key, kv::region::temp);
+          j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;
+        } else {
+          j["VERSION"] = "NA";
+        }
+      }
     } else {
       active_ver = kv::get(active_key, kv::region::temp);
       j["VERSION"] = (active_ver.empty()) ? "NA" : active_ver;

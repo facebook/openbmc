@@ -145,7 +145,7 @@ struct gpiopoll_config gpios_common_list[] = {
   {FM_POST_CARD_PRES_N,  "GPIOZ6",         GPIO_EDGE_BOTH,    usb_dbg_card_handler, NULL},
   {FP_AC_PWR_BMC_BTN,    "GPIO18A0",       GPIO_EDGE_BOTH,    gpio_event_handler,   NULL},
   {BIC_READY,            "SGPIO32",        GPIO_EDGE_BOTH,    bic_ready_handler,    bic_ready_init},
-  {GPU_FPGA_READY,       "SGPIO8",         GPIO_EDGE_FALLING, sgpio_event_handler,  NULL},
+  {GPU_FPGA_READY,       "SGPIO8",         GPIO_EDGE_BOTH,    gpu_fpga_handler,     gpu_fpga_init},
   {GPU_FPGA_THERM_OVERT, "SGPIO40",        GPIO_EDGE_FALLING, nv_event_handler,     NULL},
   {GPU_FPGA_DEVIC_OVERT, "SGPIO42",        GPIO_EDGE_FALLING, nv_event_handler,     NULL},
   {PEX_FW_VER_UPDATE,    "PEX_VER_UPDATE", GPIO_EDGE_RISING,  pex_fw_ver_handle,    NULL},
@@ -1131,6 +1131,25 @@ nv_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
       syslog(LOG_WARNING, "Failed to start NVDIA reg dump\n");
 
   log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, NULL);
+}
+
+void
+gpu_fpga_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  if (curr == GPIO_VALUE_HIGH) {
+    if (system("/usr/local/bin/setup-gpu-eeprom.sh &")) {
+      syslog(LOG_WARNING, "Failed to dump gpu eeprom");
+    }
+  }
+  else {
+    sgpio_event_handler(desc, last, curr);
+  }
+}
+
+void
+gpu_fpga_init(gpiopoll_pin_t *desc, gpio_value_t value)
+{
+  gpu_fpga_handler(desc, value, value);
 }
 
 static void *

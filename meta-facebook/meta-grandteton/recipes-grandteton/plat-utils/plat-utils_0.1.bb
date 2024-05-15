@@ -38,13 +38,14 @@ LOCAL_URI = " \
     file://setup-snr-mon.sh \
     file://check-fan-cache.sh \
     file://setup-reboot-init.sh \
+    file://setup-gpu-eeprom.sh \
     "
 
 pkgdir = "utils"
 
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util setup-server-uart.sh setup-usbnet.sh usbnet_not_ready.sh"
+binfiles = " sol-util setup-server-uart.sh setup-usbnet.sh usbnet_not_ready.sh setup-gpu-eeprom.sh"
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 gpiocli "

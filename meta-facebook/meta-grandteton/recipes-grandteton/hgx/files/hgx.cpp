@@ -242,6 +242,9 @@ int setFWVersion() {
           comp["Oem"].contains("VersionID") &&
           comp["Oem"]["VersionID"].contains("ComponentDetails")) {
         auto& verDetails = comp["Oem"]["VersionID"]["ComponentDetails"];
+        if (verDetails.dump() == "\"\"") {
+          return -1;
+        }
         kv::set(fp, verDetails);
       }
       else {

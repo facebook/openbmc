@@ -18,11 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 import binascii
+import functools
 import os
 import uuid
-from ctypes import CDLL, c_char_p, c_ubyte, c_uint32, create_string_buffer, pointer
-from subprocess import PIPE, CalledProcessError, Popen, check_output
+from ctypes import c_char_p, c_ubyte, c_uint32, CDLL, create_string_buffer, pointer
+from subprocess import CalledProcessError, check_output, PIPE, Popen
 from typing import Optional
+
+import pal
 
 from common_utils import async_exec
 
@@ -51,6 +54,7 @@ FRU_CAPABILITY_SENSOR_ALL = (
 )
 
 
+@functools.lru_cache(1)
 def pal_get_platform_name() -> Optional[str]:
     if lpal_hndl is None:
         machine = "OpenBMC"
@@ -62,12 +66,7 @@ def pal_get_platform_name() -> Optional[str]:
                 tmp2 = vers.split("-")
                 machine = tmp2[0]
         return machine
-    name = create_string_buffer(16)
-    ret = lpal_hndl.pal_get_platform_name(name)
-    if ret:
-        return None
-    else:
-        return name.value.decode()
+    return pal.pal_get_platform_name()
 
 
 def pal_get_num_slots():

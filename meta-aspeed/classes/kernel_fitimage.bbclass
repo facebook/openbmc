@@ -201,7 +201,7 @@ oe_mkimage() {
             # In order to support both legacy kernel and Linux 6.5 (or
             # higher versions), we extract the basename to ensure the
             # dtb files are located properly.
-            if [[ "${DTB}" == *\/* ]]; then
+            if echo "${DTB}" | grep -q '/'; then
                 bbnote "remove path prefix from ${DTB}"
                 DTB=`basename ${DTB} | sed 's,\.dts$,.dtb,g'`
             fi

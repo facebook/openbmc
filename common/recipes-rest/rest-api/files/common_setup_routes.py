@@ -103,6 +103,7 @@ def setup_common_routes(app: Application, write_enabled: bool):
         app.router.add_post(common_routes[9], chandler.psu_update_hdl_post)
         app.router.add_post(common_routes[10], chandler.rest_fscd_sensor_data_post)
         app.router.add_post("/api/sys/optics_thermal", chandler.rest_qsfp_thermal_post)
+        app.router.add_get("/api/sys/board_revision", chandler.rest_board_revision_get)
     # common routes for all openbmc.
     server_logger.info("Adding common routes")
     app.router.add_get("/api/sys/ntp", rest_ntp_status_handler)

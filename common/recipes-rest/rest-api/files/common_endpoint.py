@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 import rest_bmc
+import rest_board_revision
 import rest_fcpresent
 import rest_fruid
 import rest_fruid_pim
@@ -182,6 +183,10 @@ class commonApp_Handler:
     @staticmethod
     async def rest_qsfp_thermal_post(request: web.Request) -> web.Response:
         return await rest_qsfp_thermal.post_qsfp_thermal_data(request)
+
+    @staticmethod
+    async def rest_board_revision_get(request: web.Request) -> web.Response:
+        return await rest_board_revision.get_board_revision(request)
 
     @staticmethod
     async def rest_modbus_get(request: web.Request) -> web.Response:

@@ -1133,6 +1133,30 @@ nv_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(FRU_MB, desc, curr, DEFER_LOG_TIME, NULL, NULL);
 }
 
+void gpu_fpga_ready_mon() {
+  using namespace std::literals;
+  static std::future<void> worker;
+  int gpuFruID = pal_get_gpu_fru_id();
+
+  auto fpga_ready_mon_thr = [gpuFruID] {
+    constexpr auto timeout = 12min;
+    constexpr auto poll_time = 10s;
+    for (int i = 0; i < timeout / poll_time; i++) {
+      std::this_thread::sleep_for(poll_time);
+      auto val = gpio_get_value_by_shadow("GPU_FPGA_READY_ISO_R");
+      if (val == GPIO_VALUE_HIGH) {
+        return;
+      }
+    }
+    syslog(LOG_CRIT, "FRU: %d GPU_FPGA_READY_ISO_R - ASSERT Timed out", gpuFruID);
+  };
+  if (!worker.valid() || worker.wait_for(0s) == std::future_status::ready) {
+    worker = std::async(std::launch::async, fpga_ready_mon_thr);
+  } else {
+    syslog(LOG_WARNING, "Previous GPU FPGA Ready waiter thread is still running");
+  }
+}
+
 void
 gpu_fpga_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
@@ -1142,7 +1166,7 @@ gpu_fpga_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
     }
   }
   else {
-    sgpio_event_handler(desc, last, curr);
+    gpu_fpga_ready_mon();
   }
 }
 

@@ -53,14 +53,6 @@ copy_gpu_eeprom () {
 }
 
 setup_gpu_eeprom () {
-  hgx_addr16="0x$HGX_EEPROM_ADDR"
-  i2cget -y -f 9 $hgx_addr16 0x00 2>/dev/null
-  if [ $? -eq 0 ]; then
-    $KV_CMD set $GPU_CONFIG hgx persistent
-  else
-    $KV_CMD set $GPU_CONFIG ubb persistent
-  fi
-
   gpu=`$KV_CMD get $GPU_CONFIG persistent`
   if [ "$gpu" == "hgx" ]; then
     MAX_RETRY=10

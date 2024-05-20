@@ -1,0 +1,43 @@
+From 30509198659ba66aabcd0fbc998011e41f8f8652 Mon Sep 17 00:00:00 2001
+From: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+Date: Wed, 15 May 2024 11:30:20 +0800
+Subject: [PATCH v1 2/2] configs: openbmc: Revise size of environment and use
+ preboot
+
+Revise CONFIG_ENV_SIZE and Add CONFIG_USE_PREBOOT
+
+Signed-off-by: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+---
+ configs/ast2600_openbmc_spl_defconfig | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/configs/ast2600_openbmc_spl_defconfig b/configs/ast2600_openbmc_spl_defconfig
+index efd683570f..f930108e1c 100644
+--- a/configs/ast2600_openbmc_spl_defconfig
++++ b/configs/ast2600_openbmc_spl_defconfig
+@@ -14,7 +14,7 @@ CONFIG_SYS_MALLOC_F_LEN=0x2000
+ CONFIG_SPL_MMC_SUPPORT=y
+ CONFIG_SPL_SERIAL_SUPPORT=y
+ CONFIG_SPL_DRIVERS_MISC_SUPPORT=y
+-CONFIG_ENV_SIZE=0x10000
++CONFIG_ENV_SIZE=0x20000
+ CONFIG_ENV_OFFSET=0xE0000
+ CONFIG_SPL=y
+ CONFIG_SPL_STACK_R_ADDR=0x90300000
+@@ -58,7 +58,6 @@ CONFIG_CMD_BOOTZ=y
+ # CONFIG_CMD_IMI is not set
+ # CONFIG_CMD_XIMG is not set
+ CONFIG_CMD_MEMTEST=y
+-CONFIG_SYS_ALT_MEMTEST=y
+ CONFIG_CMD_CLK=y
+ CONFIG_CMD_GPIO=y
+ CONFIG_CMD_GPT=y
+@@ -140,3 +139,5 @@ CONFIG_SPL_TINY_MEMSET=y
+ CONFIG_TPM=y
+ CONFIG_SPL_TPM=y
+ # CONFIG_EFI_LOADER is not set
++CONFIG_USE_PREBOOT=y
++CONFIG_PREBOOT=""
+-- 
+2.25.1
+

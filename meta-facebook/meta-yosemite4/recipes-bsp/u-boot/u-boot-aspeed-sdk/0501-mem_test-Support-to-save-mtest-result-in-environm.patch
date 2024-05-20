@@ -1,0 +1,42 @@
+From b4e42a23dcc7a1d80b5445bfef7be69ee5e2c23e Mon Sep 17 00:00:00 2001
+From: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+Date: Wed, 15 May 2024 11:29:57 +0800
+Subject: [PATCH v1 1/2] mem_test: Support to save mtest result in environment
+
+Set mtest_result in environment after doing mtest in u-boot so that user
+can check the result in user space.
+
+Signed-off-by: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+---
+ cmd/mem.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/cmd/mem.c b/cmd/mem.c
+index 392ed1756b..bb6a3d2e60 100644
+--- a/cmd/mem.c
++++ b/cmd/mem.c
+@@ -21,6 +21,7 @@
+ #include <watchdog.h>
+ #include <asm/io.h>
+ #include <linux/compiler.h>
++#include <environment.h>
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+@@ -943,6 +944,13 @@ static int do_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
+ 		ret = errs != 0;
+ 	}
+ 
++	if (errs == 0)
++		env_set("memtest_result", "pass");
++	else
++		env_set("memtest_result", "fail");
++
++	env_save();
++
+ 	return ret;
+ }
+ #endif	/* CONFIG_CMD_MEMTEST */
+-- 
+2.25.1
+

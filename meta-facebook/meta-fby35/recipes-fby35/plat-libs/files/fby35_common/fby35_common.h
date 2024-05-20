@@ -397,6 +397,14 @@ enum brd_rev {
   GL_REV_PVT = 5,
   GL_REV_MP = 6,
 
+  JI_REV_POC = 0,
+  JI_REV_EVT = 1,
+  JI_REV_EVT2 = 2,
+  JI_REV_DVT = 3,
+  JI_REV_DVT2 = 4,
+  JI_REV_PVT = 5,
+  JI_REV_PVT2 = 6,
+
   UNKNOWN_REV = 0xFF,
 };
 

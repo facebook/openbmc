@@ -362,6 +362,22 @@ gpio_monitor_poll(void *ptr) {
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
   gpio_pin_t *gpios;
   bool chk_bic_pch_pwr_flag = true;
+  bool is_inited = false;
+  bool is_cached = false;
+  int slot_type = SERVER_TYPE_NONE;
+  int board_rev = UNKNOWN_REV;
+  int delay = 0;
+
+  if (is_inited == false) {
+    slot_type = fby35_common_get_slot_type(fru);
+    board_rev = fby35_common_get_sb_rev(fru);
+    if (slot_type < 0 || board_rev < 0) {
+      syslog(LOG_WARNING, "fail to get slot_type:%d or board_rev:%d for fru %u", slot_type, board_rev, fru);
+    } else {
+      is_inited = true;
+      syslog(LOG_INFO, "get slot_type:%d or board_rev:%d for fru %u", slot_type, board_rev, fru);
+    }
+  }
 
   /* Check for initial Asserts */
   gpios = get_struct_gpio_pin(fru);
@@ -424,6 +440,30 @@ gpio_monitor_poll(void *ptr) {
     // handle case : BIC FW update & BIC resets unexpectedly
     if (GET_BIT(n_pin_val, gpio_offset.bmc_ready) == 0) {
       bic_set_gpio(fru, gpio_offset.bmc_ready, 1);
+    }
+
+    // This is a workaround for Java Island POC/EVT board due to schematic issue.
+    if ((is_inited == true) && (slot_type == SERVER_TYPE_JI) && (is_cached == false)) {
+      switch (board_rev) {
+        case JI_REV_POC:
+        case JI_REV_EVT:
+        case JI_REV_EVT2:
+          if (GET_BIT(n_pin_val, gpio_offset.pwrgd_cpu) == 1) {
+            delay++;
+            if (delay > 5) {
+              #define CACHE_CMD "bic-cached -f slot%d &"
+              char cmd[128] = {0};
+              int cmd_len = sizeof(cmd);
+              snprintf(cmd, cmd_len, CACHE_CMD, fru);
+              if ( system(cmd) != 0 ) {
+                syslog(LOG_CRIT, "Failed to run: %s", cmd);
+                break;
+              }
+              syslog(LOG_INFO,"Re-cached slot%d MB FRU due to POC/EVT schematic issue.", fru);
+              is_cached = true;
+            }
+          }
+      }
     }
 
     if (!chk_bic_pch_pwr_flag) chk_bic_pch_pwr_flag = true;

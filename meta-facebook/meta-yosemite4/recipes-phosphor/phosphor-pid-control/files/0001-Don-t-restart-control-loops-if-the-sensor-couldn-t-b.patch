@@ -1,0 +1,79 @@
+From 44cc7f6919863ba1279566e7b81d072f704fb7c6 Mon Sep 17 00:00:00 2001
+From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
+Date: Fri, 17 May 2024 14:54:21 +0800
+Subject: [PATCH] Don't restart control loops if the sensor couldn't be found
+
+Add a workaround to not keep restarting control loops if the sensor in
+fan table couldn't be found.
+---
+ pid/zone.hpp        |  6 ++++++
+ sensors/builder.cpp | 14 +++++++++++---
+ sensors/manager.hpp | 10 +++++++++-
+ 3 files changed, 26 insertions(+), 4 deletions(-)
+
+diff --git a/pid/zone.hpp b/pid/zone.hpp
+index 52180a5..541e11b 100644
+--- a/pid/zone.hpp
++++ b/pid/zone.hpp
+@@ -136,6 +136,12 @@ class DbusPidZone : public ZoneInterface, public ModeObject
+         for (const auto& sensorInput : sensorInputs)
+         {
+             auto sensor = _mgr.getSensor(sensorInput);
++            if (sensor == NULL)
++            {
++                /* Couldn't find the sensor */
++                continue;
++            }
++
+             ReadReturn r = sensor->read();
+             _cachedValuesByName[sensorInput] = {r.value, r.unscaled};
+             int64_t timeout = sensor->getTimeout();
+diff --git a/sensors/builder.cpp b/sensors/builder.cpp
+index 7c335c6..77bb899 100644
+--- a/sensors/builder.cpp
++++ b/sensors/builder.cpp
+@@ -96,9 +96,17 @@ SensorManager
+                 }
+                 if (ri == nullptr)
+                 {
+-                    throw SensorBuildException(
+-                        "Failed to create dbus passive sensor: " + name +
+-                        " of type: " + info->type);
++                    if (info->type == "fan")
++                    {
++                        throw SensorBuildException(
++                            "Failed to create dbus passive sensor: " + name +
++                            " of type: " + info->type);
++                    }
++                    else
++                    {
++                        std::cerr << "Failed to create dbus passive sensor: " + name + " of type: " + info->type + "\n";
++                        continue;
++                    }
+                 }
+                 break;
+             case IOInterfaceType::EXTERNAL:
+diff --git a/sensors/manager.hpp b/sensors/manager.hpp
+index e02e1c9..70ca198 100644
+--- a/sensors/manager.hpp
++++ b/sensors/manager.hpp
+@@ -42,7 +42,15 @@ class SensorManager
+     // TODO(venture): Should implement read/write by name.
+     Sensor* getSensor(const std::string& name) const
+     {
+-        return _sensorMap.at(name).get();
++        if(_sensorMap.contains(name))
++        {
++            return _sensorMap.at(name).get();
++        }
++        else
++        {
++            /* sensor not found in _sensorMap */
++            return NULL;
++        }
+     }
+ 
+     sdbusplus::bus_t& getPassiveBus(void)
+-- 
+2.25.1
+

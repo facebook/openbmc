@@ -33,6 +33,7 @@ LOCAL_URI = " \
     file://mount_data0.sh \
     file://mount_data0.service \
     file://openbmc-utils.sh \
+    file://fboss-board-revision.sh \
     file://shell-utils.sh \
     file://ast-utils.sh \
     file://i2c-utils.sh \
@@ -72,6 +73,7 @@ LOCAL_URI:append:mf-mtd-ubifs = " file://data0_resize_ubifs.sh"
 OPENBMC_UTILS_FILES = " \
     mount_data0.sh \
     openbmc-utils.sh \
+    fboss-board-revision.sh \
     shell-utils.sh \
     ast-utils.sh \
     i2c-utils.sh \

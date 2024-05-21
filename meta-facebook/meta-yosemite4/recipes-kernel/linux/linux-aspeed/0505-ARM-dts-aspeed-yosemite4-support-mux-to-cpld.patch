@@ -1,7 +1,7 @@
-From 904190c2eca45671b107974911da6c987a95c33b Mon Sep 17 00:00:00 2001
+From 6d7afb08f4231b581439c0ae1da87c6107033e64 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 11 Dec 2023 10:22:47 +0800
-Subject: [PATCH 505/518] ARM: dts: aspeed: yosemite4: support mux to cpld
+Subject: [PATCH 505/525] ARM: dts: aspeed: yosemite4: support mux to cpld
 
 Mux pca9544 to cpld was added on EVT HW schematic design,
 so add dts setting for devices behind mux pca9544 to cpld

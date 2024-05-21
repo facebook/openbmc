@@ -1,4 +1,4 @@
-From c6f888173671d39544014e107e0a495c806eae32 Mon Sep 17 00:00:00 2001
+From 4ded7594a55df30d198f280f80b2e4e9197d1df0 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 12 Feb 2024 11:31:14 +0700
 Subject: [PATCH 502/502] Revert linux kernel patch usb: gadget: f_ecm: Add

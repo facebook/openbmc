@@ -1,0 +1,73 @@
+From 825d9e5d55b142f6e8d22e337f244ec681af0f33 Mon Sep 17 00:00:00 2001
+From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
+Date: Mon, 4 Mar 2024 17:48:40 +0800
+Subject: [PATCH 513/525] ARM: dts: aspeed: yosemite4: disable GPIO internal
+ Pull-Down
+
+Disable GPIO internal Pull-Down for hardware validation.
+---
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 45 ++++++++++++++++++-
+ 1 file changed, 44 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index d48918fce046..fa668aa13c82 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -1453,10 +1453,53 @@ &sgpiom0 {
+ 	bus-frequency = <48000>;
+ };
+ 
++&pinctrl {
++	pinctrl_gpio0_unbiased: gpio0_unbiased {
++		/* GPIOB0, GPIOB1 */
++		pins = "J26", "K23";
++		bias-disable;
++	};
++	pinctrl_gpio2_unbiased: gpio2_unbiased {
++		/* GPIOI5, GPIOI6, GPIOI7,
++		   GPIOL6 */
++		pins = "E16", "B16", "A15", "B14";
++		bias-disable;
++	};
++	pinctrl_gpio3_unbiased: gpio3_unbiased {
++		/* GPIOM2, GPIOM3, GPIOM4, GPIOM5,
++		   GPION0, GPION1, GPION2, GPION3, GPION5,
++		   GPIOO0, GPIOO1, GPIOO2, GPIOO3,
++		   GPIOP0, GPIOP1, GPIOP2, GPIOP3, GPIOP4, GPIOP5, GPIOP6 */
++		pins = "A12", "E14", "B12", "C12", "P25", "N23", "N25", "N24", "M23", "AD26", "AD22", "AD23", "AD24", "AB22", "W24", "AA23", "AA24", "W23", "AB23", "AB24";
++		bias-disable;
++	};
++	pinctrl_gpio4_unbiased: gpio4_unbiased {
++		/* GPIOR0, GPIOR1, GPIOR2, GPIOR3, GPIOR4, GPIOR5, GPIOR6, GPIOR7
++		   GPIOS0, GPIOS1, GPIOS2, GPIOS3, GPIOS5, GPIOS6, GPIOS7 */
++		pins = "V25", "U24", "V24", "V26", "U25", "T23", "W26", "U26", "R23", "T25", "T26", "R24", "P24", "P23", "T24";
++		bias-disable;
++	};
++	pinctrl_gpio5_unbiased: gpio5_unbiased {
++		/* GPIOV0, GPIOV1, GPIOV2, GPIOV3, GPIOV4, GPIOV5, GPIOV6, GPIOV7
++		   GPIOX1, GPIOX2 */
++		pins = "AB15", "AF14", "AD14", "AC15", "AE15", "AE14", "AD15", "AF15", "AA9", "AC9";
++		bias-disable;
++	};
++	pinctrl_gpio6_unbiased: gpio6_unbiased {
++		/* GPIOY2, GPIOY5, GPIOY6
++		   GPIOZ0, GPIOZ1, GPIOZ3, GPIOZ4 */
++		pins = "AE11", "AF12", "AC12", "AC10", "AD10", "AB11", "AC11";
++		bias-disable;
++	};
++};
++
+ &gpio0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_gpiu2_default &pinctrl_gpiu3_default
+-		     &pinctrl_gpiu4_default &pinctrl_gpiu6_default>;
++		     &pinctrl_gpiu4_default &pinctrl_gpiu6_default
++		     &pinctrl_gpio0_unbiased &pinctrl_gpio2_unbiased
++		     &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased
++		     &pinctrl_gpio5_unbiased &pinctrl_gpio6_unbiased>;
+ 	gpio-line-names =
+ 	/*A0-A7*/       "","","","","","","","",
+ 	/*B0-B7*/       "FLT_HSC_SERVER_SLOT8_N","AC_ON_OFF_BTN_CPLD_SLOT5_N",
+-- 
+2.43.0
+

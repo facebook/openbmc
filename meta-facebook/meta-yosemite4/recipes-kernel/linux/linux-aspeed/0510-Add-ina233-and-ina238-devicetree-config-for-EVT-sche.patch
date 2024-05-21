@@ -1,0 +1,37 @@
+From afe53432ea70eb5f7536f560268733120eebf322 Mon Sep 17 00:00:00 2001
+From: Eric <Eric_LC_Chen@wiwynn.com>
+Date: Mon, 29 Jan 2024 16:59:19 +0800
+Subject: [PATCH 510/525] Add ina233 and ina238 devicetree config for EVT
+ schematic change
+
+---
+ .../dts/aspeed/aspeed-bmc-facebook-yosemite4.dts    | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index 22b8ca11b42f..02fddda96463 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -919,6 +919,19 @@ power-sensor@40 {
+ 			reg = <0x40>;
+ 	};
+ 
++	power-sensor@41 {
++		compatible = "ti,ina233";
++		resistor-calibration = /bits/ 16 <0x0a00>;
++		current-lsb= /bits/ 16 <0x0001>;
++		reg = <0x41>;
++	};
++
++	power-sensor@44 {
++		compatible = "ti,ina238";
++		shunt-resistor = <1000>;
++		reg = <0x44>;
++	};
++
+ 	temperature-sensor@48 {
+ 		compatible = "ti,tmp75";
+ 		reg = <0x48>;
+-- 
+2.43.0
+

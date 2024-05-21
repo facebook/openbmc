@@ -1,0 +1,201 @@
+From a36bd5e7f0e506a85ac3bd6e8b6e5e80fd7088e0 Mon Sep 17 00:00:00 2001
+From: Eric <Eric_LC_Chen@wiwynn.com>
+Date: Wed, 20 Mar 2024 20:59:30 +0800
+Subject: [PATCH 518/525] Add nct7363 in yosemite4 dts
+
+ARM: dts: aspeed: yosemite4:
+Add nct7363(0x21 and 0x23) in yosemite4.dts
+This change is also contributing to torvalds upstream for reviewing.
+lore link: https://lore.kernel.org/all/20240425060626.2558515-3-Delphine_CC_Chiu@wiwynn.com/
+---
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 146 +++++++++++++++++-
+ 1 file changed, 145 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index 085b9cffab36..0f4c94298990 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -1171,6 +1171,42 @@ channel@5 {
+ 				};
+ 			};
+ 
++			hwmon0: hwmon@21 {
++				compatible = "nuvoton,nct7363";
++				reg = <0x21>;
++				#pwm-cells = <2>;
++
++				fan-3 {
++					pwms = <&hwmon0 2 20000>;
++					tach-ch = /bits/ 8 <0x00>;
++				};
++
++				fan-4 {
++					pwms = <&hwmon0 5 20000>;
++					tach-ch = /bits/ 8 <0x01>;
++				};
++
++				fan-5 {
++					pwms = <&hwmon0 5 20000>;
++					tach-ch = /bits/ 8 <0x02>;
++				};
++
++				fan-0 {
++					pwms = <&hwmon0 0 20000>;
++					tach-ch = /bits/ 8 <0x09>;
++				};
++
++				fan-1 {
++					pwms = <&hwmon0 0 20000>;
++					tach-ch = /bits/ 8 <0x0c>;
++				};
++
++				fan-2 {
++					pwms = <&hwmon0 2 20000>;
++					tach-ch = /bits/ 8 <0x0e>;
++				};
++			};
++
+ 			gpio@22{
+ 				compatible = "ti,tca6424";
+ 				reg = <0x22>;
+@@ -1178,6 +1214,42 @@ gpio@22{
+ 				#gpio-cells = <2>;
+ 			};
+ 
++			hwmon1: hwmon@23 {
++				compatible = "nuvoton,nct7363";
++				reg = <0x23>;
++				#pwm-cells = <2>;
++
++				fan-3 {
++					pwms = <&hwmon0 2 20000>;
++					tach-ch = /bits/ 8 <0x00>;
++				};
++
++				fan-4 {
++					pwms = <&hwmon0 5 20000>;
++					tach-ch = /bits/ 8 <0x01>;
++				};
++
++				fan-5 {
++					pwms = <&hwmon0 5 20000>;
++					tach-ch = /bits/ 8 <0x02>;
++				};
++
++				fan-0 {
++					pwms = <&hwmon0 0 20000>;
++					tach-ch = /bits/ 8 <0x09>;
++				};
++
++				fan-1 {
++					pwms = <&hwmon0 0 20000>;
++					tach-ch = /bits/ 8 <0x0c>;
++				};
++
++				fan-2 {
++					pwms = <&hwmon0 2 20000>;
++					tach-ch = /bits/ 8 <0x0e>;
++				};
++			};
++
+ 			pwm@2f{
+ 				compatible = "maxim,max31790";
+ 				#address-cells = <1>;
+@@ -1241,6 +1313,42 @@ channel@5 {
+ 				};
+ 			};
+ 
++			hwmon2: hwmon@21 {
++				compatible = "nuvoton,nct7363";
++				reg = <0x21>;
++				#pwm-cells = <2>;
++
++				fan-3 {
++					pwms = <&hwmon2 2 20000>;
++					tach-ch = /bits/ 8 <0x00>;
++				};
++
++				fan-4 {
++					pwms = <&hwmon2 5 20000>;
++					tach-ch = /bits/ 8 <0x01>;
++				};
++
++				fan-5 {
++					pwms = <&hwmon2 5 20000>;
++					tach-ch = /bits/ 8 <0x02>;
++				};
++
++				fan-0 {
++					pwms = <&hwmon2 0 20000>;
++					tach-ch = /bits/ 8 <0x09>;
++				};
++
++				fan-1 {
++					pwms = <&hwmon2 0 20000>;
++					tach-ch = /bits/ 8 <0x0c>;
++				};
++
++				fan-2 {
++					pwms = <&hwmon2 2 20000>;
++					tach-ch = /bits/ 8 <0x0e>;
++				};
++			};
++
+ 			gpio@22{
+ 				compatible = "ti,tca6424";
+ 				reg = <0x22>;
+@@ -1248,6 +1356,42 @@ gpio@22{
+ 				#gpio-cells = <2>;
+ 			};
+ 
++			hwmon3: hwmon@23 {
++				compatible = "nuvoton,nct7363";
++				reg = <0x23>;
++				#pwm-cells = <2>;
++
++				fan-3 {
++					pwms = <&hwmon3 2 20000>;
++					tach-ch = /bits/ 8 <0x00>;
++				};
++
++				fan-4 {
++					pwms = <&hwmon3 5 20000>;
++					tach-ch = /bits/ 8 <0x01>;
++				};
++
++				fan-5 {
++					pwms = <&hwmon3 5 20000>;
++					tach-ch = /bits/ 8 <0x02>;
++				};
++
++				fan-0 {
++					pwms = <&hwmon3 0 20000>;
++					tach-ch = /bits/ 8 <0x09>;
++				};
++
++				fan-1 {
++					pwms = <&hwmon3 0 20000>;
++					tach-ch = /bits/ 8 <0x0c>;
++				};
++
++				fan-2 {
++					pwms = <&hwmon3 2 20000>;
++					tach-ch = /bits/ 8 <0x0e>;
++				};
++			};
++
+ 			pwm@2f{
+ 				compatible = "maxim,max31790";
+ 				#address-cells = <1>;
+@@ -1446,7 +1590,7 @@ &uhci {
+ };
+ 
+ &jtag1 {
+-	status = "okay";
++      status = "okay";
+ };
+ 
+ &sgpiom0 {
+-- 
+2.43.0
+

@@ -1,7 +1,7 @@
-From af1efcba421f2739034612d89fdf0348d5254169 Mon Sep 17 00:00:00 2001
+From 8b0e7c128a3376677657aa03ea7055dbac4fd8cb Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 11 Dec 2023 10:29:27 +0800
-Subject: [PATCH 506/518] ARM: dts: aspeed: yosemite4: Revise gpio name
+Subject: [PATCH 506/525] ARM: dts: aspeed: yosemite4: Revise gpio name
 
 Revise gpio name for EVT schematic changes
 

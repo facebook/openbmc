@@ -1,4 +1,4 @@
-From c7fb37826b3790813189783d9d5c5180febeb7a3 Mon Sep 17 00:00:00 2001
+From 06f247027cd5047832ecbec64cce43e353ed967f Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 2 Nov 2023 14:52:04 +0800
 Subject: [PATCH 300/304] To support MCP9600 temperature driver

@@ -1,7 +1,7 @@
-From 3a2cb6a1bf6e41bdc61bc63b95fd88fac3049cb6 Mon Sep 17 00:00:00 2001
+From 61e1e1b20cb72c4eb21293ed1783ff1572793dad Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 1 Nov 2023 18:18:29 +0800
-Subject: [PATCH 504/518] hwmon: max31790: add fanN_enable for all fans
+Subject: [PATCH 504/525] hwmon: max31790: add fanN_enable for all fans
 
 The fanN_enable will be set in dbus-sensors service according to the
 index of TACH that filled in the configuration of entity-manager.

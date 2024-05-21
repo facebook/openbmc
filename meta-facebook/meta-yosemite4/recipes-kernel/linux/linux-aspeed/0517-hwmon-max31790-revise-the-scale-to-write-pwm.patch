@@ -1,0 +1,58 @@
+From 64fcead55de3ed43ffc3f5a5d8cf707830ebe4c7 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Thu, 11 Apr 2024 11:40:14 +0800
+Subject: [PATCH 517/525] hwmon: max31790: revise the scale to write pwm
+
+Since the value for PWMOUT Target Duty Cycle register is a 9 bit
+left-justified value that ranges from 0 to 511 and is contained in 2
+bytes.
+
+There is an issue that the PWM signal recorded by oscilloscope would
+not be on consistently if we set PWM to 100% to the driver.
+
+It is because the LSB of the 9 bit would always be zero if it just
+left shift 8 bit for the value that write to PWMOUT Target Duty
+Cycle register.
+
+Therefore, revise the scale of the value that was written to pwm input
+from 255 to 511 and modify the value to left-justified value.
+
+lore link: https://lore.kernel.org/all/20240416022211.859483-1-Delphine_CC_Chiu@wiwynn.com/
+
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ drivers/hwmon/max31790.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hwmon/max31790.c b/drivers/hwmon/max31790.c
+index fa31e108c7ce..ee304dc1c782 100644
+--- a/drivers/hwmon/max31790.c
++++ b/drivers/hwmon/max31790.c
+@@ -49,6 +49,9 @@
+ 
+ #define NR_CHANNEL			6
+ 
++#define PWM_INPUT_SCALE	255
++#define MAX31790_REG_PWMOUT_SCALE	511
++
+ /*
+  * Client data (each client gets its own)
+  */
+@@ -348,10 +351,13 @@ static int max31790_write_pwm(struct device *dev, u32 attr, int channel,
+ 			err = -EINVAL;
+ 			break;
+ 		}
++
++		val = DIV_ROUND_CLOSEST(val * MAX31790_REG_PWMOUT_SCALE,
++					PWM_INPUT_SCALE);
+ 		data->valid = false;
+ 		err = i2c_smbus_write_word_swapped(client,
+ 						   MAX31790_REG_PWMOUT(channel),
+-						   val << 8);
++						   val << 7);
+ 		break;
+ 	case hwmon_pwm_enable:
+ 		fan_config = data->fan_config[channel];
+-- 
+2.43.0
+

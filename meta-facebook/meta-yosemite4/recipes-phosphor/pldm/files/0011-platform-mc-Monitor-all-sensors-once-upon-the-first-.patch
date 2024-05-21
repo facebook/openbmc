@@ -1,0 +1,30 @@
+From c35e8de8affd0950ba88d42c517afe83a82eaf9b Mon Sep 17 00:00:00 2001
+From: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+Date: Tue, 23 Apr 2024 13:57:49 +0800
+Subject: [PATCH 11/11] platform-mc: Monitor all sensors once upon the first
+ power-on
+
+BMC reads all sensors once upon reboot, then update sensor values according to the update interval time.
+
+Change-Id: I489bf370dfa9b511ad3004431504ddc96c3ac0a4
+Signed-off-by: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+---
+ platform-mc/sensor_manager.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
+index bc709fe..177437f 100644
+--- a/platform-mc/sensor_manager.cpp
++++ b/platform-mc/sensor_manager.cpp
+@@ -258,7 +258,7 @@ exec::task<int> SensorManager::doSensorPollingTask(pldm_tid_t tid)
+ 
+             sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
+             elapsed = t1 - sensor->timeStamp;
+-            if (sensor->updateTime <= elapsed)
++            if ((sensor->updateTime <= elapsed) || (sensor->timeStamp == 0))
+             {
+                 rc = co_await getSensorReading(sensor);
+ 
+-- 
+2.25.1
+

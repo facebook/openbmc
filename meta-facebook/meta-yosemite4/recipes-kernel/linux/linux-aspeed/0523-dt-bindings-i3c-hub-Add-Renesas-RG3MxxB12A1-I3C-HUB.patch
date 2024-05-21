@@ -1,0 +1,423 @@
+From 7c00391e6b16a5867a6dc306a624ffafb30a20cf Mon Sep 17 00:00:00 2001
+From: Steven Niu <steven.niu.uj@renesas.com>
+Date: Sat, 17 Feb 2024 21:14:11 +0800
+Subject: [PATCH 523/525] dt-bindings: i3c-hub: Add Renesas RG3MxxB12A1 I3C HUB
+
+Document the Renesas RG3MxxB12A1 I3C HUB.
+Lore link: https://patchwork.kernel.org/project/linux-i3c/patch/20240217131412.4145506-1-steven.niu.uj@renesas.com/
+
+Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
+---
+ .../devicetree/bindings/i3c/i3c-hub.yaml      | 400 ++++++++++++++++++
+ 1 file changed, 400 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i3c/i3c-hub.yaml
+
+diff --git a/Documentation/devicetree/bindings/i3c/i3c-hub.yaml b/Documentation/devicetree/bindings/i3c/i3c-hub.yaml
+new file mode 100644
+index 000000000000..8ff6ca172975
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i3c/i3c-hub.yaml
+@@ -0,0 +1,400 @@
++# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/i3c/i3c-hub.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: I3C HUB
++
++maintainers:
++  - Zbigniew Lukwinski <zbigniew.lukwinski@linux.intel.com>
++  - Steven Niu <steven.niu.uj@renesas.com>
++
++description: |
++  I3C HUB is smart device which provides multiple functionality:
++  * enabling voltage compatibility across I3C Controller and Target devices,
++  * bus capacitance isolation
++  * address conflict isolation
++  * I3C port expansion
++  * two controllers in a single I3C bus
++  * I3C and SMBus device compatibility
++  * GPIO expansion
++
++  Having such big number of features, there is a need to have some DT knobs to tell the I3C HUB
++  driver which features shall be enabled and how they shall be configured. I3C HUB driver read,
++  validate DT knobs and set corresponding registers with the right way to satisfy user requests from
++  DT.
++
++  All the DT properties for I3C HUB are located under dedicated (for I3C HUB) DT entry. I3C HUB DT
++  entry structure is aligned with regular I3C device DT entry described in i3c.yaml.
++
++allOf:
++  - $ref: i3c.yaml#
++
++properties:
++  $nodename:
++    pattern: "^hub@0,0$"
++
++  cp0-ldo-en:
++    enum:
++      - disabled
++      - enabled
++    description: |
++      I3C HUB Controller Port 0 LDO disabling/enabling setting. If enabled, voltage produced by
++      on-die LDO will be available externally on dedicated pin. This option could be used to supply
++      external pull-up resistors or for any other purpose which does not cross LDO capabilities.
++
++      This property is optional. If not provided, LDO will be disabled.
++
++  cp1-ldo-en:
++    enum:
++      - disabled
++      - enabled
++    description: |
++      I3C HUB Controller Port 1 LDO disabling/enabling setting. If enabled, voltage produced by
++      on-die LDO will be available externally on dedicated pin. This option could be used to supply
++      external pull-up resistors or for any other purpose which does not cross LDO capabilities.
++
++      This property is optional. If not provided, LDO will be disabled.
++
++  tp0145-ldo-en:
++    enum:
++      - disabled
++      - enabled
++    description: |
++      I3C HUB Target Ports 0/1/4/5 LDO disabling/enabling setting. If enabled, voltage produced by
++      on-die LDO will be available externally on dedicated pin. This option could be used to supply
++      external pull-up resistors or for any other purpose which does not cross LDO capabilities.
++
++      This property is optional. If not provided, LDO will be disabled.
++
++  tp2367-ldo-en:
++    enum:
++      - disabled
++      - enabled
++    description: |
++      I3C HUB Target Ports 2/3/6/7 LDO disabling/enabling setting. If enabled, voltage produced by
++      on-die LDO will be available externally on dedicated pin. This option could be used to supply
++      external pull-up resistors or for any other purpose which does not cross LDO capabilities.
++
++      This property is optional. If not provided, LDO will be disabled.
++
++  cp0-ldo-volt:
++    enum:
++      - 1.0V
++      - 1.1V
++      - 1.2V
++      - 1.8V
++    description: |
++      I3C HUB Controller Port 0 LDO setting to control the Controller Port 1 voltage level. This
++      property is optional.
++
++      If not provided, LDO configuration is not modified in I3C HUB.
++
++  cp1-ldo-volt:
++    enum:
++      - 1.0V
++      - 1.1V
++      - 1.2V
++      - 1.8V
++    description: |
++      I3C HUB Controller Port 1 LDO setting to control the Controller Port 1 voltage level. This
++      property is optional.
++
++      If not provided, LDO configuration is not modified in I3C HUB.
++
++  tp0145-ldo-volt:
++    enum:
++      - disabled
++      - 1.0V
++      - 1.1V
++      - 1.2V
++      - 1.8V
++    description: |
++      I3C HUB Target Ports 0/1/4/5 LDO setting to control the Target Ports 0/1/4/5 voltage level.
++
++      If not provided, LDO configuration is not modified in I3C HUB.
++
++  tp2367-ldo-volt:
++    enum:
++      - disabled
++      - 1.0V
++      - 1.1V
++      - 1.2V
++      - 1.8V
++    description: |
++      I3C HUB Target Ports 2/3/6/7 LDO setting to control the Target Ports 2/3/6/7 voltage level.
++
++      If not provided, LDO configuration is not modified in I3C HUB.
++
++  tp0145-pullup:
++    enum:
++      - disabled
++      - 250R
++      - 500R
++      - 1k
++      - 2k
++    description: |
++      I3C HUB Target Ports 0/1/4/5 pull-up setting to control the Target Ports 0/1/4/5 pull-up
++      resistance level.
++
++      This property is optional. If not provided, pull-up configuration is not modified in I3C HUB.
++
++  tp2367-pullup:
++    enum:
++      - disabled
++      - 250R
++      - 500R
++      - 1k
++      - 2k
++    description: |
++      I3C HUB Target Ports 2/3/6/7 pull-up setting to control the Target Ports 2/3/6/7 pull-up
++      resistance level.
++
++      This property is optional. If not provided, pull-up configuration is not modified in I3C HUB.
++
++  cp0-io-strength:
++    enum:
++      - 20Ohms
++      - 30Ohms
++      - 40Ohms
++      - 50Ohms
++    description: |
++      I3C HUB Controller Port 0 IO strength setting to control the Controller Port 0 output driver
++      strength.
++
++      This property is optional. If not provided, IO strength configuration is not modified in I3C
++      HUB.
++
++  cp1-io-strength:
++    enum:
++      - 20Ohms
++      - 30Ohms
++      - 40Ohms
++      - 50Ohms
++    description: |
++      I3C HUB Controller Port 1 IO strength setting to control the Controller Port 1 output driver
++      strength.
++
++      This property is optional. If not provided, IO strength configuration is not modified in I3C
++      HUB.
++
++  tp0145-io-strength:
++    enum:
++      - 20Ohms
++      - 30Ohms
++      - 40Ohms
++      - 50Ohms
++    description: |
++      I3C HUB Target Ports 0/1/4/5 IO strength setting to control the Target Ports 0/1/4/5 output
++      driver strength.
++
++      This property is optional. If not provided, IO strength configuration is not modified in I3C
++      HUB.
++
++  tp2367-io-strength:
++    enum:
++      - 20Ohms
++      - 30Ohms
++      - 40Ohms
++      - 50Ohms
++    description: |
++      I3C HUB Target Ports 2/3/6/7 IO strength setting to control the Target Ports 2/3/6/7 output
++      driver strength.
++
++      This property is optional. If not provided, IO strength configuration is not modified in I3C
++      HUB.
++
++  id:
++    enum:
++      - 0
++      - 1
++      - 3
++    description: |
++      I3C HUB ID based on CSEL pin. There are three possible values:
++      0 - CP0 is selected as primary Controller Port
++      1 - Primary Controller Port is selected by software by writing the REG#56
++      3 - CP1 is selected as primary Controller Port
++
++      I3C HUB driver reads CSEL pin status (REG#121[5:4]) and tries to find DT node with matching
++      value in 'id' property.
++
++      This property is optional. If not provided, DT node can only be used by the I3C HUB driver if
++      there is no others with matching 'id' or 'id-cp1'. If there is a multiple DT nodes with no
++      'id' property - the first one will be chosen by I3C HUB driver. If there is a multiple DT
++      nodes with matching 'id' property - the first one will be chosen by I3C HUB driver.
++
++      If both 'id' and 'id-cp1' are available, DT node will chosen only when both values match those
++      read from I3C HUB.
++
++  id-cp1:
++    enum:
++      - 0
++      - 1
++      - 2
++      - 3
++    description: |
++      I3C HUB ID based on CP1 SDA and SCL pins state probed during power on.
++
++      I3C HUB driver reads CP1 SDA and SCL pin status and tries to find DT node with matching value
++      in 'id-cp1' property.
++
++      This property is optional. If not provided, DT node can only be used by the I3C HUB
++      driver if there is no others with matching 'id' or 'id-cp1'. If there is a multiple DT nodes
++      with no 'id-cp1' property - the first one will be chosen by I3C HUB driver. If there is a
++      multiple DT nodes with matching 'id-cp1' property - the first one will be chosen by I3C HUB
++      driver.
++
++      If both 'id' and 'id-cp1' are available, DT node will chosen only when both values match those
++      read from I3C HUB.
++
++patternProperties:
++  "@[0-9]$":
++    type: object
++    description: |
++      I3C HUB Target Port child, should be named: target-port@<target-port-id>
++
++    properties:
++      mode:
++        enum:
++          - disabled
++          - i3c
++          - smbus
++          - gpio
++        description: |
++          I3C HUB Target Port mode setting to control Target Port functionality.
++
++          This property is optional. If not provided, Target Port mode configuration is not modified
++          in I3C HUB.
++
++      pullup:
++        enum:
++          - disabled
++          - enabled
++        description: |
++          I3C HUB Target Port pull-up setting to disable/enable Target Port pull-up.
++
++          This property is optional. If not provided, Target Port pull-up configuration is not
++          modified in I3C HUB.
++
++      always-enable:
++        type: boolean
++        description: |
++          I3C HUB Target Port settings to control the port enable/disable policy.
++
++          This property is optional. If not provided, Target Port is enabled only on accessing to
++          the devices connected to it and the port is disabled automatically after the accessing
++          is done. If provided, the Target Port is always enabled.
++
++    patternProperties:
++      "@0,0$":
++        type: object
++        description: |
++          Backend for handling SMBus mode, should be named: backend@0,0
++          Adding this node installs the backed for handling SMBus Target mode communication.
++
++        properties:
++          compatible:
++            description:
++              Compatible of the I2C/SMBus backend.
++
++          target-reg:
++            description:
++              Target address used for Target Port in the I3C HUB configured as SMBus Target mode.
++
++additionalProperties: true
++
++examples:
++  - |
++    i3c-master@d040000 {
++      #address-cells = <1>;
++      #size-cells = <0>;
++
++      hub@0,0 {
++        cp0-ldo-en = "disabled";
++        cp1-ldo-en = "enabled";
++        cp0-ldo-volt = "1.0V";
++        cp1-ldo-volt = "1.1V";
++        tp0145-ldo-en = "enabled";
++        tp2367-ldo-en = "disabled";
++        tp0145-ldo-volt = "1.2V";
++        tp2367-ldo-volt = "1.8V";
++        tp0145-pullup = "2k";
++        tp2367-pullup = "500R";
++        tp0145-io-strength = "50Ohms";
++        tp2367-io-strength = "30Ohms";
++        cp0-io-strength = "20Ohms";
++        cp1-io-strength = "40Ohms";
++
++        target-port@0 {
++          mode = "i3c";
++          pullup = "enabled";
++          always_enable;
++        };
++        target-port@1 {
++          mode = "smbus";
++          pullup = "enabled";
++          backend@0,0{
++              compatible = "slave-mqueue";
++              target-reg = <0x10>;
++          };
++        };
++        target-port@2 {
++          mode = "gpio";
++          pullup = "disabled";
++        };
++        target-port@3 {
++          mode = "disabled";
++          pullup = "disabled";
++        };
++      };
++    };
++
++  - |
++    i3c-master@d040000 {
++      #address-cells = <1>;
++      #size-cells = <0>;
++
++      hub@70,3C000000100 {
++        reg = <0x70 0x3C0 0x00000100>;
++        assigned-address = <0x70>;
++        dcr = <0xC2>;
++
++        cp0-ldo-en = "disabled";
++        cp1-ldo-en = "enabled";
++        cp0-ldo-volt = "1.0V";
++        cp1-ldo-volt = "1.1V";
++        tp0145-ldo-en = "enabled";
++        tp2367-ldo-en = "disabled";
++        tp0145-ldo-volt = "1.2V";
++        tp2367-ldo-volt = "1.8V";
++        tp0145-pullup = "2k";
++        tp2367-pullup = "500R";
++        tp0145-io-strength = "50Ohms";
++        tp2367-io-strength = "30Ohms";
++        cp0-io-strength = "20Ohms";
++        cp1-io-strength = "40Ohms";
++
++        target-port@0 {
++          mode = "i3c";
++          pullup = "enabled";
++          always-enable;
++        };
++        target-port@1 {
++          mode = "smbus";
++          pullup = "enabled";
++          backend@0,0{
++              compatible = "slave-mqueue";
++              target-reg = <0x12>;
++          };
++        };
++        target-port@2 {
++          mode = "gpio";
++          pullup = "disabled";
++        };
++        target-port@3 {
++          mode = "disabled";
++          pullup = "disabled";
++        };
++      };
++    };
+-- 
+2.43.0
+

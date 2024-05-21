@@ -1,4 +1,4 @@
-From 2a5f04ddbe46ef378b2f168a92bbc744190ed41f Mon Sep 17 00:00:00 2001
+From 8e1c5fd78d42f51cf544378fde762e6cccfecaa8 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 12 Feb 2024 14:09:50 -0800
 Subject: [PATCH] ARM: dts: aspeed: Enable jtag1 in fblite-r1 dts

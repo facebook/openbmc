@@ -59,37 +59,9 @@ fixup_phy_onlyevt() {
     echo -e "\nsetting PHY CHIP 88E1512 mode."
 }
 
-# set RGMII Delay
-setup_rgmii_delay()
-{
-    SCU350=$(scu_addr 350)
-    # SCU350 MAC34 Interface Clock Delay Setting
-    #   31     R/W     RGMII 125MHz clock source selection
-    #                   0: PAD RGMIICK
-    #                   1: Internal PLL
-    #   30     R/W     RMII4 50MHz RCLK output enable
-    #                   0: Disable
-    #                   1: Enable
-    #   29     R/W     RMII3 50MHz RCLK output enable
-    #                   0: Disable
-    #                   1: Enable
-    #   28:26  ---     Reserved
-    #   25     R/W     MAC#4 RMII transmit data at clock falling edge
-    #   24     R/W     MAC#3 RMII transmit data at clock falling edge
-    #   23:18  R/W     MAC#4 RMII RCLK/RGMII RXCLK (1G) clock input delay
-    #   17:12  R/W     MAC#3 RMII RCLK/RGMII RXCLK (1G) clock input delay
-    #   11:6   R/W     MAC#4 RGMII TXCLK (1G) clock output delay
-    #   5:0    R/W     MAC#3 RGMII TXCLK (1G) clock output delay
-
-    value=$(devmem "$SCU350")
-    # set MAC4 TX4 clock delay to 8
-    value=$((value & 0xFFFFF03F ))
-    value=$((value | (8 << 6) ))
-
-    devmem "$SCU350" 32 $value
-}
 
 fixup_phy_onlyevt
 # set LPC signal strength pin to 0 (weakest)
 setup_LPC_signal_strength 0
-setup_rgmii_delay
+# set MAC4 TX4 clock delay to 8
+ast2600_setup_RGMII34_clock_delay MAC4_TX=8

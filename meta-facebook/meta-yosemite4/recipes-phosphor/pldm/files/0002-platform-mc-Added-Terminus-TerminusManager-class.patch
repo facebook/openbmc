@@ -1,4 +1,4 @@
-From 6283144d70246f16093c72406831c7c3ab9f1e12 Mon Sep 17 00:00:00 2001
+From 3173f5c8f5d03b540bf7a2a9a2fcad07cb9cbe41 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 22 Feb 2022 15:40:17 +0000
 Subject: [PATCH 02/11] platform-mc: Added Terminus/TerminusManager class
@@ -45,10 +45,10 @@ Change-Id: Ifa5bdfff50648f1d7fba8710e160de662e8f9e06
  create mode 100644 platform-mc/test/terminus_test.cpp
 
 diff --git a/meson.build b/meson.build
-index 93b4728..713b204 100644
+index 827d1f0..100c0f9 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -168,6 +168,10 @@ executable(
+@@ -169,6 +169,10 @@ executable(
    'fw-update/device_updater.cpp',
    'fw-update/watch.cpp',
    'fw-update/update_manager.cpp',
@@ -59,7 +59,7 @@ index 93b4728..713b204 100644
    'requester/mctp_endpoint_discovery.cpp',
    implicit_include_directories: false,
    dependencies: deps,
-@@ -206,5 +210,6 @@ if get_option('tests').allowed()
+@@ -207,5 +211,6 @@ if get_option('tests').allowed()
    subdir('fw-update/test')
    subdir('host-bmc/test')
    subdir('requester/test')

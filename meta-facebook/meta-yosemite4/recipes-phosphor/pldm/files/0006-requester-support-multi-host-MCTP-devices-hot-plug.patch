@@ -1,4 +1,4 @@
-From e5b80d4135d3029b7b5b4378ac47db95ed45e21d Mon Sep 17 00:00:00 2001
+From 3c08ac9fea916a1217458010c0e72be7ac79d57b Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 06/11] requester: support multi-host MCTP devices hot plug
@@ -53,10 +53,10 @@ index e42677c..744adb8 100644
 +                (const override));
  };
 diff --git a/common/utils.cpp b/common/utils.cpp
-index e9b2c68..230ad69 100644
+index f7a0ae0..9441f9b 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -581,6 +581,23 @@ PropertyMap
+@@ -404,6 +404,23 @@ PropertyMap
      return bus.call(method, dbusTimeout).unpack<PropertyMap>();
  }
  
@@ -81,10 +81,10 @@ index e9b2c68..230ad69 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 10038b4..8a823fd 100644
+index 3e8e19e..d7eedbe 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -226,6 +226,10 @@ class DBusHandlerInterface
+@@ -195,6 +195,10 @@ class DBusHandlerInterface
      virtual PropertyMap
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
                                   const char* dbusInterface) const = 0;
@@ -95,7 +95,7 @@ index 10038b4..8a823fd 100644
  };
  
  /**
-@@ -304,6 +308,9 @@ class DBusHandler : public DBusHandlerInterface
+@@ -286,6 +290,9 @@ class DBusHandler : public DBusHandlerInterface
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
                                   const char* dbusInterface) const override;
  
@@ -106,10 +106,10 @@ index 10038b4..8a823fd 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index a264354..559dd5b 100644
+index c656762..af5aa23 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -181,6 +181,7 @@ executable(
+@@ -182,6 +182,7 @@ executable(
    'platform-mc/numeric_sensor.cpp',
    'platform-mc/event_manager.cpp',
    'requester/mctp_endpoint_discovery.cpp',

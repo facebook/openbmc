@@ -1,4 +1,4 @@
-From de4e10d86ef6f006efc96e924377d2b5133cf421 Mon Sep 17 00:00:00 2001
+From 68a7faaf088183de9ab2271539da42fcaf7c8241 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 7 Feb 2024 13:52:07 +0800
 Subject: [PATCH 08/11] platform-mc: Add OEM Meta event handler
@@ -67,10 +67,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
 diff --git a/meson.build b/meson.build
-index 7526a18..cc1076f 100644
+index f662f0c..7093c79 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -185,6 +185,7 @@ executable(
+@@ -186,6 +186,7 @@ executable(
    'platform-mc/event_manager.cpp',
    'requester/mctp_endpoint_discovery.cpp',
    'requester/configuration_discovery_handler.cpp',

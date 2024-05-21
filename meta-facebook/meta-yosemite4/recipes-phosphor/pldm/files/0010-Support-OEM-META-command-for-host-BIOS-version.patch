@@ -1,4 +1,4 @@
-From c6651892f4ce5c0a8bb352214ba5ad3a6ef77ab5 Mon Sep 17 00:00:00 2001
+From 330e04d8b7932abd6275d000394b4cfc5e7901f4 Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
 Subject: [PATCH 10/11] Support OEM-META command for host BIOS version
@@ -23,10 +23,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
 
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index d7b72a0..c084239 100644
+index 523ca46..f04be77 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -64,6 +64,7 @@ if get_option('oem-meta').allowed()
+@@ -66,6 +66,7 @@ if get_option('oem-meta').allowed()
    sources += [
      '../oem/meta/libpldmresponder/oem_meta_file_io.cpp',
      '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',

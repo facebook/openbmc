@@ -1,4 +1,4 @@
-From 1be3179cbe80099272f5891115a9514b9c2f5ab4 Mon Sep 17 00:00:00 2001
+From fc452ca61815b007fd4140a11a9aa8071215086a Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 9 Jan 2024 21:25:26 +0700
 Subject: [PATCH 01/11] requester: Add coroutine API
@@ -27,12 +27,12 @@ Signed-off-by: Khang Nguyen <khangng@amperecomputing.com>
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Change-Id: I7b47d15ac15f6ae661ec94dca6a281844b939a44
 ---
- requester/handler.hpp           | 160 ++++++++++++++++++++++++++++++++
+ requester/handler.hpp           | 159 ++++++++++++++++++++++++++++++++
  requester/test/handler_test.cpp | 140 ++++++++++++++++++++++++++++
- 2 files changed, 300 insertions(+)
+ 2 files changed, 299 insertions(+)
 
 diff --git a/requester/handler.hpp b/requester/handler.hpp
-index 5fc5f7b..81d3c22 100644
+index 5fc5f7b..4f0b788 100644
 --- a/requester/handler.hpp
 +++ b/requester/handler.hpp
 @@ -9,6 +9,7 @@
@@ -91,7 +91,7 @@ index 5fc5f7b..81d3c22 100644
    private:
      PldmTransport* pldmTransport; //!< PLDM transport object
      sdeventplus::Event& event; //!< reference to PLDM daemon's main event loop
-@@ -367,6 +402,131 @@ class Handler
+@@ -367,6 +402,130 @@ class Handler
      }
  };
  
@@ -153,8 +153,7 @@ index 5fc5f7b..81d3c22 100644
 +    void onComplete(mctp_eid_t eid, const pldm_msg* response, size_t len)
 +    {
 +        stopCallback.reset();
-+        assert(eid == this->requestKey.eid);
-+        if (!response || !len)
++        if (!response || !len || eid != this->requestKey.eid)
 +        {
 +            return stdexec::set_error(std::move(receiver), (int)PLDM_ERROR);
 +        }

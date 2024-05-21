@@ -1,4 +1,4 @@
-From f0b59dd298dd5632770d4f44aa01ea7aabd9284b Mon Sep 17 00:00:00 2001
+From 205e110d12a642380468d277baead84e75f16637 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 07/11] Support OEM-META write file request for post code
@@ -29,10 +29,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 230ad69..f7f31e3 100644
+index 9441f9b..1d9a068 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -448,6 +448,21 @@ GetSubTreeResponse
+@@ -254,6 +254,21 @@ GetSubTreeResponse
      return response;
  }
  
@@ -51,25 +51,25 @@ index 230ad69..f7f31e3 100644
 +    return response;
 +}
 +
- void reportError(const char* errorMsg)
- {
-     auto& bus = pldm::utils::DBusHandler::getBus();
+ GetSubTreePathsResponse DBusHandler::getSubTreePaths(
+     const std::string& objectPath, int depth,
+     const std::vector<std::string>& ifaceList) const
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 8a823fd..1f3cb7a 100644
+index d7eedbe..796865c 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -198,6 +198,8 @@ using ServiceName = std::string;
- using Interfaces = std::vector<std::string>;
+@@ -163,6 +163,8 @@ using Interfaces = std::vector<std::string>;
  using MapperServiceMap = std::vector<std::pair<ServiceName, Interfaces>>;
  using GetSubTreeResponse = std::vector<std::pair<ObjectPath, MapperServiceMap>>;
+ using GetSubTreePathsResponse = std::vector<std::string>;
 +using GetAncestorsResponse =
 +    std::vector<std::pair<ObjectPath, MapperServiceMap>>;
  using PropertyMap = std::map<std::string, PropertyValue>;
  using InterfaceMap = std::map<std::string, PropertyMap>;
  using ObjectValueTree = std::map<sdbusplus::message::object_path, InterfaceMap>;
-@@ -216,6 +218,10 @@ class DBusHandlerInterface
-         getSubtree(const std::string& path, int depth,
-                    const std::vector<std::string>& ifaceList) const = 0;
+@@ -185,6 +187,10 @@ class DBusHandlerInterface
+         getSubTreePaths(const std::string& objectPath, int depth,
+                         const std::vector<std::string>& ifaceList) const = 0;
  
 +    virtual GetAncestorsResponse
 +        getAncestors(const std::string& path,
@@ -78,7 +78,7 @@ index 8a823fd..1f3cb7a 100644
      virtual void setDbusProperty(const DBusMapping& dBusMap,
                                   const PropertyValue& value) const = 0;
  
-@@ -279,6 +285,20 @@ class DBusHandler : public DBusHandlerInterface
+@@ -248,6 +254,20 @@ class DBusHandler : public DBusHandlerInterface
      GetSubTreeResponse
          getSubtree(const std::string& path, int depth,
                     const std::vector<std::string>& ifaceList) const override;
@@ -97,21 +97,21 @@ index 8a823fd..1f3cb7a 100644
 +        getAncestors(const std::string& path,
 +                     const std::vector<std::string>& ifaceList) const override;
  
-     /** @brief Get property(type: variant) from the requested dbus
+     /** @brief Get Subtree path response from the mapper
       *
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 45594b0..d7b72a0 100644
+index 151806b..523ca46 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -28,6 +28,7 @@ sources = [
-   '../host-bmc/dbus_to_host_effecters.cpp',
+@@ -30,6 +30,7 @@ sources = [
    '../host-bmc/host_condition.cpp',
    '../host-bmc/custom_dbus.cpp',
+   '../host-bmc/utils.cpp',
 +  '../requester/configuration_discovery_handler.cpp',
    'event_parser.cpp'
  ]
  
-@@ -56,6 +57,16 @@ if get_option('oem-ibm').allowed()
+@@ -58,6 +59,16 @@ if get_option('oem-ibm').allowed()
    ]
  endif
  
@@ -129,10 +129,10 @@ index 45594b0..d7b72a0 100644
    'pldmresponder',
    sources,
 diff --git a/meson.build b/meson.build
-index 559dd5b..7526a18 100644
+index af5aa23..f662f0c 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -60,6 +60,9 @@ if get_option('oem-ibm').allowed()
+@@ -61,6 +61,9 @@ if get_option('oem-ibm').allowed()
    conf_data.set('DMA_MAXSIZE', get_option('oem-ibm-dma-maxsize'))
    add_project_arguments('-DOEM_IBM', language : ['c', 'cpp'])
  endif

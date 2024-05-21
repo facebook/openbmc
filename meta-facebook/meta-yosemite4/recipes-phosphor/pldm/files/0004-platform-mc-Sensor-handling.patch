@@ -1,4 +1,4 @@
-From e184b8c727c250b15b1f403f372991847328f138 Mon Sep 17 00:00:00 2001
+From 6a45321d823c2398f61d4c66325c3122cea5dde7 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
 Subject: [PATCH 04/11] platform-mc: Sensor handling
@@ -43,10 +43,10 @@ Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
  create mode 100644 platform-mc/test/sensor_manager_test.cpp
 
 diff --git a/meson.build b/meson.build
-index 713b204..6ceb975 100644
+index 100c0f9..68b1cc4 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -71,6 +71,10 @@ if get_option('transport-implementation') == 'mctp-demux'
+@@ -72,6 +72,10 @@ if get_option('transport-implementation') == 'mctp-demux'
  elif get_option('transport-implementation') == 'af-mctp'
    conf_data.set('PLDM_TRANSPORT_WITH_AF_MCTP', 1)
  endif
@@ -57,7 +57,7 @@ index 713b204..6ceb975 100644
  
  configure_file(output: 'config.h',
    configuration: conf_data
-@@ -172,6 +176,8 @@ executable(
+@@ -173,6 +177,8 @@ executable(
    'platform-mc/terminus.cpp',
    'platform-mc/platform_manager.cpp',
    'platform-mc/manager.cpp',

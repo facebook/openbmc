@@ -20,6 +20,5 @@
 plat_i2c_tree = {
     "3-0056": {"name": "24c64", "driver": "at24"},
     "6-0053": {"name": "24c64", "driver": "at24"},
-    "8-0051": {"name": "24c64", "driver": "at24"},
     "12-0060": {"name": "mcbcpld", "driver": "mcbcpld"},
 }

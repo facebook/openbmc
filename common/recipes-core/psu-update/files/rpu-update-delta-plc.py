@@ -15,7 +15,7 @@ parser = get_parser()
 
 
 def get_rpu_revision(addr):
-    vers_raw = rmd.read(addr, 0x1BB9, 0x4, timeout=3000)
+    vers_raw = rmd.read(addr, 0x19E8, 0x4, timeout=3000)
     if len(vers_raw) != 4:
         print("WARNING: Read wrong number of registers")
     vers = bytes()
@@ -99,7 +99,7 @@ def load_fw(path):
 
 
 def write_block(addr, block):
-    rmd.write(addr, block.addr, block.data)
+    rmd.write(addr, block.addr, block.data, timeout=3000)
 
 
 def write_fw(addr, fw_file):

@@ -22,6 +22,41 @@
 #shellcheck disable=SC2086
 . /usr/local/bin/openbmc-utils.sh
 
+# 
+# Background: 
+# The current design utilizes the CPLD as a temporary SPI multiplexer 
+# for both the IOB-FPGA and BIOS flashes. 
+#
+# This necessitates the BMC to configure the CPLD to route the SPI lines
+# to the desired device before accessing it.
+# 
+# An alternative approach would be to leverage the CPLD 
+# to manage the chip select lines (CS lines) for both SPI devices. 
+#
+# This would enable the BMC to see both the IOB flash and BIOS flash concurrently,
+# eliminating the need for continual CPLD configuration.
+# 
+# Here's an example of how CS lines could be assigned:
+# 
+# SPI1CS0: IOB_FLASH
+# SPI1CS1: BIOS_FLASH
+# 
+# This option is not currently pursued due to several challenges:
+# 
+# a. Kernel Driver Limitation: The existing Aspeed driver integrated
+#    within the Linux kernel version 6.6 cannot read properly from devices connected to CS1.
+# b. Driver Maintenance Burden: While Aspeed offers updated drivers that address this limitation,
+#    incorporating them into OpenBMC-Linux necessitates backporting numerous patches,
+#    which requires ongoing maintenance.
+# c. Mainstream Kernel Integration Status: These updated drivers are not yet part of the standard Linux kernel,
+#    introducing additional risk associated with implementing these changes.
+# 
+# Summary:
+# 
+# Therefore, the system adopts the same design principle employed in previous platforms,
+#  which involves the CPLD acting as an SPI mux for selecting between the IOB flash and BIOS flash.
+#
+
 SPI1_MASTER="1e630000.spi"
 ASPEED_SMC_DRIVER_DIR="/sys/bus/platform/drivers/spi-aspeed-smc"
 

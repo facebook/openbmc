@@ -1,0 +1,214 @@
+From da0505082265afd40b2940d6e95930e74b4665cb Mon Sep 17 00:00:00 2001
+From: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+Date: Tue, 21 May 2024 10:04:19 +0800
+Subject: [PATCH v1] net/ncsi: Fix the multi thread manner of NCSI driver
+
+Currently NCSI driver will send several NCSI commands back to back without
+waiting the response of previous NCSI command or timeout in some state
+when NIC have multi channel. This operation against the single thread
+manner defined by NCSI SPEC(section 6.3.2.3 in DSP0222_1.1.1)
+
+According to NCSI SPEC(section 6.2.13.1 in DSP0222_1.1.1), we should probe
+one channel at a time by sending NCSI commands (Clear initial state, Get
+version ID, Get capabilities...), than repeat this steps until the max
+number of channels which we got from NCSI command (Get capabilities) has
+been probed.
+
+https://lore.kernel.org/netdev/20240521030922.3973426-1-delphine_cc_chiu@wiwynn.com/
+
+Signed-off-by: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+---
+ net/ncsi/internal.h    |  2 ++
+ net/ncsi/ncsi-manage.c | 73 +++++++++++++++++++++---------------------
+ net/ncsi/ncsi-rsp.c    |  4 ++-
+ 3 files changed, 41 insertions(+), 38 deletions(-)
+
+diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
+index a07c41411..7b3012770 100644
+--- a/net/ncsi/internal.h
++++ b/net/ncsi/internal.h
+@@ -330,6 +330,7 @@ struct ncsi_dev_priv {
+ 	spinlock_t          lock;            /* Protect the NCSI device    */
+ 	unsigned int        package_probe_id;/* Current ID during probe    */
+ 	unsigned int        package_num;     /* Number of packages         */
++	unsigned int        channel_probe_id;/* Current cahnnel ID during probe */
+ 	struct list_head    packages;        /* List of packages           */
+ 	struct ncsi_channel *hot_channel;    /* Channel was ever active    */
+ 	struct ncsi_request requests[256];   /* Request table              */
+@@ -349,6 +350,7 @@ struct ncsi_dev_priv {
+ 	bool                mlx_multi_host;  /* Enable multi host Mellanox */
+ 	u32                 package_whitelist; /* Packages to configure    */
+ 	unsigned int        ctrl_flags;      /* NCSI control flags */
++	unsigned char       channel_count;     /* Num of channels to probe   */
+ };
+ 
+ struct ncsi_cmd_arg {
+diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
+index 7c8cf1a3a..7a0284ca0 100644
+--- a/net/ncsi/ncsi-manage.c
++++ b/net/ncsi/ncsi-manage.c
+@@ -510,17 +510,19 @@ static void ncsi_suspend_channel(struct ncsi_dev_priv *ndp)
+ 
+ 		break;
+ 	case ncsi_dev_state_suspend_gls:
+-		ndp->pending_req_num = np->channel_num;
++		ndp->pending_req_num = 1;
+ 
+ 		nca.type = NCSI_PKT_CMD_GLS;
+ 		nca.package = np->id;
++		nca.channel = ndp->channel_probe_id;
++		ret = ncsi_xmit_cmd(&nca);
++		if (ret)
++			goto error;
++		ndp->channel_probe_id++;
+ 
+-		nd->state = ncsi_dev_state_suspend_dcnt;
+-		NCSI_FOR_EACH_CHANNEL(np, nc) {
+-			nca.channel = nc->id;
+-			ret = ncsi_xmit_cmd(&nca);
+-			if (ret)
+-				goto error;
++		if (ndp->channel_probe_id == ndp->channel_count) {
++			ndp->channel_probe_id = 0;
++			nd->state = ncsi_dev_state_suspend_dcnt;
+ 		}
+ 
+ 		break;
+@@ -1346,7 +1348,6 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ {
+ 	struct ncsi_dev *nd = &ndp->ndev;
+ 	struct ncsi_package *np;
+-	struct ncsi_channel *nc;
+ 	struct ncsi_cmd_arg nca;
+ 	unsigned char index;
+ 	int ret;
+@@ -1424,23 +1425,6 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 
+ 		nd->state = ncsi_dev_state_probe_cis;
+ 		break;
+-	case ncsi_dev_state_probe_cis:
+-		ndp->pending_req_num = NCSI_RESERVED_CHANNEL;
+-
+-		/* Clear initial state */
+-		nca.type = NCSI_PKT_CMD_CIS;
+-		nca.package = ndp->active_package->id;
+-		for (index = 0; index < NCSI_RESERVED_CHANNEL; index++) {
+-			nca.channel = index;
+-			ret = ncsi_xmit_cmd(&nca);
+-			if (ret)
+-				goto error;
+-		}
+-
+-		nd->state = ncsi_dev_state_probe_gvi;
+-		if (IS_ENABLED(CONFIG_NCSI_OEM_CMD_KEEP_PHY))
+-			nd->state = ncsi_dev_state_probe_keep_phy;
+-		break;
+ 	case ncsi_dev_state_probe_keep_phy:
+ 		ndp->pending_req_num = 1;
+ 
+@@ -1453,14 +1437,17 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 
+ 		nd->state = ncsi_dev_state_probe_gvi;
+ 		break;
++	case ncsi_dev_state_probe_cis:
+ 	case ncsi_dev_state_probe_gvi:
+ 	case ncsi_dev_state_probe_gc:
+ 	case ncsi_dev_state_probe_gls:
+ 		np = ndp->active_package;
+-		ndp->pending_req_num = np->channel_num;
++		ndp->pending_req_num = 1;
+ 
+-		/* Retrieve version, capability or link status */
+-		if (nd->state == ncsi_dev_state_probe_gvi)
++		/* Clear initial state Retrieve version, capability or link status */
++		if (nd->state == ncsi_dev_state_probe_cis)
++			nca.type = NCSI_PKT_CMD_CIS;
++		else if (nd->state == ncsi_dev_state_probe_gvi)
+ 			nca.type = NCSI_PKT_CMD_GVI;
+ 		else if (nd->state == ncsi_dev_state_probe_gc)
+ 			nca.type = NCSI_PKT_CMD_GC;
+@@ -1468,19 +1455,29 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 			nca.type = NCSI_PKT_CMD_GLS;
+ 
+ 		nca.package = np->id;
+-		NCSI_FOR_EACH_CHANNEL(np, nc) {
+-			nca.channel = nc->id;
+-			ret = ncsi_xmit_cmd(&nca);
+-			if (ret)
+-				goto error;
+-		}
++		nca.channel = ndp->channel_probe_id;
+ 
+-		if (nd->state == ncsi_dev_state_probe_gvi)
++		ret = ncsi_xmit_cmd(&nca);
++		if (ret)
++			goto error;
++
++		if (nd->state == ncsi_dev_state_probe_cis) {
++			nd->state = ncsi_dev_state_probe_gvi;
++			if (IS_ENABLED(CONFIG_NCSI_OEM_CMD_KEEP_PHY) && ndp->channel_probe_id == 0)
++				nd->state = ncsi_dev_state_probe_keep_phy;
++		} else if (nd->state == ncsi_dev_state_probe_gvi) {
+ 			nd->state = ncsi_dev_state_probe_gc;
+-		else if (nd->state == ncsi_dev_state_probe_gc)
++		} else if (nd->state == ncsi_dev_state_probe_gc) {
+ 			nd->state = ncsi_dev_state_probe_gls;
+-		else
++		} else {
++			nd->state = ncsi_dev_state_probe_cis;
++			ndp->channel_probe_id++;
++		}
++
++		if (ndp->channel_probe_id == ndp->channel_count) {
++			ndp->channel_probe_id = 0;
+ 			nd->state = ncsi_dev_state_probe_dp;
++		}
+ 		break;
+ 	case ncsi_dev_state_probe_dp:
+ 		ndp->pending_req_num = 1;
+@@ -1782,6 +1779,7 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+ 		ndp->requests[i].ndp = ndp;
+ 		timer_setup(&ndp->requests[i].timer, ncsi_request_timeout, 0);
+ 	}
++	ndp->channel_count = NCSI_RESERVED_CHANNEL;
+ 
+ 	spin_lock_irqsave(&ncsi_dev_lock, flags);
+ 	list_add_tail_rcu(&ndp->node, &ncsi_dev_list);
+@@ -1834,6 +1832,7 @@ int ncsi_start_dev(struct ncsi_dev *nd)
+ 
+ 	if (!(ndp->flags & NCSI_DEV_PROBED)) {
+ 		ndp->package_probe_id = 0;
++		ndp->channel_probe_id = 0;
+ 		nd->state = ncsi_dev_state_probe;
+ 		schedule_work(&ndp->work);
+ 		return 0;
+diff --git a/net/ncsi/ncsi-rsp.c b/net/ncsi/ncsi-rsp.c
+index 3e5e5cf7b..5130e30eb 100644
+--- a/net/ncsi/ncsi-rsp.c
++++ b/net/ncsi/ncsi-rsp.c
+@@ -795,12 +795,13 @@ static int ncsi_rsp_handler_gc(struct ncsi_request *nr)
+ 	struct ncsi_rsp_gc_pkt *rsp;
+ 	struct ncsi_dev_priv *ndp = nr->ndp;
+ 	struct ncsi_channel *nc;
++	struct ncsi_package *np;
+ 	size_t size;
+ 
+ 	/* Find the channel */
+ 	rsp = (struct ncsi_rsp_gc_pkt *)skb_network_header(nr->rsp);
+ 	ncsi_find_package_and_channel(ndp, rsp->rsp.common.channel,
+-				      NULL, &nc);
++				      &np, &nc);
+ 	if (!nc)
+ 		return -ENODEV;
+ 
+@@ -835,6 +836,7 @@ static int ncsi_rsp_handler_gc(struct ncsi_request *nr)
+ 	 */
+ 	nc->vlan_filter.bitmap = U64_MAX;
+ 	nc->vlan_filter.n_vids = rsp->vlan_cnt;
++	np->ndp->channel_count = rsp->channel_cnt;
+ 
+ 	return 0;
+ }
+-- 
+2.25.1
+

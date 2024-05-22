@@ -85,6 +85,7 @@ SRC_URI:append = " \
     file://0171-meta-facebook-common-add-pcc-config.patch \
     file://0172-drivers-watchdog-ast2600-support-bootstatus.patch \
     file://0173-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
+    file://0174-net-ncsi-Fix-the-multi-thread-manner-of-NCSI-driv.patch \
 "
 
 #

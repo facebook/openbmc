@@ -148,7 +148,9 @@ read_kv_snr(uint8_t fru, uint8_t sensor_num, float *value) {
 static int
 read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = -1;
+  char err_code[32] = {0};
   static uint8_t snr_retry = 0;
+  static bool snr_failed = false, fan_asserted = false;
 
   if (!gpio_get_value_by_shadow("GPU_FPGA_READY_ISO_R"))  {
     return ret;
@@ -162,9 +164,36 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
       return ret;
     }
     snr_retry = 0;
+
+    kv_get("gpu_http_err", err_code, NULL, 0);
+    if(!strcmp(err_code, "500") || snr_failed) {
+      if(fan_asserted == false) {
+        fan_asserted = true;
+        ret = system("/usr/local/bin/setup-gpu-fan-ctrl.sh enable");
+        if(ret) {
+          syslog(LOG_WARNING, "Failed to perform GPU fan control");
+        }
+      }
+    }
+    else{
+      if(fan_asserted == true) {
+        fan_asserted = false;
+        ret = system("/usr/local/bin/setup-gpu-fan-ctrl.sh disable");
+        if(ret) {
+          syslog(LOG_WARNING, "Failed to perform GPU fan control");
+        }
+      }
+    }
+    snr_failed = false;
   }
 
   ret = read_kv_snr(fru, sensor_num, value);
+  if(ubb_sensor_map[sensor_num].units == TEMP) {
+    if(*value == 0 ||
+       *value < ubb_sensor_map[sensor_num].snr_thresh.lcr_thresh) {
+      snr_failed |= true;
+    }
+  }
 
   return ret;
 }

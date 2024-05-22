@@ -351,7 +351,7 @@ bool containStr(const std::string& str, const std::initializer_list<std::string>
 }
 
 void getMetricReports() {
-  std::string url, urlUBB;
+  std::string url, urlUBB, urlHttpErr;
   std::string snr_path;
   std::string snr_val;
   std::string snr_valid = "gpu_snr_valid";
@@ -362,6 +362,17 @@ void getMetricReports() {
     url = HGX_TELEMETRY_SERVICE_DVT;
   }
   else if (get_gpu_config() == GPU_CONFIG_UBB) {
+    try{
+      urlHttpErr = HMC_URL + "Chassis/RETIMER_0/Sensors/RETIMER_0_TEMP";
+      hgx.get(urlHttpErr);
+      kv::set("gpu_http_err", "NA");
+    }
+    catch (const HTTPException& e) {
+      if (e.errorCode == 500) {
+        kv::set("gpu_http_err", "500");
+      }
+    }
+
     url = HMC_URL + "TelemetryService/MetricReports/All";
     urlUBB = HMC_URL + "Chassis/UBB";
     json jUBB = json::parse(hgx.get(urlUBB));

@@ -87,6 +87,7 @@ LOCAL_URI = " \
     file://rest_utils.py \
     file://rest_fscd_sensor_data.py \
     file://rest_qsfp_thermal.py \
+    file://rest_board_revision.py \
     file://rest_fwinfo.py \
     file://rest_debug.py \
     file://jsonschema_lite.py \

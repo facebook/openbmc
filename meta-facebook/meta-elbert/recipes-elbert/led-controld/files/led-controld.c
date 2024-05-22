@@ -20,8 +20,8 @@
 #include "led-controld.h"
 
 int elbert_write_sysfs(char* str, unsigned int val) {
-  char buf[ELBERT_BUFFER_SZ];
-  snprintf(buf, ELBERT_BUFFER_SZ, "echo %u > %s\n", val, str);
+  char buf[ELBERT_BUFFER_SZ + 11];
+  snprintf(buf, sizeof(buf), "echo %u > %s\n", val, str);
   return system(buf);
 }
 
@@ -210,7 +210,7 @@ void elbert_update_psu_led(struct system_status* status) {
 
     status->psu_ok[psu - 1] = this_psu_ok;
   }
-  
+
   if (psu_count < 2){
     all_psu_ok = false;
     syslog(LOG_WARNING, "Less than 2 PSUs detected");

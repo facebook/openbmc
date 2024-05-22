@@ -294,7 +294,7 @@ program_spi_image() {
 
     if [ "$FPGA_TYPE" -ge 0 ] ; then
         # Verify the image type
-        IMG_FPGA_TYPE=$(head -c3 "$ORIGINAL_IMAGE" | hexdump -v -e '/1 "%u\n"' | \
+        IMG_FPGA_TYPE=$(dd if="$ORIGINAL_IMAGE" bs=3 count=1 | hexdump -v -e '/1 "%u\n"' | \
                         tail -n1)
         if [ "$IMG_FPGA_TYPE" != "$FPGA_TYPE" ]; then
             echo "FPGA type in image, $IMG_FPGA_TYPE, does not match expected" \
@@ -446,7 +446,7 @@ read_spi_partition_image() {
 strip_image_header() {
     ORIG_IMAGE="$1"
     NEW_IMAGE="$2"
-    POS=$(head -c4096 "$ORIG_IMAGE" | hexdump -v -e '/1 "%u\n"' | \
+    POS=$(dd if="$ORIG_IMAGE" bs=4096 count=1 | hexdump -v -e '/1 "%u\n"' | \
           (grep -n -e '^0$' || echo 0) | head -n1 | cut -d':' -f1)
     if [ "$POS" -gt 0 ]
     then

@@ -1238,7 +1238,7 @@ check_and_read_sensor_value(uint8_t fru, uint8_t snr_num, const char *device,
                             const char *attr, int *value) {
   char dir_name[LARGEST_DEVICE_NAME + 1];
 
-  if (snr_path[fru][snr_num].name != NULL) {
+  if (snr_path[fru][snr_num].name[0] != 0) {
     if (!device_read(snr_path[fru][snr_num].name, value))
       return 0;
   }
@@ -3600,7 +3600,7 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   sensor_desc_t *snr_desc;
 
   snr_desc = get_sensor_desc(fru, snr_num);
-  strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
+  memcpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
   snr_desc->name[sizeof(snr_desc->name) - 1] = 0;
 
   pal_set_def_key_value();

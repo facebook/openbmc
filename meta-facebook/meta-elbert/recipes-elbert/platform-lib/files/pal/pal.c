@@ -1006,7 +1006,7 @@ pal_get_pim_type(uint8_t fru, int retry) {
   pal_get_fru_name(fru, fru_name);
 
   ret = elbert_eeprom_parse(fru_name, &eeprom);
-  while (ret != 0 || !strstr(eeprom.fbw_product_asset, "88-") && retry--) {
+  while (ret != 0 || (!strstr(eeprom.fbw_product_asset, "88-") && retry--)) {
     msleep(500);
     ret = elbert_eeprom_parse(fru_name, &eeprom);
   }

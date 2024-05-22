@@ -27,7 +27,7 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
 # Handler for getting PIM info
-pim_number_re = re.compile("^PIM ([2-9])\s*:\s*(\S+)")
+pim_number_re = re.compile(r"^PIM ([2-9])\s*:\s*(\S+)")
 
 
 def prepare_pimver():

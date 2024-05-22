@@ -419,7 +419,7 @@ pim_monitor_handler(void *unused) {
   uint8_t pim_type;
   uint8_t bus;
   uint8_t pim_type_old[10] = {PIM_TYPE_UNPLUG};
-  uint8_t pim_status[10];
+  uint8_t pim_status[10] = {0};
   bool thresh_first[10];
 
   memset(thresh_first, true, sizeof(thresh_first));

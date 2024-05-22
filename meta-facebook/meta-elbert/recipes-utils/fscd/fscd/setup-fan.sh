@@ -80,5 +80,4 @@ echo 0 > /tmp/.PIM_F104
 
 echo "Setup fan speed..."
 /usr/local/bin/set_fan_speed.sh 30
-runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

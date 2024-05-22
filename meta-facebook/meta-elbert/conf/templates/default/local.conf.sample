@@ -6,4 +6,4 @@
 MACHINE ??= "elbert"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb-dunfell"
+DISTRO ?= "openbmc-fb-master"

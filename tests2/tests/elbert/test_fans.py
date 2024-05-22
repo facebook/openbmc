@@ -31,8 +31,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         Logger.start(name=self._testMethodName)
         self.read_fans_cmd = "/usr/local/bin/get_fan_speed.sh"
         self.write_fans_cmd = "/usr/local/bin/set_fan_speed.sh"
-        self.kill_fan_ctrl_cmd = ["/usr/bin/sv stop fscd", "/usr/local/bin/wdtcli stop"]
-        self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
+        self.kill_fan_ctrl_cmd = ["/usr/bin/systemctl stop fscd", "/usr/local/bin/wdtcli stop"]
+        self.start_fan_ctrl_cmd = ["/usr/bin/systemctl start fscd"]
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))

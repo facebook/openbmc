@@ -16,3 +16,5 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+
+SENSORD_MONITORED_FRUS="scm smb pim2 pim3 pim4 pim5 pim6 pim7 pim8 pim9 psu1 psu2 psu3 psu4 fan"

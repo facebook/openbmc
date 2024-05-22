@@ -49,3 +49,5 @@ binfiles1 += " \
     rest_beacon.py \
     rest_bmc_board_rev.py \
 "
+
+RDEPENDS:${PN} += "python3-attrs"

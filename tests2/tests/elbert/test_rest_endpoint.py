@@ -201,3 +201,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.verify_endpoint_attributes(
             RestEndpointTest.BMC_BOARD_REV_ENDPOINT, endpoint_bmc_board_rev
         )
+
+    @unittest.skip("FIXME T127573953")
+    def test_endpoint_api_sys_bmc_secondary_boot(self):
+        pass

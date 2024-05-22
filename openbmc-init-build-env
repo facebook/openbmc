@@ -26,6 +26,7 @@ PLAT_DISTRO_OVERRIDES=(
 # master rolling-release platforms
   meta-bletchley:lf-master
   meta-clearcreek:lf-master
+  meta-elbert:lf-master
   meta-fbal:lf-master
   meta-fbdarwin:lf-master
   meta-fbep:lf-master
@@ -54,7 +55,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-yosemite4:lf-master
 # dunfell platforms (pending upgrade)
   meta-cmm:lf-dunfell
-  meta-elbert:lf-dunfell
   meta-fbsp:lf-dunfell
   meta-galaxy100:lf-dunfell
   meta-minipack:lf-dunfell

@@ -48,15 +48,23 @@ hwmon_device_add() {
             echo "Timed out waiting for $driver-$bus-$devId"
             break;
         fi
-        sleep 0.1
+        sleep 0.2
     done
 
-    # If device isn't loaded sucessfully, retry one more time
-    if [ ! -d "/sys/bus/i2c/devices/$bus-00$devId/hwmon/" ]; then
-        echo "Probe of $driver-$bus-$devId failed. Retrying..."
-        i2c_device_delete "$bus" "$devIdHex"
-        i2c_device_add "$bus" "$devIdHex" "$driver"
-    fi
+    # If device isn't loaded sucessfully, retry three more times
+    i=0
+    while true; do
+        i=$((i+1))
+        if [ ! -d "/sys/bus/i2c/devices/$bus-00$devId/hwmon/" ]; then
+            echo "Probe of $driver-$bus-$devId failed. Retrying..."
+            i2c_device_delete "$bus" "$devIdHex"
+            i2c_device_add "$bus" "$devIdHex" "$driver"
+        fi
+        if [ $i -gt 3 ]; then
+            echo "Failed to reload device $driver-$bus-$devId"
+            break;
+        fi
+     done
 }
 
 # Calibrate TH4 MAX6581

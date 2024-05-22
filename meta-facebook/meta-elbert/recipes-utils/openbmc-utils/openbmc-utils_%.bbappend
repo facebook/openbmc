@@ -54,6 +54,8 @@ LOCAL_URI += "\
     file://th4_qspi_ver.sh \
     file://dpeCheck.sh \
     file://bmc_board_rev.sh \
+    file://mount_data1.service \
+    file://setup_gpio.service \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -87,16 +89,9 @@ OPENBMC_UTILS_FILES += " \
     "
 
 DEPENDS:append = " update-rc.d-native"
+inherit systemd
 
-do_install_board() {
-    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
-    olddir="/usr/local/fbpackages/utils"
-    install -d ${D}${olddir}
-    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
-
-    # init
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
+do_work_sysv() {
     # the script to mount /mnt/data
     install -m 0755 ${S}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
     update-rc.d -r ${D} mount_data0.sh start 03 S .
@@ -139,8 +134,58 @@ do_install_board() {
     install -m 0755 ${S}/elbert_pim.layout ${D}${sysconfdir}/elbert_pim.layout
 }
 
+do_work_systemd() {
+  # TODO: We'd want to run all the logic here that is run in mound_data0.sh
+  install -d ${D}/usr/local/bin
+  install -d ${D}${systemd_system_unitdir}
+
+  install -m 755 dpm_dump.sh ${D}/usr/local/bin/dpm_dump.sh
+
+  install -m 755 setup-gpio.sh ${D}/usr/local/bin/setup-gpio.sh
+
+  install -m 755 setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
+
+  # networking is done after rcS, any start level within rcS
+  # for mac fixup should work
+  install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+
+  install -m 755 setup_bcm53134.sh ${D}/usr/local/bin/setup_bcm53134.sh
+
+  install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
+
+  install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+
+  install -m 0755 elbert_pim.layout ${D}/usr/local/bin/elbert_pim.layout
+
+  install -m 0644 mount_data1.service ${D}${systemd_system_unitdir}
+
+  install -m 0644 setup_gpio.service ${D}${systemd_system_unitdir}
+
+}
+
+do_install_board() {
+  # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
+  olddir="/usr/local/fbpackages/utils"
+  install -d ${D}${olddir}
+  ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
+
+  # init
+  install -d ${D}${sysconfdir}/init.d
+  install -d ${D}${sysconfdir}/rcS.d
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+    do_work_systemd
+  else
+    do_work_sysv
+  fi
+}
+
 do_install:append() {
   do_install_board
 }
 
 FILES:${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICE:${PN} += "mount_data1.service setup_gpio.service"
+
+#Not needed for elbert
+SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service"

@@ -352,7 +352,7 @@ program_spi_image() {
     max=3
     while true; do
         # Program the 32MB pim image
-        if flashrom -p "$DRIVER" -N --layout /etc/elbert_pim.layout \
+        if flashrom -p "$DRIVER" -N --layout /usr/local/bin/elbert_pim.layout \
            --image "$PARTITION" $OPERATION "$TEMP_IMAGE" ; then
             break
         else
@@ -433,11 +433,11 @@ read_spi_partition_image() {
     echo "Selected partition $PARTITION to read."
 
     flashrom -p "$DRIVER" \
-        --layout /etc/elbert_pim.layout --image "$PARTITION" -r "$TEMP_SPI_IMAGE" \
+        --layout /usr/local/bin/elbert_pim.layout --image "$PARTITION" -r "$TEMP_SPI_IMAGE" \
         || return 1
     sleep 1
     flashrom -p "$DRIVER" \
-        --layout /etc/elbert_pim.layout --image "$PARTITION" -v "$TEMP_SPI_IMAGE" \
+        --layout /usr/local/bin/elbert_pim.layout --image "$PARTITION" -v "$TEMP_SPI_IMAGE" \
         || return 1
     dd if="$TEMP_SPI_IMAGE" of="$DEST" bs="$BS" count="$COUNT" skip="$SKIP_MB" 2> /dev/null
     return 0
@@ -492,7 +492,7 @@ do_pim() {
                 flashrom -p linux_mtd:dev="$SMB_MTD" -E || exit 1
             else
                 flashrom -p linux_mtd:dev="$SMB_MTD" \
-                    --layout /etc/elbert_pim.layout --image "$2" -E || exit 1
+                    --layout /usr/local/bin/elbert_pim.layout --image "$2" -E || exit 1
             fi
             ;;
         *)

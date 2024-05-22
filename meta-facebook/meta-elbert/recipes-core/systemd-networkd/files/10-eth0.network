@@ -1,4 +1,4 @@
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2024-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,23 +14,25 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Match]
+Name=eth0
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+[Network]
+IPv6AcceptRA=yes
+DHCP=yes
+VLAN=eth0.4088
 
-LOCAL_URI += " \
-    file://mTerm/run \
-    file://mTerm_server.service \
-    file://sol.sh \
-    "
+[IPv6AcceptRA]
+UseMTU=no
 
-MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
+[DHCP]
+UseDomains=yes
+UseNTP=yes
+ClientIdentifier=mac
+VendorClassIdentifier=OpenBMC:VENDOR_SERIAL_HERE
 
-# Go with default names of mTerm for MTERM_SERVICES
-# since we have just one console.
-
-do_install:append() {
-    install -d ${D}/usr/local/bin
-    install -m 755 ${S}/sol.sh ${D}/usr/local/bin/sol.sh
-}
-
-FILES:${PN} += "/usr/local/bin"
+[DHCPv6]
+UseDomains=yes
+UseNTP=yes
+SendVendorOption=40981:1:string:OpenBMC:VENDOR_SERIAL_HERE

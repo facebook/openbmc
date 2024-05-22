@@ -13,9 +13,11 @@ LOCAL_URI += " \
     file://FSC-2-PIM16Q-6-PIM8DDM-config.json \
     file://FSC-8-PIM8DDM-config.json \
     file://zone1.fsc \
+    file://fscd.service \
     "
 
-FSC_BIN_FILES += "get_fan_speed.sh \
+FSC_BIN_FILES += "setup-fan.sh \
+                  get_fan_speed.sh \
                   set_fan_speed.sh "
 
 FSC_CONFIG += "FSC-8-PIM16Q-config.json \

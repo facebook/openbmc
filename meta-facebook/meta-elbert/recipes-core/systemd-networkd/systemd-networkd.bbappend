@@ -1,4 +1,4 @@
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2024-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,20 +17,5 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-LOCAL_URI += " \
-    file://mTerm/run \
-    file://mTerm_server.service \
-    file://sol.sh \
-    "
-
-MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
-
-# Go with default names of mTerm for MTERM_SERVICES
-# since we have just one console.
-
-do_install:append() {
-    install -d ${D}/usr/local/bin
-    install -m 755 ${S}/sol.sh ${D}/usr/local/bin/sol.sh
-}
-
-FILES:${PN} += "/usr/local/bin"
+SRC_URI += "file://10-eth0.network \
+           "

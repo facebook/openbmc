@@ -14,6 +14,7 @@ LOCAL_URI = " \
     file://setup-front-paneld.sh \
     file://front-paneld.c \
     file://run-front-paneld.sh \
+    file://front-paneld.service \
     "
 
 binfiles = "front-paneld"

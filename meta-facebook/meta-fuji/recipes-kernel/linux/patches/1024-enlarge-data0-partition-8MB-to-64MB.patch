@@ -1,0 +1,49 @@
+From c9680604a9d6700905d6a01fb83165cff51f0519 Mon Sep 17 00:00:00 2001
+From: Alex Landau <alandau@meta.com>
+Date: Tue, 17 Oct 2023 16:41:27 -0700
+Subject: [PATCH] Enlarge data0 partition 8MB to 64MB
+
+Summary:
+
+Test Plan:
+
+Reviewers:
+
+Subscribers:
+
+Tasks:
+
+Tags:
+---
+ arch/arm/boot/dts/facebook-bmc-flash-layout-128.dtsi | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/facebook-bmc-flash-layout-128.dtsi b/arch/arm/boot/dts/facebook-bmc-flash-layout-128.dtsi
+index 7f3652dea550..efd92232cda2 100644
+--- a/arch/arm/boot/dts/facebook-bmc-flash-layout-128.dtsi
++++ b/arch/arm/boot/dts/facebook-bmc-flash-layout-128.dtsi
+@@ -32,19 +32,19 @@ image-meta@f0000 {
+ 	};
+ 
+ 	/*
+-	 * FIT image: 119 MB.
++	 * FIT image: 63 MB.
+ 	 */
+ 	fit@100000 {
+-		reg = <0x100000 0x7700000>;
++		reg = <0x100000 0x3f00000>;
+ 		label = "fit";
+ 	};
+ 
+ 	/*
+-	 * "data0" partition (8MB) is used by Facebook BMC platforms as
++	 * "data0" partition (64MB) is used by Facebook BMC platforms as
+ 	 * persistent data store.
+ 	 */
+-	data0@7800000 {
+-		reg = <0x7800000 0x800000>;
++	data0@4000000 {
++		reg = <0x4000000 0x4000000>;
+ 		label = "data0";
+ 	};
+ 

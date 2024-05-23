@@ -35,6 +35,7 @@ SRC_URI += "file://1001-ARM-dts-aspeed-fuji-add-i2c-slave-timeout-for-i2c-bus.pa
 	    file://1003-ARM-dts-aspeed-fuji-enable-jtag-Spi.patch \
 	    file://1011-hwmon-add-net_brcm-driver.patch \
 	    file://1021-hwmon-mp2975-add-compatible-for-mp2978-1025.patch \
+      file://1024-enlarge-data0-partition-8MB-to-64MB.patch \
 	    file://1031-Added-Facebook-mfd-usmc-driver.patch \
 	    file://1032-Added-Facebook-fboss-usmc-driver.patch \
 	    file://1033-Include-spidev-into-SPI-ID-table.patch \

@@ -106,11 +106,13 @@ int MTDComponent::update_by_flashrom(const std::string& image)
     padFile.write(padding.data(), padding.size());  // Write the padding data to the end of the file
     padFile.close();
   }
+  syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
 
   // Construct the command to write the new firmware to the device
   cmd = "flashrom -p linux_mtd:dev=" + dev_number + " -w " + tempFile;
   ret = sys().runcmd(cmd);
   if (ret == 0) {
+    syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
     return FW_STATUS_SUCCESS;
   }
   return FW_STATUS_FAILURE;

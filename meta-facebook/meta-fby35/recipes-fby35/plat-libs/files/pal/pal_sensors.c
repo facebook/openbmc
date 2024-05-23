@@ -728,6 +728,9 @@ const uint8_t bic_gl_skip_sensor_list[] = {
   BIC_GL_SENSOR_MB_TOTAL_DIMM_PWR_W,
 };
 
+const uint8_t bic_ji_skip_sensor_list[] = {
+};
+
 const uint8_t bic_1ou_vf_skip_sensor_list[] = {
   BIC_1OU_VF_SENSOR_NUM_INA231_PWR_M2A,
   BIC_1OU_VF_SENSOR_NUM_INA231_VOL_M2A,
@@ -1427,6 +1430,7 @@ size_t bic_1ou_nf_sensor_cnt = sizeof(bic_1ou_nf_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_hd_skip_sensor_cnt = sizeof(bic_hd_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_gl_skip_sensor_cnt = sizeof(bic_gl_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_ji_skip_sensor_cnt = sizeof(bic_ji_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_vf_skip_sensor_cnt = sizeof(bic_1ou_vf_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_nf_skip_sensor_cnt = sizeof(bic_1ou_nf_skip_sensor_list)/sizeof(uint8_t);
 size_t bmc_dpv2_x8_sensor_cnt = sizeof(bmc_dpv2_x8_sensor_list)/sizeof(uint8_t);
@@ -1496,6 +1500,9 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
     } else if (server_type == SERVER_TYPE_GL) {
       memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_gl_skip_sensor_list, bic_gl_skip_sensor_cnt);
       count = bic_gl_skip_sensor_cnt;
+    } else if (server_type == SERVER_TYPE_JI) {
+      memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_ji_skip_sensor_list, bic_ji_skip_sensor_cnt);
+      count = bic_ji_skip_sensor_cnt;
     } else {
       memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_skip_sensor_list, bic_skip_sensor_cnt);
       count = bic_skip_sensor_cnt;

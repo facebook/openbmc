@@ -7,11 +7,12 @@ This commit depends on the patch below:
 [1] https://lore.kernel.org/all/20230920054739.1561080-1-Delphine_CC_Chiu@wiwynn.com/
 [2] https://lore.kernel.org/all/20230920054739.1561080-2-Delphine_CC_Chiu@wiwynn.com/
 [3] https://lore.kernel.org/all/20230920054739.1561080-3-Delphine_CC_Chiu@wiwynn.com/
+[4] https://lore.kernel.org/lkml/20240514092242.2739662-1-Delphine_CC_Chiu@wiwynn.com/
 ---
- drivers/hwmon/pmbus/Kconfig  |  9 ++++
- drivers/hwmon/pmbus/Makefile |  2 +
- drivers/hwmon/pmbus/ina233.c | 89 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 100 insertions(+)
+ drivers/hwmon/pmbus/Kconfig  |   9 +++
+ drivers/hwmon/pmbus/Makefile |   2 +
+ drivers/hwmon/pmbus/ina233.c | 124 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 135 insertions(+)
  create mode 100644 drivers/hwmon/pmbus/ina233.c
 
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
@@ -44,10 +45,10 @@ index 0749a76d055a..7467c7f8f591 100644
 +
 diff --git a/drivers/hwmon/pmbus/ina233.c b/drivers/hwmon/pmbus/ina233.c
 new file mode 100644
-index 000000000000..d5c7d7408ac3
+index 000000000000..33736e5049a9
 --- /dev/null
 +++ b/drivers/hwmon/pmbus/ina233.c
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,124 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Hardware monitoring driver for Texas Instruments INA233
@@ -61,9 +62,43 @@ index 000000000000..d5c7d7408ac3
 +#include <linux/init.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
++#include <linux/hwmon-sysfs.h>
 +#include "pmbus.h"
 +
 +#define MFR_CALIBRATION	0xd4
++#define MFR_READ_VSHUNT 0xd1
++
++#define HIGHEST_BIT 15
++
++static ssize_t ina233_vshunt_show(struct device *dev,
++				  struct device_attribute *devattr, char *buf)
++{
++	int shunt_volt;
++	struct i2c_client *client = to_i2c_client(dev->parent);
++
++	shunt_volt = i2c_smbus_read_word_data(client, MFR_READ_VSHUNT);
++	if (shunt_volt < 0)
++		return shunt_volt;
++
++	// Is negative
++	if (shunt_volt & (1 << HIGHEST_BIT))
++		shunt_volt = ~(shunt_volt & ~(1 << HIGHEST_BIT)) + 1;
++
++	// This unit is mV.
++	// LSB 2.5 μV is reference from spec 7.6.3.2 MFR_READ_VSHUNT
++	int val = DIV_ROUND_UP(shunt_volt * 25, 10000);
++
++	return sysfs_emit(buf, "%d\n", val);
++}
++
++static SENSOR_DEVICE_ATTR_RO(vshunt, ina233_vshunt, 1);
++
++static struct attribute *ina233_attrs[] = {
++	&sensor_dev_attr_vshunt.dev_attr.attr,
++	NULL,
++};
++
++ATTRIBUTE_GROUPS(ina233);
 +
 +struct pmbus_driver_info ina233_info = {
 +	.pages = 1,
@@ -79,6 +114,7 @@ index 000000000000..d5c7d7408ac3
 +	.m[PSC_VOLTAGE_OUT] = 8,
 +	.R[PSC_VOLTAGE_IN] = 2,
 +	.R[PSC_VOLTAGE_OUT] = 2,
++	.groups = ina233_groups,
 +};
 +
 +static int ina233_probe(struct i2c_client *client)
@@ -132,11 +168,11 @@ index 000000000000..d5c7d7408ac3
 +
 +module_i2c_driver(ina233_driver);
 +
-+MODULE_AUTHOR("Eli Huang <eli_huang@wiwynn.com>");
++MODULE_AUTHOR("Delphine_CC_Chiu <Delphine_CC_Chiu@wiwynn.com>");
 +MODULE_DESCRIPTION("PMBus driver for Texas Instruments INA233 and compatible chips");
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS(PMBUS);
 +
 -- 
-2.43.0
+2.25.1
 

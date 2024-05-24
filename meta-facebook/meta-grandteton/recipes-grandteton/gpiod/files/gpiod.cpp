@@ -1160,13 +1160,15 @@ void gpu_fpga_ready_mon() {
 void
 gpu_fpga_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
-  if (curr == GPIO_VALUE_HIGH) {
-    if (system("/usr/local/bin/setup-gpu-eeprom.sh &")) {
-      syslog(LOG_WARNING, "Failed to dump gpu eeprom");
+  if (!pal_is_artemis()) {
+    if (curr == GPIO_VALUE_HIGH) {
+      if (system("/usr/local/bin/setup-gpu-eeprom.sh &")) {
+        syslog(LOG_WARNING, "Failed to dump gpu eeprom");
+      }
     }
-  }
-  else {
-    gpu_fpga_ready_mon();
+    else {
+      gpu_fpga_ready_mon();
+    }
   }
 }
 

@@ -26,4 +26,5 @@ SRC_URI += " \
     file://0523-dt-bindings-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB.patch \
     file://0524-i3c-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB-driver.patch \
     file://0525-ARM-dts-aspeed-yosemite4-add-I3C-config-in-DTS.patch \
+    file://0526-ARM-dts-aspeed-yosemite4-add-fan-led-config.patch \
 "

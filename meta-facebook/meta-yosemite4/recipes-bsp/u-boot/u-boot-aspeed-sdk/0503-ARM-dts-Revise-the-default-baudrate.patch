@@ -1,0 +1,29 @@
+From dfa09b321c17d691f92ba38790cccf5cf0814601 Mon Sep 17 00:00:00 2001
+From: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+Date: Thu, 23 May 2024 11:03:02 +0800
+Subject: [PATCH v1] ARM: dts: Revise the default baudrate
+
+Revise the default baudrate to 57600
+
+Signed-off-by: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
+---
+ configs/ast2600_openbmc_spl_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/configs/ast2600_openbmc_spl_defconfig b/configs/ast2600_openbmc_spl_defconfig
+index efd683570f..5e95780a9a 100644
+--- a/configs/ast2600_openbmc_spl_defconfig
++++ b/configs/ast2600_openbmc_spl_defconfig
+@@ -28,7 +28,8 @@ CONFIG_FIT_SIGNATURE=y
+ CONFIG_SPL_FIT_SIGNATURE=y
+ CONFIG_SPL_LOAD_FIT=y
+ CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="console=ttyS4,115200n8 root=/dev/ram rw"
++CONFIG_BOOTARGS="console=ttyS4,57600n8 root=/dev/ram rw"
++CONFIG_BAUDRATE=57600
+ CONFIG_USE_BOOTCOMMAND=y
+ CONFIG_BOOTCOMMAND="run bootspi"
+ CONFIG_SYS_CONSOLE_ENV_OVERWRITE=y
+-- 
+2.25.1
+

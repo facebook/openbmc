@@ -6,3 +6,7 @@ srcs += [
     'platform_event.cpp',
     'event_manager.cpp',
 ]
+
+libs += [
+    dependency('libras'),
+]

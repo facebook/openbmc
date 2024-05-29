@@ -1,0 +1,30 @@
+From 7604892163763fae89161cd1b738367522073e5e Mon Sep 17 00:00:00 2001
+From: Kevin Tung <Kevin.Tung@quantatw.com>
+Date: Tue, 7 May 2024 18:59:06 +0800
+Subject: [PATCH 2/3] Fix incorrect GUID string length
+
+Modify GUID_STRING_LENGTH to 36, because when using guid_to_string() to convert
+the EDK EFI GUID to a string for intermediate use, the converted string format
+is "%08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x", which has a length of 36,
+will be put into guid[GUID_STRING_LENGTH] as the conversion result, but if
+GUID_STRING_LENGTH is defined as 30, it will cause a segmentation fault.
+---
+ cper-utils.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cper-utils.h b/cper-utils.h
+index 18f1e0f..aace246 100644
+--- a/cper-utils.h
++++ b/cper-utils.h
+@@ -1,7 +1,7 @@
+ #ifndef CPER_UTILS_H
+ #define CPER_UTILS_H
+ 
+-#define GUID_STRING_LENGTH 30
++#define GUID_STRING_LENGTH 36
+ #define TIMESTAMP_LENGTH 24
+ 
+ #include "common-utils.h"
+-- 
+2.43.2
+

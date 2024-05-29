@@ -11,10 +11,12 @@ LOCAL_URI = " \
     file://obmc-ras.c \
     file://ras.h \
     file://ras.c \
+    file://cper.hpp \
+    file://cper.cpp \
     file://meson.build \
     "
     
-DEPENDS += " libgpio-ctrl "
-RDEPENDS:${PN} += " libgpio-ctrl "
+DEPENDS += " libgpio-ctrl nlohmann-json "
+RDEPENDS:${PN} += " libgpio-ctrl nlohmann-json "
 
 inherit meson pkgconfig

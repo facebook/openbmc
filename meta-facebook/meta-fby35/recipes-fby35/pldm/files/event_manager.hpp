@@ -23,7 +23,6 @@
 #include <vector>
 #include <cstdint>
 #include <string>
-#include <nlohmann/json.hpp>
 
 /**
  * @brief SBMR defines an oemEvent of value 0xFA for the CPEREvent event class, 
@@ -35,8 +34,6 @@
  * @brief Satellite MC EID
  */
 #define DEFAULT_SATMC_EID 0xF0
-
-#define CPER_DUMP_PATH "/mnt/data/faultlog/cper"
 
 namespace pldm
 {
@@ -84,7 +81,6 @@ class EventManager
      *  @return PLDM completion code
      *
      */
-    
     int handlePlatformEvent(uint8_t payloadId, uint8_t tid, uint8_t eventClass, 
                             const uint8_t* eventData, size_t eventDataSize);
 

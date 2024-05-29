@@ -21,6 +21,7 @@
 
 #include <libpldm/utils.h>
 #include <libpldm/platform.h>
+#include <openbmc/cper.hpp>
 
 #include <syslog.h>
 #include <unistd.h>
@@ -28,6 +29,7 @@
 #include <thread>
 #include <chrono>
 #include <sstream>
+#include <cstring>
 
 namespace pldm
 {
@@ -81,40 +83,9 @@ int EventManager::handlePlatformEvent(uint8_t payloadId, uint8_t tid,
 	}
 	else if (eventClass == PLDM_OEM_EVENT_CLASS_0xFA)
 	{
-		// save the CPER format RAS error raw data
-		if (!fs::exists(CPER_DUMP_PATH))
+		auto rc = cper::createCperDumpEntry(payloadId, eventData, eventDataSize);
+		if (rc != cper::CPER_HANDLE_SUCCESS)
 		{
-			if (!fs::create_directories(CPER_DUMP_PATH))
-			{
-				syslog(LOG_ERR, "Failed to create %s directory", CPER_DUMP_PATH);
-				return PLDM_ERROR;
-			}
-		}
-		
-		auto faultLogFile = std::string(CPER_DUMP_PATH) + "/slot" + 
-												std::to_string(payloadId + 1) + "_cper-XXXXXX";
-		auto fd = mkstemp(faultLogFile.data());
-		if (fd < 0)
-		{
-			syslog(LOG_ERR, "Failed to generate temp file: %s", faultLogFile.c_str());
-			return PLDM_ERROR;
-		}
-		close(fd);
-
-		std::ofstream ofs;
-		ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-		try
-		{
-			ofs.open(faultLogFile);
-			ofs.write(reinterpret_cast<const char*>(eventData), eventDataSize);
-			ofs.close();
-			syslog(LOG_CRIT, "CPER Entry: FRU: %u, Log: %s", 
-						 payloadId + 1, fs::path(faultLogFile).filename().c_str());
-		}
-		catch (const std::ios_base::failure& e)
-		{
-			syslog(LOG_ERR, "Failed to save CPER to %s, %s.", 
-						faultLogFile.c_str(), e.what());
 			return PLDM_ERROR;
 		}
 	}

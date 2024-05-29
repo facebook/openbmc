@@ -8,4 +8,4 @@ LOCAL_URI += " \
         file://event_manager.cpp \
         "
 
-DEPENDS += " nlohmann-json "
+DEPENDS += " libcper libras"

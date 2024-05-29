@@ -63,4 +63,5 @@ IMAGE_INSTALL += " \
   mctpd \
   pldmd \
   tpm-factory-upd \
+  libcper \
   "

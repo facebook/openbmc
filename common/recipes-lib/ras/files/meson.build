@@ -1,4 +1,4 @@
-project('libras', 'c',
+project('libras', 'c', 'cpp',
     version: '0.1',
     license: 'GPL2',
     default_options: ['werror=true'],
@@ -7,6 +7,7 @@ project('libras', 'c',
 install_headers(
     'obmc-ras.h',
     'ras.h',
+    'cper.hpp',
     subdir: 'openbmc')
 
 cc = meson.get_compiler('c')
@@ -18,6 +19,7 @@ libs = [
 srcs = files(
   'obmc-ras.c',
   'ras.c',
+  'cper.cpp',
 )
 
 # RAS library.

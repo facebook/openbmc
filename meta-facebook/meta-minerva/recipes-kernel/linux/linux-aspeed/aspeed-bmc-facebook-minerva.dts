@@ -200,6 +200,7 @@
 
 &i2c2 {
 	status = "okay";
+	i2c-clk-high-min-percent = <56>;
 
 	i2c-mux@77 {
 		compatible = "nxp,pca9548";

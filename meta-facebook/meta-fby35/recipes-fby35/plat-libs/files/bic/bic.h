@@ -427,6 +427,7 @@ enum ji_gpio {
   JI_BOARD_ID3,
   JI_BOARD_ID4,
   JI_BOARD_ID5,
+  JI_FM_BIOS_MRC_DEBUG_DIS_L,
 };
 
 enum {

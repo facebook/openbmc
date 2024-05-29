@@ -187,7 +187,6 @@ const uint8_t smb_sensor_list_evt[] = {
   SMB_XP0R84V_DCSU,
   SMB_XP0R84V_CSU,
   SMB_XP1R8V_CSU,
-  SMB_XP3R3V_TCXO,
   SMB_OUTPUT_VOLTAGE_XP0R75V_1,
   SMB_OUTPUT_CURRENT_XP0R75V_1,
   SMB_INPUT_VOLTAGE_1,
@@ -265,7 +264,6 @@ const uint8_t smb_sensor_list_dvt[] = {
   SMB_XP0R84V_DCSU,
   SMB_XP0R84V_CSU,
   SMB_XP1R8V_CSU,
-  SMB_XP3R3V_TCXO,
   SMB_OUTPUT_VOLTAGE_XP0R75V_1,
   SMB_OUTPUT_CURRENT_XP0R75V_1,
   SMB_INPUT_VOLTAGE_1,
@@ -1792,18 +1790,6 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(13), value);
       }
       break;
-    case SMB_XP3R3V_TCXO:
-      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
-        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(14), value);
-      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
-                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(7), value);
-      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(10), value);
-      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(12), value);
-      }
-      break;
     case SMB_OUTPUT_VOLTAGE_XP0R75V_1:
       ret = read_attr(fru, sensor_num, SMB_MP2978_1_DEVICE, VOLT(2), value);
       break;
@@ -3241,9 +3227,6 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_XP1R8V_CSU:
       sprintf(name, "SMB_XP1R8V_CSU");
       break;
-    case SMB_XP3R3V_TCXO:
-      sprintf(name, "SMB_XP3R3V_TCXO");
-      break;
     case SMB_OUTPUT_VOLTAGE_XP0R75V_1:
       sprintf(name, "SMB_OUTPUT_VOLTAGE_XP0R75V_1");
       break;
@@ -4298,7 +4281,6 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_XP0R84V_DCSU:
     case SMB_XP0R84V_CSU:
     case SMB_XP1R8V_CSU:
-    case SMB_XP3R3V_TCXO:
     case SMB_SENSOR_FCM_T_HSC_VOLT:
     case SMB_SENSOR_FCM_B_HSC_VOLT:
     case SMB_SENSOR_FCM_T_HSC_POWER_VOLT:
@@ -4717,10 +4699,6 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_XP1R8V_CSU][UNC_THRESH] = 1.845;
       smb_sensor_threshold[SMB_XP1R8V_CSU][LNC_THRESH] = 1.755;
       smb_sensor_threshold[SMB_XP1R8V_CSU][LCR_THRESH] = 1.53;
-      smb_sensor_threshold[SMB_XP3R3V_TCXO][UCR_THRESH] = 3.8;
-      smb_sensor_threshold[SMB_XP3R3V_TCXO][UNC_THRESH] = 3.465;
-      smb_sensor_threshold[SMB_XP3R3V_TCXO][LNC_THRESH] = 3.165;
-      smb_sensor_threshold[SMB_XP3R3V_TCXO][LCR_THRESH] = 2.8;
       smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][UCR_THRESH] = 0.862;
       smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][UNC_THRESH] = 0.81;
       smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][LNC_THRESH] = 0.728;
@@ -5118,7 +5096,6 @@ smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_VDD_PCIE:
     case SMB_XP0R84V_DCSU:
     case SMB_XP0R84V_CSU:
-    case SMB_XP3R3V_TCXO:
     case SMB_SENSOR_FCM_T_HSC_VOLT:
     case SMB_SENSOR_FCM_B_HSC_VOLT:
     case SMB_SENSOR_FCM_T_HSC_CURR:

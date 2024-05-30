@@ -72,6 +72,16 @@ struct signed_header_t {
             component_id(component_id), vendor_id(vendor_id){}
 };
 
+// NOTE: pldm_image_signed_info_map is used to convert vendor-defined descriptor 
+// strings in the PLDM FW image to numbers.
+using str_uint8_t_map_t = std::unordered_map<std::string, uint8_t>;
+struct pldm_image_signed_info_map {
+  str_uint8_t_map_t board_id;
+  str_uint8_t_map_t stage;
+  str_uint8_t_map_t component_id;
+  str_uint8_t_map_t vendor_id;
+};
+
 class InfoChecker {
   protected:
     signed_header_t comp_info{};

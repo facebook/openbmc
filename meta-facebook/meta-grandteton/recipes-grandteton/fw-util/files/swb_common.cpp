@@ -882,7 +882,7 @@ int GTSwbBicFwComponent::update(string image)
   int ret = 0;
 
   ret = try_pldm_update(image, false);
-  bic_update_post_actions(this->alias_fru());
+  bic_update_post_actions(SwbBicFwComponent::alias_fru());
   return ret;
 }
 
@@ -891,12 +891,12 @@ int GTSwbBicFwComponent::fupdate(string image)
   int ret = 0;
 
   ret = try_pldm_update(image, true);
-  bic_update_post_actions(this->alias_fru());
+  bic_update_post_actions(SwbBicFwComponent::alias_fru());
   return ret;
 }
 
 int GTSwbBicFwComponent::get_version(json& j) {
-  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+  return gt_get_version(j, SwbBicFwComponent::alias_fru(), SwbBicFwComponent::alias_component(), target);
 }
 
 int GTSwbPexFwComponent::update(string image)
@@ -910,7 +910,7 @@ int GTSwbPexFwComponent::fupdate(string image)
 }
 
 int GTSwbPexFwComponent::get_version(json& j) {
-  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+  return gt_get_version(j, SwbPexFwComponent::alias_fru(), SwbPexFwComponent::alias_component(), target);
 }
 
 int GTSwbVrComponent::update(string image)
@@ -924,7 +924,7 @@ int GTSwbVrComponent::fupdate(string image)
 }
 
 int GTSwbVrComponent::get_version(json& j) {
-  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+  return gt_get_version(j, SwbVrComponent::alias_fru(), SwbVrComponent::alias_component(), target);
 }
 
 int GTSwbVrComponent::comp_verify()
@@ -936,7 +936,7 @@ int GTSwbVrComponent::comp_verify()
   // in case that cache not yet established.
   auto img_comp_info = oem_get_pkg_comp_img_info();
   json json_ver;
-  gt_get_version(json_ver, this->alias_fru(), this->alias_component(), target);
+  gt_get_version(json_ver, SwbVrComponent::alias_fru(), SwbVrComponent::alias_component(), target);
 
   // variable for parsing
   string ver_str = json_ver["VERSION"];
@@ -1001,7 +1001,7 @@ int GTSwbCpldComponent::fupdate(string image)
 }
 
 int GTSwbCpldComponent::get_version(json& j) {
-  return gt_get_version(j, this->alias_fru(), this->alias_component(), target);
+  return gt_get_version(j, CpldComponent::alias_fru(), CpldComponent::alias_component(), target);
 }
 
 int AcbPeswFwComponent::get_version(json &j) {

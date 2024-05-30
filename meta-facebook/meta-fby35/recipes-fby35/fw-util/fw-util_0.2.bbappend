@@ -43,6 +43,8 @@ LOCAL_URI += " \
         file://vpdb_vr.cpp \
         file://vpdb_vr.h \
         file://signed_info.hpp \
+        file://bic_pldm_vr.hpp \
+        file://bic_pldm_vr.cpp \
         "
 
 CXXFLAGS += "-DBIC_SUPPORT"

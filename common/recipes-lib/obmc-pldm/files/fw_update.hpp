@@ -16,6 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #pragma once
+#include <map>
 #include <vector>
 #include <libpldm/firmware_update.h>
 #include <libpldm/utils.h>
@@ -62,9 +63,25 @@ struct query_downstream_device_identifier_resp {
   uint8_t downstreamdevicedescriptorcount;
 } __attribute__((packed));
 
+struct component_parameter {
+  std::string activeComponentVersion;
+  std::string pendingComponentVersion;
+  pldm_component_parameter_entry componentData;  
+};
+
+struct firmware_parameters {
+  bitfield32_t capabilitiesDuringUpdate;
+  uint16_t compCount;
+  std::string activeCompImageSetVersion;
+  std::string pendingCompImageSetVersion;
+  std::map<uint16_t /*component ID*/, component_parameter> compParameters;
+};
+
 int oem_parse_pldm_package (const char *path);
 int oem_pldm_fw_update (uint8_t bus, uint8_t eid, const char *path, bool is_standard_descriptor, 
     std::string component, int wait_apply_time = 0, uint8_t specified_comp = 0xFF);
+int pldm_get_firmware_parameters(uint8_t bus, uint8_t eid, 
+    firmware_parameters& firmwareParameters);
 
 const std::vector<firmware_device_id_record_t>& oem_get_pkg_device_record();
 const std::vector<component_image_info_t>& oem_get_pkg_comp_img_info();

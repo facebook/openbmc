@@ -13,6 +13,7 @@ srcs += [
     'signed_decoder.cpp',
     'usbdbg.cpp',
     'vpdb_vr.cpp',
+    'bic_pldm_vr.cpp',
 ]
 
 deps += [
@@ -27,4 +28,5 @@ deps += [
     dependency('libobmc-i2c'),
     dependency('libprot'),
     dependency('libvr'),
+    dependency('libpldm'),
 ]

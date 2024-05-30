@@ -30,6 +30,7 @@
 #include <time.h>
 
 #define MAX_TRANSFER_SIZE 1024
+#define DEFAULT_INSTANCE_ID 0
 
 using namespace std;
 
@@ -215,7 +216,7 @@ pldm_query_device_identifiers(uint8_t bus, uint8_t eid)
   query_device_descriptors.clear();
 
   int ret = encode_query_device_identifiers_req (
-    0x00, // instance id
+    DEFAULT_INSTANCE_ID,
     PLDM_QUERY_DEVICE_IDENTIFIERS_REQ_BYTES,
     (pldm_msg*)request.data()
   );
@@ -674,7 +675,7 @@ pldm_request_update(int fd, uint8_t eid, uint8_t record_id)
   auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
 
   int ret = encode_request_update_req (
-    0x00, // instance id
+    DEFAULT_INSTANCE_ID,
     maxTransferSize,
     pkg_comps.size(),
     PLDM_FWUP_MIN_OUTSTANDING_REQ,
@@ -1251,6 +1252,94 @@ exit:
 
   close(sockfd);
   close(file);
+  return ret;
+}
+
+int pldm_get_firmware_parameters(uint8_t bus, uint8_t eid, 
+                                firmware_parameters& firmwareParameters)
+{
+  vector<uint8_t> response{};
+  vector<uint8_t> request(sizeof(pldm_msg_hdr) + 
+                          PLDM_GET_FIRMWARE_PARAMETERS_REQ_BYTES);
+
+  int ret = encode_get_firmware_parameters_req(
+    DEFAULT_INSTANCE_ID,
+    PLDM_GET_FIRMWARE_PARAMETERS_REQ_BYTES,
+    reinterpret_cast<pldm_msg*>(request.data())
+  );
+
+  if (ret != PLDM_SUCCESS) {
+    cerr << "Failed to encode GetFirmwareParameters request, " 
+         << "ret = " << ret << "\n";
+    return ret;
+  }
+
+  ret = oem_pldm_send_recv(bus, eid, request, response);
+  if (ret != PLDM_SUCCESS) {
+    cerr << "Failed to get firmware parameters, ret = " << ret << "\n";
+    return ret;
+  }
+
+  pldm_get_firmware_parameters_resp fwParams{};
+  variable_field activeCompImageSetVerStr{};
+  variable_field pendingCompImageSetVerStr{};
+  variable_field compParamTable{};
+  ret = decode_get_firmware_parameters_resp(
+      reinterpret_cast<pldm_msg*>(response.data()), response.size(), &fwParams, 
+      &activeCompImageSetVerStr, &pendingCompImageSetVerStr, &compParamTable);
+  
+  if (ret) {
+    cerr << "Failed to decode GetFirmwareParameters response, "
+         << "ret = " << ret << "\n";
+    return ret;
+  }
+
+  firmwareParameters.capabilitiesDuringUpdate = 
+      fwParams.capabilities_during_update;
+  firmwareParameters.compCount = fwParams.comp_count;
+  firmwareParameters.activeCompImageSetVersion = std::string(
+      reinterpret_cast<const char*>(activeCompImageSetVerStr.ptr), 
+      activeCompImageSetVerStr.length);
+  firmwareParameters.pendingCompImageSetVersion = std::string(
+      reinterpret_cast<const char*>(pendingCompImageSetVerStr.ptr), 
+      pendingCompImageSetVerStr.length);
+
+  auto compParamPtr = compParamTable.ptr;
+  auto compParamTableLen = compParamTable.length;
+  pldm_component_parameter_entry compEntry{};
+  variable_field activeCompVerStr{};
+  variable_field pendingCompVerStr{};
+
+  while (fwParams.comp_count-- && (compParamTableLen > 0)) {
+    component_parameter compParameter;
+    ret = decode_get_firmware_parameters_resp_comp_entry(
+        compParamPtr, compParamTableLen, &compEntry,
+        &activeCompVerStr, &pendingCompVerStr);
+
+    if (ret) {
+      cerr << "Decoding component parameter table entry failed, " 
+           << "ret = " << ret << "\n";
+      return ret;
+    }
+
+    compParameter.componentData = compEntry;
+    compParameter.activeComponentVersion = std::string(
+        reinterpret_cast<const char*>(activeCompVerStr.ptr), 
+        activeCompVerStr.length);
+    compParameter.pendingComponentVersion = std::string(
+        reinterpret_cast<const char*>(pendingCompVerStr.ptr), 
+        pendingCompVerStr.length);
+
+    compParamPtr += sizeof(pldm_component_parameter_entry) +
+                    activeCompVerStr.length + pendingCompVerStr.length;
+    compParamTableLen -= sizeof(pldm_component_parameter_entry) +
+                          activeCompVerStr.length +
+                          pendingCompVerStr.length;
+
+    firmwareParameters.compParameters.emplace(
+        static_cast<uint16_t>(compEntry.comp_identifier), compParameter);
+  }
+
   return ret;
 }
 

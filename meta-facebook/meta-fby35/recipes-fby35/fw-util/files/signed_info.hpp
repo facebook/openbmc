@@ -29,6 +29,11 @@ enum {
 enum {
   ALL_VENDOR = 0x00,
   ASPEED,
+  RENESAS,
+  INFINEON,
+  MPS,
+  LATTICE,
+  BROADCOM,
 };
 
 namespace pldm_signed_info {
@@ -62,3 +67,67 @@ const signed_header_t ji_bic_comps = {
   BIC_COMP, // component id
   ASPEED, // vendor id
 };
+
+
+namespace javaisland {
+
+enum {
+  BIC = 0x02,
+  CPUDVDD,
+  CPUVDD,
+  SOCVDD
+};
+
+enum {
+  ALL_VENDOR = 0x00,
+  ASPEED,
+  RENESAS,
+  INFINEON,
+  MPS,
+};
+
+const signed_header_t cpudvdd_signed_info = {
+  PLATFORM_NAME,
+  JAVAISLAND,
+  0x00,
+  CPUDVDD,
+  MPS
+};
+
+const signed_header_t cpuvdd_signed_info = {
+  PLATFORM_NAME,
+  JAVAISLAND,
+  0x00,
+  CPUVDD,
+  MPS
+};
+
+const signed_header_t socvdd_signed_info = {
+  PLATFORM_NAME,
+  JAVAISLAND,
+  0x00,
+  SOCVDD,
+  MPS
+};
+
+const pldm_image_signed_info_map signed_info_map = {
+  .board_id = {
+    {"Java Island", JAVAISLAND}
+  },
+  .stage = {
+    {"POC", POC},
+    {"EVT", EVT},
+    {"DVT", DVT},
+    {"PVT", PVT},
+    {"MP",  MP},
+  },
+  .component_id = {},
+  .vendor_id = {
+    {"ast1030", ASPEED},
+    {"mp2894",  MPS},
+    {"mp2898",  MPS},
+    {"mpq8746", MPS},
+  }
+};
+
+} // namespace javaisland

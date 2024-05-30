@@ -15,6 +15,7 @@
 #include "usbdbg.h"
 #include "hsc.h"
 #include "bic_prot.hpp"
+#include "bic_pldm_vr.hpp"
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.hpp>
 
@@ -137,6 +138,15 @@ class ClassConfig {
               break;
             }
             case SERVER_TYPE_JI: {
+              static PldmVrComponent vr_cpudvdd_fw1(
+                "slot1", "vr_cpudvdd", javaisland::CPUDVDD, SLOT1_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::cpudvdd_signed_info, javaisland::signed_info_map);
+              static PldmVrComponent vr_cpuvdd_fw1(
+                "slot1", "vr_cpuvdd", javaisland::CPUVDD, SLOT1_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::cpuvdd_signed_info, javaisland::signed_info_map);
+              static PldmVrComponent vr_socvdd_fw1(
+                "slot1", "vr_socvdd", javaisland::SOCVDD, SLOT1_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::socvdd_signed_info, javaisland::signed_info_map);
               static PldmBicFwComponent bic_fw1("slot1", "bic", "sb", FW_SB_BIC, SLOT1_PLDM_BUS_ID, MB_BIC_EID,
                                                  ji_bic_comps);
               static CpldComponent cpld_fw1(
@@ -200,6 +210,15 @@ class ClassConfig {
         if (prsnt) {
           switch (fby35_common_get_slot_type(FRU_SLOT2)) {
             case SERVER_TYPE_JI: {
+              static PldmVrComponent vr_cpudvdd_fw2(
+                "slot2", "vr_cpudvdd", javaisland::CPUDVDD, SLOT2_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::cpudvdd_signed_info, javaisland::signed_info_map);
+              static PldmVrComponent vr_cpuvdd_fw2(
+                "slot2", "vr_cpuvdd", javaisland::CPUVDD, SLOT2_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::cpuvdd_signed_info, javaisland::signed_info_map);
+              static PldmVrComponent vr_socvdd_fw2(
+                "slot2", "vr_socvdd", javaisland::SOCVDD, SLOT2_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::socvdd_signed_info, javaisland::signed_info_map);
               static PldmBicFwComponent bic_fw2("slot2", "bic", "sb", FW_SB_BIC, SLOT2_PLDM_BUS_ID, MB_BIC_EID,
                                                  ji_bic_comps);
               if (fby35_common_get_sb_rev(FRU_SLOT2) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type
@@ -293,6 +312,15 @@ class ClassConfig {
               break;
             }
             case SERVER_TYPE_JI: {
+              static PldmVrComponent vr_cpudvdd_fw3(
+                "slot3", "vr_cpudvdd", javaisland::CPUDVDD, SLOT3_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::cpudvdd_signed_info, javaisland::signed_info_map);
+              static PldmVrComponent vr_cpuvdd_fw3(
+                "slot3", "vr_cpuvdd", javaisland::CPUVDD, SLOT3_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::cpuvdd_signed_info, javaisland::signed_info_map);
+              static PldmVrComponent vr_socvdd_fw3(
+                "slot3", "vr_socvdd", javaisland::SOCVDD, SLOT3_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::socvdd_signed_info, javaisland::signed_info_map);
               static PldmBicFwComponent bic_fw3("slot3", "bic", "sb", FW_SB_BIC, SLOT3_PLDM_BUS_ID, MB_BIC_EID,
                                                  ji_bic_comps);
               static CpldComponent cpld_fw3(
@@ -340,6 +368,15 @@ class ClassConfig {
         if (prsnt) {
           switch (fby35_common_get_slot_type(FRU_SLOT4)) {
             case SERVER_TYPE_JI: {
+              static PldmVrComponent vr_cpudvdd_fw4(
+                "slot4", "vr_cpudvdd", javaisland::CPUDVDD, SLOT4_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::cpudvdd_signed_info, javaisland::signed_info_map);
+              static PldmVrComponent vr_cpuvdd_fw4(
+                "slot4", "vr_cpuvdd", javaisland::CPUVDD, SLOT4_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::cpuvdd_signed_info, javaisland::signed_info_map);
+              static PldmVrComponent vr_socvdd_fw4(
+                "slot4", "vr_socvdd", javaisland::SOCVDD, SLOT4_PLDM_BUS_ID, MB_BIC_EID ,
+                javaisland::socvdd_signed_info, javaisland::signed_info_map);
               static PldmBicFwComponent bic_fw4("slot4", "bic", "sb", FW_SB_BIC, SLOT4_PLDM_BUS_ID, MB_BIC_EID,
                                                  ji_bic_comps);
               if (fby35_common_get_sb_rev(FRU_SLOT4) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type

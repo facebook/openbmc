@@ -34,6 +34,7 @@
 clear_all_vr_cache(){
   sb_vr_list=("c0h" "c4h" "ech" "c2h" "c6h" "c8h" "cch" "d0h" "96h" "9ch" "9eh" "8ah" "8ch" "8eh")
   rbf_vr_list=("b0h" "b4h" "c8h")
+  ji_vr_list=("cpudvdd" "cpuvdd" "socvdd")
   for vr in "${sb_vr_list[@]}"; do
     $KV_CMD del "slot${slot_num}_vr_${vr}_crc"
     $KV_CMD del "slot${slot_num}_vr_${vr}_new_crc" persistent
@@ -41,6 +42,10 @@ clear_all_vr_cache(){
   for vr in "${rbf_vr_list[@]}"; do
     $KV_CMD del "slot${slot_num}_1ou_vr_${vr}_crc"
     $KV_CMD del "slot${slot_num}_1ou_vr_${vr}_new_crc" persistent
+  done
+  for vr in "${ji_vr_list[@]}"; do
+    $KV_CMD del "slot${slot_num}_vr_${vr}_active_ver"
+    $KV_CMD del "slot${slot_num}_vr_${vr}_pending_ver"
   done
 }
 

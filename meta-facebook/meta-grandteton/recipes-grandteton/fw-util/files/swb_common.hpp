@@ -78,7 +78,9 @@ class GTPldmComponent : public PldmComponent {
                   uint8_t bus, uint8_t eid): PldmComponent(info, fru, comp, bus, eid), _fru(fru), _comp(comp) {}
     int try_pldm_update(const std::string& /*image*/, bool /*force*/, uint8_t specified_comp = 0xFF);
     int gt_get_version(json& /*j*/, const string& /*fru*/, const string& /*comp*/, uint8_t /*target*/);
-    virtual int comp_version(json& /*j*/) { return -1; }
+    virtual int comp_update(const string& /*image*/) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int comp_fupdate(const string& /*image*/) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int comp_version(json& /*j*/) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int comp_verify() { return INFO_ERR::EP_SUCCESS; };
 };
 
@@ -212,11 +214,11 @@ class GtaBicFwRecoveryComponent : public Component {
   int fupdate(string image) override;
 };
 
-class GTAASICComponent : public PldmComponent, public Component {
+class GTAASICComponent : public PldmComponent {
   public:
     GTAASICComponent (const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t component_identifier, 
         int wait_apply_time)
-	: PldmComponent(fru, comp, bus, eid, component_identifier, wait_apply_time), Component(fru, comp) {}
+	: PldmComponent(fru, comp, bus, eid, component_identifier, wait_apply_time) {}
     int get_version(json& /*json*/);
     int update(std::string image); // firmware update
     int fupdate(std::string image); // force firmware update

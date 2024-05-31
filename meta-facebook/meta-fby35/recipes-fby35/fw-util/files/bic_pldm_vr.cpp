@@ -4,7 +4,6 @@
 #include <openbmc/kv.hpp>
 #include <facebook/bic.h>
 #include <facebook/bic_ipmi.h>
-#include <facebook/fby35_common.h>
 
 #include <fmt/format.h>
 #include <iostream>
@@ -13,16 +12,18 @@
 using namespace std;
 
 int PldmVrComponent::update_internal(string image, bool force) {
-  uint8_t slot_id = 0;
   uint8_t status;
   int rc;
 
   try {
-    if (fby35_common_get_slot_id(const_cast<char*>(fru.c_str()), &slot_id)) {
-      throw runtime_error(fru + " is invalid!");
-    }
-
-    if (pal_get_server_power(slot_id, &status)) {
+    server.ready();
+  } catch (const string& e) {
+    cerr << e << endl;
+    return FW_STATUS_FAILURE;
+  }
+  
+  try {
+   if (pal_get_server_power(slot_id, &status)) {
       throw runtime_error("Failed to get server power");
     }
 
@@ -85,6 +86,12 @@ int PldmVrComponent::update_internal(string image, bool force) {
 }
 
 int PldmVrComponent::get_version(json& j) {
+  try {
+    server.ready();
+  } catch(const string& e) {
+    throw runtime_error(e);
+  }
+
   if (PldmComponent::get_version(j)) {
     return FW_STATUS_FAILURE;
   }

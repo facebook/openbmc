@@ -3,10 +3,13 @@
 
 #include "pldm_comp.hpp"
 #include "signed_decoder.hpp"
+#include "server.h"
 #include <string>
 
 class PldmVrComponent : public PldmComponent {
   protected:
+    uint8_t slot_id = 0;
+    Server server;
     int update_internal(std::string image, bool force) override;
   public:
     PldmVrComponent(const std::string &fru, const std::string &comp,
@@ -15,7 +18,8 @@ class PldmVrComponent : public PldmComponent {
                     const pldm_image_signed_info_map& info_map,
                     bool has_standard_descriptor = false): 
       PldmComponent(fru, comp, comp_id, bus, eid, info, 
-                    info_map, has_standard_descriptor) {}
+                    info_map, has_standard_descriptor), 
+      slot_id(sys().get_fru_id(PldmComponent::fru)), server(slot_id, fru) {}
     int get_version(json& j) override;
 };
 

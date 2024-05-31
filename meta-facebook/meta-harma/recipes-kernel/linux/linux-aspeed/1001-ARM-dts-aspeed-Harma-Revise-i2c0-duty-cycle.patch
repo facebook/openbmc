@@ -1,0 +1,27 @@
+From ec94e4f9d947e07786890a02b8f4c40df924839d Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Fri, 31 May 2024 13:00:41 +0800
+Subject: [PATCH 2/2] ARM: dts: aspeed: Harma: Revise i2c0 duty cycle.
+
+set manual clock to 56% for i2c0.
+
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 59a56d254907..d3825a48f853 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -202,6 +202,7 @@ &kcs3 {
+ 
+ &i2c0 {
+ 	status = "okay";
++	i2c-clk-high-min-percent = <56>;
+ 
+ 	pwm@5e{
+ 		compatible = "max31790";
+-- 
+2.25.1
+

@@ -1,12 +1,12 @@
-From 3b7690eae02de546de0c6f69c215a351f1632a6a Mon Sep 17 00:00:00 2001
+From 7d8b51f16f0ad9e63094e7dcc2ff2cb45f7e59a8 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Tue, 19 Mar 2024 16:03:42 +0800
 Subject: [PATCH] meta-facebook: harma: add harm dts
 
 lorelink:https://lore.kernel.org/all/20240412091600.2534693-1-peteryin.openbmc@gmail.com/
 ---
- .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 132 +++++++++++++++---
- 1 file changed, 111 insertions(+), 21 deletions(-)
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 180 ++++++++++++++++--
+ 1 file changed, 159 insertions(+), 21 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 index b2834399f3d1..ed4cd0dd8649 100644
@@ -37,7 +37,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  &kcs2 {
  	status = "okay";
  	aspeed,lpc-io-reg = <0xca8>;
-@@ -192,7 +203,7 @@ &kcs3 {
+@@ -192,18 +203,42 @@ &kcs3 {
  &i2c0 {
  	status = "okay";
  
@@ -46,7 +46,34 @@ index b2834399f3d1..ed4cd0dd8649 100644
  		compatible = "max31790";
  		reg = <0x5e>;
  		#address-cells = <1>;
-@@ -203,7 +214,7 @@ max31790@5e{
+ 		#size-cells = <0>;
+ 	};
++
++	power-sensor@40 {
++		compatible = "ti,ina238";
++		reg = <0x40>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@41 {
++		compatible = "ti,ina238";
++		reg = <0x41>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@44 {
++		compatible = "ti,ina238";
++		reg = <0x44>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@45 {
++		compatible = "ti,ina238";
++		reg = <0x45>;
++		shunt-resistor = <1000>;
++	};
+ };
+ 
  &i2c1 {
  	status = "okay";
  
@@ -55,7 +82,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  		compatible = "ti,tmp75";
  		reg = <0x4b>;
  	};
-@@ -218,7 +229,7 @@ eeprom@50 {
+@@ -218,12 +253,36 @@ eeprom@50 {
  &i2c2 {
  	status = "okay";
  
@@ -64,7 +91,36 @@ index b2834399f3d1..ed4cd0dd8649 100644
  		compatible = "max31790";
  		reg = <0x5e>;
  		#address-cells = <1>;
-@@ -250,6 +261,10 @@ imux21: i2c@1 {
+ 		#size-cells = <0>;
+ 	};
++
++	power-sensor@40 {
++		compatible = "ti,ina238";
++		reg = <0x40>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@41 {
++		compatible = "ti,ina238";
++		reg = <0x41>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@44 {
++		compatible = "ti,ina238";
++		reg = <0x44>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@45 {
++		compatible = "ti,ina238";
++		reg = <0x45>;
++		shunt-resistor = <1000>;
++	};
+ };
+ 
+ &i2c3 {
+@@ -250,6 +309,10 @@ imux21: i2c@1 {
  			#address-cells = <1>;
  			#size-cells = <0>;
  			reg = <1>;
@@ -75,7 +131,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  		};
  	};
  };
-@@ -262,21 +277,25 @@ eeprom@52 {
+@@ -262,21 +325,25 @@ eeprom@52 {
  		reg = <0x52>;
  	};
  
@@ -108,7 +164,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  	};
  };
  
-@@ -308,6 +327,16 @@ imux23: i2c@1 {
+@@ -308,6 +375,16 @@ imux23: i2c@1 {
  
  &i2c7 {
  	status = "okay";
@@ -125,7 +181,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  };
  
  &i2c8 {
-@@ -328,6 +357,12 @@ gpio@31 {
+@@ -328,6 +405,12 @@ gpio@31 {
  		reg = <0x31>;
  		gpio-controller;
  		#gpio-cells = <2>;
@@ -138,7 +194,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  	};
  
  	i2c-mux@71 {
-@@ -370,6 +405,10 @@ &i2c11 {
+@@ -370,6 +453,10 @@ &i2c11 {
  
  &i2c12 {
  	status = "okay";
@@ -149,7 +205,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  };
  
  &i2c13 {
-@@ -385,6 +424,42 @@ imux28: i2c@0 {
+@@ -385,6 +472,42 @@ imux28: i2c@0 {
  			#address-cells = <1>;
  			#size-cells = <0>;
  			reg = <0>;
@@ -192,7 +248,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  		};
  		imux29: i2c@1 {
  			#address-cells = <1>;
-@@ -463,7 +538,8 @@ &gpio0 {
+@@ -463,7 +586,8 @@ &gpio0 {
  	/*A0-A7*/	"","","","","","","","",
  	/*B0-B7*/	"","","","",
  			"bmc-spi-mux-select-0","led-identify","","",
@@ -202,7 +258,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  	/*D0-D7*/	"","","sol-uart-select","","","","","",
  	/*E0-E7*/	"","","","","","","","",
  	/*F0-F7*/	"","","","","","","","",
-@@ -472,7 +548,8 @@ &gpio0 {
+@@ -472,7 +596,8 @@ &gpio0 {
  	/*I0-I7*/	"","","","","","","","",
  	/*J0-J7*/	"","","","","","","","",
  	/*K0-K7*/	"","","","","","","","",
@@ -212,7 +268,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  	/*M0-M7*/	"","","","","","","","",
  	/*N0-N7*/	"led-postcode-0","led-postcode-1",
  			"led-postcode-2","led-postcode-3",
-@@ -481,17 +558,27 @@ &gpio0 {
+@@ -481,17 +606,27 @@ &gpio0 {
  	/*O0-O7*/	"","","","","","","","",
  	/*P0-P7*/	"power-button","power-host-control",
  			"reset-button","","led-power","","","",
@@ -243,7 +299,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  };
  
  &sgpiom0 {
-@@ -540,10 +627,10 @@ &sgpiom0 {
+@@ -540,10 +675,10 @@ &sgpiom0 {
  	"","reset-control-cpu0-p1-mux",
  	"","reset-control-e1s-mux",
  	"power-host-good","reset-control-mb-mux",
@@ -256,7 +312,7 @@ index b2834399f3d1..ed4cd0dd8649 100644
  	"presence-e1s-0","reset-control-usb-hub",
  	"","reset-control",
  	/*E4-E7 line 72-79*/
-@@ -594,13 +681,16 @@ &sgpiom0 {
+@@ -594,13 +729,16 @@ &sgpiom0 {
  	"SLOT_ID_BCB_2","",
  	"SLOT_ID_BCB_3","",
  	/*K0-K3 line 160-167*/

@@ -27,9 +27,9 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 
 # Handler for getting PIM info
 
-pim_number_re = re.compile("\s*PIM (\S.*):")
-fpga_not_found_re = re.compile("\s*DOMFPGA is not detected")
-fpga_type_re = re.compile("\s*(\S.*) DOMFPGA: (\S.*)")
+pim_number_re = re.compile(r"\s*PIM (\S.*):")
+fpga_not_found_re = re.compile(r"\s*DOMFPGA is not detected")
+fpga_type_re = re.compile(r"\s*(\S.*) DOMFPGA: (\S.*)")
 
 
 def prepare_piminfo():

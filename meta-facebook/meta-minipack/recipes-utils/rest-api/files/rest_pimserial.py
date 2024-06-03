@@ -24,7 +24,7 @@ import subprocess
 
 # Handler for getting PIM info
 
-pimserial_re = re.compile("\s*(\S.*) : (\S.*)")
+pimserial_re = re.compile(r"\s*(\S.*) : (\S.*)")
 
 
 def prepare_pimserial():

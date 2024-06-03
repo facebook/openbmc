@@ -200,3 +200,6 @@ BUS="80 88 96 104 112 120 128 136"
 for bus in ${BUS}; do
     i2c_device_add $bus 0x60 domfpga
 done
+
+# Setup tpm
+i2c_device_add 7 0x20 tpm_i2c_infineon

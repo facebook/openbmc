@@ -80,8 +80,8 @@ echo fcm_t version : $fcm_t_maj $fcm_t_min compatible: $fcm_t_compatible
 if [ $fcm_b_compatible -eq 0 ] || [ $fcm_t_compatible -eq 0 ]; then
     echo "Old FCM CPLD detected. Running fan at the fixed speed."
     /usr/local/bin/wdtcli stop
+    exit 1 # Tell systemd to not start fscd
 else
     echo "Starting fscd..."
-    runsv /etc/sv/fscd > /dev/null 2>&1 &
 fi
 echo "done."

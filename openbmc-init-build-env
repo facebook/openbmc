@@ -47,6 +47,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-javaisland:lf-master
   meta-meru:lf-master
   meta-minerva:lf-master
+  meta-minipack:lf-master
   meta-morgan800cc:lf-master
   meta-montblanc:lf-master
   meta-qemux86:lf-master
@@ -57,7 +58,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-cmm:lf-dunfell
   meta-fbsp:lf-dunfell
   meta-galaxy100:lf-dunfell
-  meta-minipack:lf-dunfell
   meta-wedge:lf-dunfell
   meta-wedge100:lf-dunfell
   meta-wedge400:lf-dunfell

@@ -53,3 +53,5 @@ binfiles1 += " \
     rest_fw_ver.py \
     rest_system_led_info.py \
 "
+
+RDEPENDS:${PN} += "python3-attrs"

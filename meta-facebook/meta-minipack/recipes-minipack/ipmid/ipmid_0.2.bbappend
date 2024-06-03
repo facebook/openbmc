@@ -19,6 +19,11 @@ DEPENDS += " libwedge-eeprom libipmi libfruid libsdr libbic update-rc.d-native"
 RDEPENDS:${PN} += "libipmi libkv libwedge-eeprom libbic"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
+
 LOCAL_URI += " \
     file://fruid.c \
     "
+
+SRC_URI += "file://1001-In-ipmid-use-systemd-command-instead-of-sv.patch \
+            "

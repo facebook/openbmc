@@ -20,14 +20,12 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
-from utils.test_utils import qemu_check
+from utils.test_utils import qemu_check, running_systemd
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
-            "dhclient -6 -d -D LL",
-            "dhclient -pf /var/run/dhclient.eth0.pid eth0",
             "front-paneld",
             "ipmbd",
             "ipmid",
@@ -38,5 +36,19 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "rsyslogd",
             "usbmon.sh",
         ]
+        SYSV_PROCESSES = [
+            "dhclient -6 -d -D LL",
+            "dhclient -pf /var/run/dhclient.eth0.pid eth0",
+        ]
+        SYSTEMD_PROCESSES = [
+            "systemd-journald",
+            "systemd-udevd",
+            "systemd-resolved",
+            "systemd-timesyncd",
+            "systemd-networkd",
+        ]
+        self.expected_process.extend(
+            SYSTEMD_PROCESSES if running_systemd() else SYSV_PROCESSES
+        )
         if not qemu_check():
             self.expected_process.extend(["fscd"])

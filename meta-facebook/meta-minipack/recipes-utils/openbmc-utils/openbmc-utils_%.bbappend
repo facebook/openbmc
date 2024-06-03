@@ -42,6 +42,7 @@ LOCAL_URI += " \
     file://setup_pcie_repeater.sh \
     file://setup_qsfp.sh \
     file://setup_sensors_conf.sh \
+    file://setup_sensors_conf.service \
     file://seutil \
     file://smbcpld_update.sh \
     file://sol.sh \
@@ -52,6 +53,7 @@ LOCAL_URI += " \
     file://wedge_power.sh \
     file://wedge_us_mac.sh \
     file://create_vlan_intf \
+    file://mount_data1.service \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -84,13 +86,9 @@ OPENBMC_UTILS_FILES += " \
     "
 
 DEPENDS:append = " update-rc.d-native"
+inherit systemd
 
-do_install_board() {
-    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
-    olddir="/usr/local/fbpackages/utils"
-    install -d ${D}${olddir}
-    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
-
+install_sysv2() {
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
     install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
@@ -121,8 +119,44 @@ do_install_board() {
 
 }
 
+install_systemd2() {
+  install -d ${D}/usr/local/bin
+  install -d ${D}${systemd_system_unitdir}
+
+  install -m 755 setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
+
+  install -m 755 setup_sensors_conf.sh ${D}/usr/local/bin/setup_sensors_conf.sh
+  install -m 755 setup_sensors_conf.service ${D}${systemd_system_unitdir}
+
+  install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+
+  install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
+
+  install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+
+  install -m 0644 mount_data1.service ${D}${systemd_system_unitdir}
+}
+
+do_install_board() {
+  # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
+  olddir="/usr/local/fbpackages/utils"
+  install -d ${D}${olddir}
+  ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
+
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+    install_systemd2
+  else
+    install_sysv2
+  fi
+}
+
 do_install:append() {
   do_install_board
 }
 
 FILES:${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICE:${PN} += "mount_data1.service setup_sensors_conf.service"
+
+# Not needed for minipack
+SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service"

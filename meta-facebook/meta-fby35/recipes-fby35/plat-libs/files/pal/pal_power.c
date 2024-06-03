@@ -242,6 +242,18 @@ server_power_12v_off(uint8_t fru) {
 
   pal_clear_vr_crc(fru);
 
+#ifdef CONFIG_JAVAISLAND
+  // clear version cache of PLDM components
+  char ver_key[MAX_KEY_LEN] = {0};
+  const char *pldm_comp_list[] = {"vr_cpudvdd", "vr_cpuvdd", "vr_socvdd", "retimer"};
+  for (int i = 0; i < ARRAY_SIZE(pldm_comp_list); i++) {
+    snprintf(ver_key, sizeof(ver_key), "slot%d_%s_active_ver", fru, pldm_comp_list[i]);
+    kv_del(ver_key, 0);
+    snprintf(ver_key, sizeof(ver_key), "slot%d_%s_pending_ver", fru, pldm_comp_list[i]);
+    kv_del(ver_key, 0);
+  }
+#endif
+
   snprintf(cmd, sizeof(cmd), FRU_ID_COMPONENT_VER_KEY, fru, "prot");
   kv_del(cmd, 0);
   snprintf(cmd, sizeof(cmd), FRU_ID_CPLD_NEW_VER_KEY, fru);

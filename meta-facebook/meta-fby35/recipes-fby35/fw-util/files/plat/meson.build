@@ -14,6 +14,7 @@ srcs += [
     'usbdbg.cpp',
     'vpdb_vr.cpp',
     'bic_pldm_vr.cpp',
+    'bic_pldm_retimer.cpp',
 ]
 
 deps += [

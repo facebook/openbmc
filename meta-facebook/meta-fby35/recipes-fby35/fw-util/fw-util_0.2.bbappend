@@ -45,6 +45,8 @@ LOCAL_URI += " \
         file://signed_info.hpp \
         file://bic_pldm_vr.hpp \
         file://bic_pldm_vr.cpp \
+        file://bic_pldm_retimer.hpp \
+        file://bic_pldm_retimer.cpp \
         "
 
 CXXFLAGS += "-DBIC_SUPPORT"

@@ -34,7 +34,6 @@
 clear_all_vr_cache(){
   sb_vr_list=("c0h" "c4h" "ech" "c2h" "c6h" "c8h" "cch" "d0h" "96h" "9ch" "9eh" "8ah" "8ch" "8eh")
   rbf_vr_list=("b0h" "b4h" "c8h")
-  ji_vr_list=("cpudvdd" "cpuvdd" "socvdd")
   for vr in "${sb_vr_list[@]}"; do
     $KV_CMD del "slot${slot_num}_vr_${vr}_crc"
     $KV_CMD del "slot${slot_num}_vr_${vr}_new_crc" persistent
@@ -43,9 +42,13 @@ clear_all_vr_cache(){
     $KV_CMD del "slot${slot_num}_1ou_vr_${vr}_crc"
     $KV_CMD del "slot${slot_num}_1ou_vr_${vr}_new_crc" persistent
   done
-  for vr in "${ji_vr_list[@]}"; do
-    $KV_CMD del "slot${slot_num}_vr_${vr}_active_ver"
-    $KV_CMD del "slot${slot_num}_vr_${vr}_pending_ver"
+}
+
+clear_all_pldm_comp_cache(){
+  comp_list=("vr_cpudvdd" "vr_cpuvdd" "vr_socvdd" "retimer")
+  for comp in "${comp_list[@]}"; do
+    $KV_CMD del "slot${slot_num}_${comp}_active_ver"
+    $KV_CMD del "slot${slot_num}_${comp}_pending_ver"
   done
 }
 
@@ -89,6 +92,7 @@ if [ "$(is_server_prsnt "$slot_num")" = "0" ]; then
   $KV_CMD del "fru${slot_num}_sb_rev_id"
   $KV_CMD del "fru${slot_num}_is_prot_prsnt"
   clear_all_vr_cache
+  clear_all_pldm_comp_cache
   i2c_device_delete "${prot_bus}" 0x50 > /dev/null 2>&1
   set_nic_power
 else

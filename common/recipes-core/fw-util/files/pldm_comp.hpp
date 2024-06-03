@@ -20,7 +20,7 @@ class PldmComponent : public Component, public InfoChecker
     uint8_t bus, eid, component_identifier;
     bool has_standard_descriptor;
     int wait_apply_time;
-    std::string activeVerionKey, pendingVersionKey;
+    std::string activeVersionKey, pendingVersionKey;
     int find_image_index(uint8_t /*target_id*/) const;
     int get_raw_image(const std::string& /*image*/, std::string& /*raw_image*/);
     int del_raw_image() const;
@@ -39,7 +39,7 @@ class PldmComponent : public Component, public InfoChecker
                   component_identifier(component_identifier), 
                   has_standard_descriptor(has_standard_descriptor), 
                   wait_apply_time(PLDM_APPLY_DELAY_TIME_DAFAULT), 
-                  activeVerionKey(fmt::format("{}_{}_active_ver", fru, comp)), 
+                  activeVersionKey(fmt::format("{}_{}_active_ver", fru, comp)), 
                   pendingVersionKey(fmt::format("{}_{}_pending_ver", fru, comp)), 
                   signed_info_map(info_map) {}
     PldmComponent(const signed_header_t& info, const std::string &fru, const std::string &comp,

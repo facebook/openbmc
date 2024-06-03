@@ -260,7 +260,7 @@ int PldmComponent::update_version_cache() {
     
     activeVersion = activeVersion.empty() ? INVALID_VERSION : activeVersion;
     pendingVersion = pendingVersion.empty() ? INVALID_VERSION : pendingVersion;
-    kv::set(activeVerionKey, activeVersion, kv::region::temp);
+    kv::set(activeVersionKey, activeVersion, kv::region::temp);
     kv::set(pendingVersionKey, pendingVersion, kv::region::temp);
   } catch(const exception& e) {
     syslog(LOG_CRIT, "FRU %s failed to update %s version cache. %s", 
@@ -282,7 +282,7 @@ int PldmComponent::fupdate(string image) {
 int PldmComponent::get_version(json& j) {
   string activeVersion, pendingVersion;
   try {
-    activeVersion = kv::get(activeVerionKey, kv::region::temp);
+    activeVersion = kv::get(activeVersionKey, kv::region::temp);
     pendingVersion = kv::get(pendingVersionKey, kv::region::temp);
     if (activeVersion.find(INVALID_VERSION) != string::npos || 
         pendingVersion.find(INVALID_VERSION) != string::npos) {
@@ -292,7 +292,7 @@ int PldmComponent::get_version(json& j) {
     if (update_version_cache()) {
       return FW_STATUS_FAILURE;
     }
-    activeVersion = kv::get(activeVerionKey, kv::region::temp);
+    activeVersion = kv::get(activeVersionKey, kv::region::temp);
     pendingVersion = kv::get(pendingVersionKey, kv::region::temp);
   }
   j[ACTIVE_VERSION] = activeVersion;

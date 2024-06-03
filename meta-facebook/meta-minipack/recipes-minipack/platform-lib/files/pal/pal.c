@@ -1561,7 +1561,7 @@ char tstr[MAX_VALUE_LEN] = {0};
   struct timespec ts;
 
   clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%ld", ts.tv_sec);
+  sprintf(tstr, "%lld", (long long)ts.tv_sec);
 
   sprintf(key, "timestamp_sled");
 
@@ -2371,7 +2371,7 @@ check_and_read_sensor_value(uint8_t fru, uint8_t snr_num, const char *device,
                             const char *attr, int *value) {
   char dir_name[LARGEST_DEVICE_NAME + 1];
 
-  if (snr_path[fru][snr_num].name != NULL) {
+  if (*snr_path[fru][snr_num].name != '\0') {
     if (!read_device(snr_path[fru][snr_num].name, value))
       return 0;
   }
@@ -2497,10 +2497,10 @@ read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
 static int
 read_fan_rpm(const char *device, uint8_t fan, int *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
-  char device_name[11];
+  char device_name[20];
   int tmp;
 
-  snprintf(device_name, 11, "fan%d_input", fan);
+  snprintf(device_name, sizeof(device_name), "fan%d_input", fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", device, device_name);
   if (read_device(full_name, &tmp)) {
     return -1;
@@ -6063,8 +6063,11 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num,
       switch (snr_num) {
         case SCM_SENSOR_INLET_REMOTE_TEMP:
           snr_desc = get_sensor_desc(FRU_SCM, snr_num);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
           snprintf(crisel, sizeof(crisel), "%s %s %.2fV - DEASSERT,FRU:%u",
                           snr_desc->name, thresh_name, val, fru);
+#pragma GCC diagnostic pop
           break;
         default:
           return;
@@ -6074,8 +6077,11 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num,
         case SMB_SENSOR_TH3_DIE_TEMP1:
         case SMB_SENSOR_TH3_DIE_TEMP2:
           snr_desc = get_sensor_desc(fru, snr_num);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
           snprintf(crisel, sizeof(crisel), "%s %s %.2fV - DEASSERT,FRU:%u",
                           snr_desc->name, thresh_name, val, fru);
+#pragma GCC diagnostic pop
           break;
         default:
           return;
@@ -7151,7 +7157,7 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   sensor_desc_t *snr_desc;
 
   snr_desc = get_sensor_desc(fru, snr_num);
-  strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
+  memcpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
   snr_desc->name[sizeof(snr_desc->name)-1] = 0;
 
   pal_set_def_key_value();
@@ -7769,7 +7775,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
       ts.tv_sec += 30;
 
       snprintf(key, sizeof(key), "ocpdbg_lcd");
-      snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+      snprintf(value, sizeof(value), "%lld", (long long)ts.tv_sec);
       if (kv_set(key, value, 0, 0) < 0) {
         return -1;
       }

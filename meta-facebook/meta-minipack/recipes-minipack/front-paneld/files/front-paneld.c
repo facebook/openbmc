@@ -264,7 +264,7 @@ pim_driver_del(uint8_t num, uint8_t pim_type) {
 static int
 pim_thresh_init_file_check(uint8_t fru) {
   char fru_name[32];
-  char fpath[64];
+  char fpath[128];
 
   pal_get_fru_name(fru, fru_name);
   snprintf(fpath, sizeof(fpath), INIT_THRESHOLD_BIN, fru_name);

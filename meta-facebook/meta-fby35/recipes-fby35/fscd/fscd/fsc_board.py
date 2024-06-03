@@ -23,6 +23,7 @@ import kv
 import os
 
 from fsc_util import Logger
+from re import search
 
 fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
 get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR", "sensor_fail_ignore_check", "sensor_not_ready"]
@@ -243,10 +244,17 @@ def sensor_valid_check(board, sname, check_name, attribute):
             if (ret != 0) or (status.value == 5):  # SERVER_12V_OFF
                 return 0
 
-            if "fio_" in sname:
-                return 1
+            # 12V-on stby sensor
+            # Javaisland: MB_HSC_TEMP_C, MB_FIO_FRONT_TEMP_C
+            if (
+                (search(r"fio_|mb_hsc_temp_c", sname) is not None)
+            ):
+                if status.value == 6: # SERVER_12V_ON, BIC no response case.
+                    return 0
+                else:
+                    return 1
 
-            if status.value == 1:  # power on
+            if status.value == 1:  # SERVER_POWER_ON
                 ready = is_host_ready(host_ready_map[board])
                 if ready != 1:
                     return 0
@@ -257,7 +265,6 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
                 if "vf_e1s" in sname:
                     return is_e1s_prsnt(board, sname[10 : sname.find("_t")])
-
                 return 1
         return 0
     except SystemExit:

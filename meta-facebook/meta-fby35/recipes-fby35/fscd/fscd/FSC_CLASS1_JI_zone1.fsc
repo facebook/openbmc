@@ -1,0 +1,46 @@
+max([
+  linear_mb_frontIO(
+    max([
+      all:slot1_mb_fio_front_temp_c,
+      all:slot2_mb_fio_front_temp_c,
+      all:slot3_mb_fio_front_temp_c,
+      all:slot4_mb_fio_front_temp_c])),
+  linear_cpu(all:slot1_mb_soc_cpu_temp_c) + pid_cpu(all:slot1_mb_soc_cpu_temp_c),
+  linear_cpu(all:slot2_mb_soc_cpu_temp_c) + pid_cpu(all:slot2_mb_soc_cpu_temp_c),
+  linear_cpu(all:slot3_mb_soc_cpu_temp_c) + pid_cpu(all:slot3_mb_soc_cpu_temp_c),
+  linear_cpu(all:slot4_mb_soc_cpu_temp_c) + pid_cpu(all:slot4_mb_soc_cpu_temp_c),
+  linear_e1s_ssd(
+    max([
+      all:slot1_mb_e1s_ssd_temp_c,
+      all:slot2_mb_e1s_ssd_temp_c,
+      all:slot3_mb_e1s_ssd_temp_c,
+      all:slot4_mb_e1s_ssd_temp_c])) +
+  pid_e1s_ssd(
+    max([
+      all:slot1_mb_e1s_ssd_temp_c,
+      all:slot2_mb_e1s_ssd_temp_c,
+      all:slot3_mb_e1s_ssd_temp_c,
+      all:slot4_mb_e1s_ssd_temp_c])),
+  linear_mb_hsc(
+    max([
+      all:slot1_mb_hsc_temp_c,
+      all:slot2_mb_hsc_temp_c,
+      all:slot3_mb_hsc_temp_c,
+      all:slot4_mb_hsc_temp_c])),
+  linear_mb_retimer(
+    max([
+      all:slot1_mb_retimer_temp_c,
+      all:slot2_mb_retimer_temp_c,
+      all:slot3_mb_retimer_temp_c,
+      all:slot4_mb_retimer_temp_c])) +
+  pid_mb_retimer(
+    max([
+      all:slot1_mb_retimer_temp_c,
+      all:slot2_mb_retimer_temp_c,
+      all:slot3_mb_retimer_temp_c,
+      all:slot4_mb_retimer_temp_c])),
+  linear_nic(all:nic_nic_temp_c) + pid_nic(all:nic_nic_temp_c),
+  linear_bb_hsc(
+    max([
+      all:bmc_bb_hsc_temp_c]))
+])

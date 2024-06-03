@@ -1,0 +1,222 @@
+{
+  "version": "JI FSC V1.0",
+  "pwm_transition_value": 80,
+  "pwm_boost_value": 100,
+  "non_fanfail_limited_boost_value": 100,
+  "sample_interval_ms": 3000,
+  /* javaisland board & BIOS fw not support POST_COMPLETE gpio currently*/
+  /* so set sensor_fail_ignore to false temporarily */
+  "sensor_fail_ignore": false,
+  "sensor_filter_all": true,
+  "ramp_rate": 100,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "fan_dead_boost": {
+    "threshold": 2,
+    "action": "host_shutdown"
+  },
+  /* all mb sensor need to check power status */
+  /* stby sensor: nic_temp, bb_hsc_temp does not need to check power status */
+  "sensor_valid_check": {
+    "(.*)mb_": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
+  "watchdog": false,
+  "min_rpm": 500,
+  "profiles": {
+    "linear_mb_frontIO": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 25, 10 ],
+        [ 30, 13 ],
+        [ 35, 15 ],
+        [ 40, 20 ]
+      ]
+    },
+    "linear_cpu": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [ 50, 10 ],
+        [ 55, 25 ],
+        [ 60, 35 ],
+        [ 63, 40 ],
+        [ 82, 50 ]
+      ]
+    },
+    "pid_cpu": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 79,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -3.0,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_e1s_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [50, 10],
+        [55, 12],
+        [60, 14],
+        [65, 18],
+        [72, 50]
+      ]
+    },
+    "pid_e1s_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 70,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 2,
+      "kp": -3.5,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_mb_hsc": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 1,
+      "negative_hysteresis": 1,
+      "data": [
+        [ 45, 10 ],
+        [ 55, 12 ],
+        [ 60, 15 ],
+        [ 65, 18 ],
+        [ 105, 50]
+      ]
+    },
+    "linear_mb_retimer": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 1,
+      "negative_hysteresis": 1,
+      "data": [
+        [75, 10],
+        [80, 14],
+        [85, 18],
+        [100, 50]
+      ]
+    },
+    "pid_mb_retimer": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 97,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -3.5,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_nic": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 1,
+      "negative_hysteresis": 1,
+      "data": [
+        [45, 10],
+        [50, 13],
+        [55, 18],
+        [95, 50]
+      ]
+    },
+    "pid_nic": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 90,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -3.5,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_bb_hsc": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [35, 10],
+        [37, 14],
+        [40, 18],
+        [90, 50]
+      ]
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "sysfs" : "/sys/class/hwmon/hwmon*/fan1_input"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "1": {
+      "read_source" : {
+        "sysfs" : "/sys/class/hwmon/hwmon*/fan3_input"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "2": {
+      "read_source" : {
+        "sysfs" : "/sys/class/hwmon/hwmon*/fan5_input"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "3": {
+      "read_source" : {
+        "sysfs" : "/sys/class/hwmon/hwmon*/fan7_input"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0],
+      "expr_file": "FSC_CLASS1_JI_zone1.fsc"
+    }
+  }
+}

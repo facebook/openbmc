@@ -6124,6 +6124,11 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
   syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);
 
   if (fby35_common_get_slot_type(slot) == SERVER_TYPE_JI) {
+    char key[MAX_KEY_LEN] = {0};
+
+    snprintf(key, MAX_KEY_LEN, "fru%u_host_ready", slot);
+    kv_set(key, "1", 0, 0);
+
     #define PLDM_CMD " pldmd-util -b %d -e 0xF0 raw 0x02 0x04 0x01 0x00 0x08 0x00 0x00"
     char cmd[128] = {0};
     int cmd_len = sizeof(cmd);

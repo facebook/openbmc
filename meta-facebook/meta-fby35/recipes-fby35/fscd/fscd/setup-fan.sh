@@ -118,6 +118,9 @@ init_class1_fsc() {
     if [[ $server_type -eq 4 ]]; then
       config_type="GL"
       target_fsc_config="/etc/FSC_CLASS1_GL_config.json"
+    elif [[ $server_type -eq 5 ]]; then
+      config_type="JI"
+      target_fsc_config="/etc/FSC_CLASS1_JI_config.json"
     else
       config_type="1"
       target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
@@ -224,7 +227,7 @@ reload_sled_fsc() {
 
     #Check number of slots
     sys_config="$($KV_CMD get sled_system_conf persistent)"
-    if [[ "$sys_config" =~ ^(Type_(1|10|VF))$ && "$cnt" -eq 4 ]]; then
+    if [[ "$sys_config" =~ ^(Type_(1|10|VF|JI))$ && "$cnt" -eq 4 ]]; then
       run_fscd=true
     elif [[ "$sys_config" =~ ^(Type_(DPV2|HD|GL))$ && "$cnt" -eq 2 ]]; then
       run_fscd=true
@@ -249,13 +252,6 @@ reload_sled_fsc() {
 }
 
 start_fscd() {
-  server_type=$(get_server_type 1)
-
-  if [[ $server_type -eq 5 ]]; then
-    echo "Java island FSCD is not ready."
-    exit
-  fi
-
   if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
     init_class1_fsc
   elif [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then

@@ -4,8 +4,6 @@
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
-  /* javaisland board & BIOS fw not support POST_COMPLETE gpio currently*/
-  /* so set sensor_fail_ignore to false temporarily */
   "sensor_fail_ignore": false,
   "sensor_filter_all": true,
   "ramp_rate": 100,
@@ -17,8 +15,6 @@
     "threshold": 2,
     "action": "host_shutdown"
   },
-  /* all mb sensor need to check power status */
-  /* stby sensor: nic_temp, bb_hsc_temp does not need to check power status */
   "sensor_valid_check": {
     "(.*)mb_": {
       "attribute": {

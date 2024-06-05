@@ -6896,91 +6896,82 @@ pal_mon_fw_upgrade
 (int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
               uint8_t *psu_ug, uint8_t *smb_ug)
 {
-  char cmd[5];
-  FILE *fp;
-  int ret=-1;
-  char *buf_ptr;
-  char *new_buf_ptr = NULL;
-  int buf_size = 1000;
-  int str_size = 200;
-  int tmp_size;
-  char str[200];
-  snprintf(cmd, sizeof(cmd), "ps w");
-  fp = popen(cmd, "r");
-  if(NULL == fp)
+  struct strings {
+    const char *str1;
+    const char *str2;
+  };
+
+  static const struct strings sys_strings[] = {
+    { "write spi2", NULL },
+    { "write spi1 BACKUP_BIOS", NULL },
+    { "scmcpld_update", NULL },
+    { "pimcpld_update", NULL },
+    { "fw-util", "--update" },
+  };
+
+  static const struct strings fan_strings[] = {
+    { "fcmcpld_update", NULL },
+  };
+
+  static const struct strings psu_strings[] = {
+    { "psu-util", "--update" },
+  };
+
+  static const struct strings smb_strings[] = {
+    { "smbcpld_update", NULL },
+    { "pdbcpld_update", NULL },
+    { "flashcp", NULL },
+    { "write spi1 IOB_FPGA_FLASH", NULL },
+    { "write spi1 TH3_FLASH", NULL },
+    { "write spi1 BCM5396_EE", NULL },
+  };
+
+  struct {
+    uint8_t *flag;
+    const struct strings *strings;
+    int count;
+  } processes[] = {
+    { sys_ug, sys_strings, ARRAY_SIZE(sys_strings) },
+    { fan_ug, fan_strings, ARRAY_SIZE(fan_strings) },
+    { psu_ug, psu_strings, ARRAY_SIZE(psu_strings) },
+    { smb_ug, smb_strings, ARRAY_SIZE(smb_strings) },
+  };
+
+
+  FILE *fp = popen("ps w", "r");
+  if (fp == NULL)
      return -1;
 
-  buf_ptr = (char *)malloc(buf_size * sizeof(char) + sizeof(char));
-  memset(buf_ptr, 0, sizeof(char));
-  tmp_size = str_size;
-  while(fgets(str, str_size, fp) != NULL) {
-    tmp_size = tmp_size + str_size;
-    if(tmp_size + str_size >= buf_size) {
-      new_buf_ptr = realloc(buf_ptr, sizeof(char) * buf_size * 2 + sizeof(char));
-      buf_size *= 2;
+  *sys_ug = *fan_ug = *psu_ug = *smb_ug = 0;
+
+  // Scan "ps w" output and for each process command line see if it contains
+  // the string str1 (and if str2!=NULL, also str2). If so, turn on the
+  // respective flag
+  char line[200];
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    for (int i = 0; i < ARRAY_SIZE(processes); i++) {
+      if (*processes[i].flag) {
+        continue;
+      }
+      for (int j = 0; j < processes[i].count; j++) {
+        int found = strstr(line, processes[i].strings[j].str1) != NULL;
+        if (found && processes[i].strings[j].str2 != NULL) {
+          found = strstr(line, processes[i].strings[j].str2) != NULL;
+        }
+        if (found) {
+          *processes[i].flag = 1;
+          break;
+        }
+      }
     }
-    if(!new_buf_ptr) {
-      syslog(LOG_ERR,
-             "%s realloc() fail, please check memory remaining", __func__);
-      goto free_buf;
-    }
-    buf_ptr = new_buf_ptr;
-    strncat(buf_ptr, str, str_size);
   }
 
-  //check whether sys led need to blink
-  *sys_ug = strstr(buf_ptr, "write spi2") != NULL ? 1 : 0;
-  if(*sys_ug) goto fan_state;
-
-  *sys_ug = strstr(buf_ptr, "write spi1 BACKUP_BIOS") != NULL ? 1 : 0;
-  if(*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "scmcpld_update") != NULL) ? 1 : 0;
-  if(*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "pimcpld_update") != NULL) ? 1 : 0;
-  if(*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "fw-util") != NULL) ?
-          ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if(*sys_ug) goto fan_state;
-
-  //check whether fan led need to blink
-fan_state:
-  *fan_ug = (strstr(buf_ptr, "fcmcpld_update") != NULL) ? 1 : 0;
-
-  //check whether fan led need to blink
-  *psu_ug = (strstr(buf_ptr, "psu-util") != NULL) ?
-          ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-
-  //check whether smb led need to blink
-  *smb_ug = (strstr(buf_ptr, "smbcpld_update") != NULL) ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = (strstr(buf_ptr, "pdbcpld_update") != NULL) ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 IOB_FPGA_FLASH") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 TH3_FLASH") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 BCM5396_EE") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-close_fp:
-  ret = pclose(fp);
-  if(-1 == ret)
-     syslog(LOG_ERR, "%s pclose() fail ", __func__);
+  if(pclose(fp) == -1) {
+    syslog(LOG_ERR, "%s pclose() fail ", __func__);
+  }
 
   upgrade_led_blink(brd_rev, *sys_ug, *fan_ug, *psu_ug, *smb_ug);
 
-free_buf:
-  free(buf_ptr);
   return 0;
 }
 

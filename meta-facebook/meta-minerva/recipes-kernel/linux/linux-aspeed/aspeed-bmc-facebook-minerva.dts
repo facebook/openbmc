@@ -168,7 +168,7 @@
 	power-monitor@44 {
 		compatible = "lltc,ltc4287";
 		reg = <0x44>;
-		rsense-micro-ohms = <2000>;
+		shunt-resistor-micro-ohms = <2000>;
 	};
 
 	leds_gpio: gpio@19 {
@@ -249,6 +249,11 @@
 				reg = <0x45>;
 				shunt-resistor = <1000>;
 			};
+
+			temperature-sensor@4b {
+				compatible = "ti,tmp75";
+				reg = <0x4b>;
+			};
 		};
 
 		imux17: i2c@1 {
@@ -290,6 +295,11 @@
 				compatible = "ti,ina238";
 				reg = <0x45>;
 				shunt-resistor = <1000>;
+			};
+
+			temperature-sensor@4b {
+				compatible = "ti,tmp75";
+				reg = <0x4b>;
 			};
 		};
 
@@ -333,6 +343,11 @@
 				reg = <0x45>;
 				shunt-resistor = <1000>;
 			};
+			
+			temperature-sensor@4b {
+				compatible = "ti,tmp75";
+				reg = <0x4b>;
+			};
 		};
 
 		imux19: i2c@3 {
@@ -374,6 +389,11 @@
 				compatible = "ti,ina238";
 				reg = <0x45>;
 				shunt-resistor = <1000>;
+			};
+
+			temperature-sensor@4b {
+				compatible = "ti,tmp75";
+				reg = <0x4b>;
 			};
 		};
 
@@ -417,6 +437,11 @@
 				reg = <0x45>;
 				shunt-resistor = <1000>;
 			};
+
+			temperature-sensor@4b {
+				compatible = "ti,tmp75";
+				reg = <0x4b>;
+			};
 		};
 
 		imux21: i2c@5 {
@@ -458,6 +483,11 @@
 				compatible = "ti,ina238";
 				reg = <0x45>;
 				shunt-resistor = <1000>;
+			};
+
+			temperature-sensor@4b {
+				compatible = "ti,tmp75";
+				reg = <0x4b>;
 			};
 		};
 	};

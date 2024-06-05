@@ -62,8 +62,9 @@ struct command
         {
             co_await execute(ctx);
         }
-        catch (...)
+        catch (const std::exception& e)
         {
+            error("Caught exception: {ERROR}", "ERROR", e);
             json::display("failed");
             co_return;
         }
@@ -149,7 +150,7 @@ struct execute
         -> sdbusplus::async::task<>
     {
         error("Execution method undefined.");
-        throw std::exception();
+        throw std::invalid_argument("execution method");
     }
 };
 
@@ -170,7 +171,7 @@ struct execute<Action, scope::standby>
             warning("Can't find {PATH}", "PATH", path);
             error(
                 "Cannot find chassis to execute operation against; giving up.");
-            throw std::exception();
+            throw std::runtime_error("missing chassis");
         }
 
         auto proxy = chassis::Proxy(ctx).service(*service).path(path);

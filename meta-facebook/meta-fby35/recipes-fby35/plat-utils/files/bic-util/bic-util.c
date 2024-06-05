@@ -38,6 +38,9 @@
 #define SBMR_POSTCODE_SIZE 9
 #define SBMR_MAX_PAGE_POSTCODE_NUM 26
 #define SBMR_MAX_POSTCODE_PAGE_SIZE SBMR_POSTCODE_SIZE * SBMR_MAX_PAGE_POSTCODE_NUM
+#define OPA_PRSNT0_EXPB 129
+#define OPA_OU1_PRSNT_REG 0x17
+#define OPA_OU3_PRSNT_REG 0x08
 
 enum {
   UTIL_GET_GPIO = 0x0,
@@ -54,6 +57,7 @@ enum {
   UTIL_PERF_TEST,
   UTIL_CHECK_USB,
   UTIL_FILE,
+  UTIL_CHECK_OU_STS,
 };
 
 static uint8_t bmc_location = 0xff;
@@ -75,6 +79,7 @@ static const char *option_list[] = {
   "--perf_test [loop_count] (0 to run forever)",
   "--check_usb_port",
   "--file [path]",
+  "--check_ou_status",
 };
 
 static const struct option options[] = {
@@ -92,6 +97,7 @@ static const struct option options[] = {
   {"perf_test",        required_argument, 0, UTIL_PERF_TEST},
   {"check_usb_port",   no_argument,       0, UTIL_CHECK_USB},
   {"file",             required_argument, 0, UTIL_FILE},
+  {"check_ou_status",  no_argument,       0, UTIL_CHECK_OU_STS},
   {0, 0, 0, 0}
 };
 
@@ -783,6 +789,91 @@ exit:
   return ret;
 }
 
+// For Olympic 2.0
+// Detect 1~4 OU status
+// 1OU : get from cpld register
+// 2OU : get from gipo (from 1OU BIC)
+// 3OU : get from cpld register
+// 4OU : get from gipo (from 3OU BIC)
+// cpld register and gipo are low present
+static int
+util_check_ou_status(uint8_t slot_id) {
+  int ret = 0;
+  bool ou_cpld_reg_fail = 0;
+  uint8_t status;
+  uint8_t ou1_ou3_val = 0;
+  uint8_t ou2_val = 0;
+  uint8_t ou4_val = 0;
+
+  // BIC status is only valid if 12V-on. check this first
+  ret = pal_get_server_12v_power(slot_id, &status);
+  if ((ret < 0) || (SERVER_12V_OFF == status)) {
+    ret = pal_is_fru_prsnt(slot_id, &status);
+
+    if (ret < 0) {
+      printf("unable to check OU status!\n");
+      return ret;
+    }
+
+    if (status == 0) {
+      printf("Slot is empty, unable to check OU status!\n");
+    } else {
+      printf("Slot is 12V-off, unable to check OU status!\n");
+    }
+    ret = 0;
+  } else {
+    if (is_bic_ready(slot_id, NONE_INTF) == BIC_STATUS_SUCCESS) {
+
+      if (bic_op_get_ou_present_reg(slot_id , &ou1_ou3_val) < 0) {
+        printf("1OU  :  Unknow (cannot get data from CPLD) \n");
+        ou_cpld_reg_fail = 1;
+      } else {
+        if ((ou1_ou3_val & OPA_OU1_PRSNT_REG) == 0) {
+          printf("1OU  :  Present \n");
+        } else {
+          printf("1OU  :  Not Present \n");
+        }
+      }
+
+      if (bic_get_exp_gpio(slot_id, OPA_PRSNT0_EXPB, &ou2_val, FEXP_BIC_INTF) < 0) {
+        printf("2OU  :  Unknow (cannot get data from 1OU BIC) \n");
+      } else {
+        if (ou2_val) {
+          printf("2OU  :  Not Present \n");
+        } else {
+          printf("2OU  :  Present \n");
+        }
+      }
+
+      if (ou_cpld_reg_fail) {
+        printf("3OU  :  Unknow (cannot get data from CPLD) \n");
+      } else {
+        if ((ou1_ou3_val & OPA_OU3_PRSNT_REG) == 0) {
+          printf("3OU  :  Present \n");
+        } else {
+          printf("3OU  :  Not Present \n");
+        }
+      }
+
+      if (bic_get_exp_gpio(slot_id, OPA_PRSNT0_EXPB, &ou4_val, EXP3_BIC_INTF) < 0) {
+        printf("4OU  :  Unknow (cannot get data from 3OU BIC) \n");
+      } else {
+        if (ou4_val) {
+          printf("4OU  :  Not Present \n");
+        } else {
+          printf("4OU  :  Present \n");
+        }
+      }
+
+      ret = 0;
+    } else {
+      printf("Error: BIC not ready, unable to check OU status\n");
+      ret = -1;
+    }
+  }
+  return ret;
+}
+
 int
 main(int argc, char **argv) {
   int ret = 0, i = 0;
@@ -948,6 +1039,17 @@ main(int argc, char **argv) {
           return 0;
         }
         return process_file(slot_id, optarg, intf);
+      case UTIL_CHECK_OU_STS: // Only for OP2
+        if (argc != (opt_idx+1) || intf != NONE_INTF) {
+          goto err_exit;
+        }
+        server_type = fby35_common_get_slot_type(slot_id);
+        if (server_type == SERVER_TYPE_GL) {
+          return util_check_ou_status(slot_id);
+        } else {
+          printf("This project is not supported!");
+          return 0;
+        }
       default:
         printf("Invalid option: %s\n", argv[opt_idx]);
         goto err_exit;

@@ -1271,6 +1271,7 @@ bic_get_exp_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t *value, uint8_t intf
   if (value == NULL) {
     return -1;
   }
+
   // File the IANA ID
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[3] = 0x00;
@@ -2489,4 +2490,29 @@ bic_vf_get_e1s_present(uint8_t slot_id, uint8_t dev_id, uint8_t *status) {
   *status = (rbuf[4] & 0x01) ? NOT_PRESENT : PRESENT;
 
   return 0;
+}
+
+// For Olympic 2.0
+// BIC CPLD register
+// Bit 3: 3ou Riser Expansion Present, Low Present
+// Bit 4: 1ou Expansion Present Pin 3, Low Present
+// Bit 2: 1ou Expansion Present Pin 2, Low Present
+// Bit 1: 1ou Expansion Present Pin 1, Low Present
+// Bit 0: 1ou Expansion Present Pin 0, Low Present
+int
+bic_op_get_ou_present_reg(uint8_t slot_id, uint8_t *value) {
+  uint8_t tbuf[4] = {0};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = 0x01; //bus id
+  tbuf[1] = 0x42; //slave addr
+  tbuf[2] = 0x01; //read 1 byte
+  tbuf[3] = 0x05; //offset
+
+  ret = bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  *value = rbuf[0] & 0x1F; // only get bit0 ~ 4
+  return ret;
 }

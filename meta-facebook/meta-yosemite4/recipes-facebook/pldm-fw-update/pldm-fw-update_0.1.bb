@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 S = "${WORKDIR}"
 
-SRC_URI = " \
+LOCAL_URI = " \
     file://pldm-fw-update.sh \
     "
 

@@ -16,7 +16,7 @@ DEPENDS += " \
 
 inherit meson pkgconfig
 
-SRC_URI = " \
+LOCAL_URI = " \
     file://meson.build \
     file://main.cpp \
     "

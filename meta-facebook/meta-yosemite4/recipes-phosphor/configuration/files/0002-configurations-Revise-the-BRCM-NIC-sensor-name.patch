@@ -1,7 +1,7 @@
-From 3e2823a950b39f0821558c11b6e3222d30598091 Mon Sep 17 00:00:00 2001
+From f775419fe50a7859521da57db010615f128f149a Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 8 May 2024 14:29:36 +0800
-Subject: [PATCH] configurations: Revise the BRCM NIC sensor name
+Subject: [PATCH 2/4] configurations: Revise the BRCM NIC sensor name
 
 Reivse the BRCM NIC temperature sensor name to NICX_TEMP_C.
 ---

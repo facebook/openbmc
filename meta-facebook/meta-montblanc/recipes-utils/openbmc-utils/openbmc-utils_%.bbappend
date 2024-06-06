@@ -21,15 +21,11 @@ LOCAL_URI += "\
     file://board-utils.sh \
     file://setup_i2c.sh \
     file://setup-gpio.sh\
-    file://spi_util.sh \
     file://read_INA230.sh \
-    file://cpld_update.sh \
     file://setup_board.sh \
     file://wedge_power_reset_c.patch \
     "
 
 OPENBMC_UTILS_FILES += " \
-    spi_util.sh \
     read_INA230.sh \
-    cpld_update.sh \
     "

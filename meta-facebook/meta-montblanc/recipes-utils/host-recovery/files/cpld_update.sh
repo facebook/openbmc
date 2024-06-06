@@ -19,16 +19,14 @@
 #
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-# shellcheck disable=SC1091,SC3046
+# shellcheck source=/dev/null
 . /usr/local/bin/openbmc-utils.sh
 
 prog="$0"
 CPLD_TYPE="$2"
 UPDATE_IMG="$4"
+MODE="$5"
 
-chip_ver=$(aspeed_g6_chip_ver | cut -c 2)
-
-DLL_AST_JTAG_PATH=/usr/lib/libcpldupdate_dll_ast_jtag.so
 
 usage() {
     echo "Usage: $prog -s <CPLD_TYPE> -f <img_file> <hw|sw>"
@@ -52,14 +50,17 @@ if [ $# -lt 5 ]; then
     exit 1
 fi
 
-#  Multiplex diagram
+#
+#  Multiplexer Diagram
+#
 #                         SEL_0
 #       from HEADER  >>> |0\  |
 #                        |  >C| >> SCM CPLD
 #              |  /0| >> |1/  |
-#  BMC SPI1 >> |C<  |
+#  BMC JTAG >> |C<  |
 #              |  \1| >>>  COMe CPLD 
 #               SEL_1
+#
 
 enable_scm_jtag_chain(){
     gpiocli -s MUX_JTAG_SEL_0 set-value 1
@@ -80,14 +81,9 @@ cpld_update_sw_mode(){
     n=1
     while [ "${n}" -le 5 ]; do
         echo "Program $CPLD_TYPE $n times"
-        if [ "$CPLD_TYPE" = "COME" ];then
-            expect=0
-            jbi -aPROGRAM -ddo_real_time_isp=1 -W "${UPDATE_IMG}"
-        else
-            # ispvm success return code is 1
-            expect=1
-            ispvm -f 1000 dll $DLL_AST_JTAG_PATH "${UPDATE_IMG}"
-        fi
+
+        expect=0
+        jbi -aPROGRAM -ddo_real_time_isp=1 -W "${UPDATE_IMG}"
 
         result=$?
         if [ $result -eq $expect ]; then
@@ -97,41 +93,31 @@ cpld_update_sw_mode(){
     done
 }
 
-cpld_update_hw_mode(){
-    if [ $((chip_ver)) -ge 3 ];then
-        cpldprog -p "${UPDATE_IMG}"
-    else
-        echo "Only AST262x A3 chip can support HW Mode !!!"
-        exit 1
-    fi
-    result=$?
-}
-
 trap 'rm -rf /tmp/cpld_update && disable_jtag_chain' INT TERM QUIT EXIT
 
 echo 1 > /tmp/cpld_update
 
 expect=0
 
-if [ -e "$UPDATE_IMG" ];then
-    if [ "$CPLD_TYPE" = "SCM" ];then
-        #enable_scm_jtag_chain
-        echo "SCM CPLD didn't support yet"
-        exit 1
-    elif [ "$CPLD_TYPE" = "COME" ];then
-        enable_come_jtag_chain
-    else
-        echo 'argument '"$CPLD_TYPE"' is wrong'
-        exit 1
-    fi
-else
+if [ ! -e "$UPDATE_IMG" ];then
     echo 'argument '"$UPDATE_IMG"' not exist'
     exit 1
 fi
 
-case $5 in
+if [ "$CPLD_TYPE" = "SCM" ];then
+    #enable_scm_jtag_chain
+    echo "SCM CPLD didn't support yet"
+    exit 1
+elif [ "$CPLD_TYPE" = "COME" ];then
+    enable_come_jtag_chain
+else
+    echo 'argument '"$CPLD_TYPE"' is wrong'
+    exit 1
+fi
+
+case "$MODE" in
     hw)
-        cpld_update_hw_mode
+        echo 'HW mode not support'
         ;;
     sw)
         cpld_update_sw_mode

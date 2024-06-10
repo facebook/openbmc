@@ -1,7 +1,7 @@
-From 205e110d12a642380468d277baead84e75f16637 Mon Sep 17 00:00:00 2001
+From b26cddb575253af60cd437eb4894983f2ac0c32e Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 07/11] Support OEM-META write file request for post code
+Subject: [PATCH 06/10] Support OEM-META write file request for post code
  history
 
 Support write file req when multiple hosts send postcode to BMC
@@ -517,7 +517,7 @@ index 0000000..780f0ef
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 3887f7b..18f3688 100644
+index c65b20a..d75160f 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -67,6 +67,10 @@ PHOSPHOR_LOG2_USING;
@@ -531,7 +531,7 @@ index 3887f7b..18f3688 100644
  constexpr uint8_t MCTP_MSG_TYPE_PLDM = 1;
  
  using namespace pldm;
-@@ -271,6 +275,13 @@ int main(int argc, char** argv)
+@@ -273,6 +277,13 @@ int main(int argc, char** argv)
          dbusToPLDMEventHandler = std::make_unique<DbusToPLDMEvent>(
              pldmTransport.getEventSource(), hostEID, instanceIdDb, &reqHandler);
      }
@@ -546,5 +546,5 @@ index 3887f7b..18f3688 100644
          pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
          platformConfigHandler.get(), requestPLDMServiceName);
 -- 
-2.25.1
+2.43.0
 

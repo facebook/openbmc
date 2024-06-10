@@ -1,7 +1,7 @@
-From 6a45321d823c2398f61d4c66325c3122cea5dde7 Mon Sep 17 00:00:00 2001
+From 919739b261b3c22a75961b39d53d26e6b1495d1e Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
-Subject: [PATCH 04/11] platform-mc: Sensor handling
+Subject: [PATCH 03/10] platform-mc: Sensor handling
 
 Added sensor_manager and numeric_sensor class. The sensor_manager
 class manages the timing of sensor polling. The NumericSensor class
@@ -2234,10 +2234,10 @@ index 0000000..87a3ac7
 +    sensorManager.stopPolling(tid);
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index d06ed6a..8d2bd98 100644
+index c7e7552..de1cf50 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -187,7 +187,7 @@ int main(int argc, char** argv)
+@@ -189,7 +189,7 @@ int main(int argc, char** argv)
      auto event = Event::get_default();
      auto& bus = pldm::utils::DBusHandler::getBus();
      sdbusplus::server::manager_t objManager(bus,
@@ -2247,5 +2247,5 @@ index d06ed6a..8d2bd98 100644
      InstanceIdDb instanceIdDb;
      dbus_api::Requester dbusImplReq(bus, "/xyz/openbmc_project/pldm",
 -- 
-2.25.1
+2.43.0
 

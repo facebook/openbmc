@@ -1,7 +1,7 @@
-From 3c08ac9fea916a1217458010c0e72be7ac79d57b Mon Sep 17 00:00:00 2001
+From 0d1ca1273d0132f98adc465cd5f41d3da490e3cd Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 06/11] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 05/10] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -118,7 +118,7 @@ index c656762..af5aa23 100644
    dependencies: deps,
    install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 1390310..3887f7b 100644
+index be3d8f5..c65b20a 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -129,7 +129,7 @@ index 1390310..3887f7b 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -231,6 +232,9 @@ int main(int argc, char** argv)
+@@ -233,6 +234,9 @@ int main(int argc, char** argv)
          hostEffecterParser;
      std::unique_ptr<DbusToPLDMEvent> dbusToPLDMEventHandler;
      DBusHandler dbusHandler;
@@ -139,7 +139,7 @@ index 1390310..3887f7b 100644
      std::unique_ptr<oem_platform::Handler> oemPlatformHandler{};
      std::unique_ptr<platform_config::Handler> platformConfigHandler{};
      platformConfigHandler = std::make_unique<platform_config::Handler>();
-@@ -338,7 +342,9 @@ int main(int argc, char** argv)
+@@ -340,7 +344,9 @@ int main(int argc, char** argv)
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
@@ -615,5 +615,5 @@ index a08a990..3384793 100644
                           phosphor_logging_dep,
                           sdbusplus,
 -- 
-2.25.1
+2.43.0
 

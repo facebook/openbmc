@@ -1,7 +1,7 @@
-From 28da32a2261de0b65de2566fcb213d88eccd3579 Mon Sep 17 00:00:00 2001
+From 831c30b83d37fb5c282dba84e1c23482b1d59a1e Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
-Subject: [PATCH 05/11] platform-mc: Added EventManager
+Subject: [PATCH 04/10] platform-mc: Added EventManager
 
 Added eventManager to handle sensor event class(00h),
 pldmMessagePollEvent class(05h)  and OEM CPER event class(FAh)
@@ -43,10 +43,10 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 6c77159..02a53fe 100644
+index 7d50b5d..c04d7b4 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
-@@ -368,15 +368,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
+@@ -379,15 +379,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
          try
          {
              const auto& handlers = eventHandlers.at(eventClass);
@@ -2009,10 +2009,10 @@ index 6746b24..bb3584f 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 8d2bd98..1390310 100644
+index de1cf50..be3d8f5 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -278,11 +278,38 @@ int main(int argc, char** argv)
+@@ -280,11 +280,38 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -2052,7 +2052,7 @@ index 8d2bd98..1390310 100644
  #ifdef OEM_IBM
      pldm::responder::oem_ibm_platform::Handler* oemIbmPlatformHandler =
          dynamic_cast<pldm::responder::oem_ibm_platform::Handler*>(
-@@ -308,8 +335,6 @@ int main(int argc, char** argv)
+@@ -310,8 +337,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
@@ -2062,5 +2062,5 @@ index 8d2bd98..1390310 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.25.1
+2.43.0
 

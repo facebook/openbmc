@@ -612,6 +612,9 @@ int plat_get_syscfg_text(uint8_t fru, char *syscfg)
     dimm_cache_id = gl_dimm_cache_id;
     dimm_label = gl_dimm_label;
     dimm_num = ARRAY_SIZE(gl_dimm_cache_id);
+  } else if (server_type == SERVER_TYPE_JI) {
+    cpu_name_pos = 1; // Grace "A02"
+    dimm_num = 0; // javaisland does not support DIMM information
   } else {
     syslog(LOG_WARNING, "Unknown server type: %d", server_type);
     return -1;

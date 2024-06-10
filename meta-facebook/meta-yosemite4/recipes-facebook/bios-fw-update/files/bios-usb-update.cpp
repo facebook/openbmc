@@ -147,17 +147,19 @@ int bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id,
                 goto error_exit;
             }
 
-            ret = libusb_open(udev->dev, &udev->handle);
-            if (ret < 0)
-            {
-                std::cerr << "BIOS update : Error opening device -- exit\n";
-                libusb_free_device_list(udev->devs, 1);
-                goto error_exit;
-            }
 
             if ((vendor_id == udev->desc.idVendor) &&
                 (product_id == udev->desc.idProduct))
             {
+                ret = libusb_open(udev->dev, &udev->handle);
+                if (ret < 0)
+                {
+                    std::cerr << "BIOS update : Error opening device, ret: "
+			    << ret << "--exit\n";
+                    libusb_free_device_list(udev->devs, 1);
+                    goto error_exit;
+                }
+
                 ret = libusb_get_string_descriptor_ascii(
                     udev->handle, udev->desc.iManufacturer,
                     (unsigned char*)udev->manufacturer,

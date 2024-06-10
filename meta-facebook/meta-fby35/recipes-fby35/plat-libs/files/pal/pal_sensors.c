@@ -2195,6 +2195,7 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
     else if ( (strcmp(sys_conf, "Type_17") == 0) || (strcmp(sys_conf, "Type_8") == 0)) config = CONFIG_D;
     else if ( strcmp(sys_conf, "Type_VF") == 0 ) config = CONFIG_C;
     else if ( strcmp(sys_conf, "Type_GL") == 0 ) config = CONFIG_B;
+    else if ( strcmp(sys_conf, "Type_JI") == 0 ) config = CONFIG_A;
     else syslog(LOG_WARNING, "%s() Couldn't identify the system type: %s", __func__, sys_conf);
 
     syslog(LOG_INFO, "%s() Get the system type: %s", __func__, sys_conf);

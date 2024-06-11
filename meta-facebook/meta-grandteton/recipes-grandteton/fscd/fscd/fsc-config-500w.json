@@ -271,7 +271,7 @@
         },
         "type": "linear",
         "positive_hysteresis": 0,
-        "negative_hysteresis": 0,
+        "negative_hysteresis": 2,
         "data": [
           [58, 25],
           [90, 90]
@@ -298,8 +298,8 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 1,
-        "negative_hysteresis": 2,
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 3,
         "setpoint": 79,
         "kp": -3.5,
         "ki": -0.035,
@@ -326,7 +326,7 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 1,
+        "positive_hysteresis": 2,
         "negative_hysteresis": 2,
         "setpoint": 88,
         "kp": -3.5,
@@ -339,7 +339,7 @@
         },
         "type": "linear",
         "positive_hysteresis": 0,
-        "negative_hysteresis": 0,
+        "negative_hysteresis": 2,
         "data": [
           [48, 25],
           [90, 90]

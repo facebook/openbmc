@@ -123,6 +123,7 @@ extern const char *slot_usage;
 #define BIOS_IMG_SIZE             (0x4000000)         //64MB
 #define CL_BIOS_IMG_INFO_OFFSET   (0x2FEF000)
 #define HD_BIOS_IMG_INFO_OFFSET   (0x00004000)
+#define JI_BIOS_IMG_INFO_OFFSET   (0x1D00000)         //29MB
 #define MD5_SIZE                  (16)
 #define PLAT_SIG_SIZE             (16)
 #define FW_VER_SIZE               (13)

@@ -931,7 +931,7 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
 
       byte_num = read(fd, read_buf, read_bytes);
 
-      if (comp == FW_BIOS) {
+      if (comp == FW_BIOS && (board_id !=BOARD_ID_JI)) {
         off_t bios_info_offs = (board_id == BOARD_ID_HD) ? HD_BIOS_IMG_INFO_OFFSET : CL_BIOS_IMG_INFO_OFFSET;
         // BIOS signed information(64Bytes) is filled into BIOS_IMG_INFO_OFFSET (0x2FEF000).
         // We need to clear these 64Bytes to 0xFF then calculate the BIOS MD5.
@@ -1139,8 +1139,21 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
   }
 
   if (comp == FW_BIOS) {
-    info_offs = (board_id == BOARD_ID_HD) ? HD_BIOS_IMG_INFO_OFFSET : CL_BIOS_IMG_INFO_OFFSET;
-    cal_size = file_info.st_size;
+    switch (board_id) {
+      case BOARD_ID_JI:
+        info_offs = JI_BIOS_IMG_INFO_OFFSET;
+        // Javaisland BIOS signature information is placed at the end of the image
+        cal_size = file_info.st_size - IMG_SIGNED_INFO_SIZE;
+        break;
+      case BOARD_ID_HD:
+        info_offs = HD_BIOS_IMG_INFO_OFFSET;
+        cal_size = file_info.st_size;
+        break;
+      default:
+        info_offs = CL_BIOS_IMG_INFO_OFFSET;
+        cal_size = file_info.st_size;
+        break;
+    }
   } else {
     info_offs = file_info.st_size - IMG_SIGNED_INFO_SIZE;
     cal_size = info_offs;
@@ -1290,7 +1303,25 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
     else
       fw_rev = 0;
   } else if (board_type == rev_ji) {
-    fw_rev = rev_id;
+    switch (rev_id) {
+      case JI_REV_POC:
+        fw_rev = FW_REV_POC;
+        break;
+      case JI_REV_EVT:
+      case JI_REV_EVT2:
+        fw_rev = FW_REV_EVT;
+        break;
+      case JI_REV_DVT:
+      case JI_REV_DVT2:
+        fw_rev = FW_REV_DVT;
+        break;
+      case JI_REV_PVT:
+      case JI_REV_PVT2:
+        fw_rev = FW_REV_PVT;
+        break;
+      default:
+        fw_rev = 0;
+    }
   } else if (board_type == rev_op) {
     switch (rev_id) {
       case OP_REV_EVT:

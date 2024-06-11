@@ -34,10 +34,6 @@
 #include <facebook/fby35_gpio.h>
 #include <sys/time.h>
 #include <time.h>
-
-#define SBMR_POSTCODE_SIZE 9
-#define SBMR_MAX_PAGE_POSTCODE_NUM 26
-#define SBMR_MAX_POSTCODE_PAGE_SIZE SBMR_POSTCODE_SIZE * SBMR_MAX_PAGE_POSTCODE_NUM
 #define OPA_PRSNT0_EXPB 129
 #define OPA_OU1_PRSNT_REG 0x17
 #define OPA_OU3_PRSNT_REG 0x08

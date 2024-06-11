@@ -107,6 +107,10 @@ typedef struct {
 #define HD_TI_VR_REMAINING_WRITE_OFFSET(addr) (((addr) << 1 & 0xf) | 0x40)
 #define HD_MPS_VR_REMAINING_WRITE_OFFSET(addr) (((addr + 2) & 0xf) | 0x40)
 
+#define SBMR_POSTCODE_SIZE 9
+#define SBMR_MAX_PAGE_POSTCODE_NUM 26
+#define SBMR_MAX_POSTCODE_PAGE_SIZE SBMR_POSTCODE_SIZE * SBMR_MAX_PAGE_POSTCODE_NUM
+
 #define MAX_READ_RETRY 5
 
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf);

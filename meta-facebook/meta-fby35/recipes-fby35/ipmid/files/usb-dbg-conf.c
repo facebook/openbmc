@@ -534,6 +534,71 @@ int plat_dword_postcode_buf(uint8_t fru, char *status) {
 }
 #endif
 
+#ifdef CONFIG_JAVAISLAND
+int plat_dword_postcode_buf(uint8_t fru, char *status) {
+  int ret = 0;
+  size_t postcode_len = 0;
+  // the debug card LCD displays 4 postcodes per page, with a max of 10 pages
+  size_t last_postcode_len = 40 * SBMR_POSTCODE_SIZE;
+  uint8_t* postcode_buf = calloc(
+    SBMR_MAX_POSTCODE_PAGE_SIZE * MAX_POST_CODE_PAGE, sizeof(uint8_t));
+  uint8_t* last_postcode_buf = calloc(last_postcode_len, sizeof(uint8_t));
+  
+  if (postcode_buf == NULL || last_postcode_buf == NULL) {
+    syslog(LOG_ERR, "%s() Error, failed to allocate postcode buffer", __func__);
+    return -1;
+  }
+  
+  for (uint8_t page = 0; page < MAX_POST_CODE_PAGE; ++page) {
+    uint8_t len = 0;
+    uint8_t buf[SBMR_MAX_POSTCODE_PAGE_SIZE] = {0x0};
+    
+    ret = bic_request_post_buffer_page_data(fru, page, buf, &len);
+    if (ret) {
+      printf("%s() Failed to get the POST code of slot%u, page%u\n", 
+             __func__, fru, page);
+      goto exit;
+    }
+
+    if (len % SBMR_POSTCODE_SIZE) {
+      printf("%s() Failed to get the POST code of slot%u, page%u, "
+            "the size of the page must be divisible by %d\n", 
+             __func__, fru, page, SBMR_POSTCODE_SIZE);
+      ret = -1;
+      goto exit;
+    }
+
+    memcpy(postcode_buf + postcode_len, buf, len);
+    postcode_len += len;
+
+    if (len < SBMR_MAX_POSTCODE_PAGE_SIZE) {
+      break;
+    }
+  }
+  
+  if (last_postcode_len > postcode_len) {
+    last_postcode_len = postcode_len;
+  }
+  memcpy(last_postcode_buf, postcode_buf, last_postcode_len);
+  
+  char postcode_str[128] = {0};
+  char* postcode_str_ptr;
+  for (size_t i = 0; i < last_postcode_len; i += SBMR_POSTCODE_SIZE) {
+    postcode_str_ptr = postcode_str;
+    postcode_str_ptr += sprintf(postcode_str_ptr, "[");
+    for (size_t j = 0; j < SBMR_POSTCODE_SIZE; ++j) {
+      postcode_str_ptr += sprintf(postcode_str_ptr, "%02X", last_postcode_buf[i+j]);
+    }
+    sprintf(postcode_str_ptr, "]\n");
+    strcat(status, postcode_str);
+  }
+exit:
+  free(postcode_buf);
+  free(last_postcode_buf);
+  return ret;
+}
+#endif
+
 int plat_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc) {
 #ifdef CONFIG_HALFDOME
   uint8_t server_type;

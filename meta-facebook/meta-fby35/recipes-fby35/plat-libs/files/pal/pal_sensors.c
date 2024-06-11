@@ -46,7 +46,7 @@
 
 #define PWM_SET_PID "set_pwm_zone%d_pid"
 #define PWM_INTERVAL_TIME 2
-#define PWM_STEP_RISE_VALUE 20
+#define PWM_STEP_RISE_VALUE 100
 
 #define PMBUS_GET_MFR_ID 0x99
 

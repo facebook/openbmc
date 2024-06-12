@@ -6,6 +6,7 @@
 #include "bic_bios.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
+#include <openbmc/ipmi.h>
 
 using namespace std;
 
@@ -213,6 +214,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
   if (SERVER_TYPE_HD != server_type || isBypass) {
     if (server_type == SERVER_TYPE_GL) {
+      pal_set_dam_pin_status(slot_id, BIOS_DAM_PIN_DISABLE); //set DAM default mode
       cerr << "12V-cycling the server for GL..." << endl;
       pal_set_server_power(slot_id, SERVER_12V_CYCLE);
       return ret;

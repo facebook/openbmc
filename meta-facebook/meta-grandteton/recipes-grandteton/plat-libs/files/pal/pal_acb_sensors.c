@@ -270,8 +270,8 @@ PAL_SENSOR_MAP acb_artemis_sensor_map[] = {
   {"P51V_STBY_R_PWR", 0, get_acb_sensor, true,  {1838.55, 0, 0, 0, 0, 0, 0, 0},  POWER}, // 0x56
   {"P0V8_VDD_1_VOLT",  0, get_acb_sensor, false, {0.84, 0, 0, 0.76, 0, 0, 0, 0},  VOLT}, // 0x57
   {"P0V8_VDD_2_VOLT",  0, get_acb_sensor, false, {0.84, 0, 0, 0.76, 0, 0, 0, 0},  VOLT}, // 0x58
-  {"P0V8_VDD_1_CURR",  0, get_acb_sensor, false, {47, 0, 57, 0, 0, 0, 0, 0},  CURR}, // 0x59
-  {"P0V8_VDD_2_CURR",  0, get_acb_sensor, false, {47, 0, 57, 0, 0, 0, 0, 0},  CURR}, // 0x5A
+  {"P0V8_VDD_1_CURR",  0, get_acb_sensor, false, {55, 0, 60, 0, 0, 0, 0, 0},  CURR}, // 0x59
+  {"P0V8_VDD_2_CURR",  0, get_acb_sensor, false, {55, 0, 60, 0, 0, 0, 0, 0},  CURR}, // 0x5A
   {"P0V8_VDD_1_PWR",  0, get_acb_sensor, false, {38.728, 0, 47.88, 0, 0, 0, 0, 0},  POWER}, // 0x5B
   {"P0V8_VDD_2_PWR",  0, get_acb_sensor, false, {38.728, 0, 47.88, 0, 0, 0, 0, 0},  POWER}, // 0x5C
   {"P51V_STBY_L_CURR", 0, get_acb_sensor, true,  {35, 0, 0, 0, 0, 0, 0, 0},  CURR}, // 0x5D

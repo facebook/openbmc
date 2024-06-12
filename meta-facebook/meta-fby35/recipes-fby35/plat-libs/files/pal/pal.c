@@ -1257,8 +1257,12 @@ pal_get_80port_record(uint8_t slot_id, uint8_t *res_data, size_t max_len, size_t
     goto error_exit;
   }
 
-  // Send command to get 80 port record from Bridge IC
-  ret = bic_get_80port_record(slot_id, res_data, &len, NONE_INTF);
+  if ((fby35_common_get_slot_type(slot_id)) == SERVER_TYPE_JI) {
+    ret = bic_request_post_buffer_page_data(slot_id, 0, res_data, &len);
+  } else {
+    // Send command to get 80 port record from Bridge IC
+    ret = bic_get_80port_record(slot_id, res_data, &len, NONE_INTF);
+  }
   if (ret == 0)
     *res_len = (size_t)len;
 

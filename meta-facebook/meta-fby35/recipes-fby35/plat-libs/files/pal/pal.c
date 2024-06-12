@@ -3183,6 +3183,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     P12V_EDGE_FAULT    = 0x85,
     E1S_INA233_ALERT   = 0x86,
     E1S_12V_OV_ALERT   = 0x87,
+    EXPA_CLOCK_BUFFER  = 0x88,
   };
   uint8_t event = event_data[0];
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
@@ -3346,6 +3347,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       } else {
         snprintf(log_msg, sizeof(log_msg), "E1S 1OU P12V EDGE OV");
       }
+      strcat(error_log, log_msg);
+      break;
+    case EXPA_CLOCK_BUFFER :
+      snprintf(log_msg, sizeof(log_msg), "%dOU BIC set the CLOCK buffer register data failed", event_data[1] + 1);
       strcat(error_log, log_msg);
       break;
     default:

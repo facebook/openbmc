@@ -26,8 +26,9 @@
 namespace cper
 {
 
-constexpr auto CPER_DUMP_PATH = "/mnt/data/faultlog/cper";
+constexpr auto CPER_DUMP_PATH = "/mnt/data/faultlog/cper/";
 constexpr auto CPER_CONVERT = "/usr/bin/cper-convert";
+constexpr auto CPER_DUMP_MAX_LIMIT = 1024;
 
 using SectionHandler = int(*)(const nlohmann::ordered_json&, std::string&);
 using SectionHandlerMap = std::unordered_map<std::string, SectionHandler>;

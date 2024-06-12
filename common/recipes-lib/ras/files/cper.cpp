@@ -22,7 +22,6 @@
 #include <fstream>
 #include <sstream>
 #include <chrono>
-#include <vector>
 #include <unordered_map>
 
 namespace cper
@@ -259,6 +258,56 @@ int parseCperFile(const std::string& file, std::vector<std::string>& results)
   return CPER_HANDLE_SUCCESS;
 }
 
+void limitDumpEntries()
+{
+  auto begin = fs::directory_iterator(CPER_DUMP_PATH);
+  auto end = fs::directory_iterator{};
+  auto totalDumps = std::count_if(begin, end, [](const auto& entry) {
+      return fs::is_regular_file(entry);
+  });
+
+  if (totalDumps < CPER_DUMP_MAX_LIMIT)
+  {
+    return;
+  }
+
+  // get the oldest dumps
+  std::ostringstream cmd;
+  auto excessDumps = totalDumps - (CPER_DUMP_MAX_LIMIT - 1);
+  cmd << "ls -t -1 " << CPER_DUMP_PATH << " | tail -n " << excessDumps;
+
+  auto pipe_close = [](auto fd) { (void)pclose(fd); };
+  std::unique_ptr<FILE, decltype(pipe_close)> pipe(
+      popen(cmd.str().c_str(), "r"), pipe_close);
+  
+  if (pipe == nullptr)
+  {
+    throw std::runtime_error("Failed to run popen function!");
+  }
+
+  char buf[256] = {0};
+  std::vector<std::string> oldestFiles;
+  while (fgets(buf, sizeof(buf), pipe.get()) != nullptr)
+  {
+    std::string result = buf;
+    result.erase(result.find_last_not_of(" \n\r\t") + 1);
+    oldestFiles.push_back(result);
+  }
+
+  // delete the oldest dumps
+  for (const auto& file : oldestFiles) {
+    auto filePath = CPER_DUMP_PATH + file;
+    try
+    {
+      fs::remove(filePath);
+    }
+    catch (const fs::filesystem_error& e)
+    {
+      syslog(LOG_ERR, "Failed to remove file: %s, %s", filePath.c_str(), e.what());
+    }
+  }
+}
+
 int createCperDumpEntry(const uint8_t& payloadId, 
                         const uint8_t* data, const size_t& dataSize)
 {
@@ -271,13 +320,22 @@ int createCperDumpEntry(const uint8_t& payloadId,
     }
   }
 
+  try
+  {
+    limitDumpEntries();
+  }
+  catch(const std::exception& e)
+  {
+    syslog(LOG_ERR, "Failed to limit CPER dump entries. %s.", e.what());
+  }
+
   // use unix timestamp (milliseconds) to generate the CPER raw data filename
   // e.g. slot1_cper_1520857056153
   std::ostringstream oss;
   uint64_t timestamp =
       std::chrono::duration_cast<std::chrono::milliseconds>(
           std::chrono::system_clock::now().time_since_epoch()).count();
-  oss << CPER_DUMP_PATH << "/slot" << payloadId + 1 << "_cper_" << timestamp;
+  oss << CPER_DUMP_PATH << "slot" << payloadId + 1 << "_cper_" << timestamp;
   auto faultLogFile = fs::path(oss.str());
 
   std::ofstream ofs;

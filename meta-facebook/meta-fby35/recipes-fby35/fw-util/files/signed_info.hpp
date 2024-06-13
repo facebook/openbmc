@@ -75,10 +75,12 @@ namespace javaisland {
 // component id
 enum {
   BIC = 0x02,
-  CPUDVDD,
-  CPUVDD,
-  SOCVDD,
-  RETIMER
+  VR_CPUDVDD,
+  VR_CPUVDD,
+  VR_SOCVDD,
+  RETIMER,
+  VR_FBVDDP2,
+  VR_1V2,
 };
 
 // vendor id
@@ -86,8 +88,9 @@ enum {
   ALL_VENDOR = 0x00,
   ASPEED,
   MPS,
+  INFINEON,
   ASTERA,
-  TI
+  TI,
 };
 
 const signed_header_t base_signed_info = {
@@ -98,14 +101,19 @@ const signed_header_t base_signed_info = {
   0x00,
 };
 
-const signed_header_t cpudvdd_signed_info(base_signed_info, CPUDVDD, MPS);
-const signed_header_t cpuvdd_signed_info(base_signed_info, CPUVDD, MPS);
-const signed_header_t socvdd_signed_info(base_signed_info, SOCVDD, MPS);
+const signed_header_t mps_cpudvdd_signed_info(base_signed_info, VR_CPUDVDD, MPS);
+const signed_header_t mps_cpuvdd_signed_info(base_signed_info, VR_CPUVDD, MPS);
+const signed_header_t mps_socvdd_signed_info(base_signed_info, VR_SOCVDD, MPS);
+const signed_header_t inf_cpudvdd_signed_info(base_signed_info, VR_CPUDVDD, INFINEON);
+const signed_header_t mps_fbvddp2_signed_info(base_signed_info, VR_FBVDDP2, MPS);
+const signed_header_t mps_1v2_signed_info(base_signed_info, VR_1V2, MPS);
 const signed_header_t astera_retimer_signed_info(base_signed_info, RETIMER, ASTERA);
 const signed_header_t ti_retimer_signed_info(base_signed_info, RETIMER, TI);
 
-// CPLD address: 7'h0F, register: 0x07 (Board REV ID), bit4 determines retimer vendor
-#define RETIMER_VENDOR_BIT  4
+// CPLD address: 7'h0F, register: 0x07 (Board REV ID)
+// bit4 determines retimer vendor, bit5 determines hsc/vr vendor
+constexpr auto RETIMER_VENDOR_BIT = 4;
+constexpr auto HSC_VR_VENDOR_BIT = 5;
 
 inline signed_header_t get_retimer_signed_info(const uint8_t& fru) {
   int ret = fby35_common_get_sb_rev(fru); 
@@ -136,8 +144,10 @@ const pldm_image_signed_info_map signed_info_map = {
     {"mp2894",  MPS},
     {"mp2898",  MPS},
     {"mpq8746", MPS},
+    {"mp2988",  MPS},
+    {"tda38741", INFINEON},
     {"pt4080l", ASTERA},
-    {"ds160pt801", TI}
+    {"ds160pt801", TI},
   }
 };
 

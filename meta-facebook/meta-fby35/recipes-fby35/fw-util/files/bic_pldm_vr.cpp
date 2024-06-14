@@ -123,19 +123,22 @@ int PldmVrComponent::get_version(json& j) {
       pendingVersion.find(INVALID_VERSION) != string::npos) {
     pendingVersion = activeVersion;
     kv::set(pendingVersionKey, pendingVersion, kv::region::temp);
+    j[PENDING_VERSION] = pendingVersion;
+    return FW_STATUS_SUCCESS;
   }
 
-  // VR active version format is "<DEVICE NAME> <VERSION>"
+  // VR active version format is "<VENDOR NAME> <VERSION>"
   // VR pending version format is "<DEVICE NAME> <VERSION>_<COMPONENT>"
-  // Only extract the <VERSION> part
-  regex pattern(R"(\s([^_]+)(?:_.*)?)");
+  // Replace pending version <DEVICE NAME> with active version <VENDOR NAME>
+  regex pattern(R"((\S+)\s([^_]+)(?:_.*)?)");
   smatch matches;
+  string vendor;
   if (regex_search(activeVersion, matches, pattern)) {
-    activeVersion = matches[1];
+    vendor = matches[1].str();
   }
   matches = smatch();
   if (regex_search(pendingVersion, matches, pattern)) {
-    pendingVersion = matches[1];
+    pendingVersion = vendor + " " + matches[2].str();
   }
   
   j[ACTIVE_VERSION] = activeVersion;

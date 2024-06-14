@@ -6001,7 +6001,20 @@ pal_get_post_complete(uint8_t slot_id, uint8_t *bios_post_complete) {
       *bios_post_complete = atoi(value);
       break;
     case SERVER_TYPE_JI:
-      // there is no corresponding GPIO on the JavaIsland platform Currently
+      // The POST_COMPLETE gpio is support at PVT MB and BIOS 3A02.
+      // enable POST_COMPLETE gpio monitor when BMC detect MB is PVT stage.
+      // before PVT, BMC can only update fruX_host_ready by OEM ipmi command CMD_OEM_SET_POST_END(0x74)
+      // there are some case cannot be cover by using CMD_OEM_SET_POST_END(0x74).
+      // ex. HOST reset, BMC thought HOST still in POST_COMPLETE status.
+      if ( fby35_common_get_sb_rev(slot_id) >= JI_REV_PVT ) {
+        post_cmplt_pin = JI_FPGA_CPU_BOOT_DONE;
+        ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
+        if ( ret < 0 ) {
+          syslog(LOG_ERR, "%s() bic_get_gpio returns %d\n", __func__, ret);
+          return ret;
+        }
+        *bios_post_complete = BIT_VALUE(gpio, post_cmplt_pin);
+      }
     default:
       break;
   }

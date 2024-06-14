@@ -11,6 +11,7 @@ class PldmVrComponent : public PldmComponent {
     uint8_t slot_id = 0;
     Server server;
     int update_internal(std::string image, bool force) override;
+    int update_version_cache() override;
   public:
     PldmVrComponent(const std::string &fru, const std::string &comp,
                     uint8_t comp_id, uint8_t bus, uint8_t eid,

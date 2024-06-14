@@ -234,6 +234,15 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
     ret = read_kv_snr(fru, sensor_num, value, build_stage);
   }
 
+
+  if (ret == 0 &&
+      (sensor_num == GPU1_TEMP_1 || sensor_num == GPU2_TEMP_1 ||
+       sensor_num == GPU3_TEMP_1 || sensor_num == GPU4_TEMP_1 ||
+       sensor_num == GPU5_TEMP_1 || sensor_num == GPU6_TEMP_1 ||
+       sensor_num == GPU7_TEMP_1 || sensor_num == GPU8_TEMP_1)) {
+    *value = *value * -1;
+  }
+
   return ret;
 }
 

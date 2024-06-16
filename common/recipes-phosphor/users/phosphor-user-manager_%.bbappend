@@ -6,4 +6,4 @@ SRC_URI:append = " \
 "
 
 # Bump maximum amount of system users
-EXTRA_OEMESON:append = "-Dmax_system_users=1000 "
+EXTRA_OEMESON:append = " -Dmax_system_users=1000"

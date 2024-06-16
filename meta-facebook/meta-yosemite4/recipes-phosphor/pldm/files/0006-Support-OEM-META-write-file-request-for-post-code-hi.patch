@@ -1,8 +1,7 @@
-From b26cddb575253af60cd437eb4894983f2ac0c32e Mon Sep 17 00:00:00 2001
+From de2ce488284fd23b9e3262f1b140f4b556b30a79 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 06/10] Support OEM-META write file request for post code
- history
+Subject: [PATCH 6/9] Support OEM-META write file request for post code history
 
 Support write file req when multiple hosts send postcode to BMC
 and store its post code history.
@@ -20,8 +19,8 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  .../oem_meta_file_io_by_type.hpp              |  30 ++++
  .../oem_meta_file_io_type_post_code.cpp       | 131 ++++++++++++++++++
  .../oem_meta_file_io_type_post_code.hpp       |  53 +++++++
- pldmd/pldmd.cpp                               |  11 ++
- 11 files changed, 393 insertions(+)
+ pldmd/pldmd.cpp                               |  10 ++
+ 11 files changed, 392 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.hpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
@@ -517,11 +516,11 @@ index 0000000..780f0ef
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index c65b20a..d75160f 100644
+index 5fbfc51..4c1550a 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -67,6 +67,10 @@ PHOSPHOR_LOG2_USING;
- #include "libpldmresponder/oem_ibm_handler.hpp"
+@@ -65,6 +65,10 @@ PHOSPHOR_LOG2_USING;
+ #include "oem_ibm.hpp"
  #endif
  
 +#ifdef OEM_META
@@ -531,20 +530,19 @@ index c65b20a..d75160f 100644
  constexpr uint8_t MCTP_MSG_TYPE_PLDM = 1;
  
  using namespace pldm;
-@@ -273,6 +277,13 @@ int main(int argc, char** argv)
-         dbusToPLDMEventHandler = std::make_unique<DbusToPLDMEvent>(
+@@ -257,6 +261,12 @@ int main(int argc, char** argv)
              pldmTransport.getEventSource(), hostEID, instanceIdDb, &reqHandler);
      }
-+
+ 
 +#ifdef OEM_META
 +    invoker.registerHandler(
 +        PLDM_OEM, std::make_unique<pldm::responder::oem_meta::FileIOHandler>(
 +                      configurationDiscovery.get()));
 +#endif
 +
-     auto biosHandler = std::make_unique<bios::Handler>(
-         pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
-         platformConfigHandler.get(), requestPLDMServiceName);
+     auto fruHandler = std::make_unique<fru::Handler>(
+         FRU_JSONS_DIR, FRU_MASTER_JSON, pdrRepo.get(), entityTree.get(),
+         bmcEntityTree.get());
 -- 
 2.43.0
 

@@ -1,4 +1,4 @@
-From 02ca3253df32464dfe52c807477e34b42a655899 Mon Sep 17 00:00:00 2001
+From f84d96cb5daa3b69ad272871d73431b61661e0df Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 12 Mar 2024 18:34:24 +0800
 Subject: [PATCH 1/4] yosemite4: Support CX7 NIC card temperature sensor
@@ -149,5 +149,5 @@ index 0968760..01e91be 100644
  }
 +
 -- 
-2.25.1
+2.43.0
 

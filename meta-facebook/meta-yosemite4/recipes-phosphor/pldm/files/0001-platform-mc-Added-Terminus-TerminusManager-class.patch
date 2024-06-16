@@ -1,7 +1,7 @@
-From 671a23f63b022e453841c1d176fbf9e0fafe329e Mon Sep 17 00:00:00 2001
+From 7c04b535208a50aba05c4967fd17099036747395 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Tue, 22 Feb 2022 15:40:17 +0000
-Subject: [PATCH 01/10] platform-mc: Added Terminus/TerminusManager class
+Subject: [PATCH 1/9] platform-mc: Added Terminus/TerminusManager class
 
 Added requester::sendRecvPldmMsg awaiter type to be able to send and
 receive PLDM message by coroutine.
@@ -1581,7 +1581,7 @@ index 0000000..158df56
 +    EXPECT_EQ(tid, t1.getTid());
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 1030c8e..c7e7552 100644
+index 102458f..4df71e9 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -6,6 +6,7 @@
@@ -1592,7 +1592,7 @@ index 1030c8e..c7e7552 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -309,10 +310,12 @@ int main(int argc, char** argv)
+@@ -291,10 +292,12 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);

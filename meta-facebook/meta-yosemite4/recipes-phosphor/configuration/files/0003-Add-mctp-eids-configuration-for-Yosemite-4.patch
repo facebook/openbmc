@@ -1,4 +1,4 @@
-From 57ab1405b699dcb7e6d36b64ad247b536f2ff09c Mon Sep 17 00:00:00 2001
+From fd03623cdeee3418e4087bf2cce0739316aaf4f0 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/4] Add mctp eids configuration for Yosemite 4
@@ -15,11 +15,11 @@ Tested: check D-Bus path for configuration.
 Change-Id: I587f5a69051f783753f5855d2f51242aa1cd5bc4
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- configurations/yosemite4_floatingfalls.json | 17 ++++++++++++++-
- configurations/yosemite4_sentineldome.json  | 10 ++++++++-
- configurations/yosemite4_wailuafalls.json   | 24 ++++++++++++++++++++-
+ configurations/yosemite4_floatingfalls.json | 17 ++++++++++++++++-
+ configurations/yosemite4_sentineldome.json  |  7 +++++++
+ configurations/yosemite4_wailuafalls.json   | 21 +++++++++++++++++++++
  schemas/legacy.json                         |  6 ++++++
- 4 files changed, 54 insertions(+), 3 deletions(-)
+ 4 files changed, 50 insertions(+), 1 deletion(-)
 
 diff --git a/configurations/yosemite4_floatingfalls.json b/configurations/yosemite4_floatingfalls.json
 index e1f9a51..c709e5b 100644
@@ -48,32 +48,32 @@ index e1f9a51..c709e5b 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Floating Falls', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
      "Type": "Board",
 diff --git a/configurations/yosemite4_sentineldome.json b/configurations/yosemite4_sentineldome.json
-index 5c298e5..4d71cb9 100644
+index 9d368ee..725c777 100644
 --- a/configurations/yosemite4_sentineldome.json
 +++ b/configurations/yosemite4_sentineldome.json
-@@ -1,5 +1,13 @@
- {
--    "Exposes": [],
-+    "Exposes": [
+@@ -412,6 +412,13 @@
+             "Zones": [
+                 "Zone 1"
+             ]
++        },
 +        {
 +            "Address": "0x20",
 +            "Bus": "$bus % 16",
 +            "EndpointId": "$bus % 15 * 10",
 +            "Name": "BIC",
 +            "Type": "MCTPEndpoint"
-+        }
-+    ],
+         }
+     ],
      "Name": "Yosemite 4 Sentinel Dome Slot $bus % 15",
-     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Sentinel Dome', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
-     "Type": "Board",
 diff --git a/configurations/yosemite4_wailuafalls.json b/configurations/yosemite4_wailuafalls.json
-index e8ca739..b897ff2 100644
+index b85b023..4e706ef 100644
 --- a/configurations/yosemite4_wailuafalls.json
 +++ b/configurations/yosemite4_wailuafalls.json
-@@ -1,5 +1,27 @@
- {
--    "Exposes": [],
-+    "Exposes": [
+@@ -207,6 +207,27 @@
+             "Zones": [
+                 "Zone 1"
+             ]
++        },
 +        {
 +            "Address": "0x20",
 +            "Bus": "$bus % 16",
@@ -94,13 +94,11 @@ index e8ca739..b897ff2 100644
 +            "EndpointId": "$bus % 15 * 10 + 5",
 +            "Name": "CXL2",
 +            "Type": "MCTPEndpoint"
-+        }
-+    ],
+         }
+     ],
      "Name": "Yosemite 4 Wailua Falls Slot $bus % 15",
-     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Wailua Falls', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
-     "Type": "Board",
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 8f87057..7330fa4 100644
+index 85e41a6..df89e4e 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -65,6 +65,9 @@
@@ -113,7 +111,7 @@ index 8f87057..7330fa4 100644
                  "FaultIndex": {
                      "$ref": "#/definitions/Types/FaultIndex"
                  },
-@@ -733,6 +736,9 @@
+@@ -757,6 +760,9 @@
              "EntityInstance": {
                  "type": "number"
              },
@@ -124,5 +122,5 @@ index 8f87057..7330fa4 100644
                  "type": "number"
              },
 -- 
-2.25.1
+2.43.0
 

@@ -33,6 +33,7 @@ executable(
   'cmd/power-control.cpp',
   'cmd/power-state.cpp',
   'cmd/sensor-display.cpp',
+  'cmd/version-display.cpp',
   'utils/json.cpp',
   'utils/register.cpp',
   dependencies: [

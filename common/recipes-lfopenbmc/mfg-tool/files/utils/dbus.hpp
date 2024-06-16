@@ -10,6 +10,7 @@
 #include <xyz/openbmc_project/Sensor/Threshold/HardShutdown/client.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/Warning/client.hpp>
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
+#include <xyz/openbmc_project/Software/Version/client.hpp>
 #include <xyz/openbmc_project/State/BMC/client.hpp>
 #include <xyz/openbmc_project/State/Boot/PostCode/client.hpp>
 #include <xyz/openbmc_project/State/Chassis/client.hpp>
@@ -67,8 +68,7 @@ static constexpr auto interface = Proxy::interface;
 inline auto path(size_t id)
 {
     return std::string(ns_path) + "/" +
-           std::string(Proxy::namespace_path::host) +
-           std::to_string(id);
+           std::string(Proxy::namespace_path::host) + std::to_string(id);
 }
 
 } // namespace postcode
@@ -181,5 +181,21 @@ using Proxy = sdbusplus::client::xyz::openbmc_project::control::Mode<>;
 static constexpr auto interface = Proxy::interface;
 } // namespace mode
 } // namespace control
+
+namespace software
+{
+namespace version
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::software::Version<>;
+static constexpr auto ns_path = Proxy::namespace_path;
+static constexpr auto interface = Proxy::interface;
+
+inline auto path_prefix()
+{
+    return std::string(ns_path) + "/";
+}
+
+} // namespace version
+} // namespace software
 
 } // namespace mfgtool::dbuspath

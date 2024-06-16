@@ -22,6 +22,23 @@ static auto last_element(const auto& s, char c = '/')
     }
 }
 
+/** Get the first element of a deliminated string.
+ *
+ * @param[in] s - The string (or object_path).
+ * @param[in] c - The character to use as the deliminator.
+ */
+static auto first_element(const auto& s, char c = '/')
+{
+    if constexpr (requires(decltype(s)& t) { t.str; })
+    {
+        return first_element(s.str, c);
+    }
+    else
+    {
+        return s.substr(0, s.find_first_of(c));
+    }
+}
+
 /** Replace a substring with another one.
  *
  *  @param[in] s - The string (or object_path) to update.

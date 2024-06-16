@@ -11,6 +11,7 @@
 #include <xyz/openbmc_project/Sensor/Threshold/Warning/client.hpp>
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
 #include <xyz/openbmc_project/State/BMC/client.hpp>
+#include <xyz/openbmc_project/State/Boot/PostCode/client.hpp>
 #include <xyz/openbmc_project/State/Chassis/client.hpp>
 #include <xyz/openbmc_project/State/Host/client.hpp>
 
@@ -56,6 +57,21 @@ inline auto path_prefix()
     return std::string(ns_path) + "/" +
            std::string(Proxy::namespace_path::host);
 }
+
+namespace postcode
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::state::boot::PostCode<>;
+static constexpr auto ns_path = Proxy::namespace_path::value;
+static constexpr auto interface = Proxy::interface;
+
+inline auto path(size_t id)
+{
+    return std::string(ns_path) + "/" +
+           std::string(Proxy::namespace_path::host) +
+           std::to_string(id);
+}
+
+} // namespace postcode
 
 } // namespace host
 

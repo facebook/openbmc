@@ -29,6 +29,7 @@ executable(
   'cmd/log-clear.cpp',
   'cmd/log-display.cpp',
   'cmd/log-resolve.cpp',
+  'cmd/postcode-display.cpp',
   'cmd/power-control.cpp',
   'cmd/power-state.cpp',
   'cmd/sensor-display.cpp',

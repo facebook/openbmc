@@ -61,7 +61,7 @@ struct command
                     last_element(sdbusplus::message::convert_to_string(
                                      co_await proxy.unit()),
                                  '.');
-	    }
+            }
             catch (const sdbusplus::exception::SdBusError& e)
             {
                 warning("Failed to get sensor value: {PATH}, error: {ERROR}",
@@ -114,7 +114,7 @@ struct command
                 const auto& service) -> sdbusplus::async::task<> {
             auto& sensor_json = result[last_element(path)];
             auto& entry_json = sensor_json["critical"];
-            try 
+            try
             {
                 auto proxy = sensor::critical::Proxy(ctx).service(service).path(
                     path.str);

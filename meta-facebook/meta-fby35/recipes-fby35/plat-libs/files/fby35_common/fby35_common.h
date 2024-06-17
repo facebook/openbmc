@@ -405,6 +405,7 @@ enum brd_rev {
   JI_REV_DVT2 = 4,
   JI_REV_PVT = 5,
   JI_REV_PVT2 = 6,
+  JI_REV_MP = 7,
 
   UNKNOWN_REV = 0xFF,
 };

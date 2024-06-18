@@ -1,4 +1,5 @@
 #include "bic_pldm_vr.hpp"
+#include "signed_info.hpp"
 
 #include <openbmc/pal.h>
 #include <openbmc/kv.hpp>
@@ -33,6 +34,10 @@ int PldmVrComponent::update_version_cache() {
 int PldmVrComponent::update_internal(string image, bool force) {
   uint8_t status;
   int rc;
+
+  if (component_identifier == javaisland::ALL_VR) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
 
   try {
     server.ready();
@@ -111,6 +116,26 @@ int PldmVrComponent::get_version(json& j) {
     throw runtime_error(e);
   }
 
+  if (component_identifier == javaisland::ALL_VR) {
+    json j_temp;
+    for (const auto& [vr_comp_id, vr_name]: get_vr_list()) {
+      // replace component name, component ID and version key 
+      // to let get_version() get the version of a specific VR 
+      component = vr_name;
+      component_identifier = vr_comp_id;
+      activeVersionKey = fmt::format("{}_{}_active_ver", fru, vr_name);
+      pendingVersionKey = fmt::format("{}_{}_pending_ver", fru, vr_name);
+      if (get_version(j_temp)) {
+        return FW_STATUS_FAILURE;
+      }
+      auto comp_name = vr_name;
+      transform(comp_name.begin(), comp_name.end(), comp_name.begin(), ::toupper);
+      j["VERSION"][comp_name][ACTIVE_VERSION] = j_temp[ACTIVE_VERSION];
+      j["VERSION"][comp_name][PENDING_VERSION] = j_temp[PENDING_VERSION];
+    }
+    return FW_STATUS_SUCCESS;
+  }
+
   if (PldmComponent::get_version(j)) {
     return FW_STATUS_FAILURE;
   }
@@ -145,4 +170,41 @@ int PldmVrComponent::get_version(json& j) {
   j[PENDING_VERSION] = pendingVersion;
 
   return FW_STATUS_SUCCESS;
+}
+
+map<uint8_t, string> PldmVrComponent::get_vr_list() {
+  map<uint8_t, string> vr_lsit;
+
+  if (GETBIT(fby35_common_get_sb_rev(slot_id), javaisland::HSC_VR_VENDOR_BIT)) {
+    vr_lsit = {
+      {javaisland::VR_CPUDVDD, "vr_cpudvdd"},
+      {javaisland::VR_FBVDDP2, "vr_fbvddp2"},
+      {javaisland::VR_1V2, "vr_1v2"},
+    };
+  } else {
+    vr_lsit = {
+      {javaisland::VR_CPUDVDD, "vr_cpudvdd"},
+      {javaisland::VR_CPUVDD, "vr_cpuvdd"},
+      {javaisland::VR_SOCVDD, "vr_socvdd"},
+    };
+  }
+
+  return vr_lsit;
+}
+
+int PldmVrComponent::print_version() {
+  if (component_identifier == javaisland::ALL_VR) {
+    for (const auto& [vr_comp_id, vr_name]: get_vr_list()) {
+      // replace component name, component ID and version key 
+      // to let get_version() get the version of a specific VR 
+      component = vr_name;
+      component_identifier = vr_comp_id;
+      activeVersionKey = fmt::format("{}_{}_active_ver", fru, vr_name);
+      pendingVersionKey = fmt::format("{}_{}_pending_ver", fru, vr_name);
+      PldmComponent::print_version();
+    }
+    return FW_STATUS_SUCCESS;
+  } else {
+    return PldmComponent::print_version();
+  }
 }

@@ -169,6 +169,9 @@ class ClassConfig {
                   "slot1", "vr_socvdd", javaisland::VR_SOCVDD, SLOT1_PLDM_BUS_ID, MB_BIC_EID, 
                   javaisland::mps_socvdd_signed_info, javaisland::signed_info_map);
               }
+              static PldmVrComponent vr_fw1(
+                "slot1", "vr", javaisland::ALL_VR, SLOT1_PLDM_BUS_ID, MB_BIC_EID, 
+                javaisland::base_signed_info, javaisland::signed_info_map);
               static PldmRetimerComponent retimer_fw1(
                 "slot1", "retimer", javaisland::RETIMER, SLOT1_PLDM_BUS_ID, MB_BIC_EID, 
                 javaisland::get_retimer_signed_info(FRU_SLOT1), javaisland::signed_info_map);
@@ -254,6 +257,9 @@ class ClassConfig {
                   "slot2", "vr_socvdd", javaisland::VR_SOCVDD, SLOT2_PLDM_BUS_ID, MB_BIC_EID, 
                   javaisland::mps_socvdd_signed_info, javaisland::signed_info_map);
               }
+              static PldmVrComponent vr_fw2(
+                "slot2", "vr", javaisland::ALL_VR, SLOT2_PLDM_BUS_ID, MB_BIC_EID, 
+                javaisland::base_signed_info, javaisland::signed_info_map);
               static PldmRetimerComponent retimer_fw2(
                 "slot2", "retimer", javaisland::RETIMER, SLOT2_PLDM_BUS_ID, MB_BIC_EID, 
                 javaisland::get_retimer_signed_info(FRU_SLOT2), javaisland::signed_info_map);
@@ -373,6 +379,9 @@ class ClassConfig {
                   "slot3", "vr_socvdd", javaisland::VR_SOCVDD, SLOT3_PLDM_BUS_ID, MB_BIC_EID, 
                   javaisland::mps_socvdd_signed_info, javaisland::signed_info_map);
               }
+              static PldmVrComponent vr_fw3(
+                "slot3", "vr", javaisland::ALL_VR, SLOT3_PLDM_BUS_ID, MB_BIC_EID, 
+                javaisland::base_signed_info, javaisland::signed_info_map);
               static PldmRetimerComponent retimer_fw3(
                 "slot3", "retimer", javaisland::RETIMER, SLOT3_PLDM_BUS_ID, MB_BIC_EID, 
                 javaisland::get_retimer_signed_info(FRU_SLOT3), javaisland::signed_info_map);
@@ -442,6 +451,9 @@ class ClassConfig {
                   "slot4", "vr_socvdd", javaisland::VR_SOCVDD, SLOT4_PLDM_BUS_ID, MB_BIC_EID, 
                   javaisland::mps_socvdd_signed_info, javaisland::signed_info_map);
               }
+              static PldmVrComponent vr_fw4(
+                "slot4", "vr", javaisland::ALL_VR, SLOT4_PLDM_BUS_ID, MB_BIC_EID, 
+                javaisland::base_signed_info, javaisland::signed_info_map);
               static PldmRetimerComponent retimer_fw4(
                 "slot4", "retimer", javaisland::RETIMER, SLOT4_PLDM_BUS_ID, MB_BIC_EID, 
                 javaisland::get_retimer_signed_info(FRU_SLOT4), javaisland::signed_info_map);

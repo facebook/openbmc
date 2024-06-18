@@ -81,6 +81,7 @@ enum {
   RETIMER,
   VR_FBVDDP2,
   VR_1V2,
+  ALL_VR,
 };
 
 // vendor id

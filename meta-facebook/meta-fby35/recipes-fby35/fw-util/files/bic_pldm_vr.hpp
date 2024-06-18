@@ -4,7 +4,9 @@
 #include "pldm_comp.hpp"
 #include "signed_decoder.hpp"
 #include "server.h"
+
 #include <string>
+#include <map>
 
 class PldmVrComponent : public PldmComponent {
   protected:
@@ -12,6 +14,7 @@ class PldmVrComponent : public PldmComponent {
     Server server;
     int update_internal(std::string image, bool force) override;
     int update_version_cache() override;
+    std::map<uint8_t, std::string> get_vr_list();
   public:
     PldmVrComponent(const std::string &fru, const std::string &comp,
                     uint8_t comp_id, uint8_t bus, uint8_t eid,
@@ -22,6 +25,7 @@ class PldmVrComponent : public PldmComponent {
                     info_map, has_standard_descriptor), 
       slot_id(sys().get_fru_id(PldmComponent::fru)), server(slot_id, fru) {}
     int get_version(json& j) override;
+    int print_version() override;
 };
 
 #endif // _BIC_PLDM_VR_H_

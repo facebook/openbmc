@@ -28,6 +28,7 @@ LOCAL_URI = " \
     file://sync_date.sh \
     file://COPYING \
     file://setup-dev.sh \
+    file://setup-sku.sh \
     file://sol-util \
     file://check_eth0_ipv4.sh \
     file://check_bmc_ready.sh \
@@ -69,6 +70,10 @@ do_install() {
   # install setup-dev.sh
   install -m 755 setup-dev.sh ${D}${sysconfdir}/init.d/setup-dev.sh
   update-rc.d -r ${D} setup-dev.sh start 60 5 .
+
+  # install setup-sku.sh
+  install -m 755 setup-sku.sh ${D}${sysconfdir}/init.d/setup-sku.sh
+  update-rc.d -r ${D} setup-sku.sh start 67 5 .
 
   # install setup-gpio.sh
   # install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh

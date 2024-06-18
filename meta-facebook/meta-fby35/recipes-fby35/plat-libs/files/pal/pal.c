@@ -2282,6 +2282,13 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
         goto done;
       }
       if (type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
+        char sys_sku[MAX_VALUE_LEN] = {0};
+        if (kv_get("system_sku", sys_sku, NULL, 0) == 0) {
+          if (strcmp(sys_sku, "Cache") == 0) {
+            pcie_conf = CONFIG_OP_CACHE;
+            goto done;
+          }
+        }
         pcie_conf = CONFIG_OP;
         goto done;
       }

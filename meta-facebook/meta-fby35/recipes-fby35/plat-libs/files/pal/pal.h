@@ -115,6 +115,7 @@ enum {
   CONFIG_C_VF_T10   = 0x0c,
   CONFIG_C_VF_T3    = 0x0d,
   CONFIG_OP         = 0x0e,
+  CONFIG_OP_CACHE   = 0x0f,
   CONFIG_MFG        = 0xfe,
   CONFIG_UNKNOWN    = 0xff,
 };

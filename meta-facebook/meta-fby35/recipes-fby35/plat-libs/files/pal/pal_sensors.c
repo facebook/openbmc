@@ -1005,6 +1005,27 @@ const uint8_t bic_op_4ou_skip_sensor_list[] = {
   BIC_OP_4OU_MAIN_P12V_PWR_W,
 };
 
+const uint8_t bic_op_3ou_cache_sensor_list[] = {
+  BIC_OP_3OU_TEMP_C,
+  BIC_OP_3OU_P3V3_STBY_ADC_VOLT_V,
+  BIC_OP_3OU_P1V8_ADC_VOLT_V,
+  BIC_OP_3OU_P1V2_ADC_VOLT_V,
+};
+
+const uint8_t bic_op_3ou_cache_skip_sensor_list[] = {
+};
+
+const uint8_t bic_op_4ou_cache_sensor_list[] = {
+  BIC_OP_4OU_TEMP_C,
+  BIC_OP_4OU_P3V3_STBY_ADC_VOLT_V,
+  BIC_OP_4OU_P1V8_STBY_ADC_VOLT_V,
+  BIC_OP_4OU_P1V2_STBY_ADC_VOLT_V,
+};
+
+const uint8_t bic_op_4ou_cache_skip_sensor_list[] = {
+};
+
+
 const uint8_t nic_sensor_list[] = {
   NIC_SENSOR_TEMP,
 };
@@ -1455,6 +1476,10 @@ size_t bic_op_3ou_sensor_cnt = sizeof(bic_op_3ou_sensor_list)/sizeof(uint8_t);
 size_t bic_op_3ou_skip_sensor_cnt = sizeof(bic_op_3ou_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_op_4ou_sensor_cnt = sizeof(bic_op_4ou_sensor_list)/sizeof(uint8_t);
 size_t bic_op_4ou_skip_sensor_cnt = sizeof(bic_op_4ou_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_op_3ou_cache_sensor_cnt = sizeof(bic_op_3ou_cache_sensor_list)/sizeof(uint8_t);
+size_t bic_op_3ou_cache_skip_sensor_cnt = sizeof(bic_op_3ou_cache_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_op_4ou_cache_sensor_cnt = sizeof(bic_op_4ou_cache_sensor_list)/sizeof(uint8_t);
+size_t bic_op_4ou_cache_skip_sensor_cnt = sizeof(bic_op_4ou_cache_skip_sensor_list)/sizeof(uint8_t);
 
 static int compare(const void *arg1, const void *arg2) {
   return(*(int *)arg2 - *(int *)arg1);
@@ -1743,6 +1768,16 @@ done:
             current_cnt += bic_op_1ou_sensor_cnt;
             memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_2ou_sensor_list, bic_op_2ou_sensor_cnt);
             current_cnt += bic_op_2ou_sensor_cnt;
+            char sys_sku[MAX_VALUE_LEN] = {0};
+            if (kv_get("system_sku", sys_sku, NULL, 0) == 0) {
+              if (strcmp(sys_sku, "Cache") == 0) {
+                memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_3ou_cache_sensor_list, bic_op_3ou_cache_sensor_cnt);
+                current_cnt += bic_op_3ou_cache_sensor_cnt;
+                memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_4ou_cache_sensor_list, bic_op_4ou_cache_sensor_cnt);
+                current_cnt += bic_op_4ou_cache_sensor_cnt;
+                break;
+              }
+            }
             memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_3ou_sensor_list, bic_op_3ou_sensor_cnt);
             current_cnt += bic_op_3ou_sensor_cnt;
             memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_op_4ou_sensor_list, bic_op_4ou_sensor_cnt);

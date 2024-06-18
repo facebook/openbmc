@@ -416,3 +416,8 @@ get_1ou_card_type() {
 
   return 0
 }
+
+get_system_sku() {
+  sys_sku=$($KV_CMD get system_sku)
+  echo $sys_sku
+}

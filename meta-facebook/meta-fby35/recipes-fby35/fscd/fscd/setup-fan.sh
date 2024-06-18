@@ -176,7 +176,14 @@ init_class1_fsc() {
       case $board_type_1ou in
       8)
         config_type="8"
-        target_fsc_config="/etc/FSC_CLASS1_type8_GL_config.json"
+        sys_sku=$(get_system_sku)
+        if [[ "$sys_sku" == "Cache" ]]; then
+          target_fsc_config="/etc/FSC_CLASS1_type8_RSC_cache_GL_config.json"
+        elif [[ "$sys_sku" == "2.1" ]]; then
+          target_fsc_config="/etc/FSC_CLASS1_type8_2.1_GL_config.json"
+        else
+          target_fsc_config="/etc/FSC_CLASS1_type8_GL_config.json"
+        fi
         ;;
       *)
         config_type="GL"

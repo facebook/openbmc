@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <stdexcept>
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 #include "expansion.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
@@ -15,6 +16,7 @@ void ExpansionBoard::ready()
   int ret = 0;
   uint8_t type = TYPE_1OU_UNKNOWN;
   uint8_t pwr_sts = 0x0;
+  char sys_sku[MAX_VALUE_LEN] = {0};
   switch(fw_comp) {
     case FW_CPLD:
     case FW_SB_BIC:
@@ -98,6 +100,9 @@ void ExpansionBoard::ready()
       ret = pal_get_server_power(slot_id, &pwr_sts);
       if ( ret < 0 || pwr_sts == 0 )
           throw string("DC-off");
+      ret = kv_get("system_sku", sys_sku, NULL, 0);
+      if ( ret == 0 && (strcmp(sys_sku, "Cache") == 0) )
+          throw string("Not support in RSC2 CacheStore");
       break;
     default:
       break;

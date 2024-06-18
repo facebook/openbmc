@@ -1,0 +1,91 @@
+From 98673a2c9f008c8f5f1341a5126871314991f9c9 Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <cosmo.chou@quantatw.com>
+Date: Wed, 22 May 2024 01:36:37 +0800
+Subject: [PATCH 175/175] net/ncsi: specify maximum package and channel to
+ probe
+
+Most NICs have a single package. For OCP3.0 NICs, the package ID is
+determined by the slot ID. Probing all 8 package IDs is usually
+unnecessary. To reduce probe time, add properties to specify the
+maximum number of packages and channels.
+
+Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
+---
+ net/ncsi/internal.h    |  2 ++
+ net/ncsi/ncsi-manage.c | 22 ++++++++++++++++++----
+ 2 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
+index 7b3012770a94..6724c164e222 100644
+--- a/net/ncsi/internal.h
++++ b/net/ncsi/internal.h
+@@ -346,6 +346,8 @@ struct ncsi_dev_priv {
+ #define NCSI_MAX_VLAN_VIDS	15
+ 	struct list_head    vlan_vids;       /* List of active VLAN IDs */
+ 
++	unsigned int        max_package;     /* Num of packages to probe   */
++	unsigned int        max_channel;     /* Num of channels to probe   */
+ 	bool                multi_package;   /* Enable multiple packages   */
+ 	bool                mlx_multi_host;  /* Enable multi host Mellanox */
+ 	u32                 package_whitelist; /* Packages to configure    */
+diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
+index 7a0284ca09d7..feb6d971455b 100644
+--- a/net/ncsi/ncsi-manage.c
++++ b/net/ncsi/ncsi-manage.c
+@@ -1359,12 +1359,12 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 		nd->state = ncsi_dev_state_probe_deselect;
+ 		fallthrough;
+ 	case ncsi_dev_state_probe_deselect:
+-		ndp->pending_req_num = 8;
++		ndp->pending_req_num = ndp->max_package;
+ 
+ 		/* Deselect all possible packages */
+ 		nca.type = NCSI_PKT_CMD_DP;
+ 		nca.channel = NCSI_RESERVED_CHANNEL;
+-		for (index = 0; index < 8; index++) {
++		for (index = 0; index < ndp->max_package; index++) {
+ 			nca.package = index;
+ 			ret = ncsi_xmit_cmd(&nca);
+ 			if (ret)
+@@ -1492,7 +1492,7 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 
+ 		/* Probe next package */
+ 		ndp->package_probe_id++;
+-		if (ndp->package_probe_id >= 8) {
++		if (ndp->package_probe_id >= ndp->max_package) {
+ 			/* Probe finished */
+ 			ndp->flags |= NCSI_DEV_PROBED;
+ 			break;
+@@ -1747,7 +1747,7 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+ 	struct platform_device *pdev;
+ 	struct device_node *np;
+ 	unsigned long flags;
+-	int i;
++	int i, ret;
+ 
+ 	/* Check if the device has been registered or not */
+ 	nd = ncsi_find_dev(dev);
+@@ -1803,6 +1803,20 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+ 
+ 		if (np && of_get_property(np, "ncsi-ctrl,start-redo-probe", NULL))
+ 			ndp->ctrl_flags |= NCSI_CTRL_FLAG_START_REDO_PROBE;
++
++		if (np) {
++			ret = of_property_read_u32(np, "ncsi-package",
++						   &ndp->max_package);
++			if (ret || !ndp->max_package ||
++			    ndp->max_package > NCSI_MAX_PACKAGE)
++				ndp->max_package = NCSI_MAX_PACKAGE;
++
++			ret = of_property_read_u32(np, "ncsi-channel",
++						   &ndp->max_channel);
++			if (ret || !ndp->max_channel ||
++			    ndp->max_channel > NCSI_RESERVED_CHANNEL)
++				ndp->max_channel = NCSI_RESERVED_CHANNEL;
++		}
+ 	}
+ 
+ 	return nd;
+-- 
+2.25.1
+

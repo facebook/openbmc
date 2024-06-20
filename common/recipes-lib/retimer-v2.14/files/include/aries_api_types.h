@@ -426,6 +426,18 @@ typedef struct AriesRetimerCoreState
     int dsppPathFWState[16]; // Downstream Path FW state
 } AriesRetimerCoreStateType;
 
+typedef struct AriesTxDccState
+{
+    int usppDccDiff[16];
+    int dsppDccDiff[16];
+    int usppDccCca[16];
+    int dsppDccCca[16];
+    uint8_t usppDccRange[16];
+    uint8_t dsppDccRange[16];
+    bool usppCcaEn[16];
+    bool dsppCcaEn[16];
+} AriesTxDccStateType;
+
 /**
  * @brief Struct defining detailed Link status, including electrical
  * parameters
@@ -448,6 +460,7 @@ typedef struct AriesLinkState
     int linkMinFoM;     // Minimum FoM value across all Lanes on USPP and DSPP
     char* linkMinFoMRx; // Receiver corresponding to minimum FoM
     int recoveryCount; // Count of entries to Recovery since L0 at current speed
+    AriesTxDccStateType dccState;
 } AriesLinkStateType;
 
 /**

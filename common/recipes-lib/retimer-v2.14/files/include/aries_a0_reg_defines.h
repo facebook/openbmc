@@ -280,8 +280,17 @@
 /** Reg offset for PMA register LANE_DIG_ASIC_TX_OVRD_IN_0 */
 #define ARIES_PMA_LANE_DIG_ASIC_TX_OVRD_IN_0 0x1001
 
+/** Reg offset for PMA register LANE_DIG_ASIC_TX_OVRD_IN_4 */
+#define ARIES_PMA_LANE_DIG_ASIC_TX_OVRD_IN_4 0x1005
+
 /** Reg offset for PMA register LANE_DIG_ASIC_TX_ASIC_IN_0 */
 #define ARIES_PMA_LANE_DIG_ASIC_TX_ASIC_IN_0 0x100d
+
+/** Reg offset for PMA register LANE_DIG_ASIC_TX_ASIC_IN_0 */
+#define ARIES_PMA_LANE_DIG_ASIC_TX_ASIC_IN_1 0x100e
+
+/** Reg offset for PMA register LANE_DIG_ASIC_TX_ASIC_IN_3 */
+#define ARIES_PMA_LANE_DIG_ASIC_TX_ASIC_IN_3 0x1010
 
 /** Reg offset for PMA register LANE_DIG_ASIC_RX_OVRD_IN_0 */
 #define ARIES_PMA_LANE_DIG_ASIC_RX_OVRD_IN_0 0x1017

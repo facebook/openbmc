@@ -1257,6 +1257,54 @@ AriesErrorType ariesGetLinkStateDetailed(AriesLinkType* link)
         }
     }
 
+    // get Tx DCC values
+    for (laneIndex = 0; laneIndex < width; laneIndex++)
+    {
+        int absLane = startLane + laneIndex;
+        // Upstream values
+        int pmaNum = ariesGetPmaNumber(absLane);
+        int pmaLane = ariesGetPmaLane(absLane);
+
+        rc = ariesReadWordPmaLaneMainMicroIndirect(link->device->i2cDriver, upstreamSide, pmaNum,
+                                                   pmaLane, ARIES_PMA_LANE_DIG_ASIC_TX_ASIC_IN_3, dataWord);
+        CHECK_SUCCESS(rc);
+        usleep(1000);
+        link->state.dccState.usppDccCca[laneIndex] = ((dataWord[1] & 1) << 8) + dataWord[0];
+
+        rc = ariesReadWordPmaLaneMainMicroIndirect(link->device->i2cDriver, upstreamSide, pmaNum,
+                                                   pmaLane, ARIES_PMA_LANE_DIG_ASIC_TX_ASIC_IN_1, dataWord);
+        CHECK_SUCCESS(rc);
+        usleep(1000);
+        link->state.dccState.usppDccRange[laneIndex] = (dataWord[1] >> 1) & 0xF;
+
+        rc = ariesReadWordPmaLaneMainMicroIndirect(link->device->i2cDriver, upstreamSide, pmaNum,
+                                                   pmaLane, ARIES_PMA_LANE_DIG_ASIC_TX_OVRD_IN_4, dataWord);
+        CHECK_SUCCESS(rc);
+        usleep(1000);
+        link->state.dccState.usppDccDiff[laneIndex] = ((dataWord[1] & 0x3F) << 3) + ((dataWord[0] & 0xE0) >> 5);
+        link->state.dccState.usppCcaEn[laneIndex] = (dataWord[1] & 0x40) != 0; // must be equal to one
+
+        // Downstream values
+        rc = ariesReadWordPmaLaneMainMicroIndirect(link->device->i2cDriver, downstreamSide, pmaNum,
+                                                   pmaLane, ARIES_PMA_LANE_DIG_ASIC_TX_ASIC_IN_3, dataWord);
+        CHECK_SUCCESS(rc);
+        usleep(1000);
+        link->state.dccState.dsppDccCca[laneIndex] = ((dataWord[1] & 1) << 8) + dataWord[0];
+
+        rc = ariesReadWordPmaLaneMainMicroIndirect(link->device->i2cDriver, downstreamSide, pmaNum,
+                                                   pmaLane, ARIES_PMA_LANE_DIG_ASIC_TX_ASIC_IN_1, dataWord);
+        CHECK_SUCCESS(rc);
+        usleep(1000);
+        link->state.dccState.dsppDccRange[laneIndex] = (dataWord[1] >> 1) & 0xF;
+
+        rc = ariesReadWordPmaLaneMainMicroIndirect(link->device->i2cDriver, downstreamSide, pmaNum,
+                                                   pmaLane, ARIES_PMA_LANE_DIG_ASIC_TX_OVRD_IN_4, dataWord);
+        CHECK_SUCCESS(rc);
+        usleep(1000);
+        link->state.dccState.dsppDccDiff[laneIndex] = ((dataWord[1] & 0x3F) << 3) + ((dataWord[0] & 0xE0) >> 5);
+        link->state.dccState.dsppCcaEn[laneIndex] = (dataWord[1] & 0x40) != 0; // zero = disabled
+    }
+
     return ARIES_SUCCESS;
 }
 
@@ -1739,6 +1787,14 @@ AriesErrorType ariesLinkPrintDetailedState(AriesLinkType* link,
                 laneIndex, link->state.usppState.txState[laneIndex].lastCurReq);
         fprintf(fp, "aries_link['uspp']['tx'][%d]['last_pst_req'] = %d\n",
                 laneIndex, link->state.usppState.txState[laneIndex].lastPstReq);
+        fprintf(fp, "aries_link['uspp']['tx'][%d]['TX_DCC_DIFF_VAL'] = %d\n",
+                laneIndex, link->state.dccState.usppDccDiff[laneIndex]);
+        fprintf(fp, "aries_link['uspp']['tx'][%d]['TX_DCC_CCA_VAL'] = %d\n",
+                laneIndex, link->state.dccState.usppDccCca[laneIndex]);
+        fprintf(fp, "aries_link['uspp']['tx'][%d]['TX_DCC_RANGE'] = %d\n",
+                laneIndex, link->state.dccState.usppDccRange[laneIndex]);
+        fprintf(fp, "aries_link['uspp']['tx'][%d]['TX_DCC_CCA_EN'] = %d\n",
+                laneIndex, link->state.dccState.usppCcaEn[laneIndex]);
         fprintf(fp, "\n");
 
         fprintf(fp, "aries_link['uspp']['rx'][%d] = {}\n", laneIndex);
@@ -1876,6 +1932,14 @@ AriesErrorType ariesLinkPrintDetailedState(AriesLinkType* link,
                 laneIndex, link->state.dsppState.txState[laneIndex].lastCurReq);
         fprintf(fp, "aries_link['dspp']['tx'][%d]['last_pst_req'] = %d\n",
                 laneIndex, link->state.dsppState.txState[laneIndex].lastPstReq);
+        fprintf(fp, "aries_link['dspp']['tx'][%d]['TX_DCC_DIFF_VAL'] = %d\n",
+                laneIndex, link->state.dccState.dsppDccDiff[laneIndex]);
+        fprintf(fp, "aries_link['dspp']['tx'][%d]['TX_DCC_CCA_VAL'] = %d\n",
+                laneIndex, link->state.dccState.dsppDccCca[laneIndex]);
+        fprintf(fp, "aries_link['dspp']['tx'][%d]['TX_DCC_RANGE'] = %d\n",
+                laneIndex, link->state.dccState.dsppDccRange[laneIndex]);
+        fprintf(fp, "aries_link['dspp']['tx'][%d]['TX_DCC_CCA_EN'] = %d\n",
+                laneIndex, link->state.dccState.dsppCcaEn[laneIndex]);
         fprintf(fp, "\n");
 
         fprintf(fp, "aries_link['dspp']['rx'][%d] = {}\n", laneIndex);

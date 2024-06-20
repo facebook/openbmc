@@ -8,6 +8,9 @@
 #include <string>
 #include <map>
 
+constexpr auto VENDOR = "VENDOR";
+constexpr auto RMNG_W = "REMAINING WRITES";
+
 class PldmVrComponent : public PldmComponent {
   protected:
     uint8_t slot_id = 0;

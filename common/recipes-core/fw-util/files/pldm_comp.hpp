@@ -7,8 +7,7 @@
 #define PLDM_COMPONENT_IDENTIFIER_DEFAULT 0
 #define PLDM_APPLY_DELAY_TIME_DAFAULT 0
 
-constexpr auto ACTIVE_VERSION = "Active Version";
-constexpr auto PENDING_VERSION = "Pending Version";
+constexpr auto VERSION = "VERSION";
 constexpr auto INVALID_VERSION = "NA";
 
 class PldmComponent : public Component, public InfoChecker

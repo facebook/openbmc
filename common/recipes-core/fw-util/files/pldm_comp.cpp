@@ -293,10 +293,8 @@ int PldmComponent::get_version(json& j) {
       return FW_STATUS_FAILURE;
     }
     activeVersion = kv::get(activeVersionKey, kv::region::temp);
-    pendingVersion = kv::get(pendingVersionKey, kv::region::temp);
   }
-  j[ACTIVE_VERSION] = activeVersion;
-  j[PENDING_VERSION] = pendingVersion;
+  j[VERSION] = activeVersion;
 
   return FW_STATUS_SUCCESS;
 }
@@ -310,8 +308,8 @@ int PldmComponent::print_version() {
     if (get_version(j)) {
       throw runtime_error("Error in getting the version of " + component_name);
     }
-    auto activeVersion = j[ACTIVE_VERSION].get<string>();
-    auto pendingVersion = j[PENDING_VERSION].get<string>();
+    auto activeVersion = kv::get(activeVersionKey, kv::region::temp);
+    auto pendingVersion = kv::get(pendingVersionKey, kv::region::temp);
     transform(activeVersion.begin(), activeVersion.end(), 
               activeVersion.begin(), ::toupper);
     transform(pendingVersion.begin(), pendingVersion.end(), 

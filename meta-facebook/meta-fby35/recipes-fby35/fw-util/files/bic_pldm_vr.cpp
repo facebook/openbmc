@@ -118,7 +118,7 @@ int PldmVrComponent::get_version(json& j) {
 
   if (component_identifier == javaisland::ALL_VR) {
     json j_temp;
-    for (const auto& [vr_comp_id, vr_name]: get_vr_list()) {
+    for (auto& [vr_comp_id, vr_name]: get_vr_list()) {
       // replace component name, component ID and version key 
       // to let get_version() get the version of a specific VR 
       component = vr_name;
@@ -128,10 +128,13 @@ int PldmVrComponent::get_version(json& j) {
       if (get_version(j_temp)) {
         return FW_STATUS_FAILURE;
       }
-      auto comp_name = vr_name;
-      transform(comp_name.begin(), comp_name.end(), comp_name.begin(), ::toupper);
-      j["VERSION"][comp_name][ACTIVE_VERSION] = j_temp[ACTIVE_VERSION];
-      j["VERSION"][comp_name][PENDING_VERSION] = j_temp[PENDING_VERSION];
+      transform(vr_name.begin(), vr_name.end(), vr_name.begin(), ::toupper);
+      j[VERSION][vr_name][VERSION] = j_temp[VERSION];
+      j[VERSION][vr_name][VENDOR] = j_temp[VENDOR];
+      if (j_temp.contains(RMNG_W)) {
+        j[VERSION][vr_name][RMNG_W] = j_temp[RMNG_W];
+      }
+      j_temp.clear();
     }
     return FW_STATUS_SUCCESS;
   }
@@ -139,8 +142,8 @@ int PldmVrComponent::get_version(json& j) {
   if (PldmComponent::get_version(j)) {
     return FW_STATUS_FAILURE;
   }
-  auto activeVersion = j[ACTIVE_VERSION].get<string>();
-  auto pendingVersion = j[PENDING_VERSION].get<string>();
+  auto activeVersion = kv::get(activeVersionKey, kv::region::temp);
+  auto pendingVersion = kv::get(pendingVersionKey, kv::region::temp);
   
   // If the active version is valid but the pending version is invalid, let 
   // the pending version equal the active version
@@ -148,26 +151,30 @@ int PldmVrComponent::get_version(json& j) {
       pendingVersion.find(INVALID_VERSION) != string::npos) {
     pendingVersion = activeVersion;
     kv::set(pendingVersionKey, pendingVersion, kv::region::temp);
-    j[PENDING_VERSION] = pendingVersion;
-    return FW_STATUS_SUCCESS;
   }
 
-  // VR active version format is "<VENDOR NAME> <VERSION>"
-  // VR pending version format is "<DEVICE NAME> <VERSION>_<COMPONENT>"
+  // VR active version format is "<VENDOR NAME> <VERSION>" or
+  // <VENDOR NAME> <VERSION>, Remaining Write: <REMAINING WRITE>
+  // VR pending version format is "<DEVICE NAME> <VERSION>"
   // Replace pending version <DEVICE NAME> with active version <VENDOR NAME>
-  regex pattern(R"((\S+)\s([^_]+)(?:_.*)?)");
+  regex pattern(R"((\S+)\s([^\s,]+)(?:,\s*Remaining Write:\s*(\d+))?)");
   smatch matches;
-  string vendor;
+  string vendor = INVALID_VERSION;
   if (regex_search(activeVersion, matches, pattern)) {
     vendor = matches[1].str();
+    activeVersion = matches[2].str();
+    if (matches[3].matched) {
+      j[RMNG_W] = matches[3].str();
+    }
   }
   matches = smatch();
-  if (regex_search(pendingVersion, matches, pattern)) {
+  if (regex_search(pendingVersion, matches, pattern) && !vendor.empty()) {
     pendingVersion = vendor + " " + matches[2].str();
+    kv::set(pendingVersionKey, pendingVersion, kv::region::temp);
   }
   
-  j[ACTIVE_VERSION] = activeVersion;
-  j[PENDING_VERSION] = pendingVersion;
+  j[VERSION] = activeVersion;
+  j[VENDOR] = vendor;
 
   return FW_STATUS_SUCCESS;
 }

@@ -55,8 +55,8 @@ int PldmRetimerComponent::get_version(json& j) {
   if (PldmComponent::get_version(j)) {
     return FW_STATUS_FAILURE;
   }
-  auto activeVersion = j[ACTIVE_VERSION].get<string>();
-  auto pendingVersion = j[PENDING_VERSION].get<string>();
+  auto activeVersion = kv::get(activeVersionKey, kv::region::temp);
+  auto pendingVersion = kv::get(pendingVersionKey, kv::region::temp);
   
   // If the active version is valid but the pending version is invalid, let 
   // the pending version equal the active version
@@ -64,8 +64,6 @@ int PldmRetimerComponent::get_version(json& j) {
       pendingVersion.find(INVALID_VERSION) != string::npos) {
     pendingVersion = activeVersion;
     kv::set(pendingVersionKey, pendingVersion, kv::region::temp);
-    j[PENDING_VERSION] = pendingVersion;
-    return FW_STATUS_SUCCESS;
   }
 
   // Retimer active version format is "<VENDOR NAME> <VERSION>"
@@ -73,17 +71,19 @@ int PldmRetimerComponent::get_version(json& j) {
   // Replace pending version <DEVICE NAME> with active version <VENDOR NAME>
   regex pattern(R"((\S+)\s([^_]+)(?:_.*)?)");
   smatch matches;
-  string vendor;
+  string vendor = INVALID_VERSION;
   if (regex_search(activeVersion, matches, pattern)) {
     vendor = matches[1].str();
+    activeVersion = matches[2].str();
   }
   matches = smatch();
-  if (regex_search(pendingVersion, matches, pattern)) {
+  if (regex_search(pendingVersion, matches, pattern) && !vendor.empty()) {
     pendingVersion = vendor + " " + matches[2].str();
+    kv::set(pendingVersionKey, pendingVersion, kv::region::temp);
   }
   
-  j[ACTIVE_VERSION] = activeVersion;
-  j[PENDING_VERSION] = pendingVersion;
+  j[VERSION] = activeVersion;
+  j["VENDOR"] = vendor;
 
   return FW_STATUS_SUCCESS;
 }

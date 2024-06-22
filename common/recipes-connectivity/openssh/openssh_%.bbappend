@@ -11,8 +11,6 @@ RDEPENDS:${PN} += "bash"
 SSH_IDLE_TIMEOUT ?= "1800"
 
 do_configure:append() {
-    sed -ri "s/__OPENBMC_VERSION__/${OPENBMC_VERSION}/g" sshd_config
-
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
         # Read SSH keys from the persistent store. The init script on
         # the SysV variant does this by creating symlinks at startup
@@ -23,6 +21,12 @@ do_configure:append() {
         sed -i 's:.*HostKey.*\(/etc\):HostKey /mnt/data\1:' sshd_config
         sed -i '/ssh_host_key/d' sshd_config
     fi
+}
+
+do_install:append() {
+  files="${D}${sysconfdir}/ssh/sshd_config"
+  [ -e "${D}${sysconfdir}/ssh/sshd_config_readonly" ] && files="$files ${D}${sysconfdir}/ssh/sshd_config_readonly"
+  sed -ri "s/__OPENBMC_VERSION__/${OPENBMC_VERSION}/g" $files
 }
 
 do_install:append() {

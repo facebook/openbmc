@@ -1,4 +1,4 @@
-The flash should layout shall contain the following in a static layout on
+The flash layout shall contain the following in a static layout on
 redundant flash devices (unless specified otherwise):
 
 - u-boot SPL

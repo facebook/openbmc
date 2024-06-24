@@ -3,7 +3,7 @@ Power Control:
     file: server-power-control.md
     priority: P0
     short: Power on/off/reset of the managed server.
-  NIC Reseat:
+  NIC Re-seat:
     file: nic-reseat.md
     priority: P2
 Firmware Update:

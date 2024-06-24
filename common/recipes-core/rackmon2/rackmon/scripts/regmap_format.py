@@ -31,6 +31,7 @@ CSV_HEADERS = {
     "endian": str,
     "interval": int,
     "precision": int,
+    "sign": bool,
     "scale": float,
     "shift": float,
     "name": str,

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -e
+
+check_packages() {
+  required_packages=("python3-jsonschema" "meson" "ninja-build" "gtest" "gtest-devel" "gmock" "gmock-devel" "glog" "glog-devel")
+  for package in "${required_packages[@]}"; do
+    echo "Checking for $package"
+    if ! rpm -q "$package" > /dev/null; then
+      echo "${package} is not installed."
+      exit 1
+    fi
+  done
+}
+
+check_source() {
+  diff=$(diff <(clang-format "$1") "$1")
+  if [ "$diff" != "" ]; then
+    echo "$1 clang-format Failed"
+    exit 1
+  fi
+}
+
+cpp_linter() {
+  sources=$(find . -regex '.*\.\(cpp\|h\)$' -print)
+  for f in $sources; do
+    echo "Checking $f"
+    check_source "$f"
+  done
+}
+
+curr=$(dirname "$0")
+cd "$curr"
+cpp_linter
+meson -Dsyslog=false -Dpython-path=/usr/bin/python3 /tmp/builddir
+meson test -C /tmp/builddir

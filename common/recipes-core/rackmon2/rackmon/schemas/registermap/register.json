@@ -42,6 +42,9 @@
         "minimum": 0,
         "maximum": 31
       },
+      "sign": {
+        "type": "boolean"
+      },
       "scale": {
         "type": "number"
       },

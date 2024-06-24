@@ -1,7 +1,7 @@
-From 81199a00f162166bb1215168de7fd9b5dfc73a86 Mon Sep 17 00:00:00 2001
+From 7b962e7462b3cf9efb56a461986823cca2df055f Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 5/9] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 4/8] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -53,10 +53,10 @@ index e42677c..744adb8 100644
 +                (const override));
  };
 diff --git a/common/utils.cpp b/common/utils.cpp
-index f7a0ae0..9441f9b 100644
+index 60154be..3bfee96 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -404,6 +404,23 @@ PropertyMap
+@@ -416,6 +416,23 @@ PropertyMap
      return bus.call(method, dbusTimeout).unpack<PropertyMap>();
  }
  
@@ -81,10 +81,10 @@ index f7a0ae0..9441f9b 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 3e8e19e..d7eedbe 100644
+index 103783d..b528095 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -195,6 +195,10 @@ class DBusHandlerInterface
+@@ -202,6 +202,10 @@ class DBusHandlerInterface
      virtual PropertyMap
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
                                   const char* dbusInterface) const = 0;
@@ -95,7 +95,7 @@ index 3e8e19e..d7eedbe 100644
  };
  
  /**
-@@ -286,6 +290,9 @@ class DBusHandler : public DBusHandlerInterface
+@@ -293,6 +297,9 @@ class DBusHandler : public DBusHandlerInterface
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
                                   const char* dbusInterface) const override;
  
@@ -118,7 +118,7 @@ index c656762..af5aa23 100644
    dependencies: deps,
    install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index f5c92d8..5fbfc51 100644
+index a309ca6..1ed2043 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -139,7 +139,7 @@ index f5c92d8..5fbfc51 100644
      std::unique_ptr<platform_config::Handler> platformConfigHandler{};
      platformConfigHandler = std::make_unique<platform_config::Handler>();
  
-@@ -323,7 +327,9 @@ int main(int argc, char** argv)
+@@ -322,7 +326,9 @@ int main(int argc, char** argv)
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{

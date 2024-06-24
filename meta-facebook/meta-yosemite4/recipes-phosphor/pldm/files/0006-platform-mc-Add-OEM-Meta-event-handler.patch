@@ -1,7 +1,7 @@
-From c7d9cd36917829a756f5fdd9495083db848d89be Mon Sep 17 00:00:00 2001
+From 61a6e23cf1f1aaa5ff7de301ac4ba466a5369c08 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 7 Feb 2024 13:52:07 +0800
-Subject: [PATCH 7/9] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 6/8] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -57,12 +57,12 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  meson.build                             |   1 +
  oem/meta/platform-mc/event_oem_meta.cpp | 701 ++++++++++++++++++++++++
  oem/meta/platform-mc/event_oem_meta.hpp |  21 +
- platform-mc/event_manager.cpp           |  35 +-
+ platform-mc/event_manager.cpp           |  33 ++
  platform-mc/event_manager.hpp           |  13 +-
- platform-mc/manager.hpp                 |  27 +-
+ platform-mc/manager.hpp                 |  26 +-
  platform-mc/test/meson.build            |   4 +-
  pldmd/pldmd.cpp                         |  10 +-
- 8 files changed, 803 insertions(+), 9 deletions(-)
+ 8 files changed, 802 insertions(+), 7 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
@@ -813,10 +813,10 @@ index 0000000..55822a8
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index 70ad5fc..546c821 100644
+index b6da53c..88ba5c8 100644
 --- a/platform-mc/event_manager.cpp
 +++ b/platform-mc/event_manager.cpp
-@@ -2,13 +2,17 @@
+@@ -2,14 +2,17 @@
  
  #include "libpldm/utils.h"
  
@@ -829,12 +829,12 @@ index 70ad5fc..546c821 100644
  
  #include <cerrno>
  
+ PHOSPHOR_LOG2_USING;
 +constexpr auto MetaIANA = "0015A000";
-+
+ 
  namespace pldm
  {
- namespace platform_mc
-@@ -79,6 +83,23 @@ int decode_pldm_cper_event_data(const uint8_t* event_data,
+@@ -81,6 +84,23 @@ int decode_pldm_cper_event_data(const uint8_t* event_data,
      return PLDM_SUCCESS;
  }
  
@@ -858,11 +858,10 @@ index 70ad5fc..546c821 100644
  int EventManager::handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
                                        const uint8_t* eventData,
                                        size_t eventDataSize)
-@@ -128,7 +149,19 @@ int EventManager::handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
+@@ -129,6 +149,19 @@ int EventManager::handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
      {
          return processCperEvent(eventData, eventDataSize);
      }
--
 +    else if (eventClass == PLDM_OEM_EVENT_CLASS_0xFB)
 +    {
 +        const std::map<std::string, MctpEndpoint>& configurations =
@@ -876,11 +875,11 @@ index 70ad5fc..546c821 100644
 +            tid, eventData, eventDataSize, configurations);
 +        return PLDM_SUCCESS;
 +    }
-     lg2::info("unhandled event, event class={EVENTCLASS}", "EVENTCLASS",
-               eventClass);
+ 
+     lg2::info("Unsupported class type {CLASSTYPE}", "CLASSTYPE", eventClass);
  
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index 4808b87..3e0b9e2 100644
+index 57a0d9f..645240f 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
 @@ -6,6 +6,7 @@
@@ -905,7 +904,7 @@ index 4808b87..3e0b9e2 100644
  
      /** @brief Handle platform event
       *
-@@ -109,6 +112,10 @@ class EventManager
+@@ -110,6 +113,10 @@ class EventManager
      virtual int processCperEvent(const uint8_t* eventData,
                                   size_t eventDataSize);
  
@@ -916,17 +915,17 @@ index 4808b87..3e0b9e2 100644
      int createCperDumpEntry(const std::string& dataType,
                              const std::string& dataPath);
  
-@@ -126,6 +133,8 @@ class EventManager
+@@ -127,6 +134,8 @@ class EventManager
  
      /** @brief List of discovered termini */
-     std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini;
+     TerminiMapper& termini;
 +
 +    pldm::ConfigurationDiscoveryHandler* configurationDiscovery;
  };
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 9b8d1d9..5cf3d80 100644
+index d0dacae..177a9ff 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
 @@ -6,11 +6,14 @@
@@ -944,12 +943,11 @@ index 9b8d1d9..5cf3d80 100644
  namespace pldm
  {
  namespace platform_mc
-@@ -33,13 +36,16 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -32,12 +35,16 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
      Manager& operator=(Manager&&) = delete;
      ~Manager() = default;
  
--    explicit Manager(sdeventplus::Event& event,
--                     requester::Handler<requester::Request>& handler,
+-    explicit Manager(sdeventplus::Event& event, RequesterHandler& handler,
 -                     pldm::InstanceIdDb& instanceIdDb) :
 +    explicit Manager(
 +        sdeventplus::Event& event,
@@ -964,8 +962,8 @@ index 9b8d1d9..5cf3d80 100644
 +        configurationDiscovery(configurationDiscovery)
      {}
  
-     exec::task<int> beforeDiscoverTerminus();
-@@ -103,6 +109,18 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+     /** @brief Helper function to do the actions before discovering terminus
+@@ -153,6 +160,18 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          return PLDM_SUCCESS;
      }
  
@@ -981,12 +979,12 @@ index 9b8d1d9..5cf3d80 100644
 +        return PLDM_SUCCESS;
 +    }
 +
-     exec::task<int> pollForPlatformEvent(pldm_tid_t tid);
+     /** @brief The function to trigger the event polling
+      *
+      *  @param[in] tid - Terminus ID
+@@ -177,6 +196,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
  
-   private:
-@@ -113,6 +131,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
-     PlatformManager platformManager;
-     SensorManager sensorManager;
+     /** @brief Store event manager handler */
      EventManager eventManager;
 +    pldm::ConfigurationDiscoveryHandler* configurationDiscovery;
  };
@@ -1008,7 +1006,7 @@ index 378628e..47c45df 100644
  
  tests = [
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 4c1550a..32193d5 100644
+index aed5019..2c2eed4 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -276,7 +276,8 @@ int main(int argc, char** argv)

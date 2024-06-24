@@ -1,7 +1,7 @@
-From 11fb52ef90a940f2281cc9abea977ab010d82d6a Mon Sep 17 00:00:00 2001
+From 5c69fa67b1beddb418e7e3fc20714d399716dcc6 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
-Subject: [PATCH 3/9] platform-mc: Sensor handling
+Subject: [PATCH 2/8] platform-mc: Sensor handling
 
 Added sensor_manager and numeric_sensor class. The sensor_manager
 class manages the timing of sensor polling. The NumericSensor class
@@ -17,22 +17,21 @@ Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
  meson.build                                |   6 +
  meson.options                              |  24 +
  platform-mc/examples/pldm_t2_config.json   |  12 +
- platform-mc/manager.hpp                    |  15 +-
- platform-mc/numeric_sensor.cpp             | 556 +++++++++++++++++++++
- platform-mc/numeric_sensor.hpp             | 219 ++++++++
- platform-mc/platform_manager.cpp           |   2 +-
- platform-mc/sensor_manager.cpp             | 400 +++++++++++++++
- platform-mc/sensor_manager.hpp             | 105 ++++
- platform-mc/terminus.cpp                   |  98 +++-
- platform-mc/terminus.hpp                   |  18 +-
+ platform-mc/manager.hpp                    |  21 +-
+ platform-mc/numeric_sensor.cpp             | 687 +++++++++++++++++++++
+ platform-mc/numeric_sensor.hpp             | 219 +++++++
+ platform-mc/sensor_manager.cpp             | 410 ++++++++++++
+ platform-mc/sensor_manager.hpp             | 117 ++++
+ platform-mc/terminus.cpp                   | 114 +++-
+ platform-mc/terminus.hpp                   |  30 +
  platform-mc/terminus_manager.cpp           |  18 +
  platform-mc/test/meson.build               |   4 +
  platform-mc/test/mock_sensor_manager.hpp   |  24 +
- platform-mc/test/numeric_sensor_test.cpp   | 274 ++++++++++
+ platform-mc/test/numeric_sensor_test.cpp   | 272 ++++++++
  platform-mc/test/platform_manager_test.cpp |   3 +
- platform-mc/test/sensor_manager_test.cpp   | 149 ++++++
+ platform-mc/test/sensor_manager_test.cpp   | 147 +++++
  pldmd/pldmd.cpp                            |   2 +-
- 18 files changed, 1924 insertions(+), 5 deletions(-)
+ 17 files changed, 2107 insertions(+), 3 deletions(-)
  create mode 100644 platform-mc/examples/pldm_t2_config.json
  create mode 100644 platform-mc/numeric_sensor.cpp
  create mode 100644 platform-mc/numeric_sensor.hpp
@@ -117,7 +116,7 @@ index 0000000..4300fd3
 +    ]
 +}
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index b88620a..b0972d2 100644
+index 7636e94..342c028 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
 @@ -7,6 +7,7 @@
@@ -128,8 +127,8 @@ index b88620a..b0972d2 100644
  #include "terminus_manager.hpp"
  
  namespace pldm
-@@ -35,7 +36,8 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
-                      requester::Handler<requester::Request>& handler,
+@@ -33,7 +34,8 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+     explicit Manager(sdeventplus::Event& event, RequesterHandler& handler,
                       pldm::InstanceIdDb& instanceIdDb) :
          terminusManager(event, handler, instanceIdDb, termini, this),
 -        platformManager(terminusManager, termini)
@@ -137,16 +136,20 @@ index b88620a..b0972d2 100644
 +        sensorManager(event, terminusManager, termini)
      {}
  
-     exec::task<int> beforeDiscoverTerminus();
-@@ -52,12 +54,23 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+     /** @brief Helper function to do the actions before discovering terminus
+@@ -68,6 +70,20 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          terminusManager.removeMctpTerminus(mctpInfos);
      }
  
++    /** @brief Helper function to start sensor polling of the terminus TID
++     */
 +    void startSensorPolling(pldm_tid_t tid)
 +    {
 +        sensorManager.startPolling(tid);
 +    }
 +
++    /** @brief Helper function to stop sensor polling of the terminus TID
++     */
 +    void stopSensorPolling(pldm_tid_t tid)
 +    {
 +        sensorManager.stopPolling(tid);
@@ -154,20 +157,23 @@ index b88620a..b0972d2 100644
 +
    private:
      /** @brief List of discovered termini */
-     std::map<pldm_tid_t, std::shared_ptr<Terminus>> termini{};
+     TerminiMapper termini{};
+@@ -77,6 +93,9 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
  
-     TerminusManager terminusManager;
+     /** @brief Platform interface for calling the hook functions */
      PlatformManager platformManager;
++
++    /** @brief Store platform manager handler */
 +    SensorManager sensorManager;
  };
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
 new file mode 100644
-index 0000000..fcb7c73
+index 0000000..e438061
 --- /dev/null
 +++ b/platform-mc/numeric_sensor.cpp
-@@ -0,0 +1,556 @@
+@@ -0,0 +1,687 @@
 +#include "numeric_sensor.hpp"
 +
 +#include "libpldm/platform.h"
@@ -177,6 +183,8 @@ index 0000000..fcb7c73
 +
 +#include <limits>
 +#include <regex>
++
++PHOSPHOR_LOG2_USING;
 +
 +namespace pldm
 +{
@@ -224,9 +232,10 @@ index 0000000..fcb7c73
 +            sensorUnit = SensorUnit::Percent;
 +            break;
 +        default:
-+            throw std::runtime_error("baseUnit(" +
-+                                     std::to_string(pdr->base_unit) +
-+                                     ") is not of supported type");
++            lg2::error("Sensor {NAME} has Invalid baseUnit {UNIT}.", "NAME",
++                       sensorName, "UNIT", pdr->base_unit);
++            throw sdbusplus::xyz::openbmc_project::Common::Error::
++                InvalidArgument();
 +            break;
 +    }
 +
@@ -234,8 +243,19 @@ index 0000000..fcb7c73
 +    path = std::regex_replace(path, std::regex("[^a-zA-Z0-9_/]+"), "_");
 +
 +    auto& bus = pldm::utils::DBusHandler::getBus();
-+    associationDefinitionsIntf =
-+        std::make_unique<AssociationDefinitionsInft>(bus, path.c_str());
++    try
++    {
++        associationDefinitionsIntf =
++            std::make_unique<AssociationDefinitionsInft>(bus, path.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error(
++            "Failed to create association interface for numeric sensor {PATH} error - {ERROR}",
++            "PATH", path, "ERROR", e);
++        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
++    }
++
 +    associationDefinitionsIntf->associations(
 +        {{"chassis", "all_sensors", associationPath.c_str()}});
 +
@@ -410,31 +430,84 @@ index 0000000..fcb7c73
 +        updateTime = pdr->update_interval * 1000000;
 +    }
 +
-+    valueIntf = std::make_unique<ValueIntf>(bus, path.c_str());
++    try
++    {
++        valueIntf = std::make_unique<ValueIntf>(bus, path.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error(
++            "Failed to create Value interface for numeric sensor {PATH} error - {ERROR}",
++            "PATH", path, "ERROR", e);
++        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
++    }
 +    valueIntf->maxValue(unitModifier(conversionFormula(maxValue)));
 +    valueIntf->minValue(unitModifier(conversionFormula(minValue)));
 +    hysteresis = unitModifier(conversionFormula(hysteresis));
 +    valueIntf->unit(sensorUnit);
 +
-+    availabilityIntf = std::make_unique<AvailabilityIntf>(bus, path.c_str());
++    try
++    {
++        availabilityIntf = std::make_unique<AvailabilityIntf>(bus,
++                                                              path.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error(
++            "Failed to create Availability interface for numeric sensor {PATH} error - {ERROR}",
++            "PATH", path, "ERROR", e);
++        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
++    }
 +    availabilityIntf->available(true);
 +
-+    operationalStatusIntf =
-+        std::make_unique<OperationalStatusIntf>(bus, path.c_str());
++    try
++    {
++        operationalStatusIntf =
++            std::make_unique<OperationalStatusIntf>(bus, path.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error(
++            "Failed to create Operation status interface for numeric sensor {PATH} error - {ERROR}",
++            "PATH", path, "ERROR", e);
++        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
++    }
 +    operationalStatusIntf->functional(!sensorDisabled);
 +
 +    if (hasWarningThresholds)
 +    {
-+        thresholdWarningIntf =
-+            std::make_unique<ThresholdWarningIntf>(bus, path.c_str());
++        try
++        {
++            thresholdWarningIntf =
++                std::make_unique<ThresholdWarningIntf>(bus, path.c_str());
++        }
++        catch (const sdbusplus::exception_t& e)
++        {
++            lg2::error(
++                "Failed to create Threshold warning interface for numeric sensor {PATH} error - {ERROR}",
++                "PATH", path, "ERROR", e);
++            throw sdbusplus::xyz::openbmc_project::Common::Error::
++                InvalidArgument();
++        }
 +        thresholdWarningIntf->warningHigh(unitModifier(warningHigh));
 +        thresholdWarningIntf->warningLow(unitModifier(warningLow));
 +    }
 +
 +    if (hasCriticalThresholds)
 +    {
-+        thresholdCriticalIntf =
-+            std::make_unique<ThresholdCriticalIntf>(bus, path.c_str());
++        try
++        {
++            thresholdCriticalIntf =
++                std::make_unique<ThresholdCriticalIntf>(bus, path.c_str());
++        }
++        catch (const sdbusplus::exception_t& e)
++        {
++            lg2::error(
++                "Failed to create Threshold critical interface for numeric sensor {PATH} error - {ERROR}",
++                "PATH", path, "ERROR", e);
++            throw sdbusplus::xyz::openbmc_project::Common::Error::
++                InvalidArgument();
++        }
 +        thresholdCriticalIntf->criticalHigh(unitModifier(criticalHigh));
 +        thresholdCriticalIntf->criticalLow(unitModifier(criticalLow));
 +    }
@@ -481,9 +554,10 @@ index 0000000..fcb7c73
 +            sensorUnit = SensorUnit::Percent;
 +            break;
 +        default:
-+            throw std::runtime_error("baseUnit(" +
-+                                     std::to_string(pdr->base_unit) +
-+                                     ") is not of supported type");
++            lg2::error("Sensor {NAME} has Invalid baseUnit {UNIT}.", "NAME",
++                       sensorName, "UNIT", pdr->base_unit);
++            throw sdbusplus::xyz::openbmc_project::Common::Error::
++                InvalidArgument();
 +            break;
 +    }
 +
@@ -491,8 +565,18 @@ index 0000000..fcb7c73
 +    path = std::regex_replace(path, std::regex("[^a-zA-Z0-9_/]+"), "_");
 +
 +    auto& bus = pldm::utils::DBusHandler::getBus();
-+    associationDefinitionsIntf =
-+        std::make_unique<AssociationDefinitionsInft>(bus, path.c_str());
++    try
++    {
++        associationDefinitionsIntf =
++            std::make_unique<AssociationDefinitionsInft>(bus, path.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error(
++            "Failed to create Association interface for compact numeric sensor {PATH} error - {ERROR}",
++            "PATH", path, "ERROR", e);
++        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
++    }
 +    associationDefinitionsIntf->associations(
 +        {{"chassis", "all_sensors", associationPath.c_str()}});
 +
@@ -534,31 +618,84 @@ index 0000000..fcb7c73
 +
 +    timeStamp = 0;
 +    updateTime = (uint64_t)DEFAULT_SENSOR_UPDATER_INTERVAL * 1000;
-+    valueIntf = std::make_unique<ValueIntf>(bus, path.c_str());
++    try
++    {
++        valueIntf = std::make_unique<ValueIntf>(bus, path.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error(
++            "Failed to create Value interface for compact numeric sensor {PATH} error - {ERROR}",
++            "PATH", path, "ERROR", e);
++        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
++    }
 +    valueIntf->maxValue(unitModifier(conversionFormula(maxValue)));
 +    valueIntf->minValue(unitModifier(conversionFormula(minValue)));
 +    hysteresis = unitModifier(conversionFormula(hysteresis));
 +    valueIntf->unit(sensorUnit);
 +
-+    availabilityIntf = std::make_unique<AvailabilityIntf>(bus, path.c_str());
++    try
++    {
++        availabilityIntf = std::make_unique<AvailabilityIntf>(bus,
++                                                              path.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error(
++            "Failed to create Availability interface for compact numeric sensor {PATH} error - {ERROR}",
++            "PATH", path, "ERROR", e);
++        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
++    }
 +    availabilityIntf->available(true);
 +
-+    operationalStatusIntf =
-+        std::make_unique<OperationalStatusIntf>(bus, path.c_str());
++    try
++    {
++        operationalStatusIntf =
++            std::make_unique<OperationalStatusIntf>(bus, path.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error(
++            "Failed to create Operational status interface for compact numeric sensor {PATH} error - {ERROR}",
++            "PATH", path, "ERROR", e);
++        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
++    }
 +    operationalStatusIntf->functional(!sensorDisabled);
 +
 +    if (hasWarningThresholds)
 +    {
-+        thresholdWarningIntf =
-+            std::make_unique<ThresholdWarningIntf>(bus, path.c_str());
++        try
++        {
++            thresholdWarningIntf =
++                std::make_unique<ThresholdWarningIntf>(bus, path.c_str());
++        }
++        catch (const sdbusplus::exception_t& e)
++        {
++            lg2::error(
++                "Failed to create Warning threshold interface for compact numeric sensor {PATH} error - {ERROR}",
++                "PATH", path, "ERROR", e);
++            throw sdbusplus::xyz::openbmc_project::Common::Error::
++                InvalidArgument();
++        }
 +        thresholdWarningIntf->warningHigh(unitModifier(warningHigh));
 +        thresholdWarningIntf->warningLow(unitModifier(warningLow));
 +    }
 +
 +    if (hasCriticalThresholds)
 +    {
-+        thresholdCriticalIntf =
-+            std::make_unique<ThresholdCriticalIntf>(bus, path.c_str());
++        try
++        {
++            thresholdCriticalIntf =
++                std::make_unique<ThresholdCriticalIntf>(bus, path.c_str());
++        }
++        catch (const sdbusplus::exception_t& e)
++        {
++            lg2::error(
++                "Failed to create Critical threshold interface for compact numeric sensor {PATH} error - {ERROR}",
++                "PATH", path, "ERROR", e);
++            throw sdbusplus::xyz::openbmc_project::Common::Error::
++                InvalidArgument();
++        }
 +        thresholdCriticalIntf->criticalHigh(unitModifier(criticalHigh));
 +        thresholdCriticalIntf->criticalLow(unitModifier(criticalLow));
 +    }
@@ -726,7 +863,7 @@ index 0000000..fcb7c73
 +} // namespace pldm
 diff --git a/platform-mc/numeric_sensor.hpp b/platform-mc/numeric_sensor.hpp
 new file mode 100644
-index 0000000..04cd695
+index 0000000..ff9e286
 --- /dev/null
 +++ b/platform-mc/numeric_sensor.hpp
 @@ -0,0 +1,219 @@
@@ -745,13 +882,13 @@ index 0000000..04cd695
 +#include <xyz/openbmc_project/State/Decorator/Availability/server.hpp>
 +#include <xyz/openbmc_project/State/Decorator/OperationalStatus/server.hpp>
 +
++#include <string>
++
 +namespace pldm
 +{
 +namespace platform_mc
 +{
 +
-+using namespace std::chrono;
-+using namespace pldm::pdr;
 +using SensorUnit = sdbusplus::xyz::openbmc_project::Sensor::server::Value::Unit;
 +using ValueIntf = sdbusplus::server::object_t<
 +    sdbusplus::xyz::openbmc_project::Sensor::server::Value>;
@@ -949,25 +1086,12 @@ index 0000000..04cd695
 +};
 +} // namespace platform_mc
 +} // namespace pldm
-diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index 492c3c2..b23d37e 100644
---- a/platform-mc/platform_manager.cpp
-+++ b/platform-mc/platform_manager.cpp
-@@ -101,7 +101,7 @@ exec::task<int> PlatformManager::getPDRs(std::shared_ptr<Terminus> terminus)
-         else
-         {
-             // multipart transfer
--            uint32_t receivedRecordSize = 0;
-+            uint32_t receivedRecordSize = responseCnt;
-             auto pdrHdr = reinterpret_cast<pldm_pdr_hdr*>(recvBuf.data());
-             uint16_t recordChgNum = le16toh(pdrHdr->record_change_num);
-             std::vector<uint8_t> receivedPdr(recvBuf.begin(),
 diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
 new file mode 100644
-index 0000000..187a359
+index 0000000..97fbf1d
 --- /dev/null
 +++ b/platform-mc/sensor_manager.cpp
-@@ -0,0 +1,400 @@
+@@ -0,0 +1,410 @@
 +#include "sensor_manager.hpp"
 +
 +#include "terminus_manager.hpp"
@@ -981,12 +1105,10 @@ index 0000000..187a359
 +namespace platform_mc
 +{
 +
-+using namespace std::chrono;
-+
-+SensorManager::SensorManager(
-+    sdeventplus::Event& event, TerminusManager& terminusManager,
-+    std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini, bool verbose,
-+    const std::filesystem::path& configJson) :
++SensorManager::SensorManager(sdeventplus::Event& event,
++                             TerminusManager& terminusManager,
++                             TerminiMapper& termini, bool verbose,
++                             const std::filesystem::path& configJson) :
 +    event(event),
 +    terminusManager(terminusManager), termini(termini),
 +    pollingTime(SENSOR_POLLING_TIME), verbose(verbose)
@@ -1008,7 +1130,7 @@ index 0000000..187a359
 +    auto data = nlohmann::json::parse(jsonFile, nullptr, false);
 +    if (data.is_discarded())
 +    {
-+        lg2::error("Parsing json file failed. FilePath={FILE_PATH}",
++        lg2::error("Parsing json file failed. File path {FILE_PATH}",
 +                   "FILE_PATH", std::string(configJson));
 +        return;
 +    }
@@ -1037,15 +1159,15 @@ index 0000000..187a359
 +void SensorManager::startPolling(pldm_tid_t tid)
 +{
 +    // initialize prioritySensors and roundRobinSensors list
-+    if (termini.find(tid) == termini.end())
++    if (!termini.contains(tid))
 +    {
 +        return;
 +    }
 +    /* tid already initialize prioritySensors and roundRobinSensors list */
-+    if (sensorPollTimers.find(tid) != sensorPollTimers.end())
++    if (sensorPollTimers.contains(tid))
 +    {
-+        lg2::info("TID:{TID} sensor poll timer is existed.", "TID",
-+                  (unsigned)tid);
++        lg2::info("Terminus ID {TID}: sensor poll timer already exists.", "TID",
++                  tid);
 +        return;
 +    }
 +    // numeric sensor
@@ -1067,11 +1189,11 @@ index 0000000..187a359
 +    if ((prioritySensors[tid].size() == 0) &&
 +        (roundRobinSensors[tid].size() == 0))
 +    {
-+        lg2::info("TID:{TID} no sensor to polling.", "TID", (unsigned)tid);
++        lg2::info("Terminus ID {TID}: no sensor to polling.", "TID", tid);
 +        return;
 +    }
 +
-+    if (sensorPollTimers.find(tid) == sensorPollTimers.end())
++    if (!sensorPollTimers.contains(tid))
 +    {
 +        sensorPollTimers[tid] = std::make_unique<sdbusplus::Timer>(
 +            event.get(),
@@ -1081,7 +1203,8 @@ index 0000000..187a359
 +    if (!sensorPollTimers[tid]->isRunning())
 +    {
 +        sensorPollTimers[tid]->start(
-+            duration_cast<std::chrono::milliseconds>(milliseconds(pollingTime)),
++            duration_cast<std::chrono::milliseconds>(
++                std::chrono::milliseconds(pollingTime)),
 +            true);
 +    }
 +}
@@ -1089,18 +1212,19 @@ index 0000000..187a359
 +void SensorManager::stopPolling(pldm_tid_t tid)
 +{
 +    /* Stop polling timer */
-+    if (sensorPollTimers.find(tid) != sensorPollTimers.end())
++    if (sensorPollTimers.contains(tid))
 +    {
 +        sensorPollTimers[tid]->stop();
 +        sensorPollTimers.erase(tid);
 +    }
 +
-+    if (prioritySensors.find(tid) != prioritySensors.end())
++    if (prioritySensors.contains(tid))
 +    {
 +        prioritySensors[tid].clear();
 +        prioritySensors.erase(tid);
 +    }
-+    if (roundRobinSensors.find(tid) != roundRobinSensors.end())
++
++    if (roundRobinSensors.contains(tid))
 +    {
 +        while (!roundRobinSensors[tid].empty())
 +        {
@@ -1109,8 +1233,7 @@ index 0000000..187a359
 +        roundRobinSensors.erase(tid);
 +    }
 +
-+    if (doSensorPollingTaskHandles.find(tid) !=
-+        doSensorPollingTaskHandles.end())
++    if (doSensorPollingTaskHandles.contains(tid))
 +    {
 +        auto& [scope, rcOpt] = doSensorPollingTaskHandles[tid];
 +        scope.request_stop();
@@ -1148,7 +1271,8 @@ index 0000000..187a359
 +        }
 +        else
 +        {
-+            lg2::info("Stopped sensor polling for tid {TID}", "TID", tid);
++            lg2::info("Stopped sensor polling for Terminus ID {TID}", "TID",
++                      tid);
 +            rcOpt = PLDM_SUCCESS;
 +        }
 +    }),
@@ -1165,7 +1289,7 @@ index 0000000..187a359
 +
 +    do
 +    {
-+        if ((sensorPollTimers.find(tid) == sensorPollTimers.end()) ||
++        if ((!sensorPollTimers.contains(tid)) ||
 +            (sensorPollTimers[tid] && !sensorPollTimers[tid]->isRunning()))
 +        {
 +            co_return PLDM_ERROR;
@@ -1174,11 +1298,11 @@ index 0000000..187a359
 +        sd_event_now(event.get(), CLOCK_MONOTONIC, &t0);
 +        if (verbose)
 +        {
-+            lg2::info("TID:{TID} start sensor polling at {NOW}.", "TID", tid,
-+                      "NOW", pldm::utils::getCurrentSystemTime());
++            lg2::info("Terminus ID {TID}: start sensor polling at {NOW}.",
++                      "TID", tid, "NOW", pldm::utils::getCurrentSystemTime());
 +        }
 +
-+        if (termini.find(tid) == termini.end())
++        if (!termini.contains(tid))
 +        {
 +            co_return PLDM_SUCCESS;
 +        }
@@ -1197,7 +1321,7 @@ index 0000000..187a359
 +            {
 +                rc = co_await getSensorReading(sensor);
 +
-+                if ((sensorPollTimers.find(tid) == sensorPollTimers.end()) ||
++                if ((!sensorPollTimers.contains(tid)) ||
 +                    (sensorPollTimers[tid] &&
 +                     !sensorPollTimers[tid]->isRunning()))
 +                {
@@ -1224,7 +1348,7 @@ index 0000000..187a359
 +            {
 +                rc = co_await getSensorReading(sensor);
 +
-+                if ((sensorPollTimers.find(tid) == sensorPollTimers.end()) ||
++                if ((!sensorPollTimers.contains(tid)) ||
 +                    (sensorPollTimers[tid] &&
 +                     !sensorPollTimers[tid]->isRunning()))
 +                {
@@ -1235,10 +1359,16 @@ index 0000000..187a359
 +                {
 +                    sensor->timeStamp = t1;
 +                }
++                else
++                {
++                    lg2::error(
++                        "Failed to get sensor value for terminus {TID}, error: {RC}",
++                        "TID", tid, "RC", rc);
++                }
 +            }
 +
 +            toBeUpdated--;
-+            if (roundRobinSensors.find(tid) != roundRobinSensors.end())
++            if (roundRobinSensors.contains(tid))
 +            {
 +                roundRobinSensors[tid].pop();
 +                roundRobinSensors[tid].push(std::move(sensor));
@@ -1249,7 +1379,7 @@ index 0000000..187a359
 +        if (verbose)
 +        {
 +            sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
-+            lg2::info("end sensor polling at {END}. duration(us):{DELTA}",
++            lg2::info("end sensor polling at '{END}'. duration(us):'{DELTA}'",
 +                      "END", pldm::utils::getCurrentSystemTime(), "DELTA",
 +                      t1 - t0);
 +        }
@@ -1270,21 +1400,25 @@ index 0000000..187a359
 +    auto rc = encode_get_sensor_reading_req(0, sensorId, false, requestMsg);
 +    if (rc)
 +    {
-+        lg2::error("encode_get_sensor_reading_req failed, tid={TID}, rc={RC}.",
-+                   "TID", tid, "RC", rc);
++        lg2::error(
++            "Failed to encode request GetSensorReading for terminus ID {TID}, sensor Id {ID}, error {RC}.",
++            "TID", tid, "ID", sensorId, "RC", rc);
 +        co_return rc;
 +    }
 +
-+    const pldm_msg* responseMsg = NULL;
++    const pldm_msg* responseMsg = nullptr;
 +    size_t responseLen = 0;
-+    rc = co_await terminusManager.SendRecvPldmMsg(tid, request, &responseMsg,
++    rc = co_await terminusManager.sendRecvPldmMsg(tid, request, &responseMsg,
 +                                                  &responseLen);
 +    if (rc)
 +    {
++        lg2::error(
++            "Failed to send GetSensorReading message for terminus {TID}, sensor Id {ID}, error {RC}",
++            "TID", tid, "ID", sensorId, "RC", rc);
 +        co_return rc;
 +    }
 +
-+    if ((sensorPollTimers.find(tid) == sensorPollTimers.end()) ||
++    if ((!sensorPollTimers.contains(tid)) ||
 +        (sensorPollTimers[tid] && !sensorPollTimers[tid]->isRunning()))
 +    {
 +        co_return PLDM_ERROR;
@@ -1306,8 +1440,8 @@ index 0000000..187a359
 +    if (rc)
 +    {
 +        lg2::error(
-+            "Failed to decode response of GetSensorReading, tid={TID}, rc={RC}.",
-+            "TID", tid, "RC", rc);
++            "Failed to decode response GetSensorReading for terminus ID {TID}, sensor Id {ID}, error {RC}.",
++            "TID", tid, "ID", sensorId, "RC", rc);
 +        sensor->handleErrGetSensorReading();
 +        co_return rc;
 +    }
@@ -1315,8 +1449,8 @@ index 0000000..187a359
 +    if (completionCode != PLDM_SUCCESS)
 +    {
 +        lg2::error(
-+            "Failed to decode response of GetSensorReading, tid={TID}, rc={RC}, cc={CC}.",
-+            "TID", tid, "RC", rc, "CC", completionCode);
++            "Error : GetSensorReading for terminus ID {TID}, sensor Id {ID}, complete code {CC}.",
++            "TID", tid, "ID", sensorId, "CC", completionCode);
 +        co_return completionCode;
 +    }
 +
@@ -1370,10 +1504,10 @@ index 0000000..187a359
 +} // namespace pldm
 diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
 new file mode 100644
-index 0000000..bfb73e1
+index 0000000..861a3d4
 --- /dev/null
 +++ b/platform-mc/sensor_manager.hpp
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,117 @@
 +#pragma once
 +
 +#include "libpldm/platform.h"
@@ -1383,6 +1517,12 @@ index 0000000..bfb73e1
 +#include "requester/handler.hpp"
 +#include "terminus.hpp"
 +#include "terminus_manager.hpp"
++
++#include <map>
++#include <memory>
++#include <optional>
++#include <utility>
++#include <vector>
 +
 +namespace pldm
 +{
@@ -1408,8 +1548,7 @@ index 0000000..bfb73e1
 +
 +    explicit SensorManager(
 +        sdeventplus::Event& event, TerminusManager& terminusManager,
-+        std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini,
-+        bool verbose = false,
++        TerminiMapper& termini, bool verbose = false,
 +        const std::filesystem::path& configJson = PLDM_T2_CONFIG_JSON);
 +
 +    /** @brief starting sensor polling task
@@ -1426,12 +1565,16 @@ index 0000000..bfb73e1
 +    virtual void doSensorPolling(pldm_tid_t tid);
 +
 +    /** @brief polling all sensors in each terminus
++     *
++     *  @param[in] tid - Destination TID
++     *  @return coroutine return_value - PLDM completion code
 +     */
 +    exec::task<int> doSensorPollingTask(pldm_tid_t tid);
 +
 +    /** @brief Sending getSensorReading command for the sensor
 +     *
 +     *  @param[in] sensor - the sensor to be updated
++     *  @return coroutine return_value - PLDM completion code
 +     */
 +    exec::task<int> getSensorReading(std::shared_ptr<NumericSensor> sensor);
 +
@@ -1442,13 +1585,16 @@ index 0000000..bfb73e1
 +     *  @return bool - true:is in priority
 +     */
 +    bool isPriority(std::shared_ptr<NumericSensor> sensor);
++
++    /** @brief Reference to to PLDM daemon's main event loop.
++     */
 +    sdeventplus::Event& event;
 +
 +    /** @brief reference of terminusManager */
 +    TerminusManager& terminusManager;
 +
 +    /** @brief List of discovered termini */
-+    std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini;
++    TerminiMapper& termini;
 +
 +    /** @brief sensor polling interval in ms. */
 +    uint32_t pollingTime;
@@ -1480,24 +1626,34 @@ index 0000000..bfb73e1
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index d5cf22c..5e32bef 100644
+index 333813e..95caa40 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -11,7 +11,12 @@ namespace platform_mc
+@@ -11,7 +11,22 @@ namespace platform_mc
  
  Terminus::Terminus(pldm_tid_t tid, uint64_t supportedTypes) :
-     initalized(false), tid(tid), supportedTypes(supportedTypes)
+     initialized(false), tid(tid), supportedTypes(supportedTypes)
 -{}
 +{
 +    inventoryPath = "/xyz/openbmc_project/inventory/Item/Board/PLDM_Device_" +
 +                    std::to_string(tid);
-+    inventoryItemBoardInft = std::make_unique<InventoryItemBoardIntf>(
-+        utils::DBusHandler::getBus(), inventoryPath.c_str());
++    try
++    {
++        inventoryItemBoardInft = std::make_unique<InventoryItemBoardIntf>(
++            utils::DBusHandler::getBus(), inventoryPath.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error(
++            "Failed to create Inventory Board interface for device {PATH}",
++            "PATH", inventoryPath);
++        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
++    }
 +}
  
- bool Terminus::doesSupport(uint8_t type)
+ bool Terminus::doesSupportType(uint8_t type)
  {
-@@ -64,6 +69,17 @@ bool Terminus::parsePDRs()
+@@ -95,6 +110,17 @@ bool Terminus::parsePDRs()
              rc = false;
          }
      }
@@ -1515,7 +1671,14 @@ index d5cf22c..5e32bef 100644
      return rc;
  }
  
-@@ -143,6 +159,47 @@ std::shared_ptr<pldm_numeric_sensor_value_pdr>
+@@ -169,11 +195,56 @@ std::shared_ptr<pldm_numeric_sensor_value_pdr>
+     auto rc = decode_numeric_sensor_pdr_data(ptr, pdr.size(), parsedPdr.get());
+     if (rc)
+     {
++        lg2::error("Failed to decode Numeric Sensor PDR data, error {RC} ",
++                   "RC", rc);
+         return nullptr;
+     }
      return parsedPdr;
  }
  
@@ -1551,19 +1714,21 @@ index d5cf22c..5e32bef 100644
 +    {
 +        auto sensor = std::make_shared<NumericSensor>(
 +            tid, true, pdr, sensorName, inventoryPath);
++        lg2::info("Created NumericSensor {NAME}", "NAME", sensorName);
 +        numericSensors.emplace_back(sensor);
 +    }
-+    catch (const std::exception& e)
++    catch (const sdbusplus::exception_t& e)
 +    {
-+        std::cerr << "Failed to create NumericSensor. ERROR=" << e.what()
-+                  << "sensorName=" << sensorName << "\n";
++        lg2::error(
++            "Failed to create NumericSensor. error - {ERROR} sensorname - {NAME}",
++            "ERROR", e, "NAME", sensorName);
 +    }
 +}
 +
  std::shared_ptr<SensorAuxiliaryNames>
      Terminus::parseCompactNumericSensorNames(const std::vector<uint8_t>& sPdr)
  {
-@@ -216,5 +273,44 @@ std::shared_ptr<pldm_compact_numeric_sensor_pdr>
+@@ -247,5 +318,46 @@ std::shared_ptr<pldm_compact_numeric_sensor_pdr>
      return parsedPdr;
  }
  
@@ -1597,19 +1762,21 @@ index d5cf22c..5e32bef 100644
 +    {
 +        auto sensor = std::make_shared<NumericSensor>(
 +            tid, true, pdr, sensorName, inventoryPath);
++        lg2::info("Created Compact NumericSensor {NAME}", "NAME", sensorName);
 +        numericSensors.emplace_back(sensor);
 +    }
-+    catch (const std::exception& e)
++    catch (const sdbusplus::exception_t& e)
 +    {
-+        std::cerr << "Failed to create NumericSensor. ERROR=" << e.what()
-+                  << "sensorName=" << sensorName << "\n";
++        lg2::error(
++            "Failed to create Compact NumericSensor. error - {ERROR} sensorname - {NAME}",
++            "ERROR", e, "NAME", sensorName);
 +    }
 +}
 +
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 19c366f..3b1e217 100644
+index 8fa4ea0..9105b05 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -3,7 +3,9 @@
@@ -1622,7 +1789,7 @@ index 19c366f..3b1e217 100644
  
  #include <sdbusplus/server/object.hpp>
  #include <sdeventplus/event.hpp>
-@@ -22,6 +24,8 @@ using SensorName = std::string;
+@@ -28,6 +30,8 @@ using SensorName = std::string;
  using SensorAuxiliaryNames = std::tuple<
      SensorId, SensorCnt,
      std::vector<std::vector<std::pair<NameLanguageTag, SensorName>>>>;
@@ -1631,52 +1798,65 @@ index 19c366f..3b1e217 100644
  
  /**
   * @brief Terminus
-@@ -56,7 +60,10 @@ class Terminus
-     std::vector<std::vector<uint8_t>> pdrs{};
+@@ -98,6 +102,9 @@ class Terminus
+     /** @brief A flag to indicate if terminus has been initialized */
+     bool initialized = false;
  
-     /** @brief A flag to indicate if terminus has been initialzed */
--    bool initalized = false;
-+    bool initalized;
-+
 +    /** @brief A list of numericSensors */
 +    std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
- 
++
      /** @brief Get Sensor Auxiliary Names by sensorID
       *
-@@ -66,12 +73,18 @@ class Terminus
+      *  @param[in] id - sensor ID
+@@ -106,6 +113,15 @@ class Terminus
      std::shared_ptr<SensorAuxiliaryNames> getSensorAuxiliaryNames(SensorId id);
  
    private:
++    /** @brief Construct the NumericSensor sensor class for the PLDM sensor.
++     *         The NumericSensor class will handle create D-Bus object path,
++     *         provide the APIs to update sensor value, threshold...
++     *
++     *  @param[in] pdr - the numeric sensor PDR info
++     */
 +    void addNumericSensor(
 +        const std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr);
 +
-     std::shared_ptr<pldm_numeric_sensor_value_pdr>
-         parseNumericSensorPDR(const std::vector<uint8_t>& pdrData);
- 
+     /** @brief Parse the numeric sensor PDRs
+      *
+      *  @param[in] pdrData - the response PDRs from GetPDR command
+@@ -122,6 +138,14 @@ class Terminus
      std::shared_ptr<SensorAuxiliaryNames>
          parseSensorAuxiliaryNamesPDR(const std::vector<uint8_t>& pdrData);
  
++    /** @brief Construct the NumericSensor sensor class for the compact numeric
++     *         PLDM sensor.
++     *
++     *  @param[in] pdr - the compact numeric sensor PDR info
++     */
 +    void addCompactNumericSensor(
 +        const std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr);
 +
-     std::shared_ptr<pldm_compact_numeric_sensor_pdr>
-         parseCompactNumericSensorPDR(const std::vector<uint8_t>& pdrData);
- 
-@@ -84,6 +97,9 @@ class Terminus
- 
+     /** @brief Parse the compact numeric sensor PDRs
+      *
+      *  @param[in] pdrData - the response PDRs from GetPDR command
+@@ -157,6 +181,12 @@ class Terminus
+     /* @brief Sensor Auxiliary Name list */
      std::vector<std::shared_ptr<SensorAuxiliaryNames>>
          sensorAuxiliaryNamesTbl{};
 +
++    /* @brief The pointer of iventory D-Bus interface for the terminus */
 +    std::unique_ptr<InventoryItemBoardIntf> inventoryItemBoardInft = nullptr;
++
++    /* @brief Inventory D-Bus object path of the terminus */
 +    std::string inventoryPath;
  };
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 444d23e..8e5682b 100644
+index 54d749d..e9b6781 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -142,6 +142,7 @@ std::map<pldm_tid_t, std::shared_ptr<Terminus>>::iterator
+@@ -160,6 +160,7 @@ auto TerminusManager::findTeminusPtr(const MctpInfo& mctpInfo)
  
  exec::task<int> TerminusManager::discoverMctpTerminusTask()
  {
@@ -1684,7 +1864,7 @@ index 444d23e..8e5682b 100644
      while (!queuedMctpInfos.empty())
      {
          if (manager)
-@@ -157,11 +158,23 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+@@ -175,11 +176,23 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
              {
                  co_await initMctpTerminus(mctpInfo);
              }
@@ -1708,7 +1888,7 @@ index 444d23e..8e5682b 100644
          }
  
          queuedMctpInfos.pop();
-@@ -181,6 +194,11 @@ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
+@@ -199,6 +212,11 @@ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
              continue;
          }
  
@@ -1744,7 +1924,7 @@ index 8c4f570..64177cc 100644
  foreach t : tests
 diff --git a/platform-mc/test/mock_sensor_manager.hpp b/platform-mc/test/mock_sensor_manager.hpp
 new file mode 100644
-index 0000000..b61c375
+index 0000000..2c2ea1b
 --- /dev/null
 +++ b/platform-mc/test/mock_sensor_manager.hpp
 @@ -0,0 +1,24 @@
@@ -1762,9 +1942,9 @@ index 0000000..b61c375
 +class MockSensorManager : public SensorManager
 +{
 +  public:
-+    MockSensorManager(
-+        sdeventplus::Event& event, TerminusManager& terminusManager,
-+        std::map<pldm_tid_t, std::shared_ptr<Terminus>>& termini) :
++    MockSensorManager(sdeventplus::Event& event,
++                      TerminusManager& terminusManager,
++                      TerminiMapper& termini) :
 +        SensorManager(event, terminusManager, termini){};
 +
 +    MOCK_METHOD(void, doSensorPolling, (pldm_tid_t tid), (override));
@@ -1774,10 +1954,10 @@ index 0000000..b61c375
 +} // namespace pldm
 diff --git a/platform-mc/test/numeric_sensor_test.cpp b/platform-mc/test/numeric_sensor_test.cpp
 new file mode 100644
-index 0000000..23fe73f
+index 0000000..8b59401
 --- /dev/null
 +++ b/platform-mc/test/numeric_sensor_test.cpp
-@@ -0,0 +1,274 @@
+@@ -0,0 +1,272 @@
 +
 +#include "libpldm/entity.h"
 +#include "libpldm/platform.h"
@@ -1786,8 +1966,6 @@ index 0000000..23fe73f
 +#include "platform-mc/terminus.hpp"
 +
 +#include <gtest/gtest.h>
-+
-+using namespace pldm::platform_mc;
 +
 +TEST(NumericSensor, conversionFormula)
 +{
@@ -1874,8 +2052,8 @@ index 0000000..23fe73f
 +    std::string sensorName{"test1"};
 +    std::string inventoryPath{
 +        "/xyz/openbmc_project/inventroy/Item/Board/PLDM_device_1"};
-+    NumericSensor sensor(0x01, true, numericSensorPdr, sensorName,
-+                         inventoryPath);
++    pldm::platform_mc::NumericSensor sensor(0x01, true, numericSensorPdr,
++                                            sensorName, inventoryPath);
 +    double reading = 40.0;
 +    double convertedValue = 0;
 +    convertedValue = sensor.conversionFormula(reading);
@@ -1968,8 +2146,8 @@ index 0000000..23fe73f
 +    std::string sensorName{"test1"};
 +    std::string inventoryPath{
 +        "/xyz/openbmc_project/inventroy/Item/Board/PLDM_device_1"};
-+    NumericSensor sensor(0x01, true, numericSensorPdr, sensorName,
-+                         inventoryPath);
++    pldm::platform_mc::NumericSensor sensor(0x01, true, numericSensorPdr,
++                                            sensorName, inventoryPath);
 +
 +    bool highAlarm = false;
 +    bool lowAlarm = false;
@@ -2053,37 +2231,37 @@ index 0000000..23fe73f
 +    EXPECT_EQ(false, lowAlarm);
 +}
 diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
-index 171ef3c..b60f4d5 100644
+index 2df2b48..5fa7780 100644
 --- a/platform-mc/test/platform_manager_test.cpp
 +++ b/platform-mc/test/platform_manager_test.cpp
-@@ -139,6 +139,7 @@ TEST_F(PlatformManagerTest, initTerminusTest)
+@@ -150,6 +150,7 @@ TEST_F(PlatformManagerTest, initTerminusTest)
      stdexec::sync_wait(platformManager.initTerminus());
-     EXPECT_EQ(true, terminus->initalized);
+     EXPECT_EQ(true, terminus->initialized);
      EXPECT_EQ(1, terminus->pdrs.size());
 +    EXPECT_EQ(1, terminus->numericSensors.size());
  }
  
- TEST_F(PlatformManagerTest, negativeInitTerminusTest1)
-@@ -152,6 +153,7 @@ TEST_F(PlatformManagerTest, negativeInitTerminusTest1)
+ TEST_F(PlatformManagerTest, initTerminusDontSupportGetPDRTest)
+@@ -282,6 +283,7 @@ TEST_F(PlatformManagerTest, negativeInitTerminusTest1)
      stdexec::sync_wait(platformManager.initTerminus());
-     EXPECT_EQ(true, terminus->initalized);
+     EXPECT_EQ(true, terminus->initialized);
      EXPECT_EQ(0, terminus->pdrs.size());
 +    EXPECT_EQ(0, terminus->numericSensors.size());
  }
  
  TEST_F(PlatformManagerTest, negativeInitTerminusTest2)
-@@ -183,4 +185,5 @@ TEST_F(PlatformManagerTest, negativeInitTerminusTest2)
+@@ -313,4 +315,5 @@ TEST_F(PlatformManagerTest, negativeInitTerminusTest2)
      stdexec::sync_wait(platformManager.initTerminus());
-     EXPECT_EQ(true, terminus->initalized);
+     EXPECT_EQ(true, terminus->initialized);
      EXPECT_EQ(0, terminus->pdrs.size());
 +    EXPECT_EQ(0, terminus->numericSensors.size());
  }
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
 new file mode 100644
-index 0000000..87a3ac7
+index 0000000..cd4e5a4
 --- /dev/null
 +++ b/platform-mc/test/sensor_manager_test.cpp
-@@ -0,0 +1,149 @@
+@@ -0,0 +1,147 @@
 +#include "common/instance_id.hpp"
 +#include "common/types.hpp"
 +#include "mock_sensor_manager.hpp"
@@ -2093,8 +2271,6 @@ index 0000000..87a3ac7
 +#include <sdeventplus/event.hpp>
 +
 +#include <gtest/gtest.h>
-+
-+using namespace std::chrono;
 +
 +using ::testing::_;
 +using ::testing::Between;

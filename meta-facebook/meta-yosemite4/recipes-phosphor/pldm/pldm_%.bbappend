@@ -4,15 +4,14 @@ EXTRA_OEMESON:append = " -Dtransport-implementation=af-mctp -Dmaximum-transfer-s
 
 SRC_URI += " \
     file://host_eid \
-    file://0001-platform-mc-Added-Terminus-TerminusManager-class.patch \
-    file://0002-platform-mc-PDR-handling.patch \
-    file://0003-platform-mc-Sensor-handling.patch \
-    file://0004-platform-mc-Added-EventManager.patch \
-    file://0005-requester-support-multi-host-MCTP-devices-hot-plug.patch \
-    file://0006-Support-OEM-META-write-file-request-for-post-code-hi.patch \
-    file://0007-platform-mc-Add-OEM-Meta-event-handler.patch \
-    file://0008-Support-OEM-META-command-for-host-BIOS-version.patch \
-    file://0009-platform-mc-Monitor-all-sensors-once-upon-the-first-.patch \
+    file://0001-platform-mc-PDR-handling.patch \
+    file://0002-platform-mc-Sensor-handling.patch \
+    file://0003-platform-mc-Added-EventManager.patch \
+    file://0004-requester-support-multi-host-MCTP-devices-hot-plug.patch \
+    file://0005-Support-OEM-META-write-file-request-for-post-code-hi.patch \
+    file://0006-platform-mc-Add-OEM-Meta-event-handler.patch \
+    file://0007-Support-OEM-META-command-for-host-BIOS-version.patch \
+    file://0008-platform-mc-Monitor-all-sensors-once-upon-the-first-.patch \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
 "

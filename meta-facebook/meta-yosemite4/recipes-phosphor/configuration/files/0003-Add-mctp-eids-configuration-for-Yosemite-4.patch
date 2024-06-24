@@ -1,4 +1,4 @@
-From fd03623cdeee3418e4087bf2cce0739316aaf4f0 Mon Sep 17 00:00:00 2001
+From 58e4fca3b1e42e1cc90fced02350535f8ef7c51a Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/4] Add mctp eids configuration for Yosemite 4

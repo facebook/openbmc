@@ -1,7 +1,7 @@
-From bf2035c9c815acece3f8f025c09e2b3488cff8a6 Mon Sep 17 00:00:00 2001
+From 60d516dcbf1f2ac9b8a9ac01d06d27a5ce90ca95 Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
-Subject: [PATCH 8/9] Support OEM-META command for host BIOS version
+Subject: [PATCH 7/8] Support OEM-META command for host BIOS version
 
 Summary:
   - Add handler for write-file command "BIOS_VERSION", which is sent
@@ -23,10 +23,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
 
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 523ca46..f04be77 100644
+index 5d27166..4e537fa 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -66,6 +66,7 @@ if get_option('oem-meta').allowed()
+@@ -67,6 +67,7 @@ if get_option('oem-meta').allowed()
    sources += [
      '../oem/meta/libpldmresponder/oem_meta_file_io.cpp',
      '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
@@ -350,7 +350,7 @@ index 0000000..4baa9a4
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 32193d5..0ba538c 100644
+index 2c2eed4..0025b28 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -264,7 +264,7 @@ int main(int argc, char** argv)

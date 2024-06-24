@@ -1,4 +1,4 @@
-From 487101fc9af820f45100caff3f5e4465e24ca967 Mon Sep 17 00:00:00 2001
+From eb0865a4dea64ff1436430a883655464f913d333 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 7 Mar 2024 10:41:16 +0800
 Subject: [PATCH 4/4] configurations: yosemite4: Add IANA for sentinel dome

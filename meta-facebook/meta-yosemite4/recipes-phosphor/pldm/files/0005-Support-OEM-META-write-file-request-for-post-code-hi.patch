@@ -1,7 +1,7 @@
-From de2ce488284fd23b9e3262f1b140f4b556b30a79 Mon Sep 17 00:00:00 2001
+From 16794ace1a531e425d055b9ba902742e951c2afa Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 6/9] Support OEM-META write file request for post code history
+Subject: [PATCH 5/8] Support OEM-META write file request for post code history
 
 Support write file req when multiple hosts send postcode to BMC
 and store its post code history.
@@ -28,10 +28,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 9441f9b..1d9a068 100644
+index 3bfee96..98b82ed 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -254,6 +254,21 @@ GetSubTreeResponse
+@@ -266,6 +266,21 @@ GetSubTreeResponse
      return response;
  }
  
@@ -54,10 +54,10 @@ index 9441f9b..1d9a068 100644
      const std::string& objectPath, int depth,
      const std::vector<std::string>& ifaceList) const
 diff --git a/common/utils.hpp b/common/utils.hpp
-index d7eedbe..796865c 100644
+index b528095..8c18670 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -163,6 +163,8 @@ using Interfaces = std::vector<std::string>;
+@@ -170,6 +170,8 @@ using Interfaces = std::vector<std::string>;
  using MapperServiceMap = std::vector<std::pair<ServiceName, Interfaces>>;
  using GetSubTreeResponse = std::vector<std::pair<ObjectPath, MapperServiceMap>>;
  using GetSubTreePathsResponse = std::vector<std::string>;
@@ -66,7 +66,7 @@ index d7eedbe..796865c 100644
  using PropertyMap = std::map<std::string, PropertyValue>;
  using InterfaceMap = std::map<std::string, PropertyMap>;
  using ObjectValueTree = std::map<sdbusplus::message::object_path, InterfaceMap>;
-@@ -185,6 +187,10 @@ class DBusHandlerInterface
+@@ -192,6 +194,10 @@ class DBusHandlerInterface
          getSubTreePaths(const std::string& objectPath, int depth,
                          const std::vector<std::string>& ifaceList) const = 0;
  
@@ -77,7 +77,7 @@ index d7eedbe..796865c 100644
      virtual void setDbusProperty(const DBusMapping& dBusMap,
                                   const PropertyValue& value) const = 0;
  
-@@ -248,6 +254,20 @@ class DBusHandler : public DBusHandlerInterface
+@@ -255,6 +261,20 @@ class DBusHandler : public DBusHandlerInterface
      GetSubTreeResponse
          getSubtree(const std::string& path, int depth,
                     const std::vector<std::string>& ifaceList) const override;
@@ -99,18 +99,18 @@ index d7eedbe..796865c 100644
      /** @brief Get Subtree path response from the mapper
       *
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 151806b..523ca46 100644
+index 63cbaa7..5d27166 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -30,6 +30,7 @@ sources = [
-   '../host-bmc/host_condition.cpp',
-   '../host-bmc/custom_dbus.cpp',
+@@ -31,6 +31,7 @@ sources = [
+   '../host-bmc/dbus/custom_dbus.cpp',
+   '../host-bmc/dbus/cpu_core.cpp',
    '../host-bmc/utils.cpp',
 +  '../requester/configuration_discovery_handler.cpp',
    'event_parser.cpp'
  ]
  
-@@ -58,6 +59,16 @@ if get_option('oem-ibm').allowed()
+@@ -59,6 +60,16 @@ if get_option('oem-ibm').allowed()
    ]
  endif
  
@@ -516,7 +516,7 @@ index 0000000..780f0ef
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 5fbfc51..4c1550a 100644
+index 1ed2043..aed5019 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -65,6 +65,10 @@ PHOSPHOR_LOG2_USING;

@@ -1,4 +1,4 @@
-From 857494d5a3b544840e4deab5ed93a4a0c41f4eca Mon Sep 17 00:00:00 2001
+From ff28f8c91b8f77f5097c39ff5211c55ead8ea29e Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 8 May 2024 14:29:36 +0800
 Subject: [PATCH 2/4] configurations: Revise the BRCM NIC sensor name
@@ -9,7 +9,7 @@ Reivse the BRCM NIC temperature sensor name to NICX_TEMP_C.
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/configurations/brcm_200g_1p_ocp_mezz.json b/configurations/brcm_200g_1p_ocp_mezz.json
-index cd69ea7..736dcdd 100644
+index 3f028b7..837d655 100644
 --- a/configurations/brcm_200g_1p_ocp_mezz.json
 +++ b/configurations/brcm_200g_1p_ocp_mezz.json
 @@ -3,7 +3,7 @@
@@ -31,8 +31,8 @@ index cd69ea7..736dcdd 100644
 +            "Name1": "NIC$bus % 24 TEMP_C",
              "Thresholds": [
                  {
-                     "Direction": "greater than",
-@@ -26,7 +26,7 @@
+                     "Direction": "less than",
+@@ -33,7 +33,7 @@
              "Type": "TMP421"
          }
      ],

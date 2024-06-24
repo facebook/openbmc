@@ -326,6 +326,7 @@
             "length": 1,
             "keep": 10,
             "format": "INTEGER",
+            "sign": true,
             "name": "Battery_Current"
         },
         {
@@ -333,6 +334,7 @@
             "length": 1,
             "keep": 10,
             "format": "INTEGER",
+            "sign": true,
             "name": "Average_Current"
         },
         {
@@ -389,6 +391,7 @@
             "length": 1,
             "keep": 10,
             "format": "INTEGER",
+            "sign": true,
             "name": "At_Rate"
         },
         {

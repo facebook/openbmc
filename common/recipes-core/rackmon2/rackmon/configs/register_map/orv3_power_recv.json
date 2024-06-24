@@ -176,6 +176,7 @@
             "length": 1,
             "format": "FLOAT",
             "precision": 7,
+            "sign": true,
             "name": "PSU_Temp0_Inlet"
         },
         {
@@ -183,6 +184,7 @@
             "length": 1,
             "format": "FLOAT",
             "precision": 7,
+            "sign": true,
             "name": "PSU_Temp1_Outlet"
         },
         {
@@ -190,6 +192,7 @@
             "length": 1,
             "format": "FLOAT",
             "precision": 7,
+            "sign": true,
             "name": "PSU_Max_Temp"
         },
         {
@@ -197,6 +200,7 @@
             "length": 1,
             "format": "FLOAT",
             "precision": 7,
+            "sign": true,
             "name": "PSU_Min_Temp"
         },
         {

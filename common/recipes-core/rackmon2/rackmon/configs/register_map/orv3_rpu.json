@@ -206,6 +206,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
+            "sign": true,
             "name": "RPU_Coolant_Outlet_Pressure_kPa"
         },
         {
@@ -214,6 +215,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
+            "sign": true,
             "name": "RPU_Coolant_Inlet_Pressure_kPa"
         },
         {

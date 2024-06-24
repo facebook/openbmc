@@ -147,7 +147,6 @@ Support reading firmware versions of attached components including self.
 - [ ] P2 **POST code history** Read previous POST codes e.g. last 256 bytes remotely
 
 ## Host Sensor Information
-- [ ] P4 **Uptime** Host to report uptime hourly to BMC
 - [ ] P4 **Load Average** Host to report load average hourly to BMC
 - [ ] P2 **Boot-drive temperature** Host to report boot-drive temperature to the BMC
 

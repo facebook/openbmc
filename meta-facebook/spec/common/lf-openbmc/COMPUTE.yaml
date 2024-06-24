@@ -30,8 +30,3 @@ Diagnostics:
     file: automatic-crashdump.md
     priority: P2
     short: Enable automatic crashdump collection.
-Miscellaneous:
-  Host Uptime:
-    file: uptime.md
-    priority: P2
-    short: Host(s) to report uptime hourly to the BMC.

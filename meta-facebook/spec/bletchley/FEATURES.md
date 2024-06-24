@@ -188,11 +188,6 @@ Support reading firmware versions of attached components including self.
 - [ ] P5 **TPM 2.0 Boot Measurements**
   - Use TPM for storing secret keys and measurement info.
 
-#### Host Sensor Information
-
-- [ ] P5 **Uptime**
-  - Host to report uptime hourly to BMC.
-
 #### LCD Debug Card
 
 - [x] P3 **GPIO Description**

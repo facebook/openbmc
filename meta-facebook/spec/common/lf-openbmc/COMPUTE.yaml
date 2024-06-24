@@ -30,3 +30,7 @@ Diagnostics:
     file: automatic-crashdump.md
     priority: P2
     short: Enable automatic crashdump collection.
+  Vendor Debug Tools:
+    file: vendor-debug-tools.md
+    priority: P2
+    short: Enable vendor-specific debug tools.

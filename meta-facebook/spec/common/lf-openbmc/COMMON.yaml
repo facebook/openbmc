@@ -80,9 +80,10 @@ Sensor Information:
   Sensor History:
     file: sensor-history.md
     priority: P4
-    short: Historical mininum, maximum, and average over several time periods.
+    short: Historical minimum, maximum, and average over several time periods.
   Sensor History - Automatic:
     file: sensor-history---automatic.md
+    short: Automatically collect sensor history on certain critical errors.
     priority: P4
   Sensor Calibration:
     file: sensor-calibration.md

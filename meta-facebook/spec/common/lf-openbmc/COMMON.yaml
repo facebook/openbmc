@@ -40,7 +40,7 @@ User Interface:
 Network:
   IPv4:
     file: ipv4.md
-    priority: P2
+    priority: P0
     short: Support IPv4 networks.
   IPv6:
     file: ipv6.md

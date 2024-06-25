@@ -6,8 +6,8 @@ runsv /etc/sv/mTerm1 > /dev/null 2>&1 &
 runsv /etc/sv/mTerm2 > /dev/null 2>&1 &
 runsv /etc/sv/mTerm3 > /dev/null 2>&1 &
 
-# Artemis Module mTerm Service disable as default
-kv set dev_mterm_service_status disable
+# Artemis Module mTerm Service enabled as default
+kv set dev_mterm_service_status enable
 
 for i in {1..12}
 do

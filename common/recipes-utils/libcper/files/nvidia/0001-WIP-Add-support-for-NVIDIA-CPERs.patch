@@ -1,0 +1,373 @@
+From d6f5c4a7da127187ceffd531017541e876b1d55d Mon Sep 17 00:00:00 2001
+From: Karthik Rajagopalan <krajagopalan@nvidia.com>
+Date: Thu, 7 Mar 2024 12:30:43 -0800
+Subject: [PATCH] WIP: Add support for NVIDIA CPERs
+
+Change-Id: Iea9bde181ead55ad99cdb2a341501bf48e1d82a8
+Signed-off-by: Ed Tanous <etanous@nvidia.com>
+---
+ edk/Cper.c                                    |   5 +
+ edk/Cper.h                                    |  15 +++
+ generator/sections/gen-section-nvidia.c       |  44 ++++++++
+ generator/sections/gen-section.c              |   1 +
+ generator/sections/gen-section.h              |   1 +
+ meson.build                                   |   2 +
+ sections/cper-section-nvidia.c                | 100 ++++++++++++++++++
+ sections/cper-section-nvidia.h                |  10 ++
+ sections/cper-section.c                       |   3 +
+ specification/json/cper-json-full-log.json    |   1 +
+ specification/json/cper-json-section-log.json |   1 +
+ specification/json/sections/cper-nvidia.json  |  38 +++++++
+ 12 files changed, 221 insertions(+)
+ create mode 100644 generator/sections/gen-section-nvidia.c
+ create mode 100644 sections/cper-section-nvidia.c
+ create mode 100644 sections/cper-section-nvidia.h
+ create mode 100644 specification/json/sections/cper-nvidia.json
+
+diff --git a/edk/Cper.c b/edk/Cper.c
+index 4f80023..218589b 100644
+--- a/edk/Cper.c
++++ b/edk/Cper.c
+@@ -210,3 +210,8 @@ EFI_GUID gEfiIa32x64ErrorTypeMsCheckGuid = { 0x48AB7F57,
+ 					     0x4f6c,
+ 					     { 0xA7, 0xD3, 0xB0, 0xB5, 0xB0,
+ 					       0xA7, 0x43, 0x14 } };
++EFI_GUID gEfiNvidiaErrorSectionGuid = { 0x6d5244f2,
++					0x2712,
++					0x11ec,
++					{ 0xbe, 0xa7, 0xcb, 0x3f, 0xdb, 0x95,
++					  0xc7, 0x86 } };
+diff --git a/edk/Cper.h b/edk/Cper.h
+index 8f9e529..5fd5b48 100644
+--- a/edk/Cper.h
++++ b/edk/Cper.h
+@@ -1383,6 +1383,21 @@ extern EFI_GUID gEfiIa32X64ErrorTypeMsCheckGuid;
+ 
+ #endif
+ 
++///
++/// NVIDIA Error Record Section
++///
++typedef struct {
++	CHAR8 Signature[16];
++	UINT16 ErrorType;
++	UINT16 ErrorInstance;
++	UINT8 Severity;
++	UINT8 Socket;
++	UINT8 NumberRegs;
++	UINT8 Reserved;
++	UINT64 InstanceBase;
++} EFI_NVIDIA_ERROR_DATA;
++
++extern EFI_GUID gEfiNvidiaErrorSectionGuid;
+ #pragma pack(pop)
+ 
+ #endif
+diff --git a/generator/sections/gen-section-nvidia.c b/generator/sections/gen-section-nvidia.c
+new file mode 100644
+index 0000000..83ed84e
+--- /dev/null
++++ b/generator/sections/gen-section-nvidia.c
+@@ -0,0 +1,44 @@
++/**
++ * Functions for generating pseudo-random CPER NVIDIA error sections.
++ *
++ **/
++
++#include <stdlib.h>
++#include <string.h>
++#include <stdio.h>
++#include "../../edk/BaseTypes.h"
++#include "../gen-utils.h"
++#include "gen-section.h"
++
++//Generates a single pseudo-random NVIDIA error section, saving the resulting address to the given
++//location. Returns the size of the newly created section.
++size_t generate_section_nvidia(void **location)
++{
++	const char *signatures[] = {
++		"DCC-ECC",   "DCC-COH",	      "HSS-BUSY",      "HSS-IDLE",
++		"CLink",     "C2C",	      "C2C-IP-FAIL",   "L0 RESET",
++		"L1 RESET",  "L2 RESET",      "PCIe",	       "PCIe-DPC",
++		"SOCHUB",    "CCPLEXSCF",     "CMET-NULL",     "CMET-SHA256",
++		"CMET-FULL", "DRAM-CHANNELS", "PAGES-RETIRED", "CCPLEXGIC",
++		"MCF",	     "GPU-STATUS",    "GPU-CONTNMT",   "SMMU",
++	};
++
++	init_random();
++
++	//Create random bytes.
++	size_t size = sizeof(EFI_NVIDIA_ERROR_DATA);
++	UINT8 *section = generate_random_bytes(size);
++
++	//Reserved byte.
++	EFI_NVIDIA_ERROR_DATA *nvidia_error = (EFI_NVIDIA_ERROR_DATA *)section;
++	nvidia_error->Reserved = 0;
++
++	//Signature.
++	int idx_random = rand() % (sizeof(signatures) / sizeof(signatures[0]));
++	strncpy(nvidia_error->Signature, signatures[idx_random],
++		sizeof(nvidia_error->Signature));
++
++	//Set return values, exit.
++	*location = section;
++	return size;
++}
+diff --git a/generator/sections/gen-section.c b/generator/sections/gen-section.c
+index 0b07af0..695c934 100644
+--- a/generator/sections/gen-section.c
++++ b/generator/sections/gen-section.c
+@@ -42,6 +42,7 @@ CPER_GENERATOR_DEFINITION generator_definitions[] = {
+ 	  generate_section_cxl_component },
+ 	{ &gEfiCxlMldPortErrorSectionGuid, "cxlcomponent-mld",
+ 	  generate_section_cxl_component },
++	{ &gEfiNvidiaErrorSectionGuid, "nvidia", generate_section_nvidia },
+ };
+ const size_t generator_definitions_len =
+ 	sizeof(generator_definitions) / sizeof(CPER_GENERATOR_DEFINITION);
+diff --git a/generator/sections/gen-section.h b/generator/sections/gen-section.h
+index df1e227..be00b5f 100644
+--- a/generator/sections/gen-section.h
++++ b/generator/sections/gen-section.h
+@@ -20,6 +20,7 @@ size_t generate_section_dmar_iommu(void **location);
+ size_t generate_section_ccix_per(void **location);
+ size_t generate_section_cxl_protocol(void **location);
+ size_t generate_section_cxl_component(void **location);
++size_t generate_section_nvidia(void **location);
+ 
+ //Definition structure for a single CPER section generator.
+ typedef struct {
+diff --git a/meson.build b/meson.build
+index b34dab1..3a37caf 100644
+--- a/meson.build
++++ b/meson.build
+@@ -31,6 +31,7 @@ SectionSources = files(
+     'sections/cper-section-pci-dev.c',
+     'sections/cper-section-pcie.c',
+     'sections/cper-section.c',
++    'sections/cper-section-nvidia.c',
+ )
+ 
+ EDKSources = files('edk/Cper.c')
+@@ -45,6 +46,7 @@ GeneratorSectionSources = files(
+     'generator/sections/gen-section-generic.c',
+     'generator/sections/gen-section-ia32x64.c',
+     'generator/sections/gen-section-memory.c',
++    'generator/sections/gen-section-nvidia.c',
+     'generator/sections/gen-section-pci-bus.c',
+     'generator/sections/gen-section-pci-dev.c',
+     'generator/sections/gen-section-pcie.c',
+diff --git a/sections/cper-section-nvidia.c b/sections/cper-section-nvidia.c
+new file mode 100644
+index 0000000..f0ccec6
+--- /dev/null
++++ b/sections/cper-section-nvidia.c
+@@ -0,0 +1,100 @@
++/**
++ * Describes functions for converting NVIDIA CPER sections from binary and JSON format
++ * into an intermediate format.
++ **/
++
++#include <stdio.h>
++#include <string.h>
++#include <json.h>
++#include "../edk/Cper.h"
++#include "../cper-utils.h"
++#include "cper-section-nvidia.h"
++
++//Converts a single NVIDIA CPER section into JSON IR.
++json_object *cper_section_nvidia_to_ir(void *section)
++{
++	EFI_NVIDIA_ERROR_DATA *nvidia_error = (EFI_NVIDIA_ERROR_DATA *)section;
++	json_object *section_ir = json_object_new_object();
++
++	//Signature.
++	json_object_object_add(section_ir, "signature",
++			       json_object_new_string(nvidia_error->Signature));
++
++	//Fields.
++	json_object_object_add(section_ir, "errorType",
++			       json_object_new_int(nvidia_error->ErrorType));
++	json_object_object_add(
++		section_ir, "errorInstance",
++		json_object_new_int(nvidia_error->ErrorInstance));
++	json_object_object_add(section_ir, "severity",
++			       json_object_new_int(nvidia_error->Severity));
++	json_object_object_add(section_ir, "socket",
++			       json_object_new_int(nvidia_error->Socket));
++	json_object_object_add(section_ir, "numberRegs",
++			       json_object_new_int(nvidia_error->NumberRegs));
++	json_object_object_add(
++		section_ir, "instanceBase",
++		json_object_new_uint64(nvidia_error->InstanceBase));
++
++	// Registers (Address Value pairs).
++	json_object *regarr = json_object_new_array();
++	UINT64 *regPtr = &nvidia_error->InstanceBase;
++	for (int i = 0; i < nvidia_error->NumberRegs; i++) {
++		json_object *reg = json_object_new_object();
++		json_object_object_add(reg, "address",
++				       json_object_new_uint64(*++regPtr));
++		json_object_object_add(reg, "value",
++				       json_object_new_uint64(*++regPtr));
++		json_object_array_add(regarr, reg);
++	}
++	json_object_object_add(section_ir, "registers", regarr);
++
++	return section_ir;
++}
++
++//Converts a single NVIDIA CPER-JSON section into CPER binary, outputting to the given stream.
++void ir_section_nvidia_to_cper(json_object *section, FILE *out)
++{
++	json_object *regarr = json_object_object_get(section, "registers");
++	int numRegs = json_object_array_length(regarr);
++
++	size_t section_sz =
++		sizeof(EFI_NVIDIA_ERROR_DATA) + (numRegs * 2 * sizeof(UINT64));
++	EFI_NVIDIA_ERROR_DATA *section_cper =
++		(EFI_NVIDIA_ERROR_DATA *)calloc(1, section_sz);
++
++	//Signature.
++	strncpy(section_cper->Signature,
++		json_object_get_string(
++			json_object_object_get(section, "signature")),
++		sizeof(section_cper->Signature));
++
++	//Fields.
++	section_cper->ErrorType = json_object_get_int(
++		json_object_object_get(section, "errorType"));
++	section_cper->ErrorInstance = json_object_get_int(
++		json_object_object_get(section, "errorInstance"));
++	section_cper->Severity = json_object_get_int(
++		json_object_object_get(section, "severity"));
++	section_cper->Socket =
++		json_object_get_int(json_object_object_get(section, "socket"));
++	section_cper->NumberRegs = json_object_get_int(
++		json_object_object_get(section, "numberRegs"));
++	section_cper->InstanceBase = json_object_get_uint64(
++		json_object_object_get(section, "instanceBase"));
++
++	// Registers (Address Value pairs).
++	UINT64 *regPtr = &section_cper->InstanceBase;
++	for (int i = 0; i < numRegs; i++) {
++		json_object *reg = json_object_array_get_idx(regarr, i);
++		*++regPtr = json_object_get_uint64(
++			json_object_object_get(reg, "address"));
++		*++regPtr = json_object_get_uint64(
++			json_object_object_get(reg, "value"));
++	}
++
++	//Write to stream, free resources.
++	fwrite(section_cper, section_sz, 1, out);
++	fflush(out);
++	free(section_cper);
++}
+diff --git a/sections/cper-section-nvidia.h b/sections/cper-section-nvidia.h
+new file mode 100644
+index 0000000..973c3af
+--- /dev/null
++++ b/sections/cper-section-nvidia.h
+@@ -0,0 +1,10 @@
++#ifndef CPER_SECTION_NVIDIA_H
++#define CPER_SECTION_NVIDIA_H
++
++#include <json.h>
++#include "../edk/Cper.h"
++
++json_object *cper_section_nvidia_to_ir(void *section);
++void ir_section_nvidia_to_cper(json_object *section, FILE *out);
++
++#endif
+diff --git a/sections/cper-section.c b/sections/cper-section.c
+index 9bffdcb..f68ee4c 100644
+--- a/sections/cper-section.c
++++ b/sections/cper-section.c
+@@ -20,6 +20,7 @@
+ #include "cper-section-ccix-per.h"
+ #include "cper-section-cxl-protocol.h"
+ #include "cper-section-cxl-component.h"
++#include "cper-section-nvidia.h"
+ 
+ //Definitions of all sections available to the CPER parser.
+ CPER_SECTION_DEFINITION section_definitions[] = {
+@@ -69,6 +70,8 @@ CPER_SECTION_DEFINITION section_definitions[] = {
+ 	  cper_section_cxl_component_to_ir, ir_section_cxl_component_to_cper },
+ 	{ &gEfiCxlMldPortErrorSectionGuid, "CXL MLD Port Component Error",
+ 	  cper_section_cxl_component_to_ir, ir_section_cxl_component_to_cper },
++	{ &gEfiNvidiaErrorSectionGuid, "NVIDIA", cper_section_nvidia_to_ir,
++	  ir_section_nvidia_to_cper },
+ };
+ const size_t section_definitions_len =
+ 	sizeof(section_definitions) / sizeof(CPER_SECTION_DEFINITION);
+diff --git a/specification/json/cper-json-full-log.json b/specification/json/cper-json-full-log.json
+index bb7b83e..029ce2f 100644
+--- a/specification/json/cper-json-full-log.json
++++ b/specification/json/cper-json-full-log.json
+@@ -33,6 +33,7 @@
+                     { "$ref": "./sections/cper-ccix-per.json" },
+                     { "$ref": "./sections/cper-cxl-protocol.json" },
+                     { "$ref": "./sections/cper-cxl-component.json" },
++                    { "$ref": "./sections/cper-nvidia.json" },
+                     { "$ref": "./sections/cper-unknown.json" }
+                 ]
+             }
+diff --git a/specification/json/cper-json-section-log.json b/specification/json/cper-json-section-log.json
+index 6d41cd0..4287316 100644
+--- a/specification/json/cper-json-section-log.json
++++ b/specification/json/cper-json-section-log.json
+@@ -27,6 +27,7 @@
+                 { "$ref": "./sections/cper-ccix-per.json" },
+                 { "$ref": "./sections/cper-cxl-protocol.json" },
+                 { "$ref": "./sections/cper-cxl-component.json" },
++                { "$ref": "./sections/cper-nvidia.json" },
+                 { "$ref": "./sections/cper-unknown.json" }
+             ]
+         }
+diff --git a/specification/json/sections/cper-nvidia.json b/specification/json/sections/cper-nvidia.json
+new file mode 100644
+index 0000000..fb6dac5
+--- /dev/null
++++ b/specification/json/sections/cper-nvidia.json
+@@ -0,0 +1,38 @@
++{
++    "$id": "cper-json-nvidia-section",
++    "$schema": "https://json-schema.org/draft/2020-12/schema",
++    "type": "object",
++    "required": [
++        "signature",
++        "errorType",
++        "errorInstance",
++        "severity",
++        "socket",
++        "numRegs",
++        "instanceBase"
++    ],
++    "additionalProperties": false,
++    "properties": {
++        "signature": {
++            "type": "string"
++        },
++        "errorType": {
++            "type": "integer"
++        },
++        "errorInstance": {
++            "type": "integer"
++        },
++        "severity": {
++            "type": "integer"
++        },
++        "socket": {
++            "type": "integer"
++        },
++        "numberRegs": {
++            "type": "integer"
++        },
++        "instanceBase": {
++            "type": "uint64"
++        }
++    }
++}
+-- 
+2.45.2
+

@@ -134,7 +134,6 @@ static int memorySectionHandler(const nlohmann::ordered_json& sectionData,
       << "Rank Number: " << getValue(sectionData, "rankNumber");
   
   errorMsg = oss.str();
-  
   return CPER_HANDLE_SUCCESS;
 }
 
@@ -160,12 +159,24 @@ static int pcieSectionHandler(const nlohmann::ordered_json& sectionData,
   return CPER_HANDLE_SUCCESS;
 }
 
+static int nvidiaSectionHandler(const nlohmann::ordered_json& sectionData, 
+                                std::string& errorMsg)
+{
+  std::ostringstream oss;
+  oss << "Signature: " << getValue(sectionData, "signature") << ", "
+      << "Error Type: " << getValue(sectionData, "errorType");
+  
+  errorMsg = oss.str();
+  return CPER_HANDLE_SUCCESS;
+}
+
 static SectionHandlerMap getSectionHandler()
 {
   SectionHandlerMap sectionHandlerMap = {
     {"ARM", processorSectionHandler},
     {"Platform Memory", memorySectionHandler},
     {"PCIe", pcieSectionHandler},
+    {"NVIDIA", nvidiaSectionHandler},
   };
 
   addOemSectionHandlerMap(sectionHandlerMap);

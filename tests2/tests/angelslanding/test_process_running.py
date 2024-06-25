@@ -42,5 +42,5 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
         if not qemu_check():
             self.expected_process.extend([
                 "fscd",
-                "dhclient -6 -d -D LL --address-prefix-len 64 -pf /var/run/dhclient6.eth0.pid br0",
+                "dhcpcd",
             ])

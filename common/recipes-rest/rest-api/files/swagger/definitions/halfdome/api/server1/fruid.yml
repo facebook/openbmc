@@ -20,6 +20,10 @@ paths:
                 properties: 
                   Chassis Type: 
                     type: string
+                  Chassis Part Number: 
+                    type: string
+                  Chassis Serial Number: 
+                    type: string
                   Chassis Custom Data 1: 
                     type: string
                   Board Mfg Date: 
@@ -52,6 +56,8 @@ paths:
                     type: string
                   Product Asset Tag: 
                     type: string
+                  Product FRU ID: 
+                    type: string
                   Product Custom Data 1: 
                     type: string
               Actions: 
@@ -62,4 +68,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

@@ -1,0 +1,50 @@
+From 31d06062e6e12095ad4870fc863bd72bb8a2cec7 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
+Date: Tue, 25 Jun 2024 14:51:37 +0800
+Subject: [PATCH] pldm: Revise image path for update
+
+Revise image path from /tmp/images to /tmp/pldm_images to prevent image
+been removed by SoftwareManager due to both service are watching the
+same path.
+
+Change-Id: I52379e3d1ddf9c5d72585e8e4a7391c0911baa60
+Signed-off-by: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
+---
+ fw-update/watch.cpp | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/fw-update/watch.cpp b/fw-update/watch.cpp
+index 208d818..8c3ff6c 100644
+--- a/fw-update/watch.cpp
++++ b/fw-update/watch.cpp
+@@ -23,7 +23,7 @@ Watch::Watch(sd_event* loop, std::function<int(std::string&)> imageCallback) :
+     imageCallback(imageCallback)
+ {
+     // Check if IMAGE DIR exists.
+-    fs::path imgDirPath("/tmp/images");
++    fs::path imgDirPath("/tmp/pldm_images");
+     if (!fs::is_directory(imgDirPath))
+     {
+         fs::create_directories(imgDirPath);
+@@ -39,7 +39,7 @@ Watch::Watch(sd_event* loop, std::function<int(std::string&)> imageCallback) :
+                                  std::strerror(error));
+     }
+ 
+-    wd = inotify_add_watch(fd, "/tmp/images", IN_CLOSE_WRITE);
++    wd = inotify_add_watch(fd, "/tmp/pldm_images", IN_CLOSE_WRITE);
+     if (-1 == wd)
+     {
+         auto error = errno;
+@@ -92,7 +92,8 @@ int Watch::callback(sd_event_source* /* s */, int fd, uint32_t revents,
+         auto event = reinterpret_cast<inotify_event*>(&buffer[offset]);
+         if ((event->mask & IN_CLOSE_WRITE) && !(event->mask & IN_ISDIR))
+         {
+-            auto tarballPath = std::string{"/tmp/images"} + '/' + event->name;
++            auto tarballPath = std::string{"/tmp/pldm_images"} + '/' +
++                               event->name;
+             auto rc = static_cast<Watch*>(userdata)->imageCallback(tarballPath);
+             if (rc < 0)
+             {
+-- 
+2.25.1
+

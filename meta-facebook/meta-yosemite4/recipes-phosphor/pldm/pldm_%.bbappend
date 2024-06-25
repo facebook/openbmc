@@ -12,6 +12,7 @@ SRC_URI += " \
     file://0006-platform-mc-Add-OEM-Meta-event-handler.patch \
     file://0007-Support-OEM-META-command-for-host-BIOS-version.patch \
     file://0008-platform-mc-Monitor-all-sensors-once-upon-the-first-.patch \
+    file://0009-pldm-Revise-image-path-for-update.patch \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
 "

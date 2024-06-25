@@ -607,9 +607,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           // NOTE: This is a workaround to prevent 12V-cycle failure on 
           // javaisland's EVT1 and EVT2 MB because P12V_STBY is not fully 
           // discharged when performing 12V-on after 12V-off.
-          if (fby35_common_get_slot_type(fru) == SERVER_TYPE_JI &&
-              (fby35_common_get_sb_rev(fru) == JI_REV_EVT || 
-               fby35_common_get_sb_rev(fru) == JI_REV_EVT2)) {
+          if ( (fby35_common_get_slot_type(fru) == SERVER_TYPE_JI) &&
+               ((fby35_common_get_sb_rev(fru) & 0xF) <= JI_REV_EVT2) ) {
             sleep(8); // takes at least 8s to discharge
           } else {
             sleep(DELAY_12V_CYCLE);

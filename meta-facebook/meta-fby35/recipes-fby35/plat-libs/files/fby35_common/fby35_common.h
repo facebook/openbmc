@@ -505,6 +505,11 @@ enum {
 };
 
 enum {
+  JI_MB_HSC_MPS = 0,
+  JI_MB_HSC_REED = 1,
+};
+
+enum {
   PRESENT = 0,
   NOT_PRESENT = 1,
 };

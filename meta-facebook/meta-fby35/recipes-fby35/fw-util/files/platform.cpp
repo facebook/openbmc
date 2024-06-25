@@ -29,6 +29,7 @@ class ClassConfig {
     ClassConfig() {
       uint8_t bmc_location = 0, prsnt;
       uint8_t hsc_type = HSC_UNKNOWN;
+      uint8_t hsc_addr = 0xC0;
       uint8_t card_type = TYPE_1OU_UNKNOWN;
       uint8_t pdb_bus = 11;
 
@@ -143,10 +144,22 @@ class ClassConfig {
                                                  ji_bic_comps);
               static CpldComponent cpld_fw1(
                   "slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
-              if (fby35_common_get_sb_rev(FRU_SLOT1) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type
-                static HscComponent hsc_fw1("slot1", "hsc", "RS31380", FRU_SLOT1, 1, 0xA0);
+              bic_gpio_t gpio = {0};
+              int sb_rev = fby35_common_get_sb_rev(FRU_SLOT1) & 0xF;
+              uint8_t hsc_type = JI_MB_HSC_MPS;
+              if (bic_get_gpio(FRU_SLOT1, &gpio, NONE_INTF) == 0) {
+                hsc_type = (BIT_VALUE(gpio, JI_HSC_TYPE_0));
+              }
+              if (sb_rev <= JI_REV_POC ||
+                   ((sb_rev == JI_REV_EVT) && (hsc_type == JI_MB_HSC_MPS))) {
+                hsc_addr = 0xA0; // POC, EVT1 MPS
               } else {
-                static HscComponent hsc_fw1("slot1", "hsc", "MP5990", FRU_SLOT1, 1, 0xA0);
+                hsc_addr = 0xC0;
+              }
+              if (hsc_type == JI_MB_HSC_REED) {
+                static HscComponent hsc_fw1("slot1", "hsc", "RS31380", FRU_SLOT1, 1, hsc_addr);
+              } else {
+                static HscComponent hsc_fw1("slot1", "hsc", "MP5990", FRU_SLOT1, 1, hsc_addr);
               }
               if (GETBIT(fby35_common_get_sb_rev(FRU_SLOT1), javaisland::HSC_VR_VENDOR_BIT)) {
                 static PldmVrComponent vr_cpudvdd_fw1(
@@ -231,10 +244,22 @@ class ClassConfig {
             case SERVER_TYPE_JI: {
               static PldmBicFwComponent bic_fw2("slot2", "bic", "sb", FW_SB_BIC, SLOT2_PLDM_BUS_ID, MB_BIC_EID,
                                                  ji_bic_comps);
-              if (fby35_common_get_sb_rev(FRU_SLOT2) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type
-                static HscComponent hsc_fw1("slot2", "hsc", "RS31380", FRU_SLOT2, 1, 0xA0);
+              bic_gpio_t gpio = {0};
+              int sb_rev = fby35_common_get_sb_rev(FRU_SLOT2) & 0xF;
+              uint8_t hsc_type = JI_MB_HSC_MPS;
+              if (bic_get_gpio(FRU_SLOT2, &gpio, NONE_INTF) == 0) {
+                hsc_type = (BIT_VALUE(gpio, JI_HSC_TYPE_0));
+              }
+              if (sb_rev <= JI_REV_POC ||
+                  ((sb_rev == JI_REV_EVT) && (hsc_type == JI_MB_HSC_MPS))) {
+                hsc_addr = 0xA0; // POC, EVT1 MPS
               } else {
-                static HscComponent hsc_fw1("slot2", "hsc", "MP5990", FRU_SLOT2, 1, 0xA0);
+                hsc_addr = 0xC0;
+              }
+              if (hsc_type == JI_MB_HSC_REED) {
+                static HscComponent hsc_fw1("slot2", "hsc", "RS31380", FRU_SLOT2, 1, hsc_addr);
+              } else {
+                static HscComponent hsc_fw1("slot2", "hsc", "MP5990", FRU_SLOT2, 1, hsc_addr);
               }
               if (GETBIT(fby35_common_get_sb_rev(FRU_SLOT2), javaisland::HSC_VR_VENDOR_BIT)) {
                 static PldmVrComponent vr_cpudvdd_fw2(
@@ -353,10 +378,22 @@ class ClassConfig {
                                                  ji_bic_comps);
               static CpldComponent cpld_fw3(
                   "slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
-              if (fby35_common_get_sb_rev(FRU_SLOT3) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type
-                static HscComponent hsc_fw1("slot3", "hsc", "RS31380", FRU_SLOT3, 1, 0xA0);
+              bic_gpio_t gpio = {0};
+              int sb_rev = fby35_common_get_sb_rev(FRU_SLOT3) & 0xF;
+              uint8_t hsc_type = JI_MB_HSC_MPS;
+              if (bic_get_gpio(FRU_SLOT3, &gpio, NONE_INTF) == 0) {
+                hsc_type = (BIT_VALUE(gpio, JI_HSC_TYPE_0));
+              }
+              if (sb_rev <= JI_REV_POC ||
+                  ((sb_rev == JI_REV_EVT) && (hsc_type == JI_MB_HSC_MPS))) {
+                hsc_addr = 0xA0; // POC, EVT1 MPS
               } else {
-                static HscComponent hsc_fw1("slot3", "hsc", "MP5990", FRU_SLOT3, 1, 0xA0);
+                hsc_addr = 0xC0;
+              }
+              if (hsc_type == JI_MB_HSC_REED) {
+                static HscComponent hsc_fw1("slot3", "hsc", "RS31380", FRU_SLOT3, 1, hsc_addr);
+              } else {
+                static HscComponent hsc_fw1("slot3", "hsc", "MP5990", FRU_SLOT3, 1, hsc_addr);
               }
               if (GETBIT(fby35_common_get_sb_rev(FRU_SLOT3), javaisland::HSC_VR_VENDOR_BIT)) {
                 static PldmVrComponent vr_cpudvdd_fw3(
@@ -425,10 +462,22 @@ class ClassConfig {
             case SERVER_TYPE_JI: {
               static PldmBicFwComponent bic_fw4("slot4", "bic", "sb", FW_SB_BIC, SLOT4_PLDM_BUS_ID, MB_BIC_EID,
                                                  ji_bic_comps);
-              if (fby35_common_get_sb_rev(FRU_SLOT4) & (1UL << 5)) { //board rev bit 5 is used to determine HSC/VR type
-                static HscComponent hsc_fw1("slot4", "hsc", "RS31380", FRU_SLOT1, 1, 0xA0);
+              bic_gpio_t gpio = {0};
+              int sb_rev = fby35_common_get_sb_rev(FRU_SLOT4) & 0xF;
+              uint8_t hsc_type = JI_MB_HSC_MPS;
+              if (bic_get_gpio(FRU_SLOT4, &gpio, NONE_INTF) == 0) {
+                hsc_type = (BIT_VALUE(gpio, JI_HSC_TYPE_0));
+              }
+              if (sb_rev <= JI_REV_POC ||
+                  ((sb_rev == JI_REV_EVT) && (hsc_type == JI_MB_HSC_MPS))) {
+                hsc_addr = 0xA0; // POC, EVT1 MPS
               } else {
-                static HscComponent hsc_fw1("slot4", "hsc", "MP5990", FRU_SLOT1, 1, 0xA0);
+                hsc_addr = 0xC0;
+              }
+              if (hsc_type == JI_MB_HSC_REED) {
+                static HscComponent hsc_fw1("slot4", "hsc", "RS31380", FRU_SLOT4, 1, hsc_addr);
+              } else {
+                static HscComponent hsc_fw1("slot4", "hsc", "MP5990", FRU_SLOT4, 1, hsc_addr);
               }
               if (GETBIT(fby35_common_get_sb_rev(FRU_SLOT4), javaisland::HSC_VR_VENDOR_BIT)) {
                 static PldmVrComponent vr_cpudvdd_fw4(

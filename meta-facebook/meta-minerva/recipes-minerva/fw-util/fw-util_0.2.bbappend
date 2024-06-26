@@ -28,3 +28,4 @@ LOCAL_URI += " \
 DEPENDS += " \
     libfpga \
     "
+CXXFLAGS += " -DCONFIG_TPM2"

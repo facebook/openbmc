@@ -41,7 +41,7 @@ int get_fw_ver_cci_over_mctp(uint8_t eid)
 
     std::cerr << "Get Firmware Info for EID: " << +eid << std::endl;
 
-    auto addrlen = sizeof(struct sockaddr_mctp);
+    socklen_t addrlen = sizeof(struct sockaddr_mctp);
     addr.smctp_base.smctp_family = AF_MCTP;
     addr.smctp_base.smctp_network = DEFAULT_NET;
     addr.smctp_base.smctp_addr.s_addr = eid;

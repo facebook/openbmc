@@ -54,8 +54,9 @@ class CpldLatticeManager : public CpldManager
     cpldI2cInfo fwInfo{};
     CpldLatticeManager(const uint8_t bus, const uint8_t addr,
                        const std::string& path, const std::string& chip,
-                       const std::string& interface, const bool debugMode) :
-        CpldManager(bus, addr, path, chip, interface, debugMode)
+                       const std::string& interface, const std::string& target,
+                       const bool debugMode) :
+        CpldManager(bus, addr, path, chip, interface, target, debugMode)
     {}
     int fwUpdate() override;
     int getVersion() override;
@@ -76,4 +77,5 @@ class CpldLatticeManager : public CpldManager
     int readBusyFlag(uint8_t& busyFlag);
     int readStatusReg(uint8_t& statusReg);
     bool waitBusyAndVerify();
+    int readUserCode(uint32_t& userCode);
 };

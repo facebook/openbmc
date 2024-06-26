@@ -259,6 +259,11 @@ int CpldLatticeManager::readDeviceId()
         if (chip.rfind("LCMXO3D", 0) == 0)
         {
             isLCMXO3D = true;
+            if (!target.empty() && target != "CFG0" && target != "CFG1")
+            {
+                std::cerr << "Error: unknown target." << std::endl;
+                return -1;
+            }
         }
 
         std::cout << "[OK] Device ID match with chip\n";
@@ -307,7 +312,7 @@ int CpldLatticeManager::eraseFlash()
         which memory is erased in Flash
         access mode.
         Bit 1=Enable
-        8 Erase CFG0  => this
+        8 Erase CFG0
         9 Erase CFG1
         10 Erase UFM0
         11 Erase UFM1
@@ -319,10 +324,21 @@ int CpldLatticeManager::eraseFlash()
         17 Erase AESKEY
         18 Erase FEA
         19 Reserved
-        CMD_ERASE_FLASH = 0x0E, 00 01 00
+        CMD_ERASE_FLASH = 0x0E, 0Y YY 00
         */
-
-        cmd = {CMD_ERASE_FLASH, 0x00, 0x01, 0x00};
+        if (target.empty() || target == "CFG0")
+        {
+            cmd = {CMD_ERASE_FLASH, 0x00, 0x01, 0x00};
+        }
+        else if (target == "CFG1")
+        {
+            cmd = {CMD_ERASE_FLASH, 0x00, 0x02, 0x00};
+        }
+        else
+        {
+            std::cerr << "Error: unknown target." << std::endl;
+            return -1;
+        }
     }
     else
     {
@@ -346,8 +362,6 @@ int CpldLatticeManager::eraseFlash()
 
 int CpldLatticeManager::resetConfigFlash()
 {
-    std::cout << "ResetConfigFlash\n";
-
     // CMD_RESET_CONFIG_FLASH = 0x46
 
     std::vector<uint8_t> cmd;
@@ -374,9 +388,21 @@ int CpldLatticeManager::resetConfigFlash()
         20 Reserved
         21 Reserved
         22 Reserved
-        YY YY 00
+        CMD_RESET_CONFIG_FLASH = 0x46, YY YY 00
         */
-        cmd = {CMD_RESET_CONFIG_FLASH, 0x00, 0x01, 0x00};
+        if (target.empty() || target == "CFG0")
+        {
+            cmd = {CMD_RESET_CONFIG_FLASH, 0x00, 0x01, 0x00};
+        }
+        else if (target == "CFG1")
+        {
+            cmd = {CMD_RESET_CONFIG_FLASH, 0x00, 0x02, 0x00};
+        }
+        else
+        {
+            std::cerr << "Error: unknown target." << std::endl;
+            return -1;
+        }
     }
     else
     {
@@ -597,6 +623,25 @@ int CpldLatticeManager::readStatusReg(uint8_t& statusReg)
     return 0;
 }
 
+int CpldLatticeManager::readUserCode(uint32_t& userCode)
+{
+    std::vector<uint8_t> cmd = {CMD_READ_FW_VERSION, 0x0, 0x0, 0x0};
+    constexpr size_t resSize = 4;
+    std::vector<uint8_t> readData(resSize, 0);
+
+    int ret = i2cWriteReadCmd(cmd, resSize, readData);
+    if (ret < 0)
+    {
+        return -1;
+    }
+
+    for (size_t i = 0; i < resSize; i++)    
+    {
+        userCode |= readData.at(i) << ((3 - i) * 8);
+    }
+    return 0;
+}
+
 int CpldLatticeManager::XO2XO3Family_update()
 {
     if (readDeviceId() < 0)
@@ -687,22 +732,61 @@ int CpldLatticeManager::fwUpdate()
 
 int CpldLatticeManager::getVersion()
 {
-    std::vector<uint8_t> cmd = {CMD_READ_FW_VERSION, 0x0, 0x0, 0x0};
-    constexpr size_t resSize = 4;
-    std::vector<uint8_t> readData(resSize, 0);
+    uint32_t userCode = 0;
 
-    int ret = i2cWriteReadCmd(cmd, resSize, readData);
-    if (ret < 0)
+    if (target.empty())
     {
+        if (readUserCode(userCode) < 0)
+        {
+            std::cerr << "Read usercode failed." << std::endl;
+            return -1;
+        }
+
+        std::cout << "CPLD version: 0x" << std::hex << std::setfill('0')
+                    << std::setw(8) << userCode << std::endl;
+    }
+    else if (target == "CFG0" || target == "CFG1")
+    {
+        isLCMXO3D = true;
+        waitBusyAndVerify();
+
+        if (enableProgramMode() < 0)
+        {
+            std::cerr << "Enable program mode failed." << std::endl;
+            return -1;
+        }
+
+        if (resetConfigFlash() < 0)
+        {
+            std::cerr << "Reset config flash failed." << std::endl;
+            return -1;
+        }
+
+        if (readUserCode(userCode) < 0)
+        {
+            std::cerr << "Read usercode failed." << std::endl;
+            return -1;
+        }
+
+        if (programDone() < 0)
+        {
+            std::cerr << "Program not done." << std::endl;
+            return -1;
+        }
+
+        if (disableConfigInterface() < 0)
+        {
+            std::cerr << "Disable Config Interface failed." << std::endl;
+            return -1;
+        }
+
+        std::cout << "CPLD " << target << " version: 0x" << std::hex
+                << std::setfill('0') << std::setw(8) << userCode << std::endl;
+    }
+    else
+    {
+        std::cerr << "Error: unknown target." << std::endl;
         return -1;
     }
-
-    std::cout << "CPLD version: 0x";
-    for (auto v : readData)
-    {
-        std::cout << std::hex << std::setfill('0') << std::setw(2)
-                  << unsigned(v);
-    }
-    std::cout << std::endl;
     return 0;
 }

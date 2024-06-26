@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
     std::string imagePath{};
     uint8_t bus = 0, addr = 0;
-    std::string chip, interface;
+    std::string chip, interface, target;
     bool debugMode{false};
 
     CLI::App app{"CPLD update tool"};
@@ -30,6 +30,8 @@ int main(int argc, char** argv)
         ->add_option("-c,--chip", chip,
                      "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400")
         ->required();
+    update->add_option("-t,--target", target,
+                       "used for LCMXO3D series CPLD, CFG0|CFG1");
 
     update->add_flag("-v,--verbose", debugMode, "debug mode");
 
@@ -38,11 +40,13 @@ int main(int argc, char** argv)
     version->add_option("-i,--interface", interface, "interface")->required();
     version->add_option("-b,--bus", bus, "i2c bus")->required();
     version->add_option("-a,--addr", addr, "slave address")->required();
+    version->add_option("-t,--target", target,
+                        "used for LCMXO3D series CPLD, CFG0|CFG1");
 
     CLI11_PARSE(app, argc, argv);
 
     auto cpldManager = CpldLatticeManager(bus, addr, imagePath, chip, interface,
-                                          debugMode);
+                                          target, debugMode);
 
     if (version->parsed())
     {

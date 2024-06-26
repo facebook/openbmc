@@ -14,10 +14,10 @@ class CpldManager
   public:
     CpldManager(uint8_t bus, uint8_t addr, const std::string& path,
                 const std::string& chip, const std::string& interface,
-                bool debugMode) :
+                const std::string& target, bool debugMode) :
         bus(bus),
         addr(addr), imagePath(path), chip(chip), interface(interface),
-        debugMode(debugMode)
+        target(target), debugMode(debugMode)
     {
         if (interface == "i2c") // open I2C device
         {
@@ -60,6 +60,7 @@ class CpldManager
     std::string imagePath;
     std::string chip;
     std::string interface;
+    std::string target;
     bool isLCMXO3D = false;
     bool debugMode = false;
 

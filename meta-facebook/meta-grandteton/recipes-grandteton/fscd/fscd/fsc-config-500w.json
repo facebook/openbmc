@@ -1,5 +1,5 @@
 {
-    "version": "grandteton-v8.6 500w",
+    "version": "grandteton-v10 500w",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -285,12 +285,12 @@
         "positive_hysteresis": 1,
         "negative_hysteresis": 1,
         "data": [
-          [49, 25],
-          [63, 35],
-          [67, 40],
-          [72, 48],
-          [75, 55],
-          [82, 90]
+          [-36, 25],
+          [-22, 35],
+          [-18, 40],
+          [-13, 48],
+          [-10, 55],
+          [-3,  90]
         ]
       },
       "gpu_tray_gpu_pid": {
@@ -300,35 +300,7 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 79,
-        "kp": -3.5,
-        "ki": -0.035,
-        "kd": 0
-      },
-      "gpu_tray_hbm_linear": {
-        "read_source" : {
-          "util" : "/usr/local/bin/sensor-util"
-        },
-        "type": "linear",
-        "positive_hysteresis": 1,
-        "negative_hysteresis": 1,
-        "data": [
-          [62, 25],
-          [63, 35],
-          [78, 40],
-          [82, 48],
-          [85, 55],
-          [92, 90]
-        ]
-      },
-      "gpu_tray_hbm_pid": {
-        "read_source" : {
-          "util" : "/usr/local/bin/sensor-util"
-        },
-        "type": "pid",
-        "positive_hysteresis": 2,
-        "negative_hysteresis": 2,
-        "setpoint": 88,
+        "setpoint": -6,
         "kp": -3.5,
         "ki": -0.035,
         "kd": 0

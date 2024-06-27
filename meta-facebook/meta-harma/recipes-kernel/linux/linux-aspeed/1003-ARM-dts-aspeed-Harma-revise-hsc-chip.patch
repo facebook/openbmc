@@ -1,0 +1,37 @@
+From bd9ae2cee24825c3bf37d007e38506b94fe689ce Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Thu, 18 Apr 2024 11:27:43 +0800
+Subject: [PATCH] ARM: dts: aspeed: Harma: revise hsc chip
+
+Revise HSC chip name and address to match LTC4287.
+
+link lore:https://lore.kernel.org/all/20240613152425.1582059-2-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 1faecfe55991..fce4a519cf56 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -276,11 +276,10 @@ tmp75@49 {
+ 		reg = <0x49>;
+ 	};
+ 
+-	power-monitor@22 {
+-		compatible = "lltc,ltc4286";
+-		reg = <0x22>;
+-		adi,vrange-low-enable;
+-		shunt-resistor-micro-ohms = <500>;
++	power-monitor@44 {
++		compatible = "lltc,ltc4287";
++		reg = <0x44>;
++		shunt-resistor-micro-ohms = <250>;
+ 	};
+ };
+ 
+-- 
+2.25.1
+

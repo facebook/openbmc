@@ -1,0 +1,32 @@
+From 7c844c4025294b495c1a5e1c8481fe511ea71418 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Thu, 13 Jun 2024 00:14:19 +0800
+Subject: [PATCH] ARM: dts: aspeed: Harma: add power monitor xdp710
+
+Add HSC xdp710 device in i2c4.
+link lore:https://lore.kernel.org/all/20240613152425.1582059-6-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 129e9aa9b600..a85693683a10 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -329,6 +329,11 @@ power-monitor@44 {
+ 		reg = <0x44>;
+ 		shunt-resistor-micro-ohms = <250>;
+ 	};
++
++	power-monitor@40 {
++		compatible = "infineon,xdp710";
++		reg = <0x40>;
++	};
+ };
+ 
+ &i2c5 {
+-- 
+2.25.1
+

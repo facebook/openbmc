@@ -1,0 +1,47 @@
+From 8ee52b4c8d12e53d810d4b3fd963eebbb747a34b Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Mon, 26 Feb 2024 22:47:23 +0800
+Subject: [PATCH] ARM: dts: aspeed: Harma: Revise node name
+
+Revise max31790 and delta_brick node name.
+link:https://lore.kernel.org/all/20240412091600.2534693-8-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index b2834399f3d1..d992c884bb35 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -192,7 +192,7 @@ &kcs3 {
+ &i2c0 {
+ 	status = "okay";
+ 
+-	max31790@5e{
++	pwm@5e{
+ 		compatible = "max31790";
+ 		reg = <0x5e>;
+ 		#address-cells = <1>;
+@@ -218,7 +218,7 @@ eeprom@50 {
+ &i2c2 {
+ 	status = "okay";
+ 
+-	max31790@5e{
++	pwm@5e{
+ 		compatible = "max31790";
+ 		reg = <0x5e>;
+ 		#address-cells = <1>;
+@@ -262,7 +262,7 @@ eeprom@52 {
+ 		reg = <0x52>;
+ 	};
+ 
+-	delta_brick@69 {
++	power-monitor@69 {
+ 		compatible = "pmbus";
+ 		reg = <0x69>;
+ 	};
+-- 
+2.25.1
+

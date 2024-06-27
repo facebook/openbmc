@@ -1,0 +1,51 @@
+From 875d99abd3fd8ecbbec05db345fd4af5a74d5431 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Thu, 13 Jun 2024 18:15:52 +0800
+Subject: [PATCH 1009/1015] ARM: dts: aspeed: Harma: add fru device
+
+Add Aegis fru device and gpio expander device in bus 11.
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 25 +++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 49e620c72ffc..b5786e13ede5 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -427,6 +427,31 @@ eeprom@52 {
+ 
+ &i2c11 {
+ 	status = "okay";
++
++	gpio@30 {
++		compatible = "nxp,pca9555";
++		reg = <0x30>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++	gpio@31 {
++		compatible = "nxp,pca9555";
++		reg = <0x31>;
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		gpio-line-names =
++		"","","","",
++		"","","presence-cmm","",
++		"","","","",
++		"","","","";
++	};
++
++	// Aegis FRU
++	eeprom@52 {
++		compatible = "atmel,24c64";
++		reg = <0x52>;
++	};
+ };
+ 
+ &i2c12 {
+-- 
+2.25.1
+

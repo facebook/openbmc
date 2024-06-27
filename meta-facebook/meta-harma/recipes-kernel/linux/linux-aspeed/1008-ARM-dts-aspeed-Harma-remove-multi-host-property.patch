@@ -1,0 +1,28 @@
+From 033286df5fdcc7d5597f09f0392ce83c1fae81d6 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Thu, 13 Jun 2024 00:21:18 +0800
+Subject: [PATCH] ARM: dts: aspeed: Harma: remove multi-host property
+
+Harma is single host, so remove multi-host property
+link lore:https://lore.kernel.org/all/20240613152425.1582059-7-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index a85693683a10..49e620c72ffc 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -137,7 +137,6 @@ &mac3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_rmii4_default>;
+ 	use-ncsi;
+-	mellanox,multi-host;
+ };
+ 
+ &rtc {
+-- 
+2.25.1
+

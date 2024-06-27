@@ -1,0 +1,52 @@
+From 91f4c3d1917a5733aa2582812920d7cb8dffdb07 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Tue, 30 Apr 2024 23:39:34 +0800
+Subject: [PATCH] ARM: dts: aspeed: Harma: add VR device
+
+Add isl69260, xdpe152c4 device
+
+link lore:https://lore.kernel.org/all/20240613152425.1582059-3-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 24 +++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index fce4a519cf56..d17c723cdf56 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -398,6 +398,30 @@ imux28: i2c@0 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0>;
++			power-monitor@61 {
++				compatible = "isil,isl69260";
++				reg = <0x61>;
++			};
++			power-monitor@62 {
++				compatible = "isil,isl69260";
++				reg = <0x62>;
++			};
++			power-monitor@63 {
++				compatible = "isil,isl69260";
++				reg = <0x63>;
++			};
++			power-monitor@64 {
++				compatible = "infineon,xdpe152c4";
++				reg = <0x64>;
++			};
++			power-monitor@66 {
++				compatible = "infineon,xdpe152c4";
++				reg = <0x66>;
++			};
++			power-monitor@68 {
++				compatible = "infineon,xdpe152c4";
++				reg = <0x68>;
++			};
+ 		};
+ 		imux29: i2c@1 {
+ 			#address-cells = <1>;
+-- 
+2.25.1
+

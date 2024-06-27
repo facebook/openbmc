@@ -1,0 +1,82 @@
+From 4d6143e5d12731ce00bbc5274acf8a8e59b64701 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Thu, 13 Jun 2024 00:09:39 +0800
+Subject: [PATCH] ARM: dts: aspeed: Harma: add ina238
+
+Add INA238 power monitor for Harma fan board.
+link lore:https://lore.kernel.org/all/20240613152425.1582059-5-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 48 +++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 422fd07b2aa9..129e9aa9b600 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -198,6 +198,30 @@ pwm@5e{
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 	};
++
++	power-sensor@40 {
++		compatible = "ti,ina238";
++		reg = <0x40>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@41 {
++		compatible = "ti,ina238";
++		reg = <0x41>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@44 {
++		compatible = "ti,ina238";
++		reg = <0x44>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@45 {
++		compatible = "ti,ina238";
++		reg = <0x45>;
++		shunt-resistor = <1000>;
++	};
+ };
+ 
+ &i2c1 {
+@@ -224,6 +248,30 @@ pwm@5e{
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 	};
++
++	power-sensor@40 {
++		compatible = "ti,ina238";
++		reg = <0x40>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@41 {
++		compatible = "ti,ina238";
++		reg = <0x41>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@44 {
++		compatible = "ti,ina238";
++		reg = <0x44>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@45 {
++		compatible = "ti,ina238";
++		reg = <0x45>;
++		shunt-resistor = <1000>;
++	};
+ };
+ 
+ &i2c3 {
+-- 
+2.25.1
+

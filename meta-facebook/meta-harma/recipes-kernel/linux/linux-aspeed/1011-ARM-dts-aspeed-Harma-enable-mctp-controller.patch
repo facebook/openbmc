@@ -1,0 +1,34 @@
+From d492193513852517f6d569cfd9b9368915d4fb50 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Fri, 14 Jun 2024 11:19:42 +0800
+Subject: [PATCH] ARM: dts: aspeed: Harma: enable mctp controller
+
+Enable the mctp controller in i2c9.
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index a19c68ccae4b..4a3db82867ef 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -382,6 +382,14 @@ &i2c8 {
+ &i2c9 {
+ 	status = "okay";
+ 
++	mctp-controller;
++	multi-master;
++
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
++
+ 	gpio@30 {
+ 		compatible = "nxp,pca9555";
+ 		reg = <0x30>;
+-- 
+2.25.1
+

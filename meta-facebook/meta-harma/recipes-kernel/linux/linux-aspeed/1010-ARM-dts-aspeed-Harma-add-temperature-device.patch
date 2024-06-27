@@ -1,0 +1,43 @@
+From 48dfa77289e2f920776fd08522be9fa63e2c86c7 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Fri, 14 Jun 2024 11:18:04 +0800
+Subject: [PATCH] ARM: dts: aspeed: Harma: add temperature device
+
+Add temperature deivce in i2c0 and i2c2
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index b5786e13ede5..a19c68ccae4b 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -221,6 +221,11 @@ power-sensor@45 {
+ 		reg = <0x45>;
+ 		shunt-resistor = <1000>;
+ 	};
++
++	temperature-sensor@4b {
++		compatible = "ti,tmp75";
++		reg = <0x4b>;
++	};
+ };
+ 
+ &i2c1 {
+@@ -271,6 +276,11 @@ power-sensor@45 {
+ 		reg = <0x45>;
+ 		shunt-resistor = <1000>;
+ 	};
++
++	temperature-sensor@4b {
++		compatible = "ti,tmp75";
++		reg = <0x4b>;
++	};
+ };
+ 
+ &i2c3 {
+-- 
+2.25.1
+

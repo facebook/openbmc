@@ -1,4 +1,4 @@
-From 423729e5bbc282256c5c41b8b61f5cce0b614f1a Mon Sep 17 00:00:00 2001
+From 9b90bbe1bba44b86d7186303b8bec43e3564986c Mon Sep 17 00:00:00 2001
 From: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
 Date: Tue, 23 Apr 2024 13:57:49 +0800
 Subject: [PATCH 8/8] platform-mc: Monitor all sensors once upon the first

@@ -80,13 +80,11 @@ SRC_URI:append = " \
 # NCSI patches used by multiple OpenBMC platforms.
 #
 SRC_URI:append = " \
-    file://0169-net-ncsi-Simplify-Kconfig-dts-control-flow.patch \
     file://0170-net-ncsi-Add-NC-SI-1.2-Get-MC-MAC-Address-command.patch \
     file://0171-meta-facebook-common-add-pcc-config.patch \
     file://0172-drivers-watchdog-ast2600-support-bootstatus.patch \
     file://0173-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
-    file://0174-net-ncsi-Fix-the-multi-thread-manner-of-NCSI-driv.patch \
-    file://0175-net-ncsi-specify-maximum-package-and-channel-to-prob.patch \
+    file://0174-net-ncsi-specify-maximum-package-and-channel-to-prob.patch \
 "
 
 #

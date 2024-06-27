@@ -1,7 +1,7 @@
-From 506aa0a0d10b5a2179f142312bb640af71402c8c Mon Sep 17 00:00:00 2001
+From 3b5aba23c2999a34f9e28afc380eb0d30d6dac59 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Thu, 14 Mar 2024 10:30:26 +0800
-Subject: [PATCH 172/172] drivers: watchdog: ast2600 support bootstatus
+Subject: [PATCH 172/174] drivers: watchdog: ast2600 support bootstatus
 
 Add WDIOF_EXTERN1 bootstatus in ast2600
 

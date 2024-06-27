@@ -1,7 +1,7 @@
-From d3957e59d05c3aad990c41d3f85fbfde558aee72 Mon Sep 17 00:00:00 2001
+From fee29c0152e66155269deb155e4c660c1838785e Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 20 Dec 2022 21:22:46 -0800
-Subject: [PATCH 170/172] net/ncsi: Add NC-SI 1.2 Get MC MAC Address command
+Subject: [PATCH 170/174] net/ncsi: Add NC-SI 1.2 Get MC MAC Address command
 
 This change adds support for the NC-SI 1.2 Get MC MAC Address command,
 specified here:
@@ -45,10 +45,10 @@ index fd2236ee9a79..b3ff37a181d7 100644
  
  static struct ncsi_request *ncsi_alloc_command(struct ncsi_cmd_arg *nca)
 diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
-index f3d7fe86fea1..745c788f1d1d 100644
+index 90c6cf676221..5ecf611c8820 100644
 --- a/net/ncsi/ncsi-manage.c
 +++ b/net/ncsi/ncsi-manage.c
-@@ -1038,11 +1038,16 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+@@ -1040,11 +1040,16 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
  	case ncsi_dev_state_config_oem_gma:
  		nd->state = ncsi_dev_state_config_clear_vids;
  
@@ -103,10 +103,10 @@ index c9d1da34dc4d..f2f3b5c1b941 100644
  /* NCSI response code/reason */
  #define NCSI_PKT_RSP_C_COMPLETED	0x0000 /* Command Completed        */
 diff --git a/net/ncsi/ncsi-rsp.c b/net/ncsi/ncsi-rsp.c
-index 480e80e3c283..3e5e5cf7b5c9 100644
+index f22d67cb04d3..5130e30ebcae 100644
 --- a/net/ncsi/ncsi-rsp.c
 +++ b/net/ncsi/ncsi-rsp.c
-@@ -1091,6 +1091,45 @@ static int ncsi_rsp_handler_netlink(struct ncsi_request *nr)
+@@ -1093,6 +1093,45 @@ static int ncsi_rsp_handler_netlink(struct ncsi_request *nr)
  	return ret;
  }
  
@@ -152,7 +152,7 @@ index 480e80e3c283..3e5e5cf7b5c9 100644
  static struct ncsi_rsp_handler {
  	unsigned char	type;
  	int             payload;
-@@ -1127,7 +1166,8 @@ static struct ncsi_rsp_handler {
+@@ -1129,7 +1168,8 @@ static struct ncsi_rsp_handler {
  	{ NCSI_PKT_RSP_PLDM,   -1, ncsi_rsp_handler_pldm    },
  	{ NCSI_PKT_RSP_GPUUID, 20, ncsi_rsp_handler_gpuuid  },
  	{ NCSI_PKT_RSP_QPNPR,  -1, ncsi_rsp_handler_pldm    },

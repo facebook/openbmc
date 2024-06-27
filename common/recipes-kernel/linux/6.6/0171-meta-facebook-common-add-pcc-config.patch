@@ -1,7 +1,7 @@
-From 962a95d90c69d6edc739010e174259df02361837 Mon Sep 17 00:00:00 2001
+From bb93fd20f7058906e192df016ea8245745a67afa Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Wed, 13 Mar 2024 09:19:06 +0800
-Subject: [PATCH 171/172] meta-facebook: common: add pcc config
+Subject: [PATCH 171/174] meta-facebook: common: add pcc config
 
 Add PCC config in aspeed-g6.dtsi
 ---

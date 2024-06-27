@@ -1,4 +1,4 @@
-From 60d516dcbf1f2ac9b8a9ac01d06d27a5ce90ca95 Mon Sep 17 00:00:00 2001
+From 3ecbe51028130435d9463d0172f32740ca68512d Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
 Subject: [PATCH 7/8] Support OEM-META command for host BIOS version
@@ -104,7 +104,7 @@ index 739b9cd..091408f 100644
  class FileHandler
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp
 new file mode 100644
-index 0000000..c38dcec
+index 0000000..1ce107e
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp
 @@ -0,0 +1,151 @@
@@ -135,7 +135,7 @@ index 0000000..c38dcec
 +
 +    pldm::utils::DBusMapping dbusMapping{
 +        std::string("/xyz/openbmc_project/software/host") + getSlotNumber() +
-+            "/bios_version",
++            "/Sentinel_Dome_bios",
 +        "xyz.openbmc_project.Software.Version", "Version", "string"};
 +
 +    try

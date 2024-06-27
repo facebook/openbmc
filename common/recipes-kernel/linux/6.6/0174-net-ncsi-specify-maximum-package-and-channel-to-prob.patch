@@ -1,7 +1,7 @@
-From 98673a2c9f008c8f5f1341a5126871314991f9c9 Mon Sep 17 00:00:00 2001
+From 0e964bc0961cd6925f3199cdac4ccc5d85af2b32 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Wed, 22 May 2024 01:36:37 +0800
-Subject: [PATCH 175/175] net/ncsi: specify maximum package and channel to
+Subject: [PATCH 174/174] net/ncsi: specify maximum package and channel to
  probe
 
 Most NICs have a single package. For OCP3.0 NICs, the package ID is
@@ -16,7 +16,7 @@ Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
  2 files changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
-index 7b3012770a94..6724c164e222 100644
+index 0a613c4f9e74..9b25bb65fb3d 100644
 --- a/net/ncsi/internal.h
 +++ b/net/ncsi/internal.h
 @@ -346,6 +346,8 @@ struct ncsi_dev_priv {
@@ -87,5 +87,5 @@ index 7a0284ca09d7..feb6d971455b 100644
  
  	return nd;
 -- 
-2.25.1
+2.43.0
 

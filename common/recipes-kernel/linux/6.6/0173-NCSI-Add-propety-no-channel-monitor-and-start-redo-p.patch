@@ -1,7 +1,7 @@
-From dc9a7dd4f7a2388ca02851c10ca2e79cfcd69c66 Mon Sep 17 00:00:00 2001
+From 778791c4fc0275ea934e7a5af41943696b082f6b Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Tue, 2 Jan 2024 17:50:00 +0800
-Subject: [PATCH 508/518] NCSI: Add propety : no-channel-monitor and
+Subject: [PATCH 173/174] NCSI: Add propety : no-channel-monitor and
  start-redo-probe
 
 Add property start-redo-probe to , because Mellanox cx7 nic card
@@ -20,7 +20,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  2 files changed, 28 insertions(+), 1 deletion(-)
 
 diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
-index 374412ed780b..a07c41411338 100644
+index ef0f8f73826f..0a613c4f9e74 100644
 --- a/net/ncsi/internal.h
 +++ b/net/ncsi/internal.h
 @@ -202,6 +202,11 @@ struct ncsi_channel_stats {
@@ -35,19 +35,19 @@ index 374412ed780b..a07c41411338 100644
  struct ncsi_dev_priv;
  struct ncsi_package;
  
-@@ -343,6 +348,7 @@ struct ncsi_dev_priv {
- 	bool                multi_package;   /* Enable multiple packages   */
+@@ -345,6 +350,7 @@ struct ncsi_dev_priv {
  	bool                mlx_multi_host;  /* Enable multi host Mellanox */
  	u32                 package_whitelist; /* Packages to configure    */
+ 	unsigned char       channel_count;     /* Num of channels to probe   */
 +	unsigned int        ctrl_flags;      /* NCSI control flags */
  };
  
  struct ncsi_cmd_arg {
 diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
-index d9da942ad53d..9fa38673872e 100644
+index 5ecf611c8820..7a0284ca09d7 100644
 --- a/net/ncsi/ncsi-manage.c
 +++ b/net/ncsi/ncsi-manage.c
-@@ -1211,7 +1211,8 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+@@ -1208,7 +1208,8 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
  		ndp->hot_channel = hot_nc;
  		spin_unlock_irqrestore(&ndp->lock, flags);
  
@@ -57,7 +57,7 @@ index d9da942ad53d..9fa38673872e 100644
  		ncsi_process_next_channel(ndp);
  		break;
  	default:
-@@ -1779,6 +1780,7 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+@@ -1767,6 +1768,7 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
  	INIT_LIST_HEAD(&ndp->vlan_vids);
  	INIT_WORK(&ndp->work, ncsi_dev_work);
  	ndp->package_whitelist = UINT_MAX;
@@ -65,7 +65,7 @@ index d9da942ad53d..9fa38673872e 100644
  
  	/* Initialize private NCSI device */
  	spin_lock_init(&ndp->lock);
-@@ -1806,6 +1808,12 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+@@ -1795,6 +1797,12 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
  		if (np && (of_property_read_bool(np, "mellanox,multi-host") ||
  			   of_property_read_bool(np, "mlx,multi-host")))
  			ndp->mlx_multi_host = true;
@@ -78,7 +78,7 @@ index d9da942ad53d..9fa38673872e 100644
  	}
  
  	return nd;
-@@ -1815,11 +1823,24 @@ EXPORT_SYMBOL_GPL(ncsi_register_dev);
+@@ -1804,11 +1812,24 @@ EXPORT_SYMBOL_GPL(ncsi_register_dev);
  int ncsi_start_dev(struct ncsi_dev *nd)
  {
  	struct ncsi_dev_priv *ndp = TO_NCSI_DEV_PRIV(nd);
@@ -102,7 +102,7 @@ index d9da942ad53d..9fa38673872e 100644
 +
  	if (!(ndp->flags & NCSI_DEV_PROBED)) {
  		ndp->package_probe_id = 0;
- 		nd->state = ncsi_dev_state_probe;
+ 		ndp->channel_probe_id = 0;
 -- 
 2.43.0
 

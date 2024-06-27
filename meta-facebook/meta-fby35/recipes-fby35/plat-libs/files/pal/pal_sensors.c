@@ -1336,7 +1336,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"PDB_48V_WW_INPUT_VOLT_V"      , PDB_RNS    , read_pdb_vin ,     0, {  38.5,  42.72,  43.2,   56.1,  56.61,    61.5,    0,   0}, VOLT}, //0xB5
   {"PDB_12V_DELTA1_OUTPUT_VOLT_V" , PDB_DELTA_1, read_pdb_vout,     0, { 8.162, 11.125, 11.25,  13.75, 13.875,      15,    0,   0}, VOLT}, //0xB6
   {"PDB_12V_DELTA2_OUTPUT_VOLT_V" , PDB_DELTA_2, read_pdb_vout,     0, { 8.162, 11.125, 11.25,  13.75, 13.875,      15,    0,   0}, VOLT}, //0xB7
-  {"PDB_12V_WW_OUTPUT_VOLT_V"     , PDB_RNS    , read_pdb_vout,     0, {    10, 11.125, 11.25,  13.75, 13.875,    13.6,    0,   0}, VOLT}, //0xB8
+  {"PDB_12V_WW_OUTPUT_VOLT_V"     , PDB_RNS    , read_pdb_vout,     0, {    10, 11.125, 11.25,  13.75, 13.875,      15,    0,   0}, VOLT}, //0xB8
   {"PDB_DELTA1_OUTPUT_CURR_A"     , PDB_DELTA_1, read_pdb_iout,     0, {     0,      0,     0,      0,    100,       0,    0,   0}, CURR}, //0xB9
   {"PDB_DELTA2_OUTPUT_CURR_A"     , PDB_DELTA_2, read_pdb_iout,     0, {     0,      0,     0,      0,    136,       0,    0,   0}, CURR}, //0xBA
   {"PDB_12V_WW_OUTPUT_CURR_A"     , PDB_RNS    , read_pdb_iout,     0, {     0,      0,     0,      0,    144,       0,    0,   0}, CURR}, //0xBB

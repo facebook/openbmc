@@ -74,6 +74,17 @@ struct command
         // Insert the formatted postcode.
         for (auto& [code, extra] : raw_postcodes)
         {
+            if (!extra.empty())
+            {
+                std::string result;
+                for (ssize_t i = extra.size() - 1;  i >= 0; i--)
+                {
+                    result += std::format("{:02x}", extra[i]);
+                }
+                postcodes.push_back(result);
+                continue;
+            }
+
             switch (postcode_idx)
             {
                 case 0:

@@ -5394,6 +5394,13 @@ pal_clear_cmos(uint8_t slot_id) {
     printf("Failed to set server power 12V-off\n");
     return ret;
   }
+  // NOTE: This is a workaround to prevent 12V-cycle failure on
+  // javaisland's EVT1 and EVT2 MB because P12V_STBY is not fully
+  // discharged when performing 12V-on after 12V-off.
+  if ( (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_JI) &&
+       ((fby35_common_get_sb_rev(slot_id) & 0xF) <= JI_REV_EVT2) ) {
+    sleep(8-DELAY_12V_CYCLE); // takes at least 8s to discharge
+  }
   sleep(DELAY_12V_CYCLE);
 
   printf("Performing CMOS clear\n");

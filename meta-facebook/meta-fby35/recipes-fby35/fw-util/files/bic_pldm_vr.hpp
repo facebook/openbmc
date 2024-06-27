@@ -15,6 +15,7 @@ class PldmVrComponent : public PldmComponent {
   protected:
     uint8_t slot_id = 0;
     Server server;
+    static bool is_printed;
     int update_internal(std::string image, bool force) override;
     int update_version_cache() override;
     std::map<uint8_t, std::string> get_vr_list();

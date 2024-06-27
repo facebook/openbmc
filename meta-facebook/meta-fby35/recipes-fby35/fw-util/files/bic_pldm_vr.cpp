@@ -12,6 +12,8 @@
 
 using namespace std;
 
+bool PldmVrComponent::is_printed = false;
+
 int PldmVrComponent::update_version_cache() {
   string activeVersion, pendingVersion;
 
@@ -200,6 +202,11 @@ map<uint8_t, string> PldmVrComponent::get_vr_list() {
 }
 
 int PldmVrComponent::print_version() {
+  if (is_printed && component_identifier != javaisland::ALL_VR) {
+    // "vr" is prior to "vr_xxx", so "vr_xxx" does not need to print the version
+    return FW_STATUS_SUCCESS;
+  }
+
   if (component_identifier == javaisland::ALL_VR) {
     for (const auto& [vr_comp_id, vr_name]: get_vr_list()) {
       // replace component name, component ID and version key 
@@ -210,6 +217,7 @@ int PldmVrComponent::print_version() {
       pendingVersionKey = fmt::format("{}_{}_pending_ver", fru, vr_name);
       PldmComponent::print_version();
     }
+    is_printed = true;
     return FW_STATUS_SUCCESS;
   } else {
     return PldmComponent::print_version();

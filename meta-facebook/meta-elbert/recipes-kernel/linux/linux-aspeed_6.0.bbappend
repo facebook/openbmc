@@ -21,4 +21,5 @@ SRC_URI += "file://1001-ARM-dts-aspeed-elbert-Enable-spi1-controller.patch \
             file://1002-ARM-dts-aspeed-elbert-Enable-jtag1-controller.patch \
             file://1005-watchdog-suppress-watchdog-did-not-stop-message.patch \
             file://1010-hwmon-add-net_brcm-driver.patch \
+            file://1024-enlarge-data0-partition-8MB-to-64MB.patch \
            "

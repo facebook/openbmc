@@ -1,0 +1,30 @@
+From efbbb1fbbcc7afa42b54f1aff55f0693b3b9b210 Mon Sep 17 00:00:00 2001
+From: Yang Chen <yang.chen@quantatw.com>
+Date: Tue, 2 Apr 2024 15:32:01 +0800
+Subject: [PATCH 06/17] ARM: dts: aspeed: minerva: remove unused bus and device
+
+Remove unused bus and device.
+
+Signed-off-by: Yang Chen <yang.chen@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+index 13819bc166cc..bc323bfbe514 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+@@ -315,10 +315,6 @@ rtc@51 {
+ 	};
+ };
+ 
+-&i2c10 {
+-	status = "okay";
+-};
+-
+ &i2c12 {
+ 	status = "okay";
+ };
+-- 
+2.34.1
+

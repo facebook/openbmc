@@ -1,0 +1,206 @@
+From 61a7848527bbe4588e664392e54108fd5ad56840 Mon Sep 17 00:00:00 2001
+From: Yang Chen <yang.chen@quantatw.com>
+Date: Fri, 3 May 2024 23:16:38 +0800
+Subject: [PATCH 08/17] ARM: dts: aspeed: minerva: Add adc sensors for fan
+ board
+
+Add ina238 support to read the sensors in front of fans.
+
+Signed-off-by: Yang Chen <yang.chen@quantatw.com>
+---
+ .../aspeed/aspeed-bmc-facebook-minerva.dts    | 144 ++++++++++++++++++
+ 1 file changed, 144 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+index dfea0025e6ce..86d319d7edcd 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+@@ -207,6 +207,30 @@ pwm@5e{
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 			};
++
++			power-sensor@40 {
++				compatible = "ti,ina238";
++				reg = <0x40>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@41 {
++				compatible = "ti,ina238";
++				reg = <0x41>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@44 {
++				compatible = "ti,ina238";
++				reg = <0x44>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@45 {
++				compatible = "ti,ina238";
++				reg = <0x45>;
++				shunt-resistor = <1000>;
++			};
+ 		};
+ 
+ 		imux17: i2c@1 {
+@@ -225,6 +249,30 @@ pwm@5e{
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 			};
++
++			power-sensor@40 {
++				compatible = "ti,ina238";
++				reg = <0x40>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@41 {
++				compatible = "ti,ina238";
++				reg = <0x41>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@44 {
++				compatible = "ti,ina238";
++				reg = <0x44>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@45 {
++				compatible = "ti,ina238";
++				reg = <0x45>;
++				shunt-resistor = <1000>;
++			};
+ 		};
+ 
+ 		imux18: i2c@2 {
+@@ -243,6 +291,30 @@ pwm@5e{
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 			};
++
++			power-sensor@40 {
++				compatible = "ti,ina238";
++				reg = <0x40>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@41 {
++				compatible = "ti,ina238";
++				reg = <0x41>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@44 {
++				compatible = "ti,ina238";
++				reg = <0x44>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@45 {
++				compatible = "ti,ina238";
++				reg = <0x45>;
++				shunt-resistor = <1000>;
++			};
+ 		};
+ 
+ 		imux19: i2c@3 {
+@@ -261,6 +333,30 @@ pwm@5e{
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 			};
++
++			power-sensor@40 {
++				compatible = "ti,ina238";
++				reg = <0x40>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@41 {
++				compatible = "ti,ina238";
++				reg = <0x41>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@44 {
++				compatible = "ti,ina238";
++				reg = <0x44>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@45 {
++				compatible = "ti,ina238";
++				reg = <0x45>;
++				shunt-resistor = <1000>;
++			};
+ 		};
+ 
+ 		imux20: i2c@4 {
+@@ -279,6 +375,30 @@ pwm@5e{
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 			};
++
++			power-sensor@40 {
++				compatible = "ti,ina238";
++				reg = <0x40>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@41 {
++				compatible = "ti,ina238";
++				reg = <0x41>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@44 {
++				compatible = "ti,ina238";
++				reg = <0x44>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@45 {
++				compatible = "ti,ina238";
++				reg = <0x45>;
++				shunt-resistor = <1000>;
++			};
+ 		};
+ 
+ 		imux21: i2c@5 {
+@@ -297,6 +417,30 @@ pwm@5e{
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 			};
++
++			power-sensor@40 {
++				compatible = "ti,ina238";
++				reg = <0x40>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@41 {
++				compatible = "ti,ina238";
++				reg = <0x41>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@44 {
++				compatible = "ti,ina238";
++				reg = <0x44>;
++				shunt-resistor = <1000>;
++			};
++
++			power-sensor@45 {
++				compatible = "ti,ina238";
++				reg = <0x45>;
++				shunt-resistor = <1000>;
++			};
+ 		};
+ 	};
+ };
+-- 
+2.34.1
+

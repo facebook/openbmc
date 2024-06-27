@@ -1,0 +1,37 @@
+From 7e0085c344f484b8cfa9bfcbc85732ce5b97c7cb Mon Sep 17 00:00:00 2001
+From: Yang Chen <yang.chen@quantatw.com>
+Date: Tue, 25 Jun 2024 16:39:52 +0800
+Subject: [PATCH 14/17] ARM: dts: aspeed: minerva: Switch the i2c bus number
+
+Switch the i2c bus number to map the i2c tag according to the hardware design.
+
+Signed-off-by: Yang Chen <yang.chen@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+index 7a790e347853..8f3f15a5c148 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+@@ -384,7 +384,7 @@ temperature-sensor@4b {
+ 			};
+ 		};
+ 
+-		imux20: i2c@4 {
++		imux20: i2c@5 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <4>;
+@@ -430,7 +430,7 @@ temperature-sensor@4b {
+ 			};
+ 		};
+ 
+-		imux21: i2c@5 {
++		imux21: i2c@4 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <5>;
+-- 
+2.34.1
+

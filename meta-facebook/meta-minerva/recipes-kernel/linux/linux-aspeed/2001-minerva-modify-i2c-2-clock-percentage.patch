@@ -1,0 +1,26 @@
+From b4b1572841050167c3abc44de50390659a13442e Mon Sep 17 00:00:00 2001
+From: Yang Chen <yangchen.openbmc@gmail.com>
+Date: Tue, 25 Jun 2024 21:19:15 +0800
+Subject: [PATCH] minerva: modify i2c-2 clock percentage
+
+Summary:
+- Set I2C2 clock high to 56% to meet spec.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+index 896e84cd03de..47b998a368e3 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+@@ -205,6 +205,7 @@ eeprom@54 {
+ 
+ &i2c2 {
+ 	status = "okay";
++	i2c-clk-high-min-percent = <56>;
+ 
+ 	i2c-mux@77 {
+ 		compatible = "nxp,pca9548";
+-- 
+2.34.1
+

@@ -1,0 +1,43 @@
+From 277fb1bd9ce9b5b6a732419ed238ea72fea71f6c Mon Sep 17 00:00:00 2001
+From: Yang Chen <yang.chen@quantatw.com>
+Date: Mon, 1 Apr 2024 20:30:58 +0800
+Subject: [PATCH 03/17] ARM: dts: aspeed: minerva: add eeprom on i2c bus
+
+Add eeprom on the i2c-9 address 0x50 and i2c-15 address 0x56.
+
+Signed-off-by: Yang Chen <yang.chen@quantatw.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts    | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+index ca3e417d2c7e..60002b8cffc6 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+@@ -303,6 +303,11 @@ &i2c8 {
+ 
+ &i2c9 {
+ 	status = "okay";
++
++	eeprom@50 {
++		compatible = "atmel,24c64";
++		reg = <0x50>;
++	};
+ };
+ 
+ &i2c10 {
+@@ -339,6 +344,11 @@ eeprom@50 {
+ 		compatible = "atmel,24c128";
+ 		reg = <0x50>;
+ 	};
++
++	eeprom@56 {
++		compatible = "atmel,24c64";
++		reg = <0x56>;
++	};
+ };
+ 
+ &adc0 {
+-- 
+2.34.1
+

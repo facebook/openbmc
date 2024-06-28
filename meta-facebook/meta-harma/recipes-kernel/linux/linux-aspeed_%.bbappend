@@ -12,4 +12,5 @@ SRC_URI:append = " file://1008-ARM-dts-aspeed-Harma-remove-multi-host-property.p
 SRC_URI:append = " file://1009-ARM-dts-aspeed-Harma-add-fru-device.patch"
 SRC_URI:append = " file://1010-ARM-dts-aspeed-Harma-add-temperature-device.patch"
 SRC_URI:append = " file://1011-ARM-dts-aspeed-Harma-enable-mctp-controller.patch"
+SRC_URI:append = " file://1012-ARM-dts-aspeed-Harma-add-lpc_pcc-device.patch"
 

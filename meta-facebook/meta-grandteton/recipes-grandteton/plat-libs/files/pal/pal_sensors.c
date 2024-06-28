@@ -40,6 +40,7 @@ extern const uint8_t vpdb_3brick_sensor_list[];
 extern const uint8_t vpdb_adc_sensor_list[];
 
 extern const uint8_t hpdb_sensor_list[];
+extern const uint8_t hpdb_sensor_ext_list[];
 extern const uint8_t hpdb_adc_sensor_list[];
 
 extern const uint8_t fan_bp1_sensor_list[];
@@ -71,6 +72,7 @@ extern size_t vpdb_3brick_sensor_cnt;
 extern size_t vpdb_adc_sensor_cnt;
 
 extern size_t hpdb_sensor_cnt;
+extern size_t hpdb_sensor_ext_cnt;
 extern size_t hpdb_adc_sensor_cnt;
 
 extern size_t fan_bp1_sensor_cnt;
@@ -265,10 +267,19 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   } else if (fru == FRU_HPDB) {
     memcpy(snr_hpdb_tmp, hpdb_sensor_list, hpdb_sensor_cnt);
     *cnt = hpdb_sensor_cnt;
-    // ADC sensor only support greater than PVT
-    if(!pal_get_board_rev_id(FRU_HPDB, &rev) && rev >= PDB_REV_PVT2) {
+
+    if (!pal_is_gt_hnext()) {
+      // ADC sensor only support greater than PVT
+      if((!pal_get_board_rev_id(FRU_HPDB, &rev) && rev >= PDB_REV_PVT2)) {
+        memcpy(&snr_hpdb_tmp[*cnt], hpdb_adc_sensor_list, hpdb_adc_sensor_cnt);
+        *cnt += hpdb_adc_sensor_cnt;
+      }
+    }
+    else {
       memcpy(&snr_hpdb_tmp[*cnt], hpdb_adc_sensor_list, hpdb_adc_sensor_cnt);
       *cnt += hpdb_adc_sensor_cnt;
+      memcpy(&snr_hpdb_tmp[*cnt], hpdb_sensor_ext_list, hpdb_sensor_ext_cnt);
+      *cnt += hpdb_sensor_ext_cnt;
     }
     *sensor_list = snr_hpdb_tmp;
 
@@ -617,7 +628,12 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   if (check_polling_status(fru)) {
     switch(thresh) {
       case UCR_THRESH:
-        *val = sensor_map[fru].map[sensor_num].snr_thresh.ucr_thresh;
+        if(pal_is_gt_hnext() && (fru == FRU_FAN_BP1 || fru == FRU_FAN_BP2)) {
+          *val = sensor_map[fru].map[sensor_num].snr_thresh.ucr_thresh + 4000;
+        }
+        else {
+          *val = sensor_map[fru].map[sensor_num].snr_thresh.ucr_thresh;
+        }
         break;
       case UNC_THRESH:
         *val = sensor_map[fru].map[sensor_num].snr_thresh.unc_thresh;

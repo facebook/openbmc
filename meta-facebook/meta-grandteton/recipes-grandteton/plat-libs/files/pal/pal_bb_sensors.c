@@ -19,14 +19,14 @@ const char pal_tach_list[] = "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,
 //static float InletCalibration = 0;
 
 //Fan CTRL
-static int get_max31790_rpm(uint8_t fru, uint8_t sensor_num, float *value);
-static int get_max31790_duty(uint8_t fan_id, uint8_t* pwm);
-static int set_max31790_duty(uint8_t fan_id, uint8_t pwm);
+static int get_fan_rpm(uint8_t fru, uint8_t sensor_num, float *value);
+static int get_fan_duty(uint8_t fan_id, uint8_t* pwm);
+static int set_fan_duty(uint8_t fan_id, uint8_t pwm);
 static int get_nct7363y_rpm(uint8_t fru, uint8_t sensor_num, float *value);
 static int get_nct7363y_duty(uint8_t fan_id, uint8_t* pwm);
 static int set_nct7363y_duty(uint8_t fan_id, uint8_t pwm);
-//Sensor Read
 
+//Sensor Read
 static int read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic0_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic1_power(uint8_t fru, uint8_t sensor_num, float *value);
@@ -34,8 +34,9 @@ static int read_bb_sensor(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_vdrop_sensor(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value);
 FAN_CTRL_DEV fan_ctrl_map[] = {
-  {FAN_CTRL_ID0, get_max31790_rpm, get_max31790_duty, set_max31790_duty},
+  {FAN_CTRL_ID0, get_fan_rpm, get_fan_duty, set_fan_duty},
   {FAN_CTRL_ID1, get_nct7363y_rpm, get_nct7363y_duty, set_nct7363y_duty},
+  {FAN_CTRL_ID2, get_fan_rpm, get_fan_duty, set_fan_duty},
 };
 
 #define VPDB_HSC0_ADDR              (0x20)
@@ -121,6 +122,19 @@ const uint8_t hpdb_adc_sensor_list[] = {
   PDBH_SNR_CABLE2_MINUS,
 };
 
+const uint8_t hpdb_sensor_ext_list[] = {
+  PDBH_SNR_HSC3_VIN,
+  PDBH_SNR_HSC3_VOUT,
+  PDBH_SNR_HSC3_IOUT,
+  PDBH_SNR_HSC3_PIN,
+  PDBH_SNR_HSC3_TEMP,
+  PDBH_SNR_HSC4_VIN,
+  PDBH_SNR_HSC4_VOUT,
+  PDBH_SNR_HSC4_IOUT,
+  PDBH_SNR_HSC4_PIN,
+  PDBH_SNR_HSC4_TEMP,
+};
+
 const uint8_t fan_bp1_sensor_list[] = {
   FAN_BP1_SNR_FAN0_INLET_SPEED,
   FAN_BP1_SNR_FAN0_OUTLET_SPEED,
@@ -192,15 +206,24 @@ NCT7363Y_CTRL nct7363y_ctrl_list[] = {
   {NCT7363Y_PWM10_OUTLET, 0xA4, 0x4E, 0x4F},
 };
 
-//FAN CHIP
 char *max31790_chips[] = {
-  "max31790-i2c-40-2f",  // FAN_BP1
-  "max31790-i2c-40-20",  // FAN_BP1
-  "max31790-i2c-41-2f",  // FAN_BP2
-  "max31790-i2c-41-20",  // FAN_BP2
+  "max31790-i2c-40-2f",
+  "max31790-i2c-40-20",
+  "max31790-i2c-41-2f",
+  "max31790-i2c-41-20",
 };
-char **fan_chips = max31790_chips;
+int max31790_pwm_map[4] = {1,3,4,6};
 
+char *nct7904_chips[] = {
+  "nct7904-i2c-40-2d",
+  "nct7904-i2c-40-2e",
+  "nct7904-i2c-41-2d",
+  "nct7904-i2c-41-2e",
+};
+int nct7904_pwm_map[4] = {1,2,3,4};
+
+char **fan_chips;
+int *fan_pwm_map;
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}
 PAL_SENSOR_MAP bb_sensor_map[] = {
@@ -411,16 +434,16 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"MEDUSA2_POSITIVE_VDROP", HPDB_ADC_ID2, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBE
   {"MEDUSA2_RETURN_VDROP",   HPDB_ADC_ID3, read_vdrop_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
+  {"HSC3_VIN_VOLT", HPDB_HSC_ID3, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xC0
+  {"HSC3_VOUT_VOLT",HPDB_HSC_ID3, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT},//0xC1
+  {"HSC3_CURR",     HPDB_HSC_ID3, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC2
+  {"HSC3_PWR",      HPDB_HSC_ID3, read_hsc_pin,   true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC3
+  {"HSC3_TEMP",     HPDB_HSC_ID3, read_bb_sensor, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0xC4
+  {"HSC4_VIN_VOLT", HPDB_HSC_ID4, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xC5
+  {"HSC4_VOUT_VOLT",HPDB_HSC_ID4, read_bb_sensor, true, {57.0, 0, 0, 45.0, 0, 0, 0, 0}, VOLT}, //0xC6
+  {"HSC4_CURR",     HPDB_HSC_ID4, read_bb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC7
+  {"HSC4_PWR",      HPDB_HSC_ID4, read_hsc_pin,   true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC8
+  {"HSC4_TEMP",     HPDB_HSC_ID4, read_bb_sensor, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0xC9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
@@ -490,6 +513,7 @@ size_t vpdb_3brick_sensor_cnt = sizeof(vpdb_3brick_sensor_list)/sizeof(uint8_t);
 size_t vpdb_adc_sensor_cnt = sizeof(vpdb_adc_sensor_list)/sizeof(uint8_t);
 size_t hpdb_sensor_cnt = sizeof(hpdb_sensor_list)/sizeof(uint8_t);
 size_t hpdb_adc_sensor_cnt = sizeof(hpdb_adc_sensor_list)/sizeof(uint8_t);
+size_t hpdb_sensor_ext_cnt = sizeof(hpdb_sensor_ext_list)/sizeof(uint8_t);
 size_t fan_bp1_sensor_cnt = sizeof(fan_bp1_sensor_list)/sizeof(uint8_t);
 size_t fan_bp2_sensor_cnt = sizeof(fan_bp2_sensor_list)/sizeof(uint8_t);
 size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);
@@ -501,12 +525,25 @@ static int get_fan_chip_dev_id(uint8_t fru, uint8_t* dev_id) {
   if(get_comp_source(fru, fru == FRU_FAN_BP1 ? FAN_BP1_FAN_SOURCE : FAN_BP2_FAN_SOURCE, &id))
     return -1;
 
-  if (id == MAIN_SOURCE)
-    *dev_id = FAN_CTRL_ID0;
-  else if (id == SECOND_SOURCE)
-    *dev_id = FAN_CTRL_ID1;
-  else
-    return -1;
+  switch (id) {
+    case MAIN_SOURCE:
+      *dev_id = FAN_CTRL_ID0;
+      fan_chips = max31790_chips;
+      fan_pwm_map = max31790_pwm_map;
+      break;
+    case SECOND_SOURCE:
+      *dev_id = FAN_CTRL_ID1;
+      break;
+    case THIRD_SOURCE:
+      *dev_id = FAN_CTRL_ID2;
+      fan_chips = nct7904_chips;
+      fan_pwm_map = nct7904_pwm_map;
+      break;
+    default:
+      *dev_id = FAN_CTRL_ID0;
+      fan_chips = max31790_chips;
+      fan_pwm_map = max31790_pwm_map;
+  }
 
   return 0;
 }
@@ -790,6 +827,7 @@ set_nct7363y_duty(uint8_t fan_id, uint8_t pwm) {
   addr = nct7363y_dev_list[fan_id%4].slv_addr;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+
   fd = open(fn, O_RDWR);
   if (fd < 0) {
     goto err_exit;
@@ -934,30 +972,27 @@ err_exit:
   return ret;
 }
 
-//Max3170 Ctrl Fan Function
 static int
-set_max31790_duty(uint8_t fan_id, uint8_t pwm) {
+set_fan_duty(uint8_t fan_id, uint8_t pwm) {
   uint8_t location = fan_id % 2;
   uint8_t reg_map = fan_id/4;
-  int pwm_map[4] = {1, 3, 4, 6};
   char label[32] = {0};
 
   reg_map = location ? reg_map : (FAN_CHIP_CNT - reg_map - 1);
-  snprintf(label, sizeof(label), "pwm%d", pwm_map[reg_map]);
+  snprintf(label, sizeof(label), "pwm%d", fan_pwm_map[reg_map]);
   return sensors_write(fan_chips[fan_id%4], label, (float)pwm);
 }
 
 static int
-get_max31790_duty(uint8_t fan_id, uint8_t* pwm) {
+get_fan_duty(uint8_t fan_id, uint8_t* pwm) {
   int ret;
   uint8_t location = fan_id % 2;
   uint8_t reg_map = fan_id/4;
-  int pwm_map[4] = {1, 3, 4, 6};
   float val;
   char label[32] = {0};
 
   reg_map = location ? reg_map : (FAN_CHIP_CNT - reg_map - 1);
-  snprintf(label, sizeof(label), "pwm%d", pwm_map[reg_map]);
+  snprintf(label, sizeof(label), "pwm%d", fan_pwm_map[reg_map]);
   ret = sensors_read(fan_chips[fan_id%4], label, &val);
 
   if (ret == 0)
@@ -967,7 +1002,7 @@ get_max31790_duty(uint8_t fan_id, uint8_t* pwm) {
 }
 
 static int
-get_max31790_rpm(uint8_t fru, uint8_t sensor_num, float *value) {
+get_fan_rpm(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t tach_id = sensor_map[fru].map[sensor_num].id;
 
   return sensors_read(fan_chips[tach_id%8/2], sensor_map[fru].map[sensor_num].snr_name, value);

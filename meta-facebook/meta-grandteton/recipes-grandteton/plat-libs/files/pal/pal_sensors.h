@@ -158,6 +158,7 @@ enum {
 enum {
   FAN_CTRL_ID0,
   FAN_CTRL_ID1,
+  FAN_CTRL_ID2,
 };
 
 enum {

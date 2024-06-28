@@ -38,7 +38,6 @@ enum {
 enum {
   FAN_BP1_FAN_SOURCE,
   FAN_BP1_LED_SOURCE,
-
 };
 
 enum {

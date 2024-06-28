@@ -65,3 +65,9 @@ for i in {1..5}
     kv set hpdb_rsense_source "$HPDB_HSC_RSENSE_1ST"
   fi
 done
+
+if [ "$(kv get mb_product)" == "GT1.5" ] && [ "$(kv get hpdb_sku)" == "1" ]; then
+  ln -s /etc/sensors_cfg/gt-hnext-medusa.conf /etc/sensors.d/medusa.conf
+else
+  ln -s /etc/sensors_cfg/gt-medusa.conf /etc/sensors.d/medusa.conf
+fi

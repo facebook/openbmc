@@ -233,6 +233,19 @@ pal_is_artemis() { // TODO: Use MB CPLD Offest to check the platform
 #endif
 }
 
+bool
+pal_is_gt_hnext() {
+  int ret = -1;
+  char product[32] = {0};
+  ret = kv_get("mb_product", product, NULL, 0);
+  if (ret == 0 && strcmp(product, "GT1.5") == 0) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 int
 pal_get_gpu_fru_id () {
    GPUConfig cfg = get_gpu_config();

@@ -21,6 +21,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
+. /usr/local/fbpackages/utils/ast-functions
 
 mb_sku=$(($(/usr/bin/kv get mb_sku) & 0x0F))
 # sku_id[3:0] | HSC     | ADC        | VR             | RT VR        | DPM        | config
@@ -269,4 +270,113 @@ else
   i2cset -f -y 0 0x70 0x40 0xc0
   i2cset -f -y 0 0x70 0x41 0xc0
   kv set apml_mux 1
+fi
+
+#============================ GT1.5 ============================#
+# HPDB
+# sku[5:0] | HSC     | RSHUNT | ADC Type | DIF ADC  | SGL ADC  |
+# 000001   | ADM1272 | RLC    | DIF      | INA238   | MAX11617 |
+# 001010   | LTC4287 | ERO    | DIF      | ISL28022 | MAX11617 |
+
+mb_product=$(kv get mb_product)
+if [ "$mb_product" == "GT1.5" ]; then
+  # HPDB IOExpender
+  i2c_device_add 37 0x23 pca9555
+  gpio_export_ioexp 37-0023  FAN_BP1_PRSNT_N  2
+  gpio_export_ioexp 37-0023  FAN_BP2_PRSNT_N  3
+  gpio_export_ioexp 37-0023  HPDB_BOARD_ID_0  10
+  gpio_export_ioexp 37-0023  HPDB_BOARD_ID_1  11
+  gpio_export_ioexp 37-0023  HPDB_BOARD_ID_2  12
+  gpio_export_ioexp 37-0023  HPDB_SKU_ID_0    13
+  gpio_export_ioexp 37-0023  HPDB_SKU_ID_1    14
+  gpio_export_ioexp 37-0023  HPDB_SKU_ID_2    15
+
+  i2c_device_add 37 0x25 pca9555
+  gpio_export_ioexp 37-0025  FM_HS1_EN_BUSBAR_BUF  1
+  gpio_export_ioexp 37-0025  FM_HS2_EN_BUSBAR_BUF  3
+  gpio_export_ioexp 37-0025  HPDB_SKU_ID_5    12
+  gpio_export_ioexp 37-0025  HPDB_SKU_ID_4    13
+  gpio_export_ioexp 37-0025  HPDB_SKU_ID_3    14
+  gpio_export_ioexp 37-0025  HPDB_BOARD_ID_3  15
+
+  # HPDB REV
+  kv set hpdb_rev "$((
+                    $(gpio_get HPDB_BOARD_ID_3) << 3 |
+                    $(gpio_get HPDB_BOARD_ID_2) << 2 |
+                    $(gpio_get HPDB_BOARD_ID_1) << 1 |
+                    $(gpio_get HPDB_BOARD_ID_0)
+                  ))"
+
+  # HPDB SKU
+  kv set hpdb_sku "$((
+                    $(gpio_get HPDB_SKU_ID_5) << 5 |
+                    $(gpio_get HPDB_SKU_ID_4) << 4 |
+                    $(gpio_get HPDB_SKU_ID_3) << 3 |
+                    $(gpio_get HPDB_SKU_ID_2) << 2 |
+                    $(gpio_get HPDB_SKU_ID_1) << 1 |
+                    $(gpio_get HPDB_SKU_ID_0)
+                  ))"
+
+  hpdb_sku=$(kv get hpdb_sku)
+
+  if [ "$hpdb_sku" == "1" ]; then
+    # HPDB HSC
+    i2cset -y -f 39 0x10 0xd4 0x3F1F w
+    i2cset -y -f 39 0x13 0xd4 0x3F1F w
+    i2cset -y -f 39 0x1c 0xd4 0x3F1F w
+    i2cset -y -f 39 0x1f 0xd4 0x3F1F w
+    i2c_device_add 39 0x10 adm1272
+    i2c_device_add 39 0x13 adm1272
+    i2c_device_add 39 0x1c adm1272
+    i2c_device_add 39 0x1f adm1272
+    kv set hpdb_hsc_source "$HPDB_2ND_SOURCE"
+
+    sed -i '$a\
+chip "adm1272-i2c-39-10"\
+  label in1    "HSC3_VIN_VOLT"\
+  label in2    "HSC3_VOUT_VOLT"\
+  label curr1  "HSC3_CURR"\
+  label power1 "HSC3_PWR"\
+  label temp1  "HSC3_TEMP"\
+  compute curr1 @/0.15*0.94 + 0.28, @*0.15\
+  compute power1 @/0.15*0.98 + 7.1, @*0.15\
+chip "adm1272-i2c-39-1f"\
+  label in1    "HSC4_VIN_VOLT"\
+  label in2    "HSC4_VOUT_VOLT"\
+  label curr1  "HSC4_CURR"\
+  label power1 "HSC4_PWR"\
+  label temp1  "HSC4_TEMP"\
+  compute curr1 @/0.15*0.94 + 0.46, @*0.15\
+  compute power1 @/0.15*0.98 + 19.95, @*0.15' /etc/sensors_cfg/hpdb-adm1272-1.conf
+    kv set hpdb_rsense_source "$HPDB_HSC_RSENSE_1ST"
+
+    # HPDB ADC
+    i2c_device_add 37 0x42 ina238
+    i2c_device_add 37 0x43 ina238
+    i2c_device_add 37 0x44 ina238
+    i2c_device_add 37 0x45 ina238
+    kv set hpdb_adc_source "$HPDB_2ND_SOURCE"
+
+  elif [ "$hpdb_sku" == "10" ]; then
+    # HPDB HSC
+    i2cset -f -y 39 0x40 0xD9 0x8b
+    i2cset -f -y 39 0x41 0xD9 0x8b
+    i2cset -f -y 39 0x42 0xD9 0x8b
+    i2cset -f -y 39 0x46 0xD9 0x8b
+    i2c_device_add 39 0x40 ltc4286
+    i2c_device_add 39 0x41 ltc4286
+    i2c_device_add 39 0x42 ltc4286
+    i2c_device_add 39 0x46 ltc4286
+    kv set hpdb_hsc_source "$HPDB_1ST_SOURCE"
+
+    # HPDB ADC
+    i2c_device_add 37 0x42 isl28022
+    i2c_device_add 37 0x43 isl28022
+    i2c_device_add 37 0x44 isl28022
+    i2c_device_add 37 0x45 isl28022
+    kv set hpdb_adc_source "$HPDB_3RD_SOURCE"
+  fi
+
+  # HPDB FRU
+  i2c_device_add 37 0x51 24c64
 fi

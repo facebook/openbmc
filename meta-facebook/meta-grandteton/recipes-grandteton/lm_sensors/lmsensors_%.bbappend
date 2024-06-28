@@ -10,6 +10,8 @@ SRC_URI += "file://common.conf \
             file://hpdb-adm1272-2.conf \
             file://vpdb-adm1272-1.conf \
             file://vpdb-adm1272-2.conf \
+            file://gt-medusa.conf \
+            file://gt-hnext-medusa.conf \
            "
 
 FILES:${PN}-libsensors += "${sysconfdir}/sensors_cfg"
@@ -26,4 +28,6 @@ do_install:append() {
     install -m 644 ../hpdb-adm1272-2.conf ${D}${sysconfdir}/sensors_cfg/hpdb-adm1272-2.conf
     install -m 644 ../vpdb-adm1272-1.conf ${D}${sysconfdir}/sensors_cfg/vpdb-adm1272-1.conf
     install -m 644 ../vpdb-adm1272-2.conf ${D}${sysconfdir}/sensors_cfg/vpdb-adm1272-2.conf
+    install -m 644 ../gt-medusa.conf ${D}${sysconfdir}/sensors_cfg/gt-medusa.conf
+    install -m 644 ../gt-hnext-medusa.conf ${D}${sysconfdir}/sensors_cfg/gt-hnext-medusa.conf
 }

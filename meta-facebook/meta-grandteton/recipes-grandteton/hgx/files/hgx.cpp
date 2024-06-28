@@ -439,7 +439,7 @@ void getMetricReports() {
       snr_val = jvalue.value();
     }
 
-    pos_start = snr_val.find_first_not_of("0123456789");
+    pos_start = snr_val.find_first_not_of("-0123456789");
     if (pos_start != 0) {
       kv::set(snr_path, snr_val);
     }

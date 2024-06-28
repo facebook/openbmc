@@ -151,3 +151,41 @@ class CommonEepromTest(BaseEepromTest):
             found,
             "Location on Fabric {} not in set {}".format(name, self.location_on_fabric),
         )
+
+
+class EepromV5Test(CommonEepromTest):
+    # overide for FBOSS EEPROMv4,v5 format, display different
+    def set_eeprom_location(self):
+        self.test_eeprom_location = "EEPROM location on Fabric"
+
+    # overide for FBOSS EEPROMv4,v5 format, display different
+    def set_odm_pcba_number(self):
+        self.odm_pcba_part_number = "ODM/JDM PCBA Part Number"
+        self.odm_pcba_serial_number = "ODM/JDM PCBA Serial Number"
+
+    # not asset tag field for FBOSS EEPROMv4,v5 format
+    def test_asset_tag(self):
+        pass
+
+    # not local_mac field for FBOSS EEPROMv5 format
+    def test_local_mac(self):
+        pass
+
+    # not asset tag field for FBOSS EEPROMv5 format
+    def test_extended_mac_base(self):
+        pass
+
+    def test_bmc_mac(self):
+        self.get_eeprom_info()
+        self.assertIn("BMC MAC Base", self.eeprom_info)
+        self.assertIn("BMC MAC Address Size", self.eeprom_info)
+
+    def test_x86_mac(self):
+        self.get_eeprom_info()
+        self.assertIn("X86 CPU MAC Base", self.eeprom_info)
+        self.assertIn("X86 CPU MAC Address Size", self.eeprom_info)
+
+    def test_switch_asic_mac(self):
+        self.get_eeprom_info()
+        self.assertIn("Switch ASIC MAC Base", self.eeprom_info)
+        self.assertIn("Switch ASIC MAC Address Size", self.eeprom_info)

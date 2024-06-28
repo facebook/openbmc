@@ -1,3 +1,4 @@
+#
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,11 +15,15 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=Run ssd-mond in OpenBMC
+After=setup_i2c.service ipmid.service
+Wants=setup_i2c.service ipmid.service
 
-require recipes-core/images/fboss-lite-image.inc
+[Service]
+ExecStart=/usr/local/bin/ssd-mond /sys/bus/i2c/devices/1-0035/e1_ssd_present
+ExecReload=/bin/kill -HUP $MAINPID
 
-IMAGE_INSTALL += " \
-    host-recovery \
-    fbmc-snapshot \
-    ssd-mond \
-    "
+[Install]
+WantedBy=multi-user.target

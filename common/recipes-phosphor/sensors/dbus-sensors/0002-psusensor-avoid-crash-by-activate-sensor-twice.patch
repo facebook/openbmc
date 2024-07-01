@@ -1,0 +1,279 @@
+From 0e6bfddfa40ee4c8022105c43d8ab862e72ec72a Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Tue, 25 Jun 2024 14:57:08 +0800
+Subject: [PATCH 1/1] psusensor: avoid crash by activate sensor twice
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Sensor should just only activate or deactivate when power state change.
+
+Simplify powerStateChanged(), just do "sensor->activate()" instead of
+calling "createSensors()".
+
+Also add check in activate(), just return if sensor already activated.
+
+Tested result:
+Do a host power cycle and wait until ostate change to "Standby",
+psusensor is not crushing and PID remain same.
+```
+root@harma:~# systemctl status xyz.openbmc_project.psusensor
+● xyz.openbmc_project.psusensor.service - PSU Sensor
+     Loaded: loaded (/usr/lib/systemd/system/xyz.openbmc_project.psusensor.service; enabled; preset: enabled)
+    Drop-In: /usr/lib/systemd/system/xyz.openbmc_project.psusensor.service.d
+             └─psusensor-wait-host-state-ready.conf
+     Active: active (running) since Mon 2024-02-26 21:42:47 PST; 1min 10s ago
+   Main PID: 13355 (psusensor)
+        CPU: 8.344s
+     CGroup: /system.slice/xyz.openbmc_project.psusensor.service
+             └─13355 /usr/bin/psusensor
+
+Feb 26 21:43:54 harma psusensor[13355]: PSUSubEvent asserted by /sys/class/hwmon/hwmon25/in2_alarm
+Feb 26 21:43:54 harma psusensor[13355]: Failure assert
+Feb 26 21:43:55 harma psusensor[13355]: MB_DIMM_A10_TEMP_C read failed
+Feb 26 21:43:55 harma psusensor[13355]: MB_DIMM_A10_PWR_W read failed
+Feb 26 21:43:55 harma psusensor[13355]: Failure deassert
+Feb 26 21:43:56 harma psusensor[13355]: MB_DIMM_A10_TEMP_C read failed
+Feb 26 21:43:56 harma psusensor[13355]: MB_DIMM_A10_PWR_W read failed
+Feb 26 21:43:56 harma psusensor[13355]: PSUSubEvent asserted by /sys/class/hwmon/hwmon26/in2_alarm
+Feb 26 21:43:56 harma psusensor[13355]: Failure assert
+Feb 26 21:43:57 harma psusensor[13355]: MB_DIMM_A10_TEMP_C read failed
+root@harma:~#
+root@harma:~# obmcutil poweroff
+root@harma:~# sleep 10
+root@harma:~# obmcutil poweron
+root@harma:~# sleep 60
+root@harma:~# obmcutil osstate
+OperatingSystemState: xyz.openbmc_project.State.OperatingSystem.Status.OSStatus.Standby
+root@harma:~#
+root@harma:~# systemctl status xyz.openbmc_project.psusensor
+● xyz.openbmc_project.psusensor.service - PSU Sensor
+     Loaded: loaded (/usr/lib/systemd/system/xyz.openbmc_project.psusensor.service; enabled; preset: enabled)
+    Drop-In: /usr/lib/systemd/system/xyz.openbmc_project.psusensor.service.d
+             └─psusensor-wait-host-state-ready.conf
+     Active: active (running) since Mon 2024-02-26 21:42:47 PST; 3min 41s ago
+   Main PID: 13355 (psusensor)
+        CPU: 22.802s
+     CGroup: /system.slice/xyz.openbmc_project.psusensor.service
+             └─13355 /usr/bin/psusensor
+
+Feb 26 21:46:25 harma psusensor[13355]: MB_DIMM_A10_PWR_W read failed
+Feb 26 21:46:26 harma psusensor[13355]: PSUSubEvent asserted by /sys/class/hwmon/hwmon34/in2_alarm
+Feb 26 21:46:26 harma psusensor[13355]: Failure assert
+Feb 26 21:46:26 harma psusensor[13355]: MB_DIMM_A10_TEMP_C read failed
+Feb 26 21:46:26 harma psusensor[13355]: MB_DIMM_A10_PWR_W read failed
+Feb 26 21:46:26 harma psusensor[13355]: Failure deassert
+Feb 26 21:46:27 harma psusensor[13355]: MB_DIMM_A10_TEMP_C read failed
+Feb 26 21:46:27 harma psusensor[13355]: MB_DIMM_A10_PWR_W read failed
+Feb 26 21:46:27 harma psusensor[13355]: PSUSubEvent asserted by /sys/class/hwmon/hwmon25/in2_alarm
+Feb 26 21:46:27 harma psusensor[13355]: Failure assert
+```
+
+Change-Id: I3fb55c0f10ad26472470bb783ea5df5498a4c1a8
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ src/PSUSensor.cpp     | 12 +++----
+ src/PSUSensor.hpp     |  3 +-
+ src/PSUSensorMain.cpp | 80 +++++++++++++++++--------------------------
+ 3 files changed, 38 insertions(+), 57 deletions(-)
+
+diff --git a/src/PSUSensor.cpp b/src/PSUSensor.cpp
+index db632b6..05ee240 100644
+--- a/src/PSUSensor.cpp
++++ b/src/PSUSensor.cpp
+@@ -123,11 +123,13 @@ bool PSUSensor::isActive()
+     return inputDev.is_open();
+ }
+ 
+-void PSUSensor::activate(const std::string& newPath,
+-                         const std::shared_ptr<I2CDevice>& newI2CDevice)
++void PSUSensor::activate()
+ {
+-    path = newPath;
+-    i2cDevice = newI2CDevice;
++    if (isActive())
++    {
++        return;
++    }
++
+     inputDev.open(path, boost::asio::random_access_file::read_only);
+     markAvailable(true);
+     setupRead();
+@@ -139,8 +141,6 @@ void PSUSensor::deactivate()
+     // close the input dev to cancel async operations
+     inputDev.close();
+     waitTimer.cancel();
+-    i2cDevice = nullptr;
+-    path = "";
+ }
+ 
+ void PSUSensor::setupRead()
+diff --git a/src/PSUSensor.hpp b/src/PSUSensor.hpp
+index f9b738f..9c891f4 100644
+--- a/src/PSUSensor.hpp
++++ b/src/PSUSensor.hpp
+@@ -28,8 +28,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+               const std::shared_ptr<I2CDevice>& i2cDevice);
+     ~PSUSensor() override;
+     void setupRead();
+-    void activate(const std::string& newPath,
+-                  const std::shared_ptr<I2CDevice>& newI2CDevice);
++    void activate();
+     void deactivate();
+     bool isActive();
+ 
+diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
+index 85ca833..85d5c44 100644
+--- a/src/PSUSensorMain.cpp
++++ b/src/PSUSensorMain.cpp
+@@ -311,8 +311,7 @@ static void createSensorsCallback(
+     std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
+     const ManagedObjectType& sensorConfigs,
+     const std::shared_ptr<boost::container::flat_set<std::string>>&
+-        sensorsChanged,
+-    bool activateOnly)
++        sensorsChanged)
+ {
+     int numCreated = 0;
+     bool firstScan = sensorsChanged == nullptr;
+@@ -463,10 +462,6 @@ static void createSensorsCallback(
+         std::shared_ptr<I2CDevice> i2cDev;
+         if (findI2CDev != devices.end())
+         {
+-            if (activateOnly && !findI2CDev->second.second)
+-            {
+-                continue;
+-            }
+             i2cDev = findI2CDev->second.first;
+         }
+ 
+@@ -936,33 +931,19 @@ static void createSensorsCallback(
+                           << "\"\n";
+             }
+             // destruct existing one first if already created
+-
+-            auto& sensor = sensors[sensorName];
+-            if (!activateOnly)
+-            {
+-                sensor = nullptr;
+-            }
+-
+-            if (sensor != nullptr)
+-            {
+-                sensor->activate(sensorPathStr, i2cDev);
+-            }
+-            else
++            sensors[sensorName] = nullptr;
++            sensors[sensorName] = std::make_shared<PSUSensor>(
++                sensorPathStr, sensorType, objectServer, dbusConnection, io,
++                sensorName, std::move(sensorThresholds), *interfacePath,
++                readState, findSensorUnit->second, factor,
++                psuProperty.maxReading, psuProperty.minReading,
++                psuProperty.sensorOffset, labelHead, thresholdConfSize,
++                pollRate, i2cDev);
++            sensors[sensorName]->setupRead();
++            ++numCreated;
++            if constexpr (debug)
+             {
+-                sensors[sensorName] = std::make_shared<PSUSensor>(
+-                    sensorPathStr, sensorType, objectServer, dbusConnection, io,
+-                    sensorName, std::move(sensorThresholds), *interfacePath,
+-                    readState, findSensorUnit->second, factor,
+-                    psuProperty.maxReading, psuProperty.minReading,
+-                    psuProperty.sensorOffset, labelHead, thresholdConfSize,
+-                    pollRate, i2cDev);
+-                sensors[sensorName]->setupRead();
+-                ++numCreated;
+-                if constexpr (debug)
+-                {
+-                    std::cerr << "Created " << numCreated
+-                              << " sensors so far\n";
+-                }
++                std::cerr << "Created " << numCreated << " sensors so far\n";
+             }
+         }
+ 
+@@ -1055,14 +1036,13 @@ void createSensors(
+     boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
+     std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
+     const std::shared_ptr<boost::container::flat_set<std::string>>&
+-        sensorsChanged,
+-    bool activateOnly)
++        sensorsChanged)
+ {
+     auto getter = std::make_shared<GetSensorConfiguration>(
+-        dbusConnection, [&io, &objectServer, &dbusConnection, sensorsChanged,
+-                         activateOnly](const ManagedObjectType& sensorConfigs) {
++        dbusConnection, [&io, &objectServer, &dbusConnection, sensorsChanged](
++                            const ManagedObjectType& sensorConfigs) {
+         createSensorsCallback(io, objectServer, dbusConnection, sensorConfigs,
+-                              sensorsChanged, activateOnly);
++                              sensorsChanged);
+     });
+     std::vector<std::string> types(sensorTypes.size());
+     for (const auto& [type, dt] : sensorTypes)
+@@ -1204,13 +1184,17 @@ void propertyInitialize()
+ static void powerStateChanged(
+     PowerState type, bool newState,
+     boost::container::flat_map<std::string, std::shared_ptr<PSUSensor>>&
+-        sensors,
+-    boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
+-    std::shared_ptr<sdbusplus::asio::connection>& dbusConnection)
++        sensors)
+ {
+     if (newState)
+     {
+-        createSensors(io, objectServer, dbusConnection, nullptr, true);
++        for (auto& [path, sensor] : sensors)
++        {
++            if (sensor != nullptr && sensor->readState == type)
++            {
++                sensor->activate();
++            }
++        }
+     }
+     else
+     {
+@@ -1238,16 +1222,14 @@ int main()
+ 
+     propertyInitialize();
+ 
+-    auto powerCallBack = [&io, &objectServer, &systemBus](PowerState type,
+-                                                          bool state) {
+-        powerStateChanged(type, state, sensors, io, objectServer, systemBus);
++    auto powerCallBack = [](PowerState type, bool state) {
++        powerStateChanged(type, state, sensors);
+     };
+ 
+     setupPowerMatchCallback(systemBus, powerCallBack);
+ 
+-    boost::asio::post(io, [&]() {
+-        createSensors(io, objectServer, systemBus, nullptr, false);
+-    });
++    boost::asio::post(
++        io, [&]() { createSensors(io, objectServer, systemBus, nullptr); });
+     boost::asio::steady_timer filterTimer(io);
+     std::function<void(sdbusplus::message_t&)> eventHandler =
+         [&](sdbusplus::message_t& message) {
+@@ -1267,7 +1249,7 @@ int main()
+             {
+                 std::cerr << "timer error\n";
+             }
+-            createSensors(io, objectServer, systemBus, sensorsChanged, false);
++            createSensors(io, objectServer, systemBus, sensorsChanged);
+         });
+     };
+ 
+@@ -1322,7 +1304,7 @@ int main()
+                 std::cerr << "timer error\n";
+                 return;
+             }
+-            createSensors(io, objectServer, systemBus, nullptr, false);
++            createSensors(io, objectServer, systemBus, nullptr);
+         });
+     };
+ 
+-- 
+2.25.1
+

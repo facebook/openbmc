@@ -65,4 +65,5 @@ DEPENDS += " \
     libpal \
     libpldm \
     fmt \
+    libkv \
     "

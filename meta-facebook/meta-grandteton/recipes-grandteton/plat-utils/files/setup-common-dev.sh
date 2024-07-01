@@ -260,6 +260,19 @@ if [ "$bic_ready" -eq 0 ]; then
       break
     fi
   done
+
+　# SWB NIC
+  kv set swb_nic_present 1
+  for i in {8..15}
+  do
+    output=$(i2cget -y -f 32 0x13 $i | tr -d ' \t\n\r')
+    output=${output#0x}
+    pres=$((16#${output} & 0x80 ))
+    if [ "$pres" == "0" ]; then
+      kv set swb_nic_present 0
+      break
+    fi
+  done
 fi
 
 VPDB_EVT2="2"

@@ -129,6 +129,7 @@ elif "VF" in system_conf:
     for i in [1, 2, 3, 4]:
         lfby35_hndl.fby35_common_get_1ou_m2_prsnt(int(i))
 elif "JI" in system_conf:
+    one_fan_fail_tuple = (fan_mode["trans_mode"], 60)
     GPIO_FM_BIOS_POST_CMPLT_BMC_N = 12 # FPGA_CPU_BOOT_DONE:
 else:
     pass

@@ -159,7 +159,7 @@ int PldmVrComponent::get_version(json& j) {
   // <VENDOR NAME> <VERSION>, Remaining Write: <REMAINING WRITE>
   // VR pending version format is "<DEVICE NAME> <VERSION>"
   // Replace pending version <DEVICE NAME> with active version <VENDOR NAME>
-  regex pattern(R"((\S+)\s([^\s,]+)(?:,\s*Remaining Write:\s*(\d+))?)");
+  regex pattern(R"((\S+)\s([^\s_,]+)(?:,\s*Remaining Write:\s*(\d+))?)");
   smatch matches;
   string vendor = INVALID_VERSION;
   if (regex_search(activeVersion, matches, pattern)) {

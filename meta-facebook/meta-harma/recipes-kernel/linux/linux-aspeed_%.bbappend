@@ -14,4 +14,4 @@ SRC_URI:append = " file://1010-ARM-dts-aspeed-Harma-add-temperature-device.patch
 SRC_URI:append = " file://1011-ARM-dts-aspeed-Harma-enable-mctp-controller.patch"
 SRC_URI:append = " file://1012-ARM-dts-aspeed-Harma-add-lpc_pcc-device.patch"
 SRC_URI:append = " file://1013-ARM-dts-aspeed-Harma-stop-NIC-run-time-polling.patch"
-
+SRC_URI:append = " file://1014-ARM-dts-aspeed-Harma-read-cpu-temp-and-power.patch"

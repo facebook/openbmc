@@ -1,0 +1,29 @@
+From d0da66b8728333ecdccbd72ed533b5846c75fe30 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Fri, 14 Jun 2024 13:33:23 +0800
+Subject: [PATCH] ARM: dts: aspeed: Harma: stop NIC run time polling
+
+Add ncsi-ctrl,no-channel-monitor property.
+
+link lore:https://lore.kernel.org/all/20240118052220.1906721-1-Delphine_CC_Chiu@wiwynn.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index c59d89cfe6d6..f4ff3be9b443 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -137,6 +137,7 @@ &mac3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_rmii4_default>;
+ 	use-ncsi;
++	ncsi-ctrl,no-channel-monitor;
+ };
+ 
+ &rtc {
+-- 
+2.25.1
+

@@ -9,6 +9,11 @@ project('cpld-fw-handler', 'cpp',
     license: 'Apache-2.0',
     version: '1.0')
 
+if get_option('update-ebr-init').enabled()
+    add_project_arguments('-DENABLE_UPDATE_EBR_INIT', language: 'cpp')
+    summary('update-ebr-init', '-DENABLE_UPDATE_EBR_INIT', section: 'Enabled Features')
+endif
+
 executable(
     'cpld-fw-handler',
     'cpld-fw-main.cpp',

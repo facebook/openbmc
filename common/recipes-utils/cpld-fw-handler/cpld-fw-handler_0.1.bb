@@ -16,6 +16,8 @@ LOCAL_URI = " \
     file://cpld-lattice.cpp \
     file://cpld-lattice.hpp \
     file://meson.build \
+    file://meson_options.txt \
     "
 
+EXTRA_OEMESON:append:npcm8xx = " -Dupdate-ebr-init=enabled"
 DEPENDS += "cli11"

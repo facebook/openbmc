@@ -1,7 +1,7 @@
-From 61a6e23cf1f1aaa5ff7de301ac4ba466a5369c08 Mon Sep 17 00:00:00 2001
+From 1fe3ec85602089bb6e08d7a49551ebad679b4bfc Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 7 Feb 2024 13:52:07 +0800
-Subject: [PATCH 6/8] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 06/10] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -55,14 +55,14 @@ Change-Id: I722d8e09e7aea8dfa533e921d41beb505b59fb95
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
  meson.build                             |   1 +
- oem/meta/platform-mc/event_oem_meta.cpp | 701 ++++++++++++++++++++++++
+ oem/meta/platform-mc/event_oem_meta.cpp | 721 ++++++++++++++++++++++++
  oem/meta/platform-mc/event_oem_meta.hpp |  21 +
  platform-mc/event_manager.cpp           |  33 ++
  platform-mc/event_manager.hpp           |  13 +-
  platform-mc/manager.hpp                 |  26 +-
  platform-mc/test/meson.build            |   4 +-
  pldmd/pldmd.cpp                         |  10 +-
- 8 files changed, 802 insertions(+), 7 deletions(-)
+ 8 files changed, 822 insertions(+), 7 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
@@ -80,10 +80,10 @@ index f662f0c..7093c79 100644
    install: true,
 diff --git a/oem/meta/platform-mc/event_oem_meta.cpp b/oem/meta/platform-mc/event_oem_meta.cpp
 new file mode 100644
-index 0000000..96682d8
+index 0000000..93e0851
 --- /dev/null
 +++ b/oem/meta/platform-mc/event_oem_meta.cpp
-@@ -0,0 +1,701 @@
+@@ -0,0 +1,721 @@
 +#include "event_oem_meta.hpp"
 +
 +#include "common/utils.hpp"
@@ -162,7 +162,7 @@ index 0000000..96682d8
 +
 +static inline auto to_hex_string(uint8_t value)
 +{
-+    return std::format("{:2x}", value);
++    return std::format("{:02x}", value);
 +}
 +
 +std::string getSlotNumberString(
@@ -350,17 +350,37 @@ index 0000000..96682d8
 +    {
 +        case RecordType::SYSTEM_EVENT_RECORD:
 +        {
-+            // Not supported
-+            errorLog =
-+                "Record Type(0x" +
-+                to_hex_string(static_cast<uint8_t>(recordType)) +
-+                "), Raw: " + to_hex_string(eventData[1]) +
-+                to_hex_string(eventData[2]) + to_hex_string(eventData[3]) +
-+                to_hex_string(eventData[4]) + to_hex_string(eventData[5]) +
-+                to_hex_string(eventData[6]) + to_hex_string(eventData[7]) +
-+                to_hex_string(eventData[8]) + to_hex_string(eventData[9]) +
-+                to_hex_string(eventData[10]) + to_hex_string(eventData[11]) +
-+                to_hex_string(eventData[12]) + to_hex_string(eventData[13]);
++            // Currently, we only have one standard SEL needed to support on YV4.
++            if (eventData[9] == 0x2B) {
++                errorLog = "POST_ERROR:";
++                if ((eventData[11] & 0x0F) == 0x0)
++                    errorLog += ", System Firmware Error";
++
++                if (((eventData[11] >> 6) & 0x03) == 0x2) {
++                    errorLog += ", OEM Post Code 0x" +
++                    to_hex_string(eventData[13]) + to_hex_string(eventData[12]);
++                }
++
++                switch ((eventData[13] << 8) | eventData[12]) {
++                    case 0xD9:
++                        errorLog +=
++                            ", Error loading Boot Option (Load image returned error)";
++                        break;
++                    default:
++                        break;
++                }
++            } else { // Not supported
++                errorLog =
++                    "Record Type(0x" +
++                    to_hex_string(static_cast<uint8_t>(recordType)) +
++                    "), Raw: " + to_hex_string(eventData[1])  +
++                    to_hex_string(eventData[2]) + to_hex_string(eventData[3]) +
++                    to_hex_string(eventData[4]) + to_hex_string(eventData[5]) +
++                    to_hex_string(eventData[6]) + to_hex_string(eventData[7]) +
++                    to_hex_string(eventData[8]) + to_hex_string(eventData[9]) +
++                    to_hex_string(eventData[10]) + to_hex_string(eventData[11]) +
++                    to_hex_string(eventData[12]) + to_hex_string(eventData[13]);
++            }
 +            break;
 +        }
 +        case RecordType::UNIFIED_BIOS_SEL:
@@ -1034,5 +1054,5 @@ index aed5019..2c2eed4 100644
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.43.0
+2.25.1
 

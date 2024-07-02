@@ -1,7 +1,7 @@
-From 9b90bbe1bba44b86d7186303b8bec43e3564986c Mon Sep 17 00:00:00 2001
+From be9b9fe0abc301e6c5d836a2413aa0b0c300a1a9 Mon Sep 17 00:00:00 2001
 From: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
 Date: Tue, 23 Apr 2024 13:57:49 +0800
-Subject: [PATCH 8/8] platform-mc: Monitor all sensors once upon the first
+Subject: [PATCH 08/10] platform-mc: Monitor all sensors once upon the first
  power-on
 
 BMC reads all sensors once upon reboot, then update sensor values
@@ -27,5 +27,5 @@ index c1acf66..c8c00ba 100644
                  rc = co_await getSensorReading(sensor);
  
 -- 
-2.43.0
+2.25.1
 

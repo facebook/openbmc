@@ -1,7 +1,7 @@
-From 5c69fa67b1beddb418e7e3fc20714d399716dcc6 Mon Sep 17 00:00:00 2001
+From fc224a99aea33f2ad953062b3706e85e8ab1b49b Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
-Subject: [PATCH 2/8] platform-mc: Sensor handling
+Subject: [PATCH 02/10] platform-mc: Sensor handling
 
 Added sensor_manager and numeric_sensor class. The sensor_manager
 class manages the timing of sensor polling. The NumericSensor class
@@ -2423,5 +2423,5 @@ index 4df71e9..768c6c9 100644
      InstanceIdDb instanceIdDb;
      dbus_api::Requester dbusImplReq(bus, "/xyz/openbmc_project/pldm",
 -- 
-2.43.0
+2.25.1
 

@@ -1,7 +1,7 @@
-From 8e64a87e4cd47d1515aa018ebf46dff846e26fdb Mon Sep 17 00:00:00 2001
+From f8b0a51b1f8583a1ea21efd730df9a1f0440187f Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Wed, 26 Jun 2024 14:25:18 +0800
-Subject: [PATCH] Support OEM-META command for Event Logs from BIC
+Subject: [PATCH 10/10] Support OEM-META command for Event Logs from BIC
 
 Summary:
   - Add handler for write-file command "EVENT_LOG", which is sent
@@ -272,5 +272,5 @@ index 0000000..6db7642
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.34.1
+2.25.1
 

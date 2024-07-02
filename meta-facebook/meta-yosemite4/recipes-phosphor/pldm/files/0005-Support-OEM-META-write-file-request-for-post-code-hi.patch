@@ -1,7 +1,8 @@
-From 16794ace1a531e425d055b9ba902742e951c2afa Mon Sep 17 00:00:00 2001
+From c6062235ffd0eae8125b9542425cd7bff195c27f Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 5/8] Support OEM-META write file request for post code history
+Subject: [PATCH 05/10] Support OEM-META write file request for post code
+ history
 
 Support write file req when multiple hosts send postcode to BMC
 and store its post code history.
@@ -544,5 +545,5 @@ index 1ed2043..aed5019 100644
          FRU_JSONS_DIR, FRU_MASTER_JSON, pdrRepo.get(), entityTree.get(),
          bmcEntityTree.get());
 -- 
-2.43.0
+2.25.1
 

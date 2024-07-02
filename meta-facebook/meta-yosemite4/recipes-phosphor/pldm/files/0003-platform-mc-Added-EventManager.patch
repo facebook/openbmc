@@ -1,7 +1,7 @@
-From 913f90e81b72bdd7d49d51a39c882ff8300e11f8 Mon Sep 17 00:00:00 2001
+From efc8acfae27d0436ad009b9432dc6a7c7db78f5a Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
-Subject: [PATCH 3/8] platform-mc: Added EventManager
+Subject: [PATCH 03/10] platform-mc: Added EventManager
 
 Added eventManager to handle sensor event class(00h),
 pldmMessagePollEvent class(05h)  and OEM CPER event class(FAh)
@@ -2218,5 +2218,5 @@ index 768c6c9..a309ca6 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.43.0
+2.25.1
 

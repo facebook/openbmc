@@ -1,0 +1,171 @@
+From 543776b3c6541ab8cfd35d8c31cf76db28513a0e Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Mon, 1 Jul 2024 11:04:45 +0800
+Subject: [PATCH 1016/1016] Kernel: aspeed_g6: enable UART DMA mode
+
+Enable 8250_aspeed.c DMA mode,
+The byte mode buffer cannot handle it when the BMC is busy.
+For example, when information from GRUB or entering the shell occurs,
+there is a chance of a terminal response error code.
+---
+ arch/arm/boot/dts/aspeed/aspeed-g6.dtsi | 43 +++++++++++++++----------
+ 1 file changed, 26 insertions(+), 17 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+index bfbb706f77e1..2f60fe374081 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
++++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+@@ -562,7 +562,7 @@ timer: timer@1e782000 {
+                         };
+ 
+ 			uart1: serial@1e783000 {
+-				compatible = "ns16550a";
++				compatible = "aspeed,ast2600-uart";
+ 				reg = <0x1e783000 0x20>;
+ 				reg-shift = <2>;
+ 				reg-io-width = <4>;
+@@ -572,11 +572,13 @@ uart1: serial@1e783000 {
+ 				no-loopback-test;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_txd1_default &pinctrl_rxd1_default>;
++				dma-mode;
++				dma-channel = <0>;
+ 				status = "disabled";
+ 			};
+ 
+ 			uart5: serial@1e784000 {
+-				compatible = "ns16550a";
++				compatible = "aspeed,ast2600-uart";
+ 				reg = <0x1e784000 0x1000>;
+ 				reg-shift = <2>;
+ 				interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
+@@ -797,7 +799,7 @@ vuart4: serial@1e788800 {
+ 			};
+ 
+ 			uart2: serial@1e78d000 {
+-				compatible = "ns16550a";
++				compatible = "aspeed,ast2600-uart";
+ 				reg = <0x1e78d000 0x20>;
+ 				reg-shift = <2>;
+ 				reg-io-width = <4>;
+@@ -807,11 +809,13 @@ uart2: serial@1e78d000 {
+ 				no-loopback-test;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_txd2_default &pinctrl_rxd2_default>;
++				dma-mode;
++				dma-channel = <1>;
+ 				status = "disabled";
+ 			};
+ 
+ 			uart3: serial@1e78e000 {
+-				compatible = "ns16550a";
++				compatible = "aspeed,ast2600-uart";
+ 				reg = <0x1e78e000 0x20>;
+ 				reg-shift = <2>;
+ 				reg-io-width = <4>;
+@@ -821,11 +825,13 @@ uart3: serial@1e78e000 {
+ 				no-loopback-test;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_txd3_default &pinctrl_rxd3_default>;
++				dma-mode;
++				dma-channel = <2>;
+ 				status = "disabled";
+ 			};
+ 
+ 			uart4: serial@1e78f000 {
+-				compatible = "ns16550a";
++				compatible = "aspeed,ast2600-uart";
+ 				reg = <0x1e78f000 0x20>;
+ 				reg-shift = <2>;
+ 				reg-io-width = <4>;
+@@ -835,11 +841,13 @@ uart4: serial@1e78f000 {
+ 				no-loopback-test;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_txd4_default &pinctrl_rxd4_default>;
++				dma-mode;
++				dma-channel = <3>;
+ 				status = "disabled";
+ 			};
+ 
+ 			uart6: serial@1e790000 {
+-				compatible = "ns16550a";
++				compatible = "aspeed,ast2600-uart";
+ 				reg = <0x1e790000 0x20>;
+ 				reg-shift = <2>;
+ 				reg-io-width = <4>;
+@@ -848,12 +856,13 @@ uart6: serial@1e790000 {
+ 				no-loopback-test;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_uart6_default>;
+-
++				dma-mode;
++				dma-channel = <4>;
+ 				status = "disabled";
+ 			};
+ 
+ 			uart7: serial@1e790100 {
+-				compatible = "ns16550a";
++				compatible = "aspeed,ast2600-uart";
+ 				reg = <0x1e790100 0x20>;
+ 				reg-shift = <2>;
+ 				reg-io-width = <4>;
+@@ -862,12 +871,13 @@ uart7: serial@1e790100 {
+ 				no-loopback-test;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_uart7_default>;
+-
++				dma-mode;
++				dma-channel = <5>;
+ 				status = "disabled";
+ 			};
+ 
+ 			uart8: serial@1e790200 {
+-				compatible = "ns16550a";
++				compatible = "aspeed,ast2600-uart";
+ 				reg = <0x1e790200 0x20>;
+ 				reg-shift = <2>;
+ 				reg-io-width = <4>;
+@@ -876,12 +886,13 @@ uart8: serial@1e790200 {
+ 				no-loopback-test;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_uart8_default>;
+-
++				dma-mode;
++				dma-channel = <6>;
+ 				status = "disabled";
+ 			};
+ 
+ 			uart9: serial@1e790300 {
+-				compatible = "ns16550a";
++				compatible = "aspeed,ast2600-uart";
+ 				reg = <0x1e790300 0x20>;
+ 				reg-shift = <2>;
+ 				reg-io-width = <4>;
+@@ -890,7 +901,8 @@ uart9: serial@1e790300 {
+ 				no-loopback-test;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_uart9_default>;
+-
++				dma-mode;
++				dma-channel = <7>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -925,13 +937,10 @@ fsim1: fsi@1e79b100 {
+ 				status = "disabled";
+ 			};
+ 
+-			udma: dma-controller@1e79e000 {
++			udma: uart-dma@1e79e000 {
+ 				compatible = "aspeed,ast2600-udma";
+ 				reg = <0x1e79e000 0x1000>;
+ 				interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>;
+-				dma-channels = <28>;
+-				#dma-cells = <1>;
+-				status = "disabled";
+ 			};
+ 
+ 			otp: otp@1e6f2000 {
+-- 
+2.25.1
+

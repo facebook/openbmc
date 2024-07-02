@@ -1,0 +1,28 @@
+From a0ba08f1810a4154fda8f0d23a0869368d89abed Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Wed, 19 Jun 2024 16:14:08 +0800
+Subject: [PATCH 1015/1015] ARM: dts: aspeed: Harma: set ncsi package equal to
+ 1
+
+Set ncsi package=1.
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index eabaf98030a8..2c8e38353ca8 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -138,6 +138,7 @@ &mac3 {
+ 	pinctrl-0 = <&pinctrl_rmii4_default>;
+ 	use-ncsi;
+ 	ncsi-ctrl,no-channel-monitor;
++	ncsi-package = <1>;
+ };
+ 
+ &rtc {
+-- 
+2.25.1
+

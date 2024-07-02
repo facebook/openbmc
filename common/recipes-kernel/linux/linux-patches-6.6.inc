@@ -85,6 +85,8 @@ SRC_URI:append = " \
     file://0172-drivers-watchdog-ast2600-support-bootstatus.patch \
     file://0173-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
     file://0174-net-ncsi-specify-maximum-package-to-prob.patch \
+    file://0175-dmaengine-aspeed-Add-AST2600-UART-DMA-driver.patch \
+    file://0176-serial-8250-Add-AST2600-UART-driver.patch \
 "
 
 #

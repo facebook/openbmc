@@ -77,7 +77,7 @@ class BaseLogUtilTest(object):
             Logger.info("empty log, skip the test")
             self.assertTrue(True)
             return
-        pattern = r"(?P<fru_id>\S+)\s{2,}(?P<fru_name>\S+)\s{2,}(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s{4,}(?P<app_name>\S+)\s{2,}(?P<msg>.+)[\n]+"
+        pattern = r"(?P<fru_id>\d+)\s+(?P<fru_name>[^\s]+)\s+(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(?P<app_name>[^\s]+)\s{2,}(?P<msg>.+)"
         m = re.search(pattern, out)
         if m:
             self.validate_fru_id(m.group("fru_id"))

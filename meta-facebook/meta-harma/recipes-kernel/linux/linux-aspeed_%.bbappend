@@ -1,5 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-aspeed:"
 
+SRC_URI:append = " file://harma-uart.cfg"
 SRC_URI:append = " file://1000-ARM-dts-aspeed-Harma-Revise-node-name.patch"
 SRC_URI:append = " file://1001-ARM-dts-aspeed-Harma-Add-retimer-device.patch"
 SRC_URI:append = " file://1002-ARM-dts-aspeed-Harma-Modify-GPIO-line-name.patch"
@@ -16,4 +17,4 @@ SRC_URI:append = " file://1012-ARM-dts-aspeed-Harma-add-lpc_pcc-device.patch"
 SRC_URI:append = " file://1013-ARM-dts-aspeed-Harma-stop-NIC-run-time-polling.patch"
 SRC_URI:append = " file://1014-ARM-dts-aspeed-Harma-read-cpu-temp-and-power.patch"
 SRC_URI:append = " file://1015-ARM-dts-aspeed-Harma-set-ncsi-package-eq-1.patch"
-SCR_URI:append = " file://1016-Kernel-aspeed_g6-enable-UART-DMA-mode.patch"
+SRC_URI:append = " file://1016-Kernel-aspeed_g6-enable-UART-DMA-mode.patch"

@@ -29,12 +29,12 @@ int MeExtComponent::get_version(json& j) {
   if (fby2_get_slot_type(slot_id) == SLOT_TYPE_SERVER) {
 #ifdef CONFIG_FBY2_ND
     uint8_t server_type = 0xFF;
-    ret = fby2_get_server_type(slot_id, &server_type);
-    if (ret)
-      ret = FW_STATUS_FAILURE;
-
+    if (fby2_get_server_type(slot_id, &server_type)) {
+      return FW_STATUS_FAILURE;
+    }
     switch (server_type) {
       case SERVER_TYPE_ND:
+        // ND does not have a ME.
         break;
       case SERVER_TYPE_TL:
         ret = MeComponent::get_version(j);

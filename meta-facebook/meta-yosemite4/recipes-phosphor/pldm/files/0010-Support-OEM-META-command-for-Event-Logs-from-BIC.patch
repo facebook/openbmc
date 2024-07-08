@@ -1,7 +1,7 @@
-From f8b0a51b1f8583a1ea21efd730df9a1f0440187f Mon Sep 17 00:00:00 2001
+From 4a71279e8da9da56a80cf7082e8c857e4460d397 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Wed, 26 Jun 2024 14:25:18 +0800
-Subject: [PATCH 10/10] Support OEM-META command for Event Logs from BIC
+Subject: [PATCH] Support OEM-META command for Event Logs from BIC
 
 Summary:
   - Add handler for write-file command "EVENT_LOG", which is sent
@@ -11,9 +11,9 @@ add SEL in BMC.
  libpldmresponder/meson.build                  |   1 +
  .../libpldmresponder/oem_meta_file_io.cpp     |   4 +
  .../oem_meta_file_io_by_type.hpp              |   1 +
- .../oem_meta_file_io_type_event_log.cpp       | 137 ++++++++++++++++++
+ .../oem_meta_file_io_type_event_log.cpp       | 138 ++++++++++++++++++
  .../oem_meta_file_io_type_event_log.hpp       |  59 ++++++++
- 5 files changed, 202 insertions(+)
+ 5 files changed, 203 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
 
@@ -30,17 +30,17 @@ index 4e537fa..8cc3f8f 100644
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-index db75683..07db529 100644
+index db75683..d90600b 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-@@ -2,6 +2,7 @@
+@@ -1,6 +1,7 @@
+ #include "oem_meta_file_io.hpp"
  
  #include "oem_meta_file_io_type_bios_version.hpp"
- #include "oem_meta_file_io_type_post_code.hpp"
 +#include "oem_meta_file_io_type_event_log.hpp"
+ #include "oem_meta_file_io_type_post_code.hpp"
  #include "xyz/openbmc_project/Common/error.hpp"
  
- #include <libpldm/oem/meta/file_io.h>
 @@ -27,6 +28,9 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(uint8_t messageTid,
              return std::make_unique<BIOSVersionHandler>(
                  messageTid, configurationDiscovery->getConfigurations(),
@@ -52,23 +52,23 @@ index db75683..07db529 100644
              error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
                    "FILEIOTYPE", fileIOType);
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-index 091408f..6f011cf 100644
+index 091408f..29a4fa3 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
 @@ -18,6 +18,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
  {
      POST_CODE = 0x00,
      BIOS_VERSION = 0x01,
-+    EVENT_LOG = 0x03,
++    EVENT_LOG = 0x05,
  };
  
  class FileHandler
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 new file mode 100644
-index 0000000..a32a2e7
+index 0000000..37ec22c
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,138 @@
 +#include "oem_meta_file_io_type_event_log.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -139,34 +139,35 @@ index 0000000..a32a2e7
 +
 +int EventLogHandler::write(const message& eventData)
 +{
-+    static constexpr auto eventList = std::to_array(
-+        {" CPU Thermal Trip",
-+         " HSC OCP",
-+         " P12V_STBY UV",
-+         " PMALERT Assertion",
-+         " FAST_PROCHOT Assertion",
-+         " FRB3 Timer Expired",
-+         " Power-On Sequence Failure",
-+         " DIMM PMIC Error",
-+         " ADDC dump",
-+         " BMC comes out of cold reset",
-+         " BIOS FRB2 Watchdog Timer Expired",
-+         " BIC Power Failure",
-+         " CPU Power Failure",
-+         " v-boot Failure",
-+         " BMC is requested to reboot",
-+         " Chassis power on is initiated by NIC insertion",
-+         " Blade is powered cycle by blade button",
-+         " Chassis is powered cycle by sled button",
-+         " HSC Fault",
-+         " SYS Throttle",
-+         " VR Fault",
-+         " System Management Error",
-+         " Post-Completed",
-+         " Fan Error",
-+         " HDT_PRSNT Assertion",
-+         " PLTRST Assertion",
-+         " APML_ALERT Assertion",});
++    static constexpr auto eventList = std::to_array({
++        " CPU Thermal Trip",
++        " HSC OCP",
++        " P12V_STBY UV",
++        " PMALERT Assertion",
++        " FAST_PROCHOT Assertion",
++        " FRB3 Timer Expired",
++        " Power-On Sequence Failure",
++        " DIMM PMIC Error",
++        " ADDC dump",
++        " BMC comes out of cold reset",
++        " BIOS FRB2 Watchdog Timer Expired",
++        " BIC Power Failure",
++        " CPU Power Failure",
++        " v-boot Failure",
++        " BMC is requested to reboot",
++        " Chassis power on is initiated by NIC insertion",
++        " Blade is powered cycle by blade button",
++        " Chassis is powered cycle by sled button",
++        " HSC Fault",
++        " SYS Throttle",
++        " VR Fault",
++        " System Management Error",
++        " Post-Completed",
++        " Fan Error",
++        " HDT_PRSNT Assertion",
++        " PLTRST Assertion",
++        " APML_ALERT Assertion",
++    });
 +
 +    /* 1. Get host slot number */
 +    uint64_t slot;
@@ -189,17 +190,17 @@ index 0000000..a32a2e7
 +
 +    if (eventStatus == EVENT_ASSERTED)
 +    {
-+      errorLog = "Event: Host" + std::to_string(slot) + eventList[eventType] +
-+                 ", ASSERTED";
++        errorLog = "Event: Host" + std::to_string(slot) + eventList[eventType] +
++                   ", ASSERTED";
 +    }
 +    else if (eventStatus == EVENT_DEASSERTED)
 +    {
-+      errorLog = "Event: Host" + std::to_string(slot) + eventList[eventType] +
-+                 ", DEASSERTED";
++        errorLog = "Event: Host" + std::to_string(slot) + eventList[eventType] +
++                   ", DEASSERTED";
 +    }
 +
 +    /* 3. Add SEL and journal */
-+    lg2::error("{ERROR}", "ERROR", errorLog); // Create log in journal
++    lg2::error("{ERROR}", "ERROR", errorLog);   // Create log in journal
 +    pldm::utils::reportError(errorLog.c_str()); // Create log on Dbus
 +
 +    return PLDM_SUCCESS;
@@ -208,7 +209,7 @@ index 0000000..a32a2e7
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
 new file mode 100644
-index 0000000..6db7642
+index 0000000..6b75ca7
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
 @@ -0,0 +1,59 @@
@@ -220,11 +221,11 @@ index 0000000..6db7642
 +
 +namespace pldm::responder::oem_meta
 +{
-+    enum eventAssert : uint8_t
-+    {
-+        EVENT_DEASSERTED = 0x00,
-+        EVENT_ASSERTED = 0x01,
-+    };
++enum eventAssert : uint8_t
++{
++    EVENT_DEASSERTED = 0x00,
++    EVENT_ASSERTED = 0x01,
++};
 +
 +/** @class EventLogHandler
 + *

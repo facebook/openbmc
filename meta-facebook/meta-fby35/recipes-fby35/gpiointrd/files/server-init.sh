@@ -45,7 +45,7 @@ clear_all_vr_cache(){
 }
 
 clear_all_pldm_comp_cache(){
-  comp_list=("vr_cpudvdd" "vr_cpuvdd" "vr_socvdd" "retimer")
+  comp_list=("vr_cpudvdd" "vr_cpuvdd" "vr_socvdd" "retimer" "vr_1v2" "vr_fbvddp2")
   for comp in "${comp_list[@]}"; do
     $KV_CMD del "slot${slot_num}_${comp}_active_ver"
     $KV_CMD del "slot${slot_num}_${comp}_pending_ver"

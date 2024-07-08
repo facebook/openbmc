@@ -245,7 +245,7 @@ server_power_12v_off(uint8_t fru) {
 #ifdef CONFIG_JAVAISLAND
   // clear version cache of PLDM components
   char ver_key[MAX_KEY_LEN] = {0};
-  const char *pldm_comp_list[] = {"vr_cpudvdd", "vr_cpuvdd", "vr_socvdd", "retimer"};
+  const char *pldm_comp_list[] = {"vr_cpudvdd", "vr_cpuvdd", "vr_socvdd", "retimer", "vr_1v2", "vr_fbvddp2"};
   for (int i = 0; i < ARRAY_SIZE(pldm_comp_list); i++) {
     snprintf(ver_key, sizeof(ver_key), "slot%d_%s_active_ver", fru, pldm_comp_list[i]);
     kv_del(ver_key, 0);

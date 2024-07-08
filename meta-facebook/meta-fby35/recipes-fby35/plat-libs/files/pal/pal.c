@@ -5255,6 +5255,18 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
       NULL
     },
     // Server board
+#ifdef CONFIG_JAVAISLAND
+    {
+      "/usr/bin/fw-util slot%d --version bic | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version bios | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version cpld | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version hsc | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version retimer | awk -F': ' '{print $2}'",
+      "/usr/bin/fw-util slot%d --version vr_cpudvdd | awk -F': ' '{print $2}'",
+      "/usr/bin/fw-util slot%d --version vr_cpuvdd | awk -F': ' '{print $2}'",
+      "/usr/bin/fw-util slot%d --version vr_socvdd | awk -F': ' '{print $2}'",
+    },
+#else
     {
       "/usr/bin/fw-util slot%d --version bic | awk '{print $NF}'",
       "/usr/bin/fw-util slot%d --version bios | awk '{print $NF}'",
@@ -5264,6 +5276,7 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
       "/usr/bin/fw-util slot%d --version vr_vccd | awk '{print $4}' | cut -c -8",
       "/usr/bin/fw-util slot%d --version vr_vccinfaon | awk '{print $4}' | cut -c -8"
     },
+#endif
     // 2OU
     {
       "/usr/bin/fw-util slot%d --version 2ou_bic | awk '{print $NF}'",

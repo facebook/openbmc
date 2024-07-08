@@ -1,0 +1,42 @@
+From c2b3766a833a79f6675f988c94aa9fb987d0a39f Mon Sep 17 00:00:00 2001
+From: PatrickLinww <Patrick_NC_Lin@wiwynn.com>
+Date: Thu, 20 Jun 2024 13:53:31 +0800
+Subject: [PATCH] Add XDP710 in yosemite4 dts
+
+ARM: dts: aspeed: yosemite4:
+Add xdp710(0x11 and 0x13) in yosemite4.dts
+This change is also contributing to torvalds upstream for reviewing.
+Lore Link: https://lore.kernel.org/all/20240626090744.174351-25-Delphine_CC_Chiu@wiwynn.com/
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts  | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index fafbf639d371..3ce7c05fcf26 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -984,11 +984,21 @@ power-sensor@10 {
+ 		reg = <0x10>;
+ 	};
+ 
++	power-sensor@11 {
++		compatible = "infineon,xdp710";
++		reg = <0x11>;
++	};
++
+ 	power-sensor@12 {
+ 		compatible = "adi,adm1272";
+ 		reg = <0x12>;
+ 	};
+ 
++	power-sensor@13 {
++		compatible = "infineon,xdp710";
++		reg = <0x13>;
++	};
++
+ 	gpio_ext1: pca9555@20 {
+ 		compatible = "nxp,pca9555";
+ 		pinctrl-names = "default";
+-- 
+2.34.1
+

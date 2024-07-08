@@ -5393,54 +5393,78 @@ pal_clear_cmos(uint8_t slot_id) {
     return -1;
   }
 
-  ret = pal_set_server_power(slot_id, SERVER_12V_OFF);
-  if (ret < 0) {
-    printf("Failed to set server power 12V-off\n");
-    return ret;
-  }
-  // NOTE: This is a workaround to prevent 12V-cycle failure on
-  // javaisland's EVT1 and EVT2 MB because P12V_STBY is not fully
-  // discharged when performing 12V-on after 12V-off.
-  if ( (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_JI) &&
-       ((fby35_common_get_sb_rev(slot_id) & 0xF) <= JI_REV_EVT2) ) {
-    sleep(8-DELAY_12V_CYCLE); // takes at least 8s to discharge
-  }
-  sleep(DELAY_12V_CYCLE);
-
-  printf("Performing CMOS clear\n");
-  i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0) {
-    printf("%s(): Failed to open bus %d. Err: %s\n", __func__, BB_CPLD_BUS, strerror(errno));
-    return -1;
-  }
-
-  while ( retry < MAX_READ_RETRY ) {
-    // to generate 200ms high pulse to clear CMOS
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
-    if ( ret < 0 ) {
-      retry++;
-      sleep(1);
-    } else {
-      break;
+  // The Javaisland RTC_RST gpio does not connect to BB CPLD.
+  // Instead, RTC_RST gpio connect to the BIC
+  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_JI) {
+    ret = pal_set_server_power(slot_id, SERVER_POWER_OFF);
+    if (ret < 0) {
+      printf("Failed to set server power off\n");
+      return ret;
     }
-  }
-  close(i2cfd);
-  if ( retry == MAX_READ_RETRY ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    return -1;
-  }
-  sleep(1);
+    sleep(2);
 
-  ret = pal_set_server_power(slot_id, SERVER_12V_ON);
-  if (ret < 0) {
-    printf("Failed to set server power 12V-on\n");
-    return ret;
-  }
-  if ( (pal_get_server_power(slot_id, &status) == 0) && (status == SERVER_POWER_OFF) ) {
+    printf("Performing CMOS clear\n");
+    ret = remote_bic_set_gpio(slot_id, JI_RTC_CLR_L, 0, NONE_INTF);
+    if (ret < 0) {
+      printf("%s() remote_bic_set_gpio returns %d\n", __func__, ret);
+      return ret;
+    }
+    sleep(1);
+    ret = remote_bic_set_gpio(slot_id, JI_RTC_CLR_L, 1, NONE_INTF);
+    if (ret < 0) {
+      printf("%s() remote_bic_set_gpio returns %d\n", __func__, ret);
+      return ret;
+    }
+    sleep(1);
+
     ret = pal_set_server_power(slot_id, SERVER_POWER_ON);
     if (ret < 0) {
       printf("Failed to set server power on\n");
       return ret;
+    }
+  } else {
+    ret = pal_set_server_power(slot_id, SERVER_12V_OFF);
+    if (ret < 0) {
+      printf("Failed to set server power 12V-off\n");
+      return ret;
+    }
+    sleep(DELAY_12V_CYCLE);
+
+    printf("Performing CMOS clear\n");
+    i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( i2cfd < 0) {
+      printf("%s(): Failed to open bus %d. Err: %s\n", __func__, BB_CPLD_BUS, strerror(errno));
+      return -1;
+    }
+
+    while ( retry < MAX_READ_RETRY ) {
+      // to generate 200ms high pulse to clear CMOS
+      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
+      if ( ret < 0 ) {
+        retry++;
+        sleep(1);
+      } else {
+        break;
+      }
+    }
+    close(i2cfd);
+    if ( retry == MAX_READ_RETRY ) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+      return -1;
+    }
+    sleep(1);
+
+    ret = pal_set_server_power(slot_id, SERVER_12V_ON);
+    if (ret < 0) {
+      printf("Failed to set server power 12V-on\n");
+      return ret;
+    }
+    if ( (pal_get_server_power(slot_id, &status) == 0) && (status == SERVER_POWER_OFF) ) {
+      ret = pal_set_server_power(slot_id, SERVER_POWER_ON);
+      if (ret < 0) {
+        printf("Failed to set server power on\n");
+        return ret;
+      }
     }
   }
 

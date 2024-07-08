@@ -552,7 +552,7 @@ index 88a8506..6431788 100644
 +			req.ctrl_hdr.command_code = MCTP_CTRL_CMD_GET_ENDPOINT_ID;
 +			rc = endpoint_query_peer(peer, MCTP_CTRL_HDR_MSG_TYPE,
 +				&req, sizeof(req), &buf, &buf_size, &addr);
-+			if (rc < 0) {
++			if (rc < 0 && eid % 10 != 0) {
 +				warnx("Response timeout for EID %d.", eid);
 +				remove_peer(peer);
 +				free(buf);

@@ -28,8 +28,7 @@ VrComponent vr_cpu0_vcore0("mb", "cpu0_vcore0", "VR_CPU0_VCORE0/SOC");
 VrComponent vr_cpu0_vcore1("mb", "cpu0_vcore1", "VR_CPU0_VCORE1/PVDDIO");
 VrComponent vr_cpu0_pvdd11("mb", "cpu0_pvdd11", "VR_CPU0_PVDD11");
 
-
-//CPLD fwupdate
+//CPLD Component
 class CpldComponent : public Component {
   uint8_t pld_type;
   i2c_attr_t attr;
@@ -39,6 +38,18 @@ class CpldComponent : public Component {
     CpldComponent(const std::string &fru, const std::string &comp, uint8_t type, uint8_t bus, uint8_t addr,
       int (*cpld_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t))
       : Component(fru, comp), pld_type(type), attr{bus, addr, cpld_xfer} {}
+
+    static CpldComponent createCbCpld() {
+        if (is_cpld_evt()) {
+            return CpldComponent("cb", "cb_cpld", LCMXO3_2100C, 9, 0x40, nullptr);
+        } else {
+            return CpldComponent("cb", "cb_cpld", LCMXO3_2100C, 11, 0x40, nullptr);
+        }
+    }
+
+    static int check_cpld_address(uint8_t bus, uint8_t addr);
+    static bool is_cpld_evt();
+
     int update(std::string image) override;
     int fupdate(std::string image) override;
     int get_version(json& j) override;
@@ -73,7 +84,6 @@ int CpldComponent::fupdate(string image) {
   return _update(image.c_str(), attr);
 }
 
-
 int CpldComponent::get_version(json& j) {
   int ret = -1;
   uint8_t ver[4];
@@ -83,6 +93,13 @@ int CpldComponent::get_version(json& j) {
   transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
   transform(fru.begin(), fru.end(),fru.begin(), ::toupper);
   j["PRETTY_COMPONENT"] = comp;
+
+
+  if (CpldComponent::check_cpld_address(attr.bus_id, attr.slv_addr << 1)) {
+      sprintf(strbuf, "NA");
+      j["VERSION"] = string(strbuf);
+      return FW_STATUS_SUCCESS;
+  }
 
   if (!cpld_intf_open(pld_type, INTF_I2C, &attr)) {
     ret = cpld_get_ver((uint32_t *)ver);
@@ -99,12 +116,44 @@ int CpldComponent::get_version(json& j) {
   return FW_STATUS_SUCCESS;
 }
 
+int CpldComponent::check_cpld_address(uint8_t bus, uint8_t addr)
+{
+  int fd = 0, ret = -1;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
 
-//CPLD Component
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    return ret;
+  }
+
+  tbuf[0] = 0xC0;
+  tbuf[1] = 0x00;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x00;
+
+  tlen = 4;
+  rlen = 4;
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  i2c_cdev_slave_close(fd);
+
+  return ret;
+}
+
+bool CpldComponent::is_cpld_evt() {
+    // Check if the I2C bus 9 has the address 0x40
+    if (!CpldComponent::check_cpld_address(9, 0x40 << 1))
+        return true;
+    else
+        return false;
+}
+
 CpldComponent mb_cpld("mb", "mb_cpld", LCMXO3LF_4300C, 5, 0x40, nullptr);
 CpldComponent scm_cpld("scm", "scm_cpld", LCMXO3_2100C, 15, 0x40, nullptr);
-CpldComponent cb_cpld("cb", "cb_cpld", LCMXO3_2100C, 9, 0x40, nullptr);
 
+//Retimer Component
 class RetimerComponent : public Component {
   int _bus = 0;
   int addr = 0x24;
@@ -161,3 +210,14 @@ class RetimerComponent : public Component {
 
 RetimerComponent rt0_comp("mb", "retimer0", 12);
 RetimerComponent rt1_comp("mb", "retimer1", 21);
+
+
+class component_config {
+public:
+    component_config() {
+        static CpldComponent cb_cpld = CpldComponent::createCbCpld();
+    }
+};
+
+component_config comp_config;
+

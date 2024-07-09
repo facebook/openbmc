@@ -121,6 +121,15 @@ SRC_URI:append = " \
     file://0310-ARM-dts-aspeed-Enable-jtag1-in-fblite-r1-dts.patch \
 "
 
+#
+# hwmon: max31790: support to config PWM as TACH
+#
+SRC_URI:append = " \
+    file://0320-hwmon-max31790-support-to-config-PWM-as-TACH.patch \
+    file://0321-hwmon-max31790-add-fanN_enable-for-all-fans.patch \
+    file://0322-hwmon-max31790-revise-the-scale-to-write-pwm.patch \
+"
+
 SRC_URI:append = " \
     file://0502-Revert-linux-kernel-patch-usb-gadget-f_ecm-Add-suspe.patch \
 "

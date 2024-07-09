@@ -2,9 +2,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-aspeed:"
 SRC_URI += " \
     file://0500-add-meta-yv4-bmc-dts-setting.patch \
     file://0501-hwmon-ina233-Add-ina233-driver.patch \
-    file://0502-hwmon-max31790-support-to-config-PWM-as-TACH.patch \
     file://0503-Add-adm1281-driver.patch \
-    file://0504-hwmon-max31790-add-fanN_enable-for-all-fans.patch \
     file://0505-ARM-dts-aspeed-yosemite4-support-mux-to-cpld.patch \
     file://0506-ARM-dts-aspeed-yosemite4-Revise-gpio-name.patch \
     file://0507-remove-pincontrol-on-GPIO-U5.patch \
@@ -17,7 +15,6 @@ SRC_URI += " \
     file://0514-yosemite4-Change-IOE-i2c-address.patch \
     file://0515-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
     file://0516-Revise-duty-cycle-for-SMB9-and-SMB10.patch \
-    file://0517-hwmon-max31790-revise-the-scale-to-write-pwm.patch \
     file://0518-Add-nct7363-in-yosemite4-dts.patch \
     file://0519-i3c-master-add-enable-disable-hot-join-in-sys-entry.patch \
     file://0520-i3c-dw-Add-hot-join-support.patch \

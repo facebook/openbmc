@@ -14,6 +14,7 @@ SRC_URI += " \
     file://0008-platform-mc-Monitor-all-sensors-once-upon-the-first-.patch \
     file://0009-pldm-Revise-image-path-for-update.patch \
     file://0010-Support-OEM-META-command-for-Event-Logs-from-BIC.patch \
+    file://0011-platform-mc-add-more-exception-type.patch \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
 "

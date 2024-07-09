@@ -28,4 +28,5 @@ SRC_URI += " \
     file://0525-ARM-dts-aspeed-yosemite4-add-I3C-config-in-DTS.patch \
     file://0526-ARM-dts-aspeed-yosemite4-add-fan-led-config.patch \
     file://0527-Add-XDP710-in-yosemite4-dts.patch \
+    file://0528-ARM-dts-aspeed-yosemite4-add-RTQ6056-support.patch \
 "

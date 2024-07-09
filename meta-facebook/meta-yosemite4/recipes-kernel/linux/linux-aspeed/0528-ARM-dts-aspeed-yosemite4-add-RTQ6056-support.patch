@@ -1,0 +1,61 @@
+From d5b483fb4192c23bc6f58e453e3e92cefd2746a4 Mon Sep 17 00:00:00 2001
+From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
+Date: Thu, 20 Jun 2024 16:58:49 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite4: add RTQ6056 support
+
+Add RTQ6056 (spider board 3rd source) support in yosemite4 DTS.
+This change is also contributing to torvalds upstream for reviewing.
+Lore Link: https://lore.kernel.org/all/20240626090744.174351-26-Delphine_CC_Chiu@wiwynn.com/
+
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts  | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index fafbf639d..94d728ce3 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -1236,35 +1236,35 @@ adc@37 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "ti,ina233";
++		compatible = "ti,ina233", "richtek,rtq6056";
+ 		reg = <0x40>;
+ 		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@41 {
+-		compatible = "ti,ina233";
++		compatible = "ti,ina233", "richtek,rtq6056";
+ 		reg = <0x41>;
+ 		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@42 {
+-		compatible = "ti,ina233";
++		compatible = "ti,ina233", "richtek,rtq6056";
+ 		reg = <0x42>;
+ 		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@43 {
+-		compatible = "ti,ina233";
++		compatible = "ti,ina233", "richtek,rtq6056";
+ 		reg = <0x43>;
+ 		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 	};
+ 
+ 	power-sensor@44 {
+-		compatible = "ti,ina233";
++		compatible = "ti,ina233", "richtek,rtq6056";
+ 		reg = <0x44>;
+ 		resistor-calibration = /bits/ 16 <0x0400>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+-- 
+2.34.1
+

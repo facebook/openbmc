@@ -21,12 +21,14 @@ import unittest
 
 from common.base_interface_test import CommonInterfaceTest
 from utils.cit_logger import Logger
+from utils.test_utils import qemu_check
 
 
 class InterfaceTest(CommonInterfaceTest, unittest.TestCase):
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_usb0_v6_interface(self):
         """
-        Tests eth0 v6 interface
+        Tests usb0 v6 interface
         """
         self.set_ifname("usb0")
         Logger.log_testname(self._testMethodName)

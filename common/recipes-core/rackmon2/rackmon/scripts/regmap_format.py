@@ -3,6 +3,7 @@
 import argparse
 import csv
 import json
+import os
 
 description = """
 Convert Register Map between JSON and CSV
@@ -190,9 +191,17 @@ def parse_args():
     parser.add_argument(
         "-o", "--output", default=None, help="Output file (JSON or CSV based on input)"
     )
+    parser.add_argument(
+        "-u",
+        "--update",
+        action="store_true",
+        default=False,
+        help="Update just registers in JSON if it already exists",
+    )
     args = parser.parse_args()
+    input_is_json = args.input.lower().endswith(".json")
     if args.output is None:
-        if args.input.lower().endswith(".json"):
+        if input_is_json:
             args.output = "a.csv"
         else:
             args.output = "a.json"
@@ -210,15 +219,19 @@ def main():
         with open(args.output, "w", newline="") as csvfile:
             dump_csv(data["registers"], csvfile)
     else:
+        out = {
+            "name": "TODO",
+            "address_range": [[0, 0]],
+            "probe_register": 0,
+            "default_baudrate": 19200,
+            "preferred_baudrate": 19200,
+            "registers": [],
+        }
+        if args.update and os.path.isfile(args.output):
+            with open(args.output) as f:
+                out = json.load(f)
         with open(args.input) as csvfile:
-            out = {
-                "name": "TODO",
-                "address_range": [[0, 0]],
-                "probe_register": 0,
-                "default_baudrate": 19200,
-                "preferred_baudrate": 19200,
-                "registers": readRegs(csvfile),
-            }
+            out["registers"] = readRegs(csvfile)
             with open(args.output, "w") as f:
                 json.dump(out, f, indent=4)
 

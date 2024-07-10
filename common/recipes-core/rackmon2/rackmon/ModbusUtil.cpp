@@ -59,6 +59,8 @@ int main(int argc, char* argv[]) {
   app.add_option(
          "--min-delay", minDelay, "Minimum delay (ms) between transactions")
       ->capture_default_str();
+  int timeout = 0;
+  app.add_option("-t,--timeout", timeout, "Transaction Timeout (ms)")->capture_default_str();
   std::string cmd{};
   app.add_option("command", cmd, "Command to send (hex)")->required();
 
@@ -84,7 +86,7 @@ int main(int argc, char* argv[]) {
     req << uint8_t(std::stoi(v, 0, 16));
   }
   try {
-    dev.command(req, resp, 0, rackmon::ModbusTime::zero(), parity);
+    dev.command(req, resp, 0, rackmon::ModbusTime(timeout), parity);
   } catch (std::exception& e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
     return -1;

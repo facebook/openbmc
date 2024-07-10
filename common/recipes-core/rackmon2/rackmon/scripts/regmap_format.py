@@ -49,7 +49,10 @@ def reg_convert(reg):
     out = {}
     for header in CSV_HEADERS:
         if header in reg and reg[header] != "":
-            out[header] = CSV_HEADERS[header](reg[header])
+            if CSV_HEADERS[header] is bool:
+                out[header] = reg[header].capitalize() == "True"
+            else:
+                out[header] = CSV_HEADERS[header](reg[header])
     return out
 
 
@@ -73,10 +76,11 @@ def validateRow(row, isFlag):
                 and int(row["length"]) <= 0xFFFF
             )
             assert row["keep"] == "" or int(row["keep"]) > 0
-            assert row["changes_only"] == "" or bool(row["changes_only"]) in [
-                True,
-                False,
+            assert row["changes_only"] == "" or row["changes_only"].capitalize() in [
+                "True",
+                "False",
             ]
+            assert row["sign"] == "" or row["sign"].capitalize() in ["True", "False"]
             assert row["format"] in ["STRING", "INTEGER", "FLOAT", "FLAGS"]
             assert row["endian"] == "" or row["endian"] in row["endian"] in ["L", "B"]
             assert row["interval"] == "" or int(row["interval"]) > -2

@@ -1,0 +1,328 @@
+From ed011785939a255f55077817cda7b5ad5ca179d6 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Fri, 14 Jun 2024 16:24:31 +0800
+Subject: [PATCH] Support OEM-META command for power control
+
+Summary:
+  - Add handler for write-file command "SLED_CYCLE, 12V-CYCLE
+and DC-cycle" to let Host can trigger power control to the system.
+    - Option:
+      - 0x00: Sled-cycle
+      - 0x01: Slot 12V-cycle
+      - 0x02: Slot DC-cycle
+
+Change-Id: Ie6264217359f722be8181919f15bc08df510750a
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ libpldmresponder/meson.build                  |   1 +
+ .../libpldmresponder/oem_meta_file_io.cpp     |   6 +
+ .../oem_meta_file_io_by_type.hpp              |   1 +
+ .../oem_meta_file_io_type_power_control.cpp   | 167 ++++++++++++++++++
+ .../oem_meta_file_io_type_power_control.hpp   |  66 +++++++
+ 5 files changed, 241 insertions(+)
+ create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
+ create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
+
+diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
+index 8cc3f8f..ee51e8e 100644
+--- a/libpldmresponder/meson.build
++++ b/libpldmresponder/meson.build
+@@ -69,6 +69,7 @@ if get_option('oem-meta').allowed()
+     '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
+     '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
+     '../oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp',
++    '../oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp',
+   ]
+ endif
+ 
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
+index d90600b..236761f 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
+@@ -3,6 +3,7 @@
+ #include "oem_meta_file_io_type_bios_version.hpp"
+ #include "oem_meta_file_io_type_event_log.hpp"
+ #include "oem_meta_file_io_type_post_code.hpp"
++#include "oem_meta_file_io_type_power_control.hpp"
+ #include "xyz/openbmc_project/Common/error.hpp"
+ 
+ #include <libpldm/oem/meta/file_io.h>
+@@ -31,6 +32,10 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(uint8_t messageTid,
+         case EVENT_LOG:
+             return std::make_unique<EventLogHandler>(
+                 messageTid, configurationDiscovery->getConfigurations());
++        case POWER_CONTROL:
++            return std::make_unique<PowerControlHandler>(
++                messageTid, configurationDiscovery->getConfigurations(),
++                dBusIntf);
+         default:
+             error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
+                   "FILEIOTYPE", fileIOType);
+@@ -52,6 +57,7 @@ Response FileIOHandler::writeFileIO(pldm_tid_t tid, const pldm_msg* request,
+ 
+     if (rc != PLDM_SUCCESS)
+     {
++        error("Failed to decode OEM Meta file IO request, rc={RC}", "RC", rc);
+         return ccOnlyResponse(request, rc);
+     }
+ 
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
+index 29a4fa3..a13f149 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
+@@ -18,6 +18,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
+ {
+     POST_CODE = 0x00,
+     BIOS_VERSION = 0x01,
++    POWER_CONTROL = 0x02,
+     EVENT_LOG = 0x05,
+ };
+ 
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
+new file mode 100644
+index 0000000..622fc47
+--- /dev/null
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
+@@ -0,0 +1,167 @@
++#include "oem_meta_file_io_type_power_control.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++PHOSPHOR_LOG2_USING;
++namespace pldm::responder::oem_meta
++{
++
++constexpr auto slotInterface = "xyz.openbmc_project.Inventory.Decorator.Slot";
++constexpr auto slotNumberProperty = "SlotNumber";
++const std::vector<std::string> slotInterfaces = {slotInterface};
++
++uint8_t power_control_len = 1;
++enum class POWER_CONTROL_OPTION
++{
++    SLED_CYCLE = 0x00,
++    SLOT_12V_CYCLE = 0x01,
++    SLOT_DC_CYCLE = 0x02,
++};
++
++int PowerControlHandler::write(const message& data)
++{
++    if (data.size() != power_control_len)
++    {
++        error(
++            "{FUNC}: Invalid incoming data for controlling power, data size={SIZE}",
++            "FUNC", std::string(__func__), "SIZE", data.size());
++        return PLDM_ERROR;
++    }
++
++    uint8_t option = data[0];
++    pldm::utils::DBusMapping dbusMapping;
++    dbusMapping.propertyType = "string";
++    std::string property{};
++    switch (option)
++    {
++        case static_cast<uint8_t>(POWER_CONTROL_OPTION::SLED_CYCLE):
++            dbusMapping.objectPath =
++                std::string("/xyz/openbmc_project/state/chassis0");
++            dbusMapping.interface = "xyz.openbmc_project.State.Chassis";
++            dbusMapping.propertyName = "RequestedPowerTransition";
++            property =
++                "xyz.openbmc_project.State.Chassis.Transition.PowerCycle";
++            break;
++        case static_cast<uint8_t>(POWER_CONTROL_OPTION::SLOT_12V_CYCLE):
++            dbusMapping.objectPath =
++                std::string("/xyz/openbmc_project/state/chassis") +
++                getSlotNumber();
++            dbusMapping.interface = "xyz.openbmc_project.State.Chassis";
++            dbusMapping.propertyName = "RequestedPowerTransition";
++            property =
++                "xyz.openbmc_project.State.Chassis.Transition.PowerCycle";
++            break;
++        case static_cast<uint8_t>(POWER_CONTROL_OPTION::SLOT_DC_CYCLE):
++            dbusMapping.objectPath =
++                std::string("/xyz/openbmc_project/state/host") +
++                getSlotNumber();
++            dbusMapping.interface = "xyz.openbmc_project.State.Host";
++            dbusMapping.propertyName = "RequestedHostTransition";
++            property = "xyz.openbmc_project.State.Host.Transition.Reboot";
++            break;
++        default:
++            error("Get invalid power control option, option={OPTION}", "OPTION",
++                  option);
++            return PLDM_ERROR;
++    }
++
++    try
++    {
++        dBusIntf->setDbusProperty(dbusMapping, property);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("{FUNC}: Failed to execute Dbus call, ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++        return PLDM_ERROR;
++    }
++    catch (const std::exception& e)
++    {
++        error("{FUNC}: Failed to control power. ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++        return PLDM_ERROR;
++    }
++
++    return PLDM_SUCCESS;
++}
++
++std::string PowerControlHandler::getSlotNumber()
++{
++    std::string result{};
++
++    try
++    {
++        auto slotNumber = pldm::utils::DBusHandler().getDbusProperty<uint64_t>(
++            getDbusPathOfBoardContainingTheEndpoint(tid).c_str(),
++            slotNumberProperty, slotInterface);
++
++        result = std::to_string(slotNumber);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("{FUNC}: Failed to execute Dbus call, ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++    }
++    catch (const std::runtime_error& e)
++    {
++        error("{FUNC}: Runtime error occurred, ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++    }
++    catch (const std::exception& e)
++    {
++        error("{FUNC}: Unexpected exception occurred, ERROR={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++    }
++
++    return result;
++}
++
++const std::string
++    PowerControlHandler::getDbusPathOfBoardContainingTheEndpoint(uint8_t tid)
++{
++    std::string result{};
++
++    try
++    {
++        const auto& configDbusPath = getConfigurationPathByTid(tid);
++        const auto response = dBusIntf->getAncestors(configDbusPath.c_str(),
++                                                     slotInterfaces);
++        if (response.size() != 1)
++        {
++            error(
++                "{FUNC}: Only Board layer should have Decorator.Slot interface, got {SIZE} Dbus Object(s) have interface Decorator.Slot}",
++                "FUNC", std::string(__func__), "SIZE", response.size());
++            throw std::runtime_error("Invalid Response of GetAncestors");
++        }
++
++        result = std::get<0>(response.front());
++    }
++    catch (const std::runtime_error& e)
++    {
++        throw e; // Bypass it.
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        throw std::runtime_error(
++            "Failed to get board path containing the endpoint");
++    }
++
++    return result;
++}
++
++const std::string& PowerControlHandler::getConfigurationPathByTid(uint8_t tid)
++{
++    for (const auto& [configDbusPath, mctpEndpoint] : configurations)
++    {
++        if (mctpEndpoint.EndpointId == tid)
++        {
++            return configDbusPath;
++        }
++    }
++
++    error("{FUNC}: Failed to get Configuration for TID{TID}", "FUNC",
++          std::string(__func__), "TID", tid);
++    throw std::runtime_error("Failed to get Configuration");
++}
++
++} // namespace pldm::responder::oem_meta
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
+new file mode 100644
+index 0000000..16ed6ce
+--- /dev/null
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
+@@ -0,0 +1,66 @@
++#pragma once
++
++#include "common/utils.hpp"
++#include "oem_meta_file_io_by_type.hpp"
++#include "requester/configuration_discovery_handler.hpp"
++
++namespace pldm::responder::oem_meta
++{
++/** @class PowerControlHandler
++ *
++ *  @brief Inherits and implements FileHandler. This class is used
++ *  to handle incoming sled cycle request from Hosts
++ */
++class PowerControlHandler : public FileHandler
++{
++  public:
++    PowerControlHandler() = delete;
++    PowerControlHandler(const PowerControlHandler&) = delete;
++    PowerControlHandler(PowerControlHandler&&) = delete;
++    PowerControlHandler& operator=(const PowerControlHandler&) = delete;
++    PowerControlHandler& operator=(PowerControlHandler&&) = delete;
++    ~PowerControlHandler() = default;
++
++    explicit PowerControlHandler(
++        uint8_t tid, std::map<std::string, MctpEndpoint>& configurations,
++        const pldm::utils::DBusHandler* dBusIntf) :
++        tid(tid),
++        configurations(configurations), dBusIntf(dBusIntf)
++    {}
++
++    int write(const message& data) override;
++    int read(const message&) override
++    {
++        return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
++    }
++
++  private:
++    /** @brief Method to get the slot number who sent the request.
++     *  @return - Corresponding slot number.
++     */
++    std::string getSlotNumber();
++
++    /** @brief Method to get the Dbus Path of the board containing the Endpoint.
++     *  @param[in] tid - The target endpoint's TID.
++     *  @return - The board's Dbus path.
++     */
++    const std::string getDbusPathOfBoardContainingTheEndpoint(uint8_t tid);
++
++    /** @brief Method to get the Dbus path of the configuration searched by
++     * ConfigurationDiscoveryHandler.
++     *  @param[in] tid - The target endpoint's TID.
++     *  @return - The configuration's Dbus path.
++     */
++    const std::string& getConfigurationPathByTid(uint8_t tid);
++
++    /** @brief The requester's TID */
++    uint8_t tid = 0;
++
++    /** @brief Configurations searched by ConfigurationDiscoveryHandler */
++    std::map<std::string /*configDbusPath*/, MctpEndpoint>& configurations;
++
++    /** @brief D-Bus Interface object*/
++    const pldm::utils::DBusHandler* dBusIntf;
++};
++
++} // namespace pldm::responder::oem_meta
+-- 
+2.25.1
+

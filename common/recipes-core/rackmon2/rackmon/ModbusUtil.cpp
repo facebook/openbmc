@@ -60,7 +60,8 @@ int main(int argc, char* argv[]) {
          "--min-delay", minDelay, "Minimum delay (ms) between transactions")
       ->capture_default_str();
   int timeout = 0;
-  app.add_option("-t,--timeout", timeout, "Transaction Timeout (ms)")->capture_default_str();
+  app.add_option("-t,--timeout", timeout, "Transaction Timeout (ms)")
+      ->capture_default_str();
   std::string cmd{};
   app.add_option("command", cmd, "Command to send (hex)")->required();
 

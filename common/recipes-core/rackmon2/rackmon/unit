@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 check_packages() {
   required_packages=("python3-jsonschema" "meson" "ninja-build" "gtest" "gtest-devel" "gmock" "gmock-devel" "glog" "glog-devel")
   for package in "${required_packages[@]}"; do
@@ -17,7 +15,12 @@ check_source() {
   diff=$(diff <(clang-format "$1") "$1")
   if [ "$diff" != "" ]; then
     echo "$1 clang-format Failed"
-    exit 1
+    read -p "Do you want to run clang-format -i on $1? [y/n]" -r ans
+    if [ "$ans" == "y" ]; then
+      clang-format -i "$1"
+    else
+      exit 1
+    fi
   fi
 }
 
@@ -29,8 +32,9 @@ cpp_linter() {
   done
 }
 
+check_packages
 curr=$(dirname "$0")
-cd "$curr"
+cd "$curr" || exit 1
 cpp_linter
 meson -Dsyslog=false -Dpython-path=/usr/bin/python3 /tmp/builddir
 meson test -C /tmp/builddir

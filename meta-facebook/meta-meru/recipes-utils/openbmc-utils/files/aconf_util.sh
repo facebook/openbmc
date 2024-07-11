@@ -43,10 +43,12 @@ narg_err() {
 }
 
 get_old_product_name() {
-    rm -f "$TEMP_BIOS_IMAGE"
-    bios_util.sh read "$TEMP_BIOS_IMAGE" --partition aboot_conf \
-                 > /dev/null 2> /dev/null || exit 1
     parse_aboot_conf "$TEMP_BIOS_IMAGE"|grep $BOARD_NAME_VAR| \
+                     awk -F '=' '{print $2}'
+}
+
+get_old_product_version() {
+    parse_aboot_conf "$TEMP_BIOS_IMAGE"|grep $BOARD_VER_VAR| \
                      awk -F '=' '{print $2}'
 }
 
@@ -55,7 +57,13 @@ get_product_version() {
     local sub_version
 
     version=$($WEUTIL_CMD scm|grep "Product Version"|awk '{print $3}')
+    if [ -z "$version" ]; then
+        return
+    fi
     sub_version=$($WEUTIL_CMD scm|grep "Product Sub-Version"|awk '{print $3}')
+    if [ -z "$sub_version" ]; then
+        return
+    fi
     echo "${version}.${sub_version}"
 }
 
@@ -70,12 +78,25 @@ create_aboot_conf_image() {
         return 1
     fi
 
+    product_version=$(get_product_version)
+
+    if [ -z "$product_name" ] || [ -z "$product_version" ]; then
+        rm -f "$TEMP_BIOS_IMAGE"
+        bios_util.sh read "$TEMP_BIOS_IMAGE" --partition aboot_conf \
+                     > /dev/null 2> /dev/null || exit 1
+    fi
+
     if [ -z "$product_name" ]; then
         product_name=$(get_old_product_name)
     fi
 
-    rm -f "$TEMP_BIOS_IMAGE"
+    if [ -z "$product_version" ]; then
+        echo "Warning: could not find product version in weutil" >&2
+        echo "         Using original product version if available" >&2
+        product_version=$(get_old_product_version)
+    fi
 
+    rm -f "$TEMP_BIOS_IMAGE"
     pad_blocks="$((ABOOT_CONF_START / SECTION_BLOCK_SIZE))"
     dd if=/dev/zero of="$TEMP_BIOS_IMAGE" bs="$SECTION_BLOCK_SIZE" \
        count="$pad_blocks" 2> /dev/null
@@ -96,9 +117,12 @@ create_aboot_conf_image() {
         echo "Warning: no product name encoded" >&2
     fi
 
-    product_version=$(get_product_version)
-    echo -n "${BOARD_VER_VAR}=" >> "$TEMP_BIOS_IMAGE"
-    echo -n "${product_version}" | base64 >> "$TEMP_BIOS_IMAGE"
+    if [ -n "$product_version" ]; then
+        echo -n "${BOARD_VER_VAR}=" >> "$TEMP_BIOS_IMAGE"
+        echo -n "${product_version}" | base64 >> "$TEMP_BIOS_IMAGE"
+    else
+        echo "Warning: could not determine product version" >&2
+    fi
 
     size="$(stat -c "%s" "$TEMP_BIOS_IMAGE")"
     pad_size="$((ABOOT_CONF_START + ABOOT_CONF_SIZE - size))"

@@ -26,4 +26,5 @@ SRC_URI += " \
     file://0526-ARM-dts-aspeed-yosemite4-add-fan-led-config.patch \
     file://0527-Add-XDP710-in-yosemite4-dts.patch \
     file://0528-ARM-dts-aspeed-yosemite4-add-RTQ6056-support.patch \
+    file://0529-net-mctp-i2c-invalidate-flows-immediately-on-TX-erro.patch \
 "

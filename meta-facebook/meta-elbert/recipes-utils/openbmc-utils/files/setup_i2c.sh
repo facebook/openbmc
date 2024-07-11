@@ -25,7 +25,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 i2c_device_add 0 0x50 24c512
 if ! wedge_is_bmc_personality; then
     echo "uServer is not in BMC personality. Skipping all power-on sequences."
-    return
+    exit 0
 fi
 
 # Some devices occasionally fail to probe. Retry if this happens.

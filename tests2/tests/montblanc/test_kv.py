@@ -17,12 +17,19 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import os
 import unittest
 
 from common.base_kv_test import BaseKvTest
-
-from kv import FPERSIST, kv_get
 from utils.test_utils import qemu_check
+
+# We should only expect to have kv in python env on BMC
+# ignore import error for devserver / Sandcastle
+try:
+    from kv import FPERSIST, kv_get
+except ModuleNotFoundError:
+    if os.getuid() == 0:
+        raise
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")

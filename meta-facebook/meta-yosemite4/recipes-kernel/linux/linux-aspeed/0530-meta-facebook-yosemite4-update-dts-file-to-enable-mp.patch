@@ -1,0 +1,92 @@
+From 5d71e1b9d8a91eb114c9eefc40ced9b6ad6050d6 Mon Sep 17 00:00:00 2001
+From: Rush_Chen_Wiwynn <Rush_Chen@wiwynn.com>
+Date: Thu, 20 Jun 2024 15:07:00 +0800
+Subject: [PATCH] meta-facebook: yosemite4: update dts file to enable "mp5990"
+
+enable mp5990 in dts file
+This change is also contributing to torvalds upstream for reviewing.
+Lore Link: https://lore.kernel.org/all/20240626090744.174351-27-Delphine_CC_Chiu@wiwynn.com/
+
+---
+ .../dts/aspeed/aspeed-bmc-facebook-yosemite4.dts | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index fafbf639d371..3e7c323f2b0f 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -360,7 +360,7 @@ gpio@23 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "adi,adm1281";
++		compatible = "adi,adm1281", "mps,mp5990";
+ 		reg = <0x40>;
+ 		shunt-resistor-micro-ohms = <500>;
+ 	};
+@@ -406,7 +406,7 @@ gpio@23 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "adi,adm1281";
++		compatible = "adi,adm1281", "mps,mp5990";
+ 		reg = <0x40>;
+ 		shunt-resistor-micro-ohms = <500>;
+ 	};
+@@ -452,7 +452,7 @@ gpio@23 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "adi,adm1281";
++		compatible = "adi,adm1281", "mps,mp5990";
+ 		reg = <0x40>;
+ 		shunt-resistor-micro-ohms = <500>;
+ 	};
+@@ -498,7 +498,7 @@ gpio@23 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "adi,adm1281";
++		compatible = "adi,adm1281", "mps,mp5990";
+ 		reg = <0x40>;
+ 		shunt-resistor-micro-ohms = <500>;
+ 	};
+@@ -544,7 +544,7 @@ gpio@23 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "adi,adm1281";
++		compatible = "adi,adm1281", "mps,mp5990";
+ 		reg = <0x40>;
+ 		shunt-resistor-micro-ohms = <500>;
+ 	};
+@@ -590,7 +590,7 @@ gpio@23 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "adi,adm1281";
++		compatible = "adi,adm1281", "mps,mp5990";
+ 		reg = <0x40>;
+ 		shunt-resistor-micro-ohms = <500>;
+ 	};
+@@ -636,7 +636,7 @@ gpio@23 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "adi,adm1281";
++		compatible = "adi,adm1281", "mps,mp5990";
+ 		reg = <0x40>;
+ 		shunt-resistor-micro-ohms = <500>;
+ 	};
+@@ -682,7 +682,7 @@ gpio@23 {
+ 	};
+ 
+ 	power-sensor@40 {
+-		compatible = "adi,adm1281";
++		compatible = "adi,adm1281", "mps,mp5990";
+ 		reg = <0x40>;
+ 		shunt-resistor-micro-ohms = <500>;
+ 	};
+-- 
+2.34.1
+

@@ -1,0 +1,30 @@
+From d381bdb1dac6a3f401b79ae4344ab9f1b5920415 Mon Sep 17 00:00:00 2001
+From: Yang Chen <yangchen.openbmc@gmail.com>
+Date: Tue, 9 Jul 2024 14:30:52 +0800
+Subject: [PATCH 1/1] ARM: dts: aspeed: minerva: add host0-ready pin
+
+lorelink: https://lore.kernel.org/all/20240711130501.2900301-1-yangchen.openbmc@gmail.com/T/#t
+
+Add host0-ready pin for phosphor-state-manager.
+
+Signed-off-by: Yang Chen <yangchen.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+index f5ac248097b4..41e2246cfbd1 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
+@@ -613,7 +613,7 @@ &gpio0 {
+ 	/*P0-P7*/	"","","","","","","","",
+ 	/*Q0-Q7*/	"","","","","","power-chassis-control","","",
+ 	/*R0-R7*/	"","","","","","","","",
+-	/*S0-S7*/	"","","","","","","","",
++	/*S0-S7*/	"","","","","","","","host0-ready",
+ 	/*T0-T7*/	"","","","","","","","",
+ 	/*U0-U7*/	"","","","","","","","",
+ 	/*V0-V7*/	"","","","","BAT_DETECT","","power-chassis-good","",
+-- 
+2.34.1
+

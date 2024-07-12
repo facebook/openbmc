@@ -829,6 +829,10 @@ get_component_name(uint8_t comp) {
       return "1OU Retimer";
     case FW_3OU_RETIMER:
       return "3OU Retimer";
+    case FW_1OU_RETIMER_RCVY:
+      return "1OU Retimer_Recovery";
+    case FW_3OU_RETIMER_RCVY:
+      return "3OU Retimer_Recovery";
     default:
       return "Unknown";
   }

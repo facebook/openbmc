@@ -52,7 +52,7 @@ class BmcFpgaComponent : public Component {
   public:
     BmcFpgaComponent(string fru, string comp, uint8_t type, uint8_t _bus, uint8_t _addr, uint8_t _location)
       : Component(fru, comp), pld_type(type), bus(_bus), addr(_addr), location(_location),
-        attr{bus, addr, CFM_IMAGE_1, CFM1_START_ADDR, CFM1_END_ADDR, ON_CHIP_FLASH_IP_CSR_BASE, ON_CHIP_FLASH_IP_DATA_REG, DUAL_BOOT_IP_BASE} {}
+        attr{bus, addr, CFM_IMAGE_1, CFM1_START_ADDR, CFM1_END_ADDR, ON_CHIP_FLASH_IP_CSR_BASE, ON_CHIP_FLASH_IP_DATA_REG, DUAL_BOOT_IP_BASE, I2C_LITTLE_ENDIAN} {}
     int print_version();
     int update(string image);
     int fupdate(string image);

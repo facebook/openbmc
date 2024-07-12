@@ -55,6 +55,7 @@ static int g_i2c_file = 0;
 static uint8_t g_i2c_bridge_addr = 0;
 static char g_i2c_file_dp[64];
 static unsigned long g_i2c_funcs = 0;
+static uint8_t g_i2c_val_endian = I2C_LITTLE_ENDIAN;
 
 
 // on-chip Flash IP
@@ -85,10 +86,17 @@ int set_i2c_register(int file, uint8_t addr, int reg, int value)
   outbuf[1] = (reg >> 16 ) & 0xFF;
   outbuf[2] = (reg >> 8 )  & 0xFF;
   outbuf[3] = (reg >> 0 )  & 0xFF;
-  outbuf[4] = (value >> 0 ) & 0xFF;
-  outbuf[5] = (value >> 8 ) & 0xFF;
-  outbuf[6] = (value >> 16 )  & 0xFF;
-  outbuf[7] = (value >> 24 )  & 0xFF;
+  if (g_i2c_val_endian == LITTLE_ENDIAN) {
+    outbuf[4] = (value >> 0 ) & 0xFF;
+    outbuf[5] = (value >> 8 ) & 0xFF;
+    outbuf[6] = (value >> 16 )  & 0xFF;
+    outbuf[7] = (value >> 24 )  & 0xFF;
+  } else {
+    outbuf[4] = (value >> 24 ) & 0xFF;
+    outbuf[5] = (value >> 16 ) & 0xFF;
+    outbuf[6] = (value >> 8 )  & 0xFF;
+    outbuf[7] = (value >> 0 )  & 0xFF;
+  }
 
   return write(file, outbuf, 8);
 }
@@ -130,11 +138,17 @@ int get_i2c_register(int file, uint8_t addr, uint32_t reg, uint32_t *val)
     ret = read(file, inbuf, 4);
   }
 
-  readval =  (inbuf[0] << 0);
-  readval |= (inbuf[1] << 8);
-  readval |= (inbuf[2] << 16);
-  readval |= (inbuf[3] << 24);
-
+  if (g_i2c_val_endian == I2C_LITTLE_ENDIAN) {
+    readval =  (inbuf[0] << 0);
+    readval |= (inbuf[1] << 8);
+    readval |= (inbuf[2] << 16);
+    readval |= (inbuf[3] << 24);
+  } else {
+    readval =  (inbuf[3] << 0);
+    readval |= (inbuf[2] << 8);
+    readval |= (inbuf[1] << 16);
+    readval |= (inbuf[0] << 24);
+  }
   *val = readval;
   DEBUGMSG(" val = %x len=%d\r\n", *val, ret);
 
@@ -701,6 +715,7 @@ static void max10_dev_init(altera_max10_attr_t *attr)
   g_cfm_start_addr = attr->start_addr;
   g_cfm_end_addr = attr->end_addr;
   g_cfm_image_type = attr->img_type;
+  g_i2c_val_endian = attr->i2c_val_endian;
 
   DEBUGMSG("%s file dp=%s\n", __func__, g_i2c_file_dp);
   DEBUGMSG("base reg=%x, status_reg=%x, ctrl_reg=%x\n", g_flash_csr_base, g_flash_csr_status_reg, g_flash_csr_ctrl_reg);

@@ -32,6 +32,11 @@ typedef enum {
   INTF_JTAG
 } cpld_intf_t;
 
+typedef enum {
+  I2C_LITTLE_ENDIAN,
+  I2C_BIG_ENDIAN
+} i2c_endian_mode_t;
+
 typedef struct {
   uint8_t bus_id;
   uint8_t slv_addr;
@@ -47,6 +52,7 @@ typedef struct {
   uint32_t csr_base;
   uint32_t data_base;
   uint32_t boot_base;
+  uint8_t i2c_val_endian;
 } altera_max10_attr_t;
 
 int cpld_intf_open(uint8_t cpld_index, cpld_intf_t intf, void *attr);

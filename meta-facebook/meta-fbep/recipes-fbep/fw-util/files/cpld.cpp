@@ -79,7 +79,7 @@ class DumbCpldComponent : public Component {
   altera_max10_attr_t attr;
   public:
     DumbCpldComponent(const string &fru, const string &comp, uint8_t type, uint8_t /*ctype*/, uint8_t bus, uint8_t addr)
-      : Component(fru, comp), pld_type(type), attr{bus, addr, 0, 0, 0, 0, 0, 0} {}
+      : Component(fru, comp), pld_type(type), attr{bus, addr, 0, 0, 0, 0, 0, 0, I2C_LITTLE_ENDIAN} {}
     int print_version();
 };
 

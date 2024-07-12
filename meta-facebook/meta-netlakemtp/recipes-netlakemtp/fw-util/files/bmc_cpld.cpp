@@ -145,6 +145,7 @@ int BmcCpldComponent::get_cpld_attr(altera_max10_attr_t& attr)
   attr.csr_base = ON_CHIP_FLASH_IP_CSR_BASE;
   attr.data_base = ON_CHIP_FLASH_IP_DATA_REG;
   attr.boot_base = DUAL_BOOT_IP_BASE;
+  attr.i2c_val_endian = I2C_LITTLE_ENDIAN;
 
   switch(pld_type) {
     case MAX10_10M04:

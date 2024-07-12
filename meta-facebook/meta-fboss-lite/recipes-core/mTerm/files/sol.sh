@@ -41,11 +41,25 @@ start_sol_session() {
   echo "Exit from SOL session."
 }
 
-# if mTerm server is running use mTerm_client to connect to userver
-# otherwise fallback to the old method
+handle_mterm_failure() {
+  echo "Error: mTerm_server is Not running!"
+  echo "If the system rebooted recently, please wait until your system has"
+  echo "been up for at least 5 minutes."
+  echo "If mTerm_server service is down unexpectedly, please reach out to"
+  echo "@fboss_platform team for support."
+  echo "Use <microcom -s @BAUDRATE@ /dev/@TERM@> with caution: an active microcom"
+  echo "session could block console access from future sol.sh instances."
+  echo "Exiting!"
+  exit 1
+}
+
+#
+# if mTerm server is running, use mTerm_client to connect to userver.
+# otherwise, exit with errors instead of falling back to microcom.
+#
 
 if mTerm_server_running; then
   exec /usr/local/bin/mTerm_client wedge
 else
-  start_sol_session
+  handle_mterm_failure
 fi

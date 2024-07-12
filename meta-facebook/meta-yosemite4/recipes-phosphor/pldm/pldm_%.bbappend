@@ -16,6 +16,7 @@ SRC_URI += " \
     file://0010-Support-OEM-META-command-for-Event-Logs-from-BIC.patch \
     file://0011-platform-mc-add-more-exception-type.patch \
     file://0012-Support-OEM-META-command-for-power-control.patch \
+    file://0013-oem-meta-Add-APML-alert-handler.patch \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
 "

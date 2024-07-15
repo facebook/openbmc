@@ -155,6 +155,16 @@ Security:
     file: verified-boot.md
     priority: P3
     short: "TODO: define verified boot for LF."
+Serial-Over-Lan:
+  Host SOL Access:
+    file: host-sol-access.md
+    priority: P0
+  SOL Console History:
+    file: sol-console-history.md
+    priority: P1
+  SOL Host Log Streaming:
+    file: remote-console.md
+    priority: P1
 OCP Debug Card:
   Debug Card Console:
     file: debug-card-console.md

@@ -456,6 +456,7 @@ const char *ji_gpio_pin_name[] = {
   "BOARD_ID4",                      //60
   "BOARD_ID5",
   "FM_BIOS_MRC_DEBUG_DIS_L",
+  "E1S_PRSNT_L",
 };
 
 /* GPIO Expander gpio table */

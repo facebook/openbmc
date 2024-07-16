@@ -27,6 +27,9 @@ int CpldLatticeManager::jedFileParser()
     bool ufmPrepare = false;
     bool versionStart = false;
     bool checksumStart = false;
+#ifdef ENABLE_UPDATE_EBR_INIT
+    bool ebrInitDataStart = false;
+#endif
     int numberSize = 0;
 
     std::string line;
@@ -58,6 +61,12 @@ int CpldLatticeManager::jedFileParser()
         {
             cfStart = true;
         }
+#ifdef ENABLE_UPDATE_EBR_INIT
+        else if (line.rfind(TAG_EBR_INIT_DATA, 0) == 0)
+        {
+            ebrInitDataStart = true;
+        }
+#endif
         else if (ufmPrepare == true)
         {
             ufmPrepare = false;
@@ -121,7 +130,52 @@ int CpldLatticeManager::jedFileParser()
                     std::cerr << "CF Size = " << fwInfo.cfgData.size()
                               << std::endl;
                     cfStart = false;
-                    ufmPrepare = true;
+#ifdef ENABLE_UPDATE_EBR_INIT
+                    if (ebrInitDataStart == false)
+                    {
+                        ufmPrepare = true;
+                    }
+                }
+            }
+        }
+        else if (ebrInitDataStart == true)
+        {
+            // NOTE EBR_INIT DATA
+            if ((line.rfind(TAG_EBR_INIT_DATA, 0)) && (line.size() != 1))
+            {
+                if ((line.rfind("L", 0)) && (line.size() != 1))
+                {
+                    if ((line.rfind("0", 0) == 0) || (line.rfind("1", 0) == 0))
+                    {
+                        while (line.size())
+                        {
+                            auto binary_str = line.substr(0, 8);
+                            try
+                            {
+                                fwInfo.cfgData.push_back(
+                                    std::stoi(binary_str, 0, 2));
+                                line.erase(0, 8);
+                            }
+                            catch (const std::invalid_argument& error)
+                            {
+                                break;
+                            }
+                            catch (...)
+                            {
+                                std::cerr << "Error while parsing CF section"
+                                        << std::endl;
+                                return -1;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        std::cerr << "CF Size with ERB_INIT Data = " << fwInfo.cfgData.size()
+                                << std::endl;
+                        ebrInitDataStart = false;
+                        ufmPrepare = true;
+                    }
+#endif
                 }
             }
         }

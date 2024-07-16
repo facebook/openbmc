@@ -1,0 +1,34 @@
+name: Minerva
+tags:
+  - minerva
+  - lf-openbmc
+sections:
+  - overview
+  - features
+feature_list:
+  - common
+  - aspeed
+status:
+  Infrastructure:
+    Yocto: done
+    U-Boot Porting: done
+  BMC Hardware Support:
+    Aspeed AST2620: done
+  User Interface:
+    SSH: done
+  Network:
+    IPv4: done
+    IPv6: done
+    DHCPv6: done
+  FRU Information:
+    Entity Manager: done
+  Sensor Information:
+    Airflow Sensor: done
+  Thermal Management:
+    Manual Fan Control: done
+  Time Sync:
+    Local RTC: done
+    NTP Sync: done
+    Time Zone: done
+  BMC Reset and Recovery:
+    SSH Remote Reset: done

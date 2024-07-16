@@ -32,16 +32,6 @@ setup_usb_hub () {
   done
 }
 
-setup_gpu_config() {
-  HGX_EEPROM_ADDR="53"
-  i2cget -y -f 9 0x$HGX_EEPROM_ADDR 0x00 2>/dev/null
-  if [ $? -eq 0 ]; then
-    $KV_CMD set $GPU_CONFIG hgx persistent
-  else
-    $KV_CMD set $GPU_CONFIG ubb persistent
-  fi
-}
-
 LOCK_FILE="/tmp/usbhub.lock"
 if [ -e "$LOCK_FILE" ]; then
   exit 1
@@ -49,7 +39,6 @@ else
   touch "$LOCK_FILE"
 
   setup_usb_hub
-  setup_gpu_config
 
   rm "$LOCK_FILE"
 fi

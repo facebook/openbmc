@@ -138,12 +138,12 @@ class HGXMgr {
 static HGXMgr hgx;
 
 GPUConfig getConfig() {
-  int ret = -1;
   GPIO gpio("GPU_PRSNT_N_ISO_R");
   const std::string config_key{"gpu_config"};
 
   gpio.open();
   if (gpio.get_value() == GPIO_VALUE_HIGH) {
+    kv::set(config_key, "unknown", kv::region::persist);
     throw GPUNotReady();
   }
   gpio.close();
@@ -158,36 +158,45 @@ GPUConfig getConfig() {
       return GPU_CONFIG_UNKNOWN;
     }
   } catch (std::filesystem::filesystem_error& e) {
-    const int hgx_eeprom_bus = 0x9;
+    const int gpu_eeprom_bus = 0x9;
+    const uint8_t num_addrs = 2;
+    const uint8_t gpu_eeprom_addrs[num_addrs] = {0xA6, 0xA8};
+
     int fd = 0;
     uint8_t tlen, rlen;
     uint8_t tbuf[16] = {0};
     uint8_t rbuf[16] = {0};
-    const uint8_t hgx_eeprom_addr = 0xA6;
+    for (int i = 0; i < num_addrs; ++i) {
+      uint8_t eeprom_addr = gpu_eeprom_addrs[i];
 
-    fd = i2c_cdev_slave_open(hgx_eeprom_bus, hgx_eeprom_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-    if (fd < 0) {
-      syslog(LOG_WARNING, "%s() Failed to open 9", __func__);
-      throw std::runtime_error("I2C Bus open failure");
+      fd = i2c_cdev_slave_open(gpu_eeprom_bus, eeprom_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+      if (fd < 0) {
+        syslog(LOG_WARNING, "%s() Failed to open bus for address 0x%02X", __func__, eeprom_addr);
+        continue;
+      }
+
+      tbuf[0] = 0x00;
+      tlen = 1;
+      rlen = 1;
+
+      int ret = i2c_rdwr_msg_transfer(fd, eeprom_addr, tbuf, tlen, rbuf, rlen);
+      i2c_cdev_slave_close(fd);
+
+      if (ret == 0) {
+        switch (i) {
+          case 0:
+            kv::set(config_key, "hgx", kv::region::persist);
+            return GPU_CONFIG_HGX;
+          case 1:
+            kv::set(config_key, "ubb", kv::region::persist);
+            return GPU_CONFIG_UBB;
+        }
+      }
     }
-
-    tbuf[0] = 0x00;
-    tlen = 1;
-    rlen = 1;
-
-    ret = i2c_rdwr_msg_transfer(fd, hgx_eeprom_addr, tbuf, tlen, rbuf, rlen);
-    i2c_cdev_slave_close(fd);
-    GPUConfig cfg;
-    if (ret == 0) {
-      cfg = GPU_CONFIG_HGX;
-      kv::set(config_key, "hgx", kv::region::persist);
-    } else {
-      cfg = GPU_CONFIG_UBB;
-      kv::set(config_key, "ubb", kv::region::persist);
-    }
-    return cfg;
+    syslog(LOG_WARNING, "%s() Failed to read gpu eeprom", __func__);
+    kv::set(config_key, "unknown", kv::region::persist);
+    return GPU_CONFIG_UNKNOWN;
   }
-  return GPU_CONFIG_UNKNOWN;
 }
 
 std::string redfishGet(const std::string& subpath) {

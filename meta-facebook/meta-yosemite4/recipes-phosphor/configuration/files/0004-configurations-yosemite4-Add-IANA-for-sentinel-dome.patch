@@ -1,4 +1,4 @@
-From eb0865a4dea64ff1436430a883655464f913d333 Mon Sep 17 00:00:00 2001
+From 0a69cc3630b75d6403b97bd97153cadde8723e79 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 7 Mar 2024 10:41:16 +0800
 Subject: [PATCH 4/4] configurations: yosemite4: Add IANA for sentinel dome
@@ -14,15 +14,28 @@ https://gerrit.openbmc.org/c/openbmc/pldm/+/69246
 Change-Id: Ifcd410f6548c5f28d399c2ef64a2aadd57554e41
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- configurations/yosemite4_sentineldome.json | 1 +
- schemas/legacy.json                        | 6 ++++++
- 2 files changed, 7 insertions(+)
+ configurations/yosemite4_sentineldome_t1.json | 1 +
+ configurations/yosemite4_sentineldome_t2.json | 1 +
+ schemas/legacy.json                           | 6 ++++++
+ 3 files changed, 8 insertions(+)
 
-diff --git a/configurations/yosemite4_sentineldome.json b/configurations/yosemite4_sentineldome.json
-index 725c777..c1e2a5b 100644
---- a/configurations/yosemite4_sentineldome.json
-+++ b/configurations/yosemite4_sentineldome.json
-@@ -417,6 +417,7 @@
+diff --git a/configurations/yosemite4_sentineldome_t1.json b/configurations/yosemite4_sentineldome_t1.json
+index 5044b12..2011798 100644
+--- a/configurations/yosemite4_sentineldome_t1.json
++++ b/configurations/yosemite4_sentineldome_t1.json
+@@ -333,6 +333,7 @@
+             "Address": "0x20",
+             "Bus": "$bus % 16",
+             "EndpointId": "$bus % 15 * 10",
++            "IANA": "0015A000",
+             "Name": "BIC",
+             "Type": "MCTPEndpoint"
+         }
+diff --git a/configurations/yosemite4_sentineldome_t2.json b/configurations/yosemite4_sentineldome_t2.json
+index 69c6f86..b5635ea 100644
+--- a/configurations/yosemite4_sentineldome_t2.json
++++ b/configurations/yosemite4_sentineldome_t2.json
+@@ -427,6 +427,7 @@
              "Address": "0x20",
              "Bus": "$bus % 16",
              "EndpointId": "$bus % 15 * 10",

@@ -1,7 +1,7 @@
-From 576537f1da2ba3d8ae70947c71b7fafd8a5b9c4f Mon Sep 17 00:00:00 2001
+From 8f13563ee8a526ce20598ee050be10c0d0b53c5e Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Fri, 28 Jun 2024 11:19:43 +0800
-Subject: [PATCH] oem-meta: Add APML alert handler
+Subject: [PATCH 12/12] oem-meta: Add APML alert handler
 
 Add APML alert handler. It will call `amd-ras` to do ADDC.
 ---
@@ -15,10 +15,10 @@ Add APML alert handler. It will call `amd-ras` to do ADDC.
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
 
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index ee51e8e..0fc1d0e 100644
+index 917845a..91d8075 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -70,6 +70,7 @@ if get_option('oem-meta').allowed()
+@@ -73,6 +73,7 @@ if get_option('oem-meta').allowed()
      '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
      '../oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp',
      '../oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp',
@@ -191,5 +191,5 @@ index 0000000..c3e246f
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.25.1
+2.43.0
 

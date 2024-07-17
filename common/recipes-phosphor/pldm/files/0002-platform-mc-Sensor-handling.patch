@@ -1,7 +1,7 @@
-From fc224a99aea33f2ad953062b3706e85e8ab1b49b Mon Sep 17 00:00:00 2001
+From 19d50c65174d9da6f72bf030736c0303a981823a Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
-Subject: [PATCH 02/10] platform-mc: Sensor handling
+Subject: [PATCH 02/12] platform-mc: Sensor handling
 
 Added sensor_manager and numeric_sensor class. The sensor_manager
 class manages the timing of sensor polling. The NumericSensor class
@@ -1853,7 +1853,7 @@ index 8fa4ea0..9105b05 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 54d749d..e9b6781 100644
+index bb40d8d..13d40e7 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -160,6 +160,7 @@ auto TerminusManager::findTeminusPtr(const MctpInfo& mctpInfo)
@@ -2410,7 +2410,7 @@ index 0000000..cd4e5a4
 +    sensorManager.stopPolling(tid);
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 4df71e9..768c6c9 100644
+index 9613e02..3aea04a 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -187,7 +187,7 @@ int main(int argc, char** argv)
@@ -2423,5 +2423,5 @@ index 4df71e9..768c6c9 100644
      InstanceIdDb instanceIdDb;
      dbus_api::Requester dbusImplReq(bus, "/xyz/openbmc_project/pldm",
 -- 
-2.25.1
+2.43.0
 

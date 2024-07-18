@@ -529,21 +529,13 @@ func tryPetWatchdog() bool {
 
 // Try to pet the watchdog and increase its timeout.  This works in two ways:
 //
-// - When /dev/watchdog is busy because it's held open by healthd, the delay
-//   here will hopefully allow healthd's watchdog thread to get some CPU
-//   time.
+// - When /dev/watchdog is busy because it's held open by healthd / systemd
+//   / fscd, the delay here will hopefully allow the thread petting the
+//   watchdog to get some CPU time.
 //
-// - When /dev/watchdog it NOT busy because healthd is not running and there
-//   are no concurrent instances of wdtcli, the watchdog timeout will be
-//   extended and the watchdog petted.
+// - When /dev/watchdog it NOT busy and there are no concurrent instances of
+//   wdtcli, the watchdog timeout will be extended and the watchdog petted.
 var PetWatchdog = func() {
-	// LF-OpenBMC relies on systemd to pet the watchdog, so there is nothing
-	// to do here.
-	if IsLFOpenBMC() {
-		log.Printf("Watchdog not petted; LF OpenBMC")
-		return
-	}
-
 	if IsBMCLite() {
 		log.Printf("Watchdog not petted; BMC Lite")
 		return

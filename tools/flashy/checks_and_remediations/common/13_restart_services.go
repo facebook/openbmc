@@ -61,7 +61,7 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 	// healthd to be stopped).  If healthd is not in use, perform the
 	// watchdog step directly.  The timeout increase stops the BMC
 	// rebooting during the following heavyweight steps, like image
-	// validation.
+	// validation.  See utils.PetWatchdog() for the gory details.
 	if utils.HealthdExists() {
 		log.Printf("Healthd exists, attempting to restart healthd...")
 		err = utils.RestartHealthd(true, supervisor)
@@ -70,9 +70,6 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 		} else {
 			log.Printf("Finished restarting healthd")
 		}
-	// Linux Foundation uses systemd to pet the watchdog directly.
-	} else if utils.IsLFOpenBMC() {
-		log.Printf("LF-OpenBMC, letting systemd maintain the watchdog")
 	} else {
 		utils.PetWatchdog()
 	}

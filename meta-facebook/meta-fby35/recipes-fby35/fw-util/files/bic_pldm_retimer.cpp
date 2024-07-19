@@ -31,11 +31,20 @@ int PldmRetimerComponent::update_internal(string image, bool force) {
   try {
     server.ready();
     uint8_t status;
+    char host_ready_value[8] = {0};
+    auto host_ready_key = fmt::format("fru{}_host_ready", slot_id);
+
     if (pal_get_server_power(slot_id, &status)) {
       throw string("Failed to get server power");
     }
     if (status != SERVER_POWER_ON) {
       throw string("The server power is not turned on");
+    }
+    if (kv_get(host_ready_key.c_str(), host_ready_value, NULL, 0)) {
+      throw string("Failed to get POST complete status");
+    }
+    if (string(host_ready_value) != "1") {
+      throw string("The server must POST complete before updating the retimer");
     }
   } catch (const string& e) {
     cerr << e << endl;

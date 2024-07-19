@@ -251,8 +251,8 @@ do_flash_io() {
         ;;
 
         "write")
-            if [ ! -e "$file" ]; then
-                echo "Error: <$file> does not exist!"
+            if [ ! -f "$file" ]; then
+                echo "Error: <$file> does not exist or is a special file"
                 exit 1
             fi
             flash_mtd_write "$mtd_idx" "$file"

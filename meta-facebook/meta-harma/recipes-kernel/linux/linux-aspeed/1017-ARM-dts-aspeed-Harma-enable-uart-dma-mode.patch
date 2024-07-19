@@ -1,0 +1,58 @@
+From 5476256b04ffcae60a7300cdb80a55583c7bd220 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Tue, 16 Jul 2024 17:27:23 +0800
+Subject: [PATCH 1017/1018] ARM: dts: aspeed: Harma: enable uart dma mode
+
+enable uart dma mode and set uart channel
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-harma.dts    | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 2c8e38353ca8..fcda8641a877 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -90,21 +90,31 @@ tpmdev@0 {
+ 	};
+ };
+ 
++&udma {
++	status = "okay";
++};
++
+ // HOST BIOS Debug
+ &uart1 {
+ 	status = "okay";
++	dmas = <&udma 0>, <&udma 1>;
++	dma-names = "tx", "rx";
+ };
+ 
+ // SOL Host Console
+ &uart2 {
+ 	status = "okay";
+ 	pinctrl-0 = <>;
++	dmas = <&udma 2>, <&udma 3>;
++	dma-names = "tx", "rx";
+ };
+ 
+ // SOL BMC Console
+ &uart4 {
+ 	status = "okay";
+ 	pinctrl-0 = <>;
++	dmas = <&udma 6>, <&udma 7>;
++	dma-names = "tx", "rx";
+ };
+ 
+ // BMC Debug Console
+@@ -115,6 +125,8 @@ &uart5 {
+ // MTIA
+ &uart6 {
+ 	status = "okay";
++	dmas = <&udma 8>, <&udma 9>;
++	dma-names = "tx", "rx";
+ };
+ 
+ &uart_routing {
+-- 
+2.25.1
+

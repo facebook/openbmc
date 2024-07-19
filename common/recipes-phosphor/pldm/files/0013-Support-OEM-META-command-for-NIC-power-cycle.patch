@@ -1,0 +1,76 @@
+From b691ca6904d88666ab825dad35fb660979e3a348 Mon Sep 17 00:00:00 2001
+From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+Date: Fri, 28 Jun 2024 16:57:45 +0800
+Subject: [PATCH] Support OEM-META command for NIC power cycle
+
+Summary:
+- Add option to let Host can trigger NIC card power cycle to
+the system.
+  - Option:
+  - 0x03: NIC0 power cycle
+  - 0x04: NIC1 power cycle
+  - 0x05: NIC2 power cycle
+  - 0x06: NIC3 power cycle
+
+Change-Id: Iea2d41d79f255a7a4849e25207d939d9116a4165
+Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
+---
+ .../oem_meta_file_io_type_power_control.cpp   | 35 +++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
+index 622fc47..d11b7ca 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
+@@ -16,6 +16,10 @@ enum class POWER_CONTROL_OPTION
+     SLED_CYCLE = 0x00,
+     SLOT_12V_CYCLE = 0x01,
+     SLOT_DC_CYCLE = 0x02,
++    NIC0_POWER_CYCLE = 0x03,
++    NIC1_POWER_CYCLE = 0x04,
++    NIC2_POWER_CYCLE = 0x05,
++    NIC3_POWER_CYCLE = 0x06,
+ };
+ 
+ int PowerControlHandler::write(const message& data)
+@@ -59,6 +63,37 @@ int PowerControlHandler::write(const message& data)
+             dbusMapping.propertyName = "RequestedHostTransition";
+             property = "xyz.openbmc_project.State.Host.Transition.Reboot";
+             break;
++        case static_cast<uint8_t>(POWER_CONTROL_OPTION::NIC0_POWER_CYCLE):
++        case static_cast<uint8_t>(POWER_CONTROL_OPTION::NIC1_POWER_CYCLE):
++        case static_cast<uint8_t>(POWER_CONTROL_OPTION::NIC2_POWER_CYCLE):
++        case static_cast<uint8_t>(POWER_CONTROL_OPTION::NIC3_POWER_CYCLE):
++        {
++            static constexpr auto systemd_busname = "org.freedesktop.systemd1";
++            static constexpr auto systemd_path = "/org/freedesktop/systemd1";
++            static constexpr auto systemd_interface =
++                "org.freedesktop.systemd1.Manager";
++            uint8_t nic_index =
++                option -
++                static_cast<uint8_t>(POWER_CONTROL_OPTION::NIC0_POWER_CYCLE);
++            try
++            {
++                auto& bus = pldm::utils::DBusHandler::getBus();
++                auto method = bus.new_method_call(systemd_busname, systemd_path,
++                                                  systemd_interface,
++                                                  "StartUnit");
++                method.append("pldm_nic_power_cycle@" +
++                                  std::to_string(nic_index) + ".service",
++                              "replace");
++                bus.call_noreply(method);
++            }
++            catch (const std::exception& e)
++            {
++                error("Control NIC{NUM} power fail. ERROR={ERROR}", "NUM",
++                      nic_index, "ERROR", e);
++                return PLDM_ERROR;
++            }
++            return PLDM_SUCCESS;
++        }
+         default:
+             error("Get invalid power control option, option={OPTION}", "OPTION",
+                   option);
+-- 
+2.25.1
+

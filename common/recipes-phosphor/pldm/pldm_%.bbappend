@@ -16,6 +16,7 @@ SRC_URI:append:openbmc-fb-lf = " \
 		file://0010-Support-OEM-META-command-for-Event-Logs-from-BIC.patch \
 		file://0011-Support-OEM-META-command-for-power-control.patch \
 		file://0012-oem-meta-Add-APML-alert-handler.patch \
+		file://0013-Support-OEM-META-command-for-NIC-power-cycle.patch \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
 "

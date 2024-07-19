@@ -19,10 +19,10 @@
 #
 import unittest
 
-from common.base_eeprom_test import CommonEepromTest
+from common.base_eeprom_test import EepromV5Test
 
 
-class CHASSISEepromTest(CommonEepromTest, unittest.TestCase):
+class CHASSISEepromTest(EepromV5Test, unittest.TestCase):
     """
     Test for CHASSIS EEPROM
     """
@@ -36,18 +36,16 @@ class CHASSISEepromTest(CommonEepromTest, unittest.TestCase):
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FCB"]
 
-    def set_eeprom_location(self):
-        self.test_eeprom_location = "EEPROM location on Fabric"
+    """
+    Montblanc Chassis EEPROM have only BMC and ASIC switch
+    need to ignore x86
+    """
 
-    def set_odm_pcba_number(self):
-        self.odm_pcba_part_number = "ODM/JDM PCBA Part Number"
-        self.odm_pcba_serial_number = "ODM/JDM PCBA Serial Number"
-
-    def test_asset_tag(self):
-        self.asset_tag = []
+    def test_x86_mac(self):
+        pass
 
 
-class SCMEepromTest(CommonEepromTest, unittest.TestCase):
+class SCMEepromTest(EepromV5Test, unittest.TestCase):
     """
     Test for SCM EEPROM
     """
@@ -61,15 +59,13 @@ class SCMEepromTest(CommonEepromTest, unittest.TestCase):
     def set_location_on_fabric(self):
         self.location_on_fabric = ["SCM"]
 
-    def set_eeprom_location(self):
-        self.test_eeprom_location = "EEPROM location on Fabric"
+    """
+    Montblanc SCM EEPROM have only x86
+    need to ignore BMC and ASIC switch
+    """
 
-    def set_odm_pcba_number(self):
-        self.odm_pcba_part_number = "ODM/JDM PCBA Part Number"
-        self.odm_pcba_serial_number = "ODM/JDM PCBA Serial Number"
+    def test_bmc_mac(self):
+        pass
 
-    def test_asset_tag(self):
-        self.asset_tag = []
-
-    def test_extended_mac_base(self):
-        self.extended_mac = []
+    def test_switch_asic_mac(self):
+        pass

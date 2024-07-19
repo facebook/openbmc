@@ -52,7 +52,26 @@ static const i2c_dev_attr_st pwrcpld_attrs[] = {
 		0,
 		8,
 	},
-
+	{
+		"smb1_dc_status",
+		"0: DC Fail\n"
+		"1: DC Normal",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x16,
+		5,
+		1,
+	},
+	{
+		"smb2_dc_status",
+		"0: DC Fail\n"
+		"1: DC Normal",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x16,
+		6,
+		1,
+	},
 	/*
 	 * Chassis power cycle (register 0x23)
 	 */

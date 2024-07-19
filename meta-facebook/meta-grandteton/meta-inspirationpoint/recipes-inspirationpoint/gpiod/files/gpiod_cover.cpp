@@ -480,9 +480,8 @@ gta_mc_power_fault_handle(uint8_t* temp_mb_resp) {
         tbuf[0] = mc_offset[i];
         tlen = 1;
         rlen = 1;
-        ret = i2c_rdwr_msg_transfer(i2cfd, MC_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
-        if (ret < 0) {
-          syslog(LOG_WARNING, "%s() I2C transfer to MC CPLD failed, RET: %d", __func__, ret);
+        if (retry_cond((ret = i2c_rdwr_msg_transfer(i2cfd, MC_CPLD_ADDR, tbuf, tlen, rbuf, rlen)) < 0, 3, 100)) {
+          syslog(LOG_WARNING, "%s() I2C transfer to MC CPLD failed after 3 attempts, RET: %d", __func__, ret);
           i2c_cdev_slave_close(i2cfd);
           goto end;
         }

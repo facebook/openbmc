@@ -17,7 +17,8 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		"version_id",
 		"NW J3 Blade SCM Board revision:\n"
 		" 0x0: EVT-1\n"
-		" 0x1: EVT-2",
+		" 0x1: EVT-2\n"
+		" 0x3: DVT",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x00,

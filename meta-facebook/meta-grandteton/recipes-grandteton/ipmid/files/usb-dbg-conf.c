@@ -484,17 +484,11 @@ int plat_get_gdesc(uint8_t fru, dbg_gpio_desc_t **desc, size_t *desc_count)
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
   static sensor_desc_t sensors[255];
-  bool module = is_mb_hsc_module();
   uint8_t hsc_cnt = sizeof(hsc_cri_sensor) / sizeof(hsc_cri_sensor[0]);
   uint8_t cri_cnt = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
 
   if (!desc || !desc_count) {
     return -1;
-  }
-
-  if(module) {
-    for (int i=0; i<hsc_cnt; i++)
-      hsc_cri_sensor[i].fru= FRU_HSC;
   }
 
   memcpy(sensors, &cri_sensor, sizeof(cri_sensor));

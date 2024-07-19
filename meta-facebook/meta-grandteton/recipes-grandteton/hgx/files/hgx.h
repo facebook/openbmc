@@ -5,6 +5,7 @@ typedef enum HMCPhase {
   HMC_FW_EVT = 0,
   HMC_FW_DVT = 1,
   BMC_FW_DVT = 2,
+  BMC_FW_B100 = 3
 } HMCPhase;
 
 typedef enum GPUConfig {

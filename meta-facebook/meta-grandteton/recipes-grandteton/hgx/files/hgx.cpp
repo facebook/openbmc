@@ -137,6 +137,8 @@ class HGXMgr {
 
 static HGXMgr hgx;
 
+bool containStr(const std::string& str, const std::initializer_list<std::string>& substrings);
+
 GPUConfig getConfig() {
   GPIO gpio("GPU_PRSNT_N_ISO_R");
   const std::string config_key{"gpu_config"};
@@ -327,12 +329,28 @@ HMCPhase getHMCPhase() {
   if (phase != HMCPhase::HMC_FW_UNKNOWN) {
     return phase;
   }
+
   if (tryPhase(HMC_FW_INVENTORY + "HGX_FW_BMC_0")) {
-    phase = HMCPhase::BMC_FW_DVT;
-  } else if (tryPhase(HMC_FW_INVENTORY + "HGX_FW_HMC_0")) {
+    auto chassisUrl = HMC_URL + "Chassis/HGX_Chassis_0";
+    json jurl = json::parse(hgx.get(chassisUrl));
+    if (jurl.contains("Model")) {
+      auto model = jurl["Model"].dump();
+      if (containStr(model, {"H100"})) {
+        phase = HMCPhase::BMC_FW_DVT;
+      }
+      else if (containStr(model, {"B100"})) {
+        phase = HMCPhase::BMC_FW_B100;
+      }
+    }
+  }
+  else if (tryPhase(HMC_FW_INVENTORY + "HGX_FW_HMC_0")) {
     phase = HMCPhase::HMC_FW_DVT;
-  } else if (tryPhase(HMC_FW_INVENTORY + "HMC_Firmware")) {
+  }
+  else if (tryPhase(HMC_FW_INVENTORY + "HMC_Firmware")) {
     phase = HMCPhase::HMC_FW_EVT;
+  }
+  else {
+    phase = HMC_FW_UNKNOWN;
   }
   return phase;
 }

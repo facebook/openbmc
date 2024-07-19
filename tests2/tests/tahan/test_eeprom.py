@@ -19,10 +19,10 @@
 #
 import unittest
 
-from common.base_eeprom_test import CommonEepromTest
+from common.base_eeprom_test import EepromV5Test
 
 
-class ChassisEepromTest(CommonEepromTest, unittest.TestCase):
+class ChassisEepromTest(EepromV5Test, unittest.TestCase):
     """
     Test for CHASSIS EEPROM
     """
@@ -35,16 +35,3 @@ class ChassisEepromTest(CommonEepromTest, unittest.TestCase):
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["SMB"]
-
-    # overide for FBOSS EEPROMv4 format, display different
-    def set_eeprom_location(self):
-        self.test_eeprom_location = "EEPROM location on Fabric"
-
-    # overide for FBOSS EEPROMv4 format, display different
-    def set_odm_pcba_number(self):
-        self.odm_pcba_part_number = "ODM/JDM PCBA Part Number"
-        self.odm_pcba_serial_number = "ODM/JDM PCBA Serial Number"
-
-    # not asset tag field for FBOSS EEPROMv4 format
-    def test_asset_tag(self):
-        pass

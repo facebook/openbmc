@@ -260,9 +260,11 @@ if [ "$bic_ready" -eq 0 ]; then
       break
     fi
   done
+fi
 
-　# SWB NIC
-  kv set swb_nic_present 1
+# SWB NIC
+kv set swb_nic_present 1
+if [ $(gpio_get SWB_HSC_PWRGD_ISO_R) -eq 1 ]; then
   for i in {8..15}
   do
     output=$(i2cget -y -f 32 0x13 $i | tr -d ' \t\n\r')

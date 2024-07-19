@@ -47,14 +47,11 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/mb/fruid"
     def set_endpoint_fruid_attributes(self):
-        endpoint_info = self.get_from_endpoint(self.FRUID_ENDPOINT)
-        version = int(
-            endpoint_info.split("Version")[1].split(":")[1].split(",")[0].split('"')[1]
+        self.endpoint_fruid_attrb = (
+            self.FRUID_ATTRIBUTES_V5
+            + self.FRUID_ATTRIBUTES_V5_BMC
+            + self.FRUID_ATTRIBUTES_V5_SWITCH_ASIC
         )
-        if version == 4:
-            self.endpoint_fruid_attrb = self.FRUID_ATTRIBUTES_V4
-        else:
-            self.endpoint_fruid_attrb = self.FRUID_ATTRIBUTES
 
     @unittest.skip("not available")
     # "/api/sys/firmware_info/all"
@@ -65,7 +62,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     # "/api/sys/sensors"
     def set_endpoint_sensors_attributes(self):
         pass
-    
+
     @unittest.skip("not available")
     # "/api/sys/server"
     def set_endpoint_server_attributes(self):

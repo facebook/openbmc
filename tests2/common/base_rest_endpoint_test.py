@@ -223,7 +223,6 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
         "Product Name",
     ]
     FRUID_ATTRIBUTES_V4 = [
-        "Version",
         "Product Name",
         "Product Part Number",
         "System Assembly Part Number",
@@ -244,7 +243,36 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
         "Extended MAC Address Size",
         "EEPROM location on Fabric",
     ]
-
+    FRUID_ATTRIBUTES_V5 = [
+        "Product Name",
+        "Product Part Number",
+        "System Assembly Part Number",
+        "Meta PCBA Part Number",
+        "Meta PCB Part Number",
+        "ODM/JDM PCBA Part Number",
+        "ODM/JDM PCBA Serial Number",
+        "Product Production State",
+        "Product Version",
+        "Product Sub-Version",
+        "Product Serial Number",
+        "System Manufacturer",
+        "System Manufacturing Date",
+        "PCB Manufacturer",
+        "Assembled at",
+        "EEPROM location on Fabric",
+    ]
+    FRUID_ATTRIBUTES_V5_X86 = [
+        "X86 CPU MAC Base",
+        "X86 CPU MAC Address Size",
+    ]
+    FRUID_ATTRIBUTES_V5_BMC = [
+        "BMC MAC Base",
+        "BMC MAC Address Size",
+    ]
+    FRUID_ATTRIBUTES_V5_SWITCH_ASIC = [
+        "Switch ASIC MAC Base",
+        "Switch ASIC MAC Address Size",
+    ]
     BMC_ATTRIBUTES = [
         "At-Scale-Debug Running",
         "CPU Usage",

@@ -41,6 +41,7 @@ import (
 	"os"
 	"regexp"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -83,6 +84,7 @@ type mtd_info_user struct {
 
 const sizeof_mtd_info_user = 32
 const sizeof_erase_user_info = 8
+const chunkSize = uint32(1048576)
 
 // linux/include/uapi/mtd/mtd-abi.h
 var MEMGETINFO = ioctl.IOR('M', 1, sizeof_mtd_info_user)
@@ -254,6 +256,8 @@ var eraseFlashDevice = func(
 	imFile imageFile,
 	roOffset uint32,
 ) error {
+	sleepTodo := int32(chunkSize)
+
 	log.Printf("Erasing flash device '%v'...", deviceFile.Name())
 
 	if m.erasesize == 0 {
@@ -293,6 +297,18 @@ var eraseFlashDevice = func(
 			log.Print(errMsg)
 			return errors.Errorf("%v", errMsg)
 		}
+
+		// For every chunkSize bytes of work done, sleep for 1/4s to
+		// allow for other work on the system (especially I/O to the
+		// SPI) to complete.
+		//
+		// In practice erasesize will be smaller than chunkSize but
+		// in any case this will still trigger every so often.
+		sleepTodo = sleepTodo - int32(m.erasesize);
+		if sleepTodo <= 0 {
+			sleepTodo = int32(chunkSize);
+			utils.Sleep(time.Millisecond * 250);
+		}
 	}
 
 	log.Printf("Finished erasing flash device '%v'", deviceFile.Name())
@@ -306,7 +322,6 @@ var flashImage = func(
 	imFile imageFile,
 	roOffset uint32,
 ) error {
-	const chunkSize = uint32(1048576)
 	fileSize := uint32(len(imFile.data))
 
 	log.Printf("Flashing image '%v' on to flash device '%v'", imFile.name, deviceFile.Name())
@@ -336,6 +351,11 @@ var flashImage = func(
 				imFile.name, deviceFile.Name(), n, err,
 			)
 		}
+
+		// For every chunkSize bytes of work done, sleep for 1/4s to
+		// allow for other work on the system (especially I/O to the
+		// SPI) to complete.
+		utils.Sleep(time.Millisecond * 250);
 	}
 
 	log.Printf("Finished flashing image '%v' on to flash device '%v'",

@@ -23,6 +23,7 @@ import (
 	"bytes"
 	"math"
 	"testing"
+	"time"
 	"unsafe"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -59,6 +60,7 @@ func TestFlashCp(t *testing.T) {
 	runFlashProcessOrig := runFlashProcess
 	closeFileOrig := closeFlashDeviceFile
 	PetWatchdogOrig := utils.PetWatchdog
+	sleepOrig := utils.Sleep
 	defer func() {
 		openFlashDeviceFile = openFileOrig
 		getMtdInfoUser = getMtdInfoUserOrig
@@ -67,6 +69,7 @@ func TestFlashCp(t *testing.T) {
 		runFlashProcess = runFlashProcessOrig
 		closeFlashDeviceFile = closeFileOrig
 		utils.PetWatchdog = PetWatchdogOrig
+		utils.Sleep = sleepOrig
 	}()
 
 	cases := []struct {
@@ -168,6 +171,7 @@ func TestFlashCp(t *testing.T) {
 	}
 	utils.PetWatchdog = func() {
 	}
+	utils.Sleep = func(t time.Duration) {}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -227,6 +231,7 @@ func TestRunFlashProcess(t *testing.T) {
 	flashImageOrig := flashImage
 	verifyFlashOrig := verifyFlash
 	PetWatchdogOrig := utils.PetWatchdog
+	sleepOrig := utils.Sleep
 	defer func() {
 		openFlashDeviceFile = openFlashDeviceFileOrig
 		closeFlashDeviceFile = closeFlashDeviceFileOrig
@@ -235,6 +240,7 @@ func TestRunFlashProcess(t *testing.T) {
 		flashImage = flashImageOrig
 		verifyFlash = verifyFlashOrig
 		utils.PetWatchdog = PetWatchdogOrig
+		utils.Sleep = sleepOrig
 	}()
 
 	cases := []struct {
@@ -298,6 +304,7 @@ func TestRunFlashProcess(t *testing.T) {
 	}
 	utils.PetWatchdog = func() {
 	}
+	utils.Sleep = func(t time.Duration) {}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -441,8 +448,10 @@ func TestHealthCheck(t *testing.T) {
 
 func TestEraseFlashDevice(t *testing.T) {
 	IOCTLOrig := IOCTL
+	sleepOrig := utils.Sleep
 	defer func() {
 		IOCTL = IOCTLOrig
+		utils.Sleep = sleepOrig
 	}()
 
 	imData := []byte("foobar")
@@ -529,6 +538,7 @@ func TestEraseFlashDevice(t *testing.T) {
 	fileutils.Munmap = func(data []byte) error {
 		return nil
 	}
+	utils.Sleep = func(t time.Duration) {}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -566,8 +576,10 @@ func TestEraseFlashDevice(t *testing.T) {
 
 func TestFlashImage(t *testing.T) {
 	pwriteOrig := fileutils.Pwrite
+	sleepOrig := utils.Sleep
 	defer func() {
 		fileutils.Pwrite = pwriteOrig
+		utils.Sleep = sleepOrig
 	}()
 
 	imData := []byte("foobar")
@@ -610,6 +622,9 @@ func TestFlashImage(t *testing.T) {
 			want:     errors.Errorf("roOffset (100) >= file size (6)"),
 		},
 	}
+
+	utils.Sleep = func(t time.Duration) {}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fileutils.Pwrite = func(fd int, p []byte, roOffset int64) (n int, err error) {
@@ -642,13 +657,16 @@ func TestFlashImage(t *testing.T) {
 func TestVerifyFlash(t *testing.T) {
 	mmapFileRangeOrig := fileutils.MmapFileRange
 	munmapOrig := fileutils.Munmap
+	sleepOrig := utils.Sleep
 	defer func() {
 		fileutils.MmapFileRange = mmapFileRangeOrig
 		fileutils.Munmap = munmapOrig
+		utils.Sleep = sleepOrig
 	}()
 	fileutils.Munmap = func(b []byte) error {
 		return nil
 	}
+	utils.Sleep = func(t time.Duration) {}
 
 	imData := []byte("foobar")
 	imFile := imageFile{

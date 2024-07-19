@@ -12,6 +12,7 @@ LOCAL_URI = " \
     file://mfg-tool.cpp \
     file://cmd \
     file://utils \
+    file://scripts \
     "
 
 DEPENDS += " \
@@ -21,3 +22,11 @@ DEPENDS += " \
     phosphor-logging \
     sdbusplus \
     "
+
+RDEPENDS:${PN} += " \
+    bash \
+    "
+
+do_install:append() {
+    install -m 755 ${S}/scripts/table-sensor-display ${D}${bindir}/table-sensor-display
+}

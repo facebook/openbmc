@@ -1,0 +1,18 @@
+#!/bin/bash
+
+jq --raw-output '
+  def roundit: if . then (.*10000.0|round/10000.0) else "N/A" end;
+  (["sensor", "status", "value", "units", "UNR", "UCR", "UNC", "LNC", "LCR", "LNR"] | (., map(length*"-"))),
+  (to_entries[] | [
+    .key,
+    .value.status,
+    (.value.value | roundit),
+    .value.unit,
+    (.value."hard-shutdown".low | roundit),
+    (.value.critical.low | roundit),
+    (.value.warning.low | roundit),
+    (.value.warning.high | roundit),
+    (.value.critical.high | roundit),
+    (.value."hard-shutdown".high | roundit)
+  ]) | @tsv
+'

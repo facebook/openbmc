@@ -27,9 +27,7 @@ int CpldLatticeManager::jedFileParser()
     bool ufmPrepare = false;
     bool versionStart = false;
     bool checksumStart = false;
-#ifdef ENABLE_UPDATE_EBR_INIT
     bool ebrInitDataStart = false;
-#endif
     int numberSize = 0;
 
     std::string line;
@@ -130,7 +128,6 @@ int CpldLatticeManager::jedFileParser()
                     std::cerr << "CF Size = " << fwInfo.cfgData.size()
                               << std::endl;
                     cfStart = false;
-#ifdef ENABLE_UPDATE_EBR_INIT
                     if (ebrInitDataStart == false)
                     {
                         ufmPrepare = true;
@@ -138,6 +135,7 @@ int CpldLatticeManager::jedFileParser()
                 }
             }
         }
+#ifdef ENABLE_UPDATE_EBR_INIT
         else if (ebrInitDataStart == true)
         {
             // NOTE EBR_INIT DATA
@@ -175,10 +173,10 @@ int CpldLatticeManager::jedFileParser()
                         ebrInitDataStart = false;
                         ufmPrepare = true;
                     }
-#endif
                 }
             }
         }
+#endif
         else if ((checksumStart == true) && (line.size() != 1))
         {
             checksumStart = false;

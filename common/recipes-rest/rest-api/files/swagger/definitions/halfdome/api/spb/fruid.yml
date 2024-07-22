@@ -48,7 +48,11 @@ paths:
                     type: string
                   Product Asset Tag: 
                     type: string
+                  Product FRU ID: 
+                    type: string
                   Product Custom Data 1: 
+                    type: string
+                  Product Custom Data 2: 
                     type: string
               Actions: 
                 type: array

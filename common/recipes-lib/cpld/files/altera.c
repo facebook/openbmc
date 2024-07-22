@@ -86,7 +86,7 @@ int set_i2c_register(int file, uint8_t addr, int reg, int value)
   outbuf[1] = (reg >> 16 ) & 0xFF;
   outbuf[2] = (reg >> 8 )  & 0xFF;
   outbuf[3] = (reg >> 0 )  & 0xFF;
-  if (g_i2c_val_endian == LITTLE_ENDIAN) {
+  if (g_i2c_val_endian == I2C_LITTLE_ENDIAN) {
     outbuf[4] = (value >> 0 ) & 0xFF;
     outbuf[5] = (value >> 8 ) & 0xFF;
     outbuf[6] = (value >> 16 )  & 0xFF;

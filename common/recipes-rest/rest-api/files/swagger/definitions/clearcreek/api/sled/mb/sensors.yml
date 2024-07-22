@@ -1,0 +1,371 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sled/mb/sensors
+  title: Swagger doc for /api/sled/mb/sensors
+  version: 1.0.0
+paths:
+  /api/sled/mb/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  CC_P0V8_VDD0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD0_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD0_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE0_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE0_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD1_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD1_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE1_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE1_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD2_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD2_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE2_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE2_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD3_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD3_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE3_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE3_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P12V_AUX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P3V3_STBY:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P5V_STBY:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P3V3:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P3V3_PAX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P3V_BAT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P2V5_AUX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P1V2_AUX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P1V15_AUX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_PAX_0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_PAX_1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_PAX_2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_PAX_3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SYSTEM_INLET_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SYSTEM_INLET_REMOTE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_INLET_TEMP_L:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_INLET_REMOTE_TEMP_L:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_INLET_TEMP_R:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_INLET_REMOTE_TEMP_R:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_0_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_0_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_1_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_1_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

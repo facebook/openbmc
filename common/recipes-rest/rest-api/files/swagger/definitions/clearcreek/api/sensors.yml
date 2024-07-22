@@ -1,0 +1,1127 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sensors
+  title: Swagger doc for /api/sensors
+  version: 1.0.0
+paths:
+  /api/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  CC_P0V8_VDD0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD0_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD0_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE0_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE0_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD1_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD1_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE1_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE1_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD2_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD2_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE2_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE2_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD3_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_VDD3_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE3_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_P0V8_AVD_PCIE3_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P12V_AUX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P3V3_STBY:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P5V_STBY:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P3V3:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P3V3_PAX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P3V_BAT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P2V5_AUX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P1V2_AUX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_P1V15_AUX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_PAX_0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_PAX_1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_PAX_2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_PAX_3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SYSTEM_INLET_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SYSTEM_INLET_REMOTE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_INLET_TEMP_L:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_INLET_REMOTE_TEMP_L:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_INLET_TEMP_R:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BB_INLET_REMOTE_TEMP_R:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_0_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_0_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_1_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_MB_BAY_1_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_HSC_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_HSC_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_HSC_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_HSC_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_HSC_PIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_0_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_0_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_1_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_1_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_2_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_2_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_3_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_3_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_INLET_TEMP_L:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_INLET_REMOTE_TEMP_L:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_INLET_TEMP_R:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_INLET_REMOTE_TEMP_R:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_FAN0_TACH_I:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_FAN0_TACH_O:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_FAN1_TACH_I:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_FAN1_TACH_O:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_FAN2_TACH_I:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_FAN2_TACH_O:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_FAN3_TACH_I:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_PDB_FAN3_TACH_O:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_0_PWM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_1_PWM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_2_PWM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_FAN_3_PWM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_FTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_RTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_0_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_1_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_2_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_3_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_4_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_5_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_6_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_7_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_0_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_0_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_1_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_2_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_3_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_4_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_4_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_5_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_5_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_6_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_6_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_7_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_0_NVME_7_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BAY0_INA219_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BAY0_INA219_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BAY0_INA219_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_FTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_RTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_0_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_1_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_2_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_3_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_4_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_5_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_6_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_7_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SSD_BAY_1_NVME_CTEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_0_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_1_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_2_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_3_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_4_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_4_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_5_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_5_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_6_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_6_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_7_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_M2_1_NVME_7_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BAY1_INA219_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BAY1_INA219_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_BAY1_INA219_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_0_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_0_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_1_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_1_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_2_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_2_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_3_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_3_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_4_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_4_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_4_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_4_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_5_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_5_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_5_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_5_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_6_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_6_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_6_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_6_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_7_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_7_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_7_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_NIC_7_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CC_SYSTEM_AIRFLOW:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

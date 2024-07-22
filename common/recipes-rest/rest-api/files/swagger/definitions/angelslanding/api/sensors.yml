@@ -1,0 +1,995 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sensors
+  title: Swagger doc for /api/sensors
+  version: 1.0.0
+paths:
+  /api/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  AL_MB_INLET_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_OUTLET_TEMP_R:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_OUTLET_TEMP_L:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_INLET_REMOTE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_OUTLET_R_REMOTE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_OUTLET_L_REMOTE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P5V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P5V_STBY:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P3V3_STBY:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P3V3:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P3V_BAT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU_P1V8:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_PCH_P1V8:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_PVPP_ABC:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_PVPP_DEF:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_PVTT_ABC:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_PVTT_DEF:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_PVPP_ABC:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_PVPP_DEF:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_PVTT_ABC:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_PVTT_DEF:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_HSC_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_HSC_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_HSC_PIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_HSC_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_HSC_PEAK_PIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_PCH_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_DIMM_A0_C0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_DIMM_A1_C1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_DIMM_A2_C2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_DIMM_A3_C3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_DIMM_A4_C4_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_DIMM_A5_C5_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_DIMM_B0_D0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_DIMM_B1_D1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_DIMM_B2_D2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_DIMM_B3_D3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_DIMM_B4_D4_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_DIMM_B5_D5_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_DATA0_DRIVE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_DATA1_DRIVE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_PKG_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_PKG_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_TJMAX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_TJMAX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU0_THERM_MARGIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU1_THERM_MARGIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P12V_STBY_INA260_VOL:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P3V3_M2_1_INA260_VOL:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P3V3_M2_2_INA260_VOL:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P3V3_M2_3_INA260_VOL:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P12V_STBY_INA260_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P3V3_M2_1_INA260_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P3V3_M2_2_INA260_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_P3V3_M2_3_INA260_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCIN_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCIN_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCIN_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCIN_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCSA_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCSA_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCSA_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCSA_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCIO_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCIO_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCIO_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VCCIO_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VDDQ_ABC_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VDDQ_ABC_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VDDQ_ABC_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VDDQ_ABC_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VDDQ_DEF_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VDDQ_DEF_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VDDQ_DEF_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU0_VDDQ_DEF_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCIN_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCIN_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCIN_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCIN_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCSA_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCSA_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCSA_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCSA_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCIO_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCIO_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCIO_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VCCIO_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VDDQ_ABC_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VDDQ_ABC_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VDDQ_ABC_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VDDQ_ABC_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VDDQ_DEF_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VDDQ_DEF_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VDDQ_DEF_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_CPU1_VDDQ_DEF_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_PCH_P1V05_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_PCH_P1V05_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_PCH_P1V05_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_PCH_P1V05_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_PCH_PVNN_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_PCH_PVNN_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_PCH_PVNN_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_VR_PCH_PVNN_POUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN0_INLET_SPEED:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN1_INLET_SPEED:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN2_INLET_SPEED:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN3_INLET_SPEED:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN0_OUTLET_SPEED:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN1_OUTLET_SPEED:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN2_OUTLET_SPEED:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN3_OUTLET_SPEED:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN0_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN1_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN2_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN3_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN0_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN1_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN2_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_FAN3_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_HSC_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_HSC_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_HSC_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_HSC_PIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_HSC_PEAK_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_HSC_PEAK_PIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_P12V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_PDB_P3V3:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_NIC_MEZZ0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_NIC_MEZZ1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB1_HSC_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB1_HSC_IOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB1_HSC_PIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB1_HSC_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB1_HSC_PEAK_PIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_DIMM_A0_C0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_DIMM_A1_C1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_DIMM_A2_C2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_DIMM_A3_C3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_DIMM_A4_C4_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_DIMM_A5_C5_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_DIMM_B0_D0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_DIMM_B1_D1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_DIMM_B2_D2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_DIMM_B3_D3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_DIMM_B4_D4_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_DIMM_B5_D5_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_PKG_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_PKG_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_TJMAX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_TJMAX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU2_THERM_MARGIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  AL_MB_CPU3_THERM_MARGIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SYSTEM_AIRFLOW:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

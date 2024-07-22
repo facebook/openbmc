@@ -1,0 +1,923 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sensors
+  title: Swagger doc for /api/sensors
+  version: 1.0.0
+paths:
+  /api/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  EP_MB_FAN0_TACH_I:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN0_TACH_O:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN0_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN0_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN1_TACH_I:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN1_TACH_O:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN1_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN1_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN2_TACH_I:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN2_TACH_O:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN2_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN2_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN3_TACH_I:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN3_TACH_O:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN3_VOLT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN3_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_ADC_P12V_AUX:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_ADC_P3V3_STBY:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_ADC_P5V_STBY:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_ADC_P12V_1:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_ADC_P12V_2:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_ADC_P3V3:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_ADC_P3V_BAT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_INLET:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_INLET_REMOTE:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_OUTLET:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_OUTLET_REMOTE:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_PAX01_THERM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_PAX0_THERM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_PAX1_THERM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_PAX23_THERM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_PAX2_THERM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SENSOR_PAX3_THERM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SWITCH_PAX0_DIE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SWITCH_PAX1_DIE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SWITCH_PAX2_DIE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_SWITCH_PAX3_DIE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD0_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD0_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD0_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD1_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD1_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD1_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD2_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD2_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD2_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD3_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD3_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD3_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD0_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD0_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD0_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD1_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD1_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD1_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD2_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD2_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD2_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD3_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD3_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD3_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_1_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_1_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_1_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_1_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_1_PWR_PEAK:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_2_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_2_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_2_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_2_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_2_PWR_PEAK:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_AUX_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_AUX_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_AUX_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_AUX_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P12V_AUX_PWR_PEAK:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_1_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_1_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_1_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_1_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_1_PWR_PEAK:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_2_VIN:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_2_VOUT:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_2_CURR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_2_PWR:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_HSC_P48V_2_PWR_PEAK:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_ADC_1_VICOR0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_ADC_1_VICOR1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_ADC_1_VICOR2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_ADC_1_VICOR3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_ADC_2_VICOR0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_ADC_2_VICOR1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_ADC_2_VICOR2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_ADC_2_VICOR3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_SENSOR_OUTLET:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_PDB_SENSOR_OUTLET_REMOTE:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_GPU0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU0_EDGE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_HBM0_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU0_PWCS:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_GPU1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU1_EDGE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_HBM1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU1_PWCS:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_GPU2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU2_EDGE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_HBM2_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU2_PWCS:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_GPU3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU3_EDGE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_HBM3_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU3_PWCS:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_GPU4_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU4_EDGE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_HBM4_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU4_PWCS:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_GPU5_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU5_EDGE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_HBM5_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU5_PWCS:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_GPU6_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU6_EDGE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_HBM6_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU6_PWCS:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_GPU7_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU7_EDGE_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_NVIDIA_HBM7_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_GPU7_PWCS:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_SYSTEM_AIRFLOW:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN0_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN1_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN2_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_FAN3_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD0_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD1_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD2_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P0V8_VDD3_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD0_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD1_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD2_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  EP_MB_VR_P1V0_AVD3_POWER:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

@@ -1,0 +1,35 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sled/mezz1/sensors
+  title: Swagger doc for /api/sled/mezz1/sensors
+  version: 1.0.0
+paths:
+  /api/sled/mezz1/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  AL_NIC_MEZZ1_TEMP:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

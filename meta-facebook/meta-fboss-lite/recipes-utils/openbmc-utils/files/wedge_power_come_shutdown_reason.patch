@@ -1,0 +1,32 @@
+From 5c78a6d47a2beefa8d7f5d5068bce047284dedfc Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Tue, 16 Jul 2024 09:02:22 +0000
+Subject: [PATCH] add come shutdown reason check
+
+---
+ wedge_power.sh     | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/wedge_power.sh b/wedge_power.sh
+index ab9f129d9d5..7d6da257a8d 100755
+--- a/wedge_power.sh
++++ b/wedge_power.sh
+@@ -52,6 +52,15 @@ do_status() {
+         echo "on"
+     else
+         echo "off"
++        if leakage_detection_status_check; then
++            echo "Reason: Coolant Leakage Detected"
++        fi
++        if user_issued_shutdown_status_check; then
++            echo "Reason: User-initiated COMe shutdown"
++        fi
++        if ! leakage_detection_status_check && ! user_issued_shutdown_status_check; then
++            echo "Reason: Unknown"
++        fi
+     fi
+ 
+     return 0
+-- 
+2.25.1
+

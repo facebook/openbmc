@@ -1,7 +1,7 @@
-From bfcdb3b51fc3e0c6bf0a82af3f3bfb530367f4d9 Mon Sep 17 00:00:00 2001
+From 3a850b8079f5a83c54fb130a67d630b8507c093b Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
-Subject: [PATCH 03/12] platform-mc: Added EventManager
+Subject: [PATCH 02/13] platform-mc: Added EventManager
 
 Added eventManager to handle sensor event class(00h),
 pldmMessagePollEvent class(05h)  and OEM CPER event class(FAh)
@@ -1088,10 +1088,10 @@ index 342c028..d0dacae 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index 9ff3bdf..c009c1a 100644
+index 21e4bcf..3e1a700 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
-@@ -13,6 +13,10 @@ namespace platform_mc
+@@ -15,6 +15,10 @@ namespace platform_mc
  
  exec::task<int> PlatformManager::initTerminus()
  {
@@ -1102,9 +1102,9 @@ index 9ff3bdf..c009c1a 100644
      for (auto& [tid, terminus] : termini)
      {
          if (terminus->initialized)
-@@ -40,7 +44,118 @@ exec::task<int> PlatformManager::initTerminus()
-                     "TID", tid, "ERROR", rc);
-             }
+@@ -36,7 +40,118 @@ exec::task<int> PlatformManager::initTerminus()
+ 
+             terminus->parseTerminusPDRs();
          }
 +
 +        uint16_t terminusMaxBufferSize = terminus->maxBufferSize;
@@ -1508,10 +1508,10 @@ index 861a3d4..6368299 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 95caa40..32be0ad 100644
+index 6ed45d5..3c87517 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -8,9 +8,13 @@ namespace pldm
+@@ -10,9 +10,13 @@ namespace pldm
  {
  namespace platform_mc
  {
@@ -1527,10 +1527,10 @@ index 95caa40..32be0ad 100644
      inventoryPath = "/xyz/openbmc_project/inventory/Item/Board/PLDM_Device_" +
                      std::to_string(tid);
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 9105b05..d8b4137 100644
+index 6425f83..22669eb 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
-@@ -102,6 +102,18 @@ class Terminus
+@@ -100,6 +100,18 @@ class Terminus
      /** @brief A flag to indicate if terminus has been initialized */
      bool initialized = false;
  
@@ -1550,7 +1550,7 @@ index 9105b05..d8b4137 100644
      std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
  
 diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
-index fccbb1c..7c002d9 100644
+index 2816fb7..5e9f8a7 100644
 --- a/platform-mc/terminus_manager.hpp
 +++ b/platform-mc/terminus_manager.hpp
 @@ -54,10 +54,11 @@ class TerminusManager
@@ -2171,10 +2171,10 @@ index 460009d..0db976b 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 3aea04a..ef9b322 100644
+index 32b5a57..821dc88 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -261,6 +261,33 @@ int main(int argc, char** argv)
+@@ -270,6 +270,33 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -2208,7 +2208,7 @@ index 3aea04a..ef9b322 100644
      auto platformHandler = std::make_unique<platform::Handler>(
          &dbusHandler, hostEID, &instanceIdDb, PDR_JSONS_DIR, pdrRepo.get(),
          hostPDRHandler.get(), dbusToPLDMEventHandler.get(), fruHandler.get(),
-@@ -293,8 +320,6 @@ int main(int argc, char** argv)
+@@ -302,8 +329,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);

@@ -1,42 +1,29 @@
-From abeb9d2fcb1fbcf580b939e3ead0559d1e886470 Mon Sep 17 00:00:00 2001
+From 6130640eaef7c13b41b20595a5f96e384e2ff367 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
-Date: Mon, 25 Mar 2024 10:51:36 -0700
+Date: Fri, 19 Jul 2024 16:07:49 -0700
 Subject: [PATCH] mutual-tls-meta: Support "svc" and "host" entity types
 
-Summary:
-
-Test Plan:
-
-Reviewers:
-
-Subscribers:
-
-Tasks:
-
-Tags:
-Change-Id: I5101776dbf5fafe8700ad6e3de0e60a0432962cc
 ---
- http/mutual_tls.hpp           |  3 +-
+ http/mutual_tls.hpp           |  2 +-
  http/mutual_tls_meta.hpp      | 64 ++++++++++++++++++++++++++++-------
  test/http/mutual_tls_meta.cpp | 35 ++++++++++++++++---
- 3 files changed, 83 insertions(+), 19 deletions(-)
+ 3 files changed, 83 insertions(+), 18 deletions(-)
 
 diff --git a/http/mutual_tls.hpp b/http/mutual_tls.hpp
-index 5392549b..2618c842 100644
+index eb26b5a..919b515 100644
 --- a/http/mutual_tls.hpp
 +++ b/http/mutual_tls.hpp
-@@ -96,8 +96,7 @@ inline std::shared_ptr<persistent_data::UserSession>
-     // Meta Inc. CommonName parsing
-     if constexpr (BMCWEB_MUTUAL_TLS_COMMON_NAME_PARSING == "meta")
-     {
--        std::optional<std::string_view> sslUserMeta =
--            mtlsMetaParseSslUser(sslUser);
-+        std::optional<std::string> sslUserMeta = mtlsMetaParseSslUser(sslUser);
-         if (!sslUserMeta)
+@@ -36,7 +36,7 @@ inline std::string getUsernameFromCommonName(std::string_view commonName)
+         case persistent_data::MTLSCommonNameParseMode::Meta:
          {
-             return nullptr;
+             // Meta Inc. CommonName parsing
+-            std::optional<std::string_view> sslUserMeta =
++            std::optional<std::string> sslUserMeta =
+                 mtlsMetaParseSslUser(commonName);
+             if (!sslUserMeta)
+             {
 diff --git a/http/mutual_tls_meta.hpp b/http/mutual_tls_meta.hpp
-index 5e55db8e..3381dd48 100644
+index 5e55db8..3381dd4 100644
 --- a/http/mutual_tls_meta.hpp
 +++ b/http/mutual_tls_meta.hpp
 @@ -7,17 +7,17 @@
@@ -142,7 +129,7 @@ index 5e55db8e..3381dd48 100644
 +    return std::format("{}_{}", entityType, entity);
  }
 diff --git a/test/http/mutual_tls_meta.cpp b/test/http/mutual_tls_meta.cpp
-index 0e280c10..dc214d8c 100644
+index 0e280c1..dc214d8 100644
 --- a/test/http/mutual_tls_meta.cpp
 +++ b/test/http/mutual_tls_meta.cpp
 @@ -14,14 +14,35 @@ namespace

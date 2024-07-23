@@ -1,7 +1,7 @@
-From e333d957ed8fa697946f730ef42af86b8a8951af Mon Sep 17 00:00:00 2001
+From 5559601e7d4e31b34db826507f6d636b44dead21 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 7 Feb 2024 13:52:07 +0800
-Subject: [PATCH 06/12] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 05/13] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -1087,10 +1087,10 @@ index 378628e..47c45df 100644
  
  tests = [
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 700e0a0..3791664 100644
+index dd3b599..6696dd4 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -277,7 +277,8 @@ int main(int argc, char** argv)
+@@ -286,7 +286,8 @@ int main(int argc, char** argv)
      // Platform handler.
  
      std::unique_ptr<platform_mc::Manager> platformManager =
@@ -1100,7 +1100,7 @@ index 700e0a0..3791664 100644
  
      pldm::responder::platform::EventMap addOnEventHandlers{
          {PLDM_OEM_EVENT_CLASS_0xFA,
-@@ -300,6 +301,13 @@ int main(int argc, char** argv)
+@@ -309,6 +310,13 @@ int main(int argc, char** argv)
                               size_t eventDataOffset) {
          return platformManager->handleSensorEvent(
              request, payloadLength, formatVersion, tid, eventDataOffset);
@@ -1115,5 +1115,5 @@ index 700e0a0..3791664 100644
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.25.1
+2.43.0
 

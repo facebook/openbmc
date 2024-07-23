@@ -1,7 +1,7 @@
-From 19d50c65174d9da6f72bf030736c0303a981823a Mon Sep 17 00:00:00 2001
+From b571d787de40906d1e9085bdb78557e400067eaa Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
-Subject: [PATCH 02/12] platform-mc: Sensor handling
+Subject: [PATCH 01/13] platform-mc: Sensor handling
 
 Added sensor_manager and numeric_sensor class. The sensor_manager
 class manages the timing of sensor polling. The NumericSensor class
@@ -22,7 +22,7 @@ Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
  platform-mc/numeric_sensor.hpp             | 219 +++++++
  platform-mc/sensor_manager.cpp             | 410 ++++++++++++
  platform-mc/sensor_manager.hpp             | 117 ++++
- platform-mc/terminus.cpp                   | 114 +++-
+ platform-mc/terminus.cpp                   | 113 +++-
  platform-mc/terminus.hpp                   |  30 +
  platform-mc/terminus_manager.cpp           |  18 +
  platform-mc/test/meson.build               |   4 +
@@ -31,7 +31,7 @@ Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
  platform-mc/test/platform_manager_test.cpp |   3 +
  platform-mc/test/sensor_manager_test.cpp   | 147 +++++
  pldmd/pldmd.cpp                            |   2 +-
- 17 files changed, 2107 insertions(+), 3 deletions(-)
+ 17 files changed, 2106 insertions(+), 3 deletions(-)
  create mode 100644 platform-mc/examples/pldm_t2_config.json
  create mode 100644 platform-mc/numeric_sensor.cpp
  create mode 100644 platform-mc/numeric_sensor.hpp
@@ -1626,10 +1626,10 @@ index 0000000..861a3d4
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 333813e..95caa40 100644
+index 194583f..6ed45d5 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -11,7 +11,22 @@ namespace platform_mc
+@@ -13,7 +13,22 @@ namespace platform_mc
  
  Terminus::Terminus(pldm_tid_t tid, uint64_t supportedTypes) :
      initialized(false), tid(tid), supportedTypes(supportedTypes)
@@ -1653,8 +1653,8 @@ index 333813e..95caa40 100644
  
  bool Terminus::doesSupportType(uint8_t type)
  {
-@@ -95,6 +110,17 @@ bool Terminus::parsePDRs()
-             rc = false;
+@@ -124,6 +139,16 @@ void Terminus::parseTerminusPDRs()
+             }
          }
      }
 +
@@ -1667,11 +1667,10 @@ index 333813e..95caa40 100644
 +    {
 +        addCompactNumericSensor(pdr);
 +    }
-+
-     return rc;
  }
  
-@@ -169,11 +195,56 @@ std::shared_ptr<pldm_numeric_sensor_value_pdr>
+ std::shared_ptr<SensorAuxiliaryNames>
+@@ -215,11 +240,56 @@ std::shared_ptr<pldm_numeric_sensor_value_pdr>
      auto rc = decode_numeric_sensor_pdr_data(ptr, pdr.size(), parsedPdr.get());
      if (rc)
      {
@@ -1728,7 +1727,7 @@ index 333813e..95caa40 100644
  std::shared_ptr<SensorAuxiliaryNames>
      Terminus::parseCompactNumericSensorNames(const std::vector<uint8_t>& sPdr)
  {
-@@ -247,5 +318,46 @@ std::shared_ptr<pldm_compact_numeric_sensor_pdr>
+@@ -289,5 +359,46 @@ std::shared_ptr<pldm_compact_numeric_sensor_pdr>
      return parsedPdr;
  }
  
@@ -1776,7 +1775,7 @@ index 333813e..95caa40 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 8fa4ea0..9105b05 100644
+index 3a1a302..6425f83 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -3,7 +3,9 @@
@@ -1798,7 +1797,7 @@ index 8fa4ea0..9105b05 100644
  
  /**
   * @brief Terminus
-@@ -98,6 +102,9 @@ class Terminus
+@@ -96,6 +100,9 @@ class Terminus
      /** @brief A flag to indicate if terminus has been initialized */
      bool initialized = false;
  
@@ -1808,7 +1807,7 @@ index 8fa4ea0..9105b05 100644
      /** @brief Get Sensor Auxiliary Names by sensorID
       *
       *  @param[in] id - sensor ID
-@@ -106,6 +113,15 @@ class Terminus
+@@ -104,6 +111,15 @@ class Terminus
      std::shared_ptr<SensorAuxiliaryNames> getSensorAuxiliaryNames(SensorId id);
  
    private:
@@ -1824,7 +1823,7 @@ index 8fa4ea0..9105b05 100644
      /** @brief Parse the numeric sensor PDRs
       *
       *  @param[in] pdrData - the response PDRs from GetPDR command
-@@ -122,6 +138,14 @@ class Terminus
+@@ -120,6 +136,14 @@ class Terminus
      std::shared_ptr<SensorAuxiliaryNames>
          parseSensorAuxiliaryNamesPDR(const std::vector<uint8_t>& pdrData);
  
@@ -1839,7 +1838,7 @@ index 8fa4ea0..9105b05 100644
      /** @brief Parse the compact numeric sensor PDRs
       *
       *  @param[in] pdrData - the response PDRs from GetPDR command
-@@ -157,6 +181,12 @@ class Terminus
+@@ -155,6 +179,12 @@ class Terminus
      /* @brief Sensor Auxiliary Name list */
      std::vector<std::shared_ptr<SensorAuxiliaryNames>>
          sensorAuxiliaryNamesTbl{};
@@ -1853,10 +1852,10 @@ index 8fa4ea0..9105b05 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index bb40d8d..13d40e7 100644
+index 0b5cf88..c5d3f53 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -160,6 +160,7 @@ auto TerminusManager::findTeminusPtr(const MctpInfo& mctpInfo)
+@@ -160,6 +160,7 @@ auto TerminusManager::findTerminusPtr(const MctpInfo& mctpInfo)
  
  exec::task<int> TerminusManager::discoverMctpTerminusTask()
  {
@@ -2410,10 +2409,10 @@ index 0000000..cd4e5a4
 +    sensorManager.stopPolling(tid);
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 9613e02..3aea04a 100644
+index 8695fe8..32b5a57 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -187,7 +187,7 @@ int main(int argc, char** argv)
+@@ -196,7 +196,7 @@ int main(int argc, char** argv)
      auto event = Event::get_default();
      auto& bus = pldm::utils::DBusHandler::getBus();
      sdbusplus::server::manager_t objManager(bus,

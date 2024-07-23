@@ -108,9 +108,8 @@ SRC_URI:append = " \
 #
 SRC_URI:append = " \
     file://0300-To-support-MCP9600-temperature-driver.patch \
-    file://0301-To-support-LTC4286-LTC4287-driver.patch \
-    file://0302-Kernel6v5-Support-apml-driver.patch \
-    file://0303-hwmon-Add-driver-for-Astera-Labs-PT5161L-retimer.patch \
+    file://0301-Kernel6v5-Support-apml-driver.patch \
+    file://0302-hwmon-Add-driver-for-Astera-Labs-PT5161L-retimer.patch \
 "
 
 #

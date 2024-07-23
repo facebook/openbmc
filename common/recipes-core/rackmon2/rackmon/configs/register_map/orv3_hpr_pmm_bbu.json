@@ -1,0 +1,503 @@
+{
+    "name": "ORV3_HPR_PMM_BBU",
+    "address_range": [[16, 26]],
+    "probe_register": 0,
+    "default_baudrate": 115200,
+    "preferred_baudrate": 115200,
+    "registers": [
+        {
+            "begin": 0,
+            "length": 8,
+            "format": "STRING",
+            "name": "PMM_FBPN"
+        },
+        {
+            "begin": 8,
+            "length": 8,
+            "format": "STRING",
+            "name": "PMM_MFR_Name"
+        },
+        {
+            "begin": 16,
+            "length": 8,
+            "format": "STRING",
+            "name": "PMM_MFR_Model"
+        },
+        {
+            "begin": 24,
+            "length": 8,
+            "format": "STRING",
+            "name": "PMM_MFR_Date"
+        },
+        {
+            "begin": 32,
+            "length": 16,
+            "format": "STRING",
+            "name": "PMM_MFR_Serial"
+        },
+        {
+            "begin": 48,
+            "length": 4,
+            "format": "STRING",
+            "name": "PMM_Workorder"
+        },
+        {
+            "begin": 52,
+            "length": 4,
+            "format": "STRING",
+            "name": "PMM_HW_Revision"
+        },
+        {
+            "begin": 56,
+            "length": 4,
+            "format": "STRING",
+            "name": "PMM_FW_Revision"
+        },
+        {
+            "begin": 76,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "Total_Up_Time"
+        },
+        {
+            "begin": 78,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "Time_Since_Last_On"
+        },
+        {
+            "begin": 80,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "Unix_Time"
+        },
+        {
+            "begin": 82,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Size_Module_Reg_Map"
+        },
+        {
+            "begin": 83,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Shelf_Type_ID"
+        },
+        {
+            "begin": 84,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "TOR_Modbus_Port_Addr"
+        },
+        {
+            "begin": 85,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Shelf_Addr_Int_Addr"
+        },
+        {
+            "begin": 86,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "ISHARE_Cable_Connected"
+        },
+        {
+            "begin": 87,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Module1_Present"
+                ],
+                [
+                    1,
+                    "Module2_Present"
+                ],
+                [
+                    2,
+                    "Module3_Present"
+                ],
+                [
+                    3,
+                    "Module4_Present"
+                ],
+                [
+                    4,
+                    "Module5_Present"
+                ],
+                [
+                    5,
+                    "Module6_Present"
+                ]
+            ],
+            "name": "Module_Present"
+        },
+        {
+            "begin": 88,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Module1_Alert"
+                ],
+                [
+                    1,
+                    "Module2_Alert"
+                ],
+                [
+                    2,
+                    "Module3_Alert"
+                ],
+                [
+                    3,
+                    "Module4_Alert"
+                ],
+                [
+                    4,
+                    "Module5_Alert"
+                ],
+                [
+                    5,
+                    "Module6_Alert"
+                ]
+            ],
+            "name": "Module_Alert"
+        },
+        {
+            "begin": 89,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Missing_Modules"
+                ],
+                [
+                    1,
+                    "Shelf_EEPROM_Fault"
+                ],
+                [
+                    4,
+                    "Module_Modbus_Communication_Error"
+                ],
+                [
+                    5,
+                    "PMM_Modbus_Communication_Error"
+                ],
+                [
+                    6,
+                    "Serial_Link_Fault"
+                ],
+                [
+                    8,
+                    "Module_Alerts"
+                ],
+                [
+                    12,
+                    "ISHARE_Cable_Not_Detected"
+                ]
+            ],
+            "name": "General_Alarm_Status_Register"
+        },
+        {
+            "begin": 90,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Module1_Planned"
+                ],
+                [
+                    1,
+                    "Module2_Planned"
+                ],
+                [
+                    2,
+                    "Module3_Planned"
+                ],
+                [
+                    3,
+                    "Module4_Planned"
+                ],
+                [
+                    4,
+                    "Module5_Planned"
+                ],
+                [
+                    5,
+                    "Module6_Planned"
+                ]
+            ],
+            "name": "Module_Planned"
+        },
+        {
+            "begin": 92,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Blue_LED_On"
+                ],
+                [
+                    1,
+                    "Blue_LED_Blink"
+                ],
+                [
+                    4,
+                    "Amber_LED_On"
+                ],
+                [
+                    5,
+                    "Amber_LED_Blink"
+                ]
+            ],
+            "name": "PMM_LED_Status_Register"
+        },
+        {
+            "begin": 93,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "RX_Serial_Input_Failure"
+                ],
+                [
+                    1,
+                    "Module1_Modbus_Fault"
+                ],
+                [
+                    2,
+                    "Module2_Modbus_Fault"
+                ],
+                [
+                    3,
+                    "Module3_Modbus_Fault"
+                ],
+                [
+                    4,
+                    "Module4_Modbus_Fault"
+                ],
+                [
+                    5,
+                    "Module5_Modbus_Fault"
+                ],
+                [
+                    6,
+                    "Module6_Modbus_Fault"
+                ],
+                [
+                    8,
+                    "Shelf_EEPROM_Fault"
+                ]
+            ],
+            "name": "Communication_Alarm_Status_Register"
+        },
+        {
+            "begin": 94,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Serial_CRC_Error_Counter"
+        },
+        {
+            "begin": 95,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "PMM_Modbus_CRC_Error_Counter"
+        },
+        {
+            "begin": 96,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_1"
+        },
+        {
+            "begin": 97,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_2"
+        },
+        {
+            "begin": 98,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_3"
+        },
+        {
+            "begin": 99,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_4"
+        },
+        {
+            "begin": 100,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_5"
+        },
+        {
+            "begin": 101,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_6"
+        },
+        {
+            "begin": 102,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_1"
+        },
+        {
+            "begin": 103,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_2"
+        },
+        {
+            "begin": 104,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_3"
+        },
+        {
+            "begin": 105,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_4"
+        },
+        {
+            "begin": 106,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_5"
+        },
+        {
+            "begin": 107,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_6"
+        },
+        {
+            "begin": 112,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "This_Shelf_Location"
+        },
+        {
+            "begin": 113,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "This_PMM_Modbus_Address"
+        },
+        {
+            "begin": 114,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "W400_Port_Number"
+        },
+        {
+            "begin": 115,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Next_PSU_Shelf_Location_Received"
+        },
+        {
+            "begin": 116,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Next_BBU_Shelf_Location_Received"
+        },
+        {
+            "begin": 117,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Next_PSU_Shelf_Location_Sent"
+        },
+        {
+            "begin": 118,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Next_BBU_Shelf_Location_Sent"
+        },
+        {
+            "begin": 119,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Power_Off_System_Unix_Time"
+        },
+        {
+            "begin": 121,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Modbus_Baud_Rate"
+        },
+        {
+            "begin": 122,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Operation_Mode"
+        },
+        {
+            "begin": 123,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Stop_Shelf_level_Module_Polling"
+        },
+        {
+            "begin": 124,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "RJ485_Port2_Addr0"
+                ],
+                [
+                    1,
+                    "RJ485_Port2_Addr1"
+                ],
+                [
+                    2,
+                    "RJ485_Port2_Addr2"
+                ],
+                [
+                    4,
+                    "Internal_Device_Addr0"
+                ],
+                [
+                    5,
+                    "Internal_Device_Addr1"
+                ],
+                [
+                    6,
+                    "Internal_Device_Addr2"
+                ],
+                [
+                    7,
+                    "Internal_Device_Addr3"
+                ],
+                [
+                    8,
+                    "Amber_LED"
+                ],
+                [
+                    9,
+                    "Blue_LED"
+                ],
+                [
+                    11,
+                    "Shelf_EEPROM_Write_Protect"
+                ],
+                [
+                    15,
+                    "Test_Mode_Enable"
+                ]
+            ],
+            "name": "Digital_Outputs_Test"
+        }
+    ]
+}

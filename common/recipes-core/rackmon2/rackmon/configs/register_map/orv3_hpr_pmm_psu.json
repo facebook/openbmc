@@ -1,6 +1,6 @@
 {
-    "name": "ORV3_HPR_PMM",
-    "address_range": [[16, 26], [32, 42]],
+    "name": "ORV3_HPR_PMM_PSU",
+    "address_range": [[32, 42]],
     "probe_register": 0,
     "default_baudrate": 115200,
     "preferred_baudrate": 115200,

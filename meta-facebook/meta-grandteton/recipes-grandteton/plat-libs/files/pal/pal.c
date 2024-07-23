@@ -68,6 +68,7 @@
 
 #define CONFIG_HGX 0x01
 #define CONFIG_UBB 0x02
+#define CONFIG_HNEXT 0x03
 #define CONFIG_UNKNOWN 0XFF
 
 #ifdef CONFIG_ARTEMIS
@@ -1610,7 +1611,9 @@ pal_get_dev_card_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
   char value[MAX_VALUE_LEN] = {0};
 
   if(kv_get("gpu_config", value, NULL, KV_FPERSIST) == 0) {
-    if (strcmp( value, "hgx") == 0) {
+    if(pal_is_gt_hnext()) {
+      res_data[0] = CONFIG_HNEXT;
+    } else if (strcmp( value, "hgx") == 0) {
       res_data[0] = CONFIG_HGX;
     } else if(strcmp( value, "ubb") == 0) {
       res_data[0] = CONFIG_UBB;

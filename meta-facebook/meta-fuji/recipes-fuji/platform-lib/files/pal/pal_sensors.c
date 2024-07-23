@@ -1128,12 +1128,101 @@ get_current_dir(const char *device, char *dir_name) {
   return 0;
 }
 
+/**
+ * @brief Checks if the sensor reading is within thresholds.
+ */
+static inline bool
+is_sensor_reading_valid(uint8_t fru, uint8_t snr_num, int value) {
+  float unc, lnc;
+  float tmp = ((float)value) / UNIT_DIV;
+
+  pal_get_sensor_threshold(FRU_SMB, snr_num, UNC_THRESH, &unc);
+  pal_get_sensor_threshold(FRU_SMB, snr_num, LNC_THRESH, &lnc);
+  return (tmp <= unc && tmp >= lnc) ? true : false;
+}
+
+/**
+ * @brief Resets the sensor SMB_XP2R5V_BMC.
+ */
+static int
+reset_sensor_SMB_XP2R5V_BMC(uint8_t fru) {
+  const uint8_t PAGE = 1; // For sensor SMB_XP2R5V_BMC
+  const uint8_t PMBUS_COMMAND_PAGE_OFFSET = 0x00;
+  const uint8_t PMBUS_COMMAND_OPERATION_OFFSET = 0x01;
+  const uint8_t I2C_BUS_UCD = 5;
+  uint8_t I2C_ADDR_UCD;
+
+  if (get_dev_addr_from_file(fru, KEY_PWRSEQ1, &I2C_ADDR_UCD) == -1) {
+    syslog(LOG_WARNING, "%s: FAIL get SMB bus%d dev1 addr", __func__, I2C_BUS_UCD);
+    return -1;
+  }
+
+  int fd = i2c_cdev_slave_open(I2C_BUS_UCD, I2C_ADDR_UCD, I2C_SLAVE_FORCE_CLAIM);
+  if (fd == -1) {
+    syslog(LOG_ERR, "%s: FAIL to open I2C device", __func__);
+    return -1;
+  }
+
+  if (i2c_smbus_write_byte_data(fd, PMBUS_COMMAND_PAGE_OFFSET, PAGE) < 0) {
+    syslog(LOG_ERR, "%s: i2c_smbus_write_byte_data() to PAGE_OFFSET failed", __func__);
+    i2c_cdev_slave_close(fd);
+    return -1;
+  }
+
+  if (i2c_smbus_write_byte_data(fd, PMBUS_COMMAND_OPERATION_OFFSET, 0x00) < 0) {
+    syslog(LOG_ERR, "%s: i2c_smbus_write_byte_data() to OPERATION_OFFSET failed", __func__);
+    i2c_cdev_slave_close(fd);
+    return -1;
+  }
+
+  i2c_cdev_slave_close(fd);
+  return 0;
+}
+
+/**
+ * @brief Reads, validates, and potentially resets the sensor reading.
+ *
+ * This function reads the sensor value from the specified path, checks if the reading
+ * is outside the defined thresholds for the sensor `SMB_XP2R5V_BMC`. If the reading
+ * is invalid, it attempts to reset the sensor and read the value again, up to a maximum
+ * number of retries.
+ * For other sensors, if the reading is not available (N/A), it will also retry reading
+ * the sensor value a specified number of times.
+ */
+static int
+read_validate_and_reset_sensor(uint8_t fru, uint8_t snr_num, const char *path, int *value) {
+  const int MAX_RETRY = 3;
+  int retry = 0, ret = 0;
+
+  do {
+    ret = device_read(path, value);
+    if (ret == 0) {
+      // Only perform validation and reset for SMB_XP2R5V_BMC
+      if (fru == FRU_SMB && snr_num == SMB_XP2R5V_BMC) {
+        if (!is_sensor_reading_valid(fru, snr_num, *value)) {
+          syslog(LOG_WARNING, "%s: Sensor SMB_XP2R5V_BMC value is %.3f not within,"
+                 " the threshold, attempting to reset sensor",
+                 __func__, (float)*value / UNIT_DIV);
+          if (reset_sensor_SMB_XP2R5V_BMC(fru) < 0) {
+            return -1;
+          }
+        } else {
+            return 0;
+          }
+      } else {
+          return 0;
+        }
+    }
+    retry++;
+  } while (retry < MAX_RETRY);
+
+    return -1;
+}
 
 static int
 check_and_read_sensor_value(uint8_t fru, uint8_t snr_num, const char *device,
                             const char *attr, int *value) {
   char dir_name[LARGEST_DEVICE_NAME + 1];
-  int retry = 0, max_retry = 3, ret = 0;
 
   if (strstr(device, "hwmon*") != NULL) {
     /* Get current working directory */
@@ -1147,11 +1236,11 @@ check_and_read_sensor_value(uint8_t fru, uint8_t snr_num, const char *device,
              "%s/%s", device, attr);
   }
 
-  do {
-    ret = device_read(snr_path[fru][snr_num].name, value);
-  } while ((ret != 0) && (retry++ < max_retry));
+  if (read_validate_and_reset_sensor(fru, snr_num, snr_path[fru][snr_num].name, value) == 0) {
+    return 0;
+  }
 
-  return (ret == 0) ? 0 : -1;
+  return -1;
 }
 
 static int

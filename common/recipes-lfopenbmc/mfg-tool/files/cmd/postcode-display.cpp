@@ -77,7 +77,7 @@ struct command
             if (!extra.empty())
             {
                 std::string result;
-                for (ssize_t i = extra.size() - 1;  i >= 0; i--)
+                for (size_t i = 0; i < extra.size(); i++)
                 {
                     result += std::format("{:02x}", extra[i]);
                 }

@@ -2,8 +2,8 @@
 
 jq --raw-output '
   def roundit: if . then (.*10000.0|round/10000.0) else "N/A" end;
-  (["sensor", "status", "value", "units", "UNR", "UCR", "UNC", "LNC", "LCR", "LNR"] | (., map(length*"-"))),
-  (to_entries[] | [
+  [["sensor", "status", "value", "units", "UNR", "UCR", "UNC", "LNC", "LCR", "LNR"]] +
+  (to_entries | map([
     .key,
     .value.status,
     (.value.value | roundit),
@@ -14,5 +14,13 @@ jq --raw-output '
     (.value.warning.high | roundit),
     (.value.critical.high | roundit),
     (.value."hard-shutdown".high | roundit)
-  ]) | @tsv
+  ])) | transpose |
+  map(
+    map(tostring) | (map(length) | max) as $max |
+    map(. + (" " * ($max - length)))
+  ) | transpose |
+  .[0],
+  (.[0] | map(length * "-")),
+  .[1:][] |
+  @tsv
 '

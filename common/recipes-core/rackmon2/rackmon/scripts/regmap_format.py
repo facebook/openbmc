@@ -186,6 +186,7 @@ def parse_args():
     )
     parser.add_argument(
         "input",
+        nargs="+",
         help="Input register map file (JSON or CSV)",
     )
     parser.add_argument(
@@ -199,7 +200,7 @@ def parse_args():
         help="Update just registers in JSON if it already exists",
     )
     args = parser.parse_args()
-    input_is_json = args.input.lower().endswith(".json")
+    input_is_json = args.input[0].lower().endswith(".json")
     if args.output is None:
         if input_is_json:
             args.output = "a.csv"
@@ -213,8 +214,8 @@ def main():
     Main function
     """
     args = parse_args()
-    if args.input.lower().endswith(".json"):
-        with open(args.input) as f:
+    if args.input[0].lower().endswith(".json"):
+        with open(args.input[0]) as f:
             data = json.load(f)
         with open(args.output, "w", newline="") as csvfile:
             dump_csv(data["registers"], csvfile)
@@ -230,10 +231,12 @@ def main():
         if args.update and os.path.isfile(args.output):
             with open(args.output) as f:
                 out = json.load(f)
-        with open(args.input) as csvfile:
-            out["registers"] = readRegs(csvfile)
-            with open(args.output, "w") as f:
-                json.dump(out, f, indent=4)
+                out["registers"] = []
+        for input_f in args.input:
+            with open(input_f) as csvfile:
+                out["registers"] += readRegs(csvfile)
+                with open(args.output, "w") as f:
+                    json.dump(out, f, indent=4)
 
 
 main()

@@ -36,6 +36,7 @@ const (
 	FLASHY_ERROR_SAFE_TO_REBOOT   = 42
 	FLASHY_ERROR_UNSAFE_TO_REBOOT = 52
 	FLASHY_ERROR_BROKEN_SYSTEM    = 53
+	FLASHY_ERROR_MISSING_MTD      = 54
 )
 
 type StepExitError interface {
@@ -53,6 +54,10 @@ type ExitUnsafeToReboot struct {
 }
 
 type ExitBadFlashChip struct {
+	Err error
+}
+
+type ExitMissingMtd struct {
 	Err error
 }
 
@@ -98,6 +103,18 @@ func (e ExitBadFlashChip) GetExitCode() int {
 
 func (e ExitBadFlashChip) GetType() string {
 	return "ExitBadFlashChip"
+}
+
+func (e ExitMissingMtd) GetError() string {
+	return e.Err.Error()
+}
+
+func (e ExitMissingMtd) GetExitCode() int {
+	return FLASHY_ERROR_MISSING_MTD
+}
+
+func (e ExitMissingMtd) GetType() string {
+	return "ExitMissingMtd"
 }
 
 func (e ExitMustReboot) GetError() string {
@@ -157,6 +174,7 @@ func HandleStepError(err StepExitError) {
 	case ExitUnsafeToReboot,
 		ExitUnknownError,
 		ExitBadFlashChip,
+		ExitMissingMtd,
 		ExitMustReboot:
 
 		encodeExitError(err)

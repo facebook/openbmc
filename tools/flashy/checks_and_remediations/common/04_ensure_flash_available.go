@@ -75,17 +75,13 @@ func ensureFlashAvailable(stepParams step.StepParams) step.StepExitError {
 	}
 
 	// Check for mtdparts aleady being set.
-	cmd = []string{"fw_printenv", "bootargs"}
+	cmd = []string{"ls", "/dev/mtd*"}
 	_, err, stdout, stderr = utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
-		if strings.Contains(stderr, "Cannot access MTD device") {
-			errMsg := errors.Errorf(
-				"U-Boot environment is inaccessible: broken flash chip?" +
-				" Error code: %v, stderr: %v", err, stderr)
-			return step.ExitBadFlashChip{Err: errMsg}
-		}
-		log.Printf("fw_printenv doesn't work: %v, stderr: %v", err, stderr)
-		return nil
+		errMsg := errors.Errorf(
+			"Broken flash chip? U-Boot environment is inaccessible." +
+			" Error code: %v, stderr: %v", err, stderr)
+		return step.ExitMissingMtd{Err: errMsg}
 	}
 
 	// Override mtdparts on next boot.

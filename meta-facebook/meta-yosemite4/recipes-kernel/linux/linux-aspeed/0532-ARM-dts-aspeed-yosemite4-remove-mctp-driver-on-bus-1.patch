@@ -1,0 +1,27 @@
+From 0cf041faa4e1c9f20c1ef00821067df4a8fb77b7 Mon Sep 17 00:00:00 2001
+From: Jerry C Chen <Jerry_C_Chen@wiwynn.com>
+Date: Tue, 23 Jul 2024 14:13:16 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite4: remove mctp driver on bus 15
+
+1. Only binding MCTP driver on the down-stream port of the mux.
+2. Remove unnecessary driver binding since there's no MCTP device before the mux.
+lore link: https://lore.kernel.org/lkml/20240719055859.4166887-28-Delphine_CC_Chiu@wiwynn.com/
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index 1b56534b8f27..9c594ec7d45e 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -1620,7 +1620,6 @@ adc@35 {
+ 
+ &i2c15 {
+ 	status = "okay";
+-	mctp-controller;
+ 	multi-master;
+ 	bus-frequency = <400000>;
+         i2c-clk-high-min-percent = <40>;
+-- 
+2.25.1
+

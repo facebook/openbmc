@@ -1,4 +1,4 @@
-From 3a850b8079f5a83c54fb130a67d630b8507c093b Mon Sep 17 00:00:00 2001
+From 765434c91462d2aa318c2cdc12ce490d012c021c Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 02/13] platform-mc: Added EventManager
@@ -34,8 +34,8 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  platform-mc/test/mock_terminus_manager.hpp |   3 +-
  platform-mc/test/sensor_manager_test.cpp   |   4 +-
  platform-mc/test/terminus_manager_test.cpp |   2 +-
- pldmd/pldmd.cpp                            |  29 +-
- 22 files changed, 1834 insertions(+), 19 deletions(-)
+ pldmd/pldmd.cpp                            |  32 +-
+ 22 files changed, 1836 insertions(+), 20 deletions(-)
  create mode 100644 platform-mc/event_manager.cpp
  create mode 100644 platform-mc/event_manager.hpp
  create mode 100644 platform-mc/test/event_manager_test.cpp
@@ -2171,10 +2171,10 @@ index 460009d..0db976b 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 32b5a57..821dc88 100644
+index 32b5a57..0a9de75 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -270,6 +270,33 @@ int main(int argc, char** argv)
+@@ -270,10 +270,38 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -2208,7 +2208,13 @@ index 32b5a57..821dc88 100644
      auto platformHandler = std::make_unique<platform::Handler>(
          &dbusHandler, hostEID, &instanceIdDb, PDR_JSONS_DIR, pdrRepo.get(),
          hostPDRHandler.get(), dbusToPLDMEventHandler.get(), fruHandler.get(),
-@@ -302,8 +329,6 @@ int main(int argc, char** argv)
+-        platformConfigHandler.get(), &reqHandler, event, true);
++        platformConfigHandler.get(), &reqHandler, event, true,
++        addOnEventHandlers);
+ 
+     auto biosHandler = std::make_unique<bios::Handler>(
+         pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
+@@ -302,8 +330,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
@@ -2218,5 +2224,5 @@ index 32b5a57..821dc88 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.43.0
+2.25.1
 

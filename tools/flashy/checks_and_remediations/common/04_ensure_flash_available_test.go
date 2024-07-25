@@ -50,10 +50,12 @@ func TestEnsureFlashAvailable(t *testing.T) {
 	cases := []struct {
 		name              string
 		vbootUtilExists   bool
-		lfOpenBMC	  bool
+		lfOpenBMC	        bool
 		failGrep          bool
+		failLs            bool
 		failPrint         bool
 		failSet           bool
+		lsOutput          string
 		printOutput       string
 		grepOutput        string
 		want              step.StepExitError
@@ -63,8 +65,10 @@ func TestEnsureFlashAvailable(t *testing.T) {
 			vbootUtilExists:   true,
 			lfOpenBMC:         false,
 			failGrep:          false,
+			failLs:            false,
 			failPrint:         false,
 			failSet:           false,
+			lsOutput:          "/dev/mtd1",
 			printOutput:       "derp",
 			grepOutput:        "foo",
 			want:              nil,
@@ -74,8 +78,10 @@ func TestEnsureFlashAvailable(t *testing.T) {
 			vbootUtilExists:   false,
 			lfOpenBMC:         true,
 			failGrep:          false,
+			failLs:            false,
 			failPrint:         false,
 			failSet:           false,
+			lsOutput:          "/dev/mtd1",
 			printOutput:       "derp",
 			grepOutput:        "foo",
 			want:              nil,
@@ -85,8 +91,10 @@ func TestEnsureFlashAvailable(t *testing.T) {
 			vbootUtilExists:   false,
 			lfOpenBMC:         false,
 			failGrep:          false,
+			failLs:            false,
 			failPrint:         false,
 			failSet:           false,
+			lsOutput:          "/dev/mtd1",
 			printOutput:       "bootargs=console=ttyS2,9600n8 root=/dev/ram rw",
 			grepOutput:        "mtd4: 02000000 00010000 \"flash0\"",
 			want:              nil,
@@ -96,8 +104,10 @@ func TestEnsureFlashAvailable(t *testing.T) {
 			vbootUtilExists:   false,
 			lfOpenBMC:         false,
 			failGrep:          true,
+			failLs:            false,
 			failPrint:         false,
 			failSet:           false,
+			lsOutput:          "/dev/mtd1",
 			printOutput:       "bootargs=console=ttyS2,9600n8 root=/dev/ram rw",
 			grepOutput:        "",
 			want:              step.ExitMustReboot{Err: errors.Errorf("Forcing reboot for new bootargs to take effect")},
@@ -107,19 +117,36 @@ func TestEnsureFlashAvailable(t *testing.T) {
 			vbootUtilExists:   false,
 			lfOpenBMC:         false,
 			failGrep:          false,
+			failLs:            true,
+			failPrint:         false,
+			failSet:           false,
+			lsOutput:          "Cannot access MTD device /dev/mtd1: No such file or directory",
+			printOutput:       "",
+			grepOutput:        "",
+			want:              step.ExitMissingMtd{Err: errors.Errorf("Broken flash chip? Cannot see MTD chips on device. Error code: err1, stderr: Cannot access MTD device /dev/mtd1: No such file or directory")},
+		},
+		{
+			name:              "fw_printenv broken",
+			vbootUtilExists:   false,
+			lfOpenBMC:         false,
+			failGrep:          false,
+			failLs:            false,
 			failPrint:         true,
 			failSet:           false,
+			lsOutput:          "/dev/mtd1",
 			printOutput:       "Cannot access MTD device /dev/mtd1: No such file or directory",
 			grepOutput:        "",
-			want:              step.ExitMissingMtd{Err: errors.Errorf("Broken flash chip? U-Boot environment is inaccessible. Error code: err1, stderr: Cannot access MTD device /dev/mtd1: No such file or directory")},
+			want:              step.ExitBadFlashChip{Err: errors.Errorf("Broken flash chip? U-Boot environment is inaccessible. Error code: err1, stderr: Cannot access MTD device /dev/mtd1: No such file or directory")},
 		},
 		{
 			name:              "fw_setenv broken",
 			vbootUtilExists:   false,
 			lfOpenBMC:         false,
 			failGrep:          false,
+			failLs:            false,
 			failPrint:         false,
 			failSet:           true,
+			lsOutput:          "/dev/mtd1",
 			printOutput:       "bootargs=console=ttyS2,9600n8 root=/dev/ram rw",
 			grepOutput:        "",
 			want:              nil,
@@ -139,6 +166,12 @@ func TestEnsureFlashAvailable(t *testing.T) {
 						return 0, nil, tc.grepOutput, ""
 					}
 				} else if (cmdArr[0] == "ls") {
+					if (tc.failLs) {
+						return 1, errors.Errorf("err1"), "", tc.lsOutput
+					} else {
+						return 0, nil, "", tc.lsOutput
+					}
+				} else if (cmdArr[0] == "fw_printenv") {
 					if (tc.failPrint) {
 						return 1, errors.Errorf("err1"), "", tc.printOutput
 					} else {

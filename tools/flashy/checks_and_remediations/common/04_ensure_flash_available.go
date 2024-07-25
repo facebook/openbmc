@@ -79,12 +79,20 @@ func ensureFlashAvailable(stepParams step.StepParams) step.StepExitError {
 	_, err, stdout, stderr = utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
 		errMsg := errors.Errorf(
-			"Broken flash chip? U-Boot environment is inaccessible." +
+			"Broken flash chip? Cannot see MTD chips on device." +
 			" Error code: %v, stderr: %v", err, stderr)
 		return step.ExitMissingMtd{Err: errMsg}
 	}
 
 	// Override mtdparts on next boot.
+	cmd = []string{"fw_printenv", "bootargs"}
+	_, err, stdout, stderr = utils.RunCommand(cmd, 30*time.Second)
+	if err != nil {
+		errMsg := errors.Errorf(
+			"Broken flash chip? U-Boot environment is inaccessible." +
+			" Error code: %v, stderr: %v", err, stderr)
+		return step.ExitBadFlashChip{Err: errMsg}
+	}
 	bootargs := strings.Replace(strings.TrimSpace(stdout), "bootargs=", "", 1)
 	log.Printf("Current bootargs: [%v]", bootargs)
 	if !strings.Contains(stdout, bootargsAppend) {

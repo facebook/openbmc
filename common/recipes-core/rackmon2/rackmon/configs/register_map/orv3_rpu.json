@@ -1,7 +1,10 @@
 {
     "name": "ORV3_RPU",
     "address_range": [
-      [12, 12]
+        [
+            12,
+            12
+        ]
     ],
     "probe_register": 36864,
     "default_baudrate": 19200,
@@ -205,8 +208,8 @@
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
             "sign": true,
+            "scale": 0.1,
             "name": "RPU_Coolant_Outlet_Pressure_kPa"
         },
         {
@@ -214,8 +217,8 @@
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
             "sign": true,
+            "scale": 0.1,
             "name": "RPU_Coolant_Inlet_Pressure_kPa"
         },
         {
@@ -285,8 +288,14 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [1, "RPU_Fan2_Status"],
-                [0, "RPU_Fan1_Status"]
+                [
+                    1,
+                    "RPU_Fan2_Status"
+                ],
+                [
+                    0,
+                    "RPU_Fan1_Status"
+                ]
             ],
             "name": "RPU_Fan_Status"
         },
@@ -345,11 +354,26 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [4, "RPU_LED_Power_Status"],
-                [3, "RPU_LED_Fault_Status"],
-                [2, "RPU_LED_Leakage_Status"],
-                [1, "RPU_LED_Reservoir_Blinking"],
-                [0, "RPU_LED_Reservoir_On"]
+                [
+                    4,
+                    "RPU_LED_Power_Status"
+                ],
+                [
+                    3,
+                    "RPU_LED_Fault_Status"
+                ],
+                [
+                    2,
+                    "RPU_LED_Leakage_Status"
+                ],
+                [
+                    1,
+                    "RPU_LED_Reservoir_Blinking"
+                ],
+                [
+                    0,
+                    "RPU_LED_Reservoir_On"
+                ]
             ],
             "name": "RPU_LED_Status"
         },
@@ -524,7 +548,9 @@
         {
             "begin": 37140,
             "length": 1,
-            "format": "INTEGER",
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
             "name": "HEX_External_Y_Filter_Pressure"
         },
         {
@@ -544,7 +570,10 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [0, "Y_Filter_Sensor_Status"]
+                [
+                    0,
+                    "Y_Filter_Sensor_Status"
+                ]
             ],
             "name": "AALC_Sensor_Alarm"
         },
@@ -553,22 +582,70 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [15, "Bladder_Level_Sensor_Status"],
-                [14, "HEX_Static_Pressure_Sensor_Status"],
-                [13, "RPU_Low_Water_Level_Gauge_Status"],
-                [12, "RPU_Middle_Water_Level_Gauge_Status"],
-                [11, "RPU_HSC_Status"],
-                [10, "RPU_Air_Inlet_Thermometer_Status"],
-                [9, "HX_Water_Inlet_Thermometer_Status"],
-                [8, "HEX_Air_Inlet2_Thermometer_Status"],
-                [7, "HEX_Air_Inlet1_Thermometer_Status"],
-                [6, "HEX_Air_Outlet2_Thermometer_Status"],
-                [5, "HEX_Air_Outlet1_Thermometer_Status"],
-                [4, "RPU_Flow_Meter_Status"],
-                [3, "RPU_Coolant_Outlet_Gauge_Status"],
-                [2, "RPU_Coolant_Inlet_Gauge_Status"],
-                [1, "RPU_Coolant_Outlet_Thermometer_Status"],
-                [0, "RPU_Coolant_Inlet_Thermometer_Status"]
+                [
+                    15,
+                    "Bladder_Level_Sensor_Status"
+                ],
+                [
+                    14,
+                    "HEX_Static_Pressure_Sensor_Status"
+                ],
+                [
+                    13,
+                    "RPU_Low_Water_Level_Gauge_Status"
+                ],
+                [
+                    12,
+                    "RPU_Middle_Water_Level_Gauge_Status"
+                ],
+                [
+                    11,
+                    "RPU_HSC_Status"
+                ],
+                [
+                    10,
+                    "RPU_Air_Inlet_Thermometer_Status"
+                ],
+                [
+                    9,
+                    "HX_Water_Inlet_Thermometer_Status"
+                ],
+                [
+                    8,
+                    "HEX_Air_Inlet2_Thermometer_Status"
+                ],
+                [
+                    7,
+                    "HEX_Air_Inlet1_Thermometer_Status"
+                ],
+                [
+                    6,
+                    "HEX_Air_Outlet2_Thermometer_Status"
+                ],
+                [
+                    5,
+                    "HEX_Air_Outlet1_Thermometer_Status"
+                ],
+                [
+                    4,
+                    "RPU_Flow_Meter_Status"
+                ],
+                [
+                    3,
+                    "RPU_Coolant_Outlet_Gauge_Status"
+                ],
+                [
+                    2,
+                    "RPU_Coolant_Inlet_Gauge_Status"
+                ],
+                [
+                    1,
+                    "RPU_Coolant_Outlet_Thermometer_Status"
+                ],
+                [
+                    0,
+                    "RPU_Coolant_Inlet_Thermometer_Status"
+                ]
             ],
             "name": "AALC_Sensor_Alarm"
         },
@@ -577,17 +654,50 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [10, "Y_Filter_Status"],
-                [9, "Deassert_RPU_Ready"],
-                [8, "Emergency_Button_Triggered"],
-                [7, "Coolant_Loop_Blocked"],
-                [6, "Pump_Status_Abnormal"],
-                [5, "HEX_Water_Inlet_Temp_Status"],
-                [4, "RPU_Outlet_Pressure_Status"],
-                [3, "RPU_Air_Inlet_Temp_Status"],
-                [2, "RPU_Inlet_Temp_Status"],
-                [1, "RPU_Outlet_Temp_Status"],
-                [0, "RPU_Reservoir_Status_Abnormal"]
+                [
+                    10,
+                    "Y_Filter_Status"
+                ],
+                [
+                    9,
+                    "Deassert_RPU_Ready"
+                ],
+                [
+                    8,
+                    "Emergency_Button_Triggered"
+                ],
+                [
+                    7,
+                    "Coolant_Loop_Blocked"
+                ],
+                [
+                    6,
+                    "Pump_Status_Abnormal"
+                ],
+                [
+                    5,
+                    "HEX_Water_Inlet_Temp_Status"
+                ],
+                [
+                    4,
+                    "RPU_Outlet_Pressure_Status"
+                ],
+                [
+                    3,
+                    "RPU_Air_Inlet_Temp_Status"
+                ],
+                [
+                    2,
+                    "RPU_Inlet_Temp_Status"
+                ],
+                [
+                    1,
+                    "RPU_Outlet_Temp_Status"
+                ],
+                [
+                    0,
+                    "RPU_Reservoir_Status_Abnormal"
+                ]
             ],
             "name": "AALC_Status_Alarm"
         },
@@ -596,20 +706,62 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [13, "HEX_Rack_Floor_Leakage_Error"],
-                [12, "HEX_Rack_Pan_Leakage_Error"],
-                [11, "HEX_Rack_Floor_Leakage_Relay"],
-                [10, "HEX_Rack_Pan_Leakage_Relay"],
-                [9, "HEX_Rack_Floor_Leakage"],
-                [8, "HEX_Rack_Pan_Leakage"],
-                [7, "RPU_Opt_External_Leakage2_Abnormal"],
-                [6, "RPU_Opt_External_Leakage1_Abnormal"],
-                [5, "RPU_External_Leakage_Abnormal"],
-                [4, "RPU_Internal_Leakage_Abnormal"],
-                [3, "ITRack_chassis3_leakage"],
-                [2, "ITRack_chassis2_leakage"],
-                [1, "ITRack_chassis1_leakage"],
-                [0, "ITRack_chassis0_leakage"]
+                [
+                    13,
+                    "HEX_Rack_Floor_Leakage_Error"
+                ],
+                [
+                    12,
+                    "HEX_Rack_Pan_Leakage_Error"
+                ],
+                [
+                    11,
+                    "HEX_Rack_Floor_Leakage_Relay"
+                ],
+                [
+                    10,
+                    "HEX_Rack_Pan_Leakage_Relay"
+                ],
+                [
+                    9,
+                    "HEX_Rack_Floor_Leakage"
+                ],
+                [
+                    8,
+                    "HEX_Rack_Pan_Leakage"
+                ],
+                [
+                    7,
+                    "RPU_Opt_External_Leakage2_Abnormal"
+                ],
+                [
+                    6,
+                    "RPU_Opt_External_Leakage1_Abnormal"
+                ],
+                [
+                    5,
+                    "RPU_External_Leakage_Abnormal"
+                ],
+                [
+                    4,
+                    "RPU_Internal_Leakage_Abnormal"
+                ],
+                [
+                    3,
+                    "ITRack_chassis3_leakage"
+                ],
+                [
+                    2,
+                    "ITRack_chassis2_leakage"
+                ],
+                [
+                    1,
+                    "ITRack_chassis1_leakage"
+                ],
+                [
+                    0,
+                    "ITRack_chassis0_leakage"
+                ]
             ],
             "name": "Leakage"
         },
@@ -618,21 +770,66 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [15, "HEX_Comms_Status"],
-                [14, "HEX_Fan_Group3_Comms_Status"],
-                [13, "HEX_Fan_Group2_Comms_Status"],
-                [12, "HEX_Fan_Group1_Comms_Status"],
-                [10, "HEX_Coil_Dirty"],
-                [9, "HEX_Fan10_Status"],
-                [8, "HEX_Fan9_Status"],
-                [7, "HEX_Fan8_Status"],
-                [6, "HEX_Fan7_Status"],
-                [5, "HEX_Fan6_Status"],
-                [4, "HEX_Fan5_Status"],
-                [3, "HEX_Fan4_Status"],
-                [2, "HEX_Fan3_Status"],
-                [1, "HEX_Fan2_Status"],
-                [0, "HEX_Fan1_Status"]
+                [
+                    15,
+                    "HEX_Comms_Status"
+                ],
+                [
+                    14,
+                    "HEX_Fan_Group3_Comms_Status"
+                ],
+                [
+                    13,
+                    "HEX_Fan_Group2_Comms_Status"
+                ],
+                [
+                    12,
+                    "HEX_Fan_Group1_Comms_Status"
+                ],
+                [
+                    10,
+                    "HEX_Coil_Dirty"
+                ],
+                [
+                    9,
+                    "HEX_Fan10_Status"
+                ],
+                [
+                    8,
+                    "HEX_Fan9_Status"
+                ],
+                [
+                    7,
+                    "HEX_Fan8_Status"
+                ],
+                [
+                    6,
+                    "HEX_Fan7_Status"
+                ],
+                [
+                    5,
+                    "HEX_Fan6_Status"
+                ],
+                [
+                    4,
+                    "HEX_Fan5_Status"
+                ],
+                [
+                    3,
+                    "HEX_Fan4_Status"
+                ],
+                [
+                    2,
+                    "HEX_Fan3_Status"
+                ],
+                [
+                    1,
+                    "HEX_Fan2_Status"
+                ],
+                [
+                    0,
+                    "HEX_Fan1_Status"
+                ]
             ],
             "name": "HEX_Alarm"
         },
@@ -675,22 +872,70 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [15, "Pump4_Reset"],
-                [14, "Pump3_Reset"],
-                [13, "Pump2_Reset"],
-                [12, "Pump1_Reset"],
-                [11, "Clear_Log"],
-                [10, "Clear_Pump_Running_Time "],
-                [9, "Enable_Manual_Control"],
-                [8, "Set_Pump_Group2"],
-                [7, "Set_Pump_Group1"],
-                [6, "RPU_Remote_Power_Cycle"],
-                [5, "System_Stop"],
-                [4, "Auto_Tune_Pressure_Balance_Control_On"],
-                [3, "Auto_Tune_Flow_Control_On"],
-                [2, "Manual_Control_Fan_On"],
-                [1, "Manual_Control_Pump_On"],
-                [0, "Pump_Redundant_Switched_Enable"]
+                [
+                    15,
+                    "Pump4_Reset"
+                ],
+                [
+                    14,
+                    "Pump3_Reset"
+                ],
+                [
+                    13,
+                    "Pump2_Reset"
+                ],
+                [
+                    12,
+                    "Pump1_Reset"
+                ],
+                [
+                    11,
+                    "Clear_Log"
+                ],
+                [
+                    10,
+                    "Clear_Pump_Running_Time "
+                ],
+                [
+                    9,
+                    "Enable_Manual_Control"
+                ],
+                [
+                    8,
+                    "Set_Pump_Group2"
+                ],
+                [
+                    7,
+                    "Set_Pump_Group1"
+                ],
+                [
+                    6,
+                    "RPU_Remote_Power_Cycle"
+                ],
+                [
+                    5,
+                    "System_Stop"
+                ],
+                [
+                    4,
+                    "Auto_Tune_Pressure_Balance_Control_On"
+                ],
+                [
+                    3,
+                    "Auto_Tune_Flow_Control_On"
+                ],
+                [
+                    2,
+                    "Manual_Control_Fan_On"
+                ],
+                [
+                    1,
+                    "Manual_Control_Pump_On"
+                ],
+                [
+                    0,
+                    "Pump_Redundant_Switched_Enable"
+                ]
             ],
             "name": "RPU_Control"
         },
@@ -699,14 +944,1174 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
-                [5, "RPU_Opt2_External_Leakage_Setting_On"],
-                [4, "RPU_Opt1_External_Leakage_Setting_On"],
-                [3, "Rack_Pan_Leakage_Setting_On"],
-                [2, "Rack_Floor_Leakage_Setting_On"],
-                [1, "RPU_Internal_Leakage_Setting_On"],
-                [0, "RPU_External_Leakage_Setting_On"]
+                [
+                    5,
+                    "RPU_Opt2_External_Leakage_Setting_On"
+                ],
+                [
+                    4,
+                    "RPU_Opt1_External_Leakage_Setting_On"
+                ],
+                [
+                    3,
+                    "Rack_Pan_Leakage_Setting_On"
+                ],
+                [
+                    2,
+                    "Rack_Floor_Leakage_Setting_On"
+                ],
+                [
+                    1,
+                    "RPU_Internal_Leakage_Setting_On"
+                ],
+                [
+                    0,
+                    "RPU_External_Leakage_Setting_On"
+                ]
             ],
             "name": "Leakage_Settings"
+        },
+        {
+            "begin": 40960,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_BB_Tmp75_Temp_C"
+        },
+        {
+            "begin": 40961,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "PRU_BPB_Outlet_Temp_C"
+        },
+        {
+            "begin": 40962,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pdb_Hdc1080DMBr_Temp_C"
+        },
+        {
+            "begin": 40963,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump1_Hdc1080DMBr_Temp_C"
+        },
+        {
+            "begin": 40964,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump2_Hdc1080DMBr_Temp_C"
+        },
+        {
+            "begin": 40965,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump3_Hdc1080DMBr_Temp_C"
+        },
+        {
+            "begin": 40966,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_BB_HSC_P48V_Temp_C"
+        },
+        {
+            "begin": 40967,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_BPB_HSC_P48V_Temp_C"
+        },
+        {
+            "begin": 40968,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump1_HSC_P48V_Temp_C"
+        },
+        {
+            "begin": 40969,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump2_HSC_P48V_Temp_C"
+        },
+        {
+            "begin": 40970,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump3_HSC_P48V_Temp_C"
+        },
+        {
+            "begin": 40971,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_BB_HSC_P48V_Vin_Volt_V"
+        },
+        {
+            "begin": 40972,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_BPB_HSC_P48V_Vin_Volt_V"
+        },
+        {
+            "begin": 40973,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_Pump1_HSC_P48V_Vin_Volt_V"
+        },
+        {
+            "begin": 40974,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_Pump2_HSC_P48V_Vin_Volt_V"
+        },
+        {
+            "begin": 40975,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_Pump3_HSC_P48V_Vin_Volt_V"
+        },
+        {
+            "begin": 40976,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_BB_HSC_P48V_Iout_Curr_A"
+        },
+        {
+            "begin": 40977,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_BPB_HSC_P48V_Iout_Curr_A"
+        },
+        {
+            "begin": 40978,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_Pump1_HSC_P48V_Iout_Curr_A"
+        },
+        {
+            "begin": 40979,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_Pump2_HSC_P48V_Iout_Curr_A"
+        },
+        {
+            "begin": 40980,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_Pump3_HSC_P48V_Iout_Curr_A"
+        },
+        {
+            "begin": 40981,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_BB_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 40982,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_BPB_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 40983,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_Pump1_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 40984,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_Pump2_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 40985,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_Pump3_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 40986,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump1_Fan_1_Tach_RPM"
+        },
+        {
+            "begin": 40987,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump1_Fan_2_Tach_RPM"
+        },
+        {
+            "begin": 40988,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump2_Fan_1_Tach_RPM"
+        },
+        {
+            "begin": 40989,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump2_Fan_2_Tach_RPM"
+        },
+        {
+            "begin": 40990,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump3_Fan_1_Tach_RPM"
+        },
+        {
+            "begin": 40991,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump3_Fan_2_Tach_RPM"
+        },
+        {
+            "begin": 40992,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_BPB_Rack_Pressure_3_P_kPa"
+        },
+        {
+            "begin": 40993,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "RPU_BPB_Rack_Pressure_4_P_kPa"
+        },
+        {
+            "begin": 40994,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_BPB_Rack_Level_1"
+        },
+        {
+            "begin": 40995,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_BPB_Rack_Level_2"
+        },
+        {
+            "begin": 40996,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_MB_Hum_Pct_RH"
+        },
+        {
+            "begin": 40997,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pdb_Hum_Pct_RH"
+        },
+        {
+            "begin": 40998,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump1_Hum_Pct_RH"
+        },
+        {
+            "begin": 40999,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump2_Hum_Pct_RH"
+        },
+        {
+            "begin": 41000,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Pump3_Hum_Pct_RH"
+        },
+        {
+            "begin": 41001,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_Pdb_48V_Sense_Diff_Pos_Volt_V"
+        },
+        {
+            "begin": 41002,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_Pdb_48V_Sense_Diff_Neg_Volt_V"
+        },
+        {
+            "begin": 41003,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "BPB_CDU_Coolant_Leakage_Volt_V"
+        },
+        {
+            "begin": 41004,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "BPB_Rack_Coolant_Leakage_Volt_V"
+        },
+        {
+            "begin": 41005,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "AALC_Total_Pwr_Ext_W"
+        },
+        {
+            "begin": 41088,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "RPU_Pump1_Fan_1_Status"
+                ],
+                [
+                    1,
+                    "RPU_Pump1_Fan_2_Status"
+                ],
+                [
+                    2,
+                    "RPU_Pump2_Fan_1_Status"
+                ],
+                [
+                    3,
+                    "RPU_Pump2_Fan_2_Status"
+                ],
+                [
+                    4,
+                    "RPU_Pump3_Fan_1_Status"
+                ],
+                [
+                    5,
+                    "RPU_Pump3_Fan_2_Status"
+                ]
+            ],
+            "name": "RPU_Pump_Fan_Status"
+        },
+        {
+            "begin": 41306,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_ADC_12V_Aux_Volt_V"
+        },
+        {
+            "begin": 41307,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_ADC_5V_Aux_Volt_V"
+        },
+        {
+            "begin": 41308,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_ADC_3V3_Aux_Volt_V"
+        },
+        {
+            "begin": 41309,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_ADC_1V2_Aux_Volt_V"
+        },
+        {
+            "begin": 41310,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "RPU_ADC_5V_USB_Volt_V"
+        },
+        {
+            "begin": 41216,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Inlet3_Temp_C"
+        },
+        {
+            "begin": 41217,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Inlet4_Temp_C"
+        },
+        {
+            "begin": 41218,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet3_Temp_C"
+        },
+        {
+            "begin": 41219,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet4_Temp_C"
+        },
+        {
+            "begin": 41220,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet5_Temp_C"
+        },
+        {
+            "begin": 41221,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet6_Temp_C"
+        },
+        {
+            "begin": 41222,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet7_Temp_C"
+        },
+        {
+            "begin": 41223,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet8_Temp_C"
+        },
+        {
+            "begin": 41224,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet9_Temp_C"
+        },
+        {
+            "begin": 41225,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet10_Temp_C"
+        },
+        {
+            "begin": 41226,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet11_Temp_C"
+        },
+        {
+            "begin": 41227,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet12_Temp_C"
+        },
+        {
+            "begin": 41228,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet13_Temp_C"
+        },
+        {
+            "begin": 41229,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Air_Outlet14_Temp_C"
+        },
+        {
+            "begin": 41230,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan1_HSC_Temp_C"
+        },
+        {
+            "begin": 41231,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan2_HSC_Temp_C"
+        },
+        {
+            "begin": 41232,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan3_HSC_Temp_C"
+        },
+        {
+            "begin": 41233,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan4_HSC_Temp_C"
+        },
+        {
+            "begin": 41234,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan5_HSC_Temp_C"
+        },
+        {
+            "begin": 41235,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan6_HSC_Temp_C"
+        },
+        {
+            "begin": 41236,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan7_HSC_Temp_C"
+        },
+        {
+            "begin": 41237,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan8_HSC_Temp_C"
+        },
+        {
+            "begin": 41238,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan9_HSC_Temp_C"
+        },
+        {
+            "begin": 41239,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan10_HSC_Temp_C"
+        },
+        {
+            "begin": 41240,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan11_HSC_Temp_C"
+        },
+        {
+            "begin": 41241,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan12_HSC_Temp_C"
+        },
+        {
+            "begin": 41242,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan13_HSC_Temp_C"
+        },
+        {
+            "begin": 41243,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan14_HSC_Temp_C"
+        },
+        {
+            "begin": 41244,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan1_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41245,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan2_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41246,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan3_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41247,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan4_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41248,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan5_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41249,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan6_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41250,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan7_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41251,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan8_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41252,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan9_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41253,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan10_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41254,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan11_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41255,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan12_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41256,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan13_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41257,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "HEX_Fan14_HSC_P48V_VIN_Volt_V"
+        },
+        {
+            "begin": 41258,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan1_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41259,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan2_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41260,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan3_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41261,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan4_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41262,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan5_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41263,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan6_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41264,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan7_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41265,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan8_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41266,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan9_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41267,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan10_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41268,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan11_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41269,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan12_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41270,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan13_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41271,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan14_HSC_P48V_IOUT_Curr_A"
+        },
+        {
+            "begin": 41272,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan1_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41273,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan2_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41274,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan3_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41275,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan4_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41276,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan5_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41277,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan6_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41278,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan7_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41279,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan8_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41280,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan9_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41281,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan10_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41282,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan11_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41283,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan12_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41284,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan13_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41285,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_Fan14_HSC_P48V_Pin_Pwr_W"
+        },
+        {
+            "begin": 41286,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan11_TACH_RPM"
+        },
+        {
+            "begin": 41287,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan12_TACH_RPM"
+        },
+        {
+            "begin": 41288,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan13_TACH_RPM"
+        },
+        {
+            "begin": 41289,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan14_TACH_RPM"
+        },
+        {
+            "begin": 41290,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_SB_HEX_Pressure_1_P_kPa"
+        },
+        {
+            "begin": 41291,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "HEX_SB_HEX_Pressure_2_P_kPa"
+        },
+        {
+            "begin": 41292,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan1_Hum_Pct_RH"
+        },
+        {
+            "begin": 41293,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan2_Hum_Pct_RH"
+        },
+        {
+            "begin": 41294,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan3_Hum_Pct_RH"
+        },
+        {
+            "begin": 41295,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan4_Hum_Pct_RH"
+        },
+        {
+            "begin": 41296,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan5_Hum_Pct_RH"
+        },
+        {
+            "begin": 41297,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan6_Hum_Pct_RH"
+        },
+        {
+            "begin": 41298,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan7_Hum_Pct_RH"
+        },
+        {
+            "begin": 41299,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan8_Hum_Pct_RH"
+        },
+        {
+            "begin": 41300,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan9_Hum_Pct_RH"
+        },
+        {
+            "begin": 41301,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan10_Hum_Pct_RH"
+        },
+        {
+            "begin": 41302,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan11_Hum_Pct_RH"
+        },
+        {
+            "begin": 41303,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan12_Hum_Pct_RH"
+        },
+        {
+            "begin": 41304,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan13_Hum_Pct_RH"
+        },
+        {
+            "begin": 41305,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HEX_Fan14_Hum_Pct_RH"
+        },
+        {
+            "begin": 41474,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "HEX_Air_Outlet3_Thermometer_Status"
+                ],
+                [
+                    1,
+                    "HEX_Air_Outlet4_Thermometer_Status"
+                ],
+                [
+                    2,
+                    "HEX_Air_Outlet5_Thermometer_Status"
+                ],
+                [
+                    3,
+                    "HEX_Air_Outlet6_Thermometer_Status"
+                ],
+                [
+                    4,
+                    "HEX_Air_Outlet7_Thermometer_Status"
+                ],
+                [
+                    5,
+                    "HEX_Air_Outlet8_Thermometer_Status"
+                ],
+                [
+                    6,
+                    "HEX_Air_Outlet9_Thermometer_Status"
+                ],
+                [
+                    7,
+                    "HEX_Air_Outlet10_Thermometer_Status"
+                ],
+                [
+                    8,
+                    "HEX_Air_Outlet11_Thermometer_Status"
+                ],
+                [
+                    9,
+                    "HEX_Air_Outlet12_Thermometer_Status"
+                ],
+                [
+                    10,
+                    "HEX_Air_Outlet13_Thermometer_Status"
+                ],
+                [
+                    11,
+                    "HEX_Air_Outlet14_Thermometer_Status"
+                ],
+                [
+                    12,
+                    "HEX_Air_Inlet3_Thermometer_Status"
+                ],
+                [
+                    13,
+                    "HEX_Air_Inlet4_Thermometer_Status"
+                ]
+            ],
+            "name": "AALC_Sensor_Alarm"
+        },
+        {
+            "begin": 41473,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "HEX_Fan11_Status"
+                ],
+                [
+                    1,
+                    "HEX_Fan12_Status"
+                ],
+                [
+                    2,
+                    "HEX_Fan13_Status"
+                ],
+                [
+                    3,
+                    "HEX_Fan14_Status"
+                ]
+            ],
+            "name": "HEX_Alarm"
+        },
+        {
+            "begin": 41985,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "AALC_Modbus_Address"
+        },
+        {
+            "begin": 41986,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Manual_Control_RPU_Fan_Duty_Set"
+        },
+        {
+            "begin": 41987,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Manual_Control_Pump1_Duty_Set"
+        },
+        {
+            "begin": 41988,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Manual_Control_Pump2_Duty_Set"
+        },
+        {
+            "begin": 41989,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Manual_Control_Pump3_Duty_Set"
+        },
+        {
+            "begin": 42112,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Manual_Control_RPU_Fan_OnOff"
         }
     ]
 }

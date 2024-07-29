@@ -269,7 +269,7 @@ index 2de2bd76c2..0d6b1bb929 100644
 +        .soc_name    = "ast2600-a3",
 +        .hw_strap1   = AST2600_EVB_HW_STRAP1,
 +        .hw_strap2   = AST2600_EVB_HW_STRAP2,
-+        .flash_model = "mx25l25635e",
++        .flash_model = "mx66l1g45g",
 +        .macs_mask   = ASPEED_MAC3_ON,
 +        .stdout_path = ASPEED_DEV_UART5,
 +        .ram_size    = FUJI_BMC_RAM_SIZE,

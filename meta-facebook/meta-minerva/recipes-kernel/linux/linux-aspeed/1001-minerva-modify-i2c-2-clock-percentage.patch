@@ -1,4 +1,4 @@
-From b4b1572841050167c3abc44de50390659a13442e Mon Sep 17 00:00:00 2001
+From fa558c289dcb792e1eccb108bd98a857c17301d7 Mon Sep 17 00:00:00 2001
 From: Yang Chen <yangchen.openbmc@gmail.com>
 Date: Tue, 25 Jun 2024 21:19:15 +0800
 Subject: [PATCH] minerva: modify i2c-2 clock percentage
@@ -10,7 +10,7 @@ Summary:
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
-index 896e84cd03de..47b998a368e3 100644
+index 41e2246cfbd1..35caf54d5482 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minerva.dts
 @@ -205,6 +205,7 @@ eeprom@54 {
@@ -22,5 +22,5 @@ index 896e84cd03de..47b998a368e3 100644
  	i2c-mux@77 {
  		compatible = "nxp,pca9548";
 -- 
-2.34.1
+2.44.2
 

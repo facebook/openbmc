@@ -21,10 +21,21 @@
 usage() {
     echo "Reads/writes Bcm53134 registers"
     echo
-    echo "read[(8|16|32|64)] <page> <addr>"
-    echo "write[(8|16|32|64)] <page> <addr> <val>"
+    echo "read[(8|16|32|64)] [-f] <page> <addr>"
+    echo "write[(8|16|32|64)] [-f] <page> <addr> <val>"
+    echo "mii-read <port-addr> <addr>"
+    echo "mii-write <port-addr> <addr> <val>"
     echo
     echo "read/write are equivalent to read8/write8"
+    echo
+    echo "Options:"
+    echo "  -f  force the operation even if the command is disabled"
+    echo
+    echo "Return code:"
+    echo "   0 on successful read or write"
+    echo "   1 on failed read or write"
+    echo "   2 when the command is disabled. For certain hardware, the read/write "
+    echo "     commands are disabled due to not-recommended MDIO bus transactions"
 }
 
 mdio0_base_reg=0x1e650000
@@ -86,7 +97,8 @@ devmem_write() {
 }
 
 mdio_read() {
-    local addr=$1
+    local port_addr=$1
+    local addr=$2
     local fire_busy clause_22 read_request reg_val read_reg_val ctrl_idle
 
     fire_busy=$(( 1 << 31 ))
@@ -95,7 +107,7 @@ mdio_read() {
     reg_val=$(( fire_busy \
               | clause_22 \
               | read_request \
-              | ( pseudo_phy_port_addr << 21 ) \
+              | ( port_addr << 21 ) \
               | ( addr << 16 ) ))
 
     devmem_write $mdio_ctrl_reg $reg_val
@@ -108,8 +120,9 @@ mdio_read() {
 }
 
 mdio_write() {
-    local addr=$1
-    local val=$2
+    local port_addr=$1
+    local addr=$2
+    local val=$3
     local fire_busy clause_22 write_request reg_val
 
     fire_busy=$(( 1 << 31 ))
@@ -118,7 +131,7 @@ mdio_write() {
     reg_val=$(( fire_busy \
               | clause_22 \
               | write_request \
-              | ( pseudo_phy_port_addr << 21 ) \
+              | ( port_addr << 21 ) \
               | ( addr << 16 ) \
               | val ))
 
@@ -163,15 +176,15 @@ reg_read() {
     local data data_reg_num reg_val
 
     data=$(reg_page_data "$page" 1)
-    mdio_write $oob_page_reg "$data"
-    page_reg_val=$(mdio_read $oob_page_reg)
+    mdio_write $pseudo_phy_port_addr $oob_page_reg "$data"
+    page_reg_val=$(mdio_read $pseudo_phy_port_addr $oob_page_reg)
     if [ "$page_reg_val" -ne "$data" ]; then
         echo "Error: page register could not be written" >&2
         exit 1
     fi
 
     data=$(reg_addr_data "$addr" 0x2)
-    mdio_write $oob_addr_reg "$data"
+    mdio_write $pseudo_phy_port_addr $oob_addr_reg "$data"
 
     reg_wait_addr_reg_acked
 
@@ -182,7 +195,7 @@ reg_read() {
     while [ $reg_idx -lt $num_data_regs ]
     do
         data_reg_num=$(( oob_data_reg_base + reg_idx ))
-        reg_val=$(mdio_read $data_reg_num)
+        reg_val=$(mdio_read $pseudo_phy_port_addr $data_reg_num)
         val=$(( val | ( reg_val << ( reg_idx * 16 ) ) ))
 
         reg_idx=$(( reg_idx + 1 ))
@@ -202,8 +215,8 @@ reg_write() {
     local data reg_val data_reg_num
 
     data=$(reg_page_data "$page" 1)
-    mdio_write $oob_page_reg "$data"
-    page_reg_val=$(mdio_read $oob_page_reg)
+    mdio_write $pseudo_phy_port_addr $oob_page_reg "$data"
+    page_reg_val=$(mdio_read $pseudo_phy_port_addr $oob_page_reg)
     if [ "$page_reg_val" -ne "$data" ]; then
         echo "Error: page register could not be written" >&2
         exit 1
@@ -216,13 +229,13 @@ reg_write() {
     do
         data_reg_num=$(( oob_data_reg_base + reg_idx ))
         reg_val=$(( ( val >> ( reg_idx * 16 ) ) & 0xffff ))
-        mdio_write $data_reg_num $reg_val
+        mdio_write $pseudo_phy_port_addr $data_reg_num $reg_val
 
         reg_idx=$(( reg_idx + 1 ))
     done
 
     data=$(reg_addr_data "$addr" 0x1)
-    mdio_write $oob_addr_reg "$data"
+    mdio_write $pseudo_phy_port_addr $oob_addr_reg "$data"
 
     reg_wait_addr_reg_acked
     reg_clear_access_enable
@@ -236,7 +249,7 @@ reg_wait_addr_reg_acked() {
     time_limit=$(( $(date +%s) + timeout ))
     while [ "$(date +%s)" -lt $time_limit ]
     do
-        response=$(mdio_read $oob_addr_reg)
+        response=$(mdio_read $pseudo_phy_port_addr $oob_addr_reg)
         op=$(( response & 0x3 ))
         if [ $op -eq 0 ]
         then
@@ -252,7 +265,7 @@ reg_wait_addr_reg_acked() {
 
 reg_clear_access_enable() {
     data=$(reg_page_data 0 0)
-    mdio_write $oob_page_reg "$data"
+    mdio_write $pseudo_phy_port_addr $oob_page_reg "$data"
 }
 
 reg_page_data() {
@@ -290,6 +303,13 @@ val_to_binary_str() {
 handle_read() {
     local size=$1
     shift
+
+    force=0
+    if [ $# -gt 0 ] && [ "$1" == "-f" ]; then
+       force=1
+       shift
+    fi
+
     if [ $# -lt 2 ]
     then
         echo "Error: missing arguments" >&2
@@ -299,12 +319,25 @@ handle_read() {
     local page=$1
     local addr=$2
     local data_size=$(( size / 8 ))
+
+    if [ "$force" -ne 1 ]; then
+        echo "disabled due to not-recommended MDIO bus transactions"
+        exit 2
+    fi
+
     reg_read "$page" "$addr" "$data_size"
 }
 
 handle_write() {
     local size=$1
     shift
+
+    force=0
+    if [ $# -gt 0 ] && [ "$1" == "-f" ]; then
+       force=1
+       shift
+    fi
+
     if [ $# -lt 3 ]
     then
         echo "Error: missing arguments" >&2
@@ -315,7 +348,41 @@ handle_write() {
     local addr=$2
     local val=$3
     local data_size=$(( size / 8 ))
+
+    if [ "$force" -ne 1 ]; then
+        echo "disabled due to not-recommended MDIO bus transactions"
+        exit 2
+    fi
+
     reg_write "$page" "$addr" "$val" "$data_size"
+}
+
+handle_mii_read() {
+    if [ $# -lt 2 ]
+    then
+        echo "Error: missing arguments" >&2
+        usage
+        exit 1
+    fi
+    local port_addr=$1
+    local addr=$2
+
+    val=$(mdio_read "$port_addr" "$addr")
+    printf "0x%x\n" "$val"
+}
+
+handle_mii_write() {
+    if [ $# -lt 3 ]
+    then
+        echo "Error: missing arguments" >&2
+        usage
+        exit 1
+    fi
+    local port_addr=$1
+    local addr=$2
+    local val=$3
+
+    mdio_write "$port_addr" "$addr" "$val"
 }
 
 if [ $# -lt 1 ]
@@ -336,6 +403,8 @@ case "$command" in
     write16) cmd_type="write"; size="16";;
     write32) cmd_type="write"; size="32";;
     write64) cmd_type="write"; size="64";;
+    mii-read) ;;
+    mii-write) ;;
     *)
         usage
         exit 1
@@ -344,8 +413,11 @@ esac
 
 mdio_init
 
-if [ "$cmd_type" = "read" ]
-then
+if [ "$command" = "mii-read" ]; then
+    handle_mii_read "$@"
+elif [ "$command" = "mii-write" ]; then
+    handle_mii_write "$@"
+elif [ "$cmd_type" = "read" ]; then
     handle_read "$size" "$@"
 else
     handle_write "$size" "$@"

@@ -20,6 +20,8 @@
 
 # shellcheck disable=SC1091
 # shellcheck disable=SC2235
+set -o pipefail
+
 . /usr/local/bin/openbmc-utils.sh
 
 trap handle_signal INT TERM QUIT
@@ -29,6 +31,8 @@ trap handle_signal INT TERM QUIT
 # mdio prints in the format "PAGE_HEX/OFFSET_HEX VALUE_HEX == VALUE_BIN\n"
 MDIO_READ_PATTERN="^.* (0x[a-fA-F0-9]+).*$"
 OOB_MDIO_UTIL=/usr/local/bin/oob-mdio-util.sh
+MII_STATUS_WORD=1
+MII_STATUS_LINK_ST=0x4
 
 # Global variable to stack tabs for formatting
 tab=""
@@ -87,13 +91,58 @@ port_to_val() {
     echo "$val"
 }
 
+mdio_enabled=1
+check_mdio_util_result() {
+    local rc=$1
+    if [ "$rc" -eq 2 ]; then
+        mdio_enabled=0
+    fi
+}
+
+get_link_status() {
+    local result
+    local ports
+    local val
+    ports="$*"
+    if [ $mdio_enabled -eq 1 ]; then
+        result=$("$OOB_MDIO_UTIL" read16 "$page" "$offset" \
+            | sed -E "s/$MDIO_READ_PATTERN/\1/")
+        check_mdio_util_result $?
+        if [ $mdio_enabled -eq 1 ]; then
+            echo "$result"
+            return
+        fi
+    fi
+
+    # Retrieve the link statuses using the mii status word for
+    # each port. The IMP port will always be up.
+    result=0x100
+    for port in $ports; do
+        port=${port^^}
+        if [ "$1" == "IMP" ]; then
+            continue
+        fi
+        val=$("$OOB_MDIO_UTIL" mii-read "$port" "$MII_STATUS_WORD")
+        if [ $((val & MII_STATUS_LINK_ST)) -eq 0 ]; then
+            # The link status bit is latched when the link fails and
+            # is unlatched on the next read. Therefore, the status must
+            # be read a second time to get the current state.
+            val=$("$OOB_MDIO_UTIL" mii-read "$port" "$MII_STATUS_WORD")
+        fi
+        if [ $((val & MII_STATUS_LINK_ST)) -ne 0 ]; then
+            result=$((result | (1 << port) ))
+        fi
+    done
+
+    echo $result
+}
+
 do_read_lnksts() {
     local page offset result ports port val
     page=0x1
     offset=0x0
-    result=$("$OOB_MDIO_UTIL" read16 "$page" "$offset" \
-        | sed -E "s/$MDIO_READ_PATTERN/\1/")
     ports="$*"
+    result=$(get_link_status "$ports")
 
     printf "%sLink status:\n" "$tab"
     tab="	$tab"
@@ -125,8 +174,14 @@ do_read_spdsts() {
     local page offset result ports port val
     page=0x1
     offset=0x4
-    result=$("$OOB_MDIO_UTIL" read32 "$page" "$offset" \
-        | sed -E "s/$MDIO_READ_PATTERN/\1/")
+    if [ $mdio_enabled -eq 1 ]; then
+        result=$("$OOB_MDIO_UTIL" read32 "$page" "$offset" \
+            | sed -E "s/$MDIO_READ_PATTERN/\1/")
+        check_mdio_util_result $?
+    fi
+    if [ $mdio_enabled -eq 0 ]; then
+        result=""
+    fi
     ports="$*"
 
     printf "%sLink speed:\n" "$tab"

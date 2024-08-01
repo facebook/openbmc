@@ -117,8 +117,6 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 152,1,,,,,INTEGER,,,,,,,Fan_Speed
 153,1,,,,,FLAGS,,,,,,,BBU_Status_Word
 ,,,,7,Second_Shelf_Detection,,,,,,,,
-,,,,6,Reserved,,,,,,,,
-,,,,5,Reserved,,,,,,,,
 ,,,,4,Fan_Fault,,,,,,,,
 ,,,,3,Charger_Converter_Fault,,,,,,,,
 ,,,,2,Buck_Converter_Fault,,,,,,,,
@@ -249,7 +247,6 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 306,1,,,,,INTEGER,,,,,,,System_Control_Mode
 307,1,,,,,INTEGER,,,,,,,BBU_Shelf_Configuration
 308,1,,,,,INTEGER,,,,,,,Forced_Detached_Mode_Timeout
-309,1,,,,,INTEGER,,,,,,,Reserved
 310,1,,,,,INTEGER,,,,,,,PSU_Shelf_Output_Power
 311,1,,,,,INTEGER,,,,,,,PSU_AC_OK
 312,1,,,,,INTEGER,,,,,,,Charge_Delay_Time

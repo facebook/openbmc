@@ -1,0 +1,425 @@
+From 44c9848b04b65ab82a77e5c57d132fea519a1182 Mon Sep 17 00:00:00 2001
+From: Harvey Wu <Harvey.Wu@quantatw.com>
+Date: Tue, 7 Nov 2023 09:23:35 +0800
+Subject: [PATCH] Auto determine failsafe duty according sensor fail
+
+Gerrit: 67566.
+
+- Auto determine the failsafe duty when sensor failed
+
+example:
+If PID config as follows, when "Die CPU0" sensor failed, fans in zone 0
+will be set to 80%, when "DIMM0" sensor failed, since there is no
+"FailSafePercent" setting in config, so set to zone's FailSafePercent
+100%.
+```
+{
+    "Class": "temp",
+    ...
+    ...
+    ...
+    "Inputs": [
+        "Die CPU0"
+    ],
+    "Name": "CPU0 PID",
+    "FailSafePercent": 80.0,
+    ...
+    ...
+    ...
+    "Type": "Pid",
+    "Zones": [
+        "Zone 0"
+    ]
+},
+{
+    "Class": "temp",
+    ...
+    ...
+    ...
+    "Inputs": [
+        "DIMM[0-9]",
+        "DIMM1[0-5]"
+    ],
+    "Name": "DIMM CPU0 PID",
+    ...
+    ...
+    ...
+    "Type": "Pid",
+    "Zones": [
+        "Zone 0"
+    ]
+},
+{
+    "FailSafePercent": 100.0,
+    "MinThermalOutput": 0.0,
+    "Name": "Zone 0",
+    "Type": "Pid.Zone",
+    "ZoneIndex": 0
+},
+```
+
+Tested:
+If zone1 and zone2 into failsafe duty 40% =>
+fan0_pwm         | 1Dh | ok  | 29.0 | 24.70 unspecifi
+fan1_pwm         | 1Eh | ok  | 29.1 | 24.70 unspecifi
+fan2_pwm         | 1Fh | ok  | 29.2 | 39.98 unspecifi
+fan3_pwm         | 20h | ok  | 29.3 | 39.98 unspecifi
+fan4_pwm         | 21h | ok  | 29.4 | 39.98 unspecifi
+fan5_pwm         | 22h | ok  | 29.5 | 39.98 unspecifi
+
+cpu0_nbm         | 48h | ok  |  7.79 | 36 degrees C
+
+Let cpu0_nbm(zone0 and zone2) into failsafe which set failsafe duty as
+100% =>
+fan0_pwm         | 1Dh | ok  | 29.0 | 99.96 unspecifi
+fan1_pwm         | 1Eh | ok  | 29.1 | 99.96 unspecifi
+fan2_pwm         | 1Fh | ok  | 29.2 | 39.98 unspecifi
+fan3_pwm         | 20h | ok  | 29.3 | 39.98 unspecifi
+fan4_pwm         | 21h | ok  | 29.4 | 99.96 unspecifi
+fan5_pwm         | 22h | ok  | 29.5 | 99.96 unspecifi
+
+cpu0_nbm         | 48h | ns  |  7.79 | No Reading
+
+Signed-off-by: Harvey Wu <Harvey.Wu@quantatw.com>
+Change-Id: Iaf5ffd1853e5cd110a1ef66c7a1fd073bc894dda
+---
+ pid/builder.cpp            |  9 +++--
+ pid/zone.cpp               | 80 +++++++++++++++++++++++---------------
+ pid/zone.hpp               | 15 +++----
+ pid/zone_interface.hpp     |  2 +-
+ test/pid_zone_unittest.cpp | 54 ++++++++++++-------------
+ test/zone_mock.hpp         |  2 +-
+ 6 files changed, 89 insertions(+), 73 deletions(-)
+
+diff --git a/pid/builder.cpp b/pid/builder.cpp
+index d133662..8a6bd39 100644
+--- a/pid/builder.cpp
++++ b/pid/builder.cpp
+@@ -102,7 +102,8 @@ std::unordered_map<int64_t, std::shared_ptr<ZoneInterface>>
+                 auto pid = FanController::createFanPid(
+                     zone.get(), name, splitNames(inputs), info.pidInfo);
+                 zone->addFanPID(std::move(pid));
+-                zone->addPidFailSafePercent(name, info.failSafePercent);
++                zone->addPidFailSafePercent(splitNames(inputs),
++                                            info.failSafePercent);
+             }
+             else if (isThermalType(info.type))
+             {
+@@ -120,7 +121,8 @@ std::unordered_map<int64_t, std::shared_ptr<ZoneInterface>>
+                 zone->addPidControlProcess(
+                     name, info.type, info.setpoint, modeControlBus,
+                     getPidControlPath(zoneId, name), deferSignals);
+-                zone->addPidFailSafePercent(name, info.failSafePercent);
++                zone->addPidFailSafePercent(splitNames(inputs),
++                                            info.failSafePercent);
+             }
+             else if (info.type == "stepwise")
+             {
+@@ -135,7 +137,8 @@ std::unordered_map<int64_t, std::shared_ptr<ZoneInterface>>
+                 zone->addPidControlProcess(
+                     name, info.type, info.setpoint, modeControlBus,
+                     getPidControlPath(zoneId, name), deferSignals);
+-                zone->addPidFailSafePercent(name, info.failSafePercent);
++                zone->addPidFailSafePercent(splitNames(inputs),
++                                            info.failSafePercent);
+             }
+ 
+             std::cerr << "inputs: ";
+diff --git a/pid/zone.cpp b/pid/zone.cpp
+index 5332efe..88ac5d1 100644
+--- a/pid/zone.cpp
++++ b/pid/zone.cpp
+@@ -104,7 +104,19 @@ void DbusPidZone::markSensorMissing(const std::string& name)
+         return;
+     }
+ 
+-    _failSafeSensors.emplace(name);
++    if (_sensorFailSafePercent[name] == 0)
++    {
++        _failSafeSensors[name] = _zoneFailSafePercent;
++    }
++    else
++    {
++        _failSafeSensors[name] = _sensorFailSafePercent[name];
++    }
++
++    if (debugEnabled)
++    {
++        std::cerr << "Sensor " << name << " marked missing\n";
++    }
+ }
+ 
+ int64_t DbusPidZone::getZoneID(void) const
+@@ -166,9 +178,27 @@ void DbusPidZone::clearSetPoints(void)
+     _maximumSetPointName.clear();
+ }
+ 
+-double DbusPidZone::getFailSafePercent(void) const
++double DbusPidZone::getFailSafePercent(void)
+ {
+-    return _failSafePercent;
++    std::map<std::string, double>::iterator maxData =
++        std::max_element(_failSafeSensors.begin(), _failSafeSensors.end(),
++                         [](const std::pair<std::string, double> firstData,
++                            const std::pair<std::string, double> secondData) {
++        return firstData.second < secondData.second;
++    });
++
++    // In dbus/dbusconfiguration.cpp, the default sensor failsafepercent is 0 if
++    // there is no setting in json.
++    // Therfore, if the max failsafe duty in _failSafeSensors is 0, set final
++    // failsafe duty to _zoneFailSafePercent.
++    if ((*maxData).second == 0)
++    {
++        return _zoneFailSafePercent;
++    }
++    else
++    {
++        return (*maxData).second;
++    }
+ }
+ 
+ double DbusPidZone::getMinThermalSetPoint(void) const
+@@ -355,9 +385,9 @@ void DbusPidZone::determineMaxSetPointRequest(void)
+                   << _maximumSetPointName;
+         for (const auto& sensor : _failSafeSensors)
+         {
+-            if (sensor.find("Fan") == std::string::npos)
++            if (sensor.first.find("Fan") == std::string::npos)
+             {
+-                std::cerr << " " << sensor;
++                std::cerr << " " << sensor.first;
+             }
+         }
+         std::cerr << "\n";
+@@ -482,8 +512,6 @@ void DbusPidZone::initializeCache(void)
+         // Start all sensors in fail-safe mode.
+         markSensorMissing(t);
+     }
+-    // Initialize Pid FailSafePercent
+-    initPidFailSafePercent();
+ }
+ 
+ void DbusPidZone::dumpCache(void)
+@@ -582,34 +610,22 @@ bool DbusPidZone::isPidProcessEnabled(std::string name)
+     return _pidsControlProcess[name]->enabled();
+ }
+ 
+-void DbusPidZone::initPidFailSafePercent(void)
++void DbusPidZone::addPidFailSafePercent(std::vector<std::string> inputs,
++                                        double percent)
+ {
+-    // Currently, find the max failsafe percent pwm settings from zone and
+-    // controller, and assign it to zone failsafe percent.
+-
+-    _failSafePercent = _zoneFailSafePercent;
+-    std::cerr << "zone: Zone" << _zoneId
+-              << " zoneFailSafePercent: " << _zoneFailSafePercent << "\n";
+-
+-    for (const auto& [name, value] : _pidsFailSafePercent)
++    for (const auto& sensorName : inputs)
+     {
+-        _failSafePercent = std::max(_failSafePercent, value);
+-        std::cerr << "pid: " << name << " failSafePercent: " << value << "\n";
+-    }
+-
+-    // when the final failsafe percent is zero , it indicate no failsafe
+-    // percent is configured  , set it to 100% as the default setting.
+-    if (_failSafePercent == 0)
+-    {
+-        _failSafePercent = 100;
++        if (_sensorFailSafePercent.find(sensorName) !=
++            _sensorFailSafePercent.end())
++        {
++            _sensorFailSafePercent[sensorName] =
++                std::max(_sensorFailSafePercent[sensorName], percent);
++        }
++        else
++        {
++            _sensorFailSafePercent[sensorName] = percent;
++        }
+     }
+-    std::cerr << "Final zone" << _zoneId
+-              << " failSafePercent: " << _failSafePercent << "\n";
+-}
+-
+-void DbusPidZone::addPidFailSafePercent(std::string name, double percent)
+-{
+-    _pidsFailSafePercent[name] = percent;
+ }
+ 
+ std::string DbusPidZone::leader() const
+diff --git a/pid/zone.hpp b/pid/zone.hpp
+index 52180a5..8c49f1f 100644
+--- a/pid/zone.hpp
++++ b/pid/zone.hpp
+@@ -82,7 +82,7 @@ class DbusPidZone : public ZoneInterface, public ModeObject
+     void addRPMCeiling(double ceiling) override;
+     void clearSetPoints(void) override;
+     void clearRPMCeilings(void) override;
+-    double getFailSafePercent(void) const override;
++    double getFailSafePercent(void) override;
+     double getMinThermalSetPoint(void) const;
+     uint64_t getCycleIntervalTime(void) const override;
+     uint64_t getUpdateThermalsCycle(void) const override;
+@@ -121,8 +121,7 @@ class DbusPidZone : public ZoneInterface, public ModeObject
+                               std::string objPath, bool defer);
+     bool isPidProcessEnabled(std::string name);
+ 
+-    void initPidFailSafePercent(void);
+-    void addPidFailSafePercent(std::string name, double percent);
++    void addPidFailSafePercent(std::vector<std::string> inputs, double percent);
+ 
+     void updateThermalPowerDebugInterface(std::string pidName,
+                                           std::string leader, double input,
+@@ -214,13 +213,11 @@ class DbusPidZone : public ZoneInterface, public ModeObject
+     bool _redundantWrite = false;
+     bool _accumulateSetPoint = false;
+     const double _minThermalOutputSetPt;
+-    // Current fail safe Percent.
+-    double _failSafePercent;
+     // Zone fail safe Percent setting by configuration.
+     const double _zoneFailSafePercent;
+     const conf::CycleTime _cycleTime;
+ 
+-    std::set<std::string> _failSafeSensors;
++    std::map<std::string, double> _failSafeSensors;
+     std::set<std::string> _missingAcceptable;
+ 
+     std::map<std::string, double> _SetPoints;
+@@ -236,10 +233,10 @@ class DbusPidZone : public ZoneInterface, public ModeObject
+ 
+     std::map<std::string, std::unique_ptr<ProcessObject>> _pidsControlProcess;
+     /*
+-     * <key = pidname, value = pid failsafe percent>
+-     * Pid fail safe Percent setting by each pid controller configuration.
++     * <key = sensor name, value = sensor failsafe percent>
++     * sensor fail safe Percent setting by each pid controller configuration.
+      */
+-    std::map<std::string, double> _pidsFailSafePercent;
++    std::map<std::string, double> _sensorFailSafePercent;
+ };
+ 
+ } // namespace pid_control
+diff --git a/pid/zone_interface.hpp b/pid/zone_interface.hpp
+index 31f3256..43391fa 100644
+--- a/pid/zone_interface.hpp
++++ b/pid/zone_interface.hpp
+@@ -88,7 +88,7 @@ class ZoneInterface
+     /** Return the rpm or pwm percent value to drive fan pids when zone is in
+      * fail safe.
+      */
+-    virtual double getFailSafePercent() const = 0;
++    virtual double getFailSafePercent() = 0;
+ 
+     /** Return the zone's cycle time settings */
+     virtual uint64_t getCycleIntervalTime(void) const = 0;
+diff --git a/test/pid_zone_unittest.cpp b/test/pid_zone_unittest.cpp
+index 1f6e672..f91e10e 100644
+--- a/test/pid_zone_unittest.cpp
++++ b/test/pid_zone_unittest.cpp
+@@ -57,7 +57,7 @@ TEST(PidZoneConstructorTest, BoringConstructorTest)
+     const char* objPath = "/path/";
+     int64_t zone = 1;
+     double minThermalOutput = 1000.0;
+-    double failSafePercent = 0;
++    double failSafePercent = 100;
+     conf::CycleTime cycleTime;
+ 
+     double d;
+@@ -144,7 +144,7 @@ class PidZoneTest : public ::testing::Test
+     sdbusplus::SdBusMock sdbus_mock_enable;
+     int64_t zoneId = 1;
+     double minThermalOutput = 1000.0;
+-    double failSafePercent = 0;
++    double failSafePercent = 100;
+     double setpoint = 50.0;
+     bool defer = true;
+     bool accSetPoint = false;
+@@ -313,45 +313,45 @@ TEST_F(PidZoneTest, RpmSetPoints_AddBelowMinimum_BehavesAsExpected)
+     EXPECT_EQ(zone->getMinThermalSetPoint(), zone->getMaxSetPointRequest());
+ }
+ 
+-TEST_F(PidZoneTest, GetFailSafePercent_ReturnsExpected)
++TEST_F(PidZoneTest, GetFailSafePercent_SingleFailedReturnsExpected)
+ {
+-    // Verify the value used to create the object is stored.
+-    // when the final failsafe percent is zero , it indicate
+-    // no failsafe percent is configured  , set it to 100% as
+-    // the default setting.
++    // Tests when only one sensor failed and the sensor's failsafe duty is zero,
++    // and verify that the sensor name is empty and failsafe duty is PID zone's
++    // failsafe duty.
+ 
++    std::vector<std::string> input1 = {"temp1"};
++    std::vector<std::string> input2 = {"temp2"};
++    std::vector<std::string> input3 = {"temp3"};
+     std::vector<double> values = {0, 0, 0};
+-    int64_t defaultPercent = 100;
+ 
+-    zone->addPidFailSafePercent("temp1", values[0]);
+-    zone->addPidFailSafePercent("temp2", values[1]);
+-    zone->addPidFailSafePercent("temp3", values[2]);
++    zone->addPidFailSafePercent(input1, values[0]);
++    zone->addPidFailSafePercent(input2, values[1]);
++    zone->addPidFailSafePercent(input3, values[2]);
+ 
+-    zone->initPidFailSafePercent();
++    zone->markSensorMissing("temp1");
+ 
+-    EXPECT_EQ(defaultPercent, zone->getFailSafePercent());
++    EXPECT_EQ(failSafePercent, zone->getFailSafePercent());
+ }
+ 
+-TEST_F(PidZoneTest, GetFailSafePercent_VerifyReturnsExpected)
++TEST_F(PidZoneTest, GetFailSafePercent_MultiFailedReturnsExpected)
+ {
+-    // Tests adding PID controller with FailSafePercent to the zone,
+-    // and verifies it's returned as expected.
++    // Tests when multi sensor failed, and verify the final failsafe's sensor
++    // name and duty as expected.
+ 
++    std::vector<std::string> input1 = {"temp1"};
++    std::vector<std::string> input2 = {"temp2"};
++    std::vector<std::string> input3 = {"temp3"};
+     std::vector<double> values = {60, 80, 70};
+-    double max_value = 0;
+ 
+-    for (const auto& value : values)
+-    {
+-        max_value = std::max(max_value, value);
+-    }
+-
+-    zone->addPidFailSafePercent("temp1", values[0]);
+-    zone->addPidFailSafePercent("temp2", values[1]);
+-    zone->addPidFailSafePercent("temp3", values[2]);
++    zone->addPidFailSafePercent(input1, values[0]);
++    zone->addPidFailSafePercent(input2, values[1]);
++    zone->addPidFailSafePercent(input3, values[2]);
+ 
+-    zone->initPidFailSafePercent();
++    zone->markSensorMissing("temp1");
++    zone->markSensorMissing("temp2");
++    zone->markSensorMissing("temp3");
+ 
+-    EXPECT_EQ(max_value, zone->getFailSafePercent());
++    EXPECT_EQ(80, zone->getFailSafePercent());
+ }
+ 
+ TEST_F(PidZoneTest, ThermalInputs_FailsafeToValid_ReadsSensors)
+diff --git a/test/zone_mock.hpp b/test/zone_mock.hpp
+index 4e34890..a5f105b 100644
+--- a/test/zone_mock.hpp
++++ b/test/zone_mock.hpp
+@@ -41,7 +41,7 @@ class ZoneMock : public ZoneInterface
+ 
+     MOCK_CONST_METHOD0(getManualMode, bool());
+     MOCK_CONST_METHOD0(getFailSafeMode, bool());
+-    MOCK_CONST_METHOD0(getFailSafePercent, double());
++    MOCK_METHOD0(getFailSafePercent, double());
+     MOCK_CONST_METHOD0(getZoneID, int64_t());
+ 
+     MOCK_CONST_METHOD0(getCycleIntervalTime, uint64_t());
+-- 
+2.25.1
+

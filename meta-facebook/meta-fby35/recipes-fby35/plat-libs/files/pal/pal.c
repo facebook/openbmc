@@ -5739,7 +5739,7 @@ pal_get_last_postcode(uint8_t slot, char* postcode) {
   return 0;
 }
 
-#ifdef CONFIG_HALFDOME
+#if defined CONFIG_HALFDOME || defined CONFIG_JAVAISLAND
 int
 pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *res_data, size_t max_len, size_t *res_len) {
 

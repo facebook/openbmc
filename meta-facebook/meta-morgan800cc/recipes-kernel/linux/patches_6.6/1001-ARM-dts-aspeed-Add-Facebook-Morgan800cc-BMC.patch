@@ -1,0 +1,112 @@
+From d21974aced1fb97c190b7aa1e361a8e4f9e3a75e Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Fri, 28 Oct 2022 11:50:15 -0700
+Subject: [PATCH] ARM: dts: aspeed: Add Facebook Morgan800cc BMC
+
+Add initial version of device tree for Facebook morgan800cc (AST2600) BMC.
+
+morgan800cc is Facebook's next generation switch platform with an AST2600
+BMC integrated for health monitoring purpose.
+---
+ arch/arm/boot/dts/aspeed/Makefile             |  1 +
+ .../aspeed-bmc-facebook-morgan800cc.dts       | 76 +++++++++++++++++++
+ 2 files changed, 77 insertions(+)
+ create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-morgan800cc.dts
+
+diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
+index 5e3392621697..03dfb144d6bd 100644
+--- a/arch/arm/boot/dts/aspeed/Makefile
++++ b/arch/arm/boot/dts/aspeed/Makefile
+@@ -25,6 +25,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+ 	aspeed-bmc-facebook-harma.dtb \
+ 	aspeed-bmc-facebook-minerva.dtb \
+ 	aspeed-bmc-facebook-minipack.dtb \
++	aspeed-bmc-facebook-morgan800cc.dtb \
+ 	aspeed-bmc-facebook-tiogapass.dtb \
+ 	aspeed-bmc-facebook-wedge40.dtb \
+ 	aspeed-bmc-facebook-wedge100.dtb \
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-morgan800cc.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-morgan800cc.dts
+new file mode 100644
+index 000000000000..7bfb61dd02d4
+--- /dev/null
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-morgan800cc.dts
+@@ -0,0 +1,76 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) Meta Platforms, Inc. and affiliates.
++
++/dts-v1/;
++
++#include "ast2600-facebook-netbmc-common.dtsi"
++
++/ {
++	model = "Facebook morgan800cc BMC";
++	compatible = "facebook,morgan800cc-bmc", "aspeed,ast2600";
++
++	chosen {
++		stdout-path = &uart1;
++	};
++
++	spi_gpio: spi {
++		num-chipselects = <1>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
++	};
++};
++
++&spi1 {
++	reg = < 0x1e630000 0xc4
++		0x30000000 0x4000000 >;
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		compatible = "jedec,spi-nor";
++		label = "spi1.0";
++		spi-rx-bus-width = <1>;
++		spi-max-frequency = <10000000>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			bios@0 {
++				reg = <0x0 0x4000000>;
++				label = "bios";
++			};
++		};
++	};
++};
++
++&mac3 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii4_default>;
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
++
++&lpc_ctrl {
++	status = "okay";
++	flash = <&spi1>;
++};
++
++&kcs1 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca0>;
++};
++
++&kcs2 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca8>;
++};
++
++&kcs3 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca2>;
++};
+-- 
+2.43.5
+

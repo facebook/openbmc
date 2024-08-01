@@ -331,16 +331,26 @@ HMCPhase getHMCPhase() {
   }
 
   if (tryPhase(HMC_FW_INVENTORY + "HGX_FW_BMC_0")) {
-    auto chassisUrl = HMC_URL + "Chassis/HGX_Chassis_0";
-    json jurl = json::parse(hgx.get(chassisUrl));
-    if (jurl.contains("Model")) {
-      auto model = jurl["Model"].dump();
-      if (containStr(model, {"H100"})) {
-        phase = HMCPhase::BMC_FW_DVT;
+    std::vector<std::string> urls = {
+        HMC_URL + "Chassis/HGX_Chassis_0",
+        HMC_URL + "Chassis/HGX_BMC_0"
+    };
+    nlohmann::json jurl;
+
+    for (const auto& url : urls) {
+      jurl = nlohmann::json::parse(hgx.get(url));
+      if (jurl.contains("Model")) {
+        auto model = jurl["Model"].dump();
+        if (containStr(model, {"H100"})) {
+          phase = HMCPhase::BMC_FW_DVT;
+          break;
+        }
+        else if (containStr(model, {"B100"})) {
+          phase = HMCPhase::BMC_FW_B100;
+          break;
+        }
       }
-      else if (containStr(model, {"B100"})) {
-        phase = HMCPhase::BMC_FW_B100;
-      }
+      phase = HMC_FW_UNKNOWN;
     }
   }
   else if (tryPhase(HMC_FW_INVENTORY + "HGX_FW_HMC_0")) {

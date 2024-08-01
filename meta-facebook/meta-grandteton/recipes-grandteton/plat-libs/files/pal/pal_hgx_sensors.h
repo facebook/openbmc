@@ -133,6 +133,11 @@ enum {
   TEMP_GB_NVS2,
   TEMP_GB_NVS3,
 
+  //NV Link
+  TEMP_NVLINK0_0 =  0x74,
+  TEMP_NVLINK0_PORT_0,
+  TEMP_NVLINK0_PORT_1,
+
   HGX_SNR_CNT = 0x7f,
 };
 

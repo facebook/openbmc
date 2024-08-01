@@ -28,7 +28,9 @@ extern const uint8_t swb_sensor_list[];
 extern const uint8_t swb_discrete_sensor_list[];
 extern const uint8_t swb_optic_sensor_list[];
 
-extern const uint8_t hgx_sensor_list[];
+extern const uint8_t hgx_common_snr_list[];
+extern const uint8_t hgx_h100_snr_list[];
+extern const uint8_t hgx_b100_snr_list[];
 extern const uint8_t ubb_sensor_list[];
 
 extern const uint8_t nic0_sensor_list[];
@@ -60,7 +62,9 @@ extern size_t swb_sensor_cnt;
 extern size_t swb_discrete_sensor_cnt;
 extern size_t swb_optic_sensor_cnt;
 
-extern size_t hgx_sensor_cnt;
+extern size_t hgx_common_snr_cnt;
+extern size_t hgx_h100_snr_cnt;
+extern size_t hgx_b100_snr_cnt;
 extern size_t ubb_sensor_cnt;
 
 extern size_t nic0_sensor_cnt;
@@ -219,6 +223,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   static uint8_t snr_swb_tmp[255]={0};
   static uint8_t snr_vpdb_tmp[64]={0};
   static uint8_t snr_hpdb_tmp[64]={0};
+  static uint8_t snr_hgx_tmp[255]={0};
 
   if (fru == FRU_MB) {
       *sensor_list = (uint8_t *) mb_sensor_list;
@@ -242,8 +247,24 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *cnt = 0;
     }
   } else if (fru == FRU_HGX) {
-    *sensor_list = (uint8_t *) hgx_sensor_list;
-    *cnt = hgx_sensor_cnt;
+    memcpy(&snr_hgx_tmp, hgx_common_snr_list, hgx_common_snr_cnt);
+    *cnt = hgx_common_snr_cnt;
+    HMCPhase phase = get_hgx_phase();
+    switch (phase) {
+      case HMC_FW_EVT:
+      case HMC_FW_DVT:
+      case BMC_FW_DVT:
+        memcpy(&snr_hgx_tmp[hgx_common_snr_cnt], hgx_h100_snr_list, hgx_h100_snr_cnt);
+        *cnt += hgx_h100_snr_cnt;
+        break;
+      case BMC_FW_B100:
+        memcpy(&snr_hgx_tmp[hgx_common_snr_cnt], hgx_b100_snr_list, hgx_b100_snr_cnt);
+        *cnt += hgx_b100_snr_cnt;
+        break;
+      default:
+        break;
+    }
+    *sensor_list = (uint8_t *) snr_hgx_tmp;
   } else if (fru == FRU_VPDB) {
     memcpy(snr_vpdb_tmp, vpdb_sensor_list, vpdb_sensor_cnt);
     // brick

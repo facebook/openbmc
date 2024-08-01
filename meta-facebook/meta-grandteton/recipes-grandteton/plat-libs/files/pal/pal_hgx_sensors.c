@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <syslog.h>
 #include "pal.h"
-#include <openbmc/hgx.h>
 #include <openbmc/kv.h>
 
 struct hgx_snr_info {
@@ -141,6 +140,11 @@ struct hgx_snr_info {
   {"NVSwitch1", "TEMP_GB_NVS1", "HGX_NVSwitch_1", "HGX_NVSwitch_1_TEMP_0"},
   {"NVSwitch2", "TEMP_GB_NVS2", "HGX_NVSwitch_2", "HGX_NVSwitch_2_TEMP_0"},
   {"NVSwitch3", "TEMP_GB_NVS3", "HGX_NVSwitch_3", "HGX_NVSwitch_3_TEMP_0"},
+
+  //NV Link0
+  {"NULL", "NULL", "HGX_NVLINK_0", "HGX_NVLinkManagementNIC_0_Temp_0"},
+  {"NULL", "NULL", "HGX_NVLINK_0_PORT_0", "HGX_NVLinkManagementNIC_0_Port_0_Temp_0"},
+  {"NULL", "NULL", "HGX_NVLINK_0_PORT_1", "HGX_NVLinkManagementNIC_0_Port_1_Temp_0"},
 };
 
 
@@ -206,6 +210,7 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
     switch (phase) {
       case HMC_FW_DVT:
       case BMC_FW_DVT:
+      case BMC_FW_B100:
         build_stage = DVT;
         break;
       case HMC_FW_EVT:
@@ -370,9 +375,9 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {"NVSwitch_1_TEMP" , 0 , read_snr, false, {90.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x71
   {"NVSwitch_2_TEMP" , 0 , read_snr, false, {90.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x72
   {"NVSwitch_3_TEMP" , 0 , read_snr, false, {90.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x73
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x74
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x75
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x76
+  {"NVLink_0_TEMP", 0, read_snr, 0, {105.0, 0, 0, 5.0, 0, 0, 0, 0}, 0}, //0x74
+  {"NVLink_0_PORT_0_TEMP", 0, read_snr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x75
+  {"NVLink_0_PORT_1_TEMP", 0, read_snr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x76
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x77
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x78
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x79
@@ -384,7 +389,7 @@ PAL_SENSOR_MAP hgx_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
 };
 
-const uint8_t hgx_sensor_list[] = {
+const uint8_t hgx_common_snr_list[] = {
   //Baseboard
   HGX_SNR_PWR_GB_HSC0,
   HGX_SNR_PWR_GB_HSC1,
@@ -397,7 +402,6 @@ const uint8_t hgx_sensor_list[] = {
   HGX_SNR_PWR_GB_HSC8,
   HGX_SNR_PWR_GB_HSC9,
   HGX_SNR_PWR_GB_HSC10,
-  Total_Power,
   Total_GPU_Power,
   Altitude_Pressure0,
 
@@ -428,7 +432,6 @@ const uint8_t hgx_sensor_list[] = {
   TEMP_GB_PCIERETIMER5,
   TEMP_GB_PCIERETIMER6,
   TEMP_GB_PCIERETIMER7,
-  TEMP_GB_PCIESWITCH0,
 
   //GPU1 and GPU2
   GPU1_ENG,
@@ -501,8 +504,21 @@ const uint8_t hgx_sensor_list[] = {
   //NV Switch
   TEMP_GB_NVS0,
   TEMP_GB_NVS1,
-  TEMP_GB_NVS2,
-  TEMP_GB_NVS3,
 };
 
-size_t hgx_sensor_cnt = sizeof(hgx_sensor_list)/sizeof(uint8_t);
+const uint8_t hgx_h100_snr_list[] = {
+  Total_Power,
+  TEMP_GB_PCIESWITCH0,
+  TEMP_GB_NVS2,
+  TEMP_GB_NVS3
+};
+
+const uint8_t hgx_b100_snr_list[] = {
+  TEMP_NVLINK0_0,
+  TEMP_NVLINK0_PORT_0,
+  TEMP_NVLINK0_PORT_1
+};
+
+size_t hgx_common_snr_cnt = sizeof(hgx_common_snr_list)/sizeof(uint8_t);
+size_t hgx_h100_snr_cnt = sizeof(hgx_h100_snr_list)/sizeof(uint8_t);
+size_t hgx_b100_snr_cnt = sizeof(hgx_b100_snr_list)/sizeof(uint8_t);

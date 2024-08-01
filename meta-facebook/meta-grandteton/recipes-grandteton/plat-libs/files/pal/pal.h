@@ -22,6 +22,7 @@
 #define __PAL_H__
 
 #include <openbmc/obmc-pal.h>
+#include <openbmc/hgx.h>
 
 #ifdef __cplusplus
 extern "C" {

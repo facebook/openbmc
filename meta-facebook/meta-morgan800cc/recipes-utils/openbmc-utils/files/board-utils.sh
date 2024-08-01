@@ -213,7 +213,10 @@ userver_power_is_on() {
 }
 
 wait_for_status_on() {
-    for((count=0; count < 10; count++)); do
+    # Note: In MCB FPGA (>= 0.16), there is a delay between power-good register
+    # and the status register to reflect the power on status. To avoid this,
+    # we increase upper bound of timeout to 5 seconds.
+    for ((count=0; count < 50; count++)); do
         if ! userver_power_is_on_helper; then
             sleep 0.1
         else
@@ -232,10 +235,6 @@ userver_power_on() {
 
     handle_error_and_cleanup_if_timeout "${FUNCNAME[0]}"
 
-    # Note: In MCB FPGA (< 0.4), there is a small delay (< 1s)
-    # for the status bit to update after the seq_inprog has been asserted.
-    # To avoid this corner case, we introduce a FPGA agnostic check to ensure
-    # status is on before console is returned to the user.
     wait_for_status_on
 
     release_lock
@@ -268,7 +267,7 @@ userver_reset() {
     # to be backward compatible to early MCB FPGA releases. Else the
     # sequencing is expected to complete within the value configured in
     # the by MCB FPGA.
-    for((count=0; count < 10; count++)); do
+    for ((count=0; count < 10; count++)); do
         if is_sequencing; then
             sleep 1
         else
@@ -280,10 +279,6 @@ userver_reset() {
 
     handle_error_and_cleanup_if_timeout "${FUNCNAME[0]}"
 
-    # Note: In MCB FPGA (< 0.4), there is a small delay (< 1s)
-    # for the status bit to update after the seq_inprog has been asserted.
-    # To avoid this corner case, we introduce a FPGA agnostic check to ensure
-    # status is on before console is returned to the user.
     wait_for_status_on
 
     release_lock

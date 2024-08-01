@@ -57,15 +57,21 @@ gpu_snr_mon () {
   snr_mon=$2
 
   if [ "$snr_mon" == "enable" ]; then
-    sed -i "2 s/$/ $gpu_config/" /etc/sv/sensord/run
+    if [ -z "$(cat /etc/sv/sensord/run | grep "$gpu_config")" ]; then
+      sed -i "2 s/$/ $gpu_config/" /etc/sv/sensord/run
+    fi
+
     # If sensord didn't monitor the gpu, then restart to monitor it
-    if [ -z "$(ps | grep sensord | grep $gpu_config)" ]; then
+    if [ -z "$(ps | grep sensord | grep "$gpu_config")" ]; then
       sv restart sensord
     fi
   else
-    sed -i "2 s/ $gpu_config//g" /etc/sv/sensord/run
+    if [ -n "$(cat /etc/sv/sensord/run | grep "$gpu_config")" ]; then
+      sed -i "2 s/ $gpu_config//g" /etc/sv/sensord/run
+    fi
+
     # If sensord is monitoromg the gpu, then stop to monitor it
-    if [ -n "$(ps | grep sensord | grep $gpu_config)" ]; then
+    if [ -n "$(ps | grep sensord | grep "$gpu_config")" ]; then
       sv restart sensord
     fi
   fi
@@ -74,6 +80,7 @@ gpu_snr_mon () {
 setup_gpu_eeprom () {
   gpu=("hgx" "ubb")
   names=("NVIDIA" "AMD")
+  snr_polling=("hgx_polling_status" "ubb_polling_status")
   addr=("$HGX_EEPROM_ADDR" "$UBB_EEPROM_ADDR")
   bins=("$HGX_FRU_BIN" "$UBB_FRU_BIN")
 
@@ -87,6 +94,7 @@ setup_gpu_eeprom () {
       is_gpu="$(strings "${bins[$loop]}" | grep -i "${names[$loop]}")"
       if [ -n "$is_gpu" ]; then
         $KV_CMD set $GPU_CONFIG "${gpu[$loop]}" persistent
+        $KV_CMD set "${snr_polling[$loop]}" 1
         gpu_snr_mon "${gpu[$loop]}" enable
         return 0
       fi

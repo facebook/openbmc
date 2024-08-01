@@ -37,16 +37,3 @@ kv set vpdb_polling_status    1
 kv set hpdb_polling_status,   1
 kv set fan_bp1_polling_status 1
 kv set fan_bp2_polling_status 1
-
-gpu_prsnt=$(cat /tmp/gpionames/GPU_PRSNT_N_ISO_R/value)
-if [ "$gpu_prsnt" -eq 0 ]; then
-  GPU_CONFIG="gpu_config"
-  gpu=`kv get $GPU_CONFIG persistent`
-  if [ "$gpu" == "hgx" ]; then
-    sed -i '$s/$/ hgx/' /etc/sv/sensord/run
-    kv set hgx_polling_status   1
-  elif [ "$gpu" == "ubb" ]; then
-    sed -i '$s/$/ ubb/' /etc/sv/sensord/run
-    kv set ubb_polling_status   1
-  fi
-fi

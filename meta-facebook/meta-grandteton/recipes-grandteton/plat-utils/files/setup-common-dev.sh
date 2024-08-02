@@ -108,173 +108,178 @@ probe_mb_eeprom() {
     else
       kv set mb_product "GTT"
     fi
+  else
+    kv set mb_product "GTA"
+    mb_product="GTA"
   fi
 }
 probe_mb_eeprom
 
-# Swith Board
-echo "Probe SWB Device"
-SWB_1ST_SOURCE="0"
-SWB_2ND_SOURCE="1"
-SWB_3RD_SOURCE="2"
-SWB_4TH_SOURCE="3"
+if [ $mb_product != "GTA" ]; then
+  # Swith Board
+  echo "Probe SWB Device"
+  SWB_1ST_SOURCE="0"
+  SWB_2ND_SOURCE="1"
+  SWB_3RD_SOURCE="2"
+  SWB_4TH_SOURCE="3"
 
-# BIC I/O Expander PCA9539 0xEC BIC
-i2c_device_add 32 0x76 pca9539
+  # BIC I/O Expander PCA9539 0xEC BIC
+  i2c_device_add 32 0x76 pca9539
 
-gpio_export_ioexp 32-0076 BIC_FWSPICK        0
-gpio_export_ioexp 32-0076 BIC_UART_BMC_SEL   1
+  gpio_export_ioexp 32-0076 BIC_FWSPICK        0
+  gpio_export_ioexp 32-0076 BIC_UART_BMC_SEL   1
 
-#Set IO Expender
-gpio_set BIC_FWSPICK 0
-gpio_set RST_SWB_BIC_N 1
-gpio_set BIC_UART_BMC_SEL 0
+  #Set IO Expender
+  gpio_set BIC_FWSPICK 0
+  gpio_set RST_SWB_BIC_N 1
+  gpio_set BIC_UART_BMC_SEL 0
 
 
-bic_ready=$(gpio_get FM_SWB_BIC_READY_ISO_R_N)
-#SWB HSC
-if [ "$bic_ready" -eq 0 ]; then
-  cnt=3
-  while [ $cnt -ne 0 ]
-  do
-    sleep 1
-    str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf0 0x00 0x01 |grep "PLDM Data")
-    rev=$?
-    if [ "$rev" -eq 1 ]; then
-      cnt=$(("$cnt"-1))
-      val=0
-    else
-      IFS=' ' read -ra  array <<< "$str"
-      cnt=0
-      for i in "${array[@]}"
-      do
-        array["$cnt"]=${i:2}
-        cnt=$(("$cnt"+1))
-      done
-
-      int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
-      dec=$((16#${array[11]}|16#${array[12]} << 8))
-      val=$(("$int"+"$dec"))
-      break;
-    fi
-  done
-
-#kv set swb_hsc_module "0"
-  if [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
-  then
-    kv set swb_hsc_source "$SWB_2ND_SOURCE" #ltc4282
-    kv set swb_hsc_module "1"
-  elif [ "$val" -gt 1250 ]
-  then
-    kv set swb_hsc_source "$SWB_3RD_SOURCE" #ltc4287
-    kv set swb_hsc_module "1"
-  else
-    kv set swb_hsc_source "$SWB_1ST_SOURCE" #mp5990
-  fi
-
-#SWB VR
-  cnt=3
-  while [ "$cnt" -ne 0 ]
-  do
-    sleep 1
-    str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf1 0x00 0x01 |grep "PLDM Data")
-    rev=$?
-    if [ "$rev" -eq 1 ]; then
-      cnt=$(("$cnt"-1))
-    else
-      IFS=' ' read -ra  array <<< "$str"
-      cnt=0
-      for i in "${array[@]}"
-      do
-        array["$cnt"]=${i:2}
-        cnt=$(("$cnt"+1))
-      done
-
-      int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
-      dec=$((16#${array[11]}|16#${array[12]} << 8))
-      val=$(("$int"+"$dec"))
-      break;
-    fi
-  done
-
-  if [ "$val" -gt 250 ] && [ "$val" -lt 750 ]
-  then
-    kv set swb_vr_source "$SWB_2ND_SOURCE" #INF
-  elif [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
-  then
-    kv set swb_vr_source "$SWB_3RD_SOURCE" #MPS
-  elif [ "$val" -gt 1250 ] && [ "$val" -lt 1750 ]
-  then
-    kv set swb_vr_source "$SWB_4TH_SOURCE" #TI
-  else
-    kv set swb_vr_source "$SWB_1ST_SOURCE" #RAA
-  fi
-
-  #SWB NIC Configuration
-  cnt=3
-  while [ "$cnt" -ne 0 ]
-  do
-    str=$(pldmd-util -b 3 -e 0x0a raw 0x02 0x3A 0x00 0xD0 |grep "PLDM Data")
-    rev=$?
-    if [ "$rev" -eq 1 ]; then
-      kv set swb_nic_source "$SWB_1ST_SOURCE"
-      cnt=$(("$cnt"-1))
-    else
-      pldm_data=$(echo "$str" | awk -F'PLDM Data :' '{print $2}')
-      IFS=' ' read -ra  array <<< "$pldm_data"
-      cnt=0
-      for i in "${array[@]}"
-      do
-        array["$cnt"]=${i:2}
-        cnt=$(("$cnt"+1))
-      done
-      val=$((16#${array[3]}))
-      if [ "$val" -eq 1 ]; then
-        kv set swb_nic_source "$SWB_1ST_SOURCE"
+  bic_ready=$(gpio_get FM_SWB_BIC_READY_ISO_R_N)
+  #SWB HSC
+  if [ "$bic_ready" -eq 0 ]; then
+    cnt=3
+    while [ $cnt -ne 0 ]
+    do
+      sleep 1
+      str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf0 0x00 0x01 |grep "PLDM Data")
+      rev=$?
+      if [ "$rev" -eq 1 ]; then
+        cnt=$(("$cnt"-1))
+        val=0
       else
-        kv set swb_nic_source "$SWB_2ND_SOURCE"
-        #Support Fan table config3
-        sed -i '/swb_tray_nic_linear(/i \
-  swb_tray_nic_optic_linear(\
-    max([\
-      all:swb_swb_nic0_optic_temp_c,\
-      all:swb_swb_nic1_optic_temp_c,\
-      all:swb_swb_nic2_optic_temp_c,\
-      all:swb_swb_nic3_optic_temp_c,\
-      all:swb_swb_nic4_optic_temp_c,\
-      all:swb_swb_nic5_optic_temp_c,\
-      all:swb_swb_nic6_optic_temp_c,\
-      all:swb_swb_nic7_optic_temp_c])) +\
-  swb_tray_nic_optic_pid(\
-    max([\
-      all:swb_swb_nic0_optic_temp_c,\
-      all:swb_swb_nic1_optic_temp_c,\
-      all:swb_swb_nic2_optic_temp_c,\
-      all:swb_swb_nic3_optic_temp_c,\
-      all:swb_swb_nic4_optic_temp_c,\
-      all:swb_swb_nic5_optic_temp_c,\
-      all:swb_swb_nic6_optic_temp_c,\
-      all:swb_swb_nic7_optic_temp_c])), \
-  ' /etc/fsc/zone.fsc
-      fi
-      break
-    fi
-  done
-fi
+        IFS=' ' read -ra  array <<< "$str"
+        cnt=0
+        for i in "${array[@]}"
+        do
+          array["$cnt"]=${i:2}
+          cnt=$(("$cnt"+1))
+        done
 
-# SWB NIC
-kv set swb_nic_present 1
-if [ $(gpio_get SWB_HSC_PWRGD_ISO_R) -eq 1 ]; then
-  for i in {8..15}
-  do
-    output=$(i2cget -y -f 32 0x13 $i | tr -d ' \t\n\r')
-    output=${output#0x}
-    pres=$((16#${output} & 0x80 ))
-    if [ "$pres" == "0" ]; then
-      kv set swb_nic_present 0
-      break
+        int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
+        dec=$((16#${array[11]}|16#${array[12]} << 8))
+        val=$(("$int"+"$dec"))
+        break;
+      fi
+    done
+
+  #kv set swb_hsc_module "0"
+    if [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
+    then
+      kv set swb_hsc_source "$SWB_2ND_SOURCE" #ltc4282
+      kv set swb_hsc_module "1"
+    elif [ "$val" -gt 1250 ]
+    then
+      kv set swb_hsc_source "$SWB_3RD_SOURCE" #ltc4287
+      kv set swb_hsc_module "1"
+    else
+      kv set swb_hsc_source "$SWB_1ST_SOURCE" #mp5990
     fi
-  done
+
+  #SWB VR
+    cnt=3
+    while [ "$cnt" -ne 0 ]
+    do
+      sleep 1
+      str=$(pldmd-util --bus 3 -e 0x0a raw 0x02 0x11 0xf1 0x00 0x01 |grep "PLDM Data")
+      rev=$?
+      if [ "$rev" -eq 1 ]; then
+        cnt=$(("$cnt"-1))
+      else
+        IFS=' ' read -ra  array <<< "$str"
+        cnt=0
+        for i in "${array[@]}"
+        do
+          array["$cnt"]=${i:2}
+          cnt=$(("$cnt"+1))
+        done
+
+        int=$(((16#${array[9]}|16#${array[10]} << 8)*1000))
+        dec=$((16#${array[11]}|16#${array[12]} << 8))
+        val=$(("$int"+"$dec"))
+        break;
+      fi
+    done
+
+    if [ "$val" -gt 250 ] && [ "$val" -lt 750 ]
+    then
+      kv set swb_vr_source "$SWB_2ND_SOURCE" #INF
+    elif [ "$val" -gt 750 ] && [ "$val" -lt 1250 ]
+    then
+      kv set swb_vr_source "$SWB_3RD_SOURCE" #MPS
+    elif [ "$val" -gt 1250 ] && [ "$val" -lt 1750 ]
+    then
+      kv set swb_vr_source "$SWB_4TH_SOURCE" #TI
+    else
+      kv set swb_vr_source "$SWB_1ST_SOURCE" #RAA
+    fi
+
+    #SWB NIC Configuration
+    cnt=3
+    while [ "$cnt" -ne 0 ]
+    do
+      str=$(pldmd-util -b 3 -e 0x0a raw 0x02 0x3A 0x00 0xD0 |grep "PLDM Data")
+      rev=$?
+      if [ "$rev" -eq 1 ]; then
+        kv set swb_nic_source "$SWB_1ST_SOURCE"
+        cnt=$(("$cnt"-1))
+      else
+        pldm_data=$(echo "$str" | awk -F'PLDM Data :' '{print $2}')
+        IFS=' ' read -ra  array <<< "$pldm_data"
+        cnt=0
+        for i in "${array[@]}"
+        do
+          array["$cnt"]=${i:2}
+          cnt=$(("$cnt"+1))
+        done
+        val=$((16#${array[3]}))
+        if [ "$val" -eq 1 ]; then
+          kv set swb_nic_source "$SWB_1ST_SOURCE"
+        else
+          kv set swb_nic_source "$SWB_2ND_SOURCE"
+          #Support Fan table config3
+          sed -i '/swb_tray_nic_linear(/i \
+    swb_tray_nic_optic_linear(\
+      max([\
+        all:swb_swb_nic0_optic_temp_c,\
+        all:swb_swb_nic1_optic_temp_c,\
+        all:swb_swb_nic2_optic_temp_c,\
+        all:swb_swb_nic3_optic_temp_c,\
+        all:swb_swb_nic4_optic_temp_c,\
+        all:swb_swb_nic5_optic_temp_c,\
+        all:swb_swb_nic6_optic_temp_c,\
+        all:swb_swb_nic7_optic_temp_c])) +\
+    swb_tray_nic_optic_pid(\
+      max([\
+        all:swb_swb_nic0_optic_temp_c,\
+        all:swb_swb_nic1_optic_temp_c,\
+        all:swb_swb_nic2_optic_temp_c,\
+        all:swb_swb_nic3_optic_temp_c,\
+        all:swb_swb_nic4_optic_temp_c,\
+        all:swb_swb_nic5_optic_temp_c,\
+        all:swb_swb_nic6_optic_temp_c,\
+        all:swb_swb_nic7_optic_temp_c])), \
+    ' /etc/fsc/zone.fsc
+        fi
+        break
+      fi
+    done
+  fi
+
+  # SWB NIC
+  kv set swb_nic_present 1
+  if [ $(gpio_get SWB_HSC_PWRGD_ISO_R) -eq 1 ]; then
+    for i in {8..15}
+    do
+      output=$(i2cget -y -f 32 0x13 $i | tr -d ' \t\n\r')
+      output=${output#0x}
+      pres=$((16#${output} & 0x80 ))
+      if [ "$pres" == "0" ]; then
+        kv set swb_nic_present 0
+        break
+      fi
+    done
+  fi
 fi
 
 VPDB_EVT2="2"
@@ -476,168 +481,168 @@ fi
 i2c_device_add 36 0x52 24c64 #VPDB FRU
 
 if [ "$mb_product" != "GT1.5" ]; then
-#***HPDB Board Device Probe***
-HPDB_PVT="5"
-HPDB_PVT4="8"
-HPDB_1ST_SOURCE="0"
-HPDB_2ND_SOURCE="1"
-HPDB_3RD_SOURCE="2"
-HPDB_HSC_MAIN="0"
-#HPDB_HSC_SECOND="1"
+  #***HPDB Board Device Probe***
+  HPDB_PVT="5"
+  HPDB_PVT4="8"
+  HPDB_1ST_SOURCE="0"
+  HPDB_2ND_SOURCE="1"
+  HPDB_3RD_SOURCE="2"
+  HPDB_HSC_MAIN="0"
+  #HPDB_HSC_SECOND="1"
 
-echo "Probe HPDB Device"
-#HPDB ID Expender
-i2c_device_add 37 0x23 pca9555
-gpio_export_ioexp 37-0023  FAN_BP1_PRSNT_N  2
-gpio_export_ioexp 37-0023  FAN_BP2_PRSNT_N  3
-gpio_export_ioexp 37-0023  HPDB_BOARD_ID_0  10
-gpio_export_ioexp 37-0023  HPDB_BOARD_ID_1  11
-gpio_export_ioexp 37-0023  HPDB_BOARD_ID_2  12
-gpio_export_ioexp 37-0023  HPDB_SKU_ID_0    13
-gpio_export_ioexp 37-0023  HPDB_SKU_ID_1    14
-gpio_export_ioexp 37-0023  HPDB_SKU_ID_2    15
+  echo "Probe HPDB Device"
+  #HPDB ID Expender
+  i2c_device_add 37 0x23 pca9555
+  gpio_export_ioexp 37-0023  FAN_BP1_PRSNT_N  2
+  gpio_export_ioexp 37-0023  FAN_BP2_PRSNT_N  3
+  gpio_export_ioexp 37-0023  HPDB_BOARD_ID_0  10
+  gpio_export_ioexp 37-0023  HPDB_BOARD_ID_1  11
+  gpio_export_ioexp 37-0023  HPDB_BOARD_ID_2  12
+  gpio_export_ioexp 37-0023  HPDB_SKU_ID_0    13
+  gpio_export_ioexp 37-0023  HPDB_SKU_ID_1    14
+  gpio_export_ioexp 37-0023  HPDB_SKU_ID_2    15
 
-i2c_device_add 37 0x25 pca9555
-gpio_export_ioexp 37-0025  FM_HS1_EN_BUSBAR_BUF  1
-gpio_export_ioexp 37-0025  FM_HS2_EN_BUSBAR_BUF  3
-
-kv set hpdb_rev "$((
-                  $(gpio_get HPDB_BOARD_ID_2) << 2 |
-                  $(gpio_get HPDB_BOARD_ID_1) << 1 |
-                  $(gpio_get HPDB_BOARD_ID_0)
-                ))"
-
-kv set hpdb_sku "$((
-                  $(gpio_get HPDB_SKU_ID_2) << 2 |
-                  $(gpio_get HPDB_SKU_ID_1) << 1 |
-                  $(gpio_get HPDB_SKU_ID_0)
-                ))"
-
-# After PVT4
-if read_dev 37 0x25 0 >/dev/null; then
-
-  gpio_export_ioexp 37-0025  HPDB_SKU_ID_5    12
-  gpio_export_ioexp 37-0025  HPDB_SKU_ID_4    13
-  gpio_export_ioexp 37-0025  HPDB_SKU_ID_3    14
-  gpio_export_ioexp 37-0025  HPDB_BOARD_ID_3  15
+  i2c_device_add 37 0x25 pca9555
+  gpio_export_ioexp 37-0025  FM_HS1_EN_BUSBAR_BUF  1
+  gpio_export_ioexp 37-0025  FM_HS2_EN_BUSBAR_BUF  3
 
   kv set hpdb_rev "$((
-                    $(gpio_get HPDB_BOARD_ID_3) << 3 |
                     $(gpio_get HPDB_BOARD_ID_2) << 2 |
                     $(gpio_get HPDB_BOARD_ID_1) << 1 |
                     $(gpio_get HPDB_BOARD_ID_0)
                   ))"
 
   kv set hpdb_sku "$((
-                    $(gpio_get HPDB_SKU_ID_5) << 5 |
-                    $(gpio_get HPDB_SKU_ID_4) << 4 |
-                    $(gpio_get HPDB_SKU_ID_3) << 3 |
                     $(gpio_get HPDB_SKU_ID_2) << 2 |
                     $(gpio_get HPDB_SKU_ID_1) << 1 |
                     $(gpio_get HPDB_SKU_ID_0)
                   ))"
-fi
 
+  # After PVT4
+  if read_dev 37 0x25 0 >/dev/null; then
 
-# HPDB ADM1272/LTC4286 CONFIG
-hrev=$(kv get hpdb_rev)
-hpdb_hsc=$(gpio_get HPDB_SKU_ID_0)
+    gpio_export_ioexp 37-0025  HPDB_SKU_ID_5    12
+    gpio_export_ioexp 37-0025  HPDB_SKU_ID_4    13
+    gpio_export_ioexp 37-0025  HPDB_SKU_ID_3    14
+    gpio_export_ioexp 37-0025  HPDB_BOARD_ID_3  15
 
-# HPDB_BOARD_ID_3 was present in between stage DVT and stage PVT3
-# but the value was 1, so if revs in range 11 ~ 15 (DVT ~ PVT3) need to be reconfig.
-if [ "$hrev" -ge 11 ] && [ "$hrev" -le 15 ]; then
-  kv set hpdb_rev "$((
-                    $(gpio_get HPDB_BOARD_ID_2) << 2 |
-                    $(gpio_get HPDB_BOARD_ID_1) << 1 |
-                    $(gpio_get HPDB_BOARD_ID_0)
-                  ))"
-  hrev=$(kv get hpdb_rev)
-fi
+    kv set hpdb_rev "$((
+                      $(gpio_get HPDB_BOARD_ID_3) << 3 |
+                      $(gpio_get HPDB_BOARD_ID_2) << 2 |
+                      $(gpio_get HPDB_BOARD_ID_1) << 1 |
+                      $(gpio_get HPDB_BOARD_ID_0)
+                    ))"
 
-# Stage before PVT4
-[ "$hrev" -lt "$HPDB_PVT4" ] && hpdb_hsc=$(gpio_get HPDB_SKU_ID_2)
-
-if [ "$hpdb_hsc" -eq "$HPDB_HSC_MAIN" ] && [ "$hrev" -gt 1 ]; then
-  i2cset -f -y 39 0x40 0xD9 0x8b
-  i2cset -f -y 39 0x41 0xD9 0x8b
-  i2c_device_add 39 0x40 ltc4286
-  i2c_device_add 39 0x41 ltc4286
-  kv set hpdb_hsc_source "$HPDB_1ST_SOURCE"
-else
-  i2cset -y -f 39 0x13 0xd4 0x3F1F w
-  i2cset -y -f 39 0x1c 0xd4 0x3F1F w
-  i2c_device_add 39 0x13 adm1272
-  i2c_device_add 39 0x1c adm1272
-  kv set hpdb_hsc_source "$HPDB_2ND_SOURCE"
-fi
-
-if [ "$hrev" -ge "$HPDB_PVT4" ]; then
-
-  # ADC Type
-  adc_type_dif="0"
-  adc_type=$(gpio_get HPDB_SKU_ID_2)
-  adc_dif_sku="$(($(gpio_get HPDB_SKU_ID_4) << 1 | $(gpio_get HPDB_SKU_ID_3)))"
-  adc_sgl_sku=$(gpio_get HPDB_SKU_ID_5)
-
-  # ADC 1 - only dif
-  if [ "$adc_dif_sku" -eq "$HPDB_1ST_SOURCE" ]; then
-    i2c_device_add 37 0x69 ltc2945
-    i2c_device_add 37 0x6b ltc2945
-    kv set hpdb_adc_source "$HPDB_1ST_SOURCE"
-  elif [ "$adc_dif_sku" -eq "$HPDB_2ND_SOURCE" ]; then
-    i2c_device_add 37 0x42 ina238
-    i2c_device_add 37 0x44 ina238
-    kv set hpdb_adc_source "$HPDB_2ND_SOURCE"
-  elif [ "$adc_dif_sku" -eq "$HPDB_3RD_SOURCE" ]; then
-    i2c_device_add 37 0x42 isl28022
-    i2c_device_add 37 0x44 isl28022
-    kv set hpdb_adc_source "$HPDB_3RD_SOURCE"
+    kv set hpdb_sku "$((
+                      $(gpio_get HPDB_SKU_ID_5) << 5 |
+                      $(gpio_get HPDB_SKU_ID_4) << 4 |
+                      $(gpio_get HPDB_SKU_ID_3) << 3 |
+                      $(gpio_get HPDB_SKU_ID_2) << 2 |
+                      $(gpio_get HPDB_SKU_ID_1) << 1 |
+                      $(gpio_get HPDB_SKU_ID_0)
+                    ))"
   fi
 
-  # ADC 2 - dif & sig
-  if [ "$adc_type" -eq "$adc_type_dif" ]; then
-    # probe adc dif
+
+  # HPDB ADM1272/LTC4286 CONFIG
+  hrev=$(kv get hpdb_rev)
+  hpdb_hsc=$(gpio_get HPDB_SKU_ID_0)
+
+  # HPDB_BOARD_ID_3 was present in between stage DVT and stage PVT3
+  # but the value was 1, so if revs in range 11 ~ 15 (DVT ~ PVT3) need to be reconfig.
+  if [ "$hrev" -ge 11 ] && [ "$hrev" -le 15 ]; then
+    kv set hpdb_rev "$((
+                      $(gpio_get HPDB_BOARD_ID_2) << 2 |
+                      $(gpio_get HPDB_BOARD_ID_1) << 1 |
+                      $(gpio_get HPDB_BOARD_ID_0)
+                    ))"
+    hrev=$(kv get hpdb_rev)
+  fi
+
+  # Stage before PVT4
+  [ "$hrev" -lt "$HPDB_PVT4" ] && hpdb_hsc=$(gpio_get HPDB_SKU_ID_2)
+
+  if [ "$hpdb_hsc" -eq "$HPDB_HSC_MAIN" ] && [ "$hrev" -gt 1 ]; then
+    i2cset -f -y 39 0x40 0xD9 0x8b
+    i2cset -f -y 39 0x41 0xD9 0x8b
+    i2c_device_add 39 0x40 ltc4286
+    i2c_device_add 39 0x41 ltc4286
+    kv set hpdb_hsc_source "$HPDB_1ST_SOURCE"
+  else
+    i2cset -y -f 39 0x13 0xd4 0x3F1F w
+    i2cset -y -f 39 0x1c 0xd4 0x3F1F w
+    i2c_device_add 39 0x13 adm1272
+    i2c_device_add 39 0x1c adm1272
+    kv set hpdb_hsc_source "$HPDB_2ND_SOURCE"
+  fi
+
+  if [ "$hrev" -ge "$HPDB_PVT4" ]; then
+
+    # ADC Type
+    adc_type_dif="0"
+    adc_type=$(gpio_get HPDB_SKU_ID_2)
+    adc_dif_sku="$(($(gpio_get HPDB_SKU_ID_4) << 1 | $(gpio_get HPDB_SKU_ID_3)))"
+    adc_sgl_sku=$(gpio_get HPDB_SKU_ID_5)
+
+    # ADC 1 - only dif
     if [ "$adc_dif_sku" -eq "$HPDB_1ST_SOURCE" ]; then
-      i2c_device_add 37 0x6a ltc2945
-      i2c_device_add 37 0x6c ltc2945
+      i2c_device_add 37 0x69 ltc2945
+      i2c_device_add 37 0x6b ltc2945
       kv set hpdb_adc_source "$HPDB_1ST_SOURCE"
     elif [ "$adc_dif_sku" -eq "$HPDB_2ND_SOURCE" ]; then
-      i2c_device_add 37 0x43 ina238
-      i2c_device_add 37 0x45 ina238
+      i2c_device_add 37 0x42 ina238
+      i2c_device_add 37 0x44 ina238
       kv set hpdb_adc_source "$HPDB_2ND_SOURCE"
     elif [ "$adc_dif_sku" -eq "$HPDB_3RD_SOURCE" ]; then
-      i2c_device_add 37 0x43 isl28022
-      i2c_device_add 37 0x45 isl28022
+      i2c_device_add 37 0x42 isl28022
+      i2c_device_add 37 0x44 isl28022
       kv set hpdb_adc_source "$HPDB_3RD_SOURCE"
     fi
-  else
-    # probe adc sig
-    if [ "$adc_sgl_sku" -eq 0 ]; then
-      rebind_i2c_dev 37 35 max11617
-      echo 1 > /sys/bus/i2c/devices/37-0035/iio:device*/polar_resistor
+
+    # ADC 2 - dif & sig
+    if [ "$adc_type" -eq "$adc_type_dif" ]; then
+      # probe adc dif
+      if [ "$adc_dif_sku" -eq "$HPDB_1ST_SOURCE" ]; then
+        i2c_device_add 37 0x6a ltc2945
+        i2c_device_add 37 0x6c ltc2945
+        kv set hpdb_adc_source "$HPDB_1ST_SOURCE"
+      elif [ "$adc_dif_sku" -eq "$HPDB_2ND_SOURCE" ]; then
+        i2c_device_add 37 0x43 ina238
+        i2c_device_add 37 0x45 ina238
+        kv set hpdb_adc_source "$HPDB_2ND_SOURCE"
+      elif [ "$adc_dif_sku" -eq "$HPDB_3RD_SOURCE" ]; then
+        i2c_device_add 37 0x43 isl28022
+        i2c_device_add 37 0x45 isl28022
+        kv set hpdb_adc_source "$HPDB_3RD_SOURCE"
+      fi
     else
-      rebind_i2c_dev 37 48 ads1015
+      # probe adc sig
+      if [ "$adc_sgl_sku" -eq 0 ]; then
+        rebind_i2c_dev 37 35 max11617
+        echo 1 > /sys/bus/i2c/devices/37-0035/iio:device*/polar_resistor
+      else
+        rebind_i2c_dev 37 48 ads1015
+      fi
+    fi
+
+  elif [ "$hrev" -gt "$HPDB_PVT" ]; then
+    if [ "$(gpio_get HPDB_SKU_ID_1)" -eq "$HPDB_1ST_SOURCE" ]; then
+      i2c_device_add 37 0x69 ltc2945
+      i2c_device_add 37 0x6a ltc2945
+      i2c_device_add 37 0x6b ltc2945
+      i2c_device_add 37 0x6c ltc2945
+      kv set hpdb_adc_source "$HPDB_1ST_SOURCE"
+    else
+      i2c_device_add 37 0x42 ina238
+      i2c_device_add 37 0x43 ina238
+      i2c_device_add 37 0x44 ina238
+      i2c_device_add 37 0x45 ina238
+      kv set hpdb_adc_source "$HPDB_2ND_SOURCE"
     fi
   fi
 
-elif [ "$hrev" -gt "$HPDB_PVT" ]; then
-  if [ "$(gpio_get HPDB_SKU_ID_1)" -eq "$HPDB_1ST_SOURCE" ]; then
-    i2c_device_add 37 0x69 ltc2945
-    i2c_device_add 37 0x6a ltc2945
-    i2c_device_add 37 0x6b ltc2945
-    i2c_device_add 37 0x6c ltc2945
-    kv set hpdb_adc_source "$HPDB_1ST_SOURCE"
-  else
-    i2c_device_add 37 0x42 ina238
-    i2c_device_add 37 0x43 ina238
-    i2c_device_add 37 0x44 ina238
-    i2c_device_add 37 0x45 ina238
-    kv set hpdb_adc_source "$HPDB_2ND_SOURCE"
-  fi
-fi
-
-# HPDB FRU
-i2c_device_add 37 0x51 24c64
+  # HPDB FRU
+  i2c_device_add 37 0x51 24c64
 fi
 
 #***FAN Board Device Probe***
@@ -958,4 +963,3 @@ for i in {0..7}; do
     echo 1 > /sys/bus/iio/devices/iio:device1/events/in_voltage"$i"_thresh_rising_en
   fi
 done
-

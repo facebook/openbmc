@@ -61,6 +61,18 @@
     "probe_register": 0,
     "default_baudrate": 115200,
     "preferred_baudrate": 115200,
+    "special_handlers": [
+      {
+        "reg": 101,
+        "len": 2,
+        "period": 3600,
+        "action": "write",
+        "info": {
+          "interpret": "INTEGER",
+          "shell": "date +%s"
+        }
+      }
+    ],
     "registers": [
         {
             "begin": 0,

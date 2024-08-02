@@ -21,4 +21,5 @@ LOCAL_URI += "\
     file://board-utils.sh \
     file://setup_i2c.sh \
     file://setup_board.sh \
+    file://wedge_power_come_shutdown_reason.patch \
     "

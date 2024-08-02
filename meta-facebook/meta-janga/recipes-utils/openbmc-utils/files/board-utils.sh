@@ -22,10 +22,14 @@ SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 1-0035)
 
 BOARD_ID="${PWRCPLD_SYSFS_DIR}/board_id"
 VERSION_ID="${PWRCPLD_SYSFS_DIR}/version_id"
+SMB1_DC_STATUS="${PWRCPLD_SYSFS_DIR}/smb1_dc_status"
+SMB2_DC_STATUS="${PWRCPLD_SYSFS_DIR}/smb2_dc_status"
 
 COME_POWER_EN="${SCMCPLD_SYSFS_DIR}/pwr_come_en"
 COME_POWER_OFF="${SCMCPLD_SYSFS_DIR}/pwr_force_off"
 COME_POWER_CYCLE_N="${SCMCPLD_SYSFS_DIR}/pwr_cyc_n"
+XP5R0V_COME_PG="${SCMCPLD_SYSFS_DIR}/xp5r0v_come_pg"
+XP12R0V_COME_PG="${SCMCPLD_SYSFS_DIR}/xp12r0v_come_pg"
 CHASSIS_POWER_CYCLE="${PWRCPLD_SYSFS_DIR}/power_cycle_go"
 
 wedge_board_type() {
@@ -64,17 +68,17 @@ wedge_board_rev() {
 }
 
 userver_power_is_on() {
-    if [ ! -e "$COME_POWER_OFF" ] || [ ! -e "$COME_POWER_EN" ]; then
-        echo "Error: $COME_POWER_OFF does not exist! Is scbcpld ready??"
+    if [ ! -e "$XP5R0V_COME_PG" ] || [ ! -e "$XP12R0V_COME_PG" ]; then
+        echo "Error: $XP5R0V_COME_PG or $XP12R0V_COME_PG does not exist! Is scbcpld ready??"
         echo "Assuming uServer is off!"
         return 1
     fi
 
-    off_sts=$(head -n 1 "$COME_POWER_OFF" 2> /dev/null)
-    pwr_en=$(head -n 1 "$COME_POWER_EN" 2> /dev/null)
+    xp5r0v_sts=$(head -n 1 "$XP5R0V_COME_PG" 2> /dev/null)
+    xp12r0v_sts=$(head -n 1 "$XP12R0V_COME_PG" 2> /dev/null)
 
-    if [ $((off_sts)) -eq $((0x1)) ] && 
-       [ $((pwr_en)) -eq $((0x1)) ] ; then
+    if [ $((xp5r0v_sts)) -eq $((0x1)) ] &&
+       [ $((xp12r0v_sts)) -eq $((0x1)) ] ; then
         return 0
     fi
 
@@ -163,4 +167,24 @@ userver_mac_addr() {
             return 1
             ;;
     esac
+}
+
+leakage_detection_status_check() {
+    smb1_dc_sts=$(head -n 1 "$SMB1_DC_STATUS" 2> /dev/null)
+    smb2_dc_sts=$(head -n 1 "$SMB2_DC_STATUS" 2> /dev/null)
+    if [ $((smb1_dc_sts)) -eq $((0x1)) ] &&
+       [ $((smb2_dc_sts)) -eq $((0x1)) ] ; then
+        return 1
+    fi
+
+    return 0
+}
+
+user_issued_shutdown_status_check(){
+    come_pwr_ctrl_sts=$(head -n 1 "$COME_POWER_OFF" 2> /dev/null)
+    if [ $((come_pwr_ctrl_sts)) -eq $((0x1)) ]; then
+        return 1
+    fi
+
+    return 0
 }

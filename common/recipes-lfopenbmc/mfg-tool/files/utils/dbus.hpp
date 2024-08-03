@@ -2,6 +2,7 @@
 #include <xyz/openbmc_project/Common/Threshold/client.hpp>
 #include <xyz/openbmc_project/Control/FanPwm/client.hpp>
 #include <xyz/openbmc_project/Control/Mode/client.hpp>
+#include <xyz/openbmc_project/Debug/Pid/Zone/client.hpp>
 #include <xyz/openbmc_project/Inventory/Decorator/Asset/client.hpp>
 #include <xyz/openbmc_project/Inventory/Item/client.hpp>
 #include <xyz/openbmc_project/Logging/Entry/client.hpp>
@@ -181,6 +182,15 @@ using Proxy = sdbusplus::client::xyz::openbmc_project::control::Mode<>;
 static constexpr auto interface = Proxy::interface;
 } // namespace mode
 } // namespace control
+
+namespace debug
+{
+namespace pid_zone
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::debug::pid::Zone<>;
+static constexpr auto interface = Proxy::interface;
+} // namespace pid_zone
+} // namespace debug
 
 namespace software
 {

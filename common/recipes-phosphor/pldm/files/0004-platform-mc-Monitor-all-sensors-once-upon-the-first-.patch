@@ -1,7 +1,7 @@
-From 4f7402fc236b39f359e6a6f3aa51d44dd97797c1 Mon Sep 17 00:00:00 2001
+From 7a27556e921bbd615d64bf00cdb7872a3a74fe53 Mon Sep 17 00:00:00 2001
 From: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
 Date: Tue, 23 Apr 2024 13:57:49 +0800
-Subject: [PATCH 07/13] platform-mc: Monitor all sensors once upon the first
+Subject: [PATCH 04/13] platform-mc: Monitor all sensors once upon the first
  power-on
 
 BMC reads all sensors once upon reboot, then update sensor values
@@ -10,13 +10,22 @@ according to the update interval time.
 Change-Id: I489bf370dfa9b511ad3004431504ddc96c3ac0a4
 Signed-off-by: DelphineCCChiu <delphine_cc_chiu@wiwynn.com>
 ---
- platform-mc/sensor_manager.cpp | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ platform-mc/sensor_manager.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
-index c1acf66..c8c00ba 100644
+index c1acf66..588b283 100644
 --- a/platform-mc/sensor_manager.cpp
 +++ b/platform-mc/sensor_manager.cpp
+@@ -184,7 +184,7 @@ void SensorManager::doSensorPolling(pldm_tid_t tid)
+             rcOpt = PLDM_SUCCESS;
+         }
+     }),
+-                exec::default_task_context<void>());
++                exec::default_task_context<void>(exec::inline_scheduler{}));
+ }
+ 
+ exec::task<int> SensorManager::doSensorPollingTask(pldm_tid_t tid)
 @@ -259,7 +259,7 @@ exec::task<int> SensorManager::doSensorPollingTask(pldm_tid_t tid)
  
              sd_event_now(event.get(), CLOCK_MONOTONIC, &t1);
@@ -27,5 +36,5 @@ index c1acf66..c8c00ba 100644
                  rc = co_await getSensorReading(sensor);
  
 -- 
-2.43.0
+2.44.2
 

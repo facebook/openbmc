@@ -1,7 +1,7 @@
-From 0a69cc3630b75d6403b97bd97153cadde8723e79 Mon Sep 17 00:00:00 2001
+From 65969e501f5b59ba252a8b3e7880603fd5912e32 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 7 Mar 2024 10:41:16 +0800
-Subject: [PATCH 4/4] configurations: yosemite4: Add IANA for sentinel dome
+Subject: [PATCH 4/6] configurations: yosemite4: Add IANA for sentinel dome
 
 Configuring IANA for devices indicates which OEM sets we should be
 using on which hardware.
@@ -20,7 +20,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  3 files changed, 8 insertions(+)
 
 diff --git a/configurations/yosemite4_sentineldome_t1.json b/configurations/yosemite4_sentineldome_t1.json
-index 5044b12..2011798 100644
+index 2477d38..8cc179a 100644
 --- a/configurations/yosemite4_sentineldome_t1.json
 +++ b/configurations/yosemite4_sentineldome_t1.json
 @@ -333,6 +333,7 @@
@@ -32,7 +32,7 @@ index 5044b12..2011798 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/configurations/yosemite4_sentineldome_t2.json b/configurations/yosemite4_sentineldome_t2.json
-index 69c6f86..b5635ea 100644
+index c98d3d1..46584ac 100644
 --- a/configurations/yosemite4_sentineldome_t2.json
 +++ b/configurations/yosemite4_sentineldome_t2.json
 @@ -427,6 +427,7 @@
@@ -44,7 +44,7 @@ index 69c6f86..b5635ea 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index df89e4e..ece7201 100644
+index 3778744..8e2b1d5 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -80,6 +80,9 @@
@@ -57,7 +57,7 @@ index df89e4e..ece7201 100644
                  "Index": {
                      "$ref": "#/definitions/Types/Index"
                  },
-@@ -778,6 +781,9 @@
+@@ -826,6 +829,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },
@@ -68,5 +68,5 @@ index df89e4e..ece7201 100644
                  "type": "number"
              },
 -- 
-2.43.0
+2.44.2
 

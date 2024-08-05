@@ -1,19 +1,20 @@
-From 6130640eaef7c13b41b20595a5f96e384e2ff367 Mon Sep 17 00:00:00 2001
+From 3335ae0296c0229a2fa4a3fdf89bb9b8f8dbb125 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Fri, 19 Jul 2024 16:07:49 -0700
 Subject: [PATCH] mutual-tls-meta: Support "svc" and "host" entity types
 
+Change-Id: I9aa157f34f8f7ba11706ef0c07fbb1a1e1243c13
 ---
- http/mutual_tls.hpp           |  2 +-
+ http/mutual_tls.cpp           |  2 +-
  http/mutual_tls_meta.hpp      | 64 ++++++++++++++++++++++++++++-------
  test/http/mutual_tls_meta.cpp | 35 ++++++++++++++++---
  3 files changed, 83 insertions(+), 18 deletions(-)
 
-diff --git a/http/mutual_tls.hpp b/http/mutual_tls.hpp
-index eb26b5a..919b515 100644
---- a/http/mutual_tls.hpp
-+++ b/http/mutual_tls.hpp
-@@ -36,7 +36,7 @@ inline std::string getUsernameFromCommonName(std::string_view commonName)
+diff --git a/http/mutual_tls.cpp b/http/mutual_tls.cpp
+index f579089e..82988db1 100644
+--- a/http/mutual_tls.cpp
++++ b/http/mutual_tls.cpp
+@@ -35,7 +35,7 @@ std::string getUsernameFromCommonName(std::string_view commonName)
          case persistent_data::MTLSCommonNameParseMode::Meta:
          {
              // Meta Inc. CommonName parsing
@@ -23,7 +24,7 @@ index eb26b5a..919b515 100644
              if (!sslUserMeta)
              {
 diff --git a/http/mutual_tls_meta.hpp b/http/mutual_tls_meta.hpp
-index 5e55db8..3381dd4 100644
+index 5e55db8e..3381dd48 100644
 --- a/http/mutual_tls_meta.hpp
 +++ b/http/mutual_tls_meta.hpp
 @@ -7,17 +7,17 @@
@@ -129,7 +130,7 @@ index 5e55db8..3381dd4 100644
 +    return std::format("{}_{}", entityType, entity);
  }
 diff --git a/test/http/mutual_tls_meta.cpp b/test/http/mutual_tls_meta.cpp
-index 0e280c1..dc214d8 100644
+index 0e280c10..dc214d8c 100644
 --- a/test/http/mutual_tls_meta.cpp
 +++ b/test/http/mutual_tls_meta.cpp
 @@ -14,14 +14,35 @@ namespace
@@ -186,5 +187,5 @@ index 0e280c1..dc214d8 100644
          "svc:/",
          "svc:/hostname.facebook.com",
 -- 
-2.43.0
+2.44.2
 

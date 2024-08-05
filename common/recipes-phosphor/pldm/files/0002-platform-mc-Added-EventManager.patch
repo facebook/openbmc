@@ -1,4 +1,4 @@
-From 765434c91462d2aa318c2cdc12ce490d012c021c Mon Sep 17 00:00:00 2001
+From 87281db2199cbf5cae64bd4305f279453024a659 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 02/13] platform-mc: Added EventManager
@@ -26,8 +26,8 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  platform-mc/sensor_manager.hpp             |   5 +-
  platform-mc/terminus.cpp                   |   6 +-
  platform-mc/terminus.hpp                   |  12 +
- platform-mc/terminus_manager.hpp           |  17 +-
- platform-mc/test/event_manager_test.cpp    | 457 ++++++++++++++
+ platform-mc/terminus_manager.hpp           |  20 +-
+ platform-mc/test/event_manager_test.cpp    | 456 ++++++++++++++
  platform-mc/test/meson.build               |   2 +
  platform-mc/test/mock_event_manager.hpp    |  29 +
  platform-mc/test/mock_sensor_manager.hpp   |   6 +-
@@ -35,7 +35,7 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  platform-mc/test/sensor_manager_test.cpp   |   4 +-
  platform-mc/test/terminus_manager_test.cpp |   2 +-
  pldmd/pldmd.cpp                            |  32 +-
- 22 files changed, 1836 insertions(+), 20 deletions(-)
+ 22 files changed, 1836 insertions(+), 22 deletions(-)
  create mode 100644 platform-mc/event_manager.cpp
  create mode 100644 platform-mc/event_manager.hpp
  create mode 100644 platform-mc/test/event_manager_test.cpp
@@ -69,7 +69,7 @@ index 1e0955a..8ddaa29 100644
          catch (const std::out_of_range& e)
          {
 diff --git a/meson.build b/meson.build
-index 68b1cc4..c656762 100644
+index 9843cb6..d9b133a 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -76,6 +76,7 @@ conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'stati
@@ -80,7 +80,7 @@ index 68b1cc4..c656762 100644
  
  configure_file(output: 'config.h',
    configuration: conf_data
-@@ -179,6 +180,7 @@ executable(
+@@ -180,6 +181,7 @@ executable(
    'platform-mc/manager.cpp',
    'platform-mc/sensor_manager.cpp',
    'platform-mc/numeric_sensor.cpp',
@@ -1508,10 +1508,10 @@ index 861a3d4..6368299 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 6ed45d5..3c87517 100644
+index da3e0d6..a3373cd 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -10,9 +10,13 @@ namespace pldm
+@@ -12,9 +12,13 @@ namespace pldm
  {
  namespace platform_mc
  {
@@ -1527,10 +1527,10 @@ index 6ed45d5..3c87517 100644
      inventoryPath = "/xyz/openbmc_project/inventory/Item/Board/PLDM_Device_" +
                      std::to_string(tid);
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 6425f83..22669eb 100644
+index 13d114b..2d46056 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
-@@ -100,6 +100,18 @@ class Terminus
+@@ -133,6 +133,18 @@ class Terminus
      /** @brief A flag to indicate if terminus has been initialized */
      bool initialized = false;
  
@@ -1550,24 +1550,25 @@ index 6425f83..22669eb 100644
      std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
  
 diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
-index 2816fb7..5e9f8a7 100644
+index 249fdff..1ba6418 100644
 --- a/platform-mc/terminus_manager.hpp
 +++ b/platform-mc/terminus_manager.hpp
-@@ -54,10 +54,11 @@ class TerminusManager
-     explicit TerminusManager(sdeventplus::Event& event,
+@@ -54,10 +54,10 @@ class TerminusManager
+     explicit TerminusManager(sdeventplus::Event& /* event */,
                               RequesterHandler& handler,
                               pldm::InstanceIdDb& instanceIdDb,
 -                             TerminiMapper& termini, Manager* manager) :
+-        handler(handler),
+-        instanceIdDb(instanceIdDb), termini(termini),
+-        tidPool(tidPoolSize, false), manager(manager)
 +                             TerminiMapper& termini, mctp_eid_t localEid,
 +                             Manager* manager) :
-         event(event),
-         handler(handler), instanceIdDb(instanceIdDb), termini(termini),
--        tidPool(tidPoolSize, false), manager(manager)
++        handler(handler), instanceIdDb(instanceIdDb), termini(termini),
 +        localEid(localEid), tidPool(tidPoolSize, false), manager(manager)
      {
          // DSP0240 v1.1.0 table-8, special value: 0,0xFF = reserved
          tidPool[0] = true;
-@@ -147,6 +148,15 @@ class TerminusManager
+@@ -147,6 +147,15 @@ class TerminusManager
       */
      bool unmapTid(const pldm_tid_t& tid);
  
@@ -1583,7 +1584,7 @@ index 2816fb7..5e9f8a7 100644
    private:
      /** @brief Find the terminus object pointer in termini list.
       *
-@@ -221,6 +231,9 @@ class TerminusManager
+@@ -217,6 +226,9 @@ class TerminusManager
      /** @brief Managed termini list */
      TerminiMapper& termini;
  
@@ -1595,10 +1596,10 @@ index 2816fb7..5e9f8a7 100644
  
 diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
 new file mode 100644
-index 0000000..f72a786
+index 0000000..f17e52a
 --- /dev/null
 +++ b/platform-mc/test/event_manager_test.cpp
-@@ -0,0 +1,457 @@
+@@ -0,0 +1,456 @@
 +#include "libpldm/base.h"
 +#include "libpldm/entity.h"
 +#include "libpldm/platform.h"
@@ -1721,8 +1722,7 @@ index 0000000..f72a786
 +
 +    // add dummy numeric sensor
 +    termini[tid]->pdrs.emplace_back(pdr1);
-+    auto rc = termini[tid]->parsePDRs();
-+    EXPECT_EQ(true, rc);
++    termini[tid]->parseTerminusPDRs();
 +    EXPECT_EQ(1, termini[tid]->numericSensors.size());
 +
 +    uint8_t platformEventStatus = 0;
@@ -1740,8 +1740,8 @@ index 0000000..f72a786
 +                                   PLDM_SENSOR_NORMAL,
 +                                   PLDM_SENSOR_DATA_SIZE_UINT8,
 +                                   SENSOR_READING};
-+    rc = eventManager.handlePlatformEvent(tid, PLDM_SENSOR_EVENT,
-+                                          eventData.data(), eventData.size());
++    auto rc = eventManager.handlePlatformEvent(
++        tid, PLDM_SENSOR_EVENT, eventData.data(), eventData.size());
 +    EXPECT_EQ(PLDM_SUCCESS, rc);
 +    EXPECT_EQ(PLDM_EVENT_NO_LOGGING, platformEventStatus);
 +}
@@ -2143,7 +2143,7 @@ index eb06734..db9d0e3 100644
  
      exec::task<int> sendRecvPldmMsgOverMctp(mctp_eid_t /*eid*/,
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
-index cd4e5a4..525b312 100644
+index 89c147e..a49b5fe 100644
 --- a/platform-mc/test/sensor_manager_test.cpp
 +++ b/platform-mc/test/sensor_manager_test.cpp
 @@ -19,8 +19,8 @@ class SensorManagerTest : public testing::Test
@@ -2158,7 +2158,7 @@ index cd4e5a4..525b312 100644
  
      void runEventLoopForSeconds(uint64_t sec)
 diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
-index 460009d..0db976b 100644
+index 464ef71..f59a433 100644
 --- a/platform-mc/test/terminus_manager_test.cpp
 +++ b/platform-mc/test/terminus_manager_test.cpp
 @@ -32,7 +32,7 @@ class TerminusManagerTest : public testing::Test
@@ -2171,10 +2171,10 @@ index 460009d..0db976b 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 32b5a57..0a9de75 100644
+index e5cc47c..f33f9fa 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -270,10 +270,38 @@ int main(int argc, char** argv)
+@@ -269,10 +269,38 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -2214,7 +2214,7 @@ index 32b5a57..0a9de75 100644
  
      auto biosHandler = std::make_unique<bios::Handler>(
          pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
-@@ -302,8 +330,6 @@ int main(int argc, char** argv)
+@@ -301,8 +329,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
@@ -2224,5 +2224,5 @@ index 32b5a57..0a9de75 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.25.1
+2.44.2
 

@@ -1,7 +1,7 @@
-From 5153cdb79f068346b622311322563162446b0cf7 Mon Sep 17 00:00:00 2001
+From 621216ecd8d38deb78aa4d86fd8e365b643439ef Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
-Subject: [PATCH 06/13] Support OEM-META command for host BIOS version
+Subject: [PATCH 08/13] Support OEM-META command for host BIOS version
 
 Summary:
   - Add handler for write-file command "BIOS_VERSION", which is sent
@@ -350,10 +350,10 @@ index 0000000..4baa9a4
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 6696dd4..9e795ce 100644
+index 4bb7bcb..594669d 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -274,7 +274,7 @@ int main(int argc, char** argv)
+@@ -273,7 +273,7 @@ int main(int argc, char** argv)
  #ifdef OEM_META
      invoker.registerHandler(
          PLDM_OEM, std::make_unique<pldm::responder::oem_meta::FileIOHandler>(
@@ -363,5 +363,5 @@ index 6696dd4..9e795ce 100644
  
      auto fruHandler = std::make_unique<fru::Handler>(
 -- 
-2.43.0
+2.44.2
 

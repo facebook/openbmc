@@ -1,7 +1,7 @@
-From f6f6e4d910ea3e03a2e9882545eb904003997640 Mon Sep 17 00:00:00 2001
+From 4eaf3496f27776204be7eec1e6f8660ee1d46663 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 04/13] Support OEM-META write file request for post code
+Subject: [PATCH 06/13] Support OEM-META write file request for post code
  history
 
 Support write file req when multiple hosts send postcode to BMC
@@ -29,7 +29,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 3bfee96..98b82ed 100644
+index 5cdaece..59a16f8 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
 @@ -266,6 +266,21 @@ GetSubTreeResponse
@@ -55,7 +55,7 @@ index 3bfee96..98b82ed 100644
      const std::string& objectPath, int depth,
      const std::vector<std::string>& ifaceList) const
 diff --git a/common/utils.hpp b/common/utils.hpp
-index b528095..8c18670 100644
+index c44d7dc..d5aeaa4 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
 @@ -170,6 +170,8 @@ using Interfaces = std::vector<std::string>;
@@ -129,7 +129,7 @@ index 4f62f4d..500e4f9 100644
    'pldmresponder',
    sources,
 diff --git a/meson.build b/meson.build
-index af5aa23..f662f0c 100644
+index d391ec2..7b89b60 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -61,6 +61,9 @@ if get_option('oem-ibm').allowed()
@@ -517,7 +517,7 @@ index 0000000..780f0ef
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 3ddaaff..dd3b599 100644
+index 98d13f1..d750fc7 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -65,6 +65,10 @@ PHOSPHOR_LOG2_USING;
@@ -528,10 +528,10 @@ index 3ddaaff..dd3b599 100644
 +#include "libpldmresponder/oem_meta_file_io.hpp"
 +#endif
 +
- constexpr uint8_t MCTP_MSG_TYPE_PLDM = 1;
  constexpr const char* PLDMService = "xyz.openbmc_project.PLDM";
  
-@@ -267,6 +271,12 @@ int main(int argc, char** argv)
+ using namespace pldm;
+@@ -266,6 +270,12 @@ int main(int argc, char** argv)
              pldmTransport.getEventSource(), hostEID, instanceIdDb, &reqHandler);
      }
  
@@ -545,5 +545,5 @@ index 3ddaaff..dd3b599 100644
          FRU_JSONS_DIR, FRU_MASTER_JSON, pdrRepo.get(), entityTree.get(),
          bmcEntityTree.get());
 -- 
-2.43.0
+2.44.2
 

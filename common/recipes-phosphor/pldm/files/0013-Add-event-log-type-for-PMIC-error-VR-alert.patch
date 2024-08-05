@@ -1,4 +1,4 @@
-From 3519a6a59707b70791e1e6644962bcc16bcae333 Mon Sep 17 00:00:00 2001
+From c6600df36380737cbf2879577172ea2ee19eac47 Mon Sep 17 00:00:00 2001
 From: Lora Lin <lora.lin.wiwynn@gmail.com>
 Date: Thu, 11 Jul 2024 10:10:27 +0800
 Subject: [PATCH 13/13] Add event log type for PMIC error/VR alert
@@ -148,5 +148,5 @@ index 37ec22c..7f62f51 100644
      }
  
 -- 
-2.43.0
+2.44.2
 

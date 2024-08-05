@@ -1,8 +1,8 @@
-From 29fc31805f0969f9c24e94b460d90c180e77ac48 Mon Sep 17 00:00:00 2001
+From 0ba18797b3b63d433f62ec1cc8d96e781759c182 Mon Sep 17 00:00:00 2001
 From: Ricky CX Wu <ricky.cx.wu.wiwynn@gmail.com>
 Date: Thu, 1 Aug 2024 14:15:05 +0800
-Subject: [PATCH] configurations: yosemite4: set fail safe percent to 90% for
- Fan fail
+Subject: [PATCH 6/6] configurations: yosemite4: set fail safe percent to 90%
+ for Fan fail
 
 Gerrit: 73176.
 
@@ -47,5 +47,5 @@ index 3e53ccf..72f59f3 100644
              "ILimitMax": 0.0,
              "ILimitMin": 0.0,
 -- 
-2.25.1
+2.44.2
 

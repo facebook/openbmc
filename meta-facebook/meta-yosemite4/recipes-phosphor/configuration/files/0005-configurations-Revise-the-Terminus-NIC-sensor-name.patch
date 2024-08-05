@@ -1,7 +1,7 @@
-From f45585fb2c40f61d75a68d02c4fda0ee4467fd15 Mon Sep 17 00:00:00 2001
+From 6b9568bd1c2c4c50af0ab7efd7d048f821df2fc7 Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 17 Jul 2024 11:33:26 +0800
-Subject: [PATCH 3/3] configurations: Revise the Terminus NIC sensor name
+Subject: [PATCH 5/6] configurations: Revise the Terminus NIC sensor name
 
 1. Revise the Terminus NIC temperature sensor name to NICX_TEMP_C.
 2. Revise the temperature threshold.
@@ -10,15 +10,15 @@ Subject: [PATCH 3/3] configurations: Revise the Terminus NIC sensor name
  1 file changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/configurations/terminus_2x100g_nic_tsff.json b/configurations/terminus_2x100g_nic_tsff.json
-index 9a8ad0d..9885c3b 100644
+index 35dbf6f..19e8548 100644
 --- a/configurations/terminus_2x100g_nic_tsff.json
 +++ b/configurations/terminus_2x100g_nic_tsff.json
 @@ -3,7 +3,7 @@
          {
              "Address": "$address",
              "Bus": "$bus",
--            "Name": "TERMINUS NIC FRU $bus",
-+            "Name": "TERMINUS NIC FRU $bus % 24",
+-            "Name": "Terminus NIC FRU $bus",
++            "Name": "Terminus NIC FRU $bus % 24",
              "Type": "EEPROM"
          },
          {
@@ -43,11 +43,11 @@ index 9a8ad0d..9885c3b 100644
              "Type": "EMC1403"
          }
      ],
--    "Name": "TERMINUS NIC FRU $bus",
-+    "Name": "TERMINUS NIC FRU $bus % 24",
+-    "Name": "Terminus NIC FRU $bus",
++    "Name": "Terminus NIC FRU $bus % 24",
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Terminus 2x100G NIC TSFF'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.25.1
+2.44.2
 

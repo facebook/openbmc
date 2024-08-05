@@ -1,4 +1,4 @@
-From 62f373a11a5459cf329a59b74aea9921d1eeb768 Mon Sep 17 00:00:00 2001
+From b649308a983abbf4810328802013b4b6acc2319c Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 28 Jun 2024 16:57:45 +0800
 Subject: [PATCH 12/13] Support OEM-META command for NIC power cycle
@@ -72,5 +72,5 @@ index 622fc47..d11b7ca 100644
              error("Get invalid power control option, option={OPTION}", "OPTION",
                    option);
 -- 
-2.43.0
+2.44.2
 

@@ -1,4 +1,4 @@
-From cd16c3af10696fc947cbc102229d7d5d3d6881d0 Mon Sep 17 00:00:00 2001
+From f9a18f690107b94b8c62551f7b8bd5edd447f70a Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 03/13] requester: support multi-host MCTP devices hot plug
@@ -53,7 +53,7 @@ index e42677c..744adb8 100644
 +                (const override));
  };
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 60154be..3bfee96 100644
+index 1cd5a72..5cdaece 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
 @@ -416,6 +416,23 @@ PropertyMap
@@ -81,7 +81,7 @@ index 60154be..3bfee96 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 103783d..b528095 100644
+index 6b8ea7c..c44d7dc 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
 @@ -202,6 +202,10 @@ class DBusHandlerInterface
@@ -106,10 +106,10 @@ index 103783d..b528095 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index c656762..af5aa23 100644
+index d9b133a..d391ec2 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -182,6 +182,7 @@ executable(
+@@ -183,6 +183,7 @@ executable(
    'platform-mc/numeric_sensor.cpp',
    'platform-mc/event_manager.cpp',
    'requester/mctp_endpoint_discovery.cpp',
@@ -118,7 +118,7 @@ index c656762..af5aa23 100644
    dependencies: deps,
    install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 821dc88..3ddaaff 100644
+index f33f9fa..98d13f1 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -129,7 +129,7 @@ index 821dc88..3ddaaff 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -240,6 +241,9 @@ int main(int argc, char** argv)
+@@ -239,6 +240,9 @@ int main(int argc, char** argv)
          hostEffecterParser;
      std::unique_ptr<DbusToPLDMEvent> dbusToPLDMEventHandler;
      DBusHandler dbusHandler;
@@ -615,5 +615,5 @@ index a08a990..3384793 100644
                           phosphor_logging_dep,
                           sdbusplus,
 -- 
-2.43.0
+2.44.2
 

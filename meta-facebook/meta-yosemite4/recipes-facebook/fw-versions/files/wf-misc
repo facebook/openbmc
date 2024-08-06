@@ -1,0 +1,50 @@
+#!/bin/bash
+set -e
+
+slot=$1
+eid=$((10 * slot + 2))
+
+if ! busctl get-property \
+        xyz.openbmc_project.MCTP "/xyz/openbmc_project/mctp/1/$eid" \
+        xyz.openbmc_project.MCTP.Endpoint EID ; then
+    echo "WF not active"
+    exit
+fi
+
+versions=$(
+    pldmtool fw_update GetFwParams -m $eid |
+    jq --raw-output '
+        .ComponentParameterEntries |
+        map({ (.ComponentIdentifier|tostring): .ActiveComponentVersionString}) |
+        add
+    '
+)
+
+version_pvddq_ab_asic1=$(jq --raw-output ".\"1\"" <<< "$versions")
+version_pvddq_cd_asic1=$(jq --raw-output ".\"2\"" <<< "$versions")
+version_pvddq_ab_asic2=$(jq --raw-output ".\"3\"" <<< "$versions")
+version_pvddq_cd_asic2=$(jq --raw-output ".\"4\"" <<< "$versions")
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_ab_asic1" \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version_pvddq_ab_asic1"
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_cd_asic1" \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version_pvddq_cd_asic1"
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_ab_asic2" \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version_pvddq_ab_asic2"
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_cd_asic2" \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version_pvddq_cd_asic2"

@@ -21,6 +21,7 @@ FW_TOOLS = "\
     spider-cpld,yosemite4-sys-init.service,multi-user.target,multi-user.target,0 \
     tpm,tpm2-abrmd.service,multi-user.target,multi-user.target,0 \
     wf-bic,host-poweron@%i.service,obmc-host-start@%i.target,obmc-host-start@%i.target,${HOST_INSTANCES} \
+    wf-misc,host-poweron@%i.service,obmc-host-start@%i.target,obmc-host-start@%i.target,${HOST_INSTANCES} \
 "
 
 LOCAL_URI = " \

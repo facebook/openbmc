@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+
+slot=$1
+
+for pos in 1 2; do
+    eid=$((10 * slot + pos + 3))
+
+    if ! busctl get-property \
+            xyz.openbmc_project.MCTP "/xyz/openbmc_project/mctp/1/$eid" \
+            xyz.openbmc_project.MCTP.Endpoint EID ; then
+        echo "CXL $pos not active"
+        continue
+    fi
+
+    version=$(
+        cxl-fw-update version -m $eid 2>&1 |
+        grep "Slot.*FW Revision" |
+        sed 's/.*: //' | tr '\n' ',' |
+        sed 's/,$//'
+    )
+
+    busctl set-property \
+        xyz.openbmc_project.Settings \
+        "/xyz/openbmc_project/software/host$slot/Wailua_Falls_cxl_$pos" \
+        xyz.openbmc_project.Software.Version \
+        Version "s" "$version"
+
+done

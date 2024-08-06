@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+version=$(cpld-fw-handler version -i i2c -b 35 -a 0x40 | awk '{print $NF}')
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    /xyz/openbmc_project/software/chassis/Management_Board_cpld \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

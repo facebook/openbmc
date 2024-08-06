@@ -10,6 +10,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 S = "${WORKDIR}"
 
 FW_TOOLS = "\
+    mgmt-cpld,yosemite4-sys-init.service,multi-user.target,multi-user.target,0 \
+    spider-cpld,yosemite4-sys-init.service,multi-user.target,multi-user.target,0 \
     tpm,tpm2-abrmd.service,multi-user.target,multi-user.target,0 \
 "
 
@@ -20,6 +22,7 @@ LOCAL_URI = " \
 
 RDEPENDS:${PN}:append = " \
     bash \
+    cpld-fw-handler \
     tpm2-tools \
 "
 

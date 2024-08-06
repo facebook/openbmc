@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+slot=$1
+eid=$((10 * slot + 2))
+
+version=$(
+    pldmtool fw_update GetFwParams -m $eid |
+        jq --raw-output '.ActiveComponentImageSetVersionString'
+)
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    "/xyz/openbmc_project/software/host$slot/Wailua_Falls_bic" \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

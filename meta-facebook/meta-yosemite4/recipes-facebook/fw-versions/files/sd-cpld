@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+slot=$1
+bus=$((slot - 1))
+echo $bus
+version=$(cpld-fw-handler version -i i2c -b $bus -a 0x44 | awk '{print $NF}')
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_cpld" \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

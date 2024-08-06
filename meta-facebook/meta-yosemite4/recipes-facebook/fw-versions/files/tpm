@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+version=$( \
+    /usr/bin/tpm2_getcap properties-fixed | \
+    grep -A1 TPM2_PT_FIRMWARE_VERSION_1 | tail -n1 | awk '{print $2}')
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    /xyz/openbmc_project/software/chassis/Management_Board_tpm \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

@@ -17,6 +17,7 @@ FW_TOOLS = "\
     nic,setup-nic-endpoint-slot@%i.service,multi-user.target,multi-user.target,${NIC_INSTANCES} \
     sd-bic,chassis-poweron@%i.service,obmc-chassis-poweron@%i.target,obmc-chassis-poweron@%i.target,${HOST_INSTANCES} \
     sd-cpld,chassis-poweron@%i.service,obmc-chassis-poweron@%i.target,obmc-chassis-poweron@%i.target,${HOST_INSTANCES} \
+    sd-misc,chassis-poweron@%i.service,obmc-chassis-poweron@%i.target,obmc-chassis-poweron@%i.target,${HOST_INSTANCES} \
     spider-cpld,yosemite4-sys-init.service,multi-user.target,multi-user.target,0 \
     tpm,tpm2-abrmd.service,multi-user.target,multi-user.target,0 \
     wf-bic,host-poweron@%i.service,obmc-host-start@%i.target,obmc-host-start@%i.target,${HOST_INSTANCES} \

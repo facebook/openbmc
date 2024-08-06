@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+
+# Wait for the NIC to be ready and the "pldm-slow-restart" service to
+# complete.  60 seconds should be sufficient.
+sleep 60
+
+nic=$1
+eid=$((89 + nic))
+
+version=$(
+    pldmtool fw_update GetFwParams -m $eid |
+        jq --raw-output \
+            '.ComponentParameterEntries | .[].ActiveComponentVersionString'
+)
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    "/xyz/openbmc_project/software/chassis/nic$nic" \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

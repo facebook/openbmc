@@ -10,9 +10,11 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 S = "${WORKDIR}"
 
 HOST_INSTANCES="${@d.getVar('OBMC_HOST_INSTANCES', True).replace(" ", ":")}"
+NIC_INSTANCES="0:1:2:3"
 
 FW_TOOLS = "\
     mgmt-cpld,yosemite4-sys-init.service,multi-user.target,multi-user.target,0 \
+    nic,setup-nic-endpoint-slot@%i.service,multi-user.target,multi-user.target,${NIC_INSTANCES} \
     sd-cpld,chassis-poweron@%i.service,obmc-chassis-poweron@%i.target,obmc-chassis-poweron@%i.target,${HOST_INSTANCES} \
     spider-cpld,yosemite4-sys-init.service,multi-user.target,multi-user.target,0 \
     tpm,tpm2-abrmd.service,multi-user.target,multi-user.target,0 \

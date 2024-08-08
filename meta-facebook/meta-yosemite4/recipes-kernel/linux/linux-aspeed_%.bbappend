@@ -18,7 +18,6 @@ SRC_URI += " \
     file://0518-Add-nct7363-in-yosemite4-dts.patch \
     file://0519-i3c-master-add-enable-disable-hot-join-in-sys-entry.patch \
     file://0520-i3c-dw-Add-hot-join-support.patch \
-    file://0521-ARM-dts-aspeed-g6-Add-AST2600-I3Cs.patch \
     file://0522-i3c-ast2600-Validate-AST2600-I3C-for-MCTP-over-I3C.patch \
     file://0523-dt-bindings-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB.patch \
     file://0524-i3c-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB-driver.patch \

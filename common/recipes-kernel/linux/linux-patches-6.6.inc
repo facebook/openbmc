@@ -90,6 +90,13 @@ SRC_URI:append = " \
 "
 
 #
+# I3C patches used by OpenBMC platforms.
+#
+SRC_URI:append = " \
+    file://0185-ARM-dts-aspeed-g6-Add-AST2600-I3Cs.patch \
+"
+
+#
 # eMMC patch used by FBOSS OpenBMC platforms.
 #
 SRC_URI:append = " \

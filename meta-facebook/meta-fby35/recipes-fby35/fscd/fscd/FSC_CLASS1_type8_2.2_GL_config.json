@@ -6,6 +6,7 @@
   "sample_interval_ms": 3000,
   "sensor_fail_ignore": true,
   "sensor_filter_all": true,
+  "ramp_rate": 20,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
@@ -26,6 +27,16 @@
       }
     },
     "(.*)e1s_": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)retimer_": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)bic_temp_": {
       "attribute": {
         "type" : "power_status"
       }

@@ -139,17 +139,33 @@ apml_alert_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t c
 
   soc_num = cfg->shadow[8] - '0';  // "APML_CPUx_ALERT_R_N"
   if (pal_check_apml_ras_status(soc_num, &ras_status)) {
-    int fd = open(AUTODUMP_LOCK, O_CREAT | O_RDWR, 0666);
-    if (flock(fd, LOCK_EX | LOCK_NB) && (errno == EWOULDBLOCK)) {
-      close(fd);
-      return;
-    }
+    switch (ras_status) {
+      case AMD_RAS_FATAL_ERR: {
+        int fd = open(AUTODUMP_LOCK, O_CREAT | O_RDWR, 0666);
+        if (flock(fd, LOCK_EX | LOCK_NB) && (errno == EWOULDBLOCK)) {
+          close(fd);
+          return;
+        }
 
-    if (system(AUTODUMP_BIN)) {
-      syslog(LOG_WARNING, "%s[%u] Failed to launch crashdump", __FUNCTION__, soc_num);
+        if (system(AUTODUMP_BIN)) {
+          syslog(LOG_WARNING, "%s[%u] Failed to launch crashdump", __FUNCTION__, soc_num);
+        }
+
+        flock(fd, LOCK_UN);
+        close(fd);
+        break;
+      }
+      case AMD_RAS_FCH_ERR:
+        syslog(LOG_CRIT, "%s[%u] FCH reset error occurs, performing DC cycle...", __FUNCTION__, soc_num);
+        pal_set_server_power(FRU_MB, SERVER_POWER_CYCLE);
+        break;
+      case AMD_RAS_RST_CRTL_ERR:
+        syslog(LOG_CRIT, "%s[%u] Reset control error occurs, performing DC cycle...", __FUNCTION__, soc_num);
+        pal_set_server_power(FRU_MB, SERVER_POWER_CYCLE);
+        break;
+      default:
+        syslog(LOG_CRIT, "%s[%u] Unknown ras status", __FUNCTION__, soc_num);
     }
-    flock(fd, LOCK_UN);
-    close(fd);
   }
   sleep(1);
 }

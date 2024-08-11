@@ -20,6 +20,10 @@ struct delayed_prochot_log {
 #define DELAY_LOG_POWER_FAULT_MS 100
 #define DELAY_CB_SET_PLDM_RECEIVER 10
 
+#define AMD_RAS_FATAL_ERR        (1 << 0)
+#define AMD_RAS_FCH_ERR          (1 << 1)
+#define AMD_RAS_RST_CRTL_ERR     (1 << 2)
+
 bool server_power_check(uint8_t power_on_time);
 
 int gpiod_plat_thread_create(void);

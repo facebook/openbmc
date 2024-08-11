@@ -280,6 +280,11 @@ fi
 
 mb_product=$(kv get mb_product)
 if [ "$mb_product" == "GT1.5" ]; then
+
+  HPDB_1ST_SOURCE="0"
+  HPDB_2ND_SOURCE="1"
+  HPDB_3RD_SOURCE="2"
+
   # HPDB IOExpender
   i2c_device_add 37 0x23 pca9555
   gpio_export_ioexp 37-0023  FAN_BP1_PRSNT_N  2
@@ -330,25 +335,6 @@ if [ "$mb_product" == "GT1.5" ]; then
     i2c_device_add 39 0x1c adm1272
     i2c_device_add 39 0x1f adm1272
     kv set hpdb_hsc_source "$HPDB_2ND_SOURCE"
-
-    sed -i '$a\
-chip "adm1272-i2c-39-10"\
-  label in1    "HSC3_VIN_VOLT"\
-  label in2    "HSC3_VOUT_VOLT"\
-  label curr1  "HSC3_CURR"\
-  label power1 "HSC3_PWR"\
-  label temp1  "HSC3_TEMP"\
-  compute curr1 @/0.15*0.94 + 0.28, @*0.15\
-  compute power1 @/0.15*0.98 + 7.1, @*0.15\
-chip "adm1272-i2c-39-1f"\
-  label in1    "HSC4_VIN_VOLT"\
-  label in2    "HSC4_VOUT_VOLT"\
-  label curr1  "HSC4_CURR"\
-  label power1 "HSC4_PWR"\
-  label temp1  "HSC4_TEMP"\
-  compute curr1 @/0.15*0.94 + 0.46, @*0.15\
-  compute power1 @/0.15*0.98 + 19.95, @*0.15' /etc/sensors_cfg/hpdb-adm1272-1.conf
-    kv set hpdb_rsense_source "$HPDB_HSC_RSENSE_1ST"
 
     # HPDB ADC
     i2c_device_add 37 0x42 ina238

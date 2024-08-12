@@ -1,0 +1,70 @@
+From c29ace4a039afb6a7d5740a55792e6fecf2b2eef Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Thu, 8 Aug 2024 15:07:36 +0800
+Subject: [PATCH 1017/1017] ARM: dts: aspeed: Harma: Setting i3c to i2c device
+
+Setting PMIC device.
+base on: https://lore.kernel.org/all/20240506105120.3028083-2-dylan_hung@aspeedtech.com/
+---
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 48 +++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 1d5d6171c6f3..8b0f10db03b0 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -756,3 +756,51 @@ &sgpiom0 {
+ 	/*P4-P7 line 248-255*/
+ 	"","","","","","","","";
+ };
++
++&i3c0 {
++	status = "okay";
++//PMIC
++	eeprom@48 {
++		compatible = "eeprom";
++		reg = <0x48 0x0 0x0>;
++	};
++
++	eeprom@49 {
++		compatible = "eeprom";
++		reg = <0x49 0x0 0x0>;
++	};
++
++	eeprom@4a {
++		compatible = "eeprom";
++		reg = <0x4a 0x0 0x0>;
++	};
++
++	eeprom@4b {
++		compatible = "eeprom";
++		reg = <0x4b 0x0 0x0>;
++	};
++};
++
++&i3c1 {
++	status = "okay";
++//PMIC
++	eeprom@48 {
++		compatible = "eeprom";
++		reg = <0x48 0x0 0x0>;
++	};
++
++	eeprom@49 {
++		compatible = "eeprom";
++		reg = <0x49 0x0 0x0>;
++	};
++
++	eeprom@4a {
++		compatible = "eeprom";
++		reg = <0x4a 0x0 0x0>;
++	};
++
++	eeprom@4b {
++		compatible = "eeprom";
++		reg = <0x4b 0x0 0x0>;
++	};
++};
+-- 
+2.25.1
+

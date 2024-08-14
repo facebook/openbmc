@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -30,23 +31,26 @@ constexpr auto CPER_DUMP_PATH = "/mnt/data/faultlog/cper/";
 constexpr auto CPER_CONVERT = "/usr/bin/cper-convert";
 constexpr auto CPER_DUMP_MAX_LIMIT = 1024;
 
-using SectionHandler = int(*)(const nlohmann::ordered_json&, std::string&);
+constexpr auto INVALID_ID = 0xFF;
+constexpr auto INVALID_ERROR_DESC = "None";
+
+using SectionHandler = int(*)(const nlohmann::ordered_json&, const nlohmann::ordered_json&, std::string&);
 using SectionHandlerMap = std::unordered_map<std::string, SectionHandler>;
 
-enum cper_handle_codes
+enum CperHandleCodes
 {
   CPER_HANDLE_SUCCESS = 0,
   CPER_HANDLE_FAIL
 };
 
-struct processor_error_info_params_t
+enum UnifiedErrorType
 {
-  std::string title;
-  std::string key;
-  std::string validBit;
+  UNIFIED_PCIE_ERR  = 0x20,
+  UNIFIED_MEM_ERR   = 0x21,
+  UNIFIED_PROC_ERR  = 0x2F,
 };
 
-std::string getValue(const nlohmann::ordered_json& obj, const std::string& key);
+std::string formatHex(uint32_t value, int width = 2);
 int addOemSectionHandlerMap(SectionHandlerMap& sectionHandlerMap);
 int parseCperFile(const std::string& file, std::vector<std::string>& results);
 int createCperDumpEntry(const uint8_t& payloadId, 

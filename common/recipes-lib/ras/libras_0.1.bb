@@ -16,7 +16,7 @@ LOCAL_URI = " \
     file://meson.build \
     "
     
-DEPENDS += " libgpio-ctrl nlohmann-json "
-RDEPENDS:${PN} += " libgpio-ctrl nlohmann-json "
+DEPENDS += " libgpio-ctrl nlohmann-json libb64"
+RDEPENDS:${PN} += " libgpio-ctrl nlohmann-json libb64"
 
 inherit meson pkgconfig

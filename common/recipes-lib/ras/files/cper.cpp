@@ -23,150 +23,325 @@
 #include <sstream>
 #include <chrono>
 #include <unordered_map>
+#include <format>
+#include <bitset>
+#include <memory>
+#include "libbase64.h"
 
 namespace cper
 {
 
 namespace fs = std::filesystem;
+using ordered_json = nlohmann::ordered_json;
 
-std::string getValue(const nlohmann::ordered_json& obj, const std::string& key)
+// PCI Express Base Specification Revision 5.0 Version 1.0/Section 7.8.4
+struct AerInfo
 {
-  if (obj.contains(key))
-  {
-    const auto& value = obj[key];
+  uint32_t pcieExtendedCapabilityHeader;
+  uint32_t uncorrectableErrorStatus;
+  uint32_t uncorrectableErrorMask;
+  uint32_t uncorrectableErrorSeverity;
+  uint32_t correctableErrorStatus;
+  uint32_t correctableErrorMask;
+  uint32_t advancedErrorCapabilitiesAndControl;
+  uint8_t  headerLog[16];
+  uint32_t rootErrorCommand;
+  uint32_t rootErrorStatus;
+  uint32_t errorSourceIdentification;
+  uint8_t  TLPPrefixLog[40];
+};
 
-    if (value.is_boolean())
+struct PCIeErrorIdInfo{
+  int errorId;
+  std::string errorDesc;
+};
+
+static const PCIeErrorIdInfo uncorrectableErrorIdTable[] = {
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {0x20, "Data Link Protocol Error"},
+    {0x21, "Surprise Down Error"},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {0x22, "Poisoned TLP"},
+    {0x23, "Flow Control Protocol Error"},
+    {0x24, "Completion Timeout"},
+    {0x25, "Completer Abort"},
+    {0x26, "Unexpected Completion"},
+    {0x27, "Receiver Buffer Overflow"},
+    {0x28, "Malformed TLP"},
+    {0x29, "ECRC Error"},
+    {0x2A, "Unsupported Request"},
+    {0x2B, "ACS Violation"},
+    {0x2C, "Uncorrectable Internal Error"},
+    {0x2D, "MC Blocked TLP"},
+    {0x2E, "AtomicOp Egress Blocked"},
+    {0x2F, "TLP Prefix Blocked Error"},
+    {0x30, "Poisoned TLP Egress Blocked"},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+};
+
+static const PCIeErrorIdInfo correctableErrorIdTable[] = {
+    {0x00, "Receiver Error"},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {0x01, "Bad TLP"},
+    {0x02, "Bad DLLP"},
+    {0x04, "Replay Rollover"},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {0x03, "Replay Time-out"},
+    {0x05, "Advisory Non-Fatal"},
+    {0x06, "Corrected Internal Error"},
+    {0x07, "Header Log Overflow"},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
+};
+
+std::string formatHex(uint32_t value, int width)
+{
+  std::ostringstream oss;
+  oss << std::uppercase << std::hex << std::setfill('0') 
+      << std::setw(width) << value;
+  return oss.str();
+}
+
+static int parsePCIeAerData(const ordered_json& aerdata, 
+                            uint8_t& errorId1, uint8_t& errorId2, 
+                            std::string& errorDesc1, std::string& errorDesc2)
+{
+  auto encoded = aerdata.get<std::string>();
+  std::unique_ptr<char[]> decoded(new char[encoded.size()]);
+  size_t len = 0;
+
+  if (base64_decode(encoded.c_str(), encoded.size(), decoded.get(), &len, 0) != 1)
+  {
+    return CPER_HANDLE_FAIL;
+  }
+
+  errorId1 = INVALID_ID;
+  errorId2 = INVALID_ID;
+  errorDesc1 = INVALID_ERROR_DESC;
+  errorDesc2 = INVALID_ERROR_DESC;
+  std::bitset<32> statusBits;
+  const PCIeErrorIdInfo* errorIdInfo = nullptr;
+  auto aerInfo = reinterpret_cast<const AerInfo*>(decoded.get());
+
+  if (aerInfo->uncorrectableErrorStatus)
+  {
+    statusBits = aerInfo->uncorrectableErrorStatus;
+    errorIdInfo = uncorrectableErrorIdTable;
+  }
+  else if (aerInfo->correctableErrorStatus)
+  {
+    statusBits = aerInfo->correctableErrorStatus;
+    errorIdInfo = correctableErrorIdTable;
+  }
+  else
+  {
+    return CPER_HANDLE_SUCCESS;
+  }
+
+  for (int i = 0; i < 32; ++i)
+  {
+    if (statusBits[i])
     {
-      return value.get<bool>() ? "true" : "false";
-    }
-    else if (value.is_number_integer())
-    {
-      return std::to_string(value.get<int>());
-    } 
-    else if (value.is_object())
-    {
-      return value.dump();
-    }
-    else if (value.is_string())
-    {
-      return value.get<std::string>();
+      if (errorId1 == INVALID_ID)
+      {
+        errorId1 = errorIdInfo[i].errorId;
+        errorDesc1 = errorIdInfo[i].errorDesc;
+      }
+      else if (errorId2 == INVALID_ID)
+      {
+        errorId2 = errorIdInfo[i].errorId;
+        errorDesc2 = errorIdInfo[i].errorDesc;
+      }
+      else
+      {
+        break; // only supports reporting two errors
+      }
     }
   }
-  return "NA";
+
+  return CPER_HANDLE_SUCCESS;
+}
+
+static int processorSectionHandler(const ordered_json& sectionDescriptor, 
+                                   const ordered_json& sectionData, 
+                                   std::string& errorMsg)
+{
+  if (!sectionDescriptor.contains("severity") || 
+      !sectionData.contains("errorInfo"))
+  {
+    return CPER_HANDLE_FAIL;
+  }
+
+  std::string errorType = sectionData["errorInfo"][0]["errorType"]["name"];
+  std::string severity = sectionDescriptor["severity"]["name"];
+
+  std::ostringstream oss;
+  oss << "Record: Facebook Unified SEL (0xFB), GeneralInfo: ProcessorErr"
+      << "(0x" << formatHex(UNIFIED_PROC_ERR) << "), "
+      << "Location: Socket 00, "
+      << "Error Type: " << errorType << ", "
+      << "Error Severity: " << severity;
+
+  errorMsg = oss.str();
+  return CPER_HANDLE_SUCCESS;
+}
+
+static int memorySectionHandler(const ordered_json& sectionDescriptor, 
+                                const ordered_json& sectionData, 
+                                std::string& errorMsg)
+{
+  if (!sectionData.contains("memoryErrorType") || 
+      !sectionData.contains("node") || 
+      !sectionData.contains("device"))
+  {
+    return CPER_HANDLE_FAIL;
+  }
+
+  int socket = sectionData["node"];
+  int channel = sectionData["device"];
+  std::string errorType = sectionData["memoryErrorType"]["name"];
+
+  std::ostringstream oss;
+  oss << "Record: Facebook Unified SEL (0xFB), GeneralInfo: MEMORY_ECC_ERR"
+      << "(0x" << formatHex(UNIFIED_MEM_ERR) << "), "
+      << "DIMM Slot Location: "
+      << "Sled 00/" << "Socket " << formatHex(socket) << ", "
+      << "Channel " << formatHex(channel) << ", "
+      << "DIMM Failure Event: " << errorType;
+
+  errorMsg = oss.str();
+  return CPER_HANDLE_SUCCESS;
+}
+
+static int pcieSectionHandler(const ordered_json& sectionDescriptor, 
+                              const ordered_json& sectionData, 
+                              std::string& errorMsg)
+{
+  if (!sectionData.contains("deviceID") || 
+      !sectionData.contains("aerInfo"))
+  {
+    return CPER_HANDLE_FAIL;
+  }
+
+  auto& aerdata = sectionData["aerInfo"]["data"];
+  uint8_t errorId1, errorId2;
+  std::string errorDesc1, errorDesc2;
+  
+  if (parsePCIeAerData(aerdata, errorId1, errorId2, errorDesc1, errorDesc2))
+  {
+    return CPER_HANDLE_FAIL;
+  }
+
+  int segment = sectionData["deviceID"]["segmentNumber"];
+  int bus = sectionData["deviceID"]["primaryOrDeviceBusNumber"];
+  int dev = sectionData["deviceID"]["deviceNumber"];
+  int func = sectionData["deviceID"]["functionNumber"];
+
+  std::ostringstream oss;
+  oss << "Record: Facebook Unified SEL (0xFB), GeneralInfo: PCIeErr" 
+      << "(0x" << formatHex(UNIFIED_PCIE_ERR) << "), "
+      << "Segment " << formatHex(segment) << "/"
+      << "Bus " << formatHex(bus) << "/"
+      << "Dev " << formatHex(dev) << "/"
+      << "Fun " << formatHex(func) << ", "
+      << "ErrID2: 0x" << formatHex(errorId2) << "(" << errorDesc2 << "), "
+      << "ErrID1: 0x" << formatHex(errorId1) << "(" << errorDesc1 << ")";
+
+  errorMsg = oss.str();
+  return CPER_HANDLE_SUCCESS;
+}
+
+static int nvidiaSectionHandler(const ordered_json& sectionDescriptor, 
+                                const ordered_json& sectionData, 
+                                std::string& errorMsg)
+{
+  static const std::vector<std::string> procSignatures = {
+    "MCF", "DCC-COH", "DCC-ECC", "CLink", "CCPLEXGIC", "CCPLEXSCF", 
+    "C2C", "C2C-IP-FAIL", 
+  };
+
+  if (!sectionDescriptor.contains("severity") || 
+      !sectionData.contains("severity") || 
+      !sectionData.contains("numberRegs") || 
+      !sectionData.contains("registers"))
+  {
+    return CPER_HANDLE_FAIL;
+  }
+
+  std::string sectionType = sectionDescriptor["sectionType"]["type"];
+  std::string severity = sectionDescriptor["severity"]["name"];
+  std::string signature = sectionData["signature"];
+
+  std::ostringstream oss;
+  if (std::find(procSignatures.begin(), procSignatures.end(), signature) 
+      != procSignatures.end())
+  {
+    oss << "Record: Facebook Unified SEL (0xFB), GeneralInfo: ProcessorErr"
+        << "(0x" << formatHex(UNIFIED_PROC_ERR) << "), "
+        << "Location: Socket 00, "
+        << "Error Type: " << signature << ", "
+        << "Error Severity: " << severity;
+  }
+  else
+  {
+    int errorType = sectionData["errorType"];
+    int instanceBase = sectionData["errorInstance"];
+    int numberRegs = sectionData["numberRegs"];
+    uint32_t regValue = 0;
+
+    oss << "Section Type: " << sectionType << ", "
+        << "Error Severity: " << severity << ", "
+        << "Signature: " << signature << ", "
+        << "Error Type: 0x" << formatHex(errorType) << ", "
+        << "Instance Base: 0x" << formatHex(instanceBase);
+    
+    for (int reg = 0; reg < numberRegs; ++reg)
+    {
+      regValue = sectionData["registers"][reg]["value"];
+      oss << ", Reg" << reg + 1 << " value: 0x" << formatHex(regValue);
+    }
+  }
+
+  errorMsg = oss.str();
+  return CPER_HANDLE_SUCCESS;
 }
 
 int __attribute__((weak)) 
 addOemSectionHandlerMap(SectionHandlerMap& sectionHandlerMap)
 {
-  return CPER_HANDLE_SUCCESS;
-}
-
-static int processorSectionHandler(const nlohmann::ordered_json& sectionData, 
-                                   std::string& errorMsg)
-{
-  if (!sectionData.contains("errorInfo"))
-  {
-    return CPER_HANDLE_FAIL;
-  }
-
-  auto& errorInfoArray = sectionData["errorInfo"];
-  for (const auto& errorInfoObj: errorInfoArray)
-  {
-    std::ostringstream oss;
-    auto& errorInfo = errorInfoObj["errorInformation"];
-
-    auto errorInfoParams = std::vector<processor_error_info_params_t>{
-      {"Transaction Type", "transactionType", "transactionTypeValid"},
-      {"Operation", "operation", "operationValid"},
-      {"Level", "level", "levelValid"},
-      {"Processor Context Corrupt", "processorContextCorrupt", "processorContextCorruptValid"},
-      {"Corrected", "corrected", "correctedValid"},
-      {"Precise PC", "precisePC", "precisePCValid"},
-      {"Restartable PC", "restartablePC", "restartablePCValid"}
-    };
-    
-    oss << "Section Sub-type: " << getValue(errorInfoObj["errorType"], "name");
-    for (const auto& param : errorInfoParams)
-    {
-      if (errorInfo["validationBits"][param.validBit].get<bool>())
-      {
-        if (errorInfo[param.key].is_object())
-        {
-          oss << ", " << param.title << ": " 
-              << getValue(errorInfo[param.key], "value") 
-              << " - " << getValue(errorInfo[param.key], "name");
-        }
-        else
-        {
-          oss << ", " << param.title << ": " << getValue(errorInfo, param.key);
-        }
-      }
-      else
-      {
-        oss << ", " << param.title << ": Not Valid";
-      }
-    }
-
-    errorMsg = oss.str();
-  }
-
-  return CPER_HANDLE_SUCCESS;
-}
-
-static int memorySectionHandler(const nlohmann::ordered_json& sectionData, 
-                                std::string& errorMsg)
-{
-  std::ostringstream oss;
-  std::string errorType = "NA";
-  if (sectionData.contains("memoryErrorType"))
-  {
-    errorType = getValue(sectionData["memoryErrorType"], "name");
-  }
-
-  oss << "Section Sub-type: " << errorType << ", Error Specific: "
-      << "Node: " << getValue(sectionData, "node") << " / "
-      << "Card: " << getValue(sectionData, "card") << " / "
-      << "Module: " << getValue(sectionData, "moduleRank") << " / "
-      << "Bank: " << getValue(sectionData["bank"], "value") << " / "
-      << "Device: " << getValue(sectionData, "device") << " / "
-      << "Row: " << getValue(sectionData, "row") << " / "
-      << "Column: " << getValue(sectionData, "column") << " / "
-      << "Rank Number: " << getValue(sectionData, "rankNumber");
-  
-  errorMsg = oss.str();
-  return CPER_HANDLE_SUCCESS;
-}
-
-static int pcieSectionHandler(const nlohmann::ordered_json& sectionData, 
-                              std::string& errorMsg)
-{
-  if (!sectionData.contains("deviceID"))
-  {
-    return CPER_HANDLE_FAIL;
-  }
-
-  std::ostringstream oss;
-  auto& devIdObj = sectionData["deviceID"];
-
-  oss << "Error Specific: "
-      << "Segment Number: " << getValue(devIdObj, "segmentNumber") << " / "
-      << "Bus Number: " << getValue(devIdObj, "primaryOrDeviceBusNumber") << " / "
-      << "Secondary Bus Number: " << getValue(devIdObj, "secondaryBusNumber") << " / "
-      << "Device Number: " << getValue(devIdObj, "deviceNumber") << " / "
-      << "Function Number: " << getValue(devIdObj, "functionNumber");
-
-  errorMsg = oss.str();
-  return CPER_HANDLE_SUCCESS;
-}
-
-static int nvidiaSectionHandler(const nlohmann::ordered_json& sectionData, 
-                                std::string& errorMsg)
-{
-  std::ostringstream oss;
-  oss << "Signature: " << getValue(sectionData, "signature") << ", "
-      << "Error Type: " << getValue(sectionData, "errorType");
-  
-  errorMsg = oss.str();
+  // override this function if you need to replace an existing handler 
+  // or add OEM-defined sections.
   return CPER_HANDLE_SUCCESS;
 }
 
@@ -184,40 +359,45 @@ static SectionHandlerMap getSectionHandler()
   return sectionHandlerMap;
 }
 
-std::string handleSectionData(const nlohmann::ordered_json& sectionDescriptor, 
-                              const nlohmann::ordered_json& sectionData)
+std::string handleSectionData(const ordered_json& sectionDescriptor, 
+                              const ordered_json& sectionData)
 {
-  std::ostringstream oss;
+  auto sectionHandlerMap = getSectionHandler();
+  std::string sectionType = sectionDescriptor["sectionType"]["type"];
+  std::string severity = sectionDescriptor["severity"]["name"];
   std::string errorMsg;
 
-  oss << "Error Type: " << getValue(sectionDescriptor["sectionType"], "type")
-      << ", Error Severity: " << getValue(sectionDescriptor["severity"], "name");
-
-  auto sectionHandlerMap = getSectionHandler();
-  auto it = sectionHandlerMap.find(sectionDescriptor["sectionType"]["type"]);
+  auto it = sectionHandlerMap.find(sectionType);
   if (it != sectionHandlerMap.end())
   {
     try
     {
-      if (it->second(sectionData, errorMsg) != CPER_HANDLE_SUCCESS)
+      if (it->second(sectionDescriptor, sectionData, errorMsg))
       {
-        throw std::runtime_error("Faild to handle section data");
+        throw std::runtime_error("Invalid Section Data Format");
       }
-      oss << ", " << errorMsg;
+      return errorMsg;
     }
-    catch(...)
+    catch(const std::exception& err)
     {
-      oss << ", Invalid Section Data Format";
+      errorMsg = "Invalid Section Data Format";
+      syslog(LOG_ERR, "Failed to handle section data. %s", err.what());
     }
   }
   else
   {
-    oss << ", Unknow Section Information";
+    errorMsg = "Unknown Section Type";
   }
+
+  std::ostringstream oss;
+  oss << "Error Type: " << sectionType << ", " 
+      << "Error Severity: " << severity << ", "
+      << errorMsg;
+  
   return oss.str();
 }
 
-int parseCperFile(const std::string& file, std::vector<std::string>& results)
+int parseCperFile(const std::string& file, std::vector<std::string>& entries)
 {
   try
 	{
@@ -241,7 +421,7 @@ int parseCperFile(const std::string& file, std::vector<std::string>& results)
 
 		std::ifstream ifs(tempFile);
 		std::remove(tempFile.c_str());
-		nlohmann::ordered_json cperJson;
+		ordered_json cperJson;
 		ifs >> cperJson;
 
 		if (!cperJson.contains("header") || 
@@ -257,7 +437,7 @@ int parseCperFile(const std::string& file, std::vector<std::string>& results)
 		{
 			auto& sectionDescriptor = cperJson["sectionDescriptors"][i];
 			auto& sectionData = cperJson["sections"][i];
-      results.emplace_back(handleSectionData(sectionDescriptor, sectionData));
+      entries.emplace_back(handleSectionData(sectionDescriptor, sectionData));
 		}
 	}
 	catch(const std::exception& e)

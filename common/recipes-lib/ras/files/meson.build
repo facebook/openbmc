@@ -14,6 +14,7 @@ cc = meson.get_compiler('c')
 libs = [
   cc.find_library('gpio-ctrl'),
   dependency('threads'),
+  cc.find_library('base64'),
 ]
 
 srcs = files(

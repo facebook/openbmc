@@ -104,6 +104,7 @@ start_dev_connect() {
 }
 
 if [ "$3" == "start" ]; then
+  /bin/sleep 30 # wait for usb init
   start_dev_connect "$1" "$2"
 else
   exit "$EXIT_ERROR";

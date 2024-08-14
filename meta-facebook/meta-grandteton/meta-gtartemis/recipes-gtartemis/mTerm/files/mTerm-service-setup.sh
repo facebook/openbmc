@@ -14,8 +14,6 @@ do
     for j in {1..2}
     do
         runsv "/etc/sv/mTerm"$i"_"$j"" 2>&1 &
-        sleep 1
-        sv stop "/etc/sv/mTerm"$i"_"$j""
     done
 done
 

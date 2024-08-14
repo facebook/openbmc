@@ -25,6 +25,7 @@ PLAT_DISTRO_OVERRIDES=(
 # DON'T modify the next line! It is used as the anchor string in new-fblite.py
 # master rolling-release platforms
   meta-bletchley:lf-master
+  meta-catalina:lf-master
   meta-clearcreek:lf-master
   meta-elbert:lf-master
   meta-fbal:lf-master

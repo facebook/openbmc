@@ -12,11 +12,13 @@
 template<typename Func>
 int retryCond(Func func, int numRetries, int msec) {
     for (int retries = 0; retries < numRetries; retries++) {
-        if (func()) {
-            return 0;
-        }
+      if (func() < 0) {
         std::this_thread::sleep_for(std::chrono::milliseconds(msec));
+      } else {
+        return 0;
+      }
     }
+
     return -1;
 }
 
@@ -55,8 +57,10 @@ int CpldManager::i2cWriteReadCmd(const std::vector<uint8_t>& cmdData,
     if (retryCond([&]() { return ioctl(i2c_fd, I2C_RDWR, &iomsg); }, 3, 10) < 0)
     {
         std::cerr << "Fail to r/w I2C device: " << unsigned(bus)
-                  << ", Addr: " << unsigned(addr) << "errno = " << std::strerror(errno) << "\n";
+                  << ", Addr: " << unsigned(addr)
+                  << "errno = " << std::strerror(errno) << std::endl;
         return -1;
     }
+
     return 0;
 }

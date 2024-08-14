@@ -95,6 +95,9 @@ gpio_export_ioexp 29-0074 GPU_PEX_STRAP1          13
 gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_A_N     14
 gpio_export_ioexp 29-0074 GPU_CABLE_PRSNT_E_N     15
 
+#Set IO Expender
+gpio_set RST_SWB_BIC_N 1
+
 #MB FRU
 probe_mb_eeprom() {
   i2c_device_add 33 0x51 24c64
@@ -131,9 +134,7 @@ if [ $mb_product != "GTA" ]; then
 
   #Set IO Expender
   gpio_set BIC_FWSPICK 0
-  gpio_set RST_SWB_BIC_N 1
   gpio_set BIC_UART_BMC_SEL 0
-
 
   bic_ready=$(gpio_get FM_SWB_BIC_READY_ISO_R_N)
   #SWB HSC

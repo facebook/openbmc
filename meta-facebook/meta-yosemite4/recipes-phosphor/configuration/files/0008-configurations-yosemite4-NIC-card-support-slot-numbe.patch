@@ -1,0 +1,54 @@
+From 559ebefaf43c9491317d1553b7bd45563bdef732 Mon Sep 17 00:00:00 2001
+From: IngridChen-wiwynn <Ingrid_Chen@wiwynn.com>
+Date: Mon, 12 Aug 2024 11:41:09 +0800
+Subject: [PATCH] configurations: yosemite4: NIC card support slot number
+
+Support NIC card with slot number.
+---
+ configurations/brcm_200g_1p_ocp_mezz.json    | 3 +++
+ configurations/cx7_ocp.json                  | 3 +++
+ configurations/terminus_2x100g_nic_tsff.json | 3 +++
+ 3 files changed, 9 insertions(+)
+
+diff --git a/configurations/brcm_200g_1p_ocp_mezz.json b/configurations/brcm_200g_1p_ocp_mezz.json
+index 25e6386..ea79791 100644
+--- a/configurations/brcm_200g_1p_ocp_mezz.json
++++ b/configurations/brcm_200g_1p_ocp_mezz.json
+@@ -41,5 +41,8 @@
+         "Model": "$BOARD_PRODUCT_NAME",
+         "PartNumber": "$BOARD_PART_NUMBER",
+         "SerialNumber": "$BOARD_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Slot": {
++        "SlotNumber": "$bus % 24"
+     }
+ }
+diff --git a/configurations/cx7_ocp.json b/configurations/cx7_ocp.json
+index 9403a23..ce705ae 100644
+--- a/configurations/cx7_ocp.json
++++ b/configurations/cx7_ocp.json
+@@ -45,5 +45,8 @@
+     },
+     "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
+         "AssetTag": "$PRODUCT_ASSET_TAG"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Slot": {
++        "SlotNumber": "$bus % 24"
+     }
+ }
+diff --git a/configurations/terminus_2x100g_nic_tsff.json b/configurations/terminus_2x100g_nic_tsff.json
+index 19e8548..d9ddd14 100644
+--- a/configurations/terminus_2x100g_nic_tsff.json
++++ b/configurations/terminus_2x100g_nic_tsff.json
+@@ -40,5 +40,8 @@
+         "Model": "$BOARD_PRODUCT_NAME",
+         "PartNumber": "$BOARD_PART_NUMBER",
+         "SerialNumber": "$BOARD_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Slot": {
++        "SlotNumber": "$bus % 24"
+     }
+ }
+-- 
+2.25.1
+

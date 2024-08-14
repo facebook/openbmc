@@ -37,14 +37,18 @@ busctl set-property \
     xyz.openbmc_project.Software.Version \
     Version "s" "$version_pvdd11_s3"
 
-busctl set-property \
-    xyz.openbmc_project.Settings \
-    "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x8" \
-    xyz.openbmc_project.Software.Version \
-    Version "s" "$version_retimer_x8"
+if [ $version_retimer_x8 -ne "ERROR:0" ]; then
+    busctl set-property \
+        xyz.openbmc_project.Settings \
+        "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x8" \
+        xyz.openbmc_project.Software.Version \
+        Version "s" "$version_retimer_x8"
+fi
 
-busctl set-property \
-    xyz.openbmc_project.Settings \
-    "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x16" \
-    xyz.openbmc_project.Software.Version \
-    Version "s" "$version_retimer_x16"
+if [ $version_retimer_x16 -ne "ERROR:0" ]; then
+    busctl set-property \
+        xyz.openbmc_project.Settings \
+        "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x16" \
+        xyz.openbmc_project.Software.Version \
+        Version "s" "$version_retimer_x16"
+fi

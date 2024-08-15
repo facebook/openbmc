@@ -1,14 +1,61 @@
-From 268f7175c526618290bcd0880764bd08fe2eb081 Mon Sep 17 00:00:00 2001
+From 2c45adccde4c8e5f7057be24010faad76e4b9a8c Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 8 May 2024 14:29:36 +0800
 Subject: [PATCH 2/6] configurations: Revise the BRCM NIC sensor name
 
 1. Revise the BRCM NIC temperature sensor name to NICX_TEMP_C.
 2. Revise the temperature threshold.
----
- configurations/brcm_200g_1p_ocp_mezz.json | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
 
+Signed-off-by: Allen.Wang <Allen_Wang@quantatw.com>
+---
+ configurations/brcm_100g_1p_ocp_mezz.json | 16 ++++++++--------
+ configurations/brcm_200g_1p_ocp_mezz.json | 16 ++++++++--------
+ 2 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/configurations/brcm_100g_1p_ocp_mezz.json b/configurations/brcm_100g_1p_ocp_mezz.json
+index d3cb955..322e2e9 100644
+--- a/configurations/brcm_100g_1p_ocp_mezz.json
++++ b/configurations/brcm_100g_1p_ocp_mezz.json
+@@ -3,7 +3,7 @@
+         {
+             "Address": "$address",
+             "Bus": "$bus",
+-            "Name": "BRCM OCP NIC FRU $bus",
++            "Name": "BRCM OCP NIC FRU $bus % 24",
+             "Type": "EEPROM"
+         },
+         {
+@@ -12,15 +12,15 @@
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC Temp $bus",
+-            "Name1": "NIC Temp $bus",
++            "Name": "NIC$bus % 24 REMOTE_TEMP_C",
++            "Name1": "NIC$bus % 24 TEMP_C",
+             "Thresholds": [
+                 {
+-                    "Direction": "less than",
++                    "Direction": "greater than",
+                     "Index": 2,
+-                    "Name": "lower critical",
+-                    "Severity": 1,
+-                    "Value": 5
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 115
+                 },
+                 {
+                     "Direction": "greater than",
+@@ -33,7 +33,7 @@
+             "Type": "TMP421"
+         }
+     ],
+-    "Name": "BRCM OCP NIC FRU $bus",
++    "Name": "BRCM OCP NIC FRU $bus % 24",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'BRCM 100G 1P.*57504 OCP Mezz'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {
 diff --git a/configurations/brcm_200g_1p_ocp_mezz.json b/configurations/brcm_200g_1p_ocp_mezz.json
 index 3f028b7..25e6386 100644
 --- a/configurations/brcm_200g_1p_ocp_mezz.json
@@ -54,5 +101,5 @@ index 3f028b7..25e6386 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.44.2
+2.25.1
 

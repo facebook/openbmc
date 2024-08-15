@@ -777,9 +777,329 @@ int CpldLatticeManager::XO2XO3Family_update()
     return 0;
 }
 
+int XO5I2CManager::set_page(uint8_t partition_num, uint32_t page_num)
+{
+      std::vector<uint8_t> cmd = {XO5_CMD_SET_PAGE, partition_num,
+                                  static_cast<uint8_t>((page_num >> 16) & 0xFF),
+                                  static_cast<uint8_t>((page_num >> 8) & 0xFF),
+                                  static_cast<uint8_t>(page_num & 0xFF)};
+      std::vector<uint8_t> read;
+
+      return i2cWriteReadCmd(cmd, 0, read);
+}
+
+int XO5I2CManager::erase_flash(uint8_t size)
+{
+    std::vector<uint8_t> cmd = {XO5_CMD_ERASE_FLASH, size};
+    std::vector<uint8_t> read;
+    return i2cWriteReadCmd(cmd, 0, read);
+}
+
+int XO5I2CManager::cfg_reset_addr()
+{
+    std::vector<uint8_t> cmd = {XO5_CMD_CFG_RESET_ADDR};
+    std::vector<uint8_t> read;
+    return i2cWriteReadCmd(cmd, 0, read);
+}
+
+std::vector<uint8_t> XO5I2CManager::cfg_read_page()
+{
+    std::vector<uint8_t> cmd = {XO5_CMD_CFG_READ_PAGE};
+    std::vector<uint8_t> read(256);
+
+    if (i2cWriteReadCmd(cmd, 256, read) < 0) {
+        return {};
+    } else {
+        return read;
+    }
+}
+
+int XO5I2CManager::cfg_write_page(const std::vector<uint8_t>& byte_list)
+{
+    std::vector<uint8_t> cmd = {XO5_CMD_CFG_WRITE_PAGE};
+    cmd.insert(cmd.end(), byte_list.begin(), byte_list.end());
+    std::vector<uint8_t> read;
+    return i2cWriteReadCmd(cmd, 0, read);
+}
+
+bool XO5I2CManager::programCfgData(uint8_t cfg)
+{
+	unsigned int data_offset = 0;
+
+	for (int b_idx = 0; b_idx < XO5_CFG_BLOCK_NUM; ++b_idx) {
+		set_page(cfg, b_idx * XO5_PAGE_NUM);
+		erase_flash(XO5_ERASE_BLOCK);
+
+		for (int p_idx = 0; p_idx < XO5_PAGE_NUM; ++p_idx) {
+			if (data_offset < fwInfo.cfgData.size()) {
+				int remaining_bytes = fwInfo.cfgData.size() - data_offset;
+				int bytes_to_write = std::min(static_cast<int>(XO5_PAGE_SIZE), remaining_bytes);
+				std::vector<uint8_t> wr_buffer(fwInfo.cfgData.begin() + data_offset,
+								fwInfo.cfgData.begin() + data_offset + bytes_to_write);
+
+				if (cfg_write_page(wr_buffer)) {
+						std::cerr << "Failed to write page " << p_idx <<
+						" of block " << b_idx << std::endl;
+						return false;
+				}
+
+				data_offset += bytes_to_write;
+
+				float progressRate = (static_cast<float>(data_offset) / fwInfo.cfgData.size()) * 100;
+				std::cout << "Update :" << std::fixed << std::dec <<
+						std::setprecision(2) << progressRate << "% \r";
+
+				usleep(200);
+			} else {
+				return true;
+			}
+		}
+	}
+	return true;
+}
+
+bool XO5I2CManager::verifyCfgData(uint8_t cfg)
+{
+	unsigned int data_offset = 0;
+
+	for (int b_idx = 0; b_idx < XO5_CFG_BLOCK_NUM; ++b_idx) {
+		set_page(cfg, b_idx * XO5_PAGE_NUM);
+
+		for (int p_idx = 0; p_idx < XO5_PAGE_NUM; ++p_idx) {
+			if (data_offset < fwInfo.cfgData.size()) {
+				std::vector<uint8_t> read_buffer = cfg_read_page();
+
+				if (read_buffer.empty()) {
+					std::cerr << "Failed to read page " << p_idx <<
+										" of block " << b_idx << std::endl;
+					return false;
+				}
+
+				int remaining_bytes = fwInfo.cfgData.size() - data_offset;
+				int bytes_to_compare = std::min(static_cast<int>(XO5_PAGE_SIZE), remaining_bytes);
+
+				if (!std::equal(read_buffer.begin(), read_buffer.begin() + bytes_to_compare,
+												fwInfo.cfgData.begin() + data_offset)) {
+					std::cerr << "Verification failed at page " << p_idx <<
+										" of block " << b_idx << std::endl;
+					return false;
+				}
+				data_offset += bytes_to_compare;
+				} else {
+					return true;
+				}
+			float progressRate = (static_cast<float>(data_offset) / fwInfo.cfgData.size()) * 100;
+					std::cout << "Verify :" << std::fixed << std::dec <<
+								std::setprecision(2) << progressRate << "% \r";
+			usleep(200);
+		}
+	}
+
+	std::cout << "Verification successful." << std::endl;
+	return true;
+}
+
+
+int XO5I2CManager::XO5jedFileParser()
+{
+    bool cfStart = false;
+    bool checksumStart = false;
+    bool endofCF = false;
+    int numberSize = 0;
+
+    std::string line;
+    std::ifstream ifs(imagePath, std::ifstream::in);
+    if (!ifs.good())
+    {
+        std::cerr << "Failed to open JED file" << std::endl;
+        return -1;
+    }
+
+    // Parsing JED file
+    while (getline(ifs, line))
+    {
+        if (line.rfind(TAG_QF, 0) == 0)
+        {
+            numberSize = line.find("*") - line.find("F") - 1;
+            if (numberSize <= 0)
+            {
+                std::cerr << "Error in parsing QF tag" << std::endl;
+                ifs.close();
+                return -1;
+            }
+            static constexpr auto start = std::strlen(TAG_QF);
+            fwInfo.QF = std::stoul(line.substr(start, numberSize));
+
+            std::cout << "QF Size = " << fwInfo.QF << std::endl;
+        }
+        else if (line.rfind(TAG_CF_START, 0) == 0)
+        {
+            cfStart = true;
+        }
+        else if (line.rfind(TAG_CF_END, 0) == 0)
+        {
+            endofCF = true;
+            cfStart = false;
+        }
+        else if (line.rfind(TAG_CHECKSUM, 0) == 0)
+        {
+            checksumStart = true;
+        }
+
+        if (line.rfind("NOTE DEVICE NAME:", 0) == 0)
+        {
+            std::cerr << line << "\n";
+            if (line.find(chip) != std::string::npos)
+            {
+                std::cout
+                    << "[OK] The image device name match with chip name\n";
+            }
+            else
+            {
+                std::cerr << "STOP UPDATEING: The image not match with chip.\n";
+                return -1;
+            }
+        }
+
+        if (cfStart == true)
+        {
+            if ((line.rfind(TAG_CF_START, 0)) && (line.size() != 1))
+            {
+                if ((line.rfind("0", 0) == 0) || (line.rfind("1", 0) == 0))
+                {
+                    while (line.size())
+                    {
+                        auto binary_str = line.substr(0, 8);
+                        try
+                        {
+                            fwInfo.cfgData.push_back(
+                                std::stoi(binary_str, 0, 2));
+                            line.erase(0, 8);
+                        }
+                        catch (const std::invalid_argument& error)
+                        {
+                            break;
+                        }
+                        catch (...)
+                        {
+                            std::cerr << "Error while parsing CF section"
+                                      << std::endl;
+                            return -1;
+                        }
+                    }
+                }
+                else {
+                    continue;
+                }
+            }
+        }
+        else if (endofCF == true) {
+            std::cerr << "CF Size = " << fwInfo.cfgData.size()
+                              << std::endl;
+            endofCF = false;
+        }
+        else if ((checksumStart == true) && (line.size() != 1))
+        {
+            checksumStart = false;
+            numberSize = line.find("*") - line.find("C") - 1;
+            if (numberSize <= 0)
+            {
+                std::cerr << "Error in parsing checksum" << std::endl;
+                ifs.close();
+                return -1;
+            }
+            static constexpr auto start = std::strlen(TAG_CHECKSUM);
+            std::istringstream iss(line.substr(start, numberSize));
+            iss >> std::hex >> fwInfo.CheckSum;
+
+            std::cout << "Checksum = 0x" << std::hex << fwInfo.CheckSum
+                      << std::endl;
+        }
+    }
+    // Compute check sum
+    unsigned int jedFileCheckSum = 0;
+    for (unsigned i = 0; i < fwInfo.cfgData.size(); i++)
+    {
+        jedFileCheckSum += reverse_bit(fwInfo.cfgData.at(i));
+    }
+    for (unsigned i = 0; i < fwInfo.ufmData.size(); i++)
+    {
+        jedFileCheckSum += reverse_bit(fwInfo.ufmData.at(i));
+    }
+    std::cout << "jedFileCheckSum = " << jedFileCheckSum << "\n";
+    jedFileCheckSum = jedFileCheckSum & 0xffff;
+
+    if ((fwInfo.CheckSum != jedFileCheckSum) || (fwInfo.CheckSum == 0))
+    {
+        std::cerr << "CPLD JED File CheckSum Error - " << std::hex
+                  << jedFileCheckSum << std::endl;
+        ifs.close();
+        return -1;
+    } else {
+        std::cout << "[OK] JED File Checksum compare success" << std::endl;
+    }
+
+    ifs.close();
+    return 0;
+}
+
+int CpldLatticeManager::XO5Family_update()
+{
+    uint8_t operate_taget;
+    XO5I2CManager i2cManager(bus, addr, imagePath, chip, interface, target, debugMode);
+
+    std::cout << "Starting to update " << chip << std::endl;
+
+    if (target.empty() || target == "CFG0")
+    {
+        operate_taget = i2cManager.XO5_PARTITION_CFG0;
+
+    } else if (target == "CFG1")
+    {
+        operate_taget = i2cManager.XO5_PARTITION_CFG1;
+    } else
+    {
+        std::cerr << "Error: unknown target." << std::endl;
+        return -1;
+    }
+
+    if (i2cManager.XO5jedFileParser() < 0)
+    {
+        std::cerr << "JED file parsing failed" << std::endl;
+        return -1;
+    }
+
+    std::cout << "Program CFG" << (operate_taget == i2cManager.XO5_PARTITION_CFG0 ? "0" : "1")
+        << " data ..." << std::endl;
+    if (i2cManager.programCfgData(operate_taget) == false)
+    {
+        std::cerr << "Program cfg data failed." << std::endl;
+        return -1;
+    }
+
+    std::cout << "Verify CFG data ..." << std::endl;
+    if (i2cManager.verifyCfgData(operate_taget) == false)
+    {
+        std::cerr << "Verify cfg data failed." << std::endl;
+        return -1;
+    }
+
+    std::cout << "\nUpdate completed! Please AC." << std::endl;
+
+    return 0;
+}
+
 int CpldLatticeManager::fwUpdate()
 {
-    return XO2XO3Family_update();
+    if (chip == "LCMXO3LF-4300" || chip == "LCMXO3LF-6900" ||
+        chip == "LCMXO3D-4300" || chip == "LCMXO3D-9400") {
+        return XO2XO3Family_update();
+    } else if (chip == "LFMXO5-25") {
+        return XO5Family_update();
+    } else {
+        std::cerr << "Unsupported chip type: " << chip << std::endl;
+        return -1;
+    }
 }
 
 int CpldLatticeManager::getVersion()

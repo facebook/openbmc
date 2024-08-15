@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 
     update
         ->add_option("-c,--chip", chip,
-                     "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400")
+                     "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400|LFMXO5-25")
         ->required();
     update->add_option("-t,--target", target,
                        "used for LCMXO3D series CPLD, CFG0|CFG1");

@@ -50,8 +50,14 @@ class SyslogRestartTest(TestCase):
         self._ensure_rsyslog_working()
 
     def _get_pid(self):
-        result = subprocess.run(["pidof", "-s", "rsyslogd"], stdout=subprocess.PIPE)
+        result = subprocess.run(["pidof", "rsyslogd"], stdout=subprocess.PIPE)
         pid = result.stdout.strip()
+
+        # Find the first one
+        space = pid.find(b" ")
+        if space != -1:
+            pid = pid[:space]
+
         if len(pid) == 0:
             raise SyslogRestartTestError(
                 "`pidof rsyslogd` returned an empty string, rsyslog daemon doesn't seem to be running."

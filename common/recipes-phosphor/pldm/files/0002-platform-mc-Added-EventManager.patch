@@ -1,4 +1,4 @@
-From 87281db2199cbf5cae64bd4305f279453024a659 Mon Sep 17 00:00:00 2001
+From 7990d1523711f994e2b8151dda062961f90b44c9 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 02/13] platform-mc: Added EventManager
@@ -69,10 +69,10 @@ index 1e0955a..8ddaa29 100644
          catch (const std::out_of_range& e)
          {
 diff --git a/meson.build b/meson.build
-index 9843cb6..d9b133a 100644
+index 11ba149..73bf679 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -76,6 +76,7 @@ conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'stati
+@@ -77,6 +77,7 @@ conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'stati
  conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
  conf_data.set('DEFAULT_SENSOR_UPDATER_INTERVAL', get_option('default-sensor-update-interval'))
  conf_data.set_quoted('PLDM_T2_CONFIG_JSON', join_paths(package_datadir, 'pldm_t2_config.json'))
@@ -80,7 +80,7 @@ index 9843cb6..d9b133a 100644
  
  configure_file(output: 'config.h',
    configuration: conf_data
-@@ -180,6 +181,7 @@ executable(
+@@ -181,6 +182,7 @@ executable(
    'platform-mc/manager.cpp',
    'platform-mc/sensor_manager.cpp',
    'platform-mc/numeric_sensor.cpp',
@@ -89,11 +89,11 @@ index 9843cb6..d9b133a 100644
    implicit_include_directories: false,
    dependencies: deps,
 diff --git a/meson.options b/meson.options
-index 3e0aec8..d353bfb 100644
+index deb6dc6..158c219 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -198,3 +198,12 @@ option(
- 
+@@ -201,3 +201,12 @@ option(
+                     interval.''',
      value: 999
  )
 +
@@ -1508,7 +1508,7 @@ index 861a3d4..6368299 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index da3e0d6..a3373cd 100644
+index 8be6139..e7fb66b 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -12,9 +12,13 @@ namespace pldm
@@ -1527,7 +1527,7 @@ index da3e0d6..a3373cd 100644
      inventoryPath = "/xyz/openbmc_project/inventory/Item/Board/PLDM_Device_" +
                      std::to_string(tid);
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 13d114b..2d46056 100644
+index 8a39b2e..98cd179 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -133,6 +133,18 @@ class Terminus
@@ -2224,5 +2224,5 @@ index e5cc47c..f33f9fa 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.44.2
+2.43.5
 

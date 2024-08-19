@@ -1,4 +1,4 @@
-From c06b3a5a40d3c5ca9a9c252424c72905f31ee637 Mon Sep 17 00:00:00 2001
+From 0fd85adf9816f88fbb1c5cb3b3aba2e7144e0220 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
 Subject: [PATCH 01/13] platform-mc: Sensor handling
@@ -14,27 +14,24 @@ Signed-off-by: Gilbert Chen <gilbert.chen@arm.com>
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
 ---
- meson.build                                |   6 +
- meson.options                              |  24 +
+ meson.build                                |   5 +
+ meson.options                              |  14 +-
  platform-mc/examples/pldm_t2_config.json   |  12 +
  platform-mc/manager.hpp                    |  21 +-
- platform-mc/numeric_sensor.cpp             | 687 +++++++++++++++++++++
- platform-mc/numeric_sensor.hpp             | 219 +++++++
- platform-mc/sensor_manager.cpp             | 410 ++++++++++++
- platform-mc/sensor_manager.hpp             | 117 ++++
- platform-mc/terminus.cpp                   | 113 +++-
- platform-mc/terminus.hpp                   |  30 +
+ platform-mc/numeric_sensor.cpp             | 146 ++++++++
+ platform-mc/numeric_sensor.hpp             | 106 ++++++
+ platform-mc/sensor_manager.cpp             | 410 +++++++++++++++++++++
+ platform-mc/sensor_manager.hpp             | 117 ++++++
+ platform-mc/terminus.cpp                   |  19 +-
  platform-mc/terminus_manager.cpp           |  18 +
- platform-mc/test/meson.build               |   4 +
- platform-mc/test/mock_sensor_manager.hpp   |  24 +
- platform-mc/test/numeric_sensor_test.cpp   | 272 ++++++++
+ platform-mc/test/meson.build               |   3 +
+ platform-mc/test/mock_sensor_manager.hpp   |  24 ++
+ platform-mc/test/numeric_sensor_test.cpp   | 272 ++++++++++++++
  platform-mc/test/platform_manager_test.cpp |   3 +
- platform-mc/test/sensor_manager_test.cpp   | 147 +++++
+ platform-mc/test/sensor_manager_test.cpp   | 147 ++++++++
  pldmd/pldmd.cpp                            |   2 +-
- 17 files changed, 2106 insertions(+), 3 deletions(-)
+ 16 files changed, 1315 insertions(+), 4 deletions(-)
  create mode 100644 platform-mc/examples/pldm_t2_config.json
- create mode 100644 platform-mc/numeric_sensor.cpp
- create mode 100644 platform-mc/numeric_sensor.hpp
  create mode 100644 platform-mc/sensor_manager.cpp
  create mode 100644 platform-mc/sensor_manager.hpp
  create mode 100644 platform-mc/test/mock_sensor_manager.hpp
@@ -42,13 +39,13 @@ Change-Id: I4257f823ea26d7fdb322cc82d847e94db056258c
  create mode 100644 platform-mc/test/sensor_manager_test.cpp
 
 diff --git a/meson.build b/meson.build
-index bfbf63e..9843cb6 100644
+index af6bf6e..11ba149 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -72,6 +72,10 @@ if get_option('transport-implementation') == 'mctp-demux'
- elif get_option('transport-implementation') == 'af-mctp'
+@@ -73,6 +73,10 @@ elif get_option('transport-implementation') == 'af-mctp'
    conf_data.set('PLDM_TRANSPORT_WITH_AF_MCTP', 1)
  endif
+ conf_data.set('DEFAULT_SENSOR_UPDATER_INTERVAL', get_option('default-sensor-update-interval'))
 +conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'static_eid_table.json'))
 +conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
 +conf_data.set('DEFAULT_SENSOR_UPDATER_INTERVAL', get_option('default-sensor-update-interval'))
@@ -56,24 +53,22 @@ index bfbf63e..9843cb6 100644
  
  configure_file(output: 'config.h',
    configuration: conf_data
-@@ -174,6 +178,8 @@ executable(
+@@ -175,6 +179,7 @@ executable(
    'platform-mc/terminus.cpp',
    'platform-mc/platform_manager.cpp',
    'platform-mc/manager.cpp',
 +  'platform-mc/sensor_manager.cpp',
-+  'platform-mc/numeric_sensor.cpp',
+   'platform-mc/numeric_sensor.cpp',
    'requester/mctp_endpoint_discovery.cpp',
    implicit_include_directories: false,
-   dependencies: deps,
 diff --git a/meson.options b/meson.options
-index d52506e..3e0aec8 100644
+index 63726dd..deb6dc6 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -174,3 +174,27 @@ option(
-     value: 8384512,
+@@ -175,6 +175,18 @@ option(
      description: 'OEM-IBM: max DMA size'
  )
-+
+ 
 +# Platform-mc configuration parameters
 +
 +## Sensor Polling Options
@@ -86,16 +81,15 @@ index d52506e..3e0aec8 100644
 +    value: 249
 +)
 +
-+## Default Sensor Update Interval Options
-+option(
-+    'default-sensor-update-interval',
-+    type: 'integer',
-+    min: 1,
-+    max: 4294967295,
-+    description: '''The default interval time of sensor updating in
-+                    milliseconds.''',
-+
-+    value: 999
+ ## Default Sensor Update Interval Options
+ option(
+     'default-sensor-update-interval',
+@@ -188,4 +200,4 @@ option(
+                     of the monitoring terminus after each configured
+                     interval.''',
+     value: 999
+-)
+\ No newline at end of file
 +)
 diff --git a/platform-mc/examples/pldm_t2_config.json b/platform-mc/examples/pldm_t2_config.json
 new file mode 100644
@@ -169,550 +163,13 @@ index 7636e94..342c028 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
-new file mode 100644
-index 0000000..e438061
---- /dev/null
+index be7ece3..fdda328 100644
+--- a/platform-mc/numeric_sensor.cpp
 +++ b/platform-mc/numeric_sensor.cpp
-@@ -0,0 +1,687 @@
-+#include "numeric_sensor.hpp"
-+
-+#include "libpldm/platform.h"
-+
-+#include "common/utils.hpp"
-+#include "requester/handler.hpp"
-+
-+#include <limits>
-+#include <regex>
-+
-+PHOSPHOR_LOG2_USING;
-+
-+namespace pldm
-+{
-+namespace platform_mc
-+{
-+
-+NumericSensor::NumericSensor(const pldm_tid_t tid, const bool sensorDisabled,
-+                             std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr,
-+                             std::string& sensorName,
-+                             std::string& associationPath) :
-+    tid(tid),
-+    sensorId(pdr->sensor_id), sensorName(sensorName), isPriority(false)
-+{
-+    std::string path;
-+    SensorUnit sensorUnit = SensorUnit::DegreesC;
-+
-+    switch (pdr->base_unit)
-+    {
-+        case PLDM_SENSOR_UNIT_DEGRESS_C:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/temperature/";
-+            sensorUnit = SensorUnit::DegreesC;
-+            break;
-+        case PLDM_SENSOR_UNIT_VOLTS:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/voltage/";
-+            sensorUnit = SensorUnit::Volts;
-+            break;
-+        case PLDM_SENSOR_UNIT_AMPS:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/current/";
-+            sensorUnit = SensorUnit::Amperes;
-+            break;
-+        case PLDM_SENSOR_UNIT_RPM:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/fan_pwm/";
-+            sensorUnit = SensorUnit::RPMS;
-+            break;
-+        case PLDM_SENSOR_UNIT_WATTS:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/power/";
-+            sensorUnit = SensorUnit::Watts;
-+            break;
-+        case PLDM_SENSOR_UNIT_JOULES:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/energy/";
-+            sensorUnit = SensorUnit::Joules;
-+            break;
-+        case PLDM_SENSOR_UNIT_PERCENTAGE:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/utilization/";
-+            sensorUnit = SensorUnit::Percent;
-+            break;
-+        default:
-+            lg2::error("Sensor {NAME} has Invalid baseUnit {UNIT}.", "NAME",
-+                       sensorName, "UNIT", pdr->base_unit);
-+            throw sdbusplus::xyz::openbmc_project::Common::Error::
-+                InvalidArgument();
-+            break;
-+    }
-+
-+    path = sensorNameSpace + sensorName;
-+    path = std::regex_replace(path, std::regex("[^a-zA-Z0-9_/]+"), "_");
-+
-+    auto& bus = pldm::utils::DBusHandler::getBus();
-+    try
-+    {
-+        associationDefinitionsIntf =
-+            std::make_unique<AssociationDefinitionsInft>(bus, path.c_str());
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create association interface for numeric sensor {PATH} error - {ERROR}",
-+            "PATH", path, "ERROR", e);
-+        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
-+    }
-+
-+    associationDefinitionsIntf->associations(
-+        {{"chassis", "all_sensors", associationPath.c_str()}});
-+
-+    double maxValue = std::numeric_limits<double>::quiet_NaN();
-+    double minValue = std::numeric_limits<double>::quiet_NaN();
-+
-+    switch (pdr->sensor_data_size)
-+    {
-+        case PLDM_SENSOR_DATA_SIZE_UINT8:
-+            maxValue = pdr->max_readable.value_u8;
-+            minValue = pdr->min_readable.value_u8;
-+            hysteresis = pdr->hysteresis.value_u8;
-+            break;
-+        case PLDM_SENSOR_DATA_SIZE_SINT8:
-+            maxValue = pdr->max_readable.value_s8;
-+            minValue = pdr->min_readable.value_s8;
-+            hysteresis = pdr->hysteresis.value_s8;
-+            break;
-+        case PLDM_SENSOR_DATA_SIZE_UINT16:
-+            maxValue = pdr->max_readable.value_u16;
-+            minValue = pdr->min_readable.value_u16;
-+            hysteresis = pdr->hysteresis.value_u16;
-+            break;
-+        case PLDM_SENSOR_DATA_SIZE_SINT16:
-+            maxValue = pdr->max_readable.value_s16;
-+            minValue = pdr->min_readable.value_s16;
-+            hysteresis = pdr->hysteresis.value_s16;
-+            break;
-+        case PLDM_SENSOR_DATA_SIZE_UINT32:
-+            maxValue = pdr->max_readable.value_u32;
-+            minValue = pdr->min_readable.value_u32;
-+            hysteresis = pdr->hysteresis.value_u32;
-+            break;
-+        case PLDM_SENSOR_DATA_SIZE_SINT32:
-+            maxValue = pdr->max_readable.value_s32;
-+            minValue = pdr->min_readable.value_s32;
-+            hysteresis = pdr->hysteresis.value_s32;
-+            break;
-+    }
-+
-+    bool hasCriticalThresholds = false;
-+    bool hasWarningThresholds = false;
-+    double criticalHigh = std::numeric_limits<double>::quiet_NaN();
-+    double criticalLow = std::numeric_limits<double>::quiet_NaN();
-+    double warningHigh = std::numeric_limits<double>::quiet_NaN();
-+    double warningLow = std::numeric_limits<double>::quiet_NaN();
-+
-+    if (pdr->supported_thresholds.bits.bit0)
-+    {
-+        hasWarningThresholds = true;
-+        switch (pdr->range_field_format)
-+        {
-+            case PLDM_RANGE_FIELD_FORMAT_UINT8:
-+                warningHigh = pdr->warning_high.value_u8;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT8:
-+                warningHigh = pdr->warning_high.value_s8;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_UINT16:
-+                warningHigh = pdr->warning_high.value_u16;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT16:
-+                warningHigh = pdr->warning_high.value_s16;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_UINT32:
-+                warningHigh = pdr->warning_high.value_u32;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT32:
-+                warningHigh = pdr->warning_high.value_s32;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_REAL32:
-+                warningHigh = pdr->warning_high.value_f32;
-+                break;
-+        }
-+    }
-+
-+    if (pdr->supported_thresholds.bits.bit3)
-+    {
-+        hasWarningThresholds = true;
-+        switch (pdr->range_field_format)
-+        {
-+            case PLDM_RANGE_FIELD_FORMAT_UINT8:
-+                warningLow = pdr->warning_low.value_u8;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT8:
-+                warningLow = pdr->warning_low.value_s8;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_UINT16:
-+                warningLow = pdr->warning_low.value_u16;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT16:
-+                warningLow = pdr->warning_low.value_s16;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_UINT32:
-+                warningLow = pdr->warning_low.value_u32;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT32:
-+                warningLow = pdr->warning_low.value_s32;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_REAL32:
-+                warningLow = pdr->warning_low.value_f32;
-+                break;
-+        }
-+    }
-+
-+    if (pdr->supported_thresholds.bits.bit1)
-+    {
-+        hasCriticalThresholds = true;
-+        switch (pdr->range_field_format)
-+        {
-+            case PLDM_RANGE_FIELD_FORMAT_UINT8:
-+                criticalHigh = pdr->critical_high.value_u8;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT8:
-+                criticalHigh = pdr->critical_high.value_s8;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_UINT16:
-+                criticalHigh = pdr->critical_high.value_u16;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT16:
-+                criticalHigh = pdr->critical_high.value_s16;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_UINT32:
-+                criticalHigh = pdr->critical_high.value_u32;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT32:
-+                criticalHigh = pdr->critical_high.value_s32;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_REAL32:
-+                criticalHigh = pdr->critical_high.value_f32;
-+                break;
-+        }
-+    }
-+
-+    if (pdr->supported_thresholds.bits.bit4)
-+    {
-+        hasCriticalThresholds = true;
-+        switch (pdr->range_field_format)
-+        {
-+            case PLDM_RANGE_FIELD_FORMAT_UINT8:
-+                criticalLow = pdr->critical_low.value_u8;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT8:
-+                criticalLow = pdr->critical_low.value_s8;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_UINT16:
-+                criticalLow = pdr->critical_low.value_u16;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT16:
-+                criticalLow = pdr->critical_low.value_s16;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_UINT32:
-+                criticalLow = pdr->critical_low.value_u32;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_SINT32:
-+                criticalLow = pdr->critical_low.value_s32;
-+                break;
-+            case PLDM_RANGE_FIELD_FORMAT_REAL32:
-+                criticalLow = pdr->critical_low.value_f32;
-+                break;
-+        }
-+    }
-+
-+    resolution = pdr->resolution;
-+    offset = pdr->offset;
-+    baseUnitModifier = pdr->unit_modifier;
-+
-+    timeStamp = 0;
-+    updateTime = (uint64_t)DEFAULT_SENSOR_UPDATER_INTERVAL * 1000;
-+    if (!std::isnan(pdr->update_interval))
-+    {
-+        updateTime = pdr->update_interval * 1000000;
-+    }
-+
-+    try
-+    {
-+        valueIntf = std::make_unique<ValueIntf>(bus, path.c_str());
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create Value interface for numeric sensor {PATH} error - {ERROR}",
-+            "PATH", path, "ERROR", e);
-+        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
-+    }
-+    valueIntf->maxValue(unitModifier(conversionFormula(maxValue)));
-+    valueIntf->minValue(unitModifier(conversionFormula(minValue)));
-+    hysteresis = unitModifier(conversionFormula(hysteresis));
-+    valueIntf->unit(sensorUnit);
-+
-+    try
-+    {
-+        availabilityIntf = std::make_unique<AvailabilityIntf>(bus,
-+                                                              path.c_str());
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create Availability interface for numeric sensor {PATH} error - {ERROR}",
-+            "PATH", path, "ERROR", e);
-+        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
-+    }
-+    availabilityIntf->available(true);
-+
-+    try
-+    {
-+        operationalStatusIntf =
-+            std::make_unique<OperationalStatusIntf>(bus, path.c_str());
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create Operation status interface for numeric sensor {PATH} error - {ERROR}",
-+            "PATH", path, "ERROR", e);
-+        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
-+    }
-+    operationalStatusIntf->functional(!sensorDisabled);
-+
-+    if (hasWarningThresholds)
-+    {
-+        try
-+        {
-+            thresholdWarningIntf =
-+                std::make_unique<ThresholdWarningIntf>(bus, path.c_str());
-+        }
-+        catch (const sdbusplus::exception_t& e)
-+        {
-+            lg2::error(
-+                "Failed to create Threshold warning interface for numeric sensor {PATH} error - {ERROR}",
-+                "PATH", path, "ERROR", e);
-+            throw sdbusplus::xyz::openbmc_project::Common::Error::
-+                InvalidArgument();
-+        }
-+        thresholdWarningIntf->warningHigh(unitModifier(warningHigh));
-+        thresholdWarningIntf->warningLow(unitModifier(warningLow));
-+    }
-+
-+    if (hasCriticalThresholds)
-+    {
-+        try
-+        {
-+            thresholdCriticalIntf =
-+                std::make_unique<ThresholdCriticalIntf>(bus, path.c_str());
-+        }
-+        catch (const sdbusplus::exception_t& e)
-+        {
-+            lg2::error(
-+                "Failed to create Threshold critical interface for numeric sensor {PATH} error - {ERROR}",
-+                "PATH", path, "ERROR", e);
-+            throw sdbusplus::xyz::openbmc_project::Common::Error::
-+                InvalidArgument();
-+        }
-+        thresholdCriticalIntf->criticalHigh(unitModifier(criticalHigh));
-+        thresholdCriticalIntf->criticalLow(unitModifier(criticalLow));
-+    }
-+}
-+
-+NumericSensor::NumericSensor(
-+    const pldm_tid_t tid, const bool sensorDisabled,
-+    std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr,
-+    std::string& sensorName, std::string& associationPath) :
-+    tid(tid),
-+    sensorId(pdr->sensor_id), sensorName(sensorName), isPriority(false)
-+{
-+    std::string path;
-+    SensorUnit sensorUnit = SensorUnit::DegreesC;
-+
-+    switch (pdr->base_unit)
-+    {
-+        case PLDM_SENSOR_UNIT_DEGRESS_C:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/temperature/";
-+            sensorUnit = SensorUnit::DegreesC;
-+            break;
-+        case PLDM_SENSOR_UNIT_VOLTS:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/voltage/";
-+            sensorUnit = SensorUnit::Volts;
-+            break;
-+        case PLDM_SENSOR_UNIT_AMPS:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/current/";
-+            sensorUnit = SensorUnit::Amperes;
-+            break;
-+        case PLDM_SENSOR_UNIT_RPM:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/fan_pwm/";
-+            sensorUnit = SensorUnit::RPMS;
-+            break;
-+        case PLDM_SENSOR_UNIT_WATTS:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/power/";
-+            sensorUnit = SensorUnit::Watts;
-+            break;
-+        case PLDM_SENSOR_UNIT_JOULES:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/energy/";
-+            sensorUnit = SensorUnit::Joules;
-+            break;
-+        case PLDM_SENSOR_UNIT_PERCENTAGE:
-+            sensorNameSpace = "/xyz/openbmc_project/sensors/utilization/";
-+            sensorUnit = SensorUnit::Percent;
-+            break;
-+        default:
-+            lg2::error("Sensor {NAME} has Invalid baseUnit {UNIT}.", "NAME",
-+                       sensorName, "UNIT", pdr->base_unit);
-+            throw sdbusplus::xyz::openbmc_project::Common::Error::
-+                InvalidArgument();
-+            break;
-+    }
-+
-+    path = sensorNameSpace + sensorName;
-+    path = std::regex_replace(path, std::regex("[^a-zA-Z0-9_/]+"), "_");
-+
-+    auto& bus = pldm::utils::DBusHandler::getBus();
-+    try
-+    {
-+        associationDefinitionsIntf =
-+            std::make_unique<AssociationDefinitionsInft>(bus, path.c_str());
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create Association interface for compact numeric sensor {PATH} error - {ERROR}",
-+            "PATH", path, "ERROR", e);
-+        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
-+    }
-+    associationDefinitionsIntf->associations(
-+        {{"chassis", "all_sensors", associationPath.c_str()}});
-+
-+    double maxValue = std::numeric_limits<double>::quiet_NaN();
-+    double minValue = std::numeric_limits<double>::quiet_NaN();
-+    bool hasWarningThresholds = false;
-+    bool hasCriticalThresholds = false;
-+    double criticalHigh = std::numeric_limits<double>::quiet_NaN();
-+    double criticalLow = std::numeric_limits<double>::quiet_NaN();
-+    double warningHigh = std::numeric_limits<double>::quiet_NaN();
-+    double warningLow = std::numeric_limits<double>::quiet_NaN();
-+
-+    if (pdr->range_field_support.bits.bit0)
-+    {
-+        hasWarningThresholds = true;
-+        warningHigh = pdr->warning_high;
-+    }
-+    if (pdr->range_field_support.bits.bit1)
-+    {
-+        hasWarningThresholds = true;
-+        warningLow = pdr->warning_low;
-+    }
-+
-+    if (pdr->range_field_support.bits.bit2)
-+    {
-+        hasCriticalThresholds = true;
-+        criticalHigh = pdr->critical_high;
-+    }
-+
-+    if (pdr->range_field_support.bits.bit3)
-+    {
-+        hasCriticalThresholds = true;
-+        criticalLow = pdr->critical_low;
-+    }
-+
-+    resolution = std::numeric_limits<double>::quiet_NaN();
-+    offset = std::numeric_limits<double>::quiet_NaN();
-+    baseUnitModifier = pdr->unit_modifier;
-+
-+    timeStamp = 0;
-+    updateTime = (uint64_t)DEFAULT_SENSOR_UPDATER_INTERVAL * 1000;
-+    try
-+    {
-+        valueIntf = std::make_unique<ValueIntf>(bus, path.c_str());
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create Value interface for compact numeric sensor {PATH} error - {ERROR}",
-+            "PATH", path, "ERROR", e);
-+        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
-+    }
-+    valueIntf->maxValue(unitModifier(conversionFormula(maxValue)));
-+    valueIntf->minValue(unitModifier(conversionFormula(minValue)));
-+    hysteresis = unitModifier(conversionFormula(hysteresis));
-+    valueIntf->unit(sensorUnit);
-+
-+    try
-+    {
-+        availabilityIntf = std::make_unique<AvailabilityIntf>(bus,
-+                                                              path.c_str());
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create Availability interface for compact numeric sensor {PATH} error - {ERROR}",
-+            "PATH", path, "ERROR", e);
-+        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
-+    }
-+    availabilityIntf->available(true);
-+
-+    try
-+    {
-+        operationalStatusIntf =
-+            std::make_unique<OperationalStatusIntf>(bus, path.c_str());
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create Operational status interface for compact numeric sensor {PATH} error - {ERROR}",
-+            "PATH", path, "ERROR", e);
-+        throw sdbusplus::xyz::openbmc_project::Common::Error::InvalidArgument();
-+    }
-+    operationalStatusIntf->functional(!sensorDisabled);
-+
-+    if (hasWarningThresholds)
-+    {
-+        try
-+        {
-+            thresholdWarningIntf =
-+                std::make_unique<ThresholdWarningIntf>(bus, path.c_str());
-+        }
-+        catch (const sdbusplus::exception_t& e)
-+        {
-+            lg2::error(
-+                "Failed to create Warning threshold interface for compact numeric sensor {PATH} error - {ERROR}",
-+                "PATH", path, "ERROR", e);
-+            throw sdbusplus::xyz::openbmc_project::Common::Error::
-+                InvalidArgument();
-+        }
-+        thresholdWarningIntf->warningHigh(unitModifier(warningHigh));
-+        thresholdWarningIntf->warningLow(unitModifier(warningLow));
-+    }
-+
-+    if (hasCriticalThresholds)
-+    {
-+        try
-+        {
-+            thresholdCriticalIntf =
-+                std::make_unique<ThresholdCriticalIntf>(bus, path.c_str());
-+        }
-+        catch (const sdbusplus::exception_t& e)
-+        {
-+            lg2::error(
-+                "Failed to create Critical threshold interface for compact numeric sensor {PATH} error - {ERROR}",
-+                "PATH", path, "ERROR", e);
-+            throw sdbusplus::xyz::openbmc_project::Common::Error::
-+                InvalidArgument();
-+        }
-+        thresholdCriticalIntf->criticalHigh(unitModifier(criticalHigh));
-+        thresholdCriticalIntf->criticalLow(unitModifier(criticalLow));
-+    }
-+}
-+
-+double NumericSensor::conversionFormula(double value)
-+{
-+    double convertedValue = value;
-+    convertedValue *= std::isnan(resolution) ? 1 : resolution;
-+    convertedValue += std::isnan(offset) ? 0 : offset;
-+    return convertedValue;
-+}
-+
-+double NumericSensor::unitModifier(double value)
-+{
-+    return std::isnan(value) ? value : value * std::pow(10, baseUnitModifier);
-+}
+@@ -581,5 +581,151 @@ double NumericSensor::unitModifier(double value)
+ {
+     return std::isnan(value) ? value : value * std::pow(10, baseUnitModifier);
+ }
 +
 +void NumericSensor::updateReading(bool available, bool functional, double value)
 +{
@@ -859,70 +316,16 @@ index 0000000..e438061
 +        }
 +    }
 +}
-+} // namespace platform_mc
-+} // namespace pldm
+ } // namespace platform_mc
+ } // namespace pldm
 diff --git a/platform-mc/numeric_sensor.hpp b/platform-mc/numeric_sensor.hpp
-new file mode 100644
-index 0000000..ff9e286
---- /dev/null
+index 315787d..ff9e286 100644
+--- a/platform-mc/numeric_sensor.hpp
 +++ b/platform-mc/numeric_sensor.hpp
-@@ -0,0 +1,219 @@
-+#pragma once
-+
-+#include "libpldm/platform.h"
-+#include "libpldm/pldm.h"
-+
-+#include "common/types.hpp"
-+
-+#include <sdbusplus/server/object.hpp>
-+#include <xyz/openbmc_project/Association/Definitions/server.hpp>
-+#include <xyz/openbmc_project/Sensor/Threshold/Critical/server.hpp>
-+#include <xyz/openbmc_project/Sensor/Threshold/Warning/server.hpp>
-+#include <xyz/openbmc_project/Sensor/Value/server.hpp>
-+#include <xyz/openbmc_project/State/Decorator/Availability/server.hpp>
-+#include <xyz/openbmc_project/State/Decorator/OperationalStatus/server.hpp>
-+
-+#include <string>
-+
-+namespace pldm
-+{
-+namespace platform_mc
-+{
-+
-+using SensorUnit = sdbusplus::xyz::openbmc_project::Sensor::server::Value::Unit;
-+using ValueIntf = sdbusplus::server::object_t<
-+    sdbusplus::xyz::openbmc_project::Sensor::server::Value>;
-+using ThresholdWarningIntf = sdbusplus::server::object_t<
-+    sdbusplus::xyz::openbmc_project::Sensor::Threshold::server::Warning>;
-+using ThresholdCriticalIntf = sdbusplus::server::object_t<
-+    sdbusplus::xyz::openbmc_project::Sensor::Threshold::server::Critical>;
-+using OperationalStatusIntf =
-+    sdbusplus::server::object_t<sdbusplus::xyz::openbmc_project::State::
-+                                    Decorator::server::OperationalStatus>;
-+using AvailabilityIntf = sdbusplus::server::object_t<
-+    sdbusplus::xyz::openbmc_project::State::Decorator::server::Availability>;
-+using AssociationDefinitionsInft = sdbusplus::server::object_t<
-+    sdbusplus::xyz::openbmc_project::Association::server::Definitions>;
-+
-+/**
-+ * @brief NumericSensor
-+ *
-+ * This class handles sensor reading updated by sensor manager and export
-+ * status to D-Bus interface.
-+ */
-+class NumericSensor
-+{
-+  public:
-+    NumericSensor(const pldm_tid_t tid, const bool sensorDisabled,
-+                  std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr,
-+                  std::string& sensorName, std::string& associationPath);
-+
-+    NumericSensor(const pldm_tid_t tid, const bool sensorDisabled,
-+                  std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr,
-+                  std::string& sensorName, std::string& associationPath);
-+
-+    ~NumericSensor(){};
-+
+@@ -54,6 +54,15 @@ class NumericSensor
+ 
+     ~NumericSensor(){};
+ 
 +    /** @brief The function called by Sensor Manager to set sensor to
 +     * error status.
 +     */
@@ -932,21 +335,13 @@ index 0000000..ff9e286
 +     */
 +    void updateReading(bool available, bool functional, double value = 0);
 +
-+    /** @brief ConversionFormula is used to convert raw value to the unit
-+     * specified in PDR
-+     *
-+     *  @param[in] value - raw value
-+     *  @return double - converted value
-+     */
-+    double conversionFormula(double value);
-+
-+    /** @brief UnitModifier is used to apply the unit modifier specified in PDR
-+     *
-+     *  @param[in] value - raw value
-+     *  @return double - converted value
-+     */
-+    double unitModifier(double value);
-+
+     /** @brief ConversionFormula is used to convert raw value to the unit
+      * specified in PDR
+      *
+@@ -69,12 +78,103 @@ class NumericSensor
+      */
+     double unitModifier(double value);
+ 
 +    /** @brief Check if value is over threshold.
 +     *
 +     *  @param[in] alarm - previous alarm state
@@ -1035,57 +430,31 @@ index 0000000..ff9e286
 +        }
 +    };
 +
-+    /** @brief Terminus ID which the sensor belongs to */
-+    pldm_tid_t tid;
-+
-+    /** @brief Sensor ID */
-+    uint16_t sensorId;
-+
+     /** @brief Terminus ID which the sensor belongs to */
+     pldm_tid_t tid;
+ 
+     /** @brief Sensor ID */
+     uint16_t sensorId;
+ 
 +    /** @brief  The time stamp since last getSensorReading command in usec */
 +    uint64_t timeStamp;
 +
-+    /** @brief  The time of sensor update interval in usec */
-+    uint64_t updateTime;
-+
-+    /** @brief  sensorName */
-+    std::string sensorName;
-+
-+    /** @brief  sensorNameSpace */
-+    std::string sensorNameSpace;
-+
-+    /** @brief indicate if sensor is polled in priority */
-+    bool isPriority;
-+
-+  private:
+     /** @brief  The time of sensor update interval in usec */
+     uint64_t updateTime;
+ 
+@@ -88,6 +188,12 @@ class NumericSensor
+     bool isPriority;
+ 
+   private:
 +    /**
 +     * @brief Check sensor reading if any threshold has been crossed and update
 +     * Threshold interfaces accordingly
 +     */
 +    void updateThresholds();
 +
-+    std::unique_ptr<ValueIntf> valueIntf = nullptr;
-+    std::unique_ptr<ThresholdWarningIntf> thresholdWarningIntf = nullptr;
-+    std::unique_ptr<ThresholdCriticalIntf> thresholdCriticalIntf = nullptr;
-+    std::unique_ptr<AvailabilityIntf> availabilityIntf = nullptr;
-+    std::unique_ptr<OperationalStatusIntf> operationalStatusIntf = nullptr;
-+    std::unique_ptr<AssociationDefinitionsInft> associationDefinitionsIntf =
-+        nullptr;
-+
-+    /** @brief Amount of hysteresis associated with the sensor thresholds */
-+    double hysteresis;
-+
-+    /** @brief The resolution of sensor in Units */
-+    double resolution;
-+
-+    /** @brief A constant value that is added in as part of conversion process
-+     * of converting a raw sensor reading to Units */
-+    double offset;
-+
-+    /** @brief A power-of-10 multiplier for baseUnit */
-+    int8_t baseUnitModifier;
-+};
-+} // namespace platform_mc
-+} // namespace pldm
+     std::unique_ptr<ValueIntf> valueIntf = nullptr;
+     std::unique_ptr<ThresholdWarningIntf> thresholdWarningIntf = nullptr;
+     std::unique_ptr<ThresholdCriticalIntf> thresholdCriticalIntf = nullptr;
 diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
 new file mode 100644
 index 0000000..97fbf1d
@@ -1626,7 +995,7 @@ index 0000000..861a3d4
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 2892dc1..da3e0d6 100644
+index 5b2ab3c..8be6139 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -15,7 +15,22 @@ namespace platform_mc
@@ -1653,24 +1022,7 @@ index 2892dc1..da3e0d6 100644
  
  bool Terminus::doesSupportType(uint8_t type)
  {
-@@ -177,6 +192,16 @@ void Terminus::parseTerminusPDRs()
-                   "NAME", tName.value());
-         terminusName = static_cast<std::string>(tName.value());
-     }
-+
-+    for (auto pdr : numericSensorPdrs)
-+    {
-+        addNumericSensor(pdr);
-+    }
-+
-+    for (auto pdr : compactNumericSensorPdrs)
-+    {
-+        addCompactNumericSensor(pdr);
-+    }
- }
- 
- std::shared_ptr<SensorAuxiliaryNames>
-@@ -324,11 +349,56 @@ std::shared_ptr<pldm_numeric_sensor_value_pdr>
+@@ -372,6 +387,8 @@ std::shared_ptr<pldm_numeric_sensor_value_pdr>
      auto rc = decode_numeric_sensor_pdr_data(ptr, pdr.size(), parsedPdr.get());
      if (rc)
      {
@@ -1679,178 +1031,6 @@ index 2892dc1..da3e0d6 100644
          return nullptr;
      }
      return parsedPdr;
- }
- 
-+void Terminus::addNumericSensor(
-+    const std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr)
-+{
-+    uint16_t sensorId = pdr->sensor_id;
-+    std::string sensorName = "PLDM_Device_" + std::to_string(sensorId) + "_" +
-+                             std::to_string(tid);
-+
-+    if (pdr->sensor_auxiliary_names_pdr)
-+    {
-+        auto sensorAuxiliaryNames = getSensorAuxiliaryNames(sensorId);
-+        if (sensorAuxiliaryNames)
-+        {
-+            const auto& [sensorId, sensorCnt,
-+                         sensorNames] = *sensorAuxiliaryNames;
-+            if (sensorCnt == 1)
-+            {
-+                for (const auto& [languageTag, name] : sensorNames[0])
-+                {
-+                    if (languageTag == "en")
-+                    {
-+                        sensorName = name + "_" + std::to_string(sensorId) +
-+                                     "_" + std::to_string(tid);
-+                    }
-+                }
-+            }
-+        }
-+    }
-+
-+    try
-+    {
-+        auto sensor = std::make_shared<NumericSensor>(
-+            tid, true, pdr, sensorName, inventoryPath);
-+        lg2::info("Created NumericSensor {NAME}", "NAME", sensorName);
-+        numericSensors.emplace_back(sensor);
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create NumericSensor. error - {ERROR} sensorname - {NAME}",
-+            "ERROR", e, "NAME", sensorName);
-+    }
-+}
-+
- std::shared_ptr<SensorAuxiliaryNames>
-     Terminus::parseCompactNumericSensorNames(const std::vector<uint8_t>& sPdr)
- {
-@@ -393,5 +463,46 @@ std::shared_ptr<pldm_compact_numeric_sensor_pdr>
-     return parsedPdr;
- }
- 
-+void Terminus::addCompactNumericSensor(
-+    const std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr)
-+{
-+    uint16_t sensorId = pdr->sensor_id;
-+    std::string sensorName = "PLDM_Device_" + std::to_string(sensorId) + "_" +
-+                             std::to_string(tid);
-+
-+    auto sensorAuxiliaryNames = getSensorAuxiliaryNames(sensorId);
-+    if (sensorAuxiliaryNames)
-+    {
-+        const auto& [sensorId, sensorCnt, sensorNames] = *sensorAuxiliaryNames;
-+        if (sensorCnt == 1)
-+        {
-+            for (const auto& [languageTag, name] : sensorNames[0])
-+            {
-+                if (languageTag == "en")
-+                {
-+                    {
-+                        sensorName = name + "_" + std::to_string(sensorId) +
-+                                     "_" + std::to_string(tid);
-+                    }
-+                }
-+            }
-+        }
-+    }
-+
-+    try
-+    {
-+        auto sensor = std::make_shared<NumericSensor>(
-+            tid, true, pdr, sensorName, inventoryPath);
-+        lg2::info("Created Compact NumericSensor {NAME}", "NAME", sensorName);
-+        numericSensors.emplace_back(sensor);
-+    }
-+    catch (const sdbusplus::exception_t& e)
-+    {
-+        lg2::error(
-+            "Failed to create Compact NumericSensor. error - {ERROR} sensorname - {NAME}",
-+            "ERROR", e, "NAME", sensorName);
-+    }
-+}
-+
- } // namespace platform_mc
- } // namespace pldm
-diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index aacf288..13d114b 100644
---- a/platform-mc/terminus.hpp
-+++ b/platform-mc/terminus.hpp
-@@ -3,7 +3,9 @@
- #include "libpldm/platform.h"
- 
- #include "common/types.hpp"
-+#include "numeric_sensor.hpp"
- #include "requester/handler.hpp"
-+#include "terminus.hpp"
- 
- #include <sdbusplus/server/object.hpp>
- #include <sdeventplus/event.hpp>
-@@ -32,6 +34,8 @@ using SensorName = std::string;
- using SensorAuxiliaryNames = std::tuple<
-     SensorId, SensorCnt,
-     std::vector<std::vector<std::pair<NameLanguageTag, SensorName>>>>;
-+using InventoryItemBoardIntf = sdbusplus::server::object_t<
-+    sdbusplus::xyz::openbmc_project::Inventory::Item::server::Board>;
- 
- /** @struct EntityKey
-  *
-@@ -129,6 +133,9 @@ class Terminus
-     /** @brief A flag to indicate if terminus has been initialized */
-     bool initialized = false;
- 
-+    /** @brief A list of numericSensors */
-+    std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
-+
-     /** @brief Get Sensor Auxiliary Names by sensorID
-      *
-      *  @param[in] id - sensor ID
-@@ -143,6 +150,15 @@ class Terminus
-      */
-     std::optional<std::string_view> findTerminusName();
- 
-+    /** @brief Construct the NumericSensor sensor class for the PLDM sensor.
-+     *         The NumericSensor class will handle create D-Bus object path,
-+     *         provide the APIs to update sensor value, threshold...
-+     *
-+     *  @param[in] pdr - the numeric sensor PDR info
-+     */
-+    void addNumericSensor(
-+        const std::shared_ptr<pldm_numeric_sensor_value_pdr> pdr);
-+
-     /** @brief Parse the numeric sensor PDRs
-      *
-      *  @param[in] pdrData - the response PDRs from GetPDR command
-@@ -167,6 +183,14 @@ class Terminus
-     std::shared_ptr<EntityAuxiliaryNames>
-         parseEntityAuxiliaryNamesPDR(const std::vector<uint8_t>& pdrData);
- 
-+    /** @brief Construct the NumericSensor sensor class for the compact numeric
-+     *         PLDM sensor.
-+     *
-+     *  @param[in] pdr - the compact numeric sensor PDR info
-+     */
-+    void addCompactNumericSensor(
-+        const std::shared_ptr<pldm_compact_numeric_sensor_pdr> pdr);
-+
-     /** @brief Parse the compact numeric sensor PDRs
-      *
-      *  @param[in] pdrData - the response PDRs from GetPDR command
-@@ -209,6 +233,12 @@ class Terminus
- 
-     /** @brief Terminus name */
-     EntityName terminusName{};
-+
-+    /* @brief The pointer of iventory D-Bus interface for the terminus */
-+    std::unique_ptr<InventoryItemBoardIntf> inventoryItemBoardInft = nullptr;
-+
-+    /* @brief Inventory D-Bus object path of the terminus */
-+    std::string inventoryPath;
- };
- } // namespace platform_mc
- } // namespace pldm
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
 index 93fdb09..4401bef 100644
 --- a/platform-mc/terminus_manager.cpp
@@ -1900,19 +1080,18 @@ index 93fdb09..4401bef 100644
          termini.erase(it);
      }
 diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
-index 8c4f570..64177cc 100644
+index 6b95f90..64177cc 100644
 --- a/platform-mc/test/meson.build
 +++ b/platform-mc/test/meson.build
-@@ -4,6 +4,8 @@ test_src = declare_dependency(
+@@ -4,6 +4,7 @@ test_src = declare_dependency(
              '../terminus.cpp',
              '../platform_manager.cpp',
              '../manager.cpp',
 +            '../sensor_manager.cpp',
-+            '../numeric_sensor.cpp',
+             '../numeric_sensor.cpp',
              '../../requester/mctp_endpoint_discovery.cpp'],
              include_directories: ['../../requester', '../../pldmd'])
- 
-@@ -11,6 +13,8 @@ tests = [
+@@ -12,6 +13,8 @@ tests = [
    'terminus_manager_test',
    'terminus_test',
    'platform_manager_test',
@@ -2422,5 +1601,5 @@ index 39e1213..e5cc47c 100644
      InstanceIdDb instanceIdDb;
      dbus_api::Requester dbusImplReq(bus, "/xyz/openbmc_project/pldm",
 -- 
-2.44.2
+2.43.5
 

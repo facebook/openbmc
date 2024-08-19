@@ -1,4 +1,4 @@
-From f9a18f690107b94b8c62551f7b8bd5edd447f70a Mon Sep 17 00:00:00 2001
+From b327ff2077bc54eb764864e40464616e3beb40b9 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 03/13] requester: support multi-host MCTP devices hot plug
@@ -106,10 +106,10 @@ index 6b8ea7c..c44d7dc 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index d9b133a..d391ec2 100644
+index 73bf679..d457c38 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -183,6 +183,7 @@ executable(
+@@ -184,6 +184,7 @@ executable(
    'platform-mc/numeric_sensor.cpp',
    'platform-mc/event_manager.cpp',
    'requester/mctp_endpoint_discovery.cpp',
@@ -615,5 +615,5 @@ index a08a990..3384793 100644
                           phosphor_logging_dep,
                           sdbusplus,
 -- 
-2.44.2
+2.43.5
 

@@ -1,4 +1,4 @@
-From 5fa76b27c826036732507512826167e06ecfa5c3 Mon Sep 17 00:00:00 2001
+From efc3453b750a74c05310be01d007948f854b7378 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Wed, 26 Jun 2024 14:25:18 +0800
 Subject: [PATCH 09/13] Support OEM-META command for Event Logs from BIC
@@ -273,5 +273,5 @@ index 0000000..6b75ca7
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.44.2
+2.43.5
 

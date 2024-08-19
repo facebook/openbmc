@@ -1,4 +1,4 @@
-From 430435c5844fd4b2643a67f88f681fce1a241d3a Mon Sep 17 00:00:00 2001
+From 90d5b3d84aac1e25446712226304341742e9463c Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Fri, 28 Jun 2024 11:19:43 +0800
 Subject: [PATCH 11/13] oem-meta: Add APML alert handler
@@ -191,5 +191,5 @@ index 0000000..c3e246f
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.44.2
+2.43.5
 

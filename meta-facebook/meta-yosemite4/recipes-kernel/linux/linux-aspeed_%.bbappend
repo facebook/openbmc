@@ -29,4 +29,5 @@ SRC_URI += " \
     file://0530-meta-facebook-yosemite4-update-dts-file-to-enable-mp.patch \
     file://0531-ARM-dts-aspeed-yosemite4-adjust-mgm-cpld-ioexp.patch \
     file://0532-ARM-dts-aspeed-yosemite4-remove-mctp-driver-on-bus-1.patch \
+    file://0533-ARM-dts-aspeed-yosemite4-fix-GPIO-linename-typo.patch \
 "

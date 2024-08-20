@@ -1,0 +1,46 @@
+From 81e408e3a548aa0153633332b630e0cab60cf7c4 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Fri, 9 Aug 2024 11:04:11 +0800
+Subject: [PATCH 3/7] ARM: dts: aspeed: catalina: update io_expander7 &
+ io_expander8 line name
+
+io_expander7
+- P1-5: MCU_GPIO
+- P1-6: MCU_RST_N
+- P1-7: MCU_RECOVERY_N
+
+io_expander8
+- P1-5: SEC_MCU_GPIO
+- P1-6: SEC_MCU_RST_N
+- P1-7: SEC_MCU_RECOVERY_N
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+index d6127c6300726..4bda1ea8a046d 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+@@ -1024,7 +1024,7 @@ &io_expander7 {
+ 		"CX_TWARN_CX0_L","CX_TWARN_CX1_L",
+ 		"CX_OVT_SHDN_CX0","CX_OVT_SHDN_CX1",
+ 		"FNP_L_CX0","FNP_L_CX1",
+-		"","","","";
++		"","MCU_GPIO","MCU_RST_N","MCU_RECOVERY_N";
+ };
+ 
+ &io_expander8 {
+@@ -1035,7 +1035,7 @@ &io_expander8 {
+ 		"SEC_CX_TWARN_CX0_L","SEC_CX_TWARN_CX1_L",
+ 		"SEC_CX_OVT_SHDN_CX0","SEC_CX_OVT_SHDN_CX1",
+ 		"SEC_FNP_L_CX0","SEC_FNP_L_CX1",
+-		"","","","";
++		"","SEC_MCU_GPIO","SEC_MCU_RST_N","SEC_MCU_RECOVERY_N";
+ };
+ 
+ &io_expander9 {
+-- 
+2.31.1
+

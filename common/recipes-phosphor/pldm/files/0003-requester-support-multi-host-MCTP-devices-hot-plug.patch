@@ -1,4 +1,4 @@
-From b327ff2077bc54eb764864e40464616e3beb40b9 Mon Sep 17 00:00:00 2001
+From cebc8047dc29b6e304e58da6fa5517f669e320a0 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 03/13] requester: support multi-host MCTP devices hot plug
@@ -26,15 +26,17 @@ Change-Id: I59b8bf434576cbdea651848a8da11e5b870e2dfa
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
  common/test/mocked_utils.hpp                  |   4 +
+ common/types.hpp                              |   2 +-
  common/utils.cpp                              |  17 ++
- common/utils.hpp                              |   7 +
+ common/utils.hpp                              |   9 +-
+ libpldmresponder/fru.hpp                      |   2 +-
  meson.build                                   |   1 +
  pldmd/pldmd.cpp                               |   8 +-
- requester/configuration_discovery_handler.cpp | 170 ++++++++++++++++++
- requester/configuration_discovery_handler.hpp | 134 ++++++++++++++
+ requester/configuration_discovery_handler.cpp | 176 ++++++++++++++++++
+ requester/configuration_discovery_handler.hpp | 134 +++++++++++++
  .../configuration_discovery_handler_test.cpp  | 115 ++++++++++++
  requester/test/meson.build                    |   3 +
- 9 files changed, 458 insertions(+), 1 deletion(-)
+ 11 files changed, 467 insertions(+), 4 deletions(-)
  create mode 100644 requester/configuration_discovery_handler.cpp
  create mode 100644 requester/configuration_discovery_handler.hpp
  create mode 100644 requester/test/configuration_discovery_handler_test.cpp
@@ -52,6 +54,19 @@ index e42677c..744adb8 100644
 +                (const std::string&, const std::string&, const std::string&),
 +                (const override));
  };
+diff --git a/common/types.hpp b/common/types.hpp
+index 1a91235..559b0d3 100644
+--- a/common/types.hpp
++++ b/common/types.hpp
+@@ -63,7 +63,7 @@ using Property = std::string;
+ using PropertyType = std::string;
+ using Value =
+     std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
+-                 uint64_t, double, std::string, std::vector<uint8_t>>;
++                 uint64_t, double, std::string, std::vector<uint8_t>, std::vector<uint64_t>>;
+ 
+ using PropertyMap = std::map<Property, Value>;
+ using InterfaceMap = std::map<Interface, PropertyMap>;
 diff --git a/common/utils.cpp b/common/utils.cpp
 index 1cd5a72..5cdaece 100644
 --- a/common/utils.cpp
@@ -81,9 +96,18 @@ index 1cd5a72..5cdaece 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 6b8ea7c..c44d7dc 100644
+index 6b8ea7c..8de6ee7 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
+@@ -149,7 +149,7 @@ struct DBusMapping
+ 
+ using PropertyValue =
+     std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
+-                 uint64_t, double, std::string, std::vector<uint8_t>,
++                 uint64_t, double, std::string, std::vector<uint8_t>, std::vector<uint64_t>,
+                  std::vector<std::string>>;
+ using DbusProp = std::string;
+ using DbusChangedProps = std::map<DbusProp, PropertyValue>;
 @@ -202,6 +202,10 @@ class DBusHandlerInterface
      virtual PropertyMap
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
@@ -105,6 +129,19 @@ index 6b8ea7c..c44d7dc 100644
      /** @brief The template function to get property from the requested dbus
       *         path
       *
+diff --git a/libpldmresponder/fru.hpp b/libpldmresponder/fru.hpp
+index a0757e6..bcc60bb 100644
+--- a/libpldmresponder/fru.hpp
++++ b/libpldmresponder/fru.hpp
+@@ -26,7 +26,7 @@ namespace dbus
+ 
+ using Value = std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t,
+                            int64_t, uint64_t, double, std::string,
+-                           std::vector<uint8_t>, std::vector<std::string>>;
++                           std::vector<uint8_t>, std::vector<uint64_t>, std::vector<std::string>>;
+ using PropertyMap = std::map<Property, Value>;
+ using InterfaceMap = std::map<Interface, PropertyMap>;
+ using ObjectValueTree = std::map<sdbusplus::message::object_path, InterfaceMap>;
 diff --git a/meson.build b/meson.build
 index 73bf679..d457c38 100644
 --- a/meson.build
@@ -152,10 +189,10 @@ index f33f9fa..98d13f1 100644
          if (!(revents & EPOLLIN))
 diff --git a/requester/configuration_discovery_handler.cpp b/requester/configuration_discovery_handler.cpp
 new file mode 100644
-index 0000000..ac297e1
+index 0000000..4e43767
 --- /dev/null
 +++ b/requester/configuration_discovery_handler.cpp
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,176 @@
 +#include "configuration_discovery_handler.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -275,7 +312,13 @@ index 0000000..ac297e1
 +    if (response.contains("Address") && response.contains("Bus") &&
 +        response.contains("EndpointId") && response.contains("Name"))
 +    {
-+        auto address = std::get<uint64_t>(response.at("Address"));
++        auto addressArray  = std::get<std::vector<uint64_t>>(response.at("Address"));
++        uint64_t address = 0;
++
++        for (const auto& element : addressArray) {
++            address = (address << 8) | element;
++        }
++
 +        auto eid = std::get<uint64_t>(response.at("EndpointId"));
 +        auto bus = std::get<uint64_t>(response.at("Bus"));
 +        auto componentName = std::get<std::string>(response.at("Name"));
@@ -615,5 +658,5 @@ index a08a990..3384793 100644
                           phosphor_logging_dep,
                           sdbusplus,
 -- 
-2.43.5
+2.25.1
 

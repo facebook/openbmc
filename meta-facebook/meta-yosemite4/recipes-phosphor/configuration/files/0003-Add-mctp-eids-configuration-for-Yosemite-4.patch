@@ -1,4 +1,4 @@
-From 3074ca94d8926e23ffe6d81d0937a71a83469a9d Mon Sep 17 00:00:00 2001
+From f81a184f5eca5bc9cba863e646d6b4e4e9cf7f47 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/6] Add mctp eids configuration for Yosemite 4
@@ -9,37 +9,42 @@ CodeConstuct/mctp will be able to know where those static EIDs located.
 The other services will be able to know what those EIDs stand for by the
 "Name" as well.
 
+Set the Address property to array so that mctpd could apply both I2C and
+I3C address.
+
 schemas: add `EndpointId` with type `string` and `number`.
 
 Tested: check D-Bus path for configuration.
 Change-Id: I587f5a69051f783753f5855d2f51242aa1cd5bc4
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- configurations/yosemite4_floatingfalls.json   | 17 ++++++++++++++-
- configurations/yosemite4_sentineldome_t1.json |  7 +++++++
- configurations/yosemite4_sentineldome_t2.json |  7 +++++++
- configurations/yosemite4_wailuafalls.json     | 21 +++++++++++++++++++
- schemas/legacy.json                           |  6 ++++++
- 5 files changed, 57 insertions(+), 1 deletion(-)
+ configurations/yosemite4_floatingfalls.json   | 19 ++++++++++++++-
+ configurations/yosemite4_sentineldome_t1.json |  8 +++++++
+ configurations/yosemite4_sentineldome_t2.json |  8 +++++++
+ configurations/yosemite4_wailuafalls.json     | 24 +++++++++++++++++++
+ schemas/legacy.json                           |  6 +++++
+ 5 files changed, 64 insertions(+), 1 deletion(-)
 
 diff --git a/configurations/yosemite4_floatingfalls.json b/configurations/yosemite4_floatingfalls.json
-index 1ee4e91..00d300e 100644
+index 1ee4e91..5a9cb31 100644
 --- a/configurations/yosemite4_floatingfalls.json
 +++ b/configurations/yosemite4_floatingfalls.json
-@@ -1,5 +1,20 @@
+@@ -1,5 +1,22 @@
  {
 -    "Exposes": [],
 +    "Exposes": [
 +        {
-+            "Address": "0x20",
++            "Address": ["0x20"],
 +            "Bus": "$bus % 16",
++            "Class": "I2C",
 +            "EndpointId": "$bus % 15 * 10 + 1",
 +            "Name": "BIC",
 +            "Type": "MCTPEndpoint"
 +        },
 +        {
-+            "Address": "0x20",
++            "Address": ["0x20"],
 +            "Bus": "$bus % 16",
++            "Class": "I2C",
 +            "EndpointId": "$bus % 15 * 10 + 3",
 +            "Name": "CXL",
 +            "Type": "MCTPEndpoint"
@@ -49,17 +54,18 @@ index 1ee4e91..00d300e 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Floating Falls', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
      "Type": "Board",
 diff --git a/configurations/yosemite4_sentineldome_t1.json b/configurations/yosemite4_sentineldome_t1.json
-index 47d2c70..2477d38 100644
+index 47d2c70..3cecee7 100644
 --- a/configurations/yosemite4_sentineldome_t1.json
 +++ b/configurations/yosemite4_sentineldome_t1.json
-@@ -328,6 +328,13 @@
+@@ -328,6 +328,14 @@
              "Zones": [
                  "Zone 1"
              ]
 +        },
 +        {
-+            "Address": "0x20",
++            "Address": ["0x20"],
 +            "Bus": "$bus % 16",
++            "Class": "I2C",
 +            "EndpointId": "$bus % 15 * 10",
 +            "Name": "BIC",
 +            "Type": "MCTPEndpoint"
@@ -67,17 +73,18 @@ index 47d2c70..2477d38 100644
      ],
      "Name": "Yosemite 4 Sentinel Dome T1 Slot $bus % 15",
 diff --git a/configurations/yosemite4_sentineldome_t2.json b/configurations/yosemite4_sentineldome_t2.json
-index 722ee02..c98d3d1 100644
+index 722ee02..f150ff0 100644
 --- a/configurations/yosemite4_sentineldome_t2.json
 +++ b/configurations/yosemite4_sentineldome_t2.json
-@@ -422,6 +422,13 @@
+@@ -422,6 +422,14 @@
              "Zones": [
                  "Zone 1"
              ]
 +        },
 +        {
-+            "Address": "0x20",
++            "Address": ["0x20"],
 +            "Bus": "$bus % 16",
++            "Class": "I2C",
 +            "EndpointId": "$bus % 15 * 10",
 +            "Name": "BIC",
 +            "Type": "MCTPEndpoint"
@@ -85,31 +92,34 @@ index 722ee02..c98d3d1 100644
      ],
      "Name": "Yosemite 4 Sentinel Dome T2 Slot $bus % 15",
 diff --git a/configurations/yosemite4_wailuafalls.json b/configurations/yosemite4_wailuafalls.json
-index 24eafa1..da25370 100644
+index 24eafa1..3fa9dd4 100644
 --- a/configurations/yosemite4_wailuafalls.json
 +++ b/configurations/yosemite4_wailuafalls.json
-@@ -207,6 +207,27 @@
+@@ -207,6 +207,30 @@
              "Zones": [
                  "Zone 1"
              ]
 +        },
 +        {
-+            "Address": "0x20",
++            "Address": ["0x20"],
 +            "Bus": "$bus % 16",
++            "Class": "I2C",
 +            "EndpointId": "$bus % 15 * 10 + 2",
 +            "Name": "BIC",
 +            "Type": "MCTPEndpoint"
 +        },
 +        {
-+            "Address": "0x20",
++            "Address": ["0x20"],
 +            "Bus": "$bus % 16",
++            "Class": "I2C",
 +            "EndpointId": "$bus % 15 * 10 + 4",
 +            "Name": "CXL1",
 +            "Type": "MCTPEndpoint"
 +        },
 +        {
-+            "Address": "0x20",
++            "Address": ["0x20"],
 +            "Bus": "$bus % 16",
++            "Class": "I2C",
 +            "EndpointId": "$bus % 15 * 10 + 5",
 +            "Name": "CXL2",
 +            "Type": "MCTPEndpoint"
@@ -141,5 +151,5 @@ index cc5d735..3778744 100644
                  "type": "number"
              },
 -- 
-2.44.2
+2.25.1
 

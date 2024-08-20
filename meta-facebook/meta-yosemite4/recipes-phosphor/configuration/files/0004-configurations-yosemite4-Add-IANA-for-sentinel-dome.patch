@@ -1,4 +1,4 @@
-From 65969e501f5b59ba252a8b3e7880603fd5912e32 Mon Sep 17 00:00:00 2001
+From 759dafc3effc92c06abac4ffc4d51a8b7f0e7621 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 7 Mar 2024 10:41:16 +0800
 Subject: [PATCH 4/6] configurations: yosemite4: Add IANA for sentinel dome
@@ -20,24 +20,24 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  3 files changed, 8 insertions(+)
 
 diff --git a/configurations/yosemite4_sentineldome_t1.json b/configurations/yosemite4_sentineldome_t1.json
-index 2477d38..8cc179a 100644
+index 3cecee7..6490478 100644
 --- a/configurations/yosemite4_sentineldome_t1.json
 +++ b/configurations/yosemite4_sentineldome_t1.json
-@@ -333,6 +333,7 @@
-             "Address": "0x20",
+@@ -334,6 +334,7 @@
              "Bus": "$bus % 16",
+             "Class": "I2C",
              "EndpointId": "$bus % 15 * 10",
 +            "IANA": "0015A000",
              "Name": "BIC",
              "Type": "MCTPEndpoint"
          }
 diff --git a/configurations/yosemite4_sentineldome_t2.json b/configurations/yosemite4_sentineldome_t2.json
-index c98d3d1..46584ac 100644
+index f150ff0..10b902b 100644
 --- a/configurations/yosemite4_sentineldome_t2.json
 +++ b/configurations/yosemite4_sentineldome_t2.json
-@@ -427,6 +427,7 @@
-             "Address": "0x20",
+@@ -428,6 +428,7 @@
              "Bus": "$bus % 16",
+             "Class": "I2C",
              "EndpointId": "$bus % 15 * 10",
 +            "IANA": "0015A000",
              "Name": "BIC",
@@ -68,5 +68,5 @@ index 3778744..8e2b1d5 100644
                  "type": "number"
              },
 -- 
-2.44.2
+2.25.1
 

@@ -1,4 +1,4 @@
-From 8de7934b54bd371f78af52e9806729613ab36646 Mon Sep 17 00:00:00 2001
+From 8d59eb74c8afbdf782112ab7251b342c4e57ec72 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Wed, 11 Oct 2023 14:31:47 +0800
 Subject: [PATCH] Support get static eid config from entity manager
@@ -9,7 +9,7 @@ Then it will send get EID command to target device. If we the get
 the response, we publish the EID on the D-Bus.
 
 Changes:
-- Scan D-Bus for static EIDs config.
+- Scan D-Bus for static EIDs config, could apply both mctp-i2c and mctp-i3c config.
 - Add a method that rescans entity-manager config for EIDs.
 - Add matches for monitoring InterfaceAdded and InterfaceRemoved from entity-manger.
 - Add association definition interface for EIDs that came from entity-manager config.
@@ -32,11 +32,11 @@ root@bmc:~# pldmtool base GetTID -m 60
 
 Signed-off-by: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 ---
- src/mctpd.c | 525 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 517 insertions(+), 8 deletions(-)
+ src/mctpd.c | 582 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 574 insertions(+), 8 deletions(-)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index 88a8506..6431788 100644
+index b89b01b..a33bea8 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
 @@ -38,6 +38,12 @@
@@ -158,13 +158,15 @@ index 88a8506..6431788 100644
  		if (rc == -EEXIST)
  			return sd_bus_error_setf(berr, SD_BUS_ERROR_FILE_EXISTS,
  					"Endpoint claimed EID %d which is already used",
-@@ -1666,6 +1709,160 @@ static int message_read_hwaddr(sd_bus_message *call, dest_phys* dest)
+@@ -1666,6 +1709,191 @@ static int message_read_hwaddr(sd_bus_message *call, dest_phys* dest)
  	return 0;
  }
  
 +static int setup_static_eid(ctx *ctx)
 +{
 +	char **object_paths;
++	const char *bmc_interface_p;
++	char bmc_interface[MAX_STRING_SIZE];
 +	int net;
 +	dest_phys desti = {0}, *dest = &desti;
 +	peer *peer = NULL;
@@ -215,24 +217,49 @@ index 88a8506..6431788 100644
 +
 +		message = sd_bus_message_unref(message);
 +
++		// Read BMC interface from Class
++		rc = sd_bus_get_property(ctx->bus,
++			OPENBMC_ENTITY_MANAGER, object_paths[i],
++			OPENBMC_MCTP_CONFIG_IFACE, "Class",
++			&error, &message, "s");
++		if (rc < 0) {
++			warnx("Failed to get Class from %s. Error:%s", object_paths[i],
++				error.message);
++			break;
++		}
++		memset(bmc_interface, 0x0, MAX_STRING_SIZE);
++		bmc_interface_p = NULL;
++		sd_bus_message_read(message, "s", &bmc_interface_p);
++		strncpy(bmc_interface, bmc_interface_p, MAX_STRING_SIZE - 1);
++		bmc_interface[MAX_STRING_SIZE - 1] = '\0';
++
++		message = sd_bus_message_unref(message);
++
++		// Read Address
 +		rc = sd_bus_get_property(ctx->bus,
 +			OPENBMC_ENTITY_MANAGER, object_paths[i],
 +			OPENBMC_MCTP_CONFIG_IFACE, "Address",
-+			&error, &message, "t");
++			&error, &message, "at");
 +		if (rc < 0) {
 +			warnx("Failed to get address from %s. Error:%s", object_paths[i],
 +				error.message);
 +			break;
 +		}
 +
-+		sd_bus_message_read(message, "t", &data);
++		const void* msg_hwaddr = NULL;
++		size_t msg_hwaddr_len;
++		sd_bus_message_read_array(message, 't', &msg_hwaddr, &msg_hwaddr_len);
++		const uint64_t* hwaddr_array = (const uint64_t*)msg_hwaddr;
 +
-+		size_t size = sizeof(uint8_t);
-+		memcpy(dest->hwaddr, &data, size);
-+		dest->hwaddr_len = size;
++		memset(dest->hwaddr, 0x0, MAX_ADDR_LEN);
++		for (int i = 0; i < msg_hwaddr_len; ++i) {
++			dest->hwaddr[i] = (uint8_t)hwaddr_array[i] & 0xFF;
++		}
++		dest->hwaddr_len = msg_hwaddr_len / sizeof(uint64_t);
 +
 +		message = sd_bus_message_unref(message);
 +
++		// Read Bus
 +		rc = sd_bus_get_property(ctx->bus,
 +			OPENBMC_ENTITY_MANAGER, object_paths[i],
 +			OPENBMC_MCTP_CONFIG_IFACE, "Bus",
@@ -244,9 +271,13 @@ index 88a8506..6431788 100644
 +		}
 +		uint64_t bus = 0;
 +		char ifname[MAX_STRING_SIZE];
++
 +		sd_bus_message_read(message, "t", &bus);
-+		// TODO: handle different interface name
-+		sprintf(ifname, "mctpi2c%ld", bus);
++		if (strcmp(bmc_interface, "I3C") == 0) {
++			sprintf(ifname, "mctpi3c%ld", bus);
++		} else {
++			sprintf(ifname, "mctpi2c%ld", bus);
++		}
 +
 +		dest->ifindex = mctp_nl_ifindex_byname(ctx->nl, ifname);
 +		if (dest->ifindex <= 0) {
@@ -319,7 +350,7 @@ index 88a8506..6431788 100644
  /* SetupEndpoint method tries the following in order:
    - request Get Endpoint ID to add to the known table, return that
    - request Set Endpoint ID, return that */
-@@ -1832,6 +2029,20 @@ err:
+@@ -1832,6 +2060,20 @@ err:
  	return rc;
  }
  
@@ -340,7 +371,7 @@ index 88a8506..6431788 100644
  // Query various properties of a peer.
  // To be called when a new peer is discovered/assigned, once an EID is known
  // and routable.
-@@ -2274,6 +2485,11 @@ static const sd_bus_vtable bus_mctpd_vtable[] = {
+@@ -2274,6 +2516,11 @@ static const sd_bus_vtable bus_mctpd_vtable[] = {
  		SD_BUS_PARAM(found),
  		method_learn_endpoint,
  		0),
@@ -352,7 +383,7 @@ index 88a8506..6431788 100644
  	SD_BUS_VTABLE_END,
  
  };
-@@ -2337,6 +2553,10 @@ static int bus_endpoint_get_prop(sd_bus *bus,
+@@ -2337,6 +2584,10 @@ static int bus_endpoint_get_prop(sd_bus *bus,
  	} else if (strcmp(property, "UUID") == 0 && peer->uuid) {
  		const char *s = dfree(bytes_to_uuid(peer->uuid));
  		rc = sd_bus_message_append(reply, "s", s);
@@ -363,7 +394,7 @@ index 88a8506..6431788 100644
  	} else {
  		printf("Unknown property '%s' for %s iface %s\n", property, path, interface);
  		rc = -ENOENT;
-@@ -2390,6 +2610,16 @@ static const sd_bus_vtable bus_endpoint_cc_vtable[] = {
+@@ -2390,6 +2641,16 @@ static const sd_bus_vtable bus_endpoint_cc_vtable[] = {
  	SD_BUS_VTABLE_END
  };
  
@@ -380,7 +411,7 @@ index 88a8506..6431788 100644
  static int bus_endpoint_find(sd_bus *bus, const char *path,
  	const char *interface, void *userdata, void **ret_found,
  	sd_bus_error *ret_error)
-@@ -2425,6 +2655,24 @@ static int bus_endpoint_find_uuid(sd_bus *bus, const char *path,
+@@ -2425,6 +2686,24 @@ static int bus_endpoint_find_uuid(sd_bus *bus, const char *path,
  	return 0;
  }
  
@@ -405,7 +436,7 @@ index 88a8506..6431788 100644
  static char* net_path(int net)
  {
  	size_t l;
-@@ -2584,6 +2832,225 @@ out:
+@@ -2584,6 +2863,251 @@ out:
  	return rc;
  }
  
@@ -436,12 +467,14 @@ index 88a8506..6431788 100644
 +			sd_bus_message_skip(m, "a{sv}");
 +		} else {
 +			sd_bus_message_enter_container(m, SD_BUS_TYPE_ARRAY, "{sv}");
-+			uint64_t data;
++			uint64_t data, bus;
 +			int net;
 +			mctp_eid_t eid;
 +			dest_phys desti = {0}, *dest = &desti;
 +			peer *peer = NULL;
 +			char ifname[MAX_STRING_SIZE];
++			const char *bmc_interface_p;
++			char bmc_interface[MAX_STRING_SIZE];
 +			while (!sd_bus_message_at_end(m, false)) {
 +				const char *key;
 +				rc = sd_bus_message_enter_container(m, SD_BUS_TYPE_DICT_ENTRY, "sv");
@@ -459,13 +492,18 @@ index 88a8506..6431788 100644
 +					if (rc < 0) {
 +						return rc;
 +					}
-+					rc = sd_bus_message_read(m, "t", &data);
++					const void* msg_hwaddr = NULL;
++					size_t msg_hwaddr_len;
++					rc = sd_bus_message_read_array(m, 't', &msg_hwaddr, &msg_hwaddr_len);
 +					if (rc < 0) {
 +						return rc;
 +					}
-+					size_t size = sizeof(uint8_t);
-+					memcpy(dest->hwaddr, &data, size);
-+					dest->hwaddr_len = size;
++					const uint64_t* hwaddr_array = (const uint64_t*)msg_hwaddr;
++					memset(dest->hwaddr, 0x0, MAX_ADDR_LEN);
++					for (int i = 0; i < msg_hwaddr_len; ++i) {
++						dest->hwaddr[i] = (uint8_t)hwaddr_array[i] & 0xFF;
++					}
++					dest->hwaddr_len = msg_hwaddr_len / sizeof(uint64_t);
 +					rc = sd_bus_message_exit_container(m); //exit variant
 +					if (rc < 0) {
 +						return rc;
@@ -475,12 +513,25 @@ index 88a8506..6431788 100644
 +					if (rc < 0) {
 +						return rc;
 +					}
-+					rc = sd_bus_message_read(m, "t", &data);
++					rc = sd_bus_message_read(m, "t", &bus);
 +					if (rc < 0) {
 +						return rc;
 +					}
-+					// TODO: handle different interface name
-+					sprintf(ifname, "mctpi2c%ld", data);
++					rc = sd_bus_message_exit_container(m); //exit variant
++					if (rc < 0) {
++						return rc;
++					}
++				} else if (strcmp(key, "Class") == 0) {
++					rc = sd_bus_message_enter_container(m, SD_BUS_TYPE_VARIANT, NULL);
++					if (rc < 0) {
++						return rc;
++					}
++					rc = sd_bus_message_read(m, "s", &bmc_interface_p);
++					if (rc < 0) {
++						return rc;
++					}
++					strncpy(bmc_interface, bmc_interface_p, MAX_STRING_SIZE - 1);
++					bmc_interface[MAX_STRING_SIZE - 1] = '\0';
 +					rc = sd_bus_message_exit_container(m); //exit variant
 +					if (rc < 0) {
 +						return rc;
@@ -511,6 +562,12 @@ index 88a8506..6431788 100644
 +			rc = sd_bus_message_exit_container(m); //exit array
 +			if (rc < 0) {
 +				return rc;
++			}
++
++			if (strcmp(bmc_interface, "I3C") == 0) {
++				sprintf(ifname, "mctpi3c%ld", bus);
++			} else {
++				sprintf(ifname, "mctpi2c%ld", bus);
 +			}
 +
 +			dest->ifindex = mctp_nl_ifindex_byname(ctx->nl, ifname);
@@ -631,7 +688,7 @@ index 88a8506..6431788 100644
  static int setup_bus(ctx *ctx)
  {
  	int rc;
-@@ -2655,6 +3122,17 @@ static int setup_bus(ctx *ctx)
+@@ -2655,6 +3179,17 @@ static int setup_bus(ctx *ctx)
  		goto out;
  	}
  
@@ -649,7 +706,7 @@ index 88a8506..6431788 100644
  	rc = sd_bus_add_object_manager(ctx->bus, NULL, MCTP_DBUS_PATH);
  	if (rc < 0) {
  		warnx("Adding object manager failed: %s", strerror(-rc));
-@@ -2668,6 +3146,36 @@ static int setup_bus(ctx *ctx)
+@@ -2668,6 +3203,36 @@ static int setup_bus(ctx *ctx)
  		goto out;
  	}
  
@@ -686,7 +743,7 @@ index 88a8506..6431788 100644
  	rc = 0;
  out:
  	return rc;
-@@ -2870,7 +3378,7 @@ static int add_local_eid(ctx *ctx, int net, int eid)
+@@ -2870,7 +3435,7 @@ static int add_local_eid(ctx *ctx, int net, int eid)
  		}
  	}
  
@@ -695,7 +752,7 @@ index 88a8506..6431788 100644
  	if (rc < 0) {
  		warn("BUG: Error adding local eid %d net %d", eid, net);
  		return rc;
-@@ -3021,7 +3529,7 @@ static int setup_testing(ctx *ctx) {
+@@ -3021,7 +3586,7 @@ static int setup_testing(ctx *ctx) {
  			for (i = 0; i < 256; i++)
  				ctx->nets[j].peeridx[i] = -1;
  
@@ -704,7 +761,7 @@ index 88a8506..6431788 100644
  		if (rc < 0) {
  			warnx("%s failed add_peer, %s", __func__, strerror(-rc));
  			return rc;
-@@ -3031,7 +3539,7 @@ static int setup_testing(ctx *ctx) {
+@@ -3031,7 +3596,7 @@ static int setup_testing(ctx *ctx) {
  		sd_id128_randomize((void*)peer->uuid);
  		publish_peer(peer, false);
  
@@ -713,7 +770,7 @@ index 88a8506..6431788 100644
  		if (rc < 0) {
  			warnx("%s failed add_peer, %s", __func__, strerror(-rc));
  			return rc;
-@@ -3044,7 +3552,7 @@ static int setup_testing(ctx *ctx) {
+@@ -3044,7 +3609,7 @@ static int setup_testing(ctx *ctx) {
  		peer->message_types[2] = 0x04;
  		publish_peer(peer, false);
  
@@ -722,7 +779,7 @@ index 88a8506..6431788 100644
  		if (rc < 0) {
  			warnx("%s failed add_peer, %s", __func__, strerror(-rc));
  			return rc;
-@@ -3192,6 +3700,8 @@ int main(int argc, char **argv)
+@@ -3192,6 +3757,8 @@ int main(int argc, char **argv)
  	if (rc < 0 && !ctx->testing)
  		return 1;
  
@@ -731,7 +788,7 @@ index 88a8506..6431788 100644
  	// TODO add net argument?
  	rc = listen_control_msg(ctx, MCTP_NET_ANY);
  	if (rc < 0) {
-@@ -3210,7 +3720,6 @@ int main(int argc, char **argv)
+@@ -3210,7 +3777,6 @@ int main(int argc, char **argv)
  	if (rc < 0)
  		return 1;
  

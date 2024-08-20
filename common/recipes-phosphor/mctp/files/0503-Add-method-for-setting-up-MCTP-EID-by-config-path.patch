@@ -1,19 +1,22 @@
-From 493b47a79dadef19123372b1cc362c2dc34395fc Mon Sep 17 00:00:00 2001
+From 8a756018dee070fc6a6d3100f2990aa8ef9786dc Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Thu, 11 Apr 2024 08:27:09 +0800
 Subject: [PATCH] Add method for setting up MCTP EID by config path
 
+Change:
+- Could apply both mctp-i2c and mctp-i3c config.
+
 The code have been update to
 https://github.com/CodeConstruct/mctp/pull/17
 ---
- src/mctpd.c | 162 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 162 insertions(+)
+ src/mctpd.c | 195 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 195 insertions(+)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index 3a68421..911e55e 100644
+index 0478c36..2cee003 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
-@@ -2129,6 +2129,156 @@ out:
+@@ -2160,6 +2160,189 @@ out:
  	return rc;
  }
  
@@ -23,6 +26,8 @@ index 3a68421..911e55e 100644
 +	int net;
 +	ctx *ctx = data;
 +	const char *object_path = NULL;
++	const char *bmc_interface_p = NULL;
++	char bmc_interface[MAX_STRING_SIZE];
 +	char ifname[MAX_STRING_SIZE];
 +	char parent_path[MAX_STRING_SIZE];
 +	char *peer_path;
@@ -39,6 +44,7 @@ index 3a68421..911e55e 100644
 +	if (rc < 0)
 +		goto err;
 +
++	// Read EndpointId
 +	rc = sd_bus_get_property(ctx->bus,
 +		OPENBMC_ENTITY_MANAGER, object_path,
 +		OPENBMC_MCTP_CONFIG_IFACE, "EndpointId",
@@ -60,24 +66,50 @@ index 3a68421..911e55e 100644
 +
 +	message = sd_bus_message_unref(message);
 +
++	// Read BMC interface from Class
++	rc = sd_bus_get_property(ctx->bus,
++		OPENBMC_ENTITY_MANAGER, object_path,
++		OPENBMC_MCTP_CONFIG_IFACE, "Class",
++		&error, &message, "s");
++	if (rc < 0) {
++		warnx("Failed to get Class from %s. Error:%s", object_path,
++			error.message);
++		goto err;
++	}
++	memset(bmc_interface, 0x0, MAX_STRING_SIZE);
++	rc = sd_bus_message_read(message, "s", &bmc_interface_p);
++	if (rc < 0)
++		goto err;
++	strncpy(bmc_interface, bmc_interface_p, MAX_STRING_SIZE - 1);
++	bmc_interface[MAX_STRING_SIZE - 1] = '\0';
++
++	message = sd_bus_message_unref(message);
++
++	// Read Address
 +	rc = sd_bus_get_property(ctx->bus,
 +		OPENBMC_ENTITY_MANAGER, object_path,
 +		OPENBMC_MCTP_CONFIG_IFACE, "Address",
-+		&error, &message, "t");
++		&error, &message, "at");
 +	if (rc < 0) {
 +		warnx("Failed to get address from %s. Error:%s", object_path,
 +			error.message);
 +		goto err;
 +	}
 +
-+	sd_bus_message_read(message, "t", &data);
++	const void* msg_hwaddr = NULL;
++	size_t msg_hwaddr_len;
++	sd_bus_message_read_array(message, 't', &msg_hwaddr, &msg_hwaddr_len);
++	const uint64_t* hwaddr_array = (const uint64_t*)msg_hwaddr;
 +
-+	size_t size = sizeof(uint8_t);
-+	memcpy(dest->hwaddr, &data, size);
-+	dest->hwaddr_len = size;
++	memset(dest->hwaddr, 0x0, MAX_ADDR_LEN);
++	for (int i = 0; i < msg_hwaddr_len; ++i) {
++		dest->hwaddr[i] = (uint8_t)hwaddr_array[i] & 0xFF;
++	}
++	dest->hwaddr_len = msg_hwaddr_len / sizeof(uint64_t);
 +
 +	message = sd_bus_message_unref(message);
 +
++	// Read Bus
 +	rc = sd_bus_get_property(ctx->bus,
 +		OPENBMC_ENTITY_MANAGER, object_path,
 +		OPENBMC_MCTP_CONFIG_IFACE, "Bus",
@@ -89,8 +121,12 @@ index 3a68421..911e55e 100644
 +	}
 +	uint64_t bus = 0;
 +	sd_bus_message_read(message, "t", &bus);
-+	// TODO: handle different interface name
-+	sprintf(ifname, "mctpi2c%ld", bus);
++
++	if (strcmp(bmc_interface, "I3C") == 0) {
++		sprintf(ifname, "mctpi3c%ld", bus);
++	} else {
++		sprintf(ifname, "mctpi2c%ld", bus);
++	}
 +
 +	dest->ifindex = mctp_nl_ifindex_byname(ctx->nl, ifname);
 +	if (dest->ifindex <= 0) {
@@ -170,7 +206,7 @@ index 3a68421..911e55e 100644
  // Query various properties of a peer.
  // To be called when a new peer is discovered/assigned, once an EID is known
  // and routable.
-@@ -2595,11 +2745,23 @@ static const sd_bus_vtable bus_mctpd_vtable[] = {
+@@ -2626,11 +2809,23 @@ static const sd_bus_vtable bus_mctpd_vtable[] = {
  		SD_BUS_PARAM(found),
  		method_learn_endpoint,
  		0),

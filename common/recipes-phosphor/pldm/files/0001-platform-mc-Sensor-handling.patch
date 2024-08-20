@@ -1,4 +1,4 @@
-From 0fd85adf9816f88fbb1c5cb3b3aba2e7144e0220 Mon Sep 17 00:00:00 2001
+From 21a7221f6368937771c1d899163402ea979f57b8 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbert.chen@arm.com>
 Date: Wed, 23 Feb 2022 20:56:19 +0000
 Subject: [PATCH 01/13] platform-mc: Sensor handling
@@ -163,10 +163,10 @@ index 7636e94..342c028 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
-index be7ece3..fdda328 100644
+index ad563fd..3a833f5 100644
 --- a/platform-mc/numeric_sensor.cpp
 +++ b/platform-mc/numeric_sensor.cpp
-@@ -581,5 +581,151 @@ double NumericSensor::unitModifier(double value)
+@@ -579,5 +579,151 @@ double NumericSensor::unitModifier(double value)
  {
      return std::isnan(value) ? value : value * std::pow(10, baseUnitModifier);
  }
@@ -319,12 +319,12 @@ index be7ece3..fdda328 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/numeric_sensor.hpp b/platform-mc/numeric_sensor.hpp
-index 315787d..ff9e286 100644
+index 770a286..c051b23 100644
 --- a/platform-mc/numeric_sensor.hpp
 +++ b/platform-mc/numeric_sensor.hpp
 @@ -54,6 +54,15 @@ class NumericSensor
  
-     ~NumericSensor(){};
+     ~NumericSensor() {};
  
 +    /** @brief The function called by Sensor Manager to set sensor to
 +     * error status.
@@ -995,7 +995,7 @@ index 0000000..861a3d4
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 5b2ab3c..8be6139 100644
+index 7b94bda..e4b1e3a 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -15,7 +15,22 @@ namespace platform_mc
@@ -1022,7 +1022,7 @@ index 5b2ab3c..8be6139 100644
  
  bool Terminus::doesSupportType(uint8_t type)
  {
-@@ -372,6 +387,8 @@ std::shared_ptr<pldm_numeric_sensor_value_pdr>
+@@ -373,6 +388,8 @@ std::shared_ptr<pldm_numeric_sensor_value_pdr>
      auto rc = decode_numeric_sensor_pdr_data(ptr, pdr.size(), parsedPdr.get());
      if (rc)
      {
@@ -1032,10 +1032,10 @@ index 5b2ab3c..8be6139 100644
      }
      return parsedPdr;
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 93fdb09..4401bef 100644
+index 7567d89..1743b74 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -161,6 +161,7 @@ TerminiMapper::iterator
+@@ -162,6 +162,7 @@ TerminiMapper::iterator
  
  exec::task<int> TerminusManager::discoverMctpTerminusTask()
  {
@@ -1043,7 +1043,7 @@ index 93fdb09..4401bef 100644
      while (!queuedMctpInfos.empty())
      {
          if (manager)
-@@ -176,11 +177,23 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+@@ -177,11 +178,23 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
              {
                  co_await initMctpTerminus(mctpInfo);
              }
@@ -1067,7 +1067,7 @@ index 93fdb09..4401bef 100644
          }
  
          queuedMctpInfos.pop();
-@@ -200,6 +213,11 @@ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
+@@ -201,6 +214,11 @@ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
              continue;
          }
  
@@ -1588,7 +1588,7 @@ index 0000000..89c147e
 +    sensorManager.stopPolling(tid);
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 39e1213..e5cc47c 100644
+index 13d28f2..70886e2 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -195,7 +195,7 @@ int main(int argc, char** argv)

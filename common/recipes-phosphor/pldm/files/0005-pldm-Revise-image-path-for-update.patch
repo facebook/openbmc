@@ -1,4 +1,4 @@
-From 6e2559b8d2c187d23fea7236271637dc7404ec04 Mon Sep 17 00:00:00 2001
+From 34863ffdbd554e9ccfeca7a80c1813ec9abe8793 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
 Date: Tue, 25 Jun 2024 14:51:37 +0800
 Subject: [PATCH 05/13] pldm: Revise image path for update
@@ -14,7 +14,7 @@ Signed-off-by: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/fw-update/watch.cpp b/fw-update/watch.cpp
-index 208d818..8c3ff6c 100644
+index 60f18fc..512a083 100644
 --- a/fw-update/watch.cpp
 +++ b/fw-update/watch.cpp
 @@ -23,7 +23,7 @@ Watch::Watch(sd_event* loop, std::function<int(std::string&)> imageCallback) :
@@ -27,7 +27,7 @@ index 208d818..8c3ff6c 100644
      {
          fs::create_directories(imgDirPath);
 @@ -39,7 +39,7 @@ Watch::Watch(sd_event* loop, std::function<int(std::string&)> imageCallback) :
-                                  std::strerror(error));
+             "inotify_init1 failed, errno="s + std::strerror(error));
      }
  
 -    wd = inotify_add_watch(fd, "/tmp/images", IN_CLOSE_WRITE);

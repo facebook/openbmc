@@ -1,4 +1,4 @@
-From 7990d1523711f994e2b8151dda062961f90b44c9 Mon Sep 17 00:00:00 2001
+From 7612aa88f602a64fb8845ace6b6993bd525b57a2 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 2 May 2023 10:20:10 +0000
 Subject: [PATCH 02/13] platform-mc: Added EventManager
@@ -13,7 +13,7 @@ Change-Id: I1b337ccae454067841ffbbd8754631216a995542
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
 ---
- libpldmresponder/platform.cpp              |   9 +-
+ libpldmresponder/platform.cpp              |  13 +-
  meson.build                                |   2 +
  meson.options                              |   9 +
  platform-mc/event_manager.cpp              | 698 +++++++++++++++++++++
@@ -26,7 +26,7 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  platform-mc/sensor_manager.hpp             |   5 +-
  platform-mc/terminus.cpp                   |   6 +-
  platform-mc/terminus.hpp                   |  12 +
- platform-mc/terminus_manager.hpp           |  20 +-
+ platform-mc/terminus_manager.hpp           |  17 +-
  platform-mc/test/event_manager_test.cpp    | 456 ++++++++++++++
  platform-mc/test/meson.build               |   2 +
  platform-mc/test/mock_event_manager.hpp    |  29 +
@@ -35,26 +35,28 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  platform-mc/test/sensor_manager_test.cpp   |   4 +-
  platform-mc/test/terminus_manager_test.cpp |   2 +-
  pldmd/pldmd.cpp                            |  32 +-
- 22 files changed, 1836 insertions(+), 22 deletions(-)
+ 22 files changed, 1837 insertions(+), 22 deletions(-)
  create mode 100644 platform-mc/event_manager.cpp
  create mode 100644 platform-mc/event_manager.hpp
  create mode 100644 platform-mc/test/event_manager_test.cpp
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 1e0955a..8ddaa29 100644
+index 522899c..95cfc99 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
-@@ -376,15 +376,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
+@@ -377,15 +377,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
          try
          {
              const auto& handlers = eventHandlers.at(eventClass);
 +            bool handled = false;
              for (const auto& handler : handlers)
              {
-                 auto rc = handler(request, payloadLength, formatVersion, tid,
-                                   offset);
+-                auto rc =
+-                    handler(request, payloadLength, formatVersion, tid, offset);
 -                if (rc != PLDM_SUCCESS)
++                auto rc = handler(request, payloadLength, formatVersion, tid,
++                                  offset);
 +                if (rc == PLDM_SUCCESS)
                  {
 -                    return CmdHandler::ccOnlyResponse(request, rc);
@@ -1088,7 +1090,7 @@ index 342c028..d0dacae 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index 21e4bcf..3e1a700 100644
+index f6ffcc5..2447485 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
 @@ -15,6 +15,10 @@ namespace platform_mc
@@ -1389,12 +1391,12 @@ index 21e4bcf..3e1a700 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/platform_manager.hpp b/platform-mc/platform_manager.hpp
-index 8187ca1..9f3fe14 100644
+index 8d6e7b4..5865bfd 100644
 --- a/platform-mc/platform_manager.hpp
 +++ b/platform-mc/platform_manager.hpp
-@@ -89,6 +89,51 @@ class PlatformManager
-                                          uint32_t& repositorySize,
-                                          uint32_t& largestRecordSize);
+@@ -86,6 +86,51 @@ class PlatformManager
+         const pldm_tid_t tid, uint8_t& repositoryState, uint32_t& recordCount,
+         uint32_t& repositorySize, uint32_t& largestRecordSize);
  
 +    /** @brief Send setEventReceiver command to destination EID.
 +     *
@@ -1508,7 +1510,7 @@ index 861a3d4..6368299 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 8be6139..e7fb66b 100644
+index e4b1e3a..2ce3689 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -12,9 +12,13 @@ namespace pldm
@@ -1527,7 +1529,7 @@ index 8be6139..e7fb66b 100644
      inventoryPath = "/xyz/openbmc_project/inventory/Item/Board/PLDM_Device_" +
                      std::to_string(tid);
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 8a39b2e..98cd179 100644
+index a819ad7..5b33127 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -133,6 +133,18 @@ class Terminus
@@ -1550,25 +1552,23 @@ index 8a39b2e..98cd179 100644
      std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
  
 diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
-index 249fdff..1ba6418 100644
+index d485de5..38e3b0d 100644
 --- a/platform-mc/terminus_manager.hpp
 +++ b/platform-mc/terminus_manager.hpp
-@@ -54,10 +54,10 @@ class TerminusManager
+@@ -54,9 +54,10 @@ class TerminusManager
      explicit TerminusManager(sdeventplus::Event& /* event */,
                               RequesterHandler& handler,
                               pldm::InstanceIdDb& instanceIdDb,
 -                             TerminiMapper& termini, Manager* manager) :
--        handler(handler),
--        instanceIdDb(instanceIdDb), termini(termini),
--        tidPool(tidPoolSize, false), manager(manager)
 +                             TerminiMapper& termini, mctp_eid_t localEid,
 +                             Manager* manager) :
-+        handler(handler), instanceIdDb(instanceIdDb), termini(termini),
+         handler(handler), instanceIdDb(instanceIdDb), termini(termini),
+-        tidPool(tidPoolSize, false), manager(manager)
 +        localEid(localEid), tidPool(tidPoolSize, false), manager(manager)
      {
          // DSP0240 v1.1.0 table-8, special value: 0,0xFF = reserved
          tidPool[0] = true;
-@@ -147,6 +147,15 @@ class TerminusManager
+@@ -145,6 +146,15 @@ class TerminusManager
       */
      bool unmapTid(const pldm_tid_t& tid);
  
@@ -1584,7 +1584,7 @@ index 249fdff..1ba6418 100644
    private:
      /** @brief Find the terminus object pointer in termini list.
       *
-@@ -217,6 +226,9 @@ class TerminusManager
+@@ -215,6 +225,9 @@ class TerminusManager
      /** @brief Managed termini list */
      TerminiMapper& termini;
  
@@ -2129,7 +2129,7 @@ index 2c2ea1b..f850dac 100644
      MOCK_METHOD(void, doSensorPolling, (pldm_tid_t tid), (override));
  };
 diff --git a/platform-mc/test/mock_terminus_manager.hpp b/platform-mc/test/mock_terminus_manager.hpp
-index eb06734..db9d0e3 100644
+index 4e56a83..5a606d8 100644
 --- a/platform-mc/test/mock_terminus_manager.hpp
 +++ b/platform-mc/test/mock_terminus_manager.hpp
 @@ -17,7 +17,8 @@ class MockTerminusManager : public TerminusManager
@@ -2141,7 +2141,7 @@ index eb06734..db9d0e3 100644
 +                        manager)
      {}
  
-     exec::task<int> sendRecvPldmMsgOverMctp(mctp_eid_t /*eid*/,
+     exec::task<int> sendRecvPldmMsgOverMctp(
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
 index 89c147e..a49b5fe 100644
 --- a/platform-mc/test/sensor_manager_test.cpp
@@ -2158,7 +2158,7 @@ index 89c147e..a49b5fe 100644
  
      void runEventLoopForSeconds(uint64_t sec)
 diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
-index 464ef71..f59a433 100644
+index 432ba21..a4a0b11 100644
 --- a/platform-mc/test/terminus_manager_test.cpp
 +++ b/platform-mc/test/terminus_manager_test.cpp
 @@ -32,7 +32,7 @@ class TerminusManagerTest : public testing::Test
@@ -2171,7 +2171,7 @@ index 464ef71..f59a433 100644
      {}
  
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index e5cc47c..f33f9fa 100644
+index 70886e2..d7cc802 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -269,10 +269,38 @@ int main(int argc, char** argv)

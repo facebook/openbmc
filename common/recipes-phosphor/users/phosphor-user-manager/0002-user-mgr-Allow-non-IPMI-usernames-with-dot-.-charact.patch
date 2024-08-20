@@ -1,7 +1,7 @@
-From cfc9738f691ed43ae4e68aaed686eadfad40f64c Mon Sep 17 00:00:00 2001
+From ddeed7bc3e5d7e961779c821da1e8bb363d24385 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Fri, 5 Apr 2024 07:54:27 -0700
-Subject: [PATCH] user-mgr: Allow non-IPMI usernames with dot '.' character
+Subject: [PATCH 2/2] user-mgr: Allow non-IPMI usernames with dot '.' character
 
 Meta Inc's user certificates [1] can contain '.' as a valid character.
 Added logic to maintain the current regex for IPMI users and another one
@@ -38,7 +38,7 @@ Signed-off-by: Marco Kawajiri <kawajiri@meta.com>
  2 files changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/test/user_mgr_test.cpp b/test/user_mgr_test.cpp
-index 94120ff..9de8612 100644
+index 664def2..797ed35 100644
 --- a/test/user_mgr_test.cpp
 +++ b/test/user_mgr_test.cpp
 @@ -565,12 +565,23 @@ TEST_F(UserMgrInTest,
@@ -66,7 +66,7 @@ index 94120ff..9de8612 100644
  
  TEST_F(UserMgrInTest, UserAddNotRootFailedWithInternalFailure)
 diff --git a/user_mgr.cpp b/user_mgr.cpp
-index 08cc772..0cf9441 100644
+index de4b570..a7e19e1 100644
 --- a/user_mgr.cpp
 +++ b/user_mgr.cpp
 @@ -124,6 +124,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
@@ -104,5 +104,5 @@ index 08cc772..0cf9441 100644
          lg2::error("Invalid username '{USERNAME}'", "USERNAME", userName);
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
 -- 
-2.43.0
+2.43.5
 

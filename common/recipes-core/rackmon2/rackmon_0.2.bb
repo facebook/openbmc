@@ -108,6 +108,7 @@ LOCAL_URI += " \
 #scripts
 LOCAL_URI += " \
     file://scripts/schema_validator.py \
+    file://scripts/address_validator.py \
     file://scripts/pyrmd.py \
     file://scripts/rackmon-stress.py \
     "

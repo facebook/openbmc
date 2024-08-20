@@ -129,6 +129,7 @@ foreach c : register_maps
 endforeach
 
 config_validator = files('scripts/schema_validator.py')
+address_validator = files('scripts/address_validator.py')
 confchecker_iface = custom_target(
   'check_syntax_iface',
   command: [
@@ -157,6 +158,22 @@ confchecker_regmap = custom_target(
   capture: true,
   output: 'validate_configs_regmap.log',
 )
+
+confchecker_addr_regmap = custom_target(
+  'check_address_regmap',
+  command: [
+    get_option('python-path'),
+    address_validator,
+    '@INPUT@',
+  ],
+  input: files(filepaths_regmap),
+  depend_files: files(filepaths_regmap),
+  build_by_default: true,
+  capture: true,
+  output: 'validate_address_regmap.log',
+)
+
+
 
 pyrmd_tests = join_paths(meson.source_root(), meson.current_source_dir(), 'tests', 'test_pyrmd.py')
 pyrmd_tester = custom_target(

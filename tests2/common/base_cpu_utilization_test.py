@@ -24,11 +24,12 @@ import re
 import time
 import unittest
 from abc import abstractmethod
+from typing import List, Tuple
 
 from utils.cit_logger import Logger
 
 
-def get_system_cpu_usage():
+def get_system_cpu_usage() -> Tuple[int, int]:
     """Returns a snapshot of the system CPU usage at the time of call
     (ticks since boot). Returns a tuple (used, total), where used is the
     ticks used directly or indirectly by the user (user time + user time of
@@ -46,7 +47,7 @@ def get_system_cpu_usage():
                 )  # (usr+nic+sys, total)
 
 
-def get_proc_cpu_usage(pid):
+def get_proc_cpu_usage(pid: int) -> int:
     """Returns a stapshot of the CPU usage (user+system) for the specified pid.
     If the pid doesn't exist, returns 0.
     """
@@ -60,7 +61,7 @@ def get_proc_cpu_usage(pid):
         return 0
 
 
-def get_pids_for_cmdlines(cmdline_regexes):
+def get_pids_for_cmdlines(cmdline_regexes: List[str]) -> List[int]:
     """Returns a list of pids corresponding to processes whose command line
     matches at least one of the items in the `cmdlines` list.
     """

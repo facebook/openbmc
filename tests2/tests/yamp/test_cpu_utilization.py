@@ -32,9 +32,6 @@ class CpuUtilizationTest(BaseCpuUtilizationTest):
             result_threshold is set to 8 because we will target 80% of failure.
         """
         self.expected_cpu_utilization = 60
-        self.number_of_retry = 10
-        self.result_threshold = 8
-        self.wait_time = 5
 
     def skip_cpu_utilization_processes(self):
         """

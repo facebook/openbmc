@@ -33,14 +33,12 @@ class BaseCpuUtilizationTest(unittest.TestCase):
         self.cpu_utilization_cmd = None
         self.expected_cpu_utilization = None
         self.skip_processes = None
-        self.number_of_retry = None
-        self.result_threshold = None
-        self.wait_time = None
-        pass
+        self.number_of_retry = 10
+        self.result_threshold = 8
+        self.wait_time = 5
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))
-        pass
 
     def set_cpu_utilization_cmd(self):
         """

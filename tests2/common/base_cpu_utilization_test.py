@@ -81,7 +81,7 @@ class BaseCpuUtilizationTest(unittest.TestCase):
         self.cpu_utilization_cmd = None
         self.expected_cpu_utilization = None
         self.skip_processes = None
-        self.number_of_retry = 4
+        self.number_of_retries = 4
         self.result_threshold = 2
         self.wait_time = 5
 
@@ -92,13 +92,20 @@ class BaseCpuUtilizationTest(unittest.TestCase):
     def init_cpu_variables(self):
         pass
 
+    @abstractmethod
+    def skip_cpu_utilization_processes(self):
+        pass
+
     def test_cpu_utilization(self):
-        """
-        This test is ran a specific number of time
+        """Test that CPU utilization is below a threshold.
+
+        This test is run a specific number of times
         to make sure that we isolate for the posibility
-        of the test being flaky. result_threshold is used
-        to make sure that the test pass or fail
+        of the test being flaky. At least result_threshold runs
+        (out of number_of_retries) should show a utilization below
+        the threshold.
         """
+
         self.init_cpu_variables()
         self.assertNotEqual(
             self.expected_cpu_utilization, None, "CPU utilization threshold not set"
@@ -110,7 +117,7 @@ class BaseCpuUtilizationTest(unittest.TestCase):
         # CPU utilization is below the threshold (expected_cpu_utilization)
         good_runs = 0
         cpu_data = []
-        for _ in range(self.number_of_retry):
+        for _ in range(self.number_of_retries):
             (percentage_used_minus_procs, percentage_used) = (
                 self.compute_cpu_utilization()
             )
@@ -132,10 +139,10 @@ class BaseCpuUtilizationTest(unittest.TestCase):
         self.assertGreaterEqual(good_runs, self.result_threshold, debug_info)
 
     def compute_cpu_utilization(self):
+        """Computes the CPU utilization in percents. Returns a tuple
+        (actual_percentage_minus_excluded processes, actual_percentage).
         """
-        Used to test the cpu utilization and make
-        sure it's not above the threshold
-        """
+
         # Get list of excluded PIDs
         pids = get_pids_for_cmdlines(self.skip_processes) + [os.getpid()]
         # Capture usage of these PIDs (from their start to now)

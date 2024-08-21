@@ -1,0 +1,174 @@
+#!/bin/bash
+
+HMC_IP="172.31.13.251"
+HMC_URL_PREFIX="http://${HMC_IP}"
+
+
+FW_UPDATE_URL="${HMC_URL_PREFIX}/redfish/v1/UpdateService/update-multipart"
+FW_INVENTORY_URL="${HMC_URL_PREFIX}/redfish/v1/UpdateService/FirmwareInventory"
+#CAK_INSTALL_CPU_0="${HMC_URL_PREFIX}/redfish/v1/Chassis/HGX_ERoT_CPU_0/Actions/Oem/CAKInstall"
+#CAK_INSTALL_CPU_1="${HMC_URL_PREFIX}/redfish/v1/Chassis/HGX_ERoT_CPU_1/Actions/Oem/CAKInstall"
+
+is_hmc_managed_fw_comp()
+{
+    local managed_components=(
+        "HGX_FW_BMC_0"
+        "HGX_FW_CPLD_0"
+        "HGX_FW_CPU_0"
+        "HGX_FW_CPU_1"
+        "HGX_FW_FPGA_0"
+        "HGX_FW_FPGA_1"
+        "HGX_FW_ERoT_BMC_0"
+        "HGX_FW_ERoT_CPU_0"
+        "HGX_FW_ERoT_CPU_1"
+        "HGX_FW_ERoT_FPGA_0"
+        "HGX_FW_ERoT_FPGA_1"
+    )
+
+    for component in "${managed_components[@]}"; do
+        if [ "$1" = "$component" ]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+get_comp_version()
+{
+    CURL_CMD="curl -s '${FW_INVENTORY_URL}/$1'"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        echo "$1 : NA"
+    else
+        echo "${CURL_DATA}" | jq -r '. | "\(.Id): \(.Version)"'
+    fi
+}
+
+get_all_comp_version()
+{
+    CURL_CMD="curl -s '${FW_INVENTORY_URL}?\$expand=.(\$levels=1)'"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        echo "failed: HMC not response."
+    else
+        echo "${CURL_DATA}" | jq -r '.Members[] | "\(.Id): \(.Version)"'
+    fi
+}
+
+prepare_update_target_str()
+{
+    if [ "$1" = "bundle" ]; then
+        echo ""
+    elif [ "$1" = "sbios" ]; then
+        echo "\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_CPU_0\",\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_CPU_1\""
+    elif is_hmc_managed_fw_comp "$1"; then
+        echo "\"/redfish/v1/UpdateService/FirmwareInventory/$1\""
+    else
+        return 1
+    fi
+    return 0
+}
+
+update_comp()
+{
+    if ! TARGET_STR=$(prepare_update_target_str "$1"); then
+        echo "failed: Unknow component, $1"
+        exit 1
+    fi
+
+    CURL_CMD="curl -s -u root:0penBmc -H 'Expect:' -L -X POST '${FW_UPDATE_URL}' -F 'UpdateParameters={\"Targets\":[$TARGET_STR]} ;type=application/json' -F UpdateFile=@$2"
+    echo "CMD: ${CURL_CMD}"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        echo "failed: HMC not response."
+        return 1
+    fi
+
+    TASK_ID=$(echo "$CURL_DATA" | jq -r '."@odata.id"')
+    echo "TASK_ID: ${TASK_ID}"
+
+    for (( retry = 0; retry < 500; retry++ ))
+    do
+        sleep 5
+        CURL_CMD="curl -s http://${HMC_IP}${TASK_ID}"
+        if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+            echo "failed: HMC not response."
+            return 1
+        fi
+
+        if ! PERCENT=$(echo "$CURL_DATA" | jq -r '."PercentComplete"'); then
+            echo "failed: incorrect response format."
+            return 1
+        elif ! TASK_STATE=$(echo "$CURL_DATA" | jq -r '."TaskState"'); then
+            echo "failed: incorrect response format."
+            return 1
+        elif ! TASK_STATUS=$(echo "$CURL_DATA" | jq -r '."TaskStatus"'); then
+            echo "failed: incorrect response format."
+            return 1
+        fi
+        
+        echo "PercentComplete: ${PERCENT} ...... (count: ${retry})"
+
+        if [ "$TASK_STATE" != "Running" ]; then
+            echo "Update finished, state: ${TASK_STATE}, status: ${TASK_STATUS}"
+            if [ "$TASK_STATE" = "Completed" ]; then
+                return 0
+            else
+                return 1
+            fi
+        fi
+    done
+
+    echo "failed: Update process timeout."
+    return 1
+}
+
+print_usage()
+{
+    echo "Usage: $0 --version <component>"
+    echo "       $0 --update <component> <firmware file>"
+    echo
+    echo "Options:"
+    echo "  --version <all|bundle|sbios|HGX_COMP>"
+    echo "  --update <bundle|sbios|HGX_COMP> <file>"
+    echo
+    echo "HGX_COMP:"
+    echo "  HGX_FW_BMC_0, HGX_FW_CPLD_0, HGX_FW_CPU_0, HGX_FW_CPU_1, HGX_FW_FPGA_0,"
+    echo "  HGX_FW_FPGA_1, HGX_FW_ERoT_BMC_0, HGX_FW_ERoT_CPU_0, HGX_FW_ERoT_CPU_1,"
+    echo "  HGX_FW_ERoT_FPGA_0, HGX_FW_ERoT_FPGA_1"
+    echo
+    echo "Examples:"
+    echo "  $0 --version all"
+    echo "  $0 --version bundle"
+    echo "  $0 --version sbios"
+    echo "  $0 --version HGX_FW_BMC_0"
+    echo "  $0 --update bundle /path/to/bundle/firmware/file"
+    echo "  $0 --update sbios /path/to/sbios/firmware/file"
+    echo "  $0 --update HGX_FW_BMC_0 /path/to/firmware/file"
+    echo
+}
+
+INPUT_CMD="$1"
+INPUT_COMP="$2"
+
+if [ "$INPUT_CMD" = "--version" ]; then
+    if [ "$INPUT_COMP" = "all" ]; then
+        get_all_comp_version
+    elif [ "$INPUT_COMP" = "bundle" ]; then
+        get_all_comp_version | grep -v "HGX_FW_CPU"
+    elif [ "$INPUT_COMP" = "sbios" ]; then
+        get_all_comp_version | grep "HGX_FW_CPU"
+    elif is_hmc_managed_fw_comp "$INPUT_COMP"; then
+        get_comp_version "$INPUT_COMP"
+    else
+        echo "failed: Unknow component, $INPUT_COMP"
+        exit 1
+    fi
+elif [ "$1" = "--update" ]; then
+    FW_FILE="$3"
+    if [ ! -f "$FW_FILE" ]; then
+        echo "failed: incorrect firmware file path, $FW_FILE"
+        exit 1
+    fi
+    update_comp "$INPUT_COMP" "$(realpath "${FW_FILE}")"
+else
+    print_usage
+fi

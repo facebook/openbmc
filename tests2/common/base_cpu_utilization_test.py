@@ -19,6 +19,7 @@
 #
 
 import os
+import pathlib
 import re
 import time
 import unittest
@@ -27,124 +28,142 @@ from abc import abstractmethod
 from utils.cit_logger import Logger
 
 
+def get_system_cpu_usage():
+    """Returns a snapshot of the system CPU usage at the time of call
+    (ticks since boot). Returns a tuple (used, total), where used is the
+    ticks used directly or indirectly by the user (user time + user time of
+    low priority processes (nice) + system (kernel) time caused by the above)
+    """
+    with open("/proc/stat") as f:
+        for line in f:
+            if line.startswith("cpu "):
+                values = [
+                    int(x) for x in line.split()[1:9]
+                ]  # (usr, nic, sys, idle, iowait, irq, softirq, steal)
+                return (
+                    values[0] + values[1] + values[2],
+                    sum(values),
+                )  # (usr+nic+sys, total)
+
+
+def get_proc_cpu_usage(pid):
+    """Returns a stapshot of the CPU usage (user+system) for the specified pid.
+    If the pid doesn't exist, returns 0.
+    """
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            line = f.read()
+            fields = line.split()
+            (usr, sys) = (int(fields[14]), int(fields[15]))
+            return usr + sys
+    except FileNotFoundError:
+        return 0
+
+
+def get_pids_for_cmdlines(cmdline_regexes):
+    """Returns a list of pids corresponding to processes whose command line
+    matches at least one of the items in the `cmdlines` list.
+    """
+    regex = "|".join(cmdline_regexes)
+    pids = []
+    for subdir in pathlib.Path("/proc").iterdir():
+        if not subdir.is_dir() or not re.fullmatch("[0-9]+", subdir.name):
+            continue
+        cmdline = subdir.joinpath("cmdline").read_text().rstrip("\0").replace("\0", " ")
+        if re.search(regex, cmdline):
+            pids.append(int(subdir.name))
+    return pids
+
+
 class BaseCpuUtilizationTest(unittest.TestCase):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.cpu_utilization_cmd = None
         self.expected_cpu_utilization = None
         self.skip_processes = None
-        self.number_of_retry = 10
-        self.result_threshold = 8
+        self.number_of_retry = 4
+        self.result_threshold = 2
         self.wait_time = 5
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))
 
-    def set_cpu_utilization_cmd(self):
-        """
-            we want to get two iteration of the top command with a 1
-            sec delay between them.We are skipping the very first top
-            iteration because it could the cpu consumption from
-            the time the system last booted. Then we are using awk
-            to make sure that we get the second iteration which
-            starts after the line with Mem.
-        """
-        self.cpu_utilization_cmd = "top -bn 2 -d 1 | awk 'p>1; /^Mem/{++p}'"
-
     @abstractmethod
     def init_cpu_variables(self):
         pass
 
-    def get_cpu_utilization(self):
-        """
-            Getting the data containing CPU consumption
-        """
-        self.set_cpu_utilization_cmd()
-        self.assertNotEqual(
-            self.cpu_utilization_cmd, None, "Command to get cpu utilization is not set"
-        )
-        Logger.info("Executing cmd={}".format(self.cpu_utilization_cmd))
-        info = os.popen(self.cpu_utilization_cmd)
-        return info
-
-    def dumpAllCpuData(self, save_data_dbg, cpu_percentage_used):
-        """
-            Used to dump all the data in formatted user
-            friendly way in case we need to debug this.
-        """
-        cpu_data = "\n"
-        cpu_data += "\nCPU percentage after skipping the processes: {}".format(
-            cpu_percentage_used
-        )
-        cpu_data += "\nExpected CPU consumption: {}\n".format(
-            self.expected_cpu_utilization
-        )
-        for line in save_data_dbg:
-            cpu_data += line
-        return cpu_data
-
     def test_cpu_utilization(self):
         """
-            This test is ran a specific number of time
-            to make sure that we isolate for the posibility
-            of the test being flaky. result_threshold is used
-            to make sure that the test pass or fail
+        This test is ran a specific number of time
+        to make sure that we isolate for the posibility
+        of the test being flaky. result_threshold is used
+        to make sure that the test pass or fail
         """
         self.init_cpu_variables()
+        self.assertNotEqual(
+            self.expected_cpu_utilization, None, "CPU utilization threshold not set"
+        )
         self.skip_cpu_utilization_processes()
-        retry = 0
-        result = 0
-        cpu_data = "\n"
-        while retry < self.number_of_retry:
-            cpu_value = self.compute_cpu_utilization()
-            result += cpu_value[0]
-            cpu_data += cpu_value[1]
-            retry += 1
-            # use a delay to allow processes to run on cpu
-            time.sleep(self.wait_time)
 
-        self.assertLess(result, self.result_threshold, cpu_data)
+        # We run compute_cpu_utilization number_of_retries times and
+        # the test passes if in at least result_threshold runs the
+        # CPU utilization is below the threshold (expected_cpu_utilization)
+        good_runs = 0
+        cpu_data = []
+        for _ in range(self.number_of_retry):
+            (percentage_used_minus_procs, percentage_used) = (
+                self.compute_cpu_utilization()
+            )
+            if percentage_used_minus_procs < self.expected_cpu_utilization:
+                good_runs += 1
+            if good_runs >= self.result_threshold:
+                return
+            cpu_data += [(percentage_used_minus_procs, percentage_used)]
+
+        debug_info = (
+            f"Expected CPU utilization <= {self.expected_cpu_utilization}%\n"
+            "Actual utilizations for each run (without excluded processes "
+            "(used in test), with excluded processes (for info)):"
+        )
+
+        debug_info += "\n".join(
+            f"{p}%   {p_with_excluded}%" for (p, p_with_excluded) in cpu_data
+        )
+        self.assertGreaterEqual(good_runs, self.result_threshold, debug_info)
 
     def compute_cpu_utilization(self):
         """
-            Used to test the cpu utilization and make
-            sure it's not above the threshold
+        Used to test the cpu utilization and make
+        sure it's not above the threshold
         """
-        stream = self.get_cpu_utilization()
-        self.assertNotEqual(
-            self.expected_cpu_utilization, None, "Expected set of cpu data not set"
+        # Get list of excluded PIDs
+        pids = get_pids_for_cmdlines(self.skip_processes) + [os.getpid()]
+        # Capture usage of these PIDs (from their start to now)
+        old_proc_usages = [get_proc_cpu_usage(pid) for pid in pids]
+        # Capture system usage (from boot to now)
+        (old_used, old_total) = get_system_cpu_usage()
+
+        # Sleep for a duration during which we'll calculate CPU usage
+        time.sleep(self.wait_time)
+
+        # Capture system usage after sleep
+        (used, total) = get_system_cpu_usage()
+        # Capture process usage after sleep
+        proc_usages = [get_proc_cpu_usage(pid) for pid in pids]
+
+        # Calculate used percentage
+        diff_used = used - old_used  # Ticks used by all processes, including in kernel
+        diff_total = total - old_total  # Total ticks, including idle time
+        # Ticks used by excluded processes (if >= condition is to protect from
+        # processes that didn't exist at either the first or second measurement
+        diff_procs = sum(
+            proc_usages[i] - old_proc_usages[i]
+            for i in range(len(pids))
+            if proc_usages[i] >= old_proc_usages[i]
         )
-        self.assertNotEqual(
-            self.skip_processes, None, "processes to be skipped not set"
-        )
+        # CPU usage percentage for all processes
+        percentage_used = 100 * diff_used // diff_total
+        # CPU usage percentage for non-excluded processes <- the interesting value
+        percentage_used_minus_procs = 100 * (diff_used - diff_procs) // diff_total
 
-        count = 0
-        cpu_percentage_used = 0
-        save_data_dbg = []  # Saving data for debuging purpose
-
-        # Get the total cpu consumption and them subtract
-        # it from the one of the processes cpu
-        # consumption that is very unpredicatable
-        for line in stream.readlines():
-            save_data_dbg.append(line)
-            data = line.split()
-            if count == 0:
-                # Add the usr, sys, and nic processes total consumption
-                usr = int(re.sub("[^0-9]", "", data[1]))
-                sys = int(re.sub("[^0-9]", "", data[3]))
-                nic = int(re.sub("[^0-9]", "", data[5]))
-                cpu_percentage_used = usr + sys + nic
-                count += 1
-            else:
-                for proc in self.skip_processes:
-                    if re.search(proc, line):
-                        proc_cpu_consumption = int(re.sub("[^0-9]", "", data[6]))
-                        cpu_percentage_used -= proc_cpu_consumption
-
-        # Update the cpu data for debugging purpose
-        cpu_data = self.dumpAllCpuData(save_data_dbg, cpu_percentage_used)
-
-        cpu_consumption = 1
-        if cpu_percentage_used < self.expected_cpu_utilization:
-            cpu_consumption = 0
-        return [cpu_consumption, cpu_data]
+        return (percentage_used_minus_procs, percentage_used)

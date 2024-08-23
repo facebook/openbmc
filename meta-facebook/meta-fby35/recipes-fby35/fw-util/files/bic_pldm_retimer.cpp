@@ -75,24 +75,16 @@ int PldmRetimerComponent::get_version(json& j) {
     kv::set(pendingVersionKey, pendingVersion, kv::region::temp);
   }
 
-  // Retimer active version format is "<VENDOR NAME> <VERSION>"
   // Retimer pending version format is "<DEVICE NAME> <VERSION>_<COMPONENT>"
-  // Replace pending version <DEVICE NAME> with active version <VENDOR NAME>
+  // Need to remove <DEVICE NAME> string from pending version
   regex pattern(R"((\S+)\s([^_]+)(?:_.*)?)");
   smatch matches;
-  string vendor = INVALID_VERSION;
-  if (regex_search(activeVersion, matches, pattern)) {
-    vendor = matches[1].str();
-    activeVersion = matches[2].str();
-  }
-  matches = smatch();
-  if (regex_search(pendingVersion, matches, pattern) && !vendor.empty()) {
-    pendingVersion = vendor + " " + matches[2].str();
+  if (regex_search(pendingVersion, matches, pattern)) {
+    pendingVersion = matches[2].str();
     kv::set(pendingVersionKey, pendingVersion, kv::region::temp);
   }
   
   j[VERSION] = activeVersion;
-  j["VENDOR"] = vendor;
 
   return FW_STATUS_SUCCESS;
 }

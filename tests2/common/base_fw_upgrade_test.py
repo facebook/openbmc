@@ -755,62 +755,70 @@ class BaseFwUpgradeTest(object):
             self.print_line("", "center", "-")
 
     def upgrade_components(self, components_to_upgrade, logging=False):
+        for component in components_to_upgrade:
+            self.upgrade_one_component(component, logging)
+            # Retry an intermittently failed upgrade
+            if not component["upgrade_status"]:
+                print(f"*** Upgrade of component {component['entity']} failed, retrying ***")
+                component["upgrade_status"] = True
+                self.upgrade_one_component(component, logging)
+
+    def upgrade_one_component(self, components, logging=False):
         """
         main method to check and upgrade the components
         """
-        for component in components_to_upgrade:
-            # Start timestamp
-            start = time.perf_counter()
-            entity = component["entity"]
-            ret = -1
-            if component["upgrade_needed"]:
-                try:
-                    if not self.bmc_ssh_session.session.isalive():
-                        print("remote ssh session broke! retrying...")
-                        if not self.reconnect_to_remote_host(30):
-                            self.fail("cannot reconnect to UUT!")
-                    filename = self.remote_bin_path + "/" + self.json[entity][UFW_NAME]
-                    Logger.info("ander-updating: filename is {}".format(filename))
-                    cmd_to_execute = self.json[entity][UFW_CMD]
-                    cmd_to_execute = cmd_to_execute.format(filename=filename)
-                    if logging:
-                        self.print_line(
-                            "Updating: {} ".format(entity),
-                            "left",
-                            ".",
-                            endline=" ",
-                            has_append=True,
-                        )
-                    self.send_command_to_UUT(self.STOP_FSCD)
-                    self.send_command_to_UUT(self.STOP_WDT)
-                    self.send_command_to_UUT(cmd_to_execute, prompt=False)
-                    ret = self.bmc_ssh_session.session.expect_exact(
-                        self.expected_keyword, timeout=self.upgrading_timeout[entity]
+        # Start timestamp
+        start = time.perf_counter()
+        entity = component["entity"]
+        ret = -1
+        if component["upgrade_needed"]:
+            try:
+                if not self.bmc_ssh_session.session.isalive():
+                    print("remote ssh session broke! retrying...")
+                    if not self.reconnect_to_remote_host(30):
+                        self.fail("cannot reconnect to UUT!")
+                filename = self.remote_bin_path + "/" + self.json[entity][UFW_NAME]
+                Logger.info("ander-updating: filename is {}".format(filename))
+                cmd_to_execute = self.json[entity][UFW_CMD]
+                cmd_to_execute = cmd_to_execute.format(filename=filename)
+                if logging:
+                    self.print_line(
+                        "Updating: {} ".format(entity),
+                        "left",
+                        ".",
+                        endline=" ",
+                        has_append=True,
                     )
-                except pexpect.exceptions.TIMEOUT:
-                    ret = -1
-                    if logging:
-                        print("Timed out")
-                except Exception as e:
-                    self.fail(e)
+                self.send_command_to_UUT(self.STOP_FSCD)
+                self.send_command_to_UUT(self.STOP_WDT)
+                self.send_command_to_UUT(cmd_to_execute, prompt=False)
+                ret = self.bmc_ssh_session.session.expect_exact(
+                    self.expected_keyword, timeout=self.upgrading_timeout[entity]
+                )
+            except pexpect.exceptions.TIMEOUT:
+                ret = -1
+                if logging:
+                    print("Timed out")
+            except Exception as e:
+                self.fail(e)
 
-                # End timestamp
-                end = time.perf_counter()
-                component["execution_time"] = end - start
-                if ret >= 0 and ret <= self.num_last_failed_expected_key:
-                    if logging:
-                        print("Failed")
-                    component["upgrade_status"] = False
-                    component["result"] = self.receive_command_output_from_UUT()
-                    Logger.error("{}: Upgrading failed!".format(component))
-                else:
-                    if logging and ret == -1:
-                        print("Done")
-            # flush the rest log.
-            self.flush_session_contents(logging)
-            if logging:
-                print("Done")
-            time.sleep(10)  # delay for the current process to be done
+            # End timestamp
+            end = time.perf_counter()
+            component["execution_time"] = end - start
+            if ret >= 0 and ret <= self.num_last_failed_expected_key:
+                if logging:
+                    print("Failed")
+                component["upgrade_status"] = False
+                component["result"] = self.receive_command_output_from_UUT()
+                Logger.error("{}: Upgrading failed!".format(component))
+            else:
+                if logging and ret == -1:
+                    print("Done")
+        # flush the rest log.
+        self.flush_session_contents(logging)
+        if logging:
+            print("Done")
+        time.sleep(10)  # delay for the current process to be done
 
     def do_external_firmware_upgrade(self, component=None):
         """

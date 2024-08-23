@@ -662,6 +662,45 @@ fi
 
 delete_software_id
 
+# Update BIC version to Settings D-Bus
+if [ "$bic_name" == "sd" ]; then
+	echo "Updating SD BIC version to Settings D-Bus"
+	sleep 15 # wait for BIC reset
+
+	max_retries=3
+	retry_delay=5
+
+	for ((i=1; i<=max_retries; i++)); do
+		/usr/libexec/fw-versions/sd-bic "$slot_id"
+
+		# Check if the command was successful
+		if [ $? -eq 0 ]; then
+			echo "Version retrieved successfully: $version"
+			break
+		else
+			sleep $retry_delay
+		fi
+	done
+elif [ "$bic_name" == "wf" ]; then
+	echo "Updating WF BIC version to Settings D-Bus"
+	sleep 15 # wait for BIC reset
+
+	max_retries=3
+	retry_delay=5
+
+	for ((i=1; i<=max_retries; i++)); do
+		/usr/libexec/fw-versions/wf-bic "$slot_id"
+
+		# Check if the command was successful
+		if [ $? -eq 0 ]; then
+			echo "Version retrieved successfully: $version"
+			break
+		else
+			sleep $retry_delay
+		fi
+	done
+fi
+
 echo "Done"
 
 #unlock

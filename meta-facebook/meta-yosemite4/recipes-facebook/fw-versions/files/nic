@@ -6,7 +6,7 @@ set -e
 sleep 60
 
 nic=$1
-eid=$((89 + nic))
+eid=$((90 + nic)) # NICs' EID start at 90
 
 version=$(
     pldmtool fw_update GetFwParams -m $eid |

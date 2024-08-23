@@ -1,0 +1,28 @@
+From 349ab9ca4e9dffabb1e06b4a6066e228f1955c4d Mon Sep 17 00:00:00 2001
+From: Ian-I-Chien <Ian_Chien@wiwynn.com>
+Date: Tue, 20 Aug 2024 17:22:09 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemitet4: add RTQ6056 support on 11
+ (0x41).
+
+lore link: https://lore.kernel.org/lkml/20240821094043.4126132-1-Delphine_CC_Chiu@wiwynn.com/T/#ma9684ff720dcad2ace906593a173f19f51d49909
+
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index 41a95b0f13d3..b1ea02b6f505 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -1081,7 +1081,7 @@ power-sensor@40 {
+ 	};
+ 
+ 	power-sensor@41 {
+-		compatible = "ti,ina233";
++		compatible = "ti,ina233", "richtek,rtq6056";
+ 		resistor-calibration = /bits/ 16 <0x0a00>;
+ 		current-lsb= /bits/ 16 <0x0001>;
+ 		reg = <0x41>;
+-- 
+2.25.1
+

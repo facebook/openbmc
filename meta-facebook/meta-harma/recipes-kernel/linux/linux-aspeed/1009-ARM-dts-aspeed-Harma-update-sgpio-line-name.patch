@@ -1,0 +1,75 @@
+From 1e845b03359be597efc814a2a3cbaec4213c3039 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Tue, 20 Aug 2024 11:07:45 +0800
+Subject: [PATCH 1019/1019] ARM: dts: aspeed: Harma: update sgpio line name
+
+power-card-enable
+uart-switch-button
+power-fault-n
+asic0-card-type-detection0-n
+asic0-card-type-detection1-n
+asic0-card-type-detection2-n
+uart-switch-lsb
+uart-switch-msb
+
+lore:https://lore.kernel.org/all/20240820102904.1756785-3-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts   | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index b185badcde2a..dee34816aa53 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -588,7 +588,7 @@ &gpio0 {
+ 	/*B0-B7*/	"","","","",
+ 			"bmc-spi-mux-select-0","led-identify","","",
+ 	/*C0-C7*/	"reset-cause-platrst","","","","",
+-			"cpu0-err-alert","","",
++			"cpu0-err-alert","power-card-enable","",
+ 	/*D0-D7*/	"","","sol-uart-select","","","","","",
+ 	/*E0-E7*/	"","","","","","","","",
+ 	/*F0-F7*/	"","","","","","","","",
+@@ -607,7 +607,9 @@ &gpio0 {
+ 	/*O0-O7*/	"","","","","","","","",
+ 	/*P0-P7*/	"power-button","power-host-control",
+ 			"reset-button","","led-power","","","",
+-	/*Q0-Q7*/	"","","","","","power-chassis-control","","",
++	/*Q0-Q7*/
++			"","","","",
++			"","power-chassis-control","","uart-switch-button",
+ 	/*R0-R7*/	"","","","","","","","",
+ 	/*S0-S7*/	"","","","","","","","",
+ 	/*T0-T7*/	"","","","","","","","",
+@@ -708,7 +710,7 @@ &sgpiom0 {
+ 	"FM_BOARD_REV_ID2","",
+ 	"FM_BOARD_REV_ID1","",
+ 	/*H0-H3 line 112-119*/
+-	"FM_BOARD_REV_ID0","",
++	"FM_BOARD_REV_ID0","reset-control-cmos-clear",
+ 	"","","","","","",
+ 	/*H4-H7 line 120-127*/
+ 	"","",
+@@ -739,9 +741,15 @@ &sgpiom0 {
+ 	"cpu0-thermtrip-alert","",
+ 	"reset-cause-pcie","",
+ 	/*L4-L7 line 184-191*/
+-	"pvdd11-ocp-alert","","","","","","","",
++	"pvdd11-ocp-alert","",
++	"power-fault-n","",
++	"asic0-card-type-detection0-n","",
++	"asic0-card-type-detection1-n","",
+ 	/*M0-M3 line 192-199*/
+-	"","","","","","","","",
++	"asic0-card-type-detection2-n","",
++	"uart-switch-lsb","",
++	"uart-switch-msb","",
++	"","",
+ 	/*M4-M7 line 200-207*/
+ 	"","","","","","","","",
+ 	/*N0-N3 line 208-215*/
+-- 
+2.25.1
+

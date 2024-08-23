@@ -8,3 +8,5 @@ SRC_URI:append = " file://1004-ARM-dts-aspeed-Harma-stop-NIC-run-time-polling.pa
 SRC_URI:append = " file://1005-ARM-dts-aspeed-Harma-read-cpu-temp-and-power.patch"
 SRC_URI:append = " file://1006-ARM-dts-aspeed-Harma-set-ncsi-package-eq-1.patch"
 SRC_URI:append = " file://1007-ARM-dts-aspeed-Harma-Setting-i3c-to-i2c-device.patch"
+SRC_URI:append = " file://1008-ARM-dts-aspeed-Harma-add-rtc-device.patch"
+SRC_URI:append = " file://1009-ARM-dts-aspeed-Harma-update-sgpio-line-name.patch"

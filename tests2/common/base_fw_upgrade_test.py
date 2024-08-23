@@ -763,9 +763,9 @@ class BaseFwUpgradeTest(object):
                 component["upgrade_status"] = True
                 self.upgrade_one_component(component, logging)
 
-    def upgrade_one_component(self, components, logging=False):
+    def upgrade_one_component(self, component, logging=False):
         """
-        main method to check and upgrade the components
+        main method to check and upgrade a component
         """
         # Start timestamp
         start = time.perf_counter()

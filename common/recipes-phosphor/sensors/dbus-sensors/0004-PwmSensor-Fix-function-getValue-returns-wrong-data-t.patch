@@ -1,7 +1,7 @@
-From 95379c62a47518902c8b42d64cebe05c71fa6545 Mon Sep 17 00:00:00 2001
+From 2832d88a7bfc6c268b01870483843cd5cb2f951a Mon Sep 17 00:00:00 2001
 From: Yi-Shum <EasonChen1@quantatw.com>
 Date: Fri, 21 Jun 2024 13:39:44 +0800
-Subject: [PATCH 1/1] PwmSensor: Fix function getValue returns wrong data type
+Subject: [PATCH 4/5] PwmSensor: Fix function getValue returns wrong data type
 
 Summary:
 Function "getValue" is defined as uint32_t but returns -1 in some cases.
@@ -17,10 +17,10 @@ Signed-off-by: Yi-Shum <EasonChen1@quantatw.com>
  1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/src/PwmSensor.cpp b/src/PwmSensor.cpp
-index 2a431eb..43df6a2 100644
+index a06d7c4..bffead9 100644
 --- a/src/PwmSensor.cpp
 +++ b/src/PwmSensor.cpp
-@@ -211,12 +211,14 @@ uint32_t PwmSensor::getValue(bool errThrow)
+@@ -212,12 +212,14 @@ uint32_t PwmSensor::getValue(bool errThrow)
      std::ifstream ref(sysPath);
      if (!ref.good())
      {
@@ -37,7 +37,7 @@ index 2a431eb..43df6a2 100644
      }
      try
      {
-@@ -225,7 +227,7 @@ uint32_t PwmSensor::getValue(bool errThrow)
+@@ -226,7 +228,7 @@ uint32_t PwmSensor::getValue(bool errThrow)
      }
      catch (const std::invalid_argument&)
      {
@@ -47,5 +47,5 @@ index 2a431eb..43df6a2 100644
          if (errThrow)
          {
 -- 
-2.34.1
+2.43.5
 

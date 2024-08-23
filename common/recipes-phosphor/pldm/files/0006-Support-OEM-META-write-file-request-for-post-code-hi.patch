@@ -1,4 +1,4 @@
-From d4b69639ea6731da36e849face5fe72f7ba799a5 Mon Sep 17 00:00:00 2001
+From 88372ada5d26af89ca036df0d6b5de99eb470b43 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 06/13] Support OEM-META write file request for post code
@@ -16,10 +16,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  meson.build                                   |   3 +
  meson.options                                 |   8 ++
  .../libpldmresponder/oem_meta_file_io.cpp     |  63 +++++++++
- .../libpldmresponder/oem_meta_file_io.hpp     |  48 +++++++
+ .../libpldmresponder/oem_meta_file_io.hpp     |  49 +++++++
  .../oem_meta_file_io_by_type.hpp              |  30 ++++
  .../oem_meta_file_io_type_post_code.cpp       | 131 ++++++++++++++++++
- .../oem_meta_file_io_type_post_code.hpp       |  53 +++++++
+ .../oem_meta_file_io_type_post_code.hpp       |  52 +++++++
  pldmd/pldmd.cpp                               |  10 ++
  11 files changed, 392 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.cpp
@@ -29,7 +29,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index beae4b4..73aeb9a 100644
+index c7e9eea..54f9fe9 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
 @@ -263,6 +263,21 @@ GetSubTreeResponse
@@ -55,7 +55,7 @@ index beae4b4..73aeb9a 100644
      const std::string& objectPath, int depth,
      const std::vector<std::string>& ifaceList) const
 diff --git a/common/utils.hpp b/common/utils.hpp
-index cd592c2..a09f487 100644
+index fd7c7db..c0be128 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
 @@ -169,6 +169,8 @@ using Interfaces = std::vector<std::string>;
@@ -129,7 +129,7 @@ index 4f62f4d..500e4f9 100644
    'pldmresponder',
    sources,
 diff --git a/meson.build b/meson.build
-index d457c38..ac56ea4 100644
+index 9262e9d..b5d65f6 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -61,6 +61,9 @@ if get_option('oem-ibm').allowed()
@@ -143,7 +143,7 @@ index d457c38..ac56ea4 100644
  conf_data.set('INSTANCE_ID_EXPIRATION_INTERVAL',get_option('instance-id-expiration-interval'))
  conf_data.set('RESPONSE_TIME_OUT',get_option('response-time-out'))
 diff --git a/meson.options b/meson.options
-index 158c219..2663d9a 100644
+index 48f1a40..d3803ca 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -166,6 +166,14 @@ option(
@@ -163,7 +163,7 @@ index 158c219..2663d9a 100644
      type: 'integer',
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 new file mode 100644
-index 0000000..fbbc353
+index 0000000..59c0b3f
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 @@ -0,0 +1,63 @@
@@ -183,8 +183,8 @@ index 0000000..fbbc353
 +static constexpr auto mctpEndpointInterface =
 +    "xyz.openbmc_project.Configuration.MCTPEndpoint";
 +
-+std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(uint8_t messageTid,
-+                                                             uint8_t fileIOType)
++std::unique_ptr<FileHandler>
++    FileIOHandler::getHandlerByType(uint8_t messageTid, uint8_t fileIOType)
 +{
 +    switch (fileIOType)
 +    {
@@ -232,10 +232,10 @@ index 0000000..fbbc353
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
 new file mode 100644
-index 0000000..19ec632
+index 0000000..841fb98
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,49 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -258,11 +258,12 @@ index 0000000..19ec632
 +    FileIOHandler(pldm::ConfigurationDiscoveryHandler* configurationDescovery) :
 +        configurationDescovery(configurationDescovery)
 +    {
-+        handlers.emplace(PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
-+                         [this](pldm_tid_t tid, const pldm_msg* request,
-+                                size_t payloadLength) {
-+            return this->writeFileIO(tid, request, payloadLength);
-+        });
++        handlers.emplace(
++            PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
++            [this](pldm_tid_t tid, const pldm_msg* request,
++                   size_t payloadLength) {
++                return this->writeFileIO(tid, request, payloadLength);
++            });
 +    }
 +
 +  private:
@@ -277,8 +278,8 @@ index 0000000..19ec632
 +    Response writeFileIO(pldm_tid_t tid, const pldm_msg* request,
 +                         size_t payloadLength);
 +
-+    std::unique_ptr<FileHandler> getHandlerByType(pldm_tid_t tid,
-+                                                  uint8_t fileIOType);
++    std::unique_ptr<FileHandler>
++        getHandlerByType(pldm_tid_t tid, uint8_t fileIOType);
 +
 +    pldm::ConfigurationDiscoveryHandler* configurationDescovery;
 +};
@@ -322,7 +323,7 @@ index 0000000..739b9cd
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp
 new file mode 100644
-index 0000000..8ef5c0e
+index 0000000..d1661cc
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp
 @@ -0,0 +1,131 @@
@@ -430,16 +431,16 @@ index 0000000..8ef5c0e
 +    size_t index = 0;
 +    std::for_each(postCodeList.begin(), postCodeList.end(),
 +                  [&primaryPostCode, &index](auto postcode) {
-+        primaryPostCode |= std::uint64_t(postcode) << (8 * index);
-+        index++;
-+    });
++                      primaryPostCode |= std::uint64_t(postcode) << (8 * index);
++                      index++;
++                  });
 +
 +    try
 +    {
 +        auto& bus = pldm::utils::DBusHandler::getBus();
-+        auto method = bus.new_method_call(dbusService, dbusObjStr.c_str(),
-+                                          "org.freedesktop.DBus.Properties",
-+                                          "Set");
++        auto method =
++            bus.new_method_call(dbusService, dbusObjStr.c_str(),
++                                "org.freedesktop.DBus.Properties", "Set");
 +
 +        method.append(
 +            dbusService, "Value",
@@ -459,10 +460,10 @@ index 0000000..8ef5c0e
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
 new file mode 100644
-index 0000000..780f0ef
+index 0000000..f06cc38
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
-@@ -0,0 +1,53 @@
+@@ -0,0 +1,52 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -481,8 +482,7 @@ index 0000000..780f0ef
 +  public:
 +    PostCodeHandler(pldm_tid_t tid,
 +                    const std::map<std::string, MctpEndpoint>& configurations) :
-+        tid(tid),
-+        configurations(configurations)
++        tid(tid), configurations(configurations)
 +    {}
 +
 +    ~PostCodeHandler() = default;
@@ -517,7 +517,7 @@ index 0000000..780f0ef
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index e8e9001..d20963b 100644
+index e013277..d876c23 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -65,6 +65,10 @@ PHOSPHOR_LOG2_USING;
@@ -531,7 +531,7 @@ index e8e9001..d20963b 100644
  constexpr const char* PLDMService = "xyz.openbmc_project.PLDM";
  
  using namespace pldm;
-@@ -266,6 +270,12 @@ int main(int argc, char** argv)
+@@ -268,6 +272,12 @@ int main(int argc, char** argv)
              pldmTransport.getEventSource(), hostEID, instanceIdDb, &reqHandler);
      }
  
@@ -545,5 +545,5 @@ index e8e9001..d20963b 100644
          FRU_JSONS_DIR, FRU_MASTER_JSON, pdrRepo.get(), entityTree.get(),
          bmcEntityTree.get());
 -- 
-2.43.5
+2.44.2
 

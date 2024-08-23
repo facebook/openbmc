@@ -1,4 +1,4 @@
-From 148335f976860a500a1335e13ea1864d6f7c7981 Mon Sep 17 00:00:00 2001
+From aa92bc49f7b0e7dcfb932be5ac6d54873b39b7bd Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
 Subject: [PATCH 08/13] Support OEM-META command for host BIOS version
@@ -13,12 +13,12 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
  libpldmresponder/meson.build                  |   1 +
  .../libpldmresponder/oem_meta_file_io.cpp     |   7 +-
- .../libpldmresponder/oem_meta_file_io.hpp     |  14 +-
+ .../libpldmresponder/oem_meta_file_io.hpp     |  13 +-
  .../oem_meta_file_io_by_type.hpp              |   1 +
  .../oem_meta_file_io_type_bios_version.cpp    | 151 ++++++++++++++++++
- .../oem_meta_file_io_type_bios_version.hpp    |  84 ++++++++++
+ .../oem_meta_file_io_type_bios_version.hpp    |  83 ++++++++++
  pldmd/pldmd.cpp                               |   2 +-
- 7 files changed, 255 insertions(+), 5 deletions(-)
+ 7 files changed, 253 insertions(+), 5 deletions(-)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
 
@@ -35,7 +35,7 @@ index 500e4f9..55d73b0 100644
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-index fbbc353..db75683 100644
+index 59c0b3f..e78e890 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 @@ -1,5 +1,6 @@
@@ -45,7 +45,7 @@ index fbbc353..db75683 100644
  #include "oem_meta_file_io_type_post_code.hpp"
  #include "xyz/openbmc_project/Common/error.hpp"
  
-@@ -21,7 +22,11 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(uint8_t messageTid,
+@@ -21,7 +22,11 @@ std::unique_ptr<FileHandler>
      {
          case POST_CODE:
              return std::make_unique<PostCodeHandler>(
@@ -59,10 +59,10 @@ index fbbc353..db75683 100644
              error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
                    "FILEIOTYPE", fileIOType);
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-index 19ec632..f529e30 100644
+index 841fb98..857714f 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-@@ -17,8 +17,10 @@ namespace pldm::responder::oem_meta
+@@ -17,8 +17,9 @@ namespace pldm::responder::oem_meta
  class FileIOHandler : public CmdHandler
  {
    public:
@@ -70,14 +70,13 @@ index 19ec632..f529e30 100644
 -        configurationDescovery(configurationDescovery)
 +    FileIOHandler(pldm::utils::DBusHandler* dBusIntf,
 +                  pldm::ConfigurationDiscoveryHandler* configurationDiscovery) :
-+        dBusIntf(dBusIntf),
-+        configurationDiscovery(configurationDiscovery)
++        dBusIntf(dBusIntf), configurationDiscovery(configurationDiscovery)
      {
-         handlers.emplace(PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
-                          [this](pldm_tid_t tid, const pldm_msg* request,
-@@ -42,7 +44,13 @@ class FileIOHandler : public CmdHandler
-     std::unique_ptr<FileHandler> getHandlerByType(pldm_tid_t tid,
-                                                   uint8_t fileIOType);
+         handlers.emplace(
+             PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
+@@ -43,7 +44,13 @@ class FileIOHandler : public CmdHandler
+     std::unique_ptr<FileHandler>
+         getHandlerByType(pldm_tid_t tid, uint8_t fileIOType);
  
 -    pldm::ConfigurationDiscoveryHandler* configurationDescovery;
 +    /** @brief D-Bus Interface object*/
@@ -104,7 +103,7 @@ index 739b9cd..091408f 100644
  class FileHandler
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp
 new file mode 100644
-index 0000000..1ce107e
+index 0000000..a9315c6
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp
 @@ -0,0 +1,151 @@
@@ -196,8 +195,8 @@ index 0000000..1ce107e
 +    try
 +    {
 +        const auto& configDbusPath = getConfigurationPathByTid(tid);
-+        const auto response = dBusIntf->getAncestors(configDbusPath.c_str(),
-+                                                     slotInterfaces);
++        const auto response =
++            dBusIntf->getAncestors(configDbusPath.c_str(), slotInterfaces);
 +        if (response.size() != 1)
 +        {
 +            error(
@@ -261,10 +260,10 @@ index 0000000..1ce107e
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
 new file mode 100644
-index 0000000..4baa9a4
+index 0000000..275a3ad
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,83 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -292,8 +291,7 @@ index 0000000..4baa9a4
 +    explicit BIOSVersionHandler(
 +        uint8_t tid, std::map<std::string, MctpEndpoint>& configurations,
 +        const pldm::utils::DBusHandler* dBusIntf) :
-+        tid(tid),
-+        configurations(configurations), dBusIntf(dBusIntf)
++        tid(tid), configurations(configurations), dBusIntf(dBusIntf)
 +    {}
 +
 +    /** @brief Method to set Host's BIOS version.
@@ -350,10 +348,10 @@ index 0000000..4baa9a4
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index feebaea..b28e24c 100644
+index 5f9ecf6..451d55d 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -273,7 +273,7 @@ int main(int argc, char** argv)
+@@ -275,7 +275,7 @@ int main(int argc, char** argv)
  #ifdef OEM_META
      invoker.registerHandler(
          PLDM_OEM, std::make_unique<pldm::responder::oem_meta::FileIOHandler>(
@@ -363,5 +361,5 @@ index feebaea..b28e24c 100644
  
      auto fruHandler = std::make_unique<fru::Handler>(
 -- 
-2.43.5
+2.44.2
 

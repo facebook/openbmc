@@ -1,4 +1,4 @@
-From 3ade4384ecbbe436f2a8d3869df212e7656c03e1 Mon Sep 17 00:00:00 2001
+From 1f7e01dfa0489cba87fcc31b79cc242cffa571a9 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 7 Feb 2024 13:52:07 +0800
 Subject: [PATCH 07/13] platform-mc: Add OEM Meta event handler
@@ -55,22 +55,22 @@ Change-Id: I722d8e09e7aea8dfa533e921d41beb505b59fb95
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
  meson.build                             |   1 +
- oem/meta/platform-mc/event_oem_meta.cpp | 782 ++++++++++++++++++++++++
+ oem/meta/platform-mc/event_oem_meta.cpp | 815 ++++++++++++++++++++++++
  oem/meta/platform-mc/event_oem_meta.hpp |  21 +
  platform-mc/event_manager.cpp           |  33 +
  platform-mc/event_manager.hpp           |  13 +-
  platform-mc/manager.hpp                 |  26 +-
  platform-mc/test/meson.build            |   4 +-
  pldmd/pldmd.cpp                         |  10 +-
- 8 files changed, 883 insertions(+), 7 deletions(-)
+ 8 files changed, 916 insertions(+), 7 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
 diff --git a/meson.build b/meson.build
-index ac56ea4..96d9032 100644
+index b5d65f6..b3c7636 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -188,6 +188,7 @@ executable(
+@@ -185,6 +185,7 @@ executable(
    'platform-mc/event_manager.cpp',
    'requester/mctp_endpoint_discovery.cpp',
    'requester/configuration_discovery_handler.cpp',
@@ -80,10 +80,10 @@ index ac56ea4..96d9032 100644
    install: true,
 diff --git a/oem/meta/platform-mc/event_oem_meta.cpp b/oem/meta/platform-mc/event_oem_meta.cpp
 new file mode 100644
-index 0000000..f35ffc8
+index 0000000..a4575bc
 --- /dev/null
 +++ b/oem/meta/platform-mc/event_oem_meta.cpp
-@@ -0,0 +1,782 @@
+@@ -0,0 +1,815 @@
 +#include "event_oem_meta.hpp"
 +
 +#include "common/utils.hpp"
@@ -286,19 +286,42 @@ index 0000000..f35ffc8
 +    };
 +
 +    static constexpr auto errorSeverityDetail = std::to_array(
-+        {"Correctable Error", "Deferred Error",
-+         "Uncorrected Recoverable Error", "Uncorrected Thread Fatal Error",
-+         "Uncorrected System Fatal Error"}
-+    );
++        {"Correctable Error", "Deferred Error", "Uncorrected Recoverable Error",
++         "Uncorrected Thread Fatal Error", "Uncorrected System Fatal Error"});
 +
-+    static constexpr auto machineCheckBank = std::to_array({
-+        "LS", "IF", "L2", "DE", "RAZ", "EX", "FP", "L3", "L3", "L3",
-+        "L3", "L3", "L3", "L3", "L3", "MP5", "PB", "PCS_GMI", "PCS_GMI",
-+        "KPX_GMI", "KPX_GMI", "UMC/PB/RAZ", "UMC/PCIE/RAZ", "CS/RAZ",
-+        "CS/RAZ", "NBIO/SHUB/RAZ", "PCIE/SATA/RAZ", "PCIE/NBIF/RAZ",
-+        "PIE/PSP/KPX_WALF/NBIF/USB/RAZ", "SMU/MPDMA/RAZ", "PCS_XGMI/RAZ",
-+        "KPX_SERDES/RAZ"}
-+    );
++    static constexpr auto machineCheckBank = std::to_array(
++        {"LS",
++         "IF",
++         "L2",
++         "DE",
++         "RAZ",
++         "EX",
++         "FP",
++         "L3",
++         "L3",
++         "L3",
++         "L3",
++         "L3",
++         "L3",
++         "L3",
++         "L3",
++         "MP5",
++         "PB",
++         "PCS_GMI",
++         "PCS_GMI",
++         "KPX_GMI",
++         "KPX_GMI",
++         "UMC/PB/RAZ",
++         "UMC/PCIE/RAZ",
++         "CS/RAZ",
++         "CS/RAZ",
++         "NBIO/SHUB/RAZ",
++         "PCIE/SATA/RAZ",
++         "PCIE/NBIF/RAZ",
++         "PIE/PSP/KPX_WALF/NBIF/USB/RAZ",
++         "SMU/MPDMA/RAZ",
++         "PCS_XGMI/RAZ",
++         "KPX_SERDES/RAZ"});
 +
 +    static constexpr auto memoryError = std::to_array(
 +        {"Memory training failure", "Memory correctable error",
@@ -338,9 +361,9 @@ index 0000000..f35ffc8
 +    static constexpr auto memoryPprEvent =
 +        std::to_array({"PPR success", "PPR fail", "PPR request", "Reserved"});
 +
-+    static constexpr auto memoryAdddcEvent =
-+        std::to_array({"Bank VLS", "r-Bank VLS + re-buddy",
-+                       "r-Bank VLS + Rank VLS", "r-Rank VLS + re-buddy"});
++    static constexpr auto memoryAdddcEvent = std::to_array(
++        {"Bank VLS", "r-Bank VLS + re-buddy", "r-Bank VLS + Rank VLS",
++         "r-Rank VLS + re-buddy"});
 +
 +    static constexpr auto upiEvent = std::to_array(
 +        {"Successful LLR without Phy Reinit", "Successful LLR with Phy Reinit",
@@ -367,18 +390,23 @@ index 0000000..f35ffc8
 +    {
 +        case RecordType::SYSTEM_EVENT_RECORD:
 +        {
-+            // Currently, we only have one standard SEL needed to support on YV4.
-+            if (eventData[9] == 0x2B) {
++            // Currently, we only have one standard SEL needed to support on
++            // YV4.
++            if (eventData[9] == 0x2B)
++            {
 +                errorLog = "POST_ERROR:";
 +                if ((eventData[11] & 0x0F) == 0x0)
 +                    errorLog += ", System Firmware Error";
 +
-+                if (((eventData[11] >> 6) & 0x03) == 0x2) {
++                if (((eventData[11] >> 6) & 0x03) == 0x2)
++                {
 +                    errorLog += ", OEM Post Code 0x" +
-+                    to_hex_string(eventData[13]) + to_hex_string(eventData[12]);
++                                to_hex_string(eventData[13]) +
++                                to_hex_string(eventData[12]);
 +                }
 +
-+                switch ((eventData[13] << 8) | eventData[12]) {
++                switch ((eventData[13] << 8) | eventData[12])
++                {
 +                    case 0xD9:
 +                        errorLog +=
 +                            ", Error loading Boot Option (Load image returned error)";
@@ -386,16 +414,19 @@ index 0000000..f35ffc8
 +                    default:
 +                        break;
 +                }
-+            } else { // Not supported
++            }
++            else
++            { // Not supported
 +                errorLog =
 +                    "Record Type(0x" +
 +                    to_hex_string(static_cast<uint8_t>(recordType)) +
-+                    "), Raw: " + to_hex_string(eventData[1])  +
++                    "), Raw: " + to_hex_string(eventData[1]) +
 +                    to_hex_string(eventData[2]) + to_hex_string(eventData[3]) +
 +                    to_hex_string(eventData[4]) + to_hex_string(eventData[5]) +
 +                    to_hex_string(eventData[6]) + to_hex_string(eventData[7]) +
 +                    to_hex_string(eventData[8]) + to_hex_string(eventData[9]) +
-+                    to_hex_string(eventData[10]) + to_hex_string(eventData[11]) +
++                    to_hex_string(eventData[10]) +
++                    to_hex_string(eventData[11]) +
 +                    to_hex_string(eventData[12]) + to_hex_string(eventData[13]);
 +            }
 +            break;
@@ -446,30 +477,30 @@ index 0000000..f35ffc8
 +                        {
 +                            if (plat == 0)
 +                            { // Intel
-+                                errorLog = "GeneralInfo: MEMORY_ECC_ERR(0x" +
-+                                           to_hex_string(generalInfo) + "), " +
-+                                           dimmLocation +
-+                                           ", DIMM Failure Event: " +
-+                                           memoryError[static_cast<uint8_t>(
-+                                               eventType)] +
-+                                           ", Major Code: 0x" +
-+                                           to_hex_string(eventData[11]) +
-+                                           ", Minor Code: 0x" +
-+                                           to_hex_string(eventData[12]);
++                                errorLog =
++                                    "GeneralInfo: MEMORY_ECC_ERR(0x" +
++                                    to_hex_string(generalInfo) + "), " +
++                                    dimmLocation + ", DIMM Failure Event: " +
++                                    memoryError[static_cast<uint8_t>(
++                                        eventType)] +
++                                    ", Major Code: 0x" +
++                                    to_hex_string(eventData[11]) +
++                                    ", Minor Code: 0x" +
++                                    to_hex_string(eventData[12]);
 +                            }
 +                            else
 +                            { // AMD
-+                                errorLog = "GeneralInfo: MEMORY_ECC_ERR(0x" +
-+                                           to_hex_string(generalInfo) + "), " +
-+                                           dimmLocation +
-+                                           ", DIMM Failure Event: " +
-+                                           memoryError[static_cast<uint8_t>(
-+                                               eventType)] +
-+                                           ", Major Code: 0x" +
-+                                           to_hex_string(eventData[11]) +
-+                                           ", Minor Code: 0x" +
-+                                           to_hex_string((eventData[13] << 8) |
-+                                                         eventData[12]);
++                                errorLog =
++                                    "GeneralInfo: MEMORY_ECC_ERR(0x" +
++                                    to_hex_string(generalInfo) + "), " +
++                                    dimmLocation + ", DIMM Failure Event: " +
++                                    memoryError[static_cast<uint8_t>(
++                                        eventType)] +
++                                    ", Major Code: 0x" +
++                                    to_hex_string(eventData[11]) +
++                                    ", Minor Code: 0x" +
++                                    to_hex_string((eventData[13] << 8) |
++                                                  eventData[12]);
 +                            }
 +                            break;
 +                        }
@@ -556,23 +587,23 @@ index 0000000..f35ffc8
 +                    uint8_t cpuNumber = (eventData[7] >> 5) & 0x07;
 +                    uint8_t coreNumber = eventData[7] & 0x1F;
 +                    uint8_t machineCheckBankNumber = eventData[8];
-+                    uint32_t errorInfo = (static_cast<uint32_t>(eventData[9]) << 16) |
++                    uint32_t errorInfo =
++                        (static_cast<uint32_t>(eventData[9]) << 16) |
 +                        (static_cast<uint32_t>(eventData[10]) << 8) |
-+                         static_cast<uint32_t>(eventData[11]);
++                        static_cast<uint32_t>(eventData[11]);
 +                    uint8_t errorCode = eventData[12];
 +                    uint8_t errorStatus = eventData[13];
 +
-+                    errorLog = "GeneralInfo: MCAErr(0x" +
-+                               to_hex_string(generalInfo) +
-+                               "), MCA Severity: " +
-+                               errorSeverityDetail[mcaSeverity] +
-+                               ", CPU Number: " + std::to_string(cpuNumber) +
-+                               ", Core Number: " + std::to_string(coreNumber) +
-+                               ", Machine Check Bank: " +
-+                               machineCheckBank[machineCheckBankNumber] +
-+                               ", Error Info: 0x" + to_hex_string(errorInfo) +
-+                               ", Error Code: 0x" + to_hex_string(errorCode) +
-+                               ", Error Status: 0x" + to_hex_string(errorStatus);
++                    errorLog =
++                        "GeneralInfo: MCAErr(0x" + to_hex_string(generalInfo) +
++                        "), MCA Severity: " + errorSeverityDetail[mcaSeverity] +
++                        ", CPU Number: " + std::to_string(cpuNumber) +
++                        ", Core Number: " + std::to_string(coreNumber) +
++                        ", Machine Check Bank: " +
++                        machineCheckBank[machineCheckBankNumber] +
++                        ", Error Info: 0x" + to_hex_string(errorInfo) +
++                        ", Error Code: 0x" + to_hex_string(errorCode) +
++                        ", Error Status: 0x" + to_hex_string(errorStatus);
 +                    break;
 +                }
 +                case UnifiedError::UNIFIED_MCA_ERR_EXT:
@@ -583,15 +614,15 @@ index 0000000..f35ffc8
 +                    uint8_t machineCheckBankNumber = eventData[8];
 +                    uint16_t errorCode = (eventData[9] << 8) | eventData[10];
 +
-+                    errorLog = "GeneralInfo: MCAErrExt(0x" +
-+                               to_hex_string(generalInfo) +
-+                               "), MCA Severity: " +
-+                               errorSeverityDetail[mcaSeverity] +
-+                               ", CPU Number: " + std::to_string(cpuNumber) +
-+                               ", Core Number: " + std::to_string(coreNumber) +
-+                               ", Machine Check Bank: " +
-+                               machineCheckBank[machineCheckBankNumber] +
-+                               ", Error Code: 0x" + to_hex_string(errorCode);
++                    errorLog =
++                        "GeneralInfo: MCAErrExt(0x" +
++                        to_hex_string(generalInfo) +
++                        "), MCA Severity: " + errorSeverityDetail[mcaSeverity] +
++                        ", CPU Number: " + std::to_string(cpuNumber) +
++                        ", Core Number: " + std::to_string(coreNumber) +
++                        ", Machine Check Bank: " +
++                        machineCheckBank[machineCheckBankNumber] +
++                        ", Error Code: 0x" + to_hex_string(errorCode);
 +                    break;
 +                }
 +                case UnifiedError::UNIFIED_RP_PIO_1st:
@@ -696,15 +727,16 @@ index 0000000..f35ffc8
 +                    {
 +                        case PcieEvent::PCIE_DPC:
 +                        {
-+                            errorLog = "GeneralInfo: PCIeEvent(0x" +
-+                                       to_hex_string(generalInfo) +
-+                                       "), PCIe Failure Event: " +
-+                                       pcieEvent[estrIdx] + ", Status: 0x" +
-+                                       to_hex_string((eventData[9] << 8) |
-+                                                     eventData[8]) +
-+                                       ", Source ID: 0x" +
-+                                       to_hex_string((eventData[11] << 8) |
-+                                                     eventData[10]);
++                            errorLog =
++                                "GeneralInfo: PCIeEvent(0x" +
++                                to_hex_string(generalInfo) +
++                                "), PCIe Failure Event: " + pcieEvent[estrIdx] +
++                                ", Status: 0x" +
++                                to_hex_string((eventData[9] << 8) |
++                                              eventData[8]) +
++                                ", Source ID: 0x" +
++                                to_hex_string((eventData[11] << 8) |
++                                              eventData[10]);
 +                            break;
 +                        }
 +                        default:
@@ -794,14 +826,14 @@ index 0000000..f35ffc8
 +                }
 +                case UnifiedError::UNIFIED_BOOT_GUARD:
 +                {
-+                    errorLog = "GeneralInfo: Boot Guard ACM Failure Events(0x" +
-+                               to_hex_string(generalInfo) +
-+                               "), Error Class(0x" +
-+                               to_hex_string(eventData[10]) +
-+                               "), Major Error Code(0x" +
-+                               to_hex_string(eventData[11]) +
-+                               "), Minor Error Code(0x" +
-+                               to_hex_string(eventData[12]) + ")";
++                    errorLog =
++                        "GeneralInfo: Boot Guard ACM Failure Events(0x" +
++                        to_hex_string(generalInfo) + "), Error Class(0x" +
++                        to_hex_string(eventData[10]) +
++                        "), Major Error Code(0x" +
++                        to_hex_string(eventData[11]) +
++                        "), Minor Error Code(0x" +
++                        to_hex_string(eventData[12]) + ")";
 +                    break;
 +                }
 +                case UnifiedError::UNIFIED_PPR_EVENT:
@@ -834,21 +866,22 @@ index 0000000..f35ffc8
 +                }
 +                default:
 +                {
-+                    errorLog = "Undefined Error Type(0x" +
-+                               to_hex_string(static_cast<uint8_t>(errorType)) +
-+                               "), Raw: " + to_hex_string(eventData[1]) +
-+                               to_hex_string(eventData[2]) +
-+                               to_hex_string(eventData[3]) +
-+                               to_hex_string(eventData[4]) +
-+                               to_hex_string(eventData[5]) +
-+                               to_hex_string(eventData[6]) +
-+                               to_hex_string(eventData[7]) +
-+                               to_hex_string(eventData[8]) +
-+                               to_hex_string(eventData[9]) +
-+                               to_hex_string(eventData[10]) +
-+                               to_hex_string(eventData[11]) +
-+                               to_hex_string(eventData[12]) +
-+                               to_hex_string(eventData[13]);
++                    errorLog =
++                        "Undefined Error Type(0x" +
++                        to_hex_string(static_cast<uint8_t>(errorType)) +
++                        "), Raw: " + to_hex_string(eventData[1]) +
++                        to_hex_string(eventData[2]) +
++                        to_hex_string(eventData[3]) +
++                        to_hex_string(eventData[4]) +
++                        to_hex_string(eventData[5]) +
++                        to_hex_string(eventData[6]) +
++                        to_hex_string(eventData[7]) +
++                        to_hex_string(eventData[8]) +
++                        to_hex_string(eventData[9]) +
++                        to_hex_string(eventData[10]) +
++                        to_hex_string(eventData[11]) +
++                        to_hex_string(eventData[12]) +
++                        to_hex_string(eventData[13]);
 +                    break;
 +                }
 +            }
@@ -894,11 +927,11 @@ index 0000000..55822a8
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index b6da53c..88ba5c8 100644
+index b3c97c5..f0142f1 100644
 --- a/platform-mc/event_manager.cpp
 +++ b/platform-mc/event_manager.cpp
-@@ -2,14 +2,17 @@
- 
+@@ -3,14 +3,17 @@
+ #include "libpldm/platform.h"
  #include "libpldm/utils.h"
  
 +#include "requester/configuration_discovery_handler.hpp"
@@ -915,7 +948,7 @@ index b6da53c..88ba5c8 100644
  
  namespace pldm
  {
-@@ -81,6 +84,23 @@ int decode_pldm_cper_event_data(const uint8_t* event_data,
+@@ -81,6 +84,23 @@ int decode_pldm_cper_event_data(
      return PLDM_SUCCESS;
  }
  
@@ -936,12 +969,12 @@ index b6da53c..88ba5c8 100644
 +    return false;
 +}
 +
- int EventManager::handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
-                                       const uint8_t* eventData,
-                                       size_t eventDataSize)
-@@ -129,6 +149,19 @@ int EventManager::handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
+ int EventManager::handlePlatformEvent(
+     pldm_tid_t tid, uint16_t eventId, uint8_t eventClass,
+     const uint8_t* eventData, size_t eventDataSize)
+@@ -145,6 +165,19 @@ int EventManager::handlePlatformEvent(
      {
-         return processCperEvent(eventData, eventDataSize);
+         return processCperEvent(eventId, eventData, eventDataSize);
      }
 +    else if (eventClass == PLDM_OEM_EVENT_CLASS_0xFB)
 +    {
@@ -960,7 +993,7 @@ index b6da53c..88ba5c8 100644
      lg2::info("Unsupported class type {CLASSTYPE}", "CLASSTYPE", eventClass);
  
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index 57a0d9f..645240f 100644
+index c0a7cbe..abe9f19 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
 @@ -6,6 +6,7 @@
@@ -971,22 +1004,21 @@ index 57a0d9f..645240f 100644
  #include "requester/handler.hpp"
  #include "terminus.hpp"
  #include "terminus_manager.hpp"
-@@ -54,9 +55,11 @@ class EventManager
+@@ -60,8 +61,10 @@ class EventManager
  
      explicit EventManager(
          TerminusManager& terminusManager,
 -        std::map<mctp_eid_t, std::shared_ptr<Terminus>>& termini) :
+-        terminusManager(terminusManager), termini(termini)
 +        std::map<mctp_eid_t, std::shared_ptr<Terminus>>& termini,
 +        pldm::ConfigurationDiscoveryHandler* configurationDiscovery = nullptr) :
-         terminusManager(terminusManager),
--        termini(termini){};
-+        termini(termini), configurationDiscovery(configurationDiscovery)
-+    {}
- 
-     /** @brief Handle platform event
-      *
-@@ -110,6 +113,10 @@ class EventManager
-     virtual int processCperEvent(const uint8_t* eventData,
++        terminusManager(terminusManager), termini(termini),
++        configurationDiscovery(configurationDiscovery)
+     {
+         // Default response handler for PollForPlatFormEventMessage
+         registerEventHandler(
+@@ -170,6 +173,10 @@ class EventManager
+     virtual int processCperEvent(uint16_t eventId, const uint8_t* eventData,
                                   size_t eventDataSize);
  
 +    bool checkMetaIana(
@@ -996,17 +1028,17 @@ index 57a0d9f..645240f 100644
      int createCperDumpEntry(const std::string& dataType,
                              const std::string& dataPath);
  
-@@ -127,6 +134,8 @@ class EventManager
+@@ -192,6 +199,8 @@ class EventManager
  
-     /** @brief List of discovered termini */
-     TerminiMapper& termini;
+     /** @brief map of PLDM event type to EventHandlers */
+     EventMap eventHandlers;
 +
 +    pldm::ConfigurationDiscoveryHandler* configurationDiscovery;
  };
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index d0dacae..177a9ff 100644
+index d1d2e52..640034d 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
 @@ -6,11 +6,14 @@
@@ -1035,7 +1067,7 @@ index d0dacae..177a9ff 100644
 +        requester::Handler<requester::Request>& handler,
 +        pldm::InstanceIdDb& instanceIdDb,
 +        pldm::ConfigurationDiscoveryHandler* configurationDiscovery) :
-         terminusManager(event, handler, instanceIdDb, termini, LOCAL_EID, this),
+         terminusManager(event, handler, instanceIdDb, termini, this, LOCAL_EID),
          platformManager(terminusManager, termini),
          sensorManager(event, terminusManager, termini, this),
 -        eventManager(terminusManager, termini)
@@ -1044,7 +1076,7 @@ index d0dacae..177a9ff 100644
      {}
  
      /** @brief Helper function to do the actions before discovering terminus
-@@ -153,6 +160,18 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -166,6 +173,18 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          return PLDM_SUCCESS;
      }
  
@@ -1055,7 +1087,7 @@ index d0dacae..177a9ff 100644
 +        auto eventData = reinterpret_cast<const uint8_t*>(request->payload) +
 +                         eventDataOffset;
 +        auto eventDataSize = payloadLength - eventDataOffset;
-+        eventManager.handlePlatformEvent(tid, PLDM_OEM_EVENT_CLASS_0xFB,
++        eventManager.handlePlatformEvent(tid, 0x00, PLDM_OEM_EVENT_CLASS_0xFB,
 +                                         eventData, eventDataSize);
 +        return PLDM_SUCCESS;
 +    }
@@ -1063,7 +1095,7 @@ index d0dacae..177a9ff 100644
      /** @brief The function to trigger the event polling
       *
       *  @param[in] tid - Terminus ID
-@@ -177,6 +196,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -191,6 +210,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
  
      /** @brief Store event manager handler */
      EventManager eventManager;
@@ -1087,10 +1119,10 @@ index 378628e..47c45df 100644
  
  tests = [
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index d20963b..feebaea 100644
+index d876c23..5f9ecf6 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -285,7 +285,8 @@ int main(int argc, char** argv)
+@@ -287,7 +287,8 @@ int main(int argc, char** argv)
      // Platform handler.
  
      std::unique_ptr<platform_mc::Manager> platformManager =
@@ -1099,21 +1131,21 @@ index d20963b..feebaea 100644
 +                                               configurationDiscovery.get());
  
      pldm::responder::platform::EventMap addOnEventHandlers{
-         {PLDM_OEM_EVENT_CLASS_0xFA,
-@@ -308,6 +309,13 @@ int main(int argc, char** argv)
+         {PLDM_CPER_EVENT_CLASS,
+@@ -310,6 +311,13 @@ int main(int argc, char** argv)
                               size_t eventDataOffset) {
-         return platformManager->handleSensorEvent(
-             request, payloadLength, formatVersion, tid, eventDataOffset);
-+    }}},
+              return platformManager->handleSensorEvent(
+                  request, payloadLength, formatVersion, tid, eventDataOffset);
++         }}},
 +        {PLDM_OEM_EVENT_CLASS_0xFB,
 +         {[&platformManager](const pldm_msg* request, size_t payloadLength,
 +                             uint8_t formatVersion, uint8_t tid,
 +                             size_t eventDataOffset) {
-+        return platformManager->handleOemMetaEvent(
-+            request, payloadLength, formatVersion, tid, eventDataOffset);
-     }}}};
++             return platformManager->handleOemMetaEvent(
++                 request, payloadLength, formatVersion, tid, eventDataOffset);
+          }}}};
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.43.5
+2.44.2
 

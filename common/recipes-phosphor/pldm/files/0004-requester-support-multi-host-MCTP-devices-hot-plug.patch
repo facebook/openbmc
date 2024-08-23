@@ -1,7 +1,7 @@
-From cebc8047dc29b6e304e58da6fa5517f669e320a0 Mon Sep 17 00:00:00 2001
+From 9ae44348f6048af2c0cf28bd12399f43acc70a7e Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 03/13] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 04/13] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -26,17 +26,17 @@ Change-Id: I59b8bf434576cbdea651848a8da11e5b870e2dfa
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
  common/test/mocked_utils.hpp                  |   4 +
- common/types.hpp                              |   2 +-
+ common/types.hpp                              |   6 +-
  common/utils.cpp                              |  17 ++
  common/utils.hpp                              |   9 +-
- libpldmresponder/fru.hpp                      |   2 +-
+ libpldmresponder/fru.hpp                      |   7 +-
  meson.build                                   |   1 +
  pldmd/pldmd.cpp                               |   8 +-
- requester/configuration_discovery_handler.cpp | 176 ++++++++++++++++++
- requester/configuration_discovery_handler.hpp | 134 +++++++++++++
- .../configuration_discovery_handler_test.cpp  | 115 ++++++++++++
+ requester/configuration_discovery_handler.cpp | 178 ++++++++++++++++++
+ requester/configuration_discovery_handler.hpp | 133 +++++++++++++
+ .../configuration_discovery_handler_test.cpp  | 115 +++++++++++
  requester/test/meson.build                    |   3 +
- 11 files changed, 467 insertions(+), 4 deletions(-)
+ 11 files changed, 473 insertions(+), 8 deletions(-)
  create mode 100644 requester/configuration_discovery_handler.cpp
  create mode 100644 requester/configuration_discovery_handler.hpp
  create mode 100644 requester/test/configuration_discovery_handler_test.cpp
@@ -55,20 +55,24 @@ index 1e7cf6e..b4a1be7 100644
 +                (const override));
  };
 diff --git a/common/types.hpp b/common/types.hpp
-index 1a91235..559b0d3 100644
+index 0113775..92c303f 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
-@@ -63,7 +63,7 @@ using Property = std::string;
+@@ -68,9 +68,9 @@ using Interface = std::string;
+ using Interfaces = std::vector<std::string>;
+ using Property = std::string;
  using PropertyType = std::string;
- using Value =
-     std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
+-using Value =
+-    std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
 -                 uint64_t, double, std::string, std::vector<uint8_t>>;
-+                 uint64_t, double, std::string, std::vector<uint8_t>, std::vector<uint64_t>>;
++using Value = std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t,
++                           int64_t, uint64_t, double, std::string,
++                           std::vector<uint8_t>, std::vector<uint64_t>>;
  
  using PropertyMap = std::map<Property, Value>;
  using InterfaceMap = std::map<Interface, PropertyMap>;
 diff --git a/common/utils.cpp b/common/utils.cpp
-index e652021..beae4b4 100644
+index e652021..c7e9eea 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
 @@ -412,6 +412,23 @@ PropertyMap DBusHandler::getDbusPropertiesVariant(
@@ -80,9 +84,9 @@ index e652021..beae4b4 100644
 +                                const std::string& dbusInterface) const
 +{
 +    auto& bus = DBusHandler::getBus();
-+    auto method = bus.new_method_call(service.c_str(), objPath.c_str(),
-+                                      "org.freedesktop.DBus.Properties",
-+                                      "GetAll");
++    auto method =
++        bus.new_method_call(service.c_str(), objPath.c_str(),
++                            "org.freedesktop.DBus.Properties", "GetAll");
 +    method.append(dbusInterface);
 +
 +    auto response = bus.call(method);
@@ -96,19 +100,19 @@ index e652021..beae4b4 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 6b8ea7c..8de6ee7 100644
+index 5561399..fd7c7db 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
 @@ -149,7 +149,7 @@ struct DBusMapping
- 
  using PropertyValue =
      std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
--                 uint64_t, double, std::string, std::vector<uint8_t>,
-+                 uint64_t, double, std::string, std::vector<uint8_t>, std::vector<uint64_t>,
-                  std::vector<std::string>>;
+                  uint64_t, double, std::string, std::vector<uint8_t>,
+-                 std::vector<std::string>>;
++                 std::vector<uint64_t>, std::vector<std::string>>;
  using DbusProp = std::string;
  using DbusChangedProps = std::map<DbusProp, PropertyValue>;
-@@ -202,6 +202,10 @@ class DBusHandlerInterface
+ using DBusInterfaceAdded = std::vector<
+@@ -201,6 +201,10 @@ class DBusHandlerInterface
      virtual PropertyMap
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
                                   const char* dbusInterface) const = 0;
@@ -130,23 +134,28 @@ index 6b8ea7c..8de6ee7 100644
       *         path
       *
 diff --git a/libpldmresponder/fru.hpp b/libpldmresponder/fru.hpp
-index a0757e6..bcc60bb 100644
+index af55f92..8fda98b 100644
 --- a/libpldmresponder/fru.hpp
 +++ b/libpldmresponder/fru.hpp
-@@ -26,7 +26,7 @@ namespace dbus
+@@ -24,9 +24,10 @@ namespace responder
+ namespace dbus
+ {
  
- using Value = std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t,
-                            int64_t, uint64_t, double, std::string,
+-using Value = std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t,
+-                           int64_t, uint64_t, double, std::string,
 -                           std::vector<uint8_t>, std::vector<std::string>>;
-+                           std::vector<uint8_t>, std::vector<uint64_t>, std::vector<std::string>>;
++using Value =
++    std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
++                 uint64_t, double, std::string, std::vector<uint8_t>,
++                 std::vector<uint64_t>, std::vector<std::string>>;
  using PropertyMap = std::map<Property, Value>;
  using InterfaceMap = std::map<Interface, PropertyMap>;
  using ObjectValueTree = std::map<sdbusplus::message::object_path, InterfaceMap>;
 diff --git a/meson.build b/meson.build
-index 73bf679..d457c38 100644
+index eb13820..9262e9d 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -184,6 +184,7 @@ executable(
+@@ -181,6 +181,7 @@ executable(
    'platform-mc/numeric_sensor.cpp',
    'platform-mc/event_manager.cpp',
    'requester/mctp_endpoint_discovery.cpp',
@@ -155,7 +164,7 @@ index 73bf679..d457c38 100644
    dependencies: deps,
    install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index d7cc802..e8e9001 100644
+index 13e1e8e..e013277 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -166,7 +175,7 @@ index d7cc802..e8e9001 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -239,6 +240,9 @@ int main(int argc, char** argv)
+@@ -241,6 +242,9 @@ int main(int argc, char** argv)
          hostEffecterParser;
      std::unique_ptr<DbusToPLDMEvent> dbusToPLDMEventHandler;
      DBusHandler dbusHandler;
@@ -176,7 +185,7 @@ index d7cc802..e8e9001 100644
      std::unique_ptr<platform_config::Handler> platformConfigHandler{};
      platformConfigHandler =
          std::make_unique<platform_config::Handler>(PDR_JSONS_DIR);
-@@ -332,7 +336,9 @@ int main(int argc, char** argv)
+@@ -334,7 +338,9 @@ int main(int argc, char** argv)
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
@@ -189,10 +198,10 @@ index d7cc802..e8e9001 100644
          if (!(revents & EPOLLIN))
 diff --git a/requester/configuration_discovery_handler.cpp b/requester/configuration_discovery_handler.cpp
 new file mode 100644
-index 0000000..4e43767
+index 0000000..8b4d956
 --- /dev/null
 +++ b/requester/configuration_discovery_handler.cpp
-@@ -0,0 +1,176 @@
+@@ -0,0 +1,178 @@
 +#include "configuration_discovery_handler.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -245,7 +254,7 @@ index 0000000..4e43767
 +
 +        for (const auto& [objectPath, serviceMap] : response)
 +        {
-+            appendConfigIfEidMatch(std::get<0>(mctpInfo), objectPath,
++            appendConfigIfEidMatch(std::get<eid>(mctpInfo), objectPath,
 +                                   serviceMap);
 +        }
 +    }
@@ -312,10 +321,12 @@ index 0000000..4e43767
 +    if (response.contains("Address") && response.contains("Bus") &&
 +        response.contains("EndpointId") && response.contains("Name"))
 +    {
-+        auto addressArray  = std::get<std::vector<uint64_t>>(response.at("Address"));
++        auto addressArray =
++            std::get<std::vector<uint64_t>>(response.at("Address"));
 +        uint64_t address = 0;
 +
-+        for (const auto& element : addressArray) {
++        for (const auto& element : addressArray)
++        {
 +            address = (address << 8) | element;
 +        }
 +
@@ -371,10 +382,10 @@ index 0000000..4e43767
 +} // namespace pldm
 diff --git a/requester/configuration_discovery_handler.hpp b/requester/configuration_discovery_handler.hpp
 new file mode 100644
-index 0000000..58d64dc
+index 0000000..403b15f
 --- /dev/null
 +++ b/requester/configuration_discovery_handler.hpp
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,133 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -408,8 +419,7 @@ index 0000000..58d64dc
 +    ~ConfigurationDiscoveryHandler() = default;
 +
 +    explicit ConfigurationDiscoveryHandler(
-+        const pldm::utils::DBusHandler* dBusIntf) :
-+        dBusIntf(dBusIntf)
++        const pldm::utils::DBusHandler* dBusIntf) : dBusIntf(dBusIntf)
 +    {}
 +
 +    /** @brief Discover configuration associated with the new MCTP endpoints.
@@ -511,7 +521,7 @@ index 0000000..58d64dc
 +} // namespace pldm
 diff --git a/requester/test/configuration_discovery_handler_test.cpp b/requester/test/configuration_discovery_handler_test.cpp
 new file mode 100644
-index 0000000..a8230a8
+index 0000000..cd28c42
 --- /dev/null
 +++ b/requester/test/configuration_discovery_handler_test.cpp
 @@ -0,0 +1,115 @@
@@ -549,7 +559,7 @@ index 0000000..a8230a8
 +        .WillOnce(testing::Return(mockedGetSubtreeResponse));
 +
 +    pldm::utils::PropertyMap mockGetAllResponse{
-+        {"Address", uint64_t(0x1)},
++        {"Address", std::vector<uint64_t>{0x1}},
 +        {"Bus", uint64_t(0)},
 +        {"EndpointId", uint64_t(EID)},
 +        {"Name", std::string("MockedDevice")}};
@@ -617,9 +627,9 @@ index 0000000..a8230a8
 +    auto handler =
 +        std::make_unique<pldm::ConfigurationDiscoveryHandler>(&mockedUtils);
 +
-+    pldm::MctpEndpoint mockedMctpEndpoint = {uint64_t(0x1), uint64_t(EID),
-+                                             uint64_t(0), "MockedDevice",
-+                                             std::nullopt};
++    pldm::MctpEndpoint mockedMctpEndpoint = {
++        uint64_t(0x1), uint64_t(EID), uint64_t(0), "MockedDevice",
++        std::nullopt};
 +    handler->getConfigurations().emplace(
 +        "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice",
 +        mockedMctpEndpoint);
@@ -658,5 +668,5 @@ index a08a990..3384793 100644
                           phosphor_logging_dep,
                           sdbusplus,
 -- 
-2.25.1
+2.44.2
 

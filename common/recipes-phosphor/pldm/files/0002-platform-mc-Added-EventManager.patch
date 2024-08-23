@@ -1,69 +1,77 @@
-From 7612aa88f602a64fb8845ace6b6993bd525b57a2 Mon Sep 17 00:00:00 2001
+From c17b15e798ffa3a9e47751de4692fb7b85326b62 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
-Date: Tue, 2 May 2023 10:20:10 +0000
+Date: Tue, 6 Aug 2024 09:23:30 +0000
 Subject: [PATCH 02/13] platform-mc: Added EventManager
 
-Added eventManager to handle sensor event class(00h),
-pldmMessagePollEvent class(05h)  and OEM CPER event class(FAh)
-which are defined in table 11 of DSP0248 v1.2.1. The eventManager
-supports to receive event asynchronously and polls all event
-synchronously if terminus sends pldmMessagePollEvent.
+Added eventManager to handle sensor event class(00h), and OEM CPER event
+class(FAh) which are defined in table 11 of DSP0248 v1.2.1. In this
+commit, the eventManager supports to receive event asynchronously.
 
 Change-Id: I1b337ccae454067841ffbbd8754631216a995542
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
 ---
- libpldmresponder/platform.cpp              |  13 +-
- meson.build                                |   2 +
- meson.options                              |   9 +
- platform-mc/event_manager.cpp              | 698 +++++++++++++++++++++
- platform-mc/event_manager.hpp              | 132 ++++
- platform-mc/manager.cpp                    |  12 +
- platform-mc/manager.hpp                    |  85 ++-
- platform-mc/platform_manager.cpp           | 276 ++++++++
- platform-mc/platform_manager.hpp           |  45 ++
- platform-mc/sensor_manager.cpp             |  13 +-
- platform-mc/sensor_manager.hpp             |   5 +-
- platform-mc/terminus.cpp                   |   6 +-
- platform-mc/terminus.hpp                   |  12 +
- platform-mc/terminus_manager.hpp           |  17 +-
- platform-mc/test/event_manager_test.cpp    | 456 ++++++++++++++
- platform-mc/test/meson.build               |   2 +
- platform-mc/test/mock_event_manager.hpp    |  29 +
- platform-mc/test/mock_sensor_manager.hpp   |   6 +-
- platform-mc/test/mock_terminus_manager.hpp |   3 +-
- platform-mc/test/sensor_manager_test.cpp   |   4 +-
- platform-mc/test/terminus_manager_test.cpp |   2 +-
- pldmd/pldmd.cpp                            |  32 +-
- 22 files changed, 1837 insertions(+), 22 deletions(-)
+ common/types.hpp                         |   6 +
+ libpldmresponder/platform.cpp            |   7 +-
+ meson.build                              |   1 +
+ platform-mc/event_manager.cpp            | 531 +++++++++++++++++++++++
+ platform-mc/event_manager.hpp            | 120 +++++
+ platform-mc/manager.hpp                  |  52 ++-
+ platform-mc/platform_manager.cpp         |  74 ++++
+ platform-mc/platform_manager.hpp         |  10 +
+ platform-mc/sensor_manager.cpp           |   5 +-
+ platform-mc/sensor_manager.hpp           |   5 +-
+ platform-mc/terminus.cpp                 |   4 +-
+ platform-mc/terminus.hpp                 |   3 +
+ platform-mc/test/event_manager_test.cpp  | 458 +++++++++++++++++++
+ platform-mc/test/meson.build             |   2 +
+ platform-mc/test/mock_event_manager.hpp  |  31 ++
+ platform-mc/test/mock_sensor_manager.hpp |   6 +-
+ platform-mc/test/sensor_manager_test.cpp |   2 +-
+ pldmd/pldmd.cpp                          |  25 +-
+ 18 files changed, 1328 insertions(+), 14 deletions(-)
  create mode 100644 platform-mc/event_manager.cpp
  create mode 100644 platform-mc/event_manager.hpp
  create mode 100644 platform-mc/test/event_manager_test.cpp
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
+diff --git a/common/types.hpp b/common/types.hpp
+index 661c2e7..0113775 100644
+--- a/common/types.hpp
++++ b/common/types.hpp
+@@ -52,6 +52,12 @@ using MctpInfos = std::vector<MctpInfo>;
+ #define MCTP_START_VALID_EID 8
+ 
+ #define PLDM_PLATFORM_GETPDR_MAX_RECORD_BYTES 1024
++/* default the max event message buffer size BMC supported to 4K bytes */
++#define PLDM_PLATFORM_EVENT_MSG_MAX_BUFFER_SIZE 4096
++/* DSP0248 section16.9 EventMessageBufferSize Command, the default message
++ * buffer size is 256 bytes
++ */
++#define PLDM_PLATFORM_DEFAULT_MESSAGE_BUFFER_SIZE 256
+ 
+ namespace dbus
+ {
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 522899c..95cfc99 100644
+index 522899c..81442fb 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
 @@ -377,15 +377,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
          try
          {
              const auto& handlers = eventHandlers.at(eventClass);
-+            bool handled = false;
++            bool oneFailedHandler = false;
              for (const auto& handler : handlers)
              {
--                auto rc =
--                    handler(request, payloadLength, formatVersion, tid, offset);
--                if (rc != PLDM_SUCCESS)
-+                auto rc = handler(request, payloadLength, formatVersion, tid,
-+                                  offset);
-+                if (rc == PLDM_SUCCESS)
+                 auto rc =
+                     handler(request, payloadLength, formatVersion, tid, offset);
+                 if (rc != PLDM_SUCCESS)
                  {
 -                    return CmdHandler::ccOnlyResponse(request, rc);
-+                    handled = true;
++                    oneFailedHandler = true;
                  }
              }
-+            if (handled == false)
++            if (oneFailedHandler)
 +            {
 +                return CmdHandler::ccOnlyResponse(request, rc);
 +            }
@@ -71,18 +79,10 @@ index 522899c..95cfc99 100644
          catch (const std::out_of_range& e)
          {
 diff --git a/meson.build b/meson.build
-index 11ba149..73bf679 100644
+index 2977598..eb13820 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -77,6 +77,7 @@ conf_data.set_quoted('STATIC_EID_TABLE_PATH', join_paths(package_datadir, 'stati
- conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
- conf_data.set('DEFAULT_SENSOR_UPDATER_INTERVAL', get_option('default-sensor-update-interval'))
- conf_data.set_quoted('PLDM_T2_CONFIG_JSON', join_paths(package_datadir, 'pldm_t2_config.json'))
-+conf_data.set('LOCAL_EID', get_option('local-eid'))
- 
- configure_file(output: 'config.h',
-   configuration: conf_data
-@@ -181,6 +182,7 @@ executable(
+@@ -179,6 +179,7 @@ executable(
    'platform-mc/manager.cpp',
    'platform-mc/sensor_manager.cpp',
    'platform-mc/numeric_sensor.cpp',
@@ -90,29 +90,12 @@ index 11ba149..73bf679 100644
    'requester/mctp_endpoint_discovery.cpp',
    implicit_include_directories: false,
    dependencies: deps,
-diff --git a/meson.options b/meson.options
-index deb6dc6..158c219 100644
---- a/meson.options
-+++ b/meson.options
-@@ -201,3 +201,12 @@ option(
-                     interval.''',
-     value: 999
- )
-+
-+## BMC endpoint Options
-+option(
-+    'local-eid',
-+    type: 'integer',
-+    min: 1,
-+    max: 255,
-+    description: 'The local MCTP EID',
-+    value: 8)
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
 new file mode 100644
-index 0000000..b6da53c
+index 0000000..7cd2cb2
 --- /dev/null
 +++ b/platform-mc/event_manager.cpp
-@@ -0,0 +1,698 @@
+@@ -0,0 +1,531 @@
 +#include "event_manager.hpp"
 +
 +#include "libpldm/utils.h"
@@ -140,7 +123,7 @@ index 0000000..b6da53c
 +    PLDM_FORMAT_TYPE_CPER_SECTION = 0x1
 +};
 +
-+/* Minimum length of pldm cper event data */
++/* Minumum length of pldm cper event data */
 +#define PLDM_CPER_EVENT_DATA_MIN_LENGTH 4
 +
 +/** @struct pldm_cper_event
@@ -169,14 +152,13 @@ index 0000000..b6da53c
 + *  @note  Caller is responsible for memory alloc and dealloc of param
 + *         'event_data'
 + */
-+int decode_pldm_cper_event_data(const uint8_t* event_data,
-+                                size_t event_data_length,
-+                                uint8_t* format_version, uint8_t* format_type,
-+                                uint16_t* cper_event_data_length,
-+                                uint8_t** cper_event_data)
++int decode_pldm_cper_event_data(
++    const uint8_t* event_data, size_t event_data_length,
++    uint8_t* format_version, uint8_t* format_type,
++    uint16_t* cper_event_data_length, uint8_t** cper_event_data)
 +{
-+    if (event_data == NULL || format_version == NULL || format_type == NULL ||
-+        cper_event_data_length == NULL || cper_event_data == NULL)
++    if (!event_data || !format_version || !format_type ||
++        !cper_event_data_length || !cper_event_data)
 +    {
 +        return PLDM_ERROR_INVALID_DATA;
 +    }
@@ -196,10 +178,11 @@ index 0000000..b6da53c
 +    return PLDM_SUCCESS;
 +}
 +
-+int EventManager::handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
-+                                      const uint8_t* eventData,
-+                                      size_t eventDataSize)
++int EventManager::handlePlatformEvent(
++    pldm_tid_t tid, uint16_t eventId, uint8_t eventClass,
++    const uint8_t* eventData, size_t eventDataSize)
 +{
++    /* EventClass sensorEvent `Table 11 - PLDM Event Types` DSP0248 */
 +    if (eventClass == PLDM_SENSOR_EVENT)
 +    {
 +        uint16_t sensorId = 0;
@@ -231,18 +214,10 @@ index 0000000..b6da53c
 +                return PLDM_ERROR;
 +        }
 +    }
-+    else if (eventClass == PLDM_MESSAGE_POLL_EVENT)
++    /* EventClass CPER (0xFA OEM) `Table 11 - PLDM Event Types` DSP0248 */
++    else if (eventClass == PLDM_CPER_EVENT_CLASS)
 +    {
-+        lg2::info("received poll event for terminus {TID}", "TID", tid);
-+        if (termini.contains(tid))
-+        {
-+            termini[tid]->pollEvent = true;
-+        }
-+        return PLDM_SUCCESS;
-+    }
-+    else if (eventClass == PLDM_OEM_EVENT_CLASS_0xFA)
-+    {
-+        return processCperEvent(eventData, eventDataSize);
++        return processCperEvent(eventId, eventData, eventDataSize);
 +    }
 +
 +    lg2::info("Unsupported class type {CLASSTYPE}", "CLASSTYPE", eventClass);
@@ -250,174 +225,17 @@ index 0000000..b6da53c
 +    return PLDM_ERROR;
 +}
 +
-+exec::task<int> EventManager::pollForPlatformEventTask(pldm_tid_t tid)
-+{
-+    uint8_t rc = 0;
-+    uint8_t transferOperationFlag = PLDM_GET_FIRSTPART;
-+    uint32_t dataTransferHandle = 0;
-+    uint32_t eventIdToAcknowledge = 0;
-+
-+    uint8_t completionCode;
-+    uint8_t eventTid;
-+    uint16_t eventId = 0xffff;
-+    uint32_t nextDataTransferHandle;
-+    uint8_t transferFlag;
-+    uint8_t eventClass;
-+    uint32_t eventDataSize;
-+    uint8_t* eventData;
-+    uint32_t eventDataIntegrityChecksum;
-+
-+    std::vector<uint8_t> eventMessage{};
-+
-+    while (eventId != 0)
-+    {
-+        completionCode = 0;
-+        eventTid = 0;
-+        eventId = 0;
-+        nextDataTransferHandle = 0;
-+        transferFlag = 0;
-+        eventClass = 0;
-+        eventDataSize = 0;
-+        eventData = nullptr;
-+        eventDataIntegrityChecksum = 0;
-+
-+        rc = co_await pollForPlatformEventMessage(
-+            tid, transferOperationFlag, dataTransferHandle,
-+            eventIdToAcknowledge, completionCode, eventTid, eventId,
-+            nextDataTransferHandle, transferFlag, eventClass, eventDataSize,
-+            eventData, eventDataIntegrityChecksum);
-+        if (rc || completionCode != PLDM_SUCCESS)
-+        {
-+            lg2::error(
-+                "Failed to pollForPlatformEventMessage for terminus {TID}, event {EVENTID}, error {RC}, complete code {CC}",
-+                "TID", tid, "EVENTID", eventId, "RC", rc, "CC", completionCode);
-+            co_return rc;
-+        }
-+
-+        if (eventDataSize > 0)
-+        {
-+            eventMessage.insert(eventMessage.end(), eventData,
-+                                eventData + eventDataSize);
-+        }
-+
-+        if (transferOperationFlag == PLDM_ACKNOWLEDGEMENT_ONLY)
-+        {
-+            if (eventId == 0xffff)
-+            {
-+                transferOperationFlag = PLDM_GET_FIRSTPART;
-+                dataTransferHandle = 0;
-+                eventIdToAcknowledge = 0;
-+                eventMessage.clear();
-+            }
-+        }
-+        else
-+        {
-+            if (transferFlag == PLDM_START || transferFlag == PLDM_MIDDLE)
-+            {
-+                transferOperationFlag = PLDM_GET_NEXTPART;
-+                dataTransferHandle = nextDataTransferHandle;
-+                eventIdToAcknowledge = 0xffff;
-+            }
-+            else
-+            {
-+                if (transferFlag == PLDM_START_AND_END)
-+                {
-+                    handlePlatformEvent(eventTid, eventClass,
-+                                        eventMessage.data(),
-+                                        eventMessage.size());
-+                }
-+                else if (transferFlag == PLDM_END)
-+                {
-+                    if (eventDataIntegrityChecksum ==
-+                        crc32(eventMessage.data(), eventMessage.size()))
-+                    {
-+                        handlePlatformEvent(eventTid, eventClass,
-+                                            eventMessage.data(),
-+                                            eventMessage.size());
-+                    }
-+                    else
-+                    {
-+                        lg2::error(
-+                            "pollForPlatformEventMessage for terminus {TID} with event {EVENTID} checksum error.",
-+                            "TID", tid, "EVENTID", eventId);
-+                    }
-+                }
-+
-+                transferOperationFlag = PLDM_ACKNOWLEDGEMENT_ONLY;
-+                dataTransferHandle = 0;
-+                eventIdToAcknowledge = eventId;
-+            }
-+        }
-+    }
-+
-+    co_return PLDM_SUCCESS;
-+}
-+
-+exec::task<int> EventManager::pollForPlatformEventMessage(
-+    pldm_tid_t tid, uint8_t transferOperationFlag, uint32_t dataTransferHandle,
-+    uint16_t eventIdToAcknowledge, uint8_t& completionCode, uint8_t& eventTid,
-+    uint16_t& eventId, uint32_t& nextDataTransferHandle, uint8_t& transferFlag,
-+    uint8_t& eventClass, uint32_t& eventDataSize, uint8_t*& eventData,
-+    uint32_t& eventDataIntegrityChecksum)
-+{
-+    Request request(sizeof(pldm_msg_hdr) +
-+                    PLDM_POLL_FOR_PLATFORM_EVENT_MESSAGE_REQ_BYTES);
-+    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
-+    auto rc = encode_poll_for_platform_event_message_req(
-+        0, 0x01, transferOperationFlag, dataTransferHandle,
-+        eventIdToAcknowledge, requestMsg, request.size());
-+    if (rc)
-+    {
-+        lg2::error(
-+            "Failed to encode request PollForPlatformEventMessage for terminus ID {TID}, error {RC} ",
-+            "TID", tid, "RC", rc);
-+        co_return rc;
-+    }
-+
-+    const pldm_msg* responseMsg = nullptr;
-+    size_t responseLen = 0;
-+    rc = co_await terminusManager.sendRecvPldmMsg(tid, request, &responseMsg,
-+                                                  &responseLen);
-+    if (rc)
-+    {
-+        lg2::error(
-+            "Failed to send PollForPlatformEventMessage message for terminus {TID}, error {RC}",
-+            "TID", tid, "RC", rc);
-+        co_return rc;
-+    }
-+
-+    rc = decode_poll_for_platform_event_message_resp(
-+        responseMsg, responseLen, &completionCode, &eventTid, &eventId,
-+        &nextDataTransferHandle, &transferFlag, &eventClass, &eventDataSize,
-+        (void**)&eventData, &eventDataIntegrityChecksum);
-+    if (rc)
-+    {
-+        lg2::error(
-+            "Failed to decode response PollForPlatformEventMessage for terminus ID {TID}, error {RC} ",
-+            "TID", tid, "RC", rc);
-+        co_return rc;
-+    }
-+    if (completionCode != PLDM_SUCCESS)
-+    {
-+        lg2::error(
-+            "Error : PollForPlatformEventMessage for terminus ID {TID}, complete code {CC}.",
-+            "TID", tid, "CC", completionCode);
-+        co_return rc;
-+    }
-+
-+    co_return completionCode;
-+}
-+
-+int EventManager::processCperEvent(const uint8_t* eventData,
++int EventManager::processCperEvent([[maybe_unused]] uint16_t eventId,
++                                   const uint8_t* eventData,
 +                                   size_t eventDataSize)
 +{
 +    uint8_t formatVersion;
 +    uint8_t formatType = 0;
 +    uint16_t cperEventDataLength;
 +    uint8_t* cperEventData;
-+    auto rc = decode_pldm_cper_event_data(eventData, eventDataSize,
-+                                          &formatVersion, &formatType,
-+                                          &cperEventDataLength, &cperEventData);
++    auto rc = decode_pldm_cper_event_data(
++        eventData, eventDataSize, &formatVersion, &formatType,
++        &cperEventDataLength, &cperEventData);
 +
 +    if (rc)
 +    {
@@ -512,10 +330,9 @@ index 0000000..b6da53c
 +    return PLDM_SUCCESS;
 +}
 +
-+int EventManager::createSensorThresholdLogEntry(const std::string& messageId,
-+                                                const std::string& sensorName,
-+                                                const double reading,
-+                                                const double threshold)
++int EventManager::createSensorThresholdLogEntry(
++    const std::string& messageId, const std::string& sensorName,
++    const double reading, const double threshold)
 +{
 +    using namespace sdbusplus::xyz::openbmc_project::Logging::server;
 +    using Level =
@@ -530,8 +347,8 @@ index 0000000..b6da53c
 +
 +        try
 +        {
-+            auto service = pldm::utils::DBusHandler().getService(logObjPath,
-+                                                                 logInterface);
++            auto service =
++                pldm::utils::DBusHandler().getService(logObjPath, logInterface);
 +            auto severity = sdbusplus::xyz::openbmc_project::Logging::server::
 +                convertForMessage(level);
 +            auto method = bus.new_method_call(service.c_str(), logObjPath,
@@ -551,9 +368,9 @@ index 0000000..b6da53c
 +    addData["REDFISH_MESSAGE_ID"] = messageId;
 +    Level level = Level::Informational;
 +
-+    addData["REDFISH_MESSAGE_ARGS"] = sensorName + "," +
-+                                      std::to_string(reading) + "," +
-+                                      std::to_string(threshold);
++    addData["REDFISH_MESSAGE_ARGS"] =
++        sensorName + "," + std::to_string(reading) + "," +
++        std::to_string(threshold);
 +
 +    if (messageId == pldm::platform_mc::SensorThresholdWarningLowGoingHigh ||
 +        messageId == pldm::platform_mc::SensorThresholdWarningHighGoingLow)
@@ -596,9 +413,9 @@ index 0000000..b6da53c
 +    uint8_t previousEventState = 0;
 +    uint8_t sensorDataSize = 0;
 +    uint32_t presentReading;
-+    auto rc = decode_numeric_sensor_data(sensorData, sensorDataLength,
-+                                         &eventState, &previousEventState,
-+                                         &sensorDataSize, &presentReading);
++    auto rc = decode_numeric_sensor_data(
++        sensorData, sensorDataLength, &eventState, &previousEventState,
++        &sensorDataSize, &presentReading);
 +    if (rc)
 +    {
 +        lg2::error(
@@ -681,9 +498,8 @@ index 0000000..b6da53c
 +    return PLDM_ERROR;
 +}
 +
-+std::string
-+    EventManager::getSensorThresholdMessageId(uint8_t previousEventState,
-+                                              uint8_t eventState)
++std::string EventManager::getSensorThresholdMessageId(
++    uint8_t previousEventState, uint8_t eventState)
 +{
 +    switch (previousEventState)
 +    {
@@ -813,10 +629,10 @@ index 0000000..b6da53c
 +} // namespace pldm
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
 new file mode 100644
-index 0000000..57a0d9f
+index 0000000..14b12f9
 --- /dev/null
 +++ b/platform-mc/event_manager.hpp
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,120 @@
 +#pragma once
 +
 +#include "libpldm/platform.h"
@@ -829,7 +645,7 @@ index 0000000..57a0d9f
 +#include "terminus.hpp"
 +#include "terminus_manager.hpp"
 +
-+#define PLDM_OEM_EVENT_CLASS_0xFA 0xFA
++#define PLDM_CPER_EVENT_CLASS 0xFA
 +
 +namespace pldm
 +{
@@ -874,59 +690,45 @@ index 0000000..57a0d9f
 +    explicit EventManager(
 +        TerminusManager& terminusManager,
 +        std::map<mctp_eid_t, std::shared_ptr<Terminus>>& termini) :
-+        terminusManager(terminusManager),
-+        termini(termini){};
++        terminusManager(terminusManager), termini(termini) {};
 +
 +    /** @brief Handle platform event
 +     *
 +     *  @param[in] tid - tid where the event is from
++     *  @param[in] eventId - event Id
 +     *  @param[in] eventClass - event class
 +     *  @param[in] eventData - event data
 +     *  @param[in] eventDataSize - size of event data
 +     *  @return PLDM completion code
 +     *
 +     */
-+    int handlePlatformEvent(pldm_tid_t tid, uint8_t eventClass,
-+                            const uint8_t* eventData, size_t eventDataSize);
++    int handlePlatformEvent(pldm_tid_t tid, uint16_t eventId,
++                            uint8_t eventClass, const uint8_t* eventData,
++                            size_t eventDataSize);
 +
 +    std::string getSensorThresholdMessageId(uint8_t previousEventState,
 +                                            uint8_t eventState);
 +
-+    /** @brief A Coroutine to poll all events from terminus
-+     *
-+     *  @param[in] tid - the destination TID
-+     *  @return coroutine return_value - PLDM completion code
++    /** @brief Set available state of terminus for pldm request.
 +     */
-+    exec::task<int> pollForPlatformEventTask(pldm_tid_t tid);
++    void updateAvailableState(pldm_tid_t tid, Availability state)
++    {
++        availableState[tid] = state;
++    };
++
++    /** @brief Get available state of terminus for pldm request.
++     */
++    bool getAvailableState(pldm_tid_t tid)
++    {
++        if (!availableState.contains(tid))
++        {
++            return false;
++        }
++        return availableState[tid];
++    };
 +
 +  protected:
-+    /** @brief Send pollForPlatformEventMessage and return response
-+     *
-+     *  @param[in] tid - Destination TID
-+     *  @param[in] transferOpFlag - Transfer Operation Flag
-+     *  @param[in] dataTransferHandle - Data transfer handle
-+     *  @param[in] eventIdToAcknowledge - Event ID
-+     *  @param[out] completionCode - the complete code of response message
-+     *  @param[out] eventTid - Event terminus ID
-+     *  @param[out] eventId - Event ID
-+     *  @param[out] nextDataTransferHandle - Next handle to get next data part
-+     *  @param[out] transferFlag - transfer Flag of response data
-+     *  @param[out] eventClass - event class
-+     *  @param[out] eventDataSize - data size of event response message
-+     *  @param[out] eventData - event data of response message
-+     *  @param[out] eventDataIntegrityChecksum - check sum of final event
-+     *  @return coroutine return_value - PLDM completion code
-+     *
-+     */
-+    exec::task<int> pollForPlatformEventMessage(
-+        pldm_tid_t tid, uint8_t transferOperationFlag,
-+        uint32_t dataTransferHandle, uint16_t eventIdToAcknowledge,
-+        uint8_t& completionCode, uint8_t& eventTid, uint16_t& eventId,
-+        uint32_t& nextDataTransferHandle, uint8_t& transferFlag,
-+        uint8_t& eventClass, uint32_t& eventDataSize, uint8_t*& eventData,
-+        uint32_t& eventDataIntegrityChecksum);
-+
-+    virtual int processCperEvent(const uint8_t* eventData,
++    virtual int processCperEvent(uint16_t eventId, const uint8_t* eventData,
 +                                 size_t eventDataSize);
 +
 +    int createCperDumpEntry(const std::string& dataType,
@@ -936,43 +738,23 @@ index 0000000..57a0d9f
 +                                  const uint8_t* sensorData,
 +                                  size_t sensorDataLength);
 +
-+    virtual int createSensorThresholdLogEntry(const std::string& messageID,
-+                                              const std::string& sensorName,
-+                                              const double reading,
-+                                              const double threshold);
++    virtual int createSensorThresholdLogEntry(
++        const std::string& messageID, const std::string& sensorName,
++        const double reading, const double threshold);
 +
 +    /** @brief Reference of terminusManager */
 +    TerminusManager& terminusManager;
 +
 +    /** @brief List of discovered termini */
 +    TerminiMapper& termini;
++
++    /** @brief Available state for pldm request of terminus*/
++    std::map<pldm_tid_t, Availability> availableState;
 +};
 +} // namespace platform_mc
 +} // namespace pldm
-diff --git a/platform-mc/manager.cpp b/platform-mc/manager.cpp
-index 7e79a29..3305d66 100644
---- a/platform-mc/manager.cpp
-+++ b/platform-mc/manager.cpp
-@@ -31,5 +31,17 @@ exec::task<int> Manager::afterDiscoverTerminus()
-     co_return rc;
- }
- 
-+exec::task<int> Manager::pollForPlatformEvent(pldm_tid_t tid)
-+{
-+    auto it = termini.find(tid);
-+    if (it != termini.end())
-+    {
-+        auto& terminus = it->second;
-+        co_await eventManager.pollForPlatformEventTask(tid);
-+        terminus->pollEvent = false;
-+    }
-+    co_return PLDM_SUCCESS;
-+}
-+
- } // namespace platform_mc
- } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 342c028..d0dacae 100644
+index 93b7925..7ad3479 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
 @@ -4,6 +4,7 @@
@@ -983,12 +765,9 @@ index 342c028..d0dacae 100644
  #include "platform_manager.hpp"
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
-@@ -33,9 +34,10 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
- 
-     explicit Manager(sdeventplus::Event& event, RequesterHandler& handler,
+@@ -35,7 +36,8 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
                       pldm::InstanceIdDb& instanceIdDb) :
--        terminusManager(event, handler, instanceIdDb, termini, this),
-+        terminusManager(event, handler, instanceIdDb, termini, LOCAL_EID, this),
+         terminusManager(event, handler, instanceIdDb, termini, this, LOCAL_EID),
          platformManager(terminusManager, termini),
 -        sensorManager(event, terminusManager, termini)
 +        sensorManager(event, terminusManager, termini, this),
@@ -996,11 +775,19 @@ index 342c028..d0dacae 100644
      {}
  
      /** @brief Helper function to do the actions before discovering terminus
-@@ -84,6 +86,82 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -87,6 +89,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+         if (termini.contains(tid))
+         {
+             sensorManager.updateAvailableState(tid, state);
++            eventManager.updateAvailableState(tid, state);
+         }
+     }
+ 
+@@ -97,6 +100,50 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          sensorManager.stopPolling(tid);
      }
  
-+    /** @brief CPER event handler function
++    /** @brief CPER event handler funtion
 +     *
 +     *  @param[in] request - Event message
 +     *  @param[in] payloadLength - Event message payload size
@@ -1017,35 +804,12 @@ index 342c028..d0dacae 100644
 +        auto eventData = reinterpret_cast<const uint8_t*>(request->payload) +
 +                         eventDataOffset;
 +        auto eventDataSize = payloadLength - eventDataOffset;
-+        eventManager.handlePlatformEvent(tid, PLDM_OEM_EVENT_CLASS_0xFA,
++        eventManager.handlePlatformEvent(tid, 0x00, PLDM_CPER_EVENT_CLASS,
 +                                         eventData, eventDataSize);
 +        return PLDM_SUCCESS;
 +    }
 +
-+    /** @brief PLDM POLL event handler function
-+     *
-+     *  @param[in] request - Event message
-+     *  @param[in] payloadLength - Event message payload size
-+     *  @param[in] tid - Terminus ID
-+     *  @param[in] eventDataOffset - Event data offset
-+     *
-+     *  @return PLDM error code: PLDM_SUCCESS when there is no error in handling
-+     *          the event
-+     */
-+    int handlePldmMessagePollEvent(const pldm_msg* request,
-+                                   size_t payloadLength,
-+                                   uint8_t /* formatVersion */, uint8_t tid,
-+                                   size_t eventDataOffset)
-+    {
-+        auto eventData = reinterpret_cast<const uint8_t*>(request->payload) +
-+                         eventDataOffset;
-+        auto eventDataSize = payloadLength - eventDataOffset;
-+        eventManager.handlePlatformEvent(tid, PLDM_MESSAGE_POLL_EVENT,
-+                                         eventData, eventDataSize);
-+        return PLDM_SUCCESS;
-+    }
-+
-+    /** @brief Sensor event handler function
++    /** @brief Sensor event handler funtion
 +     *
 +     *  @param[in] request - Event message
 +     *  @param[in] payloadLength - Event message payload size
@@ -1062,24 +826,15 @@ index 342c028..d0dacae 100644
 +        auto eventData = reinterpret_cast<const uint8_t*>(request->payload) +
 +                         eventDataOffset;
 +        auto eventDataSize = payloadLength - eventDataOffset;
-+        eventManager.handlePlatformEvent(tid, PLDM_SENSOR_EVENT, eventData,
-+                                         eventDataSize);
++        eventManager.handlePlatformEvent(tid, 0x00, PLDM_SENSOR_EVENT,
++                                         eventData, eventDataSize);
 +        return PLDM_SUCCESS;
 +    }
-+
-+    /** @brief The function to trigger the event polling
-+     *
-+     *  @param[in] tid - Terminus ID
-+     *  @param[in] eventDataOffset - Event data offset
-+     *
-+     *  @return coroutine return_value - PLDM completion code
-+     */
-+    exec::task<int> pollForPlatformEvent(pldm_tid_t tid);
 +
    private:
      /** @brief List of discovered termini */
      TerminiMapper termini{};
-@@ -96,6 +174,9 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -109,6 +156,9 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
  
      /** @brief Store platform manager handler */
      SensorManager sensorManager;
@@ -1090,30 +845,18 @@ index 342c028..d0dacae 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index f6ffcc5..2447485 100644
+index 923b7be..0b48e92 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
-@@ -15,6 +15,10 @@ namespace platform_mc
- 
- exec::task<int> PlatformManager::initTerminus()
- {
-+/* DSP0248 section16.9 EventMessageBufferSize Command, the default message
-+ * buffer size is 256 bytes*/
-+#define DEFAULT_MESSAGE_BUFFER_SIZE 256
-+
-     for (auto& [tid, terminus] : termini)
-     {
-         if (terminus->initialized)
-@@ -36,7 +40,118 @@ exec::task<int> PlatformManager::initTerminus()
- 
+@@ -37,6 +37,29 @@ exec::task<int> PlatformManager::initTerminus()
              terminus->parseTerminusPDRs();
          }
-+
+ 
 +        uint16_t terminusMaxBufferSize = terminus->maxBufferSize;
 +        if (!terminus->doesSupportCommand(PLDM_PLATFORM,
 +                                          PLDM_EVENT_MESSAGE_BUFFER_SIZE))
 +        {
-+            terminusMaxBufferSize = DEFAULT_MESSAGE_BUFFER_SIZE;
++            terminusMaxBufferSize = PLDM_PLATFORM_DEFAULT_MESSAGE_BUFFER_SIZE;
 +        }
 +        else
 +        {
@@ -1125,115 +868,26 @@ index f6ffcc5..2447485 100644
 +                lg2::error(
 +                    "Failed to get message buffer size for terminus with TID: {TID}, error: {ERROR}",
 +                    "TID", tid, "ERROR", rc);
-+                terminusMaxBufferSize = DEFAULT_MESSAGE_BUFFER_SIZE;
++                terminusMaxBufferSize =
++                    PLDM_PLATFORM_DEFAULT_MESSAGE_BUFFER_SIZE;
 +            }
 +        }
-+        terminus->maxBufferSize = std::min(terminus->maxBufferSize,
-+                                           terminusMaxBufferSize);
++        terminus->maxBufferSize =
++            std::min(terminus->maxBufferSize, terminusMaxBufferSize);
 +
-+        if (!terminus->doesSupportCommand(PLDM_PLATFORM,
-+                                          PLDM_EVENT_MESSAGE_SUPPORTED))
-+        {
-+            terminus->synchronyConfigurationSupported.byte = 0;
-+        }
-+        else
-+        {
-+            /**
-+             *  Get synchronyConfigurationSupported use PLDM command
-+             *  eventMessageBufferSize
-+             */
-+            uint8_t synchronyConfiguration = 0;
-+            uint8_t numberEventClassReturned = 0;
-+            std::vector<uint8_t> eventClass{};
-+            auto rc = co_await eventMessageSupported(
-+                tid, 1, synchronyConfiguration,
-+                terminus->synchronyConfigurationSupported,
-+                numberEventClassReturned, eventClass);
-+            if (rc != PLDM_SUCCESS)
-+            {
-+                lg2::error(
-+                    "Failed to get event message supported for terminus with TID: {TID}, error: {ERROR}",
-+                    "TID", tid, "ERROR", rc);
-+                terminus->synchronyConfigurationSupported.byte = 0;
-+            }
-+        }
-+
-+        if (!terminus->doesSupportCommand(PLDM_PLATFORM,
-+                                          PLDM_SET_EVENT_RECEIVER))
-+        {
-+            lg2::error("Terminus {TID} does not support Event", "TID", tid);
-+        }
-+        else
-+        {
-+            /**
-+             *  Set Event receiver base on synchronyConfigurationSupported data
-+             *  use PLDM command SetEventReceiver
-+             */
-+            pldm_event_message_global_enable eventMessageGlobalEnable =
-+                PLDM_EVENT_MESSAGE_GLOBAL_DISABLE;
-+            uint16_t heartbeatTimer = 0;
-+
-+            /* Use PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE when
-+             * for eventMessageGlobalEnable when the terminus supports that type
-+             */
-+            if (terminus->synchronyConfigurationSupported.byte &
-+                (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE))
-+            {
-+                heartbeatTimer = 0x78;
-+                eventMessageGlobalEnable =
-+                    PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE;
-+            }
-+            /* Use PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC when
-+             * for eventMessageGlobalEnable when the terminus does not support
-+             * PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE
-+             * and supports PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC type
-+             */
-+            else if (terminus->synchronyConfigurationSupported.byte &
-+                     (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC))
-+            {
-+                eventMessageGlobalEnable =
-+                    PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC;
-+            }
-+            /* Only use PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_POLLING
-+             * for eventMessageGlobalEnable when the terminus only supports
-+             * this type
-+             */
-+            else if (terminus->synchronyConfigurationSupported.byte &
-+                     (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_POLLING))
-+            {
-+                eventMessageGlobalEnable =
-+                    PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_POLLING;
-+            }
-+
-+            if (eventMessageGlobalEnable != PLDM_EVENT_MESSAGE_GLOBAL_DISABLE)
-+            {
-+                auto rc = co_await setEventReceiver(
-+                    tid, eventMessageGlobalEnable,
-+                    PLDM_TRANSPORT_PROTOCOL_TYPE_MCTP, heartbeatTimer);
-+                if (rc != PLDM_SUCCESS)
-+                {
-+                    lg2::error(
-+                        "Failed to set event receiver for terminus with TID: {TID}, error: {ERROR}",
-+                        "TID", tid, "ERROR", rc);
-+                }
-+            }
-+        }
-     }
-+
-     co_return PLDM_SUCCESS;
- }
- 
-@@ -265,5 +380,166 @@ exec::task<int> PlatformManager::getPDRRepositoryInfo(
+         auto rc = co_await configEventReceiver(tid);
+         if (rc)
+         {
+@@ -369,6 +392,57 @@ exec::task<int> PlatformManager::getPDRRepositoryInfo(
      co_return completionCode;
  }
  
-+exec::task<int>
-+    PlatformManager::eventMessageBufferSize(pldm_tid_t tid,
-+                                            uint16_t receiverMaxBufferSize,
-+                                            uint16_t& terminusBufferSize)
++exec::task<int> PlatformManager::eventMessageBufferSize(
++    pldm_tid_t tid, uint16_t receiverMaxBufferSize,
++    uint16_t& terminusBufferSize)
 +{
-+    Request request(sizeof(pldm_msg_hdr) +
-+                    PLDM_EVENT_MESSAGE_BUFFER_SIZE_REQ_BYTES);
++    Request request(
++        sizeof(pldm_msg_hdr) + PLDM_EVENT_MESSAGE_BUFFER_SIZE_REQ_BYTES);
 +    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
 +    auto rc = encode_event_message_buffer_size_req(0, receiverMaxBufferSize,
 +                                                   requestMsg);
@@ -1279,143 +933,17 @@ index f6ffcc5..2447485 100644
 +    co_return completionCode;
 +}
 +
-+exec::task<int> PlatformManager::setEventReceiver(
-+    pldm_tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable,
-+    pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer)
-+{
-+    Request request(sizeof(pldm_msg_hdr) + PLDM_SET_EVENT_RECEIVER_REQ_BYTES);
-+    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
-+    auto rc = encode_set_event_receiver_req(
-+        0, eventMessageGlobalEnable, protocalType,
-+        terminusManager.getLocalEid(), heartbeatTimer, requestMsg);
-+    if (rc)
-+    {
-+        lg2::error(
-+            "Failed to encode request SetEventReceiver for terminus ID {TID}, error {RC} ",
-+            "TID", tid, "RC", rc);
-+        co_return rc;
-+    }
-+
-+    const pldm_msg* responseMsg = nullptr;
-+    size_t responseLen = 0;
-+    rc = co_await terminusManager.sendRecvPldmMsg(tid, request, &responseMsg,
-+                                                  &responseLen);
-+    if (rc)
-+    {
-+        lg2::error(
-+            "Failed to send SetEventReceiver message for terminus {TID}, error {RC}",
-+            "TID", tid, "RC", rc);
-+        co_return rc;
-+    }
-+
-+    uint8_t completionCode;
-+    rc = decode_set_event_receiver_resp(responseMsg, responseLen,
-+                                        &completionCode);
-+    if (rc)
-+    {
-+        lg2::error(
-+            "Failed to decode response SetEventReceiver for terminus ID {TID}, error {RC} ",
-+            "TID", tid, "RC", rc);
-+        co_return rc;
-+    }
-+
-+    if (completionCode != PLDM_SUCCESS)
-+    {
-+        lg2::error(
-+            "Error : SetEventReceiver for terminus ID {TID}, complete code {CC}.",
-+            "TID", tid, "CC", completionCode);
-+        co_return rc;
-+    }
-+
-+    co_return completionCode;
-+}
-+
-+exec::task<int> PlatformManager::eventMessageSupported(
-+    pldm_tid_t tid, uint8_t formatVersion, uint8_t& synchronyConfiguration,
-+    bitfield8_t& synchronyConfigurationSupported,
-+    uint8_t& numberEventClassReturned, std::vector<uint8_t>& eventClass)
-+{
-+    Request request(sizeof(pldm_msg_hdr) +
-+                    PLDM_EVENT_MESSAGE_SUPPORTED_REQ_BYTES);
-+    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
-+    auto rc = encode_event_message_supported_req(0, formatVersion, requestMsg);
-+    if (rc)
-+    {
-+        lg2::error(
-+            "Failed to encode request EventMessageSupported for terminus ID {TID}, error {RC} ",
-+            "TID", tid, "RC", rc);
-+        co_return rc;
-+    }
-+
-+    const pldm_msg* responseMsg = nullptr;
-+    size_t responseLen = 0;
-+    rc = co_await terminusManager.sendRecvPldmMsg(tid, request, &responseMsg,
-+                                                  &responseLen);
-+    if (rc)
-+    {
-+        lg2::error(
-+            "Failed to send EventMessageSupported message for terminus {TID}, error {RC}",
-+            "TID", tid, "RC", rc);
-+        co_return rc;
-+    }
-+
-+    uint8_t completionCode = 0;
-+    uint8_t eventClassReturned[std::numeric_limits<uint8_t>::max()];
-+    uint8_t eventClassCount = std::numeric_limits<uint8_t>::max();
-+
-+    rc = decode_event_message_supported_resp(
-+        responseMsg, responseLen, &completionCode, &synchronyConfiguration,
-+        &synchronyConfigurationSupported, &numberEventClassReturned,
-+        eventClassReturned, eventClassCount);
-+    if (rc)
-+    {
-+        lg2::error(
-+            "Failed to decode response EventMessageSupported for terminus ID {TID}, error {RC} ",
-+            "TID", tid, "RC", rc);
-+        co_return rc;
-+    }
-+
-+    if (completionCode != PLDM_SUCCESS)
-+    {
-+        lg2::error(
-+            "Error : EventMessageSupported for terminus ID {TID}, complete code {CC}.",
-+            "TID", tid, "CC", completionCode);
-+        co_return rc;
-+    }
-+
-+    eventClass.insert(eventClass.end(), eventClassReturned,
-+                      eventClassReturned + numberEventClassReturned);
-+
-+    co_return completionCode;
-+}
- } // namespace platform_mc
- } // namespace pldm
+ exec::task<int> PlatformManager::setEventReceiver(
+     pldm_tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable,
+     pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer)
 diff --git a/platform-mc/platform_manager.hpp b/platform-mc/platform_manager.hpp
-index 8d6e7b4..5865bfd 100644
+index 196546c..01a498f 100644
 --- a/platform-mc/platform_manager.hpp
 +++ b/platform-mc/platform_manager.hpp
-@@ -86,6 +86,51 @@ class PlatformManager
-         const pldm_tid_t tid, uint8_t& repositoryState, uint32_t& recordCount,
-         uint32_t& repositorySize, uint32_t& largestRecordSize);
+@@ -111,6 +111,16 @@ class PlatformManager
+         pldm_event_message_global_enable eventMessageGlobalEnable,
+         pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer);
  
-+    /** @brief Send setEventReceiver command to destination EID.
-+     *
-+     *  @param[in] tid - Destination TID
-+     *  @param[in] eventMessageGlobalEnable - Enable/disable event message
-+     *             generation from the terminus
-+     *  @param[in] eventReceiverEid - The EID of eventReceiver that terminus
-+     *             should send event message to
-+     *  @param[in] protocalType - Provided in the request to help the responder
-+     *             verify that the content of the eventReceiverAddressInfo field
-+     *  @param[in] heartbeatTimer - Amount of time in seconds after each
-+     *             elapsing of which the terminus shall emit a heartbeat event.
-+     *  @return coroutine return_value - PLDM completion code
-+     */
-+    exec::task<int> setEventReceiver(
-+        pldm_tid_t tid,
-+        pldm_event_message_global_enable eventMessageGlobalEnable,
-+        pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer);
-+
 +    /** @brief  send eventMessageBufferSize
 +     *  @param[in] tid - Destination TID
 +     *  @param[in] receiverMaxBufferSize
@@ -1426,28 +954,11 @@ index 8d6e7b4..5865bfd 100644
 +                                           uint16_t receiverMaxBufferSize,
 +                                           uint16_t& terminusBufferSize);
 +
-+    /** @brief  send eventMessageSupported
-+     *  @param[in] tid - Destination TID
-+     *  @param[in] formatVersion - version of the event format
-+     *  @param[out] synchronyConfiguration - messaging style most recently
-+     *              configured via the setEventReceiver command
-+     *  @param[out] synchronyConfigurationSupported - event messaging styles
-+     *              supported by the terminus
-+     *  @param[out] numerEventClassReturned - number of eventClass enumerated
-+     *              bytes
-+     *  @param[out] eventClass - vector of eventClass the device can generate
-+     *  @return coroutine return_value - PLDM completion code
-+     */
-+    exec::task<int> eventMessageSupported(
-+        pldm_tid_t tid, uint8_t formatVersion, uint8_t& synchronyConfiguration,
-+        bitfield8_t& synchronyConfigurationSupported,
-+        uint8_t& numerEventClassReturned, std::vector<uint8_t>& eventClass);
-+
-     /** reference of TerminusManager for sending PLDM request to terminus*/
-     TerminusManager& terminusManager;
- 
+     /** @brief  send eventMessageSupported
+      *  @param[in] tid - Destination TID
+      *  @param[in] formatVersion - version of the event format
 diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
-index 97fbf1d..c1acf66 100644
+index fcfd0a6..74e3043 100644
 --- a/platform-mc/sensor_manager.cpp
 +++ b/platform-mc/sensor_manager.cpp
 @@ -1,5 +1,6 @@
@@ -1457,49 +968,32 @@ index 97fbf1d..c1acf66 100644
  #include "terminus_manager.hpp"
  
  #include <phosphor-logging/lg2.hpp>
-@@ -13,11 +14,12 @@ namespace platform_mc
+@@ -13,9 +14,9 @@ namespace platform_mc
  
  SensorManager::SensorManager(sdeventplus::Event& event,
                               TerminusManager& terminusManager,
--                             TerminiMapper& termini, bool verbose,
-+                             TerminiMapper& termini, Manager* manager,
-+                             bool verbose,
-                              const std::filesystem::path& configJson) :
-     event(event),
-     terminusManager(terminusManager), termini(termini),
--    pollingTime(SENSOR_POLLING_TIME), verbose(verbose)
-+    pollingTime(SENSOR_POLLING_TIME), verbose(verbose), manager(manager)
- {
-     // default priority sensor name spaces
-     prioritySensorNameSpaces.emplace_back(
-@@ -213,6 +215,13 @@ exec::task<int> SensorManager::doSensorPollingTask(pldm_tid_t tid)
-             co_return PLDM_SUCCESS;
-         }
+-                             TerminiMapper& termini) :
++                             TerminiMapper& termini, Manager* manager) :
+     event(event), terminusManager(terminusManager), termini(termini),
+-    pollingTime(SENSOR_POLLING_TIME)
++    pollingTime(SENSOR_POLLING_TIME), manager(manager)
+ {}
  
-+        auto& terminus = termini[tid];
-+
-+        if (manager && terminus->pollEvent)
-+        {
-+            co_await manager->pollForPlatformEvent(tid);
-+        }
-+
-         // poll priority Sensors
-         for (auto& sensor : prioritySensors[tid])
-         {
+ void SensorManager::startPolling(pldm_tid_t tid)
 diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
-index 861a3d4..6368299 100644
+index 1c7c788..29172bb 100644
 --- a/platform-mc/sensor_manager.hpp
 +++ b/platform-mc/sensor_manager.hpp
 @@ -38,7 +38,7 @@ class SensorManager
  
-     explicit SensorManager(
-         sdeventplus::Event& event, TerminusManager& terminusManager,
--        TerminiMapper& termini, bool verbose = false,
-+        TerminiMapper& termini, Manager* manager, bool verbose = false,
-         const std::filesystem::path& configJson = PLDM_T2_CONFIG_JSON);
+     explicit SensorManager(sdeventplus::Event& event,
+                            TerminusManager& terminusManager,
+-                           TerminiMapper& termini);
++                           TerminiMapper& termini, Manager* manager);
  
      /** @brief starting sensor polling task
-@@ -112,6 +112,9 @@ class SensorManager
+      */
+@@ -111,6 +111,9 @@ class SensorManager
      /** @brief round robin sensor list */
      std::map<pldm_tid_t, std::queue<std::shared_ptr<NumericSensor>>>
          roundRobinSensors;
@@ -1510,96 +1004,40 @@ index 861a3d4..6368299 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index e4b1e3a..2ce3689 100644
+index 575741a..a6c7073 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -12,9 +12,13 @@ namespace pldm
+@@ -14,8 +14,8 @@ namespace platform_mc
  {
- namespace platform_mc
- {
-+/* default the max message buffer size BMC supported to 4K bytes */
-+#define MAX_MESSAGE_BUFFER_SIZE 4096
  
  Terminus::Terminus(pldm_tid_t tid, uint64_t supportedTypes) :
--    initialized(false), tid(tid), supportedTypes(supportedTypes)
-+    initialized(false), maxBufferSize(MAX_MESSAGE_BUFFER_SIZE),
-+    synchronyConfigurationSupported(0), pollEvent(false), tid(tid),
-+    supportedTypes(supportedTypes)
- {
-     inventoryPath = "/xyz/openbmc_project/inventory/Item/Board/PLDM_Device_" +
-                     std::to_string(tid);
+-    initialized(false), synchronyConfigurationSupported(0), tid(tid),
+-    supportedTypes(supportedTypes)
++    initialized(false), maxBufferSize(PLDM_PLATFORM_EVENT_MSG_MAX_BUFFER_SIZE),
++    synchronyConfigurationSupported(0), tid(tid), supportedTypes(supportedTypes)
+ {}
+ 
+ bool Terminus::doesSupportType(uint8_t type)
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index a819ad7..5b33127 100644
+index 13b0884..b19c52f 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
-@@ -133,6 +133,18 @@ class Terminus
+@@ -133,6 +133,9 @@ class Terminus
      /** @brief A flag to indicate if terminus has been initialized */
      bool initialized = false;
  
 +    /** @brief maximum message buffer size the terminus can send and receive */
 +    uint16_t maxBufferSize;
 +
-+    /** @brief This value indicates the event messaging styles supported by the
-+     * terminus */
-+    bitfield8_t synchronyConfigurationSupported;
-+
-+    /** @brief The flag indicates that the terminus FIFO contains a large
-+     *         message that will require a multipart transfer via the
-+     *         PollForPlatformEvent command */
-+    bool pollEvent;
-+
-     /** @brief A list of numericSensors */
-     std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
- 
-diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
-index d485de5..38e3b0d 100644
---- a/platform-mc/terminus_manager.hpp
-+++ b/platform-mc/terminus_manager.hpp
-@@ -54,9 +54,10 @@ class TerminusManager
-     explicit TerminusManager(sdeventplus::Event& /* event */,
-                              RequesterHandler& handler,
-                              pldm::InstanceIdDb& instanceIdDb,
--                             TerminiMapper& termini, Manager* manager) :
-+                             TerminiMapper& termini, mctp_eid_t localEid,
-+                             Manager* manager) :
-         handler(handler), instanceIdDb(instanceIdDb), termini(termini),
--        tidPool(tidPoolSize, false), manager(manager)
-+        localEid(localEid), tidPool(tidPoolSize, false), manager(manager)
-     {
-         // DSP0240 v1.1.0 table-8, special value: 0,0xFF = reserved
-         tidPool[0] = true;
-@@ -145,6 +146,15 @@ class TerminusManager
-      */
-     bool unmapTid(const pldm_tid_t& tid);
- 
-+    /** @brief getter of local EID
-+     *
-+     *  @return uint8_t - local EID
-+     */
-+    mctp_eid_t getLocalEid()
-+    {
-+        return localEid;
-+    }
-+
-   private:
-     /** @brief Find the terminus object pointer in termini list.
-      *
-@@ -215,6 +225,9 @@ class TerminusManager
-     /** @brief Managed termini list */
-     TerminiMapper& termini;
- 
-+    /** @brief local EID */
-+    mctp_eid_t localEid;
-+
-     /** @brief tables for maintaining assigned TID */
-     std::vector<bool> tidPool;
- 
+     /** @brief This value indicates the event messaging styles supported by the
+      * terminus */
+     bitfield8_t synchronyConfigurationSupported;
 diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
 new file mode 100644
-index 0000000..f17e52a
+index 0000000..ee03c5d
 --- /dev/null
 +++ b/platform-mc/test/event_manager_test.cpp
-@@ -0,0 +1,456 @@
+@@ -0,0 +1,458 @@
 +#include "libpldm/base.h"
 +#include "libpldm/entity.h"
 +#include "libpldm/platform.h"
@@ -1720,8 +1158,33 @@ index 0000000..f17e52a
 +        0                              // fatalLow
 +    };
 +
++    std::vector<uint8_t> pdr2{
++        0x1, 0x0, 0x0,
++        0x0,                             // record handle
++        0x1,                             // PDRHeaderVersion
++        PLDM_ENTITY_AUXILIARY_NAMES_PDR, // PDRType
++        0x1,
++        0x0,                             // recordChangeNumber
++        0x11,
++        0,                               // dataLength
++        /* Entity Auxiliary Names PDR Data*/
++        3,
++        0x80, // entityType system software
++        0x1,
++        0x0,  // Entity instance number =1
++        0,
++        0,    // Overal system
++        0,    // shared Name Count one name only
++        01,   // nameStringCount
++        0x65, 0x6e, 0x00,
++        0x00, // Language Tag "en"
++        0x53, 0x00, 0x30, 0x00,
++        0x00  // Entity Name "S0"
++    };
++
 +    // add dummy numeric sensor
 +    termini[tid]->pdrs.emplace_back(pdr1);
++    termini[tid]->pdrs.emplace_back(pdr2);
 +    termini[tid]->parseTerminusPDRs();
 +    EXPECT_EQ(1, termini[tid]->numericSensors.size());
 +
@@ -1733,15 +1196,16 @@ index 0000000..f17e52a
 +                    SENSOR_READING, WARNING_HIGH))
 +        .Times(1)
 +        .WillRepeatedly(Return(PLDM_SUCCESS));
-+    std::vector<uint8_t> eventData{0x1,
-+                                   0x0, // sensor id
-+                                   PLDM_NUMERIC_SENSOR_STATE,
-+                                   PLDM_SENSOR_UPPERWARNING,
-+                                   PLDM_SENSOR_NORMAL,
-+                                   PLDM_SENSOR_DATA_SIZE_UINT8,
-+                                   SENSOR_READING};
++    std::vector<uint8_t> eventData{
++        0x1,
++        0x0, // sensor id
++        PLDM_NUMERIC_SENSOR_STATE,
++        PLDM_SENSOR_UPPERWARNING,
++        PLDM_SENSOR_NORMAL,
++        PLDM_SENSOR_DATA_SIZE_UINT8,
++        SENSOR_READING};
 +    auto rc = eventManager.handlePlatformEvent(
-+        tid, PLDM_SENSOR_EVENT, eventData.data(), eventData.size());
++        tid, 0x00, PLDM_SENSOR_EVENT, eventData.data(), eventData.size());
 +    EXPECT_EQ(PLDM_SUCCESS, rc);
 +    EXPECT_EQ(PLDM_EVENT_NO_LOGGING, platformEventStatus);
 +}
@@ -1860,25 +1324,25 @@ index 0000000..f17e52a
 +            0x0, 0x0,  0x0,  0x0,          0x0, 0x0, // updateTime
 +            0x0, 0x0,  0x0,  0x0,          0x0, 0x0, 0x0,
 +            0x0, 0x0,  0x0,  0x0,          0x0, 0x0, // OEMUpdateTime
-+            1,   0x0,  0x0,  0x0,                    // recordCount
++            2,   0x0,  0x0,  0x0,                    // recordCount
 +            0x0, 0x1,  0x0,  0x0,                    // repositorySize
 +            59,  0x0,  0x0,  0x0,                    // largestRecordSize
 +            0x0 // dataTransferHandleTimeout
 +        };
 +    auto rc = terminusManager.enqueueResponse(
-+        (pldm_msg*)getPDRRepositoryInfoResp.data(),
++        reinterpret_cast<pldm_msg*>(getPDRRepositoryInfoResp.data()),
 +        sizeof(getPDRRepositoryInfoResp));
 +    EXPECT_EQ(rc, PLDM_SUCCESS);
 +
 +    // queue getPDR responses
 +    const size_t getPdrRespLen = 81;
 +    std::array<uint8_t, sizeof(pldm_msg_hdr) + getPdrRespLen> getPdrResp{
-+        0x0, 0x02, 0x51, PLDM_SUCCESS, 0x0, 0x0, 0x0, 0x0, // nextRecordHandle
++        0x0, 0x02, 0x51, PLDM_SUCCESS, 0x1, 0x0, 0x0, 0x0, // nextRecordHandle
 +        0x0, 0x0, 0x0, 0x0, // nextDataTransferHandle
 +        0x5,                // transferFlag
 +        69, 0x0,            // responseCount
 +        // numeric Sensor PDR
-+        0x1, 0x0, 0x0,
++        0x0, 0x0, 0x0,
 +        0x0,                     // record handle
 +        0x1,                     // PDRHeaderVersion
 +        PLDM_NUMERIC_SENSOR_PDR, // PDRType
@@ -1940,8 +1404,44 @@ index 0000000..f17e52a
 +        0,                             // fatalHigh
 +        0                              // fatalLow
 +    };
-+    rc = terminusManager.enqueueResponse((pldm_msg*)getPdrResp.data(),
-+                                         sizeof(getPdrResp));
++    rc = terminusManager.enqueueResponse(
++        reinterpret_cast<pldm_msg*>(getPdrResp.data()), sizeof(getPdrResp));
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++
++    const size_t getPdrAuxNameRespLen = 39;
++    std::array<uint8_t, sizeof(pldm_msg_hdr) + getPdrAuxNameRespLen>
++        getPdrAuxNameResp{
++            0x0, 0x02, 0x51, PLDM_SUCCESS, 0x0, 0x0, 0x0,
++            0x0,                // nextRecordHandle
++            0x0, 0x0, 0x0, 0x0, // nextDataTransferHandle
++            0x5,                // transferFlag
++            0x1b, 0x0,          // responseCount
++            // Common PDR Header
++            0x1, 0x0, 0x0,
++            0x0,                             // record handle
++            0x1,                             // PDRHeaderVersion
++            PLDM_ENTITY_AUXILIARY_NAMES_PDR, // PDRType
++            0x1,
++            0x0,                             // recordChangeNumber
++            0x11,
++            0,                               // dataLength
++            /* Entity Auxiliary Names PDR Data*/
++            3,
++            0x80, // entityType system software
++            0x1,
++            0x0,  // Entity instance number =1
++            0,
++            0,    // Overal system
++            0,    // shared Name Count one name only
++            01,   // nameStringCount
++            0x65, 0x6e, 0x00,
++            0x00, // Language Tag "en"
++            0x53, 0x00, 0x30, 0x00,
++            0x00  // Entity Name "S0"
++        };
++    rc = terminusManager.enqueueResponse(
++        reinterpret_cast<pldm_msg*>(getPdrAuxNameResp.data()),
++        sizeof(getPdrAuxNameResp));
 +    EXPECT_EQ(rc, PLDM_SUCCESS);
 +
 +    // queue eventMessageBufferSize response(bufferSize=32)
@@ -1949,7 +1449,7 @@ index 0000000..f17e52a
 +    std::array<uint8_t, sizeof(pldm_msg_hdr) + eventMessageBufferSizeRespLen>
 +        eventMessageBufferSizeResp{0x0, 0x02, 0x0d, PLDM_SUCCESS, 32, 0};
 +    rc = terminusManager.enqueueResponse(
-+        (pldm_msg*)eventMessageBufferSizeResp.data(),
++        reinterpret_cast<pldm_msg*>(eventMessageBufferSizeResp.data()),
 +        sizeof(eventMessageBufferSizeResp));
 +    EXPECT_EQ(rc, PLDM_SUCCESS);
 +
@@ -1963,7 +1463,7 @@ index 0000000..f17e52a
 +                                  3,    // numberEventClassReturned
 +                                  0x0,  0x5,  0xfa};
 +    rc = terminusManager.enqueueResponse(
-+        (pldm_msg*)eventMessageSupportedResp.data(),
++        reinterpret_cast<pldm_msg*>(eventMessageSupportedResp.data()),
 +        sizeof(eventMessageSupportedResp));
 +    EXPECT_EQ(rc, PLDM_SUCCESS);
 +
@@ -1972,8 +1472,9 @@ index 0000000..f17e52a
 +    PLDM_GET_PDR_REPOSITORY_INFO_RESP_BYTES;
 +    std::array<uint8_t, sizeof(pldm_msg_hdr) + SetEventReceiverLen>
 +        SetEventReceiverResp{0x0, 0x02, 0x04, PLDM_SUCCESS};
-+    rc = terminusManager.enqueueResponse((pldm_msg*)SetEventReceiverResp.data(),
-+                                         sizeof(SetEventReceiverResp));
++    rc = terminusManager.enqueueResponse(
++        reinterpret_cast<pldm_msg*>(SetEventReceiverResp.data()),
++        sizeof(SetEventReceiverResp));
 +    EXPECT_EQ(rc, PLDM_SUCCESS);
 +
 +    // should finish immediately
@@ -1981,80 +1482,19 @@ index 0000000..f17e52a
 +    EXPECT_EQ(true, terminus->initialized);
 +    EXPECT_EQ(32, terminus->maxBufferSize);
 +    EXPECT_EQ(0x06, terminus->synchronyConfigurationSupported.byte);
-+    EXPECT_EQ(1, terminus->pdrs.size());
++    EXPECT_EQ(2, terminus->pdrs.size());
 +    EXPECT_EQ(1, terminus->numericSensors.size());
 +}
 +
-+TEST_F(EventManagerTest, pollForPlatformEventTaskMultipartTransferTest)
++TEST_F(EventManagerTest, updateAvailableState)
 +{
-+    // Add terminus
-+    auto mappedTid = terminusManager.mapTid(pldm::MctpInfo(10, "", "", 1));
-+    auto tid = mappedTid.value();
-+    termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
-+        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM);
-+    auto terminus = termini[tid];
-+
-+    // queue pollForPlatformEventMessage first part response
-+    const size_t pollForPlatformEventMessage1Len = 22;
-+    std::array<uint8_t, sizeof(pldm_msg_hdr) + pollForPlatformEventMessage1Len>
-+        pollForPlatformEventMessage1Resp{
-+            0x0,        0x02, 0x0d, PLDM_SUCCESS,
-+            tid,                         // TID
-+            0x1,        0x0,             // eventID
-+            0x1,        0x0,  0x0,  0x0, // nextDataTransferHandle
-+            PLDM_START,                  // transferFlag = start
-+            0xfa,                        // eventClass
-+            8,          0,    0,    0,   // eventDataSize
-+            0x01,                        // CPER event formatVersion= 0x01
-+            1,                        // formatType = single CPER section(0x01)
-+            10,         0,            // eventDataLength = 10
-+            1,          2,    3,    4 // eventData first part
-+        };
-+    auto rc = terminusManager.enqueueResponse(
-+        (pldm_msg*)pollForPlatformEventMessage1Resp.data(),
-+        sizeof(pollForPlatformEventMessage1Resp));
-+    EXPECT_EQ(rc, PLDM_SUCCESS);
-+
-+    // queue pollForPlatformEventMessage last part response
-+    const size_t pollForPlatformEventMessage2Len = 24;
-+    std::array<uint8_t, sizeof(pldm_msg_hdr) + pollForPlatformEventMessage2Len>
-+        pollForPlatformEventMessage2Resp{
-+            0x0,      0x02, 0x0d, PLDM_SUCCESS,
-+            tid,                       // TID
-+            0x1,      0x0,             // eventID
-+            0x2,      0x0,  0x0,  0x0, // nextDataTransferHandle
-+            PLDM_END,                  // transferFlag = end
-+            0xfa,                      // eventClass
-+            6,        0,    0,    0,   // eventDataSize
-+            5,        6,    7,    8,
-+            9,        0,               // eventData last part
-+            0x46,     0x7f, 0x6a, 0x5d // crc32
-+        };
-+    rc = terminusManager.enqueueResponse(
-+        (pldm_msg*)pollForPlatformEventMessage2Resp.data(),
-+        sizeof(pollForPlatformEventMessage2Resp));
-+    EXPECT_EQ(rc, PLDM_SUCCESS);
-+
-+    // queue pollForPlatformEventMessage Ack response
-+    const size_t pollForPlatformEventMessage3Len = 4;
-+    std::array<uint8_t, sizeof(pldm_msg_hdr) + pollForPlatformEventMessage3Len>
-+        pollForPlatformEventMessage3Resp{
-+            0x0, 0x02, 0x0d, PLDM_SUCCESS,
-+            tid,     // TID
-+            0x0, 0x0 // eventID
-+        };
-+    rc = terminusManager.enqueueResponse(
-+        (pldm_msg*)pollForPlatformEventMessage3Resp.data(),
-+        sizeof(pollForPlatformEventMessage3Resp));
-+    EXPECT_EQ(rc, PLDM_SUCCESS);
-+
-+    EXPECT_CALL(eventManager, processCperEvent(_, _))
-+        .Times(1)
-+        .WillRepeatedly(Return(1));
-+
-+    // start task to poll event from terminus
-+    // should finish immediately
-+    stdexec::sync_wait(eventManager.pollForPlatformEventTask(tid));
++    pldm_tid_t tid = 1;
++    eventManager.updateAvailableState(tid, true);
++    EXPECT_EQ(true, eventManager.getAvailableState(tid));
++    eventManager.updateAvailableState(tid, false);
++    EXPECT_EQ(false, eventManager.getAvailableState(tid));
++    eventManager.updateAvailableState(2, false);
++    EXPECT_EQ(false, eventManager.getAvailableState(tid));
 +}
 diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
 index 64177cc..378628e 100644
@@ -2078,10 +1518,10 @@ index 64177cc..378628e 100644
  foreach t : tests
 diff --git a/platform-mc/test/mock_event_manager.hpp b/platform-mc/test/mock_event_manager.hpp
 new file mode 100644
-index 0000000..1ef68a2
+index 0000000..0bda579
 --- /dev/null
 +++ b/platform-mc/test/mock_event_manager.hpp
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,31 @@
 +#pragma once
 +
 +#include "platform-mc/event_manager.hpp"
@@ -2098,7 +1538,7 @@ index 0000000..1ef68a2
 +  public:
 +    MockEventManager(TerminusManager& terminusManager,
 +                     std::map<mctp_eid_t, std::shared_ptr<Terminus>>& termini) :
-+        EventManager(terminusManager, termini){};
++        EventManager(terminusManager, termini) {};
 +
 +    MOCK_METHOD(int, createSensorThresholdLogEntry,
 +                (const std::string& messageID, const std::string& sensorName,
@@ -2106,13 +1546,15 @@ index 0000000..1ef68a2
 +                (override));
 +
 +    MOCK_METHOD(int, processCperEvent,
-+                (const uint8_t* eventData, size_t eventDataSize), (override));
++                (uint16_t eventId, const uint8_t* eventData,
++                 size_t eventDataSize),
++                (override));
 +};
 +
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/test/mock_sensor_manager.hpp b/platform-mc/test/mock_sensor_manager.hpp
-index 2c2ea1b..f850dac 100644
+index a52e4ea..fcb8102 100644
 --- a/platform-mc/test/mock_sensor_manager.hpp
 +++ b/platform-mc/test/mock_sensor_manager.hpp
 @@ -13,9 +13,9 @@ class MockSensorManager : public SensorManager
@@ -2121,60 +1563,31 @@ index 2c2ea1b..f850dac 100644
      MockSensorManager(sdeventplus::Event& event,
 -                      TerminusManager& terminusManager,
 -                      TerminiMapper& termini) :
--        SensorManager(event, terminusManager, termini){};
+-        SensorManager(event, terminusManager, termini) {};
 +                      TerminusManager& terminusManager, TerminiMapper& termini,
 +                      Manager* manager) :
-+        SensorManager(event, terminusManager, termini, manager){};
++        SensorManager(event, terminusManager, termini, manager) {};
  
      MOCK_METHOD(void, doSensorPolling, (pldm_tid_t tid), (override));
  };
-diff --git a/platform-mc/test/mock_terminus_manager.hpp b/platform-mc/test/mock_terminus_manager.hpp
-index 4e56a83..5a606d8 100644
---- a/platform-mc/test/mock_terminus_manager.hpp
-+++ b/platform-mc/test/mock_terminus_manager.hpp
-@@ -17,7 +17,8 @@ class MockTerminusManager : public TerminusManager
-     MockTerminusManager(sdeventplus::Event& event, RequesterHandler& handler,
-                         pldm::InstanceIdDb& instanceIdDb,
-                         TerminiMapper& termini, Manager* manager) :
--        TerminusManager(event, handler, instanceIdDb, termini, manager)
-+        TerminusManager(event, handler, instanceIdDb, termini, LOCAL_EID,
-+                        manager)
-     {}
- 
-     exec::task<int> sendRecvPldmMsgOverMctp(
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
-index 89c147e..a49b5fe 100644
+index c0f590c..b5084f4 100644
 --- a/platform-mc/test/sensor_manager_test.cpp
 +++ b/platform-mc/test/sensor_manager_test.cpp
-@@ -19,8 +19,8 @@ class SensorManagerTest : public testing::Test
-         bus(pldm::utils::DBusHandler::getBus()),
-         event(sdeventplus::Event::get_default()), instanceIdDb(),
+@@ -21,7 +21,7 @@ class SensorManagerTest : public testing::Test
          reqHandler(pldmTransport, event, instanceIdDb, false),
--        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
+         terminusManager(event, reqHandler, instanceIdDb, termini, nullptr,
+                         LOCAL_EID),
 -        sensorManager(event, terminusManager, termini)
-+        terminusManager(event, reqHandler, instanceIdDb, termini, 0x0, nullptr),
 +        sensorManager(event, terminusManager, termini, nullptr)
      {}
  
      void runEventLoopForSeconds(uint64_t sec)
-diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
-index 432ba21..a4a0b11 100644
---- a/platform-mc/test/terminus_manager_test.cpp
-+++ b/platform-mc/test/terminus_manager_test.cpp
-@@ -32,7 +32,7 @@ class TerminusManagerTest : public testing::Test
-         event(sdeventplus::Event::get_default()), instanceIdDb(),
-         reqHandler(pldmTransport, event, instanceIdDb, false,
-                    std::chrono::seconds(1), 2, std::chrono::milliseconds(100)),
--        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
-+        terminusManager(event, reqHandler, instanceIdDb, termini, 0x0, nullptr),
-         mockTerminusManager(event, reqHandler, instanceIdDb, termini, nullptr)
-     {}
- 
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 70886e2..d7cc802 100644
+index 8637a15..dc6c30a 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -269,10 +269,38 @@ int main(int argc, char** argv)
+@@ -271,10 +271,31 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -2183,27 +1596,20 @@ index 70886e2..d7cc802 100644
 +        std::make_unique<platform_mc::Manager>(event, reqHandler, instanceIdDb);
 +
 +    pldm::responder::platform::EventMap addOnEventHandlers{
-+        {PLDM_OEM_EVENT_CLASS_0xFA,
++        {PLDM_CPER_EVENT_CLASS,
 +         {[&platformManager](const pldm_msg* request, size_t payloadLength,
 +                             uint8_t formatVersion, uint8_t tid,
 +                             size_t eventDataOffset) {
-+        return platformManager->handleCperEvent(
-+            request, payloadLength, formatVersion, tid, eventDataOffset);
-+    }}},
-+        {PLDM_MESSAGE_POLL_EVENT,
-+         {[&platformManager](const pldm_msg* request, size_t payloadLength,
-+                             uint8_t formatVersion, uint8_t tid,
-+                             size_t eventDataOffset) {
-+        return platformManager->handlePldmMessagePollEvent(
-+            request, payloadLength, formatVersion, tid, eventDataOffset);
-+    }}},
++             return platformManager->handleCperEvent(
++                 request, payloadLength, formatVersion, tid, eventDataOffset);
++         }}},
 +        {PLDM_SENSOR_EVENT,
 +         {[&platformManager](const pldm_msg* request, size_t payloadLength,
 +                             uint8_t formatVersion, uint8_t tid,
 +                             size_t eventDataOffset) {
-+        return platformManager->handleSensorEvent(
-+            request, payloadLength, formatVersion, tid, eventDataOffset);
-+    }}}};
++             return platformManager->handleSensorEvent(
++                 request, payloadLength, formatVersion, tid, eventDataOffset);
++         }}}};
 +
      auto platformHandler = std::make_unique<platform::Handler>(
          &dbusHandler, hostEID, &instanceIdDb, PDR_JSONS_DIR, pdrRepo.get(),
@@ -2214,7 +1620,7 @@ index 70886e2..d7cc802 100644
  
      auto biosHandler = std::make_unique<bios::Handler>(
          pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
-@@ -301,8 +329,6 @@ int main(int argc, char** argv)
+@@ -303,8 +324,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);
@@ -2224,5 +1630,5 @@ index 70886e2..d7cc802 100644
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 -- 
-2.43.5
+2.44.2
 

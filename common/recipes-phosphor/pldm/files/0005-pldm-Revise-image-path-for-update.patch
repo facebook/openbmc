@@ -1,4 +1,4 @@
-From 34863ffdbd554e9ccfeca7a80c1813ec9abe8793 Mon Sep 17 00:00:00 2001
+From 792f80765b062aa78d65972457593fcd074aa751 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
 Date: Tue, 25 Jun 2024 14:51:37 +0800
 Subject: [PATCH 05/13] pldm: Revise image path for update
@@ -14,7 +14,7 @@ Signed-off-by: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/fw-update/watch.cpp b/fw-update/watch.cpp
-index 60f18fc..512a083 100644
+index 60f18fc..56a0e5a 100644
 --- a/fw-update/watch.cpp
 +++ b/fw-update/watch.cpp
 @@ -23,7 +23,7 @@ Watch::Watch(sd_event* loop, std::function<int(std::string&)> imageCallback) :
@@ -40,11 +40,11 @@ index 60f18fc..512a083 100644
          if ((event->mask & IN_CLOSE_WRITE) && !(event->mask & IN_ISDIR))
          {
 -            auto tarballPath = std::string{"/tmp/images"} + '/' + event->name;
-+            auto tarballPath = std::string{"/tmp/pldm_images"} + '/' +
-+                               event->name;
++            auto tarballPath =
++                std::string{"/tmp/pldm_images"} + '/' + event->name;
              auto rc = static_cast<Watch*>(userdata)->imageCallback(tarballPath);
              if (rc < 0)
              {
 -- 
-2.43.5
+2.44.2
 

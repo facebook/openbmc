@@ -1,7 +1,7 @@
-From 0e6bfddfa40ee4c8022105c43d8ab862e72ec72a Mon Sep 17 00:00:00 2001
+From e4e9258f8d7905d607e2b499aeab966579cc060b Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 25 Jun 2024 14:57:08 +0800
-Subject: [PATCH 1/1] psusensor: avoid crash by activate sensor twice
+Subject: [PATCH 3/5] psusensor: avoid crash by activate sensor twice
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -73,16 +73,16 @@ Change-Id: I3fb55c0f10ad26472470bb783ea5df5498a4c1a8
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Signed-off-by: Peter Yin <peter.yin@quantatw.com>
 ---
- src/PSUSensor.cpp     | 12 +++----
+ src/PSUSensor.cpp     | 12 +++---
  src/PSUSensor.hpp     |  3 +-
- src/PSUSensorMain.cpp | 80 +++++++++++++++++--------------------------
- 3 files changed, 38 insertions(+), 57 deletions(-)
+ src/PSUSensorMain.cpp | 86 +++++++++++++++++--------------------------
+ 3 files changed, 41 insertions(+), 60 deletions(-)
 
 diff --git a/src/PSUSensor.cpp b/src/PSUSensor.cpp
-index db632b6..05ee240 100644
+index 3c02b93..9786105 100644
 --- a/src/PSUSensor.cpp
 +++ b/src/PSUSensor.cpp
-@@ -123,11 +123,13 @@ bool PSUSensor::isActive()
+@@ -122,11 +122,13 @@ bool PSUSensor::isActive()
      return inputDev.is_open();
  }
  
@@ -100,7 +100,7 @@ index db632b6..05ee240 100644
      inputDev.open(path, boost::asio::random_access_file::read_only);
      markAvailable(true);
      setupRead();
-@@ -139,8 +141,6 @@ void PSUSensor::deactivate()
+@@ -138,8 +140,6 @@ void PSUSensor::deactivate()
      // close the input dev to cancel async operations
      inputDev.close();
      waitTimer.cancel();
@@ -110,7 +110,7 @@ index db632b6..05ee240 100644
  
  void PSUSensor::setupRead()
 diff --git a/src/PSUSensor.hpp b/src/PSUSensor.hpp
-index f9b738f..9c891f4 100644
+index 09601f8..008c632 100644
 --- a/src/PSUSensor.hpp
 +++ b/src/PSUSensor.hpp
 @@ -28,8 +28,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
@@ -124,10 +124,10 @@ index f9b738f..9c891f4 100644
      bool isActive();
  
 diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
-index 85ca833..85d5c44 100644
+index ef7f66e..01081d0 100644
 --- a/src/PSUSensorMain.cpp
 +++ b/src/PSUSensorMain.cpp
-@@ -311,8 +311,7 @@ static void createSensorsCallback(
+@@ -299,8 +299,7 @@ static void createSensorsCallback(
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
      const ManagedObjectType& sensorConfigs,
      const std::shared_ptr<boost::container::flat_set<std::string>>&
@@ -137,7 +137,7 @@ index 85ca833..85d5c44 100644
  {
      int numCreated = 0;
      bool firstScan = sensorsChanged == nullptr;
-@@ -463,10 +462,6 @@ static void createSensorsCallback(
+@@ -451,10 +450,6 @@ static void createSensorsCallback(
          std::shared_ptr<I2CDevice> i2cDev;
          if (findI2CDev != devices.end())
          {
@@ -148,7 +148,7 @@ index 85ca833..85d5c44 100644
              i2cDev = findI2CDev->second.first;
          }
  
-@@ -936,33 +931,19 @@ static void createSensorsCallback(
+@@ -932,33 +927,20 @@ static void createSensorsCallback(
                            << "\"\n";
              }
              // destruct existing one first if already created
@@ -187,14 +187,15 @@ index 85ca833..85d5c44 100644
 -                ++numCreated;
 -                if constexpr (debug)
 -                {
--                    std::cerr << "Created " << numCreated
--                              << " sensors so far\n";
+-                    std::cerr
+-                        << "Created " << numCreated << " sensors so far\n";
 -                }
-+                std::cerr << "Created " << numCreated << " sensors so far\n";
++                std::cerr
++                    << "Created " << numCreated << " sensors so far\n";
              }
          }
  
-@@ -1055,14 +1036,13 @@ void createSensors(
+@@ -1053,15 +1035,14 @@ void createSensors(
      boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
      const std::shared_ptr<boost::container::flat_set<std::string>>&
@@ -205,15 +206,18 @@ index 85ca833..85d5c44 100644
      auto getter = std::make_shared<GetSensorConfiguration>(
 -        dbusConnection, [&io, &objectServer, &dbusConnection, sensorsChanged,
 -                         activateOnly](const ManagedObjectType& sensorConfigs) {
+-            createSensorsCallback(io, objectServer, dbusConnection,
+-                                  sensorConfigs, sensorsChanged, activateOnly);
+-        });
 +        dbusConnection, [&io, &objectServer, &dbusConnection, sensorsChanged](
 +                            const ManagedObjectType& sensorConfigs) {
-         createSensorsCallback(io, objectServer, dbusConnection, sensorConfigs,
--                              sensorsChanged, activateOnly);
++        createSensorsCallback(io, objectServer, dbusConnection, sensorConfigs,
 +                              sensorsChanged);
-     });
++    });
      std::vector<std::string> types(sensorTypes.size());
      for (const auto& [type, dt] : sensorTypes)
-@@ -1204,13 +1184,17 @@ void propertyInitialize()
+     {
+@@ -1116,13 +1097,17 @@ void propertyInitialize()
  static void powerStateChanged(
      PowerState type, bool newState,
      boost::container::flat_map<std::string, std::shared_ptr<PSUSensor>>&
@@ -235,12 +239,12 @@ index 85ca833..85d5c44 100644
      }
      else
      {
-@@ -1238,16 +1222,14 @@ int main()
+@@ -1150,16 +1135,14 @@ int main()
  
      propertyInitialize();
  
--    auto powerCallBack = [&io, &objectServer, &systemBus](PowerState type,
--                                                          bool state) {
+-    auto powerCallBack = [&io, &objectServer,
+-                          &systemBus](PowerState type, bool state) {
 -        powerStateChanged(type, state, sensors, io, objectServer, systemBus);
 +    auto powerCallBack = [](PowerState type, bool state) {
 +        powerStateChanged(type, state, sensors);
@@ -256,24 +260,25 @@ index 85ca833..85d5c44 100644
      boost::asio::steady_timer filterTimer(io);
      std::function<void(sdbusplus::message_t&)> eventHandler =
          [&](sdbusplus::message_t& message) {
-@@ -1267,7 +1249,7 @@ int main()
-             {
-                 std::cerr << "timer error\n";
-             }
--            createSensors(io, objectServer, systemBus, sensorsChanged, false);
-+            createSensors(io, objectServer, systemBus, sensorsChanged);
-         });
-     };
+@@ -1179,8 +1162,7 @@ int main()
+                 {
+                     std::cerr << "timer error\n";
+                 }
+-                createSensors(io, objectServer, systemBus, sensorsChanged,
+-                              false);
++                createSensors(io, objectServer, systemBus, sensorsChanged);
+             });
+         };
  
-@@ -1322,7 +1304,7 @@ int main()
-                 std::cerr << "timer error\n";
-                 return;
-             }
--            createSensors(io, objectServer, systemBus, nullptr, false);
-+            createSensors(io, objectServer, systemBus, nullptr);
-         });
-     };
+@@ -1235,7 +1217,7 @@ int main()
+                     std::cerr << "timer error\n";
+                     return;
+                 }
+-                createSensors(io, objectServer, systemBus, nullptr, false);
++                createSensors(io, objectServer, systemBus, nullptr);
+             });
+         };
  
 -- 
-2.25.1
+2.43.5
 

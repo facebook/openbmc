@@ -1,4 +1,4 @@
-From 29ca3b3c4f9b6570bbab9d8a6f49fb6356dea341 Mon Sep 17 00:00:00 2001
+From 7f77048a416604ece00c6c425b4b1a4a7af532c4 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 14 Jun 2024 16:24:31 +0800
 Subject: [PATCH 10/13] Support OEM-META command for power control
@@ -18,8 +18,8 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  .../libpldmresponder/oem_meta_file_io.cpp     |   6 +
  .../oem_meta_file_io_by_type.hpp              |   1 +
  .../oem_meta_file_io_type_power_control.cpp   | 167 ++++++++++++++++++
- .../oem_meta_file_io_type_power_control.hpp   |  66 +++++++
- 5 files changed, 241 insertions(+)
+ .../oem_meta_file_io_type_power_control.hpp   |  65 +++++++
+ 5 files changed, 240 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
 
@@ -36,7 +36,7 @@ index 348cbf1..8e552c9 100644
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-index d90600b..236761f 100644
+index ef1e913..2263cf5 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 @@ -3,6 +3,7 @@
@@ -47,7 +47,7 @@ index d90600b..236761f 100644
  #include "xyz/openbmc_project/Common/error.hpp"
  
  #include <libpldm/oem/meta/file_io.h>
-@@ -31,6 +32,10 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(uint8_t messageTid,
+@@ -31,6 +32,10 @@ std::unique_ptr<FileHandler>
          case EVENT_LOG:
              return std::make_unique<EventLogHandler>(
                  messageTid, configurationDiscovery->getConfigurations());
@@ -80,7 +80,7 @@ index 29a4fa3..a13f149 100644
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
 new file mode 100644
-index 0000000..622fc47
+index 0000000..4f86f14
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
 @@ -0,0 +1,167 @@
@@ -210,8 +210,8 @@ index 0000000..622fc47
 +    try
 +    {
 +        const auto& configDbusPath = getConfigurationPathByTid(tid);
-+        const auto response = dBusIntf->getAncestors(configDbusPath.c_str(),
-+                                                     slotInterfaces);
++        const auto response =
++            dBusIntf->getAncestors(configDbusPath.c_str(), slotInterfaces);
 +        if (response.size() != 1)
 +        {
 +            error(
@@ -253,10 +253,10 @@ index 0000000..622fc47
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
 new file mode 100644
-index 0000000..16ed6ce
+index 0000000..acd0103
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
-@@ -0,0 +1,66 @@
+@@ -0,0 +1,65 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -283,8 +283,7 @@ index 0000000..16ed6ce
 +    explicit PowerControlHandler(
 +        uint8_t tid, std::map<std::string, MctpEndpoint>& configurations,
 +        const pldm::utils::DBusHandler* dBusIntf) :
-+        tid(tid),
-+        configurations(configurations), dBusIntf(dBusIntf)
++        tid(tid), configurations(configurations), dBusIntf(dBusIntf)
 +    {}
 +
 +    int write(const message& data) override;
@@ -324,5 +323,5 @@ index 0000000..16ed6ce
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.43.5
+2.44.2
 

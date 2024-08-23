@@ -1,0 +1,494 @@
+From 3cedbb5e3b5e63cd0c9abdc5f2eb5dc6667b5884 Mon Sep 17 00:00:00 2001
+From: Thu Nguyen <thu@os.amperecomputing.com>
+Date: Tue, 6 Aug 2024 09:15:55 +0000
+Subject: [PATCH 01/13] platform-mc: Set the local terminus as event receiver
+
+Send `SetEventReceiver` to the discoveried terminus with the
+configurable local EID to set the local terminus as event receiver.
+Before send `SetEventReceiver` the local terminus also send
+`EventMessageSupported` to get the `synchronyConfigurationSupported`.
+The `eventMessageGlobalEnable` and `heartbeatTimer` options in the
+`SetEventReceiver` command will depend on the responded
+`synchronyConfigurationSupported`.
+
+Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
+Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
+Change-Id: Ia798c1cd5d946ac519933bca60620e970fe10b0a
+---
+ meson.build                                |   1 +
+ meson.options                              |   9 +
+ platform-mc/manager.hpp                    |   2 +-
+ platform-mc/platform_manager.cpp           | 222 +++++++++++++++++++++
+ platform-mc/platform_manager.hpp           |  42 ++++
+ platform-mc/terminus.cpp                   |   3 +-
+ platform-mc/terminus.hpp                   |   4 +
+ platform-mc/terminus_manager.hpp           |  22 +-
+ platform-mc/test/mock_terminus_manager.hpp |   3 +-
+ platform-mc/test/sensor_manager_test.cpp   |   3 +-
+ platform-mc/test/terminus_manager_test.cpp |   3 +-
+ 11 files changed, 304 insertions(+), 10 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index e8c3bc8..2977598 100644
+--- a/meson.build
++++ b/meson.build
+@@ -74,6 +74,7 @@ elif get_option('transport-implementation') == 'af-mctp'
+ endif
+ conf_data.set('DEFAULT_SENSOR_UPDATER_INTERVAL', get_option('default-sensor-update-interval'))
+ conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
++conf_data.set('LOCAL_EID', get_option('local-eid'))
+ 
+ configure_file(output: 'config.h',
+   configuration: conf_data
+diff --git a/meson.options b/meson.options
+index 8a7138a..48f1a40 100644
+--- a/meson.options
++++ b/meson.options
+@@ -208,3 +208,12 @@ option(
+                     `GetSensorReading` if the sensor need to be updated.''',
+     value: 249
+ )
++
++## BMC endpoint Options
++option(
++    'local-eid',
++    type: 'integer',
++    min: 1,
++    max: 255,
++    description: 'The local MCTP EID. Will be used in `SetEventReceiver`.',
++    value: 8)
+diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
+index d8210b4..93b7925 100644
+--- a/platform-mc/manager.hpp
++++ b/platform-mc/manager.hpp
+@@ -33,7 +33,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+ 
+     explicit Manager(sdeventplus::Event& event, RequesterHandler& handler,
+                      pldm::InstanceIdDb& instanceIdDb) :
+-        terminusManager(event, handler, instanceIdDb, termini, this),
++        terminusManager(event, handler, instanceIdDb, termini, this, LOCAL_EID),
+         platformManager(terminusManager, termini),
+         sensorManager(event, terminusManager, termini)
+     {}
+diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
+index f6ffcc5..923b7be 100644
+--- a/platform-mc/platform_manager.cpp
++++ b/platform-mc/platform_manager.cpp
+@@ -36,7 +36,111 @@ exec::task<int> PlatformManager::initTerminus()
+ 
+             terminus->parseTerminusPDRs();
+         }
++
++        auto rc = co_await configEventReceiver(tid);
++        if (rc)
++        {
++            lg2::error(
++                "Failed to config event receiver for terminus with TID: {TID}, error: {ERROR}",
++                "TID", tid, "ERROR", rc);
++        }
++    }
++
++    co_return PLDM_SUCCESS;
++}
++
++exec::task<int> PlatformManager::configEventReceiver(pldm_tid_t tid)
++{
++    if (!termini.contains(tid))
++    {
++        co_return PLDM_ERROR;
++    }
++
++    auto& terminus = termini[tid];
++    if (!terminus->doesSupportCommand(PLDM_PLATFORM,
++                                      PLDM_EVENT_MESSAGE_SUPPORTED))
++    {
++        terminus->synchronyConfigurationSupported.byte = 0;
++    }
++    else
++    {
++        /**
++         *  Get synchronyConfigurationSupported use PLDM command
++         *  eventMessageBufferSize
++         */
++        uint8_t synchronyConfiguration = 0;
++        uint8_t numberEventClassReturned = 0;
++        std::vector<uint8_t> eventClass{};
++        auto rc = co_await eventMessageSupported(
++            tid, 1, synchronyConfiguration,
++            terminus->synchronyConfigurationSupported, numberEventClassReturned,
++            eventClass);
++        if (rc != PLDM_SUCCESS)
++        {
++            lg2::error(
++                "Failed to get event message supported for terminus with TID: {TID}, error: {ERROR}",
++                "TID", tid, "ERROR", rc);
++            terminus->synchronyConfigurationSupported.byte = 0;
++        }
++    }
++
++    if (!terminus->doesSupportCommand(PLDM_PLATFORM, PLDM_SET_EVENT_RECEIVER))
++    {
++        lg2::error("Terminus {TID} does not support Event", "TID", tid);
++        co_return PLDM_ERROR;
++    }
++
++    /**
++     *  Set Event receiver base on synchronyConfigurationSupported data
++     *  use PLDM command SetEventReceiver
++     */
++    pldm_event_message_global_enable eventMessageGlobalEnable =
++        PLDM_EVENT_MESSAGE_GLOBAL_DISABLE;
++    uint16_t heartbeatTimer = 0;
++
++    /* Use PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE when
++     * for eventMessageGlobalEnable when the terminus supports that type
++     */
++    if (terminus->synchronyConfigurationSupported.byte &
++        (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE))
++    {
++        heartbeatTimer = 0x78;
++        eventMessageGlobalEnable =
++            PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE;
++    }
++    /* Use PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC when
++     * for eventMessageGlobalEnable when the terminus does not support
++     * PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE
++     * and supports PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC type
++     */
++    else if (terminus->synchronyConfigurationSupported.byte &
++             (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC))
++    {
++        eventMessageGlobalEnable = PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC;
++    }
++    /* Only use PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_POLLING
++     * for eventMessageGlobalEnable when the terminus only supports
++     * this type
++     */
++    else if (terminus->synchronyConfigurationSupported.byte &
++             (1 << PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_POLLING))
++    {
++        eventMessageGlobalEnable = PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_POLLING;
+     }
++
++    if (eventMessageGlobalEnable != PLDM_EVENT_MESSAGE_GLOBAL_DISABLE)
++    {
++        auto rc = co_await setEventReceiver(tid, eventMessageGlobalEnable,
++                                            PLDM_TRANSPORT_PROTOCOL_TYPE_MCTP,
++                                            heartbeatTimer);
++        if (rc != PLDM_SUCCESS)
++        {
++            lg2::error(
++                "Failed to set event receiver for terminus with TID: {TID}, error: {ERROR}",
++                "TID", tid, "ERROR", rc);
++        }
++    }
++
+     co_return PLDM_SUCCESS;
+ }
+ 
+@@ -265,5 +369,123 @@ exec::task<int> PlatformManager::getPDRRepositoryInfo(
+     co_return completionCode;
+ }
+ 
++exec::task<int> PlatformManager::setEventReceiver(
++    pldm_tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable,
++    pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer)
++{
++    size_t requestBytes = PLDM_SET_EVENT_RECEIVER_REQ_BYTES;
++    /** Ignore heartbeatTimer bytes when eventMessageGlobalEnable is not
++     *  ENABLE_ASYNC_KEEP_ALIVE
++     **/
++    if (eventMessageGlobalEnable !=
++        PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE)
++    {
++        requestBytes = requestBytes - sizeof(heartbeatTimer);
++    }
++    Request request(sizeof(pldm_msg_hdr) + requestBytes);
++    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++    auto rc = encode_set_event_receiver_req(
++        0, eventMessageGlobalEnable, protocalType,
++        terminusManager.getLocalEid(), heartbeatTimer, requestMsg);
++    if (rc)
++    {
++        lg2::error(
++            "Failed to encode request SetEventReceiver for terminus ID {TID}, error {RC} ",
++            "TID", tid, "RC", rc);
++        co_return rc;
++    }
++
++    const pldm_msg* responseMsg = nullptr;
++    size_t responseLen = 0;
++    rc = co_await terminusManager.sendRecvPldmMsg(tid, request, &responseMsg,
++                                                  &responseLen);
++    if (rc)
++    {
++        lg2::error(
++            "Failed to send SetEventReceiver message for terminus {TID}, error {RC}",
++            "TID", tid, "RC", rc);
++        co_return rc;
++    }
++
++    uint8_t completionCode;
++    rc = decode_set_event_receiver_resp(responseMsg, responseLen,
++                                        &completionCode);
++    if (rc)
++    {
++        lg2::error(
++            "Failed to decode response SetEventReceiver for terminus ID {TID}, error {RC} ",
++            "TID", tid, "RC", rc);
++        co_return rc;
++    }
++
++    if (completionCode != PLDM_SUCCESS)
++    {
++        lg2::error(
++            "Error : SetEventReceiver for terminus ID {TID}, complete code {CC}.",
++            "TID", tid, "CC", completionCode);
++        co_return rc;
++    }
++
++    co_return completionCode;
++}
++
++exec::task<int> PlatformManager::eventMessageSupported(
++    pldm_tid_t tid, uint8_t formatVersion, uint8_t& synchronyConfiguration,
++    bitfield8_t& synchronyConfigurationSupported,
++    uint8_t& numberEventClassReturned, std::vector<uint8_t>& eventClass)
++{
++    Request request(
++        sizeof(pldm_msg_hdr) + PLDM_EVENT_MESSAGE_SUPPORTED_REQ_BYTES);
++    auto requestMsg = reinterpret_cast<pldm_msg*>(request.data());
++    auto rc = encode_event_message_supported_req(0, formatVersion, requestMsg);
++    if (rc)
++    {
++        lg2::error(
++            "Failed to encode request EventMessageSupported for terminus ID {TID}, error {RC} ",
++            "TID", tid, "RC", rc);
++        co_return rc;
++    }
++
++    const pldm_msg* responseMsg = nullptr;
++    size_t responseLen = 0;
++    rc = co_await terminusManager.sendRecvPldmMsg(tid, request, &responseMsg,
++                                                  &responseLen);
++    if (rc)
++    {
++        lg2::error(
++            "Failed to send EventMessageSupported message for terminus {TID}, error {RC}",
++            "TID", tid, "RC", rc);
++        co_return rc;
++    }
++
++    uint8_t completionCode = 0;
++    uint8_t eventClassReturned[std::numeric_limits<uint8_t>::max()];
++    uint8_t eventClassCount = std::numeric_limits<uint8_t>::max();
++
++    rc = decode_event_message_supported_resp(
++        responseMsg, responseLen, &completionCode, &synchronyConfiguration,
++        &synchronyConfigurationSupported, &numberEventClassReturned,
++        eventClassReturned, eventClassCount);
++    if (rc)
++    {
++        lg2::error(
++            "Failed to decode response EventMessageSupported for terminus ID {TID}, error {RC} ",
++            "TID", tid, "RC", rc);
++        co_return rc;
++    }
++
++    if (completionCode != PLDM_SUCCESS)
++    {
++        lg2::error(
++            "Error : EventMessageSupported for terminus ID {TID}, complete code {CC}.",
++            "TID", tid, "CC", completionCode);
++        co_return rc;
++    }
++
++    eventClass.insert(eventClass.end(), eventClassReturned,
++                      eventClassReturned + numberEventClassReturned);
++
++    co_return completionCode;
++}
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/platform_manager.hpp b/platform-mc/platform_manager.hpp
+index 8d6e7b4..196546c 100644
+--- a/platform-mc/platform_manager.hpp
++++ b/platform-mc/platform_manager.hpp
+@@ -40,6 +40,13 @@ class PlatformManager
+      */
+     exec::task<int> initTerminus();
+ 
++    /** @brief Helper to get the supported event messages and set event receiver
++     *
++     *  @param[in] tid - Destination TID
++     *  @return coroutine return_value - PLDM completion code
++     */
++    exec::task<int> configEventReceiver(pldm_tid_t tid);
++
+   private:
+     /** @brief Fetch all PDRs from terminus.
+      *
+@@ -86,6 +93,41 @@ class PlatformManager
+         const pldm_tid_t tid, uint8_t& repositoryState, uint32_t& recordCount,
+         uint32_t& repositorySize, uint32_t& largestRecordSize);
+ 
++    /** @brief Send setEventReceiver command to destination EID.
++     *
++     *  @param[in] tid - Destination TID
++     *  @param[in] eventMessageGlobalEnable - Enable/disable event message
++     *             generation from the terminus
++     *  @param[in] eventReceiverEid - The EID of eventReceiver that terminus
++     *             should send event message to
++     *  @param[in] protocalType - Provided in the request to help the responder
++     *             verify that the content of the eventReceiverAddressInfo field
++     *  @param[in] heartbeatTimer - Amount of time in seconds after each
++     *             elapsing of which the terminus shall emit a heartbeat event.
++     *  @return coroutine return_value - PLDM completion code
++     */
++    exec::task<int> setEventReceiver(
++        pldm_tid_t tid,
++        pldm_event_message_global_enable eventMessageGlobalEnable,
++        pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer);
++
++    /** @brief  send eventMessageSupported
++     *  @param[in] tid - Destination TID
++     *  @param[in] formatVersion - version of the event format
++     *  @param[out] synchronyConfiguration - messaging style most recently
++     *              configured via the setEventReceiver command
++     *  @param[out] synchronyConfigurationSupported - event messaging styles
++     *              supported by the terminus
++     *  @param[out] numerEventClassReturned - number of eventClass enumerated
++     *              bytes
++     *  @param[out] eventClass - vector of eventClass the device can generate
++     *  @return coroutine return_value - PLDM completion code
++     */
++    exec::task<int> eventMessageSupported(
++        pldm_tid_t tid, uint8_t formatVersion, uint8_t& synchronyConfiguration,
++        bitfield8_t& synchronyConfigurationSupported,
++        uint8_t& numerEventClassReturned, std::vector<uint8_t>& eventClass);
++
+     /** reference of TerminusManager for sending PLDM request to terminus*/
+     TerminusManager& terminusManager;
+ 
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+index 7b94bda..575741a 100644
+--- a/platform-mc/terminus.cpp
++++ b/platform-mc/terminus.cpp
+@@ -14,7 +14,8 @@ namespace platform_mc
+ {
+ 
+ Terminus::Terminus(pldm_tid_t tid, uint64_t supportedTypes) :
+-    initialized(false), tid(tid), supportedTypes(supportedTypes)
++    initialized(false), synchronyConfigurationSupported(0), tid(tid),
++    supportedTypes(supportedTypes)
+ {}
+ 
+ bool Terminus::doesSupportType(uint8_t type)
+diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
+index a819ad7..13b0884 100644
+--- a/platform-mc/terminus.hpp
++++ b/platform-mc/terminus.hpp
+@@ -133,6 +133,10 @@ class Terminus
+     /** @brief A flag to indicate if terminus has been initialized */
+     bool initialized = false;
+ 
++    /** @brief This value indicates the event messaging styles supported by the
++     * terminus */
++    bitfield8_t synchronyConfigurationSupported;
++
+     /** @brief A list of numericSensors */
+     std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
+ 
+diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
+index d485de5..2103fc5 100644
+--- a/platform-mc/terminus_manager.hpp
++++ b/platform-mc/terminus_manager.hpp
+@@ -51,12 +51,12 @@ class TerminusManager
+     TerminusManager& operator=(TerminusManager&&) = delete;
+     virtual ~TerminusManager() = default;
+ 
+-    explicit TerminusManager(sdeventplus::Event& /* event */,
+-                             RequesterHandler& handler,
+-                             pldm::InstanceIdDb& instanceIdDb,
+-                             TerminiMapper& termini, Manager* manager) :
++    explicit TerminusManager(
++        sdeventplus::Event& /* event */, RequesterHandler& handler,
++        pldm::InstanceIdDb& instanceIdDb, TerminiMapper& termini,
++        Manager* manager, mctp_eid_t localEid) :
+         handler(handler), instanceIdDb(instanceIdDb), termini(termini),
+-        tidPool(tidPoolSize, false), manager(manager)
++        tidPool(tidPoolSize, false), manager(manager), localEid(localEid)
+     {
+         // DSP0240 v1.1.0 table-8, special value: 0,0xFF = reserved
+         tidPool[0] = true;
+@@ -145,6 +145,15 @@ class TerminusManager
+      */
+     bool unmapTid(const pldm_tid_t& tid);
+ 
++    /** @brief getter of local EID
++     *
++     *  @return uint8_t - local EID
++     */
++    mctp_eid_t getLocalEid()
++    {
++        return localEid;
++    }
++
+   private:
+     /** @brief Find the terminus object pointer in termini list.
+      *
+@@ -233,6 +242,9 @@ class TerminusManager
+ 
+     /** @brief A Manager interface for calling the hook functions **/
+     Manager* manager;
++
++    /** @brief local EID */
++    mctp_eid_t localEid;
+ };
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/test/mock_terminus_manager.hpp b/platform-mc/test/mock_terminus_manager.hpp
+index 4e56a83..5607c0e 100644
+--- a/platform-mc/test/mock_terminus_manager.hpp
++++ b/platform-mc/test/mock_terminus_manager.hpp
+@@ -17,7 +17,8 @@ class MockTerminusManager : public TerminusManager
+     MockTerminusManager(sdeventplus::Event& event, RequesterHandler& handler,
+                         pldm::InstanceIdDb& instanceIdDb,
+                         TerminiMapper& termini, Manager* manager) :
+-        TerminusManager(event, handler, instanceIdDb, termini, manager)
++        TerminusManager(event, handler, instanceIdDb, termini, manager,
++                        LOCAL_EID)
+     {}
+ 
+     exec::task<int> sendRecvPldmMsgOverMctp(
+diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
+index 9fe050b..c0f590c 100644
+--- a/platform-mc/test/sensor_manager_test.cpp
++++ b/platform-mc/test/sensor_manager_test.cpp
+@@ -19,7 +19,8 @@ class SensorManagerTest : public testing::Test
+         bus(pldm::utils::DBusHandler::getBus()),
+         event(sdeventplus::Event::get_default()), instanceIdDb(),
+         reqHandler(pldmTransport, event, instanceIdDb, false),
+-        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
++        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr,
++                        LOCAL_EID),
+         sensorManager(event, terminusManager, termini)
+     {}
+ 
+diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
+index 432ba21..78de1fa 100644
+--- a/platform-mc/test/terminus_manager_test.cpp
++++ b/platform-mc/test/terminus_manager_test.cpp
+@@ -32,7 +32,8 @@ class TerminusManagerTest : public testing::Test
+         event(sdeventplus::Event::get_default()), instanceIdDb(),
+         reqHandler(pldmTransport, event, instanceIdDb, false,
+                    std::chrono::seconds(1), 2, std::chrono::milliseconds(100)),
+-        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr),
++        terminusManager(event, reqHandler, instanceIdDb, termini, nullptr,
++                        LOCAL_EID),
+         mockTerminusManager(event, reqHandler, instanceIdDb, termini, nullptr)
+     {}
+ 
+-- 
+2.44.2
+

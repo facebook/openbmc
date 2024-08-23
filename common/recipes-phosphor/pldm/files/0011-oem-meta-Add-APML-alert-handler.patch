@@ -1,16 +1,18 @@
-From 8b0d2ae9645cddce58e84a0a3300a1c2a67b7f8c Mon Sep 17 00:00:00 2001
+From 86fea5278b18a347a1e0946f032abfdf0129127d Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Fri, 28 Jun 2024 11:19:43 +0800
 Subject: [PATCH 11/13] oem-meta: Add APML alert handler
 
 Add APML alert handler. It will call `amd-ras` to do ADDC.
+
+Change-Id: I9b8587c345e20a17ae858cfb021478c5878c55ab
 ---
  libpldmresponder/meson.build                  |  1 +
  .../libpldmresponder/oem_meta_file_io.cpp     |  3 +
  .../oem_meta_file_io_by_type.hpp              |  1 +
- .../oem_meta_file_io_type_apml_alert.cpp      | 76 +++++++++++++++++++
- .../oem_meta_file_io_type_apml_alert.hpp      | 43 +++++++++++
- 5 files changed, 124 insertions(+)
+ .../oem_meta_file_io_type_apml_alert.cpp      | 85 +++++++++++++++++++
+ .../oem_meta_file_io_type_apml_alert.hpp      | 42 +++++++++
+ 5 files changed, 132 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
 
@@ -27,18 +29,17 @@ index 8e552c9..33b1c07 100644
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-index 236761f..b2ced66 100644
+index 2263cf5..5e4acff 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-@@ -4,6 +4,7 @@
+@@ -1,5 +1,6 @@
+ #include "oem_meta_file_io.hpp"
+ 
++#include "oem_meta_file_io_type_apml_alert.hpp"
+ #include "oem_meta_file_io_type_bios_version.hpp"
  #include "oem_meta_file_io_type_event_log.hpp"
  #include "oem_meta_file_io_type_post_code.hpp"
- #include "oem_meta_file_io_type_power_control.hpp"
-+#include "oem_meta_file_io_type_apml_alert.hpp"
- #include "xyz/openbmc_project/Common/error.hpp"
- 
- #include <libpldm/oem/meta/file_io.h>
-@@ -29,6 +30,8 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(uint8_t messageTid,
+@@ -29,6 +30,8 @@ std::unique_ptr<FileHandler>
              return std::make_unique<BIOSVersionHandler>(
                  messageTid, configurationDiscovery->getConfigurations(),
                  dBusIntf);
@@ -61,16 +62,16 @@ index a13f149..44c8e5f 100644
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.cpp
 new file mode 100644
-index 0000000..80f2e0f
+index 0000000..0967762
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.cpp
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,85 @@
 +#include "oem_meta_file_io_type_apml_alert.hpp"
-+
-+#include <phosphor-logging/lg2.hpp>
 +
 +#include <fcntl.h>
 +#include <sys/file.h>
++
++#include <phosphor-logging/lg2.hpp>
 +
 +constexpr auto CPUID_SIZE = 16;
 +
@@ -80,34 +81,40 @@ index 0000000..80f2e0f
 +
 +int APMLAlertHandler::write(const message& data)
 +{
-+    FILE *fp;
++    FILE* fp;
 +    char buffer[1024];
 +    auto fru = tid / 10;
 +
-+    if (data.size() != CPUID_SIZE) {
++    if (data.size() != CPUID_SIZE)
++    {
 +        error("Invalid length for CPUID");
 +    }
 +
 +    // Convert to hex string
 +    std::string CPUIDString;
-+    for (size_t i = 0; i < data.size(); ++i) {
++    for (size_t i = 0; i < data.size(); ++i)
++    {
 +        CPUIDString += std::format("0x{:02x}", data[i]);
-+        if (i != data.size() - 1) {
++        if (i != data.size() - 1)
++        {
 +            CPUIDString += " ";
 +        }
 +    }
 +
-+    auto command = "amd-ras --fru " + std::to_string(fru) + " --ncpu 1 --cid " + CPUIDString;
++    auto command = "amd-ras --fru " + std::to_string(fru) + " --ncpu 1 --cid " +
++                   CPUIDString;
 +
 +    auto lock_file = "/tmp/amd-ras" + std::to_string(fru) + ".lock";
 +    int fd = open(lock_file.c_str(), O_CREAT | O_RDWR, 0666);
-+    if (fd == -1) {
++    if (fd == -1)
++    {
 +        perror("open lock for amd-ras failed");
 +        return PLDM_ERROR;
 +    }
 +
 +    // obtain lock
-+    if (flock(fd, LOCK_EX) == -1) {
++    if (flock(fd, LOCK_EX) == -1)
++    {
 +        perror("flock for amd-ras failed");
 +        close(fd);
 +        return PLDM_ERROR;
@@ -115,7 +122,8 @@ index 0000000..80f2e0f
 +
 +    // run amd-ras
 +    fp = popen(command.c_str(), "r");
-+    if (fp == NULL) {
++    if (fp == NULL)
++    {
 +        perror("popen() failed for amd-ras");
 +        flock(fd, LOCK_UN);
 +        close(fd);
@@ -123,13 +131,15 @@ index 0000000..80f2e0f
 +    }
 +
 +    std::string output;
-+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
++    while (fgets(buffer, sizeof(buffer), fp) != NULL)
++    {
 +        output += buffer;
 +    }
 +    pclose(fp);
 +
 +    // release lock
-+    if (flock(fd, LOCK_UN) == -1) {
++    if (flock(fd, LOCK_UN) == -1)
++    {
 +        perror("flock for amd-ras failed");
 +        close(fd);
 +        return PLDM_ERROR;
@@ -143,10 +153,10 @@ index 0000000..80f2e0f
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
 new file mode 100644
-index 0000000..c3e246f
+index 0000000..f71b579
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,42 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -171,8 +181,7 @@ index 0000000..c3e246f
 +
 +    explicit APMLAlertHandler(uint8_t tid,
 +                              const pldm::utils::DBusHandler* dBusIntf) :
-+        tid(tid),
-+        dBusIntf(dBusIntf)
++        tid(tid), dBusIntf(dBusIntf)
 +    {}
 +
 +    int write(const message& data) override;
@@ -191,5 +200,5 @@ index 0000000..c3e246f
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.43.5
+2.44.2
 

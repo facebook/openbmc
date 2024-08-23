@@ -1,4 +1,4 @@
-From 46cd3f9177f25be35f3e8528e259231fae31df16 Mon Sep 17 00:00:00 2001
+From 797865c0f610c7ac1ad331a14759db5dca905935 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 28 Jun 2024 16:57:45 +0800
 Subject: [PATCH 12/13] Support OEM-META command for NIC power cycle
@@ -19,7 +19,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 35 insertions(+)
 
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
-index 622fc47..d11b7ca 100644
+index 4f86f14..d733c70 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
 @@ -16,6 +16,10 @@ enum class POWER_CONTROL_OPTION
@@ -52,9 +52,9 @@ index 622fc47..d11b7ca 100644
 +            try
 +            {
 +                auto& bus = pldm::utils::DBusHandler::getBus();
-+                auto method = bus.new_method_call(systemd_busname, systemd_path,
-+                                                  systemd_interface,
-+                                                  "StartUnit");
++                auto method =
++                    bus.new_method_call(systemd_busname, systemd_path,
++                                        systemd_interface, "StartUnit");
 +                method.append("pldm_nic_power_cycle@" +
 +                                  std::to_string(nic_index) + ".service",
 +                              "replace");
@@ -72,5 +72,5 @@ index 622fc47..d11b7ca 100644
              error("Get invalid power control option, option={OPTION}", "OPTION",
                    option);
 -- 
-2.43.5
+2.44.2
 

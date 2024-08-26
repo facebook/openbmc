@@ -69,6 +69,19 @@ index cc59176563..744441b5cc 100644
          }
          qdev_prop_set_uint8(dev, "cs", i);
          qdev_realize_and_unref(dev, BUS(s->spi), &error_fatal);
+diff --git a/hw/block/block.c b/hw/block/block.c
+index 9f52ee6..e7790b0 100644
+--- a/hw/block/block.c
++++ b/hw/block/block.c
+@@ -73,7 +73,7 @@ bool blk_check_size_and_read_all(BlockBackend *blk, void *buf, hwaddr size,
+                          "can't get size of block backend");
+         return false;
+     }
+-    if (blk_len != size) {
++    if (blk_len < size) {
+         error_setg(errp, "device requires %" HWADDR_PRIu " bytes, "
+                    "block backend provides %" PRIu64 " bytes",
+                    size, blk_len);
 -- 
 2.43.0
 

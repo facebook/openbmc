@@ -79,6 +79,7 @@ KNOWN_USAGE_STRINGS = {
     "awk": ["awk [OPTIONS] [AWK_PROGRAM] [FILE]..."],
     "base64": [
         "base64 [-d] [FILE]",
+        "base64 [OPTION]... [FILE]",
         "base64 [-d] [-w COL] [FILE]",  # BusyBox v1.35.0
     ],
     "basename": [

@@ -6198,19 +6198,25 @@ pal_get_dam_pin_status(uint8_t slot, uint8_t* dam_pin_status) {
   return 0;
 }
 
-static void * set_event_receiver(void *ptr) {
+void * pal_set_event_receiver(void *ptr) {
   #define PLDM_CMD "pldmd-util -b %d -e 0xF0 raw 0x02 0x04 0x01 0x00 0x08 0x00 0x00"
   char cmd[128] = {0};
   int cmd_len = sizeof(cmd);
   int slot = (int)ptr;
+  int ret = -1;
+  int count = 1;
 
   pthread_detach(pthread_self());
   sleep(3);
   snprintf(cmd, cmd_len, PLDM_CMD, slot-1);
-  if ( system(cmd) != 0 ) {
-    syslog(LOG_CRIT, "Failed to run: %s", cmd);
-  } else {
-    syslog(LOG_INFO,"slot%d, Set event receiver to SatMC", slot);
+
+  while (ret) {
+    ret = system(cmd);
+    if (ret != 0) {
+      syslog(LOG_INFO,"slot%d, Failed to set event receiver, count: %d ", slot, count++);
+    } else {
+      syslog(LOG_INFO,"slot%d, Set event receiver to SatMC", slot);
+    }
   }
   pthread_exit(0);
 }
@@ -6228,7 +6234,7 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
     snprintf(key, MAX_KEY_LEN, "fru%u_host_ready", slot);
     kv_set(key, "1", 0, 0);
 
-    int ret = pthread_create(&tid, NULL, set_event_receiver, (void *)arg_slot);
+    int ret = pthread_create(&tid, NULL, pal_set_event_receiver, (void *)arg_slot);
     if (ret < 0) {
       syslog(LOG_WARNING, "[%s] Create set_event_receiver thread failed!, ret:%d", __func__, ret);
     }

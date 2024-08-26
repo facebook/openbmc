@@ -70,6 +70,7 @@ static bool bios_post_cmplt[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_12v_off[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
+static pthread_t tid[MAX_NUM_SLOTS] = {0};
 
 pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
@@ -362,22 +363,20 @@ gpio_monitor_poll(void *ptr) {
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
   gpio_pin_t *gpios;
   bool chk_bic_pch_pwr_flag = true;
-  bool is_inited = false;
   bool is_cached = false;
   int slot_type = SERVER_TYPE_NONE;
   int board_rev = UNKNOWN_REV;
   int delay = 0;
 
-  if (is_inited == false) {
+  do {
     slot_type = fby35_common_get_slot_type(fru);
     board_rev = (fby35_common_get_sb_rev(fru) & 0xF);
     if (slot_type < 0 || board_rev < 0) {
       syslog(LOG_WARNING, "fail to get slot_type:%d or board_rev:%d for fru %u", slot_type, board_rev, fru);
     } else {
-      is_inited = true;
       syslog(LOG_INFO, "get slot_type:%d or board_rev:%d for fru %u", slot_type, board_rev, fru);
     }
-  }
+  } while (slot_type < 0 || board_rev < 0);
 
   /* Check for initial Asserts */
   gpios = get_struct_gpio_pin(fru);
@@ -443,7 +442,7 @@ gpio_monitor_poll(void *ptr) {
     }
 
     // This is a workaround for Java Island POC/EVT board due to schematic issue.
-    if ((is_inited == true) && (slot_type == SERVER_TYPE_JI) && (is_cached == false)) {
+    if ((slot_type == SERVER_TYPE_JI) && (is_cached == false)) {
       switch (board_rev) {
         case JI_REV_POC:
         case JI_REV_EVT:
@@ -596,6 +595,32 @@ cpld_io_mon() {
   return NULL;
 }
 
+void
+create_set_event_receiver(uint8_t slot)
+{
+  int arg_slot = slot;
+
+  syslog(LOG_INFO, "slot%d, Create set_event_receiver thread \n", slot);
+  int ret = pthread_create(&tid[slot], NULL, pal_set_event_receiver, (void *)arg_slot);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "slot%d, Create set_event_receiver thread failed! ret:%d", slot, ret);
+  }
+}
+
+void
+cancle_set_event_receiver(uint8_t slot)
+{
+  int ret;
+
+  if (tid[slot] == 0) {
+    return;
+  }
+  ret = pthread_cancel(tid[slot]);
+  if (ret != 0) {
+    syslog(LOG_INFO, "slot%d, Cancel set_event_receiver thread failed! ret=%d", slot, ret);
+  }
+}
+
 static void *
 host_pwr_mon() {
 #define MAX_NIC_PWR_RETRY   15
@@ -646,6 +671,9 @@ host_pwr_mon() {
             pal_set_last_pwr_state(fru, "off");
           }
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+          if (fby35_common_get_slot_type(fru) == SERVER_TYPE_JI) {
+            cancle_set_event_receiver(fru);
+          }
           set_pwrgd_cpu_flag(fru, false);
           check_cpu_pwr_fault(fru);
         }
@@ -658,6 +686,9 @@ host_pwr_mon() {
           }
           pal_clear_mrc_warning(fru);
           syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
+          if (fby35_common_get_slot_type(fru) == SERVER_TYPE_JI) {
+            create_set_event_receiver(fru);
+          }
           set_pwrgd_cpu_flag(fru, false);
         }
         host_off_flag &= ~(0x1 << i);

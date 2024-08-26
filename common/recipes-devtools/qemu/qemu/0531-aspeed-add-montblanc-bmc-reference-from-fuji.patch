@@ -67,7 +67,7 @@ index 6d8901f9d6..95fc35fd4c 100644
 +
  static void wedge100_i2c_init(AspeedMachineState *bmc)
  {
-     AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
+     AspeedSoCState *soc = bmc->soc;
 @@ -1497,6 +1534,28 @@ static void aspeed_machine_fuji_class_init(ObjectClass *oc, void *data)
          aspeed_soc_num_cpus(amc->soc_name);
  };

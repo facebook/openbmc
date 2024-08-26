@@ -20,7 +20,7 @@ index aa2d351a77..f8d5831086 100644
 @@ -1068,18 +1068,7 @@ static void create_unimplemented_i2c_device(I2CBus *bus, uint8_t addr)
  static void oby35_cl_i2c_init(AspeedMachineState *bmc)
  {
-     AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
+     AspeedSoCState *soc = bmc->soc;
 -    I2CBus *i2c[16];
 -
 -    for (int i = 0; i < 16; i++) {

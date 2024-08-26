@@ -18,7 +18,7 @@ index 2de2bd76c2..0d6b1bb929 100644
  
 +static void wedge100_i2c_init(AspeedMachineState *bmc)
 +{
-+    AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
++    AspeedSoCState *soc = bmc->soc;
 +    I2CBus *i2c[14];
 +
 +    for (int i = 0; i < 14; i++) {
@@ -55,7 +55,7 @@ index 2de2bd76c2..0d6b1bb929 100644
 +
 +static void oby35_cl_i2c_init(AspeedMachineState *bmc)
 +{
-+    AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
++    AspeedSoCState *soc = bmc->soc;
 +    I2CBus *i2c[16];
 +
 +    for (int i = 0; i < 16; i++) {
@@ -72,7 +72,7 @@ index 2de2bd76c2..0d6b1bb929 100644
 +
 +static void oby35_bb_i2c_init(AspeedMachineState *bmc)
 +{
-+    AspeedSoCState *soc = ASPEED_SOC(&bmc->soc);
++    AspeedSoCState *soc = bmc->soc;
 +    I2CBus *i2c[16];
 +
 +    for (int i = 0; i < 16; i++) {

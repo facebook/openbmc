@@ -7,6 +7,19 @@
 
 #include <string>
 
+#define RETIMER_SWITCH_BUS 1
+#define RETIMER_SWITCH_ADDR 0xE2
+#define AL_RETIMER_ADDR 0x40
+#define TI_RETIMER_ADDR 0x20
+
+enum RETIMER_TYPE {
+  RETIMER_AL_PT4080L, 
+  RETIMER_TI_DS160PT801,
+  RETIMER_UNKNOWN = 0xFF,
+};
+
+int get_server_retimer_type(const uint8_t& slot_id);
+
 class PldmRetimerComponent : public PldmComponent {
   protected:
     uint8_t slot_id = 0;

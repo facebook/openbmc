@@ -252,6 +252,8 @@ server_power_12v_off(uint8_t fru) {
     snprintf(ver_key, sizeof(ver_key), "slot%d_%s_pending_ver", fru, pldm_comp_list[i]);
     kv_del(ver_key, 0);
   }
+  snprintf(ver_key, sizeof(ver_key), "slot%d_retimer_type", fru);
+  kv_del(ver_key, 0);
 #endif
 
   snprintf(cmd, sizeof(cmd), FRU_ID_COMPONENT_VER_KEY, fru, "prot");

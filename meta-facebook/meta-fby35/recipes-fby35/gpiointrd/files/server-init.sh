@@ -50,6 +50,7 @@ clear_all_pldm_comp_cache(){
     $KV_CMD del "slot${slot_num}_${comp}_active_ver"
     $KV_CMD del "slot${slot_num}_${comp}_pending_ver"
   done
+  $KV_CMD del "slot${slot_num}_retimer_type"
 }
 
 # stop the service first

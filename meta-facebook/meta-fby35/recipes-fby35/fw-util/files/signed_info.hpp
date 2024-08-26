@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include "signed_decoder.hpp"
+#include "bic_pldm_retimer.hpp"
 #include <facebook/fby35_common.h>
 
 const std::string PLATFORM_NAME = "Yosemite V3.5";
@@ -92,6 +93,7 @@ enum {
   INFINEON,
   ASTERA,
   TI,
+  UNKNOWN_VENDOR,
 };
 
 const signed_header_t base_signed_info = {
@@ -117,14 +119,13 @@ constexpr auto RETIMER_VENDOR_BIT = 4;
 constexpr auto HSC_VR_VENDOR_BIT = 5;
 
 inline signed_header_t get_retimer_signed_info(const uint8_t& fru) {
-  int ret = fby35_common_get_sb_rev(fru); 
-  if (ret < 0) {
-    ret = 0;
-  }
-  if (GETBIT(ret, RETIMER_VENDOR_BIT)) {
+  int retimer_type = get_server_retimer_type(fru);
+  if (retimer_type == RETIMER_AL_PT4080L) {
+    return astera_retimer_signed_info;
+  } else if (retimer_type == RETIMER_TI_DS160PT801) {
     return ti_retimer_signed_info;
   } else {
-    return astera_retimer_signed_info;
+    return signed_header_t(base_signed_info, RETIMER, UNKNOWN_VENDOR);
   }
 }
 

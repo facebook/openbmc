@@ -53,6 +53,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-montblanc:lf-master
   meta-qemux86:lf-master
   meta-tahan:lf-master
+  meta-ventura:lf-master
   meta-waimeacanyon:lf-master
   meta-yosemite4:lf-master
 # dunfell platforms (pending upgrade)

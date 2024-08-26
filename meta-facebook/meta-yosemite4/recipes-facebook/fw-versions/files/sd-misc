@@ -19,6 +19,15 @@ version_pvddcr_cpu0=$(jq --raw-output ".\"3\"" <<< "$versions")
 version_retimer_x16=$(jq --raw-output ".\"4\"" <<< "$versions")
 version_retimer_x8=$(jq --raw-output ".\"5\"" <<< "$versions")
 
+# Function to transform version from 02081900 to 2.8.25
+transform_version() {
+    version="$1"
+    major=$(echo "$version" | cut -c1-2)  # First two characters for major
+    minor=$(echo "$version" | cut -c3-4)  # Next two characters for minor
+    patch=$(echo "$version" | cut -c5-6)  # Next two characters for patch
+    echo "$((16#$major)).$((16#$minor)).$((16#$patch))"  # Convert to decimal and format
+}
+
 busctl set-property \
     xyz.openbmc_project.Settings \
     "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_vr_pvddcr_cpu0" \
@@ -37,18 +46,20 @@ busctl set-property \
     xyz.openbmc_project.Software.Version \
     Version "s" "$version_pvdd11_s3"
 
-if [ $version_retimer_x8 -ne "ERROR:0" ]; then
+if [ "$version_retimer_x8" != "ERROR:0" ]; then
+    formatted_version_retimer_x8=$(transform_version "$version_retimer_x8")
     busctl set-property \
         xyz.openbmc_project.Settings \
         "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x8" \
         xyz.openbmc_project.Software.Version \
-        Version "s" "$version_retimer_x8"
+        Version "s" "$formatted_version_retimer_x8"
 fi
 
-if [ $version_retimer_x16 -ne "ERROR:0" ]; then
+if [ "$version_retimer_x16" != "ERROR:0" ]; then
+    formatted_version_retimer_x16=$(transform_version "$version_retimer_x16")
     busctl set-property \
         xyz.openbmc_project.Settings \
         "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x16" \
         xyz.openbmc_project.Software.Version \
-        Version "s" "$version_retimer_x16"
+        Version "s" "$formatted_version_retimer_x16"
 fi

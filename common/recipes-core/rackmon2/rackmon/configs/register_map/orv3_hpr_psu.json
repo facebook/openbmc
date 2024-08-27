@@ -1,25 +1,77 @@
 {
     "name": "ORV3_HPR_PSU",
     "address_range": [
-      [144, 149], [154, 159], [170, 175], [186, 191],
-      [208, 213], [218, 223], [224, 229], [150, 152],
-      [167, 169], [183, 185], [176, 179], [230, 231],
-      [246, 249], [250, 255]
+        [
+            144,
+            149
+        ],
+        [
+            154,
+            159
+        ],
+        [
+            170,
+            175
+        ],
+        [
+            186,
+            191
+        ],
+        [
+            208,
+            213
+        ],
+        [
+            218,
+            223
+        ],
+        [
+            224,
+            229
+        ],
+        [
+            150,
+            152
+        ],
+        [
+            167,
+            169
+        ],
+        [
+            183,
+            185
+        ],
+        [
+            176,
+            179
+        ],
+        [
+            230,
+            231
+        ],
+        [
+            246,
+            249
+        ],
+        [
+            250,
+            255
+        ]
     ],
     "probe_register": 0,
     "default_baudrate": 115200,
     "preferred_baudrate": 115200,
     "special_handlers": [
-      {
-        "reg": 90,
-        "len": 2,
-        "period": 3600,
-        "action": "write",
-        "info": {
-          "interpret": "INTEGER",
-          "shell": "date +%s"
+        {
+            "reg": 90,
+            "len": 2,
+            "period": 3600,
+            "action": "write",
+            "info": {
+                "interpret": "INTEGER",
+                "shell": "date +%s"
+            }
         }
-      }
     ],
     "registers": [
         {
@@ -164,6 +216,10 @@
                 [
                     11,
                     "PFC_Fail"
+                ],
+                [
+                    12,
+                    "AC_Loss_Single_Fault"
                 ]
             ],
             "name": "PFC_Alarm_Status_Register"
@@ -232,6 +288,14 @@
                 [
                     5,
                     "PFC_Temp_Alarm"
+                ],
+                [
+                    6,
+                    "Bus_Clip_Temp_Alarm"
+                ],
+                [
+                    7,
+                    "Bus_Clip_OTP"
                 ],
                 [
                     8,
@@ -609,6 +673,13 @@
             "name": "Input_Power_Planned"
         },
         {
+            "begin": 118,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 10,
+            "name": "PSU_Output_Voltage_ORing"
+        },
+        {
             "begin": 119,
             "length": 1,
             "format": "INTEGER",
@@ -687,23 +758,16 @@
             "name": "Pulse_Mgmt_Count_Requested"
         },
         {
-            "begin": 123,
-            "length": 1,
-            "format": "INTEGER",
-            "name": "Size_Module_Reg_Map"
-        },
-        {
             "begin": 124,
             "length": 1,
             "format": "INTEGER",
             "name": "Shelf_Location"
         },
         {
-            "begin": 126,
+            "begin": 125,
             "length": 1,
-            "format": "FLOAT",
-            "precision": 10,
-            "name": "PSU_Output_Voltage_ORing"
+            "format": "INTEGER",
+            "name": "Size_Module_Reg_Map"
         }
     ]
 }

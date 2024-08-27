@@ -28,6 +28,7 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 ,,,,9,Bulk_Not_Ok,,,,,,,,
 ,,,,10,Input_Relay_Off,,,,,,,,
 ,,,,11,PFC_Fail,,,,,,,,
+,,,,12,AC_Loss_Single_Fault,,,,,,,,
 62,1,,,,,FLAGS,,,,,,,DCDC_Alarm_Status_Register
 ,,,,0,Main_UVP,,,,,,,,
 ,,,,1,Main_OVP,,,,,,,,
@@ -43,6 +44,8 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 ,,,,3,Sync_Temp_Alarm,,,,,,,,
 ,,,,4,LLC_Temp_Alarm,,,,,,,,
 ,,,,5,PFC_Temp_Alarm,,,,,,,,
+,,,,6,Bus_Clip_Temp_Alarm,,,,,,,,
+,,,,7,Bus_Clip_OTP,,,,,,,,
 ,,,,8,Fan_Failure,,,,,,,,
 64,1,,,,,FLAGS,,,,,,,Communication_Alarm_Status_Register
 ,,,,0,Primary_Secondary_MCU_Fault,,,,,,,,
@@ -105,6 +108,7 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 115,1,,,,,FLOAT,,,10,,,,Bus_Voltage_Max_Over_Period
 116,1,,,,,FLOAT,,,10,,,,Bus_Voltage_Min_Over_Period
 117,1,,,,,INTEGER,,,,,,,Input_Power_Planned
+118,1,,,,,FLOAT,,,10,,,,PSU_Output_Voltage_ORing
 119,1,,,,,INTEGER,,,,,,,Region
 120,1,,,,,FLAGS,,,,,,,Hardware_Signal
 ,,,,0,PSU_A0,,,,,,,,
@@ -122,6 +126,5 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 ,,,,12,PSKILL,,,,,,,,
 121,1,,,,,INTEGER,,,,,,,AC_Loss_Count_Requested
 122,1,,,,,INTEGER,,,,,,,Pulse_Mgmt_Count_Requested
-123,1,,,,,INTEGER,,,,,,,Size_Module_Reg_Map
 124,1,,,,,INTEGER,,,,,,,Shelf_Location
-126,1,,,,,FLOAT,,,10,,,,PSU_Output_Voltage_ORing
+125,1,,,,,INTEGER,,,,,,,Size_Module_Reg_Map

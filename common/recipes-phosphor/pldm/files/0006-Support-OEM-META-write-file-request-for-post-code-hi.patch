@@ -1,4 +1,4 @@
-From 88372ada5d26af89ca036df0d6b5de99eb470b43 Mon Sep 17 00:00:00 2001
+From 32a9ed10f939c6d39e4d0c225a722607e7472b7f Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 06/13] Support OEM-META write file request for post code
@@ -12,8 +12,8 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
  common/utils.cpp                              |  15 ++
  common/utils.hpp                              |  20 +++
- libpldmresponder/meson.build                  |  11 ++
- meson.build                                   |   3 +
+ libpldmresponder/meson.build                  |   9 ++
+ meson.build                                   |   4 +
  meson.options                                 |   8 ++
  .../libpldmresponder/oem_meta_file_io.cpp     |  63 +++++++++
  .../libpldmresponder/oem_meta_file_io.hpp     |  49 +++++++
@@ -21,7 +21,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  .../oem_meta_file_io_type_post_code.cpp       | 131 ++++++++++++++++++
  .../oem_meta_file_io_type_post_code.hpp       |  52 +++++++
  pldmd/pldmd.cpp                               |  10 ++
- 11 files changed, 392 insertions(+)
+ 11 files changed, 391 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.hpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
@@ -100,48 +100,47 @@ index fd7c7db..c0be128 100644
      /** @brief Get Subtree path response from the mapper
       *
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 4f62f4d..500e4f9 100644
+index 4a0f697..5bf142a 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
 @@ -34,6 +34,7 @@ sources = [
-   '../host-bmc/utils.cpp',
-   '../host-bmc/dbus/pcie_device.cpp',
-   '../host-bmc/dbus/pcie_slot.cpp',
-+  '../requester/configuration_discovery_handler.cpp',
-   'event_parser.cpp'
+     '../host-bmc/utils.cpp',
+     '../host-bmc/dbus/pcie_device.cpp',
+     '../host-bmc/dbus/pcie_slot.cpp',
++    '../requester/configuration_discovery_handler.cpp',
+     'event_parser.cpp',
  ]
  
-@@ -63,6 +64,16 @@ if get_option('oem-ibm').allowed()
-   ]
+@@ -61,6 +62,14 @@ if get_option('oem-ibm').allowed()
+     ]
  endif
  
 +if get_option('oem-meta').allowed()
-+   responder_headers += [
-+    '../oem/meta/',
-+   ]
-+  sources += [
-+    '../oem/meta/libpldmresponder/oem_meta_file_io.cpp',
-+    '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
-+  ]
++    responder_headers += ['../oem/meta/']
++    sources += [
++        '../oem/meta/libpldmresponder/oem_meta_file_io.cpp',
++        '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
++    ]
 +endif
 +
  libpldmresponder = library(
-   'pldmresponder',
-   sources,
+     'pldmresponder',
+     sources,
 diff --git a/meson.build b/meson.build
-index 9262e9d..b5d65f6 100644
+index b1fae50..2b49dc9 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -61,6 +61,9 @@ if get_option('oem-ibm').allowed()
-   conf_data.set('DMA_MAXSIZE', get_option('oem-ibm-dma-maxsize'))
-   add_project_arguments('-DOEM_IBM', language : ['c', 'cpp'])
- endif
+@@ -141,6 +141,10 @@ conf_data.set('LOCAL_EID', get_option('local-eid'))
+ 
+ configure_file(output: 'config.h', configuration: conf_data)
+ 
 +if get_option('oem-meta').allowed()
-+  add_project_arguments('-DOEM_META', language : ['c','cpp'])
++    add_project_arguments('-DOEM_META', language: ['c', 'cpp'])
 +endif
- conf_data.set('NUMBER_OF_REQUEST_RETRIES', get_option('number-of-request-retries'))
- conf_data.set('INSTANCE_ID_EXPIRATION_INTERVAL',get_option('instance-id-expiration-interval'))
- conf_data.set('RESPONSE_TIME_OUT',get_option('response-time-out'))
++
+ add_project_arguments(
+     '-include',
+     '@0@'.format(meson.current_build_dir() / 'config.h'),
 diff --git a/meson.options b/meson.options
 index 48f1a40..d3803ca 100644
 --- a/meson.options
@@ -517,7 +516,7 @@ index 0000000..f06cc38
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index e013277..d876c23 100644
+index 39bf8cc..3ae4e11 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -65,6 +65,10 @@ PHOSPHOR_LOG2_USING;
@@ -531,7 +530,7 @@ index e013277..d876c23 100644
  constexpr const char* PLDMService = "xyz.openbmc_project.PLDM";
  
  using namespace pldm;
-@@ -268,6 +272,12 @@ int main(int argc, char** argv)
+@@ -269,6 +273,12 @@ int main(int argc, char** argv)
              pldmTransport.getEventSource(), hostEID, instanceIdDb, &reqHandler);
      }
  

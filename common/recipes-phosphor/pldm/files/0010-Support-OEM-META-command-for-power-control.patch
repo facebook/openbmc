@@ -1,4 +1,4 @@
-From 7f77048a416604ece00c6c425b4b1a4a7af532c4 Mon Sep 17 00:00:00 2001
+From 78cb25c4ce93868bf471566d84d9d6f8253bd9c5 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 14 Jun 2024 16:24:31 +0800
 Subject: [PATCH 10/13] Support OEM-META command for power control
@@ -24,15 +24,15 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
 
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 348cbf1..8e552c9 100644
+index 1e08f12..467f72e 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -73,6 +73,7 @@ if get_option('oem-meta').allowed()
-     '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
-     '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
-     '../oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp',
-+    '../oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp',
-   ]
+@@ -69,6 +69,7 @@ if get_option('oem-meta').allowed()
+         '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
+         '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
+         '../oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp',
++        '../oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp',
+     ]
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp

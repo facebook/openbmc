@@ -1,4 +1,4 @@
-From aa92bc49f7b0e7dcfb932be5ac6d54873b39b7bd Mon Sep 17 00:00:00 2001
+From 75fbfe577e3ae95243afa0fa3a8fef38be8aae77 Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
 Subject: [PATCH 08/13] Support OEM-META command for host BIOS version
@@ -23,15 +23,15 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
 
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 500e4f9..55d73b0 100644
+index 5bf142a..7854ee4 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -71,6 +71,7 @@ if get_option('oem-meta').allowed()
-   sources += [
-     '../oem/meta/libpldmresponder/oem_meta_file_io.cpp',
-     '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
-+    '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
-   ]
+@@ -67,6 +67,7 @@ if get_option('oem-meta').allowed()
+     sources += [
+         '../oem/meta/libpldmresponder/oem_meta_file_io.cpp',
+         '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
++        '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
+     ]
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
@@ -348,10 +348,10 @@ index 0000000..275a3ad
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 5f9ecf6..451d55d 100644
+index e0cb884..06371d0 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -275,7 +275,7 @@ int main(int argc, char** argv)
+@@ -276,7 +276,7 @@ int main(int argc, char** argv)
  #ifdef OEM_META
      invoker.registerHandler(
          PLDM_OEM, std::make_unique<pldm::responder::oem_meta::FileIOHandler>(

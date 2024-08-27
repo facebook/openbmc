@@ -1,4 +1,4 @@
-From 46f4bcd865f0f342b3ae1f4e251673ca757bfa08 Mon Sep 17 00:00:00 2001
+From bd90259811a93e67d901daa077c6b8ebcdf2176c Mon Sep 17 00:00:00 2001
 From: Dung Cao <dung@os.amperecomputing.com>
 Date: Tue, 21 Nov 2023 04:38:29 +0000
 Subject: [PATCH 03/13] platform-mc: Support pollForPlatFormEventMessage

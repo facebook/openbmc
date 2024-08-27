@@ -1,4 +1,4 @@
-From 3cedbb5e3b5e63cd0c9abdc5f2eb5dc6667b5884 Mon Sep 17 00:00:00 2001
+From 035c036680f6bc64835a99a2a656ec1d5c093a3c Mon Sep 17 00:00:00 2001
 From: Thu Nguyen <thu@os.amperecomputing.com>
 Date: Tue, 6 Aug 2024 09:15:55 +0000
 Subject: [PATCH 01/13] platform-mc: Set the local terminus as event receiver
@@ -29,17 +29,17 @@ Change-Id: Ia798c1cd5d946ac519933bca60620e970fe10b0a
  11 files changed, 304 insertions(+), 10 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index e8c3bc8..2977598 100644
+index 22de2d4..cea34a3 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -74,6 +74,7 @@ elif get_option('transport-implementation') == 'af-mctp'
- endif
- conf_data.set('DEFAULT_SENSOR_UPDATER_INTERVAL', get_option('default-sensor-update-interval'))
+@@ -137,6 +137,7 @@ conf_data.set(
+     get_option('default-sensor-update-interval'),
+ )
  conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
 +conf_data.set('LOCAL_EID', get_option('local-eid'))
  
- configure_file(output: 'config.h',
-   configuration: conf_data
+ configure_file(output: 'config.h', configuration: conf_data)
+ 
 diff --git a/meson.options b/meson.options
 index 8a7138a..48f1a40 100644
 --- a/meson.options
@@ -462,10 +462,10 @@ index 4e56a83..5607c0e 100644
  
      exec::task<int> sendRecvPldmMsgOverMctp(
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
-index 9fe050b..c0f590c 100644
+index b3a2d41..04b1470 100644
 --- a/platform-mc/test/sensor_manager_test.cpp
 +++ b/platform-mc/test/sensor_manager_test.cpp
-@@ -19,7 +19,8 @@ class SensorManagerTest : public testing::Test
+@@ -17,7 +17,8 @@ class SensorManagerTest : public testing::Test
          bus(pldm::utils::DBusHandler::getBus()),
          event(sdeventplus::Event::get_default()), instanceIdDb(),
          reqHandler(pldmTransport, event, instanceIdDb, false),

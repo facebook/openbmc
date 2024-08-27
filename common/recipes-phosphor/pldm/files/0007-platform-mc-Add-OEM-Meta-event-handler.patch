@@ -1,4 +1,4 @@
-From 1f7e01dfa0489cba87fcc31b79cc242cffa571a9 Mon Sep 17 00:00:00 2001
+From a28d2466d212c4bb6c63eeb1df7cebf009c22711 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 7 Feb 2024 13:52:07 +0800
 Subject: [PATCH 07/13] platform-mc: Add OEM Meta event handler
@@ -60,24 +60,24 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  platform-mc/event_manager.cpp           |  33 +
  platform-mc/event_manager.hpp           |  13 +-
  platform-mc/manager.hpp                 |  26 +-
- platform-mc/test/meson.build            |   4 +-
+ platform-mc/test/meson.build            |   2 +
  pldmd/pldmd.cpp                         |  10 +-
- 8 files changed, 916 insertions(+), 7 deletions(-)
+ 8 files changed, 915 insertions(+), 6 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
 diff --git a/meson.build b/meson.build
-index b5d65f6..b3c7636 100644
+index 2b49dc9..7c0f70a 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -185,6 +185,7 @@ executable(
-   'platform-mc/event_manager.cpp',
-   'requester/mctp_endpoint_discovery.cpp',
-   'requester/configuration_discovery_handler.cpp',
-+  'oem/meta/platform-mc/event_oem_meta.cpp',
-   implicit_include_directories: false,
-   dependencies: deps,
-   install: true,
+@@ -254,6 +254,7 @@ executable(
+     'platform-mc/event_manager.cpp',
+     'requester/mctp_endpoint_discovery.cpp',
+     'requester/configuration_discovery_handler.cpp',
++    'oem/meta/platform-mc/event_oem_meta.cpp',
+     implicit_include_directories: false,
+     dependencies: deps,
+     install: true,
 diff --git a/oem/meta/platform-mc/event_oem_meta.cpp b/oem/meta/platform-mc/event_oem_meta.cpp
 new file mode 100644
 index 0000000..a4575bc
@@ -1104,25 +1104,23 @@ index d1d2e52..640034d 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
-index 378628e..47c45df 100644
+index 0e8bc87..d1bf36e 100644
 --- a/platform-mc/test/meson.build
 +++ b/platform-mc/test/meson.build
-@@ -7,7 +7,9 @@ test_src = declare_dependency(
-             '../sensor_manager.cpp',
-             '../numeric_sensor.cpp',
-             '../event_manager.cpp',
--            '../../requester/mctp_endpoint_discovery.cpp'],
-+            '../../requester/mctp_endpoint_discovery.cpp',
-+            '../../requester/configuration_discovery_handler.cpp',
-+            '../../oem/meta/platform-mc/event_oem_meta.cpp'],
-             include_directories: ['../../requester', '../../pldmd'])
- 
- tests = [
+@@ -8,6 +8,8 @@ test_src = declare_dependency(
+         '../numeric_sensor.cpp',
+         '../event_manager.cpp',
+         '../../requester/mctp_endpoint_discovery.cpp',
++        '../../requester/configuration_discovery_handler.cpp',
++        '../../oem/meta/platform-mc/event_oem_meta.cpp',
+     ],
+     include_directories: ['../../requester', '../../pldmd'],
+ )
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index d876c23..5f9ecf6 100644
+index 3ae4e11..e0cb884 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -287,7 +287,8 @@ int main(int argc, char** argv)
+@@ -288,7 +288,8 @@ int main(int argc, char** argv)
      // Platform handler.
  
      std::unique_ptr<platform_mc::Manager> platformManager =
@@ -1132,7 +1130,7 @@ index d876c23..5f9ecf6 100644
  
      pldm::responder::platform::EventMap addOnEventHandlers{
          {PLDM_CPER_EVENT_CLASS,
-@@ -310,6 +311,13 @@ int main(int argc, char** argv)
+@@ -311,6 +312,13 @@ int main(int argc, char** argv)
                               size_t eventDataOffset) {
               return platformManager->handleSensorEvent(
                   request, payloadLength, formatVersion, tid, eventDataOffset);

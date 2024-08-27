@@ -1,4 +1,4 @@
-From c17b15e798ffa3a9e47751de4692fb7b85326b62 Mon Sep 17 00:00:00 2001
+From 9c384d0fcae6440c7cf9792e3e9c9662cf832168 Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 6 Aug 2024 09:23:30 +0000
 Subject: [PATCH 02/13] platform-mc: Added EventManager
@@ -79,17 +79,17 @@ index 522899c..81442fb 100644
          catch (const std::out_of_range& e)
          {
 diff --git a/meson.build b/meson.build
-index 2977598..eb13820 100644
+index cea34a3..bbd934a 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -179,6 +179,7 @@ executable(
-   'platform-mc/manager.cpp',
-   'platform-mc/sensor_manager.cpp',
-   'platform-mc/numeric_sensor.cpp',
-+  'platform-mc/event_manager.cpp',
-   'requester/mctp_endpoint_discovery.cpp',
-   implicit_include_directories: false,
-   dependencies: deps,
+@@ -247,6 +247,7 @@ executable(
+     'platform-mc/manager.cpp',
+     'platform-mc/sensor_manager.cpp',
+     'platform-mc/numeric_sensor.cpp',
++    'platform-mc/event_manager.cpp',
+     'requester/mctp_endpoint_discovery.cpp',
+     implicit_include_directories: false,
+     dependencies: deps,
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
 new file mode 100644
 index 0000000..7cd2cb2
@@ -1497,22 +1497,22 @@ index 0000000..ee03c5d
 +    EXPECT_EQ(false, eventManager.getAvailableState(tid));
 +}
 diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
-index 64177cc..378628e 100644
+index ab7b20a..0e8bc87 100644
 --- a/platform-mc/test/meson.build
 +++ b/platform-mc/test/meson.build
 @@ -6,6 +6,7 @@ test_src = declare_dependency(
-             '../manager.cpp',
-             '../sensor_manager.cpp',
-             '../numeric_sensor.cpp',
-+            '../event_manager.cpp',
-             '../../requester/mctp_endpoint_discovery.cpp'],
-             include_directories: ['../../requester', '../../pldmd'])
- 
-@@ -15,6 +16,7 @@ tests = [
-   'platform_manager_test',
-   'sensor_manager_test',
-   'numeric_sensor_test',
-+  'event_manager_test',
+         '../manager.cpp',
+         '../sensor_manager.cpp',
+         '../numeric_sensor.cpp',
++        '../event_manager.cpp',
+         '../../requester/mctp_endpoint_discovery.cpp',
+     ],
+     include_directories: ['../../requester', '../../pldmd'],
+@@ -17,6 +18,7 @@ tests = [
+     'platform_manager_test',
+     'sensor_manager_test',
+     'numeric_sensor_test',
++    'event_manager_test',
  ]
  
  foreach t : tests
@@ -1571,10 +1571,10 @@ index a52e4ea..fcb8102 100644
      MOCK_METHOD(void, doSensorPolling, (pldm_tid_t tid), (override));
  };
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
-index c0f590c..b5084f4 100644
+index 04b1470..6ab8d3b 100644
 --- a/platform-mc/test/sensor_manager_test.cpp
 +++ b/platform-mc/test/sensor_manager_test.cpp
-@@ -21,7 +21,7 @@ class SensorManagerTest : public testing::Test
+@@ -19,7 +19,7 @@ class SensorManagerTest : public testing::Test
          reqHandler(pldmTransport, event, instanceIdDb, false),
          terminusManager(event, reqHandler, instanceIdDb, termini, nullptr,
                          LOCAL_EID),

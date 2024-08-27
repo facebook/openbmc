@@ -1,4 +1,4 @@
-From 86fea5278b18a347a1e0946f032abfdf0129127d Mon Sep 17 00:00:00 2001
+From 2d6c5984fa06c0488d437b436757130159e09051 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Fri, 28 Jun 2024 11:19:43 +0800
 Subject: [PATCH 11/13] oem-meta: Add APML alert handler
@@ -17,15 +17,15 @@ Change-Id: I9b8587c345e20a17ae858cfb021478c5878c55ab
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
 
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 8e552c9..33b1c07 100644
+index 467f72e..8bdda72 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -74,6 +74,7 @@ if get_option('oem-meta').allowed()
-     '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
-     '../oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp',
-     '../oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp',
-+    '../oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.cpp',
-   ]
+@@ -70,6 +70,7 @@ if get_option('oem-meta').allowed()
+         '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
+         '../oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp',
+         '../oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp',
++        '../oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.cpp',
+     ]
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp

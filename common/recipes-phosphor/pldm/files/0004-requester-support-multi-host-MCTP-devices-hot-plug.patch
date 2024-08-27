@@ -1,4 +1,4 @@
-From 9ae44348f6048af2c0cf28bd12399f43acc70a7e Mon Sep 17 00:00:00 2001
+From 2092625225abf22aaad4773a88d1201dbc03645e Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 04/13] requester: support multi-host MCTP devices hot plug
@@ -31,12 +31,12 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  common/utils.hpp                              |   9 +-
  libpldmresponder/fru.hpp                      |   7 +-
  meson.build                                   |   1 +
- pldmd/pldmd.cpp                               |   8 +-
+ pldmd/pldmd.cpp                               |   9 +-
  requester/configuration_discovery_handler.cpp | 178 ++++++++++++++++++
  requester/configuration_discovery_handler.hpp | 133 +++++++++++++
  .../configuration_discovery_handler_test.cpp  | 115 +++++++++++
- requester/test/meson.build                    |   3 +
- 11 files changed, 473 insertions(+), 8 deletions(-)
+ requester/test/meson.build                    |  13 +-
+ 11 files changed, 482 insertions(+), 10 deletions(-)
  create mode 100644 requester/configuration_discovery_handler.cpp
  create mode 100644 requester/configuration_discovery_handler.hpp
  create mode 100644 requester/test/configuration_discovery_handler_test.cpp
@@ -152,19 +152,19 @@ index af55f92..8fda98b 100644
  using InterfaceMap = std::map<Interface, PropertyMap>;
  using ObjectValueTree = std::map<sdbusplus::message::object_path, InterfaceMap>;
 diff --git a/meson.build b/meson.build
-index eb13820..9262e9d 100644
+index bbd934a..b1fae50 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -181,6 +181,7 @@ executable(
-   'platform-mc/numeric_sensor.cpp',
-   'platform-mc/event_manager.cpp',
-   'requester/mctp_endpoint_discovery.cpp',
-+  'requester/configuration_discovery_handler.cpp',
-   implicit_include_directories: false,
-   dependencies: deps,
-   install: true,
+@@ -249,6 +249,7 @@ executable(
+     'platform-mc/numeric_sensor.cpp',
+     'platform-mc/event_manager.cpp',
+     'requester/mctp_endpoint_discovery.cpp',
++    'requester/configuration_discovery_handler.cpp',
+     implicit_include_directories: false,
+     dependencies: deps,
+     install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 13e1e8e..e013277 100644
+index 13e1e8e..39bf8cc 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -175,17 +175,18 @@ index 13e1e8e..e013277 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -241,6 +242,9 @@ int main(int argc, char** argv)
+@@ -241,6 +242,10 @@ int main(int argc, char** argv)
          hostEffecterParser;
      std::unique_ptr<DbusToPLDMEvent> dbusToPLDMEventHandler;
      DBusHandler dbusHandler;
++
 +    auto configurationDiscovery =
 +        std::make_unique<pldm::ConfigurationDiscoveryHandler>(&dbusHandler);
 +
      std::unique_ptr<platform_config::Handler> platformConfigHandler{};
      platformConfigHandler =
          std::make_unique<platform_config::Handler>(PDR_JSONS_DIR);
-@@ -334,7 +338,9 @@ int main(int argc, char** argv)
+@@ -334,7 +339,9 @@ int main(int argc, char** argv)
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
@@ -641,32 +642,29 @@ index 0000000..cd28c42
 +    ASSERT_EQ(0, handler->getConfigurations().size());
 +}
 diff --git a/requester/test/meson.build b/requester/test/meson.build
-index a08a990..3384793 100644
+index f269561..d30d884 100644
 --- a/requester/test/meson.build
 +++ b/requester/test/meson.build
-@@ -2,12 +2,14 @@ test_src = declare_dependency(
-           sources: [
-             '../mctp_endpoint_discovery.cpp',
-             '../../common/utils.cpp',
-+            '../configuration_discovery_handler.cpp'
-           ])
+@@ -1,8 +1,17 @@
+ test_src = declare_dependency(
+-    sources: ['../mctp_endpoint_discovery.cpp', '../../common/utils.cpp'],
++    sources: [
++        '../mctp_endpoint_discovery.cpp',
++        '../../common/utils.cpp',
++        '../configuration_discovery_handler.cpp',
++    ],
+ )
  
- tests = [
-   'handler_test',
-   'request_test',
-   'mctp_endpoint_discovery_test',
-+  'configuration_discovery_handler_test',
- ]
+-tests = ['handler_test', 'request_test', 'mctp_endpoint_discovery_test']
++tests = [
++    'handler_test',
++    'request_test',
++    'mctp_endpoint_discovery_test',
++    'configuration_discovery_handler_test',
++]
  
  foreach t : tests
-@@ -19,6 +21,7 @@ foreach t : tests
-                          gmock,
-                          libpldm_dep,
-                          nlohmann_json_dep,
-+                         libpldmutils,
-                          phosphor_dbus_interfaces,
-                          phosphor_logging_dep,
-                          sdbusplus,
+     test(
 -- 
 2.44.2
 

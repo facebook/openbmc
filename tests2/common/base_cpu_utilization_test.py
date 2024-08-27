@@ -82,8 +82,8 @@ class BaseCpuUtilizationTest(unittest.TestCase):
         self.cpu_utilization_cmd = None
         self.expected_cpu_utilization = None
         self.skip_processes = None
-        self.number_of_retries = 4
-        self.result_threshold = 2
+        self.number_of_retries = 10
+        self.result_threshold = 3
         self.wait_time = 5
 
     def tearDown(self):

@@ -1,0 +1,65 @@
+From 00043c9dc0a3a36c5b963780f486b5f7a578cdf8 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Sun, 28 Jul 2024 22:59:37 -0700
+Subject: [PATCH 5/8] ARM: dts: aspeed: elbert: Enable mdio0 devices
+
+Enable mdio0 to configure the BCM53134 switch which connects BMC and
+host to the front-panel ethernet port.
+---
+ .../dts/aspeed/aspeed-bmc-facebook-elbert.dts | 37 +++++++++++++++++--
+ 1 file changed, 34 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
+index ff1009ea1c49..d9faa02c0e35 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
+@@ -184,12 +184,43 @@ &i2c11 {
+ 	status = "okay";
+ };
+ 
++&mdio0 {
++	status = "okay";
++
++	ethernet-switch@1e {
++		compatible = "brcm,bcm53134";
++		reg = <30>;
++
++		ethernet-ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			port@0 {
++				reg = <0>;
++				label = "uplink-port";
++			};
++
++			port@1 {
++				reg = <1>;
++				label = "x86-mgmt";
++			};
++
++			port@8 {
++				reg = <8>;
++				label = "bmc-mgmt";
++				phy-mode = "rgmii";
++				fixed-link {
++					speed = <1000>;
++					full-duplex;
++				};
++			};
++		};
++	};
++};
++
+ /*
+  * BMC's "mac3" controller is connected to BCM53134P's IMP_RGMII port
+  * directly (fixed link, no PHY in between).
+- * Note: BMC's "mdio0" controller is connected to BCM53134P's MDIO
+- * interface, and the MDIO channel will be enabled in dts later, when
+- * BCM53134 is added to "bcm53xx" DSA driver.
+  */
+ &mac3 {
+ 	status = "okay";
+-- 
+2.43.0
+

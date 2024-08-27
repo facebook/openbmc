@@ -1,0 +1,147 @@
+From 9c43a71664ff882ef69994b1528e17df19c18d1d Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Fri, 28 Oct 2022 11:50:15 -0700
+Subject: [PATCH 4/8] ARM: dts: aspeed: Add Facebook FBDarwin (AST2600) BMC
+
+Add initial device tree for the Meta (Facebook) FBDarwin AST2600 BMC.
+
+FBDarwin is Meta's rack switch platform with an AST2600 BMC integrated
+for health monitoring purpose.
+---
+ arch/arm/boot/dts/aspeed/Makefile             |   1 +
+ .../aspeed/aspeed-bmc-facebook-fbdarwin.dts   | 111 ++++++++++++++++++
+ 2 files changed, 112 insertions(+)
+ create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts
+
+diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
+index 5e3392621697..8d9597695643 100644
+--- a/arch/arm/boot/dts/aspeed/Makefile
++++ b/arch/arm/boot/dts/aspeed/Makefile
+@@ -19,6 +19,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+ 	aspeed-bmc-facebook-bletchley.dtb \
+ 	aspeed-bmc-facebook-cmm.dtb \
+ 	aspeed-bmc-facebook-elbert.dtb \
++	aspeed-bmc-facebook-fbdarwin.dtb \
+ 	aspeed-bmc-facebook-fuji.dtb \
+ 	aspeed-bmc-facebook-galaxy100.dtb \
+ 	aspeed-bmc-facebook-greatlakes.dtb \
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts
+new file mode 100644
+index 000000000000..348fa5364cbb
+--- /dev/null
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts
+@@ -0,0 +1,111 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) 2021 Facebook Inc.
++
++/dts-v1/;
++
++#include "ast2600-facebook-netbmc-common.dtsi"
++
++/ {
++	model = "Facebook FBDARWIN BMC";
++	compatible = "facebook,fbdarwin-bmc", "aspeed,ast2600";
++
++	aliases {
++		serial0 = &uart5;
++		serial1 = &uart1;
++		serial2 = &uart2;
++		serial3 = &uart3;
++	};
++
++	chosen {
++		stdout-path = &uart5;
++	};
++
++	iio-hwmon {
++		compatible = "iio-hwmon";
++		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
++			      <&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
++			      <&adc1 0>, <&adc1 1>, <&adc1 2>, <&adc1 3>,
++			      <&adc1 4>, <&adc1 5>, <&adc1 6>, <&adc1 7>;
++	};
++
++	spi_gpio: spi {
++		num-chipselects = <1>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
++	};
++};
++
++&mdio0 {
++	status = "okay";
++
++	ethernet-switch@1e {
++		compatible = "brcm,bcm53134";
++		reg = <30>;
++
++		ethernet-ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			port@0 {
++				reg = <0>;
++				label = "uplink-port";
++			};
++
++			port@1 {
++				reg = <1>;
++				label = "x86-mgmt";
++			};
++
++			port@8 {
++				reg = <8>;
++				label = "bmc-mgmt";
++				phy-mode = "rgmii";
++				fixed-link {
++					speed = <1000>;
++					full-duplex;
++				};
++			};
++		};
++	};
++};
++
++/*
++ * BMC's "mac3" controller is connected to BCM53134P's IMP_RGMII port
++ * directly (fixed link, no PHY in between).
++ */
++&mac3 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii4_default>;
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
++
++&i2c0 {
++	eeprom@50 {
++		compatible = "atmel,24c512";
++		reg = <0x50>;
++	};
++};
++
++&adc0 {
++	ref_voltage = <2500>;
++	status = "okay";
++
++	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
++		     &pinctrl_adc2_default &pinctrl_adc3_default
++		     &pinctrl_adc4_default &pinctrl_adc5_default
++		     &pinctrl_adc6_default &pinctrl_adc7_default>;
++};
++
++&adc1 {
++	ref_voltage = <2500>;
++	status = "okay";
++
++	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default
++		     &pinctrl_adc10_default &pinctrl_adc11_default
++		     &pinctrl_adc12_default &pinctrl_adc13_default
++		     &pinctrl_adc14_default &pinctrl_adc15_default>;
++};
+-- 
+2.43.0
+

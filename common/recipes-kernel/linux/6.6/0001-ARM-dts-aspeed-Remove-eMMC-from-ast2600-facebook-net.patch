@@ -1,16 +1,12 @@
-From 6519e528ed2442273836f82fd35211def60d0b3f Mon Sep 17 00:00:00 2001
+From 9ac0967b4b3eb7c3e85534ad9cc2d8ea6f567443 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Fri, 2 Feb 2024 16:55:06 -0800
-Subject: [PATCH 1/4] ARM: dts: aspeed: Remove eMMC from
+Subject: [PATCH 1/8] ARM: dts: aspeed: Remove eMMC from
  ast2600-facebook-netbmc-common.dtsi
-
-Summary:
 
 Remove eMMC device entries from ast2600-facebook-netbmc-common.dtsi
 because eMMC will be removed from future Meta/Facebook AST2600 network
 OpenBMC platforms.
-
-Test Plan:
 ---
  .../dts/aspeed/ast2600-facebook-netbmc-common.dtsi   | 12 ------------
  1 file changed, 12 deletions(-)

@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.0:"
 
 SRC_URI += "file://1001-ARM-dts-aspeed-Add-Facebook-FBDarwin-AST2600-BMC.patch \
             file://1002-misc-eeprom_93xx46-Add-93C76-93C86-support.patch \

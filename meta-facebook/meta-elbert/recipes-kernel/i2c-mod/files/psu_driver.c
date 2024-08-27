@@ -418,19 +418,12 @@ static int psu_detect(struct i2c_client *client,
   return 0;
 }
 
-static int psu_probe(struct i2c_client *client,
-                     const struct i2c_device_id *id)
+static int psu_probe(struct i2c_client *client)
 {
   int n_attrs = sizeof(psu_attr_table) / sizeof(psu_attr_table[0]);
 
-  return i2c_dev_sysfs_data_init(client, &psu_data,
+  return devm_i2c_dev_sysfs_init(client, &psu_data,
                                  psu_attr_table, n_attrs);
-}
-
-static int psu_remove(struct i2c_client *client)
-{
-  i2c_dev_sysfs_data_clean(client, &psu_data);
-  return 0;
 }
 
 static struct i2c_driver psu_driver = {
@@ -439,7 +432,6 @@ static struct i2c_driver psu_driver = {
     .name = "psu_driver",
   },
   .probe    = psu_probe,
-  .remove   = psu_remove,
   .id_table = psu_id,
   .detect   = psu_detect,
   .address_list = normal_i2c,

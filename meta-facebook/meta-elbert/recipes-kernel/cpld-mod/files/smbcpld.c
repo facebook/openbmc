@@ -908,18 +908,12 @@ static int smbcpld_detect(struct i2c_client *client,
   return 0;
 }
 
-static int smbcpld_probe(struct i2c_client *client,
-                         const struct i2c_device_id *id)
+static int smbcpld_probe(struct i2c_client *client)
 {
   int n_attrs = sizeof(smbcpld_attr_table) / sizeof(smbcpld_attr_table[0]);
-  return i2c_dev_sysfs_data_init(client, &smbcpld_data,
-                                 smbcpld_attr_table, n_attrs);
-}
 
-static int smbcpld_remove(struct i2c_client *client)
-{
-  i2c_dev_sysfs_data_clean(client, &smbcpld_data);
-  return 0;
+  return devm_i2c_dev_sysfs_init(client, &smbcpld_data,
+                                 smbcpld_attr_table, n_attrs);
 }
 
 static struct i2c_driver smbcpld_driver = {
@@ -928,7 +922,6 @@ static struct i2c_driver smbcpld_driver = {
     .name = "smbcpld",
   },
   .probe    = smbcpld_probe,
-  .remove   = smbcpld_remove,
   .id_table = smbcpld_id,
   .detect   = smbcpld_detect,
   .address_list = normal_i2c,

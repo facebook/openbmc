@@ -713,18 +713,12 @@ static int fancpld_detect(struct i2c_client *client,
   return 0;
 }
 
-static int fancpld_probe(struct i2c_client *client,
-                         const struct i2c_device_id *id)
+static int fancpld_probe(struct i2c_client *client)
 {
   int n_attrs = sizeof(fancpld_attr_table) / sizeof(fancpld_attr_table[0]);
-  return i2c_dev_sysfs_data_init(client, &fancpld_data,
-                                 fancpld_attr_table, n_attrs);
-}
 
-static int fancpld_remove(struct i2c_client *client)
-{
-  i2c_dev_sysfs_data_clean(client, &fancpld_data);
-  return 0;
+  return devm_i2c_dev_sysfs_init(client, &fancpld_data,
+                                 fancpld_attr_table, n_attrs);
 }
 
 static struct i2c_driver fancpld_driver = {
@@ -733,7 +727,6 @@ static struct i2c_driver fancpld_driver = {
     .name = "fancpld",
   },
   .probe    = fancpld_probe,
-  .remove   = fancpld_remove,
   .id_table = fancpld_id,
   .detect   = fancpld_detect,
   .address_list = normal_i2c,

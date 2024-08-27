@@ -1,21 +1,13 @@
-From c9680604a9d6700905d6a01fb83165cff51f0519 Mon Sep 17 00:00:00 2001
+From f45acd2d48d464c8d1e179b058f8e95f49094397 Mon Sep 17 00:00:00 2001
 From: Alex Landau <alandau@meta.com>
 Date: Tue, 17 Oct 2023 16:41:27 -0700
-Subject: [PATCH] Enlarge data0 partition 8MB to 64MB
+Subject: [PATCH] ARM: dts: aspeed: Expand data0 partition in
+ facebook-bmc-flash-layout-128.dtsi
 
-Summary:
-
-Test Plan:
-
-Reviewers:
-
-Subscribers:
-
-Tasks:
-
-Tags:
+Expand data0 partition to 64MB in facebook-bmc-flash-layout-128.dtsi for
+larger persistent storage.
 ---
- arch/arm/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi | 10 +++++-----
+ .../boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi | 10 +++++-----
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi b/arch/arm/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi
@@ -47,3 +39,6 @@ index 7f3652dea550..efd92232cda2 100644
  		label = "data0";
  	};
  
+-- 
+2.43.0
+

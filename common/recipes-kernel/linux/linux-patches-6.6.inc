@@ -10,6 +10,7 @@ SRC_URI:append = " \
     file://0004-ARM-dts-aspeed-Add-Facebook-FBDarwin-AST2600-BMC.patch \
     file://0005-ARM-dts-aspeed-elbert-Enable-mdio0-devices.patch \
     file://0006-ARM-dts-aspeed-Add-Facebook-fblite-r1-BMC.patch \
+    file://0007-ARM-dts-aspeed-Expand-data0-partition-in-facebook-bm.patch \
 "
 
 #

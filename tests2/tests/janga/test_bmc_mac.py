@@ -34,4 +34,5 @@ class BMCMacTest(BaseBMCMacTest, unittest.TestCase):
         # ref: https://rst.im/oui/CELESTICA%20INC
         self.mac_pattern = [
             r"(b4\:db\:91\:..\:..\:..)",
+            r"(dc\:da\:4d\:..\:..\:..)",
         ]

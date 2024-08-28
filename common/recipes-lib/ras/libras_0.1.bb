@@ -7,6 +7,8 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://obmc-ras.c;beginline=1;endline=1;md5=b9fee9b0fbd6c5d36637dcaca2e0752e"
 
 LOCAL_URI = " \
+    file://base64.h \
+    file://base64.c \
     file://obmc-ras.h \
     file://obmc-ras.c \
     file://ras.h \
@@ -15,8 +17,7 @@ LOCAL_URI = " \
     file://cper.cpp \
     file://meson.build \
     "
-    
-DEPENDS += " libgpio-ctrl nlohmann-json libb64"
-RDEPENDS:${PN} += " libgpio-ctrl nlohmann-json libb64"
+
+DEPENDS += " libgpio-ctrl nlohmann-json"
 
 inherit meson pkgconfig

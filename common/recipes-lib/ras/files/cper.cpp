@@ -26,7 +26,7 @@
 #include <format>
 #include <bitset>
 #include <memory>
-#include "libbase64.h"
+#include "base64.h"
 
 namespace cper
 {
@@ -128,23 +128,26 @@ static const PCIeErrorIdInfo correctableErrorIdTable[] = {
 std::string formatHex(uint32_t value, int width)
 {
   std::ostringstream oss;
-  oss << std::uppercase << std::hex << std::setfill('0') 
+  oss << std::uppercase << std::hex << std::setfill('0')
       << std::setw(width) << value;
   return oss.str();
 }
 
-static int parsePCIeAerData(const ordered_json& aerdata, 
-                            uint8_t& errorId1, uint8_t& errorId2, 
+static int parsePCIeAerData(const ordered_json& aerdata,
+                            uint8_t& errorId1, uint8_t& errorId2,
                             std::string& errorDesc1, std::string& errorDesc2)
 {
   auto encoded = aerdata.get<std::string>();
-  std::unique_ptr<char[]> decoded(new char[encoded.size()]);
-  size_t len = 0;
 
-  if (base64_decode(encoded.c_str(), encoded.size(), decoded.get(), &len, 0) != 1)
+  int32_t decoded_size = 0;
+  uint8_t* decoded_buf = base64_decode(encoded.c_str(), encoded.size(), &decoded_size);
+
+  if (decoded_buf == nullptr)
   {
     return CPER_HANDLE_FAIL;
   }
+
+  std::vector<uint8_t> decoded(decoded_buf, decoded_buf + decoded_size);
 
   errorId1 = INVALID_ID;
   errorId2 = INVALID_ID;
@@ -152,7 +155,7 @@ static int parsePCIeAerData(const ordered_json& aerdata,
   errorDesc2 = INVALID_ERROR_DESC;
   std::bitset<32> statusBits;
   const PCIeErrorIdInfo* errorIdInfo = nullptr;
-  auto aerInfo = reinterpret_cast<const AerInfo*>(decoded.get());
+  auto aerInfo = reinterpret_cast<const AerInfo*>(decoded.data());
 
   if (aerInfo->uncorrectableErrorStatus)
   {
@@ -193,11 +196,11 @@ static int parsePCIeAerData(const ordered_json& aerdata,
   return CPER_HANDLE_SUCCESS;
 }
 
-static int processorSectionHandler(const ordered_json& sectionDescriptor, 
-                                   const ordered_json& sectionData, 
+static int processorSectionHandler(const ordered_json& sectionDescriptor,
+                                   const ordered_json& sectionData,
                                    std::string& errorMsg)
 {
-  if (!sectionDescriptor.contains("severity") || 
+  if (!sectionDescriptor.contains("severity") ||
       !sectionData.contains("errorInfo"))
   {
     return CPER_HANDLE_FAIL;
@@ -217,12 +220,12 @@ static int processorSectionHandler(const ordered_json& sectionDescriptor,
   return CPER_HANDLE_SUCCESS;
 }
 
-static int memorySectionHandler(const ordered_json& sectionDescriptor, 
-                                const ordered_json& sectionData, 
+static int memorySectionHandler(const ordered_json& sectionDescriptor,
+                                const ordered_json& sectionData,
                                 std::string& errorMsg)
 {
-  if (!sectionData.contains("memoryErrorType") || 
-      !sectionData.contains("node") || 
+  if (!sectionData.contains("memoryErrorType") ||
+      !sectionData.contains("node") ||
       !sectionData.contains("device"))
   {
     return CPER_HANDLE_FAIL;
@@ -244,11 +247,11 @@ static int memorySectionHandler(const ordered_json& sectionDescriptor,
   return CPER_HANDLE_SUCCESS;
 }
 
-static int pcieSectionHandler(const ordered_json& sectionDescriptor, 
-                              const ordered_json& sectionData, 
+static int pcieSectionHandler(const ordered_json& sectionDescriptor,
+                              const ordered_json& sectionData,
                               std::string& errorMsg)
 {
-  if (!sectionData.contains("deviceID") || 
+  if (!sectionData.contains("deviceID") ||
       !sectionData.contains("aerInfo"))
   {
     return CPER_HANDLE_FAIL;
@@ -257,7 +260,7 @@ static int pcieSectionHandler(const ordered_json& sectionDescriptor,
   auto& aerdata = sectionData["aerInfo"]["data"];
   uint8_t errorId1, errorId2;
   std::string errorDesc1, errorDesc2;
-  
+
   if (parsePCIeAerData(aerdata, errorId1, errorId2, errorDesc1, errorDesc2))
   {
     return CPER_HANDLE_FAIL;
@@ -269,7 +272,7 @@ static int pcieSectionHandler(const ordered_json& sectionDescriptor,
   int func = sectionData["deviceID"]["functionNumber"];
 
   std::ostringstream oss;
-  oss << "Record: Facebook Unified SEL (0xFB), GeneralInfo: PCIeErr" 
+  oss << "Record: Facebook Unified SEL (0xFB), GeneralInfo: PCIeErr"
       << "(0x" << formatHex(UNIFIED_PCIE_ERR) << "), "
       << "Segment " << formatHex(segment) << "/"
       << "Bus " << formatHex(bus) << "/"
@@ -282,18 +285,18 @@ static int pcieSectionHandler(const ordered_json& sectionDescriptor,
   return CPER_HANDLE_SUCCESS;
 }
 
-static int nvidiaSectionHandler(const ordered_json& sectionDescriptor, 
-                                const ordered_json& sectionData, 
+static int nvidiaSectionHandler(const ordered_json& sectionDescriptor,
+                                const ordered_json& sectionData,
                                 std::string& errorMsg)
 {
   static const std::vector<std::string> procSignatures = {
-    "MCF", "DCC-COH", "DCC-ECC", "CLink", "CCPLEXGIC", "CCPLEXSCF", 
-    "C2C", "C2C-IP-FAIL", 
+    "MCF", "DCC-COH", "DCC-ECC", "CLink", "CCPLEXGIC", "CCPLEXSCF",
+    "C2C", "C2C-IP-FAIL",
   };
 
-  if (!sectionDescriptor.contains("severity") || 
-      !sectionData.contains("severity") || 
-      !sectionData.contains("numberRegs") || 
+  if (!sectionDescriptor.contains("severity") ||
+      !sectionData.contains("severity") ||
+      !sectionData.contains("numberRegs") ||
       !sectionData.contains("registers"))
   {
     return CPER_HANDLE_FAIL;
@@ -304,7 +307,7 @@ static int nvidiaSectionHandler(const ordered_json& sectionDescriptor,
   std::string signature = sectionData["signature"];
 
   std::ostringstream oss;
-  if (std::find(procSignatures.begin(), procSignatures.end(), signature) 
+  if (std::find(procSignatures.begin(), procSignatures.end(), signature)
       != procSignatures.end())
   {
     oss << "Record: Facebook Unified SEL (0xFB), GeneralInfo: ProcessorErr"
@@ -325,7 +328,7 @@ static int nvidiaSectionHandler(const ordered_json& sectionDescriptor,
         << "Signature: " << signature << ", "
         << "Error Type: 0x" << formatHex(errorType) << ", "
         << "Instance Base: 0x" << formatHex(instanceBase);
-    
+
     for (int reg = 0; reg < numberRegs; ++reg)
     {
       regValue = sectionData["registers"][reg]["value"];
@@ -337,10 +340,10 @@ static int nvidiaSectionHandler(const ordered_json& sectionDescriptor,
   return CPER_HANDLE_SUCCESS;
 }
 
-int __attribute__((weak)) 
+int __attribute__((weak))
 addOemSectionHandlerMap(SectionHandlerMap& sectionHandlerMap)
 {
-  // override this function if you need to replace an existing handler 
+  // override this function if you need to replace an existing handler
   // or add OEM-defined sections.
   return CPER_HANDLE_SUCCESS;
 }
@@ -359,7 +362,7 @@ static SectionHandlerMap getSectionHandler()
   return sectionHandlerMap;
 }
 
-std::string handleSectionData(const ordered_json& sectionDescriptor, 
+std::string handleSectionData(const ordered_json& sectionDescriptor,
                               const ordered_json& sectionData)
 {
   auto sectionHandlerMap = getSectionHandler();
@@ -390,10 +393,10 @@ std::string handleSectionData(const ordered_json& sectionDescriptor,
   }
 
   std::ostringstream oss;
-  oss << "Error Type: " << sectionType << ", " 
+  oss << "Error Type: " << sectionType << ", "
       << "Error Severity: " << severity << ", "
       << errorMsg;
-  
+
   return oss.str();
 }
 
@@ -424,14 +427,14 @@ int parseCperFile(const std::string& file, std::vector<std::string>& entries)
 		ordered_json cperJson;
 		ifs >> cperJson;
 
-		if (!cperJson.contains("header") || 
-				!cperJson.contains("sectionDescriptors") || 
+		if (!cperJson.contains("header") ||
+				!cperJson.contains("sectionDescriptors") ||
 				!cperJson.contains("sections"))
 		{
       syslog(LOG_ERR, "Invalid CPER format found in file %s", tempFile.c_str());
       return CPER_HANDLE_FAIL;
 		}
-		
+
 		size_t sectionCount = cperJson["header"]["sectionCount"];
     for (size_t i = 0; i < sectionCount; ++i)
 		{
@@ -470,7 +473,7 @@ void limitDumpEntries()
   auto pipe_close = [](auto fd) { (void)pclose(fd); };
   std::unique_ptr<FILE, decltype(pipe_close)> pipe(
       popen(cmd.str().c_str(), "r"), pipe_close);
-  
+
   if (pipe == nullptr)
   {
     throw std::runtime_error("Failed to run popen function!");
@@ -499,7 +502,7 @@ void limitDumpEntries()
   }
 }
 
-int createCperDumpEntry(const uint8_t& payloadId, 
+int createCperDumpEntry(const uint8_t& payloadId,
                         const uint8_t* data, const size_t& dataSize)
 {
   if (!fs::exists(CPER_DUMP_PATH))
@@ -539,7 +542,7 @@ int createCperDumpEntry(const uint8_t& payloadId,
   }
   catch (const std::ios_base::failure& e)
   {
-    syslog(LOG_ERR, "Failed to save CPER to %s, %s.", 
+    syslog(LOG_ERR, "Failed to save CPER to %s, %s.",
            faultLogFile.c_str(), e.what());
     return CPER_HANDLE_FAIL;
   }
@@ -555,7 +558,7 @@ int createCperDumpEntry(const uint8_t& payloadId,
     }
     for (const auto& entry: entries)
     {
-      syslog(LOG_CRIT, "SEL Entry: FRU: %u, %s, Log: %s", 
+      syslog(LOG_CRIT, "SEL Entry: FRU: %u, %s, Log: %s",
 						 payloadId + 1, entry.c_str(), filename.c_str());
     }
   }
@@ -564,7 +567,7 @@ int createCperDumpEntry(const uint8_t& payloadId,
     syslog(LOG_ERR, "Failed to create CPER dump entry, %s.", e.what());
     return CPER_HANDLE_FAIL;
   }
-  
+
   return CPER_HANDLE_SUCCESS;
 }
 

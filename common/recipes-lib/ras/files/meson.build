@@ -12,14 +12,13 @@ install_headers(
 cc = meson.get_compiler('c')
 libs = [
   cc.find_library('gpio-ctrl'),
-  dependency('threads'),
-  cc.find_library('base64'),
 ]
 
 srcs = files(
+  'base64.c',
+  'cper.cpp',
   'obmc-ras.c',
   'ras.c',
-  'cper.cpp',
 )
 
 # RAS library.

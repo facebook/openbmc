@@ -52,7 +52,7 @@ def get_proc_cpu_usage(pid: int) -> int:
     If the pid doesn't exist, returns 0.
     """
     try:
-        with open(f"/proc/{pid}/stat") as f:
+        with open("/proc/{}/stat".format(pid)) as f:
             line = f.read()
             fields = line.split()
             (usr, sys) = (int(fields[14]), int(fields[15]))
@@ -129,13 +129,13 @@ class BaseCpuUtilizationTest(unittest.TestCase):
             cpu_data += [(percentage_used_minus_procs, percentage_used)]
 
         debug_info = (
-            f"Expected CPU utilization <= {self.expected_cpu_utilization}%\n"
+            "Expected CPU utilization <= {}%\n"
             "Actual utilizations for each run (without excluded processes "
             "(used in test), with excluded processes (for info)):"
-        )
+        ).format(self.expected_cpu_utilization)
 
         debug_info += "\n".join(
-            f"{p}%   {p_with_excluded}%" for (p, p_with_excluded) in cpu_data
+            "{}%   {}%".format(p, p_with_excluded) for (p, p_with_excluded) in cpu_data
         )
         self.assertGreaterEqual(good_runs, self.result_threshold, debug_info)
 

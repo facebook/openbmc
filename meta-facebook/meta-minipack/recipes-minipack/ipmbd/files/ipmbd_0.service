@@ -21,7 +21,6 @@ Wants=setup_i2c.service
 After=setup_i2c.service
 
 [Service]
-Type=forking
 ExecStart=/usr/local/bin/ipmbd 0 1
 Restart=always
 

@@ -1,4 +1,4 @@
-From 6b9568bd1c2c4c50af0ab7efd7d048f821df2fc7 Mon Sep 17 00:00:00 2001
+From d85ed3ee13978639506e4c48f1fee2b73b972942 Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 17 Jul 2024 11:33:26 +0800
 Subject: [PATCH 5/6] configurations: Revise the Terminus NIC sensor name
@@ -49,5 +49,5 @@ index 35dbf6f..19e8548 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.44.2
+2.25.1
 

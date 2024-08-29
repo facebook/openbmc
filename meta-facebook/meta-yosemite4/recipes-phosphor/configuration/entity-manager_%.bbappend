@@ -7,5 +7,6 @@ SRC_URI += " \
     file://0004-configurations-yosemite4-Add-IANA-for-sentinel-dome.patch \
     file://0005-configurations-Revise-the-Terminus-NIC-sensor-name.patch \
     file://0006-configurations-yosemite4-set-fail-safe-percent-to-90.patch \
+    file://0007-configurations-yosemite4-NIC-card-support-slot-numbe.patch \
 "
 

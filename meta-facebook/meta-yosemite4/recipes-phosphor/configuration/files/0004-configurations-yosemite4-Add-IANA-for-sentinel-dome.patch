@@ -1,4 +1,4 @@
-From 759dafc3effc92c06abac4ffc4d51a8b7f0e7621 Mon Sep 17 00:00:00 2001
+From e878e7ec08c0daa5cd219d39beac45c9f6543681 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 7 Mar 2024 10:41:16 +0800
 Subject: [PATCH 4/6] configurations: yosemite4: Add IANA for sentinel dome
@@ -14,13 +14,15 @@ https://gerrit.openbmc.org/c/openbmc/pldm/+/69246
 Change-Id: Ifcd410f6548c5f28d399c2ef64a2aadd57554e41
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- configurations/yosemite4_sentineldome_t1.json | 1 +
- configurations/yosemite4_sentineldome_t2.json | 1 +
- schemas/legacy.json                           | 6 ++++++
- 3 files changed, 8 insertions(+)
+ configurations/yosemite4_sentineldome_t1.json         | 1 +
+ configurations/yosemite4_sentineldome_t1_retimer.json | 1 +
+ configurations/yosemite4_sentineldome_t2.json         | 1 +
+ configurations/yosemite4_sentineldome_t2_retimer.json | 1 +
+ schemas/legacy.json                                   | 6 ++++++
+ 5 files changed, 10 insertions(+)
 
 diff --git a/configurations/yosemite4_sentineldome_t1.json b/configurations/yosemite4_sentineldome_t1.json
-index 3cecee7..6490478 100644
+index fa11bc2..8ffdc8d 100644
 --- a/configurations/yosemite4_sentineldome_t1.json
 +++ b/configurations/yosemite4_sentineldome_t1.json
 @@ -334,6 +334,7 @@
@@ -31,11 +33,35 @@ index 3cecee7..6490478 100644
              "Name": "BIC",
              "Type": "MCTPEndpoint"
          }
+diff --git a/configurations/yosemite4_sentineldome_t1_retimer.json b/configurations/yosemite4_sentineldome_t1_retimer.json
+index 6796a9e..87407cc 100644
+--- a/configurations/yosemite4_sentineldome_t1_retimer.json
++++ b/configurations/yosemite4_sentineldome_t1_retimer.json
+@@ -353,6 +353,7 @@
+             "Bus": "$bus % 16",
+             "Class": "I2C",
+             "EndpointId": "$bus % 15 * 10",
++            "IANA": "0015A000",
+             "Name": "BIC",
+             "Type": "MCTPEndpoint"
+         }
 diff --git a/configurations/yosemite4_sentineldome_t2.json b/configurations/yosemite4_sentineldome_t2.json
-index f150ff0..10b902b 100644
+index 69f722f..ef60152 100644
 --- a/configurations/yosemite4_sentineldome_t2.json
 +++ b/configurations/yosemite4_sentineldome_t2.json
-@@ -428,6 +428,7 @@
+@@ -393,6 +393,7 @@
+             "Bus": "$bus % 16",
+             "Class": "I2C",
+             "EndpointId": "$bus % 15 * 10",
++            "IANA": "0015A000",
+             "Name": "BIC",
+             "Type": "MCTPEndpoint"
+         }
+diff --git a/configurations/yosemite4_sentineldome_t2_retimer.json b/configurations/yosemite4_sentineldome_t2_retimer.json
+index b5cc4e4..9a2e061 100644
+--- a/configurations/yosemite4_sentineldome_t2_retimer.json
++++ b/configurations/yosemite4_sentineldome_t2_retimer.json
+@@ -412,6 +412,7 @@
              "Bus": "$bus % 16",
              "Class": "I2C",
              "EndpointId": "$bus % 15 * 10",
@@ -44,10 +70,10 @@ index f150ff0..10b902b 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 3778744..8e2b1d5 100644
+index d8ccd77..0b5f38b 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
-@@ -80,6 +80,9 @@
+@@ -83,6 +83,9 @@
                  "GpioPolarity": {
                      "$ref": "#/definitions/Types/GpioPolarity"
                  },
@@ -57,7 +83,7 @@ index 3778744..8e2b1d5 100644
                  "Index": {
                      "$ref": "#/definitions/Types/Index"
                  },
-@@ -826,6 +829,9 @@
+@@ -871,6 +874,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },

@@ -8,14 +8,29 @@ sleep 60
 nic=$1
 eid=$((90 + nic)) # NICs' EID start at 90
 
-version=$(
-    pldmtool fw_update GetFwParams -m $eid |
-        jq --raw-output \
-            '.ComponentParameterEntries | .[].ActiveComponentVersionString'
-)
+MAX_RETRIES=3
+RETRY_COUNT=0
+version=""
 
-busctl set-property \
-    xyz.openbmc_project.Settings \
-    "/xyz/openbmc_project/software/chassis/nic$nic" \
-    xyz.openbmc_project.Software.Version \
-    Version "s" "$version"
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    version=$(
+        pldmtool fw_update GetFwParams -m $eid |
+            jq --raw-output \
+                '.ComponentParameterEntries | .[].ActiveComponentVersionString'
+    )
+
+    if [ -n "$version" ]; then
+
+        busctl set-property \
+            xyz.openbmc_project.Settings \
+            "/xyz/openbmc_project/software/chassis/nic$nic" \
+            xyz.openbmc_project.Software.Version \
+            Version "s" "$version"
+
+        break
+    else
+        echo "Version is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 2
+    fi
+done

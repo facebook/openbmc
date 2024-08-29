@@ -32,6 +32,7 @@ LOCAL_URI = " \
     file://sync_date.sh \
     file://check_bmc_ready.sh \
     file://check_2nd_source.sh \
+    file://check_nic_status.sh \
     "
 
 pkgdir = "utils"
@@ -62,6 +63,8 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -m 755 check_nic_status.sh ${D}${sysconfdir}/init.d/check_nic_status.sh
+  update-rc.d -r ${D} check_nic_status.sh start 90 5 .
   install -m 755 run_power_on.sh ${D}${sysconfdir}/init.d/run_power_on.sh
   update-rc.d -r ${D} run_power_on.sh start 99 5 .
   install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh

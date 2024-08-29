@@ -13,17 +13,40 @@ for pos in 1 2; do
         continue
     fi
 
-    version=$(
-        cxl-fw-update version -m $eid 2>&1 |
-        grep "Slot.*FW Revision" |
-        sed 's/.*: //' | tr '\n' ',' |
-        sed 's/,$//'
-    )
+    max_retries=3
+    retry_count=0
+    TIMEOUT_DURATION=3
 
-    busctl set-property \
-        xyz.openbmc_project.Settings \
-        "/xyz/openbmc_project/software/host$slot/Wailua_Falls_cxl_$pos" \
-        xyz.openbmc_project.Software.Version \
-        Version "s" "$version"
+    while [ $retry_count -lt $max_retries ]; do
+        # Store the output of the command in a variable
+        output=$(timeout $TIMEOUT_DURATION cxl-fw-update version -m $eid 2>&1)
+
+        # Check if the output is empty
+        if [ $? -eq 124 ]; then
+            echo "No output from cxl-fw-update. Retrying... ($((retry_count + 1))/$max_retries)"
+            retry_count=$((retry_count + 1))
+            sleep 1
+        else
+            # Extract the active slot number
+            active_slot=$(echo "$output" | grep "Active FW Slot" | awk '{print $4}')
+
+            # Extract the firmware version for the active slot
+            version=$(echo "$output" | grep "Slot $active_slot FW Revision" | sed 's/.*: //')
+
+            busctl set-property \
+                xyz.openbmc_project.Settings \
+                "/xyz/openbmc_project/software/host$slot/Wailua_Falls_cxl_$pos" \
+                xyz.openbmc_project.Software.Version \
+                Version "s" "$version"
+
+            break
+        fi
+
+    done
+
+    if [ $retry_count -eq $max_retries ]; then
+        echo "Failed to get output from cxl-fw-update after $max_retries retries on CXL$pos."
+        exit 1
+    fi
 
 done

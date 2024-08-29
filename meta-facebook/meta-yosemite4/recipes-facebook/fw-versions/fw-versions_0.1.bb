@@ -15,14 +15,14 @@ NIC_INSTANCES="0:1:2:3"
 FW_TOOLS = "\
     mgmt-cpld,yosemite4-sys-init.service,multi-user.target,multi-user.target,0 \
     nic,setup-nic-endpoint-slot@%i.service,multi-user.target,multi-user.target,${NIC_INSTANCES} \
-    sd-bic,chassis-poweron@%i.service,obmc-chassis-poweron@%i.target,obmc-chassis-poweron@%i.target,${HOST_INSTANCES} \
-    sd-cpld,chassis-poweron@%i.service,obmc-chassis-poweron@%i.target,obmc-chassis-poweron@%i.target,${HOST_INSTANCES} \
-    sd-misc,chassis-poweron@%i.service,obmc-chassis-poweron@%i.target,obmc-chassis-poweron@%i.target,${HOST_INSTANCES} \
+    sd-bic,chassis-poweron@%i.service_chassis-powercycle@%i.service,obmc-chassis-poweron@%i.target_obmc-chassis-powercycle@%i.target,obmc-chassis-poweron@%i.target_obmc-chassis-powercycle@%i.target,${HOST_INSTANCES} \
+    sd-cpld,chassis-poweron@%i.service_chassis-powercycle@%i.service,obmc-chassis-poweron@%i.target_obmc-chassis-powercycle@%i.target,obmc-chassis-poweron@%i.target_obmc-chassis-powercycle@%i.target,${HOST_INSTANCES} \
+    sd-misc,chassis-poweron@%i.service_chassis-powercycle@%i.service,obmc-chassis-poweron@%i.target_obmc-chassis-powercycle@%i.target,obmc-chassis-poweron@%i.target_obmc-chassis-powercycle@%i.target,${HOST_INSTANCES} \
     spider-cpld,yosemite4-sys-init.service,multi-user.target,multi-user.target,0 \
     tpm,tpm2-abrmd.service,multi-user.target,multi-user.target,0 \
-    wf-bic,host-poweron@%i.service,obmc-host-start@%i.target,obmc-host-start@%i.target,${HOST_INSTANCES} \
-    wf-cxl,host-poweron@%i.service,obmc-host-start@%i.target,obmc-host-start@%i.target,${HOST_INSTANCES} \
-    wf-misc,host-poweron@%i.service,obmc-host-start@%i.target,obmc-host-start@%i.target,${HOST_INSTANCES} \
+    wf-bic,chassis-poweron@%i.service_chassis-powercycle@%i.service,obmc-chassis-poweron@%i.target_obmc-chassis-powercycle@%i.target,obmc-chassis-poweron@%i.target_obmc-chassis-powercycle@%i.target,${HOST_INSTANCES} \
+    wf-cxl,host-poweron@%i.service_host-powercycle@%i.service,obmc-host-start@%i.target_obmc-host-reboot@%i.target,obmc-host-start@%i.target_obmc-host-reboot@%i.target,${HOST_INSTANCES} \
+    wf-misc,host-poweron@%i.service_host-powercycle@%i.service,obmc-host-start@%i.target_obmc-host-reboot@%i.target,obmc-host-start@%i.target_obmc-host-reboot@%i.target,${HOST_INSTANCES} \
 "
 
 LOCAL_URI = " \
@@ -46,9 +46,9 @@ do_install:append() {
 
     for f in ${FW_TOOLS}; do
         SERVICE=$(echo "$f" | cut -d, -f1)
-        AFTER=$(echo "$f" | cut -d, -f2)
-        BEFORE=$(echo "$f" | cut -d, -f3)
-        WANTEDBY=$(echo "$f" | cut -d, -f4)
+        AFTER=$(echo "$f" | cut -d, -f2 | sed 's/_/ /g')
+        BEFORE=$(echo "$f" | cut -d, -f3 | sed 's/_/ /g')
+        WANTEDBY=$(echo "$f" | cut -d, -f4 | sed 's/_/ /g')
 
         install -m 0755 ${S}/$SERVICE ${D}${libexecdir}/${BPN}/$SERVICE
 
@@ -60,23 +60,22 @@ do_install:append() {
             -e "s/{AFTER}/$AFTER/g" \
             -e "s/{BEFORE}/$BEFORE/g" \
             -e "s/{WANTEDBY}/$WANTEDBY/g"
-
     done
 }
 
 def fw_version_services(d):
-
     services = []
 
     for f in d.getVar('FW_TOOLS', True).split():
-        (service,_,_,wantedby,instances) = f.split(',')
+        (service, afters, befores, wantedbys, instances) = f.split(',')
 
         for i in instances.split(":"):
-            wantedby_i = wantedby.replace("%i", str(i))
+            for s in wantedbys.split('_'):
+                wantedby_str = s.replace("%i", str(i))
 
-            services.append(
-                f"{wantedby_i}:fw-versions-{service}@{i}.service:fw-versions-{service}@.service"
-            )
+                services.append(
+                    f"{wantedby_str}:fw-versions-{service}@{i}.service:fw-versions-{service}@.service"
+                )
 
     return " ".join(services)
 
@@ -99,4 +98,3 @@ pkg_prerm:${PN}:append() {
         rm "$D${systemd_system_unitdir}/$TARGET.wants/$INSTANCE"
     done
 }
-

@@ -311,6 +311,8 @@ enum {
   POST_HTTP_BOOT_FAIL     = 0x6,
   POST_GET_CERT_FAIL      = 0x7,
   POST_AMD_ABL_FAIL       = 0xA,
+  POST_PAGE_RETIRED       = 0xB,
+  POST_CHANNEL_RETIRED    = 0xC,
 };
 
 enum {

@@ -632,6 +632,8 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "Password cleared by jumper",
     "DXE FV check failure",
     "AMD ABL failure",
+    "DRAM page retired",
+    "DRAM channel retired",
     "Reserved"
   };
   char *cert_event[] = {

@@ -4,6 +4,8 @@ set -e
 slot=$1
 eid=$((10 * slot + 2))
 
+sleep 6
+
 version=$(
     pldmtool fw_update GetFwParams -m $eid |
         jq --raw-output '.ActiveComponentImageSetVersionString'

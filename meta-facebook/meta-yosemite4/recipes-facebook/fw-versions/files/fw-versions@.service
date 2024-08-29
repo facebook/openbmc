@@ -1,6 +1,6 @@
 [Unit]
 Description=FW Version Fetch for {SERVICE}
-After=xyz.openbmc_project.Settings
+After=xyz.openbmc_project.Settings.service
 After={AFTER}
 Before={BEFORE}
 

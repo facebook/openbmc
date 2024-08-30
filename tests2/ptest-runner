@@ -21,6 +21,7 @@ def recipes_with_ptest():
         "qemux86-image.bb",
         "ptest-meson-crosstarget-native_0.1.bb",
         "rsyslog_8.34.0.bb",
+        "libcper_git.bb"
     ]
 
     def contains_ptest(f):

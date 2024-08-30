@@ -167,6 +167,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-catalina-determinator",
+            "args": {
+                "name": "openbmc-cit-catalina-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-catalina-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform catalina"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-catalina/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-clearcreek-determinator",
             "args": {
                 "name": "openbmc-cit-clearcreek-determinator",
@@ -1090,6 +1123,39 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-tahan/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-ventura-determinator",
+            "args": {
+                "name": "openbmc-cit-ventura-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-ventura-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform ventura"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-ventura/.*"
                     ]
                 }
             ],

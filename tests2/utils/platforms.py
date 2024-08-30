@@ -1,6 +1,7 @@
 PLATFORMS = [
     "angelslanding",
     "bletchley",
+    "catalina",
     "clearcreek",
     "elbert",
     "emeraldpools",
@@ -29,6 +30,7 @@ PLATFORMS = [
     "morgan800cc",
     "northdome",
     "tahan",
+    "ventura",
     "wedge100",
     "wedge400",
     "yamp",

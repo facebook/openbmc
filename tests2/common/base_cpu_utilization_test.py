@@ -57,7 +57,7 @@ def get_proc_cpu_usage(pid: int) -> int:
             fields = line.split()
             (usr, sys) = (int(fields[14]), int(fields[15]))
             return usr + sys
-    except FileNotFoundError:
+    except OSError:
         return 0
 
 
@@ -70,7 +70,12 @@ def get_pids_for_cmdlines(cmdline_regexes: List[str]) -> List[int]:
     for subdir in pathlib.Path("/proc").iterdir():
         if not subdir.is_dir() or not re.fullmatch("[0-9]+", subdir.name):
             continue
-        cmdline = subdir.joinpath("cmdline").read_text().rstrip("\0").replace("\0", " ")
+        try:
+            cmdline = (
+                subdir.joinpath("cmdline").read_text().rstrip("\0").replace("\0", " ")
+            )
+        except OSError:
+            cmdline = ""
         if re.search(regex, cmdline):
             pids.append(int(subdir.name))
     return pids

@@ -52,4 +52,6 @@ class CpuUtilizationTest(BaseCpuUtilizationTest):
             "sensord",
             "front-paneld",
             "ipmbd",
+            "ast-mdio.py",
+            "/init",
         ]

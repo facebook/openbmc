@@ -458,6 +458,7 @@ const char *ji_gpio_pin_name[] = {
   "FM_BIOS_MRC_DEBUG_DIS_L",
   "E1S_PRSNT_L",
   "RETIMER_PG",
+  "SATMC_READY",
 };
 
 /* GPIO Expander gpio table */

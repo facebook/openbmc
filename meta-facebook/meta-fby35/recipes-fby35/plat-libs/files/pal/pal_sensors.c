@@ -428,6 +428,7 @@ const uint8_t bic_ji_sensor_list[] = {
   BIC_JI_SENSOR_MB_CPU_Throttle,
   BIC_JI_SENSOR_MB_POWER_BREAK,
   BIC_JI_SENSOR_MB_SPARE_CHANNEL,
+  BIC_JI_SENSOR_MB_PAGE_RETIRE_CNT,
 };
 
 const uint8_t bic_1ou_vf_sensor_list[] = {

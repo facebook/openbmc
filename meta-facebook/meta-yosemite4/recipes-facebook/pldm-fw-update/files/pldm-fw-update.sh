@@ -1,9 +1,30 @@
 #!/bin/bash
 
+RETRY_UPDATE_COUNT=200
+
 lockfile="/tmp/pldm-fw-upate.lock"
 
 exec 200>"$lockfile"
-flock -n 200 || { echo "PLDM firmware update is already running"; exit 1; }
+retry_remain_count=$RETRY_UPDATE_COUNT
+do_restart_pldmd="true"
+echo ""
+while true
+do
+    exec 200>"$lockfile"
+    if ! flock -n 200; then
+		do_restart_pldmd="false"
+        echo -ne "PLDM firmware update is already running, retry in 10 seconds, $retry_remain_count time(s) remaining...  "\\r
+        retry_remain_count=$((retry_remain_count - 1))
+        if [ $retry_remain_count -eq 0 ]; then
+            echo ""
+			echo "Retry time exhausted, abort"
+            exit 1
+        fi
+        sleep 10
+    else
+        break
+    fi
+done
 
 SB_CPLD_ADDR="0x22"
 SB_UART_MUX_SWITCH_REG="0x08"
@@ -28,47 +49,18 @@ expected_t1m_devices=20
 expected_t1c_devices=12
 
 #Error retrun code
-INVALID_INPUT=255
-FAIL_TO_GET_BMC_VERSION=2
-FAIL_TO_GET_MGM_CPLD_VERSION=3
-FAIL_TO_GET_SPD_CPLD_VERSION=4
-FAIL_TO_GET_SD_CPLD_VERSION=5
-FAIL_TO_GET_TPM_VERSION=6
-FAIL_TO_GET_NIC_VERSION=7
-FAIL_TO_GET_SD_BIC_VERSION=8
-FAIL_TO_GET_WF_BIC_VERSION=9
-FAIL_TO_GET_SD_VR_VERSION=10
-FAIL_TO_GET_SD_RETIMER_VERSION=11
-FAIL_TO_GET_BIOS_VERSION=12
-FAIL_TO_GET_WF_VR_VERSION=13
-FAIL_TO_GET_WF_CXL1_VERSION=14
-FAIL_TO_GET_WF_CXL2_VERSION=15
 # For firmware update
-# CXL update
-FAIL_TO_UPDATE_WF_CXL_PLDM_SERVICE_NOT_RUNING=16
-FAIL_TO_UPDATE_WF_CXL_EID_DOES_NOT_EXIST=17
-FAIL_TO_UPDATE_WF_CXL_CAN_ONLY_UPDATE_ONE_BIC_AT_A_TIME=18
-FAIL_TO_UPDATE_WF_CXL_TIME_OUT_ERROR=19
-FAIL_TO_UPDATE_WF_CXL_FAIL_TO_DELETE_SOFTWARE_ID=20
 # PLDM update
-FAIL_TO_UPDATE_PLDM_DC_POWER_OFF=21
 FAIL_TO_UPDATE_PLDM_TIME_OUT_ERROR=22
 FAIL_TO_UPDATE_PLDM_FAIL_TO_DELETE_SOFTWARE_ID=23
 FAIL_TO_UPDATE_PLDM_IMAGE_DOES_NOT_MATCH=24
 FAIL_TO_UPDATE_PLDM_MISS_SOFTWARE_ID=25
-FAIL_TO_UPDATE_PLDM_CAN_ONLY_UPDATE_ONE_PLDM_COMPONENT_AT_A_TIME=26
-FAIL_TO_UPDATE_PLDM_FAIL_TO_INIT_REAMAINING_WRITE_UNKNOWN_VR_TYPE=27
 FAIL_TO_UPDATE_PLDM_FAIL_TO_INIT_REAMAINING_WRITE_UNKNOWN_VR_DEVICE=28
-FAIL_TO_UPDATE_PLDM_VR_DEVICE_REMAINING_WRITE_TIME_IS_0=29
 FAIL_TO_UPDATE_PLDM_SD_VR_SLOT_ID_IS_WRONG=30
-FAIL_TO_UPDATE_PLDM_PLDM_SERVICE_NOT_RUNING=31
-FAIL_TO_UPDATE_PLDM_VR_DEVICE_CAN_NOT_UPDATE_IN_RECOVERY_MODE=32
 FAIL_TO_UPDATE_PLDM_UNABLE_TO_DETERMINE_RETIMER_TYPE=33
 NO_RETIMER_ON_THE_FRU=34
 FAIL_TO_UPDATE_PLDM_PLDM_SOFTWARE_ACTIVATION_STATUS_FAIL=35
 
-expected_t1m_devices=20
-expected_t1c_devices=12
 
 show_usage() {
 	echo "Usage: pldm-fw-update.sh [sd|ff|wf|sd_vr|wf_vr|sd_retimer] (--rcvy <slot_id> <uart image>) (<slot_id>) <pldm image>"
@@ -213,7 +205,7 @@ delete_software_id() {
 			fi
 			counter=$((counter+2))
 			if [ "${counter}" == 10 ]; then
-				echo "Object /xyz/openbmc_project/software/"$software_id" is stalled in activating"
+				echo "Object /xyz/openbmc_project/software/$software_id is stalled in activating"
 				echo "Restarting pldmd to recover it."
 				systemctl restart pldmd
 				sleep 40
@@ -245,7 +237,7 @@ update_bic() {
 		if [ "$3" == "wf_bic" ] || [ "$3" == "sd_bic" ]; then
 			bic_eid="${2}0"
 			if [ "$3" == "wf_bic" ]; then
-				bic_eid=$(($bic_eid+2))
+				bic_eid=$((bic_eid+2))
 			fi
 			if [ $update_status == $FAIL_TO_UPDATE_PLDM_TIME_OUT_ERROR ]; then
 				local output
@@ -334,17 +326,31 @@ is_sd_bic() {
 is_other_bic_updating() {
   echo "Check if other PLDM components are updating"
 
-  pldm_output=$(busctl tree xyz.openbmc_project.PLDM)
-  if echo "$pldm_output" | grep -qE "/xyz/openbmc_project/software/[0-9]+"; then
-    echo "$pldm_output" | grep -E "/xyz/openbmc_project/software/[0-9]+"
-	previous_software_id=$(busctl tree xyz.openbmc_project.PLDM |grep /xyz/openbmc_project/software/ | cut -d "/" -f 5)
-    busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$previous_software_id" xyz.openbmc_project.Software.ActivationProgress Progress > /dev/null
-	ret=$?
-	if [ "$ret" -eq 0 ]; then
-		echo "It can only be updated one PLDM component at a time. Please wait until the software update is completed."
-		exit 255
-	fi
-  fi
+  retry_remain_count=$RETRY_UPDATE_COUNT
+  while true
+  do
+	  pldm_output=$(busctl tree xyz.openbmc_project.PLDM)
+	  if echo "$pldm_output" | grep -qE "/xyz/openbmc_project/software/[0-9]+"; then
+		echo "$pldm_output" | grep -E "/xyz/openbmc_project/software/[0-9]+"
+		previous_software_id=$(busctl tree xyz.openbmc_project.PLDM |grep /xyz/openbmc_project/software/ | cut -d "/" -f 5)
+		busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$previous_software_id" xyz.openbmc_project.Software.ActivationProgress Progress > /dev/null
+		ret=$?
+		if [ "$ret" -eq 0 ]; then
+			echo -ne "Please wait until the other software update is completed, retry in 10 seconds, $retry_remain_count time(s) remaining... "\\r
+			retry_remain_count=$((retry_remain_count - 1))
+			if [ $retry_remain_count -eq 0 ]; then
+				echo ""
+				echo "Retry time exhausted, abort"
+				exit 255
+			fi
+		else
+			break
+		fi
+	  else
+		break
+	  fi
+	  sleep 10
+  done
 }
 
 # Function to prompt for continuation and check user input
@@ -495,7 +501,7 @@ slot_id=
 bic_name=$1
 pldm_image=$2
 
-if [ ! -f /tmp/fw-util.lock ]; then
+if [ ! -f /tmp/fw-util.lock ] && [ "$do_restart_pldmd" == "true" ]; then
     device_list=$(busctl tree xyz.openbmc_project.PLDM | grep '/xyz/openbmc_project/inventory/Item/Board/' | wc -l)
     if [ "$device_list" -ne "$expected_t1m_devices" ] && [ "$device_list" -ne "$expected_t1c_devices" ]; then
         echo "Restarting pldmd due to incomplete device"
@@ -522,7 +528,7 @@ elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 	pldm_image=$3
 	if [ "$bic_name" == "sd_vr" ]; then
 		VR_TYPE=$(hexdump -n 1 -s 0x6D -e '1/1 "%02x"' "$pldm_image")
-		VR_OFFSET=($(get_offset_for_vr_type "$VR_TYPE"))
+		mapfile -t VR_OFFSET < <(get_offset_for_vr_type "$VR_TYPE")
 		VR_HIGHBYTE_OFFSET="${VR_OFFSET[0]}"
 		VR_LOWBYTE_OFFSET="${VR_OFFSET[1]}"
 	fi
@@ -649,7 +655,7 @@ if [ "$bic_name" == "wf" ] || [ "$bic_name" == "ff" ]; then
 fi
 
 if [ "$bic_name" == "sd_vr" ]; then
-	i2c_bus=$(($slot_id+15))
+	i2c_bus=$((slot_id+15))
 	i2ctransfer -f -y $i2c_bus w2@"$SD_EEPROM_ADDR" "$VR_HIGHBYTE_OFFSET" "$VR_LOWBYTE_OFFSET"
 	result=$(i2ctransfer -f -y  $i2c_bus r2@"$SD_EEPROM_ADDR")
 	if [ "$result" == "0xff 0xff" ]; then
@@ -675,7 +681,7 @@ if [ "$bic_name" == "sd" ]; then
 
 		# Check if the command was successful
 		if [ $? -eq 0 ]; then
-			echo "Version retrieved successfully: $version"
+			echo "Version retrieved successfully."
 			break
 		else
 			sleep $retry_delay
@@ -687,13 +693,13 @@ elif [ "$bic_name" == "wf" ]; then
 
 	max_retries=3
 	retry_delay=5
-
+	
 	for ((i=1; i<=max_retries; i++)); do
 		/usr/libexec/fw-versions/wf-bic "$slot_id"
 
 		# Check if the command was successful
 		if [ $? -eq 0 ]; then
-			echo "Version retrieved successfully: $version"
+			echo "Version retrieved successfully."
 			break
 		else
 			sleep $retry_delay

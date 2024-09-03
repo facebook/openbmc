@@ -42,6 +42,8 @@ FAN_CTRL_DEV fan_ctrl_map[] = {
 #define VPDB_HSC0_ADDR              (0x20)
 #define HPDB_HSC1_ADDR              (0x38)
 #define HPDB_HSC2_ADDR              (0x26)
+#define HPDB_HSC3_ADDR              (0x20)
+#define HPDB_HSC4_ADDR              (0x3E)
 #define EIN_ROLLOVER_CNT            (0x10000)
 #define EIN_SAMPLE_CNT              (0x1000000)
 #define EIN_ENERGY_CNT              (0x800000)
@@ -52,6 +54,8 @@ PAL_I2C_BUS_INFO adm1272_info_list[] = {
   {VPDB_HSC_ID0, I2C_BUS_38, VPDB_HSC0_ADDR},
   {HPDB_HSC_ID1, I2C_BUS_39, HPDB_HSC1_ADDR},
   {HPDB_HSC_ID2, I2C_BUS_39, HPDB_HSC2_ADDR},
+  {HPDB_HSC_ID3, I2C_BUS_39, HPDB_HSC1_ADDR},
+  {HPDB_HSC_ID4, I2C_BUS_39, HPDB_HSC2_ADDR},
 };
 
 const uint8_t nic0_sensor_list[] = {
@@ -713,6 +717,9 @@ read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
               *value = (*value * 0.96) - 0.26;
             }
             break;
+          case HPDB_HSC_ID3:
+          case HPDB_HSC_ID4:
+            return ret;
           default:
             return -1;
         }

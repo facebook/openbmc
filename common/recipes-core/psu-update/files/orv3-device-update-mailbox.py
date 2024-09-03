@@ -32,6 +32,7 @@ vendor_params = {
         "block_wait": True,
         "hw_workarounds": ["WRITE_BLOCK_CRC_EXPECTED"],
     },
+    "hpr_pmm": {"block_size": 68, "boot_mode": 0xAA55, "block_wait": True},
 }
 
 parser = get_parser()
@@ -94,16 +95,18 @@ def boot_mode(addr, boot_mode):
     finally:
         time.sleep(10.0)
         exit_boot_mode(addr)
-        time.sleep(10.0)
+        time.sleep(16.0)
         verify_firmware_status(addr, NORMAL_OPERATION_MODE)
 
 
+@retry(5, delay=1.0)
 def verify_firmware_status(addr, expected_status):
     # ensure 0x302 register contains expected status
     a = rmd.read(addr, 0x302, timeout=1000)[0]
     if a != expected_status:
         raise ValueError(
-            "Bad firmware state: ", int(a), " expected: ", int(expected_status)
+            "Bad firmware state: 0x%02x expected: 0x%02x"
+            % (int(a), int(expected_status))
         )
 
 
@@ -192,7 +195,7 @@ def main():
     if args.block_size is not None:
         params["block_size"] = args.block_size
     print("Upgrade Parameters: ", params)
-    with suppress_monitoring():
+    with suppress_monitoring(args.addr):
         try:
             update_device(args.addr, args.file, params)
         except Exception as e:

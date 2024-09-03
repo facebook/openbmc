@@ -6205,6 +6205,7 @@ void * pal_set_event_receiver(void *ptr) {
   int slot = (int)ptr;
   int ret = -1;
   int count = 1;
+  uint8_t status = 0xFF;
 
   pthread_detach(pthread_self());
   sleep(3);
@@ -6216,8 +6217,16 @@ void * pal_set_event_receiver(void *ptr) {
       syslog(LOG_INFO,"slot%d, Failed to set event receiver, count: %d ", slot, count++);
     } else {
       syslog(LOG_INFO,"slot%d, Set event receiver to SatMC", slot);
+      break;
     }
+    pal_get_server_power(slot, &status);
+    if (status == SERVER_12V_OFF || status == SERVER_POWER_OFF) {
+      syslog(LOG_INFO, "slot%d, stop set_event_receiver due to POWER_OFF/12V_OFF ", slot);
+      break;
+    }
+    sleep(1);
   }
+
   pthread_exit(0);
 }
 

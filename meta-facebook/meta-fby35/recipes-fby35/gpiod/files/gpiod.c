@@ -607,20 +607,6 @@ create_set_event_receiver(uint8_t slot)
   }
 }
 
-void
-cancle_set_event_receiver(uint8_t slot)
-{
-  int ret;
-
-  if (tid[slot] == 0) {
-    return;
-  }
-  ret = pthread_cancel(tid[slot]);
-  if (ret != 0) {
-    syslog(LOG_INFO, "slot%d, Cancel set_event_receiver thread failed! ret=%d", slot, ret);
-  }
-}
-
 static void *
 host_pwr_mon() {
 #define MAX_NIC_PWR_RETRY   15
@@ -671,9 +657,6 @@ host_pwr_mon() {
             pal_set_last_pwr_state(fru, "off");
           }
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
-          if (fby35_common_get_slot_type(fru) == SERVER_TYPE_JI) {
-            cancle_set_event_receiver(fru);
-          }
           set_pwrgd_cpu_flag(fru, false);
           check_cpu_pwr_fault(fru);
         }

@@ -1,0 +1,28 @@
+From 9c915713ce67cc5008fa21eae77b79d38193cb80 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Mon, 2 Sep 2024 13:14:51 +0700
+Subject: [PATCH] u-boot: fboss-lite: disable internall pull-down GPIO7
+ (bootcmd - fix in facebook_fblite.h)
+
+---
+ include/configs/facebook_fblite.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/include/configs/facebook_fblite.h b/include/configs/facebook_fblite.h
+index 86f253750cf..a54ef8de708 100644
+--- a/include/configs/facebook_fblite.h
++++ b/include/configs/facebook_fblite.h
+@@ -14,4 +14,10 @@
+ #undef CONFIG_ASPEED_WATCHDOG_TIMEOUT
+ #define CONFIG_ASPEED_WATCHDOG_TIMEOUT	(10*60) /* 10 minutes */
+ 
++#undef CONFIG_BOOTCOMMAND
++#define CONFIG_BOOTCOMMAND                                                     \
++    "mw 0x1e6e261c 0x80000000; "     /* Disable internal pull-down GPIOP7*/    \
++    "bootm " CONFIG_KERNEL_LOAD "; " /* Location of FIT */                     \
++    CONFIG_POSTBOOT
++
+ #endif	/* __CONFIG_H */
+-- 
+2.43.0
+

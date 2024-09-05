@@ -316,52 +316,65 @@ std::string updateNonBlocking(const std::string& comp, const std::string& path, 
 }
 
 HMCPhase getHMCPhase() {
-  static HMCPhase phase = HMCPhase::HMC_FW_UNKNOWN;
-  // TODO Try to do this with one Get at the root.
+  HMCPhase phase = HMCPhase::BMC_FW_DVT;
+  try {
+    std::string strModel = kv::get("gpu_model");
+    if (containStr(strModel, {"H100", "H200"})) {
+      return HMCPhase::BMC_FW_DVT;
+    }
+    else if (containStr(strModel, {"B100", "B200"})) {
+      return HMCPhase::BMC_FW_B100;
+    }
+    else if (containStr(strModel, {"HGX_DVT"})) {
+      return HMCPhase::HMC_FW_DVT;
+    }
+    else if (containStr(strModel, {"HGX_EVT"})) {
+      return HMCPhase::HMC_FW_EVT;
+    }
+  } catch (std::exception& e) {
+    //do nothing
+  }
+
   auto tryPhase = [](const std::string& url) {
     try {
       hgx.get(url);
       return true;
-    } catch (std::exception&) {
+    } catch (std::exception& e) {
       return false;
     }
   };
-  if (phase != HMCPhase::HMC_FW_UNKNOWN) {
-    return phase;
-  }
 
   if (tryPhase(HMC_FW_INVENTORY + "HGX_FW_BMC_0")) {
-    std::vector<std::string> urls = {
-        HMC_URL + "Chassis/HGX_Chassis_0",
-        HMC_URL + "Chassis/HGX_BMC_0"
-    };
-    nlohmann::json jurl;
+    std::string url = HMC_URL + "Chassis/HGX_Chassis_0/Assembly";
+    phase = HMCPhase::BMC_FW_DVT;
+    json jurl = json::parse(hgx.get(url));
 
-    for (const auto& url : urls) {
-      jurl = nlohmann::json::parse(hgx.get(url));
-      if (jurl.contains("Model")) {
-        auto model = jurl["Model"].dump();
-        if (containStr(model, {"H100"})) {
-          phase = HMCPhase::BMC_FW_DVT;
-          break;
-        }
-        else if (containStr(model, {"B100"})) {
-          phase = HMCPhase::BMC_FW_B100;
-          break;
+    if (jurl.contains("Assemblies")) {
+      json &tempArray = jurl["Assemblies"];
+      for (auto &x : tempArray) {
+        if (x.contains("Model"))  {
+          auto model = x["Model"].dump();
+          if (containStr(model, {"H100", "H200"})) {
+            kv::set("gpu_model", model);
+            return HMCPhase::BMC_FW_DVT;
+          }
+          else if (containStr(model, {"B100", "B200"})) {
+            kv::set("gpu_model", model);
+            return HMCPhase::BMC_FW_B100;
+          }
         }
       }
-      phase = HMC_FW_UNKNOWN;
     }
   }
   else if (tryPhase(HMC_FW_INVENTORY + "HGX_FW_HMC_0")) {
+    kv::set("gpu_model", "HGX_DVT");
     phase = HMCPhase::HMC_FW_DVT;
   }
   else if (tryPhase(HMC_FW_INVENTORY + "HMC_Firmware")) {
+    kv::set("gpu_model", "HGX_EVT");
     phase = HMCPhase::HMC_FW_EVT;
   }
-  else {
-    phase = HMC_FW_UNKNOWN;
-  }
+
   return phase;
 }
 

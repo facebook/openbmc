@@ -124,6 +124,7 @@ LOCAL_URI += " \
     file://tests/RegisterValueTest.cpp \
     file://tests/RegisterTest.cpp \
     file://tests/RegisterMapTest.cpp \
+    file://tests/RegisterSpanTest.cpp \
     file://tests/ModbusDeviceTest.cpp \
     file://tests/PollThreadTest.cpp \
     file://tests/RackmonTest.cpp \

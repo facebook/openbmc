@@ -40,6 +40,7 @@ test_srcs = svc_common + files(
     'tests/RegisterValueTest.cpp',
     'tests/RegisterTest.cpp',
     'tests/RegisterMapTest.cpp',
+    'tests/RegisterSpanTest.cpp',
     'tests/ModbusDeviceTest.cpp',
     'tests/PollThreadTest.cpp',
     'tests/RackmonTest.cpp',

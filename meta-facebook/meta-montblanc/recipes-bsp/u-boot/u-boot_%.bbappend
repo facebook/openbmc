@@ -18,4 +18,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://facebook-fblite_defconfig.append \
+            file://0501-u-boot-fboss-lite-disable-internal-pull-down-GPIO7.patch \
            "

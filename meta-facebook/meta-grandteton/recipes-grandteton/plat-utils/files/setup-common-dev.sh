@@ -236,11 +236,17 @@ if [ $mb_product != "GTA" ]; then
         val=$((16#${array[3]}))
         if [ "$val" -eq 1 ]; then
           kv set swb_nic_source "$SWB_1ST_SOURCE"
-        elif [ "$val" -eq 0 ] && [ "$mb_product" == "GTI" ]; then
-          kv set swb_nic_source "$SWB_3RD_SOURCE"
+          kv set swb_nic_vendor "Mellanox "
         else
-          kv set swb_nic_source "$SWB_2ND_SOURCE"
-          #Support Fan table config3
+          # Support optic temp sensor
+          if [ "$val" -eq 2 ]; then
+            kv set swb_nic_source "$SWB_2ND_SOURCE"
+            kv set swb_nic_vendor "Mellanox "
+          elif [ "$val" -eq 3 ]; then
+            kv set swb_nic_source "$SWB_3RD_SOURCE"
+            kv set swb_nic_vendor "Broadcom "
+          fi
+
           sed -i '/swb_tray_nic_linear(/i \
     swb_tray_nic_optic_linear(\
       max([\

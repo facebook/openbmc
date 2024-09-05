@@ -319,7 +319,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
     //Add swb optic sensor
     get_comp_source(fru, SWB_NIC_SOURCE, &id);
-    if (id == SECOND_SOURCE) {
+    if (id == SECOND_SOURCE || id == THIRD_SOURCE) {
       memcpy(&snr_swb_tmp[*cnt], swb_optic_sensor_list, swb_optic_sensor_cnt);
       *cnt += swb_optic_sensor_cnt;
     }

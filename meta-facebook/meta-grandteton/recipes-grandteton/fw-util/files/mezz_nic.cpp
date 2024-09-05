@@ -3,6 +3,7 @@
 #include <libpldm-oem/pal_pldm.hpp>
 #include <libpldm-oem/fw_update.hpp>
 #include <openbmc/pal.h>
+#include <openbmc/kv.hpp>
 #include "mezz_nic.hpp"
 
 using namespace std;
@@ -10,7 +11,12 @@ using namespace std;
 int PLDMNicComponent::get_version(json& j) {
 
   string ver{};
-  j["PRETTY_COMPONENT"] = "Mellanox " + _ver_key;
+
+  try {
+    j["PRETTY_COMPONENT"] = kv::get("swb_nic_vendor", kv::region::temp) + _ver_key;
+  } catch (std::exception& e) {
+    j["PRETTY_COMPONENT"] = _ver_key;
+  }
   j["VERSION"] = get_pldm_active_ver(_bus_id, _eid, ver) ? "NA": ver;
 
   return FW_STATUS_SUCCESS;

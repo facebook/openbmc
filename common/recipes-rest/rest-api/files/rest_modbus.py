@@ -19,6 +19,7 @@
 #
 
 import json
+import traceback
 from typing import Tuple
 
 import aiohttp
@@ -113,6 +114,34 @@ async def get_modbus_registers(request: aiohttp.web.Request) -> aiohttp.web.Resp
     return aiohttp.web.json_response(data, dumps=null_dumps)
 
 
+async def post_modbus_reload(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    if pyrmd is None:
+        raise ModuleNotFoundError()
+    try:
+        payload = await request.json()
+        jsonschema.validate(payload, RELOAD_REQ_SCHEMA)
+        sync = payload.pop("synchronous", True)
+        await pyrmd.RackmonAsyncInterface.reload(payload, sync)
+    except jsonschema.ValidationError as e:
+        return aiohttp.web.json_response(
+            {
+                "status": "Bad Request",
+                "details": "Json validation error: " + str(e),
+            },
+            status=400,
+        )
+    except Exception as e:
+        return aiohttp.web.json_response(
+            {
+                "status": "Internal server error",
+                "details": repr(e) + ":" + traceback.format_exc(),
+            },
+            status=500,
+        )
+    response = {"status": "SUCCESS"}
+    return aiohttp.web.json_response(response, dumps=dumps_bytestr)
+
+
 async def get_modbus_devices() -> aiohttp.web.Response:
     if pyrmd is None:
         raise ModuleNotFoundError()
@@ -170,6 +199,7 @@ VALUE_DATA_REQ_SCHEMA = {
     "title": "Data Request",
     "description": "Schema of request",
     "type": "object",
+    "additionalProperties": False,
     "properties": {
         "filter": {
             "description": "Optional filter requested monitor data",
@@ -181,5 +211,24 @@ VALUE_DATA_REQ_SCHEMA = {
                 "registerFilter": REGISTER_FILTER_SCHEMA,
             },
         }
+    },
+}
+
+RELOAD_REQ_SCHEMA = {
+    "title": "Reload Request",
+    "description": "Schema of request",
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "filter": {
+            "description": "Optional filter requested monitor data",
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "deviceFilter": DEVICE_FILTER_SCHEMA,
+                "registerFilter": REGISTER_FILTER_SCHEMA,
+            },
+        },
+        "synchronous": {"type": "boolean"},
     },
 }

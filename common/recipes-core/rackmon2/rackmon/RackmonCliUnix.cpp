@@ -346,6 +346,29 @@ static void do_data_cmd(
     print_text(type, resp_j);
 }
 
+static void do_reload_cmd(
+    const std::vector<int>& deviceFilter,
+    const std::vector<std::string>& deviceTypeFilter,
+    const std::vector<int>& regFilter,
+    const std::vector<std::string>& regNameFilter) {
+  json req;
+  req["type"] = "reloadRegisters";
+  if (deviceFilter.size()) {
+    req["filter"]["deviceFilter"]["addressFilter"] = deviceFilter;
+  } else if (deviceTypeFilter.size()) {
+    req["filter"]["deviceFilter"]["typeFilter"] = deviceTypeFilter;
+  }
+  if (regFilter.size()) {
+    req["filter"]["registerFilter"]["addressFilter"] = regFilter;
+  } else if (regNameFilter.size()) {
+    req["filter"]["registerFilter"]["nameFilter"] = regNameFilter;
+  }
+  RackmonClient cli;
+  std::string resp = cli.request(req.dump());
+  json resp_j = json::parse(resp);
+  std::cout << resp_j.at("status") << std::endl;
+}
+
 static void do_rackmonstatus() {
   json req;
   req["type"] = "listModbusDevices";
@@ -516,6 +539,25 @@ int main(int argc, const char** argv) {
       "--latest",
       latestOnly,
       "Returns only the latest stored value for a given register");
+
+  auto reload = app.add_subcommand("reload", "Reload requested registers");
+  reload->callback([&]() {
+    do_reload_cmd(deviceFilter, deviceTypeFilter, regFilter, regNameFilter);
+  });
+  reload->add_option(
+      "--reg-addr", regFilter, "Return values of provided registers only");
+  reload->add_option(
+      "--dev-addr",
+      deviceFilter,
+      "Return values of provided device addresses only");
+  reload->add_option(
+      "--dev-type",
+      deviceTypeFilter,
+      "Return values of provided devices of the given type only");
+  reload->add_option(
+      "--reg-name",
+      regNameFilter,
+      "Return values of provided register names only");
 
   // Pause command
   app.add_subcommand("pause", "Pause monitoring")->callback([&]() {

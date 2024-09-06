@@ -13,7 +13,7 @@ import time
 
 
 class ModbusException(Exception):
-    ...
+    pass
 
 
 class ModbusTimeout(ModbusException):
@@ -158,6 +158,45 @@ class RackmonInterface:
         return req
 
     @classmethod
+    def _reload(cls, dataFilter, sync):
+        req = {"type": "reloadRegisters"}
+        req = {**req, **dataFilter}
+        if not sync:
+            req["synchronous"] = False
+        return req
+
+    @classmethod
+    def _register_filter(cls, dev, reg):
+        devl = dev if isinstance(dev, list) else [dev]
+        regl = reg if isinstance(reg, list) else [reg]
+        if isinstance(regl[0], str):
+            regkey = "nameFilter"
+        elif isinstance(regl[0], int):
+            regkey = "addressFilter"
+        else:
+            raise ValueError("Reg not recognized type")
+        dataFilter = {
+            "filter": {
+                "deviceFilter": {"addressFilter": devl},
+                "registerFilter": {regkey: regl},
+            }
+        }
+        return dataFilter
+
+    @classmethod
+    def _data_values(cls, data):
+        if len(data) == 0 or len(data[0]["regList"]) == 0:
+            return None
+        out = []
+        for reg in data[0]["regList"]:
+            if len(reg["history"]) == 0:
+                out.append(None)
+            else:
+                value = reg["history"][0]["value"].values()
+                out.append(list(value)[0])
+        return out if len(out) > 1 else out[0]
+
+    @classmethod
     def _execute(cls, cmd, decodeJson=True):
         request = json.dumps(cmd).encode()
         if not os.path.exists("/var/run/rackmond.sock"):
@@ -230,6 +269,21 @@ class RackmonInterface:
         return cls._execute(cmd, False)
 
     @classmethod
+    def get(cls, dev, reg, reload=False):
+        dataFilter = cls._register_filter(dev, reg)
+        if reload:
+            cls.reload(dataFilter)
+        dataFilter["latestValueOnly"] = True
+        data = cls.data(False, dataFilter)
+        return cls._data_values(data)
+
+    @classmethod
+    def reload(cls, dataFilter, sync=True):
+        cmd = cls._reload(dataFilter, sync)
+        resp = cls._execute(cmd, True)
+        cls._check(resp)
+
+    @classmethod
     def read(cls, addr, reg, length=1, timeout=0):
         result = cls._do(cls._read, addr, reg, length, timeout)
         return result["regValues"]
@@ -288,6 +342,21 @@ class RackmonAsyncInterface(RackmonInterface):
             return result["data"]
         cmd = cls._data(raw, dataFilter)
         return await cls._execute(cmd, False)
+
+    @classmethod
+    async def get(cls, dev, reg, reload=False):
+        dataFilter = cls._register_filter(dev, reg)
+        if reload:
+            await cls.reload(dataFilter)
+        dataFilter["latestValueOnly"] = True
+        data = await cls.data(False, dataFilter)
+        return cls._data_values(data)
+
+    @classmethod
+    async def reload(cls, dataFilter, sync=True):
+        cmd = cls._reload(dataFilter, sync)
+        resp = await cls._execute(cmd, True)
+        cls._check(resp)
 
     @classmethod
     async def read(cls, addr, reg, length=1, timeout=0):

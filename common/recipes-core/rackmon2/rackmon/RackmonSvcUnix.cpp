@@ -36,6 +36,36 @@ class RackmonUNIXSocketService : public UnixService {
   void deinitialize() override;
 };
 
+struct ModbusDataFilter {
+  ModbusDeviceFilter devFilter{};
+  ModbusRegisterFilter regFilter{};
+  bool latestValueOnly = false;
+};
+
+void from_json(const json& filter, ModbusDataFilter& out) {
+  if (filter.contains("deviceFilter")) {
+    const json& jdevFilter = filter["deviceFilter"];
+    if (jdevFilter.contains("addressFilter")) {
+      out.devFilter.addrFilter = jdevFilter["addressFilter"];
+    } else if (jdevFilter.contains("typeFilter")) {
+      out.devFilter.typeFilter = jdevFilter["typeFilter"];
+    } else {
+      throw std::logic_error("Device Filter needs at least one set");
+    }
+  }
+  if (filter.contains("registerFilter")) {
+    const json& jregFilter = filter["registerFilter"];
+    if (jregFilter.contains("addressFilter")) {
+      out.regFilter.addrFilter = jregFilter["addressFilter"];
+    } else if (jregFilter.contains("nameFilter")) {
+      out.regFilter.nameFilter = jregFilter["nameFilter"];
+    } else {
+      throw std::logic_error("Register Filter needs at least one set");
+    }
+  }
+  out.latestValueOnly = filter.value("latestValueOnly", false);
+}
+
 void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
   std::string cmd;
   req.at("type").get_to(cmd);
@@ -91,36 +121,32 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
   } else if (cmd == "rescan") {
     rackmond_.forceScan();
   } else if (cmd == "getMonitorData") {
-    ModbusDeviceFilter devFilter{};
-    ModbusRegisterFilter regFilter{};
-    bool latestValueOnly = false;
+    ModbusDataFilter filter{};
     if (req.contains("filter")) {
-      const json& filter = req["filter"];
-      if (filter.contains("deviceFilter")) {
-        const json& jdevFilter = filter["deviceFilter"];
-        if (jdevFilter.contains("addressFilter")) {
-          devFilter.addrFilter = jdevFilter["addressFilter"];
-        } else if (jdevFilter.contains("typeFilter")) {
-          devFilter.typeFilter = jdevFilter["typeFilter"];
-        } else {
-          throw std::logic_error("Device Filter needs at least one set");
-        }
-      }
-      if (filter.contains("registerFilter")) {
-        const json& jregFilter = filter["registerFilter"];
-        if (jregFilter.contains("addressFilter")) {
-          regFilter.addrFilter = jregFilter["addressFilter"];
-        } else if (jregFilter.contains("nameFilter")) {
-          regFilter.nameFilter = jregFilter["nameFilter"];
-        } else {
-          throw std::logic_error("Register Filter needs at least one set");
-        }
-      }
-      latestValueOnly = filter.value("latestValueOnly", false);
+      filter = req["filter"];
     }
     std::vector<ModbusDeviceValueData> ret;
-    rackmond_.getValueData(ret, devFilter, regFilter, latestValueOnly);
+    rackmond_.getValueData(
+        ret, filter.devFilter, filter.regFilter, filter.latestValueOnly);
     resp["data"] = ret;
+  } else if (cmd == "reloadRegisters") {
+    ModbusDataFilter filter{};
+    if (req.contains("filter")) {
+      filter = req["filter"];
+    }
+    bool sync = req.value("synchronous", true);
+    if (sync) {
+      rackmond_.reload(filter.devFilter, filter.regFilter);
+    } else {
+      auto tid = std::thread([this, filter]() {
+        try {
+          rackmond_.reload(filter.devFilter, filter.regFilter);
+        } catch (std::exception& e) {
+          logError << "Async Reload failed: " << e.what() << std::endl;
+        }
+      });
+      tid.detach();
+    }
   } else {
     throw std::logic_error("UNKNOWN_CMD: " + cmd);
   }

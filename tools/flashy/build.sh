@@ -23,3 +23,4 @@ set -e
 cd "$(dirname "$0")"
 rm -rf build
 GOOS=linux GOARCH=arm GOARM=5 go build -ldflags="-w -s" -gcflags=all="-l" -o build/flashy
+GOOS=linux GOARCH=arm64 go build -ldflags="-w -s" -gcflags=all="-l" -o build/flashy_arm64

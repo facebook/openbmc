@@ -1,7 +1,7 @@
-From 5d2dcd398e76fc8703d5b92c6bbe5f4190b4dafe Mon Sep 17 00:00:00 2001
+From f4cf32151e9bcdff838f165431e48cbb144613f8 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Wed, 22 May 2024 01:36:37 +0800
-Subject: [PATCH 174/174] net/ncsi: specify maximum package to probe
+Subject: [PATCH 174/176] net/ncsi: specify maximum package to probe
 
 Most NICs have a single package. For OCP3.0 NICs, the package ID is
 determined by the slot ID. Probing all 8 package IDs is usually
@@ -12,14 +12,13 @@ Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
 Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
 
 link:https://lore.kernel.org/all/20240701154336.3536924-1-peteryin.openbmc@gmail.com/
-
 ---
  net/ncsi/internal.h    |  1 +
  net/ncsi/ncsi-manage.c | 16 ++++++++++++----
  2 files changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
-index 7b3012770a94b..090152cd9b70f 100644
+index 0a613c4f9e74..f44d7c555158 100644
 --- a/net/ncsi/internal.h
 +++ b/net/ncsi/internal.h
 @@ -346,6 +346,7 @@ struct ncsi_dev_priv {
@@ -31,7 +30,7 @@ index 7b3012770a94b..090152cd9b70f 100644
  	bool                mlx_multi_host;  /* Enable multi host Mellanox */
  	u32                 package_whitelist; /* Packages to configure    */
 diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
-index 7a0284ca09d74..6912ee6e46a8d 100644
+index 7a0284ca09d7..6912ee6e46a8 100644
 --- a/net/ncsi/ncsi-manage.c
 +++ b/net/ncsi/ncsi-manage.c
 @@ -1359,12 +1359,12 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
@@ -83,5 +82,5 @@ index 7a0284ca09d74..6912ee6e46a8d 100644
  
  	return nd;
 -- 
-2.25.1
+2.44.2
 

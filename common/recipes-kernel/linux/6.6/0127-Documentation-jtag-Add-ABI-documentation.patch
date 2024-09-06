@@ -1,4 +1,4 @@
-From 8fa0a5199dc4b7dc34b19ad67989519cde723a10 Mon Sep 17 00:00:00 2001
+From 927c7a0348639a9939c18bdcba8f2af6db2fcfa3 Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:18 -0700
 Subject: [PATCH 127/132] Documentation: jtag: Add ABI documentation
@@ -345,5 +345,5 @@ index 000000000000..445f0b9c5b4d
 +- Steven Filary
 +- Vadim Pasternak
 -- 
-2.43.0
+2.44.2
 

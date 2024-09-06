@@ -1,7 +1,7 @@
-From 9c43a71664ff882ef69994b1528e17df19c18d1d Mon Sep 17 00:00:00 2001
+From 6fc2a782361ef6a9e91d22b4978d21513e51d4a3 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Fri, 28 Oct 2022 11:50:15 -0700
-Subject: [PATCH 4/8] ARM: dts: aspeed: Add Facebook FBDarwin (AST2600) BMC
+Subject: [PATCH 4/7] ARM: dts: aspeed: Add Facebook FBDarwin (AST2600) BMC
 
 Add initial device tree for the Meta (Facebook) FBDarwin AST2600 BMC.
 
@@ -14,11 +14,11 @@ for health monitoring purpose.
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 5e3392621697..8d9597695643 100644
+index c4f064e4b073..5c63781c25db 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -19,6 +19,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
- 	aspeed-bmc-facebook-bletchley.dtb \
+@@ -20,6 +20,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+ 	aspeed-bmc-facebook-catalina.dtb \
  	aspeed-bmc-facebook-cmm.dtb \
  	aspeed-bmc-facebook-elbert.dtb \
 +	aspeed-bmc-facebook-fbdarwin.dtb \
@@ -143,5 +143,5 @@ index 000000000000..348fa5364cbb
 +		     &pinctrl_adc14_default &pinctrl_adc15_default>;
 +};
 -- 
-2.43.0
+2.44.2
 

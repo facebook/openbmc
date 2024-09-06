@@ -1,7 +1,7 @@
-From bd90259811a93e67d901daa077c6b8ebcdf2176c Mon Sep 17 00:00:00 2001
+From 697319972e23310c1a25558c7f6b0b51ba3a9b91 Mon Sep 17 00:00:00 2001
 From: Dung Cao <dung@os.amperecomputing.com>
 Date: Tue, 21 Nov 2023 04:38:29 +0000
-Subject: [PATCH 03/13] platform-mc: Support pollForPlatFormEventMessage
+Subject: [PATCH 02/12] platform-mc: Support pollForPlatFormEventMessage
 
 Supports polling all events synchronously when the terminus sends
 `pldmMessagePollEvent` with the event id. BMC will use the received
@@ -399,10 +399,10 @@ index 7e79a29..2cb81a1 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 7ad3479..d1d2e52 100644
+index 266d267..89b8b0a 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
-@@ -122,6 +122,28 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -123,6 +123,28 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          return PLDM_SUCCESS;
      }
  
@@ -431,7 +431,7 @@ index 7ad3479..d1d2e52 100644
      /** @brief Sensor event handler funtion
       *
       *  @param[in] request - Event message
-@@ -144,6 +166,16 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -145,6 +167,16 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          return PLDM_SUCCESS;
      }
  
@@ -481,11 +481,11 @@ index a6c7073..7d59849 100644
  
  bool Terminus::doesSupportType(uint8_t type)
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index b19c52f..e560944 100644
+index ca1604d..02018d8 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
-@@ -140,6 +140,14 @@ class Terminus
-      * terminus */
+@@ -141,6 +141,14 @@ class Terminus
+      */
      bitfield8_t synchronyConfigurationSupported;
  
 +    /** @brief The flag indicates that the terminus FIFO contains a large
@@ -611,10 +611,10 @@ index ee03c5d..5293fd1 100644
 +    stdexec::sync_wait(eventManager.pollForPlatformEventTask(tid, 0));
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index dc6c30a..13e1e8e 100644
+index b75e999..aafab21 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -283,6 +283,13 @@ int main(int argc, char** argv)
+@@ -282,6 +282,13 @@ int main(int argc, char** argv)
               return platformManager->handleCperEvent(
                   request, payloadLength, formatVersion, tid, eventDataOffset);
           }}},

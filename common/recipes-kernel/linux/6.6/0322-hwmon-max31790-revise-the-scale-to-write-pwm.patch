@@ -1,7 +1,7 @@
-From 64fcead55de3ed43ffc3f5a5d8cf707830ebe4c7 Mon Sep 17 00:00:00 2001
+From 0d7dad8febffccb3ae7f31c5872503e767369c91 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 11 Apr 2024 11:40:14 +0800
-Subject: [PATCH 517/525] hwmon: max31790: revise the scale to write pwm
+Subject: [PATCH 322/322] hwmon: max31790: revise the scale to write pwm
 
 Since the value for PWMOUT Target Duty Cycle register is a 9 bit
 left-justified value that ranges from 0 to 511 and is contained in 2
@@ -54,5 +54,5 @@ index fa31e108c7ce..ee304dc1c782 100644
  	case hwmon_pwm_enable:
  		fan_config = data->fan_config[channel];
 -- 
-2.43.0
+2.44.2
 

@@ -1,7 +1,7 @@
-From ad4eb5fd482e858e000805bad131ee613e2bedbe Mon Sep 17 00:00:00 2001
+From 818d9474f8504aab5b0606a712604861ae0bb7a9 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 24 Nov 2023 15:54:07 +0800
-Subject: [PATCH 302/304] Kernel6v5: Support apml driver
+Subject: [PATCH 301/305] Kernel6v5: Support apml driver
 
 https://github.com/AMDESE/OpenBMC/blob/master/meta-amd/meta-common/recipes-kernel/linux/linux-aspeed/0057-apml_sbrmi-Add-support-to-identify-register-address-.patch
 
@@ -38,10 +38,10 @@ Link: https://github.com/AMDESE/OpenBMC/blob/master/meta-amd/meta-common/recipes
  create mode 100644 include/uapi/linux/amd-apml.h
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 67f8f2e6633c..cdde5a2a4d90 100644
+index 52e6e68fafd6..0163149c98fd 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -1745,6 +1745,28 @@ config SENSORS_SBRMI
+@@ -1755,6 +1755,28 @@ config SENSORS_SBRMI
  	  This driver can also be built as a module. If so, the module will
  	  be called sbrmi.
  
@@ -71,10 +71,10 @@ index 67f8f2e6633c..cdde5a2a4d90 100644
  	tristate "Sensiron humidity and temperature sensors. SHT15 and compat."
  	depends on GPIOLIB || COMPILE_TEST
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 6415bf756c10..774eba4960d6 100644
+index 9dacd43f1d9d..caed8a52afae 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
-@@ -182,6 +182,8 @@ obj-$(CONFIG_SENSORS_PWM_FAN)	+= pwm-fan.o
+@@ -183,6 +183,8 @@ obj-$(CONFIG_SENSORS_PWM_FAN)	+= pwm-fan.o
  obj-$(CONFIG_SENSORS_RASPBERRYPI_HWMON)	+= raspberrypi-hwmon.o
  obj-$(CONFIG_SENSORS_SBTSI)	+= sbtsi_temp.o
  obj-$(CONFIG_SENSORS_SBRMI)	+= sbrmi.o
@@ -2754,5 +2754,5 @@ index 000000000000..041610925fad
 +
 +#endif /*_AMD_APML_H_*/
 -- 
-2.43.0
+2.44.2
 

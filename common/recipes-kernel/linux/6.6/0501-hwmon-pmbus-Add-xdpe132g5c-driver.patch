@@ -1,4 +1,4 @@
-From 91018f28c66de62ec2f21215404f3b3f49c036f8 Mon Sep 17 00:00:00 2001
+From 3566fe3df04fb51963244673196a92a91643cc48 Mon Sep 17 00:00:00 2001
 From: "karthik.gengan" <gengankarthik@gmail.com>
 Date: Fri, 4 Nov 2022 06:31:37 +0000
 Subject: [PATCH 501/502] hwmon: (pmbus) Add xdpe132g5c driver
@@ -256,5 +256,5 @@ index 000000000000..d39bb63565da
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS(PMBUS);
 -- 
-2.43.0
+2.44.2
 

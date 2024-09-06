@@ -1,7 +1,7 @@
-From 87be69d6ce78b9bdfd5fc5991bcb87fb872ac103 Mon Sep 17 00:00:00 2001
+From 1b253237c146e09d667a77a3f6cd50a4002fb500 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Fri, 26 Jul 2024 19:03:48 +0800
-Subject: [PATCH 4/7] ARM: dts: aspeed: catalina: add extra ncsi properties
+Subject: [PATCH 503/506] ARM: dts: aspeed: catalina: add extra ncsi properties
 
 The Catalina dts file was removing some properties and compatible strings which
 are not support in db-binding document and cause `CHECK_DTBS=y` check failed.
@@ -15,13 +15,11 @@ Add extra properties which only avaliable in Meta common patches.
 
 Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
 ---
-LINK: https://lore.kernel.org/all/87dc3f83dfd85c2d6b81fb28b9058d59efc6b2c6.camel@codeconstruct.com.au/
----
  arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts | 2 ++
  1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index 4bda1ea8a046d..bfbd40ce0edee 100644
+index 45428fec0699..47f770636a91 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -158,6 +158,8 @@ &mac3 {
@@ -34,5 +32,5 @@ index 4bda1ea8a046d..bfbd40ce0edee 100644
  
  &fmc {
 -- 
-2.31.1
+2.44.2
 

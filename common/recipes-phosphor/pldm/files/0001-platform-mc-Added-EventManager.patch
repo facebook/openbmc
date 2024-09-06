@@ -1,7 +1,7 @@
-From 9c384d0fcae6440c7cf9792e3e9c9662cf832168 Mon Sep 17 00:00:00 2001
+From 734a5fc8a06ce24c4eae29ab9622374723e3a8aa Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 6 Aug 2024 09:23:30 +0000
-Subject: [PATCH 02/13] platform-mc: Added EventManager
+Subject: [PATCH 01/12] platform-mc: Added EventManager
 
 Added eventManager to handle sensor event class(00h), and OEM CPER event
 class(FAh) which are defined in table 11 of DSP0248 v1.2.1. In this
@@ -36,11 +36,11 @@ Signed-off-by: Gilbert Chen <gilbertc@nvidia.com>
  create mode 100644 platform-mc/test/mock_event_manager.hpp
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 661c2e7..0113775 100644
+index a1c1c51..e3b10ee 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -52,6 +52,12 @@ using MctpInfos = std::vector<MctpInfo>;
- #define MCTP_START_VALID_EID 8
+ constexpr uint8_t BmcMctpEid = 8;
  
  #define PLDM_PLATFORM_GETPDR_MAX_RECORD_BYTES 1024
 +/* default the max event message buffer size BMC supported to 4K bytes */
@@ -53,7 +53,7 @@ index 661c2e7..0113775 100644
  namespace dbus
  {
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 522899c..81442fb 100644
+index 0a0de64..9b1c5ae 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
 @@ -377,15 +377,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
@@ -79,10 +79,10 @@ index 522899c..81442fb 100644
          catch (const std::out_of_range& e)
          {
 diff --git a/meson.build b/meson.build
-index cea34a3..bbd934a 100644
+index 22de2d4..32684b3 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -247,6 +247,7 @@ executable(
+@@ -246,6 +246,7 @@ executable(
      'platform-mc/manager.cpp',
      'platform-mc/sensor_manager.cpp',
      'platform-mc/numeric_sensor.cpp',
@@ -754,7 +754,7 @@ index 0000000..14b12f9
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 93b7925..7ad3479 100644
+index efbd1cb..266d267 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
 @@ -4,6 +4,7 @@
@@ -765,9 +765,9 @@ index 93b7925..7ad3479 100644
  #include "platform_manager.hpp"
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
-@@ -35,7 +36,8 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
-                      pldm::InstanceIdDb& instanceIdDb) :
-         terminusManager(event, handler, instanceIdDb, termini, this, LOCAL_EID),
+@@ -36,7 +37,8 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+         terminusManager(event, handler, instanceIdDb, termini, this,
+                         pldm::BmcMctpEid),
          platformManager(terminusManager, termini),
 -        sensorManager(event, terminusManager, termini)
 +        sensorManager(event, terminusManager, termini, this),
@@ -775,7 +775,7 @@ index 93b7925..7ad3479 100644
      {}
  
      /** @brief Helper function to do the actions before discovering terminus
-@@ -87,6 +89,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -88,6 +90,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          if (termini.contains(tid))
          {
              sensorManager.updateAvailableState(tid, state);
@@ -783,7 +783,7 @@ index 93b7925..7ad3479 100644
          }
      }
  
-@@ -97,6 +100,50 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -98,6 +101,50 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          sensorManager.stopPolling(tid);
      }
  
@@ -834,7 +834,7 @@ index 93b7925..7ad3479 100644
    private:
      /** @brief List of discovered termini */
      TerminiMapper termini{};
-@@ -109,6 +156,9 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -110,6 +157,9 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
  
      /** @brief Store platform manager handler */
      SensorManager sensorManager;
@@ -845,7 +845,7 @@ index 93b7925..7ad3479 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index 923b7be..0b48e92 100644
+index 35526fb..ff6af04 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
 @@ -37,6 +37,29 @@ exec::task<int> PlatformManager::initTerminus()
@@ -935,14 +935,14 @@ index 923b7be..0b48e92 100644
 +
  exec::task<int> PlatformManager::setEventReceiver(
      pldm_tid_t tid, pldm_event_message_global_enable eventMessageGlobalEnable,
-     pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer)
+     pldm_transport_protocol_type protocolType, uint16_t heartbeatTimer)
 diff --git a/platform-mc/platform_manager.hpp b/platform-mc/platform_manager.hpp
-index 196546c..01a498f 100644
+index 641f16a..549a4e7 100644
 --- a/platform-mc/platform_manager.hpp
 +++ b/platform-mc/platform_manager.hpp
 @@ -111,6 +111,16 @@ class PlatformManager
          pldm_event_message_global_enable eventMessageGlobalEnable,
-         pldm_transport_protocol_type protocalType, uint16_t heartbeatTimer);
+         pldm_transport_protocol_type protocolType, uint16_t heartbeatTimer);
  
 +    /** @brief  send eventMessageBufferSize
 +     *  @param[in] tid - Destination TID
@@ -1019,7 +1019,7 @@ index 575741a..a6c7073 100644
  
  bool Terminus::doesSupportType(uint8_t type)
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 13b0884..b19c52f 100644
+index 26a412b..ca1604d 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -133,6 +133,9 @@ class Terminus
@@ -1030,8 +1030,8 @@ index 13b0884..b19c52f 100644
 +    uint16_t maxBufferSize;
 +
      /** @brief This value indicates the event messaging styles supported by the
-      * terminus */
-     bitfield8_t synchronyConfigurationSupported;
+      *         terminus
+      */
 diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
 new file mode 100644
 index 0000000..ee03c5d
@@ -1571,23 +1571,23 @@ index a52e4ea..fcb8102 100644
      MOCK_METHOD(void, doSensorPolling, (pldm_tid_t tid), (override));
  };
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
-index 04b1470..6ab8d3b 100644
+index 65505fb..bf33a8a 100644
 --- a/platform-mc/test/sensor_manager_test.cpp
 +++ b/platform-mc/test/sensor_manager_test.cpp
 @@ -19,7 +19,7 @@ class SensorManagerTest : public testing::Test
          reqHandler(pldmTransport, event, instanceIdDb, false),
          terminusManager(event, reqHandler, instanceIdDb, termini, nullptr,
-                         LOCAL_EID),
+                         pldm::BmcMctpEid),
 -        sensorManager(event, terminusManager, termini)
 +        sensorManager(event, terminusManager, termini, nullptr)
      {}
  
      void runEventLoopForSeconds(uint64_t sec)
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 8637a15..dc6c30a 100644
+index 46c216a..b75e999 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -271,10 +271,31 @@ int main(int argc, char** argv)
+@@ -270,10 +270,31 @@ int main(int argc, char** argv)
      // FRU table is built lazily when a FRU command or Get PDR command is
      // handled. To enable building FRU table, the FRU handler is passed to the
      // Platform handler.
@@ -1620,7 +1620,7 @@ index 8637a15..dc6c30a 100644
  
      auto biosHandler = std::make_unique<bios::Handler>(
          pldmTransport.getEventSource(), hostEID, &instanceIdDb, &reqHandler,
-@@ -303,8 +324,6 @@ int main(int argc, char** argv)
+@@ -302,8 +323,6 @@ int main(int argc, char** argv)
  
      std::unique_ptr<fw_update::Manager> fwManager =
          std::make_unique<fw_update::Manager>(event, reqHandler, instanceIdDb);

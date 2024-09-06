@@ -1,7 +1,7 @@
-From be81c336103f293875df27f31457402bdbc5d53a Mon Sep 17 00:00:00 2001
+From d419278962e7e6465af130b05f1669573a5d6b05 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Fri, 2 Feb 2024 16:57:17 -0800
-Subject: [PATCH 2/8] ARM: dts: aspeed: elbert: Enable eMMC device
+Subject: [PATCH 2/7] ARM: dts: aspeed: elbert: Enable eMMC device
 
 Enable eMMC device in Elbert dts because the eMMC entries were removed
 from ast2600-facebook-netbmc-common.dtsi.
@@ -30,5 +30,5 @@ index 74f3c67e0eff..ff1009ea1c49 100644
 +	bus-width = <4>;
 +};
 -- 
-2.43.0
+2.44.2
 

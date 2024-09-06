@@ -1,7 +1,7 @@
-From b4df33cec886937fd98021cd652ae975e844501e Mon Sep 17 00:00:00 2001
+From 71ab0dc8a389d2673b929e060125f624e5da9691 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Fri, 2 Feb 2024 16:58:06 -0800
-Subject: [PATCH 3/8] ARM: dts: aspeed: fuji: Enable eMMC device
+Subject: [PATCH 3/7] ARM: dts: aspeed: fuji: Enable eMMC device
 
 Enable eMMC device in Fuji dts because the eMMC entries were removed
 from ast2600-facebook-netbmc-common.dtsi.
@@ -30,5 +30,5 @@ index f23c26a3441d..8602ede3ec7e 100644
 +	bus-width = <4>;
 +};
 -- 
-2.43.0
+2.44.2
 

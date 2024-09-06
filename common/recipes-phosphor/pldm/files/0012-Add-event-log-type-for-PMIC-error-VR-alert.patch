@@ -1,7 +1,7 @@
-From 71b3c61e4e03b9d9b7132a07d64fae8d7290190c Mon Sep 17 00:00:00 2001
+From 1328227d50c270145266347408398790c8a29566 Mon Sep 17 00:00:00 2001
 From: Lora Lin <lora.lin.wiwynn@gmail.com>
 Date: Thu, 11 Jul 2024 10:10:27 +0800
-Subject: [PATCH 13/13] Add event log type for PMIC error/VR alert
+Subject: [PATCH 12/12] Add event log type for PMIC error/VR alert
 
 Summary:
 - Add event log type for PMIC error/PMbus alert/VR fault event.

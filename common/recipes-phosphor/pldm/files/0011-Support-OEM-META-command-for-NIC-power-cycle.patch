@@ -1,7 +1,7 @@
-From 8fb06793e1a52932da1107ce6879739f940feccf Mon Sep 17 00:00:00 2001
+From ee415c913d956e3de01efd4b8daad1a579bb8c8d Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 28 Jun 2024 16:57:45 +0800
-Subject: [PATCH 12/13] Support OEM-META command for NIC power cycle
+Subject: [PATCH 11/12] Support OEM-META command for NIC power cycle
 
 Summary:
 - Add option to let Host can trigger NIC card power cycle to

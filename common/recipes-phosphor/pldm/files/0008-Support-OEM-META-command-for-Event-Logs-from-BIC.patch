@@ -1,7 +1,7 @@
-From 17764e6f7fba1f9aaa47f74e3e131bd44e60a337 Mon Sep 17 00:00:00 2001
+From 23ec25effd4fda243f177eeba093c03f529b3726 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Wed, 26 Jun 2024 14:25:18 +0800
-Subject: [PATCH 09/13] Support OEM-META command for Event Logs from BIC
+Subject: [PATCH 08/12] Support OEM-META command for Event Logs from BIC
 
 Summary:
   - Add handler for write-file command "EVENT_LOG", which is sent
@@ -20,7 +20,7 @@ Change-Id: I55a19b6c22e05cae3a9572a8d6707769ae7ee402
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
 
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 7854ee4..1e08f12 100644
+index d73b97d..4003e40 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
 @@ -68,6 +68,7 @@ if get_option('oem-meta').allowed()

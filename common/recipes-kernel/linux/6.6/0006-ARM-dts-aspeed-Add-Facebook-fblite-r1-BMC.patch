@@ -1,7 +1,7 @@
-From 9abb6ffc2579c3a899e3b4a612966514f60738dc Mon Sep 17 00:00:00 2001
+From 5dbdb600cc2fbd499bcc4e1a36f708147e282735 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 5 Feb 2024 15:28:46 -0800
-Subject: [PATCH 6/8] ARM: dts: aspeed: Add Facebook fblite-r1 BMC
+Subject: [PATCH 6/7] ARM: dts: aspeed: Add Facebook fblite-r1 BMC
 
 Add Meta/Facebook FBOSS BMC-Lite Flavor-1 OpenBMC dts. The dts is
 currently being used by Minipack3, Janga and Tahan BMC platforms.
@@ -12,10 +12,10 @@ currently being used by Minipack3, Janga and Tahan BMC platforms.
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 8d9597695643..b39172077543 100644
+index 5c63781c25db..c1c91eda7e71 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -20,6 +20,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+@@ -21,6 +21,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
  	aspeed-bmc-facebook-cmm.dtb \
  	aspeed-bmc-facebook-elbert.dtb \
  	aspeed-bmc-facebook-fbdarwin.dtb \
@@ -124,5 +124,5 @@ index 000000000000..4264bd3c7a6b
 +	};
 +};
 -- 
-2.43.0
+2.44.2
 

@@ -1,4 +1,4 @@
-From 7d3482ca2b3332331132e32ec99888e359537aa4 Mon Sep 17 00:00:00 2001
+From 3634dad0dd47e6ab1b9e26fa9e505b4624672393 Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:19 -0700
 Subject: [PATCH 128/132] Documentation jtag: Add JTAG core driver ioctl number
@@ -69,5 +69,5 @@ index 4ea5b837399a..ac1ccb7936f7 100644
  0xB4  00-0F  linux/gpio.h                                            <mailto:linux-gpio@vger.kernel.org>
  0xB5  00-0F  uapi/linux/rpmsg.h                                      <mailto:linux-remoteproc@vger.kernel.org>
 -- 
-2.43.0
+2.44.2
 

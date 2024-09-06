@@ -1,89 +1,22 @@
-From 1594a82a6903af80b4621f794e1030295d2d2852 Mon Sep 17 00:00:00 2001
+From 017df08d6cdfcec0e71b383fe1616f732860651c Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Fri, 9 Aug 2024 13:03:18 +0800
-Subject: [PATCH 2/7] ARM: dts: aspeed: catalina: add pdb cpld io expander
+Subject: [PATCH 502/506] ARM: dts: aspeed: catalina: add pdb cpld io expander
 
 Add more IO expanders which emulate by PDB CPLD.
 
 Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
 ---
- .../aspeed/aspeed-bmc-facebook-catalina.dts   | 131 ++++++++++++++++++
- 1 file changed, 131 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-catalina.dts   | 71 +++++++++++++++++++
+ 1 file changed, 71 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index a62c30f2c0df8..883405e81e322 100644
+index 82835e96317d..45428fec0699 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-@@ -762,6 +762,66 @@ eeprom@57 {
- 
- &i2c14 {
- 	status = "okay";
-+
-+	// PDB CPLD IOEXP 0x10
-+	io_expander9: gpio@10 {
-+		compatible = "nxp,pca9555";
-+		interrupt-parent = <&gpio0>;
-+		interrupts = <ASPEED_GPIO(I, 6) IRQ_TYPE_LEVEL_LOW>;
-+		reg = <0x10>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	// PDB CPLD IOEXP 0x11
-+	io_expander10: gpio@11 {
-+		compatible = "nxp,pca9555";
-+		interrupt-parent = <&gpio0>;
-+		interrupts = <ASPEED_GPIO(I, 6) IRQ_TYPE_LEVEL_LOW>;
-+		reg = <0x11>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	// PDB CPLD IOEXP 0x12
-+	io_expander11: gpio@12 {
-+		compatible = "nxp,pca9555";
-+		interrupt-parent = <&gpio0>;
-+		interrupts = <ASPEED_GPIO(I, 6) IRQ_TYPE_LEVEL_LOW>;
-+		reg = <0x12>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	// PDB CPLD IOEXP 0x13
-+	io_expander12: gpio@13 {
-+		compatible = "nxp,pca9555";
-+		interrupt-parent = <&gpio0>;
-+		interrupts = <ASPEED_GPIO(I, 6) IRQ_TYPE_LEVEL_LOW>;
-+		reg = <0x13>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	// PDB CPLD IOEXP 0x14
-+	io_expander13: gpio@14 {
-+		compatible = "nxp,pca9555";
-+		interrupt-parent = <&gpio0>;
-+		interrupts = <ASPEED_GPIO(I, 6) IRQ_TYPE_LEVEL_LOW>;
-+		reg = <0x14>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	// PDB CPLD IOEXP 0x15
-+	io_expander14: gpio@15 {
-+		compatible = "nxp,pca9555";
-+		interrupt-parent = <&gpio0>;
-+		interrupts = <ASPEED_GPIO(I, 6) IRQ_TYPE_LEVEL_LOW>;
-+		reg = <0x15>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
- };
- 
- &i2c15 {
-@@ -977,3 +1037,74 @@ &io_expander8 {
- 		"SEC_FNP_L_CX0","SEC_FNP_L_CX1",
- 		"","","","";
+@@ -1108,3 +1108,74 @@ &io_expander14 {
+ 		"FAB_BMC_REV_ID2","FAB_BMC_REV_ID1",
+ 		"FAB_BMC_REV_ID0","";
  };
 +
 +&io_expander9 {
@@ -158,5 +91,5 @@ index a62c30f2c0df8..883405e81e322 100644
 +};
 \ No newline at end of file
 -- 
-2.31.1
+2.44.2
 

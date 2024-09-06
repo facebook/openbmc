@@ -87,7 +87,7 @@ SRC_URI:append = " \
     file://0171-meta-facebook-common-add-pcc-config.patch \
     file://0172-drivers-watchdog-ast2600-support-bootstatus.patch \
     file://0173-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
-    file://0174-net-ncsi-specify-maximum-package-to-prob.patch \
+    file://0174-net-ncsi-specify-maximum-package-to-probe.patch \
     file://0175-dmaengine-aspeed-Add-AST2600-UART-DMA-driver.patch \
     file://0176-serial-8250-Add-AST2600-UART-driver.patch \
 "
@@ -119,7 +119,6 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0300-To-support-MCP9600-temperature-driver.patch \
     file://0301-Kernel6v5-Support-apml-driver.patch \
-    file://0302-hwmon-Add-driver-for-Astera-Labs-PT5161L-retimer.patch \
 "
 
 #

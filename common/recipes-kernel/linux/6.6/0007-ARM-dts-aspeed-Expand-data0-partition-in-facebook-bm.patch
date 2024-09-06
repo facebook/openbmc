@@ -1,7 +1,7 @@
-From f45acd2d48d464c8d1e179b058f8e95f49094397 Mon Sep 17 00:00:00 2001
+From c82d4f143825ef330230c661f59a9b411721634b Mon Sep 17 00:00:00 2001
 From: Alex Landau <alandau@meta.com>
 Date: Tue, 17 Oct 2023 16:41:27 -0700
-Subject: [PATCH] ARM: dts: aspeed: Expand data0 partition in
+Subject: [PATCH 7/7] ARM: dts: aspeed: Expand data0 partition in
  facebook-bmc-flash-layout-128.dtsi
 
 Expand data0 partition to 64MB in facebook-bmc-flash-layout-128.dtsi for
@@ -40,5 +40,5 @@ index 7f3652dea550..efd92232cda2 100644
  	};
  
 -- 
-2.43.0
+2.44.2
 

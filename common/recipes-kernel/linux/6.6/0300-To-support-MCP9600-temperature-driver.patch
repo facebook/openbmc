@@ -1,7 +1,7 @@
-From 06f247027cd5047832ecbec64cce43e353ed967f Mon Sep 17 00:00:00 2001
+From 39938d3a0dd5004c139f1f7140c37fd5f661f7bb Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 2 Nov 2023 14:52:04 +0800
-Subject: [PATCH 300/304] To support MCP9600 temperature driver
+Subject: [PATCH 300/305] To support MCP9600 temperature driver
 
 LF-Kernel link:
 link:https://lore.kernel.org/all/20231025233153.5454-1-andrew.hepp@ahepp.dev/
@@ -268,5 +268,5 @@ index 000000000000..46845804292b
 +MODULE_DESCRIPTION("Microchip MCP9600 thermocouple EMF converter driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.43.0
+2.44.2
 

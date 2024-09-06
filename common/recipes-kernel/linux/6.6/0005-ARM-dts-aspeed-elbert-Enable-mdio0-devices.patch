@@ -1,7 +1,7 @@
-From 00043c9dc0a3a36c5b963780f486b5f7a578cdf8 Mon Sep 17 00:00:00 2001
+From e689e8cb3e239dbf62be140517be51e15f266d1b Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Sun, 28 Jul 2024 22:59:37 -0700
-Subject: [PATCH 5/8] ARM: dts: aspeed: elbert: Enable mdio0 devices
+Subject: [PATCH 5/7] ARM: dts: aspeed: elbert: Enable mdio0 devices
 
 Enable mdio0 to configure the BCM53134 switch which connects BMC and
 host to the front-panel ethernet port.
@@ -61,5 +61,5 @@ index ff1009ea1c49..d9faa02c0e35 100644
  &mac3 {
  	status = "okay";
 -- 
-2.43.0
+2.44.2
 

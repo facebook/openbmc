@@ -1,4 +1,4 @@
-From 4ded7594a55df30d198f280f80b2e4e9197d1df0 Mon Sep 17 00:00:00 2001
+From 81954f972e92be308cf9709f716b10a9d2908cfd Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 12 Feb 2024 11:31:14 +0700
 Subject: [PATCH 502/502] Revert linux kernel patch usb: gadget: f_ecm: Add
@@ -174,5 +174,5 @@ index 34be220cef77..d8df29b31fd7 100644
  struct net_device *gether_connect(struct gether *);
  void gether_disconnect(struct gether *);
 -- 
-2.43.0
+2.44.2
 

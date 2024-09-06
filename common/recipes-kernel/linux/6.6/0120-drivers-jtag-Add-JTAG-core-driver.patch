@@ -1,4 +1,4 @@
-From cd5e338bb089d9824274684834241aba80cee1e7 Mon Sep 17 00:00:00 2001
+From e5b5573291d85001cb54f64fb5b74281b25ba194 Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:15 -0700
 Subject: [PATCH 120/132] drivers: jtag: Add JTAG core driver
@@ -664,5 +664,5 @@ index 000000000000..3f9e1953f5a4
 +
 +#endif /* __UAPI_LINUX_JTAG_H */
 -- 
-2.43.0
+2.44.2
 

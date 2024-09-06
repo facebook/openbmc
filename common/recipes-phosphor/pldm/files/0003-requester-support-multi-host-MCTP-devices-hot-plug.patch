@@ -1,7 +1,7 @@
-From 2092625225abf22aaad4773a88d1201dbc03645e Mon Sep 17 00:00:00 2001
+From 2f07e40e18d8745d0a46ea0db4b10dfba8b2da2c Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 04/13] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 03/12] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -55,7 +55,7 @@ index 1e7cf6e..b4a1be7 100644
 +                (const override));
  };
 diff --git a/common/types.hpp b/common/types.hpp
-index 0113775..92c303f 100644
+index e3b10ee..47f12e4 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -68,9 +68,9 @@ using Interface = std::string;
@@ -72,7 +72,7 @@ index 0113775..92c303f 100644
  using PropertyMap = std::map<Property, Value>;
  using InterfaceMap = std::map<Interface, PropertyMap>;
 diff --git a/common/utils.cpp b/common/utils.cpp
-index e652021..c7e9eea 100644
+index 6f39321..b096bc6 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
 @@ -412,6 +412,23 @@ PropertyMap DBusHandler::getDbusPropertiesVariant(
@@ -100,10 +100,10 @@ index e652021..c7e9eea 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 5561399..fd7c7db 100644
+index 7df5f81..56f67e3 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -149,7 +149,7 @@ struct DBusMapping
+@@ -158,7 +158,7 @@ struct DBusMapping
  using PropertyValue =
      std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
                   uint64_t, double, std::string, std::vector<uint8_t>,
@@ -112,7 +112,7 @@ index 5561399..fd7c7db 100644
  using DbusProp = std::string;
  using DbusChangedProps = std::map<DbusProp, PropertyValue>;
  using DBusInterfaceAdded = std::vector<
-@@ -201,6 +201,10 @@ class DBusHandlerInterface
+@@ -210,6 +210,10 @@ class DBusHandlerInterface
      virtual PropertyMap
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
                                   const char* dbusInterface) const = 0;
@@ -123,7 +123,7 @@ index 5561399..fd7c7db 100644
  };
  
  /**
-@@ -292,6 +296,9 @@ class DBusHandler : public DBusHandlerInterface
+@@ -301,6 +305,9 @@ class DBusHandler : public DBusHandlerInterface
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
                                   const char* dbusInterface) const override;
  
@@ -152,10 +152,10 @@ index af55f92..8fda98b 100644
  using InterfaceMap = std::map<Interface, PropertyMap>;
  using ObjectValueTree = std::map<sdbusplus::message::object_path, InterfaceMap>;
 diff --git a/meson.build b/meson.build
-index bbd934a..b1fae50 100644
+index 32684b3..b03f7a1 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -249,6 +249,7 @@ executable(
+@@ -248,6 +248,7 @@ executable(
      'platform-mc/numeric_sensor.cpp',
      'platform-mc/event_manager.cpp',
      'requester/mctp_endpoint_discovery.cpp',
@@ -164,7 +164,7 @@ index bbd934a..b1fae50 100644
      dependencies: deps,
      install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 13e1e8e..39bf8cc 100644
+index aafab21..ad3e59a 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -175,10 +175,10 @@ index 13e1e8e..39bf8cc 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -241,6 +242,10 @@ int main(int argc, char** argv)
-         hostEffecterParser;
+@@ -244,6 +245,10 @@ int main(int argc, char** argv)
+     }
+     std::shared_ptr<HostPDRHandler> hostPDRHandler;
      std::unique_ptr<DbusToPLDMEvent> dbusToPLDMEventHandler;
-     DBusHandler dbusHandler;
 +
 +    auto configurationDiscovery =
 +        std::make_unique<pldm::ConfigurationDiscoveryHandler>(&dbusHandler);
@@ -186,7 +186,7 @@ index 13e1e8e..39bf8cc 100644
      std::unique_ptr<platform_config::Handler> platformConfigHandler{};
      platformConfigHandler =
          std::make_unique<platform_config::Handler>(PDR_JSONS_DIR);
-@@ -334,7 +339,9 @@ int main(int argc, char** argv)
+@@ -333,7 +338,9 @@ int main(int argc, char** argv)
      std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
          std::make_unique<MctpDiscovery>(
              bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{

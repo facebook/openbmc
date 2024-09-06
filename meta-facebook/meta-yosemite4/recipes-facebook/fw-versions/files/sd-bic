@@ -9,6 +9,11 @@ version=$(
         jq --raw-output '.ActiveComponentImageSetVersionString'
 )
 
+if [ -z "$version" ]; then
+    echo "Failed to get slot$slot sd bic version"
+    exit 1
+fi
+
 busctl set-property \
     xyz.openbmc_project.Settings \
     "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_bic" \

@@ -1,7 +1,9 @@
 #!/bin/bash
 
-RETRY_UPDATE_COUNT=200
+# shellcheck source=meta-facebook/meta-yosemite4/recipes-yosemite4/plat-tool/files/yosemite4-common-functions
+source /usr/libexec/yosemite4-common-functions
 
+RETRY_UPDATE_COUNT=200
 lockfile="/tmp/pldm-fw-upate.lock"
 
 exec 200>"$lockfile"
@@ -48,7 +50,6 @@ remaining_write_times=""
 expected_t1m_devices=20
 expected_t1c_devices=12
 
-#Error retrun code
 # For firmware update
 # PLDM update
 FAIL_TO_UPDATE_PLDM_TIME_OUT_ERROR=22
@@ -61,6 +62,14 @@ FAIL_TO_UPDATE_PLDM_UNABLE_TO_DETERMINE_RETIMER_TYPE=33
 NO_RETIMER_ON_THE_FRU=34
 FAIL_TO_UPDATE_PLDM_PLDM_SOFTWARE_ACTIVATION_STATUS_FAIL=35
 
+
+MANAGEMENT_BOARD_IO_EXP_BUS_NUM="34"
+MANAGEMENT_BOARD_VERSION=$(get_product_version Management_Board)
+if [ "$MANAGEMENT_BOARD_VERSION" = "DVT" ] || [ "$MANAGEMENT_BOARD_VERSION" = "EVT" ]; then
+	MANAGEMENT_BOARD_IO_EXP_BUS_NUM="13"
+fi
+
+is_nuvoton_board="$(check_nuvoton_board)"
 
 show_usage() {
 	echo "Usage: pldm-fw-update.sh [sd|ff|wf|sd_vr|wf_vr|sd_retimer] (--rcvy <slot_id> <uart image>) (<slot_id>) <pldm image>"
@@ -113,6 +122,14 @@ recovery_bic_by_uart() {
 		return $ret
 	fi
 
+	# Notify Nuvoton MGM CPLD to change baud rate to 115200
+	if [ -n "$is_nuvoton_board" ]; then
+		if [ "$slot" -ge 5 ] && [ "$slot" -le 8 ]; then
+			set_val=$((0x1 << (slot-1)))
+			i2ctransfer -f -y $MANAGEMENT_BOARD_IO_EXP_BUS_NUM w2@0x21 0x0C "$set_val"
+		fi
+	fi
+
 	# set UART to 115200
 	/bin/stty -F "/dev/ttyS$uart_num" 115200
 	ret=$?
@@ -128,6 +145,13 @@ recovery_bic_by_uart() {
 	cat "$uart_image" > "/dev/ttyS$uart_num"
 
 	sleep 5
+
+	# Notify Nuvoton MGM CPLD to change baud rate to 57600
+	if [ -n "$is_nuvoton_board" ]; then
+		if [ "$slot" -ge 5 ] && [ "$slot" -le 8 ]; then
+			i2ctransfer -f -y $MANAGEMENT_BOARD_IO_EXP_BUS_NUM w2@0x21 0x0C 0x0
+		fi
+	fi
 
 	# set UART back to 57600
 	/bin/stty -F "/dev/ttyS$uart_num" 57600
@@ -157,7 +181,8 @@ wait_for_update_complete() {
 		# Capture the output of busctl command
 		local output
 		output=$(busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.ActivationProgress Progress)
-		if [ $? -ne 0 ]; then
+		ret=$?
+		if [ "$ret" -ne "0" ]; then
 			local status
 			status=$(busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.Activation Activation)
 			status=$(echo "$status" | cut -d " " -f 2)
@@ -241,10 +266,10 @@ update_bic() {
 			fi
 			if [ $update_status == $FAIL_TO_UPDATE_PLDM_TIME_OUT_ERROR ]; then
 				local output
-				output=$(pldmtool fw_update GetStatus -m ${bic_eid})
+				output=$(pldmtool fw_update GetStatus -m "${bic_eid}")
 				bic_current_state=$(echo "$output" | grep -o '"CurrentState": "[^"]*' | cut -d'"' -f4)
 				if [ "$bic_current_state" = "DOWNLOAD" ]; then
-				pldmtool raw -d 0x80 0x3f 0x1 0x15 0xa0 0x0 0x18 0x03 -m ${bic_eid}
+				pldmtool raw -d 0x80 0x3f 0x1 0x15 0xa0 0x0 0x18 0x03 -m "${bic_eid}"
 				sleep 6 # wait for BIC reset
 				fi
 			fi
@@ -378,13 +403,13 @@ get_offset_for_vr_type() {
 
     case "$vr_type" in
         *"$S3_VR_ID")
-            echo "${S3_REMAINING_WRTIE_OFFSET[@]}"
+            printf "%s\n" "${S3_REMAINING_WRTIE_OFFSET[@]}"
             ;;
         *"$CPU0_VR_ID")
-            echo "${CPU0_REMAINING_WRTIE_OFFSET[@]}"
+            printf "%s\n" "${CPU0_REMAINING_WRTIE_OFFSET[@]}"
             ;;
         *"$CPU1_VR_ID")
-            echo "${CPU1_REMAINING_WRTIE_OFFSET[@]}"
+            printf "%s\n" "${CPU1_REMAINING_WRTIE_OFFSET[@]}"
             ;;
         *)
             echo "Failed to initialize remaining write because of unknown VR type"
@@ -463,18 +488,18 @@ check_if_no_retimer_sku() {
     # echo "gpio_97 = $gpio_97"
     gpio_97_rx_data=$(echo "$gpio_97" | grep 'Rx:' | cut -d':' -f2-)
     # echo "gpio_97_rx_data = $gpio_97_rx_data"
-    gpio_97_cc_byte=$(echo $gpio_97_rx_data | awk '{print $(NF-7)}')
+    gpio_97_cc_byte=$(echo "$gpio_97_rx_data" | awk '{print $(NF-7)}')
     # echo "gpio_97_cc_byte = $gpio_97_cc_byte"
-    gpio_97_last_byte=$(echo $gpio_97_rx_data | awk '{print $NF}' )
+    gpio_97_last_byte=$(echo "$gpio_97_rx_data" | awk '{print $NF}' )
     # echo "gpio_97_last_byte = $gpio_97_last_byte"
     # retimer 0 CHIP GPIO 95
     gpio_95=$(pldmtool raw -d 0x80 0x02 0x3a 0x5f 0xFF -m "${slot_id}0" 2>/dev/null)
     # echo "gpio_95 = $gpio_95"
     gpio_95_rx_data=$(echo "$gpio_95" | grep 'Rx:' | cut -d':' -f2-)
     # echo "gpio_95_rx_data = $gpio_95_rx_data"
-    gpio_95_cc_byte=$(echo $gpio_95_rx_data | awk '{print $(NF-7)}')
+    gpio_95_cc_byte=$(echo "$gpio_95_rx_data" | awk '{print $(NF-7)}')
     # echo "gpio_95_cc_byte = $gpio_95_cc_byte"
-    gpio_95_last_byte=$(echo $gpio_95_rx_data | awk '{print $NF}' )
+    gpio_95_last_byte=$(echo "$gpio_95_rx_data" | awk '{print $NF}' )
     # echo "gpio_95_last_byte = $gpio_95_last_byte"
 
     # pldm tool raw command failed
@@ -502,7 +527,7 @@ bic_name=$1
 pldm_image=$2
 
 if [ ! -f /tmp/fw-util.lock ] && [ "$do_restart_pldmd" == "true" ]; then
-    device_list=$(busctl tree xyz.openbmc_project.PLDM | grep '/xyz/openbmc_project/inventory/Item/Board/' | wc -l)
+    device_list=$(busctl tree xyz.openbmc_project.PLDM | grep -c '/xyz/openbmc_project/inventory/Item/Board/')
     if [ "$device_list" -ne "$expected_t1m_devices" ] && [ "$device_list" -ne "$expected_t1c_devices" ]; then
         echo "Restarting pldmd due to incomplete device"
         systemctl restart pldmd
@@ -678,10 +703,11 @@ if [ "$bic_name" == "sd" ]; then
 
 	for ((i=1; i<=max_retries; i++)); do
 		/usr/libexec/fw-versions/sd-bic "$slot_id"
-
+		ret=$?
 		# Check if the command was successful
-		if [ $? -eq 0 ]; then
-			echo "Version retrieved successfully."
+		if [ "$ret" -eq "0" ]; then
+			version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+			echo "Version retrieved successfully: $version"
 			break
 		else
 			sleep $retry_delay
@@ -696,10 +722,11 @@ elif [ "$bic_name" == "wf" ]; then
 	
 	for ((i=1; i<=max_retries; i++)); do
 		/usr/libexec/fw-versions/wf-bic "$slot_id"
-
+		ret=$?
 		# Check if the command was successful
-		if [ $? -eq 0 ]; then
-			echo "Version retrieved successfully."
+		if [ "$ret" -eq "0" ]; then
+			version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot/Wailua_Falls_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+			echo "Version retrieved successfully: $version"
 			break
 		else
 			sleep $retry_delay

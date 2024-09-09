@@ -2,7 +2,7 @@
 
 jq --raw-output '
   def roundit: if . then (.*10000.0|round/10000.0) else "N/A" end;
-  [["sensor", "status", "value", "units", "UNR", "UCR", "UNC", "LNC", "LCR", "LNR"]] +
+  [["sensor", "status", "value", "units", "LNR", "LCR", "LNC", "UNC", "UCR", "UNR"]] +
   (to_entries | map([
     .key,
     .value.status,

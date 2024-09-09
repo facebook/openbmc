@@ -1,20 +1,25 @@
 {
     "name": "ORV3_HPR_PMM_PSU",
-    "address_range": [[32, 42]],
+    "address_range": [
+        [
+            32,
+            42
+        ]
+    ],
     "probe_register": 0,
     "default_baudrate": 115200,
     "preferred_baudrate": 115200,
     "special_handlers": [
-      {
-        "reg": 80,
-        "len": 2,
-        "period": 3600,
-        "action": "write",
-        "info": {
-          "interpret": "INTEGER",
-          "shell": "date +%s"
+        {
+            "reg": 80,
+            "len": 2,
+            "period": 3600,
+            "action": "write",
+            "info": {
+                "interpret": "INTEGER",
+                "shell": "date +%s"
+            }
         }
-      }
     ],
     "registers": [
         {
@@ -437,7 +442,7 @@
         },
         {
             "begin": 119,
-            "length": 1,
+            "length": 2,
             "format": "INTEGER",
             "name": "Power_Off_System_Unix_Time"
         },

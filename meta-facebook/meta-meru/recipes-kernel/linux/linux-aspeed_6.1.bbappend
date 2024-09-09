@@ -19,4 +19,5 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
 
 SRC_URI += "file://1001-ARM-dts-aspeed-Add-Facebook-meru-BMC.patch \
             file://1002-spi-nor-add-support-for-ISSI-IS25LP512MG.patch \
+            file://1003-spi-nor-add-support-for-Gigadevice-GD25B512.patch \
            "

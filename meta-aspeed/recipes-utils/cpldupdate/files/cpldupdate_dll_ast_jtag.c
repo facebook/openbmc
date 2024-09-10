@@ -33,7 +33,11 @@
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(4,1,51)
 #define JTAG_SYSFS_DIR "/sys/devices/platform/ast-jtag.0/"
 #else
-#define JTAG_SYSFS_DIR "/sys/devices/platform/ahb/ahb:apb/1e6e4000.jtag/"
+/*
+ * Below symlink is used to reference JTAG master becasue the JTAG sysfs
+ * path is different across platforms.
+ */
+#define JTAG_SYSFS_DIR "/run/devmap/jtag/ASPEED_JTAG/"
 #endif
 #endif
 

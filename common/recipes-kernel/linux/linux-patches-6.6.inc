@@ -122,14 +122,6 @@ SRC_URI:append = " \
 "
 
 #
-# Enable JTAG in "fblite-r1" dts (patch #0005) to support the recovery
-# path (programming CPLD) in OpenBMC.
-#
-SRC_URI:append = " \
-    file://0310-ARM-dts-aspeed-Enable-jtag1-in-fblite-r1-dts.patch \
-"
-
-#
 # hwmon: max31790: support to config PWM as TACH
 #
 SRC_URI:append = " \

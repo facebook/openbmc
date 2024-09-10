@@ -281,7 +281,7 @@ def update_psu(addr, filename, key):
 
 def main():
     args = parser.parse_args()
-    with suppress_monitoring():
+    with suppress_monitoring(args.addr):
         try:
             update_psu(args.addr, args.file, args.key)
         except Exception as e:

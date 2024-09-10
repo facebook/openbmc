@@ -1,7 +1,7 @@
-From 6fc2a782361ef6a9e91d22b4978d21513e51d4a3 Mon Sep 17 00:00:00 2001
+From 5e996ce509eee6c50ea0dadef3402a63b3b3b0c8 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Fri, 28 Oct 2022 11:50:15 -0700
-Subject: [PATCH 4/7] ARM: dts: aspeed: Add Facebook FBDarwin (AST2600) BMC
+Subject: [PATCH] ARM: dts: aspeed: Add Facebook FBDarwin (AST2600) BMC
 
 Add initial device tree for the Meta (Facebook) FBDarwin AST2600 BMC.
 
@@ -9,8 +9,8 @@ FBDarwin is Meta's rack switch platform with an AST2600 BMC integrated
 for health monitoring purpose.
 ---
  arch/arm/boot/dts/aspeed/Makefile             |   1 +
- .../aspeed/aspeed-bmc-facebook-fbdarwin.dts   | 111 ++++++++++++++++++
- 2 files changed, 112 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-fbdarwin.dts   | 123 ++++++++++++++++++
+ 2 files changed, 124 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
@@ -27,10 +27,10 @@ index c4f064e4b073..5c63781c25db 100644
  	aspeed-bmc-facebook-greatlakes.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts
 new file mode 100644
-index 000000000000..348fa5364cbb
+index 000000000000..d71a8412ec1c
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts
-@@ -0,0 +1,111 @@
+@@ -0,0 +1,123 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) 2021 Facebook Inc.
 +
@@ -142,6 +142,18 @@ index 000000000000..348fa5364cbb
 +		     &pinctrl_adc12_default &pinctrl_adc13_default
 +		     &pinctrl_adc14_default &pinctrl_adc15_default>;
 +};
++
++&emmc_controller {
++	status = "okay";
++};
++
++&emmc {
++	status = "okay";
++
++	non-removable;
++	max-frequency = <25000000>;
++	bus-width = <4>;
++};
 -- 
-2.44.2
+2.43.5
 

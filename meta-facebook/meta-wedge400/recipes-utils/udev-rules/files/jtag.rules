@@ -1,0 +1,1 @@
+SUBSYSTEM=="platform", DEVPATH=="/devices/platform/ahb/*/1e6e4000.jtag", RUN+="/bin/mkdir -p /run/devmap/jtag", RUN+="/bin/ln -sf %S%p /run/devmap/jtag/ASPEED_JTAG"

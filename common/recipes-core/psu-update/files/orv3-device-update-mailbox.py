@@ -99,8 +99,7 @@ def boot_mode(addr, boot_mode):
         verify_firmware_status(addr, NORMAL_OPERATION_MODE)
 
 
-@retry(5, delay=1.0)
-def verify_firmware_status(addr, expected_status):
+def verify_firmware_status_noretry(addr, expected_status):
     # ensure 0x302 register contains expected status
     a = rmd.read(addr, 0x302, timeout=1000)[0]
     if a != expected_status:
@@ -108,6 +107,11 @@ def verify_firmware_status(addr, expected_status):
             "Bad firmware state: 0x%02x expected: 0x%02x"
             % (int(a), int(expected_status))
         )
+
+
+@retry(5, delay=1.0)
+def verify_firmware_status(addr, expected_status):
+    verify_firmware_status_noretry(addr, expected_status)
 
 
 @retry(5, delay=1.0)
@@ -134,7 +138,7 @@ def write_block(addr, data, block_size, workarounds):
 
 @retry(500, delay=0.01, verbose=0)
 def wait_write_block(addr):
-    verify_firmware_status(addr, FIRMWARE_PACKET_CORRECT)
+    verify_firmware_status_noretry(addr, FIRMWARE_PACKET_CORRECT)
 
 
 def transfer_image(addr, image, block_size_words, block_wait, workarounds):

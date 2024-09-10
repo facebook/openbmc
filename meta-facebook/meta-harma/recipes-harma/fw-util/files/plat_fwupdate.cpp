@@ -173,7 +173,7 @@ class RetimerComponent : public Component {
       if (ret) {
         return FW_STATUS_FAILURE;
       }
-      std::cout << "To active the upgrade of Retimer, please perform 'power-util mb cycle'" << std::endl;
+      std::cout << "To active the upgrade of Retimer, please perform DC cycle" << std::endl;
       return FW_STATUS_SUCCESS;
     }
 

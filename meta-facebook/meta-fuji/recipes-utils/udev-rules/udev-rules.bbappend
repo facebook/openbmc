@@ -17,6 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
+    file://jtag.rules \
     file://spi-devices.rules \
     "
 
@@ -24,6 +25,7 @@ do_install:append() {
     dst=${D}${sysconfdir}/udev/
     install -d ${dst}/rules.d
 
+    install -m 0644 jtag.rules ${dst}/rules.d/99-jtag.rules
     install -m 0644 spi-devices.rules ${dst}/rules.d/99-spi-devices.rules
 }
 

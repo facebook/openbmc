@@ -5261,10 +5261,10 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
       "/usr/bin/fw-util slot%d --version bios | awk '{print $NF}'",
       "/usr/bin/fw-util slot%d --version cpld | awk '{print $NF}'",
       "/usr/bin/fw-util slot%d --version hsc | awk '{print $NF}'",
-      "/usr/bin/fw-util slot%d --version retimer | awk -F': ' '{print $2}'",
-      "/usr/bin/fw-util slot%d --version vr_cpudvdd | awk -F': ' '{print $2}'",
-      "/usr/bin/fw-util slot%d --version vr_cpuvdd | awk -F': ' '{print $2}'",
-      "/usr/bin/fw-util slot%d --version vr_socvdd | awk -F': ' '{print $2}'",
+      "/usr/bin/fw-util slot%d --version retimer | sed -n 's/^[^:]*: //p'",
+      "/usr/bin/fw-util slot%d --version vr_cpudvdd | sed -n 's/^[^:]*: //p'",
+      "/usr/bin/fw-util slot%d --version vr_cpuvdd | sed -n 's/^[^:]*: //p'",
+      "/usr/bin/fw-util slot%d --version vr_socvdd | sed -n 's/^[^:]*: //p'",
     },
 #else
     {
@@ -5332,6 +5332,20 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
     default:
        memcpy(cmd, cmd_table[fru][comp], sizeof(cmd));
   }
+
+#ifdef CONFIG_JAVAISLAND
+  // Javaisland has two different VR vendors, each using a distinct VR name.
+  // Therefore, the VR names need to be replaced according to the specific VR vendor.
+  // sb_rev_id bit5 determines the VR vendor
+  if (fru == FW_VER_SB && GETBIT(fby35_common_get_sb_rev(slot), 5)) {
+    char* sb_alt_cmd_table[IPMI_GET_VER_MAX_COMP];
+    memcpy(sb_alt_cmd_table, cmd_table[fru], sizeof(sb_alt_cmd_table));
+    sb_alt_cmd_table[5] = "/usr/bin/fw-util slot%d --version vr_cpudvdd | sed -n 's/^[^:]*: //p'";
+    sb_alt_cmd_table[6] = "/usr/bin/fw-util slot%d --version vr_fbvddp2 | sed -n 's/^[^:]*: //p'";
+    sb_alt_cmd_table[7] = "/usr/bin/fw-util slot%d --version vr_1v2 | sed -n 's/^[^:]*: //p'";
+    snprintf(cmd, sizeof(cmd), sb_alt_cmd_table[comp], slot);
+  }
+#endif
   if((fp = popen(cmd, "r")) == NULL) {
     syslog(LOG_ERR, "%s(): fail to send command: %s, errno: %s", __func__, cmd_table[fru][comp], strerror(errno));
     return CC_UNSPECIFIED_ERROR;

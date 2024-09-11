@@ -70,7 +70,6 @@ static bool bios_post_cmplt[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_12v_off[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
-static pthread_t tid[MAX_NUM_SLOTS] = {0};
 
 pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
@@ -595,18 +594,6 @@ cpld_io_mon() {
   return NULL;
 }
 
-void
-create_set_event_receiver(uint8_t slot)
-{
-  int arg_slot = slot;
-
-  syslog(LOG_INFO, "slot%d, Create set_event_receiver thread \n", slot);
-  int ret = pthread_create(&tid[slot], NULL, pal_set_event_receiver, (void *)arg_slot);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "slot%d, Create set_event_receiver thread failed! ret:%d", slot, ret);
-  }
-}
-
 static void *
 host_pwr_mon() {
 #define MAX_NIC_PWR_RETRY   15
@@ -670,7 +657,7 @@ host_pwr_mon() {
           pal_clear_mrc_warning(fru);
           syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
           if (fby35_common_get_slot_type(fru) == SERVER_TYPE_JI) {
-            create_set_event_receiver(fru);
+            pal_create_set_event_receiver(fru);
           }
           set_pwrgd_cpu_flag(fru, false);
         }

@@ -217,7 +217,7 @@ int pal_get_board_type(uint8_t slot_id, int *config_status, uint8_t *board_type)
 int pal_get_post_complete(uint8_t slot_id, uint8_t *bios_post_complete);
 int pal_update_ierr_status(uint8_t slot, uint8_t status);
 int pal_get_cpu_model(uint8_t fru);
-void * pal_set_event_receiver(void *ptr);
+void pal_create_set_event_receiver(uint8_t slot);
 
 #ifdef __cplusplus
 } // extern "C"

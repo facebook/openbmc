@@ -83,7 +83,12 @@ int EventManager::handlePlatformEvent(uint8_t payloadId, uint8_t tid,
 	}
 	else if (eventClass == PLDM_OEM_EVENT_CLASS_0xFA)
 	{
-		auto rc = cper::createCperDumpEntry(payloadId, eventData, eventDataSize);
+		// Skip the first 4 bytes because NVIDIA SatMC sends additional 
+		// 4 bytes at the beginning of each CPER raw data. 
+		// These 4 bytes are formatVersion (uint8), formatType (uint8) and 
+		// eventDataLength (uint16), which are the header of the add event data 
+		// for CPEREvent request command, but are incompatible with libcper.
+		auto rc = cper::createCperDumpEntry(payloadId, eventData+4, eventDataSize-4);
 		if (rc != cper::CPER_HANDLE_SUCCESS)
 		{
 			return PLDM_ERROR;

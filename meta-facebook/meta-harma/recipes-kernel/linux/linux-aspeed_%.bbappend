@@ -12,3 +12,4 @@ SRC_URI:append = " file://1007-ARM-dts-aspeed-Harma-Setting-i3c-to-i2c-device.pa
 SRC_URI:append = " file://1008-ARM-dts-aspeed-Harma-add-rtc-device.patch"
 SRC_URI:append = " file://1009-ARM-dts-aspeed-Harma-update-sgpio-line-name.patch"
 SRC_URI:append = " file://1010-ARM-dts-aspeed-Harma-enable-uart-dma-mode.patch"
+SRC_URI:append = " file://1011-ARM-dts-aspeed-Harma-revise-i2c0-and-i2c2-duty-cycle.patch"

@@ -60,6 +60,7 @@ static const PCIeErrorIdInfo uncorrectableErrorIdTable[] = {
     {INVALID_ID, INVALID_ERROR_DESC},
     {INVALID_ID, INVALID_ERROR_DESC},
     {INVALID_ID, INVALID_ERROR_DESC},
+    {INVALID_ID, INVALID_ERROR_DESC},
     {0x20, "Data Link Protocol Error"},
     {0x21, "Surprise Down Error"},
     {INVALID_ID, INVALID_ERROR_DESC},

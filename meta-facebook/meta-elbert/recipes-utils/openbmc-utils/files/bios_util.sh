@@ -153,7 +153,7 @@ elif [ "$1" = "verify" ]; then
         bios_image="$TEMP_BIOS_IMAGE"
     fi
     echo "Verifying flash content..."
-    flashrom -f -p linux_mtd:dev="$SCM_MTD" -v "$bios_image" || exit 1
+    retry_command 5 flashrom -f -p linux_mtd:dev="$SCM_MTD" -v "$bios_image" || exit 1
 elif [ "$1" = "write" ]; then
     bios_image="$2"
     if [ -n "$(aboot_version "$bios_image")" ]; then

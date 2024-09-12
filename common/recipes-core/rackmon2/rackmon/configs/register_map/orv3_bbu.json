@@ -2,6 +2,7 @@
     "name": "ORV3_BBU",
     "address_range": [
         [64, 69],
+        [80, 82],
         [96, 101]
     ],
     "probe_register": 8,

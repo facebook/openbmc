@@ -1,4 +1,4 @@
-From d4c3f7b5aacca632bb872ed631b50327c4446197 Mon Sep 17 00:00:00 2001
+From 2148a4f1973fc671304df37ee4dd2eebc13e701b Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 7 Feb 2024 13:52:07 +0800
 Subject: [PATCH 06/12] platform-mc: Add OEM Meta event handler

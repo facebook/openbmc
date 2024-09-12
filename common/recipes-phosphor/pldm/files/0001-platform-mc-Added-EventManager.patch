@@ -1,4 +1,4 @@
-From 734a5fc8a06ce24c4eae29ab9622374723e3a8aa Mon Sep 17 00:00:00 2001
+From 340c2dbe076af23c89a913c66cf6f0fa4416fe4b Mon Sep 17 00:00:00 2001
 From: Gilbert Chen <gilbertc@nvidia.com>
 Date: Tue, 6 Aug 2024 09:23:30 +0000
 Subject: [PATCH 01/12] platform-mc: Added EventManager
@@ -53,7 +53,7 @@ index a1c1c51..e3b10ee 100644
  namespace dbus
  {
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 0a0de64..9b1c5ae 100644
+index d04bb1e..b8ac0f6 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
 @@ -377,15 +377,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
@@ -1004,7 +1004,7 @@ index 1c7c788..29172bb 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 575741a..a6c7073 100644
+index c8cd91a..0038d04 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -14,8 +14,8 @@ namespace platform_mc
@@ -1571,7 +1571,7 @@ index a52e4ea..fcb8102 100644
      MOCK_METHOD(void, doSensorPolling, (pldm_tid_t tid), (override));
  };
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
-index 65505fb..bf33a8a 100644
+index 59a120b..4ec9f5b 100644
 --- a/platform-mc/test/sensor_manager_test.cpp
 +++ b/platform-mc/test/sensor_manager_test.cpp
 @@ -19,7 +19,7 @@ class SensorManagerTest : public testing::Test

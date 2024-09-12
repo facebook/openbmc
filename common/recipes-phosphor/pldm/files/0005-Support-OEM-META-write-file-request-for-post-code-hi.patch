@@ -1,4 +1,4 @@
-From b526e836b8c06af0a85a85fbc4cf9842f913343c Mon Sep 17 00:00:00 2001
+From f8a6c5f321a3c3b0a3e5c5a4b799bee3be9bcf47 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 05/12] Support OEM-META write file request for post code
@@ -100,7 +100,7 @@ index 56f67e3..271030a 100644
      /** @brief Get Subtree path response from the mapper
       *
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 2e0ed5a..040cd88 100644
+index cf6ecf5..459f4ba 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
 @@ -34,6 +34,7 @@ sources = [
@@ -111,7 +111,7 @@ index 2e0ed5a..040cd88 100644
      'event_parser.cpp',
  ]
  
-@@ -61,6 +62,14 @@ if get_option('oem-ibm').allowed()
+@@ -62,6 +63,14 @@ if get_option('oem-ibm').allowed()
      ]
  endif
  

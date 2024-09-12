@@ -1,4 +1,4 @@
-From ee415c913d956e3de01efd4b8daad1a579bb8c8d Mon Sep 17 00:00:00 2001
+From 4093df7f56de4e030a7fbba081fea426a32335c3 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 28 Jun 2024 16:57:45 +0800
 Subject: [PATCH 11/12] Support OEM-META command for NIC power cycle

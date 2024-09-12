@@ -1,4 +1,4 @@
-From 522edcce9ca074ae9a6976e7f08ed04edff1e69b Mon Sep 17 00:00:00 2001
+From 62da40387be3dbb3ea2ed87ec9be449b505b783f Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 14 Jun 2024 16:24:31 +0800
 Subject: [PATCH 09/12] Support OEM-META command for power control
@@ -24,10 +24,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
 
 diff --git a/libpldmresponder/meson.build b/libpldmresponder/meson.build
-index 4003e40..53a62d8 100644
+index 6abd601..5dee580 100644
 --- a/libpldmresponder/meson.build
 +++ b/libpldmresponder/meson.build
-@@ -69,6 +69,7 @@ if get_option('oem-meta').allowed()
+@@ -70,6 +70,7 @@ if get_option('oem-meta').allowed()
          '../oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.cpp',
          '../oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp',
          '../oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp',

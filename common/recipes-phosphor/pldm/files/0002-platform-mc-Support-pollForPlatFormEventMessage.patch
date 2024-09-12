@@ -1,4 +1,4 @@
-From 697319972e23310c1a25558c7f6b0b51ba3a9b91 Mon Sep 17 00:00:00 2001
+From 09528fb523e2e7847f5d1303bb06f5f6ad977434 Mon Sep 17 00:00:00 2001
 From: Dung Cao <dung@os.amperecomputing.com>
 Date: Tue, 21 Nov 2023 04:38:29 +0000
 Subject: [PATCH 02/12] platform-mc: Support pollForPlatFormEventMessage
@@ -467,7 +467,7 @@ index 74e3043..ce5be90 100644
          auto toBeUpdated = roundRobinSensors[tid].size();
          while (((t1 - t0) < pollingTimeInUsec) && (toBeUpdated > 0))
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index a6c7073..7d59849 100644
+index 0038d04..34521d2 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -15,7 +15,8 @@ namespace platform_mc

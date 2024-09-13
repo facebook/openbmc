@@ -134,7 +134,7 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 #define IPMI_GET_VER_FRU_NUM  5
 #define IPMI_GET_VER_MAX_COMP 9
-#define MAX_FW_VER_LEN        32  //include the string terminal
+#define MAX_FW_VER_LEN        40  //include the string terminal
 #define MAX_CMD_LEN           128
 
 #define MAX_COMPONENT_LEN 32 //include the string terminal

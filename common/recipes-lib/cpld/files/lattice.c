@@ -522,6 +522,15 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
 #ifdef VERBOSE_DEBUG
           printf("%x %x %x %x\n",dev_info->UFM[current_addr],dev_info->UFM[current_addr+1],dev_info->UFM[current_addr+2],dev_info->UFM[current_addr+3]);
 #endif
+          //each data has 128bits(4*unsigned int), so the for-loop need to be run 4 times
+          for ( i = 0; i < sizeof(unsigned int); i++ )
+          {
+            JED_CheckSum += (dev_info->UFM[current_addr+i]>>24) & 0xff;
+            JED_CheckSum += (dev_info->UFM[current_addr+i]>>16) & 0xff;
+            JED_CheckSum += (dev_info->UFM[current_addr+i]>>8)  & 0xff;
+            JED_CheckSum += (dev_info->UFM[current_addr+i])     & 0xff;
+          }
+
           dev_info->UFM_Line++;
         }
         else

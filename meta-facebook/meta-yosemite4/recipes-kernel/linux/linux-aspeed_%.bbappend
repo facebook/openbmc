@@ -31,4 +31,6 @@ SRC_URI += " \
     file://0532-ARM-dts-aspeed-yosemite4-remove-mctp-driver-on-bus-1.patch \
     file://0533-ARM-dts-aspeed-yosemite4-fix-GPIO-linename-typo.patch \
     file://0534-0029-ARM-dts-aspeed-yosemitet4-add-RTQ6056-support-on-11-.patch \
+    file://0535-hwmon-new-driver-for-ISL28022-power-monitor.patch \
+    file://0536-ARM-dts-aspeed-yosemite4-remove-power-sensor-on-11.patch \
 "

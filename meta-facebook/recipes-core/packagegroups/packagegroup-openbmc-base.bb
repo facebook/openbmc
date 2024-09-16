@@ -24,7 +24,8 @@ RDEPENDS:${PN} += " \
   u-boot-fw-utils \
   wdtcli \
   udev-rules \
-  fixmybmc \
   "
 
 RDEPENDS:${PN} += '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "vboot-utils", "", d)} '
+
+RDEPENDS:${PN}:append:openbmc-fb-fboss = "fixmybmc"

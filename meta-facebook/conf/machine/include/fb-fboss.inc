@@ -13,3 +13,5 @@ PREFERRED_VERSION_libwatchdog = "0.2"
 #
 PREFERRED_VERSION_wedge-eeprom ?= "0.1"
 PREFERRED_VERSION_libwedge-eeprom ?= "0.1"
+
+DISTROOVERRIDES .= ":openbmc-fb-fboss"

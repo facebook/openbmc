@@ -26,6 +26,10 @@ def _parse_all_fpga_ver(data) -> Dict:
     result = {}
     PIM_number = "0"
     for line in data.splitlines():
+        # Get IOBFPGA version
+        if line.startswith("IOBFPGA: "):
+            _, iofpga_ver = line.split(" ", 1)
+            result["IOBFPGA"] = iofpga_ver.strip()
         # Check if this line just shows PIM number (not version),
         # if so, update PIM number to be used in the key.
         # Here, we expects a line like: "PIM 1: "

@@ -26,6 +26,8 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
+                  IOBFPGA:
+                    type: string
                   PIM6: 
                     type: string
                   PIM4_TYPE: 

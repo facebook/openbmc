@@ -1,0 +1,923 @@
+From 5830334d32a496c0d80b51b6c99531f4a7829424 Mon Sep 17 00:00:00 2001
+From: Bright Cheng <bright_cheng@wiwynn.com>
+Date: Mon, 26 Aug 2024 11:37:53 +0800
+Subject: [PATCH] Utils: support powerState for multi-node system
+
+The current code of dbus-sensors only get powerState values for Chassis0
+and Host0 which cannot be used for the system with multiple server
+nodes.
+
+This commit add "slotId" in Sensor class to indicate the index of
+server. When setupPowerMatchCallback is called, code will call
+GetSubTreePaths method to get chassis and host objects to set match
+rules for each object. Meanwhile, sensor can get corresponding powerState
+value with its slotId.
+
+Test Plan:
+1. Add setting "SlotId" and "PowerState" to some sensors
+2. Modify property "CurrentPowerState" to
+xyz.openbmc_project.State.Chassis.PowerState.Off, the sensor value of
+corresponding server should be nan.
+3. Change property "CurrentPowerState" to
+xyz.openbmc_project.State.Chassis.PowerState.Off, the sensor value of
+corresponding server should be real value.
+
+Test Result:
+root@bmc:~# busctl get-property xyz.openbmc_project.State.Chassis7 /xyz/openbmc_project/state/chassis7 xyz.openbmc_project.State.Chassis CurrentPowerState
+s "xyz.openbmc_project.State.Chassis.PowerState.On"
+root@bmc:~# busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/power/MEDUSA_MB7_12VHSC_INPUT_PWR_W xyz.openbmc_project.Sensor.Value Value
+d 154.067
+root@bmc:~# busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/temperature/MEDUSA_MB7_12VHSC_TEMP_C xyz.openbmc_project.Sensor.Value Value
+d 36.428
+root@bmc:~# busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/MEDUSA_MB7_12VHSC_INPUT_VOLT_V xyz.openbmc_project.Sensor.Value Value
+d 12.214
+root@bmc:~# busctl set-property xyz.openbmc_project.State.Chassis7 /xyz/openbmc_project/state/chassis7 xyz.openbmc_project.State.Chassis CurrentPowerState s "xyz.openbmc_project.State.Chassis.PowerState.Off"
+root@bmc:~# busctl get-property xyz.openbmc_project.State.Chassis7 /xyz/openbmc_project/state/chassis7 xyz.openbmc_project.State.Chassis CurrentPowerState
+s "xyz.openbmc_project.State.Chassis.PowerState.Off"
+root@bmc:~# busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/power/MEDUSA_MB7_12VHSC_INPUT_PWR_W xyz.openbmc_project.Sensor.Value Value
+d nan
+root@bmc:~# busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/temperature/MEDUSA_MB7_12VHSC_TEMP_C xyz.openbmc_project.Sensor.Value Value
+d nan
+root@bmc:~# busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/MEDUSA_MB7_12VHSC_INPUT_VOLT_V xyz.openbmc_project.Sensor.Value Value
+d nan
+root@bmc:~# busctl set-property xyz.openbmc_project.State.Chassis7 /xyz/openbmc_project/state/chassis7 xyz.openbmc_project.State.Chassis CurrentPowerState s "xyz.openbmc_project.State.Chassis.PowerState.On"
+root@bmc:~# busctl get-property xyz.openbmc_project.State.Chassis7 /xyz/openbmc_project/state/chassis7 xyz.openbmc_project.State.Chassis CurrentPowerState
+s "xyz.openbmc_project.State.Chassis.PowerState.On"
+root@bmc:~# busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/power/MEDUSA_MB7_12VHSC_INPUT_PWR_W xyz.openbmc_project.Sensor.Value Value
+d 152.107
+root@bmc:~# busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/temperature/MEDUSA_MB7_12VHSC_TEMP_C xyz.openbmc_project.Sensor.Value Value
+d 36.666
+root@bmc:~# busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/MEDUSA_MB7_12VHSC_INPUT_VOLT_V xyz.openbmc_project.Sensor.Value Value
+d 12.209
+---
+ src/HwmonTempMain.cpp |   6 +-
+ src/PSUSensor.cpp     |  25 ++-
+ src/PSUSensor.hpp     |   9 +-
+ src/PSUSensorMain.cpp |  21 ++-
+ src/Utils.cpp         | 421 ++++++++++++++++++++++++++++--------------
+ src/Utils.hpp         |  38 ++--
+ src/sensor.hpp        |   7 +-
+ 7 files changed, 349 insertions(+), 178 deletions(-)
+
+diff --git a/src/HwmonTempMain.cpp b/src/HwmonTempMain.cpp
+index 956e9e5..dad4667 100644
+--- a/src/HwmonTempMain.cpp
++++ b/src/HwmonTempMain.cpp
+@@ -589,7 +589,11 @@ static void powerStateChanged(
+         {
+             if (sensor != nullptr && sensor->readState == type)
+             {
+-                sensor->deactivate();
++                if ((type == PowerState::chassisOn) &&
++                    (!isChassisOn(sensor->slotId)))
++                {
++                    sensor->deactivate();
++                }
+             }
+         }
+     }
+diff --git a/src/PSUSensor.cpp b/src/PSUSensor.cpp
+index 3d1c3e6..e8099b3 100644
+--- a/src/PSUSensor.cpp
++++ b/src/PSUSensor.cpp
+@@ -44,23 +44,22 @@ static constexpr const char* sensorPathPrefix = "/xyz/openbmc_project/sensors/";
+ 
+ static constexpr bool debug = false;
+ 
+-PSUSensor::PSUSensor(const std::string& path, const std::string& objectType,
+-                     sdbusplus::asio::object_server& objectServer,
+-                     std::shared_ptr<sdbusplus::asio::connection>& conn,
+-                     boost::asio::io_context& io, const std::string& sensorName,
+-                     std::vector<thresholds::Threshold>&& thresholdsIn,
+-                     const std::string& sensorConfiguration,
+-                     const PowerState& powerState,
+-                     const std::string& sensorUnits, double factor, double max,
+-                     double min, double offset, const std::string& label,
+-                     size_t tSize, double pollRate,
+-                     const std::shared_ptr<I2CDevice>& i2cDevice) :
++PSUSensor::PSUSensor(
++    const std::string& path, const std::string& objectType,
++    sdbusplus::asio::object_server& objectServer,
++    std::shared_ptr<sdbusplus::asio::connection>& conn,
++    boost::asio::io_context& io, const std::string& sensorName,
++    std::vector<thresholds::Threshold>&& thresholdsIn,
++    const std::string& sensorConfiguration, const PowerState& powerState,
++    const std::string& sensorUnits, double factor, double max, double min,
++    double offset, const std::string& label, size_t tSize, double pollRate,
++    const std::shared_ptr<I2CDevice>& i2cDevice, const size_t& slotId) :
+     Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
+-           objectType, false, false, max, min, conn, powerState),
++           objectType, false, false, max, min, conn, powerState, slotId),
+     i2cDevice(i2cDevice), objServer(objectServer),
+     inputDev(io, path, boost::asio::random_access_file::read_only),
+     waitTimer(io), path(path), sensorFactor(factor), sensorOffset(offset),
+-    thresholdTimer(io)
++    thresholdTimer(io), slotId(slotId)
+ {
+     buffer = std::make_shared<std::array<char, 128>>();
+     std::string unitPath = sensor_paths::getPathForUnits(sensorUnits);
+diff --git a/src/PSUSensor.hpp b/src/PSUSensor.hpp
+index cebe730..27609be 100644
+--- a/src/PSUSensor.hpp
++++ b/src/PSUSensor.hpp
+@@ -25,7 +25,8 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+               const PowerState& powerState, const std::string& sensorUnits,
+               double factor, double max, double min, double offset,
+               const std::string& label, size_t tSize, double pollRate,
+-              const std::shared_ptr<I2CDevice>& i2cDevice);
++              const std::shared_ptr<I2CDevice>& i2cDevice,
++              const size_t& slotId);
+     ~PSUSensor() override;
+     void setupRead();
+     void activate();
+@@ -61,6 +62,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+     static constexpr double defaultSensorPoll = 1.0;
+     static constexpr unsigned int defaultSensorPollMs =
+         static_cast<unsigned int>(defaultSensorPoll * 1000);
++    size_t slotId;
+ };
+ 
+ class PSUProperty
+@@ -68,8 +70,9 @@ class PSUProperty
+   public:
+     PSUProperty(std::string name, double max, double min, double factor,
+                 double offset) :
+-        labelTypeName(std::move(name)), maxReading(max), minReading(min),
+-        sensorScaleFactor(factor), sensorOffset(offset)
++        labelTypeName(std::move(name)),
++        maxReading(max), minReading(min), sensorScaleFactor(factor),
++        sensorOffset(offset)
+     {}
+     ~PSUProperty() = default;
+ 
+diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
+index 26047cf..7ef7276 100644
+--- a/src/PSUSensorMain.cpp
++++ b/src/PSUSensorMain.cpp
+@@ -499,6 +499,7 @@ static void createSensorsCallback(
+         checkGroupEvent(directory.string(), groupEventPathList);
+ 
+         PowerState readState = getPowerState(*baseConfig);
++        size_t readSlot = getSlotId(*baseConfig);
+ 
+         /* Check if there are more sensors in the same interface */
+         int i = 1;
+@@ -939,7 +940,7 @@ static void createSensorsCallback(
+                 readState, findSensorUnit->second, factor,
+                 psuProperty.maxReading, psuProperty.minReading,
+                 psuProperty.sensorOffset, labelHead, thresholdConfSize,
+-                pollRate, i2cDev);
++                pollRate, i2cDev, readSlot);
+             sensors[sensorName]->setupRead();
+             ++numCreated;
+             if constexpr (debug)
+@@ -1045,9 +1046,9 @@ void createSensors(
+     auto getter = std::make_shared<GetSensorConfiguration>(
+         dbusConnection, [&io, &objectServer, &dbusConnection, sensorsChanged](
+                             const ManagedObjectType& sensorConfigs) {
+-        createSensorsCallback(io, objectServer, dbusConnection, sensorConfigs,
+-                              sensorsChanged);
+-    });
++            createSensorsCallback(io, objectServer, dbusConnection,
++                                  sensorConfigs, sensorsChanged);
++        });
+     std::vector<std::string> types(sensorTypes.size());
+     for (const auto& [type, dt] : sensorTypes)
+     {
+@@ -1110,7 +1111,11 @@ static void powerStateChanged(
+         {
+             if (sensor != nullptr && sensor->readState == type)
+             {
+-                sensor->activate();
++                if ((type == PowerState::chassisOn) &&
++                    (isChassisOn(sensor->slotId)))
++                {
++                    sensor->activate();
++                }
+             }
+         }
+     }
+@@ -1120,7 +1125,11 @@ static void powerStateChanged(
+         {
+             if (sensor != nullptr && sensor->readState == type)
+             {
+-                sensor->deactivate();
++                if ((type == PowerState::chassisOn) &&
++                    (!isChassisOn(sensor->slotId)))
++                {
++                    sensor->deactivate();
++                }
+             }
+         }
+     }
+diff --git a/src/Utils.cpp b/src/Utils.cpp
+index ac0778d..59e989e 100644
+--- a/src/Utils.cpp
++++ b/src/Utils.cpp
+@@ -58,14 +58,24 @@
+ 
+ namespace fs = std::filesystem;
+ 
+-static bool powerStatusOn = false;
+-static bool biosHasPost = false;
++using powerStatePair = std::pair<std::string, bool>;
++using powerMatchPair =
++    std::pair<std::string, std::unique_ptr<sdbusplus::bus::match_t>>;
++
+ static bool manufacturingMode = false;
+-static bool chassisStatusOn = false;
++static std::vector<powerStatePair> powerStatusOn;
++static std::vector<powerStatePair> biosHasPost;
++static std::vector<powerStatePair> chassisStatusOn;
+ 
+ static std::unique_ptr<sdbusplus::bus::match_t> powerMatch = nullptr;
+ static std::unique_ptr<sdbusplus::bus::match_t> postMatch = nullptr;
+ static std::unique_ptr<sdbusplus::bus::match_t> chassisMatch = nullptr;
++static std::vector<powerMatchPair> powerMatchVec;
++static std::vector<powerMatchPair> postMatchVec;
++static std::vector<powerMatchPair> chassisMatchVec;
++static std::vector<std::shared_ptr<boost::asio::steady_timer>> timerVec;
++static std::vector<std::shared_ptr<boost::asio::steady_timer>>
++    timerChassisStatusVec;
+ 
+ /**
+  * return the contents of a file
+@@ -301,44 +311,84 @@ bool findFiles(const fs::path& dirPath, std::string_view matchString,
+     return true;
+ }
+ 
+-bool isPowerOn()
++std::vector<powerStatePair>::iterator findPowerStateByPath(
++    const std::string& path, std::vector<powerStatePair>& powerStatus)
++{
++    return std::find_if(
++        powerStatus.begin(), powerStatus.end(),
++        [&path](const auto& pair) { return pair.first == std::string(path); });
++}
++
++std::vector<powerMatchPair>::iterator findPowerMatchByPath(
++    const std::string& path, std::vector<powerMatchPair>& powerMatch)
++{
++    return std::find_if(
++        powerMatch.begin(), powerMatch.end(),
++        [&path](const auto& pair) { return pair.first == std::string(path); });
++}
++
++bool isPowerOn(const size_t& slotId)
+ {
+-    if (!powerMatch)
++    std::string path = power::path + std::to_string(slotId);
++    auto match_it = findPowerMatchByPath(path, powerMatchVec);
++    if (match_it == powerMatchVec.end())
+     {
+         throw std::runtime_error("Power Match Not Created");
+     }
+-    return powerStatusOn;
++    auto it = findPowerStateByPath(path, powerStatusOn);
++    if (it == powerStatusOn.end())
++    {
++        return false;
++    }
++
++    return it->second;
+ }
+ 
+-bool hasBiosPost()
++bool hasBiosPost(const size_t& slotId)
+ {
+-    if (!postMatch)
++    std::string path = post::path + std::to_string(slotId);
++    auto match_it = findPowerMatchByPath(path, postMatchVec);
++    if (match_it == postMatchVec.end())
+     {
+         throw std::runtime_error("Post Match Not Created");
+     }
+-    return biosHasPost;
++    auto it = findPowerStateByPath(path, biosHasPost);
++    if (it == biosHasPost.end())
++    {
++        return false;
++    }
++
++    return it->second;
+ }
+ 
+-bool isChassisOn()
++bool isChassisOn(const size_t& slotId)
+ {
+-    if (!chassisMatch)
++    std::string path = chassis::path + std::to_string(slotId);
++    auto match_it = findPowerMatchByPath(path, chassisMatchVec);
++    if (match_it == chassisMatchVec.end())
+     {
+         throw std::runtime_error("Chassis On Match Not Created");
+     }
+-    return chassisStatusOn;
++    auto it = findPowerStateByPath(path, chassisStatusOn);
++    if (it == chassisStatusOn.end())
++    {
++        return false;
++    }
++    return it->second;
+ }
+ 
+-bool readingStateGood(const PowerState& powerState)
++bool readingStateGood(const PowerState& powerState, const size_t& slotId)
+ {
+-    if (powerState == PowerState::on && !isPowerOn())
++    if (powerState == PowerState::on && !isPowerOn(slotId))
+     {
+         return false;
+     }
+-    if (powerState == PowerState::biosPost && (!hasBiosPost() || !isPowerOn()))
++    if (powerState == PowerState::biosPost &&
++        (!hasBiosPost(slotId) || !isPowerOn(slotId)))
+     {
+         return false;
+     }
+-    if (powerState == PowerState::chassisOn && !isChassisOn())
++    if (powerState == PowerState::chassisOn && !isChassisOn(slotId))
+     {
+         return false;
+     }
+@@ -348,11 +398,15 @@ bool readingStateGood(const PowerState& powerState)
+ 
+ static void
+     getPowerStatus(const std::shared_ptr<sdbusplus::asio::connection>& conn,
+-                   size_t retries = 2)
++                   size_t slotNumber = 0, size_t retries = 2)
+ {
++    std::string busname = power::busname + std::to_string(slotNumber);
++    std::string path = power::path + std::to_string(slotNumber);
++
+     conn->async_method_call(
+-        [conn, retries](boost::system::error_code ec,
+-                        const std::variant<std::string>& state) {
++        [conn, retries, slotNumber,
++         path](boost::system::error_code ec,
++               const std::variant<std::string>& state) {
+             if (ec)
+             {
+                 if (retries != 0U)
+@@ -360,10 +414,10 @@ static void
+                     auto timer = std::make_shared<boost::asio::steady_timer>(
+                         conn->get_io_context());
+                     timer->expires_after(std::chrono::seconds(15));
+-                    timer->async_wait(
+-                        [timer, conn, retries](boost::system::error_code) {
+-                            getPowerStatus(conn, retries - 1);
+-                        });
++                    timer->async_wait([timer, conn, retries,
++                                       slotNumber](boost::system::error_code) {
++                        getPowerStatus(conn, slotNumber, retries - 1);
++                    });
+                     return;
+                 }
+ 
+@@ -373,19 +427,24 @@ static void
+                           << "\n";
+                 return;
+             }
+-            powerStatusOn = std::get<std::string>(state).ends_with(".Running");
++            auto it = findPowerStateByPath(path, powerStatusOn);
++            it->second = std::get<std::string>(state).ends_with(".Running");
+         },
+-        power::busname, power::path, properties::interface, properties::get,
+-        power::interface, power::property);
++        busname, path, properties::interface, properties::get, power::interface,
++        power::property);
+ }
+ 
+ static void
+     getPostStatus(const std::shared_ptr<sdbusplus::asio::connection>& conn,
+-                  size_t retries = 2)
++                  size_t slotNumber = 0, size_t retries = 2)
+ {
++    std::string busname = post::busname + std::to_string(slotNumber);
++    std::string path = post::path + std::to_string(slotNumber);
++
+     conn->async_method_call(
+-        [conn, retries](boost::system::error_code ec,
+-                        const std::variant<std::string>& state) {
++        [conn, retries, slotNumber,
++         path](boost::system::error_code ec,
++               const std::variant<std::string>& state) {
+             if (ec)
+             {
+                 if (retries != 0U)
+@@ -393,10 +452,10 @@ static void
+                     auto timer = std::make_shared<boost::asio::steady_timer>(
+                         conn->get_io_context());
+                     timer->expires_after(std::chrono::seconds(15));
+-                    timer->async_wait(
+-                        [timer, conn, retries](boost::system::error_code) {
+-                            getPostStatus(conn, retries - 1);
+-                        });
++                    timer->async_wait([timer, conn, retries,
++                                       slotNumber](boost::system::error_code) {
++                        getPostStatus(conn, slotNumber, retries - 1);
++                    });
+                     return;
+                 }
+                 // we commonly come up before power control, we'll capture the
+@@ -406,21 +465,26 @@ static void
+                 return;
+             }
+             const auto& value = std::get<std::string>(state);
+-            biosHasPost = (value != "Inactive") &&
+-                          (value != "xyz.openbmc_project.State.OperatingSystem."
+-                                    "Status.OSStatus.Inactive");
++            auto it = findPowerStateByPath(path, biosHasPost);
++            it->second = (value != "Inactive") &&
++                         (value != "xyz.openbmc_project.State.OperatingSystem."
++                                   "Status.OSStatus.Inactive");
+         },
+-        post::busname, post::path, properties::interface, properties::get,
+-        post::interface, post::property);
++        busname, path, properties::interface, properties::get, post::interface,
++        post::property);
+ }
+ 
+ static void
+     getChassisStatus(const std::shared_ptr<sdbusplus::asio::connection>& conn,
+-                     size_t retries = 2)
++                     size_t slotNumber = 0, size_t retries = 2)
+ {
++    std::string busname = chassis::busname + std::to_string(slotNumber);
++    std::string path = chassis::path + std::to_string(slotNumber);
++
+     conn->async_method_call(
+-        [conn, retries](boost::system::error_code ec,
+-                        const std::variant<std::string>& state) {
++        [conn, retries, slotNumber,
++         path](boost::system::error_code ec,
++               const std::variant<std::string>& state) {
+             if (ec)
+             {
+                 if (retries != 0U)
+@@ -428,10 +492,10 @@ static void
+                     auto timer = std::make_shared<boost::asio::steady_timer>(
+                         conn->get_io_context());
+                     timer->expires_after(std::chrono::seconds(15));
+-                    timer->async_wait(
+-                        [timer, conn, retries](boost::system::error_code) {
+-                            getChassisStatus(conn, retries - 1);
+-                        });
++                    timer->async_wait([timer, conn, retries,
++                                       slotNumber](boost::system::error_code) {
++                        getChassisStatus(conn, slotNumber, retries - 1);
++                    });
+                     return;
+                 }
+ 
+@@ -441,10 +505,10 @@ static void
+                           << ec.message() << "\n";
+                 return;
+             }
+-            chassisStatusOn =
+-                std::get<std::string>(state).ends_with(chassis::sOn);
++            auto it = findPowerStateByPath(path, chassisStatusOn);
++            it->second = std::get<std::string>(state).ends_with(chassis::sOn);
+         },
+-        chassis::busname, chassis::path, properties::interface, properties::get,
++        busname, path, properties::interface, properties::get,
+         chassis::interface, chassis::property);
+ }
+ 
+@@ -452,8 +516,6 @@ void setupPowerMatchCallback(
+     const std::shared_ptr<sdbusplus::asio::connection>& conn,
+     std::function<void(PowerState type, bool state)>&& hostStatusCallback)
+ {
+-    static boost::asio::steady_timer timer(conn->get_io_context());
+-    static boost::asio::steady_timer timerChassisOn(conn->get_io_context());
+     // create a match for powergood changes, first time do a method call to
+     // cache the correct value
+     if (powerMatch)
+@@ -461,32 +523,64 @@ void setupPowerMatchCallback(
+         return;
+     }
+ 
+-    powerMatch = std::make_unique<sdbusplus::bus::match_t>(
+-        static_cast<sdbusplus::bus_t&>(*conn),
+-        "type='signal',interface='" + std::string(properties::interface) +
+-            "',path='" + std::string(power::path) + "',arg0='" +
+-            std::string(power::interface) + "'",
+-        [hostStatusCallback](sdbusplus::message_t& message) {
+-            std::string objectName;
+-            boost::container::flat_map<std::string, std::variant<std::string>>
+-                values;
+-            message.read(objectName, values);
+-            auto findState = values.find(power::property);
+-            if (findState != values.end())
+-            {
+-                bool on = std::get<std::string>(findState->second)
+-                              .ends_with(".Running");
+-                if (!on)
++    /* Get host paths */
++    static const int depth = 1;
++    GetSubTreePathsType hostSubTreePaths;
++
++    try
++    {
++        auto method =
++            conn->new_method_call(mapper::busName, mapper::path,
++                                  mapper::interface, mapper::subtreepaths);
++        method.append("/xyz/openbmc_project/state", depth,
++                      GetSubTreePathsType({power::interface}));
++        auto reply = conn->call(method);
++        reply.read(hostSubTreePaths);
++    }
++    catch (sdbusplus::exception_t& e)
++    {
++        std::cerr << "Error getting host subtree paths: " << e.what() << "\n";
++        return;
++    }
++
++    for (const auto& path : hostSubTreePaths)
++    {
++        size_t slotNumber =
++            std::stoi(path.substr(path.find_last_of("/host") + 1));
++        powerStatusOn.emplace_back(std::make_pair(std::string(path), false));
++        biosHasPost.emplace_back(std::make_pair(std::string(path), false));
++        auto timer =
++            timerVec.emplace_back(std::make_shared<boost::asio::steady_timer>(
++                conn->get_io_context()));
++
++        powerMatch = std::make_unique<sdbusplus::bus::match_t>(
++            static_cast<sdbusplus::bus_t&>(*conn),
++            "type='signal',interface='" + std::string(properties::interface) +
++                "',path='" + std::string(path) + "',arg0='" +
++                std::string(power::interface) + "'",
++            [hostStatusCallback, path, timer](sdbusplus::message_t& message) {
++                std::string objectName;
++                boost::container::flat_map<std::string,
++                                           std::variant<std::string>>
++                    values;
++                message.read(objectName, values);
++                auto findState = values.find(power::property);
++                if (findState != values.end())
+                 {
+-                    timer.cancel();
+-                    powerStatusOn = false;
+-                    hostStatusCallback(PowerState::on, powerStatusOn);
+-                    return;
+-                }
+-                // on comes too quickly
+-                timer.expires_after(std::chrono::seconds(10));
+-                timer.async_wait(
+-                    [hostStatusCallback](boost::system::error_code ec) {
++                    bool on = std::get<std::string>(findState->second)
++                                  .ends_with(".Running");
++                    auto it = findPowerStateByPath(path, powerStatusOn);
++                    if (!on)
++                    {
++                        timer->cancel();
++                        it->second = false;
++                        hostStatusCallback(PowerState::on, it->second);
++                        return;
++                    }
++                    // on comes too quickly
++                    timer->expires_after(std::chrono::seconds(10));
++                    timer->async_wait([hostStatusCallback,
++                                       it](boost::system::error_code ec) {
+                         if (ec == boost::asio::error::operation_aborted)
+                         {
+                             return;
+@@ -496,78 +590,123 @@ void setupPowerMatchCallback(
+                             std::cerr << "Timer error " << ec.message() << "\n";
+                             return;
+                         }
+-                        powerStatusOn = true;
+-                        hostStatusCallback(PowerState::on, powerStatusOn);
++                        it->second = true;
++                        hostStatusCallback(PowerState::on, it->second);
+                     });
+-            }
+-        });
+-
+-    postMatch = std::make_unique<sdbusplus::bus::match_t>(
+-        static_cast<sdbusplus::bus_t&>(*conn),
+-        "type='signal',interface='" + std::string(properties::interface) +
+-            "',path='" + std::string(post::path) + "',arg0='" +
+-            std::string(post::interface) + "'",
+-        [hostStatusCallback](sdbusplus::message_t& message) {
+-            std::string objectName;
+-            boost::container::flat_map<std::string, std::variant<std::string>>
+-                values;
+-            message.read(objectName, values);
+-            auto findState = values.find(post::property);
+-            if (findState != values.end())
+-            {
+-                auto& value = std::get<std::string>(findState->second);
+-                biosHasPost =
+-                    (value != "Inactive") &&
+-                    (value != "xyz.openbmc_project.State.OperatingSystem."
+-                              "Status.OSStatus.Inactive");
+-                hostStatusCallback(PowerState::biosPost, biosHasPost);
+-            }
+-        });
+-
+-    chassisMatch = std::make_unique<sdbusplus::bus::match_t>(
+-        static_cast<sdbusplus::bus_t&>(*conn),
+-        "type='signal',interface='" + std::string(properties::interface) +
+-            "',path='" + std::string(chassis::path) + "',arg0='" +
+-            std::string(chassis::interface) + "'",
+-        [hostStatusCallback = std::move(hostStatusCallback)](
+-            sdbusplus::message_t& message) {
+-            std::string objectName;
+-            boost::container::flat_map<std::string, std::variant<std::string>>
+-                values;
+-            message.read(objectName, values);
+-            auto findState = values.find(chassis::property);
+-            if (findState != values.end())
+-            {
+-                bool on = std::get<std::string>(findState->second)
+-                              .ends_with(chassis::sOn);
+-                if (!on)
++                }
++            });
++
++        powerMatchVec.emplace_back(
++            std::make_pair(std::string(path), std::move(powerMatch)));
++
++        postMatch = std::make_unique<sdbusplus::bus::match_t>(
++            static_cast<sdbusplus::bus_t&>(*conn),
++            "type='signal',interface='" + std::string(properties::interface) +
++                "',path='" + std::string(path) + "',arg0='" +
++                std::string(post::interface) + "'",
++            [hostStatusCallback, path](sdbusplus::message_t& message) {
++                std::string objectName;
++                boost::container::flat_map<std::string,
++                                           std::variant<std::string>>
++                    values;
++                message.read(objectName, values);
++                auto findState = values.find(post::property);
++                if (findState != values.end())
+                 {
+-                    timerChassisOn.cancel();
+-                    chassisStatusOn = false;
+-                    hostStatusCallback(PowerState::chassisOn, chassisStatusOn);
+-                    return;
++                    auto& value = std::get<std::string>(findState->second);
++                    auto it = findPowerStateByPath(path, biosHasPost);
++                    it->second =
++                        (value != "Inactive") &&
++                        (value != "xyz.openbmc_project.State.OperatingSystem."
++                                  "Status.OSStatus.Inactive");
++                    hostStatusCallback(PowerState::biosPost, it->second);
+                 }
+-                // on comes too quickly
+-                timerChassisOn.expires_after(std::chrono::seconds(10));
+-                timerChassisOn.async_wait([hostStatusCallback](
+-                                              boost::system::error_code ec) {
+-                    if (ec == boost::asio::error::operation_aborted)
+-                    {
+-                        return;
+-                    }
+-                    if (ec)
++            });
++        postMatchVec.emplace_back(
++            std::make_pair(std::string(path), std::move(postMatch)));
++        getPowerStatus(conn, slotNumber);
++        getPostStatus(conn, slotNumber);
++    }
++
++    /* Get chassis paths */
++    GetSubTreePathsType chassisSubTreePaths;
++
++    try
++    {
++        auto method =
++            conn->new_method_call(mapper::busName, mapper::path,
++                                  mapper::interface, mapper::subtreepaths);
++        method.append("/xyz/openbmc_project/state", depth,
++                      GetSubTreePathsType({chassis::interface}));
++        auto reply = conn->call(method);
++        reply.read(chassisSubTreePaths);
++    }
++    catch (sdbusplus::exception_t& e)
++    {
++        std::cerr << "Error getting chassis subtree paths: " << e.what()
++                  << "\n";
++        return;
++    }
++
++    for (const auto& path : chassisSubTreePaths)
++    {
++        chassisStatusOn.emplace_back(std::make_pair(std::string(path), false));
++        size_t slotNumber =
++            std::stoi(path.substr(path.find_last_of("/chassis") + 1));
++        auto timerChassisOn = timerChassisStatusVec.emplace_back(
++            std::make_shared<boost::asio::steady_timer>(
++                conn->get_io_context()));
++
++        chassisMatch = std::make_unique<sdbusplus::bus::match_t>(
++            static_cast<sdbusplus::bus_t&>(*conn),
++            "type='signal',interface='" + std::string(properties::interface) +
++                "',path='" + std::string(path) + "',arg0='" +
++                std::string(chassis::interface) + "'",
++            [hostStatusCallback, slotNumber, timerChassisOn,
++             path](sdbusplus::message_t& message) {
++                std::string objectName;
++                boost::container::flat_map<std::string,
++                                           std::variant<std::string>>
++                    values;
++                message.read(objectName, values);
++                auto findState = values.find(chassis::property);
++                if (findState != values.end())
++                {
++                    bool on = std::get<std::string>(findState->second)
++                                  .ends_with(chassis::sOn);
++                    auto it = findPowerStateByPath(path, chassisStatusOn);
++                    if (!on)
+                     {
+-                        std::cerr << "Timer error " << ec.message() << "\n";
++                        timerChassisOn->cancel();
++                        it->second = false;
++                        hostStatusCallback(PowerState::chassisOn, it->second);
+                         return;
+                     }
+-                    chassisStatusOn = true;
+-                    hostStatusCallback(PowerState::chassisOn, chassisStatusOn);
+-                });
+-            }
+-        });
+-    getPowerStatus(conn);
+-    getPostStatus(conn);
+-    getChassisStatus(conn);
++                    // on comes too quickly
++                    timerChassisOn->expires_after(std::chrono::seconds(10));
++                    timerChassisOn->async_wait(
++                        [hostStatusCallback, slotNumber,
++                         it](boost::system::error_code ec) {
++                            if (ec == boost::asio::error::operation_aborted)
++                            {
++                                return;
++                            }
++                            if (ec)
++                            {
++                                std::cerr
++                                    << "Timer error " << ec.message() << "\n";
++                                return;
++                            }
++                            it->second = true;
++                            hostStatusCallback(PowerState::chassisOn,
++                                               it->second);
++                        });
++                }
++            });
++        chassisMatchVec.emplace_back(
++            std::make_pair(std::string(path), std::move(chassisMatch)));
++        getChassisStatus(conn, slotNumber);
++    }
+ }
+ 
+ void setupPowerMatch(const std::shared_ptr<sdbusplus::asio::connection>& conn)
+diff --git a/src/Utils.hpp b/src/Utils.hpp
+index 78a6ecd..450a20a 100644
+--- a/src/Utils.hpp
++++ b/src/Utils.hpp
+@@ -43,6 +43,7 @@ using ManagedObjectType =
+ using GetSubTreeType = std::vector<
+     std::pair<std::string,
+               std::vector<std::pair<std::string, std::vector<std::string>>>>>;
++using GetSubTreePathsType = std::vector<std::string>;
+ using Association = std::tuple<std::string, std::string, std::string>;
+ 
+ inline std::string escapeName(const std::string& sensorName)
+@@ -67,9 +68,9 @@ bool findFiles(const std::filesystem::path& dirPath,
+                std::string_view matchString,
+                std::vector<std::filesystem::path>& foundPaths,
+                int symlinkDepth = 1);
+-bool isPowerOn();
+-bool hasBiosPost();
+-bool isChassisOn();
++bool isPowerOn(const size_t& slotId = 0);
++bool hasBiosPost(const size_t& slotId = 0);
++bool isChassisOn(const size_t& slotId = 0);
+ void setupPowerMatchCallback(
+     const std::shared_ptr<sdbusplus::asio::connection>& conn,
+     std::function<void(PowerState type, bool state)>&& callback);
+@@ -87,7 +88,7 @@ void createAssociation(
+ void findLimits(std::pair<double, double>& limits,
+                 const SensorBaseConfiguration* data);
+ 
+-bool readingStateGood(const PowerState& powerState);
++bool readingStateGood(const PowerState& powerState, const size_t& slotId = 0);
+ 
+ constexpr const char* configInterfacePrefix =
+     "xyz.openbmc_project.Configuration.";
+@@ -103,6 +104,7 @@ constexpr const char* busName = "xyz.openbmc_project.ObjectMapper";
+ constexpr const char* path = "/xyz/openbmc_project/object_mapper";
+ constexpr const char* interface = "xyz.openbmc_project.ObjectMapper";
+ constexpr const char* subtree = "GetSubTree";
++constexpr const char* subtreepaths = "GetSubTreePaths";
+ } // namespace mapper
+ 
+ namespace properties
+@@ -114,27 +116,27 @@ constexpr const char* set = "Set";
+ 
+ namespace power
+ {
+-const static constexpr char* busname = "xyz.openbmc_project.State.Host0";
++const static constexpr char* busname = "xyz.openbmc_project.State.Host";
+ const static constexpr char* interface = "xyz.openbmc_project.State.Host";
+-const static constexpr char* path = "/xyz/openbmc_project/state/host0";
++const static constexpr char* path = "/xyz/openbmc_project/state/host";
+ const static constexpr char* property = "CurrentHostState";
+ } // namespace power
+ 
+ namespace chassis
+ {
+-const static constexpr char* busname = "xyz.openbmc_project.State.Chassis0";
++const static constexpr char* busname = "xyz.openbmc_project.State.Chassis";
+ const static constexpr char* interface = "xyz.openbmc_project.State.Chassis";
+-const static constexpr char* path = "/xyz/openbmc_project/state/chassis0";
++const static constexpr char* path = "/xyz/openbmc_project/state/chassis";
+ const static constexpr char* property = "CurrentPowerState";
+ const static constexpr char* sOn = ".On";
+ } // namespace chassis
+ 
+ namespace post
+ {
+-const static constexpr char* busname = "xyz.openbmc_project.State.Host0";
++const static constexpr char* busname = "xyz.openbmc_project.State.Host";
+ const static constexpr char* interface =
+     "xyz.openbmc_project.State.OperatingSystem.Status";
+-const static constexpr char* path = "/xyz/openbmc_project/state/host0";
++const static constexpr char* path = "/xyz/openbmc_project/state/host";
+ const static constexpr char* property = "OperatingSystemState";
+ } // namespace post
+ 
+@@ -204,6 +206,19 @@ inline PowerState getPowerState(const SensorBaseConfigMap& cfg)
+     return state;
+ }
+ 
++inline size_t getSlotId(const SensorBaseConfigMap& cfg)
++{
++    size_t slotId = 0; // If there's no slotId defined, default to chassis0
++    auto findSlotId = cfg.find("SlotId");
++    if (findSlotId != cfg.end())
++    {
++        std::string readSlot =
++            std::visit(VariantToStringVisitor(), findSlotId->second);
++        slotId = std::stod(readSlot);
++    }
++    return slotId;
++}
++
+ inline float getPollRate(const SensorBaseConfigMap& cfg, float dflt)
+ {
+     float pollRate = dflt;
+@@ -246,7 +261,8 @@ struct GetSensorConfiguration :
+     GetSensorConfiguration(
+         std::shared_ptr<sdbusplus::asio::connection> connection,
+         std::function<void(ManagedObjectType& resp)>&& callbackFunc) :
+-        dbusConnection(std::move(connection)), callback(std::move(callbackFunc))
++        dbusConnection(std::move(connection)),
++        callback(std::move(callbackFunc))
+     {}
+ 
+     void getPath(const std::string& path, const std::string& interface,
+diff --git a/src/sensor.hpp b/src/sensor.hpp
+index 82798dc..be25504 100644
+--- a/src/sensor.hpp
++++ b/src/sensor.hpp
+@@ -63,7 +63,7 @@ struct Sensor
+            const std::string& configurationPath, const std::string& objectType,
+            bool isSettable, bool isMutable, const double max, const double min,
+            std::shared_ptr<sdbusplus::asio::connection>& conn,
+-           PowerState readState = PowerState::always) :
++           PowerState readState = PowerState::always, size_t slotId = 0) :
+         name(sensor_paths::escapePathForDbus(name)),
+         configurationPath(configurationPath),
+         configInterface(configInterfaceName(objectType)),
+@@ -71,7 +71,7 @@ struct Sensor
+         minValue(min), thresholds(std::move(thresholdData)),
+         hysteresisTrigger((max - min) * 0.01),
+         hysteresisPublish((max - min) * 0.0001), dbusConnection(conn),
+-        readState(readState),
++        readState(readState), slotId(slotId),
+         instrumentation(enableInstrumentation
+                             ? std::make_unique<SensorInstrumentation>()
+                             : nullptr)
+@@ -105,6 +105,7 @@ struct Sensor
+     double hysteresisPublish;
+     std::shared_ptr<sdbusplus::asio::connection> dbusConnection;
+     PowerState readState;
++    size_t slotId;
+     size_t errCount{0};
+     std::unique_ptr<SensorInstrumentation> instrumentation;
+ 
+@@ -425,7 +426,7 @@ struct Sensor
+ 
+     bool readingStateGood() const
+     {
+-        return ::readingStateGood(readState);
++        return ::readingStateGood(readState, slotId);
+     }
+ 
+     void markFunctional(bool isFunctional)
+-- 
+2.25.1
+

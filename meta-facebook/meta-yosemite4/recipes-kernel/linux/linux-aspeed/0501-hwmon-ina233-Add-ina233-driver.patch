@@ -1,7 +1,7 @@
-From 1494c696e7e9bbace4176872ea79f5aa4da9e7cb Mon Sep 17 00:00:00 2001
+From f94d8f48c31dd344b22be0950af52825331e8018 Mon Sep 17 00:00:00 2001
 From: DelphineCCChiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 21 Sep 2023 18:35:19 +0800
-Subject: [PATCH 501/525] hwmon: (ina233) Add ina233 driver
+Subject: [PATCH 501/532] hwmon: (ina233) Add ina233 driver
 
 This commit depends on the patch below:
 [1] https://lore.kernel.org/all/20230920054739.1561080-1-Delphine_CC_Chiu@wiwynn.com/
@@ -174,5 +174,5 @@ index 000000000000..33736e5049a9
 +MODULE_IMPORT_NS(PMBUS);
 +
 -- 
-2.25.1
+2.44.2
 

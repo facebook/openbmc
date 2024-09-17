@@ -1,0 +1,38 @@
+From 29afdd8498dffd9e1974c6b84b5286dca9b2728b Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Fri, 30 Aug 2024 15:45:27 +0800
+Subject: [PATCH 1010/1010] ARM: dts: aspeed: Harma: revise i2c0 and i2c2 duty
+ cycle
+
+Revise the duty cycle for I2C0 and I2C2 to match the definitions in the datasheet.
+This patch only in meta,
+base on:https://github.com/facebook/openbmc/blob/helium/common/recipes-kernel/linux/6.6/0160-aspeed-i2c-add-clock-duty-cycle-property.patch
+
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 6e2f03dba40e..a029b596685f 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -206,6 +206,7 @@ &kcs3 {
+ 
+ &i2c0 {
+ 	status = "okay";
++	i2c-clk-high-min-percent = <68>;
+ 
+ 	pwm@5e{
+ 		compatible = "max31790";
+@@ -261,6 +262,7 @@ eeprom@50 {
+ 
+ &i2c2 {
+ 	status = "okay";
++	i2c-clk-high-min-percent = <68>;
+ 
+ 	pwm@5e{
+ 		compatible = "max31790";
+-- 
+2.44.2
+

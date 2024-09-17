@@ -1,7 +1,7 @@
-From 42c2e5aa31aa93d19438084091036c7457b00ffc Mon Sep 17 00:00:00 2001
+From 3f76401ce319f506149c66fc1cfa6bd9be3a193f Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 12 Apr 2024 11:14:31 +0800
-Subject: [PATCH] ARM: dts: aspeed: Harma: Modify GPIO line name
+Subject: [PATCH 1002/1010] ARM: dts: aspeed: Harma: Modify GPIO line name
 
 Add:
 "reset-cause-platrst", "cpu0-err-alert", "leakage-detect-alert",
@@ -21,10 +21,10 @@ Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
  1 file changed, 29 insertions(+), 9 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index 068f9bef3ca8..1faecfe55991 100644
+index fd85d5e34a55..ec7a4bde1333 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -332,6 +332,12 @@ gpio@31 {
+@@ -393,6 +393,12 @@ gpio@31 {
  		reg = <0x31>;
  		gpio-controller;
  		#gpio-cells = <2>;
@@ -36,8 +36,8 @@ index 068f9bef3ca8..1faecfe55991 100644
 +		"","","","";
  	};
  
- 	i2c-mux@71 {
-@@ -471,7 +477,8 @@ &gpio0 {
+ 	// PTTV FRU
+@@ -559,7 +565,8 @@ &gpio0 {
  	/*A0-A7*/	"","","","","","","","",
  	/*B0-B7*/	"","","","",
  			"bmc-spi-mux-select-0","led-identify","","",
@@ -47,7 +47,7 @@ index 068f9bef3ca8..1faecfe55991 100644
  	/*D0-D7*/	"","","sol-uart-select","","","","","",
  	/*E0-E7*/	"","","","","","","","",
  	/*F0-F7*/	"","","","","","","","",
-@@ -480,7 +487,8 @@ &gpio0 {
+@@ -568,7 +575,8 @@ &gpio0 {
  	/*I0-I7*/	"","","","","","","","",
  	/*J0-J7*/	"","","","","","","","",
  	/*K0-K7*/	"","","","","","","","",
@@ -57,7 +57,7 @@ index 068f9bef3ca8..1faecfe55991 100644
  	/*M0-M7*/	"","","","","","","","",
  	/*N0-N7*/	"led-postcode-0","led-postcode-1",
  			"led-postcode-2","led-postcode-3",
-@@ -499,7 +507,16 @@ &gpio0 {
+@@ -588,7 +596,16 @@ &gpio0 {
  	/*W0-W7*/	"","","","","","","","",
  	/*X0-X7*/	"","","","","","","","",
  	/*Y0-Y7*/	"","","","","","","","",
@@ -75,7 +75,7 @@ index 068f9bef3ca8..1faecfe55991 100644
  };
  
  &sgpiom0 {
-@@ -548,10 +565,10 @@ &sgpiom0 {
+@@ -636,10 +653,10 @@ &sgpiom0 {
  	"","reset-control-cpu0-p1-mux",
  	"","reset-control-e1s-mux",
  	"power-host-good","reset-control-mb-mux",
@@ -88,7 +88,7 @@ index 068f9bef3ca8..1faecfe55991 100644
  	"presence-e1s-0","reset-control-usb-hub",
  	"","reset-control",
  	/*E4-E7 line 72-79*/
-@@ -602,13 +619,16 @@ &sgpiom0 {
+@@ -690,13 +707,16 @@ &sgpiom0 {
  	"SLOT_ID_BCB_2","",
  	"SLOT_ID_BCB_3","",
  	/*K0-K3 line 160-167*/
@@ -110,5 +110,5 @@ index 068f9bef3ca8..1faecfe55991 100644
  	"","","","","","","","",
  	/*M4-M7 line 200-207*/
 -- 
-2.25.1
+2.44.2
 

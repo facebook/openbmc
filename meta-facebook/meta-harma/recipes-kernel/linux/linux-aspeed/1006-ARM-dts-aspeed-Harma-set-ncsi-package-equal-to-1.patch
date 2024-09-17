@@ -1,11 +1,10 @@
-From 72b679d53f6a3a07c8efa59a2a9f8fdc34f7daa2 Mon Sep 17 00:00:00 2001
+From ec14f3f7558974df8f12f7e3b8f23dbaaaf05473 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
-Date: Fri, 14 Jun 2024 13:33:23 +0800
-Subject: [PATCH 1004/1010] ARM: dts: aspeed: Harma: stop NIC run time polling
+Date: Wed, 19 Jun 2024 16:14:08 +0800
+Subject: [PATCH 1006/1010] ARM: dts: aspeed: Harma: set ncsi package equal to
+ 1
 
-Add ncsi-ctrl,no-channel-monitor property.
-
-link lore:https://lore.kernel.org/all/20240118052220.1906721-1-Delphine_CC_Chiu@wiwynn.com/
+Set ncsi package=1.
 
 Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
 ---
@@ -13,14 +12,14 @@ Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index 279ed49eee9e..65421d18299c 100644
+index 32e4d4530e9a..9d3010c6d93b 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -133,6 +133,7 @@ &mac3 {
- 	pinctrl-names = "default";
+@@ -134,6 +134,7 @@ &mac3 {
  	pinctrl-0 = <&pinctrl_rmii4_default>;
  	use-ncsi;
-+	ncsi-ctrl,no-channel-monitor;
+ 	ncsi-ctrl,no-channel-monitor;
++	ncsi-package = <1>;
  };
  
  &fmc {

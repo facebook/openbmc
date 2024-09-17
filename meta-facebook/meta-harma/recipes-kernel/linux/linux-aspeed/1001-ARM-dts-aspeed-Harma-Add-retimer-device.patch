@@ -1,7 +1,7 @@
-From 03ed64fab26448f2c4a4d5ef7b250736f9a00edf Mon Sep 17 00:00:00 2001
+From 3a9e4095960fdaed1d3b0f3554d36bb1f636c883 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 12 Apr 2024 12:45:57 +0800
-Subject: [PATCH] ARM: dts: aspeed: Harma: Add retimer device
+Subject: [PATCH 1001/1010] ARM: dts: aspeed: Harma: Add retimer device
 
 Add pt5161l device in i2c bus12 and bus21.
 link lore:https://lore.kernel.org/all/20240412091600.2534693-12-peteryin.openbmc@gmail.com/
@@ -12,10 +12,10 @@ Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
  1 file changed, 8 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index d992c884bb35..068f9bef3ca8 100644
+index ccb45ca840cd..fd85d5e34a55 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -250,6 +250,10 @@ imux21: i2c@1 {
+@@ -299,6 +299,10 @@ imux21: i2c@1 {
  			#address-cells = <1>;
  			#size-cells = <0>;
  			reg = <1>;
@@ -26,7 +26,7 @@ index d992c884bb35..068f9bef3ca8 100644
  		};
  	};
  };
-@@ -370,6 +374,10 @@ &i2c11 {
+@@ -429,6 +433,10 @@ eeprom@52 {
  
  &i2c12 {
  	status = "okay";
@@ -38,5 +38,5 @@ index d992c884bb35..068f9bef3ca8 100644
  
  &i2c13 {
 -- 
-2.25.1
+2.44.2
 

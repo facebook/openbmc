@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <gpiod.h>
 #include <syslog.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
@@ -98,15 +99,79 @@ int CpldComponent::get_version(json& j) {
   return FW_STATUS_SUCCESS;
 }
 
+class GpioControlCpld : public CpldComponent {
+public:
+  GpioControlCpld(const std::string& fru, const std::string& comp, uint8_t type, void* i2c_attr, const std::string& linename, bool high_active)
+    : CpldComponent(fru, comp, type, i2c_attr), is_high_active(high_active), linename(linename) {}
+
+  ~GpioControlCpld() {}
+
+  int update(std::string image)
+  {
+    int ret;
+    gpiod_line* line = gpiod_line_find(linename.c_str());
+    if (!line) {
+      std::cerr << "Failed to find GPIO line: " << linename << std::endl;
+      throw std::runtime_error("GPIO line not found");
+    }
+
+    if (gpiod_line_request_output(line, "fw-util", is_high_active ? 1 : 0) != 0) {
+      std::cerr << "Failed to request GPIO line as output" << std::endl;
+      gpiod_line_close_chip(line);
+      throw std::runtime_error("Failed to request GPIO line as output");
+    }
+    msleep(100);
+
+    ret = CpldComponent::update(image);
+
+    gpiod_line_set_value(line, is_high_active ? 0 : 1);
+    gpiod_line_release(line);
+    gpiod_line_close_chip(line);
+
+    return ret;
+  }
+
+  int fupdate(std::string image)
+  {
+    return update(image);
+  }
+    
+  int get_version(json& j)
+  {
+    int ret;
+    gpiod_line* line = gpiod_line_find(linename.c_str());
+    if (!line) {
+      std::cerr << "Failed to find GPIO line: " << linename << std::endl;
+      throw std::runtime_error("GPIO line not found");
+    }
+
+    if (gpiod_line_request_output(line, "fw-util", is_high_active ? 1 : 0) != 0) {
+      std::cerr << "Failed to request GPIO line as output" << std::endl;
+      gpiod_line_close_chip(line);
+      throw std::runtime_error("Failed to request GPIO line as output");
+    }
+    msleep(100);
+
+    ret = CpldComponent::get_version(j);
+
+    gpiod_line_set_value(line, is_high_active ? 0 : 1);
+    gpiod_line_release(line);
+    gpiod_line_close_chip(line);
+
+    return ret;
+  }
+
+private:
+  bool is_high_active;
+  std::string linename;
+};
+
 static altera_max10_attr_t scm_cpld_attr = {
   7, 0x31, CFM_IMAGE_1, CFM0_10M16_START_ADDR, CFM0_10M16_END_ADDR,
   ON_CHIP_FLASH_IP_CSR_BASE, ON_CHIP_FLASH_IP_DATA_REG, DUAL_BOOT_IP_BASE,
   I2C_BIG_ENDIAN
 };
+static i2c_attr_t pdb_cpld_attr = {14, 0x40, nullptr};
 
-static i2c_attr_t pdb_cpld_attr = {
-    14, 0x40, nullptr
-};
-
-CpldComponent scm_cpld("scm", "cpld", MAX10_10M16, &scm_cpld_attr);
+GpioControlCpld scm_cpld("scm", "cpld", MAX10_10M16, &scm_cpld_attr, "USBDBG_IPMI_EN_L", true);
 CpldComponent pdb_cpld("pdb", "cpld", LCMXO3_2100C, &pdb_cpld_attr);

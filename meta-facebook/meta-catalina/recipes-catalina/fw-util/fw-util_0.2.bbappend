@@ -39,6 +39,7 @@ LOCAL_URI += " \
 
 DEPENDS += " \
     libfpga \
+    libgpiod \
     libgpio-ctrl \
     libipmi \
     libmcu \

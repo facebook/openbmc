@@ -13,4 +13,5 @@ deps += [
     dependency('libvr'),
     dependency('libfpga'),
     dependency('libnl-wrapper'),
+    dependency('libgpiod'),
 ]

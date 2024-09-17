@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+version=$(fw-util pdb --version vr_n2 | awk -F ',' '{print $1}' | awk -F ' ' '{print $3, $4}')
+echo "version: $version"
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    /xyz/openbmc_project/software/chassis/pdb_vr_n2 \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

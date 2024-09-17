@@ -1,0 +1,12 @@
+[Unit]
+Description=FW Version Fetch for {SERVICE}
+After=xyz.openbmc_project.Settings.service
+After={AFTER}
+Before={BEFORE}
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/fw-versions/{SERVICE} %i
+
+[Install]
+WantedBy={WANTEDBY}

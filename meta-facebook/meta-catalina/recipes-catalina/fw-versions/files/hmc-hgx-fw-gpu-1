@@ -1,0 +1,24 @@
+#!/bin/bash
+set -e
+
+max_retry_count=30
+retry_delay_sec=10
+
+for ((i=1; i<=max_retry_count; i++))
+do
+    if ! version=$(hmc-util --version HGX_FW_GPU_1); then
+        echo "failed to get version, retry after ${retry_delay_sec} seconds (count: ${i})"
+        sleep "$retry_delay_sec"
+    else
+        version=$(echo "$version" | awk '{print $NF}')
+        echo "version: $version"
+        busctl set-property \
+            xyz.openbmc_project.Settings \
+            /xyz/openbmc_project/software/chassis/HGX_FW_GPU_1 \
+            xyz.openbmc_project.Software.Version \
+            Version "s" "$version"
+        exit 0
+    fi
+done
+
+exit 1

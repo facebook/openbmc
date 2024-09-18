@@ -20,6 +20,7 @@ IMAGE_INSTALL += " \
   kcsd \
   mdio-util \
   flashrom \
+  watchdog \
   "
 
 # Add vboot-utils

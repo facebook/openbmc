@@ -1,0 +1,127 @@
+From 82633035d07ba497bcc85230b6bced7050e762b9 Mon Sep 17 00:00:00 2001
+From: Marvin Lin <milkfafa@gmail.com>
+Date: Fri, 30 Aug 2024 13:38:52 +0800
+Subject: [PATCH] configuration: yv4: set mctp i3c information for SD and WF
+
+Set mctp i3c information for SD and WF.
+
+Signed-off-by: Joseph Liu <kwliu@nuvoton.com>
+Signed-off-by: Marvin Lin <milkfafa@gmail.com>
+---
+ configurations/yosemite4_sentineldome_t1.json  |  6 +++---
+ .../yosemite4_sentineldome_t1_retimer.json     |  6 +++---
+ configurations/yosemite4_sentineldome_t2.json  |  6 +++---
+ .../yosemite4_sentineldome_t2_retimer.json     |  6 +++---
+ configurations/yosemite4_wailuafalls.json      | 18 +++++++++---------
+ 5 files changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/configurations/yosemite4_sentineldome_t1.json b/configurations/yosemite4_sentineldome_t1.json
+index 8ffdc8d..7e8640a 100644
+--- a/configurations/yosemite4_sentineldome_t1.json
++++ b/configurations/yosemite4_sentineldome_t1.json
+@@ -330,9 +330,9 @@
+             ]
+         },
+         {
+-            "Address": ["0x20"],
+-            "Bus": "$bus % 16",
+-            "Class": "I2C",
++            "Address": ["7", "236", "128", "1", "0", "$bus % 16 * 5"],
++            "Bus": "$bus / 4 - 4",
++            "Class": "I3C",
+             "EndpointId": "$bus % 15 * 10",
+             "IANA": "0015A000",
+             "Name": "BIC",
+diff --git a/configurations/yosemite4_sentineldome_t1_retimer.json b/configurations/yosemite4_sentineldome_t1_retimer.json
+index 87407cc..846736f 100644
+--- a/configurations/yosemite4_sentineldome_t1_retimer.json
++++ b/configurations/yosemite4_sentineldome_t1_retimer.json
+@@ -349,9 +349,9 @@
+             ]
+         },
+         {
+-            "Address": ["0x20"],
+-            "Bus": "$bus % 16",
+-            "Class": "I2C",
++            "Address": ["7", "236", "128", "1", "0", "$bus % 16 * 5"],
++            "Bus": "$bus / 4 - 4",
++            "Class": "I3C",
+             "EndpointId": "$bus % 15 * 10",
+             "IANA": "0015A000",
+             "Name": "BIC",
+diff --git a/configurations/yosemite4_sentineldome_t2.json b/configurations/yosemite4_sentineldome_t2.json
+index ef60152..9ec8cf4 100644
+--- a/configurations/yosemite4_sentineldome_t2.json
++++ b/configurations/yosemite4_sentineldome_t2.json
+@@ -389,9 +389,9 @@
+             ]
+         },
+         {
+-            "Address": ["0x20"],
+-            "Bus": "$bus % 16",
+-            "Class": "I2C",
++            "Address": ["7", "236", "128", "1", "0", "$bus % 16 * 5"],
++            "Bus": "$bus / 4 - 4",
++            "Class": "I3C",
+             "EndpointId": "$bus % 15 * 10",
+             "IANA": "0015A000",
+             "Name": "BIC",
+diff --git a/configurations/yosemite4_sentineldome_t2_retimer.json b/configurations/yosemite4_sentineldome_t2_retimer.json
+index 9a2e061..5674fa9 100644
+--- a/configurations/yosemite4_sentineldome_t2_retimer.json
++++ b/configurations/yosemite4_sentineldome_t2_retimer.json
+@@ -408,9 +408,9 @@
+             ]
+         },
+         {
+-            "Address": ["0x20"],
+-            "Bus": "$bus % 16",
+-            "Class": "I2C",
++            "Address": ["7", "236", "128", "1", "0", "$bus % 16 * 5"],
++            "Bus": "$bus / 4 - 4",
++            "Class": "I3C",
+             "EndpointId": "$bus % 15 * 10",
+             "IANA": "0015A000",
+             "Name": "BIC",
+diff --git a/configurations/yosemite4_wailuafalls.json b/configurations/yosemite4_wailuafalls.json
+index 3fa9dd4..0510d6f 100644
+--- a/configurations/yosemite4_wailuafalls.json
++++ b/configurations/yosemite4_wailuafalls.json
+@@ -209,25 +209,25 @@
+             ]
+         },
+         {
+-            "Address": ["0x20"],
+-            "Bus": "$bus % 16",
+-            "Class": "I2C",
++            "Address": ["7", "236", "128", "1", "0", "$bus % 16 * 5"],
++            "Bus": "$bus / 4 - 4",
++            "Class": "I3C",
+             "EndpointId": "$bus % 15 * 10 + 2",
+             "Name": "BIC",
+             "Type": "MCTPEndpoint"
+         },
+         {
+-            "Address": ["0x20"],
+-            "Bus": "$bus % 16",
+-            "Class": "I2C",
++            "Address": ["7", "236", "128", "1", "0", "$bus % 16 * 5"],
++            "Bus": "$bus / 4 - 4",
++            "Class": "I3C",
+             "EndpointId": "$bus % 15 * 10 + 4",
+             "Name": "CXL1",
+             "Type": "MCTPEndpoint"
+         },
+         {
+-            "Address": ["0x20"],
+-            "Bus": "$bus % 16",
+-            "Class": "I2C",
++            "Address": ["7", "236", "128", "1", "0", "$bus % 16 * 5"],
++            "Bus": "$bus / 4 - 4",
++            "Class": "I3C",
+             "EndpointId": "$bus % 15 * 10 + 5",
+             "Name": "CXL2",
+             "Type": "MCTPEndpoint"
+-- 
+2.34.1
+

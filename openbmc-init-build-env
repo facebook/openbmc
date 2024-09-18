@@ -54,6 +54,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-tahan:lf-master
   meta-waimeacanyon:lf-master
   meta-yosemite4:lf-master
+  meta-yosemite4n:lf-master
 # dunfell platforms (pending upgrade)
   meta-cmm:lf-dunfell
   meta-fbsp:lf-dunfell

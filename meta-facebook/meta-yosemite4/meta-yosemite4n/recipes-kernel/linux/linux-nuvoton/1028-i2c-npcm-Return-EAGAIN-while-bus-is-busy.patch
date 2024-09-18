@@ -1,0 +1,38 @@
+From 241620bf50a713a7d32d99e9da45a98d56d92b40 Mon Sep 17 00:00:00 2001
+From: Marvin Lin <milkfafa@gmail.com>
+Date: Wed, 4 Sep 2024 16:25:55 +0800
+Subject: [PATCH] i2c: npcm: Return EAGAIN while bus is busy
+
+Return EAGAIN while bus is busy.
+
+Signed-off-by: Marvin Lin <milkfafa@gmail.com>
+---
+ drivers/i2c/busses/i2c-npcm7xx.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/busses/i2c-npcm7xx.c b/drivers/i2c/busses/i2c-npcm7xx.c
+index 6e649dc6c99e..fe8c104712d3 100644
+--- a/drivers/i2c/busses/i2c-npcm7xx.c
++++ b/drivers/i2c/busses/i2c-npcm7xx.c
+@@ -2268,7 +2268,7 @@ static int npcm_i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+ 
+ 	/* if there was BER, check if need to recover the bus: */
+ 	if (bus->cmd_err == -EAGAIN)
+-		bus->cmd_err = i2c_recover_bus(adap);
++		i2c_recover_bus(adap);
+ 
+ 	/*
+ 	 * After any type of error, check if LAST bit is still set,
+@@ -2291,6 +2291,9 @@ static int npcm_i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+ #else
+ 	npcm_i2c_int_enable(bus, false);
+ #endif
++	if (bus->cmd_err == -EBUSY)
++		bus->cmd_err = -EAGAIN;
++
+ 	return bus->cmd_err;
+ }
+ 
+-- 
+2.34.1
+

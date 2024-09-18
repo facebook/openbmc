@@ -1,0 +1,50 @@
+From f4965a886c1f1e331093cc85516e38fa2be52f2d Mon Sep 17 00:00:00 2001
+From: Stanley Chu <yschu@nuvoton.com>
+Date: Tue, 9 Apr 2024 16:17:55 +0800
+Subject: [PATCH] i3c: expose interface for doing daa request
+
+Allow user space to request for doing daa.
+
+Example: request i3c0 to do daa.
+echo 1 > /sys/bus/i3c/devices/i3c-0/discover
+
+Signed-off-by: Stanley Chu <yschu@nuvoton.com>
+---
+ drivers/i3c/master.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/i3c/master.c b/drivers/i3c/master.c
+index 046070298a64..9279ea730abb 100644
+--- a/drivers/i3c/master.c
++++ b/drivers/i3c/master.c
+@@ -638,6 +638,19 @@ static ssize_t hotjoin_show(struct device *dev, struct device_attribute *da, cha
+ }
+ 
+ static DEVICE_ATTR_RW(hotjoin);
++static ssize_t discover_store(struct device *dev, struct device_attribute *da,
++			      const char *buf, size_t count)
++{
++	struct i3c_master_controller *master;
++	ssize_t ret = count;
++
++	master = dev_to_i3cmaster(dev);
++	dev_dbg(&master->dev, "Request master to do DAA\n");
++	i3c_master_do_daa(master);
++
++	return ret;
++}
++static DEVICE_ATTR_WO(discover);
+ 
+ static struct attribute *i3c_masterdev_attrs[] = {
+ 	&dev_attr_mode.attr,
+@@ -650,6 +663,7 @@ static struct attribute *i3c_masterdev_attrs[] = {
+ 	&dev_attr_dynamic_address.attr,
+ 	&dev_attr_hdrcap.attr,
+ 	&dev_attr_hotjoin.attr,
++	&dev_attr_discover.attr,
+ 	NULL,
+ };
+ ATTRIBUTE_GROUPS(i3c_masterdev);
+-- 
+2.34.1
+

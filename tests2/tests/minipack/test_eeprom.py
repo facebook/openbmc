@@ -20,10 +20,8 @@
 import unittest
 
 from common.base_eeprom_test import CommonEepromTest
-from utils.test_utils import qemu_check
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for weutil

@@ -17,12 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class BaseEepromTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)

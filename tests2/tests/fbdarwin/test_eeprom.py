@@ -24,10 +24,8 @@ import unittest
 from common.base_eeprom_test import CommonEepromTest
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import qemu_check
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FBDARWINEepromTest(CommonEepromTest):
     """
     Base Class for FBDARWIN EEPROM fields.

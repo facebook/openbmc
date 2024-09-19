@@ -22,18 +22,16 @@ dump_fpga_version() {
     local fpga_dir=$1
     local fpga_name=$2
 
-    fpga_ver=`head -n 1 ${fpga_dir}/fpga_ver 2> /dev/null`
-    if [ $? -ne 0 ]; then
+    if ! fpga_ver=$(head -n 1 "${fpga_dir}/fpga_ver" 2> /dev/null); then
         echo "${fpga_name} is not detected"
         return
     fi
-    fpga_sub_ver=`head -n 1 ${fpga_dir}/fpga_sub_ver 2> /dev/null`
-    if [ $? -ne 0 ]; then
+    if ! fpga_sub_ver=$(head -n 1 "${fpga_dir}/fpga_sub_ver" 2> /dev/null); then
         echo "${fpga_name} is not detected"
         return
     fi
 
-    echo "${fpga_name}: $(($fpga_ver)).$(($fpga_sub_ver))"
+    echo "${fpga_name}: $((fpga_ver)).$((fpga_sub_ver))"
 }
 
 echo -n "DOMFPGA1: "
@@ -41,8 +39,8 @@ bus=13
 addr=0x60
 dom_fpga1_ver=$(i2cget -f -y $bus $addr 0x01 2>/dev/null)
 dom_fpga1_ver_sub=$(i2cget -f -y $bus $addr 0x02 2>/dev/null)
-if [ ! -z $dom_fpga1_ver ]; then
-    echo "$(($dom_fpga1_ver)).$(($dom_fpga1_ver_sub))"
+if [ -n "$dom_fpga1_ver" ]; then
+    echo "$((dom_fpga1_ver)).$((dom_fpga1_ver_sub))"
 else
     echo "Not found"
 fi
@@ -52,8 +50,8 @@ bus=5
 addr=0x60
 dom_fpga2_ver=$(i2cget -f -y $bus $addr 0x01 2>/dev/null)
 dom_fpga2_ver_sub=$(i2cget -f -y $bus $addr 0x02 2>/dev/null)
-if [ ! -z $dom_fpga2_ver ]; then
-    echo "$(($dom_fpga2_ver)).$(($dom_fpga2_ver_sub))"
+if [ -n "$dom_fpga2_ver" ]; then
+    echo "$((dom_fpga2_ver)).$((dom_fpga2_ver_sub))"
 else
     echo "Not found"
 fi

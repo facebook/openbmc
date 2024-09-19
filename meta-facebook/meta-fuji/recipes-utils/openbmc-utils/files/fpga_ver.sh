@@ -28,12 +28,12 @@ dump_fpga_version() {
 
     if ! fpga_ver=$(head -n 1 "${fpga_dir}/fpga_ver" 2> /dev/null); then
         echo "${fpga_name} is not detected"
-        exit 1
+        exit_code=1
 
     fi
     if ! fpga_sub_ver=$(head -n 1 "${fpga_dir}/fpga_sub_ver" 2> /dev/null); then
         echo "${fpga_name} is not detected"
-        exit 1
+        exit_code=1
     fi
 
     echo "${fpga_name}: $((fpga_ver)).$((fpga_sub_ver))"

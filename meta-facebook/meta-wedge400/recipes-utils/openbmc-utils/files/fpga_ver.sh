@@ -18,40 +18,32 @@
 # Boston, MA 02110-1301 USA
 #
 
-dump_fpga_version() {
-    local fpga_dir=$1
-    local fpga_name=$2
+exit_code=0
 
-    if ! fpga_ver=$(head -n 1 "${fpga_dir}/fpga_ver" 2> /dev/null); then
+dump_fpga_version() {
+    local bus=$1
+    local addr=$2
+    local fpga_name=$3
+
+    if ! fpga_ver=$(i2cget -f -y "$bus" "$addr" 0x01 2>/dev/null); then
         echo "${fpga_name} is not detected"
+        exit_code=1
         return
     fi
-    if ! fpga_sub_ver=$(head -n 1 "${fpga_dir}/fpga_sub_ver" 2> /dev/null); then
+
+    if ! fpga_sub_ver=$(i2cget -f -y "$bus" "$addr" 0x02 2>/dev/null); then
         echo "${fpga_name} is not detected"
+        exit_code=1
         return
     fi
 
     echo "${fpga_name}: $((fpga_ver)).$((fpga_sub_ver))"
 }
 
-echo -n "DOMFPGA1: "
-bus=13
-addr=0x60
-dom_fpga1_ver=$(i2cget -f -y $bus $addr 0x01 2>/dev/null)
-dom_fpga1_ver_sub=$(i2cget -f -y $bus $addr 0x02 2>/dev/null)
-if [ -n "$dom_fpga1_ver" ]; then
-    echo "$((dom_fpga1_ver)).$((dom_fpga1_ver_sub))"
-else
-    echo "Not found"
-fi
+dump_fpga_version 13 0x60 "DOMFPGA1"
+dump_fpga_version 5 0x60 "DOMFPGA2"
 
-echo -n "DOMFPGA2: "
-bus=5
-addr=0x60
-dom_fpga2_ver=$(i2cget -f -y $bus $addr 0x01 2>/dev/null)
-dom_fpga2_ver_sub=$(i2cget -f -y $bus $addr 0x02 2>/dev/null)
-if [ -n "$dom_fpga2_ver" ]; then
-    echo "$((dom_fpga2_ver)).$((dom_fpga2_ver_sub))"
-else
-    echo "Not found"
+if [ "$exit_code" -ne 0 ]; then
+    echo "Not all DOMFPGA or PIM were detected/inserted. Please review the logs above.... exiting"
+    exit 1
 fi

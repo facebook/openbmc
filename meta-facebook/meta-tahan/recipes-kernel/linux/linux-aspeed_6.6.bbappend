@@ -1,4 +1,4 @@
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the

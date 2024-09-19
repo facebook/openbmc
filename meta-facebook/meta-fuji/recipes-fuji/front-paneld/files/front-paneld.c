@@ -193,11 +193,11 @@ pim_driver_add(uint8_t num) {
   uint8_t fru = num - 1 + FRU_PIM1;
   uint8_t i = 0;
   struct dev_bus_addr *pim_device = PIM_I2C_DEVICE_CHANGE_LIST[num - 1];
+  struct dev_addr_driver *pim_hsc = NULL;
   uint8_t pim_type;
   pim_i2c_mux_bind(num);
-  sleep(2);
+  sleep(5);
 
-  struct dev_addr_driver *pim_hsc = pal_get_pim_hsc(fru);
   /* 0 channel of paca9548 */
   /* need to add DOM FPGA before getting PIM Type*/
   bus_id = bus + PIM_DOM_DEVICE_CH  ;
@@ -262,6 +262,7 @@ pim_driver_add(uint8_t num) {
    *    LM25066  0x44
    */
   bus_id = bus + PIM_HSC_DEVICE_CH  ;
+  pim_hsc = pal_get_pim_hsc(fru);
   if ( pim_hsc == NULL ){
     syslog(LOG_CRIT, "Cannot find device:   %s:0x%02x %s:0x%02x on PIM %d Bus:%d",
                     ADM1278_DRIVER, PIM_HSC_ADM1278_ADDR,

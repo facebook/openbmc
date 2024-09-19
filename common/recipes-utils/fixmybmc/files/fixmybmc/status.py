@@ -23,8 +23,30 @@ class Status:
 
 
 class Error(Status):
-    def __init__(self, exception) -> None:
+    def __init__(
+        self,
+        exception=None,
+        description=None,
+        cmd_status=None,
+    ) -> None:
         self.exception = exception
+        self.description = description
+        self.cmd_status = cmd_status
+
+    @property
+    def info(self):
+        parts = []
+        if self.exception is not None:
+            parts.append(self.exception)
+        if self.description is not None:
+            parts.append(self.description)
+        if self.cmd_status.args:
+            parts.append(f"Command: {' '.join(self.cmd_status.args)}")
+        if self.cmd_status.stdout is not None:
+            parts.append(f"stdout: {self.cmd_status.stdout}")
+        if self.cmd_status.stderr is not None:
+            parts.append(f"stderr: {self.cmd_status.stderr}")
+        return "\n".join(parts) or None
 
 
 class Ok(Status):

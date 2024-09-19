@@ -8,7 +8,7 @@ def indent(text: str, level: int = 1) -> str:
 
 def run_cmd(cmd, **kwargs) -> subprocess.CompletedProcess:
     result = subprocess.run(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, **kwargs
     )
     return result
 

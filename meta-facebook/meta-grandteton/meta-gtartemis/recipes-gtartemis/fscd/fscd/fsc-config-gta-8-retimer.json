@@ -1,5 +1,5 @@
 {
-    "version": "gtartemis-v1.4",
+    "version": "gtartemis-v1.5.3",
     "pwm_transition_value": 65,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -160,15 +160,16 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
         "data": [
-          [67, 17],
-          [68, 20],
-          [69, 21],
-          [70, 22],
-          [71, 23],
-          [72, 24],
-          [73, 25],
-          [74, 26],
-          [75, 27]
+          [64, 17],
+          [65, 23],
+          [66, 24],
+          [67, 25],
+          [68, 26],
+          [69, 27],
+          [70, 28],
+          [71, 29],
+          [72, 30],
+          [73, 31]
         ]
       },
       "cpu_tray_dimm_pid": {
@@ -178,9 +179,9 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 3,
-        "setpoint": 78,
-        "kp": -3,
-        "ki": -0.01,
+        "setpoint": 75,
+        "kp": -6.8,
+        "ki": -0.02,
         "kd": 0
       },
       "cpu_tray_nic_linear": {

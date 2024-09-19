@@ -18,7 +18,11 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		"NW TH5 Blade SCM Board revision:\n"
 		" 0x0: EVT-1\n"
 		" 0x1: EVT-2\n"
-		" 0x3: DVT",
+		" 0x2: EVT-3\n"
+		" 0x3: DVT-1\n"
+		" 0x4: DVT-2\n"
+		" 0x5: PVT\n"
+		" 0x6: MP",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x00,

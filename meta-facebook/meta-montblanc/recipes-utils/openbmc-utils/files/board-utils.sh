@@ -62,8 +62,23 @@ wedge_board_rev() {
         0)
             echo "Revision: EVT-1"
             ;;
+        1)
+            echo "Revision: EVT-2"
+            ;;
+        2)
+            echo "Revision: EVT-3"
+            ;;
         3)
-            echo "Revision: DVT"
+            echo "Revision: DVT-1"
+            ;;
+        4)
+            echo "Revision: DVT-2"
+            ;;
+        5)
+            echo "Revision: PVT"
+            ;;
+        6)
+            echo "Revision: MP"
             ;;
         *) 
             echo "Revision: unknown value [$version_id]"

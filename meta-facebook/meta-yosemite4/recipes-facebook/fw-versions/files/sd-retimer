@@ -4,17 +4,11 @@ set -e
 slot=$1
 eid=$((10 * slot))
 
-versions=$(
-    pldmtool fw_update GetFwParams -m $eid |
-    jq --raw-output '
-        .ComponentParameterEntries |
-        map({ (.ComponentIdentifier|tostring): .ActiveComponentVersionString}) |
-        add
-    '
-)
-
-version_retimer_x16=$(jq --raw-output ".\"4\"" <<< "$versions")
-version_retimer_x8=$(jq --raw-output ".\"5\"" <<< "$versions")
+MAX_RETRIES=3
+RETRY_COUNT=0
+version=""
+formatted_version_retimer_x8=""
+formatted_version_retimer_x16=""
 
 # Function to transform version from 02081900 to 2.8.25
 transform_version() {
@@ -25,20 +19,48 @@ transform_version() {
     echo "$((16#$major)).$((16#$minor)).$((16#$patch))"  # Convert to decimal and format
 }
 
-if [ "$version_retimer_x8" != "ERROR:0" ]; then
-    formatted_version_retimer_x8=$(transform_version "$version_retimer_x8")
-    busctl set-property \
-        xyz.openbmc_project.Settings \
-        "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x8" \
-        xyz.openbmc_project.Software.Version \
-        Version "s" "$formatted_version_retimer_x8"
-fi
+while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+    versions=$(
+        pldmtool fw_update GetFwParams -m $eid |
+        jq --raw-output '
+            .ComponentParameterEntries |
+            map({ (.ComponentIdentifier|tostring): .ActiveComponentVersionString}) |
+            add
+        '
+    )
 
-if [ "$version_retimer_x16" != "ERROR:0" ]; then
-    formatted_version_retimer_x16=$(transform_version "$version_retimer_x16")
-    busctl set-property \
-        xyz.openbmc_project.Settings \
-        "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x16" \
-        xyz.openbmc_project.Software.Version \
-        Version "s" "$formatted_version_retimer_x16"
-fi
+    version_retimer_x16=$(jq --raw-output ".\"4\"" <<< "$versions")
+    version_retimer_x8=$(jq --raw-output ".\"5\"" <<< "$versions")
+
+    if [ -n "$version_retimer_x8" ] && [ -n "$version_retimer_x16" ]; then
+        if [ "$version_retimer_x8" != "ERROR:0" ]; then
+            formatted_version_retimer_x8=$(transform_version "$version_retimer_x8")
+            busctl set-property \
+                xyz.openbmc_project.Settings \
+                "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x8" \
+                xyz.openbmc_project.Software.Version \
+                Version "s" "$formatted_version_retimer_x8"
+        fi
+
+        if [ "$version_retimer_x16" != "ERROR:0" ]; then
+            formatted_version_retimer_x16=$(transform_version "$version_retimer_x16")
+            busctl set-property \
+                xyz.openbmc_project.Settings \
+                "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_retimer_x16" \
+                xyz.openbmc_project.Software.Version \
+                Version "s" "$formatted_version_retimer_x16"
+        fi
+
+        if [ "$version_retimer_x8" != "ERROR:0" ] && [ "$version_retimer_x16" != "ERROR:0" ]; then
+            break
+        else
+            echo "Version is ERROR, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            sleep 5
+        fi
+    else
+        echo "Version is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+    fi
+done

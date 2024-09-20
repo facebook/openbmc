@@ -4,18 +4,37 @@ set -e
 slot=$1
 eid=$((10 * slot))
 
-version=$(
-    pldmtool fw_update GetFwParams -m $eid |
-        jq --raw-output '.ActiveComponentImageSetVersionString'
-)
+MAX_RETRIES=3
+RETRY_COUNT=0
+version=""
 
 if [ -z "$version" ]; then
     echo "Failed to get slot$slot sd bic version"
     exit 1
 fi
 
-busctl set-property \
-    xyz.openbmc_project.Settings \
-    "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_bic" \
-    xyz.openbmc_project.Software.Version \
-    Version "s" "$version"
+while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+    version=$(
+        pldmtool fw_update GetFwParams -m $eid |
+            jq --raw-output '.ActiveComponentImageSetVersionString'
+    )
+
+    if [ -n "$version" ]; then
+        busctl set-property \
+            xyz.openbmc_project.Settings \
+            "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_bic" \
+            xyz.openbmc_project.Software.Version \
+            Version "s" "$version"
+
+        break
+    else
+        echo "Version is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+    fi
+done
+
+if [ "$RETRY_COUNT" -eq "$MAX_RETRIES" ]; then
+    echo "Failed to get slot$slot sd bic version"
+    exit 1
+fi

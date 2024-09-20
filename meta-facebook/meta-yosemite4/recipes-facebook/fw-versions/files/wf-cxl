@@ -2,6 +2,9 @@
 set -e
 
 slot=$1
+# Wait for the CXL devices to be ready
+sleep 60
+
 
 for pos in 1 2; do
     eid=$((10 * slot + pos + 3))
@@ -13,18 +16,18 @@ for pos in 1 2; do
         continue
     fi
 
-    max_retries=3
-    retry_count=0
+    MAX_RETRIES=3
+    RETRY_COUNT=0
     TIMEOUT_DURATION=3
 
-    while [ $retry_count -lt $max_retries ]; do
+    while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
         # Store the output of the command in a variable
         output=$(timeout $TIMEOUT_DURATION cxl-fw-update version -m $eid 2>&1)
 
         # Check if the output is empty
         if [ $? -eq 124 ]; then
-            echo "No output from cxl-fw-update. Retrying... ($((retry_count + 1))/$max_retries)"
-            retry_count=$((retry_count + 1))
+            echo "No output from cxl-fw-update. Retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+            RETRY_COUNT=$((RETRY_COUNT + 1))
             sleep 1
         else
             # Extract the active slot number
@@ -44,8 +47,8 @@ for pos in 1 2; do
 
     done
 
-    if [ $retry_count -eq $max_retries ]; then
-        echo "Failed to get output from cxl-fw-update after $max_retries retries on CXL$pos."
+    if [ "$RETRY_COUNT" -eq "$MAX_RETRIES" ]; then
+        echo "Failed to get output from cxl-fw-update after $MAX_RETRIES retries on CXL$pos."
         exit 1
     fi
 

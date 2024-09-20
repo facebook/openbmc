@@ -1,45 +1,57 @@
 #!/bin/bash
 set -e
 
-get_tpm_vender=$( \
-    /usr/bin/tpm2_getcap properties-fixed | \
-    grep -A1 TPM2_PT_MANUFACTURER | tail -n1 | awk '{print $2}')
+MAX_RETRIES=3
+RETRY_COUNT=0
+version=""
 
-if [ "$get_tpm_vender" == "0x4E544300" ]; then
-
-    # Nuvoton MANUFACTURER ID = 0x4E544300
-    # Nuvoton TPM Version = TPM2_PT_FIRMWARE_VERSION_1 + TPM2_PT_FIRMWARE_VERSION_2
-
-    get_nuvoton_version_1=$( \
+while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+    get_tpm_vender=$( \
         /usr/bin/tpm2_getcap properties-fixed | \
-        grep -A1 TPM2_PT_FIRMWARE_VERSION_1 | tail -n1 | awk '{print $2}')
+        grep -A1 TPM2_PT_MANUFACTURER | tail -n1 | awk '{print $2}')
 
-    get_nuvoton_version_2=$( \
-        /usr/bin/tpm2_getcap properties-fixed | \
-        grep -A1 TPM2_PT_FIRMWARE_VERSION_2 | tail -n1 | awk '{print $2}')
+    if [ -n "$get_tpm_vender" ]; then
+        if [ "$get_tpm_vender" == "0x4E544300" ]; then
 
-    nuvoton_tpm_version_1=$((get_nuvoton_version_1 >> 16))
-    nuvoton_tpm_version_2=$((get_nuvoton_version_1 & 0xFFFF))
-    nuvoton_tpm_version_3=$((get_nuvoton_version_2 >> 16))
-    nuvoton_tpm_version_4=$((get_nuvoton_version_2 & 0xFFFF))
+            # Nuvoton MANUFACTURER ID = 0x4E544300
+            # Nuvoton TPM Version = TPM2_PT_FIRMWARE_VERSION_1 + TPM2_PT_FIRMWARE_VERSION_2
 
-    version="${nuvoton_tpm_version_1}.${nuvoton_tpm_version_2}.${nuvoton_tpm_version_3}.${nuvoton_tpm_version_4}"
-else
-    # IFX MANUFACTUR ID = 0x49465800
-    # IFX TPM Version = TPM2_PT_FIRMWARE_VERSION_1
+            get_nuvoton_version_1=$( \
+                /usr/bin/tpm2_getcap properties-fixed | \
+                grep -A1 TPM2_PT_FIRMWARE_VERSION_1 | tail -n1 | awk '{print $2}')
 
-    get_ifx_version=$( \
-        /usr/bin/tpm2_getcap properties-fixed | \
-        grep -A1 TPM2_PT_FIRMWARE_VERSION_1 | tail -n1 | awk '{print $2}')
+            get_nuvoton_version_2=$( \
+                /usr/bin/tpm2_getcap properties-fixed | \
+                grep -A1 TPM2_PT_FIRMWARE_VERSION_2 | tail -n1 | awk '{print $2}')
 
-    ifx_tpm_version_1=$((get_ifx_version >> 16))
-    ifx_tpm_version_2=$((get_ifx_version & 0xFFFF))
+            nuvoton_tpm_version_1=$((get_nuvoton_version_1 >> 16))
+            nuvoton_tpm_version_2=$((get_nuvoton_version_1 & 0xFFFF))
+            nuvoton_tpm_version_3=$((get_nuvoton_version_2 >> 16))
+            nuvoton_tpm_version_4=$((get_nuvoton_version_2 & 0xFFFF))
 
-    version="${ifx_tpm_version_1}.${ifx_tpm_version_2}"
-fi
+            version="${nuvoton_tpm_version_1}.${nuvoton_tpm_version_2}.${nuvoton_tpm_version_3}.${nuvoton_tpm_version_4}"
+        else
+            # IFX MANUFACTUR ID = 0x49465800
+            # IFX TPM Version = TPM2_PT_FIRMWARE_VERSION_1
 
-busctl set-property \
-    xyz.openbmc_project.Settings \
-    /xyz/openbmc_project/software/chassis/Management_Board_tpm \
-    xyz.openbmc_project.Software.Version \
-    Version "s" "$version"
+            get_ifx_version=$( \
+                /usr/bin/tpm2_getcap properties-fixed | \
+                grep -A1 TPM2_PT_FIRMWARE_VERSION_1 | tail -n1 | awk '{print $2}')
+
+            ifx_tpm_version_1=$((get_ifx_version >> 16))
+            ifx_tpm_version_2=$((get_ifx_version & 0xFFFF))
+
+            version="${ifx_tpm_version_1}.${ifx_tpm_version_2}"
+        fi
+
+        busctl set-property \
+            xyz.openbmc_project.Settings \
+            /xyz/openbmc_project/software/chassis/Management_Board_tpm \
+            xyz.openbmc_project.Software.Version \
+            Version "s" "$version"
+    else
+        echo "Vendor string is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+    fi
+done

@@ -11,40 +11,73 @@ if ! busctl get-property \
     exit
 fi
 
-versions=$(
-    pldmtool fw_update GetFwParams -m $eid |
-    jq --raw-output '
-        .ComponentParameterEntries |
-        map({ (.ComponentIdentifier|tostring): .ActiveComponentVersionString}) |
-        add
-    '
-)
+MAX_RETRIES=3
+RETRY_COUNT=0
+version_pvddq_ab_asic1=""
+version_pvddq_cd_asic1=""
+version_pvddq_ab_asic2=""
+version_pvddq_cd_asic2=""
+# The MUX will be switch to WF BIC when CXL ready.
+sleep 60
 
-version_pvddq_ab_asic1=$(jq --raw-output ".\"1\"" <<< "$versions")
-version_pvddq_cd_asic1=$(jq --raw-output ".\"2\"" <<< "$versions")
-version_pvddq_ab_asic2=$(jq --raw-output ".\"3\"" <<< "$versions")
-version_pvddq_cd_asic2=$(jq --raw-output ".\"4\"" <<< "$versions")
+while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+    versions=$(
+        pldmtool fw_update GetFwParams -m $eid |
+        jq --raw-output '
+            .ComponentParameterEntries |
+            map({ (.ComponentIdentifier|tostring): .ActiveComponentVersionString}) |
+            add
+        '
+    )
 
-busctl set-property \
-    xyz.openbmc_project.Settings \
-    "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_ab_asic1" \
-    xyz.openbmc_project.Software.Version \
-    Version "s" "$version_pvddq_ab_asic1"
+    version_pvddq_ab_asic1=$(jq --raw-output ".\"1\"" <<< "$versions")
+    version_pvddq_cd_asic1=$(jq --raw-output ".\"2\"" <<< "$versions")
+    version_pvddq_ab_asic2=$(jq --raw-output ".\"3\"" <<< "$versions")
+    version_pvddq_cd_asic2=$(jq --raw-output ".\"4\"" <<< "$versions")
 
-busctl set-property \
-    xyz.openbmc_project.Settings \
-    "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_cd_asic1" \
-    xyz.openbmc_project.Software.Version \
-    Version "s" "$version_pvddq_cd_asic1"
+    if [ -n "$version_pvddq_ab_asic1" ] && [ -n "$version_pvddq_cd_asic1" ] && [ -n "$version_pvddq_ab_asic2" ] && [ -n "$version_pvddq_cd_asic2" ]; then
+        if [ "$version_pvddq_ab_asic1" != "ERROR:0" ]; then
+            busctl set-property \
+                xyz.openbmc_project.Settings \
+                "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_ab_asic1" \
+                xyz.openbmc_project.Software.Version \
+                Version "s" "$version_pvddq_ab_asic1"
+        fi
 
-busctl set-property \
-    xyz.openbmc_project.Settings \
-    "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_ab_asic2" \
-    xyz.openbmc_project.Software.Version \
-    Version "s" "$version_pvddq_ab_asic2"
+        if [ "$version_pvddq_cd_asic1" != "ERROR:0" ]; then
+            busctl set-property \
+                xyz.openbmc_project.Settings \
+                "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_cd_asic1" \
+                xyz.openbmc_project.Software.Version \
+                Version "s" "$version_pvddq_cd_asic1"
+        fi
 
-busctl set-property \
-    xyz.openbmc_project.Settings \
-    "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_cd_asic2" \
-    xyz.openbmc_project.Software.Version \
-    Version "s" "$version_pvddq_cd_asic2"
+        if [ "$version_pvddq_ab_asic2" != "ERROR:0" ]; then
+            busctl set-property \
+                xyz.openbmc_project.Settings \
+                "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_ab_asic2" \
+                xyz.openbmc_project.Software.Version \
+                Version "s" "$version_pvddq_ab_asic2"
+        fi
+
+        if [ "$version_pvddq_cd_asic2" != "ERROR:0" ]; then
+            busctl set-property \
+                xyz.openbmc_project.Settings \
+                "/xyz/openbmc_project/software/host$slot/Wailua_Falls_vr_pvddq_cd_asic2" \
+                xyz.openbmc_project.Software.Version \
+                Version "s" "$version_pvddq_cd_asic2"
+        fi
+
+        if [ "$version_pvddq_ab_asic1" != "ERROR:0" ] && [ "$version_pvddq_cd_asic1" != "ERROR:0" ] && [ "$version_pvddq_ab_asic2" != "ERROR:0" ] && [ "$version_pvddq_cd_asic2" != "ERROR:0" ]; then
+            break
+        else
+            echo "Version is ERROR, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            sleep 5
+        fi
+    else
+        echo "Version is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+    fi
+done

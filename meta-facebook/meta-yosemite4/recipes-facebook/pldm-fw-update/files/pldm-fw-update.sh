@@ -692,7 +692,7 @@ if [ "$bic_name" == "sd" ]; then
 		ret=$?
 		# Check if the command was successful
 		if [ "$ret" -eq "0" ]; then
-			version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot/Sentinel_Dome_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+			version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
 			echo "Version retrieved successfully: $version"
 			break
 		else
@@ -711,7 +711,7 @@ elif [ "$bic_name" == "wf" ]; then
 		ret=$?
 		# Check if the command was successful
 		if [ "$ret" -eq "0" ]; then
-			version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot/Wailua_Falls_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+			version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
 			echo "Version retrieved successfully: $version"
 			break
 		else

@@ -4,17 +4,15 @@
 source /usr/libexec/yosemite4-common-functions
 
 RETRY_UPDATE_COUNT=200
-lockfile="/tmp/pldm-fw-upate.lock"
+lockfile="/tmp/pldm-fw-update.lock"
 
 exec 200>"$lockfile"
 retry_remain_count=$RETRY_UPDATE_COUNT
-do_restart_pldmd="true"
 echo ""
 while true
 do
     exec 200>"$lockfile"
     if ! flock -n 200; then
-		do_restart_pldmd="false"
         echo -ne "PLDM firmware update is already running, retry in 10 seconds, $retry_remain_count time(s) remaining...  "\\r
         retry_remain_count=$((retry_remain_count - 1))
         if [ $retry_remain_count -eq 0 ]; then
@@ -46,9 +44,6 @@ VR_OFFSET=""
 VR_HIGHBYTE_OFFSET=""
 VR_LOWBYTE_OFFSET=""
 remaining_write_times=""
-
-expected_t1m_devices=20
-expected_t1c_devices=12
 
 # For firmware update
 # PLDM update
@@ -525,15 +520,6 @@ is_rcvy=false
 slot_id=
 bic_name=$1
 pldm_image=$2
-
-if [ ! -f /tmp/fw-util.lock ] && [ "$do_restart_pldmd" == "true" ]; then
-    device_list=$(busctl tree xyz.openbmc_project.PLDM | grep -c '/xyz/openbmc_project/inventory/Item/Board/')
-    if [ "$device_list" -ne "$expected_t1m_devices" ] && [ "$device_list" -ne "$expected_t1c_devices" ]; then
-        echo "Restarting pldmd due to incomplete device"
-        systemctl restart pldmd
-        sleep 40
-    fi
-fi
 
 # Determine recovery mode and check for required image files based on argument count
 if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then

@@ -1,0 +1,62 @@
+From c0cd0b72226120ff795e2b5a9d2e7c03ba9e6499 Mon Sep 17 00:00:00 2001
+From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
+Date: Thu, 19 Sep 2024 14:00:24 +0800
+Subject: [PATCH] Update retimer version after post complete
+
+The retimer will not be ready right away after fw update. The best
+timing to read retimer version is post-complete.
+
+This patch isn't sent to upstream because the fw-versions service
+is internal temporary solution.
+---
+ .../oem_meta_file_io_type_event_log.cpp       | 20 +++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
+index 7f62f51..81e1c7e 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
+@@ -1,6 +1,7 @@
+ #include "oem_meta_file_io_type_event_log.hpp"
+ 
+ #include <phosphor-logging/lg2.hpp>
++#include <sdbusplus/bus.hpp>
+ 
+ #include <utility>
+ 
+@@ -143,6 +144,11 @@ int EventLogHandler::write(const message& eventData)
+         " PVDD11_S3",
+     });
+ 
++    /* systemd service to kick start a target. */
++    constexpr auto SYSTEMD_SERVICE = "org.freedesktop.systemd1";
++    constexpr auto SYSTEMD_ROOT = "/org/freedesktop/systemd1";
++    constexpr auto SYSTEMD_INTERFACE = "org.freedesktop.systemd1.Manager";
++
+     /* 1. Get host slot number */
+     uint64_t slot;
+ 
+@@ -206,6 +212,20 @@ int EventLogHandler::write(const message& eventData)
+                      std::format("{:02x}", eventData[3]) +
+                      std::format("{:02x}", eventData[4]);
+     }
++    else if ((strcmp(eventList[eventType], " Post-Completed") == 0))
++    {
++        /* The retimer is not available temporary after fw update.
++           We should update fw version on d-bus when post-complete. */
++        auto bus = sdbusplus::bus::new_default();
++        auto method = bus.new_method_call(SYSTEMD_SERVICE, SYSTEMD_ROOT,
++                                    SYSTEMD_INTERFACE, "StartUnit");
++        auto service = std::string("fw-versions-sd-retimer@") +
++                       std::to_string(slot) + ".service";
++        method.append(service, "replace");
++        bus.call_noreply(method);
++
++        event_name = eventList[eventType];
++    }
+     else
+     {
+         event_name = eventList[eventType];
+-- 
+2.25.1
+

@@ -18,6 +18,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0010-oem-meta-Add-APML-alert-handler.patch \
     file://0011-Support-OEM-META-command-for-NIC-power-cycle.patch \
     file://0012-Add-event-log-type-for-PMIC-error-VR-alert.patch \
+    file://0013-Update-retimer-version-after-post-complete.patch \
 "
 
 FILES:${PN}:append:openbmc-fb-lf = " \

@@ -683,41 +683,23 @@ delete_software_id
 if [ "$bic_name" == "sd" ]; then
 	echo "Updating SD BIC version to Settings D-Bus"
 	sleep 15 # wait for BIC reset
-
-	max_retries=3
-	retry_delay=5
-
-	for ((i=1; i<=max_retries; i++)); do
-		/usr/libexec/fw-versions/sd-bic "$slot_id"
-		ret=$?
-		# Check if the command was successful
-		if [ "$ret" -eq "0" ]; then
-			version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
-			echo "Version retrieved successfully: $version"
-			break
-		else
-			sleep $retry_delay
-		fi
-	done
+	/usr/libexec/fw-versions/sd-bic "$slot_id"
+	ret=$?
+	# Check if the command was successful
+	if [ "$ret" -eq "0" ]; then
+		version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+		echo "Version retrieved successfully: $version"
+	fi
 elif [ "$bic_name" == "wf" ]; then
 	echo "Updating WF BIC version to Settings D-Bus"
 	sleep 15 # wait for BIC reset
-
-	max_retries=3
-	retry_delay=5
-	
-	for ((i=1; i<=max_retries; i++)); do
-		/usr/libexec/fw-versions/wf-bic "$slot_id"
-		ret=$?
-		# Check if the command was successful
-		if [ "$ret" -eq "0" ]; then
-			version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
-			echo "Version retrieved successfully: $version"
-			break
-		else
-			sleep $retry_delay
-		fi
-	done
+	/usr/libexec/fw-versions/wf-bic "$slot_id"
+	ret=$?
+	# Check if the command was successful
+	if [ "$ret" -eq "0" ]; then
+		version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+		echo "Version retrieved successfully: $version"
+	fi
 fi
 
 echo "Done"

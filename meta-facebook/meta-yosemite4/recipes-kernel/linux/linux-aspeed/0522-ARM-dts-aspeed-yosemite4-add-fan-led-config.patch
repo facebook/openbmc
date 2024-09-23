@@ -1,4 +1,4 @@
-From 43312ebf5907e453956b862cf004508b111cbdf3 Mon Sep 17 00:00:00 2001
+From 93519a1bb8a6313fb4d0b951e15e2d8c887d177d Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 22 May 2024 17:15:50 +0800
 Subject: [PATCH 522/532] ARM: dts: aspeed: yosemite4: add fan led config
@@ -13,7 +13,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 150 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 8337e00da346..2cc2b5a760ca 100644
+index 8570d8926ba8..6aae946c5eac 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -75,6 +75,154 @@ tpmdev@0 {
@@ -171,7 +171,7 @@ index 8337e00da346..2cc2b5a760ca 100644
  };
  
  &uart1 {
-@@ -1276,7 +1424,7 @@ eeprom@52 {
+@@ -1281,7 +1429,7 @@ eeprom@52 {
  				reg = <0x52>;
  			};
  
@@ -180,7 +180,7 @@ index 8337e00da346..2cc2b5a760ca 100644
  				compatible = "nxp,pca9552";
  				reg = <0x61>;
  				#address-cells = <1>;
-@@ -1418,7 +1566,7 @@ eeprom@52 {
+@@ -1423,7 +1571,7 @@ eeprom@52 {
  				reg = <0x52>;
  			};
  

@@ -1,4 +1,4 @@
-From ebc8d6a5b401d50c6741d51a3fbd17b460c59098 Mon Sep 17 00:00:00 2001
+From e05076ab9932e5eaa91e7c28ded0d1e6aae2de8e Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 03/12] requester: support multi-host MCTP devices hot plug
@@ -100,10 +100,10 @@ index 6f39321..b096bc6 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 7df5f81..56f67e3 100644
+index 05dc4bd..53cef17 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -158,7 +158,7 @@ struct DBusMapping
+@@ -174,7 +174,7 @@ struct DBusMapping
  using PropertyValue =
      std::variant<bool, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
                   uint64_t, double, std::string, std::vector<uint8_t>,
@@ -112,7 +112,7 @@ index 7df5f81..56f67e3 100644
  using DbusProp = std::string;
  using DbusChangedProps = std::map<DbusProp, PropertyValue>;
  using DBusInterfaceAdded = std::vector<
-@@ -210,6 +210,10 @@ class DBusHandlerInterface
+@@ -226,6 +226,10 @@ class DBusHandlerInterface
      virtual PropertyMap
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
                                   const char* dbusInterface) const = 0;
@@ -123,7 +123,7 @@ index 7df5f81..56f67e3 100644
  };
  
  /**
-@@ -301,6 +305,9 @@ class DBusHandler : public DBusHandlerInterface
+@@ -317,6 +321,9 @@ class DBusHandler : public DBusHandlerInterface
          getDbusPropertiesVariant(const char* serviceName, const char* objPath,
                                   const char* dbusInterface) const override;
  
@@ -164,7 +164,7 @@ index 32684b3..b03f7a1 100644
      dependencies: deps,
      install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index aafab21..ad3e59a 100644
+index e9ff90e..9dcddb7 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@

@@ -1,4 +1,4 @@
-From c1dd590e71bc16381f12f2f6c785d51ec8083f77 Mon Sep 17 00:00:00 2001
+From 860cb057ad444193084130040cea2a0077fcc1f4 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Fri, 9 Aug 2024 10:31:13 +0800
 Subject: [PATCH 529/532] ARM: dts: aspeed: yosemite4: fix GPIO linename typo
@@ -12,10 +12,10 @@ https://lore.kernel.org/lkml/20240816092417.3651434-29-Delphine_CC_Chiu@wiwynn.c
  1 file changed, 121 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index ad6dd121f6af..28591185bf54 100644
+index 64656bdcc0f0..89e2c48bc3f7 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1919,7 +1919,7 @@ &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased
+@@ -1924,7 +1924,7 @@ &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased
  	/*O0-O7*/       "AC_ON_OFF_BTN_CPLD_SLOT8_N","RST_SMB_NIC1_R_N",
  			"RST_SMB_NIC2_R_N","RST_SMB_NIC3_R_N",
  			"","","","FM_BMC_SLED_CYCLE_R",
@@ -24,7 +24,7 @@ index ad6dd121f6af..28591185bf54 100644
  			"EN_P3V_BAT_SCALED_R","PWRGD_P5V_USB_BMC",
  			"FM_BMC_RTCRST_R","RST_USB_HUB_R_N",
  			"FLAG_P5V_USB_BMC_N","",
-@@ -1940,16 +1940,29 @@ &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased
+@@ -1945,16 +1945,29 @@ &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased
  			"","PRSNT_NIC0_N","","",
  	/*V0-V7*/       "FM_RESBTN_SLOT5_BMC_N","FM_RESBTN_SLOT6_BMC_N",
  			"FM_RESBTN_SLOT7_BMC_N","FM_RESBTN_SLOT8_BMC_N",
@@ -57,7 +57,7 @@ index ad6dd121f6af..28591185bf54 100644
  	pin_gpio_b4 {
  		gpios = <ASPEED_GPIO(B, 4) GPIO_ACTIVE_HIGH>;
  		input;
-@@ -1958,6 +1971,14 @@ pin_gpio_b5 {
+@@ -1963,6 +1976,14 @@ pin_gpio_b5 {
  		gpios = <ASPEED_GPIO(B, 5) GPIO_ACTIVE_HIGH>;
  		input;
  	};
@@ -72,7 +72,7 @@ index ad6dd121f6af..28591185bf54 100644
  	pin_gpio_f0 {
  		gpios = <ASPEED_GPIO(F, 0) GPIO_ACTIVE_LOW>;
  		input;
-@@ -1998,6 +2019,58 @@ pin_gpio_l7 {
+@@ -2003,6 +2024,58 @@ pin_gpio_l7 {
  		gpios = <ASPEED_GPIO(L, 7) GPIO_ACTIVE_LOW>;
  		input;
  	};
@@ -131,7 +131,7 @@ index ad6dd121f6af..28591185bf54 100644
  	pin_gpio_s0 {
  		gpios = <ASPEED_GPIO(S, 0) GPIO_ACTIVE_LOW>;
  		input;
-@@ -2006,6 +2079,14 @@ pin_gpio_s1 {
+@@ -2011,6 +2084,14 @@ pin_gpio_s1 {
  		gpios = <ASPEED_GPIO(S, 1) GPIO_ACTIVE_LOW>;
  		input;
  	};
@@ -146,7 +146,7 @@ index ad6dd121f6af..28591185bf54 100644
  	pin_gpio_v0 {
  		gpios = <ASPEED_GPIO(V, 0) GPIO_ACTIVE_LOW>;
  		input;
-@@ -2022,6 +2103,14 @@ pin_gpio_v3 {
+@@ -2027,6 +2108,14 @@ pin_gpio_v3 {
  		gpios = <ASPEED_GPIO(V, 3) GPIO_ACTIVE_LOW>;
  		input;
  	};
@@ -161,7 +161,7 @@ index ad6dd121f6af..28591185bf54 100644
  	pin_gpio_w0 {
  		gpios = <ASPEED_GPIO(W, 0) GPIO_ACTIVE_LOW>;
  		input;
-@@ -2054,6 +2143,34 @@ pin_gpio_w7 {
+@@ -2059,6 +2148,34 @@ pin_gpio_w7 {
  		gpios = <ASPEED_GPIO(W, 7) GPIO_ACTIVE_LOW>;
  		input;
  	};

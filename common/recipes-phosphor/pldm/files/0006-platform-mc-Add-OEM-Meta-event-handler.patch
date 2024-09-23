@@ -1,4 +1,4 @@
-From 2148a4f1973fc671304df37ee4dd2eebc13e701b Mon Sep 17 00:00:00 2001
+From 7e85771e72dc4a01afd5382e14f24f395e144d3f Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 7 Feb 2024 13:52:07 +0800
 Subject: [PATCH 06/12] platform-mc: Add OEM Meta event handler
@@ -54,15 +54,16 @@ xyz.openbmc_project.Software.Version        interface -         -               
 Change-Id: I722d8e09e7aea8dfa533e921d41beb505b59fb95
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- meson.build                             |   1 +
- oem/meta/platform-mc/event_oem_meta.cpp | 815 ++++++++++++++++++++++++
- oem/meta/platform-mc/event_oem_meta.hpp |  21 +
- platform-mc/event_manager.cpp           |  33 +
- platform-mc/event_manager.hpp           |  13 +-
- platform-mc/manager.hpp                 |  26 +-
- platform-mc/test/meson.build            |   2 +
- pldmd/pldmd.cpp                         |  10 +-
- 8 files changed, 915 insertions(+), 6 deletions(-)
+ meson.build                                   |   1 +
+ .../libpldmresponder/oem_meta_file_io.hpp     |   2 +-
+ oem/meta/platform-mc/event_oem_meta.cpp       | 815 ++++++++++++++++++
+ oem/meta/platform-mc/event_oem_meta.hpp       |  21 +
+ platform-mc/event_manager.cpp                 |  36 +
+ platform-mc/event_manager.hpp                 |  15 +-
+ platform-mc/manager.hpp                       |  26 +-
+ platform-mc/test/meson.build                  |   2 +
+ pldmd/pldmd.cpp                               |  10 +-
+ 9 files changed, 920 insertions(+), 8 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
@@ -78,6 +79,19 @@ index e9177e6..e849a9b 100644
      implicit_include_directories: false,
      dependencies: deps,
      install: true,
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
+index 841fb98..f25235d 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io.hpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
+@@ -21,7 +21,7 @@ class FileIOHandler : public CmdHandler
+         configurationDescovery(configurationDescovery)
+     {
+         handlers.emplace(
+-            PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
++            PLDM_OEM_META_FILE_IO_CMD_WRITE_FILE,
+             [this](pldm_tid_t tid, const pldm_msg* request,
+                    size_t payloadLength) {
+                 return this->writeFileIO(tid, request, payloadLength);
 diff --git a/oem/meta/platform-mc/event_oem_meta.cpp b/oem/meta/platform-mc/event_oem_meta.cpp
 new file mode 100644
 index 0000000..a4575bc
@@ -927,10 +941,10 @@ index 0000000..55822a8
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index b3c97c5..f0142f1 100644
+index 6e16a32..76bf306 100644
 --- a/platform-mc/event_manager.cpp
 +++ b/platform-mc/event_manager.cpp
-@@ -3,14 +3,17 @@
+@@ -3,8 +3,10 @@
  #include "libpldm/platform.h"
  #include "libpldm/utils.h"
  
@@ -941,16 +955,17 @@ index b3c97c5..f0142f1 100644
  #include <phosphor-logging/lg2.hpp>
  #include <xyz/openbmc_project/Logging/Entry/server.hpp>
  
- #include <cerrno>
+@@ -12,6 +14,7 @@
+ #include <memory>
  
  PHOSPHOR_LOG2_USING;
 +constexpr auto MetaIANA = "0015A000";
  
  namespace pldm
  {
-@@ -81,6 +84,23 @@ int decode_pldm_cper_event_data(
-     return PLDM_SUCCESS;
- }
+@@ -19,6 +22,23 @@ namespace platform_mc
+ {
+ namespace fs = std::filesystem;
  
 +bool EventManager::checkMetaIana(
 +    pldm_tid_t tid, const std::map<std::string, MctpEndpoint>& configurations)
@@ -972,11 +987,12 @@ index b3c97c5..f0142f1 100644
  int EventManager::handlePlatformEvent(
      pldm_tid_t tid, uint16_t eventId, uint8_t eventClass,
      const uint8_t* eventData, size_t eventDataSize)
-@@ -145,6 +165,19 @@ int EventManager::handlePlatformEvent(
-     {
-         return processCperEvent(eventId, eventData, eventDataSize);
+@@ -89,6 +109,22 @@ int EventManager::handlePlatformEvent(
+         return PLDM_SUCCESS;
      }
-+    else if (eventClass == PLDM_OEM_EVENT_CLASS_0xFB)
+ 
++    /* EventClass CPER (0xFA OEM) `Table 11 - PLDM Event Types` DSP0248 */
++    if (eventClass == PLDM_OEM_EVENT_CLASS_0xFB)
 +    {
 +        const std::map<std::string, MctpEndpoint>& configurations =
 +            configurationDiscovery->getConfigurations();
@@ -987,13 +1003,15 @@ index b3c97c5..f0142f1 100644
 +        }
 +        pldm::platform_mc::oem_meta::processOemMetaEvent(
 +            tid, eventData, eventDataSize, configurations);
++
 +        return PLDM_SUCCESS;
 +    }
- 
++
      lg2::info("Unsupported class type {CLASSTYPE}", "CLASSTYPE", eventClass);
  
+     return PLDM_ERROR;
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index c0a7cbe..abe9f19 100644
+index 96ba6d0..64198e3 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
 @@ -6,6 +6,7 @@
@@ -1004,41 +1022,43 @@ index c0a7cbe..abe9f19 100644
  #include "requester/handler.hpp"
  #include "terminus.hpp"
  #include "terminus_manager.hpp"
-@@ -60,8 +61,10 @@ class EventManager
+@@ -39,9 +40,11 @@ class EventManager
+     EventManager& operator=(EventManager&&) = delete;
+     virtual ~EventManager() = default;
  
-     explicit EventManager(
-         TerminusManager& terminusManager,
--        std::map<mctp_eid_t, std::shared_ptr<Terminus>>& termini) :
+-    explicit EventManager(TerminusManager& terminusManager,
+-                          TerminiMapper& termini) :
 -        terminusManager(terminusManager), termini(termini)
-+        std::map<mctp_eid_t, std::shared_ptr<Terminus>>& termini,
++    explicit EventManager(
++        TerminusManager& terminusManager, TerminiMapper& termini,
 +        pldm::ConfigurationDiscoveryHandler* configurationDiscovery = nullptr) :
 +        terminusManager(terminusManager), termini(termini),
 +        configurationDiscovery(configurationDiscovery)
      {
          // Default response handler for PollForPlatFormEventMessage
-         registerEventHandler(
-@@ -170,6 +173,10 @@ class EventManager
-     virtual int processCperEvent(uint16_t eventId, const uint8_t* eventData,
-                                  size_t eventDataSize);
+         registerPolledEventHandler(
+@@ -185,6 +188,10 @@ class EventManager
+         uint8_t& eventClass, uint32_t& eventDataSize, uint8_t*& eventData,
+         uint32_t& eventDataIntegrityChecksum);
  
 +    bool checkMetaIana(
 +        pldm_tid_t tid,
 +        const std::map<std::string, MctpEndpoint>& configurations);
 +
-     int createCperDumpEntry(const std::string& dataType,
-                             const std::string& dataPath);
+     /** @brief Reference of terminusManager */
+     TerminusManager& terminusManager;
  
-@@ -192,6 +199,8 @@ class EventManager
+@@ -196,6 +203,8 @@ class EventManager
  
-     /** @brief map of PLDM event type to EventHandlers */
-     EventMap eventHandlers;
+     /** @brief map of PLDM event type of polled event to EventHandlers */
+     pldm::platform_mc::EventMap eventHandlers;
 +
 +    pldm::ConfigurationDiscoveryHandler* configurationDiscovery;
  };
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 89b8b0a..46d4521 100644
+index 2f93195..1694371 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
 @@ -6,11 +6,14 @@
@@ -1118,7 +1138,7 @@ index 0e8bc87..d1bf36e 100644
      include_directories: ['../../requester', '../../pldmd'],
  )
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 3ad4a96..f8d1904 100644
+index 8ebb9ce..bf74b28 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -287,7 +287,8 @@ int main(int argc, char** argv)
@@ -1130,7 +1150,7 @@ index 3ad4a96..f8d1904 100644
 +                                               configurationDiscovery.get());
  
      pldm::responder::platform::EventMap addOnEventHandlers{
-         {PLDM_CPER_EVENT_CLASS,
+         {PLDM_CPER_EVENT,
 @@ -310,6 +311,13 @@ int main(int argc, char** argv)
                               size_t eventDataOffset) {
               return platformManager->handleSensorEvent(

@@ -1,4 +1,4 @@
-From 008e08f7123e2b69ee1320e57fd716b91a22be19 Mon Sep 17 00:00:00 2001
+From 90e01015c4ccbe357de15f8c6ebd3e09ae8382cb Mon Sep 17 00:00:00 2001
 From: Frank Li <Frank.Li@nxp.com>
 Date: Fri, 1 Dec 2023 17:25:27 -0500
 Subject: [PATCH 516/532] i3c: master: add enable(disable) hot join in sys

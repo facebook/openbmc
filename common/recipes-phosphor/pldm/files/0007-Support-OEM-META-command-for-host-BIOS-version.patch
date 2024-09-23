@@ -1,4 +1,4 @@
-From 5c088c2d44b47ad299f81342f34ad87f74685630 Mon Sep 17 00:00:00 2001
+From c96ddaf9e937c6f80f9f7d5c1cf5b6f2098c8ef4 Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
 Subject: [PATCH 07/12] Support OEM-META command for host BIOS version
@@ -59,7 +59,7 @@ index 59c0b3f..e78e890 100644
              error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
                    "FILEIOTYPE", fileIOType);
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-index 841fb98..857714f 100644
+index f25235d..edde91d 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
 @@ -17,8 +17,9 @@ namespace pldm::responder::oem_meta
@@ -73,7 +73,7 @@ index 841fb98..857714f 100644
 +        dBusIntf(dBusIntf), configurationDiscovery(configurationDiscovery)
      {
          handlers.emplace(
-             PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
+             PLDM_OEM_META_FILE_IO_CMD_WRITE_FILE,
 @@ -43,7 +44,13 @@ class FileIOHandler : public CmdHandler
      std::unique_ptr<FileHandler>
          getHandlerByType(pldm_tid_t tid, uint8_t fileIOType);
@@ -348,7 +348,7 @@ index 0000000..275a3ad
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index f8d1904..2739b53 100644
+index bf74b28..c2646fd 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -275,7 +275,7 @@ int main(int argc, char** argv)

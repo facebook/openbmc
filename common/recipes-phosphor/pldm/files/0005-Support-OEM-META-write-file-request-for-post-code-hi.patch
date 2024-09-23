@@ -1,4 +1,4 @@
-From f8a6c5f321a3c3b0a3e5c5a4b799bee3be9bcf47 Mon Sep 17 00:00:00 2001
+From 2262862088876de6242a64b7444a7f47e5f9bfbc Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 05/12] Support OEM-META write file request for post code
@@ -55,10 +55,10 @@ index b096bc6..c495461 100644
      const std::string& objectPath, int depth,
      const std::vector<std::string>& ifaceList) const
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 56f67e3..271030a 100644
+index 53cef17..978a34c 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -178,6 +178,8 @@ using Interfaces = std::vector<std::string>;
+@@ -194,6 +194,8 @@ using Interfaces = std::vector<std::string>;
  using MapperServiceMap = std::vector<std::pair<ServiceName, Interfaces>>;
  using GetSubTreeResponse = std::vector<std::pair<ObjectPath, MapperServiceMap>>;
  using GetSubTreePathsResponse = std::vector<std::string>;
@@ -67,7 +67,7 @@ index 56f67e3..271030a 100644
  using PropertyMap = std::map<std::string, PropertyValue>;
  using InterfaceMap = std::map<std::string, PropertyMap>;
  using ObjectValueTree = std::map<sdbusplus::message::object_path, InterfaceMap>;
-@@ -200,6 +202,10 @@ class DBusHandlerInterface
+@@ -216,6 +218,10 @@ class DBusHandlerInterface
          getSubTreePaths(const std::string& objectPath, int depth,
                          const std::vector<std::string>& ifaceList) const = 0;
  
@@ -78,7 +78,7 @@ index 56f67e3..271030a 100644
      virtual void setDbusProperty(const DBusMapping& dBusMap,
                                   const PropertyValue& value) const = 0;
  
-@@ -263,6 +269,20 @@ class DBusHandler : public DBusHandlerInterface
+@@ -279,6 +285,20 @@ class DBusHandler : public DBusHandlerInterface
      GetSubTreeResponse
          getSubtree(const std::string& path, int depth,
                     const std::vector<std::string>& ifaceList) const override;
@@ -516,7 +516,7 @@ index 0000000..f06cc38
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index ad3e59a..3ad4a96 100644
+index 9dcddb7..8ebb9ce 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -65,6 +65,10 @@ PHOSPHOR_LOG2_USING;

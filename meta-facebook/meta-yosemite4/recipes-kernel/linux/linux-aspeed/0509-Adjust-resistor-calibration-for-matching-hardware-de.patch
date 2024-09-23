@@ -1,4 +1,4 @@
-From 0df0b728a335ae86adf647e2d8e40b4c40e9c955 Mon Sep 17 00:00:00 2001
+From 3a88375f7386a144e02f71363cd44c8df3869e07 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Tue, 5 Mar 2024 15:15:49 +0800
 Subject: [PATCH 509/532] Adjust resistor-calibration for matching hardware
@@ -14,10 +14,10 @@ once we finish.
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 27c57483bfa4..3e7ee2b8057b 100644
+index e4f544620910..93cda6094d11 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1087,35 +1087,35 @@ adc@37 {
+@@ -1092,35 +1092,35 @@ adc@37 {
  	power-sensor@40 {
  		compatible = "ti,ina233";
  		reg = <0x40>;

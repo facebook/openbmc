@@ -1,4 +1,4 @@
-From 61d91c9d5bdca1c485bd96b99d8f9ef04d874ce5 Mon Sep 17 00:00:00 2001
+From 25cd3f542f10ba6e4e4c84b8ed1a82a2818870b2 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 5 Mar 2024 10:57:35 +0800
 Subject: [PATCH 510/532] ARM: dts: aspeed: yosemite4: Revise i2c duty cycle
@@ -12,7 +12,7 @@ https://lore.kernel.org/all/20240312061556.496605-23-Delphine_CC_Chiu@wiwynn.com
  1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 3e7ee2b8057b..3e59a2789e50 100644
+index 93cda6094d11..50c56d139c65 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -765,6 +765,7 @@ eeprom@54 {
@@ -23,7 +23,7 @@ index 3e7ee2b8057b..3e59a2789e50 100644
  	i2c-mux@74 {
  		compatible = "nxp,pca9544";
  		i2c-mux-idle-disconnect;
-@@ -1318,6 +1319,7 @@ &i2c15 {
+@@ -1323,6 +1324,7 @@ &i2c15 {
  	mctp-controller;
  	multi-master;
  	bus-frequency = <400000>;

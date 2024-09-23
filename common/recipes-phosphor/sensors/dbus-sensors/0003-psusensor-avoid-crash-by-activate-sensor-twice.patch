@@ -1,4 +1,4 @@
-From e4e9258f8d7905d607e2b499aeab966579cc060b Mon Sep 17 00:00:00 2001
+From b34ba31f217e5d9e0213605b78a551deb4abc92c Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 25 Jun 2024 14:57:08 +0800
 Subject: [PATCH 3/5] psusensor: avoid crash by activate sensor twice
@@ -124,7 +124,7 @@ index 09601f8..008c632 100644
      bool isActive();
  
 diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
-index ef7f66e..01081d0 100644
+index 65dd35b..1e83c9b 100644
 --- a/src/PSUSensorMain.cpp
 +++ b/src/PSUSensorMain.cpp
 @@ -299,8 +299,7 @@ static void createSensorsCallback(
@@ -270,7 +270,7 @@ index ef7f66e..01081d0 100644
              });
          };
  
-@@ -1235,7 +1217,7 @@ int main()
+@@ -1239,7 +1221,7 @@ int main()
                      std::cerr << "timer error\n";
                      return;
                  }
@@ -280,5 +280,5 @@ index ef7f66e..01081d0 100644
          };
  
 -- 
-2.43.5
+2.44.2
 

@@ -1,4 +1,4 @@
-From 158107ca6f389b697b839e47046a4fe8979bbd8f Mon Sep 17 00:00:00 2001
+From 2b779ec408a50ea283afcf1e5185e6ef6f1c30fc Mon Sep 17 00:00:00 2001
 From: MarshallZhan <Marshall_Zhan@wiwynn.com>
 Date: Thu, 18 Jul 2024 17:15:21 +0800
 Subject: [PATCH 527/532] ARM: dts: aspeed: yosemite4: adjust mgm cpld ioexp
@@ -13,10 +13,10 @@ https://lore.kernel.org/lkml/20240719055859.4166887-28-Delphine_CC_Chiu@wiwynn.c
  1 file changed, 28 insertions(+), 29 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 67bafcbac3e2..8054ec0a9c2c 100644
+index 1a09f05e7fae..a0c7d87a00d5 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1162,6 +1162,33 @@ rtc@6f {
+@@ -1167,6 +1167,33 @@ rtc@6f {
  				compatible = "nuvoton,nct3018y";
  				reg = <0x6f>;
  			};
@@ -50,42 +50,42 @@ index 67bafcbac3e2..8054ec0a9c2c 100644
  		};
  
  		imux35: i2c@1 {
-@@ -1194,34 +1221,6 @@ ipmb@10 {
+@@ -1199,34 +1226,6 @@ ipmb@10 {
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
  		i2c-protocol;
  	};
 -
--        gpio@20 {
--                compatible = "nxp,pca9506";
--                reg = <0x20>;
--                gpio-controller;
--                #gpio-cells = <2>;
--        };
+-	gpio@20 {
+-		compatible = "nxp,pca9506";
+-		reg = <0x20>;
+-		gpio-controller;
+-		#gpio-cells = <2>;
+-	};
 -
--        gpio@21 {
--                compatible = "nxp,pca9506";
--                reg = <0x21>;
--                gpio-controller;
--                #gpio-cells = <2>;
--        };
+-	gpio@21 {
+-		compatible = "nxp,pca9506";
+-		reg = <0x21>;
+-		gpio-controller;
+-		#gpio-cells = <2>;
+-	};
 -
--        gpio@22 {
--                compatible = "nxp,pca9506";
--                reg = <0x22>;
--                gpio-controller;
--                #gpio-cells = <2>;
--        };
+-	gpio@22 {
+-		compatible = "nxp,pca9506";
+-		reg = <0x22>;
+-		gpio-controller;
+-		#gpio-cells = <2>;
+-	};
 -
--        gpio@23 {
--                compatible = "nxp,pca9506";
--                reg = <0x23>;
--                gpio-controller;
--                #gpio-cells = <2>;
--        };
+-	gpio@23 {
+-		compatible = "nxp,pca9506";
+-		reg = <0x23>;
+-		gpio-controller;
+-		#gpio-cells = <2>;
+-	};
  };
  
  &i2c14 {
-@@ -1920,7 +1919,7 @@ &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased
+@@ -1925,7 +1924,7 @@ &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased
  			"FM_BMC_READY_R2","RST_SMB_NIC0_R_N","","",
  	/*O0-O7*/       "AC_ON_OFF_BTN_CPLD_SLOT8_N","RST_SMB_NIC1_R_N",
  			"RST_SMB_NIC2_R_N","RST_SMB_NIC3_R_N",

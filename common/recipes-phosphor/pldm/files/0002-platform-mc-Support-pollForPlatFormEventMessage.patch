@@ -1,4 +1,4 @@
-From 09528fb523e2e7847f5d1303bb06f5f6ad977434 Mon Sep 17 00:00:00 2001
+From 457e01bc063e8fdd296c888905bec17b2058f36a Mon Sep 17 00:00:00 2001
 From: Dung Cao <dung@os.amperecomputing.com>
 Date: Tue, 21 Nov 2023 04:38:29 +0000
 Subject: [PATCH 02/12] platform-mc: Support pollForPlatFormEventMessage
@@ -12,19 +12,19 @@ Change-Id: If01f63f30d3f57f8423c863ec776e83dda8e3042
 Signed-off-by: Dung Cao <dung@os.amperecomputing.com>
 Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
 ---
- platform-mc/event_manager.cpp           | 210 ++++++++++++++++++++++++
+ platform-mc/event_manager.cpp           | 212 ++++++++++++++++++++++++
  platform-mc/event_manager.hpp           |  79 ++++++++-
  platform-mc/manager.cpp                 |  12 ++
  platform-mc/manager.hpp                 |  32 ++++
  platform-mc/sensor_manager.cpp          |   7 +
  platform-mc/terminus.cpp                |   3 +-
  platform-mc/terminus.hpp                |   8 +
- platform-mc/test/event_manager_test.cpp | 103 ++++++++++++
+ platform-mc/test/event_manager_test.cpp |  99 +++++++++++
  pldmd/pldmd.cpp                         |   7 +
- 9 files changed, 459 insertions(+), 2 deletions(-)
+ 9 files changed, 457 insertions(+), 2 deletions(-)
 
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index 7cd2cb2..b3c97c5 100644
+index ae33e8e..6e16a32 100644
 --- a/platform-mc/event_manager.cpp
 +++ b/platform-mc/event_manager.cpp
 @@ -1,5 +1,6 @@
@@ -34,12 +34,12 @@ index 7cd2cb2..b3c97c5 100644
  #include "libpldm/utils.h"
  
  #include "terminus_manager.hpp"
-@@ -116,6 +117,29 @@ int EventManager::handlePlatformEvent(
-                 return PLDM_ERROR;
-         }
+@@ -64,6 +65,30 @@ int EventManager::handlePlatformEvent(
+         return processCperEvent(tid, eventId, eventData, eventDataSize);
      }
+ 
 +    /* EventClass pldmMessagePollEvent `Table 11 - PLDM Event Types` DSP0248 */
-+    else if (eventClass == PLDM_MESSAGE_POLL_EVENT)
++    if (eventClass == PLDM_MESSAGE_POLL_EVENT)
 +    {
 +        lg2::info("Received pldmMessagePollEvent for terminus {TID}", "TID",
 +                  tid);
@@ -61,11 +61,12 @@ index 7cd2cb2..b3c97c5 100644
 +        }
 +        return PLDM_SUCCESS;
 +    }
-     /* EventClass CPER (0xFA OEM) `Table 11 - PLDM Event Types` DSP0248 */
-     else if (eventClass == PLDM_CPER_EVENT_CLASS)
-     {
-@@ -127,6 +151,192 @@ int EventManager::handlePlatformEvent(
++
+     lg2::info("Unsupported class type {CLASSTYPE}", "CLASSTYPE", eventClass);
+ 
      return PLDM_ERROR;
+@@ -456,5 +481,192 @@ int EventManager::createCperDumpEntry(const std::string& dataType,
+     return PLDM_SUCCESS;
  }
  
 +exec::task<int>
@@ -177,6 +178,7 @@ index 7cd2cb2..b3c97c5 100644
 +                        lg2::error(
 +                            "pollForPlatformEventMessage for terminus {TID} with event {EVENTID} checksum error.",
 +                            "TID", tid, "EVENTID", eventId);
++                        co_return PLDM_ERROR_INVALID_DATA;
 +                    }
 +                }
 +
@@ -254,14 +256,13 @@ index 7cd2cb2..b3c97c5 100644
 +    co_return completionCode;
 +}
 +
- int EventManager::processCperEvent([[maybe_unused]] uint16_t eventId,
-                                    const uint8_t* eventData,
-                                    size_t eventDataSize)
+ } // namespace platform_mc
+ } // namespace pldm
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index 14b12f9..c0a7cbe 100644
+index 032651e..96ba6d0 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
-@@ -17,6 +17,12 @@ namespace pldm
+@@ -15,6 +15,12 @@ namespace pldm
  namespace platform_mc
  {
  
@@ -271,18 +272,18 @@ index 14b12f9..c0a7cbe 100644
 +                      const uint8_t* eventData, size_t eventDataSize)>;
 +using EventMap = std::map<EventType, HandlerFunc>;
 +
- const std::string SensorThresholdCriticalHighGoingHigh{
-     "OpenBMC.0.2.SensorThresholdCriticalHighGoingHigh"};
- const std::string SensorThresholdCriticalHighGoingLow{
-@@ -55,7 +61,26 @@ class EventManager
-     explicit EventManager(
-         TerminusManager& terminusManager,
-         std::map<mctp_eid_t, std::shared_ptr<Terminus>>& termini) :
+ /**
+  * @brief EventManager
+  *
+@@ -35,7 +41,25 @@ class EventManager
+ 
+     explicit EventManager(TerminusManager& terminusManager,
+                           TerminiMapper& termini) :
 -        terminusManager(terminusManager), termini(termini) {};
 +        terminusManager(terminusManager), termini(termini)
 +    {
 +        // Default response handler for PollForPlatFormEventMessage
-+        registerEventHandler(
++        registerPolledEventHandler(
 +            PLDM_MESSAGE_POLL_EVENT,
 +            [this](pldm_tid_t tid, uint16_t eventId, const uint8_t* eventData,
 +                   size_t eventDataSize) {
@@ -290,21 +291,20 @@ index 14b12f9..c0a7cbe 100644
 +                                                 PLDM_MESSAGE_POLL_EVENT,
 +                                                 eventData, eventDataSize);
 +            });
-+        registerEventHandler(
-+            PLDM_CPER_EVENT_CLASS,
++        registerPolledEventHandler(
++            PLDM_CPER_EVENT,
 +            [this](pldm_tid_t tid, uint16_t eventId, const uint8_t* eventData,
 +                   size_t eventDataSize) {
-+                return this->handlePlatformEvent(tid, eventId,
-+                                                 PLDM_CPER_EVENT_CLASS,
++                return this->handlePlatformEvent(tid, eventId, PLDM_CPER_EVENT,
 +                                                 eventData, eventDataSize);
 +            });
 +    };
  
      /** @brief Handle platform event
       *
-@@ -74,6 +99,14 @@ class EventManager
-     std::string getSensorThresholdMessageId(uint8_t previousEventState,
-                                             uint8_t eventState);
+@@ -73,6 +97,30 @@ class EventManager
+         return availableState[tid];
+     };
  
 +    /** @brief A Coroutine to poll all events from terminus
 +     *
@@ -314,16 +314,10 @@ index 14b12f9..c0a7cbe 100644
 +    exec::task<int> pollForPlatformEventTask(pldm_tid_t tid,
 +                                             uint16_t pollEventId);
 +
-     /** @brief Set available state of terminus for pldm request.
-      */
-     void updateAvailableState(pldm_tid_t tid, Availability state)
-@@ -92,7 +125,48 @@ class EventManager
-         return availableState[tid];
-     };
- 
-+    /** @brief Register response handler for PollForPlatFormEventMessage
++    /** @brief Register response handler for the polled events from
++     *         PollForPlatFormEventMessage
 +     */
-+    void registerEventHandler(uint8_t eventClass, HandlerFunc function)
++    void registerPolledEventHandler(uint8_t eventClass, HandlerFunc function)
 +    {
 +        auto it = eventHandlers.find(eventClass);
 +        if (it != eventHandlers.end())
@@ -337,6 +331,12 @@ index 14b12f9..c0a7cbe 100644
 +    }
 +
    protected:
+     /** @brief Helper method to process the PLDM Numeric sensor event class
+      *
+@@ -111,6 +159,32 @@ class EventManager
+                             const std::string& dataPath,
+                             const std::string& terminusName);
+ 
 +    /** @brief Send pollForPlatformEventMessage and return response
 +     *
 +     *  @param[in] tid - Destination TID
@@ -352,8 +352,8 @@ index 14b12f9..c0a7cbe 100644
 +     *  @param[out] eventDataSize - data size of event response message
 +     *  @param[out] eventData - event data of response message
 +     *  @param[out] eventDataIntegrityChecksum - check sum of final event
-+     *  @return coroutine return_value - PLDM completion code
 +     *
++     *  @return coroutine return_value - PLDM completion code
 +     */
 +    exec::task<int> pollForPlatformEventMessage(
 +        pldm_tid_t tid, uint8_t transferOperationFlag,
@@ -363,16 +363,16 @@ index 14b12f9..c0a7cbe 100644
 +        uint8_t& eventClass, uint32_t& eventDataSize, uint8_t*& eventData,
 +        uint32_t& eventDataIntegrityChecksum);
 +
-     virtual int processCperEvent(uint16_t eventId, const uint8_t* eventData,
-                                  size_t eventDataSize);
+     /** @brief Reference of terminusManager */
+     TerminusManager& terminusManager;
  
-@@ -115,6 +189,9 @@ class EventManager
+@@ -119,6 +193,9 @@ class EventManager
  
-     /** @brief Available state for pldm request of terminus*/
-     std::map<pldm_tid_t, Availability> availableState;
+     /** @brief Available state for pldm request of terminus */
+     std::unordered_map<pldm_tid_t, Availability> availableState;
 +
-+    /** @brief map of PLDM event type to EventHandlers */
-+    EventMap eventHandlers;
++    /** @brief map of PLDM event type of polled event to EventHandlers */
++    pldm::platform_mc::EventMap eventHandlers;
  };
  } // namespace platform_mc
  } // namespace pldm
@@ -399,10 +399,10 @@ index 7e79a29..2cb81a1 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 266d267..89b8b0a 100644
+index 1c23795..2f93195 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
-@@ -123,6 +123,28 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -145,6 +145,38 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          return PLDM_SUCCESS;
      }
  
@@ -428,13 +428,6 @@ index 266d267..89b8b0a 100644
 +        return PLDM_SUCCESS;
 +    }
 +
-     /** @brief Sensor event handler funtion
-      *
-      *  @param[in] request - Event message
-@@ -145,6 +167,16 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
-         return PLDM_SUCCESS;
-     }
- 
 +    /** @brief The function to trigger the event polling
 +     *
 +     *  @param[in] tid - Terminus ID
@@ -467,7 +460,7 @@ index 74e3043..ce5be90 100644
          auto toBeUpdated = roundRobinSensors[tid].size();
          while (((t1 - t0) < pollingTimeInUsec) && (toBeUpdated > 0))
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 0038d04..34521d2 100644
+index b5a1e8c..70d1112 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -15,7 +15,8 @@ namespace platform_mc
@@ -481,12 +474,12 @@ index 0038d04..34521d2 100644
  
  bool Terminus::doesSupportType(uint8_t type)
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index ca1604d..02018d8 100644
+index dd766c6..13f10e8 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
-@@ -141,6 +141,14 @@ class Terminus
-      */
-     bitfield8_t synchronyConfigurationSupported;
+@@ -144,6 +144,14 @@ class Terminus
+     /** @brief A list of numericSensors */
+     std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
  
 +    /** @brief The flag indicates that the terminus FIFO contains a large
 +     *         message that will require a multipart transfer via the
@@ -496,14 +489,14 @@ index ca1604d..02018d8 100644
 +    /** @brief The sensor id is used to poll for pollForPlatformMessage */
 +    uint16_t pollEventId;
 +
-     /** @brief A list of numericSensors */
-     std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
- 
+     /** @brief Get Sensor Auxiliary Names by sensorID
+      *
+      *  @param[in] id - sensor ID
 diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
-index ee03c5d..5293fd1 100644
+index 2a976e0..da30320 100644
 --- a/platform-mc/test/event_manager_test.cpp
 +++ b/platform-mc/test/event_manager_test.cpp
-@@ -456,3 +456,106 @@ TEST_F(EventManagerTest, updateAvailableState)
+@@ -388,3 +388,102 @@ TEST_F(EventManagerTest, updateAvailableState)
      eventManager.updateAvailableState(2, false);
      EXPECT_EQ(false, eventManager.getAvailableState(tid));
  }
@@ -533,7 +526,7 @@ index ee03c5d..5293fd1 100644
 +            0x0,
 +            0x0,                          // nextDataTransferHandle
 +            PLDM_PLATFORM_TRANSFER_START, // transferFlag = start
-+            0xfa,                         // eventClass
++            PLDM_CPER_EVENT,              // eventClass
 +            8,
 +            0,
 +            0,
@@ -568,7 +561,7 @@ index ee03c5d..5293fd1 100644
 +            0x0,
 +            0x0,                        // nextDataTransferHandle
 +            PLDM_PLATFORM_TRANSFER_END, // transferFlag = end
-+            0xfa,                       // eventClass
++            PLDM_CPER_EVENT,            // eventClass
 +            6,
 +            0,
 +            0,
@@ -602,16 +595,12 @@ index ee03c5d..5293fd1 100644
 +        sizeof(pollForPlatformEventMessage3Resp));
 +    EXPECT_EQ(rc, PLDM_SUCCESS);
 +
-+    EXPECT_CALL(eventManager, processCperEvent(_, _, _))
-+        .Times(1)
-+        .WillRepeatedly(Return(1));
-+
 +    // start task to poll event from terminus
 +    // should finish immediately
 +    stdexec::sync_wait(eventManager.pollForPlatformEventTask(tid, 0));
 +}
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index b75e999..aafab21 100644
+index fc2b08d..e9ff90e 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -282,6 +282,13 @@ int main(int argc, char** argv)

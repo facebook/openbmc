@@ -6,7 +6,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://host_eid \
     file://pldm-restart.sh \
     file://pldm-slow-restart.service \
-    file://0001-platform-mc-Added-EventManager.patch \
+    file://0001-platform-mc-Support-CPER-Event-handler.patch \
     file://0002-platform-mc-Support-pollForPlatFormEventMessage.patch \
     file://0003-requester-support-multi-host-MCTP-devices-hot-plug.patch \
     file://0004-pldm-Revise-image-path-for-update.patch \

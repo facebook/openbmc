@@ -1,7 +1,7 @@
-From ffe7acb63817dc3715a3904a5e26cbf8f282f387 Mon Sep 17 00:00:00 2001
+From 3dc38b2547cb314bcf3d0a51b96a4f54680adca6 Mon Sep 17 00:00:00 2001
 From: Ricky CX Wu <ricky.cx.wu.wiwynn@gmail.com>
 Date: Thu, 1 Aug 2024 14:15:05 +0800
-Subject: [PATCH 6/6] configurations: yosemite4: set fail safe percent to 90%
+Subject: [PATCH 6/7] configurations: yosemite4: set fail safe percent to 90%
  for Fan fail
 
 Gerrit: 73176.
@@ -23,7 +23,7 @@ Signed-off-by: Ricky CX Wu <ricky.cx.wu.wiwynn@gmail.com>
  2 files changed, 2 insertions(+)
 
 diff --git a/configurations/yosemite4.json b/configurations/yosemite4.json
-index 26fdbf7..31207bd 100644
+index 0c2d19b..4f57db0 100644
 --- a/configurations/yosemite4.json
 +++ b/configurations/yosemite4.json
 @@ -438,6 +438,7 @@
@@ -35,7 +35,7 @@ index 26fdbf7..31207bd 100644
              "ILimitMax": 0.0,
              "ILimitMin": 0.0,
 diff --git a/configurations/yosemite4n.json b/configurations/yosemite4n.json
-index c022bf8..749dca1 100644
+index 49a6769..a3f9e0a 100644
 --- a/configurations/yosemite4n.json
 +++ b/configurations/yosemite4n.json
 @@ -412,6 +412,7 @@
@@ -47,5 +47,5 @@ index c022bf8..749dca1 100644
              "ILimitMax": 0.0,
              "ILimitMin": 0.0,
 -- 
-2.25.1
+2.44.2
 

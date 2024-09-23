@@ -1,0 +1,285 @@
+From 6730d534be90c7ef0ddeb7188e95cbc69066e88d Mon Sep 17 00:00:00 2001
+From: Thu Nguyen <thu@os.amperecomputing.com>
+Date: Tue, 10 Sep 2024 10:15:01 +0000
+Subject: [PATCH 01/12] platform-mc: Support CPER Event handler
+
+Handle CPER event(0x07) which is defined in `Table 11 - PLDM Event
+Type` and section `16.17 eventData format for CPEREvent` in DSP0248
+v1.3.0.
+
+Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
+Change-Id: I85c53933183178c6b5acdfc12c805e8a4cf1ca2a
+---
+ platform-mc/event_manager.cpp | 152 ++++++++++++++++++++++++++++++++++
+ platform-mc/event_manager.hpp |  24 ++++++
+ platform-mc/manager.hpp       |  24 +++++-
+ pldmd/pldmd.cpp               |   7 ++
+ 4 files changed, 206 insertions(+), 1 deletion(-)
+
+diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
+index 1b9c6c3..ae33e8e 100644
+--- a/platform-mc/event_manager.cpp
++++ b/platform-mc/event_manager.cpp
+@@ -58,6 +58,12 @@ int EventManager::handlePlatformEvent(
+         }
+     }
+ 
++    /* EventClass CPEREvent as `Table 11 - PLDM Event Types` DSP0248 V1.3.0 */
++    if (eventClass == PLDM_CPER_EVENT)
++    {
++        return processCperEvent(tid, eventId, eventData, eventDataSize);
++    }
++
+     lg2::info("Unsupported class type {CLASSTYPE}", "CLASSTYPE", eventClass);
+ 
+     return PLDM_ERROR;
+@@ -304,5 +310,151 @@ int EventManager::processNumericSensorEvent(pldm_tid_t tid, uint16_t sensorId,
+     return PLDM_SUCCESS;
+ }
+ 
++int EventManager::processCperEvent(pldm_tid_t tid, uint16_t eventId,
++                                   const uint8_t* eventData,
++                                   const size_t eventDataSize)
++{
++    if (eventDataSize < PLDM_PLATFORM_CPER_EVENT_MIN_LENGTH)
++    {
++        lg2::error(
++            "Error : Invalid CPER Event data length for eventId {EVENTID}.",
++            "EVENTID", eventId);
++        return PLDM_ERROR;
++    }
++    const size_t cperEventDataSize =
++        eventDataSize - PLDM_PLATFORM_CPER_EVENT_MIN_LENGTH;
++    const size_t msgDataLen =
++        sizeof(pldm_platform_cper_event) + cperEventDataSize;
++    std::string terminusName = "";
++    auto msgData = std::make_unique<unsigned char[]>(msgDataLen);
++    auto cperEvent = new (msgData.get()) pldm_platform_cper_event;
++
++    auto rc = decode_pldm_platform_cper_event(eventData, eventDataSize,
++                                              cperEvent, msgDataLen);
++
++    if (rc)
++    {
++        lg2::error(
++            "Failed to decode CPER event for eventId {EVENTID} of terminus ID {TID} error {RC}.",
++            "EVENTID", eventId, "TID", tid, "RC", rc);
++        return rc;
++    }
++
++    if (termini.contains(tid) && !termini[tid])
++    {
++        terminusName = termini[tid]->getTerminusName();
++    }
++
++    /* Continue log CPER for terminus does not have Name */
++    if (terminusName.empty())
++    {
++        lg2::error(
++            "Source terminus ID {TID} of CPER event for eventId {EVENTID} does not have terminus name.",
++            "TID", tid, "EVENTID", eventId);
++    }
++
++    // save event data to file
++    std::string dirName{"/var/cper"};
++    auto dirStatus = fs::status(dirName);
++    if (fs::exists(dirStatus))
++    {
++        if (!fs::is_directory(dirStatus))
++        {
++            lg2::error("Failed to create '{DIRNAME}' directory", "DIRNAME",
++                       dirName);
++            return PLDM_ERROR;
++        }
++    }
++    else
++    {
++        try
++        {
++            fs::create_directory(dirName);
++        }
++        catch (const std::exception& e)
++        {
++            lg2::error(
++                "Failed to create /var/cper directory to store CPER Fault log");
++            return PLDM_ERROR;
++        }
++    }
++
++    std::string fileName{dirName + "/cper-XXXXXX"};
++    auto fd = mkstemp(fileName.data());
++    if (fd < 0)
++    {
++        lg2::error("Failed to generate temp file, error {ERRORNO}", "ERRORNO",
++                   std::strerror(errno));
++        return PLDM_ERROR;
++    }
++    close(fd);
++
++    std::ofstream ofs;
++    ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit |
++                   std::ofstream::eofbit);
++
++    try
++    {
++        ofs.open(fileName);
++        ofs.write(reinterpret_cast<const char*>(
++                      pldm_platform_cper_event_event_data(cperEvent)),
++                  cperEvent->event_data_length);
++        if (cperEvent->format_type == PLDM_PLATFORM_CPER_EVENT_WITH_HEADER)
++        {
++            rc = createCperDumpEntry("CPER", fileName, terminusName);
++        }
++        else
++        {
++            rc = createCperDumpEntry("CPERSection", fileName, terminusName);
++        }
++        ofs.close();
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to save CPER to '{FILENAME}', error - {ERROR}.",
++                   "FILENAME", fileName, "ERROR", e);
++        return PLDM_ERROR;
++    }
++    return rc;
++}
++
++int EventManager::createCperDumpEntry(const std::string& dataType,
++                                      const std::string& dataPath,
++                                      const std::string& terminusName)
++{
++    auto createDump =
++        [](std::map<std::string, std::variant<std::string, uint64_t>>&
++               addData) {
++            static constexpr auto dumpObjPath =
++                "/xyz/openbmc_project/dump/faultlog";
++            static constexpr auto dumpInterface =
++                "xyz.openbmc_project.Dump.Create";
++            auto& bus = pldm::utils::DBusHandler::getBus();
++
++            try
++            {
++                auto service = pldm::utils::DBusHandler().getService(
++                    dumpObjPath, dumpInterface);
++                auto method = bus.new_method_call(service.c_str(), dumpObjPath,
++                                                  dumpInterface, "CreateDump");
++                method.append(addData);
++                bus.call_noreply(method);
++            }
++            catch (const std::exception& e)
++            {
++                lg2::error(
++                    "Failed to create D-Bus Dump entry, error - {ERROR}.",
++                    "ERROR", e);
++            }
++        };
++
++    std::map<std::string, std::variant<std::string, uint64_t>> addData;
++    addData["Type"] = dataType;
++    addData["PrimaryLogId"] = dataPath;
++    addData["AdditionalTypeName"] = terminusName;
++    createDump(addData);
++    return PLDM_SUCCESS;
++}
++
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
+index f40db44..032651e 100644
+--- a/platform-mc/event_manager.hpp
++++ b/platform-mc/event_manager.hpp
+@@ -87,6 +87,30 @@ class EventManager
+                                   const uint8_t* sensorData,
+                                   size_t sensorDataLength);
+ 
++    /** @brief Helper method to process the PLDM CPER event class
++     *
++     *  @param[in] tid - tid where the event is from
++     *  @param[in] eventId - Event ID which is the source of event
++     *  @param[in] eventData - CPER event data
++     *  @param[in] eventDataSize - event data length
++     *
++     *  @return PLDM completion code
++     */
++    int processCperEvent(pldm_tid_t tid, uint16_t eventId,
++                         const uint8_t* eventData, const size_t eventDataSize);
++
++    /** @brief Helper method to create CPER dump log
++     *
++     *  @param[in] dataType - CPER event data type
++     *  @param[in] dataPath - CPER event data fault log file path
++     *  @param[in] terminusName - Terminus name which creates CPER event
++     *
++     *  @return PLDM completion code
++     */
++    int createCperDumpEntry(const std::string& dataType,
++                            const std::string& dataPath,
++                            const std::string& terminusName);
++
+     /** @brief Reference of terminusManager */
+     TerminusManager& terminusManager;
+ 
+diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
+index a4fd466..1c23795 100644
+--- a/platform-mc/manager.hpp
++++ b/platform-mc/manager.hpp
+@@ -101,7 +101,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+         sensorManager.stopPolling(tid);
+     }
+ 
+-    /** @brief Sensor event handler funtion
++    /** @brief Sensor event handler function
+      *
+      *  @param[in] request - Event message
+      *  @param[in] payloadLength - Event message payload size
+@@ -123,6 +123,28 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+         return PLDM_SUCCESS;
+     }
+ 
++    /** @brief CPER event handler function
++     *
++     *  @param[in] request - Event message
++     *  @param[in] payloadLength - Event message payload size
++     *  @param[in] tid - Terminus ID
++     *  @param[in] eventDataOffset - Event data offset
++     *
++     *  @return PLDM error code: PLDM_SUCCESS when there is no error in handling
++     *          the event
++     */
++    int handleCperEvent(const pldm_msg* request, size_t payloadLength,
++                        uint8_t /* formatVersion */, uint8_t tid,
++                        size_t eventDataOffset)
++    {
++        auto eventData =
++            const_cast<const uint8_t*>(request->payload) + eventDataOffset;
++        auto eventDataSize = payloadLength - eventDataOffset;
++        eventManager.handlePlatformEvent(tid, 0x00, PLDM_CPER_EVENT, eventData,
++                                         eventDataSize);
++        return PLDM_SUCCESS;
++    }
++
+   private:
+     /** @brief List of discovered termini */
+     TerminiMapper termini{};
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index 5aae40d..fc2b08d 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -275,6 +275,13 @@ int main(int argc, char** argv)
+         std::make_unique<platform_mc::Manager>(event, reqHandler, instanceIdDb);
+ 
+     pldm::responder::platform::EventMap addOnEventHandlers{
++        {PLDM_CPER_EVENT,
++         {[&platformManager](const pldm_msg* request, size_t payloadLength,
++                             uint8_t formatVersion, uint8_t tid,
++                             size_t eventDataOffset) {
++             return platformManager->handleCperEvent(
++                 request, payloadLength, formatVersion, tid, eventDataOffset);
++         }}},
+         {PLDM_SENSOR_EVENT,
+          {[&platformManager](const pldm_msg* request, size_t payloadLength,
+                              uint8_t formatVersion, uint8_t tid,
+-- 
+2.44.2
+

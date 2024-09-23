@@ -1,4 +1,4 @@
-From c5d6e329c16aa440be8307b843911bcb45005cdc Mon Sep 17 00:00:00 2001
+From e3379ba67d9514782732ecabfdeb3df5f080d06b Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 11 Dec 2023 10:22:47 +0800
 Subject: [PATCH 503/532] ARM: dts: aspeed: yosemite4: support mux to cpld
@@ -15,7 +15,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 49 insertions(+), 15 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 5c5a6fbc784f..edad22a3fb30 100644
+index 4a7e9287d471..d2e89fab9c95 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -36,6 +36,10 @@ aliases {
@@ -29,7 +29,7 @@ index 5c5a6fbc784f..edad22a3fb30 100644
  	};
  
  	chosen {
-@@ -951,24 +955,54 @@ &i2c12 {
+@@ -956,24 +960,54 @@ &i2c12 {
  	status = "okay";
  	bus-frequency = <400000>;
  

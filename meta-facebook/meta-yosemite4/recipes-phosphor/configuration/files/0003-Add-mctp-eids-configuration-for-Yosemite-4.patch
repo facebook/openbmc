@@ -1,7 +1,7 @@
-From bdd1285d245eceead8321e070ce804c67cf0dd3d Mon Sep 17 00:00:00 2001
+From de9a764f4a11a45020ea8daa9bab83908face7a3 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
-Subject: [PATCH 3/6] Add mctp eids configuration for Yosemite 4
+Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
 
 The MCTP specification is defined in DSP0236. As describe in section
 8.17.2, we need a configuration for static EIDs. The `mctpd` from
@@ -56,10 +56,10 @@ index 1ee4e91..5a9cb31 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Floating Falls', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
      "Type": "Board",
 diff --git a/configurations/yosemite4_sentineldome_t1.json b/configurations/yosemite4_sentineldome_t1.json
-index 9c04095..fa11bc2 100644
+index 6c0096b..524d41b 100644
 --- a/configurations/yosemite4_sentineldome_t1.json
 +++ b/configurations/yosemite4_sentineldome_t1.json
-@@ -328,6 +328,14 @@
+@@ -338,6 +338,14 @@
              "Zones": [
                  "Zone 1"
              ]
@@ -75,10 +75,10 @@ index 9c04095..fa11bc2 100644
      ],
      "Name": "Yosemite 4 Sentinel Dome T1 Slot $bus % 15",
 diff --git a/configurations/yosemite4_sentineldome_t1_retimer.json b/configurations/yosemite4_sentineldome_t1_retimer.json
-index a3ce02e..6796a9e 100644
+index 77ec74d..a5f93f2 100644
 --- a/configurations/yosemite4_sentineldome_t1_retimer.json
 +++ b/configurations/yosemite4_sentineldome_t1_retimer.json
-@@ -347,6 +347,14 @@
+@@ -358,6 +358,14 @@
              "Zones": [
                  "Zone 1"
              ]
@@ -94,10 +94,10 @@ index a3ce02e..6796a9e 100644
      ],
      "Name": "Yosemite 4 Sentinel Dome T1 with Retimer Slot $bus % 15",
 diff --git a/configurations/yosemite4_sentineldome_t2.json b/configurations/yosemite4_sentineldome_t2.json
-index 6786b60..69f722f 100644
+index 322e400..32814db 100644
 --- a/configurations/yosemite4_sentineldome_t2.json
 +++ b/configurations/yosemite4_sentineldome_t2.json
-@@ -387,6 +387,14 @@
+@@ -399,6 +399,14 @@
              "Zones": [
                  "Zone 1"
              ]
@@ -113,10 +113,10 @@ index 6786b60..69f722f 100644
      ],
      "Name": "Yosemite 4 Sentinel Dome T2 Slot $bus % 15",
 diff --git a/configurations/yosemite4_sentineldome_t2_retimer.json b/configurations/yosemite4_sentineldome_t2_retimer.json
-index effe42d..b5cc4e4 100644
+index c51db9e..d369b1f 100644
 --- a/configurations/yosemite4_sentineldome_t2_retimer.json
 +++ b/configurations/yosemite4_sentineldome_t2_retimer.json
-@@ -406,6 +406,14 @@
+@@ -419,6 +419,14 @@
              "Zones": [
                  "Zone 1"
              ]
@@ -132,10 +132,10 @@ index effe42d..b5cc4e4 100644
      ],
      "Name": "Yosemite 4 Sentinel Dome T2 with Retimer Slot $bus % 15",
 diff --git a/configurations/yosemite4_wailuafalls.json b/configurations/yosemite4_wailuafalls.json
-index 24eafa1..3fa9dd4 100644
+index 9ba7fd9..f1b566a 100644
 --- a/configurations/yosemite4_wailuafalls.json
 +++ b/configurations/yosemite4_wailuafalls.json
-@@ -207,6 +207,30 @@
+@@ -214,6 +214,30 @@
              "Zones": [
                  "Zone 1"
              ]
@@ -167,20 +167,20 @@ index 24eafa1..3fa9dd4 100644
      ],
      "Name": "Yosemite 4 Wailua Falls Slot $bus % 15",
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index f5ac45b..d8ccd77 100644
+index 071717f..bc88fbb 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -68,6 +68,9 @@
                  "EntityInstance": {
-                     "$ref": "#/definitions/Types/EntityInstance"
+                     "$ref": "#/$defs/Types/EntityInstance"
                  },
 +                "EndpointId": {
-+                    "$ref": "#/definitions/Types/EndpointId"
++                    "$ref": "#/$defs/Types/EndpointId"
 +                },
                  "FaultIndex": {
-                     "$ref": "#/definitions/Types/FaultIndex"
+                     "$ref": "#/$defs/Types/FaultIndex"
                  },
-@@ -850,6 +853,9 @@
+@@ -868,6 +871,9 @@
              "EntityInstance": {
                  "type": "number"
              },
@@ -191,5 +191,5 @@ index f5ac45b..d8ccd77 100644
                  "type": "number"
              },
 -- 
-2.25.1
+2.44.2
 

@@ -1,7 +1,7 @@
-From e878e7ec08c0daa5cd219d39beac45c9f6543681 Mon Sep 17 00:00:00 2001
+From bc3c2eedc0726622edc01ec486220ce92e16a1d8 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 7 Mar 2024 10:41:16 +0800
-Subject: [PATCH 4/6] configurations: yosemite4: Add IANA for sentinel dome
+Subject: [PATCH 4/7] configurations: yosemite4: Add IANA for sentinel dome
 
 Configuring IANA for devices indicates which OEM sets we should be
 using on which hardware.
@@ -22,10 +22,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  5 files changed, 10 insertions(+)
 
 diff --git a/configurations/yosemite4_sentineldome_t1.json b/configurations/yosemite4_sentineldome_t1.json
-index fa11bc2..8ffdc8d 100644
+index 524d41b..f68ac2e 100644
 --- a/configurations/yosemite4_sentineldome_t1.json
 +++ b/configurations/yosemite4_sentineldome_t1.json
-@@ -334,6 +334,7 @@
+@@ -344,6 +344,7 @@
              "Bus": "$bus % 16",
              "Class": "I2C",
              "EndpointId": "$bus % 15 * 10",
@@ -34,10 +34,10 @@ index fa11bc2..8ffdc8d 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/configurations/yosemite4_sentineldome_t1_retimer.json b/configurations/yosemite4_sentineldome_t1_retimer.json
-index 6796a9e..87407cc 100644
+index a5f93f2..43e275c 100644
 --- a/configurations/yosemite4_sentineldome_t1_retimer.json
 +++ b/configurations/yosemite4_sentineldome_t1_retimer.json
-@@ -353,6 +353,7 @@
+@@ -364,6 +364,7 @@
              "Bus": "$bus % 16",
              "Class": "I2C",
              "EndpointId": "$bus % 15 * 10",
@@ -46,10 +46,10 @@ index 6796a9e..87407cc 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/configurations/yosemite4_sentineldome_t2.json b/configurations/yosemite4_sentineldome_t2.json
-index 69f722f..ef60152 100644
+index 32814db..f5064cf 100644
 --- a/configurations/yosemite4_sentineldome_t2.json
 +++ b/configurations/yosemite4_sentineldome_t2.json
-@@ -393,6 +393,7 @@
+@@ -405,6 +405,7 @@
              "Bus": "$bus % 16",
              "Class": "I2C",
              "EndpointId": "$bus % 15 * 10",
@@ -58,10 +58,10 @@ index 69f722f..ef60152 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/configurations/yosemite4_sentineldome_t2_retimer.json b/configurations/yosemite4_sentineldome_t2_retimer.json
-index b5cc4e4..9a2e061 100644
+index d369b1f..f45294d 100644
 --- a/configurations/yosemite4_sentineldome_t2_retimer.json
 +++ b/configurations/yosemite4_sentineldome_t2_retimer.json
-@@ -412,6 +412,7 @@
+@@ -425,6 +425,7 @@
              "Bus": "$bus % 16",
              "Class": "I2C",
              "EndpointId": "$bus % 15 * 10",
@@ -70,20 +70,20 @@ index b5cc4e4..9a2e061 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index d8ccd77..0b5f38b 100644
+index bc88fbb..f07ad65 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -83,6 +83,9 @@
                  "GpioPolarity": {
-                     "$ref": "#/definitions/Types/GpioPolarity"
+                     "$ref": "#/$defs/Types/GpioPolarity"
                  },
 +                "IANA": {
-+                    "$ref": "#/definitions/Types/IANA"
++                    "$ref": "#/$defs/Types/IANA"
 +                },
                  "Index": {
-                     "$ref": "#/definitions/Types/Index"
+                     "$ref": "#/$defs/Types/Index"
                  },
-@@ -871,6 +874,9 @@
+@@ -889,6 +892,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },
@@ -94,5 +94,5 @@ index d8ccd77..0b5f38b 100644
                  "type": "number"
              },
 -- 
-2.25.1
+2.44.2
 

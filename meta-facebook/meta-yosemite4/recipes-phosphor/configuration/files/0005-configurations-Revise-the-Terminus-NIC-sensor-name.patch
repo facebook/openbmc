@@ -1,7 +1,7 @@
-From d85ed3ee13978639506e4c48f1fee2b73b972942 Mon Sep 17 00:00:00 2001
+From e3364988b3563f7cf328b13a5ca54b780e53854d Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 17 Jul 2024 11:33:26 +0800
-Subject: [PATCH 5/6] configurations: Revise the Terminus NIC sensor name
+Subject: [PATCH 5/7] configurations: Revise the Terminus NIC sensor name
 
 1. Revise the Terminus NIC temperature sensor name to NICX_TEMP_C.
 2. Revise the temperature threshold.
@@ -49,5 +49,5 @@ index 35dbf6f..19e8548 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.25.1
+2.44.2
 

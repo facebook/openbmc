@@ -1,7 +1,7 @@
-From 5830334d32a496c0d80b51b6c99531f4a7829424 Mon Sep 17 00:00:00 2001
+From e64228b1ba6ab17d779dc4c1a7335cf25f71b591 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
-Subject: [PATCH] Utils: support powerState for multi-node system
+Subject: [PATCH 5/5] Utils: support powerState for multi-node system
 
 The current code of dbus-sensors only get powerState values for Chassis0
 and Host0 which cannot be used for the system with multiple server
@@ -60,10 +60,10 @@ d 12.209
  7 files changed, 349 insertions(+), 178 deletions(-)
 
 diff --git a/src/HwmonTempMain.cpp b/src/HwmonTempMain.cpp
-index 956e9e5..dad4667 100644
+index f7ccb4f..82ec61b 100644
 --- a/src/HwmonTempMain.cpp
 +++ b/src/HwmonTempMain.cpp
-@@ -589,7 +589,11 @@ static void powerStateChanged(
+@@ -590,7 +590,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -151,7 +151,7 @@ index cebe730..27609be 100644
      ~PSUProperty() = default;
  
 diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
-index 26047cf..7ef7276 100644
+index 71c057d..8e1f989 100644
 --- a/src/PSUSensorMain.cpp
 +++ b/src/PSUSensorMain.cpp
 @@ -499,6 +499,7 @@ static void createSensorsCallback(
@@ -919,5 +919,5 @@ index 82798dc..be25504 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.25.1
+2.44.2
 

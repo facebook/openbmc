@@ -1,4 +1,4 @@
-From 9d1c2a81211321fd26d6454f3419061dfe958532 Mon Sep 17 00:00:00 2001
+From 41a40389760bfe2a5c007e140de9c82665ddfb09 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Wed, 4 Sep 2024 10:08:31 +0800
 Subject: [PATCH 531/532] hwmon: new driver for ISL28022 power monitor

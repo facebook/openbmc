@@ -1,4 +1,4 @@
-From 2b779ec408a50ea283afcf1e5185e6ef6f1c30fc Mon Sep 17 00:00:00 2001
+From 9cd073a35da705085f5c40ae256d4f24a6706192 Mon Sep 17 00:00:00 2001
 From: MarshallZhan <Marshall_Zhan@wiwynn.com>
 Date: Thu, 18 Jul 2024 17:15:21 +0800
 Subject: [PATCH 527/532] ARM: dts: aspeed: yosemite4: adjust mgm cpld ioexp
@@ -13,7 +13,7 @@ https://lore.kernel.org/lkml/20240719055859.4166887-28-Delphine_CC_Chiu@wiwynn.c
  1 file changed, 28 insertions(+), 29 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 1a09f05e7fae..a0c7d87a00d5 100644
+index ee4a22215672..f29ef15003d8 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -1167,6 +1167,33 @@ rtc@6f {

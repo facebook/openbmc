@@ -1,4 +1,4 @@
-From 860cb057ad444193084130040cea2a0077fcc1f4 Mon Sep 17 00:00:00 2001
+From f8e686c7267d6aadf1f55c1aab010b50f76898dc Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Fri, 9 Aug 2024 10:31:13 +0800
 Subject: [PATCH 529/532] ARM: dts: aspeed: yosemite4: fix GPIO linename typo
@@ -12,7 +12,7 @@ https://lore.kernel.org/lkml/20240816092417.3651434-29-Delphine_CC_Chiu@wiwynn.c
  1 file changed, 121 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 64656bdcc0f0..89e2c48bc3f7 100644
+index 7259d9af25e1..027653876fd6 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -1924,7 +1924,7 @@ &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased

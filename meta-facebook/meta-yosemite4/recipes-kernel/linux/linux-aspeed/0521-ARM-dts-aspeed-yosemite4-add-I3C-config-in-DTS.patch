@@ -1,4 +1,4 @@
-From c13a0b3ed051f2fad3e892a58a48cd5ce28ba8fd Mon Sep 17 00:00:00 2001
+From d4526477edc11cfaef1a89ef6ca634d7d690ceed Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 6 May 2024 19:35:43 +0800
 Subject: [PATCH 521/532] ARM: dts: aspeed: yosemite4: add I3C config in DTS
@@ -16,7 +16,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 85 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 522c635e1ec4..8570d8926ba8 100644
+index f9de4c1eda8b..1e73215379be 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -1567,6 +1567,91 @@ eeprom@50 {

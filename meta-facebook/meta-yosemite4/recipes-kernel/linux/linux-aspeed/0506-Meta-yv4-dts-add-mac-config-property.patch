@@ -1,4 +1,4 @@
-From 1ddd5ae5409ff9eea83c77acd368912b8dd2fc82 Mon Sep 17 00:00:00 2001
+From 45a05b010a97a21b1871e0897c7bb6dd06eb7b30 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 3 Jan 2024 13:49:42 +0800
 Subject: [PATCH 506/532] Meta yv4 dts : add mac config property
@@ -12,7 +12,7 @@ This commit depends on the patch below:
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 091637908df7..a9ae9ed991d2 100644
+index 8652778e826b..294c0d029580 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -137,6 +137,8 @@ &mac2 {

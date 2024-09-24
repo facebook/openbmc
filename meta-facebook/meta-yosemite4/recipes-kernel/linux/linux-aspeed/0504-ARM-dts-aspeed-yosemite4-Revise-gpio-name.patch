@@ -1,4 +1,4 @@
-From 4dd6a7272199d663f8111ded43514de38c05dee1 Mon Sep 17 00:00:00 2001
+From 5e9610c1e6e0a7ea4fc1ee15af755c30f84b7147 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 11 Dec 2023 10:29:27 +0800
 Subject: [PATCH 504/532] ARM: dts: aspeed: yosemite4: Revise gpio name
@@ -14,7 +14,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index d2e89fab9c95..97f63b1d1e00 100644
+index ec9bb6e4f5c5..bfccbf5ce349 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -1429,7 +1429,7 @@ &pinctrl_gpiu4_default &pinctrl_gpiu5_default

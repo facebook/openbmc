@@ -1,4 +1,4 @@
-From 93519a1bb8a6313fb4d0b951e15e2d8c887d177d Mon Sep 17 00:00:00 2001
+From 9706316b81a582eb56c24039350af7d57ce710ad Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 22 May 2024 17:15:50 +0800
 Subject: [PATCH 522/532] ARM: dts: aspeed: yosemite4: add fan led config
@@ -13,11 +13,11 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 150 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 8570d8926ba8..6aae946c5eac 100644
+index 1e73215379be..577dd7d40401 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -75,6 +75,154 @@ tpmdev@0 {
- 			reg = <0>;
+@@ -75,6 +75,154 @@ tpm@0 {
+ 			spi-max-frequency = <33000000>;
  		};
  	};
 +

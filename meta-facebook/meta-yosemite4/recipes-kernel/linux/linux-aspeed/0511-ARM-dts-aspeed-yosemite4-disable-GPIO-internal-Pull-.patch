@@ -1,4 +1,4 @@
-From a221bbca9e75ca596689c1605935aba406ca716d Mon Sep 17 00:00:00 2001
+From 9272cb622e18fd29a0ff4b360b9e7dd4b08930e2 Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Mon, 4 Mar 2024 17:48:40 +0800
 Subject: [PATCH 511/532] ARM: dts: aspeed: yosemite4: disable GPIO internal
@@ -10,7 +10,7 @@ Disable GPIO internal Pull-Down for hardware validation.
  1 file changed, 44 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 50c56d139c65..fc65e7e98a3b 100644
+index 1b273beced36..fd557a6fdff8 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -1458,10 +1458,53 @@ &sgpiom0 {

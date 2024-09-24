@@ -1,4 +1,4 @@
-From e0f8edb998b1df5524e3d87eeda919ba5c22d8fd Mon Sep 17 00:00:00 2001
+From 3a977fc10e6b93eb9fade155c64d30652bde5856 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Mon, 29 Jan 2024 16:59:19 +0800
 Subject: [PATCH 508/532] Add ina233 and ina238 devicetree config for EVT
@@ -9,7 +9,7 @@ Subject: [PATCH 508/532] Add ina233 and ina238 devicetree config for EVT
  1 file changed, 13 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 891efd2bfec8..e4f544620910 100644
+index 09d3c13171d4..e786ffc9497d 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -924,6 +924,19 @@ power-sensor@40 {

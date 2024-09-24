@@ -1,4 +1,4 @@
-From e14b4c6dfa27c4a5623e6ecd872da0f43b26a3d9 Mon Sep 17 00:00:00 2001
+From 0cde2791dcfe44456507bf29646c9e8b9b3c0a39 Mon Sep 17 00:00:00 2001
 From: Jerry C Chen <Jerry_C_Chen@wiwynn.com>
 Date: Tue, 23 Jul 2024 14:13:16 +0800
 Subject: [PATCH 528/532] ARM: dts: aspeed: yosemite4: remove mctp driver on
@@ -12,7 +12,7 @@ lore link: https://lore.kernel.org/lkml/20240719055859.4166887-28-Delphine_CC_Ch
  1 file changed, 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index a0c7d87a00d5..64656bdcc0f0 100644
+index f29ef15003d8..7259d9af25e1 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -1624,7 +1624,6 @@ adc@35 {

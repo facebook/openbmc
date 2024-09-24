@@ -1,0 +1,3143 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/sensors
+  title: Swagger doc for /api/sensors
+  version: 1.0.0
+paths:
+  /api/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  MB_INLET_R_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_INLET_L_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_OUTLET_R_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_OUTLET_L_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A3_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A4_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A5_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A6_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A7_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A8_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A9_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A10_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A11_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B3_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B4_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B5_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B6_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B7_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B8_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B9_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B10_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B11_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_VCORE0_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_VCORE0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_VCORE0_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_VCORE0_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_SOC_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_SOC_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_SOC_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_SOC_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_VCORE1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_VCORE1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_VCORE1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_VCORE1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_PVDDIO_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_PVDDIO_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_PVDDIO_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_PVDDIO_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_PVDD11_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_PVDD11_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_PVDD11_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU0_PVDD11_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_VCORE0_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_VCORE0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_VCORE0_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_VCORE0_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_SOC_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_SOC_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_SOC_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_SOC_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_VCORE1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_VCORE1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_VCORE1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_VCORE1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_PVDDIO_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_PVDDIO_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_PVDDIO_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_PVDDIO_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_PVDD11_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_PVDD11_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_PVDD11_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_CPU1_PVDD11_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_PKG_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_PKG_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P3V_BAT_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_E1S_P3V3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_E1S_P12V_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_E1S_P12V_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_E1S_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P12V_AUX_IN0_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P5V_IN3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P3V3_IN4_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P3V3_AUX_IN5_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A0_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A2_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A3_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A4_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A5_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A6_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A7_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A8_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A9_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A10_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU0_DIMM_A11_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B0_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B2_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B3_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B4_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B5_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B6_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B7_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B8_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B9_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B10_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_CPU1_DIMM_B11_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_RETIMER0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_RETIMER1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_RETIMER2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_RETIMER3_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_RETIMER4_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_RETIMER5_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_RETIMER6_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_RETIMER7_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P5V_AUX_ADC_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P1V8_AUX_ADC_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P1V2_AUX_ADC_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P1V8_CPU0_RT_1D_ADC_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_P1V8_CPU1_RT_1D_ADC_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_PVDD_33_S5_ADC_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_PVDD18_S5_P0_ADC_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_PVDD18_S5_P1_ADC_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_RT_P0V9_VDD1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_RT_P0V9_VDD1_VOUT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_RT_P0V9_VDD1_IOUT_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_RT_P0V9_VDD1_POUT_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_RT_P0V9_VDD2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_RT_P0V9_VDD2_VOUT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_RT_P0V9_VDD2_IOUT_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_VR_RT_P0V9_VDD2_POUT_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_HSC_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_HSC_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_HSC_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MB_HSC_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC0_MEZZ0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC0_MEZZ0_P3V3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC0_MEZZ0_P12V_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC0_MEZZ0_P12V_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC1_MEZZ1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC1_MEZZ1_P3V3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC1_MEZZ1_P12V_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC1_MEZZ1_P12V_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SCM_P12V_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SCM_P5V_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SCM_P3V3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SCM_P2V5_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SCM_P1V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SCM_PGPPA_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SCM_P1V2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SCM_P1V0_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SCM_INLET_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_HSC0_VIN_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_HSC0_VOUT_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_HSC0_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_HSC0_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_HSC0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_P3V3_AUX_IN6_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK0_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK0_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK2_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC1_VIN_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC1_VOUT_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC2_VIN_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC2_VOUT_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC2_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC2_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  HPDB_HSC2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN0_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN0_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN1_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN1_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN4_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN4_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN5_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN5_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN8_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN8_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN9_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN9_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN12_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN12_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN13_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP1_FAN13_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN2_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN2_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN3_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN3_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN6_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN6_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN7_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN7_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN10_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN10_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN11_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN11_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN14_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN14_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN15_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN15_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_INLET_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_OUTLET_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_OUTLET_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_HSC1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_HSC2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_PEX0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_PEX1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_POWER_BRICK_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_POWER_BRICK_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_AUX_L_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_AUX_R_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_AUX_1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_AUX_2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P5V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P3V3_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V2_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V8_PEX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V8_1_VDD_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V8_2_VDD_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V25_1_VDD_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V25_2_VDD_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL4_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL5_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL6_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL7_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL9_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL10_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL11_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL12_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_AUX_L_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_AUX_R_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_AUX_1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_AUX_2_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL2_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL3_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL4_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL5_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL6_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL7_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL8_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL9_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL10_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL11_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL12_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_AUX_L_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_AUX_R_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_AUX_1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_AUX_2_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL2_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL3_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL4_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL5_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL6_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL7_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL8_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL9_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL10_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL11_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P12V_ACCL12_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_STBY_L_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_STBY_R_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_STBY_L_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_STBY_R_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_VDD_1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_VDD_2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_VDD_1_VOLT_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_VDD_2_VOLT_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_VDD_1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_VDD_2_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_STBY_L_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P51V_STBY_R_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_1_VDD_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_2_VDD_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V25_1_12VIN_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V25_2_12VIN_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V25_1_12VIN_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V25_2_12VIN_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V25_1_12VIN_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P1V25_2_12VIN_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_Freya_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_Freya_1_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_Freya_1_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_Freya_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_Freya_2_VOL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_Freya_2_VOL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_INLET_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_OUTLET_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_PU4_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P3V3_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P1V2_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P3V3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL4_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL5_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL6_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL7_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD4_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SW_4C_1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SW_4C_2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL2_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL3_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL4_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL5_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL6_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL7_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL8_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD2_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD3_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD4_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SW_4C_1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SW_4C_2_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL2_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL3_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL4_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL5_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL6_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL7_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_CXL8_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD2_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD3_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SSD4_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SW_4C_1_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_P12V_AUX_SW_4C_2_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_SSD1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_SSD2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_SSD3_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  MC_SSD4_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SYSTEM_POWER_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  SYSTEM_AIRFLOW_CFM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_VDD_1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_P0V8_VDD_2_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL1_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL2_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL3_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL4_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL5_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL6_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL7_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL8_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL9_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL10_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL11_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_ASIC_1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_ASIC_1_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_ASIC_1_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_ASIC_1_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_ASIC_2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_ASIC_2_0V8_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_ASIC_2_1V05_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  CB_ACCL12_ASIC_2_12V_AUX_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

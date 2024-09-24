@@ -1,0 +1,119 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/server/vpdb/sensors
+  title: Swagger doc for /api/server/vpdb/sensors
+  version: 1.0.0
+paths:
+  /api/server/vpdb/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  VPDB_HSC0_VIN_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_HSC0_VOUT_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_HSC0_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_HSC0_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_HSC0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_P3V3_AUX_IN6_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK0_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK0_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK1_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK1_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK1_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK2_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK2_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  VPDB_BRICK2_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

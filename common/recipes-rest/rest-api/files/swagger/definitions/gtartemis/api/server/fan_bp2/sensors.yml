@@ -1,0 +1,125 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/server/fan_bp2/sensors
+  title: Swagger doc for /api/server/fan_bp2/sensors
+  version: 1.0.0
+paths:
+  /api/server/fan_bp2/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  FAN_BP2_FAN2_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN2_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN3_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN3_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN6_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN6_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN7_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN7_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN10_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN10_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN11_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN11_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN14_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN14_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN15_INLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  FAN_BP2_FAN15_OUTLET_SPEED_RPM:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

@@ -1,0 +1,53 @@
+swagger: '2.0'
+info:
+  description: Swagger doc for /api/server/mezz0/sensors
+  title: Swagger doc for /api/server/mezz0/sensors
+  version: 1.0.0
+paths:
+  /api/server/mezz0/sensors:
+    get:
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  NIC0_MEZZ0_TEMP_C:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC0_MEZZ0_P3V3_VOLT_V:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC0_MEZZ0_P12V_CURR_A:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+                  NIC0_MEZZ0_P12V_PWR_W:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      value:
+                        type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

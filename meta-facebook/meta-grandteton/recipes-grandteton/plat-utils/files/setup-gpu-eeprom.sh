@@ -86,6 +86,7 @@ setup_gpu_eeprom () {
 
   MAX_RETRY=10
 
+for count in $(seq 1 $MAX_RETRY); do
   for loop in "${!addr[@]}"; do
     response=$(i2cget -y -f 9 "${addr[$loop]}" 0x00)
     if [[ $? -eq 0 && ! "$response" =~ "Error" ]]; then
@@ -98,8 +99,11 @@ setup_gpu_eeprom () {
         gpu_snr_mon "${gpu[$loop]}" enable
         return 0
       fi
+    else
+      sleep 0.2
     fi
   done
+done
 
   $KV_CMD set $GPU_CONFIG "unknown" persistent
   gpu_snr_mon hgx disable

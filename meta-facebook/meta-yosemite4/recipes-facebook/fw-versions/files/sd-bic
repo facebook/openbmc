@@ -8,11 +8,6 @@ MAX_RETRIES=3
 RETRY_COUNT=0
 version=""
 
-if [ -z "$version" ]; then
-    echo "Failed to get slot$slot sd bic version"
-    exit 1
-fi
-
 while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
     version=$(
         pldmtool fw_update GetFwParams -m $eid |

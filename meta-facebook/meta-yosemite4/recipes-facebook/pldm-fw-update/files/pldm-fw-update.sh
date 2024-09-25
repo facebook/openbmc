@@ -683,22 +683,74 @@ delete_software_id
 if [ "$bic_name" == "sd" ]; then
 	echo "Updating SD BIC version to Settings D-Bus"
 	sleep 15 # wait for BIC reset
-	/usr/libexec/fw-versions/sd-bic "$slot_id"
-	ret=$?
-	# Check if the command was successful
-	if [ "$ret" -eq "0" ]; then
-		version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
-		echo "Version retrieved successfully: $version"
+	# Check if slot_id is empty
+	if [ -z "$slot_id" ]; then
+		# Loop through slot_id values from 1 to 8 if slot_id is empty
+		for slot_id in {1..8}; do
+			# Check EID presence first
+			busctl get-property xyz.openbmc_project.MCTP \
+				/xyz/openbmc_project/mctp/1/"$slot_id"0 \
+				xyz.openbmc_project.MCTP.Endpoint EID  > /dev/null 2>&1
+			ret=$?
+			if [ "$ret" -eq 0 ]; then
+				/usr/libexec/fw-versions/sd-bic "$slot_id"
+				ret=$?
+				# Check if the command was successful
+				if [ "$ret" -eq 0 ]; then
+					version=$(busctl get-property xyz.openbmc_project.Settings \
+						"/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" \
+						xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+					echo "Version retrieved successfully: $version"
+				fi
+			fi
+		done
+	else
+		# Execute the command with the provided slot_id
+		/usr/libexec/fw-versions/sd-bic "$slot_id"
+		ret=$?
+		# Check if the command was successful
+		if [ "$ret" -eq 0 ]; then
+			version=$(busctl get-property xyz.openbmc_project.Settings \
+				"/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" \
+				xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+			echo "Version retrieved successfully: $version"
+		fi
 	fi
 elif [ "$bic_name" == "wf" ]; then
 	echo "Updating WF BIC version to Settings D-Bus"
 	sleep 15 # wait for BIC reset
-	/usr/libexec/fw-versions/wf-bic "$slot_id"
-	ret=$?
-	# Check if the command was successful
-	if [ "$ret" -eq "0" ]; then
-		version=$(busctl get-property xyz.openbmc_project.Settings "/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
-		echo "Version retrieved successfully: $version"
+	# Check if slot_id is empty
+	if [ -z "$slot_id" ]; then
+		# Loop through slot_id values from 1 to 8 if slot_id is empty
+		for slot_id in {1..8}; do
+			# Check EID presence first
+			busctl get-property xyz.openbmc_project.MCTP \
+				/xyz/openbmc_project/mctp/1/"$slot_id"2 \
+				xyz.openbmc_project.MCTP.Endpoint EID  > /dev/null 2>&1
+			ret=$?
+			if [ "$ret" -eq 0 ]; then
+				/usr/libexec/fw-versions/wf-bic "$slot_id"
+				ret=$?
+				# Check if the command was successful
+				if [ "$ret" -eq 0 ]; then
+					version=$(busctl get-property xyz.openbmc_project.Settings \
+						"/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" \
+						xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+					echo "Version retrieved successfully: $version"
+				fi
+			fi
+		done
+	else
+		# Execute the command with the provided slot_id
+		/usr/libexec/fw-versions/wf-bic "$slot_id"
+		ret=$?
+		# Check if the command was successful
+		if [ "$ret" -eq 0 ]; then
+			version=$(busctl get-property xyz.openbmc_project.Settings \
+				"/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" \
+				xyz.openbmc_project.Software.Version Version | awk -F'"' '{print $2}')
+			echo "Version retrieved successfully: $version"
+		fi
 	fi
 fi
 

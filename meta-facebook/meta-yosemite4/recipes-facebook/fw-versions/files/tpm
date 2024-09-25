@@ -49,6 +49,7 @@ while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
             /xyz/openbmc_project/software/chassis/Management_Board_tpm \
             xyz.openbmc_project.Software.Version \
             Version "s" "$version"
+        break
     else
         echo "Vendor string is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
         RETRY_COUNT=$((RETRY_COUNT + 1))

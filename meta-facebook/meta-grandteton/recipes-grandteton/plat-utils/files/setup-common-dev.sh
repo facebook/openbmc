@@ -116,7 +116,23 @@ probe_mb_eeprom() {
     mb_product="GTA"
   fi
 }
+
+probe_mb_nic1_eeprom() {
+  i2c_device_add 4 0x52 24c64
+  product=$(/usr/bin/strings /sys/bus/i2c/drivers/at24/4-0052/eeprom | grep -i "Broadcom")
+  if [ -n "$product" ]; then
+    kv set swb_nic_vendor "Broadcom "
+  else
+    kv set swb_nic_vendor "Mellanox "
+  fi
+}
+
 probe_mb_eeprom
+
+if [ $mb_product == "GTA" ]; then
+  #Set MB NIC1 vendor for Artemis platform
+  probe_mb_nic1_eeprom
+fi
 
 if [ $mb_product != "GTA" ]; then
   # Swith Board

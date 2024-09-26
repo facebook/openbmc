@@ -227,7 +227,9 @@ delete_software_id() {
 			if [ "${counter}" == 10 ]; then
 				echo "Object /xyz/openbmc_project/software/$software_id is stalled in activating"
 				echo "Restarting pldmd to recover it."
-				systemctl restart pldmd
+				systemctl stop pldmd
+				sleep 10
+				systemctl start pldmd
 				sleep 40
 				exit $FAIL_TO_UPDATE_PLDM_FAIL_TO_DELETE_SOFTWARE_ID
 			fi

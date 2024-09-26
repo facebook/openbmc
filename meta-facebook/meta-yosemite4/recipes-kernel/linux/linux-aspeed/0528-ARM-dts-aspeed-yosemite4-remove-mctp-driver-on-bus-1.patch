@@ -1,4 +1,4 @@
-From 0cde2791dcfe44456507bf29646c9e8b9b3c0a39 Mon Sep 17 00:00:00 2001
+From 9ff8dcae7641ea6633cf313151dcc09d77868ebd Mon Sep 17 00:00:00 2001
 From: Jerry C Chen <Jerry_C_Chen@wiwynn.com>
 Date: Tue, 23 Jul 2024 14:13:16 +0800
 Subject: [PATCH 528/532] ARM: dts: aspeed: yosemite4: remove mctp driver on

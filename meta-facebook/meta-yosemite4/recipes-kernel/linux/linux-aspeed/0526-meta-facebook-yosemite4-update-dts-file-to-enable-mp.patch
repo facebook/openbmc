@@ -1,4 +1,4 @@
-From 45963fad8d4f2a9ae0f6ad0239043696f5d8fc84 Mon Sep 17 00:00:00 2001
+From 876fa357706813a9645b4c2469258f5a15f1388f Mon Sep 17 00:00:00 2001
 From: Rush_Chen_Wiwynn <Rush_Chen@wiwynn.com>
 Date: Thu, 20 Jun 2024 15:07:00 +0800
 Subject: [PATCH 526/532] meta-facebook: yosemite4: update dts file to enable

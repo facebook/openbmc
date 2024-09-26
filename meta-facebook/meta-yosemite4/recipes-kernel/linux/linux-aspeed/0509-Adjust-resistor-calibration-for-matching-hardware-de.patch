@@ -1,4 +1,4 @@
-From 5777972772a1e959280d11425d5ff25859ac2a04 Mon Sep 17 00:00:00 2001
+From f94feac2a4f68774f0c29969b46cae48356b95cd Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Tue, 5 Mar 2024 15:15:49 +0800
 Subject: [PATCH 509/532] Adjust resistor-calibration for matching hardware

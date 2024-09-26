@@ -1,4 +1,4 @@
-From 6dc5d711fdbdfaf306eed5cde382fe81d6c3e30e Mon Sep 17 00:00:00 2001
+From 9fb01249678dc2e3eb15123b9006d19e783db7d4 Mon Sep 17 00:00:00 2001
 From: DelphineCCChiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 21 Sep 2023 18:35:19 +0800
 Subject: [PATCH 501/532] hwmon: (ina233) Add ina233 driver

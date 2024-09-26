@@ -1,4 +1,4 @@
-From b8f2a0747764c2c8c25da3b98c7a3ab05a4584b6 Mon Sep 17 00:00:00 2001
+From f39e981eb92e730fc06600e03de8f0ee0db34dcf Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Mon, 29 Apr 2024 15:36:24 +0800
 Subject: [PATCH 517/532] i3c: dw: Add hot-join support.

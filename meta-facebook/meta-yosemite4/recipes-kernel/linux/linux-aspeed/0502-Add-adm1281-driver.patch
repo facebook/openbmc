@@ -1,4 +1,4 @@
-From 35f10d1c02e5568b9bccb80427f0da4f504e07fb Mon Sep 17 00:00:00 2001
+From 3a4b6a4de543d2f6243ea15016eec03895b38048 Mon Sep 17 00:00:00 2001
 From: Eli_Huang <Eli_Huang@wiwynn.com>
 Date: Tue, 26 Sep 2023 10:20:13 +0800
 Subject: [PATCH 502/532] Add adm1281 driver

@@ -1,4 +1,4 @@
-From 358c56bba470fae78ea6276e01177e6dbe2eb1e4 Mon Sep 17 00:00:00 2001
+From fc0b67612c5442a8b5f0eb111bcec2450cd1e76d Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Wed, 20 Mar 2024 11:45:42 +0800
 Subject: [PATCH 513/532] hwmon: Driver for Nuvoton NCT7363Y

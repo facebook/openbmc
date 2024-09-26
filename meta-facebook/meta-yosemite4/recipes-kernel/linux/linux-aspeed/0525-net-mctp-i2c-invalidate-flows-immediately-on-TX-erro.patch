@@ -1,4 +1,4 @@
-From 81b4f6e1a49f57a1511be653f5b3dd90eaab9cd8 Mon Sep 17 00:00:00 2001
+From 28daa9d42dede856db1f51e8105d5d5633720e61 Mon Sep 17 00:00:00 2001
 From: Jeremy Kerr <jk@codeconstruct.com.au>
 Date: Wed, 19 Jun 2024 22:06:08 +0800
 Subject: [PATCH 525/532] net: mctp-i2c: invalidate flows immediately on TX

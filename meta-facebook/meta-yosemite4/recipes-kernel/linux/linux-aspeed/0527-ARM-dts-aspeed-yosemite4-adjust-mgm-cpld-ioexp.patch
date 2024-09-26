@@ -1,4 +1,4 @@
-From 9cd073a35da705085f5c40ae256d4f24a6706192 Mon Sep 17 00:00:00 2001
+From dcee78720cdb179a63cfca7004dffc5f35000db0 Mon Sep 17 00:00:00 2001
 From: MarshallZhan <Marshall_Zhan@wiwynn.com>
 Date: Thu, 18 Jul 2024 17:15:21 +0800
 Subject: [PATCH 527/532] ARM: dts: aspeed: yosemite4: adjust mgm cpld ioexp

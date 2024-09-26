@@ -1,4 +1,4 @@
-From f53b96e27c664cc508a88f288e7130b27f238cc0 Mon Sep 17 00:00:00 2001
+From e26b3e92099a4c3d7319d3af96a6ff6e0f534e83 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Tue, 30 Jan 2024 15:13:10 +0800
 Subject: [PATCH 507/532] yosemite4: Add EEPROMs for NICs in DTS

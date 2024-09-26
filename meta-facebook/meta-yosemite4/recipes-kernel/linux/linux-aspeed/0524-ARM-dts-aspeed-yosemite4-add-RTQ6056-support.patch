@@ -1,4 +1,4 @@
-From b743476bf7167f0936304448fec402a640551ebc Mon Sep 17 00:00:00 2001
+From 328ac45904839f48509110ca142373a8b3f1cf0f Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Thu, 20 Jun 2024 16:58:49 +0800
 Subject: [PATCH 524/532] ARM: dts: aspeed: yosemite4: add RTQ6056 support

@@ -1,4 +1,4 @@
-From 3bc915130a7e2a0960cc281923c833db263fddd2 Mon Sep 17 00:00:00 2001
+From 186469049e2f1aea6175376c11ac49250874dd03 Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Sat, 17 Feb 2024 21:14:11 +0800
 Subject: [PATCH 519/532] dt-bindings: i3c-hub: Add Renesas RG3MxxB12A1 I3C HUB

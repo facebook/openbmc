@@ -7,8 +7,7 @@
         ]
     ],
     "probe_register": 0,
-    "default_baudrate": 115200,
-    "preferred_baudrate": 115200,
+    "baudrate": 115200,
     "special_handlers": [
         {
             "reg": 80,

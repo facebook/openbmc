@@ -4,7 +4,7 @@
   "title": "Rackmon Register Map Configuration",
   "description": "Schema to test the Register Map JSON configuration",
   "type": "object",
-  "required": ["name", "address_range", "probe_register", "default_baudrate", "registers"],
+  "required": ["name", "address_range", "probe_register", "baudrate", "registers"],
   "additionalProperties": false,
   
   "properties": {
@@ -31,12 +31,7 @@
       "minimum": 0,
       "maximum": 65535
     },
-    "default_baudrate": {
-      "type": "integer",
-      "minimum": 19200,
-      "maximum": 115200
-    },
-    "preferred_baudrate": {
+    "baudrate": {
       "type": "integer",
       "minimum": 19200,
       "maximum": 115200
@@ -59,9 +54,6 @@
       "items": {
         "$ref": "registermap/special_handlers.json#/definitions"
       }
-    },
-    "baud_config": {
-      "$ref": "registermap/baud_config.json#definitions"
     }
   }
 }

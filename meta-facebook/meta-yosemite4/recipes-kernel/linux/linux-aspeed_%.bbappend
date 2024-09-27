@@ -33,4 +33,5 @@ SRC_URI += " \
     file://0530-ARM-dts-aspeed-yosemitet4-add-RTQ6056-support-on-11-.patch \
     file://0531-hwmon-new-driver-for-ISL28022-power-monitor.patch \
     file://0532-ARM-dts-aspeed-yosemite4-remove-power-sensor-0x44-on.patch \
+    file://0533-Add-SQ52205-driver.patch \
 "

@@ -36,5 +36,8 @@ check_packages
 curr=$(dirname "$0")
 cd "$curr" || exit 1
 cpp_linter
+
+set -e
 meson -Dsyslog=false -Dpython-path=/usr/bin/python3 /tmp/builddir
+ninja -C /tmp/builddir
 meson test -C /tmp/builddir

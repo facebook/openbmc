@@ -35,4 +35,5 @@ SRC_URI += " \
     file://0532-ARM-dts-aspeed-yosemite4-remove-power-sensor-0x44-on.patch \
     file://0533-Add-SQ52205-driver.patch \
     file://0534-ARM-dts-aspeed-yosemite4-add-Spider-Board-SQ52205-dr.patch \
+    file://0535-ARM-dts-aspeed-yosemite4-add-GPIO-I6-to-dts.patch \
 "

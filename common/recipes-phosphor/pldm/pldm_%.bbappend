@@ -17,6 +17,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0011-Support-OEM-META-command-for-NIC-power-cycle.patch \
     file://0012-Add-event-log-type-for-PMIC-error-VR-alert.patch \
     file://0013-Update-retimer-version-after-post-complete.patch \
+    file://0014-Support-OEM-META-command-for-getting-Http-boot-certi.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

@@ -172,6 +172,8 @@ static altera_max10_attr_t scm_cpld_attr = {
   I2C_BIG_ENDIAN
 };
 static i2c_attr_t pdb_cpld_attr = {14, 0x40, nullptr};
+static i2c_attr_t hdd_cpld_attr = {3, 0x30, nullptr};
 
 GpioControlCpld scm_cpld("scm", "cpld", MAX10_10M16, &scm_cpld_attr, "USBDBG_IPMI_EN_L", true);
 CpldComponent pdb_cpld("pdb", "cpld", LCMXO3_2100C, &pdb_cpld_attr);
+CpldComponent hdd_cpld("hdd", "cpld", LCMXO2_4000HC, &hdd_cpld_attr);

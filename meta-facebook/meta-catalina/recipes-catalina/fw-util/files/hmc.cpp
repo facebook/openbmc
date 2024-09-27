@@ -6,6 +6,7 @@ class HmcComponent : public Component {
       : Component(fru, comp) {}
 
     int update(std::string image);
+    int fupdate(std::string image);
     int print_version();
 };
 
@@ -16,6 +17,16 @@ int HmcComponent::update(const std::string image)
   int ret;
 
   cmd_str << "hmc-util --update " << component() << " " << image;
+  ret = sys().runcmd(cmd_str.str());
+  return ret;
+}
+
+int HmcComponent::fupdate(const std::string image)
+{
+  std::stringstream cmd_str;
+  int ret;
+
+  cmd_str << "hmc-util --force-update " << component() << " " << image;
   ret = sys().runcmd(cmd_str.str());
   return ret;
 }

@@ -20,7 +20,7 @@ using namespace std;
 
 //NIC Component
 NicExtComponent nic0("nic0", "nic0", "nic0_fw_ver", FRU_NIC0, 0, 0x00);
-// NicExtComponent nic1("nic1", "nic1", "nic1_fw_ver", FRU_NIC1, 1, 0x00);
+NicExtComponent nic1("nic1", "nic1", "nic1_fw_ver", FRU_NIC1, 1, 0x00);
 
 //VR Component
 VrComponent pdb_vr_n1("pdb", "vr_n1", "PDB_P12V_N1_VR");

@@ -1,0 +1,8 @@
+[Unit]
+Description=Run sync-hmc-datetime service every hour 
+
+[Timer]
+OnUnitActiveSec=1h
+
+[Install]
+WantedBy=timers.target

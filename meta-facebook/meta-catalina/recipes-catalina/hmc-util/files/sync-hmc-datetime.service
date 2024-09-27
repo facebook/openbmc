@@ -1,0 +1,11 @@
+[Unit]
+Description=Sync HMC Datetime
+After=catalina-sys-init.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/hmc-util --sync-datetime 30 10
+SyslogIdentifier=sync-hmc-datetime
+
+[Install]
+WantedBy=multi-user.target

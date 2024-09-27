@@ -6,26 +6,33 @@ HMC_URL_PREFIX="http://${HMC_IP}"
 
 FW_UPDATE_URL="${HMC_URL_PREFIX}/redfish/v1/UpdateService/update-multipart"
 FW_INVENTORY_URL="${HMC_URL_PREFIX}/redfish/v1/UpdateService/FirmwareInventory"
-#CAK_INSTALL_CPU_0="${HMC_URL_PREFIX}/redfish/v1/Chassis/HGX_ERoT_CPU_0/Actions/Oem/CAKInstall"
-#CAK_INSTALL_CPU_1="${HMC_URL_PREFIX}/redfish/v1/Chassis/HGX_ERoT_CPU_1/Actions/Oem/CAKInstall"
+MANAGERS_HGX_BMC_0="${HMC_URL_PREFIX}/redfish/v1/Managers/HGX_BMC_0"
+
+HMC_MANG_COMP_LIST=(
+    "HGX_FW_BMC_0"
+    "HGX_FW_CPLD_0"
+    "HGX_FW_CPU_0"
+    "HGX_FW_CPU_1"
+    "HGX_FW_ERoT_BMC_0"
+    "HGX_FW_ERoT_CPU_0"
+    "HGX_FW_ERoT_CPU_1"
+    "HGX_FW_ERoT_FPGA_0"
+    "HGX_FW_ERoT_FPGA_1"
+    "HGX_FW_FPGA_0"
+    "HGX_FW_FPGA_1"
+    "HGX_FW_GPU_0"
+    "HGX_FW_GPU_1"
+    "HGX_FW_GPU_2"
+    "HGX_FW_GPU_3"
+    "HGX_InfoROM_GPU_0"
+    "HGX_InfoROM_GPU_1"
+    "HGX_InfoROM_GPU_2"
+    "HGX_InfoROM_GPU_3"
+)
 
 is_hmc_managed_fw_comp()
 {
-    local managed_components=(
-        "HGX_FW_BMC_0"
-        "HGX_FW_CPLD_0"
-        "HGX_FW_CPU_0"
-        "HGX_FW_CPU_1"
-        "HGX_FW_FPGA_0"
-        "HGX_FW_FPGA_1"
-        "HGX_FW_ERoT_BMC_0"
-        "HGX_FW_ERoT_CPU_0"
-        "HGX_FW_ERoT_CPU_1"
-        "HGX_FW_ERoT_FPGA_0"
-        "HGX_FW_ERoT_FPGA_1"
-    )
-
-    for component in "${managed_components[@]}"; do
+    for component in "${HMC_MANG_COMP_LIST[@]}"; do
         if [ "$1" = "$component" ]; then
             return 0
         fi
@@ -38,10 +45,17 @@ get_comp_version()
 {
     CURL_CMD="curl -s '${FW_INVENTORY_URL}/$1'"
     if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        # HMC not response
         echo "$1 : NA"
+        return 1
+    elif ! echo "${CURL_DATA}" | jq -e '.Version' > /dev/null; then
+        # component's firminventory not available yet
+        echo "$1 : NA"
+        return 1
     else
         echo "${CURL_DATA}" | jq -r '. | "\(.Id): \(.Version)"'
     fi
+    return 0
 }
 
 get_all_comp_version()
@@ -49,22 +63,54 @@ get_all_comp_version()
     CURL_CMD="curl -s '${FW_INVENTORY_URL}?\$expand=.(\$levels=1)'"
     if ! CURL_DATA=$(eval "${CURL_CMD}"); then
         echo "failed: HMC not response."
+        return 1
     else
         echo "${CURL_DATA}" | jq -r '.Members[] | "\(.Id): \(.Version)"'
     fi
+    return 0
+}
+
+get_all_firmware_path_without_sbios()
+{
+    CURL_CMD="curl -s '${FW_INVENTORY_URL}'"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        return 1
+    fi
+    echo "${CURL_DATA}" | jq -r '.Members[]."@odata.id"' | grep -v HGX_FW_CPU_ | awk '{printf "\"%s\",", $0}' | sed 's/,$/\n/'
+    return 0
 }
 
 prepare_update_target_str()
 {
-    if [ "$1" = "bundle" ]; then
-        echo ""
-    elif [ "$1" = "sbios" ]; then
-        echo "\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_CPU_0\",\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_CPU_1\""
-    elif is_hmc_managed_fw_comp "$1"; then
-        echo "\"/redfish/v1/UpdateService/FirmwareInventory/$1\""
-    else
-        return 1
-    fi
+    case "$1" in
+        "all")
+            # Update all components available in the firmware package
+            echo ""
+            ;;
+
+        "bundle")
+            # Update all components find in HMC excluding the SBIOS
+            if ! get_all_firmware_path_without_sbios; then
+                echo "Error: Failed to retrieve firmware paths."
+                return 1
+            fi
+            ;;
+
+        "sbios")
+            # Update SBIOS only
+            echo "\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_CPU_0\",\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_CPU_1\""
+            ;;
+
+        *)
+            if is_hmc_managed_fw_comp "$1"; then
+                echo "\"/redfish/v1/UpdateService/FirmwareInventory/$1\""
+            else
+                echo "Error: Unknown or unmanaged firmware component: $1"
+                return 1
+            fi
+            ;;
+    esac
+
     return 0
 }
 
@@ -75,7 +121,12 @@ update_comp()
         exit 1
     fi
 
-    CURL_CMD="curl -s -u root:0penBmc -H 'Expect:' -L -X POST '${FW_UPDATE_URL}' -F 'UpdateParameters={\"Targets\":[$TARGET_STR]} ;type=application/json' -F UpdateFile=@$2"
+    FORCE_UPDATE=""
+    if [ "$3" = "--force-update" ]; then
+        FORCE_UPDATE=", \"ForceUpdate\":true"
+    fi
+
+    CURL_CMD="curl -s -u root:0penBmc -H 'Expect:' -L -X POST '${FW_UPDATE_URL}' -F 'UpdateParameters={\"Targets\":[$TARGET_STR]$FORCE_UPDATE} ;type=application/json' -F UpdateFile=@$2"
     echo "CMD: ${CURL_CMD}"
     if ! CURL_DATA=$(eval "${CURL_CMD}"); then
         echo "failed: HMC not response."
@@ -84,10 +135,12 @@ update_comp()
 
     TASK_ID=$(echo "$CURL_DATA" | jq -r '."@odata.id"')
     echo "TASK_ID: ${TASK_ID}"
+    echo
 
+    MESSAGE_COUNT=0
     for (( retry = 0; retry < 500; retry++ ))
     do
-        sleep 5
+        sleep 10
         CURL_CMD="curl -s http://${HMC_IP}${TASK_ID}"
         if ! CURL_DATA=$(eval "${CURL_CMD}"); then
             echo "failed: HMC not response."
@@ -104,11 +157,18 @@ update_comp()
             echo "failed: incorrect response format."
             return 1
         fi
+
+        NEW_MESSAGE_COUNT=$(echo "$CURL_DATA" | jq -r '.Messages | length')
+        for ((i=MESSAGE_COUNT; i<NEW_MESSAGE_COUNT; i++))
+        do
+            echo "[$i] $(echo "$CURL_DATA" | jq -r ".Messages[$i].Message")"
+        done
+        MESSAGE_COUNT="$NEW_MESSAGE_COUNT"
         
-        echo "PercentComplete: ${PERCENT} ...... (count: ${retry})"
+        echo -ne "PercentComplete: ${PERCENT} ...... (seconds: $((retry*10)))\r"
 
         if [ "$TASK_STATE" != "Running" ]; then
-            echo "Update finished, state: ${TASK_STATE}, status: ${TASK_STATUS}"
+            echo -e "\r\nUpdate finished, state: ${TASK_STATE}, status: ${TASK_STATUS}"
             if [ "$TASK_STATE" = "Completed" ]; then
                 return 0
             else
@@ -117,39 +177,73 @@ update_comp()
         fi
     done
 
-    echo "failed: Update process timeout."
+    echo -e "\r\nfailed: Update process timeout."
     return 1
+}
+
+set_hmc_datetime()
+{
+    BMC_DATETIME=$(date -u +"%Y-%m-%dT%H:%M:%S+00:00")
+    CURL_CMD="curl -s -X PATCH '${MANAGERS_HGX_BMC_0}' -d '{\"DateTime\":\"${BMC_DATETIME}\"}'"
+
+    if ! eval "${CURL_CMD}"; then
+        echo "HMC datetime set failed."
+        return 1
+    fi
+
+    echo "HMC datetime set to \"${BMC_DATETIME}\"."
+    return 0
+}
+
+sync_hmc_datetime()
+{
+    RETRY_COUNT="$1"
+    RETRY_DELAY_SEC="$2"
+
+    for i in $(seq 0 "${RETRY_COUNT}")
+    do
+        if [ "$i" != "0" ]; then
+            echo "Retry $i times......"
+        fi
+
+        if set_hmc_datetime; then
+            exit 0
+        fi
+
+        echo "Wait ${RETRY_DELAY_SEC} seconds and retry"
+        sleep "${RETRY_DELAY_SEC}"
+    done
+}
+
+is_number() {
+    # Check if input is a valid number
+    if ! [[ "$1" =~ ^[0-9]+$ ]]; then
+        return 1
+    else
+        return 0
+    fi
 }
 
 print_usage()
 {
-    echo "Usage: $0 --version <component>"
-    echo "       $0 --update <component> <firmware file>"
+    echo "Usage: $0 <commands>"
     echo
-    echo "Options:"
+    echo "Commands:"
     echo "  --version <all|bundle|sbios|HGX_COMP>"
-    echo "  --update <bundle|sbios|HGX_COMP> <file>"
+    echo "  [--update|--force-update] <all|bundle|sbios|HGX_COMP> <file>"
+    echo "  --sync-datetime [retry_count] [retry_delay]"
     echo
     echo "HGX_COMP:"
-    echo "  HGX_FW_BMC_0, HGX_FW_CPLD_0, HGX_FW_CPU_0, HGX_FW_CPU_1, HGX_FW_FPGA_0,"
-    echo "  HGX_FW_FPGA_1, HGX_FW_ERoT_BMC_0, HGX_FW_ERoT_CPU_0, HGX_FW_ERoT_CPU_1,"
-    echo "  HGX_FW_ERoT_FPGA_0, HGX_FW_ERoT_FPGA_1"
-    echo
-    echo "Examples:"
-    echo "  $0 --version all"
-    echo "  $0 --version bundle"
-    echo "  $0 --version sbios"
-    echo "  $0 --version HGX_FW_BMC_0"
-    echo "  $0 --update bundle /path/to/bundle/firmware/file"
-    echo "  $0 --update sbios /path/to/sbios/firmware/file"
-    echo "  $0 --update HGX_FW_BMC_0 /path/to/firmware/file"
+    for comp in "${HMC_MANG_COMP_LIST[@]}"; do
+        echo "  $comp"
+    done
     echo
 }
 
 INPUT_CMD="$1"
-INPUT_COMP="$2"
 
 if [ "$INPUT_CMD" = "--version" ]; then
+    INPUT_COMP="$2"
     if [ "$INPUT_COMP" = "all" ]; then
         get_all_comp_version
     elif [ "$INPUT_COMP" = "bundle" ]; then
@@ -162,13 +256,27 @@ if [ "$INPUT_CMD" = "--version" ]; then
         echo "failed: Unknow component, $INPUT_COMP"
         exit 1
     fi
-elif [ "$1" = "--update" ]; then
+elif [ "$1" == "--update" ] || [ "$1" = "--force-update" ]; then
+    INPUT_COMP="$2"
     FW_FILE="$3"
     if [ ! -f "$FW_FILE" ]; then
         echo "failed: incorrect firmware file path, $FW_FILE"
         exit 1
     fi
-    update_comp "$INPUT_COMP" "$(realpath "${FW_FILE}")"
+    update_comp "$INPUT_COMP" "$(realpath "${FW_FILE}")" "$1"
+elif [ "$1" = "--sync-datetime" ]; then
+    RETRY_COUNT="$2"
+    RETRY_DELAY_SEC="$3"
+    # Validate RETRY_COUNT and RETRY_DELAY_SEC
+    if ! is_number "$RETRY_COUNT"; then
+        echo "Invalid retry count, defaulting to 0."
+        RETRY_COUNT=0
+    fi
+    if ! is_number "$RETRY_DELAY_SEC"; then
+        echo "Invalid retry delay, defaulting to 0."
+        RETRY_DELAY_SEC=0
+    fi
+    sync_hmc_datetime "$RETRY_COUNT" "$RETRY_DELAY_SEC"
 else
     print_usage
 fi

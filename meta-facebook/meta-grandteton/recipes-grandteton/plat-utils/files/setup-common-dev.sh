@@ -129,12 +129,12 @@ probe_mb_nic1_eeprom() {
 
 probe_mb_eeprom
 
-if [ $mb_product == "GTA" ]; then
+if [ "$mb_product" == "GTA" ]; then
   #Set MB NIC1 vendor for Artemis platform
   probe_mb_nic1_eeprom
 fi
 
-if [ $mb_product != "GTA" ]; then
+if [ "$mb_product" != "GTA" ]; then
   # Swith Board
   echo "Probe SWB Device"
   SWB_1ST_SOURCE="0"
@@ -253,38 +253,12 @@ if [ $mb_product != "GTA" ]; then
         if [ "$val" -eq 1 ]; then
           kv set swb_nic_source "$SWB_1ST_SOURCE"
           kv set swb_nic_vendor "Mellanox "
-        else
-          # Support optic temp sensor
-          if [ "$val" -eq 2 ]; then
-            kv set swb_nic_source "$SWB_2ND_SOURCE"
-            kv set swb_nic_vendor "Mellanox "
-          elif [ "$val" -eq 3 ]; then
-            kv set swb_nic_source "$SWB_3RD_SOURCE"
-            kv set swb_nic_vendor "Broadcom "
-          fi
-
-          sed -i '/swb_tray_nic_linear(/i \
-    swb_tray_nic_optic_linear(\
-      max([\
-        all:swb_swb_nic0_optic_temp_c,\
-        all:swb_swb_nic1_optic_temp_c,\
-        all:swb_swb_nic2_optic_temp_c,\
-        all:swb_swb_nic3_optic_temp_c,\
-        all:swb_swb_nic4_optic_temp_c,\
-        all:swb_swb_nic5_optic_temp_c,\
-        all:swb_swb_nic6_optic_temp_c,\
-        all:swb_swb_nic7_optic_temp_c])) +\
-    swb_tray_nic_optic_pid(\
-      max([\
-        all:swb_swb_nic0_optic_temp_c,\
-        all:swb_swb_nic1_optic_temp_c,\
-        all:swb_swb_nic2_optic_temp_c,\
-        all:swb_swb_nic3_optic_temp_c,\
-        all:swb_swb_nic4_optic_temp_c,\
-        all:swb_swb_nic5_optic_temp_c,\
-        all:swb_swb_nic6_optic_temp_c,\
-        all:swb_swb_nic7_optic_temp_c])), \
-    ' /etc/fsc/zone.fsc
+        elif [ "$val" -eq 2 ]; then
+          kv set swb_nic_source "$SWB_2ND_SOURCE"
+          kv set swb_nic_vendor "Mellanox "
+        elif [ "$val" -eq 3 ]; then
+          kv set swb_nic_source "$SWB_3RD_SOURCE"
+          kv set swb_nic_vendor "Broadcom "
         fi
         break
       fi

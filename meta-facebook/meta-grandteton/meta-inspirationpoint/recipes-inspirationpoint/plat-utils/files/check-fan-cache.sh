@@ -145,6 +145,62 @@ check_mb_rev() {
   fi
 }
 
+check_swb_nic_source()
+{
+   readonly NIC_MLX=0
+   readonly NIC_MLX_OPTIC=1
+   readonly NIC_BRCM_OPTIC=2
+
+   nic_source=$(kv get swb_nic_source)
+   if [ "$nic_source" == $NIC_MLX_OPTIC ] ||
+      [ "$nic_source" == $NIC_BRCM_OPTIC ]; then
+
+    expr_file=$(awk -F': ' '/"expr_file"/ {gsub(/[",]/, "", $2); print $2}' $DEFAULT_FSC_CONFIG)
+      sed -i '/swb_tray_switch_linear(/i \
+  swb_tray_nic_linear(\
+    max([\
+      all:swb_swb_nic0_temp_c,\
+      all:swb_swb_nic1_temp_c,\
+      all:swb_swb_nic2_temp_c,\
+      all:swb_swb_nic3_temp_c,\
+      all:swb_swb_nic4_temp_c,\
+      all:swb_swb_nic5_temp_c,\
+      all:swb_swb_nic6_temp_c,\
+      all:swb_swb_nic7_temp_c])) +\
+  swb_tray_nic_pid(\
+    max([\
+      all:swb_swb_nic0_temp_c,\
+      all:swb_swb_nic1_temp_c,\
+      all:swb_swb_nic2_temp_c,\
+      all:swb_swb_nic3_temp_c,\
+      all:swb_swb_nic4_temp_c,\
+      all:swb_swb_nic5_temp_c,\
+      all:swb_swb_nic6_temp_c,\
+      all:swb_swb_nic7_temp_c])),\
+  swb_tray_nic_optic_linear(\
+    max([\
+      all:swb_swb_nic0_optic_temp_c,\
+      all:swb_swb_nic1_optic_temp_c,\
+      all:swb_swb_nic2_optic_temp_c,\
+      all:swb_swb_nic3_optic_temp_c,\
+      all:swb_swb_nic4_optic_temp_c,\
+      all:swb_swb_nic5_optic_temp_c,\
+      all:swb_swb_nic6_optic_temp_c,\
+      all:swb_swb_nic7_optic_temp_c])) +\
+  swb_tray_nic_optic_pid(\
+    max([\
+      all:swb_swb_nic0_optic_temp_c,\
+      all:swb_swb_nic1_optic_temp_c,\
+      all:swb_swb_nic2_optic_temp_c,\
+      all:swb_swb_nic3_optic_temp_c,\
+      all:swb_swb_nic4_optic_temp_c,\
+      all:swb_swb_nic5_optic_temp_c,\
+      all:swb_swb_nic6_optic_temp_c,\
+      all:swb_swb_nic7_optic_temp_c])), \
+    ' /etc/fsc/"$expr_file"
+  fi
+}
+
 for retry in {1..20};
 do
     bp2_sensor238=$(kv get fan_bp2_sensor238)
@@ -170,6 +226,7 @@ if [ "$tb" -eq 0 ]; then
     else
       echo "Start fscd"
       check_mb_rev
+      check_swb_nic_source
       runsv /etc/sv/fscd > /dev/null 2>&1 &
     fi
 fi

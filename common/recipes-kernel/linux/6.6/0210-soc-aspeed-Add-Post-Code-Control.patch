@@ -1,7 +1,7 @@
-From 68959f43f881f3b7eb4942d5d09709be9b12703c Mon Sep 17 00:00:00 2001
+From 48a9a94b2fe06d218df29317901ef2781034a799 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Thu, 7 Dec 2023 13:04:19 +0800
-Subject: [PATCH 201/201] soc: aspeed: Add Post Code Control
+Subject: [PATCH] soc: aspeed: Add Post Code Control
 
 Add Aspeed Post Code Capture (PCC) module support.
 PCC can be used to snoop the debug code sent by the

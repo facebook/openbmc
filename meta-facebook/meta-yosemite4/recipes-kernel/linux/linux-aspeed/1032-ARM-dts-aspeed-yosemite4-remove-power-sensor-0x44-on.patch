@@ -1,0 +1,33 @@
+From e0d5491d4f290e839a86cc289524745e0236f848 Mon Sep 17 00:00:00 2001
+From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
+Date: Mon, 9 Sep 2024 13:59:57 +0800
+Subject: [PATCH 1032/1035] ARM: dts: aspeed: yosemite4: remove power sensor
+ 0x44 on 11
+
+Change to bind INA238 or ISL28022 in runtime.
+
+lore link: https://lore.kernel.org/all/20240910075357.3531211-1-Delphine_CC_Chiu@wiwynn.com/
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index cbf37e30712d..c5b9d05d727b 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -1092,12 +1092,6 @@ power-sensor@41 {
+ 		reg = <0x41>;
+ 	};
+ 
+-	power-sensor@44 {
+-		compatible = "ti,ina238";
+-		shunt-resistor = <1000>;
+-		reg = <0x44>;
+-	};
+-
+ 	temperature-sensor@48 {
+ 		compatible = "ti,tmp75";
+ 		reg = <0x48>;
+-- 
+2.44.2
+

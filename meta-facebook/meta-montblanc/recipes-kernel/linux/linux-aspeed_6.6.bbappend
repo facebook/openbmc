@@ -20,5 +20,5 @@
 #
 
 SRC_URI:append = " \
-    file://0503-ARM-dts-aspeed-Enable-jtag1-in-fblite-r1-dts.patch \
+    file://0900-ARM-dts-aspeed-Enable-jtag1-in-fblite-r1-dts.patch \
 "

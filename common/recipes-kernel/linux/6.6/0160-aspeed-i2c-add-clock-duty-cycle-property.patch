@@ -1,4 +1,4 @@
-From 947a7fb0d7cfb1e2d59d810d64110c117fd9cfc6 Mon Sep 17 00:00:00 2001
+From dc7341ddf4f11272fc34043b8a655efd8d3599df Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 23 May 2022 11:56:36 +0800
 Subject: [PATCH 160/165] aspeed: i2c: add clock duty cycle property

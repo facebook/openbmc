@@ -1,0 +1,43 @@
+From 2693061eb6a979a36565187608b08b290dc553f7 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Fri, 2 Aug 2024 17:34:10 +0800
+Subject: [PATCH 1005/1005] ARM: dts: aspeed: catalina: add raa228004 nodes
+
+The Catalina dts file was removing some properties and compatible strings which
+are not support in db-binding document and cause `CHECK_DTBS=y` check failed.
+
+raa228004 nodes were removed due to compatible string not exist on upstream.
+Add back raa228004 nodes back in this patch.
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-catalina.dts     | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+index e4e226219611..7eac1e9baa71 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+@@ -474,6 +474,19 @@ i2c1mux0ch3: i2c@3 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0x3>;
++
++			vrm@60 {
++				compatible = "isil,raa228004";
++				reg = <0x60>;
++			};
++			vrm@61 {
++				compatible = "isil,raa228004";
++				reg = <0x61>;
++			};
++			vrm@62 {
++				compatible = "isil,raa228004";
++				reg = <0x62>;
++			};
+ 		};
+ 		i2c1mux0ch4: i2c@4 {
+ 			#address-cells = <1>;
+-- 
+2.44.2
+

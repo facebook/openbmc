@@ -18,12 +18,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.6:"
 
 #
-# Include patches from common/recipes-kernel.
-#
-SRC_URI:append = "file://0500-hwmon-Add-net_brcm-driver.patch \
-"
-
-#
 # Include patches from elbert machine layer.
 #
 SRC_URI:append = "file://1001-ARM-dts-aspeed-elbert-Enable-spi1-controller.patch \

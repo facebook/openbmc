@@ -1,0 +1,59 @@
+From 03b6b00d2d8565a3ab3b5d5662534c7479b522c3 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Fri, 2 Aug 2024 17:32:49 +0800
+Subject: [PATCH 1004/1005] ARM: dts: aspeed: catalina: add max31790 nodes
+
+The Catalina dts file was removing some properties and compatible strings which
+are not support in db-binding document and cause `CHECK_DTBS=y` check failed.
+
+max31790 nodes were removed due to compatible string not exist on upstream.
+Add back max31790 nodes back in this patch.
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+---
+ .../aspeed/aspeed-bmc-facebook-catalina.dts   | 29 +++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+index 1ba886bf3177..e4e226219611 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+@@ -440,6 +440,35 @@ i2c1mux0ch2: i2c@2 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0x2>;
++
++			pwm@21{
++				compatible = "maxim,max31790";
++				reg = <0x21>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				channel@2 {
++					reg = <2>;
++					sensor-type = "TACH";
++				};
++				channel@5 {
++					reg = <5>;
++					sensor-type = "TACH";
++				};
++			};
++			pwm@27{
++				compatible = "maxim,max31790";
++				reg = <0x27>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				channel@2 {
++					reg = <2>;
++					sensor-type = "TACH";
++				};
++				channel@5 {
++					reg = <5>;
++					sensor-type = "TACH";
++				};
++			};
+ 		};
+ 		i2c1mux0ch3: i2c@3 {
+ 			#address-cells = <1>;
+-- 
+2.44.2
+

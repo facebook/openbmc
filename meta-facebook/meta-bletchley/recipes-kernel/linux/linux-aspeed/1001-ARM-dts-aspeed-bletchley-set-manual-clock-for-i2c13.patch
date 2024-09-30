@@ -1,0 +1,27 @@
+From 181792f62615dae6d5f926f782b3fd721d91d254 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Mon, 30 May 2022 13:45:10 +0800
+Subject: [PATCH 1001/1001] ARM: dts: aspeed: bletchley: set manual clock for
+ i2c13
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+index 7ba734ab6a9a..7ae89e63c223 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+@@ -960,7 +960,7 @@ fan_leds: pca9552@67 {
+ 
+ &i2c13 {
+ 	multi-master;
+-	aspeed,hw-timeout-ms = <1000>;
++	i2c-clk-high-min-percent = <56>;
+ 	status = "okay";
+ 
+ 	//USB Debug Connector
+-- 
+2.44.2
+

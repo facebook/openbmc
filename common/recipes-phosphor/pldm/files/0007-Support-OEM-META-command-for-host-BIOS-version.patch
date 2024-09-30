@@ -1,7 +1,7 @@
-From c96ddaf9e937c6f80f9f7d5c1cf5b6f2098c8ef4 Mon Sep 17 00:00:00 2001
+From 05723620fad68ce9986d146eb9286a3904ddd058 Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
-Subject: [PATCH 07/12] Support OEM-META command for host BIOS version
+Subject: [PATCH] Support OEM-META command for host BIOS version
 
 Summary:
   - Add handler for write-file command "BIOS_VERSION", which is sent
@@ -13,12 +13,12 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
  libpldmresponder/meson.build                  |   1 +
  .../libpldmresponder/oem_meta_file_io.cpp     |   7 +-
- .../libpldmresponder/oem_meta_file_io.hpp     |  13 +-
+ .../libpldmresponder/oem_meta_file_io.hpp     |  14 +-
  .../oem_meta_file_io_by_type.hpp              |   1 +
  .../oem_meta_file_io_type_bios_version.cpp    | 151 ++++++++++++++++++
- .../oem_meta_file_io_type_bios_version.hpp    |  83 ++++++++++
+ .../oem_meta_file_io_type_bios_version.hpp    |  85 ++++++++++
  pldmd/pldmd.cpp                               |   2 +-
- 7 files changed, 253 insertions(+), 5 deletions(-)
+ 7 files changed, 256 insertions(+), 5 deletions(-)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
 
@@ -35,7 +35,7 @@ index 459f4ba..6c97957 100644
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-index 59c0b3f..e78e890 100644
+index c45eea6..68bb64d 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 @@ -1,5 +1,6 @@
@@ -59,10 +59,10 @@ index 59c0b3f..e78e890 100644
              error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
                    "FILEIOTYPE", fileIOType);
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-index f25235d..edde91d 100644
+index f25235d..6dd34c0 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-@@ -17,8 +17,9 @@ namespace pldm::responder::oem_meta
+@@ -17,8 +17,10 @@ namespace pldm::responder::oem_meta
  class FileIOHandler : public CmdHandler
  {
    public:
@@ -70,11 +70,12 @@ index f25235d..edde91d 100644
 -        configurationDescovery(configurationDescovery)
 +    FileIOHandler(pldm::utils::DBusHandler* dBusIntf,
 +                  pldm::ConfigurationDiscoveryHandler* configurationDiscovery) :
-+        dBusIntf(dBusIntf), configurationDiscovery(configurationDiscovery)
++        dBusIntf(dBusIntf),
++        configurationDiscovery(configurationDiscovery)
      {
          handlers.emplace(
              PLDM_OEM_META_FILE_IO_CMD_WRITE_FILE,
-@@ -43,7 +44,13 @@ class FileIOHandler : public CmdHandler
+@@ -43,7 +45,13 @@ class FileIOHandler : public CmdHandler
      std::unique_ptr<FileHandler>
          getHandlerByType(pldm_tid_t tid, uint8_t fileIOType);
  
@@ -90,10 +91,10 @@ index f25235d..edde91d 100644
  
  } // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-index 739b9cd..091408f 100644
+index 3f27583..abf8369 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-@@ -17,6 +17,7 @@ constexpr auto decodeDataMaxLength = 32;
+@@ -19,6 +19,7 @@ constexpr auto decodeDataMaxLength = 32;
  enum pldm_oem_meta_file_io_type : uint8_t
  {
      POST_CODE = 0x00,
@@ -260,10 +261,10 @@ index 0000000..a9315c6
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
 new file mode 100644
-index 0000000..275a3ad
+index 0000000..69d898a
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
-@@ -0,0 +1,83 @@
+@@ -0,0 +1,85 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -291,7 +292,8 @@ index 0000000..275a3ad
 +    explicit BIOSVersionHandler(
 +        uint8_t tid, std::map<std::string, MctpEndpoint>& configurations,
 +        const pldm::utils::DBusHandler* dBusIntf) :
-+        tid(tid), configurations(configurations), dBusIntf(dBusIntf)
++        tid(tid),
++        configurations(configurations), dBusIntf(dBusIntf)
 +    {}
 +
 +    /** @brief Method to set Host's BIOS version.
@@ -300,8 +302,9 @@ index 0000000..275a3ad
 +     */
 +    int write(const message& data) override;
 +
-+    int read(const message&) override
++    int read(struct pldm_oem_meta_file_io_read_resp* data) override
 +    {
++        (void)data; // Unused
 +        return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
 +    }
 +
@@ -361,5 +364,5 @@ index bf74b28..c2646fd 100644
  
      auto fruHandler = std::make_unique<fru::Handler>(
 -- 
-2.44.2
+2.25.1
 

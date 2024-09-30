@@ -1,6 +1,6 @@
-From 007ef8ce7313c565c1372d7125ae77d7de87dabc Mon Sep 17 00:00:00 2001
-From: lora <Lora_Lin@wiwynn.com>
-Date: Wed, 25 Sep 2024 15:14:17 +0800
+From ee23c748420d4a765bf695e82b4ffccb781b6fbd Mon Sep 17 00:00:00 2001
+From: lora <lora.lin.wiwynn@gmail.com>
+Date: Fri, 27 Sep 2024 16:21:45 +0800
 Subject: [PATCH] Support OEM-META command for getting Http boot certification
 
 Summary:
@@ -13,17 +13,12 @@ Change-Id: Iaa0da923a8703703744eccccbbc8d95146444c14
 Signed-off-by: Lora Lin <lora.lin.wiwynn@gmail.com>
 ---
  libpldmresponder/meson.build                  |   1 +
- .../libpldmresponder/oem_meta_file_io.cpp     | 103 +++++++++--
- .../libpldmresponder/oem_meta_file_io.hpp     |  20 ++-
- .../oem_meta_file_io_by_type.hpp              |   5 +-
- .../oem_meta_file_io_type_apml_alert.hpp      |   6 +-
- .../oem_meta_file_io_type_bios_version.hpp    |   6 +-
- .../oem_meta_file_io_type_event_log.hpp       |   6 +-
+ .../libpldmresponder/oem_meta_file_io.cpp     |  78 +++++++++
+ .../libpldmresponder/oem_meta_file_io.hpp     |  17 ++
+ .../oem_meta_file_io_by_type.hpp              |   1 +
  .../oem_meta_file_io_type_http_boot.cpp       | 165 ++++++++++++++++++
  .../oem_meta_file_io_type_http_boot.hpp       |  41 +++++
- .../oem_meta_file_io_type_post_code.hpp       |   6 +-
- .../oem_meta_file_io_type_power_control.hpp   |   6 +-
- 11 files changed, 342 insertions(+), 23 deletions(-)
+ 6 files changed, 303 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.hpp
 
@@ -40,7 +35,7 @@ index 6cbf924..de9e778 100644
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-index 5e4acff..84f8ea9 100644
+index 36ff128..f363f87 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 @@ -3,6 +3,7 @@
@@ -61,49 +56,7 @@ index 5e4acff..84f8ea9 100644
          default:
              error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
                    "FILEIOTYPE", fileIOType);
-@@ -50,32 +54,109 @@ std::unique_ptr<FileHandler>
- Response FileIOHandler::writeFileIO(pldm_tid_t tid, const pldm_msg* request,
-                                     size_t payloadLength)
- {
--    uint8_t fileIOType;
--    uint32_t length;
--
--    std::array<uint8_t, decodeDataMaxLength> retDataField{};
--
--    auto rc = decode_oem_meta_file_io_req(request, payloadLength, &fileIOType,
--                                          &length, retDataField.data());
--
--    if (rc != PLDM_SUCCESS)
-+    constexpr uint8_t decodereqlen =
-+        PLDM_OEM_META_FILE_IO_WRITE_REQ_MIN_LENGTH + decodeDataMaxLength;
-+    alignas(struct pldm_oem_meta_file_io_write_req) unsigned char
-+        reqbuf[decodereqlen];
-+    auto request_msg = new (reqbuf) pldm_oem_meta_file_io_write_req;
-+    auto request_data = static_cast<uint8_t*>(
-+        pldm_oem_meta_file_io_write_req_data(request_msg));
-+
-+    int rc = decode_oem_meta_file_io_write_req(request, payloadLength,
-+                                               request_msg, decodereqlen);
-+
-+    if (rc != 0)
-     {
-         error("Failed to decode OEM Meta file IO request, rc={RC}", "RC", rc);
-         return ccOnlyResponse(request, rc);
-     }
- 
--    auto handler = getHandlerByType(tid, fileIOType);
-+    auto handler = getHandlerByType(tid, request_msg->handle);
- 
-     if (!handler)
-     {
-         return ccOnlyResponse(request, PLDM_ERROR_UNSUPPORTED_PLDM_CMD);
-     }
- 
--    auto data = std::span(std::begin(retDataField), length);
-+    auto data = std::span(request_data, request_msg->length);
- 
-     rc = handler->write(data);
- 
+@@ -81,4 +85,78 @@ Response FileIOHandler::writeFileIO(pldm_tid_t tid, const pldm_msg* request,
      return ccOnlyResponse(request, rc);
  }
  
@@ -173,7 +126,7 @@ index 5e4acff..84f8ea9 100644
 +        sizeof(struct pldm_oem_meta_file_io_read_resp) + response_msg->length,
 +        responseMsg, encoderesplen);
 +
-+    if (rc != PLDM_SUCCESS)
++    if (rc != 0)
 +    {
 +        return ccOnlyResponse(request, rc);
 +    }
@@ -183,20 +136,10 @@ index 5e4acff..84f8ea9 100644
 +
  } // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-index edde91d..3f5e216 100644
+index 6dd34c0..3f5e216 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-@@ -19,7 +19,8 @@ class FileIOHandler : public CmdHandler
-   public:
-     FileIOHandler(pldm::utils::DBusHandler* dBusIntf,
-                   pldm::ConfigurationDiscoveryHandler* configurationDiscovery) :
--        dBusIntf(dBusIntf), configurationDiscovery(configurationDiscovery)
-+        dBusIntf(dBusIntf),
-+        configurationDiscovery(configurationDiscovery)
-     {
-         handlers.emplace(
-             PLDM_OEM_META_FILE_IO_CMD_WRITE_FILE,
-@@ -27,6 +28,12 @@ class FileIOHandler : public CmdHandler
+@@ -28,6 +28,12 @@ class FileIOHandler : public CmdHandler
                     size_t payloadLength) {
                  return this->writeFileIO(tid, request, payloadLength);
              });
@@ -209,7 +152,7 @@ index edde91d..3f5e216 100644
      }
  
    private:
-@@ -41,6 +48,17 @@ class FileIOHandler : public CmdHandler
+@@ -42,6 +48,17 @@ class FileIOHandler : public CmdHandler
      Response writeFileIO(pldm_tid_t tid, const pldm_msg* request,
                           size_t payloadLength);
  
@@ -228,17 +171,10 @@ index edde91d..3f5e216 100644
          getHandlerByType(pldm_tid_t tid, uint8_t fileIOType);
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-index 44c8e5f..89d3385 100644
+index bdd5fce..89d3385 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-@@ -1,4 +1,6 @@
- #pragma once
-+#include <libpldm/oem/meta/file_io.h>
-+
- #include <cstdint>
- #include <vector>
- 
-@@ -19,6 +21,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
+@@ -21,6 +21,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
      POST_CODE = 0x00,
      BIOS_VERSION = 0x01,
      POWER_CONTROL = 0x02,
@@ -246,86 +182,6 @@ index 44c8e5f..89d3385 100644
      APML_ALERT = 0x04,
      EVENT_LOG = 0x05,
  };
-@@ -27,7 +30,7 @@ class FileHandler
- {
-   public:
-     virtual int write(const message& data) = 0;
--    virtual int read(const message& data) = 0;
-+    virtual int read(struct pldm_oem_meta_file_io_read_resp* data) = 0;
-     virtual ~FileHandler() {}
- };
- 
-diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
-index f71b579..1a2c8a8 100644
---- a/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
-+++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
-@@ -22,12 +22,14 @@ class APMLAlertHandler : public FileHandler
- 
-     explicit APMLAlertHandler(uint8_t tid,
-                               const pldm::utils::DBusHandler* dBusIntf) :
--        tid(tid), dBusIntf(dBusIntf)
-+        tid(tid),
-+        dBusIntf(dBusIntf)
-     {}
- 
-     int write(const message& data) override;
--    int read(const message&) override
-+    int read(struct pldm_oem_meta_file_io_read_resp* data) override
-     {
-+        (void)data; // Unused
-         return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
-     }
- 
-diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
-index 275a3ad..69d898a 100644
---- a/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
-+++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_bios_version.hpp
-@@ -25,7 +25,8 @@ class BIOSVersionHandler : public FileHandler
-     explicit BIOSVersionHandler(
-         uint8_t tid, std::map<std::string, MctpEndpoint>& configurations,
-         const pldm::utils::DBusHandler* dBusIntf) :
--        tid(tid), configurations(configurations), dBusIntf(dBusIntf)
-+        tid(tid),
-+        configurations(configurations), dBusIntf(dBusIntf)
-     {}
- 
-     /** @brief Method to set Host's BIOS version.
-@@ -34,8 +35,9 @@ class BIOSVersionHandler : public FileHandler
-      */
-     int write(const message& data) override;
- 
--    int read(const message&) override
-+    int read(struct pldm_oem_meta_file_io_read_resp* data) override
-     {
-+        (void)data; // Unused
-         return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
-     }
- 
-diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
-index 9d3b947..0523ad7 100644
---- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
-+++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
-@@ -22,7 +22,8 @@ class EventLogHandler : public FileHandler
-   public:
-     EventLogHandler(pldm_tid_t tid,
-                     const std::map<std::string, MctpEndpoint>& configurations) :
--        tid(tid), configurations(configurations)
-+        tid(tid),
-+        configurations(configurations)
-     {}
- 
-     ~EventLogHandler() = default;
-@@ -37,8 +38,9 @@ class EventLogHandler : public FileHandler
-      *  @param[in] data - eventData
-      *  @return  PLDM status code
-      */
--    int read(const message&)
-+    int read(struct pldm_oem_meta_file_io_read_resp* data)
-     {
-+        (void)data; // Unused
-         return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
-     }
- 
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp
 new file mode 100644
 index 0000000..4195cea
@@ -544,52 +400,6 @@ index 0000000..176f7c6
 +};
 +
 +} // namespace pldm::responder::oem_meta
-diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
-index f06cc38..919284e 100644
---- a/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
-+++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
-@@ -16,7 +16,8 @@ class PostCodeHandler : public FileHandler
-   public:
-     PostCodeHandler(pldm_tid_t tid,
-                     const std::map<std::string, MctpEndpoint>& configurations) :
--        tid(tid), configurations(configurations)
-+        tid(tid),
-+        configurations(configurations)
-     {}
- 
-     ~PostCodeHandler() = default;
-@@ -31,8 +32,9 @@ class PostCodeHandler : public FileHandler
-      *  @param[in] data - post code
-      *  @return  PLDM status code
-      */
--    int read(const message&)
-+    int read(struct pldm_oem_meta_file_io_read_resp* data)
-     {
-+        (void)data; // Unused
-         return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
-     }
- 
-diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
-index acd0103..fd3ffab 100644
---- a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
-+++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
-@@ -24,12 +24,14 @@ class PowerControlHandler : public FileHandler
-     explicit PowerControlHandler(
-         uint8_t tid, std::map<std::string, MctpEndpoint>& configurations,
-         const pldm::utils::DBusHandler* dBusIntf) :
--        tid(tid), configurations(configurations), dBusIntf(dBusIntf)
-+        tid(tid),
-+        configurations(configurations), dBusIntf(dBusIntf)
-     {}
- 
-     int write(const message& data) override;
--    int read(const message&) override
-+    int read(struct pldm_oem_meta_file_io_read_resp* data) override
-     {
-+        (void)data; // Unused
-         return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
-     }
- 
 -- 
 2.25.1
 

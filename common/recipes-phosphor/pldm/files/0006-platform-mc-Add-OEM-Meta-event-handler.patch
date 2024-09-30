@@ -1,7 +1,7 @@
-From 7e85771e72dc4a01afd5382e14f24f395e144d3f Mon Sep 17 00:00:00 2001
-From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
-Date: Wed, 7 Feb 2024 13:52:07 +0800
-Subject: [PATCH 06/12] platform-mc: Add OEM Meta event handler
+From 752172fe4b288de21130bdc7021fe486497593d5 Mon Sep 17 00:00:00 2001
+From: lora <lora.lin.wiwynn@gmail.com>
+Date: Fri, 27 Sep 2024 14:51:48 +0800
+Subject: [PATCH] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -54,16 +54,15 @@ xyz.openbmc_project.Software.Version        interface -         -               
 Change-Id: I722d8e09e7aea8dfa533e921d41beb505b59fb95
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- meson.build                                   |   1 +
- .../libpldmresponder/oem_meta_file_io.hpp     |   2 +-
- oem/meta/platform-mc/event_oem_meta.cpp       | 815 ++++++++++++++++++
- oem/meta/platform-mc/event_oem_meta.hpp       |  21 +
- platform-mc/event_manager.cpp                 |  36 +
- platform-mc/event_manager.hpp                 |  15 +-
- platform-mc/manager.hpp                       |  26 +-
- platform-mc/test/meson.build                  |   2 +
- pldmd/pldmd.cpp                               |  10 +-
- 9 files changed, 920 insertions(+), 8 deletions(-)
+ meson.build                             |   1 +
+ oem/meta/platform-mc/event_oem_meta.cpp | 815 ++++++++++++++++++++++++
+ oem/meta/platform-mc/event_oem_meta.hpp |  21 +
+ platform-mc/event_manager.cpp           |  36 ++
+ platform-mc/event_manager.hpp           |  15 +-
+ platform-mc/manager.hpp                 |  26 +-
+ platform-mc/test/meson.build            |   2 +
+ pldmd/pldmd.cpp                         |  10 +-
+ 8 files changed, 919 insertions(+), 7 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
@@ -79,19 +78,6 @@ index e9177e6..e849a9b 100644
      implicit_include_directories: false,
      dependencies: deps,
      install: true,
-diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-index 841fb98..f25235d 100644
---- a/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-+++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
-@@ -21,7 +21,7 @@ class FileIOHandler : public CmdHandler
-         configurationDescovery(configurationDescovery)
-     {
-         handlers.emplace(
--            PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
-+            PLDM_OEM_META_FILE_IO_CMD_WRITE_FILE,
-             [this](pldm_tid_t tid, const pldm_msg* request,
-                    size_t payloadLength) {
-                 return this->writeFileIO(tid, request, payloadLength);
 diff --git a/oem/meta/platform-mc/event_oem_meta.cpp b/oem/meta/platform-mc/event_oem_meta.cpp
 new file mode 100644
 index 0000000..a4575bc
@@ -1011,7 +997,7 @@ index 6e16a32..76bf306 100644
  
      return PLDM_ERROR;
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index 96ba6d0..64198e3 100644
+index 96ba6d0..6004f50 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
 @@ -6,6 +6,7 @@
@@ -1032,8 +1018,8 @@ index 96ba6d0..64198e3 100644
 +    explicit EventManager(
 +        TerminusManager& terminusManager, TerminiMapper& termini,
 +        pldm::ConfigurationDiscoveryHandler* configurationDiscovery = nullptr) :
-+        terminusManager(terminusManager), termini(termini),
-+        configurationDiscovery(configurationDiscovery)
++        terminusManager(terminusManager),
++        termini(termini), configurationDiscovery(configurationDiscovery)
      {
          // Default response handler for PollForPlatFormEventMessage
          registerPolledEventHandler(
@@ -1166,5 +1152,5 @@ index 8ebb9ce..bf74b28 100644
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.44.2
+2.25.1
 

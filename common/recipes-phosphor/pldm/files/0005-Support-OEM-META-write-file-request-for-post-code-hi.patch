@@ -1,8 +1,7 @@
-From 2262862088876de6242a64b7444a7f47e5f9bfbc Mon Sep 17 00:00:00 2001
+From 0972212207336b88b1fc20bc83114e9f2c9cabed Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 05/12] Support OEM-META write file request for post code
- history
+Subject: [PATCH] Support OEM-META write file request for post code history
 
 Support write file req when multiple hosts send postcode to BMC
 and store its post code history.
@@ -15,13 +14,13 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  libpldmresponder/meson.build                  |   9 ++
  meson.build                                   |   4 +
  meson.options                                 |   8 ++
- .../libpldmresponder/oem_meta_file_io.cpp     |  63 +++++++++
+ .../libpldmresponder/oem_meta_file_io.cpp     |  66 +++++++++
  .../libpldmresponder/oem_meta_file_io.hpp     |  49 +++++++
- .../oem_meta_file_io_by_type.hpp              |  30 ++++
+ .../oem_meta_file_io_by_type.hpp              |  32 +++++
  .../oem_meta_file_io_type_post_code.cpp       | 131 ++++++++++++++++++
- .../oem_meta_file_io_type_post_code.hpp       |  52 +++++++
+ .../oem_meta_file_io_type_post_code.hpp       |  54 ++++++++
  pldmd/pldmd.cpp                               |  10 ++
- 11 files changed, 391 insertions(+)
+ 11 files changed, 398 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io.hpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
@@ -162,10 +161,10 @@ index 8a7138a..f6a48be 100644
      type: 'integer',
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 new file mode 100644
-index 0000000..59c0b3f
+index 0000000..c45eea6
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,66 @@
 +#include "oem_meta_file_io.hpp"
 +
 +#include "oem_meta_file_io_type_post_code.hpp"
@@ -201,27 +200,30 @@ index 0000000..59c0b3f
 +Response FileIOHandler::writeFileIO(pldm_tid_t tid, const pldm_msg* request,
 +                                    size_t payloadLength)
 +{
-+    uint8_t fileIOType;
-+    uint32_t length;
++    constexpr uint8_t decodereqlen =
++        PLDM_OEM_META_FILE_IO_WRITE_REQ_MIN_LENGTH + decodeDataMaxLength;
++    alignas(struct pldm_oem_meta_file_io_write_req) unsigned char
++        reqbuf[decodereqlen];
++    auto request_msg = new (reqbuf) pldm_oem_meta_file_io_write_req;
++    auto request_data = static_cast<uint8_t*>(
++        pldm_oem_meta_file_io_write_req_data(request_msg));
 +
-+    std::array<uint8_t, decodeDataMaxLength> retDataField{};
++    int rc = decode_oem_meta_file_io_write_req(request, payloadLength,
++                                               request_msg, decodereqlen);
 +
-+    auto rc = decode_oem_meta_file_io_req(request, payloadLength, &fileIOType,
-+                                          &length, retDataField.data());
-+
-+    if (rc != PLDM_SUCCESS)
++    if (rc != 0)
 +    {
 +        return ccOnlyResponse(request, rc);
 +    }
 +
-+    auto handler = getHandlerByType(tid, fileIOType);
++    auto handler = getHandlerByType(tid, request_msg->handle);
 +
 +    if (!handler)
 +    {
 +        return ccOnlyResponse(request, PLDM_ERROR_UNSUPPORTED_PLDM_CMD);
 +    }
 +
-+    auto data = std::span(std::begin(retDataField), length);
++    auto data = std::span(request_data, request_msg->length);
 +
 +    rc = handler->write(data);
 +
@@ -231,7 +233,7 @@ index 0000000..59c0b3f
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.hpp b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
 new file mode 100644
-index 0000000..841fb98
+index 0000000..f25235d
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.hpp
 @@ -0,0 +1,49 @@
@@ -258,7 +260,7 @@ index 0000000..841fb98
 +        configurationDescovery(configurationDescovery)
 +    {
 +        handlers.emplace(
-+            PLDM_OEM_META_FILEIO_CMD_WRITE_FILE,
++            PLDM_OEM_META_FILE_IO_CMD_WRITE_FILE,
 +            [this](pldm_tid_t tid, const pldm_msg* request,
 +                   size_t payloadLength) {
 +                return this->writeFileIO(tid, request, payloadLength);
@@ -286,11 +288,13 @@ index 0000000..841fb98
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
 new file mode 100644
-index 0000000..739b9cd
+index 0000000..3f27583
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,32 @@
 +#pragma once
++#include <libpldm/oem/meta/file_io.h>
++
 +#include <cstdint>
 +#include <vector>
 +
@@ -315,7 +319,7 @@ index 0000000..739b9cd
 +{
 +  public:
 +    virtual int write(const message& data) = 0;
-+    virtual int read(const message& data) = 0;
++    virtual int read(struct pldm_oem_meta_file_io_read_resp* data) = 0;
 +    virtual ~FileHandler() {}
 +};
 +
@@ -459,10 +463,10 @@ index 0000000..d1661cc
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
 new file mode 100644
-index 0000000..f06cc38
+index 0000000..919284e
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_post_code.hpp
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,54 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -481,7 +485,8 @@ index 0000000..f06cc38
 +  public:
 +    PostCodeHandler(pldm_tid_t tid,
 +                    const std::map<std::string, MctpEndpoint>& configurations) :
-+        tid(tid), configurations(configurations)
++        tid(tid),
++        configurations(configurations)
 +    {}
 +
 +    ~PostCodeHandler() = default;
@@ -496,8 +501,9 @@ index 0000000..f06cc38
 +     *  @param[in] data - post code
 +     *  @return  PLDM status code
 +     */
-+    int read(const message&)
++    int read(struct pldm_oem_meta_file_io_read_resp* data)
 +    {
++        (void)data; // Unused
 +        return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
 +    }
 +
@@ -544,5 +550,5 @@ index 9dcddb7..8ebb9ce 100644
          FRU_JSONS_DIR, FRU_MASTER_JSON, pdrRepo.get(), entityTree.get(),
          bmcEntityTree.get());
 -- 
-2.44.2
+2.25.1
 

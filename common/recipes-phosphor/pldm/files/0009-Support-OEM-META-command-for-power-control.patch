@@ -1,7 +1,7 @@
-From 516a6cc0007ad6e20070ef1af2519b3eb3c5a149 Mon Sep 17 00:00:00 2001
+From 8e105561b38a18b3a2c5304aaa68625ac0532dc7 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 14 Jun 2024 16:24:31 +0800
-Subject: [PATCH 09/12] Support OEM-META command for power control
+Subject: [PATCH] Support OEM-META command for power control
 
 Summary:
   - Add handler for write-file command "SLED_CYCLE, 12V-CYCLE
@@ -18,8 +18,8 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  .../libpldmresponder/oem_meta_file_io.cpp     |   6 +
  .../oem_meta_file_io_by_type.hpp              |   1 +
  .../oem_meta_file_io_type_power_control.cpp   | 167 ++++++++++++++++++
- .../oem_meta_file_io_type_power_control.hpp   |  65 +++++++
- 5 files changed, 240 insertions(+)
+ .../oem_meta_file_io_type_power_control.hpp   |  67 +++++++
+ 5 files changed, 242 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
 
@@ -36,7 +36,7 @@ index 6abd601..5dee580 100644
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-index ef1e913..2263cf5 100644
+index 1653a39..b897db2 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 @@ -3,6 +3,7 @@
@@ -58,19 +58,19 @@ index ef1e913..2263cf5 100644
          default:
              error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
                    "FILEIOTYPE", fileIOType);
-@@ -52,6 +57,7 @@ Response FileIOHandler::writeFileIO(pldm_tid_t tid, const pldm_msg* request,
+@@ -55,6 +60,7 @@ Response FileIOHandler::writeFileIO(pldm_tid_t tid, const pldm_msg* request,
  
-     if (rc != PLDM_SUCCESS)
+     if (rc != 0)
      {
 +        error("Failed to decode OEM Meta file IO request, rc={RC}", "RC", rc);
          return ccOnlyResponse(request, rc);
      }
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-index 29a4fa3..a13f149 100644
+index f2e44de..3ebbf82 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-@@ -18,6 +18,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
+@@ -20,6 +20,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
  {
      POST_CODE = 0x00,
      BIOS_VERSION = 0x01,
@@ -253,10 +253,10 @@ index 0000000..4f86f14
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
 new file mode 100644
-index 0000000..acd0103
+index 0000000..fd3ffab
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_power_control.hpp
-@@ -0,0 +1,65 @@
+@@ -0,0 +1,67 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -283,12 +283,14 @@ index 0000000..acd0103
 +    explicit PowerControlHandler(
 +        uint8_t tid, std::map<std::string, MctpEndpoint>& configurations,
 +        const pldm::utils::DBusHandler* dBusIntf) :
-+        tid(tid), configurations(configurations), dBusIntf(dBusIntf)
++        tid(tid),
++        configurations(configurations), dBusIntf(dBusIntf)
 +    {}
 +
 +    int write(const message& data) override;
-+    int read(const message&) override
++    int read(struct pldm_oem_meta_file_io_read_resp* data) override
 +    {
++        (void)data; // Unused
 +        return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
 +    }
 +
@@ -323,5 +325,5 @@ index 0000000..acd0103
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.44.2
+2.25.1
 

@@ -1,7 +1,7 @@
-From 77a9f984aef4ac14e75a4ef494c278c7e0eec79f Mon Sep 17 00:00:00 2001
+From f3d884fc6025086fcf00a3edd87e8b15619f1561 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Fri, 28 Jun 2024 11:19:43 +0800
-Subject: [PATCH 10/12] oem-meta: Add APML alert handler
+Subject: [PATCH] oem-meta: Add APML alert handler
 
 Add APML alert handler. It will call `amd-ras` to do ADDC.
 
@@ -11,8 +11,8 @@ Change-Id: I9b8587c345e20a17ae858cfb021478c5878c55ab
  .../libpldmresponder/oem_meta_file_io.cpp     |  3 +
  .../oem_meta_file_io_by_type.hpp              |  1 +
  .../oem_meta_file_io_type_apml_alert.cpp      | 85 +++++++++++++++++++
- .../oem_meta_file_io_type_apml_alert.hpp      | 42 +++++++++
- 5 files changed, 132 insertions(+)
+ .../oem_meta_file_io_type_apml_alert.hpp      | 44 ++++++++++
+ 5 files changed, 134 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
 
@@ -29,7 +29,7 @@ index 5dee580..6cbf924 100644
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-index 2263cf5..5e4acff 100644
+index b897db2..36ff128 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 @@ -1,5 +1,6 @@
@@ -49,10 +49,10 @@ index 2263cf5..5e4acff 100644
              return std::make_unique<EventLogHandler>(
                  messageTid, configurationDiscovery->getConfigurations());
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-index a13f149..44c8e5f 100644
+index 3ebbf82..bdd5fce 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-@@ -19,6 +19,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
+@@ -21,6 +21,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
      POST_CODE = 0x00,
      BIOS_VERSION = 0x01,
      POWER_CONTROL = 0x02,
@@ -153,10 +153,10 @@ index 0000000..0967762
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
 new file mode 100644
-index 0000000..f71b579
+index 0000000..1a2c8a8
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_apml_alert.hpp
-@@ -0,0 +1,42 @@
+@@ -0,0 +1,44 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -181,12 +181,14 @@ index 0000000..f71b579
 +
 +    explicit APMLAlertHandler(uint8_t tid,
 +                              const pldm::utils::DBusHandler* dBusIntf) :
-+        tid(tid), dBusIntf(dBusIntf)
++        tid(tid),
++        dBusIntf(dBusIntf)
 +    {}
 +
 +    int write(const message& data) override;
-+    int read(const message&) override
++    int read(struct pldm_oem_meta_file_io_read_resp* data) override
 +    {
++        (void)data; // Unused
 +        return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
 +    }
 +
@@ -200,5 +202,5 @@ index 0000000..f71b579
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.44.2
+2.25.1
 

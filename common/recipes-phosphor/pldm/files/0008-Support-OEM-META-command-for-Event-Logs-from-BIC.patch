@@ -1,7 +1,7 @@
-From 4f5123b453ad123e63b99d7da248d86e073d131b Mon Sep 17 00:00:00 2001
+From 969b088504c841a44a3565f31734b6dcfe906c23 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Wed, 26 Jun 2024 14:25:18 +0800
-Subject: [PATCH 08/12] Support OEM-META command for Event Logs from BIC
+Subject: [PATCH] Support OEM-META command for Event Logs from BIC
 
 Summary:
   - Add handler for write-file command "EVENT_LOG", which is sent
@@ -14,8 +14,8 @@ Change-Id: I55a19b6c22e05cae3a9572a8d6707769ae7ee402
  .../libpldmresponder/oem_meta_file_io.cpp     |   4 +
  .../oem_meta_file_io_by_type.hpp              |   1 +
  .../oem_meta_file_io_type_event_log.cpp       | 138 ++++++++++++++++++
- .../oem_meta_file_io_type_event_log.hpp       |  58 ++++++++
- 5 files changed, 202 insertions(+)
+ .../oem_meta_file_io_type_event_log.hpp       |  60 ++++++++
+ 5 files changed, 204 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
 
@@ -32,7 +32,7 @@ index 6c97957..6abd601 100644
  endif
  
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io.cpp b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
-index e78e890..ef1e913 100644
+index 68bb64d..1653a39 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io.cpp
 @@ -1,6 +1,7 @@
@@ -54,10 +54,10 @@ index e78e890..ef1e913 100644
              error("Get invalid file io type, FILEIOTYPE={FILEIOTYPE}",
                    "FILEIOTYPE", fileIOType);
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-index 091408f..29a4fa3 100644
+index abf8369..f2e44de 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_by_type.hpp
-@@ -18,6 +18,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
+@@ -20,6 +20,7 @@ enum pldm_oem_meta_file_io_type : uint8_t
  {
      POST_CODE = 0x00,
      BIOS_VERSION = 0x01,
@@ -211,10 +211,10 @@ index 0000000..37ec22c
 +} // namespace pldm::responder::oem_meta
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
 new file mode 100644
-index 0000000..9d3b947
+index 0000000..0523ad7
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,60 @@
 +#pragma once
 +
 +#include "common/utils.hpp"
@@ -239,7 +239,8 @@ index 0000000..9d3b947
 +  public:
 +    EventLogHandler(pldm_tid_t tid,
 +                    const std::map<std::string, MctpEndpoint>& configurations) :
-+        tid(tid), configurations(configurations)
++        tid(tid),
++        configurations(configurations)
 +    {}
 +
 +    ~EventLogHandler() = default;
@@ -254,8 +255,9 @@ index 0000000..9d3b947
 +     *  @param[in] data - eventData
 +     *  @return  PLDM status code
 +     */
-+    int read(const message&)
++    int read(struct pldm_oem_meta_file_io_read_resp* data)
 +    {
++        (void)data; // Unused
 +        return PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
 +    }
 +
@@ -274,5 +276,5 @@ index 0000000..9d3b947
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.44.2
+2.25.1
 

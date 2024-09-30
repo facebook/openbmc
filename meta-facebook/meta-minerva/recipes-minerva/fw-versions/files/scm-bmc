@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+version=$(fw-util bmc --version bmc | awk '{print $NF}')
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    /xyz/openbmc_project/software/chassis/Minerva_CMM_SCM_bmc \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

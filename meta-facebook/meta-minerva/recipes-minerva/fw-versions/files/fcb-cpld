@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+fcb=$1
+bus=$((15 + fcb)) # FCB i2c bus starts from 16
+
+version=$(i2cget -y $bus 0x10 0x01) || {
+    echo "i2cget failed, not inserting version to busctl"
+    exit 1
+}
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    "/xyz/openbmc_project/software/chassis/Minerva_Fan_Board_${fcb}_fcb_cpld" \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

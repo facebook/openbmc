@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+version=$(mdio 1* 0x01 0x16)
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    /xyz/openbmc_project/software/chassis/Minerva_CMM_ethernet_switch \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

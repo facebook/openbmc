@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+version=$(fw-util scm --version cpld | awk '{print $NF}')
+echo "version: $version"
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    /xyz/openbmc_project/software/chassis/Minerva_CMM_SCM_scm_cpld \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

@@ -323,6 +323,7 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
      rc = -EINVAL;
      goto out;
    }
+   eeprom->fbw_version = 2;
    read_pointer += ELBERT_EEPROM_TYPE_SIZE;
 
   /* Parse PCA and serial. If there is additional serial TLV parsed,,

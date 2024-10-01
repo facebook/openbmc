@@ -15,13 +15,7 @@ parser = get_parser()
 
 
 def get_rpu_revision(addr):
-    vers_raw = rmd.read(addr, 0x19E8, 0x4, timeout=3000)
-    if len(vers_raw) != 4:
-        print("WARNING: Read wrong number of registers")
-    vers = bytes()
-    for ver in vers_raw:
-        vers += ver.to_bytes(2, "little")
-    return vers.decode()
+    return rmd.get(addr, "RPU_PLC_FW_Revision", True)
 
 
 @contextmanager

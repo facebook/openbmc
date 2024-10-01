@@ -271,7 +271,7 @@ update_bic() {
 				fi
 			fi
 		fi
-		return $?
+		return $update_status
 	else
 		echo "Fail: Miss software id."
 		return $FAIL_TO_UPDATE_PLDM_MISS_SOFTWARE_ID
@@ -633,7 +633,9 @@ if [ "$ret" -ne 0 ]; then
 	echo "Failed to Update PLDM component: Exit code $ret"
 	delete_software_id
 	echo "Restart PLDM service for recover"
-	systemctl restart pldmd
+	systemctl stop pldmd
+	sleep 10
+	systemctl start pldmd
 	sleep 40
 	exit $ret
 fi

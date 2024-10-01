@@ -32,7 +32,10 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         self.read_fans_cmd = "/usr/local/bin/get_fan_speed.sh"
         self.write_fans_cmd = "/usr/local/bin/set_fan_speed.sh"
         self.kill_fan_ctrl_cmd = [
-            "/usr/bin/sv -w 20 force-stop fscd",
+            # sv stop fscd may timeout, because Popen() will block sys.exit() if they run at the same time.
+            # the Popen() is used by fscd to read the real-time sensor temperature for fan speed control. In order not to introduce other new issues, the Popen() is not modified.
+            # Stopping the fscd service is not an operation for normal product operation, so it is more appropriate and safe to modify the test case(add a retry mechanism).
+            "for i in {1..3}; do /usr/bin/sv -w 20 force-stop fscd && { echo successfully stopped fscd; break; } || { echo Failed to stop fscd with return code $?, retrying..; sleep 5; }; done;",
             "/usr/local/bin/wdtcli stop",
         ]
         self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]

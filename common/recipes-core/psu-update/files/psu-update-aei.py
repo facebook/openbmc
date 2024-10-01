@@ -242,11 +242,16 @@ def update_device(addr, filename, params):
     print("done")
 
 
+def print_revision(addr):
+    print("Version:", rmd.get(addr, "PSU_FW_Revision", True))
+
+
 def main():
     global device_params
     args = parser.parse_args()
     params = device_params[args.device]
     with suppress_monitoring(args.addr):
+        print_revision(args.addr)
         try:
             update_device(args.addr, args.file, params)
         except Exception as e:
@@ -254,6 +259,7 @@ def main():
             traceback.print_exc()
             sys.exit(1)
     print("Upgrade success")
+    print_revision(args.addr)
 
 
 if __name__ == "__main__":

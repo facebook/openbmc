@@ -24,15 +24,31 @@ FIRMWARE_UPGRADE_SUCCESS = 0x00AA
 
 
 vendor_params = {
-    "panasonic": {"block_size": 96, "boot_mode": 0xAA55, "block_wait": False},
-    "delta": {"block_size": 64, "boot_mode": 0xA5A5, "block_wait": True},
+    "panasonic": {
+        "block_size": 96,
+        "boot_mode": 0xAA55,
+        "block_wait": False,
+        "version-reg": "FW_Revision",
+    },
+    "delta": {
+        "block_size": 64,
+        "boot_mode": 0xA5A5,
+        "block_wait": True,
+        "version-reg": "FW_Revision",
+    },
     "delta_power_tether": {
         "block_size": 16,
         "boot_mode": 0xAA55,
         "block_wait": True,
         "hw_workarounds": ["WRITE_BLOCK_CRC_EXPECTED"],
+        "version-reg": "PSU_FW_Revision",
     },
-    "hpr_pmm": {"block_size": 68, "boot_mode": 0xAA55, "block_wait": True},
+    "hpr_pmm": {
+        "block_size": 68,
+        "boot_mode": 0xAA55,
+        "block_wait": True,
+        "version-reg": "PMM_FW_Revision",
+    },
 }
 
 parser = get_parser()
@@ -192,6 +208,10 @@ def update_device(addr, filename, vendor_param):
     print("done")
 
 
+def print_revision(addr, params):
+    print("Version:", rmd.get(addr, params["version-reg"], True))
+
+
 def main():
     global vendor_params
     args = parser.parse_args()
@@ -199,6 +219,7 @@ def main():
     if args.block_size is not None:
         params["block_size"] = args.block_size
     print("Upgrade Parameters: ", params)
+    print_revision(args.addr, params)
     with suppress_monitoring(args.addr):
         try:
             update_device(args.addr, args.file, params)
@@ -211,6 +232,7 @@ def main():
         print("Resetting....")
         time.sleep(30.0)
         print("Upgrade success")
+    print_revision(args.addr, params)
 
 
 if __name__ == "__main__":

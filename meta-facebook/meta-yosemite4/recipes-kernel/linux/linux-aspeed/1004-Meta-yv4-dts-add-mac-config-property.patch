@@ -1,4 +1,4 @@
-From e82d6b0fb79041daf8dfab1c261a0e7e7e60957f Mon Sep 17 00:00:00 2001
+From b165160d10666154b2093515c028a7a7cd302e4c Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 3 Jan 2024 13:49:42 +0800
 Subject: [PATCH 1004/1024] Meta yv4 dts : add mac config property

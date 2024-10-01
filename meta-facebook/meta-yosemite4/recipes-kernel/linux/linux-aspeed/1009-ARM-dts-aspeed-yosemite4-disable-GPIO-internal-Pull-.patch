@@ -1,4 +1,4 @@
-From 627a8b09ca36ec35f4397d33b5c539e5832e5617 Mon Sep 17 00:00:00 2001
+From 5c3c571c60d2024de89505f4021b949ae338e739 Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Mon, 4 Mar 2024 17:48:40 +0800
 Subject: [PATCH 1009/1024] ARM: dts: aspeed: yosemite4: disable GPIO internal

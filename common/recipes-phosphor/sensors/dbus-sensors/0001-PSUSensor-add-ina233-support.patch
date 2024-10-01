@@ -1,4 +1,4 @@
-From e37c22d8db743af948fa1600ef8f80a905e1a98f Mon Sep 17 00:00:00 2001
+From ae50f48520e7c29f1d20ca9a27862f0650590d92 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:49:53 +0800
 Subject: [PATCH 1/5] PSUSensor: add ina233 support
@@ -15,10 +15,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
-index fb4e0d5..0c0ecef 100644
+index 3795baa..59f28fb 100644
 --- a/src/PSUSensorMain.cpp
 +++ b/src/PSUSensorMain.cpp
-@@ -81,6 +81,7 @@ static const I2CDeviceTypeMap sensorTypes{
+@@ -82,6 +82,7 @@ static const I2CDeviceTypeMap sensorTypes{
      {"INA219", I2CDeviceType{"ina219", true}},
      {"INA230", I2CDeviceType{"ina230", true}},
      {"INA238", I2CDeviceType{"ina238", true}},

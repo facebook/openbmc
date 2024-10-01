@@ -1,4 +1,4 @@
-From b34ba31f217e5d9e0213605b78a551deb4abc92c Mon Sep 17 00:00:00 2001
+From 3663020bd62d9916c257aeb3c7b4cb5a8d684e68 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 25 Jun 2024 14:57:08 +0800
 Subject: [PATCH 3/5] psusensor: avoid crash by activate sensor twice
@@ -73,16 +73,16 @@ Change-Id: I3fb55c0f10ad26472470bb783ea5df5498a4c1a8
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Signed-off-by: Peter Yin <peter.yin@quantatw.com>
 ---
- src/PSUSensor.cpp     | 12 +++---
+ src/PSUSensor.cpp     |  7 +---
  src/PSUSensor.hpp     |  3 +-
  src/PSUSensorMain.cpp | 86 +++++++++++++++++--------------------------
- 3 files changed, 41 insertions(+), 60 deletions(-)
+ 3 files changed, 36 insertions(+), 60 deletions(-)
 
 diff --git a/src/PSUSensor.cpp b/src/PSUSensor.cpp
-index 3c02b93..9786105 100644
+index 4d410fe..40d001f 100644
 --- a/src/PSUSensor.cpp
 +++ b/src/PSUSensor.cpp
-@@ -122,11 +122,13 @@ bool PSUSensor::isActive()
+@@ -122,16 +122,13 @@ bool PSUSensor::isActive()
      return inputDev.is_open();
  }
  
@@ -90,17 +90,17 @@ index 3c02b93..9786105 100644
 -                         const std::shared_ptr<I2CDevice>& newI2CDevice)
 +void PSUSensor::activate()
  {
+     if (isActive())
+     {
+         // Avoid activating an active sensor
+         return;
+     }
 -    path = newPath;
 -    i2cDevice = newI2CDevice;
-+    if (isActive())
-+    {
-+        return;
-+    }
-+
      inputDev.open(path, boost::asio::random_access_file::read_only);
      markAvailable(true);
      setupRead();
-@@ -138,8 +140,6 @@ void PSUSensor::deactivate()
+@@ -143,8 +140,6 @@ void PSUSensor::deactivate()
      // close the input dev to cancel async operations
      inputDev.close();
      waitTimer.cancel();
@@ -124,10 +124,10 @@ index 09601f8..008c632 100644
      bool isActive();
  
 diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
-index 65dd35b..1e83c9b 100644
+index 7dccb10..1259cf1 100644
 --- a/src/PSUSensorMain.cpp
 +++ b/src/PSUSensorMain.cpp
-@@ -299,8 +299,7 @@ static void createSensorsCallback(
+@@ -301,8 +301,7 @@ static void createSensorsCallback(
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
      const ManagedObjectType& sensorConfigs,
      const std::shared_ptr<boost::container::flat_set<std::string>>&
@@ -137,7 +137,7 @@ index 65dd35b..1e83c9b 100644
  {
      int numCreated = 0;
      bool firstScan = sensorsChanged == nullptr;
-@@ -451,10 +450,6 @@ static void createSensorsCallback(
+@@ -464,10 +463,6 @@ static void createSensorsCallback(
          std::shared_ptr<I2CDevice> i2cDev;
          if (findI2CDev != devices.end())
          {
@@ -148,7 +148,7 @@ index 65dd35b..1e83c9b 100644
              i2cDev = findI2CDev->second.first;
          }
  
-@@ -932,33 +927,20 @@ static void createSensorsCallback(
+@@ -945,33 +940,20 @@ static void createSensorsCallback(
                            << "\"\n";
              }
              // destruct existing one first if already created
@@ -195,7 +195,7 @@ index 65dd35b..1e83c9b 100644
              }
          }
  
-@@ -1053,15 +1035,14 @@ void createSensors(
+@@ -1066,15 +1048,14 @@ void createSensors(
      boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
      const std::shared_ptr<boost::container::flat_set<std::string>>&
@@ -217,7 +217,7 @@ index 65dd35b..1e83c9b 100644
      std::vector<std::string> types(sensorTypes.size());
      for (const auto& [type, dt] : sensorTypes)
      {
-@@ -1116,13 +1097,17 @@ void propertyInitialize()
+@@ -1129,13 +1110,17 @@ void propertyInitialize()
  static void powerStateChanged(
      PowerState type, bool newState,
      boost::container::flat_map<std::string, std::shared_ptr<PSUSensor>>&
@@ -239,7 +239,7 @@ index 65dd35b..1e83c9b 100644
      }
      else
      {
-@@ -1150,16 +1135,14 @@ int main()
+@@ -1163,16 +1148,14 @@ int main()
  
      propertyInitialize();
  
@@ -260,7 +260,7 @@ index 65dd35b..1e83c9b 100644
      boost::asio::steady_timer filterTimer(io);
      std::function<void(sdbusplus::message_t&)> eventHandler =
          [&](sdbusplus::message_t& message) {
-@@ -1179,8 +1162,7 @@ int main()
+@@ -1192,8 +1175,7 @@ int main()
                  {
                      std::cerr << "timer error\n";
                  }
@@ -270,7 +270,7 @@ index 65dd35b..1e83c9b 100644
              });
          };
  
-@@ -1239,7 +1221,7 @@ int main()
+@@ -1252,7 +1234,7 @@ int main()
                      std::cerr << "timer error\n";
                      return;
                  }

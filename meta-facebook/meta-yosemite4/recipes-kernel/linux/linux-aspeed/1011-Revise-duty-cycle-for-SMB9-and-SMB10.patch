@@ -1,4 +1,4 @@
-From a920ec44e2e76a2acca1734d04d2b7c0d71e7d84 Mon Sep 17 00:00:00 2001
+From 4c9885eb8f78dadcf952e3538704308baf41832f Mon Sep 17 00:00:00 2001
 From: EricYang-wiwynn <Eric_Yang@wiwynn.com>
 Date: Mon, 1 Apr 2024 15:05:58 +0800
 Subject: [PATCH 1011/1024] Revise duty cycle for SMB9 and SMB10

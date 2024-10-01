@@ -1,4 +1,4 @@
-From 877fe88eb3ac56b78439637ad5b1645316d9e16f Mon Sep 17 00:00:00 2001
+From 2fbde8bf8e7dbae90252046d702c3c4484f9dcae Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:43:49 +0800
 Subject: [PATCH 4/5] PSUSensor: Fix error for decimal part of scalefactor
@@ -41,7 +41,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  3 files changed, 25 insertions(+), 19 deletions(-)
 
 diff --git a/src/PSUSensor.cpp b/src/PSUSensor.cpp
-index 9786105..3d1c3e6 100644
+index 40d001f..a2913cf 100644
 --- a/src/PSUSensor.cpp
 +++ b/src/PSUSensor.cpp
 @@ -44,16 +44,17 @@ static constexpr const char* sensorPathPrefix = "/xyz/openbmc_project/sensors/";
@@ -112,10 +112,10 @@ index 008c632..cebe730 100644
      double sensorOffset;
  };
 diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
-index 1e83c9b..71c057d 100644
+index 1259cf1..84bac9d 100644
 --- a/src/PSUSensorMain.cpp
 +++ b/src/PSUSensorMain.cpp
-@@ -708,7 +708,7 @@ static void createSensorsCallback(
+@@ -721,7 +721,7 @@ static void createSensorsCallback(
                  try
                  {
                      psuProperty.sensorScaleFactor = std::visit(
@@ -124,7 +124,7 @@ index 1e83c9b..71c057d 100644
                  }
                  catch (const std::invalid_argument&)
                  {
-@@ -717,7 +717,8 @@ static void createSensorsCallback(
+@@ -730,7 +730,8 @@ static void createSensorsCallback(
                  }
  
                  // Avoid later division by zero
@@ -134,7 +134,7 @@ index 1e83c9b..71c057d 100644
                  {
                      customizedScale = true;
                  }
-@@ -841,7 +842,7 @@ static void createSensorsCallback(
+@@ -854,7 +855,7 @@ static void createSensorsCallback(
              // Similarly, if sensor scaling factor is being customized,
              // then the below power-of-10 constraint becomes unnecessary,
              // as config should be able to specify an arbitrary divisor.
@@ -143,7 +143,7 @@ index 1e83c9b..71c057d 100644
              if (!customizedScale)
              {
                  // Preserve existing usage of hardcoded labelMatch table below
-@@ -858,8 +859,12 @@ static void createSensorsCallback(
+@@ -871,8 +872,12 @@ static void createSensorsCallback(
                  auto findScaleFactor = baseConfig->find(strScaleFactor);
                  if (findScaleFactor != baseConfig->end())
                  {

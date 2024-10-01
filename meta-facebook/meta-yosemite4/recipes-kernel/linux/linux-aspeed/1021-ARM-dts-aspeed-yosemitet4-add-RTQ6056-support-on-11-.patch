@@ -1,4 +1,4 @@
-From 1e6e31b96501b50f10bc3cc77b6eb407f11f2b7a Mon Sep 17 00:00:00 2001
+From 11a4bd7a94f4d5701cd3c9ee368f76bbb8652938 Mon Sep 17 00:00:00 2001
 From: Ian-I-Chien <Ian_Chien@wiwynn.com>
 Date: Tue, 20 Aug 2024 17:22:09 +0800
 Subject: [PATCH 1021/1024] ARM: dts: aspeed: yosemitet4: add RTQ6056 support

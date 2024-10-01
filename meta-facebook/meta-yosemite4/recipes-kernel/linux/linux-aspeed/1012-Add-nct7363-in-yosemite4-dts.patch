@@ -1,4 +1,4 @@
-From a055b596cc03e6b0f5e1e9460c9791593b15a513 Mon Sep 17 00:00:00 2001
+From b4750d5f2369a4e94eb855ae74c07f324bdda205 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Wed, 20 Mar 2024 20:59:30 +0800
 Subject: [PATCH 1012/1024] Add nct7363 in yosemite4 dts

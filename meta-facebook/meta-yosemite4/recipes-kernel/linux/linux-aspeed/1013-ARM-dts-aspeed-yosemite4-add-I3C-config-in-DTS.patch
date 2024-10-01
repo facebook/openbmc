@@ -1,4 +1,4 @@
-From cc689db088953a4067e1a678202ae8386449a808 Mon Sep 17 00:00:00 2001
+From 2036c313a367c919b6fad315e25b6fbad561bb3b Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 6 May 2024 19:35:43 +0800
 Subject: [PATCH 1013/1024] ARM: dts: aspeed: yosemite4: add I3C config in DTS

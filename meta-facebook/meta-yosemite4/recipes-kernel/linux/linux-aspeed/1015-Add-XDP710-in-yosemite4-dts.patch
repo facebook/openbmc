@@ -1,4 +1,4 @@
-From b474bcad29a7490bbf0c84ff814627863887fd37 Mon Sep 17 00:00:00 2001
+From c8dfd88118b18a8f6c3798d9cfab87b4864ab53a Mon Sep 17 00:00:00 2001
 From: PatrickLinww <Patrick_NC_Lin@wiwynn.com>
 Date: Thu, 20 Jun 2024 13:53:31 +0800
 Subject: [PATCH 1015/1024] Add XDP710 in yosemite4 dts

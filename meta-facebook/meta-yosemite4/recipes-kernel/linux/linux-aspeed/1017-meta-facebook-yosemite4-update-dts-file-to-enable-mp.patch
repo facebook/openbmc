@@ -1,4 +1,4 @@
-From f1f9148afc92d8646f56e9e4f1acb8ea19949e14 Mon Sep 17 00:00:00 2001
+From 0b7f7909757fc61dda3ce45d581ed41daed55502 Mon Sep 17 00:00:00 2001
 From: Rush_Chen_Wiwynn <Rush_Chen@wiwynn.com>
 Date: Thu, 20 Jun 2024 15:07:00 +0800
 Subject: [PATCH 1017/1024] meta-facebook: yosemite4: update dts file to enable

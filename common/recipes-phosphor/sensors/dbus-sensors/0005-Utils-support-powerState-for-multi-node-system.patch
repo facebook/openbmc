@@ -1,4 +1,4 @@
-From e64228b1ba6ab17d779dc4c1a7335cf25f71b591 Mon Sep 17 00:00:00 2001
+From 95d86cd1671ea2dec7a14459500f22a0c0362019 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 5/5] Utils: support powerState for multi-node system
@@ -77,7 +77,7 @@ index f7ccb4f..82ec61b 100644
          }
      }
 diff --git a/src/PSUSensor.cpp b/src/PSUSensor.cpp
-index 3d1c3e6..e8099b3 100644
+index a2913cf..7ce3430 100644
 --- a/src/PSUSensor.cpp
 +++ b/src/PSUSensor.cpp
 @@ -44,23 +44,22 @@ static constexpr const char* sensorPathPrefix = "/xyz/openbmc_project/sensors/";
@@ -151,10 +151,10 @@ index cebe730..27609be 100644
      ~PSUProperty() = default;
  
 diff --git a/src/PSUSensorMain.cpp b/src/PSUSensorMain.cpp
-index 71c057d..8e1f989 100644
+index 84bac9d..1bb47cc 100644
 --- a/src/PSUSensorMain.cpp
 +++ b/src/PSUSensorMain.cpp
-@@ -499,6 +499,7 @@ static void createSensorsCallback(
+@@ -512,6 +512,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -162,7 +162,7 @@ index 71c057d..8e1f989 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -939,7 +940,7 @@ static void createSensorsCallback(
+@@ -952,7 +953,7 @@ static void createSensorsCallback(
                  readState, findSensorUnit->second, factor,
                  psuProperty.maxReading, psuProperty.minReading,
                  psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -171,7 +171,7 @@ index 71c057d..8e1f989 100644
              sensors[sensorName]->setupRead();
              ++numCreated;
              if constexpr (debug)
-@@ -1045,9 +1046,9 @@ void createSensors(
+@@ -1058,9 +1059,9 @@ void createSensors(
      auto getter = std::make_shared<GetSensorConfiguration>(
          dbusConnection, [&io, &objectServer, &dbusConnection, sensorsChanged](
                              const ManagedObjectType& sensorConfigs) {
@@ -184,7 +184,7 @@ index 71c057d..8e1f989 100644
      std::vector<std::string> types(sensorTypes.size());
      for (const auto& [type, dt] : sensorTypes)
      {
-@@ -1110,7 +1111,11 @@ static void powerStateChanged(
+@@ -1123,7 +1124,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -197,7 +197,7 @@ index 71c057d..8e1f989 100644
              }
          }
      }
-@@ -1120,7 +1125,11 @@ static void powerStateChanged(
+@@ -1133,7 +1138,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

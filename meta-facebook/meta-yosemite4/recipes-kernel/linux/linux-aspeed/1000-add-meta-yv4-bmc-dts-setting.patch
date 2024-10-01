@@ -1,4 +1,4 @@
-From 00feae764a08e99ac35679149a444bb8baa61f60 Mon Sep 17 00:00:00 2001
+From 405f685a9b9e8c2b0ac50894296d4b40d4b8700d Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 24 Oct 2023 17:43:44 +0800
 Subject: [PATCH 1000/1024] add meta yv4 bmc dts setting
@@ -6,11 +6,11 @@ Subject: [PATCH 1000/1024] add meta yv4 bmc dts setting
 This commit depends on the patch below:
 [1] https://lore.kernel.org/lkml/20240109072053.3980855-1-Delphine_CC_Chiu@wiwynn.com/
 ---
- .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 859 +++++++++++++++---
- 1 file changed, 742 insertions(+), 117 deletions(-)
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 855 +++++++++++++++---
+ 1 file changed, 740 insertions(+), 115 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 15331838fb57..574f3a2c488f 100644
+index b6566e2ca274..574f3a2c488f 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -18,6 +18,24 @@ aliases {
@@ -373,7 +373,7 @@ index 15331838fb57..574f3a2c488f 100644
  	};
  };
  
-@@ -532,54 +650,216 @@ &i2c9 {
+@@ -532,15 +650,174 @@ &i2c9 {
  	bus-frequency = <400000>;
  	i2c-mux@71 {
  		compatible = "nxp,pca9544";
@@ -549,16 +549,7 @@ index 15331838fb57..574f3a2c488f 100644
  };
  
  &i2c11 {
- 	status = "okay";
- 	power-sensor@10 {
--		compatible = "adi, adm1272";
-+		compatible = "adi,adm1272";
- 		reg = <0x10>;
- 	};
- 
- 	power-sensor@12 {
--		compatible = "adi, adm1272";
-+		compatible = "adi,adm1272";
+@@ -555,31 +832,34 @@ power-sensor@12 {
  		reg = <0x12>;
  	};
  

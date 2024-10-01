@@ -1,4 +1,4 @@
-From fe336b628227c7fb0d9a1374f1f1f22bd3a4a0a3 Mon Sep 17 00:00:00 2001
+From f8bed387d5a4bca0d38aebe174afaa9a8a3aca81 Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Tue, 24 Sep 2024 16:46:40 +0800
 Subject: [PATCH 1024/1024] ARM: dts: aspeed: yosemite4: add GPIO I6 to dts

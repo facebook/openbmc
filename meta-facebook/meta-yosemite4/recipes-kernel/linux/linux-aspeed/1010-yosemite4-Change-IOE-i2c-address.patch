@@ -1,4 +1,4 @@
-From a48b90645525581f0c1e4c1531c93f5cfc4a400f Mon Sep 17 00:00:00 2001
+From 9a3613974a9e916022e1204432d5292d131ccdd6 Mon Sep 17 00:00:00 2001
 From: Sara Lin <sara_sy_lin@wiwynn.com>
 Date: Wed, 20 Mar 2024 19:13:34 +0800
 Subject: [PATCH 1010/1024] yosemite4: Change IOE i2c address

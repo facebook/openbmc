@@ -1,4 +1,4 @@
-From 885247261d89a02aed2c9bc211deec4016fd2af3 Mon Sep 17 00:00:00 2001
+From dc6f86bad20a7ad5cbc20c9dfedf5f470fc1b2f7 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 22 May 2024 17:15:50 +0800
 Subject: [PATCH 1014/1024] ARM: dts: aspeed: yosemite4: add fan led config

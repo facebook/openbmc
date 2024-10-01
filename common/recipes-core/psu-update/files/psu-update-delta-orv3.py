@@ -85,7 +85,7 @@ class StatusRegister:
 
 
 class BadMEIResponse(ModbusException):
-    ...
+    pass
 
 
 def get_status_reg(addr):
@@ -279,10 +279,15 @@ def update_psu(addr, filename, key):
     activate(addr_b)
 
 
+def print_revision(addr):
+    print("Version:", rmd.get(addr, "PSU_FW_Revision", True))
+
+
 def main():
     args = parser.parse_args()
     with suppress_monitoring(args.addr):
         try:
+            print_revision(args.addr)
             update_psu(args.addr, args.file, args.key)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
@@ -291,6 +296,7 @@ def main():
             traceback.print_exc()
             sys.exit(1)
     print("Upgrade Success!")
+    print_revision(args.addr)
 
 
 if __name__ == "__main__":

@@ -19,12 +19,29 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
+
+i2c_get_psu_model(){
+   len=$(i2cget -f -y "$1" 0x58 0x9a 2> /dev/null || echo 0)
+   if [ "$((len))" -eq 0 ]; then
+      return
+   fi
+   modelbytes=$(i2cget -f -y "$1" 0x58 0x9a i $((len)))
+   for v in $modelbytes; do echo "$v"; done | tail -n +2 | awk '{printf("%c",$1)}'
+}
 
 # First, we will Enable write in WRITE_PROTECT(0x10) reg before adding the i2c
 # pmbus device for dps1900. This will prevent some sysfs node from disappearing
 # when we powercycle
 i2c_dsp1900_create(){
+  # Some PSU's don't support i2c very well and writes can result in the PSU
+  # being turned off. Therefore, don't add i2c access for such devices.
+  model=$(i2c_get_psu_model "$1")
+  if [[ -z "$model" ]] || [[ "$model" =~ "1900 DC" ]]; then
+    return
+  fi
+
   if ! i2cset -f -y "$1" 0x58 0x10 0; then
     echo "Fail to clear PSU pmbus WRITE_PROTECT(0x10) register"
   fi

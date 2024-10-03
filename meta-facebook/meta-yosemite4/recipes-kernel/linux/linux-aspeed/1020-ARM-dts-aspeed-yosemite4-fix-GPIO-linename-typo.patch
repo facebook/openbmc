@@ -1,4 +1,4 @@
-From 3a1df4cef3a158527cde46cb00a674c3f1ec92fc Mon Sep 17 00:00:00 2001
+From 86000785326ac5010845123a665b6d07b89be932 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Fri, 9 Aug 2024 10:31:13 +0800
 Subject: [PATCH 1020/1024] ARM: dts: aspeed: yosemite4: fix GPIO linename typo

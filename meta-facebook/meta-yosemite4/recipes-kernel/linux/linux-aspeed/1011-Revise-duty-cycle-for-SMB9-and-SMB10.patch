@@ -1,4 +1,4 @@
-From 4c9885eb8f78dadcf952e3538704308baf41832f Mon Sep 17 00:00:00 2001
+From bae99a996fe30cbab23165b83a65656eb5e7ce4a Mon Sep 17 00:00:00 2001
 From: EricYang-wiwynn <Eric_Yang@wiwynn.com>
 Date: Mon, 1 Apr 2024 15:05:58 +0800
 Subject: [PATCH 1011/1024] Revise duty cycle for SMB9 and SMB10
@@ -13,7 +13,7 @@ https://lore.kernel.org/all/20240401090509.2338027-1-Delphine_CC_Chiu@Wiwynn.com
  1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index adc4ebb95cf9..bb67b0f5a596 100644
+index d96d2b1f5e98..4201b28924d7 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -543,6 +543,7 @@ power-sensor@40 {

@@ -1,4 +1,4 @@
-From 9a3613974a9e916022e1204432d5292d131ccdd6 Mon Sep 17 00:00:00 2001
+From d53b900ce9912bfc82f813a17b95c154a6c7ad2f Mon Sep 17 00:00:00 2001
 From: Sara Lin <sara_sy_lin@wiwynn.com>
 Date: Wed, 20 Mar 2024 19:13:34 +0800
 Subject: [PATCH 1010/1024] yosemite4: Change IOE i2c address
@@ -21,7 +21,7 @@ Log
  1 file changed, 16 insertions(+), 16 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 0fab11169c0b..adc4ebb95cf9 100644
+index 4ac9e7602b51..d96d2b1f5e98 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -183,9 +183,9 @@ mctp@10 {

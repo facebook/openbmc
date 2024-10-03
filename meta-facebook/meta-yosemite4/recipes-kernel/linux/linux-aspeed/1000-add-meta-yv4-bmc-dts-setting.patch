@@ -1,4 +1,4 @@
-From 405f685a9b9e8c2b0ac50894296d4b40d4b8700d Mon Sep 17 00:00:00 2001
+From 306879cadc5222b316cf2c1c00f14bcdce6eeb37 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 24 Oct 2023 17:43:44 +0800
 Subject: [PATCH 1000/1024] add meta yv4 bmc dts setting
@@ -10,7 +10,7 @@ This commit depends on the patch below:
  1 file changed, 740 insertions(+), 115 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index b6566e2ca274..574f3a2c488f 100644
+index ae2a2ed603ff..c27ad5e14b0d 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -18,6 +18,24 @@ aliases {
@@ -704,7 +704,7 @@ index b6566e2ca274..574f3a2c488f 100644
  };
  
  &i2c13 {
-@@ -783,28 +1101,38 @@ adc@37 {
+@@ -755,28 +1073,38 @@ adc@37 {
  	};
  
  	power-sensor@40 {
@@ -748,7 +748,7 @@ index b6566e2ca274..574f3a2c488f 100644
  	};
  
  	temperature-sensor@4e {
-@@ -822,16 +1150,14 @@ eeprom@51 {
+@@ -794,16 +1122,14 @@ eeprom@51 {
  		reg = <0x51>;
  	};
  
@@ -769,7 +769,7 @@ index b6566e2ca274..574f3a2c488f 100644
  			#address-cells = <1>;
  			#size-cells = <0>;
  			reg = <0>;
-@@ -839,26 +1165,46 @@ i2c@0 {
+@@ -811,26 +1137,46 @@ i2c@0 {
  			adc@1f {
  				compatible = "ti,adc128d818";
  				reg = <0x1f>;
@@ -822,7 +822,7 @@ index b6566e2ca274..574f3a2c488f 100644
  			};
  
  			adc@33 {
-@@ -881,34 +1227,54 @@ gpio@61 {
+@@ -853,34 +1199,54 @@ gpio@61 {
  			};
  		};
  
@@ -885,7 +885,7 @@ index b6566e2ca274..574f3a2c488f 100644
  			};
  
  			adc@33 {
-@@ -936,12 +1302,10 @@ i2c-mux@73 {
+@@ -908,12 +1274,10 @@ i2c-mux@73 {
  		compatible = "nxp,pca9544";
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -899,7 +899,7 @@ index b6566e2ca274..574f3a2c488f 100644
  			#address-cells = <1>;
  			#size-cells = <0>;
  			reg = <0>;
-@@ -952,10 +1316,10 @@ adc@35 {
+@@ -924,10 +1288,10 @@ adc@35 {
  			};
  		};
  
@@ -912,7 +912,7 @@ index b6566e2ca274..574f3a2c488f 100644
  
  			adc@35 {
  				compatible = "maxim,max11617";
-@@ -978,12 +1342,75 @@ mctp@10 {
+@@ -950,12 +1314,75 @@ mctp@10 {
  
  	i2c-mux@72 {
  		compatible = "nxp,pca9544";
@@ -990,7 +990,7 @@ index b6566e2ca274..574f3a2c488f 100644
  &adc0 {
  	status = "okay";
  	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
-@@ -1009,3 +1436,201 @@ &ehci1 {
+@@ -981,3 +1408,201 @@ &ehci1 {
  &uhci {
  	status = "okay";
  };

@@ -1,4 +1,4 @@
-From 6b85a01fe9cce84cce295fdc892532119e1caa3a Mon Sep 17 00:00:00 2001
+From 02c5beec640e4ed5453f0afd8b004c820604fe9e Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Tue, 24 Sep 2024 14:52:17 +0800
 Subject: [PATCH 1023/1024] ARM: dts: aspeed: yosemite4: add Spider Board

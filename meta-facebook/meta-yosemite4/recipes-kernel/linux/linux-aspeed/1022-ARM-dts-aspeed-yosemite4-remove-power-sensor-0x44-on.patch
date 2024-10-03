@@ -1,4 +1,4 @@
-From 0337f5ab96af7f1291a4efcbb3bf7ff8c5a07b92 Mon Sep 17 00:00:00 2001
+From 189b4dc76e447828a095a41a5a93724b8a5d758c Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Mon, 9 Sep 2024 13:59:57 +0800
 Subject: [PATCH 1022/1024] ARM: dts: aspeed: yosemite4: remove power sensor

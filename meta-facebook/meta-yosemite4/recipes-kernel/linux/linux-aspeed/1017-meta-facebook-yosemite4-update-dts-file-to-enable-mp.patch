@@ -1,4 +1,4 @@
-From 0b7f7909757fc61dda3ce45d581ed41daed55502 Mon Sep 17 00:00:00 2001
+From 809d9e2d303de5f6ccd4da00eb4a1f07f674e58b Mon Sep 17 00:00:00 2001
 From: Rush_Chen_Wiwynn <Rush_Chen@wiwynn.com>
 Date: Thu, 20 Jun 2024 15:07:00 +0800
 Subject: [PATCH 1017/1024] meta-facebook: yosemite4: update dts file to enable
@@ -12,7 +12,7 @@ Lore Link: https://lore.kernel.org/all/20240626090744.174351-27-Delphine_CC_Chiu
  1 file changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 6a3848656a4e..19cc18a3a847 100644
+index cad07a50911a..661840b89d99 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -360,7 +360,7 @@ gpio@23 {

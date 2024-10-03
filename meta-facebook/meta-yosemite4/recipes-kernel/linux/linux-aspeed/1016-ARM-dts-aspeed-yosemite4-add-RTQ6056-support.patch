@@ -1,4 +1,4 @@
-From 1359edbafa3aa46d2e4b1d0d67e3573d0c3c6a58 Mon Sep 17 00:00:00 2001
+From 824d75d4d86e6b9c2e88b530b6cdf04492585531 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Thu, 20 Jun 2024 16:58:49 +0800
 Subject: [PATCH 1016/1024] ARM: dts: aspeed: yosemite4: add RTQ6056 support
@@ -11,10 +11,10 @@ Lore Link: https://lore.kernel.org/all/20240626090744.174351-26-Delphine_CC_Chiu
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index f22dc7b8785e..6a3848656a4e 100644
+index 1bc2abeb1ce6..cad07a50911a 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1283,35 +1283,35 @@ adc@37 {
+@@ -1255,35 +1255,35 @@ adc@37 {
  	};
  
  	power-sensor@40 {

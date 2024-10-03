@@ -323,11 +323,13 @@ RegisterMapDatabase::Iterator& RegisterMapDatabase::Iterator::operator++() {
     return *this;
   }
   ++it;
-  while (addr.has_value() && it != end) {
-    if ((*it)->applicableAddresses.contains(addr.value())) {
-      break;
+  if (addr.has_value()) {
+    while (it != end) {
+      if ((*it)->applicableAddresses.contains(addr.value())) {
+        break;
+      }
+      ++it;
     }
-    ++it;
   }
   return *this;
 }

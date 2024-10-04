@@ -1,7 +1,7 @@
-From e05076ab9932e5eaa91e7c28ded0d1e6aae2de8e Mon Sep 17 00:00:00 2001
+From ef7465e2782b21a2c05f61023c5b140c666cd4cb Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 03/12] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 02/13] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which

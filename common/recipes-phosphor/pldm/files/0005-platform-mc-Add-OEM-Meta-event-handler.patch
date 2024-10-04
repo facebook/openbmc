@@ -1,7 +1,7 @@
-From 752172fe4b288de21130bdc7021fe486497593d5 Mon Sep 17 00:00:00 2001
+From b875b8dbf41791535a1d5c547e4972396fd87ef3 Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
-Subject: [PATCH] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 05/13] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -927,7 +927,7 @@ index 0000000..55822a8
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index 6e16a32..76bf306 100644
+index 694d06b..9c86adb 100644
 --- a/platform-mc/event_manager.cpp
 +++ b/platform-mc/event_manager.cpp
 @@ -3,8 +3,10 @@
@@ -997,7 +997,7 @@ index 6e16a32..76bf306 100644
  
      return PLDM_ERROR;
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index 96ba6d0..6004f50 100644
+index 758e485..6420b73 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
 @@ -6,6 +6,7 @@
@@ -1044,7 +1044,7 @@ index 96ba6d0..6004f50 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 2f93195..1694371 100644
+index 864906e..34773b0 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
 @@ -6,11 +6,14 @@
@@ -1083,7 +1083,7 @@ index 2f93195..1694371 100644
      {}
  
      /** @brief Helper function to do the actions before discovering terminus
-@@ -167,6 +174,18 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -169,6 +176,18 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          return PLDM_SUCCESS;
      }
  
@@ -1102,7 +1102,7 @@ index 2f93195..1694371 100644
      /** @brief The function to trigger the event polling
       *
       *  @param[in] tid - Terminus ID
-@@ -192,6 +211,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -194,6 +213,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
  
      /** @brief Store event manager handler */
      EventManager eventManager;
@@ -1152,5 +1152,5 @@ index 8ebb9ce..bf74b28 100644
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.25.1
+2.44.2
 

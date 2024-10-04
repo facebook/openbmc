@@ -1,7 +1,8 @@
-From ee23c748420d4a765bf695e82b4ffccb781b6fbd Mon Sep 17 00:00:00 2001
+From 4444cda67b44b50e69611ce5d7e2de3cc2f86c2b Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 16:21:45 +0800
-Subject: [PATCH] Support OEM-META command for getting Http boot certification
+Subject: [PATCH 13/13] Support OEM-META command for getting Http boot
+ certification
 
 Summary:
 - Support parsing read file IO for Http Boot command (type: 0x03) and
@@ -401,5 +402,5 @@ index 0000000..176f7c6
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.25.1
+2.44.2
 

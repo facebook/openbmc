@@ -1,7 +1,7 @@
-From 63960f624b2d5f988b08812603bdaf875c64c170 Mon Sep 17 00:00:00 2001
+From a796865b75c49557abc963e0c70b157fbc06a647 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Thu, 19 Sep 2024 14:00:24 +0800
-Subject: [PATCH] Update retimer version after post complete
+Subject: [PATCH 12/13] Update retimer version after post complete
 
 The retimer will not be ready right away after fw update. The best
 timing to read retimer version is post-complete.
@@ -58,5 +58,5 @@ index 7f62f51..81e1c7e 100644
      {
          event_name = eventList[eventType];
 -- 
-2.25.1
+2.44.2
 

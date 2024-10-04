@@ -1,7 +1,7 @@
-From 457e01bc063e8fdd296c888905bec17b2058f36a Mon Sep 17 00:00:00 2001
+From 2fac35a060cea0c965793a2adaff7a52aa7226ef Mon Sep 17 00:00:00 2001
 From: Dung Cao <dung@os.amperecomputing.com>
 Date: Tue, 21 Nov 2023 04:38:29 +0000
-Subject: [PATCH 02/12] platform-mc: Support pollForPlatFormEventMessage
+Subject: [PATCH 01/13] platform-mc: Support pollForPlatFormEventMessage
 
 Supports polling all events synchronously when the terminus sends
 `pldmMessagePollEvent` with the event id. BMC will use the received
@@ -24,7 +24,7 @@ Signed-off-by: Thu Nguyen <thu@os.amperecomputing.com>
  9 files changed, 457 insertions(+), 2 deletions(-)
 
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index ae33e8e..6e16a32 100644
+index b50daf2..694d06b 100644
 --- a/platform-mc/event_manager.cpp
 +++ b/platform-mc/event_manager.cpp
 @@ -1,5 +1,6 @@
@@ -65,7 +65,7 @@ index ae33e8e..6e16a32 100644
      lg2::info("Unsupported class type {CLASSTYPE}", "CLASSTYPE", eventClass);
  
      return PLDM_ERROR;
-@@ -456,5 +481,192 @@ int EventManager::createCperDumpEntry(const std::string& dataType,
+@@ -442,5 +467,192 @@ int EventManager::createCperDumpEntry(const std::string& dataType,
      return PLDM_SUCCESS;
  }
  
@@ -259,7 +259,7 @@ index ae33e8e..6e16a32 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index 032651e..96ba6d0 100644
+index c654eb7..758e485 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
 @@ -15,6 +15,12 @@ namespace pldm
@@ -335,7 +335,7 @@ index 032651e..96ba6d0 100644
       *
 @@ -111,6 +159,32 @@ class EventManager
                              const std::string& dataPath,
-                             const std::string& terminusName);
+                             const std::string& typeName);
  
 +    /** @brief Send pollForPlatformEventMessage and return response
 +     *
@@ -399,10 +399,10 @@ index 7e79a29..2cb81a1 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 1c23795..2f93195 100644
+index c499f88..864906e 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
-@@ -145,6 +145,38 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -147,6 +147,38 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          return PLDM_SUCCESS;
      }
  
@@ -442,7 +442,7 @@ index 1c23795..2f93195 100644
      /** @brief List of discovered termini */
      TerminiMapper termini{};
 diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
-index 74e3043..ce5be90 100644
+index da829b0..ffd15f7 100644
 --- a/platform-mc/sensor_manager.cpp
 +++ b/platform-mc/sensor_manager.cpp
 @@ -181,6 +181,13 @@ exec::task<int> SensorManager::doSensorPollingTask(pldm_tid_t tid)
@@ -474,10 +474,10 @@ index b5a1e8c..70d1112 100644
  
  bool Terminus::doesSupportType(uint8_t type)
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index dd766c6..13f10e8 100644
+index 464897f..c5456b5 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
-@@ -144,6 +144,14 @@ class Terminus
+@@ -148,6 +148,14 @@ class Terminus
      /** @brief A list of numericSensors */
      std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
  

@@ -1,7 +1,7 @@
-From 267807eff62fcc5b4df677973634f7b566c9b8a3 Mon Sep 17 00:00:00 2001
+From 5e67565c3afd4f2d83505fb842c70dabb94bba2a Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Wed, 20 Mar 2024 20:59:30 +0800
-Subject: [PATCH 1012/1024] Add nct7363 in yosemite4 dts
+Subject: [PATCH 1011/1022] Add nct7363 in yosemite4 dts
 
 ARM: dts: aspeed: yosemite4:
 Add nct7363(0x21 and 0x23) in yosemite4.dts
@@ -12,11 +12,11 @@ lore link: https://lore.kernel.org/all/20240425060626.2558515-3-Delphine_CC_Chiu
  1 file changed, 145 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 4201b28924d7..e769d500fb3d 100644
+index b6966314f1e6..8322cf413493 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1180,6 +1180,42 @@ channel@5 {
- 				};
+@@ -1226,6 +1226,42 @@ pwm@20{
+ 				reg = <0x20>;
  			};
  
 +			hwmon0: hwmon@21 {
@@ -58,7 +58,7 @@ index 4201b28924d7..e769d500fb3d 100644
  			gpio@22{
  				compatible = "ti,tca6424";
  				reg = <0x22>;
-@@ -1187,6 +1223,42 @@ gpio@22{
+@@ -1233,6 +1269,42 @@ gpio@22{
  				#gpio-cells = <2>;
  			};
  
@@ -100,9 +100,9 @@ index 4201b28924d7..e769d500fb3d 100644
 +
  			pwm@2f{
  				compatible = "maxim,max31790";
- 				#address-cells = <1>;
-@@ -1250,6 +1322,42 @@ channel@5 {
- 				};
+ 				reg = <0x2f>;
+@@ -1274,6 +1346,42 @@ pwm@20{
+ 				reg = <0x20>;
  			};
  
 +			hwmon2: hwmon@21 {
@@ -144,7 +144,7 @@ index 4201b28924d7..e769d500fb3d 100644
  			gpio@22{
  				compatible = "ti,tca6424";
  				reg = <0x22>;
-@@ -1257,6 +1365,42 @@ gpio@22{
+@@ -1281,6 +1389,42 @@ gpio@22{
  				#gpio-cells = <2>;
  			};
  
@@ -186,8 +186,8 @@ index 4201b28924d7..e769d500fb3d 100644
 +
  			pwm@2f{
  				compatible = "maxim,max31790";
- 				#address-cells = <1>;
-@@ -1455,7 +1599,7 @@ &uhci {
+ 				reg = <0x2f>;
+@@ -1437,7 +1581,7 @@ &uhci {
  };
  
  &jtag1 {

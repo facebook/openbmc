@@ -1,7 +1,7 @@
-From bc3c2eedc0726622edc01ec486220ce92e16a1d8 Mon Sep 17 00:00:00 2001
+From 6ce3660f58ccbd161968e1f0dfaebd5f00c3d6c0 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Thu, 7 Mar 2024 10:41:16 +0800
-Subject: [PATCH 4/7] configurations: yosemite4: Add IANA for sentinel dome
+Subject: [PATCH 4/6] configurations: yosemite4: Add IANA for sentinel dome
 
 Configuring IANA for devices indicates which OEM sets we should be
 using on which hardware.
@@ -34,10 +34,10 @@ index 524d41b..f68ac2e 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/configurations/yosemite4_sentineldome_t1_retimer.json b/configurations/yosemite4_sentineldome_t1_retimer.json
-index a5f93f2..43e275c 100644
+index 11a2bb4..3bfa366 100644
 --- a/configurations/yosemite4_sentineldome_t1_retimer.json
 +++ b/configurations/yosemite4_sentineldome_t1_retimer.json
-@@ -364,6 +364,7 @@
+@@ -404,6 +404,7 @@
              "Bus": "$bus % 16",
              "Class": "I2C",
              "EndpointId": "$bus % 15 * 10",
@@ -58,10 +58,10 @@ index 32814db..f5064cf 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/configurations/yosemite4_sentineldome_t2_retimer.json b/configurations/yosemite4_sentineldome_t2_retimer.json
-index d369b1f..f45294d 100644
+index f2c34e0..058a9f5 100644
 --- a/configurations/yosemite4_sentineldome_t2_retimer.json
 +++ b/configurations/yosemite4_sentineldome_t2_retimer.json
-@@ -425,6 +425,7 @@
+@@ -465,6 +465,7 @@
              "Bus": "$bus % 16",
              "Class": "I2C",
              "EndpointId": "$bus % 15 * 10",
@@ -70,7 +70,7 @@ index d369b1f..f45294d 100644
              "Type": "MCTPEndpoint"
          }
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index bc88fbb..f07ad65 100644
+index 17db8d1..5a9e558 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -83,6 +83,9 @@
@@ -83,7 +83,7 @@ index bc88fbb..f07ad65 100644
                  "Index": {
                      "$ref": "#/$defs/Types/Index"
                  },
-@@ -889,6 +892,9 @@
+@@ -892,6 +895,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },

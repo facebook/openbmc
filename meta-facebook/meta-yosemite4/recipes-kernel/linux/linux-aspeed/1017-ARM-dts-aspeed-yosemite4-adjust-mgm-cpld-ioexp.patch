@@ -1,7 +1,7 @@
-From a729939262606d645b73dda67b3ed5f200708901 Mon Sep 17 00:00:00 2001
+From dbc10200d5d33efeb95155202cafc713ed0ec8e9 Mon Sep 17 00:00:00 2001
 From: MarshallZhan <Marshall_Zhan@wiwynn.com>
 Date: Thu, 18 Jul 2024 17:15:21 +0800
-Subject: [PATCH 1018/1024] ARM: dts: aspeed: yosemite4: adjust mgm cpld ioexp
+Subject: [PATCH 1017/1022] ARM: dts: aspeed: yosemite4: adjust mgm cpld ioexp
 
 Move mgm cpld io expender form bus 13 to bus 34
 Add a gpio to notify CPLD do sled cycle
@@ -13,10 +13,10 @@ https://lore.kernel.org/lkml/20240719055859.4166887-28-Delphine_CC_Chiu@wiwynn.c
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 661840b89d99..94576eb8e5d1 100644
+index 449804ee5d11..eda6e35d72dd 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1929,7 +1929,7 @@ &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased
+@@ -1911,7 +1911,7 @@ &pinctrl_gpio3_unbiased &pinctrl_gpio4_unbiased
  			"FM_BMC_READY_R2","RST_SMB_NIC0_R_N","","",
  	/*O0-O7*/       "AC_ON_OFF_BTN_CPLD_SLOT8_N","RST_SMB_NIC1_R_N",
  			"RST_SMB_NIC2_R_N","RST_SMB_NIC3_R_N",

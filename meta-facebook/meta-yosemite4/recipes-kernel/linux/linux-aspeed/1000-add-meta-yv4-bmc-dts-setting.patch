@@ -1,44 +1,19 @@
-From 306879cadc5222b316cf2c1c00f14bcdce6eeb37 Mon Sep 17 00:00:00 2001
+From e4e60d07ef2c783aca5aea3f4897ba526c28f2fc Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 24 Oct 2023 17:43:44 +0800
-Subject: [PATCH 1000/1024] add meta yv4 bmc dts setting
+Subject: [PATCH 1000/1022] add meta yv4 bmc dts setting
 
 This commit depends on the patch below:
 [1] https://lore.kernel.org/lkml/20240109072053.3980855-1-Delphine_CC_Chiu@wiwynn.com/
 ---
- .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 855 +++++++++++++++---
- 1 file changed, 740 insertions(+), 115 deletions(-)
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 446 ++++++++++++++----
+ 1 file changed, 356 insertions(+), 90 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index ae2a2ed603ff..c27ad5e14b0d 100644
+index ab4904cf2c0e..e246f4e49a55 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -18,6 +18,24 @@ aliases {
- 		serial7 = &uart8;
- 		serial8 = &uart9;
- 
-+		i2c16 = &imux16;
-+		i2c17 = &imux17;
-+		i2c18 = &imux18;
-+		i2c19 = &imux19;
-+		i2c20 = &imux20;
-+		i2c21 = &imux21;
-+		i2c22 = &imux22;
-+		i2c23 = &imux23;
-+		i2c24 = &imux24;
-+		i2c25 = &imux25;
-+		i2c26 = &imux26;
-+		i2c27 = &imux27;
-+		i2c28 = &imux28;
-+		i2c29 = &imux29;
-+		i2c30 = &imux30;
-+		i2c31 = &imux31;
-+		i2c32 = &imux32;
-+		i2c33 = &imux33;
- 		i2c34 = &imux34;
- 		i2c35 = &imux35;
- 	};
-@@ -159,6 +177,13 @@ mctp@10 {
+@@ -177,6 +177,13 @@ mctp@10 {
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
  	};
  
@@ -52,7 +27,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	gpio@21 {
  		compatible = "nxp,pca9506";
  		reg = <0x21>;
-@@ -180,13 +205,6 @@ gpio@23 {
+@@ -198,13 +205,6 @@ gpio@23 {
  		#gpio-cells = <2>;
  	};
  
@@ -66,7 +41,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	power-sensor@40 {
  		compatible = "adi,adm1281";
  		reg = <0x40>;
-@@ -205,6 +223,13 @@ mctp@10 {
+@@ -223,6 +223,13 @@ mctp@10 {
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
  	};
  
@@ -80,7 +55,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	gpio@21 {
  		compatible = "nxp,pca9506";
  		reg = <0x21>;
-@@ -226,13 +251,6 @@ gpio@23 {
+@@ -244,13 +251,6 @@ gpio@23 {
  		#gpio-cells = <2>;
  	};
  
@@ -94,7 +69,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	power-sensor@40 {
  		compatible = "adi,adm1281";
  		reg = <0x40>;
-@@ -251,6 +269,13 @@ mctp@10 {
+@@ -269,6 +269,13 @@ mctp@10 {
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
  	};
  
@@ -108,7 +83,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	gpio@21 {
  		compatible = "nxp,pca9506";
  		reg = <0x21>;
-@@ -272,13 +297,6 @@ gpio@23 {
+@@ -290,13 +297,6 @@ gpio@23 {
  		#gpio-cells = <2>;
  	};
  
@@ -122,7 +97,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	power-sensor@40 {
  		compatible = "adi,adm1281";
  		reg = <0x40>;
-@@ -297,6 +315,13 @@ mctp@10 {
+@@ -315,6 +315,13 @@ mctp@10 {
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
  	};
  
@@ -136,7 +111,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	gpio@21 {
  		compatible = "nxp,pca9506";
  		reg = <0x21>;
-@@ -318,13 +343,6 @@ gpio@23 {
+@@ -336,13 +343,6 @@ gpio@23 {
  		#gpio-cells = <2>;
  	};
  
@@ -150,7 +125,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	power-sensor@40 {
  		compatible = "adi,adm1281";
  		reg = <0x40>;
-@@ -343,6 +361,13 @@ mctp@10 {
+@@ -361,6 +361,13 @@ mctp@10 {
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
  	};
  
@@ -164,7 +139,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	gpio@21 {
  		compatible = "nxp,pca9506";
  		reg = <0x21>;
-@@ -364,13 +389,6 @@ gpio@23 {
+@@ -382,13 +389,6 @@ gpio@23 {
  		#gpio-cells = <2>;
  	};
  
@@ -178,7 +153,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	power-sensor@40 {
  		compatible = "adi,adm1281";
  		reg = <0x40>;
-@@ -389,6 +407,13 @@ mctp@10 {
+@@ -407,6 +407,13 @@ mctp@10 {
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
  	};
  
@@ -192,7 +167,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	gpio@21 {
  		compatible = "nxp,pca9506";
  		reg = <0x21>;
-@@ -410,13 +435,6 @@ gpio@23 {
+@@ -428,13 +435,6 @@ gpio@23 {
  		#gpio-cells = <2>;
  	};
  
@@ -206,7 +181,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	power-sensor@40 {
  		compatible = "adi,adm1281";
  		reg = <0x40>;
-@@ -435,6 +453,13 @@ mctp@10 {
+@@ -453,6 +453,13 @@ mctp@10 {
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
  	};
  
@@ -220,7 +195,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	gpio@21 {
  		compatible = "nxp,pca9506";
  		reg = <0x21>;
-@@ -456,13 +481,6 @@ gpio@23 {
+@@ -474,13 +481,6 @@ gpio@23 {
  		#gpio-cells = <2>;
  	};
  
@@ -234,7 +209,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	power-sensor@40 {
  		compatible = "adi,adm1281";
  		reg = <0x40>;
-@@ -481,6 +499,13 @@ mctp@10 {
+@@ -499,6 +499,13 @@ mctp@10 {
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
  	};
  
@@ -248,7 +223,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	gpio@21 {
  		compatible = "nxp,pca9506";
  		reg = <0x21>;
-@@ -502,13 +527,6 @@ gpio@23 {
+@@ -520,13 +527,6 @@ gpio@23 {
  		#gpio-cells = <2>;
  	};
  
@@ -262,294 +237,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	power-sensor@40 {
  		compatible = "adi,adm1281";
  		reg = <0x40>;
-@@ -521,9 +539,109 @@ &i2c8 {
- 	bus-frequency = <400000>;
- 	i2c-mux@70 {
- 		compatible = "nxp,pca9544";
--		idle-state = <0>;
- 		i2c-mux-idle-disconnect;
- 		reg = <0x70>;
-+
-+		imux16: i2c@0 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <0>;
-+
-+			gpio@49 {
-+				compatible = "nxp,pca9537";
-+				reg = <0x49>;
-+			};
-+
-+			eeprom@50 {
-+				compatible = "atmel,24c128";
-+				reg = <0x50>;
-+			};
-+
-+			eeprom@51 {
-+				compatible = "atmel,24c128";
-+				reg = <0x51>;
-+			};
-+
-+			eeprom@54 {
-+				compatible = "atmel,24c128";
-+				reg = <0x54>;
-+			};
-+		};
-+
-+		imux17: i2c@1 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <1>;
-+			gpio@49 {
-+				compatible = "nxp,pca9537";
-+				reg = <0x49>;
-+			};
-+
-+			eeprom@50 {
-+				compatible = "atmel,24c128";
-+				reg = <0x50>;
-+			};
-+
-+			eeprom@51 {
-+				compatible = "atmel,24c128";
-+				reg = <0x51>;
-+			};
-+
-+			eeprom@54 {
-+				compatible = "atmel,24c128";
-+				reg = <0x54>;
-+			};
-+		};
-+
-+		imux18: i2c@2 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <2>;
-+			gpio@49 {
-+				compatible = "nxp,pca9537";
-+				reg = <0x49>;
-+			};
-+
-+			eeprom@50 {
-+				compatible = "atmel,24c128";
-+				reg = <0x50>;
-+			};
-+
-+			eeprom@51 {
-+				compatible = "atmel,24c128";
-+				reg = <0x51>;
-+			};
-+
-+			eeprom@54 {
-+				compatible = "atmel,24c128";
-+				reg = <0x54>;
-+			};
-+		};
-+
-+		imux19: i2c@3 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <3>;
-+			gpio@49 {
-+				compatible = "nxp,pca9537";
-+				reg = <0x49>;
-+			};
-+
-+			eeprom@50 {
-+				compatible = "atmel,24c128";
-+				reg = <0x50>;
-+			};
-+
-+			eeprom@51 {
-+				compatible = "atmel,24c128";
-+				reg = <0x51>;
-+			};
-+
-+			eeprom@54 {
-+				compatible = "atmel,24c128";
-+				reg = <0x54>;
-+			};
-+		};
- 	};
- };
- 
-@@ -532,15 +650,174 @@ &i2c9 {
- 	bus-frequency = <400000>;
- 	i2c-mux@71 {
- 		compatible = "nxp,pca9544";
--		idle-state = <0>;
- 		i2c-mux-idle-disconnect;
- 		reg = <0x71>;
-+
-+		imux20: i2c@0 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <0>;
-+			gpio@49 {
-+				compatible = "nxp,pca9537";
-+				reg = <0x49>;
-+			};
-+
-+			eeprom@50 {
-+				compatible = "atmel,24c128";
-+				reg = <0x50>;
-+			};
-+
-+			eeprom@51 {
-+				compatible = "atmel,24c128";
-+				reg = <0x51>;
-+			};
-+
-+			eeprom@54 {
-+				compatible = "atmel,24c128";
-+				reg = <0x54>;
-+			};
-+		};
-+
-+		imux21: i2c@1 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <1>;
-+			gpio@49 {
-+				compatible = "nxp,pca9537";
-+				reg = <0x49>;
-+			};
-+
-+			eeprom@50 {
-+				compatible = "atmel,24c128";
-+				reg = <0x50>;
-+			};
-+
-+			eeprom@51 {
-+				compatible = "atmel,24c128";
-+				reg = <0x51>;
-+			};
-+
-+			eeprom@54 {
-+				compatible = "atmel,24c128";
-+				reg = <0x54>;
-+			};
-+		};
-+
-+		imux22: i2c@2 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <2>;
-+			gpio@49 {
-+				compatible = "nxp,pca9537";
-+				reg = <0x49>;
-+			};
-+
-+			eeprom@50 {
-+				compatible = "atmel,24c128";
-+				reg = <0x50>;
-+			};
-+
-+			eeprom@51 {
-+				compatible = "atmel,24c128";
-+				reg = <0x51>;
-+			};
-+
-+			eeprom@54 {
-+				compatible = "atmel,24c128";
-+				reg = <0x54>;
-+			};
-+		};
-+
-+		imux23: i2c@3 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <3>;
-+
-+			gpio@49 {
-+				compatible = "nxp,pca9537";
-+				reg = <0x49>;
-+			};
-+
-+			eeprom@50 {
-+				compatible = "atmel,24c128";
-+				reg = <0x50>;
-+			};
-+
-+			eeprom@51 {
-+				compatible = "atmel,24c128";
-+				reg = <0x51>;
-+			};
-+
-+			eeprom@54 {
-+				compatible = "atmel,24c128";
-+				reg = <0x54>;
-+			};
-+		};
- 	};
- };
- 
- &i2c10 {
- 	status = "okay";
- 	bus-frequency = <400000>;
-+	i2c-mux@74 {
-+		compatible = "nxp,pca9544";
-+		i2c-mux-idle-disconnect;
-+		reg = <0x74>;
-+
-+		imux28: i2c@0 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <0>;
-+
-+			gpio@20 {
-+				compatible = "nxp,pca9506";
-+				reg = <0x20>;
-+				gpio-controller;
-+				#gpio-cells = <2>;
-+			};
-+
-+			gpio@21 {
-+				compatible = "nxp,pca9506";
-+				reg = <0x21>;
-+				gpio-controller;
-+				#gpio-cells = <2>;
-+			};
-+
-+			gpio@22 {
-+				compatible = "nxp,pca9506";
-+				reg = <0x22>;
-+				gpio-controller;
-+				#gpio-cells = <2>;
-+			};
-+
-+			gpio@23 {
-+				compatible = "nxp,pca9506";
-+				reg = <0x23>;
-+				gpio-controller;
-+				#gpio-cells = <2>;
-+			};
-+
-+			gpio@24 {
-+				compatible = "nxp,pca9506";
-+				reg = <0x24>;
-+				gpio-controller;
-+				#gpio-cells = <2>;
-+				gpio-line-names =
-+				"","","","",
-+				"NIC0_MAIN_PWR_EN","NIC1_MAIN_PWR_EN",
-+				"NIC2_MAIN_PWR_EN","NIC3_MAIN_PWR_EN",
-+				"","","","","","","","",
-+				"","","","","","","","",
-+				"","","","","","","","";
-+			};
-+		};
-+
-+		imux29: i2c@1 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <1>;
-+		};
-+	};
- };
- 
- &i2c11 {
-@@ -555,31 +832,34 @@ power-sensor@12 {
+@@ -859,31 +859,34 @@ power-sensor@12 {
  		reg = <0x12>;
  	};
  
@@ -592,7 +280,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  		#gpio-cells = <2>;
  		interrupt-parent = <&gpio0>;
  		interrupts = <98 IRQ_TYPE_LEVEL_LOW>;
-@@ -589,35 +869,38 @@ gpio@21 {
+@@ -893,35 +896,38 @@ gpio@21 {
  				  "HSC_OCP_SLOT_EVEN_GPIO1",
  				  "HSC_OCP_SLOT_EVEN_GPIO2",
  				  "HSC_OCP_SLOT_EVEN_GPIO3",
@@ -648,7 +336,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  		interrupt-parent = <&gpio0>;
  		interrupts = <98 IRQ_TYPE_LEVEL_LOW>;
  		gpio-line-names = "HSC1_ALERT1_R_N", "HSC2_ALERT1_R_N",
-@@ -630,6 +913,11 @@ gpio@23 {
+@@ -934,6 +940,11 @@ gpio@23 {
  				  "HSC7_ALERT2_R_N", "HSC8_ALERT2_R_N";
  	};
  
@@ -660,7 +348,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	temperature-sensor@48 {
  		compatible = "ti,tmp75";
  		reg = <0x48>;
-@@ -644,6 +932,26 @@ eeprom@54 {
+@@ -948,6 +959,26 @@ eeprom@54 {
  		compatible = "atmel,24c128";
  		reg = <0x54>;
  	};
@@ -687,7 +375,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  };
  
  &i2c12 {
-@@ -719,6 +1027,16 @@ imux35: i2c@1 {
+@@ -1023,6 +1054,16 @@ imux35: i2c@1 {
  			#size-cells = <0>;
  		};
  	};
@@ -704,7 +392,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  };
  
  &i2c13 {
-@@ -755,28 +1073,38 @@ adc@37 {
+@@ -1061,28 +1102,38 @@ adc@37 {
  	};
  
  	power-sensor@40 {
@@ -748,241 +436,70 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  	};
  
  	temperature-sensor@4e {
-@@ -794,16 +1122,14 @@ eeprom@51 {
- 		reg = <0x51>;
- 	};
+@@ -1261,6 +1312,11 @@ temperature-sensor@1f {
+ 				reg = <0x1f>;
+ 			};
  
--	i2c-mux@71 {
--		compatible = "nxp,pca9846";
-+	i2c-mux@74 {
-+		compatible = "nxp,pca9546";
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--
--		idle-state = <0>;
- 		i2c-mux-idle-disconnect;
--		reg = <0x71>;
-+		reg = <0x74>;
- 
--		i2c@0 {
-+		imux30: i2c@0 {
++			emc1403@3c {
++				compatible = "smsc,emc1403";
++				reg = <0x3c>;
++			};
++
+ 			eeprom@50 {
+ 				compatible = "atmel,24c64";
+ 				reg = <0x50>;
+@@ -1271,12 +1327,16 @@ imux25: i2c@1 {
+ 			reg = <1>;
  			#address-cells = <1>;
  			#size-cells = <0>;
- 			reg = <0>;
-@@ -811,26 +1137,46 @@ i2c@0 {
- 			adc@1f {
- 				compatible = "ti,adc128d818";
+-			mctp-controller;
+ 			temperature-sensor@1f {
+ 				compatible = "ti,tmp421";
  				reg = <0x1f>;
--				ti,mode = /bits/ 8 <2>;
-+				ti,mode = /bits/ 8 <1>;
  			};
  
- 			pwm@20{
--				compatible = "max31790";
--				reg = <0x20>;
-+				compatible = "maxim,max31790";
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-+				reg = <0x20>;
-+				channel@4 {
-+					reg = <4>;
-+					sensor-type = "TACH";
-+				};
++			emc1403@3c {
++				compatible = "smsc,emc1403";
++				reg = <0x3c>;
++			};
 +
-+				channel@5 {
-+					reg = <5>;
-+					sensor-type = "TACH";
-+				};
+ 			eeprom@50 {
+ 				compatible = "atmel,24c64";
+ 				reg = <0x50>;
+@@ -1293,6 +1353,11 @@ temperature-sensor@1f {
+ 				reg = <0x1f>;
  			};
  
- 			gpio@22{
- 				compatible = "ti,tca6424";
- 				reg = <0x22>;
-+				gpio-controller;
-+				#gpio-cells = <2>;
- 			};
- 
--			pwm@23{
--				compatible = "max31790";
--				reg = <0x23>;
-+			pwm@2f{
-+				compatible = "maxim,max31790";
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-+				reg = <0x2f>;
-+				channel@4 {
-+					reg = <4>;
-+					sensor-type = "TACH";
-+				};
++			emc1403@3c {
++				compatible = "smsc,emc1403";
++				reg = <0x3c>;
++			};
 +
-+				channel@5 {
-+					reg = <5>;
-+					sensor-type = "TACH";
-+				};
- 			};
- 
- 			adc@33 {
-@@ -853,34 +1199,54 @@ gpio@61 {
- 			};
+ 			eeprom@50 {
+ 				compatible = "atmel,24c64";
+ 				reg = <0x50>;
+@@ -1300,15 +1365,17 @@ eeprom@50 {
  		};
  
--		i2c@1 {
-+		imux31: i2c@1 {
- 			#address-cells = <1>;
- 			#size-cells = <0>;
--			reg = <0>;
-+			reg = <1>;
- 
- 			adc@1f {
- 				compatible = "ti,adc128d818";
+ 		imux27: i2c@3 {
+-			reg = <3>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+ 			mctp-controller;
+ 			temperature-sensor@1f {
+ 				compatible = "ti,tmp421";
  				reg = <0x1f>;
--				ti,mode = /bits/ 8 <2>;
-+				ti,mode = /bits/ 8 <1>;
  			};
  
- 			pwm@20{
--				compatible = "max31790";
--				reg = <0x20>;
-+				compatible = "maxim,max31790";
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-+				reg = <0x20>;
-+				channel@4 {
-+					reg = <4>;
-+					sensor-type = "TACH";
-+				};
-+
-+				channel@5 {
-+					reg = <5>;
-+					sensor-type = "TACH";
-+				};
- 			};
- 
- 			gpio@22{
- 				compatible = "ti,tca6424";
- 				reg = <0x22>;
-+				gpio-controller;
-+				#gpio-cells = <2>;
- 			};
- 
--			pwm@23{
--				compatible = "max31790";
--				reg = <0x23>;
-+			pwm@2f{
-+				compatible = "maxim,max31790";
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-+				reg = <0x2f>;
-+				channel@4 {
-+					reg = <4>;
-+					sensor-type = "TACH";
-+				};
-+
-+				channel@5 {
-+					reg = <5>;
-+					sensor-type = "TACH";
-+				};
- 			};
- 
- 			adc@33 {
-@@ -908,12 +1274,10 @@ i2c-mux@73 {
- 		compatible = "nxp,pca9544";
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--
--		idle-state = <0>;
- 		i2c-mux-idle-disconnect;
- 		reg = <0x73>;
- 
--		i2c@0 {
-+		imux32: i2c@0 {
- 			#address-cells = <1>;
- 			#size-cells = <0>;
- 			reg = <0>;
-@@ -924,10 +1288,10 @@ adc@35 {
- 			};
- 		};
- 
--		i2c@1 {
-+		imux33: i2c@1 {
- 			#address-cells = <1>;
- 			#size-cells = <0>;
--			reg = <0>;
-+			reg = <1>;
- 
- 			adc@35 {
- 				compatible = "maxim,max11617";
-@@ -950,12 +1314,75 @@ mctp@10 {
- 
- 	i2c-mux@72 {
- 		compatible = "nxp,pca9544";
--		idle-state = <0>;
--		i2c-mux-idle-disconnect;
- 		reg = <0x72>;
-+
-+		imux24: i2c@0 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <0>;
-+			mctp-controller;
-+			temperature-sensor@1f {
-+				compatible = "ti,tmp421";
-+				reg = <0x1f>;
-+			};
-+
 +			emc1403@3c {
 +				compatible = "smsc,emc1403";
 +				reg = <0x3c>;
 +			};
-+		};
 +
-+		imux25: i2c@1 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <1>;
-+			mctp-controller;
-+			temperature-sensor@1f {
-+				compatible = "ti,tmp421";
-+				reg = <0x1f>;
-+			};
-+
-+			emc1403@3c {
-+				compatible = "smsc,emc1403";
-+				reg = <0x3c>;
-+			};
-+		};
-+
-+		imux26: i2c@2 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <2>;
-+			mctp-controller;
-+			temperature-sensor@1f {
-+				compatible = "ti,tmp421";
-+				reg = <0x1f>;
-+			};
-+
-+			emc1403@3c {
-+				compatible = "smsc,emc1403";
-+				reg = <0x3c>;
-+			};
-+		};
-+
-+		imux27: i2c@3 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <3>;
-+			mctp-controller;
-+			temperature-sensor@1f {
-+				compatible = "ti,tmp421";
-+				reg = <0x1f>;
-+			};
-+
-+			emc1403@3c {
-+				compatible = "smsc,emc1403";
-+				reg = <0x3c>;
-+			};
-+		};
+ 			eeprom@50 {
+ 				compatible = "atmel,24c64";
+ 				reg = <0x50>;
+@@ -1317,6 +1384,7 @@ eeprom@50 {
  	};
  };
  
@@ -990,7 +507,7 @@ index ae2a2ed603ff..c27ad5e14b0d 100644
  &adc0 {
  	status = "okay";
  	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
-@@ -981,3 +1408,201 @@ &ehci1 {
+@@ -1342,3 +1410,201 @@ &ehci1 {
  &uhci {
  	status = "okay";
  };

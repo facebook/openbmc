@@ -1,7 +1,7 @@
-From 189b4dc76e447828a095a41a5a93724b8a5d758c Mon Sep 17 00:00:00 2001
+From 08ddffec3b33f56c1454efeb3fe882b4af1d8bf5 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Mon, 9 Sep 2024 13:59:57 +0800
-Subject: [PATCH 1022/1024] ARM: dts: aspeed: yosemite4: remove power sensor
+Subject: [PATCH 1020/1022] ARM: dts: aspeed: yosemite4: remove power sensor
  0x44 on 11
 
 Change to bind INA238 or ISL28022 in runtime.
@@ -12,10 +12,10 @@ lore link: https://lore.kernel.org/all/20240910075357.3531211-1-Delphine_CC_Chiu
  1 file changed, 6 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index cbf37e30712d..c5b9d05d727b 100644
+index d991c23efc38..198000670f68 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1092,12 +1092,6 @@ power-sensor@41 {
+@@ -1119,12 +1119,6 @@ power-sensor@41 {
  		reg = <0x41>;
  	};
  

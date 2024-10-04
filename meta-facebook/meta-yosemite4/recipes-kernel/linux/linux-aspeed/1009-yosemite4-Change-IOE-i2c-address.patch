@@ -1,7 +1,7 @@
-From d53b900ce9912bfc82f813a17b95c154a6c7ad2f Mon Sep 17 00:00:00 2001
+From f47ec0ca830513e152460ae7b2405e74cbab2eb7 Mon Sep 17 00:00:00 2001
 From: Sara Lin <sara_sy_lin@wiwynn.com>
 Date: Wed, 20 Mar 2024 19:13:34 +0800
-Subject: [PATCH 1010/1024] yosemite4: Change IOE i2c address
+Subject: [PATCH 1009/1022] yosemite4: Change IOE i2c address
 
 Description
 1. Change CPLD IOE i2c address to avoid i2c address conflict.
@@ -21,7 +21,7 @@ Log
  1 file changed, 16 insertions(+), 16 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 4ac9e7602b51..d96d2b1f5e98 100644
+index b289f5f95faf..b9c10526c2a2 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -183,9 +183,9 @@ mctp@10 {

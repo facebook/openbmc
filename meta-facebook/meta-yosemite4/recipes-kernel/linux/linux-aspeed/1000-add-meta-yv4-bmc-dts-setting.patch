@@ -1,4 +1,4 @@
-From e4e60d07ef2c783aca5aea3f4897ba526c28f2fc Mon Sep 17 00:00:00 2001
+From 9575c667808fdf3df30a12f090f2e414c8dd9212 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Tue, 24 Oct 2023 17:43:44 +0800
 Subject: [PATCH 1000/1022] add meta yv4 bmc dts setting
@@ -6,11 +6,11 @@ Subject: [PATCH 1000/1022] add meta yv4 bmc dts setting
 This commit depends on the patch below:
 [1] https://lore.kernel.org/lkml/20240109072053.3980855-1-Delphine_CC_Chiu@wiwynn.com/
 ---
- .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 446 ++++++++++++++----
- 1 file changed, 356 insertions(+), 90 deletions(-)
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 478 ++++++++++++++----
+ 1 file changed, 392 insertions(+), 86 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index ab4904cf2c0e..e246f4e49a55 100644
+index ab4904cf2c0e..720f40d9d1c5 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -177,6 +177,13 @@ mctp@10 {
@@ -436,7 +436,71 @@ index ab4904cf2c0e..e246f4e49a55 100644
  	};
  
  	temperature-sensor@4e {
-@@ -1261,6 +1312,11 @@ temperature-sensor@1f {
+@@ -1149,6 +1200,15 @@ adc@1f {
+ 			pwm@20{
+ 				compatible = "maxim,max31790";
+ 				reg = <0x20>;
++				channel@4 {
++					reg = <4>;
++					sensor-type = "TACH";
++				};
++
++				channel@5 {
++					reg = <5>;
++					sensor-type = "TACH";
++				};
+ 			};
+ 
+ 			gpio@22{
+@@ -1161,6 +1221,15 @@ gpio@22{
+ 			pwm@2f{
+ 				compatible = "maxim,max31790";
+ 				reg = <0x2f>;
++				channel@4 {
++					reg = <4>;
++					sensor-type = "TACH";
++				};
++
++				channel@5 {
++					reg = <5>;
++					sensor-type = "TACH";
++				};
+ 			};
+ 
+ 			adc@33 {
+@@ -1197,6 +1266,15 @@ adc@1f {
+ 			pwm@20{
+ 				compatible = "maxim,max31790";
+ 				reg = <0x20>;
++				channel@4 {
++					reg = <4>;
++					sensor-type = "TACH";
++				};
++
++				channel@5 {
++					reg = <5>;
++					sensor-type = "TACH";
++				};
+ 			};
+ 
+ 			gpio@22{
+@@ -1209,6 +1287,15 @@ gpio@22{
+ 			pwm@2f{
+ 				compatible = "maxim,max31790";
+ 				reg = <0x2f>;
++				channel@4 {
++					reg = <4>;
++					sensor-type = "TACH";
++				};
++
++				channel@5 {
++					reg = <5>;
++					sensor-type = "TACH";
++				};
+ 			};
+ 
+ 			adc@33 {
+@@ -1261,6 +1348,11 @@ temperature-sensor@1f {
  				reg = <0x1f>;
  			};
  
@@ -448,13 +512,7 @@ index ab4904cf2c0e..e246f4e49a55 100644
  			eeprom@50 {
  				compatible = "atmel,24c64";
  				reg = <0x50>;
-@@ -1271,12 +1327,16 @@ imux25: i2c@1 {
- 			reg = <1>;
- 			#address-cells = <1>;
- 			#size-cells = <0>;
--			mctp-controller;
- 			temperature-sensor@1f {
- 				compatible = "ti,tmp421";
+@@ -1277,6 +1369,11 @@ temperature-sensor@1f {
  				reg = <0x1f>;
  			};
  
@@ -466,7 +524,7 @@ index ab4904cf2c0e..e246f4e49a55 100644
  			eeprom@50 {
  				compatible = "atmel,24c64";
  				reg = <0x50>;
-@@ -1293,6 +1353,11 @@ temperature-sensor@1f {
+@@ -1293,6 +1390,11 @@ temperature-sensor@1f {
  				reg = <0x1f>;
  			};
  
@@ -478,16 +536,7 @@ index ab4904cf2c0e..e246f4e49a55 100644
  			eeprom@50 {
  				compatible = "atmel,24c64";
  				reg = <0x50>;
-@@ -1300,15 +1365,17 @@ eeprom@50 {
- 		};
- 
- 		imux27: i2c@3 {
--			reg = <3>;
--			#address-cells = <1>;
--			#size-cells = <0>;
- 			mctp-controller;
- 			temperature-sensor@1f {
- 				compatible = "ti,tmp421";
+@@ -1309,6 +1411,11 @@ temperature-sensor@1f {
  				reg = <0x1f>;
  			};
  
@@ -499,7 +548,7 @@ index ab4904cf2c0e..e246f4e49a55 100644
  			eeprom@50 {
  				compatible = "atmel,24c64";
  				reg = <0x50>;
-@@ -1317,6 +1384,7 @@ eeprom@50 {
+@@ -1317,6 +1424,7 @@ eeprom@50 {
  	};
  };
  
@@ -507,7 +556,7 @@ index ab4904cf2c0e..e246f4e49a55 100644
  &adc0 {
  	status = "okay";
  	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
-@@ -1342,3 +1410,201 @@ &ehci1 {
+@@ -1342,3 +1450,201 @@ &ehci1 {
  &uhci {
  	status = "okay";
  };
@@ -710,5 +759,5 @@ index ab4904cf2c0e..e246f4e49a55 100644
 +	};
 +};
 -- 
-2.44.2
+2.25.1
 

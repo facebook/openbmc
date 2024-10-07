@@ -15,6 +15,7 @@ UFW_PRIORITY = "priority"
 UFW_REBOOT_REQD = "reboot_required"
 UFW_ENTITY_INSTANCE = "entities"
 UFW_POST_ACTION = "post_action"
+UFW_PRE_ACTION = "pre_action"
 UFW_CONDITION = "condition"
 UFW_CONTINUE_ON_ERROR = "continue_on_error"
 

@@ -16,6 +16,8 @@ from exceptions import (
 from typing import Any, Dict, Iterable, List, Optional
 
 from constants import (
+    HashType,
+    ResetMode,
     UFW_CMD,
     UFW_CONDITION,
     UFW_CONTINUE_ON_ERROR,
@@ -25,10 +27,9 @@ from constants import (
     UFW_HASH_VALUE,
     UFW_NAME,
     UFW_POST_ACTION,
+    UFW_PRE_ACTION,
     UFW_PRIORITY,
     UFW_VERSION,
-    HashType,
-    ResetMode,
     UpgradeState,
 )
 
@@ -289,12 +290,22 @@ class FwEntityUpgrader(object):
                 post_action = self._fw_info[UFW_POST_ACTION]
                 if self._dryrun:
                     post_action = "echo dryrun: " + post_action
-                logging.info(
-                    "=== Running post action command : {}".format(post_action)
-                )
+                logging.info("=== Running post action command : {}".format(post_action))
                 subprocess.check_output(post_action, shell=True)  # noqa p204
             else:
                 logging.info("=== Upgrade skipped. Will not run post action")
+
+    def _run_pre_upgrade_action(self, item_successful: UpgradeState):
+        """
+        Inputs:
+        item_successful: Status of all entities in list upgraded successfully or not
+        """
+        if self._is_pre_action_set_in_json():
+            pre_action = self._fw_info[UFW_PRE_ACTION]
+            if self._dryrun:
+                pre_action = "echo dryrun: " + pre_action
+            logging.info("=== Running pre action command : {}".format(pre_action))
+            subprocess.check_output(pre_action, shell=True)  # noqa p204
 
     # ========================================================================
     # API publically accessible for upgrading entity
@@ -332,6 +343,8 @@ class FwEntityUpgrader(object):
                 self._is_entity_upgrade_needed(instance_specifier=instance)
                 or self._forced_upgrade
             ):
+                # the entity upgrade is needed, so let's call the pre_upgrade_action
+                self._run_pre_upgrade_action(entity_upgrade)
                 # Check if "condition" field is set. If so, check that condition
                 if self._is_condition_set_in_json(instance_specifier=instance):
                     return_code, instance_successful = self._upgrade_executor(
@@ -420,6 +433,9 @@ class FwEntityUpgrader(object):
 
     def _is_post_action_set_in_json(self) -> bool:
         return UFW_POST_ACTION in self._fw_info
+
+    def _is_pre_action_set_in_json(self) -> bool:
+        return UFW_PRE_ACTION in self._fw_info
 
 
 class FwUpgrader(object):

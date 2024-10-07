@@ -1,0 +1,415 @@
+[
+    {
+        "Name": "BTN_BMC_R2_N",
+        "LineName": "BTN_BMC_R2_N",
+        "EventMon": "RISING",
+        "Targets": {
+            "RISING": ["set-button-sled.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWROK_STBY_BMC_SLOT1",
+        "LineName": "PWRGD_SLOT1_STBY",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["probe-slot-device@1.service", "rescan-fru-ocp-setting@1.service", "rescan-wf-bic@1.service"],
+            "FALLING": ["rescan-fru-ocp-setting@1.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWROK_STBY_BMC_SLOT2",
+        "LineName": "PWRGD_SLOT2_STBY",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["probe-slot-device@2.service", "rescan-fru-ocp-setting@2.service", "rescan-wf-bic@2.service"],
+            "FALLING": ["rescan-fru-ocp-setting@2.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWROK_STBY_BMC_SLOT3",
+        "LineName": "PWRGD_SLOT3_STBY",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["probe-slot-device@3.service", "rescan-fru-ocp-setting@3.service", "rescan-wf-bic@3.service"],
+            "FALLING": ["rescan-fru-ocp-setting@3.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWROK_STBY_BMC_SLOT4",
+        "LineName": "PWRGD_SLOT4_STBY",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["probe-slot-device@4.service", "rescan-fru-ocp-setting@4.service", "rescan-wf-bic@4.service"],
+            "FALLING": ["rescan-fru-ocp-setting@4.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWROK_STBY_BMC_SLOT5",
+        "LineName": "PWRGD_SLOT5_STBY",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["probe-slot-device@5.service", "rescan-fru-ocp-setting@5.service", "rescan-wf-bic@5.service"],
+            "FALLING": ["rescan-fru-ocp-setting@5.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWROK_STBY_BMC_SLOT6",
+        "LineName": "PWRGD_SLOT6_STBY",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["probe-slot-device@6.service", "rescan-fru-ocp-setting@6.service", "rescan-wf-bic@6.service"],
+            "FALLING": ["rescan-fru-ocp-setting@6.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWROK_STBY_BMC_SLOT7",
+        "LineName": "PWRGD_SLOT7_STBY",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["probe-slot-device@7.service", "rescan-fru-ocp-setting@7.service", "rescan-wf-bic@7.service"],
+            "FALLING": ["rescan-fru-ocp-setting@7.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWROK_STBY_BMC_SLOT8",
+        "LineName": "PWRGD_SLOT8_STBY",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["probe-slot-device@8.service", "rescan-fru-ocp-setting@8.service", "rescan-wf-bic@8.service"],
+            "FALLING": ["rescan-fru-ocp-setting@8.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_NIC0_N",
+        "LineName": "PRSNT_NIC0_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["remove-nic-endpoint-slot@0.service"],
+            "FALLING": [
+                "obmc-chassis-powercycle@1.target",
+                "obmc-chassis-powercycle@2.target",
+                "setup-nic-endpoint-slot@0.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_NIC1_N",
+        "LineName": "PRSNT_NIC1_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["remove-nic-endpoint-slot@1.service"],
+            "FALLING": [
+                "obmc-chassis-powercycle@3.target",
+                "obmc-chassis-powercycle@4.target",
+                "setup-nic-endpoint-slot@1.service",
+                "reconfig-net-interface@eth0.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_NIC2_N",
+        "LineName": "PRSNT_NIC2_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["remove-nic-endpoint-slot@2.service"],
+            "FALLING": [
+                "obmc-chassis-powercycle@5.target",
+                "obmc-chassis-powercycle@6.target",
+                "setup-nic-endpoint-slot@2.service",
+                "reconfig-net-interface@eth1.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_NIC3_N",
+        "LineName": "PRSNT_NIC3_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["remove-nic-endpoint-slot@3.service"],
+            "FALLING": [
+                "obmc-chassis-powercycle@7.target",
+                "obmc-chassis-powercycle@8.target",
+                "setup-nic-endpoint-slot@3.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_SB_SLOT1_BMC_N",
+        "LineName": "PRSNT_SB_SLOT1_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "disable-i3c-hub@1.service",
+                "slot-unplug@1.service"
+            ],
+            "FALLING": [
+                "slot-hot-plug@1.service",
+                "enable-i3c-hub@1.service",
+                "slot-plug-in@1.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_SB_SLOT2_BMC_N",
+        "LineName": "PRSNT_SB_SLOT2_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "disable-i3c-hub@2.service",
+                "slot-unplug@2.service"
+            ],
+            "FALLING": [
+                "slot-hot-plug@2.service",
+                "enable-i3c-hub@2.service",
+                "slot-plug-in@2.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_SB_SLOT3_BMC_N",
+        "LineName": "PRSNT_SB_SLOT3_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "disable-i3c-hub@3.service",
+                "slot-unplug@3.service"
+            ],
+            "FALLING": [
+                "slot-hot-plug@3.service",
+                "enable-i3c-hub@3.service",
+                "slot-plug-in@3.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_SB_SLOT4_BMC_N",
+        "LineName": "PRSNT_SB_SLOT4_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "disable-i3c-hub@4.service",
+                "slot-unplug@4.service"
+            ],
+            "FALLING": [
+                "slot-hot-plug@4.service",
+                "enable-i3c-hub@4.service",
+                "slot-plug-in@4.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_SB_SLOT5_BMC_N",
+        "LineName": "PRSNT_SB_SLOT5_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "disable-i3c-hub@5.service",
+                "slot-unplug@5.service"
+            ],
+            "FALLING": [
+                "slot-hot-plug@5.service",
+                "enable-i3c-hub@5.service",
+                "slot-plug-in@5.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_SB_SLOT6_BMC_N",
+        "LineName": "PRSNT_SB_SLOT6_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "disable-i3c-hub@6.service",
+                "slot-unplug@6.service"
+            ],
+            "FALLING": [
+                "slot-hot-plug@6.service",
+                "enable-i3c-hub@6.service",
+                "slot-plug-in@6.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_SB_SLOT7_BMC_N",
+        "LineName": "PRSNT_SB_SLOT7_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "disable-i3c-hub@7.service",
+                "slot-unplug@7.service"
+            ],
+            "FALLING": [
+                "slot-hot-plug@7.service",
+                "enable-i3c-hub@7.service",
+                "slot-plug-in@7.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_SB_SLOT8_BMC_N",
+        "LineName": "PRSNT_SB_SLOT8_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "disable-i3c-hub@8.service",
+                "slot-unplug@8.service"
+            ],
+            "FALLING": [
+                "slot-hot-plug@8.service",
+                "enable-i3c-hub@8.service",
+                "slot-plug-in@8.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FLT_HSC_SERVER_SLOT1_N",
+        "LineName": "FLT_HSC_SERVER_SLOT1_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "slot-hsc-fault@1.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FLT_HSC_SERVER_SLOT2_N",
+        "LineName": "FLT_HSC_SERVER_SLOT2_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "slot-hsc-fault@2.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FLT_HSC_SERVER_SLOT3_N",
+        "LineName": "FLT_HSC_SERVER_SLOT3_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "slot-hsc-fault@3.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FLT_HSC_SERVER_SLOT4_N",
+        "LineName": "FLT_HSC_SERVER_SLOT4_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "slot-hsc-fault@4.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FLT_HSC_SERVER_SLOT5_N",
+        "LineName": "FLT_HSC_SERVER_SLOT5_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "slot-hsc-fault@5.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FLT_HSC_SERVER_SLOT6_N",
+        "LineName": "FLT_HSC_SERVER_SLOT6_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "slot-hsc-fault@6.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FLT_HSC_SERVER_SLOT7_N",
+        "LineName": "FLT_HSC_SERVER_SLOT7_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "slot-hsc-fault@7.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FLT_HSC_SERVER_SLOT8_N",
+        "LineName": "FLT_HSC_SERVER_SLOT8_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "slot-hsc-fault@8.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "INT_SMB_BMC_SLOT1_4_BMC_N",
+        "LineName": "INT_SMB_BMC_SLOT1_4_BMC_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "check-interrupt@slot1-slot4.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "INT_SMB_BMC_SLOT5_8_BMC_N",
+        "LineName": "INT_SMB_BMC_SLOT5_8_BMC_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "check-interrupt@slot5-slot8.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "INT_FANBOARD1_IOEXP_N",
+        "LineName": "INT_FANBOARD1_IOEXP_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "fan-board-efuse-fault@1.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "INT_FANBOARD0_IOEXP_N",
+        "LineName": "INT_FANBOARD0_IOEXP_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "fan-board-efuse-fault@0.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "ALT_SMB_BMC_CPLD2_N",
+        "LineName": "ALT_SMB_BMC_CPLD2_N",
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": [
+                "nic-power-fault@0.service"]
+        },
+        "Continue": true
+    }
+]

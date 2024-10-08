@@ -53,10 +53,14 @@ struct gpio_offset_map {
   uint8_t pwrgd_cpu;
   uint8_t rst_pltrst;
   uint8_t bmc_debug_enable;
+  uint8_t retimer_pg;
+  uint8_t e1s_prsnt_l;
 } gpio_offset = { BMC_READY,
                     PWRGD_CPU_LVC3,
                     RST_PLTRST_BUF_N,
-                    FM_BMC_DEBUG_ENABLE_N }; // default as Crater Lake
+                    FM_BMC_DEBUG_ENABLE_N,
+                    GPIO_NOT_SUPPORT,
+                    GPIO_NOT_SUPPORT }; // default as Crater Lake
 
 static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot2[MAX_GPIO_PINS] = {0};
@@ -234,6 +238,10 @@ populate_gpio_pins(uint8_t fru) {
     // there is no corresponding GPIO on the JavaIsland platform Currently
     gpios[gpio_offset.rst_pltrst].flag = 0;
     gpios[gpio_offset.bmc_debug_enable].flag = 0;
+    // We need to monitor the retimer power good signal
+    gpios[gpio_offset.retimer_pg].flag = 1;
+    // We need to monitor if the E1.S SSD is present
+    gpios[gpio_offset.e1s_prsnt_l].flag = 1;
   } else {
     gpios[gpio_offset.rst_pltrst].flag = 1; // Platform reset pin
     gpios[gpio_offset.bmc_debug_enable].flag = 1; // Debug enable pin
@@ -278,6 +286,8 @@ init_gpio_offset_map() {
         gpio_offset.pwrgd_cpu = HD_PWRGD_CPU_LVC3;
         gpio_offset.rst_pltrst = HD_RST_PLTRST_BIC_N;
         gpio_offset.bmc_debug_enable = HD_FM_BMC_DEBUG_ENABLE_N;
+        gpio_offset.retimer_pg = GPIO_NOT_SUPPORT;
+        gpio_offset.e1s_prsnt_l = GPIO_NOT_SUPPORT;
 
         cpu_pwr_fault = hd_cpu_pwr_fault;
         cpu_pwr_fault_size = ARRAY_SIZE(hd_cpu_pwr_fault);
@@ -289,6 +299,8 @@ init_gpio_offset_map() {
         gpio_offset.pwrgd_cpu = GL_PWRGD_CPU_LVC3;
         gpio_offset.rst_pltrst = GL_RST_PLTRST_BUF_N;
         gpio_offset.bmc_debug_enable = GL_FM_BMC_DEBUG_ENABLE_R_N;
+        gpio_offset.retimer_pg = GPIO_NOT_SUPPORT;
+        gpio_offset.e1s_prsnt_l = GPIO_NOT_SUPPORT;
 
         cpu_pwr_fault = gl_cpu_pwr_fault;
         cpu_pwr_fault_size = ARRAY_SIZE(gl_cpu_pwr_fault);
@@ -300,12 +312,16 @@ init_gpio_offset_map() {
         gpio_offset.pwrgd_cpu = JI_RUN_POWER_PG;
         gpio_offset.rst_pltrst = GPIO_NOT_SUPPORT;
         gpio_offset.bmc_debug_enable = GPIO_NOT_SUPPORT;
+        gpio_offset.retimer_pg = JI_RETIMER_PG;
+        gpio_offset.e1s_prsnt_l = JI_E1S_PRSNT_L;
       } else {
         // Crater Lake as default setting
         gpio_offset.bmc_ready = BMC_READY;
         gpio_offset.pwrgd_cpu = PWRGD_CPU_LVC3;
         gpio_offset.rst_pltrst = RST_PLTRST_BUF_N;
         gpio_offset.bmc_debug_enable = FM_BMC_DEBUG_ENABLE_N;
+        gpio_offset.retimer_pg = GPIO_NOT_SUPPORT;
+        gpio_offset.e1s_prsnt_l = GPIO_NOT_SUPPORT;
 
         cpu_pwr_fault = cl_cpu_pwr_fault;
         cpu_pwr_fault_size = ARRAY_SIZE(cl_cpu_pwr_fault);
@@ -530,6 +546,16 @@ gpio_monitor_poll(void *ptr) {
           } else if (i == gpio_offset.bmc_debug_enable) {
             printf("FM_BMC_DEBUG_ENABLE_N is ASSERT !\n");
             syslog(LOG_CRIT, "FRU: %d, FM_BMC_DEBUG_ENABLE_N is ASSERT: %d", fru, gpios[i].status);
+          } else if (i == gpio_offset.retimer_pg) {
+            // Only log when the fru is powered on.
+            // When the fru is powered off, this gpio is expected to be asserted.
+            if (GET_BIT(n_pin_val, gpio_offset.pwrgd_cpu)) {
+              printf("%s is ASSERT !\n", gpios[i].name);
+              syslog(LOG_CRIT, "FRU: %d, %s is ASSERT: %d", fru, gpios[i].name, gpios[i].status);
+            }
+          } else if (i == gpio_offset.e1s_prsnt_l) {
+            printf("%s is ASSERT !\n", gpios[i].name);
+            syslog(LOG_CRIT, "FRU: %d, E1.S SSD is present", fru);
           }
         } else {
           if (i == gpio_offset.rst_pltrst) {
@@ -537,6 +563,12 @@ gpio_monitor_poll(void *ptr) {
           } else if (i == gpio_offset.bmc_debug_enable) {
             printf("FM_BMC_DEBUG_ENABLE_N is DEASSERT !\n");
             syslog(LOG_CRIT, "FRU: %d, FM_BMC_DEBUG_ENABLE_N is DEASSERT: %d", fru, gpios[i].status);
+          } else if (i == gpio_offset.retimer_pg) {
+            printf("%s is DEASSERT !\n", gpios[i].name);
+            syslog(LOG_CRIT, "FRU: %d, %s is DEASSERT: %d", fru, gpios[i].name, gpios[i].status);
+          } else if (i == gpio_offset.e1s_prsnt_l) {
+            printf("%s is DEASSERT !\n", gpios[i].name);
+            syslog(LOG_CRIT, "FRU: %d, E1.S SSD is absent", fru);
           }
         }
       }

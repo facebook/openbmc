@@ -19,5 +19,65 @@ probe_mb_vr() {
   fi
 }
 
+set_software_version() {
+
+  mapfile -t versions < <(
+    fw-util all --version-json | jq -r '
+      .[] | 
+      .COMPONENT + "###" + 
+      (if has("PRETTY_VERSION") 
+        then .PRETTY_VERSION 
+        else .VERSION 
+      end)
+    '
+  )
+
+  declare -A fwDict
+  for version in "${versions[@]}"; do
+    IFS='###' read -ra ADDR <<< $version
+    fwDict["${ADDR[0]}"]=${ADDR[-1]}
+  done
+
+  # use ObjectMapper to get all software version interfaces
+  components=$(busctl call \
+          xyz.openbmc_project.ObjectMapper \
+          /xyz/openbmc_project/object_mapper \
+          xyz.openbmc_project.ObjectMapper \
+          GetSubTree \
+          sias \
+          /xyz/openbmc_project/software/chassis 0 \
+          1 xyz.openbmc_project.Software.Version)
+
+  # $1 = sias, $2 = interface count
+  count=$(echo $components | awk '{print $2}')
+  for ((i=0; i<$count; i++)); do
+
+    index=$((3+i*8))
+    componentPath=$(echo $components | awk -v idx=$index '{print $idx}')
+    componentPath=$(echo $componentPath | tr -d \")
+
+    # example componentPath: /xyz/openbmc_project/software/chassis/Harma_SCM_scm_cpld
+    IFS='/' read -ra ADDR <<< $componentPath
+    component=${ADDR[-1]}
+    component=${component/Harma_MB_/}
+    component=${component/Harma_SCM_/}
+    component=${component/Minerva_CB_/}
+    component=${component/Nic_/}
+    component=${component/vr_/}
+
+    # example str: scm_cpld
+    com=$(echo $component | tr '[:upper:]' '[:lower:]')
+    if [[ -v fwDict[$com] ]]; then
+      busctl set-property \
+        xyz.openbmc_project.Settings \
+        $componentPath \
+        xyz.openbmc_project.Software.Version \
+        Version s "${fwDict[$com]}"
+    else
+      echo "$com does not exist!"
+    fi
+  done
+}
+
 probe_mb_vr
-fw-util mb --version
+set_software_version

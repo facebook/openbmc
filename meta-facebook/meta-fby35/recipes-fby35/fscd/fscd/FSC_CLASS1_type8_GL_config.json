@@ -1,5 +1,5 @@
 {
-  "version": "Olympic_GL_FSC-V2024.08.09",
+  "version": "Olympic_GL_FSC-V2024.09.18",
   "pwm_transition_value": 80,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,

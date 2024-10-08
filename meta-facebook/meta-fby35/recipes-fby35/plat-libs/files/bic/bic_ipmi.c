@@ -100,29 +100,6 @@ enum {
   BB_BIC_SLOT1_PRSNT_PIN = 15,
 };
 
-typedef enum {
-  OP_1OU = 1,
-  OP_2OU,
-  OP_3OU,
-  OP_4OU,
-} OP_OU_NUM;
-
-typedef enum { //for each OU's E1S
-  OP_E1S_0 = 0,
-  OP_E1S_1,
-  OP_E1S_2,
-  OP_E1S_3,
-  OP_E1S_4,
-} OP_ElS_NUM;
-
-typedef enum {
-  OP_E1S_0_PRSNT = 0x01,
-  OP_E1S_1_PRSNT = 0x02,
-  OP_E1S_2_PRSNT = 0x04,
-  OP_E1S_3_PRSNT = 0x08,
-  OP_E1S_4_PRSNT = 0x10,
-} OP_ElS_PRSNT;
-
 uint8_t mapping_vf_e1s_prsnt[6] = {E1S_ENDPOINT1, E1S_ENDPOINT2, E1S_ENDPOINT3, E1S_ENDPOINT4};
 uint8_t mapping_op_e1s_prsnt[2][6] = {{E1S_ENDPOINT0, E1S_ENDPOINT1, E1S_ENDPOINT2},
                                   {E1S_ENDPOINT3, E1S_ENDPOINT4, E1S_ENDPOINT5, E1S_ENDPOINT6, E1S_ENDPOINT7}};
@@ -969,69 +946,6 @@ bic_is_exp_prsnt(uint8_t slot_id) {
   kv_set(key, tmp_str, 0, 0);
 
   return val;
-}
-
-int
-bic_is_e1s_prsnt(uint8_t slot_id,uint8_t ou_num,uint8_t e1s_num){ //get E1.S Device Present for OP2
-  uint8_t tbuf[4] = {0};
-  uint8_t rbuf[1] = {0};
-  uint8_t tlen = 4;
-  uint8_t rlen = 0;
-  uint8_t is_e1s_prsnt = 0; //e1s low present
-
-  tbuf[0] = 0x01; //bus id
-  tbuf[1] = 0x42; //slave addr
-  tbuf[2] = 0x01; //read 1 byte
-
-  //register offset
-  switch(ou_num){
-    case OP_1OU:
-      tbuf[3] = 0x80;
-      break;
-    case OP_2OU:
-      tbuf[3] = 0x81;
-      break;
-    case OP_3OU:
-      tbuf[3] = 0x82;
-      break;
-    case OP_4OU:
-      tbuf[3] = 0x83;
-      break;
-    default:
-      break;
-  }
-
-  if(bic_data_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF)){
-    syslog(LOG_WARNING, "%s() Failed to send the command code to get %dOU E1S present.", __func__, ou_num);
-    return 0;
-  }
-
-  switch(e1s_num){
-    case OP_E1S_0:
-      is_e1s_prsnt = rbuf[0] & OP_E1S_0_PRSNT;
-      break;
-    case OP_E1S_1:
-      is_e1s_prsnt = rbuf[0] & OP_E1S_1_PRSNT;
-      break;
-    case OP_E1S_2:
-      is_e1s_prsnt = rbuf[0] & OP_E1S_2_PRSNT;
-      break;
-    case OP_E1S_3:
-      is_e1s_prsnt = rbuf[0] & OP_E1S_3_PRSNT;
-      break;
-    case OP_E1S_4:
-      is_e1s_prsnt = rbuf[0] & OP_E1S_4_PRSNT;
-      break;
-    default:
-      break;
-  }
-
-  if(!is_e1s_prsnt){
-    return 1;
-  }
-  else{
-    return 0;
-  }
 }
 
 /*

@@ -48,6 +48,11 @@ log_slot_present(uint8_t slot_id, gpio_value_t value)
     syslog(LOG_CRIT, "slot%d present", slot_id);
   } else if ( value == GPIO_VALUE_HIGH ) {
     syslog(LOG_CRIT, "Abnormal - slot%d not detected", slot_id);
+    if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_GL) { // for olympic 2.0
+      char post_complete[MAX_KEY_LEN] = {0};
+      snprintf(post_complete, sizeof(post_complete), POST_COMPLETE_STR, slot_id);
+      pal_set_key_value(post_complete, STR_VALUE_1);  // reset post complete value when slot is not detected
+    }
     return;
   }
 }

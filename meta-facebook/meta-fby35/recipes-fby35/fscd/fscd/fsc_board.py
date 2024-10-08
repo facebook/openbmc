@@ -124,7 +124,6 @@ elif "Type_8" in system_conf:
             "sensor_fail_ignore_check",
             "sensor_fail",
             "sensor_not_ready",
-            "e1s_not_present",
         ]
     dimm_location_name_map = gl_dimm_location_name_map
 elif "VF" in system_conf:
@@ -271,12 +270,6 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
                 if "vf_e1s" in sname:
                     return is_e1s_prsnt(board, sname[10 : sname.find("_t")])
-
-                if "ou_e1s" in sname: #for OP2 E1.S present check
-                    slot_id = 1
-                    ou_num = int(sname[0])   # witch ou
-                    e1s_num = int(sname[11]) # witch ssd
-                    return lbic_hndl.bic_is_e1s_prsnt(slot_id, ou_num, e1s_num)
                 return 1
         return 0
     except SystemExit:
@@ -288,7 +281,6 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
 
 def get_fan_mode(scenario="None"):
-    system_conf = get_system_conf()
     if "one_fan_failure" in scenario:
         return one_fan_fail_tuple
     elif "sensor_hit_UCR" in scenario:
@@ -300,9 +292,6 @@ def get_fan_mode(scenario="None"):
     elif "sensor_not_ready" in scenario:
         pwm = 70
         return fan_mode["trans_mode"], pwm
-    elif "e1s_not_present" in scenario:
-        pwm = 100
-        return fan_mode["boost_mode"], pwm
     pass
 
 
@@ -342,15 +331,3 @@ def sensor_transitional_check(sname, board):
                 return True
     return False
 
-
-def sensor_e1s_prsnt_check(sname, board):
-    (board, sname) = sname.split("_", 1)
-    if "ou_e1s" in sname: #for OP2 E1.S present check
-        slot_id = 1
-        ou_num = int(sname[0])   # witch ou
-        e1s_num = int(sname[11]) # witch ssd
-        if (lbic_hndl.bic_is_e1s_prsnt(slot_id, ou_num, e1s_num) == 0):
-            return True
-        else:
-            return False
-    return False

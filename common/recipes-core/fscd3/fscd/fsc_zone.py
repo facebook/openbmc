@@ -325,15 +325,6 @@ class Zone:
                                     outmin = max(outmin, set_fan_pwm)
                                     if outmin == set_fan_pwm:
                                         mode = set_fan_mode
-                            if self.board_fan_mode.is_scenario_supported("e1s_not_present"):
-                                if fsc_board.sensor_e1s_prsnt_check(sname, board):
-                                    (
-                                        set_fan_mode,
-                                        set_fan_pwm,
-                                    ) = self.board_fan_mode.get_board_fan_mode("e1s_not_present")
-                                    outmin = max(outmin, set_fan_pwm)
-                                    if outmin == set_fan_pwm:
-                                        mode = set_fan_mode
                             sensor_valid_flag = 0
                             self.missing_sensor_assert_retry[sensor_index] = 0
                         break

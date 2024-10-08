@@ -7,16 +7,16 @@
 import subprocess
 import threading
 import unittest
-import time
 
 from utils.cit_logger import Logger
-from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 """
 Tests Wedge Power
 """
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class BaseWedgePowerTest(unittest.TestCase):
     """
     Base class for testing the power control functionalities of a system.
@@ -25,6 +25,7 @@ class BaseWedgePowerTest(unittest.TestCase):
     various power control commands. It is designed to be extended by specific
     test classes that implement actual test cases.
     """
+
     CMD_EXECUTION_TIME_LIMIT = 15  # seconds
     EBUSY_ERR = 16
     NUM_INSTANCES = 3  # Number of instances for concurrent testing
@@ -62,7 +63,9 @@ class BaseWedgePowerTest(unittest.TestCase):
                 raise Exception(stderr.decode())
             return process.returncode, stdout.decode()
         except subprocess.TimeoutExpired:
-            Logger.error(f"Command '{full_command}' timed out after {self.CMD_EXECUTION_TIME_LIMIT} seconds.")
+            Logger.error(
+                f"Command '{full_command}' timed out after {self.CMD_EXECUTION_TIME_LIMIT} seconds."
+            )
             process.kill()
             process.communicate()  # Clean up the process
             return -1, ""
@@ -134,7 +137,9 @@ class BaseWedgePowerTest(unittest.TestCase):
         results = [None] * self.NUM_INSTANCES
 
         for i in range(self.NUM_INSTANCES):
-            thread = threading.Thread(target=self.execute_power_cmd_thread, args=(cmd, results, i))
+            thread = threading.Thread(
+                target=self.execute_power_cmd_thread, args=(cmd, results, i)
+            )
             threads.append(thread)
             thread.start()
 
@@ -146,7 +151,11 @@ class BaseWedgePowerTest(unittest.TestCase):
 
         # Assert that only one instance succeeded and others received the EBUSY_ERR
         self.assertEqual(success_count, 1, "Only one instance should succeed")
-        self.assertEqual(busy_count, self.NUM_INSTANCES - 1, "Other instances should receive busy error")
+        self.assertEqual(
+            busy_count,
+            self.NUM_INSTANCES - 1,
+            "Other instances should receive busy error",
+        )
 
 
 class WedgePowerTest(BaseWedgePowerTest):
@@ -156,7 +165,11 @@ class WedgePowerTest(BaseWedgePowerTest):
         """
         Logger.log_testname(name=self._testMethodName)
         status = self.power_status()
-        self.assertIn(status, ["Microserver power is on", "Microserver power is off"], "Invalid power status returned")
+        self.assertIn(
+            status,
+            ["Microserver power is on", "Microserver power is off"],
+            "Invalid power status returned",
+        )
 
     def test_wedge_power_off(self):
         """
@@ -177,7 +190,9 @@ class WedgePowerTest(BaseWedgePowerTest):
         Tests wedge power on with force
         """
         Logger.log_testname(name=self._testMethodName)
-        self.assertEqual(self.run_power_cmd_test("on -f"), 0, "Power on with force test failed")
+        self.assertEqual(
+            self.run_power_cmd_test("on -f"), 0, "Power on with force test failed"
+        )
 
     def test_wedge_power_reset(self):
         """
@@ -205,4 +220,3 @@ class WedgePowerTest(BaseWedgePowerTest):
         if "off" in status:
             self.run_power_cmd("on")
         self.run_concurrent_power_command_test("reset")
-

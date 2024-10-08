@@ -23,7 +23,6 @@ from common.base_interface_test import CommonInterfaceTest
 from utils.cit_logger import Logger
 from utils.test_utils import qemu_check
 
-
 """
 Tests eth0 & usb0 v6 interface
 """
@@ -47,6 +46,7 @@ class InterfaceTest(CommonInterfaceTest, unittest.TestCase):
         Logger.log_testname(self._testMethodName)
         self.assertEqual(self.ping_v6(), 0, "Ping test for usb0 v6 failed")
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_usb0_v6_x86_interface(self):
         """
         Tests usb0 v6 interface ping to x86 side

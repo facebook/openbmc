@@ -20,9 +20,11 @@
 import unittest
 
 from common.base_interface_test import BaseInterfaceTest
+from utils.test_utils import qemu_check
 
 
 class InterfaceTest(BaseInterfaceTest, unittest.TestCase):
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_usb0_v6_x86_interface(self):
         """
         Tests usb0 v6 interface ping to x86 side

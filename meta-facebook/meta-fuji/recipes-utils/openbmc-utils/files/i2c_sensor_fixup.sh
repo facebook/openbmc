@@ -45,6 +45,18 @@ i2c_driver_rebind() {
   sleep 1
 }
 
+# check and disable the PEC
+check_and_disable_pec() {
+  pec_sysfs="/sys/bus/i2c/devices/""$1""/pec"
+
+  if [ -f "${pec_sysfs}" ]; then
+    status=$(cat "$pec_sysfs")
+    if [ "$status" == "1" ]; then
+        echo 0 > "$pec_sysfs"
+    fi
+  fi
+}
+
 # During bootup validate whether the hwmon sysfs exists and
 # Input voltage value within threshold range. If not expected
 # unbind and bind the driver.
@@ -82,6 +94,13 @@ hwmon_sanitize_input_voltage() {
       break
     fi
   done
+
+  # on mp2975, occasionally read form CAPABILITY register is incorrect even
+  # thought the value on device is proper. Suspect this could be triggered by
+  # the known aspeed issue, hence setting pec back to 0.
+  if [[ ${driver_sysfs} =~ "mp2975" ]]; then
+    check_and_disable_pec "$device"
+  fi
 }
 
 

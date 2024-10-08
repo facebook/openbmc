@@ -347,6 +347,8 @@ enum {
   FRU_MEB_JCN13,
   FRU_MEB_JCN14,
   FRU_UBB,
+  FRU_HMC,
+  FRU_CX7,
   FRU_CNT,
   FRU_AGGREGATE = 0xff,
 };

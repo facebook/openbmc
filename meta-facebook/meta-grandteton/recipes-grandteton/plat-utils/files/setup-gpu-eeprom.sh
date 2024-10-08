@@ -22,18 +22,30 @@
 KV_CMD="/usr/bin/kv"
 
 GPU_CONFIG="gpu_config"
+
 HGX_FRU_BIN="/tmp/fruid_hgx.bin"
 HGX_EEPROM_ADDR="0x53"
+HMC_FRU_BIN="/tmp/fruid_hmc.bin"
+HMC_EEPROM_ADDR="0x4e"
+CX7_FRU_BIN="/tmp/fruid_cx7.bin"
+CX7_EEPROM_ADDR="0x4d"
+
 UBB_FRU_BIN="/tmp/fruid_ubb.bin"
 UBB_EEPROM_ADDR="0x54"
 
 probe_eeprom_driver () {
   addr_wo_prefix=${1#0x}
   MAX_RETRY=$2
+  driver="24c64"
+
+  if [ "$1" == "$HMC_EEPROM_ADDR" ]; then
+   driver="24c02"
+  fi
+
   for (( i=1; i<=$MAX_RETRY; i++ )); do
     if [ ! -L "/sys/bus/i2c/drivers/at24/9-00$addr_wo_prefix" ]; then
       i2c_device_delete 9 $1 2>/dev/null
-      i2c_device_add 9 $1 24c64 2>/dev/null
+      i2c_device_add 9 $1 "$driver" 2>/dev/null
     else
       return
     fi
@@ -45,10 +57,13 @@ probe_eeprom_driver () {
 copy_gpu_eeprom () {
   addr=$1
   bin=$2
+  MAX_RETRY=$3
+
   for (( i=1; i<=$MAX_RETRY; i++ )); do
-    if [ ! -e "$bin" ]; then
+    if [ ! -e "$bin" ] || [ $(wc -c <"$bin") -eq 0 ]; then
       /bin/dd if=/sys/class/i2c-dev/i2c-9/device/9-00${addr}/eeprom of=$bin bs=512 count=1
     fi
+    sleep 0.2
   done
 }
 
@@ -78,22 +93,23 @@ gpu_snr_mon () {
 }
 
 setup_gpu_eeprom () {
-  gpu=("hgx" "ubb")
-  names=("NVIDIA" "AMD")
-  snr_polling=("hgx_polling_status" "ubb_polling_status")
-  addr=("$HGX_EEPROM_ADDR" "$UBB_EEPROM_ADDR")
-  bins=("$HGX_FRU_BIN" "$UBB_FRU_BIN")
+  gpu=("dummy" "dummy" "hgx" "ubb")
+  names=("dummy" "dummy" "NVIDIA" "AMD")
+  snr_polling=("dummy" "dummy" "hgx_polling_status" "ubb_polling_status")
+  addr=("$HMC_EEPROM_ADDR" "$CX7_EEPROM_ADDR" "$HGX_EEPROM_ADDR" "$UBB_EEPROM_ADDR")
+  bins=("$HMC_FRU_BIN" "$CX7_FRU_BIN" "$HGX_FRU_BIN" "$UBB_FRU_BIN")
 
   MAX_RETRY=10
 
 for count in $(seq 1 $MAX_RETRY); do
   for loop in "${!addr[@]}"; do
+    echo $loop
     response=$(i2cget -y -f 9 "${addr[$loop]}" 0x00)
     if [[ $? -eq 0 && ! "$response" =~ "Error" ]]; then
       probe_eeprom_driver "${addr[$loop]}" $MAX_RETRY
-      copy_gpu_eeprom "${addr[$loop]#0x}" "${bins[$loop]}"
+      copy_gpu_eeprom "${addr[$loop]#0x}" "${bins[$loop]}" $MAX_RETRY
       is_gpu="$(strings "${bins[$loop]}" | grep -i "${names[$loop]}")"
-      if [ -n "$is_gpu" ]; then
+      if [ -n "$is_gpu" ] && [ "${gpu[$loop]}" != "dummy" ]; then
         $KV_CMD set $GPU_CONFIG "${gpu[$loop]}" persistent
         $KV_CMD set "${snr_polling[$loop]}" 1
         gpu_snr_mon "${gpu[$loop]}" enable

@@ -376,6 +376,16 @@ fru_presence(uint8_t fru_id, uint8_t *status) {
         return true;
       }
       return false;
+    case FRU_HMC:
+    case FRU_CX7:
+      if (pal_get_gpu_fru_id() == FRU_HGX) {
+        *status = FRU_PRSNT;
+        return true;
+      }
+      else {
+        *status = FRU_NOT_PRSNT;
+        return true;
+      }
     case FRU_ACB:
     case FRU_MEB:
       if (!pal_is_artemis()) {

@@ -78,7 +78,7 @@
 "cb_accl9, cb_accl10, cb_accl11, cb_accl12";
 #else
   const char pal_fru_list[] = \
-"all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, ubb";
+"all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, ubb, hmc, cx7";
 #endif
 
 const char pal_server_list[] = "mb";
@@ -106,9 +106,7 @@ const char pal_server_list[] = "mb";
 
 #define BP_CAPABILITY   FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
-#define FIO_CAPABILITY  FRU_CAPABILITY_FRUID_ALL
-
-#define HSC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL
+#define FRU_ONLY_CAP    FRU_CAPABILITY_FRUID_ALL
 
 // Artemis fru capability
 #define ACB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
@@ -175,8 +173,8 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_HPDB,  "hpdb",    "HPDB Board",    37, 0x51, PDB_CAPABILITY, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_FAN_BP1,   "fan_bp1",     "FAN_BP1 Board",     40, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_FAN_BP2,   "fan_bp2",     "FAN_BP2 Board",     41, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
-  {FRU_FIO,   "fio",     "FIO Board",     3,  0x20, FIO_CAPABILITY, FRU_PATH_PLDM,   fru_presence, PLDM_FRU_FIO},
-  {FRU_HSC,   "hsc",     "HSC Board",     HSC_BUS_NUM,  0x51, 0,              FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_FIO,   "fio",     "FIO Board",     3,  0x20, FRU_ONLY_CAP, FRU_PATH_PLDM,   fru_presence, PLDM_FRU_FIO},
+  {FRU_HSC,   "hsc",  "HSC Board", HSC_BUS_NUM, 0x51, 0, FRU_PATH_EEPROM, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_SHSC,  "swb_hsc", "SWB HSC Board", 3,  0x20, 0,              FRU_PATH_PLDM,   fru_presence, PLDM_FRU_SHSC},
   // Artemis FRU dev data
   {FRU_ACB,        "cb",        "Carrier Board",     ACB_BIC_BUS,   ACB_BIC_ADDR,   ACB_CAPABILITY,       FRU_PATH_PLDM,   fru_presence,    PLDM_FRU_NOT_SUPPORT},
@@ -208,7 +206,9 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_MEB_JCN13,  "mc_jcn13",  "MC JCN13",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   {FRU_MEB_JCN14,  "mc_jcn14",  "MC JCN14",         MEB_BIC_BUS,   MEB_BIC_ADDR,   0, FRU_PATH_PLDM,   pal_is_pldm_fru_prsnt,  PLDM_FRU_NOT_SUPPORT},
   //UBB
-  {FRU_UBB, "ubb", "UBB Board", 9, 0x54, UBB_CAPABILITY, FRU_PATH_NONE, fru_presence, PLDM_FRU_NOT_SUPPORT}
+  {FRU_UBB, "ubb", "UBB Board", 9, 0x54, UBB_CAPABILITY, FRU_PATH_NONE, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_HMC, "hmc",  "HGX HMC",  9, 0x4e, FRU_ONLY_CAP, FRU_PATH_NONE, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_CX7, "cx7", "HGX CX7",   9, 0x4d, FRU_ONLY_CAP, FRU_PATH_NONE, fru_presence, PLDM_FRU_NOT_SUPPORT}
 };
 
 uint8_t
@@ -839,12 +839,14 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
       case FRU_HGX:
       case FRU_OCPDBG:
       case FRU_UBB:
+      case FRU_HMC:
+      case FRU_CX7:
       case FRU_SHSC:
         *caps = 0; // Not in Artemis
         break;
       case FRU_HSC:
         if (is_mb_hsc_module()) {
-          *caps = HSC_CAPABILITY;
+          *caps = FRU_ONLY_CAP;
         } else {
           *caps = 0;
         }
@@ -903,15 +905,31 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
         break;
       case FRU_SHSC:
         if (is_swb_hsc_module()) {
-          *caps = HSC_CAPABILITY;
+          *caps = FRU_ONLY_CAP;
         } else {
           *caps = 0;
         }
         break;
       case FRU_HSC:
         if (is_mb_hsc_module()) {
-          *caps = HSC_CAPABILITY;
+          *caps = FRU_ONLY_CAP;
         } else {
+          *caps = 0;
+        }
+        break;
+      case FRU_HMC:
+        if (pal_get_gpu_fru_id() == FRU_HGX) {
+          *caps = FRU_ONLY_CAP;
+        }
+        else {
+          *caps = 0;
+        }
+        break;
+      case FRU_CX7:
+        if (pal_get_gpu_fru_id() == FRU_HGX) {
+          *caps = FRU_ONLY_CAP;
+        }
+        else {
           *caps = 0;
         }
         break;

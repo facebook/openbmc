@@ -176,12 +176,7 @@ init_class1_fsc() {
       case $board_type_1ou in
       8)
         config_type="8"
-        sys_sku=$(get_system_sku)
-        if [[ "$sys_sku" == "2.2" ]]; then
-          target_fsc_config="/etc/FSC_CLASS1_type8_2.2_GL_config.json"
-        else
-          target_fsc_config="/etc/FSC_CLASS1_type8_GL_config.json"
-        fi
+        target_fsc_config="/etc/FSC_CLASS1_type8_GL_config.json"
         ;;
       *)
         config_type="GL"

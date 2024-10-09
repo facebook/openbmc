@@ -61,16 +61,16 @@
     "probe_register": 0,
     "baudrate": 115200,
     "special_handlers": [
-      {
-        "reg": 101,
-        "len": 2,
-        "period": 3600,
-        "action": "write",
-        "info": {
-          "interpret": "INTEGER",
-          "shell": "date +%s"
+        {
+            "reg": 101,
+            "len": 2,
+            "period": 3600,
+            "action": "write",
+            "info": {
+                "interpret": "INTEGER",
+                "shell": "date +%s"
+            }
         }
-      }
     ],
     "registers": [
         {
@@ -694,8 +694,28 @@
             "format": "FLAGS",
             "flags": [
                 [
+                    11,
+                    "Rack_Sync_Start_Fault"
+                ],
+                [
+                    10,
+                    "Rack_Sync_Start2_Fault"
+                ],
+                [
+                    9,
+                    "Sync_Start_Fault"
+                ],
+                [
+                    8,
+                    "Sync_Start2_Fault"
+                ],
+                [
                     7,
                     "Second_Shelf_Detection"
+                ],
+                [
+                    6,
+                    "Power_Off_Mode"
                 ],
                 [
                     4,
@@ -909,7 +929,7 @@
             "flags": [
                 [
                     15,
-                    "SYNC_STOP_L"
+                    "SYNC_START2_L"
                 ],
                 [
                     14,
@@ -1237,6 +1257,12 @@
             "name": "Pulse_Mgmt_Count_Req"
         },
         {
+            "begin": 231,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pulse_Mgmt_Threshold"
+        },
+        {
             "begin": 232,
             "length": 1,
             "format": "INTEGER",
@@ -1261,7 +1287,43 @@
             "begin": 236,
             "length": 1,
             "format": "INTEGER",
-            "name": "CAN BUS address"
+            "name": "CANBUS_Address"
+        },
+        {
+            "begin": 237,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "Power_off_Unix_Time"
+        },
+        {
+            "begin": 256,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "Capacity_Throughput"
+        },
+        {
+            "begin": 258,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "Energy_Throughput"
+        },
+        {
+            "begin": 260,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Deep_Discharge_Events"
+        },
+        {
+            "begin": 261,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Time_in_Extreme_Temperatures"
+        },
+        {
+            "begin": 262,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Time_in_Charging_in_Extreme_Temperatures"
         },
         {
             "begin": 288,

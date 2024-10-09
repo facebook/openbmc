@@ -152,11 +152,10 @@ check_swb_nic_source()
    readonly NIC_BRCM_OPTIC=2
 
    nic_source=$(kv get swb_nic_source)
-   if [ "$nic_source" == $NIC_MLX_OPTIC ] ||
-      [ "$nic_source" == $NIC_BRCM_OPTIC ]; then
+   expr_file=$(awk -F': ' '/"expr_file"/ {gsub(/[",]/, "", $2); print $2}' $DEFAULT_FSC_CONFIG)
 
-    expr_file=$(awk -F': ' '/"expr_file"/ {gsub(/[",]/, "", $2); print $2}' $DEFAULT_FSC_CONFIG)
-      sed -i '/swb_tray_switch_linear(/i \
+   if [ -n "$nic_source" ]; then
+     sed -i '/swb_tray_switch_linear(/i \
   swb_tray_nic_linear(\
     max([\
       all:swb_swb_nic0_temp_c,\
@@ -176,7 +175,13 @@ check_swb_nic_source()
       all:swb_swb_nic4_temp_c,\
       all:swb_swb_nic5_temp_c,\
       all:swb_swb_nic6_temp_c,\
-      all:swb_swb_nic7_temp_c])),\
+      all:swb_swb_nic7_temp_c])), \
+    ' /etc/fsc/"$expr_file"
+   fi
+
+   if [ "$nic_source" == $NIC_MLX_OPTIC ] ||
+      [ "$nic_source" == $NIC_BRCM_OPTIC ]; then
+     sed -i '/swb_tray_switch_linear(/i \
   swb_tray_nic_optic_linear(\
     max([\
       all:swb_swb_nic0_optic_temp_c,\

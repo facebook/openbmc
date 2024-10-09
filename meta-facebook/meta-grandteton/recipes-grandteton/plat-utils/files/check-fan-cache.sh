@@ -29,6 +29,12 @@ check_swb_nic_source()
    readonly NIC_BRCM_OPTIC=2
 
    nic_source=$(kv get swb_nic_source)
+   # default
+   if [ -n "$nic_source" ]; then
+     kv set swb_nic_source "$SWB_1ST_SOURCE"
+     kv set swb_nic_vendor "Mellanox "
+   fi
+
    if [ "$nic_source" == $NIC_MLX_OPTIC ] ||
       [ "$nic_source" == $NIC_BRCM_OPTIC ]; then
 

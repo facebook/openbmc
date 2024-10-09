@@ -238,7 +238,6 @@ if [ "$mb_product" != "GTA" ]; then
       str=$(pldmd-util -b 3 -e 0x0a raw 0x02 0x3A 0x00 0xD0 |grep "PLDM Data")
       rev=$?
       if [ "$rev" -eq 1 ]; then
-        kv set swb_nic_source "$SWB_1ST_SOURCE"
         cnt=$(("$cnt"-1))
       else
         pldm_data=$(echo "$str" | awk -F'PLDM Data :' '{print $2}')

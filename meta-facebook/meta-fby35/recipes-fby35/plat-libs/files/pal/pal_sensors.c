@@ -34,7 +34,11 @@
 #define DUAL_FAN_UCR 13500
 #define DUAL_FAN_UNC 10200
 
+#ifdef CONFIG_HALFDOME
+#define FAN_15K_LCR  1000
+#else
 #define FAN_15K_LCR  1200
+#endif
 #define FAN_15K_UNC  13700
 #define FAN_15K_UCR  17100
 

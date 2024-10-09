@@ -14,25 +14,25 @@
             "begin": 6561,
             "length": 1,
             "format": "INTEGER",
-            "name": "Sticky_ITRack_chassis0_leakage"
+            "name": "Sticky_IT_RPU_Stop_Pump_0"
         },
         {
             "begin": 6562,
             "length": 1,
             "format": "INTEGER",
-            "name": "Sticky_ITRack_chassis1_leakage"
+            "name": "Sticky_IT_RPU_Stop_Pump_1"
         },
         {
             "begin": 6563,
             "length": 1,
             "format": "INTEGER",
-            "name": "Sticky_ITRack_chassis2_leakage"
+            "name": "Sticky_IT_RPU_Stop_Pump_2"
         },
         {
             "begin": 6564,
             "length": 1,
             "format": "INTEGER",
-            "name": "Sticky_ITRack_chassis3_leakage"
+            "name": "Sticky_IT_RPU_Stop_Pump_3"
         },
         {
             "begin": 6565,
@@ -747,19 +747,19 @@
                 ],
                 [
                     3,
-                    "ITRack_chassis3_leakage"
+                    "IT_Chassis3_Stop"
                 ],
                 [
                     2,
-                    "ITRack_chassis2_leakage"
+                    "IT_Chassis2_Stop"
                 ],
                 [
                     1,
-                    "ITRack_chassis1_leakage"
+                    "IT_Chassis1_Stop"
                 ],
                 [
                     0,
-                    "ITRack_chassis0_leakage"
+                    "IT_Chassis0_Stop"
                 ]
             ],
             "name": "Leakage"

@@ -1,8 +1,8 @@
 begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,precision,sign,scale,shift,name
-6561,1,,,,,INTEGER,,,,,,,Sticky_ITRack_chassis0_leakage
-6562,1,,,,,INTEGER,,,,,,,Sticky_ITRack_chassis1_leakage
-6563,1,,,,,INTEGER,,,,,,,Sticky_ITRack_chassis2_leakage
-6564,1,,,,,INTEGER,,,,,,,Sticky_ITRack_chassis3_leakage
+6561,1,,,,,INTEGER,,,,,,,Sticky_IT_RPU_Stop_Pump_0
+6562,1,,,,,INTEGER,,,,,,,Sticky_IT_RPU_Stop_Pump_1
+6563,1,,,,,INTEGER,,,,,,,Sticky_IT_RPU_Stop_Pump_2
+6564,1,,,,,INTEGER,,,,,,,Sticky_IT_RPU_Stop_Pump_3
 6565,1,,,,,INTEGER,,,,,,,Sticky_RPU_Internal_Leakage_Abnormal
 6566,1,,,,,INTEGER,,,,,,,Sticky_RPU_External_Leakage_Abnormal
 6567,1,,,,,INTEGER,,,,,,,Sticky_RPU_Opt_External_Leakage1_Abnormal
@@ -129,10 +129,10 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 ,,,,6,RPU_Opt_External_Leakage1_Abnormal,,,,,,,,
 ,,,,5,RPU_External_Leakage_Abnormal,,,,,,,,
 ,,,,4,RPU_Internal_Leakage_Abnormal,,,,,,,,
-,,,,3,ITRack_chassis3_leakage,,,,,,,,
-,,,,2,ITRack_chassis2_leakage,,,,,,,,
-,,,,1,ITRack_chassis1_leakage,,,,,,,,
-,,,,0,ITRack_chassis0_leakage,,,,,,,,
+,,,,3,IT_Chassis3_Stop,,,,,,,,
+,,,,2,IT_Chassis2_Stop,,,,,,,,
+,,,,1,IT_Chassis1_Stop,,,,,,,,
+,,,,0,IT_Chassis0_Stop,,,,,,,,
 37379,1,,,,,FLAGS,,,,,,,HEX_Alarm
 ,,,,15,HEX_Comms_Status,,,,,,,,
 ,,,,14,HEX_Fan_Group3_Comms_Status,,,,,,,,

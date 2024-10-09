@@ -2,6 +2,8 @@
 from subprocess import CompletedProcess
 from typing import List
 
+from fixmybmc.utils import Color
+
 
 class Status:
     def __str__(self) -> str:
@@ -25,6 +27,8 @@ class Status:
 
 
 class Error(Status):
+    color = Color.ORANGE
+
     def __init__(
         self,
         exception=None,
@@ -48,10 +52,12 @@ class Error(Status):
 
 
 class Ok(Status):
-    pass
+    color = Color.GREEN
 
 
 class Problem(Status):
+    color = Color.RED
+
     def __init__(
         self,
         *,

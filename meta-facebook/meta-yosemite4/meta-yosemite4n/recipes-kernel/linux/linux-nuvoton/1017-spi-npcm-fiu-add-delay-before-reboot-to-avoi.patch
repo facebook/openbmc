@@ -1,0 +1,56 @@
+From 84e65489a64b3a674093c97a0d4e1dc2f6d5bd22 Mon Sep 17 00:00:00 2001
+From: Marvin Lin <milkfafa@gmail.com>
+Date: Fri, 24 May 2024 17:10:08 +0800
+Subject: [PATCH] spi: npcm-fiu: add delay before reboot to avoid FIU0
+ busy
+
+---
+ drivers/spi/spi-npcm-fiu.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/drivers/spi/spi-npcm-fiu.c b/drivers/spi/spi-npcm-fiu.c
+index 5853684f3df3..5ba90c8eb361 100644
+--- a/drivers/spi/spi-npcm-fiu.c
++++ b/drivers/spi/spi-npcm-fiu.c
+@@ -8,6 +8,7 @@
+ #include <linux/module.h>
+ #include <linux/ioport.h>
+ #include <linux/clk.h>
++#include <linux/reboot.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/vmalloc.h>
+@@ -694,6 +695,20 @@ static const struct of_device_id npcm_fiu_dt_ids[] = {
+ 	{ /* sentinel */ }
+ };
+ 
++static int fiu_spi_reboot(struct notifier_block *nb, unsigned long action,
++			  void *data)
++{
++	/* give a chance to delay for a while to avoid cpu cannot access
++	 * spi flash data if program/erase progress */
++	mdelay(1000);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block fiu_spi_reboot_nb = {
++	.notifier_call = fiu_spi_reboot,
++	.priority = 255,
++};
++
+ static int npcm_fiu_probe(struct platform_device *pdev)
+ {
+ 	const struct fiu_data *fiu_data_match;
+@@ -763,6 +778,9 @@ static int npcm_fiu_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		clk_disable_unprepare(fiu->clk);
+ 
++	if (fiu->info->fiu_id == FIU0)
++		register_restart_handler(&fiu_spi_reboot_nb);
++
+ 	return ret;
+ }
+ 
+-- 
+2.34.1
+

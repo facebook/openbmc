@@ -28,6 +28,7 @@ from constants import (
     UFW_NAME,
     UFW_POST_ACTION,
     UFW_PRE_ACTION,
+    UFW_PRE_ACTION_FILENAME,
     UFW_PRIORITY,
     UFW_VERSION,
     UpgradeState,
@@ -265,7 +266,6 @@ class FwEntityUpgrader(object):
             cmd_to_execute = cmd_to_execute.format(
                 filename=filename, entity=instance_specifier
             )
-
         return_code = self._run_cmd_on_oob(cmd_to_execute)
         instance_successful = return_code == 0
         if not instance_successful:
@@ -301,11 +301,18 @@ class FwEntityUpgrader(object):
         item_successful: Status of all entities in list upgraded successfully or not
         """
         if self._is_pre_action_set_in_json():
-            pre_action = self._fw_info[UFW_PRE_ACTION]
+            pre_action_filename = os.path.join(
+                self._cwd, self._fw_info[UFW_PRE_ACTION_FILENAME]
+            )
+            cmd_to_execute = self._fw_info[UFW_PRE_ACTION]
+            # format the command with the filename in the json
+            cmd_to_execute = cmd_to_execute.format(
+                pre_action_filename=pre_action_filename
+            )
             if self._dryrun:
-                pre_action = "echo dryrun: " + pre_action
-            logging.info("=== Running pre action command : {}".format(pre_action))
-            subprocess.check_output(pre_action, shell=True)  # noqa p204
+                cmd_to_execute = "echo dryrun: " + cmd_to_execute
+            logging.info("=== Running pre action command : {}".format(cmd_to_execute))
+            subprocess.check_output(cmd_to_execute, shell=True)  # noqa p204
 
     # ========================================================================
     # API publically accessible for upgrading entity

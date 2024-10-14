@@ -5,6 +5,7 @@ from enum import Enum
 # Keys from fw_version_schema.json
 UFW_VERSION = "version"
 UFW_NAME = "filename"
+UFW_PRE_ACTION_FILENAME = "pre_action_filename"
 UFW_HASH = "hash"
 UFW_HASH_VALUE = "hash_value"
 

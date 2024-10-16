@@ -71,7 +71,7 @@ show_usage() {
 	echo "       update all PLDM component  : pldm-fw-update.sh [sd|ff|wf] <pldm image>"
 	echo "       update one PLDM component  : pldm-fw-update.sh [sd|ff|wf|sd_vr|wf_vr|sd_retimer] <slot_id> <pldm image>"
 	echo "       recovery one BIC and then update all BICs : pldm-fw-update.sh [sd|ff|wf] --rcvy <slot_id> <uart image> <pldm image>"
-	echo "       recovery SD re-timer : pldm-fw-update.sh [sd_retimer] --rcvy <pldm recovery image>"
+	echo "       recovery SD re-timer : pldm-fw-update.sh [sd_retimer] <slot_id> <pldm recovery image>"
 	echo ""
 }
 

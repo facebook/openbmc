@@ -1,4 +1,4 @@
-From b875b8dbf41791535a1d5c547e4972396fd87ef3 Mon Sep 17 00:00:00 2001
+From e03adb2f1bfcf73bad093777dce4ea8ef04e6263 Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
 Subject: [PATCH 05/13] platform-mc: Add OEM Meta event handler
@@ -55,14 +55,14 @@ Change-Id: I722d8e09e7aea8dfa533e921d41beb505b59fb95
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
  meson.build                             |   1 +
- oem/meta/platform-mc/event_oem_meta.cpp | 815 ++++++++++++++++++++++++
+ oem/meta/platform-mc/event_oem_meta.cpp | 814 ++++++++++++++++++++++++
  oem/meta/platform-mc/event_oem_meta.hpp |  21 +
  platform-mc/event_manager.cpp           |  36 ++
  platform-mc/event_manager.hpp           |  15 +-
  platform-mc/manager.hpp                 |  26 +-
  platform-mc/test/meson.build            |   2 +
  pldmd/pldmd.cpp                         |  10 +-
- 8 files changed, 919 insertions(+), 7 deletions(-)
+ 8 files changed, 918 insertions(+), 7 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
@@ -80,10 +80,10 @@ index e9177e6..e849a9b 100644
      install: true,
 diff --git a/oem/meta/platform-mc/event_oem_meta.cpp b/oem/meta/platform-mc/event_oem_meta.cpp
 new file mode 100644
-index 0000000..a4575bc
+index 0000000..b3c15ea
 --- /dev/null
 +++ b/oem/meta/platform-mc/event_oem_meta.cpp
-@@ -0,0 +1,815 @@
+@@ -0,0 +1,814 @@
 +#include "event_oem_meta.hpp"
 +
 +#include "common/utils.hpp"
@@ -392,9 +392,10 @@ index 0000000..a4575bc
 +        {
 +            // Currently, we only have one standard SEL needed to support on
 +            // YV4.
++            errorLog = "Standard (0x02), ";
 +            if (eventData[9] == 0x2B)
 +            {
-+                errorLog = "POST_ERROR:";
++                errorLog += "POST_ERROR:";
 +                if ((eventData[11] & 0x0F) == 0x0)
 +                    errorLog += ", System Firmware Error";
 +
@@ -417,22 +418,21 @@ index 0000000..a4575bc
 +            }
 +            else
 +            { // Not supported
-+                errorLog =
-+                    "Record Type(0x" +
-+                    to_hex_string(static_cast<uint8_t>(recordType)) +
-+                    "), Raw: " + to_hex_string(eventData[1]) +
-+                    to_hex_string(eventData[2]) + to_hex_string(eventData[3]) +
-+                    to_hex_string(eventData[4]) + to_hex_string(eventData[5]) +
-+                    to_hex_string(eventData[6]) + to_hex_string(eventData[7]) +
-+                    to_hex_string(eventData[8]) + to_hex_string(eventData[9]) +
-+                    to_hex_string(eventData[10]) +
-+                    to_hex_string(eventData[11]) +
-+                    to_hex_string(eventData[12]) + to_hex_string(eventData[13]);
++                errorLog +=
++                    "Raw: " + to_hex_string(eventData[1]) +
++                        to_hex_string(eventData[2]) + to_hex_string(eventData[3]) +
++                        to_hex_string(eventData[4]) + to_hex_string(eventData[5]) +
++                        to_hex_string(eventData[6]) + to_hex_string(eventData[7]) +
++                        to_hex_string(eventData[8]) + to_hex_string(eventData[9]) +
++                        to_hex_string(eventData[10]) +
++                        to_hex_string(eventData[11]) +
++                        to_hex_string(eventData[12]) + to_hex_string(eventData[13]);
 +            }
 +            break;
 +        }
 +        case RecordType::UNIFIED_BIOS_SEL:
 +        {
++            errorLog = "Facebook Unified SEL (0xFB), ";
 +            switch (errorType)
 +            {
 +                case UnifiedError::UNIFIED_PCIE_ERR:
@@ -440,7 +440,7 @@ index 0000000..a4575bc
 +                    uint8_t plat = (generalInfo & 0x10) >> 4;
 +                    if (plat == 0)
 +                    { // x86
-+                        errorLog =
++                        errorLog +=
 +                            "GeneralInfo: x86/PCIeErr(0x" +
 +                            to_hex_string(generalInfo) + "), Bus " +
 +                            to_hex_string(eventData[9]) + "/Dev " +
@@ -451,7 +451,7 @@ index 0000000..a4575bc
 +                    }
 +                    else
 +                    {
-+                        errorLog =
++                        errorLog +=
 +                            "GeneralInfo: ARM/PCIeErr(0x" +
 +                            to_hex_string(generalInfo) + "), Aux. Info: 0x" +
 +                            to_hex_string((eventData[7] << 8) | eventData[6]) +
@@ -477,7 +477,7 @@ index 0000000..a4575bc
 +                        {
 +                            if (plat == 0)
 +                            { // Intel
-+                                errorLog =
++                                errorLog +=
 +                                    "GeneralInfo: MEMORY_ECC_ERR(0x" +
 +                                    to_hex_string(generalInfo) + "), " +
 +                                    dimmLocation + ", DIMM Failure Event: " +
@@ -490,7 +490,7 @@ index 0000000..a4575bc
 +                            }
 +                            else
 +                            { // AMD
-+                                errorLog =
++                                errorLog +=
 +                                    "GeneralInfo: MEMORY_ECC_ERR(0x" +
 +                                    to_hex_string(generalInfo) + "), " +
 +                                    dimmLocation + ", DIMM Failure Event: " +
@@ -513,7 +513,7 @@ index 0000000..a4575bc
 +                                 memoryError.size())
 +                                    ? static_cast<uint8_t>(eventType)
 +                                    : (memoryError.size() - 1);
-+                            errorLog = "GeneralInfo: MEMORY_ECC_ERR(0x" +
++                            errorLog += "GeneralInfo: MEMORY_ECC_ERR(0x" +
 +                                       to_hex_string(generalInfo) + "), " +
 +                                       dimmLocation + ", DIMM Failure Event: " +
 +                                       memoryError[estrIdx];
@@ -534,7 +534,7 @@ index 0000000..a4575bc
 +                    {
 +                        case UpiError::UPI_INIT_ERR:
 +                        {
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: UPIErr(0x" +
 +                                to_hex_string(generalInfo) +
 +                                "), UPI Port Location: Sled " +
@@ -550,7 +550,7 @@ index 0000000..a4575bc
 +                        }
 +                        default:
 +                        {
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: UPIErr(0x" +
 +                                to_hex_string(generalInfo) +
 +                                "), UPI Port Location: Sled " +
@@ -570,7 +570,7 @@ index 0000000..a4575bc
 +                    uint8_t selErrorSeverity = eventData[12];
 +                    uint8_t selErrorId = eventData[13];
 +
-+                    errorLog =
++                    errorLog +=
 +                        "GeneralInfo: IIOErr(0x" + to_hex_string(generalInfo) +
 +                        "), IIO Port Location: Sled " +
 +                        std::to_string(dimmInfo.sled) + "/Socket " +
@@ -594,7 +594,7 @@ index 0000000..a4575bc
 +                    uint8_t errorCode = eventData[12];
 +                    uint8_t errorStatus = eventData[13];
 +
-+                    errorLog =
++                    errorLog +=
 +                        "GeneralInfo: MCAErr(0x" + to_hex_string(generalInfo) +
 +                        "), MCA Severity: " + errorSeverityDetail[mcaSeverity] +
 +                        ", CPU Number: " + std::to_string(cpuNumber) +
@@ -614,7 +614,7 @@ index 0000000..a4575bc
 +                    uint8_t machineCheckBankNumber = eventData[8];
 +                    uint16_t errorCode = (eventData[9] << 8) | eventData[10];
 +
-+                    errorLog =
++                    errorLog +=
 +                        "GeneralInfo: MCAErrExt(0x" +
 +                        to_hex_string(generalInfo) +
 +                        "), MCA Severity: " + errorSeverityDetail[mcaSeverity] +
@@ -631,7 +631,7 @@ index 0000000..a4575bc
 +                    auto offset =
 +                        static_cast<uint8_t>(errorType) -
 +                        static_cast<uint8_t>(UnifiedError::UNIFIED_RP_PIO_1st);
-+                    errorLog =
++                    errorLog +=
 +                        "GeneralInfo: RP_PIOEvent(0x" +
 +                        to_hex_string(generalInfo) + "), RP_PIO Header Log" +
 +                        std::to_string(1 + offset * 2) + ": 0x" +
@@ -675,7 +675,7 @@ index 0000000..a4575bc
 +                            {
 +                                tempLog = "0x" + to_hex_string(eventData[11]);
 +                            }
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: POST(0x" +
 +                                to_hex_string(generalInfo) +
 +                                "), POST Failure Event: " + postError[estrIdx] +
@@ -685,7 +685,7 @@ index 0000000..a4575bc
 +                        }
 +                        case PostError::POST_GET_CERT_FAIL:
 +                        {
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: POST(0x" +
 +                                to_hex_string(generalInfo) +
 +                                "), POST Failure Event: " + postError[estrIdx] +
@@ -696,7 +696,7 @@ index 0000000..a4575bc
 +                        {
 +                            uint16_t ablErrCode = (eventData[13] << 8) |
 +                                                  eventData[12];
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: POST(0x" +
 +                                to_hex_string(generalInfo) +
 +                                "), POST Failure Event: " + postError[estrIdx] +
@@ -706,7 +706,7 @@ index 0000000..a4575bc
 +                        }
 +                        default:
 +                        {
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: POST(0x" +
 +                                to_hex_string(generalInfo) +
 +                                "), POST Failure Event: " + postError[estrIdx];
@@ -727,7 +727,7 @@ index 0000000..a4575bc
 +                    {
 +                        case PcieEvent::PCIE_DPC:
 +                        {
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: PCIeEvent(0x" +
 +                                to_hex_string(generalInfo) +
 +                                "), PCIe Failure Event: " + pcieEvent[estrIdx] +
@@ -741,7 +741,7 @@ index 0000000..a4575bc
 +                        }
 +                        default:
 +                        {
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: PCIeEvent(0x" +
 +                                to_hex_string(generalInfo) +
 +                                "), PCIe Failure Event: " + pcieEvent[estrIdx];
@@ -763,7 +763,7 @@ index 0000000..a4575bc
 +                    {
 +                        case MemoryEvent::MEM_PPR:
 +                        {
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: MemEvent(0x" +
 +                                to_hex_string(generalInfo) + "), " +
 +                                dimmLocation + ", DIMM Failure Event: " +
@@ -776,7 +776,7 @@ index 0000000..a4575bc
 +                            uint8_t estrIdx = eventData[12] & 0x03;
 +                            if (estrIdx >= memoryAdddcEvent.size())
 +                                estrIdx = memoryAdddcEvent.size() - 1;
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: MemEvent(0x" +
 +                                to_hex_string(generalInfo) + "), " +
 +                                dimmLocation + ", DIMM Failure Event: " +
@@ -786,7 +786,7 @@ index 0000000..a4575bc
 +                        }
 +                        case MemoryEvent::MEM_NO_DIMM:
 +                        {
-+                            errorLog =
++                            errorLog +=
 +                                "GeneralInfo: MemEvent(0x" +
 +                                to_hex_string(generalInfo) +
 +                                "), DIMM Failure Event: " +
@@ -800,7 +800,7 @@ index 0000000..a4575bc
 +                                 memoryEvent.size())
 +                                    ? static_cast<uint8_t>(eventType)
 +                                    : (memoryEvent.size() - 1);
-+                            errorLog = "GeneralInfo: MemEvent(0x" +
++                            errorLog += "GeneralInfo: MemEvent(0x" +
 +                                       to_hex_string(generalInfo) + "), " +
 +                                       dimmLocation + ", DIMM Failure Event: " +
 +                                       memoryEvent[estrIdx];
@@ -815,7 +815,7 @@ index 0000000..a4575bc
 +                    uint8_t estrIdx = (eventType < upiEvent.size())
 +                                          ? eventType
 +                                          : (upiEvent.size() - 1);
-+                    errorLog = "GeneralInfo: UPIEvent(0x" +
++                    errorLog += "GeneralInfo: UPIEvent(0x" +
 +                               to_hex_string(generalInfo) +
 +                               "), UPI Port Location: Sled " +
 +                               std::to_string(dimmInfo.sled) + "/Socket " +
@@ -826,7 +826,7 @@ index 0000000..a4575bc
 +                }
 +                case UnifiedError::UNIFIED_BOOT_GUARD:
 +                {
-+                    errorLog =
++                    errorLog +=
 +                        "GeneralInfo: Boot Guard ACM Failure Events(0x" +
 +                        to_hex_string(generalInfo) + "), Error Class(0x" +
 +                        to_hex_string(eventData[10]) +
@@ -839,7 +839,7 @@ index 0000000..a4575bc
 +                case UnifiedError::UNIFIED_PPR_EVENT:
 +                {
 +                    uint8_t eventType = eventData[6] & 0x0F;
-+                    errorLog = "GeneralInfo: PPR Events(0x" +
++                    errorLog += "GeneralInfo: PPR Events(0x" +
 +                               to_hex_string(generalInfo) + "), " +
 +                               pprEvent[eventType] + ". DIMM Info: (" +
 +                               to_hex_string(eventData[7]) +
@@ -854,7 +854,7 @@ index 0000000..a4575bc
 +                case UnifiedError::UNIFIED_CXL_MEM_ERR:
 +                {
 +                    uint8_t eventType = eventData[10] & 0xF;
-+                    errorLog =
++                    errorLog +=
 +                        "GeneralInfo: CXL Memory Error(0x" +
 +                        to_hex_string(generalInfo) + "), Bus " +
 +                        to_hex_string(eventData[7]) + "/Dev " +
@@ -866,7 +866,7 @@ index 0000000..a4575bc
 +                }
 +                default:
 +                {
-+                    errorLog =
++                    errorLog +=
 +                        "Undefined Error Type(0x" +
 +                        to_hex_string(static_cast<uint8_t>(errorType)) +
 +                        "), Raw: " + to_hex_string(eventData[1]) +
@@ -889,9 +889,8 @@ index 0000000..a4575bc
 +        }
 +    }
 +    auto slotNumber = getSlotNumberString(tid, configurations);
-+    std::string message = "Host " + slotNumber + ": " + errorLog;
-+    lg2::error("BIOS_IPMI_SEL: {ERROR}", "ERROR",
-+               message);                       // Create log in journal
++    std::string message = "SEL Entry: Host: " + slotNumber + ", Record: " + errorLog;
++    lg2::error("{ERROR}", "ERROR", message);   // Create log in journal
 +    pldm::utils::reportError(message.c_str()); // Create log on Dbus
 +    return 0;
 +}
@@ -1152,5 +1151,5 @@ index 8ebb9ce..bf74b28 100644
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.44.2
+2.25.1
 

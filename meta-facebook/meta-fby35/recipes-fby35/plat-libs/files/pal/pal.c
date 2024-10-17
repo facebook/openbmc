@@ -3673,6 +3673,13 @@ int
 pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
   char key[MAX_KEY_LEN] = {0};
   snprintf(key, MAX_KEY_LEN, SEL_ERROR_STR, fru);
+  uint8_t error_type = sel[3] & 0xF;
+
+  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_JI &&
+      error_type == UNIFIED_POST_ERR ) {
+    return 0;
+  }
+
   sel_error_record[fru-1]++;
   return pal_set_key_value(key, "0");
 }

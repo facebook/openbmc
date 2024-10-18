@@ -19,7 +19,7 @@
 #
 
 from node import node
-from rest_pal_legacy import pal_get_platform_name
+
 
 class gtNode(node):
     def __init__(self, info=None, actions=None):
@@ -32,48 +32,3 @@ class gtNode(node):
             self.actions = []
         else:
             self.actions = actions
-
-def get_node_scm():
-    name = pal_get_platform_name()
-    info = {"Description": name + " SCM Board"}
-
-    return gtNode(info)
-
-def get_node_swb():
-    name = pal_get_platform_name()
-    info = {"Description": name + " Switch Board"}
-
-    return gtNode(info)
-
-def get_node_vpdb():
-    name = pal_get_platform_name()
-    info = {"Description": name + " VPDB Board"}
-
-    return gtNode(info)
-
-def get_node_hpdb():
-    name = pal_get_platform_name()
-    info = {"Description": name + " HPDB Board"}
-
-    return gtNode(info)
-
-def get_node_fan_bp1():
-    name = pal_get_platform_name()
-    info = {"Description": name + " FAN BP1 Board"}
-
-    return gtNode(info)
-
-def get_node_fan_bp2():
-    name = pal_get_platform_name()
-    info = {"Description": name + " FAN BP2 Board"}
-
-    return gtNode(info)
-
-def get_node_hgx():
-    name = pal_get_platform_name()
-    info = {"Description": name + " HGX Board"}
-
-    return gtNode(info)
-
-
-

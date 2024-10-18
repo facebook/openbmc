@@ -18,24 +18,38 @@
 # Boston, MA 02110-1301 USA
 #
 
-import json
 import typing as t
 from dataclasses import dataclass, field
 from enum import Enum
+
+import node_gt as gt
 
 from aiohttp.web import Application
 
 from compute_rest_shim import RestShim
 from node import node
-from node_sled import get_node_sled
-from node_server import get_node_server_2s
-from node_mezz import get_node_mezz
-import node_gt as gt
 
 from node_bmc import get_node_bmc
 from node_fruid import get_node_fruid
 from node_logs import get_node_logs
+from node_mezz import get_node_mezz
 from node_sensors import get_node_sensors
+from node_server import get_node_server_2s
+from node_sled import get_node_sled
+from pal import pal_get_fru_list
+from rest_pal_legacy import pal_get_platform_name
+
+# These /api/server routes do not exist on all platforms, and we only set them
+# in REST API if the FRUs are visible in libpal
+PLATFORM_SPECIFIC_NODES = {
+    "scm": "SCM Board",
+    "swb": "Switch Board",
+    "hgx": "HGX Board",
+    "vpdb": "VPDB Board",
+    "hpdb": "HPDB Board",
+    "fan_bp1": "FAN BP1 Board",
+    "fan_bp2": "FAN BP2 Board",
+}
 
 
 class HttpMethod(Enum):
@@ -141,163 +155,40 @@ def setup_board_routes(app: Application, write_enabled: bool):
                         http_methods=[HttpMethod.GET, HttpMethod.POST],
                         constructor=lambda: get_node_logs("nic1"),
                     ),
-                ]
+                ],
             ),
-            HttpRoute (
-                path = "/api/server/scm",
-                http_methods = [HttpMethod.GET],
-                constructor = lambda: gt.get_node_scm(),
-                next_routes = [
-                    HttpRoute (
-                        path = "/api/server/scm/fruid",
-                        http_methods = [HttpMethod.GET],
-                        constructor = lambda: get_node_fruid("scm"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/scm/sensors",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_sensors("scm"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/scm/logs",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_logs("scm"),
-                    ),
-                ]
-            ),
-            HttpRoute (
-                path = "/api/server/swb",
-                http_methods = [HttpMethod.GET],
-                constructor = lambda: gt.get_node_swb(),
-                next_routes = [
-                    HttpRoute (
-                        path = "/api/server/swb/fruid",
-                        http_methods = [HttpMethod.GET],
-                        constructor = lambda: get_node_fruid("swb"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/swb/sensors",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_sensors("swb"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/swb/logs",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_logs("swb"),
-                    ),
-                ]
-            ),
-            HttpRoute (
-                path = "/api/server/vpdb",
-                http_methods = [HttpMethod.GET],
-                constructor = lambda: gt.get_node_vpdb(),
-                next_routes = [
-                    HttpRoute (
-                        path = "/api/server/vpdb/fruid",
-                        http_methods = [HttpMethod.GET],
-                        constructor = lambda: get_node_fruid("vpdb"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/vpdb/sensors",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_sensors("vpdb"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/vpdb/logs",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_logs("vpdb"),
-                    ),
-                ]
-            ),
-            HttpRoute (
-                path = "/api/server/hpdb",
-                http_methods = [HttpMethod.GET],
-                constructor = lambda: gt.get_node_hpdb(),
-                next_routes = [
-                    HttpRoute (
-                        path = "/api/server/hpdb/fruid",
-                        http_methods = [HttpMethod.GET],
-                        constructor = lambda: get_node_fruid("hpdb"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/hpdb/sensors",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_sensors("hpdb"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/hpdb/logs",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_logs("hpdb"),
-                    ),
-                ]
-            ),
-            HttpRoute (
-                path = "/api/server/fan_bp1",
-                http_methods = [HttpMethod.GET],
-                constructor = lambda: gt.get_node_fan_bp1(),
-                next_routes = [
-                    HttpRoute (
-                        path = "/api/server/fan_bp1/fruid",
-                        http_methods = [HttpMethod.GET],
-                        constructor = lambda: get_node_fruid("fan_bp1"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/fan_bp1/sensors",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_sensors("fan_bp1"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/fan_bp1/logs",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_logs("fan_bp1"),
-                    ),
-                ]
-            ),
-            HttpRoute (
-                path = "/api/server/fan_bp2",
-                http_methods = [HttpMethod.GET],
-                constructor = lambda: gt.get_node_fan_bp2(),
-                next_routes = [
-                    HttpRoute (
-                        path = "/api/server/fan_bp2/fruid",
-                        http_methods = [HttpMethod.GET],
-                        constructor = lambda: get_node_fruid("fan_bp2"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/fan_bp2/sensors",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_sensors("fan_bp2"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/fan_bp2/logs",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_logs("fan_bp2"),
-                    ),
-                ]
-            ),
-            HttpRoute (
-                path = "/api/server/hgx",
-                http_methods = [HttpMethod.GET],
-                constructor = lambda: gt.get_node_hgx(),
-                next_routes = [
-                    HttpRoute (
-                        path = "/api/server/hgx/fruid",
-                        http_methods = [HttpMethod.GET],
-                        constructor = lambda: get_node_fruid("hgx"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/hgx/sensors",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_sensors("hgx"),
-                    ),
-                    HttpRoute (
-                        path = "/api/server/hgx/logs",
-                        http_methods = [HttpMethod.GET, HttpMethod.POST],
-                        constructor = lambda: get_node_logs("hgx"),
-                    ),
-                ]
-            ),
-        ]
+        ],
     )
+
+    platform = pal_get_platform_name()
+    fru_list = pal_get_fru_list()
+
+    for name, description in PLATFORM_SPECIFIC_NODES.items():
+        if name in fru_list:
+            info = {"Description": platform + " " + description}
+            routes.next_routes.append(
+                HttpRoute(
+                    path="/api/server/{}".format(name),
+                    http_methods=[HttpMethod.GET],
+                    constructor=lambda info=info: gt.gtNode(info),
+                    next_routes=[
+                        HttpRoute(
+                            path="/api/server/{}/fruid".format(name),
+                            http_methods=[HttpMethod.GET],
+                            constructor=lambda name=name: get_node_fruid(name),
+                        ),
+                        HttpRoute(
+                            path="/api/server/{}/sensors".format(name),
+                            http_methods=[HttpMethod.GET, HttpMethod.POST],
+                            constructor=lambda name=name: get_node_sensors(name),
+                        ),
+                        HttpRoute(
+                            path="/api/server/{}/logs".format(name),
+                            http_methods=[HttpMethod.GET, HttpMethod.POST],
+                            constructor=lambda name=name: get_node_logs(name),
+                        ),
+                    ],
+                ),
+            )
 
     plat_add_route(app, routes)

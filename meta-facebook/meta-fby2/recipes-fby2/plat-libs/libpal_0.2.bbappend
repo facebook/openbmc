@@ -2,6 +2,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
 LOCAL_URI += " \
     file://plat/meson.build \
+    file://pal.h \
+    file://pal.c \
     "
 
 DEPENDS += " \

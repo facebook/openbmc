@@ -82,6 +82,17 @@
     "monitor_interval": 2,
     "regenerating_interval": 1200
   },
+  "bic_health": {
+    "enabled": true,
+    "fru": [1,2,3,4],
+    "monitor_interval": 60
+  },
+  "nm_monitor": {
+    "enabled": true,
+    "monitor_interval": 1,
+    "retry_threshold": 10,
+    "nm_transmission_via_bic": true
+  },
   "verified_boot": {
     "enabled": true
   },

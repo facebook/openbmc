@@ -179,6 +179,8 @@
 #define NUM_NIC_FRU     1
 #define NUM_BMC_FRU     1
 
+#define MAX_CMD_RETRY 2
+
 
 static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
@@ -11559,5 +11561,68 @@ int pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 #if defined CONFIG_FBY2_ND
 int pal_udbg_get_frame_total_num() {
   return 5;
+}
+#endif
+
+int pal_get_server_12v_power(uint8_t slot_id, uint8_t *status) {
+  if (pal_get_server_power(slot_id, status)) {
+    return -1;
+  }
+  *status = *status == SERVER_12V_OFF ? SERVER_12V_OFF : SERVER_12V_ON;
+  return 0;
+}
+
+int pal_is_bic_ready(uint8_t fru, uint8_t *status) {
+  *status = is_bic_ready(fru);
+  return PAL_EOK;
+}
+
+int
+pal_bic_self_test(__attribute__((unused)) uint8_t fru) {
+  return PAL_EOK;
+}
+
+#if defined CONFIG_FBY2_ND
+int pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data) {
+  return PAL_ENOTSUP;
+}
+#else
+int pal_get_nm_selftest_result(uint8_t slot_id, uint8_t *data) {
+  int ret, retry = MAX_CMD_RETRY;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  tbuf[0] = NETFN_APP_REQ << 2;
+  tbuf[1] = CMD_APP_GET_SELFTEST_RESULTS;
+  tlen = 2;
+
+  int slot_type = fby2_get_slot_type(slot_id);
+
+  if (slot_type != SLOT_TYPE_SERVER) {
+    return PAL_ENOTSUP;
+  }
+
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+    retry--;
+  }
+  if (ret) {
+    printf("ME no response!\n");
+    return -1;
+  }
+
+  //BIC returned failure.
+  if (rbuf[0] != 0x00) {
+    return -1;
+  }
+  if (rlen < 3) {
+    return -1;
+  }
+  memcpy(data, rbuf + 1, rlen - 1);
+
+  return PAL_EOK;
 }
 #endif

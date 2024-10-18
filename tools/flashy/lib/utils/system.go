@@ -407,6 +407,31 @@ var getOtherProcCmdlinePaths = func() []string {
 	return otherCmdlines
 }
 
+var ListProcessesMatchingRegex = func(regex *regexp.Regexp) ([]*os.Process, error) {
+	// Get all pids by listing /proc/[0-9]*/
+	allProcCmdlines, _ := fileutils.Glob("/proc/[0-9]*/cmdline")
+
+	procs := []*os.Process{}
+	pidRegex := regexp.MustCompile(`/proc/([0-9]+)/`)
+
+	for _, cmdlinePath := range allProcCmdlines {
+		buf, err := fileutils.ReadFile(cmdlinePath)
+
+		// Check if regex matches /proc/pid/cmdline and add to procs list
+		if err == nil && regex.Match(buf) {
+			pidRegexMatch := pidRegex.FindStringSubmatch(cmdlinePath)
+
+			pid, _ := strconv.Atoi(pidRegexMatch[1])
+			if proc, err := os.FindProcess(pid); err == nil {
+				procs = append(procs, proc)
+			}
+
+		}
+	}
+
+	return procs, nil
+}
+
 // Examine arguments for well known base names and refine the match.
 var refineBaseNameMatch = func(baseName string, params []string) bool {
 	if baseName == "fw-util" {

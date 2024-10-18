@@ -27,6 +27,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	"regexp"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
@@ -1068,4 +1069,27 @@ func TestIsDataPartitionMounted(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestListProcessesMatchingRegex(t *testing.T) {
+	// Tests using real /proc/ just to get some basic test coverage
+	t.Run("Process list matching .* must return all processes", func(t *testing.T) {
+		procs, err := ListProcessesMatchingRegex(regexp.MustCompile(`.*`))
+		if err != nil {
+			t.Errorf("Error listing processes: %v", err)
+		}
+		if len(procs) < 1 {
+			t.Errorf("Expected at least one process matching `.*`, got %d", len(procs))
+		}
+	})
+
+	t.Run("Process list matching ^\b$ must return no processes", func(t *testing.T) {
+		procs, err := ListProcessesMatchingRegex(regexp.MustCompile(`^\b$`))
+		if err != nil {
+			t.Errorf("Error listing processes: %v", err)
+		}
+		if len(procs) != 0 {
+			t.Errorf("Expected no process matching `^\b$`, got %d", len(procs))
+		}
+	})
 }

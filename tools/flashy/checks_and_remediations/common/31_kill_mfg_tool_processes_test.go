@@ -17,20 +17,20 @@
  * Boston, MA 02110-1301 USA
  */
 
- package remediations_yosemite4
+package common
 
- import (
+import (
+	"bytes"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"log"
-	"testing"
-	"bytes"
 	"os"
 	"regexp"
 	"strings"
- )
+	"testing"
+)
 
- func TestKillMfgToolProcesses(t *testing.T) {
+func TestKillMfgToolProcesses(t *testing.T) {
 	// save log output into buf for testing
 	var logBuffer bytes.Buffer
 	log.SetOutput(&logBuffer)
@@ -38,15 +38,18 @@
 	// mock cleanup
 	realListProcessesMatchingRegex := utils.ListProcessesMatchingRegex
 	realKill := kill
+	realIsLFOpenBMC := utils.IsLFOpenBMC
 
 	defer func() {
 		log.SetOutput(os.Stderr)
 		kill = realKill
 		utils.ListProcessesMatchingRegex = realListProcessesMatchingRegex
+		utils.IsLFOpenBMC = realIsLFOpenBMC
 	}()
 
 	t.Run("Must not kill mfg-tool if there's a single process", func(t *testing.T) {
 		logBuffer.Reset()
+		utils.IsLFOpenBMC = func() bool { return true }
 
 		// Simulate a single mfg-tool process
 		utils.ListProcessesMatchingRegex = func(regex *regexp.Regexp) ([]*os.Process, error) {
@@ -55,9 +58,9 @@
 
 		// Mock kill
 		killCalled := false
-		kill = func (proc *os.Process) error {
+		kill = func(proc *os.Process) error {
 			killCalled = true
-			return nil;
+			return nil
 		}
 
 		res := killMfgToolProcesses(step.StepParams{})
@@ -77,6 +80,7 @@
 
 	t.Run("Must kill all mfg-tool if there are multiple mfg-tool processes", func(t *testing.T) {
 		logBuffer.Reset()
+		utils.IsLFOpenBMC = func() bool { return true }
 
 		// Simulate multiple mfg-tool processes
 		utils.ListProcessesMatchingRegex = func(regex *regexp.Regexp) ([]*os.Process, error) {
@@ -85,9 +89,9 @@
 
 		// Mock kill
 		killCalled := false
-		kill = func (proc *os.Process) error {
+		kill = func(proc *os.Process) error {
 			killCalled = true
-			return nil;
+			return nil
 		}
 
 		res := killMfgToolProcesses(step.StepParams{})
@@ -110,5 +114,24 @@
 		}
 	})
 
+	t.Run("Only run on LF OpenBMC platforms", func(t *testing.T) {
+		logBuffer.Reset()
+		utils.IsLFOpenBMC = func() bool { return false }
+
+		utils.ListProcessesMatchingRegex = func(regex *regexp.Regexp) ([]*os.Process, error) {
+			t.Errorf("Expected ListProcessesMatchingRegex() to not be called")
+			return nil, nil
+		}
+
+		res := killMfgToolProcesses(step.StepParams{})
+
+		if res != nil {
+			t.Errorf("Expected killMfgToolProcesses() to return nil, got %v", res)
+		}
+
+		if !strings.Contains(logBuffer.String(), "This step only applies to LF OpenBMC, skipping") {
+			t.Errorf("Expected skipped step log message, got %v", logBuffer.String())
+		}
+	})
 
 }

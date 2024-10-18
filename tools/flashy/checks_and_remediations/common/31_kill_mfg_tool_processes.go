@@ -17,7 +17,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-package remediations_yosemite4
+package common
 
 import (
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
@@ -33,6 +33,12 @@ func init() {
 }
 
 func killMfgToolProcesses(stepParams step.StepParams) step.StepExitError {
+	// Only run this on LF OpenBMC
+	if !utils.IsLFOpenBMC() {
+		log.Printf("This step only applies to LF OpenBMC, skipping")
+		return nil
+	}
+
 	// Find all running mfg-tool processes
 	mfgToolRegex := regexp.MustCompile(`(^|/)mfg-tool(\x00|$)`)
 	mfgToolProcs, err := utils.ListProcessesMatchingRegex(mfgToolRegex)

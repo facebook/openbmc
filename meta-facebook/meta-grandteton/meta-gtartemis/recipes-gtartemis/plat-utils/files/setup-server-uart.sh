@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2023-present Facebook. All Rights Reserved.
 #
@@ -26,8 +26,26 @@ connect_uart2_4() {
 }
 
 setup_artemis_uart() {
+  local i=0
+  local retry=5
   # input PSOC vendor id and product id to Generic Serial driver
   printf "04b4 e17a" > /sys/bus/usb-serial/drivers/generic/new_id
+  # Wait for us to have detected all 24 devices. If we do not have
+  # 24 devices within 5s of probing the new vendor, then print
+  # a SEL.
+  while [ $i -le $retry ]; do
+     num=$(lsusb | grep -c e17a)
+     if [ "$num" -lt 24 ]; then
+       if [ $i -eq $retry ]; then
+         logger -p user.crit -t usbmon "FRU: 16 ASSERT: Detected ${num} USB devices instead of expected 24"
+       fi
+     else
+       logger -p user.info -t usbmon "FRU: 16 Detected ${num} USB devices"
+       break
+     fi
+     i=$((i+1))
+     sleep 1
+  done
 }
 
 connect_uart2_4

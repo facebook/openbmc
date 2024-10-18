@@ -1281,7 +1281,6 @@ void check_nm_selftest_result(uint8_t fru, int result, uint8_t *selftest_result)
 {
   static uint8_t no_response_retry[MAX_NUM_FRUS] = {0};
   static uint8_t abnormal_status_retry[MAX_NUM_FRUS] = {0};
-  char fru_name[10]={0};
   int fru_index = fru - 1;//fru id is start from 1.
 
   enum
@@ -1289,11 +1288,8 @@ void check_nm_selftest_result(uint8_t fru, int result, uint8_t *selftest_result)
     NM_NORMAL_STATUS = 0,
   };
 
-  //the fru data is validated, no need to check the data again.
-  pal_get_fru_name(fru, fru_name);
-
 #ifdef DEBUG
-  syslog(LOG_WARNING, "fru_name:%s, fruid:%d, result:%d, nm_retry_threshold:%d", fru_name, fru, result, nm_retry_threshold);
+  syslog(LOG_WARNING, "fruid:%d, result:%d, nm_retry_threshold:%d", fru, result, nm_retry_threshold);
 #endif
 
   if ( PAL_ENOTSUP == result )
@@ -1303,7 +1299,7 @@ void check_nm_selftest_result(uint8_t fru, int result, uint8_t *selftest_result)
       if ( !is_duplicated_unaccess_event[fru_index] )
       {
         is_duplicated_unaccess_event[fru_index] = true;
-        syslog(LOG_CRIT, "ASSERT: ME Status - Controller Unavailable on the %s", fru_name);
+        syslog(LOG_CRIT, "FRU: %d ASSERT: ME Status - Controller Unavailable", fru);
       }
     }
     else
@@ -1320,7 +1316,7 @@ void check_nm_selftest_result(uint8_t fru, int result, uint8_t *selftest_result)
         if ( !is_duplicated_abnormal_event[fru_index] )
         {
           is_duplicated_abnormal_event[fru_index] = true;
-          syslog(LOG_CRIT, "ASSERT: ME Status - Controller Access Degraded or Unavailable on the %s, result: %02Xh, %02Xh", fru_name, selftest_result[0], selftest_result[1]);
+          syslog(LOG_CRIT, "FRU: %d ASSERT: ME Status - Controller Access Degraded or Unavailable, result: %02Xh, %02Xh", fru, selftest_result[0], selftest_result[1]);
         }
       }
       else
@@ -1333,13 +1329,13 @@ void check_nm_selftest_result(uint8_t fru, int result, uint8_t *selftest_result)
       if ( is_duplicated_abnormal_event[fru_index] )
       {
         is_duplicated_abnormal_event[fru_index] = false;
-        syslog(LOG_CRIT, "DEASSERT: ME Status - Controller Access Degraded or Unavailable on the %s", fru_name);
+        syslog(LOG_CRIT, "FRU: %d DEASSERT: ME Status - Controller Access Degraded or Unavailable", fru);
       }
 
       if ( is_duplicated_unaccess_event[fru_index] )
       {
         is_duplicated_unaccess_event[fru_index] = false;
-        syslog(LOG_CRIT, "DEASSERT: ME Status - Controller Unavailable on the %s", fru_name);
+        syslog(LOG_CRIT, "FRU: %d DEASSERT: ME Status - Controller Unavailable", fru);
       }
 
       no_response_retry[fru_index] = 0;

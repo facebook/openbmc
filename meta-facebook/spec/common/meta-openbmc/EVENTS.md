@@ -32,10 +32,10 @@ Cannot get CPU statistics. Stop %s
 
 ## ME Monitoring
 ```
-ASSERT: ME Status - Controller Unavailable on the <FRU_NAME>
-DEASSERT: ME Status - Controller Unavailable on the <FRU_NAME>
-ASSERT: ME Status - Controller Access Degraded or Unavailable on the %s, result: <HEX>, <HEX>
-DEASSERT: ME Status - Controller Access Degraded or Unavailable on the <FRU_NAME>
+FRU: <FRU_NUM> ASSERT: ME Status - Controller Unavailable
+FRU: <FRU_NUM> DEASSERT: ME Status - Controller Unavailable
+FRU: <FRU_NUM> ASSERT: ME Status - Controller Access Degraded or Unavailable, result: <HEX>, <HEX>
+FRU: <FRU_NUM> DEASSERT: ME Status - Controller Access Degraded or Unavailable
 ```
 
 ## Verified Boot

@@ -24,6 +24,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 LOCAL_URI = " \
     file://ast-functions \
     file://clear-ver-cache.sh \
+    file://check_power_status.sh \
     file://power-on.sh \
     file://sync_date.sh \
     file://COPYING \
@@ -66,6 +67,10 @@ do_install() {
   # install clear-ver-cache.sh
   install -m 755 clear-ver-cache.sh ${D}${sysconfdir}/init.d/clear-ver-cache.sh
   update-rc.d -r ${D} clear-ver-cache.sh start 00 5 .
+
+  # install check_power_status.sh
+  install -m 755 check_power_status.sh ${D}${sysconfdir}/init.d/check_power_status.sh
+  update-rc.d -r ${D} check_power_status.sh start 65 5 .
 
   # install setup-dev.sh
   install -m 755 setup-dev.sh ${D}${sysconfdir}/init.d/setup-dev.sh

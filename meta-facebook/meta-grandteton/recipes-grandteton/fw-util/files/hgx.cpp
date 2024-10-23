@@ -242,7 +242,7 @@ class HGXSystemConfig {
       static HGXComponent gpu5("hgx", "gpu6-fw", "HGX_FW_GPU_SXM_6");
       static HGXComponent gpu6("hgx", "gpu7-fw", "HGX_FW_GPU_SXM_7");
       static HGXComponent gpu7("hgx", "gpu8-fw", "HGX_FW_GPU_SXM_8");
-      static HGXComponent nvlink0("hgx", "nvlink0", "HGX_FW_NVLinkManagementNIC_0");
+      static HGXComponent nvbridge("hgx", "nvswitch-bridge", "HGX_FW_NVLinkManagementNIC_0");
       static HGXComponent nvsw0("hgx", "nvswitch0-fw", "HGX_FW_NVSwitch_0");
       static HGXComponent nvsw1("hgx", "nvswitch1-fw", "HGX_FW_NVSwitch_1");
       static HGXComponent pretimer0("hgx", "pcieretimer0", "HGX_FW_PCIeRetimer_0");

@@ -34,7 +34,8 @@ class HGXComponent : public Component {
           syslog(LOG_CRIT, "%s upgrade completed", (char*)_fru.c_str());
           sleep(3);
           if (pal_get_gpu_fru_id() == FRU_HGX) {
-            if (hgx::getHMCPhase() != BMC_FW_DVT) {
+            if (hgx::getHMCPhase() == HMC_FW_EVT ||
+                hgx::getHMCPhase() == HMC_FW_DVT) {
               hgx::factoryReset();
             }
           }

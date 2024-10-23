@@ -753,9 +753,7 @@ pldm_pass_comp_table(int fd, uint8_t eid, size_t index)
 static int
 pldm_update_comp(int fd, uint8_t eid, size_t index)
 {
-  uint32_t updateOptionFlags =
-    (pkg_comps[index].compImageInfo.comp_options.value << 16) +
-    pkg_comps[index].compImageInfo.requested_comp_activation_method.value;
+  uint32_t updateOptionFlags = pkg_comps[index].compImageInfo.comp_options.value;
   auto compVer_len = pkg_comps[index].compImageInfo.comp_version_string_length;
   variable_field compVer{};
   compVer.length = pkg_comps[index].compVersion.size();

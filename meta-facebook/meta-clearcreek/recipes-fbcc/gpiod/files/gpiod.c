@@ -376,6 +376,12 @@ static struct gpiopoll_config g_gpios[] = {
   {"PEX1_SYS_ERR_BMC", "GPIOG0", GPIO_EDGE_BOTH, gpio_event_pex_error, NULL},
   {"PEX2_SYS_ERR_BMC", "GPIOG3", GPIO_EDGE_BOTH, gpio_event_pex_error, NULL},
   {"PEX3_SYS_ERR_BMC", "GPIOG7", GPIO_EDGE_BOTH, gpio_event_pex_error, NULL},
+  {"EP0_CBL_PRSNT_R1", "Whisper cable to Emerald Pools, P6", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
+  {"EP1_CBL_PRSNT_R1", "Whisper cable to Emerald Pools, P4", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
+  {"EP2_CBL_PRSNT_R1", "Whisper cable to Emerald Pools, P5", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
+  {"EP3_CBL_PRSNT_R1", "Whisper cable to Emerald Pools, P7", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
+  {"NVME_0_1_PRSNTB_R_N", "SSD Bay 0", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"NVME_2_3_PRSNTB_R_N", "SSD Bay 1", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
 };
 
 int main(int argc, char **argv)

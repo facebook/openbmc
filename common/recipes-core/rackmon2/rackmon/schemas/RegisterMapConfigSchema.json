@@ -36,6 +36,11 @@
       "minimum": 19200,
       "maximum": 115200
     },
+    "max_span_length": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120
+    },
     "parity": {
       "type": "string",
       "enum": ["EVEN", "ODD", "NONE"]

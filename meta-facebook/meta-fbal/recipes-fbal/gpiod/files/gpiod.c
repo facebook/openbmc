@@ -1026,6 +1026,8 @@ static struct gpiopoll_config g_gpios[] = {
   {"PRSNT_UPI_BD_2_N", "GPIOO6", GPIO_EDGE_BOTH, upi_detect_handler, upi_init_handler},
   {"PRSNT_UPI_BD_3_N", "GPIOO7", GPIO_EDGE_BOTH, upi_detect_handler, upi_init_handler},
   {"PRSNT_UPI_BD_4_N", "GPIOP0", GPIO_EDGE_BOTH, upi_detect_handler, upi_init_handler},
+  {"PRSNT_PCIE_CABLE_1_N", "Whisper cable to EP (2S) or CC (EX), P1", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"PRSNT_PCIE_CABLE_2_N", "Whisper cable to EP (2S) or CC (EX), P0", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
 };
 
 int main(int argc, char **argv)

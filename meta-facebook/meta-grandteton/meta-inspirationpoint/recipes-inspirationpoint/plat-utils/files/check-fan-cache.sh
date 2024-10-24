@@ -26,11 +26,18 @@ HGX_ERR_UNSUPPORT=2
 KV_CMD="/usr/bin/kv"
 FAN_TABLE_VER_500W="500"
 FAN_TABLE_VER_650W="650"
+FAN_TABLE_VER_750W="750"
 FAN_TABLE_VER_GTA="gtartemis"
 DEFAULT_FSC_CONFIG="/etc/fsc-config.json"
 
 hgx_pwr_limit_check () {
   curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
+
+  mb_product=$($KV_CMD get mb_product)
+  if [ "$mb_product" == "GT1.5" ]; then
+    $KV_CMD set "auto_fsc_config" "$FAN_TABLE_VER_750W" persistent
+    exit 0
+  fi
 
   recheck_500w=0
   recheck_650w=0
@@ -125,11 +132,18 @@ check_mb_rev() {
       rm -f ${DEFAULT_FSC_CONFIG}
     fi
 
+    mb_product=$($KV_CMD get mb_product)
+    if [ "$mb_product" == "GT1.5" ]; then
+      $KV_CMD set "auto_fsc_config" "$FAN_TABLE_VER_750W" persistent
+    fi
+
     curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
     if [ "$curr_fan_table" == "$FAN_TABLE_VER_500W" ]; then
       ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
     elif [ "$curr_fan_table" == "$FAN_TABLE_VER_650W" ]; then
       ln -s /etc/fsc-config-8-retimer-650W.json ${DEFAULT_FSC_CONFIG}
+    elif [ "$curr_fan_table" == "$FAN_TABLE_VER_750W" ]; then
+      ln -s /etc/fsc-config-8-retimer-750W.json ${DEFAULT_FSC_CONFIG}
     elif [  "$curr_fan_table" == "$FAN_TABLE_VER_GTA" ]; then
       rm -f ${DEFAULT_FSC_CONFIG}
       vpdb_source=$(kv get vpdb_brick_source)

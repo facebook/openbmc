@@ -1,0 +1,564 @@
+From da4ec787a67f90ab4ba4a79a6841fe98beefeb60 Mon Sep 17 00:00:00 2001
+From: Ricky CX Wu <ricky.cx.wu.wiwynn@gmail.com>
+Date: Fri, 4 Oct 2024 17:07:19 +0800
+Subject: [PATCH] configurations: yosemite4: update fan control configs
+
+Gerrit:
+https://gerrit.openbmc.org/c/openbmc/entity-manager/+/74789
+https://gerrit.openbmc.org/c/openbmc/entity-manager/+/75396
+
+Update fan control configs according to the test result from thermal
+team.
+
+Change-Id: I57bea4362f3e00a50ca3aaaf6706ea5167d9489a
+Signed-off-by: Ricky CX Wu <ricky.cx.wu.wiwynn@gmail.com>
+---
+ configurations/yosemite4.json                 |  2 +-
+ ...saboard_adc_rns_12vhsc_adi_48vhsc_inf.json |  2 +-
+ ...saboard_adc_rns_12vhsc_mps_48vhsc_adi.json |  2 +-
+ ...saboard_adc_rns_12vhsc_mps_48vhsc_inf.json |  2 +-
+ ...yosemite4_medusaboard_adc_rns_hsc_adi.json |  2 +-
+ ...ard_adc_rns_isl_12vhsc_adi_48vhsc_inf.json |  2 +-
+ ...usaboard_adc_ti_12vhsc_adi_48vhsc_inf.json |  2 +-
+ ...usaboard_adc_ti_12vhsc_mps_48vhsc_adi.json |  2 +-
+ ...usaboard_adc_ti_12vhsc_mps_48vhsc_inf.json |  2 +-
+ .../yosemite4_medusaboard_adc_ti_hsc_adi.json |  2 +-
+ configurations/yosemite4_sentineldome_t1.json | 16 +++---
+ .../yosemite4_sentineldome_t1_retimer.json    | 16 +++---
+ configurations/yosemite4_sentineldome_t2.json | 20 +++----
+ .../yosemite4_sentineldome_t2_retimer.json    | 20 +++----
+ configurations/yosemite4_wailuafalls.json     | 53 +++++++++++++++++--
+ configurations/yosemite4n.json                |  2 +-
+ 16 files changed, 95 insertions(+), 52 deletions(-)
+
+diff --git a/configurations/yosemite4.json b/configurations/yosemite4.json
+index cb91db2..a0e8d2a 100644
+--- a/configurations/yosemite4.json
++++ b/configurations/yosemite4.json
+@@ -511,7 +511,7 @@
+             "DCoefficient": 0.0,
+             "FFGainCoefficient": 0.0,
+             "FFOffCoefficient": 0.0,
+-            "ICoefficient": -0.035,
++            "ICoefficient": -0.015,
+             "ILimitMax": 100,
+             "ILimitMin": -50,
+             "Inputs": [
+diff --git a/configurations/yosemite4_medusaboard_adc_rns_12vhsc_adi_48vhsc_inf.json b/configurations/yosemite4_medusaboard_adc_rns_12vhsc_adi_48vhsc_inf.json
+index b7d3b86..3022262 100644
+--- a/configurations/yosemite4_medusaboard_adc_rns_12vhsc_adi_48vhsc_inf.json
++++ b/configurations/yosemite4_medusaboard_adc_rns_12vhsc_adi_48vhsc_inf.json
+@@ -1539,7 +1539,7 @@
+                 "MEDUSA_12VDELTA3_TEMP_C"
+             ],
+             "Name": "Stepwise_MEDUSA_12VDELTA",
+-            "NegativeHysteresis": 3,
++            "NegativeHysteresis": 2,
+             "Output": [
+                 20.0,
+                 22.0,
+diff --git a/configurations/yosemite4_medusaboard_adc_rns_12vhsc_mps_48vhsc_adi.json b/configurations/yosemite4_medusaboard_adc_rns_12vhsc_mps_48vhsc_adi.json
+index e68dcb6..3c395e2 100644
+--- a/configurations/yosemite4_medusaboard_adc_rns_12vhsc_mps_48vhsc_adi.json
++++ b/configurations/yosemite4_medusaboard_adc_rns_12vhsc_mps_48vhsc_adi.json
+@@ -1849,7 +1849,7 @@
+                 "MEDUSA_12VDELTA3_TEMP_C"
+             ],
+             "Name": "Stepwise_MEDUSA_12VDELTA",
+-            "NegativeHysteresis": 3,
++            "NegativeHysteresis": 2,
+             "Output": [
+                 20.0,
+                 22.0,
+diff --git a/configurations/yosemite4_medusaboard_adc_rns_12vhsc_mps_48vhsc_inf.json b/configurations/yosemite4_medusaboard_adc_rns_12vhsc_mps_48vhsc_inf.json
+index bfa1a79..ea216ff 100644
+--- a/configurations/yosemite4_medusaboard_adc_rns_12vhsc_mps_48vhsc_inf.json
++++ b/configurations/yosemite4_medusaboard_adc_rns_12vhsc_mps_48vhsc_inf.json
+@@ -1539,7 +1539,7 @@
+                 "MEDUSA_12VDELTA3_TEMP_C"
+             ],
+             "Name": "Stepwise_MEDUSA_12VDELTA",
+-            "NegativeHysteresis": 3,
++            "NegativeHysteresis": 2,
+             "Output": [
+                 20.0,
+                 22.0,
+diff --git a/configurations/yosemite4_medusaboard_adc_rns_hsc_adi.json b/configurations/yosemite4_medusaboard_adc_rns_hsc_adi.json
+index 9637a51..2b18fca 100644
+--- a/configurations/yosemite4_medusaboard_adc_rns_hsc_adi.json
++++ b/configurations/yosemite4_medusaboard_adc_rns_hsc_adi.json
+@@ -1849,7 +1849,7 @@
+                 "MEDUSA_12VDELTA3_TEMP_C"
+             ],
+             "Name": "Stepwise_MEDUSA_12VDELTA",
+-            "NegativeHysteresis": 3,
++            "NegativeHysteresis": 2,
+             "Output": [
+                 20.0,
+                 22.0,
+diff --git a/configurations/yosemite4_medusaboard_adc_rns_isl_12vhsc_adi_48vhsc_inf.json b/configurations/yosemite4_medusaboard_adc_rns_isl_12vhsc_adi_48vhsc_inf.json
+index e212c1b..15550e8 100644
+--- a/configurations/yosemite4_medusaboard_adc_rns_isl_12vhsc_adi_48vhsc_inf.json
++++ b/configurations/yosemite4_medusaboard_adc_rns_isl_12vhsc_adi_48vhsc_inf.json
+@@ -1525,7 +1525,7 @@
+                 "MEDUSA_12VDELTA3_TEMP_C"
+             ],
+             "Name": "Stepwise_MEDUSA_12VDELTA",
+-            "NegativeHysteresis": 3,
++            "NegativeHysteresis": 2,
+             "Output": [
+                 20.0,
+                 22.0,
+diff --git a/configurations/yosemite4_medusaboard_adc_ti_12vhsc_adi_48vhsc_inf.json b/configurations/yosemite4_medusaboard_adc_ti_12vhsc_adi_48vhsc_inf.json
+index 3d5b395..e988a0a 100644
+--- a/configurations/yosemite4_medusaboard_adc_ti_12vhsc_adi_48vhsc_inf.json
++++ b/configurations/yosemite4_medusaboard_adc_ti_12vhsc_adi_48vhsc_inf.json
+@@ -1539,7 +1539,7 @@
+                 "MEDUSA_12VDELTA3_TEMP_C"
+             ],
+             "Name": "Stepwise_MEDUSA_12VDELTA",
+-            "NegativeHysteresis": 3,
++            "NegativeHysteresis": 2,
+             "Output": [
+                 20.0,
+                 22.0,
+diff --git a/configurations/yosemite4_medusaboard_adc_ti_12vhsc_mps_48vhsc_adi.json b/configurations/yosemite4_medusaboard_adc_ti_12vhsc_mps_48vhsc_adi.json
+index 4ee2d37..1ba6795 100644
+--- a/configurations/yosemite4_medusaboard_adc_ti_12vhsc_mps_48vhsc_adi.json
++++ b/configurations/yosemite4_medusaboard_adc_ti_12vhsc_mps_48vhsc_adi.json
+@@ -1849,7 +1849,7 @@
+                 "MEDUSA_12VDELTA3_TEMP_C"
+             ],
+             "Name": "Stepwise_MEDUSA_12VDELTA",
+-            "NegativeHysteresis": 3,
++            "NegativeHysteresis": 2,
+             "Output": [
+                 20.0,
+                 22.0,
+diff --git a/configurations/yosemite4_medusaboard_adc_ti_12vhsc_mps_48vhsc_inf.json b/configurations/yosemite4_medusaboard_adc_ti_12vhsc_mps_48vhsc_inf.json
+index 6ff0be0..a71934a 100644
+--- a/configurations/yosemite4_medusaboard_adc_ti_12vhsc_mps_48vhsc_inf.json
++++ b/configurations/yosemite4_medusaboard_adc_ti_12vhsc_mps_48vhsc_inf.json
+@@ -1539,7 +1539,7 @@
+                 "MEDUSA_12VDELTA3_TEMP_C"
+             ],
+             "Name": "Stepwise_MEDUSA_12VDELTA",
+-            "NegativeHysteresis": 3,
++            "NegativeHysteresis": 2,
+             "Output": [
+                 20.0,
+                 22.0,
+diff --git a/configurations/yosemite4_medusaboard_adc_ti_hsc_adi.json b/configurations/yosemite4_medusaboard_adc_ti_hsc_adi.json
+index 586d5d7..ec11960 100644
+--- a/configurations/yosemite4_medusaboard_adc_ti_hsc_adi.json
++++ b/configurations/yosemite4_medusaboard_adc_ti_hsc_adi.json
+@@ -1849,7 +1849,7 @@
+                 "MEDUSA_12VDELTA3_TEMP_C"
+             ],
+             "Name": "Stepwise_MEDUSA_12VDELTA",
+-            "NegativeHysteresis": 3,
++            "NegativeHysteresis": 2,
+             "Output": [
+                 20.0,
+                 22.0,
+diff --git a/configurations/yosemite4_sentineldome_t1.json b/configurations/yosemite4_sentineldome_t1.json
+index f68ac2e..19e9358 100644
+--- a/configurations/yosemite4_sentineldome_t1.json
++++ b/configurations/yosemite4_sentineldome_t1.json
+@@ -69,7 +69,7 @@
+             "DCoefficient": 0.0,
+             "FFGainCoefficient": 0.0,
+             "FFOffCoefficient": 0.0,
+-            "ICoefficient": -0.02,
++            "ICoefficient": -0.035,
+             "ILimitMax": 100,
+             "ILimitMin": -50,
+             "InputUnavailableAsFailed": false,
+@@ -80,7 +80,7 @@
+             "NegativeHysteresis": 2.0,
+             "OutLimitMax": 100,
+             "OutLimitMin": 0,
+-            "PCoefficient": -1.5,
++            "PCoefficient": -5.5,
+             "PositiveHysteresis": 0.0,
+             "SetPoint": 68.0,
+             "SlewNeg": 0.0,
+@@ -149,7 +149,7 @@
+                 "Calibrated_Sentinel_Dome_Slot $bus % 15 MB_FIO_TEMP_C"
+             ],
+             "Name": "Stepwise_MB_FIO_Slot $bus % 15",
+-            "NegativeHysteresis": 2,
++            "NegativeHysteresis": 1,
+             "Output": [
+                 20.0,
+                 21.0,
+@@ -162,15 +162,15 @@
+                 28.0,
+                 29.0,
+                 30.0,
+-                31.0,
+-                31.0,
++                32.0,
+                 33.0,
+                 35.0,
+                 37.0,
+                 38.0,
+                 39.0,
+                 40.0,
+-                41.0
++                41.0,
++                42.0
+             ],
+             "PositiveHysteresis": 0,
+             "Reading": [
+@@ -186,14 +186,14 @@
+                 29.0,
+                 30.0,
+                 31.0,
+-                32.0,
+                 33.0,
+                 34.0,
+                 35.0,
+                 36.0,
+                 37.0,
+                 38.0,
+-                39.0
++                39.0,
++                40.0
+             ],
+             "Type": "Stepwise",
+             "Zones": [
+diff --git a/configurations/yosemite4_sentineldome_t1_retimer.json b/configurations/yosemite4_sentineldome_t1_retimer.json
+index 3bfa366..bc2e8c8 100644
+--- a/configurations/yosemite4_sentineldome_t1_retimer.json
++++ b/configurations/yosemite4_sentineldome_t1_retimer.json
+@@ -95,7 +95,7 @@
+             "DCoefficient": 0.0,
+             "FFGainCoefficient": 0.0,
+             "FFOffCoefficient": 0.0,
+-            "ICoefficient": -0.02,
++            "ICoefficient": -0.035,
+             "ILimitMax": 100,
+             "ILimitMin": -50,
+             "InputUnavailableAsFailed": false,
+@@ -106,7 +106,7 @@
+             "NegativeHysteresis": 2.0,
+             "OutLimitMax": 100,
+             "OutLimitMin": 0,
+-            "PCoefficient": -1.5,
++            "PCoefficient": -5.5,
+             "PositiveHysteresis": 0.0,
+             "SetPoint": 68.0,
+             "SlewNeg": 0.0,
+@@ -209,7 +209,7 @@
+                 "Calibrated_Sentinel_Dome_Slot $bus % 15 MB_FIO_TEMP_C"
+             ],
+             "Name": "Stepwise_MB_FIO_Slot $bus % 15",
+-            "NegativeHysteresis": 2,
++            "NegativeHysteresis": 1,
+             "Output": [
+                 20.0,
+                 21.0,
+@@ -222,15 +222,15 @@
+                 28.0,
+                 29.0,
+                 30.0,
+-                31.0,
+-                31.0,
++                32.0,
+                 33.0,
+                 35.0,
+                 37.0,
+                 38.0,
+                 39.0,
+                 40.0,
+-                41.0
++                41.0,
++                42.0
+             ],
+             "PositiveHysteresis": 0,
+             "Reading": [
+@@ -246,14 +246,14 @@
+                 29.0,
+                 30.0,
+                 31.0,
+-                32.0,
+                 33.0,
+                 34.0,
+                 35.0,
+                 36.0,
+                 37.0,
+                 38.0,
+-                39.0
++                39.0,
++                40.0
+             ],
+             "Type": "Stepwise",
+             "Zones": [
+diff --git a/configurations/yosemite4_sentineldome_t2.json b/configurations/yosemite4_sentineldome_t2.json
+index f5064cf..f1076cc 100644
+--- a/configurations/yosemite4_sentineldome_t2.json
++++ b/configurations/yosemite4_sentineldome_t2.json
+@@ -71,7 +71,7 @@
+             "DCoefficient": 0.0,
+             "FFGainCoefficient": 0.0,
+             "FFOffCoefficient": 0.0,
+-            "ICoefficient": -0.02,
++            "ICoefficient": -0.035,
+             "ILimitMax": 100,
+             "ILimitMin": -50,
+             "InputUnavailableAsFailed": false,
+@@ -82,7 +82,7 @@
+             "NegativeHysteresis": 2.0,
+             "OutLimitMax": 100,
+             "OutLimitMin": 0,
+-            "PCoefficient": -1.5,
++            "PCoefficient": -5.5,
+             "PositiveHysteresis": 0.0,
+             "SetPoint": 68.0,
+             "SlewNeg": 0.0,
+@@ -98,7 +98,7 @@
+             "DCoefficient": 0.0,
+             "FFGainCoefficient": 0.0,
+             "FFOffCoefficient": 0.0,
+-            "ICoefficient": -0.02,
++            "ICoefficient": -0.035,
+             "ILimitMax": 100,
+             "ILimitMin": -50,
+             "InputUnavailableAsFailed": false,
+@@ -109,7 +109,7 @@
+             "NegativeHysteresis": 2.0,
+             "OutLimitMax": 100,
+             "OutLimitMin": 0,
+-            "PCoefficient": -1.5,
++            "PCoefficient": -5.5,
+             "PositiveHysteresis": 0.0,
+             "SetPoint": 68.0,
+             "SlewNeg": 0.0,
+@@ -178,7 +178,7 @@
+                 "Calibrated_Sentinel_Dome_Slot $bus % 15 MB_FIO_TEMP_C"
+             ],
+             "Name": "Stepwise_MB_FIO_Slot $bus % 15",
+-            "NegativeHysteresis": 2,
++            "NegativeHysteresis": 1,
+             "Output": [
+                 20.0,
+                 21.0,
+@@ -191,15 +191,15 @@
+                 28.0,
+                 29.0,
+                 30.0,
+-                31.0,
+-                31.0,
++                32.0,
+                 33.0,
+                 35.0,
+                 37.0,
+                 38.0,
+                 39.0,
+                 40.0,
+-                41.0
++                41.0,
++                42.0
+             ],
+             "PositiveHysteresis": 0,
+             "Reading": [
+@@ -215,14 +215,14 @@
+                 29.0,
+                 30.0,
+                 31.0,
+-                32.0,
+                 33.0,
+                 34.0,
+                 35.0,
+                 36.0,
+                 37.0,
+                 38.0,
+-                39.0
++                39.0,
++                40.0
+             ],
+             "Type": "Stepwise",
+             "Zones": [
+diff --git a/configurations/yosemite4_sentineldome_t2_retimer.json b/configurations/yosemite4_sentineldome_t2_retimer.json
+index 058a9f5..4cc0ea5 100644
+--- a/configurations/yosemite4_sentineldome_t2_retimer.json
++++ b/configurations/yosemite4_sentineldome_t2_retimer.json
+@@ -97,7 +97,7 @@
+             "DCoefficient": 0.0,
+             "FFGainCoefficient": 0.0,
+             "FFOffCoefficient": 0.0,
+-            "ICoefficient": -0.02,
++            "ICoefficient": -0.035,
+             "ILimitMax": 100,
+             "ILimitMin": -50,
+             "InputUnavailableAsFailed": false,
+@@ -108,7 +108,7 @@
+             "NegativeHysteresis": 2.0,
+             "OutLimitMax": 100,
+             "OutLimitMin": 0,
+-            "PCoefficient": -1.5,
++            "PCoefficient": -5.5,
+             "PositiveHysteresis": 0.0,
+             "SetPoint": 68.0,
+             "SlewNeg": 0.0,
+@@ -124,7 +124,7 @@
+             "DCoefficient": 0.0,
+             "FFGainCoefficient": 0.0,
+             "FFOffCoefficient": 0.0,
+-            "ICoefficient": -0.02,
++            "ICoefficient": -0.035,
+             "ILimitMax": 100,
+             "ILimitMin": -50,
+             "InputUnavailableAsFailed": false,
+@@ -135,7 +135,7 @@
+             "NegativeHysteresis": 2.0,
+             "OutLimitMax": 100,
+             "OutLimitMin": 0,
+-            "PCoefficient": -1.5,
++            "PCoefficient": -5.5,
+             "PositiveHysteresis": 0.0,
+             "SetPoint": 68.0,
+             "SlewNeg": 0.0,
+@@ -238,7 +238,7 @@
+                 "Calibrated_Sentinel_Dome_Slot $bus % 15 MB_FIO_TEMP_C"
+             ],
+             "Name": "Stepwise_MB_FIO_Slot $bus % 15",
+-            "NegativeHysteresis": 2,
++            "NegativeHysteresis": 1,
+             "Output": [
+                 20.0,
+                 21.0,
+@@ -251,15 +251,15 @@
+                 28.0,
+                 29.0,
+                 30.0,
+-                31.0,
+-                31.0,
++                32.0,
+                 33.0,
+                 35.0,
+                 37.0,
+                 38.0,
+                 39.0,
+                 40.0,
+-                41.0
++                41.0,
++                42.0
+             ],
+             "PositiveHysteresis": 0,
+             "Reading": [
+@@ -275,14 +275,14 @@
+                 29.0,
+                 30.0,
+                 31.0,
+-                32.0,
+                 33.0,
+                 34.0,
+                 35.0,
+                 36.0,
+                 37.0,
+                 38.0,
+-                39.0
++                39.0,
++                40.0
+             ],
+             "Type": "Stepwise",
+             "Zones": [
+diff --git a/configurations/yosemite4_wailuafalls.json b/configurations/yosemite4_wailuafalls.json
+index f1b566a..e956619 100644
+--- a/configurations/yosemite4_wailuafalls.json
++++ b/configurations/yosemite4_wailuafalls.json
+@@ -1,5 +1,39 @@
+ {
+     "Exposes": [
++        {
++            "CheckHysteresisWithSetpoint": true,
++            "Class": "temp",
++            "DCoefficient": 0.0,
++            "FFGainCoefficient": 0.0,
++            "FFOffCoefficient": 0.0,
++            "ICoefficient": -0.02,
++            "ILimitMax": 100,
++            "ILimitMin": -50,
++            "InputUnavailableAsFailed": false,
++            "Inputs": [
++                "Wailua_Falls_Slot $bus % 15 WF_VR_P0V8_ASIC1_TEMP_C",
++                "Wailua_Falls_Slot $bus % 15 WF_VR_PVDDQ_CD_ASIC1_TEMP_C",
++                "Wailua_Falls_Slot $bus % 15 WF_VR_P0V85_ASIC1_TEMP_C",
++                "Wailua_Falls_Slot $bus % 15 WF_VR_PVDDQ_AB_ASIC1_TEMP_C",
++                "Wailua_Falls_Slot $bus % 15 WF_VR_P0V8_ASIC2_TEMP_C",
++                "Wailua_Falls_Slot $bus % 15 WF_VR_PVDDQ_CD_ASIC2_TEMP_C",
++                "Wailua_Falls_Slot $bus % 15 WF_VR_P0V85_ASIC2_TEMP_C",
++                "Wailua_Falls_Slot $bus % 15 WF_VR_PVDDQ_AB_ASIC2_TEMP_C"
++            ],
++            "Name": "PID_WF_VR_Slot $bus % 15",
++            "NegativeHysteresis": 3.0,
++            "OutLimitMax": 100,
++            "OutLimitMin": 0,
++            "PCoefficient": -3.0,
++            "PositiveHysteresis": 0.0,
++            "SetPoint": 90.0,
++            "SlewNeg": 0.0,
++            "SlewPos": 0.0,
++            "Type": "Pid",
++            "Zones": [
++                "Zone 1"
++            ]
++        },
+         {
+             "CheckHysteresisWithSetpoint": true,
+             "Class": "temp",
+@@ -93,7 +127,6 @@
+             "Class": "temp",
+             "InputUnavailableAsFailed": false,
+             "Inputs": [
+-                "Wailua_Falls_Slot $bus % 15 WF_1OU_BOARD_INLET_TEMP_C",
+                 "Wailua_Falls_Slot $bus % 15 WF_VR_P0V8_ASIC1_TEMP_C",
+                 "Wailua_Falls_Slot $bus % 15 WF_VR_PVDDQ_CD_ASIC1_TEMP_C",
+                 "Wailua_Falls_Slot $bus % 15 WF_VR_P0V85_ASIC1_TEMP_C",
+@@ -103,14 +136,24 @@
+                 "Wailua_Falls_Slot $bus % 15 WF_VR_P0V85_ASIC2_TEMP_C",
+                 "Wailua_Falls_Slot $bus % 15 WF_VR_PVDDQ_AB_ASIC2_TEMP_C"
+             ],
+-            "Name": "Stepwise_WF_Non_Critical_Sensors_Slot $bus % 15",
+-            "NegativeHysteresis": 0,
++            "Name": "Stepwise_WF_VR_Slot $bus % 15",
++            "NegativeHysteresis": 3,
+             "Output": [
+-                20.0
++                20.0,
++                22.0,
++                24.0,
++                26.0,
++                28.0,
++                30.0
+             ],
+             "PositiveHysteresis": 0,
+             "Reading": [
+-                20.0
++                80.0,
++                81.0,
++                82.0,
++                83.0,
++                84.0,
++                85.0
+             ],
+             "Type": "Stepwise",
+             "Zones": [
+diff --git a/configurations/yosemite4n.json b/configurations/yosemite4n.json
+index fa45ff6..2e10ef0 100644
+--- a/configurations/yosemite4n.json
++++ b/configurations/yosemite4n.json
+@@ -485,7 +485,7 @@
+             "DCoefficient": 0.0,
+             "FFGainCoefficient": 0.0,
+             "FFOffCoefficient": 0.0,
+-            "ICoefficient": -0.035,
++            "ICoefficient": -0.015,
+             "ILimitMax": 100,
+             "ILimitMin": -50,
+             "Inputs": [
+-- 
+2.25.1
+

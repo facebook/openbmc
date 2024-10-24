@@ -1105,7 +1105,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
   const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "DVT_1C", "PVT", "MP"};
   const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP", "MP2", "MP2"};
   const char *rev_hd[] = {"POC", "EVT", "EVT", "EVT", "DVT", "DVT", "DVT", "DVT", "PVT"};
-  const char *rev_ji[] = {"POC", "EVT", "EVT2", "DVT", "PVT", "PVT2", "MP"};
+  const char *rev_ji[] = {"POC", "EVT", "EVT2", "DVT", "PVT", "PVT2", "PVT2.5", "MP"};
   const char *rev_op[] = {"EVT", "DVT", "PVT", "MP"};
   const char *rev_gl[] = {"POC", "EVT", "RSVD", "DVT", "RSVD", "PVT", "MP"};
   const char **board_type = rev_sb;
@@ -1316,6 +1316,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
         break;
       case JI_REV_PVT:
       case JI_REV_PVT2:
+      case JI_REV_PVT2_5:
         fw_rev = FW_REV_PVT;
         break;
       case JI_REV_MP:

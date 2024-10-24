@@ -28,7 +28,7 @@ dump_mb_cpld_reg() {
 
 dump_swb_cpld_reg() {
   echo "Dump SWB CPLD reg:" >> $DUMP_FILE
-  $I2C_CMD -y 32 w1@0x13 0x00 r256>> $DUMP_FILE 2>&1
+  $I2C_CMD -y 32 w1@0x13 0x00 r256 >> $DUMP_FILE 2>&1
 }
 
 parser_hgx_fpga_reg() {
@@ -149,11 +149,39 @@ dump_log() {
   echo "End of to dump NVDIA FPGA Register"
 }
 
+dump_ubb_log() {
+  echo "Start to dump UBB Register"
+  DUMP_FILE="/tmp/gpu_overt.log"
+
+  TIME=$(date +"%Y%m%d-%H:%M:%S")
+  LOG_DIR="/mnt/data/gpu_overt"
+  LOG_ARCHIVE="$LOG_DIR/${TIME}_gpu_overt.tar.gz"
+
+  dump_mb_cpld_reg
+  dump_swb_cpld_reg
+
+  echo high > /tmp/gpionames/NV_DUMP_END/direction
+  sleep 1
+  echo low > /tmp/gpionames/NV_DUMP_END/direction
+
+  if [ ! -d "$LOG_DIR" ]; then
+    mkdir -p "$LOG_DIR"
+  fi
+
+  tar -zcvf "$LOG_ARCHIVE" -C "$(dirname "$DUMP_FILE")" "$(basename "$DUMP_FILE")"
+  logger -t "gpiod" -p daemon.crit "GPU Overt dump is generated at $LOG_ARCHIVE"
+}
+
 state=`$KV_CMD get "hgx_dump_stat"`
 if [ "$state" == "Ongoing" ]; then
   exit 0
 else
   $KV_CMD set "hgx_dump_stat" "Ongoing"
-  dump_log
+  gpu_config=$(kv get gpu_config persistent)
+  if [ "$gpu_config" == "hgx" ]; then
+    dump_log
+  elif [ "$gpu_config" == "ubb" ]; then
+    dump_ubb_log
+  fi
   $KV_CMD set "hgx_dump_stat" "Done"
 fi

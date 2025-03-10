@@ -44,7 +44,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Download flashy build
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4.1.7
         with:
           name: flashy
           path: tools/flashy/build

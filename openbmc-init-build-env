@@ -26,6 +26,7 @@ PLAT_DISTRO_OVERRIDES=(
 # master rolling-release platforms
   meta-bletchley:lf-master
   meta-catalina:lf-master
+  meta-clemente:lf-master
   meta-clearcreek:lf-master
   meta-elbert:lf-master
   meta-fbal:lf-master

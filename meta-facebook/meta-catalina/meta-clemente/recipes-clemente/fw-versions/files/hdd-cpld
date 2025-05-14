@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+version=$(fw-util hdd --version cpld | awk '{print $NF}')
+echo "version: $version"
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    /xyz/openbmc_project/software/chassis/Clemente_HDD_cpld \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

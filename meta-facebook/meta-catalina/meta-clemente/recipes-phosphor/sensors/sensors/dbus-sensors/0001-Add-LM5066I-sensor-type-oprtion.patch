@@ -1,0 +1,23 @@
+From d8f7a8c218065149469d031dd0a7c9e151476870 Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Wed, 22 Jan 2025 00:13:10 +0800
+Subject: [PATCH] Add LM5066I sensor type oprtion.
+
+---
+ src/psu/PSUSensorMain.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index e64b1cc..957bf6c 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -96,6 +96,7 @@ static const I2CDeviceTypeMap sensorTypes{
+     {"ISL69243", I2CDeviceType{"isl69243", true}},
+     {"ISL69260", I2CDeviceType{"isl69260", true}},
+     {"LM25066", I2CDeviceType{"lm25066", true}},
++    {"LM5066I", I2CDeviceType{"lm5066I", true}},
+     {"LTC2945", I2CDeviceType{"ltc2945", true}},
+     {"LTC4286", I2CDeviceType{"ltc4286", true}},
+     {"LTC4287", I2CDeviceType{"ltc4287", true}},
+--
+2.43.0

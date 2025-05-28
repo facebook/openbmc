@@ -1,10 +1,11 @@
 {
-    "version": "inspirationpint_MI350X_v4",
+    "version": "inspirationpint_MI350X_v5",
     "pwm_transition_value": 100,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
     "fan_recovery_time": 2,
     "sensor_filter_all": true,
+    "ramp_rate": 20,
     "standby_fan_fail": {
       "fan_pwm": 20
     },
@@ -76,7 +77,7 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [50, 55],
+          [55, 25],
           [65, 60],
           [70, 70],
           [74, 80],
@@ -230,7 +231,6 @@
         "data": [
           [55, 25],
           [58, 45],
-          [60, 55],
           [68, 90]
         ]
       },
@@ -259,8 +259,7 @@
           [67, 40],
           [70, 45],
           [73, 50],
-          [75, 58],
-          [96, 100]
+          [75, 58]
         ]
       },
       "gpu_tray_gpu_pid": {
@@ -325,7 +324,7 @@
         "type": "pid",
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
-        "setpoint": 97,
+        "setpoint": 106,
         "kp": -3.5,
         "ki": -0.035,
         "kd": 0

@@ -15,8 +15,8 @@ import time
 import json
 import datetime
 import hashlib
+import subprocess
 
-from distutils import spawn
 from io import BytesIO
 
 from pyfdt import pyfdt
@@ -189,7 +189,7 @@ def sign_firmware(dts):
             elif args.keyname:
                 cmd += ['-N', 'FB-HSM']
             print(" ".join(cmd))
-            spawn.spawn(cmd)
+            subprocess.check_call(cmd)
             info = os.stat(tmp2.name)
             if info.st_size <= 0:
                 print("mkimage failed")
@@ -217,7 +217,7 @@ def sign_os(dts):
             elif args.keyname:
                 cmd += ['-N', 'FB-HSM']
             print(" ".join(cmd))
-            spawn.spawn(cmd)
+            subprocess.check_call(cmd)
             info = os.stat(tmp2.name)
             if info.st_size <= 0:
                 print("mkimage failed")

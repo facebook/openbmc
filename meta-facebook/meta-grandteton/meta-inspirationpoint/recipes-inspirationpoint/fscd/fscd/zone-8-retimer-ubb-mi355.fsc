@@ -141,24 +141,24 @@ max([
 
   gpu_tray_hbm_linear(
     max([
-      all:ubb_ubb_oam_0_dram_temp_c,
-      all:ubb_ubb_oam_1_dram_temp_c,
-      all:ubb_ubb_oam_2_dram_temp_c,
-      all:ubb_ubb_oam_3_dram_temp_c,
-      all:ubb_ubb_oam_4_dram_temp_c,
-      all:ubb_ubb_oam_5_dram_temp_c,
-      all:ubb_ubb_oam_6_dram_temp_c,
-      all:ubb_ubb_oam_7_dram_temp_c])) +
+      all:ubb_ubb_oam_0_memory_temp_c,
+      all:ubb_ubb_oam_1_memory_temp_c,
+      all:ubb_ubb_oam_2_memory_temp_c,
+      all:ubb_ubb_oam_3_memory_temp_c,
+      all:ubb_ubb_oam_4_memory_temp_c,
+      all:ubb_ubb_oam_5_memory_temp_c,
+      all:ubb_ubb_oam_6_memory_temp_c,
+      all:ubb_ubb_oam_7_memory_temp_c])) +
   gpu_tray_hbm_pid(
     max([
-      all:ubb_ubb_oam_0_dram_temp_c,
-      all:ubb_ubb_oam_1_dram_temp_c,
-      all:ubb_ubb_oam_2_dram_temp_c,
-      all:ubb_ubb_oam_3_dram_temp_c,
-      all:ubb_ubb_oam_4_dram_temp_c,
-      all:ubb_ubb_oam_5_dram_temp_c,
-      all:ubb_ubb_oam_6_dram_temp_c,
-      all:ubb_ubb_oam_7_dram_temp_c])),
+      all:ubb_ubb_oam_0_memory_temp_c,
+      all:ubb_ubb_oam_1_memory_temp_c,
+      all:ubb_ubb_oam_2_memory_temp_c,
+      all:ubb_ubb_oam_3_memory_temp_c,
+      all:ubb_ubb_oam_4_memory_temp_c,
+      all:ubb_ubb_oam_5_memory_temp_c,
+      all:ubb_ubb_oam_6_memory_temp_c,
+      all:ubb_ubb_oam_7_memory_temp_c])),
 
   gpu_tray_hsc_linear(
     max([

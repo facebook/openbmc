@@ -16,7 +16,8 @@ import tempfile
 
 from Crypto.PublicKey import RSA
 from Crypto.Util import number
-from distutils import spawn
+from shutil import which
+import subprocess
 
 def genWords(bits, num):
     words = []
@@ -63,7 +64,7 @@ def genKey(name, filename):
 
 def decompileSource(filename):
     with tempfile.NamedTemporaryFile() as tmp:
-        spawn.spawn(
+        subprocess.check_call(
             [dtc, "-I", "dtb", "-O", "dts", "-o", tmp.name, filename])
         with open(tmp.name) as fh:
             source = fh.read()
@@ -73,7 +74,7 @@ def compileSource(source, output, s=1):
     with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(source.encode("utf-8"))
         tmp.flush()
-        spawn.spawn(
+        subprocess.check_call(
             [dtc, "-I", "dts", "-O", "dtb", "-o", output, tmp.name])
     print("Wrote certificate store DTB (%d keys): %s" % (s, output))
 
@@ -169,8 +170,8 @@ if __name__ == '__main__':
         print("Cannot find key directory: %s" % args.keys)
         sys.exit(1)
 
-    dtc = spawn.find_executable('dtc')
-    if dtc == '':
+    dtc = which('dtc')
+    if dtc is None:
         print("Cannot find 'dtc' in your path")
         sys.exit(1)
 

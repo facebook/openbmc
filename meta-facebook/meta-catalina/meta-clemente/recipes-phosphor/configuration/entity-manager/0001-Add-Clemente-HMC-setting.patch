@@ -1,0 +1,854 @@
+From f8555b8751159dacf7212e55b670cefbe79d7714 Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Wed, 28 May 2025 15:55:01 +0800
+Subject: [PATCH] Add Clemente HMC setting
+
+---
+ configurations/nvidia_hmc.json | 826 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 825 insertions(+), 1 deletion(-)
+
+diff --git a/configurations/nvidia_hmc.json b/configurations/nvidia_hmc.json
+index f541408..17d5400 100644
+--- a/configurations/nvidia_hmc.json
++++ b/configurations/nvidia_hmc.json
+@@ -6,6 +6,830 @@
+             "Name": "NVIDIA HMC FRU",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "HGX_GPU_0_DRAM_0_Temp_0",
++            "OffsetValue": 25,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.2,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 110.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.14,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 107.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.1,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 105.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "HGX_GPU_1_DRAM_0_Temp_0",
++            "OffsetValue": 29,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.2,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 110.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.14,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 107.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.1,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 105.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 1023,
++            "MinValue": 0,
++            "Name": "HGX_GPU_0_Power_0",
++            "OffsetValue": 75,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Power",
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 1023,
++            "MinValue": 0,
++            "Name": "HGX_GPU_1_Power_0",
++            "OffsetValue": 79,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Power",
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "HGX_GPU_0_TEMP_1",
++            "OffsetValue": 108,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.001,
++                    "Name": "lower non critical",
++                    "Severity": 0,
++                    "Value": -0.05
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.08,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": -4.0
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Name": "lower non recoverable",
++                    "Severity": 4,
++                    "Value": -5.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "HGX_GPU_1_TEMP_1",
++            "OffsetValue": 112,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.001,
++                    "Name": "lower non critical",
++                    "Severity": 0,
++                    "Value": -0.05
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.08,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": -4.0
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Name": "lower non recoverable",
++                    "Severity": 4,
++                    "Value": -5.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 4294970000.0,
++            "MinValue": 0,
++            "Name": "HGX_GPU_0_Energy_0",
++            "OffsetValue": 141,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Energy",
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 4294970000.0,
++            "MinValue": 0,
++            "Name": "HGX_GPU_1_Energy_0",
++            "OffsetValue": 149,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Energy",
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 1023,
++            "MinValue": 0,
++            "Name": "HGX_GPU_0_DRAM_0_Power_0",
++            "OffsetValue": 206,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Power",
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 1023,
++            "MinValue": 0,
++            "Name": "HGX_GPU_1_DRAM_0_Power_0",
++            "OffsetValue": 210,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Power",
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "HMC_Temperature_Sensor",
++            "OffsetValue": 240,
++            "PollRate": 1,
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.9,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 95.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.86,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 93.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.8,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 90.0
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.001,
++                    "Name": "lower non critical",
++                    "Severity": 0,
++                    "Value": -0.05
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "HGX_GPU_0_TEMP_0",
++            "OffsetValue": 288,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.74,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 87.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.68,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 84.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.64,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 82.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "HGX_GPU_1_TEMP_0",
++            "OffsetValue": 292,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.74,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 87.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.68,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 84.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.64,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 82.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "ProcessorModule_0_Inlet_Temp_0",
++            "OffsetValue": 320,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.1,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 65.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.06,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 63.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 60.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "ProcessorModule_0_Inlet_Temp_1",
++            "OffsetValue": 324,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.1,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 65.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.06,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 63.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 60.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "ProcessorModule_0_Exhaust_Temp_0",
++            "OffsetValue": 328,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.3,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 75.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.26,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 73.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.2,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "ProcessorModule_1_Inlet_Temp_0",
++            "OffsetValue": 336,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.1,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 65.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.06,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 63.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 60.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "ProcessorModule_1_Inlet_Temp_1",
++            "OffsetValue": 340,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.1,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 65.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.06,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 63.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 60.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -128,
++            "Name": "ProcessorModule_1_Exhaust_Temp_0",
++            "OffsetValue": 344,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.3,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 75.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.26,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 73.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.2,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "Raw"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 100000,
++            "MinValue": 0,
++            "Name": "ProcessorModule_0_CPU_0_Energy_0",
++            "OffsetValue": 640,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Energy",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 500,
++            "MinValue": 0,
++            "Name": "ProcessorModule_0_CPU_0_Power_0",
++            "OffsetValue": 648,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Power",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 100,
++            "MinValue": 0,
++            "Name": "ProcessorModule_0_Vreg_0_CpuPower_0",
++            "OffsetValue": 656,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Voltage",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 10,
++            "MinValue": 0,
++            "Name": "ProcessorModule_0_Vreg_0_SocPower_0",
++            "OffsetValue": 664,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Voltage",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -127,
++            "Name": "ProcessorModule_0_CPU_0_TempAvg_0",
++            "OffsetValue": 672,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.8,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 90.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -127,
++            "Name": "ProcessorModule_0_CPU_0_TempLimit_0",
++            "OffsetValue": 680,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.001,
++                    "Name": "lower non critical",
++                    "Severity": 0,
++                    "Value": -0.05
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.08,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": -4.0
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Name": "lower non recoverable",
++                    "Severity": 4,
++                    "Value": -5.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 100,
++            "MinValue": 0,
++            "Name": "ProcessorModule_0_Vreg_0_CpuVoltage_0",
++            "OffsetValue": 688,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Voltage",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 100,
++            "MinValue": 0,
++            "Name": "ProcessorModule_0_Vreg_0_SocVoltage_0",
++            "OffsetValue": 696,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Voltage",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 100000,
++            "MinValue": 0,
++            "Name": "ProcessorModule_1_CPU_0_Energy_0",
++            "OffsetValue": 896,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Energy",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 500,
++            "MinValue": 0,
++            "Name": "ProcessorModule_1_CPU_0_Power_0",
++            "OffsetValue": 904,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Power",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 100,
++            "MinValue": 0,
++            "Name": "ProcessorModule_1_Vreg_0_CpuPower_0",
++            "OffsetValue": 912,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Voltage",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 10,
++            "MinValue": 0,
++            "Name": "ProcessorModule_1_Vreg_0_SocPower_0",
++            "OffsetValue": 920,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Voltage",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -127,
++            "Name": "ProcessorModule_1_CPU_0_TempAvg_0",
++            "OffsetValue": 928,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.8,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 90.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 127,
++            "MinValue": -127,
++            "Name": "ProcessorModule_1_CPU_0_TempLimit_0",
++            "OffsetValue": 936,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Temperature",
++            "Thresholds": [
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.001,
++                    "Name": "lower non critical",
++                    "Severity": 0,
++                    "Value": -0.05
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.08,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": -4.0
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Name": "lower non recoverable",
++                    "Severity": 4,
++                    "Value": -5.0
++                }
++            ],
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 100,
++            "MinValue": 0,
++            "Name": "ProcessorModule_1_Vreg_0_CpuVoltage_0",
++            "OffsetValue": 944,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Voltage",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
++        {
++            "Address": "0x4f",
++            "Bus": 13,
++            "MaxValue": 100,
++            "MinValue": 0,
++            "Name": "ProcessorModule_1_Vreg_0_SocVoltage_0",
++            "OffsetValue": 952,
++            "PollRate": 1,
++            "PowerState": "On",
++            "SensorType": "Voltage",
++            "Type": "Satellite",
++            "ValueType": "PLDM"
++        },
+         {
+             "AuthType": "None",
+             "Hostname": "172.31.13.251",
+@@ -30,4 +854,4 @@
+     "xyz.openbmc_project.Inventory.Decorator.Revision": {
+         "Version": "$PRODUCT_VERSION"
+     }
+-}
++}
+\ No newline at end of file
+-- 
+2.43.0
+

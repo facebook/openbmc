@@ -64,10 +64,10 @@ def main():
     # In order to satisy/unsatisfy conditions in setup_board_gpio()
     # modify the registers. After DVT, GPIO mapping does not change.
     set_register()
-    if version is 4:
+    if version == 4:
         print("Using GPIO EVTA table ", end="")
         setup_board_gpio(soc_gpio_table, board_gpio_table_v1)
-    elif version is 0:
+    elif version == 0:
         print("Using GPIO EVTB table ", end="")
         setup_board_gpio(soc_gpio_table, board_gpio_table_v2)
     elif version in [1, 3]:

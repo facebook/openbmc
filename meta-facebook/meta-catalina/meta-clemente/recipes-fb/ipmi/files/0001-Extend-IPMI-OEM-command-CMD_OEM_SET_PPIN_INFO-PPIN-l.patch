@@ -1,0 +1,23 @@
+From b3e1e236bbd4480ebea750bb978aeb51009f581a Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Wed, 9 Apr 2025 16:35:40 +0800
+Subject: [PATCH] Extend IPMI OEM command CMD_OEM_SET_PPIN_INFO PPIN length
+ from 8 bytes to 16 bytes.
+
+---
+ include/oemcommands.hpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/oemcommands.hpp b/include/oemcommands.hpp
+index aedd592..ea9f6e8 100644
+--- a/include/oemcommands.hpp
++++ b/include/oemcommands.hpp
+@@ -96,7 +96,7 @@ enum fb_oem_qc_cmds
+ #define MAX_BUF 50
+ 
+ #define BMC_POS 0
+-#define SIZE_CPU_PPIN 8
++#define SIZE_CPU_PPIN 16
+ #define SIZE_BOOT_ORDER 6
+ #define BOOT_MODE_UEFI 0x01
+ #define BOOT_MODE_CMOS_CLR 0x02

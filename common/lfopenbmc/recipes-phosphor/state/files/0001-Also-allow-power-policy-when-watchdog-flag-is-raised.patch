@@ -1,4 +1,4 @@
-From 7cffaf43305671adf780ab977325c952889e4e06 Mon Sep 17 00:00:00 2001
+From 02dca7209a1cd5f31d6daf0850a7f0b0e2ea6abf Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 3 Apr 2024 15:13:25 +0800
 Subject: [PATCH 1/2] Also allow power policy when watchdog flag is raised
@@ -9,19 +9,19 @@ Change-Id: I333abc0313a6560ce509c9481e9b92e592f5ad80
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/discover_system_state.cpp b/discover_system_state.cpp
-index f6542ef..1f6974d 100644
+index 2153e7c..b837088 100644
 --- a/discover_system_state.cpp
 +++ b/discover_system_state.cpp
-@@ -99,8 +99,7 @@ int main(int argc, char** argv)
-     else if (bmcRebootCause == BMC::RebootCause::Watchdog)
+@@ -114,8 +114,7 @@ int main(int argc, char** argv)
+     if (bmcRebootCause == BMC::RebootCause::Software)
      {
          info(
 -            "BMC was reset due to cold reset, no power restore policy will be run");
 -        return 0;
 +            "The LastbootCause is a watchdog. Power policy execution is currently allowed");
      }
- 
-     /* The logic here is to first check the one-time PowerRestorePolicy setting.
+ #endif // RUN_APR_ON_SOFTWARE_RESET
+ #endif
 -- 
-2.45.3
+2.47.1
 

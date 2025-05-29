@@ -1,7 +1,7 @@
-From e0581a6ea74179d41399431fde558c746967b633 Mon Sep 17 00:00:00 2001
+From c1a255d39ef08f5b3ce96d4af9bf2e6bacab5189 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 14:27:45 +0800
-Subject: [PATCH 08/11] psusensors: fixed multiple power state issue
+Subject: [PATCH 7/7] psusensors: fixed multiple power state issue
 
 Link:https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/77391
 
@@ -17,10 +17,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 1d56a77..c029ea6 100644
+index 35dadd4..595306a 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -843,6 +843,10 @@ static void createSensorsCallback(
+@@ -858,6 +858,10 @@ static void createSensorsCallback(
                                                      findPowerState->second);
                  setReadState(powerState, readState);
              }
@@ -32,5 +32,5 @@ index 1d56a77..c029ea6 100644
              {
                  lg2::error("Min must be less than Max");
 -- 
-2.45.3
+2.47.1
 

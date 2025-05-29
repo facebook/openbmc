@@ -1,4 +1,4 @@
-From a3a1c87a5d59b54d7fafeeb849bbb117918c4f0f Mon Sep 17 00:00:00 2001
+From 89c8630d57bc34ecc6928ba182cc603fd6670668 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:30:01 +0800
 Subject: [PATCH] Add retry mechanism with configurable Meson option
@@ -13,10 +13,10 @@ the number of retries to be configured via a Meson option.
  4 files changed, 52 insertions(+), 24 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 02c13dd..dcf1f28 100644
+index fee3005..1863c17 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -67,6 +67,8 @@ conf.set(
+@@ -73,6 +73,8 @@ conf.set(
      get_option('check-fwupdate-before-do-transition').allowed(),
  )
  
@@ -26,12 +26,12 @@ index 02c13dd..dcf1f28 100644
  
  if (get_option('warm-reboot').allowed())
 diff --git a/meson.options b/meson.options
-index f0221ea..d7d5bc4 100644
+index f7a3efc..7985b17 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -160,3 +160,10 @@ option(
-     value: 'enabled',
-     description: 'Install the obmcutil script',
+@@ -181,3 +181,10 @@ option(
+     value: true,
+     description: 'run APR when BMC has been rebooted due to software request',
  )
 +
 +option(
@@ -165,5 +165,5 @@ index a4ec5cc..f849de8 100644
  
  } // namespace settings
 -- 
-2.45.3
+2.47.1
 

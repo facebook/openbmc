@@ -1,7 +1,7 @@
-From fa3cc5415f5b3e433a4b715244c9aaaeef933df4 Mon Sep 17 00:00:00 2001
+From 502aaffc0c2fbc16835c827a2c05ab1c6640545a Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Mon, 17 Mar 2025 02:25:46 +0000
-Subject: [PATCH 10/11] meta-facebook: yosemite4: Disable in2_alarm event
+Subject: [PATCH 202/204] meta-facebook: yosemite4: Disable in2_alarm event
 
 ---
  meson.build               | 4 ++++
@@ -25,10 +25,10 @@ index 3aeff4c..ab277c7 100644
  # i2c-tools doesn't ship a pkg-config file for libi2c
  i2c = meson.get_compiler('cpp').find_library('i2c')
 diff --git a/meson.options b/meson.options
-index c9405ce..c4c21a7 100644
+index e97485c..bd11768 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -89,3 +89,9 @@ option(
+@@ -101,3 +101,9 @@ option(
      value: false,
      description: 'Disable host power monitoring for hwmon-temp.',
  )
@@ -39,10 +39,10 @@ index c9405ce..c4c21a7 100644
 +    description: 'Disable in2_alarm event.',
 +)
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index c029ea6..c87e121 100644
+index 79af427..f5e6acf 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -1171,7 +1171,9 @@ void propertyInitialize()
+@@ -1187,7 +1187,9 @@ void propertyInitialize()
                         {"Failure", {"crit_alarm", "lcrit_alarm"}}};
  
      eventMatch = {{"PredictiveFailure", {"power1_alarm"}},
@@ -53,5 +53,5 @@ index c029ea6..c87e121 100644
                    {"ConfigureError", {"in1_fault"}}};
  
 -- 
-2.45.3
+2.47.1
 

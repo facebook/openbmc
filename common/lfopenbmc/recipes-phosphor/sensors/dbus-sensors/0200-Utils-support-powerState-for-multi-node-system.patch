@@ -1,7 +1,7 @@
-From 8e5484894c94636ad1d25763bcf32f5649810e78 Mon Sep 17 00:00:00 2001
+From 284878120f7d19028cf6d3b55e05e5ce1fdfade9 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
-Subject: [PATCH 05/11] Utils: support powerState for multi-node system
+Subject: [PATCH 200/204] Utils: support powerState for multi-node system
 
 The current code of dbus-sensors only get powerState values for Chassis0
 and Host0 which cannot be used for the system with multiple server
@@ -62,7 +62,7 @@ Change-Id: I49ede1e6276acdbee2f8a9807c738be7970beaf9
  7 files changed, 353 insertions(+), 185 deletions(-)
 
 diff --git a/src/Utils.cpp b/src/Utils.cpp
-index 202e394..d47897a 100644
+index 52f9394..3e20529 100644
 --- a/src/Utils.cpp
 +++ b/src/Utils.cpp
 @@ -41,6 +41,7 @@
@@ -647,10 +647,10 @@ index 202e394..d47897a 100644
  
  void setupPowerMatch(const std::shared_ptr<sdbusplus::asio::connection>& conn)
 diff --git a/src/Utils.hpp b/src/Utils.hpp
-index 8cfdddd..14ad3ff 100644
+index 037c127..ac0e1ae 100644
 --- a/src/Utils.hpp
 +++ b/src/Utils.hpp
-@@ -55,6 +55,7 @@ using ManagedObjectType =
+@@ -56,6 +56,7 @@ using ManagedObjectType =
  using GetSubTreeType = std::vector<
      std::pair<std::string,
                std::vector<std::pair<std::string, std::vector<std::string>>>>>;
@@ -658,7 +658,7 @@ index 8cfdddd..14ad3ff 100644
  using Association = std::tuple<std::string, std::string, std::string>;
  
  inline std::string escapeName(const std::string& sensorName)
-@@ -79,9 +80,9 @@ bool findFiles(const std::filesystem::path& dirPath,
+@@ -80,9 +81,9 @@ bool findFiles(const std::filesystem::path& dirPath,
                 std::string_view matchString,
                 std::vector<std::filesystem::path>& foundPaths,
                 int symlinkDepth = 1);
@@ -671,7 +671,7 @@ index 8cfdddd..14ad3ff 100644
  void setupPowerMatchCallback(
      const std::shared_ptr<sdbusplus::asio::connection>& conn,
      std::function<void(PowerState type, bool state)>&& callback);
-@@ -99,7 +100,7 @@ void createAssociation(
+@@ -100,7 +101,7 @@ void createAssociation(
  void findLimits(std::pair<double, double>& limits,
                  const SensorBaseConfiguration* data);
  
@@ -680,7 +680,7 @@ index 8cfdddd..14ad3ff 100644
  
  constexpr const char* configInterfacePrefix =
      "xyz.openbmc_project.Configuration.";
-@@ -115,6 +116,7 @@ constexpr const char* busName = "xyz.openbmc_project.ObjectMapper";
+@@ -116,6 +117,7 @@ constexpr const char* busName = "xyz.openbmc_project.ObjectMapper";
  constexpr const char* path = "/xyz/openbmc_project/object_mapper";
  constexpr const char* interface = "xyz.openbmc_project.ObjectMapper";
  constexpr const char* subtree = "GetSubTree";
@@ -688,7 +688,7 @@ index 8cfdddd..14ad3ff 100644
  } // namespace mapper
  
  namespace properties
-@@ -126,27 +128,27 @@ constexpr const char* set = "Set";
+@@ -127,27 +129,27 @@ constexpr const char* set = "Set";
  
  namespace power
  {
@@ -722,7 +722,7 @@ index 8cfdddd..14ad3ff 100644
  const static constexpr char* property = "OperatingSystemState";
  } // namespace post
  
-@@ -216,6 +218,19 @@ inline PowerState getPowerState(const SensorBaseConfigMap& cfg)
+@@ -217,6 +219,19 @@ inline PowerState getPowerState(const SensorBaseConfigMap& cfg)
      return state;
  }
  
@@ -742,7 +742,7 @@ index 8cfdddd..14ad3ff 100644
  inline float getPollRate(const SensorBaseConfigMap& cfg, float dflt)
  {
      float pollRate = dflt;
-@@ -258,7 +273,8 @@ struct GetSensorConfiguration :
+@@ -259,7 +274,8 @@ struct GetSensorConfiguration :
      GetSensorConfiguration(
          std::shared_ptr<sdbusplus::asio::connection> connection,
          std::function<void(ManagedObjectType& resp)>&& callbackFunc) :
@@ -844,10 +844,10 @@ index c4f3a38..127145c 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 3b39759..ff469de 100644
+index 595306a..79af427 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -525,6 +525,7 @@ static void createSensorsCallback(
+@@ -551,6 +551,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -855,7 +855,7 @@ index 3b39759..ff469de 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -988,7 +989,8 @@ static void createSensorsCallback(
+@@ -1034,7 +1035,8 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -865,7 +865,7 @@ index 3b39759..ff469de 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  if constexpr (debug)
-@@ -1166,7 +1168,11 @@ static void powerStateChanged(
+@@ -1212,7 +1214,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -879,7 +879,7 @@ index 3b39759..ff469de 100644
          }
      }
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index 07d70ec..c590ad1 100644
+index c433e45..2c55e11 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
 @@ -72,7 +72,7 @@ struct Sensor
@@ -900,7 +900,7 @@ index 07d70ec..c590ad1 100644
          instrumentation(enableInstrumentation
                              ? std::make_unique<SensorInstrumentation>()
                              : nullptr)
-@@ -114,6 +114,7 @@ struct Sensor
+@@ -115,6 +115,7 @@ struct Sensor
      double hysteresisPublish;
      std::shared_ptr<sdbusplus::asio::connection> dbusConnection;
      PowerState readState;
@@ -908,7 +908,7 @@ index 07d70ec..c590ad1 100644
      size_t errCount{0};
      std::unique_ptr<SensorInstrumentation> instrumentation;
  
-@@ -436,7 +437,7 @@ struct Sensor
+@@ -438,7 +439,7 @@ struct Sensor
  
      bool readingStateGood() const
      {
@@ -918,5 +918,5 @@ index 07d70ec..c590ad1 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.45.3
+2.47.1
 

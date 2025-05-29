@@ -1,4 +1,4 @@
-From c867bb7ef743fa962836dc206eef91ef10aaed8c Mon Sep 17 00:00:00 2001
+From 825a91f5838f5d481d9dad2d7924af0f7f1f4eb9 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 4 Feb 2025 16:41:36 +0800
 Subject: [PATCH 102/105] dbus-sensors: Add SatelliteSensor support

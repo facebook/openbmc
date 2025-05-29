@@ -1,4 +1,4 @@
-From 000bdb93dce2290e6f898681b9ee820d75664dde Mon Sep 17 00:00:00 2001
+From b603addf8ce296fc3aaece4ad4bc9e599fa4abb4 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 18 Jun 2024 23:44:55 +0800
 Subject: [PATCH 101/105] dbus-sensors: setup SatelliteSensor meson build
@@ -28,12 +28,12 @@ index d1f1207..8e49f6d 100644
  subdir('service_files')
  subdir('src')
 diff --git a/meson.options b/meson.options
-index de733c9..cf69fe5 100644
+index 306a953..9a85b8a 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -83,3 +83,9 @@ option(
-     value: 'disabled',
-     description: 'Enables Sensor override feature without any check.',
+@@ -95,3 +95,9 @@ option(
+     value: 'enabled',
+     description: 'Enable Liquid Leak Detector.',
  )
 +option(
 +    'satellite',
@@ -41,32 +41,30 @@ index de733c9..cf69fe5 100644
 +    value: 'disabled',
 +    description: 'Enable Satellite sensor.',
 +)
-\ No newline at end of file
 diff --git a/service_files/meson.build b/service_files/meson.build
-index c3b23e0..a1e475d 100644
+index 55ddb4c..074c520 100644
 --- a/service_files/meson.build
 +++ b/service_files/meson.build
-@@ -17,6 +17,7 @@ unit_files = [
-     ['nvme', 'xyz.openbmc_project.nvmesensor.service'],
+@@ -19,6 +19,7 @@ unit_files = [
      ['psu', 'xyz.openbmc_project.psusensor.service'],
      ['external', 'xyz.openbmc_project.externalsensor.service'],
+     ['leakdetector', 'xyz.openbmc_project.leakdetector.service'],
 +    ['satellite', 'xyz.openbmc_project.satellitesensor.service'],
  ]
  
  fs = import('fs')
 diff --git a/src/meson.build b/src/meson.build
-index ca995e5..034826d 100644
+index 2371d56..8b7edb5 100644
 --- a/src/meson.build
 +++ b/src/meson.build
-@@ -118,3 +118,7 @@ endif
- if get_option('tests').allowed()
-     subdir('tests')
+@@ -152,3 +152,7 @@ endif
+ if get_option('leakdetector').allowed()
+     subdir('leakdetector')
  endif
 +
 +if get_option('satellite').enabled()
 +    subdir('satellite')
 +endif
-\ No newline at end of file
 -- 
 2.47.1
 

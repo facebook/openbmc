@@ -88,7 +88,7 @@ function init_class1_dev() {
   i2c_device_add 11 0x54 24c128
 
   local medusa_addr=""
-  local chip=""
+  local chip="unknown"
   local driver=""
   local load_driver=false
 
@@ -147,6 +147,11 @@ function init_class1_dev() {
         /usr/sbin/i2cset -f -y $MEDUSA_HSC_BUS $LTC4282_ADDR $LTC4282_ADJUST_REG "$set_12bit_mode"
       fi
     fi
+  fi
+
+  if [ "$chip" == "unknown" ]; then
+    logger -t "setup-dev.sh" -p daemon.crit "WARNING: Can't Read MEDUSA HSC Chip."
+    echo "set chip as unknown"
   fi
 
   kv set medusa_hsc_conf $chip persistent

@@ -1,4 +1,4 @@
-From 30f9cd1e9273bfecb84dfc62b81082f514803316 Mon Sep 17 00:00:00 2001
+From 3721a785a95a6df26d8243bcba7e2e55ddbffbf8 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 6 Feb 2025 13:38:04 +0800
 Subject: [PATCH 103/105] dbus-sensors: Fix SatelliteSensor build errors

@@ -1,7 +1,7 @@
-From 866e4c0688eab0f107581a1ecbe5aeef07898682 Mon Sep 17 00:00:00 2001
+From 42e487dc5c08e79cf5ddfa3c0d0ad7ff40b0ed4e Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Tue, 31 Dec 2024 14:39:48 +0800
-Subject: [PATCH 03/11] DeviceMgmt: fix device not found
+Subject: [PATCH 3/7] DeviceMgmt: fix device not found
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -220,5 +220,5 @@ index 09644ab..98f6a1f 100644
                  catch (std::runtime_error&)
                  {
 -- 
-2.45.3
+2.47.1
 

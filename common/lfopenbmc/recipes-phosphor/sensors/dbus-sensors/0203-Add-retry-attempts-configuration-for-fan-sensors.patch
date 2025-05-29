@@ -1,7 +1,7 @@
-From e1ff4148cd1efa317d230dc1b2395bb6514d7051 Mon Sep 17 00:00:00 2001
+From a03f8b6368359214b3b7e173b0855d9efbc78783 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:49:46 +0800
-Subject: [PATCH 11/11] Add retry attempts configuration for fan sensors
+Subject: [PATCH 203/204] Add retry attempts configuration for fan sensors
 
 Added a Meson option and updated FanMain.cpp to allow configuring the
 number of retry attempts for fan sensor operations.
@@ -24,10 +24,10 @@ index ab277c7..de088f2 100644
  )
  
 diff --git a/meson.options b/meson.options
-index c4c21a7..2435be5 100644
+index bd11768..d8cbff3 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -95,3 +95,10 @@ option(
+@@ -107,3 +107,10 @@ option(
      value: 'false',
      description: 'Disable in2_alarm event.',
  )
@@ -61,5 +61,5 @@ index 98e41a0..d0ec741 100644
          };
  
 -- 
-2.45.3
+2.47.1
 

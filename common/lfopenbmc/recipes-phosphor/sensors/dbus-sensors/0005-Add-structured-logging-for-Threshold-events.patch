@@ -1,7 +1,7 @@
-From c4a633a5e540f971965994970093c5e147b34b05 Mon Sep 17 00:00:00 2001
+From 3155eaa927e4bcef743eabe14ae05e6d7204c111 Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
-Subject: [PATCH 06/11] Add structured logging for Threshold events
+Subject: [PATCH 5/7] Add structured logging for Threshold events
 
 Add capability to create structured logs for threshold crossing
 (compatible with Redfish Sensor Events) along with ability to
@@ -40,13 +40,11 @@ Repeat for Upper Critical Threshold.
 Change-Id: Icaa5fef672f7570bf0cc2efd9d350261115f169a
 Signed-off-by: Amithash Prasasd <amithash@meta.com>
 ---
- meson.build                               |   2 +
- src/Thresholds.cpp                        | 162 +++++++++++++++++++++-
- src/Thresholds.hpp                        |  10 ++
- src/sensor.hpp                            |   2 +
- subprojects/phosphor-dbus-interfaces.wrap |   6 +
- 5 files changed, 181 insertions(+), 1 deletion(-)
- create mode 100644 subprojects/phosphor-dbus-interfaces.wrap
+ meson.build        |   2 +
+ src/Thresholds.cpp | 162 ++++++++++++++++++++++++++++++++++++++++++++-
+ src/Thresholds.hpp |  10 +++
+ src/sensor.hpp     |   2 +
+ 4 files changed, 175 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
 index d1f1207..3aeff4c 100644
@@ -66,7 +64,7 @@ index d1f1207..3aeff4c 100644
      sdbusplus,
      uring,
 diff --git a/src/Thresholds.cpp b/src/Thresholds.cpp
-index 68233c0..cd1a5be 100644
+index 2489fc8..d3756ba 100644
 --- a/src/Thresholds.cpp
 +++ b/src/Thresholds.cpp
 @@ -8,16 +8,23 @@
@@ -316,7 +314,7 @@ index 17c2649..e220b38 100644
  {
      bool used;
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index c590ad1..2c55e11 100644
+index 07d70ec..c433e45 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
 @@ -88,6 +88,7 @@ struct Sensor
@@ -327,7 +325,7 @@ index c590ad1..2c55e11 100644
      std::string configurationPath;
      std::string configInterface;
      bool isSensorSettable;
-@@ -272,6 +273,7 @@ struct Sensor
+@@ -271,6 +272,7 @@ struct Sensor
              setupPowerMatch(dbusConnection);
          }
  
@@ -335,18 +333,6 @@ index c590ad1..2c55e11 100644
          createAssociation(association, configurationPath);
  
          sensorInterface->register_property("Unit", unit);
-diff --git a/subprojects/phosphor-dbus-interfaces.wrap b/subprojects/phosphor-dbus-interfaces.wrap
-new file mode 100644
-index 0000000..346aa0c
---- /dev/null
-+++ b/subprojects/phosphor-dbus-interfaces.wrap
-@@ -0,0 +1,6 @@
-+[wrap-git]
-+url = https://github.com/openbmc/phosphor-dbus-interfaces.git
-+revision = HEAD
-+
-+[provide]
-+phosphor-dbus-interfaces = phosphor_dbus_interfaces_dep
 -- 
-2.45.3
+2.47.1
 

@@ -1,7 +1,7 @@
-From 2b5b7dca09433cc4baad8ca4de8ed23728cb6b68 Mon Sep 17 00:00:00 2001
+From dfff5d7d2fdcf1aea00e529a25fef00b1a00d18d Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 22 Apr 2025 16:41:32 +0800
-Subject: [PATCH] pwm-sensor: Align Target with user intent
+Subject: [PATCH 204/204] pwm-sensor: Align Target with user intent
 
 Refactor the behavior of the Target property in the PWM control
 interface and the Value property in the PWM sensor interface to ensure
@@ -93,5 +93,5 @@ index 646f0c6..926ca1b 100644
              }
              return curVal;
 -- 
-2.25.1
+2.47.1
 

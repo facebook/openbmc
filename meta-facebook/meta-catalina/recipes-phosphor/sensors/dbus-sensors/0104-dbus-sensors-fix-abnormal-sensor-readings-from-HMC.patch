@@ -1,4 +1,4 @@
-From 1f52570a2adaa7b73d0a7d92fa1e72aefaf291f5 Mon Sep 17 00:00:00 2001
+From b13ddd008cb7fe2a5a86f76c675d4a5f7cdce749 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 6 Feb 2025 13:40:38 +0800
 Subject: [PATCH 104/105] dbus-sensors: fix abnormal sensor readings from HMC

@@ -1,7 +1,7 @@
-From a889b655888809e4c02cc5f5ee3bfd723d13a1c1 Mon Sep 17 00:00:00 2001
+From 659ce5f41fa17017c301a2d5517096a8d9fde3d4 Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
-Subject: [PATCH 09/11] Avoid recreating hwmon temp when blade cycle
+Subject: [PATCH 201/204] Avoid recreating hwmon temp when blade cycle
 
 Problem:
 AC/DC cycles cause all hwmon temperature sensors to become unavailable.
@@ -28,12 +28,12 @@ Signed-off-by: Mandy Hung <mandy.hung.wiwynn@gmail.com>
  5 files changed, 29 insertions(+)
 
 diff --git a/meson.options b/meson.options
-index de733c9..c9405ce 100644
+index 306a953..e97485c 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -83,3 +83,9 @@ option(
-     value: 'disabled',
-     description: 'Enables Sensor override feature without any check.',
+@@ -95,3 +95,9 @@ option(
+     value: 'enabled',
+     description: 'Enable Liquid Leak Detector.',
  )
 +option(
 +    'disable-host-power-monitoring',
@@ -110,7 +110,7 @@ index 431335f..246e0ff 100644
      install: true,
  )
 diff --git a/src/meson.build b/src/meson.build
-index ca995e5..cb39a14 100644
+index 2371d56..32fba30 100644
 --- a/src/meson.build
 +++ b/src/meson.build
 @@ -7,6 +7,10 @@ conf_data.set10(
@@ -125,5 +125,5 @@ index ca995e5..cb39a14 100644
      input: 'dbus-sensor_config.h.in',
      output: 'dbus-sensor_config.h',
 -- 
-2.45.3
+2.47.1
 

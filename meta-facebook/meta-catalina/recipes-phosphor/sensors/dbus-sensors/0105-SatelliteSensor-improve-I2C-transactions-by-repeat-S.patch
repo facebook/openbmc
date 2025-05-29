@@ -1,4 +1,4 @@
-From 767f061bfe3c03337342643a4a83df726683972b Mon Sep 17 00:00:00 2001
+From d25a48d776fbc1d7f1930c4923e0041def6fcd70 Mon Sep 17 00:00:00 2001
 From: Chester Lin <chesterl@nvidia.com>
 Date: Tue, 4 Feb 2025 12:15:38 +0800
 Subject: [PATCH 105/105] SatelliteSensor: improve I2C transactions by repeat

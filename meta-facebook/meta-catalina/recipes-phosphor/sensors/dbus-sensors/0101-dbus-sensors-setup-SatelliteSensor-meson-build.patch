@@ -1,4 +1,4 @@
-From b603addf8ce296fc3aaece4ad4bc9e599fa4abb4 Mon Sep 17 00:00:00 2001
+From 5092f4f12285a25cc2cb76e23a60218bf3742abc Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 18 Jun 2024 23:44:55 +0800
 Subject: [PATCH 101/105] dbus-sensors: setup SatelliteSensor meson build
@@ -42,13 +42,13 @@ index 306a953..9a85b8a 100644
 +    description: 'Enable Satellite sensor.',
 +)
 diff --git a/service_files/meson.build b/service_files/meson.build
-index 55ddb4c..074c520 100644
+index 854cfd6..330f8e3 100644
 --- a/service_files/meson.build
 +++ b/service_files/meson.build
 @@ -19,6 +19,7 @@ unit_files = [
+     ['nvidia-gpu', 'xyz.openbmc_project.nvidiagpusensor.service'],
+     ['nvme', 'xyz.openbmc_project.nvmesensor.service'],
      ['psu', 'xyz.openbmc_project.psusensor.service'],
-     ['external', 'xyz.openbmc_project.externalsensor.service'],
-     ['leakdetector', 'xyz.openbmc_project.leakdetector.service'],
 +    ['satellite', 'xyz.openbmc_project.satellitesensor.service'],
  ]
  

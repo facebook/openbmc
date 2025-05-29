@@ -37,13 +37,13 @@ def gpio_name_to_num(name):
     return num
 
 def is_gpio_valid(cs, clk, mosi, miso):
-    if cs is -1:
+    if cs == -1:
         raise Exception("CS value is invalid!")
-    if clk is -1:
+    if clk == -1:
         raise Exception("CLK value is invalid!")
-    if mosi is -1:
+    if mosi == -1:
         raise Exception("MOSI value is invalid!")
-    if miso is -1:
+    if miso == -1:
         raise Exception("MISO value is invalid!")
 
     return True

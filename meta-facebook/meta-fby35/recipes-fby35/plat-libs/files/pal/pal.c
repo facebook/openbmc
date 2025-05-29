@@ -3443,6 +3443,8 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case E1S_1OU_M2_PRESENT:
       if (type_1ou == TYPE_1OU_OLMSTEAD_POINT) {
         snprintf(log_msg, sizeof(log_msg), "E1S %dOU E1.S dev%d present", event_data[1] + 1, event_data[2]);
+      } else if (type_1ou == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
+        snprintf(log_msg, sizeof(log_msg), "E1S dev%d present", event_data[2]);
       } else {
         snprintf(log_msg, sizeof(log_msg), "E1S 1OU M.2 dev%d present", event_data[2]);
       }

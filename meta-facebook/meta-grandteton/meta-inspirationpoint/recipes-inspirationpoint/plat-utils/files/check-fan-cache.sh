@@ -31,7 +31,7 @@ FAN_TABLE_VER_GTA="gtartemis"
 DEFAULT_FSC_CONFIG="/etc/fsc-config.json"
 
 hgx_pwr_limit_check () {
-  curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
+  curr_fan_table=$($KV_CMD get "auto_fsc_config" persistent)
 
   mb_product=$($KV_CMD get mb_product)
   if [ "$mb_product" == "GT1.5" ]; then
@@ -42,7 +42,7 @@ hgx_pwr_limit_check () {
   recheck_500w=0
   recheck_650w=0
   for ((loop=0; loop<2; loop++)); do
-    pwr_limit=`/usr/local/bin/hgxmgr get-pwr-limit | awk '{print $NF}'`
+    pwr_limit=$(/usr/local/bin/hgxmgr get-pwr-limit | awk '{print $NF}')
     count_500W=$(echo "$pwr_limit" | grep -o "500W" | wc -l)
     count_650W=$(echo "$pwr_limit" | grep -o "650W" | wc -l)
 
@@ -91,7 +91,7 @@ hgx_pwr_limit_check () {
   done
 }
 
-is_fscd_running=`ps | grep fscd | grep -v grep | grep "runsv /etc/sv/fscd"`
+is_fscd_running=$(ps | grep fscd | grep -v grep | grep "runsv /etc/sv/fscd")
 auto_fsc=$1
 
 if [ -n "$is_fscd_running" ] && [ "$auto_fsc" == "hgx" ]; then
@@ -100,8 +100,8 @@ if [ -n "$is_fscd_running" ] && [ "$auto_fsc" == "hgx" ]; then
 fi
 
 check_mb_rev() {
-  temp_config=`$KV_CMD get "auto_fsc_config" persistent`
-  if [ $temp_config != "$FAN_TABLE_VER_GTA" ]; then
+  temp_config=$($KV_CMD get "auto_fsc_config" persistent)
+  if [ "$temp_config" != "$FAN_TABLE_VER_GTA" ]; then
     gpu_prsnt=$(cat /tmp/gpionames/GPU_PRSNT_N_ISO_R/value)
     if [ "$gpu_prsnt" -eq 0 ]; then
       for retry in {1..60}; do
@@ -127,22 +127,12 @@ check_mb_rev() {
   if [[ "$rev_id" == "2" ]]; then
     ln -s /etc/fsc-config-2-retimer.json ${DEFAULT_FSC_CONFIG}
   else
-    # The default fan table is configued as 500W
-    if [ -z "$curr_fan_table" ]; then
-      curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
-      if [ "$curr_fan_table" != "$FAN_TABLE_VER_GTA" ]; then
-        $KV_CMD set "auto_fsc_config" 500 persistent
-      fi
-    else
-      rm -f ${DEFAULT_FSC_CONFIG}
-    fi
-
     mb_product=$($KV_CMD get mb_product)
     if [ "$mb_product" == "GT1.5" ]; then
       $KV_CMD set "auto_fsc_config" "$FAN_TABLE_VER_750W" persistent
     fi
 
-    curr_fan_table=`$KV_CMD get "auto_fsc_config" persistent`
+    curr_fan_table=$($KV_CMD get "auto_fsc_config" persistent)
     if [ "$curr_fan_table" == "$FAN_TABLE_VER_500W" ]; then
       ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
     elif [ "$curr_fan_table" == "$FAN_TABLE_VER_650W" ]; then
@@ -160,6 +150,9 @@ check_mb_rev() {
       else
         ln -s /etc/fsc-config-gta-8-retimer.json ${DEFAULT_FSC_CONFIG}
       fi
+    else
+      ln -s /etc/fsc-config-8-retimer-500W.json ${DEFAULT_FSC_CONFIG}
+      $KV_CMD set "auto_fsc_config" 500 persistent
     fi
   fi
 }

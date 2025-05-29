@@ -12,7 +12,7 @@ import argparse
 import tempfile
 import sys
 
-from distutils import spawn
+import subprocess
 from io import BytesIO
 
 from pyfdt import pyfdt
@@ -86,6 +86,6 @@ if __name__ == '__main__':
         elif args.keyname:
             cmd += ['-N', 'FB-HSM']
         print(" ".join(cmd))
-        spawn.spawn(cmd)
+        subprocess.check_call(cmd)
 
     print("Wrote signed subordinate certificate store: %s" % (args.output))

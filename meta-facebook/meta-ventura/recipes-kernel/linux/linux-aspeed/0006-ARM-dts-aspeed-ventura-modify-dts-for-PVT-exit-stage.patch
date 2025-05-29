@@ -1,0 +1,79 @@
+From d795d0aaeb1f6d2942fb60af12e1e0ecbd2d2671 Mon Sep 17 00:00:00 2001
+From: Jason Hsu <jason-hsu@quantatw.com>
+Date: Thu, 22 May 2025 19:32:53 +0800
+Subject: [PATCH] ARM: dts: aspeed: ventura: modify dts for PVT exit stage
+
+1. Add UHCI setting for 2nd source /dev/ttyUSBx.
+
+2. Add valve train present pin.
+
+3. Add fanboard gpio linename for fan present.
+
+Signed-off-by: Jason Hsu <jason-hsu@quantatw.com>
+---
+ .../aspeed/aspeed-bmc-facebook-ventura.dts    | 28 +++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
+index 7f99fcaac68b..54528a560f77 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
+@@ -951,6 +951,16 @@ fan_leds_g1_gpio: gpio@21 {
+ 				reg = <0x21>;
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
++
++				gpio-line-names =
++				"", "",
++				"", "",
++				"", "",
++				"", "",
++				"FAN0_PRSNT", "FAN1_PRSNT",
++				"", "",
++				"", "",
++				"", "";
+ 			};
+ 
+ 			adc@1f {
+@@ -981,6 +991,16 @@ fan_leds_g2_gpio: gpio@21 {
+ 				reg = <0x21>;
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
++
++				gpio-line-names =
++				"", "",
++				"", "",
++				"", "",
++				"", "",
++				"FAN2_PRSNT", "FAN3_PRSNT",
++				"", "",
++				"", "",
++				"", "";
+ 			};
+ 
+ 			adc@1f {
+@@ -1280,6 +1300,10 @@ fixed-link {
+ 	};
+ };
+ 
++&uhci {
++	status = "okay";
++};
++
+ &gpio0 {
+ 	gpio-line-names =
+ 	/*A0-A7*/	"","","","","","","","",
+@@ -1322,8 +1346,8 @@ &sgpiom0 {
+ 	/*A0 - A7*/
+ 	"power-chassis-good","power-chassis-control",
+ 	"host0-ready","WATER_VALVE_CLOSED_N",
+-	"","FM_MDIO_SW_SEL_PLD",
+-	"","FM_88E6393X_BIN_UPDATE_EN_N",
++	"wPRSNT_RETURN_PLD_R_N","FM_MDIO_SW_SEL_PLD",
++	"wPRSNT_SUPPLY_PLD_R_N","FM_88E6393X_BIN_UPDATE_EN_N",
+ 	"LEAK3_DETECT","",
+ 	"LEAK4_DETECT","",
+ 	"RETURN_CNTL_FB_D_R","",
+-- 
+2.34.1
+

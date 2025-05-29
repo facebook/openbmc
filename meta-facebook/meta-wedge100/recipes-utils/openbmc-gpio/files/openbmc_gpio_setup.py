@@ -57,11 +57,11 @@ def main():
     # In order to satisy/unsatisfy conditions in setup_board_gpio()
     # modify the registers
     set_register()
-    if version is 1:
+    if version == 1:
         print("Using GPIO EVT table ", end="")
         setup_board_gpio(soc_gpio_table, board_gpio_table_v1)
     else:
-        if version is 2:
+        if version == 2:
             print("Using GPIO DVT table ", end="")
         else:
             print(

@@ -82,6 +82,8 @@ i2c_device_add 9 0x52 24c512 # SMB EEPROM
 i2c_device_add 12 0x43 pwrcpld
 
 # Wait for the SMB EEPROM and CPLD drivers to load
+modprobe at24
+modprobe pwrcpld
 wait_sysfs_file_present "$SMB_EEPROM_SYSFS" 10
 wait_sysfs_file_present "$SCM_CPU_READY_SYSFS" 10
 

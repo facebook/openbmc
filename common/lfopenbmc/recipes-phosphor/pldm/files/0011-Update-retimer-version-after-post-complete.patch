@@ -1,4 +1,4 @@
-From 6b62280c341655445c9183861408cc8bb5523554 Mon Sep 17 00:00:00 2001
+From f59ce92d05a8ade506d308fe62e63a6f387e6603 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Thu, 19 Sep 2024 14:00:24 +0800
 Subject: [PATCH 11/18] Update retimer version after post complete
@@ -16,7 +16,7 @@ Upstream-Status: Pending
  1 file changed, 20 insertions(+)
 
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-index 0b0da08..5c0e6f6 100644
+index 4d5fa6f..60023e7 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 @@ -1,6 +1,7 @@
@@ -37,7 +37,7 @@ index 0b0da08..5c0e6f6 100644
 +    constexpr auto SYSTEMD_INTERFACE = "org.freedesktop.systemd1.Manager";
 +
      /* 1. Get host slot number */
-     uint64_t slot;
+     uint64_t slot=0;
  
 @@ -216,6 +222,20 @@ int EventLogHandler::write(const message& eventData)
                       std::format("{:02x}", eventData[3]) +
@@ -61,5 +61,5 @@ index 0b0da08..5c0e6f6 100644
      {
          event_name = eventList[eventType];
 -- 
-2.47.1
+2.25.1
 

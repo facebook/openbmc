@@ -1,4 +1,4 @@
-From 7f5638ab81495c8bfbd2749c9c6a46a633890086 Mon Sep 17 00:00:00 2001
+From 049970a83f31bfc6d3a1d738f63f450517fb0017 Mon Sep 17 00:00:00 2001
 From: Lora Lin <lora.lin.wiwynn@gmail.com>
 Date: Thu, 11 Jul 2024 10:10:27 +0800
 Subject: [PATCH 10/18] Add event log type for PMIC error/VR alert
@@ -14,7 +14,7 @@ Upstream-Status: Pending
  1 file changed, 137 insertions(+), 4 deletions(-)
 
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-index 37ec22c..0b0da08 100644
+index b84e3e3..4d5fa6f 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 @@ -8,6 +8,8 @@ PHOSPHOR_LOG2_USING;
@@ -86,7 +86,7 @@ index 37ec22c..0b0da08 100644
      });
  
      /* 1. Get host slot number */
-     uint64_t slot;
+     uint64_t slot=0;
  
 +    if (eventData.size() != MAX_EVENT_LEN)
 +    {
@@ -198,5 +198,5 @@ index 37ec22c..0b0da08 100644
      return PLDM_SUCCESS;
  }
 -- 
-2.47.1
+2.25.1
 

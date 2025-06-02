@@ -1,4 +1,4 @@
-From 5092f4f12285a25cc2cb76e23a60218bf3742abc Mon Sep 17 00:00:00 2001
+From 6135ace6c60c4ea15d7b78df350b0db879f66e4f Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 18 Jun 2024 23:44:55 +0800
 Subject: [PATCH 101/105] dbus-sensors: setup SatelliteSensor meson build
@@ -28,12 +28,12 @@ index d1f1207..8e49f6d 100644
  subdir('service_files')
  subdir('src')
 diff --git a/meson.options b/meson.options
-index 306a953..9a85b8a 100644
+index 00e6fa9..e173f94 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -95,3 +95,9 @@ option(
+@@ -101,3 +101,9 @@ option(
      value: 'enabled',
-     description: 'Enable Liquid Leak Detector.',
+     description: 'Enable SMBPBI sensor.',
  )
 +option(
 +    'satellite',
@@ -42,22 +42,22 @@ index 306a953..9a85b8a 100644
 +    description: 'Enable Satellite sensor.',
 +)
 diff --git a/service_files/meson.build b/service_files/meson.build
-index 854cfd6..330f8e3 100644
+index 5a9938d..e37d471 100644
 --- a/service_files/meson.build
 +++ b/service_files/meson.build
-@@ -19,6 +19,7 @@ unit_files = [
-     ['nvidia-gpu', 'xyz.openbmc_project.nvidiagpusensor.service'],
+@@ -20,6 +20,7 @@ unit_files = [
      ['nvme', 'xyz.openbmc_project.nvmesensor.service'],
      ['psu', 'xyz.openbmc_project.psusensor.service'],
+     ['smbpbi', 'xyz.openbmc_project.smbpbisensor.service'],
 +    ['satellite', 'xyz.openbmc_project.satellitesensor.service'],
  ]
  
  fs = import('fs')
 diff --git a/src/meson.build b/src/meson.build
-index 2371d56..8b7edb5 100644
+index 0929ba7..c1c8eb9 100644
 --- a/src/meson.build
 +++ b/src/meson.build
-@@ -152,3 +152,7 @@ endif
+@@ -156,3 +156,7 @@ endif
  if get_option('leakdetector').allowed()
      subdir('leakdetector')
  endif

@@ -1,4 +1,4 @@
-From 659ce5f41fa17017c301a2d5517096a8d9fde3d4 Mon Sep 17 00:00:00 2001
+From b2a5406984aacb0e60332e0b5e7ae062ce0019d5 Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
 Subject: [PATCH 201/204] Avoid recreating hwmon temp when blade cycle
@@ -28,12 +28,12 @@ Signed-off-by: Mandy Hung <mandy.hung.wiwynn@gmail.com>
  5 files changed, 29 insertions(+)
 
 diff --git a/meson.options b/meson.options
-index 306a953..e97485c 100644
+index 00e6fa9..5f8155f 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -95,3 +95,9 @@ option(
+@@ -101,3 +101,9 @@ option(
      value: 'enabled',
-     description: 'Enable Liquid Leak Detector.',
+     description: 'Enable SMBPBI sensor.',
  )
 +option(
 +    'disable-host-power-monitoring',
@@ -42,10 +42,10 @@ index 306a953..e97485c 100644
 +    description: 'Disable host power monitoring for hwmon-temp.',
 +)
 diff --git a/src/dbus-sensor_config.h.in b/src/dbus-sensor_config.h.in
-index 6dc9931..2dc34bf 100644
+index 8045676..6d97aa1 100644
 --- a/src/dbus-sensor_config.h.in
 +++ b/src/dbus-sensor_config.h.in
-@@ -6,4 +6,6 @@
+@@ -4,4 +4,6 @@
  constexpr const int validateUnsecureFeature = @VALIDATION_UNSECURE_FEATURE@;
  
  constexpr const int insecureSensorOverride = @INSECURE_UNRESTRICTED_SENSOR_OVERRIDE@;
@@ -110,7 +110,7 @@ index 431335f..246e0ff 100644
      install: true,
  )
 diff --git a/src/meson.build b/src/meson.build
-index 2371d56..32fba30 100644
+index 0929ba7..e1387b6 100644
 --- a/src/meson.build
 +++ b/src/meson.build
 @@ -7,6 +7,10 @@ conf_data.set10(

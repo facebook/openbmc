@@ -1,4 +1,4 @@
-From dfff5d7d2fdcf1aea00e529a25fef00b1a00d18d Mon Sep 17 00:00:00 2001
+From adb9c841ea146bc3c74f64e10f10705c13a43cfc Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 22 Apr 2025 16:41:32 +0800
 Subject: [PATCH 204/204] pwm-sensor: Align Target with user intent

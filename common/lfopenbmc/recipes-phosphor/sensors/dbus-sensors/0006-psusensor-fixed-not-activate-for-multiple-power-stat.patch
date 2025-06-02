@@ -1,4 +1,4 @@
-From f9c9bb64692037d635da93e6cffb5c83edb2a8d2 Mon Sep 17 00:00:00 2001
+From 36ebac9aadebf8c59aa83c01fce3590b33f734ea Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 15:10:57 +0800
 Subject: [PATCH 6/7] psusensor: fixed not activate for multiple power state
@@ -38,10 +38,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 26 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index a077318..35dadd4 100644
+index 5f941de..ff781b9 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -260,6 +260,27 @@ void checkEventLimits(const std::string& sensorPathStr,
+@@ -261,6 +261,27 @@ void checkEventLimits(const std::string& sensorPathStr,
      }
  }
  
@@ -69,7 +69,7 @@ index a077318..35dadd4 100644
  static void checkPWMSensor(
      const std::filesystem::path& sensorPath, std::string& labelHead,
      const std::string& interfacePath,
-@@ -472,6 +493,11 @@ static void createSensorsCallback(
+@@ -473,6 +494,11 @@ static void createSensorsCallback(
          std::shared_ptr<I2CDevice> i2cDev;
          if (findI2CDev != devices.end())
          {

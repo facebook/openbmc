@@ -13,6 +13,7 @@ int main(int argc, char** argv)
     uint8_t bus = 0, addr = 0;
     std::string chip, interface, target;
     bool debugMode{false};
+    bool legacyMode{false};
 
     CLI::App app{"CPLD update tool"};
 
@@ -34,6 +35,8 @@ int main(int argc, char** argv)
                        "used for LCMXO3D series CPLD, CFG0|CFG1");
 
     update->add_flag("-v,--verbose", debugMode, "debug mode");
+    update->add_flag("-l,--legacy", legacyMode,
+                     "Use legacy update protocol for LFMXO5-25");
 
     auto version = app.add_subcommand("version", "Get Frimware Version");
 
@@ -42,6 +45,9 @@ int main(int argc, char** argv)
     version->add_option("-a,--addr", addr, "slave address")->required();
     version->add_option("-t,--target", target,
                         "used for LCMXO3D series CPLD, CFG0|CFG1");
+    version->add_option(
+        "-c,--chip", chip,
+        "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400|LFMXO5-25");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -61,7 +67,7 @@ int main(int argc, char** argv)
         using namespace std::chrono;
 
         auto start = high_resolution_clock::now();
-        if (cpldManager.fwUpdate() < 0)
+        if (cpldManager.fwUpdate(legacyMode) < 0)
         {
             std::cerr << "CPLD update failed" << std::endl;
             return -1;

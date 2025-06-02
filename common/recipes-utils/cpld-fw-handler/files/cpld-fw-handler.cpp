@@ -22,8 +22,8 @@ int retryCond(Func func, int numRetries, int msec) {
     return -1;
 }
 
-int CpldManager::i2cWriteReadCmd(const std::vector<uint8_t>& cmdData,
-                                 size_t rx_len, std::vector<uint8_t>& readData)
+int CpldManager::i2cWriteReadCmd(std::span<const uint8_t> cmdData,
+                                 size_t rx_len, std::span<uint8_t> readData)
 {
     if (debugMode)
     {
@@ -38,21 +38,27 @@ int CpldManager::i2cWriteReadCmd(const std::vector<uint8_t>& cmdData,
 
     struct i2c_rdwr_ioctl_data iomsg;
     struct i2c_msg i2cmsg[2];
+    int msg_count = 0;
 
-    i2cmsg[0].addr = addr & 0xFF;
-    i2cmsg[0].flags = 0;
-    i2cmsg[0].len = cmdData.size();
-    i2cmsg[0].buf = const_cast<uint8_t*>(cmdData.data());
-    iomsg.nmsgs = 1;
+    if (!cmdData.empty())
+    {
+        i2cmsg[0] = {.addr = addr,
+                     .flags = 0,
+                     .len = static_cast<uint16_t>(cmdData.size()),
+                     .buf = const_cast<uint8_t*>(cmdData.data())};
+        msg_count = 1;
+    }
     if (rx_len > 0)
     {
-        i2cmsg[1].addr = addr & 0xFF;
-        i2cmsg[1].flags = I2C_M_RD;
-        i2cmsg[1].len = rx_len;
-        i2cmsg[1].buf = reinterpret_cast<uint8_t*>(readData.data());
-        iomsg.nmsgs++;
+        i2cmsg[msg_count] = {
+            .addr = addr,
+            .flags = I2C_M_RD,
+            .len = static_cast<uint16_t>(rx_len),
+            .buf = reinterpret_cast<uint8_t*>(readData.data())};
+        msg_count++;
     }
     iomsg.msgs = i2cmsg;
+    iomsg.nmsgs = msg_count;
 
     if (retryCond([&]() { return ioctl(i2c_fd, I2C_RDWR, &iomsg); }, 3, 10) < 0)
     {

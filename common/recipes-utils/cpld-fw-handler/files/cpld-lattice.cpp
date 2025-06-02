@@ -79,7 +79,7 @@ int CpldLatticeManager::jedFileParser()
             if (numberSize > 0)
             {
                 fwInfo.QF =
-                    std::stoul(line.substr(std::strlen(TAG_QF), numberSize));
+                    std::stoul(line.substr(TAG_QF.length(), numberSize));
                 std::cout << std::format("QF Size = {}\n", fwInfo.QF);
             }
         }
@@ -142,7 +142,7 @@ int CpldLatticeManager::jedFileParser()
                         ifs.close();
                         return -1;
                     }
-                    static constexpr auto start = std::strlen(TAG_CHECKSUM);
+                    static constexpr auto start = TAG_CHECKSUM.length();
                     std::istringstream iss(line.substr(start, numberSize));
                     iss >> std::hex >> fwInfo.CheckSum;
                     std::cout << std::format("Checksum = 0x{:04X}\n",
@@ -161,7 +161,7 @@ int CpldLatticeManager::jedFileParser()
                         return -1;
                     }
                     std::istringstream iss(
-                        line.substr(std::strlen(TAG_UH), numberSize));
+                        line.substr(TAG_UH.length(), numberSize));
                     iss >> std::hex >> fwInfo.Version;
                     std::cout
                         << std::format("UserCode = 0x{:08X}\n", fwInfo.Version);
@@ -253,9 +253,8 @@ int CpldLatticeManager::enableProgramMode()
 {
     // 0x74 transparent mode
     std::vector<uint8_t> cmd = {CMD_ENABLE_CONFIG_MODE, 0x08, 0x0, 0x0};
-    std::vector<uint8_t> read;
 
-    if (i2cWriteReadCmd(cmd, 0, read) < 0)
+    if (i2cWriteReadCmd(cmd) < 0)
     {
         return -1;
     }
@@ -272,7 +271,6 @@ int CpldLatticeManager::enableProgramMode()
 int CpldLatticeManager::eraseFlash()
 {
     std::vector<uint8_t> cmd;
-    std::vector<uint8_t> read;
 
     if (isLCMXO3D)
     {
@@ -315,7 +313,7 @@ int CpldLatticeManager::eraseFlash()
         cmd = {CMD_ERASE_FLASH, 0xC, 0x0, 0x0};
     }
 
-    int ret = i2cWriteReadCmd(cmd, 0, read);
+    int ret = i2cWriteReadCmd(cmd);
     if (ret < 0)
     {
         return ret;
@@ -378,8 +376,7 @@ int CpldLatticeManager::resetConfigFlash()
     {
         cmd = {CMD_RESET_CONFIG_FLASH, 0x0, 0x0, 0x0};
     }
-    std::vector<uint8_t> read;
-    return i2cWriteReadCmd(cmd, 0, read);
+    return i2cWriteReadCmd(cmd);
 }
 
 int CpldLatticeManager::writeProgramPage()
@@ -393,7 +390,6 @@ int CpldLatticeManager::writeProgramPage()
 
     */
     std::vector<uint8_t> cmd = {CMD_PROGRAM_PAGE, 0x0, 0x0, 0x01};
-    std::vector<uint8_t> read;
     size_t iterSize = 16;
 
     for (size_t i = 0; i < fwInfo.cfgData.size(); i += iterSize)
@@ -411,7 +407,7 @@ int CpldLatticeManager::writeProgramPage()
         data.insert(data.end(), fwInfo.cfgData.begin() + i,
                     fwInfo.cfgData.begin() + i + len);
 
-        if (i2cWriteReadCmd(data, 0, read) < 0)
+        if (i2cWriteReadCmd(data) < 0)
         {
             return -1;
         }
@@ -442,13 +438,12 @@ int CpldLatticeManager::programUserCode()
     Program user code.
     */
     std::vector<uint8_t> cmd = {CMD_PROGRAM_USER_CODE, 0x0, 0x0, 0x0};
-    std::vector<uint8_t> read;
     for (int i = 3; i >= 0; i--)
     {
         cmd.push_back((fwInfo.Version >> (i * 8)) & 0xFF);
     }
 
-    if (i2cWriteReadCmd(cmd, 0, read) < 0)
+    if (i2cWriteReadCmd(cmd) < 0)
     {
         return -1;
     }
@@ -466,9 +461,8 @@ int CpldLatticeManager::programDone()
 {
     // CMD_PROGRAM_DONE = 0x5E
     std::vector<uint8_t> cmd = {CMD_PROGRAM_DONE, 0x0, 0x0, 0x0};
-    std::vector<uint8_t> read;
 
-    if (i2cWriteReadCmd(cmd, 0, read) < 0)
+    if (i2cWriteReadCmd(cmd) < 0)
     {
         return -1;
     }
@@ -539,8 +533,7 @@ int CpldLatticeManager::disableConfigInterface()
 {
     // CMD_DISABLE_CONFIG_INTERFACE = 0x26,
     std::vector<uint8_t> cmd = {CMD_DISABLE_CONFIG_INTERFACE, 0x0, 0x0};
-    std::vector<uint8_t> read;
-    return i2cWriteReadCmd(cmd, 0, read);
+    return i2cWriteReadCmd(cmd);
 }
 
 bool CpldLatticeManager::waitBusyAndVerify()
@@ -649,20 +642,21 @@ int CpldLatticeManager::readStatusReg(uint8_t& statusReg)
 
 int CpldLatticeManager::readUserCode(uint32_t& userCode)
 {
-    std::vector<uint8_t> cmd = {CMD_READ_FW_VERSION, 0x0, 0x0, 0x0};
-    constexpr size_t resSize = 4;
-    std::vector<uint8_t> readData(resSize, 0);
+    constexpr std::array<uint8_t, 4> cmd{CMD_READ_FW_VERSION, 0x0, 0x0, 0x0};
+    const auto isXO5 = chip == "LFMXO5-25";
+    const size_t resSize = isXO5 ? 5 : 4;
+    std::array<uint8_t, 5> data{};
 
-    int ret = i2cWriteReadCmd(cmd, resSize, readData);
-    if (ret < 0)
+    if (i2cWriteReadCmd(cmd, resSize, std::span{data.data(), resSize}) != 0)
     {
         return -1;
     }
 
-    for (size_t i = 0; i < resSize; i++)
-    {
-        userCode |= readData.at(i) << ((3 - i) * 8);
-    }
+    userCode = isXO5 ? (uint32_t{data[4]} << 24) | (data[3] << 16) |
+                           (data[2] << 8) | data[1]
+                     : (uint32_t{data[0]} << 24) | (data[1] << 16) |
+                           (data[2] << 8) | data[3];
+
     return 0;
 }
 
@@ -770,325 +764,305 @@ int CpldLatticeManager::XO2XO3Family_update()
     return 0;
 }
 
-int XO5I2CManager::set_page(uint8_t partition_num, uint32_t page_num)
+bool XO5I2CManager::setPage(uint8_t cfg, uint8_t block, uint8_t page)
 {
-      std::vector<uint8_t> cmd = {XO5_CMD_SET_PAGE, partition_num,
-                                  static_cast<uint8_t>((page_num >> 16) & 0xFF),
-                                  static_cast<uint8_t>((page_num >> 8) & 0xFF),
-                                  static_cast<uint8_t>(page_num & 0xFF)};
-      std::vector<uint8_t> read;
-
-      return i2cWriteReadCmd(cmd, 0, read);
+    std::array<uint8_t, 5> cmd{XO5_CMD_SET_PAGE, cfg, 0x0, block, page};
+    return i2cWriteReadCmd(cmd) == 0;
 }
 
-int XO5I2CManager::erase_flash(uint8_t size)
+bool XO5I2CManager::legacyProgramPage(std::span<const uint8_t> data)
 {
-    std::vector<uint8_t> cmd = {XO5_CMD_ERASE_FLASH, size};
-    std::vector<uint8_t> read;
-    return i2cWriteReadCmd(cmd, 0, read);
-}
+    std::array<uint8_t, 1 + Cfg::PageSize> cmdBuffer{
+        XO5_CMD_CFG_WRITE_PAGE,
+    };
 
-int XO5I2CManager::cfg_reset_addr()
-{
-    std::vector<uint8_t> cmd = {XO5_CMD_CFG_RESET_ADDR};
-    std::vector<uint8_t> read;
-    return i2cWriteReadCmd(cmd, 0, read);
-}
-
-std::vector<uint8_t> XO5I2CManager::cfg_read_page()
-{
-    std::vector<uint8_t> cmd = {XO5_CMD_CFG_READ_PAGE};
-    std::vector<uint8_t> read(256);
-
-    if (i2cWriteReadCmd(cmd, 256, read) < 0) {
-        return {};
-    } else {
-        return read;
-    }
-}
-
-int XO5I2CManager::cfg_write_page(const std::vector<uint8_t>& byte_list)
-{
-    std::vector<uint8_t> cmd = {XO5_CMD_CFG_WRITE_PAGE};
-    cmd.insert(cmd.end(), byte_list.begin(), byte_list.end());
-    std::vector<uint8_t> read;
-    return i2cWriteReadCmd(cmd, 0, read);
-}
-
-bool XO5I2CManager::programCfgData(uint8_t cfg)
-{
-	unsigned int data_offset = 0;
-
-	for (int b_idx = 0; b_idx < XO5_CFG_BLOCK_NUM; ++b_idx) {
-		set_page(cfg, b_idx * XO5_PAGE_NUM);
-		erase_flash(XO5_ERASE_BLOCK);
-
-		for (int p_idx = 0; p_idx < XO5_PAGE_NUM; ++p_idx) {
-			if (data_offset < fwInfo.cfgData.size()) {
-				int remaining_bytes = fwInfo.cfgData.size() - data_offset;
-				int bytes_to_write = std::min(static_cast<int>(XO5_PAGE_SIZE), remaining_bytes);
-				std::vector<uint8_t> wr_buffer(fwInfo.cfgData.begin() + data_offset,
-								fwInfo.cfgData.begin() + data_offset + bytes_to_write);
-
-				if (cfg_write_page(wr_buffer)) {
-						std::cerr << "Failed to write page " << p_idx <<
-						" of block " << b_idx << std::endl;
-						return false;
-				}
-
-				data_offset += bytes_to_write;
-
-				float progressRate = (static_cast<float>(data_offset) / fwInfo.cfgData.size()) * 100;
-				std::cout << "Update :" << std::fixed << std::dec <<
-						std::setprecision(2) << progressRate << "% \r";
-
-				usleep(200);
-			} else {
-				return true;
-			}
-		}
-	}
-	return true;
-}
-
-bool XO5I2CManager::verifyCfgData(uint8_t cfg)
-{
-	unsigned int data_offset = 0;
-
-	for (int b_idx = 0; b_idx < XO5_CFG_BLOCK_NUM; ++b_idx) {
-		set_page(cfg, b_idx * XO5_PAGE_NUM);
-
-		for (int p_idx = 0; p_idx < XO5_PAGE_NUM; ++p_idx) {
-			if (data_offset < fwInfo.cfgData.size()) {
-				std::vector<uint8_t> read_buffer = cfg_read_page();
-
-				if (read_buffer.empty()) {
-					std::cerr << "Failed to read page " << p_idx <<
-										" of block " << b_idx << std::endl;
-					return false;
-				}
-
-				int remaining_bytes = fwInfo.cfgData.size() - data_offset;
-				int bytes_to_compare = std::min(static_cast<int>(XO5_PAGE_SIZE), remaining_bytes);
-
-				if (!std::equal(read_buffer.begin(), read_buffer.begin() + bytes_to_compare,
-												fwInfo.cfgData.begin() + data_offset)) {
-					std::cerr << "Verification failed at page " << p_idx <<
-										" of block " << b_idx << std::endl;
-					return false;
-				}
-				data_offset += bytes_to_compare;
-				} else {
-					return true;
-				}
-			float progressRate = (static_cast<float>(data_offset) / fwInfo.cfgData.size()) * 100;
-					std::cout << "Verify :" << std::fixed << std::dec <<
-								std::setprecision(2) << progressRate << "% \r";
-			usleep(200);
-		}
-	}
-
-	std::cout << "Verification successful." << std::endl;
-	return true;
-}
-
-
-int XO5I2CManager::XO5jedFileParser()
-{
-    bool cfStart = false;
-    bool checksumStart = false;
-    bool endofCF = false;
-    int numberSize = 0;
-
-    std::string line;
-    std::ifstream ifs(imagePath, std::ifstream::in);
-    if (!ifs.good())
+    std::span<uint8_t> cmd{cmdBuffer.data(), 1 + data.size()};
+    std::copy(data.begin(), data.end(), cmd.begin() + 1);
+    if (i2cWriteReadCmd(cmd) != 0)
     {
-        std::cerr << "Failed to open JED file" << std::endl;
-        return -1;
+        return false;
+    }
+    std::this_thread::sleep_for(1ms);
+    return true;
+}
+
+bool XO5I2CManager::legacyReadPage(std::span<uint8_t> data)
+{
+    constexpr std::array<uint8_t, 1> cmd{XO5_CMD_CFG_READ_PAGE};
+    return i2cWriteReadCmd(cmd, data.size(), data) == 0;
+}
+
+bool XO5I2CManager::waitUntilReady(std::chrono::milliseconds timeout)
+{
+    const auto endTime = std::chrono::steady_clock::now() + timeout;
+    std::array<uint8_t, 1> status{static_cast<uint8_t>(Status::NotReady)};
+
+    while (std::chrono::steady_clock::now() < endTime)
+    {
+        if (i2cWriteReadCmd({}, 1, status) != 0)
+        {
+            std::cerr << "Status read failed\n";
+            return false;
+        }
+
+        if (status[0] == static_cast<uint8_t>(Status::Ready))
+        {
+            return true;
+        }
+        std::this_thread::sleep_for(ReadyPollInterval);
     }
 
-    // Parsing JED file
-    while (getline(ifs, line))
+    std::cerr << "Timeout waiting for device ready\n";
+    return false;
+}
+
+bool XO5I2CManager::programPage(uint8_t block, uint8_t page,
+                                std::span<const uint8_t> data)
+{
+    std::array<uint8_t, 4 + Cfg::PageSize> cmdBuffer{
+        static_cast<uint8_t>(Cmd::PageProgram),
+        block,
+        page,
+        0x0,
+    };
+
+    std::span<uint8_t> cmd{cmdBuffer.data(), 4 + data.size()};
+    std::copy(data.begin(), data.end(), cmd.begin() + 4);
+    if (i2cWriteReadCmd(cmd) != 0)
     {
-        if (line.rfind(TAG_QF, 0) == 0)
-        {
-            numberSize = line.find("*") - line.find("F") - 1;
-            if (numberSize <= 0)
-            {
-                std::cerr << "Error in parsing QF tag" << std::endl;
-                ifs.close();
-                return -1;
-            }
-            static constexpr auto start = std::strlen(TAG_QF);
-            fwInfo.QF = std::stoul(line.substr(start, numberSize));
+        return false;
+    }
 
-            std::cout << "QF Size = " << fwInfo.QF << std::endl;
-        }
-        else if (line.rfind(TAG_CF_START, 0) == 0)
+    std::this_thread::sleep_for(1ms);
+    return waitUntilReady();
+}
+
+bool XO5I2CManager::readPage(uint8_t block, uint8_t page,
+                             std::span<uint8_t> data)
+{
+    std::array<uint8_t, 4> cmd{static_cast<uint8_t>(Cmd::PageRead), block, page,
+                               0x0};
+    if (i2cWriteReadCmd(cmd) != 0)
+    {
+        return false;
+    }
+
+    std::this_thread::sleep_for(1ms);
+    if (!waitUntilReady())
+    {
+        return false;
+    }
+    if (i2cWriteReadCmd({}, data.size(), data) != 0)
+    {
+        return false;
+    }
+
+    return data[0] == static_cast<uint8_t>(Status::Ready);
+}
+
+bool XO5I2CManager::eraseCfg()
+{
+    const auto startBlock = (legacyMode) ? 0 : getStartBlock(cfgIndex);
+    const auto endBlock = startBlock + Cfg::BlocksPerCfg;
+
+    auto eraseBlock = [this](uint8_t block) -> bool {
+        if (legacyMode)
         {
-            cfStart = true;
+            setPage(cfgIndex, block, 0);
+            std::array<uint8_t, 2> cmd{XO5_CMD_ERASE_FLASH, XO5_ERASE_BLOCK};
+            if (i2cWriteReadCmd(cmd) != 0)
+            {
+                return false;
+            }
+            std::this_thread::sleep_for(ErasePageDelay);
         }
-        else if (line.rfind(TAG_CF_END, 0) == 0)
+        else
         {
-            endofCF = true;
-            cfStart = false;
+            std::array<uint8_t, 4> cmd{static_cast<uint8_t>(Cmd::SectorErase),
+                                       block, 0x0, 0x0};
+            if (i2cWriteReadCmd(cmd) != 0)
+            {
+                return false;
+            }
+            if (!waitUntilReady())
+                return false;
         }
-        else if (line.rfind(TAG_CHECKSUM, 0) == 0)
+        return true;
+    };
+
+    for (size_t block = startBlock; block < endBlock; ++block)
+    {
+        if (!eraseBlock(block))
         {
-            checksumStart = true;
+            std::cerr << std::format("ERASE FAILED: Block {:02X}\n", block);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool XO5I2CManager::programCfg()
+{
+    const auto startBlock = (legacyMode) ? 0 : getStartBlock(cfgIndex);
+    const auto endBlock = startBlock + Cfg::BlocksPerCfg;
+    const auto& cfgData = fwInfo.cfgData;
+    const auto totalBytes = cfgData.size();
+    size_t bytesWritten = 0;
+
+    for (size_t block = startBlock; block < endBlock; ++block)
+    {
+        if (legacyMode)
+        {
+            setPage(cfgIndex, block, 0);
         }
 
-        if (line.rfind("NOTE DEVICE NAME:", 0) == 0)
+        for (size_t page = 0; page < Cfg::PagesPerBlock; ++page)
         {
-            std::cerr << line << "\n";
-            if (line.find(chip) != std::string::npos)
+            if (bytesWritten >= totalBytes)
             {
-                std::cout
-                    << "[OK] The image device name match with chip name\n";
+                return true;
             }
-            else
+
+            const auto chunkSize =
+                std::min(Cfg::PageSize, totalBytes - bytesWritten);
+            auto chunk = std::span(cfgData).subspan(bytesWritten, chunkSize);
+            const auto success = (legacyMode) ? legacyProgramPage(chunk)
+                                              : programPage(block, page, chunk);
+            if (!success)
             {
-                std::cerr << "STOP UPDATEING: The image not match with chip.\n";
-                return -1;
+                std::cerr << std::format(
+                    "\nPROGRAM FAILED: Block {:02X} Page {:02X}\n", block,
+                    page);
+                return false;
             }
+
+            bytesWritten += chunkSize;
+            updateProgress(block, page, bytesWritten, totalBytes);
+        }
+    }
+    std::cout << std::endl;
+    return true;
+}
+
+bool XO5I2CManager::verifyCfg()
+{
+    const auto startBlock = (legacyMode) ? 0 : getStartBlock(cfgIndex);
+    const auto endBlock = startBlock + Cfg::BlocksPerCfg;
+    const auto& cfgData = fwInfo.cfgData;
+    const auto totalBytes = cfgData.size();
+    uint8_t readBuffer[1 + Cfg::PageSize];
+    size_t bytesVerified = 0;
+
+    for (size_t block = startBlock; block < endBlock; ++block)
+    {
+        if (legacyMode)
+        {
+            setPage(cfgIndex, block, 0);
         }
 
-        if (cfStart == true)
+        for (size_t page = 0; page < Cfg::PagesPerBlock; ++page)
         {
-            if ((line.rfind(TAG_CF_START, 0)) && (line.size() != 1))
+            if (bytesVerified >= totalBytes)
             {
-                if ((line.rfind("0", 0) == 0) || (line.rfind("1", 0) == 0))
+                return true;
+            }
+
+            const auto chunkSize =
+                std::min(Cfg::PageSize, totalBytes - bytesVerified);
+            auto expected =
+                std::span(cfgData).subspan(bytesVerified, chunkSize);
+            auto chunk = [=, this, &readBuffer]() -> std::span<uint8_t> {
+                if (legacyMode)
                 {
-                    while (line.size())
-                    {
-                        auto binary_str = line.substr(0, 8);
-                        try
-                        {
-                            fwInfo.cfgData.push_back(
-                                std::stoi(binary_str, 0, 2));
-                            line.erase(0, 8);
-                        }
-                        catch (const std::invalid_argument& error)
-                        {
-                            break;
-                        }
-                        catch (...)
-                        {
-                            std::cerr << "Error while parsing CF section"
-                                      << std::endl;
-                            return -1;
-                        }
-                    }
+                    auto readSpan = std::span(readBuffer).first(chunkSize);
+                    return legacyReadPage(readSpan) ? readSpan
+                                                    : std::span<uint8_t>{};
                 }
-                else {
-                    continue;
-                }
-            }
-        }
-        else if (endofCF == true) {
-            std::cerr << "CF Size = " << fwInfo.cfgData.size()
-                              << std::endl;
-            endofCF = false;
-        }
-        else if ((checksumStart == true) && (line.size() != 1))
-        {
-            checksumStart = false;
-            numberSize = line.find("*") - line.find("C") - 1;
-            if (numberSize <= 0)
+                auto readSpan = std::span(readBuffer).first(1 + chunkSize);
+                return readPage(block, page, readSpan) ? readSpan.subspan(1)
+                                                       : std::span<uint8_t>{};
+            }();
+            if (chunk.empty())
             {
-                std::cerr << "Error in parsing checksum" << std::endl;
-                ifs.close();
-                return -1;
+                std::cerr << std::format(
+                    "\nCould not read Block {:02X} Page {:02X}\n", block, page);
+                return false;
             }
-            static constexpr auto start = std::strlen(TAG_CHECKSUM);
-            std::istringstream iss(line.substr(start, numberSize));
-            iss >> std::hex >> fwInfo.CheckSum;
+            if (!std::equal(chunk.begin(), chunk.end(), expected.begin()))
+            {
+                std::cerr << std::format(
+                    "\nVERIFY FAILED: Block {:02X} Page {:02X}\n", block, page);
+                return false;
+            }
 
-            std::cout << "Checksum = 0x" << std::hex << fwInfo.CheckSum
-                      << std::endl;
+            bytesVerified += chunkSize;
+            updateProgress(block, page, bytesVerified, totalBytes);
         }
     }
-    // Compute check sum
-    unsigned int jedFileCheckSum = 0;
-    for (unsigned i = 0; i < fwInfo.cfgData.size(); i++)
-    {
-        jedFileCheckSum += reverse_bit(fwInfo.cfgData.at(i));
-    }
-    for (unsigned i = 0; i < fwInfo.ufmData.size(); i++)
-    {
-        jedFileCheckSum += reverse_bit(fwInfo.ufmData.at(i));
-    }
-    std::cout << "jedFileCheckSum = " << jedFileCheckSum << "\n";
-    jedFileCheckSum = jedFileCheckSum & 0xffff;
-
-    if ((fwInfo.CheckSum != jedFileCheckSum) || (fwInfo.CheckSum == 0))
-    {
-        std::cerr << "CPLD JED File CheckSum Error - " << std::hex
-                  << jedFileCheckSum << std::endl;
-        ifs.close();
-        return -1;
-    } else {
-        std::cout << "[OK] JED File Checksum compare success" << std::endl;
-    }
-
-    ifs.close();
-    return 0;
+    std::cout << std::endl;
+    return true;
 }
 
-int CpldLatticeManager::XO5Family_update()
+int CpldLatticeManager::XO5Family_update(bool legacy)
 {
-    uint8_t operate_taget;
-    XO5I2CManager i2cManager(bus, addr, imagePath, chip, interface, target, debugMode);
+    XO5I2CManager i2cManager(bus, addr, imagePath, chip, interface, target,
+                             debugMode, legacy);
 
-    std::cout << "Starting to update " << chip << std::endl;
-
-    if (target.empty() || target == "CFG0")
+    std::cout << std::format("Starting to update {}\n", chip);
+    if (target.empty())
     {
-        operate_taget = i2cManager.XO5_PARTITION_CFG0;
-
-    } else if (target == "CFG1")
+        target = "CFG0";
+    }
+    if (target != "CFG0" && target != "CFG1")
     {
-        operate_taget = i2cManager.XO5_PARTITION_CFG1;
-    } else
-    {
-        std::cerr << "Error: unknown target." << std::endl;
+        std::cerr << "Error: unknown target.\n";
         return -1;
     }
 
-    if (i2cManager.XO5jedFileParser() < 0)
+    if (i2cManager.jedFileParser() < 0)
     {
-        std::cerr << "JED file parsing failed" << std::endl;
+        std::cerr << "JED file parsing failed.\n";
         return -1;
     }
 
-    std::cout << "Program CFG" << (operate_taget == i2cManager.XO5_PARTITION_CFG0 ? "0" : "1")
-        << " data ..." << std::endl;
-    if (i2cManager.programCfgData(operate_taget) == false)
+    if (!legacy && !i2cManager.ready())
     {
-        std::cerr << "Program cfg data failed." << std::endl;
+        std::cerr << "Error: Device not ready.\n";
         return -1;
     }
 
-    std::cout << "Verify CFG data ..." << std::endl;
-    if (i2cManager.verifyCfgData(operate_taget) == false)
+    std::cout << std::format("Erasing {} ...\n", target);
+    if (!i2cManager.eraseCfg())
     {
-        std::cerr << "Verify cfg data failed." << std::endl;
+        std::cerr << "Erase cfg data failed.\n";
         return -1;
     }
 
-    std::cout << "\nUpdate completed! Please AC." << std::endl;
+    std::cout << std::format("Programming {} ...\n", target);
+    if (!i2cManager.programCfg())
+    {
+        std::cerr << "Program cfg data failed.\n";
+        return -1;
+    }
+
+    std::cout << std::format("Verifying {} ...\n", target);
+    if (!i2cManager.verifyCfg())
+    {
+        std::cerr << "Verify cfg data failed.\n";
+        return -1;
+    }
+    std::cout << "\nUpdate completed! Please AC.\n";
 
     return 0;
 }
 
-int CpldLatticeManager::fwUpdate()
+int CpldLatticeManager::fwUpdate(bool legacy)
 {
     if (chip == "LCMXO3LF-4300" || chip == "LCMXO3LF-6900" ||
         chip == "LCMXO3D-4300" || chip == "LCMXO3D-9400") {
         return XO2XO3Family_update();
     } else if (chip == "LFMXO5-25") {
-        return XO5Family_update();
+        return XO5Family_update(legacy);
     } else {
         std::cerr << "Unsupported chip type: " << chip << std::endl;
         return -1;

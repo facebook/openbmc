@@ -3,24 +3,24 @@
 
 #include <chrono>
 
+using namespace std::chrono_literals;
+
 constexpr uint8_t busyWaitmaxRetry = 45;
 constexpr uint8_t busyFlagBit = 0x80;
 constexpr uint8_t statusRegBusy = 0x10;
 constexpr uint8_t statusRegFail = 0x20;
 constexpr std::chrono::milliseconds waitBusyTime(200);
 
-static constexpr auto TAG_QF = "QF";
-static constexpr auto TAG_UH = "UH";
-static constexpr auto TAG_CF_START = "L000";
-static constexpr auto TAG_TAG_DATA = "NOTE TAG DATA";
-static constexpr auto TAG_UFM = "NOTE USER MEMORY DATA";
-static constexpr auto TAG_ROW = "NOTE FEATURE";
-static constexpr auto TAG_CHECKSUM = "C";
-static constexpr auto TAG_USERCODE = "NOTE User Electronic";
-static constexpr auto TAG_EBR_INIT_DATA = "NOTE EBR_INIT DATA";
-static constexpr auto TAG_END_CONFIG = "NOTE END CONFIG DATA";
-static constexpr auto TAG_CF_END = "NOTE END OF CFG";
-static constexpr auto TAG_DEV_NAME = "NOTE DEVICE NAME";
+static constexpr std::string_view TAG_QF = "QF";
+static constexpr std::string_view TAG_UH = "UH";
+static constexpr std::string_view TAG_CF_START = "L000";
+static constexpr std::string_view TAG_TAG_DATA = "NOTE TAG DATA";
+static constexpr std::string_view TAG_UFM = "NOTE USER MEMORY DATA";
+static constexpr std::string_view TAG_CHECKSUM = "C";
+static constexpr std::string_view TAG_USERCODE = "NOTE User Electronic";
+static constexpr std::string_view TAG_EBR_INIT_DATA = "NOTE EBR_INIT DATA";
+static constexpr std::string_view TAG_END_CONFIG = "NOTE END CONFIG DATA";
+static constexpr std::string_view TAG_DEV_NAME = "NOTE DEVICE NAME";
 
 constexpr uint8_t isOK = 0;
 constexpr uint8_t isReady = 0;
@@ -64,14 +64,13 @@ class CpldLatticeManager : public CpldManager
                        const bool debugMode) :
         CpldManager(bus, addr, path, chip, interface, target, debugMode)
     {}
-    int fwUpdate() override;
+
     int getVersion() override;
-    int XO2XO3Family_update();
-    int XO5Family_update();
+    int fwUpdate(bool legacy);
+    int jedFileParser();
 
   private:
     int indexof(const char* str, const char* ptn);
-    int jedFileParser();
     int readDeviceId();
     int enableProgramMode();
     int eraseFlash();
@@ -87,65 +86,100 @@ class CpldLatticeManager : public CpldManager
     int readStatusReg(uint8_t& statusReg);
     bool waitBusyAndVerify();
     int readUserCode(uint32_t& userCode);
+    int XO2XO3Family_update();
+    int XO5Family_update(bool legacy);
 };
 
 class XO5I2CManager : public CpldLatticeManager
 {
-  friend class CpldLatticeManager;
   public:
-    // XO5 commands
-    static const uint8_t XO5_CMD_IDLE = 0x00;
-    static const uint8_t XO5_CMD_SET_PAGE = 0x01;
-    static const uint8_t XO5_CMD_ERASE_FLASH = 0x02;
-    static const uint8_t XO5_CMD_CFG_WRITE_PAGE = 0x11;
-    static const uint8_t XO5_CMD_CFG_RESET_ADDR = 0x12;
-    static const uint8_t XO5_CMD_CFG_READ_PAGE = 0x19;
-    static const uint8_t XO5_CMD_UFM_WRITE_PAGE = 0x20;
-    static const uint8_t XO5_CMD_UFM_READ_PAGE = 0x21;
-    static const uint8_t XO5_CMD_UFM_RESET_ADDR = 0x22;
-    static const uint8_t XO5_CMD_USERDATA_WRITE_PAGE = 0x30;
-    static const uint8_t XO5_CMD_USERDATA_READ_PAGE = 0x31;
-    static const uint8_t XO5_CMD_USERDATA_RESET_ADDR = 0x32;
-
-    // Flash partition (X25)
-    static const uint8_t XO5_PARTITION_CFG0 = 0x00;
-    static const uint8_t XO5_PARTITION_UFM0 = 0x01;
-    static const uint8_t XO5_PARTITION_CFG1 = 0x02;
-    static const uint8_t XO5_PARTITION_UFM1 = 0x03;
-    static const uint8_t XO5_PARTITION_CFG2 = 0x04;
-    static const uint8_t XO5_PARTITION_UFM2 = 0x05;
-    static const uint8_t XO5_PARTITION_USERDATA0 = 0x06;
-    static const uint8_t XO5_PARTITION_USERDATA1 = 0x07;
-    static const uint8_t XO5_PARTITION_USERDATA2 = 0x08;
-    static const uint8_t XO5_PARTITION_USERDATA3 = 0x09;
-    static const uint8_t XO5_PARTITION_USERDATA4 = 0x0A;
-    static const uint8_t XO5_PARTITION_USERDATA5 = 0x0B;
-    static const uint8_t XO5_PARTITION_USERDATA6 = 0x0C;
-    static const uint8_t XO5_PARTITION_USERDATA7 = 0x0D;
-    static const uint8_t XO5_PARTITION_USERDATA8 = 0x0E;
-
-    // Flash erase size
-    static const uint8_t XO5_ERASE_BLOCK = 0x0;
-    static const uint8_t XO5_ERASE_WHOLE = 0x1;
-
-    static const int XO5_PAGE_NUM = 256;
-    static const int XO5_PAGE_SIZE = 256;
-    static const int XO5_CFG_BLOCK_NUM = 11;
-
-    XO5I2CManager(const uint8_t bus, const uint8_t addr,
-                       const std::string& path, const std::string& chip,
-                       const std::string& interface, const std::string& target,
-                       const bool debugMode) :
-        CpldLatticeManager(bus, addr, path, chip, interface, target, debugMode)
+    XO5I2CManager(uint8_t bus, uint8_t addr, const std::string& path,
+                  const std::string& chip, const std::string& interface,
+                  const std::string& target, bool debugMode,
+                  bool legacy = false) :
+        CpldLatticeManager(bus, addr, path, chip, interface, target, debugMode),
+        legacyMode(legacy),
+        cfgIndex{static_cast<uint8_t>(
+            target == "CFG1" ? (legacyMode ? XO5_PARTITION_CFG1 : 1) : 0)}
     {}
 
+    bool ready()
+    {
+        return waitUntilReady();
+    }
+    bool eraseCfg();
+    bool programCfg();
+    bool verifyCfg();
+
   private:
-    int XO5jedFileParser();
-    int set_page(uint8_t partition_num, uint32_t page_num);
-    int erase_flash(uint8_t size);
-    int cfg_reset_addr();
-    std::vector<uint8_t> cfg_read_page();
-    int cfg_write_page(const std::vector<uint8_t>& byte_list);
-    bool programCfgData(uint8_t cfg);
-    bool verifyCfgData(uint8_t cfg);
+    enum class Cmd : uint8_t
+    {
+        SectorErase = 0xd8,
+        PageProgram = 0x02,
+        PageRead = 0x0b,
+        ReadUsercode = 0xc0
+    };
+
+    enum class Status : uint8_t
+    {
+        Ready = 0x00,
+        NotReady = 0xff
+    };
+
+    struct Cfg
+    {
+        static constexpr size_t PageSize = 256;
+        static constexpr size_t PagesPerBlock = 256;
+        static constexpr size_t BlocksPerCfg = 11;
+    };
+
+    static constexpr std::array<uint8_t, 3> CfgStartBlocks = {0x01, 0x10, 0x1F};
+    static constexpr auto ReadyPollInterval = 10ms;
+    static constexpr auto ReadyTimeout = 1000ms;
+    static constexpr auto ErasePageDelay = 250ms;
+
+    constexpr auto getStartBlock(uint8_t cfg) const
+    {
+        if (cfg >= CfgStartBlocks.size())
+        {
+            throw std::out_of_range("Invalid cfg number");
+        }
+        return CfgStartBlocks[cfg];
+    }
+
+    void updateProgress(size_t block, size_t page, size_t bytes,
+                        size_t totalBytes) const
+    {
+        std::cout << std::format("Block {:02X} Page {:02X} - {:.1f}%  \r",
+                                 block, page, 100.0f * bytes / totalBytes)
+                  << std::flush;
+    }
+
+    bool waitUntilReady(std::chrono::milliseconds timeout = ReadyTimeout);
+    bool programPage(uint8_t block, uint8_t page,
+                     std::span<const uint8_t> data);
+    bool readPage(uint8_t block, uint8_t page, std::span<uint8_t> data);
+
+    // ==================================================
+    // LEGACY XO5 PROGRAMMING MODE
+    // ==================================================
+    static constexpr auto XO5_CMD_SET_PAGE = 0x01;
+    static constexpr auto XO5_CMD_ERASE_FLASH = 0x02;
+    static constexpr auto XO5_CMD_CFG_WRITE_PAGE = 0x11;
+    static constexpr auto XO5_CMD_CFG_READ_PAGE = 0x19;
+
+    static constexpr auto XO5_PARTITION_CFG0 = 0x00;
+    static constexpr auto XO5_PARTITION_CFG1 = 0x02;
+
+    static constexpr auto XO5_ERASE_BLOCK = 0x0;
+    static constexpr auto XO5_ERASE_WHOLE = 0x1;
+
+    bool setPage(uint8_t cfg, uint8_t block, uint8_t page);
+    bool legacyProgramPage(std::span<const uint8_t> data);
+    bool legacyReadPage(std::span<uint8_t> data);
+
+    const bool legacyMode;
+    // ==================================================
+
+    uint8_t cfgIndex;
 };

@@ -6,6 +6,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -53,8 +54,8 @@ class CpldManager
         return -1;
     }
 
-    int i2cWriteReadCmd(const std::vector<uint8_t>& cmdData, size_t rx_len,
-                        std::vector<uint8_t>& readData);
+    int i2cWriteReadCmd(std::span<const uint8_t> cmdData, size_t rx_len = 0,
+                        std::span<uint8_t> readData = {});
     uint8_t bus;
     uint8_t addr;
     std::string imagePath;

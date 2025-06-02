@@ -16,7 +16,7 @@ for pos in 1 2; do
         continue
     fi
 
-    MAX_RETRIES=3
+    MAX_RETRIES=12
     RETRY_COUNT=0
     TIMEOUT_DURATION=3
 
@@ -26,9 +26,9 @@ for pos in 1 2; do
 
         # Check for non-empty output
         if [ -z "$output" ]; then
-            echo "No output from cxl-fw-update. Retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+            echo "No output from Host$slot CXL$pos cxl-fw-update. Retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
             RETRY_COUNT=$((RETRY_COUNT + 1))
-            sleep 1
+            sleep 5
         else
             # Extract the active slot number
             active_slot=$(echo "$output" | grep "Active FW Slot" | awk '{print $4}')
@@ -38,10 +38,11 @@ for pos in 1 2; do
 
             # If timeout occured, the output will be unexpected and the version will be empty.
             if [ -z "$version" ]; then
-                echo "Unexpected output from cxl-fw-update:"
+                echo "Unexpected output from Host$slot CXL$pos cxl-fw-update:"
                 echo "$output"
+                echo "Unexpected output from Host$slot CXL$pos cxl-fw-update. Retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
                 RETRY_COUNT=$((RETRY_COUNT + 1))
-                sleep 1
+                sleep 5
                 continue
             fi
 
@@ -56,7 +57,7 @@ for pos in 1 2; do
     done
 
     if [ "$RETRY_COUNT" -eq "$MAX_RETRIES" ]; then
-        echo "Failed to get output from cxl-fw-update after $MAX_RETRIES retries on CXL$pos."
+        echo "Failed to get output from cxl-fw-update after $MAX_RETRIES retries on Host$slot CXL$pos."
         exit 1
     fi
 

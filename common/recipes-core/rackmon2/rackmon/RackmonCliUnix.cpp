@@ -21,7 +21,7 @@ class RackmonClient : public UnixClient {
   RackmonClient() : UnixClient("/var/run/rackmond.sock") {}
 };
 
-static void print_json(json& j) {
+[[nodiscard]] static int print_json(json& j) {
   std::string status;
   json data = j["data"];
   j.at("status").get_to(status);
@@ -29,8 +29,9 @@ static void print_json(json& j) {
     std::cout << data.dump() << std::endl;
   } else {
     std::cout << j.dump(4) << std::endl;
-    exit(1);
+    return 1;
   }
+  return 0;
 }
 
 static std::string to_string(const json& v) {
@@ -156,7 +157,7 @@ static void print_hexstring(const json& j) {
   std::cout << std::endl;
 }
 
-static void print_text(const std::string& req_s, json& j) {
+[[nodiscard]] static int print_text(const std::string& req_s, json& j) {
   std::string status;
   j.at("status").get_to(status);
   if (status == "SUCCESS") {
@@ -170,11 +171,12 @@ static void print_text(const std::string& req_s, json& j) {
       print_hexstring(j["data"]);
   } else {
     std::cerr << "FAILURE: " << status << std::endl;
-    exit(1);
+    return 1;
   }
+  return 0;
 }
 
-static void
+[[nodiscard]] static int
 do_raw_cmd(const std::string& req_s, int timeout, int resp_len, bool json_fmt) {
   json req;
   req["type"] = "raw";
@@ -191,12 +193,12 @@ do_raw_cmd(const std::string& req_s, int timeout, int resp_len, bool json_fmt) {
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
   if (json_fmt)
-    print_json(resp_j);
+    return print_json(resp_j);
   else
-    print_text("raw", resp_j);
+    return print_text("raw", resp_j);
 }
 
-static void do_read_cmd(
+[[nodiscard]] static int do_read_cmd(
     int devAddr,
     int regAddr,
     int regCount,
@@ -214,8 +216,7 @@ static void do_read_cmd(
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
   if (json_fmt) {
-    print_json(resp_j);
-    return;
+    return print_json(resp_j);
   }
   std::string status;
   resp_j.at("status").get_to(status);
@@ -229,10 +230,12 @@ static void do_read_cmd(
     std::cout << std::endl;
   } else {
     std::cout << status << std::endl;
+    return 1;
   }
+  return 0;
 }
 
-static void do_read_file_cmd(
+[[nodiscard]] static int do_read_file_cmd(
     int devAddr,
     int fileNum,
     int recordNum,
@@ -253,8 +256,7 @@ static void do_read_file_cmd(
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
   if (json_fmt) {
-    print_json(resp_j);
-    return;
+    return print_json(resp_j);
   }
   std::string status;
   resp_j.at("status").get_to(status);
@@ -270,10 +272,12 @@ static void do_read_file_cmd(
     }
   } else {
     std::cout << status << std::endl;
+    return 1;
   }
+  return 0;
 }
 
-static void do_write_cmd(
+[[nodiscard]] static int do_write_cmd(
     int devAddr,
     int regAddr,
     std::vector<int>& values,
@@ -296,27 +300,30 @@ static void do_write_cmd(
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
   if (json_fmt) {
-    print_json(resp_j);
-    return;
+    return print_json(resp_j);
   }
   std::string status;
   resp_j.at("status").get_to(status);
   std::cout << status << std::endl;
+  if (status != "SUCCESS") {
+    return 1;
+  }
+  return 0;
 }
 
-static void do_cmd(const std::string& type, bool json_fmt) {
+[[nodiscard]] static int do_cmd(const std::string& type, bool json_fmt) {
   json req;
   req["type"] = type;
   RackmonClient cli;
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
   if (json_fmt)
-    print_json(resp_j);
+    return print_json(resp_j);
   else
-    print_text(type, resp_j);
+    return print_text(type, resp_j);
 }
 
-static void do_data_cmd(
+[[nodiscard]] static int do_data_cmd(
     const std::string& type,
     bool json_fmt,
     std::vector<int>& deviceFilter,
@@ -341,12 +348,12 @@ static void do_data_cmd(
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
   if (json_fmt)
-    print_json(resp_j);
+    return print_json(resp_j);
   else
-    print_text(type, resp_j);
+    return print_text(type, resp_j);
 }
 
-static void do_reload_cmd(
+[[nodiscard]] static int do_reload_cmd(
     const std::vector<int>& deviceFilter,
     const std::vector<std::string>& deviceTypeFilter,
     const std::vector<int>& regFilter,
@@ -366,7 +373,13 @@ static void do_reload_cmd(
   RackmonClient cli;
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
-  std::cout << resp_j.at("status") << std::endl;
+  std::string status;
+  resp_j.at("status").get_to(status);
+  std::cout << status << std::endl;
+  if (status != "SUCCESS") {
+    return 1;
+  }
+  return 0;
 }
 
 static void do_rackmonstatus() {
@@ -397,7 +410,7 @@ int main(int argc, const char** argv) {
     }
     argc++;
   }
-
+  int return_code = -1;
   bool json_fmt = false;
   // Allow flags/options to fallthrough from subcommands.
   app.fallthrough();
@@ -417,8 +430,9 @@ int main(int argc, const char** argv) {
       ->required();
   raw_cmd->add_option("cmd", req, "Request command bytes, ex: a40300000008")
       ->required();
-  raw_cmd->callback(
-      [&]() { do_raw_cmd(req, raw_cmd_timeout, expected_len, json_fmt); });
+  raw_cmd->callback([&]() {
+    return_code = do_raw_cmd(req, raw_cmd_timeout, expected_len, json_fmt);
+  });
 
   int devAddress = 0;
   int regAddress = 0;
@@ -439,7 +453,8 @@ int main(int argc, const char** argv) {
   read_cmd->add_option("--count", regCount, "The number of registers to read")
       ->capture_default_str();
   read_cmd->callback([&]() {
-    do_read_cmd(devAddress, regAddress, regCount, raw_cmd_timeout, json_fmt);
+    return_code = do_read_cmd(
+        devAddress, regAddress, regCount, raw_cmd_timeout, json_fmt);
   });
 
   std::vector<int> values{};
@@ -463,7 +478,8 @@ int main(int argc, const char** argv) {
           "The values we want to write (Each value is 16bit register)")
       ->required();
   write_cmd->callback([&]() {
-    do_write_cmd(devAddress, regAddress, values, raw_cmd_timeout, json_fmt);
+    return_code =
+        do_write_cmd(devAddress, regAddress, values, raw_cmd_timeout, json_fmt);
   });
 
   int fileNum, recNum, dataSize;
@@ -486,13 +502,13 @@ int main(int argc, const char** argv) {
       ->required();
   read_file->add_option("-t,--timeout", raw_cmd_timeout, "Timeout (ms)");
   read_file->callback([&]() {
-    do_read_file_cmd(
+    return_code = do_read_file_cmd(
         devAddress, fileNum, recNum, dataSize, raw_cmd_timeout, json_fmt);
   });
 
   // List command
   app.add_subcommand("list", "Return list of Modbus devices")->callback([&]() {
-    do_cmd("listModbusDevices", json_fmt);
+    return_code = do_cmd("listModbusDevices", json_fmt);
   });
 
   // Status command
@@ -510,7 +526,7 @@ int main(int argc, const char** argv) {
   bool latestOnly = false;
   auto data = app.add_subcommand("data", "Return detailed monitoring data");
   data->callback([&]() {
-    do_data_cmd(
+    return_code = do_data_cmd(
         format == "raw" ? "getMonitorDataRaw" : "getMonitorData",
         json_fmt,
         deviceFilter,
@@ -542,7 +558,8 @@ int main(int argc, const char** argv) {
 
   auto reload = app.add_subcommand("reload", "Reload requested registers");
   reload->callback([&]() {
-    do_reload_cmd(deviceFilter, deviceTypeFilter, regFilter, regNameFilter);
+    return_code =
+        do_reload_cmd(deviceFilter, deviceTypeFilter, regFilter, regNameFilter);
   });
   reload->add_option(
       "--reg-addr", regFilter, "Return values of provided registers only");
@@ -561,22 +578,22 @@ int main(int argc, const char** argv) {
 
   // Pause command
   app.add_subcommand("pause", "Pause monitoring")->callback([&]() {
-    do_cmd("pause", json_fmt);
+    return_code = do_cmd("pause", json_fmt);
   });
 
   // Resume command
   app.add_subcommand("resume", "Resume monitoring")->callback([&]() {
-    do_cmd("resume", json_fmt);
+    return_code = do_cmd("resume", json_fmt);
   });
 
   // Rescan
   app.add_subcommand("rescan", "Force rescan all busses")->callback([&]() {
-    do_cmd("rescan", json_fmt);
+    return_code = do_cmd("rescan", json_fmt);
   });
 
   app.require_subcommand(/* min */ 1, /* max */ 1);
 
   CLI11_PARSE(app, argc, argv);
 
-  return 0;
+  return return_code;
 }

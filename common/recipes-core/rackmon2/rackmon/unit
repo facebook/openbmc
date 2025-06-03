@@ -2,6 +2,11 @@
 # Copyright 2021-present Facebook. All Rights Reserved.
 
 check_packages() {
+  if ! command -v rpm &> /dev/null; then
+    echo "rpm is not installed. skipping packages check"
+    return
+  fi
+
   required_packages=("python3-jsonschema" "meson" "ninja-build" "gtest" "gtest-devel" "gmock" "gmock-devel" "glog" "glog-devel" "json-devel" "cli11-devel")
   for package in "${required_packages[@]}"; do
     echo "Checking for $package"

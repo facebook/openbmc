@@ -21,3 +21,5 @@ IMAGE_INSTALL:append = " managed-reboot"
 IMAGE_INSTALL:append = " nic-reset"
 # Added to determine when PLDM is missing sensors
 IMAGE_INSTALL:append = " pldm-monitor"
+# Added to ensure that nic temp sensors are brought back when they disapear
+IMAGE_INSTALL:append = " nic-sensor-monitor"

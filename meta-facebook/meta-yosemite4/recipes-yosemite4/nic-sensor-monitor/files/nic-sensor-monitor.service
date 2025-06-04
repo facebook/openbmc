@@ -1,0 +1,10 @@
+[Unit]
+Description=Monitor nic temp sensors
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nic-sensor-monitor
+
+[Install]
+WantedBy=multi-user.target
+

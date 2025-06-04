@@ -53,6 +53,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-montblanc:lf-master
   meta-morgan800cc:lf-master
   meta-qemux86:lf-master
+  meta-santabarbara:lf-master
   meta-tahan:lf-master
   meta-ventura:lf-master
   meta-waimeacanyon:lf-master

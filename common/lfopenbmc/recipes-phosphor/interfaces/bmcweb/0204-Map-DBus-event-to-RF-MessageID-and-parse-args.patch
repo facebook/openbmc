@@ -1,4 +1,4 @@
-From a6d52794838cbe5d7499086d41f13e5bf3d4e2b9 Mon Sep 17 00:00:00 2001
+From 11411cba27b1457b6603f4bc24e7bd0336b76cd3 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -107,7 +107,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  create mode 100644 test/redfish-core/lib/log_services_test.cpp
 
 diff --git a/config/meson.build b/config/meson.build
-index 40bee7f..be4a654 100644
+index 40bee7f6..be4a6542 100644
 --- a/config/meson.build
 +++ b/config/meson.build
 @@ -24,6 +24,7 @@ feature_options = [
@@ -119,7 +119,7 @@ index 40bee7f..be4a654 100644
      'redfish-bmc-journal',
      'redfish-cpu-log',
 diff --git a/include/dbus_utility.hpp b/include/dbus_utility.hpp
-index 4eedcbf..d35059a 100644
+index 4eedcbf7..d35059a0 100644
 --- a/include/dbus_utility.hpp
 +++ b/include/dbus_utility.hpp
 @@ -20,6 +20,7 @@
@@ -141,10 +141,10 @@ index 4eedcbf..d35059a 100644
  
  // clang-format on
 diff --git a/meson.build b/meson.build
-index 4923b6d..77f01ac 100644
+index 37ac2ae3..888eaf30 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -416,6 +416,7 @@ srcfiles_bmcweb = files(
+@@ -417,6 +417,7 @@ srcfiles_bmcweb = files(
      'redfish-core/src/resource_messages.cpp',
      'redfish-core/src/subscription.cpp',
      'redfish-core/src/task_messages.cpp',
@@ -161,10 +161,10 @@ index 4923b6d..77f01ac 100644
      'test/redfish-core/lib/metadata_test.cpp',
      'test/redfish-core/lib/power_subsystem_test.cpp',
 diff --git a/meson.options b/meson.options
-index 981fa8b..7583423 100644
+index 77aa2371..d08da505 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -315,6 +315,21 @@ option(
+@@ -313,6 +313,21 @@ option(
                      will be disabled by default June 2024. ''',
  )
  
@@ -187,7 +187,7 @@ index 981fa8b..7583423 100644
  option(
      'redfish-oem-manager-fan-data',
 diff --git a/redfish-core/include/event_log.hpp b/redfish-core/include/event_log.hpp
-index c902a09..bda0885 100644
+index c902a09d..bda08858 100644
 --- a/redfish-core/include/event_log.hpp
 +++ b/redfish-core/include/event_log.hpp
 @@ -1,11 +1,11 @@
@@ -221,7 +221,7 @@ index c902a09..bda0885 100644
  } // namespace event_log
  
 diff --git a/redfish-core/include/event_logs_object_type.hpp b/redfish-core/include/event_logs_object_type.hpp
-index 32f1b86..8be93c0 100644
+index 32f1b86a..8be93c04 100644
 --- a/redfish-core/include/event_logs_object_type.hpp
 +++ b/redfish-core/include/event_logs_object_type.hpp
 @@ -10,8 +10,11 @@ namespace redfish
@@ -238,7 +238,7 @@ index 32f1b86..8be93c0 100644
  };
  } // namespace redfish
 diff --git a/redfish-core/include/utils/dbus_event_log_entry.hpp b/redfish-core/include/utils/dbus_event_log_entry.hpp
-index 5ce3b6f..7c2f4f2 100644
+index 5ce3b6ff..7c2f4f27 100644
 --- a/redfish-core/include/utils/dbus_event_log_entry.hpp
 +++ b/redfish-core/include/utils/dbus_event_log_entry.hpp
 @@ -8,14 +8,17 @@
@@ -269,7 +269,7 @@ index 5ce3b6f..7c2f4f2 100644
          "Path", entry.Path,
 diff --git a/redfish-core/include/utils/dbus_registries_map_utils.hpp b/redfish-core/include/utils/dbus_registries_map_utils.hpp
 new file mode 100644
-index 0000000..f028f65
+index 00000000..f028f65c
 --- /dev/null
 +++ b/redfish-core/include/utils/dbus_registries_map_utils.hpp
 @@ -0,0 +1,27 @@
@@ -301,7 +301,7 @@ index 0000000..f028f65
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index c65875a..ce4cab2 100644
+index c65875a3..ce4cab23 100644
 --- a/redfish-core/lib/log_services.hpp
 +++ b/redfish-core/lib/log_services.hpp
 @@ -10,6 +10,7 @@
@@ -399,7 +399,7 @@ index c65875a..ce4cab2 100644
      return true;
  }
 diff --git a/redfish-core/src/dbus_log_watcher.cpp b/redfish-core/src/dbus_log_watcher.cpp
-index c6ca381..77390bd 100644
+index c6ca3811..77390bdc 100644
 --- a/redfish-core/src/dbus_log_watcher.cpp
 +++ b/redfish-core/src/dbus_log_watcher.cpp
 @@ -7,13 +7,14 @@
@@ -450,7 +450,7 @@ index c6ca381..77390bd 100644
  
  static void dbusEventLogMatchHandlerSingleEntry(
 diff --git a/redfish-core/src/event_log.cpp b/redfish-core/src/event_log.cpp
-index 23af3fe..f617a67 100644
+index 23af3fea..f617a675 100644
 --- a/redfish-core/src/event_log.cpp
 +++ b/redfish-core/src/event_log.cpp
 @@ -3,8 +3,8 @@
@@ -531,7 +531,7 @@ index 23af3fe..f617a67 100644
  
  } // namespace event_log
 diff --git a/redfish-core/src/filesystem_log_watcher.cpp b/redfish-core/src/filesystem_log_watcher.cpp
-index 41f2c6a..a58bfa0 100644
+index 41f2c6a4..a58bfa0c 100644
 --- a/redfish-core/src/filesystem_log_watcher.cpp
 +++ b/redfish-core/src/filesystem_log_watcher.cpp
 @@ -4,6 +4,7 @@
@@ -580,7 +580,7 @@ index 41f2c6a..a58bfa0 100644
  
      if (eventRecords.empty())
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index 7f61b9b..ef8782e 100644
+index 7f61b9b4..ef8782ef 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
 @@ -37,7 +37,6 @@
@@ -609,7 +609,7 @@ index 7f61b9b..ef8782e 100644
          {
 diff --git a/redfish-core/src/utils/dbus_registries_map_utils.cpp b/redfish-core/src/utils/dbus_registries_map_utils.cpp
 new file mode 100644
-index 0000000..5f03652
+index 00000000..5f036526
 --- /dev/null
 +++ b/redfish-core/src/utils/dbus_registries_map_utils.cpp
 @@ -0,0 +1,121 @@
@@ -735,7 +735,7 @@ index 0000000..5f03652
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/test/redfish-core/include/dbus_log_watcher_test.cpp b/test/redfish-core/include/dbus_log_watcher_test.cpp
-index c2a33df..48b9023 100644
+index c2a33dff..48b90236 100644
 --- a/test/redfish-core/include/dbus_log_watcher_test.cpp
 +++ b/test/redfish-core/include/dbus_log_watcher_test.cpp
 @@ -4,7 +4,7 @@
@@ -812,7 +812,7 @@ index c2a33df..48b9023 100644
          {"Id", DbusVariantType(static_cast<uint32_t>(1838))},
          {"Message", DbusVariantType("")},
 diff --git a/test/redfish-core/include/event_log_test.cpp b/test/redfish-core/include/event_log_test.cpp
-index c51eee6..291c7c1 100644
+index c51eee6e..291c7c14 100644
 --- a/test/redfish-core/include/event_log_test.cpp
 +++ b/test/redfish-core/include/event_log_test.cpp
 @@ -1,4 +1,5 @@
@@ -881,7 +881,7 @@ index c51eee6..291c7c1 100644
  } // namespace redfish::event_log
 diff --git a/test/redfish-core/lib/log_services_test.cpp b/test/redfish-core/lib/log_services_test.cpp
 new file mode 100644
-index 0000000..7c5277c
+index 00000000..7c5277c6
 --- /dev/null
 +++ b/test/redfish-core/lib/log_services_test.cpp
 @@ -0,0 +1,141 @@

@@ -1,7 +1,7 @@
-From 2ec01f7704f0e803e33610732d869215503c94a6 Mon Sep 17 00:00:00 2001
+From b3b5f4541ab83d2d39fd15e6b3b7d2bec528b4fa Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Mon, 11 Nov 2024 18:10:41 -0500
-Subject: [PATCH 100/104] Revert "Explicitly set verify_none"
+Subject: [PATCH 100/103] Revert "Explicitly set verify_none"
 
 This reverts commit 463a0e3e880340a119bf986bab039d1afbe1a432.
 ---
@@ -10,7 +10,7 @@ This reverts commit 463a0e3e880340a119bf986bab039d1afbe1a432.
  2 files changed, 9 insertions(+), 13 deletions(-)
 
 diff --git a/http/http_connection.hpp b/http/http_connection.hpp
-index 52779816..790cf93d 100644
+index 955cb347..abd5e969 100644
 --- a/http/http_connection.hpp
 +++ b/http/http_connection.hpp
 @@ -122,9 +122,6 @@ class Connection :
@@ -59,5 +59,5 @@ index cc113601..235d08e0 100644
  
      if constexpr (BMCWEB_EXPERIMENTAL_HTTP2)
 -- 
-2.45.3
+2.47.1
 

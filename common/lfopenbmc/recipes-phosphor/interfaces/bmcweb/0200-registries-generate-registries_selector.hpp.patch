@@ -1,4 +1,4 @@
-From 03315dfc48db7a86ae6653e801355057def87da4 Mon Sep 17 00:00:00 2001
+From f343e5d26631888170d914b444558cec8139b294 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Thu, 27 Feb 2025 18:39:58 -0500
 Subject: [PATCH 200/205] registries: generate registries_selector.hpp
@@ -44,7 +44,7 @@ Change-Id: Ia243a7bfbb8873384b6679b462914ba8380bf5b3
  2 files changed, 36 insertions(+), 8 deletions(-)
 
 diff --git a/redfish-core/include/registries_selector.hpp b/redfish-core/include/registries_selector.hpp
-index 6440ca5..71a628d 100644
+index 6440ca59..71a628db 100644
 --- a/redfish-core/include/registries_selector.hpp
 +++ b/redfish-core/include/registries_selector.hpp
 @@ -1,17 +1,24 @@
@@ -81,7 +81,7 @@ index 6440ca5..71a628d 100644
 +#include "registries/update_message_registry.hpp"
 +// NOLINTEND(misc-include-cleaner)
 diff --git a/scripts/parse_registries.py b/scripts/parse_registries.py
-index d60e523..2e2d07e 100755
+index 03e44cb3..595d9a83 100755
 --- a/scripts/parse_registries.py
 +++ b/scripts/parse_registries.py
 @@ -87,7 +87,28 @@ def openbmc_local_getter() -> RegistryInfo:

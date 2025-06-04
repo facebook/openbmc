@@ -1,4 +1,4 @@
-From 150a8fd89911359ea391fa9c72ef6205efd09787 Mon Sep 17 00:00:00 2001
+From 7c2d130d0b9d0b502866dc0a8cb70b908c9c2278 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Tue, 11 Mar 2025 12:10:57 +0000
 Subject: [PATCH 203/205] Add required MemberId to the EventRecord definition
@@ -46,7 +46,7 @@ Change-Id: I99fcdcdccc97bfa39581d3e42ef407a8cfadaa83
  1 file changed, 2 insertions(+)
 
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index f81fdc6..7f61b9b 100644
+index f81fdc6c..7f61b9b4 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
 @@ -212,6 +212,7 @@ void Subscription::filterAndSendEventLogs(

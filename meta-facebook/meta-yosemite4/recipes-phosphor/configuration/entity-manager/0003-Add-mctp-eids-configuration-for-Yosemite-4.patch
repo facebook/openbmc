@@ -1,4 +1,4 @@
-From 8028a84855fad349e799eb5e810b57b816d450e5 Mon Sep 17 00:00:00 2001
+From 6e851f9ee575a77a34b73b1e66f0f0a168ff3ece Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/6] Add mctp eids configuration for Yosemite 4
@@ -220,13 +220,13 @@ index 9aa8ba2..9453f76 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/schemas/exposes_record.json b/schemas/exposes_record.json
-index ffee2da..f040e21 100644
+index b818ce9..a1646f6 100644
 --- a/schemas/exposes_record.json
 +++ b/schemas/exposes_record.json
-@@ -155,6 +155,9 @@
+@@ -158,6 +158,9 @@
                  },
                  {
-                     "$ref": "cpld.json#/$defs/CPLDFirmware"
+                     "$ref": "gpio_presence.json#/$defs/GPIODeviceDetect"
 +                },
 +                {
 +                    "$ref": "legacy.json#/$defs/MCTPEndpoint"
@@ -234,7 +234,7 @@ index ffee2da..f040e21 100644
              ]
          },
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 819db95..6b006f8 100644
+index e548228..f6c68c7 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1,6 +1,43 @@
@@ -281,7 +281,7 @@ index 819db95..6b006f8 100644
          "ExitAirTempSensor": {
              "description": "implemented in dbus-sensors: ExitAirTempSensor",
              "additionalProperties": false,
-@@ -1189,6 +1226,9 @@
+@@ -1191,6 +1228,9 @@
              "EntityInstance": {
                  "type": "number"
              },
@@ -291,7 +291,7 @@ index 819db95..6b006f8 100644
              "GpioPins": {
                  "items": {
                      "type": "number"
-@@ -1198,6 +1238,9 @@
+@@ -1200,6 +1240,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },
@@ -301,7 +301,7 @@ index 819db95..6b006f8 100644
              "Index": {
                  "type": "number",
                  "minimum": 0,
-@@ -1218,6 +1261,10 @@
+@@ -1220,6 +1263,10 @@
              "MaxValue": {
                  "type": "number"
              },

@@ -1,4 +1,4 @@
-From ba7c854b2cedb44c3b9c4f2467a1aadac857ebb7 Mon Sep 17 00:00:00 2001
+From 4b58d86bf5733831f08ace39be224c33972dd00b Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
 Subject: [PATCH 205/205] Show mapped and raw Dbus messages in Log services
@@ -59,7 +59,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  1 file changed, 13 insertions(+), 11 deletions(-)
 
 diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index ce4cab2..4d0cce2 100644
+index ce4cab23..4d0cce25 100644
 --- a/redfish-core/lib/log_services.hpp
 +++ b/redfish-core/lib/log_services.hpp
 @@ -1452,26 +1452,28 @@ inline bool fillEventLogLogEntryFromPropertyMap(

@@ -1,4 +1,4 @@
-From ad1e110794dc9143a25e537f5f0c246bb041c614 Mon Sep 17 00:00:00 2001
+From 870ef1418d26d9b280945910f0cc70f92e07d480 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/6] entity-manager: Add config-prefix filtering
@@ -19,7 +19,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  5 files changed, 76 insertions(+), 37 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index c8703c1..916fb68 100644
+index ffef7c8..9b63b61 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -7,6 +7,11 @@ project(
@@ -35,12 +35,12 @@ index c8703c1..916fb68 100644
  boost_args = [
      '-DBOOST_ASIO_NO_DEPRECATED',
 diff --git a/meson.options b/meson.options
-index 65c1f97..11fe79d 100644
+index d658c8b..b4cde28 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -28,3 +28,9 @@ option(
+@@ -34,3 +34,9 @@ option(
      value: true,
-     description: 'Run JSON schema validation during the build.',
+     description: 'Build gpio presence daemon',
  )
 +option(
 +    'config-prefix',

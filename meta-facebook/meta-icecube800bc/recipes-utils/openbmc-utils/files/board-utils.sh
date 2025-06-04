@@ -33,53 +33,69 @@ COME_SYSTEM_WARM_RESET="${SCMCPLD_SYSFS_DIR}/cb_sys_reset"
 CHASSIS_POWER_CYCLE="${MCBCPLD_SYSFS_DIR}/power_cycle_go"
 
 wedge_board_type() {
-    echo 'icecube800bc'
+    board_id=$(head -n 1 < "$BOARD_ID" 2> /dev/null)
+    case "$((board_id))" in
+        7)
+            echo "SANTABARBARA"
+            ;;
+        8)
+            echo "ICECUBE800BC"
+            ;;
+        9)
+            echo "ICETRAY"
+            ;;
+        *)
+            echo "unknown value [$board_id]"
+            ;;
+    esac
 }
 
 wedge_board_rev() {
-    board_id=$(head -n 1 < "$BOARD_ID" 2> /dev/null)
     version_id=$(head -n 1 < "$VERSION_ID" 2> /dev/null)
-
-    case "$((board_id))" in
-        8)
-            echo "Board type: Icecube800bc Networking System Board "
-            ;;
-        *)
-            echo "Board type: unknown value [$board_id]"
-            ;;
-    esac
 
     case "$((version_id))" in
         0)
-            echo "Revision: Pre-EVT & EVT1"
+            echo "Pre-EVT & EVT1"
             ;;
         1)
-            echo "Revision: EVT-2A"
+            echo "EVT-2A"
             ;;
         2)
-            echo "Revision: EVT-2B"
+            echo "EVT-2B"
             ;;
         3)
-            echo "Revision: DVT-1A"
+            echo "DVT-1A"
             ;;
         4)
-            echo "Revision: DVT-1B"
+            echo "DVT-1B"
             ;;
         5)
-            echo "Revision: PPVT"
+            echo "PPVT"
             ;;
         6)
-            echo "Revision: PVT"
+            echo "PVT"
             ;;
         7)
-            echo "Revision: MP"
+            echo "MP"
             ;;
         *)
-            echo "Revision: unknown value [$version_id]"
+            echo "unknown value [$version_id]"
             ;;
     esac
 
     return 0
+}
+
+wedge_board_type_rev() {
+    board_type=$(wedge_board_type)
+    board_rev=$(wedge_board_rev)
+
+    if [ -z "$board_type" ] || [ -z "$board_rev" ]; then
+        echo "Error: Unable to determine board type or revision!"
+        return 1
+    fi
+
+    echo "${board_type}_${board_rev}"
 }
 
 userver_power_is_on() {

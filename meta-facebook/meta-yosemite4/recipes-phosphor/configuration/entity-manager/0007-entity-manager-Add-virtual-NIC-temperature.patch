@@ -1,0 +1,87 @@
+From d2d8f5b53649cc462959a2084ed93ed0c34e94ff Mon Sep 17 00:00:00 2001
+From: Rush Chen <Rush_Chen@wiwynn.com>
+Date: Wed, 4 Jun 2025 17:23:22 +0800
+Subject: [PATCH] meta-facebook: yosemite4: Add virtual NIC temperature sensors
+ into fan table
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+ Summary:
+- Add NIC temperature virtual sensors to fan control table for thermal protection.
+
+ Description:
+- The 4 newly added virtual sensors are now included in the fan control table.
+- If any of these virtual sensors report a temperature below 10°C (including 0 from NA),
+  the fan controller will raise the fan speed to 100% to prevent thermal risk.
+
+ Motivation:
+- Prevent the system from undercooling in cases where NIC temperature sensors
+  return invalid (NA) or abnormally low readings.
+- Ensures proactive fan response to maintain safe operating temperatures.
+
+ Test Plan:
+- Trigger NIC temperature sensors to report "NA" and <10°C.
+- Verify that the fan speed ramps up to 100% when virtual sensor value is low.
+---
+ configurations/meta/yosemite4.json | 44 ++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/configurations/meta/yosemite4.json b/configurations/meta/yosemite4.json
+index 8019113..c32c37c 100644
+--- a/configurations/meta/yosemite4.json
++++ b/configurations/meta/yosemite4.json
+@@ -717,6 +717,50 @@
+                 }
+             ],
+             "Type": "TMP75"
++        },
++        {
++            "Class": "temp",
++            "Inputs": [
++                "VIRTUAL_NIC0_TEMP_C",
++                "VIRTUAL_NIC1_TEMP_C",
++                "VIRTUAL_NIC2_TEMP_C",
++                "VIRTUAL_NIC3_TEMP_C"
++            ],
++            "Name": "Stepwise_VIRTUAL_NIC_TEMP_C",
++            "NegativeHysteresis": 0,
++            "Output": [
++                100.0,
++                10.0,
++                10.0,
++                11.0,
++                12.0,
++                13.0,
++                14.0,
++                15.0,
++                16.0,
++                17.0,
++                18.0,
++                19.0
++            ],
++            "PositiveHysteresis": 0,
++            "Reading": [
++                0.0,
++                10.0,
++                77.0,
++                78.0,
++                79.0,
++                80.0,
++                81.0,
++                82.0,
++                83.0,
++                84.0,
++                85.0,
++                86.0
++            ],
++            "Type": "Stepwise",
++            "Zones": [
++                "Zone 1"
++            ]
+         }
+     ],
+     "Name": "Yosemite 4 Management Board",
+-- 
+2.34.1
+

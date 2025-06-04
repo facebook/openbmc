@@ -65,6 +65,8 @@ RDEPENDS:${PN} += " \
     bash \
     udev-rules \
     jbi \
+    cpldupdate \
+    libcpldupdate-dll-ast-jtag \
 "
 
 FILES:${PN} += "/usr/local/"

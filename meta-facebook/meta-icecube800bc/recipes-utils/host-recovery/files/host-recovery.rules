@@ -1,1 +1,2 @@
 SUBSYSTEM=="platform", DEVPATH=="/devices/platform/ahb/1e630000.spi", DRIVER=="spi-aspeed-smc" RUN+="/bin/mkdir -p /run/devmap/spi-devices", RUN+="/bin/ln -sf /sys/%p /run/devmap/spi-devices/spi1-flash"
+SUBSYSTEM=="platform", DEVPATH=="/devices/platform/ahb/*/1e6e4100.jtag", RUN+="/bin/mkdir -p /run/devmap/jtag", RUN+="/bin/ln -sf %S%p /run/devmap/jtag/ASPEED_JTAG"

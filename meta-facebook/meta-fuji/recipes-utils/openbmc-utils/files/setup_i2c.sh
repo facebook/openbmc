@@ -23,6 +23,9 @@ source /usr/local/bin/openbmc-utils.sh
 #shellcheck disable=SC1091
 source /usr/local/bin/i2c_sensor_fixup.sh
 
+# use to indicate if the script run successfully
+return_value=0
+
 # Sometimes, it has been observed that I2c devices, such as the PIM's UCD, 
 # have the potential to lock the bus. This will render the entire i2c bus inoperable.
 # To recover from such instances, reset the PIM i2c mux to restore the devices back to normal.
@@ -88,6 +91,7 @@ elif i2c_detect_address 5 0x44 "$ADM1266_BLACKBOX_INFO"; then
    kv set smb_pwrseq_1_addr 0x44
 else
    echo "setup-i2c : not detect UCD90160 UCD9016A UCD90120 UCD90120A UCD90124 UCD90124A ADM1266" > /dev/kmsg
+   return_value=1
 fi
 
 # # # SMB Power Sequence 2
@@ -119,6 +123,7 @@ elif i2c_detect_address 5 0x47 "$ADM1266_BLACKBOX_INFO"; then
    kv set smb_pwrseq_2_addr 0x47
 else
    echo "setup-i2c : not detect UCD90160 UCD9016A UCD90120 UCD90120A UCD90124 UCD90124A ADM1266" > /dev/kmsg
+   return_value=1
 fi
 
 # Bus 8
@@ -180,6 +185,7 @@ elif i2c_detect_address 67 0x44; then
    kv set smb_fcm_t_hsc_addr 0x44
 else
    echo "setup-i2c : not detect ADM1278 LM25066 on FCM bus67" > /dev/kmsg
+   return_value=1
 fi
 
 # # i2c-mux PCA9548 0x70, channel 4, mux PCA9548 0x76
@@ -203,6 +209,7 @@ elif i2c_detect_address 75 0x44; then
    kv set smb_fcm_b_hsc_addr 0x44
 else
    echo "setup-i2c : not detect ADM1278 LM25066 on FCM bus75" > /dev/kmsg
+   return_value=1
 fi
 
 # # i2c-mux PCA9548 0x70, channel 5
@@ -222,3 +229,6 @@ hwmon_fix_driver_binding "smb_pwrseq_1" "smb_pwrseq_2" "smb_mp2978_1" "smb_mp297
 # of this function.
 #
 i2c_check_driver_binding
+
+# If there are some set of varient device cannot detected, return a non-zero value
+exit $return_value

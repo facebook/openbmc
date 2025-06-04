@@ -26,6 +26,7 @@ LOCAL_URI += " \
     file://fpga_ver.sh \
     file://setup_board.sh \
     file://setup_i2c.sh \
+    file://setup_i2c.service-restart-on-failure.patch \
     file://sol.sh \
     file://cpld_update.sh \
     file://wedge_power.sh \

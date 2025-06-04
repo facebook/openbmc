@@ -29,6 +29,8 @@ VERSION_ID="${SCMCPLD_SYSFS_DIR}/version_id"
 COME_POWER_EN="${SCMCPLD_SYSFS_DIR}/pwr_come_en"
 COME_POWER_OFF="${SCMCPLD_SYSFS_DIR}/pwr_force_off"
 COME_SYSTEM_WARM_RESET="${SCMCPLD_SYSFS_DIR}/cb_sys_reset"
+XP5P0_COME_PG="${SCMCPLD_SYSFS_DIR}/xp5p0_come_pg"
+XP12P0_COME_PG="${SCMCPLD_SYSFS_DIR}/xp12p0_come_pg"
 
 CHASSIS_POWER_CYCLE="${MCBCPLD_SYSFS_DIR}/power_cycle_go"
 
@@ -99,9 +101,17 @@ wedge_board_type_rev() {
 }
 
 userver_power_is_on() {
-    userver_pwr_status_n=$(head -n 1 "$COME_POWER_OFF" 2> /dev/null)
+    if [ ! -e "$XP5P0_COME_PG" ] || [ ! -e "$XP12P0_COME_PG" ]; then
+        echo "Error: $XP5P0_COME_PG or $XP12P0_COME_PG does not exist! Is scbcpld ready??"
+        echo "Assuming uServer is off!"
+        return 1
+    fi
 
-    if [ $((userver_pwr_status_n)) -eq $((0x1)) ] ; then
+    xp5p0_sts=$(head -n 1 "$XP5P0_COME_PG" 2> /dev/null)
+    xp12p0_sts=$(head -n 1 "$XP12P0_COME_PG" 2> /dev/null)
+
+    if [ $((xp5p0_sts)) -eq $((0x1)) ] &&
+       [ $((xp12p0_sts)) -eq $((0x1)) ] ; then
         return 0
     fi
 
@@ -115,6 +125,10 @@ userver_power_on() {
     if ! sysfs_write "$COME_POWER_EN" 1; then
         return 1
     fi
+
+    # Wait for power good signal to be stable
+    sleep 3
+    return 0
 }
 
 userver_power_off() {

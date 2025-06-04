@@ -80,6 +80,27 @@ wedge_board_rev() {
     return 0
 }
 
+wedge_board_type_rev() {
+    # Get the board type and revision
+    output=$(wedge_board_rev)
+
+    # Get board type from Board type: field
+    board_type=$(echo "$output" | sed -nE 's/.*Board type: (\S+).*/\1/p')
+    if [ -z "$board_type" ]; then
+        echo "Error: failed to get board type"
+        return 1
+    fi
+
+    # Get revision from Revision: field
+    rev=$(echo "$output" | sed -nE 's/.*Revision: (.*)/\1/p')
+    if [ -z "$rev" ]; then
+        echo "Error: failed to get board revision"
+        return 1
+    fi
+
+    echo "${board_type}_${rev}"
+}
+
 userver_power_is_on() {
     if [ ! -e "$XP5R0V_COME_PG" ] || [ ! -e "$XP12R0V_COME_PG" ]; then
         echo "Error: $XP5R0V_COME_PG or $XP12R0V_COME_PG does not exist! Is scbcpld ready??"

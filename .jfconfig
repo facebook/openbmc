@@ -1132,6 +1132,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-santabarbara-determinator",
+            "args": {
+                "name": "openbmc-cit-santabarbara-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-santabarbara-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform santabarbara"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-santabarbara/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-tahan-determinator",
             "args": {
                 "name": "openbmc-cit-tahan-determinator",

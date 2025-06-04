@@ -30,6 +30,7 @@ PLATFORMS = [
     "montblanc",
     "morgan800cc",
     "northdome",
+    "santabarbara",
     "tahan",
     "ventura",
     "wedge100",

@@ -16,7 +16,9 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 	{
 		"board_id",
 		"Meta Networking system board type:\n"
-		" 0x8 : Icecube",
+		" 0x7 : Santabarbara\n"
+		" 0x8 : Icecube\n"
+		" 0x9 : Icetray",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x0,
@@ -25,7 +27,7 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 	},
 	{
 		"version_id",
-		"Icecube board revision:\n"
+		"Board revision:\n"
 		" 0x00 Pre-EVT & EVT1\n"
 		" 0x01 EVT-2A\n"
 		" 0x02 EVT-2B/C\n"

@@ -1,0 +1,134 @@
+From 0b044e22ba73c6052ab0441b435f8794be67ae7f Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Mon, 12 May 2025 16:58:35 +0800
+Subject: [PATCH 6/6] configurations: add NVIDIA GB300 IO board config
+
+Adding configuration file for NVIDIA GB300 IO board.
+
+Change-Id: Idf6562cef13a8c6c56e80e57e45224e85e1f30a7
+Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
+---
+ configurations/meson.build                |  1 +
+ configurations/nvidia_gb300_io_board.json | 98 +++++++++++++++++++++++
+ 2 files changed, 99 insertions(+)
+ create mode 100644 configurations/nvidia_gb300_io_board.json
+
+diff --git a/configurations/meson.build b/configurations/meson.build
+index 9d15a41..7c3ba51 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -162,6 +162,7 @@ configs = [
+     'nvidia_gb200.json',
+     'nvidia_gb200_io_board.json',
+     'nvidia_gb300.json',
++    'nvidia_gb300_io_board.json',
+     'nvidia_hmc.json',
+     'nvme_intel_p_series.json',
+     'nvme_p4500_p5500.json',
+diff --git a/configurations/nvidia_gb300_io_board.json b/configurations/nvidia_gb300_io_board.json
+new file mode 100644
+index 0000000..01efcd0
+--- /dev/null
++++ b/configurations/nvidia_gb300_io_board.json
+@@ -0,0 +1,98 @@
++{
++    "Exposes": [
++        {
++            "Address": "$address",
++            "Bus": "$bus",
++            "Name": "NVIDIA GB300 IO Board $bus - 29 % 11 FRU",
++            "Type": "EEPROM"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": "$bus - 5",
++            "Labels": [
++                "temp2"
++            ],
++            "Name": "IOB$bus - 29 % 11 NIC0_TEMP_C",
++            "Name1": "IOB$bus - 29 % 11 NIC0_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 108.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 105.0
++                },
++                {
++                    "Direction": "less than",
++                    "Index": 2,
++                    "Name": "lower non critical",
++                    "Severity": 0,
++                    "Value": 5
++                }
++            ],
++            "Type": "TMP421"
++        },
++        {
++            "Address": "0x1f",
++            "Bus": "$bus - 3",
++            "Labels": [
++                "temp2"
++            ],
++            "Name": "IOB$bus - 29 % 11 NIC1_TEMP_C",
++            "Name1": "IOB$bus - 29 % 11 NIC1_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 108.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 105.0
++                },
++                {
++                    "Direction": "less than",
++                    "Index": 2,
++                    "Name": "lower non critical",
++                    "Severity": 0,
++                    "Value": 5
++                }
++            ],
++            "Type": "TMP421"
++        }
++    ],
++    "Name": "NVIDIA GB300 IO Board $bus - 29 % 11",
++    "Probe": [
++        "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '2x ConnectX-8 GB300 Mezz', 'BOARD_MANUFACTURER': 'NVIDIA'})",
++        "OR",
++        "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '2x ConnectX-8 GB300 Mezz', 'BOARD_MANUFACTURER': 'Nvidia'})"
++    ],
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "BuildDate": "$BOARD_MANUFACTURE_DATE",
++        "Manufacturer": "$BOARD_MANUFACTURER",
++        "Model": "$BOARD_PRODUCT_NAME",
++        "PartNumber": "$BOARD_PART_NUMBER",
++        "SerialNumber": "$BOARD_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
++        "AssetTag": "$PRODUCT_ASSET_TAG"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Revision": {
++        "Version": "$PRODUCT_VERSION"
++    }
++}
+-- 
+2.49.0
+

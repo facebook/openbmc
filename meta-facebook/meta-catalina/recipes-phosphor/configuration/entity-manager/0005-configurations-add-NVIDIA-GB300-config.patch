@@ -1,0 +1,297 @@
+From cb2931a5d0c47106692baebde27f1e0821c335d7 Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Mon, 12 May 2025 16:50:47 +0800
+Subject: [PATCH 5/6] configurations: add NVIDIA GB300 config
+
+Adding configuration file for NVIDIA GB300 module.
+
+Change-Id: Ic7f1c5e2b571d2d4e61b85bdf617a86c1c310b1c
+Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
+---
+ configurations/meson.build       |   1 +
+ configurations/nvidia_gb300.json | 248 +++++++++++++++++++++++++++++++
+ schemas/legacy.json              |   1 +
+ 3 files changed, 250 insertions(+)
+ create mode 100644 configurations/nvidia_gb300.json
+
+diff --git a/configurations/meson.build b/configurations/meson.build
+index 4e769c0..9d15a41 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -161,6 +161,7 @@ configs = [
+     'nvidia_bmc_p3809.json',
+     'nvidia_gb200.json',
+     'nvidia_gb200_io_board.json',
++    'nvidia_gb300.json',
+     'nvidia_hmc.json',
+     'nvme_intel_p_series.json',
+     'nvme_p4500_p5500.json',
+diff --git a/configurations/nvidia_gb300.json b/configurations/nvidia_gb300.json
+new file mode 100644
+index 0000000..bf7a28a
+--- /dev/null
++++ b/configurations/nvidia_gb300.json
+@@ -0,0 +1,248 @@
++{
++    "Exposes": [
++        {
++            "Address": "$address",
++            "Bus": "$bus",
++            "Name": "NVIDIA GB300 FRU",
++            "Type": "EEPROM"
++        },
++        {
++            "Address": "0x34",
++            "Bus": 1,
++            "Labels": [
++                "in_voltage0"
++            ],
++            "Name": "NVIDIA_GB300_CPU0",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 13.74
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.176
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 13.054
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "lower non critical",
++                    "Severity": 0,
++                    "Value": 1.346
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1.224
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "lower non recoverable",
++                    "Severity": 4,
++                    "Value": 1.32
++                }
++            ],
++            "Type": "MAX1363",
++            "in_voltage0_Name": "NVIDIA_GB300_CPU0_LEAK_SENSOR"
++        },
++        {
++            "Address": "0x35",
++            "Bus": 1,
++            "Labels": [
++                "in_voltage0"
++            ],
++            "Name": "NVIDIA_GB300_CPU1",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 13.74
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.176
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 13.054
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "lower non critical",
++                    "Severity": 0,
++                    "Value": 1.346
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1.224
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0,
++                    "Label": "in_voltage0",
++                    "Name": "lower non recoverable",
++                    "Severity": 4,
++                    "Value": 1.32
++                }
++            ],
++            "Type": "MAX1363",
++            "in_voltage0_Name": "NVIDIA_GB300_CPU1_LEAK_SENSOR"
++        },
++        {
++            "Address": "0x5e",
++            "Bus": 1,
++            "Labels": [
++                "iout1",
++                "pout1",
++                "temp1",
++                "vout1"
++            ],
++            "Name": "NVIDIA_GB300_VR_P12V_N1",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.272,
++                    "Label": "vout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.6
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.21,
++                    "Label": "vout1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.5,
++                    "Label": "temp1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 125
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Label": "temp1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 5
++                }
++            ],
++            "Type": "RAA228004",
++            "iout1_Name": "NVIDIA_GB300_VR_P12V_N1_CURR_A",
++            "pout1_Name": "NVIDIA_GB300_VR_P12V_N1_PWR_W",
++            "temp1_Name": "NVIDIA_GB300_VR_P12V_N1_TEMP_C",
++            "vout1_Name": "NVIDIA_GB300_VR_P12V_N1_VOLT_V"
++        },
++        {
++            "Address": "0x5f",
++            "Bus": 1,
++            "Labels": [
++                "iout1",
++                "pout1",
++                "temp1",
++                "vout1"
++            ],
++            "Name": "NVIDIA_GB300_VR_P12V_N2",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.272,
++                    "Label": "vout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.6
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.21,
++                    "Label": "vout1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.5,
++                    "Label": "temp1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 125
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Label": "temp1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 5
++                }
++            ],
++            "Type": "RAA228004",
++            "iout1_Name": "NVIDIA_GB300_VR_P12V_N2_CURR_A",
++            "pout1_Name": "NVIDIA_GB300_VR_P12V_N2_PWR_W",
++            "temp1_Name": "NVIDIA_GB300_VR_P12V_N2_TEMP_C",
++            "vout1_Name": "NVIDIA_GB300_VR_P12V_N2_VOLT_V"
++        }
++    ],
++    "Name": "NVIDIA GB300",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'P4476', 'BOARD_MANUFACTURER': 'NVIDIA'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "BuildDate": "$BOARD_MANUFACTURE_DATE",
++        "Manufacturer": "$BOARD_MANUFACTURER",
++        "Model": "$BOARD_PRODUCT_NAME",
++        "PartNumber": "$BOARD_PART_NUMBER",
++        "SerialNumber": "$BOARD_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
++        "AssetTag": "$PRODUCT_ASSET_TAG"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Revision": {
++        "Version": "$PRODUCT_VERSION"
++    }
++}
+diff --git a/schemas/legacy.json b/schemas/legacy.json
+index e548228..ac14703 100644
+--- a/schemas/legacy.json
++++ b/schemas/legacy.json
+@@ -939,6 +939,7 @@
+                         "MAX11607",
+                         "MAX11615",
+                         "MAX11617",
++                        "MAX1363",
+                         "MAX16601",
+                         "MAX20710",
+                         "MAX20730",
+-- 
+2.49.0
+

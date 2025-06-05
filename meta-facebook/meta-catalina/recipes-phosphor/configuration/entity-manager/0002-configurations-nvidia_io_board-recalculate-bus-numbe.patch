@@ -1,7 +1,7 @@
-From 4eec765438747edbc44eaa28e25021385e494ee5 Mon Sep 17 00:00:00 2001
+From 0eb55ce8892ee272e43b2f053b5d4e73a41d702d Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 10 Sep 2024 14:02:38 +0800
-Subject: [PATCH 2/3] configurations: nvidia_io_board: recalculate bus number
+Subject: [PATCH 2/6] configurations: nvidia_io_board: recalculate bus number
 
 Change the bus number calculation to meet sensor naming.
 
@@ -63,5 +63,5 @@ index 4a752e4..7a00978 100644
          "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'P4768', 'BOARD_MANUFACTURER': 'NVIDIA'})",
          "OR",
 -- 
-2.31.1
+2.49.0
 

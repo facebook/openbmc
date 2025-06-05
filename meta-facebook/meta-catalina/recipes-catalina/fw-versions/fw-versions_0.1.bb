@@ -13,31 +13,31 @@ UNPACKDIR = "${S}"
 NIC_INSTANCES="0:1"
 
 FW_TOOLS = "\
-    bmc-tpm,catalina-sys-init.service,,multi-user.target,0 \
+    bmc-tpm,platform-sys-init.service,,multi-user.target,0 \
     nic0,network-wait-ipv6-ll@eth0.service,,multi-user.target,0 \
     nic1,network-wait-ipv6-ll@eth1.service,,multi-user.target,0 \
-    pdb-vr-aux,catalina-sys-init.service,,multi-user.target,0 \
-    pdb-cpld,catalina-sys-init.service,,multi-user.target,0 \
-    pdb-vr-n1,catalina-sys-init.service,,multi-user.target,0 \
-    pdb-vr-n2,catalina-sys-init.service,,multi-user.target,0 \
-    scm-cpld,catalina-sys-init.service,,multi-user.target,0 \
-    hdd-cpld,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-bmc-0,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-cpld-0,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-cpu-0,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-cpu-1,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-bmc-0,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-cpu-0,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-cpu-1,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-fpga-0,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-fpga-1,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-fpga-0,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-fpga-1,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-gpu-0,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-gpu-1,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-inforom-gpu-0,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-inforom-gpu-1,catalina-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-pcieswitchconfig-0,catalina-sys-init.service,,multi-user.target,0 \
+    pdb-vr-aux,platform-sys-init.service,,multi-user.target,0 \
+    pdb-cpld,platform-sys-init.service,,multi-user.target,0 \
+    pdb-vr-n1,platform-sys-init.service,,multi-user.target,0 \
+    pdb-vr-n2,platform-sys-init.service,,multi-user.target,0 \
+    scm-cpld,platform-sys-init.service,,multi-user.target,0 \
+    hdd-cpld,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-bmc-0,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-cpld-0,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-cpu-0,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-cpu-1,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-erot-bmc-0,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-erot-cpu-0,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-erot-cpu-1,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-erot-fpga-0,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-erot-fpga-1,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-fpga-0,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-fpga-1,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-gpu-0,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-gpu-1,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-inforom-gpu-0,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-inforom-gpu-1,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-pcieswitchconfig-0,platform-sys-init.service,,multi-user.target,0 \
 "
 
 LOCAL_URI = " \

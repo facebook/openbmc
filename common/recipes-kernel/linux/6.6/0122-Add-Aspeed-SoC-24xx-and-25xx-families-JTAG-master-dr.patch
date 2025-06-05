@@ -1,4 +1,4 @@
-From 64cdf7360d7ed9cd5f1b6c8c1f1bf99dc616afed Mon Sep 17 00:00:00 2001
+From 8908bba3b3df11fd8998a1b68b7df62688aad50d Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:17 -0700
 Subject: [PATCH 122/132] Add Aspeed SoC 24xx and 25xx families JTAG master
@@ -1114,5 +1114,5 @@ index 000000000000..254548762dc5
 +MODULE_DESCRIPTION("ASPEED JTAG driver");
 +MODULE_LICENSE("GPL v2");
 -- 
-2.44.2
+2.47.1
 

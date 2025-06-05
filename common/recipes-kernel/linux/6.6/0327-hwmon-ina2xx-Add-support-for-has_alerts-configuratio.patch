@@ -1,4 +1,4 @@
-From 9e34fb1693ffb87c9e175105d78a89018adb8be8 Mon Sep 17 00:00:00 2001
+From 6800d2799a83fc3bdb009b94bb5c9cfc6923e8ac Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 27 Aug 2024 12:57:10 -0700
 Subject: [PATCH 327/330] hwmon: (ina2xx) Add support for has_alerts
@@ -103,5 +103,5 @@ index f0fa6d073627..03a011c9b73d 100644
  
  		regmap_update_bits(regmap, INA226_MASK_ENABLE,
 -- 
-2.45.3
+2.47.1
 

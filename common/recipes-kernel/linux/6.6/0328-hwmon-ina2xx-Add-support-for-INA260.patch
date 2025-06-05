@@ -1,4 +1,4 @@
-From 837e5f0e52df6724d82f34767ce5c88a4ae6b992 Mon Sep 17 00:00:00 2001
+From 17fe473d5ae17fb1a1a3a504f36f352d7f95bc00 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 27 Aug 2024 10:23:10 -0700
 Subject: [PATCH 328/330] hwmon: (ina2xx) Add support for INA260
@@ -224,5 +224,5 @@ index 03a011c9b73d..cecc80a41a97 100644
  };
  MODULE_DEVICE_TABLE(of, ina2xx_of_match);
 -- 
-2.45.3
+2.47.1
 

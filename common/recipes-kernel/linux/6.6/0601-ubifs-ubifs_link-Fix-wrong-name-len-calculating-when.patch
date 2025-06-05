@@ -1,4 +1,4 @@
-From b965cf6828df99738923a385d963692817b7a36e Mon Sep 17 00:00:00 2001
+From 4b92ac066c1d996671ebbe63851837ae125ecd23 Mon Sep 17 00:00:00 2001
 From: Zhihao Cheng <chengzhihao1@huawei.com>
 Date: Sat, 23 Sep 2023 11:28:59 +0800
 Subject: [PATCH 601/614] ubifs: ubifs_link: Fix wrong name len calculating
@@ -54,5 +54,5 @@ index be45972ff95d..b6f1074910b1 100644
  	if (err)
  		goto out_fname;
 -- 
-2.45.3
+2.47.1
 

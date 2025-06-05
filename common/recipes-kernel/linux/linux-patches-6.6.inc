@@ -87,9 +87,8 @@ SRC_URI:append = " \
 #
 SRC_URI:append = " \
     file://0180-meta-facebook-common-add-pcc-config.patch \
-    file://0181-drivers-watchdog-ast2600-support-bootstatus.patch \
-    file://0182-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
-    file://0183-net-ncsi-specify-maximum-package-to-probe.patch \
+    file://0181-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
+    file://0182-net-ncsi-specify-maximum-package-to-probe.patch \
 "
 
 #
@@ -123,12 +122,6 @@ SRC_URI:append = " \
 #
 SRC_URI:append = " \
     file://0220-soc-aspeed-Add-Post-Code-Control.patch \
-"
-#
-# Aspeed watchdog drivers used by multiple OpenBMC platforms.
-#
-SRC_URI:append = " \
-    file://0230-watchdog-aspeed-Update-bootstatus-handling.patch \
 "
 
 #

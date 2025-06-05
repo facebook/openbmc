@@ -1,4 +1,4 @@
-From 18ebbfc0afc251070ce07cb1019d190e6174303c Mon Sep 17 00:00:00 2001
+From eb232ee86dcc5a79daad2b67be07ed8984f1831c Mon Sep 17 00:00:00 2001
 From: Zhihao Cheng <chengzhihao1@huawei.com>
 Date: Wed, 10 Apr 2024 15:37:51 +0800
 Subject: [PATCH 611/614] ubifs: dbg_orphan_check: Fix missed key type checking
@@ -37,5 +37,5 @@ index 87c680e26ebc..38303d311dd9 100644
  				  (unsigned long)inum, key_type(c, &zbr->key));
  		ci->last_ino = inum;
 -- 
-2.45.3
+2.47.1
 

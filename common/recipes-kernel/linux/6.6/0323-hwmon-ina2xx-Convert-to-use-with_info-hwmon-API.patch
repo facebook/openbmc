@@ -1,4 +1,4 @@
-From 30742fc87ec454063e6177c60ad4c8e5dee0a48a Mon Sep 17 00:00:00 2001
+From ec1f7e553b161850e64669e1100a5dbf50032000 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 24 Jul 2024 22:41:16 -0700
 Subject: [PATCH 323/330] hwmon: (ina2xx) Convert to use with_info hwmon API
@@ -682,5 +682,5 @@ index fe850ee06024..339d41dfa10e 100644
  		return PTR_ERR(hwmon_dev);
  
 -- 
-2.45.3
+2.47.1
 

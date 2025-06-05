@@ -1,4 +1,4 @@
-From 0894f911189077c05ad4e9c8fa4a7a575047d1cb Mon Sep 17 00:00:00 2001
+From e777dbd124d3f2aabae0ccf031c418b75691d873 Mon Sep 17 00:00:00 2001
 From: Daniel Hsu <Daniel-Hsu@quantatw.com>
 Date: Tue, 25 Mar 2025 15:54:55 +0800
 Subject: [PATCH 204/204] mctp: Fix incorrect tx flow invalidation condition in
@@ -33,5 +33,5 @@ index cfe3dadd6117..c2e24972adbb 100644
  
  		break;
 -- 
-2.49.0
+2.47.1
 

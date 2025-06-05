@@ -1,4 +1,4 @@
-From da0e3601c75e2b5dac008ebb0ce0687342ced96e Mon Sep 17 00:00:00 2001
+From a1f997e3b5148c7a6165b8053d74eba4fd6be452 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 28 Aug 2024 15:18:51 -0700
 Subject: [PATCH 324/330] hwmon: (ina2xx) Pass register to alert limit write
@@ -86,5 +86,5 @@ index 339d41dfa10e..1cd6fffb1495 100644
  		return -EOPNOTSUPP;
  	}
 -- 
-2.45.3
+2.47.1
 

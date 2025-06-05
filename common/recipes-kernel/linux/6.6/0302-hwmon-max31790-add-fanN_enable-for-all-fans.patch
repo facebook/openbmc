@@ -1,4 +1,4 @@
-From a9544c47fee61922f45c54bfd4b6b8f9435a2a61 Mon Sep 17 00:00:00 2001
+From b709bcb3233604ae560354e314c120a0e44c550a Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 1 Nov 2023 18:18:29 +0800
 Subject: [PATCH 302/330] hwmon: max31790: add fanN_enable for all fans
@@ -133,5 +133,5 @@ index 378ff32c7c1e..fa31e108c7ce 100644
  			   HWMON_PWM_INPUT | HWMON_PWM_ENABLE,
  			   HWMON_PWM_INPUT | HWMON_PWM_ENABLE,
 -- 
-2.45.3
+2.47.1
 

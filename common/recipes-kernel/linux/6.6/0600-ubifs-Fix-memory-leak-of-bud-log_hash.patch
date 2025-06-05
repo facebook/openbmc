@@ -1,4 +1,4 @@
-From 6c32c40dca821960bace1ddece98ec6e3e4c2d8e Mon Sep 17 00:00:00 2001
+From 586d88e30a9ac2f448ccc54cafd921b7ce2f6b5a Mon Sep 17 00:00:00 2001
 From: Vincent Whitchurch <vincent.whitchurch@axis.com>
 Date: Tue, 18 Jul 2023 14:41:45 +0200
 Subject: [PATCH 600/614] ubifs: Fix memory leak of bud->log_hash
@@ -59,5 +59,5 @@ index 3409488d39ba..725736297b9f 100644
  	}
  	ubifs_destroy_idx_gc(c);
 -- 
-2.45.3
+2.47.1
 

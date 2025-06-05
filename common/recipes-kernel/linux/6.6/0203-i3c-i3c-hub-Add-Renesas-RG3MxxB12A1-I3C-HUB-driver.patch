@@ -1,4 +1,4 @@
-From a66aca613bafaa2475b491d77cbb0666da28c6f7 Mon Sep 17 00:00:00 2001
+From b2687b69cfe8a419d45a91b589cb0af11ae7222c Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Sat, 17 Feb 2024 21:14:12 +0800
 Subject: [PATCH 203/204] i3c: i3c-hub: Add Renesas RG3MxxB12A1 I3C HUB driver
@@ -2095,5 +2095,5 @@ index ef6217da8253..362867d17663 100644
  
  #define I3C_PID_MANUF_ID(pid)		(((pid) & GENMASK_ULL(47, 33)) >> 33)
 -- 
-2.49.0
+2.47.1
 

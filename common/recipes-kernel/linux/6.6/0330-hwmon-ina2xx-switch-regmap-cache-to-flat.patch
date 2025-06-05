@@ -1,4 +1,4 @@
-From 9335fe373859cf903140a9e2b8f5d5c753706ccf Mon Sep 17 00:00:00 2001
+From f8b7abe36203ca60b525ae1cde5bb02287e2f3cc Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Mon, 24 Feb 2025 17:10:48 -0500
 Subject: [PATCH 330/330] hwmon: ina2xx: switch regmap cache to flat
@@ -26,5 +26,5 @@ index 345fe7db9de9..7d03fc0e82d3 100644
  	.writeable_reg = ina2xx_writeable_reg,
  };
 -- 
-2.45.3
+2.47.1
 

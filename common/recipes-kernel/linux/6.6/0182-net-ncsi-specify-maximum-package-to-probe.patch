@@ -1,7 +1,7 @@
-From 71efe1efcb0edf6707295d51e1420bee3ea26a34 Mon Sep 17 00:00:00 2001
+From 607dceb4714fb60017604656343fbb4349c36b35 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Wed, 22 May 2024 01:36:37 +0800
-Subject: [PATCH 183/184] net/ncsi: specify maximum package to probe
+Subject: [PATCH 182/182] net/ncsi: specify maximum package to probe
 
 Most NICs have a single package. For OCP3.0 NICs, the package ID is
 determined by the slot ID. Probing all 8 package IDs is usually
@@ -14,8 +14,8 @@ Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
 link:https://lore.kernel.org/all/20240701154336.3536924-1-peteryin.openbmc@gmail.com/
 ---
  net/ncsi/internal.h    |  1 +
- net/ncsi/ncsi-manage.c | 19 ++++++++++++++++---
- 2 files changed, 17 insertions(+), 3 deletions(-)
+ net/ncsi/ncsi-manage.c | 16 ++++++++++++----
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
 index 6c1865e3cbe0..56a3ab885a8c 100644
@@ -82,4 +82,5 @@ index 24f75b570ce7..82285ac83678 100644
  
  	return nd;
 -- 
-2.44.2
+2.47.1
+

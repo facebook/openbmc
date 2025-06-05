@@ -1,4 +1,4 @@
-From 9d519dc5734ff3a98cf34124a6db873b9a834d17 Mon Sep 17 00:00:00 2001
+From 54ec9785c6d80467d2552f5e2a63010d51a9ffde Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 6 Sep 2023 16:19:16 +0800
 Subject: [PATCH 301/330] hwmon: max31790: support to config PWM as TACH
@@ -123,5 +123,5 @@ index 0cd44c1e998a..378ff32c7c1e 100644
  	 * Initialize the max31790 chip
  	 */
 -- 
-2.45.3
+2.47.1
 

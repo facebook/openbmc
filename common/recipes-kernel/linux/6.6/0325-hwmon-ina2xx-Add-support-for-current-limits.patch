@@ -1,4 +1,4 @@
-From 8e22a15fa5ff8d8978567f8e2e6813d2c0e0e7e1 Mon Sep 17 00:00:00 2001
+From 07e614fadb02b6d0728aa981106bea3aac3f0d02 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 28 Aug 2024 15:23:53 -0700
 Subject: [PATCH 325/330] hwmon: (ina2xx) Add support for current limits
@@ -151,5 +151,5 @@ index 1cd6fffb1495..10c8c475c634 100644
  			   HWMON_P_INPUT | HWMON_P_CRIT | HWMON_P_CRIT_ALARM),
  	NULL
 -- 
-2.45.3
+2.47.1
 

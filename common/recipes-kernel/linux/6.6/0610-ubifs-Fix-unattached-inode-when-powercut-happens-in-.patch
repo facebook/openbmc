@@ -1,4 +1,4 @@
-From eb28e33cbe29a292039ca648cafb64a2a1ee527c Mon Sep 17 00:00:00 2001
+From 6dbcdece291c09dada42748d391a4e8d189b21f2 Mon Sep 17 00:00:00 2001
 From: Zhihao Cheng <chengzhihao1@huawei.com>
 Date: Wed, 10 Apr 2024 15:37:50 +0800
 Subject: [PATCH 610/614] ubifs: Fix unattached inode when powercut happens in
@@ -359,5 +359,5 @@ index ea49d367cd9c..4e15a1559595 100644
  		       loff_t old_size, loff_t new_size);
  int ubifs_jnl_delete_xattr(struct ubifs_info *c, const struct inode *host,
 -- 
-2.45.3
+2.47.1
 

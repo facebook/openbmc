@@ -1,4 +1,4 @@
-From 3aa53a940b5997333c5940d70104333ef42040df Mon Sep 17 00:00:00 2001
+From a861fcc94ddb41889646908ea6a7cb871c2d20b3 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 23 Jul 2024 13:25:31 -0700
 Subject: [PATCH 315/330] hwmon: (ina2xx) Use bit operations
@@ -210,5 +210,5 @@ index 897657f8d685..1b4170d02c94 100644
  /* shunt resistance */
  static SENSOR_DEVICE_ATTR_RW(shunt_resistor, ina2xx_shunt, INA2XX_CALIBRATION);
 -- 
-2.45.3
+2.47.1
 

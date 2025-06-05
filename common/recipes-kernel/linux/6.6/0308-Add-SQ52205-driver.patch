@@ -1,4 +1,4 @@
-From f427b462c4c40263e33f8a45709e41d264a9120d Mon Sep 17 00:00:00 2001
+From 2796726ad6312bd70e4d63160fc7ebdcfa1cfa08 Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Fri, 23 Aug 2024 11:10:41 +0800
 Subject: [PATCH 308/330] Add SQ52205 driver
@@ -610,5 +610,5 @@ index 000000000000..eeb59ebb75f2
 +
 +
 -- 
-2.45.3
+2.47.1
 

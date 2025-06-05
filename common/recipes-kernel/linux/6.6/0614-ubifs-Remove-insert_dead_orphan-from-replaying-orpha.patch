@@ -1,4 +1,4 @@
-From 9d1051efc14660c2c8a786b517a20c26d4ebec93 Mon Sep 17 00:00:00 2001
+From 6f567ad7fad70072e1acb09d7afdd77fd9d3572e Mon Sep 17 00:00:00 2001
 From: Zhihao Cheng <chengzhihao1@huawei.com>
 Date: Wed, 10 Apr 2024 15:37:46 +0800
 Subject: [PATCH 614/614] ubifs: Remove insert_dead_orphan from replaying
@@ -94,5 +94,5 @@ index f1f939e192e4..fb957d963ba6 100644
  
  		*last_cmt_no = cmt_no;
 -- 
-2.45.3
+2.47.1
 

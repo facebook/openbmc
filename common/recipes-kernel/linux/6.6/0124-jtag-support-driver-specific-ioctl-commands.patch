@@ -1,4 +1,4 @@
-From ea8e8ae13446d2a07af39c0694005b08574d9027 Mon Sep 17 00:00:00 2001
+From 039776a623edb7cbdfb053a187cf93778086d6b6 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 22:59:49 -0700
 Subject: [PATCH 124/132] jtag: support driver specific ioctl commands
@@ -55,5 +55,5 @@ index 4153c905e550..6a6b53a549d8 100644
  
  void *jtag_priv(struct jtag *jtag);
 -- 
-2.44.2
+2.47.1
 

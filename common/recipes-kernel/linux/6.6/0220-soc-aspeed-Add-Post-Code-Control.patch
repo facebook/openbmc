@@ -1,4 +1,4 @@
-From ffdf6e6862f2a5e0ac8dcad8e33e8170e8cc6e98 Mon Sep 17 00:00:00 2001
+From a686f6be1b11abaf4963a54f5fc70928789d633c Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Thu, 7 Dec 2023 13:04:19 +0800
 Subject: [PATCH] soc: aspeed: Add Post Code Control
@@ -521,5 +521,5 @@ index 000000000000..e5ba0047499f
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("Driver for Aspeed Post Code Capture");
 -- 
-2.44.2
+2.47.1
 

@@ -1,4 +1,4 @@
-From 98af6165540123ab45f96069501bdb7e5fa7f4d9 Mon Sep 17 00:00:00 2001
+From a91af3994cce0497bce6302594f097be3e1f6074 Mon Sep 17 00:00:00 2001
 From: Arnd Bergmann <arnd@arndb.de>
 Date: Tue, 13 Feb 2024 10:54:07 +0100
 Subject: [PATCH 603/614] ubifs: fix sort function prototype
@@ -51,5 +51,5 @@ index 873e6e1c92b5..1cb79b167a4f 100644
  	if (c->dirty_idx.cnt)
  		dbg_find("dirtiest index LEB is %d with dirty %d and free %d",
 -- 
-2.45.3
+2.47.1
 

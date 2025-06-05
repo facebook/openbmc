@@ -1,4 +1,4 @@
-From daccebbaa9ce34837e9ad0a3562d5f05be840316 Mon Sep 17 00:00:00 2001
+From 29e398dc8bcbfe56fa102dd1dcd4217ff859787a Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Wed, 20 Mar 2024 11:45:42 +0800
 Subject: [PATCH 306/330] hwmon: Driver for Nuvoton NCT7363Y
@@ -140,10 +140,10 @@ index 000000000000..89699c95aa4b
 +pwmX			get or set PWM fan control value.
 +======================= =======================================================
 diff --git a/MAINTAINERS b/MAINTAINERS
-index a296bb862c45..b0d560446671 100644
+index 53ec9e78d27a..15f2c1d316ed 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -14775,6 +14775,14 @@ S:	Maintained
+@@ -14777,6 +14777,14 @@ S:	Maintained
  F:	Documentation/devicetree/bindings/hwmon/nuvoton,nct6775.yaml
  F:	drivers/hwmon/nct6775-i2c.c
  
@@ -611,5 +611,5 @@ index 000000000000..c79d3ca4f111
 +MODULE_DESCRIPTION("NCT7363 Hardware Monitoring Driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.45.3
+2.47.1
 

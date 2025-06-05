@@ -1,4 +1,4 @@
-From d49664b38c74418572a7d5ff5524a7d6d1f8737c Mon Sep 17 00:00:00 2001
+From de6e63c2f1b2f6d959ef0ae54e9309b2a87ecfb4 Mon Sep 17 00:00:00 2001
 From: Kunwu Chan <chentao@kylinos.cn>
 Date: Thu, 11 Jan 2024 14:36:56 +0800
 Subject: [PATCH 604/614] ubifs: Remove unreachable code in dbg_check_ltab_lnum
@@ -30,5 +30,5 @@ index c4d079328b92..07351fdce722 100644
  	vfree(buf);
  	return err;
 -- 
-2.45.3
+2.47.1
 

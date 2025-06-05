@@ -1,4 +1,4 @@
-From d2f824636b56312a783c83c32d1f7a6731d85db3 Mon Sep 17 00:00:00 2001
+From bf01f6bad95d337485fdedeacf252b798297ee59 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 24 Jul 2024 09:31:08 -0700
 Subject: [PATCH 320/330] hwmon: (ina2xx) Consolidate chip initialization code
@@ -178,5 +178,5 @@ index 2aea461b8c6d..a9e3b23445b4 100644
  	data->groups[group++] = &ina2xx_group;
  	if (chip == ina226)
 -- 
-2.45.3
+2.47.1
 

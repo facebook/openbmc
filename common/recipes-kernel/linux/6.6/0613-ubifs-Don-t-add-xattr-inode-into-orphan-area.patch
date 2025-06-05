@@ -1,4 +1,4 @@
-From 1ebabd6ea10ca7909ed279aece08614051ce00c8 Mon Sep 17 00:00:00 2001
+From 16467825a61f20a81ca55c19e9627a87aafb99f7 Mon Sep 17 00:00:00 2001
 From: Zhihao Cheng <chengzhihao1@huawei.com>
 Date: Wed, 10 Apr 2024 15:37:44 +0800
 Subject: [PATCH 613/614] ubifs: Don't add xattr inode into orphan area
@@ -218,5 +218,5 @@ index 4e15a1559595..5936d42711bd 100644
  	struct ubifs_orphan *dnext;
  	ino_t inum;
 -- 
-2.45.3
+2.47.1
 

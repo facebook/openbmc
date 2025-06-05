@@ -1,4 +1,4 @@
-From 5f3244c08c509c9ed4a7f0f59cfe997d180eac5b Mon Sep 17 00:00:00 2001
+From 4ea27c39dcca90873582a1d589bd2b36e8d07ae8 Mon Sep 17 00:00:00 2001
 From: Amna Waseem <Amna.Waseem@axis.com>
 Date: Tue, 11 Jun 2024 11:36:26 +0200
 Subject: [PATCH 312/330] hwmon: (ina2xx) Add device tree support to pass alert
@@ -79,5 +79,5 @@ index f8b5d972191e..9ab4205622e2 100644
  	if (ret < 0) {
  		dev_err(dev, "error configuring the device: %d\n", ret);
 -- 
-2.45.3
+2.47.1
 

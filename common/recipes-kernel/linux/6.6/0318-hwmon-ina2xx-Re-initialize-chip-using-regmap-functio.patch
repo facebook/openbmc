@@ -1,4 +1,4 @@
-From ee2f472cec9b1ccfaef25ac258319172559d8bdd Mon Sep 17 00:00:00 2001
+From 915e88a6e521a26e287f20745ecd5b3c35bea8f9 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 23 Jul 2024 16:04:29 -0700
 Subject: [PATCH 318/330] hwmon: (ina2xx) Re-initialize chip using regmap
@@ -137,5 +137,5 @@ index ed8764a29d3f..db6432523e59 100644
  }
  
 -- 
-2.45.3
+2.47.1
 

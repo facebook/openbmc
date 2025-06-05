@@ -1,4 +1,4 @@
-From b7c2f6ce06c4f39dce1aa97f8852a40f7eb0eb9c Mon Sep 17 00:00:00 2001
+From 7c070fa6ada3808cb8f5a012c58e637b1c95b250 Mon Sep 17 00:00:00 2001
 From: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 Date: Mon, 20 Mar 2023 16:11:32 +0800
 Subject: [PATCH 191/191] serial: 8250: Add AST2600 UART driver
@@ -277,5 +277,5 @@ index 628b75be312e..74148767f0b9 100644
  obj-$(CONFIG_SERIAL_8250_CONSOLE)	+= 8250_early.o
  obj-$(CONFIG_SERIAL_8250_FOURPORT)	+= 8250_fourport.o
 -- 
-2.44.2
+2.47.1
 

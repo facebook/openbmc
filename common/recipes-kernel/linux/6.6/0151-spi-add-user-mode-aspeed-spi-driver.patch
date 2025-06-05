@@ -1,4 +1,4 @@
-From fdad5ba4b82034fd8da0f9d778a9712c167a7f55 Mon Sep 17 00:00:00 2001
+From 4f3702bb3459e8e2a6f8d05706631b30fbc031b1 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 9 May 2022 22:55:21 -0700
 Subject: [PATCH 151/151] spi: add user-mode aspeed spi driver
@@ -702,5 +702,5 @@ index 000000000000..519e965585cc
 +MODULE_DESCRIPTION("ASPEED SPI Host Driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.44.2
+2.47.1
 

@@ -1,4 +1,4 @@
-From a9c9ed63e412858dc1cbfd6b43f4a4f553f136ba Mon Sep 17 00:00:00 2001
+From d16d66daec6efd0f386e8b2fe8355140bd0e7195 Mon Sep 17 00:00:00 2001
 From: Zhihao Cheng <chengzhihao1@huawei.com>
 Date: Wed, 10 Apr 2024 15:37:49 +0800
 Subject: [PATCH 609/614] ubifs: Fix space leak when powercut happens in
@@ -194,5 +194,5 @@ index 406c82eab513..b7b512070d76 100644
  		goto out_cancel;
  	ubifs_set_inode_flags(host);
 -- 
-2.45.3
+2.47.1
 

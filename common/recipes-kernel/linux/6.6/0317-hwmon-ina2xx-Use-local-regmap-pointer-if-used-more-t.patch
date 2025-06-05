@@ -1,4 +1,4 @@
-From 9c0f3c5158f4960ef5590aff777f311953827516 Mon Sep 17 00:00:00 2001
+From e5a0a0ac95f643a23f700c139cb786e75ab49ac7 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Thu, 1 Aug 2024 14:57:39 -0700
 Subject: [PATCH 317/330] hwmon: (ina2xx) Use local regmap pointer if used more
@@ -102,5 +102,5 @@ index 9d93190874d7..ed8764a29d3f 100644
  					 attr->index);
  		if (ret < 0)
 -- 
-2.45.3
+2.47.1
 

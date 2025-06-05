@@ -1,4 +1,4 @@
-From 70d77699b9aa8ba3eef57d9c045cd90986bb4bb4 Mon Sep 17 00:00:00 2001
+From 5b3d7246d193a470c5d7b1db99e82de8cc085f6e Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 2 Nov 2023 14:52:04 +0800
 Subject: [PATCH 300/330] To support MCP9600 temperature driver
@@ -268,5 +268,5 @@ index 000000000000..46845804292b
 +MODULE_DESCRIPTION("Microchip MCP9600 thermocouple EMF converter driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.45.3
+2.47.1
 

@@ -1,4 +1,4 @@
-From 72ac9267119fbc0ddeab16c4d7969b1f20cad435 Mon Sep 17 00:00:00 2001
+From 4ec56004839f8c24ba905661e642cdda1afc7a88 Mon Sep 17 00:00:00 2001
 From: Zhihao Cheng <chengzhihao1@huawei.com>
 Date: Mon, 8 Jan 2024 10:41:04 +0800
 Subject: [PATCH 605/614] ubifs: dbg_check_idx_size: Fix kmemleak if loading
@@ -133,5 +133,5 @@ index ebb3ad6b5e7e..0eae7eefef50 100644
  				     struct ubifs_zbranch *zbr,
  				     struct ubifs_znode *parent, int iip);
 -- 
-2.45.3
+2.47.1
 

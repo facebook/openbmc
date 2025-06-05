@@ -1,4 +1,4 @@
-From ce2e0ea730865146958a80f737de992a30a6bd23 Mon Sep 17 00:00:00 2001
+From ec9ba50a21d0f0e93dd36fcaf0b8c9117be53470 Mon Sep 17 00:00:00 2001
 From: dhineskumareswaran <dhineskumar.eswaran@celestica.com>
 Date: Mon, 5 Dec 2022 12:17:20 +0000
 Subject: [PATCH 150/151] spi: aspeed: add shutdown path for AST25XX SPI
@@ -22,7 +22,7 @@ In reset path, restoring all FMC related register back to default state.
  1 file changed, 26 insertions(+)
 
 diff --git a/drivers/spi/spi-aspeed-smc.c b/drivers/spi/spi-aspeed-smc.c
-index 21b0fa646c7d..6d9d119bf1a2 100644
+index 38a0613d434a..ee11236bada7 100644
 --- a/drivers/spi/spi-aspeed-smc.c
 +++ b/drivers/spi/spi-aspeed-smc.c
 @@ -46,6 +46,8 @@
@@ -42,7 +42,7 @@ index 21b0fa646c7d..6d9d119bf1a2 100644
  };
  
  #define ASPEED_SPI_MAX_NUM_CS	5
-@@ -796,6 +799,14 @@ static void aspeed_spi_remove(struct platform_device *pdev)
+@@ -798,6 +801,14 @@ static void aspeed_spi_remove(struct platform_device *pdev)
  	clk_disable_unprepare(aspi->clk);
  }
  
@@ -57,7 +57,7 @@ index 21b0fa646c7d..6d9d119bf1a2 100644
  /*
   * AHB mappings
   */
-@@ -1101,6 +1112,18 @@ static int aspeed_spi_ast2600_calibrate(struct aspeed_spi_chip *chip, u32 hdiv,
+@@ -1103,6 +1114,18 @@ static int aspeed_spi_ast2600_calibrate(struct aspeed_spi_chip *chip, u32 hdiv,
  	return -1;
  }
  
@@ -76,7 +76,7 @@ index 21b0fa646c7d..6d9d119bf1a2 100644
  /*
   * Platform definitions
   */
-@@ -1142,6 +1165,7 @@ static const struct aspeed_spi_data ast2500_fmc_data = {
+@@ -1144,6 +1167,7 @@ static const struct aspeed_spi_data ast2500_fmc_data = {
  	.segment_start = aspeed_spi_segment_start,
  	.segment_end   = aspeed_spi_segment_end,
  	.segment_reg   = aspeed_spi_segment_reg,
@@ -84,7 +84,7 @@ index 21b0fa646c7d..6d9d119bf1a2 100644
  };
  
  static const struct aspeed_spi_data ast2500_spi_data = {
-@@ -1156,6 +1180,7 @@ static const struct aspeed_spi_data ast2500_spi_data = {
+@@ -1158,6 +1182,7 @@ static const struct aspeed_spi_data ast2500_spi_data = {
  	.segment_start = aspeed_spi_segment_start,
  	.segment_end   = aspeed_spi_segment_end,
  	.segment_reg   = aspeed_spi_segment_reg,
@@ -92,7 +92,7 @@ index 21b0fa646c7d..6d9d119bf1a2 100644
  };
  
  static const struct aspeed_spi_data ast2600_fmc_data = {
-@@ -1202,6 +1227,7 @@ MODULE_DEVICE_TABLE(of, aspeed_spi_matches);
+@@ -1204,6 +1229,7 @@ MODULE_DEVICE_TABLE(of, aspeed_spi_matches);
  static struct platform_driver aspeed_spi_driver = {
  	.probe			= aspeed_spi_probe,
  	.remove_new		= aspeed_spi_remove,
@@ -101,5 +101,5 @@ index 21b0fa646c7d..6d9d119bf1a2 100644
  		.name		= DEVICE_NAME,
  		.of_match_table = aspeed_spi_matches,
 -- 
-2.44.2
+2.47.1
 

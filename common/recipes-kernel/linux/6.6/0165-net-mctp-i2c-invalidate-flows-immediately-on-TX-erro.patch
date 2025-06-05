@@ -1,7 +1,7 @@
-From bf6f724881c807c506c490feb4c4db529fdeb48f Mon Sep 17 00:00:00 2001
+From c3350c699f88e16a5ab391f9cea54e983e832467 Mon Sep 17 00:00:00 2001
 From: Jeremy Kerr <jk@codeconstruct.com.au>
 Date: Wed, 19 Jun 2024 22:06:08 +0800
-Subject: [PATCH 165/165] net: mctp-i2c: invalidate flows immediately on TX
+Subject: [PATCH 165/166] net: mctp-i2c: invalidate flows immediately on TX
  errors
 
 If we encounter an error on i2c packet transmit, we won't have a valid
@@ -22,7 +22,7 @@ Signed-off-by: Jeremy Kerr <jk@codeconstruct.com.au>
  1 file changed, 41 insertions(+)
 
 diff --git a/drivers/net/mctp/mctp-i2c.c b/drivers/net/mctp/mctp-i2c.c
-index b37a9e4bade4..4005a41bbd48 100644
+index ddd95cd605a3..cfe3dadd6117 100644
 --- a/drivers/net/mctp/mctp-i2c.c
 +++ b/drivers/net/mctp/mctp-i2c.c
 @@ -442,6 +442,42 @@ static void mctp_i2c_unlock_reset(struct mctp_i2c_dev *midev)
@@ -81,5 +81,5 @@ index b37a9e4bade4..4005a41bbd48 100644
  
  	case MCTP_I2C_TX_FLOW_INVALID:
 -- 
-2.44.2
+2.47.1
 

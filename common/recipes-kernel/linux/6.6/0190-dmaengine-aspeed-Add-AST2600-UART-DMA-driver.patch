@@ -1,4 +1,4 @@
-From 618ad49f8d4c71ff6fc26aa9a70bc132061f7590 Mon Sep 17 00:00:00 2001
+From 6e2fb2f8288856727e0b11eff412f4f580119964 Mon Sep 17 00:00:00 2001
 From: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 Date: Mon, 20 Mar 2023 16:11:31 +0800
 Subject: [PATCH 190/191] dmaengine: aspeed: Add AST2600 UART DMA driver
@@ -587,5 +587,5 @@ index 000000000000..39117b26996d
 +MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Chia-Wei Wang <chiawei_wang@aspeedtech.com");
 -- 
-2.44.2
+2.47.1
 

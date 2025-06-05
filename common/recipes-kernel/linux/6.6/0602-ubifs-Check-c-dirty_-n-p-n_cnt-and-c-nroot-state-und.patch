@@ -1,4 +1,4 @@
-From 0716e3968bb5d10be9297f1d09ba76f54c677dde Mon Sep 17 00:00:00 2001
+From dcd69d6af8ae2e7a8c961809b7645e2b198537fb Mon Sep 17 00:00:00 2001
 From: Zhihao Cheng <chengzhihao1@huawei.com>
 Date: Mon, 20 Nov 2023 19:13:45 +0800
 Subject: [PATCH 602/614] ubifs: Check @c->dirty_[n|p]n_cnt and @c->nroot state
@@ -83,5 +83,5 @@ index c4fc1047fc07..5b3a840098b0 100644
  	return 1;
  }
 -- 
-2.45.3
+2.47.1
 

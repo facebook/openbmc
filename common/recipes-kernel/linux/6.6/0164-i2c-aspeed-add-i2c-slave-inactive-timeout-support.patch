@@ -1,7 +1,7 @@
-From af56d74cc00f5824b94ba4a965b21bd0e9a39207 Mon Sep 17 00:00:00 2001
+From fd0fdc604cfc699e6d21c2c1ff5bebde612c9300 Mon Sep 17 00:00:00 2001
 From: Jae Hyun Yoo <jae.hyun.yoo@linux.intel.com>
 Date: Tue, 13 Sep 2022 08:56:54 -0700
-Subject: [PATCH 164/165] i2c: aspeed: add i2c slave inactive timeout support
+Subject: [PATCH 164/166] i2c: aspeed: add i2c slave inactive timeout support
 
 Summary:
 backport below patches to kernel 5.15 to support i2c slave inactive timeout.
@@ -22,7 +22,7 @@ fbshipit-source-id: 019a949fcc6c09d93141e781ca5c2bbe0f8bf580
  1 file changed, 85 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-aspeed.c b/drivers/i2c/busses/i2c-aspeed.c
-index 9e91d5fbd5f6..51e0297384ac 100644
+index 4a163f6ef313..3069ed1e0b5c 100644
 --- a/drivers/i2c/busses/i2c-aspeed.c
 +++ b/drivers/i2c/busses/i2c-aspeed.c
 @@ -7,6 +7,7 @@
@@ -95,7 +95,7 @@ index 9e91d5fbd5f6..51e0297384ac 100644
  	/* Transaction state. */
  	enum aspeed_i2c_master_state	master_state;
  	struct i2c_msg			*msgs;
-@@ -244,6 +264,14 @@ static int aspeed_i2c_recover_bus(struct aspeed_i2c_bus *bus)
+@@ -251,6 +271,14 @@ static int aspeed_i2c_recover_bus(struct aspeed_i2c_bus *bus)
  }
  
  #if IS_ENABLED(CONFIG_I2C_SLAVE)
@@ -110,7 +110,7 @@ index 9e91d5fbd5f6..51e0297384ac 100644
  static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
  {
  	u32 command, irq_handled = 0;
-@@ -271,6 +299,13 @@ static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
+@@ -278,6 +306,13 @@ static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
  		bus->slave_state = ASPEED_I2C_SLAVE_STOP;
  	}
  
@@ -214,5 +214,5 @@ index 9e91d5fbd5f6..51e0297384ac 100644
  	if (ret < 0)
  		return ret;
 -- 
-2.44.2
+2.47.1
 

@@ -1,4 +1,4 @@
-From 1235a86edc6d36f4cac605585cce31fc29a5de69 Mon Sep 17 00:00:00 2001
+From a9b52e897ba9f6dfa28853e4cf4ac4ae38c2fe5f Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 11 May 2020 13:51:25 -0700
 Subject: [PATCH 132/132] ARM: dts: aspeed-g5: add jtag controller
@@ -43,5 +43,5 @@ index 60a8a6fab17b..7225df3a2ce7 100644
  				compatible = "aspeed,ast2500-gfx", "syscon";
  				reg = <0x1e6e6000 0x1000>;
 -- 
-2.44.2
+2.47.1
 

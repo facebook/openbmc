@@ -1,4 +1,4 @@
-From 118f6c30a2ce201374a0d8dcf8fbfa47c76007d2 Mon Sep 17 00:00:00 2001
+From ee04f6cffc19125066ba7b34a1509b655ed4a574 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 24 Jul 2024 09:42:16 -0700
 Subject: [PATCH 319/330] hwmon: (ina2xx) Fix various overflow issues
@@ -129,5 +129,5 @@ index db6432523e59..2aea461b8c6d 100644
  	data->regmap = devm_regmap_init_i2c(client, &ina2xx_regmap_config);
  	if (IS_ERR(data->regmap)) {
 -- 
-2.45.3
+2.47.1
 

@@ -1,4 +1,4 @@
-From e24801d49e54fadc2c034b2364f55f35f8c4a1f4 Mon Sep 17 00:00:00 2001
+From 95139fd2809afeb3f68d4f36e67a6e3401c99e84 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 23 Jul 2024 16:17:02 -0700
 Subject: [PATCH 321/330] hwmon: (ina2xx) Set alert latch
@@ -39,5 +39,5 @@ index a9e3b23445b4..98338b7e7437 100644
  
  	/*
 -- 
-2.45.3
+2.47.1
 

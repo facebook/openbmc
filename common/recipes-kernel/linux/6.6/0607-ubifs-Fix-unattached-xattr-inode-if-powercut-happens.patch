@@ -1,4 +1,4 @@
-From 2c6d616c69cceb62ba903b28752d262a9c92b212 Mon Sep 17 00:00:00 2001
+From ef4924e8c30b5e174759c2e1d695d6b191d74926 Mon Sep 17 00:00:00 2001
 From: Zhihao Cheng <chengzhihao1@huawei.com>
 Date: Wed, 10 Apr 2024 15:37:43 +0800
 Subject: [PATCH 607/614] ubifs: Fix unattached xattr inode if powercut happens
@@ -82,5 +82,5 @@ index 4909321d84cf..ddeb125e6930 100644
  					goto out_ro;
  			}
 -- 
-2.45.3
+2.47.1
 

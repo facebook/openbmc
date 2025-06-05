@@ -1,4 +1,4 @@
-From 404a5ae9b54b02080b96553cc3c173d2a92aae73 Mon Sep 17 00:00:00 2001
+From 1ab5d3968a6a290a082f7780c182c650b473a804 Mon Sep 17 00:00:00 2001
 From: Chen Ni <nichen@iscas.ac.cn>
 Date: Thu, 20 Jun 2024 16:19:26 +0800
 Subject: [PATCH 612/614] ubifs: add check for crypto_shash_tfm_digest
@@ -34,5 +34,5 @@ index 7adc37c10b6a..a148760fa49e 100644
  	if (ubifs_check_hash(c, expected, calc))
  		return -EPERM;
 -- 
-2.45.3
+2.47.1
 

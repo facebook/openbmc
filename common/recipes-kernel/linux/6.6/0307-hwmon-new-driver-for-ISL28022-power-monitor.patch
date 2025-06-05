@@ -1,4 +1,4 @@
-From e1a51b1e1c65686578c64398f41feca9b9eecb0a Mon Sep 17 00:00:00 2001
+From d79a879a9b09ab6c182d6fd772bef8055623a04d Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Wed, 4 Sep 2024 10:08:31 +0800
 Subject: [PATCH 307/330] hwmon: new driver for ISL28022 power monitor
@@ -171,10 +171,10 @@ index 000000000000..8d4422a2dacd
 +shunt_voltage		shunt voltage (micro Volt)
 +======================= =======================================================
 diff --git a/MAINTAINERS b/MAINTAINERS
-index b0d560446671..8e1016af6105 100644
+index 15f2c1d316ed..930f4a82d71a 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -11211,6 +11211,14 @@ F:	drivers/isdn/Makefile
+@@ -11212,6 +11212,14 @@ F:	drivers/isdn/Makefile
  F:	drivers/isdn/hardware/
  F:	drivers/isdn/mISDN/
  
@@ -225,7 +225,7 @@ index 8b0c55df04fc..9f1bc6921361 100644
  obj-$(CONFIG_SENSORS_K8TEMP)	+= k8temp.o
 diff --git a/drivers/hwmon/isl28022.c b/drivers/hwmon/isl28022.c
 new file mode 100644
-index 000000000000..01220fad813d
+index 000000000000..67ba93cf16d8
 --- /dev/null
 +++ b/drivers/hwmon/isl28022.c
 @@ -0,0 +1,511 @@
@@ -741,5 +741,5 @@ index 000000000000..01220fad813d
 +MODULE_DESCRIPTION("ISL28022 driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.45.3
+2.47.1
 

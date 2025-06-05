@@ -8,6 +8,7 @@ SRC_URI:append = " \
     file://0005-Add-structured-logging-for-Threshold-events.patch \
     file://0006-psusensor-fixed-not-activate-for-multiple-power-stat.patch \
     file://0007-psusensors-fixed-multiple-power-state-issue.patch \
+    file://0008-pwm-sensor-Align-Target-with-user-intent.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \
@@ -15,5 +16,4 @@ SRC_URI:append:fb-compute-multihost = " \
     file://0201-Avoid-recreating-hwmon-temp-when-blade-cycle.patch \
     file://0202-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
     file://0203-Add-retry-attempts-configuration-for-fan-sensors.patch \
-    file://0204-pwm-sensor-Align-Target-with-user-intent.patch \
 "

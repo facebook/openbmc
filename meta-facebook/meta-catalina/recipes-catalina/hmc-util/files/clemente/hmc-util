@@ -1,0 +1,337 @@
+#!/bin/bash
+
+HMC_IP="172.31.13.251"
+HMC_URL_PREFIX="http://${HMC_IP}"
+
+
+FW_UPDATE_URL="${HMC_URL_PREFIX}/redfish/v1/UpdateService/update-multipart"
+FW_INVENTORY_URL="${HMC_URL_PREFIX}/redfish/v1/UpdateService/FirmwareInventory"
+MANAGERS_HGX_BMC_0="${HMC_URL_PREFIX}/redfish/v1/Managers/HGX_BMC_0"
+CURL_CONNECT_TIMEOUT=3
+
+HMC_MANG_COMP_LIST=(
+    "HGX_FW_BMC_0"
+    "HGX_FW_CPLD_0"
+    "HGX_FW_CPU_0"
+    "HGX_FW_CPU_1"
+    "HGX_FW_ERoT_BMC_0"
+    "HGX_FW_ERoT_CPU_0"
+    "HGX_FW_ERoT_CPU_1"
+    "HGX_FW_ERoT_FPGA_0"
+    "HGX_FW_FPGA_0"
+    "HGX_FW_GPU_0"
+    "HGX_FW_GPU_1"
+    "HGX_FW_GPU_2"
+    "HGX_FW_GPU_3"
+    "HGX_InfoROM_GPU_0"
+    "HGX_InfoROM_GPU_1"
+    "HGX_InfoROM_GPU_2"
+    "HGX_InfoROM_GPU_3"
+    "HGX_PCIeSwitchConfig_0"
+)
+
+is_hmc_managed_fw_comp()
+{
+    for component in "${HMC_MANG_COMP_LIST[@]}"; do
+        if [ "$1" = "$component" ]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+get_comp_version()
+{
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s '${FW_INVENTORY_URL}/$1'"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        # HMC not response
+        echo "$1: NA"
+        return 1
+    fi
+
+    COMP_VER="$(echo "${CURL_DATA}" | jq -r '"\(.Version // .Oem.Nvidia.ActiveFirmwareSlot.Version // "NA")"')"
+    echo "$1: $COMP_VER"
+
+    if [ "$COMP_VER" = "NA" ]; then
+        return 1
+    fi
+    return 0
+}
+
+get_all_comp_version()
+{
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s '${FW_INVENTORY_URL}?\$expand=.(\$levels=1)'"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        echo "failed: HMC not response."
+        return 1
+    else
+        echo "${CURL_DATA}" | jq '.Members | map(select(.Id)) | map({ (.Id): (.Version // .Oem.Nvidia.ActiveFirmwareSlot.Version // "NA") }) | add' \
+        | jq 'if (.HGX_FW_GPU_1 == null or .HGX_FW_GPU_1 == "NA") and has("HGX_FW_GPU_2") then .HGX_FW_GPU_1 = .HGX_FW_GPU_2 end' \
+        | jq 'if (.HGX_InfoROM_GPU_1 == null or .HGX_InfoROM_GPU_1 == "NA") and has("HGX_InfoROM_GPU_2") then .HGX_InfoROM_GPU_1 = .HGX_InfoROM_GPU_2 end' \
+        | jq 'if (.HGX_FW_FPGA_1 == null or .HGX_FW_FPGA_1 == "NA") then del(.HGX_FW_FPGA_1) end' \
+        | jq -r 'to_entries | sort_by(.key) | .[] | "\(.key): \(.value)"'
+    fi
+    return 0
+}
+
+get_all_firmware_path_without_sbios()
+{
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s '${FW_INVENTORY_URL}?\$expand=.(\$levels=1)'"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        return 1
+    fi
+    echo "${CURL_DATA}" | jq -r '.Members[] | select(.Id != null and .Updateable == true) | .["@odata.id"]' | grep -v HGX_FW_CPU_ | awk '{printf "\"%s\",", $0}' | sed 's/,$/\n/'
+    return 0
+}
+
+prepare_update_target_str()
+{
+    case "$1" in
+        "all"|"bundle")
+            # Update all components available in the firmware package
+            echo ""
+            ;;
+
+        "sbios")
+            # Update SBIOS only
+            echo "\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_CPU_0\",\"/redfish/v1/UpdateService/FirmwareInventory/HGX_FW_CPU_1\""
+            ;;
+
+        *)
+            if is_hmc_managed_fw_comp "$1"; then
+                echo "\"/redfish/v1/UpdateService/FirmwareInventory/$1\""
+            else
+                echo "Error: Unknown or unmanaged firmware component: $1"
+                return 1
+            fi
+            ;;
+    esac
+
+    return 0
+}
+
+is_erot_background_copy_status_done()
+{
+    EROT_URL="${HMC_URL_PREFIX}/redfish/v1/Chassis/$1"
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s '${EROT_URL}'"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        echo "NA (hmc no response)"
+        return 1
+    fi
+
+    BC_STATUS="$(echo "${CURL_DATA}" | jq -r '.Oem.Nvidia.BackgroundCopyStatus')"
+    echo "$1 BackgroundCopyStatus: $BC_STATUS"
+
+    if [ "$BC_STATUS" != "Completed" ]; then
+        return 1
+    fi
+    return 0
+}
+
+check_erot_background_copy_status()
+{
+    ALL_EROT_BC_DONE=true
+
+    case "$1" in
+        "all"|"bundle")
+            is_erot_background_copy_status_done "HGX_ERoT_BMC_0" || ALL_EROT_BC_DONE=false
+            is_erot_background_copy_status_done "HGX_ERoT_FPGA_0" || ALL_EROT_BC_DONE=false
+            ;;
+        "sbios")
+            is_erot_background_copy_status_done "HGX_ERoT_CPU_0" || ALL_EROT_BC_DONE=false
+            is_erot_background_copy_status_done "HGX_ERoT_CPU_1" || ALL_EROT_BC_DONE=false
+            ;;
+        "HGX_FW_BMC_0")
+            is_erot_background_copy_status_done "HGX_ERoT_BMC_0" || ALL_EROT_BC_DONE=false
+            ;;
+        "HGX_FW_FPGA_0")
+            is_erot_background_copy_status_done "HGX_ERoT_FPGA_0" || ALL_EROT_BC_DONE=false
+            ;;
+        "HGX_FW_CPU_0")
+            is_erot_background_copy_status_done "HGX_ERoT_CPU_0" || ALL_EROT_BC_DONE=false
+            ;;
+        "HGX_FW_CPU_1")
+            is_erot_background_copy_status_done "HGX_ERoT_CPU_1" || ALL_EROT_BC_DONE=false
+            ;;
+    esac
+
+    if [ "$ALL_EROT_BC_DONE" = false ]; then
+        return 1
+    fi
+
+    return 0
+}
+
+update_comp()
+{
+    if ! TARGET_STR=$(prepare_update_target_str "$1"); then
+        echo "failed: Unknown component, $1"
+        exit 1
+    fi
+
+    EROT_BUSY=false
+    check_erot_background_copy_status "$1" || EROT_BUSY=true
+
+    FORCE_UPDATE=""
+    if [ "$3" = "--force-update" ]; then
+        FORCE_UPDATE=", \"ForceUpdate\":true"
+    fi
+
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s -H 'Expect:' -L -X POST '${FW_UPDATE_URL}' -F 'UpdateParameters={\"Targets\":[$TARGET_STR]$FORCE_UPDATE} ;type=application/json' -F UpdateFile=@$2"
+    echo "CMD: ${CURL_CMD}"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        echo "failed: HMC not response."
+        return 1
+    fi
+
+    TASK_ID=$(echo "$CURL_DATA" | jq -r '."@odata.id"')
+    echo "TASK_ID: ${TASK_ID}"
+    echo
+
+    MESSAGE_COUNT=0
+    for (( retry = 0; retry < 500; retry++ ))
+    do
+        sleep 10
+        CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s http://${HMC_IP}${TASK_ID}"
+        if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+            echo "failed: HMC not response."
+            return 1
+        fi
+
+        if ! PERCENT=$(echo "$CURL_DATA" | jq -r '."PercentComplete"'); then
+            echo "failed: incorrect response format."
+            return 1
+        elif ! TASK_STATE=$(echo "$CURL_DATA" | jq -r '."TaskState"'); then
+            echo "failed: incorrect response format."
+            return 1
+        elif ! TASK_STATUS=$(echo "$CURL_DATA" | jq -r '."TaskStatus"'); then
+            echo "failed: incorrect response format."
+            return 1
+        fi
+
+        NEW_MESSAGE_COUNT=$(echo "$CURL_DATA" | jq -r '.Messages | length')
+        for ((i=MESSAGE_COUNT; i<NEW_MESSAGE_COUNT; i++))
+        do
+            echo "[$i] $(echo "$CURL_DATA" | jq -r ".Messages[$i].Message")"
+        done
+        MESSAGE_COUNT="$NEW_MESSAGE_COUNT"
+
+        echo -ne "PercentComplete: ${PERCENT} ...... (seconds: $((retry*10)))\r"
+
+        if [ "$TASK_STATE" != "Running" ]; then
+            echo -e "\r\nUpdate finished, state: ${TASK_STATE}, status: ${TASK_STATUS}"
+            if [ "$TASK_STATE" = "Completed" ]; then
+                return 0
+            else
+                if [ "$EROT_BUSY" = true ]; then
+                    echo "Firmware update failed might be due to ERoT is busy, please try update again."
+                fi
+                return 1
+            fi
+        fi
+    done
+
+    echo -e "\r\nfailed: Update process timeout."
+    return 1
+}
+
+set_hmc_datetime()
+{
+    BMC_DATETIME=$(date -u +"%Y-%m-%dT%H:%M:%S+00:00")
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s -X PATCH '${MANAGERS_HGX_BMC_0}' -d '{\"DateTime\":\"${BMC_DATETIME}\"}'"
+
+    if ! eval "${CURL_CMD}"; then
+        echo "HMC datetime set failed."
+        return 1
+    fi
+
+    echo "HMC datetime set to \"${BMC_DATETIME}\"."
+    return 0
+}
+
+sync_hmc_datetime()
+{
+    RETRY_COUNT="$1"
+    RETRY_DELAY_SEC="$2"
+
+    for i in $(seq 0 "${RETRY_COUNT}")
+    do
+        if [ "$i" != "0" ]; then
+            echo "Retry $i times......"
+        fi
+
+        if set_hmc_datetime; then
+            exit 0
+        fi
+
+        echo "Wait ${RETRY_DELAY_SEC} seconds and retry"
+        sleep "${RETRY_DELAY_SEC}"
+    done
+}
+
+is_number() {
+    # Check if input is a valid number
+    if ! [[ "$1" =~ ^[0-9]+$ ]]; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+print_usage()
+{
+    echo "Usage: $0 <commands>"
+    echo
+    echo "Commands:"
+    echo "  --version <all|bundle|sbios|HGX_COMP>"
+    echo "  [--update|--force-update] <all|bundle|sbios|HGX_COMP> <file>"
+    echo "  --sync-datetime [retry_count] [retry_delay]"
+    echo
+    echo "HGX_COMP:"
+    for comp in "${HMC_MANG_COMP_LIST[@]}"; do
+        echo "  $comp"
+    done
+    echo
+}
+
+INPUT_CMD="$1"
+
+if [ "$INPUT_CMD" = "--version" ]; then
+    INPUT_COMP="$2"
+    if [ "$INPUT_COMP" = "all" ]; then
+        get_all_comp_version
+    elif [ "$INPUT_COMP" = "bundle" ]; then
+        get_all_comp_version | grep -v "HGX_FW_CPU"
+    elif [ "$INPUT_COMP" = "sbios" ]; then
+        get_all_comp_version | grep "HGX_FW_CPU"
+    elif is_hmc_managed_fw_comp "$INPUT_COMP"; then
+        get_comp_version "$INPUT_COMP"
+    else
+        echo "failed: Unknow component, $INPUT_COMP"
+        exit 1
+    fi
+elif [ "$1" == "--update" ] || [ "$1" = "--force-update" ]; then
+    INPUT_COMP="$2"
+    FW_FILE="$3"
+    if [ ! -f "$FW_FILE" ]; then
+        echo "failed: incorrect firmware file path, $FW_FILE"
+        exit 1
+    fi
+    update_comp "$INPUT_COMP" "$(realpath "${FW_FILE}")" "$1"
+elif [ "$1" = "--sync-datetime" ]; then
+    RETRY_COUNT="$2"
+    RETRY_DELAY_SEC="$3"
+    # Validate RETRY_COUNT and RETRY_DELAY_SEC
+    if ! is_number "$RETRY_COUNT"; then
+        echo "Invalid retry count, defaulting to 0."
+        RETRY_COUNT=0
+    fi
+    if ! is_number "$RETRY_DELAY_SEC"; then
+        echo "Invalid retry delay, defaulting to 0."
+        RETRY_DELAY_SEC=0
+    fi
+    sync_hmc_datetime "$RETRY_COUNT" "$RETRY_DELAY_SEC"
+else
+    print_usage
+fi

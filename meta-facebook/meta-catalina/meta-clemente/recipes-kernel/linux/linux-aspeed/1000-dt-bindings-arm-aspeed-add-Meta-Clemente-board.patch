@@ -1,0 +1,29 @@
+From dcbea935f22dd5b2daa2823a5ae0a75e3b0f0742 Mon Sep 17 00:00:00 2001
+From: Leo Wang <leo.jt.wang@fii-foxconn.com>
+Date: Tue, 27 May 2025 23:08:48 +0800
+Subject: [PATCH 1000/1003] dt-bindings: arm: aspeed: add Meta Clemente board
+
+Document the new compatibles used on Meta Clemente.
+
+Acked-by: Conor Dooley <conor.dooley@microchip.com>
+Signed-off-by: Leo Wang <leo.jt.wang@fii-foxconn.com>
+LORE: https://lore.kernel.org/linux-arm-kernel/6835d5de.050a0220.14ffd7.0e18@mx.google.com/
+---
+ Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
+index a3736f134130..4416a40dcd86 100644
+--- a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
++++ b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
+@@ -81,6 +81,7 @@ properties:
+               - asus,x4tf-bmc
+               - facebook,bletchley-bmc
+               - facebook,catalina-bmc
++              - facebook,clemente-bmc
+               - facebook,cloudripper-bmc
+               - facebook,elbert-bmc
+               - facebook,fuji-bmc
+-- 
+2.49.0
+

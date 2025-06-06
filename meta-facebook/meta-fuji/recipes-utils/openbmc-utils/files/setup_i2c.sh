@@ -23,7 +23,22 @@ source /usr/local/bin/openbmc-utils.sh
 #shellcheck disable=SC1091
 source /usr/local/bin/i2c_sensor_fixup.sh
 
-# use to indicate if the script run successfully
+i2c_device_check_and_add() {
+   bus="$1"
+   addr="$2"
+   device="$3"
+
+   # Replace the address format with a 4-character zero-padded hex.
+   # e.g. 0x35 -> 0035
+   addr_format=$(printf "%04x" $((addr)))
+
+   # Check if the device already exists ignore to add it again
+   if [ ! -d "${SYSFS_I2C_DEVICES}/i2c-${bus}/${bus}-${addr_format}" ]; then
+      i2c_device_add "$bus" "$addr" "$device"
+   fi
+}
+
+# Used to indicate if the script ran successfully
 return_value=0
 
 # Sometimes, it has been observed that I2c devices, such as the PIM's UCD, 
@@ -39,27 +54,27 @@ ADM1266_BLACKBOX_INFO=0xE6
 board_ver=$(wedge_board_rev)
 
 # # Bus 0
-i2c_device_add 0 0x1010 slave-mqueue #IPMB 0
+i2c_device_check_and_add 0 0x1010 slave-mqueue #IPMB 0
 
 # # Bus 1
-i2c_device_add 1 0x40 xdpe132g5c #ISL68137 DC-DC core
-i2c_device_add 1 0x53 mp2978
-i2c_device_add 1 0x59 mp2978
+i2c_device_check_and_add 1 0x40 xdpe132g5c #ISL68137 DC-DC core
+i2c_device_check_and_add 1 0x53 mp2978
+i2c_device_check_and_add 1 0x59 mp2978
 
 # # Bus 2
-i2c_device_add 2 0x35 scmcpld  #SCM CPLD
+i2c_device_check_and_add 2 0x35 scmcpld  #SCM CPLD
 
 # # Bus 4
-i2c_device_add 4 0x1010 slave-mqueue #IPMB 1
-i2c_device_add 4 0x27 smb_debugcardcpld  # SMB DEBUGCARD CPLD
+i2c_device_check_and_add 4 0x1010 slave-mqueue #IPMB 1
+i2c_device_check_and_add 4 0x27 smb_debugcardcpld  # SMB DEBUGCARD CPLD
 
 # # Bus 13
-i2c_device_add 13 0x35 iobfpga #IOB FPGA
+i2c_device_check_and_add 13 0x35 iobfpga #IOB FPGA
 
 # # Bus 3
-i2c_device_add 3 0x48 lm75     #LM75B_1# Thermal sensor
-i2c_device_add 3 0x49 lm75     #LM75B_2# Thermal sensor
-i2c_device_add 3 0x4a lm75     #LM75B_3# Thermal sensor
+i2c_device_check_and_add 3 0x48 lm75     #LM75B_1# Thermal sensor
+i2c_device_check_and_add 3 0x49 lm75     #LM75B_2# Thermal sensor
+i2c_device_check_and_add 3 0x4a lm75     #LM75B_3# Thermal sensor
 
 # # Bus 5
 # # # SMB Power Sequence 1
@@ -71,23 +86,23 @@ i2c_device_add 3 0x4a lm75     #LM75B_3# Thermal sensor
 # # #   UCD90124A   0x43
 # # #   ADM1266     0x44
 if i2c_detect_address 5 0x35 "$UCD_DEVICE_ID_REG"; then
-   i2c_device_add 5 0x35 ucd90160
+   i2c_device_check_and_add 5 0x35 ucd90160
    kv set smb_pwrseq_1_addr 0x35
    kv set smb_pwrseq_1_page_count 16
 elif i2c_detect_address 5 0x66 "$UCD_DEVICE_ID_REG"; then
-   i2c_device_add 5 0x66 ucd90160
+   i2c_device_check_and_add 5 0x66 ucd90160
    kv set smb_pwrseq_1_addr 0x66
    kv set smb_pwrseq_1_page_count 13
 elif i2c_detect_address 5 0x68 "$UCD_DEVICE_ID_REG"; then
-   i2c_device_add 5 0x68 ucd90160
+   i2c_device_check_and_add 5 0x68 ucd90160
    kv set smb_pwrseq_1_addr 0x68
    kv set smb_pwrseq_1_page_count 13
 elif i2c_detect_address 5 0x43 "$UCD_DEVICE_ID_REG"; then
-   i2c_device_add 5 0x43 ucd90124
+   i2c_device_check_and_add 5 0x43 ucd90124
    kv set smb_pwrseq_1_addr 0x43
    kv set smb_pwrseq_1_page_count 12
 elif i2c_detect_address 5 0x44 "$ADM1266_BLACKBOX_INFO"; then
-   i2c_device_add 5 0x44 adm1266
+   i2c_device_check_and_add 5 0x44 adm1266
    kv set smb_pwrseq_1_addr 0x44
 else
    echo "setup-i2c : not detect UCD90160 UCD9016A UCD90120 UCD90120A UCD90124 UCD90124A ADM1266" > /dev/kmsg
@@ -103,23 +118,23 @@ fi
 # # #   UCD90124A   0x46
 # # #   ADM1266     0x47
 if i2c_detect_address 5 0x36 "$UCD_DEVICE_ID_REG"; then
-   i2c_device_add 5 0x36 ucd90160
+   i2c_device_check_and_add 5 0x36 ucd90160
    kv set smb_pwrseq_2_addr 0x36
    kv set smb_pwrseq_2_page_count 16
 elif i2c_detect_address 5 0x67 "$UCD_DEVICE_ID_REG"; then
-   i2c_device_add 5 0x67 ucd90160
+   i2c_device_check_and_add 5 0x67 ucd90160
    kv set smb_pwrseq_2_addr 0x67
    kv set smb_pwrseq_2_page_count 13
 elif i2c_detect_address 5 0x69 "$UCD_DEVICE_ID_REG"; then
-   i2c_device_add 5 0x69 ucd90160
+   i2c_device_check_and_add 5 0x69 ucd90160
    kv set smb_pwrseq_2_addr 0x69
    kv set smb_pwrseq_2_page_count 13
 elif i2c_detect_address 5 0x46 "$UCD_DEVICE_ID_REG"; then
-   i2c_device_add 5 0x46 ucd90124
+   i2c_device_check_and_add 5 0x46 ucd90124
    kv set smb_pwrseq_2_addr 0x46
    kv set smb_pwrseq_2_page_count 12
 elif i2c_detect_address 5 0x47 "$ADM1266_BLACKBOX_INFO"; then
-   i2c_device_add 5 0x47 adm1266
+   i2c_device_check_and_add 5 0x47 adm1266
    kv set smb_pwrseq_2_addr 0x47
 else
    echo "setup-i2c : not detect UCD90160 UCD9016A UCD90120 UCD90120A UCD90124 UCD90124A ADM1266" > /dev/kmsg
@@ -127,61 +142,61 @@ else
 fi
 
 # Bus 8
-i2c_device_add 8 0x51 24c64
-i2c_device_add 8 0x4a lm75
+i2c_device_check_and_add 8 0x51 24c64
+i2c_device_check_and_add 8 0x4a lm75
 
 # net_brcm driver only support DVT1 and later
 if [ "$board_ver" != "EVT1" ] && \
 [ "$board_ver" != "EVT2" ] && \
 [ "$board_ver" != "EVT3" ]; then
-    i2c_device_add 29 0x47 net_brcm
+    i2c_device_check_and_add 29 0x47 net_brcm
 fi
 
 # # i2c-mux PCA9548 0x70, channel 1, mux PCA9548 0x71
-i2c_device_add 48 0x58 psu_driver
-i2c_device_add 49 0x5a psu_driver
-i2c_device_add 50 0x4c lm75     #SIM
-i2c_device_add 50 0x52 24c64 	#SIM
-i2c_device_add 51 0x48 tmp75
-i2c_device_add 52 0x49 tmp75
-i2c_device_add 54 0x21 pca9534	#PCA9534
+i2c_device_check_and_add 48 0x58 psu_driver
+i2c_device_check_and_add 49 0x5a psu_driver
+i2c_device_check_and_add 50 0x4c lm75     #SIM
+i2c_device_check_and_add 50 0x52 24c64 	#SIM
+i2c_device_check_and_add 51 0x48 tmp75
+i2c_device_check_and_add 52 0x49 tmp75
+i2c_device_check_and_add 54 0x21 pca9534	#PCA9534
 if i2c_detect_address 55 0x60; then
-    i2c_device_add 55 0x60 smb_pwrcpld 	#PDB-L
+    i2c_device_check_and_add 55 0x60 smb_pwrcpld 	#PDB-L
 else
-    i2c_device_add 53 0x60 smb_pwrcpld 	#PDB-L
+    i2c_device_check_and_add 53 0x60 smb_pwrcpld 	#PDB-L
 fi
 
 # # i2c-mux PCA9548 0x70, channel 2, mux PCA9548 0x72
-i2c_device_add 56 0x58 psu_driver 	#PSU4
-i2c_device_add 57 0x5a psu_driver 	#PSU3
+i2c_device_check_and_add 56 0x58 psu_driver 	#PSU4
+i2c_device_check_and_add 57 0x5a psu_driver 	#PSU3
 
-i2c_device_add 59 0x48 tmp75
-i2c_device_add 60 0x49 tmp75
-i2c_device_add 62 0x21 pca9534
+i2c_device_check_and_add 59 0x48 tmp75
+i2c_device_check_and_add 60 0x49 tmp75
+i2c_device_check_and_add 62 0x21 pca9534
 if i2c_detect_address 63 0x60; then
-    i2c_device_add 63 0x60 smb_pwrcpld 	#PDB-R
+    i2c_device_check_and_add 63 0x60 smb_pwrcpld 	#PDB-R
 else
-    i2c_device_add 61 0x60 smb_pwrcpld  #PDB-R
+    i2c_device_check_and_add 61 0x60 smb_pwrcpld  #PDB-R
 fi
 
 # # i2c-mux PCA9548 0x70, channel 3, mux PCA9548 0x76
-i2c_device_add 64 0x33 fcbcpld #FCM CPLD
-i2c_device_add 65 0x53 24c64
-i2c_device_add 66 0x49 tmp75
-i2c_device_add 66 0x48 tmp75
-i2c_device_add 68 0x52 24c64    #fan 7 eeprom
-i2c_device_add 69 0x52 24c64    #fan 5 eeprom
-i2c_device_add 70 0x52 24c64    #fan 3 eeprom
-i2c_device_add 71 0x52 24c64    #fan 1 eeprom
+i2c_device_check_and_add 64 0x33 fcbcpld #FCM CPLD
+i2c_device_check_and_add 65 0x53 24c64
+i2c_device_check_and_add 66 0x49 tmp75
+i2c_device_check_and_add 66 0x48 tmp75
+i2c_device_check_and_add 68 0x52 24c64    #fan 7 eeprom
+i2c_device_check_and_add 69 0x52 24c64    #fan 5 eeprom
+i2c_device_check_and_add 70 0x52 24c64    #fan 3 eeprom
+i2c_device_check_and_add 71 0x52 24c64    #fan 1 eeprom
 
 # # # FCM-T HSC
 # # #    ADM1278  0x10
 # # #    LM25066  0x44
 if i2c_detect_address 67 0x10; then
-   i2c_device_add 67 0x10 adm1278    # FCM ADM1278
+   i2c_device_check_and_add 67 0x10 adm1278    # FCM ADM1278
    kv set smb_fcm_t_hsc_addr 0x10
 elif i2c_detect_address 67 0x44; then
-   i2c_device_add 67 0x44 lm25066    # FCM LM25066
+   i2c_device_check_and_add 67 0x44 lm25066    # FCM LM25066
    kv set smb_fcm_t_hsc_addr 0x44
 else
    echo "setup-i2c : not detect ADM1278 LM25066 on FCM bus67" > /dev/kmsg
@@ -189,23 +204,23 @@ else
 fi
 
 # # i2c-mux PCA9548 0x70, channel 4, mux PCA9548 0x76
-i2c_device_add 72 0x33 fcbcpld #FCM CPLD
-i2c_device_add 73 0x53 24c64
-i2c_device_add 74 0x49 tmp75
-i2c_device_add 74 0x48 tmp75
-i2c_device_add 76 0x52 24c64    #fan 8 eeprom
-i2c_device_add 77 0x52 24c64    #fan 6 eeprom
-i2c_device_add 78 0x52 24c64    #fan 4 eeprom
-i2c_device_add 79 0x52 24c64    #fan 2 eeprom
+i2c_device_check_and_add 72 0x33 fcbcpld #FCM CPLD
+i2c_device_check_and_add 73 0x53 24c64
+i2c_device_check_and_add 74 0x49 tmp75
+i2c_device_check_and_add 74 0x48 tmp75
+i2c_device_check_and_add 76 0x52 24c64    #fan 8 eeprom
+i2c_device_check_and_add 77 0x52 24c64    #fan 6 eeprom
+i2c_device_check_and_add 78 0x52 24c64    #fan 4 eeprom
+i2c_device_check_and_add 79 0x52 24c64    #fan 2 eeprom
 
 # # # FCM-B HSC
 # # #    ADM1278  0x10
 # # #    LM25066  0x44
 if i2c_detect_address 75 0x10; then
-   i2c_device_add 75 0x10 adm1278    # FCM ADM1278
+   i2c_device_check_and_add 75 0x10 adm1278    # FCM ADM1278
    kv set smb_fcm_b_hsc_addr 0x10
 elif i2c_detect_address 75 0x44; then
-   i2c_device_add 75 0x44 lm25066    # FCM LM25066
+   i2c_device_check_and_add 75 0x44 lm25066    # FCM LM25066
    kv set smb_fcm_b_hsc_addr 0x44
 else
    echo "setup-i2c : not detect ADM1278 LM25066 on FCM bus75" > /dev/kmsg
@@ -213,10 +228,10 @@ else
 fi
 
 # # i2c-mux PCA9548 0x70, channel 5
-i2c_device_add 28 0x50 24c02    #BMC54616S EEPROM
+i2c_device_check_and_add 28 0x50 24c02    #BMC54616S EEPROM
 
 # # Bus 12
-i2c_device_add 12 0x3e smb_syscpld     # SYSTEM CPLD
+i2c_device_check_and_add 12 0x3e smb_syscpld     # SYSTEM CPLD
 
 # The UCD/MP device occasionally failed to enumerate all the pages or
 # incorrectly reads the VOUT_MODE register, This is due to i2c clock stretch.
@@ -230,5 +245,5 @@ hwmon_fix_driver_binding "smb_pwrseq_1" "smb_pwrseq_2" "smb_mp2978_1" "smb_mp297
 #
 i2c_check_driver_binding
 
-# If there are some set of varient device cannot detected, return a non-zero value
+# If there are some set of variant device cannot detected, return a non-zero value
 exit $return_value

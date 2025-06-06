@@ -1,0 +1,55 @@
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+# This must start before console login is allowed, so that tools like weutil
+# work correctly as soon as the BMC is up.
+
+#
+# setup_i2c.service is overridden for the Fuji platform
+# with the addition of Restart=on-failure.
+#
+# This is necessary to address an issue where certain variant devices
+# may not be detected during the initial startup.
+#
+# example: During power sequence 1, some devices on bus 5 may not be detected
+#   setup-i2c : i2c_detect not found 5 - 0x35
+#   setup-i2c : i2c_detect not found 5 - 0x66
+#   setup-i2c : i2c_detect not found 5 - 0x68
+#   setup-i2c : i2c_detect not found 5 - 0x43
+#   setup-i2c : i2c_detect not found 5 - 0x44
+#   setup-i2c : not detect UCD90160 UCD9016A UCD90120 UCD90120A UCD90124 UCD90124A ADM1266
+#
+# To ensure that setup_i2c.sh successfully probes all devices, the service
+# will restart automatically if it encounters a failure.
+#
+
+[Unit]
+Description=Setup i2c switches and channels
+Wants=systemd-modules-load.service
+After=systemd-modules-load.service
+Before=basic.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/setup_i2c.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=basic.target

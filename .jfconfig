@@ -233,6 +233,40 @@
             ]
         },
         {
+            "alias": "openbmc-cit-clemente-determinator",
+            "args": {
+                "name": "openbmc-cit-clemente-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-clemente-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform clemente"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-catalina/meta-clemente/.*",
+                        "^meta-facebook/meta-catalina/recipes-.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-elbert-determinator",
             "args": {
                 "name": "openbmc-cit-elbert-determinator",

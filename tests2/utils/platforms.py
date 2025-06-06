@@ -3,6 +3,7 @@ PLATFORMS = [
     "bletchley",
     "catalina",
     "clearcreek",
+    "clemente",
     "elbert",
     "emeraldpools",
     "fbdarwin",

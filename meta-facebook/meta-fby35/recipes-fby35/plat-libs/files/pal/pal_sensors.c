@@ -3380,7 +3380,7 @@ pal_nic_otp_check(const float *value, float unr, float ucr) {
 }
 
 void
-pal_fan_fail_otp_check(void) {
+pal_fan_fail_otp_check(char* reason) {
   uint8_t bmc_location = 0;
   static bool is_fan_fail_otp_asserted = false;
 
@@ -3432,7 +3432,7 @@ pal_fan_fail_otp_check(void) {
     }
 
     kv_set("fan_fail_otp", STR_VALUE_1, 0, 0);
-    pal_all_slot_power_ctrl(SERVER_12V_OFF, "all fans failed");
+    pal_all_slot_power_ctrl(SERVER_12V_OFF, reason);
   } else {
     syslog(LOG_CRIT, "Turned off power of slot1 due to all fans failed");
     pal_set_server_power(FRU_SLOT1, SERVER_POWER_OFF);

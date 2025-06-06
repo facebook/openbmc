@@ -1,5 +1,5 @@
 {
-  "version": "CL_EMR_FSCV1.0",
+  "version": "CL_EMR_FSCV2.0",
   "pwm_transition_value": 80,
   "pwm_boost_value": 90,
   "non_fanfail_limited_boost_value": 100,
@@ -11,9 +11,11 @@
     "fan_fail": true,
     "sensor_fail": true
   },
-  "fan_dead_boost": {
-    "threshold": 2,
-    "action": "host_shutdown"
+  "multi_fan_fail": {
+      "data": [
+        [2, 100]
+      ],
+      "host_action": ["shutdown", 2]
   },
   "sensor_valid_check": {
     "(.*)fio_": {
@@ -43,21 +45,21 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 25, 30 ],
-        [ 26, 30 ],
-        [ 27, 30 ],
-        [ 28, 31 ],
-        [ 29, 31 ],
-        [ 30, 31 ],
-        [ 31, 32 ],
-        [ 32, 32 ],
-        [ 33, 32 ],
-        [ 34, 33 ],
-        [ 35, 33 ],
-        [ 36, 33 ],
-        [ 37, 50 ],
-        [ 38, 60 ],
-        [ 39, 70 ]
+        [ 25, 10 ],
+        [ 26, 10 ],
+        [ 27, 10 ],
+        [ 28, 11 ],
+        [ 29, 11 ],
+        [ 30, 11 ],
+        [ 31, 12 ],
+        [ 32, 12 ],
+        [ 33, 12 ],
+        [ 34, 13 ],
+        [ 35, 13 ],
+        [ 36, 13 ],
+        [ 37, 30 ],
+        [ 38, 40 ],
+        [ 39, 50 ]
       ]
     },
     "linear_cpu": {
@@ -68,17 +70,18 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
       "data": [
-        [ -23, 30 ],
-        [ -22, 31 ],
-        [ -21, 32 ],
-        [ -20, 33 ],
-        [ -19, 34 ],
-        [ -18, 35 ],
-        [ -17, 36 ],
-        [ -16, 37 ],
-        [ -15, 38 ],
-        [ -14, 39 ],
-        [ -13, 40 ]
+        [ -23, 10 ],
+        [ -22, 11 ],
+        [ -21, 12 ],
+        [ -20, 13 ],
+        [ -19, 14 ],
+        [ -18, 15 ],
+        [ -17, 16 ],
+        [ -16, 17 ],
+        [ -15, 18 ],
+        [ -14, 19 ],
+        [ -13, 20 ],
+        [ -12, 21 ]
       ]
     },
     "pid_cpu": {
@@ -86,11 +89,11 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": -10,
-      "negative_hysteresis": 2,
+      "setpoint": -11,
+      "negative_hysteresis": 3,
       "positive_hysteresis": 0,
-      "kp": -2.0,
-      "ki": -0.03,
+      "kp": -4.75,
+      "ki": -0.0065,
       "kd": 0
     },
     "linear_dimm": {
@@ -101,13 +104,13 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [65, 30],
-        [66, 31],
-        [67, 32],
-        [68, 33],
-        [69, 34],
-        [70, 35],
-        [71, 36]
+        [65, 10],
+        [66, 11],
+        [67, 12],
+        [68, 13],
+        [69, 14],
+        [70, 15],
+        [71, 16]
       ]
     },
     "pid_dimm": {
@@ -130,22 +133,12 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
       "data": [
-        [75, 30],
-        [76, 30],
-        [77, 31],
-        [78, 31],
-        [79, 32],
-        [80, 32],
-        [81, 33],
-        [82, 33],
-        [83, 34],
-        [84, 35],
-        [85, 35],
-        [86, 36],
-        [87, 37],
-        [88, 38],
-        [89, 39],
-        [90, 40]
+        [85, 10],
+        [86, 11],
+        [87, 12],
+        [88, 13],
+        [89, 14],
+        [90, 15]
       ]
     },
     "pid_nic": {
@@ -169,13 +162,12 @@
       "negative_hysteresis": 2,
       "data": [
         [89, 10],
-        [90, 20],
-        [91, 25],
-        [92, 30],
-        [93, 35],
-        [94, 40],
-        [95, 45],
-        [96, 50]
+        [90, 10],
+        [91, 15],
+        [92, 15],
+        [93, 20],
+        [94, 25],
+        [95, 30]
       ]
     },
     "pid_power": {
@@ -183,7 +175,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 90,
+      "setpoint": 96,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -5,
@@ -198,9 +190,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [58, 29],
-        [60, 32],
-        [62, 35]
+        [63, 10],
+        [64, 11],
+        [65, 12]
       ]
     },
     "pid_e1s_temp": {

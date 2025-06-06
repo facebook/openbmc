@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from ctypes import CDLL, c_uint8, byref
+from ctypes import CDLL, c_uint8, byref, c_char_p
 from subprocess import PIPE, Popen
 import kv
 import os
@@ -166,9 +166,12 @@ def board_host_actions(action="None", cause="None"):
     - handling host power off
     - alarming/syslogging criticals
     """
+    lpal_hndl.pal_fan_fail_otp_check.argtypes = [c_char_p]
     if "host_shutdown" in action:
         if "All fans are bad" in cause:
-            lpal_hndl.pal_fan_fail_otp_check()
+            lpal_hndl.pal_fan_fail_otp_check(b"all fans failed")
+        elif "Bad fan count exceeded threshold" in cause:
+            lpal_hndl.pal_fan_fail_otp_check(b"failed fan over threshold")
     pass
 
 
@@ -177,6 +180,8 @@ def board_callout(callout="None", **kwargs):
     Override this method for defining board specific callouts:
     - Exmaple chassis intrusion
     """
+    if "read_power" in callout:
+        return True
     if "init_fans" in callout:
         boost = 100  # define a boost for the platform or respect fscd override
         if "boost" in kwargs:

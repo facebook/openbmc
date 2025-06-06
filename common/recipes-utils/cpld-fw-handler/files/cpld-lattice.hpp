@@ -88,6 +88,7 @@ class CpldLatticeManager : public CpldManager
     int readUserCode(uint32_t& userCode);
     int XO2XO3Family_update();
     int XO5Family_update(bool legacy);
+    static void updateFailedWarning();
 };
 
 class XO5I2CManager : public CpldLatticeManager

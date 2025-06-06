@@ -693,6 +693,7 @@ int CpldLatticeManager::XO2XO3Family_update()
     if (enableProgramMode() < 0)
     {
         std::cout << "Enable program mode failed." << std::endl;
+        updateFailedWarning();
         return -1;
     }
 
@@ -700,6 +701,7 @@ int CpldLatticeManager::XO2XO3Family_update()
     if (eraseFlash() < 0)
     {
         std::cerr << "Erase flash failed." << std::endl;
+        updateFailedWarning();
         return -1;
     }
 
@@ -707,6 +709,7 @@ int CpldLatticeManager::XO2XO3Family_update()
     if (resetConfigFlash() < 0)
     {
         std::cerr << "Reset config flash for write failed." << std::endl;
+        updateFailedWarning();
         return -1;
     }
 
@@ -714,6 +717,7 @@ int CpldLatticeManager::XO2XO3Family_update()
     if (writeProgramPage() < 0)
     {
         std::cerr << "Write program page failed." << std::endl;
+        updateFailedWarning();
         return -1;
     }
     std::cout << "Write Program Page Done." << std::endl;
@@ -722,12 +726,14 @@ int CpldLatticeManager::XO2XO3Family_update()
     if (programUserCode() < 0)
     {
         std::cerr << "Program user code failed." << std::endl;
+        updateFailedWarning();
         return -1;
     }
 
     if (programDone() < 0)
     {
         std::cerr << "Program not done." << std::endl;
+        updateFailedWarning();
         return -1;
     }
 
@@ -735,6 +741,7 @@ int CpldLatticeManager::XO2XO3Family_update()
     if (resetConfigFlash() < 0)
     {
         std::cerr << "Reset config flash for verification failed." << std::endl;
+        updateFailedWarning();
         return -1;
     }
 
@@ -742,6 +749,7 @@ int CpldLatticeManager::XO2XO3Family_update()
     if (verifyData() < 0)
     {
         std::cerr << "Verify data failed." << std::endl;
+        updateFailedWarning();
         return -1;
     }
 
@@ -749,6 +757,7 @@ int CpldLatticeManager::XO2XO3Family_update()
     if (verifyUserCode() < 0)
     {
         std::cerr << "Verify user code failed." << std::endl;
+        updateFailedWarning();
         return -1;
     }
 
@@ -756,6 +765,7 @@ int CpldLatticeManager::XO2XO3Family_update()
     if (disableConfigInterface() < 0)
     {
         std::cerr << "Disable Config Interface failed." << std::endl;
+        updateFailedWarning();
         return -1;
     }
 
@@ -1128,4 +1138,10 @@ int CpldLatticeManager::getVersion()
         return -1;
     }
     return 0;
+}
+
+void CpldLatticeManager::updateFailedWarning()
+{    
+    std::cerr << "CPLD ROM is now corrupted, do not perform power cycle before it's recovered, otherwise the slot will bricked." << std::endl;
+    std::cerr << "Strong recommend to perform the update again right away." << std::endl;
 }

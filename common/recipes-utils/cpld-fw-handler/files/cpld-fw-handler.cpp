@@ -60,7 +60,7 @@ int CpldManager::i2cWriteReadCmd(std::span<const uint8_t> cmdData,
     iomsg.msgs = i2cmsg;
     iomsg.nmsgs = msg_count;
 
-    if (retryCond([&]() { return ioctl(i2c_fd, I2C_RDWR, &iomsg); }, 3, 10) < 0)
+    if (ioctl(i2c_fd, I2C_RDWR, &iomsg) < 0)
     {
         std::cerr << "Fail to r/w I2C device: " << unsigned(bus)
                   << ", Addr: " << unsigned(addr)

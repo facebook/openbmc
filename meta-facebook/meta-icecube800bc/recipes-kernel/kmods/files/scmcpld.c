@@ -114,9 +114,29 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		8,
 	},
 	{
-		"e1_s_ssd_prsnt0",
-		" 0x00: not present\n"
-		" 0x01: present",
+		"xp5p0_come_pg",
+		" 0x00: Not good\n"
+		" 0x01: Good\n",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x2a,
+		5,
+		1,
+	},
+	{
+		"xp12p0_come_pg",
+		" 0x00: Not good\n"
+		" 0x01: Good\n",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x2a,
+		6,
+		1,
+	},
+	{
+    "e1_s_ssd_prsnt0",
+    " 0x00: not present\n"
+    " 0x01: present",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0xb4,

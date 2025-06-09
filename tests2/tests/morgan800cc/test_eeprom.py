@@ -42,8 +42,10 @@ class CHASSISEepromTest(EepromV5Test, unittest.TestCase):
     """
 
     def test_x86_mac(self):
-        pass
+        self.skipTest("x86 mac is not present in Chassis Eeprom")
 
+    def test_version(self):
+        self.skipTest("Version attribute is not present in Chassis Eeprom")
 
 class SCMEepromTest(EepromV5Test, unittest.TestCase):
     """
@@ -65,7 +67,10 @@ class SCMEepromTest(EepromV5Test, unittest.TestCase):
     """
 
     def test_bmc_mac(self):
-        pass
+        self.skipTest("BMC mac is not present in SCM Eeprom")
 
     def test_switch_asic_mac(self):
-        pass
+        self.skipTest("ASIC switch mac is not present in SCM Eeprom")
+
+    def test_version(self):
+        self.skipTest("Version attribute is not present in SCM Eeprom")

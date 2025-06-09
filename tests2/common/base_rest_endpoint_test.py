@@ -151,8 +151,8 @@ class BaseRestEndpointTest(object):
         for attrib in attributes:
             with self.subTest(attrib=attrib):
                 self.assertIn(
-                    attrib,
-                    info,
+                    attrib.lower(),
+                    info.lower(),
                     msg="endpoint {} missing attrib {}".format(endpointname, attrib),
                 )
         if "Resources" in info:

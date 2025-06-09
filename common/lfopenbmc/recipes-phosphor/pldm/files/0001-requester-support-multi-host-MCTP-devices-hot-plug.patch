@@ -31,11 +31,11 @@ Upstream-Status: Pending
  common/utils.hpp                              |   7 +
  meson.build                                   |   1 +
  pldmd/pldmd.cpp                               |   9 +-
- requester/configuration_discovery_handler.cpp | 178 ++++++++++++++++++
- requester/configuration_discovery_handler.hpp | 143 ++++++++++++++
+ requester/configuration_discovery_handler.cpp | 188 ++++++++++++++++++
+ requester/configuration_discovery_handler.hpp | 143 +++++++++++++
  .../configuration_discovery_handler_test.cpp  | 115 +++++++++++
  requester/test/meson.build                    |  13 +-
- 9 files changed, 484 insertions(+), 3 deletions(-)
+ 9 files changed, 494 insertions(+), 3 deletions(-)
  create mode 100644 requester/configuration_discovery_handler.cpp
  create mode 100644 requester/configuration_discovery_handler.hpp
  create mode 100644 requester/test/configuration_discovery_handler_test.cpp
@@ -154,10 +154,10 @@ index 9387ffe..ea8036e 100644
          if (revents & (POLLHUP | POLLERR))
 diff --git a/requester/configuration_discovery_handler.cpp b/requester/configuration_discovery_handler.cpp
 new file mode 100644
-index 0000000..8b4d956
+index 0000000..23b3496
 --- /dev/null
 +++ b/requester/configuration_discovery_handler.cpp
-@@ -0,0 +1,178 @@
+@@ -0,0 +1,188 @@
 +#include "configuration_discovery_handler.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -239,9 +239,19 @@ index 0000000..8b4d956
 +        /** mctpEndpointInterface should be
 +         * "xyz.openbmc_project.Configuration.MCTPEndpoint".
 +         */
-+        const auto& mctpEndpointInterface = serviceMap.at(0).second.at(0);
++        const std::string mctpEndpointInterface =
++            "xyz.openbmc_project.Configuration.MCTPEndpoint";
++        const auto& interfaces = serviceMap.at(0).second;
 +        try
 +        {
++            if (std::find(interfaces.begin(), interfaces.end(), mctpEndpointInterface)
++                == interfaces.end())
++            {
++                throw std::runtime_error(
++                    "Interface '" + mctpEndpointInterface +
++                    "' not found in serviceMap for path: " + configPath);
++            }
++
 +            auto response = dBusIntf->getAll(serviceName, configPath,
 +                                             mctpEndpointInterface);
 +            appendIfEidMatch(targetEid, configPath,
@@ -631,5 +641,5 @@ index f269561..d30d884 100644
  foreach t : tests
      test(
 -- 
-2.47.1
+2.34.1
 

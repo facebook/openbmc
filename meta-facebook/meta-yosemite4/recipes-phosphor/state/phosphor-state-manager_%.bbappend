@@ -6,6 +6,7 @@ SRC_URI += " \
 "
 EXTRA_OEMESON:append = " \
     -Dretry_attempts=5 \
+    -Donly-allow-boot-when-bmc-ready=true \
 "
 
 do_install:append() {

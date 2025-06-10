@@ -1,4 +1,4 @@
-From 013199d32a450ac8c675c6868e0b0898f9935882 Mon Sep 17 00:00:00 2001
+From 6027cbbc33fa6fb5522d95bf02e0358f16bb92f4 Mon Sep 17 00:00:00 2001
 From: Jacky Chou <jacky_chou@aspeedtech.com>
 Date: Tue, 29 Apr 2025 18:27:38 +0800
 Subject: [PATCH] net: ftgmac100: reset MAC by SCU on RMII
@@ -11,15 +11,15 @@ Signed-off-by: Jacky Chou <jacky_chou@aspeedtech.com>
 Change-Id: I130487c2dcfb3890b7629ff2946f68f0feb808a7
 ---
  arch/arm/boot/dts/aspeed/aspeed-g6.dtsi   |  4 ++++
- drivers/net/ethernet/faraday/ftgmac100.c  | 25 +++++++++++++++++++++++
+ drivers/net/ethernet/faraday/ftgmac100.c  | 26 +++++++++++++++++++++++
  include/dt-bindings/clock/ast2600-clock.h |  2 ++
- 3 files changed, 31 insertions(+)
+ 3 files changed, 32 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index 10c58faeeb93..293808d8c3a2 100644
+index 4c23a545f371..649a00cd1663 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-@@ -251,6 +251,7 @@ mac0: ethernet@1e660000 {
+@@ -236,6 +236,7 @@ mac0: ethernet@1e660000 {
  			reg = <0x1e660000 0x180>;
  			interrupts = <GIC_SPI 2 IRQ_TYPE_LEVEL_HIGH>;
  			clocks = <&syscon ASPEED_CLK_GATE_MAC1CLK>;
@@ -27,7 +27,7 @@ index 10c58faeeb93..293808d8c3a2 100644
  			status = "disabled";
  		};
  
-@@ -259,6 +260,7 @@ mac1: ethernet@1e680000 {
+@@ -244,6 +245,7 @@ mac1: ethernet@1e680000 {
  			reg = <0x1e680000 0x180>;
  			interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
  			clocks = <&syscon ASPEED_CLK_GATE_MAC2CLK>;
@@ -35,7 +35,7 @@ index 10c58faeeb93..293808d8c3a2 100644
  			status = "disabled";
  		};
  
-@@ -267,6 +269,7 @@ mac2: ethernet@1e670000 {
+@@ -252,6 +254,7 @@ mac2: ethernet@1e670000 {
  			reg = <0x1e670000 0x180>;
  			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
  			clocks = <&syscon ASPEED_CLK_GATE_MAC3CLK>;
@@ -43,7 +43,7 @@ index 10c58faeeb93..293808d8c3a2 100644
  			status = "disabled";
  		};
  
-@@ -275,6 +278,7 @@ mac3: ethernet@1e690000 {
+@@ -260,6 +263,7 @@ mac3: ethernet@1e690000 {
  			reg = <0x1e690000 0x180>;
  			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
  			clocks = <&syscon ASPEED_CLK_GATE_MAC4CLK>;
@@ -52,7 +52,7 @@ index 10c58faeeb93..293808d8c3a2 100644
  		};
  
 diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
-index 848e41a4b1db..8a2f7ff086ef 100644
+index 848e41a4b1db..d61451dbaded 100644
 --- a/drivers/net/ethernet/faraday/ftgmac100.c
 +++ b/drivers/net/ethernet/faraday/ftgmac100.c
 @@ -9,6 +9,7 @@
@@ -71,12 +71,13 @@ index 848e41a4b1db..8a2f7ff086ef 100644
  
  	/* AST2500/AST2600 RMII ref clock gate */
  	struct clk *rclk;
-@@ -138,6 +140,23 @@ static int ftgmac100_reset_and_config_mac(struct ftgmac100 *priv)
+@@ -138,6 +140,24 @@ static int ftgmac100_reset_and_config_mac(struct ftgmac100 *priv)
  {
  	u32 maccr = 0;
  
 +	/* RMII needs SCU reset to clear status */
-+	if (priv->netdev->phydev->interface == PHY_INTERFACE_MODE_RMII) {
++	if (!priv->netdev->phydev ||
++		priv->netdev->phydev->interface == PHY_INTERFACE_MODE_RMII) {
 +		int err;
 +
 +		err = reset_control_assert(priv->rst);
@@ -95,7 +96,7 @@ index 848e41a4b1db..8a2f7ff086ef 100644
  	switch (priv->cur_speed) {
  	case SPEED_10:
  	case 0: /* no link */
-@@ -1968,6 +1987,12 @@ static int ftgmac100_probe(struct platform_device *pdev)
+@@ -1968,6 +1988,12 @@ static int ftgmac100_probe(struct platform_device *pdev)
  				  priv->base + FTGMAC100_OFFSET_TM);
  	}
  
@@ -109,7 +110,7 @@ index 848e41a4b1db..8a2f7ff086ef 100644
  	priv->rx_q_entries = priv->new_rx_q_entries = DEF_RX_QUEUE_ENTRIES;
  	priv->tx_q_entries = priv->new_tx_q_entries = DEF_TX_QUEUE_ENTRIES;
 diff --git a/include/dt-bindings/clock/ast2600-clock.h b/include/dt-bindings/clock/ast2600-clock.h
-index 89fd69932ee9..303c21be8915 100644
+index 712782177c90..912c3109a387 100644
 --- a/include/dt-bindings/clock/ast2600-clock.h
 +++ b/include/dt-bindings/clock/ast2600-clock.h
 @@ -121,6 +121,8 @@
@@ -122,5 +123,5 @@ index 89fd69932ee9..303c21be8915 100644
  #define ASPEED_RESET_HACE		4
  #define ASPEED_RESET_AHB		1
 -- 
-2.43.0
+2.47.1
 

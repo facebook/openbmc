@@ -14,9 +14,9 @@ Upstream-Status: Pending
  libpldmresponder/meson.build                  |   1 +
  .../libpldmresponder/oem_meta_file_io.cpp     |   4 +
  .../oem_meta_file_io_by_type.hpp              |   1 +
- .../oem_meta_file_io_type_event_log.cpp       | 138 ++++++++++++++++++
+ .../oem_meta_file_io_type_event_log.cpp       | 140 ++++++++++++++++++
  .../oem_meta_file_io_type_event_log.hpp       |  59 ++++++++
- 5 files changed, 203 insertions(+)
+ 5 files changed, 205 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
 
@@ -68,10 +68,10 @@ index abf8369..f2e44de 100644
  class FileHandler
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 new file mode 100644
-index 0000000..b84e3e3
+index 0000000..d063070
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,140 @@
 +#include "oem_meta_file_io_type_event_log.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -170,6 +170,8 @@ index 0000000..b84e3e3
 +        " HDT_PRSNT Assertion",
 +        " PLTRST Assertion",
 +        " APML_ALERT Assertion",
++        " Post-Started",
++        " Post-Ended",
 +    });
 +
 +    /* 1. Get host slot number */

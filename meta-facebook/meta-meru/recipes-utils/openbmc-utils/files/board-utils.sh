@@ -115,7 +115,7 @@ wedge_power_asic() {
     fi
 
     case "$product" in
-        MERU800BIA|MERU800BIAB)
+        MERU800BIA|MERU800BIAB|MERU800BIAC)
             echo "$power_state" > "$J3_ASIC_PCIE_RESET_SYSFS"
             echo "$power_state" > "$J3_ASIC_SYS_RESET_SYSFS"
             ;;

@@ -1,9 +1,10 @@
-From d5c834fc65fcd28677ad1bfbf7073abe4aa27bd6 Mon Sep 17 00:00:00 2001
+From fe833d182a4835a3dd701dc2808578ab1a8411c2 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 20 Aug 2024 13:27:07 +0800
-Subject: [PATCH 1/6] configurations: nvidia_hmc: add satellite sensors
+Subject: [PATCH 1/1] configurations: nvidia_hmc: add SmbpbiVirtualEeprom
+ sensors
 
-Add Satellite sensors configs for Nvidia HMC.
+Add SmbpbiVirtualEeprom sensors configs for Nvidia HMC.
 
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Change-Id: I99a3612b7bf5ffbae60a1af98dd702963728fc29
@@ -12,23 +13,23 @@ Change-Id: I99a3612b7bf5ffbae60a1af98dd702963728fc29
  1 file changed, 824 insertions(+)
 
 diff --git a/configurations/nvidia_hmc.json b/configurations/nvidia_hmc.json
-index f541408..e1891af 100644
+index f541408..6ed9a2a 100644
 --- a/configurations/nvidia_hmc.json
 +++ b/configurations/nvidia_hmc.json
-@@ -6,6 +6,830 @@
-             "Name": "NVIDIA HMC FRU",
-             "Type": "EEPROM"
-         },
+@@ -12,6 +12,830 @@
+             "Name": "HMC",
+             "Port": 80,
+             "Type": "SatelliteController"
++        },
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_GPU0_DRAM_TEMP_C",
-+            "OffsetValue": 25,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 25,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -52,8 +53,9 @@ index f541408..e1891af 100644
 +                    "Value": 105.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -61,10 +63,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_GPU1_DRAM_TEMP_C",
-+            "OffsetValue": 29,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 29,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -88,8 +89,9 @@ index f541408..e1891af 100644
 +                    "Value": 105.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -97,12 +99,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 1023,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU0_PWR_W",
-+            "OffsetValue": 75,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Power",
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "ReadOffset": 75,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Watts",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -110,12 +112,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 1023,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU1_PWR_W",
-+            "OffsetValue": 79,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Power",
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "ReadOffset": 79,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Watts",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -123,10 +125,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_GPU0_THERMAL_MARGIN_C",
-+            "OffsetValue": 108,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 108,
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
@@ -150,8 +151,9 @@ index f541408..e1891af 100644
 +                    "Value": -5.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -159,10 +161,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_GPU1_THERMAL_MARGIN_C",
-+            "OffsetValue": 112,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 112,
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
@@ -186,8 +187,9 @@ index f541408..e1891af 100644
 +                    "Value": -5.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -195,12 +197,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 4294970000.0,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU0_ENERGY_J",
-+            "OffsetValue": 141,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Energy",
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "ReadOffset": 141,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Joules",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -208,12 +210,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 4294970000.0,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU1_ENERGY_J",
-+            "OffsetValue": 149,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Energy",
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "ReadOffset": 149,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Joules",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -221,12 +223,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 1023,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU0_DRAM_PWR_W",
-+            "OffsetValue": 206,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Power",
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "ReadOffset": 206,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Watts",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -234,12 +236,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 1023,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU1_DRAM_PWR_W",
-+            "OffsetValue": 210,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Power",
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "ReadOffset": 210,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Watts",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -247,9 +249,8 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_HMC_TEMP_C",
-+            "OffsetValue": 240,
 +            "PollRate": 1,
-+            "SensorType": "Temperature",
++            "ReadOffset": 240,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -280,8 +281,9 @@ index f541408..e1891af 100644
 +                    "Value": -0.05
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -289,10 +291,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_GPU0_TEMP_C",
-+            "OffsetValue": 288,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 288,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -316,8 +317,9 @@ index f541408..e1891af 100644
 +                    "Value": 82.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -325,10 +327,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_GPU1_TEMP_C",
-+            "OffsetValue": 292,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 292,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -352,8 +353,9 @@ index f541408..e1891af 100644
 +                    "Value": 82.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -361,10 +363,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_CPU0_INLET0_TEMP_C",
-+            "OffsetValue": 320,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 320,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -388,8 +389,9 @@ index f541408..e1891af 100644
 +                    "Value": 60.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -397,10 +399,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_CPU0_INLET1_TEMP_C",
-+            "OffsetValue": 324,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 324,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -424,8 +425,9 @@ index f541408..e1891af 100644
 +                    "Value": 60.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -433,10 +435,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_CPU0_EXHAUST_TEMP_C",
-+            "OffsetValue": 328,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 328,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -460,8 +461,9 @@ index f541408..e1891af 100644
 +                    "Value": 70.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -469,10 +471,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_CPU1_INLET0_TEMP_C",
-+            "OffsetValue": 336,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 336,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -496,8 +497,9 @@ index f541408..e1891af 100644
 +                    "Value": 60.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -505,10 +507,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_CPU1_INLET1_TEMP_C",
-+            "OffsetValue": 340,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 340,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -532,8 +533,9 @@ index f541408..e1891af 100644
 +                    "Value": 60.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -541,10 +543,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -128,
 +            "Name": "HGX_CPU1_EXHAUST_TEMP_C",
-+            "OffsetValue": 344,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 344,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -568,8 +569,9 @@ index f541408..e1891af 100644
 +                    "Value": 70.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "Raw"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "UINT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -577,12 +579,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 100000,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_ENERGY_J",
-+            "OffsetValue": 640,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Energy",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 640,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Joules",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -590,12 +592,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 500,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_PWR_W",
-+            "OffsetValue": 648,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Power",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 648,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Watts",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -603,12 +605,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 100,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_VR_CPU_PWR_W",
-+            "OffsetValue": 656,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Voltage",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 656,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Volts",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -616,12 +618,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 10,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_VR_SOC_PWR_W",
-+            "OffsetValue": 664,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Voltage",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 664,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Volts",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -629,10 +631,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -127,
 +            "Name": "HGX_CPU0_TEMP_C",
-+            "OffsetValue": 672,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 672,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -642,8 +643,9 @@ index f541408..e1891af 100644
 +                    "Value": 90.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -651,10 +653,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -127,
 +            "Name": "HGX_CPU0_THERMAL_MARGIN_C",
-+            "OffsetValue": 680,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 680,
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
@@ -678,8 +679,9 @@ index f541408..e1891af 100644
 +                    "Value": -5.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -687,12 +689,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 100,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_VR_CPU_VOLT_V",
-+            "OffsetValue": 688,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Voltage",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 688,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Volts",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -700,12 +702,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 100,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_VR_SOC_VOLT_V",
-+            "OffsetValue": 696,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Voltage",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 696,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Volts",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -713,12 +715,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 100000,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_ENERGY_J",
-+            "OffsetValue": 896,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Energy",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 896,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Joules",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -726,12 +728,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 500,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_PWR_W",
-+            "OffsetValue": 904,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Power",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 904,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Watts",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -739,12 +741,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 100,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_VR_CPU_PWR_W",
-+            "OffsetValue": 912,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Voltage",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 912,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Volts",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -752,12 +754,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 10,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_VR_SOC_PWR_W",
-+            "OffsetValue": 920,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Voltage",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 920,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Volts",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -765,10 +767,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -127,
 +            "Name": "HGX_CPU1_TEMP_C",
-+            "OffsetValue": 928,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 928,
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
@@ -778,8 +779,9 @@ index f541408..e1891af 100644
 +                    "Value": 90.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -787,10 +789,9 @@ index f541408..e1891af 100644
 +            "MaxValue": 127,
 +            "MinValue": -127,
 +            "Name": "HGX_CPU1_THERMAL_MARGIN_C",
-+            "OffsetValue": 936,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Temperature",
++            "ReadOffset": 936,
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
@@ -814,8 +815,9 @@ index f541408..e1891af 100644
 +                    "Value": -5.0
 +                }
 +            ],
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "DegreesC",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -823,12 +825,12 @@ index f541408..e1891af 100644
 +            "MaxValue": 100,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_VR_CPU_VOLT_V",
-+            "OffsetValue": 944,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Voltage",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
++            "ReadOffset": 944,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Volts",
++            "ValueType": "FLOAT64"
 +        },
 +        {
 +            "Address": "0x4f",
@@ -836,16 +838,15 @@ index f541408..e1891af 100644
 +            "MaxValue": 100,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_VR_SOC_VOLT_V",
-+            "OffsetValue": 952,
 +            "PollRate": 1,
 +            "PowerState": "On",
-+            "SensorType": "Voltage",
-+            "Type": "Satellite",
-+            "ValueType": "PLDM"
-+        },
-         {
-             "AuthType": "None",
-             "Hostname": "172.31.13.251",
++            "ReadOffset": 952,
++            "Type": "SmbpbiVirtualEeprom",
++            "Units": "Volts",
++            "ValueType": "FLOAT64"
+         }
+     ],
+     "Name": "NVIDIA HMC",
 -- 
-2.49.0
+2.31.1
 

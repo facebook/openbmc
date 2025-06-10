@@ -1,0 +1,195 @@
+From 6d70cbc80633bd66855ddc5a057390dca61aa31c Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Sun, 8 Jun 2025 11:05:34 +0800
+Subject: [PATCH 2/2] smbpbi: Add support for PowerState config option
+
+This change adds support for the `PowerState` configuration option for
+SmbpbiVirtualEeprom sensor.
+
+Tested:
+- EM config
+```
+{
+    "Address": 79,
+    "Bus": 13,
+    "MaxValue": 127,
+    "MinValue": -128,
+    "Name": "HGX_GPU0_TEMP_C",
+    "PollRate": 1,
+    "PowerState": "On",
+    "ReadOffset": 288,
+    "Type": "SmbpbiVirtualEeprom",
+    "Units": "DegreesC",
+    "ValueType": "UINT64"
+}
+```
+
+- Host state in running
+```
+root@bmc:~# busctl introspect xyz.openbmc_project.SMBPBI /xyz/openbmc_project/sensors/temperature/HGX_GPU0_TEMP_C xyz.openbmc_project.State.Decorator.Availability -l
+NAME                                             TYPE      SIGNATURE RESULT/VALUE FLAGS
+.Available                                       property  b         true         emits-change writable
+root@bmc:~# busctl introspect xyz.openbmc_project.SMBPBI /xyz/openbmc_project/sensors/temperature/HGX_GPU0_TEMP_C xyz.openbmc_project.Sensor.Value -l
+NAME                             TYPE      SIGNATURE RESULT/VALUE                                     FLAGS
+.MaxValue                        property  d         127                                              emits-change
+.MinValue                        property  d         -128                                             emits-change
+.Unit                            property  s         "xyz.openbmc_project.Sensor.Value.Unit.DegreesC" emits-change
+.Value                           property  d         79.1562                                          emits-change writable
+```
+
+- Host state is off
+```
+root@bmc:~# busctl introspect xyz.openbmc_project.SMBPBI /xyz/openbmc_project/sensors/temperature/HGX_GPU0_TEMP_C xyz.openbmc_project.State.Decorator.Availability -l
+NAME                                             TYPE      SIGNATURE RESULT/VALUE FLAGS
+.Available                                       property  b         false        emits-change writable
+root@bmc:~# busctl introspect xyz.openbmc_project.SMBPBI /xyz/openbmc_project/sensors/temperature/HGX_GPU0_TEMP_C xyz.openbmc_project.Sensor.Value -l
+NAME                             TYPE      SIGNATURE RESULT/VALUE                                     FLAGS
+.MaxValue                        property  d         127                                              emits-change
+.MinValue                        property  d         -128                                             emits-change
+.Unit                            property  s         "xyz.openbmc_project.Sensor.Value.Unit.DegreesC" emits-change
+.Value                           property  d         nan                                              emits-change writable
+```
+
+Change-Id: Ie088c28fe337c00265556df6b14664106be39b73
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+Gerrit: https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/80918
+---
+ src/smbpbi/SmbpbiSensor.cpp | 49 +++++++++++++++++++++++++++++++++----
+ src/smbpbi/SmbpbiSensor.hpp |  3 ++-
+ 2 files changed, 46 insertions(+), 6 deletions(-)
+
+diff --git a/src/smbpbi/SmbpbiSensor.cpp b/src/smbpbi/SmbpbiSensor.cpp
+index d50b88d..7895607 100644
+--- a/src/smbpbi/SmbpbiSensor.cpp
++++ b/src/smbpbi/SmbpbiSensor.cpp
+@@ -59,9 +59,10 @@ SmbpbiSensor::SmbpbiSensor(
+     std::vector<thresholds::Threshold>&& thresholdData, uint8_t busId,
+     uint8_t addr, uint16_t offset, std::string& sensorUnits,
+     std::string& valueType, size_t pollTime, double minVal, double maxVal,
+-    std::string& path) :
++    std::string& path, const PowerState& powerState) :
+     Sensor(escapeName(sensorName), std::move(thresholdData),
+-           sensorConfiguration, objType, false, false, maxVal, minVal, conn),
++           sensorConfiguration, objType, false, false, maxVal, minVal, conn,
++           powerState),
+     busId(busId), addr(addr), offset(offset), sensorUnits(sensorUnits),
+     valueType(valueType), objectServer(objectServer),
+     inputDev(io, path, boost::asio::random_access_file::read_only),
+@@ -118,9 +119,16 @@ SmbpbiSensor::~SmbpbiSensor()
+ 
+ void SmbpbiSensor::init()
+ {
++    markAvailable(true);
+     read();
+ }
+ 
++void SmbpbiSensor::deactivate()
++{
++    markAvailable(false);
++    waitTimer.cancel();
++}
++
+ void SmbpbiSensor::checkThresholds()
+ {
+     thresholds::checkThresholds(this);
+@@ -416,6 +424,8 @@ static void createSensorCallback(
+ 
+             uint16_t off = loadVariant<uint16_t>(entry.second, "ReadOffset");
+ 
++            PowerState pwrState = getPowerState(entry.second);
++
+             std::string sensorUnits =
+                 loadVariant<std::string>(entry.second, "Units");
+ 
+@@ -444,12 +454,13 @@ static void createSensorCallback(
+                           "\tValue Type : {VALUETYPE}\n"
+                           "\tPollrate: {RATE}\n"
+                           "\tMinValue: {MIN}\n"
+-                          "\tMaxValue: {MAX}\n",
++                          "\tMaxValue: {MAX}\n"
++                          "\tPowerState: {PWRSTATE}\n",
+                           "CONF", entry.first, "NAME", name, "BUS",
+                           static_cast<int>(busId), "ADDR",
+                           static_cast<int>(addr), "OFF", static_cast<int>(off),
+                           "UNITS", sensorUnits, "VALUETYPE", valueType, "RATE",
+-                          rate, "MIN", minVal, "MAX", maxVal);
++                          rate, "MIN", minVal, "MAX", maxVal, "PWRSTATE", pwrState);
+             }
+ 
+             auto& sensor = sensors[name];
+@@ -460,7 +471,7 @@ static void createSensorCallback(
+             sensor = std::make_unique<SmbpbiSensor>(
+                 dbusConnection, io, name, pathPair.first, objectType,
+                 objectServer, std::move(sensorThresholds), busId, addr, off,
+-                sensorUnits, valueType, rate, minVal, maxVal, path);
++                sensorUnits, valueType, rate, minVal, maxVal, path, pwrState);
+ 
+             sensor->init();
+         }
+@@ -489,6 +500,28 @@ void createSensors(
+         "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
+ }
+ 
++static void powerStateChanged(PowerState type, bool newState)
++{
++    if (type != PowerState::on)
++    {
++        return;
++    }
++    for (auto& [name, sensor] : sensors)
++    {
++        if (sensor != nullptr && sensor->readState == type)
++        {
++            if (newState)
++            {
++                sensor->init();
++            }
++            else
++            {
++                sensor->deactivate();
++            }
++        }
++    }
++}
++
+ int main()
+ {
+     boost::asio::io_context io;
+@@ -537,6 +570,12 @@ int main()
+         eventHandler);
+ 
+     setupManufacturingModeMatch(*systemBus);
++
++    auto powerCallBack = [](PowerState type, bool state) {
++        powerStateChanged(type, state);
++    };
++    setupPowerMatchCallback(systemBus, powerCallBack);
++
+     io.run();
+     return 0;
+ }
+diff --git a/src/smbpbi/SmbpbiSensor.hpp b/src/smbpbi/SmbpbiSensor.hpp
+index c869ce3..bd8b075 100644
+--- a/src/smbpbi/SmbpbiSensor.hpp
++++ b/src/smbpbi/SmbpbiSensor.hpp
+@@ -40,7 +40,7 @@ struct SmbpbiSensor : public Sensor
+         std::vector<thresholds::Threshold>&& thresholdData, uint8_t busId,
+         uint8_t addr, uint16_t offset, std::string& sensorUnits,
+         std::string& valueType, size_t pollTime, double minVal, double maxVal,
+-        std::string& path);
++        std::string& path, const PowerState& powerState);
+     ~SmbpbiSensor() override;
+ 
+     void checkThresholds() override;
+@@ -51,6 +51,7 @@ struct SmbpbiSensor : public Sensor
+     }
+     void read();
+     void init();
++    void deactivate();
+ 
+     uint8_t busId;
+     uint8_t addr;
+-- 
+2.31.1
+

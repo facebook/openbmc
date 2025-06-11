@@ -23,21 +23,6 @@ source /usr/local/bin/openbmc-utils.sh
 #shellcheck disable=SC1091
 source /usr/local/bin/i2c_sensor_fixup.sh
 
-i2c_device_check_and_add() {
-   bus="$1"
-   addr="$2"
-   device="$3"
-
-   # Replace the address format with a 4-character zero-padded hex.
-   # e.g. 0x35 -> 0035
-   addr_format=$(printf "%04x" $((addr)))
-
-   # Check if the device already exists ignore to add it again
-   if [ ! -d "${SYSFS_I2C_DEVICES}/i2c-${bus}/${bus}-${addr_format}" ]; then
-      i2c_device_add "$bus" "$addr" "$device"
-   fi
-}
-
 # Used to indicate if the script ran successfully
 return_value=0
 
@@ -85,7 +70,9 @@ i2c_device_check_and_add 3 0x4a lm75     #LM75B_3# Thermal sensor
 # # #   UCD90160    0x68
 # # #   UCD90124A   0x43
 # # #   ADM1266     0x44
-if i2c_detect_address 5 0x35 "$UCD_DEVICE_ID_REG"; then
+if kv get smb_pwrseq_1_addr >/dev/null 2>&1; then
+   echo "setup-i2c : SMB Power Sequence 1 already added driver, skip detection"
+elif i2c_detect_address 5 0x35 "$UCD_DEVICE_ID_REG"; then
    i2c_device_check_and_add 5 0x35 ucd90160
    kv set smb_pwrseq_1_addr 0x35
    kv set smb_pwrseq_1_page_count 16
@@ -117,7 +104,9 @@ fi
 # # #   UCD90160    0x69
 # # #   UCD90124A   0x46
 # # #   ADM1266     0x47
-if i2c_detect_address 5 0x36 "$UCD_DEVICE_ID_REG"; then
+if kv get smb_pwrseq_2_addr >/dev/null 2>&1; then
+   echo "setup-i2c : SMB Power Sequence 2 already added driver, skip detection"
+elif i2c_detect_address 5 0x36 "$UCD_DEVICE_ID_REG"; then
    i2c_device_check_and_add 5 0x36 ucd90160
    kv set smb_pwrseq_2_addr 0x36
    kv set smb_pwrseq_2_page_count 16
@@ -192,7 +181,9 @@ i2c_device_check_and_add 71 0x52 24c64    #fan 1 eeprom
 # # # FCM-T HSC
 # # #    ADM1278  0x10
 # # #    LM25066  0x44
-if i2c_detect_address 67 0x10; then
+if kv get smb_fcm_t_hsc_addr >/dev/null 2>&1; then
+   echo "setup-i2c : FCM-T HSC already added driver, skip detection"
+elif i2c_detect_address 67 0x10; then
    i2c_device_check_and_add 67 0x10 adm1278    # FCM ADM1278
    kv set smb_fcm_t_hsc_addr 0x10
 elif i2c_detect_address 67 0x44; then
@@ -216,7 +207,9 @@ i2c_device_check_and_add 79 0x52 24c64    #fan 2 eeprom
 # # # FCM-B HSC
 # # #    ADM1278  0x10
 # # #    LM25066  0x44
-if i2c_detect_address 75 0x10; then
+if kv get smb_fcm_b_hsc_addr >/dev/null 2>&1; then
+   echo "setup-i2c : FCM-B HSC already added driver, skip detection"
+elif i2c_detect_address 75 0x10; then
    i2c_device_check_and_add 75 0x10 adm1278    # FCM ADM1278
    kv set smb_fcm_b_hsc_addr 0x10
 elif i2c_detect_address 75 0x44; then

@@ -1,4 +1,4 @@
-From 0b044e22ba73c6052ab0441b435f8794be67ae7f Mon Sep 17 00:00:00 2001
+From 5da59e5e5014fb7d759d50d73bf804629c015740 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Mon, 12 May 2025 16:58:35 +0800
 Subject: [PATCH 6/6] configurations: add NVIDIA GB300 IO board config
@@ -9,15 +9,15 @@ Change-Id: Idf6562cef13a8c6c56e80e57e45224e85e1f30a7
 Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
 ---
  configurations/meson.build                |  1 +
- configurations/nvidia_gb300_io_board.json | 98 +++++++++++++++++++++++
- 2 files changed, 99 insertions(+)
+ configurations/nvidia_gb300_io_board.json | 96 +++++++++++++++++++++++
+ 2 files changed, 97 insertions(+)
  create mode 100644 configurations/nvidia_gb300_io_board.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 9d15a41..7c3ba51 100644
+index 2f94c72..ed870d4 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -162,6 +162,7 @@ configs = [
+@@ -163,6 +163,7 @@ configs = [
      'nvidia_gb200.json',
      'nvidia_gb200_io_board.json',
      'nvidia_gb300.json',
@@ -27,10 +27,10 @@ index 9d15a41..7c3ba51 100644
      'nvme_p4500_p5500.json',
 diff --git a/configurations/nvidia_gb300_io_board.json b/configurations/nvidia_gb300_io_board.json
 new file mode 100644
-index 0000000..01efcd0
+index 0000000..bf7d1d1
 --- /dev/null
 +++ b/configurations/nvidia_gb300_io_board.json
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,96 @@
 +{
 +    "Exposes": [
 +        {
@@ -110,9 +110,7 @@ index 0000000..01efcd0
 +    ],
 +    "Name": "NVIDIA GB300 IO Board $bus - 29 % 11",
 +    "Probe": [
-+        "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '2x ConnectX-8 GB300 Mezz', 'BOARD_MANUFACTURER': 'NVIDIA'})",
-+        "OR",
-+        "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '2x ConnectX-8 GB300 Mezz', 'BOARD_MANUFACTURER': 'Nvidia'})"
++        "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '2x ConnectX-8 GB300 Mezz', 'BOARD_MANUFACTURER': '(Nvidia|NVIDIA)'})"
 +    ],
 +    "Type": "Board",
 +    "xyz.openbmc_project.Inventory.Decorator.Asset": {

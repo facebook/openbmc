@@ -1,4 +1,4 @@
-From 0eb55ce8892ee272e43b2f053b5d4e73a41d702d Mon Sep 17 00:00:00 2001
+From 8e2d944f3d832c330cc068d69a177c7fe8653137 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 10 Sep 2024 14:02:38 +0800
 Subject: [PATCH 2/6] configurations: nvidia_io_board: recalculate bus number

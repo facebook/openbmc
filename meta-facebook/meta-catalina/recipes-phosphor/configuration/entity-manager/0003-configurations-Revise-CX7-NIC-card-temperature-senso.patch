@@ -1,4 +1,4 @@
-From 5b43486c0d5168d92b822b3fb6fffe753b48c85f Mon Sep 17 00:00:00 2001
+From 01fdbd4e7d7064d9454aa6b0ca59835b30dcca6e Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Sep 2024 23:36:54 +0800
 Subject: [PATCH 3/6] configurations: Revise CX7 NIC card temperature sensor

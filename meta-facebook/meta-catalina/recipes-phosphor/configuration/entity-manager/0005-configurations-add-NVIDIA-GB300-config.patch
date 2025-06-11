@@ -1,4 +1,4 @@
-From cb2931a5d0c47106692baebde27f1e0821c335d7 Mon Sep 17 00:00:00 2001
+From 4c0669e36127527ec1bbe7b69908b76e1ea7ad38 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Mon, 12 May 2025 16:50:47 +0800
 Subject: [PATCH 5/6] configurations: add NVIDIA GB300 config
@@ -9,16 +9,15 @@ Change-Id: Ic7f1c5e2b571d2d4e61b85bdf617a86c1c310b1c
 Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
 ---
  configurations/meson.build       |   1 +
- configurations/nvidia_gb300.json | 248 +++++++++++++++++++++++++++++++
- schemas/legacy.json              |   1 +
- 3 files changed, 250 insertions(+)
+ configurations/nvidia_gb300.json | 626 +++++++++++++++++++++++++++++++
+ 2 files changed, 627 insertions(+)
  create mode 100644 configurations/nvidia_gb300.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 4e769c0..9d15a41 100644
+index 6a3ffd7..2f94c72 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -161,6 +161,7 @@ configs = [
+@@ -162,6 +162,7 @@ configs = [
      'nvidia_bmc_p3809.json',
      'nvidia_gb200.json',
      'nvidia_gb200_io_board.json',
@@ -28,20 +27,14 @@ index 4e769c0..9d15a41 100644
      'nvme_p4500_p5500.json',
 diff --git a/configurations/nvidia_gb300.json b/configurations/nvidia_gb300.json
 new file mode 100644
-index 0000000..bf7a28a
+index 0000000..6e56a50
 --- /dev/null
 +++ b/configurations/nvidia_gb300.json
-@@ -0,0 +1,248 @@
+@@ -0,0 +1,626 @@
 +{
 +    "Exposes": [
 +        {
-+            "Address": "$address",
-+            "Bus": "$bus",
-+            "Name": "NVIDIA GB300 FRU",
-+            "Type": "EEPROM"
-+        },
-+        {
-+            "Address": "0x34",
++            "Address": "0x48",
 +            "Bus": 1,
 +            "Labels": [
 +                "in_voltage0"
@@ -97,11 +90,11 @@ index 0000000..bf7a28a
 +                    "Value": 1.32
 +                }
 +            ],
-+            "Type": "MAX1363",
++            "Type": "ADS1015",
 +            "in_voltage0_Name": "NVIDIA_GB300_CPU0_LEAK_SENSOR"
 +        },
 +        {
-+            "Address": "0x35",
++            "Address": "0x49",
 +            "Bus": 1,
 +            "Labels": [
 +                "in_voltage0"
@@ -157,114 +150,498 @@ index 0000000..bf7a28a
 +                    "Value": 1.32
 +                }
 +            ],
-+            "Type": "MAX1363",
++            "Type": "ADS1015",
 +            "in_voltage0_Name": "NVIDIA_GB300_CPU1_LEAK_SENSOR"
 +        },
 +        {
-+            "Address": "0x5e",
-+            "Bus": 1,
-+            "Labels": [
-+                "iout1",
-+                "pout1",
-+                "temp1",
-+                "vout1"
-+            ],
-+            "Name": "NVIDIA_GB300_VR_P12V_N1",
-+            "PowerState": "On",
-+            "Thresholds": [
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 0.272,
-+                    "Label": "vout1",
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 13.6
-+                },
-+                {
-+                    "Direction": "less than",
-+                    "Hysteresis": 0.21,
-+                    "Label": "vout1",
-+                    "Name": "lower critical",
-+                    "Severity": 1,
-+                    "Value": 10.5
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.5,
-+                    "Label": "temp1",
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 125
-+                },
-+                {
-+                    "Direction": "less than",
-+                    "Hysteresis": 0.1,
-+                    "Label": "temp1",
-+                    "Name": "lower critical",
-+                    "Severity": 1,
-+                    "Value": 5
-+                }
-+            ],
-+            "Type": "RAA228004",
-+            "iout1_Name": "NVIDIA_GB300_VR_P12V_N1_CURR_A",
-+            "pout1_Name": "NVIDIA_GB300_VR_P12V_N1_PWR_W",
-+            "temp1_Name": "NVIDIA_GB300_VR_P12V_N1_TEMP_C",
-+            "vout1_Name": "NVIDIA_GB300_VR_P12V_N1_VOLT_V"
++            "Address": "$address",
++            "Bus": "$bus",
++            "Name": "NVIDIA GB300 FRU",
++            "Type": "EEPROM"
 +        },
 +        {
-+            "Address": "0x5f",
++            "Address": "0x20",
 +            "Bus": 1,
-+            "Labels": [
-+                "iout1",
-+                "pout1",
-+                "temp1",
-+                "vout1"
-+            ],
-+            "Name": "NVIDIA_GB300_VR_P12V_N2",
-+            "PowerState": "On",
++            "Connector": {
++                "Name": "FAN0_TACH_IL",
++                "Pwm": 2,
++                "PwmName": "FAN0_PWM",
++                "Tachs": [
++                    4
++                ]
++            },
++            "Index": 4,
++            "Name": "FAN0_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 0.272,
-+                    "Label": "vout1",
 +                    "Name": "upper critical",
 +                    "Severity": 1,
-+                    "Value": 13.6
++                    "Value": 36300
 +                },
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.21,
-+                    "Label": "vout1",
 +                    "Name": "lower critical",
 +                    "Severity": 1,
-+                    "Value": 10.5
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.5,
-+                    "Label": "temp1",
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 125
-+                },
-+                {
-+                    "Direction": "less than",
-+                    "Hysteresis": 0.1,
-+                    "Label": "temp1",
-+                    "Name": "lower critical",
-+                    "Severity": 1,
-+                    "Value": 5
++                    "Value": 2550
 +                }
 +            ],
-+            "Type": "RAA228004",
-+            "iout1_Name": "NVIDIA_GB300_VR_P12V_N2_CURR_A",
-+            "pout1_Name": "NVIDIA_GB300_VR_P12V_N2_PWR_W",
-+            "temp1_Name": "NVIDIA_GB300_VR_P12V_N2_TEMP_C",
-+            "vout1_Name": "NVIDIA_GB300_VR_P12V_N2_VOLT_V"
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x20",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN0_TACH_OL",
++                "Pwm": 2,
++                "PwmName": "FAN0_PWM",
++                "Tachs": [
++                    5
++                ]
++            },
++            "Index": 5,
++            "Name": "FAN0_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 33000
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1960
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x20",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN1_TACH_IL",
++                "Pwm": 3,
++                "PwmName": "FAN1_PWM",
++                "Tachs": [
++                    10
++                ]
++            },
++            "Index": 10,
++            "Name": "FAN1_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 36300
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 2550
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x20",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN1_TACH_OL",
++                "Pwm": 3,
++                "PwmName": "FAN1_PWM",
++                "Tachs": [
++                    11
++                ]
++            },
++            "Index": 11,
++            "Name": "FAN1_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 33000
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1960
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x23",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN2_TACH_IL",
++                "Pwm": 0,
++                "PwmName": "FAN2_PWM",
++                "Tachs": [
++                    0
++                ]
++            },
++            "Index": 0,
++            "Name": "FAN2_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 36300
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 2550
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x23",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN2_TACH_OL",
++                "Pwm": 0,
++                "PwmName": "FAN2_PWM",
++                "Tachs": [
++                    1
++                ]
++            },
++            "Index": 1,
++            "Name": "FAN2_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 33000
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1960
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x23",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN3_TACH_IL",
++                "Pwm": 1,
++                "PwmName": "FAN3_PWM",
++                "Tachs": [
++                    2
++                ]
++            },
++            "Index": 2,
++            "Name": "FAN3_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 36300
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 2550
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x23",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN3_TACH_OL",
++                "Pwm": 1,
++                "PwmName": "FAN3_PWM",
++                "Tachs": [
++                    3
++                ]
++            },
++            "Index": 3,
++            "Name": "FAN3_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 33000
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1960
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x2c",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN4_TACH_IL",
++                "Pwm": 2,
++                "PwmName": "FAN4_PWM",
++                "Tachs": [
++                    4
++                ]
++            },
++            "Index": 4,
++            "Name": "FAN4_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 36300
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 2550
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x2c",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN4_TACH_OL",
++                "Pwm": 2,
++                "PwmName": "FAN4_PWM",
++                "Tachs": [
++                    5
++                ]
++            },
++            "Index": 5,
++            "Name": "FAN4_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 33000
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1960
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x2c",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN5_TACH_IL",
++                "Pwm": 3,
++                "PwmName": "FAN5_PWM",
++                "Tachs": [
++                    10
++                ]
++            },
++            "Index": 10,
++            "Name": "FAN5_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 36300
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 2550
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x2c",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN5_TACH_OL",
++                "Pwm": 3,
++                "PwmName": "FAN5_PWM",
++                "Tachs": [
++                    11
++                ]
++            },
++            "Index": 11,
++            "Name": "FAN5_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 33000
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1960
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x2f",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN6_TACH_IL",
++                "Pwm": 0,
++                "PwmName": "FAN6_PWM",
++                "Tachs": [
++                    0
++                ]
++            },
++            "Index": 0,
++            "Name": "FAN6_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 36300
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 2550
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x2f",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN6_TACH_OL",
++                "Pwm": 0,
++                "PwmName": "FAN6_PWM",
++                "Tachs": [
++                    1
++                ]
++            },
++            "Index": 1,
++            "Name": "FAN6_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 33000
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1960
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x2f",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN7_TACH_IL",
++                "Pwm": 1,
++                "PwmName": "FAN7_PWM",
++                "Tachs": [
++                    2
++                ]
++            },
++            "Index": 2,
++            "Name": "FAN7_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 36300
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 2550
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x2f",
++            "Bus": 1,
++            "Connector": {
++                "Name": "FAN7_TACH_OL",
++                "Pwm": 1,
++                "PwmName": "FAN7_PWM",
++                "Tachs": [
++                    3
++                ]
++            },
++            "Index": 3,
++            "Name": "FAN7_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 33000
++                },
++                {
++                    "Direction": "less than",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1960
++                }
++            ],
++            "Type": "I2CFan"
 +        }
 +    ],
-+    "Name": "NVIDIA GB300",
-+    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'P4476', 'BOARD_MANUFACTURER': 'NVIDIA'})",
++    "Name": "NVIDIA GB300 $bus + 1 % 2",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'PG548', 'BOARD_MANUFACTURER': 'NVIDIA'})",
 +    "Type": "Board",
 +    "xyz.openbmc_project.Inventory.Decorator.Asset": {
 +        "BuildDate": "$BOARD_MANUFACTURE_DATE",
@@ -280,18 +657,6 @@ index 0000000..bf7a28a
 +        "Version": "$PRODUCT_VERSION"
 +    }
 +}
-diff --git a/schemas/legacy.json b/schemas/legacy.json
-index e548228..ac14703 100644
---- a/schemas/legacy.json
-+++ b/schemas/legacy.json
-@@ -939,6 +939,7 @@
-                         "MAX11607",
-                         "MAX11615",
-                         "MAX11617",
-+                        "MAX1363",
-                         "MAX16601",
-                         "MAX20710",
-                         "MAX20730",
 -- 
 2.49.0
 

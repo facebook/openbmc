@@ -5,6 +5,7 @@ SRC_URI += " \
     file://1001-ARM-dts-aspeed-clemente-add-Meta-Clemente-BMC.patch \
     file://1002-ARM-dts-aspeed-clemente-add-various-device-nodes-and.patch \
     file://1003-ARM-dts-aspeed-clemente-update-DTS-for-DVT-board.patch \
+    file://1004-ARM-dts-aspeed-clemente-Correct-I2C-addresses.patch \
     file://clemente-sensor.cfg \
 "
 

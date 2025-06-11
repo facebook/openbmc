@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -49,6 +51,27 @@ i2c_device_delete() {
     bus=$"$1"
     addr="$2"
     echo "$addr" > "${SYSFS_I2C_DEVICES}/i2c-${bus}/delete_device"
+}
+
+#
+# Check if the i2c device exists, and if not, add it.
+# $1 - parent bus number
+# $2 - device address
+# $3 - device name/type
+#
+i2c_device_check_and_add() {
+   bus="$1"
+   addr="$2"
+   device="$3"
+
+   # Replace the address format with a 4-character zero-padded hex.
+   # e.g. 0x35 -> 0035
+   addr_format=$(printf "%04x" $((addr)))
+
+   # Check if the device already exists ignore to add it again
+   if [ ! -d "${SYSFS_I2C_DEVICES}/${bus}-${addr_format}" ]; then
+      i2c_device_add "$bus" "$addr" "$device"
+   fi
 }
 
 #
@@ -162,7 +185,7 @@ i2c_bind_driver() {
         retries=1
     fi
 
-    if [ ! -d ${driver_dir} ]; then
+    if [ ! -d "${driver_dir}" ]; then
         echo "unable to locate i2c driver ${driver_name} in sysfs"
         return 1
     fi

@@ -1,4 +1,4 @@
-From 104e778db5d92e4aabd4f4f76af27d6313dca4fb Mon Sep 17 00:00:00 2001
+From ed5a3ae25d1f1a131c6c0c4e017db6d5d31b9174 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 12:50:55 +0000
 Subject: [PATCH 201/205] Add generation for Vendor registries and a DBus to RF
@@ -31,7 +31,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  1 file changed, 341 insertions(+), 64 deletions(-)
 
 diff --git a/scripts/parse_registries.py b/scripts/parse_registries.py
-index 595d9a83..6c4dcaec 100755
+index 80c79329..822e8323 100755
 --- a/scripts/parse_registries.py
 +++ b/scripts/parse_registries.py
 @@ -4,6 +4,7 @@ import json

@@ -1,4 +1,4 @@
-From 4b58d86bf5733831f08ace39be224c33972dd00b Mon Sep 17 00:00:00 2001
+From 87363fe065c45cfa8c938b3586c848a788abb94e Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
 Subject: [PATCH 205/205] Show mapped and raw Dbus messages in Log services
@@ -55,18 +55,19 @@ Ran it in QEMU, fetched logs and raw and mapped are shown [1].
 Change-Id: I84258ce334e1572d5c4debd65d9bb5ffb89924df
 Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
 ---
- redfish-core/lib/log_services.hpp | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ redfish-core/lib/log_services.hpp | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
 diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index ce4cab23..4d0cce25 100644
+index 9a9ff238..0b4540bd 100644
 --- a/redfish-core/lib/log_services.hpp
 +++ b/redfish-core/lib/log_services.hpp
-@@ -1452,26 +1452,28 @@ inline bool fillEventLogLogEntryFromPropertyMap(
-     }
-     DbusEventLogEntry entry = optEntry.value();
- 
+@@ -1438,26 +1438,29 @@ static LogParseError fillEventLogEntryJson(
+ inline void fillEventLogLogEntryFromDbusLogEntry(
+     const DbusEventLogEntry& entry, nlohmann::json& objectToFillOut)
+ {
 +    bool useFallbackMapping = true;
++
      if constexpr (BMCWEB_REDFISH_ALLOW_DBUS_MESSAGES_MAPPING)
      {
          EventLogObjectsType eventLogObjectsType;
@@ -77,7 +78,7 @@ index ce4cab23..4d0cce25 100644
 +        if (success)
          {
 -            messages::internalError(asyncResp->res);
--            return false;
+-            return;
 +            objectToFillOut["Message"] = std::move(eventLogObjectsType.message);
 +            objectToFillOut["MessageId"] =
 +                std::move(eventLogObjectsType.messageId);

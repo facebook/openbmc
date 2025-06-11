@@ -1,4 +1,4 @@
-From 7c2d130d0b9d0b502866dc0a8cb70b908c9c2278 Mon Sep 17 00:00:00 2001
+From 20ced42065ff7c0caa790d91075fef6e16274be6 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Tue, 11 Mar 2025 12:10:57 +0000
 Subject: [PATCH 203/205] Add required MemberId to the EventRecord definition

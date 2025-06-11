@@ -1,9 +1,8 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI:append = " \
-    file://0100-Revert-Explicitly-set-verify_none.patch \
-    file://0101-Set-request-timeout-to-40s-on-bmcweb-http-http_conne.patch \
-    file://0102-Up-the-max-connections-from-200-to-1000.patch \
+    file://0100-Set-request-timeout-to-40s-on-bmcweb-http-http_conne.patch \
+    file://0101-Up-the-max-connections-from-200-to-1000.patch \
 "
 
 EXTRA_OEMESON:append = " -Dredfish-updateservice-use-dbus=enabled"

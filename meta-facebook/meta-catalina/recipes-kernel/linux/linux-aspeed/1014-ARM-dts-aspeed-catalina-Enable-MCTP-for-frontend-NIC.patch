@@ -1,0 +1,49 @@
+From 35ceec8b0cf306015d6a3e3d59d071b6c5180eea Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Wed, 11 Jun 2025 00:55:12 +0800
+Subject: [PATCH 1/1] ARM: dts: aspeed: catalina: Enable MCTP for frontend NIC
+ management
+
+Add the `mctp-controller` property and MCTP nodes to enable support for
+frontend NIC management via PLDM over MCTP.
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+---
+LORE: https://lore.kernel.org/all/20250611-catalina-mctp-i2c-10-15-v1-1-2a882e461ed9@gmail.com/
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+index 5fb67ad2d777..8d786510167f 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+@@ -797,6 +797,12 @@ eeprom@56 {
+ 
+ &i2c10 {
+ 	status = "okay";
++	multi-master;
++	mctp-controller;
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
+ 
+ 	// OCP NIC0 TEMP
+ 	temperature-sensor@1f {
+@@ -926,6 +932,12 @@ io_expander14: gpio@15 {
+ 
+ &i2c15 {
+ 	status = "okay";
++	multi-master;
++	mctp-controller;
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
+ 
+ 	// OCP NIC1 TEMP
+ 	temperature-sensor@1f {
+-- 
+2.31.1
+

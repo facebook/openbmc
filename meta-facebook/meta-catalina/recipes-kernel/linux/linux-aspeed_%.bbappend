@@ -1,5 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-aspeed:"
-SRC_URI += " \
+
+SRC_URI:append = " \
     file://1000-i2c-aspeed-Acknowledge-Tx-ack-late-when-in-SLAVE_REA.patch \
     file://1001-ipmi-ssif_bmc-add-GPIO-based-alert-mechanism.patch \
     file://1002-bindings-ipmi-ssif-bmc-Add-property-to-adjust-respon.patch \
@@ -14,5 +15,8 @@ SRC_URI += " \
     file://1011-ARM-dts-aspeed-catalina-add-hdd-board-cpld-ioexp.patch \
     file://1012-ARM-dts-aspeed-catalina-Add-Delta-brick-nodes.patch \
     file://1013-ARM-dts-aspeed-catalina-Increase-SSIF-response-timeo.patch \
-    file://catalina-uart.cfg \
+    file://1014-ARM-dts-aspeed-catalina-Enable-MCTP-for-frontend-NIC.patch \
+    file://1015-i2c-ast2600-support-ssif.patch \
+    file://1016-ARM-dts-aspeed-catalina-enable-i2c11-byte-mode.patch \
+    file://catalina-local.cfg \
 "

@@ -1,0 +1,48 @@
+From ceb418b6d9dd60b37edbf65f8c5a473a051dacc6 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Tue, 10 Jun 2025 10:13:31 +0800
+Subject: [PATCH 1016/1016] ARM: dts: aspeed: harma: add mmc health
+
+Add a GPIO expander node at address 0x13 on i2c11 bus
+to monitor MMC health status via a dedicated GPIO line.
+
+Lore:https://lore.kernel.org/all/20250611080514.3123335-6-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index fb026c8fb0ee..b9a93f23bd0a 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -454,6 +454,25 @@ eeprom@52 {
+ &i2c11 {
+ 	status = "okay";
+ 
++	gpio@13 {
++		compatible = "nxp,pca9555";
++		reg = <0x13>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <222 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++		"","",
++		"","",
++		"","",
++		"","health-mmc",
++		"","",
++		"","",
++		"","",
++		"","";
++	};
++
+ 	gpio@30 {
+ 		compatible = "nxp,pca9555";
+ 		reg = <0x30>;
+-- 
+2.25.1
+

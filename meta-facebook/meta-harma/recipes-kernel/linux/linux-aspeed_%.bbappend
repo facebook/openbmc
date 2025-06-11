@@ -18,4 +18,6 @@ SRC_URI:append = " \
     file://1012-ARM-dts-aspeed-Harma-fan-board-io-expander.patch \
     file://1013-ARM-dts-aspeed-Harma-add-adc128d818.patch \
     file://1014-ARM-dts-aspeed-Harma-enable-I2Cv2-driver-and-fine-tu.patch \
+    file://1015-ARM-dts-aspeed-Harma-revise-gpio-bride-pin-for-batte.patch \
+    file://1016-ARM-dts-aspeed-harma-add-mmc-health.patch \
 "

@@ -1,0 +1,41 @@
+From a1a4da3cb1f31626813f61295fff53d6fb124d43 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Tue, 10 Jun 2025 09:38:36 +0800
+Subject: [PATCH 1015/1016] ARM: dts: aspeed: Harma: revise gpio bride pin for
+ battery
+
+Update the GPIO bridge pin configuration for the battery circuit
+on the Harma platform to reflect the correct hardware design.
+
+Lore:https://lore.kernel.org/all/20250611080514.3123335-5-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 25b873ace2ea..fb026c8fb0ee 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -643,7 +643,7 @@ &gpio0 {
+ 	/*T0-T7*/	"","","","","","","","",
+ 	/*U0-U7*/	"","","","","","","led-identify-gate","",
+ 	/*V0-V7*/	"","","","",
+-			"rtc-battery-voltage-read-enable","",
++			"","",
+ 			"","",
+ 	/*W0-W7*/	"","","","","","","","",
+ 	/*X0-X7*/	"","","","","","","","",
+@@ -728,7 +728,7 @@ &sgpiom0 {
+ 	"presence-cmm","ac-control-n",
+ 	/*G0-G3 line 96-103*/
+ 	"FM_CPU_CORETYPE2","",
+-	"FM_CPU_CORETYPE1","",
++	"FM_CPU_CORETYPE1","rtc-battery-voltage-read-enable",
+ 	"FM_CPU_CORETYPE0","",
+ 	"FM_BOARD_REV_ID5","",
+ 	/*G4-G7 line 104-111*/
+-- 
+2.25.1
+

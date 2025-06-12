@@ -1,0 +1,43 @@
+From 9d49f20e94962ce0f319519fe677df263b27140f Mon Sep 17 00:00:00 2001
+From: Marco Kawajiri <kawajiri@meta.com>
+Date: Thu, 12 Jun 2025 12:57:10 -0700
+Subject: [PATCH] Fix JSON fields not being extracted in
+ SensorsAsyncResp.addMetadata
+
+Summary:
+
+Test Plan:
+
+Reviewers:
+
+Subscribers:
+
+Tasks:
+
+Tags:
+---
+ redfish-core/lib/sensors.hpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/redfish-core/lib/sensors.hpp b/redfish-core/lib/sensors.hpp
+index 027e75d..7b22377 100644
+--- a/redfish-core/lib/sensors.hpp
++++ b/redfish-core/lib/sensors.hpp
+@@ -207,12 +207,12 @@ class SensorsAsyncResp
+             return;
+         }
+         const auto nameIt = sensorObject.find("Name");
+-        if (nameIt != sensorObject.end())
++        if (nameIt == sensorObject.end())
+         {
+             return;
+         }
+         const auto idIt = sensorObject.find("@odata.id");
+-        if (idIt != sensorObject.end())
++        if (idIt == sensorObject.end())
+         {
+             return;
+         }
+-- 
+2.47.1
+

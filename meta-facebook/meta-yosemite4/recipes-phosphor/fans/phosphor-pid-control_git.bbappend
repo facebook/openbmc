@@ -6,6 +6,7 @@ SRC_URI += " \
 
 EXTRA_OEMESON:append = " \
     -Doffline-failsafe-pwm=true \
+    -Dhandle-missing-object-paths=true \
 "
 
 do_install:append() {

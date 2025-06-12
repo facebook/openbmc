@@ -7,6 +7,9 @@ SRC_URI += " \
 EXTRA_OEMESON:append = " \
     -Dretry_attempts=5 \
     -Donly-allow-boot-when-bmc-ready=true \
+    -Drun-apr-on-watchdog-reset=true \
+    -Drun-apr-on-pinhole-reset=true \
+    -Drun-apr-on-software-reset=true \
 "
 
 do_install:append() {

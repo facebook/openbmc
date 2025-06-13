@@ -20,6 +20,7 @@ PLATFORMS = [
     "gtartemis",
     "halfdome",
     "harma",
+    "icecube800bc",
     "inspirationpoint",
     "janga",
     "javaisland",

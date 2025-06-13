@@ -1,0 +1,6 @@
+{
+    "cli_list": [
+        "dmesg | grep -E spi0.0 -A 10",
+        "dmesg | grep -E spi0.1 -A 10"
+    ]
+}

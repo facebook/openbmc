@@ -1,7 +1,7 @@
-From 4c0669e36127527ec1bbe7b69908b76e1ea7ad38 Mon Sep 17 00:00:00 2001
+From e8996907eb03760f0e4ae801ea9d5fa880349447 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Mon, 12 May 2025 16:50:47 +0800
-Subject: [PATCH 5/6] configurations: add NVIDIA GB300 config
+Subject: [PATCH 6/7] configurations: add NVIDIA GB300 config
 
 Adding configuration file for NVIDIA GB300 module.
 
@@ -14,10 +14,10 @@ Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
  create mode 100644 configurations/nvidia_gb300.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 6a3ffd7..2f94c72 100644
+index 98c6e46..5cf0f7e 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -162,6 +162,7 @@ configs = [
+@@ -163,6 +163,7 @@ configs = [
      'nvidia_bmc_p3809.json',
      'nvidia_gb200.json',
      'nvidia_gb200_io_board.json',
@@ -27,7 +27,7 @@ index 6a3ffd7..2f94c72 100644
      'nvme_p4500_p5500.json',
 diff --git a/configurations/nvidia_gb300.json b/configurations/nvidia_gb300.json
 new file mode 100644
-index 0000000..6e56a50
+index 0000000..ad74286
 --- /dev/null
 +++ b/configurations/nvidia_gb300.json
 @@ -0,0 +1,626 @@
@@ -641,7 +641,7 @@ index 0000000..6e56a50
 +        }
 +    ],
 +    "Name": "NVIDIA GB300 $bus + 1 % 2",
-+    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'PG548', 'BOARD_MANUFACTURER': 'NVIDIA'})",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'PG548', 'BOARD_MANUFACTURER': 'NVIDIA', 'PRODUCT_PRODUCT_NAME': 'GB300'})",
 +    "Type": "Board",
 +    "xyz.openbmc_project.Inventory.Decorator.Asset": {
 +        "BuildDate": "$BOARD_MANUFACTURE_DATE",

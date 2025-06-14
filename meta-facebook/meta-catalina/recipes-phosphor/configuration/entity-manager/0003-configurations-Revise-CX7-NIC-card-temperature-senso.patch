@@ -1,7 +1,7 @@
-From 01fdbd4e7d7064d9454aa6b0ca59835b30dcca6e Mon Sep 17 00:00:00 2001
+From e15ebef58104d0356bbd01891ce32fbd538f5628 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Sep 2024 23:36:54 +0800
-Subject: [PATCH 3/6] configurations: Revise CX7 NIC card temperature sensor
+Subject: [PATCH 3/7] configurations: Revise CX7 NIC card temperature sensor
 
 Revise the CX7 NIC temperature sensor name for Catalina system.
 

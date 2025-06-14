@@ -1,7 +1,7 @@
-From 5da59e5e5014fb7d759d50d73bf804629c015740 Mon Sep 17 00:00:00 2001
+From 151899ed6221af068e6da1291563cd6338197273 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Mon, 12 May 2025 16:58:35 +0800
-Subject: [PATCH 6/6] configurations: add NVIDIA GB300 IO board config
+Subject: [PATCH 7/7] configurations: add NVIDIA GB300 IO board config
 
 Adding configuration file for NVIDIA GB300 IO board.
 
@@ -14,10 +14,10 @@ Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
  create mode 100644 configurations/nvidia_gb300_io_board.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 2f94c72..ed870d4 100644
+index 5cf0f7e..e76382e 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -163,6 +163,7 @@ configs = [
+@@ -164,6 +164,7 @@ configs = [
      'nvidia_gb200.json',
      'nvidia_gb200_io_board.json',
      'nvidia_gb300.json',

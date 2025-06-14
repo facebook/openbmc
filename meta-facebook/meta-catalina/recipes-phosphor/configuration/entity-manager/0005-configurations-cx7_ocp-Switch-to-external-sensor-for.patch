@@ -1,7 +1,7 @@
-From 9fc4a3f0a1fbdac0a9529b7e94d8b25d8b510182 Mon Sep 17 00:00:00 2001
+From 7d1f59f9be29fd23e4eca906276b42a40cbaadcb Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 10 Jun 2025 09:11:21 +0800
-Subject: [PATCH 1/1] configurations: cx7_ocp: Switch to external sensor for
+Subject: [PATCH 5/7] configurations: cx7_ocp: Switch to external sensor for
  temperature reading
 
 Catalina hardware design does not support using `pldmd` to handle PLDM
@@ -48,5 +48,5 @@ index 5ffa735..e9c46f9 100644
      ],
      "Name": "OCP CX7 NIC $bus % 2",
 -- 
-2.31.1
+2.49.0
 

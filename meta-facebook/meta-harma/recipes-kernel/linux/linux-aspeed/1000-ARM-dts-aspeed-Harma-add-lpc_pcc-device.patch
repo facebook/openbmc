@@ -1,7 +1,7 @@
-From 3780509220fc7f37ff70e41429fc11af1af00f61 Mon Sep 17 00:00:00 2001
+From f4e09475d324d7db9268d2c41d8e9a4da5a9ce88 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 14 Jun 2024 13:30:26 +0800
-Subject: [PATCH 1003/1010] ARM: dts: aspeed: Harma: add lpc_pcc device
+Subject: [PATCH 1000/1007] ARM: dts: aspeed: Harma: add lpc_pcc device
 
 Add lpc_pcc node for AMD post code
 
@@ -14,7 +14,7 @@ Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index ec7a4bde1333..279ed49eee9e 100644
+index b9a93f23bd0a..bf38e95daf61 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 @@ -170,6 +170,16 @@ flash@0 {
@@ -35,5 +35,5 @@ index ec7a4bde1333..279ed49eee9e 100644
  	status = "okay";
  	aspeed,lpc-io-reg = <0xca8>;
 -- 
-2.44.2
+2.49.0
 

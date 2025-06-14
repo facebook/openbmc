@@ -1,7 +1,7 @@
-From ff130b6d79017297bd06a6b88247d67b45c5ecb7 Mon Sep 17 00:00:00 2001
+From 2e295837c96cb39d79e5e136b8983544da3abe28 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
-Subject: [PATCH 200/204] Utils: support powerState for multi-node system
+Subject: [PATCH 200/203] Utils: support powerState for multi-node system
 
 The current code of dbus-sensors only get powerState values for Chassis0
 and Host0 which cannot be used for the system with multiple server
@@ -753,10 +753,10 @@ index 037c127..ac0e1ae 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index fe4f5b8..50c8899 100644
+index cd86571..386e419 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -594,7 +594,11 @@ static void powerStateChanged(
+@@ -596,7 +596,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

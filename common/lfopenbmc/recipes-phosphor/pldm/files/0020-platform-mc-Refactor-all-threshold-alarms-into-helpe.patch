@@ -1,0 +1,594 @@
+From cea200e38888773583835a6a6b682105bfd0e35c Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Thu, 1 May 2025 15:34:34 -0700
+Subject: [PATCH 20/21] platform-mc: Refactor all threshold alarms into helpers
+
+This moves a lot of the common logic around getting/setting
+thresholds and their corresponding alarms into small
+helper functions. This allows us to refactor out a lot
+of the repeated code.
+
+Tested:
+Tested on a yosemite4 system where the CPU sensor
+is behind a uC with PLDM as the interface to the BMC.
+Lower the fan speed and ensure we still get the existing
+alarm.
+```
+root@sled325945102-oob:~# busctl introspect -l xyz.openbmc_project.Logging /xyz/openbmc_project/logging/entry/20 xyz.openbmc_project.Logging.Entry | grep "AdditionalData\|Message\|Resolved"
+.AdditionalData  property  a{ss} <snip>
+.Message property  s  "xyz.openbmc_project.Sensor.Threshold.Error.TemperatureCriticalHigh"                                                                                                                                                                                            emits-change writable
+.Resolved property  b  false
+```
+Increase the fan speed to allow the CPU to cool down.
+```
+root@sled325945102-oob:~# busctl introspect -l xyz.openbmc_project.Logging /xyz/openbmc_project/logging/entry/23 xyz.openbmc_project.Logging.Entry | grep "AdditionalData\|Message\|Resolved"
+.AdditionalData property  a{ss}  5 <snip>
+.Message property  s  "xyz.openbmc_project.Sensor.Threshold.Error.TemperatureCriticalHighClear"                                                                                                                                                                                       emits-change writable
+.Resolved property  b  false
+```
+
+Change-Id: Id705828092d2bb6d1b14a56901b9deb96db22c2c
+Signed-off-by: Amithash Prasad <amithash@meta.com>
+---
+ platform-mc/numeric_sensor.cpp | 347 ++++++++++++---------------------
+ platform-mc/numeric_sensor.hpp | 134 ++++++++++++-
+ 2 files changed, 263 insertions(+), 218 deletions(-)
+
+diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
+index e501ed6..7536fe4 100644
+--- a/platform-mc/numeric_sensor.cpp
++++ b/platform-mc/numeric_sensor.cpp
+@@ -14,6 +14,11 @@ namespace pldm
+ {
+ namespace platform_mc
+ {
++static const std::array<pldm::utils::Level, 3> allThresholdLevels = {
++    pldm::utils::Level::WARNING, pldm::utils::Level::CRITICAL,
++    pldm::utils::Level::HARDSHUTDOWN};
++static const std::array<pldm::utils::Direction, 2> allThresholdDirections = {
++    pldm::utils::Direction::HIGH, pldm::utils::Direction::LOW};
+ 
+ inline bool NumericSensor::createInventoryPath(
+     const std::string& associationPath, const std::string& sensorName,
+@@ -780,152 +785,161 @@ bool NumericSensor::checkThreshold(bool alarm, bool direction, double value,
+     }
+     return alarm;
+ }
+-
+-void NumericSensor::updateThresholds()
++void NumericSensor::setWarningThresholdAlarm(pldm::utils::Direction direction,
++                                             double value, bool newAlarm)
+ {
+-    double value = std::numeric_limits<double>::quiet_NaN();
+-
+-    if ((!useMetricInterface && !valueIntf) ||
+-        (useMetricInterface && !metricIntf))
++    if (direction == pldm::utils::Direction::HIGH)
+     {
+-        lg2::error(
+-            "Failed to update thresholds sensor {NAME} D-Bus interfaces don't exist.",
+-            "NAME", sensorName);
+-        return;
+-    }
+-    if (!useMetricInterface)
+-    {
+-        value = valueIntf->value();
++        thresholdWarningIntf->warningAlarmHigh(newAlarm);
++        if (newAlarm)
++        {
++            thresholdWarningIntf->warningHighAlarmAsserted(value);
++        }
++        else
++        {
++            thresholdWarningIntf->warningHighAlarmDeasserted(value);
++        }
+     }
+     else
+     {
+-        value = metricIntf->value();
+-    }
+-    if (thresholdWarningIntf &&
+-        std::isfinite(thresholdWarningIntf->warningHigh()))
+-    {
+-        auto threshold = thresholdWarningIntf->warningHigh();
+-        auto alarm = thresholdWarningIntf->warningAlarmHigh();
+-        auto newAlarm =
+-            checkThreshold(alarm, true, value, threshold, hysteresis);
+-        if (alarm != newAlarm)
++        thresholdWarningIntf->warningAlarmLow(newAlarm);
++        if (newAlarm)
+         {
+-            thresholdWarningIntf->warningAlarmHigh(newAlarm);
+-            if (newAlarm)
+-            {
+-                thresholdWarningIntf->warningHighAlarmAsserted(value);
+-            }
+-            else
+-            {
+-                thresholdWarningIntf->warningHighAlarmDeasserted(value);
+-            }
++            thresholdWarningIntf->warningLowAlarmAsserted(value);
++        }
++        else
++        {
++            thresholdWarningIntf->warningLowAlarmDeasserted(value);
+         }
+     }
++}
+ 
+-    if (thresholdWarningIntf &&
+-        std::isfinite(thresholdWarningIntf->warningLow()))
++void NumericSensor::setCriticalThresholdAlarm(pldm::utils::Direction direction,
++                                              double value, bool newAlarm)
++{
++    if (direction == pldm::utils::Direction::HIGH)
+     {
+-        auto threshold = thresholdWarningIntf->warningLow();
+-        auto alarm = thresholdWarningIntf->warningAlarmLow();
+-        auto newAlarm =
+-            checkThreshold(alarm, false, value, threshold, hysteresis);
+-        if (alarm != newAlarm)
++        thresholdCriticalIntf->criticalAlarmHigh(newAlarm);
++        if (newAlarm)
+         {
+-            thresholdWarningIntf->warningAlarmLow(newAlarm);
+-            if (newAlarm)
+-            {
+-                thresholdWarningIntf->warningLowAlarmAsserted(value);
+-            }
+-            else
+-            {
+-                thresholdWarningIntf->warningLowAlarmDeasserted(value);
+-            }
++            thresholdCriticalIntf->criticalHighAlarmAsserted(value);
++        }
++        else
++        {
++            thresholdCriticalIntf->criticalHighAlarmDeasserted(value);
+         }
+     }
+-
+-    if (thresholdCriticalIntf &&
+-        std::isfinite(thresholdCriticalIntf->criticalHigh()))
++    else
+     {
+-        auto threshold = thresholdCriticalIntf->criticalHigh();
+-        auto alarm = thresholdCriticalIntf->criticalAlarmHigh();
+-        auto newAlarm =
+-            checkThreshold(alarm, true, value, threshold, hysteresis);
+-        if (alarm != newAlarm)
++        thresholdCriticalIntf->criticalAlarmLow(newAlarm);
++        if (newAlarm)
+         {
+-            thresholdCriticalIntf->criticalAlarmHigh(newAlarm);
+-            if (newAlarm)
+-            {
+-                thresholdCriticalIntf->criticalHighAlarmAsserted(value);
+-            }
+-            else
+-            {
+-                thresholdCriticalIntf->criticalHighAlarmDeasserted(value);
+-            }
++            thresholdCriticalIntf->criticalLowAlarmAsserted(value);
++        }
++        else
++        {
++            thresholdCriticalIntf->criticalLowAlarmDeasserted(value);
+         }
+     }
++}
+ 
+-    if (thresholdCriticalIntf &&
+-        std::isfinite(thresholdCriticalIntf->criticalLow()))
++void NumericSensor::setHardShutdownThresholdAlarm(
++    pldm::utils::Direction direction, double value, bool newAlarm)
++{
++    if (direction == pldm::utils::Direction::HIGH)
+     {
+-        auto threshold = thresholdCriticalIntf->criticalLow();
+-        auto alarm = thresholdCriticalIntf->criticalAlarmLow();
+-        auto newAlarm =
+-            checkThreshold(alarm, false, value, threshold, hysteresis);
+-        if (alarm != newAlarm)
++        thresholdHardShutdownIntf->hardShutdownAlarmHigh(newAlarm);
++        if (newAlarm)
+         {
+-            thresholdCriticalIntf->criticalAlarmLow(newAlarm);
+-            if (newAlarm)
+-            {
+-                thresholdCriticalIntf->criticalLowAlarmAsserted(value);
+-            }
+-            else
+-            {
+-                thresholdCriticalIntf->criticalLowAlarmDeasserted(value);
+-            }
++            thresholdHardShutdownIntf->hardShutdownHighAlarmAsserted(value);
++        }
++        else
++        {
++            thresholdHardShutdownIntf->hardShutdownHighAlarmDeasserted(value);
+         }
+     }
+-
+-    if (thresholdHardShutdownIntf &&
+-        std::isfinite(thresholdHardShutdownIntf->hardShutdownHigh()))
++    else
+     {
+-        auto threshold = thresholdHardShutdownIntf->hardShutdownHigh();
+-        auto alarm = thresholdHardShutdownIntf->hardShutdownAlarmHigh();
+-        auto newAlarm =
+-            checkThreshold(alarm, true, value, threshold, hysteresis);
+-        if (alarm != newAlarm)
++        thresholdHardShutdownIntf->hardShutdownAlarmLow(newAlarm);
++        if (newAlarm)
+         {
+-            thresholdHardShutdownIntf->hardShutdownAlarmHigh(newAlarm);
+-            if (newAlarm)
+-            {
+-                thresholdHardShutdownIntf->hardShutdownHighAlarmAsserted(value);
+-            }
+-            else
+-            {
+-                thresholdHardShutdownIntf->hardShutdownHighAlarmDeasserted(
+-                    value);
+-            }
++            thresholdHardShutdownIntf->hardShutdownLowAlarmAsserted(value);
++        }
++        else
++        {
++            thresholdHardShutdownIntf->hardShutdownLowAlarmDeasserted(value);
+         }
+     }
++}
+ 
+-    if (thresholdHardShutdownIntf &&
+-        std::isfinite(thresholdHardShutdownIntf->hardShutdownLow()))
++int NumericSensor::setThresholdAlarm(pldm::utils::Level level,
++                                     pldm::utils::Direction direction,
++                                     double value, bool newAlarm)
++{
++    if (!isThresholdValid(level, direction))
+     {
+-        auto threshold = thresholdHardShutdownIntf->hardShutdownLow();
+-        auto alarm = thresholdHardShutdownIntf->hardShutdownAlarmLow();
+-        auto newAlarm =
+-            checkThreshold(alarm, false, value, threshold, hysteresis);
+-        if (alarm != newAlarm)
++        lg2::error(
++            "Error:Trigger sensor warning event for non warning threshold sensors {NAME}",
++            "NAME", sensorName);
++        return PLDM_ERROR;
++    }
++    auto alarm = getThresholdAlarm(level, direction);
++    if (alarm == newAlarm)
++    {
++        return PLDM_SUCCESS;
++    }
++    switch (level)
++    {
++        case pldm::utils::Level::WARNING:
++            setWarningThresholdAlarm(direction, value, newAlarm);
++            break;
++        case pldm::utils::Level::CRITICAL:
++            setCriticalThresholdAlarm(direction, value, newAlarm);
++            break;
++        case pldm::utils::Level::HARDSHUTDOWN:
++            setHardShutdownThresholdAlarm(direction, value, newAlarm);
++            break;
++        default:
++            return PLDM_ERROR;
++    }
++    return PLDM_SUCCESS;
++}
++
++void NumericSensor::updateThresholds()
++{
++    double value = std::numeric_limits<double>::quiet_NaN();
++
++    if ((!useMetricInterface && !valueIntf) ||
++        (useMetricInterface && !metricIntf))
++    {
++        lg2::error(
++            "Failed to update thresholds sensor {NAME} D-Bus interfaces don't exist.",
++            "NAME", sensorName);
++        return;
++    }
++    if (!useMetricInterface)
++    {
++        value = valueIntf->value();
++    }
++    else
++    {
++        value = metricIntf->value();
++    }
++
++    for (auto level : allThresholdLevels)
++    {
++        for (auto direction : allThresholdDirections)
+         {
+-            thresholdHardShutdownIntf->hardShutdownAlarmLow(newAlarm);
+-            if (newAlarm)
++            auto threshold = getThreshold(level, direction);
++            if (!std::isfinite(threshold))
+             {
+-                thresholdHardShutdownIntf->hardShutdownLowAlarmAsserted(value);
+-            }
+-            else
+-            {
+-                thresholdHardShutdownIntf->hardShutdownLowAlarmDeasserted(
+-                    value);
++                continue;
+             }
++            auto alarm = getThresholdAlarm(level, direction);
++            auto newAlarm =
++                checkThreshold(alarm, direction == pldm::utils::Direction::HIGH,
++                               value, threshold, hysteresis);
++            setThresholdAlarm(level, direction, value, newAlarm);
+         }
+     }
+ }
+@@ -948,108 +962,7 @@ int NumericSensor::triggerThresholdEvent(
+         "TID", eventType, "SID", direction, "VAL", value, "PSTATE", newAlarm,
+         "ESTATE", assert);
+ 
+-    switch (eventType)
+-    {
+-        case pldm::utils::Level::WARNING:
+-        {
+-            if (!thresholdWarningIntf)
+-            {
+-                lg2::error(
+-                    "Error:Trigger sensor warning event for non warning threshold sensors {NAME}",
+-                    "NAME", sensorName);
+-                return PLDM_ERROR;
+-            }
+-            if (direction == pldm::utils::Direction::HIGH &&
+-                std::isfinite(thresholdWarningIntf->warningHigh()))
+-            {
+-                auto alarm = thresholdWarningIntf->warningAlarmHigh();
+-                if (alarm == newAlarm)
+-                {
+-                    return PLDM_SUCCESS;
+-                }
+-                thresholdWarningIntf->warningAlarmHigh(newAlarm);
+-                if (assert)
+-                {
+-                    thresholdWarningIntf->warningHighAlarmAsserted(value);
+-                }
+-                else
+-                {
+-                    thresholdWarningIntf->warningHighAlarmDeasserted(value);
+-                }
+-            }
+-            else if (direction == pldm::utils::Direction::LOW &&
+-                     std::isfinite(thresholdWarningIntf->warningLow()))
+-            {
+-                auto alarm = thresholdWarningIntf->warningAlarmLow();
+-                if (alarm == newAlarm)
+-                {
+-                    return PLDM_SUCCESS;
+-                }
+-                thresholdWarningIntf->warningAlarmLow(newAlarm);
+-                if (assert)
+-                {
+-                    thresholdWarningIntf->warningLowAlarmAsserted(value);
+-                }
+-                else
+-                {
+-                    thresholdWarningIntf->warningLowAlarmDeasserted(value);
+-                }
+-            }
+-            break;
+-        }
+-        case pldm::utils::Level::CRITICAL:
+-        {
+-            if (!thresholdCriticalIntf)
+-            {
+-                lg2::error(
+-                    "Error:Trigger sensor Critical event for non warning threshold sensors {NAME}",
+-                    "NAME", sensorName);
+-                return PLDM_ERROR;
+-            }
+-            if (direction == pldm::utils::Direction::HIGH &&
+-                std::isfinite(thresholdCriticalIntf->criticalHigh()))
+-            {
+-                auto alarm = thresholdCriticalIntf->criticalAlarmHigh();
+-                if (alarm == newAlarm)
+-                {
+-                    return PLDM_SUCCESS;
+-                }
+-                thresholdCriticalIntf->criticalAlarmHigh(newAlarm);
+-                if (assert)
+-                {
+-                    thresholdCriticalIntf->criticalHighAlarmAsserted(value);
+-                }
+-                else
+-                {
+-                    thresholdCriticalIntf->criticalHighAlarmDeasserted(value);
+-                }
+-            }
+-            else if (direction == pldm::utils::Direction::LOW &&
+-                     std::isfinite(thresholdCriticalIntf->criticalLow()))
+-            {
+-                auto alarm = thresholdCriticalIntf->criticalAlarmLow();
+-                if (alarm == newAlarm)
+-                {
+-                    return PLDM_SUCCESS;
+-                }
+-                thresholdCriticalIntf->criticalAlarmLow(newAlarm);
+-                if (assert)
+-                {
+-                    thresholdCriticalIntf->criticalLowAlarmAsserted(value);
+-                }
+-                else
+-                {
+-                    thresholdCriticalIntf->criticalLowAlarmDeasserted(value);
+-                }
+-            }
+-            break;
+-        }
+-
+-        default:
+-            break;
+-    }
+-
+-    return PLDM_SUCCESS;
++    return setThresholdAlarm(eventType, direction, value, newAlarm);
+ }
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/numeric_sensor.hpp b/platform-mc/numeric_sensor.hpp
+index 37f4695..b09bcd4 100644
+--- a/platform-mc/numeric_sensor.hpp
++++ b/platform-mc/numeric_sensor.hpp
+@@ -200,7 +200,7 @@ class NumericSensor
+      *
+      *  @return double - Lower HardShutdown threshold
+      */
+-    double getThresholdLowerHardShutdownl()
++    double getThresholdLowerHardShutdown()
+     {
+         if (thresholdHardShutdownIntf)
+         {
+@@ -212,6 +212,138 @@ class NumericSensor
+         }
+     };
+ 
++    /** @brief Get threshold given level and direction
++     *
++     * @param[in] level - The threshold level (WARNING/CRITICAL/etc)
++     * @param[in] direction - The threshold direction (HIGH/LOW)
++     *
++     * @return double - The requested threshold.
++     */
++    double getThreshold(pldm::utils::Level level,
++                        pldm::utils::Direction direction)
++    {
++        if (direction != pldm::utils::Direction::HIGH &&
++            direction != pldm::utils::Direction::LOW)
++        {
++            return std::numeric_limits<double>::quiet_NaN();
++        }
++        switch (level)
++        {
++            case pldm::utils::Level::WARNING:
++                return direction == pldm::utils::Direction::HIGH
++                           ? getThresholdUpperWarning()
++                           : getThresholdLowerWarning();
++            case pldm::utils::Level::CRITICAL:
++                return direction == pldm::utils::Direction::HIGH
++                           ? getThresholdUpperCritical()
++                           : getThresholdLowerCritical();
++            case pldm::utils::Level::HARDSHUTDOWN:
++                return direction == pldm::utils::Direction::HIGH
++                           ? getThresholdUpperHardShutdown()
++                           : getThresholdLowerHardShutdown();
++            default:
++                break;
++        }
++        return std::numeric_limits<double>::quiet_NaN();
++    }
++
++    /* @brief returns true if the given threshold at level/direction is defined.
++     *
++     * @param[in] level - The threshold level (WARNING/CRITICAL/etc)
++     * @param[in] direction - The threshold direction (HIGH/LOW)
++     *
++     * @return true if the threshold is valid
++     */
++    bool isThresholdValid(pldm::utils::Level level,
++                          pldm::utils::Direction direction)
++    {
++        return std::isfinite(getThreshold(level, direction));
++    }
++
++    /* @brief Get the alarm status of the given threshold
++     *
++     * @param[in] level - The threshold level (WARNING/CRITICAL/etc)
++     * @param[in] direction - The threshold direction (HIGH/LOW)
++     *
++     * @return true if the current alarm status is asserted.
++     */
++    bool getThresholdAlarm(pldm::utils::Level level,
++                           pldm::utils::Direction direction)
++    {
++        if (!isThresholdValid(level, direction))
++        {
++            return false;
++        }
++        switch (level)
++        {
++            case pldm::utils::Level::WARNING:
++                return direction == pldm::utils::Direction::HIGH
++                           ? thresholdWarningIntf->warningAlarmHigh()
++                           : thresholdWarningIntf->warningAlarmLow();
++            case pldm::utils::Level::CRITICAL:
++                return direction == pldm::utils::Direction::HIGH
++                           ? thresholdCriticalIntf->criticalAlarmHigh()
++                           : thresholdCriticalIntf->criticalAlarmLow();
++            case pldm::utils::Level::HARDSHUTDOWN:
++                return direction == pldm::utils::Direction::HIGH
++                           ? thresholdHardShutdownIntf->hardShutdownAlarmHigh()
++                           : thresholdHardShutdownIntf->hardShutdownAlarmLow();
++            default:
++                break;
++        }
++        return false;
++    }
++
++    /* @brief raises the alarm on the warning threshold
++     *
++     * @param[in] direction - The threshold direction (HIGH/LOW)
++     * @param[in] value - The current numeric sensor reading
++     * @param[in] asserted - true if we want to set the alarm, false
++     *                       if we want to clear it.
++     *
++     * @return PLDM_SUCCESS or a valid error code.
++     */
++    void setWarningThresholdAlarm(pldm::utils::Direction direction,
++                                  double value, bool asserted);
++
++    /* @brief raises the alarm on the critical threshold
++     *
++     * @param[in] direction - The threshold direction (HIGH/LOW)
++     * @param[in] value - The current numeric sensor reading
++     * @param[in] asserted - true if we want to set the alarm, false
++     *                       if we want to clear it.
++     *
++     * @return PLDM_SUCCESS or a valid error code.
++     */
++    void setCriticalThresholdAlarm(pldm::utils::Direction direction,
++                                   double value, bool asserted);
++
++    /* @brief raises the alarm on the hard-shutdown threshold
++     *
++     * @param[in] direction - The threshold direction (HIGH/LOW)
++     * @param[in] value - The current numeric sensor reading
++     * @param[in] asserted - true if we want to set the alarm, false
++     *                       if we want to clear it.
++     *
++     * @return PLDM_SUCCESS or a valid error code.
++     */
++    void setHardShutdownThresholdAlarm(pldm::utils::Direction direction,
++                                       double value, bool asserted);
++
++    /* @brief raises the alarm on the threshold
++     *
++     * @param[in] level - The threshold level (WARNING/CRITICAL/etc)
++     * @param[in] direction - The threshold direction (HIGH/LOW)
++     * @param[in] value - The current numeric sensor reading
++     * @param[in] asserted - true if we want to set the alarm, false
++     *                       if we want to clear it.
++     *
++     * @return PLDM_SUCCESS or a valid error code.
++     */
++    int setThresholdAlarm(pldm::utils::Level level,
++                          pldm::utils::Direction direction, double value,
++                          bool asserted);
++
+     /** @brief Check if value is over threshold.
+      *
+      *  @param[in] eventType - event level in pldm::utils::Level
+-- 
+2.47.1
+

@@ -1,0 +1,664 @@
+From 5aeda9a67a28dd8a6378030226ff51d72bbd05a1 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Thu, 1 May 2025 15:34:05 -0700
+Subject: [PATCH 19/21] platform-mc: Simplify numeric sensor event handler
+
+Instead of a double nested switch/case handling
+the state transition from previousEventState to
+eventState and their possible intermediate states,
+walk up/down a list of states from previousEventState
+to eventState and use maps to translate required values.
+
+This method is less error prone and allows with very
+minimal work to fully add support to the newly enabled
+HardShutdown threshold levels.
+
+Tested:
+Trigger sensor event from remote PLDM controller
+and ensure that we are getting the appropriate
+event triggers. Also unit tests pass.
+
+Change-Id: I1813ccaefcaa0cc133916eba23939dd9d9661427
+Signed-off-by: Amithash Prasad <amithash@meta.com>
+---
+ platform-mc/event_manager.cpp           | 311 +++++++++---------------
+ platform-mc/event_manager.hpp           |   7 +
+ platform-mc/test/event_manager_test.cpp | 276 +++++++++++++++++++++
+ 3 files changed, 400 insertions(+), 194 deletions(-)
+
+diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
+index 3af26d2..f3ad721 100644
+--- a/platform-mc/event_manager.cpp
++++ b/platform-mc/event_manager.cpp
+@@ -106,6 +106,110 @@ int EventManager::handlePlatformEvent(
+     return PLDM_ERROR;
+ }
+ 
++int triggerNumericSensorThresholdEvent(NumericSensorThresholdHandler handler,
++                                       uint8_t previousEventState,
++                                       uint8_t nextEventState, double value)
++{
++    static const std::map<
++        uint8_t, std::tuple<pldm::utils::Level, pldm::utils::Direction>>
++        sensorEventMap = {
++            {PLDM_SENSOR_UPPERFATAL,
++             {pldm::utils::Level::HARDSHUTDOWN, pldm::utils::Direction::HIGH}},
++            {PLDM_SENSOR_UPPERCRITICAL,
++             {pldm::utils::Level::CRITICAL, pldm::utils::Direction::HIGH}},
++            {PLDM_SENSOR_UPPERWARNING,
++             {pldm::utils::Level::WARNING, pldm::utils::Direction::HIGH}},
++            {PLDM_SENSOR_LOWERWARNING,
++             {pldm::utils::Level::WARNING, pldm::utils::Direction::LOW}},
++            {PLDM_SENSOR_LOWERCRITICAL,
++             {pldm::utils::Level::CRITICAL, pldm::utils::Direction::LOW}},
++            {PLDM_SENSOR_LOWERFATAL,
++             {pldm::utils::Level::HARDSHUTDOWN, pldm::utils::Direction::LOW}},
++        };
++    static const std::array<uint8_t, 7> stateOrder = {
++        PLDM_SENSOR_LOWERFATAL,   PLDM_SENSOR_LOWERCRITICAL,
++        PLDM_SENSOR_LOWERWARNING, PLDM_SENSOR_NORMAL,
++        PLDM_SENSOR_UPPERWARNING, PLDM_SENSOR_UPPERCRITICAL,
++        PLDM_SENSOR_UPPERFATAL};
++    constexpr auto normalIt = stateOrder.begin() + 3;
++    const auto normalState = *normalIt;
++    auto prevIt =
++        std::find(stateOrder.begin(), stateOrder.end(), previousEventState);
++    if (prevIt == stateOrder.end())
++    {
++        lg2::error("Undefined previous threshold event state: {EVENT}", "EVENT",
++                   previousEventState);
++        return PLDM_ERROR;
++    }
++    auto nextIt =
++        std::find(stateOrder.begin(), stateOrder.end(), nextEventState);
++    if (nextIt == stateOrder.end())
++    {
++        lg2::error("Undefined current threshold event state: {EVENT}", "EVENT",
++                   nextEventState);
++        return PLDM_ERROR;
++    }
++    if (prevIt == nextIt)
++    {
++        // Nothing to do. Return success early
++        return PLDM_SUCCESS;
++    }
++
++    // This is a rare condition. But if we are going wildy across the thresholds
++    // crossing PLDM_SENSOR_NORMAL (Example going from PLDM_SENSOR_LOWERFATAL to
++    // PLDM_SENSOR_UPPERFATAL in one event, then split it up into two)
++    if ((prevIt < normalIt && nextIt > normalIt) ||
++        (prevIt > normalIt && nextIt < normalIt))
++    {
++        int rc = triggerNumericSensorThresholdEvent(handler, *prevIt,
++                                                    normalState, value);
++        if (rc != PLDM_SUCCESS)
++        {
++            lg2::error("Error handling {PREV} to current for numeric sensor",
++                       "PREV", int(*prevIt));
++        }
++        return triggerNumericSensorThresholdEvent(handler, normalState, *nextIt,
++                                                  value);
++    }
++    bool goingUp = prevIt < nextIt;
++    bool gettingBetter = (prevIt < nextIt && prevIt < normalIt) ||
++                         (prevIt > nextIt && prevIt > normalIt);
++
++    for (auto currIt = prevIt; currIt != nextIt; goingUp ? ++currIt : --currIt)
++    {
++        if (currIt == normalIt)
++        {
++            continue;
++        }
++        const auto& event = sensorEventMap.at(*currIt);
++
++        if (gettingBetter)
++        {
++            if (currIt != prevIt)
++            {
++                // Just trigger an event in case it was missed before
++                // we deassert. The implementation of triggerThresholdEvent
++                // should just no-op if it is already triggered.
++                handler(std::get<0>(event), std::get<1>(event), value, true,
++                        true);
++            }
++            handler(std::get<0>(event), std::get<1>(event), value, false,
++                    false);
++        }
++        else
++        {
++            handler(std::get<0>(event), std::get<1>(event), value, true, true);
++        }
++    }
++    if (nextIt != normalIt)
++    {
++        const auto& event = sensorEventMap.at(*nextIt);
++        return handler(std::get<0>(event), std::get<1>(event), value, true,
++                       true);
++    }
++    return PLDM_SUCCESS;
++}
++
+ int EventManager::processNumericSensorEvent(pldm_tid_t tid, uint16_t sensorId,
+                                             const uint8_t* sensorData,
+                                             size_t sensorDataLength)
+@@ -148,202 +252,21 @@ int EventManager::processNumericSensorEvent(pldm_tid_t tid, uint16_t sensorId,
+             "TID", tid, "SID", sensorId);
+         return PLDM_ERROR;
+     }
+-
+-    switch (previousEventState)
++    auto sensorHandler =
++        [&sensor](pldm::utils::Level level, pldm::utils::Direction direction,
++                  double rawValue, bool newAlarm, bool assert) {
++            return sensor->triggerThresholdEvent(level, direction, rawValue,
++                                                 newAlarm, assert);
++        };
++    rc = triggerNumericSensorThresholdEvent(sensorHandler, previousEventState,
++                                            eventState, value);
++    if (rc)
+     {
+-        case PLDM_SENSOR_UNKNOWN:
+-        case PLDM_SENSOR_NORMAL:
+-        {
+-            switch (eventState)
+-            {
+-                case PLDM_SENSOR_UPPERFATAL:
+-                case PLDM_SENSOR_UPPERCRITICAL:
+-                {
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::WARNING,
+-                                                  pldm::utils::Direction::HIGH,
+-                                                  value, true, true);
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::CRITICAL,
+-                        pldm::utils::Direction::HIGH, value, true, true);
+-                }
+-                case PLDM_SENSOR_UPPERWARNING:
+-                {
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::HIGH, value, true, true);
+-                }
+-                case PLDM_SENSOR_NORMAL:
+-                    break;
+-                case PLDM_SENSOR_LOWERWARNING:
+-                {
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::LOW, value, true, true);
+-                }
+-                case PLDM_SENSOR_LOWERCRITICAL:
+-                case PLDM_SENSOR_LOWERFATAL:
+-                {
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::WARNING,
+-                                                  pldm::utils::Direction::LOW,
+-                                                  value, true, true);
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::CRITICAL,
+-                        pldm::utils::Direction::LOW, value, true, true);
+-                }
+-                default:
+-                    break;
+-            }
+-            break;
+-        }
+-        case PLDM_SENSOR_LOWERWARNING:
+-        {
+-            switch (eventState)
+-            {
+-                case PLDM_SENSOR_UPPERFATAL:
+-                case PLDM_SENSOR_UPPERCRITICAL:
+-                    break;
+-                case PLDM_SENSOR_UPPERWARNING:
+-                {
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::WARNING,
+-                                                  pldm::utils::Direction::LOW,
+-                                                  value, false, false);
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::HIGH, value, true, true);
+-                }
+-                case PLDM_SENSOR_NORMAL:
+-                {
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::LOW, value, false, false);
+-                }
+-                case PLDM_SENSOR_LOWERWARNING:
+-                    break;
+-                case PLDM_SENSOR_LOWERCRITICAL:
+-                case PLDM_SENSOR_LOWERFATAL:
+-                {
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::CRITICAL,
+-                        pldm::utils::Direction::LOW, value, true, true);
+-                }
+-                default:
+-                    break;
+-            }
+-            break;
+-        }
+-        case PLDM_SENSOR_LOWERCRITICAL:
+-        case PLDM_SENSOR_LOWERFATAL:
+-        {
+-            switch (eventState)
+-            {
+-                case PLDM_SENSOR_UPPERFATAL:
+-                case PLDM_SENSOR_UPPERCRITICAL:
+-                case PLDM_SENSOR_UPPERWARNING:
+-                    break;
+-                case PLDM_SENSOR_NORMAL:
+-                {
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::CRITICAL,
+-                                                  pldm::utils::Direction::LOW,
+-                                                  value, false, false);
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::WARNING,
+-                                                  pldm::utils::Direction::LOW,
+-                                                  value, true, true);
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::LOW, value, false, false);
+-                }
+-                case PLDM_SENSOR_LOWERWARNING:
+-                {
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::CRITICAL,
+-                                                  pldm::utils::Direction::LOW,
+-                                                  value, false, false);
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::LOW, value, true, true);
+-                }
+-                case PLDM_SENSOR_LOWERCRITICAL:
+-                case PLDM_SENSOR_LOWERFATAL:
+-                default:
+-                    break;
+-            }
+-            break;
+-        }
+-        case PLDM_SENSOR_UPPERFATAL:
+-        case PLDM_SENSOR_UPPERCRITICAL:
+-        {
+-            switch (eventState)
+-            {
+-                case PLDM_SENSOR_UPPERFATAL:
+-                case PLDM_SENSOR_UPPERCRITICAL:
+-                    break;
+-                case PLDM_SENSOR_UPPERWARNING:
+-                {
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::CRITICAL,
+-                                                  pldm::utils::Direction::HIGH,
+-                                                  value, false, false);
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::HIGH, value, true, true);
+-                }
+-                case PLDM_SENSOR_NORMAL:
+-                {
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::CRITICAL,
+-                                                  pldm::utils::Direction::HIGH,
+-                                                  value, false, false);
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::WARNING,
+-                                                  pldm::utils::Direction::HIGH,
+-                                                  value, true, true);
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::HIGH, value, false, false);
+-                }
+-                case PLDM_SENSOR_LOWERWARNING:
+-                case PLDM_SENSOR_LOWERCRITICAL:
+-                case PLDM_SENSOR_LOWERFATAL:
+-                default:
+-                    break;
+-            }
+-            break;
+-        }
+-        case PLDM_SENSOR_UPPERWARNING:
+-        {
+-            switch (eventState)
+-            {
+-                case PLDM_SENSOR_UPPERFATAL:
+-                case PLDM_SENSOR_UPPERCRITICAL:
+-                {
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::CRITICAL,
+-                        pldm::utils::Direction::HIGH, value, true, true);
+-                }
+-                case PLDM_SENSOR_UPPERWARNING:
+-                    break;
+-                case PLDM_SENSOR_NORMAL:
+-                {
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::HIGH, value, false, false);
+-                }
+-                case PLDM_SENSOR_LOWERWARNING:
+-                {
+-                    sensor->triggerThresholdEvent(pldm::utils::Level::WARNING,
+-                                                  pldm::utils::Direction::HIGH,
+-                                                  value, false, false);
+-                    return sensor->triggerThresholdEvent(
+-                        pldm::utils::Level::WARNING,
+-                        pldm::utils::Direction::LOW, value, true, true);
+-                }
+-                case PLDM_SENSOR_LOWERCRITICAL:
+-                case PLDM_SENSOR_LOWERFATAL:
+-                default:
+-                    break;
+-            }
+-            break;
+-        }
+-        default:
+-            break;
++        lg2::error(
++            "Terminus ID {TID} sensor {SID} threshold handling had errors",
++            "TID", tid, "SID", sensorId);
++        return rc;
+     }
+-
+     return PLDM_SUCCESS;
+ }
+ 
+diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
+index 083725d..0eb52d7 100644
+--- a/platform-mc/event_manager.hpp
++++ b/platform-mc/event_manager.hpp
+@@ -21,6 +21,13 @@ using HandlerFunc =
+ using HandlerFuncs = std::vector<HandlerFunc>;
+ using EventMap = std::map<EventType, HandlerFuncs>;
+ 
++using NumericSensorThresholdHandler = std::function<int(
++    pldm::utils::Level, pldm::utils::Direction direction, double, bool, bool)>;
++
++int triggerNumericSensorThresholdEvent(NumericSensorThresholdHandler handler,
++                                       uint8_t previousEventState,
++                                       uint8_t nextEventState, double value);
++
+ /**
+  * @brief EventManager
+  *
+diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
+index 79aa0f4..0b64b0c 100644
+--- a/platform-mc/test/event_manager_test.cpp
++++ b/platform-mc/test/event_manager_test.cpp
+@@ -505,3 +505,279 @@ TEST_F(EventManagerTest, pollForPlatformEventTaskMultipartTransferTest)
+     // should finish immediately
+     stdexec::sync_wait(eventManager.pollForPlatformEventTask(tid, 0x0000));
+ }
++
++TEST(EventManagerNumericEventTest, HandleNormalToUpperWarning)
++{
++    using namespace pldm::platform_mc;
++    unsigned int callCount = 0;
++    auto handle =
++        [&callCount](pldm::utils::Level level, pldm::utils::Direction direction,
++                     double rawValue, bool newAlarm, bool assert) {
++            callCount++;
++            EXPECT_EQ(rawValue, 10.0);
++            EXPECT_TRUE(newAlarm);
++            EXPECT_TRUE(assert);
++            EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            EXPECT_EQ(direction, pldm::utils::Direction::HIGH);
++            EXPECT_EQ(callCount, 1);
++            return PLDM_SUCCESS;
++        };
++    int rc = triggerNumericSensorThresholdEvent(handle, PLDM_SENSOR_NORMAL,
++                                                PLDM_SENSOR_UPPERWARNING, 10.0);
++    ASSERT_EQ(rc, PLDM_SUCCESS);
++}
++
++TEST(EventManagerNumericEventTest, HandleUpperWarningToNormal)
++{
++    using namespace pldm::platform_mc;
++    unsigned int callCount = 0;
++    auto handle =
++        [&callCount](pldm::utils::Level level, pldm::utils::Direction direction,
++                     double rawValue, bool newAlarm, bool assert) {
++            callCount++;
++            EXPECT_EQ(rawValue, 4.0);
++            EXPECT_FALSE(newAlarm);
++            EXPECT_FALSE(assert);
++            EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            EXPECT_EQ(direction, pldm::utils::Direction::HIGH);
++            EXPECT_EQ(callCount, 1);
++            return PLDM_SUCCESS;
++        };
++    int rc = triggerNumericSensorThresholdEvent(
++        handle, PLDM_SENSOR_UPPERWARNING, PLDM_SENSOR_NORMAL, 4.0);
++    ASSERT_EQ(rc, PLDM_SUCCESS);
++}
++
++TEST(EventManagerNumericEventTest, HandleNormalToUpperCritical)
++{
++    using namespace pldm::platform_mc;
++    unsigned int callCount = 0;
++    auto handle =
++        [&callCount](pldm::utils::Level level, pldm::utils::Direction direction,
++                     double rawValue, bool newAlarm, bool assert) {
++            callCount++;
++            EXPECT_EQ(rawValue, 10.0);
++            EXPECT_TRUE(newAlarm);
++            EXPECT_TRUE(assert);
++            if (callCount == 1)
++            {
++                EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            }
++            else
++            {
++                EXPECT_EQ(level, pldm::utils::Level::CRITICAL);
++            }
++            EXPECT_EQ(direction, pldm::utils::Direction::HIGH);
++            EXPECT_LE(callCount, 2);
++            return PLDM_SUCCESS;
++        };
++    int rc = triggerNumericSensorThresholdEvent(
++        handle, PLDM_SENSOR_NORMAL, PLDM_SENSOR_UPPERCRITICAL, 10.0);
++    ASSERT_EQ(rc, PLDM_SUCCESS);
++}
++
++TEST(EventManagerNumericEventTest, HandleUpperCriticalToNormal)
++{
++    using namespace pldm::platform_mc;
++    unsigned int callCount = 0;
++    auto handle =
++        [&callCount](pldm::utils::Level level, pldm::utils::Direction direction,
++                     double rawValue, bool newAlarm, bool assert) {
++            callCount++;
++            EXPECT_EQ(rawValue, 10.0);
++            if (callCount == 1)
++            {
++                // First deasserts critical
++                EXPECT_EQ(level, pldm::utils::Level::CRITICAL);
++                EXPECT_FALSE(newAlarm);
++                EXPECT_FALSE(assert);
++            }
++            else if (callCount == 2)
++            {
++                // second  asserts warning just before deasserting it.
++                EXPECT_TRUE(newAlarm);
++                EXPECT_TRUE(assert);
++                EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            }
++            else
++            {
++                // Third and final time we deassert warning.
++                EXPECT_FALSE(newAlarm);
++                EXPECT_FALSE(assert);
++                EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            }
++            EXPECT_EQ(direction, pldm::utils::Direction::HIGH);
++            EXPECT_LE(callCount, 3);
++            return PLDM_SUCCESS;
++        };
++    int rc = triggerNumericSensorThresholdEvent(
++        handle, PLDM_SENSOR_UPPERCRITICAL, PLDM_SENSOR_NORMAL, 10.0);
++    ASSERT_EQ(rc, PLDM_SUCCESS);
++}
++
++TEST(EventManagerNumericEventTest, HandleNormalToLowerWarning)
++{
++    using namespace pldm::platform_mc;
++    unsigned int callCount = 0;
++    auto handle =
++        [&callCount](pldm::utils::Level level, pldm::utils::Direction direction,
++                     double rawValue, bool newAlarm, bool assert) {
++            callCount++;
++            EXPECT_EQ(rawValue, 10.0);
++            EXPECT_TRUE(newAlarm);
++            EXPECT_TRUE(assert);
++            EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            EXPECT_EQ(direction, pldm::utils::Direction::LOW);
++            EXPECT_EQ(callCount, 1);
++            return PLDM_SUCCESS;
++        };
++    int rc = triggerNumericSensorThresholdEvent(handle, PLDM_SENSOR_NORMAL,
++                                                PLDM_SENSOR_LOWERWARNING, 10.0);
++    ASSERT_EQ(rc, PLDM_SUCCESS);
++}
++
++TEST(EventManagerNumericEventTest, HandleLowerWarningToNormal)
++{
++    using namespace pldm::platform_mc;
++    unsigned int callCount = 0;
++    auto handle =
++        [&callCount](pldm::utils::Level level, pldm::utils::Direction direction,
++                     double rawValue, bool newAlarm, bool assert) {
++            callCount++;
++            EXPECT_EQ(rawValue, 4.0);
++            EXPECT_FALSE(newAlarm);
++            EXPECT_FALSE(assert);
++            EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            EXPECT_EQ(direction, pldm::utils::Direction::LOW);
++            EXPECT_EQ(callCount, 1);
++            return PLDM_SUCCESS;
++        };
++    int rc = triggerNumericSensorThresholdEvent(
++        handle, PLDM_SENSOR_LOWERWARNING, PLDM_SENSOR_NORMAL, 4.0);
++    ASSERT_EQ(rc, PLDM_SUCCESS);
++}
++
++TEST(EventManagerNumericEventTest, HandleNormalToLowerCritical)
++{
++    using namespace pldm::platform_mc;
++    unsigned int callCount = 0;
++    auto handle =
++        [&callCount](pldm::utils::Level level, pldm::utils::Direction direction,
++                     double rawValue, bool newAlarm, bool assert) {
++            callCount++;
++            EXPECT_EQ(rawValue, 10.0);
++            EXPECT_TRUE(newAlarm);
++            EXPECT_TRUE(assert);
++            if (callCount == 1)
++            {
++                EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            }
++            else
++            {
++                EXPECT_EQ(level, pldm::utils::Level::CRITICAL);
++            }
++            EXPECT_EQ(direction, pldm::utils::Direction::LOW);
++            EXPECT_LE(callCount, 2);
++            return PLDM_SUCCESS;
++        };
++    int rc = triggerNumericSensorThresholdEvent(
++        handle, PLDM_SENSOR_NORMAL, PLDM_SENSOR_LOWERCRITICAL, 10.0);
++    ASSERT_EQ(rc, PLDM_SUCCESS);
++}
++
++TEST(EventManagerNumericEventTest, HandleLowerCriticalToNormal)
++{
++    using namespace pldm::platform_mc;
++    unsigned int callCount = 0;
++    auto handle =
++        [&callCount](pldm::utils::Level level, pldm::utils::Direction direction,
++                     double rawValue, bool newAlarm, bool assert) {
++            callCount++;
++            EXPECT_EQ(rawValue, 10.0);
++            if (callCount == 1)
++            {
++                // First deasserts critical
++                EXPECT_EQ(level, pldm::utils::Level::CRITICAL);
++                EXPECT_FALSE(newAlarm);
++                EXPECT_FALSE(assert);
++            }
++            else if (callCount == 2)
++            {
++                // second  asserts warning just before deasserting it.
++                EXPECT_TRUE(newAlarm);
++                EXPECT_TRUE(assert);
++                EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            }
++            else
++            {
++                // Third and final time we deassert warning.
++                EXPECT_FALSE(newAlarm);
++                EXPECT_FALSE(assert);
++                EXPECT_EQ(level, pldm::utils::Level::WARNING);
++            }
++            EXPECT_EQ(direction, pldm::utils::Direction::LOW);
++            EXPECT_LE(callCount, 3);
++            return PLDM_SUCCESS;
++        };
++    int rc = triggerNumericSensorThresholdEvent(
++        handle, PLDM_SENSOR_LOWERCRITICAL, PLDM_SENSOR_NORMAL, 10.0);
++    ASSERT_EQ(rc, PLDM_SUCCESS);
++}
++
++TEST(EventManagerNumericEventTest, HandleLowerCriticalToUpperCritical)
++{
++    using namespace pldm::platform_mc;
++    unsigned int callCount = 0;
++    auto handle =
++        [&callCount](pldm::utils::Level level, pldm::utils::Direction direction,
++                     double rawValue, bool newAlarm, bool assert) {
++            callCount++;
++            EXPECT_EQ(rawValue, 10.0);
++            if (callCount == 1)
++            {
++                // First deasserts critical
++                EXPECT_EQ(level, pldm::utils::Level::CRITICAL);
++                EXPECT_FALSE(newAlarm);
++                EXPECT_FALSE(assert);
++                EXPECT_EQ(direction, pldm::utils::Direction::LOW);
++            }
++            else if (callCount == 2)
++            {
++                // second  asserts low-warning just before deasserting it.
++                EXPECT_TRUE(newAlarm);
++                EXPECT_TRUE(assert);
++                EXPECT_EQ(level, pldm::utils::Level::WARNING);
++                EXPECT_EQ(direction, pldm::utils::Direction::LOW);
++            }
++            else if (callCount == 3)
++            {
++                // third deasserts low-warning
++                EXPECT_FALSE(newAlarm);
++                EXPECT_FALSE(assert);
++                EXPECT_EQ(level, pldm::utils::Level::WARNING);
++                EXPECT_EQ(direction, pldm::utils::Direction::LOW);
++            }
++            else if (callCount == 4)
++            {
++                // forth asserts upper warning
++                EXPECT_TRUE(newAlarm);
++                EXPECT_TRUE(assert);
++                EXPECT_EQ(level, pldm::utils::Level::WARNING);
++                EXPECT_EQ(direction, pldm::utils::Direction::HIGH);
++            }
++            else
++            {
++                // fifth, asserts upper critical
++                EXPECT_TRUE(newAlarm);
++                EXPECT_TRUE(assert);
++                EXPECT_EQ(level, pldm::utils::Level::CRITICAL);
++                EXPECT_EQ(direction, pldm::utils::Direction::HIGH);
++            }
++            EXPECT_LE(callCount, 5);
++            return PLDM_SUCCESS;
++        };
++    int rc = triggerNumericSensorThresholdEvent(
++        handle, PLDM_SENSOR_LOWERCRITICAL, PLDM_SENSOR_UPPERCRITICAL, 10.0);
++    ASSERT_EQ(callCount, 5);
++    ASSERT_EQ(rc, PLDM_SUCCESS);
++}
+-- 
+2.47.1
+

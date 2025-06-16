@@ -1,7 +1,7 @@
-From 5f9033341681c1a550d2443861117015f7d0a206 Mon Sep 17 00:00:00 2001
+From 10374e13a06babb620d335c7ddc94008d56f427c Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 4 Nov 2024 19:20:09 +0800
-Subject: [PATCH 22/24] ARM: dts: aspeed: catalina: add hdd board cpld ioexp
+Subject: [PATCH 11/14] ARM: dts: aspeed: catalina: add hdd board cpld ioexp
 
 Add HDD board CPLD IO expender based on latest DVT HDD board CPLD
 firmware implementation.
@@ -12,7 +12,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 63 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index 8cd5878ab0980..bdfb4f2c871f8 100644
+index ee770e29ceebe..f2af32244c178 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -718,6 +718,33 @@ eeprom@51 {
@@ -49,7 +49,7 @@ index 8cd5878ab0980..bdfb4f2c871f8 100644
  };
  
  &i2c4 {
-@@ -1243,3 +1270,39 @@ &io_expander13 {
+@@ -1255,3 +1282,39 @@ &io_expander13 {
  		"small_leak_err_inj","large_leak_err_inj",
  		"","";
  };

@@ -1,7 +1,7 @@
-From e1fd7660b63d7e05835de4f0483a46a65bd89189 Mon Sep 17 00:00:00 2001
+From a36476f6a9d376afd6eceb34b8a8f443bc37cdb1 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Fri, 26 Jul 2024 19:03:48 +0800
-Subject: [PATCH 15/24] ARM: dts: aspeed: catalina: add extra ncsi properties
+Subject: [PATCH 04/14] ARM: dts: aspeed: catalina: add extra ncsi properties
 
 Add extra properties which only avaliable in Meta common patches.
 
@@ -16,7 +16,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index 6eb6c58891137..ea1de2ca6639a 100644
+index 8d786510167f5..d007e858f4c31 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -158,6 +158,8 @@ &mac2 {

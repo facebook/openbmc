@@ -1,7 +1,7 @@
-From 6d44d72b13337888b8fe1e3f0e5798100cae924d Mon Sep 17 00:00:00 2001
+From 4d9b9824e67dbb1ef97a2072cd6dfb33be829eff Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 18 Oct 2024 15:13:23 +0800
-Subject: [PATCH 19/24] ARM: dts: aspeed: catalina: enable ssif alert pin
+Subject: [PATCH 08/14] ARM: dts: aspeed: catalina: enable ssif alert pin
 
 Set GPIOC7 as SSIF alert pin for improving SSIF message performance.
 
@@ -11,10 +11,10 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index fc7972f5bf440..96015fd5d0547 100644
+index 6b62a470881b4..226594971b749 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-@@ -864,6 +864,7 @@ &i2c11 {
+@@ -870,6 +870,7 @@ &i2c11 {
  	ssif-bmc@10 {
  		compatible = "ssif-bmc";
  		reg = <0x10>;

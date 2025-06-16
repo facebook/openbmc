@@ -1,7 +1,7 @@
-From 2283c301a6732607446a052b5862267b96819d83 Mon Sep 17 00:00:00 2001
+From e3fbf7f9ed888305ebe3cfd6c4eb90fe63be9f49 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Mon, 20 Nov 2023 17:17:46 +0800
-Subject: [PATCH 01/24] i2c: aspeed: Acknowledge Tx ack late when in
+Subject: [PATCH 1/1] i2c: aspeed: Acknowledge Tx ack late when in
  SLAVE_READ_PROCESSED
 
 commit 2be6b47211e1 ("i2c: aspeed: Acknowledge most interrupts early

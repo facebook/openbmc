@@ -1,7 +1,7 @@
-From 1d9e220e7197fda7397dce6f9ad7ef026e37d4c6 Mon Sep 17 00:00:00 2001
+From 4f366b9f00d54035e915856c2b85c33f736ee8c7 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Fri, 2 Aug 2024 17:29:42 +0800
-Subject: [PATCH 16/24] ARM: dts: aspeed: catalina: add ipmb-dev node
+Subject: [PATCH 05/14] ARM: dts: aspeed: catalina: add ipmb-dev node
 
 ipmb-dev node was removed due to compatible string not exist on upstream.
 Add back ipmb-dev node back in this patch.
@@ -12,7 +12,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index ea1de2ca6639a..431f842cb1091 100644
+index d007e858f4c31..399688f27fa1b 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -763,6 +763,16 @@ rtc@6f {

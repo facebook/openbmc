@@ -1,7 +1,7 @@
-From 2944b1d53dd42c4ddf57bf8d7acc6ab8464280ff Mon Sep 17 00:00:00 2001
+From 5e66a86def6738c56f14e1faccf6ee1f4a8ef93b Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Mon, 4 Nov 2024 14:38:52 +0800
-Subject: [PATCH 20/24] ARM: dts: aspeed: catalina: enable uart dma mode
+Subject: [PATCH 09/14] ARM: dts: aspeed: catalina: enable uart dma mode
 
 enable uart dma mode in uart3.
 
@@ -14,7 +14,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 5 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index 96015fd5d0547..48effb32c6f93 100644
+index 226594971b749..306a228839918 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -137,11 +137,16 @@ p2v5_bmc_aux: regulator-p2v5-bmc-aux {

@@ -1,7 +1,7 @@
-From f8b8f27264cce96c00b5634cd96d6fc11c196300 Mon Sep 17 00:00:00 2001
+From 081e5d1e17888614d5ae839f0e725e6deee29349 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Thu, 9 Jan 2025 14:38:01 +0800
-Subject: [PATCH 23/24] ARM: dts: aspeed: catalina: Add Delta brick nodes
+Subject: [PATCH 12/14] ARM: dts: aspeed: catalina: Add Delta brick nodes
 
 Add Delta brick nodes to support power sensors monitoring on PDB brick
 board.
@@ -12,7 +12,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 20 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index bdfb4f2c871f8..3d7968b9093ec 100644
+index f2af32244c178..abf350fdac996 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -581,6 +581,26 @@ vrm@62 {

@@ -1,0 +1,103 @@
+From 9ac2c853dad8492a140bd092d73e3f30fbec0fb5 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Sun, 8 Jun 2025 20:24:14 +0800
+Subject: [PATCH 14/14] i2c-ast2600: support ssif
+
+---
+ drivers/i2c/busses/i2c-ast2600.c | 24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
+index d89f799550aeb..a32abda6409f9 100644
+--- a/drivers/i2c/busses/i2c-ast2600.c
++++ b/drivers/i2c/busses/i2c-ast2600.c
+@@ -583,7 +583,7 @@ static void ast2600_i2c_slave_packet_buff_irq(struct ast2600_i2c_bus *i2c_bus, u
+ 	int slave_rx_len = 0;
+ 	u32 cmd = 0;
+ 	u8 value;
+-	int i;
++	int i, ret;
+ 
+ 	/* due to master slave is common buffer, so need force the master stop not issue */
+ 	if (readl(i2c_bus->reg_base + AST2600_I2CM_CMD_STS) & GENMASK(15, 0)) {
+@@ -668,7 +668,9 @@ static void ast2600_i2c_slave_packet_buff_irq(struct ast2600_i2c_bus *i2c_bus, u
+ 		 AST2600_I2CS_WAIT_RX_DMA | AST2600_I2CS_SLAVE_MATCH | AST2600_I2CS_RX_DONE:
+ 	case AST2600_I2CS_WAIT_RX_DMA | AST2600_I2CS_SLAVE_MATCH | AST2600_I2CS_RX_DONE:
+ 	case AST2600_I2CS_WAIT_RX_DMA | AST2600_I2CS_SLAVE_MATCH:
+-		i2c_slave_event(i2c_bus->slave, I2C_SLAVE_WRITE_REQUESTED, &value);
++		value = AST2600_I2CC_GET_RX_BUFF(
++			readl(i2c_bus->reg_base + AST2600_I2CC_STS_AND_BUFF));
++		ret = i2c_slave_event(i2c_bus->slave, I2C_SLAVE_WRITE_REQUESTED, &value);
+ 		cmd = SLAVE_TRIGGER_CMD;
+ 		if (sts & AST2600_I2CS_RX_DONE) {
+ 			slave_rx_len = AST2600_I2CC_GET_RX_BUF_LEN(readl(i2c_bus->reg_base +
+@@ -683,6 +685,11 @@ static void ast2600_i2c_slave_packet_buff_irq(struct ast2600_i2c_bus *i2c_bus, u
+ 		else
+ 			cmd = SLAVE_TRIGGER_CMD | AST2600_I2CS_RX_BUFF_EN;
+ 
++		if (ret < 0) {
++			cmd |= AST2600_I2CS_RX_CMD_LAST;
++			writel(BIT(0), i2c_bus->reg_base + AST2600_I2CC_BUFF_CTRL);
++			break;
++		}
+ 		writel(AST2600_I2CC_SET_RX_BUF_LEN(i2c_bus->buf_size),
+ 		       i2c_bus->reg_base + AST2600_I2CC_BUFF_CTRL);
+ 		break;
+@@ -713,6 +720,7 @@ static void ast2600_i2c_slave_packet_buff_irq(struct ast2600_i2c_bus *i2c_bus, u
+ 		       i2c_bus->reg_base + AST2600_I2CC_BUFF_CTRL);
+ 		break;
+ 	case AST2600_I2CS_SLAVE_PENDING | AST2600_I2CS_RX_DONE | AST2600_I2CS_STOP:
++	case AST2600_I2CS_RX_DONE | AST2600_I2CS_STOP:
+ 		cmd = SLAVE_TRIGGER_CMD;
+ 		slave_rx_len = AST2600_I2CC_GET_RX_BUF_LEN(readl(i2c_bus->reg_base +
+ 								 AST2600_I2CC_BUFF_CTRL));
+@@ -724,7 +732,7 @@ static void ast2600_i2c_slave_packet_buff_irq(struct ast2600_i2c_bus *i2c_bus, u
+ 		writel(BIT(0), i2c_bus->reg_base + AST2600_I2CC_BUFF_CTRL);
+ 		i2c_slave_event(i2c_bus->slave, I2C_SLAVE_STOP, &value);
+ 		break;
+-	case AST2600_I2CS_RX_DONE | AST2600_I2CS_STOP:
++	case AST2600_I2CS_RX_DONE_NAK | AST2600_I2CS_RX_DONE | AST2600_I2CS_STOP:
+ 		cmd = SLAVE_TRIGGER_CMD;
+ 		slave_rx_len = AST2600_I2CC_GET_RX_BUF_LEN(readl(i2c_bus->reg_base +
+ 								 AST2600_I2CC_BUFF_CTRL));
+@@ -734,9 +742,10 @@ static void ast2600_i2c_slave_packet_buff_irq(struct ast2600_i2c_bus *i2c_bus, u
+ 		}
+ 		/* workaround for avoid next start with len != 0 */
+ 		writel(BIT(0), i2c_bus->reg_base + AST2600_I2CC_BUFF_CTRL);
+-		i2c_slave_event(i2c_bus->slave, I2C_SLAVE_STOP, &value);
+ 		break;
+ 	case AST2600_I2CS_WAIT_TX_DMA | AST2600_I2CS_SLAVE_MATCH:
++		value = AST2600_I2CC_GET_RX_BUFF(
++			readl(i2c_bus->reg_base + AST2600_I2CC_STS_AND_BUFF));
+ 		i2c_slave_event(i2c_bus->slave, I2C_SLAVE_READ_REQUESTED, &value);
+ 		writeb(value, i2c_bus->buf_base);
+ 		writel(AST2600_I2CC_SET_TX_BUF_LEN(1),
+@@ -757,6 +766,8 @@ static void ast2600_i2c_slave_packet_buff_irq(struct ast2600_i2c_bus *i2c_bus, u
+ 				value = readb(i2c_bus->buf_base + 0x10 + i);
+ 				i2c_slave_event(i2c_bus->slave, I2C_SLAVE_WRITE_RECEIVED, &value);
+ 			}
++			value = AST2600_I2CC_GET_RX_BUFF(readl(
++				i2c_bus->reg_base + AST2600_I2CC_STS_AND_BUFF));
+ 			i2c_slave_event(i2c_bus->slave, I2C_SLAVE_READ_REQUESTED, &value);
+ 		} else {
+ 			i2c_slave_event(i2c_bus->slave, I2C_SLAVE_READ_PROCESSED, &value);
+@@ -768,11 +779,16 @@ static void ast2600_i2c_slave_packet_buff_irq(struct ast2600_i2c_bus *i2c_bus, u
+ 		break;
+ 	/* workaround : trigger the cmd twice to fix next state keep 1000000 */
+ 	case AST2600_I2CS_SLAVE_MATCH | AST2600_I2CS_RX_DONE:
++		value = AST2600_I2CC_GET_RX_BUFF(
++			readl(i2c_bus->reg_base + AST2600_I2CC_STS_AND_BUFF));
+ 		i2c_slave_event(i2c_bus->slave, I2C_SLAVE_WRITE_REQUESTED, &value);
+ 		cmd = SLAVE_TRIGGER_CMD | AST2600_I2CS_RX_BUFF_EN;
+ 		writel(cmd, i2c_bus->reg_base + AST2600_I2CS_CMD_STS);
+ 		break;
+ 
++	case AST2600_I2CS_SLAVE_PENDING | AST2600_I2CS_WAIT_RX_DMA |
++		 AST2600_I2CS_SLAVE_MATCH | AST2600_I2CS_RX_DONE |
++		 AST2600_I2CS_TX_NAK | AST2600_I2CS_STOP:
+ 	case AST2600_I2CS_TX_NAK | AST2600_I2CS_STOP:
+ 	case AST2600_I2CS_STOP:
+ 		cmd = SLAVE_TRIGGER_CMD;
+-- 
+2.31.1
+

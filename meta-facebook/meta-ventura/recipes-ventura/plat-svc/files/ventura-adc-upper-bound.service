@@ -1,0 +1,11 @@
+[Unit]
+Description=Ventura ADC Upper Bound
+Before=xyz.openbmc_project.EntityManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/ventura/ventura-adc-upper-bound
+SyslogIdentifier=Ventura ADC Upper Bound
+
+[Install]
+WantedBy=multi-user.target

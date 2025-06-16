@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Set the ADC upper bound based on the deglitch feature provided by Aspeed
+# LORK link: https://lore.kernel.org/all/20230925081845.4147424-1-billy_tsai@aspeedtech.com/
+set_adc_upper_bound()
+{
+    # Set upper bound 0x34C for ADC channel 0
+    echo 844 > /sys/bus/iio/devices/iio:device0/events/in_voltage0_thresh_rising_value
+    # Enable de-glitch for ADC channel 0
+    echo 1 > /sys/bus/iio/devices/iio:device0/events/in_voltage0_thresh_rising_en
+
+    # Set upper bound 0x32C for ADC channel 1
+    echo 812 > /sys/bus/iio/devices/iio:device0/events/in_voltage1_thresh_rising_value
+    # Enable de-glitch for ADC channel 1
+    echo 1 > /sys/bus/iio/devices/iio:device0/events/in_voltage1_thresh_rising_en
+
+    # Set upper bound 0x34A for ADC channel 2
+    echo 842 > /sys/bus/iio/devices/iio:device0/events/in_voltage2_thresh_rising_value
+    # Enable de-glitch for ADC channel 2
+    echo 1 > /sys/bus/iio/devices/iio:device0/events/in_voltage2_thresh_rising_en
+
+    # Set upper bound 0x32A for ADC channel 3
+    echo 810 > /sys/bus/iio/devices/iio:device0/events/in_voltage3_thresh_rising_value
+    # Enable de-glitch for ADC channel 3
+    echo 1 > /sys/bus/iio/devices/iio:device0/events/in_voltage3_thresh_rising_en
+
+    # Set upper bound 0x34E for ADC channel 4
+    echo 846 > /sys/bus/iio/devices/iio:device0/events/in_voltage4_thresh_rising_value
+    # Enable de-glitch for ADC channel 4
+    echo 1 > /sys/bus/iio/devices/iio:device0/events/in_voltage4_thresh_rising_en
+
+    # Set upper bound 0x34A for ADC channel 5
+    echo 842 > /sys/bus/iio/devices/iio:device0/events/in_voltage5_thresh_rising_value
+    # Enable de-glitch for ADC channel 5
+    echo 1 > /sys/bus/iio/devices/iio:device0/events/in_voltage5_thresh_rising_en
+
+    # Set upper bound 0x2CD for ADC channel 6
+    echo 717 > /sys/bus/iio/devices/iio:device0/events/in_voltage6_thresh_rising_value
+    # Enable de-glitch for ADC channel 6
+    echo 1 > /sys/bus/iio/devices/iio:device0/events/in_voltage6_thresh_rising_en
+
+    # Set upper bound 0x285 for ADC channel 7
+    echo 645 > /sys/bus/iio/devices/iio:device0/events/in_voltage7_thresh_rising_value
+    # Enable de-glitch for ADC channel 7
+    echo 1 > /sys/bus/iio/devices/iio:device0/events/in_voltage7_thresh_rising_en
+
+    # Set upper bound 0x1C3 for ADC channel 10
+    echo 451 > /sys/bus/iio/devices/iio:device1/events/in_voltage2_thresh_rising_value
+    # Enable de-glitch for ADC channel 10
+    echo 1 > /sys/bus/iio/devices/iio:device1/events/in_voltage2_thresh_rising_en
+}
+
+set_adc_upper_bound
+
+exit 0

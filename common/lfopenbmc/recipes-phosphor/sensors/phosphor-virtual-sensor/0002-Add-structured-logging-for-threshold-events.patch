@@ -1,0 +1,527 @@
+From 0f9d5c2b7a862296f6cf823331bcc9f179749b4e Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Mon, 2 Jun 2025 21:22:13 -0700
+Subject: [PATCH 2/2] Add structured logging for threshold events
+
+Add capability to create structured logs for threshold crossing
+(compatible with Redfish Sensor Events) along with ability to
+resolve the logs when the threshold event recovers.
+
+Tested: Created an inventory with an external sensor named
+`HostDevTemp` and a virtual sensor named `SPECIAL_SENSOR` configured
+to consumes this sensor which has set thresholds
+`"HardShutdownHigh": 50` and `"CriticalHigh": 35`. This would allow
+us to change the sensor value and watch the service handling the
+threshold crossing.
+
+1. Change sensor value to 40+ to observe upper critical threshold
+   handling.
+```
+root@bmc:~# busctl introspect -l xyz.openbmc_project.Logging /xyz/openbmc_project/logging/entry/3 xyz.openbmc_project.Logging.Entry | grep "AdditionalData\|Message\|Resolved"
+.AdditionalData property  a{ss} 8 "READING_VALUE" "41.0" "SENSOR_NAME" "/xyz/openbmc_project/sensors/temperature/SPECIAL_SENSOR" "THRESHOLD_VALUE" "35.0" "UNITS" "xyz.openbmc_project.Sensor.Value.Unit.DegreesC" <snip>
+.Message property  s "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperCriticalThreshold"
+.Resolved property b false
+```
+
+2. change sensor value to 70+ to observe upper hard-shutdown threshold
+   crossing.
+```
+root@bmc:~# busctl introspect -l xyz.openbmc_project.Logging /xyz/openbmc_project/logging/entry/5 xyz.openbmc_project.Logging.Entry | grep "AdditionalData\|Message\|Resolved"
+.AdditionalData property  a{ss} 8 "READING_VALUE" "71.0" "SENSOR_NAME" "/xyz/openbmc_project/sensors/temperature/SPECIAL_SENSOR" "THRESHOLD_VALUE" "50.0" "UNITS" "xyz.openbmc_project.Sensor.Value.Unit.DegreesC" <snip>
+.Message property  s "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperHardShutdownThreshold"
+.Resolved property  b false
+```
+
+3. Change sensor value back to 40+. Ensure upper hard-shutdown threshold
+   is marked as resolved.
+```
+root@bmc:~# busctl introspect -l xyz.openbmc_project.Logging /xyz/openbmc_project/logging/entry/5 xyz.openbmc_project.Logging.Entry | grep "AdditionalData\|Message\|Resolved"
+.AdditionalData property  a{ss}     8 "READING_VALUE" "71.0" "SENSOR_NAME" "/xyz/openbmc_project/sensors/temperature/SPECIAL_SENSOR" "THRESHOLD_VALUE" "50.0" "UNITS" "xyz.openbmc_project.Sensor.Value.Unit.DegreesC" <snip>
+.Message property  s         "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperHardShutdownThreshold"
+.Resolved property  b true
+```
+
+4. Change sensor value to 1+. Ensure that the upper critical threshold
+   is marked as resolved. And a new event log is created for the
+   sensors stating that the sensor is now in normal range.
+```
+root@bmc:~# busctl introspect -l xyz.openbmc_project.Logging /xyz/openbmc_project/logging/entry/3 xyz.openbmc_project.Logging.Entry | grep "AdditionalData\|Message\|Resolved"
+.AdditionalData property  a{ss} 8 "READING_VALUE" "41.0" "SENSOR_NAME" "/xyz/openbmc_project/sensors/temperature/SPECIAL_SENSOR" "THRESHOLD_VALUE" "35.0" "UNITS" "xyz.openbmc_project.Sensor.Value.Unit.DegreesC" <snip>
+.Message property  s "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperCriticalThreshold"
+.Resolved property  b  true
+```
+```
+root@bmc:~# busctl introspect -l xyz.openbmc_project.Logging /xyz/openbmc_project/logging/entry/6 xyz.openbmc_project.Logging.Entry | grep "AdditionalData\|Message\|Resolved"
+.AdditionalData property  a{ss} 7 "READING_VALUE" "2.0" "SENSOR_NAME" "/xyz/openbmc_project/sensors/temperature/SPECIAL_SENSOR" "UNITS" "xyz.openbmc_project.Sensor.Value.Unit.DegreesC" <snip>
+.Message property  s  "xyz.openbmc_project.Sensor.Threshold.SensorReadingNormalRange"
+.Resolved property  b false
+```
+
+Change-Id: I660b6a477af38c9314680ce12705c460bae23fd8
+Signed-off-by: Amithash Prasad <amithash@meta.com>
+---
+ thresholds.hpp    | 170 +++++++++++++++++++++++++++++++++++++---------
+ virtualSensor.cpp |  27 ++++++--
+ virtualSensor.hpp |  18 +++--
+ 3 files changed, 174 insertions(+), 41 deletions(-)
+
+diff --git a/thresholds.hpp b/thresholds.hpp
+index 360851c..1aa8e37 100644
+--- a/thresholds.hpp
++++ b/thresholds.hpp
+@@ -2,11 +2,13 @@
+ 
+ #include "dbusUtils.hpp"
+ 
++#include <phosphor-logging/commit.hpp>
+ #include <xyz/openbmc_project/Sensor/Threshold/Critical/server.hpp>
+ #include <xyz/openbmc_project/Sensor/Threshold/HardShutdown/server.hpp>
+ #include <xyz/openbmc_project/Sensor/Threshold/PerformanceLoss/server.hpp>
+ #include <xyz/openbmc_project/Sensor/Threshold/SoftShutdown/server.hpp>
+ #include <xyz/openbmc_project/Sensor/Threshold/Warning/server.hpp>
++#include <xyz/openbmc_project/Sensor/Threshold/event.hpp>
+ #include <xyz/openbmc_project/Sensor/Value/server.hpp>
+ 
+ const constexpr char* entityManagerBusName =
+@@ -54,11 +56,52 @@ struct Hysteresis
+     }
+ };
+ 
++template <typename error>
++auto tryCommit(const std::string& objPath, double value, Unit unit,
++               double thresholdValue)
++    -> std::optional<sdbusplus::message::object_path>
++{
++    try
++    {
++        return lg2::commit(
++            error("SENSOR_NAME", objPath, "READING_VALUE", value, "UNITS", unit,
++                  "THRESHOLD_VALUE", thresholdValue));
++    }
++    catch (std::exception&)
++    {
++        lg2::error(
++            "Failed creating a threshold log entry for {SENSOR} with value {VALUE}",
++            "SENSOR", objPath, "VALUE", value);
++        return std::nullopt;
++    }
++}
++
++static inline void tryResolve(
++    std::optional<sdbusplus::message::object_path>& log)
++{
++    if (log)
++    {
++        try
++        {
++            lg2::resolve(*log);
++        }
++        catch (std::exception&)
++        {
++            lg2::error("Failed to resolve: {LOG}", "LOG", *log);
++        }
++        log.reset();
++    }
++}
++
+ template <>
+ struct Threshold<WarningObject> : public WarningObject, public Hysteresis
+ {
+     static constexpr auto name = "Warning";
+     using WarningObject::WarningObject;
++    using ReadingAboveUpperWarningThreshold = sdbusplus::error::xyz::
++        openbmc_project::sensor::Threshold::ReadingAboveUpperWarningThreshold;
++    using ReadingBelowLowerWarningThreshold = sdbusplus::error::xyz::
++        openbmc_project::sensor::Threshold::ReadingBelowLowerWarningThreshold;
+     /** @brief sdbusplus bus client connection. */
+     sdbusplus::bus_t& bus;
+     std::string objPath;
+@@ -70,6 +113,8 @@ struct Threshold<WarningObject> : public WarningObject, public Hysteresis
+     std::string entityPath;
+     std::string entityInterfaceHigh;
+     std::string entityInterfaceLow;
++    std::optional<sdbusplus::message::object_path> assertedHighLog;
++    std::optional<sdbusplus::message::object_path> assertedLowLog;
+ 
+     /** @brief Constructor to put object onto bus at a dbus path.
+      *  @param[in] bus - Bus to attach to.
+@@ -102,27 +147,33 @@ struct Threshold<WarningObject> : public WarningObject, public Hysteresis
+         return warningAlarmLow(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmHighSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmHighSignalAsserted(V value)
+     {
+-        return warningHighAlarmAsserted(std::forward<Args>(args)...);
++        assertedHighLog = tryCommit<ReadingAboveUpperWarningThreshold>(
++            objPath, value, units, high());
++        return warningHighAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmHighSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedHighLog);
+         return warningHighAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmLowSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmLowSignalAsserted(V value)
+     {
+-        return warningLowAlarmAsserted(std::forward<Args>(args)...);
++        assertedLowLog = tryCommit<ReadingBelowLowerWarningThreshold>(
++            objPath, value, units, low());
++        return warningLowAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmLowSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedLowLog);
+         return warningLowAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ 
+@@ -190,8 +241,14 @@ struct Threshold<CriticalObject> : public CriticalObject, public Hysteresis
+     std::string entityPath;
+     std::string entityInterfaceHigh;
+     std::string entityInterfaceLow;
++    std::optional<sdbusplus::message::object_path> assertedHighLog;
++    std::optional<sdbusplus::message::object_path> assertedLowLog;
+ 
+     using CriticalObject::CriticalObject;
++    using ReadingAboveUpperCriticalThreshold = sdbusplus::error::xyz::
++        openbmc_project::sensor::Threshold::ReadingAboveUpperCriticalThreshold;
++    using ReadingBelowLowerCriticalThreshold = sdbusplus::error::xyz::
++        openbmc_project::sensor::Threshold::ReadingBelowLowerCriticalThreshold;
+ 
+     /** @brief Constructor to put object onto bus at a dbus path.
+      *  @param[in] bus - Bus to attach to.
+@@ -224,27 +281,33 @@ struct Threshold<CriticalObject> : public CriticalObject, public Hysteresis
+         return criticalAlarmLow(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmHighSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmHighSignalAsserted(V value)
+     {
+-        return criticalHighAlarmAsserted(std::forward<Args>(args)...);
++        assertedHighLog = tryCommit<ReadingAboveUpperCriticalThreshold>(
++            objPath, value, units, high());
++        return criticalHighAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmHighSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedHighLog);
+         return criticalHighAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmLowSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmLowSignalAsserted(V value)
+     {
+-        return criticalLowAlarmAsserted(std::forward<Args>(args)...);
++        assertedLowLog = tryCommit<ReadingBelowLowerCriticalThreshold>(
++            objPath, value, units, low());
++        return criticalLowAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmLowSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedLowLog);
+         return criticalLowAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ 
+@@ -301,12 +364,22 @@ struct Threshold<SoftShutdownObject> :
+     public Hysteresis
+ {
+     static constexpr auto name = "SoftShutdown";
+-    using SoftShutdownObject::SoftShutdownObject;
++
+     /** @brief sdbusplus bus client connection. */
+     sdbusplus::bus_t& bus;
+     std::string objPath;
+     Unit units;
+ 
++    using SoftShutdownObject::SoftShutdownObject;
++    using ReadingAboveUpperSoftShutdownThreshold =
++        sdbusplus::error::xyz::openbmc_project::sensor::Threshold::
++            ReadingAboveUpperSoftShutdownThreshold;
++    using ReadingBelowLowerSoftShutdownThreshold =
++        sdbusplus::error::xyz::openbmc_project::sensor::Threshold::
++            ReadingBelowLowerSoftShutdownThreshold;
++    std::optional<sdbusplus::message::object_path> assertedHighLog;
++    std::optional<sdbusplus::message::object_path> assertedLowLog;
++
+     /** @brief Constructor to put object onto bus at a dbus path.
+      *  @param[in] bus - Bus to attach to.
+      *  @param[in] path - Path to attach at.
+@@ -338,27 +411,33 @@ struct Threshold<SoftShutdownObject> :
+         return softShutdownAlarmLow(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmHighSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmHighSignalAsserted(V value)
+     {
+-        return softShutdownHighAlarmAsserted(std::forward<Args>(args)...);
++        assertedHighLog = tryCommit<ReadingAboveUpperSoftShutdownThreshold>(
++            objPath, value, units, high());
++        return softShutdownHighAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmHighSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedHighLog);
+         return softShutdownHighAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmLowSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmLowSignalAsserted(V value)
+     {
+-        return softShutdownLowAlarmAsserted(std::forward<Args>(args)...);
++        assertedLowLog = tryCommit<ReadingBelowLowerSoftShutdownThreshold>(
++            objPath, value, units, low());
++        return softShutdownLowAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmLowSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedLowLog);
+         return softShutdownLowAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ };
+@@ -369,12 +448,21 @@ struct Threshold<HardShutdownObject> :
+     public Hysteresis
+ {
+     static constexpr auto name = "HardShutdown";
++
+     /** @brief sdbusplus bus client connection. */
+     sdbusplus::bus_t& bus;
+     std::string objPath;
+     Unit units;
+ 
+     using HardShutdownObject::HardShutdownObject;
++    using ReadingAboveUpperHardShutdownThreshold =
++        sdbusplus::error::xyz::openbmc_project::sensor::Threshold::
++            ReadingAboveUpperHardShutdownThreshold;
++    using ReadingBelowLowerHardShutdownThreshold =
++        sdbusplus::error::xyz::openbmc_project::sensor::Threshold::
++            ReadingBelowLowerHardShutdownThreshold;
++    std::optional<sdbusplus::message::object_path> assertedHighLog;
++    std::optional<sdbusplus::message::object_path> assertedLowLog;
+ 
+     /** @brief Constructor to put object onto bus at a dbus path.
+      *  @param[in] bus - Bus to attach to.
+@@ -407,27 +495,33 @@ struct Threshold<HardShutdownObject> :
+         return hardShutdownAlarmLow(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmHighSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmHighSignalAsserted(V value)
+     {
+-        return hardShutdownHighAlarmAsserted(std::forward<Args>(args)...);
++        assertedHighLog = tryCommit<ReadingAboveUpperHardShutdownThreshold>(
++            objPath, value, units, high());
++        return hardShutdownHighAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmHighSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedHighLog);
+         return hardShutdownHighAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmLowSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmLowSignalAsserted(V value)
+     {
+-        return hardShutdownLowAlarmAsserted(std::forward<Args>(args)...);
++        assertedLowLog = tryCommit<ReadingBelowLowerHardShutdownThreshold>(
++            objPath, value, units, low());
++        return hardShutdownLowAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmLowSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedLowLog);
+         return hardShutdownLowAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ };
+@@ -444,8 +538,16 @@ struct Threshold<PerformanceLossObject> :
+     Unit units;
+ 
+     using PerformanceLossObject::PerformanceLossObject;
++    using ReadingAboveUpperPerformanceLossThreshold =
++        sdbusplus::error::xyz::openbmc_project::sensor::Threshold::
++            ReadingAboveUpperPerformanceLossThreshold;
++    using ReadingBelowLowerPerformanceLossThreshold =
++        sdbusplus::error::xyz::openbmc_project::sensor::Threshold::
++            ReadingBelowLowerPerformanceLossThreshold;
+     double performanceLossHighHysteresis;
+     double performanceLossLowHysteresis;
++    std::optional<sdbusplus::message::object_path> assertedHighLog;
++    std::optional<sdbusplus::message::object_path> assertedLowLog;
+ 
+     /** @brief Constructor to put object onto bus at a dbus path.
+      *  @param[in] bus - Bus to attach to.
+@@ -478,27 +580,33 @@ struct Threshold<PerformanceLossObject> :
+         return performanceLossAlarmLow(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmHighSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmHighSignalAsserted(V value)
+     {
+-        return performanceLossHighAlarmAsserted(std::forward<Args>(args)...);
++        assertedHighLog = tryCommit<ReadingAboveUpperPerformanceLossThreshold>(
++            objPath, value, units, high());
++        return performanceLossHighAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmHighSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedHighLog);
+         return performanceLossHighAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ 
+-    template <typename... Args>
+-    auto alarmLowSignalAsserted(Args... args)
++    template <typename V>
++    auto alarmLowSignalAsserted(V value)
+     {
+-        return performanceLossLowAlarmAsserted(std::forward<Args>(args)...);
++        assertedLowLog = tryCommit<ReadingBelowLowerPerformanceLossThreshold>(
++            objPath, value, units, low());
++        return performanceLossLowAlarmAsserted(value);
+     }
+ 
+     template <typename... Args>
+     auto alarmLowSignalDeasserted(Args... args)
+     {
++        tryResolve(assertedLowLog);
+         return performanceLossLowAlarmDeasserted(std::forward<Args>(args)...);
+     }
+ };
+diff --git a/virtualSensor.cpp b/virtualSensor.cpp
+index 0bbc453..c6bc6da 100644
+--- a/virtualSensor.cpp
++++ b/virtualSensor.cpp
+@@ -486,11 +486,28 @@ void VirtualSensor::updateVirtualSensor()
+     debug("Sensor {NAME} = {VALUE}", "NAME", this->name, "VALUE", val);
+ 
+     /* Check sensor thresholds and log required message */
+-    checkThresholds(val, perfLossIface);
+-    checkThresholds(val, warningIface);
+-    checkThresholds(val, criticalIface);
+-    checkThresholds(val, softShutdownIface);
+-    checkThresholds(val, hardShutdownIface);
++    auto changed = false;
++    auto normal = checkThresholds(val, perfLossIface, changed);
++    normal &= checkThresholds(val, warningIface, changed);
++    normal &= checkThresholds(val, criticalIface, changed);
++    normal &= checkThresholds(val, softShutdownIface, changed);
++    normal &= checkThresholds(val, hardShutdownIface, changed);
++    if (changed && normal)
++    {
++        namespace Events =
++            sdbusplus::event::xyz::openbmc_project::sensor::Threshold;
++
++        try
++        {
++            lg2::commit(Events::SensorReadingNormalRange(
++                "SENSOR_NAME", objPath, "READING_VALUE", val, "UNITS", units));
++        }
++        catch (std::exception&)
++        {
++            lg2::debug("Failed to create normal range event {NAME}", "NAME",
++                       objPath);
++        }
++    }
+ }
+ 
+ void VirtualSensor::createThresholds(
+diff --git a/virtualSensor.hpp b/virtualSensor.hpp
+index d93d04b..1b3683f 100644
+--- a/virtualSensor.hpp
++++ b/virtualSensor.hpp
+@@ -210,12 +210,15 @@ class VirtualSensor : public ValueObject
+                               const std::string& sensorType,
+                               const std::string& interface);
+ 
+-    /** @brief Check Sensor threshold and update alarm and log */
++    /** @brief Check Sensor threshold and update alarm and log. Returns
++     * true if the threshold range has no alarms set. change will be
++     * set if a change to the alarms were detected, else will be left
++     * unchanged */
+     template <typename V, typename T>
+-    void checkThresholds(V value, T& threshold)
++    bool checkThresholds(V value, T& threshold, bool& change)
+     {
+         if (!threshold)
+-            return;
++            return true;
+ 
+         static constexpr auto tname = T::element_type::name;
+ 
+@@ -224,6 +227,7 @@ class VirtualSensor : public ValueObject
+         if ((!alarmHigh && value >= threshold->high()) ||
+             (alarmHigh && value < (threshold->high() - highHysteresis)))
+         {
++            change = true;
+             if (!alarmHigh)
+             {
+                 error("ASSERT: sensor {SENSOR} is above the upper threshold "
+@@ -238,7 +242,8 @@ class VirtualSensor : public ValueObject
+                      "SENSOR", name, "THRESHOLD", tname);
+                 threshold->alarmHighSignalDeasserted(value);
+             }
+-            threshold->alarmHigh(!alarmHigh);
++            alarmHigh = !alarmHigh;
++            threshold->alarmHigh(alarmHigh);
+         }
+ 
+         auto alarmLow = threshold->alarmLow();
+@@ -246,6 +251,7 @@ class VirtualSensor : public ValueObject
+         if ((!alarmLow && value <= threshold->low()) ||
+             (alarmLow && value > (threshold->low() + lowHysteresis)))
+         {
++            change = true;
+             if (!alarmLow)
+             {
+                 error("ASSERT: sensor {SENSOR} is below the lower threshold "
+@@ -260,8 +266,10 @@ class VirtualSensor : public ValueObject
+                      "SENSOR", name, "THRESHOLD", tname);
+                 threshold->alarmLowSignalDeasserted(value);
+             }
+-            threshold->alarmLow(!alarmLow);
++            alarmLow = !alarmLow;
++            threshold->alarmLow(alarmLow);
+         }
++        return !alarmHigh && !alarmLow;
+     }
+ 
+     /** @brief Create Association from entityPath*/
+-- 
+2.47.1
+

@@ -1,0 +1,378 @@
+From d9004790edff5ed0db7c78badcd3a040e671a623 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Mon, 2 Jun 2025 20:31:48 -0700
+Subject: [PATCH 1/2] Add a units and objPath member to the sensor class
+
+Adding a units and objPath members to be reusable in the future.
+Moved around helper maps as needed.
+
+Change-Id: Ic5fda95b5c8673476c2ee91359691f8afc21f7e2
+Signed-off-by: Amithash Prasad <amithash@meta.com>
+---
+ thresholds.hpp    | 60 +++++++++++++++++++++++++++++++++++++++++++----
+ virtualSensor.cpp | 58 ++++++++++++++++++++++++---------------------
+ virtualSensor.hpp | 23 ++++++++++++------
+ 3 files changed, 103 insertions(+), 38 deletions(-)
+
+diff --git a/thresholds.hpp b/thresholds.hpp
+index 114138f..360851c 100644
+--- a/thresholds.hpp
++++ b/thresholds.hpp
+@@ -7,6 +7,7 @@
+ #include <xyz/openbmc_project/Sensor/Threshold/PerformanceLoss/server.hpp>
+ #include <xyz/openbmc_project/Sensor/Threshold/SoftShutdown/server.hpp>
+ #include <xyz/openbmc_project/Sensor/Threshold/Warning/server.hpp>
++#include <xyz/openbmc_project/Sensor/Value/server.hpp>
+ 
+ const constexpr char* entityManagerBusName =
+     "xyz.openbmc_project.EntityManager";
+@@ -18,6 +19,7 @@ using ServerObject = typename sdbusplus::server::object_t<T...>;
+ 
+ namespace threshold_ns =
+     sdbusplus::xyz::openbmc_project::Sensor::Threshold::server;
++using Unit = sdbusplus::xyz::openbmc_project::Sensor::server::Value::Unit;
+ using CriticalObject = ServerObject<threshold_ns::Critical>;
+ using WarningObject = ServerObject<threshold_ns::Warning>;
+ using SoftShutdownObject = ServerObject<threshold_ns::SoftShutdown>;
+@@ -60,6 +62,7 @@ struct Threshold<WarningObject> : public WarningObject, public Hysteresis
+     /** @brief sdbusplus bus client connection. */
+     sdbusplus::bus_t& bus;
+     std::string objPath;
++    Unit units;
+ 
+     /** @brief Virtual sensor path/interface in entityManagerDbus.
+      * This 3 value is used to set thresholds
+@@ -71,9 +74,11 @@ struct Threshold<WarningObject> : public WarningObject, public Hysteresis
+     /** @brief Constructor to put object onto bus at a dbus path.
+      *  @param[in] bus - Bus to attach to.
+      *  @param[in] path - Path to attach at.
++     *  @param[in] units - units
+      */
+-    Threshold(sdbusplus::bus_t& bus, const char* path) :
+-        WarningObject(bus, path), bus(bus), objPath(std::string(path))
++    Threshold(sdbusplus::bus_t& bus, const char* path, Unit units) :
++        WarningObject(bus, path), bus(bus), objPath(std::string(path)),
++        units(units)
+     {}
+ 
+     auto high()
+@@ -177,6 +182,7 @@ struct Threshold<CriticalObject> : public CriticalObject, public Hysteresis
+     /** @brief sdbusplus bus client connection. */
+     sdbusplus::bus_t& bus;
+     std::string objPath;
++    Unit units;
+ 
+     /** @brief Virtual sensor path/interface in entityManagerDbus.
+      * This 3 value is used to set thresholds
+@@ -190,9 +196,11 @@ struct Threshold<CriticalObject> : public CriticalObject, public Hysteresis
+     /** @brief Constructor to put object onto bus at a dbus path.
+      *  @param[in] bus - Bus to attach to.
+      *  @param[in] path - Path to attach at.
++     *  @param[in] units - units
+      */
+-    Threshold(sdbusplus::bus_t& bus, const char* path) :
+-        CriticalObject(bus, path), bus(bus), objPath(std::string(path))
++    Threshold(sdbusplus::bus_t& bus, const char* path, Unit units) :
++        CriticalObject(bus, path), bus(bus), objPath(std::string(path)),
++        units(units)
+     {}
+ 
+     auto high()
+@@ -294,6 +302,20 @@ struct Threshold<SoftShutdownObject> :
+ {
+     static constexpr auto name = "SoftShutdown";
+     using SoftShutdownObject::SoftShutdownObject;
++    /** @brief sdbusplus bus client connection. */
++    sdbusplus::bus_t& bus;
++    std::string objPath;
++    Unit units;
++
++    /** @brief Constructor to put object onto bus at a dbus path.
++     *  @param[in] bus - Bus to attach to.
++     *  @param[in] path - Path to attach at.
++     *  @param[in] units - units
++     */
++    Threshold(sdbusplus::bus_t& bus, const char* path, Unit units) :
++        SoftShutdownObject(bus, path), bus(bus), objPath(std::string(path)),
++        units(units)
++    {}
+ 
+     auto high()
+     {
+@@ -347,8 +369,23 @@ struct Threshold<HardShutdownObject> :
+     public Hysteresis
+ {
+     static constexpr auto name = "HardShutdown";
++    /** @brief sdbusplus bus client connection. */
++    sdbusplus::bus_t& bus;
++    std::string objPath;
++    Unit units;
++
+     using HardShutdownObject::HardShutdownObject;
+ 
++    /** @brief Constructor to put object onto bus at a dbus path.
++     *  @param[in] bus - Bus to attach to.
++     *  @param[in] path - Path to attach at.
++     *  @param[in] units - units
++     */
++    Threshold(sdbusplus::bus_t& bus, const char* path, Unit units) :
++        HardShutdownObject(bus, path), bus(bus), objPath(std::string(path)),
++        units(units)
++    {}
++
+     auto high()
+     {
+         return hardShutdownHigh();
+@@ -401,10 +438,25 @@ struct Threshold<PerformanceLossObject> :
+     public Hysteresis
+ {
+     static constexpr auto name = "PerformanceLoss";
++    /** @brief sdbusplus bus client connection. */
++    sdbusplus::bus_t& bus;
++    std::string objPath;
++    Unit units;
++
+     using PerformanceLossObject::PerformanceLossObject;
+     double performanceLossHighHysteresis;
+     double performanceLossLowHysteresis;
+ 
++    /** @brief Constructor to put object onto bus at a dbus path.
++     *  @param[in] bus - Bus to attach to.
++     *  @param[in] path - Path to attach at.
++     *  @param[in] units - units
++     */
++    Threshold(sdbusplus::bus_t& bus, const char* path, Unit units) :
++        PerformanceLossObject(bus, path), bus(bus), objPath(std::string(path)),
++        units(units)
++    {}
++
+     auto high()
+     {
+         return performanceLossHigh();
+diff --git a/virtualSensor.cpp b/virtualSensor.cpp
+index d7be691..0bbc453 100644
+--- a/virtualSensor.cpp
++++ b/virtualSensor.cpp
+@@ -19,6 +19,19 @@ FuncMaxIgnoreNaN<double> VirtualSensor::funcMaxIgnoreNaN;
+ FuncSumIgnoreNaN<double> VirtualSensor::funcSumIgnoreNaN;
+ FuncIfNan<double> VirtualSensor::funcIfNan;
+ 
++std::map<std::string, ValueIface::Unit> unitMap = {
++    {"temperature", ValueIface::Unit::DegreesC},
++    {"fan_tach", ValueIface::Unit::RPMS},
++    {"fan_pwm", ValueIface::Unit::Percent},
++    {"voltage", ValueIface::Unit::Volts},
++    {"altitude", ValueIface::Unit::Meters},
++    {"current", ValueIface::Unit::Amperes},
++    {"power", ValueIface::Unit::Watts},
++    {"energy", ValueIface::Unit::Joules},
++    {"utilization", ValueIface::Unit::Percent},
++    {"airflow", ValueIface::Unit::CFM},
++    {"pressure", ValueIface::Unit::Pascals}};
++
+ void printParams(const VirtualSensor::ParamMap& paramMap)
+ {
+     for (const auto& p : paramMap)
+@@ -220,14 +233,17 @@ void VirtualSensor::parseConfigInterface(const PropertyMap& propertyMap,
+ }
+ 
+ void VirtualSensor::initVirtualSensor(const Json& sensorConfig,
+-                                      const std::string& objPath)
++                                      const std::string& objPath,
++                                      const std::string& type)
+ {
+     static const Json empty{};
+ 
++    units = unitMap.at(type);
++
+     /* Get threshold values if defined in config */
+     auto threshold = sensorConfig.value("Threshold", empty);
+ 
+-    createThresholds(threshold, objPath);
++    createThresholds(threshold, objPath, units);
+ 
+     /* Get MaxValue, MinValue setting if defined in config */
+     auto confDesc = sensorConfig.value("Desc", empty);
+@@ -315,7 +331,6 @@ void VirtualSensor::initVirtualSensor(const Json& sensorConfig,
+                 if (!sensorType.empty() && !name.empty())
+                 {
+                     auto path = sensorDbusPath + sensorType + "/" + name;
+-
+                     auto paramPtr =
+                         std::make_unique<SensorParam>(bus, path, *this);
+                     std::string paramName = j["ParamName"];
+@@ -379,6 +394,8 @@ void VirtualSensor::initVirtualSensor(
+     const std::string vsThresholdsIntf =
+         calculationIface + vsThresholdsIfaceSuffix;
+ 
++    units = unitMap.at(sensorType);
++
+     for (const auto& [interface, propertyMap] : interfaceMap)
+     {
+         /* Each threshold is on it's own interface with a number as a suffix
+@@ -393,7 +410,7 @@ void VirtualSensor::initVirtualSensor(
+         }
+     }
+ 
+-    createThresholds(thresholds, objPath);
++    createThresholds(thresholds, objPath, units);
+     symbols.add_constants();
+     symbols.add_package(vecopsPackage);
+     expression.register_symbol_table(symbols);
+@@ -476,8 +493,8 @@ void VirtualSensor::updateVirtualSensor()
+     checkThresholds(val, hardShutdownIface);
+ }
+ 
+-void VirtualSensor::createThresholds(const Json& threshold,
+-                                     const std::string& objPath)
++void VirtualSensor::createThresholds(
++    const Json& threshold, const std::string& objPath, ValueIface::Unit units)
+ {
+     if (threshold.empty())
+     {
+@@ -487,8 +504,8 @@ void VirtualSensor::createThresholds(const Json& threshold,
+     // at least one of their values is present.
+     if (threshold.contains("CriticalHigh") || threshold.contains("CriticalLow"))
+     {
+-        criticalIface =
+-            std::make_unique<Threshold<CriticalObject>>(bus, objPath.c_str());
++        criticalIface = std::make_unique<Threshold<CriticalObject>>(
++            bus, objPath.c_str(), units);
+ 
+         if (threshold.contains("CriticalHigh"))
+         {
+@@ -521,8 +538,8 @@ void VirtualSensor::createThresholds(const Json& threshold,
+ 
+     if (threshold.contains("WarningHigh") || threshold.contains("WarningLow"))
+     {
+-        warningIface =
+-            std::make_unique<Threshold<WarningObject>>(bus, objPath.c_str());
++        warningIface = std::make_unique<Threshold<WarningObject>>(
++            bus, objPath.c_str(), units);
+ 
+         if (threshold.contains("WarningHigh"))
+         {
+@@ -557,7 +574,7 @@ void VirtualSensor::createThresholds(const Json& threshold,
+         threshold.contains("HardShutdownLow"))
+     {
+         hardShutdownIface = std::make_unique<Threshold<HardShutdownObject>>(
+-            bus, objPath.c_str());
++            bus, objPath.c_str(), units);
+ 
+         hardShutdownIface->hardShutdownHigh(threshold.value(
+             "HardShutdownHigh", std::numeric_limits<double>::quiet_NaN()));
+@@ -573,7 +590,7 @@ void VirtualSensor::createThresholds(const Json& threshold,
+         threshold.contains("SoftShutdownLow"))
+     {
+         softShutdownIface = std::make_unique<Threshold<SoftShutdownObject>>(
+-            bus, objPath.c_str());
++            bus, objPath.c_str(), units);
+ 
+         softShutdownIface->softShutdownHigh(threshold.value(
+             "SoftShutdownHigh", std::numeric_limits<double>::quiet_NaN()));
+@@ -589,7 +606,7 @@ void VirtualSensor::createThresholds(const Json& threshold,
+         threshold.contains("PerformanceLossLow"))
+     {
+         perfLossIface = std::make_unique<Threshold<PerformanceLossObject>>(
+-            bus, objPath.c_str());
++            bus, objPath.c_str(), units);
+ 
+         perfLossIface->performanceLossHigh(threshold.value(
+             "PerformanceLossHigh", std::numeric_limits<double>::quiet_NaN()));
+@@ -685,19 +702,6 @@ Json VirtualSensors::parseConfigFile()
+     return data;
+ }
+ 
+-std::map<std::string, ValueIface::Unit> unitMap = {
+-    {"temperature", ValueIface::Unit::DegreesC},
+-    {"fan_tach", ValueIface::Unit::RPMS},
+-    {"fan_pwm", ValueIface::Unit::Percent},
+-    {"voltage", ValueIface::Unit::Volts},
+-    {"altitude", ValueIface::Unit::Meters},
+-    {"current", ValueIface::Unit::Amperes},
+-    {"power", ValueIface::Unit::Watts},
+-    {"energy", ValueIface::Unit::Joules},
+-    {"utilization", ValueIface::Unit::Percent},
+-    {"airflow", ValueIface::Unit::CFM},
+-    {"pressure", ValueIface::Unit::Pascals}};
+-
+ const std::string getSensorTypeFromUnit(const std::string& unit)
+ {
+     std::string unitPrefix = "xyz.openbmc_project.Sensor.Value.Unit.";
+@@ -890,7 +894,7 @@ void VirtualSensors::createVirtualSensors()
+                     auto objPath = sensorDbusPath + sensorType + "/" + name;
+ 
+                     auto virtualSensorPtr = std::make_unique<VirtualSensor>(
+-                        bus, objPath.c_str(), j, name);
++                        bus, objPath.c_str(), j, name, sensorType);
+ 
+                     info("Added a new virtual sensor: {NAME}", "NAME", name);
+                     virtualSensorPtr->updateVirtualSensor();
+diff --git a/virtualSensor.hpp b/virtualSensor.hpp
+index aed1b3e..d93d04b 100644
+--- a/virtualSensor.hpp
++++ b/virtualSensor.hpp
+@@ -93,12 +93,16 @@ class VirtualSensor : public ValueObject
+      * @param[in] bus          - Handle to system dbus
+      * @param[in] objPath      - The Dbus path of sensor
+      * @param[in] sensorConfig - Json object for sensor config
++     * @param[in] name         - Sensor name
++     * @param[in] type         - sensor type/unit
+      */
+     VirtualSensor(sdbusplus::bus_t& bus, const char* objPath,
+-                  const Json& sensorConfig, const std::string& name) :
+-        ValueObject(bus, objPath, action::defer_emit), bus(bus), name(name)
++                  const Json& sensorConfig, const std::string& name,
++                  const std::string& type) :
++        ValueObject(bus, objPath, action::defer_emit), bus(bus), name(name),
++        objPath(objPath)
+     {
+-        initVirtualSensor(sensorConfig, objPath);
++        initVirtualSensor(sensorConfig, objPath, type);
+     }
+ 
+     /** @brief Constructs VirtualSensor
+@@ -117,7 +121,7 @@ class VirtualSensor : public ValueObject
+                   const std::string& type, const std::string& calculationType,
+                   const std::string& entityPath) :
+         ValueObject(bus, objPath, action::defer_emit), bus(bus), name(name),
+-        entityPath(entityPath)
++        objPath(objPath), entityPath(entityPath)
+     {
+         initVirtualSensor(ifacemap, objPath, type, calculationType);
+     }
+@@ -141,6 +145,10 @@ class VirtualSensor : public ValueObject
+     sdbusplus::bus_t& bus;
+     /** @brief name of sensor */
+     std::string name;
++    /** @brief unit of sensor */
++    ValueIface::Unit units;
++    /** @brief object path of this sensor */
++    std::string objPath;
+ 
+     /** @brief Virtual sensor path in entityManager Dbus.
+      * This value is used to set thresholds/create association
+@@ -180,8 +188,8 @@ class VirtualSensor : public ValueObject
+     /** @brief Read config from json object and initialize sensor data
+      * for each virtual sensor
+      */
+-    void initVirtualSensor(const Json& sensorConfig,
+-                           const std::string& objPath);
++    void initVirtualSensor(const Json& sensorConfig, const std::string& objPath,
++                           const std::string& type);
+ 
+     /** @brief Read config from interface map and initialize sensor data
+      * for each virtual sensor
+@@ -195,7 +203,8 @@ class VirtualSensor : public ValueObject
+     double calculateValue(const std::string& sensortype,
+                           const VirtualSensor::ParamMap& paramMap);
+     /** @brief create threshold objects from json config */
+-    void createThresholds(const Json& threshold, const std::string& objPath);
++    void createThresholds(const Json& threshold, const std::string& objPath,
++                          ValueIface::Unit units);
+     /** @brief parse config from entity manager **/
+     void parseConfigInterface(const PropertyMap& propertyMap,
+                               const std::string& sensorType,
+-- 
+2.47.1
+

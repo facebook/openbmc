@@ -19,26 +19,25 @@ if not gtest_dep.found() or not gmock_dep.found()
     endif
 endif
 
+tests = {
+    'daemon_tests': ['daemon_tests.cpp'],
+    'dbus_server_tests': ['dbus_server_tests.cpp'],
+    'eventlog_parser_tests': ['eventlog_parser_tests.cpp'],
+    'http_client_tests': ['helper.cpp', 'http_client_tests.cpp'],
+    'log_service_handler_tests': ['log_service_handler_tests.cpp'],
+    'persist_map_tests': ['persist_map_tests.cpp'],
+    'redfish_binding_common_tests': ['redfish_binding_common_tests.cpp'],
+    'redfish_binding_tests': ['redfish_binding_tests.cpp'],
+    'sensor_tests': ['sensor_tests.cpp'],
+    'source_tests': ['source_tests.cpp'],
+}
 
-daemon_test_files = [
-    'daemon_tests.cpp',
-    'dbus_server_tests.cpp',
-    'eventlog_parser_tests.cpp',
-    'http_client_tests.cpp',
-    'log_service_handler_tests.cpp',
-    'persist_map_tests.cpp',
-    'redfish_binding_common_tests.cpp',
-    'redfish_binding_tests.cpp',
-    'sensor_tests.cpp',
-    'source_tests.cpp',
-]
-
-foreach t : daemon_test_files
+foreach name, sources : tests
     test(
-        t.underscorify(),
+        name,
         executable(
-            'test-' + t.underscorify(),
-            t,
+            name,
+            sources,
             dependencies: [gtest_dep, gmock_dep, base_deps],
             cpp_args: cpp_args,
             link_args: link_args,

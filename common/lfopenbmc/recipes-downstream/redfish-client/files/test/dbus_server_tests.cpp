@@ -1,6 +1,5 @@
 #include "daemon.hpp"
 #include "helper.hpp"
-#include "http_client.hpp"
 
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
 
@@ -96,7 +95,6 @@ TEST(DBusServerTests, SimpleDaemonRun)
 {
     installSignalHandlers();
     sdbusplus::async::context ctx;
-    redfish_client_daemon::HttpClient::globalInit();
     std::unordered_map<std::string, std::string> responseHeaders;
     SimpleTestHttpServer server(generateResponse, responseHeaders);
     auto config = std::format(kTestConfigFormat, server.getPort());
@@ -139,5 +137,4 @@ TEST(DBusServerTests, SimpleDaemonRun)
         }(ctx));
     daemonThread->join();
     daemonThread = nullptr; // Make sure it's destroyed before the context.
-    redfish_client_daemon::HttpClient::globalDeinit();
 }

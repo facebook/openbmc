@@ -24,7 +24,6 @@ tests = {
     'daemon_tests': ['daemon_tests.cpp'],
     'dbus_server_tests': ['dbus_server_tests.cpp', 'helper.cpp'],
     'eventlog_parser_tests': ['eventlog_parser_tests.cpp'],
-    'http_client_tests': ['helper.cpp', 'http_client_tests.cpp'],
     'log_service_handler_tests': ['log_service_handler_tests.cpp'],
     'persist_map_tests': ['persist_map_tests.cpp'],
     'redfish_binding_common_tests': ['redfish_binding_common_tests.cpp'],

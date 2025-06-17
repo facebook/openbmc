@@ -1,5 +1,4 @@
 #include "daemon.hpp"
-#include "http_client.hpp"
 
 #include <stdio.h>
 
@@ -33,15 +32,12 @@ int main(int argc, const char** argv)
 
     auto daemonConfig = DaemonConfig::fromJson(jsonContents.c_str());
 
-    HttpClient::globalInit();
     // Create a new scope to ensure the context is destroyed cleanly before
     // http client is destroyed.
     {
         sdbusplus::async::context ctx;
         runDbusServerTillInterrupted(daemonConfig, ctx, persistDir);
     }
-
-    HttpClient::globalDeinit();
 
     info("daemon-main clean exit\n");
     return 0;

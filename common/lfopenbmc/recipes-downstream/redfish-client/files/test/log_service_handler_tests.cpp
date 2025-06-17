@@ -209,7 +209,9 @@ static constexpr const char* kEventlogEntryCollectionJson = R"(
 
 TEST_F(LogServiceHandlerTest, BasicTest)
 {
-    auto logServiceHandler = std::make_shared<LogServiceHandler>("fake.url");
+    sdbusplus::async::context ctx;
+    auto logServiceHandler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url");
 
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
@@ -251,7 +253,9 @@ TEST_F(LogServiceHandlerTest, BasicTest)
 
 TEST_F(LogServiceHandlerTest, InMemoryPersistTest)
 {
-    auto logServiceHandler = std::make_shared<LogServiceHandler>("fake.url");
+    sdbusplus::async::context ctx;
+    auto logServiceHandler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url");
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
             kEventlogEntryCollectionJson);
@@ -262,7 +266,7 @@ TEST_F(LogServiceHandlerTest, InMemoryPersistTest)
     EXPECT_EQ(2, logManager.logs->size());
     // mimic a restart
     auto restartedLogServiceHandler =
-        std::make_shared<LogServiceHandler>("fake.url");
+        std::make_shared<LogServiceHandler>(ctx, "fake.url");
     restartedLogServiceHandler->commit(logEntryCollection);
     EXPECT_EQ(4, logManager.logs->size());
     restartedLogServiceHandler->commit(logEntryCollection);
@@ -271,10 +275,11 @@ TEST_F(LogServiceHandlerTest, InMemoryPersistTest)
 
 TEST_F(LogServiceHandlerTest, OnFilePersistTest)
 {
+    sdbusplus::async::context ctx;
     std::string tmpdir = std::tmpnam(nullptr);
     std::filesystem::create_directory(tmpdir);
     auto logServiceHandler = std::make_shared<LogServiceHandler>(
-        "https://fake.url/redfish/v1", tmpdir);
+        ctx, "https://fake.url/redfish/v1", tmpdir);
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
             kEventlogEntryCollectionJson);
@@ -285,7 +290,7 @@ TEST_F(LogServiceHandlerTest, OnFilePersistTest)
     EXPECT_EQ(2, logManager.logs->size());
     // mimic a restart
     auto restartedLogServiceHandler = std::make_shared<LogServiceHandler>(
-        "https://fake.url/redfish/v1", tmpdir);
+        ctx, "https://fake.url/redfish/v1", tmpdir);
     restartedLogServiceHandler->commit(logEntryCollection);
     EXPECT_EQ(2, logManager.logs->size());
     restartedLogServiceHandler->commit(logEntryCollection);

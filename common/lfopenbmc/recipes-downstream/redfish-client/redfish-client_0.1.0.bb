@@ -37,8 +37,6 @@ SRC_URI = " \
     file://daemon.cpp \
     file://daemon.hpp \
     file://daemon_main.cpp \
-    file://http_client.cpp \
-    file://http_client.hpp \
     file://log_service_handler.cpp \
     file://log_service_handler.hpp \
     file://persist_map.cpp \

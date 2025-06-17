@@ -1,5 +1,6 @@
 #include "daemon.hpp"
 
+#include "async_http_client.hpp"
 #include "log_service_handler.hpp"
 
 #include <boost/stacktrace.hpp>
@@ -357,7 +358,7 @@ class DbusServer
                 info("persistDir = {PERSIST_DIR}", "PERSIST_DIR", persistDir);
 
                 logServiceHandlers.push_back(
-                    std::make_shared<LogServiceHandler>(url, persistDir));
+                    std::make_shared<LogServiceHandler>(ctx, url, persistDir));
             }
         }
 
@@ -384,11 +385,28 @@ class DbusServer
 
             try
             {
-                auto response = httpClient->get(sensorConfigValue.url.c_str());
-                if (response.responseCode != 200)
+                const auto& url = sensorConfigValue.url;
+                auto it = httpHandles.find(url);
+                if (it == httpHandles.end())
+                {
+                    it = httpHandles
+                             .insert(
+                                 {url, std::make_unique<AsyncHttpHandle>(url)})
+                             .first;
+                }
+                auto& httpHandle = it->second;
+                // TODO: Switch to co_await when this function is switched to
+                // coroutine
+                auto maybeResponse = stdexec::sync_wait(httpHandle->get(ctx));
+                if (!maybeResponse.has_value())
+                {
+                    throw std::runtime_error("Http request stopped");
+                }
+                const auto& response = std::get<0>(maybeResponse.value());
+                if (response.code != 200)
                 {
                     throw std::runtime_error(std::format(
-                        "Http response error code: {}", response.responseCode));
+                        "Http response error code: {}", response.code));
                 }
                 sensorJson = response.body;
             }
@@ -482,7 +500,8 @@ class DbusServer
     DaemonConfig daemonConfig;
     std::thread sensorThread;
     std::string persistDir;
-    std::unique_ptr<HttpClient> httpClient = std::make_unique<HttpClient>(1);
+    std::unordered_map<std::string, std::unique_ptr<AsyncHttpHandle>>
+        httpHandles;
 };
 
 void installSignalHandlers()

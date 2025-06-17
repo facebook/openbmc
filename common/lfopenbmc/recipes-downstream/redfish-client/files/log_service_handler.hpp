@@ -1,11 +1,12 @@
 #pragma once
 
-#include "http_client.hpp"
+#include "async_http_client.hpp"
 #include "persist_map.hpp"
 #include "redfish-binding/LogEntryCollection_LogEntryCollection.hpp"
 #include "redfish-binding/LogEntry_EventSeverity.hpp"
 #include "redfish-binding/LogEntry_LogEntry.hpp"
 
+#include <sdbusplus/async/context.hpp>
 #include <sdbusplus/message.hpp>
 
 #include <memory>
@@ -14,14 +15,17 @@
 namespace redfish_client_daemon
 {
 
-class LogServiceHandler
+class LogServiceHandler : private sdbusplus::async::context_ref
 {
   public:
     LogServiceHandler() = delete;
 
-    explicit LogServiceHandler(const std::string& url,
+    explicit LogServiceHandler(sdbusplus::async::context& ctx,
+                               const std::string& url,
                                const std::string& persistDir = "") :
-        url(url), committedEntries(getPersistPath(url, persistDir)) {};
+        sdbusplus::async::context_ref(ctx), url(url),
+        committedEntries(getPersistPath(url, persistDir)),
+        httpHandle(std::make_unique<AsyncHttpHandle>(url)) {};
 
     void runOnce();
 
@@ -31,7 +35,7 @@ class LogServiceHandler
   private:
     std::string url;
     PersistMap committedEntries;
-    std::unique_ptr<HttpClient> httpClient = std::make_unique<HttpClient>(1);
+    std::unique_ptr<AsyncHttpHandle> httpHandle;
 
     void commit(redfish_binding::LogEntry::LogEntry& entry);
 

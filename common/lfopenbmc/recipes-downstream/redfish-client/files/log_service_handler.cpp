@@ -120,11 +120,17 @@ void LogServiceHandler::runOnce()
 
     try
     {
-        auto response = httpClient->get(url.c_str());
-        if (response.responseCode != 200)
+        // TODO: Switch to co_await when this function is switched to coroutine
+        auto maybeResponse = stdexec::sync_wait(httpHandle->get(ctx));
+        if (!maybeResponse.has_value())
         {
-            throw std::runtime_error(std::format("Http response error code: {}",
-                                                 response.responseCode));
+            throw std::runtime_error("Http request stopped");
+        }
+        const auto& response = std::get<0>(maybeResponse.value());
+        if (response.code != 200)
+        {
+            throw std::runtime_error(
+                std::format("Http response error code: {}", response.code));
         }
         logEntryJson = response.body;
     }
@@ -145,7 +151,7 @@ void LogServiceHandler::runOnce()
     catch (const std::exception& exn)
     {
         info("Exception while parsing url response {EXC}", "EXC", exn.what());
-        debug("Exception while querying url response: {URL}", "URL",
+        debug("Exception while parsing url response: {URL}", "URL",
               url.c_str());
     };
 }

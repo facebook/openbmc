@@ -32,6 +32,8 @@ SRC_URI = " \
     file://configurations \
     file://redfish-binding \
     file://test \
+    file://async_http_client.cpp \
+    file://async_http_client.hpp \
     file://daemon.cpp \
     file://daemon.hpp \
     file://daemon_main.cpp \

@@ -58,6 +58,7 @@ cpp_args = ['-DBOOST_STACKTRACE_USE_ADDR2LINE', '-ggdb', '-fPIC']
 link_args = ['-rdynamic']
 
 srcs = [
+    'async_http_client.cpp',
     'daemon.cpp',
     'http_client.cpp',
     'persist_map.cpp',

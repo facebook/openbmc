@@ -1,0 +1,23 @@
+#!/bin/bash
+
+jq --raw-output '
+  def optional: if . then . else "N/A" end;
+  [["entry", "timestamp", "severity", "resolved", "redfish.id", "redfish.args", "message"]] +
+  (to_entries | map([
+    .key,
+    .value.timestamp,
+    (.value.severity | sub("xyz.openbmc_project.Logging.Entry.Level."; "")),
+    .value.resolved,
+    (.value.redfish.id | optional),
+    (.value.redfish.args | optional),
+    .value.message
+  ])) | transpose |
+  map(
+    map(tostring) | (map(length) | max) as $max |
+    map(. + (" " * ($max - length)))
+  ) | transpose |
+  .[0],
+  (.[0] | map(length * "-")),
+  .[1:][] |
+  @tsv
+'

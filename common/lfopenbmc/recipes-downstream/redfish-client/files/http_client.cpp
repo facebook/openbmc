@@ -72,13 +72,12 @@ HttpResponse HttpClient::get(const char* url)
     return rv;
 }
 
-static size_t writeData(void* buffer, size_t size, size_t nmemb, void* userp)
+static size_t writeData(char* buffer, size_t size, size_t nmemb, void* userp)
 {
     THROW_UNLESS(1 == size);
 
     HttpResponse* response = (HttpResponse*)userp;
-    const char* input = (const char*)buffer;
-    response->body.insert(response->body.end(), input, input + nmemb);
+    response->body.append(buffer, nmemb);
     return nmemb;
 }
 

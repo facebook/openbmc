@@ -22,7 +22,7 @@ endif
 tests = {
     'async_http_client_tests': ['helper.cpp', 'async_http_client_tests.cpp'],
     'daemon_tests': ['daemon_tests.cpp'],
-    'dbus_server_tests': ['dbus_server_tests.cpp'],
+    'dbus_server_tests': ['dbus_server_tests.cpp', 'helper.cpp'],
     'eventlog_parser_tests': ['eventlog_parser_tests.cpp'],
     'http_client_tests': ['helper.cpp', 'http_client_tests.cpp'],
     'log_service_handler_tests': ['log_service_handler_tests.cpp'],
@@ -30,7 +30,6 @@ tests = {
     'redfish_binding_common_tests': ['redfish_binding_common_tests.cpp'],
     'redfish_binding_tests': ['redfish_binding_tests.cpp'],
     'sensor_tests': ['sensor_tests.cpp'],
-    'source_tests': ['source_tests.cpp'],
 }
 
 foreach name, sources : tests

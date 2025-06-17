@@ -63,7 +63,6 @@ srcs = [
     'http_client.cpp',
     'persist_map.cpp',
     'sensor.cpp',
-    'source.cpp',
     'log_service_handler.cpp',
 ]
 

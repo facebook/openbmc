@@ -114,13 +114,19 @@ class UnhandledException : public sdbusplus::exception::generated_event_base
 };
 } // anonymous namespace
 
-void LogServiceHandler::runOnce(std::shared_ptr<IRedfishSource> redfishSource)
+void LogServiceHandler::runOnce()
 {
     std::string logEntryJson;
 
     try
     {
-        logEntryJson = redfishSource->getBody(url);
+        auto response = httpClient->get(url.c_str());
+        if (response.responseCode != 200)
+        {
+            throw std::runtime_error(std::format("Http response error code: {}",
+                                                 response.responseCode));
+        }
+        logEntryJson = response.body;
     }
     catch (const std::exception& exn)
     {

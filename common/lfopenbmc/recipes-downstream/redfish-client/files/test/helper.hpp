@@ -17,6 +17,12 @@ class SimpleTestHttpServer
         std::string version;
         std::unordered_map<std::string, std::string> headers;
     };
+    using ResponseGenerator =
+        std::function<std::string(const ReceivedHttpRequest&)>;
+
+    SimpleTestHttpServer(
+        ResponseGenerator responseGenerator,
+        const std::unordered_map<std::string, std::string>& responseHeaders);
 
     SimpleTestHttpServer(
         const std::string& responseStr,
@@ -46,7 +52,7 @@ class SimpleTestHttpServer
 
     void startAccept();
 
-    std::string responseStr;
+    ResponseGenerator responseGenerator;
     std::unordered_map<std::string, std::string> responseHeaders;
     std::vector<ReceivedHttpRequest> requests;
     std::mutex requestsMutex;

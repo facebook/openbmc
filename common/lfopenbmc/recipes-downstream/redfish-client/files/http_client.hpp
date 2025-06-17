@@ -18,7 +18,7 @@ struct HttpResponse
 {
     std::unordered_map<std::string, std::string> headers;
     long responseCode;
-    std::vector<char> body;
+    std::string body;
 };
 
 class HttpClient

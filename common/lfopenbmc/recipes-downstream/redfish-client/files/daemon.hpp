@@ -1,7 +1,6 @@
 #pragma once
 
 #include "sensor.hpp"
-#include "source.hpp"
 
 #include <sdbusplus/async.hpp>
 #include <xyz/openbmc_project/Sensor/Value/aserver.hpp>
@@ -68,9 +67,9 @@ void installSignalHandlers();
 
 // The dbus server runs till process receives SIGINT or SIGTERM and does a clean
 // shutdown after that.
-void runDbusServerTillInterrupted(
-    const DaemonConfig& daemonConfig, sdbusplus::async::context& ctx,
-    std::shared_ptr<IRedfishSource> redfishSource, std::string persistDir = "");
+void runDbusServerTillInterrupted(const DaemonConfig& daemonConfig,
+                                  sdbusplus::async::context& ctx,
+                                  std::string persistDir = "");
 
 // The following helpers are exposed for unit testing purposes.
 // This is the interface to use for sensor values before emitting the data.

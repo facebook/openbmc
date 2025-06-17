@@ -6,9 +6,9 @@ namespace redfish_client_daemon
 using ReceivedHttpRequest = SimpleTestHttpServer::ReceivedHttpRequest;
 
 SimpleTestHttpServer::SimpleTestHttpServer(
-    const std::string& responseStr,
+    ResponseGenerator responseGenerator,
     const std::unordered_map<std::string, std::string>& responseHeaders) :
-    responseStr(responseStr), responseHeaders(responseHeaders),
+    responseGenerator(responseGenerator), responseHeaders(responseHeaders),
     // Start on port 0 to let the OS pick an available port.
     acceptor(ioContext,
              boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0)),
@@ -20,6 +20,14 @@ SimpleTestHttpServer::SimpleTestHttpServer(
         serverThreadStopped = true;
     });
 }
+
+SimpleTestHttpServer::SimpleTestHttpServer(
+    const std::string& responseStr,
+    const std::unordered_map<std::string, std::string>& responseHeaders) :
+    SimpleTestHttpServer(
+        [responseStr](const ReceivedHttpRequest&) { return responseStr; },
+        responseHeaders)
+{}
 
 SimpleTestHttpServer::~SimpleTestHttpServer()
 {
@@ -102,7 +110,7 @@ void SimpleTestHttpServer::handleAccept(
 
     // Response body.
     response += "\r\n";
-    response += responseStr;
+    response += responseGenerator(request);
     boost::asio::write(*socket, boost::asio::buffer(response));
     updateReceivedRequest(request);
     startAccept();

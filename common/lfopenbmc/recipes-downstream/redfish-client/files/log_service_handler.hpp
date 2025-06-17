@@ -1,10 +1,10 @@
 #pragma once
 
+#include "http_client.hpp"
 #include "persist_map.hpp"
 #include "redfish-binding/LogEntryCollection_LogEntryCollection.hpp"
 #include "redfish-binding/LogEntry_EventSeverity.hpp"
 #include "redfish-binding/LogEntry_LogEntry.hpp"
-#include "source.hpp"
 
 #include <sdbusplus/message.hpp>
 
@@ -23,7 +23,7 @@ class LogServiceHandler
                                const std::string& persistDir = "") :
         url(url), committedEntries(getPersistPath(url, persistDir)) {};
 
-    void runOnce(std::shared_ptr<IRedfishSource> redfishSource);
+    void runOnce();
 
     void commit(
         redfish_binding::LogEntryCollection::LogEntryCollection& collection);
@@ -31,6 +31,7 @@ class LogServiceHandler
   private:
     std::string url;
     PersistMap committedEntries;
+    std::unique_ptr<HttpClient> httpClient = std::make_unique<HttpClient>(1);
 
     void commit(redfish_binding::LogEntry::LogEntry& entry);
 

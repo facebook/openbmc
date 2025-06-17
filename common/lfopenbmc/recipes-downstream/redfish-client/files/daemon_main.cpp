@@ -34,18 +34,11 @@ int main(int argc, const char** argv)
     auto daemonConfig = DaemonConfig::fromJson(jsonContents.c_str());
 
     HttpClient::globalInit();
-
-    // TODO: Increase the pool size after parallelization. Currently it is
-    // serial.
-    auto httpClient = std::make_unique<HttpClient>(1);
-    auto redfishSource = createHttpClientRedfishSource(std::move(httpClient));
-
     // Create a new scope to ensure the context is destroyed cleanly before
     // http client is destroyed.
     {
         sdbusplus::async::context ctx;
-        runDbusServerTillInterrupted(daemonConfig, ctx, redfishSource,
-                                     persistDir);
+        runDbusServerTillInterrupted(daemonConfig, ctx, persistDir);
     }
 
     HttpClient::globalDeinit();

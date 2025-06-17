@@ -325,10 +325,8 @@ class DbusServer
 
     explicit DbusServer(sdbusplus::async::context& ctx,
                         const DaemonConfig& daemonConfig,
-                        std::shared_ptr<IRedfishSource> redfishSource,
                         std::string persistDir) :
-        ctx(ctx), daemonConfig(daemonConfig), redfishSource(redfishSource),
-        persistDir(persistDir)
+        ctx(ctx), daemonConfig(daemonConfig), persistDir(persistDir)
     {
         info("Creating Dbus Server with sensor config size {SIZE}", "SIZE",
              daemonConfig.sensorConfigs.size());
@@ -386,7 +384,13 @@ class DbusServer
 
             try
             {
-                sensorJson = redfishSource->getBody(sensorConfigValue.url);
+                auto response = httpClient->get(sensorConfigValue.url.c_str());
+                if (response.responseCode != 200)
+                {
+                    throw std::runtime_error(std::format(
+                        "Http response error code: {}", response.responseCode));
+                }
+                sensorJson = response.body;
             }
             catch (const std::exception& exn)
             {
@@ -428,7 +432,7 @@ class DbusServer
             {
                 for (auto& logServiceHandler : logServiceHandlers)
                 {
-                    logServiceHandler->runOnce(redfishSource);
+                    logServiceHandler->runOnce();
                 }
 
                 co_await sdbusplus::async::sleep_for(
@@ -476,9 +480,9 @@ class DbusServer
     std::unordered_map<std::string, std::shared_ptr<SensorDbusObject>> metrics;
     std::vector<std::shared_ptr<LogServiceHandler>> logServiceHandlers;
     DaemonConfig daemonConfig;
-    std::shared_ptr<IRedfishSource> redfishSource;
     std::thread sensorThread;
     std::string persistDir;
+    std::unique_ptr<HttpClient> httpClient = std::make_unique<HttpClient>(1);
 };
 
 void installSignalHandlers()
@@ -493,9 +497,9 @@ void installSignalHandlers()
     std::signal(SIGABRT, printStackTraceOnCrashHandler);
 }
 
-void runDbusServerTillInterrupted(
-    const DaemonConfig& daemonConfig, sdbusplus::async::context& ctx,
-    std::shared_ptr<IRedfishSource> redfishSource, std::string persistDir)
+void runDbusServerTillInterrupted(const DaemonConfig& daemonConfig,
+                                  sdbusplus::async::context& ctx,
+                                  std::string persistDir)
 {
     sdbusplus::server::manager_t manager{ctx, getSensorRootPath()};
 
@@ -507,7 +511,7 @@ void runDbusServerTillInterrupted(
         co_return;
     }(ctx, daemonConfig));
 
-    DbusServer server(ctx, daemonConfig, redfishSource, persistDir);
+    DbusServer server(ctx, daemonConfig, persistDir);
 
     ctx.run();
 }

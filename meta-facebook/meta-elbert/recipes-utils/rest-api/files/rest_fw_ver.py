@@ -135,6 +135,12 @@ def _parse_all_dpm_ver(data) -> Dict:
 async def get_all_fw_ver() -> Dict:
     rs = {}
 
+    cmd = "/usr/local/bin/bios_ver.sh"
+    proc = await create_subprocess_exec(cmd, stdout=PIPE)
+    data, _ = await proc.communicate()
+    await proc.wait()
+    rs.update({"BIOS": data.decode(errors="ignore")})
+
     cmd = "/usr/local/bin/fpga_ver.sh"
     proc = await create_subprocess_exec(cmd, stdout=PIPE)
     data, _ = await proc.communicate()

@@ -27,6 +27,10 @@ WRITE_PROTECT_REG=0x10
 
 LAYOUT_FILE="/etc/elbert_flash.layout"
 
+TMP_BIOS_FILE="/tmp/.tmp_bios_image"
+BIOS_VER_CACHE="/mnt/data/.bios_ver.txt"
+BIOS_REGEX="CONFIG_LOCALVERSION"
+
 wedge_iso_buf_enable() {
     return 0
 }

@@ -11,9 +11,14 @@ trap cleanup INT TERM QUIT EXIT
 SCM_SPI="spi1.0"
 SCM_SPIDEV="spidev1.0"
 SCM_MTD=""
+REMOVE_BIOS_VER=0
 
 cleanup() {
     disconnect_spi
+    if [ "$REMOVE_BIOS_VER" -eq 1 ]; then
+        echo "Removing bios cache file ..."
+        rm -f "$BIOS_VER_CACHE"
+    fi
 }
 
 bind_spi_nor() {
@@ -133,6 +138,7 @@ get_partition_opts() {
 if [ "$1" = "erase" ]; then
     popts=$(get_partition_opts "$2" "$3" "total")
     echo "Erasing flash content ..."
+    REMOVE_BIOS_VER=1
     run_flashrom "$popts -E" || exit 1
 elif [ "$1" = "read" ]; then
     popts=$(get_partition_opts "$3" "$4" "total")
@@ -143,6 +149,7 @@ elif [ "$1" = "verify" ]; then
     retry_command 5 run_flashrom "$popts -v $2" || exit 1
 elif [ "$1" = "write" ]; then
     popts=$(get_partition_opts "$3" "$4" "total")
+    REMOVE_BIOS_VER=1
     retry_command 5 write_flash "$popts" "$2" || exit 1
 else
     usage

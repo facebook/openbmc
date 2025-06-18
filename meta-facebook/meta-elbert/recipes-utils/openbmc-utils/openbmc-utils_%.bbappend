@@ -24,6 +24,7 @@ LOCAL_URI += "\
     file://aconf_util.sh \
     file://board-utils.sh \
     file://bios_util.sh \
+    file://bios_ver.sh \
     file://bmc_aboot.conf \
     file://cpu_aboot.conf \
     file://dump_pim_serials.sh \
@@ -67,6 +68,7 @@ OPENBMC_UTILS_FILES += " \
     aconf_util.sh \
     board-utils.sh \
     bios_util.sh \
+    bios_ver.sh \
     fpga_util.sh \
     fpga_ver.sh \
     dump_pim_serials.sh \

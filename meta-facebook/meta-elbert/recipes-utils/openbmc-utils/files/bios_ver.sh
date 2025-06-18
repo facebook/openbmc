@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+#!/bin/bash
 #
-# Copyright 2019-present Facebook. All Rights Reserved.
+# Copyright 2025-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,18 +17,24 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
 
-from common.fw_test_base_upgrade_utils_presence import BaseFwUpgradeUtilsPresenceTest
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
 
+trap cleanup INT TERM QUIT EXIT
 
-class FwUpgradeUtilsPresenceTest(BaseFwUpgradeUtilsPresenceTest, unittest.TestCase):
-    def set_fw_upgrade_utils(self):
-        self.expected_fw_upgrade_utils = [
-            "bios_util.sh",
-            "bios_ver.sh",
-            "fpga_util.sh",
-            "fpga_ver.sh",
-            "spi_pim_ver.sh",
-            "jam",
-        ]
+cleanup() {
+    rm -f "$TMP_BIOS_FILE"
+}
+
+if [ ! -f "$BIOS_VER_CACHE" ]; then
+    # force read it
+    bios_util.sh read "$TMP_BIOS_FILE" > /dev/null 2>&1
+    ver=$(grep -a "$BIOS_REGEX" "$TMP_BIOS_FILE" | awk -F'[/=/"]' '{print $3}')
+    if [ -z "$ver" ]; then
+        ver="Unknown"
+    fi
+    echo "$ver" > "$BIOS_VER_CACHE"
+fi
+
+cat "$BIOS_VER_CACHE"

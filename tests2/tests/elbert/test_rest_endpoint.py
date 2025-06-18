@@ -67,6 +67,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     def set_endpoint_firmware_info_all_attributes(self):
         self.endpoint_firmware_info_all_attrb = [
+            "BIOS",
             "FAN",
             "PIM2",
             "PIM3",

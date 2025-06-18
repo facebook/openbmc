@@ -298,7 +298,7 @@ void PackageParserV1::parse(
     throw std::exception();
   }
 
-  auto calcChecksum = crc32(pkgHdr.data(), offset);
+  auto calcChecksum = pldm_edac_crc32(pkgHdr.data(), offset);
   auto checksum = static_cast<PackageHeaderChecksum>(le32toh(
       pkgHdr[offset] | (pkgHdr[offset + 1] << 8) | (pkgHdr[offset + 2] << 16) |
       (pkgHdr[offset + 3] << 24)));

@@ -275,7 +275,7 @@ index 0000000..4195cea
 +                return PLDM_ERROR;
 +            }
 +
-+            uint32_t checksum = crc32(buffer, sb.st_size);
++            uint32_t checksum = pldm_edac_crc32(buffer, sb.st_size);
 +            free(buffer);
 +
 +            data->info.attr.size = sb.st_size;

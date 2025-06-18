@@ -17,7 +17,6 @@ SRC_URI:append = " \
     file://0203-Add-required-MemberId-to-the-EventRecord-definition.patch \
     file://0204-Map-DBus-event-to-RF-MessageID-and-parse-args.patch \
     file://0205-Show-mapped-and-raw-Dbus-messages-in-Log-services.patch \
-    file://0206-Fix-JSON-fields-not-being-extracted-in-SensorsAsyncR.patch \
 "
 
 # Dependency variables for PDI-generated Redfish Message Registries

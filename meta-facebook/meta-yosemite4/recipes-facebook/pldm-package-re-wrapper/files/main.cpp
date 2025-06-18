@@ -130,8 +130,8 @@ void outputBICPackageWithSlotNumberInHeader(uint8_t slotNumber,
     packageHeader.at(processedDataIdx + COMPONENT_IMAGE_COUNT_LENGTH +
                      COMPONENT_LOCATION_OFFSET) += newDescriptorData.size();
 
-    auto checkSum = crc32(packageHeader.data(),
-                          pkgHeaderInfo->package_header_size - 4);
+    auto checkSum = pldm_edac_crc32(packageHeader.data(),
+                                    pkgHeaderInfo->package_header_size - 4);
     packageHeader.at(pkgHeaderInfo->package_header_size - 4) = checkSum;
     packageHeader.at(pkgHeaderInfo->package_header_size - 3) = checkSum >> 8;
     packageHeader.at(pkgHeaderInfo->package_header_size - 2) = checkSum >> 16;
@@ -227,8 +227,8 @@ void outputCXLPackageWithSlotNumberInHeader(uint8_t slotNumber,
     packageHeader.at(processedDataIdx + COMPONENT_IMAGE_COUNT_LENGTH +
                      COMPONENT_LOCATION_OFFSET) += newDescriptorData.size();
 
-    auto checkSum = crc32(packageHeader.data(),
-                          pkgHeaderInfo->package_header_size - 4);
+    auto checkSum = pldm_edac_crc32(packageHeader.data(),
+                                    pkgHeaderInfo->package_header_size - 4);
     packageHeader.at(pkgHeaderInfo->package_header_size - 4) = checkSum;
     packageHeader.at(pkgHeaderInfo->package_header_size - 3) = checkSum >> 8;
     packageHeader.at(pkgHeaderInfo->package_header_size - 2) = checkSum >> 16;

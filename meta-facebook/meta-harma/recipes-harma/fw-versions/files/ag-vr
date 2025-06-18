@@ -7,7 +7,7 @@ retry_delay_sec=1
 pwr_asci_good_gpio_chip="gpiochip2"
 pwr_asci_good_line=92
 
-component_names=(
+declare -A component_names=(
     ["1"]="Minerva_Aegis_vr_osfp_p3v3"
     ["2"]="Minerva_Aegis_vr_cpu_p0v85_pvdd"
     ["3"]="Minerva_Aegis_vr_cpu_p0v75_pvdd_ch_n"
@@ -21,13 +21,12 @@ component_names=(
     ["11"]="Minerva_Aegis_vr_cpu_p0v8_vdda_pcie"
 )
 
-
 gpio_value=$(gpioget "$pwr_asci_good_gpio_chip" "$pwr_asci_good_line" 2>/dev/null)
 gpioget_status=$?
 
 if [ $gpioget_status -eq 0 ]; then
     echo "power-asci-good value: $gpio_value"
-    
+
     if [ -n "$gpio_value" ] && [ "$gpio_value" -eq 0 ] 2>/dev/null; then
         echo "Failed to set version: the power-asci-good is not high"
         exit 1
@@ -37,10 +36,12 @@ else
 fi
 
 version=""
+declare -A found_ids
+
 for ((i=1; i<=max_retry_count; i++)); do
-    output=$(pldmtool fw_update GetFwParams -m "$eid" | 
-                jq --raw-output '.ComponentParameterEntries[] | 
-                (.ComponentIdentifier | tostring) + "#" + 
+    output=$(pldmtool fw_update GetFwParams -m "$eid" |
+                jq --raw-output '.ComponentParameterEntries[] |
+                (.ComponentIdentifier | tostring) + "#" +
                 .ActiveComponentVersionString')
 
     if [ -z "$output" ]; then
@@ -54,6 +55,7 @@ for ((i=1; i<=max_retry_count; i++)); do
             fi
 
             echo "$component_name version: $version"
+            found_ids[$compId]=1
 
             busctl set-property \
                 xyz.openbmc_project.Settings \
@@ -61,7 +63,21 @@ for ((i=1; i<=max_retry_count; i++)); do
                 xyz.openbmc_project.Software.Version \
                 Version "s" "$version"
         done <<< "$output"
-        
+
+        for compId in "${!component_names[@]}"; do
+            if [ -z "${found_ids[$compId]}" ]; then
+                component_name=${component_names[$compId]}
+                echo "$component_name version: NA"
+
+                busctl set-property \
+                    xyz.openbmc_project.Settings \
+                    "/xyz/openbmc_project/software/chassis/$component_name" \
+                    xyz.openbmc_project.Software.Version \
+                    Version "s" "NA"
+            fi
+        done
+
         break
     fi
 done
+

@@ -110,7 +110,7 @@ index 0000000..bf7d1d1
 +    ],
 +    "Name": "NVIDIA GB300 IO Board $bus - 29 % 11",
 +    "Probe": [
-+        "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '2x ConnectX-8 GB300 Mezz', 'BOARD_MANUFACTURER': '(Nvidia|NVIDIA)'})"
++        "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'ConnectX-8', 'BOARD_MANUFACTURER': '(Nvidia|NVIDIA)'})"
 +    ],
 +    "Type": "Board",
 +    "xyz.openbmc_project.Inventory.Decorator.Asset": {

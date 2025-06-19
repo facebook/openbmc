@@ -1,42 +1,45 @@
-From 5a02b2b34587ef62b7493ff8cd2d726a407dc98c Mon Sep 17 00:00:00 2001
 From: Leo Wang <leo.jt.wang@fii-foxconn.com>
-Date: Wed, 28 May 2025 21:01:06 +0800
-Subject: [PATCH 1002/1003] ARM dts aspeed clemente add various device nodes
- and properties
+Date: Thu, 19 Jun 2025 16:41:57 +0800
+Subject: [PATCH v2 3/3] clemente: dts: Add NCSI properties, fan TACH
+ channels, and I2C device nodes
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <20250619-add-support-for-meta-clemente-bmc-v2-3-872bbe9a27c3@fii-foxconn.com>
+References: <20250619-add-support-for-meta-clemente-bmc-v2-0-872bbe9a27c3@fii-foxconn.com>
+In-Reply-To: <20250619-add-support-for-meta-clemente-bmc-v2-0-872bbe9a27c3@fii-foxconn.com>
+To: Rob Herring <robh@kernel.org>, Krzysztof Kozlowski <krzk+dt@kernel.org>, 
+ Conor Dooley <conor+dt@kernel.org>, Joel Stanley <joel@jms.id.au>, 
+ Andrew Jeffery <andrew@codeconstruct.com.au>, Kees Cook <kees@kernel.org>, 
+ Tony Luck <tony.luck@intel.com>, 
+ "Guilherme G. Piccoli" <gpiccoli@igalia.com>, 
+ Geert Uytterhoeven <geert+renesas@glider.be>, 
+ Magnus Damm <magnus.damm@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org, 
+ linux-aspeed@lists.ozlabs.org, linux-kernel@vger.kernel.org, 
+ linux-hardening@vger.kernel.org, linux-renesas-soc@vger.kernel.org, 
+ bruce.jy.hung@fii-foxconn.com, george.kw.lee@fii-foxconn.com, 
+ Leo Wang <leo.jt.wang@fii-foxconn.com>
+X-Mailer: b4 0.14.2
+X-Developer-Signature: v=1; a=ed25519-sha256; t=1750322514; l=3853;
+ i=leo.jt.wang@fii-foxconn.com; s=20250618; h=from:subject:message-id;
+ bh=tqTBR1CLFgjgd0mTNDKR3fqWrlwOvn404T9CeS8KF6c=;
+ b=RZoZin+ATMgeAvay1b0GSeM1BRL25g1nDmSrMXG8M/zcxvd6LNK7y7BwBVpbDWv9a8SyfHKnO
+ X/vF1SelObXChoK+1Amul01KlnewGERIXFHcDb8WBwipb30gAqLvjcZ
+X-Developer-Key: i=leo.jt.wang@fii-foxconn.com; a=ed25519;
+ pk=x+DKjAtU/ZbbMkkAVdwfZzKpvNUVgiV1sLJbidVIwSQ=
 
-This commit updates the device tree for the Facebook Clemente BMC
-to include configurations for new and existing hardware components.
-
-The key changes include:
-- Corrected the compatible string for UART3 to 'aspeed,ast2600-uart'
-  to ensure proper driver binding.
-- Enhanced MAC2 and MAC3 nodes with NCSI-specific properties
-  'ncsi-ctrl,start-redo-probe' and 'ncsi-package', enabling
-  advanced NCSI functionalities for network controllers.
-- Configured fan controller nodes (MAX31790) with channel-specific
-  TACH sensor types and addressing properties, improving fan speed
-  monitoring capabilities.
-- Updated I2C7 bus settings with a faster frequency and multi-master
-  mode, and introduced an IPMB device node for USB Debug Connector,
-  facilitating BMC communication.
-- Added alert GPIO and timeout settings for the SSIF BMC device,
-  improving the robustness of BMC communication.
-- Integrated several TI INA230 power sensors on I2C12 mux channel 7,
-  including their shunt resistor values, to enable comprehensive
-  power consumption monitoring across the board.
-
-These changes ensure the BMC's device tree accurately reflects the
-hardware configuration and enables necessary driver support for
-these components.
-
-Signed-off-by: Leo Wang <leo.jt.wang@fii-foxconn.com>
-Upstream-Status: Unknown
+This commit updates Clemente DTS with the following enhancements:
+- Set compatible = "aspeed,ast2600-uart" for uart3.
+- Add ncsi-ctrl,start-redo-probe and ncsi-package properties for mac2 and mac3.
+- Define TACH sensor channels (channel@5 and channel@6) for all max31790 fan controller nodes.
+- Enable I2C bus nodes and populate them with additional devices
 ---
- .../aspeed/aspeed-bmc-facebook-clemente.dts   | 58 +++++++++++++++++++
- 1 file changed, 58 insertions(+)
+ .../dts/aspeed/aspeed-bmc-facebook-clemente.dts    | 64 +++++++++++++++++++++-
+ 1 file changed, 63 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
-index 63b5a13214f1..a702f8641958 100644
+index ab5b37369d19a1e31fe74201fc5dc0011da2722f..b27fd7058aea2405766bd1800efab61ed3264ece 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
 @@ -163,6 +163,7 @@ &uart1 {
@@ -65,38 +68,98 @@ index 63b5a13214f1..a702f8641958 100644
  };
  
  &fmc {
-@@ -505,10 +510,30 @@ i2c1mux0ch2: i2c@2 {
- 			fanctl0: fan-controller@21{
- 				compatible = "maxim,max31790";
- 				reg = <0x21>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				channel@2 {
-+					reg = <2>;
-+					sensor-type = "TACH";
-+				};
-+				channel@5 {
-+					reg = <5>;
-+					sensor-type = "TACH";
-+				};
- 			};
- 			fanctl1: fan-controller@27{
- 				compatible = "maxim,max31790";
- 				reg = <0x27>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				channel@2 {
-+					reg = <2>;
-+					sensor-type = "TACH";
-+				};
-+				channel@5 {
-+					reg = <5>;
-+					sensor-type = "TACH";
-+				};
- 			};
+@@ -526,24 +531,64 @@ &i2c1 {
+ 	fanctl0: fan-controller@20{
+ 		compatible = "maxim,max31790";
+ 		reg = <0x20>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@5 {
++			reg = <5>;
++			sensor-type = "TACH";
++		};
++		channel@6 {
++			reg = <6>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	// Module 0
+ 	fanctl1: fan-controller@23{
+ 		compatible = "maxim,max31790";
+ 		reg = <0x23>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@5 {
++			reg = <5>;
++			sensor-type = "TACH";
++		};
++		channel@6 {
++			reg = <6>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	// Module 1
+ 	fanctl2: fan-controller@2c{
+ 		compatible = "maxim,max31790";
+ 		reg = <0x2c>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@5 {
++			reg = <5>;
++			sensor-type = "TACH";
++		};
++		channel@6 {
++			reg = <6>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	// Module 1
+ 	fanctl3: fan-controller@2f{
+ 		compatible = "maxim,max31790";
+ 		reg = <0x2f>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@5 {
++			reg = <5>;
++			sensor-type = "TACH";
++		};
++		channel@6 {
++			reg = <6>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	// Module 0 Leak Sensor
+@@ -571,8 +616,8 @@ channel@2 {
+ 		channel@3 {
+ 			reg = <3>;
+ 			ti,gain = <2>;
++			};
  		};
- 		i2c1mux0ch3: i2c@3 {
-@@ -663,6 +688,16 @@ eeprom@51 {
+-	};
+ 
+ 	// Module 1 Leak Sensor
+ 	adc@49 {
+@@ -723,6 +768,7 @@ temperature-sensor@4b {
+ 
+ &i2c2 {
+ 	status = "okay";
++
+ 	// Module 0, Expander @0x20
+ 	io_expander0: gpio@20 {
+ 		compatible = "nxp,pca9555";
+@@ -774,6 +820,7 @@ &i2c5 {
+ 
+ &i2c6 {
+ 	status = "okay";
++
+ 	rtc@6f {
+ 		compatible = "nuvoton,nct3018y";
+ 		reg = <0x6f>;
+@@ -789,6 +836,16 @@ io_expander3: gpio@21 {
  
  &i2c7 {
  	status = "okay";
@@ -113,7 +176,27 @@ index 63b5a13214f1..a702f8641958 100644
  };
  
  &i2c8 {
-@@ -721,6 +756,8 @@ &i2c11 {
+@@ -797,6 +854,7 @@ &i2c8 {
+ 
+ &i2c9 {
+ 	status = "okay";
++
+ 	// SCM CPLD IOEXP
+ 	io_expander4: gpio@4f {
+ 		compatible = "nxp,pca9555";
+@@ -826,6 +884,7 @@ eeprom@56 {
+ 
+ &i2c10 {
+ 	status = "okay";
++
+ 	// OCP NIC0 TEMP
+ 	temperature-sensor@1f {
+ 		compatible = "ti,tmp421";
+@@ -841,9 +900,12 @@ eeprom@50 {
+ 
+ &i2c11 {
+ 	status = "okay";
++
  	ssif-bmc@10 {
  		compatible = "ssif-bmc";
  		reg = <0x10>;
@@ -122,34 +205,7 @@ index 63b5a13214f1..a702f8641958 100644
  	};
  };
  
-@@ -779,6 +816,27 @@ i2c12mux0ch7: i2c@7 {
- 			#address-cells = <1>;
- 			#size-cells = <0>;
- 			reg = <7>;
-+
-+			power-sensor@40 {
-+				compatible = "ti,ina230";
-+				reg = <0x40>;
-+				shunt-resistor = <2000>;
-+			};
-+			power-sensor@41 {
-+				compatible = "ti,ina230";
-+				reg = <0x41>;
-+				shunt-resistor = <2000>;
-+			};
-+			power-sensor@44 {
-+				compatible = "ti,ina230";
-+				reg = <0x44>;
-+				shunt-resistor = <2000>;
-+			};
-+			power-sensor@49 {
-+				compatible = "ti,ina230";
-+				reg = <0x49>;
-+				shunt-resistor = <2000>;
-+			};
- 		};
- 	};
- };
+
 -- 
-2.49.0
+2.43.0
 

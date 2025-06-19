@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <syslog.h>
 #include <pthread.h>
+#include <apml.h>
 #include <esmi_cpuid_msr.h>
 #include <esmi_rmi.h>
 #include <openbmc/libgpio.h>
@@ -589,9 +590,9 @@ pal_check_apml_ras_status(uint8_t soc_num, uint8_t *ras_sts) {
 int
 pal_get_cpu_id(uint8_t soc_num) {
   oob_status_t ret;
-  int lock = -1, retry = 2;
+  int lock = -1, retry = 5;
   uint32_t core_id = 0;
-  uint32_t eax = 0, ebx = 0, ecx = 0, edx = 0;
+  uint32_t eax = 1, ebx = 0, ecx = 0, edx = 0;
   char key[MAX_KEY_LEN];
   char cpuid[MAX_VALUE_LEN], value[MAX_VALUE_LEN] = {0};
 
@@ -623,6 +624,42 @@ pal_get_cpu_id(uint8_t soc_num) {
   }
 
   return kv_set(key, cpuid, 0, KV_FPERSIST);
+}
+
+int
+pal_clear_sbrmi_alert_mask(uint8_t soc_num) {
+  oob_status_t ret = OOB_UNKNOWN_ERROR;
+  int lock = -1, retry = 5;
+  uint8_t reg = 0x61;
+
+  if (!is_cpu_socket_occupy(soc_num)) {
+    return -1;
+  }
+
+  for (; retry >= 0; --retry) {
+    lock = apml_channel_lock(soc_num);
+    // SBRMI_CONTROL_REGISTER = 0x1
+    if (esmi_oob_read_byte(soc_num, 0x1, SBRMI, &reg) == OOB_SUCCESS) {
+      if (!(reg & 0x1)) {
+        apml_channel_unlock(lock);
+        return 0;
+      }
+      reg = reg & 0xFE;
+      ret = esmi_oob_write_byte(soc_num, 0x1, SBRMI, reg);
+    }
+    apml_channel_unlock(lock);
+    if (ret == OOB_SUCCESS) {
+      break;
+    }
+    if (retry > 0) {
+      msleep(100);
+    }
+  }
+  if (ret != OOB_SUCCESS) {
+    return -1;
+  }
+
+  return 0;
 }
 
 bool

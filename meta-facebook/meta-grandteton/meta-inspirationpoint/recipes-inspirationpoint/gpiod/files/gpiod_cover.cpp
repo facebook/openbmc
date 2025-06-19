@@ -122,6 +122,8 @@ post_comp_init_handler(gpiopoll_pin_t *desc, gpio_value_t curr) {
   if (curr == GPIO_VALUE_LOW) {
     pal_get_cpu_id(0);
     pal_get_cpu_id(1);
+    pal_clear_sbrmi_alert_mask(0);
+    pal_clear_sbrmi_alert_mask(1);
     pal_check_power_rail(0);
   }
 }

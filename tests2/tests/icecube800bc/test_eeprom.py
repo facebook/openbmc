@@ -31,7 +31,7 @@ class ChassisEepromTest(EepromV5Test, unittest.TestCase):
         self.eeprom_cmd = ["weutil"]
 
     def set_product_name(self):
-        self.product_name = ["ICECUBE800BC"]
+        self.product_name = ["ICECUBE"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["MCB"]

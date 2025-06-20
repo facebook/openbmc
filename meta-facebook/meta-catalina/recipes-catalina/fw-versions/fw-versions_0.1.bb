@@ -40,6 +40,15 @@ FW_TOOLS = "\
     hmc-hgx-pcieswitchconfig-0,platform-sys-init.service,,multi-user.target,0 \
 "
 
+# Append HDD-specific services for clemente, enabling support for two HDDs
+FW_TOOLS:append:clemente = " \
+    hdd-cpld,platform-sys-init.service,,multi-user.target,1 \
+"
+# Remove vr-aux-specific services for clemente, PDB not support
+FW_TOOLS:remove:clemente = " \
+    pdb-vr-aux,platform-sys-init.service,,multi-user.target,0 \
+"
+
 LOCAL_URI = " \
     file://fw-versions@.service \
     ${@ ' '.join([ f"file://" + x.split(',')[0] for x in d.getVar('FW_TOOLS', True).split() ])} \

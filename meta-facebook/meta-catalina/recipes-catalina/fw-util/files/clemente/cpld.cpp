@@ -200,10 +200,13 @@ public:
     static i2c_attr_t pdb_cpld_attr = {14, 0x40, nullptr};
     static CpldComponent pdb_cpld("pdb", "cpld", LCMXO3_2100C, &pdb_cpld_attr);
 
-    // HDD CPLD
-    static i2c_attr_t hdd_cpld_attr = {12, 0x30, nullptr};
-    i2c_attr_t* sys_hdd_cpld_attr = &hdd_cpld_attr;
-    static CpldComponent hdd_cpld("hdd", "cpld", LCMXO2_4000HC, sys_hdd_cpld_attr);
+    // HDD CPLD 0
+    static i2c_attr_t hdd_cpld0_attr = {25, 0x40, nullptr};
+    static CpldComponent hdd_cpld0("hdd0", "cpld", LCMXO2_4000HC, &hdd_cpld0_attr);
+
+    // HDD CPLD 1
+    static i2c_attr_t hdd_cpld1_attr = {37, 0x40, nullptr};
+    static CpldComponent hdd_cpld1("hdd1", "cpld", LCMXO2_4000HC, &hdd_cpld1_attr);
   }
 };
 

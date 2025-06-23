@@ -170,7 +170,9 @@ class RedfishEventHandler(web.Application):
                 isPoison = "Yes" if (temp >> BIT_POISON) & 1 else "No"
                 isScrub = "Yes" if (temp >> BIT_SCRUB) & 1 else "No"
             if 'DecodedData' in jsonACA:
-                severityACA = jsonACA['DecodedData'].get("severity")
+                severityACA = jsonACA['DecodedData'].get("error_severity")
+                if not severityACA:
+                    severityACA = jsonACA['DecodedData'].get("severity", "")
 
                 filteredData = {
                     "error_category": jsonACA['DecodedData'].get("error_category"),

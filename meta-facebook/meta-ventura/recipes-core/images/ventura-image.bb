@@ -10,3 +10,6 @@ IMAGE_INSTALL:append = " fw-versions"
 
 # Ventura will start monitoring AALCs instead of the wedge400
 IMAGE_INSTALL:append = " rackmon"
+
+# Scripts to control connected RPUs
+IMAGE_INSTALL:append = " rpu-controller"

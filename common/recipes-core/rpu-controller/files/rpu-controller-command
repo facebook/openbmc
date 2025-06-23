@@ -1,0 +1,148 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: Unique Dev Address
+# 2: Command
+# 3: Optional override config
+
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <unique_device_address> <command> [override_config]
+      unique_device_address: The address of the modbus device to interact with
+      command: The command to execute on the device: start, stop, restart, clear-sticky-registers
+      override_config: Optional configuration file to override default settings in
+                       /usr/share/rpu-controller/config.json"
+    exit 1
+fi
+
+OVERRIDE_CONFIG_FILE=${3:-/usr/share/rpu-controller/config.json}
+
+set -eux
+
+# unique device address
+UDA="$1"
+
+COMMAND="$2"
+
+CONFIG_FILE="/var/lib/rpu-controller/default-config.json"
+
+if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
+    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
+fi
+
+echo "Running $COMMAND command on RPU at unique device address $UDA"
+
+function clear_sticky_registers {
+    # Clear Sticky_IT_RPU_Stop_Pump_0
+    rackmoncli write "$UDA" 6561 0
+
+    # Clear Sticky_IT_RPU_Stop_Pump_1
+    rackmoncli write "$UDA" 6562 0
+
+    # Clear Sticky_IT_RPU_Stop_Pump_2
+    rackmoncli write "$UDA" 6563 0
+
+    # Clear Sticky_IT_RPU_Stop_Pump_3
+    rackmoncli write "$UDA" 6564 0
+
+    # Clear Sticky_RPU_Internal_Leakage_Abnormal
+    rackmoncli write "$UDA" 6565 0
+
+    # Clear Sticky_RPU_External_Leakage_Abnormal
+    rackmoncli write "$UDA" 6566 0
+
+    # Clear Sticky_RPU_Opt_External_Leakage1_Abnormal
+    rackmoncli write "$UDA" 6567 0
+
+    # Clear Sticky_RPU_Opt_External_Leakage2_Abnormal
+    rackmoncli write "$UDA" 6568 0
+
+    # Clear Sticky_HEX_Rack_Pan_Leakage
+    rackmoncli write "$UDA" 6569 0
+
+    # Clear Sticky_HEX_Rack_Floor_Leakage
+    rackmoncli write "$UDA" 6570 0
+
+    # Clear Sticky_HEX_Rack_Pan_Leakage_Relay
+    rackmoncli write "$UDA" 6571 0
+
+    # Clear Sticky_HEX_Rack_Floor_Leakage_Relay
+    rackmoncli write "$UDA" 6572 0
+}
+
+
+function start_rpu {
+    echo "Using $CONFIG_FILE config file"
+    registerName=$(jq -er .manufacturerDiscriminator "$CONFIG_FILE")
+
+    registerValue=$(rackmoncli data --json --latest --dev-addr "$UDA" --reg-name "$registerName" |
+        jq -er ".[0].regList[] | select(.name == \"$registerName\") | .history.[0].value.strValue")
+
+    manufacturer=$(jq \
+        -er \
+        --arg value "$registerValue" \
+        '.manufacturers | to_entries[] | select(.value.registerValues | any(. == $value)) | .key' \
+        "$CONFIG_FILE")
+
+    if [ -z "$manufacturer" ]; then
+        echo "Could not identify manufacturer. Exiting!"
+        exit 1
+    fi
+
+    pumpDuty=$(jq -er ".manufacturers.${manufacturer}.pumpDutyPercentage" "$CONFIG_FILE")
+    targetCoolantOutletTemp=$(jq -er ".manufacturers.${manufacturer}.targetCoolantOutletTempTimesTen" "$CONFIG_FILE")
+
+    if [ "$manufacturer" == "delta" ]; then
+        # Set RPU_Control to enable pump 1 and 2
+        rackmoncli write "$UDA" 37904  128
+
+        # Set pump duty
+        rackmoncli write "$UDA" 37887  "$pumpDuty"
+
+        # Set Auto_Tune_Coolant_Outlet_Temperature_Target_Set (scale is .1)
+        rackmoncli write "$UDA" 37889  "$targetCoolantOutletTemp"
+
+        # Set RPU_Control to start pump
+        rackmoncli write "$UDA" 37904  32768
+    elif [ "$manufacturer" == "quanta" ]; then
+        # First 2 commands are for setting semi auto mode
+
+        # Set Manual_Control_RPU_Fan_OnOff to 0
+        rackmoncli write "$UDA" 42112  0
+
+        # Set RPU_Control for semi auto mode
+        rackmoncli write "$UDA" 37904  9
+
+        # Set Manual_Control_Pump_Duty_Set
+        rackmoncli write "$UDA" 37891  "$pumpDuty"
+
+        # Set Auto_Tune_Coolant_Outlet_Temperature_Target_Set (scale is .1)
+        rackmoncli write "$UDA" 37889  "$targetCoolantOutletTemp"
+
+        # Set manual mode on pump
+        rackmoncli write "$UDA" 42113  1
+
+        # Set manual mode on fans
+        rackmoncli write "$UDA" 42115  1
+    else
+        echo "Error: unknown start sequence for $manufacturer RPU!"
+        exit 1
+    fi
+}
+
+if [ "$COMMAND" == "restart" ]; then
+    # Set RPU_Control flag to restart
+    rackmoncli write "$UDA" 37904 64
+elif [ "$COMMAND" == "stop" ]; then
+    # Set RPU_Control flag to stop
+    rackmoncli write "$UDA" 37904 32
+elif [ "$COMMAND" == "clear-sticky-registers" ]; then
+    clear_sticky_registers
+elif [ "$COMMAND" == "start" ]; then
+    # clear_sticky_registers #TODO add this when tooling is updated
+    start_rpu
+else
+    echo "Error! '$COMMAND' is unknown!"
+    exit 1
+fi
+
+echo "$COMMAND command on RPU at unique device address $UDA COMPLETE!"

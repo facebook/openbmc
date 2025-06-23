@@ -1,0 +1,15 @@
+{
+    "manufacturerDiscriminator": "RPU_MFR_Model",
+    "manufacturers": {
+        "delta": {
+            "registerValues": ["", "RDF040DSS5193E0"],
+            "pumpDutyPercentage": 50,
+            "targetCoolantOutletTempTimesTen": 350
+        },
+        "quanta": {
+            "registerValues": ["TBD"],
+            "pumpDutyPercentage": 50,
+            "targetCoolantOutletTempTimesTen": 350
+        }
+    }
+}

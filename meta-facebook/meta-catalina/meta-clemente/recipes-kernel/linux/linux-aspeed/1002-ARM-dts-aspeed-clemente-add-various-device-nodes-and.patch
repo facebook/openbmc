@@ -1,33 +1,7 @@
-From: Leo Wang <leo.jt.wang@fii-foxconn.com>
-Date: Thu, 19 Jun 2025 16:41:57 +0800
-Subject: [PATCH v2 3/3] clemente: dts: Add NCSI properties, fan TACH
- channels, and I2C device nodes
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <20250619-add-support-for-meta-clemente-bmc-v2-3-872bbe9a27c3@fii-foxconn.com>
-References: <20250619-add-support-for-meta-clemente-bmc-v2-0-872bbe9a27c3@fii-foxconn.com>
-In-Reply-To: <20250619-add-support-for-meta-clemente-bmc-v2-0-872bbe9a27c3@fii-foxconn.com>
-To: Rob Herring <robh@kernel.org>, Krzysztof Kozlowski <krzk+dt@kernel.org>, 
- Conor Dooley <conor+dt@kernel.org>, Joel Stanley <joel@jms.id.au>, 
- Andrew Jeffery <andrew@codeconstruct.com.au>, Kees Cook <kees@kernel.org>, 
- Tony Luck <tony.luck@intel.com>, 
- "Guilherme G. Piccoli" <gpiccoli@igalia.com>, 
- Geert Uytterhoeven <geert+renesas@glider.be>, 
- Magnus Damm <magnus.damm@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org, 
- linux-aspeed@lists.ozlabs.org, linux-kernel@vger.kernel.org, 
- linux-hardening@vger.kernel.org, linux-renesas-soc@vger.kernel.org, 
- bruce.jy.hung@fii-foxconn.com, george.kw.lee@fii-foxconn.com, 
- Leo Wang <leo.jt.wang@fii-foxconn.com>
-X-Mailer: b4 0.14.2
-X-Developer-Signature: v=1; a=ed25519-sha256; t=1750322514; l=3853;
- i=leo.jt.wang@fii-foxconn.com; s=20250618; h=from:subject:message-id;
- bh=tqTBR1CLFgjgd0mTNDKR3fqWrlwOvn404T9CeS8KF6c=;
- b=RZoZin+ATMgeAvay1b0GSeM1BRL25g1nDmSrMXG8M/zcxvd6LNK7y7BwBVpbDWv9a8SyfHKnO
- X/vF1SelObXChoK+1Amul01KlnewGERIXFHcDb8WBwipb30gAqLvjcZ
-X-Developer-Key: i=leo.jt.wang@fii-foxconn.com; a=ed25519;
- pk=x+DKjAtU/ZbbMkkAVdwfZzKpvNUVgiV1sLJbidVIwSQ=
+From 66228be90a30653f0740942339f99494d571c817 Mon Sep 17 00:00:00 2001
+From: Bruce Hung <bruce.jy.hung@fii-foxconn.com>
+Date: Mon, 23 Jun 2025 14:59:33 +0800
+Subject: [PATCH] clemente: dts: Add NCSI properties, fan TACH
 
 This commit updates Clemente DTS with the following enhancements:
 - Set compatible = "aspeed,ast2600-uart" for uart3.
@@ -35,40 +9,14 @@ This commit updates Clemente DTS with the following enhancements:
 - Define TACH sensor channels (channel@5 and channel@6) for all max31790 fan controller nodes.
 - Enable I2C bus nodes and populate them with additional devices
 ---
- .../dts/aspeed/aspeed-bmc-facebook-clemente.dts    | 64 +++++++++++++++++++++-
- 1 file changed, 63 insertions(+), 1 deletion(-)
+ .../aspeed/aspeed-bmc-facebook-clemente.dts   | 56 +++++++++++++++++++
+ 1 file changed, 56 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
-index ab5b37369d19a1e31fe74201fc5dc0011da2722f..b27fd7058aea2405766bd1800efab61ed3264ece 100644
+index 10b49f0261bf..b849a9f12dbe 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
-@@ -163,6 +163,7 @@ &uart1 {
- };
- 
- &uart3 {
-+	compatible = "aspeed,ast2600-uart";
- 	status = "okay";
- };
- 
-@@ -179,6 +180,8 @@ &mac2 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_ncsi3_default>;
- 	use-ncsi;
-+	ncsi-ctrl,start-redo-probe;
-+	ncsi-package = <1>;
- };
- 
- &mac3 {
-@@ -186,6 +189,8 @@ &mac3 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_ncsi4_default>;
- 	use-ncsi;
-+	ncsi-ctrl,start-redo-probe;
-+	ncsi-package = <2>;
- };
- 
- &fmc {
-@@ -526,24 +531,64 @@ &i2c1 {
+@@ -600,24 +600,64 @@ power-monitor@14 {
  	fanctl0: fan-controller@20{
  		compatible = "maxim,max31790";
  		reg = <0x20>;
@@ -133,40 +81,13 @@ index ab5b37369d19a1e31fe74201fc5dc0011da2722f..b27fd7058aea2405766bd1800efab61e
  	};
  
  	// Module 0 Leak Sensor
-@@ -571,8 +616,8 @@ channel@2 {
- 		channel@3 {
- 			reg = <3>;
- 			ti,gain = <2>;
-+			};
- 		};
--	};
- 
- 	// Module 1 Leak Sensor
- 	adc@49 {
-@@ -723,6 +768,7 @@ temperature-sensor@4b {
- 
- &i2c2 {
- 	status = "okay";
-+
- 	// Module 0, Expander @0x20
- 	io_expander0: gpio@20 {
- 		compatible = "nxp,pca9555";
-@@ -774,6 +820,7 @@ &i2c5 {
- 
- &i2c6 {
- 	status = "okay";
-+
- 	rtc@6f {
- 		compatible = "nuvoton,nct3018y";
- 		reg = <0x6f>;
-@@ -789,6 +836,16 @@ io_expander3: gpio@21 {
+@@ -851,6 +891,15 @@ rtc@6f {
  
  &i2c7 {
  	status = "okay";
 +	bus-frequency = <100000>;
 +	multi-master;
 +	aspeed,hw-timeout-ms = <1000>;
-+
 +	//USB Debug Connector
 +	ipmb@10 {
 +		compatible = "ipmb-dev";
@@ -176,27 +97,7 @@ index ab5b37369d19a1e31fe74201fc5dc0011da2722f..b27fd7058aea2405766bd1800efab61e
  };
  
  &i2c8 {
-@@ -797,6 +854,7 @@ &i2c8 {
- 
- &i2c9 {
- 	status = "okay";
-+
- 	// SCM CPLD IOEXP
- 	io_expander4: gpio@4f {
- 		compatible = "nxp,pca9555";
-@@ -826,6 +884,7 @@ eeprom@56 {
- 
- &i2c10 {
- 	status = "okay";
-+
- 	// OCP NIC0 TEMP
- 	temperature-sensor@1f {
- 		compatible = "ti,tmp421";
-@@ -841,9 +900,12 @@ eeprom@50 {
- 
- &i2c11 {
- 	status = "okay";
-+
+@@ -906,6 +955,8 @@ &i2c11 {
  	ssif-bmc@10 {
  		compatible = "ssif-bmc";
  		reg = <0x10>;
@@ -205,7 +106,32 @@ index ab5b37369d19a1e31fe74201fc5dc0011da2722f..b27fd7058aea2405766bd1800efab61e
  	};
  };
  
-
+@@ -1201,6 +1252,8 @@ &mac2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ncsi3_default>;
+ 	use-ncsi;
++	ncsi-ctrl,start-redo-probe;
++	ncsi-package = <1>;
+ };
+ 
+ &mac3 {
+@@ -1208,6 +1261,8 @@ &mac3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ncsi4_default>;
+ 	use-ncsi;
++	ncsi-ctrl,start-redo-probe;
++	ncsi-package = <2>;
+ };
+ 
+ &pinctrl {
+@@ -1231,6 +1286,7 @@ &uart1 {
+ };
+ 
+ &uart3 {
++	compatible = "aspeed,ast2600-uart";
+ 	status = "okay";
+ };
+ 
 -- 
 2.43.0
 

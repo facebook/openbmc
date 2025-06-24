@@ -27,7 +27,7 @@ class LogServiceHandler : private sdbusplus::async::context_ref
         committedEntries(getPersistPath(url, persistDir)),
         httpHandle(std::make_unique<AsyncHttpHandle>(url)) {};
 
-    void runOnce();
+    auto runOnce() -> sdbusplus::async::task<>;
 
     void commit(
         redfish_binding::LogEntryCollection::LogEntryCollection& collection);

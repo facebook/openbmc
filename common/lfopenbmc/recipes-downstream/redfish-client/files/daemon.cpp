@@ -450,7 +450,7 @@ class DbusServer
             {
                 for (auto& logServiceHandler : logServiceHandlers)
                 {
-                    logServiceHandler->runOnce();
+                    co_await logServiceHandler->runOnce();
                 }
 
                 co_await sdbusplus::async::sleep_for(

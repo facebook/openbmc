@@ -114,19 +114,13 @@ class UnhandledException : public sdbusplus::exception::generated_event_base
 };
 } // anonymous namespace
 
-void LogServiceHandler::runOnce()
+auto LogServiceHandler::runOnce() -> sdbusplus::async::task<>
 {
     std::string logEntryJson;
 
     try
     {
-        // TODO: Switch to co_await when this function is switched to coroutine
-        auto maybeResponse = stdexec::sync_wait(httpHandle->get(ctx));
-        if (!maybeResponse.has_value())
-        {
-            throw std::runtime_error("Http request stopped");
-        }
-        const auto& response = std::get<0>(maybeResponse.value());
+        auto response = co_await httpHandle->get(ctx);
         if (response.code != 200)
         {
             throw std::runtime_error(
@@ -138,7 +132,7 @@ void LogServiceHandler::runOnce()
     {
         info("Exception while querying url {EXC}", "EXC", exn.what());
         debug("Exception while querying url: {URL}", "URL", url.c_str());
-        return;
+        co_return;
     };
 
     try

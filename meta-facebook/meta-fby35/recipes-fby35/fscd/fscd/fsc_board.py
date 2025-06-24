@@ -130,7 +130,7 @@ elif "VF" in system_conf:
     for i in [1, 2, 3, 4]:
         lfby35_hndl.fby35_common_get_1ou_m2_prsnt(int(i))
 elif "EMR" in system_conf:
-    one_fan_fail_tuple = (fan_mode["trans_mode"], 80)
+    one_fan_fail_tuple = (fan_mode["trans_mode"], 90)
     for i in [1, 2, 3, 4]:
         lfby35_hndl.fby35_common_get_1ou_m2_prsnt(int(i))
 elif "JI" in system_conf:

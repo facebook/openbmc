@@ -1,20 +1,23 @@
-From 34b2d16242236198db2012d6a2b836fb7602cb9f Mon Sep 17 00:00:00 2001
+From 084f6993dc7a54d035a2ce17e98726bb189cb5b0 Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
-Date: Fri, 6 Jun 2025 16:50:55 +0800
-Subject: [PATCH v1 2/2] ARM: dts: aspeed: santabarbara: Add Meta Santabarbara
+Date: Wed, 25 Jun 2025 14:18:01 +0800
+Subject: [PATCH v2 2/2] ARM: dts: aspeed: santabarbara: Add Meta Santabarbara
  BMC
 
-Add linux device tree entry related to the Meta(Facebook) computer-node
-system use an AT2600 BMC.
-This node is named "Santabarbara".
+Add linux device tree entry related to the Meta (Facebook) compute node
+system using an AST2600 BMC.
+
+This node is named "Santabarbara". It is a compute node with accelerator
+module. The system monitors voltage and temperature for the CPU, switch,
+and NIC components on the motherboard and switch board.
 
 Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
 ---
-LORE: https://lore.kernel.org/all/20250606102802.1821638-3-fredchen.openbmc@gmail.com/
+LORE: https://lore.kernel.org/all/20250625073847.4054971-3-fredchen.openbmc@gmail.com/
 ---
  arch/arm/boot/dts/aspeed/Makefile             |   1 +
- .../aspeed-bmc-facebook-santabarbara.dts      | 978 ++++++++++++++++++
- 2 files changed, 979 insertions(+)
+ .../aspeed-bmc-facebook-santabarbara.dts      | 982 ++++++++++++++++++
+ 2 files changed, 983 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
@@ -31,10 +34,10 @@ index 2e5f4833a073..6a8fb3addf0f 100644
  	aspeed-bmc-facebook-wedge100.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 new file mode 100644
-index 000000000000..139b986bbfbf
+index 000000000000..ee93a971c500
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-@@ -0,0 +1,978 @@
+@@ -0,0 +1,982 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +// Copyright 2025 Facebook Inc.
 +
@@ -82,11 +85,6 @@ index 000000000000..139b986bbfbf
 +		stdout-path = "serial4:57600n8";
 +	};
 +
-+	memory@80000000 {
-+		device_type = "memory";
-+		reg = <0x80000000 0x80000000>;
-+	};
-+
 +	iio-hwmon {
 +		compatible = "iio-hwmon";
 +		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
@@ -116,23 +114,9 @@ index 000000000000..139b986bbfbf
 +		};
 +	};
 +
-+	spi_gpio: spi {
-+		status = "okay";
-+		compatible = "spi-gpio";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		sck-gpios = <&gpio0 ASPEED_GPIO(Z, 3) GPIO_ACTIVE_HIGH>;
-+		mosi-gpios = <&gpio0 ASPEED_GPIO(Z, 4) GPIO_ACTIVE_HIGH>;
-+		miso-gpios = <&gpio0 ASPEED_GPIO(Z, 5) GPIO_ACTIVE_HIGH>;
-+		num-chipselects = <1>;
-+		cs-gpios = <&gpio0 ASPEED_GPIO(Z, 0) GPIO_ACTIVE_LOW>;
-+
-+		tpm@0 {
-+			compatible = "infineon,slb9670", "tcg,tpm_tis-spi";
-+			spi-max-frequency = <33000000>;
-+			reg = <0>;
-+		};
++	memory@80000000 {
++		device_type = "memory";
++		reg = <0x80000000 0x80000000>;
 +	};
 +
 +	p3v3_bmc_aux: regulator-p3v3-bmc-aux {
@@ -142,46 +126,50 @@ index 000000000000..139b986bbfbf
 +		regulator-max-microvolt = <3300000>;
 +		regulator-always-on;
 +	};
++
++	spi_gpio: spi {
++		compatible = "spi-gpio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		sck-gpios = <&gpio0 ASPEED_GPIO(Z, 3) GPIO_ACTIVE_HIGH>;
++		mosi-gpios = <&gpio0 ASPEED_GPIO(Z, 4) GPIO_ACTIVE_HIGH>;
++		miso-gpios = <&gpio0 ASPEED_GPIO(Z, 5) GPIO_ACTIVE_HIGH>;
++		num-chipselects = <1>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(Z, 0) GPIO_ACTIVE_LOW>;
++		status = "okay";
++
++		tpm@0 {
++			compatible = "infineon,slb9670", "tcg,tpm_tis-spi";
++			spi-max-frequency = <33000000>;
++			reg = <0>;
++		};
++	};
 +};
 +
-+// HOST BIOS Debug
-+&uart1 {
-+	status = "okay";
-+};
-+
-+&uart3 {
-+	status = "okay";
-+};
-+
-+&uart4 {
-+	status = "okay";
-+};
-+
-+// BMC Debug Console
-+&uart5 {
-+	status = "okay";
-+};
-+
-+&uart_routing {
-+	status = "okay";
-+};
-+
-+&wdt1 {
-+	status = "okay";
++&adc0 {
++	aspeed,int-vref-microvolt = <2500000>;
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_wdtrst1_default>;
-+	aspeed,reset-type = "soc";
-+	aspeed,external-signal;
-+	aspeed,ext-push-pull;
-+	aspeed,ext-active-high;
-+	aspeed,ext-pulse-duration = <256>;
++	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
++		&pinctrl_adc2_default &pinctrl_adc3_default
++		&pinctrl_adc4_default &pinctrl_adc5_default
++		&pinctrl_adc6_default &pinctrl_adc7_default>;
++	status = "okay";
 +};
 +
-+&mac2 {
-+	status = "okay";
++&adc1 {
++	aspeed,int-vref-microvolt = <2500000>;
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_rmii3_default>;
-+	use-ncsi;
++	pinctrl-0 = <&pinctrl_adc10_default>;
++	status = "okay";
++};
++
++&ehci0 {
++	status = "okay";
++};
++
++&ehci1 {
++	status = "okay";
 +};
 +
 +&fmc {
@@ -203,30 +191,50 @@ index 000000000000..139b986bbfbf
 +	};
 +};
 +
-+// BIOS Flash
-+&spi2 {
-+	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_spi2_default>;
-+
-+	flash@0 {
-+		status = "okay";
-+		m25p,fast-read;
-+		label = "pnor";
-+		spi-max-frequency = <12000000>;
-+		spi-tx-bus-width = <2>;
-+		spi-rx-bus-width = <2>;
-+	};
++&gpio0 {
++	gpio-line-names =
++	/*A0-A7*/	"","","","","","","","",
++	/*B0-B7*/	"rtc-battery-voltage-read-enable","","","BMC_READY",
++			"","led-identify","","",
++	/*C0-C7*/	"","","","","","","","",
++	/*D0-D7*/	"","","","","","","","",
++	/*E0-E7*/	"","","","","","","","",
++	/*F0-F7*/	"","","","","","","","",
++	/*G0-G7*/	"FM_MUX1_SEL_R","","","","","","","",
++	/*H0-H7*/	"","","","","","","","",
++	/*I0-I7*/	"","","","","","","","",
++	/*J0-J7*/	"","","","","","","","",
++	/*K0-K7*/	"","","","","","","","",
++	/*L0-L7*/	"","","","","","","","",
++	/*M0-M7*/	"","","","","","","","",
++	/*N0-N7*/	"led-postcode-0","led-postcode-1",
++			"led-postcode-2","led-postcode-3",
++			"led-postcode-4","led-postcode-5",
++			"led-postcode-6","led-postcode-7",
++	/*O0-O7*/	"","","","","","","","",
++	/*P0-P7*/	"power-button","","reset-button","",
++			"led-power","","","",
++	/*Q0-Q7*/	"","","","","","","","",
++	/*R0-R7*/	"","","","","","","","",
++	/*S0-S7*/	"","","power-host-control","","","","","",
++	/*T0-T7*/	"","","","","","","","",
++	/*U0-U7*/	"","","","","","","","",
++	/*V0-V7*/	"","","","","","","","",
++	/*W0-W7*/	"","","","","","","","",
++	/*X0-X7*/	"","","","","","","","",
++	/*Y0-Y7*/	"","","","","","","","",
++	/*Z0-Z7*/	"","","","","","","","";
 +};
 +
-+&kcs2 {
-+	status = "okay";
-+	aspeed,lpc-io-reg = <0xca8>;
-+};
-+
-+&kcs3 {
-+	status = "okay";
-+	aspeed,lpc-io-reg = <0xca2>;
++&gpio1 {
++	gpio-line-names =
++	/*18A0-18A7*/	"","","","","","","","",
++	/*18B0-18B7*/	"","","","",
++				"FM_BOARD_BMC_REV_ID0","FM_BOARD_BMC_REV_ID1",
++				"FM_BOARD_BMC_REV_ID2","",
++	/*18C0-18C7*/	"SPI_BMC_BIOS_ROM_IRQ0_R_N","","","","","","","",
++	/*18D0-18D7*/	"","","","","","","","",
++	/*18E0-18E3*/	"FM_BMC_PROT_LS_EN","AC_PWR_BMC_BTN_R_N","","";
 +};
 +
 +&i2c0 {
@@ -247,11 +255,6 @@ index 000000000000..139b986bbfbf
 +&i2c1 {
 +	status = "okay";
 +
-+	fan-controller@21{
-+		compatible = "maxim,max31790";
-+		reg = <0x21>;
-+	};
-+
 +	gpio@20 {
 +		compatible = "nxp,pca9555";
 +		reg = <0x20>;
@@ -268,6 +271,11 @@ index 000000000000..139b986bbfbf
 +			"FM_CPU0_SP7R2","FM_CPU0_SP7R3",
 +			"FM_CPU0_SP7R4","",
 +			"FM_NIC_PPS_IN_S0_R","FM_NIC_PPS_IN_S1_R";
++	};
++
++	fan-controller@21{
++		compatible = "maxim,max31790";
++		reg = <0x21>;
 +	};
 +
 +	gpio@22 {
@@ -335,9 +343,9 @@ index 000000000000..139b986bbfbf
 +		i2c-mux-idle-disconnect;
 +
 +		i2c4mux0ch0: i2c@0 {
++			reg = <0>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <0>;
 +
 +			// HPM Board ID EEPROM
 +			eeprom@51 {
@@ -352,19 +360,19 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c4mux0ch1: i2c@1 {
++			reg = <1>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <1>;
 +		};
 +		i2c4mux0ch2: i2c@2 {
++			reg = <2>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <2>;
 +		};
 +		i2c4mux0ch3: i2c@3 {
++			reg = <3>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <3>;
 +
 +			power-monitor@40 {
 +				compatible = "ti,ina230";
@@ -390,16 +398,6 @@ index 000000000000..139b986bbfbf
 +				shunt-resistor = <2000>;
 +			};
 +
-+			temperature-sensor@4c {
-+				compatible = "ti,tmp75";
-+				reg = <0x4c>;
-+			};
-+
-+			temperature-sensor@4e {
-+				compatible = "ti,tmp75";
-+				reg = <0x4e>;
-+			};
-+
 +			voltage-sensor@48 {
 +				compatible = "ti,ads7830";
 +				reg = <0x48>;
@@ -411,21 +409,31 @@ index 000000000000..139b986bbfbf
 +				reg = <0x4a>;
 +				vref-supply = <&p3v3_bmc_aux>;
 +			};
++
++			temperature-sensor@4c {
++				compatible = "ti,tmp75";
++				reg = <0x4c>;
++			};
++
++			temperature-sensor@4e {
++				compatible = "ti,tmp75";
++				reg = <0x4e>;
++			};
 +		};
 +		i2c4mux0ch4: i2c@4 {
++			reg = <4>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <4>;
 +		};
 +		i2c4mux0ch5: i2c@5 {
++			reg = <5>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <5>;
 +		};
 +		i2c4mux0ch6: i2c@6 {
++			reg = <6>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <6>;
 +
 +			power-monitor@40 {
 +				compatible = "ti,ina230";
@@ -457,15 +465,9 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c4mux0ch7: i2c@7 {
++			reg = <7>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <7>;
-+
-+			// FIO FRU
-+			eeprom@53 {
-+				compatible = "atmel,24c512";
-+				reg = <0x53>;
-+			};
 +
 +			temperature-sensor@4b {
 +				compatible = "ti,tmp75";
@@ -475,6 +477,12 @@ index 000000000000..139b986bbfbf
 +			temperature-sensor@4f {
 +				compatible = "ti,tmp75";
 +				reg = <0x4f>;
++			};
++
++			// FIO FRU
++			eeprom@53 {
++				compatible = "atmel,24c512";
++				reg = <0x53>;
 +			};
 +		};
 +	};
@@ -497,24 +505,24 @@ index 000000000000..139b986bbfbf
 +		i2c-mux-idle-disconnect;
 +
 +		i2c5mux0ch0: i2c@0 {
++			reg = <0>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <0>;
 +		};
 +		i2c5mux0ch1: i2c@1 {
++			reg = <1>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <1>;
 +		};
 +		i2c5mux0ch2: i2c@2 {
++			reg = <2>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <2>;
 +		};
 +		i2c5mux0ch3: i2c@3 {
++			reg = <3>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <3>;
 +		};
 +	};
 +
@@ -526,9 +534,9 @@ index 000000000000..139b986bbfbf
 +		i2c-mux-idle-disconnect;
 +
 +		i2c5mux1ch0: i2c@0 {
++			reg = <0>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <0>;
 +
 +			voltage-sensor@48 {
 +				compatible = "ti,ads7830";
@@ -536,9 +544,9 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c5mux1ch1: i2c@1 {
++			reg = <1>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <1>;
 +
 +			temperature-sensor@48 {
 +				compatible = "ti,tmp75";
@@ -546,9 +554,9 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c5mux1ch2: i2c@2 {
++			reg = <2>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <2>;
 +
 +			power-monitor@40 {
 +				compatible = "ti,ina230";
@@ -575,9 +583,9 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c5mux1ch3: i2c@3 {
++			reg = <3>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <3>;
 +
 +			gpio@74 {
 +				compatible = "nxp,pca9539";
@@ -625,6 +633,11 @@ index 000000000000..139b986bbfbf
 +&i2c9 {
 +	status = "okay";
 +
++	temperature-sensor@4b {
++		compatible = "ti,tmp75";
++		reg = <0x4b>;
++	};
++
 +	// SCM FRU
 +	eeprom@50 {
 +		compatible = "atmel,24c128";
@@ -635,11 +648,6 @@ index 000000000000..139b986bbfbf
 +	eeprom@56 {
 +		compatible = "atmel,24c64";
 +		reg = <0x56>;
-+	};
-+
-+	temperature-sensor@4b {
-+		compatible = "ti,tmp75";
-+		reg = <0x4b>;
 +	};
 +};
 +
@@ -686,9 +694,9 @@ index 000000000000..139b986bbfbf
 +		i2c-mux-idle-disconnect;
 +
 +		i2c12mux0ch0: i2c@0 {
++			reg = <0>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <0>;
 +
 +			temperature-sensor@48 {
 +				compatible = "ti,tmp75";
@@ -696,9 +704,9 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c12mux0ch1: i2c@1 {
++			reg = <1>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <1>;
 +
 +			power-monitor@42 {
 +				compatible = "mps,mp2971";
@@ -711,9 +719,9 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c12mux0ch2: i2c@2 {
++			reg = <2>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <2>;
 +
 +			power-monitor@40 {
 +				compatible = "ti,ina230";
@@ -728,9 +736,9 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c12mux0ch3: i2c@3 {
++			reg = <3>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <3>;
 +
 +			power-monitor@44 {
 +				compatible = "ti,ina230";
@@ -745,9 +753,9 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c12mux0ch4: i2c@4 {
++			reg = <4>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <4>;
 +
 +			voltage-sensor@49 {
 +				compatible = "ti,ads7830";
@@ -755,19 +763,19 @@ index 000000000000..139b986bbfbf
 +			};
 +		};
 +		i2c12mux0ch5: i2c@5 {
++			reg = <5>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <5>;
 +		};
 +		i2c12mux0ch6: i2c@6 {
++			reg = <6>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <6>;
 +		};
 +		i2c12mux0ch7: i2c@7 {
++			reg = <7>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			reg = <7>;
 +		};
 +	};
 +};
@@ -790,82 +798,31 @@ index 000000000000..139b986bbfbf
 +	status = "okay";
 +};
 +
-+&adc0 {
-+	aspeed,int-vref-microvolt = <2500000>;
++&kcs2 {
++	aspeed,lpc-io-reg = <0xca8>;
 +	status = "okay";
++};
 +
++&kcs3 {
++	aspeed,lpc-io-reg = <0xca2>;
++	status = "okay";
++};
++
++&mac2 {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
-+		&pinctrl_adc2_default &pinctrl_adc3_default
-+		&pinctrl_adc4_default &pinctrl_adc5_default
-+		&pinctrl_adc6_default &pinctrl_adc7_default>;
++	pinctrl-0 = <&pinctrl_rmii3_default>;
++	use-ncsi;
++	status = "okay";
 +};
 +
-+&adc1 {
-+	aspeed,int-vref-microvolt = <2500000>;
-+	status = "okay";
-+
++&mac3 {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_adc10_default>;
-+};
-+
-+&ehci0 {
++	pinctrl-0 = <&pinctrl_rmii4_default>;
++	use-ncsi;
 +	status = "okay";
-+};
-+
-+&ehci1 {
-+	status = "okay";
-+};
-+
-+&gpio0 {
-+	pinctrl-names = "default";
-+	gpio-line-names =
-+	/*A0-A7*/	"","","","","","","","",
-+	/*B0-B7*/	"rtc-battery-voltage-read-enable","","","BMC_READY",
-+			"","led-identify","","",
-+	/*C0-C7*/	"","","","","","","","",
-+	/*D0-D7*/	"","","","","","","","",
-+	/*E0-E7*/	"","","","","","","","",
-+	/*F0-F7*/	"","","","","","","","",
-+	/*G0-G7*/	"","","","","","","","",
-+	/*H0-H7*/	"","","","","","","","",
-+	/*I0-I7*/	"","","","","","","","",
-+	/*J0-J7*/	"","","","","","","","",
-+	/*K0-K7*/	"","","","","","","","",
-+	/*L0-L7*/	"","","","","","","","",
-+	/*M0-M7*/	"","","","","","","","",
-+	/*N0-N7*/	"led-postcode-0","led-postcode-1",
-+			"led-postcode-2","led-postcode-3",
-+			"led-postcode-4","led-postcode-5",
-+			"led-postcode-6","led-postcode-7",
-+	/*O0-O7*/	"","","","","","","","",
-+	/*P0-P7*/	"power-button","","reset-button","",
-+			"led-power","","","",
-+	/*Q0-Q7*/	"","","","","","","","",
-+	/*R0-R7*/	"","","","","","","","",
-+	/*S0-S7*/	"","","power-host-control","","","","","",
-+	/*T0-T7*/	"","","","","","","","",
-+	/*U0-U7*/	"","","","","","","","",
-+	/*V0-V7*/	"","","","","","","","",
-+	/*W0-W7*/	"","","","","","","","",
-+	/*X0-X7*/	"","","","","","","","",
-+	/*Y0-Y7*/	"","","","","","","","",
-+	/*Z0-Z7*/	"","","","","","","","";
-+};
-+
-+&gpio1 {
-+	gpio-line-names =
-+	/*18A0-18A7*/	"","","","","","","","",
-+	/*18B0-18B7*/	"","","","",
-+				"FM_BOARD_BMC_REV_ID0","FM_BOARD_BMC_REV_ID1",
-+				"FM_BOARD_BMC_REV_ID2","",
-+	/*18C0-18C7*/	"SPI_BMC_BIOS_ROM_IRQ0_R_N","","","","","","","",
-+	/*18D0-18D7*/	"","","","","","","","",
-+	/*18E0-18E3*/	"FM_BMC_PROT_LS_EN","AC_PWR_BMC_BTN_R_N","","";
 +};
 +
 +&sgpiom0 {
-+	status = "okay";
 +	ngpios = <128>;
 +	bus-frequency = <2000000>;
 +	gpio-line-names =
@@ -1012,6 +969,56 @@ index 000000000000..139b986bbfbf
 +	"","","","","","","","",
 +	/*P4-P7 line 248-255*/
 +	"","","","","","","","";
++	status = "okay";
++};
++
++// BIOS Flash
++&spi2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_spi2_default>;
++	status = "okay";
++
++	flash@0 {
++		m25p,fast-read;
++		label = "pnor";
++		spi-max-frequency = <12000000>;
++		spi-tx-bus-width = <2>;
++		spi-rx-bus-width = <2>;
++		status = "okay";
++	};
++};
++
++// HOST BIOS Debug
++&uart1 {
++	status = "okay";
++};
++
++&uart3 {
++	status = "okay";
++};
++
++&uart4 {
++	status = "okay";
++};
++
++// BMC Debug Console
++&uart5 {
++	status = "okay";
++};
++
++&uart_routing {
++	status = "okay";
++};
++
++&wdt1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdtrst1_default>;
++	aspeed,reset-type = "soc";
++	aspeed,external-signal;
++	aspeed,ext-push-pull;
++	aspeed,ext-active-high;
++	aspeed,ext-pulse-duration = <256>;
++	status = "okay";
 +};
 -- 
 2.49.0

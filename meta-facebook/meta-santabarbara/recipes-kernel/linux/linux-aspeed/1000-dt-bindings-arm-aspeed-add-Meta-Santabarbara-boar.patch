@@ -1,13 +1,13 @@
-From c4a1d50892287535b54c2e5e6bd4494b31a17d94 Mon Sep 17 00:00:00 2001
+From d4e5011bc71859a3cdeea69e4d4856bb64e6a3b8 Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
-Date: Fri, 6 Jun 2025 14:12:50 +0800
-Subject: [PATCH v1 1/2] dt-bindings: arm: aspeed: add Meta Santabarbara board
+Date: Wed, 25 Jun 2025 14:18:01 +0800
+Subject: [PATCH v2 1/2] dt-bindings: arm: aspeed: add Meta Santabarbara board
 
 Document the new compatibles used on Facebook Santabarbara.
 
 Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
 ---
-LORE: https://lore.kernel.org/all/20250606102802.1821638-2-fredchen.openbmc@gmail.com/
+LORE: https://lore.kernel.org/all/20250625073847.4054971-2-fredchen.openbmc@gmail.com/
 ---
  Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml | 1 +
  1 file changed, 1 insertion(+)

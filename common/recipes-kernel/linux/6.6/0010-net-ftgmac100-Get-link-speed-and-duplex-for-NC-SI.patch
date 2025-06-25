@@ -1,0 +1,112 @@
+From 69978cefc969737f8754eea98f39cf5d3574762e Mon Sep 17 00:00:00 2001
+From: Jacky Chou <jacky_chou@aspeedtech.com>
+Date: Tue, 27 Aug 2024 11:05:13 +0800
+Subject: [PATCH 10/10] net: ftgmac100: Get link speed and duplex for NC-SI
+
+The ethtool of this driver uses the phy API of ethtool
+to get the link information from PHY driver.
+Because the NC-SI is forced on 100Mbps and full duplex,
+the driver connect a fixed-link phy driver for NC-SI.
+The ethtool will get the link information from the
+fixed-link phy driver.
+
+Signed-off-by: Jacky Chou <jacky_chou@aspeedtech.com>
+Reviewed-by: Jacob Keller <jacob.e.keller@intel.com>
+Link: https://patch.msgid.link/20240827030513.481469-1-jacky_chou@aspeedtech.com
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+(cherry picked from commit e24a6c874601efb3de6e535895dd8e4f56fa98f1)
+---
+ drivers/net/ethernet/faraday/ftgmac100.c | 28 ++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
+index 05297123b515..3a288765c4b6 100644
+--- a/drivers/net/ethernet/faraday/ftgmac100.c
++++ b/drivers/net/ethernet/faraday/ftgmac100.c
+@@ -25,6 +25,7 @@
+ #include <linux/crc32.h>
+ #include <linux/if_vlan.h>
+ #include <linux/of_net.h>
++#include <linux/phy_fixed.h>
+ #include <net/ip.h>
+ #include <net/ncsi.h>
+ 
+@@ -51,6 +52,15 @@
+ #define FTGMAC_100MHZ		100000000
+ #define FTGMAC_25MHZ		25000000
+ 
++/* For NC-SI to register a fixed-link phy device */
++static struct fixed_phy_status ncsi_phy_status = {
++	.link = 1,
++	.speed = SPEED_100,
++	.duplex = DUPLEX_FULL,
++	.pause = 0,
++	.asym_pause = 0
++};
++
+ struct ftgmac100 {
+ 	/* Registers */
+ 	struct resource *res;
+@@ -1560,7 +1570,8 @@ static int ftgmac100_open(struct net_device *netdev)
+ 	if (netdev->phydev) {
+ 		/* If we have a PHY, start polling */
+ 		phy_start(netdev->phydev);
+-	} else if (priv->use_ncsi) {
++	}
++	if (priv->use_ncsi) {
+ 		/* If using NC-SI, set our carrier on and start the stack */
+ 		netif_carrier_on(netdev);
+ 
+@@ -1573,6 +1584,7 @@ static int ftgmac100_open(struct net_device *netdev)
+ 	return 0;
+ 
+ err_ncsi:
++	phy_stop(netdev->phydev);
+ 	napi_disable(&priv->napi);
+ 	netif_stop_queue(netdev);
+ err_alloc:
+@@ -1606,7 +1618,7 @@ static int ftgmac100_stop(struct net_device *netdev)
+ 	netif_napi_del(&priv->napi);
+ 	if (netdev->phydev)
+ 		phy_stop(netdev->phydev);
+-	else if (priv->use_ncsi)
++	if (priv->use_ncsi)
+ 		ncsi_stop_dev(priv->ndev);
+ 
+ 	ftgmac100_stop_hw(priv);
+@@ -1744,6 +1756,9 @@ static void ftgmac100_phy_disconnect(struct net_device *netdev)
+ 	phy_disconnect(netdev->phydev);
+ 	if (of_phy_is_fixed_link(priv->dev->of_node))
+ 		of_phy_deregister_fixed_link(priv->dev->of_node);
++
++	if (priv->use_ncsi)
++		fixed_phy_unregister(netdev->phydev);
+ }
+ 
+ static void ftgmac100_destroy_mdio(struct net_device *netdev)
+@@ -1821,6 +1836,7 @@ static int ftgmac100_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	int irq;
+ 	struct net_device *netdev;
++	struct phy_device *phydev;
+ 	struct ftgmac100 *priv;
+ 	struct device_node *np;
+ 	int err = 0;
+@@ -1908,6 +1924,14 @@ static int ftgmac100_probe(struct platform_device *pdev)
+ 			err = -EINVAL;
+ 			goto err_phy_connect;
+ 		}
++
++		phydev = fixed_phy_register(PHY_POLL, &ncsi_phy_status, NULL);
++		err = phy_connect_direct(netdev, phydev, ftgmac100_adjust_link,
++					 PHY_INTERFACE_MODE_RMII);
++		if (err) {
++			dev_err(&pdev->dev, "Connecting PHY failed\n");
++			goto err_phy_connect;
++		}
+ 	} else if (np && of_phy_is_fixed_link(np)) {
+ 		struct phy_device *phy;
+ 
+-- 
+2.25.1
+

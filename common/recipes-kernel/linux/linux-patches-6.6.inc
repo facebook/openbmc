@@ -13,6 +13,7 @@ SRC_URI:append = " \
     file://0007-ARM-dts-aspeed-Expand-data0-partition-in-facebook-bm.patch \
     file://0008-mtd-spi-nor-winbond-Add-support-for-w25q01jv.patch \
     file://0009-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
+    file://0010-net-ftgmac100-Get-link-speed-and-duplex-for-NC-SI.patch \
 "
 
 #

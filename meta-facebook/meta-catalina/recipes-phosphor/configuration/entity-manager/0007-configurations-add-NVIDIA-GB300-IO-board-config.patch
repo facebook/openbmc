@@ -1,4 +1,4 @@
-From 151899ed6221af068e6da1291563cd6338197273 Mon Sep 17 00:00:00 2001
+From c0c06f9e83d0d6d3d3c4de7b785a342f9d76eae1 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Mon, 12 May 2025 16:58:35 +0800
 Subject: [PATCH 7/7] configurations: add NVIDIA GB300 IO board config
@@ -27,7 +27,7 @@ index 5cf0f7e..e76382e 100644
      'nvme_p4500_p5500.json',
 diff --git a/configurations/nvidia_gb300_io_board.json b/configurations/nvidia_gb300_io_board.json
 new file mode 100644
-index 0000000..bf7d1d1
+index 0000000..f1fe71e
 --- /dev/null
 +++ b/configurations/nvidia_gb300_io_board.json
 @@ -0,0 +1,96 @@
@@ -128,5 +128,5 @@ index 0000000..bf7d1d1
 +    }
 +}
 -- 
-2.49.0
+2.47.1
 

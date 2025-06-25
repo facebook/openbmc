@@ -8,5 +8,4 @@ SRC_URI += " \
     file://0005-configurations-cx7_ocp-Switch-to-external-sensor-for.patch \
     file://0006-configurations-add-NVIDIA-GB300-config.patch \
     file://0007-configurations-add-NVIDIA-GB300-IO-board-config.patch \
-    file://0009-configurations-clemente_pdb-Fix-PDB_VR_P12V_N1-bus-n.patch \
 "

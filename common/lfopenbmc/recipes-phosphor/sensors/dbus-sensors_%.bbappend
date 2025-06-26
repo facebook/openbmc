@@ -9,6 +9,7 @@ SRC_URI:append = " \
     file://0006-psusensor-fixed-not-activate-for-multiple-power-stat.patch \
     file://0007-psusensors-fixed-multiple-power-state-issue.patch \
     file://0008-pwm-sensor-Align-Target-with-user-intent.patch \
+    file://0009-psu-support-gpio-bridge.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

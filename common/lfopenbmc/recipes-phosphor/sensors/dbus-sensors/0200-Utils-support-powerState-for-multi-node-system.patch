@@ -1,4 +1,4 @@
-From 2e295837c96cb39d79e5e136b8983544da3abe28 Mon Sep 17 00:00:00 2001
+From 689826a602f1f1b0b4f942f1c0480755934e0e42 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -55,11 +55,11 @@ Change-Id: I49ede1e6276acdbee2f8a9807c738be7970beaf9
  src/Utils.cpp                    | 443 ++++++++++++++++++++-----------
  src/Utils.hpp                    |  38 ++-
  src/hwmon-temp/HwmonTempMain.cpp |   6 +-
- src/psu/PSUSensor.cpp            |  25 +-
- src/psu/PSUSensor.hpp            |   9 +-
- src/psu/PSUSensorMain.cpp        |  10 +-
+ src/psu/PSUSensor.cpp            |   6 +-
+ src/psu/PSUSensor.hpp            |   8 +-
+ src/psu/PSUSensorMain.cpp        |   9 +-
  src/sensor.hpp                   |   7 +-
- 7 files changed, 353 insertions(+), 185 deletions(-)
+ 7 files changed, 342 insertions(+), 175 deletions(-)
 
 diff --git a/src/Utils.cpp b/src/Utils.cpp
 index 52f9394..3e20529 100644
@@ -770,38 +770,20 @@ index cd86571..386e419 100644
          }
      }
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 9e43f52..ea5ddda 100644
+index a7d9eb2..745235d 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
-@@ -44,23 +44,22 @@ static constexpr const char* sensorPathPrefix = "/xyz/openbmc_project/sensors/";
- 
- static constexpr bool debug = false;
- 
--PSUSensor::PSUSensor(const std::string& path, const std::string& objectType,
--                     sdbusplus::asio::object_server& objectServer,
--                     std::shared_ptr<sdbusplus::asio::connection>& conn,
--                     boost::asio::io_context& io, const std::string& sensorName,
--                     std::vector<thresholds::Threshold>&& thresholdsIn,
--                     const std::string& sensorConfiguration,
--                     const PowerState& powerState,
--                     const std::string& sensorUnits, double factor, double max,
--                     double min, double offset, const std::string& label,
--                     size_t tSize, double pollRate,
--                     const std::shared_ptr<I2CDevice>& i2cDevice) :
-+PSUSensor::PSUSensor(
-+    const std::string& path, const std::string& objectType,
-+    sdbusplus::asio::object_server& objectServer,
-+    std::shared_ptr<sdbusplus::asio::connection>& conn,
-+    boost::asio::io_context& io, const std::string& sensorName,
-+    std::vector<thresholds::Threshold>&& thresholdsIn,
-+    const std::string& sensorConfiguration, const PowerState& powerState,
-+    const std::string& sensorUnits, double factor, double max, double min,
-+    double offset, const std::string& label, size_t tSize, double pollRate,
-+    const std::shared_ptr<I2CDevice>& i2cDevice, const size_t& slotId) :
+@@ -55,14 +55,14 @@ PSUSensor::PSUSensor(
+     const std::string& sensorUnits, double factor, double max, double min,
+     double offset, const std::string& label, size_t tSize, double pollRate,
+     const std::shared_ptr<I2CDevice>& i2cDevice,
+-    std::optional<BridgeGpio>&& bridgeGpio) :
++    std::optional<BridgeGpio>&& bridgeGpio, const size_t& slotId) :
      Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
 -           objectType, false, false, max, min, conn, powerState),
 +           objectType, false, false, max, min, conn, powerState, slotId),
-     i2cDevice(i2cDevice), objServer(objectServer),
+     i2cDevice(i2cDevice), bridgeGpio(std::move(bridgeGpio)),
+     objServer(objectServer),
      inputDev(io, path, boost::asio::random_access_file::read_only),
      waitTimer(io), path(path), sensorFactor(factor), sensorOffset(offset),
 -    thresholdTimer(io)
@@ -810,20 +792,19 @@ index 9e43f52..ea5ddda 100644
      buffer = std::make_shared<std::array<char, 128>>();
      std::string unitPath = sensor_paths::getPathForUnits(sensorUnits);
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index c4f3a38..127145c 100644
+index dd43fe5..8f85908 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
-@@ -30,7 +30,8 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
-               const PowerState& powerState, const std::string& sensorUnits,
+@@ -87,7 +87,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
                double factor, double max, double min, double offset,
                const std::string& label, size_t tSize, double pollRate,
--              const std::shared_ptr<I2CDevice>& i2cDevice);
-+              const std::shared_ptr<I2CDevice>& i2cDevice,
-+              const size_t& slotId);
+               const std::shared_ptr<I2CDevice>& i2cDevice,
+-              std::optional<BridgeGpio>&& bridgeGpio);
++              std::optional<BridgeGpio>&& bridgeGpio, const size_t& slotId);
      ~PSUSensor() override;
      void setupRead();
      void activate(const std::string& newPath,
-@@ -67,6 +68,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+@@ -125,6 +125,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
      static constexpr double defaultSensorPoll = 1.0;
      static constexpr unsigned int defaultSensorPollMs =
          static_cast<unsigned int>(defaultSensorPoll * 1000);
@@ -831,7 +812,7 @@ index c4f3a38..127145c 100644
  };
  
  class PSUProperty
-@@ -74,8 +76,9 @@ class PSUProperty
+@@ -132,8 +133,9 @@ class PSUProperty
    public:
      PSUProperty(std::string name, double max, double min, double factor,
                  double offset) :
@@ -844,10 +825,10 @@ index c4f3a38..127145c 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index d4638b3..13eb117 100644
+index c341f2d..8bda465 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -552,6 +552,7 @@ static void createSensorsCallback(
+@@ -618,6 +618,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -855,17 +836,16 @@ index d4638b3..13eb117 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1035,7 +1036,8 @@ static void createSensorsCallback(
+@@ -1103,7 +1104,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
--                    pollRate, i2cDev);
-+                    pollRate, i2cDev, readSlot);
-+
+-                    pollRate, i2cDev, std::move(bridgeGpio));
++                    pollRate, i2cDev, std::move(bridgeGpio), readSlot);
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  if constexpr (debug)
-@@ -1213,7 +1215,11 @@ static void powerStateChanged(
+@@ -1281,7 +1282,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -918,5 +898,5 @@ index c433e45..2c55e11 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.47.1
+2.25.1
 

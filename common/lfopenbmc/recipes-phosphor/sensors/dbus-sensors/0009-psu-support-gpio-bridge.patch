@@ -1,0 +1,400 @@
+From 84d62c3b0257a586182d2b3e6d68842e98a36a40 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Mon, 19 May 2025 15:12:23 +0800
+Subject: [PATCH] psu: support gpio bridge
+
+Support for GPIO bridge is required for certain components that
+need a GPIO to be set before reading, such as battery voltage.
+To obtain a valid reading, the BridgeGpio option can be configured
+in the Entity Manager JSON, similar to the implementation used for
+ADC sensors.
+
+Tested
+entity-manager configuration
+"BridgeGpio": [
+    {
+        "Label": "in0",
+        "Name": "battery-read-en",
+        "Polarity": "High",
+        "SetupTime": 1
+    }
+],
+
+xyz.openbmc_project.
+Configuration.
+ADC128D818.BridgeGpio0 interface -  -                 -
+.Label                 property  s  "in0"             emits-change
+.Name                  property  s  "battery-read-en" emits-change
+.Polarity              property  s  "High"            emits-change
+.SetupTime             property  t  1                 emits-change
+
+root@bmc:~# busctl introspect xyz.openbmc_project.PSUSensor
+/xyz/openbmc_project/sensors/voltage/MB_P3V_BAT_VOLT_V
+xyz.openbmc_project.Sensor.Value
+
+NAME      TYPE      SIGNATURE RESULT/VALUE
+.MaxValue property  d         255
+.MinValue property  d         0
+.Unit     property  s         "xyz.openbmc_project.Sensor.Value.Unit
+.Value    property  d         3.024
+
+Change-Id: I7cb220cc973644f9e6494fe087749cd15885db5c
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ src/psu/PSUSensor.cpp     | 91 +++++++++++++++++++++++++++------------
+ src/psu/PSUSensor.hpp     | 60 +++++++++++++++++++++++++-
+ src/psu/PSUSensorMain.cpp | 70 +++++++++++++++++++++++++++++-
+ src/psu/meson.build       |  1 +
+ 4 files changed, 192 insertions(+), 30 deletions(-)
+
+diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
+index 9e43f52..a7d9eb2 100644
+--- a/src/psu/PSUSensor.cpp
++++ b/src/psu/PSUSensor.cpp
+@@ -35,6 +35,7 @@
+ #include <cstddef>
+ #include <limits>
+ #include <memory>
++#include <optional>
+ #include <stdexcept>
+ #include <string>
+ #include <utility>
+@@ -44,20 +45,21 @@ static constexpr const char* sensorPathPrefix = "/xyz/openbmc_project/sensors/";
+ 
+ static constexpr bool debug = false;
+ 
+-PSUSensor::PSUSensor(const std::string& path, const std::string& objectType,
+-                     sdbusplus::asio::object_server& objectServer,
+-                     std::shared_ptr<sdbusplus::asio::connection>& conn,
+-                     boost::asio::io_context& io, const std::string& sensorName,
+-                     std::vector<thresholds::Threshold>&& thresholdsIn,
+-                     const std::string& sensorConfiguration,
+-                     const PowerState& powerState,
+-                     const std::string& sensorUnits, double factor, double max,
+-                     double min, double offset, const std::string& label,
+-                     size_t tSize, double pollRate,
+-                     const std::shared_ptr<I2CDevice>& i2cDevice) :
++PSUSensor::PSUSensor(
++    const std::string& path, const std::string& objectType,
++    sdbusplus::asio::object_server& objectServer,
++    std::shared_ptr<sdbusplus::asio::connection>& conn,
++    boost::asio::io_context& io, const std::string& sensorName,
++    std::vector<thresholds::Threshold>&& thresholdsIn,
++    const std::string& sensorConfiguration, const PowerState& powerState,
++    const std::string& sensorUnits, double factor, double max, double min,
++    double offset, const std::string& label, size_t tSize, double pollRate,
++    const std::shared_ptr<I2CDevice>& i2cDevice,
++    std::optional<BridgeGpio>&& bridgeGpio) :
+     Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
+            objectType, false, false, max, min, conn, powerState),
+-    i2cDevice(i2cDevice), objServer(objectServer),
++    i2cDevice(i2cDevice), bridgeGpio(std::move(bridgeGpio)),
++    objServer(objectServer),
+     inputDev(io, path, boost::asio::random_access_file::read_only),
+     waitTimer(io), path(path), sensorFactor(factor), sensorOffset(offset),
+     thresholdTimer(io)
+@@ -167,22 +169,50 @@ void PSUSensor::setupRead()
+     }
+ 
+     std::weak_ptr<PSUSensor> weak = weak_from_this();
+-    // Note, we are building a asio buffer that is one char smaller than
+-    // the actual data structure, so that we can always append the null
+-    // terminator.  This can go away once std::from_chars<double> is available
+-    // in the standard
+-    inputDev.async_read_some_at(
+-        0, boost::asio::buffer(buffer->data(), buffer->size() - 1),
+-        [weak, buffer{buffer}](const boost::system::error_code& ec,
+-                               size_t bytesRead) {
+-            std::shared_ptr<PSUSensor> self = weak.lock();
+-            if (!self)
+-            {
+-                return;
+-            }
+-
+-            self->handleResponse(ec, bytesRead);
+-        });
++
++    if (bridgeGpio.has_value())
++    {
++        bridgeGpio->set(1);
++
++        waitTimer.expires_after(
++            std::chrono::milliseconds(bridgeGpio->setupTimeMs));
++        waitTimer.async_wait(
++            [weak, buffer{buffer}](const boost::system::error_code& ec) {
++                std::shared_ptr<PSUSensor> self = weak.lock();
++                if (!self || ec == boost::asio::error::operation_aborted)
++                {
++                    return;
++                }
++
++                self->inputDev.async_read_some_at(
++                    0, boost::asio::buffer(buffer->data(), buffer->size() - 1),
++                    [weak, buffer](const boost::system::error_code& ec,
++                                   size_t bytesRead) {
++                        std::shared_ptr<PSUSensor> self = weak.lock();
++                        if (!self)
++                        {
++                            return;
++                        }
++
++                        self->handleResponse(ec, bytesRead);
++                    });
++            });
++    }
++    else
++    {
++        inputDev.async_read_some_at(
++            0, boost::asio::buffer(buffer->data(), buffer->size() - 1),
++            [weak, buffer{buffer}](const boost::system::error_code& ec,
++                                   size_t bytesRead) {
++                std::shared_ptr<PSUSensor> self = weak.lock();
++                if (!self)
++                {
++                    return;
++                }
++
++                self->handleResponse(ec, bytesRead);
++            });
++    }
+ }
+ 
+ void PSUSensor::restartRead()
+@@ -244,6 +274,11 @@ void PSUSensor::handleResponse(const boost::system::error_code& err,
+         incrementError();
+     }
+ 
++    if (bridgeGpio)
++    {
++        (*bridgeGpio).set(0);
++    }
++
+     restartRead();
+ }
+ 
+diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
+index c4f3a38..dd43fe5 100644
+--- a/src/psu/PSUSensor.hpp
++++ b/src/psu/PSUSensor.hpp
+@@ -8,16 +8,72 @@
+ #include <boost/asio/io_context.hpp>
+ #include <boost/asio/random_access_file.hpp>
+ #include <boost/asio/steady_timer.hpp>
++#include <gpiod.hpp>
++#include <phosphor-logging/lg2.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+ 
+ #include <array>
+ #include <cstddef>
+ #include <memory>
++#include <optional>
+ #include <string>
++#include <system_error>
+ #include <utility>
+ #include <vector>
+ 
++class BridgeGpio
++{
++  public:
++    BridgeGpio(const std::string& name, const int polarity,
++               const float setupTime) :
++        setupTimeMs(static_cast<unsigned int>(setupTime * 1000))
++    {
++        line = gpiod::find_line(name);
++        if (!line)
++        {
++            lg2::error("Error finding gpio: '{NAME}'", "NAME", name);
++        }
++        else
++        {
++            try
++            {
++                auto flags = (polarity == gpiod::line::ACTIVE_HIGH)
++                                 ? 0
++                                 : gpiod::line_request::FLAG_ACTIVE_LOW;
++                line.request({"psusensor",
++                              gpiod::line_request::DIRECTION_OUTPUT, flags});
++            }
++            catch (const std::system_error& e)
++            {
++                lg2::error("Error requesting gpio: '{NAME}', reason: {ERROR}",
++                           "NAME", name, "ERROR", e);
++            }
++        }
++    }
++
++    void set(int value)
++    {
++        if (line)
++        {
++            try
++            {
++                line.set_value(value);
++            }
++            catch (const std::system_error& exc)
++            {
++                lg2::error("Failed to set GPIO value to {VALUE}: {EC}", "VALUE",
++                           value, "EC", exc);
++            }
++        }
++    }
++
++    unsigned int setupTimeMs;
++
++  private:
++    gpiod::line line;
++};
++
+ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+ {
+   public:
+@@ -30,7 +86,8 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+               const PowerState& powerState, const std::string& sensorUnits,
+               double factor, double max, double min, double offset,
+               const std::string& label, size_t tSize, double pollRate,
+-              const std::shared_ptr<I2CDevice>& i2cDevice);
++              const std::shared_ptr<I2CDevice>& i2cDevice,
++              std::optional<BridgeGpio>&& bridgeGpio);
+     ~PSUSensor() override;
+     void setupRead();
+     void activate(const std::string& newPath,
+@@ -49,6 +106,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+     // while in the middle of a read operation
+     std::shared_ptr<std::array<char, 128>> buffer;
+     std::shared_ptr<I2CDevice> i2cDevice;
++    std::optional<BridgeGpio> bridgeGpio;
+     sdbusplus::asio::object_server& objServer;
+     boost::asio::random_access_file inputDev;
+     boost::asio::steady_timer waitTimer;
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index d4638b3..c341f2d 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -31,6 +31,7 @@
+ #include <boost/asio/steady_timer.hpp>
+ #include <boost/container/flat_map.hpp>
+ #include <boost/container/flat_set.hpp>
++#include <gpiod.hpp>
+ #include <phosphor-logging/lg2.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+@@ -53,6 +54,7 @@
+ #include <functional>
+ #include <iterator>
+ #include <memory>
++#include <optional>
+ #include <regex>
+ #include <stdexcept>
+ #include <string>
+@@ -63,6 +65,7 @@
+ 
+ static constexpr bool debug = false;
+ static std::regex i2cDevRegex(R"((\/i2c\-\d+\/\d+-[a-fA-F0-9]{4,4})(\/|$))");
++static constexpr float gpioBridgeSetupTimeDefault = 1;
+ 
+ static const I2CDeviceTypeMap sensorTypes{
+     {"ADC128D818", I2CDeviceType{"adc128d818", true}},
+@@ -322,6 +325,69 @@ static void checkPWMSensor(
+         name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
+ }
+ 
++std::optional<BridgeGpio> parseBridgeGpioFromConfig(
++    const SensorData& sensorData, const std::string* label)
++{
++    for (const auto& [key, cfgMap] : sensorData)
++    {
++        if (key.find("BridgeGpio") == std::string::npos)
++        {
++            continue;
++        }
++
++        auto findName = cfgMap.find("Name");
++        if (findName == cfgMap.end())
++        {
++            continue;
++        }
++
++        std::string gpioName =
++            std::visit(VariantToStringVisitor(), findName->second);
++
++        int polarity = gpiod::line::ACTIVE_HIGH;
++        auto findPolarity = cfgMap.find("Polarity");
++        if (findPolarity != cfgMap.end())
++        {
++            if (std::string("Low") ==
++                std::visit(VariantToStringVisitor(), findPolarity->second))
++            {
++                polarity = gpiod::line::ACTIVE_LOW;
++            }
++        }
++
++        float setupTime = gpioBridgeSetupTimeDefault;
++        auto findSetupTime = cfgMap.find("SetupTime");
++        if (findSetupTime != cfgMap.end())
++        {
++            setupTime =
++                std::visit(VariantToFloatVisitor(), findSetupTime->second);
++        }
++
++        std::string labelVal;
++        auto findLabel = cfgMap.find("Label");
++        if (findLabel != cfgMap.end())
++        {
++            labelVal = std::visit(VariantToStringVisitor(), findLabel->second);
++        }
++
++        if (label != nullptr && *label != labelVal)
++        {
++            continue;
++        }
++
++        if constexpr (debug)
++        {
++            lg2::info("Found BridgeGpio config {LABEL}", "LABEL", labelVal,
++                      "NAME", gpioName, "POL",
++                      (polarity == gpiod::line::ACTIVE_LOW ? "Low" : "High"),
++                      "SETUP_TIME", setupTime);
++        }
++
++        return BridgeGpio(gpioName, polarity, setupTime);
++    }
++    return std::nullopt;
++}
++
+ static void createSensorsCallback(
+     boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
+     std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
+@@ -742,6 +808,8 @@ static void createSensorsCallback(
+                 }
+                 continue;
+             }
++            auto bridgeGpio =
++                parseBridgeGpioFromConfig(*sensorData, &labelHead);
+ 
+             // Protect the hardcoded labelMatch list from changes,
+             // by making a copy and modifying that instead.
+@@ -1035,7 +1103,7 @@ static void createSensorsCallback(
+                     readState, findSensorUnit->second, factor,
+                     psuProperty.maxReading, psuProperty.minReading,
+                     psuProperty.sensorOffset, labelHead, thresholdConfSize,
+-                    pollRate, i2cDev);
++                    pollRate, i2cDev, std::move(bridgeGpio));
+                 sensors[sensorName]->setupRead();
+                 ++numCreated;
+                 if constexpr (debug)
+diff --git a/src/psu/meson.build b/src/psu/meson.build
+index 20af98c..24759a2 100644
+--- a/src/psu/meson.build
++++ b/src/psu/meson.build
+@@ -11,6 +11,7 @@ executable(
+         pwmsensor_dep,
+         thresholds_dep,
+         utils_dep,
++        gpiodcxx,
+     ],
+     include_directories: src_inc,
+     install: true,
+-- 
+2.25.1
+

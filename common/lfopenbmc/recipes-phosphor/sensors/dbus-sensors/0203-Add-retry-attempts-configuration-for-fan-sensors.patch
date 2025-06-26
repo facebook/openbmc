@@ -24,20 +24,20 @@ index ab277c7..de088f2 100644
  )
  
 diff --git a/meson.options b/meson.options
-index ca4a0c3..b18b19f 100644
+index ecc8769..1b327a5 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -119,3 +119,10 @@ option(
      value: 'false',
      description: 'Disable in2_alarm event.',
  )
-+
 +option(
 +    'fan_sensor_retry_attempts',
 +    type: 'integer',
 +    value: 0,
 +    description: 'Number of retry attempts for fan sensor operations',
 +)
++
 diff --git a/src/fan/FanMain.cpp b/src/fan/FanMain.cpp
 index 98e41a0..d0ec741 100644
 --- a/src/fan/FanMain.cpp
@@ -61,5 +61,5 @@ index 98e41a0..d0ec741 100644
          };
  
 -- 
-2.47.1
+2.25.1
 

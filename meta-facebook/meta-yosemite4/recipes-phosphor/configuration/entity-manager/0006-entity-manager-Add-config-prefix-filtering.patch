@@ -1,7 +1,7 @@
-From 870ef1418d26d9b280945910f0cc70f92e07d480 Mon Sep 17 00:00:00 2001
+From c871c6a557a1dd9b6f5a0e8fed95fa860c19ca56 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
-Subject: [PATCH 6/6] entity-manager: Add config-prefix filtering
+Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
 
 This change introduces a new option "config-prefix" that enables
 filtering of JSON configuration files by their filename prefix.
@@ -13,13 +13,13 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 ---
  meson.build                          |  5 ++
  meson.options                        |  6 +++
- src/entity_manager/configuration.cpp | 17 ++++---
- src/utils.cpp                        | 73 +++++++++++++++++-----------
+ src/entity_manager/configuration.cpp | 17 +++---
+ src/utils.cpp                        | 79 ++++++++++++++++------------
  src/utils.hpp                        | 12 +++--
- 5 files changed, 76 insertions(+), 37 deletions(-)
+ 5 files changed, 76 insertions(+), 43 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index ffef7c8..9b63b61 100644
+index e7a117a..d5a12ee 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -7,6 +7,11 @@ project(
@@ -86,10 +86,10 @@ index 8646f57..a519c1d 100644
          {
              std::cerr << "Error validating " << jsonPath.string() << "\n";
 diff --git a/src/utils.cpp b/src/utils.cpp
-index 116c484..00b1f2d 100644
+index 0d3a6d0..00b1f2d 100644
 --- a/src/utils.cpp
 +++ b/src/utils.cpp
-@@ -33,54 +33,71 @@
+@@ -33,60 +33,71 @@
  
  namespace fs = std::filesystem;
  
@@ -153,13 +153,19 @@ index 116c484..00b1f2d 100644
              continue;
          }
  
--        for (const auto& p : fs::directory_iterator(dirPath))
+-        for (const auto& p : fs::recursive_directory_iterator(dirPath))
 +        if (!prefixes.empty() &&
 +            !std::any_of(prefixes.begin(), prefixes.end(),
 +                         [&filename](const std::string& prefix) {
 +                             return filename.starts_with(prefix);
 +                         }))
          {
+-            std::error_code ec;
+-            if (p.is_directory(ec))
+-            {
+-                continue;
+-            }
+-
 -            std::string path = p.path().string();
 -            if (std::regex_search(path, match, search))
 -            {

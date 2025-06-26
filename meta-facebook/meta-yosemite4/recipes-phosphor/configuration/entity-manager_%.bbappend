@@ -11,6 +11,6 @@ SRC_URI += " \
     file://0004-configurations-Revise-the-Terminus-NIC-sensor-name.patch \
     file://0005-configurations-yosemite4-NIC-card-support-slot-numbe.patch \
     file://0006-entity-manager-Add-config-prefix-filtering.patch \
-    file://0007-entity-manager-Add-virtual-NIC-temperature.patch \
+    file://0007-meta-facebook-yosemite4-Add-virtual-NIC-temperature-.patch \
 "
 

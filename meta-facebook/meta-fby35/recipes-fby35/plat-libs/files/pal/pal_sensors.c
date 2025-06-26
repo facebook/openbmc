@@ -4175,6 +4175,13 @@ static void correct_emr_threshold(sdr_full_t *sdr, uint8_t snr_num)
     case BIC_1OU_VF_SENSOR_NUM_T_MB_OUTLET_TEMP_T:
       sdr->uc_thresh = 58;
       break;
+    case BIC_SENSOR_P3V3_M2_VOL:
+      sdr->uc_thresh = 0;
+      sdr->unr_thresh = 0;
+      sdr->unc_thresh = 0;
+      sdr->lc_thresh = 0;
+      sdr->lnc_thresh = 0;
+      break;
     case BIC_SENSOR_OUTLET_TEMP:
       sdr->uc_thresh = 78;
       break;

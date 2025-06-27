@@ -16,5 +16,6 @@ SRC_URI:append = " \
     file://1012-ARM-dts-aspeed-catalina-Add-Delta-brick-nodes.patch \
     file://1013-ARM-dts-aspeed-catalina-Increase-SSIF-response-timeo.patch \
     file://1014-i2c-ast2600-support-ssif.patch \
+    file://1015-ARM-dts-aspeed-catalina-enable-i2c11-byte-mode.patch \
     file://catalina-local.cfg \
 "

@@ -4950,6 +4950,51 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
     strcat(error_log, temp_log);
   }
 
+  // Record Type: 0xF0 (OEM)
+  if (sel[2] == 0xF0) {
+    const uint8_t snr_num = sel[3];
+    if(snr_num == VR_ALERT) {
+      static const char *hd_bic_vr_dev_name[] = {
+          "PVDDCR_CPU0",
+          "PVDDCR_CPU1",
+          "PVDD11_S3",
+          "PVDDCR_SOC",
+          "PVDDIO"
+      };
+      static const char* pmbus_status_word_fault_str [] = {
+          "NONE OF ABOVE",      // bit 0
+          "CML",
+          "TEMP_FAULT",
+          "VIN_UV_FAULT",
+          "IOUT_OC_FAULT",
+          "VOUT_OV_FAULT"
+      };
+
+      const uint8_t num_bic_vr_dev_count = ARRAY_SIZE(hd_bic_vr_dev_name);
+      const uint8_t vr_dev_num = sel[4];
+      const uint16_t st_word = *((uint16_t*) (sel + 5));
+      uint8_t fault_count = 0;
+
+      if (vr_dev_num < num_bic_vr_dev_count) {
+        snprintf(error_log, 256, "%s VR Alert: ", hd_bic_vr_dev_name[vr_dev_num]);
+      } else {
+        snprintf(error_log, 256, "Unknown VR device Alert");
+        // no extra parsing of status_word for unknown vr device
+        return 0;
+      }
+      // only parse bit2~bit6
+      for (size_t i = 2; i <6; i++) {
+        if ((st_word & (1 << i))) {
+          if (fault_count > 0) {
+            strncat(error_log, ", ", 255);
+          }
+          strncat(error_log, pmbus_status_word_fault_str[i], 255);
+          fault_count++;
+        }
+      }
+    }
+  }
+
   return 0;
 }
 

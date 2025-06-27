@@ -1187,7 +1187,7 @@ read_hsc_vdelta_value(float *value) {
     return ret;
   }
   else {
-    syslog(LOG_CRIT, "%s, ME error occured, rlen=%d, req->data[9]=%02X, comp_code=%02X\n",
+    syslog(LOG_WARNING, "%s, ME error occured, rlen=%d, req->data[9]=%02X, comp_code=%02X\n",
                       __FUNCTION__, rlen, req->data[9], rbuf[6]);
     return ret;
   }
@@ -4017,9 +4017,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_POWER_FAIL:
         ret = read_CPLD_power_fail_sts (fru, sensor_num, (float*) value, poweron_10s_flag);
         break;
-      case MB_SENSOR_HSC_VDELTA:
-        ret = read_hsc_vdelta_value((float*) value);
-        break;
       case MB_SENSOR_VR_STATUS:
         ret = check_vr_ov_ot_status((float*) value);
         break;
@@ -4028,9 +4025,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         break;
       }
     } else {
+      
       if((poweron_10s_flag < 5) && ((sensor_num == MB_SENSOR_HSC_IN_VOLT) ||
          (sensor_num == MB_SENSOR_HSC_OUT_CURR) || (sensor_num == MB_SENSOR_HSC_IN_POWER) ||
-         (sensor_num == MB_SENSOR_HSC_TEMP) ||
+         (sensor_num == MB_SENSOR_HSC_TEMP) || (sensor_num == MB_SENSOR_HSC_VDELTA) ||
          (sensor_num == MB_SENSOR_FAN0_TACH) || (sensor_num == MB_SENSOR_FAN1_TACH))) {
         if(sensor_num == MB_SENSOR_HSC_IN_POWER){
           poweron_10s_flag++;

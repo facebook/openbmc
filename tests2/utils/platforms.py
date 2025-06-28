@@ -1,6 +1,7 @@
 PLATFORMS = [
     "angelslanding",
     "bletchley",
+    "bletchley15",
     "catalina",
     "clearcreek",
     "clemente",
@@ -20,7 +21,6 @@ PLATFORMS = [
     "gtartemis",
     "halfdome",
     "harma",
-    "icecube800bc",
     "inspirationpoint",
     "janga",
     "javaisland",

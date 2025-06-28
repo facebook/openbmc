@@ -167,6 +167,40 @@
             ]
         },
         {
+            "alias": "openbmc-cit-bletchley15-determinator",
+            "args": {
+                "name": "openbmc-cit-bletchley15-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-bletchley15-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform bletchley15"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-bletchley/meta-bletchley15/.*",
+                        "^meta-facebook/meta-bletchley/recipes-.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-catalina-determinator",
             "args": {
                 "name": "openbmc-cit-catalina-determinator",

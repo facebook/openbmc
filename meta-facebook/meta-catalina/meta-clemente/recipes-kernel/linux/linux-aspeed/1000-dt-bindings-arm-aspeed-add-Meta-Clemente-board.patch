@@ -1,7 +1,34 @@
-From 33b8549c7f0a6661bc45d13af0406971b91a0271 Mon Sep 17 00:00:00 2001
+From: Leo Wang <leo.jt.wang@fii-foxconn.com>
+Date: Fri, 27 Jun 2025 14:53:46 +0800
+Subject: [PATCH v5 1/2] dt-bindings: arm: aspeed: add Meta Clemente board
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <20250627-add-support-for-meta-clemente-bmc-v5-1-53c6f0436f09@fii-foxconn.com>
+References: <20250627-add-support-for-meta-clemente-bmc-v5-0-53c6f0436f09@fii-foxconn.com>
+In-Reply-To: <20250627-add-support-for-meta-clemente-bmc-v5-0-53c6f0436f09@fii-foxconn.com>
+To: Rob Herring <robh@kernel.org>, Krzysztof Kozlowski <krzk+dt@kernel.org>, 
+ Conor Dooley <conor+dt@kernel.org>, Joel Stanley <joel@jms.id.au>, 
+ Andrew Jeffery <andrew@codeconstruct.com.au>, Kees Cook <kees@kernel.org>, 
+ Tony Luck <tony.luck@intel.com>, 
+ "Guilherme G. Piccoli" <gpiccoli@igalia.com>, 
+ Geert Uytterhoeven <geert+renesas@glider.be>, 
+ Magnus Damm <magnus.damm@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org, 
+ linux-aspeed@lists.ozlabs.org, linux-kernel@vger.kernel.org, 
+ linux-hardening@vger.kernel.org, linux-renesas-soc@vger.kernel.org, 
+ bruce.jy.hung@fii-foxconn.com, george.kw.lee@fii-foxconn.com, 
+ Leo Wang <leo.jt.wang@fii-foxconn.com>, Leo Wang <leo.jt.wang@gmail.com>
+X-Mailer: b4 0.14.2
+X-Developer-Signature: v=1; a=ed25519-sha256; t=1751007225; l=886;
+ i=leo.jt.wang@fii-foxconn.com; s=20250618; h=from:subject:message-id;
+ bh=jaJuRFuiQIpQeCgkDZC/ZckoYXAyyJRWtir3QL+VwYw=;
+ b=QTV1DTAjokWeOyO3/ArG8E06GUn9L0Z3U19GL8TFR8XdEnkbMWBNDWr0NRmaJWmgNlCO184p/
+ HbygN6f45OUBnpd3l3s+8Ffc626R8URLk+F3tXI1X0bsIHCnEeee5v+
+X-Developer-Key: i=leo.jt.wang@fii-foxconn.com; a=ed25519;
+ pk=x+DKjAtU/ZbbMkkAVdwfZzKpvNUVgiV1sLJbidVIwSQ=
+
 From: Leo Wang <leo.jt.wang@gmail.com>
-Date: Wed, 18 Jun 2025 17:40:02 +0800
-Subject: [PATCH 1/2] dt-bindings: arm: aspeed: add Meta Clemente board
 
 Document the new compatibles used on Meta Clemente.
 
@@ -11,7 +38,7 @@ Signed-off-by: Leo Wang <leo.jt.wang@fii-foxconn.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
-index 01333ac111fb..ff3fea63cecd 100644
+index 01333ac111fbb076582a6c0e801903c3500b459f..ff3fea63cecd99ec2dc56d3cf71403f897681a98 100644
 --- a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
 +++ b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
 @@ -81,6 +81,7 @@ properties:
@@ -22,6 +49,7 @@ index 01333ac111fb..ff3fea63cecd 100644
                - facebook,cloudripper-bmc
                - facebook,elbert-bmc
                - facebook,fuji-bmc
+
 -- 
 2.43.0
 

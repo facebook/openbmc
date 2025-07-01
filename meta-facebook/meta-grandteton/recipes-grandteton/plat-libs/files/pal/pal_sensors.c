@@ -493,6 +493,24 @@ int sensor_skip_handle(uint8_t fru, uint8_t snr_num) {
         break;
     }
   }
+  else {
+    if (fru == FRU_HPDB) {
+      switch (snr_num) {
+        case PDBH_SNR_HSC1_VOUT:
+        case PDBH_SNR_HSC1_IOUT:
+        case PDBH_SNR_HSC1_PIN:
+        case PDBH_SNR_HSC2_VOUT:
+        case PDBH_SNR_HSC2_IOUT:
+        case PDBH_SNR_HSC2_PIN:
+          if (gpio_get_value_by_shadow(HMC_PRESENCE)) {
+            return READING_NA;
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
   return 0;
 }
 

@@ -197,6 +197,8 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
 
   if (!image.empty()) {
+    // the BIOS ROM has become larger, it requires a longer update time.
+    set_update_ongoing(60 * 25);
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
   } else {
     ret = bic_update_fw_fd(slot_id, fw_comp, fd, force);

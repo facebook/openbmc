@@ -233,7 +233,6 @@ const uint8_t bic_emr_sensor_list[] = {
   BIC_SENSOR_P5V_STBY_VOL,
   BIC_SENSOR_P12V_DIMM_VOL,
   BIC_SENSOR_P1V2_STBY_VOL,
-  BIC_SENSOR_P3V3_M2_VOL,
   BIC_SENSOR_HSC_INPUT_VOL,
   BIC_SENSOR_VCCIN_VR_VOL,
   BIC_SENSOR_FIVRA_VR_VOL,
@@ -4174,13 +4173,6 @@ static void correct_emr_threshold(sdr_full_t *sdr, uint8_t snr_num)
       break;
     case BIC_1OU_VF_SENSOR_NUM_T_MB_OUTLET_TEMP_T:
       sdr->uc_thresh = 58;
-      break;
-    case BIC_SENSOR_P3V3_M2_VOL:
-      sdr->uc_thresh = 0;
-      sdr->unr_thresh = 0;
-      sdr->unc_thresh = 0;
-      sdr->lc_thresh = 0;
-      sdr->lnc_thresh = 0;
       break;
     case BIC_SENSOR_OUTLET_TEMP:
       sdr->uc_thresh = 78;

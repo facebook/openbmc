@@ -1,7 +1,7 @@
-From deb61f6dbdafbc9402324cf076a94b3e0af88a77 Mon Sep 17 00:00:00 2001
+From 39e777c722f3171077350d995ebd1b78a23f5424 Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
-Subject: [PATCH 04/18] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 04/21] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -68,10 +68,10 @@ Upstream-Status: Pending
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
 diff --git a/meson.build b/meson.build
-index 4a6fe12..08d7e94 100644
+index 8a492c7..47ec24d 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -264,6 +264,7 @@ executable(
+@@ -265,6 +265,7 @@ executable(
      oem_files,
      'requester/mctp_endpoint_discovery.cpp',
      'requester/configuration_discovery_handler.cpp',

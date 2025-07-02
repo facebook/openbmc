@@ -1,7 +1,7 @@
-From 6382d5bc3b7c7a99df29e8c62d588afae8177536 Mon Sep 17 00:00:00 2001
+From 2a994a1f35e1281bd424815c832deb715449882b Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay_yc_huang@wiwynn.com>
 Date: Tue, 24 Jun 2025 10:12:30 +0000
-Subject: [PATCH] Add event log type for PROCHOT
+Subject: [PATCH 21/21] Add event log type for PROCHOT
 
 [Task Description]
 - Related to YV4T1M-1031
@@ -78,5 +78,5 @@ index d7e3fa6..d20ca08 100644
      {
          lg2::error("{ERROR}", "ERROR", errorLog); // Create log in journal
 -- 
-2.25.1
+2.47.1
 

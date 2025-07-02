@@ -1,7 +1,7 @@
-From 022f2c0a3ca7d5303924303aa45004bba56b6898 Mon Sep 17 00:00:00 2001
+From d571129537cff32eb83631a3a7e01f450445abeb Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 16:21:45 +0800
-Subject: [PATCH 12/18] Support OEM-META command for getting Http boot
+Subject: [PATCH 12/21] Support OEM-META command for getting Http boot
  certification
 
 Summary:
@@ -186,7 +186,7 @@ index bdd5fce..89d3385 100644
  };
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp
 new file mode 100644
-index 0000000..4195cea
+index 0000000..c637193
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp
 @@ -0,0 +1,165 @@

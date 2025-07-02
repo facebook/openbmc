@@ -1,7 +1,7 @@
-From dbd5114fcb1d8a99c5c247962fa309a8dbfd6c9c Mon Sep 17 00:00:00 2001
+From aab7f51161867057b5e6451e3a5003e8f7d421e7 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
-Subject: [PATCH 17/18] platform-mc: Add option for discovering FRU data
+Subject: [PATCH 17/21] platform-mc: Add option for discovering FRU data
 
 Allow enabling or disabling the discovery of FRU data from terminus.
 Supports retrieving FRU data during the terminus discovery phase and
@@ -19,12 +19,12 @@ Upstream-Status: Pending
  5 files changed, 68 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index e9c2b5d..1f35896 100644
+index 829969e..9098b0d 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -138,6 +138,10 @@ conf_data.set(
- )
+@@ -139,6 +139,10 @@ conf_data.set(
  conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
+ conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
  conf_data.set('MCTP_RECOVERY', get_option('mctp-recovery').allowed())
 +conf_data.set(
 +    'DISCOVERY_FRU_DATA',
@@ -34,10 +34,10 @@ index e9c2b5d..1f35896 100644
  configure_file(output: 'config.h', configuration: conf_data)
  
 diff --git a/meson.options b/meson.options
-index b4c9c3d..ef6a2ac 100644
+index c66d751..9b398f5 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -228,3 +228,11 @@ option(
+@@ -239,3 +239,11 @@ option(
      description: 'Recovery in request timeout. Calls `.Recover` method on timeout to handle communication recovery',
      value: 'enabled',
  )

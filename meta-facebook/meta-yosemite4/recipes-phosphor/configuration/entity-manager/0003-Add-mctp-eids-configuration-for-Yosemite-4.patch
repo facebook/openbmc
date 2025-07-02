@@ -1,4 +1,4 @@
-From fdbbd89636b1ea7894ceb4d2e8af7efd0fda113c Mon Sep 17 00:00:00 2001
+From 12d4ddce95c22a5f78106c90a3a79625dc763c5d Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
@@ -61,7 +61,7 @@ index 1ee4e91..3fe8702 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Floating Falls', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
      "Type": "Board",
 diff --git a/configurations/meta/yosemite4_sentineldome_t1.json b/configurations/meta/yosemite4_sentineldome_t1.json
-index 9780ac0..3f8266f 100644
+index 3af370e..667b31c 100644
 --- a/configurations/meta/yosemite4_sentineldome_t1.json
 +++ b/configurations/meta/yosemite4_sentineldome_t1.json
 @@ -1,5 +1,21 @@
@@ -87,7 +87,7 @@ index 9780ac0..3f8266f 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yosemite4_sentineldome_t1_retimer.json b/configurations/meta/yosemite4_sentineldome_t1_retimer.json
-index ec1d9e7..53d13c1 100644
+index 10575a2..3941f5a 100644
 --- a/configurations/meta/yosemite4_sentineldome_t1_retimer.json
 +++ b/configurations/meta/yosemite4_sentineldome_t1_retimer.json
 @@ -1,5 +1,21 @@
@@ -113,7 +113,7 @@ index ec1d9e7..53d13c1 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yosemite4_sentineldome_t2.json b/configurations/meta/yosemite4_sentineldome_t2.json
-index b86b0dc..baeea8a 100644
+index ac32603..6ceab38 100644
 --- a/configurations/meta/yosemite4_sentineldome_t2.json
 +++ b/configurations/meta/yosemite4_sentineldome_t2.json
 @@ -1,5 +1,21 @@
@@ -139,7 +139,7 @@ index b86b0dc..baeea8a 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yosemite4_sentineldome_t2_retimer.json b/configurations/meta/yosemite4_sentineldome_t2_retimer.json
-index 28e5699..e99d354 100644
+index e4610c1..d8b564c 100644
 --- a/configurations/meta/yosemite4_sentineldome_t2_retimer.json
 +++ b/configurations/meta/yosemite4_sentineldome_t2_retimer.json
 @@ -1,5 +1,21 @@
@@ -165,7 +165,7 @@ index 28e5699..e99d354 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yosemite4_wailuafalls.json b/configurations/meta/yosemite4_wailuafalls.json
-index bc7df36..f9f9e9f 100644
+index 7a865bf..3260535 100644
 --- a/configurations/meta/yosemite4_wailuafalls.json
 +++ b/configurations/meta/yosemite4_wailuafalls.json
 @@ -1,5 +1,50 @@

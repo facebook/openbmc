@@ -1,4 +1,4 @@
-From 596dc88f7ba6c463d3199e5a8f2fec7f8ff0e23b Mon Sep 17 00:00:00 2001
+From 9411ebc90a4369f5d150c0eebab58e429a5a1659 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Wed, 27 Mar 2024 09:54:11 -0700
 Subject: [PATCH 1/2] user-mgr: Add max_system_users as a build-time config
@@ -30,12 +30,12 @@ Change-Id: I8201d58c4f5051a35f43776e25fa90d7eef1856b
 Signed-off-by: Marco Kawajiri <kawajiri@meta.com>
 ---
  meson.build   | 6 ++++++
- meson.options | 6 ++++++
+ meson.options | 7 +++++++
  user_mgr.hpp  | 3 ++-
- 3 files changed, 14 insertions(+), 1 deletion(-)
+ 3 files changed, 15 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index 6bbea64..627278c 100644
+index c22c4c4..786b8dc 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -23,6 +23,12 @@ conf_data.set_quoted(
@@ -52,13 +52,14 @@ index 6bbea64..627278c 100644
      'CLASS_VERSION',
      1,
 diff --git a/meson.options b/meson.options
-index ace1bdd..fbe1962 100644
+index 44551ad..c3c18e1 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -5,3 +5,9 @@ option(
-     description: 'Enable management of the root user',
-     value: 'enabled',
+@@ -12,3 +12,10 @@ option(
+     value: 64,
+     description: 'Max password Length default value as per NIST guideline recommendation',
  )
++
 +option(
 +    'max_system_users',
 +    type: 'integer',
@@ -66,7 +67,7 @@ index ace1bdd..fbe1962 100644
 +    description: 'Maximum allowed number of system users',
 +)
 diff --git a/user_mgr.hpp b/user_mgr.hpp
-index b69cb87..bcf6130 100644
+index 13f3c8e..8a36806 100644
 --- a/user_mgr.hpp
 +++ b/user_mgr.hpp
 @@ -14,6 +14,7 @@
@@ -84,8 +85,8 @@ index b69cb87..bcf6130 100644
 -inline constexpr size_t maxSystemUsers = 30;
 +inline constexpr size_t maxSystemUsers = MAX_SYSTEM_USERS;
  inline constexpr uint8_t minPasswdLength = 8;
+ extern uint8_t maxPasswdLength; // MAX_PASSWORD_LENGTH;
  inline constexpr size_t maxSystemGroupNameLength = 32;
- inline constexpr size_t maxSystemGroupCount = 64;
 -- 
 2.47.1
 

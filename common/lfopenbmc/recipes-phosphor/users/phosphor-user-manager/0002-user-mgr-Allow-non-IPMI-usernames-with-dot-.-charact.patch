@@ -1,4 +1,4 @@
-From af5242940cb0dfe30a1baa60f1b60428efcb6ab9 Mon Sep 17 00:00:00 2001
+From 2dd6e85d53533db9b950e2a608aea072f367ddd5 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Fri, 5 Apr 2024 07:54:27 -0700
 Subject: [PATCH 2/2] user-mgr: Allow non-IPMI usernames with dot '.' character
@@ -38,7 +38,7 @@ Signed-off-by: Marco Kawajiri <kawajiri@meta.com>
  2 files changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/test/user_mgr_test.cpp b/test/user_mgr_test.cpp
-index 9dd799a..e4b215e 100644
+index 187d3c2..435f13e 100644
 --- a/test/user_mgr_test.cpp
 +++ b/test/user_mgr_test.cpp
 @@ -569,12 +569,23 @@ TEST_F(UserMgrInTest,
@@ -66,10 +66,10 @@ index 9dd799a..e4b215e 100644
  
  TEST_F(UserMgrInTest, UserAddNotRootFailedWithInternalFailure)
 diff --git a/user_mgr.cpp b/user_mgr.cpp
-index b8b3afd..ba29ac7 100644
+index 2aa15e8..41a2bdb 100644
 --- a/user_mgr.cpp
 +++ b/user_mgr.cpp
-@@ -124,6 +124,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
+@@ -125,6 +125,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
      "openbmc_orfp_", // OpenBMC Redfish OEM Privileges
  };
  
@@ -81,7 +81,7 @@ index b8b3afd..ba29ac7 100644
  void checkAndThrowsForGroupChangeAllowed(const std::string& groupName)
  {
      bool allowed = false;
-@@ -229,8 +234,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
+@@ -249,8 +254,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
  void UserMgr::throwForUserNameConstraints(
      const std::string& userName, const std::vector<std::string>& groupNames)
  {
@@ -92,7 +92,7 @@ index b8b3afd..ba29ac7 100644
      {
          if (userName.length() > ipmiMaxUserNameLen)
          {
-@@ -252,8 +257,8 @@ void UserMgr::throwForUserNameConstraints(
+@@ -272,8 +277,8 @@ void UserMgr::throwForUserNameConstraints(
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
                                Argument::ARGUMENT_VALUE("Invalid length"));
      }

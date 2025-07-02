@@ -1,4 +1,4 @@
-From c871c6a557a1dd9b6f5a0e8fed95fa860c19ca56 Mon Sep 17 00:00:00 2001
+From ae9d41717898978a9578a4c885cdef40ec64f0b2 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -13,10 +13,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 ---
  meson.build                          |  5 ++
  meson.options                        |  6 +++
- src/entity_manager/configuration.cpp | 17 +++---
+ src/entity_manager/configuration.cpp | 16 +++---
  src/utils.cpp                        | 79 ++++++++++++++++------------
  src/utils.hpp                        | 12 +++--
- 5 files changed, 76 insertions(+), 43 deletions(-)
+ 5 files changed, 75 insertions(+), 43 deletions(-)
 
 diff --git a/meson.build b/meson.build
 index e7a117a..d5a12ee 100644
@@ -49,19 +49,19 @@ index d658c8b..b4cde28 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index 8646f57..a519c1d 100644
+index bd78f1b..b790b7c 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
-@@ -35,12 +35,17 @@ bool writeJsonFiles(const nlohmann::json& systemConfiguration)
- // reads json files out of the filesystem
+@@ -37,13 +37,17 @@ bool writeJsonFiles(const nlohmann::json& systemConfiguration)
  bool loadConfigurations(std::list<nlohmann::json>& configurations)
  {
+     const auto start = std::chrono::steady_clock::now();
 +    const std::string configPrefixesEnv = CONFIG_PREFIX;
 +    std::vector<std::string> configPrefixes =
 +        (configPrefixesEnv != "all" && !configPrefixesEnv.empty())
 +            ? splitConfigString(configPrefixesEnv, ',', true)
 +            : std::vector<std::string>{};
-+
+ 
      // find configuration files
      std::vector<std::filesystem::path> jsonPaths;
 -    if (!findFiles(
@@ -74,7 +74,7 @@ index 8646f57..a519c1d 100644
      {
          std::cerr << "Unable to find any configuration files in "
                    << configurationDirectory << "\n";
-@@ -81,8 +86,8 @@ bool loadConfigurations(std::list<nlohmann::json>& configurations)
+@@ -84,8 +88,8 @@ bool loadConfigurations(std::list<nlohmann::json>& configurations)
              continue;
          }
          /*

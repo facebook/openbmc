@@ -1,7 +1,7 @@
-From 5aeda9a67a28dd8a6378030226ff51d72bbd05a1 Mon Sep 17 00:00:00 2001
+From 7c2490cab523614cb93ee35a8ff777efa606c725 Mon Sep 17 00:00:00 2001
 From: Amithash Prasad <amithash@meta.com>
 Date: Thu, 1 May 2025 15:34:05 -0700
-Subject: [PATCH 19/21] platform-mc: Simplify numeric sensor event handler
+Subject: [PATCH 18/21] platform-mc: Simplify numeric sensor event handler
 
 Instead of a double nested switch/case handling
 the state transition from previousEventState to
@@ -27,10 +27,10 @@ Signed-off-by: Amithash Prasad <amithash@meta.com>
  3 files changed, 400 insertions(+), 194 deletions(-)
 
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index 3af26d2..f3ad721 100644
+index c4ed128..edae0b0 100644
 --- a/platform-mc/event_manager.cpp
 +++ b/platform-mc/event_manager.cpp
-@@ -106,6 +106,110 @@ int EventManager::handlePlatformEvent(
+@@ -142,6 +142,110 @@ int EventManager::handlePlatformEvent(
      return PLDM_ERROR;
  }
  
@@ -141,7 +141,7 @@ index 3af26d2..f3ad721 100644
  int EventManager::processNumericSensorEvent(pldm_tid_t tid, uint16_t sensorId,
                                              const uint8_t* sensorData,
                                              size_t sensorDataLength)
-@@ -148,202 +252,21 @@ int EventManager::processNumericSensorEvent(pldm_tid_t tid, uint16_t sensorId,
+@@ -184,202 +288,21 @@ int EventManager::processNumericSensorEvent(pldm_tid_t tid, uint16_t sensorId,
              "TID", tid, "SID", sensorId);
          return PLDM_ERROR;
      }
@@ -358,10 +358,10 @@ index 3af26d2..f3ad721 100644
  }
  
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index 083725d..0eb52d7 100644
+index b44e333..bf94a93 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
-@@ -21,6 +21,13 @@ using HandlerFunc =
+@@ -22,6 +22,13 @@ using HandlerFunc =
  using HandlerFuncs = std::vector<HandlerFunc>;
  using EventMap = std::map<EventType, HandlerFuncs>;
  

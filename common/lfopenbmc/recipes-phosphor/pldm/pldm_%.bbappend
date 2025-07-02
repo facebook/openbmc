@@ -21,11 +21,10 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0015-Support-OEM-META-command-for-crashdump-from-BIC.patch \
     file://0016-platform-mc-Add-MCTP-recovery-option.patch \
     file://0017-platform-mc-Add-option-for-discovering-FRU-data.patch \
-    file://0018-platform-mc-Ensure-independent-terminus-init-flow.patch \
-    file://0019-platform-mc-Simplify-numeric-sensor-event-handler.patch \
-    file://0020-platform-mc-Refactor-all-threshold-alarms-into-helpe.patch \
-    file://0021-platform-mc-Add-structured-logging-for-threshold-eve.patch \
-    file://0022-Add-event-log-type-for-PROCHOT.patch \
+    file://0018-platform-mc-Simplify-numeric-sensor-event-handler.patch \
+    file://0019-platform-mc-Refactor-all-threshold-alarms-into-helpe.patch \
+    file://0020-platform-mc-Add-structured-logging-for-threshold-eve.patch \
+    file://0021-Add-event-log-type-for-PROCHOT.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

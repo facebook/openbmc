@@ -1,7 +1,7 @@
-From c731df189a20a24bb8c3e912bfb28fcc2cb0d894 Mon Sep 17 00:00:00 2001
+From 2ffaddea3800b410d4148410d6f845fcd83aa65e Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 01/18] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 01/21] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -107,10 +107,10 @@ index 358d0d7..e17e306 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index 3c7db76..bb33125 100644
+index 945886f..8583fce 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -259,6 +259,7 @@ executable(
+@@ -260,6 +260,7 @@ executable(
      'platform-mc/dbus_to_terminus_effecters.cpp',
      oem_files,
      'requester/mctp_endpoint_discovery.cpp',
@@ -641,5 +641,5 @@ index f269561..d30d884 100644
  foreach t : tests
      test(
 -- 
-2.34.1
+2.47.1
 

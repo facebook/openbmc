@@ -1,7 +1,7 @@
-From 4956063fa80556cb4ca282c2a5422346ef5333bd Mon Sep 17 00:00:00 2001
+From c8ef9fe15f1a967e2e0ff015627493be8e8d9137 Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
-Subject: [PATCH 05/18] Support OEM-META command for host BIOS version
+Subject: [PATCH 05/21] Support OEM-META command for host BIOS version
 
 Summary:
   - Add handler for write-file command "BIOS_VERSION", which is sent

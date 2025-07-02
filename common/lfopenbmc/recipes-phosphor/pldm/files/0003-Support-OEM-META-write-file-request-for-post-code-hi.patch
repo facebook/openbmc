@@ -1,7 +1,7 @@
-From 6d054cbbdd514459df8333dfc8b2c10ae5cdb133 Mon Sep 17 00:00:00 2001
+From 2bc4e3e21aea9e542d6380d414476cd71145407e Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 03/18] Support OEM-META write file request for post code
+Subject: [PATCH 03/21] Support OEM-META write file request for post code
  history
 
 Support write file req when multiple hosts send postcode to BMC
@@ -55,10 +55,10 @@ index acbb400..c0e3ea7 100644
      'pldmresponder',
      sources,
 diff --git a/meson.build b/meson.build
-index bb33125..4a6fe12 100644
+index 8583fce..8a492c7 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -140,6 +140,10 @@ conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
+@@ -141,6 +141,10 @@ conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
  
  configure_file(output: 'config.h', configuration: conf_data)
  
@@ -70,10 +70,10 @@ index bb33125..4a6fe12 100644
      '-include',
      '@0@'.format(meson.current_build_dir() / 'config.h'),
 diff --git a/meson.options b/meson.options
-index 0ada2a0..1ebeff3 100644
+index bd51f70..effb649 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -161,6 +161,14 @@ option(
+@@ -172,6 +172,14 @@ option(
      description: 'Enable IBM OEM PLDM',
  )
  

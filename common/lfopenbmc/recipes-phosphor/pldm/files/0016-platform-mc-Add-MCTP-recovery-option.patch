@@ -1,7 +1,7 @@
-From 6adee0169946054fecce3d2000f474ee1037d0f4 Mon Sep 17 00:00:00 2001
+From 7e550d5c309b150b767a71a305908fe26d8998be Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
-Subject: [PATCH 16/18] platform-mc: Add MCTP recovery option
+Subject: [PATCH 16/21] platform-mc: Add MCTP recovery option
 
 Allow enabling or disabling MCTP 2.0 recovery feature.
 Calls `.Recover` method on timeout to handle communication recovery.
@@ -39,22 +39,22 @@ index 46769aa..1ec44c2 100644
  
  uint16_t findStateSensorId(const pldm_pdr* pdrRepo, uint8_t tid,
 diff --git a/meson.build b/meson.build
-index 08d7e94..e9c2b5d 100644
+index 47ec24d..829969e 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -137,6 +137,7 @@ conf_data.set(
-     get_option('default-sensor-update-interval'),
+@@ -138,6 +138,7 @@ conf_data.set(
  )
  conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
+ conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
 +conf_data.set('MCTP_RECOVERY', get_option('mctp-recovery').allowed())
  
  configure_file(output: 'config.h', configuration: conf_data)
  
 diff --git a/meson.options b/meson.options
-index 1ebeff3..b4c9c3d 100644
+index effb649..c66d751 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -220,3 +220,11 @@ option(
+@@ -231,3 +231,11 @@ option(
                      `GetSensorReading` if the sensor need to be updated.''',
      value: 249,
  )
@@ -67,10 +67,10 @@ index 1ebeff3..b4c9c3d 100644
 +    value: 'enabled',
 +)
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 85b2f53..767b9e8 100644
+index 7355fd0..5064c33 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -673,6 +673,7 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
+@@ -695,6 +695,7 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
      auto rc = co_await sendRecvPldmMsgOverMctp(eid, request, responseMsg,
                                                 responseLen);
  
@@ -78,7 +78,7 @@ index 85b2f53..767b9e8 100644
      if (rc == PLDM_ERROR_NOT_READY)
      {
          // Call Recover() to check enpoint's availability
-@@ -684,6 +685,7 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
+@@ -706,6 +707,7 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
          pldm::utils::recoverMctpEndpoint(endpointObjPath);
          updateMctpEndpointAvailability(mctpInfo.value(), false);
      }

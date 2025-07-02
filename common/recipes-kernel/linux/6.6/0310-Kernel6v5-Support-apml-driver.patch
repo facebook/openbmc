@@ -1,7 +1,7 @@
-From 17ce6af4fbf721c8a3a379eec064be9166c74dd6 Mon Sep 17 00:00:00 2001
+From ed3310cc2ee258b57558004e0f0b2ea15f1f664f Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 24 Nov 2023 15:54:07 +0800
-Subject: [PATCH 310/330] Kernel6v5: Support apml driver
+Subject: [PATCH] Kernel6v5: Support apml driver
 
 https://github.com/AMDESE/OpenBMC/blob/master/meta-amd/meta-common/recipes-kernel/linux/linux-aspeed/0057-apml_sbrmi-Add-support-to-identify-register-address-.patch
 
@@ -38,10 +38,10 @@ Link: https://github.com/AMDESE/OpenBMC/blob/master/meta-amd/meta-common/recipes
  create mode 100644 include/uapi/linux/amd-apml.h
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 10a0f87d8e80..e7162df826f5 100644
+index 97318b923..83dab40fb 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -1790,6 +1790,28 @@ config SENSORS_SBRMI
+@@ -1758,6 +1758,28 @@ config SENSORS_SBRMI
  	  This driver can also be built as a module. If so, the module will
  	  be called sbrmi.
  
@@ -71,10 +71,10 @@ index 10a0f87d8e80..e7162df826f5 100644
  	tristate "Sensiron humidity and temperature sensors. SHT15 and compat."
  	depends on GPIOLIB || COMPILE_TEST
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 1d4246d5a544..353b9de74c0e 100644
+index 9dacd43f1..caed8a52a 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
-@@ -186,6 +186,8 @@ obj-$(CONFIG_SENSORS_PWM_FAN)	+= pwm-fan.o
+@@ -183,6 +183,8 @@ obj-$(CONFIG_SENSORS_PWM_FAN)	+= pwm-fan.o
  obj-$(CONFIG_SENSORS_RASPBERRYPI_HWMON)	+= raspberrypi-hwmon.o
  obj-$(CONFIG_SENSORS_SBTSI)	+= sbtsi_temp.o
  obj-$(CONFIG_SENSORS_SBRMI)	+= sbrmi.o
@@ -85,7 +85,7 @@ index 1d4246d5a544..353b9de74c0e 100644
  obj-$(CONFIG_SENSORS_SCH5636)	+= sch5636.o
 diff --git a/drivers/hwmon/sbrmi-i3c.c b/drivers/hwmon/sbrmi-i3c.c
 new file mode 100644
-index 000000000000..be2ef58803c8
+index 000000000..be2ef5880
 --- /dev/null
 +++ b/drivers/hwmon/sbrmi-i3c.c
 @@ -0,0 +1,363 @@
@@ -454,7 +454,7 @@ index 000000000000..be2ef58803c8
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/hwmon/sbtsi-i3c.c b/drivers/hwmon/sbtsi-i3c.c
 new file mode 100644
-index 000000000000..b7b499aa33ef
+index 000000000..b7b499aa3
 --- /dev/null
 +++ b/drivers/hwmon/sbtsi-i3c.c
 @@ -0,0 +1,272 @@
@@ -731,7 +731,7 @@ index 000000000000..b7b499aa33ef
 +MODULE_DESCRIPTION("Hwmon driver for AMD SB-TSI emulated sensor");
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index cadd4a820c03..499d5baacdbc 100644
+index cadd4a820..499d5baac 100644
 --- a/drivers/misc/Kconfig
 +++ b/drivers/misc/Kconfig
 @@ -562,6 +562,7 @@ config TPS6594_PFSM
@@ -743,7 +743,7 @@ index cadd4a820c03..499d5baacdbc 100644
  source "drivers/misc/eeprom/Kconfig"
  source "drivers/misc/cb710/Kconfig"
 diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index f2a4d1ff65d4..5afe961975d5 100644
+index f2a4d1ff6..5afe96197 100644
 --- a/drivers/misc/Makefile
 +++ b/drivers/misc/Makefile
 @@ -3,6 +3,7 @@
@@ -756,7 +756,7 @@ index f2a4d1ff65d4..5afe961975d5 100644
  obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
 diff --git a/drivers/misc/amd-apml/Kconfig b/drivers/misc/amd-apml/Kconfig
 new file mode 100644
-index 000000000000..bc9bd7ece0a8
+index 000000000..bc9bd7ece
 --- /dev/null
 +++ b/drivers/misc/amd-apml/Kconfig
 @@ -0,0 +1,28 @@
@@ -790,7 +790,7 @@ index 000000000000..bc9bd7ece0a8
 +	  be called apml_sbtsi.
 diff --git a/drivers/misc/amd-apml/Makefile b/drivers/misc/amd-apml/Makefile
 new file mode 100644
-index 000000000000..a73ca261f08c
+index 000000000..a73ca261f
 --- /dev/null
 +++ b/drivers/misc/amd-apml/Makefile
 @@ -0,0 +1,9 @@
@@ -805,7 +805,7 @@ index 000000000000..a73ca261f08c
 +obj-$(CONFIG_APML_SBTSI)	+= apml_sbtsi.o
 diff --git a/drivers/misc/amd-apml/apml_sbtsi.c b/drivers/misc/amd-apml/apml_sbtsi.c
 new file mode 100644
-index 000000000000..10bb9ae0ae7c
+index 000000000..10bb9ae0a
 --- /dev/null
 +++ b/drivers/misc/amd-apml/apml_sbtsi.c
 @@ -0,0 +1,433 @@
@@ -1244,7 +1244,7 @@ index 000000000000..10bb9ae0ae7c
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/misc/amd-apml/sbrmi-common.c b/drivers/misc/amd-apml/sbrmi-common.c
 new file mode 100644
-index 000000000000..7527c186adb3
+index 000000000..7527c186a
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi-common.c
 @@ -0,0 +1,490 @@
@@ -1740,7 +1740,7 @@ index 000000000000..7527c186adb3
 +}
 diff --git a/drivers/misc/amd-apml/sbrmi-common.h b/drivers/misc/amd-apml/sbrmi-common.h
 new file mode 100644
-index 000000000000..6f1aea480509
+index 000000000..6f1aea480
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi-common.h
 @@ -0,0 +1,38 @@
@@ -1784,7 +1784,7 @@ index 000000000000..6f1aea480509
 +#endif /*_AMD_APML_SBRMI_H_*/
 diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
 new file mode 100644
-index 000000000000..3ea6a63d1ba0
+index 000000000..21cc226ba
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi.c
 @@ -0,0 +1,885 @@
@@ -1878,7 +1878,7 @@ index 000000000000..3ea6a63d1ba0
 +	if (!rmi_dev->regmap) {
 +		ret = configure_regmap(rmi_dev);
 +		if (ret < 0) {
-+			pr_err("regmap configuration failed with return value:%d in sbrmi_read\n", ret);
++			// pr_err("regmap configuration failed with return value:%d in sbrmi_read\n", ret);
 +			return ret;
 +		}
 +	}
@@ -2242,7 +2242,7 @@ index 000000000000..3ea6a63d1ba0
 +		}
 +	} while (probe > 0);
 +
-+	pr_err("I2C SBRMI_REV error code value: %d\n", ret);
++	// pr_err("I2C SBRMI_REV error code value: %d\n", ret);
 +	return ret;
 +}
 +
@@ -2470,13 +2470,13 @@ index 000000000000..3ea6a63d1ba0
 +	if (rmi_dev->i3cdev) {
 +		ret = sbrmi_i3c_identify_reg_addr_size(rmi_dev->i3cdev, &size, &rev);
 +		if (ret < 0) {
-+			pr_err("Reg size identification failed with return value:%d\n", ret);
++			// pr_err("Reg size identification failed with return value:%d\n", ret);
 +			return ret;
 +		}
 +	} else if (rmi_dev->client) {
 +		ret = sbrmi_i2c_identify_reg_addr_size(rmi_dev->client, &size, &rev);
 +		if (ret < 0) {
-+			pr_err("Reg size identification failed with return value:%d\n", ret);
++			// pr_err("Reg size identification failed with return value:%d\n", ret);
 +			return ret;
 +		}
 +	} else {
@@ -2675,7 +2675,7 @@ index 000000000000..3ea6a63d1ba0
 +MODULE_LICENSE("GPL");
 diff --git a/include/uapi/linux/amd-apml.h b/include/uapi/linux/amd-apml.h
 new file mode 100644
-index 000000000000..041610925fad
+index 000000000..041610925
 --- /dev/null
 +++ b/include/uapi/linux/amd-apml.h
 @@ -0,0 +1,74 @@

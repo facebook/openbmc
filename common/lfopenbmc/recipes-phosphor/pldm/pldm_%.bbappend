@@ -25,6 +25,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0019-platform-mc-Simplify-numeric-sensor-event-handler.patch \
     file://0020-platform-mc-Refactor-all-threshold-alarms-into-helpe.patch \
     file://0021-platform-mc-Add-structured-logging-for-threshold-eve.patch \
+    file://0022-Add-event-log-type-for-PROCHOT.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

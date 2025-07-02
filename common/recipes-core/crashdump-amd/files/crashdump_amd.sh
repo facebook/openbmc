@@ -76,18 +76,18 @@ dump_sensor_history()
   l_SLOT=$1
   l_SENSOR_HISTORY=180
 
-  /usr/local/bin/sensor-util "$l_SLOT" --history $l_SENSOR_HISTORY \
-   && /usr/local/bin/sensor-util spb --history $l_SENSOR_HISTORY \
-   && /usr/local/bin/sensor-util nic --history $l_SENSOR_HISTORY 
+  /usr/local/bin/sensor-util "$l_SLOT" --history $l_SENSOR_HISTORY
+  spd=$(/usr/local/bin/sensor-util spb --history $l_SENSOR_HISTORY) && echo "$spd"
+  nic=$(/usr/local/bin/sensor-util nic --history $l_SENSOR_HISTORY) && echo "$nic"
 }
 
 dump_sensor_threshold()
 {
   l_SLOT=$1
 
-  /usr/local/bin/sensor-util "$l_SLOT" --threshold \
-   && /usr/local/bin/sensor-util spb --threshold \
-   && /usr/local/bin/sensor-util nic --threshold
+  /usr/local/bin/sensor-util "$l_SLOT" --threshold
+  spb=$(/usr/local/bin/sensor-util spb --threshold) && echo "$spd"
+  nic=$(/usr/local/bin/sensor-util nic --threshold) && echo "$nic"
 }
 
 script_filename()

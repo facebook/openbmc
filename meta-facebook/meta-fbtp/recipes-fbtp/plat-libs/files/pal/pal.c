@@ -1122,8 +1122,6 @@ read_hsc_vdelta_value(float *value) {
   uint8_t sku_id = 0;
   uint8_t hsc_volt_reg[2] = {0x88, 0x8B}; //VIN, VOUT
   float hsc_volt[2] = {0}; //VIN, VOUT
-  float p12v_adc, p5v_adc, p3v_adc;
-  char kv_str[MAX_VALUE_LEN] = {0};
 
   if (pal_get_platform_id(&sku_id) ||
       pal_get_board_rev_id(&revision_id)) {
@@ -1174,31 +1172,25 @@ read_hsc_vdelta_value(float *value) {
   if ( ret == CC_SUCCESS ) {
     retry_for_ME = 0;
     logged = false;
+    *value = hsc_volt[0] - hsc_volt[1];
   }
   else if ( rbuf[6] == CC_NODE_BUSY ) {
     if ( retry_for_ME < MAX_ME_RETRY ) {
       retry_for_ME++;
       syslog(LOG_WARNING, "%s, ME node busy, retry count: %d", __FUNCTION__, retry_for_ME);
+      return ret;
     }
     else if ( retry_for_ME >= MAX_ME_RETRY && !logged ) {
       logged = true;
       syslog(LOG_CRIT, "%s, ME node busy, reach MAX retry count: %d", __FUNCTION__, retry_for_ME);
+      *value = HSC_FAULT_DIFF_THRES + 1;
+      retry = retry_for_ME;
     }
-    return ret;
   }
   else {
-    syslog(LOG_WARNING, "%s, ME error occured, rlen=%d, req->data[9]=%02X, comp_code=%02X\n",
-                      __FUNCTION__, rlen, req->data[9], rbuf[6]);
+    syslog(LOG_WARNING, "%s, ME error occured, rlen=%d, comp_code=%02X\n",
+                         __FUNCTION__, rlen, rbuf[6]);
     return ret;
-  }
-
-  kv_get(kv_str, "read_12v", NULL, 0);
-  if (!strcmp(kv_str, "ME") && ret != READING_NA) {
-    *value = hsc_volt[0] - hsc_volt[1];
-  }
-  else {
-    ret = sensors_read_adc("MB_P12V", &p12v_adc);
-    *value = hsc_volt[0] - p12v_adc;
   }
 
   if ( *value >= HSC_FAULT_DIFF_THRES ) {
@@ -1206,12 +1198,8 @@ read_hsc_vdelta_value(float *value) {
       retry++;
     }
     else {
-      sensors_read_adc("MB_P5_STBY", &p5v_adc);
-      sensors_read_adc("MB_P3V3_STBY", &p3v_adc);
       syslog(LOG_CRIT, "HSC vdelta(Vin(%0.2f)-Vout(%0.2f)) %0.2f >= %0.2f\n" \
                        , hsc_volt[0], hsc_volt[1], *value, HSC_FAULT_DIFF_THRES);
-      syslog(LOG_CRIT, "MB_P12V: %0.2f, MB_P5V_STBY: %0.2f, MB_P3V3_STBY: %0.2f" \
-                       , p12v_adc, p5v_adc, p3v_adc);
       syslog(LOG_CRIT, "ME resp: rlen=%d, comp_code=%02X, byte10=%02X, byte11=%02X\n" \
                        , rlen, rbuf[6], rbuf[10], rbuf[11]);
       turn_off_p12v_stby("HSC vdelta");

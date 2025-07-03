@@ -1,0 +1,64 @@
+From f2f2a17c1f4b9a903dc5b6798468ab4ef3426ab2 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Tue, 1 Jul 2025 15:23:41 +0800
+Subject: [PATCH 1/1] configurations: revise nic temperature name
+
+Revise the NIC temperature name to match the naming rule:
+inventory_component_type_unit.
+
+Change-Id: Ifb063fe93753479fd2352145a4393a533fae040b
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ configurations/brcm_100g_1p_ocp_mezz.json | 4 ++--
+ configurations/brcm_200g_1p_ocp_mezz.json | 4 ++--
+ configurations/cx7_ocp.json               | 4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/configurations/brcm_100g_1p_ocp_mezz.json b/configurations/brcm_100g_1p_ocp_mezz.json
+index d3cb95568f..45695d96a3 100644
+--- a/configurations/brcm_100g_1p_ocp_mezz.json
++++ b/configurations/brcm_100g_1p_ocp_mezz.json
+@@ -12,8 +12,8 @@
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC Temp $bus",
+-            "Name1": "NIC Temp $bus",
++            "Name": "NIC$bus_OCP_TEMP_C",
++            "Name1": "NIC$bus_OCP_TEMP_C",
+             "Thresholds": [
+                 {
+                     "Direction": "less than",
+diff --git a/configurations/brcm_200g_1p_ocp_mezz.json b/configurations/brcm_200g_1p_ocp_mezz.json
+index 3f028b7429..9e14efcf14 100644
+--- a/configurations/brcm_200g_1p_ocp_mezz.json
++++ b/configurations/brcm_200g_1p_ocp_mezz.json
+@@ -12,8 +12,8 @@
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC Temp $bus",
+-            "Name1": "NIC Temp $bus",
++            "Name": "NIC$bus_OCP_TEMP_C",
++            "Name1": "NIC$bus_OCP_TEMP_C",
+             "Thresholds": [
+                 {
+                     "Direction": "less than",
+diff --git a/configurations/cx7_ocp.json b/configurations/cx7_ocp.json
+index 3f11519b3a..1fd5e472df 100644
+--- a/configurations/cx7_ocp.json
++++ b/configurations/cx7_ocp.json
+@@ -12,8 +12,8 @@
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC Temp $bus",
+-            "Name1": "NIC Temp $bus",
++            "Name": "NIC$bus_OCP_TEMP_C",
++            "Name1": "NIC$bus_OCP_TEMP_C",
+             "Thresholds": [
+                 {
+                     "Direction": "less than",
+-- 
+2.25.1
+

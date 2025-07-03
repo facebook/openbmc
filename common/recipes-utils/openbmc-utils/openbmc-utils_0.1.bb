@@ -207,6 +207,7 @@ do_install() {
     # Install boot-info.
     if ! echo ${PACKAGECONFIG} | awk "/boot-info/ {exit 1}"; then
         install -m 0755 ${UNPACKDIR}/boot_info.sh ${D}/usr/local/bin
+        ln -s /usr/local/bin/boot_info.sh ${D}/usr/local/bin/boot_util.sh
     fi
 }
 

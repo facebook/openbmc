@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: Unique Dev Address
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <unique_device_address>
+      unique_device_address: The address of the RPU modbus device to check if ready"
+    exit 1
+fi
+
+set -u
+
+# unique device address
+UDA="$1"
+
+aalcStatusAlarmRegister=37377
+
+if ! output=$(rackmoncli read "$UDA" "$aalcStatusAlarmRegister") ; then
+  echo "{\"message\": \"Rackmon output: $output\", \"status\": \"error\"}"
+  exit 1
+fi
+
+case $output in
+  0x*)
+    if (( (output & 0x0200) == 0 )); then
+      echo '{"status": "success", "ready": true}'
+    else
+      echo '{"status": "success", "ready": false}'
+    fi
+    ;;
+  *)
+    echo "{\"message\": \"Rackmon output: $output\", \"status\": \"error\"}"
+    exit 1
+    ;;
+esac

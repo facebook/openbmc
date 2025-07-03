@@ -7,9 +7,13 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0-only;m
 
 inherit systemd
 
-SRC_URI += " \
+S="${WORKDIR}/sources"
+UNPACKDIR="${S}"
+
+LOCAL_URI = " \
     file://default-config.json \
     file://rpu-controller-command \
+    file://rpu-ready \
 "
 
 RDEPENDS:${PN}:append = "bash rackmon"
@@ -19,6 +23,7 @@ RDEPENDS:${PN}:append = "bash rackmon"
 do_install() {
     install -d ${D}${libexecdir}/${PN}
     install -m 0755 ${UNPACKDIR}/rpu-controller-command ${D}${libexecdir}/${PN}/rpu-controller-command
+    install -m 0755 ${UNPACKDIR}/rpu-ready ${D}${libexecdir}/${PN}/rpu-ready
 
     install -d ${D}/var/lib/${PN}
     install ${UNPACKDIR}/default-config.json ${D}/var/lib/${PN}/default-config.json

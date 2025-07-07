@@ -44,7 +44,7 @@ wedge_board_type() {
             echo "ICECUBE800BC"
             ;;
         9)
-            echo "ICETRAY"
+            echo "ICETEA"
             ;;
         *)
             echo "unknown value [$board_id]"

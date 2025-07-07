@@ -18,7 +18,7 @@ static const i2c_dev_attr_st mcbcpld_attrs[] = {
 		"Meta Networking system board type:\n"
 		" 0x7 : Santabarbara\n"
 		" 0x8 : Icecube\n"
-		" 0x9 : Icetray",
+		" 0x9 : Icetea",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x0,

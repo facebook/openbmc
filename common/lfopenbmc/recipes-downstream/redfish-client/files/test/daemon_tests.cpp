@@ -1,6 +1,7 @@
 #include "daemon.hpp"
 
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
+#include <xyz/openbmc_project/Association/Definitions/client.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -35,21 +36,24 @@ static const char* kTestGoodConfigJSON = R"(
     "service_name": "not_a_real_sevice_name",
     "host_port": "not_a_real.host.facebook.com:not_a_real_port",
     "sensor_configs": {
-        "/item1": {
-            "url": "/redfish/v1/Chassis/server1/Sensors/slot1_1",
-            "symbolic_namespace": "airflow"
-        },
-        "/item1_a": {
-            "url": "/redfish/v1/Chassis/server2/Sensors/slot1_1",
-            "symbolic_namespace": "altitude"
-        },
-        "/item2_b": {
-            "url": "/redfish/v1/Chassis/server3/Sensors/slot1_1",
-            "symbolic_namespace": "current"
-        },
-        "/item2_c": {
-            "url": "/redfish/v1/Chassis/server4/Sensors/slot1_3",
-            "symbolic_namespace": "energy"
+        "association_path": "/xyz/openbmc_project/inventory/system/board/MC",
+        "sensors": {
+            "/item1": {
+                "url": "/redfish/v1/Chassis/server1/Sensors/slot1_1",
+                "symbolic_namespace": "airflow"
+            },
+            "/item1_a": {
+                "url": "/redfish/v1/Chassis/server2/Sensors/slot1_1",
+                "symbolic_namespace": "altitude"
+            },
+            "/item2_b": {
+                "url": "/redfish/v1/Chassis/server3/Sensors/slot1_1",
+                "symbolic_namespace": "current"
+            },
+            "/item2_c": {
+                "url": "/redfish/v1/Chassis/server4/Sensors/slot1_3",
+                "symbolic_namespace": "energy"
+            }
         }
     },
     "interval_milliseconds": 200,
@@ -70,6 +74,8 @@ TEST(DaemonConfigTest, ParseGoodConfig)
     auto config = daemonConfigFromJsonCstring(kTestGoodConfigJSON);
     EXPECT_EQ("not_a_real_sevice_name", config.serviceName);
     EXPECT_EQ("not_a_real.host.facebook.com:not_a_real_port", config.hostPort);
+    EXPECT_EQ("/xyz/openbmc_project/inventory/system/board/MC",
+              config.sensorAssociation);
     EXPECT_EQ(4, config.sensorConfigs.size());
 
     {
@@ -181,6 +187,9 @@ class SensorDBusObjectTests : public ::testing::Test
     static constexpr auto kNegativeInfinity =
         -std::numeric_limits<double>::infinity();
 
+    const std::string kAssociationPath =
+        "/xyz/openbmc_project/inventory/system/NotARealBoard/XXX";
+
     SensorDBusObjectTests() : manager(ctx, getSensorRootPath()) {}
 
     ~SensorDBusObjectTests() noexcept override {}
@@ -229,6 +238,13 @@ class SensorDBusObjectTests : public ::testing::Test
         return ValueClient(ctx).service(kBusName).path(kMetricPath);
     }
 
+    auto getAssociationClient()
+    {
+        using AssociationClient =
+            sdbusplus::client::xyz::openbmc_project::association::Definitions<>;
+        return AssociationClient(ctx).service(kBusName).path(kMetricPath);
+    }
+
     sdbusplus::async::context ctx;
     sdbusplus::server::manager_t manager;
 };
@@ -236,7 +252,8 @@ class SensorDBusObjectTests : public ::testing::Test
 TEST_F(SensorDBusObjectTests, NoOpBeforeFirstUpdate)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
-        auto sensorServer = createSensorDbusObjectForTest(ctx, kMetricPath);
+        auto sensorServer =
+            createSensorDbusObjectForTest(ctx, kMetricPath, kAssociationPath);
         auto sensorClient = getSensorClient();
 
         // Cannot read the value, nothing has been written yet.
@@ -248,17 +265,42 @@ TEST_F(SensorDBusObjectTests, NoOpBeforeFirstUpdate)
     }());
 }
 
+TEST_F(SensorDBusObjectTests, EmptyAssociationPath)
+{
+    ctx.spawn([this]() -> sdbusplus::async::task<> {
+        std::string emptyAssociation;
+        auto sensorServer =
+            createSensorDbusObjectForTest(ctx, kMetricPath, emptyAssociation);
+        auto associationClient = getAssociationClient();
+
+        co_await updateServer(sensorServer, 10.0, "");
+        auto associations = co_await associationClient.associations();
+        EXPECT_EQ(0, associations.size());
+
+        testBodyExecuted = true;
+        co_return;
+    }());
+}
+
 TEST_F(SensorDBusObjectTests, CreateAndUpdate)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
-        auto sensorServer = createSensorDbusObjectForTest(ctx, kMetricPath);
+        auto sensorServer =
+            createSensorDbusObjectForTest(ctx, kMetricPath, kAssociationPath);
         auto sensorClient = getSensorClient();
+        auto associationClient = getAssociationClient();
 
         co_await updateServer(sensorServer, 25.0, "%", 0.0, 100.0);
         EXPECT_EQ(25.0, co_await sensorClient.value());
         EXPECT_EQ(ValueIntf::Unit::Percent, co_await sensorClient.unit());
         EXPECT_EQ(0.0, co_await sensorClient.min_value());
         EXPECT_EQ(100.0, co_await sensorClient.max_value());
+
+        auto associations = co_await associationClient.associations();
+        EXPECT_EQ(1, associations.size());
+        EXPECT_EQ("chassis", std::get<0>(associations[0]));
+        EXPECT_EQ("all_sensors", std::get<1>(associations[0]));
+        EXPECT_EQ(kAssociationPath, std::get<2>(associations[0]));
 
         testBodyExecuted = true;
         co_return;
@@ -268,7 +310,8 @@ TEST_F(SensorDBusObjectTests, CreateAndUpdate)
 TEST_F(SensorDBusObjectTests, DoubleUpdate)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
-        auto sensorServer = createSensorDbusObjectForTest(ctx, kMetricPath);
+        auto sensorServer =
+            createSensorDbusObjectForTest(ctx, kMetricPath, kAssociationPath);
         auto sensorClient = getSensorClient();
 
         co_await updateServer(sensorServer, 25.0, "Cel", -10, 10);
@@ -292,7 +335,8 @@ TEST_F(SensorDBusObjectTests, DoubleUpdate)
 TEST_F(SensorDBusObjectTests, MaxMinOmitted)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
-        auto sensorServer = createSensorDbusObjectForTest(ctx, kMetricPath);
+        auto sensorServer =
+            createSensorDbusObjectForTest(ctx, kMetricPath, kAssociationPath);
         auto sensorClient = getSensorClient();
 
         co_await updateServer(sensorServer, 25.0, "J");
@@ -309,7 +353,8 @@ TEST_F(SensorDBusObjectTests, MaxMinOmitted)
 TEST_F(SensorDBusObjectTests, UnitsOnlyReadAtFirstUpdate)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
-        auto sensorServer = createSensorDbusObjectForTest(ctx, kMetricPath);
+        auto sensorServer =
+            createSensorDbusObjectForTest(ctx, kMetricPath, kAssociationPath);
         auto sensorClient = getSensorClient();
 
         co_await updateServer(sensorServer, 33.0, "Pa");
@@ -332,7 +377,8 @@ TEST_F(SensorDBusObjectTests, UnitsOnlyReadAtFirstUpdate)
 TEST_F(SensorDBusObjectTests, MissingUnitsOnFirstUpdateCannotBeModified)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
-        auto sensorServer = createSensorDbusObjectForTest(ctx, kMetricPath);
+        auto sensorServer =
+            createSensorDbusObjectForTest(ctx, kMetricPath, kAssociationPath);
         auto sensorClient = getSensorClient();
 
         co_await updateServer(sensorServer, 3.0, "This is not a real unit");

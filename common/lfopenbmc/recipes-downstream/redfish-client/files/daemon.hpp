@@ -3,6 +3,7 @@
 #include "sensor.hpp"
 
 #include <sdbusplus/async.hpp>
+#include <xyz/openbmc_project/Association/Definitions/aserver.hpp>
 #include <xyz/openbmc_project/Sensor/Value/aserver.hpp>
 
 #include <memory>
@@ -18,14 +19,16 @@ namespace redfish_client_daemon
 E.g. json snippet from daemon config:
 
   "sensor_configs": {
-    "/machine1_temp": {
-      "url": "/redfish/v1/Chassis/machine1/Sensors/machine1_temp",
-      "symbolic_namespace": "temperature"
-    },
-    "/machine1_power": {
-      "url": "/redfish/v1/Chassis/HGX_CPU_0/Sensors/machine1_power",
-      "symbolic_namespace": "power"
-    },
+    "association_path": "/xyz/openbmc_project/inventory/system/board/HMC",
+    "sensors": {
+      "/machine1_temp": {
+        "url": "/redfish/v1/Chassis/machine1/Sensors/machine1_temp",
+        "symbolic_namespace": "temperature"
+      },
+      "/machine1_power": {
+        "url": "/redfish/v1/Chassis/HGX_CPU_0/Sensors/machine1_power",
+        "symbolic_namespace": "power"
+      },
 */
 
 // SensorConfigValue holds the dictionary values corresponding to the
@@ -48,6 +51,7 @@ struct DaemonConfig
     static DaemonConfig fromJson(const std::string& configJson);
     std::string serviceName;
     std::string hostPort;
+    std::string sensorAssociation;
     // Keys are the dbus paths of the sensors. Values are the SensorConfigValue.
 
     // E.g. "/machine1_temp" ->
@@ -96,6 +100,7 @@ class ISensorDbusObject
 };
 
 std::shared_ptr<ISensorDbusObject> createSensorDbusObjectForTest(
-    sdbusplus::async::context& ctx, const char* metricPath);
+    sdbusplus::async::context& ctx, const char* metricPath,
+    const std::string& associationPath);
 
 } // namespace redfish_client_daemon

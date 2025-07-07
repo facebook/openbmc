@@ -16,15 +16,24 @@ namespace redfish_client_daemon
 
 using PathIntf = ValueIntf::namespace_path;
 
-class ServerObjectIntf :
-    public sdbusplus::aserver::xyz::openbmc_project::sensor::Value<
-        ServerObjectIntf>
+class ServerObjectIntf;
+using SensorInterfaces = sdbusplus::async::server_t<
+    ServerObjectIntf,
+    sdbusplus::aserver::xyz::openbmc_project::association::Definitions,
+    sdbusplus::aserver::xyz::openbmc_project::sensor::Value>;
+
+class ServerObjectIntf : public SensorInterfaces
 {
   public:
-    explicit ServerObjectIntf(sdbusplus::async::context& ctx, auto path) :
-        sdbusplus::aserver::xyz::openbmc_project::sensor::Value<
-            ServerObjectIntf>(ctx, path)
+    ServerObjectIntf(sdbusplus::async::context& ctx, const char* path) :
+        SensorInterfaces(ctx, path)
     {}
+
+    void emit_added()
+    {
+        Definitions::emit_added();
+        Value::emit_added();
+    }
 };
 
 // Source:
@@ -139,8 +148,13 @@ DaemonConfig DaemonConfig::fromJson(const std::string& configJson)
     rv.serviceName = parsed["service_name"].get<std::string>();
     rv.hostPort = parsed["host_port"].get<std::string>();
     auto& parsedSensorConfigs = parsed["sensor_configs"];
-    for (json::iterator it = parsedSensorConfigs.begin();
-         it != parsedSensorConfigs.end(); ++it)
+    if (parsedSensorConfigs.contains("association_path"))
+    {
+        rv.sensorAssociation =
+            parsedSensorConfigs["association_path"].get<std::string>();
+    }
+    auto& sensors = parsedSensorConfigs["sensors"];
+    for (json::iterator it = sensors.begin(); it != sensors.end(); ++it)
     {
         SensorConfigValue item;
         std::string expandedUrl = "http://";
@@ -195,8 +209,10 @@ struct SensorDbusObject
     SensorDbusObject(SensorDbusObject&&) = delete;
 
     SensorDbusObject(sdbusplus::async::context& ctx, const char* metricPath,
-                     const SensorConfigValue& sensorConfigValue) :
-        ctx(ctx), metricPath(metricPath), sensorConfigValue(sensorConfigValue)
+                     const SensorConfigValue& sensorConfigValue,
+                     const std::string& associationPath) :
+        ctx(ctx), metricPath(metricPath), sensorConfigValue(sensorConfigValue),
+        associationPath(associationPath)
     {}
 
     auto update(Sensor sensor) -> sdbusplus::async::task<>
@@ -220,6 +236,15 @@ struct SensorDbusObject
             constexpr bool emitSignal = false;
             object =
                 std::make_unique<ServerObjectIntf>(ctx, metricPath.c_str());
+
+            if (!associationPath.empty())
+            {
+                std::vector<std::tuple<std::string, std::string, std::string>>
+                    associations;
+                associations.emplace_back("chassis", "all_sensors",
+                                          associationPath);
+                object->associations<emitSignal>(associations);
+            }
 
             auto maybeUnit = toMaybeIntfUnits(sensor.getSensorUnitText());
             if (maybeUnit.has_value())
@@ -317,6 +342,7 @@ struct SensorDbusObject
     bool minValueNotified = false;
     bool maxValueNotified = false;
     SensorConfigValue sensorConfigValue;
+    const std::string& associationPath;
 };
 
 class DbusServer
@@ -344,7 +370,8 @@ class DbusServer
                 metricNamespace + sensorConfigKey;
 
             metrics[sensorConfigKey] = std::make_shared<SensorDbusObject>(
-                ctx, fullMetricPath.c_str(), sensorConfig);
+                ctx, fullMetricPath.c_str(), sensorConfig,
+                daemonConfig.sensorAssociation);
         }
 
         if (daemonConfig.eventLogConfigs.has_value())
@@ -543,9 +570,10 @@ struct SensorDbusObjectForTest : public ISensorDbusObject
 
     SensorDbusObjectForTest(sdbusplus::async::context& ctx,
                             const char* metricPath,
-                            const SensorConfigValue& sensorConfigValue) :
+                            const SensorConfigValue& sensorConfigValue,
+                            const std::string& associationPath) :
         ctx(ctx), innerObject(std::make_shared<SensorDbusObject>(
-                      ctx, metricPath, sensorConfigValue))
+                      ctx, metricPath, sensorConfigValue, associationPath))
     {}
 
     sdbusplus::async::task<> update(Sensor sensor) override
@@ -558,11 +586,12 @@ struct SensorDbusObjectForTest : public ISensorDbusObject
 };
 
 std::shared_ptr<ISensorDbusObject> createSensorDbusObjectForTest(
-    sdbusplus::async::context& ctx, const char* metricPath)
+    sdbusplus::async::context& ctx, const char* metricPath,
+    const std::string& associationPath)
 {
     SensorConfigValue fakeSensorConfigValue;
-    return std::make_shared<SensorDbusObjectForTest>(ctx, metricPath,
-                                                     fakeSensorConfigValue);
+    return std::make_shared<SensorDbusObjectForTest>(
+        ctx, metricPath, fakeSensorConfigValue, associationPath);
 }
 
 } // namespace redfish_client_daemon

@@ -1,7 +1,7 @@
-From e9708dabe396cb01ba76dca6af776a50e84213b2 Mon Sep 17 00:00:00 2001
+From 82af5e88c2c56c0b3479fc19887d723832c7a9a0 Mon Sep 17 00:00:00 2001
 From: Amithash Prasad <amithash@meta.com>
 Date: Thu, 1 May 2025 15:34:34 -0700
-Subject: [PATCH 19/21] platform-mc: Refactor all threshold alarms into helpers
+Subject: [PATCH 18/20] platform-mc: Refactor all threshold alarms into helpers
 
 This moves a lot of the common logic around getting/setting
 thresholds and their corresponding alarms into small

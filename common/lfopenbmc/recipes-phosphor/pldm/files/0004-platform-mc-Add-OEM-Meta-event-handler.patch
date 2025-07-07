@@ -1,7 +1,7 @@
-From 39e777c722f3171077350d995ebd1b78a23f5424 Mon Sep 17 00:00:00 2001
+From d780ccaf76aec7b721213fba38b0b4c031ddfcde Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
-Subject: [PATCH 04/21] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 04/20] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -1060,7 +1060,7 @@ index 0000000..55822a8
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index 3af26d2..c4ed128 100644
+index 4697b41..4f8e20e 100644
 --- a/platform-mc/event_manager.cpp
 +++ b/platform-mc/event_manager.cpp
 @@ -1,10 +1,12 @@
@@ -1135,7 +1135,7 @@ index 3af26d2..c4ed128 100644
  
      return PLDM_ERROR;
 diff --git a/platform-mc/event_manager.hpp b/platform-mc/event_manager.hpp
-index 083725d..b44e333 100644
+index 0eb52d7..bf94a93 100644
 --- a/platform-mc/event_manager.hpp
 +++ b/platform-mc/event_manager.hpp
 @@ -2,6 +2,7 @@
@@ -1146,7 +1146,7 @@ index 083725d..b44e333 100644
  #include "requester/handler.hpp"
  #include "terminus.hpp"
  #include "terminus_manager.hpp"
-@@ -39,9 +40,11 @@ class EventManager
+@@ -46,9 +47,11 @@ class EventManager
      EventManager& operator=(EventManager&&) = delete;
      virtual ~EventManager() = default;
  
@@ -1161,7 +1161,7 @@ index 083725d..b44e333 100644
      {
          // Default response handler for PollForPlatFormEventMessage
          registerPolledEventHandler(
-@@ -220,6 +223,10 @@ class EventManager
+@@ -227,6 +230,10 @@ class EventManager
                                   uint16_t eventId,
                                   std::vector<uint8_t>& eventMessage);
  
@@ -1172,7 +1172,7 @@ index 083725d..b44e333 100644
      /** @brief Reference of terminusManager */
      TerminusManager& terminusManager;
  
-@@ -231,6 +238,8 @@ class EventManager
+@@ -238,6 +245,8 @@ class EventManager
  
      /** @brief map of PLDM event type of polled event to EventHandlers */
      pldm::platform_mc::EventMap eventHandlers;

@@ -132,7 +132,7 @@ async def get_managers_members(request: web.Request) -> web.Response:
     body = {
         "@odata.context": "/redfish/v1/$metadata#Manager.Manager",
         "@odata.id": "/redfish/v1/Managers/1",
-        "@odata.type": "#Manager.v1_1_0.Manager",
+        "@odata.type": "#Manager.v1_1_5.Manager",
         "ManagerType": "BMC",
         "Id": "BMC",
         "Name": "Manager",

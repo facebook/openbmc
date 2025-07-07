@@ -120,7 +120,7 @@ class TestManagerService(AioHTTPTestCase):
         expected_resp = {
             "@odata.context": "/redfish/v1/$metadata#Manager.Manager",
             "@odata.id": "/redfish/v1/Managers/1",
-            "@odata.type": "#Manager.v1_1_0.Manager",
+            "@odata.type": "#Manager.v1_1_5.Manager",
             "ManagerType": "BMC",
             "UUID": "bd7e0200-8227-3a1c-30c0-286261016903",
             "Name": "Manager",

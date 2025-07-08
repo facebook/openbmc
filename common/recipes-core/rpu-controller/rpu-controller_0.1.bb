@@ -12,6 +12,7 @@ UNPACKDIR="${S}"
 
 LOCAL_URI = " \
     file://default-config.json \
+    file://get-rpu-unique-device-address \
     file://rpu-controller-command \
     file://rpu-ready \
 "
@@ -22,6 +23,7 @@ RDEPENDS:${PN}:append = "bash rackmon"
 
 do_install() {
     install -d ${D}${libexecdir}/${PN}
+    install -m 0755 ${UNPACKDIR}/get-rpu-unique-device-address ${D}${libexecdir}/${PN}/get-rpu-unique-device-address
     install -m 0755 ${UNPACKDIR}/rpu-controller-command ${D}${libexecdir}/${PN}/rpu-controller-command
     install -m 0755 ${UNPACKDIR}/rpu-ready ${D}${libexecdir}/${PN}/rpu-ready
 

@@ -11,5 +11,10 @@
             "pumpDutyPercentage": 50,
             "targetCoolantOutletTempTimesTen": 350
         }
+    },
+    "uniqueDeviceAddressMappings": {
+        "1": 268,
+        "2": 524,
+        "3": 780
     }
 }

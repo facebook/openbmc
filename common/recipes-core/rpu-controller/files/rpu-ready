@@ -1,18 +1,32 @@
 #!/bin/bash
 
 # ARGUMENTS:
-# 1: Unique Dev Address
+# 1: RPU Number
+# 2: Optional override config
 
-if [ $# -ne 1 ]; then
-    echo "Usage: $0 <unique_device_address>
-      unique_device_address: The address of the RPU modbus device to check if ready"
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <rpu_number> [override_config]
+      rpu_number: The RPU number
+      override_config: Optional configuration file to override default settings in
+                       /usr/share/rpu-controller/config.json"
     exit 1
 fi
 
 set -u
 
+OVERRIDE_CONFIG_FILE=${2:-/usr/share/rpu-controller/config.json}
+CONFIG_FILE="/var/lib/rpu-controller/default-config.json"
+
+if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
+    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
+fi
+
+script_dir=$( dirname "${BASH_SOURCE[0]}" )
 # unique device address
-UDA="$1"
+UDA=$("$script_dir/get-rpu-unique-device-address" "$1" "$CONFIG_FILE") || {
+  echo "Could not determine RPU unique device address"
+  exit 1
+}
 
 aalcStatusAlarmRegister=37377
 

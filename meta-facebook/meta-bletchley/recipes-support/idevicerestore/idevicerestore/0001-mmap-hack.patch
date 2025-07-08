@@ -1,71 +1,49 @@
-From a85cb40e3e36a137049c734aafe0c90f181988ed Mon Sep 17 00:00:00 2001
-From: Potin Lai <potin.lai@quantatw.com>
-Date: Tue, 14 Nov 2023 17:08:07 +0800
-Subject: [PATCH] mmap hack 20231114
+From 08a607d7aafac19cf1fb38771e6eeb5a5592aa8b Mon Sep 17 00:00:00 2001
+From: cchoux <cosmo.chou@quantatw.com>
+Date: Sun, 6 Jul 2025 02:26:34 +0800
+Subject: [PATCH] mmap hack 20250707
 
-Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
 ---
- src/common.c         |  36 +++++++++
- src/common.h         |  10 +++
- src/dfu.c            |  10 ++-
- src/idevicerestore.c |  44 ++++++++---
- src/idevicerestore.h |   1 +
- src/img4.c           |  53 ++++++++------
- src/ipsw.c           | 138 ++++++++++++++++++++++++++++++++---
- src/ipsw.h           |   4 +-
- src/recovery.c       |   4 +-
- src/restore.c        | 170 ++++++++++++++++++++++++++++---------------
- 10 files changed, 360 insertions(+), 110 deletions(-)
+ src/common.c         | 14 ++-----
+ src/common.h         | 13 +++++++
+ src/dfu.c            | 14 ++++++-
+ src/idevicerestore.c | 13 ++++---
+ src/img4.c           | 67 +++++++++++++++++---------------
+ src/ipsw.c           | 73 +++++++++++++++++++----------------
+ src/ipsw.h           |  2 +-
+ src/recovery.c       |  2 +-
+ src/restore.c        | 92 ++++++++++++++++++++++++++------------------
+ 9 files changed, 167 insertions(+), 123 deletions(-)
 
 diff --git a/src/common.c b/src/common.c
-index 9a73994..e54595c 100644
+index 70f0742..a1dde2c 100644
 --- a/src/common.c
 +++ b/src/common.c
-@@ -221,6 +221,42 @@ int read_file(const char* filename, void** data, size_t* size) {
- 	return 0;
- }
+@@ -126,18 +126,10 @@ int read_file(const char* filename, void** data, size_t* size) {
+ 	}
+ 	length = fst.st_size;
  
-+int read_file_mmap(const char* filename, void** data, size_t* size) {
-+	size_t bytes = 0;
-+	size_t length = 0;
-+	FILE* file = NULL;
-+	char* buffer = NULL;
-+	struct stat fst;
-+
-+	debug("Reading data from %s\n", filename);
-+
-+	*size = 0;
-+	*data = NULL;
-+
-+	file = fopen(filename, "rb");
-+	if (file == NULL) {
-+		error("read_file_mmap: cannot open %s: %s\n", filename, strerror(errno));
-+		return -1;
-+	}
-+
-+	if (fstat(fileno(file), &fst) < 0) {
-+		error("read_file_mmap: fstat: %s\n", strerror(errno));
-+		return -1;
-+	}
-+	length = fst.st_size;
-+
-+	buffer = (unsigned char *) mmap(0, length, PROT_READ, MAP_PRIVATE,  fileno(file), 0);
+-	buffer = (char*) malloc(length);
+-	if (buffer == NULL) {
+-		logger(LL_ERROR, "Out of memory\n");
+-		fclose(file);
+-		return -1;
+-	}
+-	bytes = fread(buffer, 1, length, file);
++	buffer = (char *)mmap(0, length, PROT_READ, MAP_PRIVATE, fileno(file), 0);
+ 	fclose(file);
+-
+-	if (bytes != length) {
+-		logger(LL_ERROR, "Unable to read entire file\n");
+-		free(buffer);
 +	if (buffer == MAP_FAILED) {
-+		error("ERROR: %s: mmap failed for %s: %s\n", __func__, filename, strerror(errno));
-+		return -1;
-+	}
-+	fclose(file);
-+
-+	*size = length;
-+	*data = buffer;
-+	return 0;
-+}
-+
- void debug_plist(plist_t plist) {
- 	uint32_t size = 0;
- 	char* data = NULL;
++		logger(LL_ERROR, "%s: mmap failed for %s: %s\n", __func__, filename, strerror(errno));
+ 		return -1;
+ 	}
+ 
 diff --git a/src/common.h b/src/common.h
-index 493b1df..92d5c2f 100644
+index 3bb648a..8757a9f 100644
 --- a/src/common.h
 +++ b/src/common.h
 @@ -39,6 +39,9 @@ extern "C" {
@@ -76,64 +54,59 @@ index 493b1df..92d5c2f 100644
 +#include <sys/mman.h>
 +
  #include "idevicerestore.h"
+ #include "log.h"
  
- #define _MODE_UNKNOWN         0
-@@ -66,6 +69,12 @@ extern "C" {
+@@ -69,6 +72,16 @@ extern "C" {
  
  #define USER_AGENT_STRING "InetURL/1.0"
  
 +#define free_mmap(data, size, fail_return) \
-+if (munmap(data, size)) { \
-+	error("ERROR: %s: munmap failed: %s (%d)\n", __func__, strerror(errno), errno); \
-+	return fail_return; \
++if (data) { \
++	if (!size) { \
++		free(data); \
++	} else if (munmap(data, size)) { \
++		logger(LL_ERROR, "%s: munmap failed: %s (%d)\n", __func__, strerror(errno), errno); \
++		return fail_return; \
++	} \
 +}
 +
  struct dfu_client_t;
  struct normal_client_t;
  struct restore_client_t;
-@@ -148,6 +157,7 @@ void debug(const char* format, ...);
- void debug_plist(plist_t plist);
- void print_progress_bar(double progress);
- int read_file(const char* filename, void** data, size_t* size);
-+int read_file_mmap(const char* filename, void** data, size_t* size);
- int write_file(const char* filename, const void* data, size_t size);
- 
- char *generate_guid(void);
 diff --git a/src/dfu.c b/src/dfu.c
-index 4487ade..7a80cd1 100644
+index 4650e9a..4f2402c 100644
 --- a/src/dfu.c
 +++ b/src/dfu.c
-@@ -121,6 +121,7 @@ int dfu_send_buffer(struct idevicerestore_client_t* client, unsigned char* buffe
+@@ -128,6 +128,7 @@ int dfu_send_buffer(struct idevicerestore_client_t* client, const void* buffer,
  int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_identity, const char* component)
  {
  	char* path = NULL;
-+	bool is_mmap_data = true;
++	bool is_mmap = true;
  
  	// Use a specific TSS ticket for the Ap,LocalPolicy component
  	plist_t tss = client->tss;
-@@ -136,6 +137,7 @@ int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_ide
+@@ -143,6 +144,7 @@ int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_ide
  		component_data = malloc(sizeof(lpol_file));
  		component_size = sizeof(lpol_file);
  		memcpy(component_data, lpol_file, component_size);
-+		is_mmap_data = false;
++		is_mmap = false;
  	} else {
  		if (tss) {
  			if (tss_response_get_path_by_entry(tss, component, &path) < 0) {
-@@ -150,7 +152,7 @@ int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_ide
- 			}
- 		}
+@@ -171,10 +173,18 @@ int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_ide
  
--		if (extract_component(client->ipsw, path, &component_data, &component_size) < 0) {
-+		if (extract_component_mmap(client->ipsw, path, &component_data, &component_size) < 0) {
- 			error("ERROR: Unable to extract component: %s\n", component);
- 			free(path);
- 			return -1;
-@@ -167,7 +169,11 @@ int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_ide
- 		free(component_data);
+ 	if (personalize_component(client, component, component_data, component_size, tss, &data, &size) < 0) {
+ 		logger(LL_ERROR, "Unable to get personalized component: %s\n", component);
+-		free(component_data);
++		if (is_mmap) {
++			free_mmap(component_data, component_size, -1);
++		} else {
++			free(component_data);
++		}
  		return -1;
  	}
 -	free(component_data);
-+	if (is_mmap_data) {
++	if (is_mmap) {
 +		free_mmap(component_data, component_size, -1);
 +	} else {
 +		free(component_data);
@@ -142,19 +115,10 @@ index 4487ade..7a80cd1 100644
  
  	if (!client->image4supported && client->build_major > 8 && !(client->flags & FLAG_CUSTOM) && !strcmp(component, "iBEC")) {
 diff --git a/src/idevicerestore.c b/src/idevicerestore.c
-index 064c503..c21c94b 100644
+index 1465f87..2d3c791 100644
 --- a/src/idevicerestore.c
 +++ b/src/idevicerestore.c
-@@ -206,7 +206,7 @@ static int load_version_data(struct idevicerestore_client_t* client)
- 
- 	char *verbuf = NULL;
- 	size_t verlen = 0;
--	read_file(version_xml, (void**)&verbuf, &verlen);
-+	read_file_mmap(version_xml, (void**)&verbuf, &verlen);
- 
- 	if (!verbuf) {
- 		error("ERROR: Could not load '%s'\n", version_xml);
-@@ -215,7 +215,7 @@ static int load_version_data(struct idevicerestore_client_t* client)
+@@ -223,7 +223,7 @@ static int load_version_data(struct idevicerestore_client_t* client)
  
  	client->version_data = NULL;
  	plist_from_xml(verbuf, verlen, &client->version_data);
@@ -163,29 +127,7 @@ index 064c503..c21c94b 100644
  
  	if (!client->version_data) {
  		remove(version_xml);
-@@ -388,10 +388,10 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
- 		char wtfname[256];
- 		sprintf(wtfname, "Firmware/dfu/WTF.s5l%04xxall.RELEASE.dfu", cpid);
- 		unsigned char* wtftmp = NULL;
--		unsigned int wtfsize = 0;
-+		uint64_t wtfsize = 0;
- 
- 		// Prefer to get WTF file from the restore IPSW
--		ipsw_extract_to_memory(client->ipsw, wtfname, &wtftmp, &wtfsize);
-+		ipsw_extract_to_memory_mmap(client->ipsw, wtfname, &wtftmp, &wtfsize);
- 		if (!wtftmp) {
- 			// update version data (from cache, or apple if too old)
- 			load_version_data(client);
-@@ -431,7 +431,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
- 			}
- 
- 			ipsw_archive_t wtf_ipsw = ipsw_open(wtfipsw);
--			ipsw_extract_to_memory(wtf_ipsw, wtfname, &wtftmp, &wtfsize);
-+			ipsw_extract_to_memory_mmap(wtf_ipsw, wtfname, &wtftmp, &wtfsize);
- 			ipsw_close(wtf_ipsw);
- 			if (!wtftmp) {
- 				error("ERROR: Could not extract WTF\n");
-@@ -446,7 +446,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
+@@ -478,7 +478,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
  		}
  		dfu_client_free(client);
  
@@ -194,18 +136,36 @@ index 064c503..c21c94b 100644
  
  		cond_wait_timeout(&client->device_event_cond, &client->device_event_mutex, 10000);
  		if (client->mode != MODE_DFU || (client->flags & FLAG_QUIT)) {
-@@ -735,8 +735,8 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
- 			// get all_flash file manifest
- 			char *files[16];
- 			char *fmanifest = NULL;
--			uint32_t msize = 0;
--			if (ipsw_extract_to_memory(client->ipsw, tmpstr, (unsigned char**)&fmanifest, &msize) < 0) {
-+			uint64_t msize = 0;
-+			if (ipsw_extract_to_memory_mmap(client->ipsw, tmpstr, (unsigned char**)&fmanifest, &msize) < 0) {
- 				error("ERROR: could not extract %s from IPSW\n", tmpstr);
- 				free(build_identity);
- 				return -1;
-@@ -751,7 +751,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
+@@ -789,6 +789,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
+ 		if (request == NULL) {
+ 			plist_free(parameters);
+ 			logger(LL_ERROR, "Unable to create TSS request\n");
++			free_mmap(uarp_buf, uarp_size, -1);
+ 			return -1;
+ 		}
+ 		plist_dict_merge(&request, parameters);
+@@ -799,6 +800,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
+ 		plist_free(request);
+ 		if (response == NULL) {
+ 			logger(LL_ERROR, "Unable to send TSS request\n");
++			free_mmap(uarp_buf, uarp_size, -1);
+ 			return -1;
+ 		}
+ 		logger(LL_INFO, "Received USBPortController1,Ticket\n");
+@@ -808,10 +810,11 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
+ 		size_t ace3bin_size = 0;
+ 		if (ace3_create_binary(uarp_buf, uarp_size, pdfu_bdid, prev, response, &ace3bin, &ace3bin_size) < 0) {
+ 			logger(LL_ERROR, "Could not create Ace3Binary\n");
++			free_mmap(uarp_buf, uarp_size, -1);
+ 			return -1;
+ 		}
+ 		plist_free(response);
+-		free(uarp_buf);
++		free_mmap(uarp_buf, uarp_size, -1);
+ 
+ 		if (idevicerestore_keep_pers) {
+ 			write_file("Ace3Binary", ace3bin, ace3bin_size);
+@@ -915,7 +918,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
  				}
  				tok = strtok(NULL, "\r\n");
  			}
@@ -214,63 +174,20 @@ index 064c503..c21c94b 100644
  
  			manifest = plist_new_dict();
  
-@@ -1083,7 +1083,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
- 		if (client->flags & FLAG_QUIT) {
- 			return -1;
- 		}
--		
-+
- 		if (get_tss_response(client, build_identity, &client->tss) < 0) {
- 			error("ERROR: Unable to get SHSH blobs for this device\n");
- 			return -1;
-@@ -2538,6 +2538,30 @@ int extract_component(ipsw_archive_t ipsw, const char* path, unsigned char** com
- 	return 0;
- }
- 
-+int extract_component_mmap(ipsw_archive_t ipsw, const char* path, unsigned char** component_data, unsigned int* component_size)
-+{
-+	char* component_name = NULL;
-+	if (!ipsw || !path || !component_data || !component_size) {
-+		return -1;
-+	}
-+
-+	component_name = strrchr(path, '/');
-+	if (component_name != NULL)
-+		component_name++;
-+	else
-+		component_name = (char*) path;
-+
-+	info("Extracting %s (%s)...\n", component_name, path);
-+    uint64_t comp_size = 0;
-+	if (ipsw_extract_to_memory_mmap(ipsw, path, component_data, &comp_size) < 0) {
-+		error("ERROR: Unable to extract %s from %s\n", component_name, ipsw->path);
-+		return -1;
-+	}
-+    *component_size = (uint32_t)comp_size;
-+
-+	return 0;
-+}
-+
- int personalize_component(const char *component_name, const unsigned char* component_data, unsigned int component_size, plist_t tss_response, unsigned char** personalized_component, unsigned int* personalized_component_size)
- {
- 	unsigned char* component_blob = NULL;
-diff --git a/src/idevicerestore.h b/src/idevicerestore.h
-index e1a767c..ae9e511 100644
---- a/src/idevicerestore.h
-+++ b/src/idevicerestore.h
-@@ -115,6 +115,7 @@ int build_identity_has_component(plist_t build_identity, const char* component);
- int build_identity_get_component_path(plist_t build_identity, const char* component, char** path);
- int ipsw_extract_filesystem(ipsw_archive_t ipsw, plist_t build_identity, char** filesystem);
- int extract_component(ipsw_archive_t ipsw, const char* path, unsigned char** component_data, unsigned int* component_size);
-+int extract_component_mmap(ipsw_archive_t ipsw, const char* path, unsigned char** component_data, unsigned int* component_size);
- int personalize_component(const char *component, const unsigned char* component_data, unsigned int component_size, plist_t tss_response, unsigned char** personalized_component, unsigned int* personalized_component_size);
- int get_preboard_manifest(struct idevicerestore_client_t* client, plist_t build_identity, plist_t* manifest);
- 
+@@ -1640,7 +1643,7 @@ void idevicerestore_client_free(struct idevicerestore_client_t* client)
+ 		free(client->cache_dir);
+ 	}
+ 	if (client->root_ticket) {
+-		free(client->root_ticket);
++		munmap(client->root_ticket, client->root_ticket_len);
+ 	}
+ 	if (client->build_manifest) {
+ 		plist_free(client->build_manifest);
 diff --git a/src/img4.c b/src/img4.c
-index 56b0496..3ebadb8 100644
+index e58dd26..a9c4d36 100644
 --- a/src/img4.c
 +++ b/src/img4.c
-@@ -407,6 +407,7 @@ int img4_stitch_component(const char* component_name, const unsigned char* compo
+@@ -409,6 +409,7 @@ int img4_stitch_component(const char* component_name, const void* component_data
  	unsigned char* p;
  	unsigned char* blob = NULL;
  	unsigned int blob_size = 0;
@@ -278,14 +195,14 @@ index 56b0496..3ebadb8 100644
  
  	if (!component_name || !component_data || component_size == 0 || !tss_response || !img4_data || !img4_size) {
  		return -1;
-@@ -418,30 +419,6 @@ int img4_stitch_component(const char* component_name, const unsigned char* compo
+@@ -420,38 +421,6 @@ int img4_stitch_component(const char* component_name, const void* component_data
  	}
  
- 	info("Personalizing IMG4 component %s...\n", component_name);
+ 	logger(LL_INFO, "Personalizing IMG4 component %s...\n", component_name);
 -	/* first we need check if we have to change the tag for the given component */
 -	const void *tag = asn1_find_element(1, ASN1_IA5_STRING, component_data);
 -	if (tag) {
--		debug("Tag found\n");
+-		logger(LL_DEBUG, "Tag found\n");
 -		if (strcmp(component_name, "RestoreKernelCache") == 0) {
 -			memcpy((void*)tag, "rkrn", 4);
 -		} else if (strcmp(component_name, "RestoreDeviceTree") == 0) {
@@ -304,12 +221,20 @@ index 56b0496..3ebadb8 100644
 -			memcpy((void*)tag, "rcio", 4);
 -		} else if (strcmp(component_name, "Ap,DCP2") == 0) {
 -			memcpy((void*)tag, "dcp2", 4);
+-		} else if (strcmp(component_name, "Ap,RestoreSecureM3Firmware") == 0) {
+-			memcpy((void*)tag, "rsm3", 4);
+-		} else if (strcmp(component_name, "Ap,RestoreSecurePageTableMonitor") == 0) {
+-			memcpy((void*)tag, "rspt", 4);
+-		} else if (strcmp(component_name, "Ap,RestoreTrustedExecutionMonitor") == 0) {
+-			memcpy((void*)tag, "rtrx", 4);
+-		} else if (strcmp(component_name, "Ap,RestorecL4") == 0) {
+-			memcpy((void*)tag, "rxcl", 4);
 -		}
 -	}
  
  	// check if we have a *-TBM entry for the given component
  	unsigned char *additional_data = NULL;
-@@ -617,6 +594,7 @@ int img4_stitch_component(const char* component_name, const unsigned char* compo
+@@ -695,6 +664,7 @@ int img4_stitch_component(const char* component_name, const void* component_data
  	p += magic_header_size;
  	memcpy(p, IMG4_MAGIC, IMG4_MAGIC_SIZE);
  	p += IMG4_MAGIC_SIZE;
@@ -317,15 +242,14 @@ index 56b0496..3ebadb8 100644
  	memcpy(p, component_data, component_size);
  	p += component_size;
  	memcpy(p, blob_header, blob_header_size);
-@@ -628,6 +606,33 @@ int img4_stitch_component(const char* component_name, const unsigned char* compo
+@@ -706,6 +676,39 @@ int img4_stitch_component(const char* component_name, const void* component_data
  		p += additional_size;
  	}
  
 +	/* first we need check if we have to change the tag for the given component */
-+	//==========================================================================
 +	const void *tag = asn1_find_element(1, ASN1_IA5_STRING, p_data);
 +	if (tag) {
-+		debug("Tag found\n");
++		logger(LL_DEBUG, "Tag found\n");
 +		if (strcmp(component_name, "RestoreKernelCache") == 0) {
 +			memcpy((void*)tag, "rkrn", 4);
 +		} else if (strcmp(component_name, "RestoreDeviceTree") == 0) {
@@ -344,38 +268,25 @@ index 56b0496..3ebadb8 100644
 +			memcpy((void*)tag, "rcio", 4);
 +		} else if (strcmp(component_name, "Ap,DCP2") == 0) {
 +			memcpy((void*)tag, "dcp2", 4);
++		} else if (strcmp(component_name, "Ap,RestoreSecureM3Firmware") == 0) {
++			memcpy((void*)tag, "rsm3", 4);
++		} else if (strcmp(component_name, "Ap,RestoreSecurePageTableMonitor") == 0) {
++			memcpy((void*)tag, "rspt", 4);
++		} else if (strcmp(component_name, "Ap,RestoreTrustedExecutionMonitor") == 0) {
++			memcpy((void*)tag, "rtrx", 4);
++		} else if (strcmp(component_name, "Ap,RestorecL4") == 0) {
++			memcpy((void*)tag, "rxcl", 4);
 +		}
 +	}
-+	//==========================================================================
 +
  	*img4_data = outbuf;
  	*img4_size = (p - outbuf);
  
 diff --git a/src/ipsw.c b/src/ipsw.c
-index c25f61d..ddd893a 100644
+index cebfa49..3e37b51 100644
 --- a/src/ipsw.c
 +++ b/src/ipsw.c
-@@ -111,8 +111,8 @@ int ipsw_print_info(const char* path)
- 
- 	if (memcmp(&magic, "PK\x03\x04", 4) == 0) {
- 		ipsw_archive_t ipsw = ipsw_open(thepath);
--		unsigned int rlen = 0;
--		if (ipsw_extract_to_memory(ipsw, "BuildManifest.plist", (unsigned char**)&plist_buf, &rlen) < 0) {
-+		uint64_t rlen = 0;
-+		if (ipsw_extract_to_memory_mmap(ipsw, "BuildManifest.plist", (unsigned char**)&plist_buf, &rlen) < 0) {
- 			ipsw_close(ipsw);
- 			error("ERROR: Failed to extract BuildManifest.plist from IPSW!\n");
- 			return -1;
-@@ -121,7 +121,7 @@ int ipsw_print_info(const char* path)
- 		plist_len = (uint32_t)rlen;
- 	} else {
- 		size_t rlen = 0;
--		if (read_file(thepath, (void**)&plist_buf, &rlen) < 0) {
-+		if (read_file_mmap(thepath, (void**)&plist_buf, &rlen) < 0) {
- 			error("ERROR: Failed to read BuildManifest.plist!\n");
- 			return -1;
- 		}
-@@ -130,7 +130,7 @@ int ipsw_print_info(const char* path)
+@@ -122,7 +122,7 @@ int ipsw_print_info(const char* path)
  
  	plist_t manifest = NULL;
  	plist_from_memory(plist_buf, plist_len, &manifest, NULL);
@@ -384,307 +295,253 @@ index c25f61d..ddd893a 100644
  
  	plist_t val;
  
-@@ -687,6 +687,52 @@ int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, unsigned cha
- 	return 0;
- }
+@@ -633,6 +633,9 @@ int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, void** pbuff
+ 	}
  
-+int ipsw_extract_to_memory_mmap(ipsw_archive_t ipsw, const char* infile, unsigned char** pbuffer, uint64_t* psize)
-+{
-+	uint64_t size = 0;
-+	unsigned char* buffer = NULL;
-+	if (ipsw == NULL) {
-+		error("ERROR: Invalid archive\n");
+ 	if (ipsw->zip) {
++		logger(LL_ERROR, "zip mode unsupported with mmap\n");
 +		return -1;
-+	}
 +
-+	if (ipsw->zip) {
-+		error("ERROR: zip mode not supported with mmap\n");
-+		return -1;
-+	} else {
-+		char *filepath = build_path(ipsw->path, infile);
-+		struct stat fst;
-+
-+		if (lstat(filepath, &fst) != 0) {
-+			error("ERROR: %s: stat failed for %s: %s\n", __func__, filepath, strerror(errno));
-+			free(filepath);
-+			return -1;
-+		}
-+
-+		size = fst.st_size;
-+		FILE *f = fopen(filepath, "rb");
-+		if(!f){
-+			error("ERROR: %s: open failed for %s: %s\n", __func__, filepath, strerror(errno));
-+			free(filepath);
-+			return -2;
-+		}
-+
-+		buffer = (unsigned char *) mmap(0, size, PROT_READ, MAP_PRIVATE, fileno(f), 0);
-+		if (buffer == MAP_FAILED) {
-+			fclose(f);
-+			error("ERROR: %s: mmap failed for %s: %s\n", __func__, filepath, strerror(errno));
-+			free(filepath);
-+			return -1;
-+		}
-+		fclose(f);
-+		free(filepath);
-+	}
-+
-+	*pbuffer = buffer;
-+	*psize = size;
-+	return 0;
-+}
-+
- int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ipsw_send_cb send_callback, void* ctx)
- {
- 	unsigned char* buffer = NULL;
-@@ -817,18 +863,86 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
- 	return 0;
- }
+ 		int err = 0;
+ 		struct zip *zip = zip_open(ipsw->path, 0, &err);
+ 		if (zip == NULL) {
+@@ -718,43 +721,41 @@ int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, void** pbuff
+ 			free(filepath);
+ 			return -1;
+ 		}
+-		buffer = (unsigned char*)malloc(size+1);
+-		if (buffer == NULL) {
+-			logger(LL_ERROR, "Out of memory\n");
+-			free(filepath);
+-			return -1;
+-		}
  
-+int ipsw_extract_send_mmap(ipsw_archive_t ipsw, const char* infile, int blocksize, ipsw_send_cb send_callback, void* ctx)
-+{
-+	unsigned char* buffer = NULL;
-+	uint64_t done = 0;
-+	uint64_t total_size = 0;
-+
-+	if (ipsw == NULL) {
-+		error("ERROR: Invalid archive\n");
-+		return -1;
-+	}
-+
-+	if (ipsw->zip) {
-+		error("ERROR: zip mode not supported with mmap\n");
-+		return -1;
-+	} else {
-+		char *filepath = build_path(ipsw->path, infile);
-+		struct stat fst;
-+
-+		if (lstat(filepath, &fst) != 0) {
-+			error("ERROR: %s: stat failed for %s: %s\n", __func__, filepath, strerror(errno));
-+			free(filepath);
-+			return -1;
-+		}
-+		total_size = fst.st_size;
-+
-+		FILE *f = fopen(filepath, "rb");
-+		if(!f){
-+			error("ERROR: %s: open failed for %s: %s\n", __func__, filepath, strerror(errno));
-+			free(filepath);
-+			return -2;
-+		}
-+
-+		while (done < total_size) {
-+			uint64_t size = total_size-done;
-+			if (size > blocksize) size = blocksize;
-+
-+			buffer = (unsigned char *) mmap(0, size, PROT_READ, MAP_PRIVATE, fileno(f), done);
-+			if (buffer == MAP_FAILED) {
-+				fclose(f);
-+				error("ERROR: %s: mmap failed for %s: %s\n", __func__, filepath, strerror(errno));
+ #ifndef WIN32
+ 		if (S_ISLNK(fst.st_mode)) {
++			buffer = (unsigned char*)malloc(size+1);
++			if (buffer == NULL) {
++				logger(LL_ERROR, "Out of memory\n");
 +				free(filepath);
 +				return -1;
 +			}
-+
-+			if (send_callback(ctx, buffer, size, done, total_size) < 0) {
-+				error("ERROR: %s: send failed\n", __func__);
-+				free_mmap(buffer, size, -1);
-+				break;
-+			}
-+			done += size;
-+			free_mmap(buffer, size, -1);
-+		}
-+		fclose(f);
-+		free(filepath);
-+		// free_mmap(buffer, total_size, -1);
-+	}
-+
-+	if (done < total_size) {
-+		error("ERROR: %s: Sending file data for %s failed (sent %" PRIu64 "/%" PRIu64 ")\n", __func__, infile, (uint64_t)done, (uint64_t)total_size);
-+		return -1;
-+	}
-+
-+	// send a NULL buffer to mark end of transfer
-+	send_callback(ctx, NULL, 0, done, total_size);
-+
-+	return 0;
-+}
-+
- int ipsw_extract_build_manifest(ipsw_archive_t ipsw, plist_t* buildmanifest, int *tss_enabled)
+ 			if (readlink(filepath, (char*)buffer, size) < 0) {
+ 				logger(LL_ERROR, "%s: readlink failed for %s: %s\n", __func__, filepath, strerror(errno));
+ 				free(filepath);
+ 				free(buffer);
+ 				return -1;
+ 			}
++			buffer[size] = '\0';
++			size = 0;
+ 		} else {
+ #endif
+ 			FILE *f = fopen(filepath, "rb");
+ 			if (!f) {
+ 				logger(LL_ERROR, "%s: fopen failed for %s: %s\n", __func__, filepath, strerror(errno));
+ 				free(filepath);
+-				free(buffer);
+ 				return -2;
+ 			}
+-			if (fread(buffer, 1, size, f) != size) {
+-				fclose(f);
+-				logger(LL_ERROR, "%s: fread failed for %s: %s\n", __func__, filepath, strerror(errno));
++			buffer = (unsigned char *)mmap(0, size, PROT_READ, MAP_PRIVATE, fileno(f), 0);
++			fclose(f);
++			if (buffer == MAP_FAILED) {
++				logger(LL_ERROR, "%s: mmap failed for %s: %s\n", __func__, filepath, strerror(errno));
+ 				free(filepath);
+-				free(buffer);
+ 				return -1;
+ 			}
+-			fclose(f);
+ #ifndef WIN32
+ 		}
+ #endif
+-		buffer[size] = '\0';
+-
+ 		free(filepath);
+ 	}
+ 
+@@ -766,8 +767,8 @@ int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, void** pbuff
+ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ipsw_send_cb send_callback, void* ctx)
  {
--	unsigned int size = 0;
-+	uint64_t size = 0;
- 	unsigned char* data = NULL;
+ 	unsigned char* buffer = NULL;
+-	size_t done = 0;
+-	size_t total_size = 0;
++	uint64_t done = 0;
++	uint64_t total_size = 0;
  
- 	*tss_enabled = 0;
+ 	if (ipsw == NULL) {
+ 		logger(LL_ERROR, "Invalid archive\n");
+@@ -775,6 +776,9 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
+ 	}
  
- 	/* older devices don't require personalized firmwares and use a BuildManifesto.plist */
+ 	if (ipsw->zip) {
++		logger(LL_ERROR, "zip mode unsupported with mmap\n");
++		return -1;
++
+ 		int err = 0;
+ 		struct zip *zip = zip_open(ipsw->path, 0, &err);
+ 		if (zip == NULL) {
+@@ -851,15 +855,15 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
+ 			return -1;
+ 		}
+ 		total_size = fst.st_size;
+-		buffer = (unsigned char*)malloc(blocksize);
+-		if (buffer == NULL) {
+-			logger(LL_ERROR, "Out of memory\n");
+-			free(filepath);
+-			return -1;
+-		}
+ 
+ #ifndef WIN32
+ 		if (S_ISLNK(fst.st_mode)) {
++			buffer = (unsigned char*)malloc(blocksize);
++			if (buffer == NULL) {
++				logger(LL_ERROR, "Out of memory\n");
++				free(filepath);
++				return -1;
++			}
+ 			ssize_t rl = readlink(filepath, (char*)buffer, (total_size > blocksize) ? blocksize : total_size);
+ 			if (rl < 0) {
+ 				logger(LL_ERROR, "%s: readlink failed for %s: %s\n", __func__, filepath, strerror(errno));
+@@ -868,36 +872,37 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
+ 				return -1;
+ 			}
+ 			send_callback(ctx, buffer, (size_t)rl, 0, 0);
++			free(buffer);
+ 		} else {
+ #endif
+ 			FILE *f = fopen(filepath, "rb");
+ 			if (!f) {
+ 				logger(LL_ERROR, "%s: fopen failed for %s: %s\n", __func__, filepath, strerror(errno));
+ 				free(filepath);
+-				free(buffer);
+ 				return -2;
+ 			}
+ 
+ 			while (done < total_size) {
+-				size_t size = total_size-done;
++				uint64_t size = total_size - done;
+ 				if (size > blocksize) size = blocksize;
+-				size_t fr = fread(buffer, 1, size, f);
+-				if (fr != size) {
+-					logger(LL_ERROR, "%s: fread failed for %s: %s\n", __func__, filepath, strerror(errno));
++				buffer = (unsigned char *)mmap(0, size, PROT_READ, MAP_PRIVATE, fileno(f), done);
++				if (buffer == MAP_FAILED) {
++					logger(LL_ERROR, "%s: mmap failed for %s: %s\n", __func__, filepath, strerror(errno));
+ 					break;
+ 				}
+-				if (send_callback(ctx, buffer, fr, done, total_size) < 0) {
++				if (send_callback(ctx, buffer, size, done, total_size) < 0) {
+ 					logger(LL_ERROR, "%s: send failed\n", __func__);
++					free_mmap(buffer, size, -1);
+ 					break;
+ 				}
+-				done += fr;
++				free_mmap(buffer, size, -1);
++				done += size;
+ 			}
+ 			fclose(f);
+ #ifndef WIN32
+ 		}
+ #endif
+ 		free(filepath);
+-		free(buffer);
+ 	}
+ 
+ 	if (done < total_size) {
+@@ -922,7 +927,7 @@ int ipsw_extract_build_manifest(ipsw_archive_t ipsw, plist_t* buildmanifest, int
  	if (ipsw_file_exists(ipsw, "BuildManifesto.plist")) {
--		if (ipsw_extract_to_memory(ipsw, "BuildManifesto.plist", &data, &size) == 0) {
-+		if (ipsw_extract_to_memory_mmap(ipsw, "BuildManifesto.plist", &data, &size) == 0) {
- 			plist_from_xml((char*)data, size, buildmanifest);
+ 		if (ipsw_extract_to_memory(ipsw, "BuildManifesto.plist", &data, &size) == 0) {
+ 			plist_from_memory((char*)data, size, buildmanifest, NULL);
 -			free(data);
 +			free_mmap(data, size, -1);
  			return 0;
  		}
  	}
-@@ -837,10 +951,10 @@ int ipsw_extract_build_manifest(ipsw_archive_t ipsw, plist_t* buildmanifest, int
- 	size = 0;
- 
- 	/* whereas newer devices do not require personalized firmwares and use a BuildManifest.plist */
--	if (ipsw_extract_to_memory(ipsw, "BuildManifest.plist", &data, &size) == 0) {
-+	if (ipsw_extract_to_memory_mmap(ipsw, "BuildManifest.plist", &data, &size) == 0) {
+@@ -934,7 +939,7 @@ int ipsw_extract_build_manifest(ipsw_archive_t ipsw, plist_t* buildmanifest, int
+ 	if (ipsw_extract_to_memory(ipsw, "BuildManifest.plist", &data, &size) == 0) {
  		*tss_enabled = 1;
- 		plist_from_xml((char*)data, size, buildmanifest);
+ 		plist_from_memory((char*)data, size, buildmanifest, NULL);
 -		free(data);
 +		free_mmap(data, size, -1);
  		return 0;
  	}
  
-@@ -849,12 +963,12 @@ int ipsw_extract_build_manifest(ipsw_archive_t ipsw, plist_t* buildmanifest, int
+@@ -948,7 +953,7 @@ int ipsw_extract_restore_plist(ipsw_archive_t ipsw, plist_t* restore_plist)
  
- int ipsw_extract_restore_plist(ipsw_archive_t ipsw, plist_t* restore_plist)
- {
--	unsigned int size = 0;
-+	uint64_t size = 0;
- 	unsigned char* data = NULL;
- 
--	if (ipsw_extract_to_memory(ipsw, "Restore.plist", &data, &size) == 0) {
-+	if (ipsw_extract_to_memory_mmap(ipsw, "Restore.plist", &data, &size) == 0) {
- 		plist_from_xml((char*)data, size, restore_plist);
+ 	if (ipsw_extract_to_memory(ipsw, "Restore.plist", &data, &size) == 0) {
+ 		plist_from_memory((char*)data, size, restore_plist, NULL);
 -		free(data);
 +		free_mmap(data, size, -1);
  		return 0;
  	}
  
 diff --git a/src/ipsw.h b/src/ipsw.h
-index f0e11a1..daf12e0 100644
+index b22e614..65deb38 100644
 --- a/src/ipsw.h
 +++ b/src/ipsw.h
 @@ -44,7 +44,7 @@ void ipsw_close(ipsw_archive_t ipsw);
  int ipsw_print_info(const char* ipsw);
  
  typedef int (*ipsw_list_cb)(void *ctx, ipsw_archive_t ipsw, const char *name, struct stat *stat);
--typedef int (*ipsw_send_cb)(void *ctx, void *data, size_t size, size_t done, size_t total_size);
-+typedef int (*ipsw_send_cb)(void *ctx, void *data, uint64_t size, uint64_t done, uint64_t total_size);
+-typedef int (*ipsw_send_cb)(void *ctx, const void *data, size_t size, size_t done, size_t total_size);
++typedef int (*ipsw_send_cb)(void *ctx, const void *data, uint64_t size, uint64_t done, uint64_t total_size);
  
  struct ipsw_file_handle {
  	FILE* file;
-@@ -69,7 +69,9 @@ int ipsw_get_file_size(ipsw_archive_t ipsw, const char* infile, uint64_t* size);
- int ipsw_extract_to_file(ipsw_archive_t ipsw, const char* infile, const char* outfile);
- int ipsw_extract_to_file_with_progress(ipsw_archive_t ipsw, const char* infile, const char* outfile, int print_progress);
- int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, unsigned char** pbuffer, unsigned int* psize);
-+int ipsw_extract_to_memory_mmap(ipsw_archive_t ipsw, const char* infile, unsigned char** pbuffer, uint64_t* psize);
- int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ipsw_send_cb send_callback, void* ctx);
-+int ipsw_extract_send_mmap(ipsw_archive_t ipsw, const char* infile, int blocksize, ipsw_send_cb send_callback, void* ctx);
- int ipsw_extract_build_manifest(ipsw_archive_t ipsw, plist_t* buildmanifest, int *tss_enabled);
- int ipsw_extract_restore_plist(ipsw_archive_t ipsw, plist_t* restore_plist);
- int ipsw_list_contents(ipsw_archive_t ipsw, ipsw_list_cb cb, void *ctx);
 diff --git a/src/recovery.c b/src/recovery.c
-index 02f5689..5742b5d 100644
+index ccea423..52195a4 100644
 --- a/src/recovery.c
 +++ b/src/recovery.c
-@@ -297,7 +297,7 @@ int recovery_send_component(struct idevicerestore_client_t* client, plist_t buil
- 
- 	unsigned char* component_data = NULL;
- 	unsigned int component_size = 0;
--	int ret = extract_component(client->ipsw, path, &component_data, &component_size);
-+	int ret = extract_component_mmap(client->ipsw, path, &component_data, &component_size);
- 	free(path);
- 	if (ret < 0) {
- 		error("ERROR: Unable to extract component: %s\n", component);
-@@ -305,7 +305,7 @@ int recovery_send_component(struct idevicerestore_client_t* client, plist_t buil
+@@ -308,7 +308,7 @@ int recovery_send_component(struct idevicerestore_client_t* client, plist_t buil
  	}
  
- 	ret = personalize_component(component, component_data, component_size, client->tss, &data, &size);
+ 	ret = personalize_component(client, component, component_data, component_size, client->tss, &data, &size);
 -	free(component_data);
 +	free_mmap(component_data, component_size, -1);
  	if (ret < 0) {
- 		error("ERROR: Unable to get personalized component: %s\n", component);
+ 		logger(LL_ERROR, "Unable to get personalized component: %s\n", component);
  		return -1;
 diff --git a/src/restore.c b/src/restore.c
-index 7fa104b..acef2ab 100644
+index aa9bf89..ef6ed14 100644
 --- a/src/restore.c
 +++ b/src/restore.c
-@@ -1101,7 +1101,7 @@ int restore_send_component(restored_client_t restore, struct idevicerestore_clie
- 
- 	unsigned char* component_data = NULL;
- 	unsigned int component_size = 0;
--	int ret = extract_component(client->ipsw, path, &component_data, &component_size);
-+	int ret = extract_component_mmap(client->ipsw, path, &component_data, &component_size);
- 	free(path);
- 	path = NULL;
- 	if (ret < 0) {
-@@ -1110,7 +1110,7 @@ int restore_send_component(restored_client_t restore, struct idevicerestore_clie
+@@ -1497,7 +1497,7 @@ int restore_send_component(struct idevicerestore_client_t* client, plist_t messa
  	}
  
- 	ret = personalize_component(component, component_data, component_size, client->tss, &data, &size);
+ 	ret = personalize_component(client, component, component_data, component_size, client->tss, &data, &size);
 -	free(component_data);
 +	free_mmap(component_data, component_size, -1);
  	component_data = NULL;
  	if (ret < 0) {
- 		error("ERROR: Unable to get personalized component %s\n", component);
-@@ -1144,7 +1144,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
- 	char* restore_sep_path = NULL;
- 	char firmware_path[PATH_MAX - 9];
- 	char manifest_file[PATH_MAX];
--	unsigned int manifest_size = 0;
-+	uint64_t manifest_size = 0;
- 	unsigned char* manifest_data = NULL;
- 	char firmware_filename[PATH_MAX];
- 	unsigned int llb_size = 0;
-@@ -1191,7 +1191,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
- 
- 	firmware_files = plist_new_dict();
- 	if (ipsw_file_exists(client->ipsw, manifest_file)) {
--		ipsw_extract_to_memory(client->ipsw, manifest_file, &manifest_data, &manifest_size);
-+		ipsw_extract_to_memory_mmap(client->ipsw, manifest_file, &manifest_data, &manifest_size);
- 	}
- 	if (manifest_data && manifest_size > 0) {
- 		info("Getting firmware manifest from %s\n", manifest_file);
-@@ -1205,7 +1205,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
+ 		logger(LL_ERROR, "Unable to get personalized component %s\n", component);
+@@ -1604,7 +1604,7 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
  			snprintf(firmware_filename, sizeof(firmware_filename), "%s/%s", firmware_path, filename);
  			plist_dict_set_item(firmware_files, compname, plist_new_string(firmware_filename));
  		}
 -		free(manifest_data);
 +		free_mmap(manifest_data, manifest_size, -1);
  	} else {
- 		info("Getting firmware manifest from build identity\n");
+ 		logger(LL_INFO, "Getting firmware manifest from build identity\n");
  		plist_dict_iter iter = NULL;
-@@ -1262,7 +1262,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
- 	const char* component = "LLB";
- 	unsigned char* component_data = NULL;
- 	unsigned int component_size = 0;
--	int ret = extract_component(client->ipsw, llb_path, &component_data, &component_size);
-+	int ret = extract_component_mmap(client->ipsw, llb_path, &component_data, &component_size);
- 	free(llb_path);
- 	if (ret < 0) {
- 		error("ERROR: Unable to extract component: %s\n", component);
-@@ -1270,7 +1270,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
+@@ -1669,7 +1669,7 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
  	}
  
- 	ret = personalize_component(component, component_data, component_size, client->tss, &llb_data, &llb_size);
+ 	ret = personalize_component(client, component, component_data, component_size, client->tss, &llb_data, &llb_size);
 -	free(component_data);
 +	free_mmap(component_data, component_size, -1);
  	component_data = NULL;
  	component_size = 0;
  	if (ret < 0) {
-@@ -1316,7 +1316,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
- 		component_data = NULL;
- 		unsigned int component_size = 0;
- 
--		if (extract_component(client->ipsw, comppath, &component_data, &component_size) < 0) {
-+		if (extract_component_mmap(client->ipsw, comppath, &component_data, &component_size) < 0) {
- 			free(iter);
- 			free(comp);
- 			free(comppath);
-@@ -1329,12 +1329,12 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
+@@ -1728,12 +1728,12 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
  			free(iter);
  			free(comp);
  			free(comppath);
 -			free(component_data);
 +			free_mmap(component_data, component_size, -1);
  			plist_free(firmware_files);
- 			error("ERROR: Unable to get personalized component: %s\n", component);
+ 			logger(LL_ERROR, "Unable to get personalized component: %s\n", component);
  			return -1;
  		}
 -		free(component_data);
@@ -692,188 +549,95 @@ index 7fa104b..acef2ab 100644
  		component_data = NULL;
  		component_size = 0;
  
-@@ -1365,7 +1365,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
- 	if (build_identity_has_component(build_identity, "RestoreSEP") &&
- 	    build_identity_get_component_path(build_identity, "RestoreSEP", &restore_sep_path) == 0) {
- 		component = "RestoreSEP";
--		ret = extract_component(client->ipsw, restore_sep_path, &component_data, &component_size);
-+		ret = extract_component_mmap(client->ipsw, restore_sep_path, &component_data, &component_size);
- 		free(restore_sep_path);
- 		if (ret < 0) {
- 			error("ERROR: Unable to extract component: %s\n", component);
-@@ -1373,7 +1373,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
+@@ -1772,7 +1772,7 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
  		}
  
- 		ret = personalize_component(component, component_data, component_size, client->tss, &personalized_data, &personalized_size);
+ 		ret = personalize_component(client, component, component_data, component_size, client->tss, &personalized_data, &personalized_size);
 -		free(component_data);
 +		free_mmap(component_data, component_size, -1);
  		component_data = NULL;
  		component_size = 0;
  		if (ret < 0) {
-@@ -1390,7 +1390,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
- 	if (build_identity_has_component(build_identity, "SEP") &&
- 	    build_identity_get_component_path(build_identity, "SEP", &sep_path) == 0) {
- 		component = "SEP";
--		ret = extract_component(client->ipsw, sep_path, &component_data, &component_size);
-+		ret = extract_component_mmap(client->ipsw, sep_path, &component_data, &component_size);
- 		free(sep_path);
- 		if (ret < 0) {
- 			error("ERROR: Unable to extract component: %s\n", component);
-@@ -1398,7 +1398,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
+@@ -1797,7 +1797,7 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
  		}
  
- 		ret = personalize_component(component, component_data, component_size, client->tss, &personalized_data, &personalized_size);
+ 		ret = personalize_component(client, component, component_data, component_size, client->tss, &personalized_data, &personalized_size);
 -		free(component_data);
 +		free_mmap(component_data, component_size, -1);
  		component_data = NULL;
  		component_size = 0;
  		if (ret < 0) {
-@@ -1415,7 +1415,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
- 	if (build_identity_has_component(build_identity, "SepStage1") &&
- 	    build_identity_get_component_path(build_identity, "SepStage1", &sep_path) == 0) {
- 		component = "SepStage1";
--		ret = extract_component(client->ipsw, sep_path, &component_data, &component_size);
-+		ret = extract_component_mmap(client->ipsw, sep_path, &component_data, &component_size);
- 		free(sep_path);
- 		if (ret < 0) {
- 			error("ERROR: Unable to extract component: %s\n", component);
-@@ -1423,7 +1423,7 @@ int restore_send_nor(restored_client_t restore, struct idevicerestore_client_t*
+@@ -1822,7 +1822,7 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
  		}
  
- 		ret = personalize_component(component, component_data, component_size, client->tss, &personalized_data, &personalized_size);
+ 		ret = personalize_component(client, component, component_data, component_size, client->tss, &personalized_data, &personalized_size);
 -		free(component_data);
 +		free_mmap(component_data, component_size, -1);
  		component_data = NULL;
  		component_size = 0;
  		if (ret < 0) {
-@@ -1962,7 +1962,7 @@ static int restore_send_baseband_data(restored_client_t restore, struct idevicer
- 	res = -1;
- 
- 	size_t sz = 0;
--	if (read_file(bbfwtmp, (void**)&buffer, &sz) < 0) {
-+	if (read_file_mmap(bbfwtmp, (void**)&buffer, &sz) < 0) {
- 		error("ERROR: could not read updated bbfw archive\n");
- 		goto leave;
- 	}
-@@ -1970,7 +1970,7 @@ static int restore_send_baseband_data(restored_client_t restore, struct idevicer
+@@ -2370,7 +2370,7 @@ static int restore_send_baseband_data(struct idevicerestore_client_t* client, pl
  	// send file
  	dict = plist_new_dict();
- 	plist_dict_set_item(dict, "BasebandData", plist_new_data(buffer, (uint64_t)sz));
+ 	plist_dict_set_item(dict, "BasebandData", plist_new_data(buffer, sz));
 -	free(buffer);
 +	free_mmap(buffer, sz, -1);
  	buffer = NULL;
  
- 	info("Sending BasebandData now...\n");
-@@ -2093,16 +2093,17 @@ static int restore_send_image_data(restored_client_t restore, struct idevicerest
- 						}
- 						build_identity_get_component_path(build_identity, component, &path);
- 						if (path) {
--							ret = extract_component(client->ipsw, path, &component_data, &component_size);
-+							ret = extract_component_mmap(client->ipsw, path, &component_data, &component_size);
- 						}
- 						free(path);
+ 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
+@@ -2519,10 +2519,11 @@ static int restore_send_image_data(struct idevicerestore_client_t *client, plist
  						path = NULL;
  						if (ret < 0) {
- 							error("ERROR: Unable to extract component: %s\n", component);
+ 							logger(LL_ERROR, "Unable to extract component: %s\n", component);
 +							return -1;
  						}
  
- 						ret = personalize_component(component, component_data, component_size, client->tss, &data, &size);
+ 						ret = personalize_component(client, component, component_data, component_size, client->tss, &data, &size);
 -						free(component_data);
 +						free_mmap(component_data, component_size, -1);
  						component_data = NULL;
  						if (ret < 0) {
- 							error("ERROR: Unable to get personalized component: %s\n", component);
-@@ -2209,7 +2210,7 @@ static plist_t restore_get_se_firmware_data(restored_client_t restore, struct id
- 		return NULL;
+ 							logger(LL_ERROR, "Unable to get personalized component: %s\n", component);
+@@ -2719,7 +2720,7 @@ static plist_t restore_get_se_firmware_data(struct idevicerestore_client_t* clie
  	}
  
--	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-+	ret = extract_component_mmap(client->ipsw, comp_path, &component_data, &component_size);
- 	free(comp_path);
- 	comp_path = NULL;
- 	if (ret < 0) {
-@@ -2221,7 +2222,7 @@ static plist_t restore_get_se_firmware_data(restored_client_t restore, struct id
- 	request = tss_request_new(NULL);
- 	if (request == NULL) {
- 		error("ERROR: Unable to create SE TSS request\n");
--		free(component_data);
-+		free_mmap(component_data, component_size, NULL);
- 		return NULL;
- 	}
- 
-@@ -2243,7 +2244,7 @@ static plist_t restore_get_se_firmware_data(restored_client_t restore, struct id
- 	plist_free(request);
- 	if (response == NULL) {
- 		error("ERROR: Unable to fetch SE ticket\n");
--		free(component_data);
-+		free_mmap(component_data, component_size, NULL);
- 		return NULL;
- 	}
- 
-@@ -2256,7 +2257,7 @@ static plist_t restore_get_se_firmware_data(restored_client_t restore, struct id
- 	}
- 
- 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char*)component_data, (uint64_t) component_size));
+ 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char*)component_data, component_size));
 -	free(component_data);
 +	free_mmap(component_data, component_size, NULL);
  	component_data = NULL;
  	component_size = 0;
  
-@@ -2324,7 +2325,7 @@ static plist_t restore_get_savage_firmware_data(restored_client_t restore, struc
+@@ -2805,7 +2806,7 @@ static plist_t restore_get_savage_firmware_data(struct idevicerestore_client_t*
  		return NULL;
  	}
  
 -	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-+	ret = extract_component_mmap(client->ipsw, comp_path, &component_data, &component_size);
++	ret = extract_component(client->ipsw, comp_path, &component_data_tmp, &component_size);
  	free(comp_path);
  	comp_path = NULL;
  	if (ret < 0) {
-@@ -2335,6 +2336,7 @@ static plist_t restore_get_savage_firmware_data(restored_client_t restore, struc
+@@ -2817,14 +2818,14 @@ static plist_t restore_get_savage_firmware_data(struct idevicerestore_client_t*
  	free(comp_name);
  	comp_name = NULL;
  
-+#if 0
- 	component_data_tmp = realloc(component_data, (size_t)component_size+16);
- 	if (!component_data_tmp) {
- 		free(component_data);
-@@ -2350,7 +2352,25 @@ static plist_t restore_get_savage_firmware_data(restored_client_t restore, struc
- 	free(component_data);
- 	component_data = NULL;
- 	component_size = 0;
-+#else
-+	component_data_tmp = malloc((size_t)component_size+16);
-+	if (!component_data_tmp) {
-+		free_mmap(component_data, component_size, NULL);
-+		return NULL;
-+	}
-+	memcpy(component_data_tmp + 16, component_data, (size_t)component_size);
-+	memset(component_data_tmp, '\0', 16);
-+	free_mmap(component_data, component_size, NULL);
- 
-+	// use component_data_tmp from now
-+	*(uint32_t*)(component_data_tmp + 4) = htole32((uint32_t)component_size);
-+	component_size += 16;
-+	plist_dict_set_item(response, "FirmwareData", plist_new_data((char*)component_data_tmp, (uint64_t) component_size));
-+	free(component_data_tmp);
-+	component_data_tmp = NULL;
-+	component_data = NULL;
-+	component_size = 0;
-+#endif
- 	return response;
- }
- 
-@@ -2416,7 +2436,7 @@ static plist_t restore_get_yonkers_firmware_data(restored_client_t restore, stru
+-	component_data_tmp = realloc(component_data, (size_t)component_size+16);
+-	if (!component_data_tmp) {
+-		free(component_data);
++	component_data = malloc((size_t)component_size+16);
++	if (!component_data) {
++		free_mmap(component_data_tmp, component_size, NULL);
+ 		plist_free(response);
+ 		return NULL;
  	}
- 
- 	/* now get actual component data */
--	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-+	ret = extract_component_mmap(client->ipsw, comp_path, &component_data, &component_size);
- 	free(comp_path);
- 	comp_path = NULL;
- 	if (ret < 0) {
-@@ -2431,7 +2451,7 @@ static plist_t restore_get_yonkers_firmware_data(restored_client_t restore, stru
- 	plist_dict_set_item(firmware_data, "YonkersFirmware", plist_new_data((char *)component_data, (uint64_t)component_size));
+-	component_data = component_data_tmp;
+-	memmove(component_data + 16, component_data, (size_t)component_size);
++	memcpy(component_data + 16, component_data_tmp, (size_t)component_size);
++	free_mmap(component_data_tmp, component_size, NULL);
+ 	memset(component_data, '\0', 16);
+ 	*(uint32_t*)(component_data + 4) = htole32((uint32_t)component_size);
+ 	component_size += 16;
+@@ -2932,7 +2933,7 @@ static plist_t restore_get_yonkers_firmware_data(struct idevicerestore_client_t*
+ 	plist_dict_set_item(firmware_data, "YonkersFirmware", plist_new_data((char*)component_data, component_size));
  	plist_dict_set_item(response, "FirmwareData", firmware_data);
  
 -	free(component_data);
@@ -881,22 +645,13 @@ index 7fa104b..acef2ab 100644
  	component_data = NULL;
  	component_size = 0;
  
-@@ -2513,7 +2533,7 @@ static plist_t restore_get_rose_firmware_data(restored_client_t restore, struct
- 		error("ERROR: Unable to get path for '%s' component\n", comp_name);
- 		return NULL;
- 	}
--	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-+	ret = extract_component_mmap(client->ipsw, comp_path, &component_data, &component_size);
- 	free(comp_path);
- 	comp_path = NULL;
- 	if (ret < 0) {
-@@ -2521,11 +2541,11 @@ static plist_t restore_get_rose_firmware_data(restored_client_t restore, struct
- 		return NULL;
+@@ -3028,11 +3029,11 @@ static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* cl
  	}
  	if (ftab_parse(component_data, component_size, &ftab, &ftag) != 0) {
+ 		plist_free(response);
 -		free(component_data);
 +		free_mmap(component_data, component_size, NULL);
- 		error("ERROR: Failed to parse '%s' component data.\n", comp_name);
+ 		logger(LL_ERROR, "Failed to parse '%s' component data.\n", comp_name);
  		return NULL;
  	}
 -	free(component_data);
@@ -904,23 +659,15 @@ index 7fa104b..acef2ab 100644
  	component_data = NULL;
  	component_size = 0;
  	if (ftag != 'rkos') {
-@@ -2539,7 +2559,7 @@ static plist_t restore_get_rose_firmware_data(restored_client_t restore, struct
- 			error("ERROR: Unable to get path for '%s' component\n", comp_name);
- 			return NULL;
- 		}
--		ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-+		ret = extract_component_mmap(client->ipsw, comp_path, &component_data, &component_size);
- 		free(comp_path);
- 		comp_path = NULL;
- 		if (ret < 0) {
-@@ -2550,12 +2570,12 @@ static plist_t restore_get_rose_firmware_data(restored_client_t restore, struct
+@@ -3059,13 +3060,13 @@ static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* cl
  
  		ftag = 0;
  		if (ftab_parse(component_data, component_size, &rftab, &ftag) != 0) {
 -			free(component_data);
 +			free_mmap(component_data, component_size, NULL);
  			ftab_free(ftab);
- 			error("ERROR: Failed to parse '%s' component data.\n", comp_name);
+ 			plist_free(response);
+ 			logger(LL_ERROR, "Failed to parse '%s' component data.\n", comp_name);
  			return NULL;
  		}
 -		free(component_data);
@@ -928,25 +675,7 @@ index 7fa104b..acef2ab 100644
  		component_data = NULL;
  		component_size = 0;
  		if (ftag != 'rkos') {
-@@ -2578,7 +2598,7 @@ static plist_t restore_get_rose_firmware_data(restored_client_t restore, struct
- 	ftab_free(ftab);
- 
- 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char *)component_data, (uint64_t)component_size));
--	free(component_data);
-+	free_mmap(component_data, component_size, NULL);
- 	component_data = NULL;
- 	component_size = 0;
- 
-@@ -2638,7 +2658,7 @@ static plist_t restore_get_veridian_firmware_data(restored_client_t restore, str
- 	}
- 
- 	/* now get actual component data */
--	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-+	ret = extract_component_mmap(client->ipsw, comp_path, &component_data, &component_size);
- 	free(comp_path);
- 	comp_path = NULL;
- 	if (ret < 0) {
-@@ -2652,7 +2672,7 @@ static plist_t restore_get_veridian_firmware_data(restored_client_t restore, str
+@@ -3181,7 +3182,7 @@ static plist_t restore_get_veridian_firmware_data(struct idevicerestore_client_t
  	} else {
  		plist_from_xml((const char*)component_data, component_size, &fw_map);
  	}
@@ -955,40 +684,23 @@ index 7fa104b..acef2ab 100644
  	component_data = NULL;
  	component_size = 0;
  
-@@ -2789,7 +2809,7 @@ static plist_t restore_get_tcon_firmware_data(restored_client_t restore, struct
+@@ -3348,7 +3349,7 @@ static plist_t restore_get_tcon_firmware_data(struct idevicerestore_client_t* cl
  	}
  
- 	/* now get actual component data */
--	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-+	ret = extract_component_mmap(client->ipsw, comp_path, &component_data, &component_size);
- 	free(comp_path);
- 	comp_path = NULL;
- 	if (ret < 0) {
-@@ -2798,7 +2818,7 @@ static plist_t restore_get_tcon_firmware_data(restored_client_t restore, struct
- 	}
- 
- 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char *)component_data, (uint64_t)component_size));
+ 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char*)component_data, component_size));
 -	free(component_data);
 +	free_mmap(component_data, component_size, NULL);
  	component_data = NULL;
  	component_size = 0;
  
-@@ -2915,7 +2935,7 @@ static plist_t restore_get_timer_firmware_data(restored_client_t restore, struct
- 			error("ERROR: Unable to get path for '%s' component\n", comp_name);
- 			return NULL;
- 		}
--		ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-+		ret = extract_component_mmap(client->ipsw, comp_path, &component_data, &component_size);
- 		free(comp_path);
- 		comp_path = NULL;
- 		if (ret < 0) {
-@@ -2923,11 +2943,11 @@ static plist_t restore_get_timer_firmware_data(restored_client_t restore, struct
+@@ -3492,12 +3493,12 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
  			return NULL;
  		}
  		if (ftab_parse(component_data, component_size, &ftab, &ftag) != 0) {
 -			free(component_data);
 +			free_mmap(component_data, component_size, NULL);
- 			error("ERROR: Failed to parse '%s' component data.\n", comp_name);
+ 			plist_free(response);
+ 			logger(LL_ERROR, "Failed to parse '%s' component data.\n", comp_name);
  			return NULL;
  		}
 -		free(component_data);
@@ -996,23 +708,15 @@ index 7fa104b..acef2ab 100644
  		component_data = NULL;
  		component_size = 0;
  		if (ftag != 'rkos') {
-@@ -2944,7 +2964,7 @@ static plist_t restore_get_timer_firmware_data(restored_client_t restore, struct
- 			error("ERROR: Unable to get path for '%s' component\n", comp_name);
- 			return NULL;
- 		}
--		ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-+		ret = extract_component_mmap(client->ipsw, comp_path, &component_data, &component_size);
- 		free(comp_path);
- 		comp_path = NULL;
- 		if (ret < 0) {
-@@ -2955,12 +2975,12 @@ static plist_t restore_get_timer_firmware_data(restored_client_t restore, struct
+@@ -3527,13 +3528,13 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
  
  		ftag = 0;
  		if (ftab_parse(component_data, component_size, &rftab, &ftag) != 0) {
 -			free(component_data);
 +			free_mmap(component_data, component_size, NULL);
  			ftab_free(ftab);
- 			error("ERROR: Failed to parse '%s' component data.\n", comp_name);
+ 			plist_free(response);
+ 			logger(LL_ERROR, "Failed to parse '%s' component data.\n", comp_name);
  			return NULL;
  		}
 -		free(component_data);
@@ -1020,23 +724,19 @@ index 7fa104b..acef2ab 100644
  		component_data = NULL;
  		component_size = 0;
  		if (ftag != 'rkos') {
-@@ -3368,12 +3388,12 @@ static int restore_bootability_send_one(void *ctx, ipsw_archive_t ipsw, const ch
- 	debug("DEBUG: BootabilityBundle send m=%07o s=%10ld %s\n", stat->st_mode, (long)stat->st_size, subpath);
- 
- 	unsigned char *buf = NULL;
--	unsigned int size = 0;
-+	uint64_t size = 0;
+@@ -3981,9 +3982,9 @@ static int restore_bootability_send_one(void *ctx, ipsw_archive_t ipsw, const ch
  
  	if ((S_ISLNK(stat->st_mode) || S_ISREG(stat->st_mode)) && stat->st_size != 0) {
--		ipsw_extract_to_memory(ipsw, name, &buf, &size);
-+		ipsw_extract_to_memory_mmap(ipsw, name, &buf, &size);
- 		if (size != stat->st_size) {
--			error("ERROR: expected %ld bytes but got %d for file %s\n", (long)stat->st_size, size, name);
-+			error("ERROR: expected %ld bytes but got %lld for file %s\n", (long)stat->st_size, size, name);
- 			free(buf);
+ 		ipsw_extract_to_memory(ipsw, name, &buf, &size);
+-		if (size != stat->st_size) {
++		if (!S_ISLNK(stat->st_mode) && size != stat->st_size) {
+ 			logger(LL_ERROR, "expected %zu bytes but got %zu for file %s\n", (size_t)stat->st_size, size, name);
+-			free(buf);
++			free_mmap(buf, size, -1);
  			return -1;
  		}
-@@ -3383,7 +3403,7 @@ static int restore_bootability_send_one(void *ctx, ipsw_archive_t ipsw, const ch
+ 	}
+@@ -3992,7 +3993,7 @@ static int restore_bootability_send_one(void *ctx, ipsw_archive_t ipsw, const ch
  
  	int ret = cpio_send_file(connection, subpath, stat, buf);
  
@@ -1045,136 +745,106 @@ index 7fa104b..acef2ab 100644
  	return ret;
  }
  
-@@ -3537,13 +3557,31 @@ int extract_global_manifest(struct idevicerestore_client_t* client, plist_t buil
- 	return 0;
- }
- 
-+int extract_global_manifest_mmap(struct idevicerestore_client_t* client, plist_t build_identity, char *variant, unsigned char** pbuffer, uint64_t* psize)
-+{
-+	char* ticket_path = extract_global_manifest_path(build_identity, variant);
-+	if (!ticket_path) {
-+		error("ERROR: failed to get global manifest path\n");
-+		return -1;
-+	}
-+	int ret = ipsw_extract_to_memory_mmap(client->ipsw, ticket_path, pbuffer, psize);
-+	if (ret != 0) {
-+		free(ticket_path);
-+		error("ERROR: failed to read global manifest\n");
-+		return -1;
-+	}
-+	free(ticket_path);
-+
-+	return 0;
-+}
-+
- struct _restore_send_file_data_ctx {
- 	struct idevicerestore_client_t* client;
- 	restored_client_t restore;
- 	int last_progress;
+@@ -4159,7 +4160,7 @@ struct _restore_send_file_data_ctx {
+ 	uint32_t tag;
  };
  
--static int _restore_send_file_data(struct _restore_send_file_data_ctx* rctx, void* data, size_t size, size_t done, size_t total_size)
-+static int _restore_send_file_data(struct _restore_send_file_data_ctx* rctx, void* data, uint64_t size, uint64_t done, uint64_t total_size)
+-static int _restore_send_file_data(struct _restore_send_file_data_ctx* rctx, const void* data, size_t size, size_t done, size_t total_size)
++static int _restore_send_file_data(struct _restore_send_file_data_ctx* rctx, const void* data, uint64_t size, uint64_t done, uint64_t total_size)
  {
  	plist_t dict = plist_new_dict();
  	if (data != NULL) {
-@@ -3591,28 +3629,32 @@ int restore_send_personalized_boot_object_v3(restored_client_t restore, struct i
- 	}
- 
- 	char *component = image_name;
--	unsigned int size = 0;
-+	uint64_t size = 0;
- 	unsigned char *data = NULL;
+@@ -4224,21 +4225,25 @@ int restore_send_personalized_boot_object_v3(struct idevicerestore_client_t* cli
+ 	size_t size = 0;
+ 	void *data = NULL;
  	char *path = NULL;
- 	plist_t blob = NULL;
- 	plist_t dict = NULL;
- 	restored_error_t restore_error = RESTORE_E_SUCCESS;
-+	bool is_mmap_data = false;
++	bool is_mmap = false;
  
- 	info("About to send %s...\n", component);
+ 	logger(LL_INFO, "About to send %s...\n", component);
  
  	if (strcmp(image_name, "__GlobalManifest__") == 0) {
--		int ret = extract_global_manifest(client, build_identity, NULL, &data, &size);
-+		is_mmap_data = true;
-+		int ret = extract_global_manifest_mmap(client, build_identity, NULL, &data, &size);
++		is_mmap = true;
+ 		int ret = extract_global_manifest(client, client->restore->build_identity, NULL, &data, &size);
  		if (ret != 0) {
  			return -1;
  		}
  	} else if (strcmp(image_name, "__RestoreVersion__") == 0) {
--		int ret = ipsw_extract_to_memory(client->ipsw, "RestoreVersion.plist", &data, &size);
-+		is_mmap_data = true;
-+		int ret = ipsw_extract_to_memory_mmap(client->ipsw, "RestoreVersion.plist", &data, &size);
++		is_mmap = true;
+ 		int ret = ipsw_extract_to_memory(client->ipsw, "RestoreVersion.plist", &data, &size);
  		if (ret != 0) {
- 			error("ERROR: failed to read global manifest\n");
+ 			logger(LL_ERROR, "failed to read global manifest\n");
  			return -1;
  		}
  	} else if (strcmp(image_name, "__SystemVersion__") == 0) {
--		int ret = ipsw_extract_to_memory(client->ipsw, "SystemVersion.plist", &data, &size);
-+		is_mmap_data = true;
-+		int ret = ipsw_extract_to_memory_mmap(client->ipsw, "SystemVersion.plist", &data, &size);
++		is_mmap = true;
+ 		int ret = ipsw_extract_to_memory(client->ipsw, "SystemVersion.plist", &data, &size);
  		if (ret != 0) {
- 			error("ERROR: failed to read global manifest\n");
- 			return -1;
-@@ -3639,7 +3681,7 @@ int restore_send_personalized_boot_object_v3(restored_client_t restore, struct i
- 		// Extract component
- 		unsigned char *component_data = NULL;
- 		unsigned int component_size = 0;
--		int ret = extract_component(client->ipsw, path, &component_data, &component_size);
-+		int ret = extract_component_mmap(client->ipsw, path, &component_data, &component_size);
- 		free(path);
- 		path = NULL;
- 		if (ret < 0) {
-@@ -3648,13 +3690,15 @@ int restore_send_personalized_boot_object_v3(restored_client_t restore, struct i
- 		}
+ 			logger(LL_ERROR, "failed to read global manifest\n");
+@@ -4276,7 +4281,7 @@ int restore_send_personalized_boot_object_v3(struct idevicerestore_client_t* cli
  
  		// Personalize IMG4
--		ret = personalize_component(component, component_data, component_size, client->tss, &data, &size);
+ 		ret = personalize_component(client, component, component_data, component_size, client->tss, &data, &size);
 -		free(component_data);
-+        unsigned int img4_size = 0;
-+		ret = personalize_component(component, component_data, component_size, client->tss, &data, &img4_size);
 +		free_mmap(component_data, component_size, -1);
  		component_data = NULL;
  		if (ret < 0) {
- 			error("ERROR: Unable to get personalized component %s\n", component);
- 			return -1;
- 		}
-+        size = img4_size;
+ 			logger(LL_ERROR, "Unable to get personalized component %s\n", component);
+@@ -4287,6 +4292,11 @@ int restore_send_personalized_boot_object_v3(struct idevicerestore_client_t* cli
+ 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
+ 	if (!service) {
+ 		logger(LL_ERROR, "%s: Unable to connect to service client\n", __func__);
++		if (is_mmap) {
++			free_mmap(data, size, -1);
++		} else {
++			free(data);
++		}
+ 		return -1;
  	}
  
- 	info("Sending %s now (%" PRIu64 " bytes)...\n", component, (uint64_t)size);
-@@ -3668,13 +3712,21 @@ int restore_send_personalized_boot_object_v3(restored_client_t restore, struct i
+@@ -4304,7 +4314,11 @@ int restore_send_personalized_boot_object_v3(struct idevicerestore_client_t* cli
  	while (i > 0) {
  		int blob_size = i > 8192 ? 8192 : i;
- 		if (_restore_send_file_data(&rctx, (data + size - i), blob_size, size-i, size) < 0) {
+ 		if (_restore_send_file_data(&rctx, ((char*)data + size - i), blob_size, size-i, size) < 0) {
 -			free(data);
-+			if (is_mmap_data) {
++			if (is_mmap) {
 +				free_mmap(data, size, -1);
 +			} else {
 +				free(data);
 +			}
- 			error("ERROR: Unable to send component %s data\n", component);
- 			return -1;
+ 			_restore_service_free(service);
+ 			finalize_progress(rctx.tag);
+ 			logger(LL_ERROR, "Unable to send component %s data\n", component);
+@@ -4312,7 +4326,11 @@ int restore_send_personalized_boot_object_v3(struct idevicerestore_client_t* cli
  		}
  		i -= blob_size;
  	}
 -	free(data);
-+	if (is_mmap_data) {
++	if (is_mmap) {
 +		free_mmap(data, size, -1);
 +	} else {
 +		free(data);
 +	}
  
  	_restore_send_file_data(&rctx, NULL, 0, size-i, size);
- 
-@@ -3762,7 +3814,7 @@ int restore_send_source_boot_object_v4(restored_client_t restore, struct idevice
- 	rctx.restore = restore;
- 	rctx.last_progress = 0;
- 
--	if (ipsw_extract_send(client->ipsw, path, 8192, (ipsw_send_cb)_restore_send_file_data, &rctx) < 0) {
-+	if (ipsw_extract_send_mmap(client->ipsw, path, 8192, (ipsw_send_cb)_restore_send_file_data, &rctx) < 0) {
- 		free(path);
- 		error("ERROR: Failed to send component %s\n", component);
- 		return -1;
+ 	finalize_progress(rctx.tag);
+@@ -4570,7 +4588,7 @@ int restore_send_recovery_os_file_asset_image(struct idevicerestore_client_t* cl
+ 	void* data = NULL;
+ 	size_t size = 0;
+ 	ret = personalize_component(client, component, component_data, component_size, client->tss_recoveryos_root_ticket, &data, &size);
+-	free(component_data);
++	free_mmap(component_data, component_size, -1);
+ 	component_data = NULL;
+ 	if (ret < 0) {
+ 		logger(LL_ERROR, "Unable to get personalized component %s. Trying to continue anyway.\n", component);
+@@ -4633,7 +4651,7 @@ int restore_send_recovery_os_iboot_fw_files_images(struct idevicerestore_client_
+ 							void* data = NULL;
+ 							size_t size = 0;
+ 							ret = personalize_component(client, component, component_data, component_size, client->tss_recoveryos_root_ticket, &data, &size);
+-							free(component_data);
++							free_mmap(component_data, component_size, -1);
+ 							component_data = NULL;
+ 							if (ret == 0) {
+ 								plist_dict_set_item(firmware_files, component, plist_new_data((char*)data, size));
 -- 
-2.44.2
+2.43.0
 

@@ -15,15 +15,21 @@ LOCAL_URI = " \
     file://get-rpu-unique-device-address \
     file://rpu-controller-command \
     file://rpu-ready \
+    file://rpu@.service \
+    file://start-rpu-service-and-get-logs \
 "
 
 RDEPENDS:${PN}:append = "bash rackmon"
 
-#SYSTEMD_SERVICE:${PN} = "rpu.service" TODO in a later revision
+SYSTEMD_SERVICE:${PN} += "rpu@.service"
 
 do_install() {
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/rpu@.service ${D}${systemd_system_unitdir}
+
     install -d ${D}${libexecdir}/${PN}
     install -m 0755 ${UNPACKDIR}/get-rpu-unique-device-address ${D}${libexecdir}/${PN}/get-rpu-unique-device-address
+    install -m 0755 ${UNPACKDIR}/start-rpu-service-and-get-logs ${D}${libexecdir}/${PN}/start-rpu-service-and-get-logs
     install -m 0755 ${UNPACKDIR}/rpu-controller-command ${D}${libexecdir}/${PN}/rpu-controller-command
     install -m 0755 ${UNPACKDIR}/rpu-ready ${D}${libexecdir}/${PN}/rpu-ready
 

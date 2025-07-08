@@ -1,0 +1,8 @@
+# Copyright 2014-present Facebook. All Rights Reserved.
+[Unit]
+Description=Run RPU command %i <RPU UniqueDevAddress>:<command>
+Requires=rackmond.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'echo %i | tr : " " | xargs /usr/libexec/rpu-controller/rpu-controller-command'

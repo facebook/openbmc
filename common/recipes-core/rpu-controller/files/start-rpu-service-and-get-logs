@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: RPU Number
+# 2: Command
+# 3: Optional override config
+
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <rpu_number> <command> [override_config]
+      rpu_number: The RPU number
+      command: The command to execute on the device: start, stop, restart, clear-sticky-registers
+      override_config: Optional configuration file to override default settings in
+                       /usr/share/rpu-controller/config.json"
+    exit 1
+fi
+
+OVERRIDE_CONFIG_FILE=${3:-/usr/share/rpu-controller/config.json}
+CONFIG_FILE="/var/lib/rpu-controller/default-config.json"
+
+if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
+    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
+fi
+
+script_dir=$( dirname "${BASH_SOURCE[0]}" )
+# unique device address
+UDA=$("$script_dir/get-rpu-unique-device-address" "$1" "$CONFIG_FILE") || {
+  echo "Could not determine RPU unique device address"
+  exit 1
+}
+
+COMMAND="$2"
+
+systemctl start "rpu@$UDA:$COMMAND.service"
+code=$?
+journalctl -I -o short -u "rpu@$UDA:$COMMAND.service"
+exit $code

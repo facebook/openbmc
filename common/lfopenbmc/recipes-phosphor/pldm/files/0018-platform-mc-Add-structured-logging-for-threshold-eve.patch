@@ -1,7 +1,7 @@
-From 1e4af1de42bebe548c3004940aff39e2b775c18b Mon Sep 17 00:00:00 2001
+From 3430db6e5c28602e7a00d65a27c07017739be2a5 Mon Sep 17 00:00:00 2001
 From: Amithash Prasad <amithash@meta.com>
 Date: Thu, 1 May 2025 15:34:59 -0700
-Subject: [PATCH 19/20] platform-mc: Add structured logging for threshold
+Subject: [PATCH 18/19] platform-mc: Add structured logging for threshold
  events
 
 Create structured threshold log events up creation

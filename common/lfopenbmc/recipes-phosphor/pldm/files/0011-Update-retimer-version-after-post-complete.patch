@@ -1,7 +1,7 @@
-From 94df8780276f9678e046f17b7393eb0edb30925b Mon Sep 17 00:00:00 2001
+From 75b42fdb6529f97b4d7f0c21d5b060c27dd4a124 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Thu, 19 Sep 2024 14:00:24 +0800
-Subject: [PATCH 11/20] Update retimer version after post complete
+Subject: [PATCH 11/19] Update retimer version after post complete
 
 The retimer will not be ready right away after fw update. The best
 timing to read retimer version is post-complete.

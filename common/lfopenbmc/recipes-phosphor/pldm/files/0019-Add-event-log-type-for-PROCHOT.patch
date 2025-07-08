@@ -1,7 +1,7 @@
-From 083f8897fd1b4c0e871d506633d24f121a48428a Mon Sep 17 00:00:00 2001
+From 003be038764aa9e3cfc819a37c679e9412da56da Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay_yc_huang@wiwynn.com>
 Date: Tue, 24 Jun 2025 10:12:30 +0000
-Subject: [PATCH 20/20] Add event log type for PROCHOT
+Subject: [PATCH 19/19] Add event log type for PROCHOT
 
 [Task Description]
 - Related to YV4T1M-1031

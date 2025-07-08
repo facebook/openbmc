@@ -1,7 +1,7 @@
-From 26afde1048040d1b06dab41f9676dd6b682ac07e Mon Sep 17 00:00:00 2001
+From 8a62fa1a195831c8344c3cf98b2e712d803a3ffa Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 01/20] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 01/19] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -82,10 +82,10 @@ index 06c256c..46769aa 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index 358d0d7..e17e306 100644
+index bccd929..409de80 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -240,6 +240,10 @@ class DBusHandlerInterface
+@@ -264,6 +264,10 @@ class DBusHandlerInterface
          const sdbusplus::message::object_path& objectPath,
          const sdbusplus::message::object_path& subtree, int depth,
          const std::vector<std::string>& ifaceList) const = 0;
@@ -96,7 +96,7 @@ index 358d0d7..e17e306 100644
  };
  
  /**
-@@ -346,6 +350,9 @@ class DBusHandler : public DBusHandlerInterface
+@@ -370,6 +374,9 @@ class DBusHandler : public DBusHandlerInterface
          const char* serviceName, const char* objPath,
          const char* dbusInterface) const override;
  

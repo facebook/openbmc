@@ -1,7 +1,7 @@
-From d780ccaf76aec7b721213fba38b0b4c031ddfcde Mon Sep 17 00:00:00 2001
+From 39a0c7934b9b9a57e27bf358fc272d79dae81e6c Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
-Subject: [PATCH 04/20] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 04/19] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter

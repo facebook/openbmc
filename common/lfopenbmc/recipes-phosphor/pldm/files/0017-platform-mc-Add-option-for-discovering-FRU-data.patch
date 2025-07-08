@@ -1,7 +1,7 @@
-From cd5dbbd06fb533238ed5f536e6cffdc0cb3e9f59 Mon Sep 17 00:00:00 2001
+From 993c58bbac5b20600f747428fa6dd4d31ab94e0e Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
-Subject: [PATCH 17/20] platform-mc: Add option for discovering FRU data
+Subject: [PATCH 17/19] platform-mc: Add option for discovering FRU data
 
 Allow enabling or disabling the discovery of FRU data from terminus.
 Supports retrieving FRU data during the terminus discovery phase and
@@ -138,7 +138,7 @@ index 1e35477..fd624f5 100644
  
  } // namespace platform_mc
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 429f959..340fb87 100644
+index 2401a24..1912832 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -103,9 +103,14 @@ bool Terminus::createInventoryPath(std::string tName)
@@ -156,7 +156,7 @@ index 429f959..340fb87 100644
          return true;
      }
      catch (const sdbusplus::exception_t& e)
-@@ -601,8 +606,9 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorId id)
+@@ -607,8 +612,9 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorId id)
   *  @param[in] p - pointer to each record of FRU record table
   *  @param[in] tableSize - FRU table size
   */
@@ -168,7 +168,7 @@ index 429f959..340fb87 100644
  {
      auto offset = p - table;
      return (tableSize - offset) < sizeof(struct pldm_fru_record_data_format);
-@@ -611,6 +617,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
+@@ -617,6 +623,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
  void Terminus::updateInventoryWithFru(const uint8_t* fruData,
                                        const size_t fruLen)
  {
@@ -176,7 +176,7 @@ index 429f959..340fb87 100644
      auto tmp = getTerminusName();
      if (!tmp || tmp.value().empty())
      {
-@@ -722,6 +729,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
+@@ -728,6 +735,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
              ptr += sizeof(pldm_fru_record_tlv) - 1 + tlv->length;
          }
      }

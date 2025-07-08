@@ -1,7 +1,7 @@
-From b901f12a77ac27fc5c8e14c61a2515f97d384f00 Mon Sep 17 00:00:00 2001
+From c56a072bcf342c7255dee87ce9c41db1a980f18d Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Wed, 26 Jun 2024 14:25:18 +0800
-Subject: [PATCH 06/20] Support OEM-META command for Event Logs from BIC
+Subject: [PATCH 06/19] Support OEM-META command for Event Logs from BIC
 
 Summary:
   - Add handler for write-file command "EVENT_LOG", which is sent

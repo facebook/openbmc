@@ -1,4 +1,4 @@
-project('hgxmgr', 'c', 'cpp',
+project('gpumgr', 'c', 'cpp',
     version: '0.1',
     license: 'GPL2',
     default_options: [
@@ -19,7 +19,7 @@ deps = [
 ]
 
 hgxmgr_exe = executable(
-    'hgxmgr', 
+    'gpumgr', 
     srcs,
     dependencies: deps,
     install: true,

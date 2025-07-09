@@ -54,8 +54,8 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   int i, ret, retry = MAX_CMD_RETRY;
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
+  size_t tlen = 0;
+  size_t rlen = 0;
 #ifdef ENABLE_LOG
   int logfd, len;
   char log[512] = {0};

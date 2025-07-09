@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyre-strict
 # (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
 
 import sys
@@ -135,7 +136,7 @@ def show_result_summary(checks: List[BmcCheck]) -> None:
 
 
 def show_remediations(
-    auto_remediations: List[Remediation], manual_remediations: List[Remediation]
+    auto_remediations: List[Remediation], manual_remediations: List[str]
 ) -> None:
     if len(manual_remediations) == 0 and len(auto_remediations) == 0:
         print("No remediations available")
@@ -143,8 +144,8 @@ def show_remediations(
 
     print("Remediations:")
     for r in manual_remediations:
-        print(indent(f"Manual remediation recommended: {r.name}"))
-        print(indent(r.description, level=2))
+        print(indent("Manual remediation recommended:"))
+        print(indent(r, level=2))
 
     for r in auto_remediations:
         print(indent(f"Auto remediation available: {r.name}"))

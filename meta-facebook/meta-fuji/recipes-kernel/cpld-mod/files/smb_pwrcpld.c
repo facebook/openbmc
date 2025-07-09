@@ -21,22 +21,11 @@
 //#define DEBUG
 
 #include <linux/errno.h>
-#include <linux/module.h>
 #include <linux/i2c.h>
-#include <i2c_dev_sysfs.h>
+#include <linux/module.h>
+#include <linux/version.h>
 
-#ifdef DEBUG
-
-#define PP_DEBUG(fmt, ...) do {                   \
-  printk(KERN_DEBUG "%s:%d " fmt "\n",            \
-         __FUNCTION__, __LINE__, ##__VA_ARGS__);  \
-} while (0)
-
-#else /* !DEBUG */
-
-#define PP_DEBUG(fmt, ...)
-
-#endif
+#include "i2c_dev_sysfs.h"
 
 #define fail_normal_help_str                    \
   "0: Fail\n"                                   \
@@ -249,15 +238,6 @@ static const i2c_dev_attr_st smb_pwrcpld_attr_table[] = {
   }
 };
 
-static i2c_dev_data_st smb_pwrcpld_data;
-
-/*
- * SMB PWRCPLD i2c addresses.
- */
-static const unsigned short normal_i2c[] = {
-  0x60, I2C_CLIENT_END
-};
-
 /* SMB PWRCPLD id */
 static const struct i2c_device_id smb_pwrcpld_id[] = {
   { "smb_pwrcpld", 0 },
@@ -265,29 +245,22 @@ static const struct i2c_device_id smb_pwrcpld_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, smb_pwrcpld_id);
 
-/* Return 0 if detection is successful, -ENODEV otherwise */
-static int smb_pwrcpld_detect(struct i2c_client *client,
-                              struct i2c_board_info *info)
-{
-  /*
-   * We don't currently do any detection of the SMB PWRCPLD
-   */
-  strlcpy(info->type, "smb_pwrcpld", I2C_NAME_SIZE);
-  return 0;
-}
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
+static int smb_pwrcpld_probe(struct i2c_client *client)
+#else
 static int smb_pwrcpld_probe(struct i2c_client *client,
                              const struct i2c_device_id *id)
+#endif
 {
-  int n_attrs = sizeof(smb_pwrcpld_attr_table) / sizeof(smb_pwrcpld_attr_table[0]);
-  return i2c_dev_sysfs_data_init(client, &smb_pwrcpld_data,
-                                 smb_pwrcpld_attr_table, n_attrs);
-}
+  i2c_dev_data_st *pdata;
 
-static int smb_pwrcpld_remove(struct i2c_client *client)
-{
-  i2c_dev_sysfs_data_clean(client, &smb_pwrcpld_data);
-  return 0;
+  pdata = devm_kmalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+  if (pdata == NULL)
+    return -ENOMEM;
+  i2c_set_clientdata(client, pdata);
+
+  return devm_i2c_dev_sysfs_init(client, pdata, smb_pwrcpld_attr_table,
+                                 ARRAY_SIZE(smb_pwrcpld_attr_table));
 }
 
 static struct i2c_driver smb_pwrcpld_driver = {
@@ -296,25 +269,10 @@ static struct i2c_driver smb_pwrcpld_driver = {
     .name = "smb_pwrcpld",
   },
   .probe    = smb_pwrcpld_probe,
-  .remove   = smb_pwrcpld_remove,
   .id_table = smb_pwrcpld_id,
-  .detect   = smb_pwrcpld_detect,
-  .address_list = normal_i2c,
 };
-
-static int __init smb_pwrcpld_mod_init(void)
-{
-  return i2c_add_driver(&smb_pwrcpld_driver);
-}
-
-static void __exit smb_pwrcpld_mod_exit(void)
-{
-  i2c_del_driver(&smb_pwrcpld_driver);
-}
+module_i2c_driver(smb_pwrcpld_driver);
 
 MODULE_AUTHOR("Xiaohua Wang");
 MODULE_DESCRIPTION("SMB PWRCPLD Driver");
 MODULE_LICENSE("GPL");
-
-module_init(smb_pwrcpld_mod_init);
-module_exit(smb_pwrcpld_mod_exit);

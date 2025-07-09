@@ -19,9 +19,11 @@
  */
 
 #include <linux/errno.h>
-#include <linux/module.h>
 #include <linux/i2c.h>
-#include <i2c_dev_sysfs.h>
+#include <linux/module.h>
+#include <linux/version.h>
+
+#include "i2c_dev_sysfs.h"
 
 static const i2c_dev_attr_st smb_debugcardcpld_attr_table[] = {
   {
@@ -43,15 +45,6 @@ static const i2c_dev_attr_st smb_debugcardcpld_attr_table[] = {
   }
 };
 
-static i2c_dev_data_st smb_debugcardcpld_data;
-
-/*
- * SMB DEGUGCARDCPLD i2c addresses.
- */
-static const unsigned short normal_i2c[] = {
-  0x27, I2C_CLIENT_END
-};
-
 /* SMB DEGUGCARDCPLD id */
 static const struct i2c_device_id smb_debugcardcpld_id[] = {
   { "smb_debugcardcpld", 0 },
@@ -59,29 +52,22 @@ static const struct i2c_device_id smb_debugcardcpld_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, smb_debugcardcpld_id);
 
-/* Return 0 if detection is successful, -ENODEV otherwise */
-static int smb_debugcardcpld_detect(struct i2c_client *client,
-                              struct i2c_board_info *info)
-{
-  /*
-   * We don't currently do any detection of the SMB DEGUGCARDCPLD
-   */
-  strlcpy(info->type, "smb_debugcardcpld", I2C_NAME_SIZE);
-  return 0;
-}
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
+static int smb_debugcardcpld_probe(struct i2c_client *client)
+#else
 static int smb_debugcardcpld_probe(struct i2c_client *client,
                              const struct i2c_device_id *id)
+#endif
 {
-   int n_attrs = sizeof(smb_debugcardcpld_attr_table) / sizeof(smb_debugcardcpld_attr_table[0]);
-   return i2c_dev_sysfs_data_init(client, &smb_debugcardcpld_data,
-                                 smb_debugcardcpld_attr_table, n_attrs);
-}
+  i2c_dev_data_st *pdata;
 
-static int smb_debugcardcpld_remove(struct i2c_client *client)
-{
-  i2c_dev_sysfs_data_clean(client, &smb_debugcardcpld_data);
-  return 0;
+  pdata = devm_kmalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+  if (pdata == NULL)
+    return -ENOMEM;
+  i2c_set_clientdata(client, pdata);
+
+  return devm_i2c_dev_sysfs_init(client, pdata, smb_debugcardcpld_attr_table,
+                                 ARRAY_SIZE(smb_debugcardcpld_attr_table));
 }
 
 static struct i2c_driver smb_debugcardcpld_driver = {
@@ -90,25 +76,10 @@ static struct i2c_driver smb_debugcardcpld_driver = {
     .name = "smb_debugcardcpld",
   },
   .probe    = smb_debugcardcpld_probe,
-  .remove   = smb_debugcardcpld_remove,
   .id_table = smb_debugcardcpld_id,
-  .detect   = smb_debugcardcpld_detect,
-  .address_list = normal_i2c,
 };
-
-static int __init smb_debugcardcpld_mod_init(void)
-{
-  return i2c_add_driver(&smb_debugcardcpld_driver);
-}
-
-static void __exit smb_debugcardcpld_mod_exit(void)
-{
-  i2c_del_driver(&smb_debugcardcpld_driver);
-}
+module_i2c_driver(smb_debugcardcpld_driver);
 
 MODULE_AUTHOR("Facebook/Celestica");
 MODULE_DESCRIPTION("SMB DEGUGCARDCPLD Driver");
 MODULE_LICENSE("GPL");
-
-module_init(smb_debugcardcpld_mod_init);
-module_exit(smb_debugcardcpld_mod_exit);

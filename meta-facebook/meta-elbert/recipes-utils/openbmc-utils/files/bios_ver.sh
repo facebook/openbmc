@@ -32,9 +32,9 @@ if [ ! -f "$BIOS_VER_CACHE" ]; then
     bios_util.sh read "$TMP_BIOS_FILE" > /dev/null 2>&1
     ver=$(grep -a "$BIOS_REGEX" "$TMP_BIOS_FILE" | awk -F'[/=/"]' '{print $3}')
     if [ -z "$ver" ]; then
-        ver="Unknown"
+        ver="UNKNOWN"
     fi
-    echo "$ver" > "$BIOS_VER_CACHE"
+    echo -n "$ver" > "$BIOS_VER_CACHE"
 fi
 
 cat "$BIOS_VER_CACHE"

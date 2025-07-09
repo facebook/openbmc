@@ -132,25 +132,26 @@ def _parse_all_dpm_ver(data) -> Dict:
     return rs
 
 
+def _process_bios_ver(data) -> Dict:
+    """Example output
+    "BIOS":"Aboot-norcal7-7.3.3-cb411-generic-8x1-33492597"
+    """
+    return {"BIOS": data}
+
+
 async def get_all_fw_ver() -> Dict:
     rs = {}
 
-    cmd = "/usr/local/bin/bios_ver.sh"
-    proc = await create_subprocess_exec(cmd, stdout=PIPE)
-    data, _ = await proc.communicate()
-    await proc.wait()
-    rs.update({"BIOS": data.decode(errors="ignore")})
+    test_dict = {
+        "/usr/local/bin/fpga_ver.sh": _parse_all_fpga_ver,
+        "/usr/local/bin/dpm_ver.sh": _parse_all_dpm_ver,
+        "/usr/local/bin/bios_ver.sh": _process_bios_ver,
+    }
 
-    cmd = "/usr/local/bin/fpga_ver.sh"
-    proc = await create_subprocess_exec(cmd, stdout=PIPE)
-    data, _ = await proc.communicate()
-    await proc.wait()
-    rs.update(_parse_all_fpga_ver(data.decode(errors="ignore")))
-
-    cmd = "/usr/local/bin/dpm_ver.sh"
-    proc = await create_subprocess_exec(cmd, stdout=PIPE)
-    data, _ = await proc.communicate()
-    await proc.wait()
-    rs.update(_parse_all_dpm_ver(data.decode(errors="ignore")))
+    for script, parse_fn in test_dict.items():
+        proc = await create_subprocess_exec(script, stdout=PIPE)
+        data, _ = await proc.communicate()
+        await proc.wait()
+        rs.update(parse_fn(data.decode(errors="ignore")))
 
     return rs

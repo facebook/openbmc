@@ -26,8 +26,9 @@
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/delay.h>
+#include <linux/version.h>
 
-#include <i2c_dev_sysfs.h>
+#include "i2c_dev_sysfs.h"
 
 #ifdef DEBUG
 #define PSU_DEBUG(fmt, ...) do {                   \
@@ -626,15 +627,6 @@ static const i2c_dev_attr_st psu_attr_table[] = {
   },
 };
 
-static i2c_dev_data_st psu_data;
-
-/*
- * psu i2c addresses.
- */
-static const unsigned short normal_i2c[] = {
-  0x58, 0x59, I2C_CLIENT_END
-};
-
 /* psu_driver id */
 static const struct i2c_device_id psu_id[] = {
   {"psu_driver", 0},
@@ -642,30 +634,22 @@ static const struct i2c_device_id psu_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, psu_id);
 
-/* Return 0 if detection is successful, -ENODEV otherwise */
-static int psu_detect(struct i2c_client *client,
-                      struct i2c_board_info *info)
-{
-  /*
-   * We don't currently do any detection of the driver
-   */
-  strlcpy(info->type, "psu_driver", I2C_NAME_SIZE);
-  return 0;
-}
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
+static int psu_probe(struct i2c_client *client)
+#else
 static int psu_probe(struct i2c_client *client,
                      const struct i2c_device_id *id)
+#endif
 {
-  int n_attrs = sizeof(psu_attr_table) / sizeof(psu_attr_table[0]);
+  i2c_dev_data_st *pdata;
 
-  return i2c_dev_sysfs_data_init(client, &psu_data,
-                                 psu_attr_table, n_attrs);
-}
+  pdata = devm_kmalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+  if (pdata == NULL)
+    return -ENOMEM;
+  i2c_set_clientdata(client, pdata);
 
-static int psu_remove(struct i2c_client *client)
-{
-  i2c_dev_sysfs_data_clean(client, &psu_data);
-  return 0;
+  return devm_i2c_dev_sysfs_init(client, pdata, psu_attr_table,
+                                 ARRAY_SIZE(psu_attr_table));
 }
 
 static struct i2c_driver psu_driver = {
@@ -674,25 +658,10 @@ static struct i2c_driver psu_driver = {
     .name = "psu_driver",
   },
   .probe    = psu_probe,
-  .remove   = psu_remove,
   .id_table = psu_id,
-  .detect   = psu_detect,
-  .address_list = normal_i2c,
 };
-
-static int __init psu_mod_init(void)
-{
-  return i2c_add_driver(&psu_driver);
-}
-
-static void __exit psu_mod_exit(void)
-{
-  i2c_del_driver(&psu_driver);
-}
+module_i2c_driver(psu_driver);
 
 MODULE_AUTHOR("Mickey Zhan");
 MODULE_DESCRIPTION("PSU Driver");
 MODULE_LICENSE("GPL");
-
-module_init(psu_mod_init);
-module_exit(psu_mod_exit);

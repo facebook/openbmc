@@ -26,6 +26,7 @@
 #include <linux/i2c.h>
 #include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
+#include <linux/version.h>
 
 /* chip registers */
 #define LTC4282_CONTROL                 0x00    /* word */
@@ -751,7 +752,13 @@ static struct attribute *ltc4282_attrs[] =  {
 }; 
 ATTRIBUTE_GROUPS(ltc4282); 
 
-static int ltc4282_probe(struct i2c_client *client, const struct i2c_device_id *id) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
+static int ltc4282_probe(struct i2c_client *client)
+#else
+static int ltc4282_probe(struct i2c_client *client,
+                         const struct i2c_device_id *id)
+#endif
+{
     struct i2c_adapter *adapter = client->adapter;
     struct device *dev =  &client->dev;
     struct ltc4282_data *data;

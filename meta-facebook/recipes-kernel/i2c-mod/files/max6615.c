@@ -29,9 +29,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
-
-/* Addresses to scan */
-static const unsigned short normal_i2c[] = { 0x18 };
+#include <linux/version.h>
 
 /* The MAX6615 registers, valid channel numbers: 0, 1 */
 #define MAX6615_REG_TEMP_CONFIG             0x02
@@ -695,31 +693,12 @@ exit:
     return err;
 }
 
-/* Return 0 if detection is successful, -ENODEV otherwise */
-static int max6615_detect(struct i2c_client *client,
-                          struct i2c_board_info *info)
-{
-    struct i2c_adapter *adapter = client->adapter;
-    int dev_id, manu_id;
-
-    if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-        return -ENODEV;
-
-    /* Actual detection via device and manufacturer ID */
-    dev_id = i2c_smbus_read_byte_data(client, MAX6615_REG_DEVID);
-    manu_id = i2c_smbus_read_byte_data(client, MAX6615_REG_MANUID);
-    if (dev_id != 0x68 || manu_id != 0x4D) {
-        printk(KERN_INFO "max6615 not detect");
-        return -ENODEV;
-    }
-
-    strlcpy(info->type, "max6615", I2C_NAME_SIZE);
-
-    return 0;
-}
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
+static int max6615_probe(struct i2c_client *client)
+#else
 static int max6615_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
+#endif
 {
     struct device *dev = &client->dev;
     struct max6615_data *data;
@@ -785,8 +764,6 @@ static struct i2c_driver max6615_driver = {
     },
     .probe = max6615_probe,
     .id_table = max6615_id,
-    .detect = max6615_detect,
-    .address_list = normal_i2c,
 };
 
 module_i2c_driver(max6615_driver);

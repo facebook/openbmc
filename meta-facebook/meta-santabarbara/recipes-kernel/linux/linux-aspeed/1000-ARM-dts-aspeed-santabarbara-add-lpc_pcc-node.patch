@@ -1,0 +1,39 @@
+From a23d0eb4bdce9c8364c28407329ab8d0d9a048b7 Mon Sep 17 00:00:00 2001
+From: Fred Chen <Fred.Chen@quantatw.com>
+Date: Tue, 1 Jul 2025 09:54:09 +0800
+Subject: [PATCH] ARM: dts: aspeed: santabarbara: add lpc_pcc node
+
+Add lpc_pcc node for AMD post code
+
+There is no lpc_pcc driver in upstream,
+so it only patch in Meta tree.
+
+Signed-off-by: Fred Chen <Fred.Chen@quantatw.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-santabarbara.dts    | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index ee93a971c500..27baa27d5f2c 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -768,6 +768,16 @@ &kcs3 {
+ 	status = "okay";
+ };
+ 
++&lpc_pcc {
++	rec-mode = <0x1>;
++	port-addr = <0x80>;
++	port-addr-hbits-select = <0x1>;
++	port-addr-xbits = <0x3>;
++	dma-mode;
++	A2600-15;
++	status = "okay";
++};
++
+ &mac2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_rmii3_default>;
+-- 
+2.49.0
+

@@ -7,14 +7,13 @@
 if [ $# -lt 1 ]; then
     echo "Usage: $0 <rpu_number> [override_config]
       rpu_number: The RPU number
-      override_config: Optional configuration file to override default settings in
-                       /usr/share/rpu-controller/config.json"
+      override_config: Optional configuration file to override default settings"
     exit 1
 fi
 
 set -u
 
-OVERRIDE_CONFIG_FILE=${2:-/usr/share/rpu-controller/config.json}
+OVERRIDE_CONFIG_FILE=${2:-/run/mnt-persist/var-data/lib/rpu-controller/override-config.json}
 CONFIG_FILE="/var/lib/rpu-controller/default-config.json"
 
 if [ -f "$OVERRIDE_CONFIG_FILE" ]; then

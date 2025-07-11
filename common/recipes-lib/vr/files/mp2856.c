@@ -275,6 +275,7 @@ mp2856_get_remaining_wr_msg(uint8_t addr, uint16_t *remain, char *msg, bool is_u
 
   if (mps_remaining_wr(addr, remain, GET_VR_CRC) < 0) {
     snprintf(msg, MAX_VALUE_LEN, ", Remaining Writes: Unknown");
+    return VR_STATUS_SKIP;
   } else {
     if (*remain == UNINITIALIZED_REMAIN_WR) {
       *remain = MAX_MP2856_REMAIN_WR;
@@ -859,6 +860,7 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
 static int
 cache_mp2856_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
   int ret = VR_STATUS_FAILURE;
+  bool should_cache = false;
   uint8_t tbuf[16];
   uint8_t crc_user[2];
   uint8_t multi_config[2];
@@ -889,12 +891,18 @@ cache_mp2856_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
            crc_user[1], crc_user[0], multi_config[1], multi_config[0]);
     
     if (mps_remaining_wr) {
-      if(mp2856_get_remaining_wr_msg(addr, &remain, remaining_wr_msg, GET_VR_CRC) == VR_STATUS_SUCCESS) {
-        strncat(checksum, remaining_wr_msg, MAX_VALUE_LEN-1);
+      switch (mp2856_get_remaining_wr_msg(addr, &remain, remaining_wr_msg, GET_VR_CRC)) {
+        case VR_STATUS_SUCCESS:
+          should_cache = true;
+        case VR_STATUS_SKIP:
+          strncat(checksum, remaining_wr_msg, MAX_VALUE_LEN-1);
+        break;
       }
     }
-
-    kv_set(key, checksum, 0, 0);
+    //if load remaining wr fail,do not cache to kv, that next read action can retry to reload it
+    if (should_cache) {
+      kv_set(key, checksum, 0, 0);
+    }
   } while (0);
 
   mp2856_set_page(bus, addr, VR_MPS_PAGE_0);

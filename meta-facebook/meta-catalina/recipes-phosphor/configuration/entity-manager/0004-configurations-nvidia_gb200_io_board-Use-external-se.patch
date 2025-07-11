@@ -1,7 +1,7 @@
-From 71f5f7142df4fa4ff64540347fd8434e2dfa7f89 Mon Sep 17 00:00:00 2001
+From c3ba4f4f709b50814eb5f34dd93cdcc82a3e84c0 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sun, 23 Mar 2025 11:03:46 +0800
-Subject: [PATCH 4/7] configurations: nvidia_gb200_io_board: Use external
+Subject: [PATCH 4/5] configurations: nvidia_gb200_io_board: Use external
  sensor service for temperature monitoring
 
 Due to a hardware design limitation, the port temperature is only
@@ -165,5 +165,5 @@ index 7a00978..1a07e06 100644
      ],
      "Name": "NVIDIA GB200 IO Board $bus - 29 % 11",
 -- 
-2.49.0
+2.47.1
 

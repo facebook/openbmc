@@ -1,7 +1,7 @@
-From e15ebef58104d0356bbd01891ce32fbd538f5628 Mon Sep 17 00:00:00 2001
+From ffb3dd5f6bd565dd86fcc8f15914cdfb91ab34ce Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Sep 2024 23:36:54 +0800
-Subject: [PATCH 3/7] configurations: Revise CX7 NIC card temperature sensor
+Subject: [PATCH 3/5] configurations: Revise CX7 NIC card temperature sensor
 
 Revise the CX7 NIC temperature sensor name for Catalina system.
 
@@ -57,5 +57,5 @@ index 3f11519..5ffa735 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.49.0
+2.47.1
 

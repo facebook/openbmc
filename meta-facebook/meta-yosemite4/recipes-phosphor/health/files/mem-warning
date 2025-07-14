@@ -18,8 +18,8 @@ memdump() {
 	for cmdline_p in /proc/*/cmdline; do
 		proc_p=$(dirname "$cmdline_p")
 		comm_p=$proc_p/comm
-		cmdline=$(tr -d '\0' < "$cmdline_p")
-		comm=$(tr -d '\0' < "$comm_p")
+		cmdline=$(tr -d '\0' <"$cmdline_p")
+		comm=$(tr -d '\0' <"$comm_p")
 		echo "PROC=$proc_p CMDLINE=$cmdline COMM=$comm"
 		echo "smaps_rollup"
 		cat "$proc_p/smaps_rollup"
@@ -27,15 +27,12 @@ memdump() {
 		grep "Vm\|Rss" "$proc_p/status"
 	done
 }
-memdump > /home/root/mem-out.txt
-
-# Restart known memory hogs that can handle a Restart
-systemctl restart xyz.openbmc_project.ObjectMapper
+memdump >/home/root/mem-out.txt
 
 # If we're still above 85%, let's ask for help
 PCT_FREE=$(free | awk '/^Mem/{printf "%2i\n", $4/$2 * 100.0}')
 if [ "$PCT_FREE" -le 15 ]; then
-  # We weren't able to clean up enough on our own, and it looks like we're
-  # headed for trouble. Ask for help
-  systemctl start managed-reboot
+	# We weren't able to clean up enough on our own, and it looks like we're
+	# headed for trouble. Ask for help
+	systemctl start managed-reboot
 fi

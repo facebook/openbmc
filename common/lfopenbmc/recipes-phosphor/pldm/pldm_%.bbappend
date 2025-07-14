@@ -23,6 +23,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0017-platform-mc-Add-option-for-discovering-FRU-data.patch \
     file://0018-platform-mc-Add-structured-logging-for-threshold-eve.patch \
     file://0019-Add-event-log-type-for-PROCHOT.patch \
+    file://0020-Add-event-log-type-for-FRB2-OS-Load-timer.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

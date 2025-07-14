@@ -1,0 +1,33 @@
+From e6a00676bf221b012d382df6484bd093fc51e400 Mon Sep 17 00:00:00 2001
+From: Rush Chen <Rush_Chen@wiwynn.com>
+Date: Wed, 2 Jul 2025 15:27:24 +0800
+Subject: [PATCH] Add event log type for FRB2/OS Load timer
+
+---
+ .../oem_meta_file_io_type_event_log.cpp               | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
+index fff4ae6..42ceebe 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
+@@ -103,7 +103,16 @@ int EventLogHandler::write(const message& eventData)
+         " CXL2 HB",
+         " Post-Started",
+         " Post-Ended",
+-        " PROCHOT is triggered due to SD sensor reading exceed UCR"
++        " PROCHOT is triggered due to SD sensor reading exceed UCR",
++        " POST STARTED",
++        " POST ENDED",
++        " FRB2 WDT HARD RST",
++        " FRB2 WDT PWR DOWN",
++        " FRB2 WDT PWR CYCLE",
++        " OS LOAD WDT EXPIRED",
++        " OS LOAD WDT HARD_RST",
++        " OS LOAD WDT PWR_DOWN",
++        " OS LOAD WDT PWR_CYCLE",
+     });
+
+     static constexpr auto pmic_event_type = std::to_array({
+--
+2.34.1

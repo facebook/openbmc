@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_eeprom_test import EepromV5Test
+from tests.icecube800bc.helper.utils import BoardRevision, get_platform_id
 
 
 class ChassisEepromTest(EepromV5Test, unittest.TestCase):
@@ -31,7 +32,14 @@ class ChassisEepromTest(EepromV5Test, unittest.TestCase):
         self.eeprom_cmd = ["weutil"]
 
     def set_product_name(self):
-        self.product_name = ["ICECUBE"]
+        platform_to_product_name_map = {
+            BoardRevision.BRD_TYPE_SANTABARBARA: ["TAHANSB"],
+            BoardRevision.BRD_TYPE_ICECUBE: ["ICECUBE"],
+            BoardRevision.BRD_TYPE_ICETEA: ["ICETEA"],
+        }
+        self.product_name = platform_to_product_name_map.get(get_platform_id())
+        if self.product_name is None:
+            raise ValueError(f"Unsupported platform: {get_platform_id()}")
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["MCB"]

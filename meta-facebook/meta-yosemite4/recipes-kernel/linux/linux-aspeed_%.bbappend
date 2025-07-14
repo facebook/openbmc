@@ -17,6 +17,5 @@ SRC_URI += " \
     file://1014-adc128-filter-out-0x1ff.patch \
     file://2015-ncsi-Add-a-apply-mac-stage-for-mellanox-NICs.patch \
     file://2016-net-ncsi-check-for-netlink-driven-responses-before-r.patch \
-    file://2017-arm-dts-aspeed-yosemite4-add-gpio-name-for-uart-mux-.patch \
     file://yosemite4-local.cfg \
 "

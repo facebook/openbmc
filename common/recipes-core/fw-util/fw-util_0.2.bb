@@ -122,4 +122,7 @@ do_configure:append() {
 do_install:append() {
   install -d ${D}${sysconfdir}
   install -m 0644 ${UNPACKDIR}/image_parts.json ${D}${sysconfdir}/image_parts.json
+
+  install -d ${D}/usr/bin
+  ln -s /usr/bin/fw-util ${D}/usr/bin/fw_util
 }

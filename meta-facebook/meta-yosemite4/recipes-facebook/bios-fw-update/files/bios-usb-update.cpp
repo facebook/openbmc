@@ -43,8 +43,11 @@ static constexpr uint16_t SB_USB_PRODUCT_ID = 0x0104;
 static constexpr uint8_t USB_INPUT_PORT = 0x3;
 static constexpr uint8_t USB_OUTPUT_PORT = 0x82;
 
-std::map<std::string, size_t> cpuTypeToOffset = {{"BERGAMO", 0x0},
-                                                 {"TURIN", 0x3000000}};
+std::multimap<std::string, size_t> cpuTypeToOffset = {{"BERGAMO", 0x0}, 
+                                                      {"TURIN", 0x0}, 
+                                                      {"TURINES", 0x3000000}, 
+                                                      {"ALL", 0x0}, 
+                                                      {"ALL", 0x3000000}};
 
 int send_bic_usb_packet(usb_dev* udev, bic_usb_packet* pkt)
 {
@@ -433,7 +436,7 @@ int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath,
     // sending file
     for (const auto& c : cpuTypeToOffset)
     {
-        if (cpuType == c.first || cpuType == "ALL")
+        if (cpuType == c.first)
         {
             ret = bic_update_fw_usb(imageFilePath, udev, c.second);
             if (ret < 0)

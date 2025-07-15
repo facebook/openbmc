@@ -147,6 +147,7 @@ pldm::fw_update::Descriptors createDescriptors(const std::string& cpuType) {
         .append(".BIOS");
     auto compatibleHardwareBergamo = compatibleHardware + ".AMD_BERGAMO";
     auto compatibleHardwareTurin = compatibleHardware + ".AMD_TURIN";
+    auto compatibleHardwareTurines = compatibleHardware + ".AMD_TURINES";
 
     if (cpuType == "BERGAMO" || cpuType == "ALL")
     {
@@ -170,6 +171,17 @@ pldm::fw_update::Descriptors createDescriptors(const std::string& cpuType) {
                     reinterpret_cast<const uint8_t*>(compatibleHardwareTurin.c_str()) +
                     compatibleHardwareTurin.size()}));
     }
+    if (cpuType == "TURINES" || cpuType == "ALL")
+    {
+        descriptors.emplace(
+            PLDM_FWUP_VENDOR_DEFINED,
+            std::make_tuple(
+                "OpenBMC.CompatibleHardware",
+                VendorDefinedDescriptorData{
+                    reinterpret_cast<const uint8_t*>(compatibleHardwareTurines.c_str()),
+                    reinterpret_cast<const uint8_t*>(compatibleHardwareTurines.c_str()) +
+                    compatibleHardwareTurines.size()}));
+    }
 
     return descriptors;
 }
@@ -191,13 +203,13 @@ int main(int argc, char** argv)
         ->required();
 
     app.add_option("-c, --cpu", cpuType,
-                   "BERGAMO or TURIN. Update both blocks if it is not set.");
+                   "BERGAMO or TURIN or TURINES. Update both blocks if it is not set.");
 
     CLI11_PARSE(app, argc, argv);
 
-    if (cpuType != "BERGAMO" && cpuType != "TURIN" && cpuType != "ALL")
+    if (cpuType != "BERGAMO" && cpuType != "TURIN" && cpuType != "TURINES" && cpuType != "ALL")
     {
-        std::cerr << "Wrong option: only support BERGAMO or TURIN cpu\n";
+        std::cerr << "Wrong option: only support BERGAMO or TURIN or TURINES cpu\n";
         return 0;
     }
 

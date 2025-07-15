@@ -1,4 +1,4 @@
-From 3a45767fdd91435fe8cae2c3829489dede600e88 Mon Sep 17 00:00:00 2001
+From 144b306449712fcdca0d2e0b8e8310fac344564f Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -13,10 +13,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 ---
  meson.build                          |  5 ++
  meson.options                        |  6 +++
- src/entity_manager/configuration.cpp | 16 +++---
+ src/entity_manager/configuration.cpp | 12 +++--
  src/utils.cpp                        | 79 ++++++++++++++++------------
  src/utils.hpp                        | 12 +++--
- 5 files changed, 75 insertions(+), 43 deletions(-)
+ 5 files changed, 73 insertions(+), 41 deletions(-)
 
 diff --git a/meson.build b/meson.build
 index e7a117a..d5a12ee 100644
@@ -35,10 +35,10 @@ index e7a117a..d5a12ee 100644
  boost_args = [
      '-DBOOST_ASIO_NO_DEPRECATED',
 diff --git a/meson.options b/meson.options
-index d658c8b..b4cde28 100644
+index bd962e4..b8d8a47 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -34,3 +34,9 @@ option(
+@@ -40,3 +40,9 @@ option(
      value: true,
      description: 'Build gpio presence daemon',
  )
@@ -49,7 +49,7 @@ index d658c8b..b4cde28 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index bd78f1b..b790b7c 100644
+index 137f4e3..0c78a22 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
 @@ -37,13 +37,17 @@ bool writeJsonFiles(const nlohmann::json& systemConfiguration)
@@ -74,17 +74,6 @@ index bd78f1b..b790b7c 100644
      {
          std::cerr << "Unable to find any configuration files in "
                    << configurationDirectory << "\n";
-@@ -84,8 +88,8 @@ bool loadConfigurations(std::list<nlohmann::json>& configurations)
-             continue;
-         }
-         /*
--        * todo(james): reenable this once less things are in flight
--        *
-+         * todo(james): reenable this once less things are in flight
-+         *
-         if (!validateJson(schema, data))
-         {
-             std::cerr << "Error validating " << jsonPath.string() << "\n";
 diff --git a/src/utils.cpp b/src/utils.cpp
 index 0d3a6d0..a4cb962 100644
 --- a/src/utils.cpp
@@ -220,5 +209,5 @@ index 105330c..7a227ed 100644
  bool getI2cDevicePaths(
      const std::filesystem::path& dirPath,
 -- 
-2.43.0
+2.47.1
 

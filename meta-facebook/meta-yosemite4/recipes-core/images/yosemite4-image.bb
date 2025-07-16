@@ -23,3 +23,5 @@ IMAGE_INSTALL:append = " nic-reset"
 IMAGE_INSTALL:append = " pldm-monitor"
 # Added to ensure that nic temp sensors are brought back when they disapear
 IMAGE_INSTALL:append = " nic-sensor-monitor"
+# Add expect needed for NIC console development
+IMAGE_INSTALL:append = " expect"

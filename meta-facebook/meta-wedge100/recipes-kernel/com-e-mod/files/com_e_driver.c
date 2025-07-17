@@ -21,7 +21,8 @@
 #include <linux/errno.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
-#include <i2c_dev_sysfs.h>
+#include <linux/version.h>
+#include "i2c_dev_sysfs.h"
 
 #ifdef DEBUG
 
@@ -333,8 +334,6 @@ static const i2c_dev_attr_st com_e_attr_table[] = {
   },
 };
 
-static i2c_dev_data_st com_e_data;
-
 /*
  * COMe i2c addresses.
  */
@@ -349,29 +348,22 @@ static const struct i2c_device_id com_e_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, com_e_id);
 
-/* Return 0 if detection is successful, -ENODEV otherwise */
-static int com_e_detect(struct i2c_client *client,
-                        struct i2c_board_info *info)
-{
-  /*
-   * We don't currently do any detection of the COMe
-   */
-  strlcpy(info->type, "com_e_driver", I2C_NAME_SIZE);
-  return 0;
-}
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
+static int com_e_probe(struct i2c_client *client)
+#else
 static int com_e_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
+#endif
 {
-  int n_attrs = sizeof(com_e_attr_table) / sizeof(com_e_attr_table[0]);
-  return i2c_dev_sysfs_data_init(client, &com_e_data,
-                                 com_e_attr_table, n_attrs);
-}
+  i2c_dev_data_st *pdata;
 
-static int com_e_remove(struct i2c_client *client)
-{
-  i2c_dev_sysfs_data_clean(client, &com_e_data);
-  return 0;
+  pdata = devm_kmalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+  if (pdata == NULL)
+    return -ENOMEM;
+  i2c_set_clientdata(client, pdata);
+
+  return devm_i2c_dev_sysfs_init(client, pdata, com_e_attr_table,
+                                 ARRAY_SIZE(com_e_attr_table));
 }
 
 static struct i2c_driver com_e_driver = {
@@ -380,9 +372,7 @@ static struct i2c_driver com_e_driver = {
     .name = "com_e_driver",
   },
   .probe    = com_e_probe,
-  .remove   = com_e_remove,
   .id_table = com_e_id,
-  .detect   = com_e_detect,
   .address_list = normal_i2c,
 };
 

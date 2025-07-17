@@ -24,8 +24,8 @@
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/delay.h>
-
-#include <i2c_dev_sysfs.h>
+#include <linux/version.h>
+#include "i2c_dev_sysfs.h"
 
 #ifdef DEBUG
 #define PWR_DEBUG(fmt, ...) do {                   \
@@ -51,8 +51,6 @@ static const i2c_dev_attr_st pwr1014a_attr_table[] = {
   },
 };
 
-static i2c_dev_data_st pwr1014a_data;
-
 /*
  * PWR1014A i2c addresses.
  */
@@ -67,29 +65,22 @@ static const struct i2c_device_id pwr1014a_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, pwr1014a_id);
 
-/* Return 0 if detection is successful, -ENODEV otherwise */
-static int pwr1014a_detect(struct i2c_client *client,
-                           struct i2c_board_info *info)
-{
-  /*
-   * We don't currently do any detection of the driver
-   */
-  strlcpy(info->type, "pwr1014a", I2C_NAME_SIZE);
-  return 0;
-}
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
+static int pwr1014a_probe(struct i2c_client *client)
+#else
 static int pwr1014a_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
+#endif
 {
-  int n_attrs = sizeof(pwr1014a_attr_table) / sizeof(pwr1014a_attr_table[0]);
-  return i2c_dev_sysfs_data_init(client, &pwr1014a_data,
-                                 pwr1014a_attr_table, n_attrs);
-}
+  i2c_dev_data_st *pdata;
 
-static int pwr1014a_remove(struct i2c_client *client)
-{
-  i2c_dev_sysfs_data_clean(client, &pwr1014a_data);
-  return 0;
+  pdata = devm_kmalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+  if (pdata == NULL)
+    return -ENOMEM;
+  i2c_set_clientdata(client, pdata);
+
+  return devm_i2c_dev_sysfs_init(client, pdata, pwr1014a_attr_table,
+                                ARRAY_SIZE(pwr1014a_attr_table));
 }
 
 static struct i2c_driver pwr1014a_driver = {
@@ -98,9 +89,7 @@ static struct i2c_driver pwr1014a_driver = {
     .name = "pwr1014a",
   },
   .probe    = pwr1014a_probe,
-  .remove   = pwr1014a_remove,
   .id_table = pwr1014a_id,
-  .detect   = pwr1014a_detect,
   .address_list = normal_i2c,
 };
 

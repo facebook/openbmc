@@ -179,15 +179,8 @@ static int pwrcpld_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, pdata);
 
-	return i2c_dev_sysfs_data_init(client, pdata, pwrcpld_attrs,
+	return devm_i2c_dev_sysfs_init(client, pdata, pwrcpld_attrs,
 				       ARRAY_SIZE(pwrcpld_attrs));
-}
-
-static void pwrcpld_remove(struct i2c_client *client)
-{
-	i2c_dev_data_st *pdata = i2c_get_clientdata(client);
-
-	i2c_dev_sysfs_data_clean(client, pdata);
 }
 
 static struct i2c_driver pwrcpld_driver = {
@@ -196,7 +189,6 @@ static struct i2c_driver pwrcpld_driver = {
 		.name = "pwrcpld",
 	},
 	.probe    = pwrcpld_probe,
-	.remove   = pwrcpld_remove,
 	.id_table = pwrcpld_id,
 };
 

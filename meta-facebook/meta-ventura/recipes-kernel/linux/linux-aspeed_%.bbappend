@@ -9,4 +9,5 @@ SRC_URI += " \
     file://0004-ARM-dts-aspeed-ventura-modify-dts-for-Pilot-stage.patch \
     file://0005-ARM-dts-aspeed-ventura-modify-dts-for-PVT-exit-stage.patch \
     file://0006-iio-adc-aspeed-Support-deglitch-feature.patch \
+    file://0007-ARM-dts-aspeed-ventura-add-missing-calbe-presence-gpios.patch \
 "

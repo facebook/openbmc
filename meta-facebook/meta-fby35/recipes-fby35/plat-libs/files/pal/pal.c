@@ -3320,7 +3320,16 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     ND_CLKBUF_OE_EN = 0xA5,
     ND_E1S_P12V_EFUSE_PWRG = 0xA6,
     ND_E1S_P3V3_EFUSE_PWRG = 0xA7,
-    VF_1OU_PRESENT = 0xA8
+    VF_1OU_PRESENT = 0xA8,
+    // for VR pwr fault
+    VR_PWR_FAULT_PVCCD_HV = 0xA9,
+    VR_PWR_FAULT_PVCCD0_HV = 0xAA,
+    VR_PWR_FAULT_PVCCD1_HV = 0xAB,
+    VR_PWR_FAULT_PVCCINF = 0xAC,
+    VR_PWR_FAULT_PVCCFA_EHV = 0xAD,
+    VR_PWR_FAULT_PVCCFA_EHV_FIVRA = 0xAE,
+    VR_PWR_FAULT_PVCCINFAON = 0xAF,
+    VR_PWR_FAULT_VCCIN = 0xB0
   };
   uint8_t event = event_data[0];
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
@@ -3599,6 +3608,30 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case ND_E1S_P3V3_EFUSE_PWRG :
       snprintf(log_msg, sizeof(log_msg), "e1s_power_off_handler : %dOU BIC E1s%d p3v3_efuse_enable is not disabled!", event_data[1] + 1, event_data[2]);
       strcat(error_log, log_msg);
+      break;
+    case VR_PWR_FAULT_PVCCD_HV:
+      snprintf(log_msg, sizeof(log_msg), "VR PVCCD Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      break;
+    case VR_PWR_FAULT_PVCCD0_HV:
+      snprintf(log_msg, sizeof(log_msg), "VR PVCCD0 Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      break;
+    case VR_PWR_FAULT_PVCCD1_HV:
+      snprintf(log_msg, sizeof(log_msg), "VR PVCCD1 Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      break;
+    case VR_PWR_FAULT_PVCCINF:
+      snprintf(log_msg, sizeof(log_msg), "VR PVCCINF Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      break;
+    case VR_PWR_FAULT_PVCCFA_EHV:
+      snprintf(log_msg, sizeof(log_msg), "VR PVCCFA_EHV Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      break;
+    case VR_PWR_FAULT_PVCCFA_EHV_FIVRA:
+      snprintf(log_msg, sizeof(log_msg), "VR PVCCFA_EHV_FIVRA Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      break;
+    case VR_PWR_FAULT_PVCCINFAON:
+      snprintf(log_msg, sizeof(log_msg), "VR PVCCINFAON Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      break;
+    case VR_PWR_FAULT_VCCIN:
+      snprintf(log_msg, sizeof(log_msg), "VR VCCIN Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
       break;
     default:
       strcat(error_log, "Undefined system event");

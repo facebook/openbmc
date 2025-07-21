@@ -71,18 +71,10 @@ function clear_sticky_registers {
 
 function start_rpu {
     echo "Using $CONFIG_FILE config file"
-    registerName=$(jq -er .manufacturerDiscriminator "$CONFIG_FILE")
+    script_dir=$( dirname "${BASH_SOURCE[0]}" )
+    manufacturer=$("$script_dir/get-rpu-manufacturer" "$UDA" "$CONFIG_FILE")
 
-    registerValue=$(rackmoncli data --json --latest --dev-addr "$UDA" --reg-name "$registerName" |
-        jq -er ".[0].regList[] | select(.name == \"$registerName\") | .history.[0].value.strValue")
-
-    manufacturer=$(jq \
-        -er \
-        --arg value "$registerValue" \
-        '.manufacturers | to_entries[] | select(.value.registerValues | any(. == $value)) | .key' \
-        "$CONFIG_FILE")
-
-    if [ -z "$manufacturer" ]; then
+    if [ -z "$manufacturer" ] || [ "$manufacturer" == "unknown" ]; then
         echo "Could not identify manufacturer. Exiting!"
         exit 1
     fi

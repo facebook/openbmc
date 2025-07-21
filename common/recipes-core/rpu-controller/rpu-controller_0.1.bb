@@ -13,6 +13,7 @@ UNPACKDIR="${S}"
 LOCAL_URI = " \
     file://default-config.json \
     file://get-rpu-manufacturer \
+    file://get-rpu-mapping-info \
     file://get-rpu-unique-device-address \
     file://rpu-controller-command \
     file://rpu-ready \
@@ -30,6 +31,7 @@ do_install() {
 
     install -d ${D}${libexecdir}/${PN}
     install -m 0755 ${UNPACKDIR}/get-rpu-manufacturer ${D}${libexecdir}/${PN}/get-rpu-manufacturer
+    install -m 0755 ${UNPACKDIR}/get-rpu-mapping-info ${D}${libexecdir}/${PN}/get-rpu-mapping-info
     install -m 0755 ${UNPACKDIR}/get-rpu-unique-device-address ${D}${libexecdir}/${PN}/get-rpu-unique-device-address
     install -m 0755 ${UNPACKDIR}/start-rpu-service-and-get-logs ${D}${libexecdir}/${PN}/start-rpu-service-and-get-logs
     install -m 0755 ${UNPACKDIR}/rpu-controller-command ${D}${libexecdir}/${PN}/rpu-controller-command

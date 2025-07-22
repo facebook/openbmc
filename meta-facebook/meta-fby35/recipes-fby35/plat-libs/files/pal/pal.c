@@ -3611,27 +3611,35 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case VR_PWR_FAULT_PVCCD_HV:
       snprintf(log_msg, sizeof(log_msg), "VR PVCCD Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      strcat(error_log, log_msg);
       break;
     case VR_PWR_FAULT_PVCCD0_HV:
       snprintf(log_msg, sizeof(log_msg), "VR PVCCD0 Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      strcat(error_log, log_msg);
       break;
     case VR_PWR_FAULT_PVCCD1_HV:
       snprintf(log_msg, sizeof(log_msg), "VR PVCCD1 Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      strcat(error_log, log_msg);
       break;
     case VR_PWR_FAULT_PVCCINF:
       snprintf(log_msg, sizeof(log_msg), "VR PVCCINF Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      strcat(error_log, log_msg);
       break;
     case VR_PWR_FAULT_PVCCFA_EHV:
       snprintf(log_msg, sizeof(log_msg), "VR PVCCFA_EHV Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      strcat(error_log, log_msg);
       break;
     case VR_PWR_FAULT_PVCCFA_EHV_FIVRA:
       snprintf(log_msg, sizeof(log_msg), "VR PVCCFA_EHV_FIVRA Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      strcat(error_log, log_msg);
       break;
     case VR_PWR_FAULT_PVCCINFAON:
       snprintf(log_msg, sizeof(log_msg), "VR PVCCINFAON Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      strcat(error_log, log_msg);
       break;
     case VR_PWR_FAULT_VCCIN:
       snprintf(log_msg, sizeof(log_msg), "VR VCCIN Power fault ! reg: 0x%02X , data:0x%02X", event_data[1], event_data[2]);
+      strcat(error_log, log_msg);
       break;
     default:
       strcat(error_log, "Undefined system event");

@@ -275,9 +275,17 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
                 if "dimm" in sname:
                     dimm_index_end = sname.index("_t")
-                    return is_dimm_prsnt(board, sname[dimm_index_start : dimm_index_end])
+                    num = sname[dimm_index_start : dimm_index_end]
+                    if ("EMR" in system_conf) and (num != "0") and (num != "4"):
+                        # always check dimm present in EMR project
+                        return 1
+
+                    return is_dimm_prsnt(board, num)
 
                 if "vf_e1s" in sname:
+                    if "EMR" in system_conf:
+                        # always check e1s present in EMR project
+                        return 1
                     return is_e1s_prsnt(board, sname[10 : sname.find("_t")])
                 return 1
         return 0

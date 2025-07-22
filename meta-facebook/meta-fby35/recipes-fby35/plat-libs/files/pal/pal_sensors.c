@@ -4189,6 +4189,47 @@ static void correct_emr_threshold(sdr_full_t *sdr, uint8_t snr_num)
     case BIC_SENSOR_HSC_TEMP:
       sdr->uc_thresh = 76;
       break;
+    case BIC_SENSOR_CPU_THERM_MARGIN:
+      sdr->uc_thresh = -30;
+      sdr->unr_thresh = -1;
+      sdr->rb_exp = 0xF0;
+      break;
+    case BIC_SENSOR_DIMMC0_TEMP:
+    case BIC_SENSOR_DIMMD0_TEMP:
+    case BIC_SENSOR_DIMMG0_TEMP:
+    case BIC_SENSOR_DIMMH0_TEMP:
+      sdr->unr_thresh = 95;
+      break;
+    case BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2D:
+      sdr->unr_thresh = 85;
+      break;
+  }
+}
+
+void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
+  char sel_str[128] = {0};
+
+  if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_CL_EMR
+      && thresh == UNR_THRESH) {
+    snprintf(sel_str, sizeof(sel_str), "temp sensor[%x] over UNR. (val = %.3f)", snr_num, val);
+    switch (snr_num) {
+      case NIC_SENSOR_TEMP:
+      case BMC_SENSOR_VPDB_DELTA_1_TEMP:
+      case BMC_SENSOR_VPDB_FLEX_1_TEMP:
+        pal_all_slot_power_ctrl(SERVER_12V_OFF, sel_str);
+        break;
+      case BIC_SENSOR_CPU_THERM_MARGIN:
+      case BIC_SENSOR_DIMMC0_TEMP:
+      case BIC_SENSOR_DIMMD0_TEMP:
+      case BIC_SENSOR_DIMMG0_TEMP:
+      case BIC_SENSOR_DIMMH0_TEMP:
+      case BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2D:
+        syslog(LOG_CRIT, "Turned off 12V power of slot%d due to %s", fru, sel_str);
+        pal_set_server_power(fru, SERVER_12V_OFF);
+        break;
+      default:
+        break;
+    }
   }
 }
 

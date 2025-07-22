@@ -206,6 +206,17 @@
       "kp": -5,
       "ki": -0.035,
       "kd": 0
+    },
+    "linear_non_fru_sensor": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
     }
   },
   "fans": {

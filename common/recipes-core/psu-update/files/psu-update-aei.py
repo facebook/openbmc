@@ -6,7 +6,13 @@ import time
 import traceback
 from contextlib import contextmanager
 
-from modbus_update_helper import get_parser, print_perc, retry, suppress_monitoring
+from modbus_update_helper import (
+    decode_modbus_address,
+    get_parser,
+    print_perc,
+    retry,
+    suppress_monitoring,
+)
 
 from pyrmd import ModbusException, ModbusTimeout, RackmonInterface as rmd
 
@@ -89,12 +95,12 @@ class BadAEIResponse(ModbusException):
 def load_file(path):
     with open(path, "rb") as f:
         return f.read()
-    raise ValueError("Failed Loading image")
 
 
 def isp_get_status(addr):
+    addr, uaddr = decode_modbus_address(addr, get_addr_bytes=False)
     req = struct.pack(">BBB", addr, 0x43, 2)
-    resp = rmd.raw(req, expected=7, timeout=2000)
+    resp = rmd.raw(req, expected=7, timeout=2000, unique_addr=uaddr)
     raddr, rfunc, bcount, status = struct.unpack(">BBBH", resp)
     if raddr != addr or rfunc != 0x43:
         raise BadAEIResponse()
@@ -103,8 +109,9 @@ def isp_get_status(addr):
 
 @retry(5, delay=1.0)
 def isp_enter(addr):
+    addr, uaddr = decode_modbus_address(addr, get_addr_bytes=False)
     req = struct.pack(">BBB", addr, 0x42, ISP_CTRL_CMD_ENTER)
-    resp = rmd.raw(req, expected=7, timeout=5000)
+    resp = rmd.raw(req, expected=7, timeout=5000, unique_addr=uaddr)
     raddr, rfun, rcmd, _ = struct.unpack(">BBBB", resp)
     if raddr != addr or rfun != 0x42 or rcmd != ISP_CTRL_CMD_ENTER:
         raise BadAEIResponse()
@@ -117,9 +124,10 @@ def isp_enter(addr):
 
 
 def isp_exit(addr):
+    addr, uaddr = decode_modbus_address(addr, get_addr_bytes=False)
     req = struct.pack(">BBB", addr, 0x42, ISP_CTRL_CMD_EXIT)
     try:
-        resp = rmd.raw(req, expected=7, timeout=5000)
+        resp = rmd.raw(req, expected=7, timeout=5000, unique_addr=uaddr)
         raddr, rfun, rcmd, status, _ = struct.unpack(">BBBBB", resp)
         if raddr != addr or rfun != 0x42 or rcmd != ISP_CTRL_CMD_EXIT:
             raise BadAEIResponse()
@@ -147,6 +155,7 @@ def isp(addr):
 
 
 def isp_flash_block(addr, block_no, block, params):
+    addr, uaddr = decode_modbus_address(addr, get_addr_bytes=False)
     bsize = params["block_size"]
     if len(block) != bsize:
         print(f"Ignoring unexpected block size {len(block)}")
@@ -157,7 +166,7 @@ def isp_flash_block(addr, block_no, block, params):
     else:
         # We need to prefix the 2 byte block#.
         req = struct.pack(">BBBH", addr, 0x45, bsize + 2, block_no) + block
-    resp = rmd.raw(req, expected=8, timeout=2000)
+    resp = rmd.raw(req, expected=8, timeout=2000, unique_addr=uaddr)
     raddr, rfunc, rlen, rblock, rcode = struct.unpack(">BBBHB", resp)
     if raddr != addr or rfunc != 0x45 or rlen != 0x3:
         print("Bad Block write response:", resp)

@@ -1,8 +1,8 @@
 {
     "bios": {
-        "filename": "coreboot-elbert.rom",
+        "filename": "Aboot-norcal7-7.3.5-cb411-generic-8x1-ENG-43066215.rom",
         "hash": "sha1sum",
-        "hash_value": "ea672e28d3f2939765204d341869d96edeb82ee9"
+        "hash_value": "006f70fb1ce359f4aa69148f2b9b0ff91ad22a23"
     },
     "fan": {
         "filename": "elbert_fan.astp",

@@ -5,9 +5,6 @@
 
 trap cleanup INT TERM QUIT EXIT
 
-BMC_CONF_FILE=/etc/bmc_aboot.conf
-CPU_CONF_FILE=/etc/cpu_aboot.conf
-
 usage() {
     program=$(basename "$0")
     echo "Usage:"
@@ -19,94 +16,17 @@ usage() {
     echo "      By default, the bmc conf-file is used"
 }
 
-ABOOT_CONF_START=$(get_section_start aboot_conf)
-FLASH_SIZE=$(get_total_size)
-ABOOT_CONF_SIZE=$(get_section_size aboot_conf)
-SECTION_BLOCK_SIZE=$((0x1000))
-
-BOARD_NAME_VAR="DMI_BOARD_NAME"
-BOARD_VER_VAR="DMI_BOARD_VERSION"
-
-BOARD_NAME_VAL="ELBERT"
-BOARD_VER_VAL="1.0"
-
-# Temp file for storing constructed bios image.
-TEMP_BIOS_IMAGE="/tmp/tmp_bios_image"
+# Temp file for storing constructed aconf image.
+TEMP_ACONF_IMAGE="/tmp/tmp_aconfutil_aconf_image"
 
 cleanup() {
-    rm -f $TEMP_BIOS_IMAGE
+    rm -f $TEMP_ACONF_IMAGE
 }
 
 narg_err() {
     echo "Invalid number of arguments"
     usage
     exit 1
-}
-
-create_aboot_conf_image() {
-    local conf_file="$1"
-
-    echo "Using Aboot conf file: $conf_file"
-
-    if [ ! -f "$conf_file" ]; then
-        echo "File not found: $conf_file" >&2
-        return 1
-    fi
-
-    rm -f "$TEMP_BIOS_IMAGE"
-    pad_blocks="$((ABOOT_CONF_START / SECTION_BLOCK_SIZE))"
-    dd if=/dev/zero of="$TEMP_BIOS_IMAGE" bs="$SECTION_BLOCK_SIZE" \
-       count="$pad_blocks" 2> /dev/null
-
-    awk -F '=' '/^[^#\s]+=\S+/ {print $1 " " $2}' "$1" | while : ; do
-        read -r name val
-        if [ -z "$name" ]; then
-            break
-        fi
-        echo -n "${name}=" >> "$TEMP_BIOS_IMAGE"
-        echo -n "${val}" | base64 >> "$TEMP_BIOS_IMAGE"
-    done
-
-    ( echo -n "${BOARD_NAME_VAR}="; echo -n "${BOARD_NAME_VAL}" | base64;
-      echo -n "${BOARD_VER_VAR}="; echo -n "${BOARD_VER_VAL}" | base64
-    ) >> "$TEMP_BIOS_IMAGE"
-
-    size="$(stat -c "%s" "$TEMP_BIOS_IMAGE")"
-    pad_size="$((ABOOT_CONF_START + ABOOT_CONF_SIZE - size))"
-    dd if=/dev/zero bs=1 count="$pad_size" >> "$TEMP_BIOS_IMAGE" 2> /dev/null
-
-    pad_size="$((FLASH_SIZE - ABOOT_CONF_START - ABOOT_CONF_SIZE))"
-    pad_blocks="$((pad_size / SECTION_BLOCK_SIZE))"
-    dd if=/dev/zero bs="$SECTION_BLOCK_SIZE" count="$pad_blocks" \
-       >> "$TEMP_BIOS_IMAGE" 2> /dev/null
-}
-
-parse_aboot_conf() {
-    if [ ! -f "$1" ]; then
-        echo "File not found: $1" >&2
-        return 1
-    fi
-
-    skip_blocks="$((ABOOT_CONF_START / SECTION_BLOCK_SIZE))"
-    num_blocks="$((ABOOT_CONF_SIZE / SECTION_BLOCK_SIZE))"
-    dd if="$1" bs="$((SECTION_BLOCK_SIZE))" skip="$skip_blocks" \
-    count="$num_blocks" 2> /dev/null | tr '\001-\011\013-\037\177-\377' '.' | while : ; do
-        read -r nv
-        if [ -z "$nv" ]; then
-            break
-        fi
-        name="${nv%%=*}"
-        val="${nv#*=}"
-        if [[ "$name" == "$nv" ]] || [[ "$val" == "$nv" ]]; then
-            echo "Error: detected invalid data in aboot_conf section"
-            exit 1
-        fi
-        if ! enc_val=$(echo -n "${val}" | base64 -d);then
-            echo "Error: detected invalid data in aboot_conf section"
-            exit 1
-        fi
-        echo "${name}=${enc_val}"
-    done
 }
 
 conf_file=""
@@ -128,9 +48,9 @@ case "${1^^}" in
         if [ $# -ne 1 ]; then
             narg_err
         fi
-        bios_util.sh read "$TEMP_BIOS_IMAGE" --partition aboot_conf || exit 1
+        bios_util.sh read "$TEMP_ACONF_IMAGE" --partition aboot_conf || exit 1
         echo "Contents of aboot_conf:"
-        parse_aboot_conf "$TEMP_BIOS_IMAGE"
+        parse_aboot_conf "$TEMP_ACONF_IMAGE"
         ;;
     PROGRAM)
         if [ $# -eq 1 ]; then
@@ -151,8 +71,8 @@ case "${1^^}" in
             narg_err
         fi
 
-        create_aboot_conf_image "$conf_file" || exit 1
-        bios_util.sh write "$TEMP_BIOS_IMAGE" --partition aboot_conf
+        create_aboot_conf_image "$conf_file" "$TEMP_ACONF_IMAGE" || exit 1
+        bios_util.sh write "$TEMP_ACONF_IMAGE" --partition aboot_conf
         ;;
     *)
         echo "Unknown action: $1"

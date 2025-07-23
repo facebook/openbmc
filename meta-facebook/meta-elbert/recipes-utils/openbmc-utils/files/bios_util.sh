@@ -13,12 +13,16 @@ SCM_SPIDEV="spidev1.0"
 SCM_MTD=""
 REMOVE_BIOS_VER=0
 
+# Temp file for storing constructed aconf image.
+TEMP_ACONF_IMAGE="/tmp/tmp_biosutil_aconf_image"
+
 cleanup() {
     disconnect_spi
     if [ "$REMOVE_BIOS_VER" -eq 1 ]; then
         echo "Removing bios cache file ..."
         rm -f "$BIOS_VER_CACHE"
     fi
+    rm -f $TEMP_ACONF_IMAGE
 }
 
 bind_spi_nor() {
@@ -61,6 +65,9 @@ usage() {
     echo "      <OP> : read, write, erase, verify"
     echo "      [<partition>] : partition of layout file; defaults to total (all sections)"
     echo "                      specify image for Aboot image sections"
+    echo "$program write <bios file> [--init-aconf]"
+    echo "      If --init-aconf is specified, the aboot_conf section will be programmed"
+    echo "      after writing the bios file."
 }
 
 disconnect_spi() {
@@ -149,8 +156,18 @@ elif [ "$1" = "verify" ]; then
     retry_command 5 run_flashrom "$popts -v $2" || exit 1
 elif [ "$1" = "write" ]; then
     popts=$(get_partition_opts "$3" "$4" "total")
+    if [ "$3" == "--init-aconf" ] && [ -n "$popts" ]; then
+        echo "--init-aconf and --partition are mutually exclusive"
+        usage
+        exit 1
+    fi
     REMOVE_BIOS_VER=1
     retry_command 5 write_flash "$popts" "$2" || exit 1
+    if [ "$3" == "--init-aconf" ]; then
+        create_aboot_conf_image "$BMC_CONF_FILE" "$TEMP_ACONF_IMAGE" || exit 1
+        popts="-l $LAYOUT_FILE -i aboot_conf"
+        retry_command 5 write_flash "$popts" "$TEMP_ACONF_IMAGE" || exit 1
+    fi
 else
     usage
     exit 1

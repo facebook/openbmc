@@ -13,3 +13,6 @@ IMAGE_INSTALL:append = " rackmon"
 
 # Scripts to control connected RPUs
 IMAGE_INSTALL:append = " rpu-controller"
+
+# Scripts to perform FW Upgrade of PSU/BBU/RPU via rackmon
+IMAGE_INSTALL:append = " psu-update"

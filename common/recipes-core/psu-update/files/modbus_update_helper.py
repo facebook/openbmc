@@ -8,6 +8,15 @@ from contextlib import contextmanager
 from pyrmd import RackmonInterface as rmd
 
 
+def decode_modbus_address(addr, get_addr_bytes=True):
+    line_addr = addr & 0xFF
+    addr_b = line_addr.to_bytes(1, "big")
+    uaddr = None if addr <= 0xFF else addr
+    if get_addr_bytes:
+        return addr_b, uaddr
+    return line_addr, uaddr
+
+
 def retry(times, exceptions=(Exception), delay=0.0, verbose=1):
     def decorator(func):
         def newfn(*args, **kwargs):

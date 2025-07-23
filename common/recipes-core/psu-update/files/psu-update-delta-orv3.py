@@ -15,6 +15,7 @@ import hexfile
 from modbus_update_helper import (
     auto_int,
     bh,
+    decode_modbus_address,
     get_parser,
     print_perc,
     suppress_monitoring,
@@ -89,9 +90,10 @@ class BadMEIResponse(ModbusException):
 
 
 def get_status_reg(addr):
-    req = addr + b"\x2B\x64\x22\x00\x00"
-    resp = rmd.raw(req, expected=12)
-    exp_resp = addr + b"\x2B\x71\x62\x00\x00"
+    addr_b, uaddr = decode_modbus_address(addr)
+    req = addr_b + b"\x2B\x64\x22\x00\x00"
+    resp = rmd.raw(req, expected=12, unique_addr=uaddr)
+    exp_resp = addr_b + b"\x2B\x71\x62\x00\x00"
     if len(resp) != 10 or resp[:6] != exp_resp:
         print("Bad status response: " + bh(resp))
         raise BadMEIResponse()
@@ -125,9 +127,10 @@ def wait_status(addr, bit_set=None, bit_cleared=None, delay=1.0, timeout=100.0):
 
 def get_challenge(addr):
     print("Send get seed")
-    req = addr + b"\x2B\x64\x27\x00\x00"
-    resp = rmd.raw(req, expected=12)
-    exp_resp = addr + b"\x2B\x71\x67\x00\x00"
+    addr_b, uaddr = decode_modbus_address(addr)
+    req = addr_b + b"\x2B\x64\x27\x00\x00"
+    resp = rmd.raw(req, expected=12, unique_addr=uaddr)
+    exp_resp = addr_b + b"\x2B\x71\x67\x00\x00"
     if len(resp) != 10 or resp[:6] != exp_resp:
         print("Bad challenge response: " + bh(resp))
         raise BadMEIResponse()
@@ -138,9 +141,10 @@ def get_challenge(addr):
 
 def send_key(addr, key):
     print("Send key")
-    req = addr + b"\x2B\x64\x27\x00\x01" + key
-    resp = rmd.raw(req, expected=12)
-    exp_resp = addr + b"\x2b\x71\x67\x00\x01\xff\xff\xff\xff"
+    addr_b, uaddr = decode_modbus_address(addr)
+    req = addr_b + b"\x2B\x64\x27\x00\x01" + key
+    resp = rmd.raw(req, expected=12, unique_addr=uaddr)
+    exp_resp = addr_b + b"\x2b\x71\x67\x00\x01\xff\xff\xff\xff"
     if resp != exp_resp:
         print("Bad key response: " + bh(resp))
         raise BadMEIResponse()
@@ -166,10 +170,11 @@ def key_handshake(addr, key):
 
 def erase_flash(addr):
     print("Erasing flash... ")
+    addr_b, uaddr = decode_modbus_address(addr)
     sys.stdout.flush()
-    req = addr + b"\x2B\x64\x31\x00\x00\xFF\xFF\xFF\xFF"
-    resp = rmd.raw(req, expected=12)
-    exp_resp = addr + b"\x2B\x71\x71\xFF\xFF\xFF\xFF\xFF\xFF"
+    req = addr_b + b"\x2B\x64\x31\x00\x00\xFF\xFF\xFF\xFF"
+    resp = rmd.raw(req, expected=12, unique_addr=uaddr)
+    exp_resp = addr_b + b"\x2B\x71\x71\xFF\xFF\xFF\xFF\xFF\xFF"
     if resp != exp_resp:
         print("Bad erase response: " + bh(resp))
         raise BadMEIResponse()
@@ -183,9 +188,10 @@ def erase_flash(addr):
 
 
 def set_write_address(psu_addr, flash_addr):
-    req = psu_addr + b"\x2B\x64\x34\x00\x00" + struct.pack(">L", flash_addr)
-    exp_resp = psu_addr + b"\x2B\x71\x74\xFF\xFF\xFF\xFF\xFF\xFF"
-    resp = rmd.raw(req, expected=12)
+    addr_b, uaddr = decode_modbus_address(psu_addr)
+    req = addr_b + b"\x2B\x64\x34\x00\x00" + struct.pack(">L", flash_addr)
+    exp_resp = addr_b + b"\x2B\x71\x74\xFF\xFF\xFF\xFF\xFF\xFF"
+    resp = rmd.raw(req, expected=12, unique_addr=uaddr)
     if resp != exp_resp:
         print("Bad set write addr response: " + bh(resp))
         raise BadMEIResponse()
@@ -194,9 +200,10 @@ def set_write_address(psu_addr, flash_addr):
 
 def write_data(addr, data):
     assert len(data) == 128
-    req = addr + b"\x2B\x65\x36" + data
-    exp_resp = addr + b"\x2B\x73\x76\xFF\xFF\xFF\xFF\xFF\xFF"
-    resp = rmd.raw(req, expected=12)
+    addr_b, uaddr = decode_modbus_address(addr)
+    req = addr_b + b"\x2B\x65\x36" + data
+    exp_resp = addr_b + b"\x2B\x73\x76\xFF\xFF\xFF\xFF\xFF\xFF"
+    resp = rmd.raw(req, expected=12, unique_addr=uaddr)
     if resp != exp_resp:
         print("Bad write data response: " + bh(resp))
         raise BadMEIResponse()
@@ -217,9 +224,10 @@ def write_data(addr, data):
 
 def verify_flash(addr):
     print("Verifying program...")
-    req = addr + b"\x2B\x64\x31\x00\x01"
-    exp_resp = addr + b"\x2B\x71\x71\xFF\xFF\xFF\xFF\xFF\xFF"
-    resp = rmd.raw(req, expected=12)
+    addr_b, uaddr = decode_modbus_address(addr)
+    req = addr_b + b"\x2B\x64\x31\x00\x01"
+    exp_resp = addr_b + b"\x2B\x71\x71\xFF\xFF\xFF\xFF\xFF\xFF"
+    resp = rmd.raw(req, expected=12, unique_addr=uaddr)
     if resp != exp_resp:
         print("Bad write data response: " + bh(resp))
         raise BadMEIResponse()
@@ -233,9 +241,10 @@ def verify_flash(addr):
 
 def activate(addr):
     print("Activating Image...")
-    req = addr + b"\x2B\x64\x2E\x00\x00"
-    exp_resp = addr + b"\x2B\x71\x6E\xFF\xFF\xFF\xFF\xFF\xFF"
-    resp = rmd.raw(req, expected=12)
+    addr_b, uaddr = decode_modbus_address(addr)
+    req = addr_b + b"\x2B\x64\x2E\x00\x00"
+    exp_resp = addr_b + b"\x2B\x71\x6E\xFF\xFF\xFF\xFF\xFF\xFF"
+    resp = rmd.raw(req, expected=12, unique_addr=uaddr)
     if resp != exp_resp:
         print("Bad activate response: " + bh(resp))
         raise BadMEIResponse()
@@ -269,14 +278,13 @@ def send_image(addr, fwimg):
 
 
 def update_psu(addr, filename, key):
-    addr_b = addr.to_bytes(1, "big")
     print("Parsing Firmware")
     fwimg = hexfile.load(filename)
-    key_handshake(addr_b, key)
-    erase_flash(addr_b)
-    send_image(addr_b, fwimg)
-    verify_flash(addr_b)
-    activate(addr_b)
+    key_handshake(addr, key)
+    erase_flash(addr)
+    send_image(addr, fwimg)
+    verify_flash(addr)
+    activate(addr)
 
 
 def print_revision(addr):

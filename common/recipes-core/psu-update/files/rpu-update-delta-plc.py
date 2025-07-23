@@ -6,7 +6,13 @@ import traceback
 from contextlib import contextmanager
 from io import StringIO
 
-from modbus_update_helper import bh, get_parser, print_perc, suppress_monitoring
+from modbus_update_helper import (
+    bh,
+    decode_modbus_address,
+    get_parser,
+    print_perc,
+    suppress_monitoring,
+)
 
 from pyrmd import RackmonInterface as rmd
 
@@ -33,41 +39,41 @@ def check_rpu_size(addr):
 
 
 @contextmanager
-def rpu_stopped(addr):
+def rpu_stopped(addr, unique_addr=None):
     """
     Allow operations to be performed with RPU stopped.
     """
     try:
         req = addr + b"\x05\x0c\x30\x00\x00"
-        resp = rmd.raw(req, expected=8)
+        resp = rmd.raw(req, expected=8, unique_addr=unique_addr)
         if resp != req:
             raise ValueError("Bad RPU Stop response: " + bh(resp))
         yield
     finally:
         req = addr + b"\x05\x0c\x30\xff\x00"
-        resp = rmd.raw(req, expected=8, timeout=3000)
+        resp = rmd.raw(req, expected=8, timeout=3000, unique_addr=unique_addr)
         if resp != req:
             raise ValueError("Bad RPU Start response: " + bh(resp))
 
 
 @contextmanager
-def fw_upgrade_enabled(addr):
+def fw_upgrade_enabled(addr, unique_addr=None):
     try:
         req = addr + b"\x64\x01\x19\x01\x01"
-        resp = rmd.raw(req, expected=8)
+        resp = rmd.raw(req, expected=8, unique_addr=unique_addr)
         if resp != req:
             raise ValueError("Bad Enable FW Upgrade response: " + bh(resp))
         yield
     finally:
         req = addr + b"\x64\x01\x19\x01\x00"
-        resp = rmd.raw(req, expected=8)
+        resp = rmd.raw(req, expected=8, unique_addr=unique_addr)
         if resp != req:
             raise ValueError("Bad Disable FW Upgrade response: " + bh(resp))
 
 
-def syntax_check(addr):
+def syntax_check(addr, unique_addr=None):
     req = addr + b"\x05\x0c\x31\xff\x00"
-    resp = rmd.raw(req, expected=8, timeout=3000)
+    resp = rmd.raw(req, expected=8, timeout=3000, unique_addr=unique_addr)
     if resp != req:
         raise ValueError(
             "FW syntax check failed: " + bh(resp) + " expected: " + bh(req)
@@ -106,24 +112,25 @@ def load_fw(path):
     return fw
 
 
-def write_block(addr, block, oem_block):
+def write_block(addr, block, oem_block, unique_addr):
     if oem_block:
+        line_addr = addr & 0xFF
         baddr = block.addr
         data = block.data
         bdata = b"".join([d.to_bytes(2, "big") for d in data])
         datalen = len(data)  # Number of words
         bdatalen = len(bdata)  # Number of bytes
         hdr = (
-            addr.to_bytes(1, "big")
+            line_addr.to_bytes(1, "big")
             + b"\x75"
             + baddr.to_bytes(2, "big")
             + datalen.to_bytes(2, "big")
             + bdatalen.to_bytes(1, "big")
         )
         cmd = hdr + bdata
-        resp = rmd.raw(cmd, expected=datalen + 9)
+        resp = rmd.raw(cmd, expected=datalen + 9, unique_addr=unique_addr)
         expected_resp = (
-            addr.to_bytes(1, "big")
+            line_addr.to_bytes(1, "big")
             + b"\x75"
             + baddr.to_bytes(2, "big")
             + datalen.to_bytes(2, "big")
@@ -134,28 +141,28 @@ def write_block(addr, block, oem_block):
         rmd.write(addr, block.addr, block.data, timeout=3000)
 
 
-def write_fw(addr, fw_file, oem_block):
+def write_fw(addr, fw_file, oem_block, unique_addr):
     for idx, block in enumerate(fw_file):
         print_perc(
             100.0 * idx / len(fw_file),
             "Writing Block %d out of %d" % (idx + 1, len(fw_file)),
         )
-        write_block(addr, block, oem_block)
+        write_block(addr, block, oem_block, unique_addr)
     print_perc(100.0, "Writing Block %d out of %d" % (len(fw_file), len(fw_file)))
 
 
 def update_rpu(addr, filename, oem_block):
     print("Current Version: %s" % (get_rpu_revision(addr)))
-    addr_b = addr.to_bytes(1, "big")
+    addr_b, unique_addr = decode_modbus_address(addr)
     fwimg = load_fw(filename)
     # The image requires a new protocol not supported by all devices.
     # Check if the device can in fact do this and abort early.
     if oem_block:
         check_rpu_size(addr)
-    with rpu_stopped(addr_b):
-        with fw_upgrade_enabled(addr_b):
-            write_fw(addr, fwimg, oem_block)
-        syntax_check(addr_b)
+    with rpu_stopped(addr_b, unique_addr):
+        with fw_upgrade_enabled(addr_b, unique_addr):
+            write_fw(addr, fwimg, oem_block, unique_addr)
+        syntax_check(addr_b, unique_addr)
     time.sleep(8.0)
     print("Version After Upgrade: %s" % (get_rpu_revision(addr)))
 

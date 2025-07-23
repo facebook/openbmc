@@ -67,6 +67,11 @@ class RackmonInterface:
             req["timeout"] = timeout
 
     @classmethod
+    def _setUniqueAddress(cls, req, unique_addr):
+        if unique_addr is not None and unique_addr > 0xFF:
+            req["uniqueDevAddress"] = unique_addr
+
+    @classmethod
     def _check(cls, resp):
         status = resp["status"]
         if status == "SUCCESS":
@@ -115,11 +120,12 @@ class RackmonInterface:
         return cmd
 
     @classmethod
-    def _raw(cls, raw_cmd, expected, timeout):
+    def _raw(cls, raw_cmd, expected, timeout, unique_addr):
         # Convert to integer array.
         raw_cmd_ints = list(raw_cmd)
         cmd = {"type": "raw", "cmd": raw_cmd_ints, "response_length": expected}
         cls._setTimeout(cmd, timeout)
+        cls._setUniqueAddress(cmd, unique_addr)
         return cmd
 
     @classmethod
@@ -238,8 +244,8 @@ class RackmonInterface:
         return resp
 
     @classmethod
-    def raw(cls, raw_cmd, expected, timeout=0, fullResp=False):
-        result = cls._do(cls._raw, raw_cmd, expected, timeout)
+    def raw(cls, raw_cmd, expected, timeout=0, fullResp=False, unique_addr=None):
+        result = cls._do(cls._raw, raw_cmd, expected, timeout, unique_addr)
         log("<- {}".format(result))
         return cls._rawResp(result, fullResp, isinstance(raw_cmd, bytes))
 
@@ -313,8 +319,8 @@ class RackmonAsyncInterface(RackmonInterface):
         return resp
 
     @classmethod
-    async def raw(cls, raw_cmd, expected, timeout=0, fullResp=False):
-        result = await cls._do(cls._raw, raw_cmd, expected, timeout)
+    async def raw(cls, raw_cmd, expected, timeout=0, fullResp=False, unique_addr=None):
+        result = await cls._do(cls._raw, raw_cmd, expected, timeout, unique_addr)
         log("<- {}".format(result))
         return cls._rawResp(result, fullResp, isinstance(raw_cmd, bytes))
 

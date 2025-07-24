@@ -555,16 +555,23 @@ bool CpldLatticeManager::waitBusyAndVerify()
 
         if (busyFlag & busyFlagBit)
         {
+            std::cout << std::fixed << std::dec
+                << "\rBusy Flag is still raised at try count "
+                << unsigned(retry) << std::flush;
             std::this_thread::sleep_for(waitBusyTime);
             retry++;
             if (retry > busyWaitmaxRetry)
             {
-                std::cout << "Status Reg : Busy!" << std::endl;
+                std::cout << "\nStatus Reg : Busy!" << std::endl;
                 return false;
             }
         }
         else
         {
+            if(retry > 0)
+            {
+                std::cout << std::endl;
+            }            
             break;
         }
     } // while loop busy check

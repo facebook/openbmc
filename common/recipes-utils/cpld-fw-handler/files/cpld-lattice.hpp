@@ -5,7 +5,7 @@
 
 using namespace std::chrono_literals;
 
-constexpr uint8_t busyWaitmaxRetry = 45;
+constexpr uint8_t busyWaitmaxRetry = 200;
 constexpr uint8_t busyFlagBit = 0x80;
 constexpr uint8_t statusRegBusy = 0x10;
 constexpr uint8_t statusRegFail = 0x20;

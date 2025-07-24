@@ -442,7 +442,7 @@ int main(int argc, const char** argv) {
   read_cmd->add_option("-t,--timeout", raw_cmd_timeout, "Timeout (ms)");
   read_cmd
       ->add_option(
-          "DeviceAddress", devAddress, "The device from which we want to read")
+          "UniqueDeviceAddress", devAddress, "The device from which we want to read")
       ->required();
   read_cmd
       ->add_option(
@@ -463,7 +463,7 @@ int main(int argc, const char** argv) {
   write_cmd->add_option("-t,--timeout", raw_cmd_timeout, "Timeout (ms)");
   write_cmd
       ->add_option(
-          "DeviceAddress", devAddress, "The device to which we want to write")
+          "UniqueDeviceAddress", devAddress, "The device to which we want to write")
       ->required();
   write_cmd
       ->add_option(
@@ -487,7 +487,7 @@ int main(int argc, const char** argv) {
       app.add_subcommand("read_file", "Read file record from the device");
   read_file
       ->add_option(
-          "DeviceAddress",
+          "UniqueDeviceAddress",
           devAddress,
           "The device from which we want to read the record")
       ->required();
@@ -542,7 +542,7 @@ int main(int argc, const char** argv) {
   data->add_option(
       "--dev-addr",
       deviceFilter,
-      "Return values of provided device addresses only");
+      "Return values of provided unique device addresses only");
   data->add_option(
       "--dev-type",
       deviceTypeFilter,
@@ -566,7 +566,7 @@ int main(int argc, const char** argv) {
   reload->add_option(
       "--dev-addr",
       deviceFilter,
-      "Return values of provided device addresses only");
+      "Return values of provided unique device addresses only");
   reload->add_option(
       "--dev-type",
       deviceTypeFilter,

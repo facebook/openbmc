@@ -4,6 +4,9 @@
 #include <unistd.h>
 
 #include <CLI/CLI.hpp>
+#include <sys/file.h>
+#include <fcntl.h>
+#include <cstdio>
 
 #include <chrono>
 
@@ -51,6 +54,37 @@ int main(int argc, char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
+    // Prevent multiple instances using flock
+
+    const auto lockFile = std::string{} + "/tmp/cpld-fw-handler_" + std::to_string(bus) + ".lock";
+    std::cout << "Lock file: " << lockFile << std::endl;
+    int fd;
+    int retryCount = 6; // Number of retries before giving up
+    do
+    {
+        fd = open(lockFile.c_str(), O_RDWR | O_CREAT, 0666);
+        if (fd < 0)
+        {
+            std::cerr << "Unable to open lock file: " << lockFile << std::endl;
+            return 1;
+        }
+        if (flock(fd, LOCK_EX | LOCK_NB) == 0)
+        {
+            break; // Successfully acquired the lock
+        }
+        std::cerr << "Another instance is running, waiting for lock..." << std::endl;
+        std::cerr << "Retry time remaining: " << retryCount << std::endl;
+        sleep(10); // Wait before retrying
+    } while (--retryCount > 0);
+    if (retryCount <= 0)
+    {
+        std::cerr << 
+            "Failed to acquire lock after multiple attempts, retry time exhausted" << 
+            std::endl;
+        close(fd);
+        return 1;
+    }
+
     auto cpldManager = CpldLatticeManager(bus, addr, imagePath, chip, interface,
                                           target, debugMode);
 
@@ -79,6 +113,11 @@ int main(int argc, char** argv)
         std::cout << "Execution time: " << duration.count() << " seconds"
                   << std::endl;
     }
+
+    std::cout << "Release lock file: " << lockFile << std::endl;
+    // Release the lock
+    flock(fd, LOCK_UN);
+    close(fd);
 
     return 0;
 }

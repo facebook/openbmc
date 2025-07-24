@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: Optional override config
+
+OVERRIDE_CONFIG_FILE=${1:-/run/mnt-persist/var-data/lib/rpu-controller/override-config.json}
+CONFIG_FILE="/var/lib/rpu-controller/default-config.json"
+
+if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
+    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
+fi
+
+script_dir=$( dirname "${BASH_SOURCE[0]}" )
+rackmoncli list --json | jq '.[] | select(.deviceType == "ORV3_RPU").uniqueDevAddress' | while read -r uda; do
+  manufacturer=$("$script_dir/get-rpu-manufacturer" "$uda" "$CONFIG_FILE")
+  jq -n --arg key "$uda" --arg manufacturer "$manufacturer" \
+    '{($key): {manufacturer: $manufacturer}}'
+done | jq -s 'add'

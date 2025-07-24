@@ -4,6 +4,10 @@ SRC_URI += " \
     file://limitcore.conf \
 "
 
+LOCAL_URI += " \
+    file://1000-fix-missing-config-h.patch \
+"
+
 EXTRA_OEMESON:append = " \
     -Doffline-failsafe-pwm=true \
     -Dhandle-missing-object-paths=true \

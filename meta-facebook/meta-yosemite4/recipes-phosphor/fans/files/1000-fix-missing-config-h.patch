@@ -1,0 +1,83 @@
+From 765a6d8024061dd9f7a881bac870120886bee9db Mon Sep 17 00:00:00 2001
+From: Pete O_o <pmb@meta.com>
+Date: Wed, 23 Jul 2025 21:44:14 -0700
+Subject: [PATCH] meson option requires config.h for meson options to operate properly
+
+This was removed in
+https://github.com/openbmc/phosphor-pid-control/commit/f8b6e55
+
+Change-Id: I42d21365516a104cc0372d1fa72477642784c4d1
+Signed-off-by: Pete O_o <pmb@meta.com>
+---
+
+diff --git a/dbus/dbusconfiguration.cpp b/dbus/dbusconfiguration.cpp
+index 787ca31..8dcd69b 100644
+--- a/dbus/dbusconfiguration.cpp
++++ b/dbus/dbusconfiguration.cpp
+@@ -13,6 +13,7 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ */
++#include "config.h"
+ 
+ #include "dbusconfiguration.hpp"
+ 
+diff --git a/dbus/dbushelper.cpp b/dbus/dbushelper.cpp
+index 2d50c72..b29d0d6 100644
+--- a/dbus/dbushelper.cpp
++++ b/dbus/dbushelper.cpp
+@@ -14,6 +14,8 @@
+  * limitations under the License.
+  */
+ 
++#include "config.h"
++
+ #include "dbushelper.hpp"
+ 
+ #include "dbushelper_interface.hpp"
+diff --git a/dbus/dbuspassive.cpp b/dbus/dbuspassive.cpp
+index d53e59e..6ca6249 100644
+--- a/dbus/dbuspassive.cpp
++++ b/dbus/dbuspassive.cpp
+@@ -13,6 +13,7 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
++#include "config.h"
+ 
+ #include "dbuspassive.hpp"
+ 
+diff --git a/main.cpp b/main.cpp
+index 37c1660..d4bfaae 100644
+--- a/main.cpp
++++ b/main.cpp
+@@ -13,6 +13,7 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
++#include "config.h"
+ 
+ #include "buildjson/buildjson.hpp"
+ #include "conf.hpp"
+diff --git a/pid/fancontroller.cpp b/pid/fancontroller.cpp
+index 9b54714..5598c4f 100644
+--- a/pid/fancontroller.cpp
++++ b/pid/fancontroller.cpp
+@@ -13,6 +13,7 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
++#include "config.h"
+ 
+ #include "fancontroller.hpp"
+ 
+diff --git a/test/pid_fancontroller_unittest.cpp b/test/pid_fancontroller_unittest.cpp
+index 315931f..3ee585e 100644
+--- a/test/pid_fancontroller_unittest.cpp
++++ b/test/pid_fancontroller_unittest.cpp
+@@ -1,3 +1,4 @@
++#include "config.h"
+ 
+ #include "pid/ec/pid.hpp"
+ #include "pid/fan.hpp"
+

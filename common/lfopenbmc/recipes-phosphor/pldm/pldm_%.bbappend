@@ -23,6 +23,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0017-platform-mc-Add-option-for-discovering-FRU-data.patch \
     file://0018-Add-event-log-type-for-PROCHOT.patch \
     file://0019-Add-event-log-type-for-FRB2-OS-Load-timer.patch \
+    file://0020-Sync-the-pldm-oem-event-type-list-from-BIC.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

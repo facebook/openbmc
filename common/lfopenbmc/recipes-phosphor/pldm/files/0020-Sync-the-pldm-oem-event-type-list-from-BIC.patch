@@ -1,0 +1,32 @@
+From a7f92c9f90b842be0e379d87d7cb46d93f11e01b Mon Sep 17 00:00:00 2001
+From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
+Date: Thu, 24 Jul 2025 15:26:16 +0000
+Subject: [PATCH] Sync the pldm oem event type list from BIC
+
+[Task Description]
+- This change is related to the minerva-ag commit that added MTIA OEM event type support
+- Synchronize the PLDM OEM event type list from BIC to ensure proper decode order
+
+[Motivation]
+- Need to sync the PLDM OEM event type list from BIC to ensure the decode order remains correct and consistent
+
+Signed-off-by: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
+---
+ oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
+index 67ed014..0a81795 100644
+--- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
++++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
+@@ -113,6 +113,7 @@ int EventLogHandler::write(const message& eventData)
+         " OS LOAD WDT HARD_RST",
+         " OS LOAD WDT PWR_DOWN",
+         " OS LOAD WDT PWR_CYCLE",
++        " MTIA VR FAULT",
+     });
+ 
+     static constexpr auto pmic_event_type = std::to_array({
+-- 
+2.25.1
+

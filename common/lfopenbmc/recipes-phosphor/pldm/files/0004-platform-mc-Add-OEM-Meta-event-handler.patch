@@ -56,14 +56,14 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Upstream-Status: Pending
 ---
  meson.build                             |   1 +
- oem/meta/platform-mc/event_oem_meta.cpp | 947 ++++++++++++++++++++++++
+ oem/meta/platform-mc/event_oem_meta.cpp | 976 ++++++++++++++++++++++++
  oem/meta/platform-mc/event_oem_meta.hpp |  21 +
  platform-mc/event_manager.cpp           |  42 +-
  platform-mc/event_manager.hpp           |  15 +-
  platform-mc/manager.hpp                 |  27 +-
  platform-mc/test/meson.build            |   2 +
  pldmd/pldmd.cpp                         |  16 +-
- 8 files changed, 1058 insertions(+), 13 deletions(-)
+ 8 files changed, 1085 insertions(+), 13 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
@@ -84,7 +84,7 @@ new file mode 100644
 index 0000000..0dba526
 --- /dev/null
 +++ b/oem/meta/platform-mc/event_oem_meta.cpp
-@@ -0,0 +1,947 @@
+@@ -0,0 +1,976 @@
 +#include "event_oem_meta.hpp"
 +
 +#include "common/utils.hpp"
@@ -110,6 +110,14 @@ index 0000000..0dba526
 +    uint8_t channel;
 +    uint8_t slot;
 +} _dimm_info;
++
++typedef struct _bdf_info
++{
++    uint8_t Bus;
++    uint8_t Dev;
++    uint8_t Fun;
++    std::string Name;
++} _bdf_info;
 +
 +constexpr auto slotNumberProperty = "SlotNumber";
 +using DecoratorSlot =
@@ -383,6 +391,15 @@ index 0000000..0dba526
 +
 +    static constexpr auto upiError =
 +        std::to_array({"UPI Init error", "Reserved"});
++
++    static constexpr auto cxlBdfMap = std::to_array<_bdf_info>({
++        // Before Y4401D BIOS
++        {0xA9, 0x00, 0x00, "MCIO3"},
++        {0xD3, 0x00, 0x00, "MCIO4"},
++        // After Y4401D BIOS
++        {0xA1, 0x00, 0x00, "MCIO3"},
++        {0xC1, 0x00, 0x00, "MCIO4"},
++    });
 +
 +    static constexpr auto memoryCxlEvent =
 +        std::to_array({"DIMM A0", "DIMM B0", "DIMM A1", "DIMM B1", "Reserved"});
@@ -987,6 +1004,18 @@ index 0000000..0dba526
 +                case UnifiedError::UNIFIED_CXL_MEM_ERR:
 +                {
 +                    uint8_t eventType = eventData[10] & 0xF;
++                    std::string devName = "";
++                    
++                    for (size_t i = 0; i < cxlBdfMap.size(); i++)
++                    {
++                        if((eventData[7] == cxlBdfMap[i].Bus) &&
++                            ((eventData[8] >> 3) == cxlBdfMap[i].Dev) &&
++                            ((eventData[8] & 0x7) == cxlBdfMap[i].Fun))
++                        {
++                            devName = cxlBdfMap[i].Name + "_";
++                            break;
++                        }
++                    }
 +                    errorLog +=
 +                        "GeneralInfo: CXL Memory Error(0x" +
 +                        to_hex_string(generalInfo) + "), Bus " +
@@ -994,7 +1023,7 @@ index 0000000..0dba526
 +                        to_hex_string(eventData[8] >> 3) + "/Fun " +
 +                        to_hex_string(eventData[8] & 0x7) +
 +                        ", DIMM Failure Event: " + memoryError[eventType] +
-+                        ", " + memoryCxlEvent[eventData[11]];
++                        ", " + devName + memoryCxlEvent[eventData[11]];
 +                    break;
 +                }
 +                default:

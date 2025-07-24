@@ -1,4 +1,4 @@
-From 689826a602f1f1b0b4f942f1c0480755934e0e42 Mon Sep 17 00:00:00 2001
+From fc62e227124c06c1f6c23db837b2bd74e11436c0 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -647,7 +647,7 @@ index 52f9394..3e20529 100644
  
  void setupPowerMatch(const std::shared_ptr<sdbusplus::asio::connection>& conn)
 diff --git a/src/Utils.hpp b/src/Utils.hpp
-index 037c127..ac0e1ae 100644
+index cb96822..e3df9a4 100644
 --- a/src/Utils.hpp
 +++ b/src/Utils.hpp
 @@ -56,6 +56,7 @@ using ManagedObjectType =
@@ -825,10 +825,10 @@ index dd43fe5..8f85908 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index c341f2d..8bda465 100644
+index edadffd..3067c8e 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -618,6 +618,7 @@ static void createSensorsCallback(
+@@ -619,6 +619,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -836,7 +836,7 @@ index c341f2d..8bda465 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1103,7 +1104,7 @@ static void createSensorsCallback(
+@@ -1104,7 +1105,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -845,7 +845,7 @@ index c341f2d..8bda465 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  if constexpr (debug)
-@@ -1281,7 +1282,11 @@ static void powerStateChanged(
+@@ -1282,7 +1283,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -859,10 +859,10 @@ index c341f2d..8bda465 100644
          }
      }
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index c433e45..2c55e11 100644
+index daa3940..4c0519d 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
-@@ -72,7 +72,7 @@ struct Sensor
+@@ -75,7 +75,7 @@ struct Sensor
             const std::string& configurationPath, const std::string& objectType,
             bool isSettable, bool isMutable, const double max, const double min,
             std::shared_ptr<sdbusplus::asio::connection>& conn,
@@ -871,7 +871,7 @@ index c433e45..2c55e11 100644
          name(sensor_paths::escapePathForDbus(name)),
          configurationPath(configurationPath),
          configInterface(configInterfaceName(objectType)),
-@@ -80,7 +80,7 @@ struct Sensor
+@@ -83,7 +83,7 @@ struct Sensor
          minValue(min), thresholds(std::move(thresholdData)),
          hysteresisTrigger((max - min) * 0.01),
          hysteresisPublish((max - min) * 0.0001), dbusConnection(conn),
@@ -880,7 +880,7 @@ index c433e45..2c55e11 100644
          instrumentation(enableInstrumentation
                              ? std::make_unique<SensorInstrumentation>()
                              : nullptr)
-@@ -115,6 +115,7 @@ struct Sensor
+@@ -121,6 +121,7 @@ struct Sensor
      double hysteresisPublish;
      std::shared_ptr<sdbusplus::asio::connection> dbusConnection;
      PowerState readState;
@@ -888,7 +888,7 @@ index c433e45..2c55e11 100644
      size_t errCount{0};
      std::unique_ptr<SensorInstrumentation> instrumentation;
  
-@@ -438,7 +439,7 @@ struct Sensor
+@@ -451,7 +452,7 @@ struct Sensor
  
      bool readingStateGood() const
      {
@@ -898,5 +898,5 @@ index c433e45..2c55e11 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.25.1
+2.47.1
 

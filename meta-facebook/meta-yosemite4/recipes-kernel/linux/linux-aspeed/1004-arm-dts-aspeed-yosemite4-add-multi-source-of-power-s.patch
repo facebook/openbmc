@@ -22,40 +22,40 @@ index 851d71224421..8024974006b8 100644
 -		compatible = "ti,ina230";
 +		compatible = "ti,ina233", "richtek,rtq6056", "silergy,sq52205";
  		reg = <0x40>;
-+		resistor-calibration = /bits/ 16 <0x0400>;
-+		current-lsb= /bits/ 16 <0x0001>;
++		shunt-resistor = <5000>;
++		ti,maximum-expected-current-microamp = <32768000>;
  	};
  
  	power-sensor@41 {
 -		compatible = "ti,ina230";
 +		compatible = "ti,ina233", "richtek,rtq6056", "silergy,sq52205";
  		reg = <0x41>;
-+		resistor-calibration = /bits/ 16 <0x0400>;
-+		current-lsb= /bits/ 16 <0x0001>;
++		shunt-resistor = <5000>;
++		ti,maximum-expected-current-microamp = <32768000>;
  	};
  
  	power-sensor@42 {
 -		compatible = "ti,ina230";
 +		compatible = "ti,ina233", "richtek,rtq6056", "silergy,sq52205";
  		reg = <0x42>;
-+		resistor-calibration = /bits/ 16 <0x0400>;
-+		current-lsb= /bits/ 16 <0x0001>;
++		shunt-resistor = <5000>;
++		ti,maximum-expected-current-microamp = <32768000>;
  	};
  
  	power-sensor@43 {
 -		compatible = "ti,ina230";
 +		compatible = "ti,ina233", "richtek,rtq6056", "silergy,sq52205";
  		reg = <0x43>;
-+		resistor-calibration = /bits/ 16 <0x0400>;
-+		current-lsb= /bits/ 16 <0x0001>;
++		shunt-resistor = <5000>;
++		ti,maximum-expected-current-microamp = <32768000>;
  	};
  
  	power-sensor@44 {
 -		compatible = "ti,ina230";
 +		compatible = "ti,ina233", "richtek,rtq6056", "silergy,sq52205";
  		reg = <0x44>;
-+		resistor-calibration = /bits/ 16 <0x0400>;
-+		current-lsb= /bits/ 16 <0x0001>;
++		shunt-resistor = <5000>;
++		ti,maximum-expected-current-microamp = <32768000>;
  	};
  
  	temperature-sensor@4e {

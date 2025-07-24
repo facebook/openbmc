@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # ARGUMENTS:
-# 1: RPU Number
+# 1: RPU unique device address
 # 2: Command
 # 3: Optional override config
 
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 <rpu_number> <command> [override_config]
-      rpu_number: The RPU number
+    echo "Usage: $0 <rpu_uda> <command> [override_config]
+      rpu_uda: The RPU unique device address
       command: The command to execute on the device: start, stop, restart, clear-sticky-registers
       override_config: Optional configuration file to override default settings"
     exit 1
@@ -20,12 +20,8 @@ if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
     CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
 fi
 
-script_dir=$( dirname "${BASH_SOURCE[0]}" )
 # unique device address
-UDA=$("$script_dir/get-rpu-unique-device-address" "$1" "$CONFIG_FILE") || {
-  echo "Could not determine RPU unique device address"
-  exit 1
-}
+UDA="$1"
 
 COMMAND="$2"
 

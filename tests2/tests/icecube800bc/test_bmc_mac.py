@@ -36,4 +36,5 @@ class BMCMacTest(BaseBMCMacTest, unittest.TestCase):
             r"(b4\:db\:91\:..\:..\:..)",
             r"(dc\:da\:4d\:..\:..\:..)",
             r"(d8\:49\:bf\:..\:..\:..)",
+            r"(88\:5a\:23\:..\:..\:..)",
         ]

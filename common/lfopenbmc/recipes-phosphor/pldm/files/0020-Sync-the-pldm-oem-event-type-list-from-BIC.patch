@@ -1,4 +1,4 @@
-From a7f92c9f90b842be0e379d87d7cb46d93f11e01b Mon Sep 17 00:00:00 2001
+From 59324f02162924e7529da0262701b371679d443a Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Thu, 24 Jul 2025 15:26:16 +0000
 Subject: [PATCH] Sync the pldm oem event type list from BIC
@@ -16,7 +16,7 @@ Signed-off-by: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-index 67ed014..0a81795 100644
+index 2d2bf9d..3af8216 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 @@ -113,6 +113,7 @@ int EventLogHandler::write(const message& eventData)

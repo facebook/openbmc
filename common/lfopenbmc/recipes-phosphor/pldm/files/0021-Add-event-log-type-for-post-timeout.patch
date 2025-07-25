@@ -1,4 +1,4 @@
-From 3c457678a04c39fd3d9ffbed75c65131b663bba1 Mon Sep 17 00:00:00 2001
+From 684c69bbdf05021007d18f969be9f4609fe5e72b Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Thu, 24 Jul 2025 15:54:40 +0000
 Subject: [PATCH] Add event log type for post timeout
@@ -19,7 +19,7 @@ Signed-off-by: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-index 69e4451..8fc3770 100644
+index 3af8216..99c09c9 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 @@ -114,6 +114,7 @@ int EventLogHandler::write(const message& eventData)

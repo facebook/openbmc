@@ -1,4 +1,4 @@
-From 49a204219e88d619bc488313c65d708a55fe152b Mon Sep 17 00:00:00 2001
+From 6b3b9266a61ab1c0134e978e754c2f55fa91d4ca Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Wed, 16 Jul 2025 08:26:10 +0800
 Subject: [PATCH] Add event log type for FRB2/OS Load timer
@@ -8,7 +8,7 @@ Subject: [PATCH] Add event log type for FRB2/OS Load timer
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-index d20ca08..67ed014 100644
+index d5c40c9..2d2bf9d 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 @@ -105,7 +105,14 @@ int EventLogHandler::write(const message& eventData)
@@ -28,5 +28,5 @@ index d20ca08..67ed014 100644
  
      static constexpr auto pmic_event_type = std::to_array({
 -- 
-2.34.1
+2.25.1
 

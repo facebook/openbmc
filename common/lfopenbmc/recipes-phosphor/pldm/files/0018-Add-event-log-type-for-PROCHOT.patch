@@ -1,7 +1,7 @@
-From 003be038764aa9e3cfc819a37c679e9412da56da Mon Sep 17 00:00:00 2001
+From 283ffa0168158f3bc9d2d50fea0d87b8fb2d1cd3 Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay_yc_huang@wiwynn.com>
 Date: Tue, 24 Jun 2025 10:12:30 +0000
-Subject: [PATCH 19/19] Add event log type for PROCHOT
+Subject: [PATCH] Add event log type for PROCHOT
 
 [Task Description]
 - Related to YV4T1M-1031
@@ -20,7 +20,7 @@ Signed-off-by: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
  1 file changed, 32 insertions(+)
 
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-index d7e3fa6..d20ca08 100644
+index 2bd8dd1..d5c40c9 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 @@ -1,7 +1,9 @@
@@ -41,7 +41,7 @@ index d7e3fa6..d20ca08 100644
      });
  
      static constexpr auto pmic_event_type = std::to_array({
-@@ -295,6 +298,35 @@ int EventLogHandler::write(const message& eventData)
+@@ -303,6 +306,35 @@ int EventLogHandler::write(const message& eventData)
              error("Failed to create info-level D-Bus log: {ERR}", "ERR", e);
          }
      }
@@ -78,5 +78,5 @@ index d7e3fa6..d20ca08 100644
      {
          lg2::error("{ERROR}", "ERROR", errorLog); // Create log in journal
 -- 
-2.47.1
+2.25.1
 

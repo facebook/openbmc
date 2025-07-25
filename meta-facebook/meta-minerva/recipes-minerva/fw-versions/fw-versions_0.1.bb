@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 S = "${WORKDIR}/sources"
 UNPACKDIR = "${S}"
 
-FCB_INSTANCES="1:2:3:4:5:6"
+FCB_INSTANCES = "1:2:3:4:5:6"
 
 FW_TOOLS = "\
     scm-bmc,minerva-sys-init.service,multi-user.target,multi-user.target,0 \

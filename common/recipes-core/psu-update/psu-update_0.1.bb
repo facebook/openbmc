@@ -23,8 +23,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 RDEPENDS:${PN} = "python3-core bash rackmon"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://modbus_update_helper.py \

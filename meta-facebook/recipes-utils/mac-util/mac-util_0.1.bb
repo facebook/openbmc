@@ -6,8 +6,8 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://mac-util.cpp;beginline=4;endline=16;md5=94a0865391a6425c9dcee589aa6888d5"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI += " \
     file://mac-util.cpp \

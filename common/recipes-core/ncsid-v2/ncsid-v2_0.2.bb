@@ -7,8 +7,8 @@ PR = "r2"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://ncsid.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \

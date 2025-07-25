@@ -23,8 +23,8 @@ LIC_FILES_CHKSUM = "file://passwd-util;beginline=5;endline=18;md5=0b1ee7d6f844d4
 
 DEPENDS:append = " update-rc.d-native"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://passwd-util \

@@ -6,8 +6,8 @@ PR = "r1"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://daemon/LICENSE;beginline=4;endline=25;md5=8861f37222b237b82044f06478647f8b"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://daemon/asd_common.h \

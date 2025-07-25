@@ -22,8 +22,8 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fscd.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://fscd.py \
@@ -110,7 +110,7 @@ cd /usr/lib/fscd/ptest
 if [ ! -d /var/volatile/log ]; then
   mkdir /var/volatile/log
 fi
-PYTHONPATH=/usr/bin python3 ./fsc_tester.py
+PYTHONPATH = /usr/bin python3 ./fsc_tester.py
 EOF
 }
 

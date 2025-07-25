@@ -9,8 +9,8 @@ LIC_FILES_CHKSUM = "file://gpiointrd.c;beginline=4;endline=16;md5=302e73da84735a
 
 inherit meson pkgconfig
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \

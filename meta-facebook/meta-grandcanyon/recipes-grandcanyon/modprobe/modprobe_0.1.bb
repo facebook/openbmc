@@ -23,8 +23,8 @@ LIC_FILES_CHKSUM = "file://modprobe.conf;md5=1aaac5ad33755459b190a062ba1b9f4b"
 
 inherit meson pkgconfig
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://modprobe.conf \

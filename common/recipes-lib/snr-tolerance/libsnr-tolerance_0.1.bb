@@ -9,8 +9,8 @@ BBCLASSEXTEND = "native"
 
 inherit meson pkgconfig
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://snr-tolerance.h \

@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-LICENSE="GPL-2.0-only"
+LICENSE = "GPL-2.0-only"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 

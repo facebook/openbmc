@@ -11,8 +11,8 @@ inherit meson pkgconfig
 
 DEPENDS:append = " libbic libpal update-rc.d-native "
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \

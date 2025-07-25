@@ -30,8 +30,8 @@ def get_orv3_support(d):
   return "true"
 EXTRA_OEMESON += "-Dorv3=${@get_orv3_support(d)}"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \

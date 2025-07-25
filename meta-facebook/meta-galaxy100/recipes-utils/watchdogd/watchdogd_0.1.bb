@@ -23,8 +23,8 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://watchdogd.sh;beginline=4;endline=16;md5=c5df8524e560f89f6fe75bb131d6e14d"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://watchdogd.sh \

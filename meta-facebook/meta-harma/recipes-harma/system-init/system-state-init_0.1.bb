@@ -16,7 +16,7 @@ do_install() {
 }
 
 TGT = "${SYSTEMD_DEFAULT_TARGET}"
-HARMA_SYS_ST_INIT_INSTFMT="../system-state-init@.service:multi-user.target.wants/system-state-init@{0}.service"
+HARMA_SYS_ST_INIT_INSTFMT = "../system-state-init@.service:multi-user.target.wants/system-state-init@{0}.service"
 
 SYSTEMD_SERVICE:${PN} += "system-state-init@.service"
 SYSTEMD_LINK:${PN} += "${@compose_list(d, 'HARMA_SYS_ST_INIT_INSTFMT', 'OBMC_CHASSIS_INSTANCES')}"

@@ -8,8 +8,8 @@ LIC_FILES_CHKSUM = "file://usb2jtag-util.c;beginline=4;endline=16;md5=302e73da84
 
 inherit meson pkgconfig
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://usb2jtag-util.c \

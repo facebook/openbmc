@@ -10,8 +10,8 @@ UNPACKDIR = "${S}"
 
 inherit meson pkgconfig
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://cpld-fw-handler.cpp \

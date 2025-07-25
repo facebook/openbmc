@@ -25,8 +25,8 @@ inherit module kernel_extra_headers
 PR = "r0"
 PV = "0.1"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://Makefile \

@@ -6,8 +6,8 @@ PR = "r1"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://obmc-ras.c;beginline=1;endline=1;md5=b9fee9b0fbd6c5d36637dcaca2e0752e"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://base64.h \

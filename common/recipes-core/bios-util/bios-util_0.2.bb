@@ -7,8 +7,8 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://bios-head.py;beginline=1;endline=1;md5=28b35612b145c34c676817ce69fbfeb6"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://bios-head.py \

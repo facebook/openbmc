@@ -21,4 +21,4 @@ EXTRA_OEMESON = " \
 "
 
 # Upstream has a bug of an unused value in a test case.
-PTEST_ENABLED="0"
+PTEST_ENABLED = "0"

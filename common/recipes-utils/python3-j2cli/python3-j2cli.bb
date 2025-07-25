@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=e46989ee3017dd8d4373102ac88457be"
 DEPENDS = "python3-pyyaml python3-jinja2"
 
 PYPI_PACKAGE = "j2cli"
-PV="0.3.10"
+PV = "0.3.10"
 inherit pypi setuptools3
 
 SRC_URI[md5sum] = "52a2d900437a318f5d99d6d3ae751e6b"

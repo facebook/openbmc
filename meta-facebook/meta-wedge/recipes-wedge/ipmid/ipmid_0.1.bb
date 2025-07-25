@@ -29,8 +29,8 @@ RDEPENDS:${PN} += "libwedge-eeprom liblog"
 
 inherit systemd
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://Makefile \

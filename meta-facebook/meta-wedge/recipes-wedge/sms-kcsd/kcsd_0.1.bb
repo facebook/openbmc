@@ -27,8 +27,8 @@ LDFLAGS += "-lipmi -lobmc-i2c -llog -lmisc-utils"
 DEPENDS += "libipmi libobmc-i2c liblog libmisc-utils"
 RDEPENDS:${PN} += "libipmi libobmc-i2c liblog libmisc-utils"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://Makefile \

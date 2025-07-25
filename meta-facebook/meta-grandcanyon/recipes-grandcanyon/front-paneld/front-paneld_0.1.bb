@@ -12,8 +12,8 @@ DEPENDS:append = "libpal update-rc.d-native"
 
 inherit meson pkgconfig
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \

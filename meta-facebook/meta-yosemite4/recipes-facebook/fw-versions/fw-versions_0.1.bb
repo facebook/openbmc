@@ -10,8 +10,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 S = "${WORKDIR}/sources"
 UNPACKDIR = "${S}"
 
-HOST_INSTANCES="${@d.getVar('OBMC_HOST_INSTANCES', True).replace(" ", ":")}"
-NIC_INSTANCES="${@d.getVar('OBMC_NIC_INSTANCES', True).replace(" ", ":")}"
+HOST_INSTANCES = "${@d.getVar('OBMC_HOST_INSTANCES', True).replace(" ", ":")}"
+NIC_INSTANCES = "${@d.getVar('OBMC_NIC_INSTANCES', True).replace(" ", ":")}"
 
 FW_TOOLS = "\
     mgmt-cpld,yosemite4-sys-init.service,multi-user.target,multi-user.target,0 \

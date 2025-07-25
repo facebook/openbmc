@@ -23,8 +23,8 @@ LIC_FILES_CHKSUM = "file://nm.c;beginline=8;endline=20;md5=da58bc07a669261cb7ccf
 
 inherit meson pkgconfig
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \

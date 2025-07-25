@@ -11,8 +11,8 @@ LDFLAGS += "-lpal -lgpio-ctrl -lasic"
 DEPENDS:append = "libpal libgpio-ctrl libasic update-rc.d-native"
 RDEPENDS:${PN} += "libasic "
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://Makefile \

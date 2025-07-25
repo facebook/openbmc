@@ -8,8 +8,8 @@ inherit systemd
 
 LICENSE = "GPL-2.0-or-later"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://10-eth0.network \

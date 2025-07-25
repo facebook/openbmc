@@ -13,8 +13,8 @@ S = "${WORKDIR}/${BPN}-${PV}"
 
 inherit python3-dir
 
-dst="${PYTHON_SITEPACKAGES_DIR}/aiohttp.egg-info"
-dst1="${PYTHON_SITEPACKAGES_DIR}/aiohttp"
+dst = "${PYTHON_SITEPACKAGES_DIR}/aiohttp.egg-info"
+dst1 = "${PYTHON_SITEPACKAGES_DIR}/aiohttp"
 
 	
 RDEPENDS:${PN}:append = "\

@@ -28,8 +28,8 @@ PACKAGECONFIG[disable-watchdog] = ""
 # boot_info.sh script is not installed by default
 PACKAGECONFIG[boot-info] = ""
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://COPYING \

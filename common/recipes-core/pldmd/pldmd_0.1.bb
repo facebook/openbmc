@@ -27,8 +27,8 @@ inherit meson pkgconfig
 RDEPENDS:${PN} = " libpldm libpldm-oem glog"
 DEPENDS = " libpldm libpldm-oem cli11 update-rc.d-native glog"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \

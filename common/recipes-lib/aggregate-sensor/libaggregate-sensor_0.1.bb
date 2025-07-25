@@ -8,8 +8,8 @@ LIC_FILES_CHKSUM = "file://aggregate-sensor.c;beginline=5;endline=17;md5=da35978
 
 inherit meson pkgconfig ptest-meson
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \
@@ -50,7 +50,7 @@ do_install:append() {
   install -m 644 ${UNPACKDIR}/aggregate_sensor.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
-LDFLAGS= "-lm -lpal"
+LDFLAGS = "-lm -lpal"
 
 DEPENDS =+ "libpal libsdr jansson libkv cmock"
 RDEPENDS:${PN} =+ "libpal libsdr libkv jansson "

@@ -57,4 +57,4 @@ IMAGE_INSTALL += " \
   name-util \
   "
 
-PROVIDES+="northdome-vboot-image"
+PROVIDES += "northdome-vboot-image"

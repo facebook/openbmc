@@ -10,7 +10,7 @@ BPN = "JSON-log-formatter"
 S = "${WORKDIR}/${BPN}-${PV}"
 
 inherit python3-dir
-dst="${PYTHON_SITEPACKAGES_DIR}/json_log_formatter"
+dst = "${PYTHON_SITEPACKAGES_DIR}/json_log_formatter"
 
 do_install() {
   mkdir -p ${D}/${dst}

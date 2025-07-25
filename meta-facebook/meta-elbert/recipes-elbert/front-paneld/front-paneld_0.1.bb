@@ -11,8 +11,8 @@ LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a
 
 DEPENDS:append = "libpal libkv libgpio-ctrl libsdr libobmc-i2c update-rc.d-native"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://Makefile \

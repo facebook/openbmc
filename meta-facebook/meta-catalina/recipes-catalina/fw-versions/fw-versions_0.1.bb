@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 S = "${WORKDIR}/sources"
 UNPACKDIR = "${S}"
 
-NIC_INSTANCES="0:1"
+NIC_INSTANCES = "0:1"
 
 FW_TOOLS = "\
     bmc-tpm,platform-sys-init.service,,multi-user.target,0 \

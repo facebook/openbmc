@@ -5,8 +5,8 @@ PR = "r2"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://mctpd.cpp;beginline=4;endline=16;md5=1b9fbafb77a4e5fffaa2d54854ecda68"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://Makefile \

@@ -25,8 +25,8 @@ DEPENDS:append = " update-rc.d-native"
 
 inherit systemd
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://psumuxmon.py \

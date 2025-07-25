@@ -29,8 +29,8 @@ inherit meson pkgconfig
 RDEPENDS:${PN} += "liblog libmisc-utils"
 DEPENDS:append = " update-rc.d-native liblog libmisc-utils"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://emmcd.c \

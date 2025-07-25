@@ -23,8 +23,8 @@ LIC_FILES_CHKSUM = "file://dhcp-id;beginline=5;endline=18;md5=0b1ee7d6f844d472fa
 
 RDEPENDS:${PN} += " bash wedge-eeprom "
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://dhcp-id \

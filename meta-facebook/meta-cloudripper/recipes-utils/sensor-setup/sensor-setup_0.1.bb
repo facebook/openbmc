@@ -26,8 +26,8 @@ inherit systemd
 DEPENDS:append = " update-rc.d-native"
 RDEPENDS:${PN} += "bash"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://sensor-setup.sh \

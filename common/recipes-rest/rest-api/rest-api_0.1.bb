@@ -63,8 +63,8 @@ RDEPENDS:${PN} += " \
     sensors-py \
 "
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://setup-rest-api.sh \

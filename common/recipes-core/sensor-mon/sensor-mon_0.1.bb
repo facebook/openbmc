@@ -24,8 +24,8 @@ LIC_FILES_CHKSUM = "file://sensord.cpp;beginline=4;endline=16;md5=b395943ba8a071
 
 inherit systemd
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \

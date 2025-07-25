@@ -19,8 +19,8 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://mkeeprom.c;beginline=4;endline=13;md5=03e4e5ed5d6d17edb790a6bcab2eaf6a"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://mkeeprom.c \

@@ -37,8 +37,8 @@ LIC_FILES_CHKSUM = "\
 inherit meson pkgconfig python3-dir
 inherit ptest-meson
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://fileops.cpp \

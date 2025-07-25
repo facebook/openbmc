@@ -9,8 +9,8 @@ LIC_FILES_CHKSUM = "file://otp.c;beginline=4;endline=16;md5=b66b777f082370423b0f
 
 inherit meson pkgconfig
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://aspeed-otp.h \

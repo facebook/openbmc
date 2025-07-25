@@ -2,6 +2,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += " \
     file://phosphor-reset-host-reboot-attempts_override.conf \
+    file://yosemite4-dbus-timeout.conf \
     file://1000-Add-retry-mechanism-with-configurable-Meson-option.patch \
 "
 EXTRA_OEMESON:append = " \
@@ -17,6 +18,15 @@ do_install:append() {
     install -d ${override_dir}
     install -m 0644 ${UNPACKDIR}/phosphor-reset-host-reboot-attempts_override.conf \
             ${override_dir}/phosphor-reset-host-reboot-attempts_override.conf
+    for s in ${D}${systemd_system_unitdir}/*.service; do
+        [ -e "$s" ] || continue
+        install -d "$s.d"
+        install -m 0644 ${UNPACKDIR}/yosemite4-dbus-timeout.conf "$s.d/"
+    done
 }
 
-FILES:${PN} += "${systemd_system_unitdir}/phosphor-reset-host-reboot-attempts@.service.d/phosphor-reset-host-reboot-attempts_override.conf"
+FILES:${PN} += " \
+    ${systemd_system_unitdir}/phosphor-reset-host-reboot-attempts@.service.d/phosphor-reset-host-reboot-attempts_override.conf \
+    ${systemd_system_unitdir}/*.service.d \
+    ${systemd_system_unitdir}/*.service.d/*.conf \
+"

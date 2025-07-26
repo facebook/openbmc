@@ -12,7 +12,7 @@ using namespace testing;
 
 class BmcComponentBasicMock : public BmcComponent {
   public:
-    BmcComponentBasicMock(std::string fru, std::string comp, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
+    BmcComponentBasicMock(const std::string& fru, const std::string& comp, const std::string& mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
       : BmcComponent(fru, comp, mtd, vers, w_offset, skip_offset) {}
     MOCK_METHOD0(sys, System&());
 };
@@ -87,14 +87,14 @@ TEST(BmcComponentTest, MTDVersion) {
 
 class BmcComponentMock : public BmcComponent {
   public:
-    BmcComponentMock(std::string fru, std::string comp, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
+    BmcComponentMock(const std::string& fru, const std::string& comp, const std::string& mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
       : BmcComponent(fru, comp, mtd, vers, w_offset, skip_offset) {}
   MOCK_METHOD2(is_valid, bool(const string &image, bool pfr_active));
-  MOCK_METHOD1(update, int(string &image));
+  MOCK_METHOD1(update, int(const string &image));
   MOCK_METHOD0(print_version, int());
   MOCK_METHOD0(sys, System&());
 
-  int real_update(string &image) {
+  int real_update(const string &image) {
     return BmcComponent::update(image);
   }
 };

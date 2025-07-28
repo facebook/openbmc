@@ -42,6 +42,8 @@ const auto HMC_DUMP_SERVICE = HMC_URL +
     "Managers/HGX_BMC_0/LogServices/Dump/Actions/LogService.CollectDiagnosticData";
 const auto SYSTEM_DUMP_SERVICE = HMC_URL +
     "Systems/HGX_Baseboard_0/LogServices/Dump/Actions/LogService.CollectDiagnosticData";
+const auto UBB_DUMP_SERVICE = HMC_URL +
+    "Systems/UBB/LogServices/DiagLogs/Actions/LogService.CollectDiagnosticData";
 
 const std::vector<std::string> HMC_PATCH_TARGETS_EVT = {
   "ERoT_FPGA_Firmware", "ERoT_GPU0_Firmware", "ERoT_GPU1_Firmware",
@@ -501,25 +503,39 @@ void getMetricReports() {
 }
 
 void factoryReset() {
-  static const std::map<HMCPhase, std::string> urlMap = {
-    {HMCPhase::HMC_FW_EVT, HMC_URL + "Managers/bmc" + HMC_FACTORY_RESET_SERVICE},
-    {HMCPhase::HMC_FW_DVT, HMC_URL + "Managers/HGX_HMC_0" + HMC_FACTORY_RESET_SERVICE},
-    {HMCPhase::BMC_FW_DVT, HMC_URL + "Managers/HGX_BMC_0" + HMC_FACTORY_RESET_SERVICE},
-    {HMCPhase::BMC_FW_B100, HMC_URL+ "Managers/HGX_BMC_0" + HMC_FACTORY_RESET_SERVICE}
-  };
-  std::string url = urlMap.at(getHMCPhase());
-  hgx.post(url, json::object({{"ResetToDefaultsType", "ResetAll"}}).dump(), false);
+  std::string url;
+  if (get_gpu_config() == GPU_CONFIG_HGX) {
+    static const std::map<HMCPhase, std::string> urlMap = {
+      {HMCPhase::HMC_FW_EVT, HMC_URL + "Managers/bmc" + HMC_FACTORY_RESET_SERVICE},
+      {HMCPhase::HMC_FW_DVT, HMC_URL + "Managers/HGX_HMC_0" + HMC_FACTORY_RESET_SERVICE},
+      {HMCPhase::BMC_FW_DVT, HMC_URL + "Managers/HGX_BMC_0" + HMC_FACTORY_RESET_SERVICE},
+      {HMCPhase::BMC_FW_B100, HMC_URL+ "Managers/HGX_BMC_0" + HMC_FACTORY_RESET_SERVICE}
+    };
+    url = urlMap.at(getHMCPhase());
+    hgx.post(url, json::object({{"ResetToDefaultsType", "ResetAll"}}).dump(), false);
+  }
+  else if (get_gpu_config() == GPU_CONFIG_UBB) {
+    url = HMC_URL + "Managers/AMC" + HMC_FACTORY_RESET_SERVICE;
+    hgx.post(url, json::object({{"ResetType", "ResetAll"}}).dump(), false);
+  }
 }
 
 void reset() {
-  static const std::map<HMCPhase, std::string> urlMap = {
-    {HMCPhase::HMC_FW_EVT, HMC_URL + "Managers/bmc" + HMC_RESET_SERVICE},
-    {HMCPhase::HMC_FW_DVT, HMC_URL + "Managers/HGX_HMC_0" + HMC_RESET_SERVICE},
-    {HMCPhase::BMC_FW_DVT, HMC_URL + "Managers/HGX_BMC_0" + HMC_RESET_SERVICE},
-    {HMCPhase::BMC_FW_B100, HMC_URL+ "Managers/HGX_BMC_0" + HMC_RESET_SERVICE}
-  };
-  std::string url = urlMap.at(getHMCPhase());
-  hgx.post(url, json::object({{"ResetType", "GracefulRestart"}}).dump(), false);
+  std::string url;
+  if (get_gpu_config() == GPU_CONFIG_HGX) {
+    static const std::map<HMCPhase, std::string> urlMap = {
+      {HMCPhase::HMC_FW_EVT, HMC_URL + "Managers/bmc" + HMC_RESET_SERVICE},
+      {HMCPhase::HMC_FW_DVT, HMC_URL + "Managers/HGX_HMC_0" + HMC_RESET_SERVICE},
+      {HMCPhase::BMC_FW_DVT, HMC_URL + "Managers/HGX_BMC_0" + HMC_RESET_SERVICE},
+      {HMCPhase::BMC_FW_B100, HMC_URL+ "Managers/HGX_BMC_0" + HMC_RESET_SERVICE}
+    };
+    url = urlMap.at(getHMCPhase());
+    hgx.post(url, json::object({{"ResetType", "GracefulRestart"}}).dump(), false);
+  }
+  else if (get_gpu_config() == GPU_CONFIG_UBB) {
+    url = HMC_URL + "Managers/AMC" + HMC_RESET_SERVICE;
+    hgx.post(url, json::object({{"ResetType", "ForceRestart"}}).dump(), false);
+  }
 }
 
 void patch_bf_update() {
@@ -547,15 +563,23 @@ std::string dumpNonBlocking(DiagnosticDataType type) {
       {DiagnosticDataType::OEM_EROT, "EROT"},
       {DiagnosticDataType::OEM_SELF_TEST, "SelfTest"},
       {DiagnosticDataType::OEM_FPGA, "FPGA"},
-      {DiagnosticDataType::OEM_RETIMER, "RetLTSSM"}};
+      {DiagnosticDataType::OEM_RETIMER, "RetLTSSM"},
+      {DiagnosticDataType::OEM_UBB, "AllLogs"}};
   json req;
   if (type == DiagnosticDataType::MANAGER) {
     req["DiagnosticDataType"] = "Manager";
     url = HMC_DUMP_SERVICE;
-  } else {
-    url = SYSTEM_DUMP_SERVICE;
+  }
+  else {
     req["DiagnosticDataType"] = "OEM";
-    req["OEMDiagnosticDataType"] = "DiagnosticType=" + typeMap.at(type);
+    if (type == DiagnosticDataType::OEM_UBB) {
+      url = UBB_DUMP_SERVICE;
+      req["OEMDiagnosticDataType"] = typeMap.at(type);
+    }
+    else {
+      url = SYSTEM_DUMP_SERVICE;
+      req["OEMDiagnosticDataType"] = "DiagnosticType=" + typeMap.at(type);
+    }
   }
   std::string respStr = hgx.post(url, req.dump(), false);
   json resp = json::parse(respStr);

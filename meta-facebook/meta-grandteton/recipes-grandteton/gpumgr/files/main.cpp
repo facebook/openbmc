@@ -1,8 +1,12 @@
 #include <CLI/CLI.hpp>
 #include <nlohmann/json.hpp>
 #include <openbmc/hgx.h>
+#include <format>
 #include <syslog.h>
 #include <iostream>
+#include <openbmc/pal.h>
+#include <openbmc/obmc-i2c.h>
+#include <libpldm-oem/pldm.h>
 
 static constexpr const char* POwER_UNITS_WATTS = "W";
 static constexpr const char* VALUE_JSON_KEY = "value";
@@ -39,7 +43,8 @@ static void do_dump(
       {"erot", hgx::DiagnosticDataType::OEM_EROT},
       {"self-test", hgx::DiagnosticDataType::OEM_SELF_TEST},
       {"fpga", hgx::DiagnosticDataType::OEM_FPGA},
-      {"retimer", hgx::DiagnosticDataType::OEM_RETIMER}};
+      {"retimer", hgx::DiagnosticDataType::OEM_RETIMER},
+      {"AllLogs", hgx::DiagnosticDataType::OEM_UBB}};
   if (async) {
     std::cout << hgx::dumpNonBlocking(compMap.at(comp)) << std::endl;
   } else {
@@ -97,9 +102,9 @@ static void do_get_snr_metric() {
 static void do_factory_reset() {
   try {
     hgx::factoryReset();
-    syslog(LOG_CRIT, "Perform HGX factory reset...");
+    syslog(LOG_CRIT, "Perform GPU factory reset...");
   } catch (std::exception& e) {
-    syslog(LOG_CRIT, "Perform HGX factory reset failed: %s", e.what());
+    syslog(LOG_CRIT, "Perform GPU factory reset failed: %s", e.what());
   }
 }
 
@@ -172,8 +177,91 @@ static void do_get_power_limit(bool json_fmt) {
   }
 }
 
+static void do_pldm_reset (uint16_t snr_id, uint16_t effecter) {
+  int ret;
+  uint8_t ubb_bus = 11;
+  uint8_t ubb_eid = 0x24;
+
+  try {
+    ret = set_pldm_state_effecter(ubb_bus, ubb_eid, snr_id, effecter);
+
+    if (!ret) {
+      std::cout << "resetting" << std::endl;
+    }
+    else {
+      std::cout << "Failed to reset, err code: " << ret << std::endl;
+    }
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to reset" << ": " << e.what() << std::endl;
+  }
+}
+
+static void do_pldm_health (uint16_t snr_id) {
+  uint8_t ubb_bus = 11;
+  uint8_t ubb_eid = 0x24;
+  float health;
+
+  try {
+    get_pldm_state_sensor (ubb_bus, ubb_eid, snr_id, &health);
+
+    if (health == 0) {
+      std::cout << "Healthy" << std::endl;
+    }
+    else {
+      std::cout << "Unhealthy" << std::endl;
+    }
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to get health" << ": " << e.what() << std::endl;
+  }
+}
+
+static void do_RT_health() {
+  constexpr int MAX_RETIMERS = 8;
+  int bus = 9;
+  int addr[] = {0x54, 0x55, 0x56, 0x57, 0x5c, 0x5d, 0x5e, 0x5f};
+
+  for (int i = 0; i < MAX_RETIMERS; i++) {
+    if (i2c_detect_device(bus, addr[i]) == 0) {
+      std::cout << "Retimer" << i << " is healthy\n";
+    } else {
+      std::cout << "Retimer" << i << " is not healthy\n";
+    }
+  }
+}
+
+static void do_inject_post(const std::string& command) {
+  std::string payload = (command == "enable")
+      ? R"({"ErrInjection": "Enable"})"
+      : R"({"ErrInjection": "Disable"})";
+
+  try {
+    for (int i = 0; i < 8; i++) {
+      std::string subpath = "Chassis/OAM_" + std::to_string(i) + "/Actions/Oem/AMD/Chassis.ErrInjection";
+      std::string out = hgx::redfishPost(subpath, std::move(payload));
+      std::cout << out << std::endl;
+    }
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to set the injection" << ": " << e.what() << std::endl;
+  }
+}
+
+static void do_inject_check(int timeout_sec) {
+  constexpr int MAX_RETIMERS = 8;
+  for (int i = 0; i < MAX_RETIMERS; i++) {
+    std::string subpath = "Chassis/OAM_" + std::to_string(i);
+    try {
+      std::string response = hgx::redfishGet(subpath, hgx::DEFAULT_TIMEOUT_SEC);
+      nlohmann::json json_response = nlohmann::json::parse(response);
+      std::string einj_state = json_response["Oem"]["EINJState"].get<std::string>();
+      std::cout << "OAM_" << i << ": " << einj_state << std::endl;
+    } catch (const std::exception& e) {
+       std::cerr << "Failed processing OAM_" << i << ": " << e.what() << std::endl;
+    }
+  }
+}
+
 int main(int argc, char* argv[]) {
-  CLI::App app("HGX Helper Utility");
+  CLI::App app("GPU Helper Utility");
   app.failure_message(CLI::FailureMessage::help);
 
   bool json_fmt = false;
@@ -200,7 +288,7 @@ int main(int argc, char* argv[]) {
   update->callback([&]() { do_update(comp, image, async, json_fmt); });
 
   std::set<std::string> allowedComps{
-      "hmc", "erot", "self-test", "fpga", "retimer"};
+      "hmc", "erot", "self-test", "fpga", "retimer", "AllLogs"};
   auto dump = app.add_subcommand("dump", "perform a dump");
   dump->add_option("comp", comp, "What to dump")
       ->required()
@@ -295,6 +383,34 @@ int main(int argc, char* argv[]) {
   auto getPwrLimit =
       app.add_subcommand("get-pwr-limit", "Get power limit from GPU");
   getPwrLimit->callback([&]() { do_get_power_limit(json_fmt); });
+
+  auto vNIC_health = app.add_subcommand("vNIC_health", "Get vNIC health");
+  vNIC_health->add_option("FRU", fru, "ubb")->required();
+  vNIC_health->callback([&]() { do_pldm_health(0x01C0); });
+
+  auto SMC_health = app.add_subcommand("SMC_health", "Get SMC health");
+  SMC_health->add_option("FRU", fru, "ubb")->required();
+  SMC_health->callback([&]() { do_pldm_health(0x03C0); });
+
+  auto RT_health = app.add_subcommand("Retimer_health", "Get Retimer health");
+  RT_health->add_option("FRU", fru, "ubb")->required();
+  RT_health->callback([&]() { do_RT_health(); });
+
+  auto vNIC_reset = app.add_subcommand("vNIC_reset", "Reset vNIC");
+  vNIC_reset->add_option("FRU", fru, "ubb")->required();
+  vNIC_reset->callback([&]() { do_pldm_reset(0x03C2, 0x0301); });
+
+  auto inject_en = app.add_subcommand("error_injection_enable", "Enable OAM error injection");
+  inject_en->add_option("FRU", fru, "ubb")->required();
+  inject_en->callback([&]() { do_inject_post("enable"); });
+
+  auto inject_disable = app.add_subcommand("error_injection_disable", "Disable OAM error injection");
+  inject_disable->add_option("FRU", fru, "ubb")->required();
+  inject_disable->callback([&]() { do_inject_post("disable"); });
+
+  auto inject_check = app.add_subcommand("error_injection_check", "check the status of OAM error injection");
+  inject_check->add_option("FRU", fru, "ubb")->required();
+  inject_check->callback([&]() { do_inject_check(12); });
 
   app.require_subcommand(/* min */ 1, /* max */ 1);
 

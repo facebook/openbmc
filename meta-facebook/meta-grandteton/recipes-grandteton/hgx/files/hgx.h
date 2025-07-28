@@ -26,7 +26,7 @@ namespace hgx {
 
 constexpr auto DEFAULT_TIMEOUT_SEC = 12;
 
-enum class DiagnosticDataType { MANAGER, OEM_EROT, OEM_SELF_TEST, OEM_FPGA, OEM_RETIMER };
+enum class DiagnosticDataType { MANAGER, OEM_EROT, OEM_SELF_TEST, OEM_FPGA, OEM_RETIMER, OEM_UBB};
 
 // Standard HTTP Exception
 struct HTTPException : std::runtime_error {

@@ -17,7 +17,8 @@ LOCAL_URI = " \
     file://main.cpp \
     "
 
-DEPENDS += "libhgx cli11"
+LDFLAGS += "-lpal"
+DEPENDS += "libpal libhgx libpldm-oem cli11 nlohmann-json libobmc-i2c"
 
 do_install:append() {
     localbindir="${D}/usr/local/bin" 

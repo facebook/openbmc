@@ -191,6 +191,59 @@ exit:
 }
 
 int
+set_pldm_state_effecter(uint8_t bus, uint8_t eid, uint16_t snr_id, uint16_t effecter)
+{
+  uint8_t tbuf[255] = {0};
+  uint8_t* rbuf = (uint8_t *) NULL;
+  struct pldm_state_snr_reading_t* resp;
+  uint8_t tlen = 0;
+  size_t  rlen = 0;
+  uint8_t effecter_count = (effecter >> 8) & 0xFF;
+  uint8_t effecter_id = effecter & 0xFF;
+  int rc;
+
+  struct pldm_msg* pldmbuf = (struct pldm_msg *)tbuf;
+  pldmbuf->hdr.request = 1;
+  pldmbuf->hdr.type    = PLDM_PLATFORM;
+  pldmbuf->hdr.command = PLDM_SET_STATE_EFFECTER_STATES;
+  tlen = PLDM_HEADER_SIZE;
+  tbuf[tlen++] = snr_id & 0xFF;
+  tbuf[tlen++] = (snr_id >> 8) & 0xFF;
+  tbuf[tlen++] = effecter_count;
+
+  for (int i = 1; i <= effecter_count; i++) {
+    if (i == effecter_id) {
+      tbuf[tlen++] = 1;                      // requestSet
+    }
+    else {
+      tbuf[tlen++] = 0;                      // requestSet
+    }
+    tbuf[tlen++] = 1;                        // effecterState
+  }
+
+  rc = oem_pldm_send_recv(bus, eid, tbuf, tlen, &rbuf, &rlen);
+
+  if (rc == PLDM_SUCCESS) {
+    resp= (struct pldm_state_snr_reading_t*) rbuf;
+    if (resp->data.completion_code) {
+      rc = -1;
+      syslog(LOG_WARNING, "%s, resp: %x", __FUNCTION__, resp->data.completion_code);
+      goto exit;
+    }
+  }
+  else {
+    syslog(LOG_WARNING, "%s, rc: %d", __FUNCTION__, rc);
+  }
+
+exit:
+  if (rbuf)
+    free(rbuf);
+
+  return rc;
+
+}
+
+int
 get_pldm_state_sensor(uint8_t bus, uint8_t eid, uint16_t snr_id, float *value)
 {
   uint8_t tbuf[255] = {0};

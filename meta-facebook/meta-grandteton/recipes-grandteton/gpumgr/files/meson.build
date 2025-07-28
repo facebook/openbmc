@@ -16,6 +16,7 @@ deps = [
   dependency('threads'),
   cc.find_library('restclient-cpp'),
   dependency('libhgx'),
+  dependency('libobmc-i2c'),
 ]
 
 hgxmgr_exe = executable(

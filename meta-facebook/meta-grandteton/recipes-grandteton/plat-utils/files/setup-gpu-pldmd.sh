@@ -34,7 +34,15 @@ setup_gpu_pldmd() {
   mctp-util -d 11 0xae 0x00 0x00 0x00 0x1 0x0 0x24
   runsv /etc/sv/mctpd_11 > /dev/null 2>&1 &
   sleep 3
+  if [ -z "$(pgrep -f "/usr/local/bin/mctpd smbus 11 0x10")" ]; then
+    sv start mctpd_11
+  fi
+
   runsv /etc/sv/pldmd_11 > /dev/null 2>&1 &
+  sleep 3
+  if [ -z "$(pgrep -f "/usr/local/bin/pldmd --bus 11")" ]; then
+    sv start pldmd_11
+  fi
 }
 
 LOCK_FILE="/tmp/gpu_pldmd.lock"
@@ -43,7 +51,10 @@ if [ -e "$LOCK_FILE" ]; then
 else
   touch "$LOCK_FILE"
 
-  setup_gpu_pldmd
+  # Check if pldmd is ready
+  if ! pldmd-util -b 11 -e 0x24 raw 0x02 0x21 0xC0 0x03 0x00 0x00; then
+    setup_gpu_pldmd
+  fi
 
   rm "$LOCK_FILE"
 fi

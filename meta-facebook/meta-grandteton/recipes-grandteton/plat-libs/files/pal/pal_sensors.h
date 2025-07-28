@@ -183,6 +183,7 @@ int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max);
 int retry_err_handle(uint8_t retry_curr, uint8_t retry_max);
 int get_pldm_sensor(uint8_t bus, uint8_t eid, uint8_t sensor_num, float *value);
 int get_pldm_state_sensor(uint8_t bus, uint8_t eid, uint16_t snr_id, float *value);
+int set_pldm_state_effecter(uint8_t bus, uint8_t eid, uint16_t snr_id, uint16_t effecter);
 int mb_vr_polling_ctrl(bool enable);
 int read_vr_temp(uint8_t fru, uint8_t sensor_num, float *value);
 int read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value);

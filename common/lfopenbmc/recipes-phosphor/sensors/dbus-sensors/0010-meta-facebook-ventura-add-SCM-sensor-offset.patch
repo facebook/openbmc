@@ -1,0 +1,96 @@
+From 5e18a4b82e18b190931aa9a656554d02bae61e09 Mon Sep 17 00:00:00 2001
+From: Jason Hsu <Jason-Hsu@quantatw.com>
+Date: Fri, 27 Jun 2025 10:35:17 +0800
+Subject: [PATCH] meta-facebook: ventura: add SCM sensor offset
+
+Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
+---
+ src/adc/ADCSensor.cpp     | 8 +++++++-
+ src/adc/ADCSensor.hpp     | 3 ++-
+ src/adc/ADCSensorMain.cpp | 9 ++++++++-
+ 3 files changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/src/adc/ADCSensor.cpp b/src/adc/ADCSensor.cpp
+index cbf7132a8..eea550fb4 100644
+--- a/src/adc/ADCSensor.cpp
++++ b/src/adc/ADCSensor.cpp
+@@ -54,7 +54,7 @@ ADCSensor::ADCSensor(
+     const std::string& path, sdbusplus::asio::object_server& objectServer,
+     std::shared_ptr<sdbusplus::asio::connection>& conn,
+     boost::asio::io_context& io, const std::string& sensorName,
+-    std::vector<thresholds::Threshold>&& thresholdsIn, const double scaleFactor,
++    std::vector<thresholds::Threshold>&& thresholdsIn, const double scaleFactor, const double offset,
+     const float pollRate, PowerState readState,
+     const std::string& sensorConfiguration,
+     std::optional<BridgeGpio>&& bridgeGpio) :
+@@ -63,6 +63,7 @@ ADCSensor::ADCSensor(
+            minVoltageReading / scaleFactor, conn, readState),
+     objServer(objectServer), inputDev(io), waitTimer(io), path(path),
+     scaleFactor(scaleFactor),
++    offset(offset),
+     sensorPollMs(static_cast<unsigned int>(pollRate * 1000)),
+     bridgeGpio(std::move(bridgeGpio)), thresholdTimer(io)
+ {
+@@ -219,6 +220,11 @@ void ADCSensor::handleResponse(const boost::system::error_code& err)
+         {
+             rawValue = std::stod(response);
+             double nvalue = (rawValue / sensorScaleFactor) / scaleFactor;
++            if (nvalue > 0.1)
++            {
++                // Do not apply offset
++                nvalue += offset;
++            }
+             nvalue = std::round(nvalue * roundFactor) / roundFactor;
+             updateValue(nvalue);
+         }
+diff --git a/src/adc/ADCSensor.hpp b/src/adc/ADCSensor.hpp
+index 618c43f22..4f6b9a31a 100644
+--- a/src/adc/ADCSensor.hpp
++++ b/src/adc/ADCSensor.hpp
+@@ -77,7 +77,7 @@ class ADCSensor : public Sensor, public std::enable_shared_from_this<ADCSensor>
+               std::shared_ptr<sdbusplus::asio::connection>& conn,
+               boost::asio::io_context& io, const std::string& sensorName,
+               std::vector<thresholds::Threshold>&& thresholds,
+-              double scaleFactor, float pollRate, PowerState readState,
++              double scaleFactor, double offset, float pollRate, PowerState readState,
+               const std::string& sensorConfiguration,
+               std::optional<BridgeGpio>&& bridgeGpio);
+     ~ADCSensor() override;
+@@ -90,6 +90,7 @@ class ADCSensor : public Sensor, public std::enable_shared_from_this<ADCSensor>
+     std::shared_ptr<boost::asio::streambuf> readBuf;
+     std::string path;
+     double scaleFactor;
++    double offset;
+     unsigned int sensorPollMs;
+     std::optional<BridgeGpio> bridgeGpio;
+     thresholds::ThresholdTimer thresholdTimer;
+diff --git a/src/adc/ADCSensorMain.cpp b/src/adc/ADCSensorMain.cpp
+index 7949280cc..13aa713b5 100644
+--- a/src/adc/ADCSensorMain.cpp
++++ b/src/adc/ADCSensorMain.cpp
+@@ -259,6 +259,13 @@ void createSensors(
+                     }
+                 }
+ 
++                float offset = 0.0;
++                auto findOffset = baseConfiguration->second.find("Offset");
++                if (findOffset != baseConfiguration->second.end())
++                {
++                    offset = std::visit(VariantToFloatVisitor(), findOffset->second);
++                }
++
+                 float pollRate =
+                     getPollRate(baseConfiguration->second, pollRateDefault);
+                 PowerState readState = getPowerState(baseConfiguration->second);
+@@ -307,7 +314,7 @@ void createSensors(
+ 
+                 sensor = std::make_shared<ADCSensor>(
+                     path.string(), objectServer, dbusConnection, io, sensorName,
+-                    std::move(sensorThresholds), scaleFactor, pollRate,
++                    std::move(sensorThresholds), scaleFactor, offset, pollRate,
+                     readState, *interfacePath, std::move(bridgeGpio));
+                 sensor->setupRead();
+             }
+-- 
+2.34.1
+

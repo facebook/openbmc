@@ -97,6 +97,47 @@ PLDM_FW_IDENT_PASS=0
 PLDM_FW_IDENT_PASS_WITH_BACKWARD_COMPATIBILITY=1
 PLDM_FW_IDENT_FAIL=255
 
+retimer_get_package_source() {
+	local input=$1
+	case "$input" in
+		"Vntg")
+			echo "BRCM"
+			;;
+		*)
+			echo "Astera"
+			;;
+	esac
+}
+
+retimer_get_source() {
+	local slot=$1
+	local target_bus=$((slot+15))
+
+	result=$(busctl call xyz.openbmc_project.ObjectMapper \
+		/xyz/openbmc_project/object_mapper \
+		xyz.openbmc_project.ObjectMapper \
+		GetSubTree sias "/xyz/openbmc_project/FruDevice" \
+		0 1 "xyz.openbmc_project.FruDevice") || {
+		echo "Failed to execute busctl call ObjectMapper"
+		exit 1
+	}
+
+	paths=$(echo "$result" | grep -o "/xyz/openbmc_project/FruDevice/Sentinel_Dome_Retimer_[^ ]*" | tr -d '"')
+
+	for path in $paths; do
+		bus=$(busctl get-property xyz.openbmc_project.FruDevice "$path" xyz.openbmc_project.FruDevice BUS 2>/dev/null | awk '{print $2}')
+		if [ "$bus" == "$target_bus" ]; then
+			board=$(busctl get-property xyz.openbmc_project.FruDevice "$path" xyz.openbmc_project.FruDevice BOARD_PRODUCT_NAME 2>/dev/null | sed -E 's/^s "//; s/"$//')
+			vendor=$(echo "$board" | sed -E 's/.*-//')
+			echo "$vendor"
+			exit 0
+		fi
+	done
+
+	echo "Cannot found corresponding vendor of bus $target_bus"
+	exit 1
+}
+
 sd_vr_get_source() {
 	local slot=$1
 	ret=$(busctl get-property -l xyz.openbmc_project.Settings /xyz/openbmc_project/software/host"$slot"/Sentinel_Dome_vr_pvdd11_s3 xyz.openbmc_project.Software.Version Version)
@@ -255,9 +296,18 @@ pldm_fw_identify() {
 	component_string_len=$(hexdump -v -n 1 -s "$offset" -e '1/1 "%d"' "$pldm_image")
 	((offset+=1))
 	component_string=$(hexdump -v -n "$component_string_len" -s "$offset" -e '1/1 "%c"' "$pldm_image")
-	((offset+=component_string_len))
+	((offset+=component_string_len+4))
+	signature=$(hexdump -v -n 4 -s "$offset" -e '1/1 "%c"' "$pldm_image")
 	
 	if [ "$instance_type" == "sd_retimer" ]; then
+		package_source=$(retimer_get_package_source "$signature")
+		device_source=$(retimer_get_source "$slot_id")
+		echo "package_source = $package_source"
+		echo "device_source = $device_source"
+		if [ "$package_source" != "$device_source" ]; then
+			echo "This image is not compatible with $instance_type"
+			return $PLDM_FW_IDENT_FAIL
+		fi
 		if [ "$component_identifier" -lt 4 ] || [ "$component_identifier" -gt 8 ] || [ "$component_identifier" -eq 6 ]; then
 			echo "This image is not compatible with $instance_type"
 			return $PLDM_FW_IDENT_FAIL

@@ -39,7 +39,7 @@ class FwUpgradeTest(unittest.TestCase):
     _COMPONENTS = {
         "bios": [
             1,
-            "/usr/local/bin/bios_util.sh write {filename}",
+            "/usr/local/bin/bios_util.sh write {filename} --init-aconf",
         ],  # priority=1, upgrade_cmd
         "scm": [
             2,

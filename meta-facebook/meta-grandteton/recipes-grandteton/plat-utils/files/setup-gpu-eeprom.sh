@@ -17,6 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
 . /usr/local/bin/openbmc-utils.sh
 . /usr/local/fbpackages/utils/ast-functions
 KV_CMD="/usr/bin/kv"
@@ -96,6 +98,12 @@ setup_gpu_model() {
         return
       fi
     done
+  elif [ "$gpu" == "ubb" ]; then
+    board_num=$(fruid-util ubb | grep "Board Part Number" | awk '{print $NF}')
+    custom_data1=$(fruid-util ubb | grep "Product Custom Data 1" | awk '{print $NF}')
+    fruid-util ubb --modify --BPN $custom_data1 /tmp/fruid_ubb.bin > /dev/null 2>&1
+    fruid-util ubb --modify --PPN $custom_data1 /tmp/fruid_ubb.bin > /dev/null 2>&1
+    fruid-util ubb --modify --PCD1 $board_num   /tmp/fruid_ubb.bin > /dev/null 2>&1
   fi
 }
 

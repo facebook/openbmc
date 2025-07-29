@@ -139,6 +139,13 @@ struct ubb_snr_info {
   {"RETIMER_6_7_0V9_VR_TEMP"},             //0x7D
   {"RETIMER_0_1_2_3_1V2_VR_TEMP"},         //0x7E
   {"RETIMER_4_5_6_7_1V2_VR_TEMP"},         //0x7F
+
+  {"GPU_WARMEST_HSC_TEMP"},                //0x80
+  {"UBB_FPGA_0V72_VR_TEMP"},               //0x81
+  {"UBB_FPGA_3V3_VR_TEMP"},                //0x82
+  {"OAM_0_1_2_3_3V3_VR_TEMP"},             //0x83
+  {"OAM_4_5_6_7_3V3_VR_TEMP"},             //0x84
+  {"IBC_HSC_TEMP"},                        //0x85
 };
 
 PAL_SENSOR_MAP ubb_sensor_map[];
@@ -279,10 +286,10 @@ PAL_SENSOR_MAP ubb_sensor_map[] = {
   {NULL, 0,  NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                          //0x1E
   {"IBC_TEMP"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},      //0x1F
 
-  {"PCB_0_TEMP",  0 , read_snr, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x20
-  {"PCB_1_TEMP" , 0 , read_snr, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x21
-  {"PCB_2_TEMP" , 0 , read_snr, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x22
-  {"PCB_3_TEMP" , 0 , read_snr, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x23
+  {"PCB_OAM7_TEMP",  0 , read_snr, true, {90.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x20
+  {"PCB_IBC_TEMP" ,  0 , read_snr, true, {90.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x21
+  {"PCB_UFPGA_TEMP", 0 , read_snr, true, {90.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x22
+  {"PCB_OAM1_TEMP" , 0 , read_snr, true, {90.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x23
   {"PCIeRetimer_0_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x24
   {"PCIeRetimer_1_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x25
   {"PCIeRetimer_2_TEMP" , 0 , read_snr, false, {110.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x26
@@ -380,6 +387,13 @@ PAL_SENSOR_MAP ubb_sensor_map[] = {
   {"RETIMER_6_7_0V9_VR_TEMP", 0, read_snr, true, {115, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x7D
   {"RETIMER_0_1_2_3_1V2_VR_TEMP", 0, read_snr, true, {115, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x7E
   {"RETIMER_4_5_6_7_1V2_VR_TEMP", 0, read_snr, true, {115, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x7F
+
+  {"WARMEST_HSC_TEMP", 0, read_snr, true,  {125, 0, 0, 5, 0, 0, 0, 0}, TEMP},       //0x80
+  {"FPGA_0V72_VR_TEMP", 0, read_snr, true, {125, 0, 0, 0, 0, 0, 0, 0}, TEMP},       //0x81
+  {"FPGA_3V3_VR_TEMP", 0, read_snr, true,  {125, 0, 0, 0, 0, 0, 0, 0}, TEMP},       //0x82
+  {"OAM_0_1_2_3_3V3_VR_TEMP", 0, read_snr, true, {125, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x83
+  {"OAM_4_5_6_7_3V3_VR_TEMP", 0, read_snr, true, {125, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x84
+  {"IBC_HSC_TEMP", 0, read_snr, true,      {125, 0, 0, 5, 0, 0, 0, 0}, TEMP},       //0x85
 };
 
 const uint8_t ubb_sensor_list[] = {
@@ -454,6 +468,13 @@ const uint8_t ubb_sensor_list[] = {
 
   GPU_WARMEST_DIE_TEMP,
   GPU_WARMEST_MEMORY_TEMP,
+
+  UBB_WARMEST_HSC_TEMP,
+  UBB_FPGA_0V72_VR_TEMP,
+  UBB_FPGA_3V3_VR_TEMP,
+  UBB_0_1_2_3_3V3_VR_TEMP,
+  UBB_4_5_6_7_3V3_VR_TEMP,
+  UBB_IBC_HSC_TEMP,
 };
 
 const uint8_t ubb_discrete_sensor_list[] = {

@@ -17,6 +17,8 @@ MTERM_LOG_FILES = "mTerm_mb \
                    mTerm_cb_accl8_2_uart1 \
                    mTerm_cb_accl9_1_uart1 \
                    mTerm_cb_accl9_2_uart1 \
+                   mTerm_cb_accl10_1_uart1 \
+                   mTerm_cb_accl10_2_uart1 \
                    mTerm_cb_accl11_1_uart1 \
                    mTerm_cb_accl11_2_uart1 \
                    mTerm_cb_accl12_1_uart1 \

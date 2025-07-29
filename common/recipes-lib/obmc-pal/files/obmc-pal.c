@@ -742,7 +742,12 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
           snprintf(temp_log, sizeof(temp_log), "DIMM %s initialization fails,FRU:%u", dimm_str,fru);
           pal_add_cri_sel(temp_log);
           break;
-
+        case MEMORY_TRAINING_ERR_CXL:
+          snprintf(error_log, ERR_LOG_SIZE, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, DDR Controller ID: 0x%02X",
+                  general_info, dimm_location_str, mem_err[event_type], sel[13]);
+          snprintf(temp_log, sizeof(temp_log), "DIMM %s initialization fails,FRU:%u", dimm_str,fru);
+          pal_add_cri_sel(temp_log);
+          break;
         default:
           pal_convert_to_dimm_str(dimm_info.socket, dimm_info.channel, dimm_info.slot, dimm_str);
           estr_idx = (event_type < ARRAY_SIZE(mem_err)) ? event_type : (ARRAY_SIZE(mem_err) - 1);
@@ -754,6 +759,9 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
             pal_add_cri_sel(temp_log);
           } else if ((event_type == MEMORY_UNCORRECTABLE_ERR) || (event_type == MEMORY_UNCORR_ERR_PTRL_SCR)) {
             snprintf(temp_log, sizeof(temp_log), "DIMM%s UECC err,FRU:%u", dimm_str, fru);
+            pal_add_cri_sel(temp_log);
+          } else {
+            snprintf(temp_log, sizeof(temp_log), "DIMM%s err,FRU:%u", dimm_str, fru);
             pal_add_cri_sel(temp_log);
           }
           break;
